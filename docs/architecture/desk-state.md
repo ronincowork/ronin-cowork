@@ -30,7 +30,7 @@ gets no invented desk state.
 
 | Route | Answers |
 |---|---|
-| `GET /api/desks` | every live session's desks and roll-up, keyed by session; memoised a few seconds. The same answer is pushed on `/events` as `{t:'desks', list}`; the route is the snapshot a tab reads before its connection's first push |
+| `GET /api/desks` | every live session's desks and roll-up, keyed by session; memoised a few seconds. Not pushed: a surface reads it when it opens |
 | `GET /api/sessions/:name/desks` | one session: `{ session, live, desks[], rollup }` |
 | `GET /api/teams/:name/desks` | every member's desks, **plus parked desks of sessions that are gone** (`live: false`) — the lead's *hand in · inspect · reassign · discard* list — the team line seen per repository (`lines`), because one roster `branch` cannot name two repos' lines, and `promotion`: the last complete team promotion and any receipt still blocking the team (advancing or interrupted), from Track 2's ledger |
 
@@ -39,12 +39,11 @@ the sum of commits ahead of a line, i.e. what nobody else can see yet.
 
 ## The surfaces
 
-The server pushes the desks answer on `/events` as `{t:'desks', list}`: sent to a fresh
-connection once, then on the sessions triggers (tmux notifications and the 2 s clock) only
-when the answer changed, because ahead/behind and unsaved files are live git facts with no
-write route to announce them. `public/js/desks.js` reads the browser store's `desks`
-resource (`public/js/store.js`) and owns the words (`desks.*` in the lexicon); the home
-panels repaint when it changes.
+The desks answer is not pushed. Nothing paints it live: the tile's ladder reads it when it
+opens, and ahead/behind and unsaved files are live git facts with no write route to announce
+them, so pushing meant a git sweep over every desk on the server's clock for no reader.
+`public/js/desks.js` reads `GET /api/desks` through the browser store (`public/js/store.js`)
+and owns the words (`desks.*` in the lexicon).
 
 | Surface | Shows |
 |---|---|

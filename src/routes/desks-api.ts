@@ -51,9 +51,9 @@ async function allDesks(): Promise<Record<string, SessionDesks>> {
   return Object.fromEntries(rows.map((r) => [r.session, r]));
 }
 
-// What GET /api/desks answers, and what /events pushes as {t:'desks', list}: one memo, so the
-// push clock and a reconnecting tab share the git reads.
-export async function loadDesks(): Promise<Record<string, SessionDesks>> {
+// What GET /api/desks answers: read when a surface opens, not pushed. The memo lets tabs
+// opening together share the git reads.
+async function loadDesks(): Promise<Record<string, SessionDesks>> {
   if (!memo || Date.now() - memo.at > MEMO_MS) memo = { at: Date.now(), value: allDesks() };
   try {
     return await memo.value;
