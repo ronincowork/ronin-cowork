@@ -119,10 +119,7 @@ export function createCoworkView(options = {}) {
         // The header already says Workspace; the body saying it again read as a stutter
         const mark = el('div', 'tile-empty-mark');
         mark.setAttribute('aria-hidden', 'true');
-        const logo = el('img');
-        logo.src = 'brand/nin-mark.svg';
-        logo.alt = '';
-        mark.append(logo);
+        mark.append(WorkspaceKit.primitives.ninMark());
         blank.content.append(mark);
         seat.empty = { el: blank.el, mount: () => {}, destroy: () => blank.el.remove() };
         seat.surface.content.append(seat.empty.el);

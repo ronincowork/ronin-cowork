@@ -25,7 +25,7 @@ test('all Workbench defaults share the quiet Ronin surface', async () => {
     source('campaign-view.js'), readFile(new URL('../public/style.css', import.meta.url), 'utf8'),
   ]);
   assert.match(primitives, /function createBlankSurface/);
-  assert.match(primitives, /logo\.src = 'brand\/nin-mark\.svg'/);
+  assert.match(primitives, /mark\.append\(ninMark\(\)\)/);
   for (const consumer of [setup, launch, campaign]) assert.match(consumer, /primitives\.createBlankSurface/);
   assert.match(css, /\.wk-blank-surface[\s\S]*\.wk-blank-surface > \.wk-surface-header \{ display: none; \}/);
 });

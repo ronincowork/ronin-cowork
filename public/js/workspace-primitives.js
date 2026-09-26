@@ -22,6 +22,24 @@ function setSurfaceState(root, state = null, message = '') {
   }
 }
 
+// THE HOUSE MARK, INLINE. public/brand/nin-mark.svg is the master (and the favicon); these
+// are its paths, copied once, so the glyph is part of whatever holds it: no fetch and no
+// decode, so it never paints a frame after its button. Decorative wherever it appears.
+const NIN_MARK = '<path fill="none" stroke="#c46243" stroke-width="8" stroke-linejoin="miter" d="M31 6h58l25 46-25 46H31L6 52z"/>'
+  + '<path fill="#c46243" d="M52.3 21.8c3.9-4.3 10.4-4.1 14.5-.5l3.8 3.4c2 1.8 2.1 4.4.5 6.7-5.4 7.8-8.7 15.8-12.1 23.7-6.1 14.4-15.7 24.7-29.4 32.7-3.7 2.2-7.4 1.4-8.8-1.6-1.2-2.6.4-5 3.7-7.4 11.2-8.1 19.1-17.7 24-29.2 3.8-9 6.8-17.1 5.1-22.4l-1.8-3c-.5-.8-.3-1.7.5-2.4z"/>'
+  + '<path fill="#c46243" d="M54.2 50c2.8-2.5 6.3-2.1 9.3 1.2 9.9 11.1 19.8 20 32.2 27.2 3.7 2.1 4.6 5 2.2 7.4-1.8 1.8-5 2.5-9.2 1.8-13.2-2.4-24.7-12.4-36.3-25.8-3.7-4.2-2.9-8.6 1.8-11.8z"/>';
+
+/** The nin mark as an inline svg, sized by `className`. */
+export function ninMark(className = '') {
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('viewBox', '0 0 120 104');
+  svg.setAttribute('aria-hidden', 'true');
+  svg.setAttribute('focusable', 'false');
+  if (className) svg.setAttribute('class', className);
+  svg.innerHTML = NIN_MARK;
+  return svg;
+}
+
 export function createSurface(options = {}) {
   const el = node('section', `wk-surface${options.className ? ` ${options.className}` : ''}`);
   if (options.label) el.setAttribute('aria-label', options.label);
@@ -50,10 +68,7 @@ function createBlankSurface(label = t('team.workspace_blank', 'Workspace')) {
   const surface = createSurface({ label, className: 'wk-blank-surface' });
   const mark = node('div', 'tile-empty-mark');
   mark.setAttribute('aria-hidden', 'true');
-  const logo = node('img');
-  logo.src = 'brand/nin-mark.svg';
-  logo.alt = '';
-  mark.append(logo);
+  mark.append(ninMark());
   surface.content.append(mark);
   return surface;
 }
@@ -99,11 +114,7 @@ function createAction(options = {}) {
   const isLaunch = options.launch || options.label === t('forms.launch', 'Launch');
   if (isLaunch) {
     el.dataset.launch = 'true';
-    const mark = document.createElement('img');
-    mark.className = 'wk-launch-mark';
-    mark.src = 'brand/nin-mark.svg';
-    mark.alt = '';
-    el.append(mark, node('span', null, options.label ?? ''));
+    el.append(ninMark('wk-launch-mark'), node('span', null, options.label ?? ''));
   } else {
     el.textContent = options.label ?? '';
   }
@@ -418,4 +429,5 @@ export const WorkspacePrimitives = Object.freeze({
   createNotice,
   createField,
   createForm,
+  ninMark,
 });

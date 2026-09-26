@@ -58,7 +58,7 @@ export function createAgentView() {
   const blank = (id) => {
     const surface = WorkspaceKit.primitives.createSurface({ label: t('team.workspace_blank', 'Workspace'), className: 'tw-blank' });
     const mark = el('div', 'tile-empty-mark'); mark.setAttribute('aria-hidden', 'true');
-    const logo = el('img'); logo.src = 'brand/nin-mark.svg'; logo.alt = ''; mark.append(logo); surface.content.append(mark);
+    mark.append(WorkspaceKit.primitives.ninMark()); surface.content.append(mark);
     return surface.el;
   };
   for (const id of ['workspace1', 'workspace2', 'workspace3', 'workspace4']) {

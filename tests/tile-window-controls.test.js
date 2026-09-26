@@ -77,9 +77,9 @@ test('managed workspaces empty their seat and both empty views use the subdued R
   // Tolerant of layout: what matters is that the host hands its onMinimize to the Tile,
   // not whether the options sit on one line (fb952d2e wrapped them to add transcriptCache).
   assert.match(host, /new Tile\([\s\S]{0,240}onMinimize: options\.onMinimize/);
-  assert.match(tile, /emptyLogo\.src = 'brand\/nin-mark\.svg'/);
-  assert.match(cowork, /logo\.src = '/);
-  assert.match(css, /\.tile-empty-mark img[\s\S]*opacity: 0\.16;[\s\S]*filter: grayscale\(1\)/);
+  assert.match(tile, /this\.emptyMark\.append\(ninMark\(\)\)/);
+  assert.match(cowork, /mark\.append\(WorkspaceKit\.primitives\.ninMark\(\)\)/);
+  assert.match(css, /\.tile-empty-mark svg[\s\S]*opacity: 0\.16;[\s\S]*filter: grayscale\(1\)/);
 });
 
 test('collapsing the application header moves the caret alone, never the island', async () => {

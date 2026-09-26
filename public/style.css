@@ -1347,7 +1347,7 @@ body {
   pointer-events: none;
 }
 .tile-empty-mark[hidden] { display: none; }
-.tile-empty-mark img {
+.tile-empty-mark svg {
   width: clamp(3rem, 18%, 7rem);
   height: auto;
   opacity: 0.16;

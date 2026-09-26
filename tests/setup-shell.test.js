@@ -92,7 +92,7 @@ test('launch actions reuse the nin mark, never the Team Roster torii, and open t
     source('js/workspace-primitives.js'), source('workspace-kit.css'), source('js/team-roster-surface.js'),
     source('js/workspace.js'), source('js/new-agent.js'), source('js/new-team-form.js'),
   ]);
-  assert.match(primitives, /brand\/nin-mark\.svg/);
+  assert.match(primitives, /el\.append\(ninMark\('wk-launch-mark'\)/);
   assert.match(kit, /\.wk-action\[data-launch='true'\] \{ border-color: var\(--kaki\); background: var\(--raise\);/);
   assert.match(roster, /launch: true/);
   assert.doesNotMatch(roster, /'torii', '⛩'/);

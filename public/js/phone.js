@@ -175,10 +175,7 @@ export async function buildPhone() {
     state.hidden = true;
     const go = el('button', 'ph-launch-go', t('forms.launch', 'Launch'));
     go.dataset.launch = 'true';
-    const launchMark = el('img', 'wk-launch-mark');
-    launchMark.src = 'brand/nin-mark.svg';
-    launchMark.alt = '';
-    go.prepend(launchMark);
+    go.prepend(WorkspaceKit.primitives.ninMark('wk-launch-mark'));
     go.type = 'button';
     let busy = false;
     go.addEventListener('click', async () => {

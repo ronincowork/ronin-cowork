@@ -227,8 +227,7 @@ function createRegisterSurface(context) {
   });
   registerAction.dataset.launch = 'true';
   const sendLabel = registerAction.textContent;
-  const sendMark = el('img', 'wk-launch-mark'); sendMark.src = 'brand/nin-mark.svg'; sendMark.alt = '';
-  registerAction.replaceChildren(sendMark, el('span', '', sendLabel));
+  registerAction.replaceChildren(WorkspaceKit.primitives.ninMark('wk-launch-mark'), el('span', '', sendLabel));
   const send = el('div', 'setup-register-send');
   send.append(consent, registerAction, notice);
   let formOpen = null; // see THE HEADER ZONE, below

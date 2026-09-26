@@ -24,6 +24,7 @@ import { get, subscribe } from './store.js';
 import { t } from './lexicon.js';
 import { makeTileTranscript } from './tile-transcript.js';
 import { createSurfaceHost, TILE_SURFACES } from './surface-host.js';
+import { ninMark } from './workspace-primitives.js';
 
 const readableSession = (name) => {
   const live = S.sessions.find((row) => row.name === name);
@@ -64,10 +65,7 @@ export class Tile {
     this.emptyMark = document.createElement('div');
     this.emptyMark.className = 'tile-empty-mark';
     this.emptyMark.setAttribute('aria-hidden', 'true');
-    const emptyLogo = document.createElement('img');
-    emptyLogo.src = 'brand/nin-mark.svg';
-    emptyLogo.alt = '';
-    this.emptyMark.append(emptyLogo);
+    this.emptyMark.append(ninMark());
     this.body.append(this.emptyMark);
     // Text dropped on the tile — an @mention or a document reference — lands here.
     installTextDrops(this);
