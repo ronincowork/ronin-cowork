@@ -40,7 +40,10 @@ in `src/tmux-client.ts` is the server's single door to tmux:
   `grid_*` names.
 - `tmux.on(kind, handler)` delivers notifications. `src/ws/events.ts` pushes the session
   list and the home rows to browsers on `%sessions-changed`, renames and window changes,
-  with the 2 s clock kept as a heartbeat; each tick takes one session listing for both. No
+  with the 2 s clock kept as a heartbeat; each tick takes one session listing for both, and
+  each is sent only when a field the UI paints moved (`sessionsSignature` leaves out
+  `activity`), so a notification that changed nothing painted sends nothing. The Team
+  rosters are pushed as `{t:'teams', rosters}` after each roster write, not on the tick. No
   `refresh-client -B` activity subscription is installed: nothing reads its values, and a
   row's `activity` comes from the listing.
 
@@ -62,12 +65,12 @@ server, the restart in `src/host-guard.ts`, stays direct on purpose.
 
 ## The roster, computed once and on change
 
-`/api/home` is computed once per two-second window and shared by every browser that asks
-in it (`createWindowedLoader` in `src/routes/launch.ts`). The same loader feeds the push:
-while a browser is connected, the sessions triggers recompute it and `src/ws/events.ts`
-broadcasts `{t:'home', rows}` only when the painted fields moved (`homeSignature` leaves
-out a row's `activity` and stance `at`); a fresh connection receives the rows once. The
-route remains the snapshot a tab reads at boot and on reconnect. A session's screen is captured
+The home rows are built by `homeRows` in `src/routes/launch.ts` from the session listing a
+tick took: while a browser is connected, `src/ws/events.ts` broadcasts `{t:'home', rows}`
+only when the painted fields moved (`homeSignature` leaves out a row's `activity` and stance
+`at`); a fresh connection receives the rows once. No browser asks `GET /api/home`: the push
+on connect is a tab's snapshot. The route answers the same rows to anything that reads it
+directly, computed once per two-second window (`createWindowedLoader`). A session's screen is captured
 and classified only when its `#{window_activity}` stamp moved since the last
 classification (`createActivityCache` in `src/status.ts`); an unchanged session keeps its
 last status, ctx and model.

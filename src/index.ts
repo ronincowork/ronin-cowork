@@ -30,7 +30,7 @@ import { homeRows, registerLaunch } from './routes/launch.js';
 import { registerPasskeyLogin, registerPasskeyManage } from './routes/passkey-api.js';
 import { registerPasswordSettings } from './routes/password-api.js';
 import { registerSessions } from './routes/sessions-api.js';
-import { registerTeams } from './routes/teams-api.js';
+import { registerTeams, teamRosters } from './routes/teams-api.js';
 import { registerDocs } from './routes/docs-api.js';
 import { registerDesks } from './routes/desks-api.js';
 import { registerTeamPage } from './routes/team-page-api.js';
@@ -417,7 +417,7 @@ const removed = await cleanupViewers();
 if (removed) console.log(`[tmux-ronin] cleaned up ${removed} stale viewer session(s)`);
 await startBootHooks();
 const stopSessionRetention = startSessionRetention(); // closed session folders outlive the retention period by nothing
-startSessionsBroadcast({ list: listSessions, home: homeRows }); // /events: pushes the session list and the home rows when they change
+startSessionsBroadcast({ list: listSessions, home: homeRows, teams: () => teamRosters() }); // /events: pushes the session list, the home rows and the Team rosters when they change
 void seedHouseBoard().catch((e) => console.error('[tmux-ronin] house board seed failed:', e));
 
 void publishMax();
