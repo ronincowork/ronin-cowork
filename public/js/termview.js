@@ -128,7 +128,7 @@ export class TermView {
       from = null;
       // Left button only, on the terminal, in a locked tile, WITHOUT the modifier —
       // someone already holding it knows the trick and must never be told.
-      if (e.button !== 0 || !this.ownsTarget(e.target) || !hooks.isLocked() || hooks.overHome(e.target)) return;
+      if (e.button !== 0 || !this.ownsTarget(e.target) || !hooks.isLocked()) return;
       if (forcesSelection(e)) return;
       from = { x: e.clientX, y: e.clientY };
     });
@@ -157,8 +157,7 @@ export class TermView {
    * discrete jump and a full re-render per step, which is exactly the reported "scrolling
    * feels broken" — it was never latency, it was us doing the scrolling badly.
    *
-   * @param {{isLocked: () => boolean, overHome: (el: EventTarget) => boolean,
-   *          sendRaw: (d: string) => void, activate: () => void}} hooks
+   * @param {{isLocked: () => boolean, sendRaw: (d: string) => void, activate: () => void}} hooks
    */
   wireDragScroll(hooks) {
     if (!IS_TOUCH) return;
@@ -169,8 +168,8 @@ export class TermView {
       'touchstart',
       (e) => {
         hooks.activate();
-        if (!this.ownsTarget(e.target) || !hooks.isLocked() || hooks.overHome(e.target)) {
-          lastY = null; // tape-fed tile and the home panel both scroll natively
+        if (!this.ownsTarget(e.target) || !hooks.isLocked()) {
+          lastY = null; // a tape-fed tile scrolls natively
           return;
         }
         lastY = e.touches[0] ? e.touches[0].clientY : null;
