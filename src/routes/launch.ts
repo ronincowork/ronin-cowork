@@ -14,7 +14,7 @@ import {
   setTags,
 } from '../tmux.js';
 import { launchArgv } from '../agents.js';
-import { AtSessionMax, liveCount, readAgentsSection, readMax, readOwner, writeMax, writeOwner } from '../machine-state.js';
+import { AtSessionMax, readAgentsSection } from '../machine-state.js';
 import { resolveForm, type SpawnForm } from '../spawn.js';
 import { appendLaunchLedger, persistBirthReceipt } from '../launch-ledger.js';
 import { mandate } from '../agent-defaults.js';
@@ -77,26 +77,6 @@ export function birthEnv(toolPath?: string, socket?: string, installBin: string 
   }
   if (socket) env[OPERATOR_SOCKET_ENV] = socket;
   return Object.keys(env).length ? env : undefined;
-}
-
-export function createWindowedLoader<T>(
-  load: () => Promise<T>,
-  windowMs: number,
-  now: () => number = Date.now,
-): () => Promise<T> {
-  let window = -1;
-  let shared: Promise<T> | null = null;
-  return () => {
-    const current = Math.floor(now() / windowMs);
-    if (!shared || current !== window) {
-      window = current;
-      shared = load().catch((error) => {
-        shared = null;
-        throw error;
-      });
-    }
-    return shared;
-  };
 }
 
 async function birthCampaign(team: string, explicit = ''): Promise<string> {
@@ -228,9 +208,9 @@ export function mikaReadinessFromPane(text: string): 'ready' | 'starting' | 'act
   return state === 'awaiting-input' ? 'action_required' : state === null ? 'starting' : 'ready';
 }
 
-// The pane is still read, for two things a journal cannot state: whether a dialog is
-// open, and the CLI's own context gauge. What the Agent is DOING comes from its journal,
-// through the transcript part's row field — no spinner is matched here any more.
+// The pane is read for two things a journal cannot state: whether a dialog is open, and
+// the CLI's own context gauge. What the Agent is DOING comes from its journal, through the
+// transcript part's row field.
 const loadPaneStatus = createActivityCache(async (name: string) => {
   const text = await capturePane(name, 0);
   return {
@@ -264,9 +244,6 @@ export function homeRows(list: SessionWithAxes[]) {
     }),
   );
 }
-
-// What GET /api/home answers: the same rows, for a tab that asks.
-export const loadHome = createWindowedLoader(async () => homeRows(await withAxes(await listSessions())), 2_000);
 
 export function registerLaunch(app: express.Express): LaunchControl {
   type MikaReady = Awaited<ReturnType<LaunchControl['ensureMika']>>;
@@ -603,42 +580,6 @@ export function registerLaunch(app: express.Express): LaunchControl {
     }
   });
 
-  app.get('/api/home', async (_req, res) => {
-    try {
-      res.json(await loadHome());
-    } catch (e) {
-      res.status(500).json({ error: String((e as Error)?.message ?? e) });
-    }
-  });
-
-  app.get('/api/session-max', async (_req, res) => {
-    try {
-      res.json({ max: await readMax(), live: await liveCount() });
-    } catch (e) {
-      res.status(500).json({ error: String((e as Error)?.message ?? e) });
-    }
-  });
-
-  app.get('/api/owner', async (_req, res) => {
-    try {
-      res.json({ name: await readOwner() });
-    } catch (e) {
-      res.status(500).json({ error: String((e as Error)?.message ?? e) });
-    }
-  });
-
-  app.put('/api/session-max', async (req, res) => {
-    const raw = req.body?.max;
-    const n = typeof raw === 'number' ? raw : Number(raw);
-    if (!Number.isFinite(n) || n < 0 || !Number.isInteger(n)) {
-      return res.status(400).json({ error: 'The session max is a whole number, 0 or more (0 = no limit).' });
-    }
-    try {
-      res.json({ max: await writeMax(n), live: await liveCount() });
-    } catch (e) {
-      res.status(500).json({ error: String((e as Error)?.message ?? e) });
-    }
-  });
 
   app.post('/api/session', async (req, res, next) => {
     const name = String(req.body?.name ?? '').trim();

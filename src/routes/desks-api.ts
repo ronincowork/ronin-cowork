@@ -2,13 +2,12 @@ import type express from 'express';
 import { listProjectRoots, repoFacts } from '../project-roots.js';
 import { deriveDesk, fromStatus, locatorFrom, rollup, sameDesk, type DeskRollup, type DeskState, type LocateRepo } from '../desk-state.js';
 import { listDesks } from '../desks/registry.js';
-import { blockingReceipt, lastGoodPromotion, summarize } from '../promotion/receipts.js';
 import { clearFunnel, diagnoseFunnel, listFunnelReceipts, preserveFunnel, readFunnelReceipt } from '../promotion/funnel-recovery.js';
 import { readTeamRoster } from '../team-rosters.js';
 import { readArrangement } from '../desks/arrangement.js';
 import { teamLineBranch } from '../desks/schema.js';
 import { readRepos } from '../tegami.js';
-import { isValidName, listSessions, sessionExists } from '../tmux.js';
+import { isValidName, sessionExists } from '../tmux.js';
 
 async function locator(): Promise<LocateRepo> {
   const roots = await listProjectRoots().catch(() => []);
@@ -18,14 +17,14 @@ async function locator(): Promise<LocateRepo> {
   );
 }
 
-export interface SessionDesks {
+interface SessionDesks {
   session: string;
   live: boolean;
   desks: DeskState[];
   rollup: DeskRollup;
 }
 
-export async function desksOf(session: string, locate: LocateRepo, live = true): Promise<SessionDesks> {
+async function desksOf(session: string, locate: LocateRepo): Promise<SessionDesks> {
   const recorded = (await listDesks({ session }).catch(() => [])).map(fromStatus);
   const desks = [...recorded];
   for (const entry of await readRepos(session)) {
@@ -33,34 +32,7 @@ export async function desksOf(session: string, locate: LocateRepo, live = true):
     if (recorded.some((desk) => sameDesk(desk, entry, at))) continue;
     desks.push(await deriveDesk(entry, at, session));
   }
-  return { session, live, desks, rollup: rollup(desks) };
-}
-
-function sum(rows: DeskRollup[]): DeskRollup {
-  const r: DeskRollup = { desks: 0, private: 0, dirty: 0, pending: 0, parked: 0, blocked: 0, lined: 0 };
-  for (const x of rows) for (const k of Object.keys(r) as (keyof DeskRollup)[]) r[k] += x[k];
-  return r;
-}
-
-let memo: { at: number; value: Promise<Record<string, SessionDesks>> } | null = null;
-const MEMO_MS = 4_000;
-
-async function allDesks(): Promise<Record<string, SessionDesks>> {
-  const locate = await locator();
-  const rows = await Promise.all((await listSessions()).map((s) => desksOf(s.name, locate)));
-  return Object.fromEntries(rows.map((r) => [r.session, r]));
-}
-
-// What GET /api/desks answers: read when a surface opens, not pushed. The memo lets tabs
-// opening together share the git reads.
-async function loadDesks(): Promise<Record<string, SessionDesks>> {
-  if (!memo || Date.now() - memo.at > MEMO_MS) memo = { at: Date.now(), value: allDesks() };
-  try {
-    return await memo.value;
-  } catch (e) {
-    memo = null;
-    throw e;
-  }
+  return { session, live: true, desks, rollup: rollup(desks) };
 }
 
 export function registerDesks(app: express.Express): void {
@@ -101,51 +73,14 @@ export function registerDesks(app: express.Express): void {
     catch (e) { res.status(409).json({ error: String((e as Error)?.message ?? e) }); }
   });
 
-  // ?session=<name> answers that session's own entry of the same keyed object ({} when it
-  // is not live), read without computing every desk on the box; the bare form is for tools.
+  // One session's desks, keyed by its name ({} when it is not live): what a Work Record's
+  // ladder reads when it opens.
   app.get('/api/desks', async (req, res) => {
     const session = String(req.query.session ?? '').trim();
     try {
-      if (!session) return res.json(await loadDesks());
-      if (!isValidName(session)) return res.status(400).json({ error: 'Invalid session name.' });
+      if (!isValidName(session)) return res.status(400).json({ error: 'Name one session: /api/desks?session=<name>.' });
       if (!(await sessionExists(session))) return res.json({});
       res.json({ [session]: await desksOf(session, await locator()) });
-    } catch (e) {
-      res.status(500).json({ error: String((e as Error)?.message ?? e) });
-    }
-  });
-
-  app.get('/api/sessions/:name/desks', async (req, res) => {
-    const { name } = req.params;
-    if (!isValidName(name)) return res.status(400).json({ error: 'Invalid name.' });
-    if (!(await sessionExists(name))) return res.status(404).json({ error: 'No such session.' });
-    try {
-      res.json(await desksOf(name, await locator()));
-    } catch (e) {
-      res.status(500).json({ error: String((e as Error)?.message ?? e) });
-    }
-  });
-
-  app.get('/api/teams/:name/desks', async (req, res) => {
-    const { name } = req.params;
-    try {
-      const locate = await locator();
-      const live = (await listSessions()).filter((s) => s.tags.includes(name));
-      const rows = await Promise.all(live.map((s) => desksOf(s.name, locate)));
-      const gone = new Map<string, DeskState[]>();
-      for (const st of await listDesks({ team: name }).catch(() => [])) {
-        if (live.some((s) => s.name === st.session)) continue;
-        (gone.get(st.session) ?? gone.set(st.session, []).get(st.session)!).push(fromStatus(st));
-      }
-      for (const [session, desks] of gone) rows.push({ session, live: false, desks, rollup: rollup(desks) });
-      const lines: Record<string, string> = {};
-      for (const r of rows) for (const d of r.desks) if (d.line && !lines[d.short]) lines[d.short] = d.line;
-      const [good, blocking] = await Promise.all([lastGoodPromotion(name).catch(() => null), blockingReceipt(name).catch(() => null)]);
-      const brief = (r: NonNullable<typeof good>) => ({ id: r.id, kind: r.kind, state: r.state, at: r.updated_at || r.at, by: r.by, summary: summarize(r) });
-      res.json({
-        team: name, members: rows, rollup: sum(rows.map((r) => r.rollup)), lines,
-        promotion: { last_good: good ? brief(good) : null, blocking: blocking ? brief(blocking) : null },
-      });
     } catch (e) {
       res.status(500).json({ error: String((e as Error)?.message ?? e) });
     }

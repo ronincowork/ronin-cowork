@@ -30,9 +30,7 @@ gets no invented desk state.
 
 | Route | Answers |
 |---|---|
-| `GET /api/desks` | every live session's desks and roll-up, keyed by session; memoised a few seconds, for tools. `?session=<name>` answers that one session's entry, `{ <name>: { session, live, desks, rollup } }` (the same entry the bare form holds, without computing every desk on the box), or `{}` when it is not live; the browser asks that when a Work Record opens. Nothing pushes either |
-| `GET /api/sessions/:name/desks` | one session: `{ session, live, desks[], rollup }` |
-| `GET /api/teams/:name/desks` | every member's desks, **plus parked desks of sessions that are gone** (`live: false`) — the lead's *hand in · inspect · reassign · discard* list — the team line seen per repository (`lines`), because one roster `branch` cannot name two repos' lines, and `promotion`: the last complete team promotion and any receipt still blocking the team (advancing or interrupted), from Track 2's ledger |
+| `GET /api/desks?session=<name>` | that session's desks and roll-up, `{ <name>: { session, live, desks, rollup } }`, or `{}` when it is not live; a missing or invalid name is a 400. The browser asks it when a Work Record opens. Nothing pushes it |
 
 The roll-up: `{ desks, private, dirty, pending, parked, blocked, lined }` — `private` is
 the sum of commits ahead of a line, i.e. what nobody else can see yet.
