@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { hardDeleteConfirmation, shutdownAgent, ShutdownRefused, ShutdownSlots, type ShutdownOps } from '../src/desks/session-shutdown.js';
+import { assignedDesks, hardDeleteConfirmation, shutdownAgent, ShutdownRefused, ShutdownSlots, type ShutdownOps } from '../src/desks/session-shutdown.js';
 import type { DeskStatus } from '../src/desks/schema.js';
 
 const desk = (patch: Partial<DeskStatus> = {}): DeskStatus => ({
@@ -125,4 +125,14 @@ test('a terminal timeout releases the session slot so retry gets a fresh operati
 
 test('Hard Delete confirmation names the exact Agent and owned desks', () => {
   assert.equal(hardDeleteConfirmation('agent'), 'HARD DELETE agent AND OWNED DESKS');
+});
+
+test('the shutdown lookup asks the registry for one session\'s desks, not every desk on the box', async () => {
+  const asked: unknown[] = [];
+  const found = await assignedDesks('agent', async (filter) => {
+    asked.push(filter);
+    return [desk(), desk({ branch: 'team/t/closed', state: 'closed' })];
+  });
+  assert.deepEqual(asked, [{ owner: 'agent' }]);
+  assert.deepEqual(found.map((d) => d.branch), ['team/t/agent'], 'only open desks are assigned');
 });

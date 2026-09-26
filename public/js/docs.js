@@ -2,6 +2,7 @@
 import { request } from './request.js';
 import { status } from './ui.js';
 import { homeData } from './home.js';
+import { subscribe } from './store.js';
 import { t } from './lexicon.js';
 import { nextTabIndex } from './workspace-tabs.js';
 import { DOC_MIME } from './team-drag.js';
@@ -215,6 +216,7 @@ export function buildDocs(tile, root, isShowing, only = null, reposFirst = () =>
     frame.src = 'about:blank'; // stop the page's scripts; the list is what's showing now
     show('list');
     refresh();
+    watch();
     return true;
   };
   back.addEventListener('click', leave);
@@ -331,16 +333,26 @@ export function buildDocs(tile, root, isShowing, only = null, reposFirst = () =>
     render(rows);
   };
 
-  // Poll only while this pane is actually on screen; a tile on another tab costs nothing.
-  setInterval(() => {
-    if (isShowing()) refresh();
-  }, 2000);
+  // THE TRACKED SHELF IS THE HOME ROWS. The list hears them from the store while it is on
+  // screen: showing the list subscribes (and draws the snapshot), each push redraws, and the
+  // first push after the pane left the screen unsubscribes. The callers own no close for
+  // this pane, so that is where it learns it closed; the next enter subscribes again.
+  let unsubscribe = null;
+  const watch = () => {
+    if (unsubscribe) return;
+    unsubscribe = subscribe('home', () => {
+      if (isShowing()) { refresh(); return; }
+      unsubscribe?.(); // the snapshot is handed over before subscribe returns
+      unsubscribe = null;
+    });
+  };
 
   empty('loading…');
   return {
     enter() {
       sig = null; // returning to the tab always redraws, however stale the signature
       refresh(shelf !== 'tracked'); // a shelf re-reads on entry: files come and go
+      watch();
     },
     // ONE-DIRECTIONAL, deliberately: this pane learns nothing about tiles or headers in
     // return. It takes a path and shows it; who asked, and why, stays the caller's.
