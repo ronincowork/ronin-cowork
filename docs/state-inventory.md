@@ -38,6 +38,11 @@ projection. [teams-api.ts](../src/routes/teams-api.ts) rejects `members`, `sessi
 lead fields in roster writes. Archive manifests preserve a restoration snapshot; they do
 not compete with the current live session.
 
+The browser holds no durable copy of server truth. Per tab, [store.js](../public/js/store.js)
+holds what [events.ts](../src/ws/events.ts) pushes — the home rows, the session list, desks —
+and the Team rosters it re-reads on a `teams` nudge; it is lost on reload and filled again
+on connect.
+
 Live runtime identity also includes the session key resolved by
 [session-dir.ts](../src/session-dir.ts). Process existence and runtime options belong to
 the session lifecycle, not a new JSON roster. Tests use the managed test-server helper.

@@ -1,42 +1,44 @@
 /* part of the ronin-cowork client — see js/README.md */
 /**
- * HOME DATA — the client's one cache of what the server knows about sessions and
- * catalogs, and the one place that refreshes it.
+ * HOME DATA — the client's cache of what the server knows about sessions and catalogs.
  *
- * This module was always the de-facto repository (`homeData`, `projectData`, an
- * inflight guard); it is now the declared one. Every reader —
- * the roster, the launcher, and the tile pickers — renders from these
- * caches, and every refresh path (boot, visibility, bfcache, the 8s poll, a
- * mutation's follow-up) lands here rather than fetching its own copy.
+ * The rows themselves are the store's (js/store.js): the server pushes them, and this
+ * module is their reader for the modules that import `homeData` — the roster, the
+ * launcher, the tile pickers. A change of rows repaints the home panels once; an unchanged
+ * push repaints nothing.
  *
- * A failed refresh keeps the LAST GOOD data and records the fault (`homeFault`)
+ * A failed snapshot keeps the LAST GOOD data and records the fault (`homeFault`)
  * instead of swallowing it: stale-and-labelled beats empty-and-silent, and the
  * roster draws the label (js/roster.js). The catalogs (projects, presets,
  * saved launches) stay best-effort — they change when the owner changes them, and
  * the next successful load heals them without a banner.
  */
 import { request } from './request.js';
-import { fetchSessions } from './api.js';
+import { snapshot, subscribe } from './store.js';
 import { tiles } from './state.js';
 import { t } from './lexicon.js';
 
 export let homeData = null; // session list enriched with status + ctx
-export let homeInflight = false;
 /** Why the roster might be stale: the last /api/home failure's message, or null. */
 export let homeFault = null;
 
+const paintHome = () => tiles.forEach((tile) => tile.renderHome?.());
+
+subscribe('home', (rows) => {
+  homeData = rows;
+  homeFault = null;
+  paintHome();
+});
+// The roster's desk column (js/desks.js reads the store) repaints on its own change.
+subscribe('desks', paintHome);
+
+/** The store's snapshot read of the rows: boot, and the callers that just changed something. */
 export async function refreshHome() {
-  if (homeInflight) return;
-  homeInflight = true;
-  const r = await request('/api/home', { cache: 'no-store' });
-  if (r.ok && Array.isArray(r.data)) {
-    homeData = r.data;
-    homeFault = null;
-  } else if (!r.ok) {
-    homeFault = r.message; // keep the last good list; say why it may be stale
-  }
-  homeInflight = false;
-  tiles.forEach((tile) => tile.renderHome?.());
+  const read = await snapshot('home');
+  const fault = read.ok ? null : read.message; // keep the last good list; say why it may be stale
+  if (fault === homeFault) return; // the rows' own change, if any, has already painted
+  homeFault = fault;
+  paintHome();
 }
 
 export let projectData = null; // /api/project-roots: [{name, title, dir, match[], remit, docs[], plans[]}]

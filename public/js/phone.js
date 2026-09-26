@@ -16,7 +16,7 @@ import { request } from './request.js';
 import { guard, showFailure } from './errors.js';
 import { connectEvents, sessionsHandlers } from './events.js';
 import { membersOfTeam, refreshTeams, subscribe, teamByName, teamsFromState, UNASSIGNED, unassignedSessions } from './team-controller.js';
-import { loadProjects, projectData, refreshHome } from './home.js';
+import { loadProjects, projectData } from './home.js';
 import { buildDocs } from './docs.js';
 import { createTerminalTileHost } from './terminal-tile-host.js';
 import { makeDrop } from './tiledrop.js';
@@ -97,7 +97,6 @@ export async function buildPhone() {
   let host = null; // the one terminal host, alive only on the terminal screen
   let stageTile = null; // the mounted tile inside it — for the slow work-record clock
   let sheet = null; // its メ sheet — dies with the host
-  let roster = null; // the roster clock, which the desk has in layout.js and the phone lacked
   let docsView = null; // the Docs screen's editor — asked before it is left, in case of unsaved typing
   const transcriptModeKey = 'ronin.phone.transcript-modes';
   let savedTranscriptModes = {};
@@ -269,7 +268,7 @@ export async function buildPhone() {
       () => teamByName(team)?.repos || []);
     docsView = docs;
     main.replaceChildren(segment(team, 'docs'), pane);
-    void refreshHome().then(() => { if (pane.isConnected) docs.enter(); });
+    docs.enter();
   };
   const leaveDocs = () => {
     if (!docsView) return true;
@@ -306,13 +305,6 @@ export async function buildPhone() {
     if (!tile.servicesOff()) sheet.addRow(node('outputEl'), t('me.output', 'Output'), 'stay');
     sheet.addRow(node('killBtn'), 'Close');
 
-    // The desk refreshes the roster on its own clock (layout.js) and the phone had none, so
-    // a row's own facts — what the Agent is doing — never arrived here at all. Same data and
-    // the same cadence, not a second poll of anything.
-    void refreshHome();
-    clearInterval(roster);
-    roster = setInterval(() => { if (document.visibilityState === 'visible') void refreshHome(); }, 8000);
-
     // The 📄 menu hangs off the hidden tile head; here it hangs off the bar.
     //
     // So does the reading toggle, and it is a toggle here rather than a dial: the owner's
@@ -331,8 +323,6 @@ export async function buildPhone() {
   };
   const closeTerminal = () => {
     if (stageTile?.session) rememberTranscriptMode(stageTile.session, stageTile.transcriptOn);
-    clearInterval(roster);
-    roster = null;
     sheet?.close();
     sheet = null;
     host?.destroy();
@@ -387,9 +377,6 @@ export async function buildPhone() {
     void fetchSessions();
     void refreshTeams();
   });
-  // The tile refreshes its own work record on connect; keep it breathing here, since the
-  // desktop's 30s clock (layout.js) never runs in this document.
-  window.setInterval(() => { if (route.screen === 'terminal' && stageTile) stageTile.refreshTegami(); }, 30000);
 
   // Ask the operator which optional surfaces are plugged in BEFORE a tile is born, the
   // way main.js does: `stream:false` means the 🔓 views are off and every tile is 🔒.

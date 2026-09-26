@@ -1,6 +1,11 @@
-/* The one browser-side Team projection and refresh controller. */
+/* The one browser-side Team projection and refresh controller.
+ *
+ * The rosters are the store's `teams` (js/store.js), re-read when the server nudges; the
+ * members are `S.sessions`. A listener hears the projection only when one of the two
+ * changed, so a Team surface never rebuilds from the same answer twice. */
 import { fetchSessions } from './api.js';
 import { request } from './request.js';
+import { snapshot as readSnapshot, subscribe as hear } from './store.js';
 import { helpersLast, teamTag } from './roster-groups.js';
 import { S } from './state.js';
 
@@ -8,10 +13,19 @@ export const UNASSIGNED = ' unassigned';
 let rosters = [];
 let loaded = false;
 let revision = 0;
+let published = '';
 const listeners = new Set();
 
 const sessions = () => Array.isArray(S.sessions) ? S.sessions : [];
-const publish = () => { revision++; for (const listener of listeners) listener(snapshot()); };
+const publish = () => {
+  const now = JSON.stringify([loaded, rosters, sessions()]);
+  if (now === published) return;
+  published = now;
+  revision++;
+  for (const listener of listeners) listener(snapshot());
+};
+
+hear('teams', (rows) => { rosters = rows; loaded = true; publish(); });
 
 export function snapshot() {
   return { revision, loaded, rosters: rosters.map((row) => ({ ...row })), sessions: sessions() };
@@ -22,12 +36,9 @@ export function subscribe(listener) {
   return () => listeners.delete(listener);
 }
 export async function refreshTeams() {
-  const [live, durable] = await Promise.all([fetchSessions(), request('/api/team-rosters', { cache: 'no-store' })]);
-  if (durable.ok && Array.isArray(durable.data)) {
-    rosters = durable.data; loaded = true;
-  }
-  publish();
-  return { live, durable, snapshot: snapshot() };
+  const [live, read] = await Promise.all([fetchSessions(), readSnapshot('teams')]);
+  publish(); // the members may have moved even when the rosters did not
+  return { live, durable: read.result, snapshot: snapshot() };
 }
 export async function deleteTeamRoster(team) {
   const result = await request(`/api/team-rosters/${encodeURIComponent(team)}`, {
