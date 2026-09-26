@@ -96,6 +96,21 @@ test('a failing loader leaves a fresh tab with no rows, and the next successful 
   assert.deepEqual(b.got('home'), [{ t: 'home', rows }]);
 });
 
+test('a tab that connects while the listing fails is sent what every other tab holds', async (t) => {
+  let fail = false;
+  const rows = [{ name: 'a', stance: 'idle' }];
+  feedEvents({ list: async () => { if (fail) throw new Error('tmux is restarting'); return [session('a')]; }, home: async () => rows });
+  const first = open(t);
+  await settle();
+  assert.equal(first.got('sessions').length, 1);
+  fail = true;
+  const late = open(t);
+  await settle();
+  assert.deepEqual(late.got('sessions').map((m) => (m.list as Array<{ name: string }>).map((s) => s.name)), [['a']], 'the last good session list');
+  assert.deepEqual(late.got('home'), [{ t: 'home', rows }], 'and the rows');
+  assert.equal(first.got('sessions').length, 1, 'the tab already open is sent nothing again');
+});
+
 test('a connection arriving while a tick is in flight receives each message once', async (t) => {
   const rows = deferred<unknown[]>();
   feedEvents({ list: async () => [session('a')], home: () => rows.promise });
