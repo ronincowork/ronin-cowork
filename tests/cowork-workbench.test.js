@@ -35,7 +35,7 @@ test('Cowork discovery offers existing no-Team Agents as ordinary Agent destinat
 
 test('Cowork launches use the standalone handoff while Team launches retain in-page seating', async () => {
   const text = await source('cowork-view.js');
-  assert.match(text, /connect: campaign \? null : async \(name\) => \{[\s\S]*fetchSessions\(\);[\s\S]*connectSession\(name, id\)/);
+  assert.match(text, /connect: campaign \? null : \(name\) => connectSession\(name, id\)/);
 });
 
 test('Teams opens its roster and New Team form in the two default workspaces', async () => {

@@ -1,7 +1,7 @@
 /* part of the ronin-cowork client — see js/README.md */
 /** Workbench; its Campaign, Cowork or Team scope limits what cards are offered. */
 import { WorkspaceKit } from './workspace-kit.js';
-import { deleteTeamRoster, membersOfTeam, refreshTeams, subscribe, teamByName, teamsFromState, unassignedSessions, UNASSIGNED } from './team-controller.js';
+import { deleteTeamRoster, membersOfTeam, subscribe, teamByName, teamsFromState, unassignedSessions, UNASSIGNED } from './team-controller.js';
 import { createNewTeamFormView } from './new-team-form.js';
 import { createNewAgentView } from './new-agent.js';
 import { createTeamRosterSurface } from './team-roster-surface.js';
@@ -27,7 +27,6 @@ import { workbenchView } from './workspace-contract.js';
 import { agentTitle, buildTeamMembers, configSignature } from './team-members.js';
 import { isCoarse } from './tiledrop.js';
 import { createFeedbackSurface } from './feedback.js';
-import { fetchSessions } from './api.js';
 import { RONIN_HELPERS } from './roster-groups.js';
 import { toast } from './ui.js';
 import { readyMika } from './mika-ready.js';
@@ -311,7 +310,7 @@ export function createCoworkView(options = {}) {
     cron: (id) => ({ el: cronBySeat[id].el, show: () => cronBySeat[id].room.enter() }),
     newTeamForm: (id, consumed) => {
       if (!newTeamFormBySeat[id]) {
-        const view = createNewTeamFormView(WorkspaceKit, { consumed, created: async () => { await refreshTeams(); bench.refreshSelector(); } });
+        const view = createNewTeamFormView(WorkspaceKit, { consumed, created: () => bench.refreshSelector() });
         newTeamFormBySeat[id] = { el: view.el, enter: () => view.enter() };
       }
       return { el: newTeamFormBySeat[id].el, show: () => void newTeamFormBySeat[id].enter() };
@@ -333,10 +332,7 @@ export function createCoworkView(options = {}) {
           // A Team launch hands its workspace to the newborn. Cowork has no Team-local
           // seat contract: its successful no-Team launch opens the standalone Agent
           // destination through new-agent's shared launch handoff.
-          connect: campaign ? null : async (name) => {
-            await fetchSessions();
-            return connectSession(name, id);
-          },
+          connect: campaign ? null : (name) => connectSession(name, id),
         });
         newAgentBySeat[id] = { el: view.el, enter: (detail) => view.enter(detail), destroy: () => view.destroy() };
       }
@@ -423,7 +419,6 @@ export function createCoworkView(options = {}) {
       if ((!result.ok || result.data?.state !== 'ready')
         && !(result.status === 409 && result.data?.state === 'action_required'
           && result.data?.code === 'provider_confirmation_required')) return false;
-      await Promise.all([fetchSessions(), refreshTeams()]);
       extras.add('mika_agent');
       paint();
       return seats.workspace2.pool.has('mika_agent');
@@ -671,10 +666,7 @@ export function createCoworkView(options = {}) {
         configNode = el('section', 'league-team-config');
         configNode.append(el('h3', 'league-team-roster-title', t('workspace.tab_team_configuration', 'Team Configuration')));
         const fields = el('div', null); configNode.append(fields);
-        renderTeamConfiguration(fields, { ...current, durable: true }, { createAction, onSaved: async () => {
-          await refreshTeams();
-          render();
-        } });
+        renderTeamConfiguration(fields, { ...current, durable: true }, { createAction, onSaved: render });
       }
       surface.content.replaceChildren(roster, configNode);
     };
@@ -752,10 +744,7 @@ export function createCoworkView(options = {}) {
           prompt: t('league.add_lead_prompt', 'Join this Team as its team lead.'),
           teamLead: true,
         }),
-        onClose: (member) => retireSession(member.name, `commons-${id}-${member.name}`, async () => {
-          await Promise.all([fetchSessions(), refreshTeams()]);
-          paint();
-        }),
+        onClose: (member) => retireSession(member.name, `commons-${id}-${member.name}`),
       });
       commons.roster.replaceChildren(members);
       if (!recordMoved) continue;
@@ -764,8 +753,7 @@ export function createCoworkView(options = {}) {
       const config = el('section', 'league-team-config');
       config.append(el('h3', 'league-team-roster-title', t('workspace.tab_team_configuration', 'Configuration')), fields);
       commons.config.replaceChildren(config);
-      renderTeamConfiguration(fields, { ...roster, durable: true }, { createAction, onSaved: async (saved) => {
-        await refreshTeams();
+      renderTeamConfiguration(fields, { ...roster, durable: true }, { createAction, onSaved: (saved) => {
         setBarLabel(); renderConfig(saved, live); paint();
       } });
     }
@@ -794,7 +782,7 @@ export function createCoworkView(options = {}) {
   };
   painterReady = true;
 
-  async function load(name) {
+  function load(name) {
     if (!name) {
       syncPools([]);
       renderCards();
@@ -802,16 +790,9 @@ export function createCoworkView(options = {}) {
       loaded = '';
       return;
     }
-    const result = await refreshTeams();
-    if (!entered || team !== name) return; // the destination moved while this was in flight
     loaded = name;
     setBarLabel();
     rosterTitle.textContent = t('team.roster_title', 'Roster');
-    if (!result.live.ok) {
-      renderCards();
-      renderConfig(null, []);
-      return;
-    }
     paint();
   }
 
@@ -838,7 +819,7 @@ export function createCoworkView(options = {}) {
       unsubscribe = subscribe(() => {
         if (!entered) return;
         refreshLeagueTeamSurfaces();
-        if (team) paint();
+        if (team) paint(); else renderCards(); // the Teams selector learns a new Team here
       });
       teamPageHandlers.add(onDraft);
     },
@@ -869,9 +850,8 @@ export function createCoworkView(options = {}) {
         bench.place(WB_TYPES.newAgent, lastSeat || 'workspace1', prompt ? { prompt } : {});
       };
       S.connectSession = (name) => connectSession(name);
-      // Entry paints once from the Team projection; load() paints a Team not yet read.
-      if (campaign) void refreshTeams().then(() => { if (entered) paint(); });
-      else if (team !== loaded) void load(team);
+      // Entry paints once from the Team projection; load() paints a Team not yet shown.
+      if (!campaign && team !== loaded) load(team);
       else paint();
       hearRows?.();
       hearRows = subscribeStore('home', onRows);

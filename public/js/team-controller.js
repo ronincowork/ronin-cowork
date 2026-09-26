@@ -1,71 +1,48 @@
-/* The one browser-side Team projection and refresh controller.
+/* The one browser-side Team projection.
  *
- * The rosters are the store's `teams` (js/store.js), read when the server nudges; the
- * members are `S.sessions`, which the store's pushed `sessions` keeps current. It hears
- * both, and a listener hears the projection only when one of the two changed, so a Team
- * surface never rebuilds from the same answer twice. */
-import { fetchSessions } from './api.js';
+ * The rosters are the store's pushed `teams` (js/store.js); the members are `S.sessions`,
+ * which the store's pushed `sessions` keeps current. The store delivers each only when it
+ * changed, so a listener hears the projection once per change and a Team surface never
+ * rebuilds from the same answer twice. A write here changes the server; the change comes
+ * back by push, and nothing is re-read. */
 import { request } from './request.js';
-import { painted, snapshot as readFromServer, subscribe as hear } from './store.js';
+import { subscribe as hear } from './store.js';
 import { helpersLast, teamTag } from './roster-groups.js';
 import { S } from './state.js';
 
 export const UNASSIGNED = ' unassigned';
 let rosters = [];
-let loaded = false;
-let revision = 0;
-let published = '';
 const listeners = new Set();
 
 const sessions = () => Array.isArray(S.sessions) ? S.sessions : [];
-const publish = () => {
-  const now = JSON.stringify([loaded, rosters]) + painted(sessions());
-  if (now === published) return;
-  published = now;
-  revision++;
-  for (const listener of listeners) listener(snapshot());
-};
+const publish = () => { for (const listener of listeners) listener(); };
 
-hear('teams', (rows) => { rosters = rows; loaded = true; publish(); });
+hear('teams', (rows) => { rosters = rows; publish(); });
 hear('sessions', () => publish());
 
-export function snapshot() {
-  return { revision, loaded, rosters: rosters.map((row) => ({ ...row })), sessions: sessions() };
-}
 export function subscribe(listener) {
   if (typeof listener !== 'function') return () => {};
   listeners.add(listener);
   return () => listeners.delete(listener);
 }
-export async function refreshTeams() {
-  const [live, read] = await Promise.all([fetchSessions(), readFromServer('teams')]);
-  publish(); // the members may have moved even when the rosters did not
-  return { live, durable: read.result, snapshot: snapshot() };
-}
 export async function deleteTeamRoster(team) {
-  const result = await request(`/api/team-rosters/${encodeURIComponent(team)}`, {
+  return request(`/api/team-rosters/${encodeURIComponent(team)}`, {
     method: 'DELETE', json: { worktree_disposition: 'ignore' },
   });
-  if (result.ok) await refreshTeams();
-  return result;
 }
 export async function setTeamMembership(session, team, member) {
   const live = sessions().find((row) => row.name === session);
   if (!live) return { ok: false, message: 'No such session.' };
   const teams = new Set(live.tags || []);
   if (member) teams.add(team); else teams.delete(team);
-  const result = await request(`/api/sessions/${encodeURIComponent(session)}/teams`, { method: 'PUT', json: { teams: [...teams] } });
-  if (result.ok) await refreshTeams();
-  return result;
+  return request(`/api/sessions/${encodeURIComponent(session)}/teams`, { method: 'PUT', json: { teams: [...teams] } });
 }
 export async function setTeamLead(session, team, lead) {
   const live = sessions().find((row) => row.name === session);
   if (!live) return { ok: false, message: 'No such session.' };
   const leads = new Set(live.leads || []);
   if (lead) leads.add(team); else leads.delete(team);
-  const result = await request(`/api/sessions/${encodeURIComponent(session)}/team_lead`, { method: 'POST', json: { teams: [...leads] } });
-  if (result.ok) await refreshTeams();
-  return result;
+  return request(`/api/sessions/${encodeURIComponent(session)}/team_lead`, { method: 'POST', json: { teams: [...leads] } });
 }
 export function sessionsAvailableToTeam(team) {
   return sessions().filter((session) => !sessionBelongsToTeam(session, team)).sort((a, b) => a.name.localeCompare(b.name));

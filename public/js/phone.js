@@ -11,12 +11,11 @@
  * RELOCATED not cloned, so every handler and live widget keeps the owner it always had.
  */
 import { trackAppHeight } from './appheight.js';
-import { fetchSessions } from './api.js';
 import { request } from './request.js';
 import { guard, showFailure } from './errors.js';
 import { sessionsHandlers } from './events.js';
-import { connect } from './store.js';
-import { membersOfTeam, refreshTeams, subscribe, teamByName, teamsFromState, UNASSIGNED, unassignedSessions } from './team-controller.js';
+import { connect, renew } from './store.js';
+import { membersOfTeam, subscribe, teamByName, teamsFromState, UNASSIGNED, unassignedSessions } from './team-controller.js';
 import { loadProjects, projectData } from './home.js';
 import { buildDocs } from './docs.js';
 import { createTerminalTileHost } from './terminal-tile-host.js';
@@ -210,7 +209,6 @@ export async function buildPhone() {
         return;
       }
       const born = result.data?.name || name.value.trim();
-      await fetchSessions();
       // The Agent opens where it was born: its own tile, in this document.
       location.hash = sessionHash(team, born);
     });
@@ -359,24 +357,21 @@ export async function buildPhone() {
   window.addEventListener('hashchange', () => guard('phone route', render));
 
   /* ---------- the feeds ---------- */
-  // Membership and the lists are live off the same feed the workbench uses. A killed
-  // or vanished session on stage sends you back to its team — a dead tile is not a page.
+  // Membership and the lists are live off the same feed the workbench uses: the Team
+  // projection repaints every screen but the terminal once per change. On the terminal, a
+  // killed or vanished session sends you back to its team — a dead tile is not a page.
   sessionsHandlers.add(() => {
-    if (route.screen === 'terminal') {
-      const row = S.sessions.find((r) => r.name === route.session);
-      if (!row) { location.hash = teamHash(route.team); return; }
-      // The tile opened on the name alone; the Agent's own title lands with the list.
-      const title = bar.querySelector('.ph-title');
-      if (title && title.textContent !== agentLabel(row)) title.textContent = agentLabel(row);
-      return;
-    }
-    render();
+    if (route.screen !== 'terminal') return;
+    const row = S.sessions.find((r) => r.name === route.session);
+    if (!row) { location.hash = teamHash(route.team); return; }
+    // The tile opened on the name alone; the Agent's own title lands with the list.
+    const title = bar.querySelector('.ph-title');
+    if (title && title.textContent !== agentLabel(row)) title.textContent = agentLabel(row);
   });
   subscribe(() => { if (route.screen !== 'terminal') render(); });
+  // A resumed phone renews the store: a socket that went reconnects and is sent it all.
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState !== 'visible') return;
-    void fetchSessions();
-    void refreshTeams();
+    if (document.visibilityState === 'visible') renew();
   });
 
   // Ask the operator which optional surfaces are plugged in BEFORE a tile is born, the
@@ -393,9 +388,7 @@ export async function buildPhone() {
   }
   // A tile address mounts its tile now: the terminal attaches by name and needs no list.
   if (route.screen === 'terminal') guard('phone paint', render);
-  await fetchSessions();
   guard('session event stream', connect);
-  await refreshTeams();
   guard('load projects', loadProjects); // the launch card's project_root fallback
   guard('phone paint', render);
 }

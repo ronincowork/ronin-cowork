@@ -1,5 +1,4 @@
 /* part of the ronin-cowork client — see js/README.md */
-import { fetchSessions } from './api.js';
 import { guard } from './errors.js';
 import { renew } from './store.js';
 import { buildSessionPicker } from './session-picker.js';
@@ -55,17 +54,14 @@ export function build() {
     window.matchMedia('(pointer: coarse) and (min-width: 681px)').addEventListener?.('change', restore);
     sync();
   }
-  // Resumed tab (esp. mobile — a backgrounded page can live for days): re-fetch the list,
-  // and renew the store — a socket that went reconnects now, and the new connection is sent
-  // the rows whole. The home panels' readings arrive by push; nothing here keeps a clock.
+  // Resumed tab (esp. mobile — a backgrounded page can live for days) or one restored from
+  // bfcache: renew the store — a socket that went reconnects now, and the new connection is
+  // sent the session list and the rows whole. Nothing here keeps a clock or re-reads a list.
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') {
-      fetchSessions();
-      renew();
-    }
+    if (document.visibilityState === 'visible') renew();
   });
   window.addEventListener('pageshow', (e) => {
-    if (e.persisted) fetchSessions(); // restored from bfcache
+    if (e.persisted) renew();
   });
   window.addEventListener('resize', () => tiles.forEach((t) => t.doFit()));
   // Desktop: Ctrl+Shift (or Ctrl+Alt) + 1/2/4 sets HOW MANY tiles are on screen —

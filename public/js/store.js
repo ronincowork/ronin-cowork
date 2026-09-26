@@ -12,17 +12,13 @@
  * changed. The store compares what arrived with what it holds, by the fields a surface
  * paints, and says nothing when they are the same.
  *
- *   home      {t:'home', rows}      — pushed on connect and on change; the only way in
- *   sessions  {t:'sessions', list}  — pushed on connect and on change; the only way in
- *   teams     {t:'teams'}           — a nudge: the store reads GET /api/team-rosters
- *   desks     read on demand from GET /api/desks; never pushed
+ * Each resource is pushed on connect and on change, and the push is the only way in: the
+ * store reads nothing over REST.
+ *
+ *   home      {t:'home', rows}
+ *   sessions  {t:'sessions', list}   — reduced into S.sessions (js/events.js) before anyone hears it
+ *   teams     {t:'teams', rosters}   — the shape of GET /api/team-rosters
  */
-import { request } from './request.js';
-
-const SNAPSHOTS = {
-  desks: { url: '/api/desks', valid: (data) => Boolean(data) && typeof data === 'object' && !Array.isArray(data) },
-  teams: { url: '/api/team-rosters', valid: Array.isArray },
-};
 
 const RECONNECT_MS = 3000;
 
@@ -33,7 +29,6 @@ export const painted = (list) => JSON.stringify(list.map(({ activity: _activity,
 const SIGNATURES = { home: painted, sessions: painted };
 
 export function createStore({
-  read = (url) => request(url, { cache: 'no-store' }),
   open = () => new WebSocket(`${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/events`),
   later = (fn, ms) => setTimeout(fn, ms),
   cancel = (handle) => clearTimeout(handle),
@@ -44,7 +39,6 @@ export function createStore({
   const reducers = new Map(); // key -> fn, run before any subscriber hears the change
   const listeners = new Map(); // message type -> Set<fn>, for the feeds that are not resources
   const openers = new Set();
-  const reading = new Map(); // key -> the one read in flight
   let socket = null;
   let retry = null;
 
@@ -53,8 +47,9 @@ export function createStore({
     const signature = (SIGNATURES[key] || JSON.stringify)(value);
     if (signatures.get(key) === signature) return false;
     signatures.set(key, signature);
+    const previous = values.get(key);
     values.set(key, value);
-    reducers.get(key)?.(value);
+    reducers.get(key)?.(value, previous);
     for (const fn of [...(subscribers.get(key) || [])]) {
       try { fn(value); } catch (error) { console.error(error); }
     }
@@ -63,7 +58,7 @@ export function createStore({
 
   const get = (key) => values.get(key);
 
-  /** Hear a resource: the snapshot now if one is held, then each change. Returns the unsubscribe. */
+  /** Hear a resource: what the store holds now, if anything, then each change. Returns the unsubscribe. */
   function subscribe(key, fn) {
     if (!subscribers.has(key)) subscribers.set(key, new Set());
     const heard = subscribers.get(key);
@@ -72,29 +67,14 @@ export function createStore({
     return () => { heard.delete(fn); };
   }
 
-  /** The one step that must run before anyone hears `key` change (the sessions reconcile). */
+  /** The one step that must run before anyone hears `key` change (the sessions reconcile).
+   *  It is handed the new value and the one it replaces (undefined for the first). */
   function reduce(key, fn) { reducers.set(key, fn); }
-
-  /**
-   * Read a resource that is not pushed (desks, teams) from its route. Concurrent callers
-   * share one request. Resolves {ok, changed, message, result}.
-   */
-  function snapshot(key) {
-    if (reading.has(key)) return reading.get(key);
-    const { url, valid } = SNAPSHOTS[key];
-    const pending = Promise.resolve(read(url))
-      .then((result) => (result?.ok && valid(result.data)
-        ? { ok: true, changed: set(key, result.data), result }
-        : { ok: false, changed: false, message: result?.message || `unreadable ${url}`, result }))
-      .finally(() => { reading.delete(key); });
-    reading.set(key, pending);
-    return pending;
-  }
 
   function receive(message) {
     if (message.t === 'home' && Array.isArray(message.rows)) set('home', message.rows);
     else if (message.t === 'sessions' && Array.isArray(message.list)) set('sessions', message.list);
-    else if (message.t === 'teams') void snapshot('teams');
+    else if (message.t === 'teams' && Array.isArray(message.rosters)) set('teams', message.rosters);
     for (const fn of listeners.get(message.t) || []) fn(message);
   }
 
@@ -134,9 +114,9 @@ export function createStore({
     try { socket.send(JSON.stringify(message)); return true; } catch { return false; }
   }
 
-  return { get, subscribe, reduce, snapshot, connect, renew, listen, onOpen, send, receive };
+  return { get, subscribe, reduce, connect, renew, listen, onOpen, send, receive };
 }
 
 /** The tab's one store. */
 export const store = createStore();
-export const { get, subscribe, snapshot, connect, renew } = store;
+export const { get, subscribe, connect, renew } = store;

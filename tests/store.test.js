@@ -16,14 +16,17 @@ function fakeSockets() {
   return { made, open };
 }
 
+// Every request the store could make would go through fetch; count them.
+const requests = [];
+globalThis.fetch = async (url) => { requests.push(String(url)); return new Response('[]'); };
+
 function rig() {
-  const reads = [];
-  const read = async (url) => { reads.push(url); return { ok: true, data: url === '/api/desks' ? {} : [] }; };
+  requests.length = 0;
   const timers = [];
   const later = (fn) => { timers.push(fn); return timers.length; };
   const sockets = fakeSockets();
-  const store = createStore({ read, open: sockets.open, later, cancel: () => {} });
-  return { store, reads, sockets, timers };
+  const store = createStore({ open: sockets.open, later, cancel: () => {} });
+  return { store, sockets, timers };
 }
 
 const settle = () => new Promise((resolve) => setImmediate(resolve));
@@ -67,12 +70,13 @@ test('a closed subscriber hears nothing more', () => {
   assert.equal(paints, 0);
 });
 
-test('a pushed value is never overwritten by a read: boot, reconnect, resume and sessions read nothing', async () => {
-  const { store, sockets, timers, reads } = rig();
+test('the store reads nothing: boot, reconnect, resume and every message arrive by push alone', async () => {
+  const { store, sockets, timers } = rig();
   store.connect();
   sockets.made[0].up();
-  sockets.made[0].push({ t: 'home', rows: [{ name: 'alpha', stance: 'working' }] });
   sockets.made[0].push({ t: 'sessions', list: [{ name: 'alpha' }] });
+  sockets.made[0].push({ t: 'home', rows: [{ name: 'alpha', stance: 'working' }] });
+  sockets.made[0].push({ t: 'teams', rosters: [{ name: 'front-2' }] });
   sockets.made[0].drop();
   timers[0]();
   sockets.made[1].up(); // a reconnect
@@ -80,22 +84,10 @@ test('a pushed value is never overwritten by a read: boot, reconnect, resume and
   sockets.made[1].push({ t: 'sessions', list: [{ name: 'alpha' }, { name: 'beta' }] });
   await settle();
 
-  assert.deepEqual(reads, [], 'nothing asks REST for a resource the server pushes');
+  assert.deepEqual(requests, [], 'nothing asks REST for a resource the server pushes');
   assert.deepEqual(store.get('home'), [{ name: 'alpha', stance: 'working' }]);
-
   sockets.made[1].push({ t: 'home', rows: [{ name: 'alpha', stance: 'awaiting_you' }] });
   assert.deepEqual(store.get('home'), [{ name: 'alpha', stance: 'awaiting_you' }], 'the newer push wins');
-});
-
-test('concurrent reads share one request', async () => {
-  const { store, reads } = rig();
-  let heard = 0;
-  store.subscribe('teams', () => { heard += 1; });
-  const [first, second] = await Promise.all([store.snapshot('teams'), store.snapshot('teams')]);
-  assert.deepEqual(reads, ['/api/team-rosters']);
-  assert.equal(heard, 1);
-  assert.equal(first.changed, true);
-  assert.equal(second.changed, true, 'both callers see the one read');
 });
 
 test('a sessions push that moved only activity stamps paints nothing', () => {
@@ -122,38 +114,36 @@ test('a home push that moved only activity or stance time paints nothing', () =>
   assert.equal(paints, 1);
 });
 
-test('the sessions reducer runs before any subscriber hears the change', () => {
+test('the sessions reducer runs before any subscriber and is handed the list it replaces', () => {
   const { store, sockets } = rig();
   const order = [];
-  store.reduce('sessions', () => order.push('reduce'));
-  store.subscribe('sessions', () => order.push('subscriber'));
+  store.reduce('sessions', (list, previous) => order.push(['reduce', list.length, previous?.length]));
+  store.subscribe('sessions', () => order.push(['subscriber']));
   store.connect();
   sockets.made[0].up();
   sockets.made[0].push({ t: 'sessions', list: [{ name: 'alpha' }] });
-  assert.deepEqual(order, ['reduce', 'subscriber']);
+  sockets.made[0].push({ t: 'sessions', list: [{ name: 'alpha' }, { name: 'beta' }] });
+  assert.deepEqual(order, [['reduce', 1, undefined], ['subscriber'], ['reduce', 2, 1], ['subscriber']]);
 });
 
-test('a teams nudge re-reads the rosters; desks are read, never taken from the socket', async () => {
-  const { store, sockets, reads } = rig();
+test('teams arrive with their rosters, and an unchanged push paints nothing', () => {
+  const { store, sockets } = rig();
   store.connect();
   sockets.made[0].up();
-  sockets.made[0].push({ t: 'teams' });
-  await settle();
-  assert.deepEqual(reads, ['/api/team-rosters']);
-
-  let desks = null;
-  store.subscribe('desks', (answer) => { desks = answer; });
-  sockets.made[0].push({ t: 'desks', list: { alpha: { desks: [], rollup: {} } } });
-  assert.equal(desks, null, 'a desks message is not a resource');
-  await store.snapshot('desks');
-  assert.deepEqual(reads, ['/api/team-rosters', '/api/desks']);
+  const heard = [];
+  store.subscribe('teams', (rosters) => heard.push(rosters));
+  sockets.made[0].push({ t: 'teams', rosters: [{ name: 'front-2', objective: 'One store' }] });
+  sockets.made[0].push({ t: 'teams', rosters: [{ name: 'front-2', objective: 'One store' }] });
+  sockets.made[0].push({ t: 'desks', list: { alpha: {} } });
+  assert.deepEqual(heard, [[{ name: 'front-2', objective: 'One store' }]]);
+  assert.equal(store.get('desks'), undefined, 'desks are not a store resource');
+  assert.deepEqual(requests, []);
 });
 
 test('renew on a dropped socket reconnects at once and cancels the pending retry', () => {
-  const reads = [];
   const sockets = fakeSockets();
   const cancelled = [];
-  const store = createStore({ read: async (url) => { reads.push(url); return { ok: true, data: [] }; },
+  const store = createStore({
     open: sockets.open, later: () => 'retry-1', cancel: (handle) => cancelled.push(handle) });
   store.connect();
   sockets.made[0].up();

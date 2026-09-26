@@ -31,8 +31,8 @@ function sendWatch() {
 export const transcriptHandlers = new Set();
 /** Who hears a team-page draft (`{t:'team-page', team, from, tab, tokens}`): the Team view registers on mount. */
 export const teamPageHandlers = new Set();
-/** Who hears the session list change, after `S.sessions` has been reconciled: the Team
- *  view, whose membership is read off that list live. */
+/** Who hears the session list change, after `S.sessions` has been reconciled: the phone's
+ *  terminal screen, which leaves a vanished Agent and retitles a renamed one. */
 export const sessionsHandlers = new Set();
 /** Who hears Mika's `show` (`{t:'mika-show', tab, workspace, surface}`): the Help panel of the tab it names. */
 export const mikaShowHandlers = new Set();
@@ -46,11 +46,12 @@ store.listen('transcript', (m) => { for (const fn of transcriptHandlers) fn(m); 
 store.listen('team-page', (m) => { for (const fn of teamPageHandlers) fn(m); });
 store.listen('mika-show', (m) => { for (const fn of mikaShowHandlers) fn(m); });
 store.listen('setup-progress', (m) => { if (Array.isArray(m.steps)) for (const fn of setupProgressHandlers) fn(m); });
-store.reduce('sessions', (list) => onSessionsEvent(list));
+store.reduce('sessions', onSessionsEvent);
 
-/** A changed session list: reconcile it, return dead tiles home, and offer the newborn. */
-function onSessionsEvent(list) {
-  const before = new Set(S.sessions.map((s) => s.name));
+/** A changed session list: reconcile it, return dead tiles home, and offer the newborn.
+ *  The page's first list has nothing before it, so nothing in it is a birth. */
+function onSessionsEvent(list, previous = list) {
+  const before = new Set(previous.map((s) => s.name));
   const now = new Set(list.map((s) => s.name));
   reconcileSessions(list); // the one writer (api.js); pickers current everywhere
   // Death: the tile refreshes and returns to the home panel.

@@ -3,7 +3,6 @@ import { WorkspaceKit } from './workspace-kit.js';
 import { createNewTeamFormView } from './new-team-form.js';
 import { createNewAgentView } from './new-agent.js';
 import { createLaunchHelpView } from './launch-help.js';
-import { refreshTeams } from './team-controller.js';
 import { t } from './lexicon.js';
 import { createFeedbackSurface } from './feedback.js';
 import { createDocumentWorkspaceAdapter } from './docs.js';
@@ -34,7 +33,7 @@ export function createLaunchView() {
       if (!teamBySeat[workspace]) {
         teamBySeat[workspace] = createNewTeamFormView(WorkspaceKit, {
           consumed,
-          created: async () => { await refreshTeams(); bench.refreshSelector(); },
+          created: () => bench.refreshSelector(),
         });
       }
       return seated(teamBySeat[workspace]);
