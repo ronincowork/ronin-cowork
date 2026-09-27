@@ -274,6 +274,9 @@ leave a socket, poll or focus target behind.
 
 ## Update paths — what causes a surface to change
 
+[The data path](data-path.md) is the rule and the contract; this table is where each fact
+lands on screen.
+
 The one-answer table. `S.sessions` has ONE writer (`reconcileSessions`, `api.js`); the
 server's resources have one holder, `store.js`, which owns the `/events` socket: the home
 rows, the session list and the Team rosters arrive only by push, on connect and on change,
