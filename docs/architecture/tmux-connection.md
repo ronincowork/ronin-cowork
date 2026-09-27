@@ -43,7 +43,8 @@ in `src/tmux-client.ts` is the server's single door to tmux:
   with the 2 s clock kept as a heartbeat; each tick takes one session listing for both, and
   each is sent only when a field the UI paints moved (`sessionsSignature` leaves out
   `activity`), so a notification that changed nothing painted sends nothing. A row's
-  `activity` comes from the listing. Everything else on `/events`:
+  `activity` comes from the listing. [The data path](data-path.md) states the rule and the
+  lifecycle; everything else on `/events`:
 
   | Message | Sent | On connect |
   |---|---|---|

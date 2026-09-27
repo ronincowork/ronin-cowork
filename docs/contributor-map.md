@@ -51,7 +51,8 @@ writer of server truth. Desktop and phone share feature modules but have separat
   [UI wording](products/kokugo.md), [Agent glossary](../KOTOBA_GLOSSARY.md).
 - Shared boundaries: [request.js](../public/js/request.js), [ui.js](../public/js/ui.js),
   [state.js](../public/js/state.js), and [store.js](../public/js/store.js) — the one `/events`
-  socket and the resources the server pushes on it; a surface subscribes rather than polls. Entries: [main.js](../public/js/main.js), [phone.js](../public/js/phone.js).
+  socket and the resources the server pushes on it; a surface subscribes rather than polls
+  ([the data path](architecture/data-path.md)). Entries: [main.js](../public/js/main.js), [phone.js](../public/js/phone.js).
 - Tests: the index names a focused test for each visible surface. Browser diagnostics are
   explicit when rendered behavior needs checking; a server test alone does not verify UI.
 
