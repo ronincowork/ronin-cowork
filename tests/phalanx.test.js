@@ -10,6 +10,7 @@ class FakeNode {
   focus() { this.focused = true; }
   setAttribute(name, value) { this.attributes[name] = String(value); }
   addEventListener(name, callback) { (this.listeners[name] ||= []).push(callback); }
+  dispatch(name, event = {}) { for (const callback of this.listeners[name] || []) callback({ currentTarget: this, preventDefault() {}, ...event }); }
   querySelectorAll(selector) { return [...this.walk()].filter((node) => selector === '[data-sws-id]' && node.dataset.swsId); }
   querySelector(selector) { return [...this.walk()].find((node) => selector === '.sws-state' && node.className === 'sws-state') || null; }
   *walk() { for (const child of this.children) { if (!(child instanceof FakeNode)) continue; yield child; yield* child.walk(); } }
@@ -69,6 +70,31 @@ test('stone state can update without disposing or reconstructing an open detail'
   assert.equal(renders, 1);
   assert.equal(stone.disabled, true);
   assert.equal(stone.querySelector('.sws-state').textContent, 'ready');
+});
+
+test('grouping is explicit, ordered, and keeps item activation and group events in the common surface', () => {
+  let activated = '';
+  let dropped = '';
+  const plain = createPhalanx({ items: [{ id: 'one', label: 'One', group: 'Ideas' }] });
+  const plainGrid = plain.el.children[0].children[0].children;
+  assert.deepEqual(plainGrid.map((node) => node.className), ['sws-group sws-group-heading', 'sws-stone'], 'ungrouped consumers keep inline headings');
+  const grouped = createPhalanx({
+    grouped: { groups: [
+      { id: 'IDEAS', label: 'Ideas', events: { drop: (_event, group) => { dropped = group.id; } } },
+      { id: 'DONE', label: 'Done' },
+    ] },
+    items: [{ id: 'one', label: 'One', group: 'IDEAS', action: (item) => { activated = item.id; } }],
+  });
+  const groups = grouped.el.children[0].children[0].children;
+  assert.deepEqual(groups.map((group) => group.dataset.swsGroup), ['IDEAS', 'DONE']);
+  assert.equal(groups[0].children[2].children[0].className, 'sws-stone');
+  groups[0].children[2].children[0].click();
+  assert.equal(activated, 'one');
+  assert.equal(grouped.selected(), null, 'an externally handled stone does not open an internal detail');
+  groups[0].dispatch('drop');
+  assert.equal(dropped, 'IDEAS');
+  grouped.setDensity('compact');
+  assert.equal(grouped.el.dataset.density, 'compact');
 });
 
 test('shared status markers are compact, token-driven, and can be placed on any stone', async () => {
