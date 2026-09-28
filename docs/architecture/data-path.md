@@ -92,6 +92,9 @@ return {
   guesses it closed from a visibility check.
 - **Reconnect** is a new connection with no memory: the server sends every held resource
   whole and the store re-sends every live want. `renew()` on a resumed tab does the same.
+  A terminal socket that drops unexpectedly also renews the store by force: `/events` only
+  listens, so after a sleep it can sit dead while still saying open, and the terminal's
+  first keystroke is what finds the link gone.
 - **Unreachable** is said from the socket: the page shows the failure bar whenever the
   socket is closed and not yet reopened, desktop and phone, and clears it on open.
 
