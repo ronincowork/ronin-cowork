@@ -4,10 +4,10 @@
 import type express from 'express';
 import {
   WorkItemBadInput, WorkItemMissing, WorkItemRefused,
-  assignItem, createItem, editItem, focusItem, holdsOf, listItems, readItem, releaseItem, reparentItem, restoreItem, returnItem, placeFocus, writeFocusDocs, writeFocusLadder,
+  assignItem, createItem, editItem, focusItem, holderLabel, holdersOf, listItems, readItem, releaseItem, reparentItem, restoreItem, returnItem, placeFocus, writeFocusDocs, writeFocusLadder,
   keepCurrentLine, type Acknowledged, type Holder, type TrailLine,
 } from '../work-items.js';
-import { agentReading } from '../work-items-read.js';
+import { agentReading, teamReading, unassignedReading } from '../work-items-read.js';
 
 const text = (value: unknown): string | undefined => typeof value === 'string' ? value : value === undefined || value === null ? undefined : String(value);
 
@@ -55,13 +55,13 @@ const guarded = (handler: Handler): express.RequestHandler => (req, res) => {
 
 export function registerWorkItems(app: express.Express): void {
   app.get('/api/work-items', guarded(async (req, res) => {
+    // The readings: ?session= (agent), ?team= (team), ?unassigned=1; otherwise every item.
     const team = text(req.query.team)?.trim();
     const session = text(req.query.session)?.trim();
-    if (!team && !session) return res.json({ ok: true, items: await listItems() });
     if (session) return res.json({ ok: true, ...(await agentReading(session)) });
-    const ids = await holdsOf(holderFrom({ team, session }));
-    const items = (await Promise.all(ids.map((id) => readItem(id)))).filter(Boolean);
-    res.json({ ok: true, holder: team ? `team:${team}` : `agent:${session}`, items });
+    if (team) return res.json({ ok: true, ...(await teamReading(team)) });
+    if (req.query.unassigned !== undefined) return res.json({ ok: true, items: await unassignedReading() });
+    res.json({ ok: true, items: await listItems() });
   }));
 
   app.post('/api/work-items', guarded(async (req, res) => {
@@ -94,7 +94,7 @@ export function registerWorkItems(app: express.Express): void {
   app.get('/api/work-items/:id', guarded(async (req, res) => {
     const item = await readItem(req.params.id);
     if (!item) throw new WorkItemMissing(`No work item ${req.params.id}.`);
-    res.json({ ok: true, item });
+    res.json({ ok: true, item, held_by: (await holdersOf(item.id)).map(holderLabel) });
   }));
 
   app.put('/api/work-items/:id', guarded(async (req, res) => {

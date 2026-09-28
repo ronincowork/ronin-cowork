@@ -2,7 +2,7 @@
 import { WorkspaceKit } from './workspace-kit.js';
 import { createPhalanx } from './phalanx.js';
 import { appendProjectReading } from './project-reading.js';
-import { PROJECT_STAGES, taskManagerScope, projectsForScope, kanbanAvailability, definedTargets, moveMessage, waitingOn } from './team-kanban.js';
+import { PROJECT_STAGES, taskManagerScope, projectsForScope, kanbanAvailability, definedTargets, holderOf, moveMessage, waitingOn } from './team-kanban.js';
 import { subscribe } from './team-controller.js';
 import { request } from './request.js';
 import { t } from './lexicon.js';
@@ -16,7 +16,7 @@ export function createWorkItemsSurface(options = {}) {
   const { createSurface, createAction, createActionBar } = WorkspaceKit.primitives;
   let projects = [], entered = false, read = null, full = false;
   const asked = new Map();
-  const holder = (project) => project.holder === 'lead' ? options.lead?.(project) || '' : project.holder;
+  const holder = (project) => holderOf(project, options.lead?.(project) || '');
   const refreshAction = createAction({ label: t('work_items.refresh', 'Refresh Work Items'), action: () => void refresh() });
   const density = createAction({ label: t('work_items.details', 'Show stone details'), selected: false, action: () => {
     full = !full;
@@ -96,7 +96,7 @@ export function createWorkItemsSurface(options = {}) {
     notice.textContent = t('work_items.loading', 'Loading Work Items…');
     const [installed, ...results] = await Promise.all([
       request('/api/installed', { cache: 'no-store', signal: controller.signal }),
-      ...scope.teams.map((team) => request(`/api/teams/${encodeURIComponent(team)}/kanban`, { cache: 'no-store', signal: controller.signal })),
+      ...scope.teams.map((team) => request(`/api/work-items?team=${encodeURIComponent(team)}`, { cache: 'no-store', signal: controller.signal })),
     ]);
     if (controller.signal.aborted) return;
     if (!installed.ok || results.some((result) => !result.ok)) {
@@ -104,7 +104,7 @@ export function createWorkItemsSurface(options = {}) {
     }
     const availability = kanbanAvailability(installed.data);
     if (!availability.available) { projects = []; paint(); notice.textContent = availability.message; return; }
-    projects = projectsForScope(results.flatMap((result, index) => (result.data.projects || []).map((project) => ({ ...project, team: result.data.team || scope.teams[index] }))), scope);
+    projects = projectsForScope(results.flatMap((result, index) => (result.data.items || []).map((project) => ({ ...project, team: result.data.team || scope.teams[index] }))), scope);
     paint(); notice.textContent = '';
   }
   const stop = subscribe(() => { if (entered) void refresh(); });

@@ -48,6 +48,8 @@ if d.get("acknowledgement"):
     if os.environ.get("ITEM_ACK_ONLY") != "1": print(json.dumps(d.get("item"), indent=2, ensure_ascii=False))
 else:
     d.pop("ok", None)
-    print(json.dumps(d.get("item", d), indent=2, ensure_ascii=False))
+    out = d.get("item", d)
+    if "held_by" in d: out = {**out, "held_by": d["held_by"]}
+    print(json.dumps(out, indent=2, ensure_ascii=False))
 '
 }

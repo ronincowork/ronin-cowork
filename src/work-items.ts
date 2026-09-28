@@ -320,14 +320,16 @@ async function listFor(holder: Holder): Promise<HeldList> {
   return { holder, holds: letter.holds, set: (holds) => writeLetterHolds(key, holds) };
 }
 
+/** Every id on any holder's list, with the holder that has it. */
+export async function heldIds(): Promise<Map<string, Holder>> {
+  const out = new Map<string, Holder>();
+  for (const list of await heldLists()) for (const id of list.holds) out.set(id, list.holder);
+  return out;
+}
+
 /** Who holds this id now: nobody, or (after any old race) everyone found with it. */
 export async function holdersOf(id: string): Promise<Holder[]> {
   return (await heldLists()).filter((list) => list.holds.includes(id)).map((list) => list.holder);
-}
-
-export async function holdsOf(holder: Holder): Promise<string[]> {
-  if (holder.kind === 'team') return (await readTeamRoster(holder.name))?.holds ?? [];
-  return (await readLetterHolds(await sessionKey(holder.name)))?.holds ?? [];
 }
 
 async function takeOffEveryList(id: string, except?: Holder): Promise<Holder[]> {

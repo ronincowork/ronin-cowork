@@ -21,6 +21,7 @@ process.env.RONIN_SESSION_DIR = path.join(temp, 'sessions');
 const items = await import('../src/work-items.js');
 const { createTeamRoster, readTeamRoster } = await import('../src/team-rosters.js');
 const { readLetterHolds, seedTegami } = await import('../src/tegami.js');
+const { teamReading, unassignedReading } = await import('../src/work-items-read.js');
 
 await createTeamRoster('crew', { objective: 'hold things' });
 await seedTegami('ann');
@@ -112,4 +113,24 @@ test('an ended Agent orphans nothing: each item gets holder-ended and is found u
   assert.equal((await items.readItem(child.id))!.parent, parent.id, 'still found under its parent');
   assert.equal((await items.readItem(loose.id))!.parent, null, 'no parent, on no list: unassigned');
   assert.deepEqual(await items.releaseHolder('gone', 'gone', 'again'), [], 'a second end finds nothing to release');
+});
+
+test('readings: the team reads its own holds and its members\' holds, children after parents; unassigned is held by none and under none', async () => {
+  await createTeamRoster('readers', { objective: 'read us' });
+  await seedTegami('reader_a');
+  const readers = { kind: 'team', name: 'readers' } as const;
+  const overall = (await items.createItem({ title: 'overall', holder: readers }, 'lead')).item;
+  const other = (await items.createItem({ title: 'other', holder: readers }, 'lead')).item;
+  const piece = (await items.createItem({ title: 'piece', parent: overall.id, holder: { kind: 'agent', name: 'reader_a' } }, 'lead')).item;
+  const parked = (await items.createItem({ title: 'parked' }, 'lead')).item;
+  const nested = (await items.createItem({ title: 'nested but unheld', parent: overall.id }, 'lead')).item;
+  const reading = await teamReading('readers', [{ name: 'reader_a', key: 'reader_a', tags: ['readers'] }, { name: 'ann', key: 'ann', tags: ['crew'] }]);
+  assert.equal(reading.objective, 'read us');
+  assert.deepEqual(reading.items.map((item) => [item.id, item.holder]), [
+    [overall.id, 'team:readers'], [piece.id, 'agent:reader_a'], [other.id, 'team:readers'],
+  ]);
+  const unassigned = (await unassignedReading()).map((item) => item.id);
+  assert.ok(unassigned.includes(parked.id));
+  assert.ok(!unassigned.includes(nested.id), 'an unheld child is found under its parent, not unassigned');
+  assert.ok(!unassigned.includes(overall.id));
 });
