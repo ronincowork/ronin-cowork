@@ -42,6 +42,7 @@ import { addCurrentBehaviour, readAgentComposition } from '../agent-composition.
 import { mandate } from '../agent-defaults.js';
 import { readFile } from 'node:fs/promises';
 import { emitSessionEnd } from '../sockets.js';
+import { releaseHolder } from '../work-items.js';
 import { resumeAgentArgv } from '../agents.js';
 import { listTeamRosters } from '../team-rosters.js';
 import { assertSameCampaignRoot, assertSameCampaignTeams } from '../campaign-scope.js';
@@ -93,12 +94,18 @@ async function openDeskRefusal(name: string): Promise<string> {
     : '';
 }
 
+/** The ending Agent's holds are released; an end never fails on it. */
+async function releaseHolds(name: string, key: string, how: string): Promise<void> {
+  await releaseHolder(name, key, how).catch((e) => console.error(`[ronin] releasing ${name}'s work items:`, e));
+}
+
 async function performAgentShutdown(name: string, progress: (value: ShutdownProgress) => void): Promise<string[]> {
   const key = await sessionKey(name);
   const result = await shutdownAgent(name, progress, undefined, {
     operationTimeoutMs: 25_000, readTimeoutMs: 5_000, closeTimeoutMs: 15_000, stopTimeoutMs: 5_000,
   });
   emitSessionEnd(name, key);
+  await releaseHolds(name, key, 'session ended');
   count('ended', { name, end: 'harakiri' });
   return result.closed;
 }
@@ -118,6 +125,7 @@ async function performAgentHardDelete(name: string, progress: (value: ShutdownPr
   progress({ phase: 'ending_agent', message: `Hard deleting Agent ${name}`, desk_count: ending.desks.length });
   await killSessionTree(name, { signal, timeoutMs: 4_000 });
   emitSessionEnd(name, key);
+  await releaseHolds(name, key, 'hard deleted');
   count('ended', { name, end: 'deleted' });
   progress({ phase: 'complete', message: `Agent ${name} and ${ending.desks.length} owned worktree(s) hard deleted; destructive evidence preserved`, desk_count: ending.desks.length });
   return { closed: disposition.closed, quarantined: disposition.quarantined };
@@ -212,6 +220,7 @@ export function registerSessions(app: express.Express): void {
         if (await sessionExists(name)) await removeArchive(archived.id).catch(() => {});
         throw e;
       }
+      await releaseHolds(name, key, 'archived');
       count('ended', { name, end: 'archived' });
       res.json({ ok: true, archived: publicArchive(archived), ...(prepared.acknowledgement ? { worktree_acknowledgement: prepared.acknowledgement } : {}) });
     } catch (e) {
@@ -257,6 +266,7 @@ export function registerSessions(app: express.Express): void {
       const prepared = await prepareSessionEnding(req, res, archived.name, 'hard_delete');
       if (!prepared.proceed) return;
       emitSessionEnd(archived.name, archived.key);
+      await releaseHolds(archived.name, archived.key, 'hard deleted');
       await fs.promises.rm(sessionRecordDir(archived.key), { recursive: true, force: true });
       await removeArchive(archived.id);
       res.json({ ok: true, ...(prepared.acknowledgement ? { worktree_acknowledgement: prepared.acknowledgement } : {}) });
@@ -273,6 +283,7 @@ export function registerSessions(app: express.Express): void {
     try {
       const result = await shutdownAgent(name);
       emitSessionEnd(name, key); // rireki deletes the tape: no graveyard, eventually is fine
+      await releaseHolds(name, key, 'deleted');
       count('ended', { name, end: 'deleted' });
       res.json({ ok: true, closed: result.closed });
     } catch (e) {

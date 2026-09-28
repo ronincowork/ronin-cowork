@@ -95,3 +95,21 @@ test('the 2026-09-24 duplicate cannot recur: a return racing an assign leaves on
   assert.equal(all.length, before, 'no second item was made');
   assert.equal(all.filter((item) => item.title === 'surface/1').length, 1);
 });
+
+test('an ended Agent orphans nothing: each item gets holder-ended and is found under its parent or unassigned', async () => {
+  await seedTegami('gone');
+  const gone = { kind: 'agent', name: 'gone' } as const;
+  const parent = (await items.createItem({ title: 'team overall', holder: team }, 'lead')).item;
+  const child = (await items.createItem({ title: 'piece', parent: parent.id, holder: gone }, 'lead')).item;
+  const loose = (await items.createItem({ title: 'loose', holder: gone }, 'lead')).item;
+  const released = await items.releaseHolder('gone', 'gone', 'session ended');
+  assert.deepEqual(released.map(({ line }) => [line.op, line.from, line.note]), [
+    ['holder-ended', 'agent:gone', 'session ended'], ['holder-ended', 'agent:gone', 'session ended'],
+  ]);
+  assert.deepEqual((await readLetterHolds('gone'))!.holds, []);
+  assert.deepEqual(await listsHolding(child.id), []);
+  assert.deepEqual(await listsHolding(loose.id), []);
+  assert.equal((await items.readItem(child.id))!.parent, parent.id, 'still found under its parent');
+  assert.equal((await items.readItem(loose.id))!.parent, null, 'no parent, on no list: unassigned');
+  assert.deepEqual(await items.releaseHolder('gone', 'gone', 'again'), [], 'a second end finds nothing to release');
+});

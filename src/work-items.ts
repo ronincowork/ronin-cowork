@@ -565,3 +565,19 @@ export function placeFocus(session: string, want: string, by: string): Promise<A
     return done;
   });
 }
+
+/** An Agent going away takes its list with it: each item it held gets one holder-ended
+ * line and is found again under its parent or unassigned. Restore does not reclaim. */
+export function releaseHolder(session: string, key: string, how: string): Promise<Acknowledged[]> {
+  return withIssuer(async () => {
+    const letter = await readLetterHolds(key);
+    if (!letter?.holds.length) return [];
+    const released: Acknowledged[] = [];
+    for (const id of letter.holds) {
+      if (!(await readItem(id))) continue;
+      released.push(await appendTrail(id, 'ronin', () => ({ op: 'holder-ended', from: `agent:${session}`, to: 'none', note: how })));
+    }
+    await writeLetterHolds(key, []);
+    return released;
+  });
+}
