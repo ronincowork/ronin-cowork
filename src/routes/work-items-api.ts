@@ -4,8 +4,8 @@
 import type express from 'express';
 import {
   WorkItemBadInput, WorkItemMissing, WorkItemRefused,
-  addEvidence, createItem, editDocs, editItem, listItems, readItem, reparentItem,
-  type Acknowledged, type TrailLine,
+  addEvidence, assignItem, createItem, editDocs, editItem, listItems, readItem, releaseItem, reparentItem,
+  type Acknowledged, type Holder, type TrailLine,
 } from '../work-items.js';
 
 const text = (value: unknown): string | undefined => typeof value === 'string' ? value : value === undefined || value === null ? undefined : String(value);
@@ -33,6 +33,14 @@ export function answerError(res: express.Response, error: unknown): void {
   else if (error instanceof WorkItemMissing) res.status(404).json({ ok: false, error: message });
   else if (error instanceof WorkItemBadInput) res.status(400).json({ ok: false, error: `BAD-ARG: ${message}` });
   else res.status(500).json({ ok: false, error: message });
+}
+
+/** A holder is named as { team } or { session }. */
+export function holderFrom(body: Record<string, unknown> | undefined): Holder {
+  const team = text(body?.team)?.trim();
+  const session = text(body?.session)?.trim();
+  if (Boolean(team) === Boolean(session)) throw new WorkItemBadInput('name the holder as team or session, one of them.');
+  return team ? { kind: 'team', name: team } : { kind: 'agent', name: session! };
 }
 
 type Handler = (req: express.Request, res: express.Response) => Promise<unknown>;
@@ -78,6 +86,12 @@ export function registerWorkItems(app: express.Express): void {
   }));
   app.post('/api/work-items/:id/docs', guarded(async (req, res) => {
     acknowledge(res, await editDocs(req.params.id, { add: text(req.body?.add), remove: text(req.body?.remove) }, callerOf(req)));
+  }));
+  app.post('/api/work-items/:id/assign', guarded(async (req, res) => {
+    acknowledge(res, await assignItem(req.params.id, holderFrom(req.body), callerOf(req), text(req.body?.note)));
+  }));
+  app.post('/api/work-items/:id/release', guarded(async (req, res) => {
+    acknowledge(res, await releaseItem(req.params.id, callerOf(req), text(req.body?.note)));
   }));
   app.post('/api/work-items/:id/reparent', guarded(async (req, res) => {
     acknowledge(res, await reparentItem(req.params.id, text(req.body?.parent) || null, callerOf(req)));

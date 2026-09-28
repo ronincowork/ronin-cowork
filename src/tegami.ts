@@ -149,6 +149,52 @@ async function replaceLetterBlock(file: string, text: string, parsed: ReturnType
   await fs.rename(tmp, file);
 }
 
+/** One Agent's holder list, as its letter keeps it: work item ids, and `at.item`, the
+ * focus. The items themselves live in the work item store. */
+export interface LetterHolds {
+  key: string;
+  name: string;
+  holds: string[];
+  at: Record<string, unknown> | null;
+}
+
+function holdsOfBody(key: string, text: string, body: Record<string, unknown>): LetterHolds {
+  const name = text.match(/^# TEGAMI — (.+)$/m)?.[1]?.trim() || key;
+  const holds = Array.isArray(body.holds) ? body.holds.filter((id): id is string => typeof id === 'string') : [];
+  const at = body.at && typeof body.at === 'object' && !Array.isArray(body.at) ? body.at as Record<string, unknown> : null;
+  return { key, name, holds, at };
+}
+
+export async function readLetterHolds(key: string): Promise<LetterHolds | null> {
+  const text = await fs.readFile(tegamiPath(key), 'utf8').catch(() => null);
+  const parsed = text === null ? null : letterBlock(text);
+  return parsed ? holdsOfBody(key, text!, parsed.body) : null;
+}
+
+/** Every letter on the machine that can hold work, live or archived. */
+export async function listLetterHolds(): Promise<LetterHolds[]> {
+  const keys = await fs.readdir(RIREKI_DIR).catch(() => [] as string[]);
+  const letters = await Promise.all(keys.map((key) => readLetterHolds(key)));
+  return letters.filter((letter): letter is LetterHolds => letter !== null);
+}
+
+/** Replace one letter's holder list. The focus follows: it stays on an item still held,
+ * or moves to the first held item, or goes when nothing is held. */
+export async function writeLetterHolds(key: string, holds: string[]): Promise<LetterHolds> {
+  const file = tegamiPath(key);
+  const text = await fs.readFile(file, 'utf8');
+  const parsed = letterBlock(text);
+  if (!parsed) throw new Error(`the work record at ${file} has no readable JSON block`);
+  parsed.body.holds = holds;
+  const at = parsed.body.at && typeof parsed.body.at === 'object' ? parsed.body.at as Record<string, unknown> : null;
+  if (!at || typeof at.item !== 'string' || !holds.includes(at.item)) {
+    if (holds[0]) parsed.body.at = { item: holds[0] };
+    else delete parsed.body.at;
+  }
+  await replaceLetterBlock(file, text, parsed, parsed.body);
+  return holdsOfBody(key, text, parsed.body);
+}
+
 export type MoveTegamiProjectInput =
   | { direction: 'place'; session: string; project: Project }
   | { direction: 'return'; session: string; projectId: string };

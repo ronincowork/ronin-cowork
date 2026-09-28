@@ -26,6 +26,8 @@ export interface TeamRoster {
   done_projects: Project[];
   backlog_projects: Project[];
   next_project_id: number;
+  /** Work item ids this Team holds. The items live in the work item store. */
+  holds: string[];
 }
 
 const dir = () => storeDir('team_rosters');
@@ -102,6 +104,7 @@ function parse(name: string, raw: string, campaign_id = ''): TeamRoster {
     done_projects: projectList('done_projects'),
     backlog_projects: projectList('backlog_projects'),
     next_project_id: Math.max(1, Number.parseInt(get('next_project_id'), 10) || 1),
+    holds: strings(json('holds'), 32),
   };
 }
 
@@ -183,11 +186,12 @@ export interface RosterEdit {
   done_projects?: Project[];
   backlog_projects?: Project[];
   next_project_id?: number;
+  holds?: string[];
 }
 
 const KEYS: (keyof RosterEdit)[] = [
   'title', 'kind', 'objective', 'project_root', 'repos', 'branch', 'branches', 'wipeboard', 'state',
-  'behaviours', 'agent_defaults', 'projects', 'done_projects', 'backlog_projects', 'next_project_id',
+  'behaviours', 'agent_defaults', 'projects', 'done_projects', 'backlog_projects', 'next_project_id', 'holds',
 ];
 
 function render(name: string, r: TeamRoster): string {
@@ -211,6 +215,7 @@ function render(name: string, r: TeamRoster): string {
     line('done_projects', JSON.stringify(r.done_projects)),
     line('backlog_projects', JSON.stringify(r.backlog_projects)),
     line('next_project_id', String(r.next_project_id)),
+    line('holds', JSON.stringify(r.holds)),
     '',
   ].join('\n');
 }
@@ -252,6 +257,7 @@ export async function createTeamRoster(name: string, edit: RosterEdit, campaign_
     done_projects: edit.done_projects ?? [],
     backlog_projects: edit.backlog_projects ?? [],
     next_project_id: edit.next_project_id ?? 1,
+    holds: edit.holds ?? [],
   };
   await mkdir(campaignDir(campaign_id), { recursive: true });
   const target = teamRosterFile(name, campaign_id);
@@ -280,7 +286,7 @@ export async function writeTeamRoster(name: string, edit: RosterEdit, campaign_i
   } as TeamRoster;
   for (const k of KEYS) {
     if (normalizedEdit[k] === undefined) continue;
-    const nested = ['behaviours', 'agent_defaults', 'projects', 'done_projects', 'backlog_projects'].includes(k);
+    const nested = ['behaviours', 'agent_defaults', 'projects', 'done_projects', 'backlog_projects', 'holds'].includes(k);
     const v = nested ? JSON.stringify(normalizedEdit[k])
       : k === 'repos' ? (normalizedEdit.repos ?? []).join(', ')
       : String(normalizedEdit[k] ?? '');

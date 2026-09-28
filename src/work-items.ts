@@ -15,6 +15,9 @@ import { existsSync, statSync } from 'node:fs';
 import { mkdir, readFile, readdir, rename, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { storeDir } from './resources.js';
+import { sessionKey } from './session-dir.js';
+import { listTeamRosters, readTeamRoster, writeTeamRoster } from './team-rosters.js';
+import { listLetterHolds, readLetterHolds, seedTegami, writeLetterHolds } from './tegami.js';
 
 export const ITEM_STAGES = ['IDEA', 'PLAN', 'BUILD', 'REVIEW', 'LAND', 'DONE'] as const;
 export const ITEM_EXITS = ['none', 'agent', 'lead', 'user'] as const;
@@ -269,5 +272,83 @@ export function reparentItem(id: string, parent: string | null, by: string): Pro
       item.parent = parent;
       return { op: 'reparent', from: from ?? 'none', to: parent ?? 'none' };
     });
+  });
+}
+
+/* HOLDING — a list of item ids on each Team (roster.holds) and each Agent (the letter's
+ * holds). Assignment moves an id between lists and never touches the item's content or
+ * parent; release takes it off every list. Both run under the issuer lock, so two
+ * concurrent assigns leave the id on exactly one list. */
+
+export type Holder = { kind: 'team' | 'agent'; name: string };
+export const holderLabel = (holder: Holder): string => `${holder.kind}:${holder.name}`;
+
+interface HeldList { holder: Holder; holds: string[]; set(holds: string[]): Promise<unknown> }
+
+async function heldLists(): Promise<HeldList[]> {
+  const teams = (await listTeamRosters()).map((roster): HeldList => ({
+    holder: { kind: 'team', name: roster.name },
+    holds: roster.holds,
+    set: (holds) => writeTeamRoster(roster.name, { holds }, roster.campaign_id),
+  }));
+  const agents = (await listLetterHolds()).map((letter): HeldList => ({
+    holder: { kind: 'agent', name: letter.name },
+    holds: letter.holds,
+    set: (holds) => writeLetterHolds(letter.key, holds),
+  }));
+  return [...teams, ...agents];
+}
+
+async function listFor(holder: Holder): Promise<HeldList> {
+  if (holder.kind === 'team') {
+    const roster = await readTeamRoster(holder.name);
+    if (!roster) throw new WorkItemBadInput(`Team "${holder.name}" has no roster.`);
+    return { holder, holds: roster.holds, set: (holds) => writeTeamRoster(roster.name, { holds }, roster.campaign_id) };
+  }
+  const key = await sessionKey(holder.name);
+  const letter = await readLetterHolds(key) ?? (await seedTegami(holder.name) ? await readLetterHolds(key) : null);
+  if (!letter) throw new WorkItemBadInput(`Agent "${holder.name}" has no work record to hold work in.`);
+  return { holder, holds: letter.holds, set: (holds) => writeLetterHolds(key, holds) };
+}
+
+/** Who holds this id now: nobody, or (after any old race) everyone found with it. */
+export async function holdersOf(id: string): Promise<Holder[]> {
+  return (await heldLists()).filter((list) => list.holds.includes(id)).map((list) => list.holder);
+}
+
+export async function holdsOf(holder: Holder): Promise<string[]> {
+  if (holder.kind === 'team') return (await readTeamRoster(holder.name))?.holds ?? [];
+  return (await readLetterHolds(await sessionKey(holder.name)))?.holds ?? [];
+}
+
+async function takeOffEveryList(id: string, except?: Holder): Promise<Holder[]> {
+  const from: Holder[] = [];
+  for (const list of await heldLists()) {
+    if (!list.holds.includes(id)) continue;
+    from.push(list.holder);
+    if (except && holderLabel(list.holder) === holderLabel(except)) continue;
+    await list.set(list.holds.filter((held) => held !== id));
+  }
+  return from;
+}
+
+const labels = (holders: Holder[]): string => holders.length ? holders.map(holderLabel).join(', ') : 'none';
+
+export async function assignUnlocked(id: string, to: Holder, by: string, note?: string): Promise<Acknowledged> {
+  await load(id);
+  const target = await listFor(to);
+  const from = await takeOffEveryList(id, to);
+  if (!target.holds.includes(id)) await target.set([...target.holds, id]);
+  return appendTrail(id, by, () => ({ op: 'assign', from: labels(from), to: holderLabel(to), note }));
+}
+
+export const assignItem = (id: string, to: Holder, by: string, note?: string) => withIssuer(() => assignUnlocked(id, to, by, note));
+
+/** Park: the id leaves every list. It is found again under its parent, or unassigned. */
+export function releaseItem(id: string, by: string, note?: string): Promise<Acknowledged> {
+  return withIssuer(async () => {
+    await load(id);
+    const from = await takeOffEveryList(id);
+    return appendTrail(id, by, () => ({ op: 'release', from: labels(from), to: 'none', note }));
   });
 }
