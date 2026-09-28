@@ -206,3 +206,25 @@ test('docs live on the focus item and the Docs reading lists every held item\'s 
   await tool('work-record', ['document', 'remove', other], 'docs');
   assert.deepEqual((await readItem(second))!.docs, []);
 });
+
+test('an id no route can hold answers "No work item <id>", and a reply that is not JSON names its HTTP status', async () => {
+  for (const [name, args] of [['team', ['project', 'read', 'surface/7']], ['work-record', ['project', 'done', 'surface/7']]] as const) {
+    const r = await run(name, [...args]);
+    assert.equal(r.status, 3, `${name} ${args.join(' ')}`);
+    assert.equal(r.stderr.trim(), 'No work item surface/7.');
+  }
+  const { createServer } = await import('node:http');
+  const html = createServer((_req, res) => { res.writeHead(502, { 'content-type': 'text/html' }); res.end('<html>bad gateway</html>'); });
+  await new Promise<void>((resolve) => html.listen(0, '127.0.0.1', resolve));
+  try {
+    const r = await new Promise<{ status: number; stderr: string }>((resolve) => {
+      execFile(path.join(root, 'ronin_bin', 'team'), ['project', 'read', 'w1'], {
+        encoding: 'utf8', env: { ...env, RONIN_URL: `http://127.0.0.1:${(html.address() as AddressInfo).port}` },
+      }, (error, _stdout, stderr) => resolve({ status: error ? Number((error as { code?: number }).code ?? 1) : 0, stderr }));
+    });
+    assert.equal(r.status, 3);
+    assert.equal(r.stderr.trim(), 'HTTP 502: Ronin answered GET /api/work-items/w1 without JSON');
+  } finally {
+    html.close();
+  }
+});

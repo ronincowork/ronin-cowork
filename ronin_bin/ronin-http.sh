@@ -30,17 +30,18 @@ ronin_connect() {
 
 # ronin_item_call METHOD PATH [JSON] — one work item request, printed for the caller: the
 # acknowledgement first, then the item as it now is (or the reply of a read); with
-# ITEM_ACK_ONLY=1 the acknowledgement alone. An error goes to stderr with exit 3; a
-# refusal (the one refusal: a reparent cycle) exits 4.
+# ITEM_ACK_ONLY=1 the acknowledgement alone. An error goes to stderr with exit 3, and a
+# reply that is not JSON is reported with its HTTP status; a refusal (the one refusal: a
+# reparent cycle) exits 4.
 ronin_item_call() {
   local method=$1 path=$2 body=${3-} out
   local args=(-sS -m 30 "${RONIN_CURL[@]+"${RONIN_CURL[@]}"}" -X "$method")
   [ -z "$body" ] || args+=(-H 'content-type: application/json' --data "$body")
-  out=$(curl "${args[@]}" "$url$path") || { echo "UNREACHABLE: Ronin did not answer at $url" >&2; return 5; }
-  REPLY_JSON=$out python3 -c '
+  out=$(curl "${args[@]}" -w '\n%{http_code}' "$url$path") || { echo "UNREACHABLE: Ronin did not answer at $url" >&2; return 5; }
+  REPLY_STATUS=${out##*$'\n'} REPLY_JSON=${out%$'\n'*} python3 -c '
 import json, os, sys
 try: d = json.loads(os.environ["REPLY_JSON"])
-except Exception: print("REFUSED: Ronin returned an invalid answer", file=sys.stderr); sys.exit(4)
+except Exception: print("HTTP %s: Ronin answered %s without JSON" % (os.environ["REPLY_STATUS"], sys.argv[1]), file=sys.stderr); sys.exit(3)
 if d.get("error"):
     print(d["error"], file=sys.stderr); sys.exit(4 if d.get("refused") else 3)
 if d.get("acknowledgement"):
@@ -51,5 +52,5 @@ else:
     out = d.get("item", d)
     if "held_by" in d: out = {**out, "held_by": d["held_by"]}
     print(json.dumps(out, indent=2, ensure_ascii=False))
-'
+' "$method $path"
 }
