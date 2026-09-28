@@ -1,149 +1,137 @@
 # Work records and projects
 
-A work record says what an Agent is doing now. It contains session context—objective,
-repositories, documents, and focus—and every project the Agent currently holds. The
-Team Kanban is derived from these records and the Team roster; there is no stored board
-to reconcile.
+A work record says what an Agent is doing now: its objective, repositories, the work items
+it holds, and its focus. The ladder and the documents live on the work item the Agent is
+on. The Team Kanban is a reading of the same items; there is no stored board to reconcile.
 
 Use the shipped `work-record` command exposed to your session. `work-record --help` is the
 canonical command vocabulary; there are no legacy reader or writer aliases.
 
-## Projects are the work ladder
+## A project is a work item
 
-Plan real deliverable work as a project. Do not also maintain a session-level ladder for
-the same work. A project is one complete object:
+A work item is stored once, keyed by its id (`w12`), and changed only by tools. Every change
+appends one line to its trail naming who made it. Nobody is refused for not holding an item:
+holding is how work is found, never permission.
 
 ```json
 {
-  "id": "virtual-kanban/6",
+  "id": "w12",
   "title": "Agent-authored projects",
-  "objective": "Create collision-free projects in an Agent work record.",
-  "stage": "BUILDING",
+  "objective": "Create collision-free projects.",
+  "stage": "BUILD",
   "exit": "agent",
   "status": "yellow",
+  "parent": "w3",
   "ladder": [
-    { "stage": "BUILDING", "legs": [
-      { "title": "Roster issued the stable ID", "done": true },
-      { "title": "Focused checks pass", "done": false }
-    ] },
-    { "stage": "LANDING" }
+    { "gate": "go / no-go", "status": "DONE" },
+    { "phase": "Build it", "status": "ACTIVE", "legs": [
+      { "title": "Store round-trips", "status": "DONE" },
+      { "title": "Focused checks pass", "status": "ACTIVE" }
+    ] }
   ],
-  "evidence": []
+  "docs": ["/home/me/plans/AGENT_PROJECTS.md"],
+  "external": {},
+  "trail": [
+    { "at": "2026-09-28T15:02:11Z", "by": "lead", "op": "create", "to": "team:surface", "note": "Agent-authored projects" },
+    { "at": "2026-09-28T15:04:40Z", "by": "lead", "op": "assign", "from": "team:surface", "to": "agent:builder" }
+  ],
+  "created": { "at": "2026-09-28T15:02:11Z", "by": "lead" }
 }
 ```
 
-The stable ID is issued by the Team roster's monotonic counter. An Agent does not state
-the number and must not derive it from the projects it can see:
+Two relations are kept apart. **Holding** (assign, hold, held by) is a list of item ids on
+each Team and each Agent; assigning moves the id from one list to another and never touches
+the item. **Parent and child** (nest, parent) is one optional parent id on the item; a
+reparent that would form a cycle is the one refusal, answered `REFUSED` with the chain
+named. A Team holds; it does not contain.
+
+Create an item held by yourself, or by a Team:
 
 ```text
-work-record project create --team virtual-kanban \
-  --title "Agent-authored projects" \
-  --objective "Create collision-free projects in an Agent work record."
+work-record project create --title "Agent-authored projects" --objective "…" [--parent w3]
+team project create surface --title "Agent-authored projects" --objective "…"
 ```
 
-Issuing an ID advances the roster counter before the project is written. If the later write fails, create a new
-project; a gap is harmless, while reusing an issued identity is not.
+Every acknowledgement answers with the item as it now is and the trail line it appended, and
+ends by naming the item and the write that keeps it current:
 
-Every Agent may take an assignment. When work arrives without a Project, create it through
-this roster-issued-ID path, then read the stable ID returned by the acknowledgement and use
-the lifecycle verbs. Never choose an ID by hand or create a duplicate project object.
-
-The same Project has three working entrances: the Team creates it in Inbox and assigns it;
-its Agent moves the whole object back to Team Inbox, Done, or Backlog; or the Agent creates
-it through the roster-issued sequence when work arrived without one. No path makes a copy.
-
-`project create` is creation, never an upsert. It writes the complete starting shape into
-the calling Agent's own record and refuses an existing ID. An Agent can write only a
-project it holds.
+```text
+w12 moved to land. Keep it current: work-record project write w12 --objective "<what it is now>" --evidence "<a fact with its receipt>"
+```
 
 ## Stage, exit, and status
 
-`stage` is the project's current column:
-
-- `IDEAS`: held by the Team roster before assignment.
-- `PLANNING`: the Agent is shaping the accepted project.
-- `BUILDING`: the Agent is producing it.
-- `LANDING`: implementation is moving through hand-in, promotion, or master.
-- `DONE`: the delivered result is contained by master.
-
-Each ladder rung names one of those stages. Legs describe observable outcomes and carry
-only `done: true|false`. Revise the ladder when reality changes and ask whether each test
-earns a leg and its maintenance cost.
+`stage` is a mark on the item: `IDEA`, `PLAN`, `BUILD`, `REVIEW`, `LAND`, `DONE`.
 
 | Flag | Values | Meaning |
 |---|---|---|
 | `exit` | `none` · `agent` · `lead` · `user` | who must act next |
 | `status` | `green` · `yellow` · `red` | delivery health |
 
-There is no owner field. The holder is where the board found the canonical project: the
-Team roster or one Agent record. There is also no revision counter, history, verdict, or
-decider. Evidence is an append-only list of useful facts such as commit SHAs and hand-in
-receipts, not a second status system.
-
-Typical updates are:
+Write one or several fields in one call; it is one trail line. Evidence is a fact with a
+receipt, such as a commit or a hand-in, and is kept as an `evidence` line on the trail:
 
 ```text
-work-record project write virtual-kanban/6 --stage LANDING
-work-record project write virtual-kanban/6 --exit lead
-work-record project write virtual-kanban/6 --status green
-work-record project write virtual-kanban/6 --leg BUILDING.2 done
-work-record project write virtual-kanban/6 --evidence "commit 0123456789"
+work-record project write w12 --objective "Sharper words" --evidence "commit 0123456789"
+work-record project write w12 --status green --exit lead
 ```
 
 Prefer the lifecycle verbs when they express the whole intent:
 
 ```text
-work-record project working virtual-kanban/6
-work-record project ready virtual-kanban/6 --for user
-work-record project stuck virtual-kanban/6
-work-record project blocked virtual-kanban/6 --on lead
-work-record project advance virtual-kanban/6 --to LANDING
-work-record project backlog virtual-kanban/6
-work-record project done virtual-kanban/6
+work-record project working w12            # yellow, exit agent, and your focus
+work-record project ready w12 --for user   # green, exit user
+work-record project stuck w12              # red, exit agent
+work-record project blocked w12 --on lead  # red, exit lead
+work-record project advance w12 --to REVIEW
+work-record project return w12 [--team surface]
+work-record project backlog w12
+work-record project done w12
+work-record project read w12
+work-record project list
 ```
 
-`working` writes yellow and `exit: agent`; `ready` writes green and the actor named by
-`--for`; `stuck` writes red while leaving the next move with the Agent; `blocked` writes
-red and names the actor required by `--on`. `advance` writes only `stage`, preserving
-`status` and `exit` so the Agent states the new condition explicitly. The field-level
-`project write` remains available; these intent operations are not aliases or automatic
-workflow. Every successful lifecycle acknowledgement ends, “Remember to update your
-project.”
+`return` gives the item to your Team (name it with `--team` when you are on several);
+`backlog` parks it, held by nobody; `done` moves it to stage DONE. The Team verbs are
+`team project assign <id> <session>`, `return <team> <id>`, `backlog <id>`, `done <id>`,
+`restore <team> <id>` (back from DONE to the stage it left, held by the Team), and
+`parent <id> <parent-id>|none`.
 
-`return`, `backlog`, and `done` move the same held object to Team Inbox, Backlog, or Done.
-They preserve its authored state. If the moved Project was focused, focus becomes the first
-remaining held Project in record order with no rung or leg coordinates, or clears when none
-remains. Team `restore` moves Backlog or Done to Inbox; assignment moves Inbox to an Agent.
+## Receipts move Land and Done
 
-## Whole-project moves
+Name the item on a hand-in with `worktree-desk hand-in <repo> --project <id>`. An accepted
+hand-in moves the item to LAND, with the receipt on its trail. A completed promotion moves
+every item named on the hand-ins it carries to DONE, with the promotion receipt. No
+association is guessed from focus, names, or repositories.
 
-The Team roster has exactly three Project areas: Inbox, Done, and Backlog. Assignment moves
-an Inbox Project whole to an Agent. Restore moves a Team-held Done or Backlog Project to
-Inbox. Custody movement never changes stage, status, exit, ladder, or evidence.
-
-Associate a hand-in explicitly with `worktree-desk hand-in <repo:branch> --project <id>`. An
-accepted receipt records that ID and prompts `work-record project advance <id> --to
-LANDING`; it does not run the command. A successful promotion follows the same receipt ID
-back to the canonical Project and prompts `work-record project done <id>`. No association
-is guessed from focus, names, or repositories, and failed operations claim no movement.
-
-A supporting Agent and a project assignment are two operations owned by their respective
-tools:
+A supporting Agent and an assignment are two operations owned by their tools:
 
 ```text
-session_create board_reader --prompt "Take virtual-kanban/6 and read its work record."
-team project assign virtual-kanban virtual-kanban/6 board_reader
+session_create board_reader --prompt "Take w12 and read it with work-record project read w12."
+team project assign w12 board_reader
 ```
 
-`session_create` creates the session and carries its explicit prompt; `team project
-assign` moves the roster-held project. Lead designation belongs to `session_set`, never
-session creation.
+## The ladder is the focus item's
 
-## Session context
+Your ladder is the ladder of the item you are on: your focus, the item `working` last
+pointed at, else the first item you hold. Write it with the same verbs as ever:
 
-Session objective, repositories, documents, focus, and the legacy ladder remain for
-compatibility and non-project work. Do not duplicate a project ladder there. List documents
-the owner should be able to open and keep checkout rows current:
+```text
+work-record update_record --phase "Build it" --leg 1 "Store round-trips"
+work-record update_record --done 1.1 --active 1.2
+work-record update_record --gate "owner go"
+work-record read --rungs
+```
+
+Phases and legs are never items; only a lead breaking work up makes a piece its own item,
+with a parent. Holding nothing, your first ladder write makes one item for you, held by
+you, titled from your objective, so there is no break. A lead or monitor places you on the
+ladder with `work-record update_record --session <name> --at N[.M]`.
+
+## Documents and session context
+
+Documents live on the focus item too, and travel with it when it moves between Agents. The
+Docs tab lists your README and the documents of every item you hold:
 
 ```text
 work-record document add docs/using-ronin/work-record.md
@@ -156,6 +144,8 @@ Remove an old entry with `work-record workspace remove <repo-or-url>`; add `--br
 to remove only that branch. The acknowledgement says how many rows changed, including
 when none matched. `session_set <name> --root <handle>` separately changes a live
 session's recorded Workspace Folder. Neither edit changes its birth directory or opens
-a managed desk. These fields locate work; they do not replace commits, hand-ins, or project evidence.
-Read the record after structural edits. Keep the project truthful when the plan changes,
-when a leg completes, when work waits on someone else, and when landing evidence arrives.
+a managed desk. These fields locate work; they do not replace commits, hand-ins, or evidence.
+
+When an Agent ends, is archived, or is Hard Deleted, what it held is released: each item
+gets a `holder-ended` line and is found again under its parent or unassigned. Restoring an
+archived Agent does not reclaim it.

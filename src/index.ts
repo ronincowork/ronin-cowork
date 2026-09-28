@@ -31,6 +31,7 @@ import { registerPasskeyLogin, registerPasskeyManage } from './routes/passkey-ap
 import { registerPasswordSettings } from './routes/password-api.js';
 import { registerSessions, shutdownOperation } from './routes/sessions-api.js';
 import { registerTeams, teamRosters } from './routes/teams-api.js';
+import { registerWorkItems } from './routes/work-items-api.js';
 import { registerDocs } from './routes/docs-api.js';
 import { registerDesks } from './routes/desks-api.js';
 import { registerTeamPage } from './routes/team-page-api.js';
@@ -229,6 +230,7 @@ registerMikaContext(app); // /api/mika/context/:tab — tiny tab-scoped owner_vi
 registerCatalogs(app); // catalogs and configuration resources — src/routes/catalogs.ts
 registerDocs(app); // /api/docs?shelf=plans|docs — the ▧ Docs tab's shelves — src/routes/docs-api.ts
 registerTeams(app); // /api/team-rosters* — the durable half of every team — src/routes/teams-api.ts
+registerWorkItems(app); // /api/work-items* — the one door to the work item store — src/routes/work-items-api.ts
 registerDesks(app); // /api/desks?session=<name> and funnel recovery — derived desk state — src/routes/desks-api.ts
 registerTeamPage(app); // /api/teams/:team/page — the team page's view, and drafts an agent hands it — src/routes/team-page-api.ts
 registerVersion(app); // /api/version — release string, or the commit this process started from — src/routes/version.ts

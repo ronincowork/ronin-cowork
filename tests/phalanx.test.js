@@ -80,19 +80,19 @@ test('grouping is explicit, ordered, and keeps item activation and group events 
   assert.deepEqual(plainGrid.map((node) => node.className), ['sws-group sws-group-heading', 'sws-stone'], 'ungrouped consumers keep inline headings');
   const grouped = createPhalanx({
     grouped: { groups: [
-      { id: 'IDEAS', label: 'Ideas', events: { drop: (_event, group) => { dropped = group.id; } } },
+      { id: 'IDEA', label: 'Ideas', events: { drop: (_event, group) => { dropped = group.id; } } },
       { id: 'DONE', label: 'Done' },
     ] },
-    items: [{ id: 'one', label: 'One', group: 'IDEAS', action: (item) => { activated = item.id; } }],
+    items: [{ id: 'one', label: 'One', group: 'IDEA', action: (item) => { activated = item.id; } }],
   });
   const groups = grouped.el.children[0].children[0].children;
-  assert.deepEqual(groups.map((group) => group.dataset.swsGroup), ['IDEAS', 'DONE']);
+  assert.deepEqual(groups.map((group) => group.dataset.swsGroup), ['IDEA', 'DONE']);
   assert.equal(groups[0].children[2].children[0].className, 'sws-stone');
   groups[0].children[2].children[0].click();
   assert.equal(activated, 'one');
   assert.equal(grouped.selected(), null, 'an externally handled stone does not open an internal detail');
   groups[0].dispatch('drop');
-  assert.equal(dropped, 'IDEAS');
+  assert.equal(dropped, 'IDEA');
   grouped.setDensity('compact');
   assert.equal(grouped.el.dataset.density, 'compact');
 });

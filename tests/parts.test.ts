@@ -11,25 +11,25 @@ import { discoverParts, partClaims, partsToLoad } from '../src/parts.js';
 import { listInstallations } from '../src/resource-adapters.js';
 
 const installations = [
-  { name: 'ronin_services', parts: ['counting', 'kanban', 'koe', 'koshi', 'koshi_weights', 'michi', 'rireki'] },
+  { name: 'ronin_services', parts: ['counting', 'koe', 'koshi', 'koshi_weights', 'michi', 'rireki'] },
   { name: 'gbrain', parts: [] },
 ];
-const onDisk = ['counting', 'gbrain', 'kanban', 'koe', 'koshi', 'koshi_weights', 'machine', 'michi', 'rireki'].map((name) => ({ name }));
+const onDisk = ['counting', 'gbrain', 'koe', 'koshi', 'koshi_weights', 'machine', 'michi', 'rireki'].map((name) => ({ name }));
 
 test('Services off parks every part the installation claims; unclaimed parts still load', () => {
   const plan = partsToLoad(onDisk, installations, { ronin_services: false }, { task_manager: true, voice_hotwords: true, terminal_transcript: true });
   assert.deepEqual(plan.load.map((p) => p.name), ['gbrain', 'machine']);
-  assert.deepEqual(plan.parked, ['counting', 'kanban', 'koe', 'koshi', 'koshi_weights', 'michi', 'rireki'].map((name) => ({ name, installation: 'ronin_services', reason: 'master_off' })));
+  assert.deepEqual(plan.parked, ['counting', 'koe', 'koshi', 'koshi_weights', 'michi', 'rireki'].map((name) => ({ name, installation: 'ronin_services', reason: 'master_off' })));
 });
 
 test('Services on loads only selected claimed parts and never their siblings', () => {
   // Usage stats and Machine status carry no choice here, and both run until switched off.
   const plan = partsToLoad(onDisk, installations, { ronin_services: true }, { task_manager: true });
-  assert.deepEqual(plan.load.map((p) => p.name), ['counting', 'gbrain', 'kanban', 'machine', 'michi']);
+  assert.deepEqual(plan.load.map((p) => p.name), ['counting', 'gbrain', 'machine', 'michi']);
   assert.deepEqual(plan.parked.map(({ name, reason }) => ({ name, reason })),
     ['koe', 'koshi', 'koshi_weights', 'rireki'].map((name) => ({ name, reason: 'component_off' })));
   assert.deepEqual(plan.capabilities.find(({ name }) => name === 'task_manager'), {
-    name: 'task_manager', parts: ['michi', 'kanban'],
+    name: 'task_manager', parts: ['michi'],
   });
 });
 
@@ -60,7 +60,7 @@ test('an explicit-empty capability map keeps transcript and voice parts off', ()
 
 test('the stock Ronin Services installation claims the recorder', async () => {
   const claims = partClaims(await listInstallations());
-  assert.equal(claims.get('kanban'), 'ronin_services');
+  assert.equal(claims.get('michi'), 'ronin_services');
   assert.equal(claims.get('rireki'), 'ronin_services');
   assert.equal(claims.get('koshi'), 'ronin_services');
   // Machine status was the last part governed by nothing: switched off, it kept serving.

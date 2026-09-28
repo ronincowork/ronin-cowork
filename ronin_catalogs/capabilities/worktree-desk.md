@@ -36,9 +36,9 @@ An ordinary contributor needs status, sync, and hand-in. Opening, handoff, recei
 conflict replies, discard, and closing are in help and on the Worktrees page; assigning a
 worktree to another Agent is the lead's.
 
-Add `--project <team/id>` to hand-in when the receipt belongs to one held Project. The
-accepted acknowledgement records the association and prints the exact LANDING command;
-it never changes Project state. A conflict or refusal prints no success movement.
+Add `--project <id>` to hand-in when the receipt belongs to one work item. An accepted
+hand-in records the association and moves the item to LAND, the receipt on its trail, and
+ends with the write that keeps the item current. A conflict or refusal moves nothing.
 
 Hand-in constructs an isolated candidate and reports `ACCEPTED` with a receipt, or keeps
 the worktree and records the evidence on a conflict; nothing is lost either way. Hand-in reaches

@@ -33,9 +33,9 @@ export function clampTip(s, room = 120) {
 }
 
 export function taskAtHand(letter) {
-  return letter?.project
-    ? { objective: letter.project.objective, project: letter.project }
-    : { objective: letter?.objective || '', project: null };
+  return letter?.item
+    ? { objective: letter.item.objective, item: letter.item }
+    : { objective: letter?.objective || '', item: null };
 }
 
 /**
@@ -71,7 +71,7 @@ export function buildLadder(letter, deskEntry = null) {
 
   const firstOpen = letter.ladder?.find((rung) => rung.status !== 'DONE' || rung.legs?.some((leg) => leg.status !== 'DONE'));
   const current = taskAtHand(letter);
-  const summaryText = current.project?.title || letter.chip?.text || (firstOpen?.gate !== undefined ? '⛩ ' + t('ladder.gate', 'GATE') : firstOpen?.phase || '');
+  const summaryText = current.item?.title || letter.chip?.text || (firstOpen?.gate !== undefined ? '⛩ ' + t('ladder.gate', 'GATE') : firstOpen?.phase || '');
   if (summaryText) {
     const summary = document.createElement('div');
     summary.className = 'sl-summary' + (letter.chip?.gate || firstOpen?.gate !== undefined ? ' gate' : '');
@@ -83,10 +83,10 @@ export function buildLadder(letter, deskEntry = null) {
   const objective = document.createElement('p');
   objective.textContent = current.objective || t('ladder.task_unstated', 'No task stated in this work record.');
   task.appendChild(objective);
-  if (current.project) {
+  if (current.item) {
     const state = document.createElement('p');
     state.className = 'sl-action';
-    state.textContent = [current.project.stage, current.project.status, current.project.exit !== 'none' ? `exit: ${current.project.exit}` : ''].filter(Boolean).join(' · ');
+    state.textContent = [current.item.id, current.item.stage, current.item.status, current.item.exit !== 'none' ? `exit: ${current.item.exit}` : ''].filter(Boolean).join(' · ');
     task.appendChild(state);
   }
   if (letter.mandate) {
@@ -166,7 +166,7 @@ export function buildLadder(letter, deskEntry = null) {
   // Checkout facts remain useful before the session has drawn a ladder. The branch and
   // repo header buttons open this panel, so returning early above would make both buttons
   // open a panel that hid the very values they name.
-  if (!letter.ladder?.length && !letter.project) {
+  if (!letter.ladder?.length && !letter.item) {
     const empty = document.createElement('div');
     empty.className = 'sl-empty';
     empty.textContent = t('ladder.none', 'no work record yet');
@@ -174,43 +174,34 @@ export function buildLadder(letter, deskEntry = null) {
     return box;
   }
 
-  if (current.project) {
-    const progress = section(t('ladder.progress', 'Progress'), 'sl-progress sl-project');
-    for (const rung of current.project.ladder || []) {
-      const heading = document.createElement('strong');
-      heading.className = 'sl-project-stage';
-      heading.textContent = rung.stage;
-      progress.appendChild(heading);
-      for (const leg of rung.legs || []) {
-        const line = document.createElement('p');
-        line.className = 'sl-project-leg';
-        line.textContent = `${leg.done ? '✓' : '□'} ${leg.title}`;
-        progress.appendChild(line);
+  if (current.item) {
+    // The item's evidence (trail lines written with --evidence) and the other items held;
+    // pressing one reads its ladder in place of this one.
+    const evidence = (current.item.trail || []).filter((line) => line.op === 'evidence');
+    const others = (letter.items || []).filter((item) => item.id !== current.item.id);
+    if (evidence.length || others.length) {
+      const progress = section(t('ladder.progress', 'Progress'), 'sl-progress sl-project');
+      for (const line of evidence) {
+        const row = document.createElement('p');
+        row.className = 'sl-project-evidence';
+        row.textContent = line.note;
+        progress.appendChild(row);
+      }
+      if (others.length) {
+        const switcher = document.createElement('div');
+        switcher.className = 'sl-projects-other';
+        for (const item of others) {
+          const button = document.createElement('button');
+          button.type = 'button';
+          button.textContent = item.title;
+          button.addEventListener('click', () => {
+            box.replaceWith(buildLadder({ ...letter, item, ladder: item.ladder || [], at: null, chip: null }, deskEntry));
+          });
+          switcher.appendChild(button);
+        }
+        progress.appendChild(switcher);
       }
     }
-    for (const evidence of current.project.evidence || []) {
-      const line = document.createElement('p');
-      line.className = 'sl-project-evidence';
-      line.textContent = evidence;
-      progress.appendChild(line);
-    }
-    const others = (letter.projects || []).filter((item) => item.id !== current.project.id);
-    if (others.length) {
-      const switcher = document.createElement('div');
-      switcher.className = 'sl-projects-other';
-      for (const item of others) {
-        const button = document.createElement('button');
-        button.type = 'button';
-        button.textContent = item.title;
-        button.addEventListener('click', () => {
-          letter.project = item;
-          box.replaceWith(buildLadder(letter, deskEntry));
-        });
-        switcher.appendChild(button);
-      }
-      progress.appendChild(switcher);
-    }
-    return box;
   }
 
   if (!letter.ladder?.length) return box;

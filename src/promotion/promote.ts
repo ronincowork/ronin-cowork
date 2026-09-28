@@ -4,6 +4,7 @@ import { healthCheck, notifyTeam, restartService, serviceStartedAfter } from './
 import { queuePromotionContinuation } from './continuation.js';
 import { houseSend } from '../desks/lead.js';
 import { receiptById } from '../desks/receipts.js';
+import { editItem, keepCurrentLine } from '../work-items.js';
 import { REPO_ROOT } from '../resources.js';
 import {
   acquirePromotionLock, advanceState, anyAdvanced, lastGoodPromotion, listReceipts, newReceipt, newReceiptId, now, readReceipt, releasePromotionLock, writeReceipt, PROMOTION_LEDGER_DIR,
@@ -54,7 +55,18 @@ export async function announcePromotion(r: PromotionReceipt, primary: string, fx
     const receipt = id.startsWith('hi_') ? await receiptById(repo.repo, id).catch(() => null) : null;
     if (receipt?.project_id && !associated.some((item) => item.id === receipt.project_id)) associated.push({ id: receipt.project_id, session: receipt.session });
   }
-  const projectNext = associated.map(({ id, session }) => ` Project ${id} state is unchanged; next: edges send ${session} "Promotion landed for Project ${id}. Run work-record project done ${id}."`).join('');
+  // Every item named on a carried hand-in moves to DONE, the promotion receipt on its trail.
+  const keep = new Map<string, string>();
+  for (const { id } of associated) {
+    try {
+      const moved = await editItem(id, { stage: 'DONE' }, r.by || 'promotion', `promotion ${r.id}`);
+      keep.set(id, keepCurrentLine(moved));
+      log(`  done  ${id}: ${moved.line.op} ${moved.line.from ?? ''} → ${moved.line.to ?? ''}`);
+    } catch (e) {
+      log(`  done  ${id}: not moved — ${(e as Error).message}`);
+    }
+  }
+  const projectNext = [...keep.values()].map((line) => ` ${line}.`).join('');
   await fx.notify(primary, r.team, `from promotion: ${r.id} is COMPLETE — ${promotedLine(r)}; ${r.restart ? 'restart and health passed' : 'no restart requested'}.${projectNext} Every desk: worktree-desk status says whether you are behind ${r.repos[0]?.target ?? 'dev'}; each contributor has been told its desk is on ${r.repos[0]?.target ?? 'dev'}.`);
   if (!fx.tell) return;
   const per = new Map<string, string[]>();
@@ -71,7 +83,7 @@ export async function announcePromotion(r: PromotionReceipt, primary: string, fx
     for (const session of repo.sessions) if (!per.has(session)) per.set(session, [`${repo.repo} → ${repo.target}@${repo.candidate.slice(0, 7)}`]);
   }
   for (const [session, items] of per) {
-    const next = [...(projects.get(session) ?? [])].map((id) => ` Project ${id} state is unchanged. Next: work-record project done ${id}.`).join('');
+    const next = [...(projects.get(session) ?? [])].map((id) => keep.get(id)).filter(Boolean).map((line) => ` ${line}.`).join('');
     const text = `from promotion: your hand-in is on ${r.repos[0]?.target ?? 'dev'} — ${items.join('; ')} [${r.id}].${next} Your worktree is finished and certified clean: stay parked for more work, or go with session_end — the worktree ends with you, never before you.`;
     try {
       log(`  told  ${session}: ${await fx.tell(session, text)}`);

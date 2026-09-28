@@ -2,7 +2,7 @@ import { listSessions, sessionDir } from '../tmux.js';
 import { tmux } from '../tmux-client.js';
 import { deriveAssignment, listDesks, readAssignment, assignmentId } from '../desks/registry.js';
 import { closeDesk, cwdIsInside, discardDesk, handoffDesk, openDesk, syncDesk, certifyDesks } from '../desks/desk.js';
-import { handIn, handInAssignment } from '../desks/hand-in.js';
+import { handInAssignment } from '../desks/hand-in.js';
 import { notifyLeads, replyToHandIn, teamOfLine } from '../desks/lead.js';
 import { acceptedSince, receiptById, receiptsForDesk, receiptsForLine } from '../desks/receipts.js';
 import { queueHolder } from '../desks/queue.js';
@@ -14,7 +14,7 @@ import { arrangementOf } from '../desks/arrangement.js';
 import { randomUUID } from 'node:crypto';
 import { withManagedTransaction } from '../desks/lifecycle-ledger.js';
 import { shutdownAgent, ShutdownRefused } from '../desks/session-shutdown.js';
-import { readTegami } from '../tegami-read.js';
+import { keepCurrentLine, readItem } from '../work-items.js';
 
 const out = (s = '') => process.stdout.write(s + '\n');
 function die(verdict: string, code: number): never {
@@ -196,20 +196,15 @@ async function main(): Promise<void> {
           if (!targets.length) die(`NO-DESK: ${session} has no open worktree`, 3);
         } else targets = [await pickOne(session, positional[0] ?? '', 'hand-in')];
         const projectId = str(flags.get('project'));
-        if (projectId) {
-          const record = await readTegami(session);
-          if (!record?.projects.some((project) => project.id === projectId)) die(`NO-PROJECT: ${projectId} is not in ${session}'s work record`, 3);
-        }
+        if (projectId && !(await readItem(projectId))) die(`NO-PROJECT: there is no work item ${projectId}`, 3);
         let worst = 0;
-        const outcomes = flags.get('assignment') ? await handInAssignment({ desks: targets, projectId }) : [await handIn(targets[0]!.repo, targets[0]!.branch, { projectId })];
+        const { outcomes, moved } = await handInAssignment({ desks: flags.get('assignment') ? targets : [targets[0]!], projectId, session });
         for (const [i, { receipt, notices, tidy }] of outcomes.entries()) {
           const d = targets[i]!;
           out(`${receipt.result.toUpperCase()} ${deskId(d)} → ${d.line}${receipt.result === 'accepted' ? ` now ${receipt.line_sha.slice(0, 10)}` : ''}${receipt.reason ? ` — ${receipt.reason}` : ''}${receipt.conflict_files.length ? ` — files: ${receipt.conflict_files.join(', ')}` : ''}  [${receipt.id}]`);
           for (const n of notices) if (n.kind !== 'adopted' || n.desk === d.branch) out(noticeLine(n));
           if (receipt.result === 'accepted' && tidy.desk) {
-            out(projectId
-              ? `  Code handed in for Project ${projectId}. Project state is unchanged. Next: work-record project advance ${projectId} --to LANDING.`
-              : '  Code handed in. No Project was associated; Project state is unchanged.');
+            if (!projectId) out('  Code handed in. No work item was named; nothing moved stage.');
             out(`  worktree is ${tidy.desk.ahead === 0 ? 'level with the line' : `${tidy.desk.ahead} commit(s) ahead of the line`}`);
             out(tidy.unsaved_files.length ? `  not handed in: ${tidy.unsaved_files.join(', ')}` : '  no unsaved or untracked files');
             out(`  NEXT: line moved; run worktree-desk status ${deskId(d)}; if it reports a dev update, run worktree-desk sync ${deskId(d)}`);
@@ -227,7 +222,10 @@ async function main(): Promise<void> {
                 : `  Lead notification was automatic: delivered to ${dlv.to} ${dlv.how === 'house-send' ? 'at the tile' : 'on the Team wipeboard'}. No further notification from the Agent is required.`);
             }
           }
-          if (receipt.result === 'accepted') out('Remember to update your project.');
+        }
+        if (moved) {
+          out(`Code handed in for ${projectId}: ${moved.line.op} ${moved.line.from ?? ''} → ${moved.line.to ?? ''} (${moved.line.note}).`);
+          out(keepCurrentLine(moved));
         }
         process.exit(worst);
       }

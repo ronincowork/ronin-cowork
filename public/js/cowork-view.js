@@ -249,7 +249,6 @@ export function createCoworkView(options = {}) {
         lead: (project) => membersOfTeam(project?.team || team).find((member) => member.team_lead)?.name || '',
         openOwner: (name) => arrange({ [oppositeSeat(id)]: { session: name } }),
         openSurface: (view, next) => bench.place(view === 'status' ? WB_TYPES.taskStatus : WB_TYPES.taskProject, oppositeSeat(id), { ...next, view }),
-        unavailable: (message) => updateKanbanAvailability({ available: false, message }),
       });
       if (!detail.scope && !campaign) manager.setTeam(team === UNASSIGNED ? '' : team);
       manager.setAvailability(kanbanGate);

@@ -3,7 +3,6 @@ import path from 'node:path';
 import { entryValue, isKeyLine } from './resources.js';
 import { storeDir } from './resources.js';
 import { teamAgentDefaults, type TeamAgentDefaults } from './agent-defaults.js';
-import { normalizeProject, type Project } from './projects.js';
 
 export type TeamKind = 'open' | 'coding' | 'work' | 'personal' | 'household' | 'social' | 'school';
 export interface TeamBehaviours { selected: string[]; required: string[] }
@@ -22,10 +21,8 @@ export interface TeamRoster {
   state: 'active' | 'archived';
   behaviours: TeamBehaviours;
   agent_defaults: TeamAgentDefaults;
-  projects: Project[];
-  done_projects: Project[];
-  backlog_projects: Project[];
-  next_project_id: number;
+  /** Work item ids this Team holds. The items live in the work item store. */
+  holds: string[];
 }
 
 const dir = () => storeDir('team_rosters');
@@ -73,14 +70,6 @@ function parse(name: string, raw: string, campaign_id = ''): TeamRoster {
   const settled = lines.some((line) => /^\s*-\s*\*\*behaviours:\*\*/i.test(line))
     && Array.isArray(behaviourMap.selected);
   const kind = get('kind');
-  const projectValue = json('projects');
-  const projects = Array.isArray(projectValue)
-    ? projectValue.map(normalizeProject).filter((project): project is Project => project !== null)
-    : [];
-  const projectList = (key: string): Project[] => {
-    const value = json(key);
-    return Array.isArray(value) ? value.map(normalizeProject).filter((project): project is Project => project !== null) : [];
-  };
   return {
     name,
     campaign_id: campaign_id || get('campaign_id'),
@@ -98,10 +87,7 @@ function parse(name: string, raw: string, campaign_id = ''): TeamRoster {
       ? { selected: strings(behaviourMap.selected, 160), required: strings(behaviourMap.required, 160) }
       : { selected: [], required: [] },
     agent_defaults: teamAgentDefaults(json('agent_defaults')),
-    projects,
-    done_projects: projectList('done_projects'),
-    backlog_projects: projectList('backlog_projects'),
-    next_project_id: Math.max(1, Number.parseInt(get('next_project_id'), 10) || 1),
+    holds: strings(json('holds'), 32),
   };
 }
 
@@ -179,15 +165,12 @@ export interface RosterEdit {
   state?: 'active' | 'archived';
   behaviours?: TeamBehaviours;
   agent_defaults?: Partial<TeamAgentDefaults>;
-  projects?: Project[];
-  done_projects?: Project[];
-  backlog_projects?: Project[];
-  next_project_id?: number;
+  holds?: string[];
 }
 
 const KEYS: (keyof RosterEdit)[] = [
   'title', 'kind', 'objective', 'project_root', 'repos', 'branch', 'branches', 'wipeboard', 'state',
-  'behaviours', 'agent_defaults', 'projects', 'done_projects', 'backlog_projects', 'next_project_id',
+  'behaviours', 'agent_defaults', 'holds',
 ];
 
 function render(name: string, r: TeamRoster): string {
@@ -207,10 +190,7 @@ function render(name: string, r: TeamRoster): string {
     line('state', r.state),
     line('behaviours', JSON.stringify(r.behaviours)),
     line('agent_defaults', JSON.stringify(r.agent_defaults)),
-    line('projects', JSON.stringify(r.projects)),
-    line('done_projects', JSON.stringify(r.done_projects)),
-    line('backlog_projects', JSON.stringify(r.backlog_projects)),
-    line('next_project_id', String(r.next_project_id)),
+    line('holds', JSON.stringify(r.holds)),
     '',
   ].join('\n');
 }
@@ -248,10 +228,7 @@ export async function createTeamRoster(name: string, edit: RosterEdit, campaign_
       ? { selected: edit.behaviours.selected.filter((name) => name !== 'mandates'), required: edit.behaviours.required.filter((name) => name !== 'mandates') }
       : { selected: [], required: [] },
     agent_defaults: teamAgentDefaults(edit.agent_defaults),
-    projects: edit.projects ?? [],
-    done_projects: edit.done_projects ?? [],
-    backlog_projects: edit.backlog_projects ?? [],
-    next_project_id: edit.next_project_id ?? 1,
+    holds: edit.holds ?? [],
   };
   await mkdir(campaignDir(campaign_id), { recursive: true });
   const target = teamRosterFile(name, campaign_id);
@@ -280,7 +257,7 @@ export async function writeTeamRoster(name: string, edit: RosterEdit, campaign_i
   } as TeamRoster;
   for (const k of KEYS) {
     if (normalizedEdit[k] === undefined) continue;
-    const nested = ['behaviours', 'agent_defaults', 'projects', 'done_projects', 'backlog_projects'].includes(k);
+    const nested = ['behaviours', 'agent_defaults', 'holds'].includes(k);
     const v = nested ? JSON.stringify(normalizedEdit[k])
       : k === 'repos' ? (normalizedEdit.repos ?? []).join(', ')
       : String(normalizedEdit[k] ?? '');

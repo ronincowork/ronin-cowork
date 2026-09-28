@@ -131,11 +131,12 @@ its job is waiting is house machinery (the same footing as Koshi's marker and
 `work-record update_record --at`), not an agent driving a session. The queue holds a
 notice while it sees a human draft or dialog, then makes one best-effort attempt.
 
-`worktree-desk hand-in <desk> --project <id>` records an explicit canonical Project ID on
-an accepted receipt. Acceptance says code was handed in, Project state is unchanged, and
-prints the exact `work-record project advance <id> --to LANDING` command. Promotion uses
-only that receipt association to prompt the holder to move the Project to Done. Neither
-acknowledgement mutates Project state; conflicts and refusals never claim success.
+`worktree-desk hand-in <desk> --project <id>` records an explicit work item id on an
+accepted receipt and moves that item to LAND once, the accepted receipts on its trail
+(`handInAssignment` in [hand-in.ts](../../src/desks/hand-in.ts)). A completed promotion
+moves every item named on the hand-ins it carries to DONE with its receipt
+(`announcePromotion`). Both acknowledgements end with the item and the write that keeps it
+current; conflicts and refusals move nothing and never claim success.
 
 **No lead set: the handing-in session holds the job**. The hand-in
 prints `YOU ARE THE LEAD FOR THIS ONE` with the words: review the line, promote when
