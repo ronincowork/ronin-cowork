@@ -642,7 +642,7 @@ export function createCoworkView(options = {}) {
   // host: a Teams stone's detail (leagueTeamDetail) or a whole workspace (createLeagueTeamSurface).
   const leagueTeamBody = (name, { seat, say }) => {
     const holding = name === UNASSIGNED;
-    const title = el('h2', 'league-team-title', leagueTeamLabel(name));
+    const title = el('h2', null, leagueTeamLabel(name));
     const objective = el('p', 'league-team-objective');
     const launch = createAction({ label: '', launch: true, size: 'compact', title: t('league.launch_team', 'Launch'), action: () => openTeam(name) });
     launch.el.setAttribute('aria-label', launch.el.title);
@@ -678,27 +678,28 @@ export function createCoworkView(options = {}) {
       return pick.el;
     };
     const paintAgents = () => {
-      const list = el('div', 'league-team-agent-list');
+      const list = el('div');
       for (const member of membersOfTeam(name)) {
-        const row = el('button', 'league-team-agent');
+        const row = el('button', 'league-team-row league-team-agent');
         row.type = 'button'; row.dataset.session = member.name;
         row.addEventListener('click', () => openAgentWorkbench(member.name));
         const live = el('i', 'home-live'); live.dataset.stance = rows.get(member.name)?.stance || 'unknown';
         live.title = stanceLabel(rows.get(member.name)?.stance) || ''; live.setAttribute('aria-hidden', 'true');
-        row.append(el('span', 'league-team-agent-mark', member.team_lead ? '人' : ''), live,
-          el('span', 'league-team-agent-name', agentTitle(member)), el('span', 'league-team-agent-holds', (held.get(member.name) || []).join(' · ')));
+        const words = el('span', 'league-team-agent-name');
+        if (member.team_lead) words.append(el('span', 'league-team-agent-lead', '人'));
+        words.append(agentTitle(member), el('span', 'league-team-agent-holds', (held.get(member.name) || []).join(' · ')));
+        row.append(live, words);
         list.append(row);
       }
       if (!holding) {
         // The ＋ is a row of its own: its glyph stands where a name stands.
-        const add = el('button', 'league-team-agent league-team-agent-plus');
-        const spacer = el('i', 'home-live'); spacer.setAttribute('aria-hidden', 'true');
-        add.append(el('span', 'league-team-agent-mark'), spacer, el('span', 'league-team-agent-name', '+'));
+        const add = el('button', 'league-team-row league-team-agent league-team-agent-plus');
+        add.append(el('span'), el('span', 'league-team-agent-name', '+'));
         add.type = 'button'; add.setAttribute('aria-label', t('league.add_agent', 'Add an Agent'));
         add.addEventListener('click', () => add.replaceWith(plus()));
         list.append(add);
       }
-      agents.replaceChildren(el('h3', 'league-team-section', t('league.agents', 'Agents')), list);
+      agents.replaceChildren(sectionHeading(t('league.agents', 'Agents')), ...list.children);
     };
     const readWork = async () => {
       if (holding) return;
@@ -710,7 +711,7 @@ export function createCoworkView(options = {}) {
       held = new Map();
       for (const item of items) if (item.holder.startsWith('agent:')) held.set(item.holder.slice(6), [...(held.get(item.holder.slice(6)) || []), item.title]);
       work.hidden = !ordered.length;
-      work.replaceChildren(el('h3', 'league-team-section', t('work_items.title', 'Work')), ...ordered.map((item) => itemLine(item, { holder: holderOf({ holder: item.holder }, lead) })));
+      work.replaceChildren(sectionHeading(t('work_items.title', 'Work')), ...ordered.map((item) => itemLine(item, { holder: holderOf({ holder: item.holder }, lead) })));
       paintAgents();
     };
     // Same contract as renderConfig below: every publish lands here, so the body only
@@ -740,6 +741,8 @@ export function createCoworkView(options = {}) {
     render();
     return { title, objective, controls, main, render };
   };
+  // A section heading is the house People heading, standing in the rows' name column.
+  const sectionHeading = (text) => { const row = el('div', 'league-team-row'); row.append(el('h3', 'league-team-roster-title', text)); return row; };
   const leagueTeamLabel = (name) => name === UNASSIGNED ? t('league.ronin', 'Ronin: no team') : readableTeam(name);
   const cachedLeagueTeam = (cacheKey, make) => {
     if (leagueTeamSurfaces.has(cacheKey)) { const cached = leagueTeamSurfaces.get(cacheKey); cached.render?.(); return cached; }
@@ -756,8 +759,9 @@ export function createCoworkView(options = {}) {
     const box = el('div', 'league-team-detail');
     const status = el('p', 'league-team-detail-state'); status.setAttribute('role', 'status'); status.hidden = true;
     const team = leagueTeamBody(name, { seat, say: (state, message) => { status.hidden = state !== 'failed'; status.textContent = state === 'failed' ? message : ''; } });
-    const head = el('div', 'league-team-detail-head');
-    head.append(team.title, createActionBar({ className: 'league-team-controls', actions: team.controls }).el, team.objective);
+    const head = el('div', 'league-team-row league-team-detail-head');
+    const actions = el('div', 'wk-surface-header-actions'); actions.append(...team.controls.map((control) => control.el));
+    head.append(team.title, actions, team.objective);
     box.append(head, status, team.main);
     return { el: box, render: team.render };
   });

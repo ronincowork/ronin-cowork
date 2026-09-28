@@ -3846,13 +3846,16 @@ button.wb-door:hover b {
 .home-group-msg { color: var(--muted); font-size: var(--text-2); }
 .home-row.dragging { opacity: .45; }
 
-.home-row {
+/* The roster's column tracks, also the in-place Team's (css/team-workspace.css). */
+.home-row, .league-team-detail, .league-team-edit {
   --hr-mark: 1.35em;
   --hr-shingo: 132px;
   --hr-status: 70px;
   --hr-ctx: 48px;
   --hr-desks: 96px;
   --hr-stack: 76px;
+}
+.home-row {
   display: grid;
   grid-template-columns:
     var(--hr-mark) minmax(0, 1fr) var(--hr-shingo) var(--hr-status) var(--hr-ctx)

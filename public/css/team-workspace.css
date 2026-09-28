@@ -31,7 +31,7 @@
 
   .tw-note { padding: var(--space-6) var(--space-7); color: var(--muted); font-size: var(--text-3); }
   .team-roster-detail { margin: var(--space-4); overflow-y: auto; }
-  .home-live { display: inline-block; width: 8px; height: 8px; margin-inline-end: var(--space-3); border-radius: var(--radius-round); background: var(--line-2); vertical-align: middle; }
+  .home-live { width: 6px; height: 6px; justify-self: center; border-radius: var(--radius-round); background: var(--line-2); }
   .home-live[data-stance='working'], .home-live[data-stance='replying'] { background: var(--ok-2); }
   .home-live[data-stance='asking'], .home-live[data-stance='awaiting_you'] { background: var(--kaki); }
   .team-roster-detail .home-maxrow, .team-roster-detail .home-group-add { display: none; }
@@ -142,29 +142,27 @@
   .league-team-edit-content { display: flex; flex-direction: column; gap: var(--space-10); }
   /* The Team opens beside its stone top-down: head, Agents, Work, Configuration. One
      heading style, one body style, tight lists. The phalanx owns the stones' geometry. */
-  .league-team-detail { display: flex; flex-direction: column; gap: var(--space-6); font-size: var(--form-input); }
-  .league-team-detail-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; column-gap: var(--space-4); }
-  .league-team-title, .league-team-section { margin: 0; color: var(--fg-strong); font-weight: 600; letter-spacing: 0; text-transform: none; }
-  .league-team-section { margin-bottom: var(--space-2); }
-  .league-team-objective { grid-column: 1 / -1; margin: 0; overflow: hidden; color: var(--muted); text-overflow: ellipsis; white-space: nowrap; }
+  .league-team-detail, .league-team-detail .league-team-edit-content { display: flex; flex-direction: column; gap: var(--space-6); }
+  .league-team-row, .tk-line { display: grid; grid-template-columns: var(--hr-mark) minmax(0, 1fr) var(--hr-shingo) var(--hr-stack); align-items: center; gap: var(--space-4); padding: var(--space-1) var(--space-2); font-size: var(--text-4); }
+  .league-team-row > h3 { grid-column: 2 / -1; }
+  .league-team-detail-head > h2 { grid-column: 2; grid-row: 1; margin: 0; color: var(--fg-strong); font-size: var(--text-8); font-weight: 600; }
+  .league-team-detail-head > .wk-surface-header-actions { grid-column: 3 / -1; grid-row: 1; justify-self: end; }
+  .league-team-objective { grid-column: 2 / -1; margin: 0; overflow: hidden; color: var(--muted); text-overflow: ellipsis; white-space: nowrap; }
   .league-team-objective[hidden] { display: none; }
   .league-team-detail-state { margin: 0; color: var(--bad); }
-  .league-team-agent-list { display: flex; flex-direction: column; }
-  .league-team-agent { display: grid; grid-template-columns: 1.35em auto minmax(0, max-content) minmax(0, 1fr); align-items: center; gap: var(--space-3); width: 100%; padding: var(--space-1) var(--space-2); border: 0; border-radius: var(--radius-hair); background: transparent; color: var(--fg); font: inherit; text-align: left; cursor: pointer; }
-  .league-team-agent:hover { background: var(--bg-2); }
-  .league-team-agent-mark { color: var(--accent); }
-  .league-team-agent-name, .league-team-agent-holds { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .league-team-agent-holds { color: var(--muted); }
-  .league-team-agent-plus { min-height: 44px; color: var(--accent); }
-  .league-team-agent-plus > .home-live { visibility: hidden; }
-  .league-team-agent-plus > .league-team-agent-name { font-size: 1.25em; font-weight: 600; line-height: 1; }
-  .league-team-work { display: flex; flex-direction: column; }
+  .league-team-agents, .league-team-work { display: flex; flex-direction: column; }
   .league-team-work[hidden], .league-team-config[hidden] { display: none; }
-  .tk-line { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: var(--space-4); padding: var(--space-1) var(--space-2); }
+  .league-team-agent { width: 100%; border: 0; border-radius: var(--radius-hair); background: transparent; color: var(--fg); font-family: inherit; text-align: left; cursor: pointer; }
+  .league-team-agent:hover { background: var(--bg-2); }
+  .league-team-agent-name { grid-column: 2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .league-team-agent-lead { margin-inline-end: var(--space-3); color: var(--accent); }
+  .league-team-agent-holds { margin-inline-start: var(--space-3); color: var(--muted); }
+  .league-team-agent-plus { min-height: 36px; color: var(--accent); }
+  .tk-line-title { grid-column: 2; }
+  .tk-line-holder { grid-column: 3; color: var(--muted); }
   .tk-line-title, .tk-line-holder { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .tk-line-holder { color: var(--muted); }
-  .tk-stage-bar { display: inline-flex; gap: 2px; }
-  .tk-stage-bar > i { width: var(--space-6); height: var(--space-2); border: var(--edge) solid var(--line-2); }
+  .tk-stage-bar { grid-column: 4; justify-self: end; display: inline-flex; gap: var(--space-1); }
+  .tk-stage-bar > i { width: var(--space-5); height: var(--space-2); border: var(--edge) solid var(--line-2); }
   .tk-stage-bar > i.past { border-color: var(--fg); background: var(--fg); }
   .tk-stage-bar > i.now { border-color: transparent; background: var(--kanban-yellow); }
   .tk-stage-bar > i.now.green { background: var(--kanban-green); }

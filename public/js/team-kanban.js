@@ -73,8 +73,8 @@ const meaningLine = (move) => move.text.split('meaning: ')[1]?.split('\n')[0] ||
 export const holderOf = (project, leadName) => project.holder.startsWith('agent:') ? project.holder.slice(6)
   : project.holder.startsWith('team:') ? leadName : '';
 
-/** One work item as one line: title, a stage bar (a segment per stage, filled to its
- * stage, the current one in its status colour) and who holds it. */
+/** One work item as one line: title, who holds it, and a stage bar (a segment per stage,
+ * filled to its stage, the current one in its status colour). */
 export function itemLine(value, { holder = '' } = {}) {
   const item = normalizedProject(value);
   const line = node('div', 'tk-line');
@@ -88,7 +88,7 @@ export function itemLine(value, { holder = '' } = {}) {
     segment.title = column.label;
     bar.append(segment);
   });
-  line.append(bar, node('span', 'tk-line-holder', holder ? `@${holder}` : ''));
+  line.append(node('span', 'tk-line-holder', holder ? `@${holder}` : ''), bar);
   return line;
 }
 
