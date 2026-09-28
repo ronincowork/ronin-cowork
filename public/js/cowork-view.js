@@ -690,7 +690,10 @@ export function createCoworkView(options = {}) {
         list.append(row);
       }
       if (!holding) {
-        const add = el('button', 'league-team-agent league-team-agent-plus', '＋');
+        // The ＋ is a row of its own: its glyph stands where a name stands.
+        const add = el('button', 'league-team-agent league-team-agent-plus');
+        const spacer = el('i', 'home-live'); spacer.setAttribute('aria-hidden', 'true');
+        add.append(el('span', 'league-team-agent-mark'), spacer, el('span', 'league-team-agent-name', '+'));
         add.type = 'button'; add.setAttribute('aria-label', t('league.add_agent', 'Add an Agent'));
         add.addEventListener('click', () => add.replaceWith(plus()));
         list.append(add);
