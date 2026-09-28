@@ -93,9 +93,14 @@ test('Roster remains a roster while Team Chart is a standalone Phalanx surface',
   assert.match(view, /team: \(\) => detail\.key \|\| team/);
   assert.match(members, /if \(reading\.description\) detail\.append/);
   assert.match(view, /campaign \? \{ action: \(\) => openAgentWorkbench\(member\.name\) \} : \{\}/, 'Team selector cards keep their default placement action');
-  assert.match(view, /createTeamRosterSurface\(\{[\s\S]*onOpen: openAgentWorkbench/, 'the Cowork Team Roster row opens the standalone Agent workbench');
-  assert.match(coworkRoster, /const openTeam = \(name\) => openWorkspaceTab\('team', name\)/);
-  assert.doesNotMatch(coworkRoster, /connectSession|S\.connectSession/, 'the Cowork Team Roster opens a standalone Team workbench');
+  // Owner 2026-09-28: one reading of Teams. A pressed stone opens the Team profile inside the
+  // Phalanx detail (never elsewhere), from the same body the placed Team profile paints.
+  assert.match(coworkRoster, /createPhalanx\(\{ className: 'team-roster-phalanx', items: \[\], renderDetail \}\)/);
+  assert.doesNotMatch(coworkRoster, /action:/, 'a Teams stone selects; it never navigates');
+  assert.match(view, /createTeamRosterSurface\(\{\s*teamDetail: \(name\) => leagueTeamDetail\(name, `teams-\$\{id\}`\)/);
+  assert.match(view, /const createLeagueTeamSurface = [\s\S]*leagueTeamBody\(name,/);
+  assert.match(view, /const leagueTeamDetail = [\s\S]*leagueTeamBody\(name,/);
+  assert.match(catalog, /type: WORKBENCH_TYPES\.team, header: 'surface', discover: \(\) => \[\]/, 'the selector offers no per-Team card');
   assert.match(workbench, /card\.el\.addEventListener\('dragstart',[\s\S]*JSON\.stringify\(\{ type: definition\.type, detail \}\)/, 'drag still carries the terminal surface and Agent resource to a workspace');
   assert.match(css, /\.league-team-member-actions \{[^}]*flex-wrap: wrap;[^}]*justify-content: flex-end;/);
   for (const label of ['Archive', 'Delete', 'Hard Delete']) assert.match(retirement, new RegExp(`'${label}'`));

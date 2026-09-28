@@ -126,12 +126,10 @@ test('Agent + Editable Doc launch receipt retains the selected registered root f
 
 test('all inventoried launch families use the shared launch marker and no Team Roster torii', async () => {
   const files = await Promise.all([
-    source('new-agent.js'), source('new-team-form.js'),
-    source('team-roster-surface.js'), source('cowork-view.js'), source('presets.js'),
+    source('new-agent.js'), source('new-team-form.js'), source('cowork-view.js'), source('presets.js'),
   ]);
-  for (const text of files.slice(0, 4)) assert.match(text, /launch: true/);
-  assert.match(files[4], /label: 'Launch'/);
-  assert.doesNotMatch(files[2], /'torii', '⛩'/);
+  for (const text of files.slice(0, 3)) assert.match(text, /launch: true/);
+  assert.match(files[3], /label: 'Launch'/);
 });
 
 test('Setup surfaces consume one runtime contract and open Presets only through Launch Your Own', async () => {

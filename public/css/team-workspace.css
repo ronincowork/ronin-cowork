@@ -133,6 +133,10 @@
 
 
   .league-team-edit-content { display: flex; flex-direction: column; gap: var(--space-10); }
+  .league-team-detail { display: flex; flex-direction: column; gap: var(--space-6); }
+  .league-team-detail-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); }
+  .league-team-detail-head h2 { margin: 0; color: var(--fg-strong); }
+  .league-team-detail-state { margin: 0; color: var(--bad); }
   .league-team-roster, .league-team-config { flex: 0 0 auto; }
   .league-team-roster { display: flex; flex-direction: column; min-height: 0; }
   .league-team-roster-heading { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); margin-bottom: var(--space-4); border-bottom: var(--edge) solid var(--line-2); padding-bottom: var(--space-3); }

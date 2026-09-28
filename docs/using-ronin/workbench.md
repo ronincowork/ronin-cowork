@@ -94,6 +94,11 @@ remembered arrangement instead of applying the floor again.
 
 Teams first opens with the Team roster in workspace 1 and New Team in workspace 2.
 
+The Team roster is the one list of Teams: each Team is a stone with its objective, how many
+Agents it has, and its lead. Press a stone and the stones fold to the left while that Team's
+members, configuration, Launch and Delete open beside them; press it again or Escape to go
+back. Drag a stone into another workspace to open the Team there.
+
 If a remembered surface is no longer available at the current scope, its workspace comes
 back empty. Check the discovery column: it is the current answer to what can be opened
 here.
