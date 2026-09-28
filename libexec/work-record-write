@@ -295,7 +295,7 @@ fi
 # MDEDIT — YOUR DOC LIST. One path, your own session, no block. The list lives on your
 # focus work item, so a document travels with the work when it moves between Agents; the
 # Docs tab shows the documents of every item you hold. Holding nothing, listing your first
-# doc makes an item for you. See docs/mdedit.md.
+# doc makes an item for you. See docs/using-ronin/work-record.md.
 #
 # The path is resolved HERE, against the Agent's cwd, because that is the only place a
 # relative path means what it says. What the item stores is always absolute.

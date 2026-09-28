@@ -140,7 +140,7 @@ test('a shell caller reaches the operator over its socket with no token and no P
       }, (_error, stdout, stderr) => resolve({ stdout, stderr }));
     });
     assert.doesNotMatch(r.stderr, /command not found|No such file/);
-    assert.ok(hits.includes('/api/teams/reach/kanban'), `reached Team member status over the socket; saw ${JSON.stringify(hits)}: ${r.stdout}${r.stderr}`);
+    assert.ok(hits.includes('/api/work-items?team=reach'), `reached Team member status over the socket; saw ${JSON.stringify(hits)}: ${r.stdout}${r.stderr}`);
     assert.deepEqual(authorization, hits.map(() => undefined), 'a socket peer carries no bearer and no Basic');
   } finally {
     server.close();

@@ -100,9 +100,24 @@ There is no lead control on a Tile, on the launch forms, or on the Configuration
 ### Durable Team record
 
 A `team_roster` is optional metadata: kind, title, purpose, project root,
-repositories and their branches, behaviours, and the Agent defaults. A tag-only
-Team is ordinary. When no durable record exists, Team Configuration says so rather than
-treating the Team as broken.
+repositories and their branches, behaviours, the Agent defaults, and `holds`, the ids of
+the work items the Team holds. A tag-only Team is ordinary. When no durable record exists,
+Team Configuration says so rather than treating the Team as broken.
+
+### Work items
+
+A work item is stored once, one JSON file per id in the `work_items` data store, and only
+`src/work-items.ts` reads or writes those files; everything else goes through the
+`/api/work-items` routes (`src/routes/work-items-api.ts`), which answer every write with
+the item as it now is and the trail line appended. Holding is a list of ids on each holder:
+`holds` on the Team roster and in each Agent's letter (`tegami.md`, beside `at.item`, its
+focus). Parent and child is one optional `parent` id on the item. Assign moves an id
+between lists and release takes it off every list, under the store's one issuer lock, so
+two concurrent assigns leave one holder. The Agent's ladder and documents are its focus
+item's. Readings are derived in `src/work-items-read.ts` and never stored: an Agent's
+(`GET /api/work-items?session=`), a Team's (`?team=`: the Team's holds and its members',
+children after parents), and unassigned (`?unassigned`). An ending, archived, or Hard
+Deleted Agent's holds are released with a `holder-ended` trail line on each item.
 
 **Team Configuration** (`public/js/team-configuration.js`) is the commons tab that edits
 that record and nothing else — never membership or the lead. It is drawn in the same format

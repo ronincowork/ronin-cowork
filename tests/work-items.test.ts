@@ -55,7 +55,7 @@ test('each edit call appends exactly one line, named by what changed', async () 
   const back = (await items.readItem(item.id))!;
   assert.equal(back.trail.length, 5);
   assert.deepEqual(back.trail.map((line) => line.op), ['create', 'stage', 'status', 'exit', 'edit']);
-  assert.throws(() => items.editItem(item.id, { stage: 'LANDING' }, 'a'), /stage must be one of IDEA, PLAN, BUILD, REVIEW, LAND, DONE/);
+  assert.throws(() => items.editItem(item.id, { stage: 'SHIPPED' }, 'a'), /stage must be one of IDEA, PLAN, BUILD, REVIEW, LAND, DONE/);
 });
 
 test('a reparent that would form a cycle is refused and names the chain', async () => {

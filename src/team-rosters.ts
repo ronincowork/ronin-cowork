@@ -243,9 +243,8 @@ export async function writeTeamRoster(name: string, edit: RosterEdit, campaign_i
   if (!existing) throw new Error(`Team "${name}" has no roster. Create it first.`);
   const where = existing.campaign_id;
   let raw = await readFile(teamRosterFile(name, where), 'utf8');
-  // Retired keys go on the next edit: `references` (2026-09-13, never used) and the Project
-  // copies (2026-09-28: the Team holds work item ids in `holds`; the items live once).
-  const lines = raw.split('\n').filter((l) => !/^-\s*\*\*(references|projects|done_projects|backlog_projects|next_project_id):\*\*/.test(l.trim()));
+  // `references` left the shape 2026-09-13 (never used); an old file's line goes on the next edit.
+  const lines = raw.split('\n').filter((l) => !/^-\s*\*\*references:\*\*/.test(l.trim()));
   const normalizedEdit: RosterEdit = edit.behaviours
     ? { ...edit, behaviours: {
         selected: edit.behaviours.selected.filter((name) => name !== 'mandates'),
