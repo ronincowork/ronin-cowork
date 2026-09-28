@@ -142,9 +142,8 @@
 
 
   .league-team-edit-content { display: flex; flex-direction: column; gap: var(--space-10); }
-  /* The Teams stones fill the column as one sheet; the Team opens beside them top-down:
-     head, Agents, Work, Configuration. One heading style, one body style, tight lists. */
-  .team-roster-phalanx:not([data-open='true']) .sws-grid { width: 100%; justify-content: flex-start; }
+  /* The Team opens beside its stone top-down: head, Agents, Work, Configuration. One
+     heading style, one body style, tight lists. The phalanx owns the stones' geometry. */
   .league-team-detail { display: flex; flex-direction: column; gap: var(--space-6); font-size: var(--form-input); }
   .league-team-detail-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; column-gap: var(--space-4); }
   .league-team-title, .league-team-section { margin: 0; color: var(--fg-strong); font-weight: 600; letter-spacing: 0; text-transform: none; }
