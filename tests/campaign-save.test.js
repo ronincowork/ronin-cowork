@@ -21,7 +21,7 @@ const calls = [];
 let reply = { ok: true, status: 200, body: {} };
 globalThis.fetch = async (url, init = {}) => {
   calls.push({ url, method: init.method || 'GET', body: init.body ? JSON.parse(init.body) : null });
-  return { ok: reply.ok, status: reply.status, json: async () => reply.body };
+  return { ok: reply.ok, status: reply.status, text() { return this.json().then((b) => JSON.stringify(b)); }, json: async () => reply.body };
 };
 
 const { loadCampaigns, saveCampaign, createCampaign, campaignById } = await import('../public/js/campaigns.js');

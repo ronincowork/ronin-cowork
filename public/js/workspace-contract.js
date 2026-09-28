@@ -1,7 +1,7 @@
 /* Runtime-checked workspace state and navigation values for Kit consumers. */
 import { migrateWorkbenchState } from './workspace-arrangement.js';
 export const WORKSPACE_DESTINATIONS = Object.freeze([
-  'campaign', 'cowork', 'team', 'agent', 'customize', 'commons', 'configuration',
+  'campaign', 'desk', 'cowork', 'team', 'agent', 'customize', 'commons', 'configuration',
 ]);
 
 /** Shared header capabilities for a movable workbench. Static views opt into only
@@ -12,7 +12,7 @@ export const WORKBENCH_HEADER = Object.freeze({
   services: true,
   feedback: true,
 });
-export const WORKBENCH_APPEARANCES = Object.freeze(['campaign', 'setup', 'launch', 'cowork', 'team', 'agent']);
+export const WORKBENCH_APPEARANCES = Object.freeze(['campaign', 'setup', 'launch', 'desk', 'cowork', 'team', 'agent']);
 
 /** One declaration for every managed Workbench's application chrome. Feature views
  * provide content and, when useful, an island reading; the base owns capabilities and

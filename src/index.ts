@@ -26,16 +26,16 @@ import { bindOperatorSocket, isOperatorPeer, operatorSocketPath, SiblingAlive, t
 import { addressRefusal, EXIT_ADDRESS_UNUSABLE } from './bind-refusal.js';
 import { publishMax, publishOwner } from './machine-state.js';
 import { registerCatalogs } from './routes/catalogs.js';
-import { registerLaunch } from './routes/launch.js';
+import { homeRows, registerLaunch } from './routes/launch.js';
 import { registerPasskeyLogin, registerPasskeyManage } from './routes/passkey-api.js';
 import { registerPasswordSettings } from './routes/password-api.js';
-import { registerSessions } from './routes/sessions-api.js';
-import { registerTeams } from './routes/teams-api.js';
+import { registerSessions, shutdownOperation } from './routes/sessions-api.js';
+import { registerTeams, teamRosters } from './routes/teams-api.js';
 import { registerDocs } from './routes/docs-api.js';
 import { registerDesks } from './routes/desks-api.js';
 import { registerTeamPage } from './routes/team-page-api.js';
 import { startTomodachiSender } from './activation/tomodachi.js';
-import { registerServicesActivation, resumeInstallWatch } from './routes/services-activation-api.js';
+import { registerServicesActivation, resumeInstallWatch, servicesSetupWrites, startConfirmationCheck } from './routes/services-activation-api.js';
 import { registerMachineSettings } from './routes/machine-settings-api.js';
 import { registerCampaigns } from './routes/campaigns-api.js';
 import { ensureInitialCampaign } from './campaigns.js';
@@ -47,29 +47,31 @@ import { registerLibrary } from './routes/library-api.js';
 import { registerJikan, startHouseJikan } from './routes/jikan-api.js';
 import { registerInstalled } from './routes/installed-api.js';
 import { registerVersion } from './routes/version.js';
-import { registerWipeboards } from './routes/wipeboards-api.js';
+import { registerWipeboards, wipeboardAnswer } from './routes/wipeboards-api.js';
 import { registerTerminalControls } from './terminal-controls.js';
 import { registerMessages } from './routes/messages-api.js';
 import { countBrowserTool } from './tool-call-api.js';
 import { registerCli } from './routes/cli-api.js';
-import { startMessageQueue } from './message-queue.js';
-import { seedHouseBoard } from './wipeboards.js';
-import { handleEvents, startSessionsBroadcast } from './ws/events.js';
+import { listQueuedMessages, startMessageQueue } from './message-queue.js';
+import { isValidTeam, listAllJobs, listJobs } from './jikan.js';
+import { isValidBoardName, seedHouseBoard, WIPEBOARD_DIR } from './wipeboards.js';
+import { handleEvents, pushJikan, pushMessages, pushWipeboard, startSessionsBroadcast, watchStore } from './ws/events.js';
 import { tmux as tmuxClient } from './tmux-client.js';
 import { handlePty } from './ws/pty.js';
 import { originAllowed, allowedOrigins } from './ws/origin.js';
+import { mountAssets, noCacheClient, publicFingerprint } from './assets.js';
 import { DocumentPathError, legacyDocumentPath, readDocumentFile, readProductDocumentFile, saveDocumentFile } from './document-file.js';
 import { checkTmuxServerCgroup } from './host-guard.js';
 import { sockets, startBootHooks, stopBootHooks, mountServiceRoutes, noteService, noteServiceCapabilityPlan, noteServiceFailure, noteServiceParked } from './sockets.js';
+import { startSessionRetention } from './session-retention.js';
 import { discoverParts, partsToLoad } from './parts.js';
 import { initialCampaign } from './campaigns.js';
 import { listInstallations } from './resource-adapters.js';
 import type { ServiceRegistration } from './sockets-contract.js';
 import { resourceRequestCache, storeDir } from './resources.js';
 import { compressResponse } from './http-performance.js';
-import { roninIdentity } from './routes/version.js';
 import { startSpawnBroker, stopSpawnBroker } from './spawn-broker.js';
-import { ensureInstalledRoots } from './setup-runtime.js';
+import { ensureInstalledRoots, githubSetupAnswer, githubSetupAttached } from './setup-runtime.js';
 import { registerSetupRuntime } from './routes/setup-runtime-api.js';
 import { registerSetupProgress } from './routes/setup-progress-api.js';
 import { registerMikaContext } from './mika-context.js';
@@ -166,7 +168,8 @@ app.get('/vendor/xterm.css', (_req, res) => res.sendFile(path.join(NM, '@xterm/x
 app.get('/vendor/xterm.js', (_req, res) => res.sendFile(path.join(NM, '@xterm/xterm/lib/xterm.js')));
 app.get('/vendor/addon-fit.js', (_req, res) => res.sendFile(path.join(NM, '@xterm/addon-fit/lib/addon-fit.js')));
 
-const assetVersion = roninIdentity().commit.replace(/[^A-Za-z0-9._-]/g, '_');
+// The client's version and its serving rules live in assets.ts, which owns why.
+const assetVersion = publicFingerprint(PUBLIC);
 const readDocument = (file: string) => fs.readFileSync(path.join(PUBLIC, file), 'utf8').replaceAll('__RONIN_ASSET_VERSION__', assetVersion);
 const indexHtml = readDocument('index.html');
 // THE MOBILE DOCUMENT. A phone downloads mobile.html — the bar, an empty list and
@@ -192,20 +195,7 @@ app.get('/index.html', sendIndex);
 app.get('/cowork-setup', (_req, res) => res.redirect(302, '/'));
 app.get('/m', sendMobile);
 app.get('/mobile.html', sendMobile);
-app.use(`/${assetVersion}`, express.static(PUBLIC, { immutable: true, maxAge: '1y', index: false }));
-
-// A development preview is replaced in place. Keep an already-open browser intact across
-// that one restart: its document may still ask for the preceding commit-prefixed assets.
-// Production retains strict immutable versioning; only development maps an old eight-hex
-// prefix onto the current preview files, which are served no-cache below.
-if (process.env.NODE_ENV !== 'production') app.use((req, _res, next) => {
-  req.url = req.url.replace(/^\/[0-9a-f]{8}(?=\/(?:style\.css|js\/|css\/))/, '');
-  next();
-});
-
-const noCacheClient = (res: express.Response, filePath: string) => {
-  if (/\.(?:html|js|css)$/.test(filePath)) res.setHeader('Cache-Control', 'no-cache');
-};
+mountAssets(app, PUBLIC, assetVersion);
 
 const STAGING = process.env.RONIN_STAGING_DIR ?? path.join(ROOT, 'public-staging');
 if (fs.existsSync(STAGING)) {
@@ -233,12 +223,13 @@ app.get('/api/health', (_req, res) =>
 registerPasskeyManage(app); // /api/passkey/{list,register-options,register,remove} — BEHIND the gate on purpose
 registerPasswordSettings(app, issueSession); // /api/password — saved browser password setting, behind the same gate
 app.use(countBrowserTool);
-registerLaunch(app); // /api/launch (both variants), /api/sessions, /api/home, session-max, owner — src/routes/launch.ts
+app.use(['/api/setup/registration', '/api/services', '/api/campaigns', '/api/machine-settings'], servicesSetupWrites); // each write pushes {t:'services-setup'}
+registerLaunch(app); // /api/launch (both variants), /api/sessions — src/routes/launch.ts
 registerMikaContext(app); // /api/mika/context/:tab — tiny tab-scoped owner_view/show seam
 registerCatalogs(app); // catalogs and configuration resources — src/routes/catalogs.ts
 registerDocs(app); // /api/docs?shelf=plans|docs — the ▧ Docs tab's shelves — src/routes/docs-api.ts
 registerTeams(app); // /api/team-rosters* — the durable half of every team — src/routes/teams-api.ts
-registerDesks(app); // /api/sessions/:name/desks, /api/teams/:name/desks — derived desk state, the control surface's visible half — src/routes/desks-api.ts
+registerDesks(app); // /api/desks?session=<name> and funnel recovery — derived desk state — src/routes/desks-api.ts
 registerTeamPage(app); // /api/teams/:team/page — the team page's view, and drafts an agent hands it — src/routes/team-page-api.ts
 registerVersion(app); // /api/version — release string, or the commit this process started from — src/routes/version.ts
 registerUpdate(app); // /api/update/* — the ⚙ gear's check + run, press-only — src/routes/update-api.ts
@@ -299,6 +290,7 @@ for (const s of services) {
 mountServiceRoutes(app);
 
 void resumeInstallWatch();
+startConfirmationCheck(); // asks Ronin HQ while a Services request awaits its emailed link
 
 registerSessions(app); // per-session: kill/harakiri, meta, ctx, tegami, send — src/routes/sessions-api.ts
 registerWipeboards(app); // /api/wipeboards* — src/routes/wipeboards-api.ts
@@ -426,7 +418,22 @@ await tmuxClient.connect(); // only the long-lived server opts into control mode
 const removed = await cleanupViewers();
 if (removed) console.log(`[tmux-ronin] cleaned up ${removed} stale viewer session(s)`);
 await startBootHooks();
-startSessionsBroadcast(); // the /events membership poll, on the same boot clock as before
+const stopSessionRetention = startSessionRetention(); // closed session folders outlive the retention period by nothing
+// /events: pushes the session list, the home rows, the Team rosters, the message queue, boards,
+// cron jobs and GitHub setup when they change — src/ws/events.ts
+startSessionsBroadcast({
+  list: listSessions,
+  home: homeRows,
+  teams: () => teamRosters(),
+  messages: listQueuedMessages,
+  wipeboard: (board) => isValidBoardName(board) ? wipeboardAnswer(board, 100) : Promise.resolve(null),
+  jikan: (team) => team === '*' ? listAllJobs() : isValidTeam(team) ? listJobs(team) : Promise.resolve(null),
+  github: { attached: githubSetupAttached, answer: githubSetupAnswer },
+  shutdown: shutdownOperation,
+});
+watchStore(WIPEBOARD_DIR, (file) => { void pushWipeboard(file.split('/')[0]!); });
+watchStore(storeDir('jikan'), (file) => { if (file.endsWith('.md')) void pushJikan(file.slice(0, -3)); });
+watchStore(storeDir('message_queue'), () => { void pushMessages(); });
 void seedHouseBoard().catch((e) => console.error('[tmux-ronin] house board seed failed:', e));
 
 void publishMax();
@@ -471,6 +478,7 @@ server.listen(config.port, config.bind, async () => {
 for (const sig of ['SIGINT', 'SIGTERM'] as const) {
   process.on(sig, () => {
     stopBootHooks();
+    stopSessionRetention();
     stopSpawnBroker();
     setTimeout(() => process.exit(0), 2000).unref();
     // Only the socket this process bound comes down with it. Nothing shared is touched:

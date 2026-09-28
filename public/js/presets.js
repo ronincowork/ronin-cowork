@@ -2,14 +2,14 @@
 import { request } from './request.js';
 import { t } from './lexicon.js';
 import { WorkspaceKit } from './workspace-kit.js';
-import { createStoneWorkSurface } from './stone-work-surface.js';
-import { loadProviderCatalog, providerCatalog, modelAvailabilityFact, modelLabel } from './form-steps.js';
+import { createPhalanx } from './phalanx.js';
+import { loadProviderCatalog, providerCatalog, modelLabel } from './form-steps.js';
 import { ask } from './ask.js';
 
-export { createStoneWorkSurface };
+export { createPhalanx };
 
 export const PRESETS_TYPE = 'setup.presets';
-export const PRESET_STORAGE_KEY = 'ronin.setup.presets.v1';
+const PRESET_STORAGE_KEY = 'ronin.setup.presets.v1';
 
 export const HOUSE_PRESETS = Object.freeze([
   { handle: 'bare_metal', shelf: 'teams', label: 'Bare Metal', description: 'Choose a provider and model for each native session, or leave it at Default.', glyph: { rects: [[4, 9, 10, 14], [18, 9, 10, 14]] }, destination: 'Ronin Lab' },
@@ -32,11 +32,11 @@ export const PRESET_KINDS = Object.freeze([
   { id: 'life', label: 'Life Assistants', presets: Object.freeze(['personal_assistant', 'health_and_fitness', 'agent_editable_doc']) },
   { id: 'research', label: 'Research and writing', presets: Object.freeze(['morning_brief', 'personal_assistant', 'bare_metal']) },
 ]);
-export const DEFAULT_RESTING_PRESETS = Object.freeze(['bare_metal', 'personal_assistant', 'agent_editable_doc']);
-export const PRESET_KINDS_KEY = 'ronin.setup.kinds.v1';
+const DEFAULT_RESTING_PRESETS = Object.freeze(['bare_metal', 'personal_assistant', 'agent_editable_doc']);
+const PRESET_KINDS_KEY = 'ronin.setup.kinds.v1';
 const knownKind = (id) => id === 'other' || PRESET_KINDS.some((kind) => kind.id === id);
 /** The house handles at rest for the picked kinds, in kind order, deduplicated. */
-export const restingPresets = (kinds = []) => {
+const restingPresets = (kinds = []) => {
   const picked = PRESET_KINDS.filter((kind) => kinds.includes(kind.id)).flatMap((kind) => kind.presets);
   return picked.length ? [...new Set(picked)] : [...DEFAULT_RESTING_PRESETS];
 };
@@ -110,7 +110,7 @@ const agentsAroundConfiguration = ({ sessions: born = [], team = '' }) => {
     ].filter(Boolean),
   };
 };
-export const CORE_PRESET_TREATMENTS = Object.freeze({
+const CORE_PRESET_TREATMENTS = Object.freeze({
   bare_metal: treatment(['sessions'], 'team', (receipt) => agentsAroundConfiguration(receipt)),
   ronin_team: treatment(['sessions'], 'team', (receipt) => agentsAroundConfiguration(receipt)),
   staff_my_codebase: treatment(['root'], 'team', () => ({ count: 2, seats: [] })),
@@ -135,7 +135,7 @@ export const CORE_PRESET_TREATMENTS = Object.freeze({
 export const isCorePreset = (handle) => Object.hasOwn(CORE_PRESET_TREATMENTS, String(handle || ''));
 export const bareMetalWorkspaceCount = (count) => count <= 1 ? 1 : count === 2 ? 2 : 4;
 export const presetActions = (handle) => ['user_message', 'launch', ...(isCorePreset(handle) ? CORE_PRESET_TREATMENTS[handle].controls : [])];
-export function firstActivatableProvider(runtime = {}) {
+function firstActivatableProvider(runtime = {}) {
   return (Array.isArray(runtime.providers) ? runtime.providers : []).find((provider) => {
     if (!provider?.id || provider.activated === true || provider.blocked) return false;
     return provider.installed === true || provider.installable === true || provider.login_open === true
@@ -276,10 +276,8 @@ async function keepFolder(folder) {
     stable: inspected.data.repo_profile?.stable || inspected.data.repo?.branch || 'main',
     worktrees: inspected.data.repo_profile?.worktrees || 'disabled',
   } : null;
-  const absent = inspected.data.arrangement?.source === 'absent';
-  const before = profile ? { mode: inspected.data.arrangement?.mode || profile.mode, working: absent ? '' : (inspected.data.arrangement?.working || ''), stable: absent ? '' : (inspected.data.arrangement?.stable || ''), worktrees: profile.worktrees } : null;
   for (const name of [rootHandle(folder), `${rootHandle(folder)}_2`, `${rootHandle(folder)}_3`]) {
-    const made = await request('/api/project-roots', { method: 'POST', json: { name, dir: folder.dir, ...(profile ? { before, profile, confirmed: true } : {}) } });
+    const made = await request('/api/project-roots', { method: 'POST', json: { name, dir: folder.dir, ...(profile ? { profile } : {}) } });
     if (made.ok) return { ok: true, name };
     if (!/already in the catalog/i.test(made.message || '')) return made;
   }
@@ -387,12 +385,10 @@ function renderRows(host, state, key, addLabel) {
       const providers = catalog.filter((item, at) => catalog.findIndex((other) => other.provider === item.provider) === at);
       const reason = (item) => item.off
         ? t('forms.reason_turned_off', 'turned off')
-        : item.listed === false && item.model_list_current
-          ? t('forms.reason_not_listed', 'not listed by your {cli} {client_version}', { cli: item.cli_label || item.cli, client_version: item.model_list?.client_version || '' })
-          : t('forms.reason_not_on_machine', 'not on this machine');
+        : t('forms.reason_not_on_machine', 'not on this machine');
       const pair = ask([{ group: t('new_agent.model_package', 'Model'), fields: [
         { key: 'provider', label: t('forms.provider', 'Model provider'), blank: t('campaign_view.provider_default', 'Default provider'), options: providers.map((item) => ({ v: item.provider, l: item.provider_label, off: item.operational ? '' : reason(item) })) },
-        { key: 'model', label: t('forms.model', 'Model'), blank: t('campaign_view.model_default', 'Default model'), after: 'provider', options: (value) => catalog.filter((item) => item.provider === value.provider).map((item) => ({ v: item.model, l: modelLabel(item), word: item.tier, sub: modelAvailabilityFact(item), off: item.selectable ? '' : (item.operational ? modelAvailabilityFact(item) : reason(item)) })) },
+        { key: 'model', label: t('forms.model', 'Model'), blank: t('campaign_view.model_default', 'Default model'), after: 'provider', options: (value) => catalog.filter((item) => item.provider === value.provider).map((item) => ({ v: item.model, l: modelLabel(item), word: item.tier, sub: item.cost || '', off: item.selectable ? '' : reason(item) })) },
       ] }], { value: { provider: row.provider || '', model: row.model || '' }, density: 'tight', onChange: (value) => { row.provider = value.provider; row.model = value.model; } });
       const remove = el('button', 'sp-remove', '✕'); remove.type = 'button'; remove.title = `Remove ${addLabel}`;
       remove.addEventListener('click', () => { state[key].splice(index, 1); paint(); });
@@ -569,7 +565,7 @@ export function createPresetsSurface({ environment = {}, workspace = 'workspace1
   // and change-preset hold. The All purpose exposes all seven without a second control.
   const restingIndexes = () => restingPresets(kinds.get()).map((handle) => HOUSE_PRESETS.findIndex((row) => row.handle === handle)).filter((index) => index >= 0);
   const visibleIndexes = () => restingIndexes();
-  const stoneSurface = createStoneWorkSurface({
+  const stoneSurface = createPhalanx({
     className: 'sp-work-surface',
     renderDetail: (item, host) => { selected = Number(item.id); detail = host; paintDetail(); },
     onSelectionChange: (id) => { selected = id == null ? -1 : Number(id); },

@@ -50,7 +50,8 @@ one on leave so no transport survives outside the entered destination.
    is waited for while the roster is still arriving, then let go.
 6. The roster renders one card per member and a `＋ Add Agent to Team` card. A card
    is a **reading**: Agent title, 人, SHINGO chip, status (ready · thinking · awaiting
-   input), model, ⛽ context, attached — read off `/api/home`'s row on entry and every 5s.
+   input), model, ⛽ context, attached — read off the store's home row: handed over
+   on entry, then again each time the server pushes a change. Leaving unsubscribes.
 7. **Click a card** and its Tile goes into the workspace last touched (the one carrying
    the Sessions grid's `.tile.active` highlight); **drag a card** onto a workspace and it
    goes there. Arrow keys walk the cards; Enter picks.
@@ -193,7 +194,8 @@ from what the tab remembered.
 
 - **Chat** — reserved, empty, inert.
 - **Wipeboard** — the real Team thread and owner composer; the roster's `wipeboard` id or
-  the Team name; polled only while entered.
+  the Team name. Entering asks the server for the thread over the socket; the thread and
+  every later post arrive by push until the tab is left.
 - **Docs** — the Commons' own mdedit pane (`buildDocs`), narrowed to the roster's members;
   a draft `commons:docs:<path>` opens a file here.
 - **Messages** — inbound session messages that have not delivered yet; safe
@@ -221,8 +223,8 @@ keyboard · `5acb840` `edges page` · `a6819eb` the roster in its view · `04120
 `7c5c619` the head row and Team Configuration finished on measurement.
 
 The surface was verified by Playwright probes against the live page (`scripts/lib/ui-host.mjs`,
-`loadPlaywright()`), plus the repo gates (`check-modules`, `check-workspace-kit`, `check-css`,
-`check-dead`, `check-docs`, `check-tests` — 248 unit tests) and `scripts/smoke-ui.mjs`.
+`loadPlaywright()`), plus the repo gates (`check-modules`, `check-css`, `check-tests`) and
+`scripts/smoke-ui.mjs`.
 The designated integrator runs one BYOIN mode on the release candidate; a SKIP is not a pass.
 
 ## Known limits
@@ -236,7 +238,7 @@ The designated integrator runs one BYOIN mode on the release candidate; a SKIP i
   from roster drag/drop, never stored on the roster.
 - Chat is intentionally empty.
 - No cherry-pick/summary reading on the cards: no service puts such a field on the
-  `/api/home` row.
+  home row.
 - There is no Team-scoped 1/2/4 mode. Sessions retains its separate raw grid.
 - The workspace selects the session it shows. The current Tile header displays its
   session name; roster placement and drag/drop change the selection.

@@ -2,8 +2,8 @@
 import { t } from './lexicon.js';
 
 
-export let failBar = null;
-export const failSeen = new Set();
+let failBar = null;
+const failSeen = new Set();
 
 /** Put a failure on screen. Nothing here may throw — it is the last line of defence. */
 export function showFailure(where, err) {
@@ -63,6 +63,20 @@ export function showFailure(where, err) {
   } catch (_) {
     /* if even this fails, the console.error above is all we get */
   }
+}
+
+/** Take a failure off the screen once its cause has cleared: its lines go, it may be shown
+ *  again, and the bar goes with its last line. */
+export function clearFailure(where) {
+  for (const key of [...failSeen]) if (key.startsWith(where + '|')) failSeen.delete(key);
+  if (!failBar) return;
+  const children = [...failBar.children];
+  children.forEach((child, i) => {
+    if (child.className !== 'failbar-line' || !child.textContent.startsWith(where + ': ')) return;
+    if (children[i + 1]?.className === 'failbar-at') children[i + 1].remove();
+    child.remove();
+  });
+  if (![...failBar.children].some((child) => child.className === 'failbar-line')) { failBar.remove(); failBar = null; }
 }
 
 /** Run fn; on a throw, show it and return fallback instead of taking the page down. */

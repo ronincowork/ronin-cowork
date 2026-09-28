@@ -118,6 +118,28 @@ head does not disappear when a surface is empty or quiet.
 Use the controls in that head for the surface you are looking at. A workspace remains the
 same numbered place when you replace its surface.
 
+## The header and the Agent tools on a tablet
+
+On a wide touch screen — an iPad keeps the workbench rather than the phone document — the
+application header folds away to give the work below more room. The chevron rides inside
+the dynamic island at the top of the screen, next to the name the island is showing.
+
+Collapsing takes the whole header, island included. The chevron stays: it docks to the top
+edge of the screen, in the island's own colours, sitting over the head of the work surfaces
+so it is always within reach. It is deliberately a little in the way — it is how you get the
+header back. Tap it again and the header returns exactly as it was.
+
+An Agent's head keeps the same depth as the surface heads beside it, and stays one row. It
+shows the Agent's name, its reading toggle, and **メ** — one menu holding that Agent's work
+record, docs, mention, output, minimise and close, the same sheet the phone uses. A control
+that has nothing to offer, such as Output with no Services, leaves the sheet rather than
+sitting there blank.
+
+The reading toggle is a toggle, never a row in the menu. Each press moves on through the
+readings this screen offers, and past the last one it returns to the terminal. A desk walks
+every reading the record has; a tablet offers Terminal, Chat and Work; a phone is Terminal
+or Chat. Notes and the full record stay on the desk.
+
 ## Short vocabulary check
 
 > The Team workbench's discovery column offers the Commons surface. Opening it places

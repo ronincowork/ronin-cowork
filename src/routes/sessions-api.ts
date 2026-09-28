@@ -1,3 +1,5 @@
+import { readLaunchIdentity } from '../launch-binding.js';
+import { resolveLaunchJournal } from '../launch-journal.js';
 import fs from 'node:fs';
 import type express from 'express';
 import {
@@ -31,12 +33,14 @@ import { enqueueMessage } from '../message-queue.js';
 import { sessionKey } from '../session-dir.js';
 import { isValidRootName, listProjectRoots } from '../project-roots.js';
 import { expandLookup } from '../lookup.js';
-import { readCtxLine } from '../ctx.js';
 import { count } from '../counts.js';
+import { broadcastEvent } from '../ws/events.js';
 import { announceTeamChanges } from './wipeboards-api.js';
-import { writeTeams } from '../tegami.js';
-import { readTegami } from '../tegami-read.js';
-import { conditionalBehaviourPath } from '../behaviours.js';
+import { writeMandate, writeTeams } from '../tegami.js';
+import { conditionalBehaviourPath, resolveBehaviourBooks } from '../behaviours.js';
+import { addCurrentBehaviour, readAgentComposition } from '../agent-composition.js';
+import { mandate } from '../agent-defaults.js';
+import { readFile } from 'node:fs/promises';
 import { emitSessionEnd } from '../sockets.js';
 import { resumeAgentArgv } from '../agents.js';
 import { listTeamRosters } from '../team-rosters.js';
@@ -77,10 +81,13 @@ interface ShutdownOperation extends ShutdownProgress {
 const publicArchive = ({ id, name, archived_at, agent, tags }: ArchivedSession) => ({ id, name, archived_at, agent, tags });
 
 const shutdownOperations = new Map<string, ShutdownOperation>();
+// A shutdown as it stands: what {t:'want', resource:'shutdown', id} answers a socket that
+// reopened mid-shutdown. Finished operations are kept five minutes.
+export const shutdownOperation = (id: string): ShutdownOperation | null => shutdownOperations.get(id) ?? null;
 const shutdownSlots = new ShutdownSlots();
 
 async function openDeskRefusal(name: string): Promise<string> {
-  const desks = (await listDesks()).filter((desk) => desk.state === 'open' && (desk.owners?.length ? desk.owners : [desk.session]).includes(name));
+  const desks = (await listDesks({ owner: name })).filter((desk) => desk.state === 'open');
   return desks.length
     ? `Session "${name}" owns open desk${desks.length === 1 ? '' : 's'} ${desks.map((desk) => `${desk.repo}:${desk.branch}`).join(', ')}. Archive leaves managed-desk custody unchanged; run session_end or Shut down Agent after closeout instead.`
     : '';
@@ -133,6 +140,42 @@ async function prepareSessionEnding(
 }
 
 export function registerSessions(app: express.Express): void {
+  app.get('/api/sessions/:name/composition', async (req, res) => {
+    const { name } = req.params;
+    if (!isValidName(name)) return res.status(400).json({ error: 'Invalid name.' });
+    if (!(await sessionExists(name))) return res.status(404).json({ error: 'No such session.' });
+    try { res.json(await readAgentComposition(name)); }
+    catch (e) { res.status(409).json({ error: String((e as Error)?.message ?? e) }); }
+  });
+
+  app.post('/api/sessions/:name/composition/behaviours', async (req, res) => {
+    const { name } = req.params;
+    if (!isValidName(name)) return res.status(400).json({ error: 'Invalid name.' });
+    if (!(await sessionExists(name))) return res.status(404).json({ error: 'No such session.' });
+    const resolved = await resolveBehaviourBooks([String(req.body?.name ?? '').trim()]);
+    if (resolved.delivered.length !== 1) return res.status(400).json({ error: 'Choose one available optional Behavior.' });
+    try {
+      const row = resolved.delivered[0];
+      const composition = await readAgentComposition(name);
+      if (composition.current.behaviours.some((item) => item.name === row.book)) return res.status(409).json({ error: 'That Behavior is already part of the current composition.' });
+      const teaching = await readFile(row.file, 'utf8');
+      const added = await addCurrentBehaviour(name, { name: row.book, path: row.file }, () => enqueueMessage(name, `Behavior added to your current composition: ${row.book}\n\nRead and follow this additive guidance now:\n\n${teaching}`, 'owner'));
+      if (!added.added) return res.status(409).json({ error: 'That Behavior is already part of the current composition.' });
+      res.json({ ok: true, queued: true, behaviour: { name: row.book, path: row.file }, message: added.delivery });
+    } catch (e) { res.status(500).json({ error: String((e as Error)?.message ?? e) }); }
+  });
+
+  app.put('/api/sessions/:name/composition/mandate', async (req, res) => {
+    const { name } = req.params;
+    if (!isValidName(name)) return res.status(400).json({ error: 'Invalid name.' });
+    if (!(await sessionExists(name))) return res.status(404).json({ error: 'No such session.' });
+    try {
+      const saved = await writeMandate(name, mandate(req.body));
+      const item = await enqueueMessage(name, `Your current mandate changed. Your birth mandate remains part of your immutable birth record.\n\nReach: ${saved.reach}\nRecruit: ${saved.recruit}\nOutput: ${saved.output.join(', ')}`, 'owner');
+      res.json({ ok: true, mandate: saved, queued: true, message: item });
+    } catch (e) { res.status(409).json({ error: String((e as Error)?.message ?? e) }); }
+  });
+
   app.get('/api/archived-sessions', async (_req, res) => {
     try {
       res.json((await listArchives()).map(publicArchive));
@@ -151,7 +194,11 @@ export function registerSessions(app: express.Express): void {
       if (!prepared.proceed) return;
       const key = await sessionKey(name);
       const runtime = await sessionRuntime(name);
-      const provider = await providerSessionInfo(runtime.agent, runtime.cwd, runtime.pid, await getProviderSessionId(name));
+      const launchIdentity = await readLaunchIdentity(key);
+      if (launchIdentity) await resolveLaunchJournal(launchIdentity);
+      const provider = launchIdentity
+        ? (launchIdentity.providerSession ? { agent: launchIdentity.cli, id: launchIdentity.providerSession } : null)
+        : await providerSessionInfo(runtime.agent, runtime.cwd, runtime.pid, await getProviderSessionId(name));
       if (!provider) return res.status(409).json({ error: `Could not identify a resumable ${runtime.agent || 'agent'} conversation.` });
       const archived: ArchivedSession = {
         version: 1, id: key, name, key, archived_at: new Date().toISOString(), cwd: runtime.cwd,
@@ -180,7 +227,7 @@ export function registerSessions(app: express.Express): void {
       }
       const argv = await resumeAgentArgv(archived.agent, archived.provider_session_id);
       if (!argv.length) return res.status(409).json({ error: `${archived.agent} cannot be resumed on this machine.` });
-      await createSession(archived.name, archived.cwd, { agent: true, argv });
+      await createSession(archived.name, archived.cwd, { agent: true, argv, cli: archived.agent, key: archived.key, resume: true });
       try {
         await setSessionKey(archived.name, archived.key);
         await setTags(archived.name, archived.tags);
@@ -216,17 +263,6 @@ export function registerSessions(app: express.Express): void {
     } catch (e) {
       const code = (e as NodeJS.ErrnoException)?.code;
       res.status(code === 'ENOENT' ? 404 : 500).json({ error: code === 'ENOENT' ? 'No such archive.' : String((e as Error)?.message ?? e) });
-    }
-  });
-
-  app.get('/api/sessions/:name/tegami', async (req, res) => {
-    const { name } = req.params;
-    if (!isValidName(name)) return res.status(400).json({ error: 'Invalid name.' });
-    if (!(await sessionExists(name))) return res.status(404).json({ error: 'No such session.' });
-    try {
-      res.json(await readTegami(name));
-    } catch (e) {
-      res.status(500).json({ error: String((e as Error)?.message ?? e) });
     }
   });
 
@@ -266,6 +302,11 @@ export function registerSessions(app: express.Express): void {
     };
     shutdownOperations.set(id, operation);
     res.status(202).json(operation); // acknowledge before desk or git inspection begins
+    // Each phase, and the end, is pushed whole as {t:'shutdown', ...operation}.
+    const progressed = (value: Partial<ShutdownOperation>) => {
+      Object.assign(operation, value);
+      broadcastEvent({ t: 'shutdown', ...operation });
+    };
     setImmediate(() => void (async () => {
       const controller = new AbortController();
       const serverTimeoutMs = mode === 'hard_delete' ? 120_000 : 30_000;
@@ -274,11 +315,11 @@ export function registerSessions(app: express.Express): void {
         await Promise.race([
           (async () => {
             if (mode === 'hard_delete') {
-              const destructive = await performAgentHardDelete(name, (value) => Object.assign(operation, value), controller.signal);
+              const destructive = await performAgentHardDelete(name, progressed, controller.signal);
               operation.destructive = destructive;
               operation.closed = [...destructive.closed, ...destructive.quarantined.map((row) => row.desk)];
             } else {
-              operation.closed = await performAgentShutdown(name, (value) => Object.assign(operation, value));
+              operation.closed = await performAgentShutdown(name, progressed);
             }
           })(),
           new Promise<never>((_resolve, reject) => {
@@ -299,17 +340,12 @@ export function registerSessions(app: express.Express): void {
         controller.abort();
         if (deadline) clearTimeout(deadline);
       }
+      broadcastEvent({ t: 'shutdown', ...operation });
       shutdownSlots.terminal(name, id); // terminal: a retry always gets a fresh operation
       setTimeout(() => {
         shutdownOperations.delete(id);
       }, 5 * 60_000).unref();
     })());
-  });
-
-  app.get('/api/session-shutdowns/:id', (req, res) => {
-    const operation = shutdownOperations.get(req.params.id);
-    if (!operation) return res.status(404).json({ error: 'No such shutdown operation.' });
-    res.status(operation.state === 'failed' && operation.blockers ? 409 : 200).json(operation);
   });
 
   app.put('/api/sessions/:name/title', async (req, res) => {
@@ -340,7 +376,9 @@ export function registerSessions(app: express.Express): void {
       if (e instanceof ShutdownRefused) {
         return res.status(409).json({ error: e.message, blockers: e.blockers });
       }
-      res.status(500).json({ error: String((e as Error)?.message ?? e) });
+      const error = String((e as Error)?.message ?? e);
+      console.error(`[ronin] harakiri: ${name} (pane ${pane}) failed: ${error}`);
+      res.status(500).json({ error });
     }
   });
 
@@ -447,24 +485,6 @@ export function registerSessions(app: express.Express): void {
     }
   });
 
-  app.get('/api/teams/:name/live', async (req, res) => {
-    const { name } = req.params;
-    try {
-      const members = (await listSessions()).filter((s) => s.tags.includes(name));
-      res.json({
-        team: name,
-        members: await Promise.all(
-          members.map(async (s) => ({
-            name: s.name,
-            team_lead: s.leads.includes(name),
-          })),
-        ),
-      });
-    } catch (e) {
-      res.status(500).json({ error: String((e as Error)?.message ?? e) });
-    }
-  });
-
   app.post('/api/sessions/:name/team_lead', async (req, res) => {
     const { name } = req.params;
     if (!isValidName(name)) return res.status(400).json({ error: 'Invalid name.' });
@@ -504,19 +524,6 @@ export function registerSessions(app: express.Express): void {
     if (!isValidName(name)) return res.status(400).json({ error: 'Invalid name.' });
     if (!(await sessionExists(name))) return res.status(404).json({ error: 'No such session.' });
     res.json({ team_lead: await getLeads(name) });
-  });
-
-  app.get('/api/sessions/:name/ctx', async (req, res) => {
-    const { name } = req.params;
-    if (!isValidName(name)) return res.status(400).json({ error: 'Invalid name.' });
-    if (!(await sessionExists(name))) return res.status(404).json({ error: 'No such session.' });
-    try {
-      const reading = await readCtxLine(name); // { ctx, model } — one capture, both readings
-      count('ctx', { name, ctx: (reading as { ctx: number | null }).ctx, model: (reading as { model?: string | null }).model ?? null });
-      res.json(reading);
-    } catch (e) {
-      res.status(500).json({ error: String((e as Error)?.message ?? e) });
-    }
   });
 
   app.post('/api/sessions/:name/send', async (req, res) => {

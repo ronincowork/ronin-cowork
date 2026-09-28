@@ -9,6 +9,27 @@ It does not own feature data. It restores placement, creates independent surface
 instances, and calls the placed instance's `show()` synchronously. The surface owns the
 smallest reads needed to paint itself.
 
+`public/js/phalanx.js` owns the shared Phalanx collection interaction: stones at rest,
+a selected-stone rail beside its detail, focus return, Escape, and responsive geometry.
+Consumers supply items and detail content; they do not recreate that movement privately.
+
+Task Manager retains its original board, furniture, selector card, and status/Project
+workspace drill-downs. Work Items (`work-items`) is a separate surface and card in
+Cowork/Desk, Team, and Agent profiles. Cowork/Desk offers one Work Items card spanning
+all Teams; Team reads its selected Team; Agent filters to Projects held by that Agent.
+
+Work Items mounts `createPhalanx` directly in the standard surface content seat. Each
+Project is a selectable stone in Ideas, Planning, Building, Landing, Done order. Selection
+moves all groups into the left rail and renders the Project inside the same `sws-detail`;
+it never opens another numbered workspace. `project-reading.js` holds the canonical
+Project reading used by both presentations, with each supplying its own styling classes.
+Work Items keeps normal Phalanx furniture, density controls, explicit holder opening,
+and message-only stage drops. It does not use Task Manager's board or beige furniture.
+
+The shared Phalanx accepts ordered `grouped.groups`, group/item event callbacks, item
+actions, and `setDensity`; Work Items stones deliberately supply no action callback,
+so the normal selection, rail, detail, Escape, and focus-return behavior applies.
+
 ## Library, profile, tenant, instance
 
 `public/js/workbench.js` owns the shared library and frame.
@@ -135,6 +156,7 @@ restoration branches.
 | Destination | First open | Notable structured opening |
 |---|---|---|
 | Ronin Settings | Defaults in workspace 1; Workspace Folders in workspace 2 | **Desk defaults** replaces the seats with Defaults and Launch your own |
+| Desk | Teams overview in workspace 1; Desk Task Manager in workspace 2 | Status and Project drill-downs retain the Desk tenant |
 | New Project | New Agent in workspace 1 | Links may replace or overlay New Agent/New Team and carry prompt or template detail |
 | Ronin Setup | Garden in workspace 1; active journey surface in workspace 2 | Journey actions select a Setup surface without another restoration path |
 | Cowork / Team | Fresh empty/member seating rules; refresh restores this instance | Team Configuration, documents, commons tabs, and New Agent may be addressed in seat detail |
@@ -193,17 +215,21 @@ independently.
 | Launch your own | no launch data until Agent, Team, or Preset is selected; that embedded form then owns its reads |
 | Presets | preset catalog plus provider/root choices required by the selected preset |
 
-### Cowork and Team (`cowork` and `team` profiles)
+### Desk, Cowork, and Team (`desk`, `cowork`, and `team` profiles)
 
-Sessions and Team records are legitimate entry data because they are the discovery cards
-and seats. Optional feature status is independent and must not hold the frame.
+Desk is a first-class Workbench profile and tenant with its own restoration namespace and
+first-open map; it is not a renamed Cowork entry. Desk and Cowork reuse aggregate surface
+implementations, while Team addresses one Team. Sessions and Team records are legitimate
+entry data because they are the discovery cards and seats. Optional feature status is
+independent and must not hold the frame.
 
 | Surface | Required data and owner |
 |---|---|
 | Team roster / Team profile | Team records and live session-derived membership |
+| Team Chart | Selected Team membership and lead designation; Phalanx owns collection and selection geometry, and its in-place detail embeds the canonical Agent composition reader plus the secondary Launch action |
 | Agent terminal | selected session plus terminal transport; other sessions are not mounted for it |
 | Commons | only the selected tab enters: Roster, Docs, Wipeboard, Messages, Configuration, or another registered room |
-| Team Task Manager | its own work surface; installed capability fact, then selected Team's derived Project view |
+| Task Manager | Desk scope aggregates the canonical per-Team Project readings; Team scope reads the selected Team; status and Project drill-downs are independently placeable surfaces carrying the same tenant |
 | Cron jobs | scheduled messages for the addressed Team or collection scope |
 | New Agent / New Team | canonical launch form and its dependencies listed above |
 | Archived sessions | archive manifests when shown |
@@ -218,9 +244,9 @@ service reads finish. Team membership and Task Manager choices enrich independen
 |---|---|
 | Self | route Agent plus the shared terminal host and transport |
 | Agent Documents | the Agent's tracked documents in one untabbed work surface |
-| Agent Task Manager | one separately offered Task Manager for each current Team |
+| Agent Task Manager | the route Agent's Projects across its current Teams, filtered by the canonical holder returned with each Team Project reading |
 | Team membership | Team records and live session tags from `team-controller.js`; writes use the canonical session-membership route |
-| Task Manager | installed capability fact and the selected Team's derived Project view |
+| Status / Project drill-down | the same Agent tenant and Team reads as Task Manager; each is an independently placeable surface and writes no Project data |
 | Document / Feedback | each shared surface's own read or submission |
 
 ## Change checklist

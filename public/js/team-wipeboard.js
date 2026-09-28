@@ -1,5 +1,6 @@
 /* part of the ronin-cowork client — see js/README.md */
 import { request } from './request.js';
+import { subscribe } from './store.js';
 import { t } from './lexicon.js';
 
 const el = (tag, cls, text) => {
@@ -12,10 +13,8 @@ const el = (tag, cls, text) => {
 export function createTeamWipeboard() {
   const root = el('div', 'twb');
   let board = ''; // the roster's wipeboard id — set on enter, '' means no team resolved
-  let newest = ''; // newest post id rendered — polls ask only for what is after it
   let entered = false;
-  let timer = 0;
-  let inFlight = false; // one request at a time: overlapping polls re-rendered the whole
+  let stop = null; // the store subscription, while entered on a board
 
   const thread = el('div', 'twb-thread');
   const note = el('p', 'tw-note');
@@ -67,37 +66,13 @@ export function createTeamWipeboard() {
     else quiet('');
   };
 
-  const refresh = async (force = false) => {
-    if (!entered || !board || inFlight) return;
-    inFlight = true;
-    try {
-      // FIRST LOAD IS THE WHOLE PAGE; EVERY POLL IS A DELTA. Asking for the full thread
-      // every two seconds re-rendered a hundred posts a poll; asking for what is after
-      // `newest` returns nothing at all in the quiet case.
-      const url = newest
-        ? `/api/wipeboards/${encodeURIComponent(board)}?since=${encodeURIComponent(newest)}`
-        : `/api/wipeboards/${encodeURIComponent(board)}?limit=100`;
-      const r = await request(url);
-      if (!entered) return;
-      if (!r.ok) {
-        // Network blips ride the poll; a standing failure is said in place of the thread.
-        if (!thread.childElementCount) quiet(t('team_wipeboard.read_failed', 'Could not read the board — {message}', { message: r.message }));
-        return;
-      }
-      const posts = r.data.posts || [];
-      if (!newest) {
-        newest = r.data.newest || '';
-        renderThread(posts, Boolean(r.data.more));
-        maybeScroll(true);
-      } else if (posts.length) {
-        for (const p of posts) thread.append(postNode(p));
-        newest = r.data.newest || newest;
-        quiet('');
-        maybeScroll(force);
-      }
-    } finally {
-      inFlight = false;
-    }
+  // The thread is the store's `wipeboard:<board>`: the server sends it whole when this
+  // opens and again on every post, so each paint is the whole thread.
+  const watch = () => {
+    stop?.();
+    stop = entered && board
+      ? subscribe(`wipeboard:${board}`, ({ posts, more }) => { renderThread(posts, more); maybeScroll(false); })
+      : null;
   };
 
   const sendPost = async () => {
@@ -112,7 +87,7 @@ export function createTeamWipeboard() {
       return;
     }
     say.value = '';
-    void refresh(true); // a delta fetch picks the post up, and your own post may scroll
+    wantBottom = true; // your own post, arriving by push, scrolls into view
   };
   post.addEventListener('click', sendPost);
   say.addEventListener('keydown', (e) => {
@@ -126,26 +101,22 @@ export function createTeamWipeboard() {
     setBoard: (id) => {
       if (id === board) return;
       board = id || '';
-      newest = '';
       thread.replaceChildren();
       quiet(board ? '' : t('team_wipeboard.no_team', 'No Team resolved — nothing to read.'));
-      if (entered && board) void refresh();
+      watch();
     },
     enter: () => {
       entered = true;
       wantBottom = true; // every entry starts at the freshest post
-      if (board) void refresh();
-      timer = window.setInterval(() => void refresh(), 2000);
+      watch();
     },
     leave: () => {
       entered = false;
-      window.clearInterval(timer);
-      timer = 0;
+      watch();
     },
     destroy: () => {
       entered = false;
-      window.clearInterval(timer);
-      timer = 0;
+      watch();
       ro.disconnect();
     },
   };

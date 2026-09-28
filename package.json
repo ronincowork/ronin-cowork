@@ -15,6 +15,7 @@
     "check:modules": "node scripts/check-modules.mjs",
     "preloads": "node scripts/generate-modulepreloads.mjs",
     "workbench:ui": "node scripts/workbench-ui.mjs",
+    "ipad:ui": "node scripts/ipad-header-ui.mjs",
     "check:css": "node scripts/check-css.mjs",
     "check:kyokai": "node scripts/check-kyokai.mjs",
     "check:tests": "node scripts/check-tests.mjs",

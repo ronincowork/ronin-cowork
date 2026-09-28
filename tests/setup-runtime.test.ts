@@ -25,7 +25,7 @@ const catalog = await listProviderCatalog();
 const nobody = async () => false;
 /** One measured summary from a fixture machine: which CLIs are on PATH and which left a credential file. */
 const measured = (section: Record<string, unknown>, installed: string[], signedIn: string[] = []) =>
-  summary.measureProviders(section, { availability: available(installed), signedIn: async (id) => signedIn.includes(id), catalog, now: () => '2026-09-08T10:00:00.000Z', version: async (file) => (file === '/bin/codex' ? '0.151.0' : ''), modelList: async (id) => id === 'codex' ? { fetched_at: '2026-09-09T10:42:03Z', etag: 'e', client_version: '0.151.0', models: [{ slug: 'gpt-5.6-sol', display_name: 'Sol', description: '', visibility: 'list', priority: 1 }] } : null });
+  summary.measureProviders(section, { availability: available(installed), signedIn: async (id) => signedIn.includes(id), catalog, now: () => '2026-09-08T10:00:00.000Z', version: async (file) => (file === '/bin/codex' ? '0.151.0' : '') });
 const answer = async (section: Record<string, unknown>, installed: string[], signedIn: string[] = [], exists: (name: string) => Promise<boolean> = nobody) =>
   runtime.setupRuntimeAnswer(section, await measured(section, installed, signedIn), { exists }, undefined, catalog);
 const row = (a: Awaited<ReturnType<typeof answer>>, id: string) => a.providers.find((provider) => provider.id === id)!;
@@ -82,7 +82,7 @@ test('an activated CLI\'s row says its version, what Refresh last learned of the
   const facts = await measured(on, ['claude', 'codex']);
   const before = await runtime.setupRuntimeAnswer(on, facts, { exists: nobody }, undefined, catalog);
   assert.equal(row(before, 'codex').version, '0.151.0');
-  assert.equal(row(before, 'codex').model_list, null, 'ordinary measurement records the CLI version; the separate inventory refresh has not completed');
+  assert.equal(row(before, 'codex').model_list, null, 'ordinary measurement records the CLI version; only Refresh all reads a model list');
   assert.equal(row(before, 'claude').version, null, 'a CLI that would not say is null, not a guess');
   assert.equal(row(before, 'codex').latest, null, 'never asked yet');
   assert.equal(row(before, 'codex').updatable, true, 'activated and the registry has an update line');

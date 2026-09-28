@@ -1,6 +1,6 @@
 /* part of the ronin-cowork client — see js/README.md */
-import { fetchSessions } from './api.js';
 import { request } from './request.js';
+import { S } from './state.js';
 import { showFailure } from './errors.js';
 import { WorkspaceKit } from './workspace-kit.js';
 import { createWarmTerminalPool } from './team-terminal-pool.js';
@@ -47,7 +47,7 @@ export function mikaTab() {
 }
 
 /** What this tab shows, for `owner_view`: best effort, never blocking Help. */
-export async function reportMikaView(view) {
+async function reportMikaView(view) {
   if (!view) return;
   try { await request(`/api/mika/context/${encodeURIComponent(mikaTab())}`, { method: 'PUT', json: { view } }); } catch (_) { /* Help does not wait on it */ }
 }
@@ -72,9 +72,7 @@ export async function askMika(tile, ask) {
   if (!tile) return false;
   let born = false;
   try {
-    const live = await request('/api/sessions', { cache: 'no-store' });
-    const up = live.ok && Array.isArray(live.data) && live.data.some((s) => s && s.name === MIKA);
-    if (!up) {
+    if (!S.sessions.some((s) => s.name === MIKA)) {
       const r = await request('/api/mika', {
         method: 'POST',
         json: {
@@ -85,7 +83,6 @@ export async function askMika(tile, ask) {
       // failure: what was wanted was her tile, and there it is.
       if (!r.ok && r.status !== 409) throw new Error(r.message);
       born = r.ok;
-      if (born) void fetchSessions(); // the roster shows her without waiting for a poll
     } else if (ask) {
       await request('/api/sessions/' + encodeURIComponent(MIKA) + '/send', {
         method: 'POST',

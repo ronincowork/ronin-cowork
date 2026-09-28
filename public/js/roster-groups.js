@@ -2,7 +2,7 @@
 /** The ordinary helper Team stays at the roster's foot while it exists. */
 export const RONIN_HELPERS = 'ronin_helpers';
 export const teamTag = (team) => team;
-export const teamDisplay = (tag) => tag;
+const teamDisplay = (tag) => tag;
 export const helpersLast = (a, b) => Number(a === RONIN_HELPERS) - Number(b === RONIN_HELPERS)
   || String(a).localeCompare(String(b));
 export const partitionRosterGroups = (groups = []) => ({

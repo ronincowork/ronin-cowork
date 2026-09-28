@@ -17,7 +17,7 @@ export const CAN_RECORD =
  * rather than webm; the endpoint runs the bytes through ffmpeg, which probes the
  * container, so the format is not our problem.
  */
-export function makeClipRecorder({ onState, onText, onError }) {
+function makeClipRecorder({ onState, onText, onError }) {
   let recording = false;
   let busy = false;
   let media = null; // { recorder, stream }

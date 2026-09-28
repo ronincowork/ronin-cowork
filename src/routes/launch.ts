@@ -9,25 +9,25 @@ import {
   sessionExists,
   setSessionIdentity,
   setLeads,
-  setProviderSessionId,
   setCampaign,
   setProjectRoot,
   setTags,
 } from '../tmux.js';
-import { launchArgv, newProviderSession } from '../agents.js';
-import { AtSessionMax, liveCount, readAgentsSection, readMax, readOwner, writeMax, writeOwner } from '../machine-state.js';
+import { launchArgv } from '../agents.js';
+import { AtSessionMax, readAgentsSection } from '../machine-state.js';
 import { resolveForm, type SpawnForm } from '../spawn.js';
 import { appendLaunchLedger, persistBirthReceipt } from '../launch-ledger.js';
 import { mandate } from '../agent-defaults.js';
 import { projectRoutineTools, type RoutineToolProjection } from '../routine-tools.js';
-import { classifyStatus, createActivityCache } from '../status.js';
+import { asksForInput, classifyStatus, createActivityCache } from '../status.js';
 import { scanContext, scanModel } from '../ctx.js';
 
 import { count } from '../counts.js';
 import { listTeamRosters } from '../team-rosters.js';
 import { announceTeamChanges } from './wipeboards-api.js';
-import { checkoutAt, deriveTeams, parkBrief, seedTegami, withAxes, writeGate } from '../tegami.js';
-import { emitSessionBorn, emitSessionWillBorn, collectBirthLines, collectRowFields } from '../sockets.js';
+import { checkoutAt, deriveTeams, parkBrief, seedTegami, withAxes, writeGate, type SessionWithAxes } from '../tegami.js';
+import { collectBirthLines, collectRowFields } from '../sockets.js';
+import { broadcastEvent, listening, pushTeams } from '../ws/events.js';
 import { prepareLaunchDesks } from '../launch-desks.js';
 import { readArrangement } from '../desks/arrangement.js';
 import { listProjectRoots } from '../project-roots.js';
@@ -77,26 +77,6 @@ export function birthEnv(toolPath?: string, socket?: string, installBin: string 
   }
   if (socket) env[OPERATOR_SOCKET_ENV] = socket;
   return Object.keys(env).length ? env : undefined;
-}
-
-export function createWindowedLoader<T>(
-  load: () => Promise<T>,
-  windowMs: number,
-  now: () => number = Date.now,
-): () => Promise<T> {
-  let window = -1;
-  let shared: Promise<T> | null = null;
-  return () => {
-    const current = Math.floor(now() / windowMs);
-    if (!shared || current !== window) {
-      window = current;
-      shared = load().catch((error) => {
-        shared = null;
-        throw error;
-      });
-    }
-    return shared;
-  };
 }
 
 async function birthCampaign(team: string, explicit = ''): Promise<string> {
@@ -228,35 +208,66 @@ export function mikaReadinessFromPane(text: string): 'ready' | 'starting' | 'act
   return state === 'awaiting-input' ? 'action_required' : state === null ? 'starting' : 'ready';
 }
 
+// The pane is read for two things a journal cannot state: whether a dialog is open, and
+// the CLI's own context gauge. What the Agent is DOING comes from its journal, through the
+// transcript part's row field.
+const loadPaneStatus = createActivityCache(async (name: string) => {
+  const text = await capturePane(name, 0);
+  return {
+    asking: asksForInput(text),
+    ctx: scanContext(text),
+    model: scanModel(text),
+  };
+});
+
+// The home rows for one session listing: what /events pushes as {t:'home', rows}, from the
+// listing its tick already took.
+export function homeRows(list: SessionWithAxes[]) {
+  return Promise.all(
+    list.map(async (s) => {
+      const [pane, contributed, tegami] = await Promise.all([
+        loadPaneStatus(s.name, s.activity).catch(() => ({ asking: false, ctx: null, model: null })),
+        collectRowFields(s.name),
+        readTegami(s.name),
+      ]);
+      const { asking, ...reading } = pane;
+      return {
+        ...s,
+        ...reading,
+        ...contributed,
+        // ONE field, and one precedence: an Agent stopped at a question is `working` as
+        // far as its journal knows, and `working` is the wrong thing to tell the person
+        // whose answer it is waiting for.
+        stance: asking ? 'asking' : (contributed.stance ?? 'unknown'),
+        ...(tegami ? { tegami } : {}),
+      };
+    }),
+  );
+}
+
+// Mika is ready when her pane says so, and nothing announces that. While she is starting
+// and a browser is connected, the server looks again at the pace a tab used to ask, and
+// pushes {t:'mika', ...ready} each time the answer changes, until it is not starting.
+let watchingMika: Promise<void> | null = null;
+export function watchMika(observe: () => Promise<{ state: string } & Record<string, unknown>>, from: { state: string }, paceMs = 350): Promise<void> | null {
+  if (watchingMika || from.state !== 'starting') return watchingMika;
+  watchingMika = (async () => {
+    let last = from.state;
+    while (listening()) {
+      await new Promise((resolve) => setTimeout(resolve, paceMs));
+      const ready = await observe().catch(() => null);
+      if (!ready) return;
+      if (ready.state !== last) broadcastEvent({ t: 'mika', ...ready });
+      last = ready.state;
+      if (ready.state !== 'starting') return;
+    }
+  })().finally(() => { watchingMika = null; });
+  return watchingMika;
+}
+
 export function registerLaunch(app: express.Express): LaunchControl {
   type MikaReady = Awaited<ReturnType<LaunchControl['ensureMika']>>;
   let mikaStarting: Promise<MikaReady> | null = null;
-  const loadPaneStatus = createActivityCache(async (name: string) => {
-    const text = await capturePane(name, 0);
-    return {
-      status: classifyStatus(text),
-      ctx: scanContext(text),
-      model: scanModel(text),
-    };
-  });
-  const loadHome = createWindowedLoader(async () => {
-    const list = await withAxes(await listSessions());
-    return Promise.all(
-      list.map(async (s) => {
-        const [pane, contributed, tegami] = await Promise.all([
-          loadPaneStatus(s.name, s.activity).catch(() => ({ status: null, ctx: null, model: null })),
-          collectRowFields(s.name),
-          readTegami(s.name),
-        ]);
-        return {
-          ...s,
-          ...pane,
-          ...contributed,
-          ...(tegami ? { tegami } : {}),
-        };
-      }),
-    );
-  }, 2_000);
 
   app.get('/api/launch-seed', async (req, res) => {
     try {
@@ -299,7 +310,7 @@ export function registerLaunch(app: express.Express): LaunchControl {
       if (await sessionExists(MIKA_SESSION)) return res.json({ ok: true, name: MIKA_SESSION, already: true });
       try {
         mikaHome = await ensureMikaHome();
-        if (loader === RONIN_HELPER_LOADER) await ensureRoninHelpersTeam();
+        if (loader === RONIN_HELPER_LOADER) { await ensureRoninHelpersTeam(); void pushTeams(); }
         mikaSelection = await resolveConfiguredMikaModel();
       } catch (error) {
         if (error instanceof MikaUnavailable) {
@@ -404,7 +415,6 @@ export function registerLaunch(app: express.Express): LaunchControl {
     }
 
     try {
-      await emitSessionWillBorn(resolved.name); // rireki resets a reused name's stale tape here
       const launchWords = resolved.session_type === 'bare_metal_agent' ? (form.prompt ?? '') : resolved.brief;
       launch = resolved.agent ? await launchArgv(resolved.cmd, launchWords) : { argv: [], parked: false };
       if (resolved.agent && !launch.argv.length) {
@@ -413,8 +423,6 @@ export function registerLaunch(app: express.Express): LaunchControl {
           error: `Could not find ${resolved.cmd.trim().split(/\s+/)[0]} on this machine. Install it from ⚙ Configuration, then launch again.`,
         });
       }
-      const providerSession = await newProviderSession(resolved.launchAgent, launch.argv);
-      launch.argv = providerSession.argv;
       routineTools = resolved.agent
         ? await projectRoutineTools(
             resolved.name,
@@ -431,17 +439,14 @@ export function registerLaunch(app: express.Express): LaunchControl {
       const transcriptOn = (await readCampaign(campaignId))?.config.services.parts.terminal_transcript === true;
       await createSession(resolved.name, resolved.dir, {
         agent: resolved.agent,
+        cli: resolved.launchAgent,
+        team: resolved.team,
         exempt: resolved.capExempt,
         argv: launch.argv,
         // Told at birth, the way tmux tells every shell where its server is: the socket
         // this operator bound. A process that bound none (a dev run) says nothing, and the
         // newborn's tools use the default path.
-        env: houseSeat === 'mika'
-          ? {
-              ...(birthEnv(routineTools?.path, boundOperatorSocket(), agentBinDir(), process.env.PATH ?? '', true) ?? {}),
-              RONIN_MACHINE_SETTINGS_AUTHORITY: 'mika',
-            }
-          : birthEnv(routineTools?.path, boundOperatorSocket(), agentBinDir(), process.env.PATH ?? ''),
+        env: birthEnv(routineTools?.path, boundOperatorSocket(), agentBinDir(), process.env.PATH ?? '', houseSeat === 'mika'),
         key: birthKey || undefined,
         // The Services switch as resolved for THIS Agent at birth (campaign < team < form):
         // off means RIREKI never records it. Set here and never again — nothing cascades
@@ -466,7 +471,6 @@ export function registerLaunch(app: express.Express): LaunchControl {
       if (form.team_lead && resolved.team) await setLeads(resolved.name, [resolved.team]);
       if (resolved.project_root && resolved.session_type !== 'bare_metal_agent') await setProjectRoot(resolved.name, resolved.project_root);
       await setCampaign(resolved.name, campaignId);
-      if (providerSession.id) await setProviderSessionId(resolved.name, providerSession.id);
       if (resolved.session_type === 'cowork_agent') {
         await seedTegami(
           resolved.name,
@@ -488,12 +492,7 @@ export function registerLaunch(app: express.Express): LaunchControl {
     }
 
     count('born', { name: resolved.name, born: 'launch' });
-    emitSessionBorn({
-      name: resolved.name,
-      team: resolved.team,
-      root: resolved.project_root,
-      cmd: resolved.cmd,
-    });
+
 
     if (resolved.session_type === 'bare_metal_agent') {
       res.json({
@@ -518,6 +517,7 @@ export function registerLaunch(app: express.Express): LaunchControl {
         tags: resolved.tags,
         team_lead: !!form.team_lead && !!resolved.team,
         kind: resolved.kind,
+        mandate: resolved.mandate,
         behaviours: resolved.behaviours,
         ignored: [...new Set([...accepted.ignored, ...resolved.ignored])].sort(),
         undelivered: [...new Set(resolved.undelivered)].sort(),
@@ -600,42 +600,6 @@ export function registerLaunch(app: express.Express): LaunchControl {
     }
   });
 
-  app.get('/api/home', async (_req, res) => {
-    try {
-      res.json(await loadHome());
-    } catch (e) {
-      res.status(500).json({ error: String((e as Error)?.message ?? e) });
-    }
-  });
-
-  app.get('/api/session-max', async (_req, res) => {
-    try {
-      res.json({ max: await readMax(), live: await liveCount() });
-    } catch (e) {
-      res.status(500).json({ error: String((e as Error)?.message ?? e) });
-    }
-  });
-
-  app.get('/api/owner', async (_req, res) => {
-    try {
-      res.json({ name: await readOwner() });
-    } catch (e) {
-      res.status(500).json({ error: String((e as Error)?.message ?? e) });
-    }
-  });
-
-  app.put('/api/session-max', async (req, res) => {
-    const raw = req.body?.max;
-    const n = typeof raw === 'number' ? raw : Number(raw);
-    if (!Number.isFinite(n) || n < 0 || !Number.isInteger(n)) {
-      return res.status(400).json({ error: 'The session max is a whole number, 0 or more (0 = no limit).' });
-    }
-    try {
-      res.json({ max: await writeMax(n), live: await liveCount() });
-    } catch (e) {
-      res.status(500).json({ error: String((e as Error)?.message ?? e) });
-    }
-  });
 
   app.post('/api/session', async (req, res, next) => {
     const name = String(req.body?.name ?? '').trim();
@@ -709,8 +673,10 @@ export function registerLaunch(app: express.Express): LaunchControl {
   };
   app.post('/api/mika/ready', async (req, res) => {
     const intent = req.body?.intent === 'setup_provider_ready' ? 'setup_provider_ready' : 'help';
-    const ready = await ensureMika(intent, isMikaTab(req.body?.tab) ? req.body.tab : '');
+    const tab = isMikaTab(req.body?.tab) ? req.body.tab : '';
+    const ready = await ensureMika(intent, tab);
     res.status(ready.ok ? 200 : ready.state === 'starting' ? 202 : 409).json(ready);
+    watchMika(() => ensureMika(intent, tab), ready);
   });
   return { ensureMika };
 }

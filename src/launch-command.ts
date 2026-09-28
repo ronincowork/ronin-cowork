@@ -18,6 +18,18 @@ export interface CommandRequest {
 }
 
 const offer = (names: string[]): string => names.join(', ') || 'nothing yet (see ⚙ Configuration)';
+// Exact refreshed ids resolve to their joined row. A CLI-supported name saved before the
+// refresh inventory existed is not Ronin's alias to rewrite; it is passed to that CLI.
+const matchingModel = (specs: readonly SessionLaunchSpec[], value: string): SessionLaunchSpec | undefined => {
+  return specs.find((spec) => spec.model === value);
+};
+
+const passthroughModel = (specs: readonly SessionLaunchSpec[], value: string): string | undefined => {
+  if (!/^[A-Za-z0-9._:/@+-]+$/.test(value)) return undefined;
+  const template = specs.find((spec) => spec.model !== 'native')?.cmd;
+  const argv = template?.match(/^(.*?\s(?:--model|-m)(?:=|\s+))(\S+)(.*)$/);
+  return argv ? `${argv[1]}${value}${argv[3]}` : undefined;
+};
 
 export interface MergedSessionsDefaults {
   sessions: SessionsDefaults;
@@ -70,8 +82,9 @@ export function resolveLaunchCommand(req: CommandRequest): { cmd: string; source
   }
 
   if (model) {
-    const named = (within.find((s) => s.model === model && s.provider === dflt?.provider)
-      ?? within.find((s) => s.model === model))?.cmd;
+    const preferred = within.filter((s) => s.provider === dflt?.provider);
+    const named = matchingModel(preferred, model)?.cmd ?? matchingModel(within, model)?.cmd
+      ?? (provider ? passthroughModel(within, model) : undefined);
     if (!named) {
       const whose = provider ? `${provider} offers` : "this box's provider catalog offers";
       throw new Error(`Unknown model "${model}" — ${whose}: ${offer([...new Set(within.map((s) => s.model))])}.`);
@@ -81,13 +94,14 @@ export function resolveLaunchCommand(req: CommandRequest): { cmd: string; source
 
   if (provider) {
     const preferred = req.sessions?.by_provider?.[provider] ?? '';
-    const chosen = preferred ? within.find((s) => s.model === preferred)?.cmd : undefined;
+    const chosen = preferred ? matchingModel(within, preferred)?.cmd ?? passthroughModel(within, preferred) : undefined;
     if (chosen) return { cmd: chosen, source: 'settei_provider' };
     return { cmd: providerDefault(within, provider)!.cmd, source: 'system' };
   }
 
   const installed = dflt?.provider && dflt?.model
-    ? specs.find((s) => s.provider === dflt.provider && s.model === dflt.model)?.cmd
+    ? matchingModel(specs.filter((s) => s.provider === dflt.provider), dflt.model)?.cmd
+      ?? passthroughModel(specs.filter((s) => s.provider === dflt.provider), dflt.model)
     : undefined;
   const providerNative = dflt?.provider ? providerDefault(specs, dflt.provider)?.cmd : undefined;
   return { cmd: installed ?? providerNative ?? defaultAgentCommand(), source: 'system' };

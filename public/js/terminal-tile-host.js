@@ -1,4 +1,4 @@
-/* One lifecycle owner for the existing Tile transport/render machinery. */
+/* One lifecycle owner for a Tile: make, mount, park, hide, fit, destroy. */
 import { Tile } from './tile.js';
 import { tiles } from './state.js';
 
@@ -12,7 +12,10 @@ export function createTerminalTileHost(options = {}) {
 
   const ensure = () => {
     if (tile) return tile;
-    tile = new Tile(Number(options.index) || 0, { onMinimize: options.onMinimize });
+    tile = new Tile({
+      onMinimize: options.onMinimize,
+      transcriptCache: options.transcriptCache,
+    });
     tiles.push(tile);
     tile.el.classList.add('wk-hosted-tile');
     // Consumer actions ride the Tile's own head row, beside its buttons — this host is
@@ -26,14 +29,8 @@ export function createTerminalTileHost(options = {}) {
     const current = ensure();
     parked = false;
     el.hidden = false;
-    if (session && current.session !== session) current.connect(session);
+    if (session && current.session !== session && current.connect(session) === false) return false;
     current.doFit();
-    return current;
-  };
-  const switchSession = (session) => {
-    if (!session) return park();
-    const current = mount();
-    if (current.session !== session) current.connect(session);
     return current;
   };
   const park = () => {
@@ -46,18 +43,19 @@ export function createTerminalTileHost(options = {}) {
    *  the transport decision and stays its own verb. */
   const hide = () => { el.hidden = true; };
   const fit = () => { if (!parked) tile?.doFit(); };
-  const send = (text) => !parked && !!tile?.sendRaw(String(text));
   const destroy = () => {
     if (!tile) return;
+    tile.unsubscribeHome?.();
+    tile.docView?.dispose();
     tile.wire?.close();
+    tile.transcriptView?.dispose();
     tile.ro?.disconnect();
     tile.composer?.dispose();
-    if (tile.kakiTimer) clearInterval(tile.kakiTimer);
     tile.el.remove();
     const at = tiles.indexOf(tile);
     if (at >= 0) tiles.splice(at, 1);
     tile = null;
     parked = true;
   };
-  return { el, mount, switchSession, park, hide, destroy, fit, send, get session() { return tile?.session || ''; }, get parked() { return parked; } };
+  return { el, mount, park, hide, destroy, fit, get parked() { return parked; } };
 }

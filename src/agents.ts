@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { execFile } from './spawn-broker.js';
-import { readAgentLaunches, renderLaunch } from './agent-launches.js';
+import { readAgentLaunches, renderLaunch, type AgentLaunches } from './agent-launches.js';
 
 const pexec = execFile;
 
@@ -10,13 +10,27 @@ export interface AgentScreen {
   ready: readonly string[];
 }
 
+/**
+ * HOW A CLI PUBLISHES ITS MODEL LIST — declared here, read by `readModels` in
+ * `src/provider-summary.ts` on Refresh all. `claude-cache` and `codex-cache` are the two
+ * cache files those CLIs keep; `command` runs the CLI with the argv and reads the list it
+ * prints; `none` says plainly that Ronin has no way to read one, so Model: Native is the
+ * only choice. A new way to read a list is a new key here, never an `if` on a CLI id.
+ */
+export type ModelsSource =
+  | { read: 'claude-cache' }
+  | { read: 'codex-cache' }
+  | { read: 'command'; argv: readonly string[] }
+  | { read: 'none' };
+
 export interface AgentOperations {
   install: string;
   update: { shell: string; argv: readonly string[] };
   selfUpdates: boolean;
   version: readonly string[];
+  models: ModelsSource;
   session: {
-    discovery: 'claude-history' | 'codex-fds' | 'unsupported';
+    discovery: 'explicit-argv' | 'unsupported';
   };
 }
 
@@ -31,7 +45,8 @@ export const AGENTS = [
       update: { shell: '', argv: ['update'] },
       selfUpdates: true,
       version: ['--version'],
-      session: { discovery: 'claude-history' },
+      models: { read: 'claude-cache' },
+      session: { discovery: 'explicit-argv' },
     } as AgentOperations,
     parked: '',
     credentials: ['.claude/.credentials.json'],
@@ -47,7 +62,8 @@ export const AGENTS = [
       update: { shell: 'npm install -g @openai/codex@latest', argv: [] },
       selfUpdates: false,
       version: ['--version'],
-      session: { discovery: 'codex-fds' },
+      models: { read: 'codex-cache' },
+      session: { discovery: 'unsupported' },
     } as AgentOperations,
     parked: '',
     credentials: ['.codex/auth.json'],
@@ -63,6 +79,7 @@ export const AGENTS = [
       update: { shell: 'npm install -g @google/gemini-cli@latest', argv: [] },
       selfUpdates: true,
       version: ['--version'],
+      models: { read: 'none' },
       session: { discovery: 'unsupported' },
     } as AgentOperations,
     parked: '',
@@ -70,7 +87,7 @@ export const AGENTS = [
     screen: { busy: [], asking: ['●\\s*\\d+\\.\\s'], ready: [] },
   },
   // [cli] auto_update defaults true: https://github.com/xai-org/grok-build/blob/main/crates/codegen/xai-grok-pager/docs/user-guide/05-configuration.md
-  { id: 'grok', cmd: 'grok', label: 'Grok CLI', operations: { install: 'npm install -g @xai-official/grok', update: { shell: 'npm install -g @xai-official/grok@latest', argv: [] }, selfUpdates: true, version: ['--version'], session: { discovery: 'unsupported' } } as AgentOperations, parked: '', credentials: ['.grok/auth.json'], screen: { busy: [], asking: [], ready: [] } },
+  { id: 'grok', cmd: 'grok', label: 'Grok CLI', operations: { install: 'npm install -g @xai-official/grok', update: { shell: 'npm install -g @xai-official/grok@latest', argv: [] }, selfUpdates: true, version: ['--version'], models: { read: 'command', argv: ['models'] }, session: { discovery: 'unsupported' } } as AgentOperations, parked: '', credentials: ['.grok/auth.json'], screen: { busy: [], asking: [], ready: [] } },
   {
     id: 'hermes',
     cmd: 'hermes',
@@ -81,6 +98,7 @@ export const AGENTS = [
       update: { shell: '', argv: ['update'] },
       selfUpdates: false,
       version: ['--version'],
+      models: { read: 'none' },
       session: { discovery: 'unsupported' },
     } as AgentOperations,
     credentials: [],
@@ -152,13 +170,50 @@ export async function launchArgv(cmd: string, brief: string): Promise<LaunchArgv
   return { argv: [bin, ...rest], parked: !!brief };
 }
 
-export async function newProviderSession(agent: string, argv: readonly string[]): Promise<{ argv: string[]; id: string }> {
-  const spec = AGENTS.find((a) => a.id === agent);
-  if (!spec) return { argv: [...argv], id: '' };
-  const grammar = await readAgentLaunches(spec.id);
-  if (!grammar.newSessionId.length) return { argv: [...argv], id: '' };
-  const id = randomUUID();
-  return { argv: [argv[0], ...renderLaunch(grammar.newSessionId, { session_id: id }), ...argv.slice(1)], id };
+export interface ProviderLaunch {
+  argv: string[];
+  id: string;
+  strategy: 'minted' | 'isolated' | 'unbound';
+  grammar?: AgentLaunches;
+}
+
+/** Read identity using the same grammar that writes it. Never inspect the prompt text. */
+function namedSession(argv: readonly string[], template: readonly string[]): string {
+  if (!template.includes('{session_id}')) return '';
+  for (let start = 1; start <= argv.length - template.length; start++) {
+    let id = '';
+    const matches = template.every((part, index) => {
+      const value = argv[start + index]!;
+      if (part === '{session_id}') { id = value; return !!value && !value.startsWith('-'); }
+      return part === value;
+    });
+    if (matches) return id;
+  }
+  // Accept the conventional --flag=<id> spelling of a declared two-token option.
+  if (template.length === 2 && template[0]!.startsWith('--') && template[1] === '{session_id}') {
+    const prefix = template[0] + '=';
+    const value = argv.slice(1).find(arg => arg.startsWith(prefix))?.slice(prefix.length) ?? '';
+    if (value && !value.startsWith('-')) return value;
+  }
+  return '';
+}
+
+export async function newProviderSession(agent: string, argv: readonly string[]): Promise<ProviderLaunch> {
+  const grammar = argv.length ? await readAgentLaunches(agent || 'terminal').catch((e: NodeJS.ErrnoException) => {
+    if (e.code === 'ENOENT') return undefined; throw e;
+  }) : undefined;
+  const unchanged = { argv: [...argv], id: '', grammar };
+  if (!grammar) return { ...unchanged, strategy: 'unbound' };
+  const resume = grammar.resume.slice(1);
+  const id = namedSession(argv, grammar.newSessionId) || namedSession(argv, resume);
+  if (id) return { ...unchanged, id, strategy: 'minted' };
+  // A selector without a literal id (interactive resume, --last, etc.) is not a new
+  // conversation. Preserve it, but do not assign or claim an invented identity.
+  if ([grammar.newSessionId[0], resume[0]].some(flag => flag && argv.slice(1).some(arg => arg === flag || arg.startsWith(flag + '='))))
+    return { ...unchanged, strategy: 'unbound' };
+  if (!grammar.newSessionId.length) return { ...unchanged, strategy: grammar.isolation ? 'isolated' : 'unbound' };
+  const assigned = randomUUID();
+  return { argv: [argv[0]!, ...renderLaunch(grammar.newSessionId, { session_id: assigned }), ...argv.slice(1)], id: assigned, strategy: 'minted', grammar };
 }
 
 export async function resumeAgentArgv(agent: string, id: string): Promise<string[]> {

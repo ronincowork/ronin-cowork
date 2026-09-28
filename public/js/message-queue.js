@@ -1,6 +1,7 @@
 /* Letters waiting only because the target currently has a draft or dialog. */
 import { t } from './lexicon.js';
-import { status, toast } from './ui.js';
+import { toast } from './ui.js';
+import { subscribe } from './store.js';
 
 const el = (tag, cls, text) => {
   const node = document.createElement(tag);
@@ -9,13 +10,8 @@ const el = (tag, cls, text) => {
   return node;
 };
 
-const ageOf = (at) => {
-  const seconds = Math.max(0, Math.floor((Date.now() - Date.parse(at)) / 1_000));
-  if (!Number.isFinite(seconds) || seconds < 5) return t('messages.age_now', 'just now');
-  if (seconds < 60) return t('messages.age_short_seconds', '{seconds}s', { seconds });
-  const minutes = Math.floor(seconds / 60);
-  return t('messages.age_short_minutes', '{minutes}m {seconds}s', { minutes, seconds: seconds % 60 });
-};
+/** When the message arrived, as a clock time: it stays true however long the card is up. */
+const arrivedAt = (at) => new Date(at).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
 const typeOf = (source) => ({
   tell: t('messages.type_tell', 'Agent tell'),
@@ -33,10 +29,9 @@ export function buildMessageQueue(host, onCount = () => {}) {
   dismissAll.type = 'button';
   const tools = el('div', 'mq-tools');
   tools.append(dismissAll);
-  const reconnecting = status('mq-reconnecting');
   const board = el('div', 'mq-board');
   const empty = el('p', 'mq-empty', t('messages.empty', 'No messages are waiting.'));
-  host.append(note, tools, reconnecting.el, board);
+  host.append(note, tools, board);
   let messages = [];
 
   const dismiss = async (ids) => {
@@ -48,16 +43,10 @@ export function buildMessageQueue(host, onCount = () => {}) {
     if (!response.ok || body.ok === false) throw new Error(body.error || response.statusText);
   };
 
-  const render = async () => {
-    try {
-      const response = await fetch('/api/messages');
-      if (!response.ok) throw new Error(response.statusText);
-      messages = (await response.json()).messages || [];
-    } catch {
-      reconnecting.say(t('messages.reconnecting', 'Reconnecting…'), 'busy');
-      return;
-    }
-    reconnecting.say('');
+  // The queue is the store's `messages`: held from connect, pushed on every post and
+  // dismissal, so a dismissal is answered by the push that no longer carries it.
+  const render = (list) => {
+    messages = list;
     board.replaceChildren();
     tools.hidden = !messages.length;
     onCount(messages.length);
@@ -67,7 +56,7 @@ export function buildMessageQueue(host, onCount = () => {}) {
       const card = el('article', 'mq-card mq-stuck');
       const head = el('div', 'mq-head');
       head.append(el('strong', '', typeOf(message.source)), el('span', 'mq-state', t('messages.state_age', '{state} · {age}', {
-        state: t('messages.waiting', 'Waiting'), age: ageOf(message.created_at),
+        state: t('messages.waiting', 'Waiting'), age: arrivedAt(message.created_at),
       })));
       const route = el('dl', 'mq-route');
       route.append(
@@ -77,7 +66,7 @@ export function buildMessageQueue(host, onCount = () => {}) {
       const button = el('button', 'cc-btn', t('messages.dismiss', 'Dismiss'));
       button.type = 'button';
       button.addEventListener('click', async () => {
-        try { await dismiss([message.id]); await render(); }
+        try { await dismiss([message.id]); }
         catch (error) { toast(t('messages.action_failed', 'Message action failed — {reason}', { reason: error.message }), false); }
       });
       const actions = el('div', 'mq-actions'); actions.append(button);
@@ -87,11 +76,11 @@ export function buildMessageQueue(host, onCount = () => {}) {
   };
 
   dismissAll.addEventListener('click', async () => {
-    try { await dismiss(dismissalIds(messages)); await render(); }
+    try { await dismiss(dismissalIds(messages)); }
     catch (error) { toast(t('messages.action_failed', 'Message action failed — {reason}', { reason: error.message }), false); }
   });
-  let timer = null;
-  const enter = () => { void render(); if (!timer) timer = setInterval(() => void render(), 2_000); };
-  const leave = () => { clearInterval(timer); timer = null; };
+  let stop = null;
+  const enter = () => { stop?.(); stop = subscribe('messages', render); };
+  const leave = () => { stop?.(); stop = null; };
   return { enter, leave, destroy: leave };
 }

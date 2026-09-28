@@ -10,7 +10,6 @@ through to `professional_en`.
 - **campaign:** Campaign
 - **campaigns:** Campaigns
 - **squad:** Squad
-- **player_one:** Player One
 - **team_kit:** Team kit
 - **loadout:** Loadout
 - **behaviours:** Perks
@@ -21,9 +20,6 @@ through to `professional_en`.
 - **go:** GLHF
 - **save_template:** Save build
 - **publish:** Publish build
-- **tier.stock:** Stock
-- **tier.yours:** Yours
-- **tier.library:** Community
 - **kind.coding:** Coding
 - **kind.household:** Household
 - **kind.personal:** Personal

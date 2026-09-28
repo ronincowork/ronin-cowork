@@ -44,18 +44,28 @@ provider: the catalog (whose it is, what it offers) and the CLI registry (how it
 resumes and is recognised in a tile). The join lives in this data and nowhere else — no
 command-word match, no map in a client.
 
-Then a table, one row per model, in the order the picker offers them:
+Then a table, one row per model id. It is descriptive metadata keyed by the id the CLI
+reports; it never says what is available, and it carries no name of its own:
 
 | Column | Meaning |
 |---|---|
-| `model` | the provider's real model id, passed to the CLI unchanged — never a euphemism |
+| `model` | the provider's concrete model id, passed to the CLI unchanged — the picker key |
 | `tier` | **light** · **standard** · **frontier**: the vendor's own cost and capability band |
-| `default` | `yes` on the one row a launch naming this provider and no model gets when ⚙ Configuration holds no preference for it; the first row when no row says so |
 | `cost` | the public list price per million tokens, input · output, with the month it was read in parentheses — a dated reading, never a contract |
 | `good at` · `not good at` | one line each, from the vendor's positioning and the public record |
 
-`src/model-providers.ts` parses this shape, joins it to the CLI's Agent page, and returns
-resolved commands. The catalog deliberately contains no CLI syntax.
+**Two names per listed model, and no more (owner, 2026-09-25).** `model` is the id every
+new picker choice uses. The name shown beside it is the CLI's own display name,
+read with its list — "Opus 5.5", "GPT-5.6-Sol" — so the version is always in the title;
+a CLI that gives no name shows the id. The catalog carries no display column: a third name
+is what hid the version until 2026-09-25. There is no default column either: Model: Native
+is every provider's default in every path, and a preference is ⚙ Configuration's to hold.
+A saved or explicitly supplied CLI model name absent from the refreshed list is passed
+unchanged to the named provider. Ronin does not maintain or rewrite an alias map.
+
+`src/model-providers.ts` parses this shape and, in `providerRows`, joins it to what each
+CLI listed and to the CLI's Agent page for the command. The catalog deliberately contains
+no CLI syntax.
 
 **Shadowing.** The shipped file is stock and an upgrade replaces it. A copy at
 `$(ronin-store catalogs)/MODEL_PROVIDERS.md` is an **overlay** on it, merged per
@@ -82,9 +92,11 @@ is the owner's to refresh and carries its own `updated` line. Ronin shows the da
 stale or not; it never hides it and never guesses a newer one. Each cost also carries the
 month it was read.
 
-**One read for the client.** `GET /api/provider-catalog` answers the catalog object whole,
-`{ origin, path, updated, providers: [{ provider, cli, label, models: [...] }] }` — the same
-object `readProviderCatalog()` gives the server, and the only catalog route there is. The Google, xAI and Nous
+**One read for the client.** `GET /api/provider-catalog` answers the catalog's own facts,
+the record's dates and every provider with its rows already joined —
+`{ origin, path, updated, stock_updated, withdrawn, measured_at, refreshed_at, providers: [{ provider, cli, label, cli_label, operational, off, native, launch_modes, models: [rows] }] }`
+(`providerCatalogAnswer`) — the only catalog route there is, and since 2026-09-25 the only
+join: no client joins anything. The Google, xAI and Nous
 sections are written from their vendors' CLI references and price lists and have not yet
 been launched end to end through Ronin; the first real launch of each cell is its proof,
 per the checklist below.
@@ -119,26 +131,39 @@ What this machine *has* is measured, not derived on every read. The Campaign rec
 | Field | Meaning |
 |---|---|
 | `measured_at` | when the machine was last asked |
+| `refreshed_at` | when **Refresh all** last ran — every activated CLI's list read, npm asked; `''` when never |
 | `installed` | CLI ids found on the login-shell PATH, with `paths` saying where |
 | `signed_in` | CLI ids whose own credential file is on this machine — presence only, never read |
-| `operational` | CLI ids that can launch: installed, signed in or recorded through **Done**, and holding at least one model in the catalog |
+| `operational` | CLI ids that can launch: installed, signed in or recorded through **Done**, not turned off, and holding at least one model in the catalog |
+| `off` | installed CLI ids the owner turned off; the sign-in is kept |
 | `activated_count` | the size of `operational` — a provider with nothing to launch does not count |
 | `versions` | what each operational/activated CLI said to the registry's `operations.version` argv, per CLI id; an installed but unactivated CLI is not run |
-| `model_lists` | each operational/activated CLI's own readable model list, including the fetching client version and date; Claude and Codex publish caches, while Grok publishes `grok models`; absent, unauthenticated or malformed means only Model: Native, never guessed |
-| `latest` | per CLI id, the newest release its npm package listed and when it was asked — asked only by **Refresh** on the Model providers surface, never by an ordinary measure, since each ask is an outbound request with its own egress line; kept until the next Refresh; absent for a CLI with no npm package to ask |
+| `models` | per CLI id, its own model list as **Refresh all** last read it: `{ read_at, by, rows: [{ id, name }] }` in the CLI's order, `by` the CLI version installed at the read; or `{ read_at, by, rows: [], unavailable }` saying why there is none. Never guessed, never inferred from the catalog |
+| `latest` | per CLI id, the newest release its npm package listed and when it was asked — asked only by **Refresh all**, never by an ordinary measure, since each ask is an outbound request with its own egress line; kept until the next; absent for a CLI with no npm package to ask |
 
-`src/provider-summary.ts` measures and records it. It is written:
+`src/provider-summary.ts` has two writers and one record:
 
-- at Ronin start;
-- after **Done** and after **Cancel** on the Setup Model providers surface (a sign-in
-  closed without Done may still have left a credential file);
-- whenever the Setup **Model providers** surface is opened — that surface paints the record
-  first, then probes behind it with `POST /api/setup/providers/measure` and repaints.
+- `measureAndRecordProviders` — the machine facts; the recorded lists, the last npm answer
+  and `refreshed_at` ride along unchanged. At Ronin start, after **Cancel** on a sign-in (a
+  sign-in closed without Done may still have left a credential file), after Turn off / on,
+  and in the Setup scan.
+- `refreshProviders` — **Refresh all**: the same facts, then every activated CLI's own list
+  read again, then npm asked. The owner's press (`POST /api/setup/providers/refresh`), and
+  once on **Done**, because activating a provider is a press too (owner, 2026-09-25).
+  Never a timer, never on open.
+
+**How a list is read is the registry's declaration.** `AGENTS[].operations.models` in
+`src/agents.ts` names the reader: `claude-cache` (`~/.claude/cache/model-catalog/*-cc.json`,
+`catalog.config.models[].id` and `.name`), `codex-cache` (`~/.codex/models_cache.json`,
+`models[]` with `slug`, `display_name`, and `visibility: list`), `command` (run the CLI with
+the argv and read the list under *Available models:* — Grok), or `none` (Gemini, Hermes:
+Model: Native only, and the surface says so). `readModels` walks that table; no CLI id
+appears in it. A new way to read a list is a new key, never an `if`.
 
 Everything else reads the record through `GET /api/setup/runtime`: Ronin Home's three
 blocks, the Presets gates, the gbrain next step and the selector summaries. A machine that
 has never been measured is measured once on the first read, not guessed. A stale summary
-shows its date. `POST /api/setup/providers/:provider/install` uses the shared installer
+shows its dates. `POST /api/setup/providers/:provider/install` uses the shared installer
 and returns the runtime with its explicit `install_open` session attachment. Setup and
 Settings mount that attachment on the provider page, including first-run sign-in. It stays
 available after the binary appears, until Cancel ends the session and measures again.
@@ -146,11 +171,12 @@ There is no completion hook in the installer; closing the tile, reopening Model 
 or restarting Ronin refreshes the measured installation and credential facts.
 
 Every launchable provider's Agent page declares a bare command. Choosing Native in the
-Model field passes no model choice to the CLI. Named model rows become
-selectable only when that CLI's captured `model_lists` record contains the exact id; the
-catalog may enrich that reported id with tier, cost and descriptions, but cannot make an
-unreported model available. With no readable CLI inventory, Native is the only Model choice;
-Launch mode remains an independent axis.
+Model field passes no model choice to the CLI. A named model row exists only because that
+CLI's list (`models[cli].rows`) reports its id; the catalog may enrich the id with tier,
+cost and descriptions, but cannot make an unreported model available, and a row the CLI
+lists that the catalog does not describe is offered all the same, with the CLI's name and
+no tier. With no list read, Native is the only Model choice; Launch mode remains an
+independent axis.
 
 ## Provider and agent are different axes
 
@@ -201,20 +227,20 @@ Every place the product asks *which provider, and which model* is one control:
 `providerModelPair` in `public/js/form-steps.js`. New Agent, New Team, Add Agent to Team,
 the Campaign's Team and Agent defaults, Team Configuration, ⚙ Configuration (the general default,
 each provider's preferred model, and Mika's row), cowork setup and the Presets rows all call
-it; none keeps a list, a join or a vendor's name of its own. The picker reads the catalog
-itself (`GET /api/provider-catalog`: its origin, its `updated` date, and one entry per
-provider with the vendor's label and its model rows) and what this machine measured of each
-CLI (`GET /api/setup/runtime`, which answers from the Campaign's recorded summary and never
-probes), joined on the catalog's own `cli` field, and it offers:
+it; none keeps a list, a join or a vendor's name of its own. The picker reads the rows the
+server joined (`GET /api/provider-catalog`) and what this machine measured of each CLI
+(`GET /api/setup/runtime`, which answers from the Campaign's recorded summary and never
+probes), and it offers:
 
-- every provider and every model in the catalog, the providers this machine can launch
-  first and the rest after, in catalog order within each group;
-- each model as `<id> · <tier>`, and no further — the tier is the one descriptor carried
-  into the choice. What a model is good at and not good at is the Model providers
-  surface's to show, where the table has room for it; an option line does not, and a
-  description squeezed into one is read by nobody;
-- what this machine cannot launch **disabled, never hidden** — the list teaches what
-  Ronin offers, and a greyed row says *not on this machine*.
+- every provider in the catalog with Native and every model its CLI listed on the last
+  Refresh all, the providers this machine can launch first and the rest after, the
+  CLI's own order within each;
+- each model as `<name> · <tier>`, the id as the value, and no further — the tier is the
+  one descriptor carried into the choice. What a model is good at and not good at is the
+  Model providers surface's to show, where the table has room for it; an option line does
+  not, and a description squeezed into one is read by nobody;
+- what this machine cannot launch **disabled, never hidden** — a greyed row says *not on
+  this machine* or *turned off*. A provider whose list was never read offers Native alone.
 
 Either pick may stand alone: a provider with Model set to Native resolves to the Agent
 page's no-model command; both blank is the level above's answer (the Team's, the Campaign's,
@@ -228,28 +254,29 @@ the first launchable **light** row — there is no name-pattern for "cheap".
 One surface (`public/js/provider-surface.js`), one definition under one type, seated by two
 selector cards: Ronin Setup's **Model providers** and Ronin Settings' **Model providers**
 open the same thing, and both cards read *N providers · M models · K activated here ·
-catalog updated <date>*. Its first face is the whole inventory on the shared stone work
-surface: one stone per CLI the registry knows, wearing its measured state and the vendor it
-serves with its model count, then any catalog provider no registry CLI serves. The header
-says which catalog copy is shown and its date — the catalog is a snapshot, not live data:
-*Catalog updated <date> · prices and models as read then; refreshed with each Ronin update*
-for the stock file, *Your catalog copy, updated <date>* when the owner's store shadows it —
-and when this machine was last measured.
+catalog updated <date>*. At the top sits the one door: **Refresh all model providers**,
+with *Last ran <date>* beside it, or *Never run — every provider offers Native only until
+it runs*. It is the owner's press, never a timer: it measures the machine, reads every
+activated CLI's own model list, and asks npm for each one's newest release. Below it the
+whole inventory on the shared stone work surface: one stone per CLI the registry knows,
+wearing its measured state and the vendor it serves with its model count, then any catalog
+provider no registry CLI serves. The header says which catalog copy is shown and its date —
+the catalog is a snapshot, not live data.
 
 A stone opens that provider, top to bottom: **Yours**, the three measured steps (install ·
 authenticate with the native sign-in tile, Done and Cancel · ready) read from the runtime
 row (`docs/getting-started/setup-workbench.md`, *Activate a provider*); then **The catalog**, the three
-measured facts, dated, and the launchable model table. Model: Native is first and marked as the
-default. Every named row came from the captured CLI inventory; matching catalog metadata
-adds its tier, cost, good-at and not-good-at descriptions, while an uncatalogued CLI model
-keeps the CLI's description. Catalog-only names never enter this table or a selector. A
-list whose `client_version` differs from the installed version is said as not yet re-read;
-Refresh replaces the Campaign's captured inventory. The native sign-in tile is mounted through the
-workbench environment's one shared mount (`public/js/provider-setup-session.js`), which
-both Ronin Setup and Ronin Settings hand their environment, so it works on either seat.
-This surface is the one client that measures: showing it paints the Campaign's recorded
-summary immediately, then probes the machine behind that frame, writes the new summary and
-repaints; its catalog rows are the one picker's read, so the surface and every picker cannot disagree.
+measured facts, one line saying when its list was read and by which CLI version (or why
+there is none, or that Refresh all has not run), and the model table. Model: Native is
+first and marked as the default. Every named row came from the CLI's list, in the CLI's
+order, and its Model cell carries both names: the CLI's own in bold, the id beneath.
+Matching catalog metadata adds tier, cost, good-at and not-good-at; a model the catalog
+does not describe is in the table all the same. Catalog-only names never enter this table
+or a selector. The native sign-in tile is mounted through the workbench environment's one
+shared mount (`public/js/provider-setup-session.js`), which both Ronin Setup and Ronin
+Settings hand their environment, so it works on either seat. Showing the surface paints
+the record; only Refresh all reads. Its rows are the one picker's read, so the surface and
+every picker cannot disagree.
 
 **Activation is the one switch.** It decides whether Ronin spends anything on a
 provider. **Turn off**, on the Ready step, writes Ronin's own `setup.providers.<cli>.off_at`
@@ -263,18 +290,16 @@ both the credential file and `activated_at`, because `operational` is derived fr
 and neither can be unset. A provider never activated is not refused at launch; it opens
 its own sign-in in the tile, as it always has.
 
-**Versions, Refresh, Update — for activated providers only.** A provider that is not
+**Versions, Refresh all, Update — for activated providers only.** A provider that is not
 activated gets nothing spent on it (owner's rule, 2026-09-09): Ronin does not run it, does
-not ask its package source, and offers no control; its step says *Installed* and stops,
-never a stale version and never "not read", since nothing was asked. An activated CLI's
-Install step says its version, which binary said it, and, once **Refresh** has asked, the
-newest release its package source lists: *Installed 0.151.0 · 0.153.4 available · ~/.local/bin/codex*, or *up to date*, or
-*latest unknown: no package source to ask* when its install line names no npm package.
-Refresh lives inside **Check dates**, the box of what is known and when: it measures the
-machine again and asks the npm registry for each operational/activated CLI whose registry
-install line names an npm package — one outbound request each, on the egress record, only
-on this press — and then says what it found with the time, *Checked … — unchanged* or the
-numbers that moved. **Update** runs the registry's `operations.update` line in a temporary
+not ask its package source, does not read its list, and offers no control; its step says
+*Installed* and stops, never a stale version and never "not read", since nothing was asked.
+An activated CLI's Install step says its version, which binary said it, and, once **Refresh
+all** has asked, the newest release its package source lists: *Installed 0.151.0 · 0.153.4
+available · ~/.local/bin/codex*, or *up to date*, or *latest unknown: no package source to
+ask* when its install line names no npm package. Refresh all asks the npm registry for each
+activated CLI whose registry install line names an npm package — one outbound request
+each, on the egress record, only on this press. **Update** runs the registry's `operations.update` line in a temporary
 `provider_setup` session shown in the page exactly as a sign-in is. The same **Cancel** ends
 all three temporary sessions — install, sign-in and update — through one teardown; npm is
 pointed at the owner's own prefix, so no box needs root and the owner
@@ -303,6 +328,11 @@ once. Every distinct agent CLI must define and prove these terminal behaviors:
 The implementation seam is deliberately small:
 
 - `src/status.ts` classifies visible terminal text as ready, working, or awaiting input.
+  Delivery and Mika's startup read use the whole table; the board does not. What an Agent is
+  doing on the roster is its **stance**, derived from the journal by the transcript part and
+  carried on the session row — the one thing still read off the pane for it is `asking`
+  (`asksForInput`), because a dialog writes no journal line in any CLI, and it takes
+  precedence ([Tile](../using-ronin/tile.md)).
 - `src/send.ts` reads the active prompt, types the brief, submits it, and verifies it left.
 - `src/routes/launch.ts` builds the brief and runs that handshake after the CLI starts.
 - `tests/agent-prompts.test.ts` holds terminal fixtures for every supported prompt/dialog

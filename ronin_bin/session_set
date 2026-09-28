@@ -9,15 +9,18 @@ session_set — update one existing live Agent
 
 Usage:
   session_set <name> [--team <team>] [--lead]
-                     [--root <workspace-folder-handle>]
+                     [--root <workspace-folder-handle> | --clear-root]
 
 Only the named facts change. A missing Agent is refused and never created; use
 session_create for a birth. The bare form is refused; use session_check
 for a read. Related: session_check --help; session_create --help;
 team --help
 
---root selects a registered Workspace Folder by its handle (for example, ronin_lab),
-not by its filesystem path. Use `machine-settings project-root list` to read the handles.
+--root changes the session's recorded Workspace Folder handle (for example, ronin_lab),
+not its birth directory or current shell directory. --clear-root clears that record.
+Use `machine-settings project-root list --campaign <id>` to read registered handles,
+or `session_check <name>` to read the current one. The Agent's working repositories
+are separate: use `work-record workspace --help` from that Agent's session.
 EOF
     exit 0 ;;
 esac
@@ -31,16 +34,17 @@ need_value() {
 NAME="${1:-}"
 [ -n "$NAME" ] && [ "${NAME#-}" = "$NAME" ] || die "usage: session_set <name> [options]. Run session_set --help." 2
 shift
-TEAM="" LEAD="" ROOT=""
+TEAM="" LEAD="" ROOT="" ROOT_ACTION=""
 while [ $# -gt 0 ]; do
   case "$1" in
     --team) need_value "$@"; TEAM="$2"; shift 2 ;;
     --lead) LEAD=1; shift ;;
-    --root|--project_root) need_value "$@"; ROOT="$2"; shift 2 ;;
+    --root|--project_root) need_value "$@"; ROOT="$2"; ROOT_ACTION=set; shift 2 ;;
+    --clear-root) ROOT=""; ROOT_ACTION=clear; shift ;;
     *) die "BAD-ARG: $1. Run session_set --help." 2 ;;
   esac
 done
-[ -n "$TEAM$LEAD$ROOT" ] || die "REFUSED: no update named — use session_check \"$NAME\" to read it" 4
+[ -n "$TEAM$LEAD$ROOT_ACTION" ] || die "REFUSED: no update named — use session_check \"$NAME\" to read it" 4
 
 . "$TOOL_DIR/ronin-http.sh"
 ronin_connect || exit $?
@@ -72,10 +76,10 @@ if [ -n "$LEAD" ]; then
   printf '%s' "$out" | grep -q '"ok":true' || die "REFUSED: $(printf '%s' "$out" | python3 -c 'import sys,json; print(json.load(sys.stdin).get("error","?"))' 2>/dev/null)" 4
   did="$did 人=$t"
 fi
-if [ -n "$ROOT" ]; then
+if [ -n "$ROOT_ACTION" ]; then
   body=$(ROOT="$ROOT" python3 -c 'import json,os; print(json.dumps({"project_root": os.environ["ROOT"]}))')
   out=$(api -X POST --data "$body" "$url/api/sessions/$NAME/project-root") || die "UNREACHABLE: Ronin did not answer at $url" 5
   printf '%s' "$out" | grep -q '"ok":true' || die "REFUSED: $(printf '%s' "$out" | python3 -c 'import sys,json; print(json.load(sys.stdin).get("error","?"))' 2>/dev/null)" 4
-  did="$did root=$ROOT"
+  did="$did recorded_root=${ROOT:-cleared} (birth and shell directory unchanged)"
 fi
 echo "UPDATED $NAME$did"

@@ -41,7 +41,7 @@ export async function loadCampaigns() {
 /** Every Campaign the last read returned, archived ones included. */
 export const campaigns = () => read?.campaigns ?? [];
 /** The ones a selector may offer: archived hides by default and kills nothing. */
-export const visibleCampaigns = () => campaigns().filter((row) => row.state !== 'archived');
+const visibleCampaigns = () => campaigns().filter((row) => row.state !== 'archived');
 export const campaignById = (id) => campaigns().find((row) => row.id === id) || null;
 
 export const initialCampaignId = () => campaigns()[0]?.id || '';

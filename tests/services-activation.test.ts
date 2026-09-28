@@ -81,8 +81,9 @@ test('workspace status checks Shiwake only after the owner presses Check status'
   assert.match(source, /activation\/poll/);
   assert.equal((source.match(/activation\/poll/g) || []).length, 1,
     'the Shiwake poll endpoint appears only in the Check status click handler');
-  assert.match(source, /visibilityState[\s\S]*refresh/,
-    'returning to the page may refresh local state without polling Shiwake');
+  assert.doesNotMatch(source, /visibilityState|setInterval/, 'returning to the page asks nothing; the push and the socket\'s reopen keep it current');
+  assert.match(source, /store\.listen\('services-setup'/);
+  assert.match(source, /store\.onOpen\(\(\) => \{ void refresh\(\); \}\)/);
 });
 
 test('the dropdown stops showing a confirmation address once confirmation is complete', () => {

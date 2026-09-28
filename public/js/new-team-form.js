@@ -1,5 +1,6 @@
 /* part of the ronin-cowork client — see js/README.md */
 import { request } from './request.js';
+import { S } from './state.js';
 import { t } from './lexicon.js';
 import { ask } from './ask.js';
 import { ruledRows } from './glyphs.js';
@@ -9,7 +10,7 @@ import { agentPicks, agentRow, createAgentRows } from './team-agents.js';
 import { openLaunchHandoff } from './launch-handoff.js';
 import { launchTeamAgents } from './team-loader.js';
 import {
-  createStep, el, loadProviderCatalog, mandateWord, modelAvailabilityFact, modelLabel, providerCatalog, readingRows, tagRow, templateTray, tierWord,
+  createStep, el, loadProviderCatalog, mandateWord, modelLabel, providerCatalog, readingRows, tagRow, templateTray, tierWord,
 } from './form-steps.js';
 import { closeWorkspaceTab, reserveWorkspaceTab } from './workspace.js';
 
@@ -70,11 +71,7 @@ export function createNewTeamFormView(kit, { created = null, consumed = null, em
     });
   const modelRows = (provider) => providerCatalog().rows.filter((row) => row.provider === provider).map((row) => ({
     v: row.model, l: modelLabel(row), word: tierWord(row.tier), sub: row.cost || '',
-    off: !row.operational
-      ? (row.off ? t('forms.reason_turned_off', 'turned off') : t('forms.reason_not_on_machine', 'not on this machine'))
-      : !row.selectable
-        ? modelAvailabilityFact(row)
-        : undefined,
+    off: row.selectable ? undefined : row.off ? t('forms.reason_turned_off', 'turned off') : t('forms.reason_not_on_machine', 'not on this machine'),
   }));
 
   /** What a template authors, as one string — the dirty test compares against it. */
@@ -241,8 +238,8 @@ export function createNewTeamFormView(kit, { created = null, consumed = null, em
     ] },
     { group: t('where.label', 'Where it works'), fields: [
       { key: 'root', label: t('where.born_in', 'Born in'), blank: t('new_team.root_default', 'The box’s default'), options: () => rootRows() },
-      { key: 'repos', label: t('where.additional', 'Additional workspaces'), many: true, after: 'root',
-        options: (value) => rootRows(true).filter((row) => row.v !== value.root), row: branchField },
+      { key: 'repos', label: t('new_agent.workspaces', 'Workspaces'), many: true, after: 'root',
+        options: () => rootRows(true), row: branchField },
     ] },
   ], {
     value: { provider: draft.provider, model: draft.model, root: draft.root, repos: draft.repos },
@@ -250,7 +247,7 @@ export function createNewTeamFormView(kit, { created = null, consumed = null, em
     density: 'tight',
     onChange: (value) => {
       draft.provider = value.provider; draft.model = value.model; draft.root = value.root;
-      draft.repos = value.repos.filter((name) => name !== value.root);
+      draft.repos = value.repos;
       for (const name of Object.keys(draft.branches)) if (!draft.repos.includes(name)) delete draft.branches[name];
       paintFoot();
     },
@@ -444,19 +441,9 @@ export function createNewTeamFormView(kit, { created = null, consumed = null, em
     // CHECK BEFORE THE FIRST WRITE. The launch door rightly refuses an explicit name
     // collision, but discovering one after POST /api/team-rosters leaves a Team with only
     // part of the cast. The form knows the whole proposed cast, so its gate checks both
-    // the live set and duplicates inside the form before it creates anything.
+    // the live set (`S.sessions`) and duplicates inside the form before it creates anything.
     if (picks.length) {
-      notice.set('info', t('new_team.checking_names', 'Checking Agent names…'));
-      const live = await request('/api/sessions', { cache: 'no-store' });
-      if (!live.ok) {
-        closeWorkspaceTab(launchTab);
-        busy = false;
-        raise.setDisabled(false);
-        return notice.set('failed', t('new_team.name_check_failed', 'Agent names could not be checked, so nothing was created. {reason}', {
-          reason: live.message,
-        }));
-      }
-      const conflicts = conflictingAgentNames(picks, Array.isArray(live.data) ? live.data : []);
+      const conflicts = conflictingAgentNames(picks, S.sessions);
       if (conflicts.length) {
         closeWorkspaceTab(launchTab);
         busy = false;
@@ -563,6 +550,7 @@ export function createNewTeamFormView(kit, { created = null, consumed = null, em
     if (!seed) return;
     const value = (field) => seed.seeds?.[field]?.value;
     draft.root = value('project_root') || '';
+    draft.repos = Array.isArray(value('repos')) ? [...value('repos')] : [];
     draft.provider = value('provider') || '';
     draft.model = value('model') || '';
     for (const key of ['reach', 'recruit']) {

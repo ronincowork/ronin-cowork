@@ -1,29 +1,27 @@
 /* part of the ronin-cowork client — see js/README.md */
 import { request } from './request.js';
 import { status } from './ui.js';
-import { homeData } from './home.js';
+import { get, subscribe } from './store.js';
 import { t } from './lexicon.js';
 import { nextTabIndex } from './workspace-tabs.js';
 import { DOC_MIME } from './team-drag.js';
-
-let docsSequence = 0; // one id per shelf, so four tiles' lists never collide
 import { WorkspacePrimitives } from './workspace-primitives.js';
 
-export function buildDocs(tile, root, isShowing, only = null, reposFirst = () => []) {
+let docsSequence = 0; // one id per shelf, so two lists on one page never collide
+
+export function buildDocs(root, only = null, reposFirst = () => []) {
   let openPath = null; // normalized target, or null while the list is showing
   let dirty = false; // the owner has typed since the last load or save
   // Only rebuild the list when it actually changed — see refresh(). null, not '', so the
-  // first read always draws: an empty roster signs as '' and would otherwise leave
+  // first read always draws: an empty list signs as '' and would otherwise leave
   // 'loading…' standing over a list that is legitimately empty.
   let sig = null;
 
   /* ---------- the rectangular shelf tabs, then the list ---------- */
   let shelf = 'tracked';
   const shelves = { plans: null, docs: null }; // fetched on demand, kept for the session
-  // THE SHELF IS THREE TABS OVER ONE PANEL. The three pills carried `role="tab"` with no
-  // tabpanel and no `aria-controls` — tabs that controlled nothing, and no keyboard. The
-  // list below them is the panel, so it is named as one, and the arrow keys come from the
-  // tab set's own decision rather than a third engine written here.
+  // THE SHELF IS THREE TABS OVER ONE PANEL: the list below them is the tabpanel, and the
+  // arrow keys come from the tab set's own decision (workspace-tabs.js).
   const pills = document.createElement('div');
   pills.className = 'dc-pills';
   pills.setAttribute('role', 'tablist');
@@ -100,8 +98,7 @@ export function buildDocs(tile, root, isShowing, only = null, reposFirst = () =>
   area.autocomplete = 'off';
   area.setAttribute('autocorrect', 'off');
   // A Tile owns pointerdown to activate/focus its terminal. This editor is seated over
-  // that terminal, so its selection gesture ends here; otherwise an ancestor or a
-  // restored older Tile handler can hand focus back to xterm before the drag begins.
+  // that terminal, so its selection gesture ends here, before focus goes back to xterm.
   area.addEventListener('pointerdown', (event) => event.stopPropagation());
   ed.append(bar, frame, area);
   root.append(pills, list, ed);
@@ -135,9 +132,7 @@ export function buildDocs(tile, root, isShowing, only = null, reposFirst = () =>
   const open = async (requested) => {
     const target = targetOf(requested);
     if (!target) { say(t('docs.bad_path', 'Choose a document in a workspace folder.'), true); return false; }
-    // The guard ← has always had, now that ← is not the only way in. Arriving from the
-    // tile can land on a doc while another is open and TYPED IN; without this, that
-    // typing would go without a word. Same question, same wording, one place further out.
+    // Arriving on a doc while another is open and typed in asks first, as ← does.
     if (target.key === openPath?.key) return true;
     if (dirty && target.key !== openPath?.key && !confirm(t('docs.discard_confirm', 'Discard unsaved changes?'))) return false;
     openPath = target;
@@ -290,12 +285,12 @@ export function buildDocs(tile, root, isShowing, only = null, reposFirst = () =>
   };
 
   /**
-   * Read the doc lists out of the roster data. No fetch: `/api/home` already carries every
-   * session's letter (that is what the ladder chip renders from), so the list is free.
+   * The tracked shelf is read off the home rows the store holds: each row carries its
+   * session's letter, and the letter lists its docs. The other shelves are read on demand.
    *
-   * Rebuilt only when it actually changed. This runs every two seconds and the rows are
-   * buttons — blowing them away mid-click is the bug the wipeboard's member row already
-   * paid for once.
+   * Rebuilt only when the list itself changed. It runs on every home push, most of which
+   * move some other part of a row (a stance, a gauge), and the rows are buttons that must
+   * not be replaced mid-click.
    */
   const refresh = (force = false) => {
     if (openPath) return; // the editor is up; the list underneath can wait
@@ -321,8 +316,9 @@ export function buildDocs(tile, root, isShowing, only = null, reposFirst = () =>
       render(rows);
       return;
     }
-    if (!homeData) return; // nothing read yet: 'loading…' is the truth, not "no docs"
-    const rows = homeData
+    const home = get('home');
+    if (!home) return; // nothing pushed yet: 'loading…' is the truth, not "no docs"
+    const rows = home
       .filter((s) => (!only || only(s.name)) && s.tegami && (s.tegami.docs || []).length)
       .map((s) => ({ name: s.name, docs: s.tegami.docs }));
     const next = 'tracked' + rows.map((s) => s.name + ':' + s.docs.join('|')).join('\n');
@@ -331,16 +327,21 @@ export function buildDocs(tile, root, isShowing, only = null, reposFirst = () =>
     render(rows);
   };
 
-  // Poll only while this pane is actually on screen; a tile on another tab costs nothing.
-  setInterval(() => {
-    if (isShowing()) refresh();
-  }, 2000);
+  // THE TRACKED SHELF IS THE HOME ROWS. OPEN (`enter`) subscribes and draws the snapshot;
+  // while open each push redraws (an open editor defers it, see refresh); CLOSE (`close`)
+  // unsubscribes. The caller that seats this pane calls both.
+  let unsubscribe = null;
 
   empty('loading…');
   return {
     enter() {
       sig = null; // returning to the tab always redraws, however stale the signature
       refresh(shelf !== 'tracked'); // a shelf re-reads on entry: files come and go
+      unsubscribe ??= subscribe('home', () => refresh());
+    },
+    close() {
+      unsubscribe?.();
+      unsubscribe = null;
     },
     // ONE-DIRECTIONAL, deliberately: this pane learns nothing about tiles or headers in
     // return. It takes a path and shows it; who asked, and why, stays the caller's.
@@ -350,14 +351,20 @@ export function buildDocs(tile, root, isShowing, only = null, reposFirst = () =>
   };
 }
 
-/** Seat the one existing Docs editor directly as a workbench resource. */
+/** Seat the Docs editor directly as a workbench resource, open on one document. */
 export function createDocumentWorkspaceAdapter({ root, path } = {}) {
   const surface = WorkspacePrimitives.createSurface({ label: t('docs.frame_title', 'Document'), className: 'workspace-document' });
   const host = document.createElement('div');
   host.className = 'home-docs';
   surface.content.append(host);
-  const docs = buildDocs(null, host, () => surface.el.isConnected);
+  const docs = buildDocs(host);
   const target = { root: String(root || ''), path: String(path || '') };
-  const show = () => docs.open(target);
-  return { el: surface.el, show, enter: show, leave: docs.leave, isDirty: docs.isDirty };
+  // The document is up first; the list under ← then hears the rows until the seat leaves.
+  const show = async () => { await docs.open(target); docs.enter(); };
+  const leave = () => {
+    const left = docs.leave();
+    if (left) docs.close();
+    return left;
+  };
+  return { el: surface.el, show, leave, isDirty: docs.isDirty };
 }

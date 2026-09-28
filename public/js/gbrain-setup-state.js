@@ -32,7 +32,7 @@ export function gbrainAccounts(data) {
  */
 export function gbrainSetupModel(result, availability = null) {
   const knownInstalled = availability?.installed === true;
-  const base = { installed: false, tone: '', hint: '', action: null, accounts: null, log: null, polling: false, summary: null };
+  const base = { installed: false, tone: '', hint: '', action: null, accounts: null, log: null, summary: null };
   const answer = (state, text, extra = {}) => ({ ...base, state, answer: text, ...extra });
   // No read yet: the surface paints at once and says it is checking. The real read shells
   // out to the gbrain CLI and can take seconds; an empty body in that window is a defect.
@@ -59,7 +59,7 @@ export function gbrainSetupModel(result, availability = null) {
   if (install.state === 'running') {
     const removing = install.op === 'uninstall';
     return answer(removing ? 'removing' : 'installing', removing ? t('gbrain.setup_removing', 'Removing…') : t('gbrain.setup_installing', 'Installing…'), {
-      tone: 'warn', polling: true, summary: removing ? 'removing' : 'installing', hint: log.length ? log[log.length - 1] : '' });
+      tone: 'warn', summary: removing ? 'removing' : 'installing', hint: log.length ? log[log.length - 1] : '' });
   }
   if (!data.installed) {
     if (install.state === 'failed' && install.op !== 'uninstall') {

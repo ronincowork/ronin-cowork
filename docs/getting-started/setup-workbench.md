@@ -163,8 +163,10 @@ Ronin saves this description separately from credentials, then checks readiness 
 The terminal height is bounded, and opening a provider scrolls its detail panel to the
 first unfinished step. This works in both Ronin Setup and Ronin Settings.
 
-Below the steps sits what the catalog knows about the provider: its models, their tier and
-cost as read, and the default. Ronin only checks that a sign-in exists; it never reads a
+Below the steps sits the provider's model list as its CLI gave it on the last **Refresh
+all model providers** (the one button at the top of the surface, with the date it last
+ran), each model with the CLI's own name and its id, and the tier and cost the catalog
+knows. Native is the default. Ronin only checks that a sign-in exists; it never reads a
 credential or asks the provider about your account. A provider that needs to sign in
 again asks in its own flow.
 
@@ -229,8 +231,8 @@ the account's GitHub tokens.
 ## Ronin Services
 
 Services adds optional capabilities. The page reports what is installed and enabled on
-this machine. Readable recording and local weights are currently parked; their source
-presence does not make those features available. See [Ronin Services](services-activation.md)
+this machine. Terminal transcript needs both the package and its switch; local weights are
+currently parked, and source presence alone does not make a feature available. See [Ronin Services](services-activation.md)
 for installation, registration, availability, and data sharing.
 
 The surface shows one measured status line and three controls in one shape:
@@ -238,6 +240,9 @@ The surface shows one measured status line and three controls in one shape:
 **Done** once they are. Installing needs a registered identity; switching on cascades to
 new Teams and Agents, and a Team can still differ in its own configuration. When a restart
 is the one thing left to do, a fourth control, **Restart**, appears until Ronin is back.
+Nothing on the page polls: a confirmed email, each install step and a switch's new facts
+arrive as Ronin learns them, and after a restart the page reads again when its connection
+to Ronin returns.
 Installed parts are usable whether or not anyone registered. The Grokbot Morning Briefing
 preset waits for Services to be active. The activation flow itself is in
 `docs/getting-started/services-activation.md`.
@@ -250,7 +255,8 @@ gbrain is the memory the Personal Assistant runs on. Its page shows four rows:
 disabled with “turn Available on first” while availability is off), and **Accounts linked** (one row per account gbrain can link; the
 Personal Assistant links one when asked, with your approval). Under them sits the next
 step: **Open Model providers** if none is activated yet, otherwise **Start your first
-Personal Assistant**, the same launch the preset makes. What gbrain is lives in
+Personal Assistant**, the same launch the preset makes. While **Load gbrain** runs, the
+**Installed** row follows each install step as it happens. What gbrain is lives in
 `docs/products/gbrain.md`.
 
 ## Launch your own

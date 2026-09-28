@@ -1,5 +1,8 @@
-/* Workspace-side Services activation. Reads local state; only Check status contacts HQ. */
+/* Workspace-side Services activation: the header badge. It reads the local state when the
+ * socket opens (boot, and Ronin back from a restart) and paints each {t:'services-setup'}
+ * push; only Check status contacts HQ from here. Nothing polls. */
 import { request } from './request.js';
+import { store } from './store.js';
 import { t } from './lexicon.js';
 
 const el = (tag, cls, text) => {
@@ -32,7 +35,7 @@ export function installServicesStatus() {
   const cancel = el('button', '', t('services.cancel_services', 'Cancel Ronin Services'));
   for (const item of [check, resend, change, cancel]) { item.type = 'button'; actions.append(item); }
   pop.append(message, actions); document.body.append(pop);
-  let state = null; let busy = false; let installTimer = null; let readyTimer = null;
+  let state = null; let busy = false; let readyTimer = null;
   let visible = false; let previousStage = null; let readyDismissed = false;
 
   const paint = (next) => {
@@ -74,10 +77,6 @@ export function installServicesStatus() {
     resend.hidden = stage !== 'awaiting_email';
     resend.disabled = Boolean(next?.resend_available_at && Date.parse(next.resend_available_at) > Date.now());
     change.hidden = cancel.hidden = !['awaiting_email', 'error', 'expired'].includes(stage);
-    if (installTimer) clearTimeout(installTimer);
-    // Installation is local work. Watch the local state only while it is running; this
-    // never calls Shiwake and stops as soon as the installer reports ready or failed.
-    if (stage === 'installing') installTimer = setTimeout(() => void refresh(), 3000);
     // `setVisible()` can paint before the first local-state read; that placeholder is not
     // a lifecycle transition and must not make an existing installation flash as new.
     if (next) previousStage = stage;
@@ -90,7 +89,10 @@ export function installServicesStatus() {
     busy = true; button.disabled = true; button.textContent = working; paint(state);
     const result = await request(route, { method, ...(json ? { json } : {}) });
     busy = false;
-    if (result.ok) paint(result.data); else { paint(state); message.textContent = result.message; }
+    // Check status answers with the services object; the registration presses answer with
+    // the registration, and their new activation arrives by push.
+    paint(result.ok ? result.data?.activation ?? state : state);
+    if (!result.ok) message.textContent = result.message;
     button.disabled = false;
   };
   check.addEventListener('click', () => void act(check, t('services.checking', 'Checking…'), '/api/services/activation/poll')
@@ -110,12 +112,8 @@ export function installServicesStatus() {
     const rect = trigger.getBoundingClientRect();
     pop.style.left = `${Math.max(8, rect.left)}px`; pop.style.top = `${rect.bottom + 8}px`;
   });
-  document.addEventListener('ronin:services-state', (event) => paint(event.detail));
-  document.addEventListener('visibilitychange', () => {
-    // This is a local read. Returning to the tab never polls Shiwake.
-    if (document.visibilityState === 'visible') void refresh();
-  });
-  void refresh();
+  store.listen('services-setup', (m) => paint(m.services?.activation ?? state));
+  store.onOpen(() => { void refresh(); });
   return { setVisible(next) {
     visible = next === true;
     paint(state);

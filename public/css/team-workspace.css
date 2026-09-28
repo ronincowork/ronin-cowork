@@ -73,6 +73,14 @@
   .tk-unavailable { margin: 0; color: var(--muted); }
   .tk-column { display: flex; height: var(--tk-column-height); min-width: 0; flex-direction: column; border: var(--edge) solid var(--line); background: var(--well); transition: border-color var(--motion-quick) var(--ease), background var(--motion-quick) var(--ease); }
   .tk-column > h3 { box-sizing: border-box; display: grid; height: var(--tk-column-head); flex: none; gap: var(--space-1); margin: 0; border-bottom: var(--edge) solid var(--line); padding: var(--space-3) var(--space-4); color: var(--muted); font-size: var(--text-3); font-weight: 650; letter-spacing: var(--tk-heading-track); text-transform: uppercase; }
+  .tk-column-open, .tk-back { border: 0; border-bottom: var(--edge) dotted currentColor; border-radius: 0; padding: 0; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+  .tk-back { grid-column: 1 / -1; justify-self: start; margin-bottom: var(--space-2); color: var(--accent-2); }
+  .tk-project-detail { padding: var(--space-5); border: var(--edge) solid var(--line); background: var(--well); }
+  .tk-project-detail h2 { margin: var(--space-5) 0 var(--space-2); color: var(--fg-strong); }
+  .tk-project-id { color: var(--muted); font-size: var(--text-3); }
+  .tk-project-facts { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--space-2) var(--space-5); }
+  .tk-project-facts dt { color: var(--muted); }
+  .tk-project-facts dd { margin: 0; color: var(--fg-strong); overflow-wrap: anywhere; }
   .tk-column-worker { color: var(--dim); font-size: var(--text-2); font-weight: 500; letter-spacing: 0; text-transform: none; }
   .tk-cards { display: flex; min-height: 0; flex: 1 1 auto; flex-direction: column; gap: var(--space-3); overflow-y: auto; padding: var(--space-3); }
   .tk-empty { margin: 0; padding: var(--space-3); color: var(--dim); font-size: var(--text-3); font-style: italic; }
@@ -96,8 +104,9 @@
   .tk-card-row { min-height: var(--tk-card-meta-line); align-items: center; gap: var(--space-2); margin-top: var(--space-3); padding-top: 0; font-size: var(--text-3); }
   .tk-waiting { color: var(--kanban-green); }
   .tk-asked { color: var(--muted); }
-  .tk-owner { border: 0; border-bottom: var(--edge) dotted currentColor; border-radius: 0; padding: 0; background: transparent; color: var(--accent-2); font: inherit; }
-  .tk-owner:hover { border-bottom-style: solid; }
+  .tk-owner, .tk-project-open { border: 0; border-bottom: var(--edge) dotted currentColor; border-radius: 0; padding: 0; background: transparent; color: var(--accent-2); font: inherit; }
+  .tk-owner:hover, .tk-project-open:hover { border-bottom-style: solid; }
+  .tk-project-open { margin-left: auto; }
   /* The tab is drawn on the launch forms' furniture (launch-forms.css: .ntf-form, .fs-step, .wk-field);
      only the identity line is its own: Team ID · Title · Kind, one height, the Kind tray hosted by the line. */
   .tw-config-form { min-width: 0; }
@@ -126,7 +135,22 @@
   .league-team-edit-content { display: flex; flex-direction: column; gap: var(--space-10); }
   .league-team-roster, .league-team-config { flex: 0 0 auto; }
   .league-team-roster { display: flex; flex-direction: column; min-height: 0; }
-  .league-team-roster-title { margin: 0 0 var(--space-4); border-bottom: var(--edge) solid var(--line-2); padding-bottom: var(--space-3); color: var(--fg-strong); font-weight: 600; letter-spacing: .08em; text-transform: uppercase; }
+  .league-team-roster-heading { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); margin-bottom: var(--space-4); border-bottom: var(--edge) solid var(--line-2); padding-bottom: var(--space-3); }
+  .league-team-roster-title { margin: 0; color: var(--fg-strong); font-weight: 600; letter-spacing: .08em; text-transform: uppercase; }
+  .league-team-people-tools, .league-team-view-toggle { display: flex; align-items: center; gap: var(--space-2); }
+  .league-team-density { inline-size: var(--space-8); padding-inline: 0; }
+  .league-team-member[data-selected='true'] { box-shadow: inset var(--edge-2) 0 var(--kaki); background: var(--raise); }
+  .league-team-org { display: grid; gap: var(--space-6); }
+  .league-team-org-leads { position: relative; width: 100%; margin-inline: auto; }
+  .league-team-org-leads::after { position: absolute; inset-block-end: calc(-1 * var(--space-6)); inset-inline-start: 50%; block-size: var(--space-6); border-inline-start: var(--edge) solid var(--line-2); content: ''; }
+  .league-team-org-unplaced { border-top: var(--edge) solid var(--line-2); padding-top: var(--space-4); }
+  .league-team-org-unplaced h4 { margin: 0; color: var(--fg-strong); }
+  .league-team-org-unplaced > p { margin: var(--space-1) 0 var(--space-3); color: var(--muted); font-size: var(--form-note); }
+  .league-team-lead-empty { border: var(--edge) dashed var(--line-2); background: var(--well); padding: var(--space-4); }
+  .league-team-lead-empty > strong { color: var(--fg-strong); }
+  .league-team-lead-empty > p { margin: var(--space-2) 0 var(--space-4); color: var(--muted); }
+  .league-team-lead-empty-actions { display: flex; flex-wrap: wrap; gap: var(--space-3); }
+  .league-team-lead-empty-actions > .ask { min-width: 0; flex: 1 1 calc(var(--space-12) * 4); }
   .league-team-member { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: var(--space-5); border-bottom: var(--edge) solid var(--line); padding: var(--space-2) 0; }
   .league-team-member-identity { display: flex; align-items: center; min-width: 0; gap: var(--space-3); }
   .league-team-member-mark { width: var(--space-6); color: var(--kaki); font-size: var(--text-5); line-height: 1; text-align: center; }
@@ -148,6 +172,10 @@
   .league-team-member-disclosure { color: var(--muted); font-size: var(--text-4); line-height: 1; text-align: center; }
   .league-team-member-detail { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: var(--space-5); border-top: var(--edge) solid var(--line); padding: var(--space-3) 0 var(--space-2); }
   .league-team-member-detail[hidden] { display: none; }
+  .league-team-roster[data-density='compact'] .league-team-member-reading { grid-template-columns: minmax(0, 1fr) calc(var(--space-12) * 1.5); }
+  .league-team-roster[data-density='compact'] .league-team-member-ctx,
+  .league-team-roster[data-density='compact'] .league-team-member-model,
+  .league-team-roster[data-density='compact'] .league-team-member-words span { display: none; }
   .league-team-member-detail > .league-team-member-actions { grid-column: 2; }
   .league-team-member-description { margin: 0; color: var(--fg); font-size: var(--form-note); line-height: 1.4; }
   .league-team-empty { margin: 0; border-bottom: var(--edge) solid var(--line); padding: var(--space-5) 0; }
@@ -205,4 +233,26 @@
   .aa-from { color: var(--muted); font-size: var(--text-1); margin-left: var(--space-3); }
 
 
+}
+
+@layer app {
+  .team-chart-surface .sws-group { color: var(--kaki); font-weight: 700; }
+  .team-chart-surface .sws-detail { min-width: 0; }
+  .tc-id, .tc-note { color: var(--muted); }
+  .tc-actions { display: grid; gap: var(--space-4); align-items: end; }
+  .tc-actions > .wk-action { justify-self: start; }
+  .ac-body { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr)); gap: var(--space-6); padding: var(--space-5); }
+  .ac-section { min-width: 0; border: var(--edge) solid var(--line); background: var(--well); padding: var(--space-5); }
+  .ac-section h3, .ac-section h4 { color: var(--fg-strong); }
+  .ac-section h3 { margin: 0 0 var(--space-2); }
+  .ac-section h4 { margin: var(--space-5) 0 var(--space-2); }
+  .ac-birth { border-left: var(--edge-2) solid var(--accent-2); }
+  .ac-note, .ac-status { color: var(--muted); font-size: var(--text-3); }
+  .ac-facts { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--space-2) var(--space-4); }
+  .ac-facts dt { color: var(--muted); }
+  .ac-facts dd { margin: 0; overflow-wrap: anywhere; color: var(--fg-strong); }
+  .ac-brief { max-height: 18rem; overflow: auto; margin: 0; border: var(--edge) solid var(--line); padding: var(--space-3); color: var(--fg); font: inherit; white-space: pre-wrap; }
+  .ac-mandate, .ac-behaviours { display: grid; gap: var(--space-4); }
+  .ac-mandate > .wk-action { justify-self: end; }
+  .ac-add { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: var(--space-3); }
 }

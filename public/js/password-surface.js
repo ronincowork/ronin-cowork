@@ -217,7 +217,7 @@ export function createPasswordSurface(context = {}) {
   return { el: surface.el, show, destroy: () => { stopProgress(); selector.destroy(); } };
 }
 
-export function passwordSurfaceDefinition() {
+function passwordSurfaceDefinition() {
   return {
     type: PASSWORD_SURFACE_TYPE,
     header: 'surface',

@@ -4,7 +4,7 @@ import path from 'node:path';
 import { updateCommand, updateLineOf } from './agent-install.js';
 import { AGENTS, discoverExecutable, launchArgv, listAgentAvailability } from './agents.js';
 import { updateSection } from './machine-state.js';
-import { listProviderCatalog, newerVersion, type ProviderCatalogEntry, type ProviderInventoryStatus, type ProviderSummary } from './model-providers.js';
+import { listProviderCatalog, newerVersion, type ModelList, type ProviderCatalogEntry, type ProviderSummary } from './model-providers.js';
 import { activatedAt, npmPackageOf, offAt } from './provider-summary.js';
 import { peekProjectRoots, upsertProjectRoot } from './project-roots.js';
 import { rootDir } from './resources.js';
@@ -89,10 +89,8 @@ export interface SetupProviderState {
   models: number;
   /** What the installed CLI said it is; null when not installed or it would not say. */
   version: string | null;
-  /** Its CLI-owned model list, including the CLI version that fetched it; null when not measured. */
-  model_list: ProviderSummary['model_lists'][string] | null;
-  /** Persisted outcome of the most recent inventory read. */
-  model_inventory: ProviderInventoryStatus | null;
+  /** Its own model list as Refresh all last read it, with the date and the CLI version; null until read, or when not activated. */
+  model_list: ModelList | null;
   /** The newest release its package source listed at the last Refresh; null when never asked or unaskable. */
   latest: string | null;
   latest_checked_at: string | null;
@@ -118,6 +116,8 @@ export interface SetupRuntimeAnswer {
   activated_band: 'zero' | 'one' | 'two_plus';
   /** When the machine facts were measured; a reader shows a stale date rather than guessing. */
   measured_at: string;
+  /** When Refresh all last read every activated CLI's model list; '' when never. */
+  refreshed_at: string;
   roots: Array<{ name: string; label: string; dir: string }>;
   gbrain: { installed: boolean; active: boolean };
   services: { installed: boolean; switched_on: boolean; active: boolean };
@@ -257,8 +257,7 @@ export async function setupRuntimeAnswer(
       off_at: offSince,
       models,
       version,
-      model_list: activated ? summary.model_lists?.[agent.id] ?? null : null,
-      model_inventory: isInstalled ? summary.model_inventory?.[agent.id] ?? { state: 'unmeasured', checked_at: '' } : null,
+      model_list: activated ? summary.models?.[agent.id] ?? null : null,
       latest: latest?.version ?? null,
       latest_checked_at: latest?.checked_at ?? null,
       updatable: activated && Boolean(updateLine),
@@ -282,6 +281,7 @@ export async function setupRuntimeAnswer(
     activated_count,
     activated_band: activated_count === 0 ? 'zero' : activated_count === 1 ? 'one' : 'two_plus',
     measured_at: summary.measured_at,
+    refreshed_at: summary.refreshed_at,
     roots: roots.map(({ name, label, dir }) => ({ name, label, dir })),
     gbrain: {
       installed: installed?.services.parts.includes('gbrain') ?? false,
@@ -509,6 +509,13 @@ export function githubAuthFromLogin(login: string): GithubAuthMeasurement {
   return account
     ? { state: 'authenticated', account, problem: '' }
     : { state: 'unreadable', account: '', problem: 'GitHub CLI returned an unreadable authentication result.' };
+}
+
+// Whether a GitHub login, GitHub install or git setup session is open: while one is, the
+// /events tick watches the GitHub answer.
+export async function githubSetupAttached(): Promise<boolean> {
+  const open = await Promise.all([GITHUB_SETUP_SESSION, GITHUB_INSTALL_SESSION, GIT_SETUP_SESSION].map((name) => sessionExists(name)));
+  return open.some(Boolean);
 }
 
 export async function githubSetupAnswer(ops: GithubSetupOps = defaultGithubSetupOps): Promise<GithubSetupAnswer> {

@@ -15,7 +15,7 @@ runtime parts, while Agent capabilities teach tools (`docs/architecture/tool-sur
 |---|---|---|
 | JIKAN | **Cron jobs**<!--g:glossary.cron_jobs--> | Scheduled requests to a named Agent or Team lead. Say "schedule a request". |
 | MICHI · TEGAMI · SHINGO · `ladder` | **work record**<!--g:glossary.work_record--> | The session's authored work and evidence. Say "update your work record". |
-| RIREKI | the recording | Readable transcripts in Services. Currently parked; live output is not a durable transcript. |
+| RIREKI | the recording | Optional journal transcripts in Services, available when the session has a supported launch binding. Terminal output remains a separate view. |
 | OBOERU | **memory**<!--g:glossary.memory--> | Notes that outlive the session that wrote them. |
 | TOMODACHI · SOROBAN | **Stats**<!--g:glossary.stats--> | Counts of what sessions did, never content. |
 | KOSHI | Koshi | Ronin's helper agents; this name is on screen. |

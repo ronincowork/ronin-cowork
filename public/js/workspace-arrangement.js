@@ -87,8 +87,8 @@ export function normalizeArrangement(state, declaration) {
   return Object.freeze({ order: Object.freeze(order), hidden: Object.freeze(hidden), widths: Object.freeze(widths) });
 }
 
-export const isHidden = (state, name) => state.hidden.includes(name);
-export const visibleOrder = (state) => state.order.filter((name) => !state.hidden.includes(name));
+const isHidden = (state, name) => state.hidden.includes(name);
+const visibleOrder = (state) => state.order.filter((name) => !state.hidden.includes(name));
 
 /** The columns the frame draws: visible slots in order, widths rescaled to 100. */
 export function visibleColumns(state, declaration) {

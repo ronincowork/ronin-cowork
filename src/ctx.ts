@@ -1,5 +1,3 @@
-import { capturePane } from './tmux.js';
-
 export interface CtxPattern {
   re: RegExp;
   mode: 'used' | 'remaining';
@@ -47,13 +45,4 @@ export function scanModel(text: string): string | null {
     }
   }
   return null;
-}
-
-export async function readCtxLine(session: string): Promise<{ ctx: number | null; model: string | null }> {
-  try {
-    const text = await capturePane(session, 0);
-    return { ctx: scanContext(text), model: scanModel(text) };
-  } catch {
-    return { ctx: null, model: null };
-  }
 }

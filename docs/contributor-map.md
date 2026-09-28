@@ -50,7 +50,9 @@ writer of server truth. Desktop and phone share feature modules but have separat
 - Contracts: [UI](architecture/ui.md), [Workbench construction](architecture/workbench.md), [Workbench use](using-ronin/workbench.md),
   [UI wording](products/kokugo.md), [Agent glossary](../KOTOBA_GLOSSARY.md).
 - Shared boundaries: [request.js](../public/js/request.js), [ui.js](../public/js/ui.js),
-  [state.js](../public/js/state.js). Entries: [main.js](../public/js/main.js), [phone.js](../public/js/phone.js).
+  [state.js](../public/js/state.js), and [store.js](../public/js/store.js) — the one `/events`
+  socket and the resources the server pushes on it; a surface subscribes rather than polls
+  ([the data path](architecture/data-path.md)). Entries: [main.js](../public/js/main.js), [phone.js](../public/js/phone.js).
 - Tests: the index names a focused test for each visible surface. Browser diagnostics are
   explicit when rendered behavior needs checking; a server test alone does not verify UI.
 
@@ -129,9 +131,9 @@ completion evidence. Coordination mechanisms support this surface; they do not r
 its name or become another work-record store.
 
 - Contract: [Work record](using-ronin/work-record.md).
-- Code path: [shingo.js](../public/js/shingo.js) →
-  [sessions-api.ts](../src/routes/sessions-api.ts) (`GET /api/sessions/:name/tegami`) →
-  [tegami-read.ts](../src/tegami-read.ts). Writes enter through
+- Code path: [tegami-read.ts](../src/tegami-read.ts) → the session's home row (`tegami`,
+  [launch.ts](../src/routes/launch.ts) `homeRows`) → the tile's ladder
+  ([tile.js](../public/js/tile.js), drawn by [shingo.js](../public/js/shingo.js)). Writes enter through
   [work-record](../ronin_bin/work-record) → [work-record-write](../libexec/work-record-write),
   which updates the authored block atomically. [tegami.ts](../src/tegami.ts) seeds the record
   and supports server-side custody/derived-field changes; [projects.ts](../src/projects.ts)

@@ -14,9 +14,17 @@ test('Ronin Home routes the Machine door from persisted Campaign Setup answers',
   } } } }), 'campaign');
 });
 
-test('Ronin Home names the place and gates Teams and New Project on runtime readiness', async () => {
+test('Ronin Home opens Desk as its operational tenant while Team and Agent use the collection chooser', async () => {
   const home = await source('js/campaign-home.js');
   assert.match(home, /Ronin Home/);
+  assert.match(home, /campaign_home\.desk', 'Desk'/);
+  assert.match(home, /campaign_home\.team', 'Team'/);
+  assert.match(home, /campaign_home\.agent', 'Agent'/);
+  assert.match(home, /campaign_home\.settings', 'Settings'/);
+  assert.match(home, /key: 'desk', route: 'desk'/);
+  assert.match(home, /key: 'team', route: 'cowork'/);
+  assert.match(home, /key: 'agent', route: 'cowork'/);
+  assert.doesNotMatch(home, /data-door=['"]campaign/);
   assert.match(home, /request\('\/api\/setup\/runtime'/);
   assert.match(home, /activatedCount < 1/);
   assert.match(home, /aria-disabled/);
@@ -84,7 +92,7 @@ test('launch actions reuse the nin mark, never the Team Roster torii, and open t
     source('js/workspace-primitives.js'), source('workspace-kit.css'), source('js/team-roster-surface.js'),
     source('js/workspace.js'), source('js/new-agent.js'), source('js/new-team-form.js'),
   ]);
-  assert.match(primitives, /brand\/nin-mark\.svg/);
+  assert.match(primitives, /el\.append\(ninMark\('wk-launch-mark'\)/);
   assert.match(kit, /\.wk-action\[data-launch='true'\] \{ border-color: var\(--kaki\); background: var\(--raise\);/);
   assert.match(roster, /launch: true/);
   assert.doesNotMatch(roster, /'torii', '⛩'/);

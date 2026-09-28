@@ -94,13 +94,38 @@ async function teamBehind(board: string): Promise<string | null> {
   return (await teamsInPlay()).includes(board) ? board : null;
 }
 
-const isTeamBoard = async (name: string): Promise<boolean> => (await teamBehind(name)) !== null;
-
 async function boardMembers(board: string, knownTeam?: string | null): Promise<{ name: string }[]> {
   const sessions = await listSessions();
   const team = knownTeam === undefined ? await teamBehind(board) : knownTeam;
   if (!team) return [];
   return sessions.filter((s) => s.tags.includes(team)).map((s) => ({ name: s.name }));
+}
+
+// A board as a reader sees it, with its last `limit` posts and `more` when older ones exist:
+// what /events sends as {t:'wipeboard', board, ...}. null when there is no board.
+export async function wipeboardAnswer(name: string, limit: number): Promise<Record<string, unknown> | null> {
+  const team = await teamBehind(name);
+  if (!(await boardExists(name))) {
+    if (!team) return null;
+    await ensureBoard(name, teamStub(team));
+  }
+  await sweep(name, team);
+  if (!(await boardExists(name))) {
+    return { name, brief: '', posts: [], newest: '', file: boardPath(name), members: [], kind: team ? 'team' : 'custom', reaped: true };
+  }
+  const [board, members] = await Promise.all([readBoard(name), boardMembers(name, team)]);
+  const older = board.posts.length > limit;
+  const posts = board.posts.slice(-limit);
+  return {
+    name: board.name,
+    brief: board.brief,
+    posts,
+    newest: board.posts.length ? board.posts[board.posts.length - 1].id : '',
+    file: boardPath(name),
+    members,
+    kind: team ? 'team' : 'custom',
+    more: older,
+  };
 }
 
 export function registerWipeboards(app: express.Express): void {
@@ -123,43 +148,6 @@ export function registerWipeboards(app: express.Express): void {
       }
       const boards = [...rows.values()].sort((a, b) => a.name.localeCompare(b.name));
       res.json({ boards });
-    } catch (e) {
-      res.status(500).json({ error: String((e as Error)?.message ?? e) });
-    }
-  });
-
-  app.get('/api/wipeboards/:name', async (req, res) => {
-    const { name } = req.params;
-    if (!isValidBoardName(name)) return res.status(400).json({ error: 'Invalid board name.' });
-    try {
-      const team = await teamBehind(name);
-      if (!(await boardExists(name))) {
-        if (!team) return res.status(404).json({ error: 'No such wipeboard.' });
-        await ensureBoard(name, teamStub(team));
-      }
-      await sweep(name, team);
-      if (!(await boardExists(name))) {
-        return res.json({
-          name, brief: '', posts: [], newest: '', file: boardPath(name),
-          members: [], kind: team ? 'team' : 'custom', reaped: true,
-        });
-      }
-      const [board, members] = await Promise.all([readBoard(name), boardMembers(name, team)]);
-      const since = String(req.query.since ?? '');
-      const limit = Math.max(0, Math.min(500, Number(req.query.limit ?? 0) || 0));
-      let posts = since ? board.posts.filter((p) => p.id > since) : board.posts;
-      const older = limit && posts.length > limit;
-      if (limit) posts = posts.slice(-limit);
-      res.json({
-        name: board.name,
-        brief: board.brief,
-        posts,
-        newest: board.posts.length ? board.posts[board.posts.length - 1].id : '',
-        file: boardPath(name),
-        members,
-        kind: team ? 'team' : 'custom',
-        more: older,
-      });
     } catch (e) {
       res.status(500).json({ error: String((e as Error)?.message ?? e) });
     }

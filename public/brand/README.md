@@ -7,7 +7,7 @@ at `/brand/`.
 
 | File | What it is for |
 |---|---|
-| `nin-mark.svg` | the favicon browsers prefer — sharp at every size |
+| `nin-mark.svg` | the favicon browsers prefer — sharp at every size; also the master for the inline copy `ninMark()` in `public/js/workspace-primitives.js`, which the Launch buttons and empty workspaces use so the mark paints with them (no fetch, no late frame). When the mark moves, copy its paths there too; `tests/nin-mark.test.js` holds them equal |
 | `nin-mark-32.png` | favicon fallback where SVG is refused |
 | `nin-mark-256.png` | `apple-touch-icon` — the home-screen icon |
 | `nin-mark-512.png` | held for a manifest; no consumer yet |

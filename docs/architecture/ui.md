@@ -221,6 +221,17 @@ shape: `{ok, status, data}` or `{ok:false, kind, message, retryable}`. It never 
 for a transport outcome, never toasts, never retries a mutation, and knows no Ronin
 vocabulary. Documented exceptions: `voice.js` (audio blob), `stats.js` (beacon).
 
+The failure kinds are `network` (it never reached Ronin), `abort` (the caller cancelled),
+`http` (Ronin answered with a failing status — the status is the story, whatever the body
+looked like), and `malformed` (the status said success and the body was there but could not
+be read; retryable, because the next read usually gets it).
+
+**An empty body and an unreadable one are different answers.** A 200 or 204 that genuinely
+said nothing decodes to `{}` and is success. A 200 whose body arrived in pieces is a
+failure, and a feature that reads emptiness as a real state — no records, no documents, no
+rows — must be able to tell the two apart. Folding them together is how a phone came to
+report "No transcript output yet." while the server was sending 637 records.
+
 Where a failure LANDS is a product decision, by scope:
 
 | Scope | Surface | Rule |
@@ -239,26 +250,93 @@ Native dialogs: `confirm()` is the destructive-confirm primitive (kill session, 
 edits) — it is modal, keyboard-correct and honest. `prompt()` is tolerated for one-line
 name entry only. `alert()` is not used.
 
+## Work-surface ownership
+
+A viewport has one surface owner and one named active tenant. `surface-host.js` holds the
+catalog of sibling Tile tenants (`term`, `tape`, `chat`, `docs`) and writes the sole active
+name to `data-surface`; the siblings render that decision and do not compete through
+z-index or maintain a second visibility flag. Navigation chooses a tenant. It does not
+construct another viewer for the same work.
+
+The invariant is deliberately small: **one host, catalogued sibling tenants, one active
+tenant**. A tenant owns its enter/leave boundary and may refuse departure (Docs does so for
+unsaved edits). Focus, sizing and teardown follow the active tenant. Adding a work surface
+means registering another sibling with the host, not adding another overlay condition to
+the shell.
+
+Phone consolidation follows the same rule: Team Docs and an Agent menu must enter one
+page-owned Docs viewer/editor, never two controllers that happen to share a builder. Until
+that routing is on the promoted tree, it remains an architectural gap rather than something
+the CSS may disguise. The active phone Tile may be destroyed when another Agent is chosen;
+its transcript listener and watch are disposed, while page-level transcript state may remain
+bounded and later catch up from its committed cursor. Hidden or destroyed tenants must not
+leave a socket, poll or focus target behind.
+
 ## Update paths — what causes a surface to change
 
-The one-answer table. `S.sessions` has ONE writer (`reconcileSessions`, `api.js`);
-`homeData` and the catalogs have one owner (`home.js`); every timer below is written
-next to a predicate that stops it costing anything while its surface is hidden.
+[The data path](data-path.md) is the rule and the contract; this table is where each fact
+lands on screen.
+
+The one-answer table. `S.sessions` has ONE writer (`reconcileSessions`, `api.js`); the
+server's resources have one holder, `store.js`, which owns the `/events` socket: the home
+rows, the session list and the Team rosters arrive only by push, on connect and on change,
+and the store reads nothing over REST. Desks are read when a surface opens and are not held.
+The catalogs have one owner (`home.js`). The store hands a subscriber a resource when it
+subscribes and again only when a field a surface paints changed; a surface paints when it
+opens and on each change, and a write is answered by the push. Every timer below is
+written next to a predicate that stops it costing anything while its surface is hidden.
 
 | Fact | Written by | Arrives via |
 |---|---|---|
-| session set (`S.sessions`) | `reconcileSessions` (`api.js`) — the only writer | boot fetch (`main.js`) · `/events` push (`events.js`, which also owns births/deaths/chips) · visibilitychange + bfcache `pageshow` (`layout.js`) · post-mutation `fetchSessions()` calls |
-| roster/status data (`homeData`) | `refreshHome` (`home.js`) — inflight-guarded, fault-keeping | 8s poll while a home pane is visible (`layout.js`) · visibilitychange · every `showHome` · post-mutation refreshes |
-| catalogs (projects, presets, saved launches) | their `load*` in `home.js` | boot, and the panes that edit them re-load after a write |
-| per-tile readings (ctx, tegami, control) | the tile's own `refresh*` | 30s poll for visible connected tiles (`layout.js`) · connect · post-write re-read |
-| pane data (wipeboard, docs list, roots, koshi, stats) | the pane module | its own gated poll (2s/2s/15s) or `enter()` — each owner is the file the surface lives in |
+| session set (`S.sessions`) | `reconcileSessions` (`api.js`) — the only writer, fed only by the store's reducer in `events.js` | `{t:'sessions', list}` only: pushed whole to every new connection and again when a painted field changed (not `activity`); `events.js` owns births, deaths and chips, and the page's first list raises no chip · while the socket is closed — it never opened, or it dropped after boot — the failure bar says "cannot reach Ronin", and the next open clears it (`sayWhenUnreachable`, called by `main.js` and `phone.js`) · visibilitychange + bfcache `pageshow` renew the store (`layout.js`, `phone.js`) · a write (title, membership, lead, launch, retire) is answered by the push |
+| home rows | the store's `home` resource, read by `get('home')` or a subscription | `{t:'home', rows}` only: the server sends it whole to every new connection, a reconnect included, and again when a painted field changed (not `activity` or the stance's `at`) · visibility resume (`renew`, `layout.js`) reconnects a socket that went |
+| desk readings | read at open, not held: `readDesks` in `desks.js` | not pushed · the Work Record ladder asks `GET /api/desks?session=<name>` when it opens and paints the answer (`openLadder`, `tile.js`) |
+| Team rosters | the store's `teams` resource, projected by `team-controller.js`, which hears the store's `teams` and `sessions` and publishes once per change of either | `{t:'teams', rosters}` only, in the shape of `GET /api/team-rosters`: pushed whole on connect and after a successful write under `/api/team-rosters` or `/api/team` · Team surfaces paint from the projection on entry and on each publish |
+| catalogs (projects) | `loadProjects` in `home.js` | boot, and the panes that edit them re-load after a write |
+| per-tile readings (gauge, work record) | the tile's `refreshCtx` / `refreshTegami`, reading its session's home row (`ctx`, `model`, `tegami`) | the tile subscribes to the store's `home` when it is made and unsubscribes when its host destroys it (`terminal-tile-host.js`) · connect repaints from the row the store holds |
+| docs list (tracked shelf) | `docs.js`, reading the store's home rows | `enter` subscribes to the store's `home` and draws the snapshot; each push redraws; `close` unsubscribes, called by the seat that leaves it (tile docs view, phone docs screen, Team and Agent workbench tabs, the document seat) · the Plans and Docs shelves read `GET /api/docs` on demand |
+| wipeboard thread, Cron jobs | the store's `wipeboard:<board>` and `jikan:<team>` (`jikan:*` for every team), painted by `team-wipeboard.js` and `team-jikan.js` | opening subscribes, which sends `{t:'want', resource, board}` or `{…, team}` on the socket; the server answers that connection with the message it broadcasts on every write (`{t:'wipeboard', board, posts, more}`, `{t:'jikan', team, jobs}`) · each reconnect says the wants again · a post, edit or removal is answered by that push · leaving unsubscribes |
+| message queue, machine reading | the store's `messages` and `memory`, painted by `message-queue.js`, the memory gauge (`ramrpm.js`) and the desk's machine panel | `{t:'messages', list}` and `{t:'memory', reading}`, held and sent on connect like the home rows, then on change · a dismissal is answered by the push · `memory` carries `off`, which hides the gauge |
+| pane data (roots, koshi, stats) | the pane module | its own read on `enter()` — each owner is the file the surface lives in |
 | tile bytes | `TileWire` (`tilewire.js`) | the socket; reconnect/backoff lives there and nowhere else |
 
-Lifecycle is deliberately simple: the page is the unit. Tiles, rooms and sheets are
-built once at boot and live for the page — nothing unmounts, so there is no disposal
-contract to forget; hidden surfaces cost nothing because their polls are gated on
-visibility predicates, not torn down. If a surface ever becomes destroyable, it takes
-a `destroy()` owner at that moment, not speculatively.
+### Transcript reading transport
+
+A transcript tab opens with a bounded tail, then registers its Agent and reading on
+`/events`. Live records arrive only for that subscription. After the event socket closes,
+the replacement socket repeats the watch and the tab makes one bounded `after=<committed>`
+walk; every fetched or pushed record enters one sequence-keyed set, so overlap is harmless
+and a record is rendered once in sequence order. The reading remains a server filter:
+records excluded from Chat still advance the journal checkpoint but do not become Chat
+rows.
+
+The promoted phone acceptance on 2026-09-24 keeps these results separate:
+
+- **Live phone Chat push passed:** one record went journal → event frame → DOM in 237ms
+  (6ms frame → DOM), with no transcript GET, one DOM copy, no unrelated-Agent frame and
+  no browser or network error.
+- **Real reconnect transport passed:** closing the client event socket produced a new open
+  socket after 3.086s and exactly one `after=1825` GET.
+- **Outage reading filtering and duplicate prevention passed:** natural records 1826–1828
+  were `act` records, so Chat correctly returned an empty page at checkpoint 1828; nothing
+  appeared before reconnect and the DOM remained duplicate-free.
+- **Missed phone Chat recovery under real traffic is unknown:** no `say` record existed in
+  that outage, so there was no Chat-admitted record to recover. The deterministic recovery
+  regression passes, but it is not relabelled as real-traffic evidence.
+- **Post-promotion open passed on `19450aab`:** a fresh Binary phone tab began in Term with
+  no Agent watch, then one Chat press registered `{session:"binary", reading:"chat"}` at
+  the start of the bounded tail request. Under the established 400ms RTT / 50KB/s envelope,
+  `tail=30` returned HTTP 200 with 26,370 bytes (916ms imposed transfer delay); the first
+  entry was visible 1,443ms after the press and 30 entries rendered. The independent
+  availability probe was `tail=1`, 1,282 bytes and 426ms. The check sent no message and
+  changed no store.
+
+Lifecycle has two explicit owners. Long-lived workspace rooms are page-owned and gate their
+polls on visibility; a surface that reads a store resource subscribes when it opens and
+unsubscribes when it closes, and the Team destination does exactly that for the home rows. Disposable phone Tiles are host-owned: destroying one closes its
+transport, disposes its transcript handler/watch, observer, composer and timers, and removes
+it from the Tile registry. A surface is never treated as page-lived merely because an older
+desktop composition happened not to unmount it.
 
 ## Transient surfaces
 
@@ -282,14 +360,12 @@ a `destroy()` owner at that moment, not speculatively.
   the hidden-opener ones. The browser's own mousedown focus rule runs after the dismissal
   handler and moves focus to the nearest focusable ancestor of what was pressed — the scrim
   is a bare `div`, so that is `<body>`, arriving right after the restore and undoing it.
-  backdrop click returned `<body>` on every one of them, ⚙ System and the session switcher
-  included. The pointer's default is cancelled, so the restore is the last word.
-  Commons menu, and that menu is gone (see Navigation). A primitive with no consumer is
-  a corpse `check-dead` fails the build on, and parked code is not kept alive by an
-  exemption — the tape is in git. The dismissal grammar it held is not repealed: the job
-  menu (`widgets.js`) and the touch drops (`tiledrop.js`) still carry it in their own
-  code, and the day a bar control drops a menu again it comes back to `ui.js` rather
-  than being hand-rolled at the call site for the fourth time.
+  The pointer's default is cancelled, so the restore is the last word, for every consumer,
+  ⚙ System and the session switcher included.
+  A primitive with no consumer is deleted, not parked — the tape is in git. The dismissal
+  grammar is not repealed: the touch drops (`tiledrop.js`) carry it in their own code, and
+  the day a bar control drops a menu again it comes back to `ui.js` rather than being
+  hand-rolled at the call site.
   **Weighed again the same day and still not restored.** メ on the tile header now drops
   the six controls that used to end the row (`public/js/tilemore.js`, docs/using-ronin/tile.md); it
   follows the adjacent header-menu grammar, and the reason is mechanical rather than
@@ -433,8 +509,7 @@ words go and the width goes with them (a genuine shell change, so a `@media` que
 
 `check-modules` (cycles across the whole graph, orphans, resolution, top-level import
 use, the 700-line ceiling) · `check-css` (colour spelled once; app patches no
-primitive and shadows no token; the contrast floor, both themes) · `check-dead`
-(deletions leave no corpses) · `check-tips` (hover/focus help stays absent) · `smoke-ui` (desktop +
+primitive and shadows no token; the contrast floor, both themes) · `check-tips` (hover/focus help stays absent) · `smoke-ui` (desktop +
 phone render, the journey probes, and an axe scan at three states — serious/critical
 fail; color-contrast is excluded there because contrast policy is check-css's tiered
 floor, including the documented sub-AA `--muted` secondary tier the density ruling
@@ -573,7 +648,7 @@ own format: two numbered steps — Team (ID · Title · Kind, then Purpose) and 
 defaults (the groups) — at the forms' tight density. Its text entries are the kit's, beside
 the stones, not inside them. Contract and file list: `docs/architecture/team-workspace.md` § Durable Team record.
 
-**What is not an `ask()`.** The stone work surface (`stone-work-surface.js`) is a page for
+**What is not an `ask()`.** The Phalanx surface (`phalanx.js`) is a page for
 browsing a collection whose item is the content — Presets, Workspace Folders, Model
 providers, Templates — and stays. Tabs, the Presets kind filter, and the
 2 ⇄ 4 button are not selections from a list. The tile head owns its current Output and

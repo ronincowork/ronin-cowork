@@ -1,78 +1,46 @@
 # professional_en
 The floor. Every key a surface reads is here, in plain English, so a lexicon that says
-nothing paints exactly this. `check-lexicon` holds this file complete.
+nothing paints exactly this.
 
 - **label:** Professional
 - **blurb:** The plain words. Every other lexicon falls through to these.
 - **desk_profile:** desk profile
 - **campaign:** Desk
 - **campaigns:** Desks
-- **add_agent.card:** Add Agent to Team
-- **add_agent.card_summary:** The Team answers the rest.
-- **add_agent.title:** Add Agent to Team
 - **add_agent.name:** name
 - **add_agent.name_placeholder:** name
 - **add_agent.instruction:** instruction
 - **add_agent.instruction_placeholder:** what this Agent should do
-- **add_agent.make_team_lead:** Make Team Lead
-- **add_agent.make_team_lead_sub:** Replace the current Team Lead when this Agent launches.
-- **add_agent.lead_swap_failed:** Started {name} as Team Lead, but could not clear Team Lead from: {names}.
-- **add_agent.template:** template
-- **add_agent.no_template:** No template
-- **add_agent.worktrees_mode:** Agent work mode
-- **add_agent.worktrees_on:** Own worktree where the Workspace folder allows it
-- **add_agent.worktrees_off:** Use the project checkout and its branches
-- **add_agent.worktrees_help:** Worktrees give this Agent a separate working folder and branch, so its file changes do not collide with another Agent’s. They run only when both the Agent and repo have Worktrees on, and use the managed hand-in and Team-lead merge process.
-- **add_agent.worktrees_choose_checkout:** Change to checkout mode
-- **add_agent.worktrees_choose_own:** Change to own-worktree mode
 - **add_agent.actions:** Launch actions
-- **add_agent.full_alternative:** Alternative: for full new Agent controls, use the
-- **add_agent.full_link:** detailed launch page
 - **add_agent.start:** Start
-- **add_agent.cancel:** Cancel
 - **add_agent.starting:** Starting…
 - **add_agent.started:** Started {name}
 - **add_agent.started_note:** Started {name} — {note}
 - **add_agent.team:** team
 - **add_agent.place:** place
 - **add_agent.still_asked:** still asked
-- **add_agent.none:** —
 - **installations:** Installations
 - **defaults:** Defaults
 - **campaign.name:** Desk name
 - **campaign.name_placeholder:** Ronin Home
 - **campaign.description:** Description
 - **campaign.description_placeholder:** What this desk is for
-- **campaign.commons:** Campaign commons
-- **campaign.view:** Campaign view
-- **campaign.commons_short:** Commons
-- **campaign.cowork_view:** Teams View
 - **campaign.coworks:** Teams
 - **campaign.cowork:** Team
 - **campaign.new:** New Desk
 - **campaign.create:** Create Desk
-- **campaign.none:** No Campaigns yet.
 - **campaign.saving:** saving…
 - **campaign.name_needed:** A Desk needs a name.
-- **campaign.profile_hint:** Sets the words, the skin and the templates this Campaign opens with.
-- **campaign.read_failed:** Could not read Campaigns — {message}
-- **campaign.archive:** Archive
-- **campaign.archived:** archived
-- **campaign.archive_confirm:** Archive {title}? It stops nothing — its Agents keep running.
 - **squad:** Team
-- **player_one:** Lead session
 - **team_kit:** Shared toolkit
 - **loadout:** Behaviors
 - **behaviours:** Behaviors
 - **glossary.installation:** installation
 - **glossary.behaviour:** behaviour
-- **glossary.installations:** Installations
-- **glossary.defaults:** Defaults
 - **mandate:** Mandate
 - **session_type:** Session type
 - **kind:** Kind
 - **template:** Template
-- **required_reading:** Required reading
 - **reach:** Reach
 - **recruit:** Recruit
 - **output:** Output
@@ -81,9 +49,6 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **go:** Go
 - **save_template:** Save as template
 - **publish:** Publish
-- **tier.stock:** Built-in
-- **tier.yours:** Mine
-- **tier.library:** Community
 - **kind.coding:** Software
 - **kind.household:** Home
 - **kind.personal:** Personal
@@ -123,7 +88,6 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **desk.check_updates:** Check for updates
 - **desk.check_updates_title:** Ask the release feeds what the latest versions are — both packages, only when pressed
 - **desk.update:** Update
-- **desk.install_services:** Install services
 - **desk.log_out:** Log out
 - **desk.log_out_title:** End this device’s session — the next visit asks for the password
 - **desk.unreachable:** unreachable
@@ -133,45 +97,12 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **desk.checkout_detail:** a dev checkout, not a release — updated by git, not by the button · started {started}
 - **desk.services_list:** services: {list}
 - **desk.services_none:** services: none — the free build
-- **desk.asking_feed:** asking the release feed…
-- **desk.updater_predate:** this operator predates the updater — its next restart carries the routes
-- **desk.feed_no_release:** the feed named no cowork release yet (a private repo needs gh auth on the host)
-- **desk.cowork_up_to_date:** ✓ cowork up to date — {installed}
-- **desk.cowork_checkout_latest:** latest cowork release is {latest} — this box runs a checkout, so the button stays off
-- **desk.update_to:** Update to {latest}
-- **desk.cowork_available:** cowork {latest} available (installed: {installed})
-- **desk.none:** none
-- **desk.update_services_to:** Update services to {latest}
-- **desk.install_services_v:** Install services {latest}
-- **desk.services_available_installed:** services {latest} available (installed: {installed})
-- **desk.services_available:** services {latest} available
-- **desk.services_up_to_date:** ✓ services up to date — {installed}
 - **desk.updated_reloading:** ✓ updated to {release} — reloading
 - **desk.update_timeout:** no new version answered after 5 minutes — journalctl --user -u "ronin-update-*" has the transcript
-- **desk.updating:** updating to {latest} — fetch, verify, gate the candidate, swap. The page blinks at the swap; sessions are untouched…
 - **desk.services_live_reloading:** ✓ services live: {list} — reloading
 - **desk.services_timeout:** services did not answer after 5 minutes — journalctl --user -u "ronin-update-*" has the transcript
-- **desk.installing_services:** installing services {latest} — fetch, verify, contract check, restart. The page blinks at the restart; sessions are untouched…
 
 ## launcher — launcher.js (the ＋ New board and its form)
-
-## roster — roster.js (the ⌂ Roster tab)
-- **roster.session_max:** session max
-- **roster.session_max_title:** How many sessions may run at once. 0 = no limit. The owner sets this; agents cannot.
-- **roster.running_of:** {n} / {max} running
-- **roster.running_no_limit:** {n} running · no limit
-- **roster.not_saved:** not saved — {message}
-- **roster.team_name:** team name
-- **roster.team_name_aria:** New team name
-- **roster.add_team:** ＋ Team
-- **roster.team_name_rule:** use letters, digits, - or _
-- **roster.drag_into:** drag a session into {team}
-- **roster.leads:** 人 leads {teams}
-- **roster.no_role_yet:** has not said what it is doing yet
-- **roster.stale:** ⚠ roster may be stale — {fault}
-- **roster.drop_here:** Drop a session here to add it to {team}
-- **roster.no_team:** no team
-- **roster.no_sessions:** no sessions yet
 
 ## panels — panels.js (the session note and session teams sheets)
 - **panels.note_sheet:** Session note
@@ -186,26 +117,16 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 
 ## commons — commons.js (the commons shell: tab strip and frame)
 - **commons.tab_off:** {tab} — off, this service is not installed.
-- **commons.sessions:** sessions
 
 ## campaign_view — campaign-view.js (Campaign Manage: the selector's Campaign-level surfaces)
 
-- **campaign_view.campaign_summary:** What this body of work is called, and what it is for.
-- **campaign_view.desk_summary:** This Ronin install, its owner and its workspace configuration.
-- **campaign_view.profile_summary:** The words, the skin and the templates this Campaign opens on.
 - **campaign_view.roots_summary:** The folders this Campaign is allowed to work in.
-- **campaign_view.templates_summary:** The Team templates this Campaign offers.
 - **campaign_view.new_summary:** Set the stage. It creates no Team and launches no Agent.
 - **campaign_view.none_selected:** No Desk selected.
-- **campaign_view.no_profiles:** No desk profiles on this install.
 - **campaign_view.no_description:** No description yet.
 - **campaign_view.no_profile:** As stock — none chosen.
 - **campaign_view.roots_n:** {n} roots
 - **campaign_view.roots_none:** None — an Agent here has nowhere to work.
-- **campaign_view.new_project_worktrees:** Worktrees for new workspace folders
-- **campaign_view.new_project_worktrees_yes:** Allow Ronin Worktrees
-- **campaign_view.new_project_worktrees_no:** Use the checkout
-- **campaign_view.new_project_worktrees_help:** Worktrees keep each Agent’s changes in a separate working folder and branch, so multiple Agents can work on one repository without clobbering each other. Each Agent hands its work in for the Team lead to merge deliberately. This sets the default for folders added later; change an existing repository on its Workspace folder card below.
 - **campaign_view.name_help:** On the door, the browser tab and the address.
 - **campaign_view.description_help:** What this body of work is for. Shown on its card.
 - **campaign_view.head:** Desk: {name}
@@ -229,8 +150,6 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **campaign_view.output_help:** What an Agent’s tile shows. Terminal Mirror is the one that ships; Detailed, Condensed and Cherry Pick arrive with Ronin Services.
 - **campaign_view.with_services:** Ronin Services
 - **campaign_view.services_title:** Arrives with Ronin Services.
-- **campaign_view.kind:** Kind
-- **campaign_view.kind_help:** The default kind of work for a new Team or project here. Nothing reads it yet.
 - **campaign_view.lexicon:** Lexicon
 - **campaign_view.lexicon_help:** The words. Held to one lexicon for now, so nothing on this page is offered.
 - **campaign_view.id:** Id
@@ -243,7 +162,6 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **campaign_view.default_recruit:** Recruit
 - **campaign_view.default_output:** Output
 - **campaign_view.default_behaviours:** Behaviors
-- **campaign_view.behaviours_help:** One shelf:name book per line.
 - **campaign_view.defaults_summary:** {model} · {reach}
 - **campaign_view.option_open:** Open
 - **campaign_view.option_discuss:** Discuss
@@ -258,158 +176,35 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **campaign_view.option_artifact:** An artifact
 - **campaign_view.option_no_code:** No code
 - **campaign_view.option_team:** The Team
-- **campaign_view.default_help:** The row a launch that names nothing starts from.
-- **campaign_view.from_settei:** from SETTEI
 - **campaign_view.col_provider:** Provider
 - **campaign_view.col_model:** Preferred model
-- **campaign_view.col_default:** Default
-- **campaign_view.templates_help:** A template fills a launch form and stops — its answers become yours. Agents are people you assign; teams are projects a cast delivers. A handful ship inside Ronin; the rest are on the library.
-- **campaign_view.library_none_kind:** Nothing of this kind on the library.
-- **campaign_view.templates_teams:** Teams — projects
-- **campaign_view.templates_agents:** Agents — people
-- **campaign_view.templates_none:** Nothing on this shelf.
-- **campaign_view.shape:** Show
-- **campaign_view.shape_all:** All
-- **campaign_view.shape_team:** Teams
-- **campaign_view.shape_agent:** Agents
-- **campaign_view.templates_on_system:** On your system — what New Team and New Agent offer
-- **campaign_view.templates_on_system_help:** Shipped with Ronin, or installed from the library, or saved by you. Anything installed or saved can be removed again from its box.
-- **campaign_view.templates_shipped_with:** Shipped with Ronin
-- **campaign_view.templates_installed:** Installed from the library, or saved by you
-- **campaign_view.templates_remove:** Remove from my system
-- **campaign_view.templates_remove_sure:** Remove — press again to confirm
-- **campaign_view.templates_removed:** Removed {name} from your system. It is still on the library.
-- **campaign_view.templates_removed_back:** Removed {name}; the shipped one is back.
-- **campaign_view.templates_yours:** yours
-- **campaign_view.templates_yours_over:** yours, replacing ours
-- **campaign_view.templates_shipped:** shipped
-- **campaign_view.templates_agents_n:** {n} agents
-- **campaign_view.templates_cast:** Cast
-- **campaign_view.templates_instructions:** Instructions
-- **campaign_view.templates_books:** Reads
-- **campaign_view.templates_download:** Download as a package
-- **campaign_view.templates_download_help:** This template, with your copies of the books and instructions it names, as one file you could put on a library.
-- **campaign_view.library:** On the Ronin library — not on your system yet
-- **campaign_view.library_help:** The shelf Ronin keeps and grows, provided by Ronin Services: a team, its people, and the books and tools they use. Nothing is fetched until you press; everything a package holds is shown before anything is written; an installed one appears below, on your system.
-- **campaign_view.library_show_all:** Show everything it holds
-- **campaign_view.library_hide_all:** Hide the contents
-- **campaign_view.library_check:** Check the library
-- **campaign_view.library_checking:** Asking Ronin HQ for the library…
-- **campaign_view.library_source:** {n} packages on the library
-- **campaign_view.library_none:** The library lists no packages yet.
-- **campaign_view.library_reading:** Reading {name} from the library…
-- **campaign_view.library_plan_help:** What installing this package writes into your stores, and what it leaves alone.
-- **campaign_view.library_plan_store:** Shelf
-- **campaign_view.library_plan_item:** Item
-- **campaign_view.library_plan_verdict:** Outcome
-- **campaign_view.library_executables:** This package installs {n} executable tools onto your Agents’ PATH. Read them before you rely on them.
-- **campaign_view.library_install:** Install
-- **campaign_view.library_install_n:** Install ({n})
-- **campaign_view.library_install_replace:** Install, replacing my {n}
-- **campaign_view.library_nothing_to_write:** Nothing new to install
-- **campaign_view.library_installing:** Installing…
-- **campaign_view.library_installed:** Installed {label}: {written} written · {skipped} left alone · {refused} refused.
-- **campaign_view.library_hold_team:** team
-- **campaign_view.library_hold_teams:** teams
-- **campaign_view.library_hold_agent:** agent
-- **campaign_view.library_hold_agents:** agents
-- **campaign_view.library_hold_sop:** Behavior
-- **campaign_view.library_hold_ways:** Behaviors
-- **campaign_view.library_hold_page:** reference page
-- **campaign_view.library_hold_pages:** reference pages
-- **campaign_view.library_hold_tool:** tool
-- **campaign_view.library_hold_tools:** tools
-- **campaign_view.verdict_new:** new — will be added
-- **campaign_view.verdict_shadows:** yours will replace the shipped one
-- **campaign_view.verdict_replaces:** you already have your own — kept unless you say replace
-- **campaign_view.verdict_same_shipped:** already shipped — skipped
-- **campaign_view.verdict_same_yours:** already yours — skipped
-- **campaign_view.verdict_refused:** refused — a package never replaces one of Ronin’s tools
 - **campaign_view.installations:** Installations
-- **campaign_view.installations_help:** System components installed on this machine. Each is on or off for the whole system; nothing already running changes.
 - **campaign_view.defaults:** Defaults
-- **campaign_view.svc_activated:** Activated with Ronin HQ: the template library and the hosted parts are yours.
-- **campaign_view.svc_not_activated:** Not activated with Ronin HQ. Activation is optional and separate from the switch: it unlocks the hosted parts — the template library first — with an email and a confirmation.
-- **campaign_view.svc_off_running:** Off: none of it runs — no recording, no transcripts, tiles are Locked only. Files stay in place.
-- **campaign_view.svc_restart_off:** Switched off, but still running in this copy of Ronin until it restarts.
-- **campaign_view.svc_restart_on:** Switched on, but not running in this copy of Ronin: restart Ronin to start it.
-- **campaign_view.svc_installed:** Installed on this machine: {parts}. The switch on the right turns it on for new Agents.
-- **campaign_view.svc_parked:** Parked parts: {parts}.
-- **campaign_view.svc_pill_installed:** Installed
-- **campaign_view.svc_pill_activated:** Installed · activated
-- **campaign_view.svc_pill_absent:** Not installed
-- **campaign_view.svc_absent:** Not installed on this machine.
-- **campaign_view.svc_sending:** Sending the confirmation email…
-- **campaign_view.svc_waiting:** Waiting for your confirmation — open the email sent to {email}.
-- **campaign_view.svc_resend:** Send the email again
-- **campaign_view.svc_resend_after:** after {time}
-- **campaign_view.svc_cancel:** Cancel the request
-- **campaign_view.svc_installing:** Confirmed — Ronin is finishing the install.
-- **campaign_view.svc_email:** you@example.com
-- **campaign_view.svc_send:** Send confirmation email
-- **campaign_view.svc_expired:** That confirmation link expired. Ask for a fresh one.
-- **campaign_view.svc_ask:** To activate: the address the entitlement should go to, then confirm from the email.
-- **campaign_view.sell_head:** What Ronin Services adds
-- **campaign_view.sell_library:** The template library — teams and agents Ronin keeps and grows, with the books and tools they use, installed with one press.
-- **campaign_view.sell_assistant:** A background assistant that keeps every agent’s work record and instructions current, so the roster and the tile say what each agent is doing.
-- **campaign_view.sell_transcripts:** Readable transcripts are not in this beta; the recorder is off while it is refactored.
-- **campaign_view.sell_voice:** Text to voice, and voice in — hear a report read back; speak to an agent from the tile.
-- **campaign_view.sell_hotwords:** Hotwords — teach dictation the words it mishears, once, for every session.
-- **campaign_view.sell_memory:** Unified team memory — what a session learns is kept for the team and recalled at birth.
-- **campaign_view.sell_stats:** Usage history — what your sessions did, counted over time, never their content.
 - **campaign_view.available:** Available
-- **campaign_view.unavailable:** Unavailable
 - **campaign_view.status_unreadable:** Status unreadable
 - **campaign_view.not_installed:** Not installed
 - **campaign_view.not_configured:** Not configured
-- **campaign_view.no_installation_description:** No description is available.
-- **campaign_view.read_more:** Read more
-- **campaign_view.loading_guide:** Opening guide…
-- **campaign_view.guide_read_failed:** The guide could not be read. Try again.
 - **campaign_view.installations_read_failed:** Installations could not be read. Nothing was changed; try again.
 - **campaign_view.installation_status_read_failed:** Installation status could not be read. Choices are shown, but their machine status is unknown.
 - **campaign_view.on:** On
 - **campaign_view.off:** Off
-- **campaign_view.rt_worktrees:** Ronin worktrees
-- **campaign_view.rt_worktrees_what:** Agent work mode: private branch and worktree where a Workspace folder allows Worktrees; direct work in the checkout and its branches everywhere else.
-- **campaign_view.rt_by_repo:** per repository — see Workspace folders
-- **campaign_view.rt_gbrain:** gbrain
-- **campaign_view.rt_gbrain_what:** The shared memory service: its reading and its MCP tools for sessions born with it connected.
-- **campaign_view.rt_koshi:** Koshi
-- **campaign_view.rt_detail_koshi:** The smart fill behind launches and Mika.
-- **campaign_view.rt_hotwords:** Hotwords
-- **campaign_view.rt_hotwords_what:** The words dictation keeps mishearing, sent with your voice.
-- **campaign_view.rt_present:** installed — no switch yet
-- **campaign_view.rt_absent:** not installed
 - **campaign_view.machine_summary:** The rest of the desk: Desk · Account · Archived · Messages · Help desk · Keypad.
 
 ## campaign_home — campaign-home.js (the root arrival: Machine Settings, Teams, Launch)
 
 - **campaign_home.ronin_home:** Ronin Home
-- **campaign_home.machine_settings:** Machine Settings
-- **campaign_home.machine_setup:** Machine Setup
-- **campaign_home.setup_is:** Install and authenticate a model provider
-- **campaign_home.campaign_is:** Admin Desk configuration
-- **campaign_home.coworks_is:** Your Teams and Agents
 - **campaign_home.launch:** New Project
-- **campaign_home.launch_is:** Start a new Team or Agent
-- **campaign_home.version:** v1.3
+- **campaign_home.desk:** Desk
+- **campaign_home.desk_is:** All Teams, Agents, and work
+- **campaign_home.team:** Team
+- **campaign_home.team_is:** Choose a Team and open its Workbench
+- **campaign_home.agent:** Agent
+- **campaign_home.agent_is:** Choose an Agent and open its Workbench
+- **campaign_home.settings:** Settings
 - **campaign_home.check_updates:** Check for updates
-- **campaign_home.checking:** Checking…
-- **campaign_home.check_unavailable:** Available after the next restart
-- **campaign_home.up_to_date:** Up to date
-- **campaign_home.update_available:** {version} available
 - **setup.provider_gate:** Activate one model provider in Machine Setup to use this.
-- **setup.not_now:** Not now
-- **setup.fine_for_now:** Fine for now
-- **setup.title:** Ronin Setup
 - **setup.open_settings:** Open Ronin Settings
 - **setup.open_setup:** Open Ronin Setup
-- **setup.use_dark:** Use dark appearance
-- **setup.use_light:** Use light appearance
-- **setup.surface_desktop:** Setting the desktop appearance — click for phone
-- **setup.surface_mobile:** Setting the phone appearance — click for desktop
-- **campaign.settings_title:** Ronin Settings
 
 ## launch — launch-view.js (the Workbench where Teams and Agents begin)
 
@@ -418,8 +213,6 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **launch.new_agent:** New Agent
 - **launch.new_agent_summary:** Start an Agent in a Team or on its own.
 - **forms.launch:** Launch
-- **forms.payload_band:** New launch payload — what this raise will send
-- **forms.payload_band_agent:** New launch payload — what this launch will send
 - **launch_mode.head:** launch mode
 - **launch_mode.mode:** Mode
 - **launch_mode.configured:** Native
@@ -434,8 +227,6 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **help.loadout_body:** Model and Launch mode are independent. Native means no override in that field; only Native model plus Native launch mode is the bare CLI command. Features add facilities or taught practices; behaviours say how ordinary work should be done.
 - **help.agents:** Agents
 - **help.agents_body:** The Agents this Team is raised with. A row is short on purpose — a name and what that Agent does — and opens for its mandate when you want it. 人 marks the lead; this form offers one, though a running Team may gain more. Raising creates the Team and then births every named row, the lead last. A Team with no rows is ordinary and raises fine.
-- **help.installations:** What an Installation is
-- **help.installations_body:** An Installation is a system-level switch in the Campaign. A system installation joins every Cowork Agent; a provider installation makes its behaviours available for Teams and Agents to choose.
 - **help.behaviours:** What a Behavior is
 - **help.behaviours_body:** Behaviors are specific guidance given to Agents at birth. Write it Down, Planning, Team Work, Visual Staging, and Working with the User are selectable; All Cowork Agents and Conditional Behaviors are applied by Ronin when their rules match.
 - **help.type:** New session
@@ -454,27 +245,21 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **help.loadout:** Behaviors
 - **help.kit:** Shared toolkit
 - **help.kit_body:** What every Agent raised on this Team starts with. All of it lands in the next Agent form as an ordinary editable value — none of it is a constraint, and changing it here never touches a session already running.
-- **new_team.common:** Common instructions
 - **new_team.who_where:** Who and where
-- **new_team.defaults_band:** Everything below this is the default for Agents launched within this team.
 - **new_team.agents:** Agents
 - **new_team.agents_meta:** {n} agents
 - **new_team.agent_name:** name
 - **new_team.agent_name_taken:** Nothing was created. Choose another name for: {names}.
 - **new_team.agent_assignment:** what this Agent does
-- **new_team.mark_team_lead:** Mark as team lead
-- **new_team.agent_more:** Its mandate
 - **new_team.agent_drop:** Remove this Agent
 - **new_team.agent_add:** ＋ Add an Agent
-- **new_team.where:** Where
 - **new_team.readable:** Title
-- **launch.mode_team:** Team
-- **launch.mode_agent:** Agent
 
 ## home — home.js (the status words and the launch receipt)
-- **home.status_ready:** ready
-- **home.status_thinking:** thinking…
-- **home.status_awaiting_input:** awaiting input
+- **home.stance_working:** working…
+- **home.stance_replying:** replying…
+- **home.stance_awaiting_you:** awaiting you
+- **home.stance_asking:** asking you
 
 ## settei — settei.js (the ⚙ Configuration tab)
 - **settei.saving:** saving…
@@ -498,7 +283,6 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **settei.reach_alias:** · or {alias} (MagicDNS)
 - **settei.reach_ssh:** reach by ssh
 - **settei.group_capacity:** capacity
-- **settei.group_messages:** messages
 - **settei.group_projects:** projects · {n}
 - **settei.dir_gone:** ✕ {dir} is gone
 - **settei.projects_link:** Edit these in ▣ Workspace folders — this room only shows them.
@@ -528,56 +312,29 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 
 ## new_team / team — new-team.js (the New Team surface; team.* rows are shared by the Team page family)
 - **new_team.name:** Team name
-- **new_team.role_placeholder:** development — or leave blank
-- **new_team.role_desc:** Optional. Blank is an unclassified Team, which is a valid state.
 - **team.objective:** Objective
-- **team.repos:** Repositories
-- **team.branch:** Branch
-- **team.lines:** Team lines
-- **team.promotion:** Promotion
-- **team.parked_desks:** Parked desks
-- **team.wipeboard:** Wipeboard
 - **team.project_root:** Workspace folder
-- **team.command:** Command
-- **team.control:** Control
-- **team.mcp:** MCP
 - **new_team.team_actions:** Team actions
 - **team.team:** Team
 - **team.roster:** Roster
-- **team.status:** Status
-- **team.mode:** Mode
-- **team.role:** Role
 - **new_team.name_invalid:** Lowercase letters, digits, _ and - only.
 - **new_team.root_default:** — the box’s default —
 - **new_team.title:** New Team
 
 ## new_team — new-team-form.js (the drawn raise form, staged beside the card above)
 - **new_team.card_summary:** Template · kit · lead — the drawn form.
-- **new_team.name_kind:** Name & kind
 - **new_team.name_placeholder:** lowercase, digits, - _
 - **new_team.objective_placeholder:** what this team is for
-- **new_team.worktrees_mode:** Agent work mode
-- **new_team.worktrees_on:** Own worktree where the Workspace folder allows it
-- **new_team.worktrees_off:** Use the project checkout and its branches
-- **new_team.worktrees_help:** Worktrees give each Agent a separate working folder and branch, so their file changes do not collide. They run only when both the Agent and repo have Worktrees on, and use the managed hand-in and Team-lead merge process.
-- **new_team.lead_include:** Include a team lead
-- **new_team.lead_include_sub:** Raised with the team and briefed.
-- **new_team.lead_empty:** Open it empty
-- **new_team.lead_empty_sub:** Ordinary. Add one whenever you like.
 - **new_team.members:** members
 - **new_team.members_note:** derived from live tags — never stored here
 - **new_team.inherits:** an agent born here inherits
 - **new_team.staffing_failed:** Team created, but {failed} of {total} Agents could not be launched: {names}. Open the Team and add them there.
-- **new_team.checking_names:** Checking Agent names…
-- **new_team.name_check_failed:** Agent names could not be checked, so nothing was created. {reason}
 - **new_team.raising:** Raising the team…
 - **new_team.save_name_placeholder:** template name
 - **new_team.save_as_new:** Save as new template
 - **new_team.saved_template:** Saved template {name}
 
 ## forms — form-steps.js (the drawn form idiom shared by New Team and New Agent)
-- **forms.own:** Make your own
-- **forms.own_blurb:** Fresh and empty. Fill it in yourself.
 - **forms.library_note:** More on the Ronin library — Campaign → Templates → Check the library to see them and download the ones you want.
 - **forms.default:** default
 - **ask.answer:** Answer
@@ -597,13 +354,9 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **forms.required:** Required
 - **forms.reason_not_on_machine:** not on this machine
 - **forms.reason_turned_off:** turned off
-- **forms.reason_not_listed:** not listed by your {cli} {client_version}
-- **forms.model_unlisted:** not listed by this CLI
 - **forms.provider_off:** {name} — not on this machine
 - **forms.model_word:** {model} · {tier}
 - **forms.model_off:** {model} · {tier} — not on this machine
-- **forms.model_list_current:** {verdict} by your {cli} {client_version}{as_of}
-- **forms.model_list_stale:** {verdict} by {cli} {client_version}{as_of}, you have {installed_version} — not yet re-read
 - **forms.tier_light:** light
 - **forms.tier_standard:** standard
 - **forms.tier_frontier:** frontier
@@ -612,10 +365,6 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **forms.none:** —
 - **forms.on:** On
 - **forms.off:** Off
-- **forms.always:** always
-- **forms.campaign:** campaign
-- **forms.campaign_on:** campaign on
-- **forms.campaign_off:** campaign off
 
 ## presets — Setup launch presets
 - **presets.tile_view:** Tile view
@@ -638,10 +387,6 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **presets.kept:** Kept
 - **presets.keep:** Keep
 - **presets.skip:** Skip
-- **forms.team_on:** team turns on
-- **forms.team_off:** team turns off
-- **forms.agent:** agent
-- **forms.agent_override:** agent overrides
 
 ## new_agent — new-agent.js (the drawn launch form, staged beside the ＋ New board)
 - **new_agent.title:** New Agent
@@ -651,23 +396,15 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **new_agent.team_defaults:** Team defaults
 - **new_agent.desk_defaults:** Desk defaults
 - **new_agent.card_summary:** Session type first — the drawn launch form.
-- **new_agent.new_session:** New session
 - **new_agent.type_cowork:** Cowork Agent
 - **new_agent.type_cowork_sub:** Born with Ronin capabilities, behaviors, and assigned Team.
 - **new_agent.type_bare:** Bare-metal Agent
 - **new_agent.type_bare_sub:** The provider’s agent and nothing else.
 - **new_agent.type_terminal:** Terminal
 - **new_agent.type_terminal_sub:** A raw tmux pane, no agent launched, and nothing sent to it.
-- **new_agent.name_model_kind:** Name, model & kind
-- **new_agent.name_model:** Name & model
-- **new_agent.name_where_model:** Name, where & model
-- **new_agent.name_where:** Name & where
 - **new_agent.name_placeholder:** name
-- **new_agent.terminal_note:** A terminal takes no kind, no instructions, no mandate and no loadout.
 - **new_agent.bare_note:** A bare-metal Agent takes no kind, no mandate and no loadout.
 - **new_agent.instructions:** Instructions
-- **new_agent.team_existing:** An existing team
-- **new_agent.team_existing_sub:** Join it. Its answers land at birth.
 - **new_agent.team_none:** No team (rōnin)
 - **new_agent.team_none_sub:** Ordinary, not a gap.
 - **new_agent.team_new:** New team
@@ -675,18 +412,11 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **new_agent.team_current:** Current team
 - **new_agent.team_current_sub:** Choose from your teams.
 - **new_agent.which_team:** Which team
-- **new_agent.team_new_blank:** Blank makes no team — the Agent is a rōnin.
-- **new_agent.a_ronin:** a rōnin
 - **new_agent.session:** session
 - **new_agent.created_first:** (created first)
 - **new_agent.blank_note:** A blank field is an answer, not a gap.
-- **new_agent.team_role:** Team role
 - **new_agent.make_team_lead:** Make team lead
 - **new_agent.team_lead:** Team lead
-- **new_agent.worktrees_mode:** Agent work mode
-- **new_agent.worktrees_on:** Own worktree where the Workspace folder allows it
-- **new_agent.worktrees_off:** Use the project checkout and its branches
-- **new_agent.worktrees_help:** Worktrees give this Agent a separate working folder and branch, so its file changes do not collide with another Agent’s. They run only when both the Agent and repo have Worktrees on, and use the managed hand-in and Team-lead merge process.
 
 ## team_wipeboard — team-wipeboard.js (the team wipeboard channel on the Team page)
 - **team_wipeboard.placeholder:** say something to the team — every member is interrupted
@@ -694,75 +424,47 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **team_wipeboard.no_notice:** → (no notice)
 - **team_wipeboard.cleared:** … earlier posts have cleared
 - **team_wipeboard.empty:** Nothing on the board right now — posts clear after 48 hours.
-- **team_wipeboard.read_failed:** Could not read the board — {message}
 - **team_wipeboard.post_failed:** Could not post — {message} (your text is still in the box)
 - **team_wipeboard.no_team:** No Team resolved — nothing to read.
 
-## desks — desks.js (the ⑂ desk readings: tile head, roster column, Team page)
-- **desks.detached:** (detached)
-- **desks.worktree:** worktree {path}
-- **desks.count_one:** 1 worktree
-- **desks.count_many:** {n} worktrees
-- **desks.pending_n:** {n} pending
-- **desks.private_n:** {n} private
-- **desks.dirty_n:** {n} dirty
-- **desks.parked_n:** {n} parked
-- **desks.blocked_n:** {n} blocked
-- **desks.none:** No managed worktree listed yet. A coding launch opens selected worktrees; the session lists its repositories in TEGAMI.
-- **desks.line:** → {line}
-- **desks.ahead:** ahead {n}
-- **desks.behind:** behind {n}
-- **desks.dirty_files:** {n} unsaved
-- **desks.pending_by:** update pending, by {who}
-- **desks.parked:** parked
-- **desks.unknown:** not found on this box
-- **desks.blocked:** blocked: {why}
-- **desks.promotion_blocking:** ⚠ {state} — {summary} ({id})
-- **desks.promotion_last:** last {summary} · {id} · by {who}
-- **desks.promotion_none:** none yet
-- **desks.parked_gone:** {name} · gone · {n} ahead
-- **desks.parked_none:** none
-
 ## team — team-view.js (the Team page)
+- **work_items.title:** Work Items
+- **work_items.intro:** Select a work item to read its Project. Drag between stages to request a move.
+- **work_items.refresh:** Refresh Work Items
+- **work_items.details:** Show stone details
+- **work_items.loading:** Loading Work Items…
+- **work_items.failed:** Could not load Work Items.
 - **team_kanban.beta:** Beta
 - **team_kanban.beta_message:** Task Manager is in beta. Follow Projects from ideas to done using Tools and the Work Record. We’re making it easier for Agents to keep them current without forcing upkeep.
 - **team_kanban.header_collapse:** Collapse
 - **team_kanban.header_expand:** Expand
+- **team_kanban.back:** Back to Task Manager
+- **team_kanban.project:** Project
+- **team_kanban.status_projects:** Projects by status
+- **team_kanban.project_missing:** This Project is not in the current scope.
+- **team_kanban.stage:** Status
+- **team_kanban.holder:** Holder
+- **team_kanban.progress:** Progress
+- **team_kanban.next:** Next
+- **team_kanban.evidence:** Evidence
+- **team_kanban.open_owner:** Open @{name}
+- **team_kanban.waiting:** waiting on
+- **team_kanban.asked:** asked
+- **team_kanban.desk_summary:** Projects across this Desk’s Teams and Agents
 - **team.lead:** Team lead
-- **team.flip_commons:** Show the Team commons in this workspace
-- **team.flip_terminal:** Show the terminal in this workspace
 - **team.workspace_1:** Workspace 1
 - **team.workspace_2:** Workspace 2
 - **team.commons_card:** Commons
 - **team.commons_summary:** See Roster / Docs / Wipeboard / Messages / Configuration
-- **team.roster_of:** Roster
 - **team.workspace_blank:** Workspace
-- **team.workspace_empty:** empty
 - **workspace.close_surface:** Close this work surface
-- **team.new_session:** New session
-- **cowork.tab_roster:** Roster
 - **cowork.tab_archives:** Archived
 - **team.workspace_3:** Workspace 3
 - **team.workspace_4:** Workspace 4
-- **team.count_2_title:** Two workspaces around the roster
-- **team.count_4_title:** Four workspaces, two by two
 - **team.roster_title:** Roster
 - **team.commons:** Commons
 - **team.arranged_by:** arranged by {from}
-- **team.attached:** attached
-- **team.add_member:** ＋ Add team member
-- **team.add_member_summary:** A new session, born into the workspace you are in.
-- **team.none_selected:** No Team selected
 - **team.state:** State
-- **team.record:** Record
-- **team.record_tag_only:** tag-only — no durable roster; the team is its sessions’ tags
-- **team.live_roster_n:** Live roster · {n}
-- **team.live_roster_none:** Live roster · none
-- **team.lead_none:** not designated
-- **team.none_selected_dot:** No Team selected.
-- **team.reading:** Reading the Team…
-- **team.read_failed:** Could not read this Team — {message}
-- **team.no_live:** No live sessions on this Team.
 
 ## services — services-card.js (the Services activation card)
 - **services.stage_not_requested:** Not requested
@@ -838,68 +540,17 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **machine.scope_note:** These are this container’s numbers, not the host’s.
 - **machine.unavailable:** not readable here
 - **machine.unavailable_note:** This system does not expose these, so they are left unanswered rather than reported as zero.
-- **machine.read_failed:** Could not read the machine just now.
-- **machine.refresh:** Refresh
-- **machine.refresh_title:** Read the machine again now
+- **machine.no_reading:** No reading of the machine yet.
 - **machine.stop:** Stop watching
 - **machine.stop_title:** Stop gathering machine readings and hide the gauge. Nothing was installed on the box, so there is nothing to undo — turn it back on whenever you like.
-- **machine.stopped:** Off. Reload to clear the gauge.
+- **machine.stopped:** Off — the gauge is hidden.
 - **machine.save_failed:** Could not save that.
 
-## gbrain — gbrain.js (the gbrain commons tab)
-- **gbrain.running:** ● running
-- **gbrain.stopped:** ○ stopped
-- **gbrain.vm_only:** VM only
-- **gbrain.network:** network reachable
-- **gbrain.none:** none
-- **gbrain.off:** off
-- **gbrain.on:** on
-- **gbrain.unknown:** unknown
-- **gbrain.intro:** What is running, what can leave this VM, and what gbrain can draw from.
-- **gbrain.refresh:** ↻ Refresh
-- **gbrain.n_connected:** {n} connected
-- **gbrain.process:** Local gbrain process
-- **gbrain.listening:** Listening
-- **gbrain.provider:** External model provider
-- **gbrain.integrations:** Integrations
-- **gbrain.public_access:** Public access
-- **gbrain.privacy_head:** Privacy and reach
-- **gbrain.details:** Local details
-- **gbrain.endpoint:** {address}:{port} · gbrain {version} · observed {time}
-- **gbrain.version_unknown:** version unknown
-- **gbrain.search_head:** Search
-- **gbrain.embeddings:** Local embeddings
-- **gbrain.model:** Model
-- **gbrain.dimensions:** Dimensions
-- **gbrain.retrieval_hybrid:** hybrid (keyword + semantic)
-- **gbrain.retrieval_keyword:** degraded — keyword only
-- **gbrain.retrieval:** Retrieval
-- **gbrain.answers_on:** gbrain composition available
-- **gbrain.answers_off:** composed by the agent (by design)
-- **gbrain.answers:** Answers
-- **gbrain.reason:** Reason
-- **gbrain.integrations_unread:** Integration status could not be read.
-- **gbrain.ask_assistant:** Ask PersonalAssistant
-- **gbrain.not_installed:** gbrain is not installed
-- **gbrain.removing:** Removing
-- **gbrain.installing:** Installing
-- **gbrain.removing_detail:** running — units, wiring, shelves (your brain repo is kept)
-- **gbrain.installing_detail:** running — weights, gbrain, cabinet, wiring
-- **gbrain.remove:** Remove
-- **gbrain.install:** Install
-- **gbrain.failed_detail:** failed — the log below says where
-- **gbrain.install_pitch:** One press installs everything: the local embedding weights, gbrain itself (pinned), your brain repo, the server, and the session wiring. Downloads come from github.com and huggingface.co; nothing else leaves the VM.
+## gbrain — gbrain-setup-state.js and gbrain.js (the Ronin Setup work surface)
 - **gbrain.retry_install:** Retry install
 - **gbrain.load:** Load gbrain
-- **gbrain.remove_button:** Remove gbrain…
-- **gbrain.remove_confirm:** Remove gbrain from this machine? The server, tokens, wiring and shelves go; your brain repo and its pages are KEPT.
-- **gbrain.checking:** checking…
-- **gbrain.status:** gbrain status
-- **gbrain.configured:** configured
 - **gbrain.status_diagnosis:** Setup could not read the local gbrain status. Nothing was changed.
 - **gbrain.check_again:** Check again
-
-## gbrain — gbrain-setup-state.js and gbrain.js (the Ronin Setup work surface)
 - **gbrain.setup_intro:** A shared, searchable memory for your Agents.
 - **gbrain.setup_q_installed:** Installed
 - **gbrain.setup_q_accounts:** Accounts linked
@@ -1069,10 +720,6 @@ The catalog entry goes. {dir} is not touched.
 - **roots.chip_direct_title:** Direct: commits land on {stable} itself.
 - **roots.chip_shared:** Repository: use checkout
 - **roots.chip_shared_title:** No RONIN_REPO record: sessions use this checkout. Edit this root to declare its repository workflow.
-- **roots.worktrees_guide:** For Ronin Worktrees to run, both must be on: the repo needs Worktrees on, and the Agent needs Worktrees on. This page controls the repo.
-- **roots.state_worktrees:** Repo: Worktrees on. Agent must also have Worktrees on.
-- **roots.state_checkout:** This repository uses its checkout.
-- **roots.state_undeclared:** No repository profile is declared, so Agents use the checkout. Edit this root to allow Ronin Worktrees.
 - **roots.stone_plain_folder:** Plain folder
 - **roots.stone_repo_no_remote:** Repository · no remote
 - **roots.stone_repo_worktrees:** Repository · Worktrees
@@ -1117,11 +764,9 @@ The catalog entry goes. {dir} is not touched.
 - **roots.github_unreadable:** Ronin could not verify GitHub authentication.
 - **roots.github_waiting:** Finish GitHub authentication in the window first.
 - **roots.github_clone_stone:** Clone a repository
-- **roots.github_clone_state:** Uses existing Git access
 - **roots.github_clone_ready_state:** Uses existing Git access
 - **roots.github_clone_heading:** Clone a repository
 - **roots.github_clone_lede:** Clone a GitHub repository and add its folder as a Ronin workspace.
-- **roots.github_clone_needs_auth:** Cloning uses this machine’s existing Git access.
 - **roots.github_clone_ready:** Cloning uses this machine’s existing Git access. GitHub CLI is optional.
 - **roots.github_repository:** GitHub repository
 - **roots.github_clone:** Clone and add workspace
@@ -1145,7 +790,6 @@ The catalog entry goes. {dir} is not touched.
 - **roots.group_repository:** Advanced repository workflow
 - **roots.group_repository_help:** Optional Git publishing and Worktrees choices. An ordinary folder needs none of these.
 - **roots.f_mode:** publishing
-- **roots.f_mode_hint:** Reviewed uses a working branch and a final PR to stable. Direct publishes on stable itself.
 - **roots.mode_reviewed:** reviewed release
 - **roots.mode_direct:** direct publishing
 - **roots.f_working:** working
@@ -1153,12 +797,10 @@ The catalog entry goes. {dir} is not touched.
 - **roots.f_stable:** stable
 - **roots.f_stable_hint:** The published branch. You choose its name.
 - **roots.f_worktrees:** Worktrees
-- **roots.f_worktrees_hint:** Worktrees keep each Agent’s file changes in a separate working folder and branch. Both the Agent and repo must have Worktrees on.
 - **roots.worktrees_enabled:** Use Ronin Worktrees
 - **roots.worktrees_disabled:** Use the checkout
 - **roots.flow_reviewed:** {working} → review → {stable}
 - **roots.flow_direct:** commits → {stable}
-- **roots.worktrees_two_gates:** This controls the repo. Worktrees use a managed hand-in and Team-lead merge process.
 - **roots.flow_worktrees:** Agents with Worktrees on use their own working folder and branch; other Agents use the checkout.
 - **roots.flow_checkout:** Every Agent uses this checkout, even when the Agent has Worktrees on.
 - **roots.flow_preview:** Flow: {branches}. {worktrees} Saving this profile does not create, move, or rename branches.
@@ -1215,60 +857,13 @@ The catalog entry goes. {dir} is not touched.
 - **roots.count_one:** {n} workspace folder
 - **roots.count_many:** {n} workspace folders
 - **roots.count_archived:** {n} archived
-- **roots.untagged_one:** {n} untagged session
-- **roots.untagged_many:** {n} untagged sessions
 
 ## stats — stats.js (the ▦ Stats tab)
-- **stats.win_today:** Today
-- **stats.win_week:** This week
-- **stats.win_month:** This month
-- **stats.win_all:** All time
-- **stats.cap_forks:** forks
-- **stats.cap_teams:** teams
-- **stats.cap_board_posts:** wipeboard posts
-- **stats.cap_board_reads:** wipeboard reads
-- **stats.cap_voice:** voice
-- **stats.cap_pad:** pad
-- **stats.cap_copy:** copy panel
-- **stats.faults_many:** ⚠ {n} stats probes are broken — counting has stopped for these. Paste this into a session to fix.
-- **stats.faults_one:** ⚠ {n} stats probe is broken — counting has stopped for this. Paste this into a session to fix.
-- **stats.range:** {from} → {to} · {days} days
-- **stats.sessions:** Sessions
-- **stats.active_days:** Active days
-- **stats.live_now:** Live now
-- **stats.peak:** peak {n}
-- **stats.teams:** Teams
-- **stats.migrated:** {n} migrated · {list}
-- **stats.started:** {n} started
-- **stats.doing_now:** Doing right now
-- **stats.born:** Born
-- **stats.ended:** Ended
-- **stats.lifetime:** Lifetime
-- **stats.ctx_unused:** Context unused at close
-- **stats.model:** Model
-- **stats.ladder_height:** Work record progress
-- **stats.at_gate:** {n} at a gate — waiting on you
-- **stats.plan_docs:** Plan docs
-- **stats.plans_in_flight:** in flight
-- **stats.plans_landed:** landed
-- **stats.plans_legs_done:** legs completed
-- **stats.plans_stale:** stale 14d+
-- **stats.plans_legs_median:** legs per plan (median)
-- **stats.ladders_plans:** Work records & plans
-- **stats.n_live:** {n} live
-- **stats.surfaces:** Ronin surfaces
-- **stats.ui:** UI
-- **stats.capabilities:** Capabilities
-- **stats.unreachable:** Stats could not be read.
-- **stats.unavailable:** Stats are not available on this install yet.
 
 ## customize — customize-rail.js (the Customize rail's sections and resources)
 - **customize.sec_behavior:** Behavior
 - **customize.sec_people:** People & work
 - **customize.sec_presentation:** Presentation
-- **customize.ways:** Behaviors
-- **customize.sops_read:** Read procedure
-- **customize.sops_blurb:** How this house goes about a domain — fetched by a situation, never pushed.
 - **customize.tools:** Tools
 - **customize.tools_blurb:** Agent-facing executables selected and taught by capability documents.
 - **customize.saved_launches:** Saved launches
@@ -1290,15 +885,9 @@ The catalog entry goes. {dir} is not touched.
 - **customize.read_failed:** could not read — {message}
 - **customize.not_a_list:** the route did not answer with a list
 - **customize.empty:** Nothing here yet. That is an ordinary state, not a fault.
-- **customize.roles_not_a_list:** the session-role route did not answer with a list
 - **customize.read_entry:** Read entry
 
 ## customize — customize-role-families.js
-- **customize.family_warning:** Changing a shipped family makes the whole definition yours; later improvements to Ronin’s copy stop reaching it.
-- **customize.pinned_first:** pinned first: {role}
-- **customize.saving_membership:** Saving membership…
-- **customize.membership_saved:** Membership saved.
-- **customize.membership_bar:** {family} membership
 
 ## customize — customize-handoff.js
 - **customize.handoff_head:** Making it yours
@@ -1307,20 +896,13 @@ The catalog entry goes. {dir} is not touched.
 - **customize.handoff_ask_agent:** Ask your agent to add one.
 
 ## pane — panes.js (the pane registry's tab labels)
-- **pane.sessions:** ⌂ Roster
-- **pane.archives:** Archived
-- **pane.new:** ＋ New session
-- **pane.wipe:** ▤ Wipeboard
 - **pane.docs:** ▧ Docs
 - **pane.settei:** Configuration
-- **pane.proj:** Workspace folders
 - **pane.hotwords:** Hotwords
 - **pane.koshi:** Koshi
 - **pane.gbrain:** gbrain
-- **pane.stats:** Stats
 
 ## desk — desk.js (the desk's rows and tooltips)
-- **cowork.commons:** Ronin Desk
 - **cowork.tab_health:** Desk
 - **cowork.tab_themes:** Themes
 - **cowork.tab_account:** Account
@@ -1330,17 +912,11 @@ The catalog entry goes. {dir} is not touched.
 - **cowork.tab_keypad:** Keypad
 - **cowork.tab_messages:** Messages
 - **messages.empty:** No messages are waiting.
-- **messages.reconnecting:** Reconnecting…
 - **messages.note:** A message waits only while a draft or dialog is present. After two minutes Ronin attempts it once, then removes it.
 - **messages.from:** From
 - **messages.to_label:** To
 - **messages.waiting:** Waiting
 - **messages.state_age:** {state} · {age}
-- **messages.age_now:** just now
-- **messages.age_short_seconds:** {seconds}s
-- **messages.age_short_minutes:** {minutes}m {seconds}s
-- **messages.age_short_hours:** {hours}h {minutes}m
-- **messages.age_short_days:** {days}d {hours}h
 - **messages.type_tell:** Agent tell
 - **messages.type_wipeboard:** Wipeboard notification
 - **messages.type_owner:** Owner message
@@ -1350,13 +926,6 @@ The catalog entry goes. {dir} is not touched.
 - **messages.dismiss_all:** Dismiss All
 - **messages.dismiss_all_count:** Dismiss All ({count})
 - **messages.action_failed:** Message action failed — {reason}
-- **cowork.h_configuration:** Configuration
-- **cowork.h_appearance:** Appearance
-- **cowork.h_release:** Release & update
-- **cowork.h_hotwords:** Hotwords
-- **cowork.h_koshi:** Koshi
-- **cowork.h_gbrain:** gbrain
-- **cowork.h_log_out:** Log out
 - **cowork.h_mika:** Mika Assist
 - **cowork.mika_button:** ミ Ask Mika
 - **cowork.mika_text:** Ask about Ronin itself — how it works, workspace folders, starting a session, changing a setting. She starts if she is not up.
@@ -1366,12 +935,6 @@ The catalog entry goes. {dir} is not touched.
 
 ## dial / gauge / mark — widgets.js (the control dial, the context gauge, the role menu)
 - **gauge.used:** ⛽ {label} {pct}% used
-- **dial.user:** Owner only
-- **dial.user_help:** Owner only — outside agents may not read or type here
-- **dial.read:** Outside agents: watch
-- **dial.read_help:** Outside agents may watch this session, not type into it
-- **dial.write:** Outside agents: type
-- **dial.write_help:** Outside agents may type into this session
 
 ## tape — tapeview.js (the RIREKI tape view)
 - **tape.summarize_now:** Summarize now
@@ -1385,7 +948,6 @@ The catalog entry goes. {dir} is not touched.
 ## ladder — shingo.js (the ladder chip and panel)
 - **ladder.task_at_hand:** Task at hand
 - **ladder.task_unstated:** No task stated in this work record.
-- **ladder.current_action:** Current action
 - **ladder.worktrees:** Worktrees
 - **ladder.branch:** Branch
 - **ladder.coworks:** Teams
@@ -1405,8 +967,6 @@ The catalog entry goes. {dir} is not touched.
 - **composer.send:** Send
 - **composer.held:** Not sent — {why}. Your text is kept.
 - **composer.why_not_connected:** the tile is not connected
-- **composer.why_disconnected:** the connection dropped before the session confirmed it
-- **composer.why_unconfirmed:** the session did not confirm it — check the tile before sending again
 - **composer.why_refused:** the session refused it
 
 ## hotwords — hotwords.js (the ▥ Hotwords tab)
@@ -1444,7 +1004,6 @@ The catalog entry goes. {dir} is not touched.
 - **retire.shutdown_failed:** could not safely shut it down
 - **retire.shutting_down:** starting shutdown…
 - **retire.resolving:** Resolving Agent…
-- **retire.timeout:** shutdown timed out; the Agent and any remaining desks were left available — try again
 - **retire.archiving:** archiving…
 - **retire.hard_delete_failed:** could not hard delete it
 - **retire.hard_deleting:** starting Hard Delete…
@@ -1473,15 +1032,23 @@ The catalog entry goes. {dir} is not touched.
 - **events.open:** Open
 
 ## bar — layout.js
-- **bar.keys_title:** Esc, ^C, jump to latest, Tab and the arrows
+
+## transcript — tile-transcript.js (the tile's journal view)
+- **transcript.title:** Transcript
+- **transcript.toggle:** Transcript
+- **transcript.terminal:** Term
+- **transcript.toggle_help:** Term → Chat → Notes → Work → All → Term: each press shows more of the record
+- **transcript.no_session:** Transcript — no Agent in this tile
+- **transcript.loading:** Loading transcript…
+- **transcript.empty:** No transcript output yet.
+- **transcript.unavailable:** Transcript unavailable for this Agent.
+- **transcript.failed:** Transcript could not be loaded. Retrying…
+- **transcript.stance_working:** Working
+- **transcript.stance_asking:** Waiting for your answer
 
 ## output — output.js (the RIREKI view picker)
 - **output.locked:** Locked
 - **output.terminal_mirror:** Terminal Mirror
-- **output.detailed:** Detailed
-- **output.condensed:** Condensed
-- **output.cherry_pick:** Cherry Pick
-- **output.agent_summary:** Agent Summary
 - **output.aria:** Output
 - **output.title:** Output shown in this tile
 
@@ -1505,31 +1072,24 @@ The catalog entry goes. {dir} is not touched.
 
 ## request — request.js (the client's own two messages)
 - **request.cancelled:** cancelled
+- **request.malformed:** Ronin answered, but the answer did not arrive whole
 - **request.unreachable:** could not reach Ronin — network or server down
 
 ## head — tilehead.js (the tile head's help and quiet words)
-- **head.dial_help:** Who may touch this session: 👤 owner only · 👁 outside agents watch · 🤖 outside agents type. Yours to turn; agents never flip it.
-- **head.dot_help:** Connection: green = attached, grey = disconnected
 - **head.rename_help:** Edit this Agent title
 - **head.rename_quiet:** Rename session — no session in this tile yet
 - **head.rename_prompt:** Edit Agent title
 - **head.rename_failed:** Could not rename session: {reason}
-- **head.view_work_record:** View Work Record
 - **head.work_record_help:** View repositories, current action, and the work record
 - **head.work_record_quiet:** View Work Record — no Agent in this workspace
 - **head.output_help:** Output — live terminal or one of RIREKI’s unlocked views
 - **head.mention_help:** Mention another session — choose a name to add it to the message box
 - **head.mention_quiet:** Mentions — no session in this tile yet
 - **head.gauge_help:** Context gauge — how full this session's context window is, read off the pane's own status line. Hidden until there is a reading.
-- **head.dial_quiet:** Control dial — no session in this tile yet
 - **head.docs_help:** This Agent's tracked docs — open one over this tile
 - **head.docs_quiet:** This Agent's docs — no Agent in this workspace
 - **head.docs_read:** Docs — {n} tracked by this Agent. Open one over this tile.
 - **head.docs_none:** Docs — this Agent is tracking none yet.
-- **head.note_help:** Session note (post-it)
-- **head.note_quiet:** Session note — no session in this tile yet
-- **head.note_has:** Session note (has notes)
-- **head.note_empty:** Session note (empty)
 - **head.minimize_help:** Close this view — the Agent keeps running
 - **head.minimize_quiet:** Close view — no Agent in this workspace
 - **head.kill_help:** Delete or archive this Agent
@@ -1547,30 +1107,27 @@ The catalog entry goes. {dir} is not touched.
 - **pad.w_wispr:** Wispr push-to-talk (right ⌥) — Wispr handles it, Ronin stays out of the way
 
 ## bar — layout.js (the ニ sheet)
+- **bar.expand_header:** Expand header
+- **bar.collapse_header:** Collapse header
 - **bar.keys:** Keys
-- **bar.ni_title:** Ronin — keys, home, new session, board, pad
 - **bar.new:** New
 - **bar.shape_title:** Two workspaces — click for four
 - **bar.shape_two:** Two workspaces — click for four
 - **bar.shape_four:** Four workspaces — click for two
-- **bar.place_teams:** Teams
-- **bar.place_teams_title:** See all of your teams here
-- **bar.place_team:** {team}
 
 ## me — tiledrop.js (the メ sheet)
-- **me.status:** Status
 - **me.ladder:** Work record
 - **me.mention:** Mention session
-- **me.groups:** Groups
 - **me.docs:** Docs
-- **me.note:** Note
-- **me.control:** Control
 - **me.kill:** Kill session
 - **me.output:** Output
+- **me.minimize:** Minimize
+- **me.agent_title:** This Agent — work record, docs, output, close
 - **me.title:** This session — status, work record, groups, docs, note, control
 
 ## keys — keysrow.js (the composer's keys row)
-- **keys.backspace:** Backspace
+- **keys.escape_face:** Esc
+- **keys.escape:** Escape
 
 ## composer — the ✕ clear
 
@@ -1579,13 +1136,11 @@ The catalog entry goes. {dir} is not touched.
 - **phone.launch_card:** Launch New Agent
 - **phone.launch_defaults:** Everything else launches with this Team's defaults.
 - **phone.no_coworks:** No Teams yet.
-- **phone.agents_one:** 1 Agent
-- **phone.agents_many:** {n} Agents
 - **phone.no_agents:** No Agents on this Team yet.
 - **phone.agents:** Agents
 - **phone.docs:** Docs
 - **phone.back:** Back
-- **phone.me_title:** This Agent — work record, docs, note, control, kill
+- **phone.me_title:** This Agent — work record, docs, output, close
 
 ## new_team — new-team-launch.js (the transaction's own sentences)
 
@@ -1610,21 +1165,7 @@ The catalog entry goes. {dir} is not touched.
 ## desk — the rail toggle and the inert row
 
 ## league — league-board.js (the League board)
-- **league.lead:** lead
-- **league.holding_empty:** Every live session is on a Team
 - **league.no_members:** No live members
-- **league.holding:** Holding area
-- **league.active:** Active Team
-- **league.resting:** Resting Team
-- **league.not_recorded:** Not recorded
-- **league.unassigned:** Unassigned
-- **league.unassigned_summary:** Live sessions that carry no Team membership.
-- **league.title:** League
-- **league.controls:** League controls
-- **league.hide_rosters:** Hide rosters
-- **league.show_rosters:** Show rosters
-- **league.new_team_summary:** Define the Team, then build its session roster.
-- **league.rosters_unavailable:** Durable rosters unavailable — showing live Teams only.
 
 ## docs — tiledocs.js
 - **docs.empty_session:** Nothing tracked yet. Ask this Agent to update its Work Record with the docs it is tracking; they will appear here.
@@ -1636,12 +1177,6 @@ The catalog entry goes. {dir} is not touched.
 - **workspace.resize:** Resize {column}
 
 ## stats — the tooltip, foot and UI rows
-- **stats.mek_seg:** launched {birth} · died {end} — {n}
-- **stats.foot:** Counted on this machine — no code, no prompts, no names. See README/STATS.md.
-- **stats.tab_proj:** ▣ Workspace folder
-- **stats.tab_stats:** ▦ Stats
-- **stats.dials_changed:** dials changed
-- **stats.desktop_touch:** desktop : touch
 
 ## wipeboard — the status lines
 
@@ -1649,7 +1184,7 @@ The catalog entry goes. {dir} is not touched.
 - **tile.session_ended:** session ended.
 - **output.title_off:** Output — Locked only. Ronin Services is off for this Agent.
 - **output.title_locked:** Output — Locked only. Ronin Services is not installed.
-- **output.title_choose:** Output — choose the live terminal or a RIREKI view
+- **output.title_choose:** Output — the live terminal, or Locked to watch without typing
 
 ## tape — the summary default and the alt note
 - **tape.no_summary:** No summary has been written yet.
@@ -1677,7 +1212,6 @@ The catalog entry goes. {dir} is not touched.
 - **ladder.side:** {state} — the work record below is held, not stale
 
 ## errors — main.js (the session-list failure)
-- **errors.no_session_list:** could not load the session list
 
 ## roots — the edit form
 - **roots.f_handle:** Workspace Folder handle
@@ -1697,7 +1231,6 @@ The catalog entry goes. {dir} is not touched.
 ## pad — cell tooltips and idle lines
 - **pad.unbound_tip:** unbound — tap to bind
 - **pad.active_tile_word:** active tile
-- **pad.asks_on_press:** (asks on press)
 - **pad.prog_ready:** writes F13–F24 + 🎙 Wispr straight onto the pad — no Input app needed
 - **pad.prog_needs_webhid:** programming the pad needs Chrome/Edge on desktop (WebHID)
 
@@ -1733,36 +1266,10 @@ The catalog entry goes. {dir} is not touched.
 - **team_jikan.filter_message:** Filter messages
 - **team_jikan.remove_confirm:** Remove this job?
 - **team_jikan.all_teams_summary:** Scheduled messages across every team
-- **team_jikan.scheduled_head:** Scheduled
-- **team_jikan.done_head:** Done
 - **team_jikan.none:** No jobs yet. Choose New job to schedule a message.
-- **team_jikan.none_done:** Nothing has run yet.
-- **team_jikan.col_request:** Request
-- **team_jikan.col_to:** To
-- **team_jikan.col_when:** When
-- **team_jikan.col_next:** Next
-- **team_jikan.col_last:** Last
-- **team_jikan.by:** set by {by}
-- **team_jikan.lead:** 人 lead
-- **team_jikan.not_yet:** not yet
-- **team_jikan.delivered:** delivered
-- **team_jikan.queued:** queued — waiting to enter
-- **team_jikan.pause:** Pause
-- **team_jikan.resume:** Resume
-- **team_jikan.run_now:** Run at next tick
-- **team_jikan.paused:** paused
 - **team_jikan.remove:** Remove
-- **team_jikan.read_failed:** Could not read the jobs — {message}
 
 ## workspace — workspace-primitives.js (the Kit's own words)
-- **workspace.channels:** Team channels
-- **workspace.channel_chat:** Chat
-- **workspace.channel_wipeboard:** Wipeboard
-- **workspace.channel_docs:** Docs
-- **workspace.channel_roster:** Roster
-- **workspace.channel_team_configuration:** Configuration
-- **workspace.channel_agent_message_queue:** Messages
-- **workspace.channel_cron_jobs:** Cron jobs
 - **team_config.no_roster:** This Team has no saved record.
 - **team_config.loading:** Loading Team Configuration…
 - **team_config.cowork_id:** Team ID
@@ -1777,27 +1284,16 @@ The catalog entry goes. {dir} is not touched.
 - **team_config.objective:** Purpose
 - **where.born_in:** Born in
 - **where.additional:** Additional workspaces
-- **where.worktrees_on:** A ticked worktree repository opens a desk for each new Agent at birth; branches are Ronin's.
-- **where.worktrees_off:** A ticked checkout repository is where this Team works, on the branch you name, or as checked out.
-- **where.col_repo:** Repository
 - **where.col_branch:** Branch
 - **where.label:** Where it works
 - **where.summary:** born in {root} · {repos}
-- **where.desks:** desks in {list}
-- **where.checkouts:** works in {list}
 - **where.none:** no auto worktree
 - **team_config.default:** Default
-- **team_config.worktrees_mode:** Agent work mode
-- **team_config.worktrees_on:** Own worktree where the Workspace folder allows it
-- **team_config.worktrees_off:** Use the project checkout and its branches
-- **team_config.worktrees_help:** Worktrees give each Agent a separate working folder and branch, so their file changes do not collide. They run only when both the Agent and repo have Worktrees on, and use the managed hand-in and Team-lead merge process.
-- **team_config.no_description:** No description supplied.
 - **team_config.provider:** Provider
 - **team_config.model:** Model
 - **team_config.reach:** Reach
 - **team_config.recruit:** Recruit
 - **team_config.output:** Output
-- **team_config.runtime:** Runtime
 - **team_config.team_step:** Team
 - **team_config.agent_defaults:** New Agent defaults
 - **team_config.next_form:** What each new Agent on this Team starts from. Nothing live changes.
@@ -1813,14 +1309,8 @@ The catalog entry goes. {dir} is not touched.
 - **workspace.slot_hide:** {column} — click to hide, drag to move
 
 ## bar / keys — index.html (the page's own words, filled by public/js/pagewords.js at boot)
-- **bar.brand_title:** ⛩ ronin — the session roster
-- **bar.league:** League
-- **bar.league_title:** Open League in a new browser tab
-- **bar.newtab_title:** Open a second Ronin in a new browser tab
 - **bar.new_title:** ⌃⇧N — start a new session: pick what it is for, where it works and who it is
 - **keys.latest_title:** Jump to latest output
-- **keys.more:** More keys
-- **keys.enter:** Enter
 - **keys.tab:** Tab
 - **keys.shift_tab:** Shift-Tab
 - **keys.shift_tab_face:** ⇧Tab
@@ -1865,33 +1355,26 @@ The catalog entry goes. {dir} is not touched.
 - **glossary.harakiri:** harakiri
 - **glossary.packet:** what gets sent
 - **glossary.egress_log:** where Ronin has connected
-- **glossary.services:** Services
 - **glossary.message_queue:** message queue
-- **league.commons:** League commons
-- **league.view:** League view
-- **league.team_roster:** Team roster
-- **league.team_roster_saving:** Adding {session} to {team}…
-- **league.selector_views:** Views
-- **league.selector_teams:** Teams
-- **league.selector_new:** New
-- **league.templates:** Templates
 - **league.agents:** Agents
-- **league.no_agents:** No live Agents
-- **league.new_agent:** New Agent
-- **league.new_agent_summary:** A new Agent, born into the workspace you are in.
 - **league.delete_team:** Delete team
 - **league.delete_team_confirm:** Delete {team}? {count} Agents will lose this Team membership.
-- **league.members:** Team members
-- **league.role_unset:** Role not set
+- **league.people:** People
+- **league.no_lead_title:** Team lead not assigned
+- **league.no_lead_help:** Assign an Agent already on this Team, or add a new Agent for the role.
+- **league.choose_lead:** Choose an Agent as team lead
+- **league.no_lead_candidates:** No current Agents to assign
+- **league.assign_lead:** Assign lead
+- **league.add_lead_agent:** Add new Agent
+- **league.add_lead_prompt:** Join this Team as its team lead.
+- **league.expand_people:** Expand Agent details
+- **league.compact_people:** Compact Agent details
 - **league.team_lead:** Team Lead
 - **league.make_team_lead:** Make Lead
 - **league.rename_agent:** Rename
 - **league.rename_agent_prompt:** Edit Agent title
-- **league.open_agent:** Open
 - **league.close_agent:** Close
 - **league.close_named_agent:** Close {name}
-- **league.no_current_step:** No current step
-- **league.no_current_description:** No current work description.
 - **league.remove_member:** Remove
 - **league.remove_named_member:** Remove {name} from this team
 - **league.choose_member:** Choose an Agent to add
@@ -1903,16 +1386,12 @@ The catalog entry goes. {dir} is not touched.
 - **agent.workbench:** Agent
 - **agent.self:** Self
 - **agent.commons:** Commons
-- **agent.commons_summary:** Docs and Task Manager
 - **agent.team_membership:** Team membership
 - **agent.team_membership_summary:** Add or remove this Agent from installed Teams
 - **agent.join_team:** Join
 - **agent.no_teams:** No Teams are installed.
-- **agent.no_team_tasks:** Join a Team to use its Task Manager.
 - **agent.team_tasks:** {team} Task Manager
 - **agent.team_tasks_summary:** Projects held by {team}
-- **league.team_roster_removing:** Removing {session} from {team}…
-- **league.open_workspace:** League workspace
 - **customize.desk_profiles:** Desk profiles
 - **customize.desk_profiles_blurb:** Your standing defaults for the surfaces you work at — a skin, a lexicon, a campaign kind, a Team page arrangement. Choosing one is a setting, on the gear.
 - **customize.lexicons:** Lexicons
@@ -1949,19 +1428,17 @@ The catalog entry goes. {dir} is not touched.
 - **setup_surface.providers_summary_unread:** Every provider and model Ronin offers, and what this machine has.
 - **setup_surface.providers_summary:** {providers} providers · {models} models · {activated} activated here
 - **setup_surface.providers_summary_dated:** {counts} · catalog updated {date}
-- **setup_surface.check_dates:** Check dates
-- **setup_surface.update_descriptions:** Update descriptions
-- **setup_surface.descriptions_unavailable:** Ronin Services required · model descriptions update not published yet.
-- **setup_surface.catalog_researched:** Catalog researched
 - **setup_surface.catalog_date_unstated:** Date not stated
-- **setup_surface.machine_measured:** Machine measured
-- **setup_surface.machine_unmeasured:** Not measured yet
 - **setup_surface.section_yours:** Yours
-- **setup_surface.section_catalog:** The catalog
 - **setup_surface.no_cli:** No CLI in Ronin’s registry serves this provider, so it cannot be installed or signed in here.
 - **setup_surface.no_cli_state:** No CLI
 - **setup_surface.no_models:** The catalog lists no models for this provider.
-- **setup_surface.model_candidates:** Listed by the CLI, missing from the catalog
+- **setup_surface.refresh_all:** Refresh all model providers
+- **setup_surface.refreshing_all:** Refreshing…
+- **setup_surface.last_ran:** Last ran {date}
+- **setup_surface.never_ran:** Never run — every provider offers Native only until it runs.
+- **setup_surface.models_read:** Model list read {date} by {cli} {version}
+- **setup_surface.models_not_read:** Model list not read yet — press Refresh all model providers.
 - **setup_surface.provider_models_n:** {vendor} · {n} models
 - **setup_surface.fact_installed:** Installed
 - **setup_surface.fact_signed_in:** Signed in
@@ -1976,27 +1453,17 @@ The catalog entry goes. {dir} is not touched.
 - **setup_surface.model_default_mark:** the default
 
 ## Provider sign-in record
-- **setup_surface.sign_in_question:** Did you authenticate? Choose how and give this sign-in a title.
-- **setup_surface.sign_in_title:** Sign-in title
-- **setup_surface.sign_in_method:** Sign-in method
-- **setup_surface.subscription:** Subscription
 - **setup_surface.api_key:** API key
 - **setup_surface.third_party:** Third-party service
 - **setup_surface.third_party_hint:** For example, OpenRouter. Put the service or account name in the title.
 - **setup_surface.not_authenticated:** Not signed in
-- **setup_surface.save_close:** Save and close
 - **setup_surface.cancel:** Cancel
-- **setup_surface.back:** Back
-- **setup_surface.cancel_setup:** Cancel setup
 - **setup_surface.sign_in_recorded:** Your sign-in record: {method} · {title}
 
 - **setup_surface.naming_authentication:** Naming this authentication
-- **setup_surface.authentication_name:** Authentication name
-- **setup_surface.authentication_name_hint:** Email address or account name
 - **setup_surface.authentication_type:** Authentication type
 - **setup_surface.account_subscription:** Account / subscription
 
-- **setup_surface.name_before_close:** To close, name your authentication.
 - **setup_surface.type_before_close:** Choose an authentication type, or Not signed in.
 
 - **setup_surface.authentication_title:** Authentication title

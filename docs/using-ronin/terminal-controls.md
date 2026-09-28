@@ -23,8 +23,10 @@ of the roster. Vocabulary gives short phrases to use with an Agent, drawn from t
 internal spawning.
 
 A failed locked-terminal selection attempt expands Session controls and flashes it orange,
-instead of showing a popup. Mobile has no Hints card; its four action buttons use the
-existing composer keys row alongside the other terminal tools. The output area ends above the
+instead of showing a popup. Mobile has no Hints card. Its composer keys row offers Clear,
+Stop, Escape, Tab, Shift-Tab, arrows, and jump-to-latest; Copy also appears in the live
+terminal view, where it opens a still snapshot for native selection. Close remains in the
+Agent menu, and transcript readings use native selection instead of a Copy button. The output area ends above the
 controls and entry box, including when the draft grows or the phone keyboard opens.
 Desktop Hints uses bold labels and wrapping text, without action buttons or help links.
 
@@ -73,9 +75,10 @@ silent; a failed request reports the error.
 
 Desktop: Option-drag on macOS or Shift-drag elsewhere selects through applications
 that capture the mouse. Copy uses the originating Tile's selection, never another Tile's.
-Mobile: tap Copy to get a still text snapshot and use native selection handles. If the
+Mobile live terminal: tap Copy to get a still text snapshot and use native selection handles. If the
 browser denies clipboard access, the snapshot remains available for native Copy.
 The snapshot contains available terminal history, not a claim to the complete transcript.
+Transcript readings have no Copy button because their text can be selected directly.
 Selecting/copying neither unlocks the Tile nor sends input to the CLI.
 
 ## Close

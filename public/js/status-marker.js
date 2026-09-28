@@ -1,5 +1,5 @@
 /* A small reusable maturity marker for cards, buttons, and headings. */
-export const STATUS_MARKERS = Object.freeze({
+const STATUS_MARKERS = Object.freeze({
   beta: 'Beta',
   comingSoon: 'Coming soon',
 });

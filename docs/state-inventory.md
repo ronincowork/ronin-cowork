@@ -18,6 +18,7 @@ manifest. Live tmux facts are listed separately because they are not durable fil
 | Archived sessions | `archived_sessions` manifests, [session-archive.ts](../src/session-archive.ts) | [sessions-api.ts](../src/routes/sessions-api.ts), [archives.js](../public/js/archives.js) | Explicit archive/restore/remove; a manifest is not a live session |
 | Team identity, defaults, and Team-held Projects | `team_rosters`, [team-rosters.ts](../src/team-rosters.ts); custody operations in [team-projects.ts](../src/team-projects.ts) | [teams-api.ts](../src/routes/teams-api.ts), Team UI, launch | Team retirement and explicit Project assignment/return; **no membership or leads in this store** |
 | Agent-authored work, documents, and held Projects | `session/<key>/tegami.md`; [work-record-write](../libexec/work-record-write) updates authored fields; [tegami.ts](../src/tegami.ts) seeds and supports custody/derived-field changes | [tegami-read.ts](../src/tegami-read.ts), [sessions-api.ts](../src/routes/sessions-api.ts), Services Kanban | One file with explicit field ownership; Team references and positioning are derived fields, not Agent-authored truth |
+| Agent composition history and live additions | Immutable `session/<key>/birth-receipt.json` from [launch.ts](../src/routes/launch.ts); additive `session/<key>/composition-additions.json` from [agent-composition.ts](../src/agent-composition.ts); current mandate remains in the work record | Agent composition session API and Workbench surface | Birth is never rewritten. Optional Behaviors only append after teaching is queued; writes serialize per session. Both files share the session record's archive/removal boundary; no removal operation exists. |
 | Pending messages | `message_queue`, [message-queue.ts](../src/message-queue.ts) | [messages-api.ts](../src/routes/messages-api.ts), [message-queue.js](../public/js/message-queue.js) | The queue records sender and channel, renders both for the recipient at delivery, and keeps delivery, retry, force, and dismissal outcomes distinct |
 | Wipeboards | `wipeboards`, [wipeboards.ts](../src/wipeboards.ts) | [wipeboards-api.ts](../src/routes/wipeboards-api.ts), [team-wipeboard.js](../public/js/team-wipeboard.js) | Domain owns expiry, unread state, and delivery; reads are not durable task evidence |
 | Cron jobs | `jikan`, [jikan.ts](../src/jikan.ts) | [jikan-api.ts](../src/routes/jikan-api.ts), [team-jikan.js](../public/js/team-jikan.js) | Explicit schedule update/remove and delivery state |
@@ -36,6 +37,13 @@ session tags and lead designations through [tmux-client.ts](../src/tmux-client.t
 projection. [teams-api.ts](../src/routes/teams-api.ts) rejects `members`, `sessions`, and
 lead fields in roster writes. Archive manifests preserve a restoration snapshot; they do
 not compete with the current live session.
+
+The browser holds no durable copy of server truth. Per tab, [store.js](../public/js/store.js)
+holds what [events.ts](../src/ws/events.ts) pushes — the home rows, the session list, the
+Team rosters, the message queue, the machine reading, and the wipeboard threads and Cron
+jobs its open surfaces asked for — and nothing else; it is lost on reload and filled again
+on connect. Desks are read at open, not
+held: the Work Record ladder asks `GET /api/desks?session=<name>` and paints the answer.
 
 Live runtime identity also includes the session key resolved by
 [session-dir.ts](../src/session-dir.ts). Process existence and runtime options belong to

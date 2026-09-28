@@ -20,6 +20,8 @@ Usage:
   machine-settings installations write <name> on|off [--campaign <id>]
   machine-settings defaults read [--campaign <id>]
   machine-settings defaults write <field> <value> [--campaign <id>]
+  machine-settings cowork-defaults read [--campaign <id>]
+  machine-settings cowork-defaults write born-in|workspaces <value> [--campaign <id>]
   machine-settings project-root list [--campaign <id>] [--all]
   machine-settings project-root read <workspace-folder-handle> [--campaign <id>]
   machine-settings project-root create <workspace-folder-handle> --title <title> --dir <path> [field flags]
@@ -37,10 +39,6 @@ Usage:
   machine-settings messages read | machine-settings messages write auto-force-after-s <seconds>
   machine-settings requirements read | machine-settings requirements write <wanted-json-array>
 
-Mika-only confirmation:
-  machine-settings --propose <write operation...>
-  machine-settings --confirmed <token> <the same write operation...>
-
 Without --campaign, Campaign operations resolve RONIN_SESSION by exact live-session name
 and refuse when it has no Campaign. Writes use only the existing typed Campaign, Machine
 Settings, activation, or Workspace Folder routes; observed/status/needed facts are read-only.
@@ -53,17 +51,6 @@ EOF
 
 case "${1:-}" in -h|--help|'') help; exit 0;; esac
 
-MIKA_MODE=false
-[ "${RONIN_MACHINE_SETTINGS_AUTHORITY:-}" = mika ] && MIKA_MODE=true
-MUTATION_MODE=direct
-CONFIRMATION=''
-case "${1:-}" in
-  --propose) MUTATION_MODE=propose; shift ;;
-  --confirmed) need --confirmed "${2-}"; MUTATION_MODE=confirmed; CONFIRMATION=$2; shift 2 ;;
-esac
-[ "$MIKA_MODE" = true ] || [ "$MUTATION_MODE" = direct ] \
-  || die 'REFUSED: proposal confirmation flags are reserved for Mika.' 4
-
 . "$TOOL_DIR/ronin-http.sh"
 ronin_connect || exit $?
 api() {
@@ -75,29 +62,15 @@ api() {
     out=$(curl -sS -m 60 "${RONIN_CURL[@]+"${RONIN_CURL[@]}"}" -H 'content-type: application/json' -X "$method" "$url$path") \
       || die "UNREACHABLE: Ronin did not answer at $url" 5
   fi
-  printf '%s' "$out" | python3 -c 'import json,sys
+  printf '%s' "$out" | ROUTE="$path" python3 -c 'import json,os,sys
 s=sys.stdin.read()
+route=os.environ["ROUTE"]
 try: v=json.loads(s)
-except Exception: print("REFUSED: Ronin returned a non-JSON answer", file=sys.stderr); raise SystemExit(4)
+except Exception: print(f"Request to {route} returned a non-JSON answer. Run machine-settings --help for usage.", file=sys.stderr); raise SystemExit(4)
 if isinstance(v,dict) and v.get("error"):
- print("REFUSED: "+str(v["error"]), file=sys.stderr); raise SystemExit(4)
+ error=v["error"]
+ print(f"Request to {route} failed: {error} Run machine-settings --help for usage.", file=sys.stderr); raise SystemExit(4)
 print(s,end="")' || exit $?
-}
-
-mutation_token() { printf '%s\0%s\0%s' "$1" "$2" "$3" | sha256sum | cut -d' ' -f1; }
-mutate() {
-  local method=$1 path=$2 body=${3-} token
-  if [ "$MIKA_MODE" = true ]; then
-    token=$(mutation_token "$method" "$path" "$body")
-    if [ "$MUTATION_MODE" = propose ]; then
-      METHOD="$method" PATH_VALUE="$path" BODY="$body" TOKEN="$token" python3 -c 'import json,os
-print(json.dumps({"proposal":{"method":os.environ["METHOD"],"path":os.environ["PATH_VALUE"],"payload":json.loads(os.environ["BODY"] or "{}")},"confirmation":os.environ["TOKEN"],"next":"After the owner confirms this exact proposal, repeat the command with --confirmed <confirmation>."},indent=2))'
-      exit 0
-    fi
-    [ "$MUTATION_MODE" = confirmed ] || die 'CONFIRMATION-REQUIRED: run the same command with --propose, show the exact proposal to the owner, then use its token only after confirmation.' 4
-    [ "$CONFIRMATION" = "$token" ] || die 'REFUSED: confirmation does not match this exact method, path, and payload.' 4
-  fi
-  api "$method" "$path" "$body"
 }
 
 CAMPAIGN=''
@@ -177,8 +150,8 @@ PY
     case "$sub" in
       -h|--help|'') echo 'Usage: machine-settings campaign read|archive [--campaign <id>]; machine-settings campaign write title|description <value> [--campaign <id>]';;
       read) take_campaign "$@"; [ "${#REMAINING[@]}" -eq 0 ] || die 'BAD-ARG: campaign read accepts only --campaign.' 2; resolve_campaign; api GET "/api/campaigns/$CAMPAIGN" | pretty;;
-      archive) take_campaign "$@"; [ "${#REMAINING[@]}" -eq 0 ] || die 'BAD-ARG: campaign archive accepts only --campaign.' 2; resolve_campaign; mutate POST "/api/campaigns/$CAMPAIGN/archive" '{}' | pretty;;
-      write) field=${1:-}; value=${2-}; [ "$#" -ge 2 ] || die 'BAD-ARG: campaign write needs field and value.' 2; shift 2; take_campaign "$@"; [ "${#REMAINING[@]}" -eq 0 ] || die 'BAD-ARG: unexpected campaign write argument.' 2; case "$field" in title|description) ;; *) die 'BAD-ARG: Campaign field is title or description.' 2;; esac; resolve_campaign; body=$(json_body 'import json,sys; print(json.dumps({sys.argv[1]:sys.argv[2]}))' "$field" "$value"); mutate PUT "/api/campaigns/$CAMPAIGN" "$body" | pretty;;
+      archive) take_campaign "$@"; [ "${#REMAINING[@]}" -eq 0 ] || die 'BAD-ARG: campaign archive accepts only --campaign.' 2; resolve_campaign; api POST "/api/campaigns/$CAMPAIGN/archive" '{}' | pretty;;
+      write) field=${1:-}; value=${2-}; [ "$#" -ge 2 ] || die 'BAD-ARG: campaign write needs field and value.' 2; shift 2; take_campaign "$@"; [ "${#REMAINING[@]}" -eq 0 ] || die 'BAD-ARG: unexpected campaign write argument.' 2; case "$field" in title|description) ;; *) die 'BAD-ARG: Campaign field is title or description.' 2;; esac; resolve_campaign; body=$(json_body 'import json,sys; print(json.dumps({sys.argv[1]:sys.argv[2]}))' "$field" "$value"); api PUT "/api/campaigns/$CAMPAIGN" "$body" | pretty;;
       *) die "BAD-ARG: unknown campaign operation '$sub'." 2;; esac
     ;;
   installations)
@@ -191,7 +164,7 @@ c=json.loads(os.environ['CAMPAIGN_JSON']); a=json.loads(os.environ['CATALOG_JSON
 print(json.dumps([{'name':x.get('name'),'catalogued':True,'observed':({'installed':bool(s.get('installed')),'activated':bool(s.get('activated')),'loaded':s.get('loaded',[]),'parked':s.get('parked',[])} if x.get('name')=='ronin_services' else 'unknown'),'campaign_on':on.get(x.get('name')) is True} for x in a],indent=2))
 PY
         ;;
-      write) name=${1:-}; choice=${2:-}; [ "$#" -ge 2 ] || die 'BAD-ARG: installations write needs name and on|off.' 2; shift 2; take_campaign "$@"; [ "${#REMAINING[@]}" -eq 0 ] || die 'BAD-ARG: unexpected installations write argument.' 2; case "$choice" in on) flag=true;; off) flag=false;; *) die 'BAD-ARG: installation choice is on or off.' 2;; esac; resolve_campaign; c=$(api GET "/api/campaigns/$CAMPAIGN"); body=$(printf '%s' "$c" | NAME="$name" FLAG="$flag" python3 -c 'import json,os,sys; c=json.load(sys.stdin); m=dict(c.get("config",{}).get("installations",{})); m[os.environ["NAME"]]=os.environ["FLAG"]=="true"; print(json.dumps({"config":{"installations":m}}))'); mutate PUT "/api/campaigns/$CAMPAIGN" "$body" | pretty;;
+      write) name=${1:-}; choice=${2:-}; [ "$#" -ge 2 ] || die 'BAD-ARG: installations write needs name and on|off.' 2; shift 2; take_campaign "$@"; [ "${#REMAINING[@]}" -eq 0 ] || die 'BAD-ARG: unexpected installations write argument.' 2; case "$choice" in on) flag=true;; off) flag=false;; *) die 'BAD-ARG: installation choice is on or off.' 2;; esac; resolve_campaign; c=$(api GET "/api/campaigns/$CAMPAIGN"); body=$(printf '%s' "$c" | NAME="$name" FLAG="$flag" python3 -c 'import json,os,sys; c=json.load(sys.stdin); m=dict(c.get("config",{}).get("installations",{})); m[os.environ["NAME"]]=os.environ["FLAG"]=="true"; print(json.dumps({"config":{"installations":m}}))'); api PUT "/api/campaigns/$CAMPAIGN" "$body" | pretty;;
       *) die "BAD-ARG: unknown installations operation '$sub'." 2;; esac
     ;;
   defaults)
@@ -203,8 +176,21 @@ PY
 c=json.load(sys.stdin); d=dict(c.get("config",{}).get("defaults",{})); f=os.environ["FIELD"].replace("-","_"); v=os.environ["VALUE"]
 if f not in {"provider","model","reach","recruit","output","behaviours","launch_mode"}: raise SystemExit(2)
 d[f]=[x.strip() for x in v.split(",") if x.strip()] if f in {"output","behaviours"} else v
-print(json.dumps({"config":{"defaults":d}}))') || die 'BAD-ARG: unknown defaults field.' 2; mutate PUT "/api/campaigns/$CAMPAIGN" "$body" | pretty;;
+print(json.dumps({"config":{"defaults":d}}))') || die 'BAD-ARG: unknown defaults field.' 2; api PUT "/api/campaigns/$CAMPAIGN" "$body" | pretty;;
       *) die "BAD-ARG: unknown defaults operation '$sub'." 2;; esac
+    ;;
+  cowork-defaults)
+    sub=${1:-}; shift || true
+    case "$sub" in
+      -h|--help|'') echo 'Usage: cowork-defaults read [--campaign <id>]; cowork-defaults write born-in <workspace-folder-handle>|workspaces <comma-separated handles> [--campaign <id>]';;
+      read) take_campaign "$@"; [ "${#REMAINING[@]}" -eq 0 ] || die 'BAD-ARG: cowork-defaults read accepts only --campaign.' 2; c=$(campaign_json); printf '%s' "$c" | python3 -c 'import json,sys; print(json.dumps(json.load(sys.stdin).get("config",{}).get("cowork_defaults",{}),indent=2))';;
+      write) field=${1:-}; value=${2-}; [ "$#" -ge 2 ] || die 'BAD-ARG: cowork-defaults write needs field and value.' 2; shift 2; take_campaign "$@"; [ "${#REMAINING[@]}" -eq 0 ] || die 'BAD-ARG: unexpected cowork-defaults write argument.' 2; case "$field" in born-in|workspaces) ;; *) die 'BAD-ARG: cowork-defaults field is born-in or workspaces. Run machine-settings --help.' 2;; esac; resolve_campaign; c=$(api GET "/api/campaigns/$CAMPAIGN"); body=$(printf '%s' "$c" | FIELD="$field" VALUE="$value" python3 -c 'import json,os,sys
+c=json.load(sys.stdin); d=dict(c.get("config",{}).get("cowork_defaults",{})); field=os.environ["FIELD"]; value=os.environ["VALUE"]
+if field=="born-in": d["project_root"]=value.strip()
+else: d["repos"]=[x.strip() for x in value.split(",") if x.strip()]
+print(json.dumps({"config":{"cowork_defaults":d}}))'); api PUT "/api/campaigns/$CAMPAIGN" "$body" | pretty;;
+      *) die "BAD-ARG: unknown cowork-defaults operation '$sub'." 2;;
+    esac
     ;;
   project-root)
     sub=${1:-}; shift || true
@@ -212,10 +198,10 @@ print(json.dumps({"config":{"defaults":d}}))') || die 'BAD-ARG: unknown defaults
       -h|--help|'') echo 'Usage: project-root list|read|create|write|archive|exclude. Commands identify a Workspace Folder by its workspace-folder-handle. Writable fields: title, dir, match, remit, docs, plans, campaign_id.';;
       list) all=false; args=(); while [ "$#" -gt 0 ]; do case "$1" in --all) all=true; shift;; *) args+=("$1"); shift;; esac; done; take_campaign "${args[@]}"; resolve_campaign; path="/api/project-roots/detail?campaign_id=$CAMPAIGN"; [ "$all" = false ] || path='/api/project-roots/detail'; api GET "$path" | pretty;;
       read) need id "${1-}"; id=$1; shift; take_campaign "$@"; resolve_campaign; api GET "/api/project-roots/detail?campaign_id=$CAMPAIGN" | ID="$id" python3 -c 'import json,os,sys; rows=[x for x in json.load(sys.stdin).get("roots",[]) if x.get("name")==os.environ["ID"]]; print(json.dumps(rows[0],indent=2)) if len(rows)==1 else (_ for _ in ()).throw(SystemExit(3))' || die "NO-PROJECT-ROOT: '$id' is not in Campaign '$CAMPAIGN'" 3;;
-      create) need id "${1-}"; id=$1; shift; title='' dir='' campaign_id='' remit='' match='' docs='' plans=''; while [ "$#" -gt 0 ]; do need "$@"; case "$1" in --title) title=$2;; --dir) dir=$2;; --campaign) campaign_id=$2;; --remit) remit=$2;; --match) match=$2;; --docs) docs=$2;; --plans) plans=$2;; *) die "BAD-ARG: unknown project-root flag '$1'." 2;; esac; shift 2; done; [ -n "$dir" ] || die 'BAD-ARG: --dir is required.' 2; CAMPAIGN=$campaign_id; resolve_campaign; body=$(json_body 'import json,sys; keys=["name","title","dir","campaign_id","remit","match","docs","plans"]; print(json.dumps({k:v for k,v in zip(keys,sys.argv[1:]) if v}))' "$id" "$title" "$dir" "$CAMPAIGN" "$remit" "$match" "$docs" "$plans"); mutate POST '/api/project-roots' "$body" | pretty;;
-      write) id=${1:-}; field=${2:-}; value=${3-}; [ "$#" -eq 3 ] || die 'BAD-ARG: project-root write needs workspace-folder-handle, field, value.' 2; case "$field" in title|dir|match|remit|docs|plans|campaign_id) ;; *) die 'BAD-ARG: project-root field is title, dir, match, remit, docs, plans, or campaign_id.' 2;; esac; body=$(json_body 'import json,sys; print(json.dumps({sys.argv[1]:sys.argv[2]}))' "$field" "$value"); mutate PUT "/api/project-roots/$id" "$body" | pretty;;
-      archive) [ "$#" -eq 1 ] || die 'BAD-ARG: project-root archive needs one workspace-folder-handle.' 2; mutate PUT "/api/project-roots/$1" '{"archived":true}' | pretty;;
-      exclude) [ "$#" -eq 1 ] || die 'BAD-ARG: project-root exclude needs one workspace-folder-handle.' 2; [ "$MIKA_MODE" = false ] || die 'REFUSED: Mika cannot exclude a Workspace Folder.' 4; mutate DELETE "/api/project-roots/$1" '{}' | pretty;;
+      create) need id "${1-}"; id=$1; shift; title='' dir='' campaign_id='' remit='' match='' docs='' plans=''; while [ "$#" -gt 0 ]; do need "$@"; case "$1" in --title) title=$2;; --dir) dir=$2;; --campaign) campaign_id=$2;; --remit) remit=$2;; --match) match=$2;; --docs) docs=$2;; --plans) plans=$2;; *) die "BAD-ARG: unknown project-root flag '$1'." 2;; esac; shift 2; done; [ -n "$dir" ] || die 'BAD-ARG: --dir is required.' 2; CAMPAIGN=$campaign_id; resolve_campaign; body=$(json_body 'import json,sys; keys=["name","title","dir","campaign_id","remit","match","docs","plans"]; print(json.dumps({k:v for k,v in zip(keys,sys.argv[1:]) if v}))' "$id" "$title" "$dir" "$CAMPAIGN" "$remit" "$match" "$docs" "$plans"); api POST '/api/project-roots' "$body" | pretty;;
+      write) id=${1:-}; field=${2:-}; value=${3-}; [ "$#" -eq 3 ] || die 'BAD-ARG: project-root write needs workspace-folder-handle, field, value.' 2; case "$field" in title|dir|match|remit|docs|plans|campaign_id) ;; *) die 'BAD-ARG: project-root field is title, dir, match, remit, docs, plans, or campaign_id.' 2;; esac; body=$(json_body 'import json,sys; print(json.dumps({sys.argv[1]:sys.argv[2]}))' "$field" "$value"); api PUT "/api/project-roots/$id" "$body" | pretty;;
+      archive) [ "$#" -eq 1 ] || die 'BAD-ARG: project-root archive needs one workspace-folder-handle.' 2; api PUT "/api/project-roots/$1" '{"archived":true}' | pretty;;
+      exclude) [ "$#" -eq 1 ] || die 'BAD-ARG: project-root exclude needs one workspace-folder-handle.' 2; api DELETE "/api/project-roots/$1" '{}' | pretty;;
       *) die "BAD-ARG: unknown project-root operation '$sub'." 2;; esac
     ;;
   provider)
@@ -223,7 +209,7 @@ print(json.dumps({"config":{"defaults":d}}))') || die 'BAD-ARG: unknown defaults
     case "$sub" in
       -h|--help|'') echo 'Usage: provider read [--campaign <id>]; provider write-default <provider> <model>; provider write-preferred <provider> <model>';;
       read) take_campaign "$@"; resolve_campaign; c=$(api GET "/api/campaigns/$CAMPAIGN"); m=$(api GET '/api/machine-settings'); p=$(api GET '/api/provider-catalog'); CAMPAIGN_JSON="$c" SETTINGS_JSON="$m" PROVIDERS_JSON="$p" python3 -c 'import json,os; c=json.loads(os.environ["CAMPAIGN_JSON"]); m=json.loads(os.environ["SETTINGS_JSON"]); print(json.dumps({"catalog":json.loads(os.environ["PROVIDERS_JSON"]),"observed":c.get("providers"),"preferences":m.get("set",{}).get("agents",{}).get("sessions",{})},indent=2))';;
-      write-default|write-preferred) [ "$#" -eq 2 ] || die "BAD-ARG: provider $sub needs provider and model." 2; provider=$1; model=$2; if [ "$sub" = write-default ]; then body=$(json_body 'import json,sys; print(json.dumps({"sessions":{"default":{"provider":sys.argv[1],"model":sys.argv[2]}}}))' "$provider" "$model"); else body=$(json_body 'import json,sys; print(json.dumps({"sessions":{"by_provider":{sys.argv[1]:sys.argv[2]}}}))' "$provider" "$model"); fi; envelope=$(BODY="$body" python3 -c 'import json,os; print(json.dumps({"family":"agents","value":json.loads(os.environ["BODY"])}))'); mutate PATCH '/api/machine-settings' "$envelope" | pretty;;
+      write-default|write-preferred) [ "$#" -eq 2 ] || die "BAD-ARG: provider $sub needs provider and model." 2; provider=$1; model=$2; if [ "$sub" = write-default ]; then body=$(json_body 'import json,sys; print(json.dumps({"sessions":{"default":{"provider":sys.argv[1],"model":sys.argv[2]}}}))' "$provider" "$model"); else body=$(json_body 'import json,sys; print(json.dumps({"sessions":{"by_provider":{sys.argv[1]:sys.argv[2]}}}))' "$provider" "$model"); fi; envelope=$(BODY="$body" python3 -c 'import json,os; print(json.dumps({"family":"agents","value":json.loads(os.environ["BODY"])}))'); api PATCH '/api/machine-settings' "$envelope" | pretty;;
       *) die "BAD-ARG: unknown provider operation '$sub'." 2;; esac
     ;;
   machine|owner|session-defaults|messages|requirements)
@@ -247,7 +233,7 @@ print(json.dumps({"config":{"defaults":d}}))') || die 'BAD-ARG: unknown defaults
       requirements:wanted) family=wanted; body=$(VALUE="$value" python3 -c 'import json,os; v=json.loads(os.environ["VALUE"]); assert isinstance(v,list); print(json.dumps({"wanted":v}))') || die 'BAD-ARG: wanted must be a JSON array.' 2;;
       *) die "BAD-ARG: '$field' is not a writable $scope field." 2;; esac
     envelope=$(BODY="$body" FAMILY="$family" python3 -c 'import json,os; print(json.dumps({"family":os.environ["FAMILY"],"value":json.loads(os.environ["BODY"])}))')
-    mutate PATCH '/api/machine-settings' "$envelope" | pretty
+    api PATCH '/api/machine-settings' "$envelope" | pretty
     ;;
   *) die "BAD-ARG: unknown operation '$COMMAND'. Run machine-settings --help." 2;;
 esac

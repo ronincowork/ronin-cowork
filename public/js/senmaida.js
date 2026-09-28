@@ -47,8 +47,6 @@ const HITO = '<g fill="currentColor">'
   + '<path d="M52.3 21.8c3.9-4.3 10.4-4.1 14.5-.5l3.8 3.4c2 1.8 2.1 4.4.5 6.7-5.4 7.8-8.7 15.8-12.1 23.7-6.1 14.4-15.7 24.7-29.4 32.7-3.7 2.2-7.4 1.4-8.8-1.6-1.2-2.6.4-5 3.7-7.4 11.2-8.1 19.1-17.7 24-29.2 3.8-9 6.8-17.1 5.1-22.4l-1.8-3c-.5-.8-.3-1.7.5-2.4z"/>'
   + '<path d="M54.2 50c2.8-2.5 6.3-2.1 9.3 1.2 9.9 11.1 19.8 20 32.2 27.2 3.7 2.1 4.6 5 2.2 7.4-1.8 1.8-5 2.5-9.2 1.8-13.2-2.4-24.7-12.4-36.3-25.8-3.7-4.2-2.9-8.6 1.8-11.8z"/></g>';
 
-export const SENMAIDA_CUTS = Object.freeze(Object.keys(CUTS));
-
 /** The horizon, as an <svg> pinned to the foot of a positioned host. */
 export function createSenmaida(cut = 'panel', className = '') {
   const shape = CUTS[cut] || CUTS.panel;
@@ -71,9 +69,4 @@ export function createHito(className = '') {
   svg.setAttribute('aria-hidden', 'true');
   svg.innerHTML = HITO;
   return svg;
-}
-
-/** The band height a cut expects, so a host can reserve the ground beneath it. */
-export function senmaidaHeight(cut = 'panel') {
-  return (CUTS[cut] || CUTS.panel).height;
 }

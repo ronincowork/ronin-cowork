@@ -108,7 +108,7 @@ export function providerPresentation(provider) {
 const STEP_DONE = Object.freeze({ installed: 'installed', authenticated: 'recorded', ready: 'ready' });
 
 /** What Turn off does and does not do, said where it is pressed. */
-export const TURN_OFF_SENTENCE = 'Turn off stops Ronin measuring, updating and launching this provider. Tiles already running are not touched, and your sign-in is kept.';
+const TURN_OFF_SENTENCE = 'Turn off stops Ronin measuring, updating and launching this provider. Tiles already running are not touched, and your sign-in is kept.';
 
 /** The Install step's text for an installed CLI: about updating, or nothing. */
 function installedDetail(provider) {

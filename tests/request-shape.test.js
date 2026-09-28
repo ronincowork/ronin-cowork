@@ -55,3 +55,71 @@ test('no client reads a property the request contract does not publish', async (
     assert.deepEqual(bad, [], `${f} reads ${bad.join(', ')} off a request result`);
   }
 });
+
+/**
+ * THE FETCH HALF, from the defect it had.
+ *
+ * `res.json().catch(() => null)` folded two different answers into one: a body that was
+ * legitimately empty, and a body that was there and could not be read. Both came back as
+ * ok with {}, so every caller that treats emptiness as a real state believed it — the
+ * owner's phone said "No transcript output yet." while the server was sending 637 records.
+ *
+ * This half needs no browser, only a fetch to stand in for one.
+ */
+import { request } from '../public/js/request.js';
+
+const answer = ({ status = 200, ok = status < 400, body = '', throws = null }) => {
+  globalThis.fetch = async () => ({
+    status,
+    ok,
+    text: async () => { if (throws) throw new Error(throws); return body; },
+  });
+};
+
+test('a 200 whose body did not arrive whole is a failure, and a retryable one', async () => {
+  answer({ body: '{"records":[{"seq":1,"text":"half a rec' });
+  const r = await request('/api/sessions/agent/transcript');
+  assert.equal(r.ok, false, 'not success-with-nothing: the body was there and unreadable');
+  assert.equal(r.kind, 'malformed');
+  assert.equal(r.retryable, true, 'the next read usually gets it');
+  assert.equal(r.status, 200);
+});
+
+test('a 200 that genuinely said nothing is still success', async () => {
+  answer({ body: '' });
+  assert.deepEqual(await request('/api/whatever'), { ok: true, status: 200, data: {} });
+});
+
+test('a 200 with a whole body is untouched', async () => {
+  answer({ body: '{"records":[{"seq":1}],"view":"chat"}' });
+  const r = await request('/api/sessions/agent/transcript');
+  assert.equal(r.ok, true);
+  assert.deepEqual(r.data.records, [{ seq: 1 }]);
+  assert.equal(r.data.view, 'chat');
+});
+
+test('a body that cannot be read at all is the same kind of failure', async () => {
+  answer({ throws: 'decode failed' });
+  const r = await request('/api/sessions/agent/transcript');
+  assert.equal(r.ok, false);
+  assert.equal(r.kind, 'malformed');
+  assert.equal(r.retryable, true);
+});
+
+test('a failed status keeps its own story, whatever shape the body was in', async () => {
+  // A proxy returning an HTML error page must not be reported as a malformed success.
+  answer({ status: 502, body: '<html>Bad Gateway</html>' });
+  const r = await request('/api/desks');
+  assert.equal(r.kind, 'http', 'the 502 is the story, not the page it came with');
+  assert.equal(r.message, 'HTTP 502');
+  assert.equal(r.retryable, true);
+});
+
+test("a server error's own words still reach the caller", async () => {
+  answer({ status: 409, body: '{"error":"name taken"}' });
+  const r = await request('/api/sessions');
+  assert.equal(r.kind, 'http');
+  assert.equal(r.message, 'name taken');
+});
+
+

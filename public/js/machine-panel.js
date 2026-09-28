@@ -1,5 +1,6 @@
 /* part of the ronin-cowork client — see js/README.md */
 import { request } from './request.js';
+import { get } from './store.js';
 import { serviceMissing } from './state.js';
 import { button, status } from './ui.js';
 import { t } from './lexicon.js';
@@ -11,14 +12,11 @@ import { t } from './lexicon.js';
  * is the look, for the moment the glance made someone curious — the same reading with
  * more of it shown, plus the switch that turns watching off.
  *
- * ONE READING, NOT A SECOND OPINION. Both surfaces call `/api/machine` and render what
- * it says. A panel that computed its own numbers could disagree with the gauge about the
- * same box, and two disagreeing answers to one question is the defect this house keeps
- * rediscovering (OPEN_THREADS 4.36).
- *
- * IT DOES NOT POLL. The gauge does that; this is drawn when the desk is opened and
- * refreshed by pressing it. A second timer against the same endpoint would double the
- * wakeups to tell one person one thing.
+ * ONE READING, NOT A SECOND OPINION. Both surfaces draw the store's `memory`, the
+ * reading the server pushes whenever it moves. A panel that computed its own numbers
+ * could disagree with the gauge about the same box, and two disagreeing answers to one
+ * question is the defect this house keeps rediscovering (OPEN_THREADS 4.36). This one is
+ * drawn when the desk is opened.
  */
 const gb = (mb) => (mb >= 1024 ? `${(mb / 1024).toFixed(1)} GB` : `${mb} MB`);
 
@@ -81,27 +79,22 @@ export function buildMachinePanel() {
     }
   };
 
-  const load = async () => {
-    const r = await request('/api/machine', { cache: 'no-store' });
-    if (r && r.ok && r.data) draw(r.data);
-    else msg.textContent = t('machine.read_failed', 'Could not read the machine just now.');
-  };
 
   const row = document.createElement('div');
   row.className = 'sys-actions';
-  const refresh = button(t('machine.refresh', 'Refresh'), { cls: 'sys-run', title: t('machine.refresh_title', 'Read the machine again now') });
-  refresh.addEventListener('click', () => void load());
   const off = button(t('machine.stop', 'Stop watching'), {
     cls: 'sys-run',
     title: t('machine.stop_title', 'Stop gathering machine readings and hide the gauge. Nothing was installed on the box, so there is nothing to undo — turn it back on whenever you like.'),
   });
   off.addEventListener('click', async () => {
     const r = await request('/api/machine-settings', { method: 'PATCH', body: { family: 'machine', value: { monitor: false } } });
-    msg.textContent = r && r.ok ? t('machine.stopped', 'Off. Reload to clear the gauge.') : t('machine.save_failed', 'Could not save that.');
+    msg.textContent = r && r.ok ? t('machine.stopped', 'Off — the gauge is hidden.') : t('machine.save_failed', 'Could not save that.');
   });
-  row.append(refresh, off);
+  row.append(off);
   block.append(row);
 
-  void load();
+  const reading = get('memory');
+  if (reading) draw(reading);
+  else msg.textContent = t('machine.no_reading', 'No reading of the machine yet.');
   return block;
 }

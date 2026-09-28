@@ -17,7 +17,6 @@ moved, restored or rebuilt and nobody knows what survived.
 | Tool | Answers |
 |---|---|
 | `bin/ronin-doctor` | every machine finding, each naming its own remedy |
-| `GET /api/machine` | the live reading — memory, swap, load, cores, scope |
 | `ronin-host inspect` | what this box IS: cores, RAM, swap, disks |
 | the machine service's watch script | one report, by hand or on a schedule the owner chose — it ships with the service, not with cowork |
 | `ronin-host account` · `bin/ronin-store --all` | who it runs as, where its stores resolve |

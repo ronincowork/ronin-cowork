@@ -12,7 +12,10 @@ Usage:
   work-record update_record --leg N <title> | --leg N.M <title>
   work-record update_record --status N[.M] PLANNED|ACTIVE|DONE
   work-record update_record --done N[.M] | --active N[.M] | --drop N[.M]
-  work-record update_record --repo <repo>:<branch> | --unrepo <repo>[:<branch>]
+  work-record update_record --repo <repo-or-url>[:<branch>] | --unrepo <repo-or-url>[:<branch>]
+  work-record workspace list
+  work-record workspace add <repo-or-url> [--branch <branch>]
+  work-record workspace remove <repo-or-url> [--branch <branch>]
   work-record document add <path>
   work-record document remove <path>
   work-record document list
@@ -28,6 +31,9 @@ Usage:
   work-record project done <id>
   work-record project return <id>
   work-record project list
+Workspace entries are the repositories this Agent records as current work. The repository
+may be a registered handle or a URL. --branch is separate so URLs parse exactly. These
+entries do not change the Agent's birth directory or open a managed desk.
 Update fields include --objective, --phase, --gate, --leg, --status, --done, --active,
 --drop, --repo, --unrepo, --on_tangent, and --on_track. A whole JSON record is accepted
 on stdin. Lead positioning is a separate form: update_record --session <name> --at N[.M].
@@ -50,6 +56,30 @@ case "${1:-}" in
       remove) [ "$#" -eq 3 ] || { usage >&2; exit 2; }; write_impl --undoc "$3" ;;
       list) [ "$#" -eq 2 ] || { usage >&2; exit 2; }; list_field docs ;;
       *) usage >&2; exit 2;; esac ;;
+  workspace)
+    verb=${2:-}; shift 2 || true
+    case "$verb" in
+      -h|--help) cat <<'EOF'
+Usage:
+  work-record workspace list
+  work-record workspace add <repo-or-url> [--branch <branch>]
+  work-record workspace remove <repo-or-url> [--branch <branch>]
+These edit the repositories in your Work Record. A remove without --branch removes every
+row for that exact repository. They do not change the birth directory or open a desk.
+To change the live session's recorded Workspace Folder, use session_set --help.
+EOF
+        ;;
+      list) [ "$#" -eq 0 ] || { usage >&2; exit 2; }; list_field repos ;;
+      add|remove)
+        [ "$#" -ge 1 ] && [ -n "$1" ] || { usage >&2; exit 2; }
+        repo=$1; shift; branch=''
+        if [ "$#" -gt 0 ]; then
+          [ "$#" -eq 2 ] && [ "$1" = --branch ] && [ -n "$2" ] || { usage >&2; exit 2; }
+          branch=$2
+        fi
+        if [ "$verb" = add ]; then write_impl --repo-pair "$repo" "$branch"; else write_impl --unrepo-pair "$repo" "$branch"; fi ;;
+      *) usage >&2; exit 2 ;;
+    esac ;;
   project)
     verb=${2:-}; shift 2 || true
     case "$verb" in

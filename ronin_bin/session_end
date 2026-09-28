@@ -57,24 +57,27 @@ ronin_connect || exit $?
 
 response_file=$(mktemp)
 trap 'rm -f "$response_file"' EXIT
-body=$(curl -sS -m 10 -o "$response_file" -w '%{http_code}' "${RONIN_CURL[@]+"${RONIN_CURL[@]}"}" \
+# 30s outlasts the server's own 25s shutdown budget, so its answer — done or why not — arrives.
+body=$(curl -sS -m 30 -o "$response_file" -w '%{http_code}' "${RONIN_CURL[@]+"${RONIN_CURL[@]}"}" \
   -X POST "$url/api/harakiri" \
   -H 'content-type: application/json' \
   -d "{\"pane\":\"$pane\"}" 2>&1) || {
   echo "STUCK: could not reach Ronin at $url — your session is still here." >&2
+  echo "STUCK: $body" >&2
   echo "STUCK: report to the owner; do not hand-roll a kill." >&2
   exit 5
 }
 
+# Every answer that is not success says why: Ronin's own reply is printed after the verdict.
+said() { cat "$response_file" >&2; echo >&2; }
 case "$body" in
   200) ;;
-  401) echo "STUCK: Ronin rejected the request (auth on). Set RONIN_AUTH=user:pass." >&2; exit 5 ;;
-  404) echo "STUCK: Ronin does not see pane $pane in any session." >&2; exit 5 ;;
+  401) echo "STUCK: Ronin rejected the request (auth on). Set RONIN_AUTH=user:pass." >&2; said; exit 5 ;;
+  404) echo "STUCK: Ronin does not see pane $pane in any session." >&2; said; exit 5 ;;
   409) echo "REFUSED: Ronin kept this Agent and its worktrees open. Complete every NEXT action below, then run session_end again." >&2
-       cat "$response_file" >&2
-       echo >&2
+       said
        exit 4 ;;
-  *)   echo "STUCK: Ronin answered $body — your session is still here." >&2; exit 5 ;;
+  *)   echo "STUCK: Ronin answered $body — your session is still here. Ronin said:" >&2; said; exit 5 ;;
 esac
 
 # Accepted. Now wait to die: the kill lands a moment after the reply. Returning here

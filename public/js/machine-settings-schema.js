@@ -10,13 +10,13 @@
  * owns meaning.
  *
  * `ctx` is what a surface already fetched and chose: { record, home, rows }, where
- * `rows` is the provider catalog as the one picker orders it (form-steps.js
- * `orderedCatalog`): every row carries its tier and whether this machine can launch it.
+ * `rows` is the provider catalog as the server joins it (form-steps.js
+ * `providerCatalog().rows`): every row carries its tier and whether this machine can launch it.
  */
 
 /** A provider·model value is one string so it survives a plain <option> and a text field. */
 export const pm = (s) => s.provider + '\t' + s.model;
-export const splitPm = (v) => String(v || '').split('\t');
+const splitPm = (v) => String(v || '').split('\t');
 
 /**
  * THE ROW A SEED NAMES, from the catalog alone. `models:first` is the catalog default of
@@ -83,7 +83,7 @@ export function pickerProvider(f) {
 }
 
 /** Would this value be omitted from a save? The one rule the registry ever declares. */
-export function omitted(f, v) {
+function omitted(f, v) {
   if (f.omit !== 'blank') return false;
   if (f.shape === 'provider-model') return !splitPm(v)[1];
   return !String(v ?? '').trim();

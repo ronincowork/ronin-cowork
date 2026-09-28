@@ -4,7 +4,7 @@ import { button, field, status } from './ui.js';
 import { pm, getPath, currentOf, optionsOf, pickerProvider, toRequest } from './machine-settings-schema.js';
 import { servicesCard } from './services-card.js';
 import { t } from './lexicon.js';
-import { loadProviderCatalog, providerCatalog, modelAvailabilityFact, modelLabel } from './form-steps.js';
+import { loadProviderCatalog, providerCatalog, modelLabel } from './form-steps.js';
 import { ask } from './ask.js';
 
 /* ---------- ⚙ CONFIGURATION — what this install IS, in one room ----------
@@ -136,14 +136,12 @@ export function buildMachineSettings(root, isShowing) {
     const providers = catalog.filter((item, index) => catalog.findIndex((other) => other.provider === item.provider) === index);
     const reason = (item) => item.off
       ? t('forms.reason_turned_off', 'turned off')
-      : item.listed === false && item.model_list_current
-        ? t('forms.reason_not_listed', 'not listed by your {cli} {client_version}', { cli: item.cli_label || item.cli, client_version: item.model_list?.client_version || '' })
-        : t('forms.reason_not_on_machine', 'not on this machine');
+      : t('forms.reason_not_on_machine', 'not on this machine');
     const fields = fixed ? [
-      { key: 'model', label: f.short ?? f.label, blank: t('settei.none_set', '— none set —'), options: catalog.filter((item) => item.provider === fixed).map((item) => ({ v: item.model, l: modelLabel(item), word: item.tier, sub: modelAvailabilityFact(item), off: item.selectable ? '' : (item.operational ? modelAvailabilityFact(item) : reason(item)) })) },
+      { key: 'model', label: f.short ?? f.label, blank: t('settei.none_set', '— none set —'), options: catalog.filter((item) => item.provider === fixed).map((item) => ({ v: item.model, l: modelLabel(item), word: item.tier, sub: item.cost || '', off: item.selectable ? '' : reason(item) })) },
     ] : [
       { key: 'provider', label: t('forms.provider', 'Model provider'), blank: t('settei.none_set', '— none set —'), options: providers.map((item) => ({ v: item.provider, l: item.provider_label, off: item.operational ? '' : reason(item) })) },
-      { key: 'model', label: t('forms.model', 'Model'), blank: t('settei.none_set', '— none set —'), after: 'provider', options: (value) => catalog.filter((item) => item.provider === value.provider).map((item) => ({ v: item.model, l: modelLabel(item), word: item.tier, sub: modelAvailabilityFact(item), off: item.selectable ? '' : (item.operational ? modelAvailabilityFact(item) : reason(item)) })) },
+      { key: 'model', label: t('forms.model', 'Model'), blank: t('settei.none_set', '— none set —'), after: 'provider', options: (value) => catalog.filter((item) => item.provider === value.provider).map((item) => ({ v: item.model, l: modelLabel(item), word: item.tier, sub: item.cost || '', off: item.selectable ? '' : reason(item) })) },
     ];
     const pair = ask([{ group: fixed ? '' : t('new_agent.model_package', 'Model'), fields }], {
       value: picked,
@@ -201,6 +199,7 @@ export function buildMachineSettings(root, isShowing) {
     });
   };
 
+  let card = null; // the Services card of the last render; a new render closes it first
   const render = () => {
     body.innerHTML = '';
     const { set, observed, status: st, schema } = rec;
@@ -333,11 +332,11 @@ export function buildMachineSettings(root, isShowing) {
     const activation = set.services.activation ?? {};
     body.appendChild(obsRow(t('settei.subscription', 'subscription'), st.subscription,
       activation.email_masked ? ` ${activation.email_masked}` : ''));
-    // email and recorded without being checked; now the operator asks Ronin HQ, the
-    // person confirms on whatever device they are holding, and the install polls until
-    // the entitlement arrives. The card renders the durable stage rather than what this
-    // page remembers doing, so a reload or a second tab lands on the truth.
-    servicesCard(body);
+    // The operator asks Ronin HQ, the person confirms on whatever device they are holding,
+    // and each step arrives by push. The card renders the durable stage rather than what
+    // this page remembers doing, so a reload or a second tab lands on the truth.
+    card?.stop();
+    card = servicesCard(body);
 
     group(t('settei.group_needed', 'still needed'));
     for (const n of rec.needed ?? []) {

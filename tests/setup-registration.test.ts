@@ -255,12 +255,12 @@ test('Services retains registration, installation, master, and explicit restart 
   assert.match(source, /ronin_services: on/);
   assert.match(source, /saveCampaign\(row\.id, \{ config: \{ installations \} \}\)/);
   assert.match(source, /setAttribute\('aria-pressed', String\(item\.pressed === true\)\)/);
-  // Restart: the one sanctioned tool behind one route; the browser asks, then reads the restart off startedAt changing.
-  assert.match(source, /if \(item\.act === 'restart'\) \{ await restartRonin\(state, startedAt\); return; \}/);
+  // Restart: the one sanctioned tool behind one route; the browser asks, and the socket's reopen reads the machine again.
+  assert.match(source, /if \(item\.act === 'restart'\) \{ await restartRonin\(state\); return; \}/);
   assert.match(source, /request\('\/api\/machine\/restart', \{ method: 'POST', json: \{\} \}\)/);
   assert.match(source, /if \(!asked\.ok && asked\.kind !== 'network'\)/, 'a refusal is shown in the tool\'s words; only no answer means Ronin went down');
-  assert.match(source, /probe\.data\.cowork\.startedAt !== startedAt\) break;/, 'the restart is read off the machine, not assumed');
-  assert.match(source, /installed\.kind === 'network' && body\.dataset\.state\) \{ timer = setTimeout/, 'a server down for a moment does not repaint the surface as Not installed');
+  assert.match(source, /store\.onOpen\(\(\) => \{ void read\(\); \}\)/, 'Ronin back from a restart is read on the reopened socket, not probed');
+  assert.match(source, /installed\.kind === 'network' && body\.dataset\.state\) return;/, 'a server down for a moment does not repaint the surface as Not installed');
   const route = await (await import('node:fs/promises')).readFile(new URL('../src/routes/machine-restart-api.ts', import.meta.url), 'utf8');
   assert.match(route, /join\(REPO_ROOT, 'ronin_bin', 'ronin-host'\)/, 'the route runs the sanctioned tool and names no unit');
   assert.match(route, /execFile\(RESTART_TOOL, \['restart'\]/, 'the route selects only the fixed restart subcommand');
@@ -273,7 +273,8 @@ test('Services retains registration, installation, master, and explicit restart 
   const index = await (await import('node:fs/promises')).readFile(new URL('../src/index.ts', import.meta.url), 'utf8');
   assert.match(index, /registerMachineRestart\(app\)/);
   assert.doesNotMatch(source, /notifySummary\(SETUP_SURFACE_TYPES\.services/);
-  assert.match(source, /if \(body\.isConnected\) void show\(\)/, 'polling stops when the surface leaves the workspace');
+  assert.doesNotMatch(source.slice(source.indexOf('export function createServicesSurface'), source.indexOf('export function createGbrainSurface')), /setTimeout|setInterval/, 'the surface never polls');
+  assert.match(source, /store\.listen\('services-setup'/);
   assert.doesNotMatch(source, /Requires a confirmed registration|services_requires_short|services_register_enables|Registration confirmed · Services access not included|not activated|setup-services-account/);
   assert.doesNotMatch(source, /const state = el\('dl'|<dd>|'Yes' : 'No'/);
 });
@@ -313,28 +314,27 @@ test('Services setup model keeps installation and registration as separate facts
   const act = (stage: string, extra: Record<string, unknown> = {}) => ({ ok: true, data: { stage, ...extra } });
   type Step = { id: string; label: string; done: boolean; enabled: boolean; act: string | null };
   const shape = (m: { steps: Step[] }) => m.steps.map((s) => `${s.id}:${s.label}:${s.done ? 'done' : s.enabled ? s.act : 'off'}`).join(' ');
-  const cases: Array<[string, unknown, unknown, unknown, string, string, string, boolean]> = [
-    ['unregistered', { ok: false, status: 500 }, inst(), null, 'not installed', 'Not installed on this machine', 'register:Register:register install:Install:off switch:Turn on:off', false],
-    ['anonymous', reg('anonymous'), inst(), act('not_requested'), 'not installed', 'Not installed · anonymous hello sent', 'register:Register:register install:Install:off switch:Turn on:off', false],
-    ['sending', reg('pending'), inst(), act('requesting'), 'sending', 'Sending the confirmation email…', 'register:Sending…:off install:Install:off switch:Turn on:off', true],
-    ['awaiting_email', reg('pending', { email_masked: 'p*****@example.com' }), inst(), act('awaiting_email'), 'confirm email', 'Confirmation email sent to p*****@example.com', 'register:Check status:check install:Install:off switch:Turn on:off', true],
-    ['expired', reg('pending'), inst(), act('expired'), 'link expired', 'Confirmation link expired', 'register:Register:register install:Install:off switch:Turn on:off', false],
-    ['send_failed', reg('pending'), inst(), act('error', { error_at_stage: 'awaiting_email' }), 'waiting to send', 'Waiting to send', 'register:Check status:check install:Install:off switch:Turn on:off', false],
-    ['entitled', entitled(), inst(), act('verified'), 'ready to install', 'Registered · Ready to install', 'register:Done:done install:Install:install switch:Turn on:off', false],
-    ['installing', entitled(), inst(), act('installing'), 'installing', 'Installing Services…', 'register:Done:done install:Installing…:off switch:Turn on:off', true],
-    ['install_failed', entitled(), inst(), act('error', { error_at_stage: 'installing', error_message: 'the installer did not start' }), 'install failed', 'Install did not finish', 'register:Done:done install:Try again:install switch:Turn on:off', false],
-    ['switched_off', reg('optional'), here(), act('not_requested'), 'switched off', 'Installed · switched off', 'register:Register:register install:Done:done switch:Turn on:switch_on', false],
-    ['restart_needed', reg('optional'), here({ switched_on: true, restart_needed: true }), act('not_requested'), 'restart needed', 'Switched on · not yet running', 'register:Register:register install:Done:done switch:Turn off:switch_off restart:Restart:restart', false],
-    ['active', entitled(), here({ switched_on: true }), act('installed'), 'active', 'Active on this Cowork', 'register:Done:done install:Done:done switch:Turn off:switch_off', false],
+  const cases: Array<[string, unknown, unknown, unknown, string, string, string]> = [
+    ['unregistered', { ok: false, status: 500 }, inst(), null, 'not installed', 'Not installed on this machine', 'register:Register:register install:Install:off switch:Turn on:off'],
+    ['anonymous', reg('anonymous'), inst(), act('not_requested'), 'not installed', 'Not installed · anonymous hello sent', 'register:Register:register install:Install:off switch:Turn on:off'],
+    ['sending', reg('pending'), inst(), act('requesting'), 'sending', 'Sending the confirmation email…', 'register:Sending…:off install:Install:off switch:Turn on:off'],
+    ['awaiting_email', reg('pending', { email_masked: 'p*****@example.com' }), inst(), act('awaiting_email'), 'confirm email', 'Confirmation email sent to p*****@example.com', 'register:Check status:check install:Install:off switch:Turn on:off'],
+    ['expired', reg('pending'), inst(), act('expired'), 'link expired', 'Confirmation link expired', 'register:Register:register install:Install:off switch:Turn on:off'],
+    ['send_failed', reg('pending'), inst(), act('error', { error_at_stage: 'awaiting_email' }), 'waiting to send', 'Waiting to send', 'register:Check status:check install:Install:off switch:Turn on:off'],
+    ['entitled', entitled(), inst(), act('verified'), 'ready to install', 'Registered · Ready to install', 'register:Done:done install:Install:install switch:Turn on:off'],
+    ['installing', entitled(), inst(), act('installing'), 'installing', 'Installing Services…', 'register:Done:done install:Installing…:off switch:Turn on:off'],
+    ['install_failed', entitled(), inst(), act('error', { error_at_stage: 'installing', error_message: 'the installer did not start' }), 'install failed', 'Install did not finish', 'register:Done:done install:Try again:install switch:Turn on:off'],
+    ['switched_off', reg('optional'), here(), act('not_requested'), 'switched off', 'Installed · switched off', 'register:Register:register install:Done:done switch:Turn on:switch_on'],
+    ['restart_needed', reg('optional'), here({ switched_on: true, restart_needed: true }), act('not_requested'), 'restart needed', 'Switched on · not yet running', 'register:Register:register install:Done:done switch:Turn off:switch_off restart:Restart:restart'],
+    ['active', entitled(), here({ switched_on: true }), act('installed'), 'active', 'Active on this Cowork', 'register:Done:done install:Done:done switch:Turn off:switch_off'],
   ];
   assert.deepEqual(cases.map(([state]) => state).sort(), [...SERVICES_SETUP_STATES].sort());
-  for (const [state, registration, installed, activation, summary, status, steps, polling] of cases) {
+  for (const [state, registration, installed, activation, summary, status, steps] of cases) {
     const model = servicesSetupModel(registration as never, installed as never, activation as never);
     assert.equal(model.state, state);
     assert.equal(model.summary, summary);
     assert.equal(model.status, status);
     assert.equal(shape(model), steps);
-    assert.equal(model.polling, polling);
     assert.ok(model.next.length > 0);
     assert.deepEqual(model.steps.slice(0, 3).map((s: Step) => s.id), ['register', 'install', 'switch'], 'always the same three steps in the same order');
     assert.equal(model.steps.length, state === 'restart_needed' ? 4 : 3, 'Restart appears only while a restart is due');
@@ -356,13 +356,11 @@ test('Services setup model keeps installation and registration as separate facts
   assert.match(servicesSetupModel(reg('optional'), here({ switched_on: true, restart_needed: true }), act('not_requested')).next, /Press Restart, or ask any of your Agents to restart Ronin/);
   const offButRunning = servicesSetupModel(reg('optional'), here({ restart_needed: true }), act('not_requested'));
   assert.equal(offButRunning.steps[3]?.act, 'restart', 'switching off also waits on a restart, so Restart is offered');
-  assert.equal(offButRunning.polling, false, 'restart disagreement waits for an explicit restart without polling');
   assert.equal(liveOn.steps[1].enabled, false, 'Done install has nothing to press');
   assert.equal(servicesSetupModel(reg('optional'), inst(), act('not_requested')).steps[1].enabled, false, 'the hosted install waits for the entitlement the API demands');
   assert.equal(servicesSetupModel(reg('optional'), inst(), act('not_requested')).steps[2].enabled, false, 'nothing to switch on before parts are installed');
   const installedAwaiting = servicesSetupModel(reg('pending', { email_masked: 'p*****@example.com' }), here(), act('awaiting_email'));
   assert.equal(installedAwaiting.state, 'switched_off');
-  assert.equal(installedAwaiting.polling, true, 'a confirmation in flight still re-reads');
   assert.equal(installedAwaiting.steps[0].act, 'check');
   assert.equal(servicesSetupModel(null, null, null).state, 'unregistered', 'no reads at all still paint a truthful floor');
   assert.match(servicesSetupModel(entitled(), here({ restart_needed: true }), act('installed')).next, /still running/);
@@ -431,16 +429,15 @@ test('Setup gbrain answers its measured facts plainly with at most one action pe
   assert.equal(gbrainSetupModel(snapshot({ integrationsKnown: false, integrations: [] }), one).accounts, null);
   assert.equal(gbrainSetupModel(snapshot({ search: { weights: 'stopped', mode: 'keyword_only' } }), one).answer, 'Installed · running · keyword-only search');
   assert.equal(gbrainSetupModel(snapshot({ installed: false, install: { state: 'running', op: 'install', log: ['fetching weights'] } })).hint, 'fetching weights');
-  assert.equal(gbrainSetupModel(snapshot({ installed: false, install: { state: 'running', op: 'install', log: ['fetching weights'] } })).polling, true);
+  assert.equal(gbrainSetupModel(snapshot({ installed: false, install: { state: 'running', op: 'install', log: ['fetching weights'] } })).state, 'installing');
   assert.deepEqual(gbrainSetupModel(snapshot({ installed: false, install: { state: 'failed', op: 'install', log: ['step 3 failed'] } })).log, ['step 3 failed']);
 });
 
-test('Setup gbrain keeps installation/default choice on Campaign Installations and keeps the commons dashboard on its default', async () => {
+test('Setup gbrain keeps installation/default choice on Campaign Installations and follows an install by push', async () => {
   const [setup, gbrain] = await Promise.all([
     (await import('node:fs/promises')).readFile(new URL('../public/js/setup-surfaces.js', import.meta.url), 'utf8'),
     (await import('node:fs/promises')).readFile(new URL('../public/js/gbrain.js', import.meta.url), 'utf8'),
   ]);
-  assert.match(setup, /presentation: 'setup'/);
   assert.match(setup, /setupRuntime\?\.gbrain|runtime\?\.gbrain/);
   assert.match(setup, /onState: \(\) => context\.workbench\?\.refreshSelector/);
   assert.match(setup, /openServices: \(\) => context\.workbench\?\.place\(SETUP_SURFACE_TYPES\.installations/);
@@ -456,13 +453,13 @@ test('Setup gbrain keeps installation/default choice on Campaign Installations a
   assert.match(gbrain, /row\(t\('campaign_view\.default_for_all_agents', 'Default for all Agents'\)\)/);
   assert.match(setup, /installationControls: context\.installationControls/);
   assert.match(gbrain, /const mine = \+\+reads;[\s\S]*?if \(mine === reads\) renderSetup\(result\)/);
-  assert.match(gbrain, /if \(!setup\) root\.append\(head, privacy, search, integrations\)/);
+  assert.doesNotMatch(gbrain, /setInterval|setTimeout/, 'an install is followed by push, never polled');
+  assert.match(gbrain, /store\.listen\('gbrain'/);
   for (const question of ['gbrain.setup_q_installed', 'gbrain.setup_q_accounts']) assert.ok(gbrain.includes(question), question);
   assert.doesNotMatch(gbrain, /gbrain\.setup_q_agents|gbrain\.setup_agents_/);
   assert.match(gbrain, /setAttribute\('aria-live', 'polite'\)/);
   assert.match(gbrain, /request\('\/api\/gbrain\/install', \{ method: 'POST', json: \{\} \}\)/);
   assert.match(gbrain, /root\.replaceChildren\(wrap\)/);
-  for (const kept of ['renderPrivacy(r.data)', 'renderSearch(r.data)', 'renderIntegrations(r.data)', 'integrations.append(renderRemove())', 'renderLoad(r.data)']) assert.ok(gbrain.includes(kept), kept);
   assert.doesNotMatch(gbrain, /designedErrors|gb-notice|gb-setup|setup-gbrain-benefit|setup-gbrain-facts/);
 });
 
@@ -493,13 +490,6 @@ test('Setup has one Installations card, Account has no gbrain tab, and Machine S
   assert.match(installations, /context\.onInstallationsState\?\.\(\{ \.\.\.values \}\)/, 'Setup completion follows the saved installation map');
 });
 
-test('legacy Services mutation entry points explicitly retire to registration', async () => {
-  const source = await (await import('node:fs/promises')).readFile(new URL('../src/routes/services-activation-api.ts', import.meta.url), 'utf8');
-  assert.match(source, /app\.post\('\/api\/services\/activation'[\s\S]*status\(410\)/);
-  assert.match(source, /Registration recovery moved to \/api\/setup\/registration\/recovery/);
-  assert.match(source, /Registration deletion moved to \/api\/setup\/registration/);
-});
-
 test('Register resend confirmation remains wired from its button to the live recovery action', async () => {
   const fs = await import('node:fs/promises');
   const [surface, api] = await Promise.all([
@@ -512,7 +502,7 @@ test('Register resend confirmation remains wired from its button to the live rec
     'the live recovery route dispatches that request to HQ resend');
 });
 
-test('retired Services mutation handlers return 410 while registration routes remain live', async () => {
+test('registration routes are live, and the retired Services mutation routes are gone', async () => {
   const handlers = new Map<string, Function>();
   const app = {
     get(path: string, handler: Function) { handlers.set(`GET ${path}`, handler); },
@@ -528,13 +518,7 @@ test('retired Services mutation handlers return 410 while registration routes re
   for (const route of [
     'POST /api/services/activation', 'POST /api/services/activation/resend',
     'POST /api/services/activation/address', 'DELETE /api/services/activation',
-  ]) {
-    let code = 200; let body: unknown = null;
-    const response = { status(value: number) { code = value; return this; }, json(value: unknown) { body = value; return this; } };
-    await handlers.get(route)?.({ body: {} }, response);
-    assert.equal(code, 410, route);
-    assert.match(String((body as { error?: string })?.error), /registration/i);
-  }
+  ]) assert.equal(handlers.has(route), false, route);
 });
 
 test('all browser mutation callers use registration; Services activation is read/poll/install only', async () => {

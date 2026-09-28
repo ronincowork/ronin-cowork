@@ -1,38 +1,67 @@
 /* part of the ronin-cowork client — see js/README.md */
-import { fetchSessions } from './api.js';
 import { guard } from './errors.js';
-import { refreshHome } from './home.js';
+import { renew } from './store.js';
 import { buildSessionPicker } from './session-picker.js';
 import { PAD_CODE, firePadBinding, padBinds, padChord } from './pad.js';
 import { buildPadPanel } from './padpanel.js';
 import { buildNotePanel } from './panels.js';
 import { IS_TOUCH, S, tiles } from './state.js';
 import { isCoarse } from './tiledrop.js';
+import { t } from './lexicon.js';
 
 export function build() {
-  // Each wiring block is guarded separately: losing one control must not cost the
-  // Resumed tab (esp. mobile — a backgrounded page can live for days): re-fetch the list.
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') {
-      fetchSessions();
-      refreshHome();
-    }
-  });
-  // Home-panel cadence: status + gauge readings for sessionless tiles. Gentle poll,
-  // only while a home panel is actually on a visible screen.
-  setInterval(() => {
-    if (document.visibilityState === 'visible') refreshHome();
-  }, 8000);
-  // Gauge cadence: the number only moves when a turn completes, so a gentle 30s poll
-  // (one cheap capture-pane per tile-with-session), paused while the tab is hidden.
-  setInterval(() => {
-    if (document.visibilityState !== 'visible') return;
-    tiles.forEach((t) => {
-      if (t.session && t.el.style.display !== 'none') { t.refreshCtx(); t.refreshTegami(); }
+  const bar = document.getElementById('bar');
+  const island = document.getElementById('viewisland');
+  if (bar && island) {
+    // THE CARET RIDES THE ISLAND, AND ONLY THE CARET EVER LEAVES IT. Collapsing hides
+    // #bar, so the one control that reopens the header has to outlive the bar: it docks
+    // to the body, fixed over the work surfaces' header, deliberately a little in the
+    // way so the fold can always be toggled back. The island itself never moves. It is
+    // one island, shaped once, and it goes down with the bar it belongs to — nothing
+    // re-parents it into a header it was never shaped for.
+    const collapse = document.createElement('button');
+    collapse.type = 'button';
+    collapse.className = 'header-collapse app-header-collapse';
+    const home = document.createComment('header-collapse-home');
+    island.append(home, collapse);
+    const sync = () => {
+      const closed = bar.classList.contains('header-collapsed');
+      collapse.textContent = closed ? '⌄' : '⌃';
+      collapse.setAttribute('aria-expanded', String(!closed));
+      collapse.setAttribute('aria-label', closed ? t('bar.expand_header', 'Expand header') : t('bar.collapse_header', 'Collapse header'));
+    };
+    const restore = () => {
+      if (!bar.classList.contains('header-collapsed')) return;
+      home.after(collapse);
+      collapse.classList.remove('header-collapse-docked');
+      bar.classList.remove('header-collapsed');
+      sync();
+    };
+    collapse.addEventListener('click', () => {
+      if (bar.classList.contains('header-collapsed')) {
+        restore();
+        return;
+      }
+      // The body, not a surface header: the caret must not depend on finding a header to
+      // live in, and collapsing the application header must never cost a work surface its
+      // own title and actions.
+      document.body.append(collapse);
+      collapse.classList.add('header-collapse-docked');
+      bar.classList.add('header-collapsed');
+      sync();
     });
-  }, 30000);
+    window.addEventListener('hashchange', restore);
+    window.matchMedia('(pointer: coarse) and (min-width: 681px)').addEventListener?.('change', restore);
+    sync();
+  }
+  // Resumed tab (esp. mobile — a backgrounded page can live for days) or one restored from
+  // bfcache: renew the store — a socket that went reconnects now, and the new connection is
+  // sent the session list and the rows whole.
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') renew();
+  });
   window.addEventListener('pageshow', (e) => {
-    if (e.persisted) fetchSessions(); // restored from bfcache
+    if (e.persisted) renew();
   });
   window.addEventListener('resize', () => tiles.forEach((t) => t.doFit()));
   // Desktop: Ctrl+Shift (or Ctrl+Alt) + 1/2/4 sets HOW MANY tiles are on screen —

@@ -1,12 +1,13 @@
 /* Selector-driven workspace-2 surfaces for the Ronin Setup workbench. */
 import { WorkspaceKit } from './workspace-kit.js';
 import { request } from './request.js';
+import { store } from './store.js';
 import { t } from './lexicon.js';
 import { buildGbrain } from './gbrain.js';
 import { createWorkspaceFoldersSurface } from './workspace-folders-surface.js';
 import { ask } from './ask.js';
 import { PROVIDER_SURFACE_TYPE, providerSurfaceDefinition } from './provider-surface.js';
-import { createStoneWorkSurface } from './stone-work-surface.js';
+import { createPhalanx } from './phalanx.js';
 import { servicesSetupModel } from './services-setup-state.js';
 import { campaignById, campaigns, loadCampaigns, saveCampaign } from './campaigns.js';
 import { completeInstallationMap } from './installation-map.js';
@@ -46,7 +47,7 @@ const action = (label, kind, onClick) => {
 };
 const servicesReady = (runtime = {}) => runtime?.services?.active === true || runtime?.services?.installed === true || runtime?.services?.switched_on === true;
 
-export const SERVICE_COMPONENTS = Object.freeze([
+const SERVICE_COMPONENTS = Object.freeze([
   { id: 'task_manager', label: 'Task manager', status: 'beta', needs: 'Adds a shared project board and quick summaries of active work.' },
   { id: 'terminal_transcript', label: 'Terminal transcript', status: 'comingSoon', needs: 'Records terminal activity for transcript views and downstream summaries.' },
   { id: 'voice_hotwords', label: 'Voice & Hotwords', status: 'comingSoon', needs: 'Adds voice tools and corrections for words dictation commonly mishears.' },
@@ -56,7 +57,7 @@ export const SERVICE_COMPONENTS = Object.freeze([
   { id: 'local_weights', label: 'Local weights', status: 'beta', needs: 'Provides locally stored model weights for features that need them.' },
 ]);
 
-export function serviceComponentRows(installed, masterOn) {
+function serviceComponentRows(installed, masterOn) {
   const parked = new Set((installed?.services?.capabilities?.parked || []).map((item) => item.name));
   return SERVICE_COMPONENTS.map((component) => ({
     v: component.id,
@@ -226,8 +227,7 @@ function createRegisterSurface(context) {
   });
   registerAction.dataset.launch = 'true';
   const sendLabel = registerAction.textContent;
-  const sendMark = el('img', 'wk-launch-mark'); sendMark.src = 'brand/nin-mark.svg'; sendMark.alt = '';
-  registerAction.replaceChildren(sendMark, el('span', '', sendLabel));
+  registerAction.replaceChildren(WorkspaceKit.primitives.ninMark('wk-launch-mark'), el('span', '', sendLabel));
   const send = el('div', 'setup-register-send');
   send.append(consent, registerAction, notice);
   let formOpen = null; // see THE HEADER ZONE, below
@@ -420,7 +420,7 @@ function createBountySurface(context) {
     detail.append(el('h4', '', t('bounty.requirements', 'Before you apply')), requirements, apply, notice);
     host.append(detail);
   };
-  const stones = createStoneWorkSurface({ className: 'setup-bounty-stones', renderDetail });
+  const stones = createPhalanx({ className: 'setup-bounty-stones', renderDetail });
   stones.mount(out.content, { before: [intro] });
   return { el: out.el, show: async () => {
     const [registration, github] = await Promise.all([
@@ -448,7 +448,6 @@ async function inlineServicesMark(host) {
 export function createServicesSurface(context) {
   const out = surface(t('settei.ronin_services', 'Ronin Services'));
   const body = el('div', 'setup-surface-body setup-services-compact'); out.content.append(body);
-  let timer = null;
   let said = '';  // the last press's answer, kept across the surface's own re-reads until the next press
   const explain = () => {
     const intro = el('section', 'setup-services-intro');
@@ -491,34 +490,30 @@ export function createServicesSurface(context) {
     if (result.ok) context.environment?.onInstallationChoice?.();
     return result;
   };
-  /** Restart: ask, then read the restart off the machine — /api/installed's startedAt changes when Ronin is back.
+  /** Restart: ask; the socket closes as Ronin goes down, and its reopen reads the machine again.
    *  A refusal answers in the tool's own words; no answer means Ronin went down, which is the restart happening. */
-  const restartRonin = async (state, startedAt) => {
+  const restartRonin = async (state) => {
     state.dataset.tone = 'warn';
     state.replaceChildren(el('p', 'setup-services-status-line', t('services_setup.restarting', 'Restarting Ronin…')), el('p', 'setup-services-next', t('services_setup.next_restarting', 'This surface re-reads the machine as Ronin comes back.')));
     const asked = await request('/api/machine/restart', { method: 'POST', json: {} });
-    if (!asked.ok && asked.kind !== 'network') { said = asked.message; await show(); return; }
-    const until = Date.now() + 120_000;
-    while (Date.now() < until && body.isConnected) {
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-      const probe = await request('/api/installed', { cache: 'no-store' });
-      if (probe.ok && probe.data?.cowork?.startedAt && probe.data.cowork.startedAt !== startedAt) break;
-    }
-    if (body.isConnected) await show();
+    if (!asked.ok && asked.kind !== 'network') { said = asked.message; await read(); }
   };
-  const show = async () => {
-    clearTimeout(timer);
+  // The three answers this surface paints, as a pushed or pressed `services` object carries them.
+  const answers = (services) => [services.registration, services.installed, services.activation].map((data) => ({ ok: true, data }));
+  const read = async () => {
     const [registration, installed, activation] = await Promise.all([
       request('/api/setup/registration', { cache: 'no-store' }),
       request('/api/installed', { cache: 'no-store' }),
       request('/api/services/activation', { cache: 'no-store' }),
       loadCampaigns(),
     ]);
-    // Ronin is down or unreachable for a moment (a restart in flight): keep what is painted and look again shortly.
-    if (!installed.ok && installed.kind === 'network' && body.dataset.state) { timer = setTimeout(() => { if (body.isConnected) void show(); }, 3000); return; }
+    // Ronin is down for a moment (a restart in flight): keep what is painted; the socket's reopen reads again.
+    if (!installed.ok && installed.kind === 'network' && body.dataset.state) return;
+    paint(registration, installed, activation);
+  };
+  const paint = (registration, installed, activation) => {
     const model = servicesSetupModel(registration, installed, activation);
     if (installed.ok) context.onInstalledState?.(installed.data);
-    const startedAt = installed.ok ? installed.data?.cowork?.startedAt || '' : '';
     const intro = explain();
     body.replaceChildren(intro);
     body.dataset.state = model.state;
@@ -553,12 +548,19 @@ export function createServicesSurface(context) {
         const button = action(item.label, '', async () => {
           if (item.act === 'register') { openRegister(); return; }
           button.disabled = true; said = ''; notice.textContent = '';
-          if (item.act === 'restart') { await restartRonin(state, startedAt); return; }
-          const result = item.act === 'switch_on' || item.act === 'switch_off' ? await switchServices(item.act === 'switch_on')
+          if (item.act === 'restart') { await restartRonin(state); return; }
+          // Install and Check status answer with the services object; a switch's new facts arrive by push.
+          const switching = item.act === 'switch_on' || item.act === 'switch_off';
+          const result = switching ? await switchServices(item.act === 'switch_on')
             : await request(item.act === 'install' ? '/api/services/install' : '/api/services/activation/poll', { method: 'POST', json: {} });
-          if (!result.ok) said = result.message;
-          else context.environment?.onInstallationChoice?.();
-          await show();
+          if (!result.ok) {
+            said = result.message;
+            notice.textContent = said; notice.classList.add('bad');
+            button.disabled = false;
+            return;
+          }
+          context.environment?.onInstallationChoice?.();
+          if (!switching) paint(...answers(result.data));
         });
         button.classList.add('setup-services-step-action');
         button.dataset.step = item.id; button.dataset.done = String(item.done);
@@ -601,7 +603,6 @@ export function createServicesSurface(context) {
         value: { [component.id]: desired[component.id] === true },
         onChange: async (answer) => {
           if (saving) return;
-          clearTimeout(timer);
           const before = { ...desired };
           desired = { ...desired, [component.id]: answer[component.id] };
           saving = true;
@@ -615,8 +616,8 @@ export function createServicesSurface(context) {
             notice.classList.add('bad');
           } else {
             notice.textContent = t('settei.saved', 'saved');
-            // One local facts read preserves runtime disagreement, including partial loads.
-            // Component selection never calls show(), activation polling, or page refresh.
+            // One local facts read preserves runtime disagreement, including partial loads,
+            // and repaints only the steps and status, never the controls being chosen.
             const fresh = await request('/api/installed', { cache: 'no-store' });
             if (fresh.ok) {
               facts = fresh.data;
@@ -649,18 +650,26 @@ export function createServicesSurface(context) {
     body.append(values, notice, state);
     body.append(el('p', 'setup-fine', 'Template Library offers ready-made Teams and Agents with their books and tools. It has no separate Services switch.'));
     body.append(el('p', 'setup-fine setup-services-gate', t('services_setup.gate', 'The Grokbot Morning Briefing preset waits for Ronin Services to be active.')));
-    // A confirmation or an install in flight: look again quietly while the surface is on screen.
-    if (model.polling) timer = setTimeout(() => { if (body.isConnected) void show(); }, model.state === 'installing' || model.steps.some((item) => item.id === 'restart') ? 5000 : 15000);
   };
-  return { el: out.el, show, destroy: () => clearTimeout(timer) };
+  // OPEN reads the three answers and listens: an email confirmed, an install's steps and a
+  // switch's new facts arrive as {t:'services-setup', services}; a reopened socket (Ronin
+  // back from a restart) reads again. CLOSE stops both. Nothing polls.
+  let unlisten = null;
+  let unopen = null;
+  const show = () => {
+    unlisten ??= store.listen('services-setup', (message) => paint(...answers(message.services)));
+    unopen ??= store.onOpen(() => { void read(); });
+    return read();
+  };
+  const close = () => { unlisten?.(); unopen?.(); unlisten = null; unopen = null; };
+  return { el: out.el, show, leave: close, destroy: close };
 }
 
-/** gbrain: the Setup presentation of the commons tab. Reads and presses are the tab's own. */
+/** gbrain: its Setup work surface (gbrain.js), open while seated, closed when it leaves. */
 export function createGbrainSurface(context) {
   const out = surface(t('pane.gbrain', 'gbrain'));
   const host = el('div', 'setup-surface-body'); out.content.append(host);
-  const room = buildGbrain(host, () => host.isConnected, (prompt) => context.environment?.showNewSession?.(prompt), {
-    presentation: 'setup',
+  const room = buildGbrain(host, (prompt) => context.environment?.showNewSession?.(prompt), {
     maturity: context.installationMaturity,
     installationControls: context.installationControls,
     availability: () => {
@@ -685,10 +694,9 @@ export function createGbrainSurface(context) {
     },
   });
   return { el: out.el, show: () => {
-    const status = context.environment?.setupRuntime?.gbrain;
     context.workbench?.refreshSelector?.();
-    room.enter?.();
-  } };
+    room.enter();
+  }, leave: () => { room.close(); }, destroy: () => { room.close(); } };
 }
 
 function createLaunchOwnSurface(context) {
@@ -704,7 +712,7 @@ function createLaunchOwnSurface(context) {
     for (const view of views) void view.enter({});
     return () => { for (const view of views) { view.destroy?.(); view.el.remove(); } };
   };
-  const stones = createStoneWorkSurface({
+  const stones = createPhalanx({
     items: [
       { id: 'agent', glyph: '人', label: t('agent', 'Agent') },
       { id: 'team', glyph: '人人', label: t('team', 'Team') },

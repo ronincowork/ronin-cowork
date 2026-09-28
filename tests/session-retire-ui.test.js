@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 
 globalThis.window = { matchMedia: () => ({ matches: false }) };
-const { createSubmitGate, retireSession, runShutdownPolling } = await import(`../public/js/session-retire.js?test=${Date.now()}`);
+const { createSubmitGate, retireSession, runShutdown } = await import(`../public/js/session-retire.js?test=${Date.now()}`);
 
 class FakeNode {
   constructor(tag = '') {
@@ -66,43 +66,81 @@ test('submit gate rejects duplicate clicks until success or failure restores it'
   assert.equal(calls, 2);
 });
 
-test('safe shutdown publishes immediate and polled phases through success', async () => {
+/** A socket the test drives: pushes and reopens, with nothing sent on a clock. */
+function rig() {
+  const hear = new Set();
+  const opens = new Set();
+  const timers = [];
+  const wants = [];
+  return {
+    hear, opens, timers, wants,
+    push: (message) => { for (const fn of [...hear]) fn(message); },
+    reopen: () => { for (const fn of [...opens]) fn(); },
+    options: (extra = {}) => ({
+      listen: (fn) => { hear.add(fn); return () => hear.delete(fn); },
+      onOpen: (fn) => { opens.add(fn); return () => opens.delete(fn); },
+      later: (fn) => { timers.push(fn); return timers.length; },
+      cancel: () => {},
+      want: (id) => { wants.push(id); for (const fn of [...hear]) fn({ t: 'shutdown', id, state: 'complete', message: 'done while away' }); },
+      ...extra,
+    }),
+  };
+}
+const settle = () => new Promise((resolve) => setImmediate(resolve));
+
+test('safe shutdown paints each pushed phase through success, and asks nothing after the POST', async () => {
   const seen = [];
-  const rows = [
-    { id: 'op', state: 'running', phase: 'checking_desks', message: 'Checking assigned worktrees (2 found)' },
-    { id: 'op', state: 'running', phase: 'closing_desks', message: 'Closing safe worktrees (2/2)' },
-    { id: 'op', state: 'complete', phase: 'complete', message: 'Agent a and 2 assigned worktree(s) closed' },
-  ];
-  const result = await runShutdownPolling('a', {
+  const socket = rig();
+  const done = runShutdown('a', socket.options({
     start: async () => ({ id: 'op', state: 'running', phase: 'resolving_agent', message: 'Resolving Agent a' }),
-    poll: async () => rows.shift(), wait: async () => {}, onProgress: (row) => seen.push(row.message),
-  });
+    onProgress: (row) => seen.push(row.message),
+  }));
+  await settle();
+  socket.push({ t: 'shutdown', id: 'other', state: 'complete', message: 'someone else' });
+  socket.push({ t: 'shutdown', id: 'op', state: 'running', phase: 'checking_desks', message: 'Checking assigned worktrees (2 found)' });
+  socket.push({ t: 'shutdown', id: 'op', state: 'running', phase: 'closing_desks', message: 'Closing safe worktrees (2/2)' });
+  socket.push({ t: 'shutdown', id: 'op', state: 'complete', phase: 'complete', message: 'Agent a and 2 assigned worktree(s) closed' });
+  const result = await done;
   assert.equal(seen[0], 'Resolving Agent…');
   assert.ok(seen.includes('Checking assigned worktrees (2 found)'));
   assert.ok(seen.includes('Closing safe worktrees (2/2)'));
+  assert.ok(!seen.includes('someone else'), 'another shutdown\'s phases are not this one\'s');
   assert.equal(result.state, 'complete');
+  assert.deepEqual(socket.wants, [], 'nothing asked while the socket stays up');
+  assert.equal(socket.hear.size + socket.opens.size, 0, 'finished: nothing left listening');
 });
 
-test('safe shutdown timeout is bounded and actionable', async () => {
-  let clock = 0;
-  await assert.rejects(() => runShutdownPolling('a', {
-    start: async () => ({ id: 'op', state: 'running', message: 'Checking' }),
-    poll: async () => ({ id: 'op', state: 'running', message: 'Checking' }),
-    wait: async () => { clock += 20; }, now: () => clock, timeoutMs: 50,
-  }), /timed out.*left available/);
+test('a phase pushed before the POST answers is not lost', async () => {
+  const socket = rig();
+  let answer;
+  const done = runShutdown('a', socket.options({ start: () => new Promise((resolve) => { answer = resolve; }) }));
+  socket.push({ t: 'shutdown', id: 'op', state: 'complete', message: 'fast' });
+  answer({ id: 'op', state: 'running', message: 'Resolving' });
+  assert.equal((await done).message, 'fast');
 });
 
-test('a hung backend poll times out and returns control to the dialog', async () => {
-  await assert.rejects(() => runShutdownPolling('a', {
-    start: async () => ({ id: 'op', state: 'running', message: 'Checking' }),
-    poll: async () => new Promise(() => {}), wait: async () => {}, pollTimeoutMs: 5,
-  }), /status check timed out; controls restored/);
+test('a reopened socket asks for the state once, for the pushes it missed', async () => {
+  const socket = rig();
+  const done = runShutdown('a', socket.options({ start: async () => ({ id: 'op', state: 'running', message: 'Resolving' }) }));
+  await settle();
+  socket.reopen();
+  assert.equal((await done).message, 'done while away');
+  assert.deepEqual(socket.wants, ['op']);
+});
+
+test('a socket that stays silent is bounded by the overall deadline', async () => {
+  const socket = rig();
+  const done = runShutdown('a', socket.options({ start: async () => ({ id: 'op', state: 'running', message: 'Checking' }) }));
+  await settle();
+  socket.timers[0]();
+  await assert.rejects(() => done, /timed out.*left available/);
 });
 
 test('actionable backend refusal is rendered as the terminal failure', async () => {
   const refusal = 'ronin:team/t/a: dirty files: x. NEXT: run git status';
-  await assert.rejects(() => runShutdownPolling('a', {
-    start: async () => ({ id: 'op', state: 'running', message: 'Resolving' }),
-    poll: async () => ({ id: 'op', state: 'failed', error: refusal, message: refusal }), wait: async () => {},
-  }), new RegExp(refusal.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+  const socket = rig();
+  const done = runShutdown('a', socket.options({ start: async () => ({ id: 'op', state: 'running', message: 'Resolving' }) }));
+  await settle();
+  socket.push({ t: 'shutdown', id: 'op', state: 'failed', error: refusal, message: refusal });
+  await assert.rejects(() => done, new RegExp(refusal.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
 });

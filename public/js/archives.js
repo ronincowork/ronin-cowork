@@ -1,5 +1,5 @@
 /* part of the ronin-cowork client — see js/README.md */
-import { deleteArchivedSession, fetchArchivedSessions, fetchSessions, rehydrateSession } from './api.js';
+import { deleteArchivedSession, fetchArchivedSessions, rehydrateSession } from './api.js';
 import { humanAge } from './shingo.js';
 import { toast } from './ui.js';
 import { t } from './lexicon.js';
@@ -86,7 +86,6 @@ function archiveRow(item, tile, enter) {
     revive.textContent = t('archives.rehydrating', 'rehydrating…');
     try {
       const liveName = await rehydrateSession(item.id);
-      await fetchSessions();
       await enter();
       tile.connect(liveName);
     } catch (e) {

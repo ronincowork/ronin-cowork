@@ -38,24 +38,18 @@ export const choice = (name, options, current, why, onPick) => {
 /** A skin token, said as a word: `stock` → Stock. The catalog's labels are these. */
 export const skinWord = (skin) => (skin ? skin[0].toUpperCase() + skin.slice(1) : '');
 /** A rireki_view token, in the words the Output picker already uses — one literal key each, so the gate can see them. */
-export const tileWord = (view) => ({
+const tileWord = (view) => ({
   locked: t('output.locked', 'Locked'),
   terminal_mirror: t('output.terminal_mirror', 'Terminal Mirror'),
-  detailed: t('output.detailed', 'Detailed'),
-  condensed: t('output.condensed', 'Condensed'),
-  cherry_pick: t('output.cherry_pick', 'Cherry Pick'),
 }[view] || view);
 
 export function createDeskProfileSurface(campaign) {
   const { createSurface, createNotice, setSurfaceState, createAction } = WorkspaceKit.primitives;
-  // The option lists, read at paint so the lexicon is up (KOKUGO § 5). Output: the two
-  // positions that ship, then the three that arrive with Ronin Services.
+  // The option lists, read at paint so the lexicon is up (KOKUGO § 5). Output is the two
+  // positions that can be produced; the tape projections left the offer on 2026-09-23.
   const OUTPUTS = () => [
     { value: 'terminal_mirror', label: tileWord('terminal_mirror') },
     { value: 'locked', label: tileWord('locked') },
-    { value: 'detailed', label: tileWord('detailed'), services: true },
-    { value: 'condensed', label: tileWord('condensed'), services: true },
-    { value: 'cherry_pick', label: tileWord('cherry_pick'), services: true },
   ];
   const THEMES = () => [
     { value: 'light', label: t('campaign_view.theme_light', 'Light') },
@@ -160,7 +154,7 @@ export function createDeskProfileSurface(campaign) {
       choice(t('campaign_view.theme_mobile', 'Theme (mobile)'), THEMES(), draft.theme_mobile || 'automatic',
         t('campaign_view.theme_mobile_help', 'Light or dark for touch surfaces — iPad and phone; Automatic is the house default — light.'), (v) => { draft.theme_mobile = v === 'automatic' ? '' : v; arm(); }),
       choice(t('campaign_view.output', 'Output'), OUTPUTS(), draft.rireki_view || '',
-        t('campaign_view.output_help', 'What an Agent’s tile shows. Terminal Mirror is the one that ships; Detailed, Condensed and Cherry Pick arrive with Ronin Services.'), (v) => { draft.rireki_view = v; arm(); }),
+        t('campaign_view.output_help', 'What an Agent’s tile shows by default: the live Terminal Mirror, or Locked to watch without typing.'), (v) => { draft.rireki_view = v; arm(); }),
       choice(t('campaign_view.lexicon', 'Lexicon'), [{ value: draft.lexicon || '', label: draft.lexicon || t('settei.none_set', '— none set —') }], draft.lexicon || '',
         t('campaign_view.lexicon_help', 'The words. Held to one lexicon for now, so nothing on this page is offered.'), null),
       // team_arrangement is in the record but not offered: the Workbench remembers its own

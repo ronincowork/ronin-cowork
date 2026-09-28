@@ -76,7 +76,7 @@ export function buildSessionPicker() {
       openSessionSomewhere(name);
       return;
     }
-    t.connect(name);
+    if (t.connect(name) === false) return;
     t.activate();
     if (!IS_TOUCH) t.focusTerminal();
   };

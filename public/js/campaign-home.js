@@ -17,9 +17,9 @@ const el = (tag, cls, text) => {
 
 function DOORS() {
   return [
-    { key: 'campaign', route: 'campaign', glyph: 'gear', name: t('campaign_home.machine_settings', 'Machine Settings'), is: t('campaign_home.campaign_is', 'Admin Desk configuration') },
-    { key: 'coworks', route: 'cowork', glyph: '人人', name: t('campaign.coworks', 'Teams'), is: t('campaign_home.coworks_is', 'Your Teams and Agents') },
-    { key: 'launch', route: 'launch', glyph: '人', name: t('campaign_home.launch', 'New Project'), is: t('campaign_home.launch_is', 'Start a new Team or Agent') },
+    { key: 'desk', route: 'desk', glyph: '⛩', name: t('campaign_home.desk', 'Desk'), is: t('campaign_home.desk_is', 'All Teams, Agents, and work') },
+    { key: 'team', route: 'cowork', glyph: '人人', name: t('campaign_home.team', 'Team'), is: t('campaign_home.team_is', 'Choose a Team and open its Workbench') },
+    { key: 'agent', route: 'cowork', glyph: '人', name: t('campaign_home.agent', 'Agent'), is: t('campaign_home.agent_is', 'Choose an Agent and open its Workbench') },
   ];
 }
 
@@ -28,23 +28,10 @@ export const setupDefaultView = (campaign) => {
   return ['provider', 'register', 'workspace', 'installations', 'password'].every((id) => answers[id]) ? 'campaign' : 'setup';
 };
 
-/** The machine door's house mark: a wheel with eight broad teeth, recognisably admin
- * without importing a platform emoji or turning into a literal vehicle silhouette. */
 function doorGlyph(glyph) {
   const host = el('span', 'ch-glyph');
   host.setAttribute('aria-hidden', 'true');
-  if (glyph !== 'gear') {
-    host.textContent = glyph;
-    return host;
-  }
-  const ns = 'http://www.w3.org/2000/svg';
-  const svg = document.createElementNS(ns, 'svg');
-  svg.setAttribute('viewBox', '0 0 32 32');
-  svg.setAttribute('focusable', 'false');
-  const wheel = document.createElementNS(ns, 'path');
-  wheel.setAttribute('d', 'M16 2v5M16 25v5M2 16h5M25 16h5M6.1 6.1l3.6 3.6M22.3 22.3l3.6 3.6M25.9 6.1l-3.6 3.6M9.7 22.3l-3.6 3.6M26 16a10 10 0 1 1-20 0 10 10 0 0 1 20 0ZM19 16a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z');
-  svg.append(wheel);
-  host.append(svg);
+  host.textContent = glyph;
   return host;
 }
 
@@ -54,6 +41,8 @@ export function createCampaignHome() {
   root.append(createSenmaida('page', 'ch-horizon'));
   const frame = el('div', 'ch-frame');
   const doors = el('div', 'ch-doors');
+  const settings = el('button', 'ch-settings', t('campaign_home.settings', 'Settings'));
+  settings.type = 'button';
   const release = el('div', 'ch-release');
   const check = el('button', 'ch-update', t('campaign_home.check_updates', 'Check for updates'));
   const answer = el('span', 'ch-update-answer');
@@ -77,7 +66,7 @@ export function createCampaignHome() {
   readings.setAttribute('aria-live', 'polite');
   release.append(readings, answer, check);
   frame.append(doors);
-  root.append(frame, release);
+  root.append(frame, settings, release);
 
   let ctx = null;
   let entered = false;
@@ -89,12 +78,10 @@ export function createCampaignHome() {
     doors.replaceChildren();
     for (const door of DOORS()) {
       const card = el('a', 'ch-door');
-      const locked = door.key !== 'campaign' && (!runtimeKnown || activatedCount < 1);
-      const route = door.key === 'campaign' ? setupDefaultView(setupCampaign) : door.route;
-      const name = door.key === 'campaign' && route === 'setup'
-        ? t('campaign_home.machine_setup', 'Machine Setup') : door.name;
-      const reading = door.key === 'campaign' && route === 'setup'
-        ? t('campaign_home.setup_is', 'Install and authenticate a model provider') : door.is;
+      const locked = !runtimeKnown || activatedCount < 1;
+      const route = door.route;
+      const name = door.name;
+      const reading = door.is;
       card.href = workbenchLaunchUrl({ destination: route, mode: 'overlay' });
       card.dataset.door = door.key;
       if (locked) {
@@ -113,6 +100,11 @@ export function createCampaignHome() {
       doors.append(card);
     }
   }
+
+  settings.addEventListener('click', () => {
+    const route = setupDefaultView(setupCampaign);
+    ctx?.navigate(route);
+  });
 
   const updates = createReleaseUpdateController({ onChange: state => {
     check.setAttribute('aria-disabled', String(state.busy));

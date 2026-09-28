@@ -39,9 +39,29 @@ in `src/tmux-client.ts` is the server's single door to tmux:
   replies and server-wide notifications only. The roster and the recorder's sweep skip
   `grid_*` names.
 - `tmux.on(kind, handler)` delivers notifications. `src/ws/events.ts` pushes the session
-  list to browsers on `%sessions-changed`, renames and window changes, with the 2 s clock
-  kept as a heartbeat; one `refresh-client -B` subscription carries every session's
-  `#{window_activity}` for the roster.
+  list and the home rows to browsers on `%sessions-changed`, renames and window changes,
+  with the 2 s clock kept as a heartbeat; each tick takes one session listing for both, and
+  each is sent only when a field the UI paints moved (`sessionsSignature` leaves out
+  `activity`), so a notification that changed nothing painted sends nothing. A row's
+  `activity` comes from the listing. [The data path](data-path.md) states the rule and the
+  lifecycle; everything else on `/events`:
+
+  | Message | Sent | On connect |
+  |---|---|---|
+  | `{t:'teams', rosters}` | after each roster write, when it moved | held, sent |
+  | `{t:'messages', list}` | when a file in the message queue folder changes and the queue moved | held, sent |
+  | `{t:'memory', reading}` | the machine service's reading of memory, swap, load, cores and scope, taken once a minute and sent when it moved; `{off:true}` once when watching is off | held, sent |
+  | `{t:'wipeboard', board, …}` | when a file under that board's folder changes and the board (last 100 posts, `more`) moved | answers `{t:'want', resource:'wipeboard', board}` |
+  | `{t:'jikan', team, jobs}` | when that Team's jobs file changes and its jobs moved, and as `team:'*'` for every Team | answers `{t:'want', resource:'jikan', team}` |
+  | `{t:'github-setup', github}` | on the tick while a GitHub or git setup session is attached, when `GET /api/setup/github`'s answer moved, and once after the last one closes | — |
+  | `{t:'services-setup', services}` | `{ registration, installed, activation }` after each write to registration, Services, Campaigns or machine settings, when the install watcher ends, and when Ronin HQ confirms the emailed link (asked every 15 s while a request waits and a browser is connected) | — |
+  | `{t:'gbrain', snapshot}` | `GET /api/gbrain`'s answer while an install or uninstall runs, and once when it ends | — |
+  | `{t:'mika', ...ready}` | after `POST /api/mika/ready` answers `starting`, while a browser is connected: her pane is looked at every 350 ms and the answer pushed when it changes, until it is not `starting` | — |
+  | `{t:'shutdown', ...operation}` | each phase of a `POST /api/sessions/:name/shutdown` operation, and once when it is complete or failed | — |
+
+  The store folders for boards, cron jobs and the message queue are the whole truth, and
+  every writer (a route, a CLI child, the server) changes a file in them: the server
+  watches each folder (`watchStore`) and pushes the resource the file names.
 
 **The rule:** no `execFile('tmux', …)` or `spawn('tmux', …)` in `src/` outside the client
 and the pty attach paths (`src/ws/pty.ts`, `src/viewer.ts`). `tests/tmux.test.ts` refuses
@@ -61,8 +81,10 @@ server, the restart in `src/host-guard.ts`, stays direct on purpose.
 
 ## The roster, computed once and on change
 
-`/api/home` is computed once per two-second window and shared by every browser that asks
-in it (`createWindowedLoader` in `src/routes/launch.ts`). A session's screen is captured
+The home rows are built by `homeRows` in `src/routes/launch.ts` from the session listing a
+tick took: while a browser is connected, `src/ws/events.ts` broadcasts `{t:'home', rows}`
+only when the painted fields moved (`homeSignature` leaves out a row's `activity` and stance
+`at`); a fresh connection receives the rows once. A session's screen is captured
 and classified only when its `#{window_activity}` stamp moved since the last
 classification (`createActivityCache` in `src/status.ts`); an unchanged session keeps its
 last status, ctx and model.

@@ -10,12 +10,13 @@
  * tile the head is hidden and the bar's one メ sheet holds the head's own controls,
  * RELOCATED not cloned, so every handler and live widget keeps the owner it always had.
  */
-import { fetchSessions } from './api.js';
+import { trackAppHeight } from './appheight.js';
 import { request } from './request.js';
 import { guard, showFailure } from './errors.js';
-import { connectEvents, sessionsHandlers } from './events.js';
-import { membersOfTeam, refreshTeams, subscribe, teamByName, teamsFromState, UNASSIGNED, unassignedSessions } from './team-controller.js';
-import { loadProjects, projectData, refreshHome } from './home.js';
+import { sayWhenUnreachable, sessionsHandlers } from './events.js';
+import { connect, renew } from './store.js';
+import { membersOfTeam, subscribe, teamByName, teamsFromState, UNASSIGNED, unassignedSessions } from './team-controller.js';
+import { loadProjects, projectData } from './home.js';
 import { buildDocs } from './docs.js';
 import { createTerminalTileHost } from './terminal-tile-host.js';
 import { makeDrop } from './tiledrop.js';
@@ -59,6 +60,8 @@ const docsHash = (team) => '#/d/' + encodeURIComponent(team);
 const sessionHash = (team, session) => '#/s/' + encodeURIComponent(team) + '/' + encodeURIComponent(session);
 
 export async function buildPhone() {
+  // The visible height before anything is laid out in it — see js/appheight.js.
+  trackAppHeight();
   const root = document.getElementById('phone');
   if (!root) throw new Error('the mobile document has no #phone');
   const bar = root.querySelector('.ph-bar');
@@ -92,9 +95,20 @@ export async function buildPhone() {
 
   let agentsPainted = ''; // what the Agents screen last drew — identical readings skip the repaint
   let host = null; // the one terminal host, alive only on the terminal screen
-  let stageTile = null; // the mounted tile inside it — for the slow work-record clock
+  let stageTile = null; // the mounted tile inside it — its transcript mode is remembered on close
   let sheet = null; // its メ sheet — dies with the host
   let docsView = null; // the Docs screen's editor — asked before it is left, in case of unsaved typing
+  const transcriptModeKey = 'ronin.phone.transcript-modes';
+  let savedTranscriptModes = {};
+  try { savedTranscriptModes = JSON.parse(sessionStorage.getItem(transcriptModeKey) || '{}') || {}; } catch {}
+  const transcriptModes = new Map(Object.entries(savedTranscriptModes).filter(([, chat]) => chat === true));
+  const rememberTranscriptMode = (session, chat) => {
+    if (!session) return;
+    if (chat) transcriptModes.set(session, true);
+    else transcriptModes.delete(session);
+    try { sessionStorage.setItem(transcriptModeKey, JSON.stringify(Object.fromEntries(transcriptModes))); } catch {}
+  };
+  const transcriptCache = new Map(); // session + reading → records/cursor retained while Tiles come and go
 
   /* ---------- screen 1 · the Teams ---------- */
   const paintTeams = () => {
@@ -161,10 +175,7 @@ export async function buildPhone() {
     state.hidden = true;
     const go = el('button', 'ph-launch-go', t('forms.launch', 'Launch'));
     go.dataset.launch = 'true';
-    const launchMark = el('img', 'wk-launch-mark');
-    launchMark.src = 'brand/nin-mark.svg';
-    launchMark.alt = '';
-    go.prepend(launchMark);
+    go.prepend(WorkspaceKit.primitives.ninMark('wk-launch-mark'));
     go.type = 'button';
     let busy = false;
     go.addEventListener('click', async () => {
@@ -195,7 +206,6 @@ export async function buildPhone() {
         return;
       }
       const born = result.data?.name || name.value.trim();
-      await fetchSessions();
       // The Agent opens where it was born: its own tile, in this document.
       location.hash = sessionHash(team, born);
     });
@@ -249,17 +259,17 @@ export async function buildPhone() {
     const team = route.team;
     teamBar(team);
     const pane = el('div', 'home-docs ph-docs');
-    const docs = buildDocs(null, pane, () => pane.isConnected,
+    const docs = buildDocs(pane,
       (name) => membersOfTeam(team).some((member) => member.name === name),
       () => teamByName(team)?.repos || []);
     docsView = docs;
     main.replaceChildren(segment(team, 'docs'), pane);
-    void refreshHome().then(() => { if (pane.isConnected) docs.enter(); });
+    docs.enter();
   };
   const leaveDocs = () => {
     if (!docsView) return true;
     const left = docsView.leave(); // false while unsaved typing stands and the owner keeps it
-    if (left) docsView = null;
+    if (left) { docsView.close(); docsView = null; }
     return left;
   };
 
@@ -267,16 +277,24 @@ export async function buildPhone() {
   const openTerminal = () => {
     const { team, session } = route;
     closeTerminal();
-    host = createTerminalTileHost({ mode: 'reduced' });
+    host = createTerminalTileHost({ mode: 'reduced', transcriptCache });
     const term = el('div', 'ph-term');
     term.append(host.el);
     main.replaceChildren(term);
     const tile = host.mount(session);
     stageTile = tile;
+    if (transcriptModes.get(session)) {
+      // The phone's one reading is Chat. Naming it now lets the transcript restore its
+      // snapshot immediately instead of first opening the route's default reading.
+      tile.transcriptReadings = [{ name: 'chat', label: 'Chat' }];
+      tile.toggleTranscript();
+    }
     tile.composer?.el.querySelector('.keysrow')?.append(feedbackAction);
 
     sheet = makeDrop('メ', t('phone.me_title', 'This Agent — work record, docs, output, close'), 'me');
     const node = (key) => tile[key]?.el ?? tile[key];
+    const transcriptBtn = node('transcriptBtn');
+    transcriptBtn.addEventListener('click', () => rememberTranscriptMode(session, tile.transcriptOn));
     sheet.addRow(node('workRecordBtn'), t('me.ladder', 'Work record'));
     sheet.addRow(node('docsBtn'), t('me.docs', 'Docs'));
     // No Services, no choice: the Output row only exists where an unlocked view does.
@@ -284,15 +302,23 @@ export async function buildPhone() {
     sheet.addRow(node('killBtn'), 'Close');
 
     // The 📄 menu hangs off the hidden tile head; here it hangs off the bar.
+    //
+    // So does the reading toggle, and it is a toggle here rather than a dial: the owner's
+    // ruling of 2026-09-23 is Term or Chat on a phone, in the head where the desktop keeps
+    // it, never a row in a menu ("It should have the same toggle as the desktop"). The
+    // button is the tile head's own — hidden when the route offers this Agent nothing,
+    // opaque when it has nothing yet, naming where you are, exactly as on the desktop.
     bar.replaceChildren(
       backLink(teamHash(team)),
       el('span', 'ph-title', agentLabel(S.sessions.find((row) => row.name === session) || { name: session })),
+      transcriptBtn,
       sheet.btn,
       sheet.menu,
       tile.docsBtn.menu,
     );
   };
   const closeTerminal = () => {
+    if (stageTile?.session) rememberTranscriptMode(stageTile.session, stageTile.transcriptOn);
     sheet?.close();
     sheet = null;
     host?.destroy();
@@ -328,28 +354,22 @@ export async function buildPhone() {
   window.addEventListener('hashchange', () => guard('phone route', render));
 
   /* ---------- the feeds ---------- */
-  // Membership and the lists are live off the same feed the workbench uses. A killed
-  // or vanished session on stage sends you back to its team — a dead tile is not a page.
+  // Membership and the lists are live off the same feed the workbench uses: the Team
+  // projection repaints every screen but the terminal once per change. On the terminal, a
+  // killed or vanished session sends you back to its team — a dead tile is not a page.
   sessionsHandlers.add(() => {
-    if (route.screen === 'terminal') {
-      const row = S.sessions.find((r) => r.name === route.session);
-      if (!row) { location.hash = teamHash(route.team); return; }
-      // The tile opened on the name alone; the Agent's own title lands with the list.
-      const title = bar.querySelector('.ph-title');
-      if (title && title.textContent !== agentLabel(row)) title.textContent = agentLabel(row);
-      return;
-    }
-    render();
+    if (route.screen !== 'terminal') return;
+    const row = S.sessions.find((r) => r.name === route.session);
+    if (!row) { location.hash = teamHash(route.team); return; }
+    // The tile opened on the name alone; the Agent's own title lands with the list.
+    const title = bar.querySelector('.ph-title');
+    if (title && title.textContent !== agentLabel(row)) title.textContent = agentLabel(row);
   });
   subscribe(() => { if (route.screen !== 'terminal') render(); });
+  // A resumed phone renews the store: a socket that went reconnects and is sent it all.
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState !== 'visible') return;
-    void fetchSessions();
-    void refreshTeams();
+    if (document.visibilityState === 'visible') renew();
   });
-  // The tile refreshes its own work record on connect; keep it breathing here, since the
-  // desktop's 30s clock (layout.js) never runs in this document.
-  window.setInterval(() => { if (route.screen === 'terminal' && stageTile) stageTile.refreshTegami(); }, 30000);
 
   // Ask the operator which optional surfaces are plugged in BEFORE a tile is born, the
   // way main.js does: `stream:false` means the 🔓 views are off and every tile is 🔒.
@@ -365,9 +385,8 @@ export async function buildPhone() {
   }
   // A tile address mounts its tile now: the terminal attaches by name and needs no list.
   if (route.screen === 'terminal') guard('phone paint', render);
-  await fetchSessions();
-  guard('session event stream', connectEvents);
-  await refreshTeams();
+  guard('say when Ronin is unreachable', sayWhenUnreachable);
+  guard('session event stream', connect);
   guard('load projects', loadProjects); // the launch card's project_root fallback
   guard('phone paint', render);
 }

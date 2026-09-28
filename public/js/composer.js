@@ -1,6 +1,5 @@
 /* part of the ronin-cowork client — see js/README.md */
 import { IS_TOUCH, S } from './state.js';
-import { CAN_RECORD, wireDictation } from './voice.js';
 import { t } from './lexicon.js';
 import { settleComposer } from './composer-rules.js';
 
@@ -22,18 +21,13 @@ export function buildComposer(body, hooks) {
   ta.placeholder = t('composer.placeholder', 'Message…');
   ta.title = t('composer.title', 'Enter sends · Shift+Enter or Option+Enter for a new line');
   ta.spellcheck = false;
-  // 🎤 sits ON the box, not floating over the terminal, and records to the host
-  // rather than to Apple — same engine the Mac's ⌥ mic uses, so it knows the words
-  // in ronin_catalogs/HOTWORDS.md. Built only where the browser can actually record; a
-  // dead button is worse than none. (Recording needs a secure context, so over the
-  // tailnet that means the https URL, not the bare IP.)
-  const mic = CAN_RECORD && IS_TOUCH ? document.createElement('button') : null;
-  if (mic) {
-    mic.className = 'cmic';
-    mic.type = 'button';
-    mic.textContent = '🎤';
-    mic.title = t('composer.mic_title', 'Dictate into this box — tap again to stop, then ↵ to send');
-  }
+  // NO 🎤 ON THE BOX. Dictation is withdrawn from the composer until Voice is rebuilt as
+  // a whole — speech to text AND text to speech, with its own controls (owner,
+  // 2026-09-24). It was offered on any touch surface the browser could record on, which
+  // said nothing about whether this machine can transcribe: Koe is parked here
+  // (`component_off`), and /api/health advertised `transcribe: true` off a default URL
+  // string that is never empty, so the button was always drawn and always failed.
+  // js/voice.js stays exactly where it is — the engine is not the thing that was wrong.
   const btn = document.createElement('button');
   btn.className = 'csend';
   btn.textContent = '↵';
@@ -42,10 +36,10 @@ export function buildComposer(body, hooks) {
   const why = document.createElement('p');
   why.className = 'cwhy';
   why.setAttribute('role', 'status');
-  wrap.append(...[why, ta, mic, btn].filter(Boolean));
+  wrap.append(why, ta, btn);
   body.appendChild(wrap);
 
-  const state = { dictation: null, queued: false, inflight: false };
+  const state = { inflight: false };
   // The wire's own words for a send that did not get through, in the owner's language.
   const reasons = {
     'not connected': () => t('composer.why_not_connected', 'the tile is not connected'),
@@ -55,38 +49,17 @@ export function buildComposer(body, hooks) {
     wrap.classList.toggle('held', !!reason);
     why.textContent = reason ? t('composer.held', 'Not sent — {why}. Your text is kept.', { why: (reasons[reason] || (() => reason))() }) : '';
   };
-  if (mic) state.dictation = wireDictation(ta, mic);
-  if (state.dictation)
-    state.dictation.afterText = () => {
-      if (!state.queued) return;
-      state.queued = false;
-      wrap.classList.remove('queued');
-      submit();
-    };
-
   const grow = () => {
     ta.style.height = 'auto';
     ta.style.height = Math.min(ta.scrollHeight, 160) + 'px';
   };
   const clearBox = () => {
-    if (S.dictation) S.dictation.stop();
     ta.value = '';
     grow();
     hold(null);
     ta.focus();
   };
   const submit = () => {
-    // Stop listening BEFORE reading the box: iOS keeps the recognizer running a
-    // beat after you stop talking, and a trailing result would refill a box we
-    // are about to clear.
-    if (S.dictation) S.dictation.stop();
-    // Enter while the clip is still TRANSCRIBING: the box is empty but a message
-    // is on its way. Queue the send; `afterText` above fires it when it lands.
-    if (state.dictation && state.dictation.busy && !ta.value.trim()) {
-      state.queued = true;
-      wrap.classList.add('queued');
-      return;
-    }
     // One message in flight at a time: a second Enter while the host is still answering
     // would send the same text twice.
     if (state.inflight) return;
@@ -114,40 +87,35 @@ export function buildComposer(body, hooks) {
       if (verdict.why) hold(verdict.why);
     });
   };
-  /**
-   * Lift above the on-screen keyboard.
-   *
-   * iOS does not resize the window when the keyboard appears — it shrinks the
-   * VISUAL viewport and leaves the layout viewport alone, so a box pinned to the
-   * bottom ends up underneath the keyboard, which is where the ⌨ overlay this
-   * replaces learned the same lesson. `visualViewport` is the only thing that knows
-   * how much is covered.
+  /*
+   * THE BOX DOES NOT CLIMB ANY MORE. It used to measure the keyboard and lift itself by
+   * that many pixels, because the application was sized to the layout viewport and its
+   * own bottom was therefore behind the keys. The application is now sized to what is
+   * visible (js/appheight.js), so the bottom of the app is the bottom of the screen and
+   * this box simply sits there. One measurement, in one place, instead of every pinned
+   * thing compensating for the same lie.
    */
-  // Reserve the actual overlay, including a growing draft and the phone keyboard.
+  // Reserve what the overlay covers, including a growing draft, so the view underneath
+  // can end above it rather than behind it.
   const reserve = () => {
-    const height = wrap.getBoundingClientRect().height;
-    body.style.setProperty('--composer-clearance', (height ? height + (parseFloat(wrap.style.bottom) || 0) : 0) + 'px');
+    body.style.setProperty('--composer-clearance', `${Math.round(wrap.getBoundingClientRect().height)}px`);
   };
   const size = new ResizeObserver(reserve);
   size.observe(wrap);
-  const lift = () => {
-    const vv = window.visualViewport;
-    const kb = vv ? Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop)) : 0;
-    wrap.style.bottom = kb + 'px';
-    reserve();
-  };
   if (IS_TOUCH) {
     ta.setAttribute('enterkeyhint', 'send');
     ta.setAttribute('autocorrect', 'on');
-    ta.addEventListener('focus', lift);
-    ta.addEventListener('blur', () => {
-      wrap.style.bottom = '0px';
-      reserve();
-    });
-    if (window.visualViewport) {
-      window.visualViewport.addEventListener('resize', lift);
-      window.visualViewport.addEventListener('scroll', lift);
-    }
+    // THE KEYS ROW STANDS DOWN IN TEXT ENTRY (owner, 2026-09-24). Two rows of controls
+    // above an on-screen keyboard is the screen twice over, and the device's own keyboard
+    // is the thing being typed on.
+    //
+    // The signal is the box having focus, not a measured keyboard height. Measuring looks
+    // more precise and is not: it needs a pixel threshold to survive the stray offset iOS
+    // reports while scrolling, and that guess was wrong on the owner's phone — the row
+    // never went away. Focus is what "entering text entry" actually means, it needs no
+    // number, and it is already the moment the keyboard opens on a touch device.
+    ta.addEventListener('focus', () => wrap.classList.add('kb-open'));
+    ta.addEventListener('blur', () => wrap.classList.remove('kb-open')); // back the moment the box is left
   }
   ta.addEventListener('input', () => {
     grow();
@@ -187,8 +155,6 @@ export function buildComposer(body, hooks) {
     clear: clearBox,
     dispose() {
       size.disconnect();
-      window.visualViewport?.removeEventListener('resize', lift);
-      window.visualViewport?.removeEventListener('scroll', lift);
     },
     show(on) {
       wrap.classList.toggle('show', !!on);

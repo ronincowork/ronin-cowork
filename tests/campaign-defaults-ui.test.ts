@@ -19,6 +19,10 @@ test('Campaign defaults use ask() and Output keeps multi-select semantics', asyn
   assert.doesNotMatch(source, /key: 'dial'|ruledRows\('dial'|default_dial/, 'the legacy Control default has no surface');
   assert.doesNotMatch(source, /key: 'features'/);
   assert.match(source, /key: 'behaviours'.*many: true/);
+  assert.match(source, /key: 'root'.*where\.born_in.*options: rootRows/);
+  assert.match(source, /key: 'repos'.*new_agent\.workspaces.*many: true.*options: rootRows/);
+  assert.match(source, /request\(`\/api\/project-roots\/detail\?campaign_id=/);
+  assert.match(source, /cowork_defaults: \{ \.\.\.cowork, project_root: root, repos: list\(repos\) \}/);
   assert.match(source, /paint\(\);[\s\S]*?request\(`\/api\/campaign-default-options/,
     'saved defaults paint before their small option catalogs arrive');
   assert.doesNotMatch(source, /\/api\/launch-seed/, 'defaults do not assemble an Agent launch');

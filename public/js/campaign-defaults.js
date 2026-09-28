@@ -3,7 +3,7 @@
 import { t } from './lexicon.js';
 import { saveCampaign } from './campaigns.js';
 import { WorkspaceKit } from './workspace-kit.js';
-import { loadProviderCatalog, providerCatalog, modelAvailabilityFact, modelLabel } from './form-steps.js';
+import { loadProviderCatalog, providerCatalog, modelLabel } from './form-steps.js';
 import { ask } from './ask.js';
 import { request } from './request.js';
 
@@ -26,11 +26,12 @@ export function createAgentDefaultsSurface(campaign) {
   const body = el('div', 'cv-body'); surface.content.append(body);
   let edited = null;
 
-  function paint(seed = null) {
+  function paint(seed = null, roots = []) {
     const row = campaign(); body.replaceChildren();
     if (!row) return surface.setState('empty', t('campaign_view.none_selected', 'No Campaign selected.'));
     surface.setState(null, '');
     const current = bucket(row.config?.defaults);
+    const cowork = bucket(row.config?.cowork_defaults);
     const form = el('form', 'cv-defaults-form');
     const questionsRow = el('div', 'cv-default-field');
     const notice = createNotice();
@@ -39,21 +40,28 @@ export function createAgentDefaultsSurface(campaign) {
     const providers = catalog.filter((row, index) => catalog.findIndex((other) => other.provider === row.provider) === index);
     const reason = (providerRow) => providerRow.off
       ? t('forms.reason_turned_off', 'turned off')
-      : providerRow.listed === false && providerRow.model_list_current
-        ? t('forms.reason_not_listed', 'not listed by your {cli} {client_version}', { cli: providerRow.cli_label || providerRow.cli, client_version: providerRow.model_list?.client_version || '' })
-        : t('forms.reason_not_on_machine', 'not on this machine');
+      : t('forms.reason_not_on_machine', 'not on this machine');
     const availableNames = new Set(list(seed?.available));
     const availableBehaviours = list(seed?.behaviours).filter((behaviour) => availableNames.has(behaviour.name));
+    const rootRows = roots.filter((root) => !root.archived).map((root) => ({
+      v: root.name, l: root.title || root.name,
+      word: root.repo_profile?.worktrees === 'enabled' ? t('where.worktree', 'worktree') : t('where.checkout', 'checkout'),
+    }));
     let picked = edited || {
+      root: String(cowork.project_root || ''), repos: list(cowork.repos),
       provider: String(current.provider || ''), model: String(current.model || ''),
       reach: current.reach || CHOICES.reach[0], recruit: current.recruit || CHOICES.recruit[0],
       output: list(current.output), launch_mode: current.launch_mode || CHOICES.launch_mode[0],
       behaviours: list(current.behaviours),
     };
     const questions = ask([
+      { group: t('where.label', 'Where it works'), fields: [
+        { key: 'root', label: t('where.born_in', 'Born in'), blank: t('team_config.default', 'Default'), options: rootRows },
+        { key: 'repos', label: t('new_agent.workspaces', 'Workspaces'), many: true, after: 'root', options: rootRows },
+      ] },
       { group: t('new_agent.model_package', 'Model'), fields: [
         { key: 'provider', label: t('campaign_view.col_provider', 'Provider'), blank: t('campaign_view.provider_default', 'Default provider'), options: providers.map((row) => ({ v: row.provider, l: row.provider_label, off: row.operational ? '' : reason(row) })) },
-        { key: 'model', label: t('campaign_view.col_model', 'Preferred model'), blank: t('campaign_view.model_default', 'Default model'), after: 'provider', options: (value) => catalog.filter((row) => row.provider === value.provider).map((row) => ({ v: row.model, l: modelLabel(row), word: row.tier, sub: modelAvailabilityFact(row), off: row.selectable ? '' : (row.operational ? modelAvailabilityFact(row) : reason(row)) })) },
+        { key: 'model', label: t('campaign_view.col_model', 'Preferred model'), blank: t('campaign_view.model_default', 'Default model'), after: 'provider', options: (value) => catalog.filter((row) => row.provider === value.provider).map((row) => ({ v: row.model, l: modelLabel(row), word: row.tier, sub: row.cost || '', off: row.selectable ? '' : reason(row) })) },
       ] },
       { group: t('mandate', 'Mandate'), fields: [
         { key: 'reach', label: t('campaign_view.default_reach', 'Reach'), options: CHOICES.reach.map((value) => ({ v: value, l: optionLabel(value) })) },
@@ -76,10 +84,14 @@ export function createAgentDefaultsSurface(campaign) {
     const save = el('button', 'cv-save', t('panels.save', 'Save')); save.type = 'submit'; actions.append(notice.el, save); form.append(actions); body.append(form);
     form.addEventListener('submit', async (event) => {
       event.preventDefault(); save.disabled = true; notice.set('info', t('campaign.saving', 'saving…'));
-      const next = { ...current, ...picked, behaviours: list(picked.behaviours) };
-      const result = await saveCampaign(row.id, { config: { defaults: next } });
+      const { root, repos, ...agentPicked } = picked;
+      const next = { ...current, ...agentPicked, behaviours: list(picked.behaviours) };
+      const result = await saveCampaign(row.id, { config: {
+        defaults: next,
+        cowork_defaults: { ...cowork, project_root: root, repos: list(repos) },
+      } });
       notice.set(result.ok ? 'success' : 'failed', result.ok ? t('settei.saved', 'saved') : result.message); save.disabled = false;
-      if (result.ok) { edited = null; paint(seed); }
+      if (result.ok) { edited = null; paint(seed, roots); }
     });
   }
 
@@ -91,7 +103,8 @@ export function createAgentDefaultsSurface(campaign) {
     void Promise.all([
       loadProviderCatalog(),
       request(`/api/campaign-default-options?campaign_id=${encodeURIComponent(campaign()?.id || '')}`),
-    ]).then(([, options]) => { if (current === generation) paint(options.ok ? options.data : null); });
+      request(`/api/project-roots/detail?campaign_id=${encodeURIComponent(campaign()?.id || '')}`),
+    ]).then(([, options, folders]) => { if (current === generation) paint(options.ok ? options.data : null, folders.ok ? list(folders.data?.roots) : []); });
   } };
 }
 

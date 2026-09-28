@@ -1,9 +1,11 @@
 # RONIN SERVICES ABILITIES — Koshi and Voice
 
-**Readable transcripts are not in this beta.** The recorder is off while it is refactored,
-so `edges read` falls back to another session's live pane. Say that you used the live
-view, and never call a pane capture durable or read
-service stores directly.
+**Transcripts come from the CLI's own journal, not the screen.** With Terminal transcript
+on, an Agent born under Ronin's launch keeps a readable copy of its conversation in its
+session folder, served as `GET /api/sessions/<name>/transcript`. Agents born before that,
+or on a CLI with no readable journal, answer *unavailable* with the reason. `edges read`
+still shows a live pane: say that you used the live view, never call a pane capture
+durable, and never read service stores directly.
 
 **Koshi** is Ronin's assisted administrative behavior: Ronin's own agents doing the house's
 internal jobs. You do not run it; the owner meets it as the Koshi tab.

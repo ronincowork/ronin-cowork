@@ -5,7 +5,7 @@ import { loadProjects } from './home.js';
 import { t } from './lexicon.js';
 import { WorkspaceKit } from './workspace-kit.js';
 import { createFolderPicker } from './folder-picker.js';
-import { createStoneWorkSurface } from './stone-work-surface.js';
+import { createPhalanx } from './phalanx.js';
 import { ask } from './ask.js';
 import { finalizeTeamName, sanitizeTeamName } from './new-team-draft.js';
 
@@ -36,7 +36,7 @@ export function buildProjectRoots(root, isShowing, campaignId = () => '', option
   messages.setAttribute('role', 'status');
   let stoneSurface = null;
   if (stones) {
-    stoneSurface = createStoneWorkSurface({
+    stoneSurface = createPhalanx({
       className: 'setup-roots-stones',
       onSelectionChange: (id) => {
         if (id !== editing) editing = null;
@@ -281,30 +281,42 @@ export function buildProjectRoots(root, isShowing, campaignId = () => '', option
       save.disabled = true;
       err.say('');
       const r = creating
-        ? await request('/api/project-roots', { method: 'POST', json: { ...body, name, campaign_id: campaignId(), ...(proposedProfile ? { before: profileFields.before, profile: proposedProfile, confirmed: true } : {}) } })
+        ? await request('/api/project-roots', { method: 'POST', json: { ...body, name, campaign_id: campaignId(), ...(proposedProfile ? { profile: proposedProfile, before: profileFields.before } : {}) } })
         : await request('/api/project-roots/' + encodeURIComponent(name), { method: 'PUT', json: body });
       if (!r.ok) {
         err.say(r.message, 'bad');
         save.disabled = false;
         return;
       }
+      let changedDuringSave = !!r.data?.profile_changed_since_open;
+      let changedBefore = r.data?.current_before;
       if (profileFields && !creating) {
         if (JSON.stringify(proposedProfile) !== JSON.stringify(profileFields.before)) {
           const d = await request('/api/project-roots/' + encodeURIComponent(name) + '/repo-profile', {
             method: 'PUT',
-            json: { before: profileFields.before, profile: proposedProfile, confirmed: true },
+            json: { profile: proposedProfile, before: profileFields.before },
           });
           if (!d.ok) {
             err.say(d.message, 'bad');
             save.disabled = false;
             return;
           }
+          changedDuringSave ||= !!d.data?.profile_changed_since_open;
+          if (d.data?.current_before) changedBefore = d.data.current_before;
         }
       }
       editing = null;
       await loadProjects(); // the launcher's picker reads the same catalog
       await refresh();
       if (stones) stoneSurface.select(name);
+      if (changedDuringSave) {
+        const report = document.createElement('p');
+        report.className = 'pr-empty bad';
+        report.setAttribute('role', 'status');
+        const actual = changedBefore ? JSON.stringify(changedBefore) : 'unknown';
+        report.textContent = t('roots.profile_changed_report', 'RONIN_REPO changed while this form was open. The profile at save time was {actual}. Your settings were saved; review the repository profile.', { actual });
+        (stones ? messages : list).prepend(report);
+      }
     });
     return f;
   }

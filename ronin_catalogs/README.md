@@ -62,8 +62,7 @@ of copying its guarded choreography.
 `rireki_view`, `team_arrangement`. `lexicons/<name>.md` is the words a surface uses —
 keys to strings with a `base:` to fall through to. Both shadow whole-file by name
 (`docs/architecture/shadowing.md`); each directory's README carries the format. The rule for words:
-`professional_en` is the floor and complete, a lexicon says only what it changes, and
-`scripts/check-lexicon.mjs` keeps the floor honest. `docs/architecture/desk-profiles.md`, `docs/architecture/lexicons.md`.
+`professional_en` is the floor and complete, and a lexicon says only what it changes. `docs/architecture/desk-profiles.md`, `docs/architecture/lexicons.md`.
 
 ## Adding an INSTALLATION, a FEATURE, or a BEHAVIOUR
 
