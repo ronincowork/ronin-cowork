@@ -6,6 +6,7 @@ import { deleteTeamRoster, membersOfTeam, subscribe, teamByName, teamsFromState,
 import { createNewTeamFormView } from './new-team-form.js';
 import { createNewAgentView } from './new-agent.js';
 import { createTeamRosterSurface } from './team-roster-surface.js';
+import { createSessionRosterSurface } from './session-roster-surface.js';
 import { createWarmTerminalPool } from './team-terminal-pool.js';
 import { createTeamWipeboard } from './team-wipeboard.js';
 import { createTeamJikan } from './team-jikan.js';
@@ -272,6 +273,8 @@ export function createCoworkView(options = {}) {
     .map((id) => [id, createTeamRosterSurface({
       teamDetail: (name) => leagueTeamDetail(name, `teams-${id}`),
     })])) : {};
+  const sessionRosterBySeat = campaign ? Object.fromEntries(Object.keys(seats)
+    .map((id) => [id, createSessionRosterSurface({ open: openAgentWorkbench })])) : {};
   const cronBySeat = campaign ? Object.fromEntries(Object.keys(seats).map((id) => { const surface = createSurface({ label: t('workspace.tab_cron_jobs', 'Cron jobs'), className: 'tw-cron' }); const room = createTeamJikan({ universal: true, teams: () => teamsFromState().filter((item) => !item.holding).map((item) => item.name) }); surface.content.append(room.el); return [id, { el: surface.el, room }]; })) : {};
   // seated in a workspace, grouped by Team of record, each row's act a labelled button.
   // A rehydrated session lands in the workspace whose surface woke it, like a birth.
@@ -315,6 +318,7 @@ export function createCoworkView(options = {}) {
     agent: () => '',
     composition: (detail = {}) => createAgentCompositionSurface(detail.key),
     roster: (id) => ({ el: teamRosterBySeat[id].el, show: () => teamRosterBySeat[id].render() }),
+    sessionRoster: (id) => ({ el: sessionRosterBySeat[id].el, show: () => sessionRosterBySeat[id].render() }),
     cron: (id) => ({ el: cronBySeat[id].el, show: () => cronBySeat[id].room.enter() }),
     newTeamForm: (id, consumed) => {
       if (!newTeamFormBySeat[id]) {

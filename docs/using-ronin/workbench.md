@@ -99,6 +99,12 @@ Agents it has, and its lead. Press a stone and the stones fold to the left while
 members, configuration, Launch and Delete open beside them; press it again or Escape to go
 back. Drag a stone into another workspace to open the Team there.
 
+**Roster** is the plain list of every Team and every Agent: one heading per Team, one row per
+Agent with its live dot (green working, amber asking you), 人 when it leads that Team, its
+kind, work position, context and model. Drag a row onto another Team's heading to move that
+Agent there (onto **Ronin: no team** to take it off the Team it came from); drag it into a
+workspace to open it; press it to open the Agent in its own tab.
+
 If a remembered surface is no longer available at the current scope, its workspace comes
 back empty. Check the discovery column: it is the current answer to what can be opened
 here.

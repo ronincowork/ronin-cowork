@@ -101,6 +101,10 @@ test('Roster remains a roster while Team Chart is a standalone Phalanx surface',
   assert.match(view, /const createLeagueTeamSurface = [\s\S]*leagueTeamBody\(name,/);
   assert.match(view, /const leagueTeamDetail = [\s\S]*leagueTeamBody\(name,/);
   assert.match(catalog, /type: WORKBENCH_TYPES\.team, header: 'surface', discover: \(\) => \[\]/, 'the selector offers no per-Team card');
+  // Owner 2026-09-28: the all-Agents roster is back on Cowork and Desk, dragging Agents between Teams.
+  assert.match(catalog, /WORKBENCH_PROFILES\.cowork, \[[^\n]*WORKBENCH_TYPES\.sessionRoster/);
+  assert.match(catalog, /WORKBENCH_PROFILES\.desk, \[[^\n]*WORKBENCH_TYPES\.sessionRoster/);
+  assert.match(await source('public/js/session-roster-surface.js'), /moveTeamMembership\(name,/);
   assert.match(workbench, /card\.el\.addEventListener\('dragstart',[\s\S]*JSON\.stringify\(\{ type: definition\.type, detail \}\)/, 'drag still carries the terminal surface and Agent resource to a workspace');
   assert.match(css, /\.league-team-member-actions \{[^}]*flex-wrap: wrap;[^}]*justify-content: flex-end;/);
   for (const label of ['Archive', 'Delete', 'Hard Delete']) assert.match(retirement, new RegExp(`'${label}'`));

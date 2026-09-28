@@ -31,6 +31,13 @@
 
   .tw-note { padding: var(--space-6) var(--space-7); color: var(--muted); font-size: var(--text-3); }
   .team-roster-detail { margin: var(--space-4); overflow-y: auto; }
+  .session-roster-list { margin: var(--space-4); overflow-y: auto; }
+  .session-roster-list .home-row { grid-template-columns: var(--hr-mark) minmax(0, 1fr) var(--hr-shingo) var(--hr-status) var(--hr-ctx) var(--hr-stack); }
+  .session-roster-list .home-row > .home-role { grid-column: 4; justify-self: start; max-width: 100%; overflow: hidden; text-overflow: ellipsis; color: var(--muted); }
+  .session-roster-list .home-row > .home-stack { grid-column: 6; }
+  .home-live { display: inline-block; width: 8px; height: 8px; margin-inline-end: var(--space-3); border-radius: var(--radius-round); background: var(--line-2); vertical-align: middle; }
+  .home-live[data-stance='working'], .home-live[data-stance='replying'] { background: var(--ok-2); }
+  .home-live[data-stance='asking'], .home-live[data-stance='awaiting_you'] { background: var(--kaki); }
   .team-roster-detail .home-maxrow, .team-roster-detail .home-group-add { display: none; }
   .home-grp-actions.tile-head { min-height: 0; padding: 0; border: 0; background: transparent; flex-wrap: nowrap; }
   .tw-config { display: flex; flex-direction: column; gap: var(--space-10); padding: var(--space-6) var(--space-7); overflow-y: auto; }
