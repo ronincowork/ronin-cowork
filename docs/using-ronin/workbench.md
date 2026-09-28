@@ -95,9 +95,13 @@ remembered arrangement instead of applying the floor again.
 Teams first opens with the Team roster in workspace 1 and New Team in workspace 2.
 
 The Team roster is the one list of Teams: each Team is a stone with its objective, how many
-Agents it has, and its lead. Press a stone and the stones fold to the left while that Team's
-members, configuration, Launch and Delete open beside them; press it again or Escape to go
-back. Drag a stone into another workspace to open the Team there.
+Agents it has, and its lead. Press a stone and the stones fold to the left while the Team
+opens beside them, top down: its title and objective with **Launch** (open the Team's own
+workbench) and the gear; its Agents, lead first, each with its live dot and what it holds, and
+**＋** at the end to bring in an Agent already running or start a new one; its Work, one line
+per item with its stage bar and holder, the Team's own items first. The gear opens the Team's
+configuration and **Delete team**. Press the stone again or Escape to go back. Drag a stone
+into another workspace to open the Team there.
 
 **Roster** is the plain list of every Team and every Agent: one heading per Team, one row per
 Agent with its live dot (green working, amber asking you), 人 when it leads that Team, its

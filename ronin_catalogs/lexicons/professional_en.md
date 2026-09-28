@@ -1382,7 +1382,6 @@ The catalog entry goes. {dir} is not touched.
 - **league.assign_member:** Assign
 - **league.launch_team:** Launch
 - **league.ronin:** Ronin: no team
-- **league.no_ronin:** No Rōnin Agents
 - **agent.workbench:** Agent
 - **agent.self:** Self
 - **agent.commons:** Commons

@@ -32,6 +32,8 @@
   .tw-note { padding: var(--space-6) var(--space-7); color: var(--muted); font-size: var(--text-3); }
   .team-roster-detail { margin: var(--space-4); overflow-y: auto; }
   .session-roster-list { margin: var(--space-4); overflow-y: auto; }
+  .session-roster-list, .session-roster-list .home-group { gap: 0; }
+  .session-roster-list .home-row { padding-block: var(--space-1); }
   .session-roster-list .home-row { grid-template-columns: var(--hr-mark) minmax(0, 1fr) var(--hr-shingo) var(--hr-status) var(--hr-ctx) var(--hr-stack); }
   .session-roster-list .home-row > .home-role { grid-column: 4; justify-self: start; max-width: 100%; overflow: hidden; text-overflow: ellipsis; color: var(--muted); }
   .session-roster-list .home-row > .home-stack { grid-column: 6; }
@@ -140,10 +142,34 @@
 
 
   .league-team-edit-content { display: flex; flex-direction: column; gap: var(--space-10); }
-  .league-team-detail { display: flex; flex-direction: column; gap: var(--space-6); }
-  .league-team-detail-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); }
-  .league-team-detail-head h2 { margin: 0; color: var(--fg-strong); }
+  /* The Teams stones fill the column as one sheet; the Team opens beside them top-down:
+     head, Agents, Work, Configuration. One heading style, one body style, tight lists. */
+  .team-roster-phalanx:not([data-open='true']) .sws-grid { width: 100%; justify-content: flex-start; }
+  .league-team-detail { display: flex; flex-direction: column; gap: var(--space-6); font-size: var(--form-input); }
+  .league-team-detail-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; column-gap: var(--space-4); }
+  .league-team-title, .league-team-section { margin: 0; color: var(--fg-strong); font-weight: 600; letter-spacing: 0; text-transform: none; }
+  .league-team-section { margin-bottom: var(--space-2); }
+  .league-team-objective { grid-column: 1 / -1; margin: 0; overflow: hidden; color: var(--muted); text-overflow: ellipsis; white-space: nowrap; }
+  .league-team-objective[hidden] { display: none; }
   .league-team-detail-state { margin: 0; color: var(--bad); }
+  .league-team-agent-list { display: flex; flex-direction: column; }
+  .league-team-agent { display: grid; grid-template-columns: 1.35em auto minmax(0, max-content) minmax(0, 1fr); align-items: center; gap: var(--space-3); width: 100%; padding: var(--space-1) var(--space-2); border: 0; border-radius: var(--radius-hair); background: transparent; color: var(--fg); font: inherit; text-align: left; cursor: pointer; }
+  .league-team-agent:hover { background: var(--bg-2); }
+  .league-team-agent-mark { color: var(--accent); }
+  .league-team-agent-name, .league-team-agent-holds { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .league-team-agent-holds { color: var(--muted); }
+  .league-team-agent-plus { display: block; color: var(--accent); }
+  .league-team-work { display: flex; flex-direction: column; }
+  .league-team-work[hidden], .league-team-config[hidden] { display: none; }
+  .tk-line { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: var(--space-4); padding: var(--space-1) var(--space-2); }
+  .tk-line-title, .tk-line-holder { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .tk-line-holder { color: var(--muted); }
+  .tk-stage-bar { display: inline-flex; gap: 2px; }
+  .tk-stage-bar > i { width: var(--space-6); height: var(--space-2); border: var(--edge) solid var(--line-2); }
+  .tk-stage-bar > i.past { border-color: var(--muted); background: var(--muted); }
+  .tk-stage-bar > i.now { border-color: transparent; background: var(--kanban-yellow); }
+  .tk-stage-bar > i.now.green { background: var(--kanban-green); }
+  .tk-stage-bar > i.now.red { background: var(--kanban-red); }
   .league-team-roster, .league-team-config { flex: 0 0 auto; }
   .league-team-roster { display: flex; flex-direction: column; min-height: 0; }
   .league-team-roster-heading { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); margin-bottom: var(--space-4); border-bottom: var(--edge) solid var(--line-2); padding-bottom: var(--space-3); }

@@ -46,7 +46,7 @@ test('Roster remains a roster while Team Chart is a standalone Phalanx surface',
   // so a five-second status tick never throws away an edit in progress (owner, 2026-09-13).
   assert.match(view, /const record = JSON\.stringify\(roster \|\| null\);/);
   assert.match(view, /if \(!recordMoved\) continue;\s*\n\s*if \(!roster\) \{ renderTeamConfiguration/);
-  assert.match(view, /if \(recordMoved \|\| !configNode\) \{/, 'the Coworks page’s copy of the tab keeps the same rule');
+  assert.match(view, /if \(recordMoved && !holding\) \{/, 'the Team profile repaints its configuration only when the saved record moved');
   assert.match(view, /onClose: \(member\) => retireSession\(member\.name/);
   assert.match(members, /actions: \[launch, rename, lead, eject, close\]/);
   assert.match(members, /classList\.add\('league-team-member-live'\)/);
@@ -97,7 +97,12 @@ test('Roster remains a roster while Team Chart is a standalone Phalanx surface',
   // Phalanx detail (never elsewhere), from the same body the placed Team profile paints.
   assert.match(coworkRoster, /createPhalanx\(\{ className: 'team-roster-phalanx', items: \[\], renderDetail \}\)/);
   assert.doesNotMatch(coworkRoster, /action:/, 'a Teams stone selects; it never navigates');
-  assert.match(view, /createTeamRosterSurface\(\{\s*teamDetail: \(name\) => leagueTeamDetail\(name, `teams-\$\{id\}`\)/);
+  assert.match(view, /createTeamRosterSurface\(\{\s*teamDetail: \(name\) => leagueTeamDetail\(name, id\)/);
+  // Owner 2026-09-28, the in-place Team: two head controls, Delete under the gear, config closed.
+  assert.match(view, /const controls = holding \? \[launch\] : \[launch, gear\]/);
+  assert.match(view, /config\.replaceChildren\(fields, createActionBar\(\{ actions: \[remove\] \}\)\.el\)/);
+  assert.match(view, /const config = el\('section', 'league-team-config'\); config\.hidden = true;/);
+  assert.match(view, /request\(`\/api\/work-items\?team=\$\{encodeURIComponent\(name\)\}`/, 'Work is the Team reading from the store');
   assert.match(view, /const createLeagueTeamSurface = [\s\S]*leagueTeamBody\(name,/);
   assert.match(view, /const leagueTeamDetail = [\s\S]*leagueTeamBody\(name,/);
   assert.match(catalog, /type: WORKBENCH_TYPES\.team, header: 'surface', discover: \(\) => \[\]/, 'the selector offers no per-Team card');
