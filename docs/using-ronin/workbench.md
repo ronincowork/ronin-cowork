@@ -103,11 +103,10 @@ per item with its stage bar and holder, the Team's own items first. The gear ope
 configuration and **Delete team**. Press the stone again or Escape to go back. Drag a stone
 into another workspace to open the Team there.
 
-**Roster** is the plain list of every Team and every Agent: one heading per Team, one row per
-Agent with its live dot (green working, amber asking you), 人 when it leads that Team, its
-kind, work position, context and model. Drag a row onto another Team's heading to move that
-Agent there (onto **Ronin: no team** to take it off the Team it came from); drag it into a
-workspace to open it; press it to open the Agent in its own tab.
+**Team roster** is the plain list of every Team and every Agent: one heading per Team with its
+Launch and delete, one row per Agent with 人 when it leads, its work position, status, context
+and model. Drag a row onto a Team's heading to add that Agent to the Team; press a row to
+open the Agent in its own tab.
 
 If a remembered surface is no longer available at the current scope, its workspace comes
 back empty. Check the discovery column: it is the current answer to what can be opened

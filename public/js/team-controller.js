@@ -37,14 +37,6 @@ export async function setTeamMembership(session, team, member) {
   if (member) teams.add(team); else teams.delete(team);
   return request(`/api/sessions/${encodeURIComponent(session)}/teams`, { method: 'PUT', json: { teams: [...teams] } });
 }
-/** Move a session from one Team to another in one write; '' on either side is no Team. */
-export async function moveTeamMembership(session, from, to) {
-  const live = sessions().find((row) => row.name === session);
-  if (!live) return { ok: false, message: 'No such session.' };
-  const teams = new Set((live.tags || []).filter((tag) => !from || teamTag(tag) !== teamTag(from)));
-  if (to) teams.add(to);
-  return request(`/api/sessions/${encodeURIComponent(session)}/teams`, { method: 'PUT', json: { teams: [...teams] } });
-}
 export async function setTeamLead(session, team, lead) {
   const live = sessions().find((row) => row.name === session);
   if (!live) return { ok: false, message: 'No such session.' };
