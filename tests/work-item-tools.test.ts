@@ -1,0 +1,130 @@
+/**
+ * `team project …` and `work-record project …` against the real /api/work-items routes.
+ * Checks from WORK_ITEM_STORE.md cut 3: each tool call leaves exactly one trail line; no
+ * tool refuses a caller for not being the holder; every acknowledgement names the item and
+ * the write that keeps it current.
+ *
+ * The routes run in this process on a free port (RONIN_URL). The tools see a fake tmux
+ * answering for a session called "probe"; this process sees no tmux server at all, so its
+ * session key for "probe" is "probe" too, and both find the same letter.
+ */
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { execFile } from 'node:child_process';
+import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+import express from 'express';
+import type { AddressInfo } from 'node:net';
+
+const root = path.resolve(import.meta.dirname, '..');
+const dir = mkdtempSync(path.join(tmpdir(), 'work-item-tools-'));
+delete process.env.TMUX;
+process.env.TMUX_TMPDIR = mkdtempSync(path.join(tmpdir(), 'work-item-tools-tmux-'));
+process.env.RONIN_SESSION_DIR = path.join(dir, 'sessions');
+process.env.RONIN_WORK_ITEMS_DIR = path.join(dir, 'work-items');
+process.env.RONIN_TEAM_ROSTERS_DIR = path.join(dir, 'team_rosters');
+
+const { registerWorkItems } = await import('../src/routes/work-items-api.js');
+const { createTeamRoster } = await import('../src/team-rosters.js');
+const { readLetterHolds, seedTegami } = await import('../src/tegami.js');
+const { readItem } = await import('../src/work-items.js');
+
+await createTeamRoster('crew', { objective: 'hold things' });
+await seedTegami('probe');
+const app = express();
+app.use(express.json());
+registerWorkItems(app);
+const server = app.listen(0, '127.0.0.1');
+await new Promise((resolve) => server.once('listening', resolve));
+test.after(() => server.close());
+
+const bin = path.join(dir, 'bin');
+mkdirSync(bin);
+writeFileSync(path.join(bin, 'tmux'), [
+  '#!/bin/sh',
+  'case "$1" in',
+  '  display-message) echo "@1";;',
+  "  list-windows) printf 'probe\\t@1\\n';;",
+  "  list-sessions) case \"$*\" in *ronin-key*) printf 'probe\\tprobe\\t1\\n';; *) printf 'probe\\t\\n';; esac;;",
+  '  *) exit 1;;',
+  'esac',
+  '',
+].join('\n'), { mode: 0o755 });
+const env: NodeJS.ProcessEnv = {
+  ...process.env, PATH: `${bin}:${process.env.PATH ?? ''}`, TMUX_PANE: '%1',
+  RONIN_URL: `http://127.0.0.1:${(server.address() as AddressInfo).port}`,
+};
+// Async on purpose: the routes answer from this same process, so a sync call would block them.
+const run = (name: string, args: string[]) => new Promise<{ status: number; stdout: string; stderr: string }>((resolve) => {
+  execFile(path.join(root, 'ronin_bin', name), args, { encoding: 'utf8', env }, (error, stdout, stderr) =>
+    resolve({ status: error ? Number((error as { code?: number }).code ?? 1) : 0, stdout, stderr }));
+});
+const tool = async (name: string, args: string[]) => {
+  const r = await run(name, args);
+  assert.equal(r.status, 0, `${name} ${args.join(' ')}: ${r.stderr}`);
+  return r.stdout;
+};
+const trail = async (id: string) => (await readItem(id))!.trail;
+
+/** Run one tool call and prove it appended exactly one line, returning that line. */
+async function oneLine(id: string, name: string, args: string[]) {
+  const before = (await trail(id)).length;
+  const out = await tool(name, args);
+  const after = await trail(id);
+  assert.equal(after.length, before + 1, `${name} ${args.join(' ')} appended ${after.length - before} lines`);
+  assert.match(out, new RegExp(`${id} .*\\. Keep it current: work-record project write ${id} --objective`), 'the acknowledgement nags');
+  return after.at(-1)!;
+}
+
+test('team project verbs: create, assign, return, backlog, done, restore, write, parent — one line each', async () => {
+  const created = await tool('team', ['project', 'create', 'crew', '--title', 'Overall', '--objective', 'The team item']);
+  const id = /Work item (w\d+)/.exec(created)![1]!;
+  assert.deepEqual((await trail(id)).map((line) => [line.op, line.to]), [['create', 'team:crew']]);
+
+  assert.equal((await oneLine(id, 'team', ['project', 'assign', id, 'probe'])).to, 'agent:probe');
+  assert.deepEqual((await readLetterHolds('probe'))!.holds, [id]);
+  assert.equal((await oneLine(id, 'team', ['project', 'return', 'crew', id])).to, 'team:crew');
+  assert.equal((await oneLine(id, 'team', ['project', 'backlog', id])).op, 'release');
+  assert.equal((await oneLine(id, 'team', ['project', 'done', id])).to, 'DONE');
+  const restored = await oneLine(id, 'team', ['project', 'restore', 'crew', id]);
+  assert.deepEqual([restored.op, restored.to], ['assign', 'team:crew']);
+  assert.equal((await readItem(id))!.stage, 'IDEA', 'restore returns the item to the stage it left');
+  assert.equal((await oneLine(id, 'team', ['project', 'write', id, '--objective', 'Sharper words'])).op, 'edit');
+
+  const child = /Work item (w\d+)/.exec(await tool('team', ['project', 'create', 'crew', '--title', 'Piece', '--objective', 'part']))![1]!;
+  assert.deepEqual([(await oneLine(child, 'team', ['project', 'parent', child, id])).to], [id]);
+  const cycle = await run('team', ['project', 'parent', id, child]);
+  assert.equal(cycle.status, 4);
+  assert.match(cycle.stderr, /^REFUSED: .* → /);
+  const listed = JSON.parse(await tool('team', ['project', 'list', 'crew'])) as { items: Array<{ id: string }> };
+  assert.ok(listed.items.some((item) => item.id === child));
+});
+
+test('work-record project verbs: one line each, and nobody is refused for not holding the item', async () => {
+  const created = await tool('work-record', ['project', 'create', '--title', 'Mine', '--objective', 'Do it']);
+  const id = /Work item (w\d+)/.exec(created)![1]!;
+  const item = (await readItem(id))!;
+  assert.deepEqual([item.stage, item.trail[0]!.by, item.trail[0]!.to], ['PLAN', 'probe', 'agent:probe']);
+
+  const working = await oneLine(id, 'work-record', ['project', 'working', id]);
+  assert.deepEqual([working.op, working.to], ['exit', 'agent'], 'a new item is already yellow, so only the exit moves');
+  assert.equal((await readLetterHolds('probe'))!.at?.item, id, 'working focuses the item');
+  assert.equal((await oneLine(id, 'work-record', ['project', 'ready', id, '--for', 'lead'])).to, 'green');
+  assert.equal((await oneLine(id, 'work-record', ['project', 'blocked', id, '--on', 'user'])).to, 'red');
+  assert.equal((await oneLine(id, 'work-record', ['project', 'advance', id, '--to', 'REVIEW'])).to, 'REVIEW');
+  const both = await oneLine(id, 'work-record', ['project', 'write', id, '--objective', 'Now this', '--evidence', 'commit abc123']);
+  assert.deepEqual([both.op, both.note], ['evidence', 'commit abc123; also objective']);
+  assert.equal((await oneLine(id, 'work-record', ['project', 'return', id, '--team', 'crew'])).to, 'team:crew');
+
+  // Held by the Team now, not by probe: probe still changes it, and the trail says so.
+  const other = await oneLine(id, 'work-record', ['project', 'stuck', id]);
+  assert.equal(other.by, 'probe');
+  assert.equal((await oneLine(id, 'work-record', ['project', 'backlog', id])).op, 'release');
+  assert.equal((await oneLine(id, 'work-record', ['project', 'done', id])).to, 'DONE');
+  assert.equal(JSON.parse(await tool('work-record', ['project', 'read', id])).id, id);
+
+  const bad = await run('work-record', ['project', 'ready', id, '--for', 'agent']);
+  assert.notEqual(bad.status, 0);
+  assert.match(bad.stderr, /--for lead\|user/);
+});

@@ -79,3 +79,19 @@ test('no permission: anyone may assign or release, and it is on the trail', asyn
   const back = await items.releaseItem(item.id, 'a_passer_by');
   assert.equal(back.line.by, 'a_passer_by');
 });
+
+test('the 2026-09-24 duplicate cannot recur: a return racing an assign leaves one item on one list', async () => {
+  // Old shape: a return wrote its stale Inbox back over a concurrent assignment and the
+  // assigned Project existed twice (Inbox and the holder's record). Here there is one file
+  // per id and holding is a list of ids, moved under one lock.
+  const one = (await items.createItem({ title: 'surface/1', holder: team }, 'lead')).item;
+  const two = (await items.createItem({ title: 'surface/2', holder: team }, 'lead')).item;
+  await items.assignItem(two.id, bo, 'lead');
+  const before = (await items.listItems()).length;
+  await Promise.all([items.returnItem(two.id, 'bo', 'bo', 'crew'), items.assignItem(one.id, ann, 'lead')]);
+  assert.deepEqual(await listsHolding(one.id), ['agent:ann']);
+  assert.deepEqual(await listsHolding(two.id), ['team:crew']);
+  const all = await items.listItems();
+  assert.equal(all.length, before, 'no second item was made');
+  assert.equal(all.filter((item) => item.title === 'surface/1').length, 1);
+});

@@ -16,6 +16,7 @@ import { mkdir, readFile, readdir, rename, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { storeDir } from './resources.js';
 import { sessionKey } from './session-dir.js';
+import { getTags } from './tmux.js';
 import { listTeamRosters, readTeamRoster, writeTeamRoster } from './team-rosters.js';
 import { listLetterHolds, readLetterHolds, seedTegami, writeLetterHolds } from './tegami.js';
 
@@ -166,6 +167,8 @@ export interface NewItem {
   exit?: string;
   status?: string;
   parent?: string | null;
+  /** Held from birth by this Team or Agent, in the same call and the same trail line. */
+  holder?: Holder;
 }
 
 function checkFields(fields: { stage?: unknown; exit?: unknown; status?: unknown }): void {
@@ -195,7 +198,12 @@ export async function createItemUnlocked(input: NewItem, by: string): Promise<Ac
     trail: [],
     created: { at, by: by.trim() || 'unknown' },
   };
-  const line = lineOf(by, 'create', { note: item.title, ...(item.parent ? { to: item.parent } : {}) });
+  if (input.holder) {
+    const list = await listFor(input.holder);
+    await save(item);
+    await list.set([...list.holds, item.id]);
+  }
+  const line = lineOf(by, 'create', { to: input.holder ? holderLabel(input.holder) : 'none', note: item.parent ? `${item.title}; under ${item.parent}` : item.title });
   item.trail.push(line);
   await save(item);
   return { item, line };
@@ -203,10 +211,11 @@ export async function createItemUnlocked(input: NewItem, by: string): Promise<Ac
 
 export const createItem = (input: NewItem, by: string) => withIssuer(() => createItemUnlocked(input, by));
 
-export interface ItemEdit { title?: string; objective?: string; stage?: string; exit?: string; status?: string; ladder?: unknown }
+export interface ItemEdit { title?: string; objective?: string; stage?: string; exit?: string; status?: string; ladder?: unknown; evidence?: string }
 
-/** One call, one trail line. A lone stage, status or exit change is named by its own op;
- * a status set with an exit (working, ready, stuck, blocked) is one status line. */
+/** One call, one trail line. Evidence names the line when given (the fact, plus what else
+ * changed); a lone stage, status or exit change is named by its own op; a status set with
+ * an exit (working, ready, stuck, blocked) is one status line; anything else is edit. */
 export function editItem(id: string, edit: ItemEdit, by: string, note?: string): Promise<Acknowledged> {
   checkFields(edit);
   const ladder = edit.ladder === undefined ? undefined : checkLadder(edit.ladder);
@@ -221,6 +230,8 @@ export function editItem(id: string, edit: ItemEdit, by: string, note?: string):
     if (edit.status !== undefined && edit.status !== item.status) { item.status = edit.status as ItemStatus; changed.push('status'); }
     if (edit.exit !== undefined && edit.exit !== item.exit) { item.exit = edit.exit as ItemExit; changed.push('exit'); }
     const said = note || undefined;
+    const evidence = edit.evidence?.trim();
+    if (evidence) return { op: 'evidence', note: [evidence, changed.length ? `also ${changed.join(', ')}` : ''].filter(Boolean).join('; ') };
     if (changed.length === 1 && changed[0] === 'stage') return { op: 'stage', from: before.stage, to: item.stage, note: said };
     if (changed.length === 1 && changed[0] === 'exit') return { op: 'exit', from: before.exit, to: item.exit, note: said };
     if (changed.every((field) => field === 'status' || field === 'exit') && changed.includes('status')) {
@@ -228,12 +239,6 @@ export function editItem(id: string, edit: ItemEdit, by: string, note?: string):
     }
     return { op: 'edit', note: [said, changed.length ? changed.join(', ') : 'no change'].filter(Boolean).join('; ') };
   }));
-}
-
-export function addEvidence(id: string, text: string, by: string): Promise<Acknowledged> {
-  const note = String(text ?? '').trim();
-  if (!note) throw new WorkItemBadInput('evidence needs its text: a fact with a receipt.');
-  return withIssuer(() => appendTrail(id, by, () => ({ op: 'evidence', note })));
 }
 
 /** Documents live on the item. Paths are absolute and must exist when listed. */
@@ -351,4 +356,52 @@ export function releaseItem(id: string, by: string, note?: string): Promise<Ackn
     const from = await takeOffEveryList(id);
     return appendTrail(id, by, () => ({ op: 'release', from: labels(from), to: 'none', note }));
   });
+}
+
+/** Back from DONE to the stage it left, held by the Team again: one call, one line. */
+export function restoreItem(id: string, team: string, by: string): Promise<Acknowledged> {
+  return withIssuer(async () => {
+    const before = await load(id);
+    const left = [...before.trail].reverse().find((line) => line.op === 'stage' && line.to === 'DONE')?.from;
+    const stage: ItemStage = before.stage !== 'DONE' ? before.stage : member(ITEM_STAGES, left) && left !== 'DONE' ? left : 'BUILD';
+    const to: Holder = { kind: 'team', name: team };
+    const target = await listFor(to);
+    const from = await takeOffEveryList(id, to);
+    if (!target.holds.includes(id)) await target.set([...target.holds, id]);
+    return appendTrail(id, by, (item) => {
+      const note = item.stage === stage ? 'restored' : `restored; stage ${item.stage} → ${stage}`;
+      item.stage = stage;
+      return { op: 'assign', from: labels(from), to: holderLabel(to), note };
+    });
+  });
+}
+
+/** An Agent gives an item back: to the named Team, or to its one Team; with no Team to
+ * give it to, the item is released and is found under its parent or unassigned. */
+export async function returnItem(id: string, session: string, by: string, team?: string): Promise<Acknowledged> {
+  const teams = team ? [team] : (await getTags(session).catch(() => [] as string[]));
+  if (teams.length === 1) return assignItem(id, { kind: 'team', name: teams[0]! }, by, `returned by ${session}`);
+  return releaseItem(id, by, teams.length ? `returned by ${session}; on ${teams.length} Teams, so released — name one with --team` : `returned by ${session}; on no Team, so released`);
+}
+
+/** Point an Agent's focus at an item it holds. The focus is the letter's, not the item's. */
+export async function focusItem(session: string, id: string): Promise<boolean> {
+  return withIssuer(async () => {
+    const key = await sessionKey(session);
+    const letter = await readLetterHolds(key);
+    if (!letter?.holds.includes(id)) return false;
+    await writeLetterHolds(key, letter.holds, id);
+    return true;
+  });
+}
+
+/** Acknowledgements nag, tools do not: every acknowledgement that touches an item ends
+ * with this line, naming the item and the write that keeps its words current. */
+export function keepCurrentLine({ item, line }: Acknowledged): string {
+  const what = line.op === 'stage' ? `moved to ${String(line.to).toLowerCase()}`
+    : line.op === 'assign' ? `is held by ${line.to}`
+      : line.op === 'release' || line.op === 'holder-ended' ? 'is held by nobody'
+        : line.op === 'create' ? 'was created'
+          : `changed (${line.op})`;
+  return `${item.id} ${what}. Keep it current: work-record project write ${item.id} --objective "<what it is now>" --evidence "<a fact with its receipt>"`;
 }

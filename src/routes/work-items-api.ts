@@ -4,8 +4,8 @@
 import type express from 'express';
 import {
   WorkItemBadInput, WorkItemMissing, WorkItemRefused,
-  addEvidence, assignItem, createItem, editDocs, editItem, listItems, readItem, releaseItem, reparentItem,
-  type Acknowledged, type Holder, type TrailLine,
+  assignItem, createItem, editDocs, editItem, focusItem, holdsOf, listItems, readItem, releaseItem, reparentItem, restoreItem, returnItem,
+  keepCurrentLine, type Acknowledged, type Holder, type TrailLine,
 } from '../work-items.js';
 
 const text = (value: unknown): string | undefined => typeof value === 'string' ? value : value === undefined || value === null ? undefined : String(value);
@@ -25,7 +25,7 @@ export const describeLine = (line: TrailLine): string => [
 ].filter(Boolean).join(' ');
 
 export const acknowledge = (res: express.Response, { item, line }: Acknowledged, extra: Record<string, unknown> = {}) =>
-  res.json({ ok: true, item, line, ...extra, acknowledgement: `Work item ${item.id} "${item.title}": ${describeLine(line)}. Stage ${item.stage}, status ${item.status}, exit ${item.exit}.` });
+  res.json({ ok: true, item, line, ...extra, acknowledgement: `Work item ${item.id} "${item.title}": ${describeLine(line)}. Stage ${item.stage}, status ${item.status}, exit ${item.exit}.\n${keepCurrentLine({ item, line })}` });
 
 export function answerError(res: express.Response, error: unknown): void {
   const message = String((error as Error)?.message ?? error);
@@ -49,12 +49,20 @@ const guarded = (handler: Handler): express.RequestHandler => (req, res) => {
 };
 
 export function registerWorkItems(app: express.Express): void {
-  app.get('/api/work-items', guarded(async (_req, res) => res.json({ ok: true, items: await listItems() })));
+  app.get('/api/work-items', guarded(async (req, res) => {
+    const team = text(req.query.team)?.trim();
+    const session = text(req.query.session)?.trim();
+    if (!team && !session) return res.json({ ok: true, items: await listItems() });
+    const ids = await holdsOf(holderFrom({ team, session }));
+    const items = (await Promise.all(ids.map((id) => readItem(id)))).filter(Boolean);
+    res.json({ ok: true, holder: team ? `team:${team}` : `agent:${session}`, items });
+  }));
 
   app.post('/api/work-items', guarded(async (req, res) => {
     const b = req.body ?? {};
     acknowledge(res, await createItem({
       title: text(b.title) ?? '', objective: text(b.objective), stage: text(b.stage), exit: text(b.exit), status: text(b.status), parent: text(b.parent) || null,
+      ...(b.team || b.session ? { holder: holderFrom(b) } : {}),
     }, callerOf(req)));
   }));
 
@@ -67,7 +75,7 @@ export function registerWorkItems(app: express.Express): void {
   app.put('/api/work-items/:id', guarded(async (req, res) => {
     const b = req.body ?? {};
     acknowledge(res, await editItem(req.params.id, {
-      title: text(b.title), objective: text(b.objective), stage: text(b.stage), status: text(b.status), exit: text(b.exit),
+      title: text(b.title), objective: text(b.objective), stage: text(b.stage), status: text(b.status), exit: text(b.exit), evidence: text(b.evidence),
       ...(b.ladder !== undefined ? { ladder: typeof b.ladder === 'string' ? JSON.parse(b.ladder) : b.ladder } : {}),
     }, callerOf(req), text(b.note)));
   }));
@@ -75,14 +83,11 @@ export function registerWorkItems(app: express.Express): void {
   app.post('/api/work-items/:id/stage', guarded(async (req, res) => {
     acknowledge(res, await editItem(req.params.id, { stage: text(req.body?.stage) ?? '' }, callerOf(req), text(req.body?.note)));
   }));
+  // `focus` names the Agent whose focus moves to this item when it holds it ("working").
   app.post('/api/work-items/:id/status', guarded(async (req, res) => {
-    acknowledge(res, await editItem(req.params.id, { status: text(req.body?.status) ?? '', exit: text(req.body?.exit) }, callerOf(req), text(req.body?.note)));
-  }));
-  app.post('/api/work-items/:id/exit', guarded(async (req, res) => {
-    acknowledge(res, await editItem(req.params.id, { exit: text(req.body?.exit) ?? '' }, callerOf(req), text(req.body?.note)));
-  }));
-  app.post('/api/work-items/:id/evidence', guarded(async (req, res) => {
-    acknowledge(res, await addEvidence(req.params.id, text(req.body?.note) ?? '', callerOf(req)));
+    const done = await editItem(req.params.id, { status: text(req.body?.status) ?? '', exit: text(req.body?.exit) }, callerOf(req), text(req.body?.note));
+    const focus = text(req.body?.focus)?.trim();
+    acknowledge(res, done, focus ? { focus: await focusItem(focus, req.params.id) ? req.params.id : 'unchanged: not held by ' + focus } : {});
   }));
   app.post('/api/work-items/:id/docs', guarded(async (req, res) => {
     acknowledge(res, await editDocs(req.params.id, { add: text(req.body?.add), remove: text(req.body?.remove) }, callerOf(req)));
@@ -92,6 +97,16 @@ export function registerWorkItems(app: express.Express): void {
   }));
   app.post('/api/work-items/:id/release', guarded(async (req, res) => {
     acknowledge(res, await releaseItem(req.params.id, callerOf(req), text(req.body?.note)));
+  }));
+  app.post('/api/work-items/:id/return', guarded(async (req, res) => {
+    const session = text(req.body?.session)?.trim();
+    if (!session) throw new WorkItemBadInput('return needs the session giving the item back.');
+    acknowledge(res, await returnItem(req.params.id, session, callerOf(req), text(req.body?.team)?.trim() || undefined));
+  }));
+  app.post('/api/work-items/:id/restore', guarded(async (req, res) => {
+    const team = text(req.body?.team)?.trim();
+    if (!team) throw new WorkItemBadInput('restore needs the team that holds the item again.');
+    acknowledge(res, await restoreItem(req.params.id, team, callerOf(req)));
   }));
   app.post('/api/work-items/:id/reparent', guarded(async (req, res) => {
     acknowledge(res, await reparentItem(req.params.id, text(req.body?.parent) || null, callerOf(req)));

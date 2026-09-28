@@ -11,7 +11,6 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import type { Project } from '../src/projects.js';
 
 const temp = await fs.mkdtemp(path.join(os.tmpdir(), 'ronin-rosters-test-'));
 process.env.RONIN_TEAM_ROSTERS_DIR = temp;
@@ -23,7 +22,6 @@ const {
   readTeamRoster,
   writeTeamRoster,
 } = await import('../src/team-rosters.js');
-const { assignTeamProject, issueTeamProjectId, moveTeamProject, returnTeamProject, writeTeamIdea } = await import('../src/team-projects.js');
 test('create → read → list: a zero-member team is a real, openable record', async () => {
   const r = await createTeamRoster('alpha', {
     kind: 'coding',
@@ -40,99 +38,18 @@ test('create → read → list: a zero-member team is a real, openable record', 
   assert.equal(r.title, 'Alpha');
   assert.equal(r.wipeboard, 'alpha', 'the board defaults to the team’s own token');
   assert.equal(r.state, 'active');
-  assert.deepEqual(r.projects, []);
-  assert.equal(r.next_project_id, 1);
+  assert.deepEqual(r.holds, [], 'a Team holds work item ids, none yet');
 
   const back = await readTeamRoster('alpha');
   assert.deepEqual(back, r);
   assert.equal((await listTeamRosters()).length, 1, 'listed with zero live members');
 });
 
-test('ideas live in the roster and its monotonic id issuer is the only id source', async () => {
-  const first = await writeTeamIdea('alpha', undefined, { title: 'Board read', objective: 'Return one JSON board.' });
-  assert.equal(first.project.id, 'alpha/1');
-  assert.equal(first.project.stage, 'IDEAS');
-  assert.equal(first.project.exit, 'lead');
-  assert.equal(first.project.status, 'yellow');
-  const edited = await writeTeamIdea('alpha', '1', { status: 'green', exit: 'user' });
-  assert.equal(edited.created, false);
-  assert.equal(edited.project.status, 'green');
-  const second = await writeTeamIdea('alpha', undefined, { title: 'Thin verbs', objective: 'Keep names replaceable.' });
-  assert.equal(second.project.id, 'alpha/2');
-  const roster = await readTeamRoster('alpha');
-  assert.equal(roster?.next_project_id, 3);
-  assert.deepEqual(roster?.projects.map((p) => p.id), ['alpha/1', 'alpha/2']);
-});
-
-test('a roster holder moves among Inbox, Backlog and Done without changing project state', async () => {
-  const before = (await readTeamRoster('alpha'))!.projects[1]!;
-  assert.deepEqual((await moveTeamProject('alpha', before.id, 'backlog')).project, before);
-  assert.deepEqual((await readTeamRoster('alpha'))!.backlog_projects, [before]);
-  assert.deepEqual((await moveTeamProject('alpha', before.id, 'done')).project, before);
-  assert.deepEqual((await moveTeamProject('alpha', before.id, 'inbox')).project, before);
-});
-
-test('an Agent project reserves its id without creating a roster idea', async () => {
-  const id = await issueTeamProjectId('alpha');
-  assert.equal(id, 'alpha/3');
-  const concurrent = await Promise.all([issueTeamProjectId('alpha'), issueTeamProjectId('alpha')]);
-  assert.deepEqual(concurrent, ['alpha/4', 'alpha/5'], 'concurrent issuers cannot observe the same counter');
-  const roster = await readTeamRoster('alpha');
-  assert.equal(roster?.next_project_id, 6);
-  assert.equal(roster?.projects.some((project) => project.id === id), false);
-});
-
-test('assign and return move one whole project across the roster boundary', async () => {
-  const held: Project[] = [];
-  const firstProject = (await readTeamRoster('alpha'))!.projects[0];
-  const move = async (input: { direction: 'place'; session: string; project: Project } | { direction: 'return'; session: string; projectId: string }) => {
-    if (input.direction === 'place') {
-      held.push(input.project);
-      return { project: input.project, projectsRemaining: held.length };
-    }
-    const at = held.findIndex((project) => project.id === input.projectId);
-    assert.notEqual(at, -1);
-    const [project] = held.splice(at, 1);
-    return { project, projectsRemaining: held.length };
-  };
-  const assigned = await assignTeamProject('alpha', '1', 'worker', move);
-  assert.deepEqual(held, [assigned]);
-  assert.equal(assigned.stage, 'IDEAS', 'assignment does not mutate authored stage');
-  assert.equal((await readTeamRoster('alpha'))?.projects.some((p) => p.id === assigned.id), false);
-  const returned = await returnTeamProject('alpha', '1', 'worker', 'inbox', move);
-  assert.equal(returned.projectsRemaining, 0);
-  assert.equal(returned.project.stage, assigned.stage, 'return preserves authored stage');
-  assert.equal(returned.project.exit, assigned.exit);
-  assert.equal(returned.project.status, assigned.status);
-  assert.equal((await readTeamRoster('alpha'))?.projects.some((p) => p.id === assigned.id), true);
-});
-
-test('concurrent assignments cannot restore a Project removed by the other assignment', async () => {
-  const one = await writeTeamIdea('alpha', undefined, { title: 'Parallel one', objective: 'Move once.' });
-  const two = await writeTeamIdea('alpha', undefined, { title: 'Parallel two', objective: 'Move once too.' });
-  const held = new Map<string, Project>();
-  const move = async (input: { direction: 'place'; session: string; project: Project } | { direction: 'return'; session: string; projectId: string }) => {
-    if (input.direction === 'place') {
-      held.set(input.project.id, input.project);
-      return { project: input.project, projectsRemaining: held.size };
-    }
-    const project = held.get(input.projectId)!;
-    held.delete(input.projectId);
-    return { project, projectsRemaining: held.size };
-  };
-  await Promise.all([
-    assignTeamProject('alpha', one.project.id, 'one', move),
-    assignTeamProject('alpha', two.project.id, 'two', move),
-  ]);
-  const roster = await readTeamRoster('alpha');
-  assert.equal(roster?.projects.some((project) => project.id === one.project.id || project.id === two.project.id), false);
-  assert.deepEqual([...held.keys()].sort(), [one.project.id, two.project.id].sort());
-});
-
 test('the settled nested shapes round-trip, and an edit touches only what it states', async () => {
   const r = await writeTeamRoster('alpha', { title: 'Alpha Platform' });
   assert.equal(r.title, 'Alpha Platform');
   assert.equal(r.objective, 'ship the teams cut', 'unstated fields survive');
+  assert.deepEqual((await writeTeamRoster('alpha', { holds: ['w3', 'w9'] })).holds, ['w3', 'w9'], 'holds round-trip');
   assert.deepEqual(r.behaviours, { selected: [], required: [] });
   assert.deepEqual(r.agent_defaults, {
     provider: 'anthropic', model: 'opus', reach: 'execute', recruit: 'nobody',

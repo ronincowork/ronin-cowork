@@ -19,17 +19,17 @@ Usage:
   work-record document add <path>
   work-record document remove <path>
   work-record document list
-  work-record project create --team <team> --title <text> --objective <text> [--stage <stage>]
+  work-record project create --title <text> --objective <text> [--stage <stage>] [--parent <id>]
   work-record project read <id>
   work-record project write <id> <options...>
   work-record project working <id>
   work-record project ready <id> --for lead|user
   work-record project stuck <id>
   work-record project blocked <id> --on lead|user
-  work-record project advance <id> --to PLANNING|BUILDING|LANDING|DONE
+  work-record project advance <id> --to IDEA|PLAN|BUILD|REVIEW|LAND|DONE
   work-record project backlog <id>
   work-record project done <id>
-  work-record project return <id>
+  work-record project return <id> [--team <team>]
   work-record project list
 Workspace entries are the repositories this Agent records as current work. The repository
 may be a registered handle or a URL. --branch is separate so URLs parse exactly. These
@@ -84,9 +84,7 @@ EOF
     verb=${2:-}; shift 2 || true
     case "$verb" in
       -h|--help) usage ;;
-      create|write|working|ready|stuck|blocked|advance|backlog|done|return) write_impl project "$verb" "$@" ;;
-      read) read_impl project read "$@" ;;
-      list) [ "$#" -eq 0 ] || { usage >&2; exit 2; }; list_field projects ;;
+      create|read|list|write|working|ready|stuck|blocked|advance|backlog|done|return) write_impl project "$verb" "$@" ;;
       *) usage >&2; exit 2;; esac ;;
   *) usage >&2; exit 2;;
 esac

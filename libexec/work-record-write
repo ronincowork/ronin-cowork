@@ -83,19 +83,17 @@ help() {
 work-record update_record — update the current session's work record
 
 Usage:
-  work-record project create --team <team> --title <text> --objective <text> [--stage <stage>]
-  work-record project write <id> --title|--objective|--stage|--exit|--status|--evidence <value>
+  work-record project create --title <text> --objective <text> [--stage <stage>] [--parent <id>]
+  work-record project write <id> --title|--objective|--stage|--exit|--status|--evidence <value> ...
   work-record project write <id> --ladder <json>
-  work-record project write <id> --leg <STAGE> <title>
-  work-record project write <id> --leg <STAGE.N> done|open
   work-record project working <id>
   work-record project ready <id> --for lead|user
   work-record project stuck <id>
   work-record project blocked <id> --on lead|user
-  work-record project advance <id> --to PLANNING|BUILDING|LANDING|DONE
+  work-record project advance <id> --to IDEA|PLAN|BUILD|REVIEW|LAND|DONE
   work-record project backlog <id>
   work-record project done <id>
-  work-record project return <id>
+  work-record project return <id> [--team <team>]
   work-record update_record --objective <text>
   work-record update_record --phase <title> | --gate <text>
   work-record update_record --leg N <title> | --leg N.M <title>
@@ -111,7 +109,9 @@ Common tasks:
   --leg N appends a leg; --leg N.M retitles it. Field updates may be combined.
   --doc lists a working document for the owner. For repository URLs and branches, use
   work-record workspace add|remove|list; its --branch flag avoids URL ambiguity.
-  return, backlog and done move the whole held Project to the Team Inbox, Backlog or Done.
+  A project is a work item, stored once; you hold its id. return gives it to your Team,
+  backlog parks it (held by nobody), done moves it to stage DONE, working makes it your
+  focus. Every verb appends one line to the item's trail.
 
 Lead position (separate form; changes only another session's pointer):
   work-record update_record --session <name> --at N[.M]
@@ -182,160 +182,60 @@ STORE="$(cd "$(dirname "$SELF")/../bin" && pwd)/ronin-store"
 [ -x "$STORE" ] || STORE=ronin-store
 SESSION_STORE="$("$STORE" session)"
 
+# PROJECT VERBS — a project is a work item, stored once in the work item store. Every verb
+# is one request to /api/work-items; the server appends one trail line naming this session
+# and answers with the item as it now is, which is printed for you to read.
 if [ "${1-}" = project ]; then
   shift; PROJECT_VERB=${1-}; shift || true
   case "$PROJECT_VERB" in
-    create|write|working|ready|stuck|blocked|advance|backlog|done|return) ;;
-    *) die "work-record update_record: project takes create, write, working, ready, stuck, blocked, advance, backlog, done or return." ;;
+    create|read|list|write|working|ready|stuck|blocked|advance|backlog|done|return) ;;
+    *) die "work-record update_record: project takes create, read, list, write, working, ready, stuck, blocked, advance, backlog, done or return." ;;
   esac
-  if [ "$PROJECT_VERB" = create ]; then
-    PROJECT_TEAM=""
-    CREATE_ARGS=()
-    while [ $# -gt 0 ]; do
-      if [ "$1" = --team ]; then
-        [ -n "${2-}" ] || die "work-record update_record: project create --team needs a value."
-        PROJECT_TEAM=$2; shift 2
-      else CREATE_ARGS+=("$1"); shift
-      fi
-    done
-    [ -n "$PROJECT_TEAM" ] || die "work-record update_record: project create needs --team <team>; its id comes from that Team's roster."
-    . "$TOOL_DIR/ronin-http.sh"
-    ronin_connect || exit $?
-    ISSUE=$(curl -sS -m 15 "${RONIN_CURL[@]+"${RONIN_CURL[@]}"}" -H 'content-type: application/json' \
-      -X POST "$url/api/team-rosters/$PROJECT_TEAM/projects/issue" 2>/dev/null) \
-      || die "work-record update_record: could not reach Ronin to issue a project id."
-    PROJECT_ID=$(printf '%s' "$ISSUE" | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d.get("id", "")); print(d.get("error", ""), file=sys.stderr)' 2>/dev/null) \
-      || die "work-record update_record: Ronin returned an invalid project-id response."
-    [ -n "$PROJECT_ID" ] || die "work-record update_record: Team $PROJECT_TEAM did not issue a project id."
-    set -- "${CREATE_ARGS[@]}"
-  else
-    PROJECT_ID=${1-}; shift || true
-    [ -n "$PROJECT_ID" ] || die "work-record update_record: project $PROJECT_VERB needs an id."
-  fi
   NAME=$(me) || exit 3
-  if [ "$PROJECT_VERB" = return ] || [ "$PROJECT_VERB" = backlog ] || [ "$PROJECT_VERB" = done ]; then
-    [ "$#" -eq 0 ] || die "work-record update_record: project $PROJECT_VERB takes only <id>."
-    PROJECT_TEAM=${PROJECT_ID%%/*}; PROJECT_NUMBER=${PROJECT_ID#*/}
-    [ "$PROJECT_TEAM" != "$PROJECT_ID" ] && [ -n "$PROJECT_TEAM" ] \
-      || die "work-record update_record: project return needs a canonical <team>/<number> id."
-    . "$TOOL_DIR/ronin-http.sh"
-    ronin_connect || exit $?
-    AREA=$([ "$PROJECT_VERB" = return ] && printf inbox || printf '%s' "$PROJECT_VERB")
-    BODY=$(python3 -c 'import json,sys; print(json.dumps({"session":sys.argv[1],"area":sys.argv[2]}))' "$NAME" "$AREA")
-    RESPONSE=$(curl -sS -m 15 "${RONIN_CURL[@]+"${RONIN_CURL[@]}"}" -H 'content-type: application/json' -X POST --data "$BODY" \
-      "$url/api/team-rosters/$PROJECT_TEAM/projects/$PROJECT_NUMBER/return") \
-      || die "work-record update_record: could not reach Ronin to return project $PROJECT_ID."
-    RESPONSE="$RESPONSE" python3 - "$PROJECT_ID" "$PROJECT_TEAM" <<'PY'
-import json, os, sys
-project_id, team = sys.argv[1:]
-try: data = json.loads(os.environ["RESPONSE"])
-except Exception: raise SystemExit("work-record update_record: Ronin returned an invalid project-return response.")
-if data.get("error"): raise SystemExit("work-record update_record: " + str(data["error"]))
-area = data.get("area", "inbox")
-focus = data.get("focus", "see work-record read")
-next_cmd = f"team project assign {team} {project_id} <session>" if area == "inbox" else f"team project restore {team} {project_id}"
-print(f"Project {project_id} moved whole to Team {team} {area.title()}; holder: Team {team}; focus: {focus}; next: {next_cmd}. Remember to update your project.")
-PY
-    exit $?
+  . "$TOOL_DIR/ronin-http.sh"
+  ronin_connect || exit $?
+  # --field value pairs -> one JSON body carrying who called.
+  fields() { python3 -c 'import json,sys
+by, allowed, *a = sys.argv[1:]; d = {"by": by}; ok = allowed.split(",")
+while a:
+    k = a.pop(0)
+    if not k.startswith("--") or not a: sys.exit("work-record update_record: fields go as --field <value> pairs.")
+    key = k[2:]
+    if key not in ok: sys.exit("work-record update_record: %s is not a field here; use %s." % (k, ", ".join("--" + f for f in ok)))
+    d[key] = a.pop(0)
+print(json.dumps(d))' "$NAME" "$@"; }
+  if [ "$PROJECT_VERB" = create ]; then
+    BODY=$(fields title,objective,stage,parent "$@") || exit 2
+    BODY=$(printf '%s' "$BODY" | python3 -c 'import json,sys; d=json.load(sys.stdin); d.setdefault("stage","PLAN"); d["session"]=sys.argv[1]
+if not d.get("title") or "objective" not in d: sys.exit("work-record update_record: project create needs --title and --objective.")
+print(json.dumps(d))' "$NAME") || exit 2
+    ronin_item_call POST /api/work-items "$BODY"; exit $?
   fi
-  PFILE="$SESSION_STORE/$(key_of "$NAME")/tegami.md"
-  [ -f "$PFILE" ] || die "work-record update_record: you have no letter yet."
-  python3 - "$PFILE" "$PROJECT_VERB" "$PROJECT_ID" "$NAME" "$@" <<'PROJECT' || exit 3
-import json, os, re, sys
-src, verb, project_id, holder, *args = sys.argv[1:]
-text = open(src).read()
-m = re.search(r"```(?:json)?\s*\n([\s\S]*?)\n```", text)
-if not m: sys.exit("work-record update_record: no json block in your letter")
-d = json.loads(m.group(1)); projects = d.setdefault("projects", [])
-if not isinstance(projects, list): sys.exit('work-record update_record: "projects" must be a list.')
-found = next((p for p in projects if isinstance(p, dict) and p.get("id") == project_id), None)
-def pairs(words):
-    if len(words) % 2: sys.exit("work-record update_record: project fields take one --field value pair.")
-    return [(words[i].removeprefix("--"), words[i+1]) for i in range(0, len(words), 2)]
-leg_edit = None
-if verb == "write" and args[:1] == ["--leg"]:
-    if len(args) != 3: sys.exit("work-record update_record: --leg takes <STAGE> <title> or <STAGE.N> done|open.")
-    leg_edit = (args[1], args[2]); edits = []
-else:
-    edits = pairs(args)
-if verb == "create":
-    if found: sys.exit("work-record update_record: project %s already exists." % project_id)
-    vals = dict(edits)
-    if not vals.get("title") or "objective" not in vals:
-        sys.exit("work-record update_record: project create needs --title and --objective.")
-    found = {"id": project_id, "title": vals["title"], "objective": vals["objective"],
-             "stage": vals.get("stage", "PLANNING"), "exit": vals.get("exit", "none"),
-             "status": vals.get("status", "yellow"), "ladder": [], "evidence": []}
-    projects.append(found)
-else:
-    if not found: sys.exit("work-record update_record: no project %s." % project_id)
-    before = {k: found.get(k) for k in ("stage", "exit", "status")}
-    if verb == "working":
-        if args: sys.exit("work-record update_record: project working takes only <id>.")
-        found["status"], found["exit"] = "yellow", "agent"
-    elif verb == "ready":
-        if len(args) != 2 or args[0] != "--for" or args[1] not in ("lead", "user"):
-            sys.exit("work-record update_record: project ready takes <id> --for lead|user.")
-        found["status"], found["exit"] = "green", args[1]
-    elif verb == "stuck":
-        if args: sys.exit("work-record update_record: project stuck takes only <id>.")
-        found["status"], found["exit"] = "red", "agent"
-    elif verb == "blocked":
-        if len(args) != 2 or args[0] != "--on" or args[1] not in ("lead", "user"):
-            sys.exit("work-record update_record: project blocked takes <id> --on lead|user.")
-        found["status"], found["exit"] = "red", args[1]
-    elif verb == "advance":
-        if len(args) != 2 or args[0] != "--to" or args[1] not in ("PLANNING", "BUILDING", "LANDING", "DONE"):
-            sys.exit("work-record update_record: project advance takes <id> --to PLANNING|BUILDING|LANDING|DONE.")
-        found["stage"] = args[1]
-    elif leg_edit:
-        where, value = leg_edit; stage, dot, index = where.partition(".")
-        rung = next((r for r in found.get("ladder", []) if isinstance(r,dict) and r.get("stage") == stage), None)
-        if rung is None:
-            if dot: sys.exit("work-record update_record: project %s has no %s ladder stage." % (project_id, stage))
-            rung = {"stage": stage, "legs": []}; found.setdefault("ladder", []).append(rung)
-        legs = rung.setdefault("legs", [])
-        if dot:
-            if not index.isdigit() or not 1 <= int(index) <= len(legs): sys.exit("work-record update_record: --leg position is out of range.")
-            if value not in ("done", "open"): sys.exit("work-record update_record: an indexed --leg takes done or open.")
-            legs[int(index)-1]["done"] = value == "done"
-        else:
-            legs.append({"title": value, "done": False})
-    else:
-        if len(edits) != 1: sys.exit("work-record update_record: project write changes one field per call.")
-        key, value = edits[0]
-        if key not in ("title", "objective", "stage", "exit", "status", "evidence", "ladder"):
-            sys.exit("work-record update_record: project write field must be title, objective, stage, exit, status, evidence or ladder.")
-        if key == "evidence": found.setdefault("evidence", []).append(value)
-        elif key == "ladder":
-            try: found["ladder"] = json.loads(value)
-            except Exception as e: sys.exit("work-record update_record: --ladder is not valid JSON — %s" % e)
-        else: found[key] = value
-stages={"IDEAS","PLANNING","BUILDING","LANDING","DONE"}; exits={"none","agent","lead","user"}; statuses={"green","yellow","red"}
-for p in projects:
-    if not isinstance(p,dict) or not all(isinstance(p.get(k),str) for k in ("id","title","objective")): sys.exit("work-record update_record: invalid project shape.")
-    if p.get("stage") not in stages or p.get("exit") not in exits or p.get("status") not in statuses: sys.exit("work-record update_record: invalid project stage, exit or status.")
-    if not isinstance(p.get("ladder"),list) or not isinstance(p.get("evidence"),list): sys.exit("work-record update_record: invalid project ladder or evidence.")
-    for rung in p["ladder"]:
-        if not isinstance(rung,dict) or rung.get("stage") not in stages: sys.exit("work-record update_record: invalid project ladder stage.")
-        if "legs" in rung and not isinstance(rung["legs"],list): sys.exit("work-record update_record: invalid project legs.")
-        for leg in rung.get("legs",[]):
-            if not isinstance(leg,dict) or not isinstance(leg.get("title"),str) or ("done" in leg and not isinstance(leg["done"],bool)): sys.exit("work-record update_record: invalid project leg.")
-block=json.dumps(d, indent=2, ensure_ascii=False); tmp=src+".project"
-open(tmp,"w").write(text[:m.start(1)]+block+text[m.end(1):]); os.replace(tmp,src)
-if verb in ("working", "ready", "stuck", "blocked", "advance"):
-    changed = ["%s=%s" % (k, found[k]) for k in ("stage", "status", "exit") if before[k] != found[k]]
-    preserved = ["%s=%s" % (k, found[k]) for k in ("stage", "status", "exit") if before[k] == found[k]]
-    next_cmd = "work-record project read %s" % project_id
-    print("Project %s updated; changed: %s; preserved: %s; holder: @%s; next: %s. Remember to update your project." %
-          (project_id, ", ".join(changed) or "none", ", ".join(preserved) or "none", holder, next_cmd))
-else:
-    if verb == "create":
-        print("Project %s created in your work record; stable id: %s; holder: %s; next: work-record project read %s. Remember to update your project." % (project_id, project_id, holder, project_id))
-    else:
-        print("work-record update_record: project %s updated." % project_id)
-PROJECT
-  exit 0
+  if [ "$PROJECT_VERB" = list ]; then
+    [ "$#" -eq 0 ] || die "work-record update_record: project list takes nothing; it lists what you hold."
+    ronin_item_call GET "/api/work-items?session=$NAME"; exit $?
+  fi
+  ID=${1-}; shift || true
+  [ -n "$ID" ] || die "work-record update_record: project $PROJECT_VERB needs an id."
+  one() { [ "$#" -eq 0 ] || die "work-record update_record: project $PROJECT_VERB takes only <id>."; }
+  case "$PROJECT_VERB" in
+    read)    one "$@"; ronin_item_call GET "/api/work-items/$ID" ;;
+    write)   [ "$#" -ge 2 ] || die "work-record update_record: project write takes <id> --field <value> ..."
+             ronin_item_call PUT "/api/work-items/$ID" "$(fields title,objective,stage,exit,status,evidence,ladder "$@")" ;;
+    working) one "$@"; ronin_item_call POST "/api/work-items/$ID/status" "$(fields status,exit,focus --status yellow --exit agent --focus "$NAME")" ;;
+    stuck)   one "$@"; ronin_item_call POST "/api/work-items/$ID/status" "$(fields status,exit --status red --exit agent)" ;;
+    ready)   [ "${1-}" = --for ] && { [ "${2-}" = lead ] || [ "${2-}" = user ]; } && [ "$#" -eq 2 ] || die "work-record update_record: project ready takes <id> --for lead|user."
+             ronin_item_call POST "/api/work-items/$ID/status" "$(fields status,exit --status green --exit "$2")" ;;
+    blocked) [ "${1-}" = --on ] && { [ "${2-}" = lead ] || [ "${2-}" = user ]; } && [ "$#" -eq 2 ] || die "work-record update_record: project blocked takes <id> --on lead|user."
+             ronin_item_call POST "/api/work-items/$ID/status" "$(fields status,exit --status red --exit "$2")" ;;
+    advance) [ "${1-}" = --to ] && [ "$#" -eq 2 ] || die "work-record update_record: project advance takes <id> --to IDEA|PLAN|BUILD|REVIEW|LAND|DONE."
+             ronin_item_call POST "/api/work-items/$ID/stage" "$(fields stage --stage "$2")" ;;
+    done)    one "$@"; ronin_item_call POST "/api/work-items/$ID/stage" "$(fields stage --stage DONE)" ;;
+    backlog) one "$@"; ronin_item_call POST "/api/work-items/$ID/release" "$(fields)" ;;
+    return)  [ "$#" -eq 0 ] || { [ "$1" = --team ] && [ -n "${2-}" ] && [ "$#" -eq 2 ]; } || die "work-record update_record: project return takes <id> [--team <team>]."
+             ronin_item_call POST "/api/work-items/$ID/return" "$(fields session,team --session "$NAME" "$@")" ;;
+  esac
+  exit $?
 fi
 
 TARGET=""; ACTIVE=""; STATE=""; DOCADD=""; DOCDEL=""
@@ -401,7 +301,7 @@ else:
 # "docs" is in this list for the same reason "at" is: this path rebuilds the whole block
 # from a fixed set of keys, so a key missing from it is a key this switch DELETES. A
 # session saying "back in ten minutes" must not lose its doc list to say it.
-block = json.dumps({k: d[k] for k in ("objective", "mandate", "teams", "repos", "projects", "ladder_state", "ladder", "docs", "at") if k in d},
+block = json.dumps({k: d[k] for k in ("objective", "mandate", "teams", "repos", "holds", "ladder_state", "ladder", "docs", "at") if k in d},
                    indent=2, ensure_ascii=False)
 tmp = src + ".sw"
 open(tmp, "w").write(text[:m.start(1)] + block + text[m.end(1):])
@@ -485,7 +385,7 @@ if docs:
 else:
     d.pop("docs", None)   # absent means empty; an empty list is a key that says nothing
 
-block = json.dumps({k: d[k] for k in ("objective", "mandate", "teams", "repos", "projects", "ladder_state", "ladder", "docs", "at") if k in d},
+block = json.dumps({k: d[k] for k in ("objective", "mandate", "teams", "repos", "holds", "ladder_state", "ladder", "docs", "at") if k in d},
                    indent=2, ensure_ascii=False)
 # Beside, then rename: the tab may read this file at any moment and a half-written block
 # reads as "no ladder" for exactly as long as the write takes.
@@ -583,7 +483,7 @@ if d.get("at"):
 
 # Titles, objective and role are copied through exactly as the agent left it — a monitor
 # that tidied a title would be authoring, which is not its job.
-block = json.dumps({k: d[k] for k in ("objective", "mandate", "teams", "repos", "projects", "side_road", "ladder", "docs", "at") if k in d},
+block = json.dumps({k: d[k] for k in ("objective", "mandate", "teams", "repos", "holds", "side_road", "ladder", "docs", "at") if k in d},
                    indent=2, ensure_ascii=False)
 open(tmp, "w").write(text[:m.start(1)] + block + text[m.end(1):])
 os.replace(tmp, src)
@@ -615,7 +515,7 @@ except Exception:
     d = {}
 if not isinstance(d, dict):
     d = {}
-out = {k: d[k] for k in ("objective", "mandate", "repos", "projects", "ladder_state", "ladder") if k in d}
+out = {k: d[k] for k in ("objective", "mandate", "repos", "holds", "ladder_state", "ladder") if k in d}
 ladder = out.setdefault("ladder", [])
 if not isinstance(ladder, list):
     sys.exit("work-record update_record: the letter's ladder is not a list; fix it with a whole-block save.")
@@ -759,7 +659,7 @@ PREV=$(awk '/^```/{f=!f; if(f) next; else exit} f' "$FILE" 2>/dev/null)
 PREVF=$(mktemp); printf '%s' "${PREV:-{\}}" > "$PREVF"
 BLOCK=$(printf '%s' "$BODY" | python3 -c '
 import json, sys
-ALLOWED   = {"objective", "mandate", "repos", "projects", "ladder_state", "ladder"}
+ALLOWED   = {"objective", "mandate", "repos", "holds", "ladder_state", "ladder"}
 # What is happening to the ladder AS A WHOLE — not a rung. Absent means "on_track", so
 # nothing has to be migrated and the normal case costs nobody a keystroke.
 #
@@ -792,6 +692,9 @@ NOT_YOURS = {
           "  A session has no identity axis of its own any more: identity is the TEAM\"s\n"
           "  team_role, on the team roster, worn contextually. Work readings are selected\n"
           "  as behaviours at birth. Drop \"role_family\".",
+    "holds": "\"holds\" is not yours to write.\n"
+             "  It lists the work items you hold; assign, return and backlog move them.\n"
+             "  Drop \"holds\" and save again; the list is carried through.",
     "docs": "\"docs\" is not written in the block.\n"
             "  Your doc list has two verbs of its own, so that rewriting your ladder can\n"
             "  never drop it by forgetting to include it:\n"
@@ -957,11 +860,11 @@ out = {"objective": d.get("objective", ""),
        "mandate": mandate,
        "teams": _teams,
        "repos": repos}
-_projects = d.get("projects", prev.get("projects", []))
-if not isinstance(_projects, list):
-    sys.exit("work-record update_record: projects must be a list.")
-if _projects:
-    out["projects"] = _projects
+# CARRY "holds" THROUGH: the work item ids this session holds. Assign and release move
+# them, through the work item routes; a whole-block save never drops them.
+_holds = [h for h in (prev.get("holds") or []) if isinstance(h, str)]
+if _holds:
+    out["holds"] = _holds
 ls_ = (d.get("ladder_state") or "").strip().lower()
 if ls_ and ls_ != "on_track":
     out["ladder_state"] = ls_

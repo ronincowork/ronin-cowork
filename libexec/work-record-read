@@ -91,12 +91,6 @@ key_of() {
 
 MODE=block
 TARGET=""
-PROJECT_ID=""
-if [ "${1-}" = project ]; then
-  [ "${2-}" = read ] && [ -n "${3-}" ] && [ "$#" -eq 3 ] \
-    || die "work-record read: use project read <id>."
-  MODE=project; PROJECT_ID=$3; shift 3
-fi
 while [ $# -gt 0 ]; do
   case "$1" in
     --json)    MODE=json ;;
@@ -149,7 +143,7 @@ d = json.loads(m.group(1))
 if d.get("teams") == teams:
     sys.exit(0)
 d["teams"] = teams
-order = ("objective", "mandate", "teams", "repos", "projects", "ladder_state", "ladder", "docs", "at")
+order = ("objective", "mandate", "teams", "repos", "holds", "ladder_state", "ladder", "docs", "at")
 block = json.dumps({k: d[k] for k in order if k in d}, indent=2, ensure_ascii=False)
 extra = {k: v for k, v in d.items() if k not in order}
 if extra:
@@ -159,15 +153,7 @@ open(tmp, "w").write(text[:m.start(1)] + block + text[m.end(1):])
 os.replace(tmp, src)
 REPAIR
 
-if [ "$MODE" = project ]; then
-  awk '/^```/{f=!f; if(f) next; else exit} f' "$FILE" | python3 -c '
-import json, sys
-d=json.load(sys.stdin); want=sys.argv[1]
-p=next((p for p in (d.get("projects") or []) if isinstance(p,dict) and p.get("id")==want),None)
-if p is None: sys.exit("work-record read: no project %s." % want)
-print(json.dumps(p, indent=2, ensure_ascii=False))
-' "$PROJECT_ID"
-elif [ "$MODE" = rungs ]; then
+if [ "$MODE" = rungs ]; then
   # The flat, numbered list of markable positions. A phase is a grouping, not a place to
   # stand, so it is shown for context but never numbered.
   awk '/^```/{f=!f; if(f) next; else exit} f' "$FILE" | python3 -c '

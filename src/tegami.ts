@@ -5,9 +5,6 @@ import { RIREKI_DIR, sessionKey } from './session-dir.js';
 import { readTeamRoster } from './team-rosters.js';
 import type { SessionInfo } from './tmux.js';
 import { mandate, type Mandate } from './agent-defaults.js';
-import { normalizeProject, type Project } from './projects.js';
-
-export type TegamiProject = Project;
 
 export interface TegamiCheckout {
   repo: string;
@@ -120,7 +117,7 @@ function seedShell(
   "mandate": ${JSON.stringify(sessionMandate)},
   "teams": ${JSON.stringify(teams)},
   "repos": ${JSON.stringify(repos.filter((checkout) => checkout.repo || checkout.branch))},${docs.length ? `\n  "docs": ${JSON.stringify(docs)},` : ''}
-  "projects": [],
+  "holds": [],
   "ladder": [] }
 \`\`\`
 `;
@@ -178,66 +175,22 @@ export async function listLetterHolds(): Promise<LetterHolds[]> {
   return letters.filter((letter): letter is LetterHolds => letter !== null);
 }
 
-/** Replace one letter's holder list. The focus follows: it stays on an item still held,
- * or moves to the first held item, or goes when nothing is held. */
-export async function writeLetterHolds(key: string, holds: string[]): Promise<LetterHolds> {
+/** Replace one letter's holder list. The focus follows: to `focus` when named and held,
+ * else it stays on an item still held, moves to the first held item, or goes. */
+export async function writeLetterHolds(key: string, holds: string[], focus?: string): Promise<LetterHolds> {
   const file = tegamiPath(key);
   const text = await fs.readFile(file, 'utf8');
   const parsed = letterBlock(text);
   if (!parsed) throw new Error(`the work record at ${file} has no readable JSON block`);
   parsed.body.holds = holds;
   const at = parsed.body.at && typeof parsed.body.at === 'object' ? parsed.body.at as Record<string, unknown> : null;
-  if (!at || typeof at.item !== 'string' || !holds.includes(at.item)) {
+  if (focus && holds.includes(focus) && at?.item !== focus) parsed.body.at = { item: focus };
+  else if (!at || typeof at.item !== 'string' || !holds.includes(at.item)) {
     if (holds[0]) parsed.body.at = { item: holds[0] };
     else delete parsed.body.at;
   }
   await replaceLetterBlock(file, text, parsed, parsed.body);
   return holdsOfBody(key, text, parsed.body);
-}
-
-export type MoveTegamiProjectInput =
-  | { direction: 'place'; session: string; project: Project }
-  | { direction: 'return'; session: string; projectId: string };
-
-export interface MoveTegamiProjectResult {
-  project: Project;
-  projectsRemaining: number;
-  focus: string;
-}
-
-/** The house's only cross-letter project write. Roster mutation stays with its caller. */
-export async function moveTegamiProject(
-  input: MoveTegamiProjectInput,
-): Promise<MoveTegamiProjectResult> {
-  const file = tegamiPath(await sessionKey(input.session));
-  const text = await fs.readFile(file, 'utf8');
-  const parsed = letterBlock(text);
-  if (!parsed) throw new Error(`@${input.session} has no readable work record`);
-  const projects = Array.isArray(parsed.body.projects)
-    ? parsed.body.projects.map(normalizeProject)
-    : [];
-  if (projects.some((project) => project === null)) throw new Error(`@${input.session} has an invalid project in its work record`);
-  const valid = projects as Project[];
-  let project: Project;
-  if (input.direction === 'place') {
-    const normalized = normalizeProject(input.project);
-    if (!normalized) throw new Error(`project ${input.project?.id || '(no id)'} has an invalid shape`);
-    if (valid.some((item) => item.id === normalized.id)) throw new Error(`project ${normalized.id} is already in @${input.session}'s work record`);
-    project = normalized;
-    valid.push(project);
-  } else {
-    const at = valid.findIndex((item) => item.id === input.projectId);
-    if (at < 0) throw new Error(`project ${input.projectId} is not in @${input.session}'s work record`);
-    [project] = valid.splice(at, 1);
-    if (parsed.body.at && typeof parsed.body.at === 'object' && !Array.isArray(parsed.body.at)
-        && (parsed.body.at as Record<string, unknown>).project === project.id) {
-      if (valid[0]) parsed.body.at = { project: valid[0].id };
-      else delete parsed.body.at;
-    }
-  }
-  parsed.body.projects = valid;
-  await replaceLetterBlock(file, text, parsed, parsed.body);
-  return { project, projectsRemaining: valid.length, focus: valid[0]?.id ?? 'none' };
 }
 
 export async function seedTegami(

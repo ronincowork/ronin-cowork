@@ -40,7 +40,7 @@ test('one global issuer: concurrent creates never share an id', async () => {
 
 test('trail append is atomic under concurrent writers: every line lands', async () => {
   const { item } = await items.createItem({ title: 'Busy' }, 'probe');
-  await Promise.all(Array.from({ length: 25 }, (_, i) => items.addEvidence(item.id, `fact ${i}`, `writer${i}`)));
+  await Promise.all(Array.from({ length: 25 }, (_, i) => items.editItem(item.id, { evidence: `fact ${i}` }, `writer${i}`)));
   const back = (await items.readItem(item.id))!;
   assert.equal(back.trail.filter((line) => line.op === 'evidence').length, 25);
   assert.equal(new Set(back.trail.map((line) => line.note)).size, 26);

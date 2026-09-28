@@ -9,17 +9,22 @@ usage() { cat <<'EOF'
 Usage:
   team roster read <team>
   team roster write <team> [typed roster flags]
-  team project create <team> --title <text> --objective <text>
-  team project read <team> <id>
+  team project create <team> --title <text> --objective <text> [--parent <id>]
+  team project read <id>
   team project list <team>
-  team project write <team> <id> --field <value> ...
-  team project assign <team> <id> <session>
-  team project return <team> <id> <session>
-  team project backlog <team> <id>
-  team project done <team> <id>
+  team project write <id> --title|--objective|--stage|--exit|--status <value> ...
+  team project assign <id> <session>
+  team project return <team> <id>
+  team project backlog <id>
+  team project done <id>
   team project restore <team> <id>
+  team project parent <id> <parent-id>|none
   team member status <team>
-All writes use canonical Team/project routes; member status is the settled Kanban view.
+A project is a work item (id like w12), stored once. The Team holds ids; so do Agents.
+Every write appends one line to the item's trail and answers with the item as it now is.
+assign moves the id to the session, return gives it back to the Team, backlog parks it
+(held by nobody), done moves it to stage DONE, restore brings it back to the Team.
+Stages: IDEA PLAN BUILD REVIEW LAND DONE. member status is the Team's reading.
 Create a Team with roster write. Add membership or move an Agent with session_set.
 For a true move, remove the old Team on that Team's page. Set or change that Team's lead
 with session_set.
@@ -36,21 +41,30 @@ request() {
   out=$(curl "${args[@]}" "$url$path") || die "UNREACHABLE: Ronin did not answer at $url" 5
   printf '%s' "$out" | python3 -m json.tool || die 'REFUSED: Ronin returned an invalid answer' 4
 }
+# The caller is named on every trail line: this session, or the shell user.
+BY=$(ronin_session_me 2>/dev/null || id -un)
 json_fields() { python3 -c 'import json,sys
-a=sys.argv[1:]; d={}
+a=sys.argv[1:]; d={"by":sys.argv[1]}; a=a[1:]
 while a:
- k=a.pop(0); v=a.pop(0) if a else ""; d[k[2:].replace("-","_")]=v
-print(json.dumps(d))' "$@"; }
+ k=a.pop(0)
+ if not k.startswith("--") or not a: sys.exit("BAD-ARG: fields go as --field <value> pairs")
+ d[k[2:].replace("-","_")]=a.pop(0)
+print(json.dumps(d))' "$BY" "$@"; }
 area=${1:-}; verb=${2:-}; shift 2 || true
 case "$area:$verb" in
   roster:read) [ "$#" -eq 1 ] || die 'BAD-ARG: roster read needs team' 2; request GET "/api/team-rosters/$1" ;;
   roster:write) [ "$#" -ge 1 ] || die 'BAD-ARG: roster write needs team' 2; exec bash "$ROOT/libexec/team-roster-write" "$@" ;;
-  project:list) [ "$#" -eq 1 ] || die 'BAD-ARG: project list needs team' 2; request GET "/api/team-rosters/$1" | python3 -c 'import json,sys; d=json.load(sys.stdin); print(json.dumps([{**p,"area":a} for a,k in (("inbox","projects"),("done","done_projects"),("backlog","backlog_projects")) for p in d.get(k,[])],indent=2))' ;;
-  project:read) [ "$#" -eq 2 ] || die 'BAD-ARG: project read needs team and id' 2; request GET "/api/team-rosters/$1" | ID="$2" python3 -c 'import json,os,sys; d=json.load(sys.stdin); p=next(({**p,"area":a} for a,k in (("inbox","projects"),("done","done_projects"),("backlog","backlog_projects")) for p in d.get(k,[]) if p.get("id")==os.environ["ID"]),None); print(json.dumps(p,indent=2)) if p else sys.exit(3)' ;;
-  project:create) [ "$#" -ge 3 ] || die 'BAD-ARG: project create needs team and fields' 2; team=$1; shift; body=$(json_fields "$@"); request POST "/api/team-rosters/$team/projects" "$body" ;;
-  project:write) [ "$#" -ge 4 ] || die 'BAD-ARG: project write needs team, id and fields' 2; team=$1; id=${2#"$team/"}; shift 2; body=$(json_fields "$@"); request PUT "/api/team-rosters/$team/projects/$id" "$body" ;;
-  project:assign|project:return) [ "$#" -eq 3 ] || die "BAD-ARG: project $verb needs team, id and session" 2; team=$1; id=${2#"$team/"}; body=$(python3 -c 'import json,sys; print(json.dumps({"session":sys.argv[1]}))' "$3"); request POST "/api/team-rosters/$team/projects/$id/$verb" "$body" ;;
-  project:backlog|project:done|project:restore) [ "$#" -eq 2 ] || die "BAD-ARG: project $verb needs team and id" 2; team=$1; id=${2#"$team/"}; request POST "/api/team-rosters/$team/projects/$id/$verb" ;;
-  member:status) [ "$#" -eq 1 ] || die 'BAD-ARG: member status needs team' 2; request GET "/api/teams/$1/kanban" ;;
+  project:list) [ "$#" -eq 1 ] || die 'BAD-ARG: project list needs team' 2; ronin_item_call GET "/api/work-items?team=$1" ;;
+  project:read) [ "$#" -eq 1 ] || die 'BAD-ARG: project read needs id' 2; ronin_item_call GET "/api/work-items/$1" ;;
+  project:create) [ "$#" -ge 3 ] || die 'BAD-ARG: project create needs team and fields' 2; team=$1; shift; body=$(json_fields --team "$team" "$@") || exit 2; ronin_item_call POST /api/work-items "$body" ;;
+  project:write) [ "$#" -ge 3 ] || die 'BAD-ARG: project write needs id and fields' 2; id=$1; shift; body=$(json_fields "$@") || exit 2; ronin_item_call PUT "/api/work-items/$id" "$body" ;;
+  project:assign) [ "$#" -eq 2 ] || die 'BAD-ARG: project assign needs id and session' 2; ronin_item_call POST "/api/work-items/$1/assign" "$(json_fields --session "$2")" ;;
+  project:return|project:restore) [ "$#" -eq 2 ] || die "BAD-ARG: project $verb needs team and id" 2
+    to=$([ "$verb" = return ] && printf assign || printf restore); ronin_item_call POST "/api/work-items/$2/$to" "$(json_fields --team "$1")" ;;
+  project:backlog) [ "$#" -eq 1 ] || die 'BAD-ARG: project backlog needs id' 2; ronin_item_call POST "/api/work-items/$1/release" "$(json_fields)" ;;
+  project:done) [ "$#" -eq 1 ] || die 'BAD-ARG: project done needs id' 2; ronin_item_call POST "/api/work-items/$1/stage" "$(json_fields --stage DONE)" ;;
+  project:parent) [ "$#" -eq 2 ] || die 'BAD-ARG: project parent needs id and parent id (or none)' 2
+    ronin_item_call POST "/api/work-items/$1/reparent" "$(json_fields --parent "$([ "$2" = none ] || printf %s "$2")")" ;;
+  member:status) [ "$#" -eq 1 ] || die 'BAD-ARG: member status needs team' 2; ronin_item_call GET "/api/work-items?team=$1" ;;
   *) usage >&2; exit 2;;
 esac
