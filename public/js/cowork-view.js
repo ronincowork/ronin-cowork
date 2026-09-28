@@ -24,7 +24,8 @@ import { launchPresetPlan, presetLaunchUrl } from './preset-launch.js';
 import { subscribe as subscribeStore } from './store.js';
 import { acceptDrops as acceptSessionDrops } from './team-drag.js';
 import { S } from './state.js';
-import { renderTeamConfiguration } from './team-configuration.js';
+import { renderTeamConfiguration, teamConfigurationMeta } from './team-configuration.js';
+import { createStep } from './form-steps.js';
 import { workbenchView } from './workspace-contract.js';
 import { agentTitle, buildTeamMembers, configSignature } from './team-members.js';
 import { isCoarse } from './tiledrop.js';
@@ -638,7 +639,7 @@ export function createCoworkView(options = {}) {
   // contributes it; there is no field for it today.
   let rows = new Map(); // name -> the store's home row
   const leagueTeamSurfaces = new Map(), openTeam = (name) => openWorkspaceTab('team', name);
-  // ONE TEAM PROFILE — head, Agents, Work, and Configuration under the gear — painted into a
+  // ONE TEAM PROFILE — head, then the Agents, Work items and Configuration steps — painted into a
   // host: a Teams stone's detail (leagueTeamDetail) or a whole workspace (createLeagueTeamSurface).
   const leagueTeamBody = (name, { seat, say }) => {
     const holding = name === UNASSIGNED;
@@ -646,17 +647,26 @@ export function createCoworkView(options = {}) {
     const objective = el('p', 'league-team-objective');
     const launch = createAction({ label: '', launch: true, size: 'compact', title: t('league.launch_team', 'Launch'), action: () => openTeam(name) });
     launch.el.setAttribute('aria-label', launch.el.title);
-    const config = el('section', 'league-team-config'); config.hidden = true;
-    const gear = createAction({ label: '⚙', size: 'compact', selected: false, title: t('workspace.tab_team_configuration', 'Configuration'), action: () => {
-      config.hidden = !config.hidden; gear.el.setAttribute('aria-pressed', String(!config.hidden));
-    } });
-    gear.el.setAttribute('aria-label', gear.el.title);
-    const controls = holding ? [launch] : [launch, gear];
+    const controls = [launch];
     const remove = createAction({ label: t('league.delete_team', 'Delete team'), kind: 'danger', size: 'compact', action: async () => { const count = membersOfTeam(name).length; if (!window.confirm(t('league.delete_team_confirm', 'Delete {team}? {count} Agents will lose this Team membership.', { team: name, count }))) return; const result = await deleteTeamRoster(name); if (!result.ok) { say('failed', result.message); return; } for (const place of bench.locations(WB_TYPES.team, name)) emptySeat(place); for (const key of [...leagueTeamSurfaces.keys()]) if (key.endsWith(`\0${name}`)) leagueTeamSurfaces.delete(key); } });
-    const agents = el('section', 'league-team-agents');
-    const work = el('section', 'league-team-work'); work.hidden = true;
+    // THE DRAWN-FORM STEPS (owner, 2026-09-28): Agents and Work items open, Configuration
+    // folded to its one-line answer; each folds or opens on its own head.
+    const folded = { agents: false, work: false, config: true };
+    const steps = {};
+    const fold = (key) => { folded[key] = !folded[key]; paintFolds(); };
+    const step = (n, key, text) => { steps[key] = createStep({ n, key, title: text, onToggle: () => fold(key) }); steps[key].body.classList.add('league-team-step-body'); return steps[key]; };
+    const agents = step(1, 'agents', t('league.agents', 'Agents')).body;
+    const work = step(2, 'work', t('league.work_items', 'Work items')).body;
+    const config = step(3, 'config', t('workspace.tab_team_configuration', 'Configuration')).body;
+    let workCount = 0;
+    const paintFolds = () => {
+      const count = membersOfTeam(name).length;
+      steps.agents.setCollapsed(folded.agents, t('league.agent_count', '{count} Agents', { count }));
+      steps.work.setCollapsed(folded.work, t('league.item_count', '{count} items', { count: workCount }));
+      steps.config.setCollapsed(folded.config, teamConfigurationMeta(teamByName(name)));
+    };
     const main = el('div', 'league-team-edit-content');
-    main.append(agents, work, config);
+    main.append(...(holding ? [steps.agents.el] : [steps.agents.el, steps.work.el, steps.config.el]));
     let held = new Map(); // agent name -> titles of the items it holds, from the Team reading
     const failed = (result) => { if (!result.ok) say('failed', result.message); else say(); };
     // THE PLUS does what the two selects did: assign an Agent already running, or start a new
@@ -699,7 +709,7 @@ export function createCoworkView(options = {}) {
         add.addEventListener('click', () => add.replaceWith(plus()));
         list.append(add);
       }
-      agents.replaceChildren(sectionHeading(t('league.agents', 'Agents')), ...list.children);
+      agents.replaceChildren(...list.children);
     };
     const readWork = async () => {
       if (holding) return;
@@ -710,9 +720,9 @@ export function createCoworkView(options = {}) {
       const lead = membersOfTeam(name).find((member) => member.team_lead)?.name || '';
       held = new Map();
       for (const item of items) if (item.holder.startsWith('agent:')) held.set(item.holder.slice(6), [...(held.get(item.holder.slice(6)) || []), item.title]);
-      work.hidden = !ordered.length;
-      work.replaceChildren(sectionHeading(t('work_items.title', 'Work')), ...ordered.map((item) => itemLine(item, { holder: holderOf({ holder: item.holder }, lead) })));
-      paintAgents();
+      workCount = ordered.length;
+      work.replaceChildren(...ordered.map((item) => itemLine(item, { holder: holderOf({ holder: item.holder }, lead) })));
+      paintAgents(); paintFolds();
     };
     // Same contract as renderConfig below: every publish lands here, so the body only
     // rebuilds — and refetches the configuration's catalogs — when what it shows moved.
@@ -737,12 +747,11 @@ export function createCoworkView(options = {}) {
         config.replaceChildren(fields, createActionBar({ actions: [remove] }).el);
         renderTeamConfiguration(fields, { ...current, durable: true }, { createAction, onSaved: render });
       }
+      paintFolds();
     };
     render();
     return { title, objective, controls, main, render };
   };
-  // A section heading is the house People heading, standing in the rows' name column.
-  const sectionHeading = (text) => { const row = el('div', 'league-team-row'); row.append(el('h3', 'league-team-roster-title', text)); return row; };
   const leagueTeamLabel = (name) => name === UNASSIGNED ? t('league.ronin', 'Ronin: no team') : readableTeam(name);
   const cachedLeagueTeam = (cacheKey, make) => {
     if (leagueTeamSurfaces.has(cacheKey)) { const cached = leagueTeamSurfaces.get(cacheKey); cached.render?.(); return cached; }
@@ -759,7 +768,7 @@ export function createCoworkView(options = {}) {
     const box = el('div', 'league-team-detail');
     const status = el('p', 'league-team-detail-state'); status.setAttribute('role', 'status'); status.hidden = true;
     const team = leagueTeamBody(name, { seat, say: (state, message) => { status.hidden = state !== 'failed'; status.textContent = state === 'failed' ? message : ''; } });
-    const head = el('div', 'league-team-row league-team-detail-head');
+    const head = el('div', 'league-team-detail-head');
     const actions = el('div', 'wk-surface-header-actions'); actions.append(...team.controls.map((control) => control.el));
     head.append(team.title, actions, team.objective);
     box.append(head, status, team.main);

@@ -98,10 +98,13 @@ test('Roster remains a roster while Team Chart is a standalone Phalanx surface',
   assert.match(coworkRoster, /createPhalanx\(\{ className: 'team-roster-phalanx', items: \[\], renderDetail \}\)/);
   assert.doesNotMatch(coworkRoster, /action:/, 'a Teams stone selects; it never navigates');
   assert.match(view, /createTeamRosterSurface\(\{\s*teamDetail: \(name\) => leagueTeamDetail\(name, id\)/);
-  // Owner 2026-09-28, the in-place Team: two head controls, Delete under the gear, config closed.
-  assert.match(view, /const controls = holding \? \[launch\] : \[launch, gear\]/);
+  // Owner 2026-09-28, the in-place Team: drawn-form steps, Launch the only head control,
+  // Agents and Work items open, Configuration folded, Delete team at the Configuration foot.
+  assert.match(view, /const controls = \[launch\];/);
+  assert.match(view, /const folded = \{ agents: false, work: false, config: true \};/);
+  assert.match(view, /createStep\(\{ n, key, title: text, onToggle: \(\) => fold\(key\) \}\)/);
   assert.match(view, /config\.replaceChildren\(fields, createActionBar\(\{ actions: \[remove\] \}\)\.el\)/);
-  assert.match(view, /const config = el\('section', 'league-team-config'\); config\.hidden = true;/);
+  assert.doesNotMatch(view, /gear/);
   assert.match(view, /request\(`\/api\/work-items\?team=\$\{encodeURIComponent\(name\)\}`/, 'Work is the Team reading from the store');
   assert.match(view, /const createLeagueTeamSurface = [\s\S]*leagueTeamBody\(name,/);
   assert.match(view, /const leagueTeamDetail = [\s\S]*leagueTeamBody\(name,/);
