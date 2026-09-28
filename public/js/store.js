@@ -129,8 +129,16 @@ export function createStore({
     return ws;
   }
 
-  /** A resumed tab: reconnect now if the socket went, rather than waiting out the retry. */
-  function renew() {
+  /** A resumed tab: reconnect now if the socket went, rather than waiting out the retry.
+   *  `force` also replaces a socket that still says open: a terminal socket found its link
+   *  dead, and this one only listens, so it cannot find that out for itself. One still
+   *  connecting is left to finish. */
+  function renew({ force = false } = {}) {
+    if (force && socket?.readyState === 1) {
+      const stale = socket;
+      socket = null; // its late close is not news: no failure bar, no retry
+      try { stale.close(); } catch { /* already gone */ }
+    }
     if (!socket || socket.readyState > 1) connect();
   }
 

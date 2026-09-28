@@ -1,4 +1,5 @@
 /* part of the ronin-cowork client — see js/README.md */
+import { renew } from './store.js';
 
 export class TileWire {
   /**
@@ -105,6 +106,9 @@ export class TileWire {
       if (this.ws !== ws) return;
       this.hooks.onStatus('off');
       if (this.wantOpen && this.session === session) {
+        // The link died under this tile. The pushed feed rides the same link and only
+        // listens, so it cannot tell: reconnect it too.
+        renew({ force: true });
         this.retry = setTimeout(() => {
           if (this.wantOpen && this.session === session) this.hooks.reopen(session);
         }, 2000);
