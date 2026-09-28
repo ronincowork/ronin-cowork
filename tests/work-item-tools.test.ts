@@ -41,12 +41,14 @@ test.after(() => server.close());
 
 const bin = path.join(dir, 'bin');
 mkdirSync(bin);
+// FAKE_SESSION names the session this tool call runs in; "probe" unless a test says so.
 writeFileSync(path.join(bin, 'tmux'), [
   '#!/bin/sh',
+  'S=${FAKE_SESSION:-probe}',
   'case "$1" in',
   '  display-message) echo "@1";;',
-  "  list-windows) printf 'probe\\t@1\\n';;",
-  "  list-sessions) case \"$*\" in *ronin-key*) printf 'probe\\tprobe\\t1\\n';; *) printf 'probe\\t\\n';; esac;;",
+  "  list-windows) printf '%s\\t@1\\n' \"$S\";;",
+  "  list-sessions) case \"$*\" in *ronin-key*) printf '%s\\t%s\\t1\\n' \"$S\" \"$S\";; *) printf '%s\\t\\n' \"$S\";; esac;;",
   '  *) exit 1;;',
   'esac',
   '',
@@ -56,12 +58,13 @@ const env: NodeJS.ProcessEnv = {
   RONIN_URL: `http://127.0.0.1:${(server.address() as AddressInfo).port}`,
 };
 // Async on purpose: the routes answer from this same process, so a sync call would block them.
-const run = (name: string, args: string[]) => new Promise<{ status: number; stdout: string; stderr: string }>((resolve) => {
-  execFile(path.join(root, 'ronin_bin', name), args, { encoding: 'utf8', env }, (error, stdout, stderr) =>
+const run = (name: string, args: string[], as = 'probe', input?: string) => new Promise<{ status: number; stdout: string; stderr: string }>((resolve) => {
+  const child = execFile(path.join(root, 'ronin_bin', name), args, { encoding: 'utf8', env: { ...env, FAKE_SESSION: as } }, (error, stdout, stderr) =>
     resolve({ status: error ? Number((error as { code?: number }).code ?? 1) : 0, stdout, stderr }));
+  child.stdin?.end(input ?? '');
 });
-const tool = async (name: string, args: string[]) => {
-  const r = await run(name, args);
+const tool = async (name: string, args: string[], as = 'probe', input?: string) => {
+  const r = await run(name, args, as, input);
   assert.equal(r.status, 0, `${name} ${args.join(' ')}: ${r.stderr}`);
   return r.stdout;
 };
@@ -127,4 +130,79 @@ test('work-record project verbs: one line each, and nobody is refused for not ho
   const bad = await run('work-record', ['project', 'ready', id, '--for', 'agent']);
   assert.notEqual(bad.status, 0);
   assert.match(bad.stderr, /--for lead\|user/);
+});
+
+test('a ladder write with nothing held creates one item held by the Agent, titled from its objective', async () => {
+  await tool('work-record', ['update_record', '--objective', 'Solo objective'], 'solo');
+  assert.deepEqual((await readLetterHolds('solo'))!.holds, []);
+  const out = await tool('work-record', ['update_record', '--phase', 'First phase', '--leg', '1', 'first leg'], 'solo');
+  const letter = (await readLetterHolds('solo'))!;
+  assert.equal(letter.holds.length, 1, 'exactly one item made');
+  const item = (await readItem(letter.holds[0]!))!;
+  assert.deepEqual([item.title, item.trail.length, item.trail[0]!.op, item.trail[0]!.to], ['Solo objective', 1, 'create', 'agent:solo']);
+  assert.deepEqual(item.ladder, [{ phase: 'First phase', status: 'PLANNED', legs: [{ title: 'first leg', status: 'PLANNED' }] }]);
+  assert.equal(letter.at?.item, item.id, 'the new item is the focus');
+  assert.match(out, /Keep it current/);
+  await tool('work-record', ['update_record', '--gate', 'owner go'], 'solo');
+  assert.equal((await readLetterHolds('solo'))!.holds.length, 1, 'the next write lands on it: no second item');
+});
+
+test('a ladder write with a focus item changes that item and nothing else, one line per write', async () => {
+  const a = /Work item (w\d+)/.exec(await tool('work-record', ['project', 'create', '--title', 'A', '--objective', 'a'], 'duo'))![1]!;
+  const b = /Work item (w\d+)/.exec(await tool('work-record', ['project', 'create', '--title', 'B', '--objective', 'b'], 'duo'))![1]!;
+  await tool('work-record', ['project', 'working', b], 'duo');
+  const before = structuredClone(await readItem(a));
+  const lines = (await trail(b)).length;
+  await tool('work-record', ['update_record', '--phase', 'p', '--leg', '1', 'x', '--leg', '1', 'y', '--done', '1.1', '--active', '1.2'], 'duo');
+  assert.deepEqual(await readItem(a), before, 'the other held item is untouched');
+  const item = (await readItem(b))!;
+  assert.equal(item.trail.length, lines + 1, 'five verbs, one request, one line');
+  assert.deepEqual(item.ladder[0]!.legs, [{ title: 'x', status: 'DONE' }, { title: 'y', status: 'ACTIVE' }]);
+
+  await tool('work-record', ['update_record', '--gate', 'wait', '--rung', '2', 'wait for owner', '--leg', '1.1', 'x renamed', '--status', '2', 'ACTIVE'], 'duo');
+  await tool('work-record', ['update_record', '--drop', '1.2'], 'duo');
+  assert.deepEqual((await readItem(b))!.ladder, [
+    { phase: 'p', status: 'PLANNED', legs: [{ title: 'x renamed', status: 'DONE' }] },
+    { gate: 'wait for owner', status: 'ACTIVE' },
+  ]);
+  const refused = await run('work-record', ['update_record', '--leg', '2', 'on a gate'], 'duo');
+  assert.equal(refused.status, 3);
+  assert.match(refused.stderr, /rung 2 is a gate/);
+  const rungs = await tool('work-record', ['read', '--rungs'], 'duo');
+  assert.match(rungs, /^1\s+phase p/m);
+  assert.match(rungs, /^2\s+GATE\s+wait for owner/m);
+});
+
+test('the marker places the Agent on its focus ladder and carries the ladder; a shape change clears it', async () => {
+  await tool('work-record', ['update_record'], 'mark', JSON.stringify({ objective: 'Marked', ladder: [
+    { gate: 'go', status: 'PLANNED' }, { phase: 'one', legs: [{ title: 'a' }, { title: 'b' }] },
+  ] }));
+  const id = (await readLetterHolds('mark'))!.holds[0]!;
+  await tool('work-record', ['update_record', '--session', 'mark', '--at', '2.2'], 'lead');
+  const item = (await readItem(id))!;
+  assert.deepEqual(item.ladder.map((r) => r.gate !== undefined ? r.status : r.legs!.map((l) => l.status)), ['DONE', ['DONE', 'ACTIVE']]);
+  assert.equal(item.trail.at(-1)!.by, 'lead');
+  assert.deepEqual((await readLetterHolds('mark'))!.at, { item: id, rung: 2, leg: 2 });
+  await tool('work-record', ['update_record', '--leg', '2.1', 'a, renamed'], 'mark');
+  assert.deepEqual((await readLetterHolds('mark'))!.at, { item: id }, 'a title edit is a shape change: the position goes');
+});
+
+test('docs live on the focus item and the Docs reading lists every held item\'s docs', async () => {
+  const doc = path.join(dir, 'plan.md');
+  writeFileSync(doc, '# plan\n');
+  const other = path.join(dir, 'other.md');
+  writeFileSync(other, '# other\n');
+  await tool('work-record', ['document', 'add', doc], 'docs');
+  const first = (await readLetterHolds('docs'))!.holds[0]!;
+  assert.deepEqual((await readItem(first))!.docs, [doc], 'holding nothing, the first doc made an item');
+  const second = /Work item (w\d+)/.exec(await tool('work-record', ['project', 'create', '--title', 'Two', '--objective', 't'], 'docs'))![1]!;
+  await tool('work-record', ['project', 'working', second], 'docs');
+  await tool('work-record', ['document', 'add', other], 'docs');
+  assert.deepEqual((await readItem(second))!.docs, [other]);
+  assert.deepEqual(JSON.parse(await tool('work-record', ['document', 'list'], 'docs')).sort(), [doc, other].sort());
+  const missing = await run('work-record', ['document', 'add', path.join(dir, 'nope.md')], 'docs');
+  assert.notEqual(missing.status, 0);
+  assert.match(missing.stderr, /no such file/);
+  await tool('work-record', ['document', 'remove', other], 'docs');
+  assert.deepEqual((await readItem(second))!.docs, []);
 });

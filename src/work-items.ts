@@ -18,7 +18,7 @@ import { storeDir } from './resources.js';
 import { sessionKey } from './session-dir.js';
 import { getTags } from './tmux.js';
 import { listTeamRosters, readTeamRoster, writeTeamRoster } from './team-rosters.js';
-import { listLetterHolds, readLetterHolds, seedTegami, writeLetterHolds } from './tegami.js';
+import { listLetterHolds, readLetterHolds, seedTegami, writeLetterAt, writeLetterHolds } from './tegami.js';
 
 export const ITEM_STAGES = ['IDEA', 'PLAN', 'BUILD', 'REVIEW', 'LAND', 'DONE'] as const;
 export const ITEM_EXITS = ['none', 'agent', 'lead', 'user'] as const;
@@ -169,6 +169,8 @@ export interface NewItem {
   parent?: string | null;
   /** Held from birth by this Team or Agent, in the same call and the same trail line. */
   holder?: Holder;
+  ladder?: Rung[];
+  docs?: string[];
 }
 
 function checkFields(fields: { stage?: unknown; exit?: unknown; status?: unknown }): void {
@@ -192,8 +194,8 @@ export async function createItemUnlocked(input: NewItem, by: string): Promise<Ac
     exit: (input.exit as ItemExit | undefined) ?? 'none',
     status: (input.status as ItemStatus | undefined) ?? 'yellow',
     parent: input.parent || null,
-    ladder: [],
-    docs: [],
+    ladder: input.ladder ?? [],
+    docs: input.docs ?? [],
     external: {},
     trail: [],
     created: { at, by: by.trim() || 'unknown' },
@@ -242,7 +244,7 @@ export function editItem(id: string, edit: ItemEdit, by: string, note?: string):
 }
 
 /** Documents live on the item. Paths are absolute and must exist when listed. */
-export function editDocs(id: string, change: { add?: string; remove?: string }, by: string): Promise<Acknowledged> {
+function docsChange(change: { add?: string; remove?: string }): { target: string; add: boolean } {
   const add = change.add?.trim();
   const remove = change.remove?.trim();
   if (Boolean(add) === Boolean(remove)) throw new WorkItemBadInput('docs takes one of add or remove, one path at a time.');
@@ -252,11 +254,13 @@ export function editDocs(id: string, change: { add?: string; remove?: string }, 
     if (!existsSync(target)) throw new WorkItemBadInput(`no such file: ${target}`);
     if (statSync(target).isDirectory()) throw new WorkItemBadInput(`${target} is a directory; the list holds documents.`);
   }
-  return withIssuer(() => appendTrail(id, by, (item) => {
-    const kept = item.docs.filter((doc) => doc !== target);
-    item.docs = add ? [target, ...kept] : kept;
-    return { op: 'edit', note: `${add ? 'doc listed' : 'doc unlisted'}: ${target}` };
-  }));
+  return { target, add: Boolean(add) };
+}
+
+function applyDocs(item: WorkItem, { target, add }: { target: string; add: boolean }): Omit<TrailLine, 'at' | 'by'> {
+  const kept = item.docs.filter((doc) => doc !== target);
+  item.docs = add ? [target, ...kept] : kept;
+  return { op: 'edit', note: `${add ? 'doc listed' : 'doc unlisted'}: ${target}` };
 }
 
 /** The one refusal: a parent chain may never come back to the item. */
@@ -404,4 +408,160 @@ export function keepCurrentLine({ item, line }: Acknowledged): string {
         : line.op === 'create' ? 'was created'
           : `changed (${line.op})`;
   return `${item.id} ${what}. Keep it current: work-record project write ${item.id} --objective "<what it is now>" --evidence "<a fact with its receipt>"`;
+}
+
+/* THE LADDER LIVES ON THE ITEM. An Agent's ladder is the ladder of its focus item (the
+ * letter's at.item, else the first item it holds). A write with nothing held creates one
+ * item for it, held by the Agent, titled from its objective: no break. Phases and legs are
+ * never items. */
+
+export type LadderEdit = string[];
+
+const shapeOf = (ladder: Rung[]): string => JSON.stringify(ladder.map((r) =>
+  r.gate !== undefined ? ['gate', r.gate] : ['phase', r.phase, (r.legs ?? []).map((leg) => leg.title)]));
+
+/** The field verbs, applied in order: phase, gate, rung, leg, status, drop. Positions are
+ * N or N.M as the rung sits on the ladder. Returns what each did. */
+export function applyLadderEdits(ladder: Rung[], edits: LadderEdit[]): string[] {
+  const said: string[] = [];
+  const pos = (word: string, verb: string, want?: 'rung' | 'leg'): { rung: Rung; leg: Leg | null } => {
+    const parts = String(word ?? '').split('.');
+    if (parts.length > 2 || !parts.every((part) => /^\d+$/.test(part))) throw new WorkItemBadInput(`${verb} takes a position as work-record read --rungs prints it — N or N.M — not "${word}".`);
+    const ri = Number(parts[0]);
+    const li = parts[1] === undefined ? null : Number(parts[1]);
+    if (ri < 1 || ri > ladder.length) throw new WorkItemBadInput(`${verb}: rung ${ri} is out of range (1..${ladder.length}).`);
+    const rung = ladder[ri - 1]!;
+    if (li === null) {
+      if (want === 'leg') throw new WorkItemBadInput(`${verb}: rung ${ri} is a ${rung.gate !== undefined ? 'gate' : 'phase'} — name a leg, N.M.`);
+      return { rung, leg: null };
+    }
+    if (rung.gate !== undefined) throw new WorkItemBadInput(`${verb}: rung ${ri} is a gate and has no legs.`);
+    const legs = rung.legs ?? [];
+    if (li < 1 || li > legs.length) throw new WorkItemBadInput(`${verb}: rung ${ri} has ${legs.length} leg(s); ${li} is out of range.`);
+    return { rung, leg: legs[li - 1]! };
+  };
+  for (const [verb, a = '', b = ''] of edits) {
+    if (verb === 'phase') { ladder.push({ phase: a.trim(), status: 'PLANNED', legs: [] }); said.push(`phase ${ladder.length} added`); }
+    else if (verb === 'gate') { ladder.push({ gate: a.trim(), status: 'PLANNED' }); said.push(`gate ${ladder.length} added`); }
+    else if (verb === 'rung') {
+      const { rung } = pos(a, '--rung', 'rung');
+      if (rung.gate !== undefined) rung.gate = b.trim(); else rung.phase = b.trim();
+      said.push(`rung ${a} retitled`);
+    } else if (verb === 'leg') {
+      if (a.includes('.')) { pos(a, '--leg', 'leg').leg!.title = b.trim(); said.push(`leg ${a} retitled`); }
+      else {
+        const { rung } = pos(a, '--leg', 'rung');
+        if (rung.gate !== undefined) throw new WorkItemBadInput(`--leg: rung ${a} is a gate; legs belong to a phase.`);
+        (rung.legs ??= []).push({ title: b.trim(), status: 'PLANNED' });
+        said.push(`leg ${a}.${rung.legs.length} added`);
+      }
+    } else if (verb === 'status') {
+      const status = b.trim().toUpperCase();
+      if (!member(RUNG_STATUSES, status)) throw new WorkItemBadInput(`--status takes PLANNED, ACTIVE or DONE, not "${b}".`);
+      const { rung, leg } = pos(a, '--status');
+      (leg ?? rung).status = status;
+      said.push(`${a} -> ${status}`);
+    } else if (verb === 'drop') {
+      const { rung, leg } = pos(a, '--drop');
+      if (leg) rung.legs = (rung.legs ?? []).filter((x) => x !== leg);
+      else ladder.splice(ladder.indexOf(rung), 1);
+      said.push(`${a} dropped`);
+    } else throw new WorkItemBadInput(`unknown ladder verb "${verb}".`);
+  }
+  return said;
+}
+
+interface Focus { key: string; objective: string; id: string | null }
+
+async function focusUnlocked(session: string): Promise<Focus> {
+  const key = await sessionKey(session);
+  const letter = await readLetterHolds(key) ?? (await seedTegami(session) ? await readLetterHolds(key) : null);
+  if (!letter) throw new WorkItemBadInput(`Agent "${session}" has no work record.`);
+  const at = typeof letter.at?.item === 'string' && letter.holds.includes(letter.at.item) ? letter.at.item : null;
+  return { key, objective: letter.objective, id: at ?? letter.holds[0] ?? null };
+}
+
+/** The item a write with nothing held makes: held by the Agent, titled from its objective. */
+async function firstItem(session: string, focus: Focus, by: string, fill: Pick<NewItem, 'ladder' | 'docs'>, said: string): Promise<Acknowledged> {
+  const made = await createItemUnlocked({
+    title: focus.objective.trim() || `${session}'s work`, objective: focus.objective, stage: 'BUILD', holder: { kind: 'agent', name: session }, ...fill,
+  }, by);
+  made.line.note = `${made.line.note}; ${said}`;
+  await save(made.item);
+  return made;
+}
+
+export interface LadderWrite { edits?: LadderEdit[]; ladder?: unknown }
+
+export function writeFocusLadder(session: string, change: LadderWrite, by: string): Promise<Acknowledged & { said: string[] }> {
+  return withIssuer(async () => {
+    const focus = await focusUnlocked(session);
+    const apply = (ladder: Rung[]): { ladder: Rung[]; said: string[] } => {
+      if (change.ladder !== undefined) {
+        const whole = checkLadder(change.ladder);
+        return { ladder: whole, said: [`ladder saved (${whole.length} rungs)`] };
+      }
+      const next = structuredClone(ladder);
+      return { ladder: next, said: applyLadderEdits(next, change.edits ?? []) };
+    };
+    if (!focus.id) {
+      const { ladder, said } = apply([]);
+      return { ...(await firstItem(session, focus, by, { ladder }, said.join('; '))), said };
+    }
+    let said: string[] = [];
+    let moved = false;
+    const done = await appendTrail(focus.id, by, (item) => {
+      const next = apply(item.ladder);
+      moved = shapeOf(item.ladder) !== shapeOf(next.ladder);
+      item.ladder = next.ladder;
+      said = next.said;
+      return { op: 'edit', note: `ladder: ${said.join('; ')}` };
+    });
+    // A position is an index into this ladder's shape: when the shape moves, it goes.
+    if (moved) await writeLetterAt(focus.key, { item: focus.id });
+    return { ...done, said };
+  });
+}
+
+export function writeFocusDocs(session: string, change: { add?: string; remove?: string }, by: string): Promise<Acknowledged> {
+  const docs = docsChange(change);
+  return withIssuer(async () => {
+    const focus = await focusUnlocked(session);
+    if (focus.id) return appendTrail(focus.id, by, (item) => applyDocs(item, docs));
+    if (!docs.add) throw new WorkItemBadInput(`@${session} holds no work item, so no documents are listed.`);
+    return firstItem(session, focus, by, { docs: [docs.target] }, `doc listed: ${docs.target}`);
+  });
+}
+
+/** A monitor or lead places the Agent on its focus ladder. The marker carries the ladder:
+ * everything before it reads DONE (never downgrading what the Agent marked), the marked
+ * leg reads ACTIVE. `none` clears the position. */
+export function placeFocus(session: string, want: string, by: string): Promise<Acknowledged> {
+  return withIssuer(async () => {
+    const focus = await focusUnlocked(session);
+    if (!focus.id) throw new WorkItemBadInput(`@${session} holds no work item, so there is no ladder to place it on.`);
+    const id = focus.id;
+    let at: { item: string; rung?: number; leg?: number } = { item: id };
+    const done = await appendTrail(id, by, (item) => {
+      if (want === 'none') return { op: 'edit', note: 'position cleared' };
+      if (!/^\d+(\.\d+)?$/.test(want)) throw new WorkItemBadInput('--at takes a position from work-record read --rungs — N or N.M — or none.');
+      const [ri, li] = want.split('.').map(Number) as [number, number | undefined];
+      const rung = item.ladder[ri - 1];
+      if (!rung) throw new WorkItemBadInput(`rung ${ri} is out of range (1..${item.ladder.length}).`);
+      if (rung.gate !== undefined && li !== undefined) throw new WorkItemBadInput(`rung ${ri} is a gate — it has no legs, use --at ${ri}.`);
+      if (rung.gate === undefined && li === undefined) throw new WorkItemBadInput(`rung ${ri} is a phase — point at one of its legs, e.g. --at ${ri}.1.`);
+      if (li !== undefined && (li < 1 || li > (rung.legs ?? []).length)) throw new WorkItemBadInput(`rung ${ri} has ${(rung.legs ?? []).length} leg(s); ${li} is out of range.`);
+      item.ladder.forEach((r, i) => {
+        if (r.gate !== undefined) { if (i + 1 < ri) r.status = 'DONE'; return; }
+        (r.legs ?? []).forEach((leg, j) => {
+          if (i + 1 === ri && li === j + 1) leg.status = 'ACTIVE';
+          else if (leg.status !== 'DONE' && (i + 1 < ri || (i + 1 === ri && li !== undefined && j + 1 < li))) leg.status = 'DONE';
+        });
+      });
+      at = li === undefined ? { item: id, rung: ri } : { item: id, rung: ri, leg: li };
+      return { op: 'edit', note: `position ${want}` };
+    });
+    await writeLetterAt(focus.key, at);
+    return done;
+  });
 }

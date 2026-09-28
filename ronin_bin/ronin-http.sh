@@ -29,8 +29,9 @@ ronin_connect() {
 }
 
 # ronin_item_call METHOD PATH [JSON] — one work item request, printed for the caller: the
-# acknowledgement first, then the item as it now is (or the reply of a read). An error
-# goes to stderr with exit 3; a refusal (the one refusal: a reparent cycle) exits 4.
+# acknowledgement first, then the item as it now is (or the reply of a read); with
+# ITEM_ACK_ONLY=1 the acknowledgement alone. An error goes to stderr with exit 3; a
+# refusal (the one refusal: a reparent cycle) exits 4.
 ronin_item_call() {
   local method=$1 path=$2 body=${3-} out
   local args=(-sS -m 30 "${RONIN_CURL[@]+"${RONIN_CURL[@]}"}" -X "$method")
@@ -44,7 +45,7 @@ if d.get("error"):
     print(d["error"], file=sys.stderr); sys.exit(4 if d.get("refused") else 3)
 if d.get("acknowledgement"):
     print(d["acknowledgement"])
-    print(json.dumps(d.get("item"), indent=2, ensure_ascii=False))
+    if os.environ.get("ITEM_ACK_ONLY") != "1": print(json.dumps(d.get("item"), indent=2, ensure_ascii=False))
 else:
     d.pop("ok", None)
     print(json.dumps(d.get("item", d), indent=2, ensure_ascii=False))

@@ -4,9 +4,10 @@
 import type express from 'express';
 import {
   WorkItemBadInput, WorkItemMissing, WorkItemRefused,
-  assignItem, createItem, editDocs, editItem, focusItem, holdsOf, listItems, readItem, releaseItem, reparentItem, restoreItem, returnItem,
+  assignItem, createItem, editItem, focusItem, holdsOf, listItems, readItem, releaseItem, reparentItem, restoreItem, returnItem, placeFocus, writeFocusDocs, writeFocusLadder,
   keepCurrentLine, type Acknowledged, type Holder, type TrailLine,
 } from '../work-items.js';
+import { agentReading } from '../work-items-read.js';
 
 const text = (value: unknown): string | undefined => typeof value === 'string' ? value : value === undefined || value === null ? undefined : String(value);
 
@@ -43,6 +44,10 @@ export function holderFrom(body: Record<string, unknown> | undefined): Holder {
   return team ? { kind: 'team', name: team } : { kind: 'agent', name: session! };
 }
 
+const parsed = (value: string): unknown => {
+  try { return JSON.parse(value); } catch (error) { throw new WorkItemBadInput(`--ladder is not valid JSON — ${(error as Error).message}`); }
+};
+
 type Handler = (req: express.Request, res: express.Response) => Promise<unknown>;
 const guarded = (handler: Handler): express.RequestHandler => (req, res) => {
   handler(req, res).catch((error) => answerError(res, error));
@@ -53,6 +58,7 @@ export function registerWorkItems(app: express.Express): void {
     const team = text(req.query.team)?.trim();
     const session = text(req.query.session)?.trim();
     if (!team && !session) return res.json({ ok: true, items: await listItems() });
+    if (session) return res.json({ ok: true, ...(await agentReading(session)) });
     const ids = await holdsOf(holderFrom({ team, session }));
     const items = (await Promise.all(ids.map((id) => readItem(id)))).filter(Boolean);
     res.json({ ok: true, holder: team ? `team:${team}` : `agent:${session}`, items });
@@ -66,6 +72,25 @@ export function registerWorkItems(app: express.Express): void {
     }, callerOf(req)));
   }));
 
+  // The Agent's focus item: its ladder, its docs, and a placed position. With nothing held,
+  // a ladder or doc write creates the item (held by the Agent, titled from its objective).
+  const sessionOf = (req: express.Request): string => {
+    const session = text(req.body?.session)?.trim();
+    if (!session) throw new WorkItemBadInput('name the session whose focus item this is.');
+    return session;
+  };
+  app.post('/api/work-items/focus/ladder', guarded(async (req, res) => {
+    const b = req.body ?? {};
+    const done = await writeFocusLadder(sessionOf(req), { edits: Array.isArray(b.edits) ? b.edits.map((edit: unknown[]) => edit.map(String)) : undefined, ladder: b.ladder }, callerOf(req));
+    acknowledge(res, done, { said: done.said });
+  }));
+  app.post('/api/work-items/focus/docs', guarded(async (req, res) => {
+    acknowledge(res, await writeFocusDocs(sessionOf(req), { add: text(req.body?.add), remove: text(req.body?.remove) }, callerOf(req)));
+  }));
+  app.post('/api/work-items/focus/at', guarded(async (req, res) => {
+    acknowledge(res, await placeFocus(sessionOf(req), text(req.body?.at)?.trim() ?? '', callerOf(req)));
+  }));
+
   app.get('/api/work-items/:id', guarded(async (req, res) => {
     const item = await readItem(req.params.id);
     if (!item) throw new WorkItemMissing(`No work item ${req.params.id}.`);
@@ -76,7 +101,7 @@ export function registerWorkItems(app: express.Express): void {
     const b = req.body ?? {};
     acknowledge(res, await editItem(req.params.id, {
       title: text(b.title), objective: text(b.objective), stage: text(b.stage), status: text(b.status), exit: text(b.exit), evidence: text(b.evidence),
-      ...(b.ladder !== undefined ? { ladder: typeof b.ladder === 'string' ? JSON.parse(b.ladder) : b.ladder } : {}),
+      ...(b.ladder !== undefined ? { ladder: typeof b.ladder === 'string' ? parsed(b.ladder) : b.ladder } : {}),
     }, callerOf(req), text(b.note)));
   }));
 
@@ -88,9 +113,6 @@ export function registerWorkItems(app: express.Express): void {
     const done = await editItem(req.params.id, { status: text(req.body?.status) ?? '', exit: text(req.body?.exit) }, callerOf(req), text(req.body?.note));
     const focus = text(req.body?.focus)?.trim();
     acknowledge(res, done, focus ? { focus: await focusItem(focus, req.params.id) ? req.params.id : 'unchanged: not held by ' + focus } : {});
-  }));
-  app.post('/api/work-items/:id/docs', guarded(async (req, res) => {
-    acknowledge(res, await editDocs(req.params.id, { add: text(req.body?.add), remove: text(req.body?.remove) }, callerOf(req)));
   }));
   app.post('/api/work-items/:id/assign', guarded(async (req, res) => {
     acknowledge(res, await assignItem(req.params.id, holderFrom(req.body), callerOf(req), text(req.body?.note)));

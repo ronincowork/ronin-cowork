@@ -64,13 +64,12 @@ function seedShell(
   repos: TegamiCheckout[],
   teams: TeamEntry[],
   sessionMandate: Mandate,
-  docs: string[] = [],
 ): string {
   return `# TEGAMI — ${name}
-> **This file is your ladder, and it is a good way to communicate that you understand your
-> role, the input you need from the user, and your planned phases and legs.** What you keep
-> here is shown on the user's tile and on their session_roster for quick reference. Keep it true
-> and save it when it changes — a stale ladder is worse than none.
+> **This is your work record, and your ladder is a good way to communicate that you understand
+> your role, the input you need from the user, and your planned phases and legs.** What you
+> keep is shown on the user's tile and on their session_roster for quick reference. Keep it
+> true and save it when it changes — a stale ladder is worse than none.
 >
 > At the end of a turn, consider updating it with \`work-record update_record\`. Not keeping it current is
 > poor quality.
@@ -89,21 +88,26 @@ function seedShell(
 > \`work-record workspace list|add|remove\` edits these entries; use \`--branch\` separately
 > for a URL. This record does not change where your shell was born or open a desk.
 >
-> YOUR **ladder** — the rungs, and which one you are on. Phases hold legs. Name a phase
-> before you know its legs; a phase with nothing under it yet is normal. Leave out what you
-> cannot see: a short ladder is a true ladder, and a guessed one is a lie. Statuses are
-> \`PLANNED\` · \`ACTIVE\` · \`DONE\`, **one ACTIVE at a time**. Add a gate wherever the work
-> genuinely stops and needs someone — that is how the owner knows you want them.
+> YOUR **ladder** lives on the work item you are on — your focus, \`at.item\` — not in this
+> file: \`work-record read\` shows it. The rungs, and which one you are on. Phases hold legs.
+> Name a phase before you know its legs; a phase with nothing under it yet is normal. Leave
+> out what you cannot see: a short ladder is a true ladder, and a guessed one is a lie.
+> Statuses are \`PLANNED\` · \`ACTIVE\` · \`DONE\`, **one ACTIVE at a time**. Add a gate
+> wherever the work genuinely stops and needs someone — that is how the owner knows you want
+> them. Holding nothing, your first ladder write makes an item for you, held by you.
+>
+> YOUR **holds** are the work items you hold, by id. Assign, return and backlog move them;
+> \`work-record project list\` reads them.
 >
 > YOUR **ladder_state** — \`work-record update_record --on_tangent\` when you step off the ladder,
 > \`--on_track\` when you are back. Riffing, a side job, ten minutes in nobody's plan — all
 > normal, and your plan is not dead while you are away from it.
 >
-> YOUR DOCS — the buildouts, handoffs and plans this session is working on.
-> \`work-record document add <path>\` puts one on your list; \`work-record document remove
-> <path>\` takes it off.
-> The owner opens them from the ▧ Docs tab in commons, so **a doc you did not list is a
-> doc they cannot reach without asking you for the path.**
+> YOUR DOCS — the buildouts, handoffs and plans — live on your focus item too.
+> \`work-record document add <path>\` puts one on it; \`work-record document remove
+> <path>\` takes it off. The owner opens them from the ▧ Docs tab, which lists the documents
+> of every item you hold, so **a doc you did not list is a doc they cannot reach without
+> asking you for the path.**
 >
 > Your own words go in "objective" and "title". Read it with \`work-record read\`. **Change one
 > field with one call**: \`work-record update_record --objective "<sentence>"\` · \`--phase "<title>"\` ·
@@ -116,9 +120,8 @@ function seedShell(
 { "objective": "",
   "mandate": ${JSON.stringify(sessionMandate)},
   "teams": ${JSON.stringify(teams)},
-  "repos": ${JSON.stringify(repos.filter((checkout) => checkout.repo || checkout.branch))},${docs.length ? `\n  "docs": ${JSON.stringify(docs)},` : ''}
-  "holds": [],
-  "ladder": [] }
+  "repos": ${JSON.stringify(repos.filter((checkout) => checkout.repo || checkout.branch))},
+  "holds": [] }
 \`\`\`
 `;
 }
@@ -151,6 +154,7 @@ async function replaceLetterBlock(file: string, text: string, parsed: ReturnType
 export interface LetterHolds {
   key: string;
   name: string;
+  objective: string;
   holds: string[];
   at: Record<string, unknown> | null;
 }
@@ -159,7 +163,7 @@ function holdsOfBody(key: string, text: string, body: Record<string, unknown>): 
   const name = text.match(/^# TEGAMI — (.+)$/m)?.[1]?.trim() || key;
   const holds = Array.isArray(body.holds) ? body.holds.filter((id): id is string => typeof id === 'string') : [];
   const at = body.at && typeof body.at === 'object' && !Array.isArray(body.at) ? body.at as Record<string, unknown> : null;
-  return { key, name, holds, at };
+  return { key, name, objective: typeof body.objective === 'string' ? body.objective : '', holds, at };
 }
 
 export async function readLetterHolds(key: string): Promise<LetterHolds | null> {
@@ -193,17 +197,27 @@ export async function writeLetterHolds(key: string, holds: string[], focus?: str
   return holdsOfBody(key, text, parsed.body);
 }
 
+/** Set the letter's position: the focus item and, when a monitor or lead placed it, the
+ * rung and leg on that item's ladder. */
+export async function writeLetterAt(key: string, at: { item: string; rung?: number; leg?: number }): Promise<void> {
+  const file = tegamiPath(key);
+  const text = await fs.readFile(file, 'utf8');
+  const parsed = letterBlock(text);
+  if (!parsed) throw new Error(`the work record at ${file} has no readable JSON block`);
+  parsed.body.at = at;
+  await replaceLetterBlock(file, text, parsed, parsed.body);
+}
+
 export async function seedTegami(
   name: string,
   checkout: TegamiCheckout | TegamiCheckout[] = { repo: '', branch: '' },
   teams: TeamEntry[] = [],
   sessionMandate: Mandate = mandate(undefined),
-  docs: string[] = [],
 ): Promise<string | null> {
   try {
     const file = tegamiPath(await sessionKey(name));
     await fs.mkdir(path.dirname(file), { recursive: true });
-    await fs.writeFile(file, seedShell(name, Array.isArray(checkout) ? checkout : [checkout], teams, mandate(sessionMandate), docs), { flag: 'wx' });
+    await fs.writeFile(file, seedShell(name, Array.isArray(checkout) ? checkout : [checkout], teams, mandate(sessionMandate)), { flag: 'wx' });
     return file;
   } catch (e) {
     if ((e as NodeJS.ErrnoException)?.code === 'EEXIST') return tegamiPath(await sessionKey(name));
@@ -243,44 +257,6 @@ export async function parkBrief(name: string, text: string): Promise<string | nu
     console.error(`[ronin] parking the brief for ${name}:`, e);
     return null;
   }
-}
-
-export async function writeGate(name: string, gate: string): Promise<boolean> {
-  const file = tegamiPath(await sessionKey(name));
-  let text: string;
-  try {
-    text = await fs.readFile(file, 'utf8');
-  } catch {
-    return false; // no letter — every launch seeds one, so this is a box in a bad way
-  }
-  const block = text.match(/```(?:json)?\s*\n([\s\S]*?)\n```/);
-  if (!block) return false;
-  const body = block[1];
-  const ladder = body.match(/"ladder"\s*:\s*\[[^[\]]*\]/);
-  if (!ladder) return false;
-  let rungs: unknown;
-  try {
-    rungs = (JSON.parse(`{${ladder[0]}}`) as { ladder: unknown }).ladder;
-  } catch {
-    return false;
-  }
-  if (!Array.isArray(rungs)) return false;
-  const ours = rungs.length === 0 || (rungs.length === 1 && !!(rungs[0] as { gate?: unknown })?.gate);
-  if (!ours) return false;
-
-  const value = gate ? JSON.stringify([{ gate, status: 'ACTIVE' }]) : '[]';
-  const next = body.replace(ladder[0], `"ladder": ${value}`);
-  try {
-    JSON.parse(next); // the guard: never leave a letter the tile cannot read
-  } catch {
-    return false;
-  }
-  const out =
-    text.slice(0, block.index!) + block[0].replace(body, next) + text.slice(block.index! + block[0].length);
-  const tmp = `${file}.gate`;
-  await fs.writeFile(tmp, out, 'utf8');
-  await fs.rename(tmp, file);
-  return true;
 }
 
 export type SessionWithAxes = SessionInfo;

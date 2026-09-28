@@ -143,7 +143,7 @@ d = json.loads(m.group(1))
 if d.get("teams") == teams:
     sys.exit(0)
 d["teams"] = teams
-order = ("objective", "mandate", "teams", "repos", "holds", "ladder_state", "ladder", "docs", "at")
+order = ("objective", "mandate", "teams", "repos", "holds", "ladder_state", "at")
 block = json.dumps({k: d[k] for k in order if k in d}, indent=2, ensure_ascii=False)
 extra = {k: v for k, v in d.items() if k not in order}
 if extra:
@@ -153,37 +153,70 @@ open(tmp, "w").write(text[:m.start(1)] + block + text[m.end(1):])
 os.replace(tmp, src)
 REPAIR
 
+# THE AGENT READING — what this session holds, its focus item's ladder, and every held
+# item's docs — comes from Ronin, derived from the work item store, never from this file.
+TOOL_DIR="$(cd "$(dirname "$SELF")/../ronin_bin" && pwd)"
+. "$TOOL_DIR/ronin-http.sh"
+READING='{}'
+if ronin_connect 2>/dev/null; then
+  READING=$(curl -sS -m 15 "${RONIN_CURL[@]+"${RONIN_CURL[@]}"}" "$url/api/work-items?session=$NAME" 2>/dev/null) || READING='{}'
+fi
+export READING
+BLOCK=$(awk '/^```/{f=!f; if(f) next; else exit} f' "$FILE")
 if [ "$MODE" = rungs ]; then
-  # The flat, numbered list of markable positions. A phase is a grouping, not a place to
-  # stand, so it is shown for context but never numbered.
-  awk '/^```/{f=!f; if(f) next; else exit} f' "$FILE" | python3 -c '
-import json, sys
-try: d = json.load(sys.stdin)
-except Exception: sys.exit("work-record read: block does not parse")
-at = d.get("at")
-at = at if isinstance(at, dict) else {}   # any other shape is not a pointer
+  # The flat, numbered list of markable positions on the focus item's ladder. A phase is a
+  # grouping, not a place to stand, so it is shown for context but never numbered.
+  python3 -c '
+import json, os, sys
+try: r = json.loads(os.environ["READING"])
+except Exception: r = {}
+if not r.get("ok"): sys.exit("work-record read: Ronin did not answer with this session'"'"'s work items.")
+at = r.get("at") or {}
 ar, al = at.get("rung"), at.get("leg")
 n = 0
-for ri, r in enumerate(d.get("ladder") or [], 1):
-    if "gate" in r:
+for ri, rung in enumerate(r.get("ladder") or [], 1):
+    if "gate" in rung:
         here = "<-- at" if ar == ri and al is None else ""
-        print("%-7s GATE  %s   [%s] %s" % (ri, r.get("gate", ""), r.get("status", ""), here))
+        print("%-7s GATE  %s   [%s] %s" % (ri, rung.get("gate", ""), rung.get("status", ""), here))
         n += 1
     else:
-        print("%-7s phase %s" % (ri, r.get("phase", "")))
-        for li, leg in enumerate(r.get("legs") or [], 1):
+        print("%-7s phase %s" % (ri, rung.get("phase", "")))
+        for li, leg in enumerate(rung.get("legs") or [], 1):
             here = "<-- at" if ar == ri and al == li else ""
-            print("%-7s leg   %s   [%s] %s"
-                  % ("%d.%d" % (ri, li), leg.get("title", ""), leg.get("status", "PLANNED"), here))
+            print("%-7s leg   %s   [%s] %s" % ("%d.%d" % (ri, li), leg.get("title", ""), leg.get("status", "PLANNED"), here))
             n += 1
 if not n:
     print("(no markable rungs)")
 '
 elif [ "$MODE" = json ]; then
-  # The one fenced block and nothing else: the markdown teaches a human, the json is the
-  # payload. If the fence was dropped, hand back the whole file rather than nothing.
-  BLOCK=$(awk '/^```/{f=!f; if(f) next; else exit} f' "$FILE")
-  [ -n "${BLOCK// /}" ] && printf '%s\n' "$BLOCK" || cat "$FILE"
+  # The letter block with the reading beside it: "ladder" and "docs" are the focus item'"'"'s
+  # and the held items'"'"', "items" what is held. Derived, never written back.
+  printf '%s' "$BLOCK" | python3 -c '
+import json, os, sys
+try: d = json.load(sys.stdin)
+except Exception: sys.exit("work-record read: the letter block does not parse")
+try: r = json.loads(os.environ["READING"])
+except Exception: r = {}
+if r.get("ok"):
+    d["ladder"] = r.get("ladder") or []
+    d["docs"] = r.get("docs") or []
+    d["items"] = [{k: i.get(k) for k in ("id", "title", "stage", "status", "exit", "parent")} for i in r.get("items") or []]
+print(json.dumps(d, indent=2, ensure_ascii=False))
+'
 else
   cat "$FILE"
+  python3 -c '
+import json, os
+try: r = json.loads(os.environ["READING"])
+except Exception: r = {}
+if not r.get("ok"):
+    print("\n(Ronin did not answer: the ladder on your work items is not shown.)"); raise SystemExit
+items = r.get("items") or []
+print("\n## Work items you hold" if items else "\n## You hold no work items — your first ladder write makes one")
+for i in items:
+    mark = "  <- focus" if i.get("id") == r.get("focus") else ""
+    print("- %s %s · %s · %s · exit %s%s" % (i["id"], i["title"], i["stage"], i["status"], i["exit"], mark))
+if r.get("ladder"):
+    print("\n```json\n%s\n```" % json.dumps({"ladder": r["ladder"], "docs": r.get("docs") or []}, indent=2, ensure_ascii=False))
+'
 fi

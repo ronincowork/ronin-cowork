@@ -40,7 +40,6 @@ test('a cold Mika birth compiles one published knowledge index into its reading'
   const source = await readFile(new URL('../src/routes/launch.ts', import.meta.url), 'utf8');
   assert.match(source, /const knowledge = await compileMikaKnowledgeAt\(mikaHome\)/);
   assert.match(source, /sources\.push\(mikaRulesSource\(\), mikaTips, mikaStartHereSource\(\), mikaKnowledgeIndex\)/);
-  assert.match(source, /mikaTips \? \[mikaTips\] : \[\],/, 'the tips are on her Docs list from birth');
   assert.match(source, /file === mikaKnowledgeIndex \|\| isShelfTeaching\(file\)/);
   assert.match(source, /const sources = houseSeat === 'mika' \? \[\] : resolvedSources/);
   assert.ok(source.indexOf('const knowledge = await compileMikaKnowledgeAt(mikaHome)') < source.indexOf('const readme = await compileBirthReadmeAt('));
