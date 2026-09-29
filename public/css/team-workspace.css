@@ -151,6 +151,8 @@
   .league-team-objective[hidden] { display: none; }
   .league-team-detail-state { margin: 0; color: var(--bad); }
   .league-team-detail .league-team-step-body { gap: 0; }
+  /* Under step 3 the configuration form's own sections keep their titles, not their numbers. */
+  .league-team-detail .league-team-step-body .fs-step .fs-step-n { display: none; }
   /* The Team's three steps open their bodies under the head, full width: beside a label
      column a workspace this narrow leaves the rows' name column nothing. */
   .league-team-detail .fs-step:has(> .fs-step-head) > .fs-step-body.league-team-step-body { grid-column: 1 / -1; }
