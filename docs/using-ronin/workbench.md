@@ -39,6 +39,18 @@ not four layout systems.
 | Agent | Self, Documents, Team membership, and separate Task Managers for the Agent's Teams |
 | Setup | pinned Presets plus Register, providers, roots, Services, gbrain, and Templates |
 
+On the Cowork and Desk workbenches two cards read the work items. **New work** shows
+four stones — Open issues, Ideas, Plan and Parked — for work nobody holds yet. **Work**
+shows every board with what is under it. The two-line button beside each title switches
+between less and more detail: with more detail New work lists every item under its
+group and Work draws each board as an org chart. Press a stone to open it; press a board
+with more detail to see its items by stage, and drag an item between stages to move it.
+Escape, or the arrow stone, always returns to the stones. Under the stones, drag an item
+onto **Move to board** to nest it under another board, onto **Request update** to ask
+its holder to bring its work record current, or press **Add** to make a new item where
+you are. There is no issue source yet, so Open issues is empty, and no triage Agent is
+configured, so **Auto-assign** says so.
+
 Adding another tenant or profile adds no layout implementation. Adding another surface
 registers a per-workspace factory in the shared library; any profile may name that type.
 

@@ -12,6 +12,22 @@ smallest reads needed to paint itself.
 `public/js/phalanx.js` owns the shared Phalanx collection interaction: stones at rest,
 a selected-stone rail beside its detail, focus return, Escape, and responsive geometry.
 Consumers supply items and detail content; they do not recreate that movement privately.
+A row may carry `items`. In full density pressing such a stone goes one level down: its
+descendants become the rail's stones and the stone is the level's detail until one is
+pressed. At rest in full density `branches` draws those items under their stone
+(`'column'` stacks them; `'chart'` is one column per child with grandchildren stacked,
+folded into a count past `CHART_DEPTH` until pressed). There is one way back from any
+depth: Escape or the back stone returns to the top view, nothing selected, in the
+density you were in. Consumers never restyle the rest geometry.
+
+New work (`work.new`) and Work (`work.boards`) are Cowork/Desk cards over the work item
+store. New work reads the common board's unassigned items as four group stones (Open
+issues, Ideas, Plan, Parked); Work reads every board with its tree (GET
+`/api/work-items` answers every item with its holder). Both draw their details from
+existing pieces (`work-details.js`: the in-place Team detail's head and steps, `itemLine`,
+shingo's `buildLadder`, `createField`) and share the work navigation bar
+(`work-nav.js`): utility stones a consumer hands its actions to (add, auto-assign,
+manual assign through the ERABI selector, request update), carrying no meaning itself.
 
 Task Manager retains its original board, furniture, selector card, and status/Project
 workspace drill-downs. Work Items (`work-items`) is a separate surface and card in
