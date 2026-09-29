@@ -26,67 +26,6 @@ import { partitionRosterGroups, rosterGroups, teamTag } from './roster-groups.js
  * @returns {{render: () => void}}
  */
 export function buildRoster(tile, host, options = {}) {
-  // THE SESSION MAX — the top line, and the only place it is set.
-  //
-  // One number the owner types. It is not derived from RAM or anything else: a machine
-  // that guesses your limit is a machine you have to argue with. 0 means no limit, which
-  // is also what an install that has never touched this does.
-  //
-  // It sits above the list because it is a fact ABOUT the list — "4 / 6" reads as one
-  // line with the roster under it. Saved on `change` (blur or Enter), never per keystroke:
-  // typing "12" over "6" would otherwise briefly save "1" and refuse a launch for it.
-  const maxRow = document.createElement('div');
-  maxRow.className = 'home-maxrow';
-  const maxLab = document.createElement('label');
-  maxLab.textContent = t('roster.session_max', 'session max');
-  const maxInp = document.createElement('input');
-  // Four tiles build four rosters, so a fixed id here was four elements wearing one
-  // id — latent (label-for resolved to the first tile's input from every tile).
-  // The tile's index keeps it unique and keeps the label honest.
-  maxInp.id = `sessionmax-${tile.index}`;
-  maxLab.htmlFor = maxInp.id;
-  maxInp.type = 'number';
-  maxInp.min = '0';
-  maxInp.step = '1';
-  maxInp.className = 'home-max';
-  maxInp.title = t('roster.session_max_title', 'How many sessions may run at once. 0 = no limit. The owner sets this; agents cannot.');
-  const maxNow = document.createElement('span');
-  maxNow.className = 'home-maxnow';
-  let maxLive = 0;
-  const paintMax = () => {
-    // "4 / 6 running" when a limit is set; just the count when it is not, because
-    // "4 / 0" reads as an error rather than as freedom.
-    const m = Number(maxInp.value) || 0;
-    maxNow.textContent = m > 0 ? t('roster.running_of', '{n} / {max} running', { n: maxLive, max: m }) : t('roster.running_no_limit', '{n} running · no limit', { n: maxLive });
-    maxNow.classList.toggle('full', m > 0 && maxLive >= m);
-  };
-  const loadMax = async () => {
-    const r = await request('/api/session-max', { cache: 'no-store' });
-    // The roster still works without it — the field just shows what it last knew.
-    if (!r.ok) return;
-    if (document.activeElement !== maxInp) maxInp.value = String(r.data.max ?? 0);
-    maxLive = r.data.live ?? 0;
-    paintMax();
-  };
-  maxInp.addEventListener('change', async () => {
-    const n = Math.max(0, Math.floor(Number(maxInp.value) || 0));
-    const r = await request('/api/session-max', { method: 'PUT', json: { max: n } });
-    if (!r.ok) {
-      // The failure lands on the line that states the rule, not in a browser alert.
-      maxNow.textContent = t('roster.not_saved', 'not saved — {message}', { message: r.message });
-      maxNow.classList.add('full');
-      setTimeout(loadMax, 2500);
-      return;
-    }
-    // Echo what was STORED, not what was typed — the server floors and validates, and a
-    // field showing a different number from the one in force is the worst of both.
-    maxInp.value = String(r.data.max);
-    maxLive = r.data.live ?? maxLive;
-    paintMax();
-  });
-  maxRow.append(maxLab, maxInp, maxNow);
-  host.appendChild(maxRow);
-
   // A refresh that failed must not look like a quiet roster: one line, above the list,
   // present only while the last /api/home read did not land (home.js keeps the fact).
   const stale = document.createElement('div');
@@ -272,9 +211,6 @@ export function buildRoster(tile, host, options = {}) {
     // The desk column rides the roster's refresh: a changed answer redraws once; a fresh
     // one (younger than the module's window) resolves false and nothing loops.
     void refreshDesks().then((changed) => { if (changed) render(); }).catch(() => {});
-    // The max line rides the roster's own refresh — no second timer, and it never
-    // overwrites the field while it has focus (see loadMax).
-    void loadMax();
     stale.hidden = !homeFault;
     if (homeFault) stale.textContent = t('roster.stale', '⚠ roster may be stale — {fault}', { fault: homeFault });
     const data = homeData || S.sessions.map((s) => ({ ...s, stance: 'unknown', ctx: null }));
