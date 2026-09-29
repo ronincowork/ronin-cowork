@@ -3,19 +3,24 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 
 class FakeNode {
-  constructor(tag = '') { this.tagName = tag.toUpperCase(); this.children = []; this.dataset = {}; this.attributes = {}; this.listeners = {}; this.hidden = false; this.className = ''; this.textContent = ''; this.classList = { add() {}, remove() {}, toggle() {} }; }
-  append(...nodes) { this.children.push(...nodes.filter(Boolean)); }
+  constructor(tag = '') { this.tagName = tag.toUpperCase(); this.dataset = {}; this.children = []; this.listeners = {}; this.attributes = {}; this._text = ''; this.className = ''; this.hidden = false; this.classList = { add() {}, remove() {}, toggle() {} }; }
+  append(...nodes) { for (const node of nodes.flat().filter((node) => node != null && node !== '')) { if (node instanceof FakeNode) { node.parent?.children.splice(node.parent.children.indexOf(node), 1); node.parent = this; } this.children.push(node); } }
   replaceChildren(...nodes) { this.children = []; this.append(...nodes); }
   setAttribute(name, value) { this.attributes[name] = String(value); }
   addEventListener(name, callback) { (this.listeners[name] ||= []).push(callback); }
   dispatch(name, event = {}) { for (const callback of this.listeners[name] || []) callback({ currentTarget: this, preventDefault() {}, stopPropagation() {}, ...event }); }
-  *walk() { for (const child of this.children) { yield child; yield* child.walk(); } }
-  find(predicate) { return [...this.walk()].filter(predicate); }
-  querySelector() { return null; }
-  focus() {}
   click() { this.dispatch('click'); }
+  focus() {}
+  remove() { if (this.parent) { this.parent.children = this.parent.children.filter((node) => node !== this); this.parent = null; } }
+  *walk() { for (const child of this.children) { if (!(child instanceof FakeNode)) continue; yield child; yield* child.walk(); } }
+  find(predicate) { return [...this.walk()].filter(predicate); }
+  all(cls) { return this.find((node) => String(node.className).split(' ').includes(cls)); }
+  querySelector() { return null; }
+  get textContent() { return this._text + this.children.map((node) => (typeof node === 'string' ? node : node.tagName === 'WBR' ? '' : node.textContent)).join(''); }
+  set textContent(value) { this._text = String(value ?? ''); this.children = []; }
 }
-globalThis.document = { createElement: (tag) => new FakeNode(tag) };
+globalThis.Node = FakeNode;
+globalThis.document = { createElement: (tag) => new FakeNode(tag), createDocumentFragment: () => new FakeNode('#fragment'), querySelector: () => null, head: { append() {} }, activeElement: null };
 
 const { newWorkGroups, boardChoices, boardTree, holderName } = await import('../public/js/work-readings.js');
 const { createWorkNav, dragItem } = await import('../public/js/work-nav.js');
@@ -78,8 +83,8 @@ test('the work navigation bar draws one stone per action it is handed and carrie
   stones.auto.dispatch('drop', carrying(''));
   stones.manual.dispatch('drop', carrying('w4'));
   await new Promise((resolve) => setImmediate(resolve));
-  const choices = nav.el.find((node) => node.className === 'wn-choice');
-  assert.deepEqual(choices.map((node) => node.textContent), ['Common', 'not w4'], 'the list is the labels it was handed, nothing else');
+  const choices = nav.el.all('ask-opt');
+  assert.deepEqual(choices.map((node) => node.all('ask-name')[0].textContent), ['Common', 'not w4'], 'the choices are the labels it was handed, drawn by the one selector');
   choices[0].click();
   assert.deepEqual(seen, ['add', 'auto w4', 'update w4', 'move w4 w1']);
 

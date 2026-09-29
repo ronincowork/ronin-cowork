@@ -69,18 +69,6 @@
   .wi-project-facts dt { color: var(--muted); }
   .wi-project-facts dd { margin: 0; overflow-wrap: anywhere; }
   .wi-outcome, .wi-evidence { overflow-wrap: anywhere; white-space: pre-wrap; }
-  /* The whole work item (appendItemReading) and the item lists beside the work-item stones:
-     tight rows, one token between sections, one left edge. */
-  .wi-item-facts { display: flex; align-items: center; gap: var(--space-4); color: var(--muted); }
-  .wi-steps { display: flex; flex-direction: column; gap: var(--space-4); margin-block-start: var(--space-6); }
-  .wi-steps .fs-step > .fs-step-body { grid-column: 1 / -1; }
-  .wi-lines { margin: 0; padding: 0; list-style: none; }
-  .wi-lines > li { overflow-wrap: anywhere; }
-  .wi-leg { color: var(--muted); }
-  .wi-trail { color: var(--muted); font-size: var(--form-note); }
-  .wi-none, .work-about { margin: 0; color: var(--muted); }
-  .work-lines { display: flex; flex-direction: column; margin-block-start: var(--space-6); }
-  .work-lines > .tk-line { padding-inline: 0; }
   /* The work navigation bar (js/work-nav.js): the utility stones under a work-item phalanx.
      Drawn in the footer, so it stays while a stone is open and takes drops from the rail. */
   .wn-bar { --sws-stone: var(--setup-stone-size); display: flex; flex-direction: column; align-items: center; gap: var(--space-3); padding-block-start: var(--space-6); }
@@ -90,15 +78,6 @@
   .wn-stone::before { display: none; }
   .wn-stone.over { border-color: var(--kaki); }
   .wn-label { margin-top: auto; color: var(--muted); font-size: var(--form-note); }
-  .wn-choices[hidden] { display: none; }
-  .wn-choice-list { width: var(--setup-stone-size); max-height: 40dvh; margin: 0; padding: 0; overflow-y: auto; list-style: none; }
-  .wn-choice { width: 100%; border: 0; background: transparent; color: var(--fg); padding: var(--space-1) var(--space-2); font: inherit; text-align: left; cursor: pointer; }
-  .wn-choice:hover, .wn-choice:focus-visible { background: var(--bg-2); }
-  .wn-choice-empty { color: var(--muted); }
-  .wn-draft { display: flex; flex-direction: column; gap: var(--space-3); }
-  .wn-draft :is(input, textarea) { min-width: 0; border: 0; border-radius: var(--radius-hair); background: var(--well); color: var(--fg); padding: var(--space-4) var(--space-5); font: inherit; resize: vertical; }
-  .wn-draft-said { margin: 0; color: var(--bad); }
-  .wn-draft-said:empty { display: none; }
   @container stone-work-surface-seat (max-width: 40rem) {
     .wk-surface-content.sws-host { padding-inline: var(--space-6); }
     .sws { gap: var(--space-6); }

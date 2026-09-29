@@ -12,39 +12,15 @@
  */
 import { WorkspaceKit } from './workspace-kit.js';
 import { createPhalanx } from './phalanx.js';
-import { createWorkNav, dragItem, draftItem } from './work-nav.js';
-import { appendItemReading } from './project-reading.js';
-import { itemLine, stageBar } from './team-kanban.js';
+import { el } from './form-steps.js';
+import { createWorkNav, dragItem } from './work-nav.js';
+import { densityControl, draftItem, itemDetail, listDetail } from './work-details.js';
 import { request } from './request.js';
 import { boardChoices, newWorkGroups } from './work-readings.js';
 import { t } from './lexicon.js';
 
 export const NEW_WORK_TYPE = 'work.new';
 
-const el = (tag, cls = '', text = '') => {
-  const out = document.createElement(tag);
-  if (cls) out.className = cls;
-  if (text) out.textContent = text;
-  return out;
-};
-
-/** The one-dash / two-dash density control the Team people surface uses. */
-export function densityControl(start, onChange) {
-  const { createAction } = WorkspaceKit.primitives;
-  let density = start;
-  const button = createAction({ label: '', size: 'compact', className: 'tw-agent-density' });
-  const lines = el('span', 'tw-agent-density-lines'); lines.append(el('i'), el('i'));
-  button.el.replaceChildren(lines);
-  const paint = () => {
-    button.el.dataset.lines = density === 'compact' ? 'two' : 'one';
-    button.el.title = density === 'compact' ? t('work_nav.expand', 'More detail') : t('work_nav.compact', 'Less detail');
-    button.el.setAttribute('aria-label', button.el.title);
-    button.el.setAttribute('aria-pressed', String(density === 'full'));
-  };
-  button.el.addEventListener('click', () => { density = density === 'compact' ? 'full' : 'compact'; paint(); onChange(density); });
-  paint();
-  return button;
-}
 
 export function createNewWorkSurface() {
   const { createSurface } = WorkspaceKit.primitives;
@@ -65,13 +41,9 @@ export function createNewWorkSurface() {
       phalanx.select('');
       await refresh();
     } });
-    if (row.item) return appendItemReading(host, row.item, { bar: stageBar(row.item) });
+    if (row.item) return itemDetail(host, row.item);
     // A group: what it is, then its items, unless its items are the stones in the rail.
-    host.append(el('h2', '', row.label), el('p', 'work-about', t(`new_work.about_${row.id}`, row.about)));
-    if (phalanx.level()) return;
-    const lines = el('div', 'work-lines');
-    for (const stone of row.items) lines.append(itemLine(stone.item));
-    if (row.items.length) host.append(lines);
+    listDetail(host, { title: row.label, about: t(`new_work.about_${row.id}`, row.about), items: phalanx.level() ? [] : row.items.map((stone) => stone.item) });
   };
   const phalanx = createPhalanx({ density: 'compact', branches: 'column', className: 'nw-phalanx', renderDetail });
   const nav = createWorkNav({

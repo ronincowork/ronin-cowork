@@ -10,21 +10,15 @@
  */
 import { WorkspaceKit } from './workspace-kit.js';
 import { createPhalanx } from './phalanx.js';
-import { createWorkNav, dragItem, draftItem } from './work-nav.js';
-import { densityControl } from './new-work-surface.js';
-import { itemLine } from './team-kanban.js';
+import { el } from './form-steps.js';
+import { createWorkNav, dragItem } from './work-nav.js';
+import { densityControl, draftItem, listDetail } from './work-details.js';
 import { request } from './request.js';
-import { boardChoices, boardTree, holderName } from './work-readings.js';
+import { boardChoices, boardTree } from './work-readings.js';
 import { t } from './lexicon.js';
 
 export const WORK_TYPE = 'work.boards';
 
-const el = (tag, cls = '', text = '') => {
-  const out = document.createElement(tag);
-  if (cls) out.className = cls;
-  if (text) out.textContent = text;
-  return out;
-};
 const firstLine = (text) => String(text || '').split('\n')[0];
 
 /** `leadOf(team)` names a Team's lead, the one a Team-held item's update request goes to. */
@@ -46,12 +40,10 @@ export function createWorkSurface({ leadOf = () => '' } = {}) {
       await refresh();
     } });
     // A board: its title, its description, and a simple list of everything under it.
-    host.append(el('h2', '', row.item.title));
-    if (row.item.objective) host.append(el('p', 'work-about', row.item.objective));
-    const lines = el('div', 'work-lines');
-    const walk = (branch) => { for (const child of branch.items || []) { lines.append(itemLine(child.item, { holder: holderName(child.item.holder) })); walk(child); } };
+    const under = [];
+    const walk = (branch) => { for (const child of branch.items || []) { under.push(child.item); walk(child); } };
     walk(row);
-    host.append(lines.children.length ? lines : el('p', 'wi-none', t('work.board_empty', 'Nothing under this board yet.')));
+    listDetail(host, { title: row.item.title, about: row.item.objective, items: under, empty: t('work.board_empty', 'Nothing under this board yet.') });
   };
   const phalanx = createPhalanx({ density: 'compact', className: 'wk-boards', renderDetail });
 
