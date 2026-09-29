@@ -1,6 +1,7 @@
 /* part of the ronin-cowork client — see js/README.md */
 /** Workbench; its Campaign, Cowork or Team scope limits what cards are offered. */
 import { createWorkItemsSurface } from './work-items-surface.js';
+import { createNewWorkSurface } from './new-work-surface.js';
 import { WorkspaceKit } from './workspace-kit.js';
 import { deleteTeamRoster, membersOfTeam, sessionsAvailableToTeam, setTeamLead, setTeamMembership, subscribe, teamByName, teamsFromState, unassignedSessions, UNASSIGNED } from './team-controller.js';
 import { createNewTeamFormView } from './new-team-form.js';
@@ -312,6 +313,7 @@ export function createCoworkView(options = {}) {
       lead: (project) => membersOfTeam(project.team).find((member) => member.team_lead)?.name || '',
       openOwner: (name) => openAgentWorkbench(name),
     }),
+    newWork: () => createNewWorkSurface(),
     teamKanban: (id) => taskManagerFor(id),
     taskStatus: (id, detail) => taskManagerFor(id, { ...detail, view: 'status' }),
     taskProject: (id, detail) => taskManagerFor(id, { ...detail, view: 'project' }),

@@ -58,6 +58,22 @@
   .wi-project-facts dt { color: var(--muted); }
   .wi-project-facts dd { margin: 0; overflow-wrap: anywhere; }
   .wi-outcome, .wi-evidence { overflow-wrap: anywhere; white-space: pre-wrap; }
+  /* The work navigation bar (js/work-nav.js): the utility stones under a work-item phalanx.
+     Drawn in the footer, so it stays while a stone is open and takes drops from the rail. */
+  .wn-bar { display: flex; flex-direction: column; align-items: center; gap: var(--space-3); padding-block-start: var(--space-6); }
+  .wn-stones { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--space-4); }
+  .wn-stone { display: inline-flex; align-items: center; gap: var(--space-3); border: var(--edge) solid var(--line-2); border-radius: var(--radius-hair); background: var(--panel); color: var(--fg); padding: var(--space-3) var(--space-5); font: inherit; cursor: pointer; }
+  .wn-stone[data-nav='add'] { border-style: dashed; background: transparent; }
+  .wn-stone:hover, .wn-stone.over { border-color: var(--kaki); }
+  .wn-glyph { color: var(--accent); font-style: normal; }
+  .wn-choices[hidden] { display: none; }
+  .wn-choice-list { width: var(--setup-stone-size); max-height: 40dvh; margin: 0; padding: 0; overflow-y: auto; list-style: none; }
+  .wn-choice { width: 100%; border: 0; background: transparent; color: var(--fg); padding: var(--space-1) var(--space-2); font: inherit; text-align: left; cursor: pointer; }
+  .wn-choice:hover, .wn-choice:focus-visible { background: var(--bg-2); }
+  .wn-choice-empty { color: var(--muted); }
+  .wn-draft { display: flex; flex-direction: column; gap: var(--space-3); }
+  .wn-draft-said { margin: 0; color: var(--bad); }
+  .wn-draft-said:empty { display: none; }
   @container stone-work-surface-seat (max-width: 40rem) {
     .wk-surface-content.sws-host { padding-inline: var(--space-6); }
     .sws { gap: var(--space-6); }
