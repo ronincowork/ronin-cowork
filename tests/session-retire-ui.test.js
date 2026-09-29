@@ -145,33 +145,32 @@ test('actionable backend refusal is rendered as the terminal failure', async () 
   await assert.rejects(() => done, new RegExp(refusal.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
 });
 
-test('closing an Agent that already ended says so, with no HTTP code or error text', async () => {
-  const beforeDocument = globalThis.document;
-  const beforeElement = globalThis.HTMLElement;
-  const beforeFetch = globalThis.fetch;
+test('closing an Agent that already ended says so, and takes a fresh feed that drops its row', async () => {
+  const saved = { document: globalThis.document, HTMLElement: globalThis.HTMLElement, fetch: globalThis.fetch, WebSocket: globalThis.WebSocket, location: globalThis.location };
   const body = new FakeNode('body');
   globalThis.HTMLElement = FakeNode;
   globalThis.document = { body, activeElement: body, createElement: (tag) => {
     const node = new FakeNode(tag);
     node.classList.toggle = () => {};
+    node.remove = () => {};
     return node;
-  }, addEventListener() {} };
+  }, addEventListener() {}, removeEventListener() {} };
   // The server's answer when the tmux session is already gone.
   globalThis.fetch = async () => new Response(JSON.stringify({ error: 'No such session.' }), { status: 404, headers: { 'content-type': 'application/json' } });
+  const feeds = [];
+  globalThis.location = { protocol: 'http:', host: 'rig' };
+  globalThis.WebSocket = class { constructor(url) { this.readyState = 0; feeds.push(url); } close() {} };
+  let done = 0;
   try {
-    retireSession('front_fable', 'gone', async () => {});
+    retireSession('front_fable', 'gone', async () => { done += 1; });
     const del = [...body.walk()].find((node) => node.tagName === 'BUTTON' && node.textContent === 'Delete');
     del.listeners.click[0]();
     await new Promise((resolve) => setTimeout(resolve, 20));
-    const said = [...body.walk()].filter((node) => node.attributes.role === 'status').map((node) => node.textContent);
-    assert.ok(said.length >= 2, 'the dialog line and the toast');
-    for (const text of said) {
-      assert.equal(text, 'front_fable had already ended.');
-      assert.doesNotMatch(text, /HTTP|404|No such session|could not/);
-    }
+    const said = [...body.walk()].filter((node) => node.id === 'toast').map((node) => node.textContent);
+    assert.deepEqual(said, ['front_fable had already ended; its row is removed.']);
+    assert.deepEqual(feeds, ['ws://rig/events'], 'a fresh feed, sent the list whole');
+    assert.equal(done, 1, 'the sheet is finished');
   } finally {
-    globalThis.document = beforeDocument;
-    globalThis.HTMLElement = beforeElement;
-    globalThis.fetch = beforeFetch;
+    Object.assign(globalThis, saved);
   }
 });

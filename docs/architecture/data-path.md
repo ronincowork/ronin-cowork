@@ -91,10 +91,15 @@ return {
 - **Close** unsubscribes. The seat that placed the surface calls its close; a surface never
   guesses it closed from a visibility check.
 - **Reconnect** is a new connection with no memory: the server sends every held resource
-  whole and the store re-sends every live want. `renew()` on a resumed tab does the same.
-  A terminal socket that drops unexpectedly also renews the store by force: `/events` only
-  listens, so after a sleep it can sit dead while still saying open, and the terminal's
-  first keystroke is what finds the link gone.
+  whole and the store re-sends every live want. A closed socket is retried every 3 s.
+- **A dead link is found by the beat.** `/events` only listens, so after a sleep or a
+  network change it can sit dead while still saying open. The server sends `{t:'beat'}`,
+  carrying nothing, to every connection every 15 s; the store replaces a feed that has
+  heard nothing for 35 s, silently, and the new connection is sent everything whole. That
+  is the one liveness path: the tab-visibility, bfcache and terminal-close renews it
+  replaced are gone. A 404 on a named session (the retire sheet) also replaces the feed at
+  once, because the answer proves the page stale. No polling for data: the beat is
+  liveness only, and every resource still arrives by push (owner, 2026-09-29).
 - **Unreachable** is said from the socket: the page shows the failure bar whenever the
   socket is closed and not yet reopened, desktop and phone, and clears it on open.
 
@@ -152,7 +157,7 @@ because the context gauge is painted by the CLI on its own screen and announced 
   `tests/unreachable-banner.test.js`, `tests/desks-session.test.ts` — each proves a push
   reaches its surface, an unchanged tick is silent, and no request is made after open.
 - `grep -rn setInterval public/js` is empty. Every `setTimeout` left is a debounce, a UI
-  delay, or the tile wire's reconnect.
+  delay, the tile wire's reconnect, or the store's silence check (put off by every message).
 - A browser on Home for 40 idle seconds makes no request to any data route, and one idle
   socket receives each held resource exactly once. Reproduce on a private rig
   ([verification](../development/verification.md)): open the page with Playwright, count

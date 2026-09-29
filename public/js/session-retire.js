@@ -2,7 +2,7 @@
 import { archiveSession, startSessionShutdown } from './api.js';
 import { sheet, toast } from './ui.js';
 import { t } from './lexicon.js';
-import { store } from './store.js';
+import { renew, store } from './store.js';
 
 /**
  * One shutdown: the POST starts it, and each phase arrives as {t:'shutdown', id, ...} until
@@ -106,12 +106,13 @@ export function retireSession(name, retirementId, onDone = () => {}) {
     try {
       await action();
     } catch (e) {
-      // It ended by itself before this was pressed: that is the answer, not a failure.
+      // It ended by itself and this page never heard: say so, and take a fresh feed, which
+      // is sent the list whole and drops the row.
       if (e.gone) {
-        const ended = t('retire.already_ended', '{name} had already ended.', { name });
-        toast(ended, true);
-        progress.textContent = ended;
-        pressed.textContent = was;
+        toast(t('retire.already_ended', '{name} had already ended; its row is removed.', { name }), true);
+        renew({ force: true });
+        dlg.close();
+        await onDone();
         return;
       }
       toast(failure + ' — ' + e.message, false);

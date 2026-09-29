@@ -1,8 +1,3 @@
-/*
- * NO POLLING. No beats or heartbeats on this socket, and nothing sent on a clock to prove the
- * link is alive. The owner removed every one of them on purpose; do not add one back. Any
- * change to how a tab finds its feed dead is put to the owner first (owner, 2026-09-29).
- */
 import { mkdirSync, watch } from 'node:fs';
 import { onClock } from '../jikan.js';
 import { type WebSocket } from 'ws';
@@ -25,7 +20,13 @@ const eventClients = new Set<WebSocket>();
  * resource changes, sent only when they differ from the last, and sent whole to every fresh
  * connection. A board's or a Team's cron jobs are asked for: {t:'want', resource, board|team}
  * answers that one connection with the message every connection is sent on a write.
+ *
+ * NO POLLING FOR DATA: the browser never asks for a resource on a clock (owner, 2026-09-29).
+ * The one clock the browser hears is {t:'beat'}, every BEAT_MS to every connection, carrying
+ * nothing: a tab's socket only listens, so without it a link that died under the tab looks
+ * like a quiet one. public/js/store.js replaces a feed silent past two beats.
  */
+export const BEAT_MS = 15_000;
 export interface Feed {
   list: () => Promise<SessionInfo[]>;
   home: (sessions: SessionWithAxes[]) => Promise<unknown[]>;
@@ -276,4 +277,5 @@ export function startSessionsBroadcast(next: Feed): void {
   onClock('sessions_broadcast', 2000, async () => {
     await tick();
   });
+  onClock('events_beat', BEAT_MS, async () => { broadcastEvent({ t: 'beat' }); });
 }

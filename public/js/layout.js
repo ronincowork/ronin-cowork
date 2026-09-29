@@ -1,6 +1,5 @@
 /* part of the ronin-cowork client — see js/README.md */
 import { guard } from './errors.js';
-import { renew } from './store.js';
 import { buildSessionPicker } from './session-picker.js';
 import { PAD_CODE, firePadBinding, padBinds, padChord } from './pad.js';
 import { buildPadPanel } from './padpanel.js';
@@ -54,15 +53,6 @@ export function build() {
     window.matchMedia('(pointer: coarse) and (min-width: 681px)').addEventListener?.('change', restore);
     sync();
   }
-  // Resumed tab (esp. mobile — a backgrounded page can live for days) or one restored from
-  // bfcache: renew the store — a socket that went reconnects now, and the new connection is
-  // sent the session list and the rows whole.
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') renew();
-  });
-  window.addEventListener('pageshow', (e) => {
-    if (e.persisted) renew();
-  });
   window.addEventListener('resize', () => tiles.forEach((t) => t.doFit()));
   // Desktop: Ctrl+Shift (or Ctrl+Alt) + 1/2/4 sets HOW MANY tiles are on screen —
   // the same three the layout buttons offer. Uses e.code (physical key) so it fires from the

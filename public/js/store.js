@@ -1,9 +1,9 @@
 /* part of the ronin-cowork client — see js/README.md */
 /*
- * NO POLLING. No beats, no heartbeats, no watchdog timers, no clocks in the browser to
- * check the feed. The owner removed every one of them on purpose; do not add one back.
- * A stale feed is recovered by the owner's own action, and any change to that is put to
- * the owner before it is written (owner, 2026-09-29).
+ * NO POLLING FOR DATA. Nothing here asks the server for a resource on a clock: every
+ * resource arrives by push into this store, the page's one source of truth (owner,
+ * 2026-09-29). The one thing on a timer is liveness: the server's {t:'beat'} carries no data,
+ * and a feed silent past two beats is replaced. Put any change to that to the owner first.
  */
 /**
  * THE STORE — the browser's one copy of what the server publishes, and the one socket it
@@ -26,6 +26,8 @@
  *   messages  {t:'messages', list}   — the message queue
  *   memory    {t:'memory', reading}  — the machine reading behind the memory gauge
  *
+ * {t:'beat'} holds nothing: it says the link is alive (SILENT_MS below).
+ *
  * Two kinds are per board or per team, and nobody holds them until a surface asks: a
  * subscription to `wipeboard:<board>` or `jikan:<team>` sends the server a `want` on the
  * socket, and the server answers this connection with the message it broadcasts on every
@@ -37,6 +39,10 @@
  */
 
 const RECONNECT_MS = 3000;
+// The server beats every 15 s (src/ws/events.ts). This socket only listens, so a link that
+// died under it (a laptop sleep, a network change) still says open and simply goes quiet.
+// Quiet past two beats is a dead link, and it is replaced without a word.
+export const SILENT_MS = 35_000;
 
 // What a surface paints. A row's or session's `activity` stamp and a row's stance `at` move
 // on every turn and nothing shows them, so they never make a change on their own — the
@@ -56,6 +62,7 @@ export function createStore({
   open = () => new WebSocket(`${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/events`),
   later = (fn, ms) => setTimeout(fn, ms),
   cancel = (handle) => clearTimeout(handle),
+  quiet = (fn, ms) => { const handle = setTimeout(fn, ms); handle.unref?.(); return handle; },
 } = {}) {
   const values = new Map();
   const signatures = new Map();
@@ -66,6 +73,7 @@ export function createStore({
   const closers = new Set();
   let socket = null;
   let retry = null;
+  let silence = null;
 
   /** Hold a value; tell the subscribers only when it differs from what was held. */
   function set(key, value) {
@@ -115,7 +123,13 @@ export function createStore({
     retry = null;
     const ws = open();
     socket = ws;
+    // Each message puts off the check; only silence lets it run.
+    const heard = () => {
+      cancel(silence);
+      silence = quiet(() => { if (socket === ws) renew({ force: true }); }, SILENT_MS);
+    };
     ws.onopen = () => {
+      heard();
       for (const fn of openers) fn();
       for (const [key, heard] of subscribers) {
         const want = heard.size ? wantFor(key) : null;
@@ -123,22 +137,23 @@ export function createStore({
       }
     };
     ws.onmessage = (event) => {
+      heard();
       let message;
       try { message = JSON.parse(event.data); } catch { return; }
       receive(message);
     };
     ws.onclose = () => {
       if (socket !== ws) return; // a socket renew() already replaced
+      cancel(silence);
       for (const fn of closers) fn();
       retry = later(connect, RECONNECT_MS); // keep the feed alive
     };
     return ws;
   }
 
-  /** A resumed tab: reconnect now if the socket went, rather than waiting out the retry.
-   *  `force` also replaces a socket that still says open: a terminal socket found its link
-   *  dead, and this one only listens, so it cannot find that out for itself. One still
-   *  connecting is left to finish. */
+  /** Reconnect now if the socket went, rather than waiting out the retry. `force` also
+   *  replaces a socket that still says open: the feed went silent past the beat, or an
+   *  answer proved the page stale. One still connecting is left to finish. */
   function renew({ force = false } = {}) {
     if (force && socket?.readyState === 1) {
       const stale = socket;
