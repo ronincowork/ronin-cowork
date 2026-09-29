@@ -106,6 +106,14 @@ export function retireSession(name, retirementId, onDone = () => {}) {
     try {
       await action();
     } catch (e) {
+      // It ended by itself before this was pressed: that is the answer, not a failure.
+      if (e.gone) {
+        const ended = t('retire.already_ended', '{name} had already ended.', { name });
+        toast(ended, true);
+        progress.textContent = ended;
+        pressed.textContent = was;
+        return;
+      }
       toast(failure + ' — ' + e.message, false);
       progress.textContent = e.message;
       for (const button of buttons) button.disabled = false;

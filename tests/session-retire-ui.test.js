@@ -144,3 +144,34 @@ test('actionable backend refusal is rendered as the terminal failure', async () 
   socket.push({ t: 'shutdown', id: 'op', state: 'failed', error: refusal, message: refusal });
   await assert.rejects(() => done, new RegExp(refusal.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
 });
+
+test('closing an Agent that already ended says so, with no HTTP code or error text', async () => {
+  const beforeDocument = globalThis.document;
+  const beforeElement = globalThis.HTMLElement;
+  const beforeFetch = globalThis.fetch;
+  const body = new FakeNode('body');
+  globalThis.HTMLElement = FakeNode;
+  globalThis.document = { body, activeElement: body, createElement: (tag) => {
+    const node = new FakeNode(tag);
+    node.classList.toggle = () => {};
+    return node;
+  }, addEventListener() {} };
+  // The server's answer when the tmux session is already gone.
+  globalThis.fetch = async () => new Response(JSON.stringify({ error: 'No such session.' }), { status: 404, headers: { 'content-type': 'application/json' } });
+  try {
+    retireSession('front_fable', 'gone', async () => {});
+    const del = [...body.walk()].find((node) => node.tagName === 'BUTTON' && node.textContent === 'Delete');
+    del.listeners.click[0]();
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    const said = [...body.walk()].filter((node) => node.attributes.role === 'status').map((node) => node.textContent);
+    assert.ok(said.length >= 2, 'the dialog line and the toast');
+    for (const text of said) {
+      assert.equal(text, 'front_fable had already ended.');
+      assert.doesNotMatch(text, /HTTP|404|No such session|could not/);
+    }
+  } finally {
+    globalThis.document = beforeDocument;
+    globalThis.HTMLElement = beforeElement;
+    globalThis.fetch = beforeFetch;
+  }
+});
