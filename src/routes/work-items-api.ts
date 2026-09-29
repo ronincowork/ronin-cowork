@@ -133,4 +133,11 @@ export function registerWorkItems(app: express.Express): void {
   app.post('/api/work-items/:id/reparent', guarded(async (req, res) => {
     acknowledge(res, await reparentItem(req.params.id, text(req.body?.parent) || null, callerOf(req)));
   }));
+
+  // Anything else under /api/work-items names no item (an id like surface/7 is not one):
+  // a JSON 404 naming it, so a tool can say so rather than parse an HTML error page.
+  app.all('/api/work-items/*', (req, res) => {
+    const id = req.path.slice('/api/work-items/'.length).replace(/\/(assign|release|return|restore|reparent|stage|status)$/, '');
+    res.status(404).json({ ok: false, error: `No work item ${id}.` });
+  });
 }
