@@ -3,13 +3,13 @@
  * agent:      the items an Agent holds, its focus item's ladder, every held item's docs.
  * team:       the roster objective, the items the Team holds and the items its members
  *             hold, each child after its parent where the lead made any.
- * unassigned: items on no holder list and with no parent.
+ * unassigned: the common board's items that nobody holds.
  */
 import { readLetterHolds } from './tegami.js';
 import { sessionKey } from './session-dir.js';
 import { readTeamRoster } from './team-rosters.js';
 import { listSessions } from './tmux.js';
-import { WorkItemMissing, heldIds, listItems, readItem, type Rung, type WorkItem } from './work-items.js';
+import { WorkItemMissing, commonBoard, heldIds, listItems, readItem, type Rung, type WorkItem } from './work-items.js';
 
 export interface AgentReading {
   holder: string;
@@ -75,6 +75,8 @@ export async function teamReading(team: string, sessions?: Array<{ name: string;
 }
 
 export async function unassignedReading(): Promise<WorkItem[]> {
+  const common = await commonBoard();
+  if (!common) return [];
   const held = await heldIds();
-  return (await listItems()).filter((item) => !item.parent && !held.has(item.id));
+  return (await listItems()).filter((item) => item.parent === common.id && !held.has(item.id));
 }

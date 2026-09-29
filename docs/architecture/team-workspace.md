@@ -111,12 +111,17 @@ A work item is stored once, one JSON file per id in the `work_items` data store,
 `/api/work-items` routes (`src/routes/work-items-api.ts`), which answer every write with
 the item as it now is and the trail line appended. Holding is a list of ids on each holder:
 `holds` on the Team roster and in each Agent's letter (`tegami.md`, beside `at.item`, its
-focus). Parent and child is one optional `parent` id on the item. Assign moves an id
+focus). Parent and child is one `parent` id on the item: the one named at creation, else
+the common board (a root titled "Common", held by nobody, made by the first create that
+finds it missing). An item with children is a board; a leaf gains its first child by
+folding its ladder into it. Nesting under a held board queues the holder (or a holding
+Team's lead) one message through the message queue. Assign moves an id
 between lists and release takes it off every list, under the store's one issuer lock, so
 two concurrent assigns leave one holder. The Agent's ladder and documents are its focus
 item's. Readings are derived in `src/work-items-read.ts` and never stored: an Agent's
 (`GET /api/work-items?session=`), a Team's (`?team=`: the Team's holds and its members',
-children after parents), and unassigned (`?unassigned`). An ending, archived, or Hard
+children after parents), and unassigned (`?unassigned`: the common board's items that
+nobody holds). An ending, archived, or Hard
 Deleted Agent's holds are released with a `holder-ended` trail line on each item.
 
 **Team Configuration** (`public/js/team-configuration.js`) is the commons tab that edits

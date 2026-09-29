@@ -29,6 +29,8 @@ process.env.RONIN_DESKS_DIR = path.join(tmp, 'desks');
 process.env.RONIN_WORKTREES_DIR = path.join(tmp, 'worktrees');
 process.env.RONIN_TEAM_ROSTERS_DIR = path.join(tmp, 'rosters');
 process.env.RONIN_WORK_ITEMS_DIR = path.join(tmp, 'work-items');
+process.env.RONIN_SESSION_DIR = path.join(tmp, 'sessions');
+process.env.RONIN_MESSAGE_QUEUE_DIR = path.join(tmp, 'message-queue');
 
 const sh = (dir: string, args: string[]) =>
   execFileSync('git', ['-C', dir, ...args], { stdio: ['ignore', 'pipe', 'pipe'] }).toString().trim();
@@ -257,7 +259,7 @@ test('a hand-in with --project ends by naming the item and the write that keeps 
     env: { ...process.env, RONIN_SESSION: 'reminder', RONIN_TEAMS: 'comp' },
   }).toString();
   const last = output.trimEnd().split('\n').at(-1)!;
-  assert.equal(last, `${item.id} moved to land. Keep it current: work-record project write ${item.id} --objective "<what it is now>" --evidence "<a fact with its receipt>"`);
+  assert.equal(last, `${item.id} moved to land; ${item.id} is a project at land, 0 legs. Keep it current: work-record project write ${item.id} --objective "<what it is now>" --evidence "<a fact with its receipt>"`);
   assert.ok(output.indexOf('ACCEPTED cowork:team/comp/reminder') < output.indexOf(last));
   assert.equal(output.split('Keep it current').length - 1, 1, 'one reminder, never a block');
   assert.equal((await readItem(item.id))!.stage, 'LAND');

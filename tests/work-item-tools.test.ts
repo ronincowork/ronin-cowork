@@ -19,6 +19,10 @@ import type { AddressInfo } from 'node:net';
 
 const root = path.resolve(import.meta.dirname, '..');
 const dir = mkdtempSync(path.join(tmpdir(), 'work-item-tools-'));
+// Every store under private roots: holder scans and arrival notices never reach live ones.
+process.env.RONIN_DATA_ROOT = path.join(dir, 'data');
+process.env.RONIN_USER_ROOT = path.join(dir, 'user');
+delete process.env.RONIN_SOCKET;
 delete process.env.TMUX;
 process.env.TMUX_TMPDIR = mkdtempSync(path.join(tmpdir(), 'work-item-tools-tmux-'));
 process.env.RONIN_SESSION_DIR = path.join(dir, 'sessions');

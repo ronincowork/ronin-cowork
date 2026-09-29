@@ -25,8 +25,12 @@ export const describeLine = (line: TrailLine): string => [
   `by ${line.by}`,
 ].filter(Boolean).join(' ');
 
-export const acknowledge = (res: express.Response, { item, line }: Acknowledged, extra: Record<string, unknown> = {}) =>
-  res.json({ ok: true, item, line, ...extra, acknowledgement: `Work item ${item.id} "${item.title}": ${describeLine(line)}. Stage ${item.stage}, status ${item.status}, exit ${item.exit}.\n${keepCurrentLine({ item, line })}` });
+export const acknowledge = (res: express.Response, done: Acknowledged, extra: Record<string, unknown> = {}) =>
+  res.json({
+    ok: true, item: done.item, line: done.line, shape: done.shape, ...(done.notified?.length ? { notified: done.notified } : {}), ...extra,
+    acknowledgement: `Work item ${done.item.id} "${done.item.title}": ${describeLine(done.line)}. Stage ${done.item.stage}, status ${done.item.status}, exit ${done.item.exit}.`
+      + `${done.notified?.length ? ` Told ${done.notified.map((name) => `@${name}`).join(', ')} of the arrival.` : ''}\n${keepCurrentLine(done)}`,
+  });
 
 export function answerError(res: express.Response, error: unknown): void {
   const message = String((error as Error)?.message ?? error);

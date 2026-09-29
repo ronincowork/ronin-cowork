@@ -12,6 +12,12 @@ import os from 'node:os';
 import path from 'node:path';
 
 const temp = await fs.mkdtemp(path.join(os.tmpdir(), 'ronin-tegami-read-'));
+// Every store under private roots, whoever runs this file: holder scans and arrival
+// notices must never reach a live roster, letter or message queue.
+const isolated = await fs.mkdtemp(path.join(os.tmpdir(), 'ronin-isolated-'));
+process.env.RONIN_DATA_ROOT = path.join(isolated, 'data');
+process.env.RONIN_USER_ROOT = path.join(isolated, 'user');
+delete process.env.RONIN_SOCKET;
 delete process.env.TMUX;
 process.env.TMUX_TMPDIR = await fs.mkdtemp(path.join(os.tmpdir(), 'ronin-tegami-read-tmux-'));
 process.env.RONIN_SESSION_DIR = temp;

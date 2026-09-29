@@ -10,6 +10,12 @@ import os from 'node:os';
 import path from 'node:path';
 
 const temp = await fs.mkdtemp(path.join(os.tmpdir(), 'ronin-holders-'));
+// Every store under private roots, whoever runs this file: holder scans and arrival
+// notices must never reach a live roster, letter or message queue.
+const isolated = await fs.mkdtemp(path.join(os.tmpdir(), 'ronin-isolated-'));
+process.env.RONIN_DATA_ROOT = path.join(isolated, 'data');
+process.env.RONIN_USER_ROOT = path.join(isolated, 'user');
+delete process.env.RONIN_SOCKET;
 // No tmux server answers in here: an empty socket dir that exists, and no inherited
 // $TMUX, so a session key is its name and nothing reaches the live server.
 delete process.env.TMUX;
@@ -111,11 +117,11 @@ test('an ended Agent orphans nothing: each item gets holder-ended and is found u
   assert.deepEqual(await listsHolding(child.id), []);
   assert.deepEqual(await listsHolding(loose.id), []);
   assert.equal((await items.readItem(child.id))!.parent, parent.id, 'still found under its parent');
-  assert.equal((await items.readItem(loose.id))!.parent, null, 'no parent, on no list: unassigned');
+  assert.ok((await unassignedReading()).some((item) => item.id === loose.id), 'on the common board, held by nobody: unassigned');
   assert.deepEqual(await items.releaseHolder('gone', 'gone', 'again'), [], 'a second end finds nothing to release');
 });
 
-test('readings: the team reads its own holds and its members\' holds, children after parents; unassigned is held by none and under none', async () => {
+test('readings: the team reads its own holds and its members\' holds, children after parents; unassigned is the common board\'s unheld items', async () => {
   await createTeamRoster('readers', { objective: 'read us' });
   await seedTegami('reader_a');
   const readers = { kind: 'team', name: 'readers' } as const;
@@ -131,6 +137,50 @@ test('readings: the team reads its own holds and its members\' holds, children a
   ]);
   const unassigned = (await unassignedReading()).map((item) => item.id);
   assert.ok(unassigned.includes(parked.id));
-  assert.ok(!unassigned.includes(nested.id), 'an unheld child is found under its parent, not unassigned');
+  assert.ok(!unassigned.includes(nested.id), 'an unheld child of another board is found under it, not unassigned');
   assert.ok(!unassigned.includes(overall.id));
+});
+
+test('nesting under a held board queues its holder exactly one message; under an unheld board, none', async () => {
+  const { listQueuedMessages, dismissMessage } = await import('../src/message-queue.js');
+  const clear = async () => { for (const message of await listQueuedMessages()) await dismissMessage(message.id); };
+  await clear();
+  await seedTegami('boarder');
+  const held = (await items.createItem({ title: 'held board', holder: { kind: 'agent', name: 'boarder' } }, 'lead')).item;
+  const unheld = (await items.createItem({ title: 'unheld board' }, 'lead')).item;
+  await clear();
+
+  const piece = (await items.createItem({ title: 'piece' }, 'lead')).item;
+  assert.deepEqual(await listQueuedMessages(), [], 'the common board is held by nobody: nobody is told');
+  const moved = await items.reparentItem(piece.id, held.id, 'lead');
+  assert.deepEqual(moved.notified, ['boarder']);
+  const queued = await listQueuedMessages();
+  assert.equal(queued.length, 1);
+  assert.equal(queued[0]!.target, 'boarder');
+  assert.equal(queued[0]!.text, `${piece.id} piece was added under your board ${held.id}. Handle it as you see fit.`);
+  await clear();
+
+  assert.deepEqual((await items.reparentItem(piece.id, unheld.id, 'lead')).notified, []);
+  assert.deepEqual(await listQueuedMessages(), [], 'a board held by nobody notifies nobody');
+  const born = await items.createItem({ title: 'born under', parent: held.id }, 'lead');
+  assert.deepEqual(born.notified, ['boarder'], 'a create with a parent is announced the same way');
+  assert.equal((await listQueuedMessages()).length, 1);
+  await clear();
+});
+
+test('a leaf\'s ladder folds into its first child, with a line on both; a second child takes nothing', async () => {
+  const ladder = [{ phase: 'Build it', status: 'ACTIVE' as const, legs: [{ title: 'one', status: 'DONE' as const }, { title: 'two', status: 'PLANNED' as const }] }];
+  const leaf = (await items.createItem({ title: 'leaf', ladder }, 'lead')).item;
+  const own = [{ gate: 'go', status: 'PLANNED' as const }];
+  const first = (await items.createItem({ title: 'first child', ladder: own }, 'lead')).item;
+  const moved = await items.reparentItem(first.id, leaf.id, 'lead');
+  assert.deepEqual(moved.item.ladder, [...ladder, ...own], 'the child takes the ladder, ahead of its own');
+  assert.equal(moved.line.note, `ladder folded in from ${leaf.id}`);
+  const board = (await items.readItem(leaf.id))!;
+  assert.deepEqual(board.ladder, [], 'the parent\'s ladder empties');
+  assert.equal(board.trail.at(-1)!.note, `ladder folded into ${first.id}, its first child`);
+  assert.equal(moved.shape, `${first.id} is a project at idea, 2 legs`);
+  const second = await items.createItem({ title: 'second child', parent: leaf.id }, 'lead');
+  assert.deepEqual(second.item.ladder, []);
+  assert.equal(await items.kindOf((await items.readItem(leaf.id))!), `${leaf.id} is a board, 2 items`);
 });

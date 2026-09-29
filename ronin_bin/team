@@ -21,6 +21,9 @@ Usage:
   team project parent <id> <parent-id>|none
   team member status <team>
 A project is a work item (id like w12), stored once. The Team holds ids; so do Agents.
+Every item is born under a parent: --parent, else the common board (made when missing).
+An item with children is a board; a leaf is a project with the ladder. Nesting under a
+board someone holds sends that holder one message. `parent <id> none` makes it a root.
 Every write appends one line to the item's trail and answers with the item as it now is.
 assign moves the id to the session, return gives it back to the Team, backlog parks it
 (held by nobody), done moves it to stage DONE, restore brings it back to the Team.
