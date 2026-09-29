@@ -1,3 +1,8 @@
+/*
+ * NO POLLING. No beats or heartbeats on this socket, and nothing sent on a clock to prove the
+ * link is alive. The owner removed every one of them on purpose; do not add one back. Any
+ * change to how a tab finds its feed dead is put to the owner first (owner, 2026-09-29).
+ */
 import { mkdirSync, watch } from 'node:fs';
 import { onClock } from '../jikan.js';
 import { type WebSocket } from 'ws';

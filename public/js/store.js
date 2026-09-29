@@ -1,4 +1,10 @@
 /* part of the ronin-cowork client — see js/README.md */
+/*
+ * NO POLLING. No beats, no heartbeats, no watchdog timers, no clocks in the browser to
+ * check the feed. The owner removed every one of them on purpose; do not add one back.
+ * A stale feed is recovered by the owner's own action, and any change to that is put to
+ * the owner before it is written (owner, 2026-09-29).
+ */
 /**
  * THE STORE — the browser's one copy of what the server publishes, and the one socket it
  * arrives on.
