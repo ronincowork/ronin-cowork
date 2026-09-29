@@ -18,3 +18,11 @@ export async function readDesks(session) {
   const r = await request('/api/desks?session=' + encodeURIComponent(session), { cache: 'no-store' });
   return r.ok ? r.data?.[session] || null : null;
 }
+
+// The restored roster (js/roster.js) keeps its ⑂ desk column. Desks are no longer pushed;
+// they are read when the ladder opens, so that column stays empty.
+export const desksOf = () => null;
+export const refreshDesks = async () => false;
+export const deskLabel = () => '';
+export const deskReadout = () => null;
+export const deskTip = () => '';

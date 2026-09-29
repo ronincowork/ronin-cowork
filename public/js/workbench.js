@@ -8,7 +8,7 @@ import { t } from './lexicon.js';
 const WORKBENCH_IDS = Object.freeze(['workspace1', 'workspace2', 'workspace3', 'workspace4']);
 const LOWER = new Set(['workspace3', 'workspace4']);
 const COLUMN_OF = Object.freeze({ workspace1: 'workspace1', workspace3: 'workspace1', workspace2: 'workspace2', workspace4: 'workspace2' });
-const SURFACE_DRAG = 'application/x-ronin-workbench-surface';
+export const SURFACE_DRAG = 'application/x-ronin-workbench-surface';
 const HEADER_KINDS = new Set(['surface', 'tabs', 'terminal']);
 const INTERACTIVE_DESCENDANT = [
   'a[href]', 'area[href]', 'button', 'input', 'select', 'textarea', 'summary',

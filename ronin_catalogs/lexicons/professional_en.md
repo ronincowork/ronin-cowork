@@ -104,6 +104,24 @@ nothing paints exactly this.
 
 ## launcher — launcher.js (the ＋ New board and its form)
 
+## roster — roster.js (the ⌂ Roster tab)
+- **roster.session_max:** session max
+- **roster.session_max_title:** How many sessions may run at once. 0 = no limit. The owner sets this; agents cannot.
+- **roster.running_of:** {n} / {max} running
+- **roster.running_no_limit:** {n} running · no limit
+- **roster.not_saved:** not saved — {message}
+- **roster.team_name:** team name
+- **roster.team_name_aria:** New team name
+- **roster.add_team:** ＋ Team
+- **roster.team_name_rule:** use letters, digits, - or _
+- **roster.drag_into:** drag a session into {team}
+- **roster.leads:** 人 leads {teams}
+- **roster.no_role_yet:** has not said what it is doing yet
+- **roster.stale:** ⚠ roster may be stale — {fault}
+- **roster.drop_here:** Drop a session here to add it to {team}
+- **roster.no_team:** no team
+- **roster.no_sessions:** no sessions yet
+
 ## panels — panels.js (the session note and session teams sheets)
 - **panels.note_sheet:** Session note
 - **panels.save:** Save
@@ -1382,7 +1400,6 @@ The catalog entry goes. {dir} is not touched.
 - **league.assign_member:** Assign
 - **league.launch_team:** Launch
 - **league.ronin:** Ronin: no team
-- **league.no_ronin:** No Rōnin Agents
 - **agent.workbench:** Agent
 - **agent.self:** Self
 - **agent.commons:** Commons

@@ -88,14 +88,12 @@ test('phone Setup workspaces keep one common viewport height for stone rail scro
 });
 
 test('launch actions reuse the nin mark, never the Team Roster torii, and open tabs', async () => {
-  const [primitives, kit, roster, workspace, agent, team] = await Promise.all([
-    source('js/workspace-primitives.js'), source('workspace-kit.css'), source('js/team-roster-surface.js'),
+  const [primitives, kit, workspace, agent, team] = await Promise.all([
+    source('js/workspace-primitives.js'), source('workspace-kit.css'),
     source('js/workspace.js'), source('js/new-agent.js'), source('js/new-team-form.js'),
   ]);
   assert.match(primitives, /el\.append\(ninMark\('wk-launch-mark'\)/);
   assert.match(kit, /\.wk-action\[data-launch='true'\] \{ border-color: var\(--kaki\); background: var\(--raise\);/);
-  assert.match(roster, /launch: true/);
-  assert.doesNotMatch(roster, /'torii', '⛩'/);
   assert.match(workspace, /window\.open\(url\.href, '_blank', 'noopener'\)/);
   for (const caller of [agent, team]) {
     assert.match(caller, /launch: true/);
@@ -126,7 +124,6 @@ test('Cowork cards always expose their reading while the base controls compact p
     readFile(new URL('../public/workspace-kit.css', import.meta.url), 'utf8'),
   ]);
   assert.match(view, /mark: member\.team_lead \? '人' : null,[\s\S]*summary: reading\.step, metadata: reading\.lines/);
-  assert.match(view, /summary: item\.objective \|\| ''/);
   assert.doesNotMatch(view, /thinSelectorCards|selector-card-thin|onSelectorDensityChange/);
   assert.match(workbench, /densityToggle\.el\.addEventListener\('click'/);
   assert.match(css, /\.wk-workbench-host\[data-selector-density='thin'\] \.wk-workbench-selector-cards > \.wk-card \.wk-card-summary/);

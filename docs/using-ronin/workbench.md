@@ -94,6 +94,22 @@ remembered arrangement instead of applying the floor again.
 
 Teams first opens with the Team roster in workspace 1 and New Team in workspace 2.
 
+The **Teams** surface is the one list of Teams: each Team is a stone with its objective, how
+many Agents it has, and its lead. Press a stone and the stones fold to the left while the Team
+opens beside them: its title and objective with **Launch** (open the Team's own workbench),
+then three numbered steps. **1 Agents**: lead first, each with its live dot and what it holds,
+and **+** at the end to bring in an Agent already running or start a new one. **2 Work items**:
+one line per item with its holder and stage bar, the Team's own items first. **3
+Configuration**, folded to its kind and model until you open it: the Team's configuration
+form, with **Delete team** at its foot. Each step folds or opens from its own heading. Press
+the stone again or Escape to go back. Drag a stone into another workspace to open the Team
+there.
+
+**Team roster** is the plain list of every Team and every Agent: one heading per Team with its
+Launch and delete, one row per Agent with 人 when it leads, its work position, status, context
+and model. Drag a row onto a Team's heading to add that Agent to the Team; press a row to
+open the Agent in its own tab.
+
 If a remembered surface is no longer available at the current scope, its workspace comes
 back empty. Check the discovery column: it is the current answer to what can be opened
 here.

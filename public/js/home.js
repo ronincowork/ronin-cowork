@@ -8,6 +8,13 @@
  */
 import { request } from './request.js';
 import { t } from './lexicon.js';
+import { subscribe } from './store.js';
+
+// The restored roster (js/roster.js) reads the pushed rows here. The store reconnects on
+// its own and says so, so the roster's stale line has no fault to show.
+export let homeData = null;
+export const homeFault = null;
+subscribe('home', (rows) => { homeData = rows; });
 
 export let projectData = null; // /api/project-roots: [{name, title, dir, match[], remit, docs[], plans[]}]
 // The provider catalog is not cached here: form-steps.js reads it for the one picker and

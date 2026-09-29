@@ -2,10 +2,11 @@
 /** Workbench; its Campaign, Cowork or Team scope limits what cards are offered. */
 import { createWorkItemsSurface } from './work-items-surface.js';
 import { WorkspaceKit } from './workspace-kit.js';
-import { deleteTeamRoster, membersOfTeam, subscribe, teamByName, teamsFromState, unassignedSessions, UNASSIGNED } from './team-controller.js';
+import { deleteTeamRoster, membersOfTeam, sessionsAvailableToTeam, setTeamLead, setTeamMembership, subscribe, teamByName, teamsFromState, unassignedSessions, UNASSIGNED } from './team-controller.js';
 import { createNewTeamFormView } from './new-team-form.js';
 import { createNewAgentView } from './new-agent.js';
 import { createTeamRosterSurface } from './team-roster-surface.js';
+import { createRosterSurface } from './roster-surface.js';
 import { createWarmTerminalPool } from './team-terminal-pool.js';
 import { createTeamWipeboard } from './team-wipeboard.js';
 import { createTeamJikan } from './team-jikan.js';
@@ -23,7 +24,8 @@ import { launchPresetPlan, presetLaunchUrl } from './preset-launch.js';
 import { subscribe as subscribeStore } from './store.js';
 import { acceptDrops as acceptSessionDrops } from './team-drag.js';
 import { S } from './state.js';
-import { renderTeamConfiguration } from './team-configuration.js';
+import { renderTeamConfiguration, teamConfigurationMeta } from './team-configuration.js';
+import { createStep } from './form-steps.js';
 import { workbenchView } from './workspace-contract.js';
 import { agentTitle, buildTeamMembers, configSignature } from './team-members.js';
 import { isCoarse } from './tiledrop.js';
@@ -32,11 +34,11 @@ import { RONIN_HELPERS } from './roster-groups.js';
 import { toast } from './ui.js';
 import { readyMika } from './mika-ready.js';
 import { createMikaHelpPanel } from './mika.js';
-import { orderCoworkTeams } from './cowork-workbench-contract.js';
 import { retireSession } from './session-retire.js';
 import { installBehaviourReader } from './behaviour-reader.js';
 import { BEHAVIOUR_SURFACE_TYPE } from './behaviour-surface.js';
-import { createTeamKanban, kanbanAvailability, KANBAN_NOT_INSTALLED } from './team-kanban.js';
+import { createTeamKanban, holderOf, itemLine, kanbanAvailability, KANBAN_NOT_INSTALLED } from './team-kanban.js';
+import { ask } from './ask.js';
 import { registerWorkbenchCatalog, WORKBENCH_PROFILES as WB_PROFILES, WORKBENCH_TYPES as WB_TYPES } from './workbench-catalog.js';
 import { createAgentCompositionSurface } from './agent-composition.js';
 import { createTeamChartSurface } from './team-chart-surface.js';
@@ -79,7 +81,7 @@ export function createCoworkView(options = {}) {
   const campaign = desk || options.kind === 'cowork';
   const viewKey = desk ? 'desk' : campaign ? 'cowork' : 'team';
   const teamsLabel = t('campaign.coworks', 'Teams');
-  const { createSurface, createTabbedSurface, createAction } = WorkspaceKit.primitives;
+  const { createSurface, createTabbedSurface, createAction, createActionBar } = WorkspaceKit.primitives;
   const { createTerminalTileHost } = WorkspaceKit.adapters;
   const { DISMISSED_WORKSPACE, normalizeWorkbenchState, workspaceMaySeedDefault } = WorkspaceKit.contract;
   const teamDefaultsRequest = (name) => ({ destination: 'team', param: name, mode: 'replace', state: {
@@ -270,8 +272,10 @@ export function createCoworkView(options = {}) {
   // surface rather than the one tab left in a strip.
   const teamRosterBySeat = campaign ? Object.fromEntries(Object.keys(seats)
     .map((id) => [id, createTeamRosterSurface({
-      onOpen: openAgentWorkbench,
+      teamDetail: (name) => leagueTeamDetail(name, id),
     })])) : {};
+  const sessionRosterBySeat = campaign ? Object.fromEntries(Object.keys(seats)
+    .map((id) => [id, createRosterSurface({ onOpen: openAgentWorkbench })])) : {};
   const cronBySeat = campaign ? Object.fromEntries(Object.keys(seats).map((id) => { const surface = createSurface({ label: t('workspace.tab_cron_jobs', 'Cron jobs'), className: 'tw-cron' }); const room = createTeamJikan({ universal: true, teams: () => teamsFromState().filter((item) => !item.holding).map((item) => item.name) }); surface.content.append(room.el); return [id, { el: surface.el, room }]; })) : {};
   // seated in a workspace, grouped by Team of record, each row's act a labelled button.
   // A rehydrated session lands in the workspace whose surface woke it, like a birth.
@@ -315,6 +319,7 @@ export function createCoworkView(options = {}) {
     agent: () => '',
     composition: (detail = {}) => createAgentCompositionSurface(detail.key),
     roster: (id) => ({ el: teamRosterBySeat[id].el, show: () => teamRosterBySeat[id].render() }),
+    sessionRoster: (id) => ({ el: sessionRosterBySeat[id].el, show: () => sessionRosterBySeat[id].render() }),
     cron: (id) => ({ el: cronBySeat[id].el, show: () => cronBySeat[id].room.enter() }),
     newTeamForm: (id, consumed) => {
       if (!newTeamFormBySeat[id]) {
@@ -371,13 +376,6 @@ export function createCoworkView(options = {}) {
         ...(mika ? { action: () => placeMikaWorkspaceTwo() } : {}),
         onPointerEnter: () => armPrewarm(member.name), onPointerLeave: disarmPrewarm };
     }),
-    teams: () => campaign ? (() => {
-      const ordered = orderCoworkTeams(teamsFromState(), {
-        helperName: RONIN_HELPERS,
-        noTeam: { name: UNASSIGNED, title: t('league.ronin', 'Ronin: no team'), objective: '' },
-      });
-      return ordered.map((item) => ({ key: item.name, label: String(item.title ?? '').trim() || readableTeam(item.name), summary: item.objective || '' }));
-    })() : [],
   };
   bench = WorkspaceKit.workbench.create({
     profile: desk ? WB_PROFILES.desk : campaign ? WB_PROFILES.cowork : WB_PROFILES.team,
@@ -641,46 +639,141 @@ export function createCoworkView(options = {}) {
   // contributes it; there is no field for it today.
   let rows = new Map(); // name -> the store's home row
   const leagueTeamSurfaces = new Map(), openTeam = (name) => openWorkspaceTab('team', name);
-  const createLeagueTeamSurface = (name, id) => {
-    const cacheKey = `${id}\0${name}`;
-    if (leagueTeamSurfaces.has(cacheKey)) {
-      const cached = leagueTeamSurfaces.get(cacheKey); cached.render?.(); return cached;
-    }
-    const label = name === UNASSIGNED ? t('league.ronin', 'Ronin: no team') : readableTeam(name), team = teamByName(name);
-    const launch = createAction({ label: t('league.launch_team', 'Launch'), launch: true, size: 'compact', action: () => openTeam(name) });
-    const remove = createAction({ label: t('league.delete_team', 'Delete team'), kind: 'danger', size: 'compact', action: async () => { const count = membersOfTeam(name).length; if (!window.confirm(t('league.delete_team_confirm', 'Delete {team}? {count} Agents will lose this Team membership.', { team: name, count }))) return; const result = await deleteTeamRoster(name); if (!result.ok) { surface.setState('failed', result.message); return; } for (const seat of bench.locations(WB_TYPES.team, name)) emptySeat(seat); for (const key of [...leagueTeamSurfaces.keys()]) if (key.endsWith(`\0${name}`)) leagueTeamSurfaces.delete(key); } });
-    const surface = createSurface({ label, className: 'league-team-edit', actions: name === UNASSIGNED ? [launch] : [launch, remove] });
-    surface.content.classList.add('league-team-edit-content');
-    // Same contract as renderConfig below: every publish lands here, so the surface only
+  // ONE TEAM PROFILE — head, then the Agents, Work items and Configuration steps — painted into a
+  // host: a Teams stone's detail (leagueTeamDetail) or a whole workspace (createLeagueTeamSurface).
+  const leagueTeamBody = (name, { seat, say }) => {
+    const holding = name === UNASSIGNED;
+    const title = el('h2', null, leagueTeamLabel(name));
+    const objective = el('p', 'league-team-objective');
+    const launch = createAction({ label: '', launch: true, size: 'compact', title: t('league.launch_team', 'Launch'), action: () => openTeam(name) });
+    launch.el.setAttribute('aria-label', launch.el.title);
+    const controls = [launch];
+    const remove = createAction({ label: t('league.delete_team', 'Delete team'), kind: 'danger', size: 'compact', action: async () => { const count = membersOfTeam(name).length; if (!window.confirm(t('league.delete_team_confirm', 'Delete {team}? {count} Agents will lose this Team membership.', { team: name, count }))) return; const result = await deleteTeamRoster(name); if (!result.ok) { say('failed', result.message); return; } for (const place of bench.locations(WB_TYPES.team, name)) emptySeat(place); for (const key of [...leagueTeamSurfaces.keys()]) if (key.endsWith(`\0${name}`)) leagueTeamSurfaces.delete(key); } });
+    // THE DRAWN-FORM STEPS (owner, 2026-09-28): Agents and Work items open, Configuration
+    // folded to its one-line answer; each folds or opens on its own head.
+    const folded = { agents: false, work: false, config: true };
+    const steps = {};
+    const fold = (key) => { folded[key] = !folded[key]; paintFolds(); };
+    const step = (n, key, text) => { steps[key] = createStep({ n, key, title: text, onToggle: () => fold(key) }); steps[key].body.classList.add('league-team-step-body'); return steps[key]; };
+    const agents = step(1, 'agents', t('league.agents', 'Agents')).body;
+    const work = step(2, 'work', t('league.work_items', 'Work items')).body;
+    const config = step(3, 'config', t('workspace.tab_team_configuration', 'Configuration')).body;
+    let workCount = 0;
+    const paintFolds = () => {
+      const count = membersOfTeam(name).length;
+      steps.agents.setCollapsed(folded.agents, t('league.agent_count', '{count} Agents', { count }));
+      steps.work.setCollapsed(folded.work, t('league.item_count', '{count} items', { count: workCount }));
+      steps.config.setCollapsed(folded.config, teamConfigurationMeta(teamByName(name)));
+    };
+    const main = el('div', 'league-team-edit-content');
+    main.append(...(holding ? [steps.agents.el] : [steps.agents.el, steps.work.el, steps.config.el]));
+    let held = new Map(); // agent name -> titles of the items it holds, from the Team reading
+    const failed = (result) => { if (!result.ok) say('failed', result.message); else say(); };
+    // THE PLUS does what the two selects did: assign an Agent already running, or start a new
+    // one. With no lead, whoever it brings in leads.
+    const plus = () => {
+      const lead = membersOfTeam(name).some((member) => member.team_lead);
+      const choices = lead ? sessionsAvailableToTeam(name) : [...membersOfTeam(name), ...sessionsAvailableToTeam(name)];
+      const NEW = ' new';
+      const pick = ask([{ fields: [{
+        key: 'agent', label: lead ? t('league.add_agent', 'Add an Agent') : t('league.choose_lead', 'Choose an Agent as team lead'),
+        blank: lead ? t('league.add_agent', 'Add an Agent') : t('league.choose_lead', 'Choose an Agent as team lead'),
+        options: [...choices.map((member) => ({ v: member.name, l: agentTitle(member) })), { v: NEW, l: t('league.add_lead_agent', 'Add new Agent') }],
+      }] }], { density: 'tight', onChange: async ({ agent }) => {
+        if (!agent) return;
+        if (agent === NEW) { bench.place(WB_TYPES.newAgent, oppositeSeat(seat), { team: name, ...(lead ? {} : { teamLead: true }) }); return; }
+        const joined = membersOfTeam(name).some((member) => member.name === agent) ? { ok: true } : await setTeamMembership(agent, name, true);
+        failed(joined.ok && !lead ? await setTeamLead(agent, name, true) : joined);
+      } });
+      return pick.el;
+    };
+    const paintAgents = () => {
+      const list = el('div');
+      for (const member of membersOfTeam(name)) {
+        const row = el('button', 'league-team-row league-team-agent');
+        row.type = 'button'; row.dataset.session = member.name;
+        row.addEventListener('click', () => openAgentWorkbench(member.name));
+        const live = el('i', 'home-live'); live.dataset.stance = rows.get(member.name)?.stance || 'unknown';
+        live.title = stanceLabel(rows.get(member.name)?.stance) || ''; live.setAttribute('aria-hidden', 'true');
+        const words = el('span', 'league-team-agent-name');
+        if (member.team_lead) words.append(el('span', 'league-team-agent-lead', '人'));
+        words.append(agentTitle(member), el('span', 'league-team-agent-holds', (held.get(member.name) || []).join(' · ')));
+        row.append(live, words);
+        list.append(row);
+      }
+      if (!holding) {
+        // The ＋ is a row of its own: its glyph stands where a name stands.
+        const add = el('button', 'league-team-row league-team-agent league-team-agent-plus');
+        add.append(el('span'), el('span', 'league-team-agent-name', '+'));
+        add.type = 'button'; add.setAttribute('aria-label', t('league.add_agent', 'Add an Agent'));
+        add.addEventListener('click', () => add.replaceWith(plus()));
+        list.append(add);
+      }
+      agents.replaceChildren(...list.children);
+    };
+    const readWork = async () => {
+      if (holding) return;
+      const result = await request(`/api/work-items?team=${encodeURIComponent(name)}`, { cache: 'no-store' });
+      const items = result.ok && Array.isArray(result.data.items) ? result.data.items : [];
+      const own = `team:${name}`;
+      const ordered = [...items.filter((item) => item.holder === own), ...items.filter((item) => item.holder !== own)];
+      const lead = membersOfTeam(name).find((member) => member.team_lead)?.name || '';
+      held = new Map();
+      for (const item of items) if (item.holder.startsWith('agent:')) held.set(item.holder.slice(6), [...(held.get(item.holder.slice(6)) || []), item.title]);
+      workCount = ordered.length;
+      work.replaceChildren(...ordered.map((item) => itemLine(item, { holder: holderOf({ holder: item.holder }, lead) })));
+      paintAgents(); paintFolds();
+    };
+    // Same contract as renderConfig below: every publish lands here, so the body only
     // rebuilds — and refetches the configuration's catalogs — when what it shows moved.
-    // The member rows follow the live signature; the configuration follows the saved record
+    // The Agents follow the live signature; the configuration follows the saved record
     // alone, so a session coming or going never repaints an edit in progress (owner, 2026-09-13).
     let seen = '';
     let seenRecord = '';
-    let configNode = null;
     const render = () => {
-      const signature = configSignature(name);
       const current = teamByName(name);
+      const signature = configSignature(name) + JSON.stringify(membersOfTeam(name).map((member) => rows.get(member.name)?.stance || ''));
       const record = JSON.stringify(current.durable ? current : null);
       const rowsMoved = signature !== seen;
       const recordMoved = record !== seenRecord;
       if (!rowsMoved && !recordMoved) return;
       seen = signature;
       seenRecord = record;
-      const holding = name === UNASSIGNED;
-      const roster = buildTeamMembers(name, { holding, onChanged: () => { surface.setState(); render(); }, onFailed: (message) => surface.setState('failed', message) });
-      if (holding) { surface.content.replaceChildren(roster); return; }
-      if (recordMoved || !configNode) {
-        configNode = el('section', 'league-team-config');
-        configNode.append(el('h3', 'league-team-roster-title', t('workspace.tab_team_configuration', 'Team Configuration')));
-        const fields = el('div', null); configNode.append(fields);
+      objective.textContent = current.objective || ''; objective.title = current.objective || ''; objective.hidden = !current.objective;
+      paintAgents();
+      if (rowsMoved) void readWork();
+      if (recordMoved && !holding) {
+        const fields = el('div', null);
+        config.replaceChildren(fields, createActionBar({ actions: [remove] }).el);
         renderTeamConfiguration(fields, { ...current, durable: true }, { createAction, onSaved: render });
       }
-      surface.content.replaceChildren(roster, configNode);
+      paintFolds();
     };
     render();
-    const out = { el: surface.el, render }; leagueTeamSurfaces.set(cacheKey, out); return out;
+    return { title, objective, controls, main, render };
   };
+  const leagueTeamLabel = (name) => name === UNASSIGNED ? t('league.ronin', 'Ronin: no team') : readableTeam(name);
+  const cachedLeagueTeam = (cacheKey, make) => {
+    if (leagueTeamSurfaces.has(cacheKey)) { const cached = leagueTeamSurfaces.get(cacheKey); cached.render?.(); return cached; }
+    const out = make(); leagueTeamSurfaces.set(cacheKey, out); return out;
+  };
+  const createLeagueTeamSurface = (name, id) => cachedLeagueTeam(`${id}\0${name}`, () => {
+    let surface = null;
+    const team = leagueTeamBody(name, { seat: id, say: (state, message) => surface?.setState(state, message) });
+    surface = createSurface({ label: leagueTeamLabel(name), className: 'league-team-edit', actions: team.controls });
+    surface.content.append(team.objective, team.main);
+    return { el: surface.el, render: team.render };
+  });
+  const leagueTeamDetail = (name, seat) => cachedLeagueTeam(`teams-${seat}\0${name}`, () => {
+    const box = el('div', 'league-team-detail');
+    const status = el('p', 'league-team-detail-state'); status.setAttribute('role', 'status'); status.hidden = true;
+    const team = leagueTeamBody(name, { seat, say: (state, message) => { status.hidden = state !== 'failed'; status.textContent = state === 'failed' ? message : ''; } });
+    const head = el('div', 'league-team-detail-head');
+    const actions = el('div', 'wk-surface-header-actions'); actions.append(...team.controls.map((control) => control.el));
+    head.append(team.title, actions, team.objective);
+    box.append(head, status, team.main);
+    return { el: box, render: team.render };
+  });
   const refreshLeagueTeamSurfaces = () => {
     for (const view of leagueTeamSurfaces.values()) view.render?.();
   };
@@ -688,6 +781,7 @@ export function createCoworkView(options = {}) {
   const onRows = (list) => {
     rows = new Map(list.map((row) => [row.name, row]));
     renderCards();
+    refreshLeagueTeamSurfaces(); // the live dots on each open Team's Agents
     // The configuration reads the same roster, but renderConfig only redraws when
     // something it shows moved.
     const roster = teamByName(team);
