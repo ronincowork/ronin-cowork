@@ -2,6 +2,7 @@
 /** Workbench; its Campaign, Cowork or Team scope limits what cards are offered. */
 import { createWorkItemsSurface } from './work-items-surface.js';
 import { createNewWorkSurface } from './new-work-surface.js';
+import { createWorkSurface } from './work-surface.js';
 import { WorkspaceKit } from './workspace-kit.js';
 import { deleteTeamRoster, membersOfTeam, sessionsAvailableToTeam, setTeamLead, setTeamMembership, subscribe, teamByName, teamsFromState, unassignedSessions, UNASSIGNED } from './team-controller.js';
 import { createNewTeamFormView } from './new-team-form.js';
@@ -314,6 +315,7 @@ export function createCoworkView(options = {}) {
       openOwner: (name) => openAgentWorkbench(name),
     }),
     newWork: () => createNewWorkSurface(),
+    work: () => createWorkSurface({ leadOf: (name) => membersOfTeam(name).find((member) => member.team_lead)?.name || '' }),
     teamKanban: (id) => taskManagerFor(id),
     taskStatus: (id, detail) => taskManagerFor(id, { ...detail, view: 'status' }),
     taskProject: (id, detail) => taskManagerFor(id, { ...detail, view: 'project' }),

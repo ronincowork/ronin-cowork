@@ -23,3 +23,19 @@ export const boardChoices = (items, id) => {
   return items.filter((item) => item.id !== id && (item.parent === null || parents.has(item.id)))
     .map((item) => ({ id: item.id, label: item.title }));
 };
+
+/** Every board (root item) with its tree under it: { item, items: [branch…], size }, where
+ * size counts every descendant. Store order is kept at each level; the store refuses
+ * cycles, so every walk ends. */
+export const boardTree = (items) => {
+  const children = new Map();
+  for (const item of items) if (item.parent) children.set(item.parent, [...(children.get(item.parent) || []), item]);
+  const branch = (item) => {
+    const below = (children.get(item.id) || []).map(branch);
+    return { item, items: below, size: below.reduce((sum, row) => sum + 1 + row.size, 0) };
+  };
+  return items.filter((item) => item.parent === null).map(branch);
+};
+
+/** The name a holder label shows: the Agent's or the Team's, nothing when nobody holds it. */
+export const holderName = (holder) => String(holder || '').replace(/^(agent|team):/, '');

@@ -4,12 +4,13 @@
  * team:       the roster objective, the items the Team holds and the items its members
  *             hold, each child after its parent where the lead made any.
  * unassigned: the common board's items that nobody holds.
+ * every:      every item, each with the holder it is found on ('' when nobody holds it).
  */
 import { readLetterHolds } from './tegami.js';
 import { sessionKey } from './session-dir.js';
 import { readTeamRoster } from './team-rosters.js';
 import { listSessions } from './tmux.js';
-import { WorkItemMissing, commonBoard, heldIds, listItems, readItem, type Rung, type WorkItem } from './work-items.js';
+import { WorkItemMissing, commonBoard, heldIds, holderLabel, listItems, readItem, type Rung, type WorkItem } from './work-items.js';
 
 export interface AgentReading {
   holder: string;
@@ -79,4 +80,12 @@ export async function unassignedReading(): Promise<WorkItem[]> {
   if (!common) return [];
   const held = await heldIds();
   return (await listItems()).filter((item) => item.parent === common.id && !held.has(item.id));
+}
+
+export async function everyItemReading(): Promise<HeldItem[]> {
+  const held = await heldIds();
+  return (await listItems()).map((item) => {
+    const holder = held.get(item.id);
+    return { ...item, holder: holder ? holderLabel(holder) : '' };
+  });
 }

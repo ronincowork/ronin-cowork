@@ -17,7 +17,7 @@ class FakeNode {
 }
 globalThis.document = { createElement: (tag) => new FakeNode(tag) };
 
-const { newWorkGroups, boardChoices } = await import('../public/js/work-readings.js');
+const { newWorkGroups, boardChoices, boardTree, holderName } = await import('../public/js/work-readings.js');
 const { createWorkNav, dragItem } = await import('../public/js/work-nav.js');
 
 const item = (id, fields = {}) => ({ id, title: `Item ${id}`, stage: 'IDEA', parent: 'w1', trail: [{ op: 'create' }], ...fields });
@@ -47,6 +47,15 @@ test('manual assign offers the boards (roots and items with children), never the
   ];
   assert.deepEqual(boardChoices(items, 'w4'), [{ id: 'w1', label: 'Common' }, { id: 'w2', label: 'Surface' }, { id: 'w3', label: 'Phase' }]);
   assert.deepEqual(boardChoices(items, 'w2').map((row) => row.id), ['w1', 'w3']);
+});
+
+test('Work reads the boards as the root items, each with its tree and a count of everything under it', () => {
+  const tree = boardTree([
+    { id: 'w1', parent: null }, { id: 'w2', parent: 'w1' }, { id: 'w3', parent: 'w2' }, { id: 'w4', parent: 'w1' }, { id: 'w5', parent: null },
+  ]);
+  const shape = (branch) => [branch.item.id, branch.size, branch.items.map(shape)];
+  assert.deepEqual(tree.map(shape), [['w1', 3, [['w2', 1, [['w3', 0, []]]], ['w4', 0, []]]], ['w5', 0, []]]);
+  assert.deepEqual(['agent:ann', 'team:crew', ''].map(holderName), ['ann', 'crew', '']);
 });
 
 test('the work navigation bar draws one stone per action it is handed and carries no meaning of its own', async () => {
@@ -79,10 +88,10 @@ test('the work navigation bar draws one stone per action it is handed and carrie
   assert.equal(dragged, 'w7');
 });
 
-test('New work is a new card on the Cowork and Desk profiles; nothing that was there leaves', async () => {
+test('New work and Work are new cards on the Cowork and Desk profiles; nothing that was there leaves', async () => {
   const catalog = await readFile(new URL('../public/js/workbench-catalog.js', import.meta.url), 'utf8');
   for (const profile of ['cowork', 'desk']) {
     const list = catalog.match(new RegExp(`profiles\\.define\\(WORKBENCH_PROFILES\\.${profile}, \\[([^\\]]*)\\]`))[1];
-    for (const type of ['kanban', 'workItems', 'roster', 'newWork']) assert.match(list, new RegExp(`WORKBENCH_TYPES\\.${type}\\b`), `${profile} offers ${type}`);
+    for (const type of ['kanban', 'workItems', 'roster', 'newWork', 'work']) assert.match(list, new RegExp(`WORKBENCH_TYPES\\.${type}\\b`), `${profile} offers ${type}`);
   }
 });

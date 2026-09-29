@@ -27,7 +27,7 @@ process.env.RONIN_SESSION_DIR = path.join(temp, 'sessions');
 const items = await import('../src/work-items.js');
 const { createTeamRoster, readTeamRoster } = await import('../src/team-rosters.js');
 const { readLetterHolds, seedTegami } = await import('../src/tegami.js');
-const { teamReading, unassignedReading } = await import('../src/work-items-read.js');
+const { everyItemReading, teamReading, unassignedReading } = await import('../src/work-items-read.js');
 
 await createTeamRoster('crew', { objective: 'hold things' });
 await seedTegami('ann');
@@ -139,6 +139,8 @@ test('readings: the team reads its own holds and its members\' holds, children a
   assert.ok(unassigned.includes(parked.id));
   assert.ok(!unassigned.includes(nested.id), 'an unheld child of another board is found under it, not unassigned');
   assert.ok(!unassigned.includes(overall.id));
+  const every = new Map((await everyItemReading()).map((item) => [item.id, item.holder]));
+  assert.deepEqual([overall.id, piece.id, parked.id, nested.id].map((id) => every.get(id)), ['team:readers', 'agent:reader_a', '', ''], 'every item names the holder it is found on');
 });
 
 test('nesting under a held board queues its holder exactly one message; under an unheld board, none', async () => {
