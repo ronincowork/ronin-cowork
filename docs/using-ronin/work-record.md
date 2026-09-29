@@ -41,9 +41,24 @@ holding is how work is found, never permission.
 
 Two relations are kept apart. **Holding** (assign, hold, held by) is a list of item ids on
 each Team and each Agent; assigning moves the id from one list to another and never touches
-the item. **Parent and child** (nest, parent) is one optional parent id on the item; a
-reparent that would form a cycle is the one refusal, answered `REFUSED` with the chain
-named. A Team holds; it does not contain.
+the item. **Parent and child** (nest, parent) is one parent id on the item; a reparent
+that would form a cycle is the one refusal, answered `REFUSED` with the chain named. A Team
+holds; it does not contain.
+
+Every item is born under a parent: the one you name, else the **common board**, a root item
+titled "Common" and held by nobody. Creating checks for the common board and makes it if it
+is missing, so there is no other starting point and no install step. `team project parent
+<id> none` lifts an item out to be its own root.
+
+An item with children is a **board**, read by its children; a leaf is a **project** and
+carries the ladder. Every acknowledgement says which ("w7 is a board, 3 items", "w9 is a
+project at plan, 2 legs"). When a leaf gains its first child, its ladder folds into that
+child, ahead of any ladder the child had, with a trail line on both.
+
+When an item is nested under a board that someone holds, by a create with a parent or a
+reparent, that holder gets one message through the ordinary queue: "w9 Fix login was added
+under your board w7. Handle it as you see fit." A Team holder's lead gets it. A board held
+by nobody, such as the common board, notifies nobody.
 
 Create an item held by yourself, or by a Team:
 
@@ -56,7 +71,7 @@ Every acknowledgement answers with the item as it now is and the trail line it a
 ends by naming the item and the write that keeps it current:
 
 ```text
-w12 moved to land. Keep it current: work-record project write w12 --objective "<what it is now>" --evidence "<a fact with its receipt>"
+w12 moved to land; w12 is a project at land, 2 legs. Keep it current: work-record project write w12 --objective "<what it is now>" --evidence "<a fact with its receipt>"
 ```
 
 ## Stage, exit, and status
@@ -147,5 +162,6 @@ session's recorded Workspace Folder. Neither edit changes its birth directory or
 a managed desk. These fields locate work; they do not replace commits, hand-ins, or evidence.
 
 When an Agent ends, is archived, or is Hard Deleted, what it held is released: each item
-gets a `holder-ended` line and is found again under its parent or unassigned. Restoring an
+gets a `holder-ended` line and is found again under its parent (on the common board, that is
+unassigned). Restoring an
 archived Agent does not reclaim it.

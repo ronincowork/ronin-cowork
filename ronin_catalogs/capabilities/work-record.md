@@ -55,7 +55,7 @@ An item carries:
 | `stage` | `IDEA` · `PLAN` · `BUILD` · `REVIEW` · `LAND` · `DONE` | a mark on the item |
 | `exit` | `none` · `agent` · `lead` · `user` | who the item is waiting on to move |
 | `status` | `green` · `yellow` · `red` | how the held work is going |
-| `parent` | an item id, or none | the one item it sits under |
+| `parent` | an item id | the one item it sits under: the common board unless another was named |
 
 Use the intent verbs when they say what happened more plainly than raw fields:
 `working <id>` means yellow with the Agent acting next and makes it your focus;
@@ -63,6 +63,11 @@ Use the intent verbs when they say what happened more plainly than raw fields:
 while the Agent retains the next move; `blocked <id> --on lead|user` means red and names who
 must act; `advance <id> --to <stage>` changes only the stage. Evidence is a fact with its
 receipt: `project write <id> --evidence "<fact>"`, alone or with other fields in one call.
+
+An item with children is a board, read by its children; a leaf is a project and carries
+the ladder, and every acknowledgement says which. When a leaf gains its first child its
+ladder folds into that child. Nesting an item under a board someone holds sends that holder
+one message; the common board is held by nobody and notifies nobody.
 
 Two tools move stage from receipts: a hand-in naming the item moves it to LAND, and a
 promotion moves the items on its hand-ins to DONE. `return` gives an item back to your Team,

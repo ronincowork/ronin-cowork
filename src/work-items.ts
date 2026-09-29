@@ -17,6 +17,8 @@ import path from 'node:path';
 import { storeDir } from './resources.js';
 import { sessionKey } from './session-dir.js';
 import { getTags } from './tmux.js';
+import { enqueueMessage } from './message-queue.js';
+import { findLeads } from './desks/lead.js';
 import { listTeamRosters, readTeamRoster, writeTeamRoster } from './team-rosters.js';
 import { listLetterHolds, readLetterHolds, seedTegami, writeLetterAt, writeLetterHolds } from './tegami.js';
 
@@ -53,8 +55,10 @@ export interface WorkItem {
   created: { at: string; by: string };
 }
 
-/** What every write answers: the item as it now is, and the line it appended. */
-export interface Acknowledged { item: WorkItem; line: TrailLine }
+/** What every write answers: the item as it now is, the line it appended, what the item
+ * is (a board has children and is read by them; a leaf is a project and carries the
+ * ladder), and who was told of an arrival under their board. */
+export interface Acknowledged { item: WorkItem; line: TrailLine; shape: string; notified?: string[] }
 
 export class WorkItemRefused extends Error {}
 export class WorkItemMissing extends Error {}
@@ -151,13 +155,23 @@ const lineOf = (by: string, op: TrailOp, extra: Omit<TrailLine, 'at' | 'by' | 'o
 });
 
 /** Read, change, append one trail line, write. Runs inside the issuer lock. */
+/** "w7 is a board, 3 items" or "w9 is a project at plan, 2 legs": told by children. */
+export async function kindOf(item: WorkItem): Promise<string> {
+  const children = (await listItems()).filter((other) => other.parent === item.id).length;
+  if (children) return `${item.id} is a board, ${children} item${children === 1 ? '' : 's'}`;
+  const legs = item.ladder.reduce((sum, rung) => sum + (rung.legs?.length ?? 0), 0);
+  return `${item.id} is a project at ${item.stage.toLowerCase()}, ${legs} leg${legs === 1 ? '' : 's'}`;
+}
+
+const answer = async (item: WorkItem, line: TrailLine): Promise<Acknowledged> => ({ item, line, shape: await kindOf(item) });
+
 export async function appendTrail(id: string, by: string, change: (item: WorkItem) => Omit<TrailLine, 'at' | 'by'>): Promise<Acknowledged> {
   const item = await load(id);
   const { op, ...extra } = change(item);
   const line = lineOf(by, op, extra);
   item.trail.push(line);
   await save(item);
-  return { item, line };
+  return answer(item, line);
 }
 
 export interface NewItem {
@@ -179,36 +193,86 @@ function checkFields(fields: { stage?: unknown; exit?: unknown; status?: unknown
   if (fields.status !== undefined && !member(ITEM_STATUSES, fields.status)) throw new WorkItemBadInput(`status must be one of ${ITEM_STATUSES.join(', ')}.`);
 }
 
+/* THE COMMON BOARD. Every item is born under a parent: the one named, else the common
+ * board, a root item titled "Common" and held by nobody. Creating checks for it and makes
+ * it when it is missing, every time; there is no other starting point. */
+const COMMON = 'Common';
+
+async function commonBoardUnlocked(by: string): Promise<string> {
+  const found = (await listItems()).find((item) => item.parent === null && item.title === COMMON);
+  if (found) return found.id;
+  const board = blank(COMMON, by);
+  board.id = await nextId();
+  board.trail.push(lineOf(by, 'create', { to: 'none', note: 'the common board' }));
+  await save(board);
+  return board.id;
+}
+
+export async function commonBoard(): Promise<WorkItem | null> {
+  return (await listItems()).find((item) => item.parent === null && item.title === COMMON) ?? null;
+}
+
+const blank = (title: string, by: string): WorkItem => ({
+  id: '', title, objective: '', stage: 'IDEA', exit: 'none', status: 'yellow', parent: null,
+  ladder: [], docs: [], external: {}, trail: [], created: { at: new Date().toISOString(), by: by.trim() || 'unknown' },
+});
+
+/** A leaf that gains its first child becomes a board: its ladder folds into that child,
+ * ahead of any ladder the child had, and the parent gets a line saying so. Returns the
+ * note for the child's own line, or nothing when there was no ladder to fold. */
+async function foldIntoFirstChild(parentId: string, child: WorkItem, by: string): Promise<string> {
+  const parent = await load(parentId);
+  const siblings = (await listItems()).filter((item) => item.parent === parentId && item.id !== child.id);
+  if (siblings.length || !parent.ladder.length) return '';
+  child.ladder = [...parent.ladder, ...child.ladder];
+  parent.ladder = [];
+  parent.trail.push(lineOf(by, 'edit', { note: `ladder folded into ${child.id}, its first child` }));
+  await save(parent);
+  return `ladder folded in from ${parentId}`;
+}
+
+/** An arrival under a held board is announced to its holder, one queued message: to the
+ * Agent, or to a holding Team's lead. A board held by nobody notifies nobody. */
+async function announceArrival(item: WorkItem): Promise<string[]> {
+  if (!item.parent) return [];
+  const told: string[] = [];
+  for (const holder of await holdersOf(item.parent)) {
+    const targets = holder.kind === 'agent' ? [holder.name] : await findLeads(holder.name);
+    for (const target of targets) {
+      await enqueueMessage(target, `${item.id} ${item.title} was added under your board ${item.parent}. Handle it as you see fit.`, 'house', 'Work items');
+      told.push(target);
+    }
+  }
+  return told;
+}
+
 /** Issue an id and write the item. Unlocked: callers hold the issuer. */
 export async function createItemUnlocked(input: NewItem, by: string): Promise<Acknowledged> {
   const title = String(input.title ?? '').trim();
   if (!title) throw new WorkItemBadInput('A work item needs a title.');
   checkFields(input);
   if (input.parent) await load(input.parent);
-  const at = new Date().toISOString();
+  // The parent first: making the common board issues an id, and the item's comes after it.
+  const parent = input.parent || await commonBoardUnlocked(by);
   const item: WorkItem = {
+    ...blank(title, by),
     id: await nextId(),
-    title,
     objective: String(input.objective ?? '').trim(),
     stage: (input.stage as ItemStage | undefined) ?? 'IDEA',
     exit: (input.exit as ItemExit | undefined) ?? 'none',
     status: (input.status as ItemStatus | undefined) ?? 'yellow',
-    parent: input.parent || null,
+    parent,
     ladder: input.ladder ?? [],
     docs: input.docs ?? [],
-    external: {},
-    trail: [],
-    created: { at, by: by.trim() || 'unknown' },
   };
-  if (input.holder) {
-    const list = await listFor(input.holder);
-    await save(item);
-    await list.set([...list.holds, item.id]);
-  }
-  const line = lineOf(by, 'create', { to: input.holder ? holderLabel(input.holder) : 'none', note: item.parent ? `${item.title}; under ${item.parent}` : item.title });
+  const list = input.holder ? await listFor(input.holder) : null;
+  const folded = await foldIntoFirstChild(item.parent!, item, by);
+  await save(item);
+  if (list) await list.set([...list.holds, item.id]);
+  const line = lineOf(by, 'create', { to: input.holder ? holderLabel(input.holder) : 'none', note: [item.title, `under ${item.parent}`, folded].filter(Boolean).join('; ') });
   item.trail.push(line);
   await save(item);
-  return { item, line };
+  return { ...(await answer(item, line)), notified: await announceArrival(item) };
 }
 
 export const createItem = (input: NewItem, by: string) => withIssuer(() => createItemUnlocked(input, by));
@@ -276,11 +340,14 @@ export function reparentItem(id: string, parent: string | null, by: string): Pro
         at = (await load(at)).parent;
       }
     }
-    return appendTrail(id, by, (item) => {
-      const from = item.parent ?? undefined;
-      item.parent = parent;
-      return { op: 'reparent', from: from ?? 'none', to: parent ?? 'none' };
-    });
+    const child = await load(id);
+    const folded = parent ? await foldIntoFirstChild(parent, child, by) : '';
+    const from = child.parent ?? 'none';
+    child.parent = parent;
+    const line = lineOf(by, 'reparent', { from, to: parent ?? 'none', ...(folded ? { note: folded } : {}) });
+    child.trail.push(line);
+    await save(child);
+    return { ...(await answer(child, line)), notified: await announceArrival(child) };
   });
 }
 
@@ -403,13 +470,13 @@ export async function focusItem(session: string, id: string): Promise<boolean> {
 
 /** Acknowledgements nag, tools do not: every acknowledgement that touches an item ends
  * with this line, naming the item and the write that keeps its words current. */
-export function keepCurrentLine({ item, line }: Acknowledged): string {
+export function keepCurrentLine({ item, line, shape }: Acknowledged): string {
   const what = line.op === 'stage' ? `moved to ${String(line.to).toLowerCase()}`
     : line.op === 'assign' ? `is held by ${line.to}`
       : line.op === 'release' || line.op === 'holder-ended' ? 'is held by nobody'
         : line.op === 'create' ? 'was created'
           : `changed (${line.op})`;
-  return `${item.id} ${what}. Keep it current: work-record project write ${item.id} --objective "<what it is now>" --evidence "<a fact with its receipt>"`;
+  return `${item.id} ${what}; ${shape}. Keep it current: work-record project write ${item.id} --objective "<what it is now>" --evidence "<a fact with its receipt>"`;
 }
 
 /* THE LADDER LIVES ON THE ITEM. An Agent's ladder is the ladder of its focus item (the
