@@ -5,10 +5,16 @@
  * left a holder (a release, or the holder ended); Open issues come from the issue source,
  * and there is none yet, so that stone shows and is empty. The phalanx draws the stones;
  * the work navigation bar sits under them.
+ *
+ *            nothing selected                    a stone selected
+ * compact    the four group stones                the four in the rail; the group and its items
+ * expanded   four columns, items under each       one level down: its items are the stones
  */
 import { WorkspaceKit } from './workspace-kit.js';
 import { createPhalanx } from './phalanx.js';
-import { createWorkNav, draftItem } from './work-nav.js';
+import { createWorkNav, dragItem, draftItem } from './work-nav.js';
+import { appendItemReading } from './project-reading.js';
+import { itemLine, stageBar } from './team-kanban.js';
 import { request } from './request.js';
 import { boardChoices, newWorkGroups } from './work-readings.js';
 import { t } from './lexicon.js';
@@ -49,7 +55,8 @@ export function createNewWorkSurface() {
   const surface = createSurface({ label: t('new_work.title', 'New work'), className: 'new-work-surface', actions: [density] });
 
   const groupOf = (id) => newWorkGroups(items).find((group) => group.id === id);
-  const draft = () => ({ id: 'new', draft: true, stage: groupOf(phalanx.selected())?.stage || 'IDEA' });
+  // Where the plus sits: the open group (selected, or the level it went down into).
+  const draft = () => ({ id: 'new', draft: true, stage: groupOf(phalanx.level()?.id || phalanx.selected())?.stage || 'IDEA' });
   const renderDetail = (row, host) => {
     if (row.draft) return draftItem(host, { heading: t('new_work.draft', 'New item'), save: async (fields) => {
       const made = await request('/api/work-items', { method: 'POST', json: { ...fields, stage: row.stage } });
@@ -58,8 +65,15 @@ export function createNewWorkSurface() {
       phalanx.select('');
       await refresh();
     } });
+    if (row.item) return appendItemReading(host, row.item, { bar: stageBar(row.item) });
+    // A group: what it is, then its items, unless its items are the stones in the rail.
+    host.append(el('h2', '', row.label), el('p', 'work-about', t(`new_work.about_${row.id}`, row.about)));
+    if (phalanx.level()) return;
+    const lines = el('div', 'work-lines');
+    for (const stone of row.items) lines.append(itemLine(stone.item));
+    if (row.items.length) host.append(lines);
   };
-  const phalanx = createPhalanx({ density: 'compact', className: 'nw-phalanx', renderDetail });
+  const phalanx = createPhalanx({ density: 'compact', branches: 'column', className: 'nw-phalanx', renderDetail });
   const nav = createWorkNav({
     add: () => phalanx.openDetail(draft()),
     autoAssign: (id) => say(t('work_nav.no_triage', 'No triage agent is configured; {id} stays where it is.', { id })),
@@ -77,9 +91,11 @@ export function createNewWorkSurface() {
   });
   phalanx.mount(surface.content, { after: [nav.el, notice] });
 
+  const count = (n) => n === 1 ? t('new_work.count_one', '1 item') : n ? t('new_work.count', '{n} items', { n }) : t('new_work.empty', 'empty');
   const paint = () => phalanx.setItems(newWorkGroups(items).map((group) => ({
-    id: group.id, label: t(`new_work.group_${group.id}`, group.label),
-    secondary: group.items.length ? t('new_work.count', '{n} items', { n: group.items.length }) : t('new_work.empty', 'empty'),
+    id: group.id, label: t(`new_work.group_${group.id}`, group.label), about: group.about,
+    secondary: count(group.items.length),
+    items: group.items.map((item) => ({ id: item.id, label: item.title, secondary: item.objective, item, ...dragItem(item.id) })),
   })));
 
   async function refresh() {

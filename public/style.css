@@ -3846,8 +3846,9 @@ button.wb-door:hover b {
 .home-group-msg { color: var(--muted); font-size: var(--text-2); }
 .home-row.dragging { opacity: .45; }
 
-/* The roster's column tracks, also the in-place Team's (css/team-workspace.css). */
-.home-row, .league-team-detail, .league-team-edit {
+/* The roster's column tracks, also the in-place Team's (css/team-workspace.css) and the
+   work-item surfaces' item lines. */
+.home-row, .league-team-detail, .league-team-edit, .work-lines {
   --hr-mark: 1.35em;
   --hr-shingo: 132px;
   --hr-status: 70px;

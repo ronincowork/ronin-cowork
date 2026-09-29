@@ -57,10 +57,10 @@ export function createWorkNav({ add = null, autoAssign = null, manualAssign = nu
   choices.addEventListener('keydown', (event) => { if (event.key === 'Escape') { event.stopPropagation(); closeChoices(); } });
 
   const stone = (key, glyph, label, { press = null, drop = null } = {}) => {
-    const button = el('button', 'wn-stone');
+    const button = el('button', 'sws-stone wn-stone');
     button.type = 'button';
     button.dataset.nav = key;
-    const mark = el('i', 'wn-glyph', glyph);
+    const mark = el('i', 'sws-glyph', glyph);
     mark.setAttribute('aria-hidden', 'true');
     button.append(mark, el('span', 'wn-label', label));
     if (press) button.addEventListener('click', press);

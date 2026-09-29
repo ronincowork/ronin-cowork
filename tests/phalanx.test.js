@@ -135,3 +135,58 @@ test('stone states wrap complete account and provider names instead of truncatin
   assert.match(css, /\.sws-state \{[^}]*overflow-wrap: anywhere;[^}]*white-space: normal/);
   assert.doesNotMatch(css, /\.sws-state \{[^}]*text-overflow: ellipsis/);
 });
+
+test('full density goes one level down into a stone with items; one way back from any depth keeps the density', () => {
+  const rendered = [];
+  const escape = (surface) => { for (const callback of surface.el.listeners.keydown) callback({ key: 'Escape', preventDefault() {} }); };
+  const rail = (surface) => surface.el.querySelectorAll('[data-sws-id]').filter((node) => !String(node.className).includes('sws-branch-stone'));
+  const tree = [{ id: 'g', label: 'G', items: [{ id: 'a', label: 'A' }, { id: 'b', label: 'B', items: [{ id: 'c', label: 'C' }] }] }, { id: 'h', label: 'H' }];
+  const surface = createPhalanx({ items: tree, density: 'full', branches: 'column', renderDetail: (item) => { rendered.push(item.id); } });
+
+  const branchIds = () => surface.el.querySelectorAll('[data-sws-id]').filter((node) => String(node.className).includes('sws-branch-stone')).map((node) => node.dataset.swsId);
+  assert.deepEqual(branchIds(), ['a', 'b', 'c'], 'at rest every item shows under its stone');
+
+  rail(surface)[0].click();
+  assert.equal(surface.level().id, 'g');
+  assert.equal(surface.selected(), null);
+  assert.deepEqual(rail(surface).map((node) => node.dataset.swsId), ['a', 'b', 'c'], "the stone's items are the stones now");
+  assert.equal(rendered.at(-1), 'g', 'the level owner is the detail until an item is pressed');
+  rail(surface)[0].click();
+  assert.equal(surface.selected(), 'a');
+  assert.equal(rendered.at(-1), 'a');
+  rail(surface)[0].click();
+  assert.equal(surface.selected(), null, 'press-again deselects where you are');
+  assert.equal(surface.level().id, 'g');
+  rail(surface)[1].click();
+  assert.equal(surface.selected(), 'b', 'a level is one level: an item with items selects');
+
+  escape(surface);
+  assert.equal(surface.level(), null);
+  assert.equal(surface.selected(), null);
+  assert.equal(surface.el.dataset.open, 'false');
+  assert.equal(surface.el.dataset.density, 'full', 'back in the density you were in');
+
+  surface.el.querySelectorAll('[data-sws-id]').find((node) => node.dataset.swsId === 'c').click();
+  assert.equal(surface.level().id, 'g');
+  assert.equal(surface.selected(), 'c', 'pressing an item at rest opens its level with it selected');
+  surface.top();
+  assert.equal(surface.level(), null);
+
+  surface.setDensity('compact');
+  rail(surface)[0].click();
+  assert.equal(surface.selected(), 'g', 'compact selects; it does not go down');
+  assert.equal(surface.level(), null);
+  assert.deepEqual(branchIds(), [], 'compact draws no branches');
+});
+
+test('a chart lays one column per child and folds a too-deep chart into counts until pressed', () => {
+  const deep = Array.from({ length: 5 }, (_, index) => ({ id: `d${index}`, label: `D${index}` }));
+  const surface = createPhalanx({ density: 'full', branches: 'chart', items: [{ id: 'board', label: 'Board', items: [{ id: 'x', label: 'X', items: deep }, { id: 'y', label: 'Y', items: [{ id: 'z', label: 'Z' }] }] }] });
+  const branchIds = () => surface.el.querySelectorAll('[data-sws-id]').filter((node) => String(node.className).includes('sws-branch-stone')).map((node) => node.dataset.swsId);
+  assert.deepEqual(branchIds(), ['x', 'y'], 'grandchildren fold into counts');
+  const x = surface.el.querySelectorAll('[data-sws-id]').find((node) => node.dataset.swsId === 'x');
+  assert.equal(x.children.at(-1).textContent, '+5');
+  x.click();
+  assert.deepEqual(branchIds(), ['x', 'd0', 'd1', 'd2', 'd3', 'd4', 'y'], 'pressing a folded child opens its column');
+  assert.equal(surface.level(), null);
+});

@@ -73,13 +73,9 @@ const meaningLine = (move) => move.text.split('meaning: ')[1]?.split('\n')[0] ||
 export const holderOf = (project, leadName) => project.holder.startsWith('agent:') ? project.holder.slice(6)
   : project.holder.startsWith('team:') ? leadName : '';
 
-/** One work item as one line: title, who holds it, and a stage bar (a segment per stage,
- * filled to its stage, the current one in its status colour). */
-export function itemLine(value, { holder = '' } = {}) {
+/** A stage bar: a segment per stage, filled to its stage, the current one in its status colour. */
+export function stageBar(value) {
   const item = normalizedProject(value);
-  const line = node('div', 'tk-line');
-  line.dataset.item = item.id;
-  line.append(node('span', 'tk-line-title', item.title));
   const bar = node('span', 'tk-stage-bar');
   bar.title = `${stageLabel(item.stage)} · ${item.status}`;
   bar.setAttribute('aria-label', bar.title);
@@ -88,7 +84,15 @@ export function itemLine(value, { holder = '' } = {}) {
     segment.title = column.label;
     bar.append(segment);
   });
-  line.append(node('span', 'tk-line-holder', holder ? `@${holder}` : ''), bar);
+  return bar;
+}
+
+/** One work item as one line: title, who holds it, and its stage bar. */
+export function itemLine(value, { holder = '' } = {}) {
+  const item = normalizedProject(value);
+  const line = node('div', 'tk-line');
+  line.dataset.item = item.id;
+  line.append(node('span', 'tk-line-title', item.title), node('span', 'tk-line-holder', holder ? `@${holder}` : ''), stageBar(item));
   return line;
 }
 
