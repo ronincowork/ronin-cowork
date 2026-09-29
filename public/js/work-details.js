@@ -8,7 +8,7 @@
  */
 import { WorkspaceKit } from './workspace-kit.js';
 import { createStep, el } from './form-steps.js';
-import { itemLine } from './team-kanban.js';
+import { PROJECT_STAGES, itemLine } from './team-kanban.js';
 import { buildLadder } from './shingo.js';
 import { holderName } from './work-readings.js';
 import { t } from './lexicon.js';
@@ -51,6 +51,7 @@ const step = (box, n, key, title, body, folded = false, meta = '') => {
   made.body.append(...body);
   made.setCollapsed(collapsed, meta);
   box.append(made.el);
+  return made.el;
 };
 
 /** A group or a board: what it is, then its items as item lines under one Work items step. */
@@ -59,6 +60,38 @@ export function listDetail(host, { title, about = '', items = [], empty = '' }) 
   if (items.length || empty) step(box, 1, 'work', t('league.work_items', 'Work items'),
     items.length ? items.map((item) => itemLine(item, { holder: holderName(item.holder) })) : [el('p', null, empty)],
     false, t('league.item_count', '{count} items', { count: items.length }));
+}
+
+/** An open board: its leaves in six steps, one per stage. Drag a line onto another stage's
+ * step to move it there (`move(id, stage)`); press a line to open it (`open(id)`). */
+export function stageDetail(host, { title, about = '', items = [], move, open }) {
+  const box = detailBox(host, { title, about });
+  PROJECT_STAGES.forEach((stage, index) => {
+    const here = items.filter((item) => item.stage === stage.key);
+    const lines = here.map((item) => {
+      const line = itemLine(item, { holder: holderName(item.holder) });
+      line.draggable = true;
+      line.addEventListener('dragstart', (event) => event.dataTransfer?.setData('text/plain', item.id));
+      line.addEventListener('click', () => open(item.id));
+      return line;
+    });
+    // An empty stage folds to its count and still takes a drop.
+    const target = step(box, index + 1, stage.key, stage.label, lines, !lines.length, t('league.item_count', '{count} items', { count: here.length }));
+    target.addEventListener('dragover', (event) => event.preventDefault());
+    target.addEventListener('drop', (event) => {
+      event.preventDefault();
+      const id = event.dataTransfer?.getData('text/plain') || '';
+      if (items.some((item) => item.id === id && item.stage !== stage.key)) move(id, stage.key);
+    });
+  });
+  return box;
+}
+
+/** The item over whatever is open beneath it; its actions close it or go through. */
+export function itemOverlay(host, item, { actions = [] } = {}) {
+  const layer = el('div', 'work-overlay');
+  itemDetail(layer, item, { actions });
+  host.append(layer);
 }
 
 /** The whole work item: its line (title, holder, stage bar), its work record (objective,

@@ -7,15 +7,15 @@
  *            nothing selected                    a stone selected
  * compact    the boards as stones                 every board in the rail; the selected
  *                                                 one's title, description and items
- * expanded   every board as an org chart: one
- *            column per child, grandchildren
- *            stacked, the row scrolls sideways
+ * expanded   every board as an org chart: one     the board opens: its items in the rail, the
+ *            column per child, grandchildren      six stage lists as the body (drag a line to
+ *            stacked, the row scrolls sideways    move its stage); an item lies over them
  */
 import { WorkspaceKit } from './workspace-kit.js';
 import { createPhalanx } from './phalanx.js';
 import { el } from './form-steps.js';
 import { createWorkNav, dragItem } from './work-nav.js';
-import { densityControl, draftItem, listDetail } from './work-details.js';
+import { densityControl, draftItem, itemOverlay, listDetail, stageDetail } from './work-details.js';
 import { request } from './request.js';
 import { boardChoices, boardTree } from './work-readings.js';
 import { t } from './lexicon.js';
@@ -24,9 +24,11 @@ export const WORK_TYPE = 'work.boards';
 
 const firstLine = (text) => String(text || '').split('\n')[0];
 
-/** `leadOf(team)` names a Team's lead, the one a Team-held item's update request goes to. */
-export function createWorkSurface({ leadOf = () => '' } = {}) {
-  const { createSurface } = WorkspaceKit.primitives;
+/** `leadOf(team)` names a Team's lead, the one a Team-held item's update request goes to;
+ * `holderTeam(holder)` names the Team a holder label works in, and `openTeam(team)` opens
+ * that Team's workbench, the way through from an item. */
+export function createWorkSurface({ leadOf = () => '', holderTeam = () => '', openTeam = () => {} } = {}) {
+  const { createSurface, createAction } = WorkspaceKit.primitives;
   let items = [];
   const notice = el('p', 'wi-notice'); notice.setAttribute('role', 'status');
   const say = (text) => { notice.textContent = text || ''; };
@@ -42,11 +44,31 @@ export function createWorkSurface({ leadOf = () => '' } = {}) {
       phalanx.select('');
       await refresh();
     } });
-    // A board: its title, its description, and a simple list of everything under it.
+    const board = phalanx.level() || row;
     const under = [];
     const walk = (branch) => { for (const child of branch.items || []) { under.push(child.item); walk(child); } };
-    walk(row);
-    listDetail(host, { title: row.item.title, about: row.item.objective, items: under, empty: t('work.board_empty', 'Nothing under this board yet.') });
+    walk(board);
+    // Compact: the board's title, its description, and a simple list of everything under it.
+    if (!phalanx.level()) return listDetail(host, { title: row.item.title, about: row.item.objective, items: under, empty: t('work.board_empty', 'Nothing under this board yet.') });
+    // Opened: its leaves in the six stage lists; a pressed item lies over them.
+    const parents = new Set(under.map((item) => item.parent));
+    stageDetail(host, {
+      title: board.item.title, about: board.item.objective, items: under.filter((item) => !parents.has(item.id)),
+      move: (id, stage) => void moveStage(id, stage),
+      open: (id) => phalanx.select(id),
+    });
+    if (row !== board) {
+      const team = holderTeam(row.item.holder);
+      itemOverlay(host, row.item, { actions: [
+        ...(team ? [createAction({ label: t('work.open_team', 'Open {team}', { team }), size: 'compact', action: () => openTeam(team) })] : []),
+        createAction({ label: t('work.close_item', 'Close'), size: 'compact', action: () => phalanx.select('') }),
+      ] });
+    }
+  };
+  const moveStage = async (id, stage) => {
+    const moved = await request(`/api/work-items/${encodeURIComponent(id)}/stage`, { method: 'POST', json: { stage } });
+    say(moved.ok ? firstLine(moved.data.acknowledgement) : moved.message);
+    await refresh();
   };
   const phalanx = createPhalanx({ density: 'compact', branches: 'chart', className: 'wk-boards', renderDetail });
 

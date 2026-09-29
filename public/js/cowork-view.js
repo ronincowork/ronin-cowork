@@ -315,7 +315,12 @@ export function createCoworkView(options = {}) {
       openOwner: (name) => openAgentWorkbench(name),
     }),
     newWork: () => createNewWorkSurface(),
-    work: () => createWorkSurface({ leadOf: (name) => membersOfTeam(name).find((member) => member.team_lead)?.name || '' }),
+    work: () => createWorkSurface({
+      leadOf: (name) => membersOfTeam(name).find((member) => member.team_lead)?.name || '',
+      holderTeam: (holder) => holder.startsWith('team:') ? holder.slice(5)
+        : holder.startsWith('agent:') ? teamsFromState().find((row) => membersOfTeam(row.name).some((member) => member.name === holder.slice(6)))?.name || '' : '',
+      openTeam: (name) => openWorkspaceTab('team', name),
+    }),
     teamKanban: (id) => taskManagerFor(id),
     taskStatus: (id, detail) => taskManagerFor(id, { ...detail, view: 'status' }),
     taskProject: (id, detail) => taskManagerFor(id, { ...detail, view: 'project' }),
