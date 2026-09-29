@@ -45,7 +45,8 @@ shows every board with what is under it. The two-line button beside each title s
 between less and more detail: with more detail New work lists every item under its
 group and Work draws each board as an org chart. Press a stone to open it; press a board
 with more detail to see its items by stage, and drag an item between stages to move it.
-Escape, or the arrow stone, always returns to the stones. Under the stones, drag an item
+The button works wherever you are: switching it keeps what you opened. Escape, or the
+arrow stone, always returns to the stones. Under the stones, drag an item
 onto **Move to board** to nest it under another board, onto **Request update** to ask
 its holder to bring its work record current, or press **Add** to make a new item where
 you are. There is no issue source yet, so Open issues is empty, and no triage Agent is

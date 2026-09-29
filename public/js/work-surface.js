@@ -95,6 +95,9 @@ export function createWorkSurface({ leadOf = () => '', holderTeam = () => '', op
     },
   });
   phalanx.mount(surface.content, { after: [nav.el, notice] });
+  // The density control sits in the head, outside the phalanx: Escape from anywhere on the
+  // surface is the same one way back.
+  surface.el.addEventListener('keydown', (event) => { if (event.key === 'Escape' && !event.defaultPrevented && (phalanx.level() || phalanx.selected())) phalanx.top(); });
 
   const count = (n) => n === 1 ? t('new_work.count_one', '1 item') : n ? t('new_work.count', '{n} items', { n }) : t('new_work.empty', 'empty');
   const stone = (branch) => ({

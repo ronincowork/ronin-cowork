@@ -179,6 +179,32 @@ test('full density goes one level down into a stone with items; one way back fro
   assert.deepEqual(branchIds(), [], 'compact draws no branches');
 });
 
+test('density switches the row and keeps the column: selection and level survive every toggle', () => {
+  const rail = (surface) => surface.el.querySelectorAll('[data-sws-id]').filter((node) => !String(node.className).includes('sws-branch-stone'));
+  const tree = [{ id: 'g', label: 'G', items: [{ id: 'a', label: 'A' }, { id: 'b', label: 'B' }] }, { id: 'h', label: 'H', items: [] }];
+  const surface = createPhalanx({ items: tree, density: 'compact', branches: 'column' });
+
+  rail(surface)[0].click();
+  assert.equal(surface.selected(), 'g');
+  surface.setDensity('full');
+  assert.equal(surface.level().id, 'g', 'compact-selected expands into its level');
+  assert.equal(surface.selected(), null);
+  rail(surface).find((node) => node.dataset.swsId === 'b').click();
+  surface.setDensity('compact');
+  assert.equal(surface.level(), null, 'a level compacts to its stone, selected');
+  assert.equal(surface.selected(), 'g');
+  surface.setDensity('full');
+  assert.equal(surface.level().id, 'g');
+  assert.equal(surface.selected(), 'b', 'the item open at the level comes back');
+  surface.top();
+  assert.equal(surface.el.dataset.density, 'full', 'the way back keeps the density');
+  surface.setDensity('compact');
+  assert.equal(surface.selected(), null, 'at rest stays at rest');
+  rail(surface)[0].click();
+  surface.setDensity('full');
+  assert.equal(surface.selected(), null, 'after the way back the level opens without the old item');
+});
+
 test('a chart lays one column per child and folds a too-deep chart into counts until pressed', () => {
   const deep = Array.from({ length: 5 }, (_, index) => ({ id: `d${index}`, label: `D${index}` }));
   const surface = createPhalanx({ density: 'full', branches: 'chart', items: [{ id: 'board', label: 'Board', items: [{ id: 'x', label: 'X', items: deep }, { id: 'y', label: 'Y', items: [{ id: 'z', label: 'Z' }] }] }] });

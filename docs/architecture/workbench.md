@@ -18,7 +18,9 @@ pressed. At rest in full density `branches` draws those items under their stone
 (`'column'` stacks them; `'chart'` is one column per child with grandchildren stacked,
 folded into a count past `CHART_DEPTH` until pressed). There is one way back from any
 depth: Escape or the back stone returns to the top view, nothing selected, in the
-density you were in. Consumers never restyle the rest geometry.
+density you were in. Switching density keeps the selection: a selected stone with items
+becomes its level in full density, a level becomes its selected stone in compact, and
+the stone open at that level returns with it. Consumers never restyle the rest geometry.
 
 New work (`work.new`) and Work (`work.boards`) are Cowork/Desk cards over the work item
 store. New work reads the common board's unassigned items as four group stones (Open

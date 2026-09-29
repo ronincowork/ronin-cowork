@@ -54,6 +54,7 @@ export function createPhalanx({ items = [], selectedId = '', renderDetail, onSel
   let restoreElement = null;
   let disposeDetail = null;
   const unfolded = new Set(); // chart children whose folded grandchildren were pressed open
+  let levelOpen = { owner: '', id: '' }; // the stone open at a level when density folded it
 
   const find = (list, id) => list.find((item) => String(item.id) === String(id));
   /** The level's owner and the rows it shows; a vanished owner is the top again. */
@@ -88,6 +89,7 @@ export function createPhalanx({ items = [], selectedId = '', renderDetail, onSel
     path = [];
     selected = '';
     externalDetail = null;
+    levelOpen = { owner: '', id: '' };
     paint();
     if (focusElement && focusElement.isConnected !== false) focusElement.focus();
     else buttonFor(focusId)?.focus();
@@ -283,10 +285,24 @@ export function createPhalanx({ items = [], selectedId = '', renderDetail, onSel
     openDetail(item, { returnFocus = null } = {}) { selected = ''; externalDetail = item || null; restoreElement = returnFocus; paint(); notify(); return api; },
     refreshDetail() { paint(); return api; },
     selected: () => selected || null,
+    /** Density switches the row and keeps the column: a selected stone with items becomes
+     * its level in full density, a level becomes its selected stone in compact, and the
+     * stone open at that level comes back when the level does. */
     setDensity(next) {
       const was = root.dataset.density;
       root.dataset.density = next === 'compact' ? 'compact' : 'full';
-      if (branches && was !== root.dataset.density && atRest()) paint();
+      if (was === root.dataset.density) return api;
+      const owner = level().owner;
+      if (owner) {
+        levelOpen = { owner: String(owner.id), id: selected };
+        path = [];
+        selected = String(owner.id);
+      } else if (full() && Array.isArray(find(rows, selected)?.items)) {
+        path = [selected];
+        selected = levelOpen.owner === selected ? levelOpen.id : '';
+      } else if (!(branches && atRest())) return api;
+      paint();
+      notify();
       return api;
     },
     destroy() { disposeDetail?.(); root.remove(); },
