@@ -7,6 +7,9 @@
  *            nothing selected                    a stone selected
  * compact    the boards as stones                 every board in the rail; the selected
  *                                                 one's title, description and items
+ * expanded   every board as an org chart: one
+ *            column per child, grandchildren
+ *            stacked, the row scrolls sideways
  */
 import { WorkspaceKit } from './workspace-kit.js';
 import { createPhalanx } from './phalanx.js';
@@ -45,7 +48,7 @@ export function createWorkSurface({ leadOf = () => '' } = {}) {
     walk(row);
     listDetail(host, { title: row.item.title, about: row.item.objective, items: under, empty: t('work.board_empty', 'Nothing under this board yet.') });
   };
-  const phalanx = createPhalanx({ density: 'compact', className: 'wk-boards', renderDetail });
+  const phalanx = createPhalanx({ density: 'compact', branches: 'chart', className: 'wk-boards', renderDetail });
 
   const open = () => phalanx.level()?.id || phalanx.selected() || '';
   const nav = createWorkNav({
