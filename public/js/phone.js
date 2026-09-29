@@ -14,7 +14,7 @@ import { trackAppHeight } from './appheight.js';
 import { request } from './request.js';
 import { guard, showFailure } from './errors.js';
 import { sayWhenUnreachable, sessionsHandlers } from './events.js';
-import { connect, renew } from './store.js';
+import { connect } from './store.js';
 import { membersOfTeam, subscribe, teamByName, teamsFromState, UNASSIGNED, unassignedSessions } from './team-controller.js';
 import { loadProjects, projectData } from './home.js';
 import { buildDocs } from './docs.js';
@@ -366,10 +366,6 @@ export async function buildPhone() {
     if (title && title.textContent !== agentLabel(row)) title.textContent = agentLabel(row);
   });
   subscribe(() => { if (route.screen !== 'terminal') render(); });
-  // A resumed phone renews the store: a socket that went reconnects and is sent it all.
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') renew();
-  });
 
   // Ask the operator which optional surfaces are plugged in BEFORE a tile is born, the
   // way main.js does: `stream:false` means the 🔓 views are off and every tile is 🔒.
