@@ -79,11 +79,10 @@ export function createWorkViewsSurface({ holderTeam = () => '', openTeam = () =>
     box.append(press('wv-container', label, count(items.length), action), under);
     return box;
   };
-  const list = (label, secondary, action, groups) => {
+  const list = (label, action, groups) => {
     const column = el('section', 'tk-column wv-list');
     const heading = el('h3');
-    heading.append(press('tk-column-open', label, '', action));
-    if (secondary) heading.append(el('span', 'tk-column-worker', secondary));
+    heading.append(press('wv-list-head', label, '', action));
     const body = el('div', 'tk-cards');
     body.append(...(groups.length ? groups : [el('p', 'tk-empty', t('team_kanban.empty', 'nothing here'))]));
     column.append(heading, body);
@@ -99,10 +98,10 @@ export function createWorkViewsSurface({ holderTeam = () => '', openTeam = () =>
     if (view === 'status') row.replaceChildren(...STAGE_KEYS.map((stage) => {
       const here = boards.map((entry) => ({ board: entry.board, items: entry.stages.find((row) => row.stage === stage)?.items || [] })).filter((entry) => entry.items.length);
       const all = here.flatMap((entry) => entry.items);
-      return list(stageName(stage), count(all.length), () => openStatus(stage, null, all),
+      return list(stageName(stage), () => openStatus(stage, null, all),
         here.map((entry) => group(entry.board.title, entry.items, () => openItem(entry.board))));
     }));
-    else row.replaceChildren(...boards.map((entry) => list(entry.board.title, count(entry.size), () => openItem(entry.board),
+    else row.replaceChildren(...boards.map((entry) => list(entry.board.title, () => openItem(entry.board),
       entry.stages.map((row) => group(stageName(row.stage), row.items, () => openStatus(row.stage, entry.board, row.items))))));
   };
 
