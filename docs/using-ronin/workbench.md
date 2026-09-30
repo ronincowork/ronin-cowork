@@ -52,6 +52,15 @@ its holder to bring its work record current, or press **Add** to make a new item
 you are. There is no issue source yet, so Open issues is empty, and no triage Agent is
 configured, so **Auto-assign** says so.
 
+**Work items** reads the same work without stones. The button at its top left says which
+view you are in, **Status** or **Board**, and switches to the other. Status shows one list
+per stage with each board's items at that stage under the board; Board shows one list per
+board with its items under each stage it has. Press a board, a stage or an item to open it
+over the lists. Its buttons at the top right are **Save** (once there is something to
+save), **Assign** (pick the Agent that holds it), **Add** (a new item, starting where you
+pressed) and **Close**; Escape closes it too. Wherever you add an item, you give its title,
+objective, status, board and, if you like, the Agent that holds it.
+
 Adding another tenant or profile adds no layout implementation. Adding another surface
 registers a per-workspace factory in the shared library; any profile may name that type.
 

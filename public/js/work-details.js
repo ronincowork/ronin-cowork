@@ -10,7 +10,10 @@ import { WorkspaceKit } from './workspace-kit.js';
 import { createStep, el } from './form-steps.js';
 import { PROJECT_STAGES, itemLine } from './team-kanban.js';
 import { buildLadder } from './shingo.js';
-import { holderName } from './work-readings.js';
+import { boardChoices, holderName } from './work-readings.js';
+import { ask } from './ask.js';
+import { request } from './request.js';
+import { S } from './state.js';
 import { t } from './lexicon.js';
 
 /** The one-dash / two-dash density control (team-members.js draws the same one). */
@@ -55,8 +58,8 @@ const step = (box, n, key, title, body, folded = false, meta = '') => {
 };
 
 /** A group or a board: what it is, then its items as item lines under one Work items step. */
-export function listDetail(host, { title, about = '', items = [], empty = '' }) {
-  const box = detailBox(host, { title, about });
+export function listDetail(host, { title, about = '', items = [], empty = '', actions = [] }) {
+  const box = detailBox(host, { title, about, actions });
   if (items.length || empty) step(box, 1, 'work', t('league.work_items', 'Work items'),
     items.length ? items.map((item) => itemLine(item, { holder: holderName(item.holder) })) : [el('p', null, empty)],
     false, t('league.item_count', '{count} items', { count: items.length }));
@@ -87,11 +90,79 @@ export function stageDetail(host, { title, about = '', items = [], move, open })
   return box;
 }
 
-/** The item over whatever is open beneath it; its actions close it or go through. */
-export function itemOverlay(host, item, { actions = [] } = {}) {
+/* THE OVERLAY — one layer over whatever is open beneath it, the same on every surface. Its
+ * utility sits small at its top right, in one order: Save (only while there is something to
+ * save), Assign (an item), Add (a new item's form, laid in its place), Close. `context`
+ * answers where Add puts a new item ({ stage, parent }); `changed(sentence)` hears every
+ * write the overlay made, for the surface to say and re-read; `closed()` hears Close. */
+const agentChoices = () => (Array.isArray(S.sessions) ? S.sessions : []).map((row) => ({ v: row.name, l: row.name }));
+const firstLine = (text) => String(text || '').split('\n')[0];
+
+function overlay(host, draw, { through = [], save = null, assign = null, context = null, changed = () => {}, closed = () => {} } = {}) {
+  const { createAction } = WorkspaceKit.primitives;
   const layer = el('div', 'work-overlay');
-  itemDetail(layer, item, { actions });
+  const close = () => { layer.remove(); closed(); };
+  const saveAction = save ? createAction({ label: t('work_overlay.save', 'Save'), size: 'compact', disabled: true, action: () => void save.run() }) : null;
+  const add = context ? () => { layer.remove(); draftOverlay(host, { ...context(), changed, closed }); } : null;
+  const utility = el('div', 'work-overlay-utility');
+  utility.append(...[
+    saveAction,
+    assign && createAction({ label: t('work_overlay.assign', 'Assign'), size: 'compact', action: () => assign.open() }),
+    add && createAction({ label: t('work_overlay.add', 'Add'), size: 'compact', action: add }),
+    createAction({ label: t('work.close_item', 'Close'), size: 'compact', action: close }),
+  ].filter(Boolean).map((action) => action.el));
+  draw(layer, [...through, utility]);
+  save?.watch((dirty) => saveAction.setDisabled(!dirty));
+  layer.addEventListener('keydown', (event) => { if (event.key === 'Escape') close(); });
   host.append(layer);
+  // Keys land in the overlay (Escape is its Close): in its first field, else on the layer.
+  layer.tabIndex = -1;
+  (layer.querySelector('input, textarea') || layer).focus();
+  return layer;
+}
+
+/** A group of items (listDetail) as an overlay: Add puts a new item where the group sits. */
+export function listOverlay(host, fields, options = {}) {
+  return overlay(host, (layer, actions) => listDetail(layer, { ...fields, actions }), options);
+}
+
+/** An item as an overlay: Assign asks which Agent holds it and writes that. `through` are
+ * the ways through to elsewhere (Open <team>), drawn before the utility. */
+export function itemOverlay(host, item, options = {}) {
+  const slot = el('div', 'work-overlay-assign');
+  slot.hidden = true;
+  const assign = { open: () => {
+    const picker = ask([{ fields: [{ key: 'session', label: t('work_overlay.assign_to', 'Assign {id} to', { id: item.id }), options: agentChoices() }] }], {
+      density: 'tight', exposed: true, onChange: async ({ session }) => {
+        if (!session) return;
+        const held = await request(`/api/work-items/${encodeURIComponent(item.id)}/assign`, { method: 'POST', json: { session } });
+        slot.hidden = true;
+        (options.changed || (() => {}))(held.ok ? firstLine(held.data.acknowledgement) : held.message);
+      },
+    });
+    slot.replaceChildren(picker.el);
+    slot.hidden = false;
+  } };
+  return overlay(host, (layer, actions) => {
+    itemDetail(layer, item, { actions });
+    layer.querySelector('.league-team-detail-head')?.after(slot);
+  }, { ...options, assign });
+}
+
+/** Add's form as an overlay: Save makes the item, and is live once the item has a title. */
+export function draftOverlay(host, { stage = 'IDEA', parent = '', changed = () => {}, closed = () => {} } = {}) {
+  let form = null;
+  const save = { watch: (hear) => form.onDirty(hear), run: () => form.submit() };
+  return overlay(host, (layer, actions) => {
+    form = draftItem(layer, { heading: t('work.draft', 'New item'), stage, parent, actions, save: async (fields) => {
+      const made = await request('/api/work-items', { method: 'POST', json: fields });
+      if (!made.ok) return made.message;
+      layer.remove();
+      closed();
+      changed(firstLine(made.data.acknowledgement));
+      return '';
+    } });
+  }, { save, changed, closed });
 }
 
 /** The whole work item: its line (title, holder, stage bar), its work record (objective,
@@ -107,22 +178,34 @@ export function itemDetail(host, item, { actions = [] } = {}) {
   step(box, 3, 'trail', t('work_item.trail', 'Trail'), trail, true, t('work_item.trail_count', '{n} lines', { n: trail.length }));
 }
 
-/** The plus stone's detail: the kit's title and objective fields; Enter saves (Shift+Enter
- * is a new line in the objective). `save` answers a sentence when it failed. */
-export function draftItem(host, { heading, save }) {
+/** Add's form: the kit's title and objective fields, then the item's status, the board it
+ * goes under (none: the store puts it on the common board) and the Agent that holds it
+ * (none: nobody). `stage` and `parent` are where Add was pressed. Enter saves (Shift+Enter
+ * is a new line in the objective). `save(fields)` answers a sentence when it failed. */
+export function draftItem(host, { heading, stage = 'IDEA', parent = '', save, actions = [] }) {
   const { createField } = WorkspaceKit.primitives;
-  const box = detailBox(host, { title: heading });
+  const box = detailBox(host, { title: heading, actions });
   const title = el('input'); title.type = 'text';
   const objective = el('textarea'); objective.rows = 3;
   const titleField = createField({ label: t('work_nav.draft_title', 'Title'), control: title });
   const objectiveField = createField({ label: t('work_nav.draft_objective', 'Objective'), control: objective });
+  const picks = ask([{ fields: [
+    { key: 'stage', label: t('work_nav.draft_stage', 'Status'), options: PROJECT_STAGES.map((row) => ({ v: row.key, l: row.label })) },
+    { key: 'parent', label: t('work_nav.draft_board', 'Board'), blank: t('work_nav.draft_no_board', 'No board'), options: [] },
+    { key: 'session', label: t('work_nav.draft_agent', 'Agent'), blank: t('ask.none', 'None'), options: agentChoices() },
+  ] }], { value: { stage, parent, session: '' }, density: 'tight' });
+  void request('/api/work-items', { cache: 'no-store' }).then((read) => {
+    if (read.ok) picks.options('parent', boardChoices(read.data.items || [], '').map((row) => ({ v: row.id, l: row.label })));
+  });
   const submit = async () => {
     if (!title.value.trim()) { title.focus(); return; }
     titleField.setValidation('', '');
-    const failed = await save({ title: title.value.trim(), objective: objective.value.trim() });
+    const { stage: at, parent: under, session } = picks.value();
+    const failed = await save({ title: title.value.trim(), objective: objective.value.trim(), stage: at, ...(under ? { parent: under } : {}), ...(session ? { session } : {}) });
     if (failed) titleField.setValidation('invalid', failed);
   };
   for (const field of [title, objective]) field.addEventListener('keydown', (event) => { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); void submit(); } });
-  box.append(titleField.el, objectiveField.el);
+  box.append(titleField.el, objectiveField.el, picks.el);
   title.focus();
+  return { submit, onDirty: (hear) => title.addEventListener('input', () => hear(Boolean(title.value.trim()))) };
 }

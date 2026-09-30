@@ -22,7 +22,7 @@ class FakeNode {
 globalThis.Node = FakeNode;
 globalThis.document = { createElement: (tag) => new FakeNode(tag), createDocumentFragment: () => new FakeNode('#fragment'), querySelector: () => null, head: { append() {} }, activeElement: null };
 
-const { newWorkGroups, boardChoices, boardTree, holderName } = await import('../public/js/work-readings.js');
+const { newWorkGroups, boardChoices, boardTree, boardStages, holderName } = await import('../public/js/work-readings.js');
 const { createWorkNav, dragItem } = await import('../public/js/work-nav.js');
 
 const item = (id, fields = {}) => ({ id, title: `Item ${id}`, stage: 'IDEA', parent: 'w1', trail: [{ op: 'create' }], ...fields });
@@ -99,4 +99,16 @@ test('New work and Work are new cards on the Cowork and Desk profiles; nothing t
     const list = catalog.match(new RegExp(`profiles\\.define\\(WORKBENCH_PROFILES\\.${profile}, \\[([^\\]]*)\\]`))[1];
     for (const type of ['kanban', 'workItems', 'roster', 'newWork', 'work']) assert.match(list, new RegExp(`WORKBENCH_TYPES\\.${type}\\b`), `${profile} offers ${type}`);
   }
+});
+
+test('Work items reads each board\'s items (every descendant) by stage, keeping only the stages it has', () => {
+  const read = boardStages([
+    { id: 'w1', parent: null, stage: 'IDEA' }, { id: 'w2', parent: 'w1', stage: 'IDEA' }, { id: 'w3', parent: 'w2', stage: 'BUILD' },
+    { id: 'w4', parent: null, stage: 'PLAN' }, { id: 'w5', parent: 'w4', stage: 'DONE' }, { id: 'w6', parent: null, stage: 'IDEA' },
+  ], ['IDEA', 'PLAN', 'BUILD', 'REVIEW', 'LAND', 'DONE']);
+  assert.deepEqual(read.map((row) => [row.board.id, row.size, row.stages.map((stage) => [stage.stage, stage.items.map((item) => item.id)])]), [
+    ['w1', 2, [['IDEA', ['w2']], ['BUILD', ['w3']]]],
+    ['w4', 1, [['DONE', ['w5']]]],
+    ['w6', 0, []],
+  ]);
 });

@@ -37,8 +37,8 @@ export function createWorkSurface({ leadOf = () => '', holderTeam = () => '', op
   const byId = (id) => items.find((item) => item.id === id);
 
   const renderDetail = (row, host) => {
-    if (row.draft) return draftItem(host, { heading: t('work.draft', 'New item'), save: async (fields) => {
-      const made = await request('/api/work-items', { method: 'POST', json: { ...fields, ...(row.parent ? { parent: row.parent } : {}) } });
+    if (row.draft) return void draftItem(host, { heading: t('work.draft', 'New item'), parent: row.parent, save: async (fields) => {
+      const made = await request('/api/work-items', { method: 'POST', json: fields });
       if (!made.ok) return made.message;
       say(firstLine(made.data.acknowledgement));
       phalanx.select('');
@@ -59,10 +59,12 @@ export function createWorkSurface({ leadOf = () => '', holderTeam = () => '', op
     });
     if (row !== board) {
       const team = holderTeam(row.item.holder);
-      itemOverlay(host, row.item, { actions: [
-        ...(team ? [createAction({ label: t('work.open_team', 'Open {team}', { team }), size: 'compact', action: () => openTeam(team) })] : []),
-        createAction({ label: t('work.close_item', 'Close'), size: 'compact', action: () => phalanx.select('') }),
-      ] });
+      itemOverlay(host, row.item, {
+        through: team ? [createAction({ label: t('work.open_team', 'Open {team}', { team }), size: 'compact', action: () => openTeam(team) })] : [],
+        context: () => ({ stage: row.item.stage, parent: row.item.parent || board.id }),
+        changed: (sentence) => { say(sentence); void refresh(); },
+        closed: () => phalanx.select(''),
+      });
     }
   };
   const moveStage = async (id, stage) => {

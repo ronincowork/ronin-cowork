@@ -39,3 +39,15 @@ export const boardTree = (items) => {
 
 /** The name a holder label shows: the Agent's or the Team's, nothing when nobody holds it. */
 export const holderName = (holder) => String(holder || '').replace(/^(agent|team):/, '');
+
+/** Every board with its items (every descendant) by stage, in the order `stages` gives,
+ * keeping only the stages it has items at: { board, stages: [{ stage, items }], size }. */
+export const boardStages = (items, stages) => boardTree(items).map((root) => {
+  const under = [];
+  const walk = (branch) => { for (const child of branch.items) { under.push(child.item); walk(child); } };
+  walk(root);
+  return {
+    board: root.item, size: under.length,
+    stages: stages.map((stage) => ({ stage, items: under.filter((item) => item.stage === stage) })).filter((row) => row.items.length),
+  };
+});

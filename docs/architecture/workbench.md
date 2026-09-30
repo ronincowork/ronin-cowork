@@ -31,6 +31,16 @@ shingo's `buildLadder`, `createField`) and share the work navigation bar
 (`work-nav.js`): utility stones a consumer hands its actions to (add, auto-assign,
 manual assign through the ERABI selector, request update), carrying no meaning itself.
 
+Work items (`work.views`, `work-views-surface.js`) is a third card over the same read, with
+no phalanx: its top-left button names the view and switches it. Status lays one Task
+Manager stage list per stage, each holding a container rectangle per board with that
+board's items (every descendant, `boardStages`) at that stage under it; Board lays one
+list per board with a container per stage it has items at. Every press opens an overlay
+from `work-details.js`, whose one utility sits top right: Save (only while there is
+something to save), Assign, Add (the Add form as an overlay, placed where it was pressed),
+Close. The Add form, the same wherever Add appears, asks title, objective, status, board
+(none: the common board) and Agent (none: nobody), all fields the create route takes.
+
 Task Manager retains its original board, furniture, selector card, and status/Project
 workspace drill-downs. Work Items (`work-items`) is a separate surface and card in
 Cowork/Desk, Team, and Agent profiles. Cowork/Desk offers one Work Items card spanning

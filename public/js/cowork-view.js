@@ -3,6 +3,7 @@
 import { createWorkItemsSurface } from './work-items-surface.js';
 import { createNewWorkSurface } from './new-work-surface.js';
 import { createWorkSurface } from './work-surface.js';
+import { createWorkViewsSurface } from './work-views-surface.js';
 import { WorkspaceKit } from './workspace-kit.js';
 import { deleteTeamRoster, membersOfTeam, sessionsAvailableToTeam, setTeamLead, setTeamMembership, subscribe, teamByName, teamsFromState, unassignedSessions, UNASSIGNED } from './team-controller.js';
 import { createNewTeamFormView } from './new-team-form.js';
@@ -288,6 +289,9 @@ export function createCoworkView(options = {}) {
     const room = buildArchives({ connect: (name) => connectSession(name, id) }, host);
     return [id, { el: surface.el, room }];
   })) : {};
+  // The Team a work item's holder works in: the holding Team, or the Team of the holding Agent.
+  const holderTeamOf = (holder) => holder.startsWith('team:') ? holder.slice(5)
+    : holder.startsWith('agent:') ? teamsFromState().find((row) => membersOfTeam(row.name).some((member) => member.name === holder.slice(6)))?.name || '' : '';
   const environment = {
     feedback: (workspace) => createFeedbackSurface(() => bench.place(campaign ? WB_TYPES.roster : WB_TYPES.commons, workspace)),
     teamCommons: (id) => ({ el: commonsFor(id).el, show: (detail = {}) => { const item = commonsFor(id); if (!detail.doc && !detail.tab) item.attendQueueOnOpen(); item.channels.enter(ctx); if (detail.doc) { item.channels.select('docs'); void item.docs.open(detail.doc); } else if (detail.tab) item.channels.select(detail.tab); } }),
@@ -317,10 +321,10 @@ export function createCoworkView(options = {}) {
     newWork: () => createNewWorkSurface(),
     work: () => createWorkSurface({
       leadOf: (name) => membersOfTeam(name).find((member) => member.team_lead)?.name || '',
-      holderTeam: (holder) => holder.startsWith('team:') ? holder.slice(5)
-        : holder.startsWith('agent:') ? teamsFromState().find((row) => membersOfTeam(row.name).some((member) => member.name === holder.slice(6)))?.name || '' : '',
+      holderTeam: holderTeamOf,
       openTeam: (name) => openWorkspaceTab('team', name),
     }),
+    workViews: () => createWorkViewsSurface({ holderTeam: holderTeamOf, openTeam: (name) => openWorkspaceTab('team', name) }),
     teamKanban: (id) => taskManagerFor(id),
     taskStatus: (id, detail) => taskManagerFor(id, { ...detail, view: 'status' }),
     taskProject: (id, detail) => taskManagerFor(id, { ...detail, view: 'project' }),

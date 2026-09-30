@@ -34,8 +34,8 @@ export function createNewWorkSurface() {
   // Where the plus sits: the open group (selected, or the level it went down into).
   const draft = () => ({ id: 'new', draft: true, stage: groupOf(phalanx.level()?.id || phalanx.selected())?.stage || 'IDEA' });
   const renderDetail = (row, host) => {
-    if (row.draft) return draftItem(host, { heading: t('new_work.draft', 'New item'), save: async (fields) => {
-      const made = await request('/api/work-items', { method: 'POST', json: { ...fields, stage: row.stage } });
+    if (row.draft) return void draftItem(host, { heading: t('new_work.draft', 'New item'), stage: row.stage, save: async (fields) => {
+      const made = await request('/api/work-items', { method: 'POST', json: fields });
       if (!made.ok) return made.message;
       say(made.data.acknowledgement?.split('\n')[0] || '');
       phalanx.select('');
