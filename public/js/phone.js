@@ -297,6 +297,7 @@ export async function buildPhone() {
     transcriptBtn.addEventListener('click', () => rememberTranscriptMode(session, tile.transcriptOn));
     sheet.addRow(node('workRecordBtn'), t('me.ladder', 'Work record'));
     sheet.addRow(node('docsBtn'), t('me.docs', 'Docs'));
+    sheet.addRow(node('attachBtn'), t('me.attach', 'Send a file'));
     // No Services, no choice: the Output row only exists where an unlocked view does.
     if (!tile.servicesOff()) sheet.addRow(node('outputEl'), t('me.output', 'Output'), 'stay');
     sheet.addRow(node('killBtn'), 'Close');

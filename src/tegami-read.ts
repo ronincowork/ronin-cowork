@@ -21,7 +21,7 @@ export interface Tegami {
   holds: string[];
   items: WorkItem[];
   item: WorkItem | null;
-  /** The session's README and the documents of every item it holds. */
+  /** The session's README, the documents of every item it holds, and files dropped on it. */
   docs: string[];
   chip: { text: string; gate: boolean };
   quietMs: number;
@@ -43,6 +43,13 @@ async function readDocs(v: unknown): Promise<string[]> {
   const want = [...new Set(v.filter((x): x is string => typeof x === 'string' && x.startsWith('/')))];
   const alive = await Promise.all(want.map((p) => fs.stat(p).then(() => p).catch(() => null)));
   return alive.filter((p): p is string => p !== null);
+}
+
+/** Files the owner handed this Agent from the browser, in the session's own drop/. */
+async function dropped(key: string): Promise<string[]> {
+  const dir = path.join(sessionDir(key), 'drop');
+  const names = await fs.readdir(dir).catch(() => [] as string[]);
+  return names.filter((n) => !n.startsWith('.')).sort().map((n) => path.join(dir, n));
 }
 
 function chipFor(
@@ -121,7 +128,7 @@ export async function readTegami(name: string): Promise<Tegami | null> {
       holds: reading.items.map((item) => item.id),
       items: reading.items,
       item: reading.items.find((item) => item.id === reading.focus) ?? null,
-      docs: await readDocs([path.join(sessionDir(key), 'README.md'), ...reading.docs]),
+      docs: await readDocs([path.join(sessionDir(key), 'README.md'), ...reading.docs, ...(await dropped(key))]),
       chip: chipFor(reading.ladder, reading.at, off),
       quietMs: Date.now() - stat.mtimeMs,
     };

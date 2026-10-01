@@ -3,6 +3,7 @@ import { makeGauge, setInert } from './widgets.js';
 import { clampTip } from './shingo.js';
 import { buildTileDocs } from './tiledocs.js';
 import { buildTileMentions } from './tilementions.js';
+import { pickFile } from './tilefiles.js';
 import { serviceMissing } from './state.js';
 import { makeOutput } from './output.js';
 import { makeDrop } from './tiledrop.js';
@@ -75,6 +76,12 @@ const HEADER = () => {
     widget: (tile) => buildTileMentions(tile),
     help: t('head.mention_help', 'Mention another session — choose a name to add it to the message box'),
     quiet: t('head.mention_quiet', 'Mentions — no session in this tile yet') },
+
+  // Drag or paste is the main way to hand this Agent a file; the paperclip is for when you cannot.
+  { key: 'attachBtn', cls: 'attach', text: '📎', needs: 'session',
+    help: t('head.attach_help', 'Send a file to this Agent — or drag or paste one on the tile'),
+    quiet: t('head.attach_quiet', 'Send a file — no Agent in this workspace'),
+    on: (tile) => pickFile(tile) },
 
   { key: 'docsBtn', needs: 'session',
     widget: (tile) => buildTileDocs(tile),
@@ -202,6 +209,7 @@ export function buildTileHead(tile) {
     const row = (key, label, mode) => { if (out[key]?.el || out[key]) sheet.addRow(out[key]?.el ?? out[key], label, mode); };
     row('workRecordBtn', t('me.ladder', 'Work record'));
     row('docsBtn', t('me.docs', 'Docs'));
+    row('attachBtn', t('me.attach', 'Send a file'));
     row('mentionBtn', t('me.mention', 'Mention session'));
     row('outputEl', t('me.output', 'Output'), 'stay');
     row('minimizeBtn', t('me.minimize', 'Minimize'));

@@ -33,6 +33,7 @@ import { registerSessions, shutdownOperation } from './routes/sessions-api.js';
 import { registerTeams, teamRosters } from './routes/teams-api.js';
 import { registerWorkItems } from './routes/work-items-api.js';
 import { registerDocs } from './routes/docs-api.js';
+import { registerDrop } from './routes/drop-api.js';
 import { registerDesks } from './routes/desks-api.js';
 import { registerTeamPage } from './routes/team-page-api.js';
 import { startTomodachiSender } from './activation/tomodachi.js';
@@ -298,6 +299,7 @@ registerSessions(app); // per-session: kill/harakiri, meta, ctx, tegami, send �
 registerWipeboards(app); // /api/wipeboards* — src/routes/wipeboards-api.ts
 registerTerminalControls(app);
 registerMessages(app); // /api/messages* — durable inbound session delivery
+registerDrop(app); // /api/sessions/:name/drop — a file handed to an Agent from the browser — src/routes/drop-api.ts
 registerCli(app); // /api/cli/:tool — command-line faces of operator verbs
 startMessageQueue();
 
