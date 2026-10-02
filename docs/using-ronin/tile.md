@@ -12,7 +12,7 @@ column, or drag its card into the workspace where you want to see it.
 | Output | **Terminal Mirror** — the live terminal — or **Locked**, the same terminal to watch without typing into it |
 | Transcript / Chat · Notes · Work · All · Term | When Terminal transcript is active, cycle from the terminal through ever fuller readings of the Agent's conversation and back |
 | Mention | Add another session's name to the message box |
-| 📎 | Send a file to this Agent from Finder, or the photo library on a phone — see [Hand an Agent a file](#hand-an-agent-a-file) |
+| 📎 | Send a file to this Agent from Finder, or the photo library on a phone — see [Share a file with an Agent](share-a-file.md) |
 | Docs | Open documents tracked by this Agent, and files handed to it |
 | × | Open the archive/delete choices |
 | − | Close this view while the Agent keeps running |
@@ -36,20 +36,11 @@ Use [Terminal controls](terminal-controls.md) for Stop, Clear, Copy, and Close, 
 provider differences and mobile controls. Close and hide view have different consequences;
 see [Archived sessions](archived-sessions.md).
 
-## Hand an Agent a file
+## Share a file with an Agent
 
-A browser terminal cannot carry a pasted image or document to a remote machine, so the tile
-takes the file itself. **Drag a file onto the tile**: the tile outlines while you hover, and
-the file uploads when you let go. **Paste** works the same way when the clipboard holds an
-image or a file; pasting text is unchanged. Where you cannot drag, press **📎** in the
-header (on a phone or tablet it is in the メ menu) to choose one.
-
-The file is saved in the session's own folder, under `drop/`, with its name cleaned and a
-timestamp in front; any type up to 25 MB. It appears on the Agent's **Docs** list, and its
-full path is typed into the Agent's input **without pressing Enter**, so you write the
-prompt around it and send it yourself. Anything you had half typed stays, with the path
-added after it. If the Agent is showing a question or a menu, the path is not typed; the
-notice gives the path instead.
+Drag a file onto the tile, paste an image or file on it, or press **📎**: the file is saved
+in the session's `drop/` folder, listed on Docs, and its path typed into the Agent's input
+without Enter. See [Share a file with an Agent](share-a-file.md).
 
 ## Output availability
 
