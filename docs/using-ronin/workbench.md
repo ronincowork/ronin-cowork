@@ -35,11 +35,11 @@ not four layout systems.
 |---|---|
 | Campaign | Campaign settings and Campaign-level resources |
 | Teams collection | Teams, Agents, shared resources, and creation surfaces available in the selected Campaign context |
-| Team | that Team's Agents, Commons, Work items, and launch surface |
+| Team | that Team's Agents, Commons, Trello view, and launch surface |
 | Agent | Self, Documents, Team membership, and separate Task Managers for the Agent's Teams |
 | Setup | pinned Presets plus Register, providers, roots, Services, gbrain, and Templates |
 
-On the Cowork and Desk workbenches one card reads the work items: **Work items**. The button at its top left says which
+On the Cowork and Desk workbenches one card reads the work items: **Trello view**. The button at its top left says which
 view you are in, **View by: Status** or **View by: Board**, and switches to the other. It is laid out like a
 Trello board: Status shows one list per stage, its items grouped under each board's name;
 Board shows one list per board, its items grouped under each stage's name. Each list shows

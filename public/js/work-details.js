@@ -1,6 +1,6 @@
 /* part of the ronin-cowork client — see js/README.md */
 /**
- * THE WORK-ITEM DETAILS — what the Work items card opens over its lists, built only from
+ * THE WORK-ITEM DETAILS — what the Trello view card opens over its lists, built only from
  * pieces that already exist: the in-place Team detail's head and steps (league-team-detail,
  * createStep), the one item line (itemLine), the tile's work record (shingo's buildLadder),
  * the kit's fields (createField) and the ERABI selector (ask). Nothing here has a look of

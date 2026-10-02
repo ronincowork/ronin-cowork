@@ -22,7 +22,7 @@ density you were in. Switching density keeps the selection: a selected stone wit
 becomes its level in full density, a level becomes its selected stone in compact, and
 the stone open at that level returns with it. Consumers never restyle the rest geometry.
 
-Work items (`work.views`, `work-views-surface.js`) is the Cowork/Desk work-item card, over
+Trello view (`work.views`, `work-views-surface.js`) is the Cowork/Desk work-item card, over
 GET `/api/work-items` (every item with its holder), with no phalanx, organised as a Trello board: its top-left button names the view and switches
 it. Status lays one fixed-width list per stage, grouping under an underlined subtitle per
 board that board's items (every descendant, `boardStages`) at that stage; Board lays one
@@ -37,7 +37,7 @@ Unfiled, the default. Assign holds the item by an Agent or a Team.
 
 Task Manager keeps its board and status/Project drill-downs for the Agent's Task Manager;
 its selector card is no longer offered on the Cowork, Desk or Team workbenches. The older
-Work Items board (`work-items`) stays on the Team workbench beside Work items and in the
+Work Items board (`work-items`) stays on the Team workbench beside Trello view and in the
 Agent's; Team reads its selected Team, Agent filters to Projects held by that Agent.
 
 Work Items mounts `createPhalanx` directly in the standard surface content seat. Each
@@ -178,7 +178,7 @@ restoration branches.
 | Destination | First open | Notable structured opening |
 |---|---|---|
 | Ronin Settings | Defaults in workspace 1; Workspace Folders in workspace 2 | **Desk defaults** replaces the seats with Defaults and Launch your own |
-| Desk | Teams overview in workspace 1; Work items in workspace 2 | Status and Project drill-downs retain the Desk tenant |
+| Desk | Teams overview in workspace 1; Trello view in workspace 2 | Status and Project drill-downs retain the Desk tenant |
 | New Project | New Agent in workspace 1 | Links may replace or overlay New Agent/New Team and carry prompt or template detail |
 | Ronin Setup | Garden in workspace 1; active journey surface in workspace 2 | Journey actions select a Setup surface without another restoration path |
 | Cowork / Team | Fresh empty/member seating rules; refresh restores this instance | Team Configuration, documents, commons tabs, and New Agent may be addressed in seat detail |

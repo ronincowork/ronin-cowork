@@ -1,6 +1,6 @@
 /* part of the ronin-cowork client — see js/README.md */
 /**
- * WORK ITEMS — every board's items read two ways, off GET /api/work-items. No phalanx. The
+ * TRELLO VIEW — every board's items read two ways, off GET /api/work-items. No phalanx. The
  * button at the top left reads "View by: Status" or "View by: Board"; pressing it switches.
  *
  *   Status   one list per stage across the top; in each, every board with items at that
@@ -33,7 +33,7 @@ export function createWorkViewsSurface({ holderTeam = () => '', openTeam = () =>
   const { createSurface, createAction } = WorkspaceKit.primitives;
   let view = 'status';
   let boards = [];
-  const surface = createSurface({ label: t('work_views.title', 'Work items'), className: 'work-views-surface' });
+  const surface = createSurface({ label: t('work_views.title', 'Trello view'), className: 'work-views-surface' });
   const root = el('div', 'wv');
   const toggle = createAction({ size: 'compact', className: 'wv-toggle', action: () => { view = view === 'status' ? 'board' : 'status'; paint(); } });
   const notice = el('p', 'wi-notice'); notice.setAttribute('role', 'status');
