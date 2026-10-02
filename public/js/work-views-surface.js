@@ -3,19 +3,21 @@
  * WORK ITEMS — every board's items read two ways, off GET /api/work-items. No phalanx. The
  * button at the top left names the view you are in; pressing it switches to the other.
  *
- *   Status   one list per stage across the top; under each, a rectangle for every board
- *            with items at that stage, and that board's items at that stage under it
- *   Board    one list per board across the top; under each, a rectangle for every stage the
- *            board has items at, and the board's items at that stage under it
+ *   Status   one list per stage across the top; in each, every board with items at that
+ *            stage as a subtitle, that board's items at that stage under it
+ *   Board    one list per board across the top; in each, every stage the board has items
+ *            at as a subtitle, the board's items at that stage under it
  *
- * A board is a root item and its items are every item under it. Press a list head, a
- * container or an item and its overlay lies over the lists: the item overlay for a board
- * or an item, the status's items in their context for a status. Close or Escape lifts it.
+ * Laid out the way a Trello board is: each list one fixed-width panel as tall as what it
+ * holds, its name and count at the head, Add at the foot. A board is a root item and its
+ * items are every item under it. Press a list head, a subtitle or an item and its overlay
+ * lies over the lists (the item overlay for a board or an item, the status's items in their
+ * context for a status). Close or Escape lifts it.
  */
 import { WorkspaceKit } from './workspace-kit.js';
 import { el } from './form-steps.js';
 import { PROJECT_STAGES } from './team-kanban.js';
-import { itemOverlay, listOverlay } from './work-details.js';
+import { draftOverlay, itemOverlay, listOverlay } from './work-details.js';
 import { request } from './request.js';
 import { boardStages, holderName } from './work-readings.js';
 import { t } from './lexicon.js';
@@ -24,10 +26,10 @@ export const WORK_VIEWS_TYPE = 'work.views';
 
 const STAGE_KEYS = PROJECT_STAGES.map((stage) => stage.key);
 const stageName = (key) => PROJECT_STAGES.find((stage) => stage.key === key)?.label || key;
-const count = (n) => n === 1 ? t('new_work.count_one', '1 item') : t('new_work.count', '{n} items', { n });
 
-/** `holderTeam(holder)` names the Team a holder works in; `openTeam(team)` opens its workbench. */
-export function createWorkViewsSurface({ holderTeam = () => '', openTeam = () => {} } = {}) {
+/** `holderTeam(holder)` names the Team a holder works in; `openTeam(team)` opens its workbench;
+ * `team`, on a Team's workbench, keeps that Team's boards. */
+export function createWorkViewsSurface({ holderTeam = () => '', openTeam = () => {}, team = '' } = {}) {
   const { createSurface, createAction } = WorkspaceKit.primitives;
   let view = 'status';
   let boards = [];
@@ -62,30 +64,32 @@ export function createWorkViewsSurface({ holderTeam = () => '', openTeam = () =>
     }, { context: () => ({ stage, parent: board?.id || '' }), changed });
   };
 
-  const press = (className, label, secondary, action) => {
+  const press = (className, parts, action) => {
     const button = el('button', className);
     button.type = 'button';
-    button.append(el('span', 'wv-label', label));
-    if (secondary) button.append(el('small', 'wv-secondary', secondary));
+    button.append(...parts);
     button.addEventListener('click', action);
     return button;
   };
-  const itemRect = (item) => press('wv-item', item.title, item.holder ? `@${holderName(item.holder)}` : '', () => openItem(item));
-  /** A container rectangle with its items under it, inside one frame. */
+  /** An item: its title, and the initial of whoever holds it. */
+  const card = (item) => {
+    const who = holderName(item.holder);
+    const mark = who ? el('span', 'wv-holder', who.slice(0, 1).toUpperCase()) : null;
+    if (mark) mark.title = who;
+    return press('wv-item', [el('span', 'wv-label', item.title), mark].filter(Boolean), () => openItem(item));
+  };
+  /** A group inside a list: a plain underlined subtitle, its items under it. */
   const group = (label, items, action) => {
     const box = el('div', 'wv-group');
-    const under = el('div', 'wv-items');
-    under.append(...items.map(itemRect));
-    box.append(press('wv-container', label, count(items.length), action), under);
+    box.append(press('wv-sub', [el('span', 'wv-label', label)], action), ...items.map(card));
     return box;
   };
-  const list = (label, action, groups) => {
-    const column = el('section', 'tk-column wv-list');
-    const heading = el('h3');
-    heading.append(press('wv-list-head', label, '', action));
-    const body = el('div', 'tk-cards');
-    body.append(...(groups.length ? groups : [el('p', 'tk-empty', t('team_kanban.empty', 'nothing here'))]));
-    column.append(heading, body);
+  /** A list: its name and count, its groups, and Add at the foot, starting where it sits. */
+  const list = (label, n, action, groups, context) => {
+    const column = el('section', 'wv-list');
+    const add = press('wv-add', [el('i', 'wv-add-mark', '+'), el('span', null, t('work_views.add', 'Add a work item'))],
+      () => { lift(); draftOverlay(root, { ...context, changed }); });
+    column.append(press('wv-list-head', [el('span', 'wv-label', label), el('span', 'wv-count', String(n))], action), ...groups, add);
     return column;
   };
 
@@ -98,17 +102,20 @@ export function createWorkViewsSurface({ holderTeam = () => '', openTeam = () =>
     if (view === 'status') row.replaceChildren(...STAGE_KEYS.map((stage) => {
       const here = boards.map((entry) => ({ board: entry.board, items: entry.stages.find((row) => row.stage === stage)?.items || [] })).filter((entry) => entry.items.length);
       const all = here.flatMap((entry) => entry.items);
-      return list(stageName(stage), () => openStatus(stage, null, all),
-        here.map((entry) => group(entry.board.title, entry.items, () => openItem(entry.board))));
+      return list(stageName(stage), all.length, () => openStatus(stage, null, all),
+        here.map((entry) => group(entry.board.title, entry.items, () => openItem(entry.board))), { stage });
     }));
-    else row.replaceChildren(...boards.map((entry) => list(entry.board.title, () => openItem(entry.board),
-      entry.stages.map((row) => group(stageName(row.stage), row.items, () => openStatus(row.stage, entry.board, row.items))))));
+    else row.replaceChildren(...boards.map((entry) => list(entry.board.title, entry.size, () => openItem(entry.board),
+      entry.stages.map((row) => group(stageName(row.stage), row.items, () => openStatus(row.stage, entry.board, row.items))), { parent: entry.board.id })));
   };
 
   async function refresh() {
     const read = await request('/api/work-items', { cache: 'no-store' });
     if (!read.ok) { notice.textContent = t('work.failed', 'Could not read the work items.'); return; }
-    boards = boardStages(read.data.items || [], STAGE_KEYS);
+    // On a Team's workbench: the boards that Team, or one of its Agents, holds or holds work under.
+    const ours = (item) => holderTeam(String(item.holder || '')) === team;
+    boards = boardStages(read.data.items || [], STAGE_KEYS)
+      .filter((entry) => !team || ours(entry.board) || entry.stages.some((row) => row.items.some(ours)));
     paint();
   }
   paint();
