@@ -53,10 +53,12 @@ you are. There is no issue source yet, so Open issues is empty, and no triage Ag
 configured, so **Auto-assign** says so.
 
 **Work items** reads the same work without stones. The button at its top left says which
-view you are in, **Status** or **Board**, and switches to the other. Status shows one list
-per stage with each board's items at that stage under the board; Board shows one list per
-board with its items under each stage it has. Press a board, a stage or an item to open it
-over the lists. Its buttons at the top right are **Save** (once there is something to
+view you are in, **Status** or **Board**, and switches to the other. It is laid out like a
+Trello board: Status shows one list per stage, its items grouped under each board's name;
+Board shows one list per board, its items grouped under each stage's name. Each list shows
+its count at the head and **Add a work item** at the foot, which starts the new item in that
+list. On a Team's workbench the card shows only that Team's boards. Press a list's name, a
+group's name or an item to open it over the lists. Its buttons at the top right are **Save** (once there is something to
 save), **Assign** (pick the Agent that holds it), **Add** (a new item, starting where you
 pressed) and **Close**; Escape closes it too. Wherever you add an item, you give its title,
 objective, status, board and, if you like, the Agent that holds it.

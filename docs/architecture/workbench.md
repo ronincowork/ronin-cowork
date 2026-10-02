@@ -32,10 +32,12 @@ shingo's `buildLadder`, `createField`) and share the work navigation bar
 manual assign through the ERABI selector, request update), carrying no meaning itself.
 
 Work items (`work.views`, `work-views-surface.js`) is a third card over the same read, with
-no phalanx: its top-left button names the view and switches it. Status lays one Task
-Manager stage list per stage, each holding a container rectangle per board with that
-board's items (every descendant, `boardStages`) at that stage under it; Board lays one
-list per board with a container per stage it has items at. Every press opens an overlay
+no phalanx, organised as a Trello board: its top-left button names the view and switches
+it. Status lays one fixed-width list per stage, grouping under an underlined subtitle per
+board that board's items (every descendant, `boardStages`) at that stage; Board lays one
+list per board with a subtitle per stage it has items at. Each list carries its count at the
+head and Add at the foot (the Add form, started in that list). Cowork/Desk show every board;
+a Team workbench shows the boards that Team or its Agents hold, or hold work under. Every press opens an overlay
 from `work-details.js`, whose one utility sits top right: Save (only while there is
 something to save), Assign, Add (the Add form as an overlay, placed where it was pressed),
 Close. The Add form, the same wherever Add appears, asks title, objective, status, board

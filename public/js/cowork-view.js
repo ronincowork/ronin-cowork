@@ -324,7 +324,7 @@ export function createCoworkView(options = {}) {
       holderTeam: holderTeamOf,
       openTeam: (name) => openWorkspaceTab('team', name),
     }),
-    workViews: () => createWorkViewsSurface({ holderTeam: holderTeamOf, openTeam: (name) => openWorkspaceTab('team', name) }),
+    workViews: () => createWorkViewsSurface({ holderTeam: holderTeamOf, openTeam: (name) => openWorkspaceTab('team', name), team: campaign || team === UNASSIGNED ? '' : team }),
     teamKanban: (id) => taskManagerFor(id),
     taskStatus: (id, detail) => taskManagerFor(id, { ...detail, view: 'status' }),
     taskProject: (id, detail) => taskManagerFor(id, { ...detail, view: 'project' }),
