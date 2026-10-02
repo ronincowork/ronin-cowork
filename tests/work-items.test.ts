@@ -24,32 +24,43 @@ process.env.RONIN_WORK_ITEMS_DIR = temp;
 const items = await import('../src/work-items.js');
 const { registerWorkItems } = await import('../src/routes/work-items-api.js');
 
-test('a create with no common board makes one and files under it; the next create reuses it', async () => {
-  assert.equal(await items.commonBoard(), null, 'a fresh store has no starting point');
+test('a create with no Unfiled board makes one and files under it; the next create reuses it', async () => {
+  assert.equal(await items.unfiledBoard(), null, 'a fresh store has no starting point');
   const first = await items.createItem({ title: 'First' }, 'probe');
-  const common = (await items.commonBoard())!;
-  assert.deepEqual([common.title, common.parent, first.item.parent], ['Common', null, common.id]);
+  const common = (await items.unfiledBoard())!;
+  assert.deepEqual([common.title, common.parent, first.item.parent], ['Unfiled', null, common.id]);
   assert.notEqual(first.item.id, common.id);
   assert.deepEqual(await items.holdersOf(common.id), [], 'held by nobody');
   const second = await items.createItem({ title: 'Second' }, 'probe');
   assert.equal(second.item.parent, common.id);
-  assert.equal((await items.listItems()).filter((item) => item.title === 'Common' && item.parent === null).length, 1);
+  assert.equal((await items.listItems()).filter((item) => item.title === 'Unfiled' && item.parent === null).length, 1);
   assert.equal(second.shape, `${second.item.id} is a project at idea, 0 legs`);
   assert.equal((await items.readItem(first.item.id)) && (await items.reparentItem(second.item.id, first.item.id, 'probe')).shape, `${second.item.id} is a project at idea, 0 legs`);
   assert.equal((await items.editItem(first.item.id, { title: 'First board' }, 'probe')).shape, `${first.item.id} is a board, 1 item`);
   // Deleted by hand: the next create makes another.
   await fs.unlink(path.join(temp, `${common.id}.json`));
   const third = await items.createItem({ title: 'Third' }, 'probe');
-  const again = (await items.commonBoard())!;
+  const again = (await items.unfiledBoard())!;
   assert.notEqual(again.id, common.id);
   assert.equal(third.item.parent, again.id);
+});
+
+test('the former "Common" root is renamed Unfiled in place, never a second board; root: true is a board of its own', async () => {
+  const unfiled = (await items.unfiledBoard())!;
+  await items.editItem(unfiled.id, { title: 'Common' }, 'probe'); // the store as it was before 2026-10-02
+  const found = (await items.unfiledBoard())!;
+  assert.deepEqual([found.id, found.title], [unfiled.id, 'Unfiled'], 'the same board, renamed');
+  assert.equal((await items.listItems()).filter((item) => item.parent === null && ['Common', 'Unfiled'].includes(item.title)).length, 1);
+  const board = await items.createItem({ title: 'A board', root: true }, 'probe');
+  assert.equal(board.item.parent, null);
+  assert.match(board.line.note || '', /a board of its own/);
 });
 
 test('create → read round-trips the whole shape, with one create line', async () => {
   const { item, line } = await items.createItem({ title: 'Store', objective: 'Keep items once.' }, 'probe');
   assert.match(item.id, /^w[1-9][0-9]*$/);
   assert.equal(item.stage, 'IDEA');
-  assert.equal(item.parent, (await items.commonBoard())!.id, 'born on the common board');
+  assert.equal(item.parent, (await items.unfiledBoard())!.id, 'born on the Unfiled board');
   assert.deepEqual(item.ladder, []);
   assert.deepEqual(item.docs, []);
   assert.deepEqual(item.external, {});

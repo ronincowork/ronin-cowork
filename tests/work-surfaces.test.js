@@ -45,12 +45,12 @@ test('New work reads four groups off the unassigned common-board items: Ideas an
 
 test('manual assign offers the boards (roots and items with children), never the item itself', () => {
   const items = [
-    { id: 'w1', title: 'Common', parent: null },
+    { id: 'w1', title: 'Unfiled', parent: null },
     { id: 'w2', title: 'Surface', parent: null },
     { id: 'w3', title: 'Phase', parent: 'w2' },
     { id: 'w4', title: 'Leaf', parent: 'w3' },
   ];
-  assert.deepEqual(boardChoices(items, 'w4'), [{ id: 'w1', label: 'Common' }, { id: 'w2', label: 'Surface' }, { id: 'w3', label: 'Phase' }]);
+  assert.deepEqual(boardChoices(items, 'w4'), [{ id: 'w1', label: 'Unfiled' }, { id: 'w2', label: 'Surface' }, { id: 'w3', label: 'Phase' }]);
   assert.deepEqual(boardChoices(items, 'w2').map((row) => row.id), ['w1', 'w3']);
 });
 
@@ -71,7 +71,7 @@ test('the work navigation bar draws one stone per action it is handed and carrie
   const nav = createWorkNav({
     add: () => seen.push('add'),
     autoAssign: (id) => seen.push(`auto ${id}`),
-    manualAssign: { choices: async (id) => [{ id: 'w1', label: 'Common' }, { id: 'w9', label: `not ${id}` }], pick: (id, board) => seen.push(`move ${id} ${board.id}`) },
+    manualAssign: { choices: async (id) => [{ id: 'w1', label: 'Unfiled' }, { id: 'w9', label: `not ${id}` }], pick: (id, board) => seen.push(`move ${id} ${board.id}`) },
     requestUpdate: (id) => seen.push(`update ${id}`),
   });
   const stones = Object.fromEntries(nav.el.find((node) => node.dataset.nav).map((node) => [node.dataset.nav, node]));
@@ -84,7 +84,7 @@ test('the work navigation bar draws one stone per action it is handed and carrie
   stones.manual.dispatch('drop', carrying('w4'));
   await new Promise((resolve) => setImmediate(resolve));
   const choices = nav.el.all('ask-opt');
-  assert.deepEqual(choices.map((node) => node.all('ask-name')[0].textContent), ['Common', 'not w4'], 'the choices are the labels it was handed, drawn by the one selector');
+  assert.deepEqual(choices.map((node) => node.all('ask-name')[0].textContent), ['Unfiled', 'not w4'], 'the choices are the labels it was handed, drawn by the one selector');
   choices[0].click();
   assert.deepEqual(seen, ['add', 'auto w4', 'update w4', 'move w4 w1']);
 

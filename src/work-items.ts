@@ -181,6 +181,8 @@ export interface NewItem {
   exit?: string;
   status?: string;
   parent?: string | null;
+  /** A board of its own: a root item, under nothing. */
+  root?: boolean;
   /** Held from birth by this Team or Agent, in the same call and the same trail line. */
   holder?: Holder;
   ladder?: Rung[];
@@ -193,24 +195,38 @@ function checkFields(fields: { stage?: unknown; exit?: unknown; status?: unknown
   if (fields.status !== undefined && !member(ITEM_STATUSES, fields.status)) throw new WorkItemBadInput(`status must be one of ${ITEM_STATUSES.join(', ')}.`);
 }
 
-/* THE COMMON BOARD. Every item is born under a parent: the one named, else the common
- * board, a root item titled "Common" and held by nobody. Creating checks for it and makes
- * it when it is missing, every time; there is no other starting point. */
-const COMMON = 'Common';
+/* THE UNFILED BOARD. Every item is born under a parent: the one named, else the Unfiled
+ * board, a root item titled "Unfiled" and held by nobody; or, asked for, as a root of its own
+ * (a new board). Creating checks for Unfiled and makes it when it is missing, every time.
+ * Until 2026-10-02 it was titled "Common": finding that root renames it in place, so the
+ * board and everything under it carry over and a second one is never made. */
+const UNFILED = 'Unfiled';
+const FORMER = 'Common';
 
-async function commonBoardUnlocked(by: string): Promise<string> {
-  const found = (await listItems()).find((item) => item.parent === null && item.title === COMMON);
+/** The Unfiled board, the former "Common" root renamed in place; null when neither exists. */
+async function findUnfiledUnlocked(by: string): Promise<WorkItem | null> {
+  const roots = (await listItems()).filter((item) => item.parent === null);
+  const found = roots.find((item) => item.title === UNFILED);
+  if (found) return found;
+  const former = roots.find((item) => item.title === FORMER);
+  if (!former) return null;
+  former.title = UNFILED;
+  former.trail.push(lineOf(by, 'edit', { note: `renamed ${FORMER} → ${UNFILED}` }));
+  await save(former);
+  return former;
+}
+
+async function unfiledBoardUnlocked(by: string): Promise<string> {
+  const found = await findUnfiledUnlocked(by);
   if (found) return found.id;
-  const board = blank(COMMON, by);
+  const board = blank(UNFILED, by);
   board.id = await nextId();
-  board.trail.push(lineOf(by, 'create', { to: 'none', note: 'the common board' }));
+  board.trail.push(lineOf(by, 'create', { to: 'none', note: 'the Unfiled board' }));
   await save(board);
   return board.id;
 }
 
-export async function commonBoard(): Promise<WorkItem | null> {
-  return (await listItems()).find((item) => item.parent === null && item.title === COMMON) ?? null;
-}
+export const unfiledBoard = (): Promise<WorkItem | null> => withIssuer(() => findUnfiledUnlocked('house'));
 
 const blank = (title: string, by: string): WorkItem => ({
   id: '', title, objective: '', stage: 'IDEA', exit: 'none', status: 'yellow', parent: null,
@@ -252,8 +268,8 @@ export async function createItemUnlocked(input: NewItem, by: string): Promise<Ac
   if (!title) throw new WorkItemBadInput('A work item needs a title.');
   checkFields(input);
   if (input.parent) await load(input.parent);
-  // The parent first: making the common board issues an id, and the item's comes after it.
-  const parent = input.parent || await commonBoardUnlocked(by);
+  // The parent first: making the Unfiled board issues an id, and the item's comes after it.
+  const parent = input.root ? null : input.parent || await unfiledBoardUnlocked(by);
   const item: WorkItem = {
     ...blank(title, by),
     id: await nextId(),
@@ -266,10 +282,10 @@ export async function createItemUnlocked(input: NewItem, by: string): Promise<Ac
     docs: input.docs ?? [],
   };
   const list = input.holder ? await listFor(input.holder) : null;
-  const folded = await foldIntoFirstChild(item.parent!, item, by);
+  const folded = item.parent ? await foldIntoFirstChild(item.parent, item, by) : '';
   await save(item);
   if (list) await list.set([...list.holds, item.id]);
-  const line = lineOf(by, 'create', { to: input.holder ? holderLabel(input.holder) : 'none', note: [item.title, `under ${item.parent}`, folded].filter(Boolean).join('; ') });
+  const line = lineOf(by, 'create', { to: input.holder ? holderLabel(input.holder) : 'none', note: [item.title, item.parent ? `under ${item.parent}` : 'a board of its own', folded].filter(Boolean).join('; ') });
   item.trail.push(line);
   await save(item);
   return { ...(await answer(item, line)), notified: await announceArrival(item) };

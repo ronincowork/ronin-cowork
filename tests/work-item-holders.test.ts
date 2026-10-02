@@ -117,11 +117,11 @@ test('an ended Agent orphans nothing: each item gets holder-ended and is found u
   assert.deepEqual(await listsHolding(child.id), []);
   assert.deepEqual(await listsHolding(loose.id), []);
   assert.equal((await items.readItem(child.id))!.parent, parent.id, 'still found under its parent');
-  assert.ok((await unassignedReading()).some((item) => item.id === loose.id), 'on the common board, held by nobody: unassigned');
+  assert.ok((await unassignedReading()).some((item) => item.id === loose.id), 'on the Unfiled board, held by nobody: unassigned');
   assert.deepEqual(await items.releaseHolder('gone', 'gone', 'again'), [], 'a second end finds nothing to release');
 });
 
-test('readings: the team reads its own holds and its members\' holds, children after parents; unassigned is the common board\'s unheld items', async () => {
+test('readings: the team reads its own holds and its members\' holds, children after parents; unassigned is the Unfiled board\'s unheld items', async () => {
   await createTeamRoster('readers', { objective: 'read us' });
   await seedTegami('reader_a');
   const readers = { kind: 'team', name: 'readers' } as const;
@@ -153,7 +153,7 @@ test('nesting under a held board queues its holder exactly one message; under an
   await clear();
 
   const piece = (await items.createItem({ title: 'piece' }, 'lead')).item;
-  assert.deepEqual(await listQueuedMessages(), [], 'the common board is held by nobody: nobody is told');
+  assert.deepEqual(await listQueuedMessages(), [], 'the Unfiled board is held by nobody: nobody is told');
   const moved = await items.reparentItem(piece.id, held.id, 'lead');
   assert.deepEqual(moved.notified, ['boarder']);
   const queued = await listQueuedMessages();

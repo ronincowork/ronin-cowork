@@ -46,7 +46,7 @@ not duplicate them. Read-only Team enumeration belongs to `edges team`.
 | Team record read and update | the roster's objective and launch defaults; the Team page derives membership from sessions |
 | Work item create, read, write | items the Team holds before they are assigned; lead ideas are items the Team holds, not a separate file or pool |
 | Assign and return | who holds an item: assign moves its id to one Agent, return moves it back to the Team. An item is one object and is never copied |
-| Parent and child | every item is born under a parent, the common board unless one is named; an item with children is a board, a leaf is a project with the ladder, and a leaf's ladder folds into its first child. Nesting under a board someone holds sends that holder one message; a reparent that would form a cycle is refused with the chain named |
+| Parent and child | every item is born under a parent, the Unfiled board unless one is named; an item with children is a board, a leaf is a project with the ladder, and a leaf's ladder folds into its first child. Nesting under a board someone holds sends that holder one message; a reparent that would form a cycle is refused with the chain named |
 | Member and item status | the Team's reading: what the Team and each member hold, with each item's `stage`, `exit` (none · agent · lead · user) and `status` (green · yellow · red) |
 | Agent configuration | create visibly with universal `session_create`, then inspect and configure Team, lead, or Workspace Folder handle through universal `session_check` and `session_set` |
 | Team broadcasts | the wipeboard for everything the whole Team must see; one-on-one goes directly to the session |
@@ -56,7 +56,7 @@ holding is how work is found, never permission, so no tool refuses a caller for 
 an item. Every acknowledgement answers with the item as it now is and ends with the item and
 the write that keeps it current. A hand-in naming an item moves it to LAND; a promotion
 moves the items on its hand-ins to DONE. When an Agent ends, what it held is released and
-found under its parent; on the common board, held by nobody, is unassigned.
+found under its parent; on the Unfiled board, held by nobody, is unassigned.
 
 Team membership and Team lead are session facts changed through `session_set`. Lead is an
 explicit designation, never inferred from capability selection or from using this tool.

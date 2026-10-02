@@ -59,9 +59,10 @@ Board shows one list per board, its items grouped under each stage's name. Each 
 its count at the head and **Add a work item** at the foot, which starts the new item in that
 list. On a Team's workbench the card shows only that Team's boards. Press a list's name, a
 group's name or an item to open it over the lists. Its buttons at the top right are **Save** (once there is something to
-save), **Assign** (pick the Agent that holds it), **Add** (a new item, starting where you
+save), **Assign** (pick the Agent or Team that holds it), **Add** (a new item, starting where you
 pressed) and **Close**; Escape closes it too. Wherever you add an item, you give its title,
-objective, status, board and, if you like, the Agent that holds it.
+objective, status and board: an existing board, **New board** (the item becomes a board of
+its own) or **Unfiled**, the default, for work nobody has filed yet.
 
 Adding another tenant or profile adds no layout implementation. Adding another surface
 registers a per-workspace factory in the shared library; any profile may name that type.

@@ -9,8 +9,8 @@ const wasHeld = (item) => (item.trail || []).some((line) => line.op === 'release
 
 export const NEW_WORK_GROUPS = Object.freeze([
   { id: 'issues', label: 'Open issues', stage: 'IDEA', about: 'Open issues from the issue source. No issue source is connected yet, so there are none to show.', pick: () => false },
-  { id: 'ideas', label: 'Ideas', stage: 'IDEA', about: 'Unassigned items on the common board at Idea.', pick: (item) => !wasHeld(item) && item.stage === 'IDEA' },
-  { id: 'plan', label: 'Plan', stage: 'PLAN', about: 'Unassigned items on the common board at Plan.', pick: (item) => !wasHeld(item) && item.stage === 'PLAN' },
+  { id: 'ideas', label: 'Ideas', stage: 'IDEA', about: 'Unassigned items on the Unfiled board at Idea.', pick: (item) => !wasHeld(item) && item.stage === 'IDEA' },
+  { id: 'plan', label: 'Plan', stage: 'PLAN', about: 'Unassigned items on the Unfiled board at Plan.', pick: (item) => !wasHeld(item) && item.stage === 'PLAN' },
   { id: 'parked', label: 'Parked', stage: 'IDEA', about: 'Items that left a Team or an Agent and are held by nobody now.', pick: wasHeld },
 ]);
 

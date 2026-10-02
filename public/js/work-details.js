@@ -14,6 +14,7 @@ import { boardChoices, holderName } from './work-readings.js';
 import { ask } from './ask.js';
 import { request } from './request.js';
 import { S } from './state.js';
+import { teamsFromState } from './team-controller.js';
 import { t } from './lexicon.js';
 
 /** The one-dash / two-dash density control (team-members.js draws the same one). */
@@ -92,7 +93,7 @@ export function stageDetail(host, { title, about = '', items = [], move, open })
 
 /* THE OVERLAY — one layer over whatever is open beneath it, the same on every surface. Its
  * utility sits small at its top right, in one order: Save (only while there is something to
- * save), Assign (an item), Add (a new item's form, laid in its place), Close. `context`
+ * save), Assign (an item, to an Agent or a Team), Add (a new item's form, laid in its place), Close. `context`
  * answers where Add puts a new item ({ stage, parent }); `changed(sentence)` hears every
  * write the overlay made, for the surface to say and re-read; `closed()` hears Close. */
 const agentChoices = () => (Array.isArray(S.sessions) ? S.sessions : []).map((row) => ({ v: row.name, l: row.name }));
@@ -132,10 +133,16 @@ export function itemOverlay(host, item, options = {}) {
   const slot = el('div', 'work-overlay-assign');
   slot.hidden = true;
   const assign = { open: () => {
-    const picker = ask([{ fields: [{ key: 'session', label: t('work_overlay.assign_to', 'Assign {id} to', { id: item.id }), options: agentChoices() }] }], {
-      density: 'tight', exposed: true, onChange: async ({ session }) => {
-        if (!session) return;
-        const held = await request(`/api/work-items/${encodeURIComponent(item.id)}/assign`, { method: 'POST', json: { session } });
+    // An Agent or a Team: pressing either writes it as the holder.
+    const teams = teamsFromState().filter((row) => !row.holding).map((row) => ({ v: row.name, l: row.title || row.name }));
+    const picker = ask([{ group: t('work_overlay.assign_to', 'Assign {id} to', { id: item.id }), fields: [
+      { key: 'session', label: t('work_overlay.assign_agent', 'Agent'), options: agentChoices() },
+      { key: 'team', label: t('work_overlay.assign_team', 'Team'), options: teams },
+    ] }], {
+      density: 'tight', exposed: true, onChange: async ({ session, team }) => {
+        const holder = session ? { session } : team ? { team } : null;
+        if (!holder) return;
+        const held = await request(`/api/work-items/${encodeURIComponent(item.id)}/assign`, { method: 'POST', json: holder });
         slot.hidden = true;
         (options.changed || (() => {}))(held.ok ? firstLine(held.data.acknowledgement) : held.message);
       },
@@ -178,9 +185,11 @@ export function itemDetail(host, item, { actions = [] } = {}) {
   step(box, 3, 'trail', t('work_item.trail', 'Trail'), trail, true, t('work_item.trail_count', '{n} lines', { n: trail.length }));
 }
 
-/** Add's form: the kit's title and objective fields, then the item's status, the board it
- * goes under (none: the store puts it on the common board) and the Agent that holds it
- * (none: nobody). `stage` and `parent` are where Add was pressed. Enter saves (Shift+Enter
+const NEW_BOARD = ' new board'; // the Board answer that makes the item a root of its own
+
+/** Add's form: the kit's title and objective fields, then the item's status and the board it
+ * goes under: an existing board, a new board of its own, or Unfiled (the default).
+ * `stage` and `parent` are where Add was pressed. Enter saves (Shift+Enter
  * is a new line in the objective). `save(fields)` answers a sentence when it failed. */
 export function draftItem(host, { heading, stage = 'IDEA', parent = '', save, actions = [] }) {
   const { createField } = WorkspaceKit.primitives;
@@ -191,17 +200,24 @@ export function draftItem(host, { heading, stage = 'IDEA', parent = '', save, ac
   const objectiveField = createField({ label: t('work_nav.draft_objective', 'Objective'), control: objective });
   const picks = ask([{ fields: [
     { key: 'stage', label: t('work_nav.draft_stage', 'Status'), options: PROJECT_STAGES.map((row) => ({ v: row.key, l: row.label })) },
-    { key: 'parent', label: t('work_nav.draft_board', 'Board'), blank: t('work_nav.draft_no_board', 'No board'), options: [] },
-    { key: 'session', label: t('work_nav.draft_agent', 'Agent'), blank: t('ask.none', 'None'), options: agentChoices() },
-  ] }], { value: { stage, parent, session: '' }, density: 'tight' });
+    { key: 'parent', label: t('work_nav.draft_board', 'Board'), blank: t('work_nav.draft_unfiled', 'Unfiled'), options: [] },
+  ] }], { value: { stage, parent }, density: 'tight' });
+  // Unfiled (the blank, the default) is the store's own root of that name, so it is not
+  // offered twice; New board makes the item a root of its own.
   void request('/api/work-items', { cache: 'no-store' }).then((read) => {
-    if (read.ok) picks.options('parent', boardChoices(read.data.items || [], '').map((row) => ({ v: row.id, l: row.label })));
+    if (!read.ok) return;
+    const items = read.data.items || [];
+    const unfiled = items.find((item) => item.parent === null && item.title === 'Unfiled')?.id;
+    picks.options('parent', [
+      ...boardChoices(items, '').filter((row) => row.id !== unfiled).map((row) => ({ v: row.id, l: row.label })),
+      { v: NEW_BOARD, l: t('work_nav.draft_new_board', 'New board') },
+    ]);
   });
   const submit = async () => {
     if (!title.value.trim()) { title.focus(); return; }
     titleField.setValidation('', '');
-    const { stage: at, parent: under, session } = picks.value();
-    const failed = await save({ title: title.value.trim(), objective: objective.value.trim(), stage: at, ...(under ? { parent: under } : {}), ...(session ? { session } : {}) });
+    const { stage: at, parent: under } = picks.value();
+    const failed = await save({ title: title.value.trim(), objective: objective.value.trim(), stage: at, ...(under === NEW_BOARD ? { root: true } : under ? { parent: under } : {}) });
     if (failed) titleField.setValidation('invalid', failed);
   };
   for (const field of [title, objective]) field.addEventListener('keydown', (event) => { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); void submit(); } });

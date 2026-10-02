@@ -1,6 +1,6 @@
 /* part of the ronin-cowork client — see js/README.md */
 /**
- * NEW WORK — Surface 1 of the work-item surfaces: four group stones read off the common
+ * NEW WORK — Surface 1 of the work-item surfaces: four group stones read off the Unfiled
  * board. Ideas and Plan are its unheld items by stage; Parked are its unheld items that
  * left a holder (a release, or the holder ended); Open issues come from the issue source,
  * and there is none yet, so that stone shows and is empty. The phalanx draws the stones;

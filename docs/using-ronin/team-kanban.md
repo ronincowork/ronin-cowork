@@ -9,7 +9,7 @@ The Task Manager is a reading, not another store. A work item is stored once, an
 list of item ids; so does each Agent. The Team's reading is the items the Team holds plus
 the items each of its members holds, each child listed after its parent where the lead
 made any. A card shows who holds it: the Team (worked by its lead) or one Agent. An item on
-the common board that nobody holds is unassigned and is not on any Team's reading. See
+the Unfiled board that nobody holds is unassigned and is not on any Team's reading. See
 [work records and projects](work-record.md) for the item's shape, stages, ladder, exit,
 and status.
 

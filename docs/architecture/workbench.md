@@ -23,7 +23,7 @@ becomes its level in full density, a level becomes its selected stone in compact
 the stone open at that level returns with it. Consumers never restyle the rest geometry.
 
 New work (`work.new`) and Work (`work.boards`) are Cowork/Desk cards over the work item
-store. New work reads the common board's unassigned items as four group stones (Open
+store. New work reads the Unfiled board's unassigned items as four group stones (Open
 issues, Ideas, Plan, Parked); Work reads every board with its tree (GET
 `/api/work-items` answers every item with its holder). Both draw their details from
 existing pieces (`work-details.js`: the in-place Team detail's head and steps, `itemLine`,
@@ -40,8 +40,9 @@ head and Add at the foot (the Add form, started in that list). Cowork/Desk show 
 a Team workbench shows the boards that Team or its Agents hold, or hold work under. Every press opens an overlay
 from `work-details.js`, whose one utility sits top right: Save (only while there is
 something to save), Assign, Add (the Add form as an overlay, placed where it was pressed),
-Close. The Add form, the same wherever Add appears, asks title, objective, status, board
-(none: the common board) and Agent (none: nobody), all fields the create route takes.
+Close. The Add form, the same wherever Add appears, asks title, objective, status and
+board: an existing board, New board (`root: true` on the create route: a root of its own) or
+Unfiled, the default. Assign holds the item by an Agent or a Team.
 
 Task Manager retains its original board, furniture, selector card, and status/Project
 workspace drill-downs. Work Items (`work-items`) is a separate surface and card in

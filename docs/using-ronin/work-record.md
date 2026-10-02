@@ -45,8 +45,9 @@ the item. **Parent and child** (nest, parent) is one parent id on the item; a re
 that would form a cycle is the one refusal, answered `REFUSED` with the chain named. A Team
 holds; it does not contain.
 
-Every item is born under a parent: the one you name, else the **common board**, a root item
-titled "Common" and held by nobody. Creating checks for the common board and makes it if it
+Every item is born under a parent: the one you name, else the **Unfiled board**, a root item
+titled "Unfiled" and held by nobody (it was called "Common" before, and is renamed in place).
+Creating checks for the Unfiled board and makes it if it
 is missing, so there is no other starting point and no install step. `team project parent
 <id> none` lifts an item out to be its own root.
 
@@ -58,7 +59,7 @@ child, ahead of any ladder the child had, with a trail line on both.
 When an item is nested under a board that someone holds, by a create with a parent or a
 reparent, that holder gets one message through the ordinary queue: "w9 Fix login was added
 under your board w7. Handle it as you see fit." A Team holder's lead gets it. A board held
-by nobody, such as the common board, notifies nobody.
+by nobody, such as the Unfiled board, notifies nobody.
 
 Create an item held by yourself, or by a Team:
 
@@ -162,6 +163,6 @@ session's recorded Workspace Folder. Neither edit changes its birth directory or
 a managed desk. These fields locate work; they do not replace commits, hand-ins, or evidence.
 
 When an Agent ends, is archived, or is Hard Deleted, what it held is released: each item
-gets a `holder-ended` line and is found again under its parent (on the common board, that is
+gets a `holder-ended` line and is found again under its parent (on the Unfiled board, that is
 unassigned). Restoring an
 archived Agent does not reclaim it.
