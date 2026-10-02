@@ -35,24 +35,11 @@ not four layout systems.
 |---|---|
 | Campaign | Campaign settings and Campaign-level resources |
 | Teams collection | Teams, Agents, shared resources, and creation surfaces available in the selected Campaign context |
-| Team | that Team's Agents, Commons, Task Manager, and launch surface |
+| Team | that Team's Agents, Commons, Work items, and launch surface |
 | Agent | Self, Documents, Team membership, and separate Task Managers for the Agent's Teams |
 | Setup | pinned Presets plus Register, providers, roots, Services, gbrain, and Templates |
 
-On the Cowork and Desk workbenches two cards read the work items. **New work** shows
-four stones — Open issues, Ideas, Plan and Parked — for work nobody holds yet. **Work**
-shows every board with what is under it. The two-line button beside each title switches
-between less and more detail: with more detail New work lists every item under its
-group and Work draws each board as an org chart. Press a stone to open it; press a board
-with more detail to see its items by stage, and drag an item between stages to move it.
-The button works wherever you are: switching it keeps what you opened. Escape, or the
-arrow stone, always returns to the stones. Under the stones, drag an item
-onto **Move to board** to nest it under another board, onto **Request update** to ask
-its holder to bring its work record current, or press **Add** to make a new item where
-you are. There is no issue source yet, so Open issues is empty, and no triage Agent is
-configured, so **Auto-assign** says so.
-
-**Work items** reads the same work without stones. The button at its top left says which
+On the Cowork and Desk workbenches one card reads the work items: **Work items**. The button at its top left says which
 view you are in, **View by: Status** or **View by: Board**, and switches to the other. It is laid out like a
 Trello board: Status shows one list per stage, its items grouped under each board's name;
 Board shows one list per board, its items grouped under each stage's name. Each list shows
