@@ -1,10 +1,10 @@
 /* part of the ronin-cowork client — see js/README.md */
 /**
- * THE WORK-ITEM SURFACES' DETAILS — what opens beside a stone on New work and Work, built
- * only from pieces that already exist: the in-place Team detail's head and steps
- * (league-team-detail, createStep), the one item line (itemLine), the tile's work record
- * (shingo's buildLadder), the kit's fields (createField) and the density control the Team
- * people surface draws. Nothing here has a look of its own.
+ * THE WORK-ITEM DETAILS — what the Work items card opens over its lists, built only from
+ * pieces that already exist: the in-place Team detail's head and steps (league-team-detail,
+ * createStep), the one item line (itemLine), the tile's work record (shingo's buildLadder),
+ * the kit's fields (createField) and the ERABI selector (ask). Nothing here has a look of
+ * its own.
  */
 import { WorkspaceKit } from './workspace-kit.js';
 import { createStep, el } from './form-steps.js';
@@ -16,24 +16,6 @@ import { request } from './request.js';
 import { S } from './state.js';
 import { teamsFromState } from './team-controller.js';
 import { t } from './lexicon.js';
-
-/** The one-dash / two-dash density control (team-members.js draws the same one). */
-export function densityControl(start, onChange) {
-  const { createAction } = WorkspaceKit.primitives;
-  let density = start;
-  const button = createAction({ label: '', size: 'compact', className: 'tw-agent-density' });
-  const lines = el('span', 'tw-agent-density-lines'); lines.append(el('i'), el('i'));
-  button.el.replaceChildren(lines);
-  const paint = () => {
-    button.el.dataset.lines = density === 'compact' ? 'two' : 'one';
-    button.el.title = density === 'compact' ? t('work_nav.expand', 'More detail') : t('work_nav.compact', 'Less detail');
-    button.el.setAttribute('aria-label', button.el.title);
-    button.el.setAttribute('aria-pressed', String(density === 'full'));
-  };
-  button.el.addEventListener('click', () => { density = density === 'compact' ? 'full' : 'compact'; paint(); onChange(density); });
-  paint();
-  return button;
-}
 
 /** The Team detail's box and head: a title, the objective under it, any actions beside. */
 const detailBox = (host, { title, about = '', actions = [] }) => {
@@ -64,31 +46,6 @@ export function listDetail(host, { title, about = '', items = [], empty = '', ac
   if (items.length || empty) step(box, 1, 'work', t('league.work_items', 'Work items'),
     items.length ? items.map((item) => itemLine(item, { holder: holderName(item.holder) })) : [el('p', null, empty)],
     false, t('league.item_count', '{count} items', { count: items.length }));
-}
-
-/** An open board: its leaves in six steps, one per stage. Drag a line onto another stage's
- * step to move it there (`move(id, stage)`); press a line to open it (`open(id)`). */
-export function stageDetail(host, { title, about = '', items = [], move, open }) {
-  const box = detailBox(host, { title, about });
-  PROJECT_STAGES.forEach((stage, index) => {
-    const here = items.filter((item) => item.stage === stage.key);
-    const lines = here.map((item) => {
-      const line = itemLine(item, { holder: holderName(item.holder) });
-      line.draggable = true;
-      line.addEventListener('dragstart', (event) => event.dataTransfer?.setData('text/plain', item.id));
-      line.addEventListener('click', () => open(item.id));
-      return line;
-    });
-    // An empty stage folds to its count and still takes a drop.
-    const target = step(box, index + 1, stage.key, stage.label, lines, !lines.length, t('league.item_count', '{count} items', { count: here.length }));
-    target.addEventListener('dragover', (event) => event.preventDefault());
-    target.addEventListener('drop', (event) => {
-      event.preventDefault();
-      const id = event.dataTransfer?.getData('text/plain') || '';
-      if (items.some((item) => item.id === id && item.stage !== stage.key)) move(id, stage.key);
-    });
-  });
-  return box;
 }
 
 /* THE OVERLAY — one layer over whatever is open beneath it, the same on every surface. Its

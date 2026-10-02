@@ -69,8 +69,7 @@
   .wi-project-facts dt { color: var(--muted); }
   .wi-project-facts dd { margin: 0; overflow-wrap: anywhere; }
   .wi-outcome, .wi-evidence { overflow-wrap: anywhere; white-space: pre-wrap; }
-  /* A work item laid over the open board's stage lists (js/work-details.js itemOverlay). */
-  .sws-detail:has(> .work-overlay) { position: relative; }
+  /* A work item laid over the Work items card's lists (js/work-details.js). */
   .work-overlay { position: absolute; inset: 0; overflow-y: auto; background: var(--panel); }
   /* Its utility, small at the top right: Save, Assign, Add, Close (js/work-details.js). */
   .work-overlay-utility { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: var(--space-2); }
@@ -103,15 +102,6 @@
   .wv-add { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-2); color: var(--muted); }
   .wv-add-mark { font-style: normal; }
   .wv > .work-overlay { padding: var(--space-5) var(--space-6); box-sizing: border-box; }
-  /* The work navigation bar (js/work-nav.js): the utility stones under a work-item phalanx.
-     Drawn in the footer, so it stays while a stone is open and takes drops from the rail. */
-  .wn-bar { --sws-stone: var(--setup-stone-size); display: flex; flex-direction: column; align-items: center; gap: var(--space-3); padding-block-start: var(--space-6); }
-  .wn-stones { display: flex; flex-wrap: wrap; justify-content: center; width: 100%; gap: var(--setup-stone-gap); }
-  /* Stones you drop onto: the phalanx stone, outlined like the dotted selector cards. */
-  .wn-stone { border-style: dashed; background: transparent; }
-  .wn-stone::before { display: none; }
-  .wn-stone.over { border-color: var(--kaki); }
-  .wn-label { margin-top: auto; color: var(--muted); font-size: var(--form-note); }
   @container stone-work-surface-seat (max-width: 40rem) {
     .wk-surface-content.sws-host { padding-inline: var(--space-6); }
     .sws { gap: var(--space-6); }

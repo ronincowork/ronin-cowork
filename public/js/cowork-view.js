@@ -1,8 +1,6 @@
 /* part of the ronin-cowork client — see js/README.md */
 /** Workbench; its Campaign, Cowork or Team scope limits what cards are offered. */
 import { createWorkItemsSurface } from './work-items-surface.js';
-import { createNewWorkSurface } from './new-work-surface.js';
-import { createWorkSurface } from './work-surface.js';
 import { createWorkViewsSurface } from './work-views-surface.js';
 import { WorkspaceKit } from './workspace-kit.js';
 import { deleteTeamRoster, membersOfTeam, sessionsAvailableToTeam, setTeamLead, setTeamMembership, subscribe, teamByName, teamsFromState, unassignedSessions, UNASSIGNED } from './team-controller.js';
@@ -317,12 +315,6 @@ export function createCoworkView(options = {}) {
         : { kind: 'team', team: team === UNASSIGNED ? '' : team },
       lead: (project) => membersOfTeam(project.team).find((member) => member.team_lead)?.name || '',
       openOwner: (name) => openAgentWorkbench(name),
-    }),
-    newWork: () => createNewWorkSurface(),
-    work: () => createWorkSurface({
-      leadOf: (name) => membersOfTeam(name).find((member) => member.team_lead)?.name || '',
-      holderTeam: holderTeamOf,
-      openTeam: (name) => openWorkspaceTab('team', name),
     }),
     workViews: () => createWorkViewsSurface({ holderTeam: holderTeamOf, openTeam: (name) => openWorkspaceTab('team', name), team: campaign || team === UNASSIGNED ? '' : team }),
     teamKanban: (id) => taskManagerFor(id),
@@ -947,7 +939,7 @@ export function createCoworkView(options = {}) {
       team = campaign ? '' : context.param;
       const { state: entry } = context.workbenchEntry({ count: 2, selected: 'workspace1',
         arrangement: normalizeWorkbenchState(null, bench.declaration).arrangement,
-        seats: campaign ? { workspace1: WB_TYPES.roster, workspace2: desk ? WB_TYPES.kanban : WB_TYPES.newTeamForm } : {} });
+        seats: campaign ? { workspace1: WB_TYPES.roster, workspace2: desk ? WB_TYPES.workViews : WB_TYPES.newTeamForm } : {} });
       setBarLabel();
       const typed = normalizeWorkbenchState(entry, bench.declaration);
       remembered = { ...typed.seats };

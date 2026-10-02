@@ -22,17 +22,8 @@ density you were in. Switching density keeps the selection: a selected stone wit
 becomes its level in full density, a level becomes its selected stone in compact, and
 the stone open at that level returns with it. Consumers never restyle the rest geometry.
 
-New work (`work.new`) and Work (`work.boards`) are Cowork/Desk cards over the work item
-store. New work reads the Unfiled board's unassigned items as four group stones (Open
-issues, Ideas, Plan, Parked); Work reads every board with its tree (GET
-`/api/work-items` answers every item with its holder). Both draw their details from
-existing pieces (`work-details.js`: the in-place Team detail's head and steps, `itemLine`,
-shingo's `buildLadder`, `createField`) and share the work navigation bar
-(`work-nav.js`): utility stones a consumer hands its actions to (add, auto-assign,
-manual assign through the ERABI selector, request update), carrying no meaning itself.
-
-Work items (`work.views`, `work-views-surface.js`) is a third card over the same read, with
-no phalanx, organised as a Trello board: its top-left button names the view and switches
+Work items (`work.views`, `work-views-surface.js`) is the Cowork/Desk work-item card, over
+GET `/api/work-items` (every item with its holder), with no phalanx, organised as a Trello board: its top-left button names the view and switches
 it. Status lays one fixed-width list per stage, grouping under an underlined subtitle per
 board that board's items (every descendant, `boardStages`) at that stage; Board lays one
 list per board with a subtitle per stage it has items at. Each list carries its count at the
@@ -44,10 +35,10 @@ Close. The Add form, the same wherever Add appears, asks title, objective, statu
 board: an existing board, New board (`root: true` on the create route: a root of its own) or
 Unfiled, the default. Assign holds the item by an Agent or a Team.
 
-Task Manager retains its original board, furniture, selector card, and status/Project
-workspace drill-downs. Work Items (`work-items`) is a separate surface and card in
-Cowork/Desk, Team, and Agent profiles. Cowork/Desk offers one Work Items card spanning
-all Teams; Team reads its selected Team; Agent filters to Projects held by that Agent.
+Task Manager keeps its board and status/Project drill-downs for the Agent's Task Manager;
+its selector card is no longer offered on the Cowork, Desk or Team workbenches. The older
+Work Items board (`work-items`) stays on the Team workbench beside Work items and in the
+Agent's; Team reads its selected Team, Agent filters to Projects held by that Agent.
 
 Work Items mounts `createPhalanx` directly in the standard surface content seat. Each
 Project is a selectable stone in Ideas, Planning, Building, Landing, Done order. Selection
@@ -187,7 +178,7 @@ restoration branches.
 | Destination | First open | Notable structured opening |
 |---|---|---|
 | Ronin Settings | Defaults in workspace 1; Workspace Folders in workspace 2 | **Desk defaults** replaces the seats with Defaults and Launch your own |
-| Desk | Teams overview in workspace 1; Desk Task Manager in workspace 2 | Status and Project drill-downs retain the Desk tenant |
+| Desk | Teams overview in workspace 1; Work items in workspace 2 | Status and Project drill-downs retain the Desk tenant |
 | New Project | New Agent in workspace 1 | Links may replace or overlay New Agent/New Team and carry prompt or template detail |
 | Ronin Setup | Garden in workspace 1; active journey surface in workspace 2 | Journey actions select a Setup surface without another restoration path |
 | Cowork / Team | Fresh empty/member seating rules; refresh restores this instance | Team Configuration, documents, commons tabs, and New Agent may be addressed in seat detail |

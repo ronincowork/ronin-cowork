@@ -22,28 +22,9 @@ class FakeNode {
 globalThis.Node = FakeNode;
 globalThis.document = { createElement: (tag) => new FakeNode(tag), createDocumentFragment: () => new FakeNode('#fragment'), querySelector: () => null, head: { append() {} }, activeElement: null };
 
-const { newWorkGroups, boardChoices, boardTree, boardStages, holderName } = await import('../public/js/work-readings.js');
-const { createWorkNav, dragItem } = await import('../public/js/work-nav.js');
+const { boardChoices, boardTree, boardStages, holderName } = await import('../public/js/work-readings.js');
 
-const item = (id, fields = {}) => ({ id, title: `Item ${id}`, stage: 'IDEA', parent: 'w1', trail: [{ op: 'create' }], ...fields });
-
-test('New work reads four groups off the unassigned common-board items: Ideas and Plan by stage, Parked by release', () => {
-  const groups = newWorkGroups([
-    item('w2'),
-    item('w3', { stage: 'PLAN' }),
-    item('w4', { trail: [{ op: 'create' }, { op: 'assign' }, { op: 'release' }] }),
-    item('w5', { trail: [{ op: 'create' }, { op: 'holder-ended' }], stage: 'PLAN' }),
-    item('w6', { stage: 'BUILD' }),
-  ]);
-  assert.deepEqual(groups.map((group) => [group.id, group.items.map((row) => row.id)]), [
-    ['issues', []],
-    ['ideas', ['w2']],
-    ['plan', ['w3']],
-    ['parked', ['w4', 'w5']],
-  ]);
-});
-
-test('manual assign offers the boards (roots and items with children), never the item itself', () => {
+test('the Add form offers the boards (roots and items with children), never the item itself', () => {
   const items = [
     { id: 'w1', title: 'Unfiled', parent: null },
     { id: 'w2', title: 'Surface', parent: null },
@@ -54,7 +35,7 @@ test('manual assign offers the boards (roots and items with children), never the
   assert.deepEqual(boardChoices(items, 'w2').map((row) => row.id), ['w1', 'w3']);
 });
 
-test('Work reads the boards as the root items, each with its tree and a count of everything under it', () => {
+test('the boards are the root items, each with its tree and a count of everything under it', () => {
   const tree = boardTree([
     { id: 'w1', parent: null }, { id: 'w2', parent: 'w1' }, { id: 'w3', parent: 'w2' }, { id: 'w4', parent: 'w1' }, { id: 'w5', parent: null },
   ]);
@@ -63,42 +44,16 @@ test('Work reads the boards as the root items, each with its tree and a count of
   assert.deepEqual(['agent:ann', 'team:crew', ''].map(holderName), ['ann', 'crew', '']);
 });
 
-test('the work navigation bar draws one stone per action it is handed and carries no meaning of its own', async () => {
-  const seen = [];
-  const bare = createWorkNav({ add: () => seen.push('add') });
-  assert.deepEqual(bare.el.find((node) => node.dataset.nav).map((node) => node.dataset.nav), ['add']);
-
-  const nav = createWorkNav({
-    add: () => seen.push('add'),
-    autoAssign: (id) => seen.push(`auto ${id}`),
-    manualAssign: { choices: async (id) => [{ id: 'w1', label: 'Unfiled' }, { id: 'w9', label: `not ${id}` }], pick: (id, board) => seen.push(`move ${id} ${board.id}`) },
-    requestUpdate: (id) => seen.push(`update ${id}`),
-  });
-  const stones = Object.fromEntries(nav.el.find((node) => node.dataset.nav).map((node) => [node.dataset.nav, node]));
-  assert.deepEqual(Object.keys(stones), ['add', 'auto', 'manual', 'update']);
-  const carrying = (id) => ({ dataTransfer: { getData: () => id } });
-  stones.add.click();
-  stones.auto.dispatch('drop', carrying('w4'));
-  stones.update.dispatch('drop', carrying('w4'));
-  stones.auto.dispatch('drop', carrying(''));
-  stones.manual.dispatch('drop', carrying('w4'));
-  await new Promise((resolve) => setImmediate(resolve));
-  const choices = nav.el.all('ask-opt');
-  assert.deepEqual(choices.map((node) => node.all('ask-name')[0].textContent), ['Unfiled', 'not w4'], 'the choices are the labels it was handed, drawn by the one selector');
-  choices[0].click();
-  assert.deepEqual(seen, ['add', 'auto w4', 'update w4', 'move w4 w1']);
-
-  let dragged = '';
-  dragItem('w7').events.dragstart({ dataTransfer: { setData: (_type, id) => { dragged = id; } } });
-  assert.equal(dragged, 'w7');
-});
-
-test('New work and Work are new cards on the Cowork and Desk profiles; nothing that was there leaves', async () => {
+test('the Cowork and Desk selectors offer one work-item card, Work items; the Team keeps the old board beside it', async () => {
   const catalog = await readFile(new URL('../public/js/workbench-catalog.js', import.meta.url), 'utf8');
+  const offered = (profile) => catalog.match(new RegExp(`profiles\\.define\\(WORKBENCH_PROFILES\\.${profile}, \\[([^\\]]*)\\]`))[1];
   for (const profile of ['cowork', 'desk']) {
-    const list = catalog.match(new RegExp(`profiles\\.define\\(WORKBENCH_PROFILES\\.${profile}, \\[([^\\]]*)\\]`))[1];
-    for (const type of ['kanban', 'workItems', 'roster', 'newWork', 'work']) assert.match(list, new RegExp(`WORKBENCH_TYPES\\.${type}\\b`), `${profile} offers ${type}`);
+    assert.match(offered(profile), /WORKBENCH_TYPES\.workViews\b/);
+    for (const gone of ['kanban', 'workItems', 'newWork', 'work']) assert.doesNotMatch(offered(profile), new RegExp(`WORKBENCH_TYPES\\.${gone}\\b`), `${profile} no longer offers ${gone}`);
   }
+  assert.match(offered('team'), /WORKBENCH_TYPES\.workViews\b/);
+  assert.match(offered('team'), /WORKBENCH_TYPES\.workItems\b/);
+  assert.doesNotMatch(offered('team'), /WORKBENCH_TYPES\.kanban\b/);
 });
 
 test('Work items reads each board\'s items (every descendant) by stage, keeping only the stages it has', () => {
