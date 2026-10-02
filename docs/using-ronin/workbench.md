@@ -53,7 +53,7 @@ you are. There is no issue source yet, so Open issues is empty, and no triage Ag
 configured, so **Auto-assign** says so.
 
 **Work items** reads the same work without stones. The button at its top left says which
-view you are in, **Status** or **Board**, and switches to the other. It is laid out like a
+view you are in, **View by: Status** or **View by: Board**, and switches to the other. It is laid out like a
 Trello board: Status shows one list per stage, its items grouped under each board's name;
 Board shows one list per board, its items grouped under each stage's name. Each list shows
 its count at the head and **Add a work item** at the foot, which starts the new item in that

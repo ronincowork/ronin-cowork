@@ -1,7 +1,7 @@
 /* part of the ronin-cowork client — see js/README.md */
 /**
  * WORK ITEMS — every board's items read two ways, off GET /api/work-items. No phalanx. The
- * button at the top left names the view you are in; pressing it switches to the other.
+ * button at the top left reads "View by: Status" or "View by: Board"; pressing it switches.
  *
  *   Status   one list per stage across the top; in each, every board with items at that
  *            stage as a subtitle, that board's items at that stage under it
@@ -97,7 +97,7 @@ export function createWorkViewsSurface({ holderTeam = () => '', openTeam = () =>
     lift();
     root.dataset.view = view;
     row.scrollLeft = 0;
-    toggle.el.textContent = view === 'status' ? t('work_views.status', 'Status') : t('work_views.board', 'Board');
+    toggle.el.textContent = t('work_views.view_by', 'View by: {view}', { view: view === 'status' ? t('work_views.status', 'Status') : t('work_views.board', 'Board') });
     toggle.el.title = view === 'status' ? t('work_views.to_board', 'Showing Status. Press for Board.') : t('work_views.to_status', 'Showing Board. Press for Status.');
     if (view === 'status') row.replaceChildren(...STAGE_KEYS.map((stage) => {
       const here = boards.map((entry) => ({ board: entry.board, items: entry.stages.find((row) => row.stage === stage)?.items || [] })).filter((entry) => entry.items.length);
