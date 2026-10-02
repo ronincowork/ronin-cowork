@@ -77,20 +77,22 @@
   .work-overlay:focus { outline: none; }
   .work-overlay-assign { padding-block: var(--space-3); }
   /* Work items (js/work-views-surface.js), organised as a Trello board: fixed-width lists
-     across the top, each one slightly shaded panel as tall as what it holds, the items on the
-     plain surface inside it; its name and count at the head, plain underlined subtitles
-     grouping its items, Add at the foot. One font size throughout. */
-  .wv { --wv-list: 230px; --wv-shade: color-mix(in srgb, var(--fg) 5%, var(--panel)); position: relative; display: flex; height: 100%; min-height: 0; flex-direction: column; gap: var(--space-4); padding: var(--space-5) var(--space-6); box-sizing: border-box; }
+     across the top, each one slightly shaded panel as tall as what it holds. Three levels at
+     one font size: the list's name in a darker band (bold), an underlined semibold subtitle
+     per group, the items as cards on the plain surface; Add at the foot. */
+  .wv { --wv-list: 230px; --wv-shade: color-mix(in srgb, var(--fg) 5%, var(--panel)); --wv-band: color-mix(in srgb, var(--fg) 13%, var(--panel)); position: relative; display: flex; height: 100%; min-height: 0; flex-direction: column; gap: var(--space-4); padding: var(--space-5) var(--space-6); box-sizing: border-box; }
   .wv-head { display: flex; align-items: center; gap: var(--space-4); }
   .wv-head .wi-notice { margin: 0; }
   .wv-row { display: grid; flex: 1 1 auto; min-height: 0; align-items: start; grid-auto-columns: var(--wv-list); grid-auto-flow: column; gap: var(--space-4); overflow-x: auto; }
-  .wv-list { display: flex; max-height: 100%; min-height: 0; flex-direction: column; gap: var(--space-2); overflow-y: auto; border: var(--edge) solid var(--line-2); border-radius: var(--radius-hair); background: var(--wv-shade); padding: var(--space-3); box-sizing: border-box; }
+  .wv-list { display: flex; max-height: 100%; min-height: 0; flex-direction: column; gap: var(--space-2); overflow-y: auto; border: var(--edge) solid var(--line-2); border-radius: var(--radius-hair); background: var(--wv-shade); padding-bottom: var(--space-2); box-sizing: border-box; }
+  .wv-list > :not(.wv-list-head) { margin-inline: var(--space-3); }
   .wv-list-head, .wv-sub, .wv-add { border: 0; background: transparent; color: var(--fg); font: inherit; text-align: left; cursor: pointer; }
-  .wv-list-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3); padding: var(--space-1) var(--space-2); font-weight: 650; }
+  /* The title band: the list's name across its top, at least two lines tall so the content
+     under it starts on one line across the row. */
+  .wv-list-head { display: flex; flex: none; align-items: flex-start; justify-content: space-between; gap: var(--space-3); min-height: calc(2lh + 2 * var(--space-3)); box-sizing: border-box; border-bottom: var(--edge) solid var(--line-2); background: var(--wv-band); padding: var(--space-3) var(--space-4); font-weight: 700; }
   .wv-count { flex: none; color: var(--muted); font-weight: 400; }
-  .wv-group { display: flex; flex-direction: column; gap: var(--space-2); }
-  .wv-group + .wv-group { margin-top: var(--space-2); }
-  .wv-sub { border-bottom: var(--edge) solid var(--line-2); padding: var(--space-2) var(--space-2) var(--space-1); font-weight: 600; }
+  .wv-group { display: flex; flex-direction: column; gap: var(--space-2); margin-top: var(--space-2); }
+  .wv-sub { border-bottom: var(--edge) solid var(--line-2); padding: var(--space-1); font-weight: 600; }
   .wv-add:hover { color: var(--fg); }
   .wv-item { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-3); min-width: 0; border: var(--edge) solid var(--line); border-radius: var(--radius-hair); background: var(--panel); padding: var(--space-3); color: var(--fg); font: inherit; text-align: left; cursor: pointer; transition: border-color var(--motion-quick) var(--ease); }
   .wv-item:hover { border-color: var(--kaki); }
