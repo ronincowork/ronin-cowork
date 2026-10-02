@@ -1,58 +1,58 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { definedTargets, kanbanAvailability, KANBAN_NOT_INSTALLED, moveMessage, projectsForScope, taskManagerScope, waitingOn } from '../public/js/team-kanban.js';
+import { definedTargets, holderOf, kanbanAvailability, KANBAN_NOT_INSTALLED, moveMessage, projectsForScope, taskManagerScope, waitingOn } from '../public/js/team-kanban.js';
 
+// An item as the team reading serves it: the holder is the list it was found on.
 const project = (values = {}) => ({
-  id: 'virtual-kanban/7', title: 'Kanban tab', objective: 'Render it.', holder: 'tab_cut',
-  stage: 'BUILDING', exit: 'user', status: 'green', ...values,
+  id: 'w7', title: 'Kanban tab', objective: 'Render it.', holder: 'agent:tab_cut', team: 'virtual',
+  stage: 'REVIEW', exit: 'user', status: 'green', trail: [], ...values,
 });
 const NOW = new Date('2026-09-13T13:02:00.000Z');
 const moduleSource = readFileSync(new URL('../public/js/team-kanban.js', import.meta.url), 'utf8');
 const workspaceCss = readFileSync(new URL('../public/css/team-workspace.css', import.meta.url), 'utf8');
 
-test('availability comes from the installed part inventory, never a second flag', () => {
-  assert.deepEqual(kanbanAvailability({ services: { capabilities: { desired: { task_manager: true }, running: ['task_manager'] }, loaded: [] } }), { available: true, message: '' });
-  assert.deepEqual(kanbanAvailability({ services: { capabilities: { desired: { task_manager: false }, running: ['task_manager'] }, loaded: ['kanban'] } }), { available: false, message: 'Unavailable.' });
-  assert.deepEqual(kanbanAvailability({ services: { capabilities: { desired: { task_manager: true }, running: [] }, loaded: ['kanban'] } }), { available: false, message: 'Unavailable.' });
-  assert.deepEqual(kanbanAvailability({ services: { loaded: ['kanban'], parked: [] } }), { available: true, message: '' });
-  assert.deepEqual(kanbanAvailability({ services: { loaded: [], parked: [{ name: 'kanban', routine: 'ronin_services' }] } }), {
-    available: false, message: 'Unavailable.',
-  });
-  assert.deepEqual(kanbanAvailability({ services: { loaded: [], parked: [] } }), {
-    available: false, message: 'Unavailable.',
-  });
+test('availability is the Task Manager capability, desired and running', () => {
+  assert.deepEqual(kanbanAvailability({ services: { capabilities: { desired: { task_manager: true }, running: ['task_manager'] } } }), { available: true, message: '' });
+  assert.deepEqual(kanbanAvailability({ services: { capabilities: { desired: { task_manager: false }, running: ['task_manager'] } } }), { available: false, message: 'Unavailable.' });
+  assert.deepEqual(kanbanAvailability({ services: { capabilities: { desired: { task_manager: true }, running: [] } } }), { available: false, message: 'Unavailable.' });
+  assert.deepEqual(kanbanAvailability({}), { available: false, message: 'Unavailable.' });
 });
 
-test('a green forward drop tells the holder the defined move without moving data', () => {
-  const move = moveMessage(project(), 'LANDING', 'kanban_revive', NOW);
+test('the holder is read off the list the item was found on', () => {
+  assert.equal(holderOf(project(), 'lead_one'), 'tab_cut');
+  assert.equal(holderOf(project({ holder: 'team:virtual' }), 'lead_one'), 'lead_one', 'a Team-held item is worked by its lead');
+  assert.equal(holderOf(project({ holder: '' }), 'lead_one'), '');
+});
+
+test('a green forward drop tells the holder the defined move, naming the verb that makes it', () => {
+  const move = moveMessage(project(), 'LAND', 'kanban_revive', NOW);
   assert.equal(move.target, 'tab_cut');
   assert.match(move.text, /^from @kanban \(the Team Task Manager, moved by the user at 2026-09-13T13:02Z\):/);
-  assert.match(move.text, /MOVE virtual-kanban\/7 "Kanban tab" from Building \(green, exit: user\) to Landing/);
-  assert.match(move.text, /meaning: show approved; hand in\./);
-  assert.match(move.text, /next: worktree-desk hand-in, then work-record project write 7 --stage LANDING/);
+  assert.match(move.text, /MOVE w7 "Kanban tab" from Review \(green, exit: user\) to Land/);
+  assert.match(move.text, /next: worktree-desk hand-in <repo> --project w7/);
+  assert.match(moveMessage(project({ stage: 'BUILD' }), 'REVIEW', 'kanban_revive', NOW).text, /next: work-record project advance w7 --to REVIEW/);
+  assert.match(moveMessage(project({ stage: 'PLAN' }), 'BUILD', 'kanban_revive', NOW).text, /next: work-record project advance w7 --to BUILD/);
 });
 
-test('lead moves resolve to the live lead session and non-green drops remain requests', () => {
-  assert.equal(moveMessage(project({ holder: 'lead', stage: 'IDEAS', exit: 'lead' }), 'PLANNING', 'kanban_revive', NOW).target, 'kanban_revive');
-  const blocked = moveMessage(project({ status: 'red' }), 'LANDING', 'kanban_revive', NOW);
+test('Team-held and lead moves resolve to the lead; non-green drops remain requests', () => {
+  assert.equal(moveMessage(project({ holder: 'team:virtual', stage: 'IDEA', exit: 'lead' }), 'PLAN', 'kanban_revive', NOW).target, 'kanban_revive');
+  assert.match(moveMessage(project({ holder: 'team:virtual', stage: 'IDEA' }), 'PLAN', 'kanban_revive', NOW).text, /team project assign w7 <session>/);
+  const blocked = moveMessage(project({ status: 'red' }), 'LAND', 'kanban_revive', NOW);
   assert.equal(blocked.target, 'tab_cut');
   assert.match(blocked.text, /a request to move on, not an approval; the card is blocked/);
-});
-
-test('Planning back to Ideas and Landing forward are sent to the lead', () => {
-  const returned = moveMessage(project({ stage: 'PLANNING', status: 'yellow' }), 'IDEAS', 'kanban_revive', NOW);
+  const returned = moveMessage(project({ stage: 'PLAN', status: 'yellow' }), 'IDEA', 'kanban_revive', NOW);
   assert.equal(returned.target, 'kanban_revive');
-  assert.match(returned.text, /return it to Ideas/);
-  const promoted = moveMessage(project({ stage: 'LANDING', exit: 'lead' }), 'DONE', 'kanban_revive', NOW);
+  const promoted = moveMessage(project({ stage: 'LAND', exit: 'lead' }), 'DONE', 'kanban_revive', NOW);
   assert.equal(promoted.target, 'kanban_revive');
-  assert.match(promoted.text, /meaning: promote/);
+  assert.match(promoted.text, /bin\/ronin-promote virtual/);
 });
 
 test('dragging marks only destinations with a defined meaning', () => {
-  assert.deepEqual([...definedTargets({ stage: 'IDEAS', status: 'green' })], ['PLANNING']);
-  assert.deepEqual([...definedTargets({ stage: 'PLANNING', status: 'green' })], ['BUILDING', 'IDEAS']);
-  assert.deepEqual([...definedTargets({ stage: 'BUILDING', status: 'yellow' })], []);
+  assert.deepEqual([...definedTargets({ stage: 'IDEA', status: 'green' })], ['PLAN']);
+  assert.deepEqual([...definedTargets({ stage: 'PLAN', status: 'green' })], ['BUILD', 'IDEA']);
+  assert.deepEqual([...definedTargets({ stage: 'BUILD', status: 'green' })], ['REVIEW']);
+  assert.deepEqual([...definedTargets({ stage: 'BUILD', status: 'yellow' })], []);
   assert.deepEqual([...definedTargets({ stage: 'DONE', status: 'green' })], []);
 });
 
@@ -100,15 +100,17 @@ test('card expansion and owner opening are sibling controls, never nested intera
   assert.match(moduleSource, /team_kanban\.open_project', 'Open Project'/);
 });
 
-test('Task Manager scope derives Team lists and filters Agent-held Projects without copying authority', () => {
+test('Task Manager scope derives Team lists, keeps the items an Agent holds, and reads evidence off the trail', () => {
   assert.deepEqual(taskManagerScope({ kind: 'desk', teams: () => ['alpha', 'beta', 'alpha'] }), { kind: 'desk', teams: ['alpha', 'beta'], agent: '' });
   const scope = taskManagerScope({ kind: 'agent', agent: 'surface-tasks', teams: ['surface', 'other'] });
   assert.deepEqual(scope, { kind: 'agent', teams: ['surface', 'other'], agent: 'surface-tasks' });
-  assert.deepEqual(projectsForScope([
-    project({ id: 'surface/2', holder: 'surface-tasks' }),
-    project({ id: 'surface/2', holder: 'surface-tasks' }),
-    project({ id: 'surface/3', holder: 'someone-else' }),
-  ], scope).map((item) => item.id), ['surface/2']);
+  const rows = projectsForScope([
+    project({ id: 'w2', holder: 'agent:surface-tasks', trail: [{ op: 'create', note: 'x' }, { op: 'evidence', note: 'commit abc' }] }),
+    project({ id: 'w2', holder: 'agent:surface-tasks' }),
+    project({ id: 'w3', holder: 'agent:someone-else' }),
+  ], scope);
+  assert.deepEqual(rows.map((item) => item.id), ['w2']);
+  assert.deepEqual(rows[0].evidence, ['commit abc']);
 });
 
 test('status and Project drill-downs are standalone Workbench surface types', () => {

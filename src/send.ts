@@ -85,6 +85,15 @@ export async function deliverForce(name: string, text: string, io: PaneIO = pane
   return { delivered: true, submitted: true, reason: 'text and Enter sent' };
 }
 
+/** Type text into the session's input with NO Enter: the owner finishes the line. A draft
+ * already there is kept and the text lands after it; an open dialog is never typed into. */
+export async function typeAtPrompt(name: string, text: string, io: PaneIO = paneIO(name)): Promise<DeliveryResult> {
+  const before = parsePrompt(await io.read());
+  if (before.menu) return { delivered: false, submitted: false, reason: 'dialog is open' };
+  await io.type(`${before.text ? ' ' : ''}${text} `);
+  return { delivered: true, submitted: false, reason: 'text typed, Enter left to the owner' };
+}
+
 async function capturePane(name: string): Promise<string> {
   return tmux.run(['capture-pane', '-p', '-e', '-t', exactPane(name)]);
 }

@@ -104,6 +104,20 @@ nothing paints exactly this.
 
 ## launcher — launcher.js (the ＋ New board and its form)
 
+## roster — roster.js (the ⌂ Roster tab)
+- **roster.not_saved:** not saved — {message}
+- **roster.team_name:** team name
+- **roster.team_name_aria:** New team name
+- **roster.add_team:** ＋ Team
+- **roster.team_name_rule:** use letters, digits, - or _
+- **roster.drag_into:** drag a session into {team}
+- **roster.leads:** 人 leads {teams}
+- **roster.no_role_yet:** has not said what it is doing yet
+- **roster.stale:** ⚠ roster may be stale — {fault}
+- **roster.drop_here:** Drop a session here to add it to {team}
+- **roster.no_team:** no team
+- **roster.no_sessions:** no sessions yet
+
 ## panels — panels.js (the session note and session teams sheets)
 - **panels.note_sheet:** Session note
 - **panels.save:** Save
@@ -1002,6 +1016,7 @@ The catalog entry goes. {dir} is not touched.
 ## retire — the working words
 - **retire.archive_failed:** could not archive it
 - **retire.shutdown_failed:** could not safely shut it down
+- **retire.already_ended:** {name} had already ended; its row is removed.
 - **retire.shutting_down:** starting shutdown…
 - **retire.resolving:** Resolving Agent…
 - **retire.archiving:** archiving…
@@ -1382,7 +1397,6 @@ The catalog entry goes. {dir} is not touched.
 - **league.assign_member:** Assign
 - **league.launch_team:** Launch
 - **league.ronin:** Ronin: no team
-- **league.no_ronin:** No Rōnin Agents
 - **agent.workbench:** Agent
 - **agent.self:** Self
 - **agent.commons:** Commons

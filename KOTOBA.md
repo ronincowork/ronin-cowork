@@ -53,9 +53,9 @@ Macro, action, SOP, and Agent role are not additional composition layers. “Act
 | Team (`team`) | A group of sessions; stock UI says Team, with Team Commons for its shared surfaces |
 | Team record (`team_roster`) | Durable Team identity, defaults, and held work; membership and leads derive from sessions ([Team workspace](docs/architecture/team-workspace.md)) |
 | Session | A running Cowork Agent, bare-metal Agent, or terminal; archived sessions have separate restore manifests ([Session identity](docs/architecture/session-identity.md)) |
-| Work record | An Agent's authored work, tracked documents, and held Projects ([Work record](docs/using-ronin/work-record.md)) |
-| Project | Work with stable identity, an objective, and a completion condition; Team-held and Agent-held records have explicit custody ([Team Kanban](docs/using-ronin/team-kanban.md)) |
-| Team Kanban | A derived view of Projects and delivery evidence, never another workflow store |
+| Work record | An Agent's objective, repositories, the work items it holds, and its focus; its ladder and documents are the focus item's ([Work record](docs/using-ronin/work-record.md)) |
+| Project | A work item: stored once by id, with an objective, a stage, a ladder, documents and a trail; **held by** one Team or Agent, or by nobody (assign moves the id between holders' lists), and **under** one parent (nest), the common board unless another is named. With children it is a board, read by its children; a leaf is a project and carries the ladder. Holding is never permission ([Work record](docs/using-ronin/work-record.md)) |
+| Team Kanban | The Team's reading of work items: what the Team and its members hold, children under their parent; a Team holds, it does not contain. Never another store, never "a board" of the Team ([Team Kanban](docs/using-ronin/team-kanban.md)) |
 | Wipeboard / message queue / Cron jobs | Team announcements, pending session delivery, and scheduled requests; distinct stores and delivery lifecycles |
 | Ronin Lab | A Workspace Folder for ideas, research, plans, and notes across or before projects; users and Ronin creators each have their own Lab, rather than a code repository for one specific project |
 | Workspace Folder (`project_root`) | A registered folder Ronin may work in; not a browser workspace ([Workspace folders](docs/architecture/project-roots.md)) |

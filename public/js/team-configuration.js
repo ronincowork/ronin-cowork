@@ -35,6 +35,12 @@ const providerRows = () => {
 const modelRows = (provider) => providerCatalog().rows.filter((row) => row.provider === provider)
   .map((row) => ({ v: row.model, l: modelLabel(row), word: tierWord(row.tier), sub: row.cost || '', off: row.selectable ? '' : reason(row) }));
 
+/** The form's one-line answer when its step is folded: kind · provider / model. */
+export function teamConfigurationMeta(roster) {
+  const defaults = bucket(roster?.agent_defaults);
+  return [kindWord(roster?.kind || 'open'), [defaults.provider, defaults.model].filter(Boolean).join(' / ')].filter(Boolean).join(' · ');
+}
+
 export function renderTeamConfiguration(host, roster, optionsArg = {}) {
   host.replaceChildren();
   if (!roster?.durable) { host.append(el('p', 'tw-config-empty', t('team_config.no_roster', 'This Team has no saved record.'))); return; }

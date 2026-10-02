@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createStore } from '../public/js/store.js';
+import { createStore, SILENT_MS } from '../public/js/store.js';
 
 /** A socket the test drives: open it, push to it, drop it. */
 function fakeSockets() {
@@ -151,4 +151,63 @@ test('renew on a dropped socket reconnects at once and cancels the pending retry
   store.renew();
   assert.equal(sockets.made.length, 2);
   assert.ok(cancelled.includes('retry-1'));
+});
+
+test('a forced renew replaces a socket that still says open, and its late close is not news', () => {
+  const sockets = fakeSockets();
+  const retries = [];
+  const store = createStore({ open: sockets.open, later: (fn) => retries.push(fn), cancel: () => {} });
+  let closes = 0;
+  store.onClose(() => { closes += 1; });
+  const heard = [];
+  store.subscribe('sessions', (list) => heard.push(list.map((s) => s.name)));
+  store.connect();
+  const stale = sockets.made[0];
+  stale.close = () => stale.drop();
+  stale.up();
+  stale.push({ t: 'sessions', list: [{ name: 'alpha' }] });
+
+  store.renew(); // a plain renew leaves an open socket alone
+  assert.equal(sockets.made.length, 1);
+
+  store.renew({ force: true });
+  assert.equal(sockets.made.length, 2, 'a new socket');
+  assert.equal(closes, 0, 'the replaced socket closing raises no failure');
+  assert.equal(retries.length, 0, 'and schedules no retry');
+  store.renew({ force: true }); // asked again while the new socket is connecting
+  assert.equal(sockets.made.length, 2, 'a connecting socket is left to finish');
+
+  sockets.made[1].up();
+  sockets.made[1].push({ t: 'sessions', list: [{ name: 'alpha' }, { name: 'newborn' }] });
+  assert.deepEqual(heard, [['alpha'], ['alpha', 'newborn']], 'the new socket delivers what the dead one missed');
+});
+
+test('a feed silent past the beat is replaced without a word, and the new one drops the ended row', () => {
+  const sockets = fakeSockets();
+  const pending = new Map();
+  let ids = 0;
+  const quiet = (fn, ms) => { ids += 1; pending.set(ids, { fn, ms }); return ids; };
+  const cancel = (id) => pending.delete(id);
+  const store = createStore({ open: sockets.open, later: () => 'retry', cancel, quiet });
+  let closes = 0;
+  store.onClose(() => { closes += 1; });
+  const heard = [];
+  store.subscribe('sessions', (list) => heard.push(list.map((s) => s.name)));
+  store.connect();
+  const dead = sockets.made[0];
+  dead.close = () => dead.drop();
+  dead.up();
+  dead.push({ t: 'sessions', list: [{ name: 'front_fable' }, { name: 'alpha' }] });
+  dead.push({ t: 'beat' });
+  assert.equal(pending.size, 1, 'each message puts the one check off');
+  const [[, check]] = pending;
+  assert.equal(check.ms, SILENT_MS);
+
+  // The link died under the page: front_fable ends, and nothing more arrives.
+  check.fn();
+  assert.equal(sockets.made.length, 2, 'a new socket');
+  assert.equal(closes, 0, 'silently: no failure bar');
+  sockets.made[1].up();
+  sockets.made[1].push({ t: 'sessions', list: [{ name: 'alpha' }] });
+  assert.deepEqual(heard, [['front_fable', 'alpha'], ['alpha']]);
 });

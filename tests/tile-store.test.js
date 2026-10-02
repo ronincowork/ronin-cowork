@@ -37,7 +37,7 @@ function fakeTile(session) {
 test('a tile paints its gauge and work record from the pushed home row, and asks no route', () => {
   const { tile, painted } = fakeTile('alpha');
   tile.subscribeHome();
-  const letter = { docs: ['PLAN.md'], ladder: [{ stage: 'IDEAS' }] };
+  const letter = { docs: ['PLAN.md'], ladder: [{ phase: 'Plan it' }] };
 
   store.receive({ t: 'home', rows: [
     { name: 'beta', ctx: 12, model: 'other' },

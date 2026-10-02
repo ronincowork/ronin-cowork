@@ -29,6 +29,7 @@ export const STORES: readonly Store[] = [
   store('wipeboards', 'user', 'wipeboards'),
   store('jikan', 'user', 'jikan'),
   store('team_rosters', 'user', 'team_rosters'),
+  store('work_items', 'data', 'work-items'),
   store('desks', 'user', 'desks'),
   store('worktrees', 'user', 'worktrees'),
   store('catalogs', 'user', 'catalogs'),

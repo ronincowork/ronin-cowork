@@ -4,10 +4,11 @@ import { t } from './lexicon.js';
 import { appendProjectReading } from './project-reading.js';
 
 const COLUMNS = [
-  { key: 'IDEAS', label: 'Ideas', worker: 'lead' },
-  { key: 'PLANNING', label: 'Planning', worker: 'Agent with the owner' },
-  { key: 'BUILDING', label: 'Building', worker: 'Agent' },
-  { key: 'LANDING', label: 'Landing', worker: 'lead, then user' },
+  { key: 'IDEA', label: 'Idea', worker: 'lead' },
+  { key: 'PLAN', label: 'Plan', worker: 'Agent with the owner' },
+  { key: 'BUILD', label: 'Build', worker: 'Agent' },
+  { key: 'REVIEW', label: 'Review', worker: 'lead' },
+  { key: 'LAND', label: 'Land', worker: 'lead, then user' },
   { key: 'DONE', label: 'Done', worker: '' },
 ];
 export { COLUMNS as PROJECT_STAGES };
@@ -21,22 +22,18 @@ export const taskManagerScope = (value = {}) => {
   const teams = [...new Set((typeof value.teams === 'function' ? value.teams() : value.teams || [value.team]).map(String).filter(Boolean))];
   return { kind, teams, agent: kind === 'agent' ? String(value.agent || '') : '' };
 };
+/** Rows are the team reading's items (GET /api/work-items?team=); the Agent scope keeps
+ * the items that Agent holds. */
 export const projectsForScope = (rows, scope) => {
   const seen = new Set();
   return rows.map(normalizedProject)
-    .filter((project) => (!scope.agent || project.holder === scope.agent) && !seen.has(project.id) && seen.add(project.id));
+    .filter((project) => (!scope.agent || project.holder === `agent:${scope.agent}`) && !seen.has(project.id) && seen.add(project.id));
 };
 
 export function kanbanAvailability(installed) {
-  const services = installed?.services || {};
-  const capabilities = services.capabilities;
-  if (capabilities?.desired && Array.isArray(capabilities.running)) {
-    const available = capabilities.desired.task_manager === true && capabilities.running.includes('task_manager');
-    return { available, message: available ? '' : KANBAN_CAMPAIGN_OFF };
-  }
-  if (Array.isArray(services.loaded) && services.loaded.includes('kanban')) return { available: true, message: '' };
-  const parked = Array.isArray(services.parked) && services.parked.some((part) => part?.name === 'kanban');
-  return { available: false, message: parked ? KANBAN_CAMPAIGN_OFF : KANBAN_NOT_INSTALLED };
+  const capabilities = installed?.services?.capabilities;
+  const available = capabilities?.desired?.task_manager === true && Array.isArray(capabilities.running) && capabilities.running.includes('task_manager');
+  return { available, message: available ? '' : KANBAN_CAMPAIGN_OFF };
 }
 
 const node = (tag, cls, text) => {
@@ -51,9 +48,9 @@ const normalizedProject = (value) => ({
   id: String(value?.id || ''),
   title: String(value?.title || value?.id || 'Untitled project'),
   objective: String(value?.objective || ''),
-  evidence: Array.isArray(value?.evidence) ? value.evidence.map(String) : [],
-  holder: String(value?.holder || 'lead'),
-  stage: INDEX[value?.stage] == null ? 'IDEAS' : value.stage,
+  evidence: Array.isArray(value?.trail) ? value.trail.filter((line) => line?.op === 'evidence').map((line) => String(line.note || '')) : [],
+  holder: String(value?.holder || ''),
+  stage: INDEX[value?.stage] == null ? 'IDEA' : value.stage,
   exit: String(value?.exit || 'none'),
   status: ['green', 'yellow', 'red'].includes(value?.status) ? value.status : 'yellow',
 });
@@ -66,38 +63,62 @@ export function definedTargets(project) {
   const targets = new Set();
   if (project.stage === 'DONE') return targets;
   if (project.status === 'green' && COLUMNS[INDEX[project.stage] + 1]) targets.add(COLUMNS[INDEX[project.stage] + 1].key);
-  if (project.stage === 'PLANNING') targets.add('IDEAS');
+  if (project.stage === 'PLAN') targets.add('IDEA');
   return targets;
 }
 
 const meaningLine = (move) => move.text.split('meaning: ')[1]?.split('\n')[0] || '';
+
+/** Who works an item now: its Agent, or the lead when the Team holds it; nobody when parked. */
+export const holderOf = (project, leadName) => project.holder.startsWith('agent:') ? project.holder.slice(6)
+  : project.holder.startsWith('team:') ? leadName : '';
+
+/** One work item as one line: title, who holds it, and a stage bar (a segment per stage,
+ * filled to its stage, the current one in its status colour). */
+export function itemLine(value, { holder = '' } = {}) {
+  const item = normalizedProject(value);
+  const line = node('div', 'tk-line');
+  line.dataset.item = item.id;
+  line.append(node('span', 'tk-line-title', item.title));
+  const bar = node('span', 'tk-stage-bar');
+  bar.title = `${stageLabel(item.stage)} · ${item.status}`;
+  bar.setAttribute('aria-label', bar.title);
+  COLUMNS.forEach((column, index) => {
+    const segment = node('i', index < INDEX[item.stage] ? 'past' : index === INDEX[item.stage] ? `now ${item.stage === 'DONE' ? 'green' : item.status}` : '');
+    segment.title = column.label;
+    bar.append(segment);
+  });
+  line.append(node('span', 'tk-line-holder', holder ? `@${holder}` : ''), bar);
+  return line;
+}
 
 /** The exact one-message write path described by the Team Kanban concept. */
 export function moveMessage(project, toStage, leadName, now = new Date()) {
   const fromIndex = INDEX[project.stage];
   const toIndex = INDEX[toStage];
   const forward = toIndex === fromIndex + 1;
-  const holder = project.holder === 'lead' ? leadName : project.holder;
-  const n = project.id.split('/').at(-1);
+  const holder = holderOf(project, leadName) || leadName;
+  const id = project.id;
   const at = now.toISOString().slice(0, 16) + 'Z';
   const head = `from @kanban (the Team Task Manager, moved by the user at ${at}):`;
-  const line = `MOVE ${project.id} "${project.title}" from ${stageLabel(project.stage)} (${project.status}, exit: ${project.exit}) to ${stageLabel(toStage)}`;
+  const line = `MOVE ${id} "${project.title}" from ${stageLabel(project.stage)} (${project.status}, exit: ${project.exit}) to ${stageLabel(toStage)}`;
   const byNote = project.exit !== 'user' && project.exit !== 'none' ? ` (exit named the ${project.exit}; the user dragged it)` : '';
   const result = (target, meaning, next) => ({ target, text: `${head}\n${line}\n  meaning: ${meaning}\n  next: ${next}` });
 
-  if (project.stage === 'PLANNING' && toStage === 'IDEAS') {
-    return result(leadName, 'return it to Ideas; the house moves it back to the roster.', `work-record project return ${n}   (end @${project.holder} if this was its only project)`);
+  if (project.stage === 'PLAN' && toStage === 'IDEA') {
+    return result(leadName, 'return it to Idea; the Team holds it again.', `work-record project advance ${id} --to IDEA, then work-record project return ${id}`);
   }
   if (!forward) return { target: holder, text: `${head}\n${line}\n  meaning: no defined move; delivered as a plain request.` };
   if (project.status !== 'green') {
     return result(holder, `a request to move on, not an approval; the card is ${project.status === 'red' ? 'blocked' : 'being worked'}.`, 'your call — say why not, or set it green when it is ready.');
   }
-  if (project.stage === 'IDEAS') return result(leadName, 'engage — the user wants this started.', `assign it to an Agent, or raise one for it (project ${n} lands in that Agent's work record)`);
-  if (project.stage === 'PLANNING') return result(holder, `the plan is agreed${byNote}; build.`, `work-record project write ${n} --stage BUILDING`);
-  if (project.stage === 'BUILDING') return result(holder, `show approved${byNote}; hand in.`, `worktree-desk hand-in, then work-record project write ${n} --stage LANDING`);
-  if (project.stage === 'LANDING') {
+  if (project.stage === 'IDEA') return result(leadName, 'engage — the user wants this started.', `team project assign ${id} <session>, or raise an Agent for it`);
+  if (project.stage === 'PLAN') return result(holder, `the plan is agreed${byNote}; build.`, `work-record project advance ${id} --to BUILD`);
+  if (project.stage === 'BUILD') return result(holder, `show approved${byNote}; ready it for review.`, `work-record project advance ${id} --to REVIEW`);
+  if (project.stage === 'REVIEW') return result(holder, `review passed${byNote}; hand in.`, `worktree-desk hand-in <repo> --project ${id}   (the hand-in moves it to Land)`);
+  if (project.stage === 'LAND') {
     const release = project.exit === 'user';
-    return result(leadName, `${release ? 'release — merge the dev → master pull request' : 'promote'}${byNote}.`, release ? 'open or merge the pull request' : `bin/ronin-promote ${project.id.split('/')[0]}`);
+    return result(leadName, `${release ? 'release — merge the dev → master pull request' : 'promote'}${byNote}.`, release ? 'open or merge the pull request' : `bin/ronin-promote ${project.team || '<team>'}   (the promotion moves it to Done)`);
   }
   return { target: holder, text: `${head}\n${line}\n  meaning: delivered as a plain request.` };
 }
@@ -158,7 +179,7 @@ export function createTeamKanban(options = {}) {
   const openCards = new Set();
   const asked = new Map(); // id -> { stage, target }; never written to the project record
   const leadName = (project) => String(options.lead?.(project) || '');
-  const holderName = (project) => project.holder === 'lead' ? leadName(project) : project.holder;
+  const holderName = (project) => holderOf(project, leadName(project));
   const effectiveScope = () => scope.kind === 'team' && team ? taskManagerScope({ kind: 'team', team }) : taskManagerScope(scope);
   const navigate = (nextView, key = '') => {
     const detail = { scope: effectiveScope(), ...(nextView === 'status' ? { stage: key } : { project: key }) };
@@ -306,20 +327,15 @@ export function createTeamKanban(options = {}) {
     }
     const requestedScope = effectiveScope();
     notice.textContent = t('team_kanban.loading', 'Loading Task Manager…');
-    loading = Promise.all(requestedScope.teams.map((name) => request(`/api/teams/${encodeURIComponent(name)}/kanban`, { cache: 'no-store' })));
+    loading = Promise.all(requestedScope.teams.map((name) => request(`/api/work-items?team=${encodeURIComponent(name)}`, { cache: 'no-store' })));
     const results = await loading;
     loading = null;
     if (JSON.stringify(effectiveScope()) !== JSON.stringify(requestedScope)) { if (entered) void refresh(); return; }
     const failures = results.filter((result) => !result.ok);
     if (!failures.length) {
-      projects = projectsForScope(results.flatMap((result, index) => (Array.isArray(result.data.projects) ? result.data.projects : [])
+      projects = projectsForScope(results.flatMap((result, index) => (Array.isArray(result.data.items) ? result.data.items : [])
         .map((project) => ({ ...project, team: String(result.data.team || requestedScope.teams[index] || '') }))), requestedScope);
       notice.textContent = '';
-    } else if (failures.some((result) => result.status === 404)) {
-      availability = { available: false, message: KANBAN_CAMPAIGN_OFF };
-      projects = [];
-      notice.textContent = availability.message;
-      options.unavailable?.(availability.message);
     } else {
       notice.textContent = t('team_kanban.failed', 'Could not load Task Manager.');
     }

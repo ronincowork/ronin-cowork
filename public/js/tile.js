@@ -8,6 +8,7 @@ import { guard } from './errors.js';
 import { buildLadder } from './shingo.js';
 import { buildTileHead, syncTileHead } from './tilehead.js';
 import { installTextDrops } from './tiledroptext.js';
+import { installFileDrops } from './tilefiles.js';
 import { dvrStep } from './dvr.js';
 import { TapeView } from './tapeview.js';
 import { TermView } from './termview.js';
@@ -69,6 +70,8 @@ export class Tile {
     this.body.append(this.emptyMark);
     // Text dropped on the tile — an @mention or a document reference — lands here.
     installTextDrops(this);
+    // A file dragged or pasted on the tile goes to this Agent — see js/tilefiles.js.
+    installFileDrops(this);
 
     // 🔓 THE UNLOCKED VIEW — mounted first, so the tape sits under the panel and the
     // terminal in the stack.

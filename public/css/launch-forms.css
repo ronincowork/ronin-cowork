@@ -47,6 +47,17 @@
   .sws-detail { flex: 1; min-width: 0; min-height: 0; overflow-y: auto; font-size: var(--form-input); line-height: 1.45; }
   .sws-detail :where(h1, h2, h3, h4) { font-size: var(--form-head); line-height: 1.3; }
   .sws-detail[hidden] { display: none; }
+  /* Branches (full density, at rest; js/phalanx.js): each stone with its items under it, the
+     row of branches scrolling sideways. 'column' stacks the items; 'chart' is one column
+     per direct child with grandchildren stacked under it. */
+  .sws[data-branching='true'] .sws-grid { width: 100%; min-width: 0; flex-wrap: nowrap; justify-content: flex-start; align-items: flex-start; overflow-x: auto; }
+  .sws-branch { display: flex; flex: none; flex-direction: column; gap: var(--space-3); }
+  .sws-branch-row { display: flex; gap: var(--space-3); }
+  .sws-branch > .sws-stone { flex: none; width: var(--sws-stone); }
+  .sws-branch-column { display: flex; flex: none; flex-direction: column; width: var(--sws-stone); gap: var(--space-1); }
+  .sws-branch-column > .sws-branch-stone { flex: none; width: 100%; aspect-ratio: auto; padding: var(--space-2) var(--space-3); }
+  .sws-branch-column .sws-label { margin-top: 0; font-size: var(--text-4); font-weight: 500; }
+  .sws-branch-count { color: var(--muted); font-size: var(--form-note); }
   .wi-phalanx[data-density='compact'] .sws-secondary, .wi-phalanx[data-density='compact'] .sws-state { display: none; }
   .wi-project-green::before { background: var(--kanban-green); }
   .wi-project-yellow::before { background: var(--kanban-yellow); }
@@ -58,6 +69,39 @@
   .wi-project-facts dt { color: var(--muted); }
   .wi-project-facts dd { margin: 0; overflow-wrap: anywhere; }
   .wi-outcome, .wi-evidence { overflow-wrap: anywhere; white-space: pre-wrap; }
+  /* A work item laid over the Work items card's lists (js/work-details.js). */
+  .work-overlay { position: absolute; inset: 0; overflow-y: auto; background: var(--panel); }
+  /* Its utility, small at the top right: Save, Assign, Add, Close (js/work-details.js). */
+  .work-overlay-utility { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: var(--space-2); }
+  .work-overlay:focus { outline: none; }
+  .work-overlay-assign { padding-block: var(--space-3); }
+  /* Work items (js/work-views-surface.js), organised as a Trello board: fixed-width lists
+     across the top, each one slightly shaded panel as tall as what it holds. Three levels at
+     one font size: the list's name in a darker band (bold), an underlined semibold subtitle
+     per group, the items as cards on the plain surface; Add at the foot. */
+  .wv { --wv-list: 230px; --wv-shade: color-mix(in srgb, var(--fg) 5%, var(--panel)); --wv-band: color-mix(in srgb, var(--fg) 13%, var(--panel)); position: relative; display: flex; height: 100%; min-height: 0; flex-direction: column; gap: var(--space-4); padding: var(--space-5) var(--space-6); box-sizing: border-box; }
+  .wv-head { display: flex; align-items: center; gap: var(--space-4); }
+  .wv-head .wi-notice { margin: 0; }
+  /* The kit drives the size; the view button takes the content's, not the compact one. */
+  .wv-head .wk-action.wv-toggle { font-size: inherit; }
+  .wv-row { display: grid; flex: 1 1 auto; min-height: 0; align-items: start; grid-auto-columns: var(--wv-list); grid-auto-flow: column; gap: var(--space-4); overflow-x: auto; }
+  .wv-list { display: flex; max-height: 100%; min-height: 0; flex-direction: column; gap: var(--space-2); overflow-y: auto; border: var(--edge) solid var(--line-2); border-radius: var(--radius-hair); background: var(--wv-shade); padding-bottom: var(--space-2); box-sizing: border-box; }
+  .wv-list > :not(.wv-list-head) { margin-inline: var(--space-3); }
+  .wv-list-head, .wv-sub, .wv-add { border: 0; background: transparent; color: var(--fg); font: inherit; text-align: left; cursor: pointer; }
+  /* The title band: the list's name across its top, at least two lines tall so the content
+     under it starts on one line across the row. */
+  .wv-list-head { display: flex; flex: none; align-items: flex-start; justify-content: space-between; gap: var(--space-3); min-height: calc(2lh + 2 * var(--space-3)); box-sizing: border-box; border-bottom: var(--edge) solid var(--line-2); background: var(--wv-band); padding: var(--space-3) var(--space-4); font-weight: 700; }
+  .wv-count { flex: none; color: var(--muted); font-weight: 400; }
+  .wv-group { display: flex; flex-direction: column; gap: var(--space-2); margin-top: var(--space-2); }
+  .wv-sub { border-bottom: var(--edge) solid var(--line-2); padding: var(--space-1); font-weight: 600; }
+  .wv-add:hover { color: var(--fg); }
+  .wv-item { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-3); min-width: 0; border: var(--edge) solid var(--line); border-radius: var(--radius-hair); background: var(--panel); padding: var(--space-3); color: var(--fg); font: inherit; text-align: left; cursor: pointer; transition: border-color var(--motion-quick) var(--ease); }
+  .wv-item:hover { border-color: var(--kaki); }
+  .wv-label { min-width: 0; overflow-wrap: anywhere; }
+  .wv-holder { display: grid; flex: none; place-items: center; width: var(--space-6); height: var(--space-6); border-radius: 50%; background: var(--accent); color: var(--panel); font-weight: 600; }
+  .wv-add { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-2); color: var(--muted); }
+  .wv-add-mark { font-style: normal; }
+  .wv > .work-overlay { padding: var(--space-5) var(--space-6); box-sizing: border-box; }
   @container stone-work-surface-seat (max-width: 40rem) {
     .wk-surface-content.sws-host { padding-inline: var(--space-6); }
     .sws { gap: var(--space-6); }

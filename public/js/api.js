@@ -25,17 +25,20 @@ export async function setSessionTitle(name, title) {
   return r.data.title;
 }
 
+/** A 404 on a named session means it had already ended by itself. */
+const failure = (r) => Object.assign(new Error(r.message), r.status === 404 ? { gone: true } : {});
+
 /** Start the observable safe Agent+desk shutdown transaction. */
 export async function startSessionShutdown(name, body) {
   const r = await request('/api/sessions/' + encodeURIComponent(name) + '/shutdown', { method: 'POST', ...(body ? { json: body } : {}) });
-  if (!r.ok) throw new Error(r.message);
+  if (!r.ok) throw failure(r);
   return r.data;
 }
 
 /** Retire a live session without keeping its tmux process resident. */
 export async function archiveSession(name) {
   const r = await request('/api/sessions/' + encodeURIComponent(name) + '/archive', { method: 'POST' });
-  if (!r.ok) throw new Error(r.message);
+  if (!r.ok) throw failure(r);
   return r.data.archived;
 }
 

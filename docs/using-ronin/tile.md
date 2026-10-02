@@ -12,7 +12,8 @@ column, or drag its card into the workspace where you want to see it.
 | Output | **Terminal Mirror** — the live terminal — or **Locked**, the same terminal to watch without typing into it |
 | Transcript / Chat · Notes · Work · All · Term | When Terminal transcript is active, cycle from the terminal through ever fuller readings of the Agent's conversation and back |
 | Mention | Add another session's name to the message box |
-| Docs | Open documents tracked by this Agent |
+| 📎 | Send a file to this Agent from Finder, or the photo library on a phone — see [Share a file with an Agent](share-a-file.md) |
+| Docs | Open documents tracked by this Agent, and files handed to it |
 | × | Open the archive/delete choices |
 | − | Close this view while the Agent keeps running |
 
@@ -34,6 +35,12 @@ application may receive the drag as mouse input.
 Use [Terminal controls](terminal-controls.md) for Stop, Clear, Copy, and Close, including
 provider differences and mobile controls. Close and hide view have different consequences;
 see [Archived sessions](archived-sessions.md).
+
+## Share a file with an Agent
+
+Drag a file onto the tile, paste an image or file on it, or press **📎**: the file is saved
+in the session's `drop/` folder, listed on Docs, and its path typed into the Agent's input
+without Enter. See [Share a file with an Agent](share-a-file.md).
 
 ## Output availability
 

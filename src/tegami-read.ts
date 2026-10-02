@@ -2,34 +2,26 @@ import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { sessionDir, sessionKey } from './session-dir.js';
 import { tegamiPath } from './tegami.js';
-import { normalizeProject, type Project } from './projects.js';
+import { agentReading } from './work-items-read.js';
+import type { Rung, WorkItem } from './work-items.js';
 import { mandate, type Mandate } from './agent-defaults.js';
 
 const ON_TRACK = 'on_track';
 
-export type RungStatus = 'PLANNED' | 'ACTIVE' | 'DONE';
-const STATUSES: RungStatus[] = ['PLANNED', 'ACTIVE', 'DONE'];
-
-export interface Leg {
-  title: string;
-  status: RungStatus;
-}
-export interface Rung {
-  phase?: string;
-  gate?: string;
-  status?: RungStatus;
-  legs?: Leg[];
-}
 export interface Tegami {
   objective: string;
   mandate: Mandate;
   repos: { repo: string; branch: string }[];
-  at: { project?: string; rung?: number; leg?: number } | null;
+  /** The focus item and, when placed, the rung and leg on its ladder. */
+  at: { item?: string; rung?: number; leg?: number } | null;
   teams: { team: string; team_role: string; objective: string }[];
   ladder_state: string;
+  /** The focus item's ladder: an Agent's ladder is the ladder of the item it is on. */
   ladder: Rung[];
-  projects: Project[];
-  project: Project | null;
+  holds: string[];
+  items: WorkItem[];
+  item: WorkItem | null;
+  /** The session's README, the documents of every item it holds, and files dropped on it. */
   docs: string[];
   chip: { text: string; gate: boolean };
   quietMs: number;
@@ -46,50 +38,6 @@ function extractBlock(text: string): unknown | null {
   }
 }
 
-function toStatus(v: unknown): RungStatus {
-  const s = String(v ?? '').toUpperCase();
-  return STATUSES.includes(s as RungStatus) ? (s as RungStatus) : 'PLANNED';
-}
-
-function normalise(raw: unknown): Rung[] {
-  if (!Array.isArray(raw)) return [];
-  const out: Rung[] = [];
-  let implicit: Rung | null = null;
-  for (const item of raw) {
-    if (!item || typeof item !== 'object') continue;
-    const r = item as Record<string, unknown>;
-    if (typeof r.gate === 'string') {
-      implicit = null;
-      out.push({ gate: r.gate, status: toStatus(r.status) });
-    } else if (typeof r.phase === 'string') {
-      implicit = null;
-      const legs = Array.isArray(r.legs)
-        ? (r.legs as Record<string, unknown>[])
-            .filter((l) => l && typeof l === 'object')
-            .map((l) => ({ title: String(l.title ?? l.leg ?? ''), status: toStatus(l.status) }))
-        : undefined;
-      out.push({ phase: r.phase, status: r.status ? toStatus(r.status) : undefined, legs });
-    } else if (typeof r.title === 'string' || typeof r.leg === 'string') {
-      if (!implicit) {
-        implicit = { phase: '', legs: [] };
-        out.push(implicit);
-      }
-      implicit.legs!.push({ title: String(r.title ?? r.leg), status: toStatus(r.status) });
-    }
-  }
-  return out;
-}
-
-function readAt(v: unknown): { project?: string; rung?: number; leg?: number } | null {
-  if (!v || typeof v !== 'object') return null;
-  const o = v as Record<string, unknown>;
-  const out: { project?: string; rung?: number; leg?: number } = {};
-  if (typeof o.project === 'string' && o.project) out.project = o.project;
-  if (Number.isInteger(o.rung)) out.rung = o.rung as number;
-  if (Number.isInteger(o.leg)) out.leg = o.leg as number;
-  return Object.keys(out).length ? out : null;
-}
-
 async function readDocs(v: unknown): Promise<string[]> {
   if (!Array.isArray(v)) return [];
   const want = [...new Set(v.filter((x): x is string => typeof x === 'string' && x.startsWith('/')))];
@@ -97,9 +45,16 @@ async function readDocs(v: unknown): Promise<string[]> {
   return alive.filter((p): p is string => p !== null);
 }
 
+/** Files the owner handed this Agent from the browser, in the session's own drop/. */
+async function dropped(key: string): Promise<string[]> {
+  const dir = path.join(sessionDir(key), 'drop');
+  const names = await fs.readdir(dir).catch(() => [] as string[]);
+  return names.filter((n) => !n.startsWith('.')).sort().map((n) => path.join(dir, n));
+}
+
 function chipFor(
   ladder: Rung[],
-  at: { project?: string; rung?: number; leg?: number } | null,
+  at: { rung?: number; leg?: number } | null,
   state: string,
 ): { text: string; gate: boolean } {
   if (state) return { text: `↳ ${state.replace(/_/g, ' ')}`, gate: false };
@@ -142,31 +97,8 @@ export async function readTegami(name: string): Promise<Tegami | null> {
     const block = extractBlock(text);
     if (!block || typeof block !== 'object') return null;
     const b = block as Record<string, unknown>;
-    const at = readAt(b.at);
-    const ladder = normalise(b.ladder);
-    const authoredProjects = Array.isArray(b.projects)
-      ? b.projects.flatMap((value) => {
-          const project = normalizeProject(value);
-          return project ? [project] : [];
-        })
-      : [];
-    const legacyProject: Project | null = authoredProjects.length || !ladder.length ? null : {
-      id: `legacy:${name}`,
-      title: String(b.objective ?? '') || 'Work record',
-      objective: String(b.objective ?? ''),
-      stage: 'BUILDING',
-      exit: ladder.some((rung) => rung.gate !== undefined) ? 'user' : 'none',
-      status: 'yellow',
-      ladder: [{
-        stage: 'BUILDING',
-        legs: ladder.flatMap((rung) => rung.gate !== undefined
-          ? [{ title: rung.gate, done: rung.status === 'DONE' }]
-          : (rung.legs || []).map((leg) => ({ title: leg.title, done: leg.status === 'DONE' }))),
-      }],
-      evidence: [],
-    };
-    const projects = legacyProject ? [legacyProject] : authoredProjects;
-    const project = projects.find((item) => item.id === at?.project) ?? projects[0] ?? null;
+    const reading = await agentReading(name);
+    const at = reading.focus ? { item: reading.focus, ...(reading.at ?? {}) } : null;
     const state = String(b.ladder_state ?? '').trim().toLowerCase();
     const off = state && state !== ON_TRACK ? state : '';
     return {
@@ -192,11 +124,12 @@ export async function readTegami(name: string): Promise<Tegami | null> {
         : [],
       ladder_state: off,
       at,
-      ladder,
-      projects,
-      project,
-      docs: await readDocs([path.join(sessionDir(key), 'README.md'), ...(Array.isArray(b.docs) ? b.docs : [])]),
-      chip: chipFor(ladder, at, off),
+      ladder: reading.ladder,
+      holds: reading.items.map((item) => item.id),
+      items: reading.items,
+      item: reading.items.find((item) => item.id === reading.focus) ?? null,
+      docs: await readDocs([path.join(sessionDir(key), 'README.md'), ...reading.docs, ...(await dropped(key))]),
+      chip: chipFor(reading.ladder, reading.at, off),
       quietMs: Date.now() - stat.mtimeMs,
     };
   } catch {
