@@ -15,13 +15,13 @@ test('Commons opens on its separate Roster and keeps Configuration separate', as
   assert.doesNotMatch(view, /commons\.config\.replaceChildren\(members, config\)/);
 });
 
-test('Task Manager is offered only when available as a standalone surface', async () => {
+test('Task Manager stays a registered standalone surface; the Team selector no longer offers it', async () => {
   const [view, catalog] = await Promise.all([
     source('public/js/cowork-view.js'), source('public/js/workbench-catalog.js'),
   ]);
   assert.match(catalog, /kanban: 'team\.kanban'/);
   assert.match(catalog, /type: WORKBENCH_TYPES\.kanban, header: 'surface'[\s\S]*e\.kanbanOffers\(\)/);
-  assert.match(catalog, /WORKBENCH_PROFILES\.team, \[WORKBENCH_TYPES\.commons, WORKBENCH_TYPES\.teamChart, WORKBENCH_TYPES\.kanban,/);
+  assert.doesNotMatch(catalog, /WORKBENCH_PROFILES\.team, \[[^\]]*WORKBENCH_TYPES\.kanban\b/);
   assert.match(view, /request\('\/api\/installed'/);
   assert.match(view, /kanbanOffers: \(\) => kanbanGate\.available \? \[\{/);
   assert.match(view, /teamKanban: \(id\) => taskManagerFor\(id\)/);
