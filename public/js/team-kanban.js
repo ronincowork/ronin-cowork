@@ -42,7 +42,7 @@ const node = (tag, cls, text) => {
   if (text != null) out.textContent = String(text);
   return out;
 };
-const stageLabel = (key) => COLUMNS[INDEX[key]]?.label || key;
+export const stageLabel = (key) => COLUMNS[INDEX[key]]?.label || key;
 const normalizedProject = (value) => ({
   ...value,
   id: String(value?.id || ''),

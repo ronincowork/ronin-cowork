@@ -12,7 +12,7 @@ let nextDetailId = 0;
 export const CHART_DEPTH = 4;
 
 /** Every descendant of a row, depth first, as plain stones (a level is one level). */
-const descendants = (row) => (row.items || []).flatMap((child) => [{ ...child, items: undefined }, ...descendants(child)]);
+const descendants = (row, depth = 1) => (row.items || []).flatMap((child) => [{ ...child, items: undefined, depth }, ...descendants(child, depth + 1)]);
 
 /**
  * The shared collection surface: a responsive phalanx at rest and a one-stone
@@ -109,6 +109,7 @@ export function createPhalanx({ items = [], selectedId = '', renderDetail, onSel
     }
     if (item.disabled) button.disabled = true;
     if (item.draggable) button.draggable = true;
+    if (item.depth > 1) button.dataset.swsDepth = String(item.depth);
     for (const [name, value] of Object.entries(item.attrs || {})) button.setAttribute(name, String(value));
     for (const [eventName, callback] of Object.entries(item.events || {})) button.addEventListener(eventName, (event) => callback(event, item, api));
     if (item.glyph && !branch) {

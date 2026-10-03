@@ -2,6 +2,7 @@
 /** Workbench; its Campaign, Cowork or Team scope limits what cards are offered. */
 import { createWorkItemsSurface } from './work-items-surface.js';
 import { createWorkViewsSurface } from './work-views-surface.js';
+import { createWhoSurface } from './who-surface.js';
 import { WorkspaceKit } from './workspace-kit.js';
 import { deleteTeamRoster, membersOfTeam, sessionsAvailableToTeam, setTeamLead, setTeamMembership, subscribe, teamByName, teamsFromState, unassignedSessions, UNASSIGNED } from './team-controller.js';
 import { createNewTeamFormView } from './new-team-form.js';
@@ -271,6 +272,7 @@ export function createCoworkView(options = {}) {
   // are Campaign-level and are now surfaces of Campaign Manage (js/campaign-view.js).
   // The Team roster stayed — a Cowork is not Campaign configuration — and is its own
   // surface rather than the one tab left in a strip.
+  const whoBySeat = {};
   const teamRosterBySeat = campaign ? Object.fromEntries(Object.keys(seats)
     .map((id) => [id, createTeamRosterSurface({
       teamDetail: (name) => leagueTeamDetail(name, id),
@@ -316,6 +318,8 @@ export function createCoworkView(options = {}) {
       lead: (project) => membersOfTeam(project.team).find((member) => member.team_lead)?.name || '',
       openOwner: (name) => openAgentWorkbench(name),
     }),
+    // Who: one per seat, its Team detail the same profile the Teams stones paint in place.
+    who: (id) => { whoBySeat[id] ||= createWhoSurface({ teamDetail: (name) => leagueTeamDetail(name, id) }); return whoBySeat[id]; },
     workViews: () => createWorkViewsSurface({
       holderTeam: holderTeamOf, openTeam: (name) => openWorkspaceTab('team', name), team: campaign || team === UNASSIGNED ? '' : team,
       leadOf: (name) => membersOfTeam(name).find((member) => member.team_lead)?.name || '',

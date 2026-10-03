@@ -43,6 +43,24 @@ Close. The Add form, the same wherever Add appears, asks title, objective, statu
 board: an existing board, New board (`root: true` on the create route: a root of its own) or
 Unfiled, the default. Assign holds the item by an Agent or a Team.
 
+Who (`collection.who`, `who-surface.js`) is the first door of the collections workbench
+(owner, 2026-10-03: Who, What, Where — Teams, boards, workspace folders — each a phalanx of
+the same stones with the other axes under them, drilled into in place). Its reading is one
+request, GET `/api/collection` (`src/collection-read.ts`), the folder filter sent as `?root=`;
+the browser joins nothing. One stone per Team: name, objective, Agents and lead. In full
+density at rest the phalanx's chart branches draw each Team's boards under it, one column per
+board with that board's items stacked beneath; the surface header's one-line/two-line toggle
+(the selector column's) folds the boards away by switching density. The no-team stone carries
+the Unfiled board, the board no Team holds, so both sides say the same thing. The top area is
+one `ask()` question, Workspace: all, or one registered folder, which narrows the stones to the
+Teams working in it; a Team in two folders is found under either. Drill is the phalanx's own:
+press a Team and its boards and items are the rail with the Team profile (`leagueTeamDetail`)
+beside; a board's detail is `listDetail` (its items as item lines, each a press to that item's
+stone); an item's detail is `itemDetail`. `who-rows.js` is the pure mapping, under test.
+The chart rest geometry is the phalanx's: branch blocks wrap at wide spacing with the chart's
+lines drawn from the head stone across its columns, and a grandchild stands inset under its
+parent in the column and in the rail (`data-sws-depth`). Every consumer inherits it.
+
 Task Manager keeps its board and status/Project drill-downs for the Agent's Task Manager;
 its selector card is no longer offered on the Cowork, Desk or Team workbenches. The older
 Work Items board (`work-items`) stays on the Team workbench beside Trello view and in the
