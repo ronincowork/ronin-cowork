@@ -50,16 +50,3 @@ export function whoMove(moved, target) {
   return '';
 }
 
-/**
- * Several readings as one (several workspaces chosen; the route narrows by one root at a
- * time, so the surface asks once per root and joins the answers): each Team, board and
- * folder once, in first-seen order. Interim until the route takes several roots.
- */
-export function unionReadings(readings = []) {
-  const once = (key) => { const seen = new Set(); return (row) => !seen.has(row[key]) && seen.add(row[key]); };
-  return {
-    teams: readings.flatMap((reading) => reading?.teams || []).filter(once('name')),
-    boards: readings.flatMap((reading) => reading?.boards || []).filter(once('id')),
-    roots: readings.flatMap((reading) => reading?.roots || []).filter(once('name')),
-  };
-}

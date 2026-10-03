@@ -13,13 +13,13 @@
  * an item and the detail is the item. Escape or the back stone is the one way back.
  *
  * Reading: GET /api/collection (src/collection-read.ts), one request, the folder filter sent
- * as ?root=, once per chosen workspace and joined (unionReadings). There is no stone for "no team": Unfiled is unfiled by definition (owner,
+ * as ?root=, repeated for every chosen workspace. There is no stone for "no team": Unfiled is unfiled by definition (owner,
  * 2026-10-03). `whoRows` (who-rows.js) is the pure mapping.
  */
 import { WorkspaceKit } from './workspace-kit.js';
 import { createCollectionPhalanx } from './collection-phalanx.js';
 import { membersOfTeam, moveTeamMembership, subscribe } from './team-controller.js';
-import { unionReadings, whoMove, whoRows } from './who-rows.js';
+import { whoMove, whoRows } from './who-rows.js';
 import { agentTitle } from './team-members.js';
 import { itemDetail, listDetail } from './work-details.js';
 import { createAgentCompositionReader } from './agent-composition.js';
@@ -152,16 +152,14 @@ export function createWhoSurface({ teamDetail, openAgent = () => {} } = {}) {
   async function read() {
     reading?.abort();
     const controller = new AbortController(); reading = controller;
-    // One request per chosen workspace (the route narrows by one root), joined; none is all.
-    const results = await Promise.all((chosen.length ? chosen : ['']).map((root) =>
-      request(`/api/collection${root ? `?root=${encodeURIComponent(root)}` : ''}`, { cache: 'no-store', signal: controller.signal })));
+    // One request; every chosen workspace rides as ?root= and the server narrows to any of them.
+    const query = chosen.map((root) => `root=${encodeURIComponent(root)}`).join('&');
+    const result = await request(`/api/collection${query ? `?${query}` : ''}`, { cache: 'no-store', signal: controller.signal });
     if (controller.signal.aborted) return;
-    const failed = results.find((result) => !result.ok);
-    if (failed) { surface.setState('failed', failed.message || ''); return; }
+    if (!result.ok) { surface.setState('failed', result.message || ''); return; }
     surface.setState();
-    const data = results.length > 1 ? unionReadings(results.map((result) => result.data)) : results[0].data;
-    if (!chosen.length || !roots) roots = data.roots || [];
-    paint({ ...data, roots });
+    if (!chosen.length || !roots) roots = result.data.roots || [];
+    paint({ ...result.data, roots });
   }
   let entered = false;
   const stop = subscribe(() => { if (entered) void read(); });
