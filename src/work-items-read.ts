@@ -2,8 +2,8 @@
  * READINGS — derived from the store and the holder lists, never stored.
  * agent:      the items an Agent holds, its focus item's ladder, every held item's docs.
  * team:       the roster objective, the items the Team holds and the items its members
- *             hold, each child after its parent where the lead made any; and its boards:
- *             the root above every one of those items, plus the Unfiled board, each whole.
+ *             hold, each child after its parent where the lead made any; and its boards
+ *             (the board → Teams rule, boardReadings), plus the Unfiled board, each whole.
  * unassigned: the Unfiled board's items that nobody holds.
  * every:      every item, each with the holder it is found on ('' when nobody holds it).
  */
@@ -30,8 +30,8 @@ export interface TeamReading {
   team: string;
   objective: string;
   items: HeldItem[];
-  /** Every item on the Team's boards (the root above each item it or a member holds) and on
-   * the Unfiled board, roots included, each with its holder. */
+  /** Every item on the Team's boards (the board → Teams rule, boardReadings) and on the
+   * Unfiled board, roots included, each with its holder. */
   boards: HeldItem[];
 }
 
@@ -76,24 +76,55 @@ export async function teamReading(team: string, sessions?: Array<{ name: string;
   for (const { holder, ids } of lists) {
     for (const item of present(await Promise.all(ids.map((id) => readItem(id))))) items.push({ ...item, holder });
   }
-  return { holder: `team:${team}`, team, objective: roster.objective, items: byParent(items), boards: await boardsAbove(items) };
+  return { holder: `team:${team}`, team, objective: roster.objective, items: byParent(items), boards: await teamBoards(team, sessions ?? await listSessions()) };
 }
 
-/** The boards above these items (each walked up its parent chain to the root) and the Unfiled
- * board, every item on them. Membership is the sessions' Team tags, so an Agent in two Teams
- * brings its boards to both. */
-async function boardsAbove(held: WorkItem[]): Promise<HeldItem[]> {
+/* THE BOARD → TEAMS RULE, the one place it lives. A board is a root item with every item
+ * under it. Its Teams come from the holders on the root and on every item under it: team:<name>
+ * directly, agent:<name> through that Agent's Team tags (an Agent in two Teams brings the board
+ * to both). The Unfiled board belongs to no Team. A Team's boards (its reading's `boards`) and
+ * the collection reading's joins both read this. */
+export interface BoardReading {
+  board: HeldItem;
+  /** Every item under the board, the root itself excluded. */
+  items: HeldItem[];
+  teams: string[];
+  agents: string[];
+}
+
+export async function boardReadings(sessions?: Array<{ name: string; tags: string[] }>, teamNames?: Set<string>): Promise<BoardReading[]> {
   const every = await everyItemReading();
+  const unfiled = (await unfiledBoard())?.id ?? '';
+  const live = sessions ?? await listSessions();
+  const teams = teamNames ?? new Set(live.flatMap((session) => session.tags));
+  const tagsOf = new Map(live.map((session) => [session.name, session.tags.filter((tag) => teams.has(tag))]));
   const byId = new Map(every.map((item) => [item.id, item]));
   const rootOf = (id: string): string => {
     let item = byId.get(id);
     for (let steps = 0; item?.parent && byId.has(item.parent) && steps < every.length; steps += 1) item = byId.get(item.parent);
     return item?.id ?? '';
   };
-  const roots = new Set(held.map((item) => rootOf(item.id)).filter(Boolean));
-  const unfiled = await unfiledBoard();
-  if (unfiled) roots.add(unfiled.id);
-  return every.filter((item) => roots.has(rootOf(item.id)));
+  const out = new Map<string, BoardReading>();
+  for (const item of every) if (!item.parent) out.set(item.id, { board: item, items: [], teams: [], agents: [] });
+  for (const item of every) if (item.parent) out.get(rootOf(item.id))?.items.push(item);
+  for (const reading of out.values()) {
+    const held = [reading.board, ...reading.items].map((item) => item.holder);
+    const agents = [...new Set(held.filter((holder) => holder.startsWith('agent:')).map((holder) => holder.slice(6)))];
+    reading.agents = agents;
+    reading.teams = reading.board.id === unfiled ? [] : [...new Set([
+      ...held.filter((holder) => holder.startsWith('team:')).map((holder) => holder.slice(5)),
+      ...agents.flatMap((agent) => tagsOf.get(agent) ?? []),
+    ])];
+  }
+  return [...out.values()];
+}
+
+/** A Team's boards by the rule above, plus the Unfiled board, every item on them. */
+async function teamBoards(team: string, sessions: Array<{ name: string; tags: string[] }>): Promise<HeldItem[]> {
+  const unfiled = (await unfiledBoard())?.id ?? '';
+  return (await boardReadings(sessions, new Set([team])))
+    .filter((reading) => reading.teams.includes(team) || reading.board.id === unfiled)
+    .flatMap((reading) => [reading.board, ...reading.items]);
 }
 
 export async function unassignedReading(): Promise<WorkItem[]> {

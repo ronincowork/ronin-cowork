@@ -44,7 +44,9 @@ view you are in, **View by: Status** or **View by: Board**, and switches to the 
 Trello board: Status shows one list per stage, its items grouped under each board's name;
 Board shows one list per board, its items grouped under each stage's name. Each list shows
 its count at the head and **Add a work item** at the foot, which starts the new item in that
-list. In Board view, **Add board** after the last board starts a new board. On a Team's
+list. In Board view, **Unfiled** always sits at the far right in its own shade, and **Add
+board** after the boards starts a new one. On a Team's workbench, Add starts on the Team's
+own board (else its lead's, else Unfiled); you can still pick any board. On a Team's
 workbench the card shows the boards that Team and its Agents work on, plus **Unfiled**, so
 unfiled work can be taken on from there; a board added there is held by the Team. In
 Board view, drag an item onto another board's list to move it there (what is under it comes
