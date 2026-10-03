@@ -8,8 +8,8 @@
  *                    Agent's Team tags; the Unfiled board has no Team
  *   board → folders  through its Teams; the Unfiled board has none
  *
- * Filters, all optional, narrow together: team (its folders and boards), root (the Teams in
- * that folder, the boards they hold), board (its Teams and folders), agent (boards narrowed to
+ * Filters, all optional, narrow together: team (its folders and boards), root (one folder or
+ * several, their union: the Teams in them, the boards they hold, each once), board (its Teams and folders), agent (boards narrowed to
  * the items that Agent holds, Teams to its Teams), stage (items at that stage). Worktrees are
  * not part of it.
  */
@@ -19,7 +19,7 @@ import { listSessions } from './tmux.js';
 import { ITEM_STAGES } from './work-items.js';
 import { boardReadings, type HeldItem } from './work-items-read.js';
 
-export interface CollectionFilters { team?: string; root?: string; board?: string; agent?: string; stage?: string }
+export interface CollectionFilters { team?: string; root?: string[]; board?: string; agent?: string; stage?: string }
 
 export interface CollectionTeam {
   name: string; title: string; objective: string; lead: string;
@@ -43,14 +43,16 @@ export async function collectionReading(filters: CollectionFilters = {}): Promis
     ...reading, roots: unique(reading.teams.flatMap((team) => foldersOf.get(team) ?? [])),
   }));
   let teams = live;
-  const { team, root, board, agent, stage } = filters;
+  const { team, board, agent, stage } = filters;
+  const root = unique(filters.root ?? []);
+  const inRoots = (names: string[] = []) => names.some((name) => root.includes(name));
   if (team) {
     teams = teams.filter((row) => row.name === team);
     boards = boards.filter((row) => row.teams.includes(team));
   }
-  if (root) {
-    teams = teams.filter((row) => foldersOf.get(row.name)?.includes(root));
-    boards = boards.filter((row) => row.roots.includes(root));
+  if (root.length) {
+    teams = teams.filter((row) => inRoots(foldersOf.get(row.name)));
+    boards = boards.filter((row) => inRoots(row.roots));
   }
   if (board) {
     boards = boards.filter((row) => row.board.id === board);
@@ -63,9 +65,9 @@ export async function collectionReading(filters: CollectionFilters = {}): Promis
   }
   if (stage) boards = boards.map((row) => ({ ...row, items: row.items.filter((item) => item.stage === stage) })).filter((row) => row.items.length);
 
-  const narrowed = Boolean(team || root || board || agent || stage);
+  const narrowed = Boolean(team || root.length || board || agent || stage);
   const shownFolders = folders.filter((folder) => !folder.archived)
-    .filter((folder) => (root ? folder.name === root : !narrowed
+    .filter((folder) => (root.length ? root.includes(folder.name) : !narrowed
       || teams.some((row) => foldersOf.get(row.name)?.includes(folder.name)) || boards.some((row) => row.roots.includes(folder.name))));
 
   return {
