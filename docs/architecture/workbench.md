@@ -54,9 +54,10 @@ folded away until the Team is pressed), or its Agents, the lead first and marked
 pressed opening its profile in place (the composition reader, with Launch); the surface header's one-line/two-line toggle (the
 selector column's) folds the boards away by switching density. A board or an item bar is its title
 and nothing else: the surface is a table of contents, saying where to drill, never a reading
-of everything, and never a count of what is visible (owner, 2026-10-03). The top area is two `ask()` questions: Workspace, all
-or one registered folder, which narrows the stones to the Teams working in it (a Team in two
-folders is found under either), and Under each Team, Boards or Agents, a one-of-two question
+of everything, and never a count of what is visible (owner, 2026-10-03). The top area is two `ask()` questions: Workspace, any
+number of registered folders (none is all), which narrows the stones to the Teams working in
+them (one request per chosen folder, joined by `unionReadings` until the route takes several
+roots; a Team in two folders is found under either), and Under each Team, Boards or Agents, a one-of-two question
 that flips on press (`ask.js`: two answers, no blank, nothing nested — no tray). Drill is the phalanx's own: press a Team and its
 boards and items are the rail with the Team profile (`leagueTeamDetail`) beside; a board's
 detail is `listDetail` (its items as item lines, each a press to that item's stone, the title

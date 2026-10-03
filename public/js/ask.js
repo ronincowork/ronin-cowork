@@ -175,7 +175,7 @@ export function ask(groups = [], { value = {}, onChange = null, className = '', 
     const b = el('b', 'ask-reading');
     if (field.switch) { b.textContent = field.switch[cur ? 0 : 1]; if (field.word) b.append(el('i', 'ask-fact', field.word)); return b; }
     if (field.many) {
-      if (!cur.length) { b.className += ' ask-blank'; b.textContent = t('ask.none', 'None'); }
+      if (!cur.length) { b.className += ' ask-blank'; b.textContent = field.blank ?? t('ask.none', 'None'); }
       else if (cur.length <= 2) b.textContent = cur.map((v) => rowFor(field, v)?.l ?? v).join(', ');
       else b.textContent = t('ask.chosen', '{n} chosen', { n: cur.length });
       return b;

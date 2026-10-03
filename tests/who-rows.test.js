@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-const { whoRows, whoMove } = await import('../public/js/who-rows.js');
+const { whoRows, whoMove, unionReadings } = await import('../public/js/who-rows.js');
 
 // The shape GET /api/collection answers (src/collection-read.ts).
 const reading = {
@@ -64,4 +64,14 @@ test('Who: what a drop means — item onto another board reparents, board or Age
   assert.equal(whoMove({ kind: 'item', id: 'w9', team: '', board: 'w2' }, team), '', 'an item is not a Team\'s to take');
   assert.equal(whoMove({ kind: 'board', id: 'w2' }, board), '');
   assert.equal(whoMove(null, team), '');
+});
+
+test('Who: several workspaces chosen join their readings, each Team, board and folder once, first seen first', () => {
+  const a = { teams: [{ name: 'surface' }, { name: 'front-2' }], boards: [{ id: 'w1' }], roots: [{ name: 'ronin_cowork' }] };
+  const b = { teams: [{ name: 'mvp' }, { name: 'surface' }], boards: [{ id: 'w1' }, { id: 'w4' }], roots: [{ name: 'samurai_lab' }] };
+  const joined = unionReadings([a, b, null]);
+  assert.deepEqual(joined.teams.map((row) => row.name), ['surface', 'front-2', 'mvp']);
+  assert.deepEqual(joined.boards.map((row) => row.id), ['w1', 'w4']);
+  assert.deepEqual(joined.roots.map((row) => row.name), ['ronin_cowork', 'samurai_lab']);
+  assert.deepEqual(unionReadings([]), { teams: [], boards: [], roots: [] });
 });
