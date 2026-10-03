@@ -5,6 +5,7 @@
  * on, and, when the header's one-line/two-line toggle says two, that board's items beneath. The top area holds one filter: the workspace
  * folder, so a Team working in two folders is found under either, and a second question,
  * what stacks under each Team: its boards or its Agents (an Agent pressed is its profile).
+ * Bars drag: an item onto a board, a board or an Agent onto a Team (whoMove says what it means).
  *
  * Drawn with the collection phalanx (collection-phalanx.js), the phalanx forked for the
  * doors. Drill is the phalanx's own, in place: press a Team and its boards and items are the rail
@@ -17,8 +18,8 @@
  */
 import { WorkspaceKit } from './workspace-kit.js';
 import { createCollectionPhalanx } from './collection-phalanx.js';
-import { membersOfTeam, subscribe } from './team-controller.js';
-import { whoRows } from './who-rows.js';
+import { membersOfTeam, moveTeamMembership, subscribe } from './team-controller.js';
+import { whoMove, whoRows } from './who-rows.js';
 import { agentTitle } from './team-members.js';
 import { itemDetail, listDetail } from './work-details.js';
 import { createAgentCompositionReader } from './agent-composition.js';
@@ -96,6 +97,40 @@ export function createWhoSurface({ teamDetail, openAgent = () => {} } = {}) {
   phalanx.mount(surface.content, { before: [filter.el] });
   paintLines();
 
+  /* DRAG AND DROP (owner, 2026-10-03). A bar drags; a Team stone takes a board (assign) or an
+   * Agent (join it, leave the Team it was under); a board bar takes an item (reparent). The
+   * meaning is whoMove's; each move is one call to the store, then the reading is asked again. */
+  const DRAG = 'application/x-ronin-who';
+  const carried = (event) => { try { return JSON.parse(event.dataTransfer?.getData(DRAG) || 'null'); } catch { return null; } };
+  const moves = {
+    assign: (moved, target) => request(`/api/work-items/${encodeURIComponent(moved.id)}/assign`, { method: 'POST', json: { team: target.id } }),
+    reparent: (moved, target) => request(`/api/work-items/${encodeURIComponent(moved.id)}/reparent`, { method: 'POST', json: { parent: target.id } }),
+    join: (moved, target) => moveTeamMembership(moved.id, moved.team, target.id),
+  };
+  const wire = (rows, team = '', board = '') => rows.map((row) => {
+    const out = { ...row, events: { ...(row.events || {}) } };
+    const mine = { kind: row.kind, id: row.kind === 'agent' ? row.agent.name : row.id, team, board };
+    if (row.kind !== 'team') {
+      out.draggable = true;
+      out.events.dragstart = (event) => { event.dataTransfer.setData(DRAG, JSON.stringify(mine)); event.dataTransfer.effectAllowed = 'move'; };
+    }
+    if (row.kind === 'team' || row.kind === 'board') {
+      // The browser hides the data until the drop; while over, only the type says it is ours.
+      out.events.dragover = (event) => { if (!event.dataTransfer?.types?.includes(DRAG)) return; event.preventDefault(); event.currentTarget.classList.add('cph-over'); };
+      out.events.dragleave = (event) => event.currentTarget.classList.remove('cph-over');
+      out.events.drop = async (event) => {
+        event.preventDefault(); event.stopPropagation(); event.currentTarget.classList.remove('cph-over');
+        const move = whoMove(carried(event), row);
+        if (!move) return;
+        const result = await moves[move](carried(event), row);
+        if (!result.ok) { surface.setState('failed', result.message || ''); return; }
+        void read();
+      };
+    }
+    if (Array.isArray(row.items)) out.items = wire(row.items, row.kind === 'team' ? row.id : team, row.kind === 'board' ? row.id : board);
+    return out;
+  });
+
   let shown = '';
   let reading = null;
   let last = null; // the reading last painted, for a switch of what stacks
@@ -109,7 +144,7 @@ export function createWhoSurface({ teamDetail, openAgent = () => {} } = {}) {
     const signature = JSON.stringify(next);
     if (signature === shown) return;
     shown = signature;
-    phalanx.setItems(next);
+    phalanx.setItems(wire(next));
     filter.options('root', (data.roots || []).map((row) => ({ v: row.name, l: row.name })));
   };
   // Every folder stays offered while a filter is on: the first unfiltered reading's list holds.

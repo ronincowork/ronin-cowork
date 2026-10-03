@@ -87,6 +87,8 @@
   .cph[data-open='true'] .sws-stone[data-cph-depth='2'] { width: calc(min(100%, var(--sws-stone)) - var(--space-5)); margin-inline-start: var(--space-5); }
   .cph[data-open='true'] .sws-stone[data-cph-depth][aria-pressed='true'] { border-color: var(--kaki); background: color-mix(in srgb, var(--kaki) 12%, var(--panel)); }
   .cph[data-open='true'] .sws-stone[data-cph-depth][aria-pressed='true'] .sws-label { font-weight: 600; }
+  .cph .sws-stone[draggable='true'] { cursor: grab; }
+  .cph .sws-stone.cph-over { outline: var(--edge-2) solid var(--kaki); outline-offset: var(--space-1); }
   .cph .sws-detail .tk-line { cursor: pointer; }
   .cph .sws-detail .tk-line:hover .tk-line-title { color: var(--kaki); }
   .wi-phalanx[data-density='compact'] .sws-secondary, .wi-phalanx[data-density='compact'] .sws-state { display: none; }

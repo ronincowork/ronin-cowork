@@ -60,7 +60,11 @@ folders is found under either), and Under each Team, Boards or Agents, a one-of-
 that flips on press (`ask.js`: two answers, no blank, nothing nested — no tray). Drill is the phalanx's own: press a Team and its
 boards and items are the rail with the Team profile (`leagueTeamDetail`) beside; a board's
 detail is `listDetail` (its items as item lines, each a press to that item's stone); an item's
-detail is `itemDetail`. `who-rows.js` is the pure mapping, under test.
+detail is `itemDetail`. Bars drag (phalanx `draggable` and `events`, nothing new): an item
+onto another board reparents it there, a board onto another Team assigns it, an Agent onto
+another Team joins it and leaves the Team it was under; `whoMove` (who-rows.js) is the rule,
+each move one call to the store, then the reading again. `who-rows.js` is the pure mapping,
+under test.
 
 **The phalanx and its fork** (owner ruling, 2026-10-03). `phalanx.js` is the stone work
 surface as it was, its geometry untouched: Settings (Presets, Workspace Folders, Model

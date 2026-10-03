@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-const { whoRows } = await import('../public/js/who-rows.js');
+const { whoRows, whoMove } = await import('../public/js/who-rows.js');
 
 // The shape GET /api/collection answers (src/collection-read.ts).
 const reading = {
@@ -56,4 +56,18 @@ test('Who: a narrowed reading (the server already filtered by workspace) draws o
 test('Who: a missing or malformed reading draws no stones rather than throwing', () => {
   assert.deepEqual(whoRows(undefined), []);
   assert.deepEqual(whoRows({ teams: null, boards: 'x' }), []);
+});
+
+test('Who: what a drop means — item onto another board reparents, board or Agent onto another Team moves it, anything else nothing', () => {
+  const team = { kind: 'team', id: 'surface' };
+  const board = { kind: 'board', id: 'w1' };
+  assert.equal(whoMove({ kind: 'item', id: 'w9', team: 'front-2', board: 'w2' }, board), 'reparent');
+  assert.equal(whoMove({ kind: 'item', id: 'w6', team: 'surface', board: 'w1' }, board), '', 'already on that board');
+  assert.equal(whoMove({ kind: 'board', id: 'w2', team: '', board: '' }, team), 'assign');
+  assert.equal(whoMove({ kind: 'board', id: 'w1', team: 'surface', board: '' }, team), '', 'already that Team\'s');
+  assert.equal(whoMove({ kind: 'agent', id: 'a', team: 'front-2', board: '' }, team), 'join');
+  assert.equal(whoMove({ kind: 'agent', id: 'a', team: 'surface', board: '' }, team), '');
+  assert.equal(whoMove({ kind: 'item', id: 'w9', team: '', board: 'w2' }, team), '', 'an item is not a Team\'s to take');
+  assert.equal(whoMove({ kind: 'board', id: 'w2' }, board), '');
+  assert.equal(whoMove(null, team), '');
 });

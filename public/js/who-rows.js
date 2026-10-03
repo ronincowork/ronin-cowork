@@ -38,3 +38,18 @@ export function whoRows(reading = {}, { under = 'boards', leadOf = () => '', mem
     ...(helper ? [stone(helper, [])] : []),
   ];
 }
+
+/**
+ * What dropping `moved` on `target` means, or '' when nothing: an item onto another board
+ * reparents it there; a board onto another Team gives it to that Team; an Agent onto another
+ * Team moves the Agent there (owner, 2026-10-03: the items and Agents are drag-droppable).
+ * `moved` is { kind, id, team, board }: the kind and id of what is dragged and the Team or
+ * board it was under; `target` is a row ({ kind, id }).
+ */
+export function whoMove(moved, target) {
+  if (!moved || !target) return '';
+  if (target.kind === 'team' && moved.kind === 'board' && moved.team !== target.id) return 'assign';
+  if (target.kind === 'team' && moved.kind === 'agent' && moved.team !== target.id) return 'join';
+  if (target.kind === 'board' && moved.kind === 'item' && moved.board !== target.id) return 'reparent';
+  return '';
+}

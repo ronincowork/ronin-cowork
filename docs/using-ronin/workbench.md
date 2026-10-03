@@ -63,7 +63,9 @@ On the Cowork and Desk workbenches the **Who** card is the Teams door of the col
 stone per Team, and under each stone the boards that Team works on, or its Agents: **Under each
 Team** at the top chooses which. The two-line button on its head shows or hides the work items under each board. **Workspace** at the top narrows the
 stones to the Teams working in one registered folder. Press a Team to open its profile beside
-its boards; press a board for its items; press an item for the item; press an Agent for its profile. Escape, or the back stone,
+its boards; press a board for its items; press an item for the item; press an Agent for its profile. Drag a
+work item onto a board to move it there, a board onto a Team to give it to that Team, or an
+Agent onto a Team to move the Agent there. Escape, or the back stone,
 is the way back. What (boards) and Where (folders) follow on the same stones.
 
 Adding another tenant or profile adds no layout implementation. Adding another surface
