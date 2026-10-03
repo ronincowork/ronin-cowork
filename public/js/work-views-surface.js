@@ -27,7 +27,6 @@ import { t } from './lexicon.js';
 export const WORK_VIEWS_TYPE = 'work.views';
 
 const STAGE_KEYS = PROJECT_STAGES.map((stage) => stage.key);
-const firstLine = (text) => String(text || '').split('\n')[0];
 const stageName = (key) => PROJECT_STAGES.find((stage) => stage.key === key)?.label || key;
 
 /** `holderTeam(holder)` names the Team a holder works in; `openTeam(team)` opens its workbench;
@@ -39,16 +38,16 @@ export function createWorkViewsSurface({ holderTeam = () => '', openTeam = () =>
   const surface = createSurface({ label: t('work_views.title', 'Trello view'), className: 'work-views-surface' });
   const root = el('div', 'wv');
   const toggle = createAction({ size: 'compact', className: 'wv-toggle', action: () => { view = view === 'status' ? 'board' : 'status'; paint(); } });
-  const notice = el('p', 'wi-notice'); notice.setAttribute('role', 'status');
   const head = el('div', 'wv-head');
-  head.append(toggle.el, notice);
+  head.append(toggle.el);
   const row = el('div', 'wv-row');
   root.append(head, row);
   surface.content.append(root);
 
   // The overlay: one at a time, over the lists; what it writes is said and re-read.
   const lift = () => root.querySelector(':scope > .work-overlay')?.remove();
-  const changed = (sentence) => { notice.textContent = sentence || ''; void refresh(); };
+  // No wording on the surface: a write shows itself when the lists are read again.
+  const changed = () => void refresh();
   const openItem = (item) => {
     lift();
     const holding = holderTeam(String(item.holder || ''));
@@ -119,12 +118,10 @@ export function createWorkViewsSurface({ holderTeam = () => '', openTeam = () =>
   const itemsById = new Map();
   const move = async (id, parent) => {
     const moved = await request(`/api/work-items/${encodeURIComponent(id)}/reparent`, { method: 'POST', json: { parent: parent || '' } });
-    let said = moved.ok ? firstLine(moved.data.acknowledgement) : moved.message;
     if (moved.ok && !parent && team && !itemsById.get(id)?.holder) {
-      const held = await request(`/api/work-items/${encodeURIComponent(id)}/assign`, { method: 'POST', json: { team } });
-      said = held.ok ? firstLine(held.data.acknowledgement) : held.message;
+      await request(`/api/work-items/${encodeURIComponent(id)}/assign`, { method: 'POST', json: { team } });
     }
-    changed(said);
+    changed();
   };
   row.addEventListener('dragover', (event) => { if (view === 'board') event.preventDefault(); });
   row.addEventListener('drop', (event) => {
@@ -158,7 +155,7 @@ export function createWorkViewsSurface({ holderTeam = () => '', openTeam = () =>
   async function refresh() {
     // A Team reads its boards from the server (its team reading's `boards`); Cowork/Desk read every item.
     const read = await request(team ? `/api/work-items?team=${encodeURIComponent(team)}` : '/api/work-items', { cache: 'no-store' });
-    if (!read.ok) { notice.textContent = t('work.failed', 'Could not read the work items.'); return; }
+    if (!read.ok) return;
     boards = boardStages((team ? read.data.boards : read.data.items) || [], STAGE_KEYS);
     paint();
   }

@@ -51,10 +51,9 @@ export function listDetail(host, { title, about = '', items = [], empty = '', ac
 /* THE OVERLAY — one layer over whatever is open beneath it, the same on every surface. Its
  * utility sits small at its top right, in one order: Save (only while there is something to
  * save), Assign (an item, to an Agent or a Team), Add (a new item's form, laid in its place), Close. `context`
- * answers where Add puts a new item ({ stage, parent }); `changed(sentence)` hears every
- * write the overlay made, for the surface to say and re-read; `closed()` hears Close. */
+ * answers where Add puts a new item ({ stage, parent }); `changed()` hears every write the
+ * overlay made, for the surface to read again; `closed()` hears Close. */
 const agentChoices = () => (Array.isArray(S.sessions) ? S.sessions : []).map((row) => ({ v: row.name, l: row.name }));
-const firstLine = (text) => String(text || '').split('\n')[0];
 
 function overlay(host, draw, { through = [], save = null, assign = null, context = null, changed = () => {}, closed = () => {} } = {}) {
   const { createAction } = WorkspaceKit.primitives;
@@ -99,9 +98,9 @@ export function itemOverlay(host, item, options = {}) {
       density: 'tight', exposed: true, onChange: async ({ session, team }) => {
         const holder = session ? { session } : team ? { team } : null;
         if (!holder) return;
-        const held = await request(`/api/work-items/${encodeURIComponent(item.id)}/assign`, { method: 'POST', json: holder });
+        await request(`/api/work-items/${encodeURIComponent(item.id)}/assign`, { method: 'POST', json: holder });
         slot.hidden = true;
-        (options.changed || (() => {}))(held.ok ? firstLine(held.data.acknowledgement) : held.message);
+        (options.changed || (() => {}))();
       },
     });
     slot.replaceChildren(picker.el);
@@ -123,7 +122,7 @@ export function draftOverlay(host, { stage = 'IDEA', parent = '', team = '', cha
       if (!made.ok) return made.message;
       layer.remove();
       closed();
-      changed(firstLine(made.data.acknowledgement));
+      changed();
       return '';
     } });
   }, { save, changed, closed });
