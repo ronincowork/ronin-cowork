@@ -71,10 +71,12 @@ export function registerWorkItems(app: express.Express): void {
   }));
 
   // The collection reading: Teams, boards and workspace folders joined, narrowed by any of
-  // ?team= ?root= ?board= ?agent= ?stage= together (src/collection-read.ts).
+  // ?team= ?root= ?board= ?agent= ?stage= together (src/collection-read.ts). root takes several
+  // folders, repeated (root=a&root=b) or comma-separated (root=a,b), answering their union.
   app.get('/api/collection', guarded(async (req, res) => {
     const filter = (key: string) => text(req.query[key])?.trim() || undefined;
-    res.json({ ok: true, ...(await collectionReading({ team: filter('team'), root: filter('root'), board: filter('board'), agent: filter('agent'), stage: filter('stage') })) });
+    const roots = [req.query.root].flat().flatMap((value) => String(value ?? '').split(',')).map((name) => name.trim()).filter(Boolean);
+    res.json({ ok: true, ...(await collectionReading({ team: filter('team'), root: roots, board: filter('board'), agent: filter('agent'), stage: filter('stage') })) });
   }));
 
   app.post('/api/work-items', guarded(async (req, res) => {

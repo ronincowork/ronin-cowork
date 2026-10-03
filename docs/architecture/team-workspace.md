@@ -139,7 +139,8 @@ with `holder, teams, agents, roots` and `stages: [{ stage, items }]`, non-empty 
 and `roots` (`name, path, teams, boards`). A Team's folders are its roster's `project_root`
 and `repos` that are registered workspace folders; a board's folders come through its
 Teams, and the Unfiled board has none. Optional filters narrow every list together:
-`team` (its folders and boards), `root` (the Teams in that folder and the boards they hold),
+`team` (its folders and boards), `root` (one folder or several, repeated `root=a&root=b` or
+comma-separated `root=a,b`: the union of the Teams in them and the boards they hold, each once),
 `board` (its Teams and folders), `agent` (boards narrowed to the items that Agent holds,
 Teams to its Teams) and `stage` (items at that stage). Worktrees are not part of it.
 
