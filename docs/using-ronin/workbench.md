@@ -60,8 +60,8 @@ objective, status and board: an existing board, **New board** (the item becomes 
 its own) or **Unfiled**, the default, for work nobody has filed yet.
 
 On the Cowork and Desk workbenches the **Who** card is the Teams door of the collection: one
-stone per Team, and under each stone the boards that Team works on with their items. The
-two-line button on its head hides or shows the boards. **Workspace** at the top narrows the
+stone per Team, and under each stone the boards that Team works on. The two-line button on
+its head hides or shows the boards. **Workspace** at the top narrows the
 stones to the Teams working in one registered folder. Press a Team to open its profile beside
 its boards; press a board for its items; press an item for the item. Escape, or the back stone,
 is the way back. What (boards) and Where (folders) follow on the same stones.

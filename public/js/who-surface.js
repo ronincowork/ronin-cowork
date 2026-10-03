@@ -20,7 +20,6 @@ import { createCollectionPhalanx } from './collection-phalanx.js';
 import { membersOfTeam, subscribe, UNASSIGNED } from './team-controller.js';
 import { whoRows } from './who-rows.js';
 import { agentTitle } from './team-members.js';
-import { stageLabel } from './team-kanban.js';
 import { itemDetail, listDetail } from './work-details.js';
 import { ask } from './ask.js';
 import { request } from './request.js';
@@ -73,12 +72,11 @@ export function createWhoSurface({ teamDetail } = {}) {
   let reading = null;
   const paint = (data) => {
     const next = whoRows(data, {
-      root, stageName: stageLabel, noTeamId: UNASSIGNED,
+      root, noTeamId: UNASSIGNED,
       leadOf: (name) => { const lead = membersOfTeam(name).find((member) => member.team_lead); return lead ? agentTitle(lead) : ''; },
       labels: {
         noTeam: t('league.ronin', 'Ronin: no team'),
         agents: (count) => t('league.agent_count', '{count} Agents', { count }),
-        items: (count) => t('league.item_count', '{count} items', { count }),
       },
     });
     const signature = JSON.stringify(next);

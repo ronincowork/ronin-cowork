@@ -1,26 +1,22 @@
 /* part of the ronin-cowork client — see js/README.md */
 /** The Who door's stones from one collection reading (GET /api/collection). Pure: no DOM. */
-import { holderName } from './work-readings.js';
 import { RONIN_HELPERS } from './roster-groups.js';
 
 /**
  * The stones from one collection reading ({ teams, boards }): every Team the reading names,
  * Ronin Helpers last, and, with no folder filter, the no-team stone carrying the Unfiled
  * board. A Team's `items` are its boards; a board's `items` are everything under it, by
- * stage. `leadOf(name)` answers the lead's shown name; the reading's session name otherwise.
+ * stage. A board or an item is its title and nothing else: the surface is a table of
+ * contents, saying where to drill, not a reading of everything (owner, 2026-10-03).
+ * `leadOf(name)` answers the lead's shown name; the reading's session name otherwise.
  */
-export function whoRows(reading = {}, { root = '', noTeamId = ' unassigned', leadOf = () => '', stageName = (key) => key, labels = {} } = {}) {
+export function whoRows(reading = {}, { root = '', noTeamId = ' unassigned', leadOf = () => '', labels = {} } = {}) {
   const teams = Array.isArray(reading.teams) ? reading.teams : [];
   const boards = Array.isArray(reading.boards) ? reading.boards : [];
   const agents = labels.agents || ((n) => `${n} Agents`);
-  const items = labels.items || ((n) => `${n} items`);
   const boardStone = (board) => ({
     id: board.id, kind: 'board', board, className: 'who-board', label: board.title,
-    state: `${items(board.stages.reduce((n, row) => n + row.items.length, 0))} · ${stageName(board.stage)}`,
-    items: board.stages.flatMap((row) => row.items.map((item) => ({
-      id: item.id, kind: 'item', item, className: 'who-item', label: item.title,
-      state: [stageName(item.stage), holderName(item.holder) ? `@${holderName(item.holder)}` : ''].filter(Boolean).join(' · '),
-    }))),
+    items: board.stages.flatMap((row) => row.items.map((item) => ({ id: item.id, kind: 'item', item, className: 'who-item', label: item.title }))),
   });
   const stone = (team, teamBoards) => {
     const lead = leadOf(team.name) || team.lead || '';

@@ -48,9 +48,11 @@ Who (`collection.who`, `who-surface.js`) is the first door of the collections wo
 the same stones with the other axes under them, drilled into in place). Its reading is one
 request, GET `/api/collection` (`src/collection-read.ts`), the folder filter sent as `?root=`;
 the browser joins nothing. One stone per Team: name, objective, Agents and lead. At rest the
-chart branches draw each Team's boards under it, one column per board with that board's items
-stacked beneath; the surface header's one-line/two-line toggle (the selector column's) folds
-the boards away by switching density. The no-team stone carries the Unfiled board, the board
+fork stacks each Team's boards under it as one-line bars, that board's items
+folded away until the Team is pressed; the surface header's one-line/two-line toggle (the
+selector column's) folds the boards away by switching density. A board or an item bar is its title
+and nothing else: the surface is a table of contents, saying where to drill, never a reading
+of everything, and never a count of what is visible (owner, 2026-10-03). The no-team stone carries the Unfiled board, the board
 no Team holds, so both sides say the same thing. The top area is one `ask()` question,
 Workspace: all, or one registered folder, which narrows the stones to the Teams working in it;
 a Team in two folders is found under either. Drill is the phalanx's own: press a Team and its
@@ -62,10 +64,11 @@ detail is `itemDetail`. `who-rows.js` is the pure mapping, under test.
 surface as it was, its geometry untouched: Settings (Presets, Workspace Folders, Model
 Providers, Setup), Team Chart, Work Items and the Trello view's overlays draw with it.
 `collection-phalanx.js` is the fork for the collection doors, built on `createPhalanx`
-(the same stones, rail, detail and way back, nothing copied): chart branches by default,
-wider spacing, the org chart's lines from the head stone across its columns, an empty row
-drawing nothing, a grandchild inset under its parent in the column and in the rail
-(`data-cph-depth`, set by the fork through `attrs`), and a header that fits its question.
+(the same stones, rail, detail and way back, nothing copied): blocks centred at wide
+spacing, each stone's children stacked under it as one-line bars joined by a line, an empty
+stack drawing nothing, grandchildren folded away at rest and inset under their parent in
+the rail (`data-cph-depth`, set by the fork through `attrs`), and a header that fits its
+question.
 Its root wears `.cph` and its host `.cph-host`; every rule is under that prefix. Who draws
 with the fork; What and Where will.
 
