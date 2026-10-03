@@ -47,32 +47,41 @@
   .sws-detail { flex: 1; min-width: 0; min-height: 0; overflow-y: auto; font-size: var(--form-input); line-height: 1.45; }
   .sws-detail :where(h1, h2, h3, h4) { font-size: var(--form-head); line-height: 1.3; }
   .sws-detail[hidden] { display: none; }
-  /* Branches (full density, at rest; js/phalanx.js): an org chart. Each stone with its items
-     under it, the chart's lines drawn from the head stone across its columns; the blocks wrap
-     at wide spacing. 'column' stacks the items; 'chart' is one column per direct child with
-     grandchildren stacked, inset, under it. */
-  .sws[data-branching='true'] .sws-grid { width: 100%; min-width: 0; flex-wrap: wrap; justify-content: flex-start; align-items: flex-start; gap: var(--space-12) calc(var(--space-12) + var(--space-6)); }
-  .sws-branch { display: flex; flex: none; flex-direction: column; align-items: flex-start; }
+  /* Branches (full density, at rest; js/phalanx.js): each stone with its items under it, the
+     row of branches scrolling sideways. 'column' stacks the items; 'chart' is one column
+     per direct child with grandchildren stacked under it. */
+  .sws[data-branching='true'] .sws-grid { width: 100%; min-width: 0; flex-wrap: nowrap; justify-content: flex-start; align-items: flex-start; overflow-x: auto; }
+  .sws-branch { display: flex; flex: none; flex-direction: column; gap: var(--space-3); }
+  .sws-branch-row { display: flex; gap: var(--space-3); }
   .sws-branch > .sws-stone { flex: none; width: var(--sws-stone); }
-  .sws-branch-row { position: relative; display: flex; gap: var(--space-6); margin-top: var(--space-8); }
-  .sws-branch-row:empty { display: none; }
-  .sws-branch-row::before { content: ''; position: absolute; top: calc(-1 * var(--space-8)); left: calc(var(--sws-stone) / 2); width: var(--edge); height: calc(var(--space-8) - var(--space-4)); background: var(--line-2); }
-  .sws-branch-row::after { content: ''; position: absolute; top: calc(-1 * var(--space-4)); left: calc(var(--sws-stone) / 2); right: calc(var(--sws-stone) / 2); height: var(--edge); background: var(--line-2); }
-  .sws-branch-column { position: relative; display: flex; flex: none; flex-direction: column; width: var(--sws-stone); gap: var(--space-1); }
-  .sws-branch-column::before { content: ''; position: absolute; top: calc(-1 * var(--space-4)); left: calc(50% - var(--edge) / 2); width: var(--edge); height: var(--space-4); background: var(--line-2); }
-  .sws-branch > .sws-branch-column { margin-top: var(--space-4); }
+  .sws-branch-column { display: flex; flex: none; flex-direction: column; width: var(--sws-stone); gap: var(--space-1); }
   .sws-branch-column > .sws-branch-stone { flex: none; width: 100%; aspect-ratio: auto; padding: var(--space-2) var(--space-3); }
-  .sws-branch-column > .sws-branch-stone:not(:first-child) { width: calc(100% - var(--space-4)); margin-inline-start: var(--space-4); }
   .sws-branch-column .sws-label { margin-top: 0; font-size: var(--text-4); font-weight: 500; }
-  .sws-branch-column .sws-state { font-size: var(--text-2); }
-  /* A grandchild in the rail stands inset under its parent, as it did in the chart. */
-  .sws[data-open='true'] .sws-stone[data-sws-depth='2'] { width: calc(min(100%, var(--sws-stone)) - var(--space-5)); margin-inline-start: var(--space-5); aspect-ratio: auto; padding: var(--space-3) var(--space-4); }
-  .sws[data-open='true'] .sws-stone[data-sws-depth='2'] .sws-label { margin-top: 0; font-size: var(--text-4); font-weight: 500; }
   .sws-branch-count { color: var(--muted); font-size: var(--form-note); }
-  /* Who's top area is one question, not a text: the header fits it, and its open tray. */
-  .who-surface .sws-header { flex-basis: auto; block-size: auto; overflow: visible; padding-block-end: var(--space-6); }
-  .who-phalanx .sws-detail .tk-line { cursor: pointer; }
-  .who-phalanx .sws-detail .tk-line:hover .tk-line-title { color: var(--kaki); }
+  /* THE COLLECTION PHALANX (js/collection-phalanx.js): the phalanx forked for the collection
+     doors, Who / What / Where. Its root wears .cph and its host .cph-host; every rule here is
+     under that prefix and reaches none of the phalanx's own consumers. At rest: wider stones'
+     gap, chart blocks wrapping at wide spacing, the org chart's lines from the head stone across
+     its columns, an empty row drawing nothing, a grandchild inset under its parent in the column
+     and in the rail (data-cph-depth, set by the fork). Its top area is a question, not a text,
+     so the header fits it and its open tray. */
+  .cph { --sws-gap: var(--space-10); }
+  .cph-host > .sws-header { flex-basis: auto; block-size: auto; overflow: visible; padding-block-end: var(--space-6); }
+  .cph[data-branching='true'] .sws-grid { flex-wrap: wrap; overflow-x: visible; gap: var(--space-12) calc(var(--space-12) + var(--space-6)); }
+  .cph .sws-branch { align-items: flex-start; gap: 0; }
+  .cph .sws-branch-row { position: relative; gap: var(--space-6); margin-top: var(--space-8); }
+  .cph .sws-branch-row:empty { display: none; }
+  .cph .sws-branch-row::before { content: ''; position: absolute; top: calc(-1 * var(--space-8)); left: calc(var(--sws-stone) / 2); width: var(--edge); height: calc(var(--space-8) - var(--space-4)); background: var(--line-2); }
+  .cph .sws-branch-row::after { content: ''; position: absolute; top: calc(-1 * var(--space-4)); left: calc(var(--sws-stone) / 2); right: calc(var(--sws-stone) / 2); height: var(--edge); background: var(--line-2); }
+  .cph .sws-branch-column { position: relative; }
+  .cph .sws-branch-column::before { content: ''; position: absolute; top: calc(-1 * var(--space-4)); left: calc(50% - var(--edge) / 2); width: var(--edge); height: var(--space-4); background: var(--line-2); }
+  .cph .sws-branch > .sws-branch-column { margin-top: var(--space-4); }
+  .cph .sws-branch-column > .sws-branch-stone:not(:first-child) { width: calc(100% - var(--space-4)); margin-inline-start: var(--space-4); }
+  .cph .sws-branch-column .sws-state { font-size: var(--text-2); }
+  .cph[data-open='true'] .sws-stone[data-cph-depth='2'] { width: calc(min(100%, var(--sws-stone)) - var(--space-5)); margin-inline-start: var(--space-5); aspect-ratio: auto; padding: var(--space-3) var(--space-4); }
+  .cph[data-open='true'] .sws-stone[data-cph-depth='2'] .sws-label { margin-top: 0; font-size: var(--text-4); font-weight: 500; }
+  .cph .sws-detail .tk-line { cursor: pointer; }
+  .cph .sws-detail .tk-line:hover .tk-line-title { color: var(--kaki); }
   .wi-phalanx[data-density='compact'] .sws-secondary, .wi-phalanx[data-density='compact'] .sws-state { display: none; }
   .wi-project-green::before { background: var(--kanban-green); }
   .wi-project-yellow::before { background: var(--kanban-yellow); }

@@ -6,7 +6,8 @@
  * boards away (stones only) or shows them. The top area holds one filter: the workspace
  * folder, so a Team working in two folders is found under either.
  *
- * Drill is the Phalanx's own, in place: press a Team and its boards and items are the rail
+ * Drawn with the collection phalanx (collection-phalanx.js), the phalanx forked for the
+ * doors. Drill is the phalanx's own, in place: press a Team and its boards and items are the rail
  * with the Team's profile beside; press a board and the detail is the board's items; press
  * an item and the detail is the item. Escape or the back stone is the one way back.
  *
@@ -15,7 +16,7 @@
  * the same thing from either side. `whoRows` (who-rows.js) is the pure mapping.
  */
 import { WorkspaceKit } from './workspace-kit.js';
-import { createPhalanx } from './phalanx.js';
+import { createCollectionPhalanx } from './collection-phalanx.js';
 import { membersOfTeam, subscribe, UNASSIGNED } from './team-controller.js';
 import { whoRows } from './who-rows.js';
 import { agentTitle } from './team-members.js';
@@ -65,7 +66,7 @@ export function createWhoSurface({ teamDetail } = {}) {
     const view = teamDetail?.(item.id);
     if (view) host.append(view.el);
   };
-  const phalanx = createPhalanx({ className: 'who-phalanx', items: [], renderDetail, branches: 'chart' });
+  const phalanx = createCollectionPhalanx({ className: 'who-phalanx', items: [], renderDetail });
   phalanx.mount(surface.content, { before: [filter.el] });
 
   let shown = '';
