@@ -62,12 +62,12 @@
      doors, Who / What / Where. Its root wears .cph and its host .cph-host; every rule here is
      under that prefix and reaches none of the phalanx's own consumers. At rest: the blocks
      centred at wide spacing, each stone's children stacked under it as one-line bars joined
-     by a line, grandchildren folded away (they stand inset under their parent in the rail;
-     data-cph-depth, set by the fork). Its top area is a question, not a text, so the header
+     by a line, grandchildren folded away or shown under their parent (data-cph-fold on the root; in the
+     rail they always stand inset under it; data-cph-depth, set by the fork). Its top area is a question, not a text, so the header
      fits it and its open tray. */
   .cph { --sws-gap: var(--space-10); }
-  .cph-host > .sws-header { flex-basis: auto; block-size: auto; overflow: visible; padding-block-end: var(--space-6); }
-  .cph[data-branching='true'] .sws-grid { width: 100%; flex-wrap: wrap; justify-content: center; overflow-x: visible; gap: var(--space-12); }
+  .cph-host > .sws-header { flex-basis: auto; block-size: auto; overflow: visible; padding-block: var(--space-4) var(--space-11); }
+  .cph[data-branching='true'] .sws-grid { width: 100%; flex-wrap: wrap; justify-content: center; overflow-x: visible; gap: calc(var(--space-12) + var(--space-8)) var(--space-12); }
   .cph .sws-branch { align-items: stretch; gap: 0; width: var(--sws-stone); }
   .cph .sws-branch-column { position: relative; margin-top: var(--space-5); gap: var(--space-2); }
   .cph .sws-branch-column:empty { display: none; }
@@ -80,7 +80,8 @@
   .cph .sws-stone[data-cph-depth]:hover .sws-label { color: var(--kaki); }
   .cph .sws-stone[data-cph-depth] .sws-label { width: 100%; margin-top: 0; overflow: hidden; font-size: var(--text-4); font-weight: 500; white-space: nowrap; text-overflow: ellipsis; }
   .cph .sws-branch-column > .sws-branch-stone { min-width: 0; padding: var(--space-2) var(--space-1); }
-  .cph[data-branching='true'] .sws-branch-column > .sws-branch-stone[data-cph-depth='2'] { display: none; }
+  .cph[data-cph-fold='true'][data-branching='true'] .sws-branch-column > .sws-branch-stone[data-cph-depth='2'] { display: none; }
+  .cph[data-branching='true'] .sws-branch-column > .sws-branch-stone[data-cph-depth='2'] { width: calc(100% - var(--space-5)); margin-inline-start: var(--space-5); }
   /* In the rail the bars keep their line and stand under their parent, the grandchild inset. */
   .cph[data-open='true'] .sws-stone[data-cph-depth] { padding: var(--space-3) var(--space-2); }
   .cph[data-open='true'] .sws-stone[data-cph-depth='2'] { width: calc(min(100%, var(--sws-stone)) - var(--space-5)); margin-inline-start: var(--space-5); }

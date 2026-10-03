@@ -4,8 +4,8 @@
  * owner ruling 2026-10-03), built ON createPhalanx: the same stones, rail, detail and one way
  * back, nothing copied. What the fork adds is the look of a collection at rest: each stone's
  * children stacked under it as one-line bars, joined by a line, the blocks centred at wide
- * spacing, and grandchildren folded away until the stone is pressed (they stand inset under
- * their parent in the rail). Children and grandchildren are not stones: a bar with a hairline,
+ * spacing, and grandchildren folded away (`setFold`) or shown under their parent; in the rail
+ * they always stand inset under it. Children and grandchildren are not stones: a bar with a hairline,
  * distinct but light (owner, 2026-10-03: the stone format on everything is too heavy; never
  * count what is visible). The fork marks each
  * nested item's depth (`data-cph-depth`) through the phalanx's own `attrs`; its root wears
@@ -31,5 +31,8 @@ export function createCollectionPhalanx({ className = '', branches = 'column', i
     return phalanx;
   };
   phalanx.setItems = (next) => { setItems.call(phalanx, markDepth(next)); return phalanx; };
+  /** Folded, the grandchildren under each child stay out of the rest view; the rail always has them. */
+  phalanx.setFold = (on = true) => { phalanx.el.dataset.cphFold = String(Boolean(on)); return phalanx; };
+  phalanx.setFold(true);
   return phalanx;
 }

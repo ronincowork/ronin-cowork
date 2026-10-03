@@ -222,6 +222,18 @@ export function ask(groups = [], { value = {}, onChange = null, className = '', 
       });
       return button;
     }
+    // A ONE-OF-TWO QUESTION FLIPS: exactly two answers, no blank, nothing nested under either —
+    // the press takes the other answer and opens nothing (owner, 2026-10-03).
+    const flips = () => !field.many && !field.blank && !childrenOf(field).length && rowsOf(field).length === 2 && rowsOf(field).every((row) => !row.row && !row.action && !row.off && !row.disabled);
+    if (flips()) {
+      button.dataset.flip = 'true';
+      button.append(el('small', 'ask-label', field.label), reading(field));
+      button.addEventListener('click', () => {
+        const rows = rowsOf(field);
+        choose(field, rows.find((row) => String(row.v) !== String(state[field.key])) || rows[0], button);
+      });
+      return button;
+    }
     button.setAttribute('aria-expanded', String(open === field.key));
     button.setAttribute('aria-controls', trayId);
     button.append(el('small', 'ask-label', field.label), reading(field));

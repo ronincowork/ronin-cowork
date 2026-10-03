@@ -4,14 +4,14 @@ import { RONIN_HELPERS } from './roster-groups.js';
 
 /**
  * The stones from one collection reading ({ teams, boards }): every Team the reading names,
- * Ronin Helpers last, and, with no folder filter, the no-team stone carrying the Unfiled
- * board and the Agents in no Team. A Team stone is its name and its lead, nothing else.
+ * Ronin Helpers last. No stone for "no team": Unfiled is unfiled by definition and says
+ * nothing (owner, 2026-10-03). A Team stone is its name and its lead, nothing else.
  * Under each Team, `under` chooses what stacks: 'boards' (a board's `items` are everything
  * under it, by stage) or 'agents' (`membersOf(name)` → [{ name, title, lead }], lead first).
  * A bar is its title and nothing else: the surface is a table of contents, saying where to
  * drill, not a reading of everything (owner, 2026-10-03).
  */
-export function whoRows(reading = {}, { root = '', under = 'boards', noTeamId = ' unassigned', leadOf = () => '', membersOf = () => [], labels = {} } = {}) {
+export function whoRows(reading = {}, { under = 'boards', leadOf = () => '', membersOf = () => [] } = {}) {
   const teams = Array.isArray(reading.teams) ? reading.teams : [];
   const boards = Array.isArray(reading.boards) ? reading.boards : [];
   const boardStone = (board) => ({
@@ -33,11 +33,8 @@ export function whoRows(reading = {}, { root = '', under = 'boards', noTeamId = 
   };
   const ordinary = teams.filter((team) => team.name !== RONIN_HELPERS).sort((a, b) => a.name.localeCompare(b.name));
   const helper = teams.find((team) => team.name === RONIN_HELPERS);
-  const unfiled = boards.filter((board) => !board.teams.length);
-  const noTeam = root ? [] : [stone({ name: noTeamId, title: labels.noTeam || 'Ronin: no team', lead: '' }, unfiled)];
   return [
     ...ordinary.map((team) => stone(team, boards.filter((board) => board.teams.includes(team.name)))),
-    ...noTeam,
     ...(helper ? [stone(helper, [])] : []),
   ];
 }

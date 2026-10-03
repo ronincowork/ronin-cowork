@@ -2,8 +2,7 @@
 /**
  * WHO — the Teams door of the collections workbench (owner, 2026-10-03). One stone per Team
  * in the shared Phalanx; under each stone, in chart rest, one column per board the Team works
- * on with that board's items stacked beneath. The header's one-line/two-line toggle folds the
- * boards away (stones only) or shows them. The top area holds one filter: the workspace
+ * on, and, when the header's one-line/two-line toggle says two, that board's items beneath. The top area holds one filter: the workspace
  * folder, so a Team working in two folders is found under either, and a second question,
  * what stacks under each Team: its boards or its Agents (an Agent pressed is its profile).
  *
@@ -13,12 +12,12 @@
  * an item and the detail is the item. Escape or the back stone is the one way back.
  *
  * Reading: GET /api/collection (src/collection-read.ts), one request, the folder filter sent
- * as ?root=. The no-team stone carries the Unfiled board, the board no Team holds; both say
- * the same thing from either side. `whoRows` (who-rows.js) is the pure mapping.
+ * as ?root=. There is no stone for "no team": Unfiled is unfiled by definition (owner,
+ * 2026-10-03). `whoRows` (who-rows.js) is the pure mapping.
  */
 import { WorkspaceKit } from './workspace-kit.js';
 import { createCollectionPhalanx } from './collection-phalanx.js';
-import { membersOfTeam, subscribe, UNASSIGNED } from './team-controller.js';
+import { membersOfTeam, subscribe } from './team-controller.js';
 import { whoRows } from './who-rows.js';
 import { agentTitle } from './team-members.js';
 import { itemDetail, listDetail } from './work-details.js';
@@ -34,20 +33,21 @@ const el = (tag, cls = '') => { const out = document.createElement(tag); if (cls
 export function createWhoSurface({ teamDetail, openAgent = () => {} } = {}) {
   const { createSurface, createAction } = WorkspaceKit.primitives;
   const surface = createSurface({ label: t('collection.who', 'Who'), className: 'who-surface' });
-  // The one-line/two-line toggle the selector column wears: two lines shows the boards.
+  // The one-line/two-line toggle the selector column wears: two lines shows the work items
+  // under each board; one line, the boards alone.
   const lines = createAction({ label: '', size: 'compact', className: 'tw-agent-density who-lines' });
   const marks = el('span', 'tw-agent-density-lines');
   marks.append(el('i'), el('i'));
   lines.el.replaceChildren(marks);
-  let expanded = true;
+  let expanded = false;
   const paintLines = () => {
     lines.el.dataset.lines = expanded ? 'two' : 'one';
-    lines.el.title = expanded ? t('collection.fold_boards', 'Hide the boards') : t('collection.unfold_boards', 'Show the boards');
+    lines.el.title = expanded ? t('collection.fold_items', 'Hide the work items') : t('collection.unfold_items', 'Show the work items');
     lines.el.setAttribute('aria-label', lines.el.title);
     lines.el.setAttribute('aria-pressed', String(expanded));
+    phalanx?.setFold(!expanded);
   };
-  lines.el.addEventListener('click', () => { expanded = !expanded; paintLines(); phalanx.setDensity(expanded ? 'full' : 'compact'); });
-  paintLines();
+  lines.el.addEventListener('click', () => { expanded = !expanded; paintLines(); });
   surface.header?.actions.append(lines.el);
 
   // Two questions: the workspace (all, or one folder; the reading is asked again with it),
@@ -94,6 +94,7 @@ export function createWhoSurface({ teamDetail, openAgent = () => {} } = {}) {
   };
   const phalanx = createCollectionPhalanx({ className: 'who-phalanx', items: [], renderDetail });
   phalanx.mount(surface.content, { before: [filter.el] });
+  paintLines();
 
   let shown = '';
   let reading = null;
@@ -101,10 +102,9 @@ export function createWhoSurface({ teamDetail, openAgent = () => {} } = {}) {
   const paint = (data) => {
     last = data;
     const next = whoRows(data, {
-      root, under, noTeamId: UNASSIGNED,
+      under,
       leadOf: (name) => { const lead = membersOfTeam(name).find((member) => member.team_lead); return lead ? agentTitle(lead) : ''; },
       membersOf: (name) => membersOfTeam(name).map((member) => ({ name: member.name, title: agentTitle(member), lead: Boolean(member.team_lead) })),
-      labels: { noTeam: t('league.ronin', 'Ronin: no team') },
     });
     const signature = JSON.stringify(next);
     if (signature === shown) return;

@@ -380,3 +380,18 @@ test('an explicit stone label survives when it matches its group head', () => {
   assert.equal(form.el.one('ask-group-head').textContent, 'Where will you install Ronin?');
   assert.equal(stoneFor(form, 'where').one('ask-label').textContent, 'Where will you install Ronin?');
 });
+
+test('a one-of-two question with no blank flips on press and opens no tray (owner, 2026-10-03)', async () => {
+  const { ask } = await import('../public/js/ask.js');
+  const changes = [];
+  const form = ask([{ fields: [{ key: 'under', label: 'Under each Team', options: [{ v: 'boards', l: 'Boards' }, { v: 'agents', l: 'Agents' }] }] }],
+    { value: { under: 'boards' }, onChange: (value, key) => changes.push([key, value.under]) });
+  const stone = form.el.all('ask-stone')[0];
+  assert.equal(stone.dataset.flip, 'true');
+  stone.click();
+  assert.equal(form.value().under, 'agents');
+  assert.equal(form.el.all('ask-tray').length, 0, 'no tray opens');
+  assert.deepEqual(changes.at(-1), ['under', 'agents']);
+  form.el.all('ask-stone')[0].click();
+  assert.equal(form.value().under, 'boards');
+});
