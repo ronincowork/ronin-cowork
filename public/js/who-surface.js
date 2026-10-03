@@ -4,7 +4,8 @@
  * in the shared Phalanx; under each stone, in chart rest, one column per board the Team works
  * on with that board's items stacked beneath. The header's one-line/two-line toggle folds the
  * boards away (stones only) or shows them. The top area holds one filter: the workspace
- * folder, so a Team working in two folders is found under either.
+ * folder, so a Team working in two folders is found under either, and a second question,
+ * what stacks under each Team: its boards or its Agents (an Agent pressed is its profile).
  *
  * Drawn with the collection phalanx (collection-phalanx.js), the phalanx forked for the
  * doors. Drill is the phalanx's own, in place: press a Team and its boards and items are the rail
@@ -21,6 +22,7 @@ import { membersOfTeam, subscribe, UNASSIGNED } from './team-controller.js';
 import { whoRows } from './who-rows.js';
 import { agentTitle } from './team-members.js';
 import { itemDetail, listDetail } from './work-details.js';
+import { createAgentCompositionReader } from './agent-composition.js';
 import { ask } from './ask.js';
 import { request } from './request.js';
 import { t } from './lexicon.js';
@@ -29,7 +31,7 @@ export const WHO_TYPE = 'collection.who';
 const el = (tag, cls = '') => { const out = document.createElement(tag); if (cls) out.className = cls; return out; };
 
 /** `teamDetail(name)` is the Cowork view's one Team profile ({ el, render }), painted in place. */
-export function createWhoSurface({ teamDetail } = {}) {
+export function createWhoSurface({ teamDetail, openAgent = () => {} } = {}) {
   const { createSurface, createAction } = WorkspaceKit.primitives;
   const surface = createSurface({ label: t('collection.who', 'Who'), className: 'who-surface' });
   // The one-line/two-line toggle the selector column wears: two lines shows the boards.
@@ -48,10 +50,20 @@ export function createWhoSurface({ teamDetail } = {}) {
   paintLines();
   surface.header?.actions.append(lines.el);
 
-  // The filter: all workspaces, or one folder; the reading is asked again with it.
+  // Two questions: the workspace (all, or one folder; the reading is asked again with it),
+  // and what stacks under each Team, its boards or its Agents.
   let root = '';
-  const filter = ask([{ fields: [{ key: 'root', label: t('collection.workspace', 'Workspace'), blank: t('collection.all_workspaces', 'All workspaces'), options: [] }] }],
-    { density: 'tight', onChange: ({ root: next }) => { root = String(next || ''); void read(); } });
+  let under = 'boards';
+  const filter = ask([{ fields: [
+    { key: 'root', label: t('collection.workspace', 'Workspace'), blank: t('collection.all_workspaces', 'All workspaces'), options: [] },
+    { key: 'under', label: t('collection.under_each_team', 'Under each Team'), options: [
+      { v: 'boards', l: t('collection.under_boards', 'Boards') }, { v: 'agents', l: t('collection.under_agents', 'Agents') },
+    ] },
+  ] }], { value: { root: '', under }, density: 'tight', onChange: ({ root: nextRoot, under: nextUnder }) => {
+    const rootMoved = String(nextRoot || '') !== root;
+    root = String(nextRoot || ''); under = nextUnder === 'agents' ? 'agents' : 'boards';
+    if (rootMoved) void read(); else if (last) paint(last);
+  } });
 
   const renderDetail = (item, host) => {
     if (item.kind === 'board') {
@@ -62,6 +74,21 @@ export function createWhoSurface({ teamDetail } = {}) {
       return;
     }
     if (item.kind === 'item') { itemDetail(host, item.item); return; }
+    if (item.kind === 'agent') {
+      // The Agent's profile, as Team Chart draws it: name, then the composition reader; Launch opens its workbench.
+      const member = item.agent;
+      const head = el('div', 'league-team-detail-head');
+      const launch = createAction({ label: t('league.launch_agent', 'Launch'), launch: true, size: 'compact', action: () => openAgent(member.name) });
+      const tools = el('div', 'wk-surface-header-actions'); tools.append(launch.el);
+      const title = el('h2'); title.textContent = member.title || member.name;
+      const id = el('p', 'league-team-objective'); id.textContent = `@${member.name}`;
+      head.append(title, tools, id);
+      const box = el('div', 'league-team-detail'); box.append(head);
+      const profile = createAgentCompositionReader(member.name, { setState: (kind, message) => surface.setState(kind, message) });
+      box.append(profile.el); host.append(box);
+      void profile.show();
+      return profile.destroy;
+    }
     const view = teamDetail?.(item.id);
     if (view) host.append(view.el);
   };
@@ -70,14 +97,14 @@ export function createWhoSurface({ teamDetail } = {}) {
 
   let shown = '';
   let reading = null;
+  let last = null; // the reading last painted, for a switch of what stacks
   const paint = (data) => {
+    last = data;
     const next = whoRows(data, {
-      root, noTeamId: UNASSIGNED,
+      root, under, noTeamId: UNASSIGNED,
       leadOf: (name) => { const lead = membersOfTeam(name).find((member) => member.team_lead); return lead ? agentTitle(lead) : ''; },
-      labels: {
-        noTeam: t('league.ronin', 'Ronin: no team'),
-        agents: (count) => t('league.agent_count', '{count} Agents', { count }),
-      },
+      membersOf: (name) => membersOfTeam(name).map((member) => ({ name: member.name, title: agentTitle(member), lead: Boolean(member.team_lead) })),
+      labels: { noTeam: t('league.ronin', 'Ronin: no team') },
     });
     const signature = JSON.stringify(next);
     if (signature === shown) return;

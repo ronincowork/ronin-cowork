@@ -28,20 +28,28 @@ test('Who: one stone per Team in name order, the no-team stone carrying Unfiled,
   assert.deepEqual(none.items[0].items.map((item) => item.id), ['w9']);
 });
 
-test('Who: a Team stone carries its boards as items, each board its items by stage; a board or item is its title and nothing else', () => {
-  const surface = whoRows(reading, { leadOf: (name) => (name === 'surface' ? 'Surface Lead2' : ''), labels: { agents: (n) => `${n} Agents` } })
+test('Who: a Team stone is its name and lead; its boards stack under it, each board its items by stage, every bar its title alone', () => {
+  const surface = whoRows(reading, { leadOf: (name) => (name === 'surface' ? 'Surface Lead2' : '') })
     .find((row) => row.id === 'surface');
   assert.equal(surface.label, 'Surface');
-  assert.equal(surface.secondary, 'Upgrade the UI UX');
-  assert.equal(surface.state, '2 Agents · 人 Surface Lead2');
+  assert.equal(surface.secondary, undefined);
+  assert.equal(surface.state, '人 Surface Lead2');
   assert.deepEqual(surface.items.map((board) => [board.id, board.kind, board.label, board.state]), [['w1', 'board', 'Upgrade', undefined]]);
   assert.deepEqual(surface.items[0].items.map((item) => [item.id, item.kind, item.label, item.state]), [['w10', 'item', 'Idea', undefined], ['w6', 'item', 'Done one', undefined]]);
 });
 
-test('Who: the lead falls back to the reading\'s session name, and a Team with no lead says only its count', () => {
+test('Who: the lead falls back to the reading\'s session name, and a Team with no lead says nothing', () => {
   const rows = whoRows(reading);
-  assert.equal(rows.find((row) => row.id === 'surface').state, '2 Agents · 人 surface_lead2');
-  assert.equal(rows.find((row) => row.id === 'front-2').state, '0 Agents');
+  assert.equal(rows.find((row) => row.id === 'surface').state, '人 surface_lead2');
+  assert.equal(rows.find((row) => row.id === 'front-2').state, '');
+});
+
+test('Who: under each Team, Agents instead of boards: the lead first and marked, the no-team stone carrying the Agents in no Team', () => {
+  const members = { surface: [{ name: 'surface_lead2', title: 'Surface Lead2', lead: true }, { name: 'a', title: 'A', lead: false }], ' none': [{ name: 'loose', title: 'Loose', lead: false }] };
+  const rows = whoRows(reading, { under: 'agents', noTeamId: ' none', membersOf: (name) => members[name] || [] });
+  assert.deepEqual(rows.find((row) => row.id === 'surface').items.map((row) => [row.id, row.kind, row.label]), [['agent:surface_lead2', 'agent', '人 Surface Lead2'], ['agent:a', 'agent', 'A']]);
+  assert.deepEqual(rows.find((row) => row.id === ' none').items.map((row) => row.label), ['Loose']);
+  assert.deepEqual(rows.find((row) => row.id === 'front-2').items, []);
 });
 
 test('Who: with a workspace filter the no-team stone is not offered (the server already narrowed the Teams)', () => {

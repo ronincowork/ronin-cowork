@@ -60,10 +60,10 @@ objective, status and board: an existing board, **New board** (the item becomes 
 its own) or **Unfiled**, the default, for work nobody has filed yet.
 
 On the Cowork and Desk workbenches the **Who** card is the Teams door of the collection: one
-stone per Team, and under each stone the boards that Team works on. The two-line button on
-its head hides or shows the boards. **Workspace** at the top narrows the
+stone per Team, and under each stone the boards that Team works on, or its Agents: **Under each
+Team** at the top chooses which. The two-line button on its head hides or shows the stack. **Workspace** at the top narrows the
 stones to the Teams working in one registered folder. Press a Team to open its profile beside
-its boards; press a board for its items; press an item for the item. Escape, or the back stone,
+its boards; press a board for its items; press an item for the item; press an Agent for its profile. Escape, or the back stone,
 is the way back. What (boards) and Where (folders) follow on the same stones.
 
 Adding another tenant or profile adds no layout implementation. Adding another surface

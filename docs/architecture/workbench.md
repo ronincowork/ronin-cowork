@@ -47,9 +47,11 @@ Who (`collection.who`, `who-surface.js`) is the first door of the collections wo
 (owner, 2026-10-03: Who, What, Where — Teams, boards, workspace folders — each a surface of
 the same stones with the other axes under them, drilled into in place). Its reading is one
 request, GET `/api/collection` (`src/collection-read.ts`), the folder filter sent as `?root=`;
-the browser joins nothing. One stone per Team: name, objective, Agents and lead. At rest the
-fork stacks each Team's boards under it as one-line bars, that board's items
-folded away until the Team is pressed; the surface header's one-line/two-line toggle (the
+the browser joins nothing. One stone per Team: its name and its lead, nothing else. At rest
+the fork stacks under each Team what the second question, Under each Team, chooses: its boards
+as one-line bars (that board's items
+folded away until the Team is pressed), or its Agents, the lead first and marked 人, an Agent
+pressed opening its profile in place (the composition reader, with Launch); the surface header's one-line/two-line toggle (the
 selector column's) folds the boards away by switching density. A board or an item bar is its title
 and nothing else: the surface is a table of contents, saying where to drill, never a reading
 of everything, and never a count of what is visible (owner, 2026-10-03). The no-team stone carries the Unfiled board, the board

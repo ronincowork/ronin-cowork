@@ -319,7 +319,7 @@ export function createCoworkView(options = {}) {
       openOwner: (name) => openAgentWorkbench(name),
     }),
     // Who: one per seat, its Team detail the same profile the Teams stones paint in place.
-    who: (id) => { whoBySeat[id] ||= createWhoSurface({ teamDetail: (name) => leagueTeamDetail(name, id) }); return whoBySeat[id]; },
+    who: (id) => { whoBySeat[id] ||= createWhoSurface({ teamDetail: (name) => leagueTeamDetail(name, id), openAgent: openAgentWorkbench }); return whoBySeat[id]; },
     workViews: () => createWorkViewsSurface({
       holderTeam: holderTeamOf, openTeam: (name) => openWorkspaceTab('team', name), team: campaign || team === UNASSIGNED ? '' : team,
       leadOf: (name) => membersOfTeam(name).find((member) => member.team_lead)?.name || '',
