@@ -10,7 +10,9 @@
  *
  * Laid out the way a Trello board is: each list one fixed-width panel as tall as what it
  * holds, its name and count at the head, Add at the foot; in Board view, Add board after
- * the last board. A board is a root item and its items are every item under it. Press a list head, a subtitle or an item and its overlay
+ * the last board. A board is a root item and its items are every item under it. In Board
+ * view an item drags onto another board's list (it moves there) or onto empty space (it
+ * becomes a board of its own). Press a list head, a subtitle or an item and its overlay
  * lies over the lists (the item overlay for a board or an item, the status's items in their
  * context for a status). Close or Escape lifts it.
  */
@@ -25,6 +27,7 @@ import { t } from './lexicon.js';
 export const WORK_VIEWS_TYPE = 'work.views';
 
 const STAGE_KEYS = PROJECT_STAGES.map((stage) => stage.key);
+const firstLine = (text) => String(text || '').split('\n')[0];
 const stageName = (key) => PROJECT_STAGES.find((stage) => stage.key === key)?.label || key;
 
 /** `holderTeam(holder)` names the Team a holder works in; `openTeam(team)` opens its workbench;
@@ -76,7 +79,12 @@ export function createWorkViewsSurface({ holderTeam = () => '', openTeam = () =>
     const who = holderName(item.holder);
     const mark = who ? el('span', 'wv-holder', who.slice(0, 1).toUpperCase()) : null;
     if (mark) mark.title = who;
-    return press('wv-item', [el('span', 'wv-label', item.title), mark].filter(Boolean), () => openItem(item));
+    const button = press('wv-item', [el('span', 'wv-label', item.title), mark].filter(Boolean), () => openItem(item));
+    if (view === 'board') {
+      button.draggable = true;
+      button.addEventListener('dragstart', (event) => event.dataTransfer?.setData('text/plain', item.id));
+    }
+    return button;
   };
   /** A group inside a list: a plain underlined subtitle, its items under it. */
   const group = (label, items, action) => {
@@ -90,14 +98,49 @@ export function createWorkViewsSurface({ holderTeam = () => '', openTeam = () =>
     const add = press('wv-add', [el('i', 'wv-add-mark', '+'), el('span', null, t('work_views.add', 'Add a work item'))],
       () => { lift(); draftOverlay(root, { ...context, changed }); });
     column.append(press('wv-list-head', [el('span', 'wv-label', label), el('span', 'wv-count', String(n))], action), ...groups, add);
+    // Board view: an item dropped on another board's list moves under that board.
+    if (view === 'board') {
+      column.addEventListener('dragover', (event) => { event.preventDefault(); column.classList.add('over'); });
+      column.addEventListener('dragleave', () => column.classList.remove('over'));
+      column.addEventListener('drop', (event) => {
+        event.preventDefault(); event.stopPropagation(); column.classList.remove('over');
+        const id = event.dataTransfer?.getData('text/plain') || '';
+        if (id && boardOf.get(id) !== context.parent) void move(id, context.parent);
+      });
+    }
     return column;
   };
+
+  /* DRAG IN BOARD VIEW. Onto another board's list: the item (its children with it) moves
+   * under that board. Onto empty space: it becomes a board of its own; on a Team's workbench
+   * the Team then holds it when nobody does, so it stays in view. One reparent call each,
+   * through the store's route, which writes the trail line. */
+  const boardOf = new Map(); // item id → the board it is on
+  const itemsById = new Map();
+  const move = async (id, parent) => {
+    const moved = await request(`/api/work-items/${encodeURIComponent(id)}/reparent`, { method: 'POST', json: { parent: parent || '' } });
+    let said = moved.ok ? firstLine(moved.data.acknowledgement) : moved.message;
+    if (moved.ok && !parent && team && !itemsById.get(id)?.holder) {
+      const held = await request(`/api/work-items/${encodeURIComponent(id)}/assign`, { method: 'POST', json: { team } });
+      said = held.ok ? firstLine(held.data.acknowledgement) : held.message;
+    }
+    changed(said);
+  };
+  row.addEventListener('dragover', (event) => { if (view === 'board') event.preventDefault(); });
+  row.addEventListener('drop', (event) => {
+    if (view !== 'board' || event.target.closest?.('.wv-list')) return;
+    event.preventDefault();
+    const id = event.dataTransfer?.getData('text/plain') || '';
+    if (id && itemsById.get(id)?.parent) void move(id, '');
+  });
 
   const paint = () => {
     lift();
     root.dataset.view = view;
     row.scrollLeft = 0;
     toggle.el.textContent = t('work_views.view_by', 'View by: {view}', { view: view === 'status' ? t('work_views.status', 'Status') : t('work_views.board', 'Board') });
+    boardOf.clear(); itemsById.clear();
+    for (const entry of boards) for (const stage of entry.stages) for (const item of stage.items) { boardOf.set(item.id, entry.board.id); itemsById.set(item.id, item); }
     toggle.el.title = view === 'status' ? t('work_views.to_board', 'Showing Status. Press for Board.') : t('work_views.to_status', 'Showing Board. Press for Status.');
     if (view === 'status') row.replaceChildren(...STAGE_KEYS.map((stage) => {
       const here = boards.map((entry) => ({ board: entry.board, items: entry.stages.find((row) => row.stage === stage)?.items || [] })).filter((entry) => entry.items.length);

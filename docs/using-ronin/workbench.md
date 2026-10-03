@@ -46,8 +46,11 @@ Board shows one list per board, its items grouped under each stage's name. Each 
 its count at the head and **Add a work item** at the foot, which starts the new item in that
 list. In Board view, **Add board** after the last board starts a new board. On a Team's
 workbench the card shows the boards that Team and its Agents work on, plus **Unfiled**, so
-unfiled work can be taken on from there; a board added there is held by the Team.
-Assigning a whole board to a Team is done from the Cowork or Desk card's **Assign**. Press a list's name, a
+unfiled work can be taken on from there; a board added there is held by the Team. In
+Board view, drag an item onto another board's list to move it there (what is under it comes
+with it), or onto empty space to make it a board of its own: that is how work leaves
+Unfiled. On a Team's workbench a board made that way is held by the Team if nobody held it.
+An item's **Assign** can also give it to a Team. Press a list's name, a
 group's name or an item to open it over the lists. Its buttons at the top right are **Save** (once there is something to
 save), **Assign** (pick the Agent or Team that holds it), **Add** (a new item, starting where you
 pressed) and **Close**; Escape closes it too. Wherever you add an item, you give its title,
