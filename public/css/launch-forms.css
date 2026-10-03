@@ -71,18 +71,19 @@
   .cph .sws-branch { align-items: stretch; gap: 0; width: var(--sws-stone); }
   .cph .sws-branch-column { position: relative; margin-top: var(--space-5); gap: var(--space-2); }
   .cph .sws-branch-column:empty { display: none; }
-  /* A child is a bar, not a stone: its title on one line, a hairline under it, no box, no accent,
-     nothing more — a table of contents, not a reading. */
+  /* A child is a bar, not a stone: its title (two lines at most, tight), a hairline under it, no
+     box, no accent, nothing more — a table of contents, not a reading. Rows stand apart; a
+     wrapped title stays one thing (owner, 2026-10-03). */
   .cph .sws-stone[data-cph-depth] { border: 0; border-bottom: var(--edge) solid var(--line-2); border-radius: 0; background: transparent; box-shadow: none; aspect-ratio: auto; }
   .cph .sws-stone[data-cph-depth]::before { display: none; }
   .cph .sws-stone[data-cph-depth]:hover { border-color: var(--kaki); }
   .cph .sws-stone[data-cph-depth]:hover .sws-label { color: var(--kaki); }
-  .cph .sws-stone[data-cph-depth] .sws-label { width: 100%; margin-top: 0; overflow: hidden; font-size: var(--text-4); font-weight: 500; white-space: nowrap; text-overflow: ellipsis; }
-  .cph .sws-branch-column > .sws-branch-stone { min-width: 0; padding: var(--space-2) var(--space-1); }
+  .cph .sws-stone[data-cph-depth] .sws-label { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; width: 100%; margin-top: 0; overflow: hidden; font-size: var(--text-4); font-weight: 500; line-height: 1.25; white-space: normal; overflow-wrap: anywhere; }
+  .cph .sws-branch-column > .sws-branch-stone { min-width: 0; padding: var(--space-3) var(--space-1); }
   .cph[data-cph-fold='true'][data-branching='true'] .sws-branch-column > .sws-branch-stone[data-cph-depth='2'] { display: none; }
   .cph[data-branching='true'] .sws-branch-column > .sws-branch-stone[data-cph-depth='2'] { width: calc(100% - var(--space-5)); margin-inline-start: var(--space-5); }
   /* In the rail the bars keep their line and stand under their parent, the grandchild inset. */
-  .cph[data-open='true'] .sws-stone[data-cph-depth] { padding: var(--space-3) var(--space-2); }
+  .cph[data-open='true'] .sws-stone[data-cph-depth] { padding: var(--space-4) var(--space-3); }
   .cph[data-open='true'] .sws-stone[data-cph-depth='2'] { width: calc(min(100%, var(--sws-stone)) - var(--space-5)); margin-inline-start: var(--space-5); }
   .cph[data-open='true'] .sws-stone[data-cph-depth][aria-pressed='true'] { border-color: var(--kaki); background: color-mix(in srgb, var(--kaki) 12%, var(--panel)); }
   .cph[data-open='true'] .sws-stone[data-cph-depth][aria-pressed='true'] .sws-label { font-weight: 600; }
@@ -93,8 +94,9 @@
   .cph[data-open='true'] .sws-stone[data-cph-depth='2']:not([aria-pressed='true']) { display: none; }
   /* In the detail an item line gives its title the row: holder and stage bar at the right, the
      title wrapping rather than clipping; the objective wraps to two lines. */
-  .cph .sws-detail .tk-line { grid-template-columns: minmax(0, 1fr) auto var(--hr-stack); cursor: pointer; }
-  .cph .sws-detail .tk-line-title { grid-column: 1; white-space: normal; overflow-wrap: anywhere; }
+  .cph .sws-detail .tk-line { grid-template-columns: minmax(0, 1fr) auto var(--hr-stack); padding: var(--space-5) var(--space-3); cursor: pointer; }
+  .cph .sws-detail .tk-line + .tk-line { border-top: var(--edge) solid var(--line-2); }
+  .cph .sws-detail .tk-line-title { grid-column: 1; line-height: 1.3; white-space: normal; overflow-wrap: anywhere; }
   .cph .sws-detail .tk-line-holder { grid-column: 2; }
   .cph .sws-detail .tk-stage-bar { grid-column: 3; }
   .cph .sws-detail .tk-line:hover .tk-line-title { color: var(--kaki); }
