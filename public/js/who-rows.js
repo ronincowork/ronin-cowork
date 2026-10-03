@@ -5,13 +5,13 @@ import { RONIN_HELPERS } from './roster-groups.js';
 /**
  * The stones from one collection reading ({ teams, boards }): every Team the reading names,
  * Ronin Helpers last. No stone for "no team": Unfiled is unfiled by definition and says
- * nothing (owner, 2026-10-03). A Team stone is its name and its lead, nothing else.
+ * nothing (owner, 2026-10-03). A Team stone is its name, nothing else.
  * Under each Team, `under` chooses what stacks: 'boards' (a board's `items` are everything
  * under it, by stage) or 'agents' (`membersOf(name)` → [{ name, title, lead }], lead first).
  * A bar is its title and nothing else: the surface is a table of contents, saying where to
  * drill, not a reading of everything (owner, 2026-10-03).
  */
-export function whoRows(reading = {}, { under = 'boards', leadOf = () => '', membersOf = () => [] } = {}) {
+export function whoRows(reading = {}, { under = 'boards', membersOf = () => [] } = {}) {
   const teams = Array.isArray(reading.teams) ? reading.teams : [];
   const boards = Array.isArray(reading.boards) ? reading.boards : [];
   const boardStone = (board) => ({
@@ -22,15 +22,11 @@ export function whoRows(reading = {}, { under = 'boards', leadOf = () => '', mem
     id: `agent:${member.name}`, kind: 'agent', agent: member, className: 'who-agent',
     label: member.lead ? `人 ${member.title || member.name}` : member.title || member.name,
   });
-  const stone = (team, teamBoards) => {
-    const lead = leadOf(team.name) || team.lead || '';
-    return {
-      id: team.name, kind: 'team', team, className: 'who-team',
-      label: String(team.title ?? '').trim() || team.name,
-      state: lead ? `人 ${lead}` : '',
-      items: under === 'agents' ? membersOf(team.name).map(agentStone) : teamBoards.map(boardStone),
-    };
-  };
+  const stone = (team, teamBoards) => ({
+    id: team.name, kind: 'team', team, className: 'who-team',
+    label: String(team.title ?? '').trim() || team.name,
+    items: under === 'agents' ? membersOf(team.name).map(agentStone) : teamBoards.map(boardStone),
+  });
   const ordinary = teams.filter((team) => team.name !== RONIN_HELPERS).sort((a, b) => a.name.localeCompare(b.name));
   const helper = teams.find((team) => team.name === RONIN_HELPERS);
   return [

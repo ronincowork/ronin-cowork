@@ -138,7 +138,6 @@ export function createWhoSurface({ teamDetail, openAgent = () => {} } = {}) {
     last = data;
     const next = whoRows(data, {
       under,
-      leadOf: (name) => { const lead = membersOfTeam(name).find((member) => member.team_lead); return lead ? agentTitle(lead) : ''; },
       membersOf: (name) => membersOfTeam(name).map((member) => ({ name: member.name, title: agentTitle(member), lead: Boolean(member.team_lead) })),
     });
     const signature = JSON.stringify(next);

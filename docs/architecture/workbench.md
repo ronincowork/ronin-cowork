@@ -47,7 +47,7 @@ Who (`collection.who`, `who-surface.js`) is the first door of the collections wo
 (owner, 2026-10-03: Who, What, Where — Teams, boards, workspace folders — each a surface of
 the same stones with the other axes under them, drilled into in place). Its reading is one
 request, GET `/api/collection` (`src/collection-read.ts`), the folder filter sent as `?root=`;
-the browser joins nothing. One stone per Team: its name and its lead, nothing else. At rest
+the browser joins nothing. One stone per Team: its name, nothing else. At rest
 the fork stacks under each Team what the second question, Under each Team, chooses: its boards
 as one-line bars (that board's items
 folded away until the Team is pressed), or its Agents, the lead first and marked 人, an Agent
@@ -71,7 +71,7 @@ surface as it was, its geometry untouched: Settings (Presets, Workspace Folders,
 Providers, Setup), Team Chart, Work Items and the Trello view's overlays draw with it.
 `collection-phalanx.js` is the fork for the collection doors, built on `createPhalanx`
 (the same stones, rail, detail and way back, nothing copied): blocks centred at wide
-spacing, each stone's children stacked under it as one-line bars joined by a line, an empty
+spacing, each stone's children stacked under it as one-line bars (no connector line), an empty
 stack drawing nothing, grandchildren folded away at rest and inset under their parent in
 the rail (`data-cph-depth`, set by the fork through `attrs`), and a header that fits its
 question.

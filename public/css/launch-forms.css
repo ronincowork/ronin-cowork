@@ -61,8 +61,8 @@
   /* THE COLLECTION PHALANX (js/collection-phalanx.js): the phalanx forked for the collection
      doors, Who / What / Where. Its root wears .cph and its host .cph-host; every rule here is
      under that prefix and reaches none of the phalanx's own consumers. At rest: the blocks
-     centred at wide spacing, each stone's children stacked under it as one-line bars joined
-     by a line, grandchildren folded away or shown under their parent (data-cph-fold on the root; in the
+     centred at wide spacing, each stone's children stacked under it as one-line bars (no
+     connector line, the space kept), grandchildren folded away or shown under their parent (data-cph-fold on the root; in the
      rail they always stand inset under it; data-cph-depth, set by the fork). Its top area is a question, not a text, so the header
      fits it and its open tray. */
   .cph { --sws-gap: var(--space-10); }
@@ -71,7 +71,6 @@
   .cph .sws-branch { align-items: stretch; gap: 0; width: var(--sws-stone); }
   .cph .sws-branch-column { position: relative; margin-top: var(--space-5); gap: var(--space-2); }
   .cph .sws-branch-column:empty { display: none; }
-  .cph .sws-branch-column::before { content: ''; position: absolute; top: calc(-1 * var(--space-5)); left: calc(50% - var(--edge) / 2); width: var(--edge); height: var(--space-5); background: var(--line-2); }
   /* A child is a bar, not a stone: its title on one line, a hairline under it, no box, no accent,
      nothing more — a table of contents, not a reading. */
   .cph .sws-stone[data-cph-depth] { border: 0; border-bottom: var(--edge) solid var(--line-2); border-radius: 0; background: transparent; box-shadow: none; aspect-ratio: auto; }

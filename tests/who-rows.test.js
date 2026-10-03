@@ -25,20 +25,14 @@ test('Who: one stone per Team in name order, Ronin Helpers last, and no stone fo
   assert.ok(!rows.some((row) => row.items.some((board) => board.id === 'w2')), 'the Unfiled board is under no stone');
 });
 
-test('Who: a Team stone is its name and lead; its boards stack under it, each board its items by stage, every bar its title alone', () => {
-  const surface = whoRows(reading, { leadOf: (name) => (name === 'surface' ? 'Surface Lead2' : '') })
+test('Who: a Team stone is its name alone; its boards stack under it, each board its items by stage, every bar its title alone', () => {
+  const surface = whoRows(reading)
     .find((row) => row.id === 'surface');
   assert.equal(surface.label, 'Surface');
   assert.equal(surface.secondary, undefined);
-  assert.equal(surface.state, '人 Surface Lead2');
+  assert.equal(surface.state, undefined);
   assert.deepEqual(surface.items.map((board) => [board.id, board.kind, board.label, board.state]), [['w1', 'board', 'Upgrade', undefined]]);
   assert.deepEqual(surface.items[0].items.map((item) => [item.id, item.kind, item.label, item.state]), [['w10', 'item', 'Idea', undefined], ['w6', 'item', 'Done one', undefined]]);
-});
-
-test('Who: the lead falls back to the reading\'s session name, and a Team with no lead says nothing', () => {
-  const rows = whoRows(reading);
-  assert.equal(rows.find((row) => row.id === 'surface').state, '人 surface_lead2');
-  assert.equal(rows.find((row) => row.id === 'front-2').state, '');
 });
 
 test('Who: under each Team, Agents instead of boards: the lead first and marked', () => {
