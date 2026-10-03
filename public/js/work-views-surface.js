@@ -30,8 +30,9 @@ const STAGE_KEYS = PROJECT_STAGES.map((stage) => stage.key);
 const stageName = (key) => PROJECT_STAGES.find((stage) => stage.key === key)?.label || key;
 
 /** `holderTeam(holder)` names the Team a holder works in; `openTeam(team)` opens its workbench;
- * `team`, on a Team's workbench, reads that Team's boards from the server and holds new boards. */
-export function createWorkViewsSurface({ holderTeam = () => '', openTeam = () => {}, team = '' } = {}) {
+ * `team`, on a Team's workbench, reads that Team's boards from the server and holds new boards;
+ * `leadOf(team)` names its lead, whose board is the Team's second choice for Add. */
+export function createWorkViewsSurface({ holderTeam = () => '', openTeam = () => {}, team = '', leadOf = () => '' } = {}) {
   const { createSurface, createAction } = WorkspaceKit.primitives;
   let view = 'status';
   let boards = [];
@@ -63,7 +64,7 @@ export function createWorkViewsSurface({ holderTeam = () => '', openTeam = () =>
       about: board ? t('work_views.status_in_board', 'Items under {board} at {stage}.', { board: board.title, stage: stageName(stage) })
         : t('work_views.status_all', 'Items under every board at {stage}.', { stage: stageName(stage) }),
       items,
-    }, { context: () => ({ stage, parent: board?.id || '' }), changed });
+    }, { context: () => ({ stage, parent: board?.id || target() }), changed });
   };
 
   const press = (className, parts, action) => {
@@ -94,8 +95,9 @@ export function createWorkViewsSurface({ holderTeam = () => '', openTeam = () =>
   /** A list: its name and count, its groups, and Add at the foot, starting where it sits. */
   const list = (label, n, action, groups, context) => {
     const column = el('section', 'wv-list');
+    if (context.parent && context.parent === unfiledId()) column.dataset.unfiled = '';
     const add = press('wv-add', [el('i', 'wv-add-mark', '+'), el('span', null, t('work_views.add', 'Add a work item'))],
-      () => { lift(); draftOverlay(root, { ...context, changed }); });
+      () => { lift(); draftOverlay(root, { ...context, parent: context.parent || target(), changed }); });
     column.append(press('wv-list-head', [el('span', 'wv-label', label), el('span', 'wv-count', String(n))], action), ...groups, add);
     // Board view: an item dropped on another board's list moves under that board.
     if (view === 'board') {
@@ -131,6 +133,21 @@ export function createWorkViewsSurface({ holderTeam = () => '', openTeam = () =>
     if (id && itemsById.get(id)?.parent) void move(id, '');
   });
 
+  /* WHERE ADD STARTS ON A TEAM: the Team's target board, read off the boards the server sent,
+   * nothing stored. The root the Team holds; else the root its lead holds; else Unfiled
+   * (the form's default). Several of one kind: the oldest. Cowork/Desk start at Unfiled. */
+  const unfiledId = () => boards.find((entry) => entry.board.title === 'Unfiled')?.board.id || '';
+  const oldest = (rows) => rows.sort((a, b) => String(a.created?.at || '').localeCompare(String(b.created?.at || '')))[0];
+  const target = () => {
+    if (!team) return '';
+    const roots = boards.map((entry) => entry.board);
+    const lead = leadOf(team);
+    return (oldest(roots.filter((board) => board.holder === `team:${team}`))
+      || (lead && oldest(roots.filter((board) => board.holder === `agent:${lead}`))))?.id || '';
+  };
+  /** Board view: Unfiled at the far right, every other board in store order left of it. */
+  const unfiledLast = (rows) => [...rows.filter((entry) => entry.board.id !== unfiledId()), ...rows.filter((entry) => entry.board.id === unfiledId())];
+
   const paint = () => {
     lift();
     root.dataset.view = view;
@@ -145,7 +162,7 @@ export function createWorkViewsSurface({ holderTeam = () => '', openTeam = () =>
       return list(stageName(stage), all.length, () => openStatus(stage, null, all),
         here.map((entry) => group(entry.board.title, entry.items, () => openItem(entry.board))), { stage });
     }));
-    else row.replaceChildren(...boards.map((entry) => list(entry.board.title, entry.size, () => openItem(entry.board),
+    else row.replaceChildren(...unfiledLast(boards).map((entry) => list(entry.board.title, entry.size, () => openItem(entry.board),
       entry.stages.map((row) => group(stageName(row.stage), row.items, () => openStatus(row.stage, entry.board, row.items))), { parent: entry.board.id })),
     // Add board, after the last board: the Add form with New board chosen, held by this Team on a Team's workbench.
     press('wv-add-board', [el('i', 'wv-add-mark', '+'), el('span', null, t('work_views.add_board', 'Add board'))],

@@ -28,7 +28,10 @@ it. Status lays one fixed-width list per stage, grouping under an underlined sub
 board that board's items (every descendant, `boardStages`) at that stage; Board lays one
 list per board with a subtitle per stage it has items at. Each list carries its count at the
 head and Add at the foot (the Add form, started in that list); Board view ends with Add board
-(the Add form with New board chosen, held by the Team on a Team workbench). Cowork/Desk read
+(the Add form with New board chosen, held by the Team on a Team workbench). Board view puts
+Unfiled last, in its own accent shade. On a Team, Add with no board of its own to start on
+defaults to the Team's target board, read off `boards` and never stored: the oldest root the
+Team holds, else the oldest its lead holds, else Unfiled. Cowork/Desk read
 every item; a Team workbench draws the server's `?team=` reading `boards` (its boards and
 Unfiled) and filters nothing in the browser. In Board view an item card drags onto another
 board's list (one reparent call under that board; its children come with it) or onto empty
