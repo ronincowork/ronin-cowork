@@ -27,8 +27,10 @@ GET `/api/work-items` (every item with its holder), with no phalanx, organised a
 it. Status lays one fixed-width list per stage, grouping under an underlined subtitle per
 board that board's items (every descendant, `boardStages`) at that stage; Board lays one
 list per board with a subtitle per stage it has items at. Each list carries its count at the
-head and Add at the foot (the Add form, started in that list). Cowork/Desk show every board;
-a Team workbench shows the boards that Team or its Agents hold, or hold work under. Every press opens an overlay
+head and Add at the foot (the Add form, started in that list); Board view ends with Add board
+(the Add form with New board chosen, held by the Team on a Team workbench). Cowork/Desk read
+every item; a Team workbench draws the server's `?team=` reading `boards` (its boards and
+Unfiled) and filters nothing in the browser. Every press opens an overlay
 from `work-details.js`, whose one utility sits top right: Save (only while there is
 something to save), Assign, Add (the Add form as an overlay, placed where it was pressed),
 Close. The Add form, the same wherever Add appears, asks title, objective, status and

@@ -121,7 +121,9 @@ between lists and release takes it off every list, under the store's one issuer 
 two concurrent assigns leave one holder. The Agent's ladder and documents are its focus
 item's. Readings are derived in `src/work-items-read.ts` and never stored: an Agent's
 (`GET /api/work-items?session=`), a Team's (`?team=`: the Team's holds and its members',
-children after parents), and unassigned (`?unassigned`: the Unfiled board's items that
+children after parents, plus `boards`: every item on the root board above each of those
+holds, walked up the parent chain, and on the Unfiled board, each board whole; members are
+the sessions tagged with the Team, so an Agent in two Teams counts for both), and unassigned (`?unassigned`: the Unfiled board's items that
 nobody holds). An ending, archived, or Hard
 Deleted Agent's holds are released with a `holder-ended` trail line on each item.
 

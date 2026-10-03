@@ -44,7 +44,10 @@ view you are in, **View by: Status** or **View by: Board**, and switches to the 
 Trello board: Status shows one list per stage, its items grouped under each board's name;
 Board shows one list per board, its items grouped under each stage's name. Each list shows
 its count at the head and **Add a work item** at the foot, which starts the new item in that
-list. On a Team's workbench the card shows only that Team's boards. Press a list's name, a
+list. In Board view, **Add board** after the last board starts a new board. On a Team's
+workbench the card shows the boards that Team and its Agents work on, plus **Unfiled**, so
+unfiled work can be taken on from there; a board added there is held by the Team.
+Assigning a whole board to a Team is done from the Cowork or Desk card's **Assign**. Press a list's name, a
 group's name or an item to open it over the lists. Its buttons at the top right are **Save** (once there is something to
 save), **Assign** (pick the Agent or Team that holds it), **Add** (a new item, starting where you
 pressed) and **Close**; Escape closes it too. Wherever you add an item, you give its title,

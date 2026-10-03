@@ -9,15 +9,15 @@
  *            at as a subtitle, the board's items at that stage under it
  *
  * Laid out the way a Trello board is: each list one fixed-width panel as tall as what it
- * holds, its name and count at the head, Add at the foot. A board is a root item and its
- * items are every item under it. Press a list head, a subtitle or an item and its overlay
+ * holds, its name and count at the head, Add at the foot; in Board view, Add board after
+ * the last board. A board is a root item and its items are every item under it. Press a list head, a subtitle or an item and its overlay
  * lies over the lists (the item overlay for a board or an item, the status's items in their
  * context for a status). Close or Escape lifts it.
  */
 import { WorkspaceKit } from './workspace-kit.js';
 import { el } from './form-steps.js';
 import { PROJECT_STAGES } from './team-kanban.js';
-import { draftOverlay, itemOverlay, listOverlay } from './work-details.js';
+import { NEW_BOARD, draftOverlay, itemOverlay, listOverlay } from './work-details.js';
 import { request } from './request.js';
 import { boardStages, holderName } from './work-readings.js';
 import { t } from './lexicon.js';
@@ -28,7 +28,7 @@ const STAGE_KEYS = PROJECT_STAGES.map((stage) => stage.key);
 const stageName = (key) => PROJECT_STAGES.find((stage) => stage.key === key)?.label || key;
 
 /** `holderTeam(holder)` names the Team a holder works in; `openTeam(team)` opens its workbench;
- * `team`, on a Team's workbench, keeps that Team's boards. */
+ * `team`, on a Team's workbench, reads that Team's boards from the server and holds new boards. */
 export function createWorkViewsSurface({ holderTeam = () => '', openTeam = () => {}, team = '' } = {}) {
   const { createSurface, createAction } = WorkspaceKit.primitives;
   let view = 'status';
@@ -48,9 +48,9 @@ export function createWorkViewsSurface({ holderTeam = () => '', openTeam = () =>
   const changed = (sentence) => { notice.textContent = sentence || ''; void refresh(); };
   const openItem = (item) => {
     lift();
-    const team = holderTeam(String(item.holder || ''));
+    const holding = holderTeam(String(item.holder || ''));
     itemOverlay(root, item, {
-      through: team ? [createAction({ label: t('work.open_team', 'Open {team}', { team }), size: 'compact', action: () => openTeam(team) })] : [],
+      through: holding ? [createAction({ label: t('work.open_team', 'Open {team}', { team: holding }), size: 'compact', action: () => openTeam(holding) })] : [],
       context: () => ({ stage: item.stage, parent: item.parent || item.id }), changed,
     });
   };
@@ -106,16 +106,17 @@ export function createWorkViewsSurface({ holderTeam = () => '', openTeam = () =>
         here.map((entry) => group(entry.board.title, entry.items, () => openItem(entry.board))), { stage });
     }));
     else row.replaceChildren(...boards.map((entry) => list(entry.board.title, entry.size, () => openItem(entry.board),
-      entry.stages.map((row) => group(stageName(row.stage), row.items, () => openStatus(row.stage, entry.board, row.items))), { parent: entry.board.id })));
+      entry.stages.map((row) => group(stageName(row.stage), row.items, () => openStatus(row.stage, entry.board, row.items))), { parent: entry.board.id })),
+    // Add board, after the last board: the Add form with New board chosen, held by this Team on a Team's workbench.
+    press('wv-add-board', [el('i', 'wv-add-mark', '+'), el('span', null, t('work_views.add_board', 'Add board'))],
+      () => { lift(); draftOverlay(root, { parent: NEW_BOARD, team, changed }); }));
   };
 
   async function refresh() {
-    const read = await request('/api/work-items', { cache: 'no-store' });
+    // A Team reads its boards from the server (its team reading's `boards`); Cowork/Desk read every item.
+    const read = await request(team ? `/api/work-items?team=${encodeURIComponent(team)}` : '/api/work-items', { cache: 'no-store' });
     if (!read.ok) { notice.textContent = t('work.failed', 'Could not read the work items.'); return; }
-    // On a Team's workbench: the boards that Team, or one of its Agents, holds or holds work under.
-    const ours = (item) => holderTeam(String(item.holder || '')) === team;
-    boards = boardStages(read.data.items || [], STAGE_KEYS)
-      .filter((entry) => !team || ours(entry.board) || entry.stages.some((row) => row.items.some(ours)));
+    boards = boardStages((team ? read.data.boards : read.data.items) || [], STAGE_KEYS);
     paint();
   }
   paint();

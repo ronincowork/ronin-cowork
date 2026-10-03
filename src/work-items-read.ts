@@ -2,7 +2,8 @@
  * READINGS — derived from the store and the holder lists, never stored.
  * agent:      the items an Agent holds, its focus item's ladder, every held item's docs.
  * team:       the roster objective, the items the Team holds and the items its members
- *             hold, each child after its parent where the lead made any.
+ *             hold, each child after its parent where the lead made any; and its boards:
+ *             the root above every one of those items, plus the Unfiled board, each whole.
  * unassigned: the Unfiled board's items that nobody holds.
  * every:      every item, each with the holder it is found on ('' when nobody holds it).
  */
@@ -29,6 +30,9 @@ export interface TeamReading {
   team: string;
   objective: string;
   items: HeldItem[];
+  /** Every item on the Team's boards (the root above each item it or a member holds) and on
+   * the Unfiled board, roots included, each with its holder. */
+  boards: HeldItem[];
 }
 
 const present = (items: Array<WorkItem | null>): WorkItem[] => items.filter((item): item is WorkItem => item !== null);
@@ -72,7 +76,24 @@ export async function teamReading(team: string, sessions?: Array<{ name: string;
   for (const { holder, ids } of lists) {
     for (const item of present(await Promise.all(ids.map((id) => readItem(id))))) items.push({ ...item, holder });
   }
-  return { holder: `team:${team}`, team, objective: roster.objective, items: byParent(items) };
+  return { holder: `team:${team}`, team, objective: roster.objective, items: byParent(items), boards: await boardsAbove(items) };
+}
+
+/** The boards above these items (each walked up its parent chain to the root) and the Unfiled
+ * board, every item on them. Membership is the sessions' Team tags, so an Agent in two Teams
+ * brings its boards to both. */
+async function boardsAbove(held: WorkItem[]): Promise<HeldItem[]> {
+  const every = await everyItemReading();
+  const byId = new Map(every.map((item) => [item.id, item]));
+  const rootOf = (id: string): string => {
+    let item = byId.get(id);
+    for (let steps = 0; item?.parent && byId.has(item.parent) && steps < every.length; steps += 1) item = byId.get(item.parent);
+    return item?.id ?? '';
+  };
+  const roots = new Set(held.map((item) => rootOf(item.id)).filter(Boolean));
+  const unfiled = await unfiledBoard();
+  if (unfiled) roots.add(unfiled.id);
+  return every.filter((item) => roots.has(rootOf(item.id)));
 }
 
 export async function unassignedReading(): Promise<WorkItem[]> {

@@ -114,11 +114,11 @@ export function itemOverlay(host, item, options = {}) {
 }
 
 /** Add's form as an overlay: Save makes the item, and is live once the item has a title. */
-export function draftOverlay(host, { stage = 'IDEA', parent = '', changed = () => {}, closed = () => {} } = {}) {
+export function draftOverlay(host, { stage = 'IDEA', parent = '', team = '', changed = () => {}, closed = () => {} } = {}) {
   let form = null;
   const save = { watch: (hear) => form.onDirty(hear), run: () => form.submit() };
   return overlay(host, (layer, actions) => {
-    form = draftItem(layer, { heading: t('work.draft', 'New item'), stage, parent, actions, save: async (fields) => {
+    form = draftItem(layer, { heading: t('work.draft', 'New item'), stage, parent, team, actions, save: async (fields) => {
       const made = await request('/api/work-items', { method: 'POST', json: fields });
       if (!made.ok) return made.message;
       layer.remove();
@@ -142,13 +142,14 @@ export function itemDetail(host, item, { actions = [] } = {}) {
   step(box, 3, 'trail', t('work_item.trail', 'Trail'), trail, true, t('work_item.trail_count', '{n} lines', { n: trail.length }));
 }
 
-const NEW_BOARD = ' new board'; // the Board answer that makes the item a root of its own
+/** The Board answer that makes the item a root of its own; pass it as `parent` to start there. */
+export const NEW_BOARD = ' new board';
 
 /** Add's form: the kit's title and objective fields, then the item's status and the board it
  * goes under: an existing board, a new board of its own, or Unfiled (the default).
- * `stage` and `parent` are where Add was pressed. Enter saves (Shift+Enter
+ * `stage` and `parent` are where Add was pressed; `team`, when given, holds the new item. Enter saves (Shift+Enter
  * is a new line in the objective). `save(fields)` answers a sentence when it failed. */
-export function draftItem(host, { heading, stage = 'IDEA', parent = '', save, actions = [] }) {
+export function draftItem(host, { heading, stage = 'IDEA', parent = '', team = '', save, actions = [] }) {
   const { createField } = WorkspaceKit.primitives;
   const box = detailBox(host, { title: heading, actions });
   const title = el('input'); title.type = 'text';
@@ -174,7 +175,7 @@ export function draftItem(host, { heading, stage = 'IDEA', parent = '', save, ac
     if (!title.value.trim()) { title.focus(); return; }
     titleField.setValidation('', '');
     const { stage: at, parent: under } = picks.value();
-    const failed = await save({ title: title.value.trim(), objective: objective.value.trim(), stage: at, ...(under === NEW_BOARD ? { root: true } : under ? { parent: under } : {}) });
+    const failed = await save({ title: title.value.trim(), objective: objective.value.trim(), stage: at, ...(under === NEW_BOARD ? { root: true } : under ? { parent: under } : {}), ...(team ? { team } : {}) });
     if (failed) titleField.setValidation('invalid', failed);
   };
   for (const field of [title, objective]) field.addEventListener('keydown', (event) => { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); void submit(); } });
