@@ -8,6 +8,7 @@ import {
   keepCurrentLine, type Acknowledged, type Holder, type TrailLine,
 } from '../work-items.js';
 import { agentReading, everyItemReading, teamReading, unassignedReading } from '../work-items-read.js';
+import { collectionReading } from '../collection-read.js';
 
 const text = (value: unknown): string | undefined => typeof value === 'string' ? value : value === undefined || value === null ? undefined : String(value);
 
@@ -67,6 +68,13 @@ export function registerWorkItems(app: express.Express): void {
     if (team) return res.json({ ok: true, ...(await teamReading(team)) });
     if (req.query.unassigned !== undefined) return res.json({ ok: true, items: await unassignedReading() });
     res.json({ ok: true, items: await everyItemReading() });
+  }));
+
+  // The collection reading: Teams, boards and workspace folders joined, narrowed by any of
+  // ?team= ?root= ?board= ?agent= ?stage= together (src/collection-read.ts).
+  app.get('/api/collection', guarded(async (req, res) => {
+    const filter = (key: string) => text(req.query[key])?.trim() || undefined;
+    res.json({ ok: true, ...(await collectionReading({ team: filter('team'), root: filter('root'), board: filter('board'), agent: filter('agent'), stage: filter('stage') })) });
   }));
 
   app.post('/api/work-items', guarded(async (req, res) => {
