@@ -50,3 +50,13 @@ export function whoMove(moved, target) {
   return '';
 }
 
+
+/** The items an Agent holds, across the boards given: the board itself when it holds the root, and every item under any board it holds. */
+export const itemsHeldBy = (boards = [], agent = '') => {
+  const holder = `agent:${agent}`;
+  return boards.flatMap((board) => [
+    ...(board.holder === holder ? [board] : []),
+    ...board.stages.flatMap((stage) => stage.items.filter((item) => item.holder === holder)),
+  ]);
+};
+

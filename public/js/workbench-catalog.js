@@ -47,7 +47,7 @@ export function registerWorkbenchCatalog() {
   add({ type: WORKBENCH_TYPES.workItems, header: 'surface', className: 'wk-selector-utility', label: () => t('work_items.title', 'Work Items'), discover: (_t, e) => e.workItemOffers(), create: ({ environment }) => environment.workItems() });
   add({ type: WORKBENCH_TYPES.workViews, header: 'surface', className: 'wk-selector-utility', label: () => t('work_views.title', 'Trello view'), summary: () => t('work_views.summary', 'Every board\'s items by status or by board'), create: ({ environment }) => environment.workViews() });
   // Who: the Teams door of the collections workbench; What and Where follow on the same stones.
-  add({ type: WORKBENCH_TYPES.who, header: 'surface', className: 'wk-selector-utility', label: () => t('collection.who', 'Who'), summary: () => t('collection.who_summary', 'Every Team with its boards and items, by workspace'), create: ({ workspace, environment }) => environment.who(workspace) });
+  add({ type: WORKBENCH_TYPES.who, header: 'surface', className: 'wk-selector-utility', label: () => t('collection.who', 'Who: Your Teams'), summary: () => t('collection.who_summary', 'Every Team with its boards and items, by workspace'), create: ({ workspace, environment }) => environment.who(workspace) });
   add({ type: WORKBENCH_TYPES.taskStatus, header: 'surface', discover: () => [], create: ({ workspace, detail, environment }) => environment.taskStatus(workspace, detail) });
   add({ type: WORKBENCH_TYPES.taskProject, header: 'surface', discover: () => [], create: ({ workspace, detail, environment }) => environment.taskProject(workspace, detail) });
   via(WORKBENCH_TYPES.roster, 'surface', 'roster', { className: 'wk-selector-utility', label: () => t('campaign.coworks', 'Teams') });

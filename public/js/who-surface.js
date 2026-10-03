@@ -23,6 +23,7 @@ import { whoMove, whoRows } from './who-rows.js';
 import { agentTitle } from './team-members.js';
 import { itemDetail, listDetail } from './work-details.js';
 import { createAgentCompositionReader } from './agent-composition.js';
+import { createTeamProfile } from './team-profile.js';
 import { ask } from './ask.js';
 import { request } from './request.js';
 import { t } from './lexicon.js';
@@ -30,10 +31,10 @@ import { t } from './lexicon.js';
 export const WHO_TYPE = 'collection.who';
 const el = (tag, cls = '') => { const out = document.createElement(tag); if (cls) out.className = cls; return out; };
 
-/** `teamDetail(name)` is the Cowork view's one Team profile ({ el, render }), painted in place. */
-export function createWhoSurface({ teamDetail, openAgent = () => {} } = {}) {
+/** `openTeam(name)` opens the Team workbench, `openAgent(name)` the Agent's, `onNewAgent(team, lead)` places the New Agent form. */
+export function createWhoSurface({ openTeam = () => {}, openAgent = () => {}, onNewAgent = () => {} } = {}) {
   const { createSurface, createAction } = WorkspaceKit.primitives;
-  const surface = createSurface({ label: t('collection.who', 'Who'), className: 'who-surface' });
+  const surface = createSurface({ label: t('collection.who', 'Who: Your Teams'), className: 'who-surface' });
   // The one-line/two-line toggle the selector column wears: two lines shows the work items
   // under each board; one line, the boards alone.
   const lines = createAction({ label: '', size: 'compact', className: 'tw-agent-density who-lines' });
@@ -91,9 +92,16 @@ export function createWhoSurface({ teamDetail, openAgent = () => {} } = {}) {
       void profile.show();
       return profile.destroy;
     }
-    const view = teamDetail?.(item.id);
-    if (view) host.append(view.el);
+    const view = teamViews.get(item.id) || createTeamProfile(item.id, {
+      openTeam, openAgent, onNewAgent,
+      openItem: (pressed) => phalanx.select(pressed.id, { focus: true }),
+      onDeleted: () => { teamViews.get(item.id)?.destroy(); teamViews.delete(item.id); phalanx.top(); },
+      say: (state, message) => surface.setState(state, message),
+    });
+    teamViews.set(item.id, view);
+    host.append(view.el);
   };
+  const teamViews = new Map(); // Team name -> its profile, kept so an edit in progress survives a repaint
   const phalanx = createCollectionPhalanx({ className: 'who-phalanx', items: [], renderDetail });
   phalanx.mount(surface.content, { before: [filter.el] });
   paintLines();
@@ -167,6 +175,6 @@ export function createWhoSurface({ teamDetail, openAgent = () => {} } = {}) {
     el: surface.el,
     show: () => { entered = true; void read(); },
     leave: () => { entered = false; reading?.abort(); },
-    destroy: () => { entered = false; reading?.abort(); stop?.(); filter.destroy?.(); phalanx.destroy(); },
+    destroy: () => { entered = false; reading?.abort(); stop?.(); filter.destroy?.(); for (const view of teamViews.values()) view.destroy(); teamViews.clear(); phalanx.destroy(); },
   };
 }

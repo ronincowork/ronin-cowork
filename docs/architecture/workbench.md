@@ -59,7 +59,7 @@ number of registered folders (none is all), which narrows the stones to the Team
 them (`?root=` repeated, the server narrowing to any of them; a Team in two folders is found
 under either), and Under each Team, Boards or Agents, a one-of-two question
 that flips on press (`ask.js`: two answers, no blank, nothing nested — no tray). Drill is the phalanx's own: press a Team and its
-boards and items are the rail with the Team profile (`leagueTeamDetail`) beside; a board's
+boards and items are the rail with the one Team profile (`team-profile.js`) beside; a board's
 detail is `listDetail` (its items as item lines, each a press to that item's stone, the title
 given the row and wrapping; the board's items stay out of the rail, only the item being viewed
 showing under its board); an item's
@@ -293,7 +293,7 @@ independent and must not hold the frame.
 
 | Surface | Required data and owner |
 |---|---|
-| Team roster / Team profile | Team records and live session-derived membership; the roster's Phalanx is Cowork/Desk's only discovery of Teams (no per-Team selector cards); its detail and a placed Team profile paint one body (`leagueTeamBody` in `cowork-view.js`) |
+| Team roster / Team profile | Team records and live session-derived membership; the roster's Phalanx is Cowork/Desk's only discovery of Teams (no per-Team selector cards); its detail, a placed Team profile and Who's stone detail paint one body, `createTeamProfile` in `team-profile.js` (owner, 2026-10-03: one Team profile format): head with Launch; Agents, each a block with its live dot, 人 and name, the items it holds as lines beneath and Launch at the right, the name opening the Agent's composition reader in place under it; one section per board the Team works on (its collection reading, `?team=`), its items as lines; Configuration with Delete team; no numbering; the plus adds an Agent. An item line pressed selects the item's stone on Who and opens the item overlay on a surface |
 | Team Chart | Selected Team membership and lead designation; Phalanx owns collection and selection geometry, and its in-place detail embeds the canonical Agent composition reader plus the secondary Launch action |
 | Team roster (`cowork.session-roster`) | `js/roster.js` restored as consumed before the Phalanx port: Team records, live sessions and pushed home rows; its desk column stays empty now that desks are read when the ladder opens |
 | Agent terminal | selected session plus terminal transport; other sessions are not mounted for it |

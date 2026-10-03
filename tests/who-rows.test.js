@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-const { whoRows, whoMove } = await import('../public/js/who-rows.js');
+const { whoRows, whoMove, itemsHeldBy } = await import('../public/js/who-rows.js');
 
 // The shape GET /api/collection answers (src/collection-read.ts).
 const reading = {
@@ -66,3 +66,14 @@ test('Who: what a drop means — item onto another board reparents, board or Age
   assert.equal(whoMove(null, team), '');
 });
 
+
+test('Who: the items an Agent holds across the Team\'s boards — the board itself when it holds the root, every item under any board it holds', () => {
+  const boards = [
+    { id: 'w1', holder: 'agent:lead', stages: [{ stage: 'IDEA', items: [{ id: 'w10', holder: '' }] }, { stage: 'DONE', items: [{ id: 'w6', holder: 'agent:items' }] }] },
+    { id: 'w3', holder: 'team:surface', stages: [{ stage: 'DONE', items: [{ id: 'w7', holder: 'agent:lead' }] }] },
+  ];
+  assert.deepEqual(itemsHeldBy(boards, 'lead').map((item) => item.id), ['w1', 'w7']);
+  assert.deepEqual(itemsHeldBy(boards, 'items').map((item) => item.id), ['w6']);
+  assert.deepEqual(itemsHeldBy(boards, 'nobody'), []);
+  assert.deepEqual(itemsHeldBy(undefined, 'lead'), []);
+});
