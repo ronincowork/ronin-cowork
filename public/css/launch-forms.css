@@ -67,6 +67,8 @@
      fits it and its open tray. */
   .cph { --sws-gap: var(--space-10); }
   .cph-host > .sws-header { flex-basis: auto; block-size: auto; overflow: visible; padding-block: var(--space-4) var(--space-11); }
+  /* Open, the top area is gone; the rail and detail keep the same room above them. */
+  .cph[data-open='true'] { padding-block-start: var(--space-10); }
   .cph[data-branching='true'] .sws-grid { width: 100%; flex-wrap: wrap; justify-content: center; overflow-x: visible; gap: calc(var(--space-12) + var(--space-8)) var(--space-12); }
   .cph .sws-branch { align-items: stretch; gap: 0; width: var(--sws-stone); }
   .cph .sws-branch-column { position: relative; margin-top: var(--space-5); gap: var(--space-2); }
