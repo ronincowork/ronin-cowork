@@ -2,8 +2,9 @@
 /**
  * THE ONE TEAM PROFILE (owner, 2026-10-03: one format, on Who's stone detail and on the Team
  * profile surface alike): head (name, objective, Launch), then
- * Agents — each Agent a block: its live dot, 人 and name on the first line, the work items
- * it holds as lines beneath, Launch at the right; pressing the name opens the Agent's
+ * Agents — each Agent a block: 人 and name on the first line (its stance the line's title), the
+ * work items it holds as lines beneath (status in a word beside the bar, no holder: it is the
+ * Agent), the Launch mark at the right; pressing the name opens the Agent's
  * profile in place under it, the same reader the rail opens — then one section per board the
  * Team works on, titled with the board's name, its items as lines, then Configuration. No
  * numbering. Built from the Team's collection reading (GET /api/collection?team=, its boards
@@ -65,8 +66,8 @@ export function createTeamProfile(name, { openTeam = () => {}, openAgent = () =>
     return pick.el;
   };
 
-  const line = (item) => {
-    const row = itemLine(item, { holder: holderName(item.holder) });
+  const line = (item, { holder = true } = {}) => {
+    const row = itemLine(item, { holder: holder ? holderName(item.holder) : '', stage: true });
     row.addEventListener('click', () => openItem(item));
     return row;
   };
@@ -75,22 +76,23 @@ export function createTeamProfile(name, { openTeam = () => {}, openAgent = () =>
     const row = el('div', 'wtd-agent-row');
     const button = el('button', 'wtd-agent-head'); button.type = 'button';
     button.setAttribute('aria-expanded', String(open.has(member.name)));
-    const live = el('i', 'home-live'); live.dataset.stance = stances.get(member.name) || 'unknown';
-    live.title = stanceLabel(stances.get(member.name)) || ''; live.setAttribute('aria-hidden', 'true');
+    // The stance is the line's title, not a bullet (owner: no bullets; the indent and lines carry the shape).
+    button.title = stanceLabel(stances.get(member.name)) || '';
     const words = el('span', 'wtd-agent-name');
     if (member.team_lead) words.append(el('span', 'league-team-agent-lead', '人'));
     words.append(agentTitle(member), el('span', 'wtd-agent-id', `@${member.name}`));
-    button.append(live, words);
+    button.append(words);
     button.addEventListener('click', () => { if (open.has(member.name)) open.delete(member.name); else open.add(member.name); paintAgents(); });
-    const go = createAction({ label: t('league.launch_agent', 'Launch'), launch: true, size: 'compact', action: () => openAgent(member.name) });
+    const go = createAction({ label: '', launch: true, size: 'compact', title: t('league.launch_agent', 'Launch'), action: () => openAgent(member.name) });
+    go.el.setAttribute('aria-label', go.el.title);
     row.append(button, go.el);
-    const items = el('div', 'wtd-agent-items'); items.append(...held.map(line));
+    // The Agent's own items: the holder is the Agent, so the line does not say it again.
+    const items = el('div', 'wtd-agent-items'); items.append(...held.map((item) => line(item, { holder: false })));
     block.append(row, items);
     if (open.has(member.name)) {
-      const profile = readers.get(member.name) || createAgentCompositionReader(member.name, { setState: tell });
-      readers.set(member.name, profile);
+      let profile = readers.get(member.name);
+      if (!profile) { profile = createAgentCompositionReader(member.name, { setState: tell }); readers.set(member.name, profile); void profile.show(); }
       const host = el('div', 'wtd-agent-profile'); host.append(profile.el); block.append(host);
-      void profile.show();
     }
     return block;
   };
@@ -117,9 +119,20 @@ export function createTeamProfile(name, { openTeam = () => {}, openAgent = () =>
     agents.setCollapsed(folded.agents, t('league.agent_count', '{count} Agents', { count: membersOfTeam(name).length }));
     config.setCollapsed(folded.config, teamConfigurationMeta(teamByName(name)));
   };
+  // THE BLOCKS ARE REBUILT ONLY WHEN WHAT THEY SHOW MOVED: members, held items or an open
+  // profile. A store push that moved nothing leaves the open profile and the plus's picker
+  // standing (they flashed when every push rebuilt them). Stances paint in place.
+  let seenAgents = '';
+  const paintStances = () => {
+    for (const head of agents.body.querySelectorAll('.wtd-agent')) head.querySelector('.wtd-agent-head').title = stanceLabel(stances.get(head.dataset.session)) || '';
+  };
   const paintAgents = () => {
     const boards = teamBoards();
-    const list = membersOfTeam(name).map((member) => agentBlock(member, itemsHeldBy(boards, member.name)));
+    const members = membersOfTeam(name);
+    const signature = JSON.stringify([members.map((member) => [member.name, member.team_lead, agentTitle(member)]), members.map((member) => itemsHeldBy(boards, member.name).map((item) => [item.id, item.title, item.stage, item.status])), [...open]]);
+    if (signature === seenAgents) { paintStances(); return; }
+    seenAgents = signature;
+    const list = members.map((member) => agentBlock(member, itemsHeldBy(boards, member.name)));
     const add = el('button', 'league-team-row league-team-agent league-team-agent-plus');
     add.append(el('span'), el('span', 'league-team-agent-name', '+'));
     add.type = 'button'; add.setAttribute('aria-label', t('league.add_agent', 'Add an Agent'));
@@ -166,7 +179,7 @@ export function createTeamProfile(name, { openTeam = () => {}, openAgent = () =>
     paintAgents(); paintBoards(); paintFolds();
   };
   const stopTeams = subscribe(render);
-  const stopRows = subscribeStore('home', (rows) => { stances = new Map((rows || []).map((row) => [row.name, row.stance])); paintAgents(); });
+  const stopRows = subscribeStore('home', (rows) => { stances = new Map((rows || []).map((row) => [row.name, row.stance])); paintStances(); });
   render();
   return {
     el: box, title, objective, controls: [launch], main, status, render,

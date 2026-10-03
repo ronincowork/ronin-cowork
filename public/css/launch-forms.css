@@ -110,15 +110,19 @@
   .wtd-agent { padding: var(--space-4) 0; }
   .wtd-agent + .wtd-agent { border-top: var(--edge) solid var(--line-2); }
   .wtd-agent-row { display: flex; align-items: center; gap: var(--space-4); }
-  .wtd-agent-head { display: flex; flex: 1 1 auto; align-items: center; gap: var(--space-4); min-width: 0; border: 0; border-radius: var(--radius-hair); background: transparent; color: var(--fg); padding: var(--space-2) var(--space-3); font: inherit; font-size: var(--text-4); text-align: left; cursor: pointer; }
+  .wtd-agent-head { display: flex; flex: 1 1 auto; align-items: center; min-width: 0; border: 0; border-radius: var(--radius-hair); background: transparent; color: var(--fg); padding: var(--space-2) var(--space-3); font: inherit; font-size: var(--text-4); text-align: left; cursor: pointer; }
   .wtd-agent-head:hover { background: var(--bg-2); }
   .wtd-agent-head[aria-expanded='true'] .wtd-agent-name { font-weight: 600; }
   .wtd-agent-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .wtd-agent-id { margin-inline-start: var(--space-3); color: var(--muted); }
-  .wtd-agent-items { padding-inline-start: calc(var(--hr-mark) + var(--space-5)); }
+  .wtd .tk-line.tk-line-worded { grid-template-columns: minmax(0, 1fr) auto auto var(--hr-stack); }
+  .wtd .tk-line-worded .tk-line-holder { grid-column: 2; }
+  .wtd .tk-line-stage { grid-column: 3; color: var(--muted); white-space: nowrap; }
+  .wtd .tk-line-worded .tk-stage-bar { grid-column: 4; }
+  .wtd-agent-items { padding-inline-start: var(--space-5); }
   .wtd-agent-items:empty { display: none; }
   .wtd-agent-items .tk-line { padding-block: var(--space-3); }
-  .wtd-agent-profile { margin: var(--space-4) 0 0 calc(var(--hr-mark) + var(--space-5)); }
+  .wtd-agent-profile { margin: var(--space-4) 0 0 var(--space-5); }
   .wtd-boards > .fs-step + .fs-step { margin-top: var(--space-6); }
   .wtd-empty { margin: 0; color: var(--dim); font-size: var(--form-note); }
   .wi-phalanx[data-density='compact'] .sws-secondary, .wi-phalanx[data-density='compact'] .sws-state { display: none; }

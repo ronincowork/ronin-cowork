@@ -75,9 +75,10 @@ export const holderOf = (project, leadName) => project.holder.startsWith('agent:
 
 /** One work item as one line: title, who holds it, and a stage bar (a segment per stage,
  * filled to its stage, the current one in its status colour). */
-export function itemLine(value, { holder = '' } = {}) {
+export function itemLine(value, { holder = '', stage = false } = {}) {
   const item = normalizedProject(value);
   const line = node('div', 'tk-line');
+  if (stage) line.classList.add('tk-line-worded');
   line.dataset.item = item.id;
   line.append(node('span', 'tk-line-title', item.title));
   const bar = node('span', 'tk-stage-bar');
@@ -88,7 +89,8 @@ export function itemLine(value, { holder = '' } = {}) {
     segment.title = column.label;
     bar.append(segment);
   });
-  line.append(node('span', 'tk-line-holder', holder ? `@${holder}` : ''), bar);
+  // `stage: true` says the status in a word beside the bar (the Team profile asked for it).
+  line.append(node('span', 'tk-line-holder', holder ? `@${holder}` : ''), ...(stage ? [node('span', 'tk-line-stage', stageLabel(item.stage))] : []), bar);
   return line;
 }
 
