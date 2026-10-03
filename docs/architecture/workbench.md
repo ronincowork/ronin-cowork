@@ -59,7 +59,9 @@ or one registered folder, which narrows the stones to the Teams working in it (a
 folders is found under either), and Under each Team, Boards or Agents, a one-of-two question
 that flips on press (`ask.js`: two answers, no blank, nothing nested — no tray). Drill is the phalanx's own: press a Team and its
 boards and items are the rail with the Team profile (`leagueTeamDetail`) beside; a board's
-detail is `listDetail` (its items as item lines, each a press to that item's stone); an item's
+detail is `listDetail` (its items as item lines, each a press to that item's stone, the title
+given the row and wrapping; the board's items stay out of the rail, only the item being viewed
+showing under its board); an item's
 detail is `itemDetail`. Bars drag (phalanx `draggable` and `events`, nothing new): an item
 onto another board reparents it there, a board onto another Team assigns it, an Agent onto
 another Team joins it and leaves the Team it was under; `whoMove` (who-rows.js) is the rule,
