@@ -1,60 +1,48 @@
 /* part of the ronin-cowork client — see js/README.md */
 /**
- * WHO — the Teams door of the collections workbench (owner, 2026-10-03). One stone per Team
- * in the shared Phalanx; under each stone, in chart rest, one column per board the Team works
- * on, and, when the header's one-line/two-line toggle says two, that board's items beneath. The top area holds one filter: the workspace
- * folder, so a Team working in two folders is found under either, and a second question,
- * what stacks under each Team: its boards or its Agents (an Agent pressed is its profile).
- * Bars drag: an item onto a board, a board or an Agent onto a Team (whoMove says what it means).
+ * WHO: YOUR TEAMS — the Teams door of the collections workbench, built to the direction
+ * doc (samurai_lab/wip/buildouts/COLLECTIONS_DIRECTION.md, owner 2026-10-04): find work,
+ * add work, reassign work; detail, configuration and editing live on a workbench, never here.
  *
- * Drawn with the collection phalanx (collection-phalanx.js), the phalanx forked for the
- * doors. Drill is the phalanx's own, in place: press a Team and its boards and items are the rail
- * with the Team's profile beside; press a board and the detail is the board's items; press
- * an item and the detail is the item. Escape or the back stone is the one way back.
+ *   Head          the door's name.
+ *   Questions     Workspace (any number; none is all) and Under each Team: Boards or Agents.
+ *   Stones        Teams, name only.
+ *   Bars          boards or Agents under each Team, title only.
+ *   Team pressed  the thin open beside the rail: objective, Agents with 人 on the lead, boards
+ *                 by name, and one door, Launch, which opens the Team's tab.
+ *   Bar pressed   expands in place to a short read in one format (the fork's `expand`):
+ *                 an Agent — its role, what it is working on now, the items it holds;
+ *                 a board — its objective and its items by title, each a press to its own
+ *                 description, status and holder, and one door, Open, which places the
+ *                 work-item surface beside this one; an item — description, status, holder.
+ *   Drag          a board onto another Team. Nothing else moves; nothing is added here.
  *
- * Reading: GET /api/collection (src/collection-read.ts), one request, the folder filter sent
- * as ?root=, repeated for every chosen workspace. There is no stone for "no team": Unfiled is unfiled by definition (owner,
- * 2026-10-03). `whoRows` (who-rows.js) is the pure mapping.
+ * Reading: GET /api/collection (src/collection-read.ts), one request, every chosen workspace
+ * as ?root=. `whoRows` (who-rows.js) is the pure mapping.
  */
 import { WorkspaceKit } from './workspace-kit.js';
 import { createCollectionPhalanx } from './collection-phalanx.js';
-import { membersOfTeam, moveTeamMembership, subscribe } from './team-controller.js';
-import { whoMove, whoRows } from './who-rows.js';
-import { agentTitle } from './team-members.js';
-import { itemDetail, listDetail } from './work-details.js';
-import { createAgentCompositionReader } from './agent-composition.js';
-import { createTeamProfile } from './team-profile.js';
+import { membersOfTeam, subscribe } from './team-controller.js';
+import { subscribe as subscribeStore } from './store.js';
+import { itemsHeldBy, whoMove, whoRows } from './who-rows.js';
+import { agentTitle, currentWorkStep } from './team-members.js';
+import { stanceLabel } from './home.js';
+import { holderName } from './work-readings.js';
+import { stageLabel } from './team-kanban.js';
 import { ask } from './ask.js';
 import { request } from './request.js';
 import { t } from './lexicon.js';
 
 export const WHO_TYPE = 'collection.who';
-const el = (tag, cls = '') => { const out = document.createElement(tag); if (cls) out.className = cls; return out; };
+const el = (tag, cls = '', text = '') => { const out = document.createElement(tag); if (cls) out.className = cls; if (text) out.textContent = text; return out; };
 
-/** `openTeam(name)` opens the Team workbench, `openAgent(name)` the Agent's, `onNewAgent(team, lead)` places the New Agent form. */
-export function createWhoSurface({ openTeam = () => {}, openAgent = () => {}, onNewAgent = () => {} } = {}) {
+/** `openTeam(name)` opens the Team's tab; `openBoard(board)` places the work-item surface beside this one. */
+export function createWhoSurface({ openTeam = () => {}, openBoard = () => {} } = {}) {
   const { createSurface, createAction } = WorkspaceKit.primitives;
   const surface = createSurface({ label: t('collection.who', 'Who: Your Teams'), className: 'who-surface' });
-  // The one-line/two-line toggle the selector column wears: two lines shows the work items
-  // under each board; one line, the boards alone.
-  const lines = createAction({ label: '', size: 'compact', className: 'tw-agent-density who-lines' });
-  const marks = el('span', 'tw-agent-density-lines');
-  marks.append(el('i'), el('i'));
-  lines.el.replaceChildren(marks);
-  let expanded = false;
-  const paintLines = () => {
-    lines.el.dataset.lines = expanded ? 'two' : 'one';
-    lines.el.title = expanded ? t('collection.fold_items', 'Hide the work items') : t('collection.unfold_items', 'Show the work items');
-    lines.el.setAttribute('aria-label', lines.el.title);
-    lines.el.setAttribute('aria-pressed', String(expanded));
-    phalanx?.setFold(!expanded);
-  };
-  lines.el.addEventListener('click', () => { expanded = !expanded; paintLines(); });
-  surface.header?.actions.append(lines.el);
 
-  // Two questions: the workspace (all, or one folder; the reading is asked again with it),
-  // and what stacks under each Team, its boards or its Agents.
-  let chosen = []; // the workspaces chosen; none is all
+  // The two questions: the workspaces (any number; none is all), and what stacks under each Team.
+  let chosen = [];
   let under = 'boards';
   const filter = ask([{ fields: [
     { key: 'root', label: t('collection.workspace', 'Workspace'), blank: t('collection.all_workspaces', 'All workspaces'), many: true, options: [] },
@@ -68,99 +56,112 @@ export function createWhoSurface({ openTeam = () => {}, openAgent = () => {}, on
     if (rootsMoved) void read(); else if (last) paint(last);
   } });
 
+  let rows = new Map(); // session name -> the store's home row (stance, work record)
+  const nowOf = (name) => { const row = rows.get(name) || {}; const step = currentWorkStep(row.tegami); return [step.text, stanceLabel(row.stance)].filter(Boolean).join(' · '); };
+  const members = (name) => membersOfTeam(name).map((member) => ({ name: member.name, title: agentTitle(member), lead: Boolean(member.team_lead), now: nowOf(member.name) }));
+
+  /* ---------- the thin open: a Team pressed ---------- */
+  const list = (title, lines) => {
+    const box = el('div', 'who-open-list');
+    box.append(el('b', 'who-open-label', title));
+    if (!lines.length) box.append(el('span', 'who-open-none', t('collection.none', 'None')));
+    for (const line of lines) box.append(line);
+    return box;
+  };
   const renderDetail = (item, host) => {
-    if (item.kind === 'board') {
-      listDetail(host, { title: item.board.title, about: item.board.objective || '', items: item.board.stages.flatMap((row) => row.items),
-        empty: t('collection.board_empty', 'Nothing under this board yet.') });
-      // An item line in the board's detail is the same press as its stone in the rail.
-      for (const line of host.querySelectorAll('.tk-line')) line.addEventListener('click', () => phalanx.select(line.dataset.item, { focus: true }));
+    if (item.kind !== 'team') return;
+    const box = el('div', 'who-open');
+    const head = el('div', 'who-open-head');
+    const launch = createAction({ label: '', launch: true, size: 'compact', title: t('league.launch_team', 'Launch'), action: () => openTeam(item.id) });
+    launch.el.setAttribute('aria-label', launch.el.title);
+    head.append(el('h2', '', item.label), launch.el);
+    box.append(head);
+    if (item.team.objective) box.append(el('p', 'who-open-objective', item.team.objective));
+    box.append(
+      list(t('league.agents', 'Agents'), members(item.id).map((member) => { const line = el('span', 'who-open-line'); if (member.lead) line.append(el('span', 'league-team-agent-lead', '人')); line.append(member.title); return line; })),
+      list(t('collection.boards', 'Boards'), (item.items || []).filter((row) => row.kind === 'board').map((row) => el('span', 'who-open-line', row.label))),
+    );
+    host.append(box);
+  };
+
+  /* ---------- a bar pressed: the short read in one format ---------- */
+  const read1 = (host, lines) => { for (const [label, text] of lines) { if (!text) continue; const line = el('div', 'cph-expand-line'); line.append(el('b', '', label), document.createTextNode(text)); host.append(line); } };
+  const expand = (item, host) => {
+    if (item.kind === 'agent') {
+      const member = members(item.team).find((row) => row.name === item.agent.name) || item.agent;
+      const held = itemsHeldBy(last?.boards?.filter((board) => board.teams.includes(item.team)) || [], member.name);
+      read1(host, [
+        [t('collection.role', 'Role'), member.lead ? t('league.team_lead', 'Team Lead') : t('league.agent', 'Agent')],
+        [t('collection.now', 'Now'), member.now || t('collection.idle', 'nothing recorded')],
+        [t('collection.holds', 'Holds'), held.map((row) => row.title).join(' · ') || t('collection.none', 'None')],
+      ]);
       return;
     }
-    if (item.kind === 'item') { itemDetail(host, item.item); return; }
-    if (item.kind === 'agent') {
-      // The Agent's profile, as Team Chart draws it: name, then the composition reader; Launch opens its workbench.
-      const member = item.agent;
-      const head = el('div', 'league-team-detail-head');
-      const launch = createAction({ label: t('league.launch_agent', 'Launch'), launch: true, size: 'compact', action: () => openAgent(member.name) });
-      const tools = el('div', 'wk-surface-header-actions'); tools.append(launch.el);
-      const title = el('h2'); title.textContent = member.title || member.name;
-      const id = el('p', 'league-team-objective'); id.textContent = `@${member.name}`;
-      head.append(title, tools, id);
-      const box = el('div', 'league-team-detail'); box.append(head);
-      const profile = createAgentCompositionReader(member.name, { setState: (kind, message) => surface.setState(kind, message) });
-      box.append(profile.el); host.append(box);
-      void profile.show();
-      return profile.destroy;
+    if (item.kind === 'board') {
+      read1(host, [[t('collection.objective', 'Objective'), item.board.objective || t('collection.none', 'None')]]);
+      const items = item.board.stages.flatMap((stage) => stage.items);
+      const titles = el('div', 'cph-expand-items');
+      for (const row of items) {
+        const line = el('button', 'cph-expand-item'); line.type = 'button'; line.textContent = row.title;
+        line.setAttribute('aria-expanded', 'false');
+        const more = el('div', 'cph-expand-more'); more.hidden = true;
+        read1(more, [[t('collection.description', 'Description'), row.objective || t('collection.none', 'None')], [t('collection.status', 'Status'), stageLabel(row.stage)], [t('collection.holder', 'Holder'), holderName(row.holder) || t('collection.nobody', 'nobody')]]);
+        line.addEventListener('click', () => { more.hidden = !more.hidden; line.setAttribute('aria-expanded', String(!more.hidden)); });
+        titles.append(line, more);
+      }
+      if (!items.length) titles.append(el('span', 'who-open-none', t('collection.board_empty', 'Nothing under this board yet.')));
+      host.append(titles);
+      const open = createAction({ label: t('collection.open', 'Open'), size: 'compact', action: () => openBoard(item.board) });
+      host.append(open.el);
+      return;
     }
-    const view = teamViews.get(item.id) || createTeamProfile(item.id, {
-      openTeam, openAgent, onNewAgent,
-      openItem: (pressed) => phalanx.select(pressed.id, { focus: true }),
-      onDeleted: () => { teamViews.get(item.id)?.destroy(); teamViews.delete(item.id); phalanx.top(); },
-      say: (state, message) => surface.setState(state, message),
-    });
-    teamViews.set(item.id, view);
-    host.append(view.el);
+    if (item.kind === 'item') {
+      read1(host, [[t('collection.description', 'Description'), item.item.objective || t('collection.none', 'None')], [t('collection.status', 'Status'), stageLabel(item.item.stage)], [t('collection.holder', 'Holder'), holderName(item.item.holder) || t('collection.nobody', 'nobody')]]);
+    }
   };
-  const teamViews = new Map(); // Team name -> its profile, kept so an edit in progress survives a repaint
-  const phalanx = createCollectionPhalanx({ className: 'who-phalanx', items: [], renderDetail });
+  const phalanx = createCollectionPhalanx({ className: 'who-phalanx', items: [], renderDetail, expand });
   phalanx.mount(surface.content, { before: [filter.el] });
-  paintLines();
 
-  /* DRAG AND DROP (owner, 2026-10-03). A bar drags; a Team stone takes a board (assign) or an
-   * Agent (join it, leave the Team it was under); a board bar takes an item (reparent). The
-   * meaning is whoMove's; each move is one call to the store, then the reading is asked again. */
+  /* ---------- the one drag: a board onto another Team ---------- */
   const DRAG = 'application/x-ronin-who';
   const carried = (event) => { try { return JSON.parse(event.dataTransfer?.getData(DRAG) || 'null'); } catch { return null; } };
-  const moves = {
-    assign: (moved, target) => request(`/api/work-items/${encodeURIComponent(moved.id)}/assign`, { method: 'POST', json: { team: target.id } }),
-    reparent: (moved, target) => request(`/api/work-items/${encodeURIComponent(moved.id)}/reparent`, { method: 'POST', json: { parent: target.id } }),
-    join: (moved, target) => moveTeamMembership(moved.id, moved.team, target.id),
-  };
-  const wire = (rows, team = '', board = '') => rows.map((row) => {
-    const out = { ...row, events: { ...(row.events || {}) } };
-    const mine = { kind: row.kind, id: row.kind === 'agent' ? row.agent.name : row.id, team, board };
-    if (row.kind !== 'team') {
-      out.draggable = true;
-      out.events.dragstart = (event) => { event.dataTransfer.setData(DRAG, JSON.stringify(mine)); event.dataTransfer.effectAllowed = 'move'; };
-    }
-    if (row.kind === 'team' || row.kind === 'board') {
-      // The browser hides the data until the drop; while over, only the type says it is ours.
-      out.events.dragover = (event) => { if (!event.dataTransfer?.types?.includes(DRAG)) return; event.preventDefault(); event.currentTarget.classList.add('cph-over'); };
-      out.events.dragleave = (event) => event.currentTarget.classList.remove('cph-over');
-      out.events.drop = async (event) => {
+  const wire = (teams) => teams.map((team) => ({
+    ...team,
+    events: {
+      dragover: (event) => { if (!event.dataTransfer?.types?.includes(DRAG)) return; event.preventDefault(); event.currentTarget.classList.add('cph-over'); },
+      dragleave: (event) => event.currentTarget.classList.remove('cph-over'),
+      drop: async (event) => {
         event.preventDefault(); event.stopPropagation(); event.currentTarget.classList.remove('cph-over');
-        const move = whoMove(carried(event), row);
-        if (!move) return;
-        const result = await moves[move](carried(event), row);
+        const moved = carried(event);
+        if (whoMove(moved, team) !== 'assign') return;
+        const result = await request(`/api/work-items/${encodeURIComponent(moved.id)}/assign`, { method: 'POST', json: { team: team.id } });
         if (!result.ok) { surface.setState('failed', result.message || ''); return; }
         void read();
-      };
-    }
-    if (Array.isArray(row.items)) out.items = wire(row.items, row.kind === 'team' ? row.id : team, row.kind === 'board' ? row.id : board);
-    return out;
-  });
+      },
+    },
+    items: (team.items || []).map((row) => row.kind !== 'board' ? row : {
+      ...row, draggable: true,
+      events: { dragstart: (event) => { event.dataTransfer.setData(DRAG, JSON.stringify({ kind: 'board', id: row.id, team: team.id })); event.dataTransfer.effectAllowed = 'move'; } },
+    }),
+  }));
 
+  /* ---------- the reading ---------- */
   let shown = '';
   let reading = null;
-  let last = null; // the reading last painted, for a switch of what stacks
+  let last = null; // the reading last painted
+  let roots = null; // every folder, from the first unfiltered reading, so a filter keeps offering them all
   const paint = (data) => {
     last = data;
-    const next = whoRows(data, {
-      under,
-      membersOf: (name) => membersOfTeam(name).map((member) => ({ name: member.name, title: agentTitle(member), lead: Boolean(member.team_lead) })),
-    });
+    const next = whoRows(data, { under, membersOf: members });
     const signature = JSON.stringify(next);
     if (signature === shown) return;
     shown = signature;
     phalanx.setItems(wire(next));
     filter.options('root', (data.roots || []).map((row) => ({ v: row.name, l: row.name })));
   };
-  // Every folder stays offered while a filter is on: the first unfiltered reading's list holds.
-  let roots = null;
   async function read() {
     reading?.abort();
     const controller = new AbortController(); reading = controller;
-    // One request; every chosen workspace rides as ?root= and the server narrows to any of them.
     const query = chosen.map((root) => `root=${encodeURIComponent(root)}`).join('&');
     const result = await request(`/api/collection${query ? `?${query}` : ''}`, { cache: 'no-store', signal: controller.signal });
     if (controller.signal.aborted) return;
@@ -170,11 +171,12 @@ export function createWhoSurface({ openTeam = () => {}, openAgent = () => {}, on
     paint({ ...result.data, roots });
   }
   let entered = false;
-  const stop = subscribe(() => { if (entered) void read(); });
+  const stopTeams = subscribe(() => { if (entered) void read(); });
+  const stopRows = subscribeStore('home', (list) => { rows = new Map((list || []).map((row) => [row.name, row])); if (entered && last) paint(last); });
   return {
     el: surface.el,
     show: () => { entered = true; void read(); },
     leave: () => { entered = false; reading?.abort(); },
-    destroy: () => { entered = false; reading?.abort(); stop?.(); filter.destroy?.(); for (const view of teamViews.values()) view.destroy(); teamViews.clear(); phalanx.destroy(); },
+    destroy: () => { entered = false; reading?.abort(); stopTeams?.(); stopRows?.(); filter.destroy?.(); phalanx.destroy(); },
   };
 }

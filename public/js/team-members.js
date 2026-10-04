@@ -139,3 +139,29 @@ export const buildTeamMembers = (name, options = {}) => {
   add.append(memberSelect, assign.el); roster.append(add);
   return roster;
 };
+
+// The roster reads the same frontier as the expanded work record: an explicit pointer
+// wins, otherwise the first unfinished rung is current. Keep the agent's actual words
+// beside that coordinate instead of substituting a launch-time label.
+export const currentWorkStep = (letter) => {
+  const ladder = letter?.ladder || [];
+  if (!ladder.length) return { label: '', text: '' };
+  const finished = (rung) => rung.gate !== undefined
+    ? rung.status === 'DONE'
+    : (rung.legs || []).length > 0 && rung.legs.every((leg) => leg.status === 'DONE');
+  let rungIndex = ladder.findIndex((rung) => !finished(rung));
+  let legIndex = -1;
+  if (letter.at && Number.isInteger(letter.at.rung) && letter.at.rung >= 1 && letter.at.rung <= ladder.length) {
+    rungIndex = letter.at.rung - 1;
+    if (Number.isInteger(letter.at.leg)) legIndex = letter.at.leg - 1;
+  }
+  if (rungIndex < 0) rungIndex = ladder.length - 1;
+  const rung = ladder[rungIndex];
+  if (rung.gate !== undefined) return { label: letter.chip?.text || t('ladder.gate', 'GATE'), text: rung.gate || '' };
+  const legs = rung.legs || [];
+  if (legIndex < 0) {
+    legIndex = legs.findIndex((leg) => leg.status === 'ACTIVE');
+    if (legIndex < 0) legIndex = legs.findIndex((leg) => leg.status !== 'DONE');
+  }
+  return { label: letter.chip?.text || rung.phase || '', text: legs[legIndex]?.title || rung.phase || '' };
+};

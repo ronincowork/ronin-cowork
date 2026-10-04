@@ -43,31 +43,22 @@ Close. The Add form, the same wherever Add appears, asks title, objective, statu
 board: an existing board, New board (`root: true` on the create route: a root of its own) or
 Unfiled, the default. Assign holds the item by an Agent or a Team.
 
-Who (`collection.who`, `who-surface.js`) is the first door of the collections workbench
-(owner, 2026-10-03: Who, What, Where — Teams, boards, workspace folders — each a surface of
-the same stones with the other axes under them, drilled into in place). Its reading is one
-request, GET `/api/collection` (`src/collection-read.ts`), the folder filter sent as `?root=`;
-the browser joins nothing. One stone per Team: its name, nothing else. At rest
-the fork stacks under each Team what the second question, Under each Team, chooses: its boards
-as one-line bars (that board's items
-folded away until the Team is pressed), or its Agents, the lead first and marked 人, an Agent
-pressed opening its profile in place (the composition reader, with Launch); the surface header's one-line/two-line toggle (the
-selector column's) folds the boards away by switching density. A board or an item bar is its title
-and nothing else: the surface is a table of contents, saying where to drill, never a reading
-of everything, and never a count of what is visible (owner, 2026-10-03). The top area is two `ask()` questions: Workspace, any
-number of registered folders (none is all), which narrows the stones to the Teams working in
-them (`?root=` repeated, the server narrowing to any of them; a Team in two folders is found
-under either), and Under each Team, Boards or Agents, a one-of-two question
-that flips on press (`ask.js`: two answers, no blank, nothing nested — no tray). Drill is the phalanx's own: press a Team and its
-boards and items are the rail with the one Team profile (`team-profile.js`) beside; a board's
-detail is `listDetail` (its items as item lines, each a press to that item's stone, the title
-given the row and wrapping; the board's items stay out of the rail, only the item being viewed
-showing under its board); an item's
-detail is `itemDetail`. Bars drag (phalanx `draggable` and `events`, nothing new): an item
-onto another board reparents it there, a board onto another Team assigns it, an Agent onto
-another Team joins it and leaves the Team it was under; `whoMove` (who-rows.js) is the rule,
-each move one call to the store, then the reading again. `who-rows.js` is the pure mapping,
-under test.
+Who (`collection.who`, `who-surface.js`) is the Teams door of the collections workbench,
+built to the direction doc (samurai_lab `wip/buildouts/COLLECTIONS_DIRECTION.md`, owner
+2026-10-04): the collection finds work, adds work and reassigns work; detail, configuration
+and editing live on a workbench. Its reading is one request, GET `/api/collection`
+(`src/collection-read.ts`), every chosen workspace as `?root=`; the browser joins nothing.
+Two `ask()` questions: Workspace (a many-of, none is all) and Under each Team (Boards or
+Agents, a one-of-two that flips on press). One stone per Team, name only; under it the
+boards or the Agents as bars, title only. A Team pressed is the thin open beside the rail:
+objective, Agents with 人 on the lead, boards by name, and one door, Launch, which opens the
+Team's tab (Who is the only door that launches Team tabs). A bar pressed expands in place
+(the fork's `expand`): an Agent to its role, what it is working on now (the home row's work
+record and stance) and the items it holds; a board to its objective and its items by title,
+each a press to its description, status and holder, with one door, Open, which places the
+work-item surface in the other workspace (the Trello view until the What door exists); an
+item to its description, status and holder. The one drag is a board onto another Team
+(`whoMove`); nothing is added here. `who-rows.js` is the pure mapping, under test.
 
 **The phalanx and its fork** (owner ruling, 2026-10-03). `phalanx.js` is the stone work
 surface as it was, its geometry untouched: Settings (Presets, Workspace Folders, Model
@@ -75,9 +66,10 @@ Providers, Setup), Team Chart, Work Items and the Trello view's overlays draw wi
 `collection-phalanx.js` is the fork for the collection doors, built on `createPhalanx`
 (the same stones, rail, detail and way back, nothing copied): blocks centred at wide
 spacing, each stone's children stacked under it as one-line bars (no connector line), an empty
-stack drawing nothing, grandchildren folded away at rest and inset under their parent in
-the rail (`data-cph-depth`, set by the fork through `attrs`), and a header that fits its
-question.
+stack drawing nothing, grandchildren folded away (`data-cph-depth`, set by the fork through
+`attrs`), a header that fits its question, and a bar pressed expanding in place through the
+consumer's `expand(item, host)` instead of selecting or going a level down; what is expanded
+survives a repaint.
 Its root wears `.cph` and its host `.cph-host`; every rule is under that prefix. Who draws
 with the fork; What and Where will.
 

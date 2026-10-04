@@ -59,15 +59,15 @@ pressed) and **Close**; Escape closes it too. Wherever you add an item, you give
 objective, status and board: an existing board, **New board** (the item becomes a board of
 its own) or **Unfiled**, the default, for work nobody has filed yet.
 
-On the Cowork and Desk workbenches the **Who** card is the Teams door of the collection: one
-stone per Team, and under each stone the boards that Team works on, or its Agents: **Under each
-Team** at the top chooses which. The two-line button on its head shows or hides the work items under each board. **Workspace** at the top narrows the
-stones to the Teams working in one registered folder. Press a Team to open its profile beside
-its boards: its Agents, each with the work items it holds and a Launch button, then a section
-per board, then Configuration; press an Agent's name there to open its profile in place; press a board for its items; press an item for the item; press an Agent for its profile. Drag a
-work item onto a board to move it there, a board onto a Team to give it to that Team, or an
-Agent onto a Team to move the Agent there. Escape, or the back stone,
-is the way back. What (boards) and Where (folders) follow on the same stones.
+On the Cowork and Desk workbenches the **Who: Your Teams** card is the Teams door of the
+collection: one stone per Team, and under each stone the boards that Team works on, or its
+Agents, as **Under each Team** at the top chooses. **Workspace** narrows the stones to the
+Teams working in the folders you pick, one or several. Press a Team for a short read beside
+the stones, its Agents and its boards, and **Launch** to open the Team's tab. Press a bar for
+a short read under it: an Agent's role and what it is doing now, a board's objective and
+items, an item's description and status. **Open** on a board places the work-item surface in
+the other workspace. Drag a board onto another Team to give it to that Team. Adding Agents
+and items, and changing them, happens on the Team's own workbench.
 
 Adding another tenant or profile adds no layout implementation. Adding another surface
 registers a per-workspace factory in the shared library; any profile may name that type.

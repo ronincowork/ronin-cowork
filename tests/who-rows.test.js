@@ -38,7 +38,7 @@ test('Who: a Team stone is its name alone; its boards stack under it, each board
 test('Who: under each Team, Agents instead of boards: the lead first and marked', () => {
   const members = { surface: [{ name: 'surface_lead2', title: 'Surface Lead2', lead: true }, { name: 'a', title: 'A', lead: false }] };
   const rows = whoRows(reading, { under: 'agents', membersOf: (name) => members[name] || [] });
-  assert.deepEqual(rows.find((row) => row.id === 'surface').items.map((row) => [row.id, row.kind, row.label]), [['agent:surface_lead2', 'agent', '人 Surface Lead2'], ['agent:a', 'agent', 'A']]);
+  assert.deepEqual(rows.find((row) => row.id === 'surface').items.map((row) => [row.id, row.kind, row.label, row.team]), [['agent:surface:surface_lead2', 'agent', '人 Surface Lead2', 'surface'], ['agent:surface:a', 'agent', 'A', 'surface']]);
   assert.deepEqual(rows.find((row) => row.id === 'front-2').items, []);
 });
 
@@ -52,20 +52,14 @@ test('Who: a missing or malformed reading draws no stones rather than throwing',
   assert.deepEqual(whoRows({ teams: null, boards: 'x' }), []);
 });
 
-test('Who: what a drop means — item onto another board reparents, board or Agent onto another Team moves it, anything else nothing', () => {
+test('Who: what a drop means — a board onto another Team gives it to that Team; nothing else moves here', () => {
   const team = { kind: 'team', id: 'surface' };
-  const board = { kind: 'board', id: 'w1' };
-  assert.equal(whoMove({ kind: 'item', id: 'w9', team: 'front-2', board: 'w2' }, board), 'reparent');
-  assert.equal(whoMove({ kind: 'item', id: 'w6', team: 'surface', board: 'w1' }, board), '', 'already on that board');
-  assert.equal(whoMove({ kind: 'board', id: 'w2', team: '', board: '' }, team), 'assign');
-  assert.equal(whoMove({ kind: 'board', id: 'w1', team: 'surface', board: '' }, team), '', 'already that Team\'s');
-  assert.equal(whoMove({ kind: 'agent', id: 'a', team: 'front-2', board: '' }, team), 'join');
-  assert.equal(whoMove({ kind: 'agent', id: 'a', team: 'surface', board: '' }, team), '');
-  assert.equal(whoMove({ kind: 'item', id: 'w9', team: '', board: 'w2' }, team), '', 'an item is not a Team\'s to take');
-  assert.equal(whoMove({ kind: 'board', id: 'w2' }, board), '');
+  assert.equal(whoMove({ kind: 'board', id: 'w2', team: '' }, team), 'assign');
+  assert.equal(whoMove({ kind: 'board', id: 'w1', team: 'surface' }, team), '', 'already that Team\'s');
+  assert.equal(whoMove({ kind: 'agent', id: 'a', team: 'front-2' }, team), '', 'Agents move on the Team roster');
+  assert.equal(whoMove({ kind: 'item', id: 'w9', team: '', board: 'w2' }, { kind: 'board', id: 'w1' }), '', 'items move on What');
   assert.equal(whoMove(null, team), '');
 });
-
 
 test('Who: the items an Agent holds across the Team\'s boards — the board itself when it holds the root, every item under any board it holds', () => {
   const boards = [

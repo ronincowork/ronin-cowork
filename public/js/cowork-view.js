@@ -30,7 +30,7 @@ import { acceptDrops as acceptSessionDrops } from './team-drag.js';
 import { S } from './state.js';
 import { renderTeamConfiguration } from './team-configuration.js';
 import { workbenchView } from './workspace-contract.js';
-import { agentTitle, buildTeamMembers, configSignature } from './team-members.js';
+import { agentTitle, buildTeamMembers, configSignature, currentWorkStep } from './team-members.js';
 import { isCoarse } from './tiledrop.js';
 import { createFeedbackSurface } from './feedback.js';
 import { RONIN_HELPERS } from './roster-groups.js';
@@ -52,32 +52,6 @@ const el = (tag, cls, text) => {
   if (text != null) out.textContent = String(text);
   return out;
 };
-// The roster reads the same frontier as the expanded work record: an explicit pointer
-// wins, otherwise the first unfinished rung is current. Keep the agent's actual words
-// beside that coordinate instead of substituting a launch-time label.
-const currentWorkStep = (letter) => {
-  const ladder = letter?.ladder || [];
-  if (!ladder.length) return { label: '', text: '' };
-  const finished = (rung) => rung.gate !== undefined
-    ? rung.status === 'DONE'
-    : (rung.legs || []).length > 0 && rung.legs.every((leg) => leg.status === 'DONE');
-  let rungIndex = ladder.findIndex((rung) => !finished(rung));
-  let legIndex = -1;
-  if (letter.at && Number.isInteger(letter.at.rung) && letter.at.rung >= 1 && letter.at.rung <= ladder.length) {
-    rungIndex = letter.at.rung - 1;
-    if (Number.isInteger(letter.at.leg)) legIndex = letter.at.leg - 1;
-  }
-  if (rungIndex < 0) rungIndex = ladder.length - 1;
-  const rung = ladder[rungIndex];
-  if (rung.gate !== undefined) return { label: letter.chip?.text || t('ladder.gate', 'GATE'), text: rung.gate || '' };
-  const legs = rung.legs || [];
-  if (legIndex < 0) {
-    legIndex = legs.findIndex((leg) => leg.status === 'ACTIVE');
-    if (legIndex < 0) legIndex = legs.findIndex((leg) => leg.status !== 'DONE');
-  }
-  return { label: letter.chip?.text || rung.phase || '', text: legs[legIndex]?.title || rung.phase || '' };
-};
-
 export function createCoworkView(options = {}) {
   registerWorkbenchCatalog();
   const desk = options.kind === 'desk';
@@ -319,8 +293,9 @@ export function createCoworkView(options = {}) {
       lead: (project) => membersOfTeam(project.team).find((member) => member.team_lead)?.name || '',
       openOwner: (name) => openAgentWorkbench(name),
     }),
-    // Who: one per seat; its Team detail is its own (who-team-detail.js).
-    who: (id) => { whoBySeat[id] ||= createWhoSurface({ openTeam, openAgent: openAgentWorkbench, onNewAgent: (team, lead) => bench.place(WB_TYPES.newAgent, oppositeSeat(id), { team, ...(lead ? { teamLead: true } : {}) }) }); return whoBySeat[id]; },
+    // Who: one per seat. Launch opens the Team's tab; a board's Open places the work-item
+    // surface beside it (the Trello view until the What door exists).
+    who: (id) => { whoBySeat[id] ||= createWhoSurface({ openTeam, openBoard: () => bench.place(WB_TYPES.workViews, oppositeSeat(id)) }); return whoBySeat[id]; },
     workViews: () => createWorkViewsSurface({
       holderTeam: holderTeamOf, openTeam: (name) => openWorkspaceTab('team', name), team: campaign || team === UNASSIGNED ? '' : team,
       leadOf: (name) => membersOfTeam(name).find((member) => member.team_lead)?.name || '',
