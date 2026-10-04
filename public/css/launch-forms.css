@@ -105,15 +105,17 @@
   .cph-expand-item { display: block; border: 0; border-radius: var(--radius-hair); background: transparent; padding: var(--space-1) var(--space-2); color: var(--fg); font: inherit; text-align: left; cursor: pointer; }
   .cph-expand-item:hover, .cph-expand-item[aria-expanded='true'] { background: var(--bg-2); }
   .cph-expand-more { display: grid; gap: var(--space-1); padding: var(--space-1) var(--space-2) var(--space-3) var(--space-5); }
+  .cph-expand-more[hidden] { display: none; }
   .cph-expand > .wk-action { justify-self: start; margin-top: var(--space-2); }
   /* The thin open: a Team pressed — name, Launch, objective, two short lists. */
-  .who-open { display: grid; gap: var(--space-6); }
-  .who-open-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); }
+  .who-open { display: grid; gap: var(--space-8); max-width: 36rem; }
+  .who-open-head { display: flex; align-items: center; gap: var(--space-5); }
   .who-open-head h2 { margin: 0; font-size: var(--text-8); font-weight: 600; color: var(--fg-strong); }
-  .who-open-objective { margin: calc(-1 * var(--space-4)) 0 0; color: var(--muted); }
-  .who-open-list { display: grid; gap: var(--space-2); }
-  .who-open-label { font-size: var(--form-key); font-weight: 500; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
-  .who-open-line { font-size: var(--text-4); color: var(--fg); }
+  .who-open-objective { margin: calc(-1 * var(--space-6)) 0 0; color: var(--muted); }
+  .who-open-list { display: grid; gap: var(--space-3); }
+  .who-open-list > .sws-stone { width: 100%; }
+  .who-open-list > .cph-expand { margin-top: calc(-1 * var(--space-1)); }
+  .who-open-label { margin-bottom: var(--space-1); font-size: var(--form-key); font-weight: 500; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
   .who-open-none { font-size: var(--form-note); color: var(--dim); }
   .cph .sws-detail .tk-line { grid-template-columns: minmax(0, 1fr) auto var(--hr-stack); padding: var(--space-5) var(--space-3); cursor: pointer; }
   .cph .sws-detail .tk-line + .tk-line { border-top: var(--edge) solid var(--line-2); }

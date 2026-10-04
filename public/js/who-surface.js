@@ -60,12 +60,26 @@ export function createWhoSurface({ openTeam = () => {}, openBoard = () => {} } =
   const nowOf = (name) => { const row = rows.get(name) || {}; const step = currentWorkStep(row.tegami); return [step.text, stanceLabel(row.stance)].filter(Boolean).join(' · '); };
   const members = (name) => membersOfTeam(name).map((member) => ({ name: member.name, title: agentTitle(member), lead: Boolean(member.team_lead), now: nowOf(member.name) }));
 
-  /* ---------- the thin open: a Team pressed ---------- */
-  const list = (title, lines) => {
+  /* ---------- the thin open: a Team pressed ----------
+   * Name with Launch beside it, the objective, then its Agents and its boards as the same
+   * bars the stacks use: each a press to its read in place, the one format everywhere. */
+  const bar = (row) => {
+    const button = el('button', `sws-stone ${row.className || ''}`.trim()); button.type = 'button';
+    button.dataset.cphDepth = '1'; button.dataset.swsId = String(row.id);
+    button.append(el('b', 'sws-label', row.label));
+    let open = null;
+    button.setAttribute('aria-expanded', 'false');
+    button.addEventListener('click', () => {
+      if (open) { open.remove(); open = null; button.setAttribute('aria-expanded', 'false'); return; }
+      open = el('div', 'cph-expand'); expand(row, open); button.after(open); button.setAttribute('aria-expanded', 'true');
+    });
+    return button;
+  };
+  const list = (title, rows) => {
     const box = el('div', 'who-open-list');
     box.append(el('b', 'who-open-label', title));
-    if (!lines.length) box.append(el('span', 'who-open-none', t('collection.none', 'None')));
-    for (const line of lines) box.append(line);
+    if (!rows.length) box.append(el('span', 'who-open-none', t('collection.none', 'None')));
+    for (const row of rows) box.append(bar(row));
     return box;
   };
   const renderDetail = (item, host) => {
@@ -77,10 +91,11 @@ export function createWhoSurface({ openTeam = () => {}, openBoard = () => {} } =
     head.append(el('h2', '', item.label), launch.el);
     box.append(head);
     if (item.team.objective) box.append(el('p', 'who-open-objective', item.team.objective));
-    box.append(
-      list(t('league.agents', 'Agents'), members(item.id).map((member) => { const line = el('span', 'who-open-line'); if (member.lead) line.append(el('span', 'league-team-agent-lead', '人')); line.append(member.title); return line; })),
-      list(t('collection.boards', 'Boards'), (item.items || []).filter((row) => row.kind === 'board').map((row) => el('span', 'who-open-line', row.label))),
-    );
+    const teams = last?.teams || [];
+    const boards = (last?.boards || []).filter((board) => board.teams.includes(item.id));
+    const rowsFor = whoRows({ teams: teams.filter((team) => team.name === item.id), boards }, { under: 'agents', membersOf: members })[0]?.items || [];
+    const boardRows = whoRows({ teams: teams.filter((team) => team.name === item.id), boards }, { under: 'boards', membersOf: members })[0]?.items || [];
+    box.append(list(t('league.agents', 'Agents'), rowsFor), list(t('collection.boards', 'Boards'), boardRows));
     host.append(box);
   };
 
