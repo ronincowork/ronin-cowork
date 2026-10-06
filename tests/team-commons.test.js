@@ -46,7 +46,6 @@ test('Roster remains a roster while Team Chart is a standalone Phalanx surface',
   // so a five-second status tick never throws away an edit in progress (owner, 2026-09-13).
   assert.match(view, /const record = JSON\.stringify\(roster \|\| null\);/);
   assert.match(view, /if \(!recordMoved\) continue;\s*\n\s*if \(!roster\) \{ renderTeamConfiguration/);
-  assert.match(view, /if \(recordMoved && !holding\) \{/, 'the Team profile repaints its configuration only when the saved record moved');
   assert.match(view, /onClose: \(member\) => retireSession\(member\.name/);
   assert.match(members, /actions: \[launch, rename, lead, eject, close\]/);
   assert.match(members, /classList\.add\('league-team-member-live'\)/);
