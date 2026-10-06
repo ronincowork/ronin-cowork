@@ -164,6 +164,34 @@ test('New Agent workspace interactions send the shown default, preserve an expli
     'a later Team change preserves the owner-edited selection');
 });
 
+test('picking Born in defaults untouched Workspaces to that folder, and leaves a hand-picked selection alone', () => {
+  // The launch forms' rule: a 'repos' change is the hand; a 'root' change defaults untouched Workspaces.
+  const options = [{ v: 'ronin_cowork', l: 'ronin_cowork' }, { v: 'ronin_lab', l: 'ronin_lab' }, { v: 'notes', l: 'notes' }];
+  const mount = () => {
+    let touched = false;
+    let form = null;
+    form = ask([{ fields: [
+      { key: 'root', label: 'Born in', options },
+      { key: 'repos', label: 'Workspaces', many: true, options },
+    ] }], { value: { root: 'ronin_cowork', repos: ['ronin_cowork'] }, onChange: (value, key) => {
+      if (key === 'repos') touched = true;
+      if (key === 'root' && !touched) form.set('repos', [value.root]);
+    } });
+    return form;
+  };
+  const form = mount();
+  stoneFor(form, 'root').click();
+  optNamed(form, 'ronin_lab').click();
+  assert.deepEqual(form.value().repos, ['ronin_lab'], 'Workspaces follows the chosen Born in');
+
+  const edited = mount();
+  stoneFor(edited, 'repos').click();
+  optNamed(edited, 'notes').click();
+  stoneFor(edited, 'root').click();
+  optNamed(edited, 'ronin_lab').click();
+  assert.deepEqual(edited.value().repos, ['ronin_cowork', 'notes'], 'a hand-picked selection survives a Born in change');
+});
+
 test('a square stone carries a glyph and a ruled word; the caption carries the sentence', () => {
   const { form } = build();
   stoneFor(form, 'reach').click();
