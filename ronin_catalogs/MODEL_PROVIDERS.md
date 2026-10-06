@@ -38,6 +38,7 @@ One `### <Vendor label>` section per provider. Its fields:
 | `cli` | the id of the CLI that serves it in `src/agents.ts` (`claude`, `codex`, …) — the join between this catalog and what the machine measures |
 | `transcript_source` | dated descriptive journal location and write discipline; availability requires a supported adapter and verified launch identity, not merely a file at that path |
 | `maturity` | optional display status: `beta` or `comingSoon`; a provider with no model rows remains visible only as an unavailable catalog card |
+| `families` | optional, space-separated `word=tier` pairs: the vendor's durable family names. A model the CLI lists that no row below describes takes the tier of the longest family word standing whole in its id, so a new generation keeps its band before this file catches up |
 
 Then one table, one row per model id. The picker's order is the CLI's own; this table's
 order is only for reading:
@@ -66,23 +67,24 @@ a stale reading is dated, never guessed.
 - **provider:** `anthropic`
 - **cli:** `claude`
 - **transcript_source:** Observed 2026-09-22: `~/.claude/projects/<cwd-slug>/<uuid>.jsonl`; one record per completed message. Journal adapter exists; exact launch identity is required.
+- **families:** `haiku=light sonnet=standard opus=frontier fable=frontier`
 
-The picker uses the concrete model ids below. Claude Code's own list carries more ids than
-these (older Opus and Sonnet generations); they are offered as it lists them. Saved CLI
-names such as `sonnet` pass through unchanged and are never rewritten by Ronin.
+Ronin offers what Claude Code's own picker offers: its catalog's `main` section. The older
+generations it files under `overflow` are still served but not offered. Saved CLI names such
+as `sonnet` pass through unchanged and are never rewritten by Ronin.
 
 | model | tier | cost | good at | not good at |
 |---|---|---|---|---|
 | `claude-opus-5-5` | frontier | $4 in · $20 out per M tokens (2026-09) | long agentic coding runs, hard reasoning, large refactors across a repository; the Opus line's current model | quick throwaway questions where its price and latency buy nothing |
 | `claude-fable-5-1` | frontier | $10 in · $50 out per M tokens (2026-06) | the hardest multi-step reasoning and long-horizon work; thinking is always on | cheap or latency-bound loops, and any task Opus already finishes reliably |
-| `claude-sonnet-5` | standard | $2 in · $10 out per M tokens (2026-06) | everyday coding, review and writing at a fraction of the frontier price | the deepest reasoning chains, where the frontier rows pull ahead |
+| `claude-sonnet-5-5` | standard | $2 in · $10 out per M tokens (2026-10) | everyday coding, agent and review work at a fraction of the frontier price; the Sonnet line's current model | the deepest reasoning chains, where the frontier rows pull ahead |
 | `claude-haiku-4-5-20251001` | light | $1 in · $5 out per M tokens (2026-06) | fast sub-agents, classification, summaries and high-volume routine work | large refactors and subtle multi-file reasoning |
-| `claude-opus-5` | frontier | $5 in · $25 out per M tokens (2026-06) | the previous Opus, still served, for work tuned to it | new work, where Opus 5.5 does the same for less |
 
 ### OpenAI
 
 - **provider:** `openai`
 - **cli:** `codex`
+- **families:** `astra=frontier sol=frontier terra=standard luna=light`
 - **transcript_source:** Observed 2026-09-22: `~/.codex/sessions/YYYY/MM/DD/rollout-*.jsonl`; ordinal-sequenced records with a session metadata header. Journal adapter exists; fresh Ronin launches isolate the journal home; the id comes from its header.
 
 Model ids are passed unchanged to Codex's `--model` option. Sol, Terra and Luna are
@@ -102,6 +104,7 @@ refused by Codex in the new tile, and Ronin never substitutes.
 
 - **provider:** `google`
 - **cli:** `gemini`
+- **families:** `pro=frontier flash=standard flash-lite=light`
 - **transcript_source:** Observed 2026-09-22: `~/.gemini/tmp/<project>/chats/session-*.jsonl`; appended `$set` mutations replace the complete messages array. An adapter must apply mutations and diff messages, not map each line to a message; not implemented here.
 
 Model ids are passed unchanged to Gemini CLI's `--model` option. The free tier serves

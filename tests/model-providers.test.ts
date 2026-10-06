@@ -58,7 +58,7 @@ test('the stock catalog names every provider with its CLI and dated, tiered meta
   }, 'a coming-soon provider is catalog data but has no rows');
   const anthropic = providers.find((entry) => entry.provider === 'anthropic')!;
   assert.equal(anthropic.label, 'Anthropic');
-  assert.deepEqual(anthropic.models.map((row) => row.model), ['claude-opus-5-5', 'claude-fable-5-1', 'claude-sonnet-5', 'claude-haiku-4-5-20251001', 'claude-opus-5']);
+  assert.deepEqual(anthropic.models.map((row) => row.model), ['claude-opus-5-5', 'claude-fable-5-1', 'claude-sonnet-5-5', 'claude-haiku-4-5-20251001']);
   assert.equal(anthropic.models.find((row) => row.model === 'claude-haiku-4-5-20251001')?.tier, 'light');
 });
 
@@ -66,7 +66,7 @@ test('the join: Native first, then every model the CLI listed in its order with 
   const rows = await catalog.providerRows(measured({
     installed: ['claude', 'codex', 'gemini'], signed_in: ['claude', 'codex'], operational: ['codex', 'claude'], off: ['gemini'], activated_count: 2,
     models: {
-      claude: listed([['claude-opus-5-5', 'Opus 5.5'], ['claude-fable-5-1', 'Fable 5.1'], ['claude-opus-4-6', 'Opus 4.6'], ['bad id;rm', 'Nope']]),
+      claude: listed([['claude-opus-5-5', 'Opus 5.5'], ['claude-fable-5-1', 'Fable 5.1'], ['claude-sonnet-6', 'Sonnet 6'], ['claude-mystery-1', 'Mystery 1'], ['bad id;rm', 'Nope']]),
       codex: listed([['gpt-5.6-sol', 'GPT-5.6-Sol']]),
     },
   }));
@@ -82,11 +82,13 @@ test('the join: Native first, then every model the CLI listed in its order with 
     ['native', 'Native', 'claude', '', true, true],
     ['claude-opus-5-5', 'Opus 5.5', 'claude --model claude-opus-5-5', 'frontier', false, true],
     ['claude-fable-5-1', 'Fable 5.1', 'claude --model claude-fable-5-1', 'frontier', false, true],
-    ['claude-opus-4-6', 'Opus 4.6', 'claude --model claude-opus-4-6', '', false, true],
-  ], 'the CLI\'s order and names; the catalog adds a tier where it has the id; an unlisted catalog row never appears; an unsafe id is not made into a command');
+    ['claude-sonnet-6', 'Sonnet 6', 'claude --model claude-sonnet-6', 'standard', false, true],
+    ['claude-mystery-1', 'Mystery 1', 'claude --model claude-mystery-1', '', false, true],
+  ], 'the CLI\'s order and names; the catalog adds a tier where it has the id, its family word where it has not; an unlisted catalog row never appears; an unsafe id is not made into a command');
   assert.equal(anthropic.models[1].cost, '$4 in · $20 out per M tokens (2026-09)');
   assert.equal(anthropic.models[1].dangerousCmd, 'claude --model claude-opus-5-5 --dangerously-skip-permissions');
   assert.equal(anthropic.models[3].cost, '', 'no catalog row: no cost, no prose, still launchable');
+  assert.ok(!('families' in anthropic), 'the family table is the join\'s input, not a client field');
   assert.equal(anthropic.models[0].provider_label, 'Anthropic');
   assert.deepEqual(rows[1].models.map((row) => row.name), ['Native', 'GPT-5.6-Sol']);
   const google = rows[2];
@@ -99,6 +101,15 @@ test('the join: Native first, then every model the CLI listed in its order with 
   const nothing = await catalog.providerRows(null);
   assert.ok(nothing.every((entry) => !entry.operational && entry.models.length <= 1), 'unmeasured: Native alone, nothing selectable');
   assert.ok(nothing.every((entry) => entry.models.every((row) => !row.selectable)));
+});
+
+test('a family word gives a listed id the catalog has no row for its band: the longest whole word wins, a part of a word never does', () => {
+  const families = [{ family: 'flash', tier: 'standard' as const }, { family: 'flash-lite', tier: 'light' as const }, { family: 'pro', tier: 'frontier' as const }];
+  assert.equal(catalog.familyTier('gemini-4-flash-lite', families), 'light');
+  assert.equal(catalog.familyTier('gemini-4-flash', families), 'standard');
+  assert.equal(catalog.familyTier('gemini-4-pro-preview', families), 'frontier');
+  assert.equal(catalog.familyTier('gemini-prompt-1', families), '', 'pro inside prompt is not the family');
+  assert.equal(catalog.familyTier('anything', undefined), '', 'a section with no families gives no tier');
 });
 
 test('the client answer is the catalog\'s own facts, the record\'s dates, and the joined rows', async () => {
@@ -245,8 +256,8 @@ test('each CLI\'s own list is read the way the registry says — the real cache 
     await writeFile(path.join(home, '.claude', 'cache', 'model-catalog', 'abc-cc.json'), await readFile(new URL('claude-model-catalog-cc.json', fixtures)));
     await writeFile(path.join(home, '.claude', 'cache', 'model-catalog', 'published-floor.json'), '{"not":"a catalog"}');
     assert.deepEqual(await summary.readModels(agent('claude'), { home, version: '2.1.282', now }), { read_at: now(), by: '2.1.282', rows: [
-      { id: 'claude-opus-5-5', name: 'Opus 5.5' }, { id: 'claude-fable-5-1', name: 'Fable 5.1' }, { id: 'claude-sonnet-5', name: 'Sonnet 5' }, { id: 'claude-opus-5', name: 'Opus 5' },
-    ] }, 'the CLI\'s order, its full names — the version is in the name; the stamped version is the installed CLI\'s');
+      { id: 'claude-opus-5-5', name: 'Opus 5.5' }, { id: 'claude-fable-5-1', name: 'Fable 5.1' }, { id: 'claude-sonnet-5', name: 'Sonnet 5' },
+    ] }, 'the CLI\'s order, its full names — the version is in the name; the stamped version is the installed CLI\'s; an overflow row its own picker hides is not offered');
     await mkdir(path.join(home, '.codex'), { recursive: true });
     await writeFile(path.join(home, '.codex', 'models_cache.json'), await readFile(new URL('codex-models_cache.json', fixtures)));
     assert.deepEqual((await summary.readModels(agent('codex'), { home, version: '0.157.0', now })).rows, [
