@@ -45,3 +45,12 @@ test('only the reading seam calls the collection route among the new files', asy
     assert.doesNotMatch(await source(file), /\/api\/collection/, `${file} reads through collection-reading.js`);
   }
 });
+
+// Owner 2026-09-28: Cowork and Desk offer no per-Team card. The Team profile card is a type of
+// its own, offered on team-next alone; the old type stays exactly as it was.
+test('the Team profile card belongs to team-next only', async () => {
+  const catalog = await source('workbench-catalog.js');
+  assert.match(catalog, /type: WORKBENCH_TYPES\.team, header: 'surface', discover: \(\) => \[\]/);
+  assert.match(catalog, /WORKBENCH_PROFILES\.teamNext, \[[^\n]*WORKBENCH_TYPES\.teamProfile/);
+  assert.doesNotMatch(catalog, /WORKBENCH_PROFILES\.(cowork|desk|team|agent), \[[^\n]*teamProfile/);
+});
