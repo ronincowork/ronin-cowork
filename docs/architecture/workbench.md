@@ -159,6 +159,12 @@ first open is Who in workspace 1 and workspace 2 dismissed. Its profile is Who, 
 view (placed by a board's Open, never offered), Document and Feedback. Launch on Who opens
 the old Team tab until `team-next` stands.
 
+**Board** (`board`, param the board's item id) and **Workspace** (`workspace`, param the
+folder name) stand raw: one card, Reading (`reading-surface.js`, type `tenant.reading`),
+the tenant's collection reading painted whole in workspace 1, workspace 2 dismissed. Each
+later row of their tables in `UI_STRUCTURE.md` is its own hand-in that adds one card. The
+Board's bar name is the board's title once its reading arrives.
+
 **The Next root** (`next`, `next-home.js`) is the temporary door to the new set: Ronin
 Home's shape with four doors, Collections, Team, Board, Workspace, and under each the names
 it can open from the unfiltered collection reading. A door whose tenant is not registered

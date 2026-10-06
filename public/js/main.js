@@ -18,6 +18,8 @@ import { createCoworkView } from './cowork-view.js';
 import { createDeskView } from './desk-view.js';
 import { createCollectionsView } from './collections-view.js';
 import { createNextHome } from './next-home.js';
+import { createBoardView } from './board-view.js';
+import { createWorkspaceView } from './workspace-view.js';
 import { createAgentView } from './agent-view.js';
 import { createCampaignHome } from './campaign-home.js';
 import { createCampaignView } from './campaign-view.js';
@@ -120,7 +122,9 @@ async function init() {
   // THE NEW WORKBENCH (owner, 2026-10-06): tenants on the one tenant frame, reached from the
   // temporary Next root. Each tenant is named here as it comes to stand; the root marks the rest.
   guard('register the Collections destination', () => workspace.register('collections', createCollectionsView()));
-  guard('register the Next root', () => workspace.register('next', createNextHome({ standing: ['collections'] })));
+  guard('register the Board destination', () => workspace.register('board', createBoardView()));
+  guard('register the Workspace destination', () => workspace.register('workspace', createWorkspaceView()));
+  guard('register the Next root', () => workspace.register('next', createNextHome({ standing: ['collections', 'board', 'workspace'] })));
   // the same workbench, selector column, persistence, recall and drag/drop as the Cowork
   // space, offering a Campaign's own configuration instead of its Coworks and Agents.
   guard('register the Campaign destination', () => workspace.register('campaign', createCampaignView()));
