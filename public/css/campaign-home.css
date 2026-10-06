@@ -76,6 +76,8 @@
   .ch-door[data-door='workspace'] { --ch-tone: var(--aiiro); }
   .nx-door { padding-bottom: var(--space-7); cursor: default; }
   .nx-head { display: block; width: 100%; color: inherit; text-decoration: none; }
+  /* The door's reading sits in flow here, always shown, so the rows under it stay pressable. */
+  .nx-door .ch-is { position: static; margin-top: var(--space-4); opacity: 1; transform: none; transition: none; }
   a.nx-head { cursor: pointer; }
   .nx-door[data-unavailable='true'] { opacity: .55; }
   .nx-door[data-unavailable='true']:hover { transform: none; box-shadow: none; border-color: var(--line-2); }

@@ -27,20 +27,21 @@ test('the tenant frame is the one seat machinery; tenants are thin files over it
   const [frame, cowork, main] = await Promise.all([source('tenant-frame.js'), source('cowork-view.js'), source('main.js')]);
   assert.match(frame, /createWarmTerminalPool\(/);
   assert.match(frame, /WorkspaceKit\.workbench\.create\(/);
-  for (const file of ['collections-view.js', 'board-view.js', 'workspace-view.js']) {
+  for (const file of ['collections-view.js', 'team-view.js', 'board-view.js', 'workspace-view.js']) {
     const tenant = await source(file);
     assert.doesNotMatch(tenant, /createWarmTerminalPool|workbench\.create\(/, `${file} owns no seats`);
     assert.match(tenant, /createTenantFrame\(\{/);
   }
   assert.doesNotMatch(cowork, /tenant-frame/, 'the old file is left as it is');
   assert.match(main, /workspace\.register\('collections', createCollectionsView\(\)\)/);
+  assert.match(main, /workspace\.register\('team-next', createTeamView\(\)\)/);
   assert.match(main, /workspace\.register\('board', createBoardView\(\)\)/);
   assert.match(main, /workspace\.register\('workspace', createWorkspaceView\(\)\)/);
-  assert.match(main, /standing: \['collections', 'board', 'workspace'\]/);
+  assert.match(main, /standing: \['collections', 'team-next', 'board', 'workspace'\]/);
 });
 
 test('only the reading seam calls the collection route among the new files', async () => {
-  for (const file of ['tenant-frame.js', 'collections-view.js', 'board-view.js', 'workspace-view.js', 'reading-surface.js', 'next-home.js']) {
+  for (const file of ['tenant-frame.js', 'collections-view.js', 'team-view.js', 'team-commons-surface.js', 'board-view.js', 'workspace-view.js', 'reading-surface.js', 'next-home.js']) {
     assert.doesNotMatch(await source(file), /\/api\/collection/, `${file} reads through collection-reading.js`);
   }
 });

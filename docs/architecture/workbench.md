@@ -159,6 +159,14 @@ first open is Who in workspace 1 and workspace 2 dismissed. Its profile is Who, 
 view (placed by a board's Open, never offered), Document and Feedback. Launch on Who opens
 the old Team tab until `team-next` stands.
 
+**Team** (`team-next`, param the Team; it takes the `team` word when it replaces the old
+Team) is `team-view.js` over the frame: the members' tiles with the lead pinned hot and
+seated on a first visit, the Commons as one self-painting surface (`team-commons-surface.js`,
+lifted from `cowork-view.js`), Team Chart, the Trello view, the Team profile as a card, New
+Agent, and the composition reader the roster opens. Not yet on it: Mika's help, the
+arranger (`edges page`), Work Items and Task Manager, which retire into the board. Who's
+Launch opens this Team.
+
 **Board** (`board`, param the board's item id) and **Workspace** (`workspace`, param the
 folder name) stand raw: one card, Reading (`reading-surface.js`, type `tenant.reading`),
 the tenant's collection reading painted whole in workspace 1, workspace 2 dismissed. Each

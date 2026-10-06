@@ -17,8 +17,8 @@ const reading = {
 };
 
 test('four doors in order; a door not standing is closed and keeps its rows', () => {
-  const doors = nextDoors(reading, ['collections']);
-  assert.deepEqual(doors.map((door) => [door.key, door.standing]), [['collections', true], ['team-next', false], ['board', false], ['workspace', false]]);
+  const doors = nextDoors(reading, ['collections', 'team-next']);
+  assert.deepEqual(doors.map((door) => [door.key, door.standing]), [['collections', true], ['team-next', true], ['board', false], ['workspace', false]]);
   assert.deepEqual(doors[0].rows, []);
   assert.deepEqual(doors[3].rows, [{ param: 'ronin_cowork', label: 'ronin_cowork' }]);
 });

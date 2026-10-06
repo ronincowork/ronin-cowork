@@ -47,6 +47,7 @@ const OPPOSITE = { workspace1: 'workspace2', workspace2: 'workspace1', workspace
  *   firstOpen(param)  the seats a fresh open gets
  *   cards(frame)      the environment entries its cards are made from
  *   sessions(param)?  the names whose tiles may seat here (none: no tiles)
+ *   pinned(param)?    the names kept hot in workspace 1 and seated in a first-visit seat
  *   selectorFilter(type)?  which placeable types are offered as cards
  *   enter(frame, context)? / leave()? / destroy()?  the tenant's own lifecycle
  */
@@ -142,9 +143,15 @@ export function createTenantFrame(tenant) {
     return true;
   };
   const sessionNames = () => (tenant.sessions?.(param) || []).map((row) => (typeof row === 'string' ? row : row.name)).filter(Boolean);
+  const pinnedNames = () => (tenant.pinned?.(param) || []).filter(Boolean);
+  const isShown = (name) => Object.values(seats).some((seat) => seat.pool.active === name && !surfaceIn(seat.id));
   const syncPools = () => {
     const names = [...new Set(sessionNames())];
     for (const seat of Object.values(seats)) seat.pool.sync(names);
+    // THE PINNED ARE ALWAYS HOT (owner: the team manager is always hot): streaming in workspace 1.
+    const pinned = pinnedNames();
+    seats.workspace1.pool.setPinned(pinned);
+    for (const name of pinned) seats.workspace1.pool.keepHot(name);
     paintSeats();
   };
   /** Any live session into a seat, member or not; it rides the pool until it leaves. */
@@ -167,6 +174,8 @@ export function createTenantFrame(tenant) {
       }
       if (WorkspaceKit.workbench.library.has(request.type) && bench.place(request.type, id, request.detail)) continue;
       if (wanted && seats[id].pool.has(wanted)) putSession(wanted, id, false);
+      // A first visit with nothing remembered seats the first pinned session not yet shown.
+      else if (!wanted) { const first = pinnedNames().find((name) => !isShown(name) && seats[id].pool.has(name)); if (first) putSession(first, id, false); }
     }
   };
 
@@ -178,6 +187,8 @@ export function createTenantFrame(tenant) {
     param: () => param,
     context: () => ctx,
     connectSession,
+    putSession: (name, id = lastSeat) => putSession(name, id),
+    isShown,
     emptySeat,
     refreshSelector: () => bench.refreshSelector(),
     remember,
@@ -244,7 +255,12 @@ export function createTenantFrame(tenant) {
       touch(liveSeats().find((id) => !heldSurface(id)) || 'workspace1');
       S.connectSession = (session) => connectSession(session);
       hearSessions?.();
-      hearSessions = tenant.sessions ? store.subscribe('sessions', () => { if (entered) { syncPools(); seatRemembered(); } }) : null;
+      if (tenant.sessions) {
+        // Tiles follow the live sessions and the rosters: a member arriving or leaving reseats.
+        const follow = () => { if (entered) { syncPools(); seatRemembered(); bench.refreshSelector(); } };
+        const stops = [store.subscribe('sessions', follow), store.subscribe('teams', follow)];
+        hearSessions = () => { for (const stop of stops) stop(); };
+      } else hearSessions = null;
       S.refreshWorkspaceHeader?.();
       tenant.enter?.(frame, context);
     },

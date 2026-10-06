@@ -16,7 +16,7 @@ import { WORK_VIEWS_TYPE } from './work-views-surface.js';
 import { WHO_TYPE } from './who-surface.js';
 import { READING_TYPE } from './reading-surface.js';
 
-export const WORKBENCH_PROFILES = Object.freeze({ campaign: 'campaign', launch: 'launch', desk: 'desk', cowork: 'cowork', team: 'team', agent: 'agent', collections: 'collections', board: 'board', workspace: 'workspace' });
+export const WORKBENCH_PROFILES = Object.freeze({ campaign: 'campaign', launch: 'launch', desk: 'desk', cowork: 'cowork', team: 'team', agent: 'agent', collections: 'collections', board: 'board', workspace: 'workspace', teamNext: 'team-next' });
 export const WORKBENCH_TYPES = Object.freeze({
   document: 'document', terminal: 'session.terminal', behaviours: BEHAVIOUR_SURFACE_TYPE, feedback: FEEDBACK_TYPE,
   launchTeam: 'launch.team', launchAgent: 'launch.agent', launchHelp: 'launch.help',
@@ -58,8 +58,10 @@ export function registerWorkbenchCatalog() {
   add({ type: WORKBENCH_TYPES.newTeamForm, header: 'surface', className: 'wk-selector-utility wk-selector-group-after', label: () => t('new_team.title', 'New Team'), summary: () => t('new_team.card_summary', 'Template · kit · lead — the drawn form.'), variant: 'dotted', create: ({ workspace, environment, consumed }) => environment.newTeamForm(workspace, consumed) });
   add({ type: WORKBENCH_TYPES.newAgent, header: 'surface', className: 'wk-selector-utility', label: () => t('new_agent.title', 'New Agent'), summary: () => t('new_agent.card_summary', 'Session type first — the drawn launch form.'), variant: 'dotted', create: ({ workspace, environment, consumed }) => environment.newAgent(workspace, consumed) });
   via(WORKBENCH_TYPES.archives, 'surface', 'archives', { className: 'wk-selector-utility', label: () => t('archives.card', 'Rehydrate Archived'), variant: 'dotted' });
-  // The Teams Phalanx is the discovery; a dragged stone places the Team profile.
-  add({ type: WORKBENCH_TYPES.team, header: 'surface', discover: () => [], create: ({ workspace, detail, environment }) => environment.team(workspace, detail) });
+  // The Teams Phalanx is the discovery; a dragged stone places the Team profile. On the Team
+  // tenant (team-next) the profile is a card of its own.
+  add({ type: WORKBENCH_TYPES.team, header: 'surface', className: 'wk-selector-utility', label: () => t('team.profile_card', 'Team profile'), summary: () => t('team.profile_summary', 'Objective, Agents and the items they hold, boards, configuration'),
+    discover: (tenant) => (tenant?.kind === 'team-next' && tenant.param?.() ? [{ key: tenant.param() }] : []), create: ({ workspace, detail, environment }) => environment.team(workspace, detail) });
   add({ type: WORKBENCH_TYPES.agentDocuments, header: 'surface', className: 'wk-selector-utility', label: () => t('workspace.tab_docs', 'Documents'), summary: () => t('agent.documents_summary', 'Documents tracked by this Agent'), discover: (_t, e) => [{ key: e.agent() }], create: ({ workspace, detail, environment }) => environment.documents(workspace, detail) });
   add({ type: WORKBENCH_TYPES.agentTeams, header: 'surface', className: 'wk-selector-utility', label: () => t('agent.team_membership', 'Team membership'), summary: () => t('agent.team_membership_summary', 'Add or remove this Agent from installed Teams'), discover: (_t, e) => [{ key: e.agent() }], create: ({ workspace, detail, environment }) => environment.teams(workspace, detail) });
   add({ type: WORKBENCH_TYPES.agentTasks, header: 'surface', className: 'wk-selector-utility', label: () => t('workspace.tab_task_manager', 'Task Manager'), discover: (_t, e) => e.taskOffers(), create: ({ workspace, detail, environment }) => environment.tasks(workspace, detail) });
@@ -79,6 +81,7 @@ export function registerWorkbenchCatalog() {
   // Trello view is placeable by a board's Open but not offered (collections-view.js filters it).
   profiles.define(WORKBENCH_PROFILES.collections, [WORKBENCH_TYPES.who, WORKBENCH_TYPES.workViews, WORKBENCH_TYPES.document, FEEDBACK_TYPE]);
   // Board and Workspace stand raw: the tenant's reading in its place; their rows come one card per hand-in.
+  profiles.define(WORKBENCH_PROFILES.teamNext, [WORKBENCH_TYPES.commons, WORKBENCH_TYPES.teamChart, WORKBENCH_TYPES.workViews, WORKBENCH_TYPES.team, WORKBENCH_TYPES.terminal, WORKBENCH_TYPES.agentComposition, WORKBENCH_TYPES.newAgent, BEHAVIOUR_SURFACE_TYPE, FEEDBACK_TYPE]);
   profiles.define(WORKBENCH_PROFILES.board, [WORKBENCH_TYPES.reading, WORKBENCH_TYPES.document, FEEDBACK_TYPE]);
   profiles.define(WORKBENCH_PROFILES.workspace, [WORKBENCH_TYPES.reading, WORKBENCH_TYPES.document, FEEDBACK_TYPE]);
   profiles.define(WORKBENCH_PROFILES.team, [WORKBENCH_TYPES.commons, WORKBENCH_TYPES.teamChart, WORKBENCH_TYPES.workItems, WORKBENCH_TYPES.workViews, WORKBENCH_TYPES.taskStatus, WORKBENCH_TYPES.taskProject, WORKBENCH_TYPES.terminal, WORKBENCH_TYPES.agentComposition, WORKBENCH_TYPES.newAgent, BEHAVIOUR_SURFACE_TYPE, FEEDBACK_TYPE]);

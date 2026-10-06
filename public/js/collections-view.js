@@ -15,9 +15,9 @@ import { t } from './lexicon.js';
 import { WORKBENCH_PROFILES, WORKBENCH_TYPES } from './workbench-catalog.js';
 import { DISMISSED_WORKSPACE } from './workspace-contract.js';
 
-// Launch opens the Team's tab: the old Team until team-next stands, then that one.
+// Launch opens the Team's tab on the new frame (team-view.js).
 function openTeam(name) {
-  return openWorkspaceTab('team', name);
+  return openWorkspaceTab('team-next', name);
 }
 function leadOf(name) {
   return membersOfTeam(name).find((member) => member.team_lead)?.name || '';
