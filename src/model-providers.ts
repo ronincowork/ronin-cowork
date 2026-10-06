@@ -53,6 +53,11 @@ export interface ProviderCatalogEntry {
   /** Optional display status for a provider that is beta or not offered yet. */
   maturity?: string;
   models: CatalogModel[];
+  /**
+   * The vendor's durable family words and their tiers (`sonnet=standard`), for a listed id
+   * no row describes yet: a new generation keeps its band before the catalog catches up.
+   */
+  families?: Array<{ family: string; tier: Tier }>;
 }
 
 export interface ProviderCatalog {
@@ -132,6 +137,24 @@ const isSeparator = (cells: string[]): boolean => cells.every((c) => /^:?-+:?$/.
 const field = (section: string, key: string): string | undefined =>
   new RegExp(`^-\\s*\\*\\*${key}:\\*\\*\\s*\`(.+)\`\\s*$`, 'm').exec(section)?.[1]?.trim();
 const asTier = (value: string): Tier => (TIERS as readonly string[]).includes(value) ? value as Tier : 'standard';
+const isTier = (value: string): value is Tier => (TIERS as readonly string[]).includes(value);
+
+/** `haiku=light sonnet=standard …` as pairs; a word with no known tier is dropped. */
+function parseFamilies(value: string | undefined): Array<{ family: string; tier: Tier }> {
+  return (value ?? '').split(/\s+/).flatMap((pair) => {
+    const [family = '', tier = ''] = pair.toLowerCase().split('=');
+    return family && isTier(tier) ? [{ family, tier }] : [];
+  });
+}
+
+/** The tier of the longest family word that stands whole in the id (`flash-lite` before `flash`); '' when none. */
+export function familyTier(id: string, families: ProviderCatalogEntry['families'] = []): Tier | '' {
+  const escape = (word: string) => word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const hit = [...families]
+    .sort((a, b) => b.family.length - a.family.length)
+    .find(({ family }) => new RegExp(`(^|[-._/])${escape(family)}($|[-._/])`, 'i').test(id));
+  return hit?.tier ?? '';
+}
 
 /** The header's `- **updated:** YYYY-MM-DD`, read before the first provider section; '' when absent. */
 export function catalogUpdated(raw: string): string {
@@ -185,6 +208,7 @@ export function parseProviderCatalog(raw: string, origin: Origin = 'stock'): Pro
     const cli = field(section, 'cli');
     if (!label || !provider || !cli) continue;
     const maturity = field(section, 'maturity');
+    const families = parseFamilies(field(section, 'families'));
     const rows = new Map<string, Record<string, string>>();
     let header: string[] = [];
     for (const line of section.split('\n')) {
@@ -215,6 +239,7 @@ export function parseProviderCatalog(raw: string, origin: Origin = 'stock'): Pro
     out.push({
       provider, cli, label, origin, shadowed: false, models,
       ...(maturity ? { maturity } : {}),
+      ...(families.length ? { families } : {}),
     });
   }
   return out;
@@ -467,11 +492,11 @@ export async function providerRows(summary: ProviderSummary | null, catalog?: Pr
           ...base, model: listed.id, name: listed.name || listed.id,
           cmd: commandText(renderLaunch(grammar.model, values(listed.id))),
           ...(grammar.modelDangerously.length ? { dangerousCmd: commandText(renderLaunch(grammar.modelDangerously, values(listed.id))) } : {}),
-          tier: meta?.tier ?? '', default: false, cost: meta?.cost ?? '', good_at: meta?.good_at ?? '', not_good_at: meta?.not_good_at ?? '',
+          tier: meta?.tier ?? familyTier(listed.id, entry.families), default: false, cost: meta?.cost ?? '', good_at: meta?.good_at ?? '', not_good_at: meta?.not_good_at ?? '',
         });
       }
     }
-    const { models: _catalogModels, ...rest } = entry;
+    const { models: _catalogModels, families: _families, ...rest } = entry;
     return { ...rest, cli_label: base.cli_label, operational: on, off, ...launch, models };
   }));
   return [...joined.filter((entry) => entry.operational), ...joined.filter((entry) => !entry.operational)];

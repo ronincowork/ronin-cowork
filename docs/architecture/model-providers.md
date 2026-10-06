@@ -38,6 +38,7 @@ Then one `### <Vendor>` section per provider. The section's fields:
 |---|---|
 | `provider` | the vendor id a launch names (`anthropic`, `openai`, `google`, `xai`, `nous`) and the key of `agents.sessions.by_provider` |
 | `cli` | the id of the CLI that serves it in `src/agents.ts` (`claude`, `codex`, `gemini`, `grok`, `hermes`) |
+| `families` | optional `word=tier` pairs (`sonnet=standard`): the vendor's durable family names, for listed ids no row describes |
 
 The `provider` and `cli` fields are the join between the two things Ronin knows about a
 provider: the catalog (whose it is, what it offers) and the CLI registry (how it installs,
@@ -154,7 +155,8 @@ What this machine *has* is measured, not derived on every read. The Campaign rec
 
 **How a list is read is the registry's declaration.** `AGENTS[].operations.models` in
 `src/agents.ts` names the reader: `claude-cache` (`~/.claude/cache/model-catalog/*-cc.json`,
-`catalog.config.models[].id` and `.name`), `codex-cache` (`~/.codex/models_cache.json`,
+`catalog.config.models[].id` and `.name`, only the `main` section its own picker offers — the
+`overflow` generations are still served but not offered), `codex-cache` (`~/.codex/models_cache.json`,
 `models[]` with `slug`, `display_name`, and `visibility: list`), `command` (run the CLI with
 the argv and read the list under *Available models:* — Grok), or `none` (Gemini, Hermes:
 Model: Native only, and the surface says so). `readModels` walks that table; no CLI id
@@ -175,7 +177,10 @@ Model field passes no model choice to the CLI. A named model row exists only bec
 CLI's list (`models[cli].rows`) reports its id; the catalog may enrich the id with tier,
 cost and descriptions, but cannot make an unreported model available, and a row the CLI
 lists that the catalog does not describe is offered all the same, with the CLI's name and
-no tier. With no list read, Native is the only Model choice; Launch mode remains an
+the tier of its family word when the section declares `families` (the longest word standing
+whole in the id: `flash-lite` before `flash`), otherwise no tier. The family table is what
+keeps Setup and Mika's Light → Standard → Frontier cascade working when a vendor ships a
+generation before the catalog is refreshed: a new Sonnet is standard on the day it is listed. With no list read, Native is the only Model choice; Launch mode remains an
 independent axis.
 
 ## Provider and agent are different axes
