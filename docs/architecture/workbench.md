@@ -127,6 +127,45 @@ The definition's `create()` draws the stable shell. Its returned `show()` or `en
 starts only that surface's reads. `leave()` parks active work and `destroy()` releases
 surface-lifetime resources. See [the common lifecycle](workspace-kit.md#lifecycle-contract).
 
+## The tenant frame and thin tenants (the new workbench)
+
+Owner ruling, 2026-10-06 (samurai_lab `wip/buildouts/UI_STRUCTURE.md`, `WORKBENCH_SKELETON.md`):
+one workbench format, and a named workbench is a **tenant** that exposes cards. The build
+stands beside the old destinations and replaces them tenant by tenant; `cowork-view.js`,
+`desk-view.js` and `agent-view.js` are not edited meanwhile and go when replaced.
+
+Three layers:
+
+1. **Kit frame**, `workbench.js`, as above: selector, cells, placement, arrangement, memory.
+2. **Tenant frame**, `tenant-frame.js`, built once: the four terminal seats and their warm
+   pools, placing a session or a surface into a cell and remembering it for refresh, the
+   common cards (terminal, document, feedback), the bar name and tab name. Lifted as a copy
+   from `cowork-view.js`. Not in it: Mika, the arranger, Commons; a tenant that needs one
+   adds it.
+3. **A thin tenant file** over it, tens of lines: `key` (the destination id, which is also
+   the appearance), `profile`, `glyph`, `label`, `name`, `homeCard`, `firstOpen(param)`,
+   `cards(frame)` (its environment entries), optional `sessions(param)`, `selectorFilter`
+   and lifecycle hooks. `collections-view.js` is the first; `team-next`, `board` and
+   `workspace` follow, one hand-in each.
+
+**The server resolves the tenant, into the store.** A tenant's reading is the collection
+reading (`src/collection-read.ts`) narrowed by campaign, team, board or root. The browser
+requests, filters and joins nothing beyond `collection-reading.js`, the one seam, which
+reads `GET /api/collection` once on open today and becomes a store want under w12
+"Readings by push". No other new file may name that route (`tests/tenant-frame.test.js`).
+
+**Collections** (`collections`, param the campaign; the one machine campaign when absent):
+first open is Who in workspace 1 and workspace 2 dismissed. Its profile is Who, the Trello
+view (placed by a board's Open, never offered), Document and Feedback. Launch on Who opens
+the old Team tab until `team-next` stands.
+
+**The Next root** (`next`, `next-home.js`) is the temporary door to the new set: Ronin
+Home's shape with four doors, Collections, Team, Board, Workspace, and under each the names
+it can open from the unfiltered collection reading. A door whose tenant is not registered
+yet is closed and says so; `main.js` names the standing ones. Ronin Home carries one
+**Next** link beside Settings. Root, route and link go in one commit when the four tenants
+replace Home's three doors.
+
 ## The surface map and live arrangement
 
 The surface map in the app bar is a miniature live model of the whole Workbench, not

@@ -347,14 +347,14 @@
   --cowork-head-fg: var(--scope-head-fg);
   --cowork-head-muted: var(--scope-head-muted);
 }
-:root[data-workbench='cowork'] {
+:root:is([data-workbench='cowork'], [data-workbench='collections']) {
   --cowork-head-bg: var(--scope-teams-head-bg);
   --cowork-head-line: var(--aiiro);
   --cowork-surface-head-edge: var(--space-1);
   --cowork-head-fg: var(--scope-head-fg);
   --cowork-head-muted: var(--scope-head-muted);
 }
-:root:is([data-workbench='team'], [data-workbench='agent']) {
+:root:is([data-workbench='team'], [data-workbench='agent'], [data-workbench='team-next'], [data-workbench='board'], [data-workbench='workspace']) {
   --cowork-head-bg: var(--team-workbench-head-bg);
   --cowork-head-line: var(--team-workbench-head-line);
   --cowork-surface-head-edge: var(--edge);
@@ -6840,7 +6840,7 @@ html[data-screen='inside'] #phone .ph-bar .ph-title[data-boot='inside'] { displa
   #bar > .wk-view-map { margin-left: auto; }
   /* Keyed on the control, not on its parent: the caret is styled the same whether it is
      riding the island or docked over the work surfaces below. */
-  :root:is([data-workbench='team'], [data-workbench='cowork'], [data-workbench='desk']) .app-header-collapse {
+  :root:is([data-workbench='team'], [data-workbench='cowork'], [data-workbench='desk'], [data-workbench='collections'], [data-workbench='team-next'], [data-workbench='board'], [data-workbench='workspace']) .app-header-collapse {
     display: inline-flex;
     flex: 0 0 auto;
     align-items: center;
@@ -6856,7 +6856,7 @@ html[data-screen='inside'] #phone .ph-bar .ph-title[data-boot='inside'] { displa
   /* Riding the island, the caret IS the island: its own ink on its own surface, not a
      second chip floating inside the slab. Scoped like the rule above so it out-ranks the
      shared panel treatment that suits a tile head but not a dark island. */
-  :root:is([data-workbench='team'], [data-workbench='cowork'], [data-workbench='desk']) .view-island > .app-header-collapse {
+  :root:is([data-workbench='team'], [data-workbench='cowork'], [data-workbench='desk'], [data-workbench='collections'], [data-workbench='team-next'], [data-workbench='board'], [data-workbench='workspace']) .view-island > .app-header-collapse {
     position: relative;
     z-index: 1;
     margin-left: var(--space-2);
@@ -6875,7 +6875,7 @@ html[data-screen='inside'] #phone .ph-bar .ph-title[data-boot='inside'] { displa
      the caret alone, in the island's own colours, cut into the top edge where the island
      sat so it does not jump, sitting over the work surfaces' header. In the way on
      purpose: it is the only way back. */
-  :root:is([data-workbench='team'], [data-workbench='cowork'], [data-workbench='desk']) .app-header-collapse.header-collapse-docked {
+  :root:is([data-workbench='team'], [data-workbench='cowork'], [data-workbench='desk'], [data-workbench='collections'], [data-workbench='team-next'], [data-workbench='board'], [data-workbench='workspace']) .app-header-collapse.header-collapse-docked {
     position: fixed;
     z-index: 5;
     top: max(0px, env(safe-area-inset-top));
@@ -6887,13 +6887,13 @@ html[data-screen='inside'] #phone .ph-bar .ph-title[data-boot='inside'] { displa
     color: var(--bar-place-fg);
     transform: translateX(-50%);
   }
-  :root:is([data-workbench='team'], [data-workbench='cowork'], [data-workbench='desk']) .wk-layout-surface > .wk-surface-header:not([data-workbench-header='selector']) {
+  :root:is([data-workbench='team'], [data-workbench='cowork'], [data-workbench='desk'], [data-workbench='collections'], [data-workbench='team-next'], [data-workbench='board'], [data-workbench='workspace']) .wk-layout-surface > .wk-surface-header:not([data-workbench-header='selector']) {
     display: none;
   }
-  :root:is([data-workbench='team'], [data-workbench='cowork'], [data-workbench='desk']) .wk-workbench-cell .tw-blank > .wk-surface-header {
+  :root:is([data-workbench='team'], [data-workbench='cowork'], [data-workbench='desk'], [data-workbench='collections'], [data-workbench='team-next'], [data-workbench='board'], [data-workbench='workspace']) .wk-workbench-cell .tw-blank > .wk-surface-header {
     display: none;
   }
-  :root:is([data-workbench='team'], [data-workbench='cowork'], [data-workbench='desk']) .tile-head > .torii {
+  :root:is([data-workbench='team'], [data-workbench='cowork'], [data-workbench='desk'], [data-workbench='collections'], [data-workbench='team-next'], [data-workbench='board'], [data-workbench='workspace']) .tile-head > .torii {
     display: none;
   }
   /* ONE BAND DEPTH ACROSS THE ROW. An Agent's head sits beside the selector's head, so
@@ -6903,10 +6903,10 @@ html[data-screen='inside'] #phone .ph-bar .ph-title[data-boot='inside'] { displa
      .tile-head; the fold's tighter padding was what pulled it out of line, so nothing is
      restated here. Everything but the name and the reading toggle is behind メ, so one
      row is enough and it must never become two. */
-  :root:is([data-workbench='team'], [data-workbench='cowork'], [data-workbench='desk']) .tile-head {
+  :root:is([data-workbench='team'], [data-workbench='cowork'], [data-workbench='desk'], [data-workbench='collections'], [data-workbench='team-next'], [data-workbench='board'], [data-workbench='workspace']) .tile-head {
     flex-wrap: nowrap;
   }
-  :root:is([data-workbench='team'], [data-workbench='cowork'], [data-workbench='desk']) .tile-head .sess {
+  :root:is([data-workbench='team'], [data-workbench='cowork'], [data-workbench='desk'], [data-workbench='collections'], [data-workbench='team-next'], [data-workbench='board'], [data-workbench='workspace']) .tile-head .sess {
     flex: 1 1 auto;
     min-width: 0;
     max-width: none;
