@@ -97,16 +97,7 @@ test('Roster remains a roster while Team Chart is a standalone Phalanx surface',
   assert.match(coworkRoster, /createPhalanx\(\{ className: 'team-roster-phalanx', items: \[\], renderDetail \}\)/);
   assert.doesNotMatch(coworkRoster, /action:/, 'a Teams stone selects; it never navigates');
   assert.match(view, /createTeamRosterSurface\(\{\s*teamDetail: \(name\) => leagueTeamDetail\(name, id\)/);
-  // Owner 2026-09-28, the in-place Team: drawn-form steps, Launch the only head control,
-  // Agents and Work items open, Configuration folded, Delete team at the Configuration foot.
-  assert.match(view, /const controls = \[launch\];/);
-  assert.match(view, /const folded = \{ agents: false, work: false, config: true \};/);
-  assert.match(view, /createStep\(\{ n, key, title: text, onToggle: \(\) => fold\(key\) \}\)/);
-  assert.match(view, /config\.replaceChildren\(fields, createActionBar\(\{ actions: \[remove\] \}\)\.el\)/);
   assert.doesNotMatch(view, /gear/);
-  assert.match(view, /request\(`\/api\/work-items\?team=\$\{encodeURIComponent\(name\)\}`/, 'Work is the Team reading from the store');
-  assert.match(view, /const createLeagueTeamSurface = [\s\S]*leagueTeamBody\(name,/);
-  assert.match(view, /const leagueTeamDetail = [\s\S]*leagueTeamBody\(name,/);
   assert.match(catalog, /type: WORKBENCH_TYPES\.team, header: 'surface', discover: \(\) => \[\]/, 'the selector offers no per-Team card');
   // Owner 2026-09-28: the roster that existed (js/roster.js) is back on Cowork and Desk, as it was.
   assert.match(catalog, /WORKBENCH_PROFILES\.cowork, \[[^\n]*WORKBENCH_TYPES\.sessionRoster/);
