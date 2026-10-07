@@ -26,8 +26,8 @@ had half typed stays, with the path added after it.
 ## A work item, the same way
 
 Drag a work item onto a tile: a card on the Trello view, a stone on Work Items, or a board
-or item under a Team on Who. Its reference, the id and the title (`w6 "Work items surface:
-Status / Board toggle"`), is typed into the Agent's input without Enter, after anything you
+or item under a Team on Who. Its reference, the id and the title in square brackets
+(`[w6 "Work items surface: Status / Board toggle"]`), is typed into the Agent's input without Enter, after anything you
 had typed, so you ask about it around it. Nothing is saved: it is a reference, not a file.
 Dragging an item within its own surface still moves it as before; only a drop on a tile
 types the reference.
