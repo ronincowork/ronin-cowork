@@ -148,14 +148,20 @@ Three layers:
    and lifecycle hooks. `collections-view.js` is the first; `team-next`, `board` and
    `workspace` follow, one hand-in each.
 
-**The server resolves the tenant, into the store.** A tenant's reading is the collection
-reading (`src/collection-read.ts`) narrowed by campaign, team, board or root. The browser
-requests, filters and joins nothing beyond `collection-reading.js`, the one seam, which
-reads `GET /api/collection` once on open today and becomes a store want under w12
-"Readings by push". The server half stands: `{t:'want', resource:'collection', campaign?,
-team?, board?, root?[]}` and `{t:'want', resource:'work-items', team?, board?}` on `/events`
-(the table in [the tmux connection](tmux-connection.md)); an absent campaign is the one
-machine campaign, and Teams, folders and boards outside it are left out. No other new file may name that route (`tests/tenant-frame.test.js`).
+**The server resolves the tenant, into the store** (w12, both halves landed 2026-10-07). A
+tenant's reading is the collection reading (`src/collection-read.ts`) narrowed by campaign,
+team, board or root, or the work-items reading for a Team or a board. A consumer subscribes
+through `collection-reading.js`, the one seam, with its filter; the store sends
+`{t:'want', resource:'collection', campaign?, team?, board?, root?[]}` or
+`{t:'want', resource:'work-items', team?, board?}` on `/events` (the table in
+[the tmux connection](tmux-connection.md)) and holds the answer under
+`readingKey(resource, filter)`, the server's own spelling: the resource, then the filter's
+JSON in field order, trimmed, empties dropped, roots deduped. The server pushes the reading
+again to every connection holding that filter whenever an input moves; an absent campaign is
+the one machine campaign, and Teams, folders and boards outside it are left out. The browser
+requests, filters and joins nothing; no new file may name `/api/collection` or
+`/api/work-items` (`tests/tenant-frame.test.js`). Who and the Trello view still read those
+routes on entry until their rows are ordered.
 
 **Collections** (`collections`, param the campaign; the one machine campaign when absent):
 first open is Who in workspace 1 and workspace 2 dismissed. Its profile is Who, the Trello

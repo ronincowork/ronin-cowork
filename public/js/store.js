@@ -52,9 +52,28 @@ const SIGNATURES = { home: painted, sessions: painted };
 
 // `wipeboard:ops` wants { resource: 'wipeboard', board: 'ops' }; a plain key wants nothing.
 const WANTED = { wipeboard: 'board', jikan: 'team' };
+// A READING is wanted with a filter (owner, 2026-10-06: the server resolves each tenant's
+// reading into this store). `collection:{"team":"surface"}` wants { resource: 'collection',
+// team: 'surface' }; the server answers {t:'collection', filter, …} and again on every change
+// to the connections holding that filter (src/ws/events.ts). The key is the resource and the
+// filter's JSON in the server's own order, so `readingKey` is the one way to spell it.
+const READINGS = { collection: ['campaign', 'team', 'board', 'root'], 'work-items': ['team', 'board'] };
+const word = (value) => (typeof value === 'string' && value.trim() ? value.trim() : undefined);
+export function readingFilter(resource, filter = {}) {
+  const out = {};
+  for (const field of READINGS[resource] || []) {
+    if (field === 'root') {
+      const root = [...new Set([filter.root].flat().map(word).filter(Boolean))];
+      if (root.length) out.root = root;
+    } else if (word(filter[field])) out[field] = word(filter[field]);
+  }
+  return out;
+}
+export const readingKey = (resource, filter = {}) => `${resource}:${JSON.stringify(readingFilter(resource, filter))}`;
 const wantFor = (key) => {
   const at = key.indexOf(':');
   const resource = at > 0 ? key.slice(0, at) : '';
+  if (READINGS[resource]) { try { return { t: 'want', resource, ...JSON.parse(key.slice(at + 1)) }; } catch { return null; } }
   return WANTED[resource] ? { t: 'want', resource, [WANTED[resource]]: key.slice(at + 1) } : null;
 };
 
@@ -114,6 +133,7 @@ export function createStore({
     else if (message.t === 'memory' && message.reading && typeof message.reading === 'object') set('memory', message.reading);
     else if (message.t === 'wipeboard' && message.board && Array.isArray(message.posts)) set(`wipeboard:${message.board}`, { posts: message.posts, more: Boolean(message.more) });
     else if (message.t === 'jikan' && message.team && Array.isArray(message.jobs)) set(`jikan:${message.team}`, message.jobs);
+    else if (READINGS[message.t] && message.filter && typeof message.filter === 'object') { const { t: _t, filter, ...reading } = message; set(readingKey(message.t, filter), reading); }
     for (const fn of listeners.get(message.t) || []) fn(message);
   }
 
