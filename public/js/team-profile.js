@@ -27,6 +27,28 @@ import { subscribe as subscribeStore } from './store.js';
 import { ask } from './ask.js';
 import { t } from './lexicon.js';
 
+/** The Agent picker: an Agent already running joins the Team, or a new one starts; with no
+ *  lead, whoever comes in leads. `onNewAgent(team, lead)` places the New Agent form; `failed(result)`
+ *  hears each write. Shared by the Team profile's plus and Who's Add block. */
+export function createAgentPicker(name, { onNewAgent = () => {}, failed = () => {}, joined = () => {} } = {}) {
+  const lead = membersOfTeam(name).some((member) => member.team_lead);
+  const choices = lead ? sessionsAvailableToTeam(name) : [...membersOfTeam(name), ...sessionsAvailableToTeam(name)];
+  const NEW = ' new';
+  const pick = ask([{ fields: [{
+    key: 'agent', label: lead ? t('league.add_agent', 'Add an Agent') : t('league.choose_lead', 'Choose an Agent as team lead'),
+    blank: lead ? t('league.add_agent', 'Add an Agent') : t('league.choose_lead', 'Choose an Agent as team lead'),
+    options: [...choices.map((member) => ({ v: member.name, l: agentTitle(member) })), { v: NEW, l: t('league.add_lead_agent', 'Add new Agent') }],
+  }] }], { density: 'tight', onChange: async ({ agent }) => {
+    if (!agent) return;
+    if (agent === NEW) { onNewAgent(name, !lead); joined(); return; }
+    const in_ = membersOfTeam(name).some((member) => member.name === agent) ? { ok: true } : await setTeamMembership(agent, name, true);
+    const result = in_.ok && !lead ? await setTeamLead(agent, name, true) : in_;
+    failed(result);
+    if (result.ok) joined();
+  } });
+  return pick.el;
+}
+
 export function createTeamProfile(name, { openTeam = () => {}, openAgent = () => {}, onNewAgent = () => {}, openItem = () => {}, onDeleted = () => {}, say = () => {} } = {}) {
   const { createAction, createActionBar } = WorkspaceKit.primitives;
   const box = el('div', 'league-team-detail wtd');
@@ -48,23 +70,7 @@ export function createTeamProfile(name, { openTeam = () => {}, openAgent = () =>
   let open = new Set(); // Agents whose profile is open
   const readers = new Map(); // Agent name -> its composition reader
 
-  /** The plus: an Agent already running joins, or a new one starts; with no lead, it leads. */
-  const plus = () => {
-    const lead = membersOfTeam(name).some((member) => member.team_lead);
-    const choices = lead ? sessionsAvailableToTeam(name) : [...membersOfTeam(name), ...sessionsAvailableToTeam(name)];
-    const NEW = ' new';
-    const pick = ask([{ fields: [{
-      key: 'agent', label: lead ? t('league.add_agent', 'Add an Agent') : t('league.choose_lead', 'Choose an Agent as team lead'),
-      blank: lead ? t('league.add_agent', 'Add an Agent') : t('league.choose_lead', 'Choose an Agent as team lead'),
-      options: [...choices.map((member) => ({ v: member.name, l: agentTitle(member) })), { v: NEW, l: t('league.add_lead_agent', 'Add new Agent') }],
-    }] }], { density: 'tight', onChange: async ({ agent }) => {
-      if (!agent) return;
-      if (agent === NEW) { onNewAgent(name, !lead); return; }
-      const joined = membersOfTeam(name).some((member) => member.name === agent) ? { ok: true } : await setTeamMembership(agent, name, true);
-      failed(joined.ok && !lead ? await setTeamLead(agent, name, true) : joined);
-    } });
-    return pick.el;
-  };
+  const plus = () => createAgentPicker(name, { onNewAgent, failed });
 
   const line = (item, { holder = true } = {}) => {
     const row = itemLine(item, { holder: holder ? holderName(item.holder) : '', stage: true });

@@ -57,8 +57,12 @@ Team's tab (Who is the only door that launches Team tabs). A bar pressed expands
 record and stance) and the items it holds; a board to its objective and its items by title,
 each a press to its description, status and holder, with one door, Open, which places the
 work-item surface in the other workspace (the Trello view until the What door exists); an
-item to its description, status and holder. The one drag is a board onto another Team
-(`whoMove`); nothing is added here. `who-rows.js` is the pure mapping, under test.
+item to its description, status and holder. The drags are a board onto another Team (`whoMove`:
+assign) and the Add block beside Under each Team onto a Team stone (`whoMove`: add), which
+opens a partial overlay (`partial-overlay.js`: a small window inside the surface under its
+anchor, Close, Escape or a press outside lifts it) holding the add form for what is showing:
+the draft form for a new board held by the Team, or the Agent picker the Team profile's plus
+uses (`createAgentPicker`, team-profile.js) — owner, 2026-10-07. `who-rows.js` is the pure mapping, under test.
 
 **The phalanx and its fork** (owner ruling, 2026-10-03). `phalanx.js` is the stone work
 surface as it was, its geometry untouched: Settings (Presets, Workspace Folders, Model

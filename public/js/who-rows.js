@@ -7,8 +7,7 @@ import { RONIN_HELPERS } from './roster-groups.js';
  * Ronin Helpers last. No stone for "no team": Unfiled is unfiled by definition and says
  * nothing (owner, 2026-10-03). A Team stone is its name, nothing else.
  * Under each Team, `under` chooses what stacks: 'boards' (a board's `items` are everything
- * under it, by stage) or 'agents' (`membersOf(name)` → [{ name, title, lead, now }], lead
- * first; `now` rides along so a change in what an Agent is doing repaints).
+ * under it, by stage) or 'agents' (`membersOf(name)` → [{ name, title, lead }], lead first).
  * A bar is its title and nothing else: the surface is a table of contents, saying where to
  * drill, not a reading of everything (owner, 2026-10-03).
  */
@@ -38,13 +37,14 @@ export function whoRows(reading = {}, { under = 'boards', membersOf = () => [] }
 
 /**
  * What dropping `moved` on `target` means on Who, or '' when nothing: a board onto another
- * Team gives it to that Team. That is the one move here (owner, 2026-10-04: Agents move on
+ * Team gives it to that Team; the Add block onto a Team adds to it (owner, 2026-10-07). Those are the moves here (owner, 2026-10-04: Agents move on
  * the Team roster, items on What). `moved` is { kind, id, team }: what is dragged and the
  * Team it was under; `target` is a row ({ kind, id }).
  */
 export function whoMove(moved, target) {
   if (!moved || !target) return '';
   if (target.kind === 'team' && moved.kind === 'board' && moved.team !== target.id) return 'assign';
+  if (target.kind === 'team' && moved.kind === 'add') return 'add';
   return '';
 }
 
