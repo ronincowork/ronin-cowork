@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { WORKSPACE_DESTINATIONS, WORKBENCH_APPEARANCES } from '../public/js/workspace-contract.js';
-import { collectionQuery } from '../public/js/collection-reading.js';
+import { readingKey } from '../public/js/store.js';
 
 const source = (file) => readFile(new URL(`../public/js/${file}`, import.meta.url), 'utf8');
 
@@ -17,10 +17,14 @@ test('the new tenants are destinations and appearances; the Next root is a desti
   assert.ok(!WORKBENCH_APPEARANCES.includes('next'), 'the root is a static page, not a workbench');
 });
 
-test('the same filter always makes the same query, roots repeated', () => {
-  assert.equal(collectionQuery(), '');
-  assert.equal(collectionQuery({ root: ['b', 'a'], team: 'surface', campaign: 'c 1' }), 'campaign=c%201&team=surface&root=b&root=a');
-  assert.equal(collectionQuery({ root: 'one', board: 'w3' }), 'board=w3&root=one');
+// The key is the server's spelling of the want (src/ws/events.ts wantedReading): resource, then
+// the filter's JSON in its field order, trimmed, empties dropped, roots deduped. A key spelt
+// otherwise would want a reading the server answers under a different name.
+test('a reading key is the server spelling of its filter', () => {
+  assert.equal(readingKey('collection'), 'collection:{}');
+  assert.equal(readingKey('collection', { root: ['b', 'a', 'b', ''], team: ' surface ', campaign: 'c 1', agent: 'x' }), 'collection:{"campaign":"c 1","team":"surface","root":["b","a"]}');
+  assert.equal(readingKey('collection', { board: 'w3', root: 'one' }), 'collection:{"board":"w3","root":["one"]}');
+  assert.equal(readingKey('work-items', { board: 'w1', team: 'surface' }), 'work-items:{"team":"surface","board":"w1"}');
 });
 
 test('the tenant frame is the one seat machinery; tenants are thin files over it and cowork-view is untouched', async () => {
@@ -42,7 +46,7 @@ test('the tenant frame is the one seat machinery; tenants are thin files over it
 
 test('only the reading seam calls the collection route among the new files', async () => {
   for (const file of ['tenant-frame.js', 'collections-view.js', 'team-view.js', 'team-commons-surface.js', 'board-view.js', 'workspace-view.js', 'reading-surface.js', 'next-home.js']) {
-    assert.doesNotMatch(await source(file), /\/api\/collection/, `${file} reads through collection-reading.js`);
+    assert.doesNotMatch(await source(file), /\/api\/collection|\/api\/work-items/, `${file} reads through collection-reading.js`);
   }
 });
 

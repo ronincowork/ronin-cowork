@@ -8,7 +8,7 @@
 import { t } from './lexicon.js';
 import { createSenmaida } from './senmaida.js';
 import { createThemeToggle } from './theme-toggle.js';
-import { readCollection } from './collection-reading.js';
+import { subscribeCollection } from './collection-reading.js';
 import { workbenchLaunchUrl } from './workspace.js';
 
 const el = (tag, cls, text) => {
@@ -55,7 +55,7 @@ export function createNextHome({ standing = [] } = {}) {
   root.append(frame);
   let ctx = null;
   let entered = false;
-  let reading = null;
+  let stop = null; // hearing the unfiltered reading while the root is on screen
 
   const go = (event, destination, param = '') => {
     if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
@@ -107,14 +107,10 @@ export function createNextHome({ standing = [] } = {}) {
       ctx = context;
       entered = true;
       paint();
-      reading?.abort();
-      const controller = new AbortController(); reading = controller;
-      void readCollection({}, { signal: controller.signal }).then((result) => {
-        if (!entered || controller.signal.aborted || !result.ok) return;
-        paint(result.data || {});
-      });
+      stop?.();
+      stop = subscribeCollection({}, (reading) => { if (entered) paint(reading || {}); });
     },
-    leave: () => { entered = false; reading?.abort(); },
-    destroy: () => { entered = false; reading?.abort(); ctx = null; },
+    leave: () => { entered = false; stop?.(); stop = null; },
+    destroy: () => { entered = false; stop?.(); stop = null; ctx = null; },
   };
 }

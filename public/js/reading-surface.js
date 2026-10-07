@@ -3,10 +3,10 @@
  * READING — a tenant's collection reading, raw, in its place. Rollout rule step 2 (samurai_lab
  * UI_STRUCTURE.md): put the surface in its place raw if need be; the formatting comes after.
  * Board and Workspace open with it until their rows are built, one card per hand-in. The
- * reading comes through the one seam (collection-reading.js); w12 makes it a store want.
+ * reading arrives by push through the one seam (collection-reading.js).
  */
 import { WorkspaceKit } from './workspace-kit.js';
-import { readCollection } from './collection-reading.js';
+import { readingKey, subscribeCollection } from './collection-reading.js';
 
 export const READING_TYPE = 'tenant.reading';
 
@@ -17,23 +17,24 @@ export function createReadingSurface({ label, filter, onRead = () => {} }) {
   const pre = document.createElement('pre');
   pre.className = 'cv-pre';
   surface.content.append(pre);
-  let reading = null;
-  const read = () => {
-    reading?.abort();
-    const controller = new AbortController();
-    reading = controller;
-    void readCollection(filter(), { signal: controller.signal }).then((result) => {
-      if (controller.signal.aborted) return;
-      if (!result.ok) { surface.setState('failed', result.message || ''); return; }
-      surface.setState();
-      pre.textContent = JSON.stringify(result.data, null, 2);
-      onRead(result.data || {});
+  let stop = null;
+  let heard = ''; // the key subscribed to, so a changed param resubscribes and the same one does not
+  const listen = () => {
+    const wanted = filter();
+    const key = readingKey('collection', wanted);
+    if (stop && key === heard) return;
+    stop?.();
+    heard = key;
+    stop = subscribeCollection(wanted, (reading) => {
+      pre.textContent = JSON.stringify(reading, null, 2);
+      onRead(reading || {});
     });
   };
+  const quiet = () => { stop?.(); stop = null; heard = ''; };
   return {
     el: surface.el,
-    show: read,
-    leave: () => reading?.abort(),
-    destroy: () => reading?.abort(),
+    show: listen,
+    leave: quiet,
+    destroy: quiet,
   };
 }
