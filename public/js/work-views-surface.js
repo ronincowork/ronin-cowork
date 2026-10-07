@@ -21,6 +21,7 @@ import { el } from './form-steps.js';
 import { PROJECT_STAGES } from './team-kanban.js';
 import { NEW_BOARD, draftOverlay, itemOverlay, listOverlay } from './work-details.js';
 import { request } from './request.js';
+import { carryItem } from './team-drag.js';
 import { boardStages, holderName } from './work-readings.js';
 import { t } from './lexicon.js';
 
@@ -80,10 +81,12 @@ export function createWorkViewsSurface({ holderTeam = () => '', openTeam = () =>
     const mark = who ? el('span', 'wv-holder', who.slice(0, 1).toUpperCase()) : null;
     if (mark) mark.title = who;
     const button = press('wv-item', [el('span', 'wv-label', item.title), mark].filter(Boolean), () => openItem(item));
-    if (view === 'board') {
-      button.draggable = true;
-      button.addEventListener('dragstart', (event) => event.dataTransfer?.setData('text/plain', item.id));
-    }
+    // Every card drags onto a tile as the item's reference; in Board view it also moves between lists.
+    button.draggable = true;
+    button.addEventListener('dragstart', (event) => {
+      carryItem(event.dataTransfer, item);
+      if (view === 'board') event.dataTransfer?.setData('text/plain', item.id);
+    });
     return button;
   };
   /** A group inside a list: a plain underlined subtitle, its items under it. */

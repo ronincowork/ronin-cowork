@@ -1,5 +1,6 @@
 /* Work Items: Project stones and their reading inside the standard Phalanx. */
 import { WorkspaceKit } from './workspace-kit.js';
+import { carryItem } from './team-drag.js';
 import { createPhalanx } from './phalanx.js';
 import { appendProjectReading } from './project-reading.js';
 import { PROJECT_STAGES, taskManagerScope, projectsForScope, kanbanAvailability, definedTargets, holderOf, moveMessage, waitingOn } from './team-kanban.js';
@@ -78,6 +79,7 @@ export function createWorkItemsSurface(options = {}) {
       events: {
         dragstart: (event) => {
           event.dataTransfer?.setData('text/plain', project.id);
+          carryItem(event.dataTransfer, project); // onto a tile: the item's reference
           const targets = definedTargets(project);
           for (const group of phalanx.el.querySelectorAll('[data-sws-group]')) {
             const defined = targets.has(group.dataset.swsGroup); group.classList.toggle('means', defined);

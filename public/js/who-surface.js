@@ -24,6 +24,7 @@ import { WorkspaceKit } from './workspace-kit.js';
 import { createCollectionPhalanx } from './collection-phalanx.js';
 import { membersOfTeam, subscribe } from './team-controller.js';
 import { subscribe as subscribeStore } from './store.js';
+import { carryItem } from './team-drag.js';
 import { itemsHeldBy, whoMove, whoRows } from './who-rows.js';
 import { agentTitle, currentWorkStep } from './team-members.js';
 import { stanceLabel } from './home.js';
@@ -118,6 +119,7 @@ export function createWhoSurface({ openTeam = () => {}, openBoard = () => {} } =
       const titles = el('div', 'cph-expand-items');
       for (const row of items) {
         const line = el('button', 'cph-expand-item'); line.type = 'button'; line.textContent = row.title;
+        line.draggable = true; line.addEventListener('dragstart', (event) => carryItem(event.dataTransfer, row)); // onto a tile: the item's reference
         line.setAttribute('aria-expanded', 'false');
         const more = el('div', 'cph-expand-more'); more.hidden = true;
         read1(more, [[t('collection.description', 'Description'), row.objective || t('collection.none', 'None')], [t('collection.status', 'Status'), stageLabel(row.stage)], [t('collection.holder', 'Holder'), holderName(row.holder) || t('collection.nobody', 'nobody')]]);
@@ -156,7 +158,7 @@ export function createWhoSurface({ openTeam = () => {}, openBoard = () => {} } =
     },
     items: (team.items || []).map((row) => row.kind !== 'board' ? row : {
       ...row, draggable: true,
-      events: { dragstart: (event) => { event.dataTransfer.setData(DRAG, JSON.stringify({ kind: 'board', id: row.id, team: team.id })); event.dataTransfer.effectAllowed = 'move'; } },
+      events: { dragstart: (event) => { event.dataTransfer.setData(DRAG, JSON.stringify({ kind: 'board', id: row.id, team: team.id })); carryItem(event.dataTransfer, { id: row.id, title: row.label }); event.dataTransfer.effectAllowed = 'move'; } },
     }),
   }));
 

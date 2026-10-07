@@ -1,11 +1,13 @@
 /* part of the ronin-cowork client — see js/README.md */
-import { DOC_MIME } from './team-drag.js';
+import { DOC_MIME, ITEM_MIME } from './team-drag.js';
 import { MENTION_MIME } from './tilementions.js';
 import { IS_TOUCH } from './state.js';
 
 export function installTextDrops(tile) {
   const body = tile.body;
-  const carried = (e) => (e.dataTransfer?.types.includes(MENTION_MIME) ? 'mention' : e.dataTransfer?.types.includes(DOC_MIME) ? 'doc' : '');
+  // A mention, a doc reference, or a work item's reference: each lands as text in the input.
+  const MIMES = { mention: MENTION_MIME, doc: DOC_MIME, item: ITEM_MIME };
+  const carried = (e) => Object.keys(MIMES).find((kind) => e.dataTransfer?.types.includes(MIMES[kind])) || '';
   const land = (text) => {
     // An unlocked tile that has not opened its composer yet opens it now: "my dialog box"
     // is where a reference goes, not the pending line.
@@ -35,7 +37,7 @@ export function installTextDrops(tile) {
   body.addEventListener('drop', (e) => {
     const kind = carried(e);
     if (!kind) return;
-    const data = e.dataTransfer.getData(kind === 'mention' ? MENTION_MIME : DOC_MIME);
+    const data = e.dataTransfer.getData(MIMES[kind]);
     delete body.dataset.dropText;
     if (!data) return;
     e.preventDefault();

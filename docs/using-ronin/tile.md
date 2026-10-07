@@ -40,7 +40,8 @@ see [Archived sessions](archived-sessions.md).
 
 Drag a file onto the tile, paste an image or file on it, or press **📎**: the file is saved
 in the session's `drop/` folder, listed on Docs, and its path typed into the Agent's input
-without Enter. See [Share a file with an Agent](share-a-file.md).
+without Enter. A work item dragged onto the tile types its reference (id and title) the
+same way. See [Share a file with an Agent](share-a-file.md).
 
 ## Output availability
 

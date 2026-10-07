@@ -23,5 +23,14 @@ The file's full path is typed into the Agent's input **without pressing Enter**.
 your prompt around it ("look at this screenshot and …") and send it yourself. Anything you
 had half typed stays, with the path added after it.
 
+## A work item, the same way
+
+Drag a work item onto a tile: a card on the Trello view, a stone on Work Items, or a board
+or item under a Team on Who. Its reference, the id and the title (`w6 "Work items surface:
+Status / Board toggle"`), is typed into the Agent's input without Enter, after anything you
+had typed, so you ask about it around it. Nothing is saved: it is a reference, not a file.
+Dragging an item within its own surface still moves it as before; only a drop on a tile
+types the reference.
+
 If the Agent is showing a question or a menu, the path is not typed, so it cannot choose
 an option by accident; the notice gives you the path to use once the question is answered.

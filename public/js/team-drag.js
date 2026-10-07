@@ -2,6 +2,12 @@
 const DRAG_TYPE = 'text/x-ronin-session';
 /** A doc dragged off the ▧ Docs list: its short reference (`dir/name`), for a composer. */
 export const DOC_MIME = 'text/x-ronin-doc';
+/** A work item dragged off a board, a stone or a bar: its reference for an Agent's input,
+ *  the id and the title (`w6 "Work items surface: Status / Board toggle"`). A tile takes it
+ *  like a dropped doc (js/tiledroptext.js): typed after any draft, no Enter (owner, 2026-10-07). */
+export const ITEM_MIME = 'text/x-ronin-item';
+export const itemReference = (item) => `${item.id} ${JSON.stringify(String(item.title || '').trim())}`;
+export function carryItem(dataTransfer, item) { dataTransfer?.setData(ITEM_MIME, itemReference(item)); }
 
 /** Let `node` accept a dragged session; `seatOf()` names the workspace it stands for and
  *  `onDrop(name, id)` is what a landing means (team-view.js arranges it). */
