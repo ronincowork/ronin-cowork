@@ -107,6 +107,21 @@
   .cph-expand-more { display: grid; gap: var(--space-1); padding: var(--space-1) var(--space-2) var(--space-3) var(--space-5); }
   .cph-expand-more[hidden] { display: none; }
   .cph-expand > .wk-action { justify-self: start; margin-top: var(--space-2); }
+  /* The question row: the ask and the Add block side by side, the block drawn as a question
+     stone (same box, dashed, kaki) so the row reads as one; it drags, it does not open. */
+  .who-questions { display: flex; flex-wrap: wrap; align-items: flex-start; gap: var(--space-7) var(--space-8); }
+  .who-add { --ask-w: 140px; --ask-h: 40px; position: relative; display: flex; flex: 0 0 var(--ask-w); flex-direction: column; justify-content: space-between; box-sizing: border-box; width: var(--ask-w); height: var(--ask-h); border: var(--edge) dashed var(--line-2); border-left: var(--edge-2) solid var(--kaki); border-radius: var(--radius-xs); background: transparent; padding: var(--space-3) var(--space-4); cursor: grab; font-size: var(--form-input); }
+  .who-add .ask-label { font-size: var(--text-2); line-height: 1; }
+  .who-add .ask-reading { display: block; color: var(--kaki); font-weight: 600; line-height: 1.1; }
+  .who-add:hover { border-color: var(--kaki); }
+  .who-add:active { cursor: grabbing; }
+  /* The partial overlay: a small window inside the surface, under its anchor. */
+  .cph-host { position: relative; }
+  .partial-overlay { position: absolute; z-index: 3; box-sizing: border-box; width: min(24rem, 100%); border: var(--edge) solid var(--line-2); border-radius: var(--radius-sm); background: var(--panel); box-shadow: var(--shadow-sheet); padding: var(--space-5) var(--space-6) var(--space-6); }
+  .partial-overlay-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); margin-bottom: var(--space-4); }
+  .partial-overlay-title { font-size: var(--text-5); font-weight: 600; color: var(--fg-strong); }
+  .partial-overlay-body { display: grid; gap: var(--space-4); }
+  .partial-overlay-body .league-team-detail-head { display: none; }
   /* The thin open: a Team pressed — name, Launch, objective, two short lists. */
   .who-open { display: grid; gap: var(--space-8); max-width: 36rem; }
   .who-open-head { display: flex; align-items: center; gap: var(--space-5); }

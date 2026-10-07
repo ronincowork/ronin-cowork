@@ -15,7 +15,9 @@
  *                 a board — its objective and its items by title, each a press to its own
  *                 description, status and holder, and one door, Open, which places the
  *                 work-item surface beside this one; an item — description, status, holder.
- *   Drag          a board onto another Team. Nothing else moves; nothing is added here.
+ *   Drag          a board onto another Team. The Add block beside Under each Team, dragged onto
+ *                 a Team stone, opens a partial overlay with the add form for what is showing
+ *                 (a board, or an Agent) — owner, 2026-10-07.
  *
  * Reading: GET /api/collection (src/collection-read.ts), one request, every chosen workspace
  * as ?root=. `whoRows` (who-rows.js) is the pure mapping.
@@ -33,14 +35,18 @@ import { stageLabel } from './team-kanban.js';
 import { ask } from './ask.js';
 import { request } from './request.js';
 import { t } from './lexicon.js';
+import { openPartialOverlay } from './partial-overlay.js';
+import { createAgentPicker } from './team-profile.js';
+import { NEW_BOARD, draftItem } from './work-details.js';
 
 export const WHO_TYPE = 'collection.who';
 const el = (tag, cls = '', text = '') => { const out = document.createElement(tag); if (cls) out.className = cls; if (text) out.textContent = text; return out; };
 
 /** `openTeam(name)` opens the Team's tab; `openBoard(board)` places the work-item surface beside this one. */
-export function createWhoSurface({ openTeam = () => {}, openBoard = () => {} } = {}) {
+export function createWhoSurface({ openTeam = () => {}, openBoard = () => {}, onNewAgent = () => {} } = {}) {
   const { createSurface, createAction } = WorkspaceKit.primitives;
   const surface = createSurface({ label: t('collection.who', 'Who: Your Teams'), className: 'who-surface' });
+  const DRAG = 'application/x-ronin-who'; // what a drag on this surface carries
 
   // The two questions: the workspaces (any number; none is all), and what stacks under each Team.
   let chosen = [];
@@ -57,9 +63,33 @@ export function createWhoSurface({ openTeam = () => {}, openBoard = () => {} } =
     if (rootsMoved) void read(); else if (last) paint(last);
   } });
 
+  // THE ADD BLOCK (owner, 2026-10-07): beside Under each Team, drawn as the questions are.
+  // Dragged onto a Team stone it opens a partial overlay over the stone with the add form for
+  // what is showing: a board (the draft form, a new board held by the Team) or an Agent (the
+  // picker the Team profile's plus uses).
+  const add = el('div', 'who-add'); add.draggable = true;
+  add.setAttribute('role', 'button'); add.tabIndex = 0;
+  add.append(el('small', 'ask-label', t('collection.add_hint', 'Drag onto a Team')), el('b', 'ask-reading', t('collection.add', 'Add +')));
+  add.addEventListener('dragstart', (event) => { event.dataTransfer.setData(DRAG, JSON.stringify({ kind: 'add' })); event.dataTransfer.effectAllowed = 'copy'; });
+  const questions = el('div', 'who-questions'); questions.append(filter.el, add);
+  const addTo = (team, anchor) => {
+    const name = String(team.label || team.id);
+    openPartialOverlay(surface.content, { anchor,
+      title: under === 'agents' ? t('collection.add_agent_to', 'Add an Agent to {team}', { team: name }) : t('collection.add_board_to', 'New board for {team}', { team: name }),
+      draw: (body, { lift }) => {
+        if (under === 'agents') { body.append(createAgentPicker(team.id, { onNewAgent, failed: (result) => { if (!result.ok) surface.setState('failed', result.message || ''); }, joined: () => { lift(); void read(); } })); return; }
+        draftItem(body, { heading: '', parent: NEW_BOARD, team: team.id, save: async (fields) => {
+          const made = await request('/api/work-items', { method: 'POST', json: fields });
+          if (!made.ok) return made.message;
+          lift(); void read(); return '';
+        } });
+      } });
+  };
+
   let rows = new Map(); // session name -> the store's home row (stance, work record)
   const nowOf = (name) => { const row = rows.get(name) || {}; const step = currentWorkStep(row.tegami); return [step.text, stanceLabel(row.stance)].filter(Boolean).join(' · '); };
-  const members = (name) => membersOfTeam(name).map((member) => ({ name: member.name, title: agentTitle(member), lead: Boolean(member.team_lead), now: nowOf(member.name) }));
+  // `now` is read when a bar expands, never carried in the rows: a status tick must not repaint the stones.
+  const members = (name) => membersOfTeam(name).map((member) => ({ name: member.name, title: agentTitle(member), lead: Boolean(member.team_lead) }));
 
   /* ---------- the thin open: a Team pressed ----------
    * Name with Launch beside it, the objective, then its Agents and its boards as the same
@@ -104,7 +134,7 @@ export function createWhoSurface({ openTeam = () => {}, openBoard = () => {} } =
   const read1 = (host, lines) => { for (const [label, text] of lines) { if (!text) continue; const line = el('div', 'cph-expand-line'); line.append(el('b', '', label), document.createTextNode(text)); host.append(line); } };
   const expand = (item, host) => {
     if (item.kind === 'agent') {
-      const member = members(item.team).find((row) => row.name === item.agent.name) || item.agent;
+      const member = { ...(members(item.team).find((row) => row.name === item.agent.name) || item.agent), now: nowOf(item.agent.name) };
       const held = itemsHeldBy(last?.boards?.filter((board) => board.teams.includes(item.team)) || [], member.name);
       read1(host, [
         [t('collection.role', 'Role'), member.lead ? t('league.team_lead', 'Team Lead') : t('league.agent', 'Agent')],
@@ -137,10 +167,9 @@ export function createWhoSurface({ openTeam = () => {}, openBoard = () => {} } =
     }
   };
   const phalanx = createCollectionPhalanx({ className: 'who-phalanx', items: [], renderDetail, expand });
-  phalanx.mount(surface.content, { before: [filter.el] });
+  phalanx.mount(surface.content, { before: [questions] });
 
-  /* ---------- the one drag: a board onto another Team ---------- */
-  const DRAG = 'application/x-ronin-who';
+  /* ---------- the drags: a board onto another Team; the Add block onto a Team ---------- */
   const carried = (event) => { try { return JSON.parse(event.dataTransfer?.getData(DRAG) || 'null'); } catch { return null; } };
   const wire = (teams) => teams.map((team) => ({
     ...team,
@@ -150,7 +179,9 @@ export function createWhoSurface({ openTeam = () => {}, openBoard = () => {} } =
       drop: async (event) => {
         event.preventDefault(); event.stopPropagation(); event.currentTarget.classList.remove('cph-over');
         const moved = carried(event);
-        if (whoMove(moved, team) !== 'assign') return;
+        const move = whoMove(moved, team);
+        if (move === 'add') { addTo(team, event.currentTarget); return; }
+        if (move !== 'assign') return;
         const result = await request(`/api/work-items/${encodeURIComponent(moved.id)}/assign`, { method: 'POST', json: { team: team.id } });
         if (!result.ok) { surface.setState('failed', result.message || ''); return; }
         void read();
@@ -189,7 +220,7 @@ export function createWhoSurface({ openTeam = () => {}, openBoard = () => {} } =
   }
   let entered = false;
   const stopTeams = subscribe(() => { if (entered) void read(); });
-  const stopRows = subscribeStore('home', (list) => { rows = new Map((list || []).map((row) => [row.name, row])); if (entered && last) paint(last); });
+  const stopRows = subscribeStore('home', (list) => { rows = new Map((list || []).map((row) => [row.name, row])); });
   return {
     el: surface.el,
     show: () => { entered = true; void read(); },

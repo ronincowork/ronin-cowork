@@ -295,7 +295,7 @@ export function createCoworkView(options = {}) {
     }),
     // Who: one per seat. Launch opens the Team's tab; a board's Open places the work-item
     // surface beside it (the Trello view until the What door exists).
-    who: (id) => { whoBySeat[id] ||= createWhoSurface({ openTeam, openBoard: () => bench.place(WB_TYPES.workViews, oppositeSeat(id)) }); return whoBySeat[id]; },
+    who: (id) => { whoBySeat[id] ||= createWhoSurface({ openTeam, openBoard: () => bench.place(WB_TYPES.workViews, oppositeSeat(id)), onNewAgent: (team, lead) => bench.place(WB_TYPES.newAgent, oppositeSeat(id), { team, ...(lead ? { teamLead: true } : {}) }) }); return whoBySeat[id]; },
     workViews: () => createWorkViewsSurface({
       holderTeam: holderTeamOf, openTeam: (name) => openWorkspaceTab('team', name), team: campaign || team === UNASSIGNED ? '' : team,
       leadOf: (name) => membersOfTeam(name).find((member) => member.team_lead)?.name || '',

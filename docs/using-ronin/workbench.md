@@ -67,8 +67,9 @@ Teams working in the folders you pick, one or several. Press a Team for a short 
 the stones, its Agents and its boards, and **Launch** to open the Team's tab. Press a bar for
 a short read under it: an Agent's role and what it is doing now, a board's objective and
 items, an item's description and status. **Open** on a board places the work-item surface in
-the other workspace. Drag a board onto another Team to give it to that Team. Adding Agents
-and items, and changing them, happens on the Team's own workbench.
+the other workspace. Drag a board onto another Team to give it to that Team. Drag **Add +**, beside Under each
+Team, onto a Team to add a board or an Agent to it, whichever is showing; a small window
+opens over the Team with the form. Changing them happens on the Team's own workbench.
 
 Adding another tenant or profile adds no layout implementation. Adding another surface
 registers a per-workspace factory in the shared library; any profile may name that type.
