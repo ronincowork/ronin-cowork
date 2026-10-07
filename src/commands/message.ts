@@ -1,6 +1,6 @@
 import { enqueueMessage, type MessageSource } from '../message-queue.js';
 import { messageSender } from '../message-sender.js';
-import { isValidName } from '../tmux.js';
+import { isValidName, listSessions } from '../tmux.js';
 
 const args = process.argv.slice(2);
 const sources = new Set<MessageSource>(['tell', 'wipeboard_notice', 'owner', 'house', 'jikan']);
@@ -17,5 +17,9 @@ if (!isValidName(target) || !text || (explicitHouseFrom && !isValidName(houseFro
 const from = source === 'tell'
   ? await messageSender()
   : houseFrom ? `@${houseFrom}` : undefined;
+if (!(await listSessions()).some((session) => session.name === target)) {
+  console.log(`NO-SESSION: send failed, no session named "${target}"; nothing was queued.`);
+  process.exit(3);
+}
 const item = await enqueueMessage(target, text, source, from);
 console.log(`QUEUED for '${target}' (message ${item.id}).`);
