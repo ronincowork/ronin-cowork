@@ -53,6 +53,8 @@ in `src/tmux-client.ts` is the server's single door to tmux:
   | `{t:'memory', reading}` | the machine service's reading of memory, swap, load, cores and scope, taken once a minute and sent when it moved; `{off:true}` once when watching is off | held, sent |
   | `{t:'wipeboard', board, …}` | when a file under that board's folder changes and the board (last 100 posts, `more`) moved | answers `{t:'want', resource:'wipeboard', board}` |
   | `{t:'jikan', team, jobs}` | when that Team's jobs file changes and its jobs moved, and as `team:'*'` for every Team | answers `{t:'want', resource:'jikan', team}` |
+  | `{t:'collection', filter, teams, boards, roots}` | `collectionReading(filter)` whole, to each connection holding that filter, when an item, a Team roster, the workspace folder catalog or the session list changes and the reading moved | answers `{t:'want', resource:'collection', campaign?, team?, board?, root?[]}`; the filter is kept until the connection closes |
+  | `{t:'work-items', filter, items, …}` | the answer of `GET /api/work-items` for the filter (a Team's reading for `team`, one board's root and items for `board`, every item otherwise), on the same inputs, when it moved | answers `{t:'want', resource:'work-items', team?, board?}`; kept as above |
   | `{t:'github-setup', github}` | on the tick while a GitHub or git setup session is attached, when `GET /api/setup/github`'s answer moved, and once after the last one closes | — |
   | `{t:'services-setup', services}` | `{ registration, installed, activation }` after each write to registration, Services, Campaigns or machine settings, when the install watcher ends, and when Ronin HQ confirms the emailed link (asked every 15 s while a request waits and a browser is connected) | — |
   | `{t:'gbrain', snapshot}` | `GET /api/gbrain`'s answer while an install or uninstall runs, and once when it ends | — |
@@ -61,7 +63,9 @@ in `src/tmux-client.ts` is the server's single door to tmux:
 
   The store folders for boards, cron jobs and the message queue are the whole truth, and
   every writer (a route, a CLI child, the server) changes a file in them: the server
-  watches each folder (`watchStore`) and pushes the resource the file names.
+  watches each folder (`watchStore`) and pushes the resource the file names. The work item,
+  Team roster and workspace folder catalog stores are watched the same way for the held
+  readings; a filtered reading reaches only the connections that want that filter.
 
 **The rule:** no `execFile('tmux', …)` or `spawn('tmux', …)` in `src/` outside the client
 and the pty attach paths (`src/ws/pty.ts`, `src/viewer.ts`). `tests/tmux.test.ts` refuses

@@ -8,18 +8,20 @@
  *                    Agent's Team tags; the Unfiled board has no Team
  *   board → folders  through its Teams; the Unfiled board has none
  *
- * Filters, all optional, narrow together: team (its folders and boards), root (one folder or
+ * The campaign scopes it: Teams and folders whose campaign_id resolves to it, boards with no
+ * Team or one of its Teams; absent, the one machine campaign. Filters, all optional, narrow together: team (its folders and boards), root (one folder or
  * several, their union: the Teams in them, the boards they hold, each once), board (its Teams and folders), agent (boards narrowed to
  * the items that Agent holds, Teams to its Teams), stage (items at that stage). Worktrees are
  * not part of it.
  */
+import { campaignResolver, machineCampaignId } from './campaign-scope.js';
 import { peekProjectRoots } from './project-roots.js';
 import { listTeamRosters } from './team-rosters.js';
 import { listSessions } from './tmux.js';
 import { ITEM_STAGES } from './work-items.js';
 import { boardReadings, type HeldItem } from './work-items-read.js';
 
-export interface CollectionFilters { team?: string; root?: string[]; board?: string; agent?: string; stage?: string }
+export interface CollectionFilters { campaign?: string; team?: string; root?: string[]; board?: string; agent?: string; stage?: string }
 
 export interface CollectionTeam {
   name: string; title: string; objective: string; lead: string;
@@ -32,16 +34,24 @@ export interface CollectionReading { teams: CollectionTeam[]; boards: Collection
 const unique = (values: string[]): string[] => [...new Set(values.filter(Boolean))];
 
 export async function collectionReading(filters: CollectionFilters = {}): Promise<CollectionReading> {
-  const [rosters, sessions, folders] = await Promise.all([listTeamRosters(), listSessions(), peekProjectRoots()]);
-  const live = rosters.filter((roster) => roster.state !== 'archived');
+  const [rosters, sessions, allFolders, resolve, machine] = await Promise.all([listTeamRosters(), listSessions(), peekProjectRoots(), campaignResolver(), machineCampaignId()]);
+  const campaign = filters.campaign || machine;
+  const inCampaign = (stored: string) => !campaign || resolve(stored) === campaign;
+  const unarchived = rosters.filter((roster) => roster.state !== 'archived');
+  const live = unarchived.filter((roster) => inCampaign(roster.campaign_id));
   const teamNames = new Set(live.map((roster) => roster.name));
+  const folders = allFolders.filter((folder) => inCampaign(folder.campaign_id));
   const folderNames = new Set(folders.filter((folder) => !folder.archived).map((folder) => folder.name));
   const foldersOf = new Map(live.map((roster) => [roster.name, unique([roster.project_root, ...roster.repos]).filter((name) => folderNames.has(name))]));
 
-  // Every board with its Teams (the one rule) and its folders through them.
-  let boards = (await boardReadings(sessions, teamNames)).map((reading) => ({
-    ...reading, roots: unique(reading.teams.flatMap((team) => foldersOf.get(team) ?? [])),
-  }));
+  // Every board with its Teams (the one rule, over every live Team so a board held in another
+  // campaign stays out) and its folders through them.
+  let boards = (await boardReadings(sessions, new Set(unarchived.map((roster) => roster.name))))
+    .filter((reading) => !reading.teams.length || reading.teams.some((team) => teamNames.has(team)))
+    .map((reading) => {
+      const teams = reading.teams.filter((team) => teamNames.has(team));
+      return { ...reading, teams, roots: unique(teams.flatMap((team) => foldersOf.get(team) ?? [])) };
+    });
   let teams = live;
   const { team, board, agent, stage } = filters;
   const root = unique(filters.root ?? []);

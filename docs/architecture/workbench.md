@@ -152,7 +152,10 @@ Three layers:
 reading (`src/collection-read.ts`) narrowed by campaign, team, board or root. The browser
 requests, filters and joins nothing beyond `collection-reading.js`, the one seam, which
 reads `GET /api/collection` once on open today and becomes a store want under w12
-"Readings by push". No other new file may name that route (`tests/tenant-frame.test.js`).
+"Readings by push". The server half stands: `{t:'want', resource:'collection', campaign?,
+team?, board?, root?[]}` and `{t:'want', resource:'work-items', team?, board?}` on `/events`
+(the table in [the tmux connection](tmux-connection.md)); an absent campaign is the one
+machine campaign, and Teams, folders and boards outside it are left out. No other new file may name that route (`tests/tenant-frame.test.js`).
 
 **Collections** (`collections`, param the campaign; the one machine campaign when absent):
 first open is Who in workspace 1 and workspace 2 dismissed. Its profile is Who, the Trello

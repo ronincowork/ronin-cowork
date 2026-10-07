@@ -6,6 +6,7 @@
  *             (the board → Teams rule, boardReadings), plus the Unfiled board, each whole.
  * unassigned: the Unfiled board's items that nobody holds.
  * every:      every item, each with the holder it is found on ('' when nobody holds it).
+ * board:      one board's root and every item under it (boardReadings), each with its holder.
  */
 import { readLetterHolds } from './tegami.js';
 import { sessionKey } from './session-dir.js';
@@ -141,4 +142,15 @@ export async function everyItemReading(): Promise<HeldItem[]> {
     const holder = held.get(item.id);
     return { ...item, holder: holder ? holderLabel(holder) : '' };
   });
+}
+
+/** The work-items want on /events (src/ws/events.ts): a Team's reading, one board's items, or
+ * every item, as GET /api/work-items answers them; null when the Team or board is not there. */
+export async function wantedItemsReading(filter: { team?: string; board?: string }): Promise<Record<string, unknown> | null> {
+  if (filter.team) return teamReading(filter.team).then((reading) => ({ ...reading }), () => null);
+  if (filter.board) {
+    const reading = (await boardReadings()).find((entry) => entry.board.id === filter.board);
+    return reading ? { items: [reading.board, ...reading.items] } : null;
+  }
+  return { items: await everyItemReading() };
 }
