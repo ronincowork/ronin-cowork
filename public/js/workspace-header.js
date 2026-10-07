@@ -42,8 +42,10 @@ export function installWorkspaceHeader(workspace) {
       coworkers.href = workbenchLaunchUrl({ destination: 'cowork', mode: 'overlay' });
     }
     if (place) {
-      const teamPage = active?.id === 'team' && active.param;
-      const editable = teamPage || active?.id === 'cowork' || active?.id === 'desk';
+      // The island is the editable tab name for any view that offers one (`tabName`): the
+      // old Team, Teams and Desk, and every tenant on the tenant frame. A Team page with no
+      // Team named offers nothing to name.
+      const editable = Boolean(active?.view?.tabName) && !(active?.id === 'team' && !active.param);
       if (editable) {
         // ViewHost has already seated the existing tab-name input here. Leave it intact:
         // its stored value names this workbench/tab and cannot rename the Team or Agent.

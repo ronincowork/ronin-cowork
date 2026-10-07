@@ -3,8 +3,8 @@
  * TEAM — the thin tenant on the tenant frame (js/tenant-frame.js), at `team-next` while the
  * old Team (cowork-view.js) stands; it takes the `team` word when it replaces it. The route
  * names the Team. Cards, as today's Team workbench has them: the Agents' tiles with the lead
- * kept hot, the Commons, Team Chart, the Trello view, the Team profile, New Agent, and the
- * composition reader the roster opens. Not yet here: Mika's help, the arranger (`edges
+ * kept hot, the Commons, Team Chart, Work (the Trello view and Work Items behind one toggle),
+ * the Team profile, New Agent, and the composition reader the roster opens. Not yet here: Mika's help, the arranger (`edges
  * page`), Work Items and Task Manager (they retire into the board). Each change of row in
  * UI_STRUCTURE.md is its own hand-in from here.
  */
@@ -12,6 +12,8 @@ import { createTenantFrame } from './tenant-frame.js';
 import { createTeamCommonsSurface, readingsOf } from './team-commons-surface.js';
 import { createTeamChartSurface } from './team-chart-surface.js';
 import { createWorkViewsSurface } from './work-views-surface.js';
+import { createWorkItemsSurface } from './work-items-surface.js';
+import { createWorkSurfaces } from './work-surfaces.js';
 import { createTeamProfile } from './team-profile.js';
 import { itemOverlay } from './work-details.js';
 import { createNewAgentView } from './new-agent.js';
@@ -66,6 +68,7 @@ export function createTeamView() {
   const commonsBySeat = {};
   const newAgentBySeat = {};
   const profiles = new Map();
+  const workBySeat = {};
   return createTenantFrame({
     key: 'team-next',
     profile: WORKBENCH_PROFILES.teamNext,
@@ -107,7 +110,17 @@ export function createTeamView() {
           onOpen: (member) => openAgent(member.name),
           onAddLead: (name) => newAgentAt(frame.opposite(seat), { team: name, teamLead: true }),
         }),
-        workViews: () => createWorkViewsSurface({ holderTeam, openTeam, team: team(), leadOf }),
+        work: (seat) => {
+          workBySeat[seat] ||= createWorkSurfaces({
+            trello: () => createWorkViewsSurface({ holderTeam, openTeam, team: team(), leadOf }),
+            workItems: () => createWorkItemsSurface({
+              scope: () => ({ kind: 'team', team: team() }),
+              lead: (project) => leadOf(project.team),
+              openOwner: openAgent,
+            }),
+          });
+          return workBySeat[seat];
+        },
         composition: (detail = {}) => createAgentCompositionSurface(detail.key),
         // ONE TEAM PROFILE (js/team-profile.js) in a whole workspace; an item line opens its overlay over it.
         team: (seat, detail = {}) => {
@@ -167,6 +180,7 @@ export function createTeamView() {
       for (const commons of Object.values(commonsBySeat)) commons.destroy();
       for (const view of Object.values(newAgentBySeat)) view.destroy();
       for (const profile of profiles.values()) profile.destroy?.();
+      for (const work of Object.values(workBySeat)) work.destroy();
     },
   });
 }

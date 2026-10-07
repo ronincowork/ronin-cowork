@@ -15,12 +15,13 @@ import { WORK_ITEMS_TYPE } from './work-items-surface.js';
 import { WORK_VIEWS_TYPE } from './work-views-surface.js';
 import { WHO_TYPE } from './who-surface.js';
 import { READING_TYPE } from './reading-surface.js';
+import { WORK_SURFACES_TYPE } from './work-surfaces.js';
 
 export const WORKBENCH_PROFILES = Object.freeze({ campaign: 'campaign', launch: 'launch', desk: 'desk', cowork: 'cowork', team: 'team', agent: 'agent', collections: 'collections', board: 'board', workspace: 'workspace', teamNext: 'team-next' });
 export const WORKBENCH_TYPES = Object.freeze({
   document: 'document', terminal: 'session.terminal', behaviours: BEHAVIOUR_SURFACE_TYPE, feedback: FEEDBACK_TYPE,
   launchTeam: 'launch.team', launchAgent: 'launch.agent', launchHelp: 'launch.help',
-  commons: 'team.commons', teamChart: TEAM_CHART_TYPE, kanban: 'team.kanban', workItems: WORK_ITEMS_TYPE, workViews: WORK_VIEWS_TYPE, who: WHO_TYPE, reading: READING_TYPE, taskStatus: 'task-manager.status', taskProject: 'task-manager.project', cron: 'cowork.cron-jobs',
+  commons: 'team.commons', teamChart: TEAM_CHART_TYPE, kanban: 'team.kanban', workItems: WORK_ITEMS_TYPE, workViews: WORK_VIEWS_TYPE, who: WHO_TYPE, reading: READING_TYPE, teamWork: WORK_SURFACES_TYPE, taskStatus: 'task-manager.status', taskProject: 'task-manager.project', cron: 'cowork.cron-jobs',
   roster: 'cowork.team-roster', sessionRoster: 'cowork.session-roster', newTeamForm: 'cowork.new-team-form', newAgent: 'session.new-agent',
   team: 'team.profile', teamProfile: 'team-next.profile', archives: 'cowork.archives',
   agentDocuments: 'agent.documents', agentTeams: 'agent.team-membership', agentTasks: 'agent.task-manager', agentComposition: AGENT_COMPOSITION_TYPE,
@@ -49,6 +50,8 @@ export function registerWorkbenchCatalog() {
   add({ type: WORKBENCH_TYPES.workViews, header: 'surface', className: 'wk-selector-utility', label: () => t('work_views.title', 'Trello view'), summary: () => t('work_views.summary', 'Every board\'s items by status or by board'), create: ({ environment }) => environment.workViews() });
   // Who: the Teams door of the collections workbench; What and Where follow on the same stones.
   add({ type: WORKBENCH_TYPES.who, header: 'surface', className: 'wk-selector-utility', label: () => t('collection.who', 'Who: Your Teams'), summary: () => t('collection.who_summary', 'Every Team with its boards and items, by workspace'), create: ({ workspace, environment }) => environment.who(workspace) });
+  // Work on the Team tenant: one card, two layers behind a toggle (the Trello view and Work Items as they are).
+  add({ type: WORKBENCH_TYPES.teamWork, header: 'surface', className: 'wk-selector-utility', label: () => t('team.work_card', 'Work'), summary: () => t('team.work_summary', 'Trello view and Work Items, one at a time'), create: ({ workspace, environment }) => environment.work(workspace) });
   add({ type: WORKBENCH_TYPES.reading, header: 'surface', className: 'wk-selector-utility', label: () => t('tenant.reading', 'Reading'), summary: () => t('tenant.reading_summary', 'The record, raw, until its surfaces are placed'), create: ({ workspace, environment }) => environment.reading(workspace) });
   add({ type: WORKBENCH_TYPES.taskStatus, header: 'surface', discover: () => [], create: ({ workspace, detail, environment }) => environment.taskStatus(workspace, detail) });
   add({ type: WORKBENCH_TYPES.taskProject, header: 'surface', discover: () => [], create: ({ workspace, detail, environment }) => environment.taskProject(workspace, detail) });
@@ -83,7 +86,7 @@ export function registerWorkbenchCatalog() {
   // Trello view is placeable by a board's Open but not offered (collections-view.js filters it).
   profiles.define(WORKBENCH_PROFILES.collections, [WORKBENCH_TYPES.who, WORKBENCH_TYPES.workViews, WORKBENCH_TYPES.document, FEEDBACK_TYPE]);
   // Board and Workspace stand raw: the tenant's reading in its place; their rows come one card per hand-in.
-  profiles.define(WORKBENCH_PROFILES.teamNext, [WORKBENCH_TYPES.commons, WORKBENCH_TYPES.teamChart, WORKBENCH_TYPES.workViews, WORKBENCH_TYPES.teamProfile, WORKBENCH_TYPES.terminal, WORKBENCH_TYPES.agentComposition, WORKBENCH_TYPES.newAgent, BEHAVIOUR_SURFACE_TYPE, FEEDBACK_TYPE]);
+  profiles.define(WORKBENCH_PROFILES.teamNext, [WORKBENCH_TYPES.commons, WORKBENCH_TYPES.teamChart, WORKBENCH_TYPES.teamWork, WORKBENCH_TYPES.teamProfile, WORKBENCH_TYPES.terminal, WORKBENCH_TYPES.agentComposition, WORKBENCH_TYPES.newAgent, BEHAVIOUR_SURFACE_TYPE, FEEDBACK_TYPE]);
   profiles.define(WORKBENCH_PROFILES.board, [WORKBENCH_TYPES.reading, WORKBENCH_TYPES.document, FEEDBACK_TYPE]);
   profiles.define(WORKBENCH_PROFILES.workspace, [WORKBENCH_TYPES.reading, WORKBENCH_TYPES.document, FEEDBACK_TYPE]);
   profiles.define(WORKBENCH_PROFILES.team, [WORKBENCH_TYPES.commons, WORKBENCH_TYPES.teamChart, WORKBENCH_TYPES.workItems, WORKBENCH_TYPES.workViews, WORKBENCH_TYPES.taskStatus, WORKBENCH_TYPES.taskProject, WORKBENCH_TYPES.terminal, WORKBENCH_TYPES.agentComposition, WORKBENCH_TYPES.newAgent, BEHAVIOUR_SURFACE_TYPE, FEEDBACK_TYPE]);

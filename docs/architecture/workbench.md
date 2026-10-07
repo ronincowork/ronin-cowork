@@ -162,10 +162,13 @@ the old Team tab until `team-next` stands.
 **Team** (`team-next`, param the Team; it takes the `team` word when it replaces the old
 Team) is `team-view.js` over the frame: the members' tiles with the lead pinned hot and
 seated on a first visit, the Commons as one self-painting surface (`team-commons-surface.js`,
-lifted from `cowork-view.js`), Team Chart, the Trello view, the Team profile as a card, New
-Agent, and the composition reader the roster opens. Not yet on it: Mika's help, the
-arranger (`edges page`), Work Items and Task Manager, which retire into the board. Who's
-Launch opens this Team.
+lifted from `cowork-view.js`), Team Chart, **Work** (`work-surfaces.js`: one card whose
+surface toggles between the Trello view and the Work Items board, each the existing surface
+unchanged; owner, 2026-10-07), the Team profile as a card, New Agent, and the composition
+reader the roster opens. Not yet on it: Mika's help, the arranger (`edges page`), Task
+Manager. Who's Launch opens this Team. The bar's island is the editable tab name for any
+view that offers `tabName`, so every tenant on the frame has it as the old Team does
+(`workspace-header.js`).
 
 **Board** (`board`, param the board's item id) and **Workspace** (`workspace`, param the
 folder name) stand raw: one card, Reading (`reading-surface.js`, type `tenant.reading`),

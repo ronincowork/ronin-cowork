@@ -54,3 +54,17 @@ test('the Team profile card belongs to team-next only', async () => {
   assert.match(catalog, /WORKBENCH_PROFILES\.teamNext, \[[^\n]*WORKBENCH_TYPES\.teamProfile/);
   assert.doesNotMatch(catalog, /WORKBENCH_PROFILES\.(cowork|desk|team|agent), \[[^\n]*teamProfile/);
 });
+
+// Owner 2026-10-07: on team-next the Trello view and Work Items are one card, Work, with a
+// toggle between the two existing surfaces; and the island is the tab name for any view
+// that offers one, so the tenants on the frame have it as the old Team does.
+test('team-next offers Work as one card over both existing surfaces, and the island follows tabName', async () => {
+  const [catalog, teamView, work, header] = await Promise.all([source('workbench-catalog.js'), source('team-view.js'), source('work-surfaces.js'), source('workspace-header.js')]);
+  assert.match(catalog, /WORKBENCH_PROFILES\.teamNext, \[[^\n]*WORKBENCH_TYPES\.teamWork/);
+  assert.doesNotMatch(catalog, /WORKBENCH_PROFILES\.teamNext, \[[^\n]*WORKBENCH_TYPES\.workViews/);
+  assert.match(teamView, /createWorkSurfaces\(\{/);
+  assert.match(teamView, /trello: \(\) => createWorkViewsSurface\(/);
+  assert.match(teamView, /workItems: \(\) => createWorkItemsSurface\(/);
+  assert.match(work, /ask\(\[\{ fields: \[\{ key: 'layer'/);
+  assert.match(header, /const editable = Boolean\(active\?\.view\?\.tabName\) && !\(active\?\.id === 'team' && !active\.param\)/);
+});
