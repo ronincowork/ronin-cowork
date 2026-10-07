@@ -47,6 +47,120 @@
   .sws-detail { flex: 1; min-width: 0; min-height: 0; overflow-y: auto; font-size: var(--form-input); line-height: 1.45; }
   .sws-detail :where(h1, h2, h3, h4) { font-size: var(--form-head); line-height: 1.3; }
   .sws-detail[hidden] { display: none; }
+  /* Branches (full density, at rest; js/phalanx.js): each stone with its items under it, the
+     row of branches scrolling sideways. 'column' stacks the items; 'chart' is one column
+     per direct child with grandchildren stacked under it. */
+  .sws[data-branching='true'] .sws-grid { width: 100%; min-width: 0; flex-wrap: nowrap; justify-content: flex-start; align-items: flex-start; overflow-x: auto; }
+  .sws-branch { display: flex; flex: none; flex-direction: column; gap: var(--space-3); }
+  .sws-branch-row { display: flex; gap: var(--space-3); }
+  .sws-branch > .sws-stone { flex: none; width: var(--sws-stone); }
+  .sws-branch-column { display: flex; flex: none; flex-direction: column; width: var(--sws-stone); gap: var(--space-1); }
+  .sws-branch-column > .sws-branch-stone { flex: none; width: 100%; aspect-ratio: auto; padding: var(--space-2) var(--space-3); }
+  .sws-branch-column .sws-label { margin-top: 0; font-size: var(--text-4); font-weight: 500; }
+  .sws-branch-count { color: var(--muted); font-size: var(--form-note); }
+  /* THE COLLECTION PHALANX (js/collection-phalanx.js): the phalanx forked for the collection
+     doors, Who / What / Where. Its root wears .cph and its host .cph-host; every rule here is
+     under that prefix and reaches none of the phalanx's own consumers. At rest: the blocks
+     centred at wide spacing, each stone's children stacked under it as one-line bars (no
+     connector line, the space kept), grandchildren folded away or shown under their parent (data-cph-fold on the root; in the
+     rail they always stand inset under it; data-cph-depth, set by the fork). Its top area is a question, not a text, so the header
+     fits it and its open tray. */
+  .cph { --sws-gap: var(--space-10); }
+  .cph-host > .sws-header { flex-basis: auto; block-size: auto; overflow: visible; padding-block: var(--space-4) var(--space-11); }
+  /* Open, the top area is gone; the rail and detail keep the same room above them. */
+  .cph[data-open='true'] { padding-block-start: var(--space-10); }
+  .cph[data-branching='true'] .sws-grid { width: 100%; flex-wrap: wrap; justify-content: center; overflow-x: visible; gap: calc(var(--space-12) + var(--space-8)) var(--space-12); }
+  .cph .sws-branch { align-items: stretch; gap: 0; width: var(--sws-stone); }
+  .cph .sws-branch-column { position: relative; margin-top: var(--space-5); gap: var(--space-2); }
+  .cph .sws-branch-column:empty { display: none; }
+  /* A child is a bar, not a stone: its title (two lines at most, tight), a hairline under it, no
+     box, no accent, nothing more — a table of contents, not a reading. Rows stand apart; a
+     wrapped title stays one thing (owner, 2026-10-03). */
+  .cph .sws-stone[data-cph-depth] { border: 0; border-bottom: var(--edge) solid var(--line-2); border-radius: 0; background: transparent; box-shadow: none; aspect-ratio: auto; }
+  .cph .sws-stone[data-cph-depth]::before { display: none; }
+  .cph .sws-stone[data-cph-depth]:hover { border-color: var(--kaki); }
+  .cph .sws-stone[data-cph-depth]:hover .sws-label { color: var(--kaki); }
+  .cph .sws-stone[data-cph-depth] .sws-label { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; width: 100%; margin-top: 0; overflow: hidden; font-size: var(--text-4); font-weight: 500; line-height: 1.25; white-space: normal; overflow-wrap: anywhere; }
+  .cph .sws-branch-column > .sws-branch-stone { min-width: 0; padding: var(--space-3) var(--space-1); }
+  .cph[data-cph-fold='true'][data-branching='true'] .sws-branch-column > .sws-branch-stone[data-cph-depth='2'] { display: none; }
+  .cph[data-branching='true'] .sws-branch-column > .sws-branch-stone[data-cph-depth='2'] { width: calc(100% - var(--space-5)); margin-inline-start: var(--space-5); }
+  /* In the rail the bars keep their line and stand under their parent, the grandchild inset. */
+  .cph[data-open='true'] .sws-stone[data-cph-depth] { padding: var(--space-4) var(--space-3); }
+  .cph[data-open='true'] .sws-stone[data-cph-depth='2'] { width: calc(min(100%, var(--sws-stone)) - var(--space-5)); margin-inline-start: var(--space-5); }
+  .cph[data-open='true'] .sws-stone[data-cph-depth][aria-pressed='true'] { border-color: var(--kaki); background: color-mix(in srgb, var(--kaki) 12%, var(--panel)); }
+  .cph[data-open='true'] .sws-stone[data-cph-depth][aria-pressed='true'] .sws-label { font-weight: 600; }
+  .cph .sws-stone[draggable='true'] { cursor: grab; }
+  .cph .sws-stone.cph-over { outline: var(--edge-2) solid var(--kaki); outline-offset: var(--space-1); }
+  /* In the rail, a board's items stay out of the way (they are in the detail, with room);
+     only the item being viewed shows, inset under its board. */
+  .cph[data-open='true'] .sws-stone[data-cph-depth='2'] { display: none; }
+  /* In the detail an item line gives its title the row: holder and stage bar at the right, the
+     title wrapping rather than clipping; the objective wraps to two lines. */
+  /* A bar expanded in place (the fork's expand): a short read in one format, muted, indented
+     under the bar, nothing boxed; a board's items are presses to their own read. */
+  .cph-expand { display: grid; gap: var(--space-2); margin: var(--space-2) 0 var(--space-4); padding-inline-start: var(--space-5); font-size: var(--text-3); color: var(--muted); line-height: 1.4; }
+  .cph-expand-line { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; min-width: 0; }
+  .cph-expand-line b { margin-inline-end: var(--space-3); color: var(--fg); font-weight: 500; }
+  .cph-expand-items { display: grid; gap: var(--space-1); }
+  .cph-expand-item { display: block; border: 0; border-radius: var(--radius-hair); background: transparent; padding: var(--space-1) var(--space-2); color: var(--fg); font: inherit; text-align: left; cursor: pointer; }
+  .cph-expand-item:hover, .cph-expand-item[aria-expanded='true'] { background: var(--bg-2); }
+  .cph-expand-more { display: grid; gap: var(--space-1); padding: var(--space-1) var(--space-2) var(--space-3) var(--space-5); }
+  .cph-expand-more[hidden] { display: none; }
+  .cph-expand > .wk-action { justify-self: start; margin-top: var(--space-2); }
+  /* The question row: the ask and the Add block side by side, the block drawn as a question
+     stone (same box, dashed, kaki) so the row reads as one; it drags, it does not open. */
+  .who-questions { display: flex; flex-wrap: wrap; align-items: flex-start; gap: var(--space-7) var(--space-8); }
+  .who-add { --ask-w: 140px; --ask-h: 40px; position: relative; display: flex; flex: 0 0 var(--ask-w); flex-direction: column; justify-content: space-between; box-sizing: border-box; width: var(--ask-w); height: var(--ask-h); border: var(--edge) dashed var(--line-2); border-left: var(--edge-2) solid var(--kaki); border-radius: var(--radius-xs); background: transparent; padding: var(--space-3) var(--space-4); cursor: grab; font-size: var(--form-input); }
+  .who-add .ask-label { font-size: var(--text-2); line-height: 1; }
+  .who-add .ask-reading { display: block; color: var(--kaki); font-weight: 600; line-height: 1.1; }
+  .who-add:hover { border-color: var(--kaki); }
+  .who-add:active { cursor: grabbing; }
+  /* The partial overlay: a small window inside the surface, under its anchor. */
+  .cph-host { position: relative; }
+  .partial-overlay { position: absolute; z-index: 3; box-sizing: border-box; width: min(24rem, 100%); border: var(--edge) solid var(--line-2); border-radius: var(--radius-sm); background: var(--panel); box-shadow: var(--shadow-sheet); padding: var(--space-5) var(--space-6) var(--space-6); }
+  .partial-overlay-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); margin-bottom: var(--space-4); }
+  .partial-overlay-title { font-size: var(--text-5); font-weight: 600; color: var(--fg-strong); }
+  .partial-overlay-body { display: grid; gap: var(--space-4); }
+  .partial-overlay-body .league-team-detail-head { display: none; }
+  /* The thin open: a Team pressed — name, Launch, objective, two short lists. */
+  .who-open { display: grid; gap: var(--space-8); max-width: 36rem; }
+  .who-open-head { display: flex; align-items: center; gap: var(--space-5); }
+  .who-open-head h2 { margin: 0; font-size: var(--text-8); font-weight: 600; color: var(--fg-strong); }
+  .who-open-objective { margin: calc(-1 * var(--space-6)) 0 0; color: var(--muted); }
+  .who-open-list { display: grid; gap: var(--space-3); }
+  .who-open-list > .sws-stone { width: 100%; }
+  .who-open-list > .cph-expand { margin-top: calc(-1 * var(--space-1)); }
+  .who-open-label { margin-bottom: var(--space-1); font-size: var(--form-key); font-weight: 500; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  .who-open-none { font-size: var(--form-note); color: var(--dim); }
+  .cph .sws-detail .tk-line { grid-template-columns: minmax(0, 1fr) auto var(--hr-stack); padding: var(--space-5) var(--space-3); cursor: pointer; }
+  .cph .sws-detail .tk-line + .tk-line { border-top: var(--edge) solid var(--line-2); }
+  .cph .sws-detail .tk-line-title { grid-column: 1; line-height: 1.3; white-space: normal; overflow-wrap: anywhere; }
+  .cph .sws-detail .tk-line-holder { grid-column: 2; }
+  .cph .sws-detail .tk-stage-bar { grid-column: 3; }
+  .cph .sws-detail .tk-line:hover .tk-line-title { color: var(--kaki); }
+  .cph .sws-detail .league-team-objective { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; white-space: normal; }
+  /* The one Team profile (js/team-profile.js): no numbering; each Agent a block — its line,
+     Launch at the right, the items it holds beneath, its profile under that when open. */
+  .wtd .fs-step-n { display: none; }
+  .league-team-edit .fs-step-n { display: none; }
+  .wtd-agent { padding: var(--space-4) 0; }
+  .wtd-agent + .wtd-agent { border-top: var(--edge) solid var(--line-2); }
+  .wtd-agent-row { display: flex; align-items: center; gap: var(--space-4); }
+  .wtd-agent-head { display: flex; flex: 1 1 auto; align-items: center; min-width: 0; border: 0; border-radius: var(--radius-hair); background: transparent; color: var(--fg); padding: var(--space-2) var(--space-3); font: inherit; font-size: var(--text-4); text-align: left; cursor: pointer; }
+  .wtd-agent-head:hover { background: var(--bg-2); }
+  .wtd-agent-head[aria-expanded='true'] .wtd-agent-name { font-weight: 600; }
+  .wtd-agent-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .wtd-agent-id { margin-inline-start: var(--space-3); color: var(--muted); }
+  .wtd .tk-line.tk-line-worded { grid-template-columns: minmax(0, 1fr) auto auto var(--hr-stack); }
+  .wtd .tk-line-worded .tk-line-holder { grid-column: 2; }
+  .wtd .tk-line-stage { grid-column: 3; color: var(--muted); white-space: nowrap; }
+  .wtd .tk-line-worded .tk-stage-bar { grid-column: 4; }
+  .wtd-agent-items { padding-inline-start: var(--space-5); }
+  .wtd-agent-items:empty { display: none; }
+  .wtd-agent-items .tk-line { padding-block: var(--space-3); }
+  .wtd-agent-profile { margin: var(--space-4) 0 0 var(--space-5); }
+  .wtd-boards > .fs-step + .fs-step { margin-top: var(--space-6); }
+  .wtd-empty { margin: 0; color: var(--dim); font-size: var(--form-note); }
   .wi-phalanx[data-density='compact'] .sws-secondary, .wi-phalanx[data-density='compact'] .sws-state { display: none; }
   .wi-project-green::before { background: var(--kanban-green); }
   .wi-project-yellow::before { background: var(--kanban-yellow); }
@@ -58,6 +172,43 @@
   .wi-project-facts dt { color: var(--muted); }
   .wi-project-facts dd { margin: 0; overflow-wrap: anywhere; }
   .wi-outcome, .wi-evidence { overflow-wrap: anywhere; white-space: pre-wrap; }
+  /* A work item laid over the Work items card's lists (js/work-details.js). */
+  .work-overlay { position: absolute; inset: 0; overflow-y: auto; background: var(--panel); }
+  /* Its utility, small at the top right: Save, Assign, Add, Close (js/work-details.js). */
+  .work-overlay-utility { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: var(--space-2); }
+  .work-overlay:focus { outline: none; }
+  .work-overlay-assign { padding-block: var(--space-3); }
+  /* Work items (js/work-views-surface.js), organised as a Trello board: fixed-width lists
+     across the top, each one slightly shaded panel as tall as what it holds. Three levels at
+     one font size: the list's name in a darker band (bold), an underlined semibold subtitle
+     per group, the items as cards on the plain surface; Add at the foot. */
+  .wv { --wv-list: 230px; --wv-shade: color-mix(in srgb, var(--fg) 5%, var(--panel)); --wv-band: color-mix(in srgb, var(--fg) 13%, var(--panel)); position: relative; display: flex; height: 100%; min-height: 0; flex-direction: column; gap: var(--space-4); padding: var(--space-5) var(--space-6); box-sizing: border-box; }
+  .wv-head { display: flex; align-items: center; gap: var(--space-4); }
+  /* The kit drives the size; the view button takes the content's, not the compact one. */
+  .wv-head .wk-action.wv-toggle { font-size: inherit; }
+  .wv-row { display: grid; flex: 1 1 auto; min-height: 0; align-items: start; grid-auto-columns: var(--wv-list); grid-auto-flow: column; gap: var(--space-4); overflow-x: auto; }
+  .wv-list { display: flex; max-height: 100%; min-height: 0; flex-direction: column; gap: var(--space-2); overflow-y: auto; border: var(--edge) solid var(--line-2); border-radius: var(--radius-hair); background: var(--wv-shade); padding-bottom: var(--space-2); box-sizing: border-box; }
+  .wv-list > :not(.wv-list-head) { margin-inline: var(--space-3); }
+  .wv-list-head, .wv-sub, .wv-add { border: 0; background: transparent; color: var(--fg); font: inherit; text-align: left; cursor: pointer; }
+  /* The title band: the list's name across its top, at least two lines tall so the content
+     under it starts on one line across the row. */
+  .wv-list-head { display: flex; flex: none; align-items: flex-start; justify-content: space-between; gap: var(--space-3); min-height: calc(2lh + 2 * var(--space-3)); box-sizing: border-box; border-bottom: var(--edge) solid var(--line-2); background: var(--wv-band); padding: var(--space-3) var(--space-4); font-weight: 700; }
+  .wv-count { flex: none; color: var(--muted); font-weight: 400; }
+  .wv-group { display: flex; flex-direction: column; gap: var(--space-2); margin-top: var(--space-2); }
+  .wv-sub { border-bottom: var(--edge) solid var(--line-2); padding: var(--space-1); font-weight: 600; }
+  .wv-add:hover { color: var(--fg); }
+  .wv-item { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-3); min-width: 0; border: var(--edge) solid var(--line); border-radius: var(--radius-hair); background: var(--panel); padding: var(--space-3); color: var(--fg); font: inherit; text-align: left; cursor: pointer; transition: border-color var(--motion-quick) var(--ease); }
+  .wv-item:hover { border-color: var(--kaki); }
+  .wv-label { min-width: 0; overflow-wrap: anywhere; }
+  .wv-holder { display: grid; flex: none; place-items: center; width: var(--space-6); height: var(--space-6); border-radius: 50%; background: var(--accent); color: var(--panel); font-weight: 600; }
+  .wv-add { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-2); color: var(--muted); }
+  .wv-add-mark { font-style: normal; }
+  .wv-add-board { display: flex; align-items: center; gap: var(--space-2); border: var(--edge) dashed var(--line-2); border-radius: var(--radius-hair); background: transparent; padding: var(--space-3) var(--space-4); color: var(--muted); font: inherit; text-align: left; cursor: pointer; }
+  .wv-add-board:hover { border-color: var(--kaki); color: var(--fg); }
+  .wv-list.over { border-color: var(--kaki); }
+  /* Unfiled reads as something different: a faint accent shade in place of the grey. */
+  .wv-list[data-unfiled] { background: color-mix(in srgb, var(--accent) 7%, var(--panel)); }
+  .wv > .work-overlay { padding: var(--space-5) var(--space-6); box-sizing: border-box; }
   @container stone-work-surface-seat (max-width: 40rem) {
     .wk-surface-content.sws-host { padding-inline: var(--space-6); }
     .sws { gap: var(--space-6); }

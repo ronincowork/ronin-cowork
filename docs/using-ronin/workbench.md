@@ -35,9 +35,41 @@ not four layout systems.
 |---|---|
 | Campaign | Campaign settings and Campaign-level resources |
 | Teams collection | Teams, Agents, shared resources, and creation surfaces available in the selected Campaign context |
-| Team | that Team's Agents, Commons, Task Manager, and launch surface |
+| Team | that Team's Agents, Commons, Trello view, and launch surface |
 | Agent | Self, Documents, Team membership, and separate Task Managers for the Agent's Teams |
 | Setup | pinned Presets plus Register, providers, roots, Services, gbrain, and Templates |
+| Collections (new) | Who: Your Teams; What, Where and New as they arrive. Reached from **Next** on Ronin Home, the temporary door to the new workbench while it is built beside the old one |
+
+On the Cowork and Desk workbenches one card reads the work items: **Trello view**. The button at its top left says which
+view you are in, **View by: Status** or **View by: Board**, and switches to the other. It is laid out like a
+Trello board: Status shows one list per stage, its items grouped under each board's name;
+Board shows one list per board, its items grouped under each stage's name. Each list shows
+its count at the head and **Add a work item** at the foot, which starts the new item in that
+list. In Board view, **Unfiled** always sits at the far right in its own shade, and **Add
+board** after the boards starts a new one. On a Team's workbench, Add starts on the Team's
+own board (else its lead's, else Unfiled); you can still pick any board. On a Team's
+workbench the card shows the boards that Team and its Agents work on, plus **Unfiled**, so
+unfiled work can be taken on from there; a board added there is held by the Team. In
+Board view, drag an item onto another board's list to move it there (what is under it comes
+with it), or onto empty space to make it a board of its own: that is how work leaves
+Unfiled. On a Team's workbench a board made that way is held by the Team if nobody held it.
+An item's **Assign** can also give it to a Team. Press a list's name, a
+group's name or an item to open it over the lists. Its buttons at the top right are **Save** (once there is something to
+save), **Assign** (pick the Agent or Team that holds it), **Add** (a new item, starting where you
+pressed) and **Close**; Escape closes it too. Wherever you add an item, you give its title,
+objective, status and board: an existing board, **New board** (the item becomes a board of
+its own) or **Unfiled**, the default, for work nobody has filed yet.
+
+On the Cowork and Desk workbenches the **Who: Your Teams** card is the Teams door of the
+collection: one stone per Team, and under each stone the boards that Team works on, or its
+Agents, as **Under each Team** at the top chooses. **Workspace** narrows the stones to the
+Teams working in the folders you pick, one or several. Press a Team for a short read beside
+the stones, its Agents and its boards, and **Launch** to open the Team's tab. Press a bar for
+a short read under it: an Agent's role and what it is doing now, a board's objective and
+items, an item's description and status. **Open** on a board places the work-item surface in
+the other workspace. Drag a board onto another Team to give it to that Team. Drag **Add +**, beside Under each
+Team, onto a Team to add a board or an Agent to it, whichever is showing; a small window
+opens over the Team with the form. Changing them happens on the Team's own workbench.
 
 Adding another tenant or profile adds no layout implementation. Adding another surface
 registers a per-workspace factory in the shared library; any profile may name that type.
@@ -93,6 +125,22 @@ workspace 2. That is only its first-open floor; once rearranged, refresh restore
 remembered arrangement instead of applying the floor again.
 
 Teams first opens with the Team roster in workspace 1 and New Team in workspace 2.
+
+The **Teams** surface is the one list of Teams: each Team is a stone with its objective, how
+many Agents it has, and its lead. Press a stone and the stones fold to the left while the Team
+opens beside them: its title and objective with **Launch** (open the Team's own workbench),
+then three numbered steps. **1 Agents**: lead first, each with its live dot and what it holds,
+and **+** at the end to bring in an Agent already running or start a new one. **2 Work items**:
+one line per item with its holder and stage bar, the Team's own items first. **3
+Configuration**, folded to its kind and model until you open it: the Team's configuration
+form, with **Delete team** at its foot. Each step folds or opens from its own heading. Press
+the stone again or Escape to go back. Drag a stone into another workspace to open the Team
+there.
+
+**Team roster** is the plain list of every Team and every Agent: one heading per Team with its
+Launch and delete, one row per Agent with 人 when it leads, its work position, status, context
+and model. Drag a row onto a Team's heading to add that Agent to the Team; press a row to
+open the Agent in its own tab.
 
 If a remembered surface is no longer available at the current scope, its workspace comes
 back empty. Check the discovery column: it is the current answer to what can be opened

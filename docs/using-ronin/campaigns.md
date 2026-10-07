@@ -32,6 +32,7 @@ The Campaign record does not embed those collections.
 
 `config.cowork_defaults.project_root` is the default **Born in** Workspace Folder for a
 new Team or teamless Agent. `config.cowork_defaults.repos` supplies its default workspaces.
-The New Team and New Agent forms show these choices before launch; an existing Team keeps
+The New Team and New Agent forms show these choices before launch. Picking a different
+Born in there sets Workspaces to that folder until you choose Workspaces yourself; an existing Team keeps
 its own birthplace and workspaces. Agents can set these fields with
 `machine-settings cowork-defaults write born-in|workspaces`.

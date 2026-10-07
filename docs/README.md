@@ -12,6 +12,7 @@ route depends on the task, not on who is reading.
 | Finish setup and start one working Agent | [Get started](getting-started/get-started.md), [Ronin Setup](getting-started/setup-workbench.md), and [provider sign-in](getting-started/provider-sign-in.md) |
 | Find and arrange my work | [Workbench](using-ronin/workbench.md) and [the tile](using-ronin/tile.md) |
 | Choose where Ronin works | [Workspace Folders](getting-started/workspace-folders.md) |
+| Give an Agent a file, image, or screenshot | [Share a file with an Agent](using-ronin/share-a-file.md) |
 | Start a Team | [New Team](using-ronin/new-team.md) |
 | Track work and coordinate Agents | [Work record](using-ronin/work-record.md), [Team Kanban](using-ronin/team-kanban.md), and [wipeboards](using-ronin/wipeboards.md) |
 | Stop, clear, copy, or close | [Terminal controls](using-ronin/terminal-controls.md) |

@@ -13,11 +13,9 @@ test('Work Record and Team are the only public names for their migrated surfaces
   assert.match(work, /list\)/);
 
   const lead = await readFile(path.join(root, 'ronin_bin', 'team'), 'utf8');
-  for (const route of ['roster:read', 'roster:write', 'project:create', 'project:read', 'project:write', 'project:list', 'project:assign\|project:return', 'member:status']) {
+  for (const route of ['roster:read', 'roster:write', 'project:create', 'project:read', 'project:write', 'project:list', 'project:assign', 'member:status']) {
     assert.match(lead, new RegExp(`^  ${route}\\)`, 'm'));
   }
-  assert.match(lead, /\/api\/teams\/\$1\/kanban/);
-  assert.match(lead, /\/api\/team-rosters\/\$team\/projects\/\$id\/\$verb/);
 
   for (const retired of ['read_tegami', 'write_tegami', 'tejun-team-set', 'tejun-kanban']) {
     await assert.rejects(access(path.join(root, 'ronin_bin', retired)), `${retired} must not exist, even as an alias`);

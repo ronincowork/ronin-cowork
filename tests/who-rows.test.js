@@ -1,0 +1,75 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+
+const { whoRows, whoMove, itemsHeldBy } = await import('../public/js/who-rows.js');
+
+// The shape GET /api/collection answers (src/collection-read.ts).
+const reading = {
+  teams: [
+    { name: 'surface', title: 'Surface', objective: 'Upgrade the UI UX', lead: 'surface_lead2', agents: ['a', 'b'], roots: ['ronin_cowork'], repos: [], boards: ['w1'], items: 2 },
+    { name: 'ronin_helpers', title: 'Ronin Helpers', objective: '', lead: '', agents: ['mika_agent'], roots: [], repos: [], boards: [], items: 0 },
+    { name: 'front-2', title: 'Front 2', objective: '', lead: '', agents: [], roots: ['ronin_cowork'], repos: [], boards: [], items: 0 },
+  ],
+  boards: [
+    { id: 'w1', title: 'Upgrade', objective: 'o', stage: 'BUILD', holder: 'agent:surface_lead2', teams: ['surface'], roots: ['ronin_cowork'],
+      stages: [{ stage: 'IDEA', items: [{ id: 'w10', title: 'Idea', stage: 'IDEA', holder: '' }] }, { stage: 'DONE', items: [{ id: 'w6', title: 'Done one', stage: 'DONE', holder: 'agent:items' }] }] },
+    { id: 'w2', title: 'Unfiled', objective: '', stage: 'IDEA', holder: '', teams: [], roots: [], stages: [{ stage: 'PLAN', items: [{ id: 'w9', title: 'Loose', stage: 'PLAN', holder: '' }] }] },
+  ],
+  roots: [{ name: 'ronin_cowork', path: '/x', teams: ['surface', 'front-2'], boards: ['w1'] }],
+};
+
+test('Who: one stone per Team in name order, Ronin Helpers last, and no stone for "no team" (Unfiled says nothing)', () => {
+  const rows = whoRows(reading);
+  assert.deepEqual(rows.map((row) => row.id), ['front-2', 'surface', 'ronin_helpers']);
+  assert.deepEqual(rows.map((row) => row.kind), ['team', 'team', 'team']);
+  assert.ok(!rows.some((row) => row.items.some((board) => board.id === 'w2')), 'the Unfiled board is under no stone');
+});
+
+test('Who: a Team stone is its name alone; its boards stack under it, each board its items by stage, every bar its title alone', () => {
+  const surface = whoRows(reading)
+    .find((row) => row.id === 'surface');
+  assert.equal(surface.label, 'Surface');
+  assert.equal(surface.secondary, undefined);
+  assert.equal(surface.state, undefined);
+  assert.deepEqual(surface.items.map((board) => [board.id, board.kind, board.label, board.state]), [['w1', 'board', 'Upgrade', undefined]]);
+  assert.deepEqual(surface.items[0].items.map((item) => [item.id, item.kind, item.label, item.state]), [['w10', 'item', 'Idea', undefined], ['w6', 'item', 'Done one', undefined]]);
+});
+
+test('Who: under each Team, Agents instead of boards: the lead first and marked', () => {
+  const members = { surface: [{ name: 'surface_lead2', title: 'Surface Lead2', lead: true }, { name: 'a', title: 'A', lead: false }] };
+  const rows = whoRows(reading, { under: 'agents', membersOf: (name) => members[name] || [] });
+  assert.deepEqual(rows.find((row) => row.id === 'surface').items.map((row) => [row.id, row.kind, row.label, row.team]), [['agent:surface:surface_lead2', 'agent', '人 Surface Lead2', 'surface'], ['agent:surface:a', 'agent', 'A', 'surface']]);
+  assert.deepEqual(rows.find((row) => row.id === 'front-2').items, []);
+});
+
+test('Who: a narrowed reading (the server already filtered by workspace) draws only what it names', () => {
+  const narrowed = { ...reading, teams: reading.teams.filter((team) => team.roots.includes('ronin_cowork')), boards: reading.boards.filter((board) => board.roots.includes('ronin_cowork')) };
+  assert.deepEqual(whoRows(narrowed).map((row) => row.id), ['front-2', 'surface']);
+});
+
+test('Who: a missing or malformed reading draws no stones rather than throwing', () => {
+  assert.deepEqual(whoRows(undefined), []);
+  assert.deepEqual(whoRows({ teams: null, boards: 'x' }), []);
+});
+
+test('Who: what a drop means — a board onto another Team gives it to that Team; nothing else moves here', () => {
+  const team = { kind: 'team', id: 'surface' };
+  assert.equal(whoMove({ kind: 'board', id: 'w2', team: '' }, team), 'assign');
+  assert.equal(whoMove({ kind: 'board', id: 'w1', team: 'surface' }, team), '', 'already that Team\'s');
+  assert.equal(whoMove({ kind: 'agent', id: 'a', team: 'front-2' }, team), '', 'Agents move on the Team roster');
+  assert.equal(whoMove({ kind: 'item', id: 'w9', team: '', board: 'w2' }, { kind: 'board', id: 'w1' }), '', 'items move on What');
+  assert.equal(whoMove({ kind: 'add' }, team), 'add', 'the Add block onto a Team adds to it');
+  assert.equal(whoMove({ kind: 'add' }, { kind: 'board', id: 'w1' }), '');
+  assert.equal(whoMove(null, team), '');
+});
+
+test('Who: the items an Agent holds across the Team\'s boards — the board itself when it holds the root, every item under any board it holds', () => {
+  const boards = [
+    { id: 'w1', holder: 'agent:lead', stages: [{ stage: 'IDEA', items: [{ id: 'w10', holder: '' }] }, { stage: 'DONE', items: [{ id: 'w6', holder: 'agent:items' }] }] },
+    { id: 'w3', holder: 'team:surface', stages: [{ stage: 'DONE', items: [{ id: 'w7', holder: 'agent:lead' }] }] },
+  ];
+  assert.deepEqual(itemsHeldBy(boards, 'lead').map((item) => item.id), ['w1', 'w7']);
+  assert.deepEqual(itemsHeldBy(boards, 'items').map((item) => item.id), ['w6']);
+  assert.deepEqual(itemsHeldBy(boards, 'nobody'), []);
+  assert.deepEqual(itemsHeldBy(undefined, 'lead'), []);
+});

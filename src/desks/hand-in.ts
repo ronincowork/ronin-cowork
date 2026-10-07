@@ -5,6 +5,7 @@ import { casRef, isAncestor, mergeInto, revParse, worktreeAddDetached, worktreeR
 import { withLineLock } from './queue.js';
 import { candidateWorktree, deskStatus, lineFor, readDesk, updateDesk } from './registry.js';
 import { appendReceipt, newReceiptId } from './receipts.js';
+import { editItem, type Acknowledged } from '../work-items.js';
 import type { DeskNotice, DeskStatus, HandInReceipt, HandInResult, RepoArrangement } from './schema.js';
 
 export interface HandInTidy {
@@ -116,8 +117,17 @@ export async function handIn(repo: string, branch: string, opts: { maxRetries?: 
   } };
 }
 
-export async function handInAssignment(assignment: { desks: Array<{ repo: string; branch: string }>; projectId?: string }): Promise<HandInOutcome[]> {
-  const out: HandInOutcome[] = [];
-  for (const d of assignment.desks) out.push(await handIn(d.repo, d.branch, { projectId: assignment.projectId }));
-  return out;
+/** One hand-in call over one or more desks. When it names a work item and any desk was
+ * accepted, the item moves to LAND once, the accepted receipts on its trail. */
+export async function handInAssignment(assignment: { desks: Array<{ repo: string; branch: string }>; projectId?: string; session: string }): Promise<{
+  outcomes: HandInOutcome[];
+  moved: Acknowledged | null;
+}> {
+  const outcomes: HandInOutcome[] = [];
+  for (const d of assignment.desks) outcomes.push(await handIn(d.repo, d.branch, { projectId: assignment.projectId }));
+  const accepted = outcomes.filter(({ receipt }) => receipt.result === 'accepted').map(({ receipt }) => receipt.id);
+  const moved = assignment.projectId && accepted.length
+    ? await editItem(assignment.projectId, { stage: 'LAND' }, assignment.session, `hand-in ${accepted.join(', ')}`)
+    : null;
+  return { outcomes, moved };
 }

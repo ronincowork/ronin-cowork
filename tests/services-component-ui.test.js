@@ -22,9 +22,8 @@ test('Services owns all seven owner-facing capabilities and exact captions', () 
   }
   assert.match(setup, /ask\(\[\{ group:/);
   assert.match(setup, /switch: \['On', 'Off'\]/);
-  assert.doesNotMatch(setup, /michi|kanban|rireki|koe|counting|koshi|koshi_weights/);
-  assert.match(parts, /task_manager: \['michi', 'kanban'\]/);
-  assert.match(parts, /sole capability-to-part expansion/);
+  assert.doesNotMatch(setup, /michi|rireki|koe|counting|koshi|koshi_weights/);
+    assert.match(parts, /sole capability-to-part expansion/);
   assert.doesNotMatch(parts, /public\/js|setup-surfaces/);
 });
 

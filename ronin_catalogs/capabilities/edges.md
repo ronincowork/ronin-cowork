@@ -30,6 +30,7 @@ house, and scheduled deliveries; do not write a second `from @<your session>:` l
 If a Tell sender cannot be resolved, the delivery says so rather than implying the
 owner or Team lead spoke. Report
 `DELIVERED` or `QUEUED`; both are accepted outcomes, and you do not relay replies.
+A send to a session that does not exist fails with `NO-SESSION` and queues nothing.
 
 `edges wipeboard` is the Team's board: post rules, collisions, line state, and anything
 everyone must see. A bare post interrupts the lead; `--to` changes who is interrupted, never

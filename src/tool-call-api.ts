@@ -13,10 +13,11 @@ const operations: Array<[string, RegExp, string]> = [
   ['POST', /^\/api\/sessions\/[^/]+\/(team_lead|project-root)$/, 'session_set'],
   ['POST', /^\/api\/team-rosters$/, 'team roster write'],
   ['PUT', /^\/api\/(team|team-rosters\/[^/]+)$/, 'team roster write'],
-  ['POST', /^\/api\/team-rosters\/[^/]+\/projects$/, 'team project create'],
-  ['PUT', /^\/api\/team-rosters\/[^/]+\/projects\/[^/]+$/, 'team project write'],
-  ...['assign', 'return', 'backlog', 'restore', 'done'].map(verb =>
-    ['POST', new RegExp('^/api/team-rosters/[^/]+/projects/[^/]+/' + verb + '$'), 'team project ' + verb] as [string, RegExp, string]),
+  ['POST', /^\/api\/work-items$/, 'work item create'],
+  ['PUT', /^\/api\/work-items\/[^/]+$/, 'work item write'],
+  ['POST', /^\/api\/work-items\/focus\/(ladder|docs|at)$/, 'work-record update_record'],
+  ...['assign', 'release', 'return', 'restore', 'reparent', 'stage', 'status'].map(verb =>
+    ['POST', new RegExp('^/api/work-items/[^/]+/' + verb + '$'), 'work item ' + verb] as [string, RegExp, string]),
 ];
 export const countBrowserTool: RequestHandler = (req, _res, next) => {
   const source = req.get('x-ronin-source');

@@ -2,6 +2,8 @@
 import { migrateWorkbenchState } from './workspace-arrangement.js';
 export const WORKSPACE_DESTINATIONS = Object.freeze([
   'campaign', 'desk', 'cowork', 'team', 'agent', 'customize', 'commons', 'configuration',
+  // The new workbench's tenants (owner, 2026-10-06), on the tenant frame; `next` is their root.
+  'collections', 'team-next', 'board', 'workspace', 'next',
 ]);
 
 /** Shared header capabilities for a movable workbench. Static views opt into only
@@ -12,7 +14,7 @@ export const WORKBENCH_HEADER = Object.freeze({
   services: true,
   feedback: true,
 });
-export const WORKBENCH_APPEARANCES = Object.freeze(['campaign', 'setup', 'launch', 'desk', 'cowork', 'team', 'agent']);
+export const WORKBENCH_APPEARANCES = Object.freeze(['campaign', 'setup', 'launch', 'desk', 'cowork', 'team', 'agent', 'collections', 'team-next', 'board', 'workspace']);
 
 /** One declaration for every managed Workbench's application chrome. Feature views
  * provide content and, when useful, an island reading; the base owns capabilities and

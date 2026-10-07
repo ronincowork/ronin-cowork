@@ -135,15 +135,18 @@ its name or become another work-record store.
   [launch.ts](../src/routes/launch.ts) `homeRows`) → the tile's ladder
   ([tile.js](../public/js/tile.js), drawn by [shingo.js](../public/js/shingo.js)). Writes enter through
   [work-record](../ronin_bin/work-record) → [work-record-write](../libexec/work-record-write),
-  which updates the authored block atomically. [tegami.ts](../src/tegami.ts) seeds the record
-  and supports server-side custody/derived-field changes; [projects.ts](../src/projects.ts)
-  defines Project shape.
+  which updates the authored block atomically and sends ladder, document and project writes
+  to [work-items-api.ts](../src/routes/work-items-api.ts). [work-items.ts](../src/work-items.ts)
+  is the one door to the work item store; [work-items-read.ts](../src/work-items-read.ts)
+  derives the Agent, Team and unassigned readings; [tegami.ts](../src/tegami.ts) seeds the
+  record and keeps its holder list.
 - Supporting trace: [coordination](coordination-trace.md) links Team custody, messages,
   wipeboards, schedules, desks, hand-in, and promotion. [Team Kanban](using-ronin/team-kanban.md)
-  is a derived reading of that evidence.
+  is the Team's reading of the work items it and its members hold.
 - Tests: [work-record.test.ts](../tests/work-record.test.ts),
-  [tegami-read.test.ts](../tests/tegami-read.test.ts), [team-kanban.test.js](../tests/team-kanban.test.js);
-  Services `tests/kanban.test.mts` checks the derived server view.
+  [tegami-read.test.ts](../tests/tegami-read.test.ts), [team-kanban.test.js](../tests/team-kanban.test.js),
+  [work-items.test.ts](../tests/work-items.test.ts), [work-item-holders.test.ts](../tests/work-item-holders.test.ts),
+  [work-item-tools.test.ts](../tests/work-item-tools.test.ts).
 
 ## Trace a visible behavior change
 

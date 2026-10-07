@@ -120,7 +120,9 @@ const text = (v: unknown): string => (typeof v === 'string' ? v : '');
  */
 const READERS: Record<ModelsSource['read'], (agent: Agent, home: string, file: string) => Promise<ModelRow[] | null>> = {
   // Claude Code keeps the catalog it fetched under ~/.claude/cache/model-catalog/*-cc.json:
-  // `catalog.config.models[]`, each with `id`, `name` ("Opus 5.5") and `short_name` ("Opus").
+  // `catalog.config.models[]`, each with `id`, `name` ("Opus 5.5"), `short_name` ("Opus") and
+  // `section`: `main` is what its own picker offers, `overflow` the older generations it
+  // still serves behind "more models". Only the offered rows are read, as Codex's hidden ones.
   'claude-cache': async (_agent, home) => {
     const dir = path.join(home, '.claude', 'cache', 'model-catalog');
     const files = (await readdir(dir)).filter((name) => name.endsWith('-cc.json')).sort();
@@ -132,7 +134,8 @@ const READERS: Record<ModelsSource['read'], (agent: Agent, home: string, file: s
     return models.flatMap((model) => {
       const m = asObject(model);
       const id = text(m.id);
-      return id ? [{ id, name: text(m.name) || text(m.short_name) || id }] : [];
+      const offered = m.section === undefined || m.section === 'main';
+      return id && offered ? [{ id, name: text(m.name) || text(m.short_name) || id }] : [];
     });
   },
   // Codex keeps ~/.codex/models_cache.json: `models[]` with `slug`, `display_name` and

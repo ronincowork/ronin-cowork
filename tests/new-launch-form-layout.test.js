@@ -35,7 +35,6 @@ test('New Agent uses one ruled ask() spec after its three session types', async 
   assert.match(form, /group: t\('where\.label', 'Where it works'\)/);
   assert.match(form, /group: t\('where\.label', 'Where it works'\), fields: \[[\s\S]*key: 'root'[\s\S]*key: 'repos'[\s\S]*key: 'launchMode'/);
   assert.match(form, /key: 'launchMode', label: t\('launch_mode\.mode', 'Mode'\)/);
-  assert.match(form, /many: true, after: 'root'/);
   assert.match(form, /questions\.show\(draft\.type === 'terminal' \? \[\] : draft\.type === 'bare_metal_agent' \? \['provider', 'model', 'root', 'launchMode'\] : null\)/);
   assert.match(form, /session_type: 'bare_metal_agent'[\s\S]*launch_mode: draft\.launchMode/);
   assert.match(form, /teamQuestions\.show\(isCowork\(\) \? null : \['team'\]\)/);
@@ -89,7 +88,8 @@ test('Where it works keeps birthplace separate and offers all workspaces to Cowo
   assert.doesNotMatch(form, /worktrees/);
   assert.match(form, /v: row\.name, l: row\.title \|\| row\.name/, 'root choices submit the Workspace Folder handle and display the optional title');
   assert.match(form, /label: t\('where\.born_in', 'Born in'\), options: rootRows/);
-  assert.match(form, /label: t\('new_agent\.workspaces', 'Workspaces'\), many: true, after: 'root', options: rootRows/);
+  assert.match(form, /label: t\('new_agent\.workspaces', 'Workspaces'\), many: true, options: rootRows/,
+    'Workspaces never depends on Born in: a dependent clear reads as the hand and blocks the Born in default');
   assert.match(form, /draft\.type === 'bare_metal_agent' \? \['provider', 'model', 'root', 'launchMode'\]/,
     'bare-metal Agents choose one birthplace and are not offered additional workspaces');
   assert.match(form, /if \(!touched\.repos\) draft\.repos = draft\.root \? \[draft\.root\] : \[\]/);
@@ -219,7 +219,8 @@ test('New Team routes each selector region through ask() and leaves Templates br
   assert.match(form, /kitQuestions = ask\(/);
   assert.match(form, /key: 'launchMode', label: t\('launch_mode\.mode', 'Mode'\)/);
   assert.match(form, /after: 'provider'/);
-  assert.match(form, /after: 'root'/);
+  assert.doesNotMatch(form, /after: 'root'/, 'Workspaces never depends on Born in: picking Born in must default it, not clear it');
+  assert.match(form, /key === 'root' && !reposTouched/);
   assert.match(form, /row: branchField/);
   assert.match(form, /group: t\('behaviours', 'Behaviours'\)/);
   assert.doesNotMatch(form, /availableFeatures|group: t\('features'/);

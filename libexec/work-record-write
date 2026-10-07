@@ -9,10 +9,16 @@
 #        work-record document add <path>                       list a doc you are working on
 #        work-record document remove <path>                     take it off the list
 #
-# FIELD VERBS — one field, your own session, no block. Each edits the current letter in
-# place and runs it through the same validator as a whole-block save, so the shape rules
-# hold and "at", "docs" and "teams" are carried through untouched. Several may be combined
-# in one call; they apply in order.
+# WHERE THINGS LIVE. The letter (tegami.md) keeps objective, mandate, repos, holds,
+# ladder_state and at. The ladder and the documents live on the focus work item (at.item,
+# else the first item held), written through /api/work-items/focus/*: holding nothing, the
+# first ladder or doc write makes an item for this session. Every item write appends one
+# trail line naming who wrote it.
+#
+# FIELD VERBS — one field, your own session, no block. Several may be combined in one
+# call; they apply in order. Letter verbs run through the same validator as a whole-block
+# save, so "at", "holds" and "teams" are carried through untouched; ladder verbs go to
+# the focus item in one request.
 #        work-record update_record --objective <text>                 your objective sentence
 #        work-record update_record --phase <title>                    append a phase rung
 #        work-record update_record --gate <text>                      append a gate rung
@@ -26,28 +32,10 @@
 #        work-record update_record --repo <repo>:<branch>             add or keep a checkout row
 #        work-record update_record --unrepo <repo>[:<branch>]         remove one
 #
-# THE MARKER FORM TAKES ONE POSITION AND NEVER JSON, and it writes exactly ONE KEY:
-# "at" -> {"rung":2,"leg":3}, or {"rung":4} for a gate, or null. It touches nothing
-# else — not a status, not a title, not even to tidy.
-#
-# The position is where the rung SITS IN THE LETTER, so anyone reading the file can check
-# it by eye. Not an index into a flattened list: that number appears nowhere in the file
-# and cannot be verified by looking.
-#
-# Why a dedicated key and not status:ACTIVE. A pointer expressed as a status cannot MOVE
-# without asserting what it left behind: the vacated rung must become DONE (a completion
-# claim a monitor has no business making) or PLANNED (false — it was worked on). "at"
-# has no such shadow. It also matches a split the display already has: the torii means
-# YOU ARE HERE, the checkmarks mean DONE. Koshi owns the torii, the agent owns the
-# marks, and the two writers never touch the same key — so there is no semantic conflict
-# to lock against.
-#
-# The read-modify-write happens HERE, in one atomic temp+rename, and the caller never
-# holds the block. That is what makes the absence of locking safe: a marker move carries
-# nothing that must survive — a monitor recomputes it next turn — so an agent writing its
-# whole block may clobber it freely and the author always wins. A caller that read a
-# block, thought for two seconds and wrote it back would instead revert the agent's own
-# authoring, which is the one outcome worth preventing.
+# THE MARKER FORM TAKES ONE POSITION AND NEVER JSON. The position is where the rung sits on
+# the focus item's ladder, as work-record read --rungs prints it. It is kept in the letter
+# as at.rung / at.leg, and it carries the ladder: rungs before it read DONE (never
+# downgrading what the Agent marked), the marked leg reads ACTIVE.
 #        cat <<'EOF' | work-record update_record
 #        { "objective": "…", "ladder": [ … ] }
 #        EOF
@@ -67,14 +55,8 @@
 #   statuses                  PLANNED · ACTIVE · DONE   (a gate you are AT is ACTIVE —
 #                             GATE is the rung kind, not a status)
 #
-# Rung one is always a gate. Exactly one ACTIVE at a time — you are waiting at a gate or
-# doing a leg, never both. A phase whose legs you cannot see yet carries no "legs" at
-# all; that is normal and renders as undetermined. Leave out what you do not know.
-#
 # There is NO verification of what you claim. Mark a rung DONE and it is DONE — the
-# ladder is an outline of where you are, not evidence. What IS checked is the shape,
-# because a key nothing reads is effort thrown away: five sessions were maintaining
-# "asks" and "blocked" long after both were removed, and nobody told them.
+# ladder is an outline of where you are, not evidence. What IS checked is the shape.
 set -u
 
 die() { printf '%s\n' "$*" >&2; exit 3; }
@@ -83,19 +65,17 @@ help() {
 work-record update_record — update the current session's work record
 
 Usage:
-  work-record project create --team <team> --title <text> --objective <text> [--stage <stage>]
-  work-record project write <id> --title|--objective|--stage|--exit|--status|--evidence <value>
+  work-record project create --title <text> --objective <text> [--stage <stage>] [--parent <id>]
+  work-record project write <id> --title|--objective|--stage|--exit|--status|--evidence <value> ...
   work-record project write <id> --ladder <json>
-  work-record project write <id> --leg <STAGE> <title>
-  work-record project write <id> --leg <STAGE.N> done|open
   work-record project working <id>
   work-record project ready <id> --for lead|user
   work-record project stuck <id>
   work-record project blocked <id> --on lead|user
-  work-record project advance <id> --to PLANNING|BUILDING|LANDING|DONE
+  work-record project advance <id> --to IDEA|PLAN|BUILD|REVIEW|LAND|DONE
   work-record project backlog <id>
   work-record project done <id>
-  work-record project return <id>
+  work-record project return <id> [--team <team>]
   work-record update_record --objective <text>
   work-record update_record --phase <title> | --gate <text>
   work-record update_record --leg N <title> | --leg N.M <title>
@@ -111,7 +91,9 @@ Common tasks:
   --leg N appends a leg; --leg N.M retitles it. Field updates may be combined.
   --doc lists a working document for the owner. For repository URLs and branches, use
   work-record workspace add|remove|list; its --branch flag avoids URL ambiguity.
-  return, backlog and done move the whole held Project to the Team Inbox, Backlog or Done.
+  A project is a work item, stored once; you hold its id. return gives it to your Team,
+  backlog parks it (held by nobody), done moves it to stage DONE, working makes it your
+  focus. Every verb appends one line to the item's trail.
 
 Lead position (separate form; changes only another session's pointer):
   work-record update_record --session <name> --at N[.M]
@@ -182,160 +164,60 @@ STORE="$(cd "$(dirname "$SELF")/../bin" && pwd)/ronin-store"
 [ -x "$STORE" ] || STORE=ronin-store
 SESSION_STORE="$("$STORE" session)"
 
+# PROJECT VERBS — a project is a work item, stored once in the work item store. Every verb
+# is one request to /api/work-items; the server appends one trail line naming this session
+# and answers with the item as it now is, which is printed for you to read.
 if [ "${1-}" = project ]; then
   shift; PROJECT_VERB=${1-}; shift || true
   case "$PROJECT_VERB" in
-    create|write|working|ready|stuck|blocked|advance|backlog|done|return) ;;
-    *) die "work-record update_record: project takes create, write, working, ready, stuck, blocked, advance, backlog, done or return." ;;
+    create|read|list|write|working|ready|stuck|blocked|advance|backlog|done|return) ;;
+    *) die "work-record update_record: project takes create, read, list, write, working, ready, stuck, blocked, advance, backlog, done or return." ;;
   esac
-  if [ "$PROJECT_VERB" = create ]; then
-    PROJECT_TEAM=""
-    CREATE_ARGS=()
-    while [ $# -gt 0 ]; do
-      if [ "$1" = --team ]; then
-        [ -n "${2-}" ] || die "work-record update_record: project create --team needs a value."
-        PROJECT_TEAM=$2; shift 2
-      else CREATE_ARGS+=("$1"); shift
-      fi
-    done
-    [ -n "$PROJECT_TEAM" ] || die "work-record update_record: project create needs --team <team>; its id comes from that Team's roster."
-    . "$TOOL_DIR/ronin-http.sh"
-    ronin_connect || exit $?
-    ISSUE=$(curl -sS -m 15 "${RONIN_CURL[@]+"${RONIN_CURL[@]}"}" -H 'content-type: application/json' \
-      -X POST "$url/api/team-rosters/$PROJECT_TEAM/projects/issue" 2>/dev/null) \
-      || die "work-record update_record: could not reach Ronin to issue a project id."
-    PROJECT_ID=$(printf '%s' "$ISSUE" | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d.get("id", "")); print(d.get("error", ""), file=sys.stderr)' 2>/dev/null) \
-      || die "work-record update_record: Ronin returned an invalid project-id response."
-    [ -n "$PROJECT_ID" ] || die "work-record update_record: Team $PROJECT_TEAM did not issue a project id."
-    set -- "${CREATE_ARGS[@]}"
-  else
-    PROJECT_ID=${1-}; shift || true
-    [ -n "$PROJECT_ID" ] || die "work-record update_record: project $PROJECT_VERB needs an id."
-  fi
   NAME=$(me) || exit 3
-  if [ "$PROJECT_VERB" = return ] || [ "$PROJECT_VERB" = backlog ] || [ "$PROJECT_VERB" = done ]; then
-    [ "$#" -eq 0 ] || die "work-record update_record: project $PROJECT_VERB takes only <id>."
-    PROJECT_TEAM=${PROJECT_ID%%/*}; PROJECT_NUMBER=${PROJECT_ID#*/}
-    [ "$PROJECT_TEAM" != "$PROJECT_ID" ] && [ -n "$PROJECT_TEAM" ] \
-      || die "work-record update_record: project return needs a canonical <team>/<number> id."
-    . "$TOOL_DIR/ronin-http.sh"
-    ronin_connect || exit $?
-    AREA=$([ "$PROJECT_VERB" = return ] && printf inbox || printf '%s' "$PROJECT_VERB")
-    BODY=$(python3 -c 'import json,sys; print(json.dumps({"session":sys.argv[1],"area":sys.argv[2]}))' "$NAME" "$AREA")
-    RESPONSE=$(curl -sS -m 15 "${RONIN_CURL[@]+"${RONIN_CURL[@]}"}" -H 'content-type: application/json' -X POST --data "$BODY" \
-      "$url/api/team-rosters/$PROJECT_TEAM/projects/$PROJECT_NUMBER/return") \
-      || die "work-record update_record: could not reach Ronin to return project $PROJECT_ID."
-    RESPONSE="$RESPONSE" python3 - "$PROJECT_ID" "$PROJECT_TEAM" <<'PY'
-import json, os, sys
-project_id, team = sys.argv[1:]
-try: data = json.loads(os.environ["RESPONSE"])
-except Exception: raise SystemExit("work-record update_record: Ronin returned an invalid project-return response.")
-if data.get("error"): raise SystemExit("work-record update_record: " + str(data["error"]))
-area = data.get("area", "inbox")
-focus = data.get("focus", "see work-record read")
-next_cmd = f"team project assign {team} {project_id} <session>" if area == "inbox" else f"team project restore {team} {project_id}"
-print(f"Project {project_id} moved whole to Team {team} {area.title()}; holder: Team {team}; focus: {focus}; next: {next_cmd}. Remember to update your project.")
-PY
-    exit $?
+  . "$TOOL_DIR/ronin-http.sh"
+  ronin_connect || exit $?
+  # --field value pairs -> one JSON body carrying who called.
+  fields() { python3 -c 'import json,sys
+by, allowed, *a = sys.argv[1:]; d = {"by": by}; ok = allowed.split(",")
+while a:
+    k = a.pop(0)
+    if not k.startswith("--") or not a: sys.exit("work-record update_record: fields go as --field <value> pairs.")
+    key = k[2:]
+    if key not in ok: sys.exit("work-record update_record: %s is not a field here; use %s." % (k, ", ".join("--" + f for f in ok)))
+    d[key] = a.pop(0)
+print(json.dumps(d))' "$NAME" "$@"; }
+  if [ "$PROJECT_VERB" = create ]; then
+    BODY=$(fields title,objective,stage,parent "$@") || exit 2
+    BODY=$(printf '%s' "$BODY" | python3 -c 'import json,sys; d=json.load(sys.stdin); d.setdefault("stage","PLAN"); d["session"]=sys.argv[1]
+if not d.get("title") or "objective" not in d: sys.exit("work-record update_record: project create needs --title and --objective.")
+print(json.dumps(d))' "$NAME") || exit 2
+    ronin_item_call POST /api/work-items "$BODY"; exit $?
   fi
-  PFILE="$SESSION_STORE/$(key_of "$NAME")/tegami.md"
-  [ -f "$PFILE" ] || die "work-record update_record: you have no letter yet."
-  python3 - "$PFILE" "$PROJECT_VERB" "$PROJECT_ID" "$NAME" "$@" <<'PROJECT' || exit 3
-import json, os, re, sys
-src, verb, project_id, holder, *args = sys.argv[1:]
-text = open(src).read()
-m = re.search(r"```(?:json)?\s*\n([\s\S]*?)\n```", text)
-if not m: sys.exit("work-record update_record: no json block in your letter")
-d = json.loads(m.group(1)); projects = d.setdefault("projects", [])
-if not isinstance(projects, list): sys.exit('work-record update_record: "projects" must be a list.')
-found = next((p for p in projects if isinstance(p, dict) and p.get("id") == project_id), None)
-def pairs(words):
-    if len(words) % 2: sys.exit("work-record update_record: project fields take one --field value pair.")
-    return [(words[i].removeprefix("--"), words[i+1]) for i in range(0, len(words), 2)]
-leg_edit = None
-if verb == "write" and args[:1] == ["--leg"]:
-    if len(args) != 3: sys.exit("work-record update_record: --leg takes <STAGE> <title> or <STAGE.N> done|open.")
-    leg_edit = (args[1], args[2]); edits = []
-else:
-    edits = pairs(args)
-if verb == "create":
-    if found: sys.exit("work-record update_record: project %s already exists." % project_id)
-    vals = dict(edits)
-    if not vals.get("title") or "objective" not in vals:
-        sys.exit("work-record update_record: project create needs --title and --objective.")
-    found = {"id": project_id, "title": vals["title"], "objective": vals["objective"],
-             "stage": vals.get("stage", "PLANNING"), "exit": vals.get("exit", "none"),
-             "status": vals.get("status", "yellow"), "ladder": [], "evidence": []}
-    projects.append(found)
-else:
-    if not found: sys.exit("work-record update_record: no project %s." % project_id)
-    before = {k: found.get(k) for k in ("stage", "exit", "status")}
-    if verb == "working":
-        if args: sys.exit("work-record update_record: project working takes only <id>.")
-        found["status"], found["exit"] = "yellow", "agent"
-    elif verb == "ready":
-        if len(args) != 2 or args[0] != "--for" or args[1] not in ("lead", "user"):
-            sys.exit("work-record update_record: project ready takes <id> --for lead|user.")
-        found["status"], found["exit"] = "green", args[1]
-    elif verb == "stuck":
-        if args: sys.exit("work-record update_record: project stuck takes only <id>.")
-        found["status"], found["exit"] = "red", "agent"
-    elif verb == "blocked":
-        if len(args) != 2 or args[0] != "--on" or args[1] not in ("lead", "user"):
-            sys.exit("work-record update_record: project blocked takes <id> --on lead|user.")
-        found["status"], found["exit"] = "red", args[1]
-    elif verb == "advance":
-        if len(args) != 2 or args[0] != "--to" or args[1] not in ("PLANNING", "BUILDING", "LANDING", "DONE"):
-            sys.exit("work-record update_record: project advance takes <id> --to PLANNING|BUILDING|LANDING|DONE.")
-        found["stage"] = args[1]
-    elif leg_edit:
-        where, value = leg_edit; stage, dot, index = where.partition(".")
-        rung = next((r for r in found.get("ladder", []) if isinstance(r,dict) and r.get("stage") == stage), None)
-        if rung is None:
-            if dot: sys.exit("work-record update_record: project %s has no %s ladder stage." % (project_id, stage))
-            rung = {"stage": stage, "legs": []}; found.setdefault("ladder", []).append(rung)
-        legs = rung.setdefault("legs", [])
-        if dot:
-            if not index.isdigit() or not 1 <= int(index) <= len(legs): sys.exit("work-record update_record: --leg position is out of range.")
-            if value not in ("done", "open"): sys.exit("work-record update_record: an indexed --leg takes done or open.")
-            legs[int(index)-1]["done"] = value == "done"
-        else:
-            legs.append({"title": value, "done": False})
-    else:
-        if len(edits) != 1: sys.exit("work-record update_record: project write changes one field per call.")
-        key, value = edits[0]
-        if key not in ("title", "objective", "stage", "exit", "status", "evidence", "ladder"):
-            sys.exit("work-record update_record: project write field must be title, objective, stage, exit, status, evidence or ladder.")
-        if key == "evidence": found.setdefault("evidence", []).append(value)
-        elif key == "ladder":
-            try: found["ladder"] = json.loads(value)
-            except Exception as e: sys.exit("work-record update_record: --ladder is not valid JSON — %s" % e)
-        else: found[key] = value
-stages={"IDEAS","PLANNING","BUILDING","LANDING","DONE"}; exits={"none","agent","lead","user"}; statuses={"green","yellow","red"}
-for p in projects:
-    if not isinstance(p,dict) or not all(isinstance(p.get(k),str) for k in ("id","title","objective")): sys.exit("work-record update_record: invalid project shape.")
-    if p.get("stage") not in stages or p.get("exit") not in exits or p.get("status") not in statuses: sys.exit("work-record update_record: invalid project stage, exit or status.")
-    if not isinstance(p.get("ladder"),list) or not isinstance(p.get("evidence"),list): sys.exit("work-record update_record: invalid project ladder or evidence.")
-    for rung in p["ladder"]:
-        if not isinstance(rung,dict) or rung.get("stage") not in stages: sys.exit("work-record update_record: invalid project ladder stage.")
-        if "legs" in rung and not isinstance(rung["legs"],list): sys.exit("work-record update_record: invalid project legs.")
-        for leg in rung.get("legs",[]):
-            if not isinstance(leg,dict) or not isinstance(leg.get("title"),str) or ("done" in leg and not isinstance(leg["done"],bool)): sys.exit("work-record update_record: invalid project leg.")
-block=json.dumps(d, indent=2, ensure_ascii=False); tmp=src+".project"
-open(tmp,"w").write(text[:m.start(1)]+block+text[m.end(1):]); os.replace(tmp,src)
-if verb in ("working", "ready", "stuck", "blocked", "advance"):
-    changed = ["%s=%s" % (k, found[k]) for k in ("stage", "status", "exit") if before[k] != found[k]]
-    preserved = ["%s=%s" % (k, found[k]) for k in ("stage", "status", "exit") if before[k] == found[k]]
-    next_cmd = "work-record project read %s" % project_id
-    print("Project %s updated; changed: %s; preserved: %s; holder: @%s; next: %s. Remember to update your project." %
-          (project_id, ", ".join(changed) or "none", ", ".join(preserved) or "none", holder, next_cmd))
-else:
-    if verb == "create":
-        print("Project %s created in your work record; stable id: %s; holder: %s; next: work-record project read %s. Remember to update your project." % (project_id, project_id, holder, project_id))
-    else:
-        print("work-record update_record: project %s updated." % project_id)
-PROJECT
-  exit 0
+  if [ "$PROJECT_VERB" = list ]; then
+    [ "$#" -eq 0 ] || die "work-record update_record: project list takes nothing; it lists what you hold."
+    ronin_item_call GET "/api/work-items?session=$NAME"; exit $?
+  fi
+  ID=${1-}; shift || true
+  [ -n "$ID" ] || die "work-record update_record: project $PROJECT_VERB needs an id."
+  one() { [ "$#" -eq 0 ] || die "work-record update_record: project $PROJECT_VERB takes only <id>."; }
+  case "$PROJECT_VERB" in
+    read)    one "$@"; ronin_item_call GET "/api/work-items/$ID" ;;
+    write)   [ "$#" -ge 2 ] || die "work-record update_record: project write takes <id> --field <value> ..."
+             ronin_item_call PUT "/api/work-items/$ID" "$(fields title,objective,stage,exit,status,evidence,ladder "$@")" ;;
+    working) one "$@"; ronin_item_call POST "/api/work-items/$ID/status" "$(fields status,exit,focus --status yellow --exit agent --focus "$NAME")" ;;
+    stuck)   one "$@"; ronin_item_call POST "/api/work-items/$ID/status" "$(fields status,exit --status red --exit agent)" ;;
+    ready)   [ "${1-}" = --for ] && { [ "${2-}" = lead ] || [ "${2-}" = user ]; } && [ "$#" -eq 2 ] || die "work-record update_record: project ready takes <id> --for lead|user."
+             ronin_item_call POST "/api/work-items/$ID/status" "$(fields status,exit --status green --exit "$2")" ;;
+    blocked) [ "${1-}" = --on ] && { [ "${2-}" = lead ] || [ "${2-}" = user ]; } && [ "$#" -eq 2 ] || die "work-record update_record: project blocked takes <id> --on lead|user."
+             ronin_item_call POST "/api/work-items/$ID/status" "$(fields status,exit --status red --exit "$2")" ;;
+    advance) [ "${1-}" = --to ] && [ "$#" -eq 2 ] || die "work-record update_record: project advance takes <id> --to IDEA|PLAN|BUILD|REVIEW|LAND|DONE."
+             ronin_item_call POST "/api/work-items/$ID/stage" "$(fields stage --stage "$2")" ;;
+    done)    one "$@"; ronin_item_call POST "/api/work-items/$ID/stage" "$(fields stage --stage DONE)" ;;
+    backlog) one "$@"; ronin_item_call POST "/api/work-items/$ID/release" "$(fields)" ;;
+    return)  [ "$#" -eq 0 ] || { [ "$1" = --team ] && [ -n "${2-}" ] && [ "$#" -eq 2 ]; } || die "work-record update_record: project return takes <id> [--team <team>]."
+             ronin_item_call POST "/api/work-items/$ID/return" "$(fields session,team --session "$NAME" "$@")" ;;
+  esac
+  exit $?
 fi
 
 TARGET=""; ACTIVE=""; STATE=""; DOCADD=""; DOCDEL=""
@@ -398,10 +280,9 @@ if want == "on_track":
     d.pop("ladder_state", None)
 else:
     d["ladder_state"] = want
-# "docs" is in this list for the same reason "at" is: this path rebuilds the whole block
-# from a fixed set of keys, so a key missing from it is a key this switch DELETES. A
-# session saying "back in ten minutes" must not lose its doc list to say it.
-block = json.dumps({k: d[k] for k in ("objective", "mandate", "teams", "repos", "projects", "ladder_state", "ladder", "docs", "at") if k in d},
+# "holds" and "at" are in this list because this path rebuilds the whole block from a
+# fixed set of keys, so a key missing from it is a key this switch DELETES.
+block = json.dumps({k: d[k] for k in ("objective", "mandate", "teams", "repos", "holds", "ladder_state", "at") if k in d},
                    indent=2, ensure_ascii=False)
 tmp = src + ".sw"
 open(tmp, "w").write(text[:m.start(1)] + block + text[m.end(1):])
@@ -411,185 +292,41 @@ STATEMARK
   exit 0
 fi
 
-# MDEDIT — YOUR DOC LIST. One path, your own session, no block.
+# MDEDIT — YOUR DOC LIST. One path, your own session, no block. The list lives on your
+# focus work item, so a document travels with the work when it moves between Agents; the
+# Docs tab shows the documents of every item you hold. Holding nothing, listing your first
+# doc makes an item for you. See docs/using-ronin/work-record.md.
 #
-# What it is for: the owner opens a buildout or a handoff from the ▧ Docs tab in commons
-# without hunting for a path, and this list is the only thing that puts it there. A doc
-# nobody listed is a doc nobody can reach without asking. See docs/mdedit.md.
-#
-# Same bargain as the state switch: a session that has just written a plan will not re-emit
-# its entire ladder to say "and this file is mine". A verb that costs a rewrite is a verb
-# that gets documented instead of used.
-#
-# THESE TWO ARE THE ONLY DOOR IN, and that is the design, not an inconvenience. "docs" is
-# refused in the whole-block form and carried through it untouched, so a careless rewrite
-# cannot drop the list by forgetting to include it — the same protection "at" has, for the
-# same reason.
+# The path is resolved HERE, against the Agent's cwd, because that is the only place a
+# relative path means what it says. What the item stores is always absolute.
 if [ -n "$DOCADD" ] || [ -n "$DOCDEL" ]; then
   [ -z "$TARGET" ] || die "work-record update_record: --doc / --undoc are your OWN session only."
   [ -z "$DOCADD" ] || [ -z "$DOCDEL" ] \
     || die "work-record update_record: --doc and --undoc are separate calls — one path at a time."
   NAME=$(me) || exit 3
-  DFILE="$SESSION_STORE/$(key_of "$NAME")/tegami.md"
-  # No letter yet is the free build's ordinary state — the birth letter is MICHI's, and
-  # cowork alone never seeds one. Listing your first doc creates a minimal shell (made on
-  # first use, never replaced — the user-catalog contract), so list-doc works everywhere.
-  # --undoc with no letter is a no-op, not a fault: there is nothing to take off.
-  if [ ! -f "$DFILE" ]; then
-    [ -n "$DOCDEL" ] && { echo "work-record update_record: no letter, nothing listed."; exit 0; }
-    mkdir -p "$(dirname "$DFILE")"
-    printf '# TEGAMI — %s\n\n```json\n{"v": 1}\n```\n' "$NAME" > "$DFILE"
-  fi
-  python3 - "$DFILE" "${DOCADD:-}" "${DOCDEL:-}" "$NAME" <<'DOCMARK' || exit 3
-import json, os, re, sys
-src, add, drop, name = sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4]
-text = open(src).read()
-m = re.search(r"```(?:json)?\s*\n([\s\S]*?)\n```", text)
-if not m:
-    sys.exit("work-record update_record: no json block in your letter")
-d = json.loads(m.group(1))
-docs = [p for p in (d.get("docs") or []) if isinstance(p, str)]
-
-# Resolved HERE, against the AGENT'S cwd, because that is the only place a relative path
-# means what it says. What lands in the letter is always absolute, so the tab — which runs
-# nowhere near this directory — can open it without knowing anything about who wrote it.
-def fix(p):
-    return os.path.abspath(os.path.expanduser(p))
-
-# PRUNE ON THE WAY THROUGH. Nothing watches the filesystem and nothing sweeps: a doc that
-# has been deleted, renamed or moved falls off the next time this list is touched at all.
-# That is the entire staleness story and it is allowed to be approximate — the owner asks
-# for a missing doc by name and the agent lists it again, which is cheaper than being right.
-docs = [p for p in docs if os.path.exists(p)]
-
-if drop:
-    t = fix(drop)
-    keep = [p for p in docs if p != t]
-    if len(keep) == len(docs):
-        print("work-record update_record: note — %s was not on the list." % t, file=sys.stderr)
-    docs = keep
-if add:
-    t = fix(add)
-    if not os.path.exists(t):
-        sys.exit("work-record update_record: no such file: %s\n"
-                 "  List a doc that exists — the tab shows only files it can open, so an\n"
-                 "  entry it cannot read would be a row that does nothing." % t)
-    if os.path.isdir(t):
-        sys.exit("work-record update_record: %s is a directory.\n"
-                 "  The list holds documents, one at a time. Listing a directory would be a\n"
-                 "  file explorer, which is the thing this exists instead of." % t)
-    docs = [t] + [p for p in docs if p != t]   # newest first, and adding twice is a no-op
-
-if docs:
-    d["docs"] = docs
-else:
-    d.pop("docs", None)   # absent means empty; an empty list is a key that says nothing
-
-block = json.dumps({k: d[k] for k in ("objective", "mandate", "teams", "repos", "projects", "ladder_state", "ladder", "docs", "at") if k in d},
-                   indent=2, ensure_ascii=False)
-# Beside, then rename: the tab may read this file at any moment and a half-written block
-# reads as "no ladder" for exactly as long as the write takes.
-tmp = src + ".doc"
-open(tmp, "w").write(text[:m.start(1)] + block + text[m.end(1):])
-os.replace(tmp, src)
-if add:
-    print("work-record update_record: @%s listed %s (%d doc%s)." % (name, fix(add), len(docs), "" if len(docs) == 1 else "s"))
-else:
-    print("work-record update_record: @%s unlisted %s (%d doc%s)." % (name, fix(drop), len(docs), "" if len(docs) == 1 else "s"))
-DOCMARK
-  exit 0
+  . "$TOOL_DIR/ronin-http.sh"
+  ronin_connect || exit $?
+  BODY=$(python3 -c 'import json,os,sys; name,add,drop=sys.argv[1:]; key="add" if add else "remove"
+print(json.dumps({"session": name, "by": name, key: os.path.abspath(os.path.expanduser(add or drop))}))' "$NAME" "${DOCADD:-}" "${DOCDEL:-}")
+  ITEM_ACK_ONLY=1 ronin_item_call POST /api/work-items/focus/docs "$BODY"; exit $?
 fi
 
+# THE MARKER — a monitor or lead places a session on its focus item's ladder: one
+# position, never JSON. The marker carries the ladder with it (everything before it reads
+# DONE, never downgrading what the Agent marked; the marked leg reads ACTIVE), and the
+# position is kept in the session's letter as at.rung / at.leg. The item's trail says who.
 if [ -n "$TARGET" ] || [ -n "$ACTIVE" ]; then
   [ -n "$TARGET" ] && [ -n "$ACTIVE" ] \
     || die "work-record update_record: --session and --at go together: work-record update_record --session <name> --at <n>"
   case "$ACTIVE" in
     none) ;;
-    *[!0-9.]*|.*|*.|*.*.*) die "work-record update_record: --at takes a position from 'work-record read --rungs' — N or N.M — or 'none'." ;;
-    '') die "work-record update_record: --at takes a position from 'work-record read --rungs' — N or N.M — or 'none'." ;;
+    *[!0-9.]*|.*|*.|*.*.*|'') die "work-record update_record: --at takes a position from 'work-record read --rungs' — N or N.M — or 'none'." ;;
   esac
-  # This writes one derived pointer. Control remains a displayed preference.
-  # Every other cross-session action stays dial-gated. This one is not an action on the
-  # session at all — it is an annotation on a file about it.
-  MFILE="$SESSION_STORE/$(key_of "$TARGET")/tegami.md"
-  [ -f "$MFILE" ] || die "work-record update_record: @$TARGET has no letter yet."
-  MTMP="$(dirname "$MFILE")/.tegami.$$"
-  # One process, one pass: read, move the marker, rename over. Nothing is held open.
-  python3 - "$MFILE" "$MTMP" "$ACTIVE" "$TARGET" <<'MARK' || exit 3
-import json, os, re, sys
-src, tmp, want = sys.argv[1], sys.argv[2], sys.argv[3]
-text = open(src).read()
-m = re.search(r"```(?:json)?\s*\n([\s\S]*?)\n```", text)
-if not m:
-    sys.exit("work-record update_record: no json block in that letter")
-d = json.loads(m.group(1))
-ladder = d.get("ladder") or []
-if want == "none":
-    d["at"] = None
-else:
-    parts = want.split(".")
-    ri = int(parts[0])
-    li = int(parts[1]) if len(parts) > 1 else None
-    if not 1 <= ri <= len(ladder):
-        sys.exit("work-record update_record: rung %d is out of range (1..%d)" % (ri, len(ladder)))
-    rung = ladder[ri - 1]
-    if "gate" in rung:
-        if li is not None:
-            sys.exit("work-record update_record: rung %d is a gate — it has no legs, use --at %d" % (ri, ri))
-        d["at"] = {"rung": ri}
-    else:
-        legs = rung.get("legs") or []
-        if li is None:
-            sys.exit("work-record update_record: rung %d is a phase — point at one of its legs, e.g. --at %d.1" % (ri, ri))
-        if not 1 <= li <= len(legs):
-            sys.exit("work-record update_record: rung %d has %d leg(s); %d is out of range" % (ri, len(legs), li))
-        d["at"] = {"rung": ri, "leg": li}
-# THE MARKER CARRIES THE LADDER WITH IT.
-#
-# A ladder is walked in order, so a session working leg 3.2 has been through 3.1 and every
-# rung before it. Moving the marker without saying so left the letter contradicting itself:
-# the torii on phase 3 leg 2 and the chip beside it reading "phase 3 · 0/3", one session
-# giving two answers out of one file.
-#
-# This is written INTO the letter rather than derived when the letter is read. There is one
-# source of truth and it is this file: SHINGO renders the letter, the letter is the only
-# thing it renders, and a monitor's observation is a change to the letter like any other.
-# A reader that recomputed position would be a second place where "where is this session"
-# is decided, and the two would disagree the first time one of them changed.
-#
-# IT NEVER DOWNGRADES. A rung the agent marked DONE ahead of the marker stays DONE: the
-# agent's word about its own work outranks a position inferred from a pane. This only ever
-# fills in the silence the agent left, which is the entire reason a monitor exists.
-if d.get("at"):
-    ar = d["at"]["rung"]
-    al = d["at"].get("leg")
-    for i, rung in enumerate(ladder, start=1):
-        if "gate" in rung:
-            if i < ar:
-                rung["status"] = "DONE"
-            continue
-        for j, leg in enumerate(rung.get("legs") or [], start=1):
-            # THE MARKER ITSELF IS ALWAYS ACTIVE — even over a DONE the agent wrote. That
-            # is not a downgrade, it is the position: the torii has to sit on a leg that
-            # reads as the one being worked, or the panel shows a torii on a finished leg
-            # and means nothing by it. Never-downgrade protects rungs AHEAD of the marker,
-            # where the agent knows something the pane cannot show.
-            if i == ar and al is not None and j == al:
-                leg["status"] = "ACTIVE"
-            elif leg.get("status") == "DONE":
-                continue
-            elif i < ar or (i == ar and al is not None and j < al):
-                leg["status"] = "DONE"
-
-# Titles, objective and role are copied through exactly as the agent left it — a monitor
-# that tidied a title would be authoring, which is not its job.
-block = json.dumps({k: d[k] for k in ("objective", "mandate", "teams", "repos", "projects", "side_road", "ladder", "docs", "at") if k in d},
-                   indent=2, ensure_ascii=False)
-open(tmp, "w").write(text[:m.start(1)] + block + text[m.end(1):])
-os.replace(tmp, src)
-print("work-record update_record: @%s at -> %s" % (sys.argv[4], d["at"]))
-MARK
-  exit 0
+  BY=$(ronin_session_me 2>/dev/null || id -un)
+  . "$TOOL_DIR/ronin-http.sh"
+  ronin_connect || exit $?
+  BODY=$(python3 -c 'import json,sys; print(json.dumps({"session": sys.argv[1], "at": sys.argv[2], "by": sys.argv[3]}))' "$TARGET" "$ACTIVE" "$BY")
+  ITEM_ACK_ONLY=1 ronin_item_call POST /api/work-items/focus/at "$BODY"; exit $?
 fi
 
 # `|| exit 3` is the refusal itself: die inside $(…) ends only the subshell, and without it
@@ -598,13 +335,34 @@ NAME=$(me) || exit 3
 DIR="$SESSION_STORE/$(key_of "$NAME")"
 FILE="$DIR/tegami.md"
 
-if [ ${#EDITS[@]} -gt 0 ]; then
+# THE LADDER VERBS go to your focus work item: the ladder lives on the item you are on.
+# One request carries them all, in order, and the item's trail gets one line. Holding
+# nothing, the first ladder write makes an item for you, titled from your objective, so
+# the letter is saved first when a call changes both.
+LADDER_EDITS='[]'; LETTER_EDITS=()
+for e in ${EDITS[@]+"${EDITS[@]}"}; do
+  case "${e%%"$US"*}" in
+    phase|gate|rung|leg|status|drop) LADDER_EDITS=$(python3 -c 'import json,sys; l=json.loads(sys.argv[1]); l.append(sys.argv[2].split("\037")); print(json.dumps(l))' "$LADDER_EDITS" "$e") ;;
+    *) LETTER_EDITS+=("$e") ;;
+  esac
+done
+send_ladder() {
+  . "$TOOL_DIR/ronin-http.sh"
+  ronin_connect || exit $?
+  ITEM_ACK_ONLY=1 ronin_item_call POST /api/work-items/focus/ladder "$(python3 -c 'import json,sys; d={"session": sys.argv[1], "by": sys.argv[1]}; d[sys.argv[2]]=json.loads(sys.argv[3]); print(json.dumps(d))' "$NAME" "$1" "$2")"
+}
+if [ ${#EDITS[@]} -gt 0 ] && [ ${#LETTER_EDITS[@]} -eq 0 ]; then
+  send_ladder edits "$LADDER_EDITS"; exit $?
+fi
+
+LADDER_BLOCK=""
+if [ ${#LETTER_EDITS[@]} -gt 0 ]; then
   # THE FIELD VERBS. Read the current block, apply each edit in order, and hand the result
   # to the validator below exactly as if the agent had sent it on stdin. One validator,
   # one save path: a verb can never write a shape the block form would refuse, and it
-  # inherits the carry-through of "at", "docs" and "teams" for free.
+  # inherits the carry-through of "at", "holds" and "teams" for free.
   PREVB=$(awk '/^```/{f=!f; if(f) next; else exit} f' "$FILE" 2>/dev/null)
-  BODY=$(RONIN_PREV_BLOCK="$PREVB" python3 - "${EDITS[@]}" <<'EDIT'
+  BODY=$(RONIN_PREV_BLOCK="$PREVB" python3 - "${LETTER_EDITS[@]}" <<'EDIT'
 import json, os, sys
 US = "\037"
 # The block arrives in the environment: stdin is this script (the heredoc), so a pipe
@@ -615,32 +373,7 @@ except Exception:
     d = {}
 if not isinstance(d, dict):
     d = {}
-out = {k: d[k] for k in ("objective", "mandate", "repos", "projects", "ladder_state", "ladder") if k in d}
-ladder = out.setdefault("ladder", [])
-if not isinstance(ladder, list):
-    sys.exit("work-record update_record: the letter's ladder is not a list; fix it with a whole-block save.")
-STATUSES = {"PLANNED", "ACTIVE", "DONE"}
-
-def pos(word, verb, want=None):
-    # N or N.M, as the rung sits in the letter; want = "rung" | "leg" | None (either)
-    parts = word.split(".")
-    if not all(p.isdigit() for p in parts) or len(parts) > 2:
-        sys.exit("work-record update_record: %s takes a position as work-record read --rungs prints it — N or N.M — not %r." % (verb, word))
-    ri = int(parts[0]); li = int(parts[1]) if len(parts) > 1 else None
-    if not 1 <= ri <= len(ladder):
-        sys.exit("work-record update_record: %s: rung %d is out of range (1..%d)." % (verb, ri, len(ladder)))
-    rung = ladder[ri - 1]
-    if li is None:
-        if want == "leg":
-            sys.exit("work-record update_record: %s: rung %d is a %s — name a leg, N.M." % (verb, ri, "gate" if "gate" in rung else "phase"))
-        return rung, None
-    if "gate" in rung:
-        sys.exit("work-record update_record: %s: rung %d is a gate and has no legs." % (verb, ri))
-    legs = rung.get("legs") or []
-    if not 1 <= li <= len(legs):
-        sys.exit("work-record update_record: %s: rung %d has %d leg(s); %d is out of range." % (verb, ri, len(legs), li))
-    return rung, legs[li - 1]
-
+out = {k: d[k] for k in ("objective", "mandate", "repos", "ladder_state") if k in d}
 said = []
 def repo_argument(raw, existing, removing=False):
     value = raw.strip()
@@ -662,37 +395,6 @@ for raw in sys.argv[1:]:
     verb, args = f[0], f[1:]
     if verb == "objective":
         out["objective"] = args[0].strip(); said.append("objective set")
-    elif verb == "phase":
-        ladder.append({"phase": args[0].strip(), "status": "PLANNED", "legs": []}); said.append("phase %d added" % len(ladder))
-    elif verb == "gate":
-        ladder.append({"gate": args[0].strip(), "status": "PLANNED"}); said.append("gate %d added" % len(ladder))
-    elif verb == "rung":
-        rung, _ = pos(args[0], "--rung", "rung")
-        key = "gate" if "gate" in rung else "phase"
-        rung[key] = args[1].strip(); said.append("rung %s retitled" % args[0])
-    elif verb == "leg":
-        if "." in args[0]:
-            _, leg = pos(args[0], "--leg", "leg")
-            leg["title"] = args[1].strip(); said.append("leg %s retitled" % args[0])
-        else:
-            rung, _ = pos(args[0], "--leg", "rung")
-            if "gate" in rung:
-                sys.exit("work-record update_record: --leg: rung %s is a gate; legs belong to a phase." % args[0])
-            rung.setdefault("legs", []).append({"title": args[1].strip(), "status": "PLANNED"})
-            said.append("leg %s.%d added" % (args[0], len(rung["legs"])))
-    elif verb == "status":
-        st = args[1].strip().upper()
-        if st not in STATUSES:
-            sys.exit("work-record update_record: --status takes PLANNED, ACTIVE or DONE, not %r." % args[1])
-        rung, leg = pos(args[0], "--status")
-        (leg if leg is not None else rung)["status"] = st; said.append("%s -> %s" % (args[0], st))
-    elif verb == "drop":
-        rung, leg = pos(args[0], "--drop")
-        if leg is not None:
-            rung["legs"].remove(leg)
-        else:
-            ladder.remove(rung)
-        said.append("%s dropped" % args[0])
     elif verb in ("repo", "repo-pair"):
         repos = out.setdefault("repos", [])
         repo, branch = (args[0].strip(), args[1].strip()) if verb == "repo-pair" else repo_argument(args[0], repos)
@@ -720,6 +422,15 @@ EDIT
 else
   BODY=$(cat)
   [ -n "${BODY// /}" ] || die "work-record update_record: nothing on stdin. Send the json block."
+  # A whole block's "ladder" goes to your focus work item; the rest is the letter.
+  SPLIT=$(printf '%s' "$BODY" | python3 -c 'import json,sys
+try: d=json.load(sys.stdin)
+except Exception as e: sys.exit("work-record update_record: that is not valid json — %s" % e)
+if not isinstance(d, dict): sys.exit("work-record update_record: the block must be an object: { \"objective\": …, \"ladder\": [ … ] }")
+l=d.pop("ladder", None)
+print(json.dumps(l) if l is not None else ""); print(json.dumps(d))') || exit 3
+  LADDER_BLOCK=$(printf '%s\n' "$SPLIT" | sed -n 1p)
+  BODY=$(printf '%s\n' "$SPLIT" | sed -n 2p)
 fi
 
 # THE TEAMS DERIVATION — tags in, roster facts out, fresh on every save. The letter's
@@ -759,7 +470,7 @@ PREV=$(awk '/^```/{f=!f; if(f) next; else exit} f' "$FILE" 2>/dev/null)
 PREVF=$(mktemp); printf '%s' "${PREV:-{\}}" > "$PREVF"
 BLOCK=$(printf '%s' "$BODY" | python3 -c '
 import json, sys
-ALLOWED   = {"objective", "mandate", "repos", "projects", "ladder_state", "ladder"}
+ALLOWED   = {"objective", "mandate", "repos", "ladder_state"}
 # What is happening to the ladder AS A WHOLE — not a rung. Absent means "on_track", so
 # nothing has to be migrated and the normal case costs nobody a keystroke.
 #
@@ -776,8 +487,7 @@ if not isinstance(d, dict):
     sys.exit("work-record update_record: the block must be an object: { \"objective\": …, \"ladder\": [ … ] }")
 
 # REFUSED HERE, CARRIED THROUGH BELOW. Neither of these has the block as its door, and
-# both are named individually because the fix differs: nobody writes "at" at all, and
-# "docs" has two verbs of its own.
+# each is named individually because the fix differs.
 NOT_YOURS = {
     "at": "\"at\" is not yours to write.\n"
           "  It is the pointer a monitor keeps at whichever rung is being worked on now.\n"
@@ -792,12 +502,9 @@ NOT_YOURS = {
           "  A session has no identity axis of its own any more: identity is the TEAM\"s\n"
           "  team_role, on the team roster, worn contextually. Work readings are selected\n"
           "  as behaviours at birth. Drop \"role_family\".",
-    "docs": "\"docs\" is not written in the block.\n"
-            "  Your doc list has two verbs of its own, so that rewriting your ladder can\n"
-            "  never drop it by forgetting to include it:\n"
-            "    work-record document add <path>      list a doc you are working on\n"
-            "    work-record document remove <path>    take it off the list\n"
-            "  Drop \"docs\" from the block and save again; the list is carried through.",
+    "holds": "\"holds\" is not yours to write.\n"
+             "  It lists the work items you hold; assign, return and backlog move them.\n"
+             "  Drop \"holds\" and save again; the list is carried through.",
 }
 extra = sorted(set(d) - ALLOWED)
 if extra:
@@ -808,7 +515,8 @@ if extra:
         extra = []
 if extra:
     sys.exit("work-record update_record: unknown key(s): " + ", ".join(extra) +
-             "\n  A TEGAMI holds: objective, mandate, repos, ladder, and ladder_state when you are off it."
+             "\n  A TEGAMI holds: objective, mandate, repos, and ladder_state when you are off it;"
+             "\n  your ladder lives on your focus work item."
              "\n  (\"teams\" is machinery-derived; membership lives in your tags.)"
              "\n  asks / blocked / decided / handoff / plan / side_ladder / v were removed —"
              "\n  nothing reads them. Questions for the owner are a GATE rung; everything else"
@@ -844,10 +552,6 @@ for key, fallback in defaults.items():
     mandate[key] = value
 d["mandate"] = mandate
 
-ladder = d.get("ladder", [])
-if not isinstance(ladder, list):
-    sys.exit("work-record update_record: \"ladder\" must be a list of rungs.")
-
 repos = d.get("repos", [])
 if not isinstance(repos, list):
     sys.exit("work-record update_record: \"repos\" must be a list of { \"repo\": …, \"branch\": … } entries.")
@@ -856,7 +560,7 @@ if not isinstance(repos, list):
 # "line" (the team line it hands in to; src/tegami.ts TegamiCheckout). The seed wrote
 # them and this tool refused them (measured 2026-09-02): a session could not save the
 # letter it was born with. They are accepted here, and carried through below when a
-# save names the same repo+branch without them — the same protection "at" and "docs"
+# save names the same repo+branch without them — the same protection "at" and "holds"
 # have, because the desk row on the roster (src/desk-state.ts) reads them.
 REPO_KEYS = {"repo", "branch", "worktree", "line"}
 prev_repos = {}
@@ -883,64 +587,17 @@ for i, checkout in enumerate(repos, 1):
             if was and isinstance(was.get(k), str) and was[k].strip():
                 checkout[k] = was[k].strip()
 
-active = 0
-for i, r in enumerate(ladder, 1):
-    if not isinstance(r, dict):
-        sys.exit(f"work-record update_record: rung {i} is not an object.")
-    if ("gate" in r) == ("phase" in r):
-        sys.exit(f"work-record update_record: rung {i} must be a gate OR a phase — exactly one of them.")
-    st = r.get("status")
-    if st == "GATE":
-        sys.exit(f"work-record update_record: rung {i} — GATE is a rung KIND, not a status. A gate you are\n"
-                 "  sitting at is ACTIVE, like anything else you are on; the tile works out the\n"
-                 "  torii from the fact that the active rung is a gate.")
-    if st is not None and st not in STATUSES:
-        sys.exit(f"work-record update_record: rung {i} status {st!r} — use one of: " + " · ".join(sorted(STATUSES)))
-    if "gate" in r and st == "ACTIVE":
-        active += 1
-    for j, leg in enumerate(r.get("legs") or [], 1):
-        if not isinstance(leg, dict) or "title" not in leg:
-            sys.exit(f"work-record update_record: rung {i} leg {j} needs a \"title\".")
-        ls = leg.get("status", "PLANNED")
-        if ls not in STATUSES:
-            sys.exit(f"work-record update_record: rung {i} leg {j} status {ls!r} — use one of: " + " · ".join(sorted(STATUSES)))
-        if ls == "ACTIVE":
-            active += 1
-
-# One ACTIVE is the rule the whole readout rests on: the tile lights exactly one rung,
-# so two is a question the display cannot answer. A warning, not a refusal — a session
-# mid-edit is not doing anything wrong.
-if active > 1:
-    print(f"work-record update_record: note — {active} rungs are ACTIVE. Only one can be where you are;"
-          " the tile will light the first.", file=sys.stderr)
-if ladder and "gate" not in ladder[0]:
-    print("work-record update_record: note — rung one is usually a GATE (the go / no-go).", file=sys.stderr)
-
 # Hand the normalised block back on STDOUT. Not via a temp file: $$ is not expanded
 # inside this single-quoted block, so the two halves would name different files — which
 # is how an empty ladder once got written over a real one. Notes go to stderr, so stdout
 # stays exactly the payload.
-# CARRY "at" THROUGH. It belongs to the monitor, so an agent save must neither write it
-# nor wipe it — a save that silently dropped the pointer would make the monitor look
-# broken every single turn, and that failure mode is one nobody would think to look for.
-#
-# But an index is only meaningful against the ladder it was computed for. If this save
-# changes the SHAPE of the sequence — a rung added, removed or reordered — the pointer
-# is reset to null, because a stale index silently points at the wrong work and null is
-# honest. Editing a title or flipping a status leaves the shape alone and keeps it.
+# CARRY "at" THROUGH: the focus item and the position a monitor placed on its ladder.
+# An agent save never writes it and never wipes it.
 prev = json.loads(open(sys.argv[1]).read()) if len(sys.argv) > 1 else {}
-def shape(l):
-    return [("gate", r.get("gate", "")) if "gate" in r
-            else ("phase", r.get("phase", ""), tuple(x.get("title", "") for x in (r.get("legs") or [])))
-            for r in (l or [])]
 at = prev.get("at")
 if not isinstance(at, dict):
     at = None
-if at is not None and shape(prev.get("ladder")) != shape(ladder):
-    at = None
-    print("work-record update_record: note — the ladder shape changed, so the pointer was cleared.",
-          file=sys.stderr)
-# "teams" IS DERIVED, NEVER TAKEN FROM THE BLOCK — the same contract as "at" and "docs"
+# "teams" IS DERIVED, NEVER TAKEN FROM THE BLOCK — the same contract as "at" and "holds"
 # but stronger: it is regenerated fresh on every save, from the tags this session
 # carries and the team rosters those tags name. That is what makes a changed team
 # objective reach the agent on its next reread, with no push and no injection. The
@@ -957,28 +614,14 @@ out = {"objective": d.get("objective", ""),
        "mandate": mandate,
        "teams": _teams,
        "repos": repos}
-_projects = d.get("projects", prev.get("projects", []))
-if not isinstance(_projects, list):
-    sys.exit("work-record update_record: projects must be a list.")
-if _projects:
-    out["projects"] = _projects
+# CARRY "holds" THROUGH: the work item ids this session holds. Assign and release move
+# them, through the work item routes; a whole-block save never drops them.
+_holds = [h for h in (prev.get("holds") or []) if isinstance(h, str)]
+if _holds:
+    out["holds"] = _holds
 ls_ = (d.get("ladder_state") or "").strip().lower()
 if ls_ and ls_ != "on_track":
     out["ladder_state"] = ls_
-out["ladder"] = ladder
-# CARRY "docs" THROUGH — same contract as "at", different reason. "at" belongs to a
-# monitor; "docs" belongs to the agent but is written by verbs, so a whole-block save must
-# put it back exactly as it found it. This one line is what makes the doc list durable:
-# there is no way to lose it by writing a ladder that does not mention it.
-#
-# Unlike "at" it is never reset. A pointer is an index into the ladder and goes stale when
-# the shape of that ladder changes; a doc list has nothing to do with the ladder.
-#
-# NOTE FOR ANYONE EDITING THIS BLOCK: it is inside a single-quoted bash string, so an
-# apostrophe anywhere in here — even in a comment — ends the string and breaks the script.
-docs_ = [p for p in (prev.get("docs") or []) if isinstance(p, str)]
-if docs_:
-    out["docs"] = docs_
 if at is not None:
     out["at"] = at
 print(json.dumps(out, indent=2, ensure_ascii=False))
@@ -1006,19 +649,9 @@ TMP="$DIR/.tegami.$$"
   else
     printf '# TEGAMI — %s\n' "$NAME"
     cat <<'TEACH'
-> **This file is your ladder, and it is the only thing anyone watching can see.** Keep it
-> true and save it whenever it changes — a stale ladder is worse than none.
->
-> RUNG ONE IS ALWAYS A GATE — Ronin's gate ⛩. Before phase 1, before anything: you draw
-> the ladder up and it waits there. Nothing below it moves until the owner says go.
->
-> Then: phases hold legs. Name a phase before you know its legs — a phase with nothing
-> under it yet is normal and is drawn as "undetermined". Leave out what you cannot see;
-> a short ladder is a true ladder, and a guessed one is a lie.
->
-> Statuses are `PLANNED` · `ACTIVE` · `DONE`. **One ACTIVE at a time** — you are
-> waiting at a gate or you are doing a leg, never both. Add a gate wherever the work
-> genuinely stops and needs someone: that is how the owner knows you want them.
+> **This is your work record.** Your objective, your repositories, and the work items you
+> hold. Your ladder lives on the item you are on: `work-record read` shows it and
+> `work-record update_record --phase|--leg|--gate|--done …` writes it. Keep both true.
 >
 > Your own words go in "objective" and "title". Nothing else is read, so nothing else
 > belongs here — findings go in your plan doc, cross-session findings on a wipeboard.
@@ -1029,5 +662,9 @@ TEACH
 } > "$TMP"
 mv -f "$TMP" "$FILE"
 
-printf 'work-record update_record: @%s ladder saved (%s rungs).\n' "$NAME" \
-  "$(printf '%s' "$BLOCK" | python3 -c 'import json,sys; print(len(json.load(sys.stdin).get("ladder") or []))')"
+printf 'work-record update_record: @%s work record saved.\n' "$NAME"
+# Then the ladder, on the focus item: after the letter, so an item made for an Agent
+# holding nothing is titled from the objective this same call just set.
+if [ "$LADDER_EDITS" != '[]' ]; then send_ladder edits "$LADDER_EDITS"
+elif [ -n "$LADDER_BLOCK" ]; then send_ladder ladder "$LADDER_BLOCK"
+fi

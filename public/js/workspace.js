@@ -10,7 +10,7 @@ const WORKBENCH_TAB_PARAM = 'ronin-tab';
 
 const text = (value) => (typeof value === 'string' ? value : '');
 const workbenchViews = new Set(WORKBENCH_APPEARANCES);
-const tenantViews = new Set(['team', 'agent']);
+const tenantViews = new Set(['team', 'agent', 'team-next', 'board', 'workspace']);
 const validTabId = (value) => /^[a-f0-9]{32}$/.test(text(value));
 const newWorkbenchTabId = () => {
   const bytes = new Uint8Array(16);

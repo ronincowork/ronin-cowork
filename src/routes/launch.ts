@@ -25,7 +25,8 @@ import { scanContext, scanModel } from '../ctx.js';
 import { count } from '../counts.js';
 import { listTeamRosters } from '../team-rosters.js';
 import { announceTeamChanges } from './wipeboards-api.js';
-import { checkoutAt, deriveTeams, parkBrief, seedTegami, withAxes, writeGate, type SessionWithAxes } from '../tegami.js';
+import { checkoutAt, deriveTeams, parkBrief, seedTegami, withAxes, type SessionWithAxes } from '../tegami.js';
+import { writeFocusLadder } from '../work-items.js';
 import { collectBirthLines, collectRowFields } from '../sockets.js';
 import { broadcastEvent, listening, pushTeams } from '../ws/events.js';
 import { prepareLaunchDesks } from '../launch-desks.js';
@@ -305,7 +306,6 @@ export function registerLaunch(app: express.Express): LaunchControl {
   const launch = async (req: express.Request, res: express.Response, houseSeat?: 'mika', loader?: typeof RONIN_HELPER_LOADER): Promise<unknown> => {
     let mikaSelection: MikaSelection | undefined;
     let mikaHome = '';
-    let mikaTips = '';
     if (houseSeat === 'mika') {
       if (await sessionExists(MIKA_SESSION)) return res.json({ ok: true, name: MIKA_SESSION, already: true });
       try {
@@ -388,9 +388,9 @@ export function registerLaunch(app: express.Express): LaunchControl {
           const previousSentence = `Read first: ${resolvedSources.join(', ')}.`;
           const knowledge = await compileMikaKnowledgeAt(mikaHome);
           mikaKnowledgeIndex = knowledge.index;
-          // The owner's tips ride in as a document of her own: in the README, and on her
-          // Docs list so they open from her tile.
-          mikaTips = await mikaTipsSource();
+          // The owner's tips ride in as a document of her own, in the README her Docs
+          // list always opens.
+          const mikaTips = await mikaTipsSource();
           sources.push(mikaRulesSource(), mikaTips, mikaStartHereSource(), mikaKnowledgeIndex);
           resolved.brief = resolved.brief.replace(previousSentence, `Read first: ${sources.join(', ')}.`);
         }
@@ -479,7 +479,6 @@ export function registerLaunch(app: express.Express): LaunchControl {
             : await checkoutAt(resolved.dir),
         await deriveTeams(resolved.tags),
         resolved.mandate,
-        mikaTips ? [mikaTips] : [],
       );
       }
     } catch (e) {
@@ -578,13 +577,10 @@ export function registerLaunch(app: express.Express): LaunchControl {
       const shelved = [launch.parked ? resolved.brief : '', birthLines].filter(Boolean).join('\n');
       if (!shelved) return;
       const at = await parkBrief(resolved.name, shelved);
-      if (at) {
-        await writeGate(
-          resolved.name,
-          launch.parked
-            ? 'Your brief could not be handed to this agent at launch, so it is parked in brief.md beside this session. Read it there.'
-            : 'There is a note for this session in brief.md beside it.',
-        );
+      // A brief that never reached the Agent is a gate the owner must see: it goes on the
+      // Agent's ladder, which (holding nothing yet) makes its first work item.
+      if (at && launch.parked) {
+        await writeFocusLadder(resolved.name, { edits: [['gate', 'Your brief could not be handed to this agent at launch, so it is parked in brief.md beside this session. Read it there.']] }, 'ronin');
       }
     })().catch((e) => console.error(`[ronin] spawn ${resolved.name}:`, e));
   };

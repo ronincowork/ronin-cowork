@@ -37,6 +37,16 @@ export async function setTeamMembership(session, team, member) {
   if (member) teams.add(team); else teams.delete(team);
   return request(`/api/sessions/${encodeURIComponent(session)}/teams`, { method: 'PUT', json: { teams: [...teams] } });
 }
+/** One write that leaves `from` and joins `to`: two writes in a row would read the tags
+ *  before the first one's push came back and strip the session of every Team. */
+export async function moveTeamMembership(session, from, to) {
+  const live = sessions().find((row) => row.name === session);
+  if (!live) return { ok: false, message: 'No such session.' };
+  const teams = new Set(live.tags || []);
+  if (from) teams.delete(from);
+  if (to) teams.add(to);
+  return request(`/api/sessions/${encodeURIComponent(session)}/teams`, { method: 'PUT', json: { teams: [...teams] } });
+}
 export async function setTeamLead(session, team, lead) {
   const live = sessions().find((row) => row.name === session);
   if (!live) return { ok: false, message: 'No such session.' };

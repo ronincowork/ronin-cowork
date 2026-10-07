@@ -26,16 +26,15 @@ export const configSignature = (name) => {
 
 export const buildTeamMembers = (name, options = {}) => {
   const { createAction, createActionBar } = WorkspaceKit.primitives;
-  const holding = !!options.holding;
   const roster = el('section', 'league-team-roster');
   const members = membersOfTeam(name);
   let density = 'compact', selected = options.selected || '';
   const heading = el('div', 'league-team-roster-heading');
-  heading.append(el('h3', 'league-team-roster-title', holding ? t('league.agents', 'Agents') : t('league.people', 'People')));
+  heading.append(el('h3', 'league-team-roster-title', t('league.people', 'People')));
   const tools = el('div', 'league-team-people-tools');
   const densityButton = createAction({ label: '', size: 'compact', className: 'tw-agent-density league-team-density' });
   const densityLines = el('span', 'tw-agent-density-lines'); densityLines.append(el('i'), el('i')); densityButton.el.replaceChildren(densityLines);
-  tools.append(densityButton.el); tools.hidden = holding; heading.append(tools); roster.append(heading);
+  tools.append(densityButton.el); heading.append(tools); roster.append(heading);
   const content = el('div', 'league-team-people-content'); roster.append(content);
 
   const select = (member) => {
@@ -55,7 +54,6 @@ export const buildTeamMembers = (name, options = {}) => {
       el('span', 'league-team-member-id', t('league.agent_id_fact', 'ID · @{id}', { id: member.name })),
     );
     identity.append(mark, words);
-    if (holding) { row.append(identity); return row; }
     const launch = options.onOpen ? createAction({ label: t('league.launch_agent', 'Launch'), size: 'compact', action: () => options.onOpen(member) }) : null;
     const rename = createAction({ label: t('league.rename_agent', 'Rename'), size: 'compact', action: async () => {
       const currentTitle = agentTitle(member);
@@ -119,8 +117,7 @@ export const buildTeamMembers = (name, options = {}) => {
     densityButton.el.title = density === 'compact' ? t('league.expand_people', 'Expand Agent details') : t('league.compact_people', 'Compact Agent details');
     densityButton.el.setAttribute('aria-label', densityButton.el.title); densityButton.el.setAttribute('aria-pressed', String(density === 'expanded'));
     if (!members.length) {
-      if (!holding) content.append(noLead());
-      content.append(el('p', 'league-team-empty', holding ? t('league.no_ronin', 'No Rōnin Agents') : t('league.no_members', 'No Agents assigned yet.')));
+      content.append(noLead(), el('p', 'league-team-empty', t('league.no_members', 'No Agents assigned yet.')));
     }
     else content.append(...members.map(memberRow));
     for (const detail of content.querySelectorAll('.league-team-member-detail')) detail.hidden = density !== 'expanded';
@@ -133,7 +130,6 @@ export const buildTeamMembers = (name, options = {}) => {
   };
   densityButton.el.addEventListener('click', () => { density = density === 'compact' ? 'expanded' : 'compact'; paint(); });
   paint();
-  if (holding) return roster;
   const available = sessionsAvailableToTeam(name), add = el('div', 'league-team-add');
   const memberSelect = el('select', null); memberSelect.setAttribute('aria-label', t('league.choose_member', 'Choose an Agent to add'));
   memberSelect.append(new Option(available.length ? t('league.choose_member', 'Choose an Agent to add') : t('league.no_available_members', 'No other Agents available'), ''));
@@ -142,4 +138,30 @@ export const buildTeamMembers = (name, options = {}) => {
   memberSelect.addEventListener('change', () => assign.setDisabled(!memberSelect.value));
   add.append(memberSelect, assign.el); roster.append(add);
   return roster;
+};
+
+// The roster reads the same frontier as the expanded work record: an explicit pointer
+// wins, otherwise the first unfinished rung is current. Keep the agent's actual words
+// beside that coordinate instead of substituting a launch-time label.
+export const currentWorkStep = (letter) => {
+  const ladder = letter?.ladder || [];
+  if (!ladder.length) return { label: '', text: '' };
+  const finished = (rung) => rung.gate !== undefined
+    ? rung.status === 'DONE'
+    : (rung.legs || []).length > 0 && rung.legs.every((leg) => leg.status === 'DONE');
+  let rungIndex = ladder.findIndex((rung) => !finished(rung));
+  let legIndex = -1;
+  if (letter.at && Number.isInteger(letter.at.rung) && letter.at.rung >= 1 && letter.at.rung <= ladder.length) {
+    rungIndex = letter.at.rung - 1;
+    if (Number.isInteger(letter.at.leg)) legIndex = letter.at.leg - 1;
+  }
+  if (rungIndex < 0) rungIndex = ladder.length - 1;
+  const rung = ladder[rungIndex];
+  if (rung.gate !== undefined) return { label: letter.chip?.text || t('ladder.gate', 'GATE'), text: rung.gate || '' };
+  const legs = rung.legs || [];
+  if (legIndex < 0) {
+    legIndex = legs.findIndex((leg) => leg.status === 'ACTIVE');
+    if (legIndex < 0) legIndex = legs.findIndex((leg) => leg.status !== 'DONE');
+  }
+  return { label: letter.chip?.text || rung.phase || '', text: legs[legIndex]?.title || rung.phase || '' };
 };

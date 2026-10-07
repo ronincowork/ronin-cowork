@@ -164,6 +164,34 @@ test('New Agent workspace interactions send the shown default, preserve an expli
     'a later Team change preserves the owner-edited selection');
 });
 
+test('picking Born in defaults untouched Workspaces to that folder, and leaves a hand-picked selection alone', () => {
+  // The launch forms' rule: a 'repos' change is the hand; a 'root' change defaults untouched Workspaces.
+  const options = [{ v: 'ronin_cowork', l: 'ronin_cowork' }, { v: 'ronin_lab', l: 'ronin_lab' }, { v: 'notes', l: 'notes' }];
+  const mount = () => {
+    let touched = false;
+    let form = null;
+    form = ask([{ fields: [
+      { key: 'root', label: 'Born in', options },
+      { key: 'repos', label: 'Workspaces', many: true, options },
+    ] }], { value: { root: 'ronin_cowork', repos: ['ronin_cowork'] }, onChange: (value, key) => {
+      if (key === 'repos') touched = true;
+      if (key === 'root' && !touched) form.set('repos', [value.root]);
+    } });
+    return form;
+  };
+  const form = mount();
+  stoneFor(form, 'root').click();
+  optNamed(form, 'ronin_lab').click();
+  assert.deepEqual(form.value().repos, ['ronin_lab'], 'Workspaces follows the chosen Born in');
+
+  const edited = mount();
+  stoneFor(edited, 'repos').click();
+  optNamed(edited, 'notes').click();
+  stoneFor(edited, 'root').click();
+  optNamed(edited, 'ronin_lab').click();
+  assert.deepEqual(edited.value().repos, ['ronin_cowork', 'notes'], 'a hand-picked selection survives a Born in change');
+});
+
 test('a square stone carries a glyph and a ruled word; the caption carries the sentence', () => {
   const { form } = build();
   stoneFor(form, 'reach').click();
@@ -379,4 +407,19 @@ test('an explicit stone label survives when it matches its group head', () => {
   const form = ask([{ group: 'Where will you install Ronin?', fields: [{ key: 'where', label: 'Where will you install Ronin?', options: [{ v: 'here', l: 'This machine' }] }] }]);
   assert.equal(form.el.one('ask-group-head').textContent, 'Where will you install Ronin?');
   assert.equal(stoneFor(form, 'where').one('ask-label').textContent, 'Where will you install Ronin?');
+});
+
+test('a one-of-two question with no blank flips on press and opens no tray (owner, 2026-10-03)', async () => {
+  const { ask } = await import('../public/js/ask.js');
+  const changes = [];
+  const form = ask([{ fields: [{ key: 'under', label: 'Under each Team', options: [{ v: 'boards', l: 'Boards' }, { v: 'agents', l: 'Agents' }] }] }],
+    { value: { under: 'boards' }, onChange: (value, key) => changes.push([key, value.under]) });
+  const stone = form.el.all('ask-stone')[0];
+  assert.equal(stone.dataset.flip, 'true');
+  stone.click();
+  assert.equal(form.value().under, 'agents');
+  assert.equal(form.el.all('ask-tray').length, 0, 'no tray opens');
+  assert.deepEqual(changes.at(-1), ['under', 'agents']);
+  form.el.all('ask-stone')[0].click();
+  assert.equal(form.value().under, 'boards');
 });

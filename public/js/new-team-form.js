@@ -231,6 +231,7 @@ export function createNewTeamFormView(kit, { created = null, consumed = null, em
     });
     return input;
   };
+  let reposTouched = false;
   const whereQuestions = ask([
     { group: t('new_agent.model_package', 'Model'), fields: [
       { key: 'provider', label: t('forms.provider', 'Model provider'), blank: t('forms.default', 'Default'), options: providerRows },
@@ -238,16 +239,22 @@ export function createNewTeamFormView(kit, { created = null, consumed = null, em
     ] },
     { group: t('where.label', 'Where it works'), fields: [
       { key: 'root', label: t('where.born_in', 'Born in'), blank: t('new_team.root_default', 'The box’s default'), options: () => rootRows() },
-      { key: 'repos', label: t('new_agent.workspaces', 'Workspaces'), many: true, after: 'root',
+      { key: 'repos', label: t('new_agent.workspaces', 'Workspaces'), many: true,
         options: () => rootRows(true), row: branchField },
     ] },
   ], {
     value: { provider: draft.provider, model: draft.model, root: draft.root, repos: draft.repos },
     className: 'ntf-where-questions',
     density: 'tight',
-    onChange: (value) => {
+    onChange: (value, key) => {
       draft.provider = value.provider; draft.model = value.model; draft.root = value.root;
       draft.repos = value.repos;
+      if (key === 'repos') reposTouched = true;
+      // Born in is where the Team works until the hand picks Workspaces itself.
+      if (key === 'root' && !reposTouched) {
+        draft.repos = rootRows(true).some((row) => row.v === draft.root) ? [draft.root] : [];
+        whereQuestions.set('repos', draft.repos);
+      }
       for (const name of Object.keys(draft.branches)) if (!draft.repos.includes(name)) delete draft.branches[name];
       paintFoot();
     },
@@ -532,6 +539,7 @@ export function createNewTeamFormView(kit, { created = null, consumed = null, em
     draft.name = '';
     draft.objective = '';
     draft.repos = []; draft.branches = {};
+    reposTouched = false;
     draft.books = [];
     draft.agents = [];
     draft.expanded = {};

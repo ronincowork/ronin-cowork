@@ -43,6 +43,10 @@ export function createCampaignHome() {
   const doors = el('div', 'ch-doors');
   const settings = el('button', 'ch-settings', t('campaign_home.settings', 'Settings'));
   settings.type = 'button';
+  // The temporary door to the new workbench's root (next-home.js); goes with it.
+  const next = el('button', 'ch-settings ch-next', t('campaign_home.next', 'Next'));
+  next.type = 'button';
+  next.addEventListener('click', () => ctx?.navigate('next'));
   const release = el('div', 'ch-release');
   const check = el('button', 'ch-update', t('campaign_home.check_updates', 'Check for updates'));
   const answer = el('span', 'ch-update-answer');
@@ -66,7 +70,7 @@ export function createCampaignHome() {
   readings.setAttribute('aria-live', 'polite');
   release.append(readings, answer, check);
   frame.append(doors);
-  root.append(frame, settings, release);
+  root.append(frame, next, settings, release);
 
   let ctx = null;
   let entered = false;

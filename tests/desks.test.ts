@@ -28,6 +28,9 @@ process.env.RONIN_CATALOGS_DIR = path.join(tmp, 'catalogs');
 process.env.RONIN_DESKS_DIR = path.join(tmp, 'desks');
 process.env.RONIN_WORKTREES_DIR = path.join(tmp, 'worktrees');
 process.env.RONIN_TEAM_ROSTERS_DIR = path.join(tmp, 'rosters');
+process.env.RONIN_WORK_ITEMS_DIR = path.join(tmp, 'work-items');
+process.env.RONIN_SESSION_DIR = path.join(tmp, 'sessions');
+process.env.RONIN_MESSAGE_QUEUE_DIR = path.join(tmp, 'message-queue');
 
 const sh = (dir: string, args: string[]) =>
   execFileSync('git', ['-C', dir, ...args], { stdio: ['ignore', 'pipe', 'pipe'] }).toString().trim();
@@ -68,7 +71,8 @@ const { parseArrangement, arrangementOf } = await import('../src/desks/arrangeme
 const { deriveAssignment, listDesks, readDesk, deskWorktree, candidateWorktree } = await import('../src/desks/registry.js');
 const { openDesk, syncDesk, closeDesk, discardDesk, handoffDesk, cwdIsInside, certifyDesks } = await import('../src/desks/desk.js');
 const { deskStatus } = await import('../src/desks/registry.js');
-const { handIn } = await import('../src/desks/hand-in.js');
+const { handIn, handInAssignment } = await import('../src/desks/hand-in.js');
+const { createItem, readItem } = await import('../src/work-items.js');
 const statusOf = async (repo: string, branch: string) => {
   const d = (await listDesks({ repo })).find((x) => x.branch === branch);
   if (!d) throw new Error(`no desk ${repo}:${branch}`);
@@ -244,20 +248,21 @@ test('accepted hand-ins discover an explicit managed repo outside the team roste
   assert.deepEqual(await acceptedLinesForTeam('comp'), [{ repo: 'services', line: 'team/comp/dev' }]);
 });
 
-test('an accepted worktree-desk hand-in ends with one project-update reminder', async () => {
+test('a hand-in with --project ends by naming the item and the write that keeps it current', async () => {
   const desk = await openDesk({ repo: 'cowork', session: 'reminder', team: 'comp' });
   await commitFile(desk.worktree, 'reminder.txt', 'hand this in\n');
+  const { item } = await createItem({ title: 'Reminded' }, 'reminder');
   const output = execFileSync(process.execPath, [
-    '--import', 'tsx', path.resolve('src/commands/desk.ts'), 'hand-in', 'cowork',
+    '--import', 'tsx', path.resolve('src/commands/desk.ts'), 'hand-in', 'cowork', '--project', item.id,
   ], {
     cwd: path.resolve('.'),
     env: { ...process.env, RONIN_SESSION: 'reminder', RONIN_TEAMS: 'comp' },
   }).toString();
-  const reminder = 'Remember to update your project.';
-  assert.equal(output.split(reminder).length - 1, 1);
-  assert.ok(output.indexOf('ACCEPTED cowork:team/comp/reminder') < output.indexOf(reminder));
-  assert.doesNotMatch(output, /contact the lead/);
-  assert.equal(output.trimEnd().split('\n').at(-1), reminder);
+  const last = output.trimEnd().split('\n').at(-1)!;
+  assert.equal(last, `${item.id} moved to land; ${item.id} is a project at land, 0 legs. Keep it current: work-record project write ${item.id} --objective "<what it is now>" --evidence "<a fact with its receipt>"`);
+  assert.ok(output.indexOf('ACCEPTED cowork:team/comp/reminder') < output.indexOf(last));
+  assert.equal(output.split('Keep it current').length - 1, 1, 'one reminder, never a block');
+  assert.equal((await readItem(item.id))!.stage, 'LAND');
 });
 
 test('openDesk keeps managed branch names private and reports the checkout route for direct repositories', async () => {
@@ -311,6 +316,19 @@ test('handIn: the line advances by compare-and-swap to the candidate, its worktr
   await fs.unlink(path.join(deskWorktree('cowork', 'team/comp/fable'), 'loose-one.txt'));
   await fs.unlink(path.join(deskWorktree('cowork', 'team/comp/fable'), 'loose-two.txt'));
   assert.equal(existsSync(candidateWorktree('cowork', 'team/comp/dev')), false, 'accepted hand-in cleans its candidate');
+});
+
+test('a hand-in naming a work item leaves one trail line and the item at LAND', async () => {
+  const { item } = await createItem({ title: 'Landing', stage: 'REVIEW' }, 'fable');
+  await commitFile(deskWorktree('cowork', 'team/comp/fable'), 'land.txt', 'land\n');
+  const { outcomes, moved } = await handInAssignment({ desks: [{ repo: 'cowork', branch: 'team/comp/fable' }], projectId: item.id, session: 'fable' });
+  assert.equal(outcomes[0]!.receipt.result, 'accepted', outcomes[0]!.receipt.reason);
+  const back = (await readItem(item.id))!;
+  assert.equal(back.stage, 'LAND');
+  assert.equal(back.trail.length, 2, 'create, then exactly one line for the hand-in');
+  assert.deepEqual([back.trail[1]!.op, back.trail[1]!.from, back.trail[1]!.to, back.trail[1]!.by], ['stage', 'REVIEW', 'LAND', 'fable']);
+  assert.equal(back.trail[1]!.note, `hand-in ${outcomes[0]!.receipt.id}`);
+  assert.equal(moved?.line.op, 'stage');
 });
 
 test('handIn with no new desk delta is an accepted ordinary result and moves no work', async () => {

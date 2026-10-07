@@ -237,8 +237,6 @@ test('the stock capability documents are well-formed and carry no retired vocabu
     'team project done', 'team project restore', 'team member status',
   ]);
   assert.ok(!by.cowork_team.tools.some((tool) => tool.name === 'session_create'), 'Cowork Team does not duplicate Agent session creation');
-  assert.match(await readFile(by['work-record'].file, 'utf8'), /Team roster issues its ID/);
-  assert.match(await readFile(by['work-record'].file, 'utf8'), /Agents never choose or reuse IDs/);
   assert.match(await readFile(by['work-record'].file, 'utf8'), /`exit`[\s\S]*`none` · `agent` · `lead` · `user`[\s\S]*`status`[\s\S]*`green` · `yellow` · `red`/);
   assert.match(await readFile(by.cowork_team.file, 'utf8'), /Assign and return/);
   const machine = await readFile(by['machine-settings'].file, 'utf8');

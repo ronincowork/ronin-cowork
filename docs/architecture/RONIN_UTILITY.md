@@ -9,6 +9,7 @@ Choose the task; implementation knowledge is not required.
 | Find and arrange work | [Workbench](../using-ronin/workbench.md) |
 | Use an Agent's terminal, docs, and work record | [The tile](../using-ronin/tile.md) |
 | Stop, clear, copy, or close | [Terminal controls](../using-ronin/terminal-controls.md) |
+| Give an Agent a file, image, or screenshot | [Share a file](../using-ronin/share-a-file.md) |
 | Start a Team | [New Team](../using-ronin/new-team.md) |
 | Archive or restore a session | [Archived sessions](../using-ronin/archived-sessions.md) |
 | Customize words, appearance, or guidance | [Customize](../getting-started/customize.md) |

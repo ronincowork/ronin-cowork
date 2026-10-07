@@ -31,7 +31,9 @@ import { registerPasskeyLogin, registerPasskeyManage } from './routes/passkey-ap
 import { registerPasswordSettings } from './routes/password-api.js';
 import { registerSessions, shutdownOperation } from './routes/sessions-api.js';
 import { registerTeams, teamRosters } from './routes/teams-api.js';
+import { registerWorkItems } from './routes/work-items-api.js';
 import { registerDocs } from './routes/docs-api.js';
+import { registerDrop } from './routes/drop-api.js';
 import { registerDesks } from './routes/desks-api.js';
 import { registerTeamPage } from './routes/team-page-api.js';
 import { startTomodachiSender } from './activation/tomodachi.js';
@@ -55,7 +57,10 @@ import { registerCli } from './routes/cli-api.js';
 import { listQueuedMessages, startMessageQueue } from './message-queue.js';
 import { isValidTeam, listAllJobs, listJobs } from './jikan.js';
 import { isValidBoardName, seedHouseBoard, WIPEBOARD_DIR } from './wipeboards.js';
-import { handleEvents, pushJikan, pushMessages, pushWipeboard, startSessionsBroadcast, watchStore } from './ws/events.js';
+import { handleEvents, pushJikan, pushMessages, pushReadings, pushWipeboard, startSessionsBroadcast, watchStore } from './ws/events.js';
+import { collectionReading } from './collection-read.js';
+import { wantedItemsReading } from './work-items-read.js';
+import { USER_CATALOGS_DIR } from './project-roots.js';
 import { tmux as tmuxClient } from './tmux-client.js';
 import { handlePty } from './ws/pty.js';
 import { originAllowed, allowedOrigins } from './ws/origin.js';
@@ -229,6 +234,7 @@ registerMikaContext(app); // /api/mika/context/:tab — tiny tab-scoped owner_vi
 registerCatalogs(app); // catalogs and configuration resources — src/routes/catalogs.ts
 registerDocs(app); // /api/docs?shelf=plans|docs — the ▧ Docs tab's shelves — src/routes/docs-api.ts
 registerTeams(app); // /api/team-rosters* — the durable half of every team — src/routes/teams-api.ts
+registerWorkItems(app); // /api/work-items* — the one door to the work item store — src/routes/work-items-api.ts
 registerDesks(app); // /api/desks?session=<name> and funnel recovery — derived desk state — src/routes/desks-api.ts
 registerTeamPage(app); // /api/teams/:team/page — the team page's view, and drafts an agent hands it — src/routes/team-page-api.ts
 registerVersion(app); // /api/version — release string, or the commit this process started from — src/routes/version.ts
@@ -296,6 +302,7 @@ registerSessions(app); // per-session: kill/harakiri, meta, ctx, tegami, send �
 registerWipeboards(app); // /api/wipeboards* — src/routes/wipeboards-api.ts
 registerTerminalControls(app);
 registerMessages(app); // /api/messages* — durable inbound session delivery
+registerDrop(app); // /api/sessions/:name/drop — a file handed to an Agent from the browser — src/routes/drop-api.ts
 registerCli(app); // /api/cli/:tool — command-line faces of operator verbs
 startMessageQueue();
 
@@ -430,10 +437,17 @@ startSessionsBroadcast({
   jikan: (team) => team === '*' ? listAllJobs() : isValidTeam(team) ? listJobs(team) : Promise.resolve(null),
   github: { attached: githubSetupAttached, answer: githubSetupAnswer },
   shutdown: shutdownOperation,
+  collection: async (filter) => ({ ...(await collectionReading(filter)) }),
+  workItems: wantedItemsReading,
 });
 watchStore(WIPEBOARD_DIR, (file) => { void pushWipeboard(file.split('/')[0]!); });
 watchStore(storeDir('jikan'), (file) => { if (file.endsWith('.md')) void pushJikan(file.slice(0, -3)); });
 watchStore(storeDir('message_queue'), () => { void pushMessages(); });
+// The readings' inputs: work items, Team rosters, the workspace folder catalog (sessions move
+// them from the tick).
+watchStore(storeDir('work_items'), () => { void pushReadings(); });
+watchStore(storeDir('team_rosters'), () => { void pushReadings(); });
+watchStore(USER_CATALOGS_DIR, (file) => { if (file === 'PROJECT_ROOTS.md') void pushReadings('collection'); });
 void seedHouseBoard().catch((e) => console.error('[tmux-ronin] house board seed failed:', e));
 
 void publishMax();
