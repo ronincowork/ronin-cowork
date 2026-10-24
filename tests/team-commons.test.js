@@ -30,7 +30,7 @@ test('Roster remains a roster; the Team page selector is Commons, Agents, New Ag
   assert.match(view, /if \(!recordMoved\) continue;\s*\n\s*if \(!roster\) \{ renderTeamConfiguration/);
   assert.match(view, /onClose: \(member\) => retireSession\(member\.name/);
   // Owner 2026-10-20: no Launch on a roster row; the caret opens the one composition body.
-  assert.match(members, /actions: \[rename, lead, eject, close\]/);
+  assert.match(members, /actions: \[composition\.action, rename, lead, eject, close\]/, 'Update is the row\'s primary act, in its one action row (lead, 2026-10-24)');
   assert.doesNotMatch(members, /league\.launch_agent/);
   assert.match(members, /createAgentCompositionReader\(member\.name/);
   assert.match(css, /\.league-team-member-detail\[hidden\] \{ display: none; \}/);

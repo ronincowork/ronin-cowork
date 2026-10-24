@@ -105,7 +105,7 @@ await fs.writeFile(
   ].join('\n'),
 );
 
-const { resolveForm } = await import('../src/spawn.js');
+const { resolveForm, resolveFacts, resolveReading } = await import('../src/spawn.js');
 const { mikaLaunchBody } = await import('../src/routes/launch.js');
 type SpawnForm = import('../src/spawn.js').SpawnForm;
 
@@ -508,4 +508,15 @@ test('a selected template names unchanged preset values without reapplying edite
   const missing = await resolveForm(commonsForm({ template: 'not_there' }), new Set());
   assert.deepEqual(missing.ignored, ['template[not_there]']);
   assert.equal(missing.stated_by.template[0]?.layer, 'system');
+});
+
+// UPDATE (owner, 2026-10-24): a running Agent's brief is rebuilt from the facts and the reading
+// alone, never through the launch. What they give must be what birth gave.
+test('the facts and the reading alone give a brief the reading birth gave it', async () => {
+  const form = forkitForm({ session_type: 'cowork_agent', name: 'parity_reading' });
+  const whole = await resolveForm(form, new Set());
+  const reading = await resolveReading(form, await resolveFacts(form, new Set()));
+  assert.deepEqual(reading.birthReading, whole.birth_reading);
+  assert.deepEqual(reading.appliedBehaviours.map((book) => book.book), whole.behaviours.map((book) => book.book));
+  assert.deepEqual(reading.capabilities, whole.capabilities);
 });

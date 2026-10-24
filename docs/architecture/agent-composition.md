@@ -123,9 +123,11 @@ An inherited mandate is a default. An explicit assignment mandate wins.
 
 The current mandate lives in the work record (`writeMandate`, `src/tegami.ts`); the birth
 mandate stays in the birth record. A newborn's mandate is chosen at creation and carried in
-its birth brief, never written after birth. A later change by anyone but the Agent pushes it
-one fixed line, "Your work record changed; please read it (work-record read)." (`ackRecord`,
-owner 2026-10-07); the record says what changed.
+its birth brief, never written after birth. The Configuration's Update (owner, 2026-10-24;
+`docs/architecture/birth-packet.md` §8) writes it there and sends the Agent its new brief as the
+one message, with no record notice on top. Any other write to the record by anyone but the
+Agent pushes it one fixed line, "Your work record changed; please read it (work-record read)."
+(`ackRecord`, owner 2026-10-07); the record says what changed.
 
 The record's `teams` block is Ronin's, one entry per Team: `team`, `team_role` (lead or
 member) and the roster's `objective`; a lead's entry also lists `members`, leads marked

@@ -58,8 +58,14 @@ export async function listQueuedMessages(): Promise<QueuedMessage[]> {
   return rows.sort((a, b) => a.created_at.localeCompare(b.created_at));
 }
 
+/** created_at is the queue's one order, so it must be total: two letters queued in the same
+ * millisecond tied and fell back to their random file names (PR #127's flaky 'oldest first').
+ * This process hands each letter a time at least one millisecond after the last it queued. */
+let lastQueuedAt = 0;
+const queuedAt = (): string => { lastQueuedAt = Math.max(Date.now(), lastQueuedAt + 1); return new Date(lastQueuedAt).toISOString(); };
+
 export async function enqueueMessage(target: string, text: string, source: MessageSource, from = sourceFrom(source)): Promise<QueuedMessage> {
-  const item: QueuedMessage = { id: randomUUID(), from, target, text, source, created_at: new Date().toISOString() };
+  const item: QueuedMessage = { id: randomUUID(), from, target, text, source, created_at: queuedAt() };
   await fs.mkdir(DIR, { recursive: true });
   const tmp = `${file(item.id)}.${process.pid}.tmp`;
   await fs.writeFile(tmp, JSON.stringify(item));

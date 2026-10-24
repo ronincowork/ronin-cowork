@@ -213,12 +213,10 @@ async function bootReading(
   return bootFiles(projectRoot, routineReading, capabilitiesOverview, session, soughtOverview);
 }
 
-export async function resolveForm(
-  form: SpawnForm,
-  taken: Set<string>,
-  referenceDir?: string,
-  proposedRoster?: TeamRoster,
-): Promise<Resolved> {
+/** THE FACTS a launch and a running Agent share: Campaign, Team, root, desk arrangement, the
+ * behaviour cascade, the name. Launching builds on them; so does a brief rebuilt later for an
+ * Agent whose configuration changed (Update, owner 2026-10-24), which never launches. */
+export async function resolveFacts(form: SpawnForm, taken: Set<string>, proposedRoster?: TeamRoster) {
   const sessionType = form.session_type ?? 'cowork_agent';
   const coworkAgent = sessionType === 'cowork_agent';
   const bareMetalAgent = sessionType === 'bare_metal_agent';
@@ -290,6 +288,36 @@ export async function resolveForm(
     : { contributions: [], selected: [], undelivered: [], behaviour_layer: 'campaign' as const };
   const installations = resolveInstallations(installationCatalog, campaign?.config.installations);
   const contributions = form.house_seat === 'mika' ? [] : [CORE_CONTRIBUTION, ...cascade.contributions];
+  const name = wanted || slugName(form.team || (agent ? 'agent' : 'terminal'), form.prompt ?? '', taken);
+  const worktrees = bareMetalAgent || sessionType === 'terminal'
+    ? { assignment: null, repositories: [] }
+    : await resolveLaunchDesks({
+    session: name,
+    team: form.team ?? '',
+    project_root: root.name,
+    agent,
+    desk: form.desk,
+    repos: form.repos,
+  });
+  const assignment = worktrees.assignment;
+  // A MANAGED DESK IS A LAUNCH FACT, NOT A BIRTH-ROOT FACT. An Agent born in a checkout
+  // root with a managed desk assigned elsewhere still works at that desk; the desk tools
+  // and the worktree capability follow the resolved assignment (bundle_commands, 2026-09-13:
+  // three Agents born in the lab checkout with a cowork desk had no desk tool on PATH).
+  const managedDesk = !!assignment?.desks.length || worktrees.repositories.some((row) => row.mode === 'managed');
+  const arrangement: 'managed' | 'checkout' | 'none' = managedDesk ? 'managed' : worktrees.repositories.length ? 'checkout' : 'none';
+  const kind = form.kind ?? String(parentSeed?.seeds.kind.value ?? 'open');
+  return {
+    sessionType, coworkAgent, bareMetalAgent, campaignId, roots, agentsSet, campaign, launchSpecs, preset, roster, profile,
+    parentSeed, root, agent, cascade, installations, contributions, name, worktrees, assignment, arrangement, kind,
+  };
+}
+export type LaunchFacts = Awaited<ReturnType<typeof resolveFacts>>;
+
+/** THE LAUNCH: which command runs, the provider switch, the Dangerously form. Only a launch
+ * comes through here; a brief rebuilt for a running Agent takes the facts and the reading alone. */
+async function resolveLaunch(form: SpawnForm, facts: LaunchFacts) {
+  const { agent, agentsSet, launchSpecs, parentSeed } = facts;
   const sessionsSet = sessionsFor(agentsSet.sessions as SessionsDefaults | undefined, !!form.team && !!form.team_lead);
   const chosen = resolveLaunchCommand({
     agent,
@@ -320,53 +348,14 @@ export async function resolveForm(
     }
     cmd = spec.dangerousCmd;
   }
-  const explicit: StatedBy[] = [{ layer: 'launch', source: 'launch request' }];
-  const system: StatedBy[] = [{ layer: 'system', source: 'src/spawn.ts' }];
-  const rosterSource: StatedBy[] = roster
-    ? [{
-        layer: 'team_roster',
-        source: proposedRoster?.name === roster.name ? 'proposed Team draft' : teamRosterFile(roster.name),
-      }]
-    : system;
-  const rootSource: StatedBy[] = form.project_root
-    ? explicit
-    : roster?.project_root
-      ? rosterSource
-      : [{ layer: 'system', source: USER_PROJECT_ROOTS_MD }];
-  const cmdSource: StatedBy[] = chosen.source === 'explicit_launch'
-    ? explicit
-    : chosen.source === 'settei_provider'
-      ? [{ layer: 'system', source: '⚙ Configuration (agents.sessions)' }]
-      : system;
-  const unique = (...groups: StatedBy[][]): StatedBy[] => {
-    const seen = new Set<string>();
-    return groups.flat().filter((item) => {
-      const key = `${item.layer}\0${item.source}`;
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    });
-  };
-  const name = wanted || slugName(form.team || (agent ? 'agent' : 'terminal'), form.prompt ?? '', taken);
-  const worktrees = bareMetalAgent || sessionType === 'terminal'
-    ? { assignment: null, repositories: [] }
-    : await resolveLaunchDesks({
-    session: name,
-    team: form.team ?? '',
-    project_root: root.name,
-    agent,
-    desk: form.desk,
-    repos: form.repos,
-  });
-  const assignment = worktrees.assignment;
-  // A MANAGED DESK IS A LAUNCH FACT, NOT A BIRTH-ROOT FACT. An Agent born in a checkout
-  // root with a managed desk assigned elsewhere still works at that desk; the desk tools
-  // and the worktree capability follow the resolved assignment (bundle_commands, 2026-09-13:
-  // three Agents born in the lab checkout with a cowork desk had no desk tool on PATH).
-  const managedDesk = !!assignment?.desks.length || worktrees.repositories.some((row) => row.mode === 'managed');
-  const arrangement = managedDesk ? 'managed' : worktrees.repositories.length ? 'checkout' : 'none';
+  return { cmd, spec, chosen, launchMode };
+}
+
+/** THE READING: the behaviours (floor, conditional, chosen), the capabilities and the shelf,
+ * as the birth packet lists them, from the facts alone. */
+export async function resolveReading(form: SpawnForm, facts: LaunchFacts) {
+  const { coworkAgent, agent, contributions, cascade, arrangement, campaign, installations, root, name } = facts;
   const enabledReading = contributionReading(contributions);
-  const kind = form.kind ?? String(parentSeed?.seeds.kind.value ?? 'open');
   const resolvedBehaviours = coworkAgent && agent
     ? await resolveBehaviourBooks(cascade.selected)
     : { delivered: [], ignored: [] };
@@ -418,6 +407,46 @@ export async function resolveForm(
   const birthReading = coworkAgent && agent
     ? [...completeReading, ...(form.seed ?? [])].filter(Boolean)
     : [];
+  return { birthReading, completeReading, appliedBehaviours, capabilities, ignored: resolvedBehaviours.ignored };
+}
+
+export async function resolveForm(
+  form: SpawnForm,
+  taken: Set<string>,
+  referenceDir?: string,
+  proposedRoster?: TeamRoster,
+): Promise<Resolved> {
+  const facts = await resolveFacts(form, taken, proposedRoster);
+  const { sessionType, coworkAgent, campaign, preset, roster, profile, parentSeed, root, agent, cascade, installations, contributions, name, worktrees, assignment, kind } = facts;
+  const { cmd, spec, chosen, launchMode } = await resolveLaunch(form, facts);
+  const { birthReading, completeReading, appliedBehaviours, capabilities, ignored } = await resolveReading(form, facts);
+  const explicit: StatedBy[] = [{ layer: 'launch', source: 'launch request' }];
+  const system: StatedBy[] = [{ layer: 'system', source: 'src/spawn.ts' }];
+  const rosterSource: StatedBy[] = roster
+    ? [{
+        layer: 'team_roster',
+        source: proposedRoster?.name === roster.name ? 'proposed Team draft' : teamRosterFile(roster.name),
+      }]
+    : system;
+  const rootSource: StatedBy[] = form.project_root
+    ? explicit
+    : roster?.project_root
+      ? rosterSource
+      : [{ layer: 'system', source: USER_PROJECT_ROOTS_MD }];
+  const cmdSource: StatedBy[] = chosen.source === 'explicit_launch'
+    ? explicit
+    : chosen.source === 'settei_provider'
+      ? [{ layer: 'system', source: '⚙ Configuration (agents.sessions)' }]
+      : system;
+  const unique = (...groups: StatedBy[][]): StatedBy[] => {
+    const seen = new Set<string>();
+    return groups.flat().filter((item) => {
+      const key = `${item.layer}\0${item.source}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  };
   const resolvedMandate = coworkAgent
     ? mandate(form.mandate ?? {
         reach: parentSeed?.seeds.reach.value,
@@ -471,7 +500,7 @@ export async function resolveForm(
     behaviours: appliedBehaviours,
     kind,
     ignored: [
-      ...resolvedBehaviours.ignored,
+      ...ignored,
       ...preset.ignored,
     ],
     undelivered: cascade.undelivered,

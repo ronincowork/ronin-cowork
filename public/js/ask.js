@@ -201,7 +201,7 @@ export function ask(groups = [], { value = {}, onChange = null, className = '', 
   // A switch has no tray to redraw. Keep its node and keyboard focus on changes.
   const refreshSwitch = (button, field) => {
     button.setAttribute('aria-checked', String(Boolean(state[field.key])));
-    button.querySelector('.ask-reading').replaceWith(reading(field));
+    button.querySelector('.ask-reading')?.replaceWith(reading(field));
   };
 
   const stone = (field) => {
@@ -214,9 +214,14 @@ export function ask(groups = [], { value = {}, onChange = null, className = '', 
       button.setAttribute('role', 'switch');
       switchAvailability(button, field);
       button.setAttribute('aria-checked', String(on));
-      const words = el('span', 'ask-words');
-      words.append(el('small', 'ask-label', field.label), reading(field));
-      button.append(words, el('span', 'ask-track'));
+      // A compact switch is the track alone, its label spoken not drawn: for a row whose words
+      // already stand beside it (the Configuration's behaviour list; lead, 2026-10-24).
+      if (field.compact) { button.dataset.compact = 'true'; button.setAttribute('aria-label', field.label); button.append(el('span', 'ask-track')); }
+      else {
+        const words = el('span', 'ask-words');
+        words.append(el('small', 'ask-label', field.label), reading(field));
+        button.append(words, el('span', 'ask-track'));
+      }
       button.addEventListener('click', () => {
         state[field.key] = !state[field.key];
         changed(field.key);

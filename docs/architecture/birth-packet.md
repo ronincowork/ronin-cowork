@@ -202,13 +202,21 @@ not permission for the stock packet to remain oversized.
 to quote the terminator. The receipt records what Ronin emitted; the acknowledgement is
 evidence that the newborn reached the end before acting.
 
-## 8. Resend
+## 8. Update
 
-**Resend birth brief** in the Agent's Configuration (`POST /api/sessions/<name>/composition/brief`,
-[birth-resend.ts](../../src/birth-resend.ts)) runs the same resolution on today's files and
-today's facts (Team, lead designation, Campaign switches, current mandate and Behaviors),
-compiles over the session README, and queues one message: read it. The birth receipt is
-not rewritten.
+**Update** in the Agent's Configuration (`PUT /api/sessions/<name>/configuration`,
+[agent-configuration.ts](../../src/agent-configuration.ts)) is the one act over a running Agent's
+configuration (owner, 2026-10-24). Disabled until something changed; pressed, it writes the
+mandate to the work record and the whole chosen Behaviors list to the composition (an unticked
+behaviour is simply not in it), resolves the reading on today's files and today's facts (Team,
+lead designation, Campaign switches, mandate, Behaviors) through the facts and the reading alone
+(`resolveFacts`, `resolveReading`; the launch — command, provider switch, Dangerously — is not in
+its way), compiles over the session README, and queues one message: here is your new brief, read
+it. No separate work-record notice rides on it; a work record changed any other way keeps its own
+notice. The birth receipt is not rewritten. The composition read
+(`GET /api/sessions/<name>/composition`) returns the same reading's Behaviors as `sends` (floor,
+conditional with its `requires`, selected; `since_birth` on a conditional the receipt lacks), so
+Configuration shows exactly what the brief carries.
 
 ## Change checkpoint
 

@@ -287,7 +287,9 @@ export function tagRow(items, emptyWord = '') {
 export function readingRows(rows) {
   const dl = el('dl', 'fs-reading');
   for (const [label, value] of rows) {
-    dl.append(el('dt', null, label));
+    const dt = el('dt');
+    if (label instanceof Node) dt.append(label); else dt.textContent = String(label ?? '');
+    dl.append(dt);
     const dd = el('dd');
     if (value instanceof Node) dd.append(value);
     else if (value) dd.textContent = String(value);

@@ -51,7 +51,10 @@ flight does nothing. Shift+Enter inserts a newline. A bare Enter in an empty box
 The box clears when the server accepts responsibility for the message, unless the owner
 has edited it in the meantime. A refusal or network error keeps the text with a reason.
 
-Every producer only writes a queue file. One server worker reads letters oldest first and
+Every producer only writes a queue file. One server worker reads letters oldest first by
+`created_at`, which the queue keeps total: each letter a process queues is stamped at least
+one millisecond after the last, so two queued in the same millisecond never tie and fall back
+to their random file names (2026-10-24). The worker
 finishes one before considering the next, so paste and Enter transactions cannot interleave.
 Direct human terminal input does not enter this queue.
 

@@ -78,8 +78,8 @@ export const buildTeamMembers = (name, options = {}) => {
     const detail = el('div', 'league-team-member-detail');
     detail.id = `team-member-${options.idPrefix || name}-${member.name}-actions`;
     toggle.setAttribute('aria-controls', detail.id);
+    // Work: the items held, once (the reading line said the same thing twice; lead, 2026-10-24).
     const work = createStep({ key: 'work', title: t('league.work', 'Work') });
-    if (reading.description) work.body.append(el('p', 'ac-line', [reading.step, reading.description].filter(Boolean).join(' · ')));
     const items = createItemPhalanx({ holder: () => member.name, className: 'league-team-member-items' }); work.body.append(items.el);
     const word = el('p', 'league-team-member-status');
     const composition = createAgentCompositionReader(member.name, { setState: (_state, message) => { word.textContent = message || ''; } });
@@ -93,7 +93,7 @@ export const buildTeamMembers = (name, options = {}) => {
     const lead = createAction({ label: member.team_lead ? t('league.team_lead', 'Team Lead') : t('league.make_team_lead', 'Make Lead'), selected: member.team_lead, action: async () => { const result = await setTeamLead(member.name, name, !member.team_lead); if (!result.ok) return options.onFailed?.(result.message); options.onChanged?.(); } });
     const eject = createAction({ label: t('league.remove_member', 'Remove'), title: t('league.remove_named_member', 'Remove {name} from this team', { name: member.name }), action: async () => { const result = await setTeamMembership(member.name, name, false); if (!result.ok) return options.onFailed?.(result.message); options.onChanged?.(); } });
     const close = options.onClose ? createAction({ label: t('league.close_agent', 'Close'), title: t('league.close_named_agent', 'Close {name}', { name: member.name }), action: () => options.onClose(member) }) : null;
-    detail.append(el('p', 'ac-line', `${agentName(member)} · @${member.name}`), work.el, composition.el, word, createActionBar({ className: 'league-team-member-actions', actions: [rename, lead, eject, close] }).el);
+    detail.append(el('p', 'ac-line', `${agentName(member)} · @${member.name}`), work.el, composition.el, word, createActionBar({ className: 'league-team-member-actions', actions: [composition.action, rename, lead, eject, close] }).el);
     const open = (expanded) => {
       detail.hidden = !expanded;
       toggle.setAttribute('aria-expanded', String(expanded));

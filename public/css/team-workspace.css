@@ -126,14 +126,8 @@
   .agent-composition .ac-body { padding: var(--space-inset); }
   /* One type scale in the body: every line reads at the form's input size (the stones' readings,
      the item lines, the buttons); only the stones' own labels and a status word are notes. */
-  .ac-line, .ac-list, .ac-brief { margin: 0; font-size: var(--form-input); line-height: var(--leading-body); overflow-wrap: anywhere; }
-  .ac-line { color: var(--muted); }
-  .ac-list { color: var(--fg); }
+  .ac-line { margin: 0; color: var(--muted); font-size: var(--form-input); line-height: var(--leading-body); overflow-wrap: anywhere; }
   .ac-status { margin: 0; color: var(--muted); font-size: var(--form-note); }
   .ac-status:empty { display: none; }
-  .ac-brief {
-    --ac-brief-h: 18rem;
-  }
-  .ac-brief { max-height: var(--ac-brief-h); overflow: auto; border: var(--edge) solid var(--line-2); border-radius: var(--radius-small); background: var(--inset); padding: var(--space-inline); color: var(--fg); font-family: inherit; white-space: pre-wrap; }
-  .ac-mandate, .ac-add { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: var(--space-row) var(--space-inline); }
+  .fs-reading.ac-behaviours { --fs-reading-key-w: var(--fs-key-w); } /* a behaviour's name is the key: a step's name column fits one, the reading key width fits a word */
 }

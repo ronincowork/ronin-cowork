@@ -35,12 +35,11 @@ import { expandLookup } from '../lookup.js';
 import { count } from '../counts.js';
 import { broadcastEvent, pushTeams } from '../ws/events.js';
 import { announceTeamChanges } from './wipeboards-api.js';
-import { memberEnded, teamChanged, writeConfiguration, writeMandate, writeTeams } from '../tegami.js';
-import { conditionalBehaviourPath, resolveBehaviourBooks } from '../behaviours.js';
-import { addCurrentBehaviour, readAgentComposition } from '../agent-composition.js';
-import { resendBirthBrief } from '../birth-resend.js';
+import { memberEnded, teamChanged, writeConfiguration, writeTeams } from '../tegami.js';
+import { conditionalBehaviourPath } from '../behaviours.js';
+import { readAgentComposition } from '../agent-composition.js';
+import { configurationSends, updateConfiguration } from '../agent-configuration.js';
 import { mandate } from '../agent-defaults.js';
-import { readFile } from 'node:fs/promises';
 import { emitSessionEnd } from '../sockets.js';
 import { releaseHolder } from '../work-items.js';
 import { resumeAgentArgv } from '../agents.js';
@@ -157,43 +156,23 @@ export function registerSessions(app: express.Express): void {
     const { name } = req.params;
     if (!isValidName(name)) return res.status(400).json({ error: 'Invalid name.' });
     if (!(await sessionExists(name))) return res.status(404).json({ error: 'No such session.' });
-    try { res.json(await readAgentComposition(name)); }
+    try {
+      // What the brief carries, so the Configuration shows every behaviour, not only the choices.
+      const sends = await configurationSends(name).then((rows) => ({ rows }), (e) => ({ error: String((e as Error)?.message ?? e) }));
+      res.json({ ...await readAgentComposition(name), sends });
+    }
     catch (e) { res.status(409).json({ error: String((e as Error)?.message ?? e) }); }
   });
 
-  app.post('/api/sessions/:name/composition/behaviours', async (req, res) => {
+  // UPDATE (owner, 2026-10-24): the Configuration's one act — write the mandate and the whole
+  // chosen Behaviors list, rebuild the brief, tell the Agent once to read it.
+  app.put('/api/sessions/:name/configuration', async (req, res) => {
     const { name } = req.params;
     if (!isValidName(name)) return res.status(400).json({ error: 'Invalid name.' });
     if (!(await sessionExists(name))) return res.status(404).json({ error: 'No such session.' });
-    const resolved = await resolveBehaviourBooks([String(req.body?.name ?? '').trim()]);
-    if (resolved.delivered.length !== 1) return res.status(400).json({ error: 'Choose one available optional Behavior.' });
-    try {
-      const row = resolved.delivered[0];
-      const composition = await readAgentComposition(name);
-      if (composition.current.behaviours.some((item) => item.name === row.book)) return res.status(409).json({ error: 'That Behavior is already part of the current composition.' });
-      const teaching = await readFile(row.file, 'utf8');
-      const added = await addCurrentBehaviour(name, { name: row.book, path: row.file }, () => enqueueMessage(name, `Behavior added to your current composition: ${row.book}\n\nRead and follow this additive guidance now:\n\n${teaching}`, 'owner'));
-      if (!added.added) return res.status(409).json({ error: 'That Behavior is already part of the current composition.' });
-      res.json({ ok: true, queued: true, behaviour: { name: row.book, path: row.file }, message: added.delivery });
-    } catch (e) { res.status(500).json({ error: String((e as Error)?.message ?? e) }); }
-  });
-
-  app.post('/api/sessions/:name/composition/brief', async (req, res) => {
-    const { name } = req.params;
-    if (!isValidName(name)) return res.status(400).json({ error: 'Invalid name.' });
-    if (!(await sessionExists(name))) return res.status(404).json({ error: 'No such session.' });
-    try { res.json({ ok: true, queued: true, ...await resendBirthBrief(name) }); }
+    const behaviours = Array.isArray(req.body?.behaviours) ? req.body.behaviours.map((row: unknown) => String(row ?? '').trim()).filter(Boolean) : [];
+    try { res.json({ ok: true, queued: true, ...await updateConfiguration(name, { mandate: mandate(req.body?.mandate), behaviours }) }); }
     catch (e) { res.status(500).json({ error: String((e as Error)?.message ?? e) }); }
-  });
-
-  app.put('/api/sessions/:name/composition/mandate', async (req, res) => {
-    const { name } = req.params;
-    if (!isValidName(name)) return res.status(400).json({ error: 'Invalid name.' });
-    if (!(await sessionExists(name))) return res.status(404).json({ error: 'No such session.' });
-    try {
-      const saved = await writeMandate(name, mandate(req.body), callerOf(req));
-      res.json({ ok: true, mandate: saved });
-    } catch (e) { res.status(409).json({ error: String((e as Error)?.message ?? e) }); }
   });
 
   app.get('/api/archived-sessions', async (_req, res) => {

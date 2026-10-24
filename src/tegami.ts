@@ -267,8 +267,9 @@ export async function ackRecord(name: string, by: string): Promise<void> {
   if (by !== name) await enqueueMessage(name, 'Your work record changed; please read it (work-record read).', 'house', 'Work record');
 }
 
-/** Change only the current mandate in an Agent-authored work record. Birth remains immutable. */
-export async function writeMandate(name: string, current: Mandate, by: string): Promise<Mandate> {
+/** Change only the current mandate in an Agent-authored work record. Birth remains immutable.
+ * No ack of its own: the Configuration's Update sends the one message, the new brief (owner, 2026-10-24). */
+export async function writeMandate(name: string, current: Mandate): Promise<Mandate> {
   const file = tegamiPath(await sessionKey(name));
   const text = await fs.readFile(file, 'utf8');
   const parsed = letterBlock(text);
@@ -276,6 +277,5 @@ export async function writeMandate(name: string, current: Mandate, by: string): 
   const next = mandate(current);
   parsed.body.mandate = next;
   await replaceLetterBlock(file, text, parsed, parsed.body);
-  await ackRecord(name, by);
   return next;
 }

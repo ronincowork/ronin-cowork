@@ -46,6 +46,8 @@
   .ask-switch .ask-words { display: grid; gap: var(--space-row); min-width: 0; }
   .ask-switch .ask-reading { padding-right: 0; }
   .ask-switch[aria-checked='false'] .ask-reading { color: var(--muted); font-weight: var(--weight-regular); }
+  /* A compact switch is the track alone (lead, 2026-10-24): no stone around it, in a row whose words stand beside it. */
+  .ask .ask-switch[data-compact='true'] { flex: none; width: auto; height: auto; min-height: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; padding: 0; }
   .ask-track { position: relative; flex: none; width: var(--ask-track-w); height: var(--ask-track-h); border-radius: var(--radius-pill); background: var(--line-2); /* the switch, off */ transition: background var(--motion-quick) var(--ease); }
   .ask-track::after { content: ''; position: absolute; top: var(--ask-knob-inset); left: var(--ask-knob-inset); width: var(--ask-knob); height: var(--ask-knob); border-radius: var(--radius-round); background: var(--surface); transition: left var(--motion-quick) var(--ease); }
   .ask-switch[aria-checked='true'] .ask-track { background: var(--kaki); /* kaki: the action, or what needs you */ }

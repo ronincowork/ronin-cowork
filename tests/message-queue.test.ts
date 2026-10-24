@@ -90,6 +90,17 @@ test('one worker sends oldest first and deletes every attempted letter', async (
   assert.deepEqual(await q.listQueuedMessages(), []);
 });
 
+test('messages queued in the same millisecond keep their enqueue order (a tie on created_at fell back to random file names)', async (t) => {
+  const q = await queue(t, 'same_ms');
+  for (let round = 0; round < 100; round++) {
+    const items = [];
+    for (const text of ['first', 'second', 'third']) items.push(await q.enqueueMessage('target', text, 'house'));
+    const listed = (await q.listQueuedMessages()).map((item: { text: string }) => item.text);
+    assert.deepEqual(listed, ['first', 'second', 'third'], `round ${round}: created_at ${items.map((item) => item.created_at).join(' ')}`);
+    await q.dismissMessages(items.map((item) => item.id));
+  }
+});
+
 test('dismissal removes only exact queued IDs', async (t) => {
   const q = await queue(t, 'dismiss');
   const first = await q.enqueueMessage('target', 'first', 'house');

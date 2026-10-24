@@ -323,8 +323,8 @@
   .fs-tag { border: var(--edge) solid var(--line-2); background: var(--surface); color: var(--muted); padding: 0 var(--space-inline); font-family: var(--font-mono); font-size: var(--form-note); white-space: nowrap; }
   .fs-tag[data-on='true'] { border-color: var(--kaki); color: var(--kaki); }
   .fs-tags-empty { color: var(--muted); font-style: normal; font-size: var(--form-note); }
-  .fs-reading { display: grid; grid-template-columns: var(--fs-reading-key-w) minmax(0, 1fr); gap: var(--space-row) var(--space-inline); align-items: baseline; margin: 0; border-top: var(--edge) solid var(--line); padding-top: var(--space-inset); }
-  .fs-reading dt { color: var(--muted); font-size: var(--form-key); letter-spacing: var(--tracking-wide); text-transform: uppercase; }
+  .fs-reading { display: grid; grid-template-columns: var(--fs-reading-key-w) minmax(0, 1fr); gap: var(--space-row) var(--space-inline); align-items: baseline; margin: 0; } /* no rule of its own: the step or foot it sits in draws one (lead, 2026-10-24) */
+  .fs-reading dt { color: var(--muted); font-size: var(--form-key); } /* normal case: the kit has no uppercase labels (owner, 2026-10-24) */
   .fs-reading dd { margin: 0; min-width: 0; color: var(--fg-strong); font-size: var(--form-input); }
   .fs-reading em { color: var(--muted); font-style: normal; }
 
@@ -366,7 +366,7 @@
   .wa-browser .folder-all[hidden] { display: none; }
   .wa-form > .fs-step:nth-last-child(1 of :not([hidden])) { border-bottom: 0; }
   .wa-reading { color: var(--fg); }
-  .wa-link { border: 0; background: transparent; padding: 0; color: var(--link); font: inherit; cursor: pointer; }
+  .wa-link { border: 0; background: transparent; padding: 0; color: var(--link); font: inherit; text-align: start; cursor: pointer; } /* reads as text: a wrapped one starts each line at the start, as text does */
   .wa-status { margin: 0; padding: var(--space-row) 0 var(--space-inset); color: var(--muted); font-size: var(--form-note); }
   .wa-status:empty { display: none; }
   .wa-status[data-kind='bad'] { color: var(--bad); }

@@ -16,7 +16,7 @@ convergence: consumers must use the actual shared contracts.
 
 | Contract | Canonical source | Owns |
 |---|---|---|
-| Kit facade | `public/js/workspace-kit.js` | The single `WorkspaceKit` namespace and Kit stylesheet loading |
+| Kit facade | `public/js/workspace-kit.js` | The single `WorkspaceKit` namespace and Kit stylesheet loading (the stylesheet is linked through the module's own fingerprinted asset path, so a restart always reaches the browser; lead, 2026-10-24) |
 | Primitives | `public/js/workspace-primitives.js` | Surface, Card, actions, metadata, forms, fields, notices, ExplorerRail, the layout map, the tab name and standard states |
 | Layouts | `public/js/workspace-layouts.js` | The Workbench layout and the Explorer composition |
 | Adapters | `public/js/workspace-adapters.js` | Room workspace adapters and terminal Tile-host export |
