@@ -135,7 +135,7 @@ async function init() {
   reveal();
 
   guard('install workspace controls', build);
-  guard('say when Ronin is unreachable', sayWhenUnreachable);
+  guard('say when Ronin is unreachable', () => sayWhenUnreachable(document.getElementById('connectionstate')));
   guard('session event stream', connect); // the store's socket: rows, sessions, births & deaths
   guard('load projects', loadProjects); // PROJECT_ROOTS.md — WHERE a spawn happens
   // Mark the first tile active but don't grab the keyboard on load (avoids the
