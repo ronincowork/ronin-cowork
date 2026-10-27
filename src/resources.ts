@@ -45,6 +45,7 @@ export const STORES: readonly Store[] = [
   store('gbrain_service', 'user', 'gbrain_service'),
   store('promotion_ledger', 'data', 'promotion-ledger'),
   store('services_secrets', 'user', 'services_secrets'),
+  store('jira', 'user', 'jira'),
 ];
 const storesById = new Map(STORES.map((row) => [row.id, row]));
 export const envName = (id: string): string => `RONIN_${id.toUpperCase()}_DIR`;
