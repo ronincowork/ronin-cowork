@@ -31,7 +31,7 @@ not holding an item: holding is how work is found, never permission.
   "parent": "w3",
   "attachments": ["/home/me/plans/AGENT_ITEMS.md"],
   "links": [{ "type": "blocks", "to": "w14" }],
-  "external": { "jira": "RON-12" },
+  "external": { "jira": { "id": "10012", "key": "RON-12" } },
   "trail": [
     { "at": "2026-09-28T15:02:11Z", "by": "lead", "op": "create", "to": "none", "note": "Agent-authored items; under w3" },
     { "at": "2026-09-28T15:04:40Z", "by": "lead", "op": "assign", "from": "none", "to": "agent:builder" }
@@ -51,7 +51,7 @@ not holding an item: holding is how work is found, never permission.
 | `parent` | an id, or none | none is normal; `item edit <id> --parent <id>\|none` |
 | `attachments` | absolute paths | as Jira's attachments; `item attach <id> <path>` |
 | `links` | `{ type: blocks\|relates, to }` list | as Jira's issue links; `item link`; a read shows links in too |
-| `external` | `jira`, `trello`, `github` keys | written with `item edit <id> --jira <key>` |
+| `external` | `jira` `{ id, key }` · `trello`, `github` keys | `jira` pairs the item with a Jira issue and is written by the Jira bridge alone; `item edit <id> --trello\|--github <key>` |
 
 One object serves every level; a field that means nothing at a level is simply unused, as in
 Jira. An epic's status is set by hand. Adding a child never changes an item's level. There

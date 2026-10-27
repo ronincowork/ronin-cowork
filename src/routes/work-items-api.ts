@@ -6,7 +6,7 @@ import type express from 'express';
 import {
   WorkItemBadInput, WorkItemMissing, WorkItemRefused,
   addComment, assignItem, attachDoc, createItem, deleteItem, editComment, editItem, flagItem, handoffItem, holderLabel, holdersOf, linkItem, listItems, readItem,
-  didLine, type Acknowledged, type Holder, type WorkItem,
+  didLine, type Acknowledged, type Holder, type JiraPair, type WorkItem,
 } from '../work-items.js';
 import { agentReading, everyItemReading, teamReading } from '../work-items-read.js';
 import { pushTeams } from '../ws/events.js';
@@ -47,6 +47,14 @@ export function holderFrom(body: Record<string, unknown> | undefined): Holder {
 const levelOf = (value: unknown): number | undefined => value === undefined || value === null || value === '' ? undefined : /^-?\d+$/.test(String(value)) ? Number(value) : value as number;
 /** "none" or blank is no parent. */
 const parentOf = (value: unknown): string | null => { const id = text(value)?.trim(); return id && id !== 'none' ? id : null; };
+
+/** The pair, as the bridge writes it: { id, key }, or null to drop it. */
+const jiraOf = (value: unknown): JiraPair | null => {
+  if (value === null) return null;
+  const pair = value as Partial<JiraPair> | undefined;
+  if (typeof pair?.id !== 'string' || typeof pair.key !== 'string') throw new WorkItemBadInput('jira is { id, key } or null.');
+  return { id: pair.id, key: pair.key };
+};
 
 type Handler = (req: express.Request, res: express.Response) => Promise<unknown>;
 const guarded = (handler: Handler): express.RequestHandler => (req, res) => {
@@ -105,11 +113,12 @@ export function registerWorkItems(app: express.Express): void {
 
   app.put('/api/work-items/:id', guarded(async (req, res) => {
     const b = req.body ?? {};
-    const external = Object.fromEntries((['jira', 'trello', 'github'] as const).filter((key) => b[key] !== undefined).map((key) => [key, text(b[key]) ?? '']));
+    const external = Object.fromEntries((['trello', 'github'] as const).filter((key) => b[key] !== undefined).map((key) => [key, text(b[key]) ?? '']));
     acknowledge(res, await editItem(req.params.id, {
       title: text(b.title), objective: text(b.objective), kind: text(b.kind), level: levelOf(b.level), priority: text(b.priority),
       ...(b.parent !== undefined ? { parent: parentOf(b.parent) } : {}),
       ...(Object.keys(external).length ? { external } : {}),
+      ...(b.jira !== undefined ? { jira: jiraOf(b.jira) } : {}),
     }, callerOf(req), text(b.note)));
   }));
 

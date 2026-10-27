@@ -39,7 +39,10 @@ export type LinkType = typeof LINK_TYPES[number];
 export type TrailOp = typeof TRAIL_OPS[number];
 
 export interface TrailLine { at: string; by: string; op: TrailOp; from?: string; to?: string; note?: string }
-export interface External { trello?: string; jira?: string; github?: string }
+/** The pair (JIRA_RONIN_BRIDGE keystone 3): the Jira issue's id, which never changes, and the
+ * key it shows (PAY-123). Only the bridge writes it. */
+export interface JiraPair { id: string; key: string }
+export interface External { trello?: string; jira?: JiraPair; github?: string }
 export interface Comment { by: string; at: string; text: string; edited?: string }
 /** Jira's issue link, kept on the item it starts from: this item blocks, or relates to, `to`. */
 export interface Link { type: LinkType; to: string }
@@ -287,7 +290,9 @@ export interface ItemEdit {
   title?: string; objective?: string; status?: string; level?: number; kind?: string; priority?: string;
   /** A new parent id, or null for none; absent leaves it. Parent is a field, as in Jira. */
   parent?: string | null;
-  external?: Partial<Record<keyof External, string>>;
+  external?: { trello?: string; github?: string };
+  /** The pair, or null to drop it; absent leaves it. */
+  jira?: JiraPair | null;
 }
 
 /** One call, one trail line. A lone status change is named by its own op (a transition), a
@@ -319,7 +324,11 @@ export function editItem(id: string, edit: ItemEdit, by: string, note?: string):
         if (value) item[key] = value; else delete item[key];
         changed.push(`${key} ${item[key] ?? 'blank'}`);
       }
-      for (const [key, value] of Object.entries(edit.external ?? {}) as Array<[keyof External, string]>) {
+      if (edit.jira !== undefined && JSON.stringify(edit.jira ?? undefined) !== JSON.stringify(item.external.jira)) {
+        if (edit.jira) item.external.jira = { id: edit.jira.id, key: edit.jira.key }; else delete item.external.jira;
+        changed.push(`jira ${item.external.jira?.key ?? 'cleared'}`);
+      }
+      for (const [key, value] of Object.entries(edit.external ?? {}) as Array<['trello' | 'github', string]>) {
         if ((item.external[key] ?? '') === value.trim()) continue;
         if (value.trim()) item.external[key] = value.trim(); else delete item.external[key];
         changed.push(`${key} ${item.external[key] ?? 'cleared'}`);
@@ -607,15 +616,23 @@ function toShape(raw: Record<string, unknown>, campaign_id: string): WorkItem {
     links: Array.isArray(links) ? links as Link[] : [],
     status: member(ITEM_STATUSES, status) ? status : member(ITEM_STATUSES, stage) ? stage : 'IDEA',
     flagged: typeof flagged === 'boolean' ? flagged : status === 'red',
-    external: (rest.external && typeof rest.external === 'object' ? rest.external : {}) as External,
+    external: externalOf(rest.external),
     trail: lines.map((line) => (line.op as string) === 'evidence' ? { ...line, op: 'comment' } : line),
   };
+}
+
+/** A jira key stored as a string becomes the pair with no id yet: { id: '', key }. */
+function externalOf(raw: unknown): External {
+  const external = (raw && typeof raw === 'object' ? { ...raw } : {}) as Record<string, unknown>;
+  if (typeof external.jira === 'string') external.jira = { id: '', key: external.jira };
+  return external as External;
 }
 
 const inJiraShape = (raw: Record<string, unknown>): boolean =>
   'level' in raw && 'flagged' in raw && Array.isArray(raw.comments) && Array.isArray(raw.links) && Array.isArray(raw.attachments)
   && !('docs' in raw) && !('stage' in raw) && !('exit' in raw) && !('ladder' in raw)
-  && !(Array.isArray(raw.trail) && raw.trail.some((line) => (line as TrailLine | null)?.op as string === 'evidence'));
+  && !(Array.isArray(raw.trail) && raw.trail.some((line) => (line as TrailLine | null)?.op as string === 'evidence'))
+  && typeof (raw.external as External | undefined)?.jira !== 'string';
 
 /* THE ONE MIGRATION (Lab JIRA_SHAPE.md and JIRA_RONIN_BRIDGE.md), at first start: every item file in the Jira
  * shape (toShape); an item with children gets level 1, every other 0; the Unfiled epic (or

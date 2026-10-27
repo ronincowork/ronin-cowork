@@ -139,8 +139,8 @@ test('trail append is atomic under concurrent writers: every line lands', async 
 test('each write appends exactly one line; external is writable', async () => {
   const { item } = await items.createItem({ title: 'Edits' }, 'probe');
   assert.deepEqual([(await items.editItem(item.id, { status: 'BUILD' }, 'a')).line.op], ['status']);
-  const jira = await items.editItem(item.id, { external: { jira: 'RON-12' } }, 'a');
-  assert.deepEqual(jira.item.external, { jira: 'RON-12' });
+  const jira = await items.editItem(item.id, { jira: { id: '10012', key: 'RON-12' } }, 'a');
+  assert.deepEqual(jira.item.external, { jira: { id: '10012', key: 'RON-12' } });
   assert.equal((await items.editItem(item.id, { title: 'Edited', objective: 'o' }, 'a')).line.op, 'edit');
   assert.deepEqual((await items.readItem(item.id))!.trail.map((line) => line.op), ['create', 'status', 'edit', 'edit']);
   assert.throws(() => items.editItem(item.id, { status: 'SHIPPED' }, 'a'), /status must be one of IDEA, PLAN, BUILD, REVIEW, LAND, DONE/);
@@ -212,13 +212,18 @@ test('the one migration: stage → status, red → flagged, exit and ladder drop
   }
 });
 
-test('the migration preserves an item already stamped with another campaign', async () => {
+test('the migration preserves an item already stamped with another campaign; a jira string becomes the pair', async () => {
   const store = await fs.mkdtemp(path.join(os.tmpdir(), 'ronin-migrate-campaign-'));
   process.env.RONIN_WORK_ITEMS_DIR = store;
   try {
     const created = await items.createItem({ title: 'Elsewhere', campaign_id: 'campaign_x' }, 'probe');
     assert.deepEqual((await items.migrateItems('probe')).migrated, []);
     assert.equal((await items.readItem(created.item.id))!.campaign_id, 'campaign_x');
+    const file = path.join(store, `${created.item.id}.json`);
+    await fs.writeFile(file, JSON.stringify({ ...JSON.parse(await fs.readFile(file, 'utf8')), external: { jira: 'PAY-7' } }));
+    assert.deepEqual((await items.migrateItems('probe')).migrated, [created.item.id]);
+    assert.deepEqual((await items.readItem(created.item.id))!.external, { jira: { id: '', key: 'PAY-7' } });
+    assert.deepEqual((await items.migrateItems('probe')).migrated, [], 'a second run changes nothing');
   } finally {
     process.env.RONIN_WORK_ITEMS_DIR = temp;
   }
@@ -240,14 +245,16 @@ test('routes acknowledge with the item and the appended line; refusals answer 40
     assert.equal(made.status, 200);
     const id = made.data.item.id as string;
     assert.equal(made.data.acknowledgement, `${id} was created`);
-    await call('PUT', `${base}/${id}`, { jira: 'RON-1', by: 'probe' });
+    assert.equal((await call('PUT', `${base}/${id}`, { jira: 'RON-1', by: 'probe' })).status, 400, 'jira is { id, key } or null');
+    await call('PUT', `${base}/${id}`, { jira: { id: '10001', key: 'RON-1' }, by: 'probe' });
     assert.equal((await call('POST', `${base}/${id}/flag`, { by: 'probe' })).data.acknowledgement, `${id} is flagged`);
     const moved = await call('POST', `${base}/${id}/transition`, { status: 'PLAN', by: 'probe' });
     assert.equal(moved.data.acknowledgement, `${id} moved to PLAN`);
     assert.equal((await call('POST', `${base}/${id}/transition`, { status: 'IDEA', by: 'probe' })).data.item.status, 'IDEA', 'any status to any status');
     await call('POST', `${base}/${id}/transition`, { status: 'PLAN', by: 'probe' });
     assert.equal((await call('PUT', `${base}/${id}`, { status: 'DONE', by: 'probe' })).data.item.status, 'PLAN', 'edit does not set status');
-    assert.deepEqual([moved.data.item.status, moved.data.item.flagged, moved.data.item.external.jira], ['PLAN', true, 'RON-1']);
+    assert.deepEqual([moved.data.item.status, moved.data.item.flagged, moved.data.item.external.jira], ['PLAN', true, { id: '10001', key: 'RON-1' }]);
+    assert.deepEqual((await call('PUT', `${base}/${id}`, { jira: null, by: 'probe' })).data.item.external, {}, 'null drops the pair');
     const child = await call('POST', base, { title: 'Child', parent: id, by: 'probe' });
     assert.equal(child.data.item.level, -1);
     assert.deepEqual((await call('GET', `${base}/${id}`)).data.children.map((item: { id: string }) => item.id), [child.data.item.id]);

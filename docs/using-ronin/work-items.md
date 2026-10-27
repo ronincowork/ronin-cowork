@@ -41,7 +41,8 @@ No parent is normal. Not every task belongs to an epic.
 - **comments**: who, when and what. The running account of the work.
 - **attachments**: documents that belong to the item. They show in the tile's Docs.
 - **links**: this item **blocks** another, or **relates** to it.
-- **external keys**: the item's key in Jira, Trello or GitHub (`--jira PAY-123`). Blank clears it.
+- **external keys**: the item's key in Trello or GitHub (`--github 123`). Blank clears it. An
+  item paired with Jira shows its Jira key (`PAY-123`); the Jira bridge keeps that pair.
 
 Every change adds a line to the item's history. `item read <id>` shows it all: fields,
 children, comments, attachments, links and history.

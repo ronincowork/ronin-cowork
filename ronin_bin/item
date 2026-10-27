@@ -9,7 +9,7 @@ Usage:
   item create --title <t> [--kind <type>] [--parent <id>] [--level 1|0|-1] [--objective <o>] [--priority <p>]
   item read <id>
   item search [--campaign <id>] [--team <t>] [--holder <name>] [--parent <id>|--no-parent] [--status <s>] [--kind <k>]
-  item edit <id> --title|--objective|--kind|--level|--parent <id|none>|--priority|--jira <value> ...
+  item edit <id> --title|--objective|--kind|--level|--parent <id|none>|--priority|--trello|--github <value> ...
   item transition <id> IDEA|PLAN|BUILD|REVIEW|LAND|DONE
   item assign <id> <agent>|team:<name>
   item handoff <id> <agent>|team:<name>|none
@@ -22,7 +22,7 @@ level: 1 epic, 0 story/task/bug/feature, -1 subtask; a new item is one below its
 --parent sets the parent and the level together (to none, the level stays). The one rule:
 nothing goes below -1; children follow their parent ("w39 can't go there.").
 delete takes the item's subtasks with it; an epic's other children are left with no parent.
---jira, --trello, --github set an external key; blank clears. Every change adds a trail line.
+--trello, --github set an external key; blank clears. Every change adds a trail line.
 Related: work-record --help; team --help
 EOF_USAGE
 }
@@ -59,7 +59,7 @@ id=${1:-}; [ -n "$id" ] || die "BAD-ARG: item $verb needs the item's id"; shift
 case "$verb" in
   read) [ "$#" -eq 0 ] || die 'BAD-ARG: item read takes only <id>'; ronin_item_call GET "/api/work-items/$id" ;;
   edit) [ "$#" -ge 2 ] || die 'BAD-ARG: item edit takes <id> --field <value> ...'
-    body=$(fields title,objective,level,kind,parent,priority,jira,trello,github "$@") || exit 2; ronin_item_call PUT "/api/work-items/$id" "$body" ;;
+    body=$(fields title,objective,level,kind,parent,priority,trello,github "$@") || exit 2; ronin_item_call PUT "/api/work-items/$id" "$body" ;;
   transition) [ "$#" -eq 1 ] || die 'BAD-ARG: item transition takes <id> <status>'
     ronin_item_call POST "/api/work-items/$id/transition" "$(json status "$1")" ;;
   assign) [ "$#" -eq 1 ] || die 'BAD-ARG: item assign takes <id> <agent>|team:<name>'

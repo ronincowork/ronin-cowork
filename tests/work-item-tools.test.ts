@@ -100,7 +100,7 @@ test('item acts, each naming its item, one trail line each', async () => {
   assert.deepEqual([flagged.op, (await readItem(id))!.flagged, (await readItem(id))!.comments.at(-1)!.text], ['flag', true, 'stuck on the API']);
   assert.equal((await oneLine(id, ['unflag', id])).to, 'false');
   assert.equal((await run('item', ['edit', id, '--flagged', 'true'])).status, 2, 'flagging is its own act');
-  assert.equal((await oneLine(id, ['edit', id, '--jira', 'RON-7'])).note, 'jira RON-7');
+  assert.equal((await run('item', ['edit', id, '--jira', 'RON-7'])).status, 2, 'the Jira pair is written by the bridge alone');
   assert.equal((await oneLine(id, ['comment', id, 'one remark'])).op, 'comment');
   assert.equal((await oneLine(id, ['edit', id, '--priority', 'Highest', '--kind', 'feature'])).note, 'kind feature, priority Highest');
   assert.equal((await oneLine(id, ['comment', id, '--edit', '2', 'one remark, fixed'])).from, '2');
