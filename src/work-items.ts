@@ -176,6 +176,8 @@ export interface NewItem {
   holder?: Holder;
   priority?: string;
   attachments?: string[];
+  /** Born paired, so its create line and unheld message already name the Jira key. */
+  jira?: JiraPair;
 }
 
 function checkFields(fields: { status?: unknown; level?: unknown }): void {
@@ -273,6 +275,7 @@ export async function createItemUnlocked(input: NewItem, by: string): Promise<Ac
     ...(input.priority?.trim() ? { priority: input.priority.trim() } : {}),
     parent: parent?.id ?? null,
     attachments: input.attachments ?? [],
+    external: input.jira ? { jira: { id: input.jira.id, key: input.jira.key } } : {},
   };
   await follow(item, item.parent, item.level);
   const list = input.holder ? await listFor(input.holder) : null;

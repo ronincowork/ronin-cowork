@@ -31,6 +31,13 @@ test('campaign is stored at creation; no parent is normal: level 0, kind blank, 
   assert.deepEqual((await items.listItems()).map((item) => item.id), [first.item.id], 'one create, one item');
 });
 
+test('an item can be born paired with its Jira item', async () => {
+  const born = await items.createItem({ title: 'Fix login', campaign_id: 'alpha', jira: { id: '10007', key: 'PAY-7' } }, 'jira:Alice');
+  assert.deepEqual(born.item.external.jira, { id: '10007', key: 'PAY-7' });
+  assert.deepEqual((await items.readItem(born.item.id))!.external.jira, { id: '10007', key: 'PAY-7' });
+  assert.equal(born.item.trail.length, 1, 'one write, one line');
+});
+
 test('level defaults one below the parent and adding a child never changes it', async () => {
   const epic = (await items.createItem({ title: 'Epic', level: 1 }, 'probe')).item;
   const story = (await items.createItem({ title: 'Story', parent: epic.id, kind: 'story' }, 'probe')).item;
