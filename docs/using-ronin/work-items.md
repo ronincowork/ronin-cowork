@@ -68,7 +68,7 @@ carries that hand-in moves it to DONE. A hand-in that names no item moves no sta
 ```text
 item create --title "…" [--kind task] [--parent w3] [--level 1|0|-1] [--objective "…"] [--priority High]
 item read w12                       # fields, children, comments, attachments, links, history
-item search [--campaign home_machine] [--team surface] [--holder builder] [--parent w3 | --no-parent] [--status BUILD] [--kind bug]
+item search [--campaign home_machine] [--team surface] [--holder builder | none] [--parent w3 | --no-parent] [--status BUILD] [--kind bug]
 item edit w12 --objective "…" --priority High --jira RON-12
 item transition w12 REVIEW
 item flag w12 "waiting on the API"  # item unflag w12 when clear
@@ -162,7 +162,7 @@ A lead uses assign to give out work: an item for each member, or the Team for wo
 given to anyone. Before handing over an item, the lead makes sure it says what is wanted:
 a clear title and objective, a parent where one fits.
 
-To find work, search: `item search --campaign <id>`, `--holder <name>`, `--team <t>`, `--parent <id>`,
+To find work, search: `item search --campaign <id>`, `--holder <name>` (`none`: held by nobody), `--team <t>`, `--parent <id>`,
 `--no-parent`, `--status <s>`, `--kind <k>`.
 
 ## Notices

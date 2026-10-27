@@ -239,19 +239,21 @@ async function announceArrival(item: WorkItem, by: string): Promise<string[]> {
   return told;
 }
 
-/** An unheld item belongs on its Campaign coordinator's list. The ordinary work-record
- * acknowledgement is enough; with no coordinator, nobody is told. */
+/** An unheld item belongs on its Campaign's unheld list: every Coordinator in the Campaign is
+ * told, in one message naming the item. With no Coordinator, nobody is told. */
 async function announceUnheld(item: WorkItem, by: string): Promise<string[]> {
   if ((await holdersOf(item.id)).length) return [];
-  const sessions = (await listSessions()).filter((session) => session.campaign_id === item.campaign_id);
+  const sessions = (await listSessions()).filter((session) => session.campaign_id === item.campaign_id && session.name !== by);
   const { readAgentComposition } = await import('./agent-composition.js');
+  const told: string[] = [];
   for (const session of sessions) {
     const role = await readAgentComposition(session.name).then((found) => found.current.role).catch(() => 'coworker');
     if (role !== 'coordinator') continue;
-    await ackRecord(session.name, by);
-    return session.name === by ? [] : [session.name];
+    const key = item.external.jira ? ` ${item.external.jira.key}` : '';
+    await enqueueMessage(session.name, `${item.id}${key} '${item.title}' has no holders; place it (item read ${item.id}).`, 'house', 'Work items');
+    told.push(session.name);
   }
-  return [];
+  return told;
 }
 
 /** Issue an id and write the item. Unlocked: callers hold the issuer. */

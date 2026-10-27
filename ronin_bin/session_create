@@ -45,6 +45,7 @@ Usage:
                         [--mode manual|assisted] [--cmd <cli>]
                         [--mcp on|off] [--tags a,b] [--seed p1,p2]
                         [--reach <reach>] [--recruit <recruit>] [--output a,b]
+                        [--role coworker|lead|epic_lead|coordinator]
 
 Creation is always explicit. An existing name is refused rather than read or updated.
 With no --team, the new Agent joins the caller's first Team when there is one.
@@ -55,6 +56,7 @@ The mandate is chosen here and carried in the birth brief; never set it after bi
 --output takes several, comma-separated: open, a plan, ideas, code, an artifact, the team, no code.
 Naming any of the three sets the whole mandate: an axis left out is reach plan, recruit
 propose agents, output open. Naming none inherits the Team's defaults.
+--role sets the Agent's role, as the New Agent form does; coworker when not named.
 Choose a current pair in one call: session_create <name> --provider <provider> --model <model>.
 The model ids below come from each CLI's refreshed inventory and are sent unchanged.
 A CLI-supported alias is also passed through unchanged, including saved preferences.
@@ -105,7 +107,7 @@ need_value() {
 NAME="${1:-}"
 [ -n "$NAME" ] && [ "${NAME#-}" = "$NAME" ] || die "usage: session_create <name> [options]. Run session_create --help." 2
 shift
-PROMPT="" TEAM="" ROOT="" PROVIDER="" MODE="" CMD="" MODEL="" MCP="" TAGS="" SEED="" BEHAVIOURS="" REACH="" RECRUIT="" OUTPUT=""
+PROMPT="" TEAM="" ROOT="" PROVIDER="" MODE="" CMD="" MODEL="" MCP="" TAGS="" SEED="" BEHAVIOURS="" REACH="" RECRUIT="" OUTPUT="" ROLE=""
 while [ $# -gt 0 ]; do
   case "$1" in
     --prompt) need_value "$@"; PROMPT="$2"; shift 2 ;;
@@ -123,6 +125,7 @@ while [ $# -gt 0 ]; do
     --reach) need_value "$@"; REACH="$2"; shift 2 ;;
     --recruit) need_value "$@"; RECRUIT="$2"; shift 2 ;;
     --output) need_value "$@"; OUTPUT="$2"; shift 2 ;;
+    --role) need_value "$@"; ROLE="$2"; shift 2 ;;
     *) die "BAD-ARG: $1. Run session_create --help." 2 ;;
   esac
 done
@@ -131,13 +134,13 @@ done
 ronin_connect || exit $?
 CALLER=$(ronin_session_me 2>/dev/null || true)
 body=$(NAME="$NAME" CALLER="$CALLER" PROMPT="$PROMPT" TEAM="$TEAM" ROOT="$ROOT" \
-       PROVIDER="$PROVIDER" MODE="$MODE" CMD="$CMD" MODEL="$MODEL" MCP="$MCP" TAGS="$TAGS" SEED="$SEED" BEHAVIOURS="$BEHAVIOURS" REACH="$REACH" RECRUIT="$RECRUIT" OUTPUT="$OUTPUT" python3 - <<'PY'
+       PROVIDER="$PROVIDER" MODE="$MODE" CMD="$CMD" MODEL="$MODEL" MCP="$MCP" TAGS="$TAGS" SEED="$SEED" BEHAVIOURS="$BEHAVIOURS" REACH="$REACH" RECRUIT="$RECRUIT" OUTPUT="$OUTPUT" ROLE="$ROLE" python3 - <<'PY'
 import json, os
 e = os.environ
 b = {"name": e["NAME"]}
 if e["CALLER"]: b["caller"] = e["CALLER"]
 for k, v in (("prompt", "PROMPT"), ("team", "TEAM"), ("project_root", "ROOT"),
-             ("provider", "PROVIDER"), ("mode", "MODE"), ("cmd", "CMD"), ("model", "MODEL")):
+             ("provider", "PROVIDER"), ("mode", "MODE"), ("cmd", "CMD"), ("model", "MODEL"), ("role", "ROLE")):
     if e[v]: b[k] = e[v]
 if e["MCP"]: b["mcp"] = e["MCP"].lower() in ("on", "true", "1", "yes")
 for k, v in (("tags", "TAGS"), ("seed", "SEED")):

@@ -71,7 +71,7 @@ export function registerWorkItems(app: express.Express): void {
 
   app.get('/api/work-items', guarded(async (req, res) => {
     // Search (Jira's JQL, as filters): ?session= (an Agent's), ?team= (a Team's), or every
-    // item; each narrowed by ?holder=<name>, ?parent=<id>, ?no_parent=1, ?status=, ?kind=.
+    // item; each narrowed by ?holder=<name> (none: held by nobody), ?parent=<id>, ?no_parent=1, ?status=, ?kind=.
     const team = text(req.query.team)?.trim();
     const session = text(req.query.session)?.trim();
     const holder = text(req.query.holder)?.trim();
@@ -81,7 +81,7 @@ export function registerWorkItems(app: express.Express): void {
     const kind = text(req.query.kind)?.trim();
     const campaign = text(req.query.campaign)?.trim();
     const narrow = <T extends WorkItem & { holder?: string }>(items: T[]): T[] => items.filter((item) =>
-      (!holder || item.holder === `agent:${holder}` || item.holder === `team:${holder}` || item.holder === holder)
+      (!holder || (holder === 'none' && !item.holder) || item.holder === `agent:${holder}` || item.holder === `team:${holder}` || item.holder === holder)
       && (!parent || item.parent === parent) && (!orphans || !item.parent)
       && (!status || item.status === status) && (!kind || (item.kind ?? '') === kind)
       && (!campaign || item.campaign_id === campaign));

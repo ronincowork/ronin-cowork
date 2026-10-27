@@ -8,7 +8,7 @@ usage() { cat <<'EOF_USAGE'
 Usage:
   item create --title <t> [--kind <type>] [--parent <id>] [--level 1|0|-1] [--objective <o>] [--priority <p>]
   item read <id>
-  item search [--campaign <id>] [--team <t>] [--holder <name>] [--parent <id>|--no-parent] [--status <s>] [--kind <k>]
+  item search [--campaign <id>] [--team <t>] [--holder <name>|none] [--parent <id>|--no-parent] [--status <s>] [--kind <k>]
   item edit <id> --title|--objective|--kind|--level|--parent <id|none>|--priority|--trello|--github <value> ...
   item transition <id> IDEA|PLAN|BUILD|REVIEW|LAND|DONE
   item assign <id> <agent>|team:<name>

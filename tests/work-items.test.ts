@@ -245,6 +245,7 @@ test('routes acknowledge with the item and the appended line; refusals answer 40
     assert.equal(made.status, 200);
     const id = made.data.item.id as string;
     assert.equal(made.data.acknowledgement, `${id} was created`);
+    assert.ok((await call('GET', `${base}?holder=none`)).data.items.some((item: { id: string }) => item.id === id), 'holder none: the items nobody holds');
     assert.equal((await call('PUT', `${base}/${id}`, { jira: 'RON-1', by: 'probe' })).status, 400, 'jira is { id, key } or null');
     await call('PUT', `${base}/${id}`, { jira: { id: '10001', key: 'RON-1' }, by: 'probe' });
     assert.equal((await call('POST', `${base}/${id}/flag`, { by: 'probe' })).data.acknowledgement, `${id} is flagged`);

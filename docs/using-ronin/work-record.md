@@ -64,7 +64,7 @@ item. **Parent** is one id on the item, or none. A Team holds; it does not conta
 ```text
 item create --title "Agent-authored items" [--kind task] [--parent w3] [--level 1|0|-1] [--objective "…"] [--priority High]
 item read w12                       # fields, children, comments, attachments, links, history
-item search [--team surface] [--holder builder] [--parent w3 | --no-parent] [--status BUILD] [--kind bug]
+item search [--team surface] [--holder builder | none] [--parent w3 | --no-parent] [--status BUILD] [--kind bug]
 item edit w12 --priority High --jira RON-12
 item edit w12 --parent w3           # parent and level together; --parent none keeps the level
 item transition w12 REVIEW          # any status to any status, as Jira's transition
@@ -101,7 +101,10 @@ w14", "w12 has /home/me/plans/AGENT_ITEMS.md removed". Status, kind and level ap
 under one someone holds, by a create with a parent or an `item edit --parent`, that holder
 gets one message through the ordinary queue: "w9 Fix login was added under w7, which you
 hold. Handle it as you see fit." A Team holder's lead gets it. An item held by nobody
-notifies nobody. Any write by someone other than the holding Agent, a comment included,
+notifies nobody. A new item held by nobody, or one its last holder hands off to none, is on
+the Campaign's unheld list (`item search --holder none`), and every Coordinator in the
+Campaign gets one message naming it: "w41 PAY-7 'Fix login' has no holders; place it
+(item read w41)." Any write by someone other than the holding Agent, a comment included,
 gives that Agent "Your work record changed"; its own writes tell nobody.
 
 ## Where you read them
