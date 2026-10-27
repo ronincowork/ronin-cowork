@@ -26,6 +26,7 @@ import { listTeamRosters, readTeamRoster, writeTeamRoster } from './team-rosters
 import { ackRecord, listLetterHolds, teamChanged, readLetterHolds, seedTegami, writeLetterHolds } from './tegami.js';
 import { initialCampaignId } from './campaign-scope.js';
 import { listSessions } from './tmux.js';
+import { emitItemChanged } from './sockets.js';
 
 export const ITEM_STATUSES = ['IDEA', 'PLAN', 'BUILD', 'REVIEW', 'LAND', 'DONE'] as const;
 export const ITEM_LEVELS = [1, 0, -1] as const;
@@ -151,6 +152,7 @@ export async function appendTrail(id: string, by: string, change: (item: WorkIte
   const line = lineOf(by, op, extra);
   item.trail.push(line);
   await save(item);
+  emitItemChanged({ item, line });
   await ackHolders(id, by);
   return answer(item, line);
 }
@@ -206,8 +208,10 @@ async function settle(moved: Array<{ child: WorkItem; level: number }>, item: Wo
   for (const { child, level } of moved) {
     const next = await load(child.id);
     next.level = level as ItemLevel;
-    next.trail.push(lineOf(by, 'edit', { note: `level ${level}, following ${item.id}` }));
+    const line = lineOf(by, 'edit', { note: `level ${level}, following ${item.id}` });
+    next.trail.push(line);
     await save(next);
+    emitItemChanged({ item: next, line });
   }
 }
 
@@ -272,6 +276,7 @@ export async function createItemUnlocked(input: NewItem, by: string): Promise<Ac
   const line = lineOf(by, 'create', { to: input.holder ? holderLabel(input.holder) : 'none', note: [item.title, item.parent ? `under ${item.parent}` : 'no parent'].join('; ') });
   item.trail.push(line);
   await save(item);
+  emitItemChanged({ item, line });
   const notified = [...new Set([...await announceArrival(item, by), ...await announceUnheld(item, by)])];
   return { ...answer(item, line), notified };
 }
@@ -418,14 +423,17 @@ export function deleteItem(id: string, by: string): Promise<{ deleted: string[];
       const orphan = other.parent !== null && deleted.includes(other.parent);
       const links = other.links.filter((link) => !deleted.includes(link.to));
       if (!orphan && links.length === other.links.length) continue;
+      const lines: TrailLine[] = [];
       if (orphan) {
-        other.trail.push(lineOf(by, 'move', { from: other.parent!, to: 'none', note: `level ${other.level}; ${other.parent} was deleted` }));
+        lines.push(lineOf(by, 'move', { from: other.parent!, to: 'none', note: `level ${other.level}; ${other.parent} was deleted` }));
         other.parent = null;
         orphaned.push(other.id);
       }
-      if (links.length !== other.links.length) other.trail.push(lineOf(by, 'link', { note: 'links to deleted items removed' }));
+      if (links.length !== other.links.length) lines.push(lineOf(by, 'link', { note: 'links to deleted items removed' }));
       other.links = links;
+      other.trail.push(...lines);
       await save(other);
+      for (const line of lines) emitItemChanged({ item: other, line });
       await ackHolders(other.id, by);
     }
     for (const at of deleted) {

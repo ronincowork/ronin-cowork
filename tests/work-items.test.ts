@@ -146,6 +146,16 @@ test('each write appends exactly one line; external is writable', async () => {
   assert.throws(() => items.editItem(item.id, { status: 'SHIPPED' }, 'a'), /status must be one of IDEA, PLAN, BUILD, REVIEW, LAND, DONE/);
 });
 
+test('the ITEM socket hears every saved write once per trail line; a throwing hook never fails the write', async () => {
+  const { sockets } = await import('../src/sockets.js');
+  const heard: string[] = [];
+  sockets.onItemChanged(() => { throw new Error('hook down'); });
+  sockets.onItemChanged(({ item, line }) => { heard.push(`${item.id} ${line.op}`); });
+  const made = await items.createItem({ title: 'Heard' }, 'a');
+  await items.addComment(made.item.id, 'hello', 'a');
+  assert.deepEqual(heard, [`${made.item.id} create`, `${made.item.id} comment`]);
+});
+
 test('the one rule: nothing goes below -1; the item takes its level and its children follow', async () => {
   const a = (await items.createItem({ title: 'A', level: 1 }, 'p')).item;
   const b = (await items.createItem({ title: 'B', parent: a.id }, 'p')).item;
