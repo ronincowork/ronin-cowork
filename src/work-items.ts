@@ -6,7 +6,7 @@
  * exactly one line to the item's trail, naming who called. Nothing is locked against
  * anyone: holding is discovery, never permission. One refusal: nothing goes below -1 (follow).
  *
- * THE SHAPE MATCHES JIRA (samurai_lab JIRA_SHAPE.md). One object
+ * THE SHAPE MATCHES JIRA (docs/using-ronin/work-items.md). One object
  * at every level: `level` 1 epic · 0 story/task/bug · -1 subtask, stored; `kind` any work
  * type name; `status` the item's state; `flagged` an impediment; `priority` any name;
  * `comments` a list; `links` blocks or relates.
@@ -599,7 +599,7 @@ export function releaseHolder(session: string, key: string, how: string): Promis
 }
 
 /** The one place that knows the shape items had before 2026-10-22, for the migration
- * (Lab JIRA_SHAPE.md): `stage` is the status, a red colour is flagged, `exit`, the other colours and the
+ * (docs/using-ronin/work-items.md): `stage` is the status, a red colour is flagged, `exit`, the other colours and the
  * ladder are dropped, `docs` is `attachments`, an evidence line on the trail is a comment,
  * no level reads 0. */
 function toShape(raw: Record<string, unknown>, campaign_id: string): WorkItem {
@@ -636,7 +636,7 @@ const inJiraShape = (raw: Record<string, unknown>): boolean =>
   && !(Array.isArray(raw.trail) && raw.trail.some((line) => (line as TrailLine | null)?.op as string === 'evidence'))
   && typeof (raw.external as External | undefined)?.jira !== 'string';
 
-/* THE ONE MIGRATION (Lab JIRA_SHAPE.md and JIRA_RONIN_BRIDGE.md), at first start: every item file in the Jira
+/* THE ONE MIGRATION (docs/using-ronin/work-items.md and Lab JIRA_RONIN_BRIDGE.md), at first start: every item file in the Jira
  * shape (toShape); an item with children gets level 1, every other 0; the Unfiled epic (or
  * the "Common" root) goes and its items have no parent; kind stays as stored. An item
  * already in shape is stamped home_machine once. After it, only the current shape exists;

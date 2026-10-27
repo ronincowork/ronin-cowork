@@ -1,6 +1,6 @@
 /**
  * THE WORK ITEM STORE — one item, stored once, every change a trail line.
- * Checks against the Jira shape (Lab JIRA_SHAPE.md): a write reads back; concurrent trail
+ * Checks against the Jira shape (docs/using-ronin/work-items.md): a write reads back; concurrent trail
  * appends all land; level defaults one below the parent; a move that would put anything
  * below -1 is refused ("can't go there"), children following; the one migration; the
  * routes answer with the item as it now is.

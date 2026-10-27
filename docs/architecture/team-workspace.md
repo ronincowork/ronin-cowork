@@ -105,7 +105,7 @@ A work item is stored once, one JSON file per id in the `work_items` data store,
 `/api/work-items` routes (`src/routes/work-items-api.ts`), which answer every write with
 the item as it now is and the trail line appended. Holding is a list of ids on each holder:
 `holds` on the Team roster and in each Agent's letter (`tegami.md`, beside `at.item`, its
-focus). The item matches Jira (Lab `JIRA_SHAPE.md`):
+focus). The item matches Jira ([Work items](../using-ronin/work-items.md)):
 `level` is stored (1 epic, 0 story/task/bug, -1 subtask), one below the parent at creation
 or 0 with none, and adding a child never changes it; `kind` is a label, blank by default;
 `status` is the item's state; `flagged` marks an impediment. Parent is one `parent` id on

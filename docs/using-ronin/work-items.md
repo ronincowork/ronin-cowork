@@ -69,7 +69,7 @@ carries that hand-in moves it to DONE. A hand-in that names no item moves no sta
 item create --title "…" [--kind task] [--parent w3] [--level 1|0|-1] [--objective "…"] [--priority High]
 item read w12                       # fields, children, comments, attachments, links, history
 item search [--campaign home_machine] [--team surface] [--holder builder | none] [--parent w3 | --no-parent] [--status BUILD] [--kind bug]
-item edit w12 --objective "…" --priority High --jira RON-12
+item edit w12 --objective "…" --priority High
 item transition w12 REVIEW
 item flag w12 "waiting on the API"  # item unflag w12 when clear
 item assign w12 builder             # adds builder; or team:surface

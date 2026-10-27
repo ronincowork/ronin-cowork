@@ -1,5 +1,5 @@
 /**
- * `item …` against the real /api/work-items routes (Lab JIRA_SHAPE.md): each act
+ * `item …` against the real /api/work-items routes (docs/using-ronin/work-items.md): each act
  * names its item and leaves exactly one trail line; no tool refuses a caller for not being
  * the holder; `item` is the one tool for work items.
  *

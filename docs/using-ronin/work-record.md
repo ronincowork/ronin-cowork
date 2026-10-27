@@ -65,7 +65,7 @@ item. **Parent** is one id on the item, or none. A Team holds; it does not conta
 item create --title "Agent-authored items" [--kind task] [--parent w3] [--level 1|0|-1] [--objective "…"] [--priority High]
 item read w12                       # fields, children, comments, attachments, links, history
 item search [--team surface] [--holder builder | none] [--parent w3 | --no-parent] [--status BUILD] [--kind bug]
-item edit w12 --priority High --jira RON-12
+item edit w12 --priority High
 item edit w12 --parent w3           # parent and level together; --parent none keeps the level
 item transition w12 REVIEW          # any status to any status, as Jira's transition
 item flag w12 "waiting on the API"  # Jira's Add flag; the reason is a comment. item unflag w12
