@@ -67,6 +67,7 @@ test('campaigns share the machine configuration document', async () => {
     usage_stats: true,
     machine_status: true,
     local_weights: false,
+    jira: false,
   }, 'new Campaigns make every capability default explicit; Machine status alone starts on');
   assert.equal((await readCampaign('alpha'))?.title, 'Alpha');
 
@@ -83,6 +84,7 @@ test('campaigns share the machine configuration document', async () => {
     usage_stats: true,
     machine_status: true,
     local_weights: false,
+    jira: false,
   });
   await writeCampaign('alpha', { config: { services: { parts: {
     project_management: true, rireki: true, task_manager: false, usage_stats: true, future_capability: true,
@@ -95,6 +97,7 @@ test('campaigns share the machine configuration document', async () => {
     usage_stats: true,
     machine_status: true,
     local_weights: false,
+    jira: false,
   }, 'an explicit mixed map drops raw ids, completes every capability, and preserves only unknown keys');
   assert.equal(edited?.created_at, created.created_at);
 

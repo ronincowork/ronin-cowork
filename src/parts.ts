@@ -53,6 +53,7 @@ export const SERVICE_CAPABILITY_PARTS = Object.freeze({
   usage_stats: ['counting'],
   machine_status: ['machine'],
   local_weights: ['koshi_weights'],
+  jira: ['jira'],
 } as const);
 
 /**

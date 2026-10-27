@@ -6,6 +6,6 @@
 - **reading:** —
 - **reading_off:** routine/ronin_services/OFF.md
 - **ways:** —
-- **parts:** counting, koe, koshi, koshi_weights, machine, project_management, rireki
+- **parts:** counting, jira, koe, koshi, koshi_weights, machine, project_management, rireki
 - **requires:** —
 - **order:** 30
