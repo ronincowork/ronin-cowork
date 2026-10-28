@@ -83,8 +83,13 @@ item to the account in Jira and press **Sync now**.
   "goes up" if **How it runs** sends it, or "stays in Ronin" if it does not. A line above
   counts them: on Jira, to go, staying in Ronin. Before Connect the table follows the switches
   as you set them. Press an epic's row (or the **No epic** row) to fold its group; the fold is
-  remembered. **Open** puts the same table full width in the other workspace, at the same
-  density; it repaints with the panel after Connect, Sync now or a change to the switches.
+  remembered. The title wraps in a narrow column. The Level, Kind, Status, Created in and
+  Jira headers filter: press one for its values with their counts, and press a value to hide or
+  show it (hide DONE under Status, say); **Show all** clears that column. A shown item keeps
+  its epic and parent as context, the count line says how many are hidden, and the filters
+  are remembered in both places. **Open** puts the same table full width in the other workspace, at the same
+  density; it repaints with the panel after Connect, Sync now or a change to the switches. Its
+  **Refresh** says Refreshing… while it reads, then the time it finished, or what failed.
 - **Pairs**: one row per paired item, with its Jira key (a link), Ronin id, title, level and
   kind, where it started, its status in Ronin and in Jira (as of the last read), holders
   (each Agent a link), flagged, when a change last came in from Jira and last went out to

@@ -282,6 +282,13 @@ nothing paints exactly this.
 - **jira.connecting_text:** Checking the account, then sending {n} items, then the first read.
 - **jira.replacing_text:** Checking the new token, then the first read.
 - **jira.widening_text:** Saving, then sending {n} items.
+- **jira.on_jira:** on Jira
+- **jira.show_all:** Show all
+- **jira.all_shown:** All shown
+- **jira.items_filtered:** {n} hidden by a filter
+- **jira.refreshing:** Refreshing…
+- **jira.refreshing_text:** Reading the work items and the Jira connection again.
+- **jira.refreshed:** Refreshed at {at}.
 
 ## campaign_home — campaign-home.js (the root arrival: Machine Settings, Teams, Launch)
 
