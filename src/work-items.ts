@@ -147,8 +147,8 @@ const lineOf = (by: string, op: TrailOp, extra: Omit<TrailLine, 'at' | 'by' | 'o
 /** Read, change, append one trail line, write. Runs inside the issuer lock. */
 const answer = (item: WorkItem, line: TrailLine): Acknowledged => ({ item, line });
 
-/** A change by anyone but the holding Agent pushes that Agent the one work-record ack
- * (ackRecord skips the Agent's own writes). */
+/** A change by anyone but the holding Agent pushes that Agent one line naming the item and the
+ * change (its own writes tell nobody). */
 export async function appendTrail(id: string, by: string, change: (item: WorkItem) => Omit<TrailLine, 'at' | 'by'>): Promise<Acknowledged> {
   const item = await load(id);
   const { op, ...extra } = change(item);
@@ -156,12 +156,19 @@ export async function appendTrail(id: string, by: string, change: (item: WorkIte
   item.trail.push(line);
   await save(item);
   emitItemChanged({ item, line });
-  await ackHolders(id, by);
+  await ackHolders(item, line);
   return answer(item, line);
 }
 
-async function ackHolders(id: string, by: string): Promise<void> {
-  for (const holder of await holdersOf(id)) if (holder.kind === 'agent') await ackRecord(holder.name, by);
+/** The holders' ack, named like the unheld one: "w64 KAN-27: a comment from jira:glen (item read w64)."
+ * or "w64 KAN-27: status BUILD → REVIEW by jira:x (item read w64)." */
+async function ackHolders(item: WorkItem, line: TrailLine): Promise<void> {
+  const key = item.external.jira ? ` ${item.external.jira.key}` : '';
+  const detail = line.from && line.to ? `${line.from} → ${line.to}` : line.to ?? line.from ?? line.note ?? '';
+  const what = line.op === 'comment' ? `a comment from ${line.by}` : `${line.op}${detail ? ` ${detail}` : ''} by ${line.by}`;
+  for (const holder of await holdersOf(item.id)) {
+    if (holder.kind === 'agent' && holder.name !== line.by) await enqueueMessage(holder.name, `${item.id}${key}: ${what} (item read ${item.id}).`, 'house', 'Work items');
+  }
 }
 
 export interface NewItem {
@@ -448,7 +455,7 @@ export function deleteItem(id: string, by: string): Promise<{ deleted: string[];
       other.trail.push(...lines);
       await save(other);
       for (const line of lines) emitItemChanged({ item: other, line });
-      await ackHolders(other.id, by);
+      await ackHolders(other, lines[0]!);
     }
     for (const at of deleted) {
       await ackHolds(await takeOffEveryList(at), by);

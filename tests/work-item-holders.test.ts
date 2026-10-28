@@ -184,7 +184,7 @@ test('a change by anyone but the holding Agent acks that Agent once; its own cha
   await seedTegami('keeper');
   const item = (await items.createItem({ title: 'kept' }, 'lead')).item;
   await clear();
-  const acks = async () => (await listQueuedMessages()).filter((message) => message.target === 'keeper' && /Your work record changed/.test(message.text)).length;
+  const acks = async () => (await listQueuedMessages()).filter((message) => message.target === 'keeper' && /Your work record changed|\(item read w\d+\)/.test(message.text)).length;
   await items.assignItem(item.id, { kind: 'agent', name: 'keeper' }, 'lead');
   assert.equal(await acks(), 1, 'an assign by someone else: one ack, not two');
   await clear();

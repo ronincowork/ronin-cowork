@@ -121,7 +121,10 @@ between lists and release takes it off every list, under the store's one issuer 
 two concurrent assigns leave one holder. An item that comes to or leaves an Agent's list
 by anyone else's hand (create with a holder, assign, release) pushes that Agent the
 one fixed work-record ack (`ackRecord`, `src/tegami.ts`; owner 2026-10-07); an Agent's own
-move is not acked. A move on a Team's list is a roster change and acks its lead. Every act
+move is not acked. A move on a Team's list is a roster change and acks its lead. Any other
+change to a held item by someone else (`appendTrail`) acks its Agent holders with a line naming
+the item and the change, "w64 KAN-27: status BUILD → REVIEW by jira:x (item read w64)."
+(`ackHolders`), so a comment's holder knows to read it. Every act
 names its item, one per Jira item act (`item --help`); the Agent's work record shows the
 items it holds, each with its status. `deleteItem` is Jira's delete: the item and its
 subtasks go, other children lose the parent, links to it go. Readings are derived in `src/work-items-read.ts` and never stored: an Agent's
