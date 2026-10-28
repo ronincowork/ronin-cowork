@@ -26,8 +26,12 @@ test('the Jira panel is a Settings surface over the bridge routes alone', async 
   // The kit and ERABI, no second selector.
   assert.match(panel, /createStep\(/);
   assert.match(panel, /createField\(/);
-  // Up and Down are the two switches, one ERABI instance, each PUT as itself.
-  assert.match(panel, /\{ key: 'up', label: t\('jira\.up', 'Up'\), switch: both \},\s*\{ key: 'polling', label: t\('jira\.down', 'Down'\), switch: both \}/);
+  // Three switches by kind of item, one ERABI instance, each PUT as itself; Polling is gone.
+  assert.match(panel, /\['take', t\('jira\.take', 'New assignments'\)/);
+  assert.match(panel, /\['assigned', t\('jira\.assigned', 'Assigned items'\)/);
+  assert.match(panel, /\['ronin', t\('jira\.ronin', 'Ronin’s items'\)/);
+  assert.match(panel, /ask\(\[\{ fields: SWITCHES\.map\(\(\[key, label\]\) => \(\{ key, label, switch: both \}\)\) \}\]/);
+  assert.doesNotMatch(panel, /polling/);
   assert.match(panel, /put\(\{ \[key\]: value\[key\] === true \}/);
   // Per pair: status on both sides, the last write in and out (the Bridge doc's panel).
   assert.match(panel, /el\('td', null, pair\.status\), el\('td', null, pair\.jiraStatus \|\| '—'\)/);
@@ -44,7 +48,7 @@ test('the Jira panel folds every section, reads at body size, and says how it ru
   assert.doesNotMatch(panel, /'li', 'fs-step-help'|el\('p', 'fs-step-help', t\(/, 'instructions are reading text, not captions');
   assert.match(css, /\.jira-read \{[^}]*font-size: var\(--text-body\)/);
   assert.match(css, /\.jira-form > \.fs-step \+ \.fs-step \{ margin-top: var\(--space-paragraph\); \}/);
-  for (const key of ['how_master', 'how_up', 'how_down', 'how_sync']) assert.match(panel, new RegExp(`t\\('jira\\.${key}'`), key);
+  for (const key of ['how_master', 'how_sync', 'take_text', 'assigned_text', 'ronin_text']) assert.match(panel, new RegExp(`t\\('jira\\.${key}'`), key);
   // Work items by level: roots are items whose parent is not in the Desk, epics first; children nest.
   assert.match(panel, /items\.filter\(\(item\) => !byId\.has\(item\.parent\)\)\.sort\(\(a, b\) => b\.level - a\.level\)/);
   assert.match(panel, /for \(const child of children\(item\.id\)\) row\(child, depth \+ 1\)/);

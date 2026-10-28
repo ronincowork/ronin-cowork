@@ -3,7 +3,7 @@
  * THE JIRA PANEL — the Campaign's Jira space, over the bridge's own routes
  * (`/api/jira/:campaign`, owned by the `jira` Services part). Not connected, it is the
  * Connect walkthrough with its four fields; connected, it is the connection, Check,
- * the Up and Down switches, Sync now, the state, and for dev the pairs. How it runs heads both, and the
+ * the three switches, Sync now, the state, and for dev the pairs. How it runs heads both, and the
  * Desk's work items by level follow. A 404 means the part is not on. The token goes out
  * on Connect and is never read back. Every section folds and keeps its fold.
  */
@@ -220,22 +220,25 @@ export function createJiraPanel(selected) {
     const word = (on) => (on ? t('campaign_view.on', 'On') : t('campaign_view.off', 'Off'));
     const step = section(1, 'how', t('jira.how', 'How it runs'));
     const line = (name, state, text) => { const p = read(''); p.append(el('b', null, `${name} · ${state}`), ` — ${text}`); return p; };
-    // The two switches, once there is a connection to switch; the master lives in Installations.
+    // The three switches, by kind of item, once there is a connection to switch; the master
+    // lives in Installations. Each line under them says what its switch does.
+    const SWITCHES = [
+      ['take', t('jira.take', 'New assignments'), t('jira.take_text', 'on, an item Jira newly assigns to the account comes in; off, it is not taken.')],
+      ['assigned', t('jira.assigned', 'Assigned items'), t('jira.assigned_text', 'on, items that came from Jira stay in step both ways: their Jira edits come in, their Agents’ changes go out; off, neither.')],
+      ['ronin', t('jira.ronin', 'Ronin’s items'), t('jira.ronin_text', 'on, items made in Ronin go up to Jira, at Connect and after, and stay in step both ways; off, neither.')],
+    ];
     if (connected) {
       const both = [t('campaign_view.on', 'On'), t('campaign_view.off', 'Off')];
-      const switches = ask([{ fields: [
-        { key: 'up', label: t('jira.up', 'Up'), switch: both },
-        { key: 'polling', label: t('jira.down', 'Down'), switch: both },
-      ] }], { value: { up: snap.up, polling: snap.polling }, density: 'tight', onChange: (value, key) => {
-        void put({ [key]: value[key] === true }, t('jira.saved', 'Saved.'));
-      } });
+      const switches = ask([{ fields: SWITCHES.map(([key, label]) => ({ key, label, switch: both })) }], {
+        value: Object.fromEntries(SWITCHES.map(([key]) => [key, snap[key]])), density: 'tight',
+        onChange: (value, key) => void put({ [key]: value[key] === true }, t('jira.saved', 'Saved.')),
+      });
       step.body.append(switches.el);
     }
     step.body.append(
       line(t('jira.how_master', 'Services › Jira'), word(!snap.off), t('jira.how_master_text', 'the master switch, in Installations; off, nothing moves.')),
-      line(t('jira.how_up', 'Up, Ronin → Jira'), word(connected && snap.up), t('jira.how_up_text', 'the Up switch: every Agent change goes as it happens; off, nothing goes and nothing is kept.')),
-      line(t('jira.how_down', 'Down, Jira → Ronin'), word(connected && snap.polling), t('jira.how_down_text', 'the Down switch: every minute while Ronin is open in a browser, hourly otherwise; off, only Sync now reads Jira, and nothing is lost.')),
-      line(t('jira.how_sync', 'Sync now'), `${t('jira.last_check', 'Last check')} ${when(snap.lastCheck)}`, t('jira.how_sync_text', 'one read, the deleted-item check, and failed writes retried.')),
+      ...SWITCHES.map(([key, label, text]) => line(label, word(connected && snap[key]), text)),
+      line(t('jira.how_sync', 'Sync now'), `${t('jira.last_check', 'Last check')} ${when(snap.lastCheck)}`, t('jira.how_sync_text', 'always reads: one read, the deleted-item check, and failed writes retried. The timer reads every minute while Ronin is open in a browser, hourly otherwise, while any switch is on.')),
     );
     return step.el;
   }
