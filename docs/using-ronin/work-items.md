@@ -61,7 +61,9 @@ children, comments, attachments, links and history.
 Agents move their items themselves with `item transition <id> <status>`. Any status to any
 status is allowed. Two moves are made for them: a hand-in that names the item
 (`worktree-desk hand-in <repo> --item <id>`) moves it to LAND, and the promotion that
-carries that hand-in moves it to DONE. A hand-in that names no item moves no status.
+carries that hand-in moves it to DONE. An item paired to Jira is the exception: promotion
+moves it to LAND (In Review on Jira), and it is DONE only when the Jira user moves it to Done,
+which comes back by polling. A hand-in that names no item moves no status.
 
 ## The item tool
 

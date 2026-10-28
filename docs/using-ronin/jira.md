@@ -31,6 +31,11 @@ except that widening **Ronin's items** uploads the items that newly qualify:
 - **Sync now** always reads: one read, the check for items gone from Jira, and failed writes
   retried.
 
+Ronin never closes a Jira item. Status maps by category (To Do ↔ IDEA, In Progress ↔ BUILD,
+Done ↔ DONE) plus any named status the connection maps (In Review ↔ REVIEW). A paired item
+handed in and promoted moves to LAND, In Review on Jira; it is DONE only when the Jira user
+moves it to Done, and that comes back with the next read.
+
 ## Connect
 
 The panel lists the Atlassian steps:

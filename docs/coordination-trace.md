@@ -22,7 +22,8 @@ surface or a new work-record store.
    `dev` to the stable line.
 7. **Work Items reads the work items.** It shows what the Team and its members
    hold. A hand-in naming an item moves it to Land and a promotion moves it to Done, each a
-   trail line naming its receipt. It never guesses from phase prose.
+   trail line naming its receipt; an item paired to Jira stays at Land (In Review) until the
+   Jira user moves it to Done. It never guesses from phase prose.
 8. **Completion closes the right records.** The work item moves to Done only when its definition
    of completion is met. Standing truth lands in code/docs; finished temporary plans are
    removed; desk and session cleanup follow their own explicit lifecycle.

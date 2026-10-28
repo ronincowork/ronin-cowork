@@ -128,7 +128,8 @@ stones. These are readings: every change goes through the `item` tool.
 
 Name the item on a hand-in with `worktree-desk hand-in <repo> --item <id>`. An accepted
 hand-in moves the item to LAND, with the receipt on its trail. A completed promotion moves
-every item named on the hand-ins it carries to DONE, with the promotion receipt. No
+every item named on the hand-ins it carries to DONE, with the promotion receipt; an item
+paired to Jira moves to LAND, In Review on Jira, until the Jira user moves it to Done. No
 association is guessed from names or repositories.
 
 A supporting Agent and an assignment are two operations owned by their tools:
