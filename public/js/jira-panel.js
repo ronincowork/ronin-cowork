@@ -49,8 +49,9 @@ export function createJiraPanel(selected) {
   };
   const read = (text) => el('p', 'jira-read', text);
   let renewShown = false;
-  // The switches before Connect: they start on and go out with it.
-  const draft = { polling: true, assigned: true, ronin: true };
+  // The switches before Connect go out with it. The up switches start off, so nothing goes
+  // up until the owner says the items are ready; turning Ronin's items on later uploads them.
+  const draft = { polling: true, assigned: false, ronin: false };
 
   const campaign = () => selected()?.id || '';
   const api = (tail = '') => `/api/jira/${encodeURIComponent(campaign())}${tail}`;
@@ -115,7 +116,7 @@ export function createJiraPanel(selected) {
       createField({ label: t('jira.space', 'Space key'), control: space, description: t('jira.space_help', 'The space’s short code, not its name: KAN in KAN-1. Also in Space settings › Details.') }).el,
       createField({ label: t('jira.token', 'API token'), control: token, description: t('jira.token_help', 'Kept by Ronin with Services; never shown again.') }).el,
       createField({ label: t('jira.expiry', 'Token expiry'), control: expiry, description: t('jira.expiry_help', 'No call returns it: the date from the Review page.') }).el,
-      read(t('jira.connect_warning', 'Connect puts every work item in this Desk on the space, assigned to the account. Then, in Jira, assign one work item to the account and press Sync now.')),
+      read(t('jira.connect_warning', 'With Ronin’s items on, Connect puts every work item in this Desk on the space, assigned to the account; off, nothing goes up until you turn it on. Then, in Jira, assign one work item to the account and press Sync now.')),
       createActionBar({ actions: [go] }).el,
     );
     return [steps.el, fields.el];
@@ -229,7 +230,7 @@ export function createJiraPanel(selected) {
     const SWITCHES = [
       ['polling', t('jira.polling', 'Polling'), t('jira.polling_text', 'Down, Jira → Ronin: Jira is read every minute while Ronin is open in a browser, hourly otherwise; off, only Sync now reads it.')],
       ['assigned', t('jira.assigned', 'Assigned items'), t('jira.assigned_text', 'Up, Ronin → Jira: changes to items that came from Jira go out to Jira; off, they stay in Ronin.')],
-      ['ronin', t('jira.ronin', 'Ronin’s items'), t('jira.ronin_text', 'Up, Ronin → Jira: items made in Ronin are created on Jira, at Connect and after, and their changes go out; off, they stay in Ronin.')],
+      ['ronin', t('jira.ronin', 'Ronin’s items'), t('jira.ronin_text', 'Up, Ronin → Jira: items made in Ronin are created on Jira, at Connect or when you turn this on, and their changes go out; off, they stay in Ronin.')],
     ];
     const both = [t('campaign_view.on', 'On'), t('campaign_view.off', 'Off')];
     step.body.append(line(t('jira.how_master', 'Services › Jira'), word(!snap.off), t('jira.how_master_text', 'the master switch, in Installations; off, nothing moves.')));

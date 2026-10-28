@@ -12,8 +12,10 @@ Every section folds, and stays as you left it.
 ## How it runs
 
 The panel's first section is three switches, one per direction of travel, each with a line
-saying what it does. They start on; set them before **Connect** and Connect uses them, or
-change them any time after. Each does what it says, with no catch-up when it comes back on:
+saying what it does. Before **Connect**, Polling starts on and the two up switches start off,
+so nothing goes up until you say your items are ready; Connect uses whatever they are set to.
+Change them any time after. Each does what it says, with no catch-up when it comes back on,
+except that turning **Ronin's items** on uploads the items that were held back:
 
 - **Services › Jira** (Installations) is the master switch; off, nothing moves.
 - **Polling** (down, Jira → Ronin): Jira is read every minute while Ronin is open in a
@@ -22,7 +24,7 @@ change them any time after. Each does what it says, with no catch-up when it com
 - **Assigned items** (up, Ronin → Jira): changes to items that came from Jira go out to Jira.
   Off, they stay in Ronin.
 - **Ronin's items** (up, Ronin → Jira): items made in Ronin are created on Jira, at Connect
-  and after, and their changes go out. Off, they stay in Ronin.
+  or when you turn it on, and their changes go out. Off, they stay in Ronin.
 - **Sync now** always reads: one read, the check for items gone from Jira, and failed writes
   retried.
 
@@ -48,8 +50,9 @@ Then fill in **Site URL** (the address you open Jira at, up to `.atlassian.net`;
 without `https://`, and anything after it is ignored), **Space key** (the space's short code,
 not its name: `KAN` in `KAN-1`),
 **API token** and **Token expiry**, and press **Connect**. Ronin checks them and says what
-to fix, keeps the token with Services (it is never shown again), puts every work item in
-the Desk on the space assigned to the account, and runs the first sync. Then assign one work
+to fix, keeps the token with Services (it is never shown again), and runs the first sync.
+With **Ronin's items** on, it first puts every work item in the Desk on the space, assigned to
+the account. Then assign one work
 item to the account in Jira and press **Sync now**.
 
 ## Connected
@@ -62,7 +65,7 @@ item to the account in Jira and press **Sync now**.
 - **Sync**: the last check, the pair count, the failed writes and the last error.
 - **Work items by level**: the Desk's items as a tree, epics with their children under them,
   then the items with no parent. Each shows its Jira key if it is paired, or "goes up at
-  sync". Before Connect, it is what Connect will put on the space.
+  sync". Before Connect, it is what Connect will put on the space with Ronin's items on.
 - **Pairs**: one row per paired item, with its Jira key (a link), Ronin id, title, level and
   kind, where it started, its status in Ronin and in Jira (as of the last read), holders
   (each Agent a link), flagged, when a change last came in from Jira and last went out to
