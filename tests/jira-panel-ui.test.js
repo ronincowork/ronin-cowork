@@ -61,10 +61,12 @@ test('the Jira panel folds every section, reads at body size, and says how it ru
   assert.match(css, /\.jira-read \{[^}]*font-size: var\(--text-body\)/);
   assert.match(css, /\.jira-form > \.fs-step \+ \.fs-step \{ margin-top: var\(--space-paragraph\); \}/);
   for (const key of ['how_master', 'how_sync', 'polling_text', 'assigned_text', 'ronin_text']) assert.match(panel, new RegExp(`t\\('jira\\.${key}'`), key);
-  // Work items by level: the Work Items surface's own stones in a grouped phalanx.
-  assert.match(panel, /createPhalanx\(\{ grouped: true, className: 'wi-phalanx jira-items'/);
-  assert.match(panel, /itemStones\(items, \{ holder \}\)/);
-  assert.doesNotMatch(panel, /jira-tree/);
+  // Work items by level: one table renderer in two hosts, in itemStones' order, epics heading groups.
+  assert.match(panel, /export function renderJiraItems\(items, site\)/);
+  assert.match(panel, /const order = itemStones\(items\)/);
+  assert.match(panel, /step\.body\.append\(renderJiraItems\(items, snap\.site\)\)/);
+  assert.match(panel, /surface\.content\.replaceChildren\(renderJiraItems\(/);
+  assert.doesNotMatch(panel, /createPhalanx/);
   assert.match(panel, /t\('jira\.goes_up', 'goes up at sync'\)/);
 });
 

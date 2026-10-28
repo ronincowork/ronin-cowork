@@ -177,6 +177,20 @@ nothing paints exactly this.
 
 ## jira — jira-panel.js (the Jira panel in Settings: connect, check, sync, the pairs)
 
+- **jira.level_epic:** Epic
+- **jira.level_task:** Task
+- **jira.level_subtask:** Subtask
+- **jira.col_level:** Level
+- **jira.col_kind_only:** Kind
+- **jira.col_id:** Ronin
+- **jira.col_title:** Title
+- **jira.col_status_only:** Status
+- **jira.col_created:** Created in
+- **jira.col_holders:** Holders
+- **jira.col_key:** Jira
+- **jira.goes_up:** goes up at sync
+- **jira.refresh:** Refresh
+- **jira.items:** Work items by level
 - **jira.check:** Check
 - **jira.sync_now:** Sync now
 - **jira.title:** Jira
@@ -223,14 +237,10 @@ nothing paints exactly this.
 - **jira.pairs:** Pairs
 - **jira.pairs_n:** {n} pairs
 - **jira.filter:** Filter: key, id, title, status, holder
-- **jira.col_key:** Jira
-- **jira.col_id:** Ronin
-- **jira.col_title:** Title
 - **jira.col_kind:** Level · kind
 - **jira.col_started:** Started in
 - **jira.col_status:** Ronin status
 - **jira.col_jira_status:** Jira status
-- **jira.col_holders:** Holders
 - **jira.col_flagged:** Flagged
 - **jira.col_last_in:** Last in
 - **jira.col_last_out:** Last out
@@ -250,11 +260,10 @@ nothing paints exactly this.
 - **jira.saved:** Saved.
 - **jira.how_sync:** Sync now
 - **jira.how_sync_text:** always reads: one read, the deleted-item check, and failed writes retried.
-- **jira.items:** Work items by level
 - **jira.items_n:** {n} items · {p} paired
-- **jira.goes_up:** goes up at sync
 - **jira.items_connected:** Paired items show their Jira key; the rest go up at the next sync.
 - **jira.items_preview:** What Connect will put on the space, assigned to the account.
+- **jira.open_items:** Open
 - **jira.off:** Services › Jira is off for this Desk. Turn it on in Installations › Ronin Services, then come back here.
 - **jira.card_summary:** This Desk’s Jira space: connect, check, sync.
 

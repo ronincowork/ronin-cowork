@@ -12,13 +12,98 @@ import { t } from './lexicon.js';
 import { request } from './request.js';
 import { ask } from './ask.js';
 import { createStep, el } from './form-steps.js';
-import { createPhalanx } from './phalanx.js';
-import { holderOf, itemStones, renderItemDetail } from './work-items-surface.js';
+import { itemStones } from './work-items-surface.js';
 
 const RENEW_DAYS = 14;
 const DAY = 86_400_000;
 
-export function createJiraPanel(selected) {
+/** The Jira link for a key, or the key alone when there is no site yet. */
+function jiraKey(site, key) {
+  if (!site) return document.createTextNode(key);
+  const link = el('a', null, key);
+  link.href = `${site}/browse/${key}`; link.target = '_blank'; link.rel = 'noopener';
+  return link;
+}
+
+/**
+ * THE JIRA ITEMS TABLE — one renderer, two hosts (the panel's section and its own
+ * worksurface). Rows run in the Work Items surface's order (itemStones' walk: each epic, its
+ * items, their subtasks; then the items with no epic). An epic row heads its group; the
+ * items with no epic in the Desk get a head row of their own. Children carry a tree mark.
+ */
+export function renderJiraItems(items, site) {
+  const LEVEL = { 1: t('jira.level_epic', 'Epic'), 0: t('jira.level_task', 'Task'), '-1': t('jira.level_subtask', 'Subtask') };
+  const byId = new Map(items.map((item) => [item.id, item]));
+  const order = itemStones(items).map((stone) => stone.item);
+  const parentOf = (item) => byId.get(item.parent) || null;
+  const ancestors = (item) => {
+    const up = [];
+    for (let at = parentOf(item), seen = new Set(); at && !seen.has(at.id); seen.add(at.id), at = parentOf(at)) up.unshift(at);
+    return up;
+  };
+  // Last among its siblings in the order: no later row shares its parent.
+  const last = (item) => !order.slice(order.indexOf(item) + 1).some((other) => other.parent === item.parent && byId.has(item.parent));
+  // The group is the top of the item's chain when that is an epic in the Desk, else "no epic".
+  const groupOf = (item) => { const top = ancestors(item)[0] ?? item; return top.level === 1 ? top.id : 'none'; };
+  const mark = (item) => {
+    const up = ancestors(item);
+    if (!up.length) return '';
+    return up.slice(1).map((at) => (last(at) ? '   ' : '│  ')).join('') + (last(item) ? '└ ' : '├ ');
+  };
+  const COLUMNS = [t('jira.col_level', 'Level'), t('jira.col_kind_only', 'Kind'), t('jira.col_id', 'Ronin'), t('jira.col_title', 'Title'),
+    t('jira.col_status_only', 'Status'), t('jira.col_created', 'Created in'), t('jira.col_holders', 'Holders'), t('jira.col_key', 'Jira')];
+  const wrap = el('div', 'tj-table-wrap');
+  const table = el('table', 'tj-table jira-items');
+  const head = el('tr');
+  for (const word of COLUMNS) head.append(el('th', null, word));
+  table.append(head);
+  let group = null;
+  for (const item of order) {
+    const next = groupOf(item);
+    // The items with no epic get one head row; an epic's own row heads its group.
+    if (next === 'none' && group !== 'none') {
+      const row = el('tr', 'jira-group');
+      const cell = el('td', null, t('work_items.no_epic', 'No epic'));
+      cell.colSpan = COLUMNS.length;
+      row.append(cell);
+      table.append(row);
+    }
+    group = next;
+    const row = el('tr', item.level === 1 ? 'jira-group' : '');
+    const title = el('td', 'jira-title');
+    title.append(el('span', 'jira-tree-mark', mark(item)), item.title || item.id);
+    const holders = el('td');
+    const [kind, name] = String(item.holder || '').split(':');
+    if (kind === 'agent') { const agent = el('a', null, name); agent.href = `#/agent/${encodeURIComponent(name)}`; holders.append(agent); }
+    else holders.textContent = item.holder || '—';
+    const pair = item.external?.jira;
+    const jira = el('td');
+    jira.append(pair ? jiraKey(site, pair.key) : t('jira.goes_up', 'goes up at sync'));
+    row.append(el('td', null, LEVEL[item.level] ?? String(item.level)), el('td', null, item.kind || '—'), el('td', null, item.id), title,
+      el('td', null, item.status), el('td', null, item.created?.by?.startsWith('jira:') ? 'Jira' : 'Ronin'), holders, jira);
+    table.append(row);
+  }
+  wrap.append(table);
+  return wrap;
+}
+
+/** The table on its own worksurface, full width, placed from the panel's Open. */
+export function createJiraItemsSurface(selected) {
+  const { createSurface, createAction } = WorkspaceKit.primitives;
+  const refresh = createAction({ label: t('jira.refresh', 'Refresh'), size: 'compact', action: () => void load() });
+  const surface = createSurface({ label: t('jira.items', 'Work items by level'), className: 'setup-surface jira-items-surface', actions: [refresh] });
+  async function load() {
+    const campaign = encodeURIComponent(selected()?.id || '');
+    const [conn, listed] = await Promise.all([
+      request(`/api/jira/${campaign}`, { cache: 'no-store' }),
+      request(`/api/work-items?campaign=${campaign}`, { cache: 'no-store' }),
+    ]);
+    surface.content.replaceChildren(renderJiraItems(listed.ok ? listed.data.items : [], conn.ok ? conn.data.site : ''));
+  }
+  return { el: surface.el, enter: () => void load() };
+}
+
+export function createJiraPanel(selected, { openItems = null } = {}) {
   const { createSurface, createAction, createActionBar, createField, createMetadata, createNotice } = WorkspaceKit.primitives;
   const check = createAction({ label: t('jira.check', 'Check'), size: 'compact', action: () => void act('check') });
   const sync = createAction({ label: t('jira.sync_now', 'Sync now'), size: 'compact', kind: 'primary', action: () => void act('sync') });
@@ -40,7 +125,6 @@ export function createJiraPanel(selected) {
   ];
   let snap = null;
   let items = [];
-  let itemsPhalanx = null;
   let filter = '';
   // Each section's fold, kept across repaints.
   const open = { how: true, before: true, connect: true, connection: true, renew: false, sync: true, items: false, pairs: false };
@@ -251,32 +335,16 @@ export function createJiraPanel(selected) {
     return step.el;
   }
 
-  /** The Desk's items in the Work Items surface's own stones: each epic heads its group, then
-   *  its items, each followed by its subtasks. Each stone's state ends with its Jira key, or
-   *  "goes up at sync"; the item's reading carries the key as a link. Not connected, it is
-   *  what Connect will put on the space; connected, what is paired. */
+  /** The Desk's items by level. Not connected, what Connect will put on the space; connected,
+   *  what is paired. Open places the same table on its own worksurface beside this one. */
   function itemsStep(n) {
     const paired = items.filter((item) => item.external?.jira).length;
     const step = section(n, 'items', t('jira.items', 'Work items by level'), t('jira.items_n', '{n} items · {p} paired', { n: items.length, p: paired }));
-    const holder = (item) => holderOf(item, '');
-    itemsPhalanx?.destroy();
-    itemsPhalanx = createPhalanx({ grouped: true, className: 'wi-phalanx jira-items', renderDetail: ({ item }, host) => {
-      const pair = item.external?.jira;
-      const jira = el('p', 'jira-read');
-      if (pair && snap.site) {
-        const key = el('a', null, pair.key);
-        key.href = `${snap.site}/browse/${pair.key}`; key.target = '_blank'; key.rel = 'noopener';
-        jira.append(`${t('jira.col_key', 'Jira')} · `, key);
-      } else jira.textContent = `${t('jira.col_key', 'Jira')} · ${pair ? pair.key : t('jira.goes_up', 'goes up at sync')}`;
-      host.append(jira);
-      renderItemDetail(host, item, { holder: holder(item) });
-    } });
-    itemsPhalanx.setItems(itemStones(items, { holder }).map((stone) => ({
-      ...stone, state: [stone.state, stone.item.external?.jira?.key || t('jira.goes_up', 'goes up at sync')].join(' · '),
-    })));
     step.body.append(read(snap.connected
       ? t('jira.items_connected', 'Paired items show their Jira key; the rest go up at the next sync.')
-      : t('jira.items_preview', 'What Connect will put on the space, assigned to the account.')), itemsPhalanx.el);
+      : t('jira.items_preview', 'What Connect will put on the space, assigned to the account.')));
+    if (openItems) step.body.append(createActionBar({ actions: [createAction({ label: t('jira.open_items', 'Open'), size: 'compact', action: () => openItems() })] }).el);
+    step.body.append(renderJiraItems(items, snap.site));
     return step.el;
   }
 

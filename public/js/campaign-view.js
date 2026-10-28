@@ -8,7 +8,7 @@ import { createAgentDefaultsSurface, defaultsSummary } from './campaign-defaults
 import { createInstallationsSurface, installationsSummary } from './campaign-installations.js';
 import { createProviderSetupSessionMount } from './provider-setup-session.js';
 import { createWorkspaceFoldersSurface } from './workspace-folders-surface.js';
-import { createJiraPanel } from './jira-panel.js';
+import { createJiraItemsSurface, createJiraPanel } from './jira-panel.js';
 import { request } from './request.js';
 import { coworkCommons } from './cowork-commons.js';
 import { createFeedbackSurface, FEEDBACK_TYPE } from './feedback.js';
@@ -28,7 +28,7 @@ import { setupProgressHandlers } from './events.js';
 const PROFILE = WORKBENCH_PROFILES.campaign;
 const MIKA_SESSION = 'mika_agent';
 const TERMINAL_TYPE = WORKBENCH_TYPES.terminal;
-const TYPES = Object.freeze({ machine: WORKBENCH_TYPES.campaignMachine, defaults: WORKBENCH_TYPES.campaignDefaults, roots: WORKBENCH_TYPES.campaignRoots, identity: WORKBENCH_TYPES.campaignIdentity, jira: WORKBENCH_TYPES.campaignJira, document: WORKBENCH_TYPES.document });
+const TYPES = Object.freeze({ machine: WORKBENCH_TYPES.campaignMachine, defaults: WORKBENCH_TYPES.campaignDefaults, roots: WORKBENCH_TYPES.campaignRoots, identity: WORKBENCH_TYPES.campaignIdentity, jira: WORKBENCH_TYPES.campaignJira, jiraItems: WORKBENCH_TYPES.campaignJiraItems, document: WORKBENCH_TYPES.document });
 /** The machine's tabs of the cowork commons — everything about this install that is not already a surface here. */
 const MACHINE_TABS = Object.freeze(['themes', 'account', 'archives', 'messages', 'help', 'keypad', 'health']);
 const elem = (tag, cls, text) => { const out = document.createElement(tag); if (cls) out.className = cls; if (text != null) out.textContent = text; return out; };
@@ -93,7 +93,11 @@ export function createCampaignView() {
       workspace,
     }),
     campaignDefaults: () => enterable(createAgentDefaultsSurface(selected)),
-    campaignJira: () => enterable(createJiraPanel(selected)),
+    // Open places the items table full width in the other workspace.
+    campaignJira: ({ workspace }) => enterable(createJiraPanel(selected, {
+      openItems: () => bench.place(TYPES.jiraItems, workspace === 'workspace1' ? 'workspace2' : 'workspace1'),
+    })),
+    campaignJiraItems: () => enterable(createJiraItemsSurface(selected)),
     campaignInstallations: (context) => {
       const surface = createInstallationsSurface(selected, {
         ...context,
