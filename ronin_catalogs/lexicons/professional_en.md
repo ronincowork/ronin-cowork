@@ -215,10 +215,6 @@ nothing paints exactly this.
 - **jira.disconnected:** Disconnected.
 - **jira.sync:** Sync
 - **jira.last_check:** Last check
-- **jira.polling:** Polling
-- **jira.polling_on:** Polling on.
-- **jira.polling_off:** Polling off: only Sync now reads Jira.
-- **jira.polling_help:** On: Jira is read every minute while you are here, and every hour otherwise.
 - **jira.pair_count:** Pairs
 - **jira.failed:** Failed writes
 - **jira.failed_n:** {n}: Sync now tries them again.
@@ -241,12 +237,15 @@ nothing paints exactly this.
 - **jira.flagged:** Flagged
 - **jira.filter_label:** Filter
 - **jira.how:** How it runs
+- **jira.up:** Up
+- **jira.down:** Down
+- **jira.saved:** Saved.
 - **jira.how_master:** Services › Jira
 - **jira.how_master_text:** the master switch, in Installations; off, nothing moves.
 - **jira.how_up:** Up, Ronin → Jira
-- **jira.how_up_text:** on whenever Services › Jira is on and this Desk is connected; every Agent change goes as it happens.
+- **jira.how_up_text:** the Up switch: every Agent change goes as it happens; off, nothing goes and nothing is kept.
 - **jira.how_down:** Down, Jira → Ronin
-- **jira.how_down_text:** the Polling switch: every minute while Ronin is open in a browser, hourly otherwise; off, only Sync now reads Jira, and nothing is lost.
+- **jira.how_down_text:** the Down switch: every minute while Ronin is open in a browser, hourly otherwise; off, only Sync now reads Jira, and nothing is lost.
 - **jira.how_sync:** Sync now
 - **jira.how_sync_text:** one read, the deleted-item check, and failed writes retried.
 - **jira.items:** Work items by level

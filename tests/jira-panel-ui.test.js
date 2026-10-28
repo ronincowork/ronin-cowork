@@ -26,7 +26,9 @@ test('the Jira panel is a Settings surface over the bridge routes alone', async 
   // The kit and ERABI, no second selector.
   assert.match(panel, /createStep\(/);
   assert.match(panel, /createField\(/);
-  assert.match(panel, /ask\(\[\{ fields: \[\s*\{ key: 'polling'/);
+  // Up and Down are the two switches, one ERABI instance, each PUT as itself.
+  assert.match(panel, /\{ key: 'up', label: t\('jira\.up', 'Up'\), switch: both \},\s*\{ key: 'polling', label: t\('jira\.down', 'Down'\), switch: both \}/);
+  assert.match(panel, /put\(\{ \[key\]: value\[key\] === true \}/);
   // Per pair: status on both sides, the last write in and out (the Bridge doc's panel).
   assert.match(panel, /el\('td', null, pair\.status\), el\('td', null, pair\.jiraStatus \|\| '—'\)/);
   assert.match(panel, /when\(pair\.lastIn\)\), el\('td', null, when\(pair\.lastOut\)\)/);
