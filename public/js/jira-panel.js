@@ -13,6 +13,7 @@ import { request } from './request.js';
 import { ask } from './ask.js';
 import { createStep, el } from './form-steps.js';
 import { itemStones } from './work-items-surface.js';
+import { openMenu } from './menu.js';
 
 const RENEW_DAYS = 14;
 /** Ronin's items, narrowest first: a change up this list is a widening. */
@@ -21,6 +22,8 @@ const DAY = 86_400_000;
 
 /** The folded groups of the items table, by epic id ('none' for no epic), shared by both hosts. */
 const FOLDED = new Set();
+/** The items table's header filters: per column, the values not shown, shared by both hosts. */
+const HIDDEN = new Map();
 
 /** Whether an item goes up under a choice of switches, as the bridge decides: one from Jira by
  * Assigned items; one made in Ronin by Ronin's items, where 'epics' takes an epic or anything under one. */
@@ -56,6 +59,8 @@ function jiraKey(site, key) {
  * items with no epic in the Desk get a head row of their own. Children carry a tree mark.
  * A head row folds its group; the fold is remembered per epic. The Jira column says where each
  * item stands under `conn`'s choice (site, assigned, ronin): its key, goes up, or stays in Ronin.
+ * Level, Kind, Status, Created in and Jira filter from their header: a menu of the column's
+ * values, each shown or not. A shown item keeps its parents on as its context.
  */
 export function renderJiraItems(items, conn) {
   const site = conn.site || '';
@@ -69,9 +74,20 @@ export function renderJiraItems(items, conn) {
   };
   // The group is the top of the item's chain when that is an epic in the Desk, else "no epic".
   const groupOf = (item) => { const top = ancestors(item)[0] ?? item; return top.level === 1 ? top.id : 'none'; };
+  // What a filterable column says of an item: the value its menu shows or hides.
+  const VALUE = {
+    level: (item) => LEVEL[item.level] ?? String(item.level),
+    kind: (item) => item.kind || '—',
+    status: (item) => item.status || '—',
+    created: (item) => (item.created?.by?.startsWith('jira:') ? 'Jira' : 'Ronin'),
+    jira: (item) => (item.external?.jira ? t('jira.on_jira', 'on Jira') : goesUp(item, byId, conn) ? t('jira.goes_up', 'goes up') : t('jira.stays', 'stays in Ronin')),
+  };
+  const shows = (item) => Object.entries(VALUE).every(([key, value]) => !HIDDEN.get(key)?.has(value(item)));
+  const kept = new Set();
+  for (const item of items.filter(shows)) for (const at of [item, ...ancestors(item)]) kept.add(at.id);
   // In itemStones' order, each epic's rows together and every item with no epic after them, under one head.
   const stones = itemStones(items).map((stone) => stone.item);
-  const order = [...stones.filter((item) => groupOf(item) !== 'none'), ...stones.filter((item) => groupOf(item) === 'none')];
+  const order = [...stones.filter((item) => groupOf(item) !== 'none'), ...stones.filter((item) => groupOf(item) === 'none')].filter((item) => kept.has(item.id));
   // Last among its siblings in the order: no later row shares its parent.
   const last = (item) => !order.slice(order.indexOf(item) + 1).some((other) => other.parent === item.parent && byId.has(item.parent));
   const mark = (item) => {
@@ -79,12 +95,30 @@ export function renderJiraItems(items, conn) {
     if (!up.length) return '';
     return up.slice(1).map((at) => (last(at) ? '    ' : '│   ')).join('') + (last(item) ? '└── ' : '├── ');
   };
-  const COLUMNS = [t('jira.col_level', 'Level'), t('jira.col_kind_only', 'Kind'), t('jira.col_id', 'Ronin'), t('jira.col_title', 'Title'),
-    t('jira.col_status_only', 'Status'), t('jira.col_created', 'Created in'), t('jira.col_holders', 'Holders'), t('jira.col_key', 'Jira')];
+  const COLUMNS = [['level', t('jira.col_level', 'Level')], ['kind', t('jira.col_kind_only', 'Kind')], [null, t('jira.col_id', 'Ronin')], [null, t('jira.col_title', 'Title')],
+    ['status', t('jira.col_status_only', 'Status')], ['created', t('jira.col_created', 'Created in')], [null, t('jira.col_holders', 'Holders')], ['jira', t('jira.col_key', 'Jira')]];
   const wrap = el('div', 'tj-table-wrap');
   const table = el('table', 'tj-table jira-items');
   const head = el('tr');
-  for (const word of COLUMNS) head.append(el('th', null, word));
+  // A filter changes the rows in this host; the other host reads it on its next load.
+  const repaint = () => host.replaceWith(renderJiraItems(items, conn));
+  const filter = (key, word) => {
+    const button = el('button', 'jira-filter', `${word} ▾`);
+    button.type = 'button';
+    const hidden = HIDDEN.get(key) ?? new Set();
+    button.setAttribute('aria-pressed', String(hidden.size > 0));
+    button.addEventListener('click', () => {
+      const values = [...new Set(items.map(VALUE[key]))].sort();
+      const toggle = (value) => { if (hidden.has(value)) hidden.delete(value); else hidden.add(value); HIDDEN.set(key, hidden); repaint(); };
+      openMenu({ anchor: button, host: button.closest('.wk-surface') || document.body, title: word, groups: [
+        { items: values.map((value) => ({ glyph: hidden.has(value) ? '' : '✓', label: value,
+          hint: String(items.filter((item) => VALUE[key](item) === value).length), run: () => toggle(value) })) },
+        { foot: true, items: [{ label: t('jira.show_all', 'Show all'), quiet: hidden.size ? '' : t('jira.all_shown', 'All shown'), run: () => { HIDDEN.delete(key); repaint(); } }] },
+      ] });
+    });
+    return button;
+  };
+  for (const [key, word] of COLUMNS) { const th = el('th'); th.append(key ? filter(key, word) : word); head.append(th); }
   table.append(head);
   // A head row toggles its group's other rows; the chevron says which way.
   const heading = (row, id, first) => {
@@ -139,24 +173,38 @@ export function renderJiraItems(items, conn) {
   const on = items.filter((item) => item.external?.jira).length;
   const go = items.filter((item) => !item.external?.jira && goesUp(item, byId, conn)).length;
   const host = el('div', 'jira-items-host');
-  host.append(el('p', 'jira-read', t('jira.items_counts', '{on} on Jira · {go} to go · {stay} stay in Ronin', { on, go, stay: items.length - on - go })), wrap);
+  const counts = t('jira.items_counts', '{on} on Jira · {go} to go · {stay} stay in Ronin', { on, go, stay: items.length - on - go });
+  const filtered = items.length - kept.size;
+  host.append(el('p', 'jira-read', filtered ? `${counts} · ${t('jira.items_filtered', '{n} hidden by a filter', { n: filtered })}` : counts), wrap);
   return host;
 }
 
 /** The table on its own worksurface, full width, placed from the panel's Open. */
 export function createJiraItemsSurface(selected) {
-  const { createSurface, createAction } = WorkspaceKit.primitives;
-  const refresh = createAction({ label: t('jira.refresh', 'Refresh'), size: 'compact', action: () => void load() });
+  const { createSurface, createAction, createNotice } = WorkspaceKit.primitives;
+  const label = t('jira.refresh', 'Refresh');
+  const refresh = createAction({ label, size: 'compact', action: () => void load(true) });
   const surface = createSurface({ label: t('jira.items', 'Work items by level'), className: 'setup-surface jira-items-surface', actions: [refresh] });
-  async function load() {
+  const notice = createNotice();
+  /** Pressed, Refresh is busy at once and the line says it reads; on return, when it read or what failed. */
+  async function load(pressed = false) {
+    if (pressed) {
+      refresh.el.textContent = t('jira.refreshing', 'Refreshing…'); refresh.setDisabled(true);
+      notice.set('info', t('jira.refreshing_text', 'Reading the work items and the Jira connection again.'));
+    }
     const campaign = encodeURIComponent(selected()?.id || '');
     const [conn, listed] = await Promise.all([
       request(`/api/jira/${campaign}`, { cache: 'no-store' }),
       request(`/api/work-items?campaign=${campaign}`, { cache: 'no-store' }),
     ]);
+    if (pressed) {
+      refresh.el.textContent = label; refresh.setDisabled(false);
+      const failed = [conn, listed].find((result) => !result.ok);
+      notice.set(failed ? 'failed' : 'success', failed ? failed.message : t('jira.refreshed', 'Refreshed at {at}.', { at: new Date().toLocaleTimeString() }));
+    }
     // The same wrapper as the panel's, so the table reads at the same density in both hosts.
     const host = el('div', 'fs-steps jira-form');
-    host.append(renderJiraItems(listed.ok ? listed.data.items : [], conn.ok ? conn.data : {}));
+    host.append(notice.el, renderJiraItems(listed.ok ? listed.data.items : [], conn.ok ? conn.data : {}));
     surface.content.replaceChildren(host);
   }
   return { el: surface.el, enter: () => { SURFACES.add({ el: surface.el, load }); void load(); } };
