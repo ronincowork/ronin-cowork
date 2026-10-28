@@ -27,12 +27,18 @@ test('the Jira panel is a Settings surface over the bridge routes alone', async 
   assert.match(panel, /createStep\(/);
   assert.match(panel, /createField\(/);
   // Three switches by direction, one ERABI instance, each PUT as itself.
-  assert.match(panel, /\['polling', t\('jira\.polling', 'Polling'\), t\('jira\.polling_text', 'down, Jira → Ronin/);
+  assert.match(panel, /\['polling', t\('jira\.polling', 'Polling'\), t\('jira\.polling_text', 'Down, Jira → Ronin/);
   assert.match(panel, /\['assigned', t\('jira\.assigned', 'Assigned items'\)/);
   assert.match(panel, /\['ronin', t\('jira\.ronin', 'Ronin’s items'\)/);
-  assert.match(panel, /ask\(\[\{ fields: SWITCHES\.map\(\(\[key, label\]\) => \(\{ key, label, switch: both \}\)\) \}\]/);
-  assert.match(panel, /t\('jira\.assigned_text', 'up, Ronin → Jira/);
-  assert.match(panel, /t\('jira\.ronin_text', 'up, Ronin → Jira/);
+  // Always shown, one ask() per switch with its caption under it; before Connect a draft that rides the Connect PUT.
+  assert.match(panel, /ask\(\[\{ fields: \[\{ key, label, switch: both \}\] \}\]/);
+  assert.match(panel, /step\.body\.append\(one\.el, read\(text\)\)/);
+  assert.match(panel, /value: \{ \[key\]: connected \? snap\[key\] : draft\[key\] \}/);
+  assert.match(panel, /else draft\[key\] = value\[key\] === true;/);
+  assert.match(panel, /expiry: expiry\.value, \.\.\.draft \}/);
+  assert.doesNotMatch(panel, /if \(connected\) \{\s*const both/);
+  assert.match(panel, /t\('jira\.assigned_text', 'Up, Ronin → Jira/);
+  assert.match(panel, /t\('jira\.ronin_text', 'Up, Ronin → Jira/);
   assert.doesNotMatch(panel, /'take'/);
   assert.match(panel, /put\(\{ \[key\]: value\[key\] === true \}/);
   // Per pair: status on both sides, the last write in and out (the Bridge doc's panel).

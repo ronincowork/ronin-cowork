@@ -11,9 +11,9 @@ Every section folds, and stays as you left it.
 
 ## How it runs
 
-The panel's first section says what moves and whether it is moving now. Once the Desk is
-connected it holds three switches, one per direction of travel; each does what it says, with
-no catch-up when it comes back on:
+The panel's first section is three switches, one per direction of travel, each with a line
+saying what it does. They start on; set them before **Connect** and Connect uses them, or
+change them any time after. Each does what it says, with no catch-up when it comes back on:
 
 - **Services › Jira** (Installations) is the master switch; off, nothing moves.
 - **Polling** (down, Jira → Ronin): Jira is read every minute while Ronin is open in a

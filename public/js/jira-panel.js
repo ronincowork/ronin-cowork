@@ -48,6 +48,8 @@ export function createJiraPanel(selected) {
   };
   const read = (text) => el('p', 'jira-read', text);
   let renewShown = false;
+  // The switches before Connect: they start on and go out with it.
+  const draft = { polling: true, assigned: true, ronin: true };
 
   const campaign = () => selected()?.id || '';
   const api = (tail = '') => `/api/jira/${encodeURIComponent(campaign())}${tail}`;
@@ -103,7 +105,7 @@ export function createJiraPanel(selected) {
     const token = input('password');
     const expiry = input('date');
     const go = createAction({ label: t('jira.connect', 'Connect'), size: 'compact', kind: 'primary', disabled: true, action: () => {
-      void put({ site: site.value.trim(), space: space.value.trim(), token: token.value.trim(), expiry: expiry.value }, t('jira.connected', 'Connected, and the first sync has run.'));
+      void put({ site: site.value.trim(), space: space.value.trim(), token: token.value.trim(), expiry: expiry.value, ...draft }, t('jira.connected', 'Connected, and the first sync has run.'));
     } });
     const ready = () => go.setDisabled(![site, space, token, expiry].every((node) => node.value.trim()));
     for (const node of [site, space, token, expiry]) node.addEventListener('input', ready);
@@ -220,26 +222,27 @@ export function createJiraPanel(selected) {
     const word = (on) => (on ? t('campaign_view.on', 'On') : t('campaign_view.off', 'Off'));
     const step = section(1, 'how', t('jira.how', 'How it runs'));
     const line = (name, state, text) => { const p = read(''); p.append(el('b', null, `${name} · ${state}`), ` — ${text}`); return p; };
-    // The three switches, by direction, once there is a connection to switch; the master
-    // lives in Installations. Each line under them says what its switch does.
+    // How it runs is the three switches, always, each with its caption under it; the master
+    // lives in Installations and stays a line. Before Connect they are a draft that rides the
+    // Connect PUT; connected, a toggle PUTs.
     const SWITCHES = [
-      ['polling', t('jira.polling', 'Polling'), t('jira.polling_text', 'down, Jira → Ronin: Jira is read every minute while Ronin is open in a browser, hourly otherwise; off, only Sync now reads it.')],
-      ['assigned', t('jira.assigned', 'Assigned items'), t('jira.assigned_text', 'up, Ronin → Jira: changes to items that came from Jira go out to Jira; off, they stay in Ronin.')],
-      ['ronin', t('jira.ronin', 'Ronin’s items'), t('jira.ronin_text', 'up, Ronin → Jira: items made in Ronin are created on Jira, at Connect and after, and their changes go out; off, they stay in Ronin.')],
+      ['polling', t('jira.polling', 'Polling'), t('jira.polling_text', 'Down, Jira → Ronin: Jira is read every minute while Ronin is open in a browser, hourly otherwise; off, only Sync now reads it.')],
+      ['assigned', t('jira.assigned', 'Assigned items'), t('jira.assigned_text', 'Up, Ronin → Jira: changes to items that came from Jira go out to Jira; off, they stay in Ronin.')],
+      ['ronin', t('jira.ronin', 'Ronin’s items'), t('jira.ronin_text', 'Up, Ronin → Jira: items made in Ronin are created on Jira, at Connect and after, and their changes go out; off, they stay in Ronin.')],
     ];
-    if (connected) {
-      const both = [t('campaign_view.on', 'On'), t('campaign_view.off', 'Off')];
-      const switches = ask([{ fields: SWITCHES.map(([key, label]) => ({ key, label, switch: both })) }], {
-        value: Object.fromEntries(SWITCHES.map(([key]) => [key, snap[key]])), density: 'tight',
-        onChange: (value, key) => void put({ [key]: value[key] === true }, t('jira.saved', 'Saved.')),
+    const both = [t('campaign_view.on', 'On'), t('campaign_view.off', 'Off')];
+    step.body.append(line(t('jira.how_master', 'Services › Jira'), word(!snap.off), t('jira.how_master_text', 'the master switch, in Installations; off, nothing moves.')));
+    for (const [key, label, text] of SWITCHES) {
+      const one = ask([{ fields: [{ key, label, switch: both }] }], {
+        value: { [key]: connected ? snap[key] : draft[key] }, density: 'tight',
+        onChange: (value) => {
+          if (connected) void put({ [key]: value[key] === true }, t('jira.saved', 'Saved.'));
+          else draft[key] = value[key] === true;
+        },
       });
-      step.body.append(switches.el);
+      step.body.append(one.el, read(text));
     }
-    step.body.append(
-      line(t('jira.how_master', 'Services › Jira'), word(!snap.off), t('jira.how_master_text', 'the master switch, in Installations; off, nothing moves.')),
-      ...SWITCHES.map(([key, label, text]) => line(label, word(connected && snap[key]), text)),
-      line(t('jira.how_sync', 'Sync now'), `${t('jira.last_check', 'Last check')} ${when(snap.lastCheck)}`, t('jira.how_sync_text', 'always reads: one read, the deleted-item check, and failed writes retried.')),
-    );
+    step.body.append(line(t('jira.how_sync', 'Sync now'), `${t('jira.last_check', 'Last check')} ${when(snap.lastCheck)}`, t('jira.how_sync_text', 'always reads: one read, the deleted-item check, and failed writes retried.')));
     return step.el;
   }
 
