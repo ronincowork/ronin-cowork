@@ -48,8 +48,8 @@ test('the Jira panel is a Settings surface over the bridge routes alone', async 
   // Busy at once where the owner pressed, the outcome on the same line, and both hosts repaint.
   assert.match(panel, /async function run\(key, action, busy, doing, call, done\)/);
   assert.match(panel, /t\('jira\.connecting_text', 'Checking the account, then sending \{n\} items, then the first read\.', \{ n: toGo\(draft\) \}\)/);
-  // Per pair: status on both sides, the last write in and out (the Bridge doc's panel).
-  assert.match(panel, /el\('td', null, pair\.status\), el\('td', null, pair\.jiraStatus \|\| '—'\)/);
+  // Per pair: one status (Jira's own name), the last write in and out.
+  assert.match(panel, /el\('td', null, pair\.status\), holders,/);
   assert.match(panel, /when\(pair\.lastIn\)\), el\('td', null, when\(pair\.lastOut\)\)/);
 });
 

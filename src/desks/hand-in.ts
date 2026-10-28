@@ -118,7 +118,7 @@ export async function handIn(repo: string, branch: string, opts: { maxRetries?: 
 }
 
 /** One hand-in call over one or more desks. When it names a work item and any desk was
- * accepted, the item moves to LAND once, the accepted receipts on its trail. */
+ * accepted, the item moves to "In Review" once, the accepted receipts on its trail. */
 export async function handInAssignment(assignment: { desks: Array<{ repo: string; branch: string }>; projectId?: string; session: string }): Promise<{
   outcomes: HandInOutcome[];
   moved: Acknowledged | null;
@@ -127,7 +127,7 @@ export async function handInAssignment(assignment: { desks: Array<{ repo: string
   for (const d of assignment.desks) outcomes.push(await handIn(d.repo, d.branch, { projectId: assignment.projectId }));
   const accepted = outcomes.filter(({ receipt }) => receipt.result === 'accepted').map(({ receipt }) => receipt.id);
   const moved = assignment.projectId && accepted.length
-    ? await editItem(assignment.projectId, { status: 'LAND' }, assignment.session, `hand-in ${accepted.join(', ')}`)
+    ? await editItem(assignment.projectId, { status: 'In Review' }, assignment.session, `hand-in ${accepted.join(', ')}`)
     : null;
   return { outcomes, moved };
 }

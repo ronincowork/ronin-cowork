@@ -239,8 +239,6 @@ nothing paints exactly this.
 - **jira.filter:** Filter: key, id, title, status, holder
 - **jira.col_kind:** Level · kind
 - **jira.col_started:** Started in
-- **jira.col_status:** Ronin status
-- **jira.col_jira_status:** Jira status
 - **jira.col_flagged:** Flagged
 - **jira.col_last_in:** Last in
 - **jira.col_last_out:** Last out

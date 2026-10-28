@@ -28,12 +28,15 @@ import { initialCampaignId } from './campaign-scope.js';
 import { listSessions } from './tmux.js';
 import { emitItemChanged } from './sockets.js';
 
-export const ITEM_STATUSES = ['IDEA', 'PLAN', 'BUILD', 'REVIEW', 'LAND', 'DONE'] as const;
+/** Status is a Jira status name (owner ruling, 2026-10-28: exactly Jira's, no mapping). A
+ * connected campaign's are its space's; these are Jira's defaults, in workflow order. */
+export const DEFAULT_STATUSES = ['To Do', 'In Progress', 'In Review', 'Done'] as const;
+/** Kind is a Jira work type name; an item made with none takes Jira's default name for its level. */
+export const KIND_OF_LEVEL: Record<number, string> = { 1: 'Epic', 0: 'Task', [-1]: 'Subtask' };
 export const ITEM_LEVELS = [1, 0, -1] as const;
 export const LINK_TYPES = ['blocks', 'relates'] as const;
 export const TRAIL_OPS = ['create', 'assign', 'handoff', 'release', 'move', 'status', 'edit', 'comment', 'flag', 'attach', 'link', 'holder-ended'] as const;
 
-export type ItemStatus = typeof ITEM_STATUSES[number];
 export type ItemLevel = typeof ITEM_LEVELS[number];
 export type LinkType = typeof LINK_TYPES[number];
 export type TrailOp = typeof TRAIL_OPS[number];
@@ -56,7 +59,8 @@ export interface WorkItem {
   level: ItemLevel;
   /** Any work type name (story, task, bug, feature, a site's own); absent reads as blank. */
   kind?: string;
-  status: ItemStatus;
+  /** A Jira status name. */
+  status: string;
   flagged: boolean;
   /** Any priority name; absent reads as blank. */
   priority?: string;
@@ -161,7 +165,7 @@ export async function appendTrail(id: string, by: string, change: (item: WorkIte
 }
 
 /** The holders' ack, named like the unheld one: "w64 KAN-27: a comment from jira:glen (item read w64)."
- * or "w64 KAN-27: status BUILD → REVIEW by jira:x (item read w64)." */
+ * or "w64 KAN-27: status In Progress → In Review by jira:x (item read w64)." */
 async function ackHolders(item: WorkItem, line: TrailLine): Promise<void> {
   const key = item.external.jira ? ` ${item.external.jira.key}` : '';
   const detail = line.from && line.to ? `${line.from} → ${line.to}` : line.to ?? line.from ?? line.note ?? '';
@@ -188,7 +192,7 @@ export interface NewItem {
 }
 
 function checkFields(fields: { status?: unknown; level?: unknown }): void {
-  if (fields.status !== undefined && !member(ITEM_STATUSES, fields.status)) throw new WorkItemBadInput(`status must be one of ${ITEM_STATUSES.join(', ')}.`);
+  if (fields.status !== undefined && !String(fields.status).trim()) throw new WorkItemBadInput('name the status, as Jira names it: To Do, In Progress, In Review, Done or the space\'s own.');
   if (fields.level !== undefined && !member(ITEM_LEVELS, fields.level)) throw new WorkItemBadInput('level must be 1, 0 or -1.');
 }
 
@@ -228,7 +232,7 @@ async function settle(moved: Array<{ child: WorkItem; level: number }>, item: Wo
 }
 
 const blank = (title: string, by: string): WorkItem => ({
-  id: '', campaign_id: '', title, objective: '', level: 0, status: 'IDEA', flagged: false, comments: [], parent: null,
+  id: '', campaign_id: '', title, objective: '', level: 0, status: DEFAULT_STATUSES[0], flagged: false, comments: [], parent: null,
   attachments: [], links: [], external: {}, trail: [], created: { at: new Date().toISOString(), by: by.trim() || 'unknown' },
 });
 
@@ -277,13 +281,13 @@ export async function createItemUnlocked(input: NewItem, by: string): Promise<Ac
     campaign_id: input.campaign_id ?? (await listSessions()).find((session) => session.name === by)?.campaign_id ?? await initialCampaignId(),
     objective: String(input.objective ?? '').trim(),
     level: (input.level as ItemLevel | undefined) ?? levelUnder(parent),
-    ...(input.kind?.trim() ? { kind: input.kind.trim() } : {}),
-    status: (input.status as ItemStatus | undefined) ?? 'IDEA',
+    status: input.status?.trim() || DEFAULT_STATUSES[0],
     ...(input.priority?.trim() ? { priority: input.priority.trim() } : {}),
     parent: parent?.id ?? null,
     attachments: input.attachments ?? [],
     external: input.jira ? { jira: { id: input.jira.id, key: input.jira.key } } : {},
   };
+  item.kind = input.kind?.trim() || KIND_OF_LEVEL[item.level];
   await follow(item, item.parent, item.level);
   const list = input.holder ? await listFor(input.holder) : null;
   await save(item);
@@ -329,7 +333,7 @@ export function editItem(id: string, edit: ItemEdit, by: string, note?: string):
       if (level !== item.level) { item.level = level; changed.push(`level ${item.level}`); }
       if (edit.title !== undefined && edit.title.trim() !== item.title) { item.title = edit.title.trim(); changed.push('title'); }
       if (edit.objective !== undefined && edit.objective.trim() !== item.objective) { item.objective = edit.objective.trim(); changed.push('objective'); }
-      if (edit.status !== undefined && edit.status !== item.status) { item.status = edit.status as ItemStatus; changed.push(`status ${item.status}`); }
+      if (edit.status !== undefined && edit.status.trim() !== item.status) { item.status = edit.status.trim(); changed.push(`status ${item.status}`); }
       for (const key of ['kind', 'priority'] as const) {
         const value = edit[key]?.trim();
         if (value === undefined || value === (item[key] ?? '')) continue;
@@ -574,7 +578,7 @@ export function releaseItem(id: string, by: string, note?: string): Promise<Ackn
 }
 
 /** What the act did, read from its trail line alone: "w39 moved under w40, level -1",
- * "w9 moved to BUILD", "w9 is held by agent:x", "w12 was created". Status, kind and level
+ * "w9 moved to In Progress", "w9 is held by agent:x", "w12 was created". Status, kind and level
  * appear only when the act changed them. Every acknowledgement is this one line. */
 export function didLine({ item, line }: Acknowledged): string {
   const what = line.op === 'status' ? `moved to ${line.to}`
@@ -608,6 +612,9 @@ export function releaseHolder(session: string, key: string, how: string): Promis
   });
 }
 
+/** Ronin's old statuses, before 2026-10-28, to Jira's default names: the migration's one map. */
+const OLD_STATUS: Record<string, string> = { IDEA: 'To Do', PLAN: 'To Do', BUILD: 'In Progress', REVIEW: 'In Review', LAND: 'In Review', DONE: 'Done' };
+
 /** The one place that knows the shape items had before 2026-10-22, for the migration
  * (docs/using-ronin/work-items.md): `stage` is the status, a red colour is flagged, `exit`, the other colours and the
  * ladder are dropped, `docs` is `attachments`, an evidence line on the trail is a comment,
@@ -621,12 +628,14 @@ function toShape(raw: Record<string, unknown>, campaign_id: string): WorkItem {
     ...(rest as unknown as WorkItem),
     campaign_id,
     level: member(ITEM_LEVELS, level) ? level : 0,
-    ...(typeof kind === 'string' && kind ? { kind } : {}),
+    kind: typeof kind === 'string' && kind ? kind : KIND_OF_LEVEL[member(ITEM_LEVELS, level) ? level : 0],
     ...(typeof priority === 'string' && priority ? { priority } : {}),
     comments: [...(Array.isArray(comments) ? comments as Comment[] : []), ...evidence.map((line) => ({ by: line.by, at: line.at, text: line.note ?? '' }))],
     attachments: (Array.isArray(attachments) ? attachments : Array.isArray(docs) ? docs : []) as string[],
     links: Array.isArray(links) ? links as Link[] : [],
-    status: member(ITEM_STATUSES, status) ? status : member(ITEM_STATUSES, stage) ? stage : 'IDEA',
+    // Before 2026-10-22 the status was `stage` and `status` a colour; after, one of the old six; now a Jira name.
+    status: stage !== undefined ? OLD_STATUS[String(stage)] ?? DEFAULT_STATUSES[0]
+      : OLD_STATUS[String(status)] ?? (typeof status === 'string' && status ? status : DEFAULT_STATUSES[0]),
     flagged: typeof flagged === 'boolean' ? flagged : status === 'red',
     external: externalOf(rest.external),
     trail: lines.map((line) => (line.op as string) === 'evidence' ? { ...line, op: 'comment' } : line),
@@ -644,7 +653,8 @@ const inJiraShape = (raw: Record<string, unknown>): boolean =>
   'level' in raw && 'flagged' in raw && Array.isArray(raw.comments) && Array.isArray(raw.links) && Array.isArray(raw.attachments)
   && !('docs' in raw) && !('stage' in raw) && !('exit' in raw) && !('ladder' in raw)
   && !(Array.isArray(raw.trail) && raw.trail.some((line) => (line as TrailLine | null)?.op as string === 'evidence'))
-  && typeof (raw.external as External | undefined)?.jira !== 'string';
+  && typeof (raw.external as External | undefined)?.jira !== 'string'
+  && typeof raw.kind === 'string' && !!raw.kind && typeof raw.status === 'string' && !(raw.status in OLD_STATUS);
 
 /* THE ONE MIGRATION (docs/using-ronin/work-items.md and Lab JIRA_RONIN_BRIDGE.md), at first start: every item file in the Jira
  * shape (toShape); an item with children gets level 1, every other 0; the Unfiled epic (or

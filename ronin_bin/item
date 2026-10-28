@@ -10,7 +10,7 @@ Usage:
   item read <id>
   item search [--campaign <id>] [--team <t>] [--holder <name>|none] [--parent <id>|--no-parent] [--status <s>] [--kind <k>]
   item edit <id> --title|--objective|--kind|--level|--parent <id|none>|--priority|--trello|--github <value> ...
-  item transition <id> IDEA|PLAN|BUILD|REVIEW|LAND|DONE
+  item transition <id> "<status>"      a Jira status name: "To Do", "In Progress", "In Review", "Done", or the space's own
   item assign <id> <agent>|team:<name>
   item handoff <id> <agent>|team:<name>|none
   item flag <id> [<why>]              item unflag <id> [<comment>]

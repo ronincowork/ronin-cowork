@@ -177,11 +177,11 @@ export function renderJiraPairs(snap, resync) {
   wrap.append(table);
   const paintRows = () => {
     const head = el('tr');
-    for (const word of [t('jira.col_key', 'Jira'), t('jira.col_id', 'Ronin'), t('jira.col_title', 'Title'), t('jira.col_kind', 'Level · kind'), t('jira.col_started', 'Started in'), t('jira.col_status', 'Ronin status'), t('jira.col_jira_status', 'Jira status'), t('jira.col_holders', 'Holders'), t('jira.col_flagged', 'Flagged'), t('jira.col_last_in', 'Last in'), t('jira.col_last_out', 'Last out'), t('jira.col_failed', 'Failed'), '']) head.append(el('th', null, word));
+    for (const word of [t('jira.col_key', 'Jira'), t('jira.col_id', 'Ronin'), t('jira.col_title', 'Title'), t('jira.col_kind', 'Level · kind'), t('jira.col_started', 'Started in'), t('jira.col_status_only', 'Status'), t('jira.col_holders', 'Holders'), t('jira.col_flagged', 'Flagged'), t('jira.col_last_in', 'Last in'), t('jira.col_last_out', 'Last out'), t('jira.col_failed', 'Failed'), '']) head.append(el('th', null, word));
     table.replaceChildren(head);
     const needle = PAIRS_FILTER.toLowerCase();
     for (const pair of snap.pairs || []) {
-      const text = [pair.key, pair.id, pair.title, pair.status, pair.jiraStatus, ...pair.holders].join(' ').toLowerCase();
+      const text = [pair.key, pair.id, pair.title, pair.status, ...pair.holders].join(' ').toLowerCase();
       if (needle && !text.includes(needle)) continue;
       const row = el('tr');
       const holders = el('td');
@@ -197,7 +197,7 @@ export function renderJiraPairs(snap, resync) {
       const failed = (snap.failed || []).filter((write) => write.item === pair.id).map((write) => write.line?.op).join(', ');
       const cell = (content) => { const td = el('td'); td.append(content); return td; };
       row.append(cell(jiraKey(snap.site, pair.key)), el('td', null, pair.id), el('td', null, pair.title), el('td', null, `${pair.level} · ${pair.kind || '—'}`),
-        el('td', null, pair.started === 'jira' ? 'Jira' : 'Ronin'), el('td', null, pair.status), el('td', null, pair.jiraStatus || '—'), holders,
+        el('td', null, pair.started === 'jira' ? 'Jira' : 'Ronin'), el('td', null, pair.status), holders,
         el('td', null, pair.flagged ? t('jira.flagged', 'Flagged') : ''), el('td', null, when(pair.lastIn)), el('td', null, when(pair.lastOut)), el('td', null, failed), cell(again.el));
       table.append(row);
     }

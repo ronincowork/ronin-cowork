@@ -77,13 +77,13 @@ export function registerWorkItems(app: express.Express): void {
     const holder = text(req.query.holder)?.trim();
     const parent = text(req.query.parent)?.trim();
     const orphans = Boolean(text(req.query.no_parent));
-    const status = text(req.query.status)?.trim().toUpperCase();
+    const status = text(req.query.status)?.trim().toLowerCase();
     const kind = text(req.query.kind)?.trim();
     const campaign = text(req.query.campaign)?.trim();
     const narrow = <T extends WorkItem & { holder?: string }>(items: T[]): T[] => items.filter((item) =>
       (!holder || (holder === 'none' && !item.holder) || item.holder === `agent:${holder}` || item.holder === `team:${holder}` || item.holder === holder)
       && (!parent || item.parent === parent) && (!orphans || !item.parent)
-      && (!status || item.status === status) && (!kind || (item.kind ?? '') === kind)
+      && (!status || item.status.toLowerCase() === status) && (!kind || (item.kind ?? '') === kind)
       && (!campaign || item.campaign_id === campaign));
     if (session) { const reading = await agentReading(session); return res.json({ ok: true, ...reading, items: narrow(reading.items) }); }
     if (team) {
@@ -124,8 +124,8 @@ export function registerWorkItems(app: express.Express): void {
 
   // Jira's transition: any status to any status, one trail line. Edit does not set it.
   app.post('/api/work-items/:id/transition', guarded(async (req, res) => {
-    const status = text(req.body?.status)?.trim().toUpperCase();
-    if (!status) throw new WorkItemBadInput('name the status: IDEA, PLAN, BUILD, REVIEW, LAND or DONE.');
+    const status = text(req.body?.status)?.trim();
+    if (!status) throw new WorkItemBadInput('name the status as Jira names it: To Do, In Progress, In Review, Done or the space\'s own.');
     acknowledge(res, await editItem(req.params.id, { status }, callerOf(req), text(req.body?.note)));
   }));
   // Assign adds a holder and removes nobody.

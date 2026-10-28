@@ -56,16 +56,16 @@ export async function announcePromotion(r: PromotionReceipt, primary: string, fx
     const receipt = id.startsWith('hi_') ? await receiptById(repo.repo, id).catch(() => null) : null;
     if (receipt?.project_id && !associated.some((item) => item.id === receipt.project_id)) associated.push({ id: receipt.project_id, session: receipt.session });
   }
-  // Every item named on a carried hand-in moves to DONE, the promotion receipt on its trail;
-  // one paired to Jira moves to LAND (In Review) instead: it is Done only when the Jira user
-  // accepts it, and that comes back by polling (owner ruling, 2026-10-28). Through the running
-  // server, so the move is its write and the ITEM socket (Jira) sees it.
+  // Every item named on a carried hand-in moves to "Done", the promotion receipt on its trail;
+  // one paired to Jira is left as it is: it is Done only when the Jira user accepts it, and that
+  // comes back by polling (owner ruling, 2026-10-28). Through the running server, so the move
+  // is its write and the ITEM socket (Jira) sees it.
   const keep = new Map<string, string>();
   for (const { id } of associated) {
     try {
-      const status = (await readItem(id))?.external.jira ? 'LAND' : 'DONE';
+      if ((await readItem(id))?.external.jira) { log(`  done  ${id}: paired to Jira, left as it is`); continue; }
       const moved = await operatorPost<{ line: TrailLine; acknowledgement: string }>(`/api/work-items/${encodeURIComponent(id)}/transition`,
-        { status, by: r.by || 'promotion', note: `promotion ${r.id}` });
+        { status: 'Done', by: r.by || 'promotion', note: `promotion ${r.id}` });
       keep.set(id, moved.acknowledgement);
       log(`  done  ${id}: ${moved.line.op} ${moved.line.from ?? ''} → ${moved.line.to ?? ''}`);
     } catch (e) {
