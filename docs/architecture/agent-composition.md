@@ -127,7 +127,9 @@ its birth brief, never written after birth. The Configuration's Update (owner, 2
 `docs/architecture/birth-packet.md` §8) writes it there and sends the Agent its new brief as the
 one message, with no record notice on top. Any other write to the record by anyone but the
 Agent pushes it one fixed line, "Your work record changed; please read it (work-record read)."
-(`ackRecord`, owner 2026-10-07); the record says what changed.
+(`ackRecord`, owner 2026-10-07); the record says what changed. A change to an item the Agent
+holds is not a record write: its ack names the item and the change, "w64 KAN-27: a comment from
+jira:x (item read w64)." (`ackHolders`, `src/work-items.ts`).
 
 The record's `teams` block is Ronin's, one entry per Team: `team`, `team_role` (lead or
 member) and the roster's `objective`; a lead's entry also lists `members`, leads marked

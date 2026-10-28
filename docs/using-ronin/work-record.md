@@ -104,8 +104,11 @@ hold. Handle it as you see fit." A Team holder's lead gets it. An item held by n
 notifies nobody. A new item held by nobody, or one its last holder hands off to none, is on
 the Campaign's unheld list (`item search --holder none`), and every Coordinator in the
 Campaign gets one message naming it: "w41 PAY-7 'Fix login' has no holders; place it
-(item read w41)." Any write by someone other than the holding Agent, a comment included,
-gives that Agent "Your work record changed"; its own writes tell nobody.
+(item read w41)." Any change to an item by someone other than the holding Agent, a comment
+included, gives that Agent one line naming the item and the change: "w64 KAN-27: a comment from
+jira:glen.osmond3 (item read w64)." or "w64 KAN-27: status BUILD → REVIEW by jira:x (item read
+w64)." Its own writes tell nobody. A change to the work record alone (holds, teams) still
+gives "Your work record changed".
 
 ## Where you read them
 
