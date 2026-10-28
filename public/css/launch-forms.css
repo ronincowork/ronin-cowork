@@ -282,7 +282,9 @@
   .jira-items .jira-tree-mark { color: var(--line-3); white-space: pre; font-family: var(--font-mono); }
   .jira-items .jira-sub td { color: var(--muted); font-size: var(--text-small); }
   /* One density in both hosts: the table sets its own type, not the host's. */
-  .jira-items { font-size: var(--form-note); line-height: var(--leading-body); }
+  .jira-items, .jira-pairs { font-size: var(--form-note); line-height: var(--leading-body); }
+  /* The pairs table: one line per pair; the wrap scrolls across instead. */
+  .jira-pairs td { white-space: nowrap; vertical-align: middle; /* beside the Re-sync button */ }
   .jira-items .jira-group { cursor: pointer; }
   .jira-items .jira-chev { color: var(--accent); }
   .na-defaults-note > p { margin: 0; }

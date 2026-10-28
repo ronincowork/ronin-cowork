@@ -83,4 +83,5 @@ item to the account in Jira and press **Sync now**.
 - **Pairs**: one row per paired item, with its Jira key (a link), Ronin id, title, level and
   kind, where it started, its status in Ronin and in Jira (as of the last read), holders
   (each Agent a link), flagged, when a change last came in from Jira and last went out to
-  it, and failed writes. Filter the rows, or **Re-sync** one.
+  it, and failed writes. Filter the rows, or **Re-sync** one. **Open** puts the same table
+  full width in the other workspace, with the same filter; a Re-sync on either repaints both.

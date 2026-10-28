@@ -31,11 +31,15 @@ export function goesUp(item, byId, choice) {
   return false;
 }
 
-/** The open items worksurfaces, repainted when the panel changes what is on Jira or what goes up. */
+/** The pairs table's filter, shared by both hosts. */
+let PAIRS_FILTER = '';
+
+/** The open Jira worksurfaces (and the panel), repainted when one changes what is on Jira or what goes up. */
 const SURFACES = new Set();
-function repaintSurfaces() {
-  for (const surface of SURFACES) if (surface.el.isConnected) void surface.load(); else SURFACES.delete(surface);
+function repaintSurfaces(except = null) {
+  for (const surface of SURFACES) if (!surface.el.isConnected) SURFACES.delete(surface); else if (surface.el !== except) void surface.load();
 }
+const when = (iso) => (iso ? new Date(iso).toLocaleString() : t('jira.never', 'never'));
 
 /** The Jira link for a key, or the key alone when there is no site yet. */
 function jiraKey(site, key) {
@@ -158,7 +162,81 @@ export function createJiraItemsSurface(selected) {
   return { el: surface.el, enter: () => { SURFACES.add({ el: surface.el, load }); void load(); } };
 }
 
-export function createJiraPanel(selected, { openItems = null } = {}) {
+/**
+ * THE JIRA PAIRS TABLE — one renderer, two hosts (the panel's Pairs section and its own
+ * worksurface). One row per pair, filtered by key, id, title, status or holder; holders link
+ * to their Agent; Re-sync calls `resync(id)` to read that pair in again.
+ */
+export function renderJiraPairs(snap, resync) {
+  const { createAction, createField } = WorkspaceKit.primitives;
+  const search = el('input');
+  search.type = 'search'; search.placeholder = t('jira.filter', 'Filter: key, id, title, status, holder'); search.autocomplete = 'off'; search.spellcheck = false;
+  search.value = PAIRS_FILTER;
+  const wrap = el('div', 'tj-table-wrap');
+  const table = el('table', 'tj-table jira-pairs');
+  wrap.append(table);
+  const paintRows = () => {
+    const head = el('tr');
+    for (const word of [t('jira.col_key', 'Jira'), t('jira.col_id', 'Ronin'), t('jira.col_title', 'Title'), t('jira.col_kind', 'Level · kind'), t('jira.col_started', 'Started in'), t('jira.col_status', 'Ronin status'), t('jira.col_jira_status', 'Jira status'), t('jira.col_holders', 'Holders'), t('jira.col_flagged', 'Flagged'), t('jira.col_last_in', 'Last in'), t('jira.col_last_out', 'Last out'), t('jira.col_failed', 'Failed'), '']) head.append(el('th', null, word));
+    table.replaceChildren(head);
+    const needle = PAIRS_FILTER.toLowerCase();
+    for (const pair of snap.pairs || []) {
+      const text = [pair.key, pair.id, pair.title, pair.status, pair.jiraStatus, ...pair.holders].join(' ').toLowerCase();
+      if (needle && !text.includes(needle)) continue;
+      const row = el('tr');
+      const holders = el('td');
+      pair.holders.forEach((holder, i) => {
+        if (i) holders.append(', ');
+        const [kind, name] = holder.split(':');
+        if (kind !== 'agent') { holders.append(holder); return; }
+        const agent = el('a', null, name);
+        agent.href = `#/agent/${encodeURIComponent(name)}`;
+        holders.append(agent);
+      });
+      const again = createAction({ label: t('jira.resync', 'Re-sync'), size: 'compact', action: () => void resync(pair.id) });
+      const failed = (snap.failed || []).filter((write) => write.item === pair.id).map((write) => write.line?.op).join(', ');
+      const cell = (content) => { const td = el('td'); td.append(content); return td; };
+      row.append(cell(jiraKey(snap.site, pair.key)), el('td', null, pair.id), el('td', null, pair.title), el('td', null, `${pair.level} · ${pair.kind || '—'}`),
+        el('td', null, pair.started === 'jira' ? 'Jira' : 'Ronin'), el('td', null, pair.status), el('td', null, pair.jiraStatus || '—'), holders,
+        el('td', null, pair.flagged ? t('jira.flagged', 'Flagged') : ''), el('td', null, when(pair.lastIn)), el('td', null, when(pair.lastOut)), el('td', null, failed), cell(again.el));
+      table.append(row);
+    }
+  };
+  search.addEventListener('input', () => { PAIRS_FILTER = search.value; paintRows(); });
+  paintRows();
+  const host = el('div', 'jira-pairs-host');
+  host.append(createField({ label: t('jira.filter_label', 'Filter'), control: search }).el, wrap);
+  return host;
+}
+
+/** The pairs table on its own worksurface, full width, placed from the panel's Open. */
+export function createJiraPairsSurface(selected) {
+  const { createSurface, createAction, createNotice } = WorkspaceKit.primitives;
+  const refresh = createAction({ label: t('jira.refresh', 'Refresh'), size: 'compact', action: () => void load() });
+  const surface = createSurface({ label: t('jira.pairs', 'Pairs'), className: 'setup-surface jira-pairs-surface', actions: [refresh] });
+  const notice = createNotice();
+  const api = (tail = '') => `/api/jira/${encodeURIComponent(selected()?.id || '')}${tail}`;
+  const post = (tail) => request(api(tail), { method: 'POST' });
+  async function resync(item) {
+    notice.set('info', t('jira.syncing_one', 'Syncing {item} with Jira.', { item }));
+    const result = await post(`/sync/${encodeURIComponent(item)}`);
+    const problems = result.data?.problems ?? [];
+    if (!result.ok && !problems.length) notice.set('failed', result.message);
+    else notice.set(problems.length ? 'failed' : 'success', problems.length ? problems.join('\n') : t('jira.synced_one', '{item} synced.', { item }));
+    await load();
+    repaintSurfaces(surface.el);
+  }
+  async function load() {
+    const conn = await request(api(), { cache: 'no-store' });
+    // The same wrapper as the panel's, so the table reads at the same density in both hosts.
+    const host = el('div', 'fs-steps jira-form');
+    host.append(notice.el, renderJiraPairs(conn.ok ? conn.data : {}, resync));
+    surface.content.replaceChildren(host);
+  }
+  return { el: surface.el, enter: () => { SURFACES.add({ el: surface.el, load }); void load(); } };
+}
+
+export function createJiraPanel(selected, { openItems = null, openPairs = null } = {}) {
   const { createSurface, createAction, createActionBar, createField, createMetadata, createNotice } = WorkspaceKit.primitives;
   const check = createAction({ label: t('jira.check', 'Check'), size: 'compact', action: () => void act('check') });
   const sync = createAction({ label: t('jira.sync_now', 'Sync now'), size: 'compact', kind: 'primary', action: () => void act('sync') });
@@ -167,7 +245,6 @@ export function createJiraPanel(selected, { openItems = null } = {}) {
   const notice = createNotice();
   const form = el('div', 'fs-steps jira-form');
   surface.content.append(notice.el, form);
-  const when = (iso) => (iso ? new Date(iso).toLocaleString() : t('jira.never', 'never'));
 
   /** The steps the user does in admin.atlassian.com and Jira (JIRA_CONNECT §2, steps 2–6), after finding the site and space. */
   const WALKTHROUGH = () => [
@@ -180,7 +257,6 @@ export function createJiraPanel(selected, { openItems = null } = {}) {
   ];
   let snap = null;
   let items = [];
-  let filter = '';
   // Each section's fold, kept across repaints.
   const open = { how: true, before: true, connect: true, connection: true, renew: false, sync: true, items: false, pairs: false };
   /** A numbered section that folds; `meta` is the line it shows folded. */
@@ -241,7 +317,7 @@ export function createJiraPanel(selected, { openItems = null } = {}) {
     else tell(key, problems.length ? 'failed' : 'success', problems.length ? problems.join('\n') : done);
     if (action) { action.el.textContent = label; action.setDisabled(false); }
     await load();
-    repaintSurfaces();
+    repaintSurfaces(surface.el);
   }
   const post = (tail) => () => request(api(tail), { method: 'POST' });
   const put = (body) => () => request(api(), { method: 'PUT', json: body });
@@ -328,7 +404,7 @@ export function createJiraPanel(selected, { openItems = null } = {}) {
       const result = await request(api(), { method: 'DELETE' });
       notice.set(result.ok ? 'success' : 'failed', result.ok ? t('jira.disconnected', 'Disconnected.') : result.message);
       await load();
-      repaintSurfaces();
+      repaintSurfaces(surface.el);
     } });
     step.body.append(renewal.el, createActionBar({ actions: [disconnect] }).el);
     return step.el;
@@ -349,46 +425,11 @@ export function createJiraPanel(selected, { openItems = null } = {}) {
     return step.el;
   }
 
-  /** For dev: one row per pair. Holders link to their Agent; Re-sync reads one pair in again. */
+  /** For dev: the pairs table. Open places the same table on its own worksurface beside this one. */
   function pairsStep() {
     const step = section(5, 'pairs', t('jira.pairs', 'Pairs'), t('jira.pairs_n', '{n} pairs', { n: snap.pairCount ?? 0 }));
-    const search = input('search', t('jira.filter', 'Filter: key, id, title, status, holder'));
-    search.value = filter;
-    const wrap = el('div', 'tj-table-wrap');
-    const table = el('table', 'tj-table jira-pairs');
-    wrap.append(table);
-    const paintRows = () => {
-      const head = el('tr');
-      for (const word of [t('jira.col_key', 'Jira'), t('jira.col_id', 'Ronin'), t('jira.col_title', 'Title'), t('jira.col_kind', 'Level · kind'), t('jira.col_started', 'Started in'), t('jira.col_status', 'Ronin status'), t('jira.col_jira_status', 'Jira status'), t('jira.col_holders', 'Holders'), t('jira.col_flagged', 'Flagged'), t('jira.col_last_in', 'Last in'), t('jira.col_last_out', 'Last out'), t('jira.col_failed', 'Failed'), '']) head.append(el('th', null, word));
-      table.replaceChildren(head);
-      const needle = filter.toLowerCase();
-      for (const pair of snap.pairs || []) {
-        const text = [pair.key, pair.id, pair.title, pair.status, pair.jiraStatus, ...pair.holders].join(' ').toLowerCase();
-        if (needle && !text.includes(needle)) continue;
-        const row = el('tr');
-        const key = el('a', null, pair.key);
-        key.href = `${snap.site}/browse/${pair.key}`; key.target = '_blank'; key.rel = 'noopener';
-        const holders = el('td');
-        pair.holders.forEach((holder, i) => {
-          if (i) holders.append(', ');
-          const [kind, name] = holder.split(':');
-          if (kind !== 'agent') { holders.append(holder); return; }
-          const agent = el('a', null, name);
-          agent.href = `#/agent/${encodeURIComponent(name)}`;
-          holders.append(agent);
-        });
-        const resync = createAction({ label: t('jira.resync', 'Re-sync'), size: 'compact', action: () => void act('sync', pair.id) });
-        const failed = (snap.failed || []).filter((write) => write.item === pair.id).map((write) => write.line?.op).join(', ');
-        const cell = (content) => { const td = el('td'); td.append(content); return td; };
-        row.append(cell(key), el('td', null, pair.id), el('td', null, pair.title), el('td', null, `${pair.level} · ${pair.kind || '—'}`),
-          el('td', null, pair.started === 'jira' ? 'Jira' : 'Ronin'), el('td', null, pair.status), el('td', null, pair.jiraStatus || '—'), holders,
-          el('td', null, pair.flagged ? t('jira.flagged', 'Flagged') : ''), el('td', null, when(pair.lastIn)), el('td', null, when(pair.lastOut)), el('td', null, failed), cell(resync.el));
-        table.append(row);
-      }
-    };
-    search.addEventListener('input', () => { filter = search.value; paintRows(); });
-    paintRows();
-    step.body.append(createField({ label: t('jira.filter_label', 'Filter'), control: search }).el, wrap);
+    if (openPairs) step.body.append(createActionBar({ actions: [createAction({ label: t('jira.open_pairs', 'Open'), size: 'compact', action: () => openPairs() })] }).el);
+    step.body.append(renderJiraPairs(snap, (id) => act('sync', id)));
     return step.el;
   }
 
@@ -465,5 +506,6 @@ export function createJiraPanel(selected, { openItems = null } = {}) {
     else form.append(howStep(), connectionStep(), syncStep(), itemsStep(4), pairsStep());
   }
 
-  return { el: surface.el, enter: () => { notice.set('', ''); void load(); } };
+  // The panel is a host too: a Re-sync on the pairs worksurface repaints it.
+  return { el: surface.el, enter: () => { SURFACES.add({ el: surface.el, load }); notice.set('', ''); void load(); } };
 }

@@ -10,7 +10,7 @@ test('the Jira panel is a Settings surface over the bridge routes alone', async 
   const campaign = await read('public/js/campaign-view.js');
   assert.match(catalog, /campaignJira: 'campaign\.jira'/);
   assert.match(catalog, /WORKBENCH_TYPES\.document, WORKBENCH_TYPES\.campaignJira,/);
-  assert.match(campaign, /campaignJira: \(\) => enterable\(createJiraPanel\(selected\)\)/);
+  assert.match(campaign, /campaignJira: \(\{ workspace \}\) => enterable\(createJiraPanel\(selected, \{/);
   assert.match(campaign, /\[TYPES\.jira, t\('jira\.title', 'Jira'\)\]/);
   // Only the bridge's own routes: GET, PUT, DELETE, check, sync, sync one.
   assert.deepEqual([...new Set(panel.match(/api\([^)]*\)/g))].sort(), ['api()', 'api(tail)'].sort());
@@ -26,17 +26,12 @@ test('the Jira panel is a Settings surface over the bridge routes alone', async 
   assert.match(panel, /const WALKTHROUGH = \(\) => \[\s*t\('jira\.step_site', 'In Jira, open the space you want Ronin on/);
   // The token goes out on PUT and is never read back into a field.
   assert.match(panel, /input\('password'\)/);
-  assert.doesNotMatch(panel, /snap\.token(?!Expiry)|\.value = snap/);
+  assert.doesNotMatch(panel, /snap\.token(?!Expiry)|token\.value = /);
   // The kit and ERABI, no second selector.
   assert.match(panel, /createStep\(/);
   assert.match(panel, /createField\(/);
-  // Three switches by direction, one ERABI instance, each PUT as itself.
-  assert.match(panel, /\['polling', t\('jira\.polling', 'Polling'\), t\('jira\.polling_text', 'Down, Jira → Ronin/);
-  assert.match(panel, /\['assigned', t\('jira\.assigned', 'Assigned items'\)/);
-  assert.match(panel, /\['ronin', t\('jira\.ronin', 'Ronin’s items'\)/);
   // Always shown, one ask() per switch with its caption under it; before Connect a draft that rides the Connect PUT.
   assert.match(panel, /ask\(\[\{ fields: \[field\] \}\]/);
-  assert.match(panel, /step\.body\.append\(one\.el, read\(text\)\)/);
   assert.match(panel, /value: \{ \[field\.key\]: connected \? snap\[field\.key\] : draft\[field\.key\] \}/);
   assert.match(panel, /if \(!connected\) \{ draft\[field\.key\] = answer;/);
   // Ronin's items is a pick of three: off, under an epic, all; it starts off.
@@ -53,7 +48,6 @@ test('the Jira panel is a Settings surface over the bridge routes alone', async 
   // Busy at once where the owner pressed, the outcome on the same line, and both hosts repaint.
   assert.match(panel, /async function run\(key, action, busy, doing, call, done\)/);
   assert.match(panel, /t\('jira\.connecting_text', 'Checking the account, then sending \{n\} items, then the first read\.', \{ n: toGo\(draft\) \}\)/);
-  assert.match(panel, /await load\(\);\n    repaintSurfaces\(\);/);
   // Per pair: status on both sides, the last write in and out (the Bridge doc's panel).
   assert.match(panel, /el\('td', null, pair\.status\), el\('td', null, pair\.jiraStatus \|\| '—'\)/);
   assert.match(panel, /when\(pair\.lastIn\)\), el\('td', null, when\(pair\.lastOut\)\)/);

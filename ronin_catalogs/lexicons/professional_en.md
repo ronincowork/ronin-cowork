@@ -270,6 +270,7 @@ nothing paints exactly this.
 - **jira.items_connected:** On Jira, the key; not yet, goes up if How it runs sends it, else stays in Ronin.
 - **jira.items_preview:** What Connect will put on the space, assigned to the account, under How it runs as set now.
 - **jira.open_items:** Open
+- **jira.open_pairs:** Open
 - **jira.off:** Services › Jira is off for this Desk. Turn it on in Installations › Ronin Services, then come back here.
 - **jira.card_summary:** This Desk’s Jira space: connect, check, sync.
 - **jira.stays:** stays in Ronin
