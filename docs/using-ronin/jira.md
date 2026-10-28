@@ -12,19 +12,19 @@ Every section folds, and stays as you left it.
 ## How it runs
 
 The panel's first section says what moves and whether it is moving now. Once the Desk is
-connected it holds three switches, one per kind of item; each does what it says, with no
-catch-up when it comes back on:
+connected it holds three switches, one per direction of travel; each does what it says, with
+no catch-up when it comes back on:
 
 - **Services › Jira** (Installations) is the master switch; off, nothing moves.
-- **New assignments**: on, an item Jira newly assigns to the account comes in; off, it is
-  not taken.
-- **Assigned items**: on, items that came from Jira stay in step both ways: their Jira edits
-  come in and their Agents' changes go out. Off, neither.
-- **Ronin's items**: on, items made in Ronin go up to Jira, at Connect and after, and stay in
-  step both ways. Off, neither.
+- **Polling** (down, Jira → Ronin): Jira is read every minute while Ronin is open in a
+  browser, and hourly otherwise. Off, only **Sync now** reads it. What is read always comes
+  in; the other two switches never hold it back.
+- **Assigned items** (up, Ronin → Jira): changes to items that came from Jira go out to Jira.
+  Off, they stay in Ronin.
+- **Ronin's items** (up, Ronin → Jira): items made in Ronin are created on Jira, at Connect
+  and after, and their changes go out. Off, they stay in Ronin.
 - **Sync now** always reads: one read, the check for items gone from Jira, and failed writes
-  retried. While any switch is on, Ronin also reads Jira every minute while it is open in a
-  browser, and hourly otherwise.
+  retried.
 
 ## Connect
 

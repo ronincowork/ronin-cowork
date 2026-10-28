@@ -237,17 +237,17 @@ nothing paints exactly this.
 - **jira.flagged:** Flagged
 - **jira.filter_label:** Filter
 - **jira.how:** How it runs
-- **jira.take:** New assignments
-- **jira.take_text:** on, an item Jira newly assigns to the account comes in; off, it is not taken.
+- **jira.polling:** Polling
+- **jira.polling_text:** down, Jira → Ronin: Jira is read every minute while Ronin is open in a browser, hourly otherwise; off, only Sync now reads it.
 - **jira.assigned:** Assigned items
-- **jira.assigned_text:** on, items that came from Jira stay in step both ways: their Jira edits come in, their Agents’ changes go out; off, neither.
+- **jira.assigned_text:** up, Ronin → Jira: changes to items that came from Jira go out to Jira; off, they stay in Ronin.
 - **jira.ronin:** Ronin’s items
-- **jira.ronin_text:** on, items made in Ronin go up to Jira, at Connect and after, and stay in step both ways; off, neither.
+- **jira.ronin_text:** up, Ronin → Jira: items made in Ronin are created on Jira, at Connect and after, and their changes go out; off, they stay in Ronin.
 - **jira.saved:** Saved.
 - **jira.how_master:** Services › Jira
 - **jira.how_master_text:** the master switch, in Installations; off, nothing moves.
 - **jira.how_sync:** Sync now
-- **jira.how_sync_text:** always reads: one read, the deleted-item check, and failed writes retried. The timer reads every minute while Ronin is open in a browser, hourly otherwise, while any switch is on.
+- **jira.how_sync_text:** always reads: one read, the deleted-item check, and failed writes retried.
 - **jira.items:** Work items by level
 - **jira.items_n:** {n} items · {p} paired
 - **jira.col_kind_only:** Kind
