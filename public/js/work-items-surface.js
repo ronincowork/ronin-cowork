@@ -32,7 +32,8 @@ export function itemStones(items, { all = items, holder = () => '' } = {}) {
   const known = new Map(all.map((item) => [item.id, item]));
   const rootOf = (item) => {
     let at = item;
-    for (const seen = new Set(); at.parent && !seen.has(at.id); seen.add(at.id)) {
+    for (const seen = new Set(); at.parent && !seen.has(at.id);) {
+      seen.add(at.id);
       const up = known.get(at.parent);
       if (!up) return { id: at.parent, title: '' };
       at = up;
