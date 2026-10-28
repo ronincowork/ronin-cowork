@@ -107,8 +107,8 @@ the item as it now is and the trail line appended. Holding is a list of ids on e
 `holds` on the Team roster and in each Agent's letter (`tegami.md`, beside `at.item`, its
 focus). The item matches Jira ([Work items](../using-ronin/work-items.md)):
 `level` is stored (1 epic, 0 story/task/bug, -1 subtask), one below the parent at creation
-or 0 with none, and adding a child never changes it; `kind` is a label, blank by default;
-`status` is the item's state; `flagged` marks an impediment. Parent is one `parent` id on
+or 0 with none, and adding a child never changes it; `kind` is the Jira work type name,
+by default the level's (Epic, Task, Subtask); `status` is the Jira status name; `flagged` marks an impediment. Parent is one `parent` id on
 the item, or none, which is normal. There is no ladder: Jira has none. Parent is a field:
 `item edit --parent` (`editItem` with `parent`) sets parent and level together (no parent
 keeps the level). One rule binds a create, a parent change and a level write (`follow`): nothing goes below -1. The item takes its new level and its
@@ -123,7 +123,7 @@ by anyone else's hand (create with a holder, assign, release) pushes that Agent 
 one fixed work-record ack (`ackRecord`, `src/tegami.ts`; owner 2026-10-07); an Agent's own
 move is not acked. A move on a Team's list is a roster change and acks its lead. Any other
 change to a held item by someone else (`appendTrail`) acks its Agent holders with a line naming
-the item and the change, "w64 KAN-27: status BUILD → REVIEW by jira:x (item read w64)."
+the item and the change, "w64 KAN-27: status In Progress → In Review by jira:x (item read w64)."
 (`ackHolders`), so a comment's holder knows to read it. Every act
 names its item, one per Jira item act (`item --help`); the Agent's work record shows the
 items it holds, each with its status. `deleteItem` is Jira's delete: the item and its

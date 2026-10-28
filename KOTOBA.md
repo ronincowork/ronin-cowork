@@ -59,7 +59,7 @@ Macro, action, SOP, and Agent role are not additional composition layers. “Act
 | Epic | A work item at level 1. It keeps its own fields; its status is set by hand |
 | Story / Task / Bug | A work item at level 0; story, task, bug or feature is its `kind`, any work type name, blank by default, with no fixed list |
 | Subtask | A work item at level -1, under a level-0 item. The one rule: nothing goes below -1; children follow their parent's new level, and a change that would put any below -1 fails with "w39 can't go there." |
-| Status | A work item's state: IDEA, PLAN, BUILD, REVIEW, LAND, DONE; `item transition <id> <status>`, any to any; a hand-in naming the item moves it to LAND, the promotion carrying it to DONE |
+| Status | A work item's state, a Jira status name (To Do, In Progress, In Review, Done, or the space's own); `item transition <id> "<status>"`, any to any; a hand-in naming the item moves it to In Review, the promotion carrying it to Done (a Jira pair is left for the Jira user) |
 | Flagged | An impediment on a work item, as Jira's flag: `item flag <id> "<why>"`, the reason kept as a comment; `item unflag <id>` |
 | Priority | A work item's priority, as Jira's: any name, or blank. Set with `item edit <id> --priority <name>` |
 | Comment | One remark on a work item, as Jira's: who, when and the text. `item comment <id> <text>` adds one and `--edit <n>` changes one; a comment by someone else tells the holding Agent its work record changed |

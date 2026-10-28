@@ -17,8 +17,8 @@ Every work item has a level. The level says what it is.
 | 0 | **story, task, bug, feature**: the work itself |
 | -1 | **subtask**: one step inside a level-0 item |
 
-At level 0 the kind is only a label. Story, task, bug and feature are the usual ones; any
-other name works, and blank is fine.
+The kind is the Jira work type's name, exactly: Story, Task, Bug and the space's own at level
+0. An item made with none takes its level's: Epic, Task or Subtask.
 
 The parent sets the level. A new item starts one level below its parent, or at 0 with no
 parent. Moving an item with `item edit <id> --parent <other>` moves its level too, and its
@@ -34,7 +34,7 @@ No parent is normal. Not every task belongs to an epic.
 
 - **title**: a short name anyone can read at a glance.
 - **objective**: what done looks like. Change it when the job changes.
-- **kind**: the label at level 0 (`--kind bug`).
+- **kind**: the label at level 0 (`--kind Bug`).
 - **status**: where the work stands (below).
 - **flagged**: the item is stuck. The reason is a comment.
 - **priority**: any name your Team uses, or blank.
@@ -49,30 +49,37 @@ children, comments, attachments, links and history.
 
 ## Status
 
+Ronin uses Jira's status and kind exactly, with no mapping (owner ruling, 2026-10-28). A status
+is a Jira status name. Unconnected, a Desk has Jira's defaults, in workflow order:
+
 | Status | Means |
 |---|---|
-| IDEA | Written down, not yet agreed or planned. New items start here. |
-| PLAN | Being shaped: scope, approach, subtasks. |
-| BUILD | Being done now. |
-| REVIEW | Your part is finished and ready for someone to look at. |
-| LAND | Handed in to the Team line. |
-| DONE | Promoted. |
+| To Do | Not started. New items start here. |
+| In Progress | Being done now. |
+| In Review | Handed in, ready for someone to look at. |
+| Done | Accepted. |
 
-Agents move their items themselves with `item transition <id> <status>`. Any status to any
-status is allowed. Two moves are made for them: a hand-in that names the item
-(`worktree-desk hand-in <repo> --item <id>`) moves it to LAND, and the promotion that
-carries that hand-in moves it to DONE. An item paired to Jira is the exception: promotion
-moves it to LAND (In Review on Jira), and it is DONE only when the Jira user moves it to Done,
-which comes back by polling. A hand-in that names no item moves no status.
+A Desk paired to a Jira space uses that space's statuses. Kind is a Jira work type name; an
+item made with none takes Jira's default for its level: Epic (1), Task (0), Subtask (-1).
+
+Agents move their items themselves with `item transition <id> "<status>"`, by name. Any status
+to any status is allowed. Two moves are made for them: a hand-in that names the item
+(`worktree-desk hand-in <repo> --item <id>`) moves it to In Review, and the promotion that
+carries that hand-in moves it to Done. An item paired to Jira is the exception: promotion
+leaves it as it is, and it is Done only when the Jira user moves it to Done, which comes back
+by polling. A hand-in that names no item moves no status.
+
+The store was migrated once from Ronin's old statuses: IDEA and PLAN to To Do, BUILD to In
+Progress, REVIEW and LAND to In Review, DONE to Done; an item with no kind took its level's.
 
 ## The item tool
 
 ```text
-item create --title "…" [--kind task] [--parent w3] [--level 1|0|-1] [--objective "…"] [--priority High]
+item create --title "…" [--kind Task] [--parent w3] [--level 1|0|-1] [--objective "…"] [--priority High]
 item read w12                       # fields, children, comments, attachments, links, history
-item search [--campaign home_machine] [--team surface] [--holder builder | none] [--parent w3 | --no-parent] [--status BUILD] [--kind bug]
+item search [--campaign home_machine] [--team surface] [--holder builder | none] [--parent w3 | --no-parent] [--status "In Progress"] [--kind Bug]
 item edit w12 --objective "…" --priority High
-item transition w12 REVIEW
+item transition w12 "In Review"
 item flag w12 "waiting on the API"  # item unflag w12 when clear
 item assign w12 builder             # adds builder; or team:surface
 item handoff w12 builder            # the giver comes off; or team:surface, or none
@@ -90,7 +97,7 @@ Every write answers with one line of what it did, then the item as it now is.
 
 ```text
 item read w12
-item transition w12 BUILD
+item transition w12 "In Progress"
 ```
 
 **Big work is broken down.** Each step gets its own subtask, moved through its own status,
@@ -120,7 +127,7 @@ item attach w12 docs/migration-plan.md
 an item of its own, never done quietly inside the one it holds.
 
 ```text
-item create --kind bug --parent w10 --title "Search drops the last result"
+item create --kind Bug --parent w10 --title "Search drops the last result"
 ```
 
 **Stuck: flag it.** With the reason. The flag comes off when the work moves again.
@@ -138,10 +145,9 @@ item link w15 blocks w12
 
 **Keep the objective true.** If the job changes, `item edit w12 --objective "<new>"`.
 
-**Finished.** REVIEW, then a hand-in with the item named.
+**Finished.** A hand-in with the item named; it moves the item to In Review.
 
 ```text
-item transition w12 REVIEW
 worktree-desk hand-in ronin_cowork --item w12
 ```
 

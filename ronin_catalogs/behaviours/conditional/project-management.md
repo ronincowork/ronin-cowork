@@ -24,29 +24,30 @@ The one rule: nothing goes below -1. A move that would push an item there fails.
 
 ### Status
 
+Status and kind are Jira's own names, exactly. Unconnected, the statuses are Jira's defaults;
+a Desk paired to a Jira space uses that space's.
+
 | Status | Means | Moved by |
 |---|---|---|
-| IDEA | Written down, not yet agreed; new items start here. | you |
-| PLAN | Being shaped: scope and subtasks. | you |
-| BUILD | Being done now. | you |
-| REVIEW | Your part is finished, ready to look at. | you |
-| LAND | Handed in to the Team line. | `worktree-desk hand-in <repo> --item <id>` |
-| DONE | Promoted. | the promotion carrying that hand-in |
+| To Do | Not started; new items start here. | you |
+| In Progress | Being done now. | you |
+| In Review | Handed in, ready to look at. | `worktree-desk hand-in <repo> --item <id>` |
+| Done | Accepted. | the promotion carrying that hand-in; for an item paired to Jira, only the Jira user |
 
-You move yours with `item transition <id> <status>`, any to any. A hand-in naming no item
-moves no status.
+You move yours with `item transition <id> "<status>"`, any to any, by name. A hand-in naming
+no item moves no status.
 
 ### The day's moves
 
-- **Start:** `work-record read` lists what you hold; `item read w12`, `item transition w12 BUILD`.
+- **Start:** `work-record read` lists what you hold; `item read w12`, `item transition w12 "In Progress"`.
 - **Break big work down:** one subtask per step, `item create --parent w12 --title "…"`.
 - **Comment** findings, decisions and answers: `item comment w12 "…"`.
 - **Attach** what you wrote for it: `item attach w12 <path>`. People reach what you attach.
-- **File side work** as its own item (`item create --kind bug …`), never inside the one you hold.
+- **File side work** as its own item (`item create --kind Bug …`), never inside the one you hold.
 - **Flag** when stuck: `item flag w12 "<why>"`; `item unflag` when moving again.
 - **Link** what holds you up, from the blocking item: `item link w15 blocks w12`.
 - **Keep the objective true:** `item edit w12 --objective "…"` when the job changes.
-- **Finish:** `item transition w12 REVIEW`, then `worktree-desk hand-in <repo> --item w12`.
+- **Finish:** `worktree-desk hand-in <repo> --item w12`; it moves the item to In Review.
 
 Several Agents or Teams can hold an item; `item assign` adds a holder and `item handoff`
 gives the caller's hold to someone else (or `none`). An ending Agent lets go of its items.

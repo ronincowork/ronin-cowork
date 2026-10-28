@@ -33,10 +33,10 @@ those. The kind names are the space's own.
 |---|---|
 | see what you hold | `work-record read` |
 | read an item | `item read <id>` |
-| create one | `item create --title <t> --kind task\|bug\|story\|feature`. Add `--parent <id>` when you know where it belongs: under an epic it is work, under a task it is a subtask. With no parent it is work with no epic yet. |
+| create one | `item create --title <t> --kind Task\|Bug\|Story`. Add `--parent <id>` when you know where it belongs: under an epic it is work, under a task it is a subtask. With no parent it is work with no epic yet. |
 | edit it | `item edit <id> --objective <o> --priority <p> --parent <id>` |
 | flag it | `item flag <id> "<why>"` when stuck; `item unflag <id>` when clear |
-| transition it | `item transition <id> BUILD`: moves it to a status |
+| transition it | `item transition <id> "In Progress"`: moves it to a status, by its Jira name |
 | comment on it | `item comment <id> <text>`: how you answer a person, from Jira or Ronin |
 | assign it | `item assign <id> <agent>` |
 | hand it over | `item handoff <id> <agent>`; use `none` to let go |
@@ -44,7 +44,8 @@ those. The kind names are the space's own.
 | link it | `item link <id> blocks <id>`: it holds up another item |
 | find items | `item search --campaign <id>`, `--team <t>` and other filters |
 
-Status is the item's state: IDEA PLAN BUILD REVIEW LAND DONE; any transition is allowed. Stuck is
+Status is Jira's status name (To Do, In Progress, In Review, Done, or the space's own); any
+transition is allowed. Kind is Jira's work type name (Epic, Task, Subtask by level). Stuck is
 `item flag`. When someone else changes an item you hold, Ronin tells you: read it,
 then edit or comment. Epics are made by leads (`--level 1`). Everything else:
 `item --help`.

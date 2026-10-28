@@ -31,10 +31,11 @@ except that widening **Ronin's items** uploads the items that newly qualify:
 - **Sync now** always reads: one read, the check for items gone from Jira, and failed writes
   retried.
 
-Ronin never closes a Jira item. Status maps by category (To Do ↔ IDEA, In Progress ↔ BUILD,
-Done ↔ DONE) plus any named status the connection maps (In Review ↔ REVIEW). A paired item
-handed in and promoted moves to LAND, In Review on Jira; it is DONE only when the Jira user
-moves it to Done, and that comes back with the next read.
+Ronin uses Jira's status and kind names exactly, with no mapping: an item's status is the
+space's status name, its kind the work type's name. Check saves the space's statuses. Ronin
+never closes a Jira item: a hand-in moves it to In Review, promotion leaves it as it is, and
+it is Done only when the Jira user moves it there; that comes back with the next read. A new
+item starts at To Do; when it goes up, it takes the status Jira gives the new work item.
 
 ## Connect
 

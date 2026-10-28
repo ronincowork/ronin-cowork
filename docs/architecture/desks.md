@@ -132,11 +132,11 @@ its job is waiting is house machinery (the same footing as Koshi's marker and
 notice while it sees a human draft or dialog, then makes one best-effort attempt.
 
 `worktree-desk hand-in <desk> --item <id>` records an explicit work item id on an
-accepted receipt and moves that item to LAND once, the accepted receipts on its trail
+accepted receipt and moves that item to In Review once, the accepted receipts on its trail
 (`handInAssignment` in [hand-in.ts](../../src/desks/hand-in.ts)). A completed promotion
-moves every item named on the hand-ins it carries to DONE with its receipt
+moves every item named on the hand-ins it carries to Done with its receipt
 (`announcePromotion`), through the running server's transition route; an item paired to Jira
-moves to LAND instead, since only the Jira user's Done closes it (it comes back by polling). Both acknowledgements end with the item and the write that keeps it
+is left as it is, since only the Jira user's Done closes it (it comes back by polling). Both acknowledgements end with the item and the write that keeps it
 current; conflicts and refusals move nothing and never claim success.
 
 **No lead set: the handing-in session holds the job**. The hand-in
