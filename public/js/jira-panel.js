@@ -48,7 +48,7 @@ export function renderJiraItems(items, site) {
   const mark = (item) => {
     const up = ancestors(item);
     if (!up.length) return '';
-    return up.slice(1).map((at) => (last(at) ? '   ' : '│  ')).join('') + (last(item) ? '└ ' : '├ ');
+    return up.slice(1).map((at) => (last(at) ? '    ' : '│   ')).join('') + (last(item) ? '└── ' : '├── ');
   };
   const COLUMNS = [t('jira.col_level', 'Level'), t('jira.col_kind_only', 'Kind'), t('jira.col_id', 'Ronin'), t('jira.col_title', 'Title'),
     t('jira.col_status_only', 'Status'), t('jira.col_created', 'Created in'), t('jira.col_holders', 'Holders'), t('jira.col_key', 'Jira')];
@@ -69,7 +69,8 @@ export function renderJiraItems(items, site) {
       table.append(row);
     }
     group = next;
-    const row = el('tr', item.level === 1 ? 'jira-group' : '');
+    // An epic heads its group; a subtask reads quieter than the item it sits under.
+    const row = el('tr', item.level === 1 ? 'jira-group' : item.level === -1 ? 'jira-sub' : '');
     const title = el('td', 'jira-title');
     title.append(el('span', 'jira-tree-mark', mark(item)), item.title || item.id);
     const holders = el('td');

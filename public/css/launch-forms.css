@@ -279,7 +279,8 @@
   /* The Jira items table: an epic (or a group with no epic here) heads its group as a band. */
   .jira-items .jira-group td { background: var(--inset); /* the group's head: where a group starts */ color: var(--fg-strong); font-weight: var(--weight-strong); }
   .jira-items .jira-title { white-space: nowrap; }
-  .jira-items .jira-tree-mark { color: var(--muted); white-space: pre; font-family: var(--font-mono); }
+  .jira-items .jira-tree-mark { color: var(--line-3); white-space: pre; font-family: var(--font-mono); }
+  .jira-items .jira-sub td { color: var(--muted); font-size: var(--text-small); }
   .jira-items-surface .tj-table { width: 100%; }
   .na-defaults-note > p { margin: 0; }
   .na-defaults-links { margin-top: var(--space-row) !important; font-weight: var(--weight-strong); }
