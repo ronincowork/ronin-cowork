@@ -59,8 +59,8 @@ function jiraKey(site, key) {
  * items with no epic in the Desk get a head row of their own. Children carry a tree mark.
  * A head row folds its group; the fold is remembered per epic. The Jira column says where each
  * item stands under `conn`'s choice (site, assigned, ronin): its key, goes up, or stays in Ronin.
- * Level, Kind, Status, Created in and Jira filter from their header: a menu of the column's
- * values, each shown or not. A shown item keeps its parents on as its context.
+ * Level, Kind, Status, Created in and Jira filter from their header: a menu under it with a
+ * tick box by each of the column's values, ticked when shown. A shown item keeps its parents on as its context.
  */
 export function renderJiraItems(items, conn) {
   const site = conn.site || '';
@@ -109,12 +109,15 @@ export function renderJiraItems(items, conn) {
     button.setAttribute('aria-pressed', String(hidden.size > 0));
     button.addEventListener('click', () => {
       const values = [...new Set(items.map(VALUE[key]))].sort();
-      const toggle = (value) => { if (hidden.has(value)) hidden.delete(value); else hidden.add(value); HIDDEN.set(key, hidden); repaint(); };
-      openMenu({ anchor: button, host: button.closest('.wk-surface') || document.body, title: word, groups: [
-        { items: values.map((value) => ({ glyph: hidden.has(value) ? '' : '✓', label: value,
-          hint: String(items.filter((item) => VALUE[key](item) === value).length), run: () => toggle(value) })) },
-        { foot: true, items: [{ label: t('jira.show_all', 'Show all'), quiet: hidden.size ? '' : t('jira.all_shown', 'All shown'), run: () => { HIDDEN.delete(key); repaint(); } }] },
+      const toggle = (value, on) => { if (on) hidden.delete(value); else hidden.add(value); HIDDEN.set(key, hidden); repaint(); };
+      const host = button.closest('.wk-surface') || document.body;
+      const menu = openMenu({ anchor: button, host, title: word, groups: [
+        { items: values.map((value) => ({ kind: 'check', label: value, checked: !hidden.has(value), run: (on) => toggle(value, on) })) },
       ] });
+      // As narrow as its values, under the header's left edge.
+      menu.el.classList.add('jira-filter-menu');
+      menu.el.style.right = 'auto';
+      menu.el.style.left = `${Math.max(6, Math.round(button.getBoundingClientRect().left - host.getBoundingClientRect().left))}px`;
     });
     return button;
   };

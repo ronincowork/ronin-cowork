@@ -281,8 +281,6 @@ nothing paints exactly this.
 - **jira.replacing_text:** Checking the new token, then the first read.
 - **jira.widening_text:** Saving, then sending {n} items.
 - **jira.on_jira:** on Jira
-- **jira.show_all:** Show all
-- **jira.all_shown:** All shown
 - **jira.items_filtered:** {n} hidden by a filter
 - **jira.refreshing:** Refreshing…
 - **jira.refreshing_text:** Reading the work items and the Jira connection again.
