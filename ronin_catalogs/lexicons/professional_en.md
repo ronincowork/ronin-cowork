@@ -252,7 +252,6 @@ nothing paints exactly this.
 - **jira.how_sync_text:** always reads: one read, the deleted-item check, and failed writes retried.
 - **jira.items:** Work items by level
 - **jira.items_n:** {n} items · {p} paired
-- **jira.col_kind_only:** Kind
 - **jira.goes_up:** goes up at sync
 - **jira.items_connected:** Paired items show their Jira key; the rest go up at the next sync.
 - **jira.items_preview:** What Connect will put on the space, assigned to the account.

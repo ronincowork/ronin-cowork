@@ -63,9 +63,10 @@ item to the account in Jira and press **Sync now**.
 - **Check** runs the connection checks again. **Sync now** reads Jira, then retries failed
   writes.
 - **Sync**: the last check, the pair count, the failed writes and the last error.
-- **Work items by level**: the Desk's items as a tree, epics with their children under them,
-  then the items with no parent. Each shows its Jira key if it is paired, or "goes up at
-  sync". Before Connect, it is what Connect will put on the space with Ronin's items on.
+- **Work items by level**: the Desk's items as stones, the same as the Work Items surface:
+  each epic heads its group, then its items, each followed by its subtasks. Each stone ends
+  with its Jira key if it is paired, or "goes up at sync"; press one to read it, with its
+  Jira link. Before Connect, it is what Connect will put on the space with Ronin's items on.
 - **Pairs**: one row per paired item, with its Jira key (a link), Ronin id, title, level and
   kind, where it started, its status in Ronin and in Jira (as of the last read), holders
   (each Agent a link), flagged, when a change last came in from Jira and last went out to

@@ -61,9 +61,10 @@ test('the Jira panel folds every section, reads at body size, and says how it ru
   assert.match(css, /\.jira-read \{[^}]*font-size: var\(--text-body\)/);
   assert.match(css, /\.jira-form > \.fs-step \+ \.fs-step \{ margin-top: var\(--space-paragraph\); \}/);
   for (const key of ['how_master', 'how_sync', 'polling_text', 'assigned_text', 'ronin_text']) assert.match(panel, new RegExp(`t\\('jira\\.${key}'`), key);
-  // Work items by level: roots are items whose parent is not in the Desk, epics first; children nest.
-  assert.match(panel, /items\.filter\(\(item\) => !byId\.has\(item\.parent\)\)\.sort\(\(a, b\) => b\.level - a\.level\)/);
-  assert.match(panel, /for \(const child of children\(item\.id\)\) row\(child, depth \+ 1\)/);
+  // Work items by level: the Work Items surface's own stones in a grouped phalanx.
+  assert.match(panel, /createPhalanx\(\{ grouped: true, className: 'wi-phalanx jira-items'/);
+  assert.match(panel, /itemStones\(items, \{ holder \}\)/);
+  assert.doesNotMatch(panel, /jira-tree/);
   assert.match(panel, /t\('jira\.goes_up', 'goes up at sync'\)/);
 });
 

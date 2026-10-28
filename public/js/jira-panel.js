@@ -12,6 +12,8 @@ import { t } from './lexicon.js';
 import { request } from './request.js';
 import { ask } from './ask.js';
 import { createStep, el } from './form-steps.js';
+import { createPhalanx } from './phalanx.js';
+import { holderOf, itemStones, renderItemDetail } from './work-items-surface.js';
 
 const RENEW_DAYS = 14;
 const DAY = 86_400_000;
@@ -38,6 +40,7 @@ export function createJiraPanel(selected) {
   ];
   let snap = null;
   let items = [];
+  let itemsPhalanx = null;
   let filter = '';
   // Each section's fold, kept across repaints.
   const open = { how: true, before: true, connect: true, connection: true, renew: false, sync: true, items: false, pairs: false };
@@ -248,39 +251,32 @@ export function createJiraPanel(selected) {
     return step.el;
   }
 
-  /** The Desk's items as a tree: epics with their children, then the items with no parent.
-   *  Not connected, it is what Connect will put on the space; connected, what is paired. */
+  /** The Desk's items in the Work Items surface's own stones: each epic heads its group, then
+   *  its items, each followed by its subtasks. Each stone's state ends with its Jira key, or
+   *  "goes up at sync"; the item's reading carries the key as a link. Not connected, it is
+   *  what Connect will put on the space; connected, what is paired. */
   function itemsStep(n) {
-    const byId = new Map(items.map((item) => [item.id, item]));
-    const children = (id) => items.filter((item) => item.parent === id);
-    const roots = items.filter((item) => !byId.has(item.parent)).sort((a, b) => b.level - a.level);
     const paired = items.filter((item) => item.external?.jira).length;
     const step = section(n, 'items', t('jira.items', 'Work items by level'), t('jira.items_n', '{n} items · {p} paired', { n: items.length, p: paired }));
-    const wrap = el('div', 'tj-table-wrap');
-    const table = el('table', 'tj-table jira-tree');
-    const head = el('tr');
-    for (const word of [t('jira.col_id', 'Ronin'), t('jira.col_title', 'Title'), t('jira.col_kind_only', 'Kind'), t('jira.col_status', 'Ronin status'), t('jira.col_key', 'Jira')]) head.append(el('th', null, word));
-    table.append(head);
-    const row = (item, depth) => {
-      const tr = el('tr');
-      const title = el('td', null, item.title);
-      title.dataset.depth = String(depth);
+    const holder = (item) => holderOf(item, '');
+    itemsPhalanx?.destroy();
+    itemsPhalanx = createPhalanx({ grouped: true, className: 'wi-phalanx jira-items', renderDetail: ({ item }, host) => {
       const pair = item.external?.jira;
-      const jira = el('td');
+      const jira = el('p', 'jira-read');
       if (pair && snap.site) {
         const key = el('a', null, pair.key);
         key.href = `${snap.site}/browse/${pair.key}`; key.target = '_blank'; key.rel = 'noopener';
-        jira.append(key);
-      } else jira.textContent = pair ? pair.key : t('jira.goes_up', 'goes up at sync');
-      tr.append(el('td', null, item.id), title, el('td', null, item.kind || '—'), el('td', null, item.status), jira);
-      table.append(tr);
-      for (const child of children(item.id)) row(child, depth + 1);
-    };
-    for (const root of roots) row(root, 0);
-    wrap.append(table);
+        jira.append(`${t('jira.col_key', 'Jira')} · `, key);
+      } else jira.textContent = `${t('jira.col_key', 'Jira')} · ${pair ? pair.key : t('jira.goes_up', 'goes up at sync')}`;
+      host.append(jira);
+      renderItemDetail(host, item, { holder: holder(item) });
+    } });
+    itemsPhalanx.setItems(itemStones(items, { holder }).map((stone) => ({
+      ...stone, state: [stone.state, stone.item.external?.jira?.key || t('jira.goes_up', 'goes up at sync')].join(' · '),
+    })));
     step.body.append(read(snap.connected
       ? t('jira.items_connected', 'Paired items show their Jira key; the rest go up at the next sync.')
-      : t('jira.items_preview', 'What Connect will put on the space, assigned to the account.')), wrap);
+      : t('jira.items_preview', 'What Connect will put on the space, assigned to the account.')), itemsPhalanx.el);
     return step.el;
   }
 
