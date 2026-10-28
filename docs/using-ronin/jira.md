@@ -12,10 +12,11 @@ Every section folds, and stays as you left it.
 ## How it runs
 
 The panel's first section is three switches, one per direction of travel, each with a line
-saying what it does. Before **Connect**, Polling starts on and the two up switches start off,
-so nothing goes up until you say your items are ready; Connect uses whatever they are set to.
+saying what it does. Before **Connect**, Polling starts on, Assigned items starts off and Ronin's items starts at
+**Off**, so nothing goes up until you say your items are ready; Connect uses whatever they
+are set to.
 Change them any time after. Each does what it says, with no catch-up when it comes back on,
-except that turning **Ronin's items** on uploads the items that were held back:
+except that widening **Ronin's items** uploads the items that newly qualify:
 
 - **Services › Jira** (Installations) is the master switch; off, nothing moves.
 - **Polling** (down, Jira → Ronin): Jira is read every minute while Ronin is open in a
@@ -23,8 +24,10 @@ except that turning **Ronin's items** on uploads the items that were held back:
   in; the other two switches never hold it back.
 - **Assigned items** (up, Ronin → Jira): changes to items that came from Jira go out to Jira.
   Off, they stay in Ronin.
-- **Ronin's items** (up, Ronin → Jira): items made in Ronin are created on Jira, at Connect
-  or when you turn it on, and their changes go out. Off, they stay in Ronin.
+- **Ronin's items** (up, Ronin → Jira) is a pick of three: **Off** sends nothing made in Ronin;
+  **Under an epic** sends epics and everything under them, while items with no epic stay in
+  Ronin; **All** sends every item. Sent items are created on Jira and their changes go out.
+  Widening it (Off to Under an epic, or to All) sends what newly qualifies, parents first.
 - **Sync now** always reads: one read, the check for items gone from Jira, and failed writes
   retried.
 
@@ -51,8 +54,8 @@ without `https://`, and anything after it is ignored), **Space key** (the space'
 not its name: `KAN` in `KAN-1`),
 **API token** and **Token expiry**, and press **Connect**. Ronin checks them and says what
 to fix, keeps the token with Services (it is never shown again), and runs the first sync.
-With **Ronin's items** on, it first puts every work item in the Desk on the space, assigned to
-the account. Then assign one work
+It first puts on the space, assigned to the account, what **Ronin's items** says: nothing,
+the epics and everything under them, or every work item. Then assign one work
 item to the account in Jira and press **Sync now**.
 
 ## Connected
@@ -67,7 +70,8 @@ item to the account in Jira and press **Sync now**.
   its group, then its items, then their subtasks, marked with a tree; items with no epic come
   last under their own head. Columns: level, kind, Ronin id, title, status, where it was
   created, holders (each Agent a link), and the Jira key as a link, or "goes up at sync".
-  **Open** puts the same table full width in the other workspace.
+  Press an epic's row (or the **No epic** row) to fold its group; the fold is remembered.
+  **Open** puts the same table full width in the other workspace, at the same density.
 - **Pairs**: one row per paired item, with its Jira key (a link), Ronin id, title, level and
   kind, where it started, its status in Ronin and in Jira (as of the last read), holders
   (each Agent a link), flagged, when a change last came in from Jira and last went out to

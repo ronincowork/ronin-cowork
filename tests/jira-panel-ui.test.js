@@ -35,10 +35,15 @@ test('the Jira panel is a Settings surface over the bridge routes alone', async 
   assert.match(panel, /\['assigned', t\('jira\.assigned', 'Assigned items'\)/);
   assert.match(panel, /\['ronin', t\('jira\.ronin', 'Ronin’s items'\)/);
   // Always shown, one ask() per switch with its caption under it; before Connect a draft that rides the Connect PUT.
-  assert.match(panel, /ask\(\[\{ fields: \[\{ key, label, switch: both \}\] \}\]/);
+  assert.match(panel, /ask\(\[\{ fields: \[field\] \}\]/);
   assert.match(panel, /step\.body\.append\(one\.el, read\(text\)\)/);
-  assert.match(panel, /value: \{ \[key\]: connected \? snap\[key\] : draft\[key\] \}/);
-  assert.match(panel, /else draft\[key\] = value\[key\] === true;/);
+  assert.match(panel, /value: \{ \[field\.key\]: connected \? snap\[field\.key\] : draft\[field\.key\] \}/);
+  assert.match(panel, /else draft\[field\.key\] = answer;/);
+  // Ronin's items is a pick of three: off, under an epic, all; it starts off.
+  assert.match(panel, /\{ v: 'off'[^}]*\},\s*\{ v: 'epics'[^}]*\},\s*\{ v: 'all'/);
+  assert.match(panel, /const draft = \{ polling: true, assigned: false, ronin: 'off' \}/);
+  // A head row folds its group in both hosts, remembered per epic.
+  assert.match(panel, /const FOLDED = new Set\(\);/);
   assert.match(panel, /expiry: expiry\.value, \.\.\.draft \}/);
   assert.doesNotMatch(panel, /if \(connected\) \{\s*const both/);
   assert.match(panel, /t\('jira\.assigned_text', 'Up, Ronin → Jira/);

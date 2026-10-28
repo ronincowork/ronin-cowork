@@ -17,6 +17,9 @@ import { itemStones } from './work-items-surface.js';
 const RENEW_DAYS = 14;
 const DAY = 86_400_000;
 
+/** The folded groups of the items table, by epic id ('none' for no epic), shared by both hosts. */
+const FOLDED = new Set();
+
 /** The Jira link for a key, or the key alone when there is no site yet. */
 function jiraKey(site, key) {
   if (!site) return document.createTextNode(key);
@@ -30,6 +33,7 @@ function jiraKey(site, key) {
  * worksurface). Rows run in the Work Items surface's order (itemStones' walk: each epic, its
  * items, their subtasks; then the items with no epic). An epic row heads its group; the
  * items with no epic in the Desk get a head row of their own. Children carry a tree mark.
+ * A head row folds its group; the fold is remembered per epic.
  */
 export function renderJiraItems(items, site) {
   const LEVEL = { 1: t('jira.level_epic', 'Epic'), 0: t('jira.level_task', 'Task'), '-1': t('jira.level_subtask', 'Subtask') };
@@ -57,20 +61,40 @@ export function renderJiraItems(items, site) {
   const head = el('tr');
   for (const word of COLUMNS) head.append(el('th', null, word));
   table.append(head);
+  // A head row toggles its group's other rows; the chevron says which way.
+  const heading = (row, id, first) => {
+    const chev = el('span', 'jira-chev');
+    const paint = () => {
+      const folded = FOLDED.has(id);
+      chev.textContent = folded ? '▸ ' : '▾ ';
+      row.setAttribute('aria-expanded', String(!folded));
+      for (const other of table.querySelectorAll(`tr[data-group="${CSS.escape(id)}"]:not(.jira-group)`)) other.hidden = folded;
+    };
+    const toggle = () => { if (FOLDED.has(id)) FOLDED.delete(id); else FOLDED.add(id); paint(); };
+    first.prepend(chev);
+    row.tabIndex = 0;
+    row.addEventListener('click', (event) => { if (!event.target.closest('a')) toggle(); });
+    row.addEventListener('keydown', (event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); toggle(); } });
+    return paint;
+  };
+  const heads = [];
   let group = null;
   for (const item of order) {
     const next = groupOf(item);
     // The items with no epic get one head row; an epic's own row heads its group.
     if (next === 'none' && group !== 'none') {
       const row = el('tr', 'jira-group');
+      row.dataset.group = 'none';
       const cell = el('td', null, t('work_items.no_epic', 'No epic'));
       cell.colSpan = COLUMNS.length;
       row.append(cell);
       table.append(row);
+      heads.push(heading(row, 'none', cell));
     }
     group = next;
     // An epic heads its group; a subtask reads quieter than the item it sits under.
     const row = el('tr', item.level === 1 ? 'jira-group' : item.level === -1 ? 'jira-sub' : '');
+    row.dataset.group = next;
     const title = el('td', 'jira-title');
     title.append(el('span', 'jira-tree-mark', mark(item)), item.title || item.id);
     const holders = el('td');
@@ -83,7 +107,9 @@ export function renderJiraItems(items, site) {
     row.append(el('td', null, LEVEL[item.level] ?? String(item.level)), el('td', null, item.kind || '—'), el('td', null, item.id), title,
       el('td', null, item.status), el('td', null, item.created?.by?.startsWith('jira:') ? 'Jira' : 'Ronin'), holders, jira);
     table.append(row);
+    if (item.level === 1) heads.push(heading(row, item.id, row.firstChild));
   }
+  for (const paint of heads) paint();
   wrap.append(table);
   return wrap;
 }
@@ -99,7 +125,10 @@ export function createJiraItemsSurface(selected) {
       request(`/api/jira/${campaign}`, { cache: 'no-store' }),
       request(`/api/work-items?campaign=${campaign}`, { cache: 'no-store' }),
     ]);
-    surface.content.replaceChildren(renderJiraItems(listed.ok ? listed.data.items : [], conn.ok ? conn.data.site : ''));
+    // The same wrapper as the panel's, so the table reads at the same density in both hosts.
+    const host = el('div', 'fs-steps jira-form');
+    host.append(renderJiraItems(listed.ok ? listed.data.items : [], conn.ok ? conn.data.site : ''));
+    surface.content.replaceChildren(host);
   }
   return { el: surface.el, enter: () => void load() };
 }
@@ -139,7 +168,7 @@ export function createJiraPanel(selected, { openItems = null } = {}) {
   let renewShown = false;
   // The switches before Connect go out with it. The up switches start off, so nothing goes
   // up until the owner says the items are ready; turning Ronin's items on later uploads them.
-  const draft = { polling: true, assigned: false, ronin: false };
+  const draft = { polling: true, assigned: false, ronin: 'off' };
 
   const campaign = () => selected()?.id || '';
   const api = (tail = '') => `/api/jira/${encodeURIComponent(campaign())}${tail}`;
@@ -204,7 +233,7 @@ export function createJiraPanel(selected, { openItems = null } = {}) {
       createField({ label: t('jira.space', 'Space key'), control: space, description: t('jira.space_help', 'The space’s short code, not its name: KAN in KAN-1. Also in Space settings › Details.') }).el,
       createField({ label: t('jira.token', 'API token'), control: token, description: t('jira.token_help', 'Kept by Ronin with Services; never shown again.') }).el,
       createField({ label: t('jira.expiry', 'Token expiry'), control: expiry, description: t('jira.expiry_help', 'No call returns it: the date from the Review page.') }).el,
-      read(t('jira.connect_warning', 'With Ronin’s items on, Connect puts every work item in this Desk on the space, assigned to the account; off, nothing goes up until you turn it on. Then, in Jira, assign one work item to the account and press Sync now.')),
+      read(t('jira.connect_warning', 'Connect puts on the space, assigned to the account, what Ronin’s items says: nothing (Off), epics and everything under them, or every work item. Then, in Jira, assign one work item to the account and press Sync now.')),
       createActionBar({ actions: [go] }).el,
     );
     return [steps.el, fields.el];
@@ -312,22 +341,28 @@ export function createJiraPanel(selected, { openItems = null } = {}) {
     const word = (on) => (on ? t('campaign_view.on', 'On') : t('campaign_view.off', 'Off'));
     const step = section(1, 'how', t('jira.how', 'How it runs'));
     const line = (name, state, text) => { const p = read(''); p.append(el('b', null, `${name} · ${state}`), ` — ${text}`); return p; };
-    // How it runs is the three switches, always, each with its caption under it; the master
+    // How it runs is the three questions, always, each with its caption under it; the master
     // lives in Installations and stays a line. Before Connect they are a draft that rides the
-    // Connect PUT; connected, a toggle PUTs.
-    const SWITCHES = [
-      ['polling', t('jira.polling', 'Polling'), t('jira.polling_text', 'Down, Jira → Ronin: Jira is read every minute while Ronin is open in a browser, hourly otherwise; off, only Sync now reads it.')],
-      ['assigned', t('jira.assigned', 'Assigned items'), t('jira.assigned_text', 'Up, Ronin → Jira: changes to items that came from Jira go out to Jira; off, they stay in Ronin.')],
-      ['ronin', t('jira.ronin', 'Ronin’s items'), t('jira.ronin_text', 'Up, Ronin → Jira: items made in Ronin are created on Jira, at Connect or when you turn this on, and their changes go out; off, they stay in Ronin.')],
-    ];
+    // Connect PUT; connected, a change PUTs.
     const both = [t('campaign_view.on', 'On'), t('campaign_view.off', 'Off')];
+    const FIELDS = [
+      { key: 'polling', label: t('jira.polling', 'Polling'), switch: both, text: t('jira.polling_text', 'Down, Jira → Ronin: Jira is read every minute while Ronin is open in a browser, hourly otherwise; off, only Sync now reads it.') },
+      { key: 'assigned', label: t('jira.assigned', 'Assigned items'), switch: both, text: t('jira.assigned_text', 'Up, Ronin → Jira: changes to items that came from Jira go out to Jira; off, they stay in Ronin.') },
+      // Ronin's items is a pick of three, not a switch: how much of what Ronin made goes up.
+      { key: 'ronin', label: t('jira.ronin', 'Ronin’s items'), options: [
+        { v: 'off', l: t('jira.ronin_off', 'Off'), sub: t('jira.ronin_off_sub', 'Nothing made in Ronin goes up.') },
+        { v: 'epics', l: t('jira.ronin_epics', 'Under an epic'), sub: t('jira.ronin_epics_sub', 'Epics and everything under them go up; items with no epic stay in Ronin.') },
+        { v: 'all', l: t('jira.ronin_all', 'All'), sub: t('jira.ronin_all_sub', 'Every item made in Ronin goes up.') },
+      ], text: t('jira.ronin_text', 'Up, Ronin → Jira: items made in Ronin are created on Jira and their changes go out: none, those under an epic, or all. Widening it sends what newly qualifies, parents first.') },
+    ];
     step.body.append(line(t('jira.how_master', 'Services › Jira'), word(!snap.off), t('jira.how_master_text', 'the master switch, in Installations; off, nothing moves.')));
-    for (const [key, label, text] of SWITCHES) {
-      const one = ask([{ fields: [{ key, label, switch: both }] }], {
-        value: { [key]: connected ? snap[key] : draft[key] }, density: 'tight',
+    for (const { text, ...field } of FIELDS) {
+      const one = ask([{ fields: [field] }], {
+        value: { [field.key]: connected ? snap[field.key] : draft[field.key] }, density: 'tight',
         onChange: (value) => {
-          if (connected) void put({ [key]: value[key] === true }, t('jira.saved', 'Saved.'));
-          else draft[key] = value[key] === true;
+          const answer = field.switch ? value[field.key] === true : value[field.key];
+          if (connected) void put({ [field.key]: answer }, t('jira.saved', 'Saved.'));
+          else draft[field.key] = answer;
         },
       });
       step.body.append(one.el, read(text));

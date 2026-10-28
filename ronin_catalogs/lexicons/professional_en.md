@@ -219,7 +219,7 @@ nothing paints exactly this.
 - **jira.token_help:** Kept by Ronin with Services; never shown again.
 - **jira.expiry:** Token expiry
 - **jira.expiry_help:** No call returns it: the date from the Review page.
-- **jira.connect_warning:** With Ronin’s items on, Connect puts every work item in this Desk on the space, assigned to the account; off, nothing goes up until you turn it on. Then, in Jira, assign one work item to the account and press Sync now.
+- **jira.connect_warning:** Connect puts on the space, assigned to the account, what Ronin’s items says: nothing (Off), epics and everything under them, or every work item. Then, in Jira, assign one work item to the account and press Sync now.
 - **jira.connection:** Connection
 - **jira.account:** Account
 - **jira.renew:** The token expires in {n} days. Make a new one (steps 3–4), paste it here, then revoke the old one.
@@ -254,7 +254,13 @@ nothing paints exactly this.
 - **jira.assigned:** Assigned items
 - **jira.assigned_text:** Up, Ronin → Jira: changes to items that came from Jira go out to Jira; off, they stay in Ronin.
 - **jira.ronin:** Ronin’s items
-- **jira.ronin_text:** Up, Ronin → Jira: items made in Ronin are created on Jira, at Connect or when you turn this on, and their changes go out; off, they stay in Ronin.
+- **jira.ronin_off:** Off
+- **jira.ronin_off_sub:** Nothing made in Ronin goes up.
+- **jira.ronin_epics:** Under an epic
+- **jira.ronin_epics_sub:** Epics and everything under them go up; items with no epic stay in Ronin.
+- **jira.ronin_all:** All
+- **jira.ronin_all_sub:** Every item made in Ronin goes up.
+- **jira.ronin_text:** Up, Ronin → Jira: items made in Ronin are created on Jira and their changes go out: none, those under an epic, or all. Widening it sends what newly qualifies, parents first.
 - **jira.how_master:** Services › Jira
 - **jira.how_master_text:** the master switch, in Installations; off, nothing moves.
 - **jira.saved:** Saved.
