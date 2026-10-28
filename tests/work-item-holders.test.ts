@@ -188,10 +188,10 @@ test('a change by anyone but the holding Agent acks that Agent once; its own cha
   await items.assignItem(item.id, { kind: 'agent', name: 'keeper' }, 'lead');
   assert.equal(await acks(), 1, 'an assign by someone else: one ack, not two');
   await clear();
-  await items.editItem(item.id, { status: 'BUILD' }, 'lead');
+  await items.editItem(item.id, { status: 'In Progress' }, 'lead');
   assert.equal(await acks(), 1);
   await clear();
-  await items.editItem(item.id, { status: 'REVIEW' }, 'keeper');
+  await items.editItem(item.id, { status: 'In Review' }, 'keeper');
   assert.equal(await acks(), 0, 'its own write is not acked');
   await clear();
   await items.addComment(item.id, 'over to you', 'lead');

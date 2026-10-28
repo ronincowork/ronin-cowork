@@ -259,9 +259,9 @@ test('a hand-in with --item ends by naming the item and the write that keeps it 
     env: { ...process.env, RONIN_SESSION: 'reminder', RONIN_TEAMS: 'comp' },
   }).toString();
   const last = output.trimEnd().split('\n').at(-1)!;
-  assert.equal(last, `${item.id} moved to LAND`);
+  assert.equal(last, `${item.id} moved to In Review`);
   assert.ok(output.indexOf('ACCEPTED cowork:team/comp/reminder') < output.indexOf(last));
-  assert.equal((await readItem(item.id))!.status, 'LAND');
+  assert.equal((await readItem(item.id))!.status, 'In Review');
 });
 
 test('openDesk keeps managed branch names private and reports the checkout route for direct repositories', async () => {
@@ -317,15 +317,15 @@ test('handIn: the line advances by compare-and-swap to the candidate, its worktr
   assert.equal(existsSync(candidateWorktree('cowork', 'team/comp/dev')), false, 'accepted hand-in cleans its candidate');
 });
 
-test('a hand-in naming a work item leaves one trail line and the item at LAND', async () => {
-  const { item } = await createItem({ title: 'Landing', status: 'REVIEW' }, 'fable');
+test('a hand-in naming a work item leaves one trail line and the item at In Review', async () => {
+  const { item } = await createItem({ title: 'Landing', status: 'In Progress' }, 'fable');
   await commitFile(deskWorktree('cowork', 'team/comp/fable'), 'land.txt', 'land\n');
   const { outcomes, moved } = await handInAssignment({ desks: [{ repo: 'cowork', branch: 'team/comp/fable' }], projectId: item.id, session: 'fable' });
   assert.equal(outcomes[0]!.receipt.result, 'accepted', outcomes[0]!.receipt.reason);
   const back = (await readItem(item.id))!;
-  assert.equal(back.status, 'LAND');
+  assert.equal(back.status, 'In Review');
   assert.equal(back.trail.length, 2, 'create, then exactly one line for the hand-in');
-  assert.deepEqual([back.trail[1]!.op, back.trail[1]!.from, back.trail[1]!.to, back.trail[1]!.by], ['status', 'REVIEW', 'LAND', 'fable']);
+  assert.deepEqual([back.trail[1]!.op, back.trail[1]!.from, back.trail[1]!.to, back.trail[1]!.by], ['status', 'In Progress', 'In Review', 'fable']);
   assert.equal(back.trail[1]!.note, `hand-in ${outcomes[0]!.receipt.id}`);
   assert.equal(moved?.line.op, 'status');
 });

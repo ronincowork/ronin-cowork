@@ -62,9 +62,9 @@ Team and each Agent; assigning moves the id from one list to another and never t
 item. **Parent** is one id on the item, or none. A Team holds; it does not contain.
 
 ```text
-item create --title "Agent-authored items" [--kind task] [--parent w3] [--level 1|0|-1] [--objective "…"] [--priority High]
+item create --title "Agent-authored items" [--kind Task] [--parent w3] [--level 1|0|-1] [--objective "…"] [--priority High]
 item read w12                       # fields, children, comments, attachments, links, history
-item search [--team surface] [--holder builder | none] [--parent w3 | --no-parent] [--status "In Progress"] [--kind bug]
+item search [--team surface] [--holder builder | none] [--parent w3 | --no-parent] [--status "In Progress"] [--kind Bug]
 item edit w12 --priority High
 item edit w12 --parent w3           # parent and level together; --parent none keeps the level
 item transition w12 "In Review"     # any status to any status, by name, as Jira's transition

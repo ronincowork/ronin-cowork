@@ -94,8 +94,8 @@ test('item acts, each naming its item, one trail line each', async () => {
   assert.deepEqual((await readLetterHolds('probe'))!.holds, [id]);
   assert.equal((await oneLine(id, ['assign', id, 'team:crew'])).to, 'team:crew');
   assert.equal((await oneLine(id, ['handoff', id, 'none'])).op, 'handoff');
-  assert.equal((await oneLine(id, ['transition', id, 'DONE'])).to, 'DONE');
-  assert.equal((await run('item', ['edit', id, '--status', 'BUILD'])).status, 2, 'status is transition\'s, not edit\'s');
+  assert.equal((await oneLine(id, ['transition', id, 'Done'])).to, 'Done');
+  assert.equal((await run('item', ['edit', id, '--status', 'In Progress'])).status, 2, 'status is transition\'s, not edit\'s');
   const flagged = await oneLine(id, ['flag', id, 'stuck on the API']);
   assert.deepEqual([flagged.op, (await readItem(id))!.flagged, (await readItem(id))!.comments.at(-1)!.text], ['flag', true, 'stuck on the API']);
   assert.equal((await oneLine(id, ['unflag', id])).to, 'false');
@@ -127,8 +127,8 @@ test('item acts, each naming its item, one trail line each', async () => {
 
   const listed = JSON.parse(await tool('item', ['search', '--parent', epic])) as { items: Array<{ id: string }> };
   assert.deepEqual(listed.items.map((item) => item.id).sort(), [id, loose].sort());
-  const roots = JSON.parse(await tool('item', ['search', '--no-parent', '--status', 'IDEA'])) as { items: Array<{ parent: string | null; status: string }> };
-  assert.ok(roots.items.length && roots.items.every((item) => item.parent === null && item.status === 'IDEA'));
+  const roots = JSON.parse(await tool('item', ['search', '--no-parent', '--status', 'To Do'])) as { items: Array<{ parent: string | null; status: string }> };
+  assert.ok(roots.items.length && roots.items.every((item) => item.parent === null && item.status === 'To Do'));
   assert.match(await tool('item', ['delete', id]), new RegExp(`^${id} was deleted; with its subtasks ${sub}`));
   assert.equal(await readItem(sub), null);
   for (const verb of ['move', 'list', 'doc', 'plan', 'focus', 'evidence', 'write']) assert.equal((await run('item', [verb, loose])).status, 2, `item ${verb} is not an act`);
@@ -142,7 +142,7 @@ test('item is the one tool for work items: team and work-record have no item act
 });
 
 test('an id no route can hold answers "No work item <id>", and a reply that is not JSON names its HTTP status', async () => {
-  for (const args of [['read', 'surface/7'], ['transition', 'surface/7', 'DONE']]) {
+  for (const args of [['read', 'surface/7'], ['transition', 'surface/7', 'Done']]) {
     const r = await run('item', args);
     assert.equal(r.status, 3, `item ${args.join(' ')}`);
     assert.equal(r.stderr.trim(), 'No work item surface/7.');

@@ -54,7 +54,7 @@ test('the chip is the items held with their status; a flagged one marks it', asy
   await writeLetter('tegami-read-held', `{ "objective": "", "holds": ${JSON.stringify(ids)}, "at": { "item": "${ids[0]}", "rung": 2 } }`);
   const t = await readTegami('tegami-read-held');
   assert.ok(t);
-  assert.equal(t.chip.text, `${ids[0]} IDEA · ⚑ ${ids[1]} IDEA · ${ids[2]} IDEA · +1`);
+  assert.equal(t.chip.text, `${ids[0]} To Do · ⚑ ${ids[1]} To Do · ${ids[2]} To Do · +1`);
   assert.equal(t.chip.gate, true);
   assert.deepEqual(t.holds, ids, 'an old "at" in the letter reads as nothing');
 });

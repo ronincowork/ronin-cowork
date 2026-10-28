@@ -25,9 +25,9 @@ process.env.RONIN_WORK_ITEMS_DIR = temp;
 const items = await import('../src/work-items.js');
 const { registerWorkItems } = await import('../src/routes/work-items-api.js');
 
-test('campaign is stored at creation; no parent is normal: level 0, kind blank, nothing made to hold it', async () => {
+test('campaign is stored at creation; no parent is normal: level 0, kind Task, To Do, nothing made to hold it', async () => {
   const first = await items.createItem({ title: 'First', campaign_id: 'alpha' }, 'probe');
-  assert.deepEqual([first.item.campaign_id, first.item.parent, first.item.level, first.item.kind, first.item.status, first.item.flagged], ['alpha', null, 0, undefined, 'IDEA', false]);
+  assert.deepEqual([first.item.campaign_id, first.item.parent, first.item.level, first.item.kind, first.item.status, first.item.flagged], ['alpha', null, 0, 'Task', 'To Do', false]);
   assert.deepEqual((await items.listItems()).map((item) => item.id), [first.item.id], 'one create, one item');
 });
 
@@ -99,7 +99,7 @@ test('kind is any work type name or blank; priority any name; the answer says on
   assert.equal(items.didLine(flagged), `${bug.item.id} is flagged: waiting on Ana`);
   assert.deepEqual([flagged.item.flagged, flagged.item.comments.map((comment) => comment.text)], [true, ['waiting on Ana']], 'the reason is an ordinary comment');
   assert.equal(items.didLine(await items.flagItem(bug.item.id, false, undefined, 'probe')), `${bug.item.id} is unflagged`);
-  assert.equal(items.didLine(await items.editItem(bug.item.id, { status: 'BUILD' }, 'probe')), `${bug.item.id} moved to BUILD`);
+  assert.equal(items.didLine(await items.editItem(bug.item.id, { status: 'In Progress' }, 'probe')), `${bug.item.id} moved to In Progress`);
   assert.equal((await items.editItem(bug.item.id, { kind: '' }, 'probe')).item.kind, undefined);
   assert.equal((await items.createItem({ title: 'Odd', kind: 'feature' }, 'probe')).item.kind, 'feature');
   assert.equal(items.didLine(await items.editItem(bug.item.id, { priority: 'High' }, 'probe')), `${bug.item.id} changed: priority High`);
@@ -145,12 +145,12 @@ test('trail append is atomic under concurrent writers: every line lands', async 
 
 test('each write appends exactly one line; external is writable', async () => {
   const { item } = await items.createItem({ title: 'Edits' }, 'probe');
-  assert.deepEqual([(await items.editItem(item.id, { status: 'BUILD' }, 'a')).line.op], ['status']);
+  assert.deepEqual([(await items.editItem(item.id, { status: 'In Progress' }, 'a')).line.op], ['status']);
   const jira = await items.editItem(item.id, { jira: { id: '10012', key: 'RON-12' } }, 'a');
   assert.deepEqual(jira.item.external, { jira: { id: '10012', key: 'RON-12' } });
   assert.equal((await items.editItem(item.id, { title: 'Edited', objective: 'o' }, 'a')).line.op, 'edit');
   assert.deepEqual((await items.readItem(item.id))!.trail.map((line) => line.op), ['create', 'status', 'edit', 'edit']);
-  assert.throws(() => items.editItem(item.id, { status: 'SHIPPED' }, 'a'), /status must be one of IDEA, PLAN, BUILD, REVIEW, LAND, DONE/);
+  assert.throws(() => items.editItem(item.id, { status: ' ' }, 'a'), /name the status/, 'any Jira status name; only blank is refused');
 });
 
 test('the ITEM socket hears every saved write once per trail line; a throwing hook never fails the write', async () => {
@@ -196,7 +196,7 @@ test('the one rule: nothing goes below -1; the item takes its level and its chil
   await assert.rejects(items.editItem(epic.id, { level: -1 }, 'p'), { message: `${epic.id} can't go there.` });
 });
 
-test('the one migration: stage → status, red → flagged, exit and ladder dropped, evidence a comment, levels from children, Unfiled out', async () => {
+test('the one migration: stage → status (old names to Jira's), red → flagged, exit and ladder dropped, evidence a comment, levels from children, Unfiled out', async () => {
   const store = await fs.mkdtemp(path.join(os.tmpdir(), 'ronin-migrate-'));
   const old = (id: string, fields: Record<string, unknown>) => fs.writeFile(path.join(store, `${id}.json`), JSON.stringify({
     id, title: id, objective: '', stage: 'IDEA', exit: 'none', status: 'yellow', parent: null, ladder: [], docs: [], external: {}, trail: [], created: { at: '', by: '' }, ...fields,
@@ -210,8 +210,8 @@ test('the one migration: stage → status, red → flagged, exit and ladder drop
     const done = await items.migrateItems('probe');
     assert.deepEqual([done.before, done.after, done.removed, done.migrated], [4, 3, ['w1'], ['w2', 'w3', 'w4']]);
     const [w2, w3, w4] = await Promise.all(['w2', 'w3', 'w4'].map(async (id) => JSON.parse(await fs.readFile(path.join(store, `${id}.json`), 'utf8'))));
-    assert.deepEqual([w2.campaign_id, w2.parent, w2.status, w2.flagged, w2.level, w2.kind, 'exit' in w2, 'stage' in w2, 'docs' in w2, w2.attachments], ['home_machine', null, 'BUILD', true, 0, 'bug', false, false, false, ['/plan.md']]);
-    assert.deepEqual([w3.level, w3.status, w3.comments, w3.trail[0].op], [1, 'PLAN', [{ by: 'ann', at: '2026-10-01T00:00:00Z', text: 'commit abc' }], 'comment']);
+    assert.deepEqual([w2.campaign_id, w2.parent, w2.status, w2.flagged, w2.level, w2.kind, 'exit' in w2, 'stage' in w2, 'docs' in w2, w2.attachments], ['home_machine', null, 'In Progress', true, 0, 'bug', false, false, false, ['/plan.md']]);
+    assert.deepEqual([w3.level, w3.status, w3.comments, w3.trail[0].op], [1, 'To Do', [{ by: 'ann', at: '2026-10-01T00:00:00Z', text: 'commit abc' }], 'comment']);
     assert.deepEqual([w4.level, w4.flagged, w4.parent, 'ladder' in w4], [0, false, 'w3', false]);
     assert.deepEqual((await items.migrateItems('probe')).migrated, [], 'a second run changes nothing');
   } finally {
@@ -256,12 +256,12 @@ test('routes acknowledge with the item and the appended line; refusals answer 40
     assert.equal((await call('PUT', `${base}/${id}`, { jira: 'RON-1', by: 'probe' })).status, 400, 'jira is { id, key } or null');
     await call('PUT', `${base}/${id}`, { jira: { id: '10001', key: 'RON-1' }, by: 'probe' });
     assert.equal((await call('POST', `${base}/${id}/flag`, { by: 'probe' })).data.acknowledgement, `${id} is flagged`);
-    const moved = await call('POST', `${base}/${id}/transition`, { status: 'PLAN', by: 'probe' });
-    assert.equal(moved.data.acknowledgement, `${id} moved to PLAN`);
-    assert.equal((await call('POST', `${base}/${id}/transition`, { status: 'IDEA', by: 'probe' })).data.item.status, 'IDEA', 'any status to any status');
-    await call('POST', `${base}/${id}/transition`, { status: 'PLAN', by: 'probe' });
-    assert.equal((await call('PUT', `${base}/${id}`, { status: 'DONE', by: 'probe' })).data.item.status, 'PLAN', 'edit does not set status');
-    assert.deepEqual([moved.data.item.status, moved.data.item.flagged, moved.data.item.external.jira], ['PLAN', true, { id: '10001', key: 'RON-1' }]);
+    const moved = await call('POST', `${base}/${id}/transition`, { status: 'In Review', by: 'probe' });
+    assert.equal(moved.data.acknowledgement, `${id} moved to In Review`);
+    assert.equal((await call('POST', `${base}/${id}/transition`, { status: 'To Do', by: 'probe' })).data.item.status, 'To Do', 'any status to any status');
+    await call('POST', `${base}/${id}/transition`, { status: 'In Review', by: 'probe' });
+    assert.equal((await call('PUT', `${base}/${id}`, { status: 'Done', by: 'probe' })).data.item.status, 'In Review', 'edit does not set status');
+    assert.deepEqual([moved.data.item.status, moved.data.item.flagged, moved.data.item.external.jira], ['In Review', true, { id: '10001', key: 'RON-1' }]);
     assert.deepEqual((await call('PUT', `${base}/${id}`, { jira: null, by: 'probe' })).data.item.external, {}, 'null drops the pair');
     const child = await call('POST', base, { title: 'Child', parent: id, by: 'probe' });
     assert.equal(child.data.item.level, -1);
@@ -271,7 +271,7 @@ test('routes acknowledge with the item and the appended line; refusals answer 40
     assert.deepEqual([stuck.status, stuck.data.error], [409, `${id} can't go there.`]);
     assert.equal((await call('POST', `${base}/${peer.data.item.id}/link`, { type: 'blocks', to: id, by: 'probe' })).data.acknowledgement, `${peer.data.item.id} blocks ${id}`);
     assert.deepEqual((await call('GET', `${base}/${id}`)).data.linked_from, [{ type: 'blocks', from: peer.data.item.id }]);
-    assert.ok((await call('GET', `${base}?status=plan&kind=task`)).data.items.every((item: { status: string; kind: string }) => item.status === 'PLAN' && item.kind === 'task'));
+    assert.ok((await call('GET', `${base}?status=in%20review&kind=Task`)).data.items.every((item: { status: string; kind: string }) => item.status === 'In Review' && item.kind === 'Task'));
     const alpha = (await call('GET', `${base}?campaign=alpha`)).data.items as Array<{ campaign_id: string }>;
     assert.ok(alpha.length && alpha.every((item) => item.campaign_id === 'alpha'));
     assert.equal((await call('DELETE', `${base}/${id}`, { by: 'probe' })).data.acknowledgement, `${id} was deleted; with its subtasks ${child.data.item.id}`);
