@@ -10,7 +10,7 @@ import { t } from './lexicon.js';
 export const WORK_ITEMS_TYPE = 'work-items';
 /** Jira's flag: an impediment, marked the same way on every surface. */
 export const FLAG_MARK = '⚑';
-const KIND_OF_LEVEL = { 1: 'epic', '-1': 'subtask' };
+const KIND_OF_LEVEL = { 1: 'Epic', 0: 'Task', '-1': 'Subtask' };
 
 const el = (tag, cls = '', text = '') => {
   const out = document.createElement(tag); out.className = cls; out.textContent = text; return out;
