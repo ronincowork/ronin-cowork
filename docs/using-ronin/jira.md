@@ -59,7 +59,8 @@ Status, kind, priority and link type are the space's own names, exactly as Jira 
 anything else is refused, and the refusal names the ones there are. Unconnected, they are
 Jira's defaults (To Do, In Progress, In Review, Done; Epic, Task, Story, Bug, Feature,
 Subtask; Highest to Lowest, Medium by default; Blocks, Relates, Duplicate, Cloners). Check
-reads the space's own. The level is the kind's: an epic is 1, a subtask -1, the rest 0.
+reads the space's own; a list Jira will not give keeps the last one read, or Jira's defaults,
+and the Sync section says so. The level is the kind's: an epic is 1, a subtask -1, the rest 0.
 Ronin never closes a Jira item: a hand-in moves it to In Review, if the space has that
 status; promotion leaves it as it is; it is Done when the Jira user moves it there, and that
 comes back with the next read.
