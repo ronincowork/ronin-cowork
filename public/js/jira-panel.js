@@ -225,11 +225,14 @@ export function createJiraPanel(selected, { openItems = null } = {}) {
     const space = input('text', 'KAN');
     const token = input('password');
     const expiry = input('date');
+    // A Connect that stopped at Check keeps what was entered: the fields come back filled, the token aside.
+    site.value = snap.site || ''; space.value = snap.space?.key || ''; expiry.value = snap.tokenExpiry || '';
     const go = createAction({ label: t('jira.connect', 'Connect'), size: 'compact', kind: 'primary', disabled: true, action: () => {
       void put({ site: site.value.trim(), space: space.value.trim(), token: token.value.trim(), expiry: expiry.value, ...draft }, t('jira.connected', 'Connected, and the first sync has run.'));
     } });
     const ready = () => go.setDisabled(![site, space, token, expiry].every((node) => node.value.trim()));
     for (const node of [site, space, token, expiry]) node.addEventListener('input', ready);
+    if (snap.lastError) fields.body.append(createNotice({ kind: 'failed', message: snap.lastError }).el);
     fields.body.append(
       createField({ label: t('jira.site', 'Site URL'), control: site, description: t('jira.site_help', 'The address you open Jira at, up to .atlassian.net: https://your-site.atlassian.net. Copy it from any Jira page.') }).el,
       createField({ label: t('jira.space', 'Space key'), control: space, description: t('jira.space_help', 'The space’s short code, not its name: KAN in KAN-1. Also in Space settings › Details.') }).el,
@@ -397,6 +400,8 @@ export function createJiraPanel(selected, { openItems = null } = {}) {
       return;
     }
     if (snap.error) { notice.set('failed', snap.error); return; }
+    // A file that has not passed Check keeps its switches; the draft starts from them.
+    if (!connected && snap.ronin) Object.assign(draft, { polling: snap.polling, assigned: snap.assigned, ronin: snap.ronin });
     if (!connected) form.append(howStep(), ...connectSteps(), itemsStep(4));
     else form.append(howStep(), connectionStep(), syncStep(), itemsStep(4), pairsStep());
   }

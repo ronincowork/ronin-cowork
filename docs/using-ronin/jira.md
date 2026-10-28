@@ -54,6 +54,8 @@ without `https://`, and anything after it is ignored), **Space key** (the space'
 not its name: `KAN` in `KAN-1`),
 **API token** and **Token expiry**, and press **Connect**. Ronin checks them and says what
 to fix, keeps the token with Services (it is never shown again), and runs the first sync.
+Until every check passes the campaign is not connected: the panel shows these fields again,
+filled with what you entered (the token aside), and what to fix above them.
 It first puts on the space, assigned to the account, what **Ronin's items** says: nothing,
 the epics and everything under them, or every work item. Then assign one work
 item to the account in Jira and press **Sync now**.
