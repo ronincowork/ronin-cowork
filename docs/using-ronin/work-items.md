@@ -69,9 +69,6 @@ carries that hand-in moves it to Done. An item paired to Jira is the exception: 
 leaves it as it is, and it is Done only when the Jira user moves it to Done, which comes back
 by polling. A hand-in that names no item moves no status.
 
-The store was migrated once from Ronin's old statuses: IDEA and PLAN to To Do, BUILD to In
-Progress, REVIEW and LAND to In Review, DONE to Done; an item with no kind took its level's.
-
 ## The item tool
 
 ```text
