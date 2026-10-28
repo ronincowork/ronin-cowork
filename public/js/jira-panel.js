@@ -38,17 +38,19 @@ function jiraKey(site, key) {
 export function renderJiraItems(items, site) {
   const LEVEL = { 1: t('jira.level_epic', 'Epic'), 0: t('jira.level_task', 'Task'), '-1': t('jira.level_subtask', 'Subtask') };
   const byId = new Map(items.map((item) => [item.id, item]));
-  const order = itemStones(items).map((stone) => stone.item);
   const parentOf = (item) => byId.get(item.parent) || null;
   const ancestors = (item) => {
     const up = [];
     for (let at = parentOf(item), seen = new Set(); at && !seen.has(at.id); seen.add(at.id), at = parentOf(at)) up.unshift(at);
     return up;
   };
-  // Last among its siblings in the order: no later row shares its parent.
-  const last = (item) => !order.slice(order.indexOf(item) + 1).some((other) => other.parent === item.parent && byId.has(item.parent));
   // The group is the top of the item's chain when that is an epic in the Desk, else "no epic".
   const groupOf = (item) => { const top = ancestors(item)[0] ?? item; return top.level === 1 ? top.id : 'none'; };
+  // In itemStones' order, each epic's rows together and every item with no epic after them, under one head.
+  const stones = itemStones(items).map((stone) => stone.item);
+  const order = [...stones.filter((item) => groupOf(item) !== 'none'), ...stones.filter((item) => groupOf(item) === 'none')];
+  // Last among its siblings in the order: no later row shares its parent.
+  const last = (item) => !order.slice(order.indexOf(item) + 1).some((other) => other.parent === item.parent && byId.has(item.parent));
   const mark = (item) => {
     const up = ancestors(item);
     if (!up.length) return '';

@@ -68,7 +68,7 @@ test('the Jira panel folds every section, reads at body size, and says how it ru
   for (const key of ['how_master', 'how_sync', 'polling_text', 'assigned_text', 'ronin_text']) assert.match(panel, new RegExp(`t\\('jira\\.${key}'`), key);
   // Work items by level: one table renderer in two hosts, in itemStones' order, epics heading groups.
   assert.match(panel, /export function renderJiraItems\(items, site\)/);
-  assert.match(panel, /const order = itemStones\(items\)/);
+  assert.match(panel, /const stones = itemStones\(items\)/);
   assert.match(panel, /step\.body\.append\(renderJiraItems\(items, snap\.site\)\)/);
   assert.match(panel, /surface\.content\.replaceChildren\(renderJiraItems\(/);
   assert.doesNotMatch(panel, /createPhalanx/);
