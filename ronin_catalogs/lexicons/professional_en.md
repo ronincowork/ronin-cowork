@@ -229,9 +229,12 @@ nothing paints exactly this.
 - **jira.col_title:** Title
 - **jira.col_kind:** Level · kind
 - **jira.col_started:** Started in
-- **jira.col_status:** Status
+- **jira.col_status:** Ronin status
+- **jira.col_jira_status:** Jira status
 - **jira.col_holders:** Holders
 - **jira.col_flagged:** Flagged
+- **jira.col_last_in:** Last in
+- **jira.col_last_out:** Last out
 - **jira.col_failed:** Failed
 - **jira.resync:** Re-sync
 - **jira.flagged:** Flagged

@@ -26,6 +26,9 @@ test('the Jira panel is a Settings surface over the bridge routes alone', async 
   assert.match(panel, /createStep\(/);
   assert.match(panel, /createField\(/);
   assert.match(panel, /ask\(\[\{ fields: \[\s*\{ key: 'polling'/);
+  // Per pair: status on both sides, the last write in and out (the Bridge doc's panel).
+  assert.match(panel, /el\('td', null, pair\.status\), el\('td', null, pair\.jiraStatus \|\| '—'\)/);
+  assert.match(panel, /when\(pair\.lastIn\)\), el\('td', null, when\(pair\.lastOut\)\)/);
 });
 
 test('every Jira panel word is in the lexicon', async () => {

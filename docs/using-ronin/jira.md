@@ -39,5 +39,6 @@ item to the account in Jira and press **Sync now**.
   otherwise; off, only **Sync now** reads it. Below it are the last check, the pair count,
   the failed writes and the last error.
 - **Pairs**: one row per paired item, with its Jira key (a link), Ronin id, title, level and
-  kind, where it started, status, holders (each Agent a link), flagged and failed writes.
-  Filter the rows, or **Re-sync** one.
+  kind, where it started, its status in Ronin and in Jira (as of the last read), holders
+  (each Agent a link), flagged, when a change last came in from Jira and last went out to
+  it, and failed writes. Filter the rows, or **Re-sync** one.
