@@ -16,7 +16,8 @@ test('the Jira panel is a Settings surface over the bridge routes alone', async 
   assert.deepEqual([...new Set(panel.match(/api\([^)]*\)/g))].sort(), ['api()', "api('/check')", 'api(item ? `/sync/${encodeURIComponent(item)'].sort());
   assert.match(panel, /`\/api\/jira\/\$\{encodeURIComponent\(campaign\(\)\)\}\$\{tail\}`/);
   for (const method of ['PUT', 'DELETE', 'POST']) assert.match(panel, new RegExp(`method: '${method}'`));
-  assert.doesNotMatch(panel, /fetch\(|\/api\/(?!jira)/);
+  // Besides its own routes, only the existing work-items list for the Desk.
+  assert.doesNotMatch(panel, /fetch\(|\/api\/(?!jira|work-items\?campaign=)/);
   assert.match(panel, /result\.status === 404 \? \{ off: true \}/);
   assert.match(panel, /Services › Jira is off/);
   // The token goes out on PUT and is never read back into a field.
@@ -29,6 +30,23 @@ test('the Jira panel is a Settings surface over the bridge routes alone', async 
   // Per pair: status on both sides, the last write in and out (the Bridge doc's panel).
   assert.match(panel, /el\('td', null, pair\.status\), el\('td', null, pair\.jiraStatus \|\| '—'\)/);
   assert.match(panel, /when\(pair\.lastIn\)\), el\('td', null, when\(pair\.lastOut\)\)/);
+});
+
+test('the Jira panel folds every section, reads at body size, and says how it runs', async () => {
+  const panel = await read('public/js/jira-panel.js');
+  const css = await read('public/css/launch-forms.css');
+  // Every numbered section is a fold that keeps its state; the one unnumbered fold is Replace token.
+  assert.equal(panel.match(/createStep\(/g).length, 2);
+  assert.match(panel, /onToggle: \(\) => \{ open\[key\] = !open\[key\]; step\.setCollapsed\(!open\[key\], meta\); \}/);
+  for (const key of ['how', 'before', 'connect', 'connection', 'sync', 'items', 'pairs']) assert.match(panel, new RegExp(`section\\((?:\\d|n), '${key}'`), key);
+  assert.doesNotMatch(panel, /'li', 'fs-step-help'|el\('p', 'fs-step-help', t\(/, 'instructions are reading text, not captions');
+  assert.match(css, /\.jira-read \{[^}]*font-size: var\(--text-body\)/);
+  assert.match(css, /\.jira-form > \.fs-step \+ \.fs-step \{ margin-top: var\(--space-paragraph\); \}/);
+  for (const key of ['how_master', 'how_up', 'how_down', 'how_sync']) assert.match(panel, new RegExp(`t\\('jira\\.${key}'`), key);
+  // Work items by level: roots are items whose parent is not in the Desk, epics first; children nest.
+  assert.match(panel, /items\.filter\(\(item\) => !byId\.has\(item\.parent\)\)\.sort\(\(a, b\) => b\.level - a\.level\)/);
+  assert.match(panel, /for \(const child of children\(item\.id\)\) row\(child, depth \+ 1\)/);
+  assert.match(panel, /t\('jira\.goes_up', 'goes up at sync'\)/);
 });
 
 test('every Jira panel word is in the lexicon', async () => {

@@ -7,6 +7,19 @@ says so.
 Open **Settings** and press **Jira**. Open it before you start in Atlassian, so the token
 goes straight into the panel when you make it.
 
+Every section folds, and stays as you left it.
+
+## How it runs
+
+The panel's first section says what moves and whether it is moving now:
+
+- **Services › Jira** (Installations) is the master switch; off, nothing moves.
+- **Up, Ronin → Jira** is on whenever Services › Jira is on and the Desk is connected; every
+  Agent change goes as it happens.
+- **Down, Jira → Ronin** is the **Polling** switch: every minute while Ronin is open in a
+  browser, hourly otherwise. Off, only **Sync now** reads Jira, and nothing is lost.
+- **Sync now** is one read, the check for items gone from Jira, and failed writes retried.
+
 ## Connect
 
 The panel lists the Atlassian steps:
@@ -38,6 +51,9 @@ item to the account in Jira and press **Sync now**.
 - **Sync**: **Polling** on reads Jira every minute while you are in Ronin, and every hour
   otherwise; off, only **Sync now** reads it. Below it are the last check, the pair count,
   the failed writes and the last error.
+- **Work items by level**: the Desk's items as a tree, epics with their children under them,
+  then the items with no parent. Each shows its Jira key if it is paired, or "goes up at
+  sync". Before Connect, it is what Connect will put on the space.
 - **Pairs**: one row per paired item, with its Jira key (a link), Ronin id, title, level and
   kind, where it started, its status in Ronin and in Jira (as of the last read), holders
   (each Agent a link), flagged, when a change last came in from Jira and last went out to

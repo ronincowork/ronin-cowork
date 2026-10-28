@@ -214,15 +214,16 @@ nothing paints exactly this.
 - **jira.disconnect_confirm:** Disconnect this Desk from Jira? Every pair drops; nothing is deleted on either side.
 - **jira.disconnected:** Disconnected.
 - **jira.sync:** Sync
+- **jira.last_check:** Last check
 - **jira.polling:** Polling
 - **jira.polling_on:** Polling on.
 - **jira.polling_off:** Polling off: only Sync now reads Jira.
 - **jira.polling_help:** On: Jira is read every minute while you are here, and every hour otherwise.
-- **jira.last_check:** Last check
 - **jira.pair_count:** Pairs
 - **jira.failed:** Failed writes
 - **jira.failed_n:** {n}: Sync now tries them again.
 - **jira.pairs:** Pairs
+- **jira.pairs_n:** {n} pairs
 - **jira.filter:** Filter: key, id, title, status, holder
 - **jira.col_key:** Jira
 - **jira.col_id:** Ronin
@@ -239,7 +240,21 @@ nothing paints exactly this.
 - **jira.resync:** Re-sync
 - **jira.flagged:** Flagged
 - **jira.filter_label:** Filter
-- **jira.pairs_n:** {n} pairs
+- **jira.how:** How it runs
+- **jira.how_master:** Services › Jira
+- **jira.how_master_text:** the master switch, in Installations; off, nothing moves.
+- **jira.how_up:** Up, Ronin → Jira
+- **jira.how_up_text:** on whenever Services › Jira is on and this Desk is connected; every Agent change goes as it happens.
+- **jira.how_down:** Down, Jira → Ronin
+- **jira.how_down_text:** the Polling switch: every minute while Ronin is open in a browser, hourly otherwise; off, only Sync now reads Jira, and nothing is lost.
+- **jira.how_sync:** Sync now
+- **jira.how_sync_text:** one read, the deleted-item check, and failed writes retried.
+- **jira.items:** Work items by level
+- **jira.items_n:** {n} items · {p} paired
+- **jira.col_kind_only:** Kind
+- **jira.goes_up:** goes up at sync
+- **jira.items_connected:** Paired items show their Jira key; the rest go up at the next sync.
+- **jira.items_preview:** What Connect will put on the space, assigned to the account.
 - **jira.off:** Services › Jira is off for this Desk. Turn it on in Installations › Ronin Services, then come back here.
 - **jira.card_summary:** This Desk’s Jira space: connect, check, sync.
 

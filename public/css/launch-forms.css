@@ -271,6 +271,13 @@
   .fs-sum { flex: 1 1 auto; min-width: 0; color: var(--accent); font-size: var(--form-note); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .fs-sum[hidden] { display: none; }
   .fs-step-help { margin: 0; color: var(--muted); font-size: var(--form-note); line-height: var(--leading-body); }
+  /* The Jira panel: instructions are reading text, not captions; each section stands apart. */
+  .jira-read { margin: 0; color: var(--fg); font-size: var(--text-body); line-height: var(--leading-body); }
+  .jira-read b { color: var(--fg-strong); font-weight: var(--weight-strong); }
+  .jira-walkthrough { margin: 0; padding-left: var(--space-subsection); display: flex; flex-direction: column; gap: var(--space-row); }
+  .jira-form > .fs-step + .fs-step { margin-top: var(--space-paragraph); }
+  .jira-tree td[data-depth='1'] { padding-left: calc(var(--space-inline) + var(--space-subsection)); }
+  .jira-tree td[data-depth='2'] { padding-left: calc(var(--space-inline) + 2 * var(--space-subsection)); }
   .na-defaults-note > p { margin: 0; }
   .na-defaults-links { margin-top: var(--space-row) !important; font-weight: var(--weight-strong); }
   .na-defaults-links a { color: inherit; font: inherit; text-decoration: none; }
