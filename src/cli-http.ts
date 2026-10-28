@@ -43,6 +43,18 @@ async function overHttp(target: { url: string; token: string }, route: string, p
   return { status: res.status, body: await res.text() };
 }
 
+/** One POST to a route of the running Ronin, so the write is the server's and its sockets
+ *  fire (a write from another process reaches the store but no socket). Returns the JSON. */
+export async function operatorPost<T = Record<string, unknown>>(route: string, body: unknown): Promise<T> {
+  const target = operatorTarget();
+  const payload = JSON.stringify(body);
+  const raw = target.kind === 'socket' ? await overSocket(target.path, route, payload) : await overHttp(target, route, payload);
+  let reply: T & { error?: string };
+  try { reply = JSON.parse(raw.body) as T & { error?: string }; } catch { reply = {} as T & { error?: string }; }
+  if (raw.status < 200 || raw.status >= 300) throw new Error(reply.error || `HTTP ${raw.status}`);
+  return reply;
+}
+
 export async function cliRequest(tool: string, args = process.argv.slice(2), input?: string): Promise<CliReply> {
   const target = operatorTarget();
   const payload = JSON.stringify({ args, input, counted: process.env.RONIN_TOOL_COUNTED === '1', session: process.env.RONIN_SESSION ?? '', pane: process.env.TMUX_PANE ?? '' });

@@ -4,7 +4,8 @@ import { healthCheck, notifyTeam, restartService, serviceStartedAfter } from './
 import { queuePromotionContinuation } from './continuation.js';
 import { houseSend } from '../desks/lead.js';
 import { receiptById } from '../desks/receipts.js';
-import { editItem, didLine } from '../work-items.js';
+import { operatorPost } from '../cli-http.js';
+import type { TrailLine } from '../work-items.js';
 import { REPO_ROOT } from '../resources.js';
 import {
   acquirePromotionLock, advanceState, anyAdvanced, lastGoodPromotion, listReceipts, newReceipt, newReceiptId, now, readReceipt, releasePromotionLock, writeReceipt, PROMOTION_LEDGER_DIR,
@@ -56,11 +57,13 @@ export async function announcePromotion(r: PromotionReceipt, primary: string, fx
     if (receipt?.project_id && !associated.some((item) => item.id === receipt.project_id)) associated.push({ id: receipt.project_id, session: receipt.session });
   }
   // Every item named on a carried hand-in moves to DONE, the promotion receipt on its trail.
+  // Through the running server, so the move is its write and the ITEM socket (Jira) sees it.
   const keep = new Map<string, string>();
   for (const { id } of associated) {
     try {
-      const moved = await editItem(id, { status: 'DONE' }, r.by || 'promotion', `promotion ${r.id}`);
-      keep.set(id, didLine(moved));
+      const moved = await operatorPost<{ line: TrailLine; acknowledgement: string }>(`/api/work-items/${encodeURIComponent(id)}/transition`,
+        { status: 'DONE', by: r.by || 'promotion', note: `promotion ${r.id}` });
+      keep.set(id, moved.acknowledgement);
       log(`  done  ${id}: ${moved.line.op} ${moved.line.from ?? ''} → ${moved.line.to ?? ''}`);
     } catch (e) {
       log(`  done  ${id}: not moved — ${(e as Error).message}`);

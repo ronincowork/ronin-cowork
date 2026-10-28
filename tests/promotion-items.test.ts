@@ -8,6 +8,8 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import type { AddressInfo } from 'node:net';
+import express from 'express';
 
 const tmp = await fs.mkdtemp(path.join(os.tmpdir(), 'ronin-promotion-items-'));
 // Every store under private roots, whoever runs this file: holder scans and arrival
@@ -22,6 +24,15 @@ process.env.RONIN_WORK_ITEMS_DIR = path.join(tmp, 'work-items');
 const { appendReceipt } = await import('../src/desks/receipts.js');
 const { announcePromotion } = await import('../src/promotion/promote.js');
 const { createItem, readItem } = await import('../src/work-items.js');
+const { registerWorkItems } = await import('../src/routes/work-items-api.js');
+// The move goes through the running server's route: here, an in-process one.
+const app = express();
+app.use(express.json());
+registerWorkItems(app);
+const server = app.listen(0, '127.0.0.1');
+await new Promise((resolve) => server.once('listening', resolve));
+process.env.RONIN_URL = `http://127.0.0.1:${(server.address() as AddressInfo).port}/`;
+test.after(() => server.close());
 type Receipt = Parameters<typeof appendReceipt>[0];
 type Promotion = Parameters<typeof announcePromotion>[0];
 type Fx = Parameters<typeof announcePromotion>[2];
