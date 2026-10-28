@@ -175,6 +175,71 @@ nothing paints exactly this.
 - **campaign_view.off:** Off
 - **campaign_view.machine_summary:** The rest of the desk: Desk · Account · Archived · Messages · Help desk · Keypad.
 
+## jira — jira-panel.js (the Jira panel in Settings: connect, check, sync, the pairs)
+
+- **jira.check:** Check
+- **jira.sync_now:** Sync now
+- **jira.title:** Jira
+- **jira.never:** never
+- **jira.step_account:** admin.atlassian.com › your organization › Directory › Service accounts › Create a service account. Any name, 6–30 characters. On Select app roles, give Jira the role User and leave every other app at None.
+- **jira.step_token:** Open the account › Create credentials › API token. Any name; expiry up to 365 days. The Review page shows the expiry date: enter it below.
+- **jira.step_scopes:** Scopes: read:jira-work, write:jira-work and read:jira-user. Create, copy, and paste the token below straight away. Scopes cannot be changed later; a missing one means a new token.
+- **jira.step_access:** On a Free site, nothing to do. On a paid site, in the space: Space settings › Access, add the account as Member.
+- **jira.step_linking:** In Jira: Settings › Work items › Work item linking › Activate, if it is off.
+- **jira.checking:** Checking…
+- **jira.syncing:** Syncing…
+- **jira.all_good:** Every check passes.
+- **jira.synced_one:** {item} synced.
+- **jira.synced:** Synced.
+- **jira.saving:** Saving…
+- **jira.before:** In Atlassian
+- **jira.before_help:** Keep this panel open while you make the account: the token goes straight into the field below.
+- **jira.connect:** Connect
+- **jira.connected:** Connected, and the first sync has run.
+- **jira.site:** Site URL
+- **jira.space:** Space key
+- **jira.space_help:** The prefix on every work item: KAN in KAN-1. Also in Space settings › Details.
+- **jira.token:** API token
+- **jira.token_help:** Kept by Ronin with Services; never shown again.
+- **jira.expiry:** Token expiry
+- **jira.expiry_help:** No call returns it: the date from the Review page.
+- **jira.connect_warning:** Connect puts every work item in this Desk on the space, assigned to the account. Then, in Jira, assign one work item to the account and press Sync now.
+- **jira.connection:** Connection
+- **jira.account:** Account
+- **jira.renew:** The token expires in {n} days. Make a new one (steps 3–4), paste it here, then revoke the old one.
+- **jira.replace_token:** Replace token
+- **jira.token_replaced:** Token replaced.
+- **jira.new_token:** New API token
+- **jira.disconnect:** Disconnect
+- **jira.disconnect_confirm:** Disconnect this Desk from Jira? Every pair drops; nothing is deleted on either side.
+- **jira.disconnected:** Disconnected.
+- **jira.sync:** Sync
+- **jira.polling:** Polling
+- **jira.polling_on:** Polling on.
+- **jira.polling_off:** Polling off: only Sync now reads Jira.
+- **jira.polling_help:** On: Jira is read every minute while you are here, and every hour otherwise.
+- **jira.last_check:** Last check
+- **jira.pair_count:** Pairs
+- **jira.failed:** Failed writes
+- **jira.failed_n:** {n}: Sync now tries them again.
+- **jira.pairs:** Pairs
+- **jira.filter:** Filter: key, id, title, status, holder
+- **jira.col_key:** Jira
+- **jira.col_id:** Ronin
+- **jira.col_title:** Title
+- **jira.col_kind:** Level · kind
+- **jira.col_started:** Started in
+- **jira.col_status:** Status
+- **jira.col_holders:** Holders
+- **jira.col_flagged:** Flagged
+- **jira.col_failed:** Failed
+- **jira.resync:** Re-sync
+- **jira.flagged:** Flagged
+- **jira.filter_label:** Filter
+- **jira.pairs_n:** {n} pairs
+- **jira.off:** Services › Jira is off for this Desk. Turn it on in Installations › Ronin Services, then come back here.
+- **jira.card_summary:** This Desk’s Jira space: connect, check, sync.
+
 ## campaign_home — campaign-home.js (the root arrival: Machine Settings, Teams, Launch)
 
 - **campaign_home.ronin_home:** Ronin Home
