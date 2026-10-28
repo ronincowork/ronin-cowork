@@ -30,18 +30,23 @@ change them any time after. Each does what it says, with no catch-up when it com
 
 The panel lists the Atlassian steps:
 
-1. admin.atlassian.com › your organization › **Directory › Service accounts › Create a
+1. In Jira, open the space you want Ronin on. The address bar gives the Site URL (up to
+   `.atlassian.net`); the space key is the short code before every work item number (`KAN`
+   in `KAN-1`).
+2. admin.atlassian.com › your organization › **Directory › Service accounts › Create a
    service account**. Any name, 6–30 characters. On **Select app roles**, give Jira the
    role **User** and leave every other app at **None**.
-2. Open the account › **Create credentials › API token**. Any name. Expiry is up to 365
+3. Open the account › **Create credentials › API token**. Any name. Expiry is up to 365
    days; the **Review** page shows the date.
-3. Scopes: `read:jira-work`, `write:jira-work` and `read:jira-user`. Scopes cannot be
+4. Scopes: `read:jira-work`, `write:jira-work` and `read:jira-user`. Scopes cannot be
    changed later, so a missing one means a new token.
-4. On a Free site, nothing to do. On a paid site, in the space: **Space settings › Access**,
+5. On a Free site, nothing to do. On a paid site, in the space: **Space settings › Access**,
    add the account as **Member**.
-5. In Jira, **Settings › Work items › Work item linking › Activate**, if it is off.
+6. In Jira, **Settings › Work items › Work item linking › Activate**, if it is off.
 
-Then fill in **Site URL**, **Space key** (the prefix on every work item: `KAN` in `KAN-1`),
+Then fill in **Site URL** (the address you open Jira at, up to `.atlassian.net`; with or
+without `https://`, and anything after it is ignored), **Space key** (the space's short code,
+not its name: `KAN` in `KAN-1`),
 **API token** and **Token expiry**, and press **Connect**. Ronin checks them and says what
 to fix, keeps the token with Services (it is never shown again), puts every work item in
 the Desk on the space assigned to the account, and runs the first sync. Then assign one work

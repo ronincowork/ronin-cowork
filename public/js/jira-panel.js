@@ -27,8 +27,9 @@ export function createJiraPanel(selected) {
   surface.content.append(notice.el, form);
   const when = (iso) => (iso ? new Date(iso).toLocaleString() : t('jira.never', 'never'));
 
-  /** The steps the user does in admin.atlassian.com and Jira (JIRA_CONNECT §2, steps 2–6). */
+  /** The steps the user does in admin.atlassian.com and Jira (JIRA_CONNECT §2, steps 2–6), after finding the site and space. */
   const WALKTHROUGH = () => [
+    t('jira.step_site', 'In Jira, open the space you want Ronin on. The address bar gives the Site URL (up to .atlassian.net); the space key is the short code before every work item number (KAN in KAN-1).'),
     t('jira.step_account', 'admin.atlassian.com › your organization › Directory › Service accounts › Create a service account. Any name, 6–30 characters. On Select app roles, give Jira the role User and leave every other app at None.'),
     t('jira.step_token', 'Open the account › Create credentials › API token. Any name; expiry up to 365 days. The Review page shows the expiry date: enter it below.'),
     t('jira.step_scopes', 'Scopes: read:jira-work, write:jira-work and read:jira-user. Create, copy, and paste the token below straight away. Scopes cannot be changed later; a missing one means a new token.'),
@@ -100,7 +101,7 @@ export function createJiraPanel(selected) {
     steps.body.append(read(t('jira.before_help', 'Keep this panel open while you make the account: the token goes straight into the field below.')), list);
 
     const fields = section(3, 'connect', t('jira.connect', 'Connect'));
-    const site = input('url', 'https://your-site.atlassian.net');
+    const site = input('text', 'https://your-site.atlassian.net');
     const space = input('text', 'KAN');
     const token = input('password');
     const expiry = input('date');
@@ -110,8 +111,8 @@ export function createJiraPanel(selected) {
     const ready = () => go.setDisabled(![site, space, token, expiry].every((node) => node.value.trim()));
     for (const node of [site, space, token, expiry]) node.addEventListener('input', ready);
     fields.body.append(
-      createField({ label: t('jira.site', 'Site URL'), control: site }).el,
-      createField({ label: t('jira.space', 'Space key'), control: space, description: t('jira.space_help', 'The prefix on every work item: KAN in KAN-1. Also in Space settings › Details.') }).el,
+      createField({ label: t('jira.site', 'Site URL'), control: site, description: t('jira.site_help', 'The address you open Jira at, up to .atlassian.net: https://your-site.atlassian.net. Copy it from any Jira page.') }).el,
+      createField({ label: t('jira.space', 'Space key'), control: space, description: t('jira.space_help', 'The space’s short code, not its name: KAN in KAN-1. Also in Space settings › Details.') }).el,
       createField({ label: t('jira.token', 'API token'), control: token, description: t('jira.token_help', 'Kept by Ronin with Services; never shown again.') }).el,
       createField({ label: t('jira.expiry', 'Token expiry'), control: expiry, description: t('jira.expiry_help', 'No call returns it: the date from the Review page.') }).el,
       read(t('jira.connect_warning', 'Connect puts every work item in this Desk on the space, assigned to the account. Then, in Jira, assign one work item to the account and press Sync now.')),

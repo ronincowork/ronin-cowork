@@ -20,6 +20,10 @@ test('the Jira panel is a Settings surface over the bridge routes alone', async 
   assert.doesNotMatch(panel, /fetch\(|\/api\/(?!jira|work-items\?campaign=)/);
   assert.match(panel, /result\.status === 404 \? \{ off: true \}/);
   assert.match(panel, /Services › Jira is off/);
+  // The two fields a new user gets wrong: the site's address and the space's code.
+  assert.match(panel, /t\('jira\.site_help', 'The address you open Jira at, up to \.atlassian\.net/);
+  assert.match(panel, /t\('jira\.space_help', 'The space’s short code, not its name/);
+  assert.match(panel, /const WALKTHROUGH = \(\) => \[\s*t\('jira\.step_site', 'In Jira, open the space you want Ronin on/);
   // The token goes out on PUT and is never read back into a field.
   assert.match(panel, /input\('password'\)/);
   assert.doesNotMatch(panel, /snap\.token(?!Expiry)|\.value = snap/);

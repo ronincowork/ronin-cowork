@@ -181,6 +181,7 @@ nothing paints exactly this.
 - **jira.sync_now:** Sync now
 - **jira.title:** Jira
 - **jira.never:** never
+- **jira.step_site:** In Jira, open the space you want Ronin on. The address bar gives the Site URL (up to .atlassian.net); the space key is the short code before every work item number (KAN in KAN-1).
 - **jira.step_account:** admin.atlassian.com › your organization › Directory › Service accounts › Create a service account. Any name, 6–30 characters. On Select app roles, give Jira the role User and leave every other app at None.
 - **jira.step_token:** Open the account › Create credentials › API token. Any name; expiry up to 365 days. The Review page shows the expiry date: enter it below.
 - **jira.step_scopes:** Scopes: read:jira-work, write:jira-work and read:jira-user. Create, copy, and paste the token below straight away. Scopes cannot be changed later; a missing one means a new token.
@@ -197,8 +198,9 @@ nothing paints exactly this.
 - **jira.connect:** Connect
 - **jira.connected:** Connected, and the first sync has run.
 - **jira.site:** Site URL
+- **jira.site_help:** The address you open Jira at, up to .atlassian.net: https://your-site.atlassian.net. Copy it from any Jira page.
 - **jira.space:** Space key
-- **jira.space_help:** The prefix on every work item: KAN in KAN-1. Also in Space settings › Details.
+- **jira.space_help:** The space’s short code, not its name: KAN in KAN-1. Also in Space settings › Details.
 - **jira.token:** API token
 - **jira.token_help:** Kept by Ronin with Services; never shown again.
 - **jira.expiry:** Token expiry
