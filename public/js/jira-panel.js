@@ -15,10 +15,27 @@ import { createStep, el } from './form-steps.js';
 import { itemStones } from './work-items-surface.js';
 
 const RENEW_DAYS = 14;
+/** Ronin's items, narrowest first: a change up this list is a widening. */
+const REACH = { off: 0, epics: 1, all: 2 };
 const DAY = 86_400_000;
 
 /** The folded groups of the items table, by epic id ('none' for no epic), shared by both hosts. */
 const FOLDED = new Set();
+
+/** Whether an item goes up under a choice of switches, as the bridge decides: one from Jira by
+ * Assigned items; one made in Ronin by Ronin's items, where 'epics' takes an epic or anything under one. */
+export function goesUp(item, byId, choice) {
+  if (item.created?.by?.startsWith('jira:')) return !!choice.assigned;
+  if (choice.ronin !== 'epics') return choice.ronin === 'all';
+  for (let at = item, seen = new Set(); at && !seen.has(at.id); seen.add(at.id), at = byId.get(at.parent)) if (at.level === 1) return true;
+  return false;
+}
+
+/** The open items worksurfaces, repainted when the panel changes what is on Jira or what goes up. */
+const SURFACES = new Set();
+function repaintSurfaces() {
+  for (const surface of SURFACES) if (surface.el.isConnected) void surface.load(); else SURFACES.delete(surface);
+}
 
 /** The Jira link for a key, or the key alone when there is no site yet. */
 function jiraKey(site, key) {
@@ -33,9 +50,11 @@ function jiraKey(site, key) {
  * worksurface). Rows run in the Work Items surface's order (itemStones' walk: each epic, its
  * items, their subtasks; then the items with no epic). An epic row heads its group; the
  * items with no epic in the Desk get a head row of their own. Children carry a tree mark.
- * A head row folds its group; the fold is remembered per epic.
+ * A head row folds its group; the fold is remembered per epic. The Jira column says where each
+ * item stands under `conn`'s choice (site, assigned, ronin): its key, goes up, or stays in Ronin.
  */
-export function renderJiraItems(items, site) {
+export function renderJiraItems(items, conn) {
+  const site = conn.site || '';
   const LEVEL = { 1: t('jira.level_epic', 'Epic'), 0: t('jira.level_task', 'Task'), '-1': t('jira.level_subtask', 'Subtask') };
   const byId = new Map(items.map((item) => [item.id, item]));
   const parentOf = (item) => byId.get(item.parent) || null;
@@ -105,7 +124,7 @@ export function renderJiraItems(items, site) {
     else holders.textContent = item.holder || '—';
     const pair = item.external?.jira;
     const jira = el('td');
-    jira.append(pair ? jiraKey(site, pair.key) : t('jira.goes_up', 'goes up at sync'));
+    jira.append(pair ? jiraKey(site, pair.key) : goesUp(item, byId, conn) ? t('jira.goes_up', 'goes up') : t('jira.stays', 'stays in Ronin'));
     row.append(el('td', null, LEVEL[item.level] ?? String(item.level)), el('td', null, item.kind || '—'), el('td', null, item.id), title,
       el('td', null, item.status), el('td', null, item.created?.by?.startsWith('jira:') ? 'Jira' : 'Ronin'), holders, jira);
     table.append(row);
@@ -113,7 +132,11 @@ export function renderJiraItems(items, site) {
   }
   for (const paint of heads) paint();
   wrap.append(table);
-  return wrap;
+  const on = items.filter((item) => item.external?.jira).length;
+  const go = items.filter((item) => !item.external?.jira && goesUp(item, byId, conn)).length;
+  const host = el('div', 'jira-items-host');
+  host.append(el('p', 'jira-read', t('jira.items_counts', '{on} on Jira · {go} to go · {stay} stay in Ronin', { on, go, stay: items.length - on - go })), wrap);
+  return host;
 }
 
 /** The table on its own worksurface, full width, placed from the panel's Open. */
@@ -129,10 +152,10 @@ export function createJiraItemsSurface(selected) {
     ]);
     // The same wrapper as the panel's, so the table reads at the same density in both hosts.
     const host = el('div', 'fs-steps jira-form');
-    host.append(renderJiraItems(listed.ok ? listed.data.items : [], conn.ok ? conn.data.site : ''));
+    host.append(renderJiraItems(listed.ok ? listed.data.items : [], conn.ok ? conn.data : {}));
     surface.content.replaceChildren(host);
   }
-  return { el: surface.el, enter: () => void load() };
+  return { el: surface.el, enter: () => { SURFACES.add({ el: surface.el, load }); void load(); } };
 }
 
 export function createJiraPanel(selected, { openItems = null } = {}) {
@@ -168,13 +191,26 @@ export function createJiraPanel(selected, { openItems = null } = {}) {
   };
   const read = (text) => el('p', 'jira-read', text);
   let renewShown = false;
+  let paintItems = null;
   // The switches before Connect go out with it. The up switches start off, so nothing goes
   // up until the owner says the items are ready; turning Ronin's items on later uploads them.
   const draft = { polling: true, assigned: false, ronin: 'off' };
 
   const campaign = () => selected()?.id || '';
   const api = (tail = '') => `/api/jira/${encodeURIComponent(campaign())}${tail}`;
-  const say = (problems, done) => notice.set(problems?.length ? 'failed' : 'success', problems?.length ? problems.join('\n') : done);
+  // A line where the owner pressed: what is running, then what came of it; it outlives the repaint.
+  const said = {};
+  const spots = {};
+  const spot = (key) => {
+    const line = createNotice();
+    spots[key] = line;
+    line.set(said[key]?.kind ?? '', said[key]?.text ?? '');
+    return line.el;
+  };
+  const tell = (key, kind, text) => { said[key] = { kind, text }; spots[key]?.set(kind, text); };
+  const byId = () => new Map(items.map((item) => [item.id, item]));
+  /** How many items not on Jira go up under a choice. */
+  const toGo = (choice) => { const map = byId(); return items.filter((item) => !item.external?.jira && goesUp(item, map, choice)).length; };
 
   const input = (type, placeholder = '') => {
     const node = el('input');
@@ -193,24 +229,32 @@ export function createJiraPanel(selected, { openItems = null } = {}) {
     paint();
   }
 
-  async function act(what, item = '') {
-    check.setDisabled(true); sync.setDisabled(true);
-    notice.set('info', what === 'check' ? t('jira.checking', 'Checking…') : t('jira.syncing', 'Syncing…'));
-    const result = what === 'check'
-      ? await request(api('/check'), { method: 'POST' })
-      : await request(api(item ? `/sync/${encodeURIComponent(item)}` : '/sync'), { method: 'POST' });
-    if (!result.ok && !result.data?.problems) notice.set('failed', result.message);
-    else if (what === 'check') say(result.data.problems, t('jira.all_good', 'Every check passes.'));
-    else notice.set('success', item ? t('jira.synced_one', '{item} synced.', { item }) : t('jira.synced', 'Synced.'));
+  /** Busy at once where the owner pressed: the button says so, the line at `key` says what runs;
+   *  on return the line says what came of it, and both hosts repaint. */
+  async function run(key, action, busy, doing, call, done) {
+    const label = action?.el.textContent;
+    if (action) { action.el.textContent = busy; action.setDisabled(true); }
+    tell(key, 'info', doing);
+    const result = await call();
+    const problems = result.data?.problems ?? [];
+    if (!result.ok && !problems.length) tell(key, 'failed', result.message);
+    else tell(key, problems.length ? 'failed' : 'success', problems.length ? problems.join('\n') : done);
+    if (action) { action.el.textContent = label; action.setDisabled(false); }
     await load();
+    repaintSurfaces();
   }
+  const post = (tail) => () => request(api(tail), { method: 'POST' });
+  const put = (body) => () => request(api(), { method: 'PUT', json: body });
 
-  async function put(body, done) {
-    notice.set('info', t('jira.saving', 'Saving…'));
-    const result = await request(api(), { method: 'PUT', json: body });
-    if (!result.ok) notice.set('failed', result.message);
-    else say(result.data.problems, done);
-    await load();
+  function act(what, item = '') {
+    const failed = snap.failed?.length ?? 0;
+    if (what === 'check') {
+      return run('sync', check, t('jira.checking', 'Checking…'), t('jira.checking_text', 'Checking the site, the account, the space and its permissions.'),
+        post('/check'), t('jira.all_good', 'Every check passes.'));
+    }
+    if (item) return run('sync', null, '', t('jira.syncing_one', 'Syncing {item} with Jira.', { item }), post(`/sync/${encodeURIComponent(item)}`), t('jira.synced_one', '{item} synced.', { item }));
+    return run('sync', sync, t('jira.syncing', 'Syncing…'), t('jira.syncing_text', 'Reading Jira, checking for deleted work items, then retrying {n} failed writes.', { n: failed }),
+      post('/sync'), t('jira.synced', 'Synced.'));
   }
 
   /* ---- Not connected: the walkthrough, then the four fields ---- */
@@ -228,7 +272,10 @@ export function createJiraPanel(selected, { openItems = null } = {}) {
     // A Connect that stopped at Check keeps what was entered: the fields come back filled, the token aside.
     site.value = snap.site || ''; space.value = snap.space?.key || ''; expiry.value = snap.tokenExpiry || '';
     const go = createAction({ label: t('jira.connect', 'Connect'), size: 'compact', kind: 'primary', disabled: true, action: () => {
-      void put({ site: site.value.trim(), space: space.value.trim(), token: token.value.trim(), expiry: expiry.value, ...draft }, t('jira.connected', 'Connected, and the first sync has run.'));
+      void run('connect', go, t('jira.connecting', 'Connecting…'),
+        t('jira.connecting_text', 'Checking the account, then sending {n} items, then the first read.', { n: toGo(draft) }),
+        put({ site: site.value.trim(), space: space.value.trim(), token: token.value.trim(), expiry: expiry.value, ...draft }),
+        t('jira.connected', 'Connected, and the first sync has run.'));
     } });
     const ready = () => go.setDisabled(![site, space, token, expiry].every((node) => node.value.trim()));
     for (const node of [site, space, token, expiry]) node.addEventListener('input', ready);
@@ -240,6 +287,7 @@ export function createJiraPanel(selected, { openItems = null } = {}) {
       createField({ label: t('jira.expiry', 'Token expiry'), control: expiry, description: t('jira.expiry_help', 'No call returns it: the date from the Review page.') }).el,
       read(t('jira.connect_warning', 'Connect puts on the space, assigned to the account, what Ronin’s items says: nothing (Off), epics and everything under them, or every work item. Then, in Jira, assign one work item to the account and press Sync now.')),
       createActionBar({ actions: [go] }).el,
+      spot('connect'),
     );
     return [steps.el, fields.el];
   }
@@ -248,7 +296,7 @@ export function createJiraPanel(selected, { openItems = null } = {}) {
   function connectionStep() {
     const step = section(2, 'connection', t('jira.connection', 'Connection'), `${snap.site} · ${snap.space?.key || ''}`);
     const days = snap.tokenExpiry ? Math.ceil((new Date(snap.tokenExpiry) - Date.now()) / DAY) : null;
-    step.body.append(createMetadata({ rows: [
+    step.body.append(spot('connect'), createMetadata({ rows: [
       [t('jira.site', 'Site URL'), snap.site],
       [t('jira.space', 'Space key'), snap.space?.key],
       [t('jira.account', 'Account'), snap.account],
@@ -264,13 +312,15 @@ export function createJiraPanel(selected, { openItems = null } = {}) {
     const renewal = createStep({ key: 'renew', title: t('jira.replace_token', 'Replace token'), onToggle: () => { open.renew = !open.renew; renewal.setCollapsed(!open.renew, ''); } });
     const token = input('password');
     const expiry = input('date');
-    const renew = createAction({ label: t('jira.replace_token', 'Replace token'), size: 'compact', disabled: true, action: () => void put({ token: token.value.trim(), expiry: expiry.value }, t('jira.token_replaced', 'Token replaced.')) });
+    const renew = createAction({ label: t('jira.replace_token', 'Replace token'), size: 'compact', disabled: true, action: () => void run('token', renew, t('jira.checking', 'Checking…'),
+      t('jira.replacing_text', 'Checking the new token, then the first read.'), put({ token: token.value.trim(), expiry: expiry.value }), t('jira.token_replaced', 'Token replaced.')) });
     const ready = () => renew.setDisabled(!token.value.trim() || !expiry.value);
     token.addEventListener('input', ready); expiry.addEventListener('input', ready);
     renewal.body.append(
       createField({ label: t('jira.new_token', 'New API token'), control: token }).el,
       createField({ label: t('jira.expiry', 'Token expiry'), control: expiry }).el,
       createActionBar({ actions: [renew] }).el,
+      spot('token'),
     );
     renewal.setCollapsed(!open.renew, '');
     const disconnect = createAction({ label: t('jira.disconnect', 'Disconnect'), size: 'compact', action: async () => {
@@ -278,6 +328,7 @@ export function createJiraPanel(selected, { openItems = null } = {}) {
       const result = await request(api(), { method: 'DELETE' });
       notice.set(result.ok ? 'success' : 'failed', result.ok ? t('jira.disconnected', 'Disconnected.') : result.message);
       await load();
+      repaintSurfaces();
     } });
     step.body.append(renewal.el, createActionBar({ actions: [disconnect] }).el);
     return step.el;
@@ -292,6 +343,7 @@ export function createJiraPanel(selected, { openItems = null } = {}) {
         [t('jira.pair_count', 'Pairs'), String(snap.pairCount ?? 0)],
         [t('jira.failed', 'Failed writes'), failed.length ? t('jira.failed_n', '{n}: Sync now tries them again.', { n: failed.length }) : '0'],
       ] }).el);
+    step.body.append(spot('sync'));
     for (const write of failed) step.body.append(el('p', 'fs-step-help', `${write.item} · ${write.line?.op} · ${write.error}`));
     if (snap.lastError) step.body.append(createNotice({ kind: 'failed', message: snap.lastError }).el);
     return step.el;
@@ -366,11 +418,14 @@ export function createJiraPanel(selected, { openItems = null } = {}) {
         value: { [field.key]: connected ? snap[field.key] : draft[field.key] }, density: 'tight',
         onChange: (value) => {
           const answer = field.switch ? value[field.key] === true : value[field.key];
-          if (connected) void put({ [field.key]: answer }, t('jira.saved', 'Saved.'));
-          else draft[field.key] = answer;
+          if (!connected) { draft[field.key] = answer; paintItems?.(); return; }
+          // Widening Ronin's items sends what newly qualifies; the line says how many.
+          const sends = field.key === 'ronin' && REACH[answer] > REACH[snap.ronin] ? toGo({ ...snap, ronin: answer }) : 0;
+          void run(field.key, null, '', sends ? t('jira.widening_text', 'Saving, then sending {n} items.', { n: sends }) : t('jira.saving', 'Saving…'),
+            put({ [field.key]: answer }), t('jira.saved', 'Saved.'));
         },
       });
-      step.body.append(one.el, read(text));
+      step.body.append(one.el, read(text), spot(field.key));
     }
     step.body.append(line(t('jira.how_sync', 'Sync now'), `${t('jira.last_check', 'Last check')} ${when(snap.lastCheck)}`, t('jira.how_sync_text', 'always reads: one read, the deleted-item check, and failed writes retried.')));
     return step.el;
@@ -382,10 +437,14 @@ export function createJiraPanel(selected, { openItems = null } = {}) {
     const paired = items.filter((item) => item.external?.jira).length;
     const step = section(n, 'items', t('jira.items', 'Work items by level'), t('jira.items_n', '{n} items · {p} paired', { n: items.length, p: paired }));
     step.body.append(read(snap.connected
-      ? t('jira.items_connected', 'Paired items show their Jira key; the rest go up at the next sync.')
-      : t('jira.items_preview', 'What Connect will put on the space, assigned to the account.')));
+      ? t('jira.items_connected', 'On Jira, the key; not yet, goes up if How it runs sends it, else stays in Ronin.')
+      : t('jira.items_preview', 'What Connect will put on the space, assigned to the account, under How it runs as set now.')));
     if (openItems) step.body.append(createActionBar({ actions: [createAction({ label: t('jira.open_items', 'Open'), size: 'compact', action: () => openItems() })] }).el);
-    step.body.append(renderJiraItems(items, snap.site));
+    // Before Connect the table follows the draft as it changes, without repainting the fields.
+    const host = el('div');
+    paintItems = () => host.replaceChildren(renderJiraItems(items, snap.connected ? snap : { site: snap.site, ...draft }));
+    paintItems();
+    step.body.append(host);
     return step.el;
   }
 

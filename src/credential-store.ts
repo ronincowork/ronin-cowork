@@ -24,6 +24,6 @@ export async function writeCredential(name: string, value: unknown): Promise<voi
   const file = credentialFile(name);
   await mkdir(path.dirname(file), { recursive: true });
   const temporary = `${file}.${process.pid}.tmp`;
-  await writeFile(temporary, JSON.stringify(value, null, 2) + '\n');
+  await writeFile(temporary, JSON.stringify(value, null, 2) + '\n', { mode: 0o600 });
   await rename(temporary, file);
 }

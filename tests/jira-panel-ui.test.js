@@ -13,7 +13,7 @@ test('the Jira panel is a Settings surface over the bridge routes alone', async 
   assert.match(campaign, /campaignJira: \(\) => enterable\(createJiraPanel\(selected\)\)/);
   assert.match(campaign, /\[TYPES\.jira, t\('jira\.title', 'Jira'\)\]/);
   // Only the bridge's own routes: GET, PUT, DELETE, check, sync, sync one.
-  assert.deepEqual([...new Set(panel.match(/api\([^)]*\)/g))].sort(), ['api()', "api('/check')", 'api(item ? `/sync/${encodeURIComponent(item)'].sort());
+  assert.deepEqual([...new Set(panel.match(/api\([^)]*\)/g))].sort(), ['api()', 'api(tail)'].sort());
   assert.match(panel, /`\/api\/jira\/\$\{encodeURIComponent\(campaign\(\)\)\}\$\{tail\}`/);
   for (const method of ['PUT', 'DELETE', 'POST']) assert.match(panel, new RegExp(`method: '${method}'`));
   // Besides its own routes, only the existing work-items list for the Desk.
@@ -38,7 +38,7 @@ test('the Jira panel is a Settings surface over the bridge routes alone', async 
   assert.match(panel, /ask\(\[\{ fields: \[field\] \}\]/);
   assert.match(panel, /step\.body\.append\(one\.el, read\(text\)\)/);
   assert.match(panel, /value: \{ \[field\.key\]: connected \? snap\[field\.key\] : draft\[field\.key\] \}/);
-  assert.match(panel, /else draft\[field\.key\] = answer;/);
+  assert.match(panel, /if \(!connected\) \{ draft\[field\.key\] = answer;/);
   // Ronin's items is a pick of three: off, under an epic, all; it starts off.
   assert.match(panel, /\{ v: 'off'[^}]*\},\s*\{ v: 'epics'[^}]*\},\s*\{ v: 'all'/);
   assert.match(panel, /const draft = \{ polling: true, assigned: false, ronin: 'off' \}/);
@@ -49,7 +49,11 @@ test('the Jira panel is a Settings surface over the bridge routes alone', async 
   assert.match(panel, /t\('jira\.assigned_text', 'Up, Ronin → Jira/);
   assert.match(panel, /t\('jira\.ronin_text', 'Up, Ronin → Jira/);
   assert.doesNotMatch(panel, /'take'/);
-  assert.match(panel, /put\(\{ \[key\]: value\[key\] === true \}/);
+  assert.match(panel, /put\(\{ \[field\.key\]: answer \}\)/);
+  // Busy at once where the owner pressed, the outcome on the same line, and both hosts repaint.
+  assert.match(panel, /async function run\(key, action, busy, doing, call, done\)/);
+  assert.match(panel, /t\('jira\.connecting_text', 'Checking the account, then sending \{n\} items, then the first read\.', \{ n: toGo\(draft\) \}\)/);
+  assert.match(panel, /await load\(\);\n    repaintSurfaces\(\);/);
   // Per pair: status on both sides, the last write in and out (the Bridge doc's panel).
   assert.match(panel, /el\('td', null, pair\.status\), el\('td', null, pair\.jiraStatus \|\| '—'\)/);
   assert.match(panel, /when\(pair\.lastIn\)\), el\('td', null, when\(pair\.lastOut\)\)/);
@@ -67,12 +71,14 @@ test('the Jira panel folds every section, reads at body size, and says how it ru
   assert.match(css, /\.jira-form > \.fs-step \+ \.fs-step \{ margin-top: var\(--space-paragraph\); \}/);
   for (const key of ['how_master', 'how_sync', 'polling_text', 'assigned_text', 'ronin_text']) assert.match(panel, new RegExp(`t\\('jira\\.${key}'`), key);
   // Work items by level: one table renderer in two hosts, in itemStones' order, epics heading groups.
-  assert.match(panel, /export function renderJiraItems\(items, site\)/);
+  assert.match(panel, /export function renderJiraItems\(items, conn\)/);
   assert.match(panel, /const stones = itemStones\(items\)/);
-  assert.match(panel, /step\.body\.append\(renderJiraItems\(items, snap\.site\)\)/);
-  assert.match(panel, /surface\.content\.replaceChildren\(renderJiraItems\(/);
+  assert.match(panel, /host\.replaceChildren\(renderJiraItems\(items, snap\.connected \? snap : \{ site: snap\.site, \.\.\.draft \}\)\)/);
+  assert.match(panel, /host\.append\(renderJiraItems\(listed\.ok \? listed\.data\.items : \[\], conn\.ok \? conn\.data : \{\}\)\)/);
   assert.doesNotMatch(panel, /createPhalanx/);
-  assert.match(panel, /t\('jira\.goes_up', 'goes up at sync'\)/);
+  // The Jira column: the key, goes up, or stays in Ronin under the choice; counted above the table.
+  assert.match(panel, /goesUp\(item, byId, conn\) \? t\('jira\.goes_up', 'goes up'\) : t\('jira\.stays', 'stays in Ronin'\)/);
+  assert.match(panel, /t\('jira\.items_counts', '\{on\} on Jira · \{go\} to go · \{stay\} stay in Ronin'/);
 });
 
 test('every Jira panel word is in the lexicon', async () => {

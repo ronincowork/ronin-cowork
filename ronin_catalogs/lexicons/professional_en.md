@@ -188,7 +188,7 @@ nothing paints exactly this.
 - **jira.col_created:** Created in
 - **jira.col_holders:** Holders
 - **jira.col_key:** Jira
-- **jira.goes_up:** goes up at sync
+- **jira.goes_up:** goes up
 - **jira.refresh:** Refresh
 - **jira.items:** Work items by level
 - **jira.check:** Check
@@ -267,11 +267,20 @@ nothing paints exactly this.
 - **jira.how_sync:** Sync now
 - **jira.how_sync_text:** always reads: one read, the deleted-item check, and failed writes retried.
 - **jira.items_n:** {n} items · {p} paired
-- **jira.items_connected:** Paired items show their Jira key; the rest go up at the next sync.
-- **jira.items_preview:** What Connect will put on the space, assigned to the account.
+- **jira.items_connected:** On Jira, the key; not yet, goes up if How it runs sends it, else stays in Ronin.
+- **jira.items_preview:** What Connect will put on the space, assigned to the account, under How it runs as set now.
 - **jira.open_items:** Open
 - **jira.off:** Services › Jira is off for this Desk. Turn it on in Installations › Ronin Services, then come back here.
 - **jira.card_summary:** This Desk’s Jira space: connect, check, sync.
+- **jira.stays:** stays in Ronin
+- **jira.items_counts:** {on} on Jira · {go} to go · {stay} stay in Ronin
+- **jira.checking_text:** Checking the site, the account, the space and its permissions.
+- **jira.syncing_one:** Syncing {item} with Jira.
+- **jira.syncing_text:** Reading Jira, checking for deleted work items, then retrying {n} failed writes.
+- **jira.connecting:** Connecting…
+- **jira.connecting_text:** Checking the account, then sending {n} items, then the first read.
+- **jira.replacing_text:** Checking the new token, then the first read.
+- **jira.widening_text:** Saving, then sending {n} items.
 
 ## campaign_home — campaign-home.js (the root arrival: Machine Settings, Teams, Launch)
 

@@ -66,14 +66,20 @@ item to the account in Jira and press **Sync now**.
   panel warns; make a new token, paste it in **Replace token** with its date, then revoke the
   old one in Atlassian. **Disconnect** drops every pair; nothing is deleted on either side.
 - **Check** runs the connection checks again. **Sync now** reads Jira, then retries failed
-  writes.
+  writes. Connect, Check, Sync now and a change to the switches show at once where you pressed:
+  the button says it is busy, a line says what is running, and then what came of it.
+  A change to an item that is not on Jira and that **How it runs** keeps in Ronin is not a
+  write, and never a failed one.
 - **Sync**: the last check, the pair count, the failed writes and the last error.
 - **Work items by level**: a table of the Desk's items in Work Items order: each epic heads
   its group, then its items, then their subtasks, marked with a tree; items with no epic come
   last under their own head. Columns: level, kind, Ronin id, title, status, where it was
-  created, holders (each Agent a link), and the Jira key as a link, or "goes up at sync".
-  Press an epic's row (or the **No epic** row) to fold its group; the fold is remembered.
-  **Open** puts the same table full width in the other workspace, at the same density.
+  created, holders (each Agent a link), and Jira: the key as a link once the item is on Jira,
+  "goes up" if **How it runs** sends it, or "stays in Ronin" if it does not. A line above
+  counts them: on Jira, to go, staying in Ronin. Before Connect the table follows the switches
+  as you set them. Press an epic's row (or the **No epic** row) to fold its group; the fold is
+  remembered. **Open** puts the same table full width in the other workspace, at the same
+  density; it repaints with the panel after Connect, Sync now or a change to the switches.
 - **Pairs**: one row per paired item, with its Jira key (a link), Ronin id, title, level and
   kind, where it started, its status in Ronin and in Jira (as of the last read), holders
   (each Agent a link), flagged, when a change last came in from Jira and last went out to
