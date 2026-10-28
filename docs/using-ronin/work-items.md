@@ -9,21 +9,22 @@ syntax.
 
 ## The structure
 
-Every work item has a level. The level says what it is.
+Every work item has a kind, and the kind has a level. The level says what it is.
 
 | Level | What it is |
 |---|---|
-| 1 | **epic**: holds a body of work |
-| 0 | **story, task, bug, feature**: the work itself |
-| -1 | **subtask**: one step inside a level-0 item |
+| 1 | **Epic**: holds a body of work |
+| 0 | **Task, Story, Bug, Feature**: the work itself |
+| -1 | **Subtask**: one step inside a level-0 item |
 
-The kind is the Jira work type's name, exactly: Story, Task, Bug and the space's own at level
-0. An item made with none takes its level's: Epic, Task or Subtask.
+The kind is the Jira work type's name, exactly; a Desk paired to a space uses the space's
+own. Setting the kind sets the level (`--kind Epic` makes an epic).
 
-The parent sets the level. A new item starts one level below its parent, or at 0 with no
-parent. Moving an item with `item edit <id> --parent <other>` moves its level too, and its
-children follow, each one level below its parent. Put a task under another task and it
-becomes a subtask. `--parent none` takes the parent away and leaves the level as it is.
+A new item starts one level below its parent, or at 0 with no parent, with its space's first
+kind there unless you name one. Moving an item with `item edit <id> --parent <other>` moves
+its level too, and its children follow, each one level below its parent; a kind at another
+level becomes the first kind at the new one. Put a task under another task and it becomes a
+Subtask. `--parent none` takes the parent away and leaves the level as it is.
 
 There is one rule: nothing goes below -1. If a move would push any item there, it fails
 with one line, such as "w39 can't go there." Choose another parent.
@@ -34,13 +35,16 @@ No parent is normal. Not every task belongs to an epic.
 
 - **title**: a short name anyone can read at a glance.
 - **objective**: what done looks like. Change it when the job changes.
-- **kind**: the label at level 0 (`--kind Bug`).
+- **kind**: the work type (`--kind Bug`); it sets the level.
 - **status**: where the work stands (below).
 - **flagged**: the item is stuck. The reason is a comment.
-- **priority**: any name your Team uses, or blank.
+- **priority**: Highest, High, Medium, Low or Lowest, or the site's own; a new item is Medium,
+  as every Jira work item is.
 - **comments**: who, when and what. The running account of the work.
-- **attachments**: documents that belong to the item. They show in the tile's Docs.
-- **links**: this item **blocks** another, or **relates** to it.
+- **attachments**: documents that belong to the item, by path; they show in the tile's Docs.
+  A file kept in Jira is its Jira link.
+- **links**: by Jira's link type name: this item **Blocks** another, **Relates** to it, is a
+  **Duplicate**, or **Cloners**.
 - **external keys**: the item's key in Trello or GitHub (`--github 123`). Blank clears it. An
   item paired with Jira shows its Jira key (`PAY-123`); the Jira bridge keeps that pair.
 
@@ -49,8 +53,9 @@ children, comments, attachments, links and history.
 
 ## Status
 
-Ronin uses Jira's status and kind exactly, with no mapping (owner ruling, 2026-10-28). A status
-is a Jira status name. Unconnected, a Desk has Jira's defaults, in workflow order:
+Status, kind, priority and link type are Jira's names exactly, with no mapping; anything else
+is refused, and the refusal names the ones there are. Unconnected, a Desk has Jira's
+statuses, in workflow order:
 
 | Status | Means |
 |---|---|
@@ -59,20 +64,20 @@ is a Jira status name. Unconnected, a Desk has Jira's defaults, in workflow orde
 | In Review | Handed in, ready for someone to look at. |
 | Done | Accepted. |
 
-A Desk paired to a Jira space uses that space's statuses. Kind is a Jira work type name; an
-item made with none takes Jira's default for its level: Epic (1), Task (0), Subtask (-1).
+A Desk paired to a Jira space uses that space's names, and a new item starts at the space's
+first status.
 
 Agents move their items themselves with `item transition <id> "<status>"`, by name. Any status
 to any status is allowed. Two moves are made for them: a hand-in that names the item
 (`worktree-desk hand-in <repo> --item <id>`) moves it to In Review, and the promotion that
-carries that hand-in moves it to Done. An item paired to Jira is the exception: promotion
+carries that hand-in moves it to Done, each only where the space has that status. An item paired to Jira is the exception: promotion
 leaves it as it is, and it is Done only when the Jira user moves it to Done, which comes back
 by polling. A hand-in that names no item moves no status.
 
 ## The item tool
 
 ```text
-item create --title "…" [--kind Task] [--parent w3] [--level 1|0|-1] [--objective "…"] [--priority High]
+item create --title "…" [--kind Task] [--parent w3] [--objective "…"] [--priority High]
 item read w12                       # fields, children, comments, attachments, links, history
 item search [--campaign home_machine] [--team surface] [--holder builder | none] [--parent w3 | --no-parent] [--status "In Progress"] [--kind Bug]
 item edit w12 --objective "…" --priority High
@@ -81,8 +86,8 @@ item flag w12 "waiting on the API"  # item unflag w12 when clear
 item assign w12 builder             # adds builder; or team:surface
 item handoff w12 builder            # the giver comes off; or team:surface, or none
 item comment w12 "…"                # --edit <n> changes one
-item attach w12 docs/plan.md        # --remove <path> takes it off
-item link w12 blocks w14            # or relates; --remove takes it off
+item attach w12 docs/plan.md        # or a link; --remove <path> takes it off
+item link w12 Blocks w14            # or Relates, Duplicate, Cloners; --remove takes it off
 item delete w12                     # with its subtasks
 ```
 
@@ -137,7 +142,7 @@ item unflag w12 "Shape agreed; see the comment above"
 **Held up by another item: link it.** The link reads from the item that does the blocking.
 
 ```text
-item link w15 blocks w12
+item link w15 Blocks w12
 ```
 
 **Keep the objective true.** If the job changes, `item edit w12 --objective "<new>"`.

@@ -5,7 +5,7 @@ import { casRef, isAncestor, mergeInto, revParse, worktreeAddDetached, worktreeR
 import { withLineLock } from './queue.js';
 import { candidateWorktree, deskStatus, lineFor, readDesk, updateDesk } from './registry.js';
 import { appendReceipt, newReceiptId } from './receipts.js';
-import { editItem, type Acknowledged } from '../work-items.js';
+import { WorkItemBadInput, editItem, type Acknowledged } from '../work-items.js';
 import type { DeskNotice, DeskStatus, HandInReceipt, HandInResult, RepoArrangement } from './schema.js';
 
 export interface HandInTidy {
@@ -118,16 +118,21 @@ export async function handIn(repo: string, branch: string, opts: { maxRetries?: 
 }
 
 /** One hand-in call over one or more desks. When it names a work item and any desk was
- * accepted, the item moves to "In Review" once, the accepted receipts on its trail. */
+ * accepted, the item moves to the space's "In Review" once, the accepted receipts on its
+ * trail; a space with no such status leaves it, and `unmoved` says why. */
 export async function handInAssignment(assignment: { desks: Array<{ repo: string; branch: string }>; projectId?: string; session: string }): Promise<{
   outcomes: HandInOutcome[];
   moved: Acknowledged | null;
+  unmoved?: string;
 }> {
   const outcomes: HandInOutcome[] = [];
   for (const d of assignment.desks) outcomes.push(await handIn(d.repo, d.branch, { projectId: assignment.projectId }));
   const accepted = outcomes.filter(({ receipt }) => receipt.result === 'accepted').map(({ receipt }) => receipt.id);
-  const moved = assignment.projectId && accepted.length
-    ? await editItem(assignment.projectId, { status: 'In Review' }, assignment.session, `hand-in ${accepted.join(', ')}`)
-    : null;
-  return { outcomes, moved };
+  if (!assignment.projectId || !accepted.length) return { outcomes, moved: null };
+  try {
+    return { outcomes, moved: await editItem(assignment.projectId, { status: 'In Review' }, assignment.session, `hand-in ${accepted.join(', ')}`) };
+  } catch (error) {
+    if (!(error instanceof WorkItemBadInput)) throw error;
+    return { outcomes, moved: null, unmoved: error.message };
+  }
 }

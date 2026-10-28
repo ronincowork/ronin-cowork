@@ -64,7 +64,6 @@ function jiraKey(site, key) {
  */
 export function renderJiraItems(items, conn) {
   const site = conn.site || '';
-  const LEVEL = { 1: t('jira.level_epic', 'Epic'), 0: t('jira.level_task', 'Task'), '-1': t('jira.level_subtask', 'Subtask') };
   const byId = new Map(items.map((item) => [item.id, item]));
   const parentOf = (item) => byId.get(item.parent) || null;
   const ancestors = (item) => {
@@ -76,8 +75,8 @@ export function renderJiraItems(items, conn) {
   const groupOf = (item) => { const top = ancestors(item)[0] ?? item; return top.level === 1 ? top.id : 'none'; };
   // What a filterable column says of an item: the value its menu shows or hides.
   const VALUE = {
-    level: (item) => LEVEL[item.level] ?? String(item.level),
-    kind: (item) => item.kind || '—',
+    level: (item) => String(item.level),
+    kind: (item) => item.kind,
     status: (item) => item.status || '—',
     created: (item) => (item.created?.by?.startsWith('jira:') ? 'Jira' : 'Ronin'),
     jira: (item) => (item.external?.jira ? t('jira.on_jira', 'on Jira') : goesUp(item, byId, conn) ? t('jira.goes_up', 'goes up') : t('jira.stays', 'stays in Ronin')),
@@ -166,7 +165,7 @@ export function renderJiraItems(items, conn) {
     const pair = item.external?.jira;
     const jira = el('td');
     jira.append(pair ? jiraKey(site, pair.key) : goesUp(item, byId, conn) ? t('jira.goes_up', 'goes up') : t('jira.stays', 'stays in Ronin'));
-    row.append(el('td', null, LEVEL[item.level] ?? String(item.level)), el('td', null, item.kind || '—'), el('td', null, item.id), title,
+    row.append(el('td', null, String(item.level)), el('td', null, item.kind), el('td', null, item.id), title,
       el('td', null, item.status), el('td', null, item.created?.by?.startsWith('jira:') ? 'Jira' : 'Ronin'), holders, jira);
     table.append(row);
     if (item.level === 1) heads.push(heading(row, item.id, row.firstChild));
@@ -228,7 +227,7 @@ export function renderJiraPairs(snap, resync) {
   wrap.append(table);
   const paintRows = () => {
     const head = el('tr');
-    for (const word of [t('jira.col_key', 'Jira'), t('jira.col_id', 'Ronin'), t('jira.col_title', 'Title'), t('jira.col_kind', 'Level · kind'), t('jira.col_started', 'Started in'), t('jira.col_status_only', 'Status'), t('jira.col_holders', 'Holders'), t('jira.col_flagged', 'Flagged'), t('jira.col_last_in', 'Last in'), t('jira.col_last_out', 'Last out'), t('jira.col_failed', 'Failed'), '']) head.append(el('th', null, word));
+    for (const word of [t('jira.col_key', 'Jira'), t('jira.col_id', 'Ronin'), t('jira.col_title', 'Title'), t('jira.col_kind', 'Level · kind'), t('jira.col_started', 'Started in'), t('jira.col_status_only', 'Status'), t('jira.col_holders', 'Holders'), t('jira.col_flagged', 'Flagged'), t('jira.col_last_in', 'Last in'), t('jira.col_last_out', 'Last out'), t('jira.col_waiting', 'Waiting'), '']) head.append(el('th', null, word));
     table.replaceChildren(head);
     const needle = PAIRS_FILTER.toLowerCase();
     for (const pair of snap.pairs || []) {
@@ -245,11 +244,10 @@ export function renderJiraPairs(snap, resync) {
         holders.append(agent);
       });
       const again = createAction({ label: t('jira.resync', 'Re-sync'), size: 'compact', action: () => void resync(pair.id) });
-      const failed = (snap.failed || []).filter((write) => write.item === pair.id).map((write) => write.line?.op).join(', ');
       const cell = (content) => { const td = el('td'); td.append(content); return td; };
-      row.append(cell(jiraKey(snap.site, pair.key)), el('td', null, pair.id), el('td', null, pair.title), el('td', null, `${pair.level} · ${pair.kind || '—'}`),
+      row.append(cell(jiraKey(snap.site, pair.key)), el('td', null, pair.id), el('td', null, pair.title), el('td', null, `${pair.level} · ${pair.kind}`),
         el('td', null, pair.started === 'jira' ? 'Jira' : 'Ronin'), el('td', null, pair.status), holders,
-        el('td', null, pair.flagged ? t('jira.flagged', 'Flagged') : ''), el('td', null, when(pair.lastIn)), el('td', null, when(pair.lastOut)), el('td', null, failed), cell(again.el));
+        el('td', null, pair.flagged ? t('jira.flagged', 'Flagged') : ''), el('td', null, when(pair.lastIn)), el('td', null, when(pair.lastOut)), el('td', null, (pair.waiting || []).join(', ')), cell(again.el));
       table.append(row);
     }
   };
@@ -319,9 +317,9 @@ export function createJiraPanel(selected, { openItems = null, openPairs = null }
   const read = (text) => el('p', 'jira-read', text);
   let renewShown = false;
   let paintItems = null;
-  // The switches before Connect go out with it. The up switches start off, so nothing goes
-  // up until the owner says the items are ready; turning Ronin's items on later uploads them.
-  const draft = { polling: true, assigned: false, ronin: 'off' };
+  // The switches before Connect go out with it, as the bridge starts them: Ronin's items off,
+  // so nothing made in Ronin goes up until the owner says the items are ready.
+  const draft = { polling: true, assigned: true, ronin: 'off' };
 
   const campaign = () => selected()?.id || '';
   const api = (tail = '') => `/api/jira/${encodeURIComponent(campaign())}${tail}`;
@@ -374,13 +372,12 @@ export function createJiraPanel(selected, { openItems = null, openPairs = null }
   const put = (body) => () => request(api(), { method: 'PUT', json: body });
 
   function act(what, item = '') {
-    const failed = snap.failed?.length ?? 0;
     if (what === 'check') {
       return run('sync', check, t('jira.checking', 'Checking…'), t('jira.checking_text', 'Checking the site, the account, the space and its permissions.'),
         post('/check'), t('jira.all_good', 'Every check passes.'));
     }
     if (item) return run('sync', null, '', t('jira.syncing_one', 'Syncing {item} with Jira.', { item }), post(`/sync/${encodeURIComponent(item)}`), t('jira.synced_one', '{item} synced.', { item }));
-    return run('sync', sync, t('jira.syncing', 'Syncing…'), t('jira.syncing_text', 'Reading Jira, checking for deleted work items, then retrying {n} failed writes.', { n: failed }),
+    return run('sync', sync, t('jira.syncing', 'Syncing…'), t('jira.syncing_text', 'Checking the space, reading Jira, sending what is waiting, then checking for deleted work items.'),
       post('/sync'), t('jira.synced', 'Synced.'));
   }
 
@@ -461,18 +458,19 @@ export function createJiraPanel(selected, { openItems = null, openPairs = null }
     return step.el;
   }
 
+  /** A failed sync says so in Jira's words, with what is waiting to go up; the next tick tries again. */
   function syncStep() {
     const step = section(3, 'sync', t('jira.sync', 'Sync'), `${t('jira.last_check', 'Last check')} · ${when(snap.lastCheck)}`);
-    const failed = snap.failed || [];
+    const waiting = (snap.pairs || []).filter((pair) => pair.waiting?.length);
     step.body.append(
       createMetadata({ rows: [
         [t('jira.last_check', 'Last check'), when(snap.lastCheck)],
         [t('jira.pair_count', 'Pairs'), String(snap.pairCount ?? 0)],
-        [t('jira.failed', 'Failed writes'), failed.length ? t('jira.failed_n', '{n}: Sync now tries them again.', { n: failed.length }) : '0'],
+        [t('jira.waiting', 'Waiting to go up'), String(waiting.length)],
       ] }).el);
     step.body.append(spot('sync'));
-    for (const write of failed) step.body.append(el('p', 'fs-step-help', `${write.item} · ${write.line?.op} · ${write.error}`));
-    if (snap.lastError) step.body.append(createNotice({ kind: 'failed', message: snap.lastError }).el);
+    if (snap.lastError) step.body.append(createNotice({ kind: 'failed', message: `${t('jira.sync_failed', 'Sync failed')}: ${snap.lastError}` }).el);
+    for (const pair of waiting) step.body.append(el('p', 'fs-step-help', `${pair.id} ${pair.key} · ${pair.waiting.join(', ')}`));
     return step.el;
   }
 
@@ -519,7 +517,7 @@ export function createJiraPanel(selected, { openItems = null, openPairs = null }
       });
       step.body.append(one.el, read(text), spot(field.key));
     }
-    step.body.append(line(t('jira.how_sync', 'Sync now'), `${t('jira.last_check', 'Last check')} ${when(snap.lastCheck)}`, t('jira.how_sync_text', 'always reads: one read, the deleted-item check, and failed writes retried.')));
+    step.body.append(line(t('jira.how_sync', 'Sync now'), `${t('jira.last_check', 'Last check')} ${when(snap.lastCheck)}`, t('jira.how_sync_text', 'always reads: the space checked, one read, what is waiting sent, and the deleted-item check.')));
     return step.el;
   }
 

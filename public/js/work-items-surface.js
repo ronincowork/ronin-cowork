@@ -10,7 +10,6 @@ import { t } from './lexicon.js';
 export const WORK_ITEMS_TYPE = 'work-items';
 /** Jira's flag: an impediment, marked the same way on every surface. */
 export const FLAG_MARK = '⚑';
-const KIND_OF_LEVEL = { 1: 'Epic', 0: 'Task', '-1': 'Subtask' };
 
 const el = (tag, cls = '', text = '') => {
   const out = document.createElement(tag); out.className = cls; out.textContent = text; return out;
@@ -56,7 +55,7 @@ export function itemStones(items, { all = items, holder = () => '' } = {}) {
     return {
       id: item.id, item, group, label: item.title || item.id,
       secondary: owner ? `@${owner}` : '',
-      state: [item.id, item.kind || KIND_OF_LEVEL[item.level] || '', item.status, item.flagged ? FLAG_MARK : ''].filter(Boolean).join(' · '),
+      state: [item.id, item.kind, item.status, item.flagged ? FLAG_MARK : ''].filter(Boolean).join(' · '),
       className: `wi-level-${item.level === 1 ? 'epic' : item.level === -1 ? 'subtask' : 'item'}${item.flagged ? ' wi-flagged' : ''}`,
       attrs: { 'data-item': item.id }, draggable: true,
       events: { dragstart: (event) => carryItem(event.dataTransfer, item) }, // onto a tile: the item's reference
@@ -67,7 +66,7 @@ export function itemStones(items, { all = items, holder = () => '' } = {}) {
 /** One item's reading: objective, priority, comments, attachments (each opens), links and history. */
 export function renderItemDetail(host, item, { holder = '', openAttachment = null } = {}) {
   host.append(el('h2', '', item.title || item.id),
-    el('p', 'wi-meta', [item.id, item.kind || KIND_OF_LEVEL[item.level] || '', item.status, item.flagged ? `${FLAG_MARK} ${t('work_items.flagged', 'flagged')}` : ''].filter(Boolean).join(' · ')),
+    el('p', 'wi-meta', [item.id, item.kind, item.status, item.flagged ? `${FLAG_MARK} ${t('work_items.flagged', 'flagged')}` : ''].filter(Boolean).join(' · ')),
     el('p', 'wi-objective', item.objective || ''));
   const facts = el('dl', 'wi-facts');
   for (const [label, value] of [
@@ -89,9 +88,12 @@ export function renderItemDetail(host, item, { holder = '', openAttachment = nul
   }));
   section(t('work_items.attachments', 'Attachments'), (item.attachments || []).map((path) => {
     const row = el('li');
-    const open = el(openAttachment ? 'button' : 'span', 'wi-attachment', path.split('/').pop());
+    // A file kept in Jira is its link, opened there; a path opens here.
+    const link = /^https?:\/\//.test(path);
+    const open = el(link ? 'a' : openAttachment ? 'button' : 'span', 'wi-attachment', decodeURIComponent(path.split('/').pop()));
     open.title = path;
-    if (openAttachment) { open.type = 'button'; open.addEventListener('click', () => openAttachment(path)); }
+    if (link) { open.href = path; open.target = '_blank'; open.rel = 'noopener'; }
+    else if (openAttachment) { open.type = 'button'; open.addEventListener('click', () => openAttachment(path)); }
     row.append(open);
     return row;
   }));

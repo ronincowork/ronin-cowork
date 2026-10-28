@@ -6,21 +6,25 @@ TOOL_DIR=$(dirname "$SELF")
 die() { echo "$1" >&2; exit "${2:-2}"; }
 usage() { cat <<'EOF_USAGE'
 Usage:
-  item create --title <t> [--kind <type>] [--parent <id>] [--level 1|0|-1] [--objective <o>] [--priority <p>]
+  item create --title <t> [--kind <type>] [--parent <id>] [--objective <o>] [--priority <p>]
   item read <id>
   item search [--campaign <id>] [--team <t>] [--holder <name>|none] [--parent <id>|--no-parent] [--status <s>] [--kind <k>]
-  item edit <id> --title|--objective|--kind|--level|--parent <id|none>|--priority|--trello|--github <value> ...
-  item transition <id> "<status>"      a Jira status name: "To Do", "In Progress", "In Review", "Done", or the space's own
+  item edit <id> --title|--objective|--kind|--parent <id|none>|--priority|--trello|--github <value> ...
+  item transition <id> "<status>"
   item assign <id> <agent>|team:<name>
   item handoff <id> <agent>|team:<name>|none
   item flag <id> [<why>]              item unflag <id> [<comment>]
   item comment <id> <text>            item comment <id> --edit <n> <text>
-  item attach <id> <path>             item attach <id> --remove <path>
-  item link <id> blocks|relates <id> [--remove]
+  item attach <id> <path>|<url>       item attach <id> --remove <path>|<url>
+  item link <id> <type> <id> [--remove]
   item delete <id>
-level: 1 epic, 0 story/task/bug/feature, -1 subtask; a new item is one below its parent.
---parent sets the parent and the level together (to none, the level stays). The one rule:
-nothing goes below -1; children follow their parent ("w39 can't go there.").
+Status, kind, priority and link type are the space's own names, exactly; unconnected,
+Jira's: To Do, In Progress, In Review, Done; Epic, Task, Story, Bug, Feature, Subtask;
+Highest, High, Medium, Low, Lowest; Blocks, Relates, Duplicate, Cloners. Anything else is
+refused, naming the set. The kind sets the level: 1 Epic, 0 Task/Story/Bug/Feature,
+-1 Subtask; a new item is one below its parent, and --parent moves it there (to none, the
+level stays). The one rule: nothing goes below -1; children follow their parent
+("w39 can't go there.").
 delete takes the item's subtasks with it; an epic's other children are left with no parent.
 --trello, --github set an external key; blank clears. Every change adds a trail line.
 Related: work-record --help; team --help
@@ -43,7 +47,7 @@ print(json.dumps(d))' "$BY" "$@"; }
 json() { python3 -c 'import json,sys; a=sys.argv[1:]; print(json.dumps(dict(zip(a[::2], a[1::2]))))' by "$BY" "$@"; }
 verb=$1; shift
 case "$verb" in
-  create) body=$(fields title,objective,parent,level,kind,priority "$@") || exit 2; ronin_item_call POST /api/work-items "$body"; exit $? ;;
+  create) body=$(fields title,objective,parent,kind,priority "$@") || exit 2; ronin_item_call POST /api/work-items "$body"; exit $? ;;
   search)
     q=''
     while [ "$#" -gt 0 ]; do
@@ -59,7 +63,7 @@ id=${1:-}; [ -n "$id" ] || die "BAD-ARG: item $verb needs the item's id"; shift
 case "$verb" in
   read) [ "$#" -eq 0 ] || die 'BAD-ARG: item read takes only <id>'; ronin_item_call GET "/api/work-items/$id" ;;
   edit) [ "$#" -ge 2 ] || die 'BAD-ARG: item edit takes <id> --field <value> ...'
-    body=$(fields title,objective,level,kind,parent,priority,trello,github "$@") || exit 2; ronin_item_call PUT "/api/work-items/$id" "$body" ;;
+    body=$(fields title,objective,kind,parent,priority,trello,github "$@") || exit 2; ronin_item_call PUT "/api/work-items/$id" "$body" ;;
   transition) [ "$#" -eq 1 ] || die 'BAD-ARG: item transition takes <id> <status>'
     ronin_item_call POST "/api/work-items/$id/transition" "$(json status "$1")" ;;
   assign) [ "$#" -eq 1 ] || die 'BAD-ARG: item assign takes <id> <agent>|team:<name>'
@@ -88,13 +92,14 @@ case "$verb" in
     ronin_item_call POST "/api/work-items/$id/$verb" "$(json ${1:+comment "$1"})" ;;
   attach)
     remove=''; [ "${1:-}" = --remove ] && { remove=true; shift; }
-    [ "$#" -eq 1 ] || die 'BAD-ARG: item attach takes <id> [--remove] <path>'
-    # Resolved here, against the caller's cwd: the item stores the absolute path.
-    ronin_item_call POST "/api/work-items/$id/attach" "$(json path "$(python3 -c 'import os,sys; print(os.path.abspath(os.path.expanduser(sys.argv[1])))' "$1")" ${remove:+remove true})" ;;
+    [ "$#" -eq 1 ] || die 'BAD-ARG: item attach takes <id> [--remove] <path>|<url>'
+    # A path is resolved here, against the caller's cwd: the item stores the absolute path.
+    case "$1" in http://*|https://*) at=$1 ;; *) at=$(python3 -c 'import os,sys; print(os.path.abspath(os.path.expanduser(sys.argv[1])))' "$1") ;; esac
+    ronin_item_call POST "/api/work-items/$id/attach" "$(json path "$at" ${remove:+remove true})" ;;
   link)
     remove=''; args=()
     for a in "$@"; do [ "$a" = --remove ] && remove=true || args+=("$a"); done
-    [ "${#args[@]}" -eq 2 ] || die 'BAD-ARG: item link takes <id> blocks|relates <id> [--remove]'
+    [ "${#args[@]}" -eq 2 ] || die 'BAD-ARG: item link takes <id> <type> <id> [--remove], the type as the space names it (Blocks)'
     ronin_item_call POST "/api/work-items/$id/link" "$(json type "${args[0]}" to "${args[1]}" ${remove:+remove true})" ;;
   delete) [ "$#" -eq 0 ] || die 'BAD-ARG: item delete takes only <id>'
     ronin_item_call DELETE "/api/work-items/$id" "$(json)" ;;

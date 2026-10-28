@@ -14,18 +14,19 @@ them true as you go, never only at the end. `item --help` has the exact syntax.
 
 | Level | What it is |
 |---|---|
-| 1 | **epic**: holds a body of work |
-| 0 | **story, task, bug, feature**: the work itself; the kind is only a label |
-| -1 | **subtask**: one step inside a level-0 item |
+| 1 | **Epic**: holds a body of work |
+| 0 | **Task, Story, Bug, Feature**: the work itself |
+| -1 | **Subtask**: one step inside a level-0 item |
 
-The parent sets the level: a new item starts one level below its parent, or at 0 with none,
+The kind sets the level. A new item starts one level below its parent, or at 0 with none,
 and `item edit <id> --parent <other>` moves it with its children. No parent is normal.
 The one rule: nothing goes below -1. A move that would push an item there fails.
 
 ### Status
 
-Status and kind are Jira's own names, exactly. Unconnected, the statuses are Jira's defaults;
-a Desk paired to a Jira space uses that space's.
+Status, kind, priority and link type are Jira's own names, exactly; anything else is
+refused, naming the ones there are. Unconnected, they are Jira's defaults; a Desk paired to
+a Jira space uses that space's.
 
 | Status | Means | Moved by |
 |---|---|---|
@@ -45,7 +46,7 @@ no item moves no status.
 - **Attach** what you wrote for it: `item attach w12 <path>`. People reach what you attach.
 - **File side work** as its own item (`item create --kind Bug …`), never inside the one you hold.
 - **Flag** when stuck: `item flag w12 "<why>"`; `item unflag` when moving again.
-- **Link** what holds you up, from the blocking item: `item link w15 blocks w12`.
+- **Link** what holds you up, from the blocking item: `item link w15 Blocks w12`.
 - **Keep the objective true:** `item edit w12 --objective "…"` when the job changes.
 - **Finish:** `worktree-desk hand-in <repo> --item w12`; it moves the item to In Review.
 

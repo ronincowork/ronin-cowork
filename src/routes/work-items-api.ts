@@ -43,8 +43,6 @@ export function holderFrom(body: Record<string, unknown> | undefined): Holder {
   return team ? { kind: 'team', name: team } : { kind: 'agent', name: session! };
 }
 
-/** The tool sends words: "-1" is a level. Anything else is passed on as it came, for the store to name. */
-const levelOf = (value: unknown): number | undefined => value === undefined || value === null || value === '' ? undefined : /^-?\d+$/.test(String(value)) ? Number(value) : value as number;
 /** "none" or blank is no parent. */
 const parentOf = (value: unknown): string | null => { const id = text(value)?.trim(); return id && id !== 'none' ? id : null; };
 
@@ -78,12 +76,12 @@ export function registerWorkItems(app: express.Express): void {
     const parent = text(req.query.parent)?.trim();
     const orphans = Boolean(text(req.query.no_parent));
     const status = text(req.query.status)?.trim().toLowerCase();
-    const kind = text(req.query.kind)?.trim();
+    const kind = text(req.query.kind)?.trim().toLowerCase();
     const campaign = text(req.query.campaign)?.trim();
     const narrow = <T extends WorkItem & { holder?: string }>(items: T[]): T[] => items.filter((item) =>
       (!holder || (holder === 'none' && !item.holder) || item.holder === `agent:${holder}` || item.holder === `team:${holder}` || item.holder === holder)
       && (!parent || item.parent === parent) && (!orphans || !item.parent)
-      && (!status || item.status.toLowerCase() === status) && (!kind || (item.kind ?? '') === kind)
+      && (!status || item.status.toLowerCase() === status) && (!kind || item.kind.toLowerCase() === kind)
       && (!campaign || item.campaign_id === campaign));
     if (session) { const reading = await agentReading(session); return res.json({ ok: true, ...reading, items: narrow(reading.items) }); }
     if (team) {
@@ -96,7 +94,7 @@ export function registerWorkItems(app: express.Express): void {
   app.post('/api/work-items', guarded(async (req, res) => {
     const b = req.body ?? {};
     acknowledge(res, await createItem({
-      title: text(b.title) ?? '', objective: text(b.objective), status: text(b.status), kind: text(b.kind), level: levelOf(b.level), priority: text(b.priority), parent: text(b.parent) || null,
+      title: text(b.title) ?? '', objective: text(b.objective), status: text(b.status), kind: text(b.kind), priority: text(b.priority), parent: text(b.parent) || null,
       ...(b.team || b.session ? { holder: holderFrom(b) } : {}),
     }, callerOf(req)));
   }));
@@ -115,7 +113,7 @@ export function registerWorkItems(app: express.Express): void {
     const b = req.body ?? {};
     const external = Object.fromEntries((['trello', 'github'] as const).filter((key) => b[key] !== undefined).map((key) => [key, text(b[key]) ?? '']));
     acknowledge(res, await editItem(req.params.id, {
-      title: text(b.title), objective: text(b.objective), kind: text(b.kind), level: levelOf(b.level), priority: text(b.priority),
+      title: text(b.title), objective: text(b.objective), kind: text(b.kind), priority: text(b.priority),
       ...(b.parent !== undefined ? { parent: parentOf(b.parent) } : {}),
       ...(Object.keys(external).length ? { external } : {}),
       ...(b.jira !== undefined ? { jira: jiraOf(b.jira) } : {}),
@@ -125,7 +123,7 @@ export function registerWorkItems(app: express.Express): void {
   // Jira's transition: any status to any status, one trail line. Edit does not set it.
   app.post('/api/work-items/:id/transition', guarded(async (req, res) => {
     const status = text(req.body?.status)?.trim();
-    if (!status) throw new WorkItemBadInput('name the status as Jira names it: To Do, In Progress, In Review, Done or the space\'s own.');
+    if (!status) throw new WorkItemBadInput('name the status, one of the space\'s.');
     acknowledge(res, await editItem(req.params.id, { status }, callerOf(req), text(req.body?.note)));
   }));
   // Assign adds a holder and removes nobody.

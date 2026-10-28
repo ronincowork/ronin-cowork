@@ -47,11 +47,14 @@ export function buildWorkRecord(letter, deskEntry = null, { openDoc = null } = {
         line('wr-action', [item.id, item.status, item.flagged ? `⚑ ${t('work_items.flagged', 'flagged')}` : ''].filter(Boolean).join(' · ')));
       for (const path of item.attachments || []) {
         // Where the reader can open a document (the tile's menu), each one is a press.
-        const doc = document.createElement(openDoc ? 'button' : 'p');
+        // A file kept in Jira is its link, opened there.
+        const link = /^https?:\/\//.test(path);
+        const doc = document.createElement(link ? 'a' : openDoc ? 'button' : 'p');
         doc.className = 'wr-doc';
-        doc.textContent = path.split('/').pop();
+        doc.textContent = decodeURIComponent(path.split('/').pop());
         doc.title = path;
-        if (openDoc) { doc.type = 'button'; doc.addEventListener('click', () => openDoc(path)); }
+        if (link) { doc.href = path; doc.target = '_blank'; doc.rel = 'noopener'; }
+        else if (openDoc) { doc.type = 'button'; doc.addEventListener('click', () => openDoc(path)); }
         row.appendChild(doc);
       }
       held.appendChild(row);

@@ -6,10 +6,11 @@
  * exactly one line to the item's trail, naming who called. Nothing is locked against
  * anyone: holding is discovery, never permission. One refusal: nothing goes below -1 (follow).
  *
- * THE SHAPE MATCHES JIRA (docs/using-ronin/work-items.md). One object
- * at every level: `level` 1 epic · 0 story/task/bug · -1 subtask, stored; `kind` any work
- * type name; `status` the item's state; `flagged` an impediment; `priority` any name;
- * `comments` a list; `links` blocks or relates.
+ * THE SHAPE MATCHES JIRA (docs/using-ronin/work-items.md). One object at every level, and one
+ * exact value (Lab JIRA_RONIN_BRIDGE keystone 10): `status`, `kind`, `priority` and a link's
+ * `type` are the space's own names (spaceNames), anything else refused naming the set;
+ * `level` is the kind's level (1 epic · 0 story, task, bug · -1 subtask); `flagged` an
+ * impediment; `comments` a list.
  *
  * One file per item, <store>/<id>.json, written beside and renamed over. Ids come from one
  * global issuer (w1, w2, …) under one in-process lock that every write shares, so a trail
@@ -28,17 +29,10 @@ import { initialCampaignId } from './campaign-scope.js';
 import { listSessions } from './tmux.js';
 import { emitItemChanged } from './sockets.js';
 
-/** Status is a Jira status name (owner ruling, 2026-10-28: exactly Jira's, no mapping). A
- * connected campaign's are its space's; these are Jira's defaults, in workflow order. */
-export const DEFAULT_STATUSES = ['To Do', 'In Progress', 'In Review', 'Done'] as const;
-/** Kind is a Jira work type name; an item made with none takes Jira's default name for its level. */
-export const KIND_OF_LEVEL: Record<number, string> = { 1: 'Epic', 0: 'Task', [-1]: 'Subtask' };
 export const ITEM_LEVELS = [1, 0, -1] as const;
-export const LINK_TYPES = ['blocks', 'relates'] as const;
 export const TRAIL_OPS = ['create', 'assign', 'handoff', 'release', 'move', 'status', 'edit', 'comment', 'flag', 'attach', 'link', 'holder-ended'] as const;
 
 export type ItemLevel = typeof ITEM_LEVELS[number];
-export type LinkType = typeof LINK_TYPES[number];
 export type TrailOp = typeof TRAIL_OPS[number];
 
 export interface TrailLine { at: string; by: string; op: TrailOp; from?: string; to?: string; note?: string }
@@ -47,26 +41,66 @@ export interface TrailLine { at: string; by: string; op: TrailOp; from?: string;
 export interface JiraPair { id: string; key: string }
 export interface External { trello?: string; jira?: JiraPair; github?: string }
 export interface Comment { by: string; at: string; text: string; edited?: string }
-/** Jira's issue link, kept on the item it starts from: this item blocks, or relates to, `to`. */
-export interface Link { type: LinkType; to: string }
+/** Jira's issue link, kept on the item it starts from: `type` is the link type's name (Blocks: this item blocks `to`). */
+export interface Link { type: string; to: string }
+
+/** A space's own names: what status, kind (with its level), priority and link type may be. */
+export interface SpaceNames {
+  statuses: string[];
+  kinds: Array<{ name: string; level: ItemLevel }>;
+  priorities: string[];
+  /** The priority a new work item holds. */
+  priority: string;
+  links: string[];
+}
+/** Jira's defaults, for a campaign no space has named. Statuses in workflow order; the first
+ * kind at a level is the one a new item there takes. */
+export const JIRA_NAMES: SpaceNames = {
+  statuses: ['To Do', 'In Progress', 'In Review', 'Done'],
+  kinds: [{ name: 'Epic', level: 1 }, { name: 'Task', level: 0 }, { name: 'Story', level: 0 }, { name: 'Bug', level: 0 }, { name: 'Feature', level: 0 }, { name: 'Subtask', level: -1 }],
+  priorities: ['Highest', 'High', 'Medium', 'Low', 'Lowest'],
+  priority: 'Medium',
+  links: ['Blocks', 'Relates', 'Duplicate', 'Cloners'],
+};
+const SPACES = new Map<string, SpaceNames>();
+/** The Jira bridge names a connected campaign's space here (null when it disconnects). */
+export function setSpaceNames(campaign: string, names: SpaceNames | null): void {
+  if (names) SPACES.set(campaign, names); else SPACES.delete(campaign);
+}
+export const spaceNames = (campaign: string): SpaceNames => SPACES.get(campaign) ?? JIRA_NAMES;
+
+/** The value as named, or a refusal naming the set. */
+function oneOf(what: string, value: string, names: string[]): string {
+  if (!names.includes(value)) throw new WorkItemBadInput(`${what} is one of ${names.join(', ')}; not "${value}".`);
+  return value;
+}
+const kindAt = (names: SpaceNames, level: number): string => {
+  const kind = names.kinds.find((one) => one.level === level);
+  if (!kind) throw new WorkItemBadInput(`the space has no work type at level ${level}.`);
+  return kind.name;
+};
+const levelOfKind = (names: SpaceNames, kind: string): ItemLevel => {
+  oneOf('kind', kind, names.kinds.map((one) => one.name));
+  return names.kinds.find((one) => one.name === kind)!.level;
+};
 
 export interface WorkItem {
   id: string;
   campaign_id: string;
   title: string;
   objective: string;
-  /** 1 epic · 0 story, task or bug · -1 subtask. A default at birth, never derived. */
+  /** The kind's level: 1 epic · 0 story, task or bug · -1 subtask. */
   level: ItemLevel;
-  /** Any work type name (story, task, bug, feature, a site's own); absent reads as blank. */
-  kind?: string;
-  /** A Jira status name. */
+  /** The space's work type name. */
+  kind: string;
+  /** The space's status name. */
   status: string;
   flagged: boolean;
-  /** Any priority name; absent reads as blank. */
-  priority?: string;
+  /** The space's priority name. */
+  priority: string;
   comments: Comment[];
   parent: string | null;
-  /** Absolute paths, as Jira's attachments. */
+  /** Absolute paths, or the Jira link of a file kept in Jira. */
   attachments: string[];
   links: Link[];
   external: External;
@@ -87,9 +121,6 @@ export const isItemId = (value: string): boolean => ID.test(value);
 
 const dir = () => storeDir('work_items');
 const fileOf = (id: string) => path.join(dir(), `${id}.json`);
-
-const member = <T extends readonly unknown[]>(values: T, value: unknown): value is T[number] =>
-  (values as readonly unknown[]).includes(value);
 
 let tail: Promise<unknown> = Promise.resolve();
 /** The issuer lock. Every item and holder write runs inside it, one at a time. */
@@ -181,7 +212,7 @@ export interface NewItem {
   objective?: string;
   status?: string;
   parent?: string | null;
-  level?: number;
+  /** The space's work type name; with none, the space's first at one below the parent (0 with none). */
   kind?: string;
   /** Held from birth by this Team or Agent, in the same call and the same trail line. */
   holder?: Holder;
@@ -191,15 +222,10 @@ export interface NewItem {
   jira?: JiraPair;
 }
 
-function checkFields(fields: { status?: unknown; level?: unknown }): void {
-  if (fields.status !== undefined && !String(fields.status).trim()) throw new WorkItemBadInput('name the status, as Jira names it: To Do, In Progress, In Review, Done or the space\'s own.');
-  if (fields.level !== undefined && !member(ITEM_LEVELS, fields.level)) throw new WorkItemBadInput('level must be 1, 0 or -1.');
-}
-
 /** One below the parent, 0 with none (Jira's hierarchy). A default, never a guard. */
 const levelUnder = (parent: WorkItem | null): ItemLevel => parent ? (parent.level - 1) as ItemLevel : 0;
 
-/** THE ONE RULE (owner, 2026-10-22): nothing goes below -1. On a create, move or level
+/** THE ONE RULE (owner, 2026-10-22): nothing goes below -1. On a create, move or kind
  * write the item takes its new level and its children follow, each one below its own
  * parent; if any would land below -1 the act fails in one line: "w39 can't go there."
  * Nothing else is checked. That covers anything under a subtask, a move under one's own
@@ -219,12 +245,15 @@ async function follow(item: WorkItem, parent: string | null, level: number): Pro
   return out;
 }
 
-/** The children follow: each takes its new level, with one trail line saying why. */
+/** The children follow: each takes its new level, and the space's first kind there when its
+ * own is at another level, with one trail line saying why. */
 async function settle(moved: Array<{ child: WorkItem; level: number }>, item: WorkItem, by: string): Promise<void> {
   for (const { child, level } of moved) {
     const next = await load(child.id);
+    const names = spaceNames(next.campaign_id);
     next.level = level as ItemLevel;
-    const line = lineOf(by, 'edit', { note: `level ${level}, following ${item.id}` });
+    if (names.kinds.find((one) => one.name === next.kind)?.level !== level) next.kind = kindAt(names, level);
+    const line = lineOf(by, 'edit', { note: `level ${level}, kind ${next.kind}, following ${item.id}` });
     next.trail.push(line);
     await save(next);
     emitItemChanged({ item: next, line });
@@ -232,7 +261,7 @@ async function settle(moved: Array<{ child: WorkItem; level: number }>, item: Wo
 }
 
 const blank = (title: string, by: string): WorkItem => ({
-  id: '', campaign_id: '', title, objective: '', level: 0, status: DEFAULT_STATUSES[0], flagged: false, comments: [], parent: null,
+  id: '', campaign_id: '', title, objective: '', level: 0, kind: '', status: '', flagged: false, priority: '', comments: [], parent: null,
   attachments: [], links: [], external: {}, trail: [], created: { at: new Date().toISOString(), by: by.trim() || 'unknown' },
 });
 
@@ -273,22 +302,24 @@ async function announceUnheld(item: WorkItem, by: string): Promise<string[]> {
 export async function createItemUnlocked(input: NewItem, by: string): Promise<Acknowledged> {
   const title = String(input.title ?? '').trim();
   if (!title) throw new WorkItemBadInput('A work item needs a title.');
-  checkFields(input);
   const parent = input.parent ? await load(input.parent) : null;
+  const campaign_id = input.campaign_id ?? (await listSessions()).find((session) => session.name === by)?.campaign_id ?? await initialCampaignId();
+  const names = spaceNames(campaign_id);
+  const named = input.kind?.trim();
   const item: WorkItem = {
     ...blank(title, by),
     id: await nextId(),
-    campaign_id: input.campaign_id ?? (await listSessions()).find((session) => session.name === by)?.campaign_id ?? await initialCampaignId(),
+    campaign_id,
     objective: String(input.objective ?? '').trim(),
-    level: (input.level as ItemLevel | undefined) ?? levelUnder(parent),
-    status: input.status?.trim() || DEFAULT_STATUSES[0],
-    ...(input.priority?.trim() ? { priority: input.priority.trim() } : {}),
+    level: named ? levelOfKind(names, named) : levelUnder(parent),
+    status: oneOf('status', input.status?.trim() || names.statuses[0]!, names.statuses),
+    priority: oneOf('priority', input.priority?.trim() || names.priority, names.priorities),
     parent: parent?.id ?? null,
     attachments: input.attachments ?? [],
     external: input.jira ? { jira: { id: input.jira.id, key: input.jira.key } } : {},
   };
-  item.kind = input.kind?.trim() || KIND_OF_LEVEL[item.level];
   await follow(item, item.parent, item.level);
+  item.kind = named || kindAt(names, item.level);
   const list = input.holder ? await listFor(input.holder) : null;
   await save(item);
   if (list) { await list.set([...list.holds, item.id]); await ackHolds([input.holder ?? null], by); }
@@ -303,7 +334,7 @@ export async function createItemUnlocked(input: NewItem, by: string): Promise<Ac
 export const createItem = (input: NewItem, by: string) => withIssuer(() => createItemUnlocked(input, by));
 
 export interface ItemEdit {
-  title?: string; objective?: string; status?: string; level?: number; kind?: string; priority?: string;
+  title?: string; objective?: string; status?: string; kind?: string; priority?: string;
   /** A new parent id, or null for none; absent leaves it. Parent is a field, as in Jira. */
   parent?: string | null;
   external?: { trello?: string; github?: string };
@@ -312,19 +343,24 @@ export interface ItemEdit {
 }
 
 /** One call, one trail line. A lone status change is named by its own op (a transition), a
- * lone parent change by move ("w39 moved under w40, level -1"); anything else is edit. A new
- * parent sets the level one below it, or leaves it with none (Jira's convert/move), unless
- * the level is named too; the children follow under the one rule (follow). */
+ * lone parent change by move ("w39 moved under w40, level -1"); anything else is edit. A kind
+ * sets the level; a new parent with no kind named sets the level one below it, or leaves it
+ * with none (Jira's convert/move), and the kind becomes the space's first at that level. The
+ * children follow under the one rule (follow). */
 export function editItem(id: string, edit: ItemEdit, by: string, note?: string): Promise<Acknowledged> {
-  checkFields(edit);
   if (edit.title !== undefined && !String(edit.title).trim()) throw new WorkItemBadInput('title cannot be empty.');
   return withIssuer(async () => {
     const current = await load(id);
+    const names = spaceNames(current.campaign_id);
+    if (edit.status !== undefined) oneOf('status', edit.status.trim(), names.statuses);
+    if (edit.priority !== undefined) oneOf('priority', edit.priority.trim(), names.priorities);
     const reparent = edit.parent !== undefined && edit.parent !== current.parent;
     const under = reparent && edit.parent ? await load(edit.parent) : null;
     const parent = reparent ? under?.id ?? null : current.parent;
-    const level = (edit.level as ItemLevel | undefined) ?? (under ? levelUnder(under) : current.level);
-    const children = reparent || edit.level !== undefined ? await follow(current, parent, level) : [];
+    const named = edit.kind?.trim();
+    const level = named ? levelOfKind(names, named) : under ? levelUnder(under) : current.level;
+    const children = level !== current.level || reparent ? await follow(current, parent, level) : [];
+    const kind = named || (level === current.level ? current.kind : kindAt(names, level));
     const done = await appendTrail(id, by, (item) => {
       const changed: string[] = [];
       const before = item.status;
@@ -334,12 +370,9 @@ export function editItem(id: string, edit: ItemEdit, by: string, note?: string):
       if (edit.title !== undefined && edit.title.trim() !== item.title) { item.title = edit.title.trim(); changed.push('title'); }
       if (edit.objective !== undefined && edit.objective.trim() !== item.objective) { item.objective = edit.objective.trim(); changed.push('objective'); }
       if (edit.status !== undefined && edit.status.trim() !== item.status) { item.status = edit.status.trim(); changed.push(`status ${item.status}`); }
-      for (const key of ['kind', 'priority'] as const) {
-        const value = edit[key]?.trim();
-        if (value === undefined || value === (item[key] ?? '')) continue;
-        if (value) item[key] = value; else delete item[key];
-        changed.push(`${key} ${item[key] ?? 'blank'}`);
-      }
+      if (kind !== item.kind) { item.kind = kind; changed.push(`kind ${kind}`); }
+      const priority = edit.priority?.trim();
+      if (priority !== undefined && priority !== item.priority) { item.priority = priority; changed.push(`priority ${priority}`); }
       if (edit.jira !== undefined && JSON.stringify(edit.jira ?? undefined) !== JSON.stringify(item.external.jira)) {
         if (edit.jira) item.external.jira = { id: edit.jira.id, key: edit.jira.key }; else delete item.external.jira;
         changed.push(`jira ${item.external.jira?.key ?? 'cleared'}`);
@@ -351,7 +384,7 @@ export function editItem(id: string, edit: ItemEdit, by: string, note?: string):
       }
       const said = note || undefined;
       if (changed.length === 1 && changed[0]!.startsWith('status ')) return { op: 'status', from: before, to: item.status, note: said };
-      if (reparent && changed.every((what) => /^(parent|level) /.test(what))) return { op: 'move', from, to: parent ?? 'none', note: `level ${item.level}` };
+      if (reparent && changed.every((what) => /^(parent|level|kind) /.test(what))) return { op: 'move', from, to: parent ?? 'none', note: `level ${item.level}` };
       return { op: 'edit', note: [said, changed.length ? changed.join(', ') : 'no change'].filter(Boolean).join('; ') };
     });
     await settle(children, done.item, by);
@@ -393,10 +426,11 @@ export async function editComment(id: string, n: number, words: string, by: stri
   }));
 }
 
-/** Attachments live on the item, as paths. A path is absolute and must exist when attached. */
+/** Attachments live on the item: an absolute path that exists when attached, or a link (a file kept in Jira). */
 function attachment(target: string, remove: boolean): string {
   const at = String(target ?? '').trim();
   if (!at) throw new WorkItemBadInput('name the document to attach.');
+  if (/^https?:\/\//.test(at)) return at;
   if (!path.isAbsolute(at)) throw new WorkItemBadInput(`${at} is not an absolute path.`);
   if (!remove) {
     if (!existsSync(at)) throw new WorkItemBadInput(`no such file: ${at}`);
@@ -414,18 +448,17 @@ export async function attachDoc(id: string, target: string, by: string, remove =
   }));
 }
 
-/** Jira's issue link: this item blocks, or relates to, another. Kept on this item; a read of
- * the other shows it inward. */
+/** Jira's issue link, by the space's link type name (Blocks: this item blocks `to`). Kept on
+ * this item; a read of the other shows it inward. */
 export async function linkItem(id: string, type: string, to: string, by: string, remove = false): Promise<Acknowledged> {
-  if (!member(LINK_TYPES, type)) throw new WorkItemBadInput('a link is blocks or relates.');
   return withIssuer(async () => {
+    oneOf('a link', type, spaceNames((await load(id)).campaign_id).links);
     await load(to);
     return appendTrail(id, by, (item) => {
       const same = (link: Link) => link.type === type && link.to === to;
       if (remove) item.links = item.links.filter((link) => !same(link));
       else if (!item.links.some(same)) item.links.push({ type, to });
-      const phrase = type === 'blocks' ? `blocks ${to}` : `relates to ${to}`;
-      return { op: 'link', to, note: remove ? `${phrase}: link removed` : phrase };
+      return { op: 'link', to, note: `${type} ${to}${remove ? ': link removed' : ''}` };
     });
   });
 }
@@ -612,81 +645,30 @@ export function releaseHolder(session: string, key: string, how: string): Promis
   });
 }
 
-/** Ronin's old statuses, before 2026-10-28, to Jira's default names: the migration's one map. */
-const OLD_STATUS: Record<string, string> = { IDEA: 'To Do', PLAN: 'To Do', BUILD: 'In Progress', REVIEW: 'In Review', LAND: 'In Review', DONE: 'Done' };
-
-/** The one place that knows the shape items had before 2026-10-22, for the migration
- * (docs/using-ronin/work-items.md): `stage` is the status, a red colour is flagged, `exit`, the other colours and the
- * ladder are dropped, `docs` is `attachments`, an evidence line on the trail is a comment,
- * no level reads 0. */
-function toShape(raw: Record<string, unknown>, campaign_id: string): WorkItem {
-  const { stage, exit: _exit, ladder: _ladder, docs, attachments, status, flagged, level, kind, priority, comments, links, trail, ...rest } = raw;
-  void _exit; void _ladder;
-  const lines = (Array.isArray(trail) ? trail : []) as TrailLine[];
-  const evidence = lines.filter((line) => (line.op as string) === 'evidence');
-  return {
-    ...(rest as unknown as WorkItem),
-    campaign_id,
-    level: member(ITEM_LEVELS, level) ? level : 0,
-    kind: typeof kind === 'string' && kind ? kind : KIND_OF_LEVEL[member(ITEM_LEVELS, level) ? level : 0],
-    ...(typeof priority === 'string' && priority ? { priority } : {}),
-    comments: [...(Array.isArray(comments) ? comments as Comment[] : []), ...evidence.map((line) => ({ by: line.by, at: line.at, text: line.note ?? '' }))],
-    attachments: (Array.isArray(attachments) ? attachments : Array.isArray(docs) ? docs : []) as string[],
-    links: Array.isArray(links) ? links as Link[] : [],
-    // Before 2026-10-22 the status was `stage` and `status` a colour; after, one of the old six; now a Jira name.
-    status: stage !== undefined ? OLD_STATUS[String(stage)] ?? DEFAULT_STATUSES[0]
-      : OLD_STATUS[String(status)] ?? (typeof status === 'string' && status ? status : DEFAULT_STATUSES[0]),
-    flagged: typeof flagged === 'boolean' ? flagged : status === 'red',
-    external: externalOf(rest.external),
-    trail: lines.map((line) => (line.op as string) === 'evidence' ? { ...line, op: 'comment' } : line),
-  };
+/** The Jira bridge's word to an item's holding Agents, when a change of theirs was not sent. */
+export async function tellHolders(id: string, text: string): Promise<void> {
+  for (const holder of await holdersOf(id)) if (holder.kind === 'agent') await enqueueMessage(holder.name, text, 'house', 'Work items');
 }
 
-/** A jira key stored as a string becomes the pair with no id yet: { id: '', key }. */
-function externalOf(raw: unknown): External {
-  const external = (raw && typeof raw === 'object' ? { ...raw } : {}) as Record<string, unknown>;
-  if (typeof external.jira === 'string') external.jira = { id: '', key: external.jira };
-  return external as External;
-}
-
-const inJiraShape = (raw: Record<string, unknown>): boolean =>
-  'level' in raw && 'flagged' in raw && Array.isArray(raw.comments) && Array.isArray(raw.links) && Array.isArray(raw.attachments)
-  && !('docs' in raw) && !('stage' in raw) && !('exit' in raw) && !('ladder' in raw)
-  && !(Array.isArray(raw.trail) && raw.trail.some((line) => (line as TrailLine | null)?.op as string === 'evidence'))
-  && typeof (raw.external as External | undefined)?.jira !== 'string'
-  && typeof raw.kind === 'string' && !!raw.kind && typeof raw.status === 'string' && !(raw.status in OLD_STATUS);
-
-/* THE ONE MIGRATION (docs/using-ronin/work-items.md and Lab JIRA_RONIN_BRIDGE.md), at first start: every item file in the Jira
- * shape (toShape); an item with children gets level 1, every other 0; the Unfiled epic (or
- * the "Common" root) goes and its items have no parent; kind stays as stored. An item
- * already in shape is stamped home_machine once. After it, only the current shape exists;
- * a second run changes nothing. Holder lists are not touched: an id left on one names nothing. */
-export function migrateItems(by = 'ronin', campaign_id = 'home_machine'): Promise<{ before: number; after: number; migrated: string[]; removed: string[] }> {
+/* THE ONE MIGRATION, at server start: kind, priority and link type take Jira's own name where
+ * one matches but for case (task → Task, high → High, blocks → Blocks); an item with no
+ * priority takes Jira's default; the level is the kind's. A second run changes nothing. */
+export function migrateItems(by = 'ronin'): Promise<{ before: number; migrated: string[] }> {
   return withIssuer(async () => {
-    let names: string[] = [];
-    try { names = await readdir(dir()); } catch { return { before: 0, after: 0, migrated: [], removed: [] }; }
-    const raws = new Map<string, Record<string, unknown>>();
-    for (const name of names) {
-      const id = name.endsWith('.json') ? name.slice(0, -5) : '';
-      if (isItemId(id)) raws.set(id, JSON.parse(await readFile(fileOf(id), 'utf8')) as Record<string, unknown>);
-    }
-    const before = raws.size;
-    const removed = [...raws].filter(([, raw]) => raw.parent === null && (raw.title === 'Unfiled' || raw.title === 'Common') && !('level' in raw)).map(([id]) => id);
-    for (const id of removed) { await rm(fileOf(id)); raws.delete(id); }
-    const parents = new Set([...raws.values()].map((raw) => raw.parent));
+    const items = await listItems();
+    const exact = (names: string[], value: string) => names.find((name) => name.toLowerCase() === value.toLowerCase()) ?? value;
     const migrated: string[] = [];
-    for (const [id, raw] of raws) {
-      const unfiled = removed.includes(String(raw.parent));
-      if (inJiraShape(raw) && 'campaign_id' in raw && !unfiled) continue;
-      const item = toShape(
-        { ...raw, ...('level' in raw ? {} : { level: parents.has(id) ? 1 : 0 }) },
-        typeof raw.campaign_id === 'string' ? raw.campaign_id : campaign_id,
-      );
-      if (unfiled) item.parent = null;
-      item.trail.push(lineOf(by, 'edit', { note: `migrated to the Jira shape${unfiled ? `; ${raw.parent} (Unfiled) was removed, so no parent` : ''}` }));
+    for (const item of items) {
+      const was = JSON.stringify(item);
+      item.kind = exact(JIRA_NAMES.kinds.map((one) => one.name), item.kind ?? '');
+      item.level = JIRA_NAMES.kinds.find((one) => one.name === item.kind)?.level ?? item.level;
+      item.priority = item.priority ? exact(JIRA_NAMES.priorities, item.priority) : JIRA_NAMES.priority;
+      item.links = item.links.map((link) => ({ ...link, type: exact(JIRA_NAMES.links, link.type) }));
+      if (JSON.stringify(item) === was) continue;
+      item.trail.push(lineOf(by, 'edit', { note: `Jira's names: kind ${item.kind}, priority ${item.priority}${item.links.length ? `, links ${item.links.map((link) => link.type).join(', ')}` : ''}` }));
       await save(item);
-      migrated.push(id);
+      migrated.push(item.id);
     }
-    return { before, after: raws.size, migrated, removed };
+    return { before: items.length, migrated };
   });
 }

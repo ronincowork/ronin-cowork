@@ -177,9 +177,6 @@ nothing paints exactly this.
 
 ## jira — jira-panel.js (the Jira panel in Settings: connect, check, sync, the pairs)
 
-- **jira.level_epic:** Epic
-- **jira.level_task:** Task
-- **jira.level_subtask:** Subtask
 - **jira.col_level:** Level
 - **jira.col_kind_only:** Kind
 - **jira.col_id:** Ronin
@@ -232,8 +229,8 @@ nothing paints exactly this.
 - **jira.sync:** Sync
 - **jira.last_check:** Last check
 - **jira.pair_count:** Pairs
-- **jira.failed:** Failed writes
-- **jira.failed_n:** {n}: Sync now tries them again.
+- **jira.waiting:** Waiting to go up
+- **jira.sync_failed:** Sync failed
 - **jira.pairs:** Pairs
 - **jira.pairs_n:** {n} pairs
 - **jira.filter:** Filter: key, id, title, status, holder
@@ -242,7 +239,7 @@ nothing paints exactly this.
 - **jira.col_flagged:** Flagged
 - **jira.col_last_in:** Last in
 - **jira.col_last_out:** Last out
-- **jira.col_failed:** Failed
+- **jira.col_waiting:** Waiting
 - **jira.resync:** Re-sync
 - **jira.flagged:** Flagged
 - **jira.filter_label:** Filter
@@ -263,7 +260,7 @@ nothing paints exactly this.
 - **jira.how_master_text:** the master switch, in Installations; off, nothing moves.
 - **jira.saved:** Saved.
 - **jira.how_sync:** Sync now
-- **jira.how_sync_text:** always reads: one read, the deleted-item check, and failed writes retried.
+- **jira.how_sync_text:** always reads: the space checked, one read, what is waiting sent, and the deleted-item check.
 - **jira.items_n:** {n} items · {p} paired
 - **jira.items_connected:** On Jira, the key; not yet, goes up if How it runs sends it, else stays in Ronin.
 - **jira.items_preview:** What Connect will put on the space, assigned to the account, under How it runs as set now.
@@ -275,7 +272,7 @@ nothing paints exactly this.
 - **jira.items_counts:** {on} on Jira · {go} to go · {stay} stay in Ronin
 - **jira.checking_text:** Checking the site, the account, the space and its permissions.
 - **jira.syncing_one:** Syncing {item} with Jira.
-- **jira.syncing_text:** Reading Jira, checking for deleted work items, then retrying {n} failed writes.
+- **jira.syncing_text:** Checking the space, reading Jira, sending what is waiting, then checking for deleted work items.
 - **jira.connecting:** Connecting…
 - **jira.connecting_text:** Checking the account, then sending {n} items, then the first read.
 - **jira.replacing_text:** Checking the new token, then the first read.

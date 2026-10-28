@@ -36,7 +36,7 @@ test('the Jira panel is a Settings surface over the bridge routes alone', async 
   assert.match(panel, /if \(!connected\) \{ draft\[field\.key\] = answer;/);
   // Ronin's items is a pick of three: off, under an epic, all; it starts off.
   assert.match(panel, /\{ v: 'off'[^}]*\},\s*\{ v: 'epics'[^}]*\},\s*\{ v: 'all'/);
-  assert.match(panel, /const draft = \{ polling: true, assigned: false, ronin: 'off' \}/);
+  assert.match(panel, /const draft = \{ polling: true, assigned: true, ronin: 'off' \}/);
   // A head row folds its group in both hosts, remembered per epic.
   assert.match(panel, /const FOLDED = new Set\(\);/);
   assert.match(panel, /expiry: expiry\.value, \.\.\.draft \}/);
@@ -68,7 +68,6 @@ test('the Jira panel folds every section, reads at body size, and says how it ru
   assert.match(panel, /export function renderJiraItems\(items, conn\)/);
   assert.match(panel, /const stones = itemStones\(items\)/);
   assert.match(panel, /host\.replaceChildren\(renderJiraItems\(items, snap\.connected \? snap : \{ site: snap\.site, \.\.\.draft \}\)\)/);
-  assert.match(panel, /host\.append\(renderJiraItems\(listed\.ok \? listed\.data\.items : \[\], conn\.ok \? conn\.data : \{\}\)\)/);
   assert.doesNotMatch(panel, /createPhalanx/);
   // The Jira column: the key, goes up, or stays in Ronin under the choice; counted above the table.
   assert.match(panel, /goesUp\(item, byId, conn\) \? t\('jira\.goes_up', 'goes up'\) : t\('jira\.stays', 'stays in Ronin'\)/);

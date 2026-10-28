@@ -106,9 +106,9 @@ A work item is stored once, one JSON file per id in the `work_items` data store,
 the item as it now is and the trail line appended. Holding is a list of ids on each holder:
 `holds` on the Team roster and in each Agent's letter (`tegami.md`, beside `at.item`, its
 focus). The item matches Jira ([Work items](../using-ronin/work-items.md)):
-`level` is stored (1 epic, 0 story/task/bug, -1 subtask), one below the parent at creation
-or 0 with none, and adding a child never changes it; `kind` is the Jira work type name,
-by default the level's (Epic, Task, Subtask); `status` is the Jira status name; `flagged` marks an impediment. Parent is one `parent` id on
+`kind` is the space's work type name and sets `level` (1 Epic, 0 Task/Story/Bug, -1
+Subtask), one below the parent at creation or 0 with none, and adding a child never changes
+it; `status`, `priority` and a link's type are the space's names (`spaceNames`); `flagged` marks an impediment. Parent is one `parent` id on
 the item, or none, which is normal. There is no ladder: Jira has none. Parent is a field:
 `item edit --parent` (`editItem` with `parent`) sets parent and level together (no parent
 keeps the level). One rule binds a create, a parent change and a level write (`follow`): nothing goes below -1. The item takes its new level and its

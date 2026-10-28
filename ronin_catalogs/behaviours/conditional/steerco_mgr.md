@@ -19,7 +19,7 @@ assignment.
   `team member status <team>`.
 - **An item under a known epic:** file it there, `item edit <id> --parent <epic>`. The
   epic_agent is told and hands it off or adds its holders.
-- **An item with no epic:** create one, `item create --level 1 --title <t>`, raise an
+- **An item with no epic:** create one, `item create --kind Epic --title <t>`, raise an
   epic_agent for it (`session_create <name> --role epic_lead`, with a stated purpose), `item assign <epic> <agent>`,
   then file the item under it.
 - **"Where is this?"** is answered by reading the item, never by asking an Agent.

@@ -85,9 +85,9 @@ const PUBLIC = path.join(ROOT, 'public');
 const NM = path.join(ROOT, 'node_modules');
 const isEntryPoint = !!process.argv[1] && pathToFileURL(path.resolve(process.argv[1])).href === import.meta.url;
 if (isEntryPoint) await migrateSopsToBehaviours();
-// Work items in the Jira shape (docs/using-ronin/work-items.md); a store already in shape is left alone.
+// Work items take Jira's own names (docs/using-ronin/work-items.md); a store already on them is left alone.
 if (isEntryPoint) await migrateItems().then((done) => {
-  if (done.migrated.length || done.removed.length) console.log(`[work-items] migrated ${done.migrated.length} of ${done.before} items; removed ${done.removed.join(', ') || 'none'}; ${done.after} remain`);
+  if (done.migrated.length) console.log(`[work-items] ${done.migrated.length} of ${done.before} items took Jira's names`);
 }).catch((error) => console.error(`[work-items] migration: ${(error as Error).message}`));
 const isBoxInstance = isEntryPoint
   && process.env.NODE_ENV === 'production'

@@ -30,7 +30,7 @@ not holding an item: holding is how work is found, never permission.
   ],
   "parent": "w3",
   "attachments": ["/home/me/plans/AGENT_ITEMS.md"],
-  "links": [{ "type": "blocks", "to": "w14" }],
+  "links": [{ "type": "Blocks", "to": "w14" }],
   "external": { "jira": { "id": "10012", "key": "RON-12" } },
   "trail": [
     { "at": "2026-09-28T15:02:11Z", "by": "lead", "op": "create", "to": "none", "note": "Agent-authored items; under w3" },
@@ -42,15 +42,15 @@ not holding an item: holding is how work is found, never permission.
 
 | Field | Values | Meaning |
 |---|---|---|
-| `level` | `1` epic · `0` story, task or bug · `-1` subtask | stored; a new item is one level below its parent, `0` with none |
-| `kind` | a Jira work type name (`Epic`, `Task`, `Subtask`, `Story`, `Bug`, a site's own) | the work type; made with none, the level's: Epic, Task or Subtask |
-| `status` | a Jira status name: `To Do` · `In Progress` · `In Review` · `Done`, or the space's own | the item's state, exactly as Jira names it |
+| `level` | `1` · `0` · `-1` | the kind's level: Epic 1, Subtask -1, the rest 0 |
+| `kind` | the space's work type name: `Epic`, `Task`, `Story`, `Bug`, `Feature`, `Subtask` unconnected | the work type; made with none, the space's first one level below the parent |
+| `status` | the space's status name: `To Do` · `In Progress` · `In Review` · `Done` unconnected | the item's state, exactly as Jira names it |
 | `flagged` | `true` · `false` | an impediment, as Jira's flag; `item flag` / `item unflag` |
-| `priority` | any name · blank | as Jira's priority; `item edit <id> --priority <name>` |
+| `priority` | the site's priority name: `Highest` · `High` · `Medium` · `Low` · `Lowest` unconnected | as Jira's priority, Medium when made; `item edit <id> --priority <name>` |
 | `comments` | `{ by, at, text }` list | as Jira's comments; `item comment <id> <text>` adds one |
 | `parent` | an id, or none | none is normal; `item edit <id> --parent <id>\|none` |
-| `attachments` | absolute paths | as Jira's attachments; `item attach <id> <path>` |
-| `links` | `{ type: blocks\|relates, to }` list | as Jira's issue links; `item link`; a read shows links in too |
+| `attachments` | absolute paths, or a file's Jira link | as Jira's attachments; `item attach <id> <path>\|<url>` |
+| `links` | `{ type, to }` list, the type Jira's link type name (`Blocks`, `Relates`, `Duplicate`, `Cloners`) | as Jira's issue links; `item link`; a read shows links in too |
 | `external` | `jira` `{ id, key }` · `trello`, `github` keys | `jira` pairs the item with a Jira issue and is written by the Jira bridge alone; `item edit <id> --trello\|--github <key>` |
 
 One object serves every level; a field that means nothing at a level is simply unused, as in
@@ -62,7 +62,7 @@ Team and each Agent; assigning moves the id from one list to another and never t
 item. **Parent** is one id on the item, or none. A Team holds; it does not contain.
 
 ```text
-item create --title "Agent-authored items" [--kind Task] [--parent w3] [--level 1|0|-1] [--objective "…"] [--priority High]
+item create --title "Agent-authored items" [--kind Task] [--parent w3] [--objective "…"] [--priority High]
 item read w12                       # fields, children, comments, attachments, links, history
 item search [--team surface] [--holder builder | none] [--parent w3 | --no-parent] [--status "In Progress"] [--kind Bug]
 item edit w12 --priority High
@@ -73,7 +73,7 @@ item assign w12 builder             # or team:surface, or none
 item comment w12 "commit 0123456789: store round-trips"
 item comment w12 --edit 1 "commit 0123456789: the store round-trips"
 item attach w12 docs/using-ronin/work-record.md     # --remove <path> takes it off
-item link w12 blocks w14            # or relates; --remove takes it off
+item link w12 Blocks w14            # or Relates, Duplicate, Cloners; --remove takes it off
 item delete w12                     # with its subtasks; an epic's other children lose the parent
 ```
 
@@ -83,7 +83,7 @@ parent; with no parent the level stays. Any level-0 item moved under another bec
 subtask (Jira's convert to subtask).
 
 **The one rule: nothing goes below -1.** On a create, an `item edit --parent` or
-`--level`, the item takes its new level (one below its parent, or the level set) and its
+`--kind`, the item takes its new level (one below its parent, or its kind's) and its
 children follow, each one below its own parent. If any of them would land below -1, the
 act fails with one line: "w39 can't go there." Nothing else is checked. So nothing goes
 under a subtask, under its own descendant or under itself; a story and its subtasks move to
@@ -95,8 +95,8 @@ left with no parent, links to it go, and its holders let go of it.
 
 Every write answers with one line of what the act did, read from the trail line it
 appended, then the item as it now is: "w39 moved under w40, level -1", "w9 moved to In Progress",
-"w9 is held by agent:x", "w12 was created", "w12 changed: kind story", "w12 is flagged:
-waiting on the API", "w12 has a comment from lead: Start with the store.", "w12 blocks
+"w9 is held by agent:x", "w12 was created", "w12 changed: kind Story", "w12 is flagged:
+waiting on the API", "w12 has a comment from lead: Start with the store.", "w12 Blocks
 w14", "w12 has /home/me/plans/AGENT_ITEMS.md removed". Status, kind and level appear only when the act changed them. When an item arrives
 under one someone holds, by a create with a parent or an `item edit --parent`, that holder
 gets one message through the ordinary queue: "w9 Fix login was added under w7, which you

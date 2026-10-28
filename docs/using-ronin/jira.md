@@ -12,30 +12,57 @@ Every section folds, and stays as you left it.
 ## How it runs
 
 The panel's first section is three switches, one per direction of travel, each with a line
-saying what it does. Before **Connect**, Polling starts on, Assigned items starts off and Ronin's items starts at
-**Off**, so nothing goes up until you say your items are ready; Connect uses whatever they
-are set to.
-Change them any time after. Each does what it says, with no catch-up when it comes back on,
-except that widening **Ronin's items** uploads the items that newly qualify:
+saying what it does. Before **Connect**, Polling and Assigned items start on and Ronin's items
+starts at **Off**, so nothing made in Ronin goes up until you say your items are ready;
+Connect uses whatever they are set to. Change them any time after; what waited while a switch
+was off goes when it comes back on:
 
 - **Services › Jira** (Installations) is the master switch; off, nothing moves.
 - **Polling** (down, Jira → Ronin): Jira is read every minute while Ronin is open in a
-  browser, and hourly otherwise. Off, only **Sync now** reads it. What is read always comes
-  in; the other two switches never hold it back.
+  browser, and hourly otherwise. Off, only **Sync now** reads it. What Jira changed always
+  comes in; the other two switches never hold it back.
 - **Assigned items** (up, Ronin → Jira): changes to items that came from Jira go out to Jira.
   Off, they stay in Ronin.
 - **Ronin's items** (up, Ronin → Jira) is a pick of three: **Off** sends nothing made in Ronin;
   **Under an epic** sends epics and everything under them, while items with no epic stay in
-  Ronin; **All** sends every item. Sent items are created on Jira and their changes go out.
-  Widening it (Off to Under an epic, or to All) sends what newly qualifies, parents first.
-- **Sync now** always reads: one read, the check for items gone from Jira, and failed writes
-  retried.
+  Ronin; **All** sends every item. Sent items are created on Jira, assigned to the account,
+  and their changes go out. Widening it sends what newly qualifies, parents first. An item
+  that came from Jira is never created there again.
+- **Sync now** always reads: the space checked, one read, what is waiting sent, and the check
+  for items gone from Jira.
 
-Ronin uses Jira's status and kind names exactly, with no mapping: an item's status is the
-space's status name, its kind the work type's name. Check saves the space's statuses. Ronin
-never closes a Jira item: a hand-in moves it to In Review, promotion leaves it as it is, and
-it is Done only when the Jira user moves it there; that comes back with the next read. A new
-item starts at To Do; when it goes up, it takes the status Jira gives the new work item.
+## Jira wins
+
+Jira is the source; Ronin keeps the item as Jira had it at the last sync, and compares.
+
+- **A change in Jira** replaces the Ronin item at the next read, and its holders hear of it
+  as of any change.
+- **A change in Ronin** goes up at once, but only if Jira has not changed the item since the
+  last sync. If it has, Jira's item replaces Ronin's and each holding Agent is told: "w64
+  KAN-27 changed on Jira (by jira:Alice); your change was not sent. Read the item and redo it
+  if it still applies."
+- **Comments and attachments** are only ever added, so each goes across once, both ways. A
+  Jira attachment shows on the item as its Jira link; it stays in Jira. An Agent's file is
+  uploaded. Editing a comment, or removing an attachment, stays in Ronin.
+- **Agent links**: each Agent holding the item has a link on the Jira item that opens its
+  chat; it goes when the Agent lets go.
+- **Jira down, or a token expired**: the panel says **Sync failed** in Jira's own words and
+  lists what is waiting to go up. Ronin keeps working and the Agents are not told; every
+  tick tries again.
+- **Assigned away in Jira**, or deleted there: the pair drops and the item stays in Ronin,
+  out of Jira. Assigned back to Ronin, it takes its pair back. A child of a paired item stays
+  Ronin's whoever it is assigned to.
+
+## One exact value
+
+Status, kind, priority and link type are the space's own names, exactly as Jira writes them;
+anything else is refused, and the refusal names the ones there are. Unconnected, they are
+Jira's defaults (To Do, In Progress, In Review, Done; Epic, Task, Story, Bug, Feature,
+Subtask; Highest to Lowest, Medium by default; Blocks, Relates, Duplicate, Cloners). Check
+reads the space's own. The level is the kind's: an epic is 1, a subtask -1, the rest 0.
+Ronin never closes a Jira item: a hand-in moves it to In Review, if the space has that
+status; promotion leaves it as it is; it is Done when the Jira user moves it there, and that
+comes back with the next read.
 
 ## Connect
 
@@ -71,15 +98,15 @@ item to the account in Jira and press **Sync now**.
 - **Connection**: the site, space, account and token expiry. 14 days before the expiry the
   panel warns; make a new token, paste it in **Replace token** with its date, then revoke the
   old one in Atlassian. **Disconnect** drops every pair; nothing is deleted on either side.
-- **Check** runs the connection checks again. **Sync now** reads Jira, then retries failed
-  writes. Connect, Check, Sync now and a change to the switches show at once where you pressed:
-  the button says it is busy, a line says what is running, and then what came of it.
-  A change to an item that is not on Jira and that **How it runs** keeps in Ronin is not a
-  write, and never a failed one.
-- **Sync**: the last check, the pair count, the failed writes and the last error.
+- **Check** runs the connection checks again and reads the space's names. **Sync now** is
+  described above. Connect, Check, Sync now and a change to the switches show at once where
+  you pressed: the button says it is busy, a line says what is running, and then what came
+  of it.
+- **Sync**: the last check, the pair count, how many items are waiting to go up, and, when
+  the last sync failed, **Sync failed** with Jira's message and each waiting item.
 - **Work items by level**: a table of the Desk's items in Work Items order: each epic heads
   its group, then its items, then their subtasks, marked with a tree; items with no epic come
-  last under their own head. Columns: level, kind, Ronin id, title, status, where it was
+  last under their own head. Columns: level (1, 0 or -1), kind, Ronin id, title, status, where it was
   created, holders (each Agent a link), and Jira: the key as a link once the item is on Jira,
   "goes up" if **How it runs** sends it, or "stays in Ronin" if it does not. A line above
   counts them: on Jira, to go, staying in Ronin. Before Connect the table follows the switches
@@ -92,7 +119,7 @@ item to the account in Jira and press **Sync now**.
   density; it repaints with the panel after Connect, Sync now or a change to the switches. Its
   **Refresh** says Refreshing… while it reads, then the time it finished, or what failed.
 - **Pairs**: one row per paired item, with its Jira key (a link), Ronin id, title, level and
-  kind, where it started, its status in Ronin and in Jira (as of the last read), holders
+  kind, where it started, its status, holders
   (each Agent a link), flagged, when a change last came in from Jira and last went out to
-  it, and failed writes. Filter the rows, or **Re-sync** one. **Open** puts the same table
+  it, and what it has waiting to go up. Filter the rows, or **Re-sync** one. **Open** puts the same table
   full width in the other workspace, with the same filter; a Re-sync on either repaints both.

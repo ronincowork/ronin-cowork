@@ -85,9 +85,9 @@ async function oneLine(id: string, args: string[], as = 'probe') {
 const made = (out: string) => /^(w\d+) was created/m.exec(out)![1]!;
 
 test('item acts, each naming its item, one trail line each', async () => {
-  const epic = made(await tool('item', ['create', '--title', 'Overall', '--level', '1']));
+  const epic = made(await tool('item', ['create', '--title', 'Overall', '--kind', 'Epic']));
   assert.deepEqual([(await readItem(epic))!.level, (await trail(epic)).map((line) => [line.op, line.to])], [1, [['create', 'none']]]);
-  const id = made(await tool('item', ['create', '--title', 'Piece', '--objective', 'part', '--parent', epic, '--kind', 'task']));
+  const id = made(await tool('item', ['create', '--title', 'Piece', '--objective', 'part', '--parent', epic, '--kind', 'Task']));
   assert.match(await tool('item', ['read', id]), /"level": 0/);
 
   assert.equal((await oneLine(id, ['assign', id, 'probe'])).to, 'agent:probe');
@@ -102,7 +102,7 @@ test('item acts, each naming its item, one trail line each', async () => {
   assert.equal((await run('item', ['edit', id, '--flagged', 'true'])).status, 2, 'flagging is its own act');
   assert.equal((await run('item', ['edit', id, '--jira', 'RON-7'])).status, 2, 'the Jira pair is written by the bridge alone');
   assert.equal((await oneLine(id, ['comment', id, 'one remark'])).op, 'comment');
-  assert.equal((await oneLine(id, ['edit', id, '--priority', 'Highest', '--kind', 'feature'])).note, 'kind feature, priority Highest');
+  assert.equal((await oneLine(id, ['edit', id, '--priority', 'Highest', '--kind', 'Feature'])).note, 'kind Feature, priority Highest');
   assert.equal((await oneLine(id, ['comment', id, '--edit', '2', 'one remark, fixed'])).from, '2');
   const doc = path.join(dir, 'plan.md');
   writeFileSync(doc, '# plan\n');
@@ -121,9 +121,9 @@ test('item acts, each naming its item, one trail line each', async () => {
   const loose = made(await tool('item', ['create', '--title', 'Loose']));
   const moved = await oneLine(loose, ['edit', loose, '--parent', epic]);
   assert.deepEqual([moved.op, moved.to, (await readItem(loose))!.level], ['move', epic, 0]);
-  assert.equal((await oneLine(peer, ['link', peer, 'blocks', loose])).note, `blocks ${loose}`);
+  assert.equal((await oneLine(peer, ['link', peer, 'Blocks', loose])).note, `Blocks ${loose}`);
   assert.match(await tool('item', ['read', loose]), new RegExp(`"from": "${peer}"`));
-  assert.equal((await oneLine(peer, ['link', peer, 'blocks', loose, '--remove'])).note, `blocks ${loose}: link removed`);
+  assert.equal((await oneLine(peer, ['link', peer, 'Blocks', loose, '--remove'])).note, `Blocks ${loose}: link removed`);
 
   const listed = JSON.parse(await tool('item', ['search', '--parent', epic])) as { items: Array<{ id: string }> };
   assert.deepEqual(listed.items.map((item) => item.id).sort(), [id, loose].sort());
