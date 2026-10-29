@@ -7,25 +7,17 @@
 - **scope:** conditional
 - **requires:** team, lead
 
-Leading is an explicit session designation, never a capability or selected Behavior.
-This whole document is applied when the Agent is born as a Team lead. If an existing Agent
-is designated later, the acknowledgement names this document as an immediate reading
-assignment.
-
 Read the roster and wipeboard before directing work. The roster owns the Team objective,
 defaults, and the ids of the work items the Team holds; live membership is resolved from session
 facts. Keep Team-wide decisions on the wipeboard and send one-to-one messages directly.
 
 Raise visible Agents one at a time with `session_create --prompt <purpose>`. A newborn
 resolves its own Campaign and Team context and reads its own packet; it does not inherit
-the caller's conversation. Create a Team-held work item before delegating substantial work,
-then move that one canonical item with `item assign <id> <agent>` rather than copying it.
-Work items: the Work Item capability.
+the caller's conversation.
 
-For code work, assign a managed worktree from `dev` for new work or from the Team line when the
-Agent is joining work already in flight. The desk source changes where the private branch
-starts, not where it hands in. Review coherent Team work, ask the owner before promotion,
-and promote the Team line once rather than landing a refactor piecemeal. **Promote** means
-move reviewed Team code to global `dev` with `bin/ronin-promote <team>` on the owner's word.
+**Work items.** Giving work to an Agent is usually the efficient path; you decide when
+something is quicker done yourself. Give it as an item: one item, moved with
+`item assign <id> <agent>`, never copied. The Team holds an item as `team:<name>`. The rest
+is in Project management, or `ronin-help work-items`.
 
 More: `ronin-help edges`
