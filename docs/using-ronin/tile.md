@@ -68,7 +68,8 @@ itself is read-only, but the Agent is live, and the box below it talks to the Ag
 same way it does over the terminal. In Chat the conversation ends where the box begins, so
 nothing is ever hidden under it. If you are at the end you stay at the end: a new line, the
 dots, a draft growing to several lines or the tile changing size never push the last line
-out of view. Scroll up and it leaves you where you are.
+out of view. Scroll up and it leaves you where you are, and fetches earlier lines as you
+go; a long conversation is never loaded whole.
 
 On a phone the button sits in the bar at the top, because the tile's own header is not on
 screen there, and it is a two-state toggle: **Term** or **Chat**. The fuller readings are a

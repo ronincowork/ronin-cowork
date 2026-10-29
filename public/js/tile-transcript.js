@@ -237,8 +237,26 @@ export function makeTileTranscript({ read = request, watch = watchTranscript, on
       insertInOrder(entryFor(rec), rec.seq);
     }
     paintStance(); // the end-of-conversation indicator stays the end
+    letGo();
     follow();
     return fresh.length;
+  }
+
+  /**
+   * KEEP WHAT IS DRAWN SMALL, so nothing on the page costs more the longer the Agent runs.
+   *
+   * Only while following the end, where the oldest records are far out of sight: a reader
+   * scrolled up keeps everything they paged in until they come back down. A dropped record
+   * leaves `held` too, so scrolling up fetches it again by the oldest seq still drawn.
+   */
+  function letGo() {
+    if (!following) return;
+    const drawn = [...el.children].filter((n) => Number.isFinite(Number(n.getAttribute?.('data-seq'))));
+    for (const entry of drawn.slice(0, Math.max(0, drawn.length - KEEP))) {
+      held.delete(Number(entry.getAttribute('data-seq')));
+      entry.remove();
+      exhausted = false;
+    }
   }
   const append = merge;
 
@@ -276,6 +294,7 @@ export function makeTileTranscript({ read = request, watch = watchTranscript, on
    * would use anyway.
    */
   const SCREENFUL = 30;
+  const KEEP = 4 * SCREENFUL; // what stays drawn while following the end
 
   /** What the route said, in the shape the header reads. `shown` is what this read carried. */
   function report(data, shown) {
@@ -361,8 +380,11 @@ export function makeTileTranscript({ read = request, watch = watchTranscript, on
         noteEnd(result.data);
         const records = Array.isArray(result.data.records) ? result.data.records : [];
         merge(records);
-        if (result.data.more !== true) {
-          // The whole gap is in. Only now does the resume point move.
+        // At the end, once everything drawn comes from this walk and fills what stays drawn,
+        // the rest of the gap is far out of sight and scrolling up fetches it by the oldest
+        // seq drawn, so the walk is done. Scrolled up, it goes on: the reader is in the gap.
+        if (result.data.more !== true || (following && held.size >= KEEP && oldestHeld() > lower)) {
+          // The whole gap is in, or in reach. Only now does the resume point move.
           owed = null;
           committed = frontier;
           return;
@@ -488,6 +510,7 @@ export function makeTileTranscript({ read = request, watch = watchTranscript, on
   // stay there.
   el.addEventListener?.('scroll', () => {
     following = atEnd();
+    if (following) letGo();
     if (el.scrollTop <= 0) void earlier(generation);
   });
   // The log's own box changes too: the message box grows with a draft, the tile resizes.

@@ -343,7 +343,11 @@ flow, so the log ends where the composer begins; Term and the tape still reserve
 one `following` flag read on scroll and a ResizeObserver on the log's own box
 (`js/tile-transcript.js`). Because the composer is in flow there, any change to its height
 re-lays out the whole log: the composer re-measures its height from auto only when the draft
-can have shrunk, and a longer draft is only read (`js/composer.js`). A tenant owns its enter/leave boundary and may refuse departure (Docs does so for
+can have shrunk, and a longer draft is only read (`js/composer.js`). The log draws a bounded
+stretch, never the whole conversation: it opens on the last screenful, scrolling up fetches
+the screenful before the oldest record drawn, and while the reader follows the end only the
+newest `KEEP` (four screenfuls) stay drawn, so live records and a reconnect's catch-up walk
+let the oldest go and nothing costs more the longer the Agent runs. A tenant owns its enter/leave boundary and may refuse departure (Docs does so for
 unsaved edits). Focus, sizing and teardown follow the active tenant. Adding a work surface
 means registering another sibling with the host, not adding another overlay condition to
 the shell.
