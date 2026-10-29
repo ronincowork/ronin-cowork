@@ -50,8 +50,8 @@ no item moves no status.
 - **Keep the objective true:** `item edit w12 --objective "…"` when the job changes.
 - **Finish:** `worktree-desk hand-in <repo> --item w12`; it moves the item to In Review.
 
-Several Agents or Teams can hold an item; `item assign <id> <agent>|team:<name>` adds a holder
-and `item handoff` gives the caller's hold to someone else (or `none`). An ending Agent lets go of its items.
+Several Agents or Teams can hold an item; `item assign` adds a holder and `item handoff`
+gives the caller's hold to someone else (or `none`). An ending Agent lets go of its items.
 A lead gives out work by assigning items that say what is wanted.
 
 ### Notices
@@ -62,7 +62,7 @@ how you reply to a person. Your own changes notify nobody: tell whoever needs to
 
 ### Don'ts
 
-- Don't work without an item. If there is none, create one and assign it to yourself before you start.
+- Don't work without an item. If there is none, create one and assign it to yourself.
 - Don't keep work only in your head or chat: put it on the item.
 - Don't leave an item in a status the work has left.
 - Don't delete to tidy: `item delete` removes the item and its subtasks for everyone.

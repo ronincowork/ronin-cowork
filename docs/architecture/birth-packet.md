@@ -202,12 +202,11 @@ not permission for the stock packet to remain oversized.
 to quote the terminator. The receipt records what Ronin emitted; the acknowledgement is
 evidence that the newborn reached the end before acting.
 
-## 8. Send
+## 8. Update
 
-**Send** in the Agent's Configuration (`PUT /api/sessions/<name>/configuration`,
+**Update** in the Agent's Configuration (`PUT /api/sessions/<name>/configuration`,
 [agent-configuration.ts](../../src/agent-configuration.ts)) is the one act over a running Agent's
-configuration (owner, 2026-10-24). It can always be pressed: with nothing changed it resends the
-same brief. Pressed, it writes the
+configuration (owner, 2026-10-24). Disabled until something changed; pressed, it writes the
 mandate to the work record and the whole chosen Behaviors list to the composition (an unticked
 behaviour is simply not in it), resolves the reading on today's files and today's facts (Team,
 lead designation, Campaign switches, mandate, Behaviors) through the facts and the reading alone
