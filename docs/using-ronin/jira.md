@@ -41,6 +41,10 @@ Jira is the source; Ronin keeps the item as Jira had it at the last sync, and co
   last sync. If it has, Jira's item replaces Ronin's and each holding Agent is told: "w64
   KAN-27 changed on Jira (by jira:Alice); your change was not sent. Read the item and redo it
   if it still applies."
+- **Jira fields** come in only: Sprint, Due date, Rank, Reporter, Created, Resolved, Story
+  point estimate, Labels, Components and Fix versions, by Jira's names, the ones Jira fills.
+  A Sprint or Due date change reaches the holders as any Jira change does; Rank and the rest
+  are refreshed quietly. Ronin never sends them.
 - **Comments and attachments** are only ever added, so each goes across once, both ways. A
   Jira attachment shows on the item as its Jira link; it stays in Jira. An Agent's file is
   uploaded. Editing a comment, or removing an attachment, stays in Ronin.

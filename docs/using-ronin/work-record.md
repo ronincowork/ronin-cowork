@@ -52,6 +52,7 @@ not holding an item: holding is how work is found, never permission.
 | `attachments` | absolute paths, or a file's Jira link | as Jira's attachments; `item attach <id> <path>\|<url>` |
 | `links` | `{ type, to }` list, the type Jira's link type name (`Blocks`, `Relates`, `Duplicate`, `Cloners`) | as Jira's issue links; `item link`; a read shows links in too |
 | `external` | `jira` `{ id, key }` · `trello`, `github` keys | `jira` pairs the item with a Jira issue and is written by the Jira bridge alone; `item edit <id> --trello\|--github <key>` |
+| `jiraFields` | Jira's field name → plain text (`"Sprint": "KAN Sprint 3 (active)"`, `"Due date": "2026-11-02"`) | a paired item's Jira fields, the populated ones; set by the Jira bridge alone, read only |
 
 One object serves every level; a field that means nothing at a level is simply unused, as in
 Jira. An epic's status is set by hand. Adding a child never changes an item's level. There
@@ -121,7 +122,7 @@ gives "Your work record changed".
 
 Items show as stones grouped by parent: each epic, then its items, each followed by its
 subtasks. A stone shows the id, title, kind, status and ⚑ when flagged; press one to read
-its objective, priority, comments, attachments (each opens), links and history beside the
+its objective, priority, Jira fields, comments, attachments (each opens), links and history beside the
 stones. These are readings: every change goes through the `item` tool.
 
 ## Receipts move Land and Done

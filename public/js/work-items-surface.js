@@ -73,6 +73,8 @@ export function renderItemDetail(host, item, { holder = '', openAttachment = nul
     [t('work_items.priority', 'Priority'), item.priority || '—'],
     [t('work_items.holder', 'Holder'), holder ? `@${holder}` : t('work_items.nobody', 'nobody')],
     [t('work_items.parent', 'Parent'), item.parent || '—'],
+    // A paired item's Jira fields, by Jira's own names.
+    ...Object.entries(item.jiraFields || {}),
   ]) facts.append(el('dt', '', label), el('dd', '', value));
   host.append(facts);
   const section = (label, rows) => {

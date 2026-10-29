@@ -111,6 +111,7 @@ export function registerWorkItems(app: express.Express): void {
 
   app.put('/api/work-items/:id', guarded(async (req, res) => {
     const b = req.body ?? {};
+    if (b.jiraFields !== undefined) throw new WorkItemRefused('jiraFields are Jira\'s, read only: the bridge sets them.');
     const external = Object.fromEntries((['trello', 'github'] as const).filter((key) => b[key] !== undefined).map((key) => [key, text(b[key]) ?? '']));
     acknowledge(res, await editItem(req.params.id, {
       title: text(b.title), objective: text(b.objective), kind: text(b.kind), priority: text(b.priority),

@@ -3,7 +3,8 @@
  *
  * The only module that reads or writes an item file. Everything else reaches items through
  * the /api/work-items routes (src/routes/work-items-api.ts), and every change here appends
- * exactly one line to the item's trail, naming who called. Nothing is locked against
+ * exactly one line to the item's trail, naming who called (a quiet Jira fields refresh aside,
+ * setJiraFields). Nothing is locked against
  * anyone: holding is discovery, never permission. One refusal: nothing goes below -1 (follow).
  *
  * THE SHAPE MATCHES JIRA (docs/using-ronin/work-items.md). One object at every level, and one
@@ -104,6 +105,9 @@ export interface WorkItem {
   attachments: string[];
   links: Link[];
   external: External;
+  /** A paired item's Jira fields (keystone 10): Jira's field name → its value as plain text,
+   * the populated ones. In only: the bridge sets them (setJiraFields), nobody else. */
+  jiraFields?: Record<string, string>;
   trail: TrailLine[];
   created: { at: string; by: string };
 }
@@ -389,6 +393,18 @@ export function editItem(id: string, edit: ItemEdit, by: string, note?: string):
     });
     await settle(children, done.item, by);
     return reparent ? { ...done, notified: await announceArrival(done.item, by) } : done;
+  });
+}
+
+/** The bridge, in-process, sets a paired item's Jira fields; no route writes them. With a note
+ * (a Sprint or Due date change) it is a trail line the holders hear; without, it is saved with
+ * no line, since Rank moves with every drag in the backlog. */
+export function setJiraFields(id: string, fields: Record<string, string>, by: string, note?: string): Promise<unknown> {
+  return withIssuer(async () => {
+    if (note) return appendTrail(id, by, (item) => { item.jiraFields = fields; return { op: 'edit', note }; });
+    const item = await load(id);
+    item.jiraFields = fields;
+    await save(item);
   });
 }
 

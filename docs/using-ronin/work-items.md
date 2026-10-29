@@ -47,6 +47,9 @@ No parent is normal. Not every task belongs to an epic.
   **Duplicate**, or **Cloners**.
 - **external keys**: the item's key in Trello or GitHub (`--github 123`). Blank clears it. An
   item paired with Jira shows its Jira key (`PAY-123`); the Jira bridge keeps that pair.
+- **Jira fields**: an item paired with Jira also shows Jira's Sprint, Due date, Rank,
+  Reporter, Created, Resolved, Story point estimate, Labels, Components and Fix versions,
+  by Jira's names, the ones Jira fills. They are Jira's: read only.
 
 Every change adds a line to the item's history. `item read <id>` shows it all: fields,
 children, comments, attachments, links and history.

@@ -49,6 +49,7 @@ no item moves no status.
 - **Link** what holds you up, from the blocking item: `item link w15 Blocks w12`.
 - **Keep the objective true:** `item edit w12 --objective "…"` when the job changes.
 - **Finish:** `worktree-desk hand-in <repo> --item w12`; it moves the item to In Review.
+- **Paired with Jira:** work your items in Rank order, those in the active sprint first; the Jira fields are Jira's, read only.
 
 Several Agents or Teams can hold an item; `item assign` adds a holder and `item handoff`
 gives the caller's hold to someone else (or `none`). An ending Agent lets go of its items.
