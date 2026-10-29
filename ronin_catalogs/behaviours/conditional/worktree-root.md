@@ -13,10 +13,8 @@ An assigned worktree is a private branch and working folder. Compare `worktree-d
 with the brief before writing. `worktree-desk sync <repo>` merges global dev by default.
 Use `--source team` for the shared Team review line, `--source lead` for the Team lead’s
 private worktree, or `--source <repo:branch>` for a specific teammate’s worktree in the same repo.
-Only committed work merges. Read the acknowledgement: exact source SHA, destination
-before/after HEAD, and merged, already-contained, pending, or conflict. Unsaved source
-files are excluded; pending/conflict leaves your files untouched. Resolve conflicts on
-your private worktree, using the reported commit, then commit and hand in.
+Only committed work merges; read what sync reports. A conflict leaves your files untouched:
+resolve it on your worktree, then commit and hand in.
 
 Commit preserves a private checkpoint; `worktree-desk hand-in <repo>` admits committed
 work to Team review. Sync changes neither source custody nor your hand-in destination.
@@ -31,8 +29,7 @@ After the final hand-in, status must say `CERTIFIED CLEAN`: no unsaved files and
 commit on the Team line. Stay parked unless told to end; `session_end` closes all
 certified worktrees and ends the Agent together.
 
-`worktree-desk discard` refuses an occupied worktree, names the Agent standing there, and
-deletes nothing. Use Hard Delete when the intention is to remove the Agent and its worktrees
-together.
+`worktree-desk discard` refuses an occupied worktree, names who stands there, and deletes
+nothing; Hard Delete removes the Agent and its worktrees together.
 
 More: `ronin-help desks`

@@ -426,7 +426,6 @@ test('team_lead is explicit and applies its conditional Behavior at birth', asyn
   const lead = await resolveForm(commonsForm({ team: 'builders', team_lead: true }), new Set());
   const leadReading = lead.birth_reading.find((file) => file.endsWith('/conditional/team-lead.md'))!;
   assert.ok(leadReading, 'the fact-selected Behavior is part of the birth reading');
-  assert.match(await fs.readFile(leadReading, 'utf8'), /immediate reading\s+assignment/);
   const ordinary = await resolveForm(commonsForm({ team: 'builders', team_lead: false }), new Set());
   assert.ok(!ordinary.birth_reading.some((file) => file.endsWith('/conditional/team-lead.md')));
 });

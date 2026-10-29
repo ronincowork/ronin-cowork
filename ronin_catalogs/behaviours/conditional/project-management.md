@@ -19,14 +19,14 @@ them true as you go, never only at the end. `item --help` has the exact syntax.
 | -1 | **Subtask**: one step inside a level-0 item |
 
 The kind sets the level. A new item starts one level below its parent, or at 0 with none,
-and `item edit <id> --parent <other>` moves it with its children. No parent is normal.
+and `item edit <id> --parent <other>` moves it with its children. No parent is normal;
+Epics are mostly steerco and epic Agents' work, though one for a big topic is fine.
 The one rule: nothing goes below -1. A move that would push an item there fails.
 
 ### Status
 
-Status, kind, priority and link type are Jira's own names, exactly; anything else is
-refused, naming the ones there are. Unconnected, they are Jira's defaults; a Desk paired to
-a Jira space uses that space's.
+Status, kind, priority and link type are Jira's names, exactly (a paired space's own);
+`item --help` lists them.
 
 | Status | Means | Moved by |
 |---|---|---|
@@ -48,12 +48,11 @@ no item moves no status.
 - **Flag** when stuck: `item flag w12 "<why>"`; `item unflag` when moving again.
 - **Link** what holds you up, from the blocking item: `item link w15 Blocks w12`.
 - **Keep the objective true:** `item edit w12 --objective "…"` when the job changes.
-- **Finish:** `worktree-desk hand-in <repo> --item w12`; it moves the item to In Review.
+- **Finish:** `worktree-desk hand-in <repo> --item w12` moves it to In Review; in a checkout, transition it.
 - **Paired with Jira:** work your items in Rank order, those in the active sprint first; the Jira fields are Jira's, read only.
 
-Several Agents or Teams can hold an item; `item assign` adds a holder and `item handoff`
-gives the caller's hold to someone else (or `none`). An ending Agent lets go of its items.
-A lead gives out work by assigning items that say what is wanted.
+Several Agents or Teams can hold an item: `item assign <id> <agent>|team:<name>` adds a
+holder, `item handoff` gives yours to someone else (or `none`). An ending Agent lets go.
 
 ### Notices
 
@@ -63,7 +62,7 @@ how you reply to a person. Your own changes notify nobody: tell whoever needs to
 
 ### Don'ts
 
-- Don't work without an item. If there is none, create one and assign it to yourself.
+- Don't work without an item: create one and assign it to yourself before you start.
 - Don't keep work only in your head or chat: put it on the item.
 - Don't leave an item in a status the work has left.
 - Don't delete to tidy: `item delete` removes the item and its subtasks for everyone.

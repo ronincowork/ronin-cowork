@@ -104,6 +104,7 @@ test('every selector phrase has an exact meaning in floor or capability teaching
     'ronin_catalogs/capabilities/cowork_team.md',
     'ronin_catalogs/capabilities/worktree-desk.md',
     'ronin_catalogs/behaviours/conditional/team-lead.md',
+    'ronin_catalogs/behaviours/conditional/lead-worktrees.md',
   ].map((file) => readFile(path.resolve(file), 'utf8')))).join('\n');
   const block = selector.match(/const vocabulary = section\('Agent vocabulary'[\s\S]*?for \(const \[term, description\] of \[([\s\S]*?)\]\) \{/);
   assert.ok(block, 'the selector should expose one Agent vocabulary list');
