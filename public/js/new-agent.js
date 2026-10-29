@@ -483,8 +483,9 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
   function paintActions() {
     // The button says what the press will DO: with the name blank there is no team to
     // create, so it must not promise one.
+    // Send always resends the brief; a change only highlights it.
     const ready = configure ? JSON.stringify(configurationValue()) !== configured : !!draft.name.trim() && (draft.teamMode !== 'new' || isValidTeamName(chosenTeam()));
-    start.setDisabled(!ready);
+    start.setDisabled(configure ? !loaded || busy : !ready);
     if (ready) start.el.dataset.kind = 'primary';
     else delete start.el.dataset.kind;
     const offer = !configure && isCowork() && (!templateRow() || templateDirty());
