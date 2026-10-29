@@ -27,8 +27,8 @@ one case to stop and report on the Team wipeboard; do not create the missing bra
 worktree yourself.
 
 After the final hand-in, status must say `CERTIFIED CLEAN`: no unsaved files and every
-commit on the Team line. Stay parked unless told to end; a "your hand-in is on dev" notice
-is news, not a request. `session_end` closes all certified worktrees and the Agent together.
+commit on the Team line. Your worktrees end with you, never before you: `session_end` closes
+certified worktrees and the Agent together; anything else keeps both and says what to do.
 
 `worktree-desk discard` refuses an occupied worktree, names who stands there, and deletes
 nothing; Hard Delete removes the Agent and its worktrees together.
