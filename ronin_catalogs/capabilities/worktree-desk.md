@@ -82,4 +82,4 @@ a pending sync with the same explicit source. On conflict, resolve the reported 
 on your private worktree; do not edit the source or shared Team line.
 
 After the final hand-in, `status` must say `CERTIFIED CLEAN`: no unsaved files and every
-commit on the Team line. Stay parked unless told to end.
+commit on the Team line.
