@@ -499,11 +499,18 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
     mandate: { reach: draft.reach, recruit: draft.recruit, output: draft.output }, behaviours: [...draft.books],
   });
 
+  // The press shows at once: Send turns green and says Sending… until the brief is out.
+  function sending(on) {
+    if (on) start.el.dataset.busy = 'true';
+    else delete start.el.dataset.busy;
+    start.el.lastChild.textContent = on ? t('agent_composition.sending', 'Sending…') : t('agent_composition.send', 'Send');
+  }
+
   async function doSend() {
     if (busy) return;
-    busy = true; start.setDisabled(true); notice.set('info', t('agent_composition.updating', 'Updating…'));
+    busy = true; start.setDisabled(true); sending(true); notice.set('', '');
     const result = await request(`/api/sessions/${encodeURIComponent(configure)}/configuration`, { method: 'PUT', json: configurationValue() });
-    busy = false;
+    busy = false; sending(false);
     if (!result.ok) { notice.set('failed', result.message); paintActions(); return; }
     configured = JSON.stringify(configurationValue()); paintActions();
     notice.set('success', t('agent_composition.updated', 'The Agent has been sent its new brief.'));
