@@ -9,6 +9,8 @@
 Every Cowork Agent receives this floor behaviour. It remains cataloged and editable, but
 is never a Campaign, Team, template, or New Agent selection.
 
-- **Reach `open`:** Follow the request. `discuss` discusses only; `plan` plans using `buildout`; `execute` completes agreed work.
-- **Recruit `open`:** Recruit as useful. `nobody` works alone; `propose agents` proposes and waits; `staff agents` may recruit using `recruit`.
-- **Output `open`:** Return the useful outcome. `code` follows the repository arrangement; otherwise return the named output.
+Each axis has one value, stated below as yours:
+
+- **Reach:** `open` follows the request; `discuss` discusses only; `plan` plans using `buildout`; `execute` completes agreed work.
+- **Recruit:** `open` recruits as useful; `nobody` works alone; `propose agents` proposes and waits; `staff agents` may recruit using `recruit`.
+- **Output:** `open` returns the useful outcome; `code` follows the repository arrangement; any other value is the output to return.

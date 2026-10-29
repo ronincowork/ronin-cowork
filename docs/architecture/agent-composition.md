@@ -147,6 +147,9 @@ the change. Adding a Behavior sends its own message carrying the teaching, which
 notification. Brief and model have no write after birth.
 
 Mandate teaching is part of the Ronin floor for every Cowork Agent. It is not selectable
-and must not appear among elective behaviors. This value-plus-teaching pattern is
+and must not appear among elective behaviors. The floor page teaches what each Reach,
+Recruit and Output value means; the brief carries a per-session copy (`MANDATES.md` in the
+session's boot cache) that adds the Agent's own values from its current record, so a brief
+resent after a Configuration change states the new mandate. This value-plus-teaching pattern is
 fundamental to composition: stating a fact is insufficient when the Agent has not also
 been taught what that fact means and how it governs its work.

@@ -73,7 +73,7 @@ export function readFirstSentence(packet: PacketReport): string {
 const userShelf = () => storeDir('session_boot');
 
 /** A generated fragment, written to the session's cache so the compiler inlines it like any shelf file. */
-async function cachedReading(name: string, text: string, session = ''): Promise<string> {
+export async function cachedReading(name: string, text: string, session = ''): Promise<string> {
   const dir = session ? path.join(storeDir('session_boot_cache'), 'sessions', session) : storeDir('session_boot_cache');
   const target = path.join(dir, name);
   const temp = `${target}.${process.pid}.${randomUUID()}.tmp`;

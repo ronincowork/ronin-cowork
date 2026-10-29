@@ -1,7 +1,8 @@
+import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { resolveLaunchCommand, sessionsFor, type SessionsDefaults } from './launch-command.js';
 import { REPO_ROOT } from './resources.js';
-import { WORDS_READING, bootFiles, ensureShelf } from './birth-readme.js';
+import { WORDS_READING, bootFiles, cachedReading, ensureShelf } from './birth-readme.js';
 import { listProjectRoots, USER_PROJECT_ROOTS_MD, type ProjectRootInfo } from './project-roots.js';
 import { listSessionLaunchSpecs } from './model-providers.js';
 import { agentSpec } from './agents.js';
@@ -211,6 +212,25 @@ async function bootReading(
   return bootFiles(projectRoot, routineReading, capabilitiesOverview, session, soughtOverview);
 }
 
+/** THE AGENT'S OWN MANDATE, in its Mandates page: the floor page teaches what each value
+ * means; the packet copy adds the values this Agent holds, so a resent brief carries a change. */
+async function ownMandates(file: string, held: Mandate, session: string): Promise<string> {
+  const page = (await readFile(file, 'utf8')).trimEnd();
+  const yours = `**Yours:** Reach \`${held.reach}\` · Recruit \`${held.recruit}\` · Output \`${held.output.join('`, `')}\`.`;
+  return cachedReading('MANDATES.md', `${page}\n\n${yours}\n`, session);
+}
+
+/** The form's mandate, or the level above's when the form states none. */
+function resolveMandate(form: SpawnForm, facts: { coworkAgent: boolean; parentSeed?: { seeds: { reach: { value: unknown }; recruit: { value: unknown }; output: { value: unknown } } } | null }): Mandate {
+  return facts.coworkAgent
+    ? mandate(form.mandate ?? {
+        reach: facts.parentSeed?.seeds.reach.value,
+        recruit: facts.parentSeed?.seeds.recruit.value,
+        output: facts.parentSeed?.seeds.output.value,
+      })
+    : mandate(undefined);
+}
+
 /** THE FACTS a launch and a running Agent share: Campaign, Team, root, desk arrangement, the
  * behaviour cascade, the name. Launching builds on them; so does a brief rebuilt later for an
  * Agent whose configuration changed (Update, owner 2026-10-24), which never launches. */
@@ -357,7 +377,11 @@ export async function resolveReading(form: SpawnForm, facts: LaunchFacts) {
   const resolvedBehaviours = coworkAgent && agent
     ? await resolveBehaviourBooks(cascade.selected)
     : { delivered: [], ignored: [] };
-  const floorBehaviours = coworkAgent && agent ? await resolveFloorBehaviours() : [];
+  const floorBehaviours = coworkAgent && agent
+    ? await Promise.all((await resolveFloorBehaviours()).map(async (row) => row.book === 'mandates'
+      ? { ...row, file: await ownMandates(row.file, resolveMandate(form, facts), name) }
+      : row))
+    : [];
   const conditionalBehaviours = coworkAgent && agent
     ? await resolveConditionalBehaviours({
         arrangement,
@@ -446,13 +470,7 @@ export async function resolveForm(
       return true;
     });
   };
-  const resolvedMandate = coworkAgent
-    ? mandate(form.mandate ?? {
-        reach: parentSeed?.seeds.reach.value,
-        recruit: parentSeed?.seeds.recruit.value,
-        output: parentSeed?.seeds.output.value,
-      })
-    : mandate(undefined);
+  const resolvedMandate = resolveMandate(form, facts);
 
   return {
     session_type: sessionType,
