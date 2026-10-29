@@ -421,6 +421,12 @@ const deliver = (msg) => [...transcriptHandlers].forEach((fn) => fn(msg));
 const seqsOn = (view) => [...view.el.children]
   .filter((n) => n.className === 'tile-transcript-entry')
   .map((n) => Number(n.attributes['data-seq']));
+// A reader at the end holds the newest records with no hole: whatever is older is fetched by
+// scrolling up from the first one, so nothing is skipped.
+const endsWithoutHole = (shown, newest, label) => {
+  assert.equal(shown.at(-1), newest, `${label}: the newest record is drawn`);
+  shown.forEach((seq, i) => assert.equal(seq, newest - shown.length + 1 + i, `${label}: no hole, in order, each once`));
+};
 
 test('a live record arriving before the opening page does not cost the history', async () => {
   let release;
@@ -581,7 +587,7 @@ test('a gap wider than one page is filled all the way, not just its newest page'
       }
       doors.push([after, Number.isFinite(before) ? before : null]);
       const newest = Number.isFinite(before) ? before - 1 : 10 + MISSED;
-      const count = Math.min(500, newest - after);
+      const count = Math.min(50, newest - after);
       const from = newest - count + 1;
       return { ok: true, data: { available: true, view: 'chat', readings: READINGS, seq: 10 + MISSED + 1,
         more: from > after + 1,
@@ -596,12 +602,10 @@ test('a gap wider than one page is filled all the way, not just its newest page'
   deliver({ t: 'reconnected' });
   for (let i = 0; i < 10; i++) await tick();
 
+  // At the end, the walk stops once a full stretch is drawn; the rest is a scroll-up away.
   const shown = seqsOn(view);
-  assert.equal(shown.length, MISSED + 1, `every missed record landed: ${shown.length} of ${MISSED + 1}`);
-  assert.deepEqual(shown, [...shown].sort((a, b) => a - b), 'in seq order');
-  assert.equal(new Set(shown).size, shown.length, 'each exactly once');
-  assert.equal(shown[0], 10);
-  assert.equal(shown.at(-1), 10 + MISSED);
+  endsWithoutHole(shown, 10 + MISSED, 'the gap');
+  assert.ok(shown.length < MISSED, `only what stays drawn, not the whole gap: ${shown.length}`);
 
   // The lower bound never moved; only `before` stepped backwards.
   assert.ok(doors.length >= 3, `the walk took more than one page: ${doors.length}`);
@@ -662,8 +666,10 @@ test('the gap walk is governed by progress, not by a page count', async () => {
   await tick();
   deliver({ t: 'reconnected' });
   for (let i = 0; i < 1100; i++) await tick();
-  assert.ok(pages > 500, `the walk ran past any fixed cap: ${pages} pages`);
-  assert.equal(seqsOn(long).length, 1001, 'and every record landed');
+  // One-record pages: the walk keeps going until the end is drawn in full, however many
+  // pages that takes, and stops with no hole above the newest.
+  assert.ok(pages > 100, `the walk ran until the end was filled: ${pages} pages`);
+  endsWithoutHole(seqsOn(long), 1000, 'one-record pages');
   long.dispose();
 
   // A route insisting there is more without ever reaching further back.
@@ -702,7 +708,7 @@ test('a walk that fails halfway still owes the whole gap, and the next one pays 
       doors.push([after, Number.isFinite(before) ? before : null]);
       if (doors.length === failOn) return { ok: false, kind: 'network', retryable: true };
       const newest = Number.isFinite(before) ? before - 1 : 10 + MISSED;
-      const count = Math.min(500, newest - after);
+      const count = Math.min(50, newest - after);
       const from = newest - count + 1;
       return { ok: true, data: { available: true, view: 'chat', readings: READINGS, seq: 10 + MISSED + 1,
         more: from > after + 1,
@@ -729,10 +735,7 @@ test('a walk that fails halfway still owes the whole gap, and the next one pays 
 
   assert.deepEqual([...new Set(doors.map(([after]) => after))], [10],
     'every request in both walks keeps the original lower bound');
-  const shown = seqsOn(view);
-  assert.equal(shown.length, MISSED + 1, `the whole gap is recovered: ${shown.length} of ${MISSED + 1}`);
-  assert.deepEqual(shown, [...shown].sort((a, b) => a - b), 'in order');
-  assert.equal(new Set(shown).size, shown.length, 'each exactly once, though pages were re-fetched');
+  endsWithoutHole(seqsOn(view), 10 + MISSED, 'after the second walk, though pages were re-fetched');
   view.dispose();
 });
 
