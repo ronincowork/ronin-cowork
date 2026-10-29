@@ -341,7 +341,9 @@ tenant**. Chat lays its tile out as a column, the log that scrolls and then the 
 flow, so the log ends where the composer begins; Term and the tape still reserve
 `--composer-clearance` under an overlaid composer. The log keeps a reader at its end through
 one `following` flag read on scroll and a ResizeObserver on the log's own box
-(`js/tile-transcript.js`). A tenant owns its enter/leave boundary and may refuse departure (Docs does so for
+(`js/tile-transcript.js`). Because the composer is in flow there, any change to its height
+re-lays out the whole log: the composer re-measures its height from auto only when the draft
+can have shrunk, and a longer draft is only read (`js/composer.js`). A tenant owns its enter/leave boundary and may refuse departure (Docs does so for
 unsaved edits). Focus, sizing and teardown follow the active tenant. Adding a work surface
 means registering another sibling with the host, not adding another overlay condition to
 the shell.

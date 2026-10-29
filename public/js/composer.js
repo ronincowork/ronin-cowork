@@ -49,9 +49,16 @@ export function buildComposer(body, hooks) {
     wrap.classList.toggle('held', !!reason);
     why.textContent = reason ? t('composer.held', 'Not sent — {why}. Your text is kept.', { why: (reasons[reason] || (() => reason))() }) : '';
   };
+  // The auto-height measure changes the box's height for a moment, and in Chat that re-lays
+  // out the whole history beside it, once per keystroke (w77: 34 ms a key on a week-long
+  // Agent). A longer draft only needs reading; the measure is spent only when it can have shrunk.
+  let drafted = { chars: 0, lines: 1 };
   const grow = () => {
-    ta.style.height = 'auto';
-    ta.style.height = Math.min(ta.scrollHeight, 160) + 'px';
+    const now = { chars: ta.value.length, lines: ta.value.split('\n').length };
+    if (now.chars < drafted.chars || now.lines < drafted.lines) ta.style.height = 'auto';
+    drafted = now;
+    const height = Math.min(ta.scrollHeight, 160) + 'px';
+    if (ta.style.height !== height) ta.style.height = height;
   };
   const clearBox = () => {
     ta.value = '';
