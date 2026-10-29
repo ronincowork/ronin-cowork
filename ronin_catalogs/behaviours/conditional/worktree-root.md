@@ -16,9 +16,10 @@ private worktree, or `--source <repo:branch>` for a specific teammate’s worktr
 Only committed work merges; read what sync reports. A conflict leaves your files untouched:
 resolve it on your worktree, then commit and hand in.
 
-Commit preserves a private checkpoint; `worktree-desk hand-in <repo>` admits committed
-work to Team review. Sync changes neither source custody nor your hand-in destination.
-None of those operations is Git push.
+Commit preserves a private checkpoint; `worktree-desk hand-in <repo> --item <id>` admits
+committed work to Team review, moves the item to In Review and tells the lead, so there's
+no need to tell it yourself. Sync changes neither source custody nor your hand-in
+destination. None of those operations is Git push.
 
 If no worktree was named, `worktree-desk open <repo>` either opens one or reports that the
 repository uses its checkout. A contradiction between the assignment and status is the
@@ -26,8 +27,8 @@ one case to stop and report on the Team wipeboard; do not create the missing bra
 worktree yourself.
 
 After the final hand-in, status must say `CERTIFIED CLEAN`: no unsaved files and every
-commit on the Team line. Stay parked unless told to end; `session_end` closes all
-certified worktrees and ends the Agent together.
+commit on the Team line. Stay parked unless told to end; a "your hand-in is on dev" notice
+is news, not a request. `session_end` closes all certified worktrees and the Agent together.
 
 `worktree-desk discard` refuses an occupied worktree, names who stands there, and deletes
 nothing; Hard Delete removes the Agent and its worktrees together.
