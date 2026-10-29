@@ -49,8 +49,8 @@ No parent is normal. Not every task belongs to an epic.
 - **id**: `w12`, or, for an item paired with Jira, its Jira key (`KAN-65`), so Agents and Jira
   users say the same name. One made in Ronin is `w101` until it goes to Jira, then takes its
   key; a key changed in Jira renames it again. Its children, links and holders follow, the
-  history says "renamed from w101", and each holder is told: "w101 is now KAN-65 (on Jira);
-  use KAN-65 (item read KAN-65)."
+  history says "renamed from w101", and each holder is told: "w101 is now KAN-65 (its Jira
+  key); nothing to do."
 
 - **Jira fields**: an item paired with Jira also shows Jira's Sprint, Due date, Rank,
   Reporter, Created, Resolved, Story point estimate, Labels, Components and Fix versions,

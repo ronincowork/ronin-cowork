@@ -37,7 +37,7 @@ A paired item's Ronin id is its Jira key (`KAN-65`), so Agents and Jira users sa
 name. An item from Jira comes in with its key. An item made in Ronin is `w101` until the sync
 that creates it on Jira renames it; a key changed in Jira (the space's key renamed, the item
 moved) renames it the same way. Children, links and holders follow, and each holder is told:
-"w101 is now KAN-65 (on Jira); use KAN-65 (item read KAN-65)." Without a connection, items
+"w101 is now KAN-65 (its Jira key); nothing to do." Without a connection, items
 stay `w101`.
 
 ## Jira wins
