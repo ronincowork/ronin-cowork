@@ -7,8 +7,10 @@
 - **scope:** conditional
 - **requires:** project_management
 
-Anyone reading your work items should know where your work is without asking you, so keep
-them true as you go, never only at the end. `item --help` has the exact syntax.
+Work items work like Jira issues, connected or not: the same levels, and status, kind,
+priority and link type use Jira's names exactly (a paired space's own; `item --help` lists
+them). Anyone reading your items should know where your work is without asking you, so keep
+them true as you go, never only at the end.
 
 ### The structure
 
@@ -24,9 +26,6 @@ Epics are mostly steerco and epic Agents' work, though one for a big topic is fi
 The one rule: nothing goes below -1. A move that would push an item there fails.
 
 ### Status
-
-Status, kind, priority and link type are Jira's names, exactly (a paired space's own);
-`item --help` lists them.
 
 | Status | Means | Moved by |
 |---|---|---|
