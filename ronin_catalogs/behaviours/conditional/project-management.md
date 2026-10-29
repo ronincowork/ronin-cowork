@@ -8,8 +8,8 @@
 - **requires:** project_management
 
 Work items work like Jira issues: the same levels, and status, kind, priority and link
-type use Jira's names exactly (a paired space's own; `item --help` lists them). Anyone reading your items should know where your work is without asking you, so keep
-them true as you go, never only at the end.
+type use Jira's names exactly (`item --help` lists them). Anyone reading your items should
+know where your work is without asking you, so keep them true as you go, never only at the end.
 
 ### The structure
 
@@ -31,7 +31,7 @@ The one rule: nothing goes below -1. A move that would push an item there fails.
 | To Do | Not started; new items start here. | you |
 | In Progress | Being done now. | you |
 | In Review | Handed in, ready to look at. | `worktree-desk hand-in <repo> --item <id>` |
-| Done | Accepted. | the promotion carrying that hand-in; for an item paired to Jira, only the Jira user |
+| Done | Accepted. | the promotion carrying that hand-in; for an item with a Jira key, only the Jira user |
 
 You move yours with `item transition <id> "<status>"`, any to any, by name. A hand-in naming
 no item moves no status.
@@ -47,7 +47,7 @@ no item moves no status.
 - **Link** what holds you up, from the blocking item: `item link w15 Blocks w12`.
 - **Keep the objective true:** `item edit w12 --objective "…"` when the job changes.
 - **Finish:** `worktree-desk hand-in <repo> --item w12` moves it to In Review; in a checkout, transition it.
-- **Paired with Jira:** work your items in Rank order, those in the active sprint first; the Jira fields are Jira's, read only.
+- **Jira fields:** where an item shows them, work in Rank order, active sprint first; they are Jira's, read only.
 
 Several Agents or Teams can hold an item: `item assign <id> <agent>|team:<name>` adds a
 holder, `item handoff` gives yours to someone else (or `none`). An ending Agent lets go.
