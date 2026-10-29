@@ -7,9 +7,8 @@
 - **scope:** conditional
 - **requires:** project_management
 
-Work items work like Jira issues, connected or not: the same levels, and status, kind,
-priority and link type use Jira's names exactly (a paired space's own; `item --help` lists
-them). Anyone reading your items should know where your work is without asking you, so keep
+Work items work like Jira issues: the same levels, and status, kind, priority and link
+type use Jira's names exactly (a paired space's own; `item --help` lists them). Anyone reading your items should know where your work is without asking you, so keep
 them true as you go, never only at the end.
 
 ### The structure
