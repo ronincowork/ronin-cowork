@@ -1,4 +1,4 @@
-# WORKTREE ROOT — get, update, and hand in
+# Managed worktree — get, update, and hand in
 
 - **label:** Managed worktree
 - **scope:** conditional
