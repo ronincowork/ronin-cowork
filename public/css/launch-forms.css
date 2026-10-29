@@ -283,7 +283,7 @@
   /* A header filters its column; a filtered header reads strong in the accent. */
   .jira-items th { padding: var(--space-inline); /* as its cells: a header button never meets the next header */ }
   .jira-items .jira-filter { padding: 0; border: 0; background: none; color: inherit; font: inherit; cursor: pointer; white-space: nowrap; }
-  .menu.jira-filter-menu { width: max-content; min-width: 10rem; max-width: calc(100% - 12px); }
+  .menu.jira-filter-menu { width: fit-content; }
   .jira-items .jira-filter[aria-pressed="true"] { color: var(--accent); font-weight: var(--weight-strong); }
   .jira-items .jira-tree-mark { color: var(--line-3); white-space: pre; font-family: var(--font-mono); }
   .jira-items .jira-sub td { color: var(--muted); font-size: var(--text-small); }
