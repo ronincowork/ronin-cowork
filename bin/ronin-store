@@ -50,7 +50,8 @@ koshi_weights_service|user|koshi_weights_service
 gbrain_brain|user|gbrain_brain
 gbrain_service|user|gbrain_service
 promotion_ledger|data|promotion-ledger
-services_secrets|user|services_secrets"
+services_secrets|user|services_secrets
+jira|user|jira"
 
 root_dir() {
   case "$1" in

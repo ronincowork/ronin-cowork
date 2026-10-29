@@ -112,7 +112,8 @@ each catalog.
 The floor currently contains `mandates.md`, `cowork-agent.md`, and the stock-empty
 `user-intro.md`. Registration writes the owner's two-line introduction to
 `ways/floor/user-intro.md`, which shadows the placeholder whole. Team-lead teaching lives
-in `conditional/team-lead.md`; Team remains the tool capability in
+in `conditional/team-lead.md`, and a lead with managed worktrees also gets
+`conditional/lead-worktrees.md`; Team remains the tool capability in
 `capabilities/cowork_team.md`.
 
 ### Session Boot

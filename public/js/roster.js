@@ -123,7 +123,7 @@ export function buildRoster(tile, host, options = {}) {
       sg.className = 'home-record' + (s.tegami.chip.gate ? ' gate' : '');
       // was already the touch spelling — "quiet" costs five characters on a row that has
       // none to spare, and a bare duration beside a position reads as one anyway — and
-      // the desktop had no better claim on the width. `w12 BUILD · w14 PLAN · 9h`.
+      // the desktop had no better claim on the width. `w12 In Progress · w14 To Do · 9h`.
       const age = s.tegami.quietMs >= 60000 ? humanAge(s.tegami.quietMs) : '';
       sg.textContent = s.tegami.chip.text + (age ? ' · ' + age : '');
       // Agent-authored and unbounded — clamped for the fixed help box (see work-record.js).

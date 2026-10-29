@@ -3542,6 +3542,11 @@ body {
 .menu-more { color: var(--muted); }
 .menu-item[aria-checked='true'] .menu-label { color: var(--fg-strong); font-weight: var(--weight-strong); }
 .menu-item[aria-checked='true'] .menu-glyph { color: var(--kaki); }
+/* A tick box: a ruled square, filled kaki with a tick when checked; its label stays plain. */
+.menu-item[role='menuitemcheckbox'] .menu-glyph { display: grid; place-items: center; justify-self: center; box-sizing: border-box; width: 1rem; height: 1rem; border: var(--edge) solid var(--line-3); border-radius: var(--radius-small); font-size: var(--text-small); line-height: var(--leading-none); }
+.menu-item[role='menuitemcheckbox'][aria-checked='true'] .menu-glyph { border-color: var(--kaki); background: var(--kaki); /* kaki: the choice is on */ color: var(--on-strong); }
+.menu-item[role='menuitemcheckbox'][aria-checked='true'] .menu-glyph::after { content: '✓'; }
+.menu-item[role='menuitemcheckbox'][aria-checked='true'] .menu-label { color: var(--fg); font-weight: inherit; }
 .menu-item[aria-disabled='true'] { opacity: .45; cursor: default; }
 .menu-item[aria-disabled='true']:hover { background: transparent; }
 .menu-back .menu-label { color: var(--fg-strong); font-weight: var(--weight-strong); }
@@ -3889,6 +3894,8 @@ body {
 .ramrpm-pop span { color: var(--muted); text-align: right; }
 
 .services-state { margin-left: var(--space-inline); border: var(--edge) solid var(--line-2); border-radius: var(--radius-small); background: var(--surface); color: var(--muted); padding: var(--space-row) var(--space-inline); font: var(--text-small) var(--font-mono); cursor: pointer; }
+.connection-state { color: var(--muted); font: var(--text-small) var(--font-mono); white-space: nowrap; }
+#phone .connection-state { margin-left: auto; }
 .services-state.busy::before { content: '◌'; display: inline-block; margin-right: var(--space-inline); animation: services-spin var(--motion-slow) linear infinite; }
 .services-pop { position: fixed; z-index: 50; width: min(360px, calc(100vw - 16px)); border: var(--edge) solid var(--line-2); border-radius: var(--radius-small); background: var(--surface); box-shadow: var(--shadow-menu); padding: var(--space-inset); }
 .services-pop-message { margin: 0 0 var(--space-subsection); color: var(--muted); }

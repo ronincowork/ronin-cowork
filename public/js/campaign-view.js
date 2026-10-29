@@ -8,6 +8,7 @@ import { createAgentDefaultsSurface, defaultsSummary } from './campaign-defaults
 import { createInstallationsSurface, installationsSummary } from './campaign-installations.js';
 import { createProviderSetupSessionMount } from './provider-setup-session.js';
 import { createWorkspaceFoldersSurface } from './workspace-folders-surface.js';
+import { createJiraItemsSurface, createJiraPairsSurface, createJiraPanel } from './jira-panel.js';
 import { request } from './request.js';
 import { coworkCommons } from './cowork-commons.js';
 import { createFeedbackSurface, FEEDBACK_TYPE } from './feedback.js';
@@ -27,7 +28,7 @@ import { setupProgressHandlers } from './events.js';
 const PROFILE = WORKBENCH_PROFILES.campaign;
 const MIKA_SESSION = 'mika_agent';
 const TERMINAL_TYPE = WORKBENCH_TYPES.terminal;
-const TYPES = Object.freeze({ machine: WORKBENCH_TYPES.campaignMachine, defaults: WORKBENCH_TYPES.campaignDefaults, roots: WORKBENCH_TYPES.campaignRoots, identity: WORKBENCH_TYPES.campaignIdentity, document: WORKBENCH_TYPES.document });
+const TYPES = Object.freeze({ machine: WORKBENCH_TYPES.campaignMachine, defaults: WORKBENCH_TYPES.campaignDefaults, roots: WORKBENCH_TYPES.campaignRoots, identity: WORKBENCH_TYPES.campaignIdentity, jira: WORKBENCH_TYPES.campaignJira, jiraItems: WORKBENCH_TYPES.campaignJiraItems, jiraPairs: WORKBENCH_TYPES.campaignJiraPairs, document: WORKBENCH_TYPES.document });
 /** The machine's tabs of the cowork commons — everything about this install that is not already a surface here. */
 const MACHINE_TABS = Object.freeze(['themes', 'account', 'archives', 'messages', 'help', 'keypad', 'health']);
 const elem = (tag, cls, text) => { const out = document.createElement(tag); if (cls) out.className = cls; if (text != null) out.textContent = text; return out; };
@@ -92,6 +93,13 @@ export function createCampaignView() {
       workspace,
     }),
     campaignDefaults: () => enterable(createAgentDefaultsSurface(selected)),
+    // Open places the items table, or the pairs table, full width in the other workspace.
+    campaignJira: ({ workspace }) => enterable(createJiraPanel(selected, {
+      openItems: () => bench.place(TYPES.jiraItems, workspace === 'workspace1' ? 'workspace2' : 'workspace1'),
+      openPairs: () => bench.place(TYPES.jiraPairs, workspace === 'workspace1' ? 'workspace2' : 'workspace1'),
+    })),
+    campaignJiraItems: () => enterable(createJiraItemsSurface(selected)),
+    campaignJiraPairs: () => enterable(createJiraPairsSurface(selected)),
     campaignInstallations: (context) => {
       const surface = createInstallationsSurface(selected, {
         ...context,
@@ -149,6 +157,7 @@ export function createCampaignView() {
     for (const [type, label] of [
       [TYPES.machine, t('campaign_view.machine_settings', 'Machine Settings')],
       [TYPES.identity, t('campaign_view.desk_settings', 'Desk Settings')],
+      [TYPES.jira, t('jira.title', 'Jira')],
     ]) {
       const first = cards.querySelector(`[data-workbench-offer-type="${type}"]`);
       if (first) first.before(elem('h3', 'wk-selector-group', label));

@@ -1,5 +1,5 @@
 /**
- * A completed promotion moves every work item named on the hand-ins it carries to DONE,
+ * A completed promotion moves every work item named on the hand-ins it carries to Done,
  * with the promotion receipt on the item's trail, and its notices name the item and the
  * write that keeps it current (owner, 2026-09-28: acknowledgements nag, tools do not).
  */
@@ -8,6 +8,8 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import type { AddressInfo } from 'node:net';
+import express from 'express';
 
 const tmp = await fs.mkdtemp(path.join(os.tmpdir(), 'ronin-promotion-items-'));
 // Every store under private roots, whoever runs this file: holder scans and arrival
@@ -22,12 +24,21 @@ process.env.RONIN_WORK_ITEMS_DIR = path.join(tmp, 'work-items');
 const { appendReceipt } = await import('../src/desks/receipts.js');
 const { announcePromotion } = await import('../src/promotion/promote.js');
 const { createItem, readItem } = await import('../src/work-items.js');
+const { registerWorkItems } = await import('../src/routes/work-items-api.js');
+// The move goes through the running server's route: here, an in-process one.
+const app = express();
+app.use(express.json());
+registerWorkItems(app);
+const server = app.listen(0, '127.0.0.1');
+await new Promise((resolve) => server.once('listening', resolve));
+process.env.RONIN_URL = `http://127.0.0.1:${(server.address() as AddressInfo).port}/`;
+test.after(() => server.close());
 type Receipt = Parameters<typeof appendReceipt>[0];
 type Promotion = Parameters<typeof announcePromotion>[0];
 type Fx = Parameters<typeof announcePromotion>[2];
 
-test('promotion moves each carried item to DONE once and says so', async () => {
-  const { item } = await createItem({ title: 'Promoted', status: 'LAND' }, 'fable');
+test('promotion moves each carried item to Done once and says so', async () => {
+  const { item } = await createItem({ title: 'Promoted', status: 'In Review' }, 'fable');
   await appendReceipt({
     id: 'hi_1', repo: 'cowork', line: 'team/comp/dev', desk: 'team/comp/fable', session: 'fable', result: 'accepted',
     at: new Date().toISOString(), source_tip: 'a', expected_old: 'b', candidate: 'c', line_sha: 'c', conflict_files: [], reason: '', project_id: item.id,
@@ -44,10 +55,10 @@ test('promotion moves each carried item to DONE once and says so', async () => {
   await announcePromotion(receipt, tmp, fx, () => undefined);
 
   const back = (await readItem(item.id))!;
-  assert.equal(back.status, 'DONE');
+  assert.equal(back.status, 'Done');
   assert.equal(back.trail.length, 2, 'create, then one line for the promotion');
-  assert.deepEqual([back.trail[1]!.op, back.trail[1]!.from, back.trail[1]!.to, back.trail[1]!.note, back.trail[1]!.by], ['status', 'LAND', 'DONE', 'promotion promo_1', 'lead']);
-  const keep = `${item.id} moved to DONE.`;
+  assert.deepEqual([back.trail[1]!.op, back.trail[1]!.from, back.trail[1]!.to, back.trail[1]!.note, back.trail[1]!.by], ['status', 'In Review', 'Done', 'promotion promo_1', 'lead']);
+  const keep = `${item.id} moved to Done.`;
   assert.equal(notices.length, 2);
   for (const text of notices) assert.ok(text.includes(keep), text);
 });

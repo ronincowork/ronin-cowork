@@ -37,7 +37,7 @@ conflict replies, discard, and closing are in help and on the Worktrees page; as
 worktree to another Agent is the lead's.
 
 Add `--item <id>` to hand-in when the receipt belongs to one work item. An accepted
-hand-in records the association and moves the item to LAND, the receipt on its trail, and
+hand-in records the association and moves the item to In Review, the receipt on its trail, and
 ends with the write that keeps the item current. A conflict or refusal moves nothing.
 
 Hand-in constructs an isolated candidate and reports `ACCEPTED` with a receipt, or keeps
@@ -82,4 +82,4 @@ a pending sync with the same explicit source. On conflict, resolve the reported 
 on your private worktree; do not edit the source or shared Team line.
 
 After the final hand-in, `status` must say `CERTIFIED CLEAN`: no unsaved files and every
-commit on the Team line. Stay parked unless told to end.
+commit on the Team line.

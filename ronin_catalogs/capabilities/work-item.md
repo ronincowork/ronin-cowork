@@ -20,33 +20,36 @@
 | `item handoff` | write: the giver comes off and the receiver goes on; `none` lets go | priority | `item --help` |
 | `item comment` | write: one comment, or `--edit <n>` changes one | priority | `item --help` |
 | `item attach` | write: attach or remove a document, visible in Docs | priority | `item --help` |
-| `item link` | write: this item blocks, or relates to, another | priority | `item --help` |
+| `item link` | write: a link by Jira's type name (Blocks, Relates, …) | priority | `item --help` |
 | `item delete` | write: the item goes, with its subtasks | priority | `item --help` |
 
 Your work lives on work items, as in Jira.
 
-**Kinds.** An **epic** holds a body of work. A **story, task, bug or feature** is the
-work itself; it is what you will create most. A **subtask** is a step inside one of
-those. The kind names are the space's own.
+**Kinds.** An **Epic** holds a body of work. A **Task, Story, Bug or Feature** is the
+work itself; it is what you will create most. A **Subtask** is a step inside one of
+those. The kind names are the space's own, and the kind sets the level.
 
 | To | Command |
 |---|---|
 | see what you hold | `work-record read` |
 | read an item | `item read <id>` |
-| create one | `item create --title <t> --kind task\|bug\|story\|feature`. Add `--parent <id>` when you know where it belongs: under an epic it is work, under a task it is a subtask. With no parent it is work with no epic yet. |
+| create one | `item create --title <t> --kind Task\|Bug\|Story`. Add `--parent <id>` when you know where it belongs: under an epic it is work, under a task it is a subtask. With no parent it is work with no epic yet. |
 | edit it | `item edit <id> --objective <o> --priority <p> --parent <id>` |
 | flag it | `item flag <id> "<why>"` when stuck; `item unflag <id>` when clear |
-| transition it | `item transition <id> BUILD`: moves it to a status |
+| transition it | `item transition <id> "In Progress"`: moves it to a status, by its Jira name |
 | comment on it | `item comment <id> <text>`: how you answer a person, from Jira or Ronin |
 | assign it | `item assign <id> <agent>` |
 | hand it over | `item handoff <id> <agent>`; use `none` to let go |
 | attach a document | `item attach <id> <path>`: the owner reaches only the documents you attach |
-| link it | `item link <id> blocks <id>`: it holds up another item |
+| link it | `item link <id> Blocks <id>`: it holds up another item |
 | find items | `item search --campaign <id>`, `--team <t>` and other filters |
 
-Status is the item's state: IDEA PLAN BUILD REVIEW LAND DONE; any transition is allowed. Stuck is
-`item flag`. When someone else changes an item you hold, Ronin tells you: read it,
-then edit or comment. Epics are made by leads (`--level 1`). Everything else:
+Status, kind, priority and link type are the space's names exactly (unconnected, Jira's:
+To Do, In Progress, In Review, Done; Epic, Task, Story, Bug, Feature, Subtask; Highest to
+Lowest; Blocks, Relates, Duplicate, Cloners); anything else is refused, naming the set. Any
+transition is allowed. Stuck is `item flag`. When someone else changes an item you hold,
+Ronin tells you: read it, then edit or comment. Epics are made by leads (`--kind Epic`).
+Everything else:
 `item --help`.
 
 More: `ronin-help work-items`

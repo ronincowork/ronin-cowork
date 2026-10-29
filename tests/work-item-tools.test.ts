@@ -1,5 +1,5 @@
 /**
- * `item …` against the real /api/work-items routes (Lab JIRA_SHAPE.md): each act
+ * `item …` against the real /api/work-items routes (docs/using-ronin/work-items.md): each act
  * names its item and leaves exactly one trail line; no tool refuses a caller for not being
  * the holder; `item` is the one tool for work items.
  *
@@ -85,24 +85,24 @@ async function oneLine(id: string, args: string[], as = 'probe') {
 const made = (out: string) => /^(w\d+) was created/m.exec(out)![1]!;
 
 test('item acts, each naming its item, one trail line each', async () => {
-  const epic = made(await tool('item', ['create', '--title', 'Overall', '--level', '1']));
+  const epic = made(await tool('item', ['create', '--title', 'Overall', '--kind', 'Epic']));
   assert.deepEqual([(await readItem(epic))!.level, (await trail(epic)).map((line) => [line.op, line.to])], [1, [['create', 'none']]]);
-  const id = made(await tool('item', ['create', '--title', 'Piece', '--objective', 'part', '--parent', epic, '--kind', 'task']));
+  const id = made(await tool('item', ['create', '--title', 'Piece', '--objective', 'part', '--parent', epic, '--kind', 'Task']));
   assert.match(await tool('item', ['read', id]), /"level": 0/);
 
   assert.equal((await oneLine(id, ['assign', id, 'probe'])).to, 'agent:probe');
   assert.deepEqual((await readLetterHolds('probe'))!.holds, [id]);
   assert.equal((await oneLine(id, ['assign', id, 'team:crew'])).to, 'team:crew');
   assert.equal((await oneLine(id, ['handoff', id, 'none'])).op, 'handoff');
-  assert.equal((await oneLine(id, ['transition', id, 'DONE'])).to, 'DONE');
-  assert.equal((await run('item', ['edit', id, '--status', 'BUILD'])).status, 2, 'status is transition\'s, not edit\'s');
+  assert.equal((await oneLine(id, ['transition', id, 'Done'])).to, 'Done');
+  assert.equal((await run('item', ['edit', id, '--status', 'In Progress'])).status, 2, 'status is transition\'s, not edit\'s');
   const flagged = await oneLine(id, ['flag', id, 'stuck on the API']);
   assert.deepEqual([flagged.op, (await readItem(id))!.flagged, (await readItem(id))!.comments.at(-1)!.text], ['flag', true, 'stuck on the API']);
   assert.equal((await oneLine(id, ['unflag', id])).to, 'false');
   assert.equal((await run('item', ['edit', id, '--flagged', 'true'])).status, 2, 'flagging is its own act');
-  assert.equal((await oneLine(id, ['edit', id, '--jira', 'RON-7'])).note, 'jira RON-7');
+  assert.equal((await run('item', ['edit', id, '--jira', 'RON-7'])).status, 2, 'the Jira pair is written by the bridge alone');
   assert.equal((await oneLine(id, ['comment', id, 'one remark'])).op, 'comment');
-  assert.equal((await oneLine(id, ['edit', id, '--priority', 'Highest', '--kind', 'feature'])).note, 'kind feature, priority Highest');
+  assert.equal((await oneLine(id, ['edit', id, '--priority', 'Highest', '--kind', 'Feature'])).note, 'kind Feature, priority Highest');
   assert.equal((await oneLine(id, ['comment', id, '--edit', '2', 'one remark, fixed'])).from, '2');
   const doc = path.join(dir, 'plan.md');
   writeFileSync(doc, '# plan\n');
@@ -121,14 +121,14 @@ test('item acts, each naming its item, one trail line each', async () => {
   const loose = made(await tool('item', ['create', '--title', 'Loose']));
   const moved = await oneLine(loose, ['edit', loose, '--parent', epic]);
   assert.deepEqual([moved.op, moved.to, (await readItem(loose))!.level], ['move', epic, 0]);
-  assert.equal((await oneLine(peer, ['link', peer, 'blocks', loose])).note, `blocks ${loose}`);
+  assert.equal((await oneLine(peer, ['link', peer, 'Blocks', loose])).note, `Blocks ${loose}`);
   assert.match(await tool('item', ['read', loose]), new RegExp(`"from": "${peer}"`));
-  assert.equal((await oneLine(peer, ['link', peer, 'blocks', loose, '--remove'])).note, `blocks ${loose}: link removed`);
+  assert.equal((await oneLine(peer, ['link', peer, 'Blocks', loose, '--remove'])).note, `Blocks ${loose}: link removed`);
 
   const listed = JSON.parse(await tool('item', ['search', '--parent', epic])) as { items: Array<{ id: string }> };
   assert.deepEqual(listed.items.map((item) => item.id).sort(), [id, loose].sort());
-  const roots = JSON.parse(await tool('item', ['search', '--no-parent', '--status', 'IDEA'])) as { items: Array<{ parent: string | null; status: string }> };
-  assert.ok(roots.items.length && roots.items.every((item) => item.parent === null && item.status === 'IDEA'));
+  const roots = JSON.parse(await tool('item', ['search', '--no-parent', '--status', 'To Do'])) as { items: Array<{ parent: string | null; status: string }> };
+  assert.ok(roots.items.length && roots.items.every((item) => item.parent === null && item.status === 'To Do'));
   assert.match(await tool('item', ['delete', id]), new RegExp(`^${id} was deleted; with its subtasks ${sub}`));
   assert.equal(await readItem(sub), null);
   for (const verb of ['move', 'list', 'doc', 'plan', 'focus', 'evidence', 'write']) assert.equal((await run('item', [verb, loose])).status, 2, `item ${verb} is not an act`);
@@ -142,7 +142,7 @@ test('item is the one tool for work items: team and work-record have no item act
 });
 
 test('an id no route can hold answers "No work item <id>", and a reply that is not JSON names its HTTP status', async () => {
-  for (const args of [['read', 'surface/7'], ['transition', 'surface/7', 'DONE']]) {
+  for (const args of [['read', 'surface/7'], ['transition', 'surface/7', 'Done']]) {
     const r = await run('item', args);
     assert.equal(r.status, 3, `item ${args.join(' ')}`);
     assert.equal(r.stderr.trim(), 'No work item surface/7.');

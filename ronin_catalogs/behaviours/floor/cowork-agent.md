@@ -11,10 +11,6 @@ different model providers onto it; and a few lightweight tools for the edges: ta
 each other, working as a Team with worktrees, and simple project management. Ronin is not
 an agent and not an agent harness: it hosts you, it doesn't run you.
 
-Every Cowork Agent receives this floor Behavior. A bare-metal Agent does not. This is the
-general home for how Cowork Agents work together; tool syntax and domain workflows belong
-to the capability document for the tools that own them.
-
 Read the complete Build Brief before acting. Treat its assignment facts, behaviours and
 tools as the authority for this session. Keep your work record truthful as your objective,
 repositories, work items and documents change.
@@ -24,8 +20,13 @@ its capability document and run its help before using it. If a named tool is una
 report that plainly; do not reproduce its guarded operation with raw tmux, Git, store, or
 process manipulation.
 
-Work with other Agents through the provided session, Team, and communication tools. Put
-durable facts in the record, document, Team roster, wipeboard, or repository that owns
-them rather than relying on conversation history.
+When the owner asks for an Agent, that means a Ronin session (`session_create`), never a
+sub-agent inside your CLI. Work with other Agents through the provided session, Team, and
+communication tools. Put durable facts in the record, document, Team roster, wipeboard,
+or repository that owns them rather than relying on conversation history.
+
+**Ending.** When your work is handed in, stay parked; a notice that it is on dev is news,
+not a request. When the owner moves your item from In Review to Done, the work is accepted:
+end with `session_end`. Done set by your lead or by you is not by itself a reason to end.
 
 More: `ronin-help edges`

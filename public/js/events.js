@@ -1,7 +1,6 @@
 /* part of the ronin-cowork client — see js/README.md */
 import { reconcileSessions } from './api.js';
 import { store } from './store.js';
-import { clearFailure, showFailure } from './errors.js';
 import { S, tiles } from './state.js';
 import { t } from './lexicon.js';
 
@@ -50,15 +49,24 @@ store.listen('setup-progress', (m) => { if (Array.isArray(m.steps)) for (const f
 store.reduce('sessions', onSessionsEvent);
 
 /**
- * THE PAGE SAYS WHEN IT CANNOT REACH RONIN, and the socket is the truth of that: while the
- * socket is closed — it never opened, or it dropped after boot — every reading on the page
- * is frozen, so the failure bar says so; the next open takes it off. The store's own retry
- * is the only retry. Desktop (main.js) and phone (phone.js) both call this once.
+ * A restart is ordinary: only a connection that stays closed gets a quiet top-bar reading.
+ * A quick restart paints nothing, and the next open clears both the delay and the reading.
  */
-export function sayWhenUnreachable() {
-  const where = t('errors.unreachable', 'cannot reach Ronin');
-  store.onClose(() => showFailure(where, new Error(t('errors.unreachable_detail', 'the live connection is closed; what this page shows may be out of date. It reconnects on its own.'))));
-  store.onOpen(() => clearFailure(where));
+export function sayWhenUnreachable(status) {
+  let pending = null;
+  const clear = () => {
+    clearTimeout(pending);
+    pending = null;
+    status.hidden = true;
+  };
+  store.onClose(() => {
+    clearTimeout(pending);
+    pending = setTimeout(() => {
+      status.textContent = t('events.reconnecting', 'Reconnecting…');
+      status.hidden = false;
+    }, 3000);
+  });
+  store.onOpen(clear);
 }
 
 /** A changed session list: reconcile it, return dead tiles home, and offer the newborn.

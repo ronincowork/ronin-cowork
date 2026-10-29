@@ -6,7 +6,7 @@ import type express from 'express';
 import {
   WorkItemBadInput, WorkItemMissing, WorkItemRefused,
   addComment, assignItem, attachDoc, createItem, deleteItem, editComment, editItem, flagItem, handoffItem, holderLabel, holdersOf, linkItem, listItems, readItem,
-  didLine, type Acknowledged, type Holder, type WorkItem,
+  didLine, type Acknowledged, type Holder, type JiraPair, type WorkItem,
 } from '../work-items.js';
 import { agentReading, everyItemReading, teamReading } from '../work-items-read.js';
 import { pushTeams } from '../ws/events.js';
@@ -43,10 +43,16 @@ export function holderFrom(body: Record<string, unknown> | undefined): Holder {
   return team ? { kind: 'team', name: team } : { kind: 'agent', name: session! };
 }
 
-/** The tool sends words: "-1" is a level. Anything else is passed on as it came, for the store to name. */
-const levelOf = (value: unknown): number | undefined => value === undefined || value === null || value === '' ? undefined : /^-?\d+$/.test(String(value)) ? Number(value) : value as number;
 /** "none" or blank is no parent. */
 const parentOf = (value: unknown): string | null => { const id = text(value)?.trim(); return id && id !== 'none' ? id : null; };
+
+/** The pair, as the bridge writes it: { id, key }, or null to drop it. */
+const jiraOf = (value: unknown): JiraPair | null => {
+  if (value === null) return null;
+  const pair = value as Partial<JiraPair> | undefined;
+  if (typeof pair?.id !== 'string' || typeof pair.key !== 'string') throw new WorkItemBadInput('jira is { id, key } or null.');
+  return { id: pair.id, key: pair.key };
+};
 
 type Handler = (req: express.Request, res: express.Response) => Promise<unknown>;
 const guarded = (handler: Handler): express.RequestHandler => (req, res) => {
@@ -63,19 +69,19 @@ export function registerWorkItems(app: express.Express): void {
 
   app.get('/api/work-items', guarded(async (req, res) => {
     // Search (Jira's JQL, as filters): ?session= (an Agent's), ?team= (a Team's), or every
-    // item; each narrowed by ?holder=<name>, ?parent=<id>, ?no_parent=1, ?status=, ?kind=.
+    // item; each narrowed by ?holder=<name> (none: held by nobody), ?parent=<id>, ?no_parent=1, ?status=, ?kind=.
     const team = text(req.query.team)?.trim();
     const session = text(req.query.session)?.trim();
     const holder = text(req.query.holder)?.trim();
     const parent = text(req.query.parent)?.trim();
     const orphans = Boolean(text(req.query.no_parent));
-    const status = text(req.query.status)?.trim().toUpperCase();
-    const kind = text(req.query.kind)?.trim();
+    const status = text(req.query.status)?.trim().toLowerCase();
+    const kind = text(req.query.kind)?.trim().toLowerCase();
     const campaign = text(req.query.campaign)?.trim();
     const narrow = <T extends WorkItem & { holder?: string }>(items: T[]): T[] => items.filter((item) =>
-      (!holder || item.holder === `agent:${holder}` || item.holder === `team:${holder}` || item.holder === holder)
+      (!holder || (holder === 'none' && !item.holder) || item.holder === `agent:${holder}` || item.holder === `team:${holder}` || item.holder === holder)
       && (!parent || item.parent === parent) && (!orphans || !item.parent)
-      && (!status || item.status === status) && (!kind || (item.kind ?? '') === kind)
+      && (!status || item.status.toLowerCase() === status) && (!kind || item.kind.toLowerCase() === kind)
       && (!campaign || item.campaign_id === campaign));
     if (session) { const reading = await agentReading(session); return res.json({ ok: true, ...reading, items: narrow(reading.items) }); }
     if (team) {
@@ -88,7 +94,7 @@ export function registerWorkItems(app: express.Express): void {
   app.post('/api/work-items', guarded(async (req, res) => {
     const b = req.body ?? {};
     acknowledge(res, await createItem({
-      title: text(b.title) ?? '', objective: text(b.objective), status: text(b.status), kind: text(b.kind), level: levelOf(b.level), priority: text(b.priority), parent: text(b.parent) || null,
+      title: text(b.title) ?? '', objective: text(b.objective), status: text(b.status), kind: text(b.kind), priority: text(b.priority), parent: text(b.parent) || null,
       ...(b.team || b.session ? { holder: holderFrom(b) } : {}),
     }, callerOf(req)));
   }));
@@ -105,18 +111,20 @@ export function registerWorkItems(app: express.Express): void {
 
   app.put('/api/work-items/:id', guarded(async (req, res) => {
     const b = req.body ?? {};
-    const external = Object.fromEntries((['jira', 'trello', 'github'] as const).filter((key) => b[key] !== undefined).map((key) => [key, text(b[key]) ?? '']));
+    if (b.jiraFields !== undefined) throw new WorkItemRefused('jiraFields are Jira\'s, read only: the bridge sets them.');
+    const external = Object.fromEntries((['trello', 'github'] as const).filter((key) => b[key] !== undefined).map((key) => [key, text(b[key]) ?? '']));
     acknowledge(res, await editItem(req.params.id, {
-      title: text(b.title), objective: text(b.objective), kind: text(b.kind), level: levelOf(b.level), priority: text(b.priority),
+      title: text(b.title), objective: text(b.objective), kind: text(b.kind), priority: text(b.priority),
       ...(b.parent !== undefined ? { parent: parentOf(b.parent) } : {}),
       ...(Object.keys(external).length ? { external } : {}),
+      ...(b.jira !== undefined ? { jira: jiraOf(b.jira) } : {}),
     }, callerOf(req), text(b.note)));
   }));
 
   // Jira's transition: any status to any status, one trail line. Edit does not set it.
   app.post('/api/work-items/:id/transition', guarded(async (req, res) => {
-    const status = text(req.body?.status)?.trim().toUpperCase();
-    if (!status) throw new WorkItemBadInput('name the status: IDEA, PLAN, BUILD, REVIEW, LAND or DONE.');
+    const status = text(req.body?.status)?.trim();
+    if (!status) throw new WorkItemBadInput('name the status, one of the space\'s.');
     acknowledge(res, await editItem(req.params.id, { status }, callerOf(req), text(req.body?.note)));
   }));
   // Assign adds a holder and removes nobody.

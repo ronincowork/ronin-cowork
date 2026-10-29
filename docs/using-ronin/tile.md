@@ -24,7 +24,7 @@ it; the arrow keys move through it.
 | @ Mention a session | Choose a session; its name goes into the message box |
 | Output | **Terminal Mirror** — the live terminal — or **Locked**, the same terminal to watch without typing into it. Not shown when this Agent has no Ronin Services |
 | ☰ Work record | Opens over the whole tile, leaving the terminal untouched beneath it: the work items it holds first, each with its status, flag and attachments, then its task at hand, worktrees and Teams. Press an attachment to open it over the tile; Close or Escape returns to the terminal |
-| ⚙ Configuration | Opens over the whole tile in three sections. **Agent** shows the work-record objective, title, born Workspace Folder, role, and Team. **Mandate** shows Reach, Recruit, and Output. **Behaviors** opens every behavior as ERABI choices; always-on and conditional guidance is fixed and says why, while optional guidance can be chosen. **Send** is the only configuration act and highlights only after a change. It writes the changed fields, rebuilds the brief from current facts and files, tells the Agent to read it, then refreshes the surface. Closing without sending discards the draft. |
+| ⚙ Configuration | Opens over the whole tile in three sections. **Agent** shows the work-record objective, title, born Workspace Folder, role, and Team. **Mandate** shows Reach, Recruit, and Output. **Behaviors** opens every behavior as ERABI choices; always-on and conditional guidance is fixed and says why, while optional guidance can be chosen. **Send** is the only configuration act; it can always be pressed, to resend the brief unchanged, and highlights after a change. Pressed, it turns green and says Sending… until the brief is out. It writes the changed fields, rebuilds the brief from current facts and files, tells the Agent to read it, then refreshes the surface. Closing without sending discards the draft. |
 | 📄 Docs | The attachments of the work items this Agent holds, with how many; press one to open it over the tile |
 | × Delete or archive… | Open the archive/delete choices; it stays at the foot of the menu |
 
@@ -68,7 +68,8 @@ itself is read-only, but the Agent is live, and the box below it talks to the Ag
 same way it does over the terminal. In Chat the conversation ends where the box begins, so
 nothing is ever hidden under it. If you are at the end you stay at the end: a new line, the
 dots, a draft growing to several lines or the tile changing size never push the last line
-out of view. Scroll up and it leaves you where you are.
+out of view. Scroll up and it leaves you where you are, and fetches earlier lines as you
+go; a long conversation is never loaded whole.
 
 On a phone the button sits in the bar at the top, because the tile's own header is not on
 screen there, and it is a two-state toggle: **Term** or **Chat**. The fuller readings are a

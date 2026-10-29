@@ -26,6 +26,8 @@
   .wk-action[aria-pressed='true'] { border-color: var(--kaki); background: var(--selected); /* the one you are on, have chosen, or are dropping onto */ color: var(--kaki); }
   /* A disabled action, primary included, keeps a legible label: muted text on the plain surface, never a faded fill (owner via lead, 2026-10-24). */
   .wk-action:disabled, .wk-action[data-kind='primary']:disabled { border-color: var(--line-2); background: var(--surface); color: var(--muted); cursor: default; }
+  /* Busy: the press is under way (Send's Sending…); it outranks disabled, which it also is. */
+  .wk-action[data-busy='true'], .wk-action[data-busy='true']:disabled { border-color: var(--ok-2); background: var(--ok-2); /* status: under way or done */ color: var(--surface); cursor: progress; }
   .wk-metadata { display: grid; grid-template-columns: minmax(7rem, auto) minmax(0, 1fr); gap: var(--space-row) var(--space-inline); margin: 0; }
   .wk-metadata-key { color: var(--muted); }
   .wk-metadata-value { min-width: 0; margin: 0; color: var(--fg); overflow-wrap: anywhere; }

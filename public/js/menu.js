@@ -10,6 +10,7 @@
  * `{ items?, foot? }`, divided from the next by a hairline only, never a word:
  *   items  rows: { glyph, label, hint, run, kind, checked, quiet, list, empty }
  *          kind 'action' (default) runs and closes · 'radio' one of the group, aria-checked ·
+ *          'check' a tick box: a press flips it, calls run(checked), and the menu stays up ·
  *          'list' drills in: its rows replace the menu's, with a Back row; never a flyout.
  *          `quiet` is the reason a row cannot run; it is shown, and the row does nothing.
  *   foot   the group stays at the bottom while the rest scrolls (Delete or archive).
@@ -58,8 +59,9 @@ export function openMenu({ anchor, host, title = '', groups = [], onClose = () =
   const row = (item, { radio = false } = {}) => {
     const button = el('button', 'menu-item');
     button.type = 'button';
-    button.setAttribute('role', radio ? 'menuitemradio' : 'menuitem');
-    if (radio) button.setAttribute('aria-checked', String(!!item.checked));
+    const check = item.kind === 'check';
+    button.setAttribute('role', check ? 'menuitemcheckbox' : radio ? 'menuitemradio' : 'menuitem');
+    if (radio || check) button.setAttribute('aria-checked', String(!!item.checked));
     if (item.kind === 'list') button.setAttribute('aria-haspopup', 'menu');
     const hint = item.quiet || item.hint || '';
     button.append(el('span', 'menu-glyph', item.glyph || (radio && item.checked ? '●' : '')),
@@ -70,6 +72,7 @@ export function openMenu({ anchor, host, title = '', groups = [], onClose = () =
       if (item.quiet) return;
       if (item.kind === 'list') { drill(item); return; }
       if (item.kind === 'back') { paint(); first(); return; }
+      if (check) { item.checked = !item.checked; button.setAttribute('aria-checked', String(item.checked)); item.run?.(item.checked); return; }
       close();
       item.run?.();
     });

@@ -127,7 +127,9 @@ its birth brief, never written after birth. The Configuration's Update (owner, 2
 `docs/architecture/birth-packet.md` §8) writes it there and sends the Agent its new brief as the
 one message, with no record notice on top. Any other write to the record by anyone but the
 Agent pushes it one fixed line, "Your work record changed; please read it (work-record read)."
-(`ackRecord`, owner 2026-10-07); the record says what changed.
+(`ackRecord`, owner 2026-10-07); the record says what changed. A change to an item the Agent
+holds is not a record write: its ack names the item and the change, "w64 KAN-27: a comment from
+jira:x (item read w64)." (`ackHolders`, `src/work-items.ts`).
 
 The record's `teams` block is Ronin's, one entry per Team: `team`, `team_role` (lead or
 member) and the roster's `objective`; a lead's entry also lists `members`, leads marked
@@ -145,6 +147,9 @@ the change. Adding a Behavior sends its own message carrying the teaching, which
 notification. Brief and model have no write after birth.
 
 Mandate teaching is part of the Ronin floor for every Cowork Agent. It is not selectable
-and must not appear among elective behaviors. This value-plus-teaching pattern is
+and must not appear among elective behaviors. The floor page teaches what each Reach,
+Recruit and Output value means; the brief carries a per-session copy (`MANDATES.md` in the
+session's boot cache) that adds the Agent's own values from its current record, so a brief
+resent after a Configuration change states the new mandate. This value-plus-teaching pattern is
 fundamental to composition: stating a fact is insufficient when the Agent has not also
 been taught what that fact means and how it governs its work.

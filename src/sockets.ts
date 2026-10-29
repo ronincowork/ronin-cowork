@@ -1,4 +1,4 @@
-import type { BornInfo, RowFields, Sockets } from './sockets-contract.js';
+import type { BornInfo, ItemChange, RowFields, Sockets } from './sockets-contract.js';
 import { deliverToWatchers } from './ws/watchers.js';
 
 type BootHook = { start(): void | Promise<void>; stop?(): void };
@@ -8,6 +8,7 @@ const bornHooks: Array<(info: BornInfo) => void | Promise<void>> = [];
 const birthLineHooks: Array<(name: string, agent: boolean) => Promise<string> | string> = [];
 const endHooks: Array<(name: string, key: string) => void | Promise<void>> = [];
 const watchHooks: Array<(session: string) => void | Promise<void>> = [];
+const itemHooks: Array<(change: ItemChange) => void | Promise<void>> = [];
 const rowContribs: Array<(session: string) => Promise<RowFields> | RowFields> = [];
 const routeMounts: Array<(app: unknown) => void> = [];
 let streamHandler: ((...args: unknown[]) => void) | undefined;
@@ -21,6 +22,7 @@ export const sockets: Sockets = {
   onSessionEnd: (cb) => void endHooks.push(cb),
   onTranscriptWatch: (cb) => void watchHooks.push(cb),
   addRowFields: (cb) => void rowContribs.push(cb),
+  onItemChanged: (cb) => void itemHooks.push(cb),
   // Connections are Core's; what a reading admits is the part's. This is the seam.
   deliverToWatchers: (session, make) => deliverToWatchers(session, make),
   addRoutes: (m) => void routeMounts.push(m),
@@ -78,6 +80,16 @@ export function emitTranscriptWatch(session: string): void {
 
 export function emitSessionEnd(name: string, key: string): void {
   for (const cb of endHooks) void Promise.resolve(cb(name, key)).catch((e) => console.error('[sockets] end hook:', e));
+}
+/** After a saved work-item write, once per trail line (work-items.ts). Fire and forget. */
+export function emitItemChanged(change: ItemChange): void {
+  for (const cb of itemHooks) {
+    try {
+      void Promise.resolve(cb(change)).catch((e) => console.error('[sockets] item hook:', e));
+    } catch (e) {
+      console.error('[sockets] item hook:', e);
+    }
+  }
 }
 export function getStreamHandler(): ((...args: unknown[]) => void) | undefined {
   return streamHandler;

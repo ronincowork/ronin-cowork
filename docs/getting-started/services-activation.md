@@ -19,6 +19,7 @@ itself when Ronin is back.
 
 Below the controls, each feature has its own switch. Project management, Usage stats and
 Machine status start on; the rest start off. Turn any of them on or off whenever you like.
+With **Jira** on, **Settings › Jira** connects a Desk to a Jira space: see [Jira](../using-ronin/jira.md).
 
 ## What is sent
 

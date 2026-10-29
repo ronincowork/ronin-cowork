@@ -66,6 +66,9 @@ export async function buildPhone() {
   if (!root) throw new Error('the mobile document has no #phone');
   const bar = root.querySelector('.ph-bar');
   const main = root.querySelector('.ph-main');
+  const connectionStatus = el('span', 'connection-state');
+  connectionStatus.hidden = true;
+  const paintBar = (...nodes) => bar.replaceChildren(...nodes, connectionStatus);
   // The mark is in the document's own markup; tapping it is the way to the Teams list.
   const brand = bar.querySelector('.brand');
   const feedbackAction = el('button', '', t('feedback.button', 'Feedback'));
@@ -79,8 +82,8 @@ export async function buildPhone() {
     back.title = t('phone.back', 'Back');
     return back;
   };
-  const teamsBar = () => bar.replaceChildren(brand, el('span', 'ph-title', t('phone.coworks', 'Teams')));
-  const teamBar = (team) => bar.replaceChildren(
+  const teamsBar = () => paintBar(brand, el('span', 'ph-title', t('phone.coworks', 'Teams')));
+  const teamBar = (team) => paintBar(
     backLink('#/'),
     el('span', 'ph-title', teamLabel({ ...teamByName(team), name: team })),
   );
@@ -89,9 +92,9 @@ export async function buildPhone() {
   // server never shows a bare strip and nothing changes shape when the readings land.
   let route = routeFromHash();
   if (route.screen === 'teams') teamsBar();
-  else if (route.screen === 'feedback') bar.replaceChildren(backLink('#/'), el('span', 'ph-title', t('feedback.title', 'Feedback')));
-  else if (route.screen === 'terminal') bar.replaceChildren(backLink(teamHash(route.team)), el('span', 'ph-title', readable(route.session)));
-  else bar.replaceChildren(backLink('#/'), el('span', 'ph-title', ''));
+  else if (route.screen === 'feedback') paintBar(backLink('#/'), el('span', 'ph-title', t('feedback.title', 'Feedback')));
+  else if (route.screen === 'terminal') paintBar(backLink(teamHash(route.team)), el('span', 'ph-title', readable(route.session)));
+  else paintBar(backLink('#/'), el('span', 'ph-title', ''));
 
   let agentsPainted = ''; // what the Agents screen last drew — identical readings skip the repaint
   let host = null; // the one terminal host, alive only on the terminal screen
@@ -299,7 +302,7 @@ export async function buildPhone() {
     // it, never a row in a menu ("It should have the same toggle as the desktop"). The
     // button is the tile head's own — hidden when the route offers this Agent nothing,
     // opaque when it has nothing yet, naming where you are, exactly as on the desktop.
-    bar.replaceChildren(
+    paintBar(
       backLink(teamHash(team)),
       el('span', 'ph-title', agentLabel(S.sessions.find((row) => row.name === session) || { name: session })),
       transcriptBtn,
@@ -316,7 +319,7 @@ export async function buildPhone() {
   };
 
   const paintFeedback = () => {
-    bar.replaceChildren(backLink('#/'), el('span', 'ph-title', t('feedback.title', 'Feedback')));
+    paintBar(backLink('#/'), el('span', 'ph-title', t('feedback.title', 'Feedback')));
     main.replaceChildren(feedback.el);
     feedback.show?.();
   };
@@ -368,7 +371,7 @@ export async function buildPhone() {
   }
   // A tile address mounts its tile now: the terminal attaches by name and needs no list.
   if (route.screen === 'terminal') guard('phone paint', render);
-  guard('say when Ronin is unreachable', sayWhenUnreachable);
+  guard('say when Ronin is unreachable', () => sayWhenUnreachable(connectionStatus));
   guard('session event stream', connect);
   guard('load projects', loadProjects); // the launch card's project_root fallback
   guard('phone paint', render);

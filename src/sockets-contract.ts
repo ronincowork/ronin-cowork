@@ -1,5 +1,7 @@
 
-export const CONTRACT_V = 10;
+import type { TrailLine, WorkItem } from './work-items.js';
+
+export const CONTRACT_V = 11;
 
 export interface LaunchIdentity {
   key: string;
@@ -23,6 +25,8 @@ export interface BornInfo {
   root?: string; // project_root dir, when known
   cmd?: string; // what was started in the pane
 }
+
+export interface ItemChange { item: WorkItem; line: TrailLine }
 
 export type RowFields = Record<string, unknown>;
 
@@ -83,6 +87,12 @@ export interface Sockets {
  * many connections were written to.
  */
   deliverToWatchers(session: string, make: (reading: string) => unknown | null): number;
+  /**
+   * THE ITEM SOCKET. Called after every saved work-item write, once per trail line, fire
+   * and forget: the item as saved and the line that write appended. A throw is logged and
+   * never fails the write.
+   */
+  onItemChanged(cb: (change: ItemChange) => void | Promise<void>): void;
   addRoutes(mount: (app: unknown) => void): void;
   setStreamHandler(h: (...args: unknown[]) => void): void;
 }

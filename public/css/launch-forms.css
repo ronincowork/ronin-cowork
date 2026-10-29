@@ -271,6 +271,28 @@
   .fs-sum { flex: 1 1 auto; min-width: 0; color: var(--accent); font-size: var(--form-note); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .fs-sum[hidden] { display: none; }
   .fs-step-help { margin: 0; color: var(--muted); font-size: var(--form-note); line-height: var(--leading-body); }
+  /* The Jira panel: instructions are reading text, not captions; each section stands apart. */
+  .jira-read { margin: 0; color: var(--fg); font-size: var(--text-body); line-height: var(--leading-body); }
+  .jira-read b { color: var(--fg-strong); font-weight: var(--weight-strong); }
+  .jira-walkthrough { margin: 0; padding-left: var(--space-subsection); display: flex; flex-direction: column; gap: var(--space-row); }
+  .jira-form > .fs-step + .fs-step { margin-top: var(--space-paragraph); }
+  /* The Jira items table: an epic (or a group with no epic here) heads its group as a band. */
+  .jira-items .jira-group td { background: var(--inset); /* the group's head: where a group starts */ color: var(--fg-strong); font-weight: var(--weight-strong); }
+  /* Title is the one column that wraps, narrow, so the columns after it stay in view. */
+  .jira-items .jira-title { min-width: 16ch; max-width: 36ch; white-space: normal; overflow-wrap: anywhere; }
+  /* A header filters its column; a filtered header reads strong in the accent. */
+  .jira-items th { padding: var(--space-inline); /* as its cells: a header button never meets the next header */ }
+  .jira-items .jira-filter { padding: 0; border: 0; background: none; color: inherit; font: inherit; cursor: pointer; white-space: nowrap; }
+  .menu.jira-filter-menu { width: fit-content; }
+  .jira-items .jira-filter[aria-pressed="true"] { color: var(--accent); font-weight: var(--weight-strong); }
+  .jira-items .jira-tree-mark { color: var(--line-3); white-space: pre; font-family: var(--font-mono); }
+  .jira-items .jira-sub td { color: var(--muted); font-size: var(--text-small); }
+  /* One density in both hosts: the table sets its own type, not the host's. */
+  .jira-items, .jira-pairs { font-size: var(--form-note); line-height: var(--leading-body); }
+  /* The pairs table: one line per pair; the wrap scrolls across instead. */
+  .jira-pairs td { white-space: nowrap; vertical-align: middle; /* beside the Re-sync button */ }
+  .jira-items .jira-group { cursor: pointer; }
+  .jira-items .jira-chev { color: var(--accent); }
   .na-defaults-note > p { margin: 0; }
   .na-defaults-links { margin-top: var(--space-row) !important; font-weight: var(--weight-strong); }
   .na-defaults-links a { color: inherit; font: inherit; text-decoration: none; }

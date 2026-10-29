@@ -21,8 +21,8 @@ not holding an item: holding is how work is found, never permission.
   "title": "Agent-authored items",
   "objective": "Create collision-free work items.",
   "level": 0,
-  "kind": "task",
-  "status": "BUILD",
+  "kind": "Task",
+  "status": "In Progress",
   "flagged": false,
   "priority": "High",
   "comments": [
@@ -30,8 +30,8 @@ not holding an item: holding is how work is found, never permission.
   ],
   "parent": "w3",
   "attachments": ["/home/me/plans/AGENT_ITEMS.md"],
-  "links": [{ "type": "blocks", "to": "w14" }],
-  "external": { "jira": "RON-12" },
+  "links": [{ "type": "Blocks", "to": "w14" }],
+  "external": { "jira": { "id": "10012", "key": "RON-12" } },
   "trail": [
     { "at": "2026-09-28T15:02:11Z", "by": "lead", "op": "create", "to": "none", "note": "Agent-authored items; under w3" },
     { "at": "2026-09-28T15:04:40Z", "by": "lead", "op": "assign", "from": "none", "to": "agent:builder" }
@@ -42,16 +42,17 @@ not holding an item: holding is how work is found, never permission.
 
 | Field | Values | Meaning |
 |---|---|---|
-| `level` | `1` epic · `0` story, task or bug · `-1` subtask | stored; a new item is one level below its parent, `0` with none |
-| `kind` | any work type name (`story`, `task`, `bug`, `feature`, a site's own) · blank | the work type; blank unless you set it, no fixed list |
-| `status` | `IDEA` · `PLAN` · `BUILD` · `REVIEW` · `LAND` · `DONE` | the item's state |
+| `level` | `1` · `0` · `-1` | the kind's level: Epic 1, Subtask -1, the rest 0 |
+| `kind` | the space's work type name: `Epic`, `Task`, `Story`, `Bug`, `Feature`, `Subtask` unconnected | the work type; made with none, the space's first one level below the parent |
+| `status` | the space's status name: `To Do` · `In Progress` · `In Review` · `Done` unconnected | the item's state, exactly as Jira names it |
 | `flagged` | `true` · `false` | an impediment, as Jira's flag; `item flag` / `item unflag` |
-| `priority` | any name · blank | as Jira's priority; `item edit <id> --priority <name>` |
+| `priority` | the site's priority name: `Highest` · `High` · `Medium` · `Low` · `Lowest` unconnected | as Jira's priority, Medium when made; `item edit <id> --priority <name>` |
 | `comments` | `{ by, at, text }` list | as Jira's comments; `item comment <id> <text>` adds one |
 | `parent` | an id, or none | none is normal; `item edit <id> --parent <id>\|none` |
-| `attachments` | absolute paths | as Jira's attachments; `item attach <id> <path>` |
-| `links` | `{ type: blocks\|relates, to }` list | as Jira's issue links; `item link`; a read shows links in too |
-| `external` | `jira`, `trello`, `github` keys | written with `item edit <id> --jira <key>` |
+| `attachments` | absolute paths, or a file's Jira link | as Jira's attachments; `item attach <id> <path>\|<url>` |
+| `links` | `{ type, to }` list, the type Jira's link type name (`Blocks`, `Relates`, `Duplicate`, `Cloners`) | as Jira's issue links; `item link`; a read shows links in too |
+| `external` | `jira` `{ id, key }` · `trello`, `github` keys | `jira` pairs the item with a Jira issue and is written by the Jira bridge alone; `item edit <id> --trello\|--github <key>` |
+| `jiraFields` | Jira's field name → plain text (`"Sprint": "KAN Sprint 3 (active)"`, `"Due date": "2026-11-02"`) | a paired item's Jira fields, the populated ones; set by the Jira bridge alone, read only |
 
 One object serves every level; a field that means nothing at a level is simply unused, as in
 Jira. An epic's status is set by hand. Adding a child never changes an item's level. There
@@ -62,18 +63,18 @@ Team and each Agent; assigning moves the id from one list to another and never t
 item. **Parent** is one id on the item, or none. A Team holds; it does not contain.
 
 ```text
-item create --title "Agent-authored items" [--kind task] [--parent w3] [--level 1|0|-1] [--objective "…"] [--priority High]
+item create --title "Agent-authored items" [--kind Task] [--parent w3] [--objective "…"] [--priority High]
 item read w12                       # fields, children, comments, attachments, links, history
-item search [--team surface] [--holder builder] [--parent w3 | --no-parent] [--status BUILD] [--kind bug]
-item edit w12 --priority High --jira RON-12
+item search [--team surface] [--holder builder | none] [--parent w3 | --no-parent] [--status "In Progress"] [--kind Bug]
+item edit w12 --priority High
 item edit w12 --parent w3           # parent and level together; --parent none keeps the level
-item transition w12 REVIEW          # any status to any status, as Jira's transition
+item transition w12 "In Review"     # any status to any status, by name, as Jira's transition
 item flag w12 "waiting on the API"  # Jira's Add flag; the reason is a comment. item unflag w12
 item assign w12 builder             # or team:surface, or none
 item comment w12 "commit 0123456789: store round-trips"
 item comment w12 --edit 1 "commit 0123456789: the store round-trips"
 item attach w12 docs/using-ronin/work-record.md     # --remove <path> takes it off
-item link w12 blocks w14            # or relates; --remove takes it off
+item link w12 Blocks w14            # or Relates, Duplicate, Cloners; --remove takes it off
 item delete w12                     # with its subtasks; an epic's other children lose the parent
 ```
 
@@ -83,7 +84,7 @@ parent; with no parent the level stays. Any level-0 item moved under another bec
 subtask (Jira's convert to subtask).
 
 **The one rule: nothing goes below -1.** On a create, an `item edit --parent` or
-`--level`, the item takes its new level (one below its parent, or the level set) and its
+`--kind`, the item takes its new level (one below its parent, or its kind's) and its
 children follow, each one below its own parent. If any of them would land below -1, the
 act fails with one line: "w39 can't go there." Nothing else is checked. So nothing goes
 under a subtask, under its own descendant or under itself; a story and its subtasks move to
@@ -94,15 +95,21 @@ another epic together; and an epic with stories moved under an epic becomes 0, i
 left with no parent, links to it go, and its holders let go of it.
 
 Every write answers with one line of what the act did, read from the trail line it
-appended, then the item as it now is: "w39 moved under w40, level -1", "w9 moved to BUILD",
-"w9 is held by agent:x", "w12 was created", "w12 changed: kind story", "w12 is flagged:
-waiting on the API", "w12 has a comment from lead: Start with the store.", "w12 blocks
+appended, then the item as it now is: "w39 moved under w40, level -1", "w9 moved to In Progress",
+"w9 is held by agent:x", "w12 was created", "w12 changed: kind Story", "w12 is flagged:
+waiting on the API", "w12 has a comment from lead: Start with the store.", "w12 Blocks
 w14", "w12 has /home/me/plans/AGENT_ITEMS.md removed". Status, kind and level appear only when the act changed them. When an item arrives
 under one someone holds, by a create with a parent or an `item edit --parent`, that holder
 gets one message through the ordinary queue: "w9 Fix login was added under w7, which you
 hold. Handle it as you see fit." A Team holder's lead gets it. An item held by nobody
-notifies nobody. Any write by someone other than the holding Agent, a comment included,
-gives that Agent "Your work record changed"; its own writes tell nobody.
+notifies nobody. A new item held by nobody, or one its last holder hands off to none, is on
+the Campaign's unheld list (`item search --holder none`), and every Coordinator in the
+Campaign gets one message naming it: "w41 PAY-7 'Fix login' has no holders; place it
+(item read w41)." Any change to an item by someone other than the holding Agent, a comment
+included, gives that Agent one line naming the item and the change: "w64 KAN-27: a comment from
+jira:glen.osmond3 (item read w64)." or "w64 KAN-27: status In Progress → In Review by jira:x (item read
+w64)." Its own writes tell nobody. A change to the work record alone (holds, teams) still
+gives "Your work record changed".
 
 ## Where you read them
 
@@ -115,14 +122,15 @@ gives that Agent "Your work record changed"; its own writes tell nobody.
 
 Items show as stones grouped by parent: each epic, then its items, each followed by its
 subtasks. A stone shows the id, title, kind, status and ⚑ when flagged; press one to read
-its objective, priority, comments, attachments (each opens), links and history beside the
+its objective, priority, Jira fields, comments, attachments (each opens), links and history beside the
 stones. These are readings: every change goes through the `item` tool.
 
 ## Receipts move Land and Done
 
 Name the item on a hand-in with `worktree-desk hand-in <repo> --item <id>`. An accepted
-hand-in moves the item to LAND, with the receipt on its trail. A completed promotion moves
-every item named on the hand-ins it carries to DONE, with the promotion receipt. No
+hand-in moves the item to In Review, with the receipt on its trail. A completed promotion
+moves every item named on the hand-ins it carries to Done, with the promotion receipt; an item
+paired to Jira is left as it is until the Jira user moves it to Done. No
 association is guessed from names or repositories.
 
 A supporting Agent and an assignment are two operations owned by their tools:

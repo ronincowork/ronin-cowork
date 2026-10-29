@@ -175,6 +175,114 @@ nothing paints exactly this.
 - **campaign_view.off:** Off
 - **campaign_view.machine_summary:** The rest of the desk: Desk · Account · Archived · Messages · Help desk · Keypad.
 
+## jira — jira-panel.js (the Jira panel in Settings: connect, check, sync, the pairs)
+
+- **jira.col_level:** Level
+- **jira.col_kind_only:** Kind
+- **jira.col_id:** Ronin
+- **jira.col_title:** Title
+- **jira.col_status_only:** Status
+- **jira.col_created:** Created in
+- **jira.col_holders:** Holders
+- **jira.col_key:** Jira
+- **jira.goes_up:** goes up
+- **jira.refresh:** Refresh
+- **jira.items:** Work items by level
+- **jira.check:** Check
+- **jira.sync_now:** Sync now
+- **jira.title:** Jira
+- **jira.never:** never
+- **jira.step_site:** In Jira, open the space you want Ronin on. The address bar gives the Site URL (up to .atlassian.net); the space key is the short code before every work item number (KAN in KAN-1).
+- **jira.step_account:** admin.atlassian.com › your organization › Directory › Service accounts › Create a service account. Any name, 6–30 characters. On Select app roles, give Jira the role User and leave every other app at None.
+- **jira.step_token:** Open the account › Create credentials › API token. Any name; expiry up to 365 days. The Review page shows the expiry date: enter it below.
+- **jira.step_scopes:** Scopes: read:jira-work, write:jira-work and read:jira-user. Create, copy, and paste the token below straight away. Scopes cannot be changed later; a missing one means a new token.
+- **jira.step_access:** On a Free site, nothing to do. On a paid site, in the space: Space settings › Access, add the account as Member.
+- **jira.step_linking:** In Jira: Settings › Work items › Work item linking › Activate, if it is off.
+- **jira.checking:** Checking…
+- **jira.syncing:** Syncing…
+- **jira.all_good:** Every check passes.
+- **jira.synced_one:** {item} synced.
+- **jira.synced:** Synced.
+- **jira.saving:** Saving…
+- **jira.before:** In Atlassian
+- **jira.before_help:** Keep this panel open while you make the account: the token goes straight into the field below.
+- **jira.connect:** Connect
+- **jira.connected:** Connected, and the first sync has run.
+- **jira.site:** Site URL
+- **jira.site_help:** The address you open Jira at, up to .atlassian.net: https://your-site.atlassian.net. Copy it from any Jira page.
+- **jira.space:** Space key
+- **jira.space_help:** The space’s short code, not its name: KAN in KAN-1. Also in Space settings › Details.
+- **jira.token:** API token
+- **jira.token_help:** Kept by Ronin with Services; never shown again.
+- **jira.expiry:** Token expiry
+- **jira.expiry_help:** No call returns it: the date from the Review page.
+- **jira.connect_warning:** Connect puts on the space, assigned to the account, what Ronin’s items says: nothing (Off), epics and everything under them, or every work item. Then, in Jira, assign one work item to the account and press Sync now.
+- **jira.connection:** Connection
+- **jira.account:** Account
+- **jira.renew:** The token expires in {n} days. Make a new one (steps 3–4), paste it here, then revoke the old one.
+- **jira.replace_token:** Replace token
+- **jira.token_replaced:** Token replaced.
+- **jira.new_token:** New API token
+- **jira.disconnect:** Disconnect
+- **jira.disconnect_confirm:** Disconnect this Desk from Jira? Every pair drops; nothing is deleted on either side.
+- **jira.disconnected:** Disconnected.
+- **jira.sync:** Sync
+- **jira.last_check:** Last check
+- **jira.pair_count:** Pairs
+- **jira.waiting:** Waiting to go up
+- **jira.sync_failed:** Sync failed
+- **jira.pairs:** Pairs
+- **jira.pairs_n:** {n} pairs
+- **jira.filter:** Filter: key, id, title, status, holder
+- **jira.col_kind:** Level · kind
+- **jira.col_started:** Started in
+- **jira.col_flagged:** Flagged
+- **jira.col_last_in:** Last in
+- **jira.col_last_out:** Last out
+- **jira.col_waiting:** Waiting
+- **jira.resync:** Re-sync
+- **jira.flagged:** Flagged
+- **jira.filter_label:** Filter
+- **jira.how:** How it runs
+- **jira.polling:** Polling
+- **jira.polling_text:** Down, Jira → Ronin: Jira is read every minute while Ronin is open in a browser, hourly otherwise; off, only Sync now reads it.
+- **jira.assigned:** Assigned items
+- **jira.assigned_text:** Up, Ronin → Jira: changes to items that came from Jira go out to Jira; off, they stay in Ronin.
+- **jira.ronin:** Ronin’s items
+- **jira.ronin_off:** Off
+- **jira.ronin_off_sub:** Nothing made in Ronin goes up.
+- **jira.ronin_epics:** Under an epic
+- **jira.ronin_epics_sub:** Epics and everything under them go up; items with no epic stay in Ronin.
+- **jira.ronin_all:** All
+- **jira.ronin_all_sub:** Every item made in Ronin goes up.
+- **jira.ronin_text:** Up, Ronin → Jira: items made in Ronin are created on Jira and their changes go out: none, those under an epic, or all. Widening it sends what newly qualifies, parents first.
+- **jira.how_master:** Services › Jira
+- **jira.how_master_text:** the master switch, in Installations; off, nothing moves.
+- **jira.saved:** Saved.
+- **jira.how_sync:** Sync now
+- **jira.how_sync_text:** always reads: the space checked, one read, what is waiting sent, and the deleted-item check.
+- **jira.items_n:** {n} items · {p} paired
+- **jira.items_connected:** On Jira, the key; not yet, goes up if How it runs sends it, else stays in Ronin.
+- **jira.items_preview:** What Connect will put on the space, assigned to the account, under How it runs as set now.
+- **jira.open_items:** Open
+- **jira.open_pairs:** Open
+- **jira.off:** Services › Jira is off for this Desk. Turn it on in Installations › Ronin Services, then come back here.
+- **jira.card_summary:** This Desk’s Jira space: connect, check, sync.
+- **jira.stays:** stays in Ronin
+- **jira.items_counts:** {on} on Jira · {go} to go · {stay} stay in Ronin
+- **jira.checking_text:** Checking the site, the account, the space and its permissions.
+- **jira.syncing_one:** Syncing {item} with Jira.
+- **jira.syncing_text:** Checking the space, reading Jira, sending what is waiting, then checking for deleted work items.
+- **jira.connecting:** Connecting…
+- **jira.connecting_text:** Checking the account, then sending {n} items, then the first read.
+- **jira.replacing_text:** Checking the new token, then the first read.
+- **jira.widening_text:** Saving, then sending {n} items.
+- **jira.on_jira:** on Jira
+- **jira.items_filtered:** {n} hidden by a filter
+- **jira.refreshing:** Refreshing…
+- **jira.refreshing_text:** Reading the work items and the Jira connection again.
+- **jira.refreshed:** Refreshed at {at}.
+
 ## campaign_home — campaign-home.js (the root arrival: Machine Settings, Teams, Launch)
 
 - **campaign_home.ronin_home:** Ronin Home

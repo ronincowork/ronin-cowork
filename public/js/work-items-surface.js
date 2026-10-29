@@ -10,7 +10,6 @@ import { t } from './lexicon.js';
 export const WORK_ITEMS_TYPE = 'work-items';
 /** Jira's flag: an impediment, marked the same way on every surface. */
 export const FLAG_MARK = '⚑';
-const KIND_OF_LEVEL = { 1: 'epic', '-1': 'subtask' };
 
 const el = (tag, cls = '', text = '') => {
   const out = document.createElement(tag); out.className = cls; out.textContent = text; return out;
@@ -32,7 +31,8 @@ export function itemStones(items, { all = items, holder = () => '' } = {}) {
   const known = new Map(all.map((item) => [item.id, item]));
   const rootOf = (item) => {
     let at = item;
-    for (const seen = new Set(); at.parent && !seen.has(at.id); seen.add(at.id)) {
+    for (const seen = new Set(); at.parent && !seen.has(at.id);) {
+      seen.add(at.id);
       const up = known.get(at.parent);
       if (!up) return { id: at.parent, title: '' };
       at = up;
@@ -55,7 +55,7 @@ export function itemStones(items, { all = items, holder = () => '' } = {}) {
     return {
       id: item.id, item, group, label: item.title || item.id,
       secondary: owner ? `@${owner}` : '',
-      state: [item.id, item.kind || KIND_OF_LEVEL[item.level] || '', item.status, item.flagged ? FLAG_MARK : ''].filter(Boolean).join(' · '),
+      state: [item.id, item.kind, item.status, item.flagged ? FLAG_MARK : ''].filter(Boolean).join(' · '),
       className: `wi-level-${item.level === 1 ? 'epic' : item.level === -1 ? 'subtask' : 'item'}${item.flagged ? ' wi-flagged' : ''}`,
       attrs: { 'data-item': item.id }, draggable: true,
       events: { dragstart: (event) => carryItem(event.dataTransfer, item) }, // onto a tile: the item's reference
@@ -66,13 +66,15 @@ export function itemStones(items, { all = items, holder = () => '' } = {}) {
 /** One item's reading: objective, priority, comments, attachments (each opens), links and history. */
 export function renderItemDetail(host, item, { holder = '', openAttachment = null } = {}) {
   host.append(el('h2', '', item.title || item.id),
-    el('p', 'wi-meta', [item.id, item.kind || KIND_OF_LEVEL[item.level] || '', item.status, item.flagged ? `${FLAG_MARK} ${t('work_items.flagged', 'flagged')}` : ''].filter(Boolean).join(' · ')),
+    el('p', 'wi-meta', [item.id, item.kind, item.status, item.flagged ? `${FLAG_MARK} ${t('work_items.flagged', 'flagged')}` : ''].filter(Boolean).join(' · ')),
     el('p', 'wi-objective', item.objective || ''));
   const facts = el('dl', 'wi-facts');
   for (const [label, value] of [
     [t('work_items.priority', 'Priority'), item.priority || '—'],
     [t('work_items.holder', 'Holder'), holder ? `@${holder}` : t('work_items.nobody', 'nobody')],
     [t('work_items.parent', 'Parent'), item.parent || '—'],
+    // A paired item's Jira fields, by Jira's own names.
+    ...Object.entries(item.jiraFields || {}),
   ]) facts.append(el('dt', '', label), el('dd', '', value));
   host.append(facts);
   const section = (label, rows) => {
@@ -88,9 +90,12 @@ export function renderItemDetail(host, item, { holder = '', openAttachment = nul
   }));
   section(t('work_items.attachments', 'Attachments'), (item.attachments || []).map((path) => {
     const row = el('li');
-    const open = el(openAttachment ? 'button' : 'span', 'wi-attachment', path.split('/').pop());
+    // A file kept in Jira is its link, opened there; a path opens here.
+    const link = /^https?:\/\//.test(path);
+    const open = el(link ? 'a' : openAttachment ? 'button' : 'span', 'wi-attachment', decodeURIComponent(path.split('/').pop()));
     open.title = path;
-    if (openAttachment) { open.type = 'button'; open.addEventListener('click', () => openAttachment(path)); }
+    if (link) { open.href = path; open.target = '_blank'; open.rel = 'noopener'; }
+    else if (openAttachment) { open.type = 'button'; open.addEventListener('click', () => openAttachment(path)); }
     row.append(open);
     return row;
   }));

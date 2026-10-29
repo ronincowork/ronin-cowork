@@ -52,6 +52,9 @@ left out taking its plain default (reach `plan`, recruit `propose agents`, outpu
 naming none inherits the Team's defaults. A later change goes through the mandate route,
 which acks the Agent one line.
 
+`--role coworker|lead|epic_lead|coordinator` sets the newborn's role, as the New Agent form
+does; coworker when not named.
+
 `session_set <name> --root <handle>` changes the recorded Workspace Folder; `--clear-root`
 clears it. The original birth directory and the running shell's directory remain as they
 were. Read the handle with `session_check <name>`. From inside the Agent's session, use

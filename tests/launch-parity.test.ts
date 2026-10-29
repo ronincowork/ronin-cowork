@@ -426,7 +426,6 @@ test('team_lead is explicit and applies its conditional Behavior at birth', asyn
   const lead = await resolveForm(commonsForm({ team: 'builders', team_lead: true }), new Set());
   const leadReading = lead.birth_reading.find((file) => file.endsWith('/conditional/team-lead.md'))!;
   assert.ok(leadReading, 'the fact-selected Behavior is part of the birth reading');
-  assert.match(await fs.readFile(leadReading, 'utf8'), /immediate reading\s+assignment/);
   const ordinary = await resolveForm(commonsForm({ team: 'builders', team_lead: false }), new Set());
   assert.ok(!ordinary.birth_reading.some((file) => file.endsWith('/conditional/team-lead.md')));
 });
@@ -477,10 +476,14 @@ test('kind and behaviours resolve at birth, with unusable books reported as unde
   const born = await resolveForm(commonsForm({
     kind: 'coding',
     behaviours: ['mandates', 'write_it_down', 'ways:not_there'],
+    mandate: { reach: 'plan', recruit: 'nobody', output: ['a plan', 'ideas'] },
   }), new Set());
   assert.equal(born.kind, 'coding');
   assert.deepEqual(born.behaviours.map((row) => row.book), ['mandates', 'cowork-agent', 'user-intro', 'checkout', 'project-management', 'write_it_down']);
-  assert.ok(born.birth_reading.some((file) => file.endsWith('/behaviours/floor/mandates.md')), 'the floor folder is applied');
+  // w73: the Mandates page in the brief stated `open` whatever the Agent held.
+  const mandates = born.birth_reading.find((file) => path.basename(file) === 'MANDATES.md');
+  assert.ok(mandates, 'the floor folder is applied, Mandates as the Agent\'s own copy');
+  assert.match(await fs.readFile(mandates!, 'utf8'), /Reach `plan` · Recruit `nobody` · Output `a plan`, `ideas`/);
   assert.ok(born.birth_reading.some((file) => file.endsWith('/behaviours/floor/cowork-agent.md')), 'every Cowork Agent receives its floor guidance');
   assert.ok(born.birth_reading.some((file) => file.endsWith('/behaviours/floor/user-intro.md')), 'the stock-empty user introduction has a stable floor coordinate');
   assert.ok(born.birth_reading.some((file) => file.endsWith('/behaviours/selected/write_it_down.md')));

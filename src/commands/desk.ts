@@ -198,7 +198,7 @@ async function main(): Promise<void> {
         const projectId = str(flags.get('item'));
         if (projectId && !(await readItem(projectId))) die(`NO-ITEM: there is no work item ${projectId}`, 3);
         let worst = 0;
-        const { outcomes, moved } = await handInAssignment({ desks: flags.get('assignment') ? targets : [targets[0]!], projectId, session });
+        const { outcomes, moved, unmoved } = await handInAssignment({ desks: flags.get('assignment') ? targets : [targets[0]!], projectId, session });
         for (const [i, { receipt, notices, tidy }] of outcomes.entries()) {
           const d = targets[i]!;
           out(`${receipt.result.toUpperCase()} ${deskId(d)} → ${d.line}${receipt.result === 'accepted' ? ` now ${receipt.line_sha.slice(0, 10)}` : ''}${receipt.reason ? ` — ${receipt.reason}` : ''}${receipt.conflict_files.length ? ` — files: ${receipt.conflict_files.join(', ')}` : ''}  [${receipt.id}]`);
@@ -227,6 +227,7 @@ async function main(): Promise<void> {
           out(`Code handed in for ${projectId}: ${moved.line.op} ${moved.line.from ?? ''} → ${moved.line.to ?? ''} (${moved.line.note}).`);
           out(didLine(moved));
         }
+        if (unmoved) out(`Code handed in for ${projectId}; its status did not move: ${unmoved}`);
         process.exit(worst);
       }
       case 'sync': {

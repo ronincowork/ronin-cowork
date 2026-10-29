@@ -113,14 +113,8 @@ const capabilitySettings = (raw: Record<string, boolean>): Record<string, boolea
   const explicit = (name: string, fallback: boolean): boolean =>
     Object.prototype.hasOwnProperty.call(raw, name) ? raw[name] === true : fallback;
   // An explicit choice always wins. Where there is none, the parts layer says what the
-  // capability does: Project management, Usage stats and Machine status run until switched off,
-  // so the legacy per-part flags no longer decide them.
-  out.task_manager = explicit('task_manager', CAPABILITY_ON_BY_DEFAULT.has('task_manager'));
-  out.terminal_transcript = explicit('terminal_transcript', false);
-  out.voice_hotwords = explicit('voice_hotwords', false);
-  out.usage_stats = explicit('usage_stats', CAPABILITY_ON_BY_DEFAULT.has('usage_stats'));
-  out.machine_status = explicit('machine_status', CAPABILITY_ON_BY_DEFAULT.has('machine_status'));
-  out.local_weights = explicit('local_weights', false);
+  // capability does, so the legacy per-part flags no longer decide it.
+  for (const name of capabilityKeys) out[name] = explicit(name, CAPABILITY_ON_BY_DEFAULT.has(name));
   return out;
 };
 

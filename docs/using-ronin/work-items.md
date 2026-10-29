@@ -9,21 +9,22 @@ syntax.
 
 ## The structure
 
-Every work item has a level. The level says what it is.
+Every work item has a kind, and the kind has a level. The level says what it is.
 
 | Level | What it is |
 |---|---|
-| 1 | **epic**: holds a body of work |
-| 0 | **story, task, bug, feature**: the work itself |
-| -1 | **subtask**: one step inside a level-0 item |
+| 1 | **Epic**: holds a body of work |
+| 0 | **Task, Story, Bug, Feature**: the work itself |
+| -1 | **Subtask**: one step inside a level-0 item |
 
-At level 0 the kind is only a label. Story, task, bug and feature are the usual ones; any
-other name works, and blank is fine.
+The kind is the Jira work type's name, exactly; a Desk paired to a space uses the space's
+own. Setting the kind sets the level (`--kind Epic` makes an epic).
 
-The parent sets the level. A new item starts one level below its parent, or at 0 with no
-parent. Moving an item with `item edit <id> --parent <other>` moves its level too, and its
-children follow, each one level below its parent. Put a task under another task and it
-becomes a subtask. `--parent none` takes the parent away and leaves the level as it is.
+A new item starts one level below its parent, or at 0 with no parent, with its space's first
+kind there unless you name one. Moving an item with `item edit <id> --parent <other>` moves
+its level too, and its children follow, each one level below its parent; a kind at another
+level becomes the first kind at the new one. Put a task under another task and it becomes a
+Subtask. `--parent none` takes the parent away and leaves the level as it is.
 
 There is one rule: nothing goes below -1. If a move would push any item there, it fails
 with one line, such as "w39 can't go there." Choose another parent.
@@ -34,48 +35,67 @@ No parent is normal. Not every task belongs to an epic.
 
 - **title**: a short name anyone can read at a glance.
 - **objective**: what done looks like. Change it when the job changes.
-- **kind**: the label at level 0 (`--kind bug`).
+- **kind**: the work type (`--kind Bug`); it sets the level.
 - **status**: where the work stands (below).
 - **flagged**: the item is stuck. The reason is a comment.
-- **priority**: any name your Team uses, or blank.
+- **priority**: Highest, High, Medium, Low or Lowest, or the site's own; a new item is Medium,
+  as every Jira work item is.
 - **comments**: who, when and what. The running account of the work.
-- **attachments**: documents that belong to the item. They show in the tile's Docs.
-- **links**: this item **blocks** another, or **relates** to it.
-- **external keys**: the item's key in Jira, Trello or GitHub (`--jira PAY-123`). Blank clears it.
+- **attachments**: documents that belong to the item, by path; they show in the tile's Docs.
+  A file kept in Jira is its Jira link.
+- **links**: by Jira's link type name: this item **Blocks** another, **Relates** to it, is a
+  **Duplicate**, or **Cloners**.
+- **external keys**: the item's key in Trello or GitHub (`--github 123`). Blank clears it.
+- **id**: `w12`, or, for an item paired with Jira, its Jira key (`KAN-65`), so Agents and Jira
+  users say the same name. One made in Ronin is `w101` until it goes to Jira, then takes its
+  key; a key changed in Jira renames it again. Its children, links and holders follow, the
+  history says "renamed from w101", and each holder is told: "w101 is now KAN-65 (on Jira);
+  use KAN-65 (item read KAN-65)."
+
+- **Jira fields**: an item paired with Jira also shows Jira's Sprint, Due date, Rank,
+  Reporter, Created, Resolved, Story point estimate, Labels, Components and Fix versions,
+  by Jira's names, the ones Jira fills. They are Jira's: read only.
 
 Every change adds a line to the item's history. `item read <id>` shows it all: fields,
 children, comments, attachments, links and history.
 
 ## Status
 
+Status, kind, priority and link type are Jira's names exactly, with no mapping; anything else
+is refused, and the refusal names the ones there are. Unconnected, a Desk has Jira's
+statuses, in workflow order:
+
 | Status | Means |
 |---|---|
-| IDEA | Written down, not yet agreed or planned. New items start here. |
-| PLAN | Being shaped: scope, approach, subtasks. |
-| BUILD | Being done now. |
-| REVIEW | Your part is finished and ready for someone to look at. |
-| LAND | Handed in to the Team line. |
-| DONE | Promoted. |
+| To Do | Not started. New items start here. |
+| In Progress | Being done now. |
+| In Review | Handed in, ready for someone to look at. |
+| Done | Accepted. |
 
-Agents move their items themselves with `item transition <id> <status>`. Any status to any
-status is allowed. Two moves are made for them: a hand-in that names the item
-(`worktree-desk hand-in <repo> --item <id>`) moves it to LAND, and the promotion that
-carries that hand-in moves it to DONE. A hand-in that names no item moves no status.
+A Desk paired to a Jira space uses that space's names, and a new item starts at the space's
+first status.
+
+Agents move their items themselves with `item transition <id> "<status>"`, by name. Any status
+to any status is allowed. Two moves are made for them: a hand-in that names the item
+(`worktree-desk hand-in <repo> --item <id>`) moves it to In Review, and the promotion that
+carries that hand-in moves it to Done, each only where the space has that status. An item paired to Jira is the exception: promotion
+leaves it as it is, and it is Done only when the Jira user moves it to Done, which comes back
+by polling. A hand-in that names no item moves no status.
 
 ## The item tool
 
 ```text
-item create --title "…" [--kind task] [--parent w3] [--level 1|0|-1] [--objective "…"] [--priority High]
+item create --title "…" [--kind Task] [--parent w3] [--objective "…"] [--priority High]
 item read w12                       # fields, children, comments, attachments, links, history
-item search [--campaign home_machine] [--team surface] [--holder builder] [--parent w3 | --no-parent] [--status BUILD] [--kind bug]
-item edit w12 --objective "…" --priority High --jira RON-12
-item transition w12 REVIEW
+item search [--campaign home_machine] [--team surface] [--holder builder | none] [--parent w3 | --no-parent] [--status "In Progress"] [--kind Bug]
+item edit w12 --objective "…" --priority High
+item transition w12 "In Review"
 item flag w12 "waiting on the API"  # item unflag w12 when clear
 item assign w12 builder             # adds builder; or team:surface
 item handoff w12 builder            # the giver comes off; or team:surface, or none
 item comment w12 "…"                # --edit <n> changes one
-item attach w12 docs/plan.md        # --remove <path> takes it off
-item link w12 blocks w14            # or relates; --remove takes it off
+item attach w12 docs/plan.md        # or a link; --remove <path> takes it off
+item link w12 Blocks w14            # or Relates, Duplicate, Cloners; --remove takes it off
 item delete w12                     # with its subtasks
 ```
 
@@ -87,7 +107,7 @@ Every write answers with one line of what it did, then the item as it now is.
 
 ```text
 item read w12
-item transition w12 BUILD
+item transition w12 "In Progress"
 ```
 
 **Big work is broken down.** Each step gets its own subtask, moved through its own status,
@@ -117,7 +137,7 @@ item attach w12 docs/migration-plan.md
 an item of its own, never done quietly inside the one it holds.
 
 ```text
-item create --kind bug --parent w10 --title "Search drops the last result"
+item create --kind Bug --parent w10 --title "Search drops the last result"
 ```
 
 **Stuck: flag it.** With the reason. The flag comes off when the work moves again.
@@ -130,15 +150,14 @@ item unflag w12 "Shape agreed; see the comment above"
 **Held up by another item: link it.** The link reads from the item that does the blocking.
 
 ```text
-item link w15 blocks w12
+item link w15 Blocks w12
 ```
 
 **Keep the objective true.** If the job changes, `item edit w12 --objective "<new>"`.
 
-**Finished.** REVIEW, then a hand-in with the item named.
+**Finished.** A hand-in with the item named; it moves the item to In Review.
 
 ```text
-item transition w12 REVIEW
 worktree-desk hand-in ronin_cowork --item w12
 ```
 
@@ -161,7 +180,7 @@ A lead uses assign to give out work: an item for each member, or the Team for wo
 given to anyone. Before handing over an item, the lead makes sure it says what is wanted:
 a clear title and objective, a parent where one fits.
 
-To find work, search: `item search --campaign <id>`, `--holder <name>`, `--team <t>`, `--parent <id>`,
+To find work, search: `item search --campaign <id>`, `--holder <name>` (`none`: held by nobody), `--team <t>`, `--parent <id>`,
 `--no-parent`, `--status <s>`, `--kind <k>`.
 
 ## Notices
