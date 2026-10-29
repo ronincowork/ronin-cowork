@@ -13,9 +13,10 @@
  * `level` is the kind's level (1 epic · 0 story, task, bug · -1 subtask); `flagged` an
  * impediment; `comments` a list.
  *
- * One file per item, <store>/<id>.json, written beside and renamed over. Ids come from one
- * global issuer (w1, w2, …) under one in-process lock that every write shares, so a trail
- * append is read, push, write with nobody in between.
+ * One file per item, <store>/<id>.json, written beside and renamed over. An id is `w<n>` from one
+ * global issuer (w1, w2, …), or a paired item's Jira key (KAN-65, keystone 3: renameItem), under
+ * one in-process lock that every write shares, so a trail append is read, push, write with
+ * nobody in between.
  */
 import { existsSync, statSync } from 'node:fs';
 import { mkdir, readFile, readdir, rename, rm, writeFile } from 'node:fs/promises';
@@ -31,7 +32,7 @@ import { listSessions } from './tmux.js';
 import { emitItemChanged } from './sockets.js';
 
 export const ITEM_LEVELS = [1, 0, -1] as const;
-export const TRAIL_OPS = ['create', 'assign', 'handoff', 'release', 'move', 'status', 'edit', 'comment', 'flag', 'attach', 'link', 'holder-ended'] as const;
+export const TRAIL_OPS = ['create', 'assign', 'handoff', 'release', 'move', 'status', 'edit', 'comment', 'flag', 'attach', 'link', 'holder-ended', 'rename'] as const;
 
 export type ItemLevel = typeof ITEM_LEVELS[number];
 export type TrailOp = typeof TRAIL_OPS[number];
@@ -120,8 +121,16 @@ export class WorkItemRefused extends Error {}
 export class WorkItemMissing extends Error {}
 export class WorkItemBadInput extends Error {}
 
-const ID = /^w[1-9][0-9]*$/;
+/** `w<n>`, or a Jira key (KAN-65). */
+const ID = /^(w[1-9][0-9]*|[A-Z][A-Z0-9_]+-[1-9][0-9]*)$/;
 export const isItemId = (value: string): boolean => ID.test(value);
+/** w ids by number, then keys by space and number. */
+const order = (id: string): [string, number] => { const [, prefix, n] = /^(.*?)-?([0-9]+)$/.exec(id)!; return [prefix!, Number(n)]; };
+const byId = (a: WorkItem, b: WorkItem): number => {
+  const [pa, na] = order(a.id);
+  const [pb, nb] = order(b.id);
+  return pa === pb ? na - nb : pa === 'w' ? -1 : pb === 'w' ? 1 : pa.localeCompare(pb);
+};
 
 const dir = () => storeDir('work_items');
 const fileOf = (id: string) => path.join(dir(), `${id}.json`);
@@ -144,7 +153,7 @@ async function save(item: WorkItem): Promise<void> {
 }
 
 async function load(id: string): Promise<WorkItem> {
-  if (!isItemId(id)) throw new WorkItemMissing(`"${id}" is not a work item id; ids look like w12.`);
+  if (!isItemId(id)) throw new WorkItemMissing(`"${id}" is not a work item id; ids look like w12 or KAN-65.`);
   try {
     return JSON.parse(await readFile(fileOf(id), 'utf8')) as WorkItem;
   } catch (error) {
@@ -165,9 +174,10 @@ export async function listItems(): Promise<WorkItem[]> {
   try { names = await readdir(dir()); } catch { return []; }
   const ids = names.filter((name) => name.endsWith('.json')).map((name) => name.slice(0, -5)).filter(isItemId);
   const items = await Promise.all(ids.map((id) => readItem(id)));
-  return items.filter((item): item is WorkItem => item !== null).sort((a, b) => Number(a.id.slice(1)) - Number(b.id.slice(1)));
+  return items.filter((item): item is WorkItem => item !== null).sort(byId);
 }
 
+/** Counts w ids only; a Jira key is never issued. */
 async function nextId(): Promise<string> {
   let names: string[] = [];
   try { names = await readdir(dir()); } catch { /* an empty store issues w1 */ }
@@ -199,14 +209,13 @@ export async function appendTrail(id: string, by: string, change: (item: WorkIte
   return answer(item, line);
 }
 
-/** The holders' ack, named like the unheld one: "w64 KAN-27: a comment from jira:glen (item read w64)."
- * or "w64 KAN-27: status In Progress → In Review by jira:x (item read w64)." */
+/** The holders' ack, named like the unheld one: "KAN-27: a comment from jira:glen (item read KAN-27)."
+ * or "w64: status In Progress → In Review by jira:x (item read w64)." */
 async function ackHolders(item: WorkItem, line: TrailLine): Promise<void> {
-  const key = item.external.jira ? ` ${item.external.jira.key}` : '';
   const detail = line.from && line.to ? `${line.from} → ${line.to}` : line.to ?? line.from ?? line.note ?? '';
   const what = line.op === 'comment' ? `a comment from ${line.by}` : `${line.op}${detail ? ` ${detail}` : ''} by ${line.by}`;
   for (const holder of await holdersOf(item.id)) {
-    if (holder.kind === 'agent' && holder.name !== line.by) await enqueueMessage(holder.name, `${item.id}${key}: ${what} (item read ${item.id}).`, 'house', 'Work items');
+    if (holder.kind === 'agent' && holder.name !== line.by) await enqueueMessage(holder.name, `${item.id}: ${what} (item read ${item.id}).`, 'house', 'Work items');
   }
 }
 
@@ -295,14 +304,13 @@ async function announceUnheld(item: WorkItem, by: string): Promise<string[]> {
   for (const session of sessions) {
     const role = await readAgentComposition(session.name).then((found) => found.current.role).catch(() => 'coworker');
     if (role !== 'coordinator') continue;
-    const key = item.external.jira ? ` ${item.external.jira.key}` : '';
-    await enqueueMessage(session.name, `${item.id}${key} '${item.title}' has no holders; place it (item read ${item.id}).`, 'house', 'Work items');
+    await enqueueMessage(session.name, `${item.id} '${item.title}' has no holders; place it (item read ${item.id}).`, 'house', 'Work items');
     told.push(session.name);
   }
   return told;
 }
 
-/** Issue an id and write the item. Unlocked: callers hold the issuer. */
+/** Issue an id and write the item; born paired, its id is its Jira key. Unlocked: callers hold the issuer. */
 export async function createItemUnlocked(input: NewItem, by: string): Promise<Acknowledged> {
   const title = String(input.title ?? '').trim();
   if (!title) throw new WorkItemBadInput('A work item needs a title.');
@@ -312,7 +320,7 @@ export async function createItemUnlocked(input: NewItem, by: string): Promise<Ac
   const named = input.kind?.trim();
   const item: WorkItem = {
     ...blank(title, by),
-    id: await nextId(),
+    id: input.jira?.key ?? await nextId(),
     campaign_id,
     objective: String(input.objective ?? '').trim(),
     level: named ? levelOfKind(names, named) : levelUnder(parent),
@@ -518,6 +526,38 @@ export function deleteItem(id: string, by: string): Promise<{ deleted: string[];
   });
 }
 
+/** Keystone 3: a paired item's Ronin id is its Jira key. One call rewrites the item's file and
+ * id, each child's parent, every link pointing at it, and each holder's holds; the item gets one
+ * trail line, "renamed from <old>", and its holders (a Team's lead) are told. Trails, comments,
+ * receipts and the promotion ledger stay as written. */
+export function renameItem(from: string, to: string, by: string): Promise<Acknowledged> {
+  return withIssuer(async () => {
+    const item = await load(from);
+    item.id = to;
+    for (const other of await listItems()) {
+      if (other.id === from || (other.parent !== from && !other.links.some((link) => link.to === from))) continue;
+      if (other.parent === from) other.parent = to;
+      other.links = other.links.map((link) => link.to === from ? { ...link, to } : link);
+      await save(other);
+    }
+    const holders: Holder[] = [];
+    for (const list of await heldLists()) {
+      if (!list.holds.includes(from)) continue;
+      holders.push(list.holder);
+      await list.set(list.holds.map((id) => id === from ? to : id));
+    }
+    const line = lineOf(by, 'rename', { from, to, note: `renamed from ${from}` });
+    item.trail.push(line);
+    await save(item);
+    await rm(fileOf(from));
+    emitItemChanged({ item, line });
+    const told = new Set<string>();
+    for (const holder of holders) for (const name of holder.kind === 'agent' ? [holder.name] : await findLeads(holder.name)) told.add(name);
+    for (const name of told) await enqueueMessage(name, `${from} is now ${to} (on Jira); use ${to} (item read ${to}).`, 'house', 'Work items');
+    return answer(item, line);
+  });
+}
+
 /* HOLDING — a list of item ids on each Team (roster.holds) and each Agent (the letter's
  * holds). Assignment adds an id; handoff removes the giver and adds the receiver. Neither
  * touches the item's content or parent, and both run under the issuer lock. */
@@ -636,6 +676,7 @@ export function didLine({ item, line }: Acknowledged): string {
         : line.op === 'handoff' ? (line.to === 'none' ? `${line.from} let go` : `was handed from ${line.from} to ${line.to}`)
         : line.op === 'release' || line.op === 'holder-ended' ? 'is held by nobody'
           : line.op === 'create' ? 'was created'
+          : line.op === 'rename' ? `was renamed from ${line.from}`
               : line.op === 'comment' ? (line.from ? `comment ${line.from} was edited` : `has a comment from ${line.by}: ${line.note}`)
               : line.op === 'flag' ? `is ${line.to === 'true' ? 'flagged' : 'unflagged'}${line.note ? `: ${line.note}` : ''}`
               : line.op === 'attach' ? (line.from === 'removed' ? `has ${line.to} removed` : `has ${line.to} attached`)

@@ -45,8 +45,13 @@ No parent is normal. Not every task belongs to an epic.
   A file kept in Jira is its Jira link.
 - **links**: by Jira's link type name: this item **Blocks** another, **Relates** to it, is a
   **Duplicate**, or **Cloners**.
-- **external keys**: the item's key in Trello or GitHub (`--github 123`). Blank clears it. An
-  item paired with Jira shows its Jira key (`PAY-123`); the Jira bridge keeps that pair.
+- **external keys**: the item's key in Trello or GitHub (`--github 123`). Blank clears it.
+- **id**: `w12`, or, for an item paired with Jira, its Jira key (`KAN-65`), so Agents and Jira
+  users say the same name. One made in Ronin is `w101` until it goes to Jira, then takes its
+  key; a key changed in Jira renames it again. Its children, links and holders follow, the
+  history says "renamed from w101", and each holder is told: "w101 is now KAN-65 (on Jira);
+  use KAN-65 (item read KAN-65)."
+
 - **Jira fields**: an item paired with Jira also shows Jira's Sprint, Due date, Rank,
   Reporter, Created, Resolved, Story point estimate, Labels, Components and Fix versions,
   by Jira's names, the ones Jira fills. They are Jira's: read only.

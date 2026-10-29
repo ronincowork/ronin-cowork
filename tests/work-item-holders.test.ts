@@ -213,3 +213,31 @@ test('session_create\'s caller survives the launch filter, so a lead is not told
   const { acceptedLaunchBody } = await import('../src/routes/launch.js');
   assert.equal(acceptedLaunchBody({ name: 'member', caller: 'lead' }).body.caller, 'lead');
 });
+
+test('renameItem moves the id: the file, a child\'s parent, a link to it, every holder\'s holds, one trail line, the holder told', async () => {
+  const { listQueuedMessages, dismissMessages } = await import('../src/message-queue.js');
+  await seedTegami('renamer');
+  const renamer = { kind: 'agent', name: 'renamer' } as const;
+  const { item } = await items.createItem({ title: 'made in Ronin', holder: renamer }, 'lead');
+  await items.assignItem(item.id, team, 'lead');
+  const child = (await items.createItem({ title: 'under it', parent: item.id }, 'lead')).item;
+  const other = (await items.createItem({ title: 'blocks it' }, 'lead')).item;
+  await items.linkItem(other.id, 'Blocks', item.id, 'lead');
+  await dismissMessages((await listQueuedMessages()).map((message) => message.id));
+
+  const done = await items.renameItem(item.id, 'KAN-65', 'jira:Ronin');
+  assert.equal(done.item.id, 'KAN-65');
+  assert.equal(await items.readItem(item.id), null, 'the old file is gone');
+  assert.equal((await items.readItem('KAN-65'))!.title, 'made in Ronin');
+  assert.equal((await items.readItem(child.id))!.parent, 'KAN-65');
+  assert.deepEqual((await items.readItem(other.id))!.links, [{ type: 'Blocks', to: 'KAN-65' }]);
+  assert.deepEqual(await listsHolding('KAN-65'), ['agent:renamer', 'team:crew']);
+  assert.deepEqual(await listsHolding(item.id), []);
+  const trail = (await items.readItem('KAN-65'))!.trail;
+  assert.equal(trail.filter((line) => line.op === 'rename').length, 1);
+  assert.equal(trail.at(-1)!.note, `renamed from ${item.id}`);
+  assert.ok((await items.listItems()).some((one) => one.id === 'KAN-65'), 'a key is listed');
+  const told = (await listQueuedMessages()).find((message) => message.target === 'renamer');
+  assert.equal(told?.text, `${item.id} is now KAN-65 (on Jira); use KAN-65 (item read KAN-65).`);
+  assert.match((await items.createItem({ title: 'next' }, 'lead')).item.id, /^w[0-9]+$/, 'the issuer counts w ids only');
+});
