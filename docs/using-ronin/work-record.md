@@ -134,7 +134,8 @@ stones. These are readings: every change goes through the `item` tool.
 ## Receipts move Land and Done
 
 Name the item on a hand-in with `worktree-desk hand-in <repo> --item <id>`. An accepted
-hand-in moves the item to In Review, with the receipt on its trail. A completed promotion
+hand-in moves the item to In Review, with the receipt on its trail; that line tells nobody, as
+the lead hears of the hand-in itself. A completed promotion
 moves every item named on the hand-ins it carries to Done, with the promotion receipt; an item
 paired to Jira is left as it is until the Jira user moves it to Done. No
 association is guessed from names or repositories.
