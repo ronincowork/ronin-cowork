@@ -16,6 +16,9 @@ private worktree, or `--source <repo:branch>` for a specific teammate’s worktr
 Only committed work merges; read what sync reports. A conflict leaves your files untouched:
 resolve it on your worktree, then commit and hand in.
 
+Your worktree's `node_modules` is the live install Ronin runs from. Don't install, update
+or delete packages there; a package change goes to your Team lead.
+
 Commit preserves a private checkpoint; `worktree-desk hand-in <repo> --item <id>` admits
 committed work to Team review, moves the item to In Review and tells the lead, so there's
 no need to tell it yourself. Sync changes neither source custody nor your hand-in
