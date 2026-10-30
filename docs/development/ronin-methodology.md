@@ -22,7 +22,7 @@ forbids an installed tool or its `--help`.
 
 Set the objective with `work-record update_record`: one objective in the owner's words and
 the session job. Keep the items you hold current with `item transition` and `item flag`,
-and attach every live document with `item attach <id> <path>` so the owner can open it
+and add every live document with `work-record add_doc <path>` so the owner can open it
 without asking for a path. `work-record read` returns the visible status;
 the work record is not the plan, a transcript, or a second build-out document.
 

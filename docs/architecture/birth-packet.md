@@ -135,7 +135,10 @@ uses these delivery depths:
 | Explicit seed outside an inline teaching location | **Shelf card** | Title, first useful prose sentence, and resolved path. |
 
 Empty sources are omitted. Headings in inline documents are demoted beneath the packet's
-own heading. A shelf card is discoverability, not an instruction that the entire document
+own heading. An inline document keeps its title and teaching: the catalog field block under
+the title (label, blurb, installation, order, scope, requires, class) is dropped, and no
+source path is printed. The files keep their fields; the contents list names each section
+by its title. A shelf card is discoverability, not an instruction that the entire document
 has already been read. A generated overview is disposable compiler output derived from
 the resolved source files; contributors edit those sources, never the generated fragment.
 

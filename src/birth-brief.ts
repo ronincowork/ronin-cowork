@@ -194,6 +194,22 @@ function titleOf(text: string, file: string): string {
   return heading ? heading[1].trim() : path.basename(file);
 }
 
+/** A catalog page's field block, under its title, is for the catalog, not the reader: an
+ *  inlined page keeps its title and teaching and drops the block. The file keeps it. */
+const FIELD = /^- \*\*(label|blurb|installation|order|scope|requires|class):\*\*/;
+function withoutFields(text: string): string {
+  const lines = text.split('\n');
+  const title = lines.findIndex((line) => /^#{1,6}\s/.test(line));
+  if (title < 0) return text;
+  let end = title + 1;
+  while (end < lines.length && lines[end].trim() === '') end++;
+  const start = end;
+  while (end < lines.length && FIELD.test(lines[end])) end++;
+  if (end === start) return text;
+  while (end < lines.length && lines[end].trim() === '') end++;
+  return [...lines.slice(0, title + 1), '', ...lines.slice(end)].join('\n');
+}
+
 function reachForItWhen(text: string): string {
   const paragraphs = text
     .replace(/<!--[\s\S]*?-->/g, '')
@@ -226,8 +242,8 @@ export async function compileBirthBriefAt(
         shelf.push({ title, file: source, when: reachForItWhen(text) });
         continue;
       }
-      const demoted = text.replace(/^(#{1,6})(?=\s)/gm, (heading) => `${heading}#`.slice(0, 6));
-      sections.push({ title, body: `_Source: ${source}_\n\n${demoted}` });
+      const demoted = withoutFields(text).replace(/^(#{1,6})(?=\s)/gm, (heading) => `${heading}#`.slice(0, 6));
+      sections.push({ title, body: demoted });
     } catch { /* a source that vanished before compilation is omitted, never stale */ }
   }
   const lines = [

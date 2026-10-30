@@ -144,7 +144,9 @@ item assign w12 board_reader
 
 Documents are an item's attachments, and travel with it when it moves between Agents. The
 tile's Docs lists the attachments of every item you hold: a document you did
-not attach is one the owner cannot reach.
+not attach is one the owner cannot reach. `work-record add_doc <path>|<url>` adds one to
+the item you hold; holding several, name it with `--item <id>`. Every Agent is born with
+Write it Down, which asks for this and for a short, current list.
 
 ## The work record
 
