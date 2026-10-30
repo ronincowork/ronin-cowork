@@ -5,8 +5,8 @@ starts. It is read once, when a session is born.
 
 The birth compiler selects the applicable shelf files, removes duplicate sources, and
 writes one `AGENT_BIRTH_BRIEF.md` (the Agent birth brief) into the newborn's per-session directory. The
-brief points to that one document, and the same birth brief appears automatically in the Agent's tracked Docs. The
-page opens with its own contents list. Ronin's teaching — `all/`, each system installation's page, the
+brief points to that one document; it is not one of the Agent's Docs, which are its items'
+attachments. The page opens with its own contents list. Ronin's teaching — `all/`, each system installation's page, the
 generated tool overview — is inlined; the owner's project-root documents,
 selected behaviour books and explicit seeds are listed by title and path under **On your
 shelf**, because pasting a project's whole catalog is what made the packet unreadable.

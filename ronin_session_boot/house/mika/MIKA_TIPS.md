@@ -5,7 +5,7 @@ correctly but that still surprise. Read every bullet; they outrank a document wh
 two disagree, because they come from watching real sessions.
 
 Owner: write bullets here as you meet them. Ronin reads this file into Mika's birth brief at
-her next birth, and it is on her Docs list, so it opens from her tile.
+her next birth.
 
 - **An agent's Docs tab is empty.** The agent did not attach its documents (`item attach
   <id> <path>`). That is the agent's lapse, not the owner's. Tell the owner to type

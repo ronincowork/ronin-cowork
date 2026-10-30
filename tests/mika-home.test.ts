@@ -106,14 +106,6 @@ test('native provider confirmation advances on the same pane from action require
   assert.equal(mikaReadinessFromPane('Welcome\n› Use /skills'), 'ready');
 });
 
-test('Mika birth stays visible through the ordinary session Docs record', async () => {
-  const launch = await readFile(new URL('../src/routes/launch.ts', import.meta.url), 'utf8');
-  const tegami = await readFile(new URL('../src/tegami-read.ts', import.meta.url), 'utf8');
-  assert.match(launch, /rememberSessionKey\(resolved\.name, birthKey\)/);
-  assert.match(launch, /resolved\.birth_reading = \[brief\]/);
-  assert.match(tegami, /path\.join\(sessionDir\(key\), BIRTH_BRIEF\)/);
-});
-
 test("the owner's tips come from their session-boot shadow when one exists, else the shipped file", async () => {
   const root = await mkdtemp(path.join(os.tmpdir(), 'ronin-mika-tips-'));
   process.env.RONIN_SESSION_BOOT_DIR = path.join(root, 'shelf');

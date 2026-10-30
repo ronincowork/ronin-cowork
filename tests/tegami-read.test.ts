@@ -59,7 +59,7 @@ test('the chip is the items held with their status; a flagged one marks it', asy
   assert.deepEqual(t.holds, ids, 'an old "at" in the letter reads as nothing');
 });
 
-test('docs are the birth brief and every held item\'s attachments, only what exists', async () => {
+test('docs are every held item\'s attachments, only what exists', async () => {
   const name = 'tegami-read-docs';
   const real = path.join(temp, 'a-real-doc.md');
   const second = path.join(temp, 'second.md');
@@ -68,11 +68,10 @@ test('docs are the birth brief and every held item\'s attachments, only what exi
   const one = await item('one', [real, path.join(temp, 'gone.md')]);
   const two = await item('two', [second]);
   await writeLetter(name, `{ "holds": ["${one}", "${two}"] }`);
-  const brief = path.join(temp, name, 'AGENT_BIRTH_BRIEF.md');
-  await fs.writeFile(brief, '# Read first\n');
+  await fs.writeFile(path.join(temp, name, 'AGENT_BIRTH_BRIEF.md'), '# Read first\n'); // the brief is not a Doc
   const t = await readTegami(name);
   assert.ok(t);
-  assert.deepEqual(t.docs, [brief, real, second]);
+  assert.deepEqual(t.docs, [real, second]);
 });
 
 test('an unfenced bare object still parses — an agent that drops the fence keeps its readout', async () => {

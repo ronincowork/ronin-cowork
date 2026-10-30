@@ -381,8 +381,7 @@ export function registerLaunch(app: express.Express): LaunchControl {
           const previousSentence = `Read first: ${resolvedSources.join(', ')}.`;
           const knowledge = await compileMikaKnowledgeAt(mikaHome);
           mikaKnowledgeIndex = knowledge.index;
-          // The owner's tips ride in as a document of her own, in the birth brief her Docs
-          // list always opens.
+          // The owner's tips ride in as a document of her own, inside her birth brief.
           const mikaTips = await mikaTipsSource();
           sources.push(mikaRulesSource(), mikaTips, mikaStartHereSource(), mikaKnowledgeIndex);
           resolved.brief = resolved.brief.replace(previousSentence, `Read first: ${sources.join(', ')}.`);
