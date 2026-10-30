@@ -17,7 +17,7 @@
 | `item flag` | write: the item is stuck, with the reason as a comment | priority | `item --help` |
 | `item unflag` | write: the item is clear | priority | `item --help` |
 | `item assign` | write: add an Agent or Team as a holder, removing nobody | priority | `item --help` |
-| `item handoff` | write: the giver (you, or `--from <agent>\|team:<name>`) comes off and the receiver goes on; `none` lets go | priority | `item --help` |
+| `item handoff` | write: the giver (you, or `--from` an Agent or `team:<name>`) comes off and the receiver goes on; `none` lets go | priority | `item --help` |
 | `item watch` | write: track an item without holding it; `item unwatch` stops | priority | `item --help` |
 | `item comment` | write: one comment, or `--edit <n>` changes one | priority | `item --help` |
 | `item attach` | write: attach or remove a document, visible in Docs | priority | `item --help` |

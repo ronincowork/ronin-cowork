@@ -222,7 +222,7 @@ test('the stock capability documents are well-formed and carry no retired vocabu
   // bundle names that boundary but does not duplicate the Session tool row.
   const priority = (name: string) => by[name].tools.filter((tool) => tool.priority).map((tool) => tool.command);
   assert.deepEqual(priority('work-record'), ['work-record update_record', 'work-record workspace', 'work-record read', 'work-record add_doc']);
-  assert.deepEqual(priority('work-item'), ['item create', 'item read', 'item search', 'item edit', 'item transition', 'item flag', 'item unflag', 'item assign', 'item handoff', 'item comment', 'item attach', 'item link', 'item delete']);
+  assert.deepEqual(priority('work-item'), ['item create', 'item read', 'item search', 'item edit', 'item transition', 'item flag', 'item unflag', 'item assign', 'item handoff', 'item watch', 'item comment', 'item attach', 'item link', 'item delete']);
   assert.deepEqual(priority('edges'), ['edges send', 'edges wipeboard', 'edges read', 'edges team']);
   assert.deepEqual(priority('worktree-desk'), ['worktree-desk status', 'worktree-desk sync', 'worktree-desk hand-in']);
   assert.deepEqual(priority('agent_session'), ['session_check', 'session_create']);
