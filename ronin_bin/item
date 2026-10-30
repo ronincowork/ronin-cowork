@@ -13,6 +13,7 @@ Usage:
   item transition <id> "<status>"
   item assign <id> <agent>|team:<name>
   item handoff <id> <agent>|team:<name>|none
+  item watch <id>                     item unwatch <id>
   item flag <id> [<why>]              item unflag <id> [<comment>]
   item comment <id> <text>            item comment <id> --edit <n> <text>
   item attach <id> <path>|<url>       item attach <id> --remove <path>|<url>
@@ -25,6 +26,10 @@ refused, naming the set. The kind sets the level: 1 Epic, 0 Task/Story/Bug/Featu
 -1 Subtask; a new item is one below its parent, and --parent moves it there (to none, the
 level stays). The one rule: nothing goes below -1; children follow their parent
 ("w39 can't go there.").
+watch tracks an item without holding it: you hear the moves on it and everything under it
+(status, flag, a new child, a holder change), not its comments, edits or links. Holders hear
+every change, a Team's lead for the Team; each list gets its own message. Nobody hears their
+own change.
 delete takes the item's subtasks with it; an epic's other children are left with no parent.
 --trello, --github set an external key; blank clears. Every change adds a trail line.
 Related: work-record --help; team --help
@@ -80,6 +85,8 @@ case "$verb" in
       *) to=$(json session "$1") ;;
     esac
     ronin_item_call POST "/api/work-items/$id/handoff" "$to" ;;
+  watch|unwatch) [ "$#" -eq 0 ] || die "BAD-ARG: item $verb takes only <id>"
+    ronin_item_call POST "/api/work-items/$id/$verb" "$(json)" ;;
   comment)
     if [ "${1:-}" = --edit ]; then
       [ "$#" -eq 3 ] || die 'BAD-ARG: item comment takes <id> --edit <n> <text>, the text quoted'

@@ -184,7 +184,7 @@ test('a change by anyone but the holding Agent acks that Agent once; its own cha
   await seedTegami('keeper');
   const item = (await items.createItem({ title: 'kept' }, 'lead')).item;
   await clear();
-  const acks = async () => (await listQueuedMessages()).filter((message) => message.target === 'keeper' && /Your work record changed|\(item read w\d+\)/.test(message.text)).length;
+  const acks = async () => (await listQueuedMessages()).filter((message) => message.target === 'keeper' && /Your work record changed|^w\d+: /.test(message.text)).length;
   await items.assignItem(item.id, { kind: 'agent', name: 'keeper' }, 'lead');
   assert.equal(await acks(), 1, 'an assign by someone else: one ack, not two');
   await clear();
@@ -240,4 +240,88 @@ test('renameItem moves the id: the file, a child\'s parent, a link to it, every 
   const told = (await listQueuedMessages()).find((message) => message.target === 'renamer');
   assert.equal(told?.text, `${item.id} is now KAN-65 (its Jira key); nothing to do.`);
   assert.match((await items.createItem({ title: 'next' }, 'lead')).item.id, /^w[0-9]+$/, 'the issuer counts w ids only');
+});
+
+/* ONE RECIPIENT RULE — holders, each holding Team's lead, and watchers by kind of move. The
+ * leads come from tmux; a fake tmux on PATH answers one lead, "cap" of crew, and nothing else. */
+async function withLead(t: { after(fn: () => void): void }): Promise<void> {
+  const bin = await fs.mkdtemp(path.join(os.tmpdir(), 'ronin-holders-bin-'));
+  await fs.writeFile(path.join(bin, 'tmux'), [
+    '#!/bin/sh',
+    'case "$*" in',
+    "  *ronin-key*) exit 0;;",
+    "  *ronin-lead*) printf 'cap\\037crew\\037crew\\n';;",
+    '  *) exit 1;;',
+    'esac',
+    '',
+  ].join('\n'), { mode: 0o755 });
+  const before = process.env.PATH;
+  process.env.PATH = `${bin}:${before ?? ''}`;
+  t.after(() => { process.env.PATH = before; });
+}
+
+test('a Team-held item\'s status move reaches its lead; the lead\'s own move does not', async (t) => {
+  await withLead(t);
+  const { listQueuedMessages, dismissMessages } = await import('../src/message-queue.js');
+  const clear = async () => { await dismissMessages((await listQueuedMessages()).map((message) => message.id)); };
+  const { item } = await items.createItem({ title: 'team work', holder: team }, 'cap');
+  await clear();
+  await items.editItem(item.id, { status: 'In Progress' }, 'member');
+  assert.deepEqual((await listQueuedMessages()).map((message) => [message.target, message.text]),
+    [['cap', `${item.id}: status To Do → In Progress by member.`]]);
+  await clear();
+  await items.editItem(item.id, { status: 'In Review' }, 'cap');
+  assert.deepEqual(await listQueuedMessages(), []);
+});
+
+test('a watcher of an epic hears a grandchild\'s status move and a new child, not a comment; watching holds nothing', async () => {
+  const { listQueuedMessages, dismissMessages } = await import('../src/message-queue.js');
+  const clear = async () => { await dismissMessages((await listQueuedMessages()).map((message) => message.id)); };
+  const heard = async () => (await listQueuedMessages()).filter((message) => message.target === 'watcher').map((message) => message.text);
+  await seedTegami('watcher');
+  const epic = (await items.createItem({ title: 'topic', kind: 'Epic' }, 'lead')).item;
+  const story = (await items.createItem({ title: 'story', parent: epic.id }, 'lead')).item;
+  const step = (await items.createItem({ title: 'step', parent: story.id }, 'lead')).item;
+  assert.deepEqual((await items.watchItem(epic.id, 'watcher', true)).watches, [epic.id]);
+  assert.deepEqual(await listsHolding(epic.id), [], 'watching is not holding');
+  await clear();
+
+  await items.editItem(step.id, { status: 'In Progress' }, 'lead');
+  assert.deepEqual(await heard(), [`${step.id} (under ${epic.id}, which you watch): status To Do → In Progress by lead.`]);
+  await clear();
+  await items.addComment(step.id, 'a note', 'lead');
+  await items.editItem(step.id, { title: 'renamed step' }, 'lead');
+  assert.deepEqual(await heard(), [], 'comments and edits stay the holders\'');
+  const more = (await items.createItem({ title: 'more', parent: story.id }, 'lead')).item;
+  assert.deepEqual(await heard(), [`${more.id} (under ${epic.id}, which you watch): more was added under ${story.id}.`]);
+  await clear();
+
+  await items.watchItem(epic.id, 'watcher', false);
+  await items.editItem(step.id, { status: 'Done' }, 'lead');
+  assert.deepEqual(await heard(), [], 'unwatched, nothing');
+});
+
+test('a watcher is not told of its own move', async () => {
+  const { listQueuedMessages, dismissMessages } = await import('../src/message-queue.js');
+  await seedTegami('self');
+  const { item } = await items.createItem({ title: 'watched' }, 'lead');
+  await items.watchItem(item.id, 'self', true);
+  await dismissMessages((await listQueuedMessages()).map((message) => message.id));
+  await items.editItem(item.id, { status: 'In Progress' }, 'self');
+  await items.flagItem(item.id, true, undefined, 'self');
+  assert.deepEqual((await listQueuedMessages()).filter((message) => message.target === 'self'), []);
+  await items.editItem(item.id, { status: 'In Review' }, 'lead');
+  assert.deepEqual((await listQueuedMessages()).filter((message) => message.target === 'self').map((message) => message.text),
+    [`${item.id}: status In Progress → In Review by lead.`], 'watching the item itself: no "(under …)"');
+});
+
+test('an Agent that holds and watches an item gets each list\'s message', async () => {
+  const { listQueuedMessages, dismissMessages } = await import('../src/message-queue.js');
+  await seedTegami('both');
+  const { item } = await items.createItem({ title: 'held and watched', holder: { kind: 'agent', name: 'both' } }, 'lead');
+  await items.watchItem(item.id, 'both', true);
+  await dismissMessages((await listQueuedMessages()).map((message) => message.id));
+  await items.editItem(item.id, { status: 'In Progress' }, 'lead');
+  assert.deepEqual((await listQueuedMessages()).filter((message) => message.target === 'both').map((message) => message.text),
+    [`${item.id}: status To Do → In Progress by lead.`, `${item.id}: status To Do → In Progress by lead.`]);
 });

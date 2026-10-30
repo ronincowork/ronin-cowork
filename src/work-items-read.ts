@@ -1,6 +1,6 @@
 /**
  * READINGS — derived from the store and the holder lists, never stored.
- * agent:      the items an Agent holds and every held item's attachments.
+ * agent:      the items an Agent holds and every held item's attachments, and the items it watches.
  * team:       the roster objective, the items the Team holds and the items its members
  *             hold, each child after its parent where the lead made any; and its epics
  *             (the epic → Teams rule, boardReadings), plus the roots nobody's work reaches,
@@ -18,6 +18,7 @@ export interface AgentReading {
   holder: string;
   items: WorkItem[];
   attachments: string[];
+  watching: WorkItem[];
 }
 
 /** An item in a reading, with the holder it was found on (team:<name> or agent:<name>). */
@@ -42,6 +43,7 @@ export async function agentReading(session: string): Promise<AgentReading> {
     holder: `agent:${session}`,
     items,
     attachments: [...new Set(items.flatMap((item) => item.attachments))],
+    watching: present(await Promise.all((letter?.watches ?? []).map((id) => readItem(id)))),
   };
 }
 

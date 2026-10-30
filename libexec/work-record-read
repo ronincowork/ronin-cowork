@@ -106,7 +106,7 @@ STORE="$(cd "$(dirname "$SELF")/../bin" && pwd)/ronin-store"
 FILE="$("$STORE" session)/$(key_of "$NAME")/tegami.md"
 [ -f "$FILE" ] || die "work-record read: @$NAME has no letter yet — Ronin seeds one within a minute."
 
-# THE AGENT READING — what this session holds, with each item's status, and every held
+# THE AGENT READING — what this session holds and watches, with each item's status, and every held
 # item's attachments — comes from Ronin, derived from the work item store, never from this file.
 TOOL_DIR="$(cd "$(dirname "$SELF")/../ronin_bin" && pwd)"
 . "$TOOL_DIR/ronin-http.sh"
@@ -128,6 +128,7 @@ except Exception: r = {}
 if r.get("ok"):
     d["attachments"] = r.get("attachments") or []
     d["items"] = [{k: i.get(k) for k in ("id", "title", "level", "kind", "status", "flagged", "parent")} for i in r.get("items") or []]
+    d["watching"] = [{k: i.get(k) for k in ("id", "title", "level", "kind", "status", "flagged", "parent")} for i in r.get("watching") or []]
 print(json.dumps(d, indent=2, ensure_ascii=False))
 '
 else
@@ -142,6 +143,10 @@ items = r.get("items") or []
 print("\n## Work items you hold" if items else "\n## You hold no work items — item create, then item assign <id> <you>")
 for i in items:
     print("- %s %s · %s%s" % (i["id"], i["title"], i["status"], " · flagged" if i.get("flagged") else ""))
+if r.get("watching"):
+    print("\n## Work items you watch")
+    for i in r["watching"]:
+        print("- %s %s · %s%s" % (i["id"], i["title"], i["status"], " · flagged" if i.get("flagged") else ""))
 if r.get("attachments"):
     print("\n## Attachments\n" + "\n".join("- " + doc for doc in r["attachments"]))
 '

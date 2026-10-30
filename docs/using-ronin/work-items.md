@@ -93,6 +93,7 @@ item transition w12 "In Review"
 item flag w12 "waiting on the API"  # item unflag w12 when clear
 item assign w12 builder             # adds builder; or team:surface
 item handoff w12 builder            # the giver comes off; or team:surface, or none
+item watch w3                       # track it and everything under it; item unwatch w3 stops
 item comment w12 "…"                # --edit <n> changes one
 item attach w12 docs/plan.md        # or a link; --remove <path> takes it off
 item link w12 Blocks w14            # or Relates, Duplicate, Cloners; --remove takes it off
@@ -183,11 +184,35 @@ a clear title and objective, a parent where one fits.
 To find work, search: `item search --campaign <id>`, `--holder <name>` (`none`: held by nobody), `--team <t>`, `--parent <id>`,
 `--no-parent`, `--status <s>`, `--kind <k>`.
 
+## Watching
+
+An Agent can track an item without holding it: `item watch w3`. Anyone can watch anything,
+and an item can have any number of watchers. Watching changes no holders; `work-record read`
+lists what you watch, and `item unwatch w3` stops.
+
+A watcher hears the moves on the item and everything under it, its children and theirs:
+a status change, a flag raised or cleared, a new child (created under or moved under), a
+holder change (assign, handoff, let go, holder ended). Comments, edits, links and Jira
+fields stay the holders'. A team lead watches its epic, or the items it gave out to members,
+to hear their moves.
+
 ## Notices
 
-When someone else changes an item an Agent holds, Ronin tells it: "Your work record
-changed; please read it." When someone adds an item under one it holds, Ronin tells it that
-too. Under a Team's item, the Team's lead is told.
+A change is told to two lists, with two messages. The one who made it is never told.
+
+- **Holders:** the Agents holding the item and the lead of each Team holding it. They hear
+  every change: "w5: status To Do → In Review by builder." or "w5: a comment from jira:glen."
+  A new child under an item they hold: "w9 Fix login was added under w7, which you hold.
+  Handle it as you see fit."
+- **Watchers:** everyone watching the item or anything above it. They hear only a status
+  change, a flag, a new child and a holder change, named with what they watch: "w9 (under w3,
+  which you watch): status To Do → In Review by builder." Watching the item itself, the
+  "(under …)" part is dropped.
+
+Each list gets its own message, so an Agent that holds and watches gets both. A Team-held
+item's lead is on the holders list; the lead of a member-held item hears only by watching
+it. When the holders themselves change, each Agent whose list moved also hears "Your work record
+changed; please read it."
 
 The Agent reads the item, then answers with an edit or a comment. A comment is how it
 replies to a person, from Ronin or from Jira. A change is never left unanswered.

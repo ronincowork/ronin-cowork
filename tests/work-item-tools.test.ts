@@ -179,3 +179,15 @@ test('an id no route can hold answers "No work item <id>", and a reply that is n
     html.close();
   }
 });
+
+test('item watch and unwatch change the caller\'s watches, never its holds or the item\'s trail; work-record read shows them', async () => {
+  const id = made(await tool('item', ['create', '--title', 'Watched']));
+  const holds = (await readLetterHolds('probe'))!.holds;
+  const lines = (await trail(id)).length;
+  assert.match(await tool('item', ['watch', id]), new RegExp(`^You watch ${id};`));
+  assert.deepEqual([(await readLetterHolds('probe'))!.watches, (await readLetterHolds('probe'))!.holds], [[id], holds]);
+  assert.deepEqual((JSON.parse(await tool('work-record', ['read', '--json'])) as { watching: Array<{ id: string }> }).watching.map((item) => item.id), [id]);
+  await tool('item', ['unwatch', id]);
+  assert.deepEqual((await readLetterHolds('probe'))!.watches, []);
+  assert.equal((await trail(id)).length, lines, 'watching adds no trail line');
+});

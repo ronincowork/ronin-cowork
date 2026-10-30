@@ -122,9 +122,12 @@ two concurrent assigns leave one holder. An item that comes to or leaves an Agen
 by anyone else's hand (create with a holder, assign, release) pushes that Agent the
 one fixed work-record ack (`ackRecord`, `src/tegami.ts`; owner 2026-10-07); an Agent's own
 move is not acked. A move on a Team's list is a roster change and acks its lead. Any other
-change to a held item by someone else (`appendTrail`) acks its Agent holders with a line naming
-the item and the change, "w64 KAN-27: status In Progress → In Review by jira:x (item read w64)."
-(`ackHolders`), so a comment's holder knows to read it. Every act
+change to an item by someone else (`appendTrail`) acks its hearers with a line naming the item
+and the change, "w64 KAN-27: status In Progress → In Review by jira:x." (`ackHolders`), so a
+comment's holder knows to read it. One rule (`hearers`) builds two lists: holders (Agent
+holders and each holding Team's lead) hear every change; watchers (the Agents whose letter's
+`watches` names the item or one above it) hear status, flag, holder and new-child moves, in a
+message naming what they watch. Each list gets its own message; an Agent on both gets both. Every act
 names its item, one per Jira item act (`item --help`); the Agent's work record shows the
 items it holds, each with its status. `deleteItem` is Jira's delete: the item and its
 subtasks go, other children lose the parent, links to it go. Readings are derived in `src/work-items-read.ts` and never stored: an Agent's

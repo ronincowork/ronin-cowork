@@ -5,7 +5,7 @@
 import type express from 'express';
 import {
   WorkItemBadInput, WorkItemMissing, WorkItemRefused,
-  addComment, assignItem, attachDoc, createItem, deleteItem, editComment, editItem, flagItem, handoffItem, holderLabel, holdersOf, linkItem, listItems, readItem,
+  addComment, assignItem, attachDoc, createItem, deleteItem, editComment, editItem, flagItem, handoffItem, holderLabel, holdersOf, linkItem, listItems, readItem, watchItem,
   didLine, type Acknowledged, type Holder, type JiraPair, type WorkItem,
 } from '../work-items.js';
 import { agentReading, everyItemReading, teamReading } from '../work-items-read.js';
@@ -137,6 +137,13 @@ export function registerWorkItems(app: express.Express): void {
     const to = req.body?.none === true || req.body?.none === 'true' ? null : holderFrom(req.body);
     acknowledge(res, await handoffItem(req.params.id, { kind: 'agent', name: by }, to, by, text(req.body?.note)));
   }));
+  // Watch adds the item to the calling Agent's watches, unwatch takes it off; no hold changes, no trail line.
+  for (const [verb, watch] of [['watch', true], ['unwatch', false]] as const) {
+    app.post(`/api/work-items/:id/${verb}`, guarded(async (req, res) => {
+      const { id, watches } = await watchItem(req.params.id, callerOf(req), watch);
+      res.json({ ok: true, watches, acknowledgement: `${watch ? 'You watch' : 'You no longer watch'} ${id}; you watch ${watches.length ? watches.join(', ') : 'nothing'}.` });
+    }));
+  }
   // Jira's Add flag / Remove flag; { comment } is the reason, kept as a comment.
   for (const [verb, flagged] of [['flag', true], ['unflag', false]] as const) {
     app.post(`/api/work-items/:id/${verb}`, guarded(async (req, res) => {
@@ -167,7 +174,7 @@ export function registerWorkItems(app: express.Express): void {
   // Anything else under /api/work-items names no item (an id like surface/7 is not one):
   // a JSON 404 naming it, so a tool can say so rather than parse an HTML error page.
   app.all('/api/work-items/*', (req, res) => {
-    const id = req.path.slice('/api/work-items/'.length).replace(/\/(assign|handoff|transition|flag|unflag|attach|link|comment)$/, '');
+    const id = req.path.slice('/api/work-items/'.length).replace(/\/(assign|handoff|watch|unwatch|transition|flag|unflag|attach|link|comment)$/, '');
     res.status(404).json({ ok: false, error: `No work item ${id}.` });
   });
 }

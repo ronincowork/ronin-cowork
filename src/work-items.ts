@@ -26,7 +26,7 @@ import { sessionKey } from './session-dir.js';
 import { enqueueMessage } from './message-queue.js';
 import { findLeads } from './desks/lead.js';
 import { listTeamRosters, readTeamRoster, writeTeamRoster } from './team-rosters.js';
-import { ackRecord, listLetterHolds, teamChanged, readLetterHolds, seedTegami, writeLetterHolds } from './tegami.js';
+import { ackRecord, listLetterHolds, teamChanged, readLetterHolds, seedTegami, writeLetterHolds, writeLetterWatches } from './tegami.js';
 import { initialCampaignId } from './campaign-scope.js';
 import { listSessions } from './tmux.js';
 import { emitItemChanged } from './sockets.js';
@@ -196,8 +196,8 @@ const lineOf = (by: string, op: TrailOp, extra: Omit<TrailLine, 'at' | 'by' | 'o
 /** Read, change, append one trail line, write. Runs inside the issuer lock. */
 const answer = (item: WorkItem, line: TrailLine): Acknowledged => ({ item, line });
 
-/** A change by anyone but the holding Agent pushes that Agent one line naming the item and the
- * change (its own writes tell nobody). */
+/** A change by anyone but the hearer pushes each hearer one line naming the item and the
+ * change (one's own writes tell nobody). */
 export async function appendTrail(id: string, by: string, change: (item: WorkItem) => Omit<TrailLine, 'at' | 'by'>): Promise<Acknowledged> {
   const item = await load(id);
   const { op, ...extra } = change(item);
@@ -209,14 +209,49 @@ export async function appendTrail(id: string, by: string, change: (item: WorkIte
   return answer(item, line);
 }
 
-/** The holders' ack, named like the unheld one: "KAN-27: a comment from jira:glen (item read KAN-27)."
- * or "w64: status In Progress → In Review by jira:x (item read w64)." */
+/** The hearers' ack: "KAN-27: a comment from jira:glen." or "w64: status In Progress → In Review by jira:x." */
 async function ackHolders(item: WorkItem, line: TrailLine): Promise<void> {
   const detail = line.from && line.to ? `${line.from} → ${line.to}` : line.to ?? line.from ?? line.note ?? '';
   const what = line.op === 'comment' ? `a comment from ${line.by}` : `${line.op}${detail ? ` ${detail}` : ''} by ${line.by}`;
+  const { holders, watchers } = await hearers(item, line.op, line.by);
+  for (const name of holders) await enqueueMessage(name, `${item.id}: ${what}.`, 'house', 'Work items');
+  for (const { name, watches } of watchers) await enqueueMessage(name, `${item.id}${watching(item.id, watches)}: ${what}.`, 'house', 'Work items');
+}
+
+/** What a watcher's message names: " (under w3, which you watch)", or nothing when it watches the item itself. */
+const watching = (id: string, watches: string): string => watches === id ? '' : ` (under ${watches}, which you watch)`;
+
+/** The moves a watcher hears: status, a flag raised or cleared, a holder change, and an
+ * arrival (a child created or moved under). Comments, edits, links and fields stay the holders'. */
+const WATCHED: ReadonlySet<string> = new Set<TrailOp | 'arrival'>(['status', 'flag', 'assign', 'handoff', 'release', 'holder-ended', 'arrival']);
+
+/** The item's id and every id above it, nearest first. */
+async function ancestry(item: WorkItem): Promise<string[]> {
+  const ids = [item.id];
+  for (let at = item.parent; at; at = (await readItem(at))?.parent ?? null) ids.push(at);
+  return ids;
+}
+
+/** THE ONE RECIPIENT RULE: who hears a move on an item, in two lists, never the one who made
+ * it. Holders: the Agents holding it and each holding Team's lead; they hear every change.
+ * Watchers: the Agents watching it or an item above it, each with the item it watches; they
+ * hear only the WATCHED moves. Each list gets its own message: an Agent on both gets both. */
+async function hearers(item: WorkItem, move: TrailOp | 'arrival' | null, by: string): Promise<{ holders: string[]; watchers: Array<{ name: string; watches: string }> }> {
+  const holders = new Set<string>();
   for (const holder of await holdersOf(item.id)) {
-    if (holder.kind === 'agent' && holder.name !== line.by) await enqueueMessage(holder.name, `${item.id}: ${what} (item read ${item.id}).`, 'house', 'Work items');
+    for (const name of holder.kind === 'agent' ? [holder.name] : await findLeads(holder.name)) holders.add(name);
   }
+  holders.delete(by);
+  const watchers = new Map<string, string>();
+  if (move && WATCHED.has(move)) {
+    const above = await ancestry(item);
+    for (const letter of await listLetterHolds()) {
+      const watched = above.find((id) => letter.watches.includes(id));
+      if (watched) watchers.set(letter.name, watched);
+    }
+  }
+  watchers.delete(by);
+  return { holders: [...holders], watchers: [...watchers].map(([name, watches]) => ({ name, watches })) };
 }
 
 export interface NewItem {
@@ -278,20 +313,16 @@ const blank = (title: string, by: string): WorkItem => ({
   attachments: [], links: [], external: {}, trail: [], created: { at: new Date().toISOString(), by: by.trim() || 'unknown' },
 });
 
-/** An arrival under a held item is announced to its holder, one queued message: to the
- * Agent, or to a holding Team's lead, never to whoever made the change. An item held by
- * nobody notifies nobody. */
+/** An arrival under an item is announced to the parent's hearers (hearers), one queued
+ * message each: its holders, and the watchers of the parent or an item above it. A parent
+ * nobody holds or watches notifies nobody. */
 async function announceArrival(item: WorkItem, by: string): Promise<string[]> {
-  if (!item.parent) return [];
-  const told: string[] = [];
-  for (const holder of await holdersOf(item.parent)) {
-    const targets = holder.kind === 'agent' ? [holder.name] : await findLeads(holder.name);
-    for (const target of targets.filter((name) => name !== by)) {
-      await enqueueMessage(target, `${item.id} ${item.title} was added under ${item.parent}, which you hold. Handle it as you see fit.`, 'house', 'Work items');
-      told.push(target);
-    }
-  }
-  return told;
+  const parent = item.parent ? await readItem(item.parent) : null;
+  if (!parent) return [];
+  const { holders, watchers } = await hearers(parent, 'arrival', by);
+  for (const name of holders) await enqueueMessage(name, `${item.id} ${item.title} was added under ${parent.id}, which you hold. Handle it as you see fit.`, 'house', 'Work items');
+  for (const { name, watches } of watchers) await enqueueMessage(name, `${item.id}${watching(item.id, watches)}: ${item.title} was added under ${parent.id}.`, 'house', 'Work items');
+  return [...holders, ...watchers.map(({ name }) => name)];
 }
 
 /** An unheld item belongs on its Campaign's unheld list: every Coordinator in the Campaign is
@@ -304,7 +335,7 @@ async function announceUnheld(item: WorkItem, by: string): Promise<string[]> {
   for (const session of sessions) {
     const role = await readAgentComposition(session.name).then((found) => found.current.role).catch(() => 'coworker');
     if (role !== 'coordinator') continue;
-    await enqueueMessage(session.name, `${item.id} '${item.title}' has no holders; place it (item read ${item.id}).`, 'house', 'Work items');
+    await enqueueMessage(session.name, `${item.id} '${item.title}' has no holders; place it.`, 'house', 'Work items');
     told.push(session.name);
   }
   return told;
@@ -522,6 +553,7 @@ export function deleteItem(id: string, by: string): Promise<{ deleted: string[];
       await ackHolds(await takeOffEveryList(at), by);
       await rm(fileOf(at));
     }
+    await rewriteWatches((watches) => watches.filter((watched) => !deleted.includes(watched)));
     return { deleted, orphaned };
   });
 }
@@ -540,20 +572,16 @@ export function renameItem(from: string, to: string, by: string): Promise<Acknow
       other.links = other.links.map((link) => link.to === from ? { ...link, to } : link);
       await save(other);
     }
-    const holders: Holder[] = [];
     for (const list of await heldLists()) {
-      if (!list.holds.includes(from)) continue;
-      holders.push(list.holder);
-      await list.set(list.holds.map((id) => id === from ? to : id));
+      if (list.holds.includes(from)) await list.set(list.holds.map((id) => id === from ? to : id));
     }
+    await rewriteWatches((watches) => watches.map((id) => id === from ? to : id));
     const line = lineOf(by, 'rename', { from, to, note: `renamed from ${from}` });
     item.trail.push(line);
     await save(item);
     await rm(fileOf(from));
     emitItemChanged({ item, line });
-    const told = new Set<string>();
-    for (const holder of holders) for (const name of holder.kind === 'agent' ? [holder.name] : await findLeads(holder.name)) told.add(name);
-    for (const name of told) await enqueueMessage(name, `${from} is now ${to} (its Jira key); nothing to do.`, 'house', 'Work items');
+    for (const name of (await hearers(item, 'rename', by)).holders) await enqueueMessage(name, `${from} is now ${to} (its Jira key); nothing to do.`, 'house', 'Work items');
     return answer(item, line);
   });
 }
@@ -587,10 +615,15 @@ async function listFor(holder: Holder): Promise<HeldList> {
     if (!roster) throw new WorkItemBadInput(`Team "${holder.name}" has no roster.`);
     return { holder, holds: roster.holds, set: (holds) => writeTeamRoster(roster.name, { holds }, roster.campaign_id) };
   }
-  const key = await sessionKey(holder.name);
-  const letter = await readLetterHolds(key) ?? (await seedTegami(holder.name) ? await readLetterHolds(key) : null);
-  if (!letter) throw new WorkItemBadInput(`Agent "${holder.name}" has no work record to hold work in.`);
-  return { holder, holds: letter.holds, set: (holds) => writeLetterHolds(key, holds) };
+  const letter = await letterOf(holder.name, 'hold work in');
+  return { holder, holds: letter.holds, set: (holds) => writeLetterHolds(letter.key, holds) };
+}
+
+async function letterOf(name: string, to: string) {
+  const key = await sessionKey(name);
+  const letter = await readLetterHolds(key) ?? (await seedTegami(name) ? await readLetterHolds(key) : null);
+  if (!letter) throw new WorkItemBadInput(`Agent "${name}" has no work record to ${to}.`);
+  return letter;
 }
 
 /** Every id on any holder's list, with the holder that has it. */
@@ -666,6 +699,28 @@ export function releaseItem(id: string, by: string, note?: string): Promise<Ackn
   });
 }
 
+/* WATCHING — a list of item ids on each Agent's letter, beside its holds: what it tracks
+ * without holding. Watching changes no holds and no item, and adds no trail line; the watcher
+ * hears the WATCHED moves on the item and everything under it (hearers). */
+
+/** Watch adds the id to the Agent's watches; unwatch takes it off (a deleted item too). */
+export function watchItem(id: string, session: string, watch: boolean): Promise<{ id: string; watches: string[] }> {
+  return withIssuer(async () => {
+    const letter = await letterOf(session, 'watch from');
+    const kept = letter.watches.filter((watched) => watched !== id);
+    const watches = watch ? [...kept, id] : kept;
+    await writeLetterWatches(letter.key, watches);
+    return { id, watches };
+  });
+}
+
+async function rewriteWatches(change: (watches: string[]) => string[]): Promise<void> {
+  for (const letter of await listLetterHolds()) {
+    const watches = change(letter.watches);
+    if (watches.join() !== letter.watches.join()) await writeLetterWatches(letter.key, watches);
+  }
+}
+
 /** What the act did, read from its trail line alone: "w39 moved under w40, level -1",
  * "w9 moved to In Progress", "w9 is held by agent:x", "w12 was created". Status, kind and level
  * appear only when the act changed them. Every acknowledgement is this one line. */
@@ -685,11 +740,12 @@ export function didLine({ item, line }: Acknowledged): string {
   return `${item.id} ${what}`;
 }
 
-/** An Agent going away takes its list with it: each item it held gets one holder-ended
- * line and is found again under its parent or unassigned. Restore does not reclaim. */
+/** An Agent going away takes its lists with it: it watches nothing, and each item it held gets
+ * one holder-ended line and is found again under its parent or unassigned. Restore does not reclaim. */
 export function releaseHolder(session: string, key: string, how: string): Promise<Acknowledged[]> {
   return withIssuer(async () => {
     const letter = await readLetterHolds(key);
+    if (letter?.watches.length) await writeLetterWatches(key, []);
     if (!letter?.holds.length) return [];
     const released: Acknowledged[] = [];
     // Off the list first, so the ended Agent is not acked for its own release.
@@ -702,9 +758,10 @@ export function releaseHolder(session: string, key: string, how: string): Promis
   });
 }
 
-/** The Jira bridge's word to an item's holding Agents, when a change of theirs was not sent. */
+/** The Jira bridge's word to an item's holders (a holding Team's lead), when a change of theirs was not sent. */
 export async function tellHolders(id: string, text: string): Promise<void> {
-  for (const holder of await holdersOf(id)) if (holder.kind === 'agent') await enqueueMessage(holder.name, text, 'house', 'Work items');
+  const item = await readItem(id);
+  if (item) for (const name of (await hearers(item, null, '')).holders) await enqueueMessage(name, text, 'house', 'Work items');
 }
 
 /* THE ONE MIGRATION, at server start: kind, priority and link type take Jira's own name where
