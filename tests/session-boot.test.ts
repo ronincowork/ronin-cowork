@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import os from 'node:os';
 import path from 'node:path';
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
-import { PACKET_BUDGET, bootFiles, compileBirthBriefAt, describePacket, isShelfTeaching, migrateBirthBriefs, packetEndLine, readFirstSentence } from '../src/birth-brief.js';
+import { PACKET_BUDGET, bootFiles, compileBirthBriefAt, describePacket, isShelfTeaching, packetEndLine, readFirstSentence } from '../src/birth-brief.js';
 import { storeDir } from '../src/resources.js';
 import { buildBrief, type SpawnForm } from '../src/spawn.js';
 import { contributionReading } from '../src/resource-adapters.js';
@@ -382,26 +382,4 @@ test('a system installation reads one way or the other', async () => {
     assert.ok(utility.includes(`../using-ronin/${guide}.md`), `usage route: ${guide}`);
   }
   assert.doesNotMatch(utility, /Control dial|owner only/);
-});
-
-test('the one cutover renames each session brief and moves its receipt path with it', async () => {
-  const temp = await mkdtemp(path.join(os.tmpdir(), 'ronin-brief-cutover-'));
-  const oldData = process.env.RONIN_DATA_ROOT;
-  process.env.RONIN_DATA_ROOT = temp;
-  try {
-    const dir = path.join(temp, 'sessions', 'agent-1');
-    await mkdir(dir, { recursive: true });
-    const old = path.join(dir, 'README.md');
-    await writeFile(old, '# Read first — agent\n');
-    await writeFile(path.join(dir, 'birth-receipt.json'), JSON.stringify({ packet: { path: old, lines: 1 } }, null, 2));
-    await mkdir(path.join(temp, 'sessions', 'no-brief'));
-    assert.equal(await migrateBirthBriefs(), 1);
-    assert.equal(await readFile(path.join(dir, 'AGENT_BIRTH_BRIEF.md'), 'utf8'), '# Read first — agent\n');
-    await assert.rejects(readFile(old, 'utf8'), { code: 'ENOENT' });
-    assert.equal(JSON.parse(await readFile(path.join(dir, 'birth-receipt.json'), 'utf8')).packet.path, path.join(dir, 'AGENT_BIRTH_BRIEF.md'));
-    assert.equal(await migrateBirthBriefs(), 0, 'once done, there is nothing left to move');
-  } finally {
-    if (oldData === undefined) delete process.env.RONIN_DATA_ROOT; else process.env.RONIN_DATA_ROOT = oldData;
-    await rm(temp, { recursive: true, force: true });
-  }
 });

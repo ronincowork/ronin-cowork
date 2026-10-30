@@ -269,33 +269,3 @@ export async function compileBirthBriefAt(
   await rename(temp, target);
   return target;
 }
-
-/**
- * One cutover: each session folder's brief was `README.md`, which tells whoever opens it
- * nothing. It becomes BIRTH_BRIEF, and the path its birth receipt records moves with it.
- * Nothing reads the old name after this.
- */
-export async function migrateBirthBriefs(): Promise<number> {
-  const root = storeDir('session');
-  const keys = await readdir(root).catch((error: NodeJS.ErrnoException) => {
-    if (error.code === 'ENOENT') return [];
-    throw error;
-  });
-  let moved = 0;
-  for (const key of keys) {
-    const from = path.join(root, key, 'README.md');
-    const to = path.join(root, key, BIRTH_BRIEF);
-    try {
-      await rename(from, to);
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === 'ENOENT' || (error as NodeJS.ErrnoException).code === 'ENOTDIR') continue;
-      throw error;
-    }
-    moved++;
-    const receipt = path.join(root, key, 'birth-receipt.json');
-    const text = await readFile(receipt, 'utf8').catch(() => null);
-    const quoted = (value: string) => JSON.stringify(value).slice(1, -1);
-    if (text?.includes(quoted(from))) await writeFile(receipt, text.replaceAll(quoted(from), quoted(to)), 'utf8');
-  }
-  return moved;
-}
