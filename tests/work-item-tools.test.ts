@@ -31,7 +31,7 @@ process.env.RONIN_TEAM_ROSTERS_DIR = path.join(dir, 'team_rosters');
 const { registerWorkItems } = await import('../src/routes/work-items-api.js');
 const { createTeamRoster, readTeamRoster } = await import('../src/team-rosters.js');
 const { readLetterHolds, seedTegami } = await import('../src/tegami.js');
-const { readItem } = await import('../src/work-items.js');
+const { createItem, readItem } = await import('../src/work-items.js');
 
 await createTeamRoster('crew', { objective: 'hold things' });
 await seedTegami('probe');
@@ -178,6 +178,21 @@ test('an id no route can hold answers "No work item <id>", and a reply that is n
   } finally {
     html.close();
   }
+});
+
+test('item read shows a connected item\'s stored key and its parent\'s, keeping no parent apart from a parent with none', async () => {
+  const connection = async (id: string) => (JSON.parse(await tool('item', ['read', id])) as { connection?: unknown }).connection;
+  const pair = (key: string) => ({ id: key.replace(/\D/g, ''), key });
+  const keyed = (await createItem({ title: 'Connected epic', kind: 'Epic', jira: pair('CX-1') }, 'fixture')).item.id;
+  const bare = (await createItem({ title: 'Unconnected epic', kind: 'Epic' }, 'fixture')).item.id;
+  const underKeyed = (await createItem({ title: 'Under a keyed parent', kind: 'Task', parent: keyed, jira: pair('CX-2') }, 'fixture')).item.id;
+  const underBare = (await createItem({ title: 'Under a bare parent', kind: 'Task', parent: bare, jira: pair('CX-3') }, 'fixture')).item.id;
+  const loose = (await createItem({ title: 'Unconnected', kind: 'Task', parent: bare }, 'fixture')).item.id;
+  assert.deepEqual(await connection(underKeyed), { key: 'CX-2', parent: { id: 'CX-1', key: 'CX-1' } });
+  assert.deepEqual(await connection(underBare), { key: 'CX-3', parent: { id: bare, key: null } });
+  assert.deepEqual(await connection(keyed), { key: 'CX-1', parent: null });
+  assert.equal(await connection(loose), undefined, 'an unconnected item reads as before');
+  assert.equal(await connection(bare), undefined);
 });
 
 test('item watch and unwatch change the caller\'s watches, never its holds or the item\'s trail; work-record read shows them', async () => {

@@ -57,7 +57,10 @@ No parent is normal. Not every task belongs to an epic.
   by Jira's names, the ones Jira fills. They are Jira's: read only.
 
 Every change adds a line to the item's history. `item read <id>` shows it all: fields,
-children, comments, attachments, links and history.
+children, comments, attachments, links and history. A connected item also shows its
+`connection`: the key it carries, and its parent's: `null` when it has no parent, a
+`key` of `null` when the parent carries none. These are the stored keys; nothing is
+checked, so a key does not mean the connection works.
 
 ## Status
 

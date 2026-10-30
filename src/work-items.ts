@@ -78,6 +78,15 @@ export function jiraLink(item: WorkItem): string | undefined {
   return site && item.external.jira ? `${site}/browse/${item.external.jira.key}` : undefined;
 }
 
+/** What item read says of an item's connection, from stored keys only: the key it carries,
+ * and its parent's (null: no parent; key null: a parent that carries none). Nothing is
+ * fetched, so a key is not a claim the connection works. None for an unconnected item. */
+export interface Connection { key: string; parent: { id: string; key: string | null } | null }
+export function connectionOf(item: WorkItem, parent: WorkItem | null): Connection | undefined {
+  if (!item.external.jira) return undefined;
+  return { key: item.external.jira.key, parent: item.parent ? { id: item.parent, key: parent?.external.jira?.key ?? null } : null };
+}
+
 /** The value as named, or a refusal naming the set. */
 function oneOf(what: string, value: string, names: string[]): string {
   if (!names.includes(value)) throw new WorkItemBadInput(`${what} is one of ${names.join(', ')}; not "${value}".`);

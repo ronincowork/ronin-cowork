@@ -6,7 +6,7 @@
 import type express from 'express';
 import {
   WorkItemBadInput, WorkItemMissing, WorkItemRefused,
-  addComment, assignItem, attachDoc, createItem, deleteItem, editComment, editItem, flagItem, handoffItem, holderLabel, holdersOf, linkItem, listItems, readItem, watchItem,
+  addComment, assignItem, attachDoc, connectionOf, createItem, deleteItem, editComment, editItem, flagItem, handoffItem, holderLabel, holdersOf, linkItem, listItems, readItem, watchItem,
   didLine, type Acknowledged, type Holder, type JiraPair, type WorkItem,
 } from '../work-items.js';
 import { agentReading, everyItemReading, teamReading } from '../work-items-read.js';
@@ -107,7 +107,8 @@ export function registerWorkItems(app: express.Express): void {
     const all = await listItems();
     const children = all.filter((other) => other.parent === item.id);
     const inward = all.flatMap((other) => other.links.filter((link) => link.to === item.id).map((link) => ({ type: link.type, from: other.id })));
-    res.json({ ok: true, item, held_by: (await holdersOf(item.id)).map(holderLabel), ...(children.length ? { children } : {}), ...(inward.length ? { linked_from: inward } : {}) });
+    const connection = connectionOf(item, all.find((other) => other.id === item.parent) ?? null);
+    res.json({ ok: true, item, held_by: (await holdersOf(item.id)).map(holderLabel), ...(children.length ? { children } : {}), ...(inward.length ? { linked_from: inward } : {}), ...(connection ? { connection } : {}) });
   }));
 
   app.put('/api/work-items/:id', guarded(async (req, res) => {
