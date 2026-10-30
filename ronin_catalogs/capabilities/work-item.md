@@ -17,7 +17,7 @@
 | `item flag` | write: the item is stuck, with the reason as a comment | priority | `item --help` |
 | `item unflag` | write: the item is clear | priority | `item --help` |
 | `item assign` | write: add an Agent or Team as a holder, removing nobody | priority | `item --help` |
-| `item handoff` | write: the giver comes off and the receiver goes on; `none` lets go | priority | `item --help` |
+| `item handoff` | write: the giver (you, or `--from <agent>\|team:<name>`) comes off and the receiver goes on; `none` lets go | priority | `item --help` |
 | `item watch` | write: track an item without holding it; `item unwatch` stops | priority | `item --help` |
 | `item comment` | write: one comment, or `--edit <n>` changes one | priority | `item --help` |
 | `item attach` | write: attach or remove a document, visible in Docs | priority | `item --help` |
@@ -62,7 +62,7 @@ else is refused, naming the set.
 - **Link** what holds you up, from the blocking item: `item link w15 Blocks w12`.
 - **Keep the objective true:** `item edit w12 --objective "…"` when the job changes.
 - **Finish:** `worktree-desk hand-in <repo> --item w12` moves it to In Review; in a checkout, transition it.
-- **Give it on:** `item handoff w12 <agent>`; `item assign` adds a holder beside you.
+- **Give it on:** `item handoff w12 <agent>`; `item assign` adds a holder beside you. Take your Team's item: `item handoff w12 <you> --from team:<name>`.
 
 ### Notices
 

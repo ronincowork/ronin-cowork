@@ -213,3 +213,16 @@ test('work-record read with nothing held: a lead is told its team holds its work
   assert.match(read, /You hold no work items — your team holds your work; item create puts it there/);
   assert.match(read, /## Work items of team crew/);
 });
+
+test('a member takes its team\'s item by handoff --from team:<name>: off the team\'s holds, onto its own', async () => {
+  const { holdersOf, holderLabel } = await import('../src/work-items.js');
+  const epic = made(await tool('item', ['create', '--title', 'Team topic', '--kind', 'Epic']));
+  const id = made(await tool('item', ['create', '--title', 'Team piece', '--parent', epic]));
+  await tool('item', ['handoff', id, 'team:crew']);
+  assert.deepEqual((await holdersOf(id)).map(holderLabel), ['team:crew']);
+  const line = await oneLine(id, ['handoff', id, 'probe', '--from', 'team:crew']);
+  assert.deepEqual([line.from, line.to], ['team:crew', 'agent:probe']);
+  assert.deepEqual((await holdersOf(id)).map(holderLabel), ['agent:probe']);
+  await tool('item', ['handoff', id, 'none', '--from', 'probe']);
+  assert.deepEqual((await holdersOf(id)).map(holderLabel), [], '--from names an Agent too, and none lets it go');
+});

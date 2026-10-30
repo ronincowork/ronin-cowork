@@ -12,7 +12,7 @@ Usage:
   item edit <id> --title|--objective|--kind|--parent <id|none>|--priority|--trello|--github <value> ...
   item transition <id> "<status>"
   item assign <id> <agent>|team:<name>
-  item handoff <id> <agent>|team:<name>|none
+  item handoff <id> <agent>|team:<name>|none [--from <agent>|team:<name>]
   item watch <id> [<agent>|team:<name>]   item unwatch <id> [<agent>|team:<name>]
   item flag <id> [<why>]              item unflag <id> [<comment>]
   item comment <id> <text>            item comment <id> --edit <n> <text>
@@ -33,6 +33,8 @@ you hear the moves on it and everything under it (status, flag, a new child, a h
 change), not its comments, edits or links. Holders hear every change. A team hears through
 its lead: as holder what it holds, as watcher what it watches and what its members hold.
 Reached as both, you get both messages. Nobody hears their own change.
+handoff takes you off and the receiver on; --from names the giver instead: take your team's
+item with item handoff <id> <you> --from team:<name>, and it shows on the team through you.
 delete takes the item's subtasks with it; an epic's other children are left with no parent.
 --trello, --github set an external key; blank clears. Every change adds a trail line.
 Related: work-record --help; team --help
@@ -81,11 +83,15 @@ case "$verb" in
       *) to=$(json session "$1") ;;
     esac
     ronin_item_call POST "/api/work-items/$id/assign" "$to" ;;
-  handoff) [ "$#" -eq 1 ] || die 'BAD-ARG: item handoff takes <id> <agent>|team:<name>|none'
+  handoff) from=''
+    [ "$#" -eq 3 ] && [ "$2" = --from ] && { from=$3; set -- "$1"; }
+    [ "$#" -eq 1 ] || die 'BAD-ARG: item handoff takes <id> <agent>|team:<name>|none [--from <agent>|team:<name>]'
     case "$1" in
-      none) to=$(python3 -c 'import json,sys; print(json.dumps({"by": sys.argv[1], "none": True}))' "$BY") ;;
-      team:*) to=$(json team "${1#team:}") ;;
-      *) to=$(json session "$1") ;;
+      none) to=$(python3 -c 'import json,sys; d = {"by": sys.argv[1], "none": True}
+if sys.argv[2]: d["from"] = sys.argv[2]
+print(json.dumps(d))' "$BY" "$from") ;;
+      team:*) to=$(json team "${1#team:}" ${from:+from "$from"}) ;;
+      *) to=$(json session "$1" ${from:+from "$from"}) ;;
     esac
     ronin_item_call POST "/api/work-items/$id/handoff" "$to" ;;
   watch|unwatch) [ "$#" -le 1 ] || die "BAD-ARG: item $verb takes <id> [<agent>|team:<name>]"

@@ -92,7 +92,7 @@ item edit w12 --objective "…" --priority High
 item transition w12 "In Review"
 item flag w12 "waiting on the API"  # item unflag w12 when clear
 item assign w12 builder             # adds builder; or team:surface
-item handoff w12 builder            # the giver comes off; or team:surface, or none
+item handoff w12 builder            # the giver comes off; or team:surface, or none; --from team:surface names the giver
 item watch w3                       # track it and everything under it; or name builder, team:surface; item unwatch w3 stops
 item comment w12 "…"                # --edit <n> changes one
 item attach w12 docs/plan.md        # or a link; --remove <path> takes it off
@@ -175,6 +175,7 @@ item assign w12 builder         an Agent holds it
 item assign w12 team:surface    the Team holds it
 item handoff w12 builder        the giver comes off and builder goes on
 item handoff w12 none           the giver lets go
+item handoff w12 builder --from team:surface   builder takes the Team's item off the Team
 ```
 
 Assigning adds a holder and removes nobody. When an Agent ends, what it held goes back to

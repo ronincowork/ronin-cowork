@@ -132,11 +132,14 @@ export function registerWorkItems(app: express.Express): void {
   app.post('/api/work-items/:id/assign', guarded(async (req, res) => {
     acknowledge(res, await assignItem(req.params.id, holderFrom(req.body), callerOf(req), text(req.body?.note)));
   }));
-  // Handoff removes the calling Agent and adds the receiver; none only lets the caller go.
+  // Handoff removes the giver and adds the receiver; none only lets the giver go. The giver is
+  // the caller, or { from } named: an Agent, or team:<name> (an Agent taking its team's item).
   app.post('/api/work-items/:id/handoff', guarded(async (req, res) => {
     const by = callerOf(req);
     const to = req.body?.none === true || req.body?.none === 'true' ? null : holderFrom(req.body);
-    acknowledge(res, await handoffItem(req.params.id, { kind: 'agent', name: by }, to, by, text(req.body?.note)));
+    const named = text(req.body?.from)?.trim();
+    const from: Holder = named ? (named.startsWith('team:') ? { kind: 'team', name: named.slice(5) } : { kind: 'agent', name: named.replace(/^agent:/, '') }) : { kind: 'agent', name: by };
+    acknowledge(res, await handoffItem(req.params.id, from, to, by, text(req.body?.note)));
   }));
   // Watch adds the item to the watcher's watches (the caller, or { team } or { session } named), unwatch
   // takes it off; no hold changes, no trail line.
