@@ -5,24 +5,18 @@ import { conditionalBehaviourPath, resolveConditionalBehaviours } from '../src/b
 import { teamLeadAcknowledgement } from '../src/routes/sessions-api.js';
 
 test('Team lead is one ordinary conditional Behavior selected only by the explicit designation', async () => {
-  const lead = await resolveConditionalBehaviours({ arrangement: 'none', team: true, lead: true, project_management: false });
+  const lead = await resolveConditionalBehaviours({ arrangement: 'none', team: true, lead: true });
   assert.equal(lead.filter((row) => row.book === 'team-lead').length, 1);
   assert.ok(!(
-    await resolveConditionalBehaviours({ arrangement: 'none', team: true, lead: false, project_management: false })
+    await resolveConditionalBehaviours({ arrangement: 'none', team: true, lead: false })
   ).some((row) => row.book === 'team-lead'));
   assert.ok(!(
-    await resolveConditionalBehaviours({ arrangement: 'none', team: false, lead: true, project_management: false })
+    await resolveConditionalBehaviours({ arrangement: 'none', team: false, lead: true })
   ).some((row) => row.book === 'team-lead'));
-});
-
-test('Project management is one conditional Behavior selected only by the Campaign switch', async () => {
-  const facts = { arrangement: 'none', team: false, lead: false } as const;
-  assert.equal((await resolveConditionalBehaviours({ ...facts, project_management: true })).filter((row) => row.book === 'project-management').length, 1);
-  assert.ok(!(await resolveConditionalBehaviours({ ...facts, project_management: false })).some((row) => row.book === 'project-management'));
 });
 
 test('Agent roles select their conditional brief', async () => {
-  const facts = { arrangement: 'none' as const, team: false, lead: false, project_management: false };
+  const facts = { arrangement: 'none' as const, team: false, lead: false };
   assert.ok((await resolveConditionalBehaviours({ ...facts, role: 'epic_lead' })).some((row) => row.book === 'epic_agent'));
   assert.ok((await resolveConditionalBehaviours({ ...facts, role: 'coordinator' })).some((row) => row.book === 'steerco_mgr'));
   assert.ok(!(await resolveConditionalBehaviours({ ...facts, role: 'coworker' })).some((row) => ['epic_agent', 'steerco_mgr'].includes(row.book)));

@@ -461,3 +461,16 @@ test('a lead\'s reading shows its Team\'s items: what the Team holds and watches
   assert.deepEqual((await agentReading('mem')).teams, [], 'a member leads nothing');
   await items.watchItem(watched.id, team, false);
 });
+
+test('a Jira pairing tells holders once: the key stored acks nobody, the rename ack stays', async () => {
+  const { listQueuedMessages, dismissMessages } = await import('../src/message-queue.js');
+  await seedTegami('paired');
+  const { item } = await items.createItem({ title: 'goes up', holder: { kind: 'agent', name: 'paired' } }, 'lead');
+  await dismissMessages((await listQueuedMessages()).map((message) => message.id));
+  await items.editItem(item.id, { jira: { id: '10091', key: 'KAN-191' } }, 'jira:ronin_machine');
+  await items.renameItem(item.id, 'KAN-191', 'jira:ronin_machine');
+  assert.deepEqual((await listQueuedMessages()).filter((message) => message.target === 'paired').map((message) => message.text),
+    [`${item.id} is now KAN-191 (its Jira key); nothing to do.`]);
+  await items.editItem('KAN-191', { jira: null }, 'jira:ronin_machine');
+  assert.equal((await listQueuedMessages()).filter((message) => message.target === 'paired').length, 2, 'the pair dropped is news');
+});

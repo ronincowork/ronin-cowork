@@ -145,7 +145,7 @@ except Exception: r = {}
 if not r.get("ok"):
     print("\n(Ronin did not answer: the work items you hold are not shown.)"); raise SystemExit
 items = r.get("items") or []
-print("\n## Work items you hold" if items else "\n## You hold no work items — item create --parent <epic> makes one yours")
+print("\n## Work items you hold" if items else "\n## You hold no work items — your team holds your work; item create puts it there" if r.get("teams") else "\n## You hold no work items — item create --parent <epic> makes one yours")
 for i in items:
     print("- %s %s · %s%s" % (i["id"], i["title"], i["status"], " · flagged" if i.get("flagged") else ""))
 line = lambda i: "- %s %s · %s%s" % (i["id"], i["title"], i["status"], " · flagged" if i.get("flagged") else "")

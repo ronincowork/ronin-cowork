@@ -70,7 +70,7 @@ The directory is the delivery scope:
 | Scope | Inclusion mechanism | Result |
 |---|---|---|
 | `floor/` | Every resolved file, automatically | Applied to every Cowork Agent. |
-| `conditional/` | A file is applied when all of its authored `requires:` predicates match the resolved launch facts. | Applied only to matching Agents; for example Team-lead teaching follows the explicit lead designation, and its worktree and promotion part (`lead-worktrees.md`) also needs `arrangement:managed`. Predicates: `arrangement:<managed\|checkout\|none>`, `team`, `lead`, and `project_management` (the Campaign's Project management part, `services.parts.task_manager`, is on). |
+| `conditional/` | A file is applied when all of its authored `requires:` predicates match the resolved launch facts. | Applied only to matching Agents; for example Team-lead teaching follows the explicit lead designation, and its worktree and promotion part (`lead-worktrees.md`) also needs `arrangement:managed`. Predicates: `arrangement:<managed\|checkout\|none>`, `team` and `lead`. |
 | `selected/` | Explicit Agent selection, or an inherited Team then Campaign default, after availability resolution. | The chosen files are applied; invalid or unavailable names do not silently become teaching. |
 | `sought/` | Every resolved file contributes to a generated virtual index; no maintained list. | Awareness only. The source files are not applied. |
 

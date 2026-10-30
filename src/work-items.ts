@@ -197,15 +197,15 @@ const lineOf = (by: string, op: TrailOp, extra: Omit<TrailLine, 'at' | 'by' | 'o
 const answer = (item: WorkItem, line: TrailLine): Acknowledged => ({ item, line });
 
 /** A change by anyone but the hearer pushes each hearer one line naming the item and the
- * change (one's own writes tell nobody). */
-export async function appendTrail(id: string, by: string, change: (item: WorkItem) => Omit<TrailLine, 'at' | 'by'>): Promise<Acknowledged> {
+ * change (one's own writes tell nobody); `news` false keeps the line from everyone. */
+export async function appendTrail(id: string, by: string, change: (item: WorkItem) => Omit<TrailLine, 'at' | 'by'>, news: (line: TrailLine) => boolean = () => true): Promise<Acknowledged> {
   const item = await load(id);
   const { op, ...extra } = change(item);
   const line = lineOf(by, op, extra);
   item.trail.push(line);
   await save(item);
   emitItemChanged({ item, line });
-  await ackHolders(item, line);
+  if (news(line)) await ackHolders(item, line);
   return answer(item, line);
 }
 
@@ -433,6 +433,8 @@ export function editItem(id: string, edit: ItemEdit, by: string, note?: string):
     const level = named ? levelOfKind(names, named) : under ? levelUnder(under) : current.level;
     const children = level !== current.level || reparent ? await follow(current, parent, level) : [];
     const kind = named || (level === current.level ? current.kind : kindAt(names, level));
+    // The bridge storing the Jira key alone is not news: the rename that follows is told.
+    let paired = false;
     const done = await appendTrail(id, by, (item) => {
       const changed: string[] = [];
       const before = item.status;
@@ -455,10 +457,11 @@ export function editItem(id: string, edit: ItemEdit, by: string, note?: string):
         changed.push(`${key} ${item.external[key] ?? 'cleared'}`);
       }
       const said = note || undefined;
+      paired = changed.length === 1 && changed[0]!.startsWith('jira ') && Boolean(item.external.jira);
       if (changed.length === 1 && changed[0]!.startsWith('status ')) return { op: 'status', from: before, to: item.status, note: said };
       if (reparent && changed.every((what) => /^(parent|level|kind) /.test(what))) return { op: 'move', from, to: parent ?? 'none', note: `level ${item.level}` };
       return { op: 'edit', note: [said, changed.length ? changed.join(', ') : 'no change'].filter(Boolean).join('; ') };
-    });
+    }, () => !paired);
     await settle(children, done.item, by);
     return reparent ? { ...done, notified: await announceArrival(done.item, by) } : done;
   });

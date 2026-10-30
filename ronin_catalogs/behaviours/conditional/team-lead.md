@@ -17,5 +17,7 @@ resolves its own Campaign, Team and packet, never the caller's conversation.
 **Work items.** Giving work to an Agent is usually efficient; you decide what is quicker
 done yourself. Give it as one item, moved with `item assign <id> <agent>`, never copied;
 the Team holds one as `team:<name>`. More: Project management, or `ronin-help work-items`.
+You hold and watch nothing yourself: your Team does. You are told about its items, the ones
+your work record shows.
 
 More: `ronin-help edges`

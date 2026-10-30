@@ -388,7 +388,6 @@ export async function resolveReading(form: SpawnForm, facts: LaunchFacts) {
         role: form.role ?? (form.team_lead ? 'lead' : 'coworker'),
         team: !!form.team,
         lead: !!form.team_lead && !!form.team,
-        project_management: campaign?.config.services.parts.task_manager === true,
       })
     : [];
   const soughtBehaviours = coworkAgent && agent ? await resolveSoughtBehaviours() : [];

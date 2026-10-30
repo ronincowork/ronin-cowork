@@ -479,7 +479,7 @@ test('kind and behaviours resolve at birth, with unusable books reported as unde
     mandate: { reach: 'plan', recruit: 'nobody', output: ['a plan', 'ideas'] },
   }), new Set());
   assert.equal(born.kind, 'coding');
-  assert.deepEqual(born.behaviours.map((row) => row.book), ['mandates', 'cowork-agent', 'user-intro', 'write_it_down', 'checkout', 'project-management', 'visual_staging']);
+  assert.deepEqual(born.behaviours.map((row) => row.book), ['mandates', 'cowork-agent', 'user-intro', 'write_it_down', 'checkout', 'visual_staging']);
   // w73: the Mandates page in the brief stated `open` whatever the Agent held.
   const mandates = born.birth_reading.find((file) => path.basename(file) === 'MANDATES.md');
   assert.ok(mandates, 'the floor folder is applied, Mandates as the Agent\'s own copy');

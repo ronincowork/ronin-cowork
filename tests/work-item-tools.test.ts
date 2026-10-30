@@ -195,3 +195,21 @@ test('item watch and unwatch change the caller\'s watches, never its holds or th
   await tool('item', ['unwatch', id, 'team:crew']);
   assert.deepEqual((await readTeamRoster('crew'))!.watches, []);
 });
+
+test('work-record read with nothing held: a lead is told its team holds its work, a member to create under an epic', async (t) => {
+  await seedTegami('lead_probe');
+  await seedTegami('member_probe');
+  assert.match(await tool('work-record', ['read'], 'member_probe'), /You hold no work items — item create --parent <epic> makes one yours/);
+  // The routes' own tmux: lead_probe leads crew.
+  const served = path.join(dir, 'served-bin');
+  mkdirSync(served);
+  writeFileSync(path.join(served, 'tmux'), ['#!/bin/sh', 'case "$*" in',
+    `  *list-sessions*ronin-key*) printf '${['lead_probe', '', '1', '0', '1', 'crew', 'crew', 'lead_probe', '', '', '', '0', ''].join('\\t')}\\n';;`,
+    '  *) exit 1;;', 'esac', ''].join('\n'), { mode: 0o755 });
+  const before = process.env.PATH;
+  process.env.PATH = `${served}:${before ?? ''}`;
+  t.after(() => { process.env.PATH = before; });
+  const read = await tool('work-record', ['read'], 'lead_probe');
+  assert.match(read, /You hold no work items — your team holds your work; item create puts it there/);
+  assert.match(read, /## Work items of team crew/);
+});
