@@ -106,8 +106,9 @@ STORE="$(cd "$(dirname "$SELF")/../bin" && pwd)/ronin-store"
 FILE="$("$STORE" session)/$(key_of "$NAME")/tegami.md"
 [ -f "$FILE" ] || die "work-record read: @$NAME has no letter yet — Ronin seeds one within a minute."
 
-# THE AGENT READING — what this session holds and watches, with each item's status, and every held
-# item's attachments — comes from Ronin, derived from the work item store, never from this file.
+# THE AGENT READING — what this session holds and watches, with each item's status, every held
+# item's attachments, and for a lead each team's items (what the team and each member hold and
+# watch) — comes from Ronin, derived from the work item store, never from this file.
 TOOL_DIR="$(cd "$(dirname "$SELF")/../ronin_bin" && pwd)"
 . "$TOOL_DIR/ronin-http.sh"
 READING='{}'
@@ -129,6 +130,10 @@ if r.get("ok"):
     d["attachments"] = r.get("attachments") or []
     d["items"] = [{k: i.get(k) for k in ("id", "title", "level", "kind", "status", "flagged", "parent")} for i in r.get("items") or []]
     d["watching"] = [{k: i.get(k) for k in ("id", "title", "level", "kind", "status", "flagged", "parent")} for i in r.get("watching") or []]
+    brief = lambda items: [{k: i.get(k) for k in ("id", "title", "level", "kind", "status", "flagged", "parent")} for i in items or []]
+    if r.get("teams"):
+        d["team_items"] = [{"team": t["team"], "items": brief(t.get("items")), "watching": brief(t.get("watching")),
+            "members": [{"name": m["name"], "items": brief(m.get("items")), "watching": brief(m.get("watching"))} for m in t.get("members") or []]} for t in r["teams"]]
 print(json.dumps(d, indent=2, ensure_ascii=False))
 '
 else
@@ -140,13 +145,20 @@ except Exception: r = {}
 if not r.get("ok"):
     print("\n(Ronin did not answer: the work items you hold are not shown.)"); raise SystemExit
 items = r.get("items") or []
-print("\n## Work items you hold" if items else "\n## You hold no work items — item create, then item assign <id> <you>")
+print("\n## Work items you hold" if items else "\n## You hold no work items — item create --parent <epic> makes one yours")
 for i in items:
     print("- %s %s · %s%s" % (i["id"], i["title"], i["status"], " · flagged" if i.get("flagged") else ""))
+line = lambda i: "- %s %s · %s%s" % (i["id"], i["title"], i["status"], " · flagged" if i.get("flagged") else "")
 if r.get("watching"):
     print("\n## Work items you watch")
-    for i in r["watching"]:
-        print("- %s %s · %s%s" % (i["id"], i["title"], i["status"], " · flagged" if i.get("flagged") else ""))
+    for i in r["watching"]: print(line(i))
+for t in r.get("teams") or []:
+    print("\n## Work items of team %s" % t["team"])
+    for who, held, watched in [("The team", t.get("items"), t.get("watching"))] + [(m["name"], m.get("items"), m.get("watching")) for m in t.get("members") or []]:
+        if not held and not watched: continue
+        print("\n### %s" % who)
+        for i in held or []: print(line(i))
+        for i in watched or []: print(line(i) + " · watched")
 if r.get("attachments"):
     print("\n## Attachments\n" + "\n".join("- " + doc for doc in r["attachments"]))
 '

@@ -128,12 +128,15 @@ export interface LetterHolds {
   objective: string;
   holds: string[];
   watches: string[];
+  /** The Teams its letter names, lead or member: what an ending Agent's items go back to. */
+  teams: string[];
 }
 
 function holdsOfBody(key: string, text: string, body: Record<string, unknown>): LetterHolds {
   const name = text.match(/^# TEGAMI — (.+)$/m)?.[1]?.trim() || key;
   const ids = (list: unknown) => Array.isArray(list) ? list.filter((id): id is string => typeof id === 'string') : [];
-  return { key, name, objective: typeof body.objective === 'string' ? body.objective : '', holds: ids(body.holds), watches: ids(body.watches) };
+  return { key, name, objective: typeof body.objective === 'string' ? body.objective : '', holds: ids(body.holds), watches: ids(body.watches),
+    teams: Array.isArray(body.teams) ? body.teams.map((entry) => (entry as TeamEntry)?.team).filter((team): team is string => typeof team === 'string') : [] };
 }
 
 export async function readLetterHolds(key: string): Promise<LetterHolds | null> {

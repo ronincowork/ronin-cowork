@@ -29,7 +29,7 @@ process.env.RONIN_WORK_ITEMS_DIR = path.join(dir, 'work-items');
 process.env.RONIN_TEAM_ROSTERS_DIR = path.join(dir, 'team_rosters');
 
 const { registerWorkItems } = await import('../src/routes/work-items-api.js');
-const { createTeamRoster } = await import('../src/team-rosters.js');
+const { createTeamRoster, readTeamRoster } = await import('../src/team-rosters.js');
 const { readLetterHolds, seedTegami } = await import('../src/tegami.js');
 const { readItem } = await import('../src/work-items.js');
 
@@ -190,4 +190,8 @@ test('item watch and unwatch change the caller\'s watches, never its holds or th
   await tool('item', ['unwatch', id]);
   assert.deepEqual((await readLetterHolds('probe'))!.watches, []);
   assert.equal((await trail(id)).length, lines, 'watching adds no trail line');
+  assert.match(await tool('item', ['watch', id, 'team:crew']), new RegExp(`^team:crew watches ${id}; it watches ${id}\\.`));
+  assert.deepEqual((await readTeamRoster('crew'))!.watches, [id], 'a team\'s watches sit on its roster');
+  await tool('item', ['unwatch', id, 'team:crew']);
+  assert.deepEqual((await readTeamRoster('crew'))!.watches, []);
 });
