@@ -6,7 +6,8 @@ where offered, or use `mika "your question"` when the tool is available. The **H
 Ronin Home opens her beside the guides, on her Chat reading rather than her terminal; that
 needs Ronin Services' transcripts, and without them her tile opens on the terminal.
 
-Mika runs as an Agent session using an available provider. Provider availability and the
+Mika runs as an Agent session on the Steerco team, kept at the foot of the roster, using an
+available provider. Provider availability and the
 installed capability determine whether it can start; a Help entry alone is not proof that
 all prerequisites are ready.
 

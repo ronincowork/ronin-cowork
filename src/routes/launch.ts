@@ -49,7 +49,7 @@ import { boundOperatorSocket, OPERATOR_SOCKET_ENV } from '../operator-socket.js'
 import { ensureMikaHome, MIKA_PROMPTS, MikaUnavailable, mikaRulesSource, mikaStartHereSource, mikaTipsSource, resolveConfiguredMikaModel, type MikaSelection } from '../mika-runtime.js';
 import { compileMikaKnowledgeAt } from '../mika-knowledge.js';
 import { isMikaTab } from '../mika-context.js';
-import { ensureRoninHelpersTeam, recordRoninHelperWelcome, roninHelperWelcomeState, RONIN_HELPER_LOADER, RONIN_HELPERS_TEAM } from '../ronin-helper.js';
+import { ensureSteercoTeam, recordRoninHelperWelcome, roninHelperWelcomeState, RONIN_HELPER_LOADER, STEERCO_TEAM } from '../ronin-helper.js';
 import { REPO_ROOT, storeDir } from '../resources.js';
 
 const MIKA_SESSION = 'mika_agent' as const;
@@ -184,7 +184,7 @@ export function mikaLaunchBody(input: unknown, selection?: Pick<MikaSelection, '
   return {
     session_type: 'cowork_agent',
     name: MIKA_SESSION,
-    tags: [RONIN_HELPERS_TEAM],
+    tags: [STEERCO_TEAM],
     // She discusses, recruits nobody, and hands back ideas — never a plan (owner, 2026-09-09).
     mandate: { reach: 'discuss', recruit: 'nobody', output: ['ideas'] },
     prompt: typeof source.prompt === 'string' ? source.prompt : '',
@@ -194,7 +194,7 @@ export function mikaLaunchBody(input: unknown, selection?: Pick<MikaSelection, '
 }
 
 export interface LaunchControl {
-  ensureMika(intent?: 'help' | 'setup_provider_ready', tab?: string): Promise<{ ok: boolean; state: 'ready' | 'starting' | 'action_required' | 'refused'; action?: 'pending_user'; session: typeof MIKA_SESSION; team: typeof RONIN_HELPERS_TEAM; loader: typeof RONIN_HELPER_LOADER; already?: boolean; welcome_delivered?: boolean; error?: string; code?: string; available_levels?: unknown }>;
+  ensureMika(intent?: 'help' | 'setup_provider_ready', tab?: string): Promise<{ ok: boolean; state: 'ready' | 'starting' | 'action_required' | 'refused'; action?: 'pending_user'; session: typeof MIKA_SESSION; team: typeof STEERCO_TEAM; loader: typeof RONIN_HELPER_LOADER; already?: boolean; welcome_delivered?: boolean; error?: string; code?: string; available_levels?: unknown }>;
 }
 
 export function mikaReadinessFromPane(text: string): 'ready' | 'starting' | 'action_required' {
@@ -304,7 +304,7 @@ export function registerLaunch(app: express.Express): LaunchControl {
       if (await sessionExists(MIKA_SESSION)) return res.json({ ok: true, name: MIKA_SESSION, already: true });
       try {
         mikaHome = await ensureMikaHome();
-        if (loader === RONIN_HELPER_LOADER) { await ensureRoninHelpersTeam(); void pushTeams(); }
+        if (loader === RONIN_HELPER_LOADER) { await ensureSteercoTeam(); void pushTeams(); }
         mikaSelection = await resolveConfiguredMikaModel();
       } catch (error) {
         if (error instanceof MikaUnavailable) {
@@ -603,7 +603,7 @@ export function registerLaunch(app: express.Express): LaunchControl {
     return launchJob(req, res, next);
   });
   const ensureMika = async (intent: 'help' | 'setup_provider_ready' = 'help', tab = ''): Promise<MikaReady> => {
-    const metadata = { session: MIKA_SESSION, team: RONIN_HELPERS_TEAM, loader: RONIN_HELPER_LOADER };
+    const metadata = { session: MIKA_SESSION, team: STEERCO_TEAM, loader: RONIN_HELPER_LOADER };
     const observeLive = async (already: boolean): Promise<MikaReady> => {
       let providerState: ReturnType<typeof mikaReadinessFromPane> = 'starting';
       try { providerState = mikaReadinessFromPane(await capturePane(MIKA_SESSION, 0)); } catch { /* live but not yet drawable */ }

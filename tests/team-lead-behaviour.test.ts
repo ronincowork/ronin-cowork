@@ -18,8 +18,8 @@ test('Team lead is one ordinary conditional Behavior selected only by the explic
 test('Agent roles select their conditional brief', async () => {
   const facts = { arrangement: 'none' as const, team: false, lead: false };
   assert.ok((await resolveConditionalBehaviours({ ...facts, role: 'epic_lead' })).some((row) => row.book === 'epic_agent'));
-  assert.ok((await resolveConditionalBehaviours({ ...facts, role: 'coordinator' })).some((row) => row.book === 'steerco_mgr'));
-  assert.ok(!(await resolveConditionalBehaviours({ ...facts, role: 'coworker' })).some((row) => ['epic_agent', 'steerco_mgr'].includes(row.book)));
+  assert.ok((await resolveConditionalBehaviours({ ...facts, role: 'coordinator' })).some((row) => row.book === 'traffic_control'));
+  assert.ok(!(await resolveConditionalBehaviours({ ...facts, role: 'coworker' })).some((row) => ['epic_agent', 'traffic_control'].includes(row.book)));
 });
 
 test('a later lead designation acknowledges the change with the resolved reading assignment', async () => {

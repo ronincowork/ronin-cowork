@@ -17,7 +17,7 @@ yourself only when you hold it.
   (`team roster write`, then `session_create` one Agent at a time, each with a stated
   purpose) and assign the items to it.
 - **Watch the items under your epic:** status, flags, comments. A flagged item is yours to
-  unblock, or to raise with steerco_mgr.
+  unblock, or to raise with traffic_control.
 - **Two working teams collide:** they settle on your epic's wipeboard; you decide.
 - **Report on the epic itself:** its status true, what matters as an `item comment`.
-- **Too big for one epic:** tell steerco_mgr; it makes another.
+- **Too big for one epic:** tell traffic_control; it makes another.

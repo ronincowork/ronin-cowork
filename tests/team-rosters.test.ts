@@ -105,8 +105,8 @@ test('dissolve deletes the roster and only the roster', async () => {
 test('exact deletion removes a stale uppercase roster file from its Campaign store', async () => {
   const campaign = path.join(temp, 'home_machine');
   await fs.mkdir(campaign, { recursive: true });
-  const stale = path.join(campaign, 'RONIN_HELPERS.md');
-  await fs.writeFile(stale, 'title = Ronin Helpers\nobjective = stale\n', 'utf8');
-  await deleteTeamRoster('RONIN_HELPERS');
+  const stale = path.join(campaign, 'STEERCO.md');
+  await fs.writeFile(stale, 'title = Steerco\nobjective = stale\n', 'utf8');
+  await deleteTeamRoster('STEERCO');
   await assert.rejects(fs.lstat(stale), { code: 'ENOENT' });
 });

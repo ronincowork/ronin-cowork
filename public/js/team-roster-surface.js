@@ -5,7 +5,7 @@ import { t } from './lexicon.js';
 import { createPhalanx } from './phalanx.js';
 import { ask } from './ask.js';
 import { orderCoworkTeams } from './cowork-workbench-contract.js';
-import { RONIN_HELPERS } from './roster-groups.js';
+import { STEERCO } from './roster-groups.js';
 import { SURFACE_DRAG } from './workbench.js';
 import { WORKBENCH_TYPES } from './workbench-catalog.js';
 import { openWorkspaceTab } from './workspace.js';
@@ -64,7 +64,7 @@ export function createTeamRosterSurface({ teamDetail } = {}) {
   const items = () => {
     const rows = new Map(teamsRows(teamsFromState(), membersOfTeam, { roots }).map((row) => [row.id, row]));
     return orderCoworkTeams(teamsFromState(), {
-      helperName: RONIN_HELPERS,
+      helperName: STEERCO,
       noTeam: { name: UNASSIGNED, title: t('league.ronin', 'Ronin: no team'), objective: '' },
     }).filter((team) => rows.has(team.name)).map((team) => {
       const name = String(team.title ?? '').trim() || team.name;

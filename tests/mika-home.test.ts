@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { ensureMikaHome, mikaStartHerePath, mikaTipsSource } from '../src/mika-runtime.js';
 import { mkdir } from 'node:fs/promises';
-import { ensureRoninHelpersTeam, RONIN_HELPER_LOADER, RONIN_HELPERS_TEAM } from '../src/ronin-helper.js';
+import { ensureSteercoTeam, RONIN_HELPER_LOADER, STEERCO_TEAM } from '../src/ronin-helper.js';
 import { mikaReadinessFromPane } from '../src/routes/launch.js';
 
 test('Mika home is a private stable store outside project-root selection', async () => {
@@ -60,14 +60,14 @@ test('selector readiness awaits the singleton and hides transport failures', asy
 });
 
 test('a ronin_helper start creates its ordinary Team idempotently', async () => {
-  const root = await mkdtemp(path.join(os.tmpdir(), 'ronin-helper-team-'));
+  const root = await mkdtemp(path.join(os.tmpdir(), 'ronin-steerco-team-'));
   process.env.RONIN_TEAM_ROSTERS_DIR = path.join(root, 'teams');
   process.env.RONIN_SESSION_BOOT_DIR = path.join(root, 'session-boot');
-  const [first, second] = await Promise.all([ensureRoninHelpersTeam(), ensureRoninHelpersTeam()]);
+  const [first, second] = await Promise.all([ensureSteercoTeam(), ensureSteercoTeam()]);
   assert.equal(RONIN_HELPER_LOADER, 'ronin_helper');
-  assert.equal(first.name, RONIN_HELPERS_TEAM);
-  assert.equal(second.name, RONIN_HELPERS_TEAM);
-  assert.equal((await lstat(path.join(root, 'teams', `${RONIN_HELPERS_TEAM}.md`))).isFile(), true);
+  assert.equal(first.name, STEERCO_TEAM);
+  assert.equal(second.name, STEERCO_TEAM);
+  assert.equal((await lstat(path.join(root, 'teams', `${STEERCO_TEAM}.md`))).isFile(), true);
   delete process.env.RONIN_TEAM_ROSTERS_DIR;
   delete process.env.RONIN_SESSION_BOOT_DIR;
 });
@@ -80,7 +80,7 @@ test('Mika joins her team without the wipeboard join notice', async () => {
 
 test('a fresh helper launch creates its full Team roster before the tagged session birth', async () => {
   const launch = await readFile(new URL('../src/routes/launch.ts', import.meta.url), 'utf8');
-  const ensure = launch.indexOf('await ensureRoninHelpersTeam()');
+  const ensure = launch.indexOf('await ensureSteercoTeam()');
   const birth = launch.indexOf('await createSession(resolved.name');
   assert.ok(ensure >= 0 && birth > ensure);
 });

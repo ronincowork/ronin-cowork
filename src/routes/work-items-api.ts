@@ -6,7 +6,7 @@
 import type express from 'express';
 import {
   WorkItemBadInput, WorkItemMissing, WorkItemRefused,
-  addComment, assignItem, attachDoc, connectionOf, createItem, deleteItem, editComment, editItem, flagItem, handoffItem, holderLabel, holdersOf, linkItem, listItems, readItem, watchItem,
+  addComment, assignItem, attachDoc, connectionOf, createItem, deleteItem, editComment, editItem, flagItem, handoffItem, holderLabel, holdersOf, linkItem, listItems, readItem, watchItem, watchedIds,
   didLine, type Acknowledged, type Holder, type JiraPair, type WorkItem,
 } from '../work-items.js';
 import { agentReading, everyItemReading, teamReading } from '../work-items-read.js';
@@ -70,7 +70,7 @@ export function registerWorkItems(app: express.Express): void {
 
   app.get('/api/work-items', guarded(async (req, res) => {
     // Search (Jira's JQL, as filters): ?session= (an Agent's), ?team= (a Team's), or every
-    // item; each narrowed by ?holder=<name> (none: the unheld list, held by nobody and not Done), ?parent=<id>, ?no_parent=1, ?status=, ?kind=.
+    // item; each narrowed by ?holder=<name> (none: the unheld list, held and watched by nobody and not Done), ?parent=<id>, ?no_parent=1, ?status=, ?kind=.
     const team = text(req.query.team)?.trim();
     const session = text(req.query.session)?.trim();
     const holder = text(req.query.holder)?.trim();
@@ -79,8 +79,9 @@ export function registerWorkItems(app: express.Express): void {
     const status = text(req.query.status)?.trim().toLowerCase();
     const kind = text(req.query.kind)?.trim().toLowerCase();
     const campaign = text(req.query.campaign)?.trim();
+    const watched = holder === 'none' ? await watchedIds() : new Set<string>();
     const narrow = <T extends WorkItem & { holder?: string }>(items: T[]): T[] => items.filter((item) =>
-      (!holder || (holder === 'none' && !item.holder && item.status !== 'Done') || item.holder === `agent:${holder}` || item.holder === `team:${holder}` || item.holder === holder)
+      (!holder || (holder === 'none' && !item.holder && !watched.has(item.id) && item.status !== 'Done') || item.holder === `agent:${holder}` || item.holder === `team:${holder}` || item.holder === holder)
       && (!parent || item.parent === parent) && (!orphans || !item.parent)
       && (!status || item.status.toLowerCase() === status) && (!kind || item.kind.toLowerCase() === kind)
       && (!campaign || item.campaign_id === campaign));

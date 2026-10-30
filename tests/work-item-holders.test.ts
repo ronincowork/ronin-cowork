@@ -360,6 +360,28 @@ test('a watcher of an epic hears a grandchild\'s status move and a new child, no
   assert.deepEqual(await heard(), [], 'unwatched, nothing');
 });
 
+test('the unheld list is held by nobody and watched by nobody: an Agent\'s or a Team\'s watch takes an item off it', async () => {
+  const express = (await import('express')).default;
+  const { registerWorkItems } = await import('../src/routes/work-items-api.js');
+  const app = express();
+  registerWorkItems(app);
+  const server = app.listen(0, '127.0.0.1');
+  await new Promise((resolve) => server.once('listening', resolve));
+  const unheld = async () => ((await (await fetch(`http://127.0.0.1:${(server.address() as { port: number }).port}/api/work-items?holder=none`)).json()) as { items: Array<{ id: string }> }).items.map((item) => item.id);
+  try {
+    await seedTegami('follower');
+    await createTeamRoster('followers', { objective: 'follow things' });
+    const [loose, mine, ours] = await Promise.all(['loose', 'agent-watched', 'team-watched'].map(async (title) => (await items.createItem({ title }, 'lead')).item.id));
+    await items.watchItem(mine!, { kind: 'agent', name: 'follower' }, true);
+    await items.watchItem(ours!, { kind: 'team', name: 'followers' }, true);
+    const list = await unheld();
+    assert.ok(list.includes(loose!));
+    assert.deepEqual([list.includes(mine!), list.includes(ours!)], [false, false]);
+  } finally {
+    server.close();
+  }
+});
+
 test('a watcher is not told of its own move', async () => {
   const { listQueuedMessages, dismissMessages } = await import('../src/message-queue.js');
   await seedTegami('self');

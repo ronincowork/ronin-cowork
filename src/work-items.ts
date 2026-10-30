@@ -368,7 +368,7 @@ async function announceArrival(item: WorkItem, by: string): Promise<string[]> {
 /** An unheld item not Done belongs on its Campaign's unheld list: every Coordinator in the
  * Campaign is told, in one message naming the item. With no Coordinator, nobody is told. */
 async function announceUnheld(item: WorkItem, by: string): Promise<string[]> {
-  if (item.status === 'Done' || (await holdersOf(item.id)).length) return [];
+  if (item.status === 'Done' || (await holdersOf(item.id)).length || (await watchedIds()).has(item.id)) return [];
   const sessions = (await listSessions()).filter((session) => session.campaign_id === item.campaign_id && session.name !== by);
   const { readAgentComposition } = await import('./agent-composition.js');
   const told: string[] = [];
@@ -782,6 +782,11 @@ async function watchListFor(watcher: Holder): Promise<{ watches: string[]; set(w
   }
   const letter = await letterOf(watcher.name, 'watch from');
   return { watches: letter.watches, set: (watches) => writeLetterWatches(letter.key, watches) };
+}
+
+/** Every id on an Agent's or a Team's watches: a watched item is off the unheld list. */
+export async function watchedIds(): Promise<Set<string>> {
+  return new Set([...(await listLetterHolds()), ...(await listTeamRosters())].flatMap((list) => list.watches));
 }
 
 async function rewriteWatches(change: (watches: string[]) => string[]): Promise<void> {
