@@ -451,7 +451,9 @@ test('a lead\'s reading shows its Team\'s items: what the Team holds and watches
   const piece = (await items.createItem({ title: 'member piece', parent: epic.id, holder: { kind: 'agent', name: 'mem' } }, 'boss')).item;
   await items.watchItem(watched.id, team, true);
   await items.watchItem(watched.id, { kind: 'agent', name: 'mem' }, true);
+  await items.attachDoc(epic.id, 'https://example.com/team-plan.md', 'boss');
   const reading = await agentReading('cap');
+  assert.deepEqual(reading.attachments, ['https://example.com/team-plan.md'], 'the Team\'s docs are the lead\'s');
   const crew = reading.teams.find((one) => one.team === 'crew')!;
   assert.ok(crew.items.some((item) => item.id === epic.id));
   assert.deepEqual(crew.watching.map((item) => item.id), [watched.id]);

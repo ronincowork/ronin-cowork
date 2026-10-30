@@ -1,6 +1,7 @@
 /**
  * READINGS — derived from the store and the holder lists, never stored.
- * agent:      the items an Agent holds and every held item's attachments, and the items it watches;
+ * agent:      the items an Agent holds and every held item's attachments (a lead's Teams' holds
+ *             included: the lead wears the Team), and the items it watches;
  *             for a lead, each Team it leads: what the Team holds and watches, and what each
  *             member holds and watches.
  * team:       the roster objective, the items the Team holds and the items its members
@@ -66,7 +67,7 @@ export async function agentReading(session: string): Promise<AgentReading> {
   return {
     holder: `agent:${session}`,
     items,
-    attachments: [...new Set(items.flatMap((item) => item.attachments))],
+    attachments: [...new Set([...items, ...teams.flatMap((team) => team.items)].flatMap((item) => item.attachments))],
     watching: await read(letter?.watches),
     teams,
   };
