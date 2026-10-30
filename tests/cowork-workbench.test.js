@@ -8,7 +8,7 @@ const source = (file) => readFile(new URL(`../public/js/${file}`, import.meta.ur
 test('Cowork roster keeps ordinary Teams readable and the special destinations last', () => {
   const noTeam = { name: '__none__', title: 'Ronin: no team' };
   const ordered = orderCoworkTeams([
-    { name: 'helper', title: 'Ronin Helpers' },
+    { name: 'helper', title: 'Steerco' },
     { name: 'zulu', title: 'Zulu' },
     { name: 'parked', title: 'Parked', holding: true },
     { name: 'alpha', title: 'Alpha' },
@@ -20,7 +20,7 @@ test('Cowork roster keeps ordinary Teams readable and the special destinations l
 
 test('Cowork roster omits a held helper and does not invent a no-team destination', () => {
   const ordered = orderCoworkTeams([
-    { name: 'helper', title: 'Ronin Helpers', holding: true },
+    { name: 'helper', title: 'Steerco', holding: true },
     { name: 'plain', title: 'Plain' },
   ], { helperName: 'helper' });
   assert.deepEqual(ordered.map((team) => team.name), ['plain']);

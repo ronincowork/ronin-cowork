@@ -3,22 +3,22 @@ import { readFile, rename, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { mikaHomeDir } from './mika-runtime.js';
 
-/** The launch path used by a Ronin helper. Mika is its first profile. */
+/** The launch path used by a Ronin helper. Mika is its first profile; she sits on Steerco. */
 export const RONIN_HELPER_LOADER = 'ronin_helper' as const;
-export const RONIN_HELPERS_TEAM = 'ronin_helpers' as const;
+export const STEERCO_TEAM = 'steerco' as const;
 
-export async function ensureRoninHelpersTeam(): Promise<TeamRoster> {
-  const existing = await readTeamRoster(RONIN_HELPERS_TEAM, '');
+export async function ensureSteercoTeam(): Promise<TeamRoster> {
+  const existing = await readTeamRoster(STEERCO_TEAM, '');
   if (existing) return existing;
   try {
-    return await createTeamRoster(RONIN_HELPERS_TEAM, {
-      title: 'Ronin Helpers',
+    return await createTeamRoster(STEERCO_TEAM, {
+      title: 'Steerco',
       kind: 'open',
-      objective: 'Sessions that help operate Ronin itself.',
-      wipeboard: 'ronin_helpers',
+      objective: 'Place the work that reaches Ronin, and help operate Ronin.',
+      wipeboard: 'steerco',
     });
   } catch (error) {
-    const winner = await readTeamRoster(RONIN_HELPERS_TEAM, '');
+    const winner = await readTeamRoster(STEERCO_TEAM, '');
     if (winner) return winner;
     throw error;
   }

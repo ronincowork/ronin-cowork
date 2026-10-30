@@ -106,8 +106,9 @@ w14", "w12 has /home/me/plans/AGENT_ITEMS.md removed". Status, kind and level ap
 under one someone holds, by a create with a parent or an `item edit --parent`, that holder
 gets one message through the ordinary queue: "w9 Fix login was added under w7, which you
 hold. Handle it as you see fit." A Team holder's lead hears it for the Team: "…which your
-team holds." An item held by nobody notifies nobody. An item not Done that nobody holds,
-from Jira or handed off to none by its last holder, is on the Campaign's unheld list (`item search --holder none`), and every Coordinator in the
+team holds." An item held by nobody notifies nobody. An item not Done that nobody holds
+and nobody watches (no Agent's or Team's watches name it), from Jira or handed off to none by
+its last holder, is on the Campaign's unheld list (`item search --holder none`), and every Coordinator in the
 Campaign gets one message naming it: "w41 PAY-7 'Fix login' has no holders; place it."
 Any change to an item by someone other than a holder, a comment included, gives each holding
 Agent, and each holding Team's lead, one line naming the item and the change: "w64 KAN-27: a

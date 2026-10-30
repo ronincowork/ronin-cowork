@@ -189,7 +189,7 @@ A lead uses assign to give out work: an item for each member, or the Team for wo
 given to anyone. Before handing over an item, the lead makes sure it says what is wanted:
 a clear title and objective, a parent where one fits.
 
-To find work, search: `item search --campaign <id>`, `--holder <name>` (`none`: the unheld list, held by nobody and not Done), `--team <t>`, `--parent <id>`,
+To find work, search: `item search --campaign <id>`, `--holder <name>` (`none`: the unheld list, held by nobody, watched by nobody and not Done), `--team <t>`, `--parent <id>`,
 `--no-parent`, `--status <s>`, `--kind <k>`.
 
 ## Watching

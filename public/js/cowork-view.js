@@ -28,7 +28,7 @@ import { createStep } from './form-steps.js';
 import { workbenchView } from './workspace-contract.js';
 import { agentTitle, buildTeamMembers, configSignature, currentWorkStep } from './team-members.js';
 import { createFeedbackSurface } from './feedback.js';
-import { RONIN_HELPERS } from './roster-groups.js';
+import { STEERCO } from './roster-groups.js';
 import { toast } from './ui.js';
 import { readyMika } from './mika-ready.js';
 import { createMikaHelpPanel } from './mika.js';
@@ -288,7 +288,7 @@ export function createCoworkView(options = {}) {
     team: (id, detail) => createLeagueTeamSurface(detail.key, id),
     sessions: () => (campaign ? unassignedSessions() : membersOfTeam(team)).map((member) => {
       const reading = readingsOf(member);
-      const mika = team === RONIN_HELPERS && member.name === 'mika_agent';
+      const mika = team === STEERCO && member.name === 'mika_agent';
       return { key: member.name, label: mika ? t('mika.name', 'Mika') : agentTitle(member), className: 'team-agent-card',
         mark: member.team_lead ? '人' : null,
         summary: reading.step, metadata: reading.lines,
@@ -320,7 +320,7 @@ export function createCoworkView(options = {}) {
   root.append(bench.host);
   // ミ Help: Mika takes over the selector column — her ordinary tile, borrowed from the
   // pool, no workspace changes hands — and Close puts the roster cards back. The Mika
-  // card under Ronin Helpers is the other door: the same session as a normal tile.
+  // card under Steerco is the other door: the same session as a normal tile.
   helpPanel = createMikaHelpPanel({
     selector: bench.host.querySelector('.wk-workbench-selector'),
     header: bench.selectorHeader,
