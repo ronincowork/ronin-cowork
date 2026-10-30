@@ -12,7 +12,7 @@ import {
   writeDesk, listDesks,
 } from './registry.js';
 import { soloDeskBranch, teamDeskBranch, type DeskNotice, type DeskRecord, type DeskSource, type DeskStatus, type RepoArrangement, type TeamLine } from './schema.js';
-import { materializeNodeModules } from '../worktree-runtime.js';
+import { linkNodeModules } from '../worktree-runtime.js';
 import { withManagedTransaction } from './lifecycle-ledger.js';
 import { listSessions, sessionDir, stopSessionTree } from '../tmux.js';
 
@@ -99,7 +99,7 @@ export async function openDesk(input: OpenInput): Promise<DeskStatus> {
   }
   await setUpstream(a.dir, branch, line.branch).catch(() => undefined);
   await stampDeskIdentity(a.dir, mounted?.path ?? wtPath, input.session);
-  await materializeNodeModules(a.dir, mounted?.path ?? wtPath);
+  await linkNodeModules(a.dir, mounted?.path ?? wtPath);
 
   const rec: DeskRecord = existing
     ? { ...existing, session: input.session, team: input.team, assignment: input.assignment ?? existing.assignment, state: 'open', parked_at: undefined, worktree: mounted?.path ?? wtPath,
