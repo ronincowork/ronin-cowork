@@ -94,8 +94,8 @@ forms, or on the Configuration tab.
 ### Durable Team record
 
 A `team_roster` is optional metadata: kind, title, purpose, project root,
-repositories and their branches, behaviours, the Agent defaults, and `holds`, the ids of
-the work items the Team holds. A tag-only Team is ordinary. When no durable record exists,
+repositories and their branches, behaviours, the Agent defaults, `holds`, the ids of
+the work items the Team holds, and `watches`, the ids it watches. A tag-only Team is ordinary. When no durable record exists,
 Team Configuration says so rather than treating the Team as broken.
 
 ### Work items
@@ -125,10 +125,14 @@ move is not acked. A move on a Team's list is a roster change and acks its lead.
 change to an item by someone else (`appendTrail`) acks its hearers with a line naming the item
 and the change, "w64 KAN-27: status In Progress → In Review by jira:x." (`ackHolders`), so a
 comment's holder knows to read it. One rule (`hearers`) builds two lists: holders (the Agents
-holding the item) hear every change; watchers (the Agents whose letter's `watches` names
-the item or one above it, and each watching Team's lead: a Team watches what it and its
-Agents hold, found from the holders at send time and stored nowhere) hear status, flag, holder and new-child moves, in a message naming what
-they watch. Each list gets its own message; an Agent on both gets both. Every act
+holding the item, and each holding Team's lead) hear every change; watchers (the Agents whose
+letter's `watches` names the item or one above it, and the lead of each Team whose roster's
+`watches` does, or whose member holds the item, found at send time and stored nowhere) hear
+status, flag, holder and new-child moves, in a message naming what they watch. Holding puts a
+Team on no watchers list. Each list reaches an Agent once and gets its own message; the two are
+never compared. A create by an Agent lands on its Team when it leads one, else on itself, and
+needs an epic above it (`createItemUnlocked`); an ending Agent's items go back to its one Team,
+its Done items to nobody, untold (`releaseHolder`). Every act
 names its item, one per Jira item act (`item --help`); the Agent's work record shows the
 items it holds, each with its status. `deleteItem` is Jira's delete: the item and its
 subtasks go, other children lose the parent, links to it go. Readings are derived in `src/work-items-read.ts` and never stored: an Agent's

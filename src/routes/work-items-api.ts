@@ -1,7 +1,8 @@
 /* /api/work-items* — the one door to the work item store (src/work-items.ts), and the
  * `item` tool's (ronin_bin/item): every act names its item. Every write acknowledges with
  * the item as it now is and the trail line it appended; the caller reads that before its
- * next act. The one refusal (409) is the rule that nothing goes below -1: "w39 can't go there." */
+ * next act. The refusals (409): nothing goes below -1 ("w39 can't go there."), and an Agent's
+ * new item needs an epic above it. */
 import type express from 'express';
 import {
   WorkItemBadInput, WorkItemMissing, WorkItemRefused,
@@ -69,7 +70,7 @@ export function registerWorkItems(app: express.Express): void {
 
   app.get('/api/work-items', guarded(async (req, res) => {
     // Search (Jira's JQL, as filters): ?session= (an Agent's), ?team= (a Team's), or every
-    // item; each narrowed by ?holder=<name> (none: held by nobody), ?parent=<id>, ?no_parent=1, ?status=, ?kind=.
+    // item; each narrowed by ?holder=<name> (none: the unheld list, held by nobody and not Done), ?parent=<id>, ?no_parent=1, ?status=, ?kind=.
     const team = text(req.query.team)?.trim();
     const session = text(req.query.session)?.trim();
     const holder = text(req.query.holder)?.trim();
@@ -79,7 +80,7 @@ export function registerWorkItems(app: express.Express): void {
     const kind = text(req.query.kind)?.trim().toLowerCase();
     const campaign = text(req.query.campaign)?.trim();
     const narrow = <T extends WorkItem & { holder?: string }>(items: T[]): T[] => items.filter((item) =>
-      (!holder || (holder === 'none' && !item.holder) || item.holder === `agent:${holder}` || item.holder === `team:${holder}` || item.holder === holder)
+      (!holder || (holder === 'none' && !item.holder && item.status !== 'Done') || item.holder === `agent:${holder}` || item.holder === `team:${holder}` || item.holder === holder)
       && (!parent || item.parent === parent) && (!orphans || !item.parent)
       && (!status || item.status.toLowerCase() === status) && (!kind || item.kind.toLowerCase() === kind)
       && (!campaign || item.campaign_id === campaign));
@@ -137,11 +138,17 @@ export function registerWorkItems(app: express.Express): void {
     const to = req.body?.none === true || req.body?.none === 'true' ? null : holderFrom(req.body);
     acknowledge(res, await handoffItem(req.params.id, { kind: 'agent', name: by }, to, by, text(req.body?.note)));
   }));
-  // Watch adds the item to the calling Agent's watches, unwatch takes it off; no hold changes, no trail line.
+  // Watch adds the item to the watcher's watches (the caller, or { team } or { session } named), unwatch
+  // takes it off; no hold changes, no trail line.
   for (const [verb, watch] of [['watch', true], ['unwatch', false]] as const) {
     app.post(`/api/work-items/:id/${verb}`, guarded(async (req, res) => {
-      const { id, watches } = await watchItem(req.params.id, callerOf(req), watch);
-      res.json({ ok: true, watches, acknowledgement: `${watch ? 'You watch' : 'You no longer watch'} ${id}; you watch ${watches.length ? watches.join(', ') : 'nothing'}.` });
+      const by = callerOf(req);
+      const watcher = req.body?.team || req.body?.session ? holderFrom(req.body) : { kind: 'agent', name: by } as const;
+      const { id, watches } = await watchItem(req.params.id, watcher, watch);
+      const list = watches.length ? watches.join(', ') : 'nothing';
+      res.json({ ok: true, watches, acknowledgement: watcher.kind === 'agent' && watcher.name === by
+        ? `You ${watch ? 'watch' : 'no longer watch'} ${id}; you watch ${list}.`
+        : `${holderLabel(watcher)} ${watch ? 'watches' : 'no longer watches'} ${id}; it watches ${list}.` });
     }));
   }
   // Jira's Add flag / Remove flag; { comment } is the reason, kept as a comment.

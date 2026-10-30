@@ -23,6 +23,8 @@ export interface TeamRoster {
   agent_defaults: TeamAgentDefaults;
   /** Work item ids this Team holds. The items live in the work item store. */
   holds: string[];
+  /** Work item ids this Team watches; its lead hears their moves (work-items.ts hearers). */
+  watches: string[];
 }
 
 const dir = () => storeDir('team_rosters');
@@ -88,6 +90,7 @@ function parse(name: string, raw: string, campaign_id = ''): TeamRoster {
       : { selected: [], required: [] },
     agent_defaults: teamAgentDefaults(json('agent_defaults')),
     holds: strings(json('holds'), 32),
+    watches: strings(json('watches'), 32),
   };
 }
 
@@ -166,11 +169,12 @@ export interface RosterEdit {
   behaviours?: TeamBehaviours;
   agent_defaults?: Partial<TeamAgentDefaults>;
   holds?: string[];
+  watches?: string[];
 }
 
 const KEYS: (keyof RosterEdit)[] = [
   'title', 'kind', 'objective', 'project_root', 'repos', 'branch', 'branches', 'wipeboard', 'state',
-  'behaviours', 'agent_defaults', 'holds',
+  'behaviours', 'agent_defaults', 'holds', 'watches',
 ];
 
 function render(name: string, r: TeamRoster): string {
@@ -191,6 +195,7 @@ function render(name: string, r: TeamRoster): string {
     line('behaviours', JSON.stringify(r.behaviours)),
     line('agent_defaults', JSON.stringify(r.agent_defaults)),
     line('holds', JSON.stringify(r.holds)),
+    line('watches', JSON.stringify(r.watches)),
     '',
   ].join('\n');
 }
@@ -229,6 +234,7 @@ export async function createTeamRoster(name: string, edit: RosterEdit, campaign_
       : { selected: [], required: [] },
     agent_defaults: teamAgentDefaults(edit.agent_defaults),
     holds: edit.holds ?? [],
+    watches: edit.watches ?? [],
   };
   await mkdir(campaignDir(campaign_id), { recursive: true });
   const target = teamRosterFile(name, campaign_id);
@@ -257,7 +263,7 @@ export async function writeTeamRoster(name: string, edit: RosterEdit, campaign_i
   } as TeamRoster;
   for (const k of KEYS) {
     if (normalizedEdit[k] === undefined) continue;
-    const nested = ['behaviours', 'agent_defaults', 'holds'].includes(k);
+    const nested = ['behaviours', 'agent_defaults', 'holds', 'watches'].includes(k);
     const v = nested ? JSON.stringify(normalizedEdit[k])
       : k === 'repos' ? (normalizedEdit.repos ?? []).join(', ')
       : String(normalizedEdit[k] ?? '');

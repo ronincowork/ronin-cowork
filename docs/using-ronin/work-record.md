@@ -63,7 +63,7 @@ Team and each Agent; assigning moves the id from one list to another and never t
 item. **Parent** is one id on the item, or none. A Team holds; it does not contain.
 
 ```text
-item create --title "Agent-authored items" [--kind Task] [--parent w3] [--objective "…"] [--priority High]
+item create --title "Agent-authored items" [--kind Task] [--parent w3] [--objective "…"] [--priority High] [--team surface]
 item read w12                       # fields, children, comments, attachments, links, history
 item search [--team surface] [--holder builder | none] [--parent w3 | --no-parent] [--status "In Progress"] [--kind Bug]
 item edit w12 --priority High
@@ -78,7 +78,10 @@ item link w12 Blocks w14            # or Relates, Duplicate, Cloners; --remove t
 item delete w12                     # with its subtasks; an epic's other children lose the parent
 ```
 
-A new item is held by nobody until it is assigned. Parent is a field, as in Jira:
+A new item lands on whoever made it: a lead's on its Team (a lead of several names one with
+`--team`, or the create is refused naming its Teams), any other Agent's on itself. An Agent's
+new item needs an epic above it, or the create is refused saying so; an Epic needs none, and
+items from Jira come as Jira has them. Parent is a field, as in Jira:
 `item edit --parent` changes the parent and the level in one act, one below the new
 parent; with no parent the level stays. Any level-0 item moved under another becomes a
 subtask (Jira's convert to subtask).
@@ -101,14 +104,15 @@ waiting on the API", "w12 has a comment from lead: Start with the store.", "w12 
 w14", "w12 has /home/me/plans/AGENT_ITEMS.md removed". Status, kind and level appear only when the act changed them. When an item arrives
 under one someone holds, by a create with a parent or an `item edit --parent`, that holder
 gets one message through the ordinary queue: "w9 Fix login was added under w7, which you
-hold. Handle it as you see fit." A Team holder's lead hears it as a watcher. An item held by nobody
-notifies nobody. A new item held by nobody, or one its last holder hands off to none, is on
-the Campaign's unheld list (`item search --holder none`), and every Coordinator in the
+hold. Handle it as you see fit." A Team holder's lead hears it for the Team: "…which your
+team holds." An item held by nobody notifies nobody. An item not Done that nobody holds,
+from Jira or handed off to none by its last holder, is on the Campaign's unheld list (`item search --holder none`), and every Coordinator in the
 Campaign gets one message naming it: "w41 PAY-7 'Fix login' has no holders; place it."
-Any change to an item by someone other than the holding Agent, a comment included, gives that
-Agent one line naming the item and the change: "w64 KAN-27: a
+Any change to an item by someone other than a holder, a comment included, gives each holding
+Agent, and each holding Team's lead, one line naming the item and the change: "w64 KAN-27: a
 comment from jira:glen.osmond3." or "w64 KAN-27: status In Progress → In Review by jira:x."
-Watchers, a holding Team's or member's lead among them, hear the moves (work-items.md, Notices). Its own writes tell nobody. A change to the work record alone (holds, teams) still
+Watchers, the lead of a Team that watches the item or has a member holding it among them,
+hear the moves (work-items.md, Notices). Its own writes tell nobody. A change to the work record alone (holds, teams) still
 gives "Your work record changed".
 
 ## Where you read them
@@ -119,6 +123,8 @@ gives "Your work record changed".
 - The tile's **☰ Work record**: the held items first, each with its status, flag and
   attachments, then the objective, worktrees and Teams. **📄 Docs** lists the held items'
   attachments.
+- `work-record read`: what the Agent holds and watches. A lead also sees each Team it leads:
+  what the Team holds and watches, and what each member holds and watches, read when asked.
 
 Items show as stones grouped by parent: each epic, then its items, each followed by its
 subtasks. A stone shows the id, title, kind, status and ⚑ when flagged; press one to read
@@ -165,5 +171,6 @@ session's recorded Workspace Folder. Neither edit changes its birth directory or
 a managed desk. These fields locate work; they do not replace commits, hand-ins, or evidence.
 
 When an Agent ends, is archived, or is Hard Deleted, what it held is released: each item
-gets a `holder-ended` line and is held by nobody, found again under its parent or with no
-parent. Restoring an archived Agent does not reclaim it.
+gets a `holder-ended` line and goes back to the Agent's Team, or to nobody when it has no Team
+or several. A Done item goes to nobody and nobody is told. Restoring an archived Agent does
+not reclaim it.

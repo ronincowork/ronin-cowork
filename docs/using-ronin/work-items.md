@@ -85,7 +85,7 @@ by polling. A hand-in that names no item moves no status.
 ## The item tool
 
 ```text
-item create --title "…" [--kind Task] [--parent w3] [--objective "…"] [--priority High]
+item create --title "…" [--kind Task] [--parent w3] [--objective "…"] [--priority High] [--team surface]
 item read w12                       # fields, children, comments, attachments, links, history
 item search [--campaign home_machine] [--team surface] [--holder builder | none] [--parent w3 | --no-parent] [--status "In Progress"] [--kind Bug]
 item edit w12 --objective "…" --priority High
@@ -93,7 +93,7 @@ item transition w12 "In Review"
 item flag w12 "waiting on the API"  # item unflag w12 when clear
 item assign w12 builder             # adds builder; or team:surface
 item handoff w12 builder            # the giver comes off; or team:surface, or none
-item watch w3                       # track it and everything under it; item unwatch w3 stops
+item watch w3                       # track it and everything under it; or name builder, team:surface; item unwatch w3 stops
 item comment w12 "…"                # --edit <n> changes one
 item attach w12 docs/plan.md        # or a link; --remove <path> takes it off
 item link w12 Blocks w14            # or Relates, Duplicate, Cloners; --remove takes it off
@@ -164,8 +164,11 @@ worktree-desk hand-in ronin_cowork --item w12
 
 ## Holding and assigning
 
-An item can be held by several Agents and Teams, or by nobody. A new item is held by
-nobody until it is assigned.
+An item can be held by several Agents and Teams, or by nobody. A new item lands on whoever
+made it: a lead's on its Team (a lead of several Teams names one, `--team surface`, or the
+create is refused naming its Teams), any other Agent's on itself. A new item needs an epic
+above it, `--parent` naming the epic or an item under one; an Epic needs none. Items from
+Jira come as Jira has them.
 
 ```text
 item assign w12 builder         an Agent holds it
@@ -174,47 +177,58 @@ item handoff w12 builder        the giver comes off and builder goes on
 item handoff w12 none           the giver lets go
 ```
 
-Assigning adds a holder and removes nobody. When an Agent ends, it lets go; other holders
-stay.
+Assigning adds a holder and removes nobody. When an Agent ends, what it held goes back to
+its Team, or to nobody when it has no Team or several; other holders stay. Its Done items go
+to nobody, and nobody is told: Done work needs no holder, and `item search` still finds it.
 
 A lead uses assign to give out work: an item for each member, or the Team for work not yet
 given to anyone. Before handing over an item, the lead makes sure it says what is wanted:
 a clear title and objective, a parent where one fits.
 
-To find work, search: `item search --campaign <id>`, `--holder <name>` (`none`: held by nobody), `--team <t>`, `--parent <id>`,
+To find work, search: `item search --campaign <id>`, `--holder <name>` (`none`: the unheld list, held by nobody and not Done), `--team <t>`, `--parent <id>`,
 `--no-parent`, `--status <s>`, `--kind <k>`.
 
 ## Watching
 
-An Agent can track an item without holding it: `item watch w3`. Anyone can watch anything,
-and an item can have any number of watchers. Watching changes no holders; `work-record read`
-lists what you watch, and `item unwatch w3` stops.
+An Agent can track an item without holding it: `item watch w3`, or for someone else,
+`item watch w3 builder`, `item watch w3 team:surface`. Anyone can watch anything, and an
+item can have any number of watchers. Watching changes no holders; a Team's watches sit on
+its roster beside its holds. `work-record read` lists what you watch, and `item unwatch w3`
+stops.
 
 A watcher hears the moves on the item and everything under it, its children and theirs:
 a status change, a flag raised or cleared, a new child (created under or moved under), a
 holder change (assign, handoff, let go, holder ended). Comments, edits, links and Jira
-fields stay the holders'. A lead needs no watch for its Team's work: the Team watches it.
-A lead watches its epic to hear the rest of the topic.
+fields stay the holders'.
+
+## A Team's four lists
+
+A Team hears through its lead, whoever is lead now, so a new lead hears with no step.
+
+- **What the Team holds** (its roster): the lead gets the holder messages.
+- **What the Team watches** (its roster): the lead gets the watcher messages.
+- **What its members hold:** the lead gets the watcher messages, never the holder ones.
+- **What its members watch:** the lead hears nothing; they are shown only.
+
+The lead's `work-record read` shows all four, read from the roster and the members' own
+records when it reads.
 
 ## Notices
 
-A change is told to two lists, with two messages. The one who made it is never told.
+A change is told to two lists, with two messages. The one who made it is never told. Each
+list reaches an Agent once; the two are never compared, so an Agent on both gets both.
 
-- **Holders:** the Agents holding the item themselves; a Team holding it puts nobody here.
-  They hear every change: "w5: status To Do → In Review by builder." or "w5: a comment from jira:glen."
-  A new child under an item they hold: "w9 Fix login was added under w7, which you hold.
-  Handle it as you see fit."
-- **Watchers:** everyone watching the item or anything above it, and each Team watching it.
-  A Team watches what it holds and everything its Agents hold, without anyone writing it
-  down; its lead gets the Team's watcher messages by being lead, so a new lead gets them at
-  once. They hear only a status
-  change, a flag, a new child and a holder change, named with what they watch: "w9 (under w3,
-  which you watch): status To Do → In Review by builder." Watching the item itself, the
-  "(under …)" part is dropped.
+- **Holders:** the Agents holding the item, and each Team holding it through its lead. They
+  hear every change: "w5: status To Do → In Review by builder." or "w5: a comment from
+  jira:glen." A new child under an item they hold: "w9 Fix login was added under w7, which
+  you hold. Handle it as you see fit."; a lead hearing for its Team, "…which your team holds."
+- **Watchers:** the Agents watching the item or anything above it, and through its lead each
+  Team watching it or anything above it, or with a member holding it. Holding the item puts
+  a Team on no watchers list. They hear only a status change, a flag, a new child and a holder
+  change, named with what they watch: "w9 (under w3, which you watch): status To Do → In
+  Review by builder." Watching the item itself, the "(under …)" part is dropped.
 
-A new child under a Team-held item reaches its lead as a watcher: "w9 (under w7, which you
-watch): Fix login was added under w7." Each list gets its own message, so a lead that holds
-an item itself and is also its watcher gets both. When the holders themselves change, each Agent whose list moved also hears "Your work record
+When the holders themselves change, each Agent whose list moved also hears "Your work record
 changed; please read it."
 
 The Agent reads the item, then answers with an edit or a comment. A comment is how it
@@ -224,7 +238,7 @@ An Agent's own changes notify nobody. If someone needs to know, it tells them.
 
 ## Don'ts
 
-- Don't do work without an item. If there is none, create one and assign it to yourself.
+- Don't do work without an item. If there is none, create one under its epic; it is yours.
 - Don't keep work only in your head or in your chat. If it matters, it is on the item:
   a comment, an attachment, a subtask or a status.
 - Don't leave an item in a status the work has left. Move it when the work moves.

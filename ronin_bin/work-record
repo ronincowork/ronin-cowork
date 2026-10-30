@@ -19,7 +19,8 @@ may be a registered handle or a URL. --branch is separate so URLs parse exactly.
 entries do not change the Agent's birth directory or open a managed desk.
 Update fields are --objective, --repo, --unrepo, --on_tangent and --on_track. A whole
 JSON record is accepted on stdin. read shows the record, the items held and watched, each with
-its status, and their documents. add_doc adds a document to the item you hold; holding
+its status, and their documents; a lead's also shows each team it leads: what the team and
+each member hold and watch. add_doc adds a document to the item you hold; holding
 several, name one with --item. Work items are the item tool's: item --help.
 Related: item --help; session_create --help; team --help
 EOF
@@ -44,7 +45,7 @@ case "${1:-}" in
     if [ -z "$id" ]; then
       held=$(bash "$ROOT/libexec/work-record-read" --json | python3 -c 'import json,sys; print(" ".join(i["id"] for i in json.load(sys.stdin).get("items") or []))') || exit 3
       case "$held" in
-        '') echo 'NO-ITEM: you hold no work item to add it to: item create, then item assign <id> <you>' >&2; exit 2 ;;
+        '') echo 'NO-ITEM: you hold no work item to add it to: item create --parent <epic> makes one yours' >&2; exit 2 ;;
         *' '*) echo "BAD-ARG: you hold $held; name one with --item <id>" >&2; exit 2 ;;
       esac
       id=$held
