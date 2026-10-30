@@ -528,13 +528,33 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
     paint();
   }
 
+  // THE AGENT IS BEING BUILT (KAN-89). A launch cuts a workspace, compiles a brief and starts
+  // a CLI, which takes seconds; a small Starting… under the form said none of that. The press
+  // goes busy at once, like Send, and the form steps back under the transcript's working dots.
+  const building = el('div', 'tile-transcript-stance na-building');
+  building.setAttribute('aria-live', 'polite');
+  building.hidden = true;
+  function built(name) {
+    if (name) start.el.dataset.busy = 'true';
+    else delete start.el.dataset.busy;
+    start.el.lastChild.textContent = name ? t('add_agent.building_button', 'Building…') : t('forms.launch', 'Launch');
+    form.inert = !!name;
+    building.hidden = !name;
+    if (!name) return;
+    const words = t('add_agent.building', 'Building {name}: its workspace, its brief, then its CLI', { name });
+    building.replaceChildren(...[0, 1, 2].map(() => document.createElement('i')), words);
+    building.setAttribute('aria-label', words);
+    building.scrollIntoView?.({ block: 'nearest' });
+  }
+
   async function doStart() {
     if (busy) return;
     const launchTab = connect ? null : reserveWorkspaceTab();
     const name = draft.name.trim();
     busy = true;
     start.setDisabled(true);
-    notice.set('info', t('add_agent.starting', 'Starting…'));
+    notice.set('', '');
+    built(name);
     // A NEW TEAM IS TWO IDEMPOTENT DOORS (§ 7.5): write the record, then launch into it.
     let team = chosenTeam();
     if (draft.teamMode === 'new') {
@@ -542,6 +562,7 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
         if (launchTab) closeWorkspaceTab(launchTab);
         busy = false;
         start.setDisabled(false);
+        built('');
         notice.set('failed', t('new_team.name_invalid', 'Lowercase letters, digits, _ and - only.'));
         return;
       }
@@ -553,6 +574,7 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
         if (launchTab) closeWorkspaceTab(launchTab);
         busy = false;
         start.setDisabled(false);
+        built('');
         notice.set('failed', made.message);
         return;
       }
@@ -576,6 +598,7 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
     const result = await request('/api/launch', { method: 'POST', json: body });
     busy = false;
     start.setDisabled(false);
+    built('');
     if (!result.ok) {
       if (launchTab) closeWorkspaceTab(launchTab);
       notice.set('failed', result.message);
@@ -711,7 +734,7 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
   form.append(stepType.el, stepTop.el, stepLoadout.el, stepPayload.el);
   // Save as template sits UNDER the reading, for the same reason as on New Team: the
   // reading is the packet, and the button saves the packet.
-  surface.content.append(form, notice.el);
+  surface.content.append(building, form, notice.el);
 
   const seedPrompt = (prompt) => {
     if (!prompt) return;
