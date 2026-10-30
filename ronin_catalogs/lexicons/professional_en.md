@@ -180,6 +180,7 @@ nothing paints exactly this.
 - **jira.col_level:** Level
 - **jira.col_kind_only:** Kind
 - **jira.col_id:** Ronin
+- **jira.col_item_id:** Id
 - **jira.col_title:** Title
 - **jira.col_status_only:** Status
 - **jira.col_created:** Created in
@@ -277,7 +278,6 @@ nothing paints exactly this.
 - **jira.connecting_text:** Checking the account, then sending {n} items, then the first read.
 - **jira.replacing_text:** Checking the new token, then the first read.
 - **jira.widening_text:** Saving, then sending {n} items.
-- **jira.on_jira:** on Jira
 - **jira.items_filtered:** {n} hidden by a filter
 - **jira.refreshing:** Refreshing…
 - **jira.refreshing_text:** Reading the work items and the Jira connection again.

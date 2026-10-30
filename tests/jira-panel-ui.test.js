@@ -69,7 +69,7 @@ test('the Jira panel folds every section, reads at body size, and says how it ru
   assert.match(panel, /const stones = itemStones\(items\)/);
   assert.match(panel, /host\.replaceChildren\(renderJiraItems\(items, snap\.connected \? snap : \{ site: snap\.site, \.\.\.draft \}\)\)/);
   assert.doesNotMatch(panel, /createPhalanx/);
-  // The Jira column: the key, goes up, or stays in Ronin under the choice; counted above the table.
+  // One Id column: the Jira key when paired, else the w id with goes up or stays in Ronin under the choice; counted above the table.
   assert.match(panel, /goesUp\(item, byId, conn\) \? t\('jira\.goes_up', 'goes up'\) : t\('jira\.stays', 'stays in Ronin'\)/);
   assert.match(panel, /t\('jira\.items_counts', '\{on\} on Jira · \{go\} to go · \{stay\} stay in Ronin'/);
 });

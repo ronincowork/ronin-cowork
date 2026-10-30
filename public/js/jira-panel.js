@@ -57,9 +57,10 @@ function jiraKey(site, key) {
  * worksurface). Rows run in the Work Items surface's order (itemStones' walk: each epic, its
  * items, their subtasks; then the items with no epic). An epic row heads its group; the
  * items with no epic in the Desk get a head row of their own. Children carry a tree mark.
- * A head row folds its group; the fold is remembered per epic. The Jira column says where each
- * item stands under `conn`'s choice (site, assigned, ronin): its key, goes up, or stays in Ronin.
- * Level, Kind, Status, Created in and Jira filter from their header: a menu under it with a
+ * A head row folds its group; the fold is remembered per epic. The Id column is the item's one
+ * id: a paired item's is its Jira key, linked; an unpaired one's w id says, quietly, where it
+ * stands under `conn`'s choice (site, assigned, ronin): goes up, or stays in Ronin.
+ * Level, Kind, Status and Created in filter from their header: a menu under it with a
  * tick box by each of the column's values, ticked when shown. A shown item keeps its parents on as its context.
  */
 export function renderJiraItems(items, conn) {
@@ -79,7 +80,6 @@ export function renderJiraItems(items, conn) {
     kind: (item) => item.kind,
     status: (item) => item.status || '—',
     created: (item) => (item.created?.by?.startsWith('jira:') ? 'Jira' : 'Ronin'),
-    jira: (item) => (item.external?.jira ? t('jira.on_jira', 'on Jira') : goesUp(item, byId, conn) ? t('jira.goes_up', 'goes up') : t('jira.stays', 'stays in Ronin')),
   };
   const shows = (item) => Object.entries(VALUE).every(([key, value]) => !HIDDEN.get(key)?.has(value(item)));
   const kept = new Set();
@@ -94,8 +94,8 @@ export function renderJiraItems(items, conn) {
     if (!up.length) return '';
     return up.slice(1).map((at) => (last(at) ? '    ' : '│   ')).join('') + (last(item) ? '└── ' : '├── ');
   };
-  const COLUMNS = [['level', t('jira.col_level', 'Level')], ['kind', t('jira.col_kind_only', 'Kind')], [null, t('jira.col_id', 'Ronin')], [null, t('jira.col_title', 'Title')],
-    ['status', t('jira.col_status_only', 'Status')], ['created', t('jira.col_created', 'Created in')], [null, t('jira.col_holders', 'Holders')], ['jira', t('jira.col_key', 'Jira')]];
+  const COLUMNS = [['level', t('jira.col_level', 'Level')], ['kind', t('jira.col_kind_only', 'Kind')], [null, t('jira.col_item_id', 'Id')], [null, t('jira.col_title', 'Title')],
+    ['status', t('jira.col_status_only', 'Status')], ['created', t('jira.col_created', 'Created in')], [null, t('jira.col_holders', 'Holders')]];
   const wrap = el('div', 'tj-table-wrap');
   const table = el('table', 'tj-table jira-items');
   const head = el('tr');
@@ -163,10 +163,11 @@ export function renderJiraItems(items, conn) {
     if (kind === 'agent') { const agent = el('a', null, name); agent.href = `#/agent/${encodeURIComponent(name)}`; holders.append(agent); }
     else holders.textContent = item.holder || '—';
     const pair = item.external?.jira;
-    const jira = el('td');
-    jira.append(pair ? jiraKey(site, pair.key) : goesUp(item, byId, conn) ? t('jira.goes_up', 'goes up') : t('jira.stays', 'stays in Ronin'));
-    row.append(el('td', null, String(item.level)), el('td', null, item.kind), el('td', null, item.id), title,
-      el('td', null, item.status), el('td', null, item.created?.by?.startsWith('jira:') ? 'Jira' : 'Ronin'), holders, jira);
+    const id = el('td', 'jira-id');
+    if (pair) id.append(jiraKey(site, pair.key));
+    else id.append(item.id, ' ', el('span', 'jira-where', goesUp(item, byId, conn) ? t('jira.goes_up', 'goes up') : t('jira.stays', 'stays in Ronin')));
+    row.append(el('td', null, String(item.level)), el('td', null, item.kind), id, title,
+      el('td', null, item.status), el('td', null, item.created?.by?.startsWith('jira:') ? 'Jira' : 'Ronin'), holders);
     table.append(row);
     if (item.level === 1) heads.push(heading(row, item.id, row.firstChild));
   }
