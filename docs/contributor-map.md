@@ -102,7 +102,7 @@ surface owns the resulting package and birth receipt.
   [behaviors](../ronin_catalogs/behaviours/README.md), [templates](../ronin_catalogs/templates/README.md).
 - Code: [launch.ts](../src/routes/launch.ts), [agent-defaults.ts](../src/agent-defaults.ts),
   [capabilities.ts](../src/capabilities.ts), [behaviours.ts](../src/behaviours.ts),
-  [birth-readme.ts](../src/birth-readme.ts).
+  [birth-brief.ts](../src/birth-brief.ts).
 - Tests: [capabilities.test.ts](../tests/capabilities.test.ts),
   [behaviours.test.ts](../tests/behaviours.test.ts), [session-boot.test.ts](../tests/session-boot.test.ts),
   [birth-receipt.test.ts](../tests/birth-receipt.test.ts).

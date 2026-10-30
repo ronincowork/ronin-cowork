@@ -17,7 +17,7 @@ same name replaces ours whole; a new name sits beside it.
 | `routine/<name>/FILE.md` | when an installation's or a behaviour's definition declares the file: `reading:` if it is on, `reading_off:` if it is off |
 | `ronin_catalogs/capabilities/<bundle>.md` | not a shelf: the source of the generated tool overview, one entry per bundle whose `requires:` hold for this birth |
 
-A session receives every applicable level compiled into one per-session `README.md`:
+A session receives every applicable level compiled into one per-session `AGENT_BIRTH_BRIEF.md`:
 Ronin's teaching inlined, your `root/` documents listed by title and path.
 Nothing overrides another level; owner files shadow stock only at the same coordinate.
 
@@ -33,7 +33,7 @@ A link whose target has gone simply stops appearing; nothing goes stale, because
 is written down.
 
 **This README is not handed to a session.** It explains the source shelf; the generated
-README beside a session's letter is the only document the newborn is asked to open.
+birth brief beside a session's letter is the only document the newborn is asked to open.
 
 ## What ships
 
@@ -49,7 +49,7 @@ table was shelved as vocabulary; nothing objected, because no test read the real
 - `CAPABILITIES.md` has no template. At birth Ronin renders it from the capability documents
   the launch resolver selected (`ronin_catalogs/capabilities/`) — the priority tools that
   exist on this box, `--help`, and each full document's path — and includes it in the
-  compiled README.
+  compiled birth brief.
 
 Cowork-agent working guidance is applied from the Behavior floor. Other guidance is selected
 by conditional and selected Behavior definitions. Repository test protocols stay in repository

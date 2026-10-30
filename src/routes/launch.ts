@@ -41,7 +41,7 @@ import { listBehaviours, listInstallations } from '../resource-adapters.js';
 import { agentBinDir } from '../agent-install.js';
 import { resolveLaunchSeed, shownLaunchSeed } from '../launch-seed.js';
 import type { SessionsDefaults } from '../launch-command.js';
-import { compileBirthReadmeAt, describePacket, isShelfTeaching, readFirstSentence, type PacketReport } from '../birth-readme.js';
+import { compileBirthBriefAt, describePacket, isShelfTeaching, readFirstSentence, type PacketReport } from '../birth-brief.js';
 import { rememberSessionKey, sessionDir as sessionRecordDir } from '../session-dir.js';
 import type { HouseSeat } from '../house-seats.js';
 import { readTegami } from '../tegami-read.js';
@@ -368,7 +368,7 @@ export function registerLaunch(app: express.Express): LaunchControl {
       birthKey = `${resolved.name}-${Date.now()}`;
       birthDir = sessionRecordDir(birthKey);
       try {
-        // Mika's README replaces the ordinary startup shelf: her rules, the Setup
+        // Mika's birth brief replaces the ordinary startup shelf: her rules, the Setup
         // walkthrough, and the generated source index — the complete, bounded map of her
         // admitted knowledge. Her typed brief stays two sentences; the reading is here.
         const resolvedSources = [...resolved.birth_reading];
@@ -381,13 +381,12 @@ export function registerLaunch(app: express.Express): LaunchControl {
           const previousSentence = `Read first: ${resolvedSources.join(', ')}.`;
           const knowledge = await compileMikaKnowledgeAt(mikaHome);
           mikaKnowledgeIndex = knowledge.index;
-          // The owner's tips ride in as a document of her own, in the README her Docs
-          // list always opens.
+          // The owner's tips ride in as a document of her own, inside her birth brief.
           const mikaTips = await mikaTipsSource();
           sources.push(mikaRulesSource(), mikaTips, mikaStartHereSource(), mikaKnowledgeIndex);
           resolved.brief = resolved.brief.replace(previousSentence, `Read first: ${sources.join(', ')}.`);
         }
-        const readme = await compileBirthReadmeAt(
+        const brief = await compileBirthBriefAt(
           birthDir,
           sources,
           resolved.name,
@@ -399,12 +398,12 @@ export function registerLaunch(app: express.Express): LaunchControl {
           await rm(birthDir, { recursive: true, force: true });
           return res.status(500).json({ error: 'The birth reading was compiled, but its brief did not contain the resolved source list.' });
         }
-        packet = await describePacket(readme, resolved.name);
+        packet = await describePacket(brief, resolved.name);
         resolved.brief = resolved.brief.replace(sourceSentence, readFirstSentence(packet));
-        resolved.birth_reading = [readme];
+        resolved.birth_reading = [brief];
       } catch (e) {
         if (birthDir) await rm(birthDir, { recursive: true, force: true });
-        return res.status(500).json({ error: `Could not compile this Agent's birth README: ${String((e as Error)?.message ?? e)}` });
+        return res.status(500).json({ error: `Could not compile this Agent's birth brief: ${String((e as Error)?.message ?? e)}` });
       }
     }
 

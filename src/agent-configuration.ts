@@ -10,7 +10,7 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { readAgentComposition, writeCurrentBehaviours, writeCurrentRole } from './agent-composition.js';
 import type { Mandate } from './agent-defaults.js';
-import { compileBirthReadmeAt, isShelfTeaching, packetEndLine } from './birth-readme.js';
+import { compileBirthBriefAt, isShelfTeaching, packetEndLine } from './birth-brief.js';
 import { enqueueMessage } from './message-queue.js';
 import { listBehaviours } from './resource-adapters.js';
 import { sessionDir, sessionKey } from './session-dir.js';
@@ -72,7 +72,7 @@ type ConfigurationUpdate = {
   mandate: Mandate; behaviours: string[]; by: string;
 };
 
-export async function updateConfiguration(name: string, next: ConfigurationUpdate): Promise<{ readme: string }> {
+export async function updateConfiguration(name: string, next: ConfigurationUpdate): Promise<{ brief: string }> {
   const [catalog, before] = await Promise.all([listBehaviours(), readAgentComposition(name)]);
   const selected = new Set(next.behaviours);
   const chosen = catalog.filter((row) => row.scope === 'selected' && selected.has(row.name)).map((row) => ({ name: row.name, path: row.page }));
@@ -90,7 +90,7 @@ export async function updateConfiguration(name: string, next: ConfigurationUpdat
   if (JSON.stringify(before.current.mandate) !== JSON.stringify(next.mandate)) await writeMandate(name, next.mandate);
   if (JSON.stringify(before.current.behaviours.map((row) => row.name)) !== JSON.stringify(chosen.map((row) => row.name))) await writeCurrentBehaviours(name, chosen);
   const { dir, reading } = await configurationReading(name);
-  const readme = await compileBirthReadmeAt(dir, reading.birthReading, name, isShelfTeaching);
-  await enqueueMessage(name, `Your configuration changed. Here is your new brief: ${readme}. Read it now, top to bottom; it ends with the line "${packetEndLine(name)}".`, 'house');
-  return { readme };
+  const brief = await compileBirthBriefAt(dir, reading.birthReading, name, isShelfTeaching);
+  await enqueueMessage(name, `Your configuration changed. Here is your new brief: ${brief}. Read it now, top to bottom; it ends with the line "${packetEndLine(name)}".`, 'house');
+  return { brief };
 }

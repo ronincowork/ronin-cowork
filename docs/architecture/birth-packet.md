@@ -13,7 +13,7 @@ Birth produces two related artifacts:
 
 - The **Build Brief** states the resolved assignment, mandate, Team and project facts and
   contains one `Read first:` instruction.
-- The **birth packet** is the per-session `README.md` named by that instruction. It is the
+- The **birth packet** is the per-session `AGENT_BIRTH_BRIEF.md` named by that instruction. It is the
   one document the newborn reads before acting.
 
 The brief does not paste every teaching source. The packet does not decide the Agent's
@@ -37,14 +37,14 @@ explicit assignment + inherited defaults + installed and measured facts
                          ordered sources
                                 |
                                 v
-                     birth README compiler
+                     birth brief compiler
                   deduplicate + choose depth
                                 |
                     enforce one-read budget
                                 |
               +-----------------+-----------------+
               v                                   v
-       session README                    Build Brief Read first
+       session birth brief               Build Brief Read first
        + birth receipt                  + optional acknowledgement
 ```
 
@@ -168,14 +168,14 @@ after resolution, but they do not turn ordinary project documents into inline au
 
 ## 5. Compile one bounded packet
 
-`compileBirthReadmeAt` writes one `README.md` beside the session's work record and birth
+`compileBirthBriefAt` writes one `AGENT_BIRTH_BRIEF.md` beside the session's work record and birth
 receipt. Its last line is:
 
 ```text
 — end of packet for <session> —
 ```
 
-Every supported provider caps one file read. `PACKET_BUDGET` in `src/birth-readme.ts`
+Every supported provider caps one file read. `PACKET_BUDGET` in `src/birth-brief.ts`
 therefore holds the compiled packet to 30,000 bytes and 450 lines. Bytes are the hard cap;
 the line limit protects the first-window reading habit. `tests/session-boot.test.ts`
 compiles the fullest real stock birth and fails if the packet exceeds either bound or if
@@ -214,7 +214,7 @@ mandate to the work record and the whole chosen Behaviors list to the compositio
 behaviour is simply not in it), resolves the reading on today's files and today's facts (Team,
 lead designation, Campaign switches, mandate, Behaviors) through the facts and the reading alone
 (`resolveFacts`, `resolveReading`; the launch — command, provider switch, Dangerously — is not in
-its way), compiles over the session README, and queues one message: here is your new brief, read
+its way), compiles over the session's birth brief, and queues one message: here is your new brief, read
 it. No separate work-record notice rides on it; a work record changed any other way keeps its own
 notice. The birth receipt is not rewritten. The composition read
 (`GET /api/sessions/<name>/composition`) returns the same reading's Behaviors as `sends` (floor,

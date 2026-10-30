@@ -14,7 +14,7 @@ export interface Tegami {
   holds: string[];
   /** The items held, each with its status: what the tile and the roster show. */
   items: WorkItem[];
-  /** The session's README, the documents of every item it holds, and files dropped on it. */
+  /** The documents of every item the session holds, and files dropped on it. */
   docs: string[];
   chip: { text: string; gate: boolean };
   quietMs: number;
@@ -89,7 +89,7 @@ export async function readTegami(name: string): Promise<Tegami | null> {
         : [],
       holds: reading.items.map((item) => item.id),
       items: reading.items,
-      docs: await readDocs([path.join(sessionDir(key), 'README.md'), ...reading.attachments, ...(await dropped(key))]),
+      docs: await readDocs([...reading.attachments, ...(await dropped(key))]),
       chip: chipFor(reading.items),
       quietMs: Date.now() - stat.mtimeMs,
     };

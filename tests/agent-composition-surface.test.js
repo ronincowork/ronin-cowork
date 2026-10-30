@@ -34,6 +34,6 @@ test('Send rebuilds one brief and sends one message', () => {
   assert.equal((configuration.match(/enqueueMessage\(/g) || []).length, 1);
   assert.match(configuration, /resolveReading\(form, await resolveFacts\(form, new Set\(\)\)\)/);
   assert.match(configuration, /writeCurrentRole\(name, next\.role\)[\s\S]*configurationReading\(name\)/, 'Send stores the role before rebuilding its conditional reading');
-  assert.match(launchRoute, /compileBirthReadmeAt\([\s\S]*writeCurrentRoleAt\(birthDir,[^\n]+\)/, 'birth stores the role fact after the README creates its record directory');
+  assert.match(launchRoute, /compileBirthBriefAt\([\s\S]*writeCurrentRoleAt\(birthDir,[^\n]+\)/, 'birth stores the role fact after the birth brief creates its record directory');
   for (const writer of ['writeObjective', 'setSessionTitle', 'setTags', 'setLeads', 'writeMandate', 'writeCurrentBehaviours', 'writeCurrentRole']) assert.match(configuration, new RegExp(writer));
 });

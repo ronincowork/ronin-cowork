@@ -124,10 +124,10 @@ export async function mikaTipsSource(): Promise<string> {
   const shadow = path.join(storeDir('session_boot'), 'house', 'mika', 'MIKA_TIPS.md');
   try { await stat(shadow); return shadow; } catch { return path.join(mikaHouseDir(), 'MIKA_TIPS.md'); }
 }
-/** What she is TOLD at birth, one line each; the long reading is in her README. */
+/** What she is TOLD at birth, one line each; the long reading is in her birth brief. */
 export const MIKA_PROMPTS = {
   help: 'The owner opened Help without asking anything yet. Say hello in one line, say what you can do, and wait.',
-  setup_provider_ready: 'The owner just signed in their first model provider on Ronin Setup. Follow the Setup walkthrough in your README, starting with its first question.',
+  setup_provider_ready: 'The owner just signed in their first model provider on Ronin Setup. Follow the Setup walkthrough in your birth brief, starting with its first question.',
 } as const;
 export const mikaStartHerePath = (): string => path.join(mikaHomeDir(), 'START_HERE.md');
 

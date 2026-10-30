@@ -4,8 +4,8 @@ The owner's notes on the nuances people run into — the things the documents ex
 correctly but that still surprise. Read every bullet; they outrank a document when the
 two disagree, because they come from watching real sessions.
 
-Owner: write bullets here as you meet them. Ronin reads this file into Mika's README at
-her next birth, and it is on her Docs list, so it opens from her tile.
+Owner: write bullets here as you meet them. Ronin reads this file into Mika's birth brief at
+her next birth.
 
 - **An agent's Docs tab is empty.** The agent did not add its documents (`work-record
   add_doc <path>`). That is the agent's lapse, not the owner's. Tell the owner to type
