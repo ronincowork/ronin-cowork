@@ -6,4 +6,4 @@
 - **kinds:** work, social
 - **brief:** Be my office manager — handle the daily grind: inbox, calendar, paperwork.
 - **mandate:** execute · nobody · open
-- **behaviours:** write_it_down
+- **behaviours:** —

@@ -171,7 +171,7 @@ test('the real stock shelf compiles to one read: contracts first, glossary point
     assert.match(firstWindow, /Read the complete Build Brief before acting/);
     assert.match(firstWindow, /do not reproduce its guarded operation/);
     assert.match(firstWindow, /Read the roster and wipeboard before directing work/);
-    assert.match(firstWindow, /ronin_catalogs\/behaviours\/conditional\/worktree-root\.md/);
+    assert.match(firstWindow, /^## Managed worktree/m);
     // The glossary stays out of the packet; the packet points at the tool.
     assert.doesNotMatch(text, /^## KOTOBA_GLOSSARY/m);
     assert.match(text, /`ronin-help <word>`/);

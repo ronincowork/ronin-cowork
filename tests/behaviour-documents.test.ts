@@ -25,14 +25,14 @@ test('canonical hyphenated floor and conditional Behaviors are readable', async 
 });
 
 test('saving stock creates a whole-file owner shadow and never changes stock', async () => {
-  const stock = await readBehaviourDocument('selected', 'write_it_down');
+  const stock = await readBehaviourDocument('floor', 'write_it_down');
   assert.equal(stock.origin, 'stock');
-  const text = stock.text.replace('Preserve decisions', 'Keep decisions');
-  const saved = await createBehaviourDocument({ scope: 'selected', name: 'write_it_down', text, shadow: true });
+  const text = stock.text.replace('Keep a clean', 'Keep a tidy');
+  const saved = await createBehaviourDocument({ scope: 'floor', name: 'write_it_down', text, shadow: true });
   assert.equal(saved.origin, 'user');
   assert.equal(saved.shadowed, true);
   assert.equal(saved.text, text);
-  assert.equal(await readFile(path.join(process.env.RONIN_WAYS_DIR!, 'selected', 'write_it_down.md'), 'utf8'), text);
+  assert.equal(await readFile(path.join(process.env.RONIN_WAYS_DIR!, 'floor', 'write_it_down.md'), 'utf8'), text);
 });
 
 test('Save As is create-only and rejects stock or owner collisions', async () => {

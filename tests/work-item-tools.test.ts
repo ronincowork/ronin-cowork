@@ -141,6 +141,23 @@ test('item is the one tool for work items: team and work-record have no item act
   assert.notEqual((await run('work-record', ['update_record', '--phase', 'p'])).status, 0);
 });
 
+test('work-record add_doc adds a document to the item you hold; holding several, --item names one', async () => {
+  await seedTegami('writer');
+  const doc = path.join(dir, 'idea.md');
+  writeFileSync(doc, '# idea\n');
+  assert.match((await run('work-record', ['add_doc', doc], 'writer')).stderr, /^NO-ITEM: you hold no work item/);
+  const first = made(await tool('item', ['create', '--title', 'Idea']));
+  await tool('item', ['assign', first, 'writer']);
+  await tool('work-record', ['add_doc', doc], 'writer');
+  assert.deepEqual((await readItem(first))!.attachments, [doc]);
+  const second = made(await tool('item', ['create', '--title', 'Concept']));
+  await tool('item', ['assign', second, 'writer']);
+  const several = await run('work-record', ['add_doc', doc], 'writer');
+  assert.deepEqual([several.status, several.stderr.trim()], [2, `BAD-ARG: you hold ${first} ${second}; name one with --item <id>`]);
+  await tool('work-record', ['add_doc', doc, '--item', second], 'writer');
+  assert.deepEqual((await readItem(second))!.attachments, [doc]);
+});
+
 test('an id no route can hold answers "No work item <id>", and a reply that is not JSON names its HTTP status', async () => {
   for (const args of [['read', 'surface/7'], ['transition', 'surface/7', 'Done']]) {
     const r = await run('item', args);

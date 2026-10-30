@@ -475,18 +475,19 @@ test('a name alone resolves the ordinary Cowork Agent birth', async () => {
 test('kind and behaviours resolve at birth, with unusable books reported as undelivered', async () => {
   const born = await resolveForm(commonsForm({
     kind: 'coding',
-    behaviours: ['mandates', 'write_it_down', 'ways:not_there'],
+    behaviours: ['mandates', 'visual_staging', 'ways:not_there'],
     mandate: { reach: 'plan', recruit: 'nobody', output: ['a plan', 'ideas'] },
   }), new Set());
   assert.equal(born.kind, 'coding');
-  assert.deepEqual(born.behaviours.map((row) => row.book), ['mandates', 'cowork-agent', 'user-intro', 'checkout', 'project-management', 'write_it_down']);
+  assert.deepEqual(born.behaviours.map((row) => row.book), ['mandates', 'cowork-agent', 'user-intro', 'write_it_down', 'checkout', 'project-management', 'visual_staging']);
   // w73: the Mandates page in the brief stated `open` whatever the Agent held.
   const mandates = born.birth_reading.find((file) => path.basename(file) === 'MANDATES.md');
   assert.ok(mandates, 'the floor folder is applied, Mandates as the Agent\'s own copy');
   assert.match(await fs.readFile(mandates!, 'utf8'), /Reach `plan` · Recruit `nobody` · Output `a plan`, `ideas`/);
   assert.ok(born.birth_reading.some((file) => file.endsWith('/behaviours/floor/cowork-agent.md')), 'every Cowork Agent receives its floor guidance');
   assert.ok(born.birth_reading.some((file) => file.endsWith('/behaviours/floor/user-intro.md')), 'the stock-empty user introduction has a stable floor coordinate');
-  assert.ok(born.birth_reading.some((file) => file.endsWith('/behaviours/selected/write_it_down.md')));
+  assert.ok(born.birth_reading.some((file) => file.endsWith('/behaviours/floor/write_it_down.md')), 'every Cowork Agent is born with Write it Down');
+  assert.ok(born.birth_reading.some((file) => file.endsWith('/behaviours/selected/visual_staging.md')));
   assert.deepEqual(born.ignored, []);
   assert.deepEqual(born.undelivered, ['ways:not_there']);
   assert.equal(born.stated_by.kind[0]?.layer, 'launch');
@@ -498,7 +499,7 @@ test('a selected template names unchanged preset values without reapplying edite
     template: 'office_manager',
     prompt: 'Be my office manager — handle the daily grind: inbox, calendar, paperwork.',
     mandate: { reach: 'execute', recruit: 'nobody', output: 'open' },
-    behaviours: ['write_it_down'],
+    behaviours: [],
   }), new Set());
   assert.deepEqual(preset.stated_by.template, [{ layer: 'template', source: 'office_manager' }]);
   assert.equal(preset.stated_by.brief[0]?.layer, 'template');
@@ -509,7 +510,7 @@ test('a selected template names unchanged preset values without reapplying edite
     template: 'office_manager',
     prompt: 'Handle only the calendar.',
     mandate: { reach: 'plan', recruit: 'nobody', output: 'an artifact' },
-    behaviours: [],
+    behaviours: ['visual_staging'],
   }), new Set());
   assert.equal(edited.stated_by.brief[0]?.layer, 'launch');
   assert.deepEqual(edited.stated_by.mandate, [{ layer: 'launch', source: 'launch request' }]);
