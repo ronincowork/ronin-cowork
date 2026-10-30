@@ -229,8 +229,9 @@ list reaches an Agent once; the two are never compared, so an Agent on both gets
   change, named with what they watch: "w9 (under w3, which you watch): status To Do → In
   Review by builder." Watching the item itself, the "(under …)" part is dropped.
 
-When the holders themselves change, each Agent whose list moved also hears "Your work record
-changed; please read it."
+A line that changes nothing, such as a hand-in or a promotion on an item already there,
+stays on the trail and tells nobody. When the holders themselves change, each Agent whose
+list moved also hears "Your work record changed; please read it."
 
 The Agent reads the item, then answers with an edit or a comment. A comment is how it
 replies to a person, from Ronin or from Jira. A change is never left unanswered.

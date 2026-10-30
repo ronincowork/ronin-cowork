@@ -474,3 +474,18 @@ test('a Jira pairing tells holders once: the key stored acks nobody, the rename 
   await items.editItem('KAN-191', { jira: null }, 'jira:ronin_machine');
   assert.equal((await listQueuedMessages()).filter((message) => message.target === 'paired').length, 2, 'the pair dropped is news');
 });
+
+test('a promotion of an item already Done tells nobody; its line stays on the trail', async () => {
+  const { listQueuedMessages, dismissMessages } = await import('../src/message-queue.js');
+  await seedTegami('finisher');
+  await seedTegami('follower');
+  const { item } = await items.createItem({ title: 'finished', status: 'Done', holder: { kind: 'agent', name: 'finisher' } }, 'lead');
+  await items.watchItem(item.id, { kind: 'agent', name: 'follower' }, true);
+  await dismissMessages((await listQueuedMessages()).map((message) => message.id));
+  // As src/promotion/promote.ts moves it: the transition route, status Done, the receipt as note.
+  await items.editItem(item.id, { status: 'Done' }, 'promotion', 'promotion 20261030T112406Z-promote-x');
+  assert.deepEqual((await listQueuedMessages()).filter((message) => ['finisher', 'follower'].includes(message.target)), []);
+  assert.equal((await items.readItem(item.id))!.trail.at(-1)!.note, 'promotion 20261030T112406Z-promote-x; no change');
+  await items.editItem(item.id, { status: 'In Progress' }, 'promotion');
+  assert.deepEqual((await listQueuedMessages()).map((message) => message.target).sort(), ['finisher', 'follower'], 'a real move is still told');
+});
