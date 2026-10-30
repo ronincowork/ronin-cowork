@@ -24,7 +24,6 @@ import path from 'node:path';
 import { storeDir } from './resources.js';
 import { sessionKey } from './session-dir.js';
 import { enqueueMessage } from './message-queue.js';
-import { findLeads } from './desks/lead.js';
 import { listTeamRosters, readTeamRoster, writeTeamRoster } from './team-rosters.js';
 import { ackRecord, listLetterHolds, teamChanged, readLetterHolds, seedTegami, writeLetterHolds, writeLetterWatches } from './tegami.js';
 import { initialCampaignId } from './campaign-scope.js';
@@ -233,14 +232,15 @@ async function ancestry(item: WorkItem): Promise<string[]> {
 }
 
 /** THE ONE RECIPIENT RULE: who hears a move on an item, in two lists, never the one who made
- * it. Holders: the Agents holding it and each holding Team's lead; they hear every change.
- * Watchers: the Agents watching it or an item above it, each with the item it watches; they
- * hear only the WATCHED moves. Each list gets its own message: an Agent on both gets both. */
+ * it. Holders: the Agents holding it themselves (a Team puts nobody here); they hear every
+ * change. Watchers, each with the item it watches, hear only the WATCHED moves: the Agents
+ * watching it or an item above it, and each watching Team's lead. A Team watches what it holds
+ * and what its Agents hold, found now from the holders and written into nobody's watches; its
+ * lead hears by being lead, so a new lead hears with no step. Each list gets its own message:
+ * an Agent on both gets both. */
 async function hearers(item: WorkItem, move: TrailOp | 'arrival' | null, by: string): Promise<{ holders: string[]; watchers: Array<{ name: string; watches: string }> }> {
-  const holders = new Set<string>();
-  for (const holder of await holdersOf(item.id)) {
-    for (const name of holder.kind === 'agent' ? [holder.name] : await findLeads(holder.name)) holders.add(name);
-  }
+  const held = await holdersOf(item.id);
+  const holders = new Set(held.filter((holder) => holder.kind === 'agent').map((holder) => holder.name));
   holders.delete(by);
   const watchers = new Map<string, string>();
   if (move && WATCHED.has(move)) {
@@ -249,6 +249,9 @@ async function hearers(item: WorkItem, move: TrailOp | 'arrival' | null, by: str
       const watched = above.find((id) => letter.watches.includes(id));
       if (watched) watchers.set(letter.name, watched);
     }
+    const sessions = await listSessions();
+    const watching = held.flatMap((holder) => holder.kind === 'team' ? [holder.name] : sessions.find((session) => session.name === holder.name)?.tags ?? []);
+    for (const session of sessions) if (session.leads.some((team) => watching.includes(team))) watchers.set(session.name, item.id);
   }
   watchers.delete(by);
   return { holders: [...holders], watchers: [...watchers].map(([name, watches]) => ({ name, watches })) };
@@ -560,7 +563,7 @@ export function deleteItem(id: string, by: string): Promise<{ deleted: string[];
 
 /** Keystone 3: a paired item's Ronin id is its Jira key. One call rewrites the item's file and
  * id, each child's parent, every link pointing at it, and each holder's holds; the item gets one
- * trail line, "renamed from <old>", and its holders (a Team's lead) are told. Trails, comments,
+ * trail line, "renamed from <old>", and its holding Agents are told. Trails, comments,
  * receipts and the promotion ledger stay as written. */
 export function renameItem(from: string, to: string, by: string): Promise<Acknowledged> {
   return withIssuer(async () => {
@@ -758,7 +761,7 @@ export function releaseHolder(session: string, key: string, how: string): Promis
   });
 }
 
-/** The Jira bridge's word to an item's holders (a holding Team's lead), when a change of theirs was not sent. */
+/** The Jira bridge's word to an item's holding Agents, when a change of theirs was not sent. */
 export async function tellHolders(id: string, text: string): Promise<void> {
   const item = await readItem(id);
   if (item) for (const name of (await hearers(item, null, '')).holders) await enqueueMessage(name, text, 'house', 'Work items');

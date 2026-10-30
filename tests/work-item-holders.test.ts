@@ -242,15 +242,20 @@ test('renameItem moves the id: the file, a child\'s parent, a link to it, every 
   assert.match((await items.createItem({ title: 'next' }, 'lead')).item.id, /^w[0-9]+$/, 'the issuer counts w ids only');
 });
 
-/* ONE RECIPIENT RULE — holders, each holding Team's lead, and watchers by kind of move. The
- * leads come from tmux; a fake tmux on PATH answers one lead, "cap" of crew, and nothing else. */
-async function withLead(t: { after(fn: () => void): void }): Promise<void> {
+/* ONE RECIPIENT RULE — holders are the Agents holding an item; watchers are the Agents
+ * watching it or above, and each watching Team's lead. A Team watches what it and its Agents
+ * hold, found at send time. A fake tmux on PATH lists the sessions in its rows file: cap, lead
+ * of crew, and mem, in crew; lead(name) makes another session crew's lead. */
+async function withLead(t: { after(fn: () => void): void }): Promise<(name: string) => Promise<void>> {
   const bin = await fs.mkdtemp(path.join(os.tmpdir(), 'ronin-holders-bin-'));
+  const rows = path.join(bin, 'rows');
+  const lead = (name: string) => fs.writeFile(rows, ['cap', 'cap2', 'mem'].map((session) =>
+    [session, '', '1', '0', '1', 'crew', session === name ? 'crew' : '', session, '', '', '', '0', ''].join('\t')).join('\n') + '\n');
+  await lead('cap');
   await fs.writeFile(path.join(bin, 'tmux'), [
     '#!/bin/sh',
     'case "$*" in',
-    "  *ronin-key*) exit 0;;",
-    "  *ronin-lead*) printf 'cap\\037crew\\037crew\\n';;",
+    `  *list-sessions*ronin-key*) cat '${rows}';;`,
     '  *) exit 1;;',
     'esac',
     '',
@@ -258,20 +263,51 @@ async function withLead(t: { after(fn: () => void): void }): Promise<void> {
   const before = process.env.PATH;
   process.env.PATH = `${bin}:${before ?? ''}`;
   t.after(() => { process.env.PATH = before; });
+  return lead;
 }
 
-test('a Team-held item\'s status move reaches its lead; the lead\'s own move does not', async (t) => {
+test('a member\'s status move reaches its lead as a watcher message, and the member as its holder', async (t) => {
+  await withLead(t);
+  const { listQueuedMessages, dismissMessages } = await import('../src/message-queue.js');
+  await seedTegami('mem');
+  const { item } = await items.createItem({ title: 'member work', holder: { kind: 'agent', name: 'mem' } }, 'boss');
+  await dismissMessages((await listQueuedMessages()).map((message) => message.id));
+  await items.editItem(item.id, { status: 'In Progress' }, 'boss');
+  assert.deepEqual((await listQueuedMessages()).map((message) => [message.target, message.text]).sort(), [
+    ['cap', `${item.id}: status To Do → In Progress by boss.`],
+    ['mem', `${item.id}: status To Do → In Progress by boss.`],
+  ]);
+});
+
+test('the Team is the watcher: a new lead hears the next member move, the old lead nothing, and nobody\'s watches changed', async (t) => {
+  const lead = await withLead(t);
+  const { listQueuedMessages, dismissMessages } = await import('../src/message-queue.js');
+  await seedTegami('mem');
+  const { item } = await items.createItem({ title: 'member move', holder: { kind: 'agent', name: 'mem' } }, 'boss');
+  await lead('cap2');
+  await dismissMessages((await listQueuedMessages()).map((message) => message.id));
+  await items.editItem(item.id, { status: 'In Progress' }, 'mem');
+  assert.deepEqual((await listQueuedMessages()).map((message) => [message.target, message.text]), [['cap2', `${item.id}: status To Do → In Progress by mem.`]]);
+  assert.deepEqual((await readLetterHolds('mem'))!.watches, [], 'derived at send time, never written');
+});
+
+test('a Team-held item: its lead hears a status move and a new child as a watcher, never a comment', async (t) => {
   await withLead(t);
   const { listQueuedMessages, dismissMessages } = await import('../src/message-queue.js');
   const clear = async () => { await dismissMessages((await listQueuedMessages()).map((message) => message.id)); };
-  const { item } = await items.createItem({ title: 'team work', holder: team }, 'cap');
+  const heard = async () => (await listQueuedMessages()).filter((message) => message.target === 'cap').map((message) => message.text);
+  const { item } = await items.createItem({ title: 'team work', holder: team }, 'boss');
   await clear();
-  await items.editItem(item.id, { status: 'In Progress' }, 'member');
-  assert.deepEqual((await listQueuedMessages()).map((message) => [message.target, message.text]),
-    [['cap', `${item.id}: status To Do → In Progress by member.`]]);
+  await items.editItem(item.id, { status: 'In Progress' }, 'boss');
+  assert.deepEqual(await heard(), [`${item.id}: status To Do → In Progress by boss.`]);
+  await clear();
+  await items.addComment(item.id, 'a remark', 'boss');
+  assert.deepEqual(await heard(), [], 'a Team holding an item puts nobody on the holders list');
+  const child = (await items.createItem({ title: 'piece', parent: item.id }, 'boss')).item;
+  assert.deepEqual(await heard(), [`${child.id} (under ${item.id}, which you watch): piece was added under ${item.id}.`]);
   await clear();
   await items.editItem(item.id, { status: 'In Review' }, 'cap');
-  assert.deepEqual(await listQueuedMessages(), []);
+  assert.deepEqual(await heard(), [], 'the lead\'s own move');
 });
 
 test('a watcher of an epic hears a grandchild\'s status move and a new child, not a comment; watching holds nothing', async () => {

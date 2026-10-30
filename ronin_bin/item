@@ -27,9 +27,9 @@ refused, naming the set. The kind sets the level: 1 Epic, 0 Task/Story/Bug/Featu
 level stays). The one rule: nothing goes below -1; children follow their parent
 ("w39 can't go there.").
 watch tracks an item without holding it: you hear the moves on it and everything under it
-(status, flag, a new child, a holder change), not its comments, edits or links. Holders hear
-every change, a Team's lead for the Team; each list gets its own message. Nobody hears their
-own change.
+(status, flag, a new child, a holder change), not its comments, edits or links. Holding Agents hear
+every change; the lead of a holding Team or holding member hears as a watcher. Each list gets
+its own message. Nobody hears their own change.
 delete takes the item's subtasks with it; an epic's other children are left with no parent.
 --trello, --github set an external key; blank clears. Every change adds a trail line.
 Related: work-record --help; team --help
