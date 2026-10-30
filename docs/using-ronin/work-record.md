@@ -12,7 +12,8 @@ there are no aliases.
 ## Work items
 
 A work item matches Jira. It is stored once, keyed by its id (`w12`), and changed only by
-tools. Every change appends one line to its trail naming who made it. Nobody is refused for
+tools. An id is never issued twice: once paired, a w item takes its Jira key and its number
+stays used. Every change appends one line to its trail naming who made it. Nobody is refused for
 not holding an item: holding is how work is found, never permission.
 
 ```json

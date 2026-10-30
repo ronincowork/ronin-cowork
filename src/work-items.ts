@@ -184,14 +184,22 @@ export async function listItems(): Promise<WorkItem[]> {
   return items.filter((item): item is WorkItem => item !== null).sort(byId);
 }
 
-/** Counts w ids only; a Jira key is never issued. */
+/** THE ISSUER never issues an id twice. It keeps the highest w number ever issued in
+ * <store>/issued (written inside the issuer lock), so a w item renamed to its Jira key leaves
+ * its number used. With no file yet it starts from the w files and every "renamed from w<n>"
+ * trail line. A Jira key is never issued. */
 async function nextId(): Promise<string> {
+  const file = path.join(dir(), 'issued');
+  const number = (id: string | undefined) => Number(/^w([1-9][0-9]*)$/.exec(id ?? '')?.[1] ?? 0);
+  let top = Number((await readFile(file, 'utf8').catch(() => '')).trim()) || 0;
+  if (!top) for (const item of await listItems()) {
+    top = Math.max(top, number(item.id), ...item.trail.filter((line) => line.op === 'rename').map((line) => number(line.from)));
+  }
   let names: string[] = [];
   try { names = await readdir(dir()); } catch { /* an empty store issues w1 */ }
-  const top = names.reduce((max, name) => {
-    const match = /^w([1-9][0-9]*)\.json$/.exec(name);
-    return match ? Math.max(max, Number(match[1])) : max;
-  }, 0);
+  for (const name of names) top = Math.max(top, number(name.replace(/\.json$/, '')));
+  await mkdir(dir(), { recursive: true });
+  await writeFile(file, `${top + 1}\n`, 'utf8');
   return `w${top + 1}`;
 }
 

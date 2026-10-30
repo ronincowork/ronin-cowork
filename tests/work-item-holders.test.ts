@@ -489,3 +489,16 @@ test('a promotion of an item already Done tells nobody; its line stays on the tr
   await items.editItem(item.id, { status: 'In Progress' }, 'promotion');
   assert.deepEqual((await listQueuedMessages()).map((message) => message.target).sort(), ['finisher', 'follower'], 'a real move is still told');
 });
+
+test('a w id is never issued twice: renamed to its Jira key, its number stays used', async () => {
+  const { item } = await items.createItem({ title: 'goes to Jira' }, 'lead');
+  await items.renameItem(item.id, 'KAN-301', 'jira:ronin_machine');
+  const next = (await items.createItem({ title: 'the next one' }, 'lead')).item.id;
+  assert.notEqual(next, item.id);
+  assert.ok(Number(next.slice(1)) > Number(item.id.slice(1)));
+  // A store with no issued file yet starts past every renamed w id, from the trail.
+  await items.renameItem(next, 'KAN-302', 'jira:ronin_machine');
+  await fs.rm(path.join(process.env.RONIN_WORK_ITEMS_DIR!, 'issued'));
+  const after = (await items.createItem({ title: 'after a fresh start' }, 'lead')).item.id;
+  assert.ok(Number(after.slice(1)) > Number(next.slice(1)), `${after} after ${next}`);
+});
