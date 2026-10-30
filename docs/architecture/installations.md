@@ -105,7 +105,7 @@ One resolver runs before the Agent process exists:
 7. One packet and receipt record the result, with `stated_by` naming
    `installation · campaign · team · agent · conditional`.
 
-The same result feeds the birth README, command directory, and receipt. Provider-native
+The same result feeds the birth brief, command directory, and receipt. Provider-native
 MCP configuration is outside Agent launch resolution.
 
 ## Catalog definitions

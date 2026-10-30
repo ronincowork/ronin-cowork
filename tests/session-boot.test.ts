@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import os from 'node:os';
 import path from 'node:path';
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
-import { PACKET_BUDGET, bootFiles, compileBirthReadmeAt, describePacket, isShelfTeaching, packetEndLine, readFirstSentence } from '../src/birth-readme.js';
+import { PACKET_BUDGET, bootFiles, compileBirthBriefAt, describePacket, isShelfTeaching, migrateBirthBriefs, packetEndLine, readFirstSentence } from '../src/birth-brief.js';
 import { storeDir } from '../src/resources.js';
 import { buildBrief, type SpawnForm } from '../src/spawn.js';
 import { contributionReading } from '../src/resource-adapters.js';
@@ -152,7 +152,7 @@ test('the real stock shelf compiles to one read: contracts first, glossary point
     const boot = [...applied, ...await bootFiles('', [
       'routine/ronin_host/HOST_ABILITIES.md',
     ], await fullOverview(), 'newborn')];
-    const target = await compileBirthReadmeAt(path.join(temp, 'session'), boot, 'newborn', isShelfTeaching);
+    const target = await compileBirthBriefAt(path.join(temp, 'session'), boot, 'newborn', isShelfTeaching);
     const text = await readFile(target, 'utf8');
     const bytes = Buffer.byteLength(text, 'utf8');
     const lines = text.split('\n').length;
@@ -300,8 +300,8 @@ test('startup reading is never stripped when instructions are present', () => {
   assert.match(brief, /Read first: \/stock\/CAPABILITIES\.md\./);
 });
 
-test('resolved sources compile into one session README: teaching inlined once, reference listed by title and path', async () => {
-  const temp = await mkdtemp(path.join(os.tmpdir(), 'ronin-birth-readme-test-'));
+test('resolved sources compile into one session birth brief: teaching inlined once, reference listed by title and path', async () => {
+  const temp = await mkdtemp(path.join(os.tmpdir(), 'ronin-birth-brief-test-'));
   try {
     const one = path.join(temp, 'ONE.md');
     const two = path.join(temp, 'TWO.md');
@@ -309,8 +309,8 @@ test('resolved sources compile into one session README: teaching inlined once, r
     await writeFile(one, '# First guide\n\nalpha\n');
     await writeFile(two, '# Second guide\n\nbeta\n');
     await writeFile(catalog, '# Every noun in the house\n\n<!-- a comment -->\n> a quote first\n\nThe definition of every house noun, one row each. More words follow.\n\n' + 'a row\n'.repeat(1000));
-    const target = await compileBirthReadmeAt(path.join(temp, 'session-key'), [one, one, two, catalog], 'new-agent', (file) => file !== catalog);
-    assert.equal(path.basename(target), 'README.md');
+    const target = await compileBirthBriefAt(path.join(temp, 'session-key'), [one, one, two, catalog], 'new-agent', (file) => file !== catalog);
+    assert.equal(path.basename(target), 'AGENT_BIRTH_BRIEF.md');
     const text = await readFile(target, 'utf8');
     assert.match(text, /^# Read first — new-agent/m);
     assert.match(text, /compiled this one document for \*\*new-agent\*\*/);
@@ -330,11 +330,11 @@ test('resolved sources compile into one session README: teaching inlined once, r
 });
 
 test('an over-budget packet is described as such, and the brief asks for it in parts', async () => {
-  const temp = await mkdtemp(path.join(os.tmpdir(), 'ronin-birth-readme-test-'));
+  const temp = await mkdtemp(path.join(os.tmpdir(), 'ronin-birth-brief-test-'));
   try {
     const big = path.join(temp, 'BIG.md');
     await writeFile(big, '# A shelf file nobody curated\n\n' + 'a line of teaching that goes on and on and on\n'.repeat(1200));
-    const target = await compileBirthReadmeAt(path.join(temp, 'session-key'), [big], 'heavy');
+    const target = await compileBirthBriefAt(path.join(temp, 'session-key'), [big], 'heavy');
     const packet = await describePacket(target, 'heavy');
     assert.ok(packet.bytes > PACKET_BUDGET.bytes && packet.over_budget, `${packet.bytes} bytes is over budget`);
     const sentence = readFirstSentence(packet);
@@ -382,4 +382,26 @@ test('a system installation reads one way or the other', async () => {
     assert.ok(utility.includes(`../using-ronin/${guide}.md`), `usage route: ${guide}`);
   }
   assert.doesNotMatch(utility, /Control dial|owner only/);
+});
+
+test('the one cutover renames each session brief and moves its receipt path with it', async () => {
+  const temp = await mkdtemp(path.join(os.tmpdir(), 'ronin-brief-cutover-'));
+  const oldData = process.env.RONIN_DATA_ROOT;
+  process.env.RONIN_DATA_ROOT = temp;
+  try {
+    const dir = path.join(temp, 'sessions', 'agent-1');
+    await mkdir(dir, { recursive: true });
+    const old = path.join(dir, 'README.md');
+    await writeFile(old, '# Read first — agent\n');
+    await writeFile(path.join(dir, 'birth-receipt.json'), JSON.stringify({ packet: { path: old, lines: 1 } }, null, 2));
+    await mkdir(path.join(temp, 'sessions', 'no-brief'));
+    assert.equal(await migrateBirthBriefs(), 1);
+    assert.equal(await readFile(path.join(dir, 'AGENT_BIRTH_BRIEF.md'), 'utf8'), '# Read first — agent\n');
+    await assert.rejects(readFile(old, 'utf8'), { code: 'ENOENT' });
+    assert.equal(JSON.parse(await readFile(path.join(dir, 'birth-receipt.json'), 'utf8')).packet.path, path.join(dir, 'AGENT_BIRTH_BRIEF.md'));
+    assert.equal(await migrateBirthBriefs(), 0, 'once done, there is nothing left to move');
+  } finally {
+    if (oldData === undefined) delete process.env.RONIN_DATA_ROOT; else process.env.RONIN_DATA_ROOT = oldData;
+    await rm(temp, { recursive: true, force: true });
+  }
 });

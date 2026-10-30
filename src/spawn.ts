@@ -2,7 +2,7 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { resolveLaunchCommand, sessionsFor, type SessionsDefaults } from './launch-command.js';
 import { REPO_ROOT } from './resources.js';
-import { WORDS_READING, bootFiles, cachedReading, ensureShelf } from './birth-readme.js';
+import { WORDS_READING, bootFiles, cachedReading, ensureShelf } from './birth-brief.js';
 import { listProjectRoots, USER_PROJECT_ROOTS_MD, type ProjectRootInfo } from './project-roots.js';
 import { listSessionLaunchSpecs } from './model-providers.js';
 import { agentSpec } from './agents.js';

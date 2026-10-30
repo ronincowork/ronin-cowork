@@ -41,7 +41,7 @@ test('a cold Mika birth compiles one published knowledge index into its reading'
   assert.match(source, /sources\.push\(mikaRulesSource\(\), mikaTips, mikaStartHereSource\(\), mikaKnowledgeIndex\)/);
   assert.match(source, /file === mikaKnowledgeIndex \|\| isShelfTeaching\(file\)/);
   assert.match(source, /const sources = houseSeat === 'mika' \? \[\] : resolvedSources/);
-  assert.ok(source.indexOf('const knowledge = await compileMikaKnowledgeAt(mikaHome)') < source.indexOf('const readme = await compileBirthReadmeAt('));
+  assert.ok(source.indexOf('const knowledge = await compileMikaKnowledgeAt(mikaHome)') < source.indexOf('const brief = await compileBirthBriefAt('));
 });
 
 test('selector readiness awaits the singleton and hides transport failures', async () => {
@@ -110,8 +110,8 @@ test('Mika birth stays visible through the ordinary session Docs record', async 
   const launch = await readFile(new URL('../src/routes/launch.ts', import.meta.url), 'utf8');
   const tegami = await readFile(new URL('../src/tegami-read.ts', import.meta.url), 'utf8');
   assert.match(launch, /rememberSessionKey\(resolved\.name, birthKey\)/);
-  assert.match(launch, /resolved\.birth_reading = \[readme\]/);
-  assert.match(tegami, /path\.join\(sessionDir\(key\), 'README\.md'\)/);
+  assert.match(launch, /resolved\.birth_reading = \[brief\]/);
+  assert.match(tegami, /path\.join\(sessionDir\(key\), BIRTH_BRIEF\)/);
 });
 
 test("the owner's tips come from their session-boot shadow when one exists, else the shipped file", async () => {

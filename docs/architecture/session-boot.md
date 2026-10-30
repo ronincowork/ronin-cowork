@@ -4,8 +4,8 @@
 starts. It is read once, when a session is born.
 
 The birth compiler selects the applicable shelf files, removes duplicate sources, and
-writes one `README.md` into the newborn's per-session directory. The brief points to that
-one document, and the same README appears automatically in the Agent's tracked Docs. The
+writes one `AGENT_BIRTH_BRIEF.md` (the Agent birth brief) into the newborn's per-session directory. The
+brief points to that one document, and the same birth brief appears automatically in the Agent's tracked Docs. The
 page opens with its own contents list. Ronin's teaching — `all/`, each system installation's page, the
 generated tool overview — is inlined; the owner's project-root documents,
 selected behaviour books and explicit seeds are listed by title and path under **On your
@@ -20,7 +20,7 @@ shelf**, because pasting a project's whole catalog is what made the packet unrea
 | `ronin_catalogs/capabilities/<bundle>.md` | not a shelf level but the source of the generated **tool overview**: each capability bundle whose `requires:` predicates hold for this birth is rendered as one entry — title, blurb, the projected priority tools, help route, and the path of the full document (`ronin_catalogs/capabilities/README.md`) |
 
 The levels are **additive, not a hierarchy**. Root, installations and behaviours are
-independent launch facts; their files compile into one birth README
+independent launch facts; their files compile into one birth brief
 and nothing overrides another level. Work-specific reading uses the separate
 `behaviours` choice: each behaviour that is on joins that same birth reading once.
 There is no mutable role level and no live re-delivery observer.
@@ -69,7 +69,7 @@ is rendered from the selected capability documents at that same instant.
 
 The shelf is keyed by filename **within one level**. An owner file replaces stock at that
 same coordinate. Two different levels may honestly contain `README.md`; both become
-sections in the compiled birth README. If two coordinates resolve to the same symlink
+sections in the compiled birth brief. If two coordinates resolve to the same symlink
 target, the compiler includes that source once.
 
 ## Where the directories come from
@@ -91,7 +91,7 @@ could not be made.**
 The contract for the compiled document itself — the one-read budget, the order, the closing
 line, the receipt — is [`docs/architecture/birth-packet.md`](birth-packet.md).
 
-**The packet says where it ends, and the brief says how big it is.** The compiled README's
+**The packet says where it ends, and the brief says how big it is.** The compiled birth brief's
 last line is `— end of packet for <session> —`. The brief's `Read first:` sentence names the
 path, the line count, the size, that one read delivers it, and that line; when a packet is
 over the one-read budget the sentence says so and asks for it in parts, in order, until that
@@ -103,7 +103,7 @@ open a file in a first window of ~250 lines — which is why the contracts come 
 
 Two universal background files and two generated fragments, compiled in reading order —
 then the tool map and glossary — and held to the
-one-read budget (`PACKET_BUDGET` in `src/birth-readme.ts`) by `tests/session-boot.test.ts`
+one-read budget (`PACKET_BUDGET` in `src/birth-brief.ts`) by `tests/session-boot.test.ts`
 on the real shelf:
 
 - **`all/RONIN_UTILITY.md`** — the coworkspace for an Agent: the pages, the three
@@ -125,7 +125,7 @@ General Cowork Agent guidance belongs to the Behavior floor (`floor/cowork-agent
 feature (Ronin Host, gbrain); see
 [`docs/architecture/installations.md`](installations.md). Test
 protocols are repository-contributor instructions and never enter user birth reading.
-The compiled result lives as `README.md` beside that session's letter and birth receipt.
+The compiled result lives as `AGENT_BIRTH_BRIEF.md` beside that session's letter and birth receipt.
 
 A shelf that arrives full is a shelf nobody curates.
 

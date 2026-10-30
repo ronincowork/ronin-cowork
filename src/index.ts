@@ -78,6 +78,7 @@ import { registerSetupProgress } from './routes/setup-progress-api.js';
 import { registerMikaContext } from './mika-context.js';
 import { migrateSopsToBehaviours } from './behaviour-store-migration.js';
 import { migrateItems } from './work-items.js';
+import { BIRTH_BRIEF, migrateBirthBriefs } from './birth-brief.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(__dirname, '..');
@@ -89,6 +90,10 @@ if (isEntryPoint) await migrateSopsToBehaviours();
 if (isEntryPoint) await migrateItems().then((done) => {
   if (done.migrated.length) console.log(`[work-items] ${done.migrated.length} of ${done.before} items took Jira's names`);
 }).catch((error) => console.error(`[work-items] migration: ${(error as Error).message}`));
+// Session folders name the brief for what it is (docs/architecture/birth-packet.md).
+if (isEntryPoint) await migrateBirthBriefs().then((moved) => {
+  if (moved) console.log(`[birth] ${moved} session briefs renamed to ${BIRTH_BRIEF}`);
+}).catch((error) => console.error(`[birth] brief migration: ${(error as Error).message}`));
 const isBoxInstance = isEntryPoint
   && process.env.NODE_ENV === 'production'
   && process.env.RONIN_TEST_RUNNER !== '1';

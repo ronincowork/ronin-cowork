@@ -452,7 +452,7 @@ test('Mika house mechanics resolve explicitly', async () => {
   assert.equal(mika.opening, '{prompt}', 'nothing is typed at her beyond the request itself');
   // The launch prefixes "You are the Mika Assist." — with the posture that is the whole typed intro: two sentences.
   assert.match(mika.brief, /^You are the Mika Assist\. You explain and operate Ronin only[^.]*\.\n/);
-  assert.equal((mika.brief.split('\n')[0].match(/\. /g) || []).length, 1, 'two sentences typed; the rules live in her README');
+  assert.equal((mika.brief.split('\n')[0].match(/\. /g) || []).length, 1, 'two sentences typed; the rules live in her birth brief');
   assert.match(mika.brief, /You are the Mika Assist/);
   assert.ok(!mika.birth_reading.some((file) => file.includes('MikaAssist')));
   assert.equal(mika.stated_by.capExempt[0]?.layer, 'house');
