@@ -27,6 +27,10 @@
 Your work lives on work items. Anyone reading your items should know where your work is
 without asking you, so keep them true as you go, never only at the end.
 
+An item is changed only through the item commands. Whatever Ronin is connected to follows on its
+own; an Agent never reaches a connected system, its API or its credentials. If something
+outside Ronin looks different from the item, tell your lead and stop; never repair it yourself.
+
 ### The structure
 
 | Level | What it is |
@@ -75,6 +79,7 @@ know.
 - Don't work without an item: create it under its epic before you start.
 - Don't keep work only in your head or chat: put it on the item.
 - Don't leave an item in a status the work has left.
+- Don't go around Ronin to change an item anywhere else.
 - Don't delete to tidy: `item delete` removes the item and its subtasks for everyone.
 
 More: `ronin-help work-items`
