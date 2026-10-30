@@ -43,8 +43,13 @@ export function buildWorkRecord(letter, deskEntry = null, { openDoc = null } = {
     for (const item of letter.items) {
       const row = document.createElement('div');
       row.className = 'wr-item' + (item.flagged ? ' flagged' : '');
-      row.append(line('', item.title),
-        line('wr-action', [item.id, item.status, item.flagged ? `⚑ ${t('work_items.flagged', 'flagged')}` : ''].filter(Boolean).join(' · ')));
+      // A paired item's id is its Jira issue, opened there; any other id is text.
+      const action = line('wr-action', [item.status, item.flagged ? `⚑ ${t('work_items.flagged', 'flagged')}` : ''].filter(Boolean).join(' · '));
+      const id = document.createElement(item.jira_url ? 'a' : 'span');
+      id.textContent = item.id;
+      if (item.jira_url) { id.href = item.jira_url; id.target = '_blank'; id.rel = 'noopener'; }
+      action.prepend(id, ' · ');
+      row.append(line('', item.title), action);
       for (const path of item.attachments || []) {
         // Where the reader can open a document (the tile's menu), each one is a press.
         // A file kept in Jira is its link, opened there.

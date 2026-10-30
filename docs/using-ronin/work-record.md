@@ -121,7 +121,7 @@ gives "Your work record changed".
 - **Work items** in a Team on the Teams workbench, and under an opened Agent on the Team
   roster.
 - The tile's **☰ Work record**: the held items first, each with its status, flag and
-  attachments, then the objective, worktrees and Teams. **📄 Docs** lists the held items'
+  attachments (a Jira-paired item's id opens its Jira issue), then the objective, worktrees and Teams. **📄 Docs** lists the held items'
   attachments.
 - `work-record read`: what the Agent holds and watches. A lead also sees each Team it leads:
   what the Team holds and watches, and what each member holds and watches, read when asked.

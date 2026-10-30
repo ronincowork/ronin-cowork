@@ -81,3 +81,15 @@ test('an unfenced bare object still parses — an agent that drops the fence kee
   assert.ok(t);
   assert.equal(t.objective, 'no fence');
 });
+
+test('a paired item carries its Jira issue link, from its space\'s site; an unpaired one none', async () => {
+  const { setSpaceNames, JIRA_NAMES } = await import('../src/work-items.js');
+  const paired = (await createItem({ title: 'on Jira', campaign_id: 'linked', jira: { id: '10094', key: 'KAN-94' } }, 'test')).item.id;
+  const local = (await createItem({ title: 'stays in Ronin', campaign_id: 'linked' }, 'test')).item.id;
+  await writeLetter('tegami-read-linked', JSON.stringify({ objective: 'link', holds: [paired, local] }));
+  const urls = async () => (await readTegami('tegami-read-linked'))!.items.map((one) => [one.id, one.jira_url]);
+  assert.deepEqual(await urls(), [[paired, undefined], [local, undefined]], 'no site named: no link');
+  setSpaceNames('linked', { ...JIRA_NAMES, site: 'https://example.atlassian.net' });
+  assert.deepEqual(await urls(), [[paired, 'https://example.atlassian.net/browse/KAN-94'], [local, undefined]]);
+  setSpaceNames('linked', null);
+});

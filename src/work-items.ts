@@ -54,6 +54,8 @@ export interface SpaceNames {
   /** The priority a new work item holds. */
   priority: string;
   links: string[];
+  /** The Jira site's address (https://x.atlassian.net), for a paired item's link; none unconnected. */
+  site?: string;
 }
 /** Jira's defaults, for a campaign no space has named. Statuses in workflow order; the first
  * kind at a level is the one a new item there takes. */
@@ -70,6 +72,11 @@ export function setSpaceNames(campaign: string, names: SpaceNames | null): void 
   if (names) SPACES.set(campaign, names); else SPACES.delete(campaign);
 }
 export const spaceNames = (campaign: string): SpaceNames => SPACES.get(campaign) ?? JIRA_NAMES;
+/** A paired item's Jira issue address, derived from its space's site; none when unpaired or the site is unnamed. */
+export function jiraLink(item: WorkItem): string | undefined {
+  const site = spaceNames(item.campaign_id).site;
+  return site && item.external.jira ? `${site}/browse/${item.external.jira.key}` : undefined;
+}
 
 /** The value as named, or a refusal naming the set. */
 function oneOf(what: string, value: string, names: string[]): string {
