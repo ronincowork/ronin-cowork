@@ -1,15 +1,17 @@
-import { access, cp, lstat, rm } from 'node:fs/promises';
+import { access, lstat, symlink } from 'node:fs/promises';
 import path from 'node:path';
 
 const exists = (at: string): Promise<boolean> => access(at).then(() => true, () => false);
 
-/** Give a managed worktree its own dependency tree. Never alias the live operator install. */
-export async function materializeNodeModules(from: string, to: string): Promise<void> {
+/**
+ * Point a managed worktree's node_modules at the home checkout's (owner, KAN-89). Copying it
+ * held every launch for up to 28 s. A worktree that already has a node_modules, linked or its
+ * own copy, keeps it.
+ */
+export async function linkNodeModules(from: string, to: string): Promise<void> {
   const source = path.join(from, 'node_modules');
   const target = path.join(to, 'node_modules');
   if (!(await exists(source))) return;
-  const stat = await lstat(target).catch(() => null);
-  if (stat?.isSymbolicLink()) await rm(target);
-  else if (stat) return;
-  await cp(source, target, { recursive: true, force: false, errorOnExist: true });
+  if (await lstat(target).then(() => true, () => false)) return;
+  await symlink(source, target, 'dir');
 }

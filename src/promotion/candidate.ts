@@ -4,7 +4,7 @@ import { storeDir } from '../resources.js';
 import { changedFiles, git, gitOut, isAncestor, mergeInto, revParse, worktreeAddDetached, worktreeList, casRef } from '../desks/git.js';
 import { acceptedSince } from '../desks/receipts.js';
 import type { RepoCandidate } from './receipts.js';
-import { materializeNodeModules } from '../worktree-runtime.js';
+import { linkNodeModules } from '../worktree-runtime.js';
 
 export interface RepoSpec {
   repo: string;
@@ -37,7 +37,7 @@ export async function resetCandidate(spec: RepoSpec, sha: string, cdir = candida
     await git(spec.dir, ['worktree', 'prune']).catch(() => undefined);
     await worktreeAddDetached(spec.dir, cdir, sha);
   }
-  await materializeNodeModules(spec.dir, cdir);
+  await linkNodeModules(spec.dir, cdir);
   return cdir;
 }
 
