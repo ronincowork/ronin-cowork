@@ -553,7 +553,7 @@ export function renameItem(from: string, to: string, by: string): Promise<Acknow
     emitItemChanged({ item, line });
     const told = new Set<string>();
     for (const holder of holders) for (const name of holder.kind === 'agent' ? [holder.name] : await findLeads(holder.name)) told.add(name);
-    for (const name of told) await enqueueMessage(name, `${from} is now ${to} (on Jira); use ${to} (item read ${to}).`, 'house', 'Work items');
+    for (const name of told) await enqueueMessage(name, `${from} is now ${to} (its Jira key); nothing to do.`, 'house', 'Work items');
     return answer(item, line);
   });
 }

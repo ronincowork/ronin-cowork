@@ -238,6 +238,6 @@ test('renameItem moves the id: the file, a child\'s parent, a link to it, every 
   assert.equal(trail.at(-1)!.note, `renamed from ${item.id}`);
   assert.ok((await items.listItems()).some((one) => one.id === 'KAN-65'), 'a key is listed');
   const told = (await listQueuedMessages()).find((message) => message.target === 'renamer');
-  assert.equal(told?.text, `${item.id} is now KAN-65 (on Jira); use KAN-65 (item read KAN-65).`);
+  assert.equal(told?.text, `${item.id} is now KAN-65 (its Jira key); nothing to do.`);
   assert.match((await items.createItem({ title: 'next' }, 'lead')).item.id, /^w[0-9]+$/, 'the issuer counts w ids only');
 });
