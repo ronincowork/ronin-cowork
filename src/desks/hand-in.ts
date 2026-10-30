@@ -119,7 +119,7 @@ export async function handIn(repo: string, branch: string, opts: { maxRetries?: 
 
 /** One hand-in call over one or more desks. When it names a work item and any desk was
  * accepted, the item moves to the space's "In Review" once, the accepted receipts on its
- * trail, a line that acks nobody (the lead hears of the hand-in itself); a space with no such
+ * trail; on an item already there the line changes nothing and acks nobody; a space with no such
  * status leaves it, and `unmoved` says why. */
 export async function handInAssignment(assignment: { desks: Array<{ repo: string; branch: string }>; projectId?: string; session: string }): Promise<{
   outcomes: HandInOutcome[];
@@ -131,7 +131,7 @@ export async function handInAssignment(assignment: { desks: Array<{ repo: string
   const accepted = outcomes.filter(({ receipt }) => receipt.result === 'accepted').map(({ receipt }) => receipt.id);
   if (!assignment.projectId || !accepted.length) return { outcomes, moved: null };
   try {
-    return { outcomes, moved: await editItem(assignment.projectId, { status: 'In Review' }, assignment.session, `hand-in ${accepted.join(', ')}`, false) };
+    return { outcomes, moved: await editItem(assignment.projectId, { status: 'In Review' }, assignment.session, `hand-in ${accepted.join(', ')}`, true) };
   } catch (error) {
     if (!(error instanceof WorkItemBadInput)) throw error;
     return { outcomes, moved: null, unmoved: error.message };

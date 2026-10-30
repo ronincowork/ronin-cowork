@@ -418,9 +418,9 @@ export interface ItemEdit {
  * lone parent change by move ("w39 moved under w40, level -1"); anything else is edit. A kind
  * sets the level; a new parent with no kind named sets the level one below it, or leaves it
  * with none (Jira's convert/move), and the kind becomes the space's first at that level. The
- * children follow under the one rule (follow). `news` false (a hand-in recording itself) keeps
- * the line from everyone. */
-export function editItem(id: string, edit: ItemEdit, by: string, note?: string, news = true): Promise<Acknowledged> {
+ * children follow under the one rule (follow). `quietIfUnchanged` (a hand-in recording itself)
+ * keeps a line that changed nothing from everyone. */
+export function editItem(id: string, edit: ItemEdit, by: string, note?: string, quietIfUnchanged = false): Promise<Acknowledged> {
   if (edit.title !== undefined && !String(edit.title).trim()) throw new WorkItemBadInput('title cannot be empty.');
   return withIssuer(async () => {
     const current = await load(id);
@@ -436,6 +436,7 @@ export function editItem(id: string, edit: ItemEdit, by: string, note?: string, 
     const kind = named || (level === current.level ? current.kind : kindAt(names, level));
     // The bridge storing the Jira key alone is not news: the rename that follows is told.
     let paired = false;
+    let unchanged = false;
     const done = await appendTrail(id, by, (item) => {
       const changed: string[] = [];
       const before = item.status;
@@ -459,10 +460,11 @@ export function editItem(id: string, edit: ItemEdit, by: string, note?: string, 
       }
       const said = note || undefined;
       paired = changed.length === 1 && changed[0]!.startsWith('jira ') && Boolean(item.external.jira);
+      unchanged = !changed.length;
       if (changed.length === 1 && changed[0]!.startsWith('status ')) return { op: 'status', from: before, to: item.status, note: said };
       if (reparent && changed.every((what) => /^(parent|level|kind) /.test(what))) return { op: 'move', from, to: parent ?? 'none', note: `level ${item.level}` };
       return { op: 'edit', note: [said, changed.length ? changed.join(', ') : 'no change'].filter(Boolean).join('; ') };
-    }, () => news && !paired);
+    }, () => !paired && !(quietIfUnchanged && unchanged));
     await settle(children, done.item, by);
     return reparent ? { ...done, notified: await announceArrival(done.item, by) } : done;
   });
