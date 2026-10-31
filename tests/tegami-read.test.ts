@@ -59,7 +59,7 @@ test('the chip is the items held with their status; a flagged one marks it', asy
   assert.deepEqual(t.holds, ids, 'an old "at" in the letter reads as nothing');
 });
 
-test('docs are the README and every held item\'s attachments, only what exists', async () => {
+test('docs are every held item\'s attachments, only what exists', async () => {
   const name = 'tegami-read-docs';
   const real = path.join(temp, 'a-real-doc.md');
   const second = path.join(temp, 'second.md');
@@ -68,11 +68,10 @@ test('docs are the README and every held item\'s attachments, only what exists',
   const one = await item('one', [real, path.join(temp, 'gone.md')]);
   const two = await item('two', [second]);
   await writeLetter(name, `{ "holds": ["${one}", "${two}"] }`);
-  const readme = path.join(temp, name, 'README.md');
-  await fs.writeFile(readme, '# Read first\n');
+  await fs.writeFile(path.join(temp, name, 'AGENT_BIRTH_BRIEF.md'), '# Read first\n'); // the brief is not a Doc
   const t = await readTegami(name);
   assert.ok(t);
-  assert.deepEqual(t.docs, [readme, real, second]);
+  assert.deepEqual(t.docs, [real, second]);
 });
 
 test('an unfenced bare object still parses — an agent that drops the fence keeps its readout', async () => {
@@ -81,4 +80,16 @@ test('an unfenced bare object still parses — an agent that drops the fence kee
   const t = await readTegami('tegami-read-bare');
   assert.ok(t);
   assert.equal(t.objective, 'no fence');
+});
+
+test('a paired item carries its Jira issue link, from its space\'s site; an unpaired one none', async () => {
+  const { setSpaceNames, JIRA_NAMES } = await import('../src/work-items.js');
+  const paired = (await createItem({ title: 'on Jira', campaign_id: 'linked', jira: { id: '10094', key: 'KAN-94' } }, 'test')).item.id;
+  const local = (await createItem({ title: 'stays in Ronin', campaign_id: 'linked' }, 'test')).item.id;
+  await writeLetter('tegami-read-linked', JSON.stringify({ objective: 'link', holds: [paired, local] }));
+  const urls = async () => (await readTegami('tegami-read-linked'))!.items.map((one) => [one.id, one.jira_url]);
+  assert.deepEqual(await urls(), [[paired, undefined], [local, undefined]], 'no site named: no link');
+  setSpaceNames('linked', { ...JIRA_NAMES, site: 'https://example.atlassian.net' });
+  assert.deepEqual(await urls(), [[paired, 'https://example.atlassian.net/browse/KAN-94'], [local, undefined]]);
+  setSpaceNames('linked', null);
 });

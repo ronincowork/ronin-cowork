@@ -1,11 +1,12 @@
 /* /api/work-items* — the one door to the work item store (src/work-items.ts), and the
  * `item` tool's (ronin_bin/item): every act names its item. Every write acknowledges with
  * the item as it now is and the trail line it appended; the caller reads that before its
- * next act. The one refusal (409) is the rule that nothing goes below -1: "w39 can't go there." */
+ * next act. The refusals (409): nothing goes below -1 ("w39 can't go there."), and an Agent's
+ * new item needs an epic above it. */
 import type express from 'express';
 import {
   WorkItemBadInput, WorkItemMissing, WorkItemRefused,
-  addComment, assignItem, attachDoc, createItem, deleteItem, editComment, editItem, flagItem, handoffItem, holderLabel, holdersOf, linkItem, listItems, readItem,
+  addComment, assignItem, attachDoc, connectionOf, createItem, deleteItem, editComment, editItem, flagItem, handoffItem, holderLabel, holdersOf, linkItem, listItems, readItem, watchItem, watchedIds,
   didLine, type Acknowledged, type Holder, type JiraPair, type WorkItem,
 } from '../work-items.js';
 import { agentReading, everyItemReading, teamReading } from '../work-items-read.js';
@@ -69,7 +70,7 @@ export function registerWorkItems(app: express.Express): void {
 
   app.get('/api/work-items', guarded(async (req, res) => {
     // Search (Jira's JQL, as filters): ?session= (an Agent's), ?team= (a Team's), or every
-    // item; each narrowed by ?holder=<name> (none: held by nobody), ?parent=<id>, ?no_parent=1, ?status=, ?kind=.
+    // item; each narrowed by ?holder=<name> (none: the unheld list, held and watched by nobody and not Done), ?parent=<id>, ?no_parent=1, ?status=, ?kind=.
     const team = text(req.query.team)?.trim();
     const session = text(req.query.session)?.trim();
     const holder = text(req.query.holder)?.trim();
@@ -78,8 +79,9 @@ export function registerWorkItems(app: express.Express): void {
     const status = text(req.query.status)?.trim().toLowerCase();
     const kind = text(req.query.kind)?.trim().toLowerCase();
     const campaign = text(req.query.campaign)?.trim();
+    const watched = holder === 'none' ? await watchedIds() : new Set<string>();
     const narrow = <T extends WorkItem & { holder?: string }>(items: T[]): T[] => items.filter((item) =>
-      (!holder || (holder === 'none' && !item.holder) || item.holder === `agent:${holder}` || item.holder === `team:${holder}` || item.holder === holder)
+      (!holder || (holder === 'none' && !item.holder && !watched.has(item.id) && item.status !== 'Done') || item.holder === `agent:${holder}` || item.holder === `team:${holder}` || item.holder === holder)
       && (!parent || item.parent === parent) && (!orphans || !item.parent)
       && (!status || item.status.toLowerCase() === status) && (!kind || item.kind.toLowerCase() === kind)
       && (!campaign || item.campaign_id === campaign));
@@ -106,7 +108,8 @@ export function registerWorkItems(app: express.Express): void {
     const all = await listItems();
     const children = all.filter((other) => other.parent === item.id);
     const inward = all.flatMap((other) => other.links.filter((link) => link.to === item.id).map((link) => ({ type: link.type, from: other.id })));
-    res.json({ ok: true, item, held_by: (await holdersOf(item.id)).map(holderLabel), ...(children.length ? { children } : {}), ...(inward.length ? { linked_from: inward } : {}) });
+    const connection = connectionOf(item, all.find((other) => other.id === item.parent) ?? null);
+    res.json({ ok: true, item, held_by: (await holdersOf(item.id)).map(holderLabel), ...(children.length ? { children } : {}), ...(inward.length ? { linked_from: inward } : {}), ...(connection ? { connection } : {}) });
   }));
 
   app.put('/api/work-items/:id', guarded(async (req, res) => {
@@ -131,12 +134,28 @@ export function registerWorkItems(app: express.Express): void {
   app.post('/api/work-items/:id/assign', guarded(async (req, res) => {
     acknowledge(res, await assignItem(req.params.id, holderFrom(req.body), callerOf(req), text(req.body?.note)));
   }));
-  // Handoff removes the calling Agent and adds the receiver; none only lets the caller go.
+  // Handoff removes the giver and adds the receiver; none only lets the giver go. The giver is
+  // the caller, or { from } named: an Agent, or team:<name> (an Agent taking its team's item).
   app.post('/api/work-items/:id/handoff', guarded(async (req, res) => {
     const by = callerOf(req);
     const to = req.body?.none === true || req.body?.none === 'true' ? null : holderFrom(req.body);
-    acknowledge(res, await handoffItem(req.params.id, { kind: 'agent', name: by }, to, by, text(req.body?.note)));
+    const named = text(req.body?.from)?.trim();
+    const from: Holder = named ? (named.startsWith('team:') ? { kind: 'team', name: named.slice(5) } : { kind: 'agent', name: named.replace(/^agent:/, '') }) : { kind: 'agent', name: by };
+    acknowledge(res, await handoffItem(req.params.id, from, to, by, text(req.body?.note)));
   }));
+  // Watch adds the item to the watcher's watches (the caller, or { team } or { session } named), unwatch
+  // takes it off; no hold changes, no trail line.
+  for (const [verb, watch] of [['watch', true], ['unwatch', false]] as const) {
+    app.post(`/api/work-items/:id/${verb}`, guarded(async (req, res) => {
+      const by = callerOf(req);
+      const watcher = req.body?.team || req.body?.session ? holderFrom(req.body) : { kind: 'agent', name: by } as const;
+      const { id, watches } = await watchItem(req.params.id, watcher, watch);
+      const list = watches.length ? watches.join(', ') : 'nothing';
+      res.json({ ok: true, watches, acknowledgement: watcher.kind === 'agent' && watcher.name === by
+        ? `You ${watch ? 'watch' : 'no longer watch'} ${id}; you watch ${list}.`
+        : `${holderLabel(watcher)} ${watch ? 'watches' : 'no longer watches'} ${id}; it watches ${list}.` });
+    }));
+  }
   // Jira's Add flag / Remove flag; { comment } is the reason, kept as a comment.
   for (const [verb, flagged] of [['flag', true], ['unflag', false]] as const) {
     app.post(`/api/work-items/:id/${verb}`, guarded(async (req, res) => {
@@ -167,7 +186,7 @@ export function registerWorkItems(app: express.Express): void {
   // Anything else under /api/work-items names no item (an id like surface/7 is not one):
   // a JSON 404 naming it, so a tool can say so rather than parse an HTML error page.
   app.all('/api/work-items/*', (req, res) => {
-    const id = req.path.slice('/api/work-items/'.length).replace(/\/(assign|handoff|transition|flag|unflag|attach|link|comment)$/, '');
+    const id = req.path.slice('/api/work-items/'.length).replace(/\/(assign|handoff|watch|unwatch|transition|flag|unflag|attach|link|comment)$/, '');
     res.status(404).json({ ok: false, error: `No work item ${id}.` });
   });
 }

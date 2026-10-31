@@ -52,6 +52,7 @@ else:
     out = d.get("item", d)
     if "held_by" in d: out = {**out, "held_by": d["held_by"]}
     if "linked_from" in d: out = {**out, "linked_from": d["linked_from"]}
+    if "connection" in d: out = {**out, "connection": d["connection"]}
     if "children" in d: out = {**out, "children": [{k: c.get(k) for k in ("id", "title", "level", "kind", "priority", "status", "flagged")} for c in d["children"]]}
     print(json.dumps(out, indent=2, ensure_ascii=False))
 ' "$method $path"

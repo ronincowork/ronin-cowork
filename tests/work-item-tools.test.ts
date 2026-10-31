@@ -29,9 +29,9 @@ process.env.RONIN_WORK_ITEMS_DIR = path.join(dir, 'work-items');
 process.env.RONIN_TEAM_ROSTERS_DIR = path.join(dir, 'team_rosters');
 
 const { registerWorkItems } = await import('../src/routes/work-items-api.js');
-const { createTeamRoster } = await import('../src/team-rosters.js');
+const { createTeamRoster, readTeamRoster } = await import('../src/team-rosters.js');
 const { readLetterHolds, seedTegami } = await import('../src/tegami.js');
-const { readItem } = await import('../src/work-items.js');
+const { createItem, readItem } = await import('../src/work-items.js');
 
 await createTeamRoster('crew', { objective: 'hold things' });
 await seedTegami('probe');
@@ -141,6 +141,23 @@ test('item is the one tool for work items: team and work-record have no item act
   assert.notEqual((await run('work-record', ['update_record', '--phase', 'p'])).status, 0);
 });
 
+test('work-record add_doc adds a document to the item you hold; holding several, --item names one', async () => {
+  await seedTegami('writer');
+  const doc = path.join(dir, 'idea.md');
+  writeFileSync(doc, '# idea\n');
+  assert.match((await run('work-record', ['add_doc', doc], 'writer')).stderr, /^NO-ITEM: you hold no work item/);
+  const first = made(await tool('item', ['create', '--title', 'Idea']));
+  await tool('item', ['assign', first, 'writer']);
+  await tool('work-record', ['add_doc', doc], 'writer');
+  assert.deepEqual((await readItem(first))!.attachments, [doc]);
+  const second = made(await tool('item', ['create', '--title', 'Concept']));
+  await tool('item', ['assign', second, 'writer']);
+  const several = await run('work-record', ['add_doc', doc], 'writer');
+  assert.deepEqual([several.status, several.stderr.trim()], [2, `BAD-ARG: you hold ${first} ${second}; name one with --item <id>`]);
+  await tool('work-record', ['add_doc', doc, '--item', second], 'writer');
+  assert.deepEqual((await readItem(second))!.attachments, [doc]);
+});
+
 test('an id no route can hold answers "No work item <id>", and a reply that is not JSON names its HTTP status', async () => {
   for (const args of [['read', 'surface/7'], ['transition', 'surface/7', 'Done']]) {
     const r = await run('item', args);
@@ -161,4 +178,81 @@ test('an id no route can hold answers "No work item <id>", and a reply that is n
   } finally {
     html.close();
   }
+});
+
+test('item read shows a connected item\'s stored key and its parent\'s, keeping no parent apart from a parent with none', async () => {
+  const connection = async (id: string) => (JSON.parse(await tool('item', ['read', id])) as { connection?: unknown }).connection;
+  const pair = (key: string) => ({ id: key.replace(/\D/g, ''), key });
+  const keyed = (await createItem({ title: 'Connected epic', kind: 'Epic', jira: pair('CX-1') }, 'fixture')).item.id;
+  const bare = (await createItem({ title: 'Unconnected epic', kind: 'Epic' }, 'fixture')).item.id;
+  const underKeyed = (await createItem({ title: 'Under a keyed parent', kind: 'Task', parent: keyed, jira: pair('CX-2') }, 'fixture')).item.id;
+  const underBare = (await createItem({ title: 'Under a bare parent', kind: 'Task', parent: bare, jira: pair('CX-3') }, 'fixture')).item.id;
+  const loose = (await createItem({ title: 'Unconnected', kind: 'Task', parent: bare }, 'fixture')).item.id;
+  assert.deepEqual(await connection(underKeyed), { key: 'CX-2', parent: { id: 'CX-1', key: 'CX-1' } });
+  assert.deepEqual(await connection(underBare), { key: 'CX-3', parent: { id: bare, key: null } });
+  assert.deepEqual(await connection(keyed), { key: 'CX-1', parent: null });
+  assert.equal(await connection(loose), undefined, 'an unconnected item reads as before');
+  assert.equal(await connection(bare), undefined);
+});
+
+test('item watch and unwatch change the caller\'s watches, never its holds or the item\'s trail; work-record read shows them', async () => {
+  const id = made(await tool('item', ['create', '--title', 'Watched']));
+  const holds = (await readLetterHolds('probe'))!.holds;
+  const lines = (await trail(id)).length;
+  assert.match(await tool('item', ['watch', id]), new RegExp(`^You watch ${id};`));
+  assert.deepEqual([(await readLetterHolds('probe'))!.watches, (await readLetterHolds('probe'))!.holds], [[id], holds]);
+  assert.deepEqual((JSON.parse(await tool('work-record', ['read', '--json'])) as { watching: Array<{ id: string }> }).watching.map((item) => item.id), [id]);
+  await tool('item', ['unwatch', id]);
+  assert.deepEqual((await readLetterHolds('probe'))!.watches, []);
+  assert.equal((await trail(id)).length, lines, 'watching adds no trail line');
+  assert.match(await tool('item', ['watch', id, 'team:crew']), new RegExp(`^team:crew watches ${id}; it watches ${id}\\.`));
+  assert.deepEqual((await readTeamRoster('crew'))!.watches, [id], 'a team\'s watches sit on its roster');
+  await tool('item', ['unwatch', id, 'team:crew']);
+  assert.deepEqual((await readTeamRoster('crew'))!.watches, []);
+});
+
+test('work-record read with nothing held: a lead is told its team holds its work, a member to create under an epic', async (t) => {
+  await seedTegami('lead_probe');
+  await seedTegami('member_probe');
+  assert.match(await tool('work-record', ['read'], 'member_probe'), /You hold no work items — item create --parent <epic> makes one yours/);
+  // The routes' own tmux: lead_probe leads crew.
+  const served = path.join(dir, 'served-bin');
+  mkdirSync(served);
+  writeFileSync(path.join(served, 'tmux'), ['#!/bin/sh', 'case "$*" in',
+    `  *list-sessions*ronin-key*) printf '${['lead_probe', '', '1', '0', '1', 'crew', 'crew', 'lead_probe', '', '', '', '0', ''].join('\\t')}\\n';;`,
+    '  *) exit 1;;', 'esac', ''].join('\n'), { mode: 0o755 });
+  const before = process.env.PATH;
+  process.env.PATH = `${served}:${before ?? ''}`;
+  t.after(() => { process.env.PATH = before; });
+  const read = await tool('work-record', ['read'], 'lead_probe');
+  assert.match(read, /You hold no work items — your team holds your work; item create puts it there/);
+  assert.match(read, /## Work items of team crew/);
+});
+
+test('a member takes its team\'s item by handoff --from team:<name>: off the team\'s holds, onto its own', async () => {
+  const { holdersOf, holderLabel } = await import('../src/work-items.js');
+  const epic = made(await tool('item', ['create', '--title', 'Team topic', '--kind', 'Epic']));
+  const id = made(await tool('item', ['create', '--title', 'Team piece', '--parent', epic]));
+  await tool('item', ['handoff', id, 'team:crew']);
+  assert.deepEqual((await holdersOf(id)).map(holderLabel), ['team:crew']);
+  const line = await oneLine(id, ['handoff', id, 'probe', '--from', 'team:crew']);
+  assert.deepEqual([line.from, line.to], ['team:crew', 'agent:probe']);
+  assert.deepEqual((await holdersOf(id)).map(holderLabel), ['agent:probe']);
+  await tool('item', ['handoff', id, 'none', '--from', 'probe']);
+  assert.deepEqual((await holdersOf(id)).map(holderLabel), [], '--from names an Agent too, and none lets it go');
+});
+
+test('work-record read and read --json take a reading over 128 KB, the most one env string may hold', async () => {
+  const { createItem } = await import('../src/work-items.js');
+  await seedTegami('big_probe');
+  const ids: string[] = [];
+  for (let n = 0; n < 40; n++) ids.push((await createItem({ title: `big ${n}`, objective: 'x'.repeat(4000), holder: { kind: 'agent', name: 'big_probe' } }, 'lead')).item.id);
+  const reading = JSON.stringify((await (await fetch(`${env.RONIN_URL}/api/work-items?session=big_probe`)).json()));
+  assert.ok(reading.length > 131072, `the reading is ${reading.length} bytes`);
+  const text = await run('work-record', ['read'], 'big_probe');
+  assert.equal(text.status, 0, text.stderr);
+  assert.match(text.stdout, new RegExp(`- ${ids.at(-1)} big 39 · To Do`));
+  const json = await run('work-record', ['read', '--json'], 'big_probe');
+  assert.equal(json.status, 0, json.stderr);
+  assert.equal((JSON.parse(json.stdout) as { items: unknown[] }).items.length, 40);
 });

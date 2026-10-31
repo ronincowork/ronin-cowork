@@ -42,8 +42,8 @@ text, byte for byte.
 
 ## T1 — always-taught
 
-The sources included in every assisted Agent's compiled birth README. The brief names
-only that per-session README (`docs/architecture/session-boot.md`):
+The sources included in every assisted Agent's compiled birth brief. The brief names
+only that per-session `AGENT_BIRTH_BRIEF.md` (`docs/architecture/session-boot.md`):
 
 | File | Static / generated | What it is |
 |---|---|---|
@@ -56,7 +56,7 @@ plausibly use it? Optional abilities belong to a feature, never this tier.
 
 ## T2 — scoped-taught
 
-Identical delivery — sections in the compiled birth README — but only for Agents in scope.
+Identical delivery — sections in the compiled birth brief — but only for Agents in scope.
 **There is no pull and no trigger the session acts on: the trigger is the launch.**
 Launch facts select the levels:
 
@@ -68,7 +68,7 @@ Launch facts select the levels:
 
 Selection governs teaching only; Agent launch never reconfigures an MCP server. These levels add up
 rather than override: root, installations and behaviours are fixed
-at birth and compiled into one README. Work-specific reading is selected separately
+at birth and compiled into one birth brief. Work-specific reading is selected separately
 as `behaviours`; the behaviours that are on join that same birth reading once and are not a
 mutable shelf axis. A T2 file that would help every session is mis-shelved and belongs up
 a tier.
@@ -94,10 +94,10 @@ house-wide body of knowledge.
 
 | When wondering… | Go to | Not |
 |---|---|---|
-| what a word means here | the house-words section of the birth README | guessing |
+| what a word means here | the house-words section of the birth brief | guessing |
 | whether a capability exists | the catalogs, via the map | improvising with tmux |
 | how to use a capability tool | its selected document, then `<tool> --help` | guessing |
 | anything about another session | `work-record read --session <session>` for authored work; `edges read` when recorded output is available; `edges send` for a message | pane capture only when there is no tape or live prompt state is unknowable, and report the fallback; raw `send-keys` |
 | how the house does a domain | the Behavior shelf, by book | inventing a process |
 | what is true on this machine | run the named tool | any document |
-| where anything else is | the shelves section of the birth README | — |
+| where anything else is | the shelves section of the birth brief | — |

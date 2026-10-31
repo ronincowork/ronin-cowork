@@ -44,9 +44,9 @@ test('registration records purpose fields but never stores the plain email', asy
   const { resolveFloorBehaviours } = await import('../src/behaviours.js');
   const resolvedIntro = (await resolveFloorBehaviours()).find((row) => row.book === 'user-intro');
   assert.equal(resolvedIntro?.file, path.join(root, 'ways', 'floor', 'user-intro.md'));
-  const { compileBirthReadmeAt, isShelfTeaching } = await import('../src/birth-readme.js');
-  const readme = await compileBirthReadmeAt(path.join(root, 'session'), [resolvedIntro!.file], 'newborn', isShelfTeaching);
-  assert.match(await readFile(readme, 'utf8'), /^## User intro[\s\S]*^### About the user/m);
+  const { compileBirthBriefAt, isShelfTeaching } = await import('../src/birth-brief.js');
+  const brief = await compileBirthBriefAt(path.join(root, 'session'), [resolvedIntro!.file], 'newborn', isShelfTeaching);
+  assert.match(await readFile(brief, 'utf8'), /^## User intro[\s\S]*^### About the user/m);
   assert.equal(JSON.stringify(record).includes('person@example.com'), false);
   assert.equal((await registrationAnswer()).status, 'pending', 'submission is not entitlement');
 });

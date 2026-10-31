@@ -181,7 +181,7 @@ brings you here, which core Ronin feature you prefer, which of the starting patt
 are most likely to use, what describes you, where you will install, a two-line introduction
 for your Cowork Agents, and anything else. The introduction stays on this machine as the
 owner `ways/floor/user-intro.md` shadow of the stock-empty Behavior and is included in every
-Cowork Agent's birth README; leaving it blank removes the shadow and leaves the placeholder
+Cowork Agent's birth brief; leaving it blank removes the shadow and leaves the placeholder
 empty.
 Sending the form is always your own press; nothing in the header zone submits it for you.
 Share only what feels useful. A registered identity is what Ronin Services entitlement

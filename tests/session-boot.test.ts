@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import os from 'node:os';
 import path from 'node:path';
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
-import { PACKET_BUDGET, bootFiles, compileBirthReadmeAt, describePacket, isShelfTeaching, packetEndLine, readFirstSentence } from '../src/birth-readme.js';
+import { PACKET_BUDGET, bootFiles, compileBirthBriefAt, describePacket, isShelfTeaching, packetEndLine, readFirstSentence } from '../src/birth-brief.js';
 import { storeDir } from '../src/resources.js';
 import { buildBrief, type SpawnForm } from '../src/spawn.js';
 import { contributionReading } from '../src/resource-adapters.js';
@@ -147,12 +147,12 @@ test('the real stock shelf compiles to one read: contracts first, glossary point
     // with every listed tool present.
     const applied = [
       ...await resolveFloorBehaviours(),
-      ...await resolveConditionalBehaviours({ arrangement: 'managed', team: true, lead: true, project_management: true }),
+      ...await resolveConditionalBehaviours({ arrangement: 'managed', team: true, lead: true }),
     ].map((row) => row.file);
     const boot = [...applied, ...await bootFiles('', [
       'routine/ronin_host/HOST_ABILITIES.md',
     ], await fullOverview(), 'newborn')];
-    const target = await compileBirthReadmeAt(path.join(temp, 'session'), boot, 'newborn', isShelfTeaching);
+    const target = await compileBirthBriefAt(path.join(temp, 'session'), boot, 'newborn', isShelfTeaching);
     const text = await readFile(target, 'utf8');
     const bytes = Buffer.byteLength(text, 'utf8');
     const lines = text.split('\n').length;
@@ -171,7 +171,7 @@ test('the real stock shelf compiles to one read: contracts first, glossary point
     assert.match(firstWindow, /Read the complete Build Brief before acting/);
     assert.match(firstWindow, /do not reproduce its guarded operation/);
     assert.match(firstWindow, /Read the roster and wipeboard before directing work/);
-    assert.match(firstWindow, /ronin_catalogs\/behaviours\/conditional\/worktree-root\.md/);
+    assert.match(firstWindow, /^## Managed worktree/m);
     // The glossary stays out of the packet; the packet points at the tool.
     assert.doesNotMatch(text, /^## KOTOBA_GLOSSARY/m);
     assert.match(text, /`ronin-help <word>`/);
@@ -300,8 +300,8 @@ test('startup reading is never stripped when instructions are present', () => {
   assert.match(brief, /Read first: \/stock\/CAPABILITIES\.md\./);
 });
 
-test('resolved sources compile into one session README: teaching inlined once, reference listed by title and path', async () => {
-  const temp = await mkdtemp(path.join(os.tmpdir(), 'ronin-birth-readme-test-'));
+test('resolved sources compile into one session birth brief: teaching inlined once, reference listed by title and path', async () => {
+  const temp = await mkdtemp(path.join(os.tmpdir(), 'ronin-birth-brief-test-'));
   try {
     const one = path.join(temp, 'ONE.md');
     const two = path.join(temp, 'TWO.md');
@@ -309,8 +309,8 @@ test('resolved sources compile into one session README: teaching inlined once, r
     await writeFile(one, '# First guide\n\nalpha\n');
     await writeFile(two, '# Second guide\n\nbeta\n');
     await writeFile(catalog, '# Every noun in the house\n\n<!-- a comment -->\n> a quote first\n\nThe definition of every house noun, one row each. More words follow.\n\n' + 'a row\n'.repeat(1000));
-    const target = await compileBirthReadmeAt(path.join(temp, 'session-key'), [one, one, two, catalog], 'new-agent', (file) => file !== catalog);
-    assert.equal(path.basename(target), 'README.md');
+    const target = await compileBirthBriefAt(path.join(temp, 'session-key'), [one, one, two, catalog], 'new-agent', (file) => file !== catalog);
+    assert.equal(path.basename(target), 'AGENT_BIRTH_BRIEF.md');
     const text = await readFile(target, 'utf8');
     assert.match(text, /^# Read first — new-agent/m);
     assert.match(text, /compiled this one document for \*\*new-agent\*\*/);
@@ -330,11 +330,11 @@ test('resolved sources compile into one session README: teaching inlined once, r
 });
 
 test('an over-budget packet is described as such, and the brief asks for it in parts', async () => {
-  const temp = await mkdtemp(path.join(os.tmpdir(), 'ronin-birth-readme-test-'));
+  const temp = await mkdtemp(path.join(os.tmpdir(), 'ronin-birth-brief-test-'));
   try {
     const big = path.join(temp, 'BIG.md');
     await writeFile(big, '# A shelf file nobody curated\n\n' + 'a line of teaching that goes on and on and on\n'.repeat(1200));
-    const target = await compileBirthReadmeAt(path.join(temp, 'session-key'), [big], 'heavy');
+    const target = await compileBirthBriefAt(path.join(temp, 'session-key'), [big], 'heavy');
     const packet = await describePacket(target, 'heavy');
     assert.ok(packet.bytes > PACKET_BUDGET.bytes && packet.over_budget, `${packet.bytes} bytes is over budget`);
     const sentence = readFirstSentence(packet);

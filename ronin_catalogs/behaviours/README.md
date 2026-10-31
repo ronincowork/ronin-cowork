@@ -28,5 +28,5 @@ Ordinary searchable operator and product explanation belongs in `docs/`.
 
 Stock `floor/user-intro.md` is the empty placeholder. Registration populates its whole-file
 shadow in the owner `ways` store with a maximum two-line introduction compiled into every
-Cowork Agent's README; blank registration text removes the shadow and reveals the empty
+Cowork Agent's birth brief; blank registration text removes the shadow and reveals the empty
 stock page. The registration record is canonical, so there is no maintained index.

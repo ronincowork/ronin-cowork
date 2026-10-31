@@ -45,7 +45,7 @@ requirement are on. A launch request naming an unavailable behaviour is born wit
 the birth receipt names it as undelivered and birth still succeeds. Providerless
 behaviours are always on offer.
 
-Every Cowork Agent receives mandate teaching from the Ronin floor. The general selected stock shelf displays Write it Down,
+Every Cowork Agent receives mandate teaching and Write it Down from the Ronin floor. The general selected stock shelf displays
 Planning, Team work, Visual Staging, and Working with the User. Installation-owned Behaviors such as
 `gbrain`, `trello`, and `perplexity` remain separate. A Team's required behaviours cannot
 be removed on an Agent form. Every form uses the same tall, wrapping behaviour stone;
@@ -105,7 +105,7 @@ One resolver runs before the Agent process exists:
 7. One packet and receipt record the result, with `stated_by` naming
    `installation · campaign · team · agent · conditional`.
 
-The same result feeds the birth README, command directory, and receipt. Provider-native
+The same result feeds the birth brief, command directory, and receipt. Provider-native
 MCP configuration is outside Agent launch resolution.
 
 ## Catalog definitions

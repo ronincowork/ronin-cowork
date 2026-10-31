@@ -35,9 +35,13 @@ export async function promotionUnitProgress(receipt: PromotionReceipt): Promise<
   try {
     const { stdout } = await execFileP('systemctl', [
       '--user', 'show', receipt.restart.unit,
-      '--property=ActiveState,SubState,Result,ExecMainStatus', '--output=json',
+      '--property=ActiveState,SubState,Result,ExecMainStatus',
     ], { timeout: 5_000 });
-    return JSON.parse(stdout) as object;
+    // systemctl show prints Key=value lines; it has no JSON output.
+    return Object.fromEntries(stdout.trim().split('\n').filter(Boolean).map((line) => {
+      const at = line.indexOf('=');
+      return [line.slice(0, at), line.slice(at + 1)];
+    }));
   } catch (error) {
     return { unit: receipt.restart.unit, detail: String((error as Error).message ?? error).split('\n')[0] };
   }

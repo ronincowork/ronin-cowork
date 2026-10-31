@@ -230,7 +230,7 @@ export function buildDocs(root, only = null, reposFirst = () => []) {
   const appendWorkRecordNote = () => {
     const foot = document.createElement('p');
     foot.className = 'dc-work-record-note';
-    foot.textContent = t('docs.work_record_note', 'Ask an agent to attach a document with item attach <id> <path>. If a document is missing, ask the agent to update its work record.');
+    foot.textContent = t('docs.work_record_note', 'Ask an agent to add a document with work-record add_doc <path>. If a document is missing, ask the agent to update its work record.');
     list.appendChild(foot);
   };
 
@@ -238,7 +238,7 @@ export function buildDocs(root, only = null, reposFirst = () => []) {
     list.innerHTML = '';
     if (!rows.length) {
       if (shelf !== 'tracked') empty(t('docs.shelf_empty', 'Nothing on this shelf — a workspace folder names its places on its record (Workspace folders → docs / plans).'));
-      else empty(only ? t('docs.empty_team', 'No tracked documents.') : t('docs.empty', 'No session has listed a doc yet. An agent attaches one with: item attach <id> <path>'));
+      else empty(only ? t('docs.empty_team', 'No tracked documents.') : t('docs.empty', 'No session has listed a doc yet. An agent adds one with: work-record add_doc <path>'));
       return;
     }
     for (const s of rows) {

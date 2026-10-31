@@ -1,6 +1,9 @@
 /**
  * READINGS — derived from the store and the holder lists, never stored.
- * agent:      the items an Agent holds and every held item's attachments.
+ * agent:      the items an Agent holds and every held item's attachments (a lead's Teams' holds
+ *             included: the lead wears the Team), and the items it watches;
+ *             for a lead, each Team it leads: what the Team holds and watches, and what each
+ *             member holds and watches.
  * team:       the roster objective, the items the Team holds and the items its members
  *             hold, each child after its parent where the lead made any; and its epics
  *             (the epic → Teams rule, boardReadings), plus the roots nobody's work reaches,
@@ -18,6 +21,16 @@ export interface AgentReading {
   holder: string;
   items: WorkItem[];
   attachments: string[];
+  watching: WorkItem[];
+  /** Each Team the Agent leads, read from its roster and its members' records. */
+  teams: LedTeam[];
+}
+
+export interface LedTeam {
+  team: string;
+  items: WorkItem[];
+  watching: WorkItem[];
+  members: Array<{ name: string; items: WorkItem[]; watching: WorkItem[] }>;
 }
 
 /** An item in a reading, with the holder it was found on (team:<name> or agent:<name>). */
@@ -35,13 +48,28 @@ export interface TeamReading {
 
 const present = (items: Array<WorkItem | null>): WorkItem[] => items.filter((item): item is WorkItem => item !== null);
 
+const read = (ids: string[] = []) => Promise.all(ids.map((id) => readItem(id))).then(present);
+
 export async function agentReading(session: string): Promise<AgentReading> {
   const letter = await readLetterHolds(await sessionKey(session));
-  const items = present(await Promise.all((letter?.holds ?? []).map((id) => readItem(id))));
+  const items = await read(letter?.holds);
+  const sessions = await listSessions();
+  const teams: LedTeam[] = [];
+  for (const team of sessions.find((one) => one.name === session)?.leads ?? []) {
+    const roster = await readTeamRoster(team);
+    const members = [];
+    for (const member of sessions.filter((one) => one.name !== session && one.tags.includes(team))) {
+      const record = await readLetterHolds(member.key);
+      members.push({ name: member.name, items: await read(record?.holds), watching: await read(record?.watches) });
+    }
+    teams.push({ team, items: await read(roster?.holds), watching: await read(roster?.watches), members });
+  }
   return {
     holder: `agent:${session}`,
     items,
-    attachments: [...new Set(items.flatMap((item) => item.attachments))],
+    attachments: [...new Set([...items, ...teams.flatMap((team) => team.items)].flatMap((item) => item.attachments))],
+    watching: await read(letter?.watches),
+    teams,
   };
 }
 

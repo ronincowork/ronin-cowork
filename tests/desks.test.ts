@@ -330,6 +330,25 @@ test('a hand-in naming a work item leaves one trail line and the item at In Revi
   assert.equal(moved?.line.op, 'status');
 });
 
+test('a hand-in that moves an item to In Review tells its holder and watcher; one on an item already there tells nobody', async () => {
+  const { seedTegami } = await import('../src/tegami.js');
+  const { listQueuedMessages, dismissMessages } = await import('../src/message-queue.js');
+  const { watchItem } = await import('../src/work-items.js');
+  await seedTegami('keeper');
+  await seedTegami('onlooker');
+  const heard = async () => (await listQueuedMessages()).filter((message) => ['keeper', 'onlooker'].includes(message.target)).map((message) => message.target).sort();
+  const { item } = await createItem({ title: 'Quiet landing', status: 'In Progress', holder: { kind: 'agent', name: 'keeper' } }, 'owner');
+  await watchItem(item.id, { kind: 'agent', name: 'onlooker' }, true);
+  await dismissMessages((await listQueuedMessages()).map((message) => message.id));
+  await commitFile(deskWorktree('cowork', 'team/comp/fable'), 'quiet.txt', 'quiet\n');
+  await handInAssignment({ desks: [{ repo: 'cowork', branch: 'team/comp/fable' }], projectId: item.id, session: 'fable' });
+  assert.deepEqual(await heard(), ['keeper', 'onlooker'], 'the move to In Review is news');
+  await dismissMessages((await listQueuedMessages()).map((message) => message.id));
+  await handInAssignment({ desks: [{ repo: 'cowork', branch: 'team/comp/fable' }], projectId: item.id, session: 'fable' });
+  assert.deepEqual(await heard(), [], 'already In Review: the line changes nothing');
+  assert.deepEqual((await readItem(item.id))!.trail.slice(1).map((line) => [line.op, /^hand-in /.test(line.note ?? '')]), [['status', true], ['edit', true]]);
+});
+
 test('handIn with no new desk delta is an accepted ordinary result and moves no work', async () => {
   const before = sh(cowork, ['rev-parse', 'team/comp/dev']);
   const { receipt } = await handIn('cowork', 'team/comp/fable');

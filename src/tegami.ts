@@ -82,6 +82,8 @@ function seedShell(
 > - **repos:** the worktrees and branches you work in: \`work-record workspace add|remove\`.
 > - **holds:** the work items you hold; their status shows here. Work items:
 >   the Work Item capability.
+> - **watches:** the work items you track without holding: \`item watch <id>\`; you hear
+>   the moves under each (status, flag, a new child, a holder change).
 > - **teams**, **configuration:** Ronin writes these and tells you when they change.
 
 \`\`\`json
@@ -89,7 +91,8 @@ function seedShell(
   "mandate": ${JSON.stringify(sessionMandate)},
   "teams": ${JSON.stringify(teams)},
   "repos": ${JSON.stringify(repos.filter((checkout) => checkout.repo || checkout.branch))},
-  "holds": [] }
+  "holds": [],
+  "watches": [] }
 \`\`\`
 `;
 }
@@ -117,19 +120,23 @@ async function replaceLetterBlock(file: string, text: string, parsed: ReturnType
   await fs.rename(tmp, file);
 }
 
-/** One Agent's holder list, as its letter keeps it: work item ids. The items themselves
- * live in the work item store. */
+/** One Agent's holder and watch lists, as its letter keeps them: work item ids. The items
+ * themselves live in the work item store. */
 export interface LetterHolds {
   key: string;
   name: string;
   objective: string;
   holds: string[];
+  watches: string[];
+  /** The Teams its letter names, lead or member: what an ending Agent's items go back to. */
+  teams: string[];
 }
 
 function holdsOfBody(key: string, text: string, body: Record<string, unknown>): LetterHolds {
   const name = text.match(/^# TEGAMI — (.+)$/m)?.[1]?.trim() || key;
-  const holds = Array.isArray(body.holds) ? body.holds.filter((id): id is string => typeof id === 'string') : [];
-  return { key, name, objective: typeof body.objective === 'string' ? body.objective : '', holds };
+  const ids = (list: unknown) => Array.isArray(list) ? list.filter((id): id is string => typeof id === 'string') : [];
+  return { key, name, objective: typeof body.objective === 'string' ? body.objective : '', holds: ids(body.holds), watches: ids(body.watches),
+    teams: Array.isArray(body.teams) ? body.teams.map((entry) => (entry as TeamEntry)?.team).filter((team): team is string => typeof team === 'string') : [] };
 }
 
 export async function readLetterHolds(key: string): Promise<LetterHolds | null> {
@@ -146,12 +153,16 @@ export async function listLetterHolds(): Promise<LetterHolds[]> {
 }
 
 /** Replace one letter's holder list. */
-export async function writeLetterHolds(key: string, holds: string[]): Promise<LetterHolds> {
+export const writeLetterHolds = (key: string, holds: string[]): Promise<LetterHolds> => writeLetterList(key, 'holds', holds);
+/** Replace one letter's watch list. */
+export const writeLetterWatches = (key: string, watches: string[]): Promise<LetterHolds> => writeLetterList(key, 'watches', watches);
+
+async function writeLetterList(key: string, list: 'holds' | 'watches', ids: string[]): Promise<LetterHolds> {
   const file = tegamiPath(key);
   const text = await fs.readFile(file, 'utf8');
   const parsed = letterBlock(text);
   if (!parsed) throw new Error(`the work record at ${file} has no readable JSON block`);
-  parsed.body.holds = holds;
+  parsed.body[list] = ids;
   await replaceLetterBlock(file, text, parsed, parsed.body);
   return holdsOfBody(key, text, parsed.body);
 }

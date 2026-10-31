@@ -3,7 +3,7 @@ import path from 'node:path';
 import { sessionDir, sessionKey } from './session-dir.js';
 import { tegamiPath } from './tegami.js';
 import { agentReading } from './work-items-read.js';
-import type { WorkItem } from './work-items.js';
+import { jiraLink, type WorkItem } from './work-items.js';
 import { mandate, type Mandate } from './agent-defaults.js';
 
 export interface Tegami {
@@ -12,12 +12,13 @@ export interface Tegami {
   repos: { repo: string; branch: string }[];
   teams: { team: string; team_role: string; objective: string; members?: string[] }[];
   holds: string[];
-  /** The items held, each with its status: what the tile and the roster show. */
-  items: WorkItem[];
-  /** The session's README, the documents of every item it holds, and files dropped on it. */
+  /** The items held, each with its status, and a paired one's Jira link: what the tile and the roster show. */
+  items: Array<WorkItem & { jira_url?: string }>;
+  /** The documents of every item the session holds, and files dropped on it. */
   docs: string[];
   chip: { text: string; gate: boolean };
-  quietMs: number;
+  /** When the work record was last written (epoch ms): the browser works out the age, so the push stays still. */
+  quietSince: number;
 }
 
 function extractBlock(text: string): unknown | null {
@@ -88,10 +89,10 @@ export async function readTegami(name: string): Promise<Tegami | null> {
           })
         : [],
       holds: reading.items.map((item) => item.id),
-      items: reading.items,
-      docs: await readDocs([path.join(sessionDir(key), 'README.md'), ...reading.attachments, ...(await dropped(key))]),
+      items: reading.items.map((item) => ({ ...item, ...(jiraLink(item) ? { jira_url: jiraLink(item) } : {}) })),
+      docs: await readDocs([...reading.attachments, ...(await dropped(key))]),
       chip: chipFor(reading.items),
-      quietMs: Date.now() - stat.mtimeMs,
+      quietSince: stat.mtimeMs,
     };
   } catch {
     return null; // no directory, no file, no record. All the same answer.

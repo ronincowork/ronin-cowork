@@ -121,3 +121,32 @@ use the glossary's plain terms. **Koshi** is an existing UI name and an explicit
 
 Retired names such as TEJUN do not reintroduce macros or SOPs as current architectural
 categories. Use the tool and composition terms above.
+
+## Ronin Cloud
+
+These terms name the hosted offer's surfaces; the plan is
+`samurai_lab/wip/ronin_cloud/RONIN_CLOUD.md` and the build is `MVP_ARCHITECTURE.md` beside it.
+Every physical or fleet surface carries the `office_` prefix; `control_plane`, `front_door`,
+`model_gateway` and `kill_switch` stand alone because nothing else shares the word.
+
+| Term | Meaning |
+|---|---|
+| Office (`office`) | The product unit: one customer's full Ronin with its own kernel and disk, running on an office_host. The customer sees and buys offices and Agents running, never the machinery |
+| Office host (`office_host`) | The physical machine Ronin rents, running many offices under one hypervisor. Ronin administers it; no customer touches it |
+| Hypervisor (`hypervisor`) | The software on an office_host that carves it into offices and exposes the API the control_plane drives: Proxmox VE |
+| Control plane (`control_plane`) | The separate small machine that runs the fleet from outside every office over a private link: office_registry, provisioner, kill_switch, meter, fleet updates |
+| Office registry (`office_registry`) | The control_plane's record: account, office, office_host, private address, state, stop_clock |
+| Front door (`front_door`) | The public entry on an office_host: Caddy, OAuth2 Proxy and Keycloak. Maps the hostname to an office, then checks that the signed-in user owns it; signing in alone opens nothing |
+| SSH gateway (`ssh_gateway`) | SSH entry at the same name as the front_door; no office address is ever shown |
+| Office network (`office_network`) | The private network on an office_host; offices reach out through NAT, never each other, the office_host or the control_plane |
+| Office image (`office_image`) | The Ronin image an office boots from once; after that Ronin updates itself |
+| Office disk (`office_disk`) | The whole disk of one office, the one persistence unit; its backup is an `office_snapshot` |
+| Stop clock (`stop_clock`) | The 30 days a stopped office is kept before deletion |
+| Kill switch (`kill_switch`) | The control_plane's stops from outside an office: stop it, cut its network, drop its front_door route, revoke its house_token. Works when control inside the office is lost |
+| Model gateway (`model_gateway`) | Holds Ronin's provider key outside every office; an office speaks to it with its house_token |
+| House token (`house_token`) | One office's credential for the model_gateway; revoking it is part of the kill_switch |
+| Office export (`office_export`) | The off-ramp: the office as self-hosted Ronin on the customer's own computer |
+
+Server, host, guest, VM, workspace, customer machine and edge are not Cloud terms. "VM" named
+two layers at once, the rented machine and the customer's slice; say office_host and office.
+"Edge" is the `edges` message tool.

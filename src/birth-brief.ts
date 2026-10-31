@@ -16,6 +16,9 @@ export type Level = 'all' | 'root' | 'routine';
 /** The glossary's filename on the universal shelf; the owner may shadow it by name. */
 const GLOSSARY = 'KOTOBA_GLOSSARY.md';
 
+/** The compiled brief's filename in each session folder: named for what it is, to whoever opens it. */
+export const BIRTH_BRIEF = 'AGENT_BIRTH_BRIEF.md';
+
 /**
  * THE ONE-READ BUDGET. A newborn is handed one path and reads it with its own CLI's file
  * tool, and every supported CLI caps what one read delivers: Codex ~10k tokens of shell
@@ -45,12 +48,12 @@ export interface PacketReport {
   over_budget: boolean;
 }
 
-export async function describePacket(readmePath: string, session: string): Promise<PacketReport> {
-  const text = await readFile(readmePath, 'utf8');
+export async function describePacket(briefPath: string, session: string): Promise<PacketReport> {
+  const text = await readFile(briefPath, 'utf8');
   const bytes = Buffer.byteLength(text, 'utf8');
   const lines = text.split('\n').length;
   return {
-    path: readmePath,
+    path: briefPath,
     bytes,
     lines,
     sections: (text.match(/^## /gm) ?? []).length,
@@ -191,6 +194,22 @@ function titleOf(text: string, file: string): string {
   return heading ? heading[1].trim() : path.basename(file);
 }
 
+/** A catalog page's field block, under its title, is for the catalog, not the reader: an
+ *  inlined page keeps its title and teaching and drops the block. The file keeps it. */
+const FIELD = /^- \*\*(label|blurb|installation|order|scope|requires|class):\*\*/;
+function withoutFields(text: string): string {
+  const lines = text.split('\n');
+  const title = lines.findIndex((line) => /^#{1,6}\s/.test(line));
+  if (title < 0) return text;
+  let end = title + 1;
+  while (end < lines.length && lines[end].trim() === '') end++;
+  const start = end;
+  while (end < lines.length && FIELD.test(lines[end])) end++;
+  if (end === start) return text;
+  while (end < lines.length && lines[end].trim() === '') end++;
+  return [...lines.slice(0, title + 1), '', ...lines.slice(end)].join('\n');
+}
+
 function reachForItWhen(text: string): string {
   const paragraphs = text
     .replace(/<!--[\s\S]*?-->/g, '')
@@ -202,7 +221,7 @@ function reachForItWhen(text: string): string {
   return sentence.length > 180 ? `${sentence.slice(0, 177).trimEnd()}…` : sentence;
 }
 
-export async function compileBirthReadmeAt(
+export async function compileBirthBriefAt(
   dir: string,
   sources: readonly string[],
   session: string,
@@ -223,8 +242,8 @@ export async function compileBirthReadmeAt(
         shelf.push({ title, file: source, when: reachForItWhen(text) });
         continue;
       }
-      const demoted = text.replace(/^(#{1,6})(?=\s)/gm, (heading) => `${heading}#`.slice(0, 6));
-      sections.push({ title, body: `_Source: ${source}_\n\n${demoted}` });
+      const demoted = withoutFields(text).replace(/^(#{1,6})(?=\s)/gm, (heading) => `${heading}#`.slice(0, 6));
+      sections.push({ title, body: demoted });
     } catch { /* a source that vanished before compilation is omitted, never stale */ }
   }
   const lines = [
@@ -257,10 +276,10 @@ export async function compileBirthReadmeAt(
     // Over the one-read budget: the newborn's CLI will cut it and the newborn will not
     // know what it missed. Said here, in the operator log, until the compiler can say it
     // in the packet and the receipt (plans: BIRTH_PACKET, leg 3).
-    console.warn(`[birth] ${session}: the compiled README is ${size.bytes} bytes / ${size.lines} lines, over the one-read budget of ${PACKET_BUDGET.bytes} / ${PACKET_BUDGET.lines}; a single read will not deliver it whole.`);
+    console.warn(`[birth] ${session}: the compiled birth brief is ${size.bytes} bytes / ${size.lines} lines, over the one-read budget of ${PACKET_BUDGET.bytes} / ${PACKET_BUDGET.lines}; a single read will not deliver it whole.`);
   }
   await mkdir(dir, { recursive: true });
-  const target = path.join(dir, 'README.md');
+  const target = path.join(dir, BIRTH_BRIEF);
   const temp = `${target}.${process.pid}.${randomUUID()}.tmp`;
   await writeFile(temp, packet, 'utf8');
   await rename(temp, target);

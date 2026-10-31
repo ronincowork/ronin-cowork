@@ -46,7 +46,7 @@ export interface RepoDesk {
   base_sha?: string;
   /** The explicit source decision used to create or most recently adopt this desk. */
   source?: DeskSource;
-  /** The desk-local dependency tree, when the repository has one. */
+  /** The desk's node_modules, when the repository has one: a link to the home checkout's. */
   dependency_location?: string;
   /** Living or resumable sessions which own this desk. Old rows default to session. */
   owners?: string[];

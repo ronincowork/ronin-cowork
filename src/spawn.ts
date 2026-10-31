@@ -2,7 +2,7 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { resolveLaunchCommand, sessionsFor, type SessionsDefaults } from './launch-command.js';
 import { REPO_ROOT } from './resources.js';
-import { WORDS_READING, bootFiles, cachedReading, ensureShelf } from './birth-readme.js';
+import { WORDS_READING, bootFiles, cachedReading, ensureShelf } from './birth-brief.js';
 import { listProjectRoots, USER_PROJECT_ROOTS_MD, type ProjectRootInfo } from './project-roots.js';
 import { listSessionLaunchSpecs } from './model-providers.js';
 import { agentSpec } from './agents.js';
@@ -388,7 +388,6 @@ export async function resolveReading(form: SpawnForm, facts: LaunchFacts) {
         role: form.role ?? (form.team_lead ? 'lead' : 'coworker'),
         team: !!form.team,
         lead: !!form.team_lead && !!form.team,
-        project_management: campaign?.config.services.parts.task_manager === true,
       })
     : [];
   const soughtBehaviours = coworkAgent && agent ? await resolveSoughtBehaviours() : [];

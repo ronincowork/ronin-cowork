@@ -120,13 +120,14 @@ item to the account in Jira and press **Sync now**.
   the last sync failed, **Sync failed** with Jira's message and each waiting item.
 - **Work items by level**: a table of the Desk's items in Work Items order: each epic heads
   its group, then its items, then their subtasks, marked with a tree; items with no epic come
-  last under their own head. Columns: level (1, 0 or -1), kind, Ronin id, title, status, where it was
-  created, holders (each Agent a link), and Jira: the key as a link once the item is on Jira,
-  "goes up" if **How it runs** sends it, or "stays in Ronin" if it does not. A line above
+  last under their own head. Columns: level (1, 0 or -1), kind, id, title, status, where it was
+  created, and holders (each Agent a link). The id is the item's one id: once it is on Jira,
+  its key, as a link; until then its w id, with a quiet "goes up" if **How it runs** sends it,
+  or "stays in Ronin" if it does not. A line above
   counts them: on Jira, to go, staying in Ronin. Before Connect the table follows the switches
   as you set them. Press an epic's row (or the **No epic** row) to fold its group; the fold is
-  remembered. The title wraps in a narrow column. The Level, Kind, Status, Created in and
-  Jira headers filter: press one for its values, each with a tick box; untick a value to hide
+  remembered. The title wraps in a narrow column. The Level, Kind, Status and Created in
+  headers filter: press one for its values, each with a tick box; untick a value to hide
   it (Done under Status, say) and tick it to show it again. A shown item keeps
   its epic and parent as context, the count line says how many are hidden, and the filters
   are remembered in both places. **Open** puts the same table full width in the other workspace, at the same

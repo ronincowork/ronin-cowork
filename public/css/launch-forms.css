@@ -204,6 +204,10 @@
   .launch-form-embed-actions { position: sticky; top: 0; z-index: 4; display: flex; justify-content: flex-end; background: var(--surface); padding-bottom: var(--space-row); }
   .ntf-foot { font-size: var(--form-note); }
   .ntf-form { display: flex; flex-direction: column; margin-bottom: var(--space-subsection); }
+  /* A launch under way: the working dots above, the form stepped back until the Agent is born. */
+  .ntf-form[inert] { opacity: .45; }
+  .na-building { margin: 0 0 var(--space-subsection); color: var(--fg); font-size: var(--form-input); }
+  .na-building[hidden] { display: none; }
 
   .ntf-agent { display: grid; gap: var(--space-paragraph); margin: var(--space-paragraph) 0 0; border: var(--edge) solid var(--line-2); border-radius: var(--radius-small); padding: var(--space-inset); }
   .ntf-agent-legend { color: var(--accent); padding: 0 var(--space-inline); font-size: var(--form-key); font-weight: var(--weight-bold); text-transform: uppercase; }
@@ -285,6 +289,9 @@
   .jira-items .jira-filter { padding: 0; border: 0; background: none; color: inherit; font: inherit; cursor: pointer; white-space: nowrap; }
   .menu.jira-filter-menu { width: fit-content; }
   .jira-items .jira-filter[aria-pressed="true"] { color: var(--accent); font-weight: var(--weight-strong); }
+  /* One id per row; an unpaired one's goes up / stays in Ronin reads quieter beside it. */
+  .jira-items .jira-id { white-space: nowrap; }
+  .jira-items .jira-where { color: var(--muted); font-size: var(--text-small); }
   .jira-items .jira-tree-mark { color: var(--line-3); white-space: pre; font-family: var(--font-mono); }
   .jira-items .jira-sub td { color: var(--muted); font-size: var(--text-small); }
   /* One density in both hosts: the table sets its own type, not the host's. */
