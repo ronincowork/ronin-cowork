@@ -17,7 +17,8 @@ export interface Tegami {
   /** The documents of every item the session holds, and files dropped on it. */
   docs: string[];
   chip: { text: string; gate: boolean };
-  quietMs: number;
+  /** When the work record was last written (epoch ms): the browser works out the age, so the push stays still. */
+  quietSince: number;
 }
 
 function extractBlock(text: string): unknown | null {
@@ -91,7 +92,7 @@ export async function readTegami(name: string): Promise<Tegami | null> {
       items: reading.items.map((item) => ({ ...item, ...(jiraLink(item) ? { jira_url: jiraLink(item) } : {}) })),
       docs: await readDocs([...reading.attachments, ...(await dropped(key))]),
       chip: chipFor(reading.items),
-      quietMs: Date.now() - stat.mtimeMs,
+      quietSince: stat.mtimeMs,
     };
   } catch {
     return null; // no directory, no file, no record. All the same answer.

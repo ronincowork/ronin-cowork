@@ -124,7 +124,8 @@ export function buildRoster(tile, host, options = {}) {
       // was already the touch spelling — "quiet" costs five characters on a row that has
       // none to spare, and a bare duration beside a position reads as one anyway — and
       // the desktop had no better claim on the width. `w12 In Progress · w14 To Do · 9h`.
-      const age = s.tegami.quietMs >= 60000 ? humanAge(s.tegami.quietMs) : '';
+      const quiet = Date.now() - s.tegami.quietSince;
+      const age = quiet >= 60000 ? humanAge(quiet) : '';
       sg.textContent = s.tegami.chip.text + (age ? ' · ' + age : '');
       // Agent-authored and unbounded — clamped for the fixed help box (see work-record.js).
       sg.title = s.tegami.objective ? clampTip(s.tegami.objective) : '';
