@@ -168,9 +168,13 @@ export function registerTeams(app: express.Express): void {
   });
 
   app.get('/api/team-rosters/:name', async (req, res) => {
-    const roster = await readTeamRoster(req.params.name);
-    if (!roster) return res.status(404).json({ error: `Team "${req.params.name}" has no roster.` });
-    res.json({ ...roster, wipeboard_exists: await boardExists(roster.wipeboard) });
+    try {
+      const roster = await readTeamRoster(req.params.name);
+      if (!roster) return res.status(404).json({ error: `Team "${req.params.name}" has no roster.` });
+      res.json({ ...roster, wipeboard_exists: await boardExists(roster.wipeboard) });
+    } catch (e) {
+      res.status(400).json({ error: errMsg(e) });
+    }
   });
 
   app.put('/api/team-rosters/:name', async (req, res) => {

@@ -131,6 +131,18 @@ test('the seed door tolerates a pre-cut behaviour shape without inventing an ele
   assert.equal(await fs.readFile(file, 'utf8'), raw, 'the seed read performs no migration');
 });
 
+test('GET /api/team-rosters/:name refuses a name held by two Campaigns, naming them, and the server stays up', async () => {
+  const { createTeamRoster } = await import('../src/team-rosters.js');
+  await createTeamRoster('twin', {}, 'home_machine');
+  await createTeamRoster('twin', {}, 'other');
+  const response = await fetch(`${base}/api/team-rosters/twin`, { signal: AbortSignal.timeout(5000) });
+  assert.equal(response.status, 400);
+  const body = await response.json() as { error: string };
+  assert.match(body.error, /home_machine/);
+  assert.match(body.error, /other/);
+  assert.equal((await fetch(`${base}/api/team-rosters`)).status, 200, 'the server answers after the refusal');
+});
+
 test.after(async () => {
   server.close();
   await fs.rm(temp, { recursive: true, force: true });
