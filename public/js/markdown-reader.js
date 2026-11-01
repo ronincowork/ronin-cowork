@@ -8,7 +8,9 @@ const safeHref = (value) => {
 export const markdownHeadingId = (text) => String(text).toLowerCase().replace(/[^\w\s-]/g, '').trim().replace(/\s+/g, '-');
 
 const inline = (parent, text, doc, onLink, resolveHref) => {
-  const pattern = /(`[^`]+`|\[[^\]]+\]\([^)]+\)|\*\*[^*]+\*\*|__[^_]+__|\*[^*]+\*|_[^_]+_)/g;
+  // An underscore inside a word is part of it (ronin_lab, snake_case), never emphasis: as in
+  // CommonMark, `_` and `__` only open and close at a word's edge.
+  const pattern = /(`[^`]+`|\[[^\]]+\]\([^)]+\)|\*\*[^*]+\*\*|(?<!\w)__[^_]+__(?!\w)|\*[^*]+\*|(?<!\w)_[^_]+_(?!\w))/g;
   let cursor = 0;
   for (const match of String(text).matchAll(pattern)) {
     if (match.index > cursor) parent.append(doc.createTextNode(text.slice(cursor, match.index)));

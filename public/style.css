@@ -3200,6 +3200,9 @@ body {
 .tile-transcript-para { margin: 0; }
 /* The Agent's words as markdown: real bold and lists, code in the terminal's face. */
 .tile-transcript-entry[data-md='true'] { white-space: normal; }
+/* The Docs reader caps its column at 72ch and centres it, on the window's width. A Chat line
+   is as wide as the tile, the person's and the Agent's alike (owner, 2026-11-01). */
+.tile-transcript-entry .markdown-reader { max-width: none; margin: 0; }
 .tile-transcript-entry .markdown-reader > :first-child { margin-top: 0; }
 .tile-transcript-entry .markdown-reader > :last-child { margin-bottom: 0; }
 .tile-transcript-entry .markdown-reader :is(p, ul, ol, pre) { margin: 0 0 var(--space-paragraph); }
