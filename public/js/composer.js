@@ -52,14 +52,25 @@ export function buildComposer(body, hooks) {
   // The auto-height measure changes the box's height for a moment, and in Chat that re-lays
   // out the whole history beside it, once per keystroke (w77: 34 ms a key on a week-long
   // Agent). A longer draft only needs reading; the measure is spent only when it can have shrunk.
+  // The box is border-box, so its height is the text's scrollHeight PLUS its own border;
+  // sized to scrollHeight alone it was 2 px short and the text sat on the bottom edge.
   let drafted = { chars: 0, lines: 1 };
-  const grow = () => {
+  const grow = (force = false) => {
     const now = { chars: ta.value.length, lines: ta.value.split('\n').length };
-    if (now.chars < drafted.chars || now.lines < drafted.lines) ta.style.height = 'auto';
+    if (force || now.chars < drafted.chars || now.lines < drafted.lines) ta.style.height = 'auto';
     drafted = now;
-    const height = Math.min(ta.scrollHeight, 160) + 'px';
+    const border = ta.offsetHeight - ta.clientHeight;
+    const height = Math.min(ta.scrollHeight + border, 160) + 'px';
     if (ta.style.height !== height) ta.style.height = height;
   };
+  // A tile made wider or narrower re-wraps the draft without a keystroke: measure again.
+  let width = 0;
+  const rewrap = new ResizeObserver(() => {
+    if (ta.clientWidth === width) return; // our own height change, not a new width
+    width = ta.clientWidth;
+    if (ta.value) grow(true);
+  });
+  rewrap.observe(ta);
   const clearBox = () => {
     ta.value = '';
     grow();
@@ -162,6 +173,7 @@ export function buildComposer(body, hooks) {
     clear: clearBox,
     dispose() {
       size.disconnect();
+      rewrap.disconnect();
     },
     show(on) {
       wrap.classList.toggle('show', !!on);
