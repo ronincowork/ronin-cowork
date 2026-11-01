@@ -29,7 +29,9 @@ subdirectory to keep private (`isolated`). With neither capability, the outcome 
 `launch_isolation` mirrors every existing home entry by symlink except its declared
 private journal directory, which is a real directory under the Ronin session store.
 There is no per-file inheritance list. `transcript_journal` declares the source format,
-root, filename pattern, header id field and child-record marker. The model catalog carries
+root, filename pattern, header id field and child-record marker. A journal with no header id
+field (`idPath`) is one store file the birth owns, such as Hermes's `state.db`, read as a
+whole rather than placed and chained by its first line. The model catalog carries
 descriptive source observations; executable CLI mechanics live here. This keeps the commands we use in one auditable place
 beside the upstream alternatives we deliberately do not use. `src/agents.ts` owns
 install/update/version and identity-discovery adapters. Each Agent page also owns its

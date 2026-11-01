@@ -11,7 +11,9 @@ export interface LaunchIdentity {
   home?: string;
   journalFile?: string;
   env: Record<string, string>;
-  journal?: { format: string; root: string; pattern: string; idPath: string; childPath?: string;
+  /** `idPath` names the session id in a segment file's first line. Absent, the journal is ONE
+   *  store file the birth owns (`root`/`pattern`, e.g. Hermes's state.db), not a chain of segments. */
+  journal?: { format: string; root: string; pattern: string; idPath?: string; childPath?: string;
     /** Where the header carries the segment's own time — the authority for ordering a
      *  continuation chain. Defaults to the top-level `timestamp` both CLIs already write. */
     tsPath?: string };
