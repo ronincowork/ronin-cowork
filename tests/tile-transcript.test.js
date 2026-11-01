@@ -812,7 +812,9 @@ test('the Agent\'s words are drawn as markdown, and the switch redraws them exac
     const agent = () => view.el.children.find((n) => n.getAttribute('data-role') === 'agent');
     assert.equal(agent().getAttribute('data-md'), 'true', 'the Agent\'s words are markdown');
     assert.equal(view.el.children.find((n) => n.getAttribute('data-role') === 'user').textContent, '**mine**', 'the person\'s stay as typed');
-    setChatMarkdown(false);
+    setChatMarkdown('another', false);
+    assert.equal(agent().getAttribute('data-md'), 'true', 'another Agent\'s switch leaves this tile alone');
+    setChatMarkdown('agent', false);
     assert.equal(agent().getAttribute('data-md'), undefined);
     assert.equal(agent().textContent, '**done**', 'off shows the marks as written');
     view.dispose();
@@ -869,9 +871,9 @@ test('the Agent working aloud is marked, and keeps its mark when the markdown sw
   await tick();
   const marked = () => view.el.children.filter((n) => n.getAttribute('data-narration') === 'true').map((n) => n.rawText);
   assert.deepEqual(marked(), ['Checking the shots.'], 'the reply is not marked');
-  setChatMarkdown(false);
+  setChatMarkdown('agent', false);
   assert.deepEqual(marked(), ['Checking the shots.']);
-  setChatMarkdown(true);
+  setChatMarkdown('agent', true);
   view.dispose();
 });
 

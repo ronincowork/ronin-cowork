@@ -5,16 +5,18 @@ import { t } from './lexicon.js';
 import { renderMarkdownDocument } from './markdown-reader.js';
 
 /*
- * MARKDOWN ON OR OFF, per device (owner, 2026-11-01): on draws the Agent's bold, lists and code;
- * off shows exactly what it wrote, marks and all, for copying. One setting for every tile.
+ * MARKDOWN ON OR OFF, per Agent (owner, 2026-11-01: "when i select MD or not in one tile it
+ * impacts all tiles"): on draws the Agent's bold, lists and code; off shows exactly what it
+ * wrote, marks and all, for copying. Kept in this browser for that Agent; a tile showing
+ * another Agent is untouched.
  */
-const MARKDOWN_KEY = 'ronin.chat.markdown';
-export function chatMarkdown() {
-  try { return globalThis.localStorage?.getItem(MARKDOWN_KEY) !== 'off'; } catch { return true; }
+const markdownKey = (session) => `ronin.chat.markdown.${session}`;
+export function chatMarkdown(session) {
+  try { return globalThis.localStorage?.getItem(markdownKey(session)) !== 'off'; } catch { return true; }
 }
-export function setChatMarkdown(on) {
-  try { globalThis.localStorage?.setItem(MARKDOWN_KEY, on ? 'on' : 'off'); } catch { /* storage is optional */ }
-  for (const view of views) view.redraw();
+export function setChatMarkdown(session, on) {
+  try { globalThis.localStorage?.setItem(markdownKey(session), on ? 'on' : 'off'); } catch { /* storage is optional */ }
+  for (const view of views) if (view.shows() === session) view.redraw();
 }
 const views = new Set();
 /** What the person has sent and the CLI has not yet written down, shown light until it lands. */
@@ -200,7 +202,7 @@ export function makeTileTranscript({ read = request, watch = transcriptWatch(), 
     entry.rawText = text;
     // The Agent's words are read as markdown, the way Docs reads a file; the person's own words,
     // tool lines and notes stay as written.
-    if (rec.role === 'agent' && rec.kind === 'say' && chatMarkdown()) {
+    if (rec.role === 'agent' && rec.kind === 'say' && chatMarkdown(session)) {
       entry.setAttribute('data-md', 'true');
       entry.append(renderMarkdownDocument(text, document));
       return entry;
@@ -646,7 +648,7 @@ export function makeTileTranscript({ read = request, watch = transcriptWatch(), 
   // The view listens for its Agent's records for as long as it exists. `delivered` ignores
   // anything for another session, so a stale registration cannot write into the wrong tile.
   transcriptHandlers.add(delivered);
-  const self = { el, show, hide, probe, setReading, setStance, pending, redraw,
+  const self = { el, show, hide, probe, setReading, setStance, pending, redraw, shows: () => session,
     /** For tests and teardown: stop listening. */
     dispose() { stash(); stop(); active = false; transcriptHandlers.delete(delivered); views.delete(self); watch('', ''); } };
   views.add(self);

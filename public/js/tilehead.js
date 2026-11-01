@@ -191,7 +191,7 @@ export function tileMenu(tile) {
     // Chat's reading of the Agent's words: drawn, or exactly as written (per device).
     tile.transcriptOn ? { items: [
       { kind: 'check', label: t('me.markdown', 'Markdown'), hint: t('me.markdown_hint', 'off shows the marks as written'),
-        checked: chatMarkdown(), run: (on) => setChatMarkdown(on) },
+        checked: chatMarkdown(tile.session), run: (on) => setChatMarkdown(tile.session, on) },
     ] } : null,
     { items: [
       { glyph: '☰', label: t('me.work_record', 'Work record'), run: () => void openWorkRecord(tile) },

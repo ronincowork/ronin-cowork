@@ -58,7 +58,7 @@ else that uses the shape takes `tool.name` and `tool.target` only.
   The Agent's words are rendered as markdown through `markdown-reader.js`, in `--font-ui` at
   `--text-label` (`--text-heading` on a phone); code and tool lines use Terminal's
   `--font-term` at `--term-size`. The Markdown check on the tile's メ menu turns the rendering
-  off, per device. A message the person sends shows at once in `--muted` and is replaced when
+  off, per Agent, kept in the browser. A message the person sends shows at once in `--muted` and is replaced when
   its own `user` line arrives.
 - **Status** (`rireki/stance.ts`) is the newest line: `tool` is *working* (with the tool's
   name and target), `ask` is *asking you*, `turn` is *awaiting you*, anything else is
