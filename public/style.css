@@ -3217,6 +3217,8 @@ body {
 .tile-transcript-entry[data-role='user'][data-pending='true'] { color: var(--muted); }
 /* A pipe table, wherever markdown is read (Chat, Docs, Help): a heavier rule under the header
    and a light one between rows, as the terminal draws it; a wide one scrolls in its own box. */
+/* A list item that holds paragraphs (its body indented under it) ends without a trailing gap. */
+.markdown-reader li > :last-child { margin-bottom: 0; }
 .markdown-reader .markdown-table { max-width: 100%; overflow-x: auto; margin: 0 0 var(--space-paragraph); }
 .markdown-reader table { border-collapse: collapse; }
 .markdown-reader :is(th, td) { padding: var(--space-row) var(--space-inline); text-align: left; vertical-align: top; }

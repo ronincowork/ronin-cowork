@@ -26,6 +26,9 @@ const inline = (parent, text, doc, onLink, resolveHref) => {
   if (cursor < text.length) parent.append(doc.createTextNode(text.slice(cursor)));
 };
 
+const LIST = /^(\s*)([-+*]|\d+[.)])\s+(.*)$/;
+const leading = (line) => line.match(/^\s*/)[0].length;
+
 /* A pipe table: a row of cells, then a rule of dashes under the header (GitHub's markdown). */
 const isRow = (line) => /^\s*\|.*\|\s*$/.test(line || '');
 const isRule = (line) => /^\s*\|?(\s*:?-{3,}:?\s*\|)+\s*(:?-{3,}:?\s*)?\|?\s*$/.test(line || '');
@@ -49,8 +52,35 @@ export function renderMarkdownDocument(source, doc = document, { onLink, resolve
       // Wide tables scroll inside their own box rather than widening the page.
       const box = doc.createElement('div'); box.className = 'markdown-table'; box.append(table); article.append(box); continue;
     }
-    const list = lines[index].match(/^\s*([-+*]|\d+[.)])\s+(.+)$/);
-    if (list) { const ordered = /^\d/.test(list[1]); const node = doc.createElement(ordered ? 'ol' : 'ul'); while (index < lines.length) { const item = lines[index].match(/^\s*([-+*]|\d+[.)])\s+(.+)$/); if (!item || /^\d/.test(item[1]) !== ordered) break; const li = doc.createElement('li'); inline(li, item[2], doc, onLink, resolveHref); node.append(li); index++; } article.append(node); continue; }
+    const list = lines[index].match(LIST);
+    if (list) {
+      // A LIST ITEM IS ITS MARKER LINE PLUS EVERYTHING INDENTED UNDER IT, blank lines included:
+      // the way GPT models write a numbered point with its paragraph beneath (owner, 2026-11-01,
+      // "pretty ugly" on hermes_sol). A blank line between items keeps the list going; an item's
+      // body is read as markdown in its own right, so lists nest.
+      const ordered = /^\d/.test(list[2]); const indent = list[1].length;
+      const node = doc.createElement(ordered ? 'ol' : 'ul');
+      if (ordered && parseInt(list[2], 10) !== 1) node.setAttribute('start', String(parseInt(list[2], 10)));
+      const sameList = (line) => { const m = (line || '').match(LIST); return !!m && m[1].length === indent && /^\d/.test(m[2]) === ordered; };
+      const nextFilled = (from) => { let k = from; while (k < lines.length && !lines[k].trim()) k++; return k; };
+      while (index < lines.length) {
+        if (!lines[index].trim()) { const k = nextFilled(index); if (k < lines.length && sameList(lines[k])) { index = k; continue; } break; }
+        if (!sameList(lines[index])) break;
+        const item = lines[index].match(LIST); const column = item[1].length + item[2].length + 1; index++;
+        const more = [];
+        while (index < lines.length) {
+          const line = lines[index];
+          if (!line.trim()) { const k = nextFilled(index); if (k < lines.length && leading(lines[k]) > indent && !sameList(lines[k])) { more.push(''); index++; continue; } break; }
+          if (leading(line) <= indent) break;
+          more.push(line.slice(Math.min(leading(line), column))); index++;
+        }
+        const li = doc.createElement('li');
+        if (!more.length) inline(li, item[3], doc, onLink, resolveHref);
+        else for (const child of [...renderMarkdownDocument([item[3], ...more].join('\n'), doc, { onLink, resolveHref }).children]) li.append(child);
+        node.append(li);
+      }
+      article.append(node); continue;
+    }
     const body = []; while (index < lines.length && lines[index].trim() && !/^\s{0,3}#{1,6}\s+/.test(lines[index]) && !/^\s*```/.test(lines[index]) && !/^\s*(?:[-+*]|\d+[.)])\s+/.test(lines[index]) && !(isRow(lines[index]) && isRule(lines[index + 1]))) body.push(lines[index++].trim());
     const node = doc.createElement('p'); inline(node, body.join(' '), doc, onLink, resolveHref); article.append(node);
   }

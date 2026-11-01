@@ -888,3 +888,12 @@ test('a pipe table in the Agent\'s words is drawn as a table', async () => {
   assert.equal(body.children[0].children[1].children[0].textContent, 'two | three', 'an escaped pipe stays in its cell');
   assert.equal(article.children.at(-1).children[0].textContent, 'After.');
 });
+
+test('a numbered point with its paragraph indented beneath stays one list (how GPT models write)', async () => {
+  const { renderMarkdownDocument } = await import('../public/js/markdown-reader.js');
+  const article = renderMarkdownDocument('Six areas:\n\n1. Front door\n\n   Put ingress in its own office.\n\n2. Browser content\n\n   Separate origins.\n\nAfter.', globalThis.document);
+  const ol = article.children[1];
+  assert.equal(article.children.length, 3, 'one paragraph, ONE list, one paragraph: not a list per item');
+  assert.equal(ol.children.length, 2, 'two items');
+  assert.equal(ol.children[0].children[1].children[0].textContent, 'Put ingress in its own office.', 'the indented paragraph is inside its item');
+});
