@@ -4,7 +4,7 @@ import { mkdtemp, mkdir, readFile, readdir, realpath, rm, writeFile } from 'node
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { newProviderSession } from '../src/agents.js';
+import { newProviderSession, initialBriefArgs } from '../src/agents.js';
 import { readAgentLaunches } from '../src/agent-launches.js';
 import { processLaunch, readLaunchIdentity } from '../src/launch-binding.js';
 import { resolveLaunchJournal } from '../src/launch-journal.js';
@@ -112,4 +112,14 @@ test('a journal declared with no idPath is one store file the birth owns (Hermes
   await writeFile(path.join(root, 'state.db'), '');
   assert.deepEqual(await resolveLaunchSegments(identity), { files: [path.join(root, 'state.db')], session: 'h-key' });
   assert.equal(await resolveLaunchJournal(identity), path.join(root, 'state.db'));
+});
+
+
+test('Hermes receives the birth brief as one literal interactive query argument', async () => {
+  const grammar = await readAgentLaunches('hermes');
+  const brief = 'Read the birth packet.\nQuotes "hello", $(nothing), `literal`, and --flags stay text.';
+  assert.deepEqual(initialBriefArgs(grammar, brief), ['--query', brief]);
+  assert.deepEqual(initialBriefArgs(grammar, ''), []);
+  assert.deepEqual(initialBriefArgs({ ...grammar, initial: 'positional' }, brief), [brief]);
+  assert.deepEqual(initialBriefArgs({ ...grammar, initial: 'none' }, brief), []);
 });

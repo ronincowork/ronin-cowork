@@ -159,6 +159,11 @@ export interface LaunchArgv {
   parked: boolean;
 }
 
+export function initialBriefArgs(grammar: AgentLaunches | null, brief: string): string[] {
+  if (!brief || !grammar || grammar.initial === 'none') return [];
+  return grammar.initial === 'positional' ? [brief] : renderLaunch(grammar.initial, { brief });
+}
+
 export async function launchArgv(cmd: string, brief: string): Promise<LaunchArgv> {
   const parts = cmd.trim().split(/\s+/).filter(Boolean);
   if (!parts.length) return { argv: [], parked: false };
@@ -169,7 +174,8 @@ export async function launchArgv(cmd: string, brief: string): Promise<LaunchArgv
   const bin = probed?.path || (head.includes('/') ? head : '');
   if (!bin) return { argv: [], parked: false };
   const grammar = spec ? await readAgentLaunches(spec.id) : null;
-  if (grammar?.initial === 'positional' && brief) return { argv: [bin, ...rest, brief], parked: false };
+  const initial = initialBriefArgs(grammar, brief);
+  if (initial.length) return { argv: [bin, ...rest, ...initial], parked: false };
   return { argv: [bin, ...rest], parked: !!brief };
 }
 

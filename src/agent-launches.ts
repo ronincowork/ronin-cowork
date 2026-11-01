@@ -9,7 +9,7 @@ export interface AgentLaunches {
   newSessionId: string[];
   isolation?: { env: string; home: string; private: string | string[]; provision?: 'hermes-setup' };
   transcript?: { format: string; root: string; pattern: string; idPath?: string; childPath?: string };
-  initial: 'positional' | 'none';
+  initial: 'positional' | 'none' | string[];
 }
 
 const field = (text: string, name: string): string =>
@@ -42,7 +42,7 @@ export async function readAgentLaunches(cli: string): Promise<AgentLaunches> {
     modelDangerously: argv(text, 'launch_model_dangerously'),
     resume: argv(text, 'launch_resume'),
     newSessionId: argv(text, 'launch_new_session_id'),
-    initial: initial === 'none' ? 'none' : 'positional',
+    initial: initial.startsWith('[') ? argv(text, 'launch_initial') : initial === 'none' ? 'none' : 'positional',
   };
   if (!launches.native.length || launches.native[0] !== cli) {
     throw new Error(`docs/agents/${cli}.md must declare launch_native beginning with ${cli}.`);

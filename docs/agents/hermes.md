@@ -10,7 +10,7 @@
 - **launch_new_session_id:** —
 - **launch_isolation:** {"env":"HERMES_HOME","home":"~/.hermes","private":["state.db","state.db-wal","state.db-shm","memories","sessions","logs"],"provision":"hermes-setup"}
 - **transcript_journal:** {"format":"hermes-state","root":"{home}","pattern":"state.db"}
-- **launch_initial:** none
+- **launch_initial:** ["--query", "{brief}"]
 
 CLI id: `hermes`. Catalog provider: `hermes`.
 
@@ -55,7 +55,7 @@ provider/model selected in the catalog. Ronin has no automated installer for it;
 manual installation can be detected. Update and declared resume arguments are registry
 data, but exact conversation discovery is unsupported, so Archive refuses.
 
-The initial brief is parked rather than positional. Hermes calls Ronin's Dangerously
+The initial brief is passed as one literal `--query` argument. On a TTY Hermes submits it as the first turn and keeps the session interactive. Hermes calls Ronin's Dangerously
 intent `--yolo`, which bypasses its dangerous-command approval prompts. Services' gbrain scripts do not implement Hermes MCP registration,
 and Agent launch does not provision one.
 
