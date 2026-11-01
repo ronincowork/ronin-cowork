@@ -857,3 +857,19 @@ test('a tile leaving its Chat never stops another tile\'s Chat hearing its Agent
     assert.deepEqual(sent.at(-1).watches, []);
   } finally { store.send = original; }
 });
+
+test('the Agent working aloud is marked, and keeps its mark when the markdown switch redraws it', async () => {
+  const { setChatMarkdown } = await import('../public/js/tile-transcript.js');
+  const view = makeTileTranscript({
+    read: async () => ({ ok: true, data: { available: true, records: [{ seq: 1, role: 'agent', kind: 'say', text: 'Checking the shots.', narration: true }, { seq: 2, role: 'agent', kind: 'say', text: 'Done.' }], since: 1, seq: 2, view: 'chat', readings: READINGS } }),
+    watch: () => {},
+  });
+  view.show('agent', 'chat');
+  await tick();
+  const marked = () => view.el.children.filter((n) => n.getAttribute('data-narration') === 'true').map((n) => n.rawText);
+  assert.deepEqual(marked(), ['Checking the shots.'], 'the reply is not marked');
+  setChatMarkdown(false);
+  assert.deepEqual(marked(), ['Checking the shots.']);
+  setChatMarkdown(true);
+  view.dispose();
+});

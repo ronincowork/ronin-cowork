@@ -20,7 +20,7 @@ on across both.
   runs when the log file changes (a directory watch), resumes from where it stopped, and pushes
   only the new lines. Claude Code writes its private reasoning as empty thinking blocks and the
   narration it prints between tool calls as thinking blocks that carry text: the first is never
-  stored, the second is the Agent's `say`.
+  stored, the second is the Agent's `say`, marked `narration`.
 - **Terminal read** (`terminal-read.ts`): runs when tmux reports output on the Agent's pane
   (Core's activity subscription, the `onPaneActivity` socket). It reads the screen once and
   writes only what no log holds:
@@ -35,7 +35,7 @@ so its output lives in its session folder like every other Agent's.
 
 ## The shape
 
-One JSON line per event: `seq ts role kind text tool state src`.
+One JSON line per event: `seq ts role kind text tool state src`, plus `narration` where it applies.
 
 | Field | Holds |
 |---|---|
@@ -46,6 +46,7 @@ One JSON line per event: `seq ts role kind text tool state src`.
 | `text` | the words, or the tool's full input or output |
 | `tool` | on `tool` and `done` only: `name`, `target` (the first meaningful string of the input: the command, path or pattern), `call` (pairs a `tool` with its `done`), `outcome` (`ok` or `error`, only where the log states it; Codex does not) |
 | `state` | `final` or `interrupted` |
+| `narration` | `true` on a `say` the CLI printed between tool calls (the Agent working aloud, not its reply); Chat draws it in `--muted` |
 | `src` | where it was read: the log file, byte offset and model, or `terminal: true` |
 
 Tool input and output can hold secrets. Only the Agent's own tile is served `text`; anything

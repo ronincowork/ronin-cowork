@@ -106,6 +106,7 @@ export function makeTileTranscript({ read = request, watch = transcriptWatch(), 
       seq: Number(entry.dataset.seq),
       role: entry.dataset.role || '',
       kind: entry.dataset.kind || '',
+      ...(entry.dataset.narration ? { narration: true } : {}),
       text: entry.rawText ?? entry.textContent ?? '',
     })).filter((record) => Number.isFinite(record.seq));
     const key = cacheKey();
@@ -193,6 +194,8 @@ export function makeTileTranscript({ read = request, watch = transcriptWatch(), 
     if (typeof rec.seq === 'number') entry.setAttribute('data-seq', String(rec.seq));
     entry.setAttribute('data-role', rec.role || '');
     entry.setAttribute('data-kind', rec.kind || '');
+    // The Agent working aloud between tool calls, not its reply: drawn quieter.
+    if (rec.narration) entry.setAttribute('data-narration', 'true');
     const text = String(rec.text || '');
     entry.rawText = text;
     // The Agent's words are read as markdown, the way Docs reads a file; the person's own words,
@@ -220,7 +223,8 @@ export function makeTileTranscript({ read = request, watch = transcriptWatch(), 
     for (const entry of [...el.children]) {
       const seq = Number(entry.getAttribute?.('data-seq'));
       if (!Number.isFinite(seq) || entry.rawText === undefined) continue;
-      const next = entryFor({ seq, role: entry.getAttribute('data-role'), kind: entry.getAttribute('data-kind'), text: entry.rawText });
+      const next = entryFor({ seq, role: entry.getAttribute('data-role'), kind: entry.getAttribute('data-kind'), text: entry.rawText,
+        narration: entry.getAttribute('data-narration') === 'true' });
       el.insertBefore(next, entry);
       entry.remove();
     }

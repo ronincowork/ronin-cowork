@@ -77,6 +77,9 @@ and code stay in the terminal's own type so they line up as they do there. **Mar
 メ menu (shown while Chat is open) turns the drawing off, to see exactly what the Agent wrote,
 marks and all; the choice is kept on this device.
 
+The short lines an Agent prints between steps, its working aloud, show in a lighter shade than
+its replies.
+
 What you send shows in Chat straight away, in a lighter shade, and turns to the normal shade
 when the Agent's CLI takes it. A busy Agent takes a message at the end of what it is doing,
 so a light message is one still waiting.
