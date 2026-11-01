@@ -1188,6 +1188,8 @@ The catalog entry goes. {dir} is not touched.
 - **me.docs_none:** No attachments on the items this Agent holds.
 - **me.attach:** Send a file
 - **me.attach_hint:** or drag one onto the tile
+- **me.markdown:** Markdown
+- **me.markdown_hint:** off shows the marks as written
 - **me.no_record:** This Agent has not written a work record yet.
 - **head.menu_quiet:** Menu — no Agent in this workspace
 - **menu.empty:** Nothing here yet.

@@ -3139,8 +3139,10 @@ body {
    opens the view, which says why in full. */
 .tile-head button.transcript-toggle.off { opacity: 0.4; }
 .tile-transcript-entry[data-kind='note'] { color: var(--muted); font-style: italic; }
+/* Tool lines and code read in the terminal's own face and size, so commands and paths line up
+   as they do there (KAN-147). */
 .tile-transcript-entry[data-kind='tool'],
-.tile-transcript-entry[data-kind='done'] { color: var(--muted); font-family: var(--mono, monospace); font-size: 0.9em; }
+.tile-transcript-entry[data-kind='done'] { color: var(--muted); font: var(--term-size)/var(--leading-body) var(--font-term); }
 /* The Agent stopped at a question: its words, in the colour that means act. */
 .tile-transcript-entry[data-kind='ask'] { color: var(--bad); }
 .tile .tile-transcript { display: none; }
@@ -3156,6 +3158,11 @@ body {
   position: static;
   flex: none;
 }
+/* In Chat the box is written in the face and size Chat is read in. */
+.tile .tile-body[data-surface='chat'] > .composer textarea { font: var(--text-label)/var(--leading-body) var(--font-ui); }
+@media (pointer: coarse) {
+  .tile .tile-body[data-surface='chat'] > .composer textarea { font-size: var(--text-heading); }
+}
 .tile-body[data-surface='chat'] > .tile-transcript {
   display: block;
   flex: 1 1 auto;
@@ -3168,7 +3175,12 @@ body {
   padding: var(--space-inline) var(--space-inline) var(--space-subsection);
   color: var(--fg);
   background: var(--tile-bg);
-  font: var(--text-body)/var(--leading-body) var(--font-mono);
+  /* A READING VIEW, NOT A SECOND TERMINAL (KAN-147, owner 2026-11-01): Chat has no grid to keep,
+     so its words are in the UI's own face at a reading size, larger than Terminal's 13px. */
+  font: var(--text-label)/var(--leading-body) var(--font-ui);
+}
+@media (pointer: coarse) {
+  .tile-body[data-surface='chat'] > .tile-transcript { font-size: var(--text-heading); }
 }
 /*
  * SPACE SAYS WHAT IT SEPARATES (owner, 2026-10-22: "one big, long series of lines"). Lines
@@ -3186,6 +3198,20 @@ body {
 .tile-transcript-entry[data-role='user'] + .tile-transcript-entry:not([data-role='user']),
 .tile-transcript-entry:not([data-role='user']) + .tile-transcript-entry[data-role='user'] { margin-top: var(--space-subsection); }
 .tile-transcript-para { margin: 0; }
+/* The Agent's words as markdown: real bold and lists, code in the terminal's face. */
+.tile-transcript-entry[data-md='true'] { white-space: normal; }
+.tile-transcript-entry .markdown-reader > :first-child { margin-top: 0; }
+.tile-transcript-entry .markdown-reader > :last-child { margin-bottom: 0; }
+.tile-transcript-entry .markdown-reader :is(p, ul, ol, pre) { margin: 0 0 var(--space-paragraph); }
+.tile-transcript-entry .markdown-reader :is(h1, h2, h3, h4, h5, h6) { margin: var(--space-subsection) 0 var(--space-row); color: var(--fg-strong); font-size: 1em; font-weight: var(--weight-strong); line-height: var(--leading-tight); }
+.tile-transcript-entry .markdown-reader :is(ul, ol) { padding-left: var(--space-subsection); }
+.tile-transcript-entry .markdown-reader li + li { margin-top: var(--space-row); }
+.tile-transcript-entry .markdown-reader :is(code, pre) { font: var(--term-size)/var(--leading-body) var(--font-term); }
+.tile-transcript-entry .markdown-reader :not(pre) > code { padding: 0 var(--space-row); border-radius: var(--radius-small); background: var(--inset); }
+.tile-transcript-entry .markdown-reader pre { overflow: auto; padding: var(--space-inline); border-radius: var(--radius-small); background: var(--inset); white-space: pre; }
+.tile-transcript-entry .markdown-reader a { color: var(--accent); }
+/* Sent, and not yet written down by the CLI: the person's words in a lighter shade until they land. */
+.tile-transcript-entry[data-role='user'][data-pending='true'] { color: var(--muted); }
 .tile-transcript-para + .tile-transcript-para { margin-top: var(--space-paragraph); }
 /*
  * WHOSE LINE IS THIS. The Agent's turns are the reading, in the strongest ink; the person
@@ -3417,7 +3443,8 @@ body {
   resize: none;
   min-height: var(--control-height-small);
   max-height: 160px;
-  padding: var(--space-row) var(--space-control);
+  /* Even room round the text: the line's own leading tops up the rows to the sides' inline space. */
+  padding: var(--space-row) var(--space-inline);
   border: var(--edge) solid var(--term-input-line);
   border-radius: var(--radius-small);
   background: var(--inset);
@@ -3464,7 +3491,7 @@ body {
 }
 @media (pointer: coarse) {
 
-  .tile:is(.tape-on, .keys-on, .transcript-on) .composer textarea { font-size: 16px; }
+  .tile:is(.tape-on, .keys-on, .transcript-on) .composer textarea { font-size: var(--text-heading); }
 }
 
 .tile-head .lock.armed { color: var(--ok-2); }
@@ -4410,7 +4437,9 @@ button.wk-card { cursor: pointer; }
   display: none;
 }
 
-.tile.keys-on:not(.tape-on) .tile-body {
+/* Not in Chat: there the box is in the column, under the log, and reserving its height again
+   left that much empty screen under it on the phone (KAN-147). */
+.tile.keys-on:not(.tape-on) .tile-body:not([data-surface='chat']) {
   /* FitAddon reads computed height: give it the content area, excluding controls. */
   box-sizing: content-box;
   padding-bottom: var(--composer-clearance, 0);
