@@ -216,7 +216,7 @@ export function handleEvents(ws: WebSocket): void {
   // The one thing a browser says on this socket. Everything else it sends is ignored: this
   // is a feed, and an unknown message from a client is not a reason to drop the connection.
   ws.on('message', (raw) => {
-    let msg: { t?: string; session?: unknown; reading?: unknown; resource?: unknown; board?: unknown; team?: unknown; id?: unknown };
+    let msg: { t?: string; session?: unknown; reading?: unknown; watches?: unknown[]; resource?: unknown; board?: unknown; team?: unknown; id?: unknown };
     try {
       msg = JSON.parse(String(raw)) as typeof msg;
     } catch {
@@ -235,12 +235,14 @@ export function handleEvents(ws: WebSocket): void {
       return;
     }
     if (msg?.t !== 'watch') return;
-    const session = typeof msg.session === 'string' ? msg.session : '';
-    watchFor(ws, session, typeof msg.reading === 'string' ? msg.reading : '');
-    // Somebody is now looking at this Agent: a good moment for whoever follows journals to
-    // make sure it is following this one. Already following is nothing at all; not following
+    const watches = (Array.isArray(msg.watches) ? msg.watches : [])
+      .filter((w): w is { session: string; reading?: unknown } => !!w && typeof w === 'object' && typeof (w as { session?: unknown }).session === 'string')
+      .map((w) => ({ session: w.session, reading: typeof w.reading === 'string' ? w.reading : '' }));
+    watchFor(ws, watches);
+    // Somebody is now looking at these Agents: a good moment for whoever follows journals to
+    // make sure it is following them. Already following is nothing at all; not following
     // means installing a watcher, which catches up what was missed.
-    if (session) emitTranscriptWatch(session);
+    for (const session of new Set(watches.map((w) => w.session))) if (session) emitTranscriptWatch(session);
   });
   // A fresh connection gets each message exactly once. The held ones it is sent now, as every
   // other tab holds them; a later publish is a newer change. The session list and the rows
