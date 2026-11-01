@@ -73,10 +73,10 @@ out of view. Scroll up and it leaves you where you are, and fetches earlier line
 go; a long conversation is never loaded whole.
 
 Chat is made for reading, not a second terminal. The Agent's words are in the same type as the
-rest of Ronin, larger than the terminal's, with bold, lists and headings drawn; commands, paths
+rest of Ronin, larger than the terminal's, with bold, lists, headings and tables drawn; commands, paths
 and code stay in the terminal's own type so they line up as they do there. **Markdown** on the
 メ menu (shown while Chat is open) turns the drawing off, to see exactly what the Agent wrote,
-marks and all; the choice is kept on this device.
+marks and all, in the terminal's type; the choice is kept on this device.
 
 The short lines an Agent prints between steps, its working aloud, show in a lighter shade and in
 italic, set apart from its replies.
