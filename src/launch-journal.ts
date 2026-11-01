@@ -1,5 +1,5 @@
 /** Resolve journals only inside the location owned by the launch declaration. */
-import { open, readdir, stat } from 'node:fs/promises';
+import { open, readdir } from 'node:fs/promises';
 import path from 'node:path';
 import { readLaunchIdentity, writeLaunchIdentity } from './launch-binding.js';
 import type { LaunchIdentity } from './sockets-contract.js';
@@ -57,11 +57,12 @@ export async function resolveLaunchSegments(identity: LaunchIdentity): Promise<S
   // ONE STORE, NOT SEGMENTS: a CLI that keeps its conversation in a database the birth owns
   // (Hermes's state.db under its own home) declares no idPath. The file is the journal; there
   // is no header to place it by and no chain to order.
+  // Its path is known from birth, before the CLI creates it: the source is handed out at once,
+  // so the part watches the folder from the start and reads the store the moment it appears.
+  // Answering "pending" until then left a fresh Hermes Agent unread until someone opened its
+  // Chat (owner, 2026-11-01: hermes_parallel_check answered and Chat stayed empty).
   if (!declaration.idPath) {
-    const file = path.join(declaration.root, pattern);
-    return (await stat(file).then((s) => s.isFile(), () => false))
-      ? { files: [file], session: identity.providerSession || identity.key }
-      : { gap: 'journal_pending' };
+    return { files: [path.join(declaration.root, pattern)], session: identity.providerSession || identity.key };
   }
   const found: { file: string; ts: string; id: string }[] = [];
   for (const file of await files(declaration.root, pattern)) {
@@ -89,10 +90,7 @@ export async function resolveLaunchJournal(identity: LaunchIdentity): Promise<st
   if (!identity.journal || identity.strategy === 'unbound') return null;
   const declaration = identity.journal;
   const pattern = declaration.pattern.replaceAll('{session_id}', identity.providerSession);
-  if (!declaration.idPath) { // one store file the birth owns (see resolveLaunchSegments)
-    const file = path.join(declaration.root, pattern);
-    return (await stat(file).then((s) => s.isFile(), () => false)) ? file : null;
-  }
+  if (!declaration.idPath) return path.join(declaration.root, pattern); // one store the birth owns (see resolveLaunchSegments)
   const idPath = declaration.idPath;
   for (const file of await files(declaration.root, pattern)) {
     if (identity.providerSession && declaration.pattern.includes('{session_id}')) {

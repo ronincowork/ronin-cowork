@@ -113,7 +113,8 @@ test('a journal declared with no idPath is one store file the birth owns (Hermes
   const { resolveLaunchSegments } = await import('../src/launch-journal.js');
   const identity = { key: 'h-key', cli: 'hermes', strategy: 'isolated' as const, providerSession: '', home: root, env: {},
     journal: { format: 'hermes-state', root, pattern: 'state.db' } };
-  assert.deepEqual(await resolveLaunchSegments(identity), { gap: 'journal_pending' }, 'nothing written yet');
+  // Known from birth: handed out before the CLI writes it, so the folder is watched from the start.
+  assert.deepEqual(await resolveLaunchSegments(identity), { files: [path.join(root, 'state.db')], session: 'h-key' });
   await writeFile(path.join(root, 'state.db'), '');
   assert.deepEqual(await resolveLaunchSegments(identity), { files: [path.join(root, 'state.db')], session: 'h-key' });
   assert.equal(await resolveLaunchJournal(identity), path.join(root, 'state.db'));
