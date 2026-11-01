@@ -17,12 +17,24 @@ export async function sendFile(tile, file) {
   // A pasted screenshot arrives as "image.png"; the server stamps every name with the time.
   const name = file.name || `pasted.${(file.type.split('/')[1] || 'bin').replace(/[^a-z0-9]/gi, '')}`;
   toast(t('drop.sending', 'Sending {name}…', { name }));
-  const r = await request(`/api/sessions/${encodeURIComponent(session)}/drop?name=${encodeURIComponent(name)}`, {
+  // Where the person is writing: the message box when the tile shows one (Chat, a phone),
+  // else the Agent's own input in the terminal.
+  const box = tile.composer?.el?.classList.contains('show') ? tile.composerTa : null;
+  const r = await request(`/api/sessions/${encodeURIComponent(session)}/drop?name=${encodeURIComponent(name)}${box ? '&into=box' : ''}`, {
     method: 'POST',
     headers: { 'content-type': file.type || 'application/octet-stream' },
     text: file,
   });
   if (!r.ok) { toast(t('drop.failed', 'Could not send {name}: {reason}', { name, reason: r.message }), false); return; }
+  if (box && r.data.into === 'box') {
+    const start = box.selectionStart;
+    const lead = start > 0 && !/\s/.test(box.value[start - 1]) ? ' ' : '';
+    box.setRangeText(`${lead}${r.data.path} `, start, box.selectionEnd, 'end');
+    box.dispatchEvent(new Event('input'));
+    box.focus();
+    toast(t('drop.boxed', 'Saved {name}; its path is in the message box, add your prompt.', { name }));
+    return;
+  }
   toast(r.data.typed
     ? t('drop.typed', 'Saved {name}; its path is in the input, add your prompt.', { name })
     : t('drop.not_typed', 'Saved to {path}; not typed into the input ({reason}).', { path: r.data.path, reason: r.data.reason || '' }));
