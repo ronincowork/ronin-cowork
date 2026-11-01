@@ -35,11 +35,14 @@ async function isolate(grammar: AgentLaunches, key: string): Promise<{ home: str
   const home = path.join(storeDir('session'), key, 'cli-home');
   await mkdir(home, { recursive: true, mode: 0o700 });
   const entries = await readdir(source).catch((e: NodeJS.ErrnoException) => { if (e.code === 'ENOENT') return []; throw e; });
-  const privateEntries = Array.isArray(declaration.private) ? declaration.private : [declaration.private];
-  if (privateEntries.some(entry => !entry || path.basename(entry) !== entry || entry === '.' || entry === '..')) throw new Error('Isolation entries must be home-relative basenames.');
-  // Legacy string declares a directory. Lists exclude files or directories without creating file names as folders.
+  if (declaration.shared !== undefined && declaration.private !== undefined) throw new Error('Isolation must choose shared or private entries, not both.');
+  const privateEntries = typeof declaration.private === 'string' ? [declaration.private] : declaration.private ?? [];
+  const namedEntries = declaration.shared ?? privateEntries;
+  if (namedEntries.some(entry => !entry || path.basename(entry) !== entry || entry === '.' || entry === '..')) throw new Error('Isolation entries must be home-relative basenames.');
+  // Legacy string declares a directory. Shared lists inherit only explicitly named entries.
   if (typeof declaration.private === 'string') await mkdir(path.join(home, declaration.private), { recursive: true, mode: 0o700 });
-  for (const entry of entries.filter(entry => !privateEntries.includes(entry))) {
+  const inherited = entries.filter(entry => declaration.shared ? declaration.shared.includes(entry) : !privateEntries.includes(entry));
+  for (const entry of inherited) {
     await symlink(path.join(source, entry), path.join(home, entry));
   }
   return { home, env: { [declaration.env]: home } };

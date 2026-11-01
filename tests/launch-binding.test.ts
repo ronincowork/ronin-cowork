@@ -84,7 +84,9 @@ test('all process starts pass through one serial entry, including unbound shells
 test('Hermes isolates SQLite files and memory, and records its cli-home before startup', async t => {
   const root = await mkdtemp(path.join(tmpdir(), 'hermes-isolation-'));
   const source = path.join(root, 'source'); await mkdir(source);
-  for (const file of ['state.db', 'state.db-wal', 'state.db-shm', 'state.db.fts_rebuild.lock', 'state.db.quarantine.lock', 'gateway.sock', 'gateway.sock.path', 'gateway.pid', 'gateway.lock', 'gateway_state.json', 'gateway-starts.log', 'gateway_voice_mode.json', 'config.yaml']) await writeFile(path.join(source, file), 'source');
+  for (const file of ['state.db', 'state.db-wal', 'state.db-shm', 'state.db.fts_rebuild.lock', 'state.db.quarantine.lock', 'gateway.sock', 'gateway.sock.path', 'gateway.pid', 'gateway.lock', 'gateway_state.json', 'gateway-starts.log', 'gateway_voice_mode.json', 'unknown-future-runtime.sock', 'config.yaml', 'auth.json', '.env', 'SOUL.md']) await writeFile(path.join(source, file), 'source');
+  for (const entry of ['skills', 'hermes-agent', 'tools']) await mkdir(path.join(source, entry));
+  await mkdir(path.join(source, 'profiles')); await writeFile(path.join(source, 'profiles', 'foreign-profile'), 'shared gateway owns this');
   await mkdir(path.join(source, 'runtime')); await writeFile(path.join(source, 'runtime', 'active_sessions.lock'), 'runtime');
   await mkdir(path.join(source, 'bot-desktop')); await writeFile(path.join(source, 'bot-desktop', 'rfb.sock'), 'runtime');
   await mkdir(path.join(source, 'memories')); await writeFile(path.join(source, 'memories', 'MEMORY.md'), 'private');
@@ -96,7 +98,8 @@ test('Hermes isolates SQLite files and memory, and records its cli-home before s
     assert.equal(identity.home, path.join(root, 'sessions', 'hermes-birth', 'cli-home'));
     assert.equal(env.HERMES_HOME, identity.home);
     assert.equal((await readLaunchIdentity('hermes-birth'))?.home, identity.home);
-    assert.deepEqual(await readdir(identity.home!), ['config.yaml']);
+    assert.deepEqual((await readdir(identity.home!)).sort(), ['.env', 'SOUL.md', 'auth.json', 'config.yaml', 'hermes-agent', 'skills', 'tools'].sort());
+    for (const entry of ['.env', 'SOUL.md', 'auth.json', 'skills', 'hermes-agent', 'tools']) assert.equal(await realpath(path.join(identity.home!, entry)), path.join(source, entry));
     assert.equal(await realpath(path.join(identity.home!, 'config.yaml')), path.join(source, 'config.yaml'));
     await writeFile(path.join(identity.home!, 'state.db'), 'own database');
   });

@@ -8,7 +8,7 @@
 - **launch_model_dangerously:** ["hermes", "chat", "-m", "{model}", "--yolo"]
 - **launch_resume:** ["hermes", "--resume", "{session_id}"]
 - **launch_new_session_id:** —
-- **launch_isolation:** {"env":"HERMES_HOME","home":"~/.hermes","private":["state.db","state.db-wal","state.db-shm","state.db.fts_rebuild.lock","state.db.quarantine.lock","gateway.sock","gateway.sock.path","gateway.pid","gateway.lock","gateway_state.json","gateway-starts.log","gateway_voice_mode.json","runtime","bot-desktop","memories","sessions","logs"],"provision":"hermes-setup"}
+- **launch_isolation:** {"env":"HERMES_HOME","home":"~/.hermes","shared":["auth.json",".env","config.yaml","skills","SOUL.md","hermes-agent","tools"],"provision":"hermes-setup"}
 - **transcript_journal:** {"format":"hermes-state","root":"{home}","pattern":"state.db"}
 - **launch_initial:** ["--query", "{brief}"]
 
@@ -23,7 +23,14 @@ connections currently use provider-default reasoning.
 
 New Agent keeps its two fields: Model provider = Hermes, Model = the setup name.
 Each Cowork birth creates a private `cli-home/` directory inside that session's record,
-with a configuration snapshot and empty memory/history. The shared isolation grammar accepts a list of private home entries, excluding state.db, its WAL/SHM and lock files, gateway runtime files (including the socket-path pointer), memories, sessions and logs from inherited links. Each birth therefore starts its own gateway and conversation store. Its `.env` links to the
+with a configuration snapshot and empty memory/history. Hermes uses `shared` to link only
+`auth.json`, `.env`, `config.yaml`, `skills`, `SOUL.md`, `hermes-agent`, and `tools` from
+its installed home. Named setups replace the inherited config with their snapshot and
+point `.env` at the connection credential. Everything else starts private, including
+new runtime files introduced by Hermes updates. Codex retains its existing `private` form.
+Each birth owns its gateway and conversation store: Hermes mints conversation IDs itself,
+`--continue` selects the newest conversation in a store, and a shared gateway would make
+one gateway failure affect every Agent. Its `.env` links to the
 connection's private credential file. Key rotation is picked up at process restart;
 running processes may retain their old key in memory. Setup edits affect future births.
 No subscription credentials are borrowed. Setup metadata is stored in the credential
