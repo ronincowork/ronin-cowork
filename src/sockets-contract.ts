@@ -1,7 +1,7 @@
 
 import type { TrailLine, WorkItem } from './work-items.js';
 
-export const CONTRACT_V = 11;
+export const CONTRACT_V = 12;
 
 export interface LaunchIdentity {
   key: string;
@@ -37,7 +37,9 @@ export type RowFields = Record<string, unknown>;
  * is its last. Absent for every identity whose journal is a single pinned file.
  */
 /** `root`: the folder a birth owns for its journal (an isolated CLI, e.g. Codex), which may file
- *  segments in subfolders; absent when the journal sits in a folder shared with other births. */
+ *  segments in subfolders; absent when the journal sits in a folder shared with other births.
+ *  A CLI that keeps no log has a source too: `format` 'terminal' and an empty `file`, so its
+ *  output lives in the same session folder, written by the terminal read alone. */
 export interface TranscriptSource { file: string; format: string; provider: string; session: string; dir: string; files?: string[]; root?: string }
 
 /**
@@ -50,7 +52,6 @@ export type TranscriptGap =
   | 'not_live'        // no live pane for that name
   | 'no_key'          // the pane is live, but it carries no Ronin identity key at all
   | 'no_identity'     // the pane has a key, but no launch identity was persisted for it
-  | 'unbound'         // identity exists; this CLI writes no journal Ronin can read
   | 'journal_pending'; // bound and expected, but the CLI has not written the file yet
 
 export type TranscriptLookup = { source: TranscriptSource } | { gap: TranscriptGap };
@@ -74,6 +75,10 @@ export interface Sockets {
    */
   onTranscriptWatch(cb: (session: string) => void | Promise<void>): void;
   addRowFields(cb: (session: string) => Promise<RowFields> | RowFields): void;
+  /** tmux reported output on this Agent's pane: the terminal read's one trigger. */
+  onPaneActivity(cb: (session: string) => void): void;
+  /** A part wrote something a home row shows: push the rows now, not on a clock. */
+  rowChanged(session: string): void;
 
 /**
  * WHO IS WATCHING A CONVERSATION, and how a part reaches them.

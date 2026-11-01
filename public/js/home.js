@@ -39,7 +39,6 @@ export async function loadProjects() {
 export function stanceLabel(stance) {
   return {
     working: t('home.stance_working', 'working…'),
-    replying: t('home.stance_replying', 'replying…'),
     awaiting_you: t('home.stance_awaiting_you', 'awaiting you'),
     asking: t('home.stance_asking', 'asking you'),
     unknown: t('home.stance_unknown', ''),

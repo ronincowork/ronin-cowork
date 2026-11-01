@@ -20,7 +20,7 @@ import { resolveForm, type SpawnForm } from '../spawn.js';
 import { appendLaunchLedger, persistBirthReceipt } from '../launch-ledger.js';
 import { writeCurrentRoleAt } from '../agent-composition.js';
 import { mandate } from '../agent-defaults.js';
-import { asksForInput, classifyStatus, createActivityCache } from '../status.js';
+import { classifyStatus, createActivityCache } from '../status.js';
 import { scanContext, scanModel } from '../ctx.js';
 
 import { count } from '../counts.js';
@@ -202,16 +202,11 @@ export function mikaReadinessFromPane(text: string): 'ready' | 'starting' | 'act
   return state === 'awaiting-input' ? 'action_required' : state === null ? 'starting' : 'ready';
 }
 
-// The pane is read for two things a journal cannot state: whether a dialog is open, and
-// the CLI's own context gauge. What the Agent is DOING comes from its journal, through the
-// transcript part's row field.
+// The pane is read for the CLI's own context gauge and model line. What the Agent is DOING is
+// its output's newest line, through the transcript part's row field: one status, not two.
 const loadPaneStatus = createActivityCache(async (name: string) => {
   const text = await capturePane(name, 0);
-  return {
-    asking: asksForInput(text),
-    ctx: scanContext(text),
-    model: scanModel(text),
-  };
+  return { ctx: scanContext(text), model: scanModel(text) };
 });
 
 // The home rows for one session listing: what /events pushes as {t:'home', rows}, from the
@@ -220,19 +215,15 @@ export function homeRows(list: SessionWithAxes[]) {
   return Promise.all(
     list.map(async (s) => {
       const [pane, contributed, tegami] = await Promise.all([
-        loadPaneStatus(s.name, s.activity).catch(() => ({ asking: false, ctx: null, model: null })),
+        loadPaneStatus(s.name, s.activity).catch(() => ({ ctx: null, model: null })),
         collectRowFields(s.name),
         readTegami(s.name),
       ]);
-      const { asking, ...reading } = pane;
       return {
         ...s,
-        ...reading,
+        ...pane,
         ...contributed,
-        // ONE field, and one precedence: an Agent stopped at a question is `working` as
-        // far as its journal knows, and `working` is the wrong thing to tell the person
-        // whose answer it is waiting for.
-        stance: asking ? 'asking' : (contributed.stance ?? 'unknown'),
+        stance: contributed.stance ?? 'unknown',
         ...(tegami ? { tegami } : {}),
       };
     }),

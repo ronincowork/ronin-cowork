@@ -39,8 +39,9 @@ in `src/tmux-client.ts` is the server's single door to tmux:
   replies and server-wide notifications only. The roster and the recorder's sweep skip
   `grid_*` names.
 - `tmux.on(kind, handler)` delivers notifications. `src/ws/events.ts` pushes the session
-  list and the home rows to browsers on `%sessions-changed`, renames and window changes,
-  with the 2 s clock kept as a heartbeat; each tick takes one session listing for both, and
+  list and the home rows to browsers on `%sessions-changed`, renames, window changes and the
+  activity subscription (a pane had output, which also wakes the transcript part's terminal
+  read through `onPaneActivity`); there is no clock. Each tick takes one session listing for both, and
   each is sent only when a field the UI paints moved (`sessionsSignature` leaves out
   `activity`), so a notification that changed nothing painted sends nothing. A row's
   `activity` comes from the listing. [The data path](data-path.md) states the rule and the

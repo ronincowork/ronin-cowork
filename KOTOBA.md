@@ -79,7 +79,7 @@ Macro, action, SOP, and Agent role are not additional composition layers. “Act
 | All view (`all_view`) | Everything the journal holds, injected lines and tool output included; the complete view ([Tile](docs/using-ronin/tile.md)) |
 | Term (`term_view`) | The live terminal in the tile; not a reading, and what the view toggle returns to ([Tile](docs/using-ronin/tile.md)) |
 | View toggle (`view_toggle`) | The tile-head control cycling `term_view` → `chat_view` → `notes_view` → `work_view` → `all_view` → `term_view` on a desk, and `term_view` ↔ `chat_view` on a phone; it names where you are, goes opaque when the Agent has nothing to show, and says why on press ([Tile](docs/using-ronin/tile.md)) |
-| Agent stance (`agent_stance`) | What an Agent is doing now: working, replying, awaiting you, asking, unknown. Derived by the backend and sent; the tile never infers it ([Tile](docs/using-ronin/tile.md)) |
+| Agent stance (`agent_stance`) | What an Agent is doing now: working, awaiting you, asking, unknown. The newest line of the Agent's output, sent by the backend; the tile never infers it ([Tile](docs/using-ronin/tile.md)) |
 
 ## Services and state
 

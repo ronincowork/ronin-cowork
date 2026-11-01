@@ -3139,8 +3139,10 @@ body {
    opens the view, which says why in full. */
 .tile-head button.transcript-toggle.off { opacity: 0.4; }
 .tile-transcript-entry[data-kind='note'] { color: var(--muted); font-style: italic; }
-.tile-transcript-entry[data-kind='act'],
-.tile-transcript-entry[data-kind='code'] { color: var(--muted); font-family: var(--mono, monospace); font-size: 0.9em; }
+.tile-transcript-entry[data-kind='tool'],
+.tile-transcript-entry[data-kind='done'] { color: var(--muted); font-family: var(--mono, monospace); font-size: 0.9em; }
+/* The Agent stopped at a question: its words, in the colour that means act. */
+.tile-transcript-entry[data-kind='ask'] { color: var(--bad); }
 .tile .tile-transcript { display: none; }
 /* Chat is a column: the log that scrolls, then the message box. The log ends where the box
    begins, so nothing of the conversation is ever under it and "at the end" is what you see
@@ -3224,6 +3226,7 @@ body {
   animation: transcript-thinking var(--motion-hint) ease-in-out infinite;
 }
 .tile-transcript-stance i:nth-child(2) { animation-delay: var(--motion-quick); }
+.tile-transcript-doing { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: var(--text-small) var(--font-term); }
 .tile-transcript-stance i:nth-child(3) { animation-delay: var(--motion-settle); }
 @keyframes transcript-thinking {
   0%, 60%, 100% { transform: translateY(0); opacity: 0.45; }

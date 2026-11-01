@@ -11,6 +11,9 @@ const watchHooks: Array<(session: string) => void | Promise<void>> = [];
 const itemHooks: Array<(change: ItemChange) => void | Promise<void>> = [];
 const rowContribs: Array<(session: string) => Promise<RowFields> | RowFields> = [];
 const routeMounts: Array<(app: unknown) => void> = [];
+const activityHooks: Array<(session: string) => void> = [];
+// The home push, set by ws/events.ts (which imports this file, so it is handed in, not imported).
+let pushRows: (session: string) => void = () => {};
 let streamHandler: ((...args: unknown[]) => void) | undefined;
 
 export const sockets: Sockets = {
@@ -22,6 +25,8 @@ export const sockets: Sockets = {
   onSessionEnd: (cb) => void endHooks.push(cb),
   onTranscriptWatch: (cb) => void watchHooks.push(cb),
   addRowFields: (cb) => void rowContribs.push(cb),
+  onPaneActivity: (cb) => void activityHooks.push(cb),
+  rowChanged: (session) => pushRows(session),
   onItemChanged: (cb) => void itemHooks.push(cb),
   // Connections are Core's; what a reading admits is the part's. This is the seam.
   deliverToWatchers: (session, make) => deliverToWatchers(session, make),
@@ -74,6 +79,12 @@ export async function collectBirthLines(name: string, agent: boolean): Promise<s
  * which don't exist." An Agent already being watched is unaffected; one that is not gets a
  * watcher, and installing one catches up what was written while nothing was watching.
  */
+export function emitPaneActivity(session: string): void {
+  for (const cb of activityHooks) {
+    try { cb(session); } catch (e) { console.error('[sockets] pane activity hook:', e); }
+  }
+}
+export function onRowChanged(push: (session: string) => void): void { pushRows = push; }
 export function emitTranscriptWatch(session: string): void {
   for (const cb of watchHooks) void Promise.resolve(cb(session)).catch((e) => console.error('[sockets] watch hook:', e));
 }

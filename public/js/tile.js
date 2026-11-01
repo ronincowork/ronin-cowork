@@ -306,7 +306,8 @@ export class Tile {
    * backend sends it, the front renders it (owner, 2026-09-23).
    */
   refreshStance() {
-    this.transcriptView.setStance(this.homeRow()?.stance || '');
+    const row = this.homeRow();
+    this.transcriptView.setStance(row?.stance || '', row?.tool);
   }
 
   /** The route's word on this Agent's transcript arrived; the header reads it from here. */

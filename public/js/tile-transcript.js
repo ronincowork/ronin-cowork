@@ -34,6 +34,7 @@ export function makeTileTranscript({ read = request, watch = watchTranscript, on
   let rendered = false; // whether this reading has ever shown a record — the header's 'empty'
   let probing = 0; // the live probe; hide() and a newer probe outdate an older one
   let stance = ''; // what the Agent is doing, as the roster row last said
+  let doing = ''; // the tool it is working on, as the row names it: name and target
   /*
    * A READER AT THE END STAYS AT THE END. Where they are is read when they scroll, not at each
    * change: by the time a record or the dots arrive, a longer draft or a smaller tile may
@@ -103,7 +104,7 @@ export function makeTileTranscript({ read = request, watch = watchTranscript, on
   /**
    * THE END OF THE CONVERSATION, as it stands right now.
    *
-   * Three bouncing dots on the Agent's side while it is working or replying, exactly where
+   * Three bouncing dots on the Agent's side while it is working, exactly where
    * its next line will appear; nothing at all when it is your turn, because an empty end is
    * how a conversation says it is waiting for you. `asking` is neither: the Agent cannot go
    * on until the person answers, and that is worth a sentence rather than a decoration.
@@ -112,7 +113,7 @@ export function makeTileTranscript({ read = request, watch = watchTranscript, on
    * as the last child of the log so the view scrolls to it like any other line.
    */
   function paintStance() {
-    const shows = active && (stance === 'working' || stance === 'replying' || stance === 'asking');
+    const shows = active && (stance === 'working' || stance === 'asking');
     if (!shows) {
       stanceNode?.remove();
       stanceNode = null;
@@ -123,15 +124,26 @@ export function makeTileTranscript({ read = request, watch = watchTranscript, on
       stanceNode.className = 'tile-transcript-stance';
       stanceNode.setAttribute('aria-live', 'polite');
     }
-    if (stanceNode.getAttribute?.('data-stance') !== stance) {
+    const key = `${stance}\u0000${doing}`;
+    if (stanceNode.getAttribute?.('data-key') !== key) {
+      stanceNode.setAttribute('data-key', key);
       stanceNode.setAttribute('data-stance', stance);
       stanceNode.replaceChildren();
       const words = stance === 'asking'
         ? t('transcript.stance_asking', 'Waiting for your answer')
         : t('transcript.stance_working', 'Working');
       if (stance === 'asking') stanceNode.textContent = words;
-      else for (let i = 0; i < 3; i++) stanceNode.append(document.createElement('i'));
-      stanceNode.setAttribute('aria-label', words);
+      else {
+        for (let i = 0; i < 3; i++) stanceNode.append(document.createElement('i'));
+        // The live flow's latest step: the tool it is in, by name and target.
+        if (doing) {
+          const step = document.createElement('span');
+          step.className = 'tile-transcript-doing';
+          step.textContent = doing;
+          stanceNode.append(step);
+        }
+      }
+      stanceNode.setAttribute('aria-label', doing && stance !== 'asking' ? `${words}: ${doing}` : words);
     }
     // Always last: records append above it, so the end of the conversation stays the end.
     el.append(stanceNode);
@@ -167,7 +179,7 @@ export function makeTileTranscript({ read = request, watch = watchTranscript, on
     entry.setAttribute('data-kind', rec.kind || '');
     // A blank line in what was written is a paragraph break, drawn as the paragraph space
     // rather than one empty line; tool calls and code keep their text as it came.
-    const paras = rec.kind === 'act' || rec.kind === 'code' ? [] : String(rec.text || '').split(/\n[ \t]*\n\s*/).filter((part) => part.trim());
+    const paras = rec.kind === 'tool' || rec.kind === 'done' ? [] : String(rec.text || '').split(/\n[ \t]*\n\s*/).filter((part) => part.trim());
     if (paras.length < 2) { entry.textContent = rec.text || ''; return entry; }
     for (const part of paras) {
       const para = document.createElement('p');
@@ -456,11 +468,13 @@ export function makeTileTranscript({ read = request, watch = watchTranscript, on
     report(result.data, records.length);
   }
 
-  /** The home row's word on what this Agent is doing. */
-  function setStance(next) {
+  /** The home row's word on what this Agent is doing, and the tool it is in. */
+  function setStance(next, tool) {
     const value = typeof next === 'string' ? next : '';
-    if (value === stance) return;
+    const step = tool?.name ? [tool.name, tool.target].filter(Boolean).join(' · ') : '';
+    if (value === stance && step === doing) return;
     stance = value;
+    doing = step;
     paintStance();
   }
 

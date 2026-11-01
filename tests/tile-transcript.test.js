@@ -293,8 +293,10 @@ test('the end of the conversation says what the Agent is doing, from the row and
   view.setStance('working');
   assert.equal(indicator()?.children.length, 3, 'three dots');
   assert.equal(view.el.children.at(-1), indicator(), 'and they are the end of the conversation');
-  view.setStance('replying');
-  assert.equal(indicator()?.children.length, 3);
+  // In a tool: the dots, then the tool by name and target — never its input.
+  view.setStance('working', { name: 'Bash', target: 'npm test' });
+  assert.equal(indicator()?.children.length, 4);
+  assert.equal(indicator()?.children.at(-1).textContent, 'Bash · npm test');
 
   // Your turn: the end of the conversation is empty, which is how it says so.
   view.setStance('awaiting_you');

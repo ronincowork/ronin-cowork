@@ -348,7 +348,6 @@ nothing paints exactly this.
 
 ## home — home.js (the status words and the launch receipt)
 - **home.stance_working:** working…
-- **home.stance_replying:** replying…
 - **home.stance_awaiting_you:** awaiting you
 - **home.stance_asking:** asking you
 

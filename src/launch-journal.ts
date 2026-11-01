@@ -130,7 +130,11 @@ export async function resolveTranscriptSource(name: string): Promise<import('./s
   }
   const identity = await readLaunchIdentity(key.trim());
   if (!identity) return { gap: 'no_identity' };
-  if (!identity.journal) return { gap: 'unbound' };
+  // A CLI that keeps no log still has an output, in its own session folder: the terminal
+  // read writes it, in the same shape as every other Agent's.
+  if (!identity.journal) {
+    return { source: { format: 'terminal', provider: identity.cli, dir: sessionDir(key.trim()), file: '', session: identity.providerSession } };
+  }
   const common = { format: identity.journal.format, provider: identity.cli, dir: sessionDir(key.trim()) };
   // An isolated birth owns its journal root, so its journal is the ordered chain of parent
   // segments in it and the newest is merely the current one. Nothing is written here.

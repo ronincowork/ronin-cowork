@@ -26,7 +26,7 @@ standing in for a close. When something seems to need one, the shape upstream is
 
 ```
  tmux notifications ─┐                              ┌─ subscribe / unsubscribe
- 2 s heartbeat ──────┤   src/ws/events.ts           │        ▲
+ pane activity ──────┤   src/ws/events.ts           │        ▲
  store-folder watch ─┤   one tick → one listing     │   surfaces (tile, roster, wipeboard …)
  write routes ───────┤   signature-diffed pushes ───┼──▶ public/js/store.js
  services (gbrain,   │   held values on connect     │   one socket, one copy per resource
@@ -110,8 +110,9 @@ poll.
 
 ## The server side
 
-- **One tick, one listing.** A tmux notification, or the 2 s heartbeat while a browser is
-  connected, takes one session listing and builds `sessions` and `home` from it. Each is
+- **One tick, one listing.** A tmux notification (the session set changed, or a pane had
+  output: tmux's activity subscription), or a transcript read writing a line (`rowChanged`),
+  takes one session listing and builds `sessions` and `home` from it. Each is
   signed on the painted fields (`activity` and a stance's `at` are left out) and sent only
   when the signature moved. A connection that joins mid-tick is sent only what it missed.
 - **Write routes push.** Roster routes push `teams` after a successful write;
@@ -128,9 +129,9 @@ poll.
 
 The server's clocks, and why each exists: cron (`jikan`), session retention, the message
 delivery queue, the pty heartbeat, the HQ confirmation wait while a registration is
-pending, the machine service's one-minute reading, and the 2 s tick. None of them exists
-for the browser's sake. The tick is the one place the server observes rather than is told,
-because the context gauge is painted by the CLI on its own screen and announced to nobody.
+pending, and the machine service's one-minute reading. None of them exists for the browser's
+sake. There is no session tick on a clock: a pane's output is announced by tmux, and that is
+when its context gauge and its terminal read are looked at again.
 
 ## Adding a pushed resource
 

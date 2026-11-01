@@ -95,16 +95,14 @@ that one needs you to do something and a decoration would not say it. If the dot
 unwelcome, a system "reduce motion" setting leaves them still.
 
 
-Each Agent's row says its **stance**: *working…*, *replying…*, *awaiting you*, or *asking
-you*. It is read from the conversation the CLI itself wrote — a tool going out is a record,
-a finished reply is a record — so it does not depend on what happens to be drawn on the
-terminal. An Agent whose CLI keeps no readable conversation says nothing rather than
-guessing.
+Each Agent's row says its **stance**: *working…*, *awaiting you*, or *asking you*. It is the
+newest line of what the Agent has done: a tool going out, a finished turn, a question on its
+screen. While it works, the end of the conversation names the tool it is in (for example
+*Bash · npm test*). Every Agent gets this, whichever provider it runs on: a CLI that keeps a
+log is read from its log, and one that keeps none is read from its terminal, less fully.
 
-*Asking you* is the exception and the one that matters most: a permission prompt is drawn on
-the screen and no CLI writes it down, so that one is read from the terminal, and it outranks
-the rest. An Agent stopped at a question is busy as far as its own journal knows, and "busy"
-is the wrong thing to tell the person whose answer it is waiting for.
+*Asking you* comes from the terminal for every CLI: a permission prompt is drawn on the screen
+and no CLI writes it down.
 
 See [Work record](work-record.md) for authored work and [Workbench](workbench.md) for
 arrangement and navigation. Contributors can find the implementation in the

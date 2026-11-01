@@ -5,13 +5,13 @@ import { listSessions, type SessionInfo } from '../tmux.js';
 import { tmux, type TmuxClient } from '../tmux-client.js';
 import { withAxes, type SessionWithAxes } from '../tegami.js';
 import { unwatch, watchFor } from './watchers.js';
-import { emitTranscriptWatch } from '../sockets.js';
+import { emitPaneActivity, emitTranscriptWatch, onRowChanged } from '../sockets.js';
 
 const eventClients = new Set<WebSocket>();
 
 /*
- * THE PUSH — the browser store holds what arrives here. Each tick (a tmux notification, or
- * the 2s clock while a browser is connected) takes ONE session listing and builds both
+ * THE PUSH — the browser store holds what arrives here. Each tick (a tmux notification, a
+ * pane's output, or a read writing a line) takes ONE session listing and builds both
  * messages from it: {t:'sessions', list} and {t:'home', rows}, each sent only when a field
  * the UI paints moved. While a GitHub or git setup session is attached, the tick also sends
  * {t:'github-setup', github} when that answer moved.
@@ -269,13 +269,43 @@ export function wireTmuxNotifications(client: Pick<TmuxClient, 'on'>, refresh: (
   return () => unsubscribes.forEach((unsubscribe) => unsubscribe());
 }
 
+/**
+ * WHICH PANES HAD OUTPUT, from tmux's activity subscription: `name:stamp,` per session. Only
+ * the sessions whose stamp moved since the last report are returned.
+ */
+export function activityMoved(value: string, last: Map<string, string>): string[] {
+  const moved: string[] = [];
+  const now = new Map<string, string>();
+  for (const entry of value.split(',')) {
+    const at = entry.lastIndexOf(':');
+    if (at <= 0) continue;
+    const name = entry.slice(0, at);
+    const stamp = entry.slice(at + 1);
+    now.set(name, stamp);
+    if (last.has(name) && last.get(name) !== stamp) moved.push(name);
+  }
+  last.clear();
+  for (const [name, stamp] of now) last.set(name, stamp);
+  return moved;
+}
+
+/*
+ * NO CLOCK. The push runs when something changed: tmux says the session set changed, tmux says a
+ * pane had output (which is also what wakes the terminal read), or a read wrote a line (the
+ * part calls rowChanged). An Agent doing nothing costs nothing; the beat stays, carrying no data.
+ */
 export function startSessionsBroadcast(next: Feed): void {
   feedEvents(next);
   void pushTeams();
   void pushMessages();
   wireTmuxNotifications(tmux, () => { void tick(); });
-  onClock('sessions_broadcast', 2000, async () => {
-    await tick();
+  const stamps = new Map<string, string>();
+  tmux.on('subscription', (n) => {
+    if (!n.subscription?.startsWith('activity')) return;
+    const moved = activityMoved(n.value ?? '', stamps);
+    for (const name of moved) emitPaneActivity(name);
+    if (moved.length) void tick();
   });
+  onRowChanged(() => { void tick(); });
   onClock('events_beat', BEAT_MS, async () => { broadcastEvent({ t: 'beat' }); });
 }
