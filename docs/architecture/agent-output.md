@@ -46,7 +46,7 @@ One JSON line per event: `seq ts role kind text tool state src`, plus `narration
 | `text` | the words, or the tool's full input or output |
 | `tool` | on `tool` and `done` only: `name`, `target` (the first meaningful string of the input: the command, path or pattern), `call` (pairs a `tool` with its `done`), `outcome` (`ok` or `error`, only where the log states it; Codex does not) |
 | `state` | `final` or `interrupted` |
-| `narration` | `true` on a `say` the CLI printed between tool calls (the Agent working aloud, not its reply); Chat draws it in `--muted` |
+| `narration` | `true` on a `say` the CLI printed between tool calls (the Agent working aloud, not its reply); Chat draws it in `--muted` italic |
 | `src` | where it was read: the log file, byte offset and model, or `terminal: true` |
 
 Tool input and output can hold secrets. Only the Agent's own tile is served `text`; anything

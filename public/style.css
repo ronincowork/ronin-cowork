@@ -3215,8 +3215,9 @@ body {
 .tile-transcript-entry .markdown-reader a { color: var(--accent); }
 /* Sent, and not yet written down by the CLI: the person's words in a lighter shade until they land. */
 .tile-transcript-entry[data-role='user'][data-pending='true'] { color: var(--muted); }
-/* The Agent working aloud between tool calls: quieter than its reply, so the reply stands out. */
-.tile-transcript-entry[data-narration='true'] { color: var(--muted); }
+/* The Agent working aloud between tool calls: quieter than its reply, and in italic, the way
+   markdown marks an aside, with Markdown on or off (owner, 2026-11-01). */
+.tile-transcript-entry[data-narration='true'] { color: var(--muted); font-style: italic; }
 .tile-transcript-para + .tile-transcript-para { margin-top: var(--space-paragraph); }
 /*
  * WHOSE LINE IS THIS. The Agent's turns are the reading, in the strongest ink; the person
