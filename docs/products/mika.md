@@ -22,10 +22,12 @@ Messages for the retained request rather than sending the same request repeatedl
 
 ## Customize the guidance
 
-An owner copy of `house/mika/MIKA_TIPS.md` under the resolved `session_boot` store can add
+Mika's brief is `ronin_catalogs/behaviours/conditional/mika.md`, stacked on the base brief every
+Agent gets; her Setup walkthrough and tips are reading on `ronin_session_boot/routine/mika/`.
+An owner copy of `routine/mika/MIKA_TIPS.md` under the resolved `session_boot` store can add
 guidance for the next Mika session. Ask an Agent to follow the
 [session-reading rules](../architecture/session-boot.md); do not edit the installed stock
 file or expect a running session to reread it automatically.
 
 Contributors: [Mika capability](../../ronin_catalogs/capabilities/mika.md),
-`src/mika-runtime.ts`, `src/mika-knowledge.ts`, and the house launch path in `src/routes/launch.ts`.
+`src/mika-runtime.ts`, `src/mika-knowledge.ts`, and the knowledge index step in `src/routes/launch.ts`.

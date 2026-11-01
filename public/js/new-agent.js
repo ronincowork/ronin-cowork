@@ -416,6 +416,7 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
   const conditionReason = (row) => (row.requires || []).map((need) => ({
     'arrangement:managed': 'Managed worktree', 'arrangement:checkout': 'Shared checkout', team: 'On a Team', lead: 'Team lead',
     project_management: 'Project management on', 'role:epic_lead': 'Epic Lead role', 'role:coordinator': 'Coordinator role',
+    cowork: 'Cowork Agent', 'role:mika': 'Mika', new_owner: 'New owner',
   })[need] || need).join(' · ');
   function paintBehaviourShelves() {
     paintShelves(shelvesHost, { rows: behaviourRows(), selected: draft.books, openBehaviours: configure ? null : openBehaviours, reason: conditionReason, onChange: (books) => {

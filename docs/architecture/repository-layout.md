@@ -31,7 +31,7 @@ ronin-cowork/
 ├── ronin_bin/               Agent-facing executable tools projected onto PATH
 ├── ronin_catalogs/          stock typed catalogs and Agent-composition definitions
 │   ├── behaviours/
-│   │   ├── floor/           every resolved file applies to every Cowork Agent
+│   │   ├── floor/           every resolved file applies to every Agent, house Agents included
 │   │   ├── conditional/     individual files apply from authored launch facts
 │   │   ├── selected/        individual files apply through explicit composition
 │   │   └── sought/          awareness-only files; currently empty
@@ -43,8 +43,7 @@ ronin-cowork/
 ├── ronin_library/           Library type/index definitions and user-facing inventory
 ├── ronin_session_boot/      background birth sources outside Behavior composition
 │   ├── all/                 KOTOBA glossary and Ronin utility only
-│   ├── house/               house-seat-specific startup material
-│   └── routine/             installation-contributed on/off reading
+│   └── routine/             reading declared by an installation or a brief (Mika's: `routine/mika/`)
 ├── scripts/                 repository verification, diagnostics, and maintenance
 ├── src/                     TypeScript server, contracts, adapters, and runtime
 │   ├── activation/          registration and optional-Service activation state
@@ -109,9 +108,12 @@ each catalog.
   instruction.
 - Flat root registries remain flat when their format needs no additional grouping.
 
-The floor currently contains `mandates.md`, `cowork-agent.md`, and the stock-empty
+The floor contains `base-agent.md`, what every Agent is told, and the stock-empty
 `user-intro.md`. Registration writes the owner's two-line introduction to
-`ways/floor/user-intro.md`, which shadows the placeholder whole. Team-lead teaching lives
+`ways/floor/user-intro.md`, which shadows the placeholder whole. Every brief stacks on the
+floor: `conditional/cowork-agent.md`, `mandates.md` and `write_it_down.md` apply to every
+Agent that is not a house Agent (`requires: cowork`); `conditional/mika.md` is Mika's
+(`requires: role:mika`), with `conditional/atarashi.md` added for a new owner. Team-lead teaching lives
 in `conditional/team-lead.md`, and a lead with managed worktrees also gets
 `conditional/lead-worktrees.md`; Team remains the tool capability in
 `capabilities/cowork_team.md`.
@@ -120,7 +122,7 @@ in `conditional/team-lead.md`, and a lead with managed worktrees also gets
 
 `ronin_session_boot/all/` is deliberately small background material the owner should not
 need to compose: the KOTOBA glossary and Ronin utility. Universal working rules
-belong in the Behavior floor. Tool workflows belong in capabilities. Do not rebuild a
+belong in the Behavior floor and the cowork briefs. Tool workflows belong in capabilities. Do not rebuild a
 second universal instruction shelf here.
 
 House and routine readings exist only for their declared startup mechanisms. Owner root

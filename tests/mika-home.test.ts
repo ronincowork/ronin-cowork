@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import { chmod, lstat, mkdtemp, readFile, stat, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { ensureMikaHome, mikaStartHerePath, mikaTipsSource } from '../src/mika-runtime.js';
+import { ensureMikaHome, mikaStartHerePath } from '../src/mika-runtime.js';
+import { declaredFiles } from '../src/birth-brief.js';
 import { mkdir } from 'node:fs/promises';
 import { ensureSteercoTeam, RONIN_HELPER_LOADER, STEERCO_TEAM } from '../src/ronin-helper.js';
 import { mikaReadinessFromPane } from '../src/routes/launch.js';
@@ -38,9 +39,9 @@ test('a stale starter from an earlier release is refreshed from the shipped one,
 test('a cold Mika birth compiles one published knowledge index into its reading', async () => {
   const source = await readFile(new URL('../src/routes/launch.ts', import.meta.url), 'utf8');
   assert.match(source, /const knowledge = await compileMikaKnowledgeAt\(mikaHome\)/);
-  assert.match(source, /sources\.push\(mikaRulesSource\(\), mikaTips, mikaStartHereSource\(\), mikaKnowledgeIndex\)/);
+  assert.match(source, /sources\.push\(mikaKnowledgeIndex\)/);
   assert.match(source, /file === mikaKnowledgeIndex \|\| isShelfTeaching\(file\)/);
-  assert.match(source, /const sources = houseSeat === 'mika' \? \[\] : resolvedSources/);
+  assert.doesNotMatch(source, /houseSeat === 'mika' \? \[\] : resolvedSources/);
   assert.ok(source.indexOf('const knowledge = await compileMikaKnowledgeAt(mikaHome)') < source.indexOf('const brief = await compileBirthBriefAt('));
 });
 
@@ -109,9 +110,10 @@ test('native provider confirmation advances on the same pane from action require
 test("the owner's tips come from their session-boot shadow when one exists, else the shipped file", async () => {
   const root = await mkdtemp(path.join(os.tmpdir(), 'ronin-mika-tips-'));
   process.env.RONIN_SESSION_BOOT_DIR = path.join(root, 'shelf');
-  assert.match(await mikaTipsSource(), /ronin_session_boot\/house\/mika\/MIKA_TIPS\.md$/);
-  await mkdir(path.join(root, 'shelf', 'house', 'mika'), { recursive: true });
-  await writeFile(path.join(root, 'shelf', 'house', 'mika', 'MIKA_TIPS.md'), '# tips\n- owner note\n');
-  assert.equal(await mikaTipsSource(), path.join(root, 'shelf', 'house', 'mika', 'MIKA_TIPS.md'));
+  const tips = ['routine/mika/MIKA_TIPS.md'];
+  assert.match((await declaredFiles(tips))[0], /ronin_session_boot\/routine\/mika\/MIKA_TIPS\.md$/);
+  await mkdir(path.join(root, 'shelf', 'routine', 'mika'), { recursive: true });
+  await writeFile(path.join(root, 'shelf', 'routine', 'mika', 'MIKA_TIPS.md'), '# tips\n- owner note\n');
+  assert.deepEqual(await declaredFiles(tips), [path.join(root, 'shelf', 'routine', 'mika', 'MIKA_TIPS.md')]);
   delete process.env.RONIN_SESSION_BOOT_DIR;
 });

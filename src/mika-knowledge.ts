@@ -8,7 +8,7 @@ const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 // 23 KB leaves room in the 30 KB one-read packet for her rules, the owner's tips and the
 // Setup walkthrough beside the index.
 export const MIKA_INDEX_BUDGET = { bytes: 23_200, lines: 402, previewBytes: 160, minimumPreviewBytes: 24 } as const;
-export const MIKA_TAXONOMY = path.join(ROOT, 'ronin_session_boot', 'house', 'mika', 'MIKA_PYRAMID.toml');
+export const MIKA_TAXONOMY = path.join(ROOT, 'ronin_session_boot', 'routine', 'mika', 'MIKA_PYRAMID.toml');
 const INDEX_NAME = 'MIKA_SOURCE_INDEX.md';
 const MANIFEST_NAME = 'mika-source-manifest.json';
 const SNAPSHOT_DIR = 'mika-source-snapshots';
@@ -149,8 +149,8 @@ async function resolvedEntries(nodes: MikaTaxonomyNode[], options: MikaKnowledge
       markdownFiles(ownerRoots[node.root] ?? ''),
     ]);
     const names = [...new Set([...stock.keys(), ...owner.keys()])]
-      // Her own house folder is read whole at birth, never indexed as a source.
-      .filter((name) => !(node.root === 'ronin_session_boot' && name.startsWith('house/mika/')))
+      // Her own shelf folder is read whole at birth, never indexed as a source.
+      .filter((name) => !(node.root === 'ronin_session_boot' && name.startsWith('routine/mika/')))
       // A more specific taxonomy root owns its subtree and its owner overlay.
       .filter((name) => !delegated.some((root) => name === root || name.startsWith(`${root}/`)))
       .sort((a, b) => Buffer.from(a).compare(Buffer.from(b)));

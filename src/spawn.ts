@@ -2,7 +2,7 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { resolveLaunchCommand, sessionsFor, type SessionsDefaults } from './launch-command.js';
 import { REPO_ROOT } from './resources.js';
-import { WORDS_READING, bootFiles, cachedReading, ensureShelf } from './birth-brief.js';
+import { WORDS_READING, bootFiles, cachedReading, declaredFiles, ensureShelf } from './birth-brief.js';
 import { listProjectRoots, USER_PROJECT_ROOTS_MD, type ProjectRootInfo } from './project-roots.js';
 import { listSessionLaunchSpecs } from './model-providers.js';
 import { agentSpec } from './agents.js';
@@ -10,7 +10,7 @@ import { readAgentsSection, readSetupSection } from './machine-state.js';
 import { offAt, readProviderSummary } from './provider-summary.js';
 import { storeDir } from './resources.js';
 import { contributionReading, listBehaviours, listInstallations } from './resource-adapters.js';
-import { isCreatableTeamName as isTeamName, readTeamRoster, teamRosterFile, type TeamRoster } from './team-rosters.js';
+import { isCreatableTeamName as isTeamName, listTeamRosters, readTeamRoster, teamRosterFile, type TeamRoster } from './team-rosters.js';
 import { resolveLaunchProfile, type LaunchProfile, type StatedBy } from './launch-profile.js';
 import { readCampaign } from './campaigns.js';
 import { primaryWorkLocation, renderDeskBlock, renderWorkLocations, resolveLaunchDesks, type DeskChoice } from './launch-desks.js';
@@ -374,27 +374,32 @@ async function resolveLaunch(form: SpawnForm, facts: LaunchFacts) {
 export async function resolveReading(form: SpawnForm, facts: LaunchFacts) {
   const { coworkAgent, agent, contributions, cascade, arrangement, campaign, installations, root, name } = facts;
   const enabledReading = contributionReading(contributions);
-  const resolvedBehaviours = coworkAgent && agent
+  // A house Agent (Mika) is born on the floor and her own conditional brief; the cowork
+  // briefs, selected and sought behaviours, capabilities and the shelf are a cowork Agent's.
+  const briefed = coworkAgent && agent;
+  const cowork = briefed && form.house_seat !== 'mika';
+  const resolvedBehaviours = cowork
     ? await resolveBehaviourBooks(cascade.selected)
     : { delivered: [], ignored: [] };
-  const floorBehaviours = coworkAgent && agent
-    ? await Promise.all((await resolveFloorBehaviours()).map(async (row) => row.book === 'mandates'
-      ? { ...row, file: await ownMandates(row.file, resolveMandate(form, facts), name) }
-      : row))
-    : [];
-  const conditionalBehaviours = coworkAgent && agent
-    ? await resolveConditionalBehaviours({
+  const floorBehaviours = briefed ? await resolveFloorBehaviours() : [];
+  const conditionalBehaviours = briefed
+    ? await Promise.all((await resolveConditionalBehaviours({
         arrangement,
-        role: form.role ?? (form.team_lead ? 'lead' : 'coworker'),
+        role: cowork ? form.role ?? (form.team_lead ? 'lead' : 'coworker') : 'mika',
         team: !!form.team,
         lead: !!form.team_lead && !!form.team,
-      })
+        cowork,
+        new_owner: !(await listTeamRosters()).some((roster) => roster.campaign_id === (campaign?.id ?? '') && roster.state !== 'archived'),
+      })).map(async (row) => row.book === 'mandates'
+        ? { ...row, file: await ownMandates(row.file, resolveMandate(form, facts), name) }
+        : row))
     : [];
-  const soughtBehaviours = coworkAgent && agent ? await resolveSoughtBehaviours() : [];
+  const conditionalReading = conditionalBehaviours.flatMap((row) => row.reading ?? []);
+  const soughtBehaviours = cowork ? await resolveSoughtBehaviours() : [];
   // CAPABILITY BUNDLES: the folder decides what exists, and facts select the knowledge.
   // Installed Cowork tools remain universal; feature facts decide feature projection.
   // Mika keeps her own curated toolset.
-  const capabilities = coworkAgent && agent && form.house_seat !== 'mika'
+  const capabilities = cowork
     ? await resolveCapabilities({
         arrangement,
         installations: new Set(installations.filter((installation) => installation.enabled).map((installation) => installation.name)),
@@ -404,15 +409,15 @@ export async function resolveReading(form: SpawnForm, facts: LaunchFacts) {
         lead: !!form.team_lead && !!form.team,
       })
     : [];
-  const shelfReading = coworkAgent && agent
+  const shelfReading = cowork
     ? await bootReading(
         root.name,
-        enabledReading,
-        form.house_seat === 'mika' ? undefined : renderCapabilitiesOverview(capabilities),
+        [...enabledReading, ...conditionalReading],
+        renderCapabilitiesOverview(capabilities),
         name,
         soughtBehaviours.length ? await renderSoughtOverview(soughtBehaviours) : undefined,
       )
-    : [];
+    : briefed ? await declaredFiles(conditionalReading) : [];
   // The selected capability documents are reached through the overview's own
   // "Full document" line, not as shelf cards: the packet has a one-read budget and the
   // fullest stock birth already sits within 2 KB of it with the overview inlined.

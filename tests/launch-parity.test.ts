@@ -455,6 +455,9 @@ test('Mika house mechanics resolve explicitly', async () => {
   assert.equal((mika.brief.split('\n')[0].match(/\. /g) || []).length, 1, 'two sentences typed; the rules live in her birth brief');
   assert.match(mika.brief, /You are the Mika Assist/);
   assert.ok(!mika.birth_reading.some((file) => file.includes('MikaAssist')));
+  const reads = (tail: string) => mika.birth_reading.some((file) => file.endsWith(tail));
+  assert.ok(['/behaviours/floor/base-agent.md', '/behaviours/conditional/mika.md', '/routine/mika/START_HERE.md', '/routine/mika/MIKA_TIPS.md'].every(reads), 'her brief: the base brief, hers, and her reading');
+  assert.ok(!['/conditional/cowork-agent.md', '/conditional/write_it_down.md'].some(reads) && !mika.birth_reading.some((file) => path.basename(file) === 'MANDATES.md'), 'no cowork briefs for a house Agent');
   assert.equal(mika.stated_by.capExempt[0]?.layer, 'house');
   const door = mikaLaunchBody({});
   assert.deepEqual(door.mandate, { reach: 'discuss', recruit: 'nobody', output: ['ideas'] }, 'she discusses, recruits nobody, hands back ideas');
@@ -479,14 +482,15 @@ test('kind and behaviours resolve at birth, with unusable books reported as unde
     mandate: { reach: 'plan', recruit: 'nobody', output: ['a plan', 'ideas'] },
   }), new Set());
   assert.equal(born.kind, 'coding');
-  assert.deepEqual(born.behaviours.map((row) => row.book), ['mandates', 'cowork-agent', 'user-intro', 'write_it_down', 'checkout', 'visual_staging']);
+  assert.deepEqual(born.behaviours.map((row) => row.book), ['base-agent', 'user-intro', 'checkout', 'mandates', 'cowork-agent', 'write_it_down', 'visual_staging']);
   // w73: the Mandates page in the brief stated `open` whatever the Agent held.
   const mandates = born.birth_reading.find((file) => path.basename(file) === 'MANDATES.md');
-  assert.ok(mandates, 'the floor folder is applied, Mandates as the Agent\'s own copy');
+  assert.ok(mandates, 'Mandates is applied as the Agent\'s own copy');
   assert.match(await fs.readFile(mandates!, 'utf8'), /Reach `plan` · Recruit `nobody` · Output `a plan`, `ideas`/);
-  assert.ok(born.birth_reading.some((file) => file.endsWith('/behaviours/floor/cowork-agent.md')), 'every Cowork Agent receives its floor guidance');
+  assert.ok(born.birth_reading.some((file) => file.endsWith('/behaviours/floor/base-agent.md')), 'every Agent receives the base brief');
+  assert.ok(born.birth_reading.some((file) => file.endsWith('/behaviours/conditional/cowork-agent.md')), 'every Cowork Agent receives its cowork guidance');
   assert.ok(born.birth_reading.some((file) => file.endsWith('/behaviours/floor/user-intro.md')), 'the stock-empty user introduction has a stable floor coordinate');
-  assert.ok(born.birth_reading.some((file) => file.endsWith('/behaviours/floor/write_it_down.md')), 'every Cowork Agent is born with Write it Down');
+  assert.ok(born.birth_reading.some((file) => file.endsWith('/behaviours/conditional/write_it_down.md')), 'every Cowork Agent is born with Write it Down');
   assert.ok(born.birth_reading.some((file) => file.endsWith('/behaviours/selected/visual_staging.md')));
   assert.deepEqual(born.ignored, []);
   assert.deepEqual(born.undelivered, ['ways:not_there']);

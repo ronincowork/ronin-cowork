@@ -354,7 +354,7 @@ export function buildMachineSettings(root, isShowing, { only = null } = {}) {
               behaviours: schema.seat.behaviours,
               name: schema.seat.name,
               prompt: schema.seat.prompt,
-              seed: ['ronin_session_boot/house/atarashi/install.md'],
+              seed: ['ronin_catalogs/behaviours/conditional/atarashi.md'],
             },
           });
           go.disabled = false;

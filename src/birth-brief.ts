@@ -114,13 +114,14 @@ async function levelFiles(stock: string, user: string): Promise<string[]> {
   return (await resolveFiles({ stock, user, symlinks: true })).map((file) => file.path);
 }
 
-async function declaredFiles(refs: readonly string[]): Promise<string[]> {
+/** Declared shelf reading (`routine/…`, `<service>_connected/`), the owner's copy over stock. */
+export async function declaredFiles(refs: readonly string[]): Promise<string[]> {
   const user = userShelf();
   const out: string[] = [];
   for (const raw of refs) {
     const ref = raw.trim().replace(/^\/+/, '');
     if (!ref || ref.includes('..') || path.isAbsolute(raw)) continue;
-    if (!ref.startsWith('routine/') && !ref.startsWith('house/') && !/^[a-z0-9_-]+_connected\/$/.test(ref)) continue;
+    if (!ref.startsWith('routine/') && !/^[a-z0-9_-]+_connected\/$/.test(ref)) continue;
     if (ref.endsWith('/')) {
       out.push(...await levelFiles(path.join(STOCK, ref), path.join(user, ref)));
       continue;

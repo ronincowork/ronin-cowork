@@ -120,8 +120,8 @@ on the real shelf:
   Behavior, or explanatory document rather than a capability.
   The generated copy is disposable data as an internal compiler fragment.
 
-General Cowork Agent guidance belongs to the Behavior floor (`floor/cowork-agent.md` and
-`floor/mandates.md`). System teaching belongs to an installation (Ronin Services) or to a
+What every Agent is told belongs to the Behavior floor (`floor/base-agent.md`); general Cowork
+Agent guidance stacks on it (`conditional/cowork-agent.md`, `mandates.md`, `write_it_down.md`). System teaching belongs to an installation (Ronin Services) or to a
 feature (Ronin Host, gbrain); see
 [`docs/architecture/installations.md`](installations.md). Test
 protocols are repository-contributor instructions and never enter user birth reading.
