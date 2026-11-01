@@ -2,11 +2,11 @@ import type { CampaignConfig } from './campaigns.js';
 import type { BehaviourRow, InstallationRow } from './resource-adapters.js';
 import { sessionsFor, type SessionsDefaults } from './launch-command.js';
 import type { StatedBy } from './launch-profile.js';
-import type { ProjectRootInfo } from './project-roots.js';
+import type { Workspace } from './workspaces.js';
 import { availableBehaviours, resolveContributions, type ResolvedContribution } from './instruction-cascade.js';
 import { teamRosterFile, type TeamRoster } from './team-rosters.js';
 
-export type SeedField = 'kind' | 'project_root' | 'repos' | 'branch' | 'provider' | 'model' | 'reach' | 'recruit' | 'output' | 'launch_mode' | 'behaviours';
+export type SeedField = 'kind' | 'branch' | 'provider' | 'model' | 'reach' | 'recruit' | 'output' | 'launch_mode' | 'behaviours';
 export interface SeedValue<T = unknown> { value: T; stated_by: StatedBy[] }
 export interface LaunchSeed {
   campaign_id: string; seeds: Record<SeedField, SeedValue>;
@@ -14,7 +14,9 @@ export interface LaunchSeed {
   available: string[]; still_asked: Array<'session_type' | 'name' | 'instructions'>;
 }
 export interface LaunchSeedSources {
-  campaign: CampaignConfig; roster: TeamRoster | null; roots: ProjectRootInfo[];
+  campaign: CampaignConfig; roster: TeamRoster | null;
+  /** The Team's Workspace: its Mode is its Agents'. */
+  workspace: Workspace | null;
   sessions: SessionsDefaults | undefined; installations: InstallationRow[]; behaviours: BehaviourRow[];
   /** A Team lead's launch: the lead pair, when one is set. */
   lead?: boolean;
@@ -36,10 +38,6 @@ export function resolveLaunchSeed(s: LaunchSeedSources): LaunchSeed & { resolved
   const a = t ? { ...c, ...t.agent_defaults } : c;
   const teamSource = t ? teamBy(t) : null;
   const source = (field: string): StatedBy[] => teamSource ?? campaignBy(s.campaign.id, `defaults.${field}`);
-  const cowork = s.campaign.config.cowork_defaults;
-  const campaignRoot = typeof cowork.project_root === 'string' ? cowork.project_root : '';
-  const campaignRepos = Array.isArray(cowork.repos) ? cowork.repos.map(String) : [];
-  const root = t?.project_root || campaignRoot || s.roots.find((item) => !item.archived)?.name || '';
   const available = availableBehaviours(s.installations, s.campaign.config.installations, s.behaviours);
   const selectedBehaviours = t ? t.behaviours?.selected ?? [] : campaignBehaviours;
   const required = new Set(teamSettled ? t?.behaviours?.required ?? [] : []);
@@ -54,13 +52,13 @@ export function resolveLaunchSeed(s: LaunchSeedSources): LaunchSeed & { resolved
     campaign_id: s.campaign.id,
     seeds: {
       kind: { value: t?.kind ?? 'open', stated_by: conditional(t ? 'Team membership' : 'teamless Agent') },
-      project_root: { value: root, stated_by: t?.project_root ? conditional(teamRosterFile(t.name, t.campaign_id)) : campaignRoot ? campaignBy(s.campaign.id, 'cowork_defaults.project_root') : conditional('Workspace Folder') },
-      repos: { value: t?.repos ?? campaignRepos, stated_by: t ? teamBy(t) : campaignBy(s.campaign.id, 'cowork_defaults.repos') },
       branch: { value: t?.branch ?? '', stated_by: conditional(t ? teamRosterFile(t.name, t.campaign_id) : 'branch default') },
       provider: { value: pair?.provider ?? '', stated_by: pairSource }, model: { value: pair?.model ?? '', stated_by: pairSource },
       reach: { value: a.reach, stated_by: source('reach') }, recruit: { value: a.recruit, stated_by: source('recruit') },
       output: { value: a.output, stated_by: source('output') },
-      launch_mode: { value: a.launch_mode, stated_by: source('launch_mode') },
+      launch_mode: s.workspace
+        ? { value: s.workspace.launch_mode, stated_by: [{ layer: 'team', source: `Workspace ${s.workspace.name}` }] }
+        : { value: c.launch_mode, stated_by: campaignBy(s.campaign.id, 'defaults.launch_mode') },
       behaviours: { value: cascade.selected, stated_by: behaviourSource },
     },
     // The launch UI reads the complete resolved library from this one projection. Only

@@ -1,12 +1,12 @@
 import type { LaunchProfile } from './launch-profile.js';
 import { REPO_ROOT } from './resources.js';
-import { mikaHomeDir } from './mika-runtime.js';
+import { roninHouse } from './workspaces.js';
 
 export type HouseSeat = 'mika';
 
 export function profileDir(profile: LaunchProfile): string {
   if (profile.dir === '{install}') return REPO_ROOT;
-  if (profile.dir === '{mika_home}') return mikaHomeDir();
+  if (profile.dir === '{house}') return roninHouse();
   return '';
 }
 
@@ -22,7 +22,7 @@ export function resolveHouseSeatProfile(seat: HouseSeat | undefined, profile: La
     ack: false,
     opening: '{prompt}',
     capExempt: true,
-    dir: '{mika_home}',
+    dir: '{house}',
     stated_by: {
       ...profile.stated_by,
       label: house,

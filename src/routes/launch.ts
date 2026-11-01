@@ -31,9 +31,8 @@ import { createItem } from '../work-items.js';
 import { callerOf } from './work-items-api.js';
 import { collectBirthLines, collectRowFields } from '../sockets.js';
 import { broadcastEvent, listening, pushTeams } from '../ws/events.js';
-import { prepareLaunchDesks } from '../launch-desks.js';
-import { readArrangement } from '../desks/arrangement.js';
 import { listProjectRoots } from '../project-roots.js';
+import { readWorkspace } from '../workspaces.js';
 import { campaignResolver, initialCampaignId } from '../campaign-scope.js';
 import { readTeamRoster } from '../team-rosters.js';
 import { readCampaign } from '../campaigns.js';
@@ -76,21 +75,11 @@ async function birthCampaign(team: string, explicit = ''): Promise<string> {
   return roster?.campaign_id || (await initialCampaignId());
 }
 
-async function deskNote(r: { assignment?: unknown; project_root?: string; agent?: unknown; cmd?: string }): Promise<string> {
-  if (r.assignment || !r.cmd || !r.project_root) return '';
-  const root = (await listProjectRoots()).find((x) => x.name === r.project_root);
-  if (!root) return '';
-  const a = await readArrangement(root.name, root.dir).catch(() => null);
-  if (!a) return `no worktree — ${root.name}'s RONIN_REPO could not be read`;
-  if (a.source === 'absent') return `checkout — ${root.name} has no RONIN_REPO`;
-  if (a.desks !== 'managed') return `no Worktree — ${root.name} uses its checkout at ${root.dir}; edit directly there`;
-  return '';
-}
 
 const LAUNCH_KEYS = new Set([
   'session_type', 'team', 'team_lead', 'role', 'instructions', 'prompt', 'name', 'caller',
-  'project_root', 'cmd', 'model', 'provider', 'mandate', 'campaign_id', 'launch_mode',
-  'tags', 'seed', 'inject', 'reference', 'desk', 'repos',
+  'cmd', 'model', 'provider', 'mandate', 'campaign_id',
+  'tags', 'seed', 'inject', 'reference',
   'kind', 'behaviours',
   'template',
 ]);
@@ -122,10 +111,6 @@ export function acceptedLaunchBody(input: unknown): { body: Record<string, unkno
   if (body.session_type !== undefined && sessionType !== statedType) ignored.add('session_type');
   body.session_type = sessionType;
 
-  if (body.desk !== undefined && body.desk !== 'own' && body.desk !== 'none') drop('desk');
-  if (body.launch_mode !== undefined && body.launch_mode !== 'configured' && body.launch_mode !== 'live_dangerously') drop('launch_mode');
-  if (body.repos !== undefined && (!Array.isArray(body.repos) || body.repos.some((r: unknown) => typeof r !== 'string'))) drop('repos');
-  if (body.repos !== undefined && sessionType !== 'cowork_agent') drop('repos');
   if (body.tags !== undefined && !Array.isArray(body.tags)) drop('tags');
   if (body.seed !== undefined && !Array.isArray(body.seed)) drop('seed');
   if (body.kind !== undefined && (typeof body.kind !== 'string' || !KINDS.has(body.kind.trim()))) drop('kind');
@@ -136,12 +121,11 @@ export function acceptedLaunchBody(input: unknown): { body: Record<string, unkno
   if (body.template !== undefined) body.template = String(body.template).trim();
 
   const inapplicable = sessionType === 'terminal'
-      ? ['provider', 'model', 'instructions', 'prompt', 'kind', 'mandate', 'behaviours', 'template', 'cmd', 'launch_mode', 'seed', 'inject', 'reference', 'role']
+      ? ['provider', 'model', 'instructions', 'prompt', 'kind', 'mandate', 'behaviours', 'template', 'cmd', 'seed', 'inject', 'reference', 'role']
     : sessionType === 'bare_metal_agent'
       ? ['kind', 'mandate', 'behaviours', 'template', 'seed', 'inject', 'reference', 'team_lead', 'role']
       : [];
   for (const key of inapplicable) drop(key);
-  if (sessionType === 'bare_metal_agent' && body.desk === 'own') drop('desk');
 
   return { body, ignored: [...ignored].sort() };
 }
@@ -158,11 +142,9 @@ export function spawnFormFromLaunchBody(body: Record<string, unknown>, houseSeat
     role,
     prompt: String(body.instructions ?? body.prompt ?? '').trim(),
     name: String(body.name ?? '').trim(),
-    project_root: String(body.project_root ?? '').trim() || undefined,
     cmd: String(body.cmd ?? '').trim() || undefined,
     model: String(body.model ?? '').trim() || undefined,
     provider: String(body.provider ?? '').trim() || undefined,
-    launch_mode: body.launch_mode === 'configured' || body.launch_mode === 'live_dangerously' ? body.launch_mode : undefined,
     mandate: sessionType === 'cowork_agent' && body.mandate !== undefined ? mandate(body.mandate) : undefined,
     campaign_id: String(body.campaign_id ?? '').trim() || undefined,
     kind: typeof body.kind === 'string' ? body.kind : undefined,
@@ -172,8 +154,6 @@ export function spawnFormFromLaunchBody(body: Record<string, unknown>, houseSeat
     seed: Array.isArray(body.seed) ? body.seed.map(String) : [],
     inject: String(body.inject ?? '').trim() || undefined,
     reference: String(body.reference ?? '').trim() || undefined,
-    desk: body.desk === 'own' || body.desk === 'none' ? body.desk : undefined,
-    repos: Array.isArray(body.repos) ? body.repos.map(String) : undefined,
   };
 }
 
@@ -276,7 +256,7 @@ export function registerLaunch(app: express.Express): LaunchControl {
       const { resolved_contributions: _resolved, undelivered: _undelivered, ...seed } = resolveLaunchSeed({
         campaign,
         roster,
-        roots,
+        workspace: roster?.workspace ? await readWorkspace(roster.campaign_id, roster.workspace) : null,
         sessions: agents.sessions as SessionsDefaults | undefined,
         lead: req.query.lead === '1',
         installations,
@@ -346,14 +326,6 @@ export function registerLaunch(app: express.Express): LaunchControl {
     const teams = new Set((await listTeamRosters()).filter((item) => item.state !== 'archived').map((item) => item.name));
     const unknownTeams = resolved.tags.filter((name) => !teams.has(name));
     if (unknownTeams.length) return res.status(400).json({ error: `Unknown Team: ${unknownTeams.join(', ')}.` });
-
-    if (resolved.assignment) {
-      try {
-        resolved.assignment = await prepareLaunchDesks(resolved.assignment);
-      } catch (e) {
-        return res.status(400).json({ error: `Could not prepare selected managed workspace: ${String((e as Error)?.message ?? e)}` });
-      }
-    }
 
     if (resolved.session_type === 'cowork_agent' && resolved.agent) {
       birthKey = `${resolved.name}-${Date.now()}`;
@@ -440,14 +412,12 @@ export function registerLaunch(app: express.Express): LaunchControl {
         }
       }
       if (form.team_lead && resolved.team) await setLeads(resolved.name, [resolved.team]);
-      if (resolved.project_root && resolved.session_type !== 'bare_metal_agent') await setProjectRoot(resolved.name, resolved.project_root);
+      if (resolved.workspace) await setProjectRoot(resolved.name, resolved.workspace);
       await setCampaign(resolved.name, campaignId);
       if (resolved.session_type === 'cowork_agent') {
         await seedTegami(
           resolved.name,
-          resolved.assignment?.desks.length
-            ? resolved.assignment.desks.map((d) => ({ repo: d.repo, branch: d.branch, worktree: d.worktree, line: d.line }))
-            : await checkoutAt(resolved.dir),
+          await checkoutAt(resolved.dir),
         await deriveTeams(resolved.name, resolved.tags),
         resolved.mandate,
       );
@@ -485,7 +455,7 @@ export function registerLaunch(app: express.Express): LaunchControl {
         session_type: resolved.session_type,
         identity: resolved.identity,
         team: resolved.team,
-        project_root: resolved.project_root,
+        workspace: resolved.workspace,
         dir: resolved.dir,
         cmd: resolved.cmd,
         tags: resolved.tags,
@@ -504,10 +474,6 @@ export function registerLaunch(app: express.Express): LaunchControl {
         // and whether one read delivers it. The receipt says what left; the tape says what
         // arrived (the ACK asks the newborn to quote the terminator).
         ...(packet ? { packet } : {}),
-        desks: resolved.assignment?.desks.map((d) => ({ repo: d.repo, branch: d.branch, worktree: d.worktree, line: d.line })) ?? [],
-        work_locations: resolved.work_locations,
-        arrangement: resolved.work_locations.find((row) => row.repo === resolved.project_root)?.reason ?? '',
-        desk_note: await deskNote(resolved),
         // The capability documents this birth read from the folder: which were selected,
         // why the rest were not, and which listed tools are present on this box.
         capabilities: resolved.capabilities.map((capability) => ({

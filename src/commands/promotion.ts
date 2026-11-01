@@ -18,6 +18,7 @@ import type { ByoinMode } from '../promotion/promote.js';
 import { clearFunnel, diagnoseFunnel, listFunnelReceipts, preserveFunnel, readFunnelReceipt } from '../promotion/funnel-recovery.js';
 import { storeDir } from '../resources.js';
 import { findLeads } from '../desks/lead.js';
+import { teamRepos } from '../workspaces.js';
 
 const args = process.argv.slice(2);
 const flag = (name: string): boolean => args.includes(name);
@@ -32,7 +33,7 @@ async function reposForTeam(team: string): Promise<RepoSpec[]> {
   const roster = await readTeamRoster(team);
   if (!roster) throw new Error(await missingRosterMessage(team));
   const roots = await listProjectRoots();
-  const defaults = roster.repos.length ? roster.repos : roster.project_root ? [roster.project_root] : [];
+  const defaults = await teamRepos(roster);
   const overrides = new Map(args.filter((a, i) => args[i - 1] === '--repo' && a.includes('=')).map((a) => a.split('=') as [string, string]));
   const accepted = await unpromotedAcceptedLines(await acceptedLinesForTeam(team), async ({ repo, line }) => {
     const dir = overrides.get(repo) ?? roots.find((root) => root.name === repo)?.dir;

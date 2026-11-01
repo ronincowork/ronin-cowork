@@ -63,22 +63,31 @@ await fs.mkdir(path.join(tmp, 'shelf', 'all'), { recursive: true });
 await fs.writeFile(path.join(tmp, 'shelf', 'all', 'ALL_BOOK.md'), '# ALL_BOOK.md');
 
 const { createTeamRoster } = await import('../src/team-rosters.js');
+const { saveWorkspace, workspaceLaunchFolder, roninHouse } = await import('../src/workspaces.js');
 const { resolveForm } = await import('../src/spawn.js');
 
-// The Team works in cowork; its papers, and this Agent's birth root, are the ronin_lab checkout.
-await createTeamRoster('papers', { objective: 'write it up from the code', project_root: 'ronin_lab', repos: ['cowork'], branch: '' });
+// The Team's Workspace holds the managed cowork repository, the ronin_lab checkout and a folder.
+await saveWorkspace({
+  name: 'papers_ws', campaign_id: 'home_machine', title: 'Papers', objective: 'write it up from the code', instructions: '',
+  repos: [{ name: 'cowork', note: '' }, { name: 'ronin_lab', note: 'notes' }], folders: [{ path: '/srv/papers', note: 'drafts' }], launch_mode: 'configured',
+});
+await createTeamRoster('papers', { objective: 'write it up from the code', workspace: 'papers_ws', branch: '' }, 'home_machine');
 
-test('an Agent born in a checkout with a managed worktree is taught the worktree kit', async () => {
-  const resolved = await resolveForm({ project_root: 'ronin_lab', team: 'papers', prompt: 'Write it up.' }, new Set());
-  assert.equal(resolved.project_root, 'ronin_lab', 'born in the checkout');
-  assert.deepEqual(resolved.assignment?.desks.map((desk) => desk.repo), ['cowork'], 'assigned one desk in the managed repository');
-  assert.ok(resolved.work_locations.some((row) => row.repo === 'cowork' && row.mode === 'managed'), 'the desk is a managed location');
-  assert.match(resolved.brief, /hand in through worktree-desk/, 'the brief tells the Agent to use the desk tool');
-  assert.equal(resolved.capabilities.find((row) => row.name === 'worktree-desk')?.selected, true, 'managed work selects desk teaching');
+test('a Team Agent starts in its Workspace launch folder, its brief naming the repositories and folders', async () => {
+  const resolved = await resolveForm({ team: 'papers', prompt: 'Write it up.' }, new Set());
+  assert.equal(resolved.workspace, 'papers_ws');
+  assert.equal(resolved.dir, workspaceLaunchFolder('home_machine', 'papers_ws'), 'born in the Workspace launch folder, never a repository');
+  assert.match(resolved.brief, /^## Workspace — Papers$/m);
+  assert.match(resolved.brief, /^- cowork .* — worktree: `worktree-desk open cowork`$/m, 'a managed repository is opened when needed');
+  assert.match(resolved.brief, /^- ronin_lab .* — shared checkout \(notes\)$/m);
+  assert.match(resolved.brief, /^- \/srv\/papers — drafts$/m);
+  assert.doesNotMatch(resolved.brief, /Born in|Repository approaches/);
+  assert.equal(resolved.capabilities.find((row) => row.name === 'worktree-desk')?.selected, true, 'desk teaching is ready for managed work');
 });
 
-test('an Agent born in a checkout with no desk still receives universal desk teaching', async () => {
-  const resolved = await resolveForm({ project_root: 'ronin_lab', prompt: 'Read the papers.' }, new Set());
-  assert.equal(resolved.assignment, null);
-  assert.equal(resolved.capabilities.find((row) => row.name === 'worktree-desk')?.selected, true, 'desk teaching is ready for later managed work');
+test('an Agent without a Team has no Workspace and starts in Ronin house', async () => {
+  const resolved = await resolveForm({ prompt: 'Read the papers.' }, new Set());
+  assert.equal(resolved.workspace, '');
+  assert.equal(resolved.dir, roninHouse());
+  assert.doesNotMatch(resolved.brief, /## Workspace/);
 });

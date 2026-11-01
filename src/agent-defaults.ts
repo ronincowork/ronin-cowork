@@ -15,7 +15,7 @@ export interface AgentDefaults {
 }
 
 /** A Team's own defaults. The model is not one: Models > Defaults owns it (owner, 2026-10-21). */
-export type TeamAgentDefaults = Omit<AgentDefaults, 'behaviours' | 'provider' | 'model'>;
+export type TeamAgentDefaults = Omit<AgentDefaults, 'behaviours' | 'provider' | 'model' | 'launch_mode'>;
 
 const text = (value: unknown, max = 120): string =>
   typeof value === 'string' ? value.trim().slice(0, max) : '';
@@ -55,6 +55,6 @@ export function mandate(value: unknown): Mandate {
 }
 
 export function teamAgentDefaults(value: unknown): TeamAgentDefaults {
-  const { behaviours: _behaviours, provider: _provider, model: _model, ...defaults } = agentDefaults(value);
+  const { behaviours: _behaviours, provider: _provider, model: _model, launch_mode: _mode, ...defaults } = agentDefaults(value);
   return defaults;
 }

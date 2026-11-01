@@ -13,8 +13,8 @@ export interface TeamRoster {
   title: string;
   kind: TeamKind;
   objective: string;
-  project_root: string;
-  repos: string[];
+  /** The Workspace this Team is launched in (src/workspaces.ts); its Agents inherit it. */
+  workspace: string;
   branch: string;
   branches: Record<string, string>;
   wipeboard: string;
@@ -79,8 +79,7 @@ function parse(name: string, raw: string, campaign_id = ''): TeamRoster {
     kind: ['open', 'coding', 'work', 'personal', 'household', 'social', 'school'].includes(kind)
       ? kind as TeamKind : 'open',
     objective: get('objective'),
-    project_root: get('project_root'),
-    repos: strings(get('repos').split(','), 160),
+    workspace: get('workspace'),
     branch: get('branch'),
     branches: stringMap(json('branches')),
     wipeboard: get('wipeboard') || name,
@@ -160,8 +159,7 @@ export interface RosterEdit {
   title?: string;
   kind?: TeamKind;
   objective?: string;
-  project_root?: string;
-  repos?: string[];
+  workspace?: string;
   branch?: string;
   branches?: Record<string, string>;
   wipeboard?: string;
@@ -173,7 +171,7 @@ export interface RosterEdit {
 }
 
 const KEYS: (keyof RosterEdit)[] = [
-  'title', 'kind', 'objective', 'project_root', 'repos', 'branch', 'branches', 'wipeboard', 'state',
+  'title', 'kind', 'objective', 'workspace', 'branch', 'branches', 'wipeboard', 'state',
   'behaviours', 'agent_defaults', 'holds', 'watches',
 ];
 
@@ -186,8 +184,7 @@ function render(name: string, r: TeamRoster): string {
     line('title', r.title),
     line('kind', r.kind),
     line('objective', r.objective),
-    line('project_root', r.project_root),
-    line('repos', r.repos.join(', ')),
+    line('workspace', r.workspace),
     line('branch', r.branch),
     line('branches', JSON.stringify(r.branches)),
     line('wipeboard', r.wipeboard || name),
@@ -223,8 +220,7 @@ export async function createTeamRoster(name: string, edit: RosterEdit, campaign_
     title: edit.title?.trim() || name.split(/[_-]+/).filter(Boolean).map((part) => part[0]?.toUpperCase() + part.slice(1)).join(' '),
     kind: edit.kind ?? 'open',
     objective: edit.objective ?? '',
-    project_root: edit.project_root ?? '',
-    repos: edit.repos ?? [],
+    workspace: edit.workspace ?? '',
     branch: edit.branch ?? '',
     branches: edit.branches ?? {},
     wipeboard: edit.wipeboard || (await freeBoardToken(name, campaign_id)),
@@ -265,7 +261,6 @@ export async function writeTeamRoster(name: string, edit: RosterEdit, campaign_i
     if (normalizedEdit[k] === undefined) continue;
     const nested = ['behaviours', 'agent_defaults', 'holds', 'watches'].includes(k);
     const v = nested ? JSON.stringify(normalizedEdit[k])
-      : k === 'repos' ? (normalizedEdit.repos ?? []).join(', ')
       : String(normalizedEdit[k] ?? '');
     const lineText = `- **${k}:** ${v || BLANK}`;
     const at = lines.findIndex((l) => new RegExp(`^-\\s*\\*\\*${k}:\\*\\*`).test(l.trim()));

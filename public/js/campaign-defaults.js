@@ -25,12 +25,11 @@ export function createAgentDefaultsSurface(campaign) {
   const body = el('div', 'cv-body'); surface.content.append(body);
   let edited = null;
 
-  function paint(seed = null, roots = []) {
+  function paint(seed = null) {
     const row = campaign(); body.replaceChildren();
     if (!row) return surface.setState('empty', t('campaign_view.none_selected', 'No Campaign selected.'));
     surface.setState(null, '');
     const current = bucket(row.config?.defaults);
-    const cowork = bucket(row.config?.cowork_defaults);
     const form = el('form', 'cv-defaults-form');
     const questionsRow = el('div', 'cv-default-field');
     const notice = createNotice();
@@ -38,21 +37,12 @@ export function createAgentDefaultsSurface(campaign) {
     body.append(el('p', 'cv-note', t('campaign_view.defaults_models', 'Models are set in Models > Defaults.')));
     const availableNames = new Set(list(seed?.available));
     const availableBehaviours = list(seed?.behaviours).filter((behaviour) => availableNames.has(behaviour.name));
-    const rootRows = roots.filter((root) => !root.archived).map((root) => ({
-      v: root.name, l: root.title || root.name,
-      word: root.repo_profile?.worktrees === 'enabled' ? t('where.worktree', 'worktree') : t('where.checkout', 'checkout'),
-    }));
     let picked = edited || {
-      root: String(cowork.project_root || ''), repos: list(cowork.repos),
       reach: current.reach || CHOICES.reach[0], recruit: current.recruit || CHOICES.recruit[0],
       output: list(current.output), launch_mode: current.launch_mode || CHOICES.launch_mode[0],
       behaviours: list(current.behaviours),
     };
     const questions = ask([
-      { group: t('where.label', 'Where it works'), fields: [
-        { key: 'root', label: t('where.born_in', 'Born in'), blank: t('team_config.default', 'Default'), options: rootRows },
-        { key: 'repos', label: t('new_agent.workspaces', 'Workspaces'), many: true, after: 'root', options: rootRows },
-      ] },
       { group: t('mandate', 'Mandate'), fields: [
         { key: 'reach', label: t('campaign_view.default_reach', 'Reach'), options: CHOICES.reach.map((value) => ({ v: value, l: optionLabel(value) })) },
         { key: 'recruit', label: t('campaign_view.default_recruit', 'Recruit'), options: CHOICES.recruit.map((value) => ({ v: value, l: optionLabel(value) })) },
@@ -74,14 +64,10 @@ export function createAgentDefaultsSurface(campaign) {
     const save = el('button', 'cv-save', t('panels.save', 'Save')); save.type = 'submit'; actions.append(notice.el, save); form.append(actions); body.append(form);
     form.addEventListener('submit', async (event) => {
       event.preventDefault(); save.disabled = true; notice.set('info', t('campaign.saving', 'saving…'));
-      const { root, repos, ...agentPicked } = picked;
-      const next = { ...current, ...agentPicked, behaviours: list(picked.behaviours) };
-      const result = await saveCampaign(row.id, { config: {
-        defaults: next,
-        cowork_defaults: { ...cowork, project_root: root, repos: list(repos) },
-      } });
+      const next = { ...current, ...picked, behaviours: list(picked.behaviours) };
+      const result = await saveCampaign(row.id, { config: { defaults: next } });
       notice.set(result.ok ? 'success' : 'failed', result.ok ? t('settei.saved', 'saved') : result.message); save.disabled = false;
-      if (result.ok) { edited = null; paint(seed, roots); }
+      if (result.ok) { edited = null; paint(seed); }
     });
   }
 
@@ -92,8 +78,7 @@ export function createAgentDefaultsSurface(campaign) {
     if (!campaign()) return;
     void Promise.all([
       request(`/api/campaign-default-options?campaign_id=${encodeURIComponent(campaign()?.id || '')}`),
-      request(`/api/project-roots/detail?campaign_id=${encodeURIComponent(campaign()?.id || '')}`),
-    ]).then(([options, folders]) => { if (current === generation) paint(options.ok ? options.data : null, folders.ok ? list(folders.data?.roots) : []); });
+    ]).then(([options]) => { if (current === generation) paint(options.ok ? options.data : null); });
   } };
 }
 

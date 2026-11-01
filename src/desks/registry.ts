@@ -2,7 +2,6 @@ import { mkdir, readFile, readdir, rename, unlink, writeFile } from 'node:fs/pro
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { storeDir } from '../resources.js';
-import { readTeamRoster } from '../team-rosters.js';
 import { arrangementOf } from './arrangement.js';
 import { aheadBehind, dirtyFiles, revParse, worktreeOf } from './git.js';
 import {
@@ -170,13 +169,7 @@ export const writeAssignment = async (a: Assignment): Promise<Assignment> => {
 
 export async function deriveAssignment(input: { session: string; team: string; project_root: string; repos?: string[] }): Promise<Assignment> {
   const { session, team, project_root } = input;
-  let repos = [project_root];
-  if (input.repos) {
-    repos = [...new Set(input.repos)]; // the launch's own answer wins, even when empty
-  } else if (team) {
-    const roster = await readTeamRoster(team);
-    repos = roster ? roster.repos : [project_root];
-  }
+  const repos = input.repos ? [...new Set(input.repos)] : [project_root];
   const desks: RepoDesk[] = [];
   const now = new Date().toISOString();
   const id = assignmentId(session, team);

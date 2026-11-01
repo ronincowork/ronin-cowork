@@ -7,7 +7,7 @@
  * on a profile of the door's surfaces (workbench-catalog.js), the door's surface seated in
  * Workspace 1 on first open. Models seats its own stones of providers (models-surface.js), a
  * stone dragged into a workspace or a selector card placing that provider whole; Workspaces
- * seats its own stones of folders (workspaces-surface.js) the same way, its three admin doors
+ * seats its own stones of Workspaces, and the repositories and folders beside them (workspaces-surface.js), its admin doors
  * dotted selector cards. Help (owner, 2026-10-21) seats the help outline in Workspace 1 and Mika
  * in Workspace 2 (a page stone dragged into a workspace reads that page there), her ordinary tile opened on her reading: a chat, not a terminal. Help is outside
  * Home's provider gate; with no provider Mika's seat says so in one line instead of her tile.
@@ -20,7 +20,7 @@ import { createProviderSetupSessionMount } from './provider-setup-session.js';
 import { loadProviderCatalog } from './form-steps.js';
 import { createModelDefaults, createModelProvider, createModelRefresh, createModelStones, providerOffers } from './models-surface.js';
 import { createGithubWorkspaceSetup } from './github-workspace-setup.js';
-import { createFolder, createFolderClone, createFolderGithub, createFolderNew, createFolderStones, createRootsReading, folderOffers } from './workspaces-surface.js';
+import { createFolder, createFolderClone, createFolderGithub, createFolderNew, createFolderStones, createRootsReading, createWorkspaceStones, folderOffers } from './workspaces-surface.js';
 import { createWorkspaceAdd } from './workspace-add.js';
 import { campaignById, loadCampaigns, normalizeSelection } from './campaigns.js';
 import { createHelpOutline, createHelpPage } from './help-outline.js';
@@ -109,9 +109,10 @@ export function createModelsView() {
   });
 }
 
-/** Workspaces: the stones of folders in Workspace 1 over the Campaign this tab looks at, a folder whole where a
- * stone is dropped or its card placed, one card per folder; Add a workspace, GitHub CLI and Clone a repository
- * as dotted cards, the folder they add taking their workspace. One read of the folders for the whole bench. */
+/** Workspaces: the stones of Workspaces in Workspace 1 over the Campaign this tab looks at, a pressed one's page
+ * beside them; the repositories and folders Ronin knows in Workspace 2, one whole where a stone is dropped or its
+ * card placed; Add a repository or folder, GitHub CLI and Clone a repository as dotted cards. One read of the
+ * folders for the whole bench. */
 export function createWorkspacesView() {
   const campaign = (ctx) => campaignById(normalizeSelection(ctx()?.state?.campaignSelection).primary_campaign_id);
   const providerSessions = createProviderSetupSessionMount();
@@ -121,7 +122,8 @@ export function createWorkspacesView() {
   let github = null;
   let cloneSeat = 'workspace2';
   return doorWorkbench({
-    id: 'workspaces', profile: WORKBENCH_PROFILES.workspaces, label: t('campaign_home.workspaces', 'Workspaces'), seat: WORKBENCH_TYPES.folderStones,
+    id: 'workspaces', profile: WORKBENCH_PROFILES.workspaces, label: t('campaign_home.workspaces', 'Workspaces'), seat: WORKBENCH_TYPES.workspaceRecords,
+    seats: { workspace1: WORKBENCH_TYPES.workspaceRecords, workspace2: WORKBENCH_TYPES.folderStones },
     loaded: loadCampaigns,
     environment: ({ bench, ctx }) => {
       const campaignId = () => campaign(ctx)?.id || '';
@@ -129,6 +131,7 @@ export function createWorkspacesView() {
       const environment = {
         mountProviderSetupSession: providerSessions.mountProviderSetupSession,
         folders: () => folderOffers(reading),
+        workspaceRecords: () => keep(createWorkspaceStones({ reading, campaignId })),
         folderStones: () => keep(createFolderStones({ reading, campaignId, workbench: bench() })),
         folder: (_workspace, detail) => keep(createFolder(detail.key, { reading, campaignId })),
         folderNew: (workspace) => keep(createFolderNew({ reading, campaignId, placeFolder: (name) => placeFolder(name, workspace) })),

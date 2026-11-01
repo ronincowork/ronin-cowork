@@ -35,7 +35,6 @@ async function configurationReading(name: string) {
     name,
     team,
     team_lead: !!team && leads.includes(team),
-    project_root: projectRoot || undefined,
     campaign_id: campaign || undefined,
     kind: receipt.kind,
     mandate: composition.current.mandate,
