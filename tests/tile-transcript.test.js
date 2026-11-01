@@ -874,3 +874,15 @@ test('the Agent working aloud is marked, and keeps its mark when the markdown sw
   setChatMarkdown(true);
   view.dispose();
 });
+
+test('a pipe table in the Agent\'s words is drawn as a table', async () => {
+  const { renderMarkdownDocument } = await import('../public/js/markdown-reader.js');
+  const article = renderMarkdownDocument('Before.\n| A | B |\n|---|---|\n| one | two \\| three |\n\nAfter.', globalThis.document);
+  const box = article.children.find((n) => n.className === 'markdown-table');
+  assert.ok(box, 'the table is drawn, not run into a paragraph');
+  const [table] = box.children;
+  const [head, body] = table.children;
+  assert.equal(head.children[0].children.length, 2, 'two header cells');
+  assert.equal(body.children[0].children[1].children[0].textContent, 'two | three', 'an escaped pipe stays in its cell');
+  assert.equal(article.children.at(-1).children[0].textContent, 'After.');
+});

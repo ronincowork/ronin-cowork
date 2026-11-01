@@ -3215,6 +3215,17 @@ body {
 .tile-transcript-entry .markdown-reader a { color: var(--accent); }
 /* Sent, and not yet written down by the CLI: the person's words in a lighter shade until they land. */
 .tile-transcript-entry[data-role='user'][data-pending='true'] { color: var(--muted); }
+/* A pipe table, wherever markdown is read (Chat, Docs, Help): a heavier rule under the header
+   and a light one between rows, as the terminal draws it; a wide one scrolls in its own box. */
+.markdown-reader .markdown-table { max-width: 100%; overflow-x: auto; margin: 0 0 var(--space-paragraph); }
+.markdown-reader table { border-collapse: collapse; }
+.markdown-reader :is(th, td) { padding: var(--space-row) var(--space-inline); text-align: left; vertical-align: top; }
+.markdown-reader :is(th, td):first-child { padding-left: 0; white-space: nowrap; }
+.markdown-reader th { border-bottom: calc(var(--edge) * 2) solid var(--line-2); color: var(--fg-strong); font-weight: var(--weight-strong); white-space: nowrap; }
+.markdown-reader tbody tr + tr td { border-top: var(--edge) solid var(--line); }
+/* Markdown off shows what the Agent wrote, marks and all, in the terminal's type, so a table or
+   an indent lines up as it was written. */
+.tile-transcript-entry[data-role='agent'][data-kind='say']:not([data-md]) { font: var(--term-size)/var(--leading-body) var(--font-term); }
 /* The Agent working aloud between tool calls: quieter than its reply, and in italic, the way
    markdown marks an aside, with Markdown on or off (owner, 2026-11-01). */
 .tile-transcript-entry[data-narration='true'] { color: var(--muted); font-style: italic; }
