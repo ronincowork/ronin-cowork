@@ -345,3 +345,18 @@ test('dry run proves and writes nothing, moves nothing', async () => {
   assert.equal((await R.listReceipts(undefined, LEDGER)).length, before);
   assert.equal(sh(cw.dir, 'rev-parse', 'dev'), cw.base);
 });
+
+test('a promotion names only the hand-ins it brings, even when the last promoted tip is no receipt', async () => {
+  // Owner, 2026-11-01: a Services notice listed seven hand-ins, six already on dev since the
+  // morning. The last promotion's line tip was a commit no receipt names, so "everything after
+  // that receipt" became every receipt the line ever accepted.
+  const { dir, line } = await fixture('named', 3);
+  sh(dir, 'merge', '-q', '--no-edit', line[1]); // the first two were promoted earlier
+  const from = sh(dir, 'rev-parse', 'dev');
+  const { ledgerFile } = await import('../src/desks/receipts.js');
+  const file = ledgerFile('named', 'team/comp/dev');
+  await fs.mkdir(path.dirname(file), { recursive: true });
+  await fs.writeFile(file, line.map((sha, i) => JSON.stringify({ id: `hi_${i + 1}`, repo: 'named', line: 'team/comp/dev', result: 'accepted', line_sha: sha, session: 's' })).join('\n') + '\n');
+  const got = await C.ledgerHandIns({ ...spec('named', dir) }, from, line[2], 'a-tip-no-receipt-names');
+  assert.deepEqual(got.ids, ['hi_3'], 'what dev already holds is not news');
+});
