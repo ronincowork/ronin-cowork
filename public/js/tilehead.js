@@ -8,6 +8,7 @@ import { createMenuButton } from './menu.js';
 import { buildWorkRecord, heldAttachments } from './work-record.js';
 import { readDesks } from './desks.js';
 import { t } from './lexicon.js';
+import { chatMarkdown, setChatMarkdown } from './tile-transcript.js';
 
 /**
  * THE HEADER, left to right. One row per control; see the file header for the columns.
@@ -187,6 +188,11 @@ export function tileMenu(tile) {
     tile.servicesOff() || outputs.length < 2 ? null : {
       items: outputs.map(([value, label]) => ({ kind: 'radio', label, checked: tile.output === value,
         run: () => tile.setOutput(value) })) },
+    // Chat's reading of the Agent's words: drawn, or exactly as written (per device).
+    tile.transcriptOn ? { items: [
+      { kind: 'check', label: t('me.markdown', 'Markdown'), hint: t('me.markdown_hint', 'off shows the marks as written'),
+        checked: chatMarkdown(), run: (on) => setChatMarkdown(on) },
+    ] } : null,
     { items: [
       { glyph: '☰', label: t('me.work_record', 'Work record'), run: () => void openWorkRecord(tile) },
       { glyph: '⚙', label: t('me.configuration', 'Configuration'), hint: t('me.configuration_hint', 'mandate, Behaviors'),

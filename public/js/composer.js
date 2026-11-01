@@ -68,7 +68,8 @@ export function buildComposer(body, hooks) {
   const rewrap = new ResizeObserver(() => {
     if (ta.clientWidth === width) return; // our own height change, not a new width
     width = ta.clientWidth;
-    if (ta.value) grow(true);
+    // Next frame: resizing inside the observer's own callback is a layout loop.
+    if (ta.value) requestAnimationFrame(() => grow(true));
   });
   rewrap.observe(ta);
   const clearBox = () => {

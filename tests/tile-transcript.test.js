@@ -45,7 +45,7 @@ class Node {
 
 // getElementById answers for the phone document only when a test says it is on one: the
 // tile asks that question to decide how far its cycle goes.
-globalThis.document = { createElement: () => new Node(), activeElement: null,
+globalThis.document = { createElement: () => new Node(), createTextNode: (text) => Object.assign(new Node(), { textContent: text }), activeElement: null,
   getElementById: (id) => (id === 'phone' && globalThis.__onPhone ? new Node() : null) };
 globalThis.window = { matchMedia: () => ({ matches: false }), addEventListener() {} };
 Object.defineProperty(globalThis, 'navigator', { value: { platform: 'Linux' }, configurable: true });
@@ -60,8 +60,9 @@ const [{ makeTileTranscript }, { Tile }, { syncTileHead }, { S }, { transcriptHa
 const tick = () => new Promise((resolve) => setImmediate(resolve));
 const record = (text) => ({ role: 'agent', kind: 'say', text });
 const answer = (records, since, seq) => ({ ok: true, data: { available: true, records, since, seq } });
+// What each entry was sent: the Agent's words are drawn as markdown, so the drawing is not the text.
 const contents = (el) => el.children.filter((n) => n.className === 'tile-transcript-entry')
-  .map((n) => n.textContent);
+  .map((n) => n.rawText ?? n.textContent);
 
 test('header toggle appears only with loaded Rireki and changes its label', () => {
   const button = new Node();
@@ -794,4 +795,42 @@ test('a finger opens on the reading; a desk still opens on the terminal', () => 
   land(d.tile, live);
   assert.equal(d.tile.transcriptOn, false);
   assert.deepEqual(d.shown, []);
+});
+
+test('the Agent\'s words are drawn as markdown, and the switch redraws them exactly as written', async () => {
+  const { setChatMarkdown } = await import('../public/js/tile-transcript.js');
+  const store = new Map();
+  globalThis.localStorage = { getItem: (k) => store.get(k) ?? null, setItem: (k, v) => store.set(k, v) };
+  try {
+    const view = makeTileTranscript({
+      read: async () => ({ ok: true, data: { available: true, records: [{ seq: 1, role: 'agent', kind: 'say', text: '**done**' }, { seq: 2, role: 'user', kind: 'say', text: '**mine**' }], since: 1, seq: 2, view: 'chat', readings: READINGS } }),
+      watch: () => {},
+    });
+    view.show('agent', 'chat');
+    await tick();
+    const agent = () => view.el.children.find((n) => n.getAttribute('data-role') === 'agent');
+    assert.equal(agent().getAttribute('data-md'), 'true', 'the Agent\'s words are markdown');
+    assert.equal(view.el.children.find((n) => n.getAttribute('data-role') === 'user').textContent, '**mine**', 'the person\'s stay as typed');
+    setChatMarkdown(false);
+    assert.equal(agent().getAttribute('data-md'), undefined);
+    assert.equal(agent().textContent, '**done**', 'off shows the marks as written');
+    view.dispose();
+  } finally { delete globalThis.localStorage; }
+});
+
+test('a sent message shows at once, light, and goes when the CLI writes it down', async () => {
+  const view = makeTileTranscript({
+    read: async () => ({ ok: true, data: { available: true, records: [record('earlier')].map((r) => ({ ...r, seq: 4 })), since: 1, seq: 5, view: 'chat', readings: READINGS } }),
+    watch: () => {},
+  });
+  view.show('agent', 'chat');
+  await tick();
+  view.pending('check  the\nreceipt');
+  const light = () => view.el.children.filter((n) => n.getAttribute('data-pending') === 'true');
+  assert.equal(light().length, 1);
+  assert.equal(view.el.children.at(-1), light()[0], 'at the end, where it was sent');
+  for (const handler of transcriptHandlers) handler({ t: 'transcript', session: 'agent', reading: 'chat', records: [{ seq: 5, role: 'user', kind: 'say', text: 'check the receipt' }] });
+  assert.equal(light().length, 0, 'its own record replaced it');
+  assert.deepEqual(contents(view.el), ['earlier', 'check the receipt']);
+  view.dispose();
 });

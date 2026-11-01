@@ -393,7 +393,12 @@ export class Tile {
 
   /** Ronin's box uses the same message sender in Locked and Unlocked views. */
   sendMessage(text) {
-    return sendComposerMessage(this.session, text);
+    // Shown at once, light, in Chat; a send that did not get through takes it back.
+    const drop = this.transcriptView.pending(text);
+    return sendComposerMessage(this.session, text).then((outcome) => {
+      if (!outcome?.ok) drop();
+      return outcome;
+    });
   }
 
   /**

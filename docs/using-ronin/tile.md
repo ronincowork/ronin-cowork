@@ -59,7 +59,7 @@ same way. See [Share a file with an Agent](share-a-file.md).
 The separate **Transcript** button appears when Ronin Services has loaded Terminal
 transcript. It switches **Term → Chat → Term**; the button always names where you are
 now. Chat is the conversation alone, as the CLI itself wrote it. The button is opaque when this Agent has nothing to show — born before Ronin
-recorded launch identity, started outside Ronin, on a CLI with no readable journal, or
+recorded launch identity, started outside Ronin, or
 simply nothing written yet; pressing it says which. Switching the service on later, or a restart, does not lose
 an Agent whose identity was recorded. **Term** returns to the normal interactive terminal.
 
@@ -70,6 +70,16 @@ nothing is ever hidden under it. If you are at the end you stay at the end: a ne
 dots, a draft growing to several lines or the tile changing size never push the last line
 out of view. Scroll up and it leaves you where you are, and fetches earlier lines as you
 go; a long conversation is never loaded whole.
+
+Chat is made for reading, not a second terminal. The Agent's words are in the same type as the
+rest of Ronin, larger than the terminal's, with bold, lists and headings drawn; commands, paths
+and code stay in the terminal's own type so they line up as they do there. **Markdown** on the
+メ menu (shown while Chat is open) turns the drawing off, to see exactly what the Agent wrote,
+marks and all; the choice is kept on this device.
+
+What you send shows in Chat straight away, in a lighter shade, and turns to the normal shade
+when the Agent's CLI takes it. A busy Agent takes a message at the end of what it is doing,
+so a light message is one still waiting.
 
 On a phone the button sits in the bar at the top, because the tile's own header is not on
 screen there, and it is a two-state toggle: **Term** or **Chat**. The fuller readings are a
