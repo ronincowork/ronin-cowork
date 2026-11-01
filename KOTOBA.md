@@ -131,6 +131,7 @@ Every physical or fleet surface carries the `office_` prefix; `control_plane`, `
 
 | Term | Meaning |
 |---|---|
+| Ronin as a Service (`raas`) | The whole hosted offering: offices on office_hosts, the control_plane, front_door, billing and office_export. The house name; Ronin Cloud is the same offering as the customer hears it |
 | Office (`office`) | The product unit: one customer's full Ronin with its own kernel and disk, running on an office_host. The customer sees and buys offices and Agents running, never the machinery |
 | Office host (`office_host`) | The physical machine Ronin rents, running many offices under one hypervisor. Ronin administers it; no customer touches it |
 | Hypervisor (`hypervisor`) | The software on an office_host that carves it into offices and exposes the API the control_plane drives: Proxmox VE |
