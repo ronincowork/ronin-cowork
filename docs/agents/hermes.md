@@ -8,7 +8,7 @@
 - **launch_model_dangerously:** ["hermes", "chat", "-m", "{model}", "--yolo"]
 - **launch_resume:** ["hermes", "--resume", "{session_id}"]
 - **launch_new_session_id:** —
-- **launch_isolation:** {"env":"HERMES_HOME","home":"~/.hermes","shared":["auth.json",".env","config.yaml","skills","SOUL.md","hermes-agent","tools"],"provision":"hermes-setup"}
+- **launch_isolation:** {"env":"HERMES_HOME","home":"~/.hermes","shared":["auth.json",".env","config.yaml","skills","SOUL.md","hermes-agent","tools","installs"],"provision":"hermes-setup"}
 - **transcript_journal:** {"format":"hermes-state","root":"{home}","pattern":"state.db"}
 - **launch_initial:** ["--query", "{brief}"]
 
@@ -24,8 +24,9 @@ connections currently use provider-default reasoning.
 New Agent keeps its two fields: Model provider = Hermes, Model = the setup name.
 Each Cowork birth creates a private `cli-home/` directory inside that session's record,
 with a configuration snapshot and empty memory/history. Hermes uses `shared` to link only
-`auth.json`, `.env`, `config.yaml`, `skills`, `SOUL.md`, `hermes-agent`, and `tools` from
-its installed home. Named setups replace the inherited config with their snapshot and
+`auth.json`, `.env`, `config.yaml`, `skills`, `SOUL.md`, `hermes-agent`, `tools`, and `installs` from
+its installed home. `installs` holds the dependency generations and installation records,
+so a fresh data home reuses the installed runtime instead of installing dependencies. Named setups replace the inherited config with their snapshot and
 point `.env` at the connection credential. Everything else starts private, including
 new runtime files introduced by Hermes updates. Codex retains its existing `private` form.
 Each birth owns its gateway and conversation store: Hermes mints conversation IDs itself,
