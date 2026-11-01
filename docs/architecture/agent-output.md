@@ -18,7 +18,9 @@ on across both.
 
 - **Log read:** one adapter per log format (Claude `message-blocks`, Codex `event-items`). It
   runs when the log file changes (a directory watch), resumes from where it stopped, and pushes
-  only the new lines.
+  only the new lines. Claude Code writes its private reasoning as empty thinking blocks and the
+  narration it prints between tool calls as thinking blocks that carry text: the first is never
+  stored, the second is the Agent's `say`.
 - **Terminal read** (`terminal-read.ts`): runs when tmux reports output on the Agent's pane
   (Core's activity subscription, the `onPaneActivity` socket). It reads the screen once and
   writes only what no log holds:
