@@ -1,3 +1,4 @@
+import { mountHermesSurface } from './hermes-surface.js';
 /* part of the ronin-cowork client — see js/README.md */
 /**
  * ONE MODEL PROVIDERS SURFACE, TWO SEATS. Ronin Setup's Model providers card and Ronin
@@ -100,7 +101,7 @@ export function providerStones(runtime) {
       const own = rows.filter((row) => row.cli === provider.id);
       const vendor = own[0]?.provider_label || provider.from || '';
       const entry = (providerCatalog().providers || []).find((candidate) => candidate.cli === provider.id);
-      return stoneOf(String(provider.id), provider.label || provider.id, own.length ? t('setup_surface.provider_models_n', '{vendor} · {n} models', { vendor, n: own.length }) : vendor, providerPresentation(provider).inventoryState, provider.activated === true, createStatusMarker(entry?.maturity));
+      return stoneOf(String(provider.id), provider.label || provider.id, own.length ? t('setup_surface.provider_models_n', '{vendor} · {n} models', { vendor, n: own.length }) : vendor, provider.id === 'hermes' ? (own.length ? 'Setups available' : 'Add a connection and setup') : providerPresentation(provider).inventoryState, provider.activated === true, createStatusMarker(entry?.maturity));
     }),
     ...catalogOnly(runtime).map((entry) => ({
       ...stoneOf(entry.provider, entry.label, entry.models.length ? t('setup_surface.provider_models_n', '{vendor} · {n} models', { vendor: entry.label, n: entry.models.length }) : '', entry.models.length ? t('setup_surface.no_cli_state', 'No CLI') : '', false, createStatusMarker(entry.maturity)),
@@ -538,6 +539,7 @@ export function createProviderDrawing(context, { repaint, say = () => {} }) {
     const provider = providerFromRuntime(runtime, id);
     const rows = providerCatalog().rows.filter((row) => (provider ? row.cli === provider.id : row.provider === id));
     if (!provider && !rows.length) { host.append(el('p', 'setup-notice bad', t('setup_surface.provider_missing', 'This provider is no longer in the model-provider catalog.'))); return null; }
+    if (id === 'hermes') return mountHermesSurface(host, provider, paint);
     const yours = el('section', 'setup-provider-yours');
     yours.append(el('h3', 'setup-provider-eyebrow', t('setup_surface.section_yours', 'Yours')));
     if (provider) paintYours(provider, yours);

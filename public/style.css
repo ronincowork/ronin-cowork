@@ -4962,3 +4962,11 @@ html[data-screen='inside'] #phone .ph-bar .ph-title[data-boot='inside'] { displa
   .help-mika-none { margin: 0; padding: var(--space-inset); color: var(--fg); font-size: var(--text-body); }
   .help-mika-none a { color: var(--link); }
 }
+
+/* Hermes API connections and named models share the Models workbench seat. */
+.hermes-settings { display: grid; gap: var(--space-paragraph); min-width: 0; }
+.hermes-settings p { margin: 0; color: var(--muted); line-height: var(--leading-body); }
+.hermes-card, .hermes-editor { display: grid; gap: var(--space-inline); padding: var(--space-inset); border: var(--edge) solid var(--line); border-radius: var(--radius-small); min-width: 0; }
+.hermes-field { display: grid; gap: var(--space-row); color: var(--muted); font-size: var(--form-note); }
+.hermes-field input, .hermes-field select { width: 100%; min-width: 0; min-height: var(--control-height); box-sizing: border-box; background: var(--inset); color: var(--fg); border: var(--edge) solid var(--line); border-radius: var(--radius-small); padding: var(--space-row) var(--space-control); font: inherit; font-size: var(--form-input); }
+.hermes-card p { overflow-wrap: anywhere; }

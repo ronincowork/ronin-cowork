@@ -1,3 +1,4 @@
+import { readHermesSettings } from './hermes-setups.js';
 /**
  * THE PROVIDER CATALOG AND THE ONE JOIN — every model row a picker offers or a launch runs.
  *
@@ -426,6 +427,7 @@ async function grammarOf(cli: string): Promise<AgentLaunches | null> {
 export async function providerRows(summary: ProviderSummary | null, catalog?: ProviderCatalogEntry[], info?: ModelInfoFile): Promise<ProviderRows[]> {
   const roots = catalog ?? await listProviderCatalog();
   const entries = roots.flatMap(entry => {
+    if (entry.cli === 'hermes') return [{ ...entry, provider: 'hermes', label: 'Hermes', connections: false }];
     if (!entry.connections) return [entry];
     const connections = summary?.models?.[entry.cli]?.connections ?? [];
     if (!connections.length) return [entry];
@@ -443,6 +445,21 @@ export async function providerRows(summary: ProviderSummary | null, catalog?: Pr
   const joined = await Promise.all(entries.map(async (entry): Promise<ProviderRows> => {
     const agent = AGENTS.find((candidate) => candidate.id === entry.cli);
     const off = turnedOff.has(entry.cli);
+    if (entry.cli === 'hermes') {
+      const settings = await readHermesSettings();
+      const grammar = entry.launchable ? await grammarOf(entry.cli) : null;
+      const on = !!grammar && (summary?.installed ?? []).includes('hermes') && !off;
+      const models: ProviderRow[] = settings.setups.filter(setup => settings.connections.some(c => c.id === setup.connection)).map((setup, index) => ({
+        provider: 'hermes', cli: 'hermes', provider_label: 'Hermes', cli_label: 'Hermes', operational: on, off,
+        selectable: on, origin: entry.origin, shadowed: entry.shadowed, model: setup.id, name: setup.name,
+        cmd: grammar ? commandText(renderLaunch(grammar.model, { model: setup.model })) : '',
+        ...(grammar?.modelDangerously.length ? { dangerousCmd: commandText(renderLaunch(grammar.modelDangerously, { model: setup.model })) } : {}),
+        tier: '', default: index === 0, info: null,
+      }));
+      return { ...entry, provider: 'hermes', label: 'Hermes', cli_label: 'Hermes', operational: on && models.length > 0, off,
+        models, launch_modes: ['configured', 'live_dangerously'] };
+    }
+
     const on = operational.has(entry.cli) && (!entry.connections || !!entry.connection_rows?.length);
     const base = {
       provider: entry.provider, cli: entry.cli, provider_label: entry.label, cli_label: agent?.label ?? entry.cli,

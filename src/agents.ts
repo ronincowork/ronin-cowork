@@ -21,7 +21,7 @@ export type ModelsSource =
   | { read: 'claude-cache' }
   | { read: 'codex-cache' }
   | { read: 'command'; argv: readonly string[] }
-  | { read: 'hermes-config' }
+  | { read: 'hermes-setups' }
   | { read: 'none' };
 
 export interface AgentOperations {
@@ -101,7 +101,7 @@ export const AGENTS = [
       update: { shell: '', argv: ['update'] },
       selfUpdates: false,
       version: ['--version'],
-      models: { read: 'hermes-config' },
+      models: { read: 'hermes-setups' },
       session: { discovery: 'unsupported' },
     } as AgentOperations,
     credentials: [],

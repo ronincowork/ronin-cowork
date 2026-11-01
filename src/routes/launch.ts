@@ -368,6 +368,11 @@ export function registerLaunch(app: express.Express): LaunchControl {
     }
 
     try {
+      let hermesEnv: Record<string, string> = {};
+      if (resolved.identity?.provider === 'hermes') {
+        if (!birthDir) throw new Error('Named Hermes setups require a Cowork agent session.');
+        hermesEnv = { RONIN_SETUP_ID: resolved.identity.model };
+      }
       const launchWords = resolved.session_type === 'bare_metal_agent' ? (form.prompt ?? '') : resolved.brief;
       launch = resolved.agent ? await launchArgv(resolved.cmd, launchWords) : { argv: [], parked: false };
       if (resolved.agent && !launch.argv.length) {
@@ -389,7 +394,7 @@ export function registerLaunch(app: express.Express): LaunchControl {
         // Told at birth, the way tmux tells every shell where its server is: the socket
         // this operator bound. A process that bound none (a dev run) says nothing, and the
         // newborn's tools use the default path.
-        env: birthEnv(boundOperatorSocket(), agentBinDir(), process.env.PATH ?? ''),
+        env: { ...birthEnv(boundOperatorSocket(), agentBinDir(), process.env.PATH ?? ''), ...hermesEnv },
         key: birthKey || undefined,
         // The Services switch as resolved for THIS Agent at birth (campaign < team < form):
         // off means RIREKI never records it. Set here and never again — nothing cascades

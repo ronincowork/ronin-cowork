@@ -103,8 +103,8 @@ test('the picker offers every provider, disabling what is not on this machine', 
   assert.equal(pair.el.className, 'fs-pair');
   const providerOptions = pair.providerSelect.options;
   assert.deepEqual(providerOptions.map((option) => [option.value, option.disabled]), [['', false], ['openai', false], ['anthropic', true], ['google', true]]);
-  assert.equal(providerOptions[1].textContent, 'OpenAI');
-  assert.equal(providerOptions[2].textContent, 'Anthropic — not on this machine');
+  assert.equal(providerOptions[1].textContent, 'Codex');
+  assert.equal(providerOptions[2].textContent, 'Claude Code — not on this machine');
   assert.equal(pair.modelSelect.disabled, true, 'no provider named yet');
   assert.deepEqual(pair.modelSelect.options.map((option) => option.value), ['']);
 });
@@ -150,9 +150,9 @@ test('a provider the owner turned off is greyed with that word — never the fal
     await loadProviderCatalog();
     assert.deepEqual(providerCatalog().rows.filter((row) => row.provider === 'anthropic').map((row) => [row.operational, row.off]), [[false, true], [false, true], [false, true]]);
     const pair = providerModelPair(() => ({ provider: '', model: '' }), () => {}, (_label, control) => control);
-    assert.equal(pair.providerSelect.options[2].textContent, 'Anthropic — turned off');
+    assert.equal(pair.providerSelect.options[2].textContent, 'Claude Code — turned off');
     assert.equal(pair.providerSelect.options[2].disabled, true, 'disabled, never hidden');
-    assert.equal(pair.providerSelect.options[3].textContent, 'Google — not on this machine', 'absent keeps its own words');
+    assert.equal(pair.providerSelect.options[3].textContent, 'Gemini CLI — not on this machine', 'absent keeps its own words');
     const fixed = providerModelPair(() => ({ provider: 'anthropic', model: '' }), () => {}, (_label, control) => control, { fixed: 'anthropic' });
     assert.equal(fixed.modelSelect.options[1].textContent, 'Native — turned off');
     assert.equal(fixed.modelSelect.options[2].textContent, 'Opus 5 · frontier — turned off');
@@ -188,22 +188,18 @@ test('no client module keeps its own provider or model list, join, or vendor nam
   assert.doesNotMatch(schemaSource, /haiku|mini|flash|LIGHT|modelOpts/);
 });
 
-test('harness selection scopes connections and clears the old model when switching', async () => {
-  const hermes = { provider: 'hermes_openai', cli: 'hermes', native: 'hermes', label: 'OpenAI API', cli_label: 'Hermes', models: [] };
-  CATALOG_DOOR = door();
-  CATALOG_DOOR.providers.push({ ...joined(hermes, true, [['luna', 'Luna']]), connections: true, inference_provider: 'openai' });
-  CATALOG_DOOR.providers.push({ ...joined({ ...hermes, provider: 'hermes_mistral', label: 'Mistral API' }, true, [['small', 'Small']]), connections: true, inference_provider: 'mistral' });
+test('Hermes named setups use the existing provider and model selects', async () => {
+  const hermes = { provider: 'hermes', cli: 'hermes', native: 'hermes', label: 'Hermes', cli_label: 'Hermes', models: [] };
+  CATALOG_DOOR.providers.push(joined(hermes, true, [['luna-id', 'Luna'], ['sol-id', 'Sol reviewer']]));
   try {
     await loadProviderCatalog();
     const draft = { provider: 'openai', model: 'gpt-5.6-sol' };
     const pair = providerModelPair(() => draft, (provider, model) => Object.assign(draft, { provider, model }), (_label, control) => control);
-    assert.equal(pair.harnessSelect.value, 'codex');
-    pair.harnessSelect.value = 'hermes'; pair.harnessSelect.fire('change');
-    assert.deepEqual(draft, { provider: '', model: '' });
-    assert.deepEqual(pair.providerSelect.options.map(row => row.value), ['', 'hermes_openai', 'hermes_mistral']);
-    pair.providerSelect.value = 'hermes_mistral'; pair.providerSelect.fire('change');
-    assert.deepEqual(pair.modelSelect.options.map(row => row.value), ['', 'native', 'small']);
-    pair.modelSelect.value = 'small'; pair.modelSelect.fire('change');
-    assert.deepEqual(draft, { provider: 'hermes_mistral', model: 'small' });
+    assert.equal(pair.harnessSelect, undefined);
+    pair.providerSelect.value = 'hermes'; pair.providerSelect.fire('change');
+    assert.deepEqual(draft, { provider: 'hermes', model: '' });
+    assert.deepEqual(pair.modelSelect.options.map(row => row.value), ['', 'native', 'luna-id', 'sol-id']);
+    pair.modelSelect.value = 'luna-id'; pair.modelSelect.fire('change');
+    assert.deepEqual(draft, { provider: 'hermes', model: 'luna-id' });
   } finally { CATALOG_DOOR = door(); await loadProviderCatalog(); }
 });

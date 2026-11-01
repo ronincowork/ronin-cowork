@@ -87,20 +87,16 @@ Dangerously to Grok's canonical `--always-approve` spelling.
 xAI names no durable family, so its families are the versions themselves. Not yet
 exercised through Ronin.
 
-### Hermes API connections
+### Hermes
 
-- **provider:** `nous`
+- **provider:** `hermes`
 - **cli:** `hermes`
-- **connections:** `configured`
-- **families:** `405b=standard 36b=light`
-- **transcript_source:** Not established by the 2026-09-22 transcript investigation; no transcript availability promised.
+- **transcript_source:** Not established; no transcript availability promised.
 
-Hermes is a harness with zero or more configured API connections. `connections: configured`
-expands this template from the CLI's saved connection/model inventory on Refresh all.
-The retained `nous` id is the legacy empty template, not an inference choice when no
-connection is configured. Each measured connection has its own stable Ronin route id;
-its actual inference-provider id is passed unchanged to Hermes. Endpoint and credential
-configuration remain in Hermes. See `docs/agents/hermes.md` for setup and current limits.
+Hermes uses Ronin-managed API connections and named setups. The Model dropdown lists
+setup names; each setup pins a connection, actual API model, reasoning and approvals.
+Each Cowork launch receives a separate Hermes home. Credentials belong to the API
+connection, not the setup. See `docs/agents/hermes.md` for setup and current limits.
 
 ### OpenRouter
 

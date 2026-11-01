@@ -38,9 +38,9 @@ test('strategy follows grammar rather than a provider list', async () => {
 test('isolated launch mirrors newly discovered settings but owns its journal; restore reuses home', async t => {
   const root = await mkdtemp(path.join(tmpdir(), 'launch-isolation-'));
   const source = path.join(root, 'original-home'), store = path.join(root, 'sessions');
-  await mkdir(source); await mkdir(path.join(source, isolated.isolation!.private));
+  await mkdir(source); await mkdir(path.join(source, isolated.isolation!.private as string));
   await writeFile(path.join(source, 'future-setting'), 'preserve me');
-  await writeFile(path.join(source, isolated.isolation!.private, 'neighbour.jsonl'), 'foreign');
+  await writeFile(path.join(source, isolated.isolation!.private as string, 'neighbour.jsonl'), 'foreign');
   const envName = isolated.isolation!.env;
   const oldHome = process.env[envName], oldStore = process.env.RONIN_SESSION_DIR;
   process.env[envName] = source; process.env.RONIN_SESSION_DIR = store;
@@ -78,4 +78,26 @@ test('all process starts pass through one serial entry, including unbound shells
   assert.deepEqual(events, ['a']); release();
   const result = await Promise.all([first, second]);
   assert.deepEqual(events, ['a', 'b']); assert.ok(result.every(r => r.strategy === 'unbound'));
+});
+
+
+test('Hermes isolates SQLite files and memory, and records its cli-home before startup', async t => {
+  const root = await mkdtemp(path.join(tmpdir(), 'hermes-isolation-'));
+  const source = path.join(root, 'source'); await mkdir(source);
+  for (const file of ['state.db', 'state.db-wal', 'state.db-shm', 'config.yaml']) await writeFile(path.join(source, file), 'source');
+  await mkdir(path.join(source, 'memories')); await writeFile(path.join(source, 'memories', 'MEMORY.md'), 'private');
+  const old = process.env.HERMES_HOME, oldStore = process.env.RONIN_SESSION_DIR;
+  process.env.HERMES_HOME = source; process.env.RONIN_SESSION_DIR = path.join(root, 'sessions');
+  t.after(async () => { if (old === undefined) delete process.env.HERMES_HOME; else process.env.HERMES_HOME = old; if (oldStore === undefined) delete process.env.RONIN_SESSION_DIR; else process.env.RONIN_SESSION_DIR = oldStore; await rm(root, { recursive: true, force: true }); });
+  const result = await processLaunch({ name: 'hermes', key: 'hermes-birth', cli: 'hermes', argv: ['hermes', 'chat'], cwd: root }, async (_argv, env, identity) => {
+    assert.equal(identity.strategy, 'isolated');
+    assert.equal(identity.home, path.join(root, 'sessions', 'hermes-birth', 'cli-home'));
+    assert.equal(env.HERMES_HOME, identity.home);
+    assert.equal((await readLaunchIdentity('hermes-birth'))?.home, identity.home);
+    assert.deepEqual(await readdir(identity.home!), ['config.yaml']);
+    assert.equal(await realpath(path.join(identity.home!, 'config.yaml')), path.join(source, 'config.yaml'));
+    await writeFile(path.join(identity.home!, 'state.db'), 'own database');
+  });
+  assert.equal(await readFile(path.join(source, 'state.db'), 'utf8'), 'source');
+  assert.equal(await readFile(path.join(result.home!, 'state.db'), 'utf8'), 'own database');
 });

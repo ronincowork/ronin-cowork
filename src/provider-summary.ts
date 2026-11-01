@@ -1,3 +1,4 @@
+import { hermesConfigured, readHermesSettings } from './hermes-setups.js';
 /**
  * MEASURING THE PROVIDERS — the one place the machine is asked what it has, and the
  * Campaign record that keeps the answer.
@@ -19,7 +20,6 @@
 import { readFile, readdir, stat } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { readHermesConnections } from './hermes-models.js';
 import { appendEgress, type EgressLine } from './activation/egress.js';
 import { AGENTS, listAgentAvailability, type AgentAvailability, type ModelsSource } from './agents.js';
 import { execFile } from './spawn-broker.js';
@@ -56,6 +56,7 @@ async function exists(file: string): Promise<boolean> {
 
 /** The CLI signed in on this machine and left its credential file; Ronin reads only that it exists. */
 export async function providerSignedIn(cli: string, home = os.homedir()): Promise<boolean> {
+  if (cli === 'hermes') return hermesConfigured();
   const files = AGENTS.find((agent) => agent.id === cli)?.credentials ?? [];
   for (const file of files) if (await exists(path.join(home, file))) return true;
   return false;
@@ -155,7 +156,7 @@ const READERS: Record<ModelsSource['read'], (agent: Agent, home: string, file: s
     const { stdout, stderr } = await execFile(file, [...agent.operations.models.argv], { timeout: 20_000 });
     return commandModels(`${stdout}\n${stderr}`);
   },
-  'hermes-config': async (_agent, _home, file) => ({ connections: await readHermesConnections(file) }),
+  'hermes-setups': async () => (await readHermesSettings()).setups.map(setup => ({ id: setup.id, name: setup.name })),
   none: async () => null,
 };
 
