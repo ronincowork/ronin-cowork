@@ -138,7 +138,7 @@ export async function resolveTranscriptSource(name: string): Promise<import('./s
     const chain = await resolveLaunchSegments(identity);
     if ('gap' in chain) return { gap: chain.gap };
     const files = chain.files;
-    return { source: { ...common, file: files[files.length - 1], files, session: chain.session } };
+    return { source: { ...common, file: files[files.length - 1], files, session: chain.session, root: identity.journal.root } };
   }
   const file = await resolveLaunchJournal(identity);
   if (!file) return { gap: 'journal_pending' };

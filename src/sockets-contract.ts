@@ -36,7 +36,9 @@ export type RowFields = Record<string, unknown>;
  * ordered chain when one birth's journal spans several segments, oldest first, and `file`
  * is its last. Absent for every identity whose journal is a single pinned file.
  */
-export interface TranscriptSource { file: string; format: string; provider: string; session: string; dir: string; files?: string[] }
+/** `root`: the folder a birth owns for its journal (an isolated CLI, e.g. Codex), which may file
+ *  segments in subfolders; absent when the journal sits in a folder shared with other births. */
+export interface TranscriptSource { file: string; format: string; provider: string; session: string; dir: string; files?: string[]; root?: string }
 
 /**
  * WHY THERE IS NO SOURCE, when there is none. Core knows which of these it hit; before
