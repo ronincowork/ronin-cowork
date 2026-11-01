@@ -6,13 +6,13 @@ import path from 'node:path';
 import os from 'node:os';
 import { parse } from 'dotenv';
 import { readCredential, writeCredential } from './credential-store.js';
-import { storeDir } from './resources.js';
+import { storeDir, REPO_ROOT } from './resources.js';
 
-export interface HermesConnection { id: string; name: string; provider: 'openai' | 'mistral' | 'custom'; baseUrl: string; models: string[]; discoveredAt?: string }
+export interface HermesConnection { id: string; name: string; provider: 'openai' | 'mistral' | 'custom'; baseUrl: string; models: string[]; discoveredAt?: string; credentialEnv?: string }
 export interface HermesSetup { id: string; name: string; connection: string; model: string; reasoning: string; approvals: 'off' | 'prompt' }
 export interface HermesSettings { connections: HermesConnection[]; setups: HermesSetup[] }
 const empty = (): HermesSettings => ({ connections: [], setups: [] });
-export const readHermesSettings = () => readCredential<HermesSettings>('hermes-setups', empty());
+const readStoredSettings = () => readCredential<HermesSettings>('hermes-setups', empty());
 const keyPath = (id: string) => path.join(storeDir('services_secrets'), `hermes-${id}.env`);
 const idPattern = /^[a-z0-9-]+$/;
 const modelPattern = /^[A-Za-z0-9._:/-]+$/;
@@ -28,7 +28,7 @@ export async function hermesSettingsAnswer() {
 }
 export async function saveHermesConnection(input: Record<string, unknown>): Promise<HermesConnection> {
   return mutation(async () => {
-    const state = await readHermesSettings();
+    const state = await readStoredSettings();
     const existing = state.connections.find(c => c.id === input.id);
     if (input.id && !existing) throw new Error('Connection no longer exists.');
     const provider = input.provider;
@@ -42,7 +42,8 @@ export async function saveHermesConnection(input: Record<string, unknown>): Prom
     if (existing && existing.baseUrl !== baseUrl && !apiKey) throw new Error('Enter a key for the changed endpoint.');
     const id = existing?.id || randomUUID();
     const changed = !existing || existing.baseUrl !== baseUrl || existing.provider !== provider || !!apiKey;
-    const connection: HermesConnection = { id, name: required(input.name, 'Connection name'), provider, baseUrl,
+    if (existing?.credentialEnv && !apiKey && existing.baseUrl !== baseUrl) throw new Error('Update the endpoint in the credential environment, or enter a key here.');
+    const connection: HermesConnection = { ...(!apiKey && existing?.credentialEnv ? { credentialEnv: existing.credentialEnv } : {}), id, name: required(input.name, 'Connection name'), provider, baseUrl,
       models: changed ? [] : existing.models, ...(!changed && existing.discoveredAt ? { discoveredAt: existing.discoveredAt } : {}) };
     if (apiKey) {
       await mkdir(path.dirname(keyPath(id)), { recursive: true });
@@ -57,7 +58,7 @@ export async function saveHermesConnection(input: Record<string, unknown>): Prom
 }
 export async function discoverHermesModels(id: string): Promise<string[]> {
   return mutation(async () => {
-    const state = await readHermesSettings(); const c = state.connections.find(c => c.id === id);
+    const state = await readStoredSettings(); const c = state.connections.find(c => c.id === id);
     if (!c) throw new Error('Connection no longer exists.');
     const key = await readKey(c.id); if (!key) throw new Error('API key missing.');
     let response: Response;
@@ -75,7 +76,7 @@ export async function discoverHermesModels(id: string): Promise<string[]> {
 }
 export async function saveHermesSetup(input: Record<string, unknown>): Promise<HermesSetup> {
   return mutation(async () => {
-    const state = await readHermesSettings(); const c = state.connections.find(c => c.id === input.connection);
+    const state = await readStoredSettings(); const c = state.connections.find(c => c.id === input.connection);
     if (!c) throw new Error('Select an API connection.');
     const model = required(input.model, 'Model');
     if (!c.models.includes(model)) throw new Error('Select a model discovered from this connection.');
@@ -92,22 +93,74 @@ export async function saveHermesSetup(input: Record<string, unknown>): Promise<H
 }
 export async function deleteHermesEntry(kind: 'connections' | 'setups', id: string) {
   return mutation(async () => {
-    const state = await readHermesSettings();
+    const state = await readStoredSettings();
     if (kind === 'connections' && state.setups.some(s => s.connection === id)) throw new Error('Remove the setups using this connection first.');
     // Keep the private credential file for already-running profiles. Removing a setup does not revoke their key.
-    if (kind === 'connections') state.connections = state.connections.filter(row => row.id !== id);
+    if (kind === 'connections') {
+      const source = state.connections.find(row => row.id === id)?.credentialEnv;
+      if (source) throw new Error(`Remove ${source} from the environment to disconnect this API.`);
+      state.connections = state.connections.filter(row => row.id !== id);
+    }
     else state.setups = state.setups.filter(row => row.id !== id);
     await writeCredential('hermes-setups', state);
   });
 }
-export async function importHermesOpenAI() {
-  const key = parse(await readFile(path.join(os.homedir(), '.hermes', '.env'))).OPENAI_API_KEY;
-  if (!key) throw new Error('No OpenAI API key saved in the default Hermes home.');
-  return saveHermesConnection({ name: 'Ronin Hermes OpenAI', provider: 'openai', baseUrl: 'https://api.openai.com/v1', apiKey: key });
+const environmentProviders: Record<string, { name: string; provider: HermesConnection['provider']; baseUrl: string }> = {
+  OPENAI: { name: 'OpenAI API', provider: 'openai', baseUrl: 'https://api.openai.com/v1' },
+  MISTRAL: { name: 'Mistral API', provider: 'mistral', baseUrl: 'https://api.mistral.ai/v1' },
+};
+/** Pure discovery: known compatible APIs, or NAME_API_KEY paired with NAME_BASE_URL. */
+export function environmentConnections(env: NodeJS.ProcessEnv) {
+  return Object.entries(env).flatMap(([credentialEnv, value]) => {
+    const match = /^([A-Z][A-Z0-9_]*)_API_KEY$/.exec(credentialEnv);
+    const apiKey = value?.trim();
+    if (!match || !apiKey || /[\r\n'"\\]/.test(apiKey)) return [];
+    const prefix = match[1]; const known = environmentProviders[prefix];
+    const baseUrl = (env[`${prefix}_BASE_URL`] || known?.baseUrl || '').replace(/\/$/, '');
+    let url: URL;
+    try { url = new URL(baseUrl); } catch { return []; }
+    if (url.protocol !== 'https:' || url.username || url.password || url.search || url.hash) return [];
+    return [{ credentialEnv, apiKey, baseUrl, name: known?.name || `${prefix} API`, provider: known?.provider || 'custom' as const }];
+  });
+}
+async function credentialEnvironment(): Promise<NodeJS.ProcessEnv> {
+  const readEnv = async (file: string) => { try { return parse(await readFile(file)); } catch { return {}; } };
+  const native = await readEnv(path.join(process.env.HERMES_HOME || path.join(os.homedir(), '.hermes'), '.env'));
+  const app = await readEnv(process.env.DOTENV_CONFIG_PATH || path.join(REPO_ROOT, '.env'));
+  return { ...native, ...process.env, ...app };
+}
+/** Reconcile references to existing credentials. API access is only checked by model discovery. */
+export function readHermesSettings(environment?: NodeJS.ProcessEnv): Promise<HermesSettings> {
+  return mutation(async () => {
+    const state = await readStoredSettings(); let changed = false;
+    const discovered = environmentConnections(environment || await credentialEnvironment());
+    for (const found of discovered) {
+      let c = state.connections.find(c => c.credentialEnv === found.credentialEnv);
+      // An explicitly managed connection wins over automatic discovery of the same endpoint.
+      if (!c && state.connections.some(c => !c.credentialEnv && c.baseUrl === found.baseUrl)) continue;
+      if (!c) {
+        c = { id: randomUUID(), name: found.name, provider: found.provider, baseUrl: found.baseUrl, models: [], credentialEnv: found.credentialEnv };
+        state.connections.push(c); changed = true;
+      }
+      if (c.baseUrl !== found.baseUrl) { c.baseUrl = found.baseUrl; c.models = []; delete c.discoveredAt; changed = true; }
+      const content = `OPENAI_API_KEY='${found.apiKey}'\nOPENAI_BASE_URL='${found.baseUrl}'\n`;
+      const previous = await readFile(keyPath(c.id), 'utf8').catch(() => '');
+      if (previous !== content) {
+        await mkdir(path.dirname(keyPath(c.id)), { recursive: true });
+        const tmp = `${keyPath(c.id)}.tmp`;
+        await writeFile(tmp, content, { mode: 0o600 }); await rename(tmp, keyPath(c.id));
+      }
+    }
+    for (const c of state.connections) {
+      if (c.credentialEnv && !discovered.some(found => found.credentialEnv === c.credentialEnv)) await rm(keyPath(c.id), { force: true });
+    }
+    if (changed) await writeCredential('hermes-setups', state);
+    return state;
+  });
 }
 /** Fresh home per birth; immutable settings snapshot, shared credential link for rotation on restart. */
 export async function prepareHermesHome(setupId: string, home: string) {
-  const state = await readHermesSettings(); const setup = state.setups.find(s => s.id === setupId);
+  const state = await readStoredSettings(); const setup = state.setups.find(s => s.id === setupId);
   const connection = state.connections.find(c => c.id === setup?.connection);
   if (!setup || !connection || !await readKey(connection.id)) throw new Error('Hermes setup or API credential is unavailable.');
   await mkdir(home, { recursive: true, mode: 0o700 });

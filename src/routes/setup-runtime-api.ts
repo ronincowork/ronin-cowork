@@ -1,4 +1,4 @@
-import { hermesSettingsAnswer, saveHermesConnection, discoverHermesModels, saveHermesSetup, deleteHermesEntry, importHermesOpenAI } from '../hermes-setups.js';
+import { hermesSettingsAnswer, saveHermesConnection, discoverHermesModels, saveHermesSetup, deleteHermesEntry } from '../hermes-setups.js';
 import { homedir } from 'node:os';
 import { dispatchInstall } from '../agent-install.js';
 import type express from 'express';
@@ -51,7 +51,6 @@ export function registerSetupRuntime(app: express.Express): void {
         case 'connection': await saveHermesConnection(req.body); break;
         case 'discover': await discoverHermesModels(String(req.body.id)); break;
         case 'setup': await saveHermesSetup(req.body); break;
-        case 'import': await importHermesOpenAI(); break;
         case 'delete':
           if (req.body.kind !== 'connections' && req.body.kind !== 'setups') throw new Error('Invalid entry type.');
           await deleteHermesEntry(req.body.kind, String(req.body.id)); break;

@@ -64,14 +64,14 @@ export function mountHermesSurface(host, provider, onChanged) {
     if (disposed) return;
     root.replaceChildren(el('h2', 'Hermes'), el('p', provider?.installed ? `Runtime installed${provider.version ? ` · ${provider.version}` : ''}` : 'Install Hermes before launching an agent.'), notice);
     notice.textContent = '';
-    root.append(el('h3', 'API connections'), el('p', 'Save a connection, then discover its models. Discovery checks API access; it does not verify inference for every model.'));
+    root.append(el('h3', 'API connections'), el('p', 'Saved API connections appear here automatically. Load a connection’s models to create named setups.'));
     for (const c of state.connections) {
       const row = el('div'); row.className = 'hermes-card';
-      row.append(el('strong', c.name), el('p', `${c.provider} · ${c.configured ? 'Key configured' : 'Key missing'} · ${c.discoveredAt ? `${c.models.length} models discovered` : 'Models not discovered'}`),
-        button('Discover models', () => run('discover', { id: c.id })), button('Edit', () => editConnection(c)), button('Remove', () => run('delete', { kind: 'connections', id: c.id })));
+      row.append(el('strong', c.name), el('p', `${c.provider}${c.credentialEnv ? ` · ${c.credentialEnv}` : ''} · ${c.configured ? 'Configured' : 'Key missing'} · ${c.discoveredAt ? `${c.models.length} models discovered` : 'Models not discovered'}`),
+        button('Load models', () => run('discover', { id: c.id })), button('Edit', () => editConnection(c)), ...(c.credentialEnv ? [] : [button('Remove', () => run('delete', { kind: 'connections', id: c.id }))]));
       root.append(row);
     }
-    root.append(button('Add API connection', () => editConnection()), button('Import saved Hermes OpenAI key', () => run('import', {})));
+    root.append(button('Add API connection', () => editConnection()));
     root.append(el('h3', 'Named setups'), el('p', 'These names appear under Model when you select Hermes in New Agent. Each launch gets separate memory and conversation history.'));
     for (const setup of state.setups) {
       const row = el('div'); row.className = 'hermes-card';

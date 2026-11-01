@@ -31,8 +31,12 @@ store's `hermes-setups.json`; secrets remain in private `hermes-<connection-id>.
 Deleting a connection is blocked while a setup references it. Its credential file is
 retained for existing agents; revocation is performed at the API provider.
 
-The import action copies only OPENAI_API_KEY from the default Hermes home into a
-Ronin-owned connection. It does not import memories, instructions or conversation history.
+Existing provider credentials appear automatically: OPENAI_API_KEY and MISTRAL_API_KEY
+use their provider endpoints; another compatible API uses NAME_API_KEY plus NAME_BASE_URL.
+Ronin reads its environment/.env and the native Hermes .env, records the provider reference,
+and prepares the private credential file used by agent homes. No import action is required.
+Environment-backed connections are removed at their source; explicit form connections
+remain managed in Ronin. Configured means a key is present, not that inference was tested.
 Named setups currently require Cowork agent births; bare-metal launches are refused.
 Archive/restore remains unsupported. The hermes-state transcript declaration identifies the private state.db; the reader is delivered separately by KAN-155. Raw native Hermes commands
 continue to use Hermes's own defaults and do not select a Ronin setup automatically.

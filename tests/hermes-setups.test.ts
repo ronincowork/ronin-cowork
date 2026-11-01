@@ -5,6 +5,8 @@ import path from 'node:path';
 import { mkdtemp, readFile, stat, rm } from 'node:fs/promises';
 const box = await mkdtemp(path.join(os.tmpdir(), 'ronin-hermes-setups-'));
 process.env.RONIN_USER_ROOT = path.join(box, 'user');
+process.env.HERMES_HOME = path.join(box, 'missing-native-home');
+process.env.DOTENV_CONFIG_PATH = path.join(box, 'missing-env');
 const h = await import('../src/hermes-setups.js');
 const { providerRows } = await import('../src/model-providers.js');
 test.after(() => rm(box, { recursive: true, force: true }));
@@ -69,4 +71,17 @@ test('canonical launch provisioning replaces inherited config links without chan
   assert.equal(identity.strategy, 'isolated');
   assert.equal(await readFile(path.join(source, 'config.yaml'), 'utf8'), 'native-config');
   assert.equal(await readFile(path.join(source, '.env'), 'utf8'), 'native-key');
+});
+
+test('environment credentials appear automatically without exposing values or duplicating connections', async () => {
+  const env = { MISTRAL_API_KEY: 'mistral-secret', OFFICE_API_KEY: 'office-secret', OFFICE_BASE_URL: 'https://office.example.test/v1', UNRELATED_API_KEY: 'ignored' };
+  const discovered = h.environmentConnections(env);
+  assert.deepEqual(discovered.map(c => [c.name, c.provider]), [['Mistral API', 'mistral'], ['OFFICE API', 'custom']]);
+  const first = await h.readHermesSettings(env);
+  const second = await h.readHermesSettings(env);
+  assert.deepEqual(second, first);
+  assert.equal(second.connections.filter(c => c.credentialEnv === 'MISTRAL_API_KEY').length, 1);
+  assert.doesNotMatch(JSON.stringify(second), /mistral-secret|office-secret/);
+  const mistral = second.connections.find(c => c.credentialEnv === 'MISTRAL_API_KEY')!;
+  await assert.rejects(h.deleteHermesEntry('connections', mistral.id), /environment/);
 });

@@ -87,9 +87,11 @@ This proves model-list access, not per-model inference compatibility.
 
 `hermes-setups.ts` owns validation, serialized mutation, secret-free projection and fresh
 home provisioning. `/api/hermes` reads the projection; POST `/api/hermes/{connection,
-discover,setup,delete,import}` owns writes. The credential store holds metadata plus one
+discover,setup,delete}` owns writes. The credential store holds metadata plus one
 private dotenv credential file per connection. Keys never enter catalog or route answers.
 The Models worksurface has connection and setup editors instead of Authenticate/Ready.
+Provider-key environment pairs are reconciled on read and appear automatically, without
+an import action. Environment credentials remain authoritative for those connections.
 
 The launch join maps setup UUIDs to explicit actual-model commands. Cowork launch creates
 `<session-record>/cli-home`, saves immutable settings and links the connection credential.
