@@ -6,7 +6,7 @@ its stable identifier.
 
 ```text
 behaviours/
-├── floor/         every resolved file is applied in full
+├── floor/         every resolved file is applied in full, to every Agent
 ├── conditional/   matching files are applied in full from authored `requires` facts
 ├── selected/      individual files are applied when Agent → Team → Campaign selects them
 └── sought/        every resolved file contributes only a generated awareness card

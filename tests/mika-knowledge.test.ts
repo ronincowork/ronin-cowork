@@ -159,13 +159,13 @@ test('the stock taxonomy discovers the complete approved set within the hard ind
         .filter((relative) => !delegated.some((root) => relative === root || relative.startsWith(`${root}/`)))
         .map((relative) => `${node.root}/${relative}`);
     }))).flat()
-      .filter((id) => !id.startsWith('ronin_session_boot/house/mika/'));
+      .filter((id) => !id.startsWith('ronin_session_boot/routine/mika/'));
     const built = await compileMikaKnowledgeAt(temp, { ownerRoots: {
       docs: '', 'ronin_catalogs/behaviours': '', ronin_catalogs: '', ronin_session_boot: '', ronin_library: '',
     } });
     assert.deepEqual(built.entries.map((row) => row.id), approved);
     // Her own house folder is read whole at birth, never indexed as a source.
-    assert.ok(built.entries.every((row) => !row.id.startsWith('ronin_session_boot/house/mika/')));
+    assert.ok(built.entries.every((row) => !row.id.startsWith('ronin_session_boot/routine/mika/')));
     assert.ok(built.bytes <= MIKA_INDEX_BUDGET.bytes, `${built.bytes} index bytes`);
     assert.ok(built.lines <= MIKA_INDEX_BUDGET.lines, `${built.lines} index lines`);
   } finally { await rm(temp, { recursive: true, force: true }); }

@@ -46,7 +46,7 @@ import { rememberSessionKey, sessionDir as sessionRecordDir } from '../session-d
 import type { HouseSeat } from '../house-seats.js';
 import { readTegami } from '../tegami-read.js';
 import { boundOperatorSocket, OPERATOR_SOCKET_ENV } from '../operator-socket.js';
-import { ensureMikaHome, MIKA_PROMPTS, MikaUnavailable, mikaRulesSource, mikaStartHereSource, mikaTipsSource, resolveConfiguredMikaModel, type MikaSelection } from '../mika-runtime.js';
+import { ensureMikaHome, MIKA_PROMPTS, MikaUnavailable, resolveConfiguredMikaModel, type MikaSelection } from '../mika-runtime.js';
 import { compileMikaKnowledgeAt } from '../mika-knowledge.js';
 import { isMikaTab } from '../mika-context.js';
 import { ensureSteercoTeam, recordRoninHelperWelcome, roninHelperWelcomeState, RONIN_HELPER_LOADER, STEERCO_TEAM } from '../ronin-helper.js';
@@ -368,11 +368,10 @@ export function registerLaunch(app: express.Express): LaunchControl {
       birthKey = `${resolved.name}-${Date.now()}`;
       birthDir = sessionRecordDir(birthKey);
       try {
-        // Mika's birth brief replaces the ordinary startup shelf: her rules, the Setup
-        // walkthrough, and the generated source index — the complete, bounded map of her
-        // admitted knowledge. Her typed brief stays two sentences; the reading is here.
+        // Mika's reading is her briefs like any Agent's (floor, then hers under behaviours/);
+        // her own addition is the generated source index, the bounded map of her knowledge.
         const resolvedSources = [...resolved.birth_reading];
-        const sources = houseSeat === 'mika' ? [] : resolvedSources;
+        const sources = [...resolvedSources];
         let mikaKnowledgeIndex = '';
         if (houseSeat === 'mika') {
           // A cold Mika launch publishes exactly one verified knowledge generation. The
@@ -381,9 +380,7 @@ export function registerLaunch(app: express.Express): LaunchControl {
           const previousSentence = `Read first: ${resolvedSources.join(', ')}.`;
           const knowledge = await compileMikaKnowledgeAt(mikaHome);
           mikaKnowledgeIndex = knowledge.index;
-          // The owner's tips ride in as a document of her own, inside her birth brief.
-          const mikaTips = await mikaTipsSource();
-          sources.push(mikaRulesSource(), mikaTips, mikaStartHereSource(), mikaKnowledgeIndex);
+          sources.push(mikaKnowledgeIndex);
           resolved.brief = resolved.brief.replace(previousSentence, `Read first: ${sources.join(', ')}.`);
         }
         const brief = await compileBirthBriefAt(

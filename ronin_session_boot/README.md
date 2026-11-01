@@ -51,8 +51,9 @@ table was shelved as vocabulary; nothing objected, because no test read the real
   exist on this box, `--help`, and each full document's path — and includes it in the
   compiled birth brief.
 
-Cowork-agent working guidance is applied from the Behavior floor. Other guidance is selected
-by conditional and selected Behavior definitions. Repository test protocols stay in repository
+Every Agent's working guidance is applied from the Behavior floor and the briefs that stack on
+it (`ronin_catalogs/behaviours/`). Other guidance is selected by conditional and selected
+Behavior definitions. Repository test protocols stay in repository
 developer instructions and are never ordinary user birth reading.
 
 See `docs/architecture/session-boot.md`.

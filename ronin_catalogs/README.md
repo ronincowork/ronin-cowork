@@ -35,8 +35,8 @@ input; identical subject names across directories do not make the documents inte
 | Path | Files | Why it exists / what belongs here |
 |---|---|---|
 | `capabilities/` | Core: `agent_session.md`, `cowork_team.md`, `edges.md`, `machine-settings.md`, `work-record.md`, `worktree-desk.md`. Feature: `mika.md`, `ronin-host.md`. | Agent-operable domains made from real tools. Every file has a `## Tools` table. |
-| `behaviours/floor/` | `cowork-agent.md`, `mandates.md`, `user-intro.md` | The complete automatic floor; the folder resolves wholesale. `user-intro.md` is the stock-empty coordinate shadowed from registration. |
-| `behaviours/conditional/` | `checkout.md`, `team-lead.md`, `worktree-root.md` | Candidates applied from launch facts declared in each file. |
+| `behaviours/floor/` | `base-agent.md`, `user-intro.md` | What every Agent is told, house Agents included; the folder resolves wholesale. `user-intro.md` is the stock-empty coordinate shadowed from registration. |
+| `behaviours/conditional/` | `cowork-agent.md`, `mandates.md`, `write_it_down.md` (`cowork`); `team-lead.md`, `lead-worktrees.md`, `epic_agent.md`, `traffic_control.md`; `mika.md`, `atarashi.md`; `checkout.md`, `worktree-root.md` | Candidates applied from launch facts declared in each file. |
 | `behaviours/selected/` | General choices display as Planning, Team Work, Visual Staging, and Working with the User; installation-owned files remain separate candidates | Candidates applied through Agent → Team → Campaign selection. Hidden compatibility files are not offered. |
 | `behaviours/sought/` | empty | Future awareness-only pages; the folder would generate its own index. |
 | `installations/` | `gbrain.md`, `perplexity.md`, `ronin_services.md`, `trello.md`. | What can be installed or enabled on a machine and what that installation contributes. An installation is not an Agent capability. |

@@ -13,7 +13,7 @@ test('Session Readings resolves level shapes, leaf links and per-level shadows',
   const previous = process.env.RONIN_SESSION_BOOT_DIR;
   process.env.RONIN_SESSION_BOOT_DIR = shelf;
   try {
-    for (const dir of ['all', 'root/project', 'routine/ronin_services', 'house/atarashi', 'gbrain_connected']) {
+    for (const dir of ['all', 'root/project', 'routine/ronin_services', 'gbrain_connected']) {
       await mkdir(path.join(shelf, dir), { recursive: true });
       await writeFile(path.join(shelf, dir, `${dir.replaceAll('/', '-')}.md`), `# ${dir}\n`);
     }
@@ -26,7 +26,7 @@ test('Session Readings resolves level shapes, leaf links and per-level shadows',
     await symlink(path.join(temp, 'hidden-dir'), path.join(shelf, 'routine', 'linked-routine'));
 
     const rows = await listSessionReadings();
-    for (const level of ['all', 'root/project', 'routine/ronin_services', 'house/atarashi', 'gbrain_connected']) {
+    for (const level of ['all', 'root/project', 'routine/ronin_services', 'gbrain_connected']) {
       assert.ok(rows.some((row) => row.level === level), `${level} should be represented`);
     }
     const shadow = rows.find((row) => row.name === 'all/RONIN_UTILITY.md');

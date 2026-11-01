@@ -1,7 +1,7 @@
 # User intro
 
 - **label:** User Intro
-- **blurb:** What the owner wants every Cowork Agent to know about them.
+- **blurb:** What the owner wants every Agent to know about them.
 - **installation:** —
 - **order:** 30
 - **scope:** floor
