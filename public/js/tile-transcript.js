@@ -1,6 +1,6 @@
 /* The journal view is independent of the terminal socket and old Output selector. */
 import { request } from './request.js';
-import { transcriptHandlers, watchTranscript } from './events.js';
+import { transcriptHandlers, transcriptWatch } from './events.js';
 import { t } from './lexicon.js';
 import { renderMarkdownDocument } from './markdown-reader.js';
 
@@ -26,10 +26,10 @@ const said = (text) => String(text || '').replace(/\s+/g, ' ').trim();
  *                 and the T-levels come from here, never from a list kept in the tile.
  */
 /**
- * @param watch  tells the server what this tab is showing; the server sends only that
+ * @param watch  this view's own slot in what the tab tells the server it shows; the server sends only that
  *               Agent's records, already cut to that reading. Injected for testing.
  */
-export function makeTileTranscript({ read = request, watch = watchTranscript, onState = () => {}, cache = null } = {}) {
+export function makeTileTranscript({ read = request, watch = transcriptWatch(), onState = () => {}, cache = null } = {}) {
   const el = document.createElement('div');
   el.className = 'tile-transcript';
   el.setAttribute('role', 'log');

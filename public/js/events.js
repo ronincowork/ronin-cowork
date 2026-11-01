@@ -13,18 +13,31 @@ import { t } from './lexicon.js';
  *
  * WHAT THIS TAB IS SHOWING, said once and re-said whenever it changes. The server sends an
  * Agent's records only to connections that asked for them, so a phone watching one Agent is
- * never woken by another. One registration per connection: a tile shows one Agent in one
- * reading, so a new watch replaces the old and there is nothing to unsubscribe.
+ * never woken by another.
+ *
+ * ONE SLOT PER VIEW, THE WHOLE LIST PER TAB. A page holds several tiles, each with its own
+ * Chat. When the tab had one registration, a tile leaving Chat cleared it for every other tile
+ * and an open Chat stopped hearing its Agent (owner, 2026-11-01). So each view owns a slot,
+ * and the tab always sends every slot: one view changing never speaks for another.
  */
-let watching = null; // {session, reading} — kept so a reconnect can say it again
+const slots = new Set(); // each {session, reading}; a view's own, present while it shows something
 
-export function watchTranscript(session, reading) {
-  watching = session ? { session, reading: reading || '' } : null;
-  sendWatch();
+/** A view's own say in what this tab watches. Call it with the Agent and reading it shows, or
+ *  with '' when it shows nothing. */
+export function transcriptWatch() {
+  const slot = { session: '', reading: '' };
+  return (session, reading) => {
+    slot.session = session || '';
+    slot.reading = reading || '';
+    if (slot.session) slots.add(slot); else slots.delete(slot);
+    sendWatch();
+  };
 }
 
 function sendWatch() {
-  store.send({ t: 'watch', session: watching?.session || '', reading: watching?.reading || '' });
+  const watches = new Map();
+  for (const { session, reading } of slots) watches.set(`${session}\u0000${reading}`, { session, reading });
+  store.send({ t: 'watch', watches: [...watches.values()] });
 }
 
 /** Who hears an Agent's records arriving, and the reconnect that means a gap to fill. */

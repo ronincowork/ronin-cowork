@@ -834,3 +834,26 @@ test('a sent message shows at once, light, and goes when the CLI writes it down'
   assert.deepEqual(contents(view.el), ['earlier', 'check the receipt']);
   view.dispose();
 });
+
+test('a tile leaving its Chat never stops another tile\'s Chat hearing its Agent', async () => {
+  // Owner, 2026-11-01: "the balls stopped bouncing and then nothing". The tab had one watch
+  // slot; any tile that stopped showing a Chat cleared it for every tile on the page.
+  const { store } = await import('../public/js/store.js');
+  const sent = [];
+  const original = store.send;
+  store.send = (message) => { sent.push(message); return true; };
+  try {
+    const read = async () => ({ ok: true, data: { available: true, records: [], since: 0, seq: 0, view: 'chat', readings: READINGS } });
+    const mine = makeTileTranscript({ read });
+    const other = makeTileTranscript({ read });
+    mine.show('alpha', 'chat');
+    other.show('bravo', 'chat');
+    other.hide();
+    assert.deepEqual(sent.at(-1).watches, [{ session: 'alpha', reading: 'chat' }], 'alpha is still watched');
+    other.show('bravo', 'chat');
+    other.dispose();
+    assert.deepEqual(sent.at(-1).watches, [{ session: 'alpha', reading: 'chat' }], 'and a tile that goes away takes only its own');
+    mine.dispose();
+    assert.deepEqual(sent.at(-1).watches, []);
+  } finally { store.send = original; }
+});
