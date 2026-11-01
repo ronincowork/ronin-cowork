@@ -48,9 +48,9 @@ const machine = { measured_at: '2026-09-13T00:00:00.000Z', providers: [
   { id: 'claude', label: 'Claude Code', from: 'Anthropic', installed: false, signed_in: false, activated: false, version: null },
 ] };
 const ways = [{ name: 'mandates', label: 'Mandates', blurb: '' }, { name: 'buildout', label: 'Buildout', blurb: 'Write the plan beside the work.' }];
-const roots = { roots: [
-  { name: 'ronin_cowork', title: 'Ronin Cowork', repo_profile: { worktrees: 'enabled' } },
-  { name: 'ronin_services', title: 'Ronin Services', repo_profile: { worktrees: 'disabled' } },
+const workspaces = { workspaces: [
+  { name: 'ronin_ws', title: 'Ronin Workspace', objective: 'the code' },
+  { name: 'other_ws', title: 'Other Workspace', objective: '' },
 ] };
 const seedWith = (available) => ({ behaviours: [{ name: 'ronin_host', label: 'Ronin Host' }, { name: 'trello', label: 'Trello' }], available });
 
@@ -61,7 +61,7 @@ const serve = (seed) => {
       : url.startsWith('/api/ways') ? ways
         : url.startsWith('/api/provider-catalog') ? catalog
           : url.startsWith('/api/setup/runtime') ? machine
-            : url.startsWith('/api/project-roots/detail') ? roots
+            : url.startsWith('/api/workspaces') ? workspaces
               : url.startsWith('/api/team-rosters/') && init.method === 'PUT' ? (puts.push(JSON.parse(init.body)), { roster: JSON.parse(init.body) })
                 : null;
     return { ok: body !== null, status: body ? 200 : 404, headers: { get: () => 'application/json' }, json: async () => body ?? { error: 'no' }, text: async () => JSON.stringify(body ?? { error: 'no' }) };
@@ -70,7 +70,7 @@ const serve = (seed) => {
 
 const roster = {
   durable: true, name: 'jobber', title: 'Jobber', kind: 'coding', objective: 'Polish.',
-  project_root: 'ronin_cowork', repos: ['ronin_services'], branches: { ronin_services: 'dev' },
+  workspace: 'ronin_ws',
   behaviours: { selected: ['mandates', 'buildout'], required: ['mandates'] },
   agent_defaults: { provider: 'openai', model: 'gpt-5.6-sol', reach: 'plan', recruit: 'propose agents', output: 'open', launch_mode: 'live_dangerously', permissions: 'retired', note: 'carried' },
 };
@@ -92,13 +92,11 @@ test('every question is an ERABI stone whose reading is the saved answer', async
   renderTeamConfiguration(host, roster);
   const form = await painted(host);
   assert.deepEqual(form.all('ask-stone').map((node) => node.dataset.askKey), [
-    'kind', 'root', 'repos', 'reach', 'recruit', 'output', 'launch_mode',
+    'kind', 'workspace', 'reach', 'recruit', 'output',
   ], 'the stones in the tab’s order: Kind on the head line, then the New Agent defaults; no behaviour or Control stone');
-  assert.equal(readingOf(form, 'root'), 'Ronin Cowork', 'Born in reads the Workspace Folder’s title');
-  assert.equal(readingOf(form, 'repos'), 'Ronin Services');
+  assert.equal(readingOf(form, 'workspace'), 'Ronin Workspace', 'the Workspace reads its title');
   assert.equal(readingOf(form, 'kind'), 'Coding');
   assert.equal(readingOf(form, 'reach'), 'Plan');
-  assert.equal(readingOf(form, 'launch_mode'), 'Dangerously');
 });
 
 test('the tab is the launch forms’ format: step 1 Team (ID · Title · Kind, then Purpose), step 2 New Agent defaults', async () => {
@@ -121,7 +119,7 @@ test('the tab is the launch forms’ format: step 1 Team (ID · Title · Kind, t
   assert.equal(purpose.one('wk-field-control').value, 'Polish.');
   const defaults = form.all('fs-step')[1];
   assert.match(defaults.one('fs-step-help').textContent, /each new Agent on this Team starts from/);
-  assert.deepEqual(defaults.all('ask-group-head').map((node) => node.textContent), ['Where it works', 'Mandate', 'Launch mode'], 'everything under Purpose is a New Agent default');
+  assert.deepEqual(defaults.all('ask-group-head').map((node) => node.textContent), ['Workspace', 'Mandate'], 'everything under Purpose is a New Agent default');
   assert.equal(form.all('wk-field-label').some((node) => /References/.test(node.textContent)), false, 'no references — that field left the shape');
   for (const node of form.walk()) {
     assert.notEqual(node.tagName, 'SELECT', 'no native select');
@@ -152,9 +150,7 @@ test('Save leaves behaviours untouched and carries agent defaults without permis
   const body = puts[0];
   assert.equal(body.title, 'Jobber');
   assert.equal(body.kind, 'coding');
-  assert.equal(body.project_root, 'ronin_cowork');
-  assert.deepEqual(body.repos, ['ronin_services']);
-  assert.deepEqual(body.branches, { ronin_services: 'dev' }, 'a checkout keeps its branch');
+  assert.equal(body.workspace, 'ronin_ws');
   assert.equal('references' in body, false, 'references is not sent');
   assert.equal('behaviours' in body, false, 'behaviours are not sent, so the store carries them');
   assert.equal(body.agent_defaults.note, 'carried', 'a key the tab does not draw is carried');

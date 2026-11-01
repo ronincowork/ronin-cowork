@@ -22,7 +22,7 @@ await fs.writeFile(path.join(process.env.RONIN_CONFIG_DIR, 'machine_settings.jso
           provider: 'openai', model: 'gpt-test', reach: 'execute', recruit: 'nobody', output: ['code'],
           behaviours: ['gbrain', 'mandates'], launch_mode: 'configured',
         },
-        cowork_defaults: { project_root: 'ronin_cowork', repos: ['ronin_cowork'], branch: 'dev' },
+        cowork_defaults: { branch: 'dev' },
       },
     },
   },
@@ -47,13 +47,10 @@ test('POST /api/team-rosters creates a Team from its name alone', async () => {
   assert.equal(body.roster.title, 'Name Only');
   assert.equal(body.roster.kind, 'open');
   assert.equal(body.roster.wipeboard, 'name_only');
-  assert.equal(body.roster.project_root, 'ronin_cowork');
-  assert.deepEqual(body.roster.repos, ['ronin_cowork']);
   assert.equal(body.roster.branch, 'dev');
   assert.deepEqual(body.roster.behaviours, { selected: ['gbrain'], required: [] });
   assert.deepEqual(body.roster.agent_defaults, {
     reach: 'execute', recruit: 'nobody', output: ['code'],
-    launch_mode: 'configured',
   });
 });
 
@@ -64,8 +61,6 @@ test('PUT /api/team creates with Campaign defaults, then omission on update pres
   assert.equal(created.status, 200);
   const first = await created.json() as { created: boolean; roster: Record<string, any> };
   assert.equal(first.created, true);
-  assert.equal(first.roster.project_root, 'ronin_cowork');
-  assert.deepEqual(first.roster.repos, ['ronin_cowork']);
   assert.equal(first.roster.branch, 'dev');
   assert.deepEqual(first.roster.behaviours.selected, ['gbrain']);
   assert.equal(first.roster.agent_defaults.recruit, 'nobody');
@@ -77,8 +72,6 @@ test('PUT /api/team creates with Campaign defaults, then omission on update pres
   const second = await updated.json() as { created: boolean; roster: Record<string, any> };
   assert.equal(second.created, false);
   assert.equal(second.roster.objective, 'second');
-  assert.equal(second.roster.project_root, 'ronin_cowork');
-  assert.deepEqual(second.roster.repos, ['ronin_cowork']);
   assert.equal(second.roster.branch, 'dev');
   assert.deepEqual(second.roster.behaviours.selected, ['gbrain']);
   assert.equal(second.roster.agent_defaults.recruit, 'nobody');
@@ -126,8 +119,8 @@ test('the seed door tolerates a pre-cut behaviour shape without inventing an ele
   const seed = await response.json() as { seeds: { behaviours: { value: string[] } }; behaviours: Array<{ name: string; scope: string; on: boolean }> };
   assert.deepEqual(seed.seeds.behaviours.value, []);
   const mandates = seed.behaviours.find((row) => row.name === 'mandates');
-  assert.equal(mandates?.scope, 'floor');
-  assert.equal(mandates?.on, false, 'floor guidance is visible but never added to the elective seed');
+  assert.equal(mandates?.scope, 'conditional');
+  assert.equal(mandates?.on, false, 'conditional guidance is visible but never added to the elective seed');
   assert.equal(await fs.readFile(file, 'utf8'), raw, 'the seed read performs no migration');
 });
 

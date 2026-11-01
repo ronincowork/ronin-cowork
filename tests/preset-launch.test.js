@@ -7,8 +7,9 @@ import { launchPresetPlan } from '../public/js/preset-launch.js';
 const responder = (template, calls) => { let roster = null; return async (url, options = {}) => {
   calls.push({ url, body: options.json });
   if (url.startsWith('/api/templates/')) return { ok: true, data: [template] };
+  if (url.startsWith('/api/workspaces/')) return { ok: true, data: { workspace: options.json } };
   if (url === '/api/team-rosters') { roster = options.json; return { ok: true, data: options.json }; }
-  if (url === '/api/launch') return { ok: true, data: { name: options.json.name, receipt: { project_root: options.json.project_root || roster?.project_root, work_locations: [{ worktree: `/desk/${options.json.name}` }] } } };
+  if (url === '/api/launch') return { ok: true, data: { name: options.json.name, receipt: { workspace: roster?.workspace, work_locations: [{ worktree: `/desk/${options.json.name}` }] } } };
   if (url === '/api/setup/morning-brief/schedules') return { ok: true, data: { schedule: { team: options.json.team, job: { id: 'job-1', ...options.json } } } };
   throw new Error(`unexpected ${url}`);
 }; };
@@ -36,7 +37,7 @@ test('Develop Project retains every ordinary launch receipt and work location', 
   const calls = [], send = responder({ name: 'develop_new_project', label: 'Develop', agents: [] }, calls);
   const result = await launchPresetPlan({ template: { shelf: 'teams', name: 'develop_new_project' }, inputs: { root: 'project_one', workstreams: ['frontend', 'backend'] } }, send);
   assert.equal(result.data.receipts.length, 2);
-  assert.ok(result.data.receipts.every((receipt) => receipt.project_root === 'project_one' && receipt.work_locations.length === 1));
+  assert.ok(result.data.receipts.every((receipt) => receipt.workspace && receipt.work_locations.length === 1));
 });
 
 test('Ronin Team launches the stored template through the team loader, with nothing about provider or model on a row', async () => {
@@ -49,7 +50,9 @@ test('Ronin Team launches the stored template through the team loader, with noth
   const result = await launchPresetPlan({ template: { shelf: 'teams', name: 'ronin_team' }, user_message: 'Ship it.', inputs: { sessions, root: 'ronin_lab' } }, send);
   assert.equal(result.ok, true);
   // Where rides the Team record, as the New Team form sends it.
-  assert.equal(calls.find((row) => row.url === '/api/team-rosters').body.project_root, 'ronin_lab');
+  const ws = calls.find((row) => row.url.startsWith('/api/workspaces/'));
+  assert.deepEqual(ws.body.repos, [{ name: 'ronin_lab', note: '' }], 'the preset\'s folder lands in the Team\'s Workspace');
+  assert.equal(calls.find((row) => row.url === '/api/team-rosters').body.workspace, decodeURIComponent(ws.url.split('/').pop()));
   // The receipt keeps each row's lead mark, in birth order, for the seating to read.
   assert.deepEqual(result.data.sessions, [{ name: 'agent_1' }, { name: 'agent_2' }, { name: 'team_lead', team_lead: true }]);
   const births = calls.filter((row) => row.url === '/api/launch');
@@ -69,7 +72,6 @@ test('Bare Metal launches a bare-metal team: bare_metal_<code> with native agent
   const roster = calls.find((row) => row.url === '/api/team-rosters').body;
   const code = roster.name.match(/^bare_metal_(\d{3})$/)?.[1];
   assert.ok(code, 'the team is bare_metal_<code>');
-  assert.equal(roster.project_root, 'ronin_lab');
   assert.equal(roster.behaviours, undefined, 'a bare-metal team adds no Cowork behaviours');
   assert.equal(result.data.team, roster.name);
   const births = calls.filter((row) => row.url === '/api/launch').map((row) => row.body);
@@ -77,7 +79,6 @@ test('Bare Metal launches a bare-metal team: bare_metal_<code> with native agent
   for (const body of births) {
     assert.equal(body.session_type, 'bare_metal_agent');
     assert.equal(body.team, roster.name);
-    assert.equal(body.project_root, 'ronin_lab');
     assert.equal(body.instructions, '');
     assert.equal('mandate' in body || 'team_lead' in body || 'routines' in body, false);
   }
