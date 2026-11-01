@@ -56,7 +56,8 @@ runtime parts, while Agent capabilities teach tools (`docs/architecture/tool-sur
 | `session_mandate` | **mandate** | **Reach** how far an Agent goes · **Recruit** how it builds a Team · **Output** what it hands back. |
 | instruction cascade | **installation** · **behaviour** | Installations enable; behaviors guide (floor, conditional, selected, sought). Mandate teaching is floor. |
 | `message_queue` | **message queue** | Messages waiting to enter a live session. |
-| `project_root` | **workspace folder** | A registered folder Ronin may work in. Not a numbered browser workspace. |
+| `project_root` | **workspace folder** | A repository or folder Ronin knows by name; a Workspace picks the ones its Agents use. |
+| `workspace` (record) | **Workspace** | A project: objective, instructions, repositories, folders and Mode. Every Team works in one. |
 | `desk_profile` | **desk profile** | The owner's standing defaults: skin, words, layout. |
 | harakiri | **harakiri** | A session ends itself. |
 | Desk | **Desk** | The engagement context containing Teams, Agents, and work. It is not a Git worktree. |

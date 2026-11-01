@@ -30,7 +30,7 @@ export function createNewTeamFormView(kit, { created = null, consumed = null, em
   const draft = {
     template: '', templateName: '', title: '',
     name: '', kind: 'open', objective: '',
-    root: '', repos: [], branches: {},
+    workspace: '',
     reach: 'open', recruit: 'open', output: ['open'],
     books: [], launchMode: 'configured',
     // The Agents this Team is raised with.
@@ -47,7 +47,7 @@ export function createNewTeamFormView(kit, { created = null, consumed = null, em
   };
   let seed = null;          // the campaign's answers, once the door has spoken
   let templates = [];
-  let roots = [];
+  let workspaces = [];
   let snapshot = '';        // what the applied template wrote, for the dirty test
   let busy = false;
   let loaded = false;
@@ -226,52 +226,20 @@ export function createNewTeamFormView(kit, { created = null, consumed = null, em
 
   /* ---- the Workspace, under the name and instructions in section 2 (owner, 2026-10-21: "We include
      the workspace in the new team"), not folded into Agent defaults ---- */
-  const rootRows = (additional = false) => roots.filter((row) => !additional || row.repo !== false).map((row) => ({
-    v: row.name, l: row.name,
-  }));
-  const branchField = (option) => {
-    const input = el('input', 'wk-field-control'); input.type = 'text'; input.spellcheck = false;
-    input.value = draft.branches[option.v] || ''; input.placeholder = t('where.branch', 'Branch');
-    input.addEventListener('input', () => {
-      const branch = input.value.trim();
-      if (branch) draft.branches[option.v] = branch; else delete draft.branches[option.v];
-      paintFoot();
-    });
-    return input;
-  };
-  let reposTouched = false;
+  const workspaceRows = () => workspaces.map((row) => ({ v: row.name, l: row.title || row.name, sub: row.objective || '' }));
   const whereQuestions = ask([
     { group: t('new_team.workspace', 'Workspace'), fields: [
-      { key: 'root', label: t('where.born_in', 'Born in'), blank: t('new_team.root_default', 'The box’s default'), options: () => rootRows() },
-      { key: 'repos', label: t('new_agent.workspaces', 'Workspaces'), many: true,
-        options: () => rootRows(true), row: branchField },
+      { key: 'workspace', label: t('new_team.workspace', 'Workspace'), blank: t('new_team.workspace_none', 'None'), options: workspaceRows },
     ] },
   ], {
-    value: { root: draft.root, repos: draft.repos },
+    value: { workspace: draft.workspace },
     className: 'ntf-where-questions',
     density: 'tight',
-    onChange: (value, key) => {
-      draft.root = value.root;
-      draft.repos = value.repos;
-      if (key === 'repos') reposTouched = true;
-      // Born in is where the Team works until the hand picks Workspaces itself.
-      if (key === 'root' && !reposTouched) {
-        draft.repos = rootRows(true).some((row) => row.v === draft.root) ? [draft.root] : [];
-        whereQuestions.set('repos', draft.repos);
-      }
-      for (const name of Object.keys(draft.branches)) if (!draft.repos.includes(name)) delete draft.branches[name];
-      paintFoot();
-    },
+    onChange: (value) => { draft.workspace = value.workspace; paintFoot(); },
   });
   stepTop.body.append(whereQuestions.el);
-  function paintRoots() {
-    whereQuestions.set('root', draft.root); whereQuestions.set('repos', draft.repos);
-  }
-  const whereSummary = () => t('where.summary', 'born in {root} · {repos}', {
-    root: draft.root || t('team_config.default', 'Default'),
-    repos: draft.repos.length ? t('where.roots', 'also in {list}', { list: draft.repos.join(', ') })
-      : t('where.none', 'no auto worktree'),
-  });
+  function paintRoots() { whereQuestions.set('workspace', draft.workspace); }
+  const whereSummary = () => workspaces.find((row) => row.name === draft.workspace)?.title || draft.workspace || t('new_team.workspace_none', 'None');
 
   /* ---- step 5 · Team kit ---- */
   const stepKit = createStep({ n: 6, key: 'kit', title: t('team_kit', 'Shared toolkit') });
@@ -426,9 +394,7 @@ export function createNewTeamFormView(kit, { created = null, consumed = null, em
     title: draft.title.trim(),
     kind: draft.kind,
     objective: draft.objective.trim(),
-    project_root: draft.root,
-    repos: draft.repos,
-    branches: draft.branches,
+    workspace: draft.workspace,
     behaviours: { selected: [...draft.books], required: [] },
     agent_defaults: {
       reach: draft.reach, recruit: draft.recruit, output: draft.output,
@@ -539,8 +505,6 @@ export function createNewTeamFormView(kit, { created = null, consumed = null, em
     draft.template = '';
     draft.name = '';
     draft.objective = '';
-    draft.repos = []; draft.branches = {};
-    reposTouched = false;
     draft.books = [];
     draft.agents = seededAgents();
     draft.expanded = {};
@@ -558,8 +522,6 @@ export function createNewTeamFormView(kit, { created = null, consumed = null, em
   function applySeed() {
     if (!seed) return;
     const value = (field) => seed.seeds?.[field]?.value;
-    draft.root = value('project_root') || '';
-    draft.repos = Array.isArray(value('repos')) ? [...value('repos')] : [];
     for (const key of ['reach', 'recruit']) {
       if (value(key)) draft[key] = value(key);
     }
@@ -613,17 +575,18 @@ export function createNewTeamFormView(kit, { created = null, consumed = null, em
     el: embedded ? surface.content : surface.el,
     enter: async (detail = {}) => {
       paint();
-      const [seeded, tray, rootRows] = await Promise.all([
+      const [seeded, tray, workspaceRows] = await Promise.all([
         request('/api/launch-seed'),
         request('/api/templates/teams'),
-        request('/api/project-roots'),
+        request('/api/workspaces'),
         // The Team's inline Agent editor reads the shared provider catalog too. Load it
         // here so a fresh New Team journey does not depend on another launch surface
         // having happened to populate the module cache first.
         loadProviderCatalog(),
       ]);
       templates = tray.ok && Array.isArray(tray.data) ? tray.data : [];
-      roots = rootRows.ok && Array.isArray(rootRows.data) ? rootRows.data : [];
+      workspaces = workspaceRows.ok && Array.isArray(workspaceRows.data?.workspaces) ? workspaceRows.data.workspaces : [];
+      if (!draft.workspace && workspaces.length === 1) draft.workspace = workspaces[0].name;
       if (seeded.ok) seed = seeded.data;
       // The seed lands only while the form is untouched — re-entering an open draft
       // must not overwrite the owner's hand.

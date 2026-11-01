@@ -5,7 +5,7 @@ template or make your own, and give the Team a name and objective.
 
 ## Set up the work
 
-Choose the Workspace Folder and repositories the Team will use. Set the guidance and mandate
+Choose the [Workspace](workspaces.md) the Team works in. Set the guidance and mandate
 for this work; the model a new Agent or Team lead gets is set on **Models > Defaults**. The Team starts
 with its lead already in the Agents list, named after the first word of the Team name (`front-2`
 gives `front_lead`); the name follows the Team name as you type until you edit it, and the lead can

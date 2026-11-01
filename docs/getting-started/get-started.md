@@ -22,11 +22,13 @@ CLI, and others. Install it if needed, then sign in with your own subscription o
 account. One provider is enough to start. [Provider sign-in](provider-sign-in.md) walks
 through it.
 
-## 2. Choose where your Agents work
+## 2. Tell Ronin about your project
 
-Choose **Workspace folders**. Ronin already made two for you: **Ronin Lab**, for ideas,
-research and notes, and **Project One**, for a project. Use one of those, or add a folder
-you already work in. See [Workspace folders](workspace-folders.md).
+Open the **Workspaces** door on Ronin Home and make a Workspace for your project: what it is
+for, its repositories and the folders it uses. Your Teams work in it. Ronin already knows two
+folders, **Ronin Lab** for ideas and notes and **Project One** for a project; add your own
+there too. See [Workspaces](../using-ronin/workspaces.md) and
+[Workspace folders](workspace-folders.md).
 
 ## 3. Start your first Agent
 

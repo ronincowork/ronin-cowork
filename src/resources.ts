@@ -28,6 +28,9 @@ export const STORES: readonly Store[] = [
   store('wipeboards', 'user', 'wipeboards'),
   store('jikan', 'user', 'jikan'),
   store('team_rosters', 'user', 'team_rosters'),
+  store('workspaces', 'user', 'workspaces'),
+  // Where every Agent without a Workspace starts: a catch-all, not material.
+  store('house', 'user', 'house'),
   store('work_items', 'data', 'work-items'),
   store('desks', 'user', 'desks'),
   store('worktrees', 'user', 'worktrees'),

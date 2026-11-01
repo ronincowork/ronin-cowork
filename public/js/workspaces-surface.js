@@ -21,6 +21,7 @@ import { createRootDrawing, NEW, rootStone } from './projectroots.js';
 import { SURFACE_DRAG } from './workbench.js';
 import { WORKBENCH_TYPES } from './workbench-catalog.js';
 import { t } from './lexicon.js';
+import { ask } from './ask.js';
 
 /** The one read of the folders for a workbench: every surface on it paints from this and hears it. */
 export function createRootsReading() {
@@ -157,3 +158,102 @@ const githubBox = (label, className, item) => {
 };
 export const createFolderGithub = (github) => githubBox(t('roots.github_auth_stone', 'GitHub CLI'), 'workspaces-github', github.items[0]);
 export const createFolderClone = (github) => githubBox(t('roots.github_clone_stone', 'Clone a repository'), 'workspaces-clone', github.items[1]);
+
+/** WS1: the stones of Workspaces (owner, 2026-11-01: a Workspace is a project, its brief: objective,
+ * instructions, repositories, folder pointers, Mode). A stone pressed opens its page beside the rail;
+ * "New Workspace" opens the same page empty. `reading` is the folder read, for the repository choices. */
+export function createWorkspaceStones({ reading, campaignId }) {
+  const { createSurface } = WorkspaceKit.primitives;
+  const out = createSurface({ label: t('workspaces.title', 'Workspaces'), className: 'setup-surface workspaces-records' });
+  const messages = status();
+  const say = sayInto(messages);
+  let workspaces = [];
+  const NEW_ID = '__new_workspace';
+  const query = () => (campaignId() ? `?campaign_id=${encodeURIComponent(campaignId())}` : '');
+  const load = async () => {
+    const answer = await request(`/api/workspaces${query()}`, { cache: 'no-store' });
+    if (!answer.ok) { say(answer.message, true); return; }
+    workspaces = answer.data?.workspaces || [];
+    stones.setItems([
+      ...workspaces.map((w) => ({ id: w.name, label: w.title || w.name, state: w.objective || t('workspaces.no_objective', 'no objective yet') })),
+      { id: NEW_ID, label: t('workspaces.new', 'New Workspace'), state: t('workspaces.new_state', 'a project for your Teams'), className: 'add' },
+    ]);
+  };
+  const editor = (w, host) => {
+    const isNew = !w;
+    const draft = w ? JSON.parse(JSON.stringify(w)) : { name: '', title: '', objective: '', instructions: '', repos: [], folders: [], launch_mode: 'configured' };
+    const page = el('div', 'workspace-page');
+    const field = (label, control) => { const row = el('label', 'workspace-field'); row.append(el('span', 'workspace-field-label', label), control); return row; };
+    const input = (value, onInput, placeholder = '') => { const i = el('input', 'wk-field-control'); i.type = 'text'; i.value = value; i.placeholder = placeholder; i.addEventListener('input', () => onInput(i.value)); return i; };
+    const area = (value, onInput) => { const a = el('textarea', 'wk-field-control'); a.rows = 4; a.value = value; a.addEventListener('input', () => onInput(a.value)); return a; };
+    if (isNew) page.append(field(t('workspaces.name', 'Name'), input('', (v) => { draft.name = v.trim().toLowerCase(); }, t('new_team.name_placeholder', 'lowercase, digits, - _'))));
+    page.append(
+      field(t('workspaces.field_title', 'Title'), input(draft.title, (v) => { draft.title = v; })),
+      field(t('workspaces.objective', 'Objective'), area(draft.objective, (v) => { draft.objective = v; })),
+      field(t('workspaces.instructions', 'Instructions'), area(draft.instructions, (v) => { draft.instructions = v; })),
+    );
+    const repoRows = () => reading.roots().filter((root) => !root.archived && root.facts?.repo).map((root) => ({ v: root.name, l: root.title || root.name }));
+    const noteFor = (option) => input(draft.repos.find((r) => r.name === option.v)?.note || '', (v) => {
+      const repo = draft.repos.find((r) => r.name === option.v); if (repo) repo.note = v;
+    }, t('workspaces.note', 'Note'));
+    const choices = ask([
+      { group: t('workspaces.repositories', 'Repositories'), fields: [
+        { key: 'repos', label: t('workspaces.repositories', 'Repositories'), many: true, options: repoRows, row: noteFor },
+      ] },
+      { group: t('launch_mode.mode', 'Mode'), fields: [
+        { key: 'launch_mode', label: t('launch_mode.mode', 'Mode'), options: [
+          { v: 'configured', l: t('launch_mode.configured', 'Native'), sub: t('launch_mode.configured_sub', 'Do not override the provider CLI’s approval behavior. Model selection is separate.') },
+          { v: 'live_dangerously', l: t('launch_mode.live', 'Dangerously'), sub: t('workspaces.live_sub', 'Each provider’s own approval-bypass launch; Native where a provider has none.') },
+        ] },
+      ] },
+    ], {
+      value: { repos: draft.repos.map((r) => r.name), launch_mode: draft.launch_mode },
+      density: 'tight',
+      onChange: (value) => {
+        draft.repos = value.repos.map((name) => draft.repos.find((r) => r.name === name) || { name, note: '' });
+        draft.launch_mode = value.launch_mode;
+      },
+    });
+    page.append(choices.el);
+    const folders = el('div', 'workspace-folders');
+    const paintFolders = () => {
+      folders.replaceChildren(el('span', 'workspace-field-label', t('workspaces.folders', 'Folders')));
+      draft.folders.forEach((folder, index) => {
+        const row = el('div', 'workspace-folder-row');
+        const remove = el('button', 'wk-btn', t('workspaces.remove', 'Remove')); remove.type = 'button';
+        remove.addEventListener('click', () => { draft.folders.splice(index, 1); paintFolders(); });
+        row.append(input(folder.path, (v) => { folder.path = v; }, t('workspaces.path', 'Path')), input(folder.note, (v) => { folder.note = v; }, t('workspaces.note', 'Note')), remove);
+        folders.append(row);
+      });
+      const add = el('button', 'wk-btn', t('workspaces.add_folder', 'Add a folder')); add.type = 'button';
+      add.addEventListener('click', () => { draft.folders.push({ path: '', note: '' }); paintFolders(); });
+      folders.append(add);
+    };
+    paintFolders();
+    const save = el('button', 'wk-btn primary', isNew ? t('workspaces.create', 'Create Workspace') : t('workspaces.save', 'Save')); save.type = 'button';
+    save.addEventListener('click', async () => {
+      save.disabled = true;
+      const answer = await request(`/api/workspaces/${encodeURIComponent(draft.name)}`, { method: 'PUT', json: { ...draft, campaign_id: campaignId() || undefined } });
+      save.disabled = false;
+      if (!answer.ok) { say(answer.message, true); return; }
+      say(t('workspaces.saved', 'Saved {name}.', { name: answer.data.workspace.title || answer.data.workspace.name }));
+      await load(); stones.select(answer.data.workspace.name);
+    });
+    page.append(folders, save);
+    host.append(page);
+    if (!reading.roots().length) void reading.read().then(() => choices.paint());
+  };
+  const stones = createPhalanx({
+    className: 'workspace-record-stones',
+    renderDetail: (item, host) => {
+      host.scrollTop = 0;
+      editor(item.id === NEW_ID ? null : workspaces.find((w) => w.name === item.id) || null, host);
+    },
+  });
+  stones.mount(out.content, { before: [messages] });
+  return {
+    el: out.el,
+    show: () => { void load(); },
+    destroy: () => stones.destroy(),
+  };
+}
