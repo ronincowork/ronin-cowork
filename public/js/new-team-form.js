@@ -32,7 +32,7 @@ export function createNewTeamFormView(kit, { created = null, consumed = null, em
     name: '', kind: 'open', objective: '',
     workspace: '',
     reach: 'open', recruit: 'open', output: ['open'],
-    books: [], launchMode: 'configured',
+    books: [],
     // The Agents this Team is raised with.
     agents: seededAgents(),
     expanded: {},
@@ -76,7 +76,6 @@ export function createNewTeamFormView(kit, { created = null, consumed = null, em
   const offered = () => (draft.kind === 'open' ? templates : templates.filter((row) => row.kinds.includes(draft.kind)));
   const availableBehaviours = () => (seed?.behaviours || []).filter((row) => row.available === true);
   // The provider the next Agent defaults to (Models > Defaults): which launch modes it offers.
-  const defaultProvider = () => seed?.seeds?.provider?.value || '';
 
   /** What a template authors, as one string — the dirty test compares against it. */
   const authored = () => JSON.stringify({
@@ -254,42 +253,26 @@ export function createNewTeamFormView(kit, { created = null, consumed = null, em
   // already carries `--dangerously-bypass-approvals-and-sandbox` hardcoded, and nothing
   // in `src/spawn.ts` reads the field to change a command. It is stored and attributed
   // and delivered nowhere. Raised with the lead; the record keeps its default.
-  /* Launch mode is an agent default like the model: it lands in the next Agent form and
-     the hand has the last word. js/new-agent.js carries the whole argument. */
-  const LAUNCH_MODES = () => {
-    const supported = providerCatalog().providers.find((row) => row.provider === defaultProvider())?.launch_modes || ['configured'];
-    return [{ key: 'configured', label: t('launch_mode.configured', 'Native'),
-      sub: t('launch_mode.configured_sub', 'Do not override the provider CLI’s approval behavior. Model selection is separate.') },
-    ...(supported.includes('live_dangerously') ? [{ key: 'live_dangerously', label: t('launch_mode.live', 'Dangerously'),
-      sub: t('launch_mode.live_sub', 'Use that provider CLI’s own approval-bypass launch.') }] : [])];
-  };
   const kitHost = el('div');
   let kitQuestions = null;
   let kitSignature = '';
   function paintKitQuestions() {
-    const signature = JSON.stringify([availableBehaviours().map((row) => row.name), defaultProvider(), LAUNCH_MODES().map((row) => row.key)]);
-    if (!LAUNCH_MODES().some((row) => row.key === draft.launchMode)) draft.launchMode = 'configured';
+    const signature = JSON.stringify([availableBehaviours().map((row) => row.name)]);
     if (signature !== kitSignature) {
       kitQuestions?.destroy();
       const shelfRows = (rows) => rows.filter((row) => !row.installation).map((row) => ({ v: row.name, l: row.label || row.name, sub: row.blurb || '', read: row.reading, view: { name: row.name, scope: row.scope || 'selected' } }));
       kitQuestions = ask([
-        { group: t('launch_mode.head', 'Launch mode'), fields: [{
-          key: 'launchMode', label: t('launch_mode.mode', 'Mode'),
-          options: LAUNCH_MODES().map((row) => ({ v: row.key, l: row.label, sub: row.sub })),
-        }] },
         { group: t('behaviours', 'Behaviours'), fields: [{
           key: 'books', label: t('behaviours', 'Behaviours'), many: true, shape: 'tall', options: shelfRows(availableBehaviours()),
         }] },
       ], {
         value: {
-          launchMode: draft.launchMode,
           books: [...draft.books],
         },
         className: 'ntf-kit-questions',
         density: 'tight',
         trayHost: kitHost,
         onChange: (value, key) => {
-          draft.launchMode = value.launchMode;
           draft.books = [...value.books];
           paintKitQuestions(); whereQuestions.paint(); paintFoot();
         },
@@ -297,7 +280,6 @@ export function createNewTeamFormView(kit, { created = null, consumed = null, em
       kitSignature = signature;
       kitHost.replaceChildren(kitQuestions.el);
     }
-    kitQuestions.set('launchMode', draft.launchMode);
     kitQuestions.set('books', [...draft.books]);
   }
   stepKit.body.append(kitHost);
@@ -350,7 +332,6 @@ export function createNewTeamFormView(kit, { created = null, consumed = null, em
     foot.append(readingRows([
       [t('kind', 'Kind'), draft.kind],
       [t('behaviours', 'Behaviours'), draft.books.length ? tagRow(draft.books.map((text) => ({ text, on: true }))) : ''],
-      [t('launch_mode.head', 'launch mode'), LAUNCH_MODES().find((row) => row.key === draft.launchMode)?.label || draft.launchMode],
       [t('mandate', 'Mandate'), `${draft.reach} · ${draft.recruit} · ${draft.output.join(', ')}`],
       [t('add_agent.still_asked', 'still asked'), tagRow([
         t('session_type', 'Session type'), t('add_agent.name', 'name'), t('add_agent.instruction', 'instruction'),
@@ -398,7 +379,6 @@ export function createNewTeamFormView(kit, { created = null, consumed = null, em
     behaviours: { selected: [...draft.books], required: [] },
     agent_defaults: {
       reach: draft.reach, recruit: draft.recruit, output: draft.output,
-      launch_mode: draft.launchMode,
     },
   });
 
@@ -526,8 +506,6 @@ export function createNewTeamFormView(kit, { created = null, consumed = null, em
       if (value(key)) draft[key] = value(key);
     }
     if (value('output')) draft.output = [value('output')].flat().filter(Boolean);
-    // launch_mode is named on its own because the seed's key is snake and the draft's is camel.
-    if (value('launch_mode')) draft.launchMode = value('launch_mode');
     draft.books = Array.isArray(value('behaviours')) ? [...value('behaviours')] : [];
     paintRoots();
   }

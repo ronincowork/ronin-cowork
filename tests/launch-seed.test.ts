@@ -21,11 +21,11 @@ const campaign = { id: 'home_machine', config: {
   defaults: agentDefaults({ provider: 'openai', model: 'gpt', behaviours: ['gbrain', 'mandates'] }),
   cowork_defaults: {}, template_defaults: {},
 } } as CampaignConfig;
-const team = { name: 'alpha', campaign_id: 'home_machine', kind: 'coding', project_root: 'work', branch: 'dev',
+const team = { name: 'alpha', campaign_id: 'home_machine', kind: 'coding', workspace: 'work', branch: 'dev',
   behaviours: { selected: ['write_it_down', 'mandates'], required: ['mandates'] },
-  agent_defaults: { provider: 'anthropic', model: 'opus', reach: 'execute', recruit: 'nobody', output: ['code'], launch_mode: 'configured' },
+  agent_defaults: { provider: 'anthropic', model: 'opus', reach: 'execute', recruit: 'nobody', output: ['code'] },
 } as TeamRoster;
-const sources = (roster: TeamRoster | null) => ({ campaign, roster, roots: [{ name: 'home', dir: '/home', archived: false }],
+const sources = (roster: TeamRoster | null) => ({ campaign, roster, workspace: null,
   sessions: { default: { provider: 'anthropic', model: 'sonnet' } }, installations, behaviours });
 
 test('teamless seed exposes available behaviours and the fixed residue', () => {
@@ -38,23 +38,10 @@ test('teamless seed exposes available behaviours and the fixed residue', () => {
   assert.deepEqual(seed.still_asked, ['session_type', 'name', 'instructions']);
 });
 
-test('Campaign Cowork defaults seed birthplace and workspaces until a Team owns them', () => {
-  const configured = { ...campaign, config: { ...campaign.config, cowork_defaults: {
-    project_root: 'samurai_lab', repos: ['samurai_lab', 'ronin_cowork'],
-  } } };
-  const sourcesWithDefaults = { ...sources(null), campaign: configured };
-  const seed = resolveLaunchSeed(sourcesWithDefaults);
-  assert.equal(seed.seeds.project_root.value, 'samurai_lab');
-  assert.deepEqual(seed.seeds.repos.value, ['samurai_lab', 'ronin_cowork']);
-  assert.equal(seed.seeds.project_root.stated_by[0]?.layer, 'campaign');
-  assert.deepEqual(resolveLaunchSeed({ ...sourcesWithDefaults, roster: team }).seeds.project_root.value, 'work');
-});
-
 test('Team complete elective lists replace Campaign defaults while floor guidance remains visible', () => {
   const seed = resolveLaunchSeed(sources(team));
   assert.deepEqual(seed.seeds.behaviours.value, ['write_it_down']);
   assert.equal(seed.seeds.behaviours.stated_by[0]?.layer, 'team');
-  assert.equal(seed.seeds.project_root.stated_by[0]?.layer, 'conditional');
   const mandates = seed.behaviours.find((row) => row.name === 'mandates');
   assert.equal(mandates?.scope, 'floor');
   assert.equal(mandates?.on, false, 'floor guidance is visible but never part of the Team elective list');

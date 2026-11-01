@@ -15,7 +15,6 @@ const summary = await import('../src/provider-summary.js');
 const { listProviderCatalog } = await import('../src/model-providers.js');
 const roots = await import('../src/project-roots.js');
 const arrangements = await import('../src/desks/arrangement.js');
-const launchDesks = await import('../src/launch-desks.js');
 
 const available = (installed: string[]) => [
   { id: 'claude', label: 'Claude Code', get: 'install claude', parked: '', cmd: 'claude', installed: installed.includes('claude'), path: installed.includes('claude') ? '/bin/claude' : '' },
@@ -426,15 +425,6 @@ test('installed roots are distinct registered repositories with READMEs and firs
     { mode: arrangement.mode, working: arrangement.working, stable: arrangement.stable, desks: arrangement.desks },
     { mode: 'reviewed', working: 'dev', stable: 'main', desks: 'managed' },
   );
-  const launch = await launchDesks.resolveLaunchDesks({
-    session: 'develop_project_proof', team: 'develop_project', project_root: 'project_one', agent: true, control: true,
-  });
-  assert.equal(launch.assignment?.project_root, 'project_one');
-  assert.equal(launch.assignment?.primary, 'project_one');
-  assert.equal(launch.assignment?.desks[0]?.line, 'team/develop_project/dev');
-  assert.equal(launch.repositories[0]?.repo, 'project_one');
-  assert.equal(launch.repositories[0]?.mode, 'managed');
-  assert.equal(launch.repositories[0]?.managed?.worktree, launch.assignment?.desks[0]?.worktree);
 });
 
 test('concurrent runtime reads do not collide on the roots catalog', async () => {

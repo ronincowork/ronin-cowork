@@ -26,7 +26,7 @@ test('create → read → list: a zero-member team is a real, openable record', 
   const r = await createTeamRoster('alpha', {
     kind: 'coding',
     objective: 'ship the teams cut',
-    project_root: 'ronin-cowork',
+    workspace: 'ronin-cowork',
     branch: 'dev',
     behaviours: { selected: ['mandates'], required: ['mandates'] },
     agent_defaults: {
@@ -53,7 +53,7 @@ test('the settled nested shapes round-trip, and an edit touches only what it sta
   assert.deepEqual(r.behaviours, { selected: [], required: [] });
   assert.deepEqual(r.agent_defaults, {
     reach: 'execute', recruit: 'nobody',
-    output: ['code'], launch_mode: 'configured',
+    output: ['code'],
   });
 });
 
@@ -62,10 +62,10 @@ test('a blank field is written as "—" and reads back as the blank it stands fo
   // next edit read those marks back as VALUES — a project_root named "—", refused at
   // launch. The mark is a rendering; the store must never return it as a fact.
   await createTeamRoster('bare', { objective: 'only this' });
-  const withBranches = await createTeamRoster('checkouts', { repos: ['cowork', 'koe'], branches: { koe: 'main', ignored: '' } });
+  const withBranches = await createTeamRoster('checkouts', { branches: { koe: 'main', ignored: '' } });
   assert.deepEqual((await readTeamRoster('checkouts'))?.branches, { koe: 'main' }, 'per-repo branches round-trip; blanks drop');
   const r = await writeTeamRoster('bare', { branch: 'dev' });
-  assert.equal(r.project_root, '', 'an untouched blank stays blank after an edit');
+  assert.equal(r.workspace, '', 'an untouched blank stays blank after an edit');
   assert.equal(r.kind, 'open');
   assert.deepEqual(r.behaviours, { selected: [], required: [] });
   assert.equal(r.branch, 'dev');

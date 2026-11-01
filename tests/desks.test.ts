@@ -83,11 +83,8 @@ const { casRef, revParse } = await import('../src/desks/git.js');
 const { lockDir, withLineLock, queueHolder } = await import('../src/desks/queue.js');
 const { readManagedEvents } = await import('../src/desks/lifecycle-ledger.js');
 const { createTeamRoster } = await import('../src/team-rosters.js');
-const { acceptedLaunchBody, spawnFormFromLaunchBody } = await import('../src/routes/launch.js');
-const { prepareLaunchDesks, resolveLaunchDesks } = await import('../src/launch-desks.js');
 
-await createTeamRoster('comp', { objective: 'desks', project_root: 'cowork', branch: '' });
-await createTeamRoster('multi', { objective: 'two repos', project_root: 'cowork', repos: ['cowork', 'koe'], branch: '' });
+await createTeamRoster('comp', { objective: 'desks', branch: '' });
 
 const commitFile = async (wt: string, file: string, text: string, msg = `edit ${file}`) => {
   await fs.mkdir(path.dirname(path.join(wt, file)), { recursive: true });
@@ -111,40 +108,19 @@ test('arrangement: absent RONIN_REPO is today, reviewed has defaults, bad values
   await assert.rejects(arrangementOf('nope'), /no project_root named/);
 });
 
-test('deriveAssignment: a team desks only its ticked repositories; nothing ticked is born with no desk', async () => {
+test('deriveAssignment: the named repository is the desk unless an explicit list says otherwise', async () => {
   const a = await deriveAssignment({ session: 'fable', team: 'comp', project_root: 'cowork' });
   assert.equal(a.id, 'fable@comp');
-  assert.deepEqual(a.desks, [], 'the project_root is never a desk by implication');
-  assert.equal(a.primary, '');
-  const own = await deriveAssignment({ session: 'fable', team: 'comp', project_root: 'cowork', repos: ['cowork'] });
-  assert.deepEqual(own.desks.map((d) => d.repo), ['cowork'], "the launch's own repos override the Team's ticks");
-  const quick = await deriveAssignment({ session: 'q', team: 'multi', project_root: 'cowork', repos: [] });
-  assert.deepEqual(quick.desks, [], 'an empty launch answer unticks every Team desk');
+  assert.deepEqual(a.desks.map((d) => `${d.repo}:${d.branch}`), ['cowork:team/comp/fable']);
+  const quick = await deriveAssignment({ session: 'q', team: 'comp', project_root: 'cowork', repos: [] });
+  assert.deepEqual(quick.desks, [], 'an explicit empty list yields no desk');
   const solo = await deriveAssignment({ session: 'lone', team: '', project_root: 'cowork' });
   assert.deepEqual(solo.desks.map((d) => `${d.branch}→${d.line}`), ['solo/lone→dev']);
-  const both = await deriveAssignment({ session: 'fable', team: 'multi', project_root: 'cowork' });
-  assert.deepEqual(both.desks.map((d) => `${d.repo}:${d.branch}`), ['cowork:team/multi/fable', 'koe:team/multi/fable'],
-    'the roster repos list yields a desk per repository');
-  assert.equal(both.primary, 'cowork');
   const direct = await deriveAssignment({ session: 'k', team: '', project_root: 'koe' });
   assert.deepEqual(direct.desks.map((d) => d.repo), ['koe'], 'candidate planning preserves a direct repository');
   assert.equal(direct.primary, 'koe');
   const absent = await deriveAssignment({ session: 'p', team: '', project_root: 'plain' });
   assert.deepEqual(absent.desks.map((d) => d.repo), ['plain'], 'candidate planning preserves an absent profile for resolver normalization');
-});
-
-test('a request-selected managed repository outside Born in reaches resolution and receives a desk', async () => {
-  const accepted = acceptedLaunchBody({
-    session_type: 'cowork_agent', name: 'outside-root', team: 'comp', project_root: 'koe', repos: ['services'],
-  });
-  const form = spawnFormFromLaunchBody(accepted.body);
-  const resolved = await resolveLaunchDesks({
-    session: form.name!, team: form.team!, project_root: form.project_root!, agent: true, repos: form.repos,
-  });
-  assert.deepEqual(resolved.assignment?.desks.map((row) => row.repo), ['services']);
-  const prepared = await prepareLaunchDesks(resolved.assignment!);
-  assert.equal(prepared.desks[0]?.repo, 'services');
-  assert.equal((await readDesk('services', prepared.desks[0]!.branch))?.worktree, prepared.desks[0]?.worktree);
 });
 
 test('openDesk: cut from current local dev, mounted, exact base recorded; the team line is review-only', async () => {

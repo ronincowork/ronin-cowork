@@ -72,7 +72,7 @@ test('birth records Team membership without injecting a second prompt', async ()
 
 test('bare-metal Agent ignores Ronin-only fields and a managed desk', () => {
   for (const [key, value] of [['mandate', {}], ['behaviours', []], ['routines', {}], ['seed', []], ['desk', 'own']] as const) {
-    const result = acceptedLaunchBody({ session_type: 'bare_metal_agent', name: 'proof', project_root: 'home', [key]: value });
+    const result = acceptedLaunchBody({ session_type: 'bare_metal_agent', name: 'proof', [key]: value });
     assert.equal(result.body[key], undefined, key);
     assert.deepEqual(result.ignored, [key]);
   }
@@ -100,17 +100,10 @@ test('cowork kind and behaviours survive body acceptance while unusable shapes a
   assert.deepEqual(ignored.ignored, ['behaviours', 'kind']);
 });
 
-test('explicit workspace selection, including empty, survives request acceptance into the resolver form', () => {
-  const selected = acceptedLaunchBody({ session_type: 'cowork_agent', name: 'proof', project_root: 'ronin_lab', repos: ['ronin_cowork'] });
-  assert.deepEqual(spawnFormFromLaunchBody(selected.body).repos, ['ronin_cowork']);
-
-  const empty = acceptedLaunchBody({ session_type: 'cowork_agent', name: 'proof', team: 'team-with-defaults', project_root: 'ronin_lab', repos: [] });
-  assert.deepEqual(spawnFormFromLaunchBody(empty.body).repos, [], 'an explicit empty selection cannot fall back to Team repositories');
-});
-
 test('settled launch enums are accepted and their retired keys are receipt-only', () => {
   const accepted = acceptedLaunchBody({ name: 'proof', launch_mode: 'configured' });
-  assert.equal(accepted.body.launch_mode, 'configured');
+  assert.equal(accepted.body.launch_mode, undefined, 'Mode is the Workspace\'s, never the request\'s');
+  assert.deepEqual(accepted.ignored, ['launch_mode']);
 
   const malformed = acceptedLaunchBody({ name: 'proof', launch_mode: 'safe', gbrain_mode: 'maybe', permissions: 'bypass', mcp: false });
   assert.equal(malformed.body.launch_mode, undefined);
