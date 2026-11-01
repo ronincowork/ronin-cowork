@@ -84,7 +84,9 @@ test('all process starts pass through one serial entry, including unbound shells
 test('Hermes isolates SQLite files and memory, and records its cli-home before startup', async t => {
   const root = await mkdtemp(path.join(tmpdir(), 'hermes-isolation-'));
   const source = path.join(root, 'source'); await mkdir(source);
-  for (const file of ['state.db', 'state.db-wal', 'state.db-shm', 'config.yaml']) await writeFile(path.join(source, file), 'source');
+  for (const file of ['state.db', 'state.db-wal', 'state.db-shm', 'state.db.fts_rebuild.lock', 'state.db.quarantine.lock', 'gateway.sock', 'gateway.sock.path', 'gateway.pid', 'gateway.lock', 'gateway_state.json', 'gateway-starts.log', 'gateway_voice_mode.json', 'config.yaml']) await writeFile(path.join(source, file), 'source');
+  await mkdir(path.join(source, 'runtime')); await writeFile(path.join(source, 'runtime', 'active_sessions.lock'), 'runtime');
+  await mkdir(path.join(source, 'bot-desktop')); await writeFile(path.join(source, 'bot-desktop', 'rfb.sock'), 'runtime');
   await mkdir(path.join(source, 'memories')); await writeFile(path.join(source, 'memories', 'MEMORY.md'), 'private');
   const old = process.env.HERMES_HOME, oldStore = process.env.RONIN_SESSION_DIR;
   process.env.HERMES_HOME = source; process.env.RONIN_SESSION_DIR = path.join(root, 'sessions');

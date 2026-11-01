@@ -10,6 +10,8 @@ function button(name, fn) {
   return made.el ?? made;
 }
 
+const actions = (...items) => WorkspaceKit.primitives.createActionBar({ actions: items }).el;
+
 /** Hermes owns an installed runtime; Ronin owns named API connections and launch setups. */
 export function mountHermesSurface(host, provider, onChanged) {
   let disposed = false;
@@ -36,7 +38,7 @@ export function mountHermesSurface(host, provider, onChanged) {
     const key = input('', 'password'); key.autocomplete = 'new-password';
     providerChoice.addEventListener('change', () => { url.value = providerChoice.value === 'mistral' ? 'https://api.mistral.ai/v1' : providerChoice.value === 'openai' ? 'https://api.openai.com/v1' : ''; });
     form.append(el('h3', connection.id ? 'Edit API connection' : 'Add API connection'), field('Name', name), field('API provider', providerChoice), field('Base URL', url), field(connection.id ? 'API key (leave blank to keep)' : 'API key', key));
-    const save = button('Save connection', () => {}); save.type = 'submit'; form.append(save, button('Cancel', () => editor.replaceChildren()));
+    const save = button('Save connection', () => {}); save.type = 'submit'; form.append(actions(save, button('Cancel', () => editor.replaceChildren())));
     form.addEventListener('submit', async event => { event.preventDefault(); save.disabled = true; try { await run('connection', { id: connection.id, name: name.value, provider: providerChoice.value, baseUrl: url.value, apiKey: key.value }); } finally { key.value = ''; save.disabled = false; } });
     editor.append(form); name.focus();
   };
@@ -56,7 +58,7 @@ export function mountHermesSurface(host, provider, onChanged) {
     };
     connection.addEventListener('change', populate); populate();
     form.append(el('h3', setup.id ? 'Edit named setup' : 'Add named setup'), field('Name shown in the Model dropdown', name), field('API connection', connection), field('API model', model), field('Reasoning effort', reasoning), field('Approvals', approvals));
-    const save = button('Save setup', () => {}); save.type = 'submit'; form.append(save, button('Cancel', () => editor.replaceChildren()));
+    const save = button('Save setup', () => {}); save.type = 'submit'; form.append(actions(save, button('Cancel', () => editor.replaceChildren())));
     form.addEventListener('submit', async event => { event.preventDefault(); save.disabled = true; try { await run('setup', { id: setup.id, name: name.value, connection: connection.value, model: model.value, reasoning: reasoning.value, approvals: approvals.value }); } finally { save.disabled = false; } });
     editor.append(form); name.focus();
   };
@@ -68,18 +70,18 @@ export function mountHermesSurface(host, provider, onChanged) {
     for (const c of state.connections) {
       const row = el('div'); row.className = 'hermes-card';
       row.append(el('strong', c.name), el('p', `${c.provider}${c.credentialEnv ? ` · ${c.credentialEnv}` : ''} · ${c.configured ? 'Configured' : 'Key missing'} · ${c.discoveredAt ? `${c.models.length} models discovered` : 'Models not discovered'}`),
-        button('Load models', () => run('discover', { id: c.id })), button('Edit', () => editConnection(c)), ...(c.credentialEnv ? [] : [button('Remove', () => run('delete', { kind: 'connections', id: c.id }))]));
+        actions(button('Load models', () => run('discover', { id: c.id })), button('Edit', () => editConnection(c)), ...(c.credentialEnv ? [] : [button('Remove', () => run('delete', { kind: 'connections', id: c.id }))])));
       root.append(row);
     }
-    root.append(button('Add API connection', () => editConnection()));
+    root.append(actions(button('Add API connection', () => editConnection())));
     root.append(el('h3', 'Named setups'), el('p', 'These names appear under Model when you select Hermes in New Agent. Each launch gets separate memory and conversation history.'));
     for (const setup of state.setups) {
       const row = el('div'); row.className = 'hermes-card';
       row.append(el('strong', setup.name), el('p', `${state.connections.find(c => c.id === setup.connection)?.name || 'Missing connection'} · ${setup.model} · ${setup.reasoning} reasoning · ${setup.approvals === 'off' ? 'YOLO' : 'Ask for approval'}`),
-        button('Edit', () => editSetup(setup)), button('Duplicate', () => editSetup({ ...setup, id: undefined, name: `${setup.name} copy` })), button('Remove', () => run('delete', { kind: 'setups', id: setup.id })));
+        actions(button('Edit', () => editSetup(setup)), button('Duplicate', () => editSetup({ ...setup, id: undefined, name: `${setup.name} copy` })), button('Remove', () => run('delete', { kind: 'setups', id: setup.id }))));
       root.append(row);
     }
-    const add = button('Add named setup', () => editSetup()); add.disabled = !state.connections.some(c => c.models.length); root.append(add, editor); editor.replaceChildren();
+    const add = button('Add named setup', () => editSetup()); add.disabled = !state.connections.some(c => c.models.length); root.append(actions(add), editor); editor.replaceChildren();
     root.append(el('p', 'Setup edits apply to future launches. Key changes are picked up when an agent restarts. Removing a connection does not revoke its key at the API provider.'));
   };
   void request('/api/hermes').then(result => { if (disposed) return; if (result.ok) { state = result.data; paint(); } else { root.append(notice); notice.textContent = result.message; } });

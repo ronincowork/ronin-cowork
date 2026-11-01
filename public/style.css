@@ -4970,3 +4970,6 @@ html[data-screen='inside'] #phone .ph-bar .ph-title[data-boot='inside'] { displa
 .hermes-field { display: grid; gap: var(--space-row); color: var(--muted); font-size: var(--form-note); }
 .hermes-field input, .hermes-field select { width: 100%; min-width: 0; min-height: var(--control-height); box-sizing: border-box; background: var(--inset); color: var(--fg); border: var(--edge) solid var(--line); border-radius: var(--radius-small); padding: var(--space-row) var(--space-control); font: inherit; font-size: var(--form-input); }
 .hermes-card p { overflow-wrap: anywhere; }
+
+.hermes-settings .wk-action { width: 140px; min-height: 40px; flex: 0 0 140px; }
+.hermes-settings .wk-action-bar { display: flex; flex-wrap: wrap; gap: var(--space-inline); }
