@@ -4973,3 +4973,9 @@ html[data-screen='inside'] #phone .ph-bar .ph-title[data-boot='inside'] { displa
 
 .hermes-settings .wk-action { width: 140px; min-height: 40px; flex: 0 0 140px; }
 .hermes-settings .wk-action-bar { display: flex; flex-wrap: wrap; gap: var(--space-inline); }
+
+.hermes-card { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-inline) var(--space-control); }
+.hermes-card-summary { display: flex; flex: 1 1 16rem; flex-wrap: wrap; align-items: baseline; gap: var(--space-row) var(--space-inline); min-width: 0; }
+.hermes-card-summary span { color: var(--muted); overflow-wrap: anywhere; }
+.hermes-card .wk-action-bar { flex: 0 0 auto; }
+.hermes-card .wk-action { width: auto; flex: 0 0 auto; min-width: 4rem; }

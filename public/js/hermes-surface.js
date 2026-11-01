@@ -10,6 +10,7 @@ function button(name, fn) {
   return made.el ?? made;
 }
 
+const summary = (name, detail) => { const node = el('div'); node.className = 'hermes-card-summary'; node.append(el('strong', name), el('span', detail)); return node; };
 const actions = (...items) => WorkspaceKit.primitives.createActionBar({ actions: items }).el;
 
 /** Hermes owns an installed runtime; Ronin owns named API connections and launch setups. */
@@ -69,7 +70,7 @@ export function mountHermesSurface(host, provider, onChanged) {
     root.append(el('h3', 'API connections'), el('p', 'Saved API connections appear here automatically. Load a connection’s models to create named setups.'));
     for (const c of state.connections) {
       const row = el('div'); row.className = 'hermes-card';
-      row.append(el('strong', c.name), el('p', `${c.provider}${c.credentialEnv ? ` · ${c.credentialEnv}` : ''} · ${c.configured ? 'Configured' : 'Key missing'} · ${c.discoveredAt ? `${c.models.length} models discovered` : 'Models not discovered'}`),
+      row.append(summary(c.name, `${c.provider}${c.credentialEnv ? ` · ${c.credentialEnv}` : ''} · ${c.configured ? 'Configured' : 'Key missing'} · ${c.discoveredAt ? `${c.models.length} models discovered` : 'Models not discovered'}`),
         actions(button('Load models', () => run('discover', { id: c.id })), button('Edit', () => editConnection(c)), ...(c.credentialEnv ? [] : [button('Remove', () => run('delete', { kind: 'connections', id: c.id }))])));
       root.append(row);
     }
@@ -77,7 +78,7 @@ export function mountHermesSurface(host, provider, onChanged) {
     root.append(el('h3', 'Named setups'), el('p', 'These names appear under Model when you select Hermes in New Agent. Each launch gets separate memory and conversation history.'));
     for (const setup of state.setups) {
       const row = el('div'); row.className = 'hermes-card';
-      row.append(el('strong', setup.name), el('p', `${state.connections.find(c => c.id === setup.connection)?.name || 'Missing connection'} · ${setup.model} · ${setup.reasoning} reasoning · ${setup.approvals === 'off' ? 'YOLO' : 'Ask for approval'}`),
+      row.append(summary(setup.name, `${state.connections.find(c => c.id === setup.connection)?.name || 'Missing connection'} · ${setup.model} · ${setup.reasoning} reasoning · ${setup.approvals === 'off' ? 'YOLO' : 'Ask for approval'}`),
         actions(button('Edit', () => editSetup(setup)), button('Duplicate', () => editSetup({ ...setup, id: undefined, name: `${setup.name} copy` })), button('Remove', () => run('delete', { kind: 'setups', id: setup.id }))));
       root.append(row);
     }
