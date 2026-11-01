@@ -742,7 +742,7 @@ test('a walk that fails halfway still owes the whole gap, and the next one pays 
   view.dispose();
 });
 
-test('a finger opens on the reading; a desk still opens on the terminal', () => {
+test('a tile opens on Chat, on a desk as on a phone, and an Agent with nothing yet on its terminal', () => {
   const make = () => {
     const shown = [];
     const tile = {
@@ -790,11 +790,12 @@ test('a finger opens on the reading; a desk still opens on the terminal', () => 
     globalThis.window.matchMedia = coarse;
   }
 
-  // A desk is unchanged: no intention is ever set there, so the terminal stays the way in.
+  // A desk too (owner, 2026-11-01): Chat is the default everywhere.
   const d = make();
+  d.tile.transcriptWantChat = true;
   land(d.tile, live);
-  assert.equal(d.tile.transcriptOn, false);
-  assert.deepEqual(d.shown, []);
+  assert.equal(d.tile.transcriptOn, true);
+  assert.deepEqual(d.shown, [['show', 'chat']]);
 });
 
 test('the Agent\'s words are drawn as markdown, and the switch redraws them exactly as written', async () => {

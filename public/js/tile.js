@@ -629,12 +629,12 @@ export class Tile {
     this.session = session;
     // Ask the route once, so the button is opaque or live before anyone presses it.
     if (changed && this.transcriptAvailable()) void this.transcriptView.probe(session);
-    // A FINGER OPENS ON THE READING, NOT THE TERMINAL (owner, 2026-09-24). Someone coming
-    // to an Agent on a phone or a tablet wants to see what it said; the terminal is a
-    // desk's way in. Held as an intention rather than acted on here, because only the
-    // route can say whether THIS Agent has a record — the probe above is already on its
-    // way, and onTranscriptState spends the intention when the answer lands.
-    if (changed) this.transcriptWantChat = (this.opensOnReading || isCoarse()) && this.transcriptAvailable();
+    // A TILE OPENS ON CHAT, NOT THE TERMINAL (owner, 2026-09-24 for a finger; 2026-11-01 for
+    // every tile). Someone coming to an Agent wants to see what it said; Term is one press
+    // away. Held as an intention rather than acted on here, because only the route can say
+    // whether THIS Agent has a record — the probe above is already on its way, and
+    // onTranscriptState spends the intention when the answer lands.
+    if (changed) this.transcriptWantChat = this.transcriptAvailable();
     this.sessionKey = S.sessions.find((row) => row.name === session)?.key;
     this.syncEmpty();
     // The Services answer is per session. A tile that held an unlocked view for one Agent

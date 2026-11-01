@@ -58,7 +58,8 @@ same way. See [Share a file with an Agent](share-a-file.md).
 
 The separate **Transcript** button appears when Ronin Services has loaded Terminal
 transcript. It switches **Term → Chat → Term**; the button always names where you are
-now. Chat is the conversation alone, as the CLI itself wrote it. The button is opaque when this Agent has nothing to show — born before Ronin
+now. A tile opens on Chat, on a desk as on a phone, once its Agent has something to show; an
+Agent with nothing written yet is met at its terminal. Chat is the conversation alone, as the CLI itself wrote it. The button is opaque when this Agent has nothing to show — born before Ronin
 recorded launch identity, started outside Ronin, or
 simply nothing written yet; pressing it says which. Switching the service on later, or a restart, does not lose
 an Agent whose identity was recorded. **Term** returns to the normal interactive terminal.
