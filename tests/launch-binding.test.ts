@@ -101,3 +101,15 @@ test('Hermes isolates SQLite files and memory, and records its cli-home before s
   assert.equal(await readFile(path.join(source, 'state.db'), 'utf8'), 'source');
   assert.equal(await readFile(path.join(result.home!, 'state.db'), 'utf8'), 'own database');
 });
+
+test('a journal declared with no idPath is one store file the birth owns (Hermes state.db)', async t => {
+  const root = await mkdtemp(path.join(tmpdir(), 'launch-store-'));
+  t.after(async () => { await rm(root, { recursive: true, force: true }); });
+  const { resolveLaunchSegments } = await import('../src/launch-journal.js');
+  const identity = { key: 'h-key', cli: 'hermes', strategy: 'isolated' as const, providerSession: '', home: root, env: {},
+    journal: { format: 'hermes-state', root, pattern: 'state.db' } };
+  assert.deepEqual(await resolveLaunchSegments(identity), { gap: 'journal_pending' }, 'nothing written yet');
+  await writeFile(path.join(root, 'state.db'), '');
+  assert.deepEqual(await resolveLaunchSegments(identity), { files: [path.join(root, 'state.db')], session: 'h-key' });
+  assert.equal(await resolveLaunchJournal(identity), path.join(root, 'state.db'));
+});

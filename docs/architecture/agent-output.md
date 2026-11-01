@@ -16,7 +16,8 @@ Both live in the transcript part (Services `rireki/`, see its `docs/rireki.md`).
 through the session folder's one write queue, so their lines never interleave and `seq` runs
 on across both.
 
-- **Log read:** one adapter per log format (Claude `message-blocks`, Codex `event-items`). It
+- **Log read:** one adapter per log format (Claude `message-blocks`, Codex `event-items`, Hermes
+  `hermes-state`, which reads the SQLite `state.db` under the Agent's own `HERMES_HOME`). It
   runs when the log file changes (a directory watch), resumes from where it stopped, and pushes
   only the new lines. Claude Code writes its private reasoning as empty thinking blocks and the
   narration it prints between tool calls as thinking blocks that carry text: the first is never
@@ -26,7 +27,8 @@ on across both.
   writes only what no log holds:
   - for every Agent, an `ask` when a question or permission prompt opens and a `note` when it
     closes;
-  - for a CLI with no log read (Grok, or Gemini until it has one), the conversation as far as
+  - for a CLI with no log read (Grok, or Gemini until it has one; a Hermes Agent born before its
+    home was its own), the conversation as far as
     the screen shows it: a `note` when work starts, then a `say` of what the screen newly shows
     and a `turn` when the CLI is ready again. Less complete than a log, in the same shape.
 

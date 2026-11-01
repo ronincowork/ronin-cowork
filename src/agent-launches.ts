@@ -8,7 +8,7 @@ export interface AgentLaunches {
   resume: string[];
   newSessionId: string[];
   isolation?: { env: string; home: string; private: string | string[]; provision?: 'hermes-setup' };
-  transcript?: { format: string; root: string; pattern: string; idPath: string; childPath?: string };
+  transcript?: { format: string; root: string; pattern: string; idPath?: string; childPath?: string };
   initial: 'positional' | 'none';
 }
 

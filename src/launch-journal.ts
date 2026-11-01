@@ -1,5 +1,5 @@
 /** Resolve journals only inside the location owned by the launch declaration. */
-import { open, readdir } from 'node:fs/promises';
+import { open, readdir, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { readLaunchIdentity, writeLaunchIdentity } from './launch-binding.js';
 import type { LaunchIdentity } from './sockets-contract.js';
@@ -54,6 +54,15 @@ export async function resolveLaunchSegments(identity: LaunchIdentity): Promise<S
   const declaration = identity.journal;
   if (!declaration) return { gap: 'journal_pending' };
   const pattern = declaration.pattern.replaceAll('{session_id}', identity.providerSession);
+  // ONE STORE, NOT SEGMENTS: a CLI that keeps its conversation in a database the birth owns
+  // (Hermes's state.db under its own home) declares no idPath. The file is the journal; there
+  // is no header to place it by and no chain to order.
+  if (!declaration.idPath) {
+    const file = path.join(declaration.root, pattern);
+    return (await stat(file).then((s) => s.isFile(), () => false))
+      ? { files: [file], session: identity.providerSession || identity.key }
+      : { gap: 'journal_pending' };
+  }
   const found: { file: string; ts: string; id: string }[] = [];
   for (const file of await files(declaration.root, pattern)) {
     const row = await header(file);
@@ -80,6 +89,11 @@ export async function resolveLaunchJournal(identity: LaunchIdentity): Promise<st
   if (!identity.journal || identity.strategy === 'unbound') return null;
   const declaration = identity.journal;
   const pattern = declaration.pattern.replaceAll('{session_id}', identity.providerSession);
+  if (!declaration.idPath) { // one store file the birth owns (see resolveLaunchSegments)
+    const file = path.join(declaration.root, pattern);
+    return (await stat(file).then((s) => s.isFile(), () => false)) ? file : null;
+  }
+  const idPath = declaration.idPath;
   for (const file of await files(declaration.root, pattern)) {
     if (identity.providerSession && declaration.pattern.includes('{session_id}')) {
       identity.journalFile = file;
@@ -97,7 +111,7 @@ export async function resolveLaunchJournal(identity: LaunchIdentity): Promise<st
     } finally { await handle.close(); }
     const child = declaration.childPath ? field(row, declaration.childPath) : undefined;
     if (child === true || (child !== null && typeof child === 'object')) continue;
-    const id = field(row, declaration.idPath);
+    const id = field(row, idPath);
     if (typeof id !== 'string' || !id) return null;
     // Named/minted identities select their declared id; isolated identities own this directory.
     if (identity.providerSession && identity.providerSession !== id) continue;
