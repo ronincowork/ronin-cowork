@@ -108,6 +108,11 @@ export async function ledgerHandIns(spec: RepoSpec, from: string, to: string, si
   const sessions = new Set<string>();
   for (const r of rows) {
     if (r.line_sha && !(await isAncestor(spec.dir, r.line_sha, to))) continue;
+    // ALREADY ON THE TARGET IS NOT THIS PROMOTION'S. `sinceLineTip` only narrows the read when
+    // the last promoted tip is a receipt's; when it is not (a merge on the line), every receipt
+    // the line ever accepted came back, and a notice named hand-ins promoted hours before
+    // (owner, 2026-11-01). Git says what is new: in the line tip, not yet in the target.
+    if (r.line_sha && (await isAncestor(spec.dir, r.line_sha, from))) continue;
     ids.push(r.id);
     if (r.session) sessions.add(r.session);
   }
