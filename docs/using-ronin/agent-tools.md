@@ -14,7 +14,7 @@ Tools do jobs and report what happened. Every Cowork Agent has:
 - **worktree-desk**: a private folder and branch for code, and a hand-in when the work is ready for review. See [managed worktrees](desks.md).
 - **machine-settings** and **ronin-host**: read this machine's settings and health.
 - **mika**: ask Mika, the house assistant.
-- **ronin-help**: the pages you are reading now, and the meaning of a Ronin word: `ronin-help` lists the topics, `ronin-help <topic>` prints one, `ronin-help <word>` looks a word up.
+- **ronin-help**: the pages you are reading now, and the meaning of a Ronin word: `ronin-help` lists the topics, `ronin-help <topic>` prints one, `ronin-help <brief>` prints a brief by its file name, `ronin-help <word>` looks a word up.
 
 The provider's own tools (reading files, running commands, searching) are there too;
 Ronin adds to them and takes nothing away.

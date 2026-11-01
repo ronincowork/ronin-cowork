@@ -1,7 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import path from 'node:path';
-import { conditionalBehaviourPath, resolveConditionalBehaviours } from '../src/behaviours.js';
+import { briefPointer, resolveConditionalBehaviours } from '../src/behaviours.js';
 import { teamLeadAcknowledgement } from '../src/routes/sessions-api.js';
 
 test('Team lead is one ordinary conditional Behavior selected only by the explicit designation', async () => {
@@ -34,10 +33,10 @@ test('Mika is born on the base brief and hers, never the cowork briefs; the inst
   assert.ok(!cowork.some((book) => ['mika', 'atarashi'].includes(book)));
 });
 
-test('a later lead designation acknowledges the change with the resolved reading assignment', async () => {
-  const reading = await conditionalBehaviourPath('team-lead');
-  assert.equal(path.basename(reading ?? ''), 'team-lead.md');
-  const message = teamLeadAcknowledgement(['builders'], reading);
+test('a later lead designation acknowledges with the brief file name, label and tool', async () => {
+  const message = teamLeadAcknowledgement(['builders'], await briefPointer('team-lead'));
   assert.match(message, /now the team_lead of "builders"/);
-  assert.match(message, /Reading assignment: read .*conditional\/team-lead\.md now for what a Team lead does\./);
+  assert.match(message, /read team-lead\.md \(Team lead\): ronin-help team-lead/);
+  assert.equal(await briefPointer('worktree-root'), 'read worktree-root.md (Managed worktree): ronin-help worktree-root');
+  assert.equal(await briefPointer('checkout'), 'read checkout.md (Checkout): ronin-help checkout');
 });

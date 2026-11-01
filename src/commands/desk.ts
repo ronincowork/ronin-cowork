@@ -15,6 +15,7 @@ import { randomUUID } from 'node:crypto';
 import { withManagedTransaction } from '../desks/lifecycle-ledger.js';
 import { shutdownAgent, ShutdownRefused } from '../desks/session-shutdown.js';
 import { didLine, readItem } from '../work-items.js';
+import { briefPointer } from '../behaviours.js';
 
 const out = (s = '') => process.stdout.write(s + '\n');
 function die(verdict: string, code: number): never {
@@ -178,6 +179,7 @@ async function main(): Promise<void> {
         out(`  worktree ${d.worktree}`);
         out(`  dependencies ${d.dependency_location || 'none'}`);
         out(row(d));
+        if (verb === 'open') out(`  ${await briefPointer('worktree-root')}`);
         // Open does its job and says what it did; it does not decide custody (owner,
         // 2026-09-09: tools acknowledge, they do not hard-code behaviour). Reopening a
         // desk that was handed off leaves custody with the holder, and every later verb

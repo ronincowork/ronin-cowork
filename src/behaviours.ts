@@ -75,9 +75,11 @@ export async function resolveConditionalBehaviours(facts: BehaviourFacts): Promi
     .map((row) => ({ book: row.name, file: row.page, reading: row.reading }));
 }
 
-/** The resolved stock-or-owner page named by an acknowledgement outside birth. */
-export async function conditionalBehaviourPath(name: string): Promise<string | undefined> {
-  return (await listBehaviours()).find((row) => row.scope === 'conditional' && row.name === name)?.page;
+/** What an acknowledgement outside birth says to read: the brief's file name, its label,
+ * and the tool that reads it (`ronin-help <name>`, the owner's copy over stock). */
+export async function briefPointer(name: string): Promise<string> {
+  const row = (await listBehaviours()).find((entry) => entry.name === name);
+  return `read ${name}.md (${row?.label ?? name}): ronin-help ${name}`;
 }
 
 /** Sought pages are indexed, never applied. The folder itself is the registry. */
