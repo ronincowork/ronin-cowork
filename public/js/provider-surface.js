@@ -493,9 +493,9 @@ export function createProviderDrawing(context, { repaint, say = () => {} }) {
     if (list.unavailable) return list.unavailable;
     return t('setup_surface.models_read', 'Model list read {date} by {cli} {version}', { date: list.read_at, cli: entry.label || entry.id, version: list.by || '' }).trim();
   };
-  const paintCatalog = (rows, entry, host) => {
+  const paintCatalog = (rows, entry, host, label = '') => {
     const section = el('section', 'setup-provider-catalog');
-    section.append(el('h3', 'setup-provider-eyebrow', t('setup_surface.section_models', 'Models')));
+    section.append(el('h3', 'setup-provider-eyebrow', label || t('setup_surface.section_models', 'Models')));
     const facts = el('dl', 'setup-provider-facts');
     for (const [label, on] of [
       [t('setup_surface.fact_installed', 'Installed'), entry?.installed === true],
@@ -545,7 +545,23 @@ export function createProviderDrawing(context, { repaint, say = () => {} }) {
       yours.append(el('h2', '', rows[0].provider_label), el('p', 'setup-fine', t('setup_surface.no_cli', 'No CLI in Ronin’s registry serves this provider, so it cannot be installed or signed in here.')));
     }
     host.append(yours);
-    paintCatalog(rows, provider, host);
+    const connections = providerCatalog().providers.filter(entry => entry.cli === id && entry.connections);
+    if (provider?.installed && connections.length) {
+      const section = el('section', 'setup-provider-catalog');
+      section.append(el('h3', 'setup-provider-eyebrow', t('setup_surface.api_connections', 'API connections')));
+      section.append(el('p', 'setup-fine', t('setup_surface.api_connections_help', 'Add or change API connections in the native setup. Each connection keeps its own models. Finish setup, then refresh to update Ronin.')));
+      if (!connections.some(entry => entry.inference_provider)) section.append(el('p', 'setup-fine', t('setup_surface.api_connections_empty', 'No API connections configured yet.')));
+      if (!provider.off && !provider.login_open) section.append(action(t('setup_surface.manage_connections', 'Manage API connections'), '', async () => {
+        const result = await request(`/api/setup/providers/${encodeURIComponent(provider.id)}/login`, { method: 'POST', json: {} });
+        if (!result.ok) { section.append(el('p', 'setup-notice bad', result.message)); return; }
+        await paint();
+      }));
+      host.append(section);
+    }
+    const configured = connections.filter(entry => entry.inference_provider);
+    if (configured.length) {
+      for (const connection of configured) paintCatalog(connection.models, provider, host, connection.label);
+    } else paintCatalog(rows, provider, host);
     if (alignedProvider !== id) {
       alignedProvider = id;
       requestAnimationFrame(() => {

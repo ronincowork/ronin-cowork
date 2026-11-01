@@ -187,3 +187,23 @@ test('no client module keeps its own provider or model list, join, or vendor nam
   const schemaSource = await read('machine-settings-schema.js');
   assert.doesNotMatch(schemaSource, /haiku|mini|flash|LIGHT|modelOpts/);
 });
+
+test('harness selection scopes connections and clears the old model when switching', async () => {
+  const hermes = { provider: 'hermes_openai', cli: 'hermes', native: 'hermes', label: 'OpenAI API', cli_label: 'Hermes', models: [] };
+  CATALOG_DOOR = door();
+  CATALOG_DOOR.providers.push({ ...joined(hermes, true, [['luna', 'Luna']]), connections: true, inference_provider: 'openai' });
+  CATALOG_DOOR.providers.push({ ...joined({ ...hermes, provider: 'hermes_mistral', label: 'Mistral API' }, true, [['small', 'Small']]), connections: true, inference_provider: 'mistral' });
+  try {
+    await loadProviderCatalog();
+    const draft = { provider: 'openai', model: 'gpt-5.6-sol' };
+    const pair = providerModelPair(() => draft, (provider, model) => Object.assign(draft, { provider, model }), (_label, control) => control);
+    assert.equal(pair.harnessSelect.value, 'codex');
+    pair.harnessSelect.value = 'hermes'; pair.harnessSelect.fire('change');
+    assert.deepEqual(draft, { provider: '', model: '' });
+    assert.deepEqual(pair.providerSelect.options.map(row => row.value), ['', 'hermes_openai', 'hermes_mistral']);
+    pair.providerSelect.value = 'hermes_mistral'; pair.providerSelect.fire('change');
+    assert.deepEqual(pair.modelSelect.options.map(row => row.value), ['', 'native', 'small']);
+    pair.modelSelect.value = 'small'; pair.modelSelect.fire('change');
+    assert.deepEqual(draft, { provider: 'hermes_mistral', model: 'small' });
+  } finally { CATALOG_DOOR = door(); await loadProviderCatalog(); }
+});

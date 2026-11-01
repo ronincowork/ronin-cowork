@@ -227,7 +227,7 @@ test('each CLI\'s own list is read the way the registry says — the real cache 
   const home = await mkdtemp(path.join(os.tmpdir(), 'ronin-model-lists-'));
   const now = () => '2026-09-25T18:00:00.000Z';
   try {
-    assert.deepEqual(AGENTS.map((agent) => [agent.id, agent.operations.models.read]), [['claude', 'claude-cache'], ['codex', 'codex-cache'], ['gemini', 'none'], ['grok', 'command'], ['hermes', 'none']]);
+    assert.deepEqual(AGENTS.map((agent) => [agent.id, agent.operations.models.read]), [['claude', 'claude-cache'], ['codex', 'codex-cache'], ['gemini', 'none'], ['grok', 'command'], ['hermes', 'hermes-config']]);
     // Nothing on disk yet: not guessed.
     assert.deepEqual(await summary.readModels(agent('claude'), { home, version: '2.1.282', now }), { read_at: now(), by: '2.1.282', rows: [], unavailable: 'No readable model list from Claude Code.' });
     await mkdir(path.join(home, '.claude', 'cache', 'model-catalog'), { recursive: true });

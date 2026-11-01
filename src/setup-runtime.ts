@@ -193,7 +193,7 @@ const defaultSessionOps: ProviderSessionOps = {
     await mkdir(rootDir('user'), { recursive: true });
     await createSetupSession(name, spec.id, rootDir('user'), { agent: false, argv: [] });
     void collectBirthLines(name, true);
-    await runCommand(name, launch.argv.map((arg) => "'" + arg.replace(/'/g, "'\\''") + "'").join(' '));
+    await runCommand(name, [...launch.argv, ...(spec.operations.setup ?? [])].map((arg) => "'" + arg.replace(/'/g, "'\\''") + "'").join(' '));
   },
   async openUpdate(provider, name) {
     const spec = AGENTS.find((agent) => agent.id === provider);
