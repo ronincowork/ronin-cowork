@@ -176,7 +176,7 @@
     min-height: calc(var(--sp-ask-rows) + 2 * var(--space-row)); /* and its padding */
   }
   .sp-row input { min-width: 0; border: 0; background: transparent; color: var(--fg-strong); padding: var(--space-row) 0; font: inherit; }
-  .sp-row .fs-pair { display: flex; gap: var(--space-inline); min-width: 0; }
+  .sp-row .fs-pair { display: flex; flex-wrap: wrap; gap: var(--space-inline); min-width: 0; }
   .sp-row .fs-pair select { max-width: var(--sp-select-w); border: 0; border-bottom: var(--edge) solid transparent; background: transparent; color: var(--accent); padding: var(--space-row) 0; font: inherit; }
   .sp-row .fs-pair select:hover { border-bottom-color: var(--accent); }
   .sp-row .fs-pair select:disabled { color: var(--muted); }
@@ -304,6 +304,7 @@
   .na-defaults-links { margin-top: var(--space-row) !important; font-weight: var(--weight-strong); }
   .na-defaults-links a { color: inherit; font: inherit; text-decoration: none; }
   .fs-head { margin: var(--space-row) 0 0; color: var(--muted); font-size: var(--form-key); text-transform: uppercase; letter-spacing: var(--tracking-wide); }
+  .fs-connection-note { grid-column: 1 / -1; }
   .fs-pair { display: grid; grid-template-columns: repeat(auto-fit, minmax(var(--fs-pair-w), 1fr)); gap: var(--space-row) var(--space-inline); }
 
   .fs-gridlabel { display: block; color: var(--muted); font-size: var(--form-key); text-transform: uppercase; letter-spacing: var(--tracking-wide); }

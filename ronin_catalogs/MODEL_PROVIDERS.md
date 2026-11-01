@@ -87,17 +87,20 @@ Dangerously to Grok's canonical `--always-approve` spelling.
 xAI names no durable family, so its families are the versions themselves. Not yet
 exercised through Ronin.
 
-### Nous Research
+### Hermes API connections
 
 - **provider:** `nous`
 - **cli:** `hermes`
+- **connections:** `configured`
 - **families:** `405b=standard 36b=light`
 - **transcript_source:** Not established by the 2026-09-22 transcript investigation; no transcript availability promised.
 
-Hermes Agent runs any provider; its own Hermes models come through the Nous Portal
-(`hermes setup --portal` signs in). Model ids are passed unchanged to `hermes chat -m`.
-Its Agent page maps Dangerously to Hermes's `--yolo` spelling. models.dev does not list
-the Nous Portal, so these models show no model info. Not yet exercised through Ronin.
+Hermes is a harness with zero or more configured API connections. `connections: configured`
+expands this template from the CLI's saved connection/model inventory on Refresh all.
+The retained `nous` id is the legacy empty template, not an inference choice when no
+connection is configured. Each measured connection has its own stable Ronin route id;
+its actual inference-provider id is passed unchanged to Hermes. Endpoint and credential
+configuration remain in Hermes. See `docs/agents/hermes.md` for setup and current limits.
 
 ### OpenRouter
 

@@ -47,6 +47,10 @@ export interface ProviderCatalogEntry {
   launchable: boolean;
   /** The provider key models.dev files this vendor's models under; absent when it lists none. */
   models_dev?: string;
+  /** Expand this harness into its explicitly configured inference connections. */
+  connections?: boolean;
+  inference_provider?: string;
+  connection_rows?: ModelRow[];
   /**
    * The vendor's durable family words and their tiers (`sonnet=standard`): a listed id's
    * tier, so a new generation keeps its band the day its CLI lists it.
@@ -87,6 +91,7 @@ export interface SessionLaunchSpec {
 
 /** A joined row as the client paints it: the launch spec plus what this machine can do with it. */
 export interface ProviderRow extends SessionLaunchSpec {
+  unavailable_reason?: string;
   provider_label: string;
   cli_label: string;
   /** Installed, signed in or recorded, and not turned off: this machine can launch it. */
@@ -192,6 +197,7 @@ export function parseProviderCatalog(raw: string, origin: Origin = 'stock'): Pro
       provider, cli, label, origin, shadowed: false, launchable: maturity !== 'comingSoon',
       ...(maturity ? { maturity } : {}),
       ...(modelsDev ? { models_dev: modelsDev } : {}),
+      ...(field(section, 'connections') === 'configured' ? { connections: true } : {}),
       ...(families.length ? { families } : {}),
     });
   }
@@ -251,8 +257,15 @@ export interface ModelRow {
   name: string;
 }
 
+export interface ModelConnection {
+  provider: string;
+  label: string;
+  rows: ModelRow[];
+}
+
 /** A CLI's own model list as Ronin last read it. Rows are in the CLI's order. */
 export interface ModelList {
+  connections?: ModelConnection[];
   /** When Ronin read it. */
   read_at: string;
   /** The CLI version installed at that read; '' when it would not say. */
@@ -315,6 +328,12 @@ function parseModelList(value: unknown): ModelList | null {
     read_at: item.read_at,
     by: typeof item.by === 'string' ? item.by : '',
     rows,
+    ...(Array.isArray(item.connections) ? { connections: item.connections.flatMap(value => {
+      const connection = record(value);
+      if (typeof connection.provider !== 'string' || !/^[A-Za-z0-9][A-Za-z0-9._:/@+-]*$/.test(connection.provider)) return [];
+      const list = parseModelList({ read_at: item.read_at, rows: connection.rows });
+      return list ? [{ provider: connection.provider, label: typeof connection.label === 'string' ? connection.label : connection.provider, rows: list.rows }] : [];
+    }) } : {}),
     ...(typeof item.unavailable === 'string' && item.unavailable ? { unavailable: item.unavailable } : {}),
   };
 }
@@ -405,23 +424,36 @@ async function grammarOf(cli: string): Promise<AgentLaunches | null> {
  * Agent page has no rows at all.
  */
 export async function providerRows(summary: ProviderSummary | null, catalog?: ProviderCatalogEntry[], info?: ModelInfoFile): Promise<ProviderRows[]> {
-  const entries = catalog ?? await listProviderCatalog();
+  const roots = catalog ?? await listProviderCatalog();
+  const entries = roots.flatMap(entry => {
+    if (!entry.connections) return [entry];
+    const connections = summary?.models?.[entry.cli]?.connections ?? [];
+    if (!connections.length) return [entry];
+    return connections.map(connection => {
+      const vendor = roots.find(row => row.provider === connection.provider);
+      return { ...entry, provider: `${entry.cli}_${Buffer.from(connection.provider).toString('hex')}`,
+        label: vendor?.label || connection.label, inference_provider: connection.provider,
+        connection_rows: connection.rows, models_dev: vendor?.models_dev,
+        families: vendor?.families ?? entry.families };
+    });
+  });
   const facts = (info ?? await readModelInfo()).providers;
   const operational = new Set(summary?.operational ?? []);
   const turnedOff = new Set(summary?.off ?? []);
   const joined = await Promise.all(entries.map(async (entry): Promise<ProviderRows> => {
     const agent = AGENTS.find((candidate) => candidate.id === entry.cli);
     const off = turnedOff.has(entry.cli);
-    const on = operational.has(entry.cli);
+    const on = operational.has(entry.cli) && (!entry.connections || !!entry.connection_rows?.length);
     const base = {
       provider: entry.provider, cli: entry.cli, provider_label: entry.label, cli_label: agent?.label ?? entry.cli,
       operational: on, off, selectable: on, origin: entry.origin, shadowed: entry.shadowed,
+      ...(entry.connections && !entry.inference_provider ? { unavailable_reason: 'No API connections configured' } : {}),
     };
     const grammar = entry.launchable ? await grammarOf(entry.cli) : null;
     const models: ProviderRow[] = [];
     let launch: Pick<ProviderRows, 'native' | 'nativeDangerousCmd' | 'launch_modes'> = {};
     if (grammar) {
-      const values = (model = '') => ({ provider: entry.provider, model });
+      const values = (model = '') => ({ provider: entry.inference_provider || entry.provider, model });
       const native = commandText(renderLaunch(grammar.native, values()));
       const dangerous = grammar.nativeDangerously.length || grammar.modelDangerously.length;
       launch = {
@@ -429,24 +461,24 @@ export async function providerRows(summary: ProviderSummary | null, catalog?: Pr
         launch_modes: dangerous ? ['configured', 'live_dangerously'] : ['configured'],
         ...(grammar.nativeDangerously.length ? { nativeDangerousCmd: commandText(renderLaunch(grammar.nativeDangerously, values())) } : {}),
       };
-      models.push({
+      if (!entry.inference_provider) models.push({
         ...base, model: NATIVE_MODEL, name: NATIVE_NAME, cmd: native,
         ...(launch.nativeDangerousCmd ? { dangerousCmd: launch.nativeDangerousCmd } : {}),
         tier: '', default: true, info: null,
       });
       const known = entry.models_dev ? facts[entry.models_dev] ?? {} : {};
-      for (const listed of summary?.models?.[entry.cli]?.rows ?? []) {
+      for (const listed of entry.connection_rows ?? summary?.models?.[entry.cli]?.rows ?? []) {
         if (!SAFE_MODEL_ID.test(listed.id)) continue;
         const meta = Object.hasOwn(known, listed.id) ? known[listed.id] : null;
         models.push({
           ...base, model: listed.id, name: listed.name || listed.id,
           cmd: commandText(renderLaunch(grammar.model, values(listed.id))),
           ...(grammar.modelDangerously.length ? { dangerousCmd: commandText(renderLaunch(grammar.modelDangerously, values(listed.id))) } : {}),
-          tier: familyTier(listed.id, entry.families) || familyTier(meta?.family ?? '', entry.families), default: false, info: meta,
+          tier: familyTier(listed.id, entry.families) || familyTier(meta?.family ?? '', entry.families), default: !!entry.inference_provider && models.length === 0, info: meta,
         });
       }
     }
-    const { families: _families, ...rest } = entry;
+    const { families: _families, connection_rows: _connectionRows, ...rest } = entry;
     return { ...rest, cli_label: base.cli_label, operational: on, off, ...launch, models };
   }));
   return [...joined.filter((entry) => entry.operational), ...joined.filter((entry) => !entry.operational)];

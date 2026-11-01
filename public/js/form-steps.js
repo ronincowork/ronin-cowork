@@ -235,19 +235,39 @@ export const modelWord = (row) => row?.model === NATIVE_MODEL || !row?.tier
  * `blank` names the two blank options; `labels` the two field labels.
  */
 export function providerModelPair(read, write, field, { fixed = '', classes = '', blank = {}, labels = {} } = {}) {
+  const harnessSelect = el('select', classes);
   const providerSelect = el('select', classes);
+  let chosenHarness = '';
+  let lastProvider = '';
+  const connectionNote = el('p', 'fs-tmplnote fs-connection-note');
+  const harnessField = field(t('forms.harness', 'agent harness'), harnessSelect);
   const modelSelect = el('select', classes);
   const option = (label, value, disabled = false) => { const out = el('option', null, label); out.value = value; if (disabled) out.disabled = true; return out; };
   const empty = { provider: blank.provider ?? t('forms.default', 'default'), model: blank.model ?? t('forms.default', 'default') };
   const paint = () => {
     const rows = providerCatalog().rows;
     const current = read() || {};
+    const grouped = providerCatalog().providers.some(entry => entry.connections);
+    harnessField.hidden = !!fixed || !grouped;
+    if (!fixed && grouped) {
+      if (current.provider !== lastProvider) chosenHarness = rows.find(row => row.provider === current.provider)?.cli || chosenHarness;
+      lastProvider = current.provider || '';
+      const harnesses = providerCatalog().providers.filter((row, index, all) => all.findIndex(other => other.cli === row.cli) === index);
+      harnessSelect.replaceChildren(option(empty.provider, ''));
+      for (const harness of harnesses) harnessSelect.add(option(harness.cli_label || harness.cli, harness.cli));
+      harnessSelect.value = chosenHarness;
+    }
     if (!fixed) {
-      const seen = rows.filter((row, index) => rows.findIndex((other) => other.provider === row.provider) === index);
+      const visible = grouped && chosenHarness ? rows.filter(row => row.cli === chosenHarness) : rows;
+      const seen = visible.filter((row, index) => visible.findIndex((other) => other.provider === row.provider) === index);
       providerSelect.replaceChildren(option(empty.provider, ''));
-      for (const row of seen) providerSelect.add(option(row.operational ? row.provider_label : row.off ? t('forms.provider_turned_off', '{name} — turned off', { name: row.provider_label }) : t('forms.provider_off', '{name} — not on this machine', { name: row.provider_label }), row.provider, !row.operational));
+      for (const row of seen) providerSelect.add(option(row.operational ? row.provider_label : row.unavailable_reason ? `${row.provider_label} — ${row.unavailable_reason}` : row.off ? t('forms.provider_turned_off', '{name} — turned off', { name: row.provider_label }) : t('forms.provider_off', '{name} — not on this machine', { name: row.provider_label }), row.provider, !row.operational));
       providerSelect.value = seen.some((row) => row.provider === current.provider) ? String(current.provider) : '';
     }
+    const connectionRoot = providerCatalog().providers.find(entry => entry.cli === chosenHarness && entry.connections);
+    connectionNote.hidden = !!fixed || !connectionRoot;
+    connectionNote.textContent = connectionRoot
+      ? t('forms.api_connections_hint', 'API connections and their configured models come from {harness}. Manage connections in Models, then refresh the model list.', { harness: connectionRoot.cli_label }) : '';
     const chosen = fixed || providerSelect.value;
     const offered = rows.filter((row) => row.provider === chosen);
     modelSelect.replaceChildren(option(empty.model, ''));
@@ -261,14 +281,17 @@ export function providerModelPair(read, write, field, { fixed = '', classes = ''
     modelSelect.value = offered.some((row) => row.model === current.model) ? String(current.model) : '';
     modelSelect.disabled = !chosen;
   };
+  harnessSelect.addEventListener('change', () => { chosenHarness = harnessSelect.value; lastProvider = ''; write('', ''); paint(); });
   providerSelect.addEventListener('change', () => { write(providerSelect.value, ''); paint(); });
   modelSelect.addEventListener('change', () => { write(fixed || providerSelect.value, modelSelect.value); });
   const wrap = el('div', 'fs-pair');
+  if (!fixed) wrap.append(harnessField);
   if (!fixed) wrap.append(field(labels.provider ?? t('forms.provider', 'model provider'), providerSelect));
   wrap.append(field(labels.model ?? t('forms.model', 'model'), modelSelect));
+  if (!fixed) wrap.append(connectionNote);
   paint();
   if (!providerCatalog().loaded) void loadProviderCatalog().then(paint);
-  return { el: wrap, paint, providerSelect, modelSelect };
+  return { el: wrap, paint, harnessSelect, providerSelect, modelSelect };
 }
 
 /** A row of small tags — the kit summary and the born reading speak in these. */

@@ -77,6 +77,26 @@ catalog object carries `withdrawn`, the shipped providers the copy set aside. Se
 with the house header (`seedUserCatalog`) or copy one section out of the shipped file to
 start from.
 
+## Harnesses with multiple API connections
+
+A catalog entry with `connections: configured` is a harness template. Its model reader
+records `connections: [{ provider, label, rows: [{ id, name }] }]` within the existing
+CLI model-list record. The one join expands these into distinct provider routes. Their
+ids are `<cli>_<hex-encoded inference-provider id>`, so existing vendor routes and saved
+defaults do not change meaning. The inference-provider id, rather than the Ronin route
+id, fills the Agent page's `{provider}` argument. Connection model lists never mix.
+
+The shared picker adds a harness choice when such a template is present, followed by
+connection and model. A configured connection offers explicit models only; its first
+configured model is used if the model field is blank. An empty template stays visible
+but unavailable. Turning off the harness disables every connection.
+
+Hermes's reader uses its native config-get command during Refresh only. It projects
+saved names and model ids and discards all credential and endpoint fields. It reports
+configured choices, not verified API entitlement. Native connection setup is declared
+as `operations.setup` in the CLI registry; Hermes uses `model`. Setup can be reopened
+to manage additional connections. See [Hermes](../agents/hermes.md) for the tested scope.
+
 ## Model info
 
 `src/model-info.ts` owns it. One shape in three places:
@@ -181,7 +201,7 @@ What this machine *has* is measured, not derived on every read. The Campaign rec
 `catalog.config.models[].id` and `.name`, only the `main` section its own picker offers — the
 `overflow` generations are still served but not offered), `codex-cache` (`~/.codex/models_cache.json`,
 `models[]` with `slug`, `display_name`, and `visibility: list`), `command` (run the CLI with
-the argv and read the list under *Available models:* — Grok), or `none` (Gemini, Hermes:
+the argv and read the list under *Available models:* — Grok), or `hermes-config` (Hermes saved connections), or `none` (Gemini:
 Model: Native only, and the surface says so). `readModels` walks that table; no CLI id
 appears in it. A new way to read a list is a new key, never an `if`.
 
