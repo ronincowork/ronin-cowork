@@ -119,8 +119,15 @@ else does.
 ### The root landing
 
 The bare `/` route is the landing, not a remembered workspace and not a Campaign editor.
-It has four doors — **Models**, **Workspaces**, **Teams**, **Help** — each opening its own Workbench in
-the same tab (`public/js/door-workbenches.js`; owner, 2026-10-19). Models is its own stones of
+Its centre is **Ronin OFFICE Space** (owner, 2026-11-02; KAN-186): three stones in a triangle, **Teams**
+(who does the work) at the apex, **Workspaces** (where the work is) and **Epics** (what the work is)
+under it. **Models**, **Help** and **Settings** are three smaller stones in a vertical line on the right
+of the page (in a row under the triangle on a narrow window). Each stone opens its own Workbench in
+the same tab (`public/js/door-workbenches.js`; owner, 2026-10-19). Epics (owner, 2026-11-02; KAN-187)
+seats a stone per Epic — the level-1 work items, over the Campaign this tab looks at — in Workspace 1
+(`epics-surface.js`): a pressed stone reads the item beside the rail as Work Items does
+(`renderItemDetail`); a stone dragged into a workspace places that Epic whole there; the selector
+offers the Epics card alone. Models is its own stones of
 providers in Workspace 1 (`models-surface.js`): a stone dragged into a workspace, or its selector
 card, places that provider's page there whole, no rail; Settings' Model Providers surface stays
 as it is, both drawing with the one exported drawing. Workspaces is its own stones of folders in
@@ -139,7 +146,7 @@ under a headline of what Ronin is for (the headline alone on a phone); 'START HE
 Getting started and Using Ronin; each of the six opens one level down to Return and its pages (the four's level is the four), the page being read pressed; a pressed page read beside the rail through
 `/api/file?product=1`) in Workspace 1 and Mika (`help.mika`) in Workspace 2, her tile opened on its
 reading (`createMikaTilePool({ opensOn: 'reading' })`); both are solid cards.
-Until one model provider is activated the Models, Workspaces and Teams doors are locked; Help stays
+Until one model provider is activated the Models, Workspaces, Teams and Epics doors are locked; Help stays
 open, its Mika seat saying in one line that she needs a provider, pointing to Setup, and say so (the gate the old
 root had); Settings, the live stone, opens Setup until its five answers are recorded.
 

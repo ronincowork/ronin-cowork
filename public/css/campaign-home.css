@@ -6,15 +6,21 @@
     --ch-horizon-h: 290px;
     --ch-horizon-ink: var(--kaki);
     --ch-glyph: 30px;
-    --ch-frame-w: 860px;
+    --ch-frame-w: 640px;
     --ch-door-h: 208px;
+    --ch-side-w: 168px;
+    --ch-side-h: 104px;
+    --ch-side-glyph: 18px;
     --ch-caption-top: 144px;
     --ch-caption-x: 20px;
     --ch-caption-lift: 4px;
     --ch-corner-x: 16px;
     --ch-corner-y: 14px;
     display: grid;
-    place-items: center;
+    /* Ronin OFFICE Space centred, the smaller stones in a column on the right (owner, 2026-11-02). */
+    grid-template-columns: minmax(var(--ch-side-w), 1fr) minmax(0, var(--ch-frame-w)) minmax(var(--ch-side-w), 1fr);
+    align-items: center;
+    column-gap: var(--space-section);
     min-height: 0;
     height: 100%;
     padding: var(--space-inset) var(--space-inset);
@@ -22,6 +28,7 @@
     position: relative;
   }
   .ch-frame {
+    grid-column: 2;
     width: 100%;
     max-width: var(--ch-frame-w);
     display: flex;
@@ -34,7 +41,30 @@
   .ch-horizon { position: absolute; left: 0; bottom: 0; width: 100%; height: var(--ch-horizon-h); color: var(--ch-horizon-ink); opacity: var(--ch-horizon-opacity); z-index: 0; pointer-events: none; }
   .ch-frame { position: relative; z-index: 1; }
 
-  .ch-doors { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-subsection) var(--space-inline); }
+  /* RONIN OFFICE SPACE (owner, 2026-11-02): Teams at the apex, Workspaces and Epics under it. */
+  .ch-office { display: flex; flex-direction: column; gap: var(--space-subsection); }
+  .ch-office-name {
+    margin: 0;
+    font-size: var(--text-display);
+    font-weight: var(--weight-strong);
+    line-height: var(--leading-tight);
+    color: var(--fg-strong);
+    text-align: center;
+  }
+  .ch-doors { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--space-subsection) var(--space-inline); }
+  .ch-doors > .ch-door[data-door='teams'] { grid-column: 1 / -1; justify-self: center; width: calc((100% - var(--space-inline)) / 2); }
+
+  /* Models, Help and Settings: smaller stones, one above the other, on the right of the page. */
+  .ch-side {
+    grid-column: 3;
+    justify-self: end;
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-inline);
+    width: var(--ch-side-w);
+  }
 
   .ch-door {
     --ch-edge-hover: color-mix(in srgb, var(--ch-tone) 45%, var(--line-3));
@@ -73,6 +103,8 @@
   .ch-door[data-door='workspaces'] { --ch-tone: var(--accent-2); }
   .ch-door[data-door='teams'] { --ch-tone: var(--ok-2); }
   .ch-door[data-door='help'] { --ch-tone: var(--define-line); }
+  .ch-door[data-door='epics'] { --ch-tone: var(--kaki); }
+  .ch-door[data-door='settings'] { --ch-tone: var(--line-3); }
   .ch-door[data-door='desk'] { --ch-tone: var(--kaki); }
   .ch-door[data-door='team'] { --ch-tone: var(--accent-2); }
   .ch-door[data-door='agent'] { --ch-tone: var(--ok-2); }
@@ -115,6 +147,12 @@
     transition-delay: var(--motion-quick);
   }
 
+  .ch-door-small { min-height: var(--ch-side-h); padding: var(--space-inline) var(--space-inline) var(--space-inline) var(--space-inset); }
+  .ch-door-small .ch-glyph { --ch-glyph: var(--ch-side-glyph); }
+  .ch-door-small h2 { margin-top: var(--space-paragraph); font-size: var(--text-heading); }
+  .ch-door-small .ch-is, .ch-door-small .ch-gate { position: static; opacity: 1; transform: none; margin-top: var(--space-row); padding-top: 0; border-top: 0; font-size: var(--text-small); }
+  .ch-door-small:not(:hover):not(:focus-visible) .ch-is { display: none; }
+
   .ch-release {
     position: absolute;
     z-index: 2;
@@ -130,26 +168,14 @@
     text-align: left;
     overflow-wrap: anywhere;
   }
-  .ch-settings {
-    position: absolute;
-    z-index: 2;
-    right: var(--ch-corner-x);
-    bottom: var(--ch-corner-y);
-    padding: var(--space-row) var(--space-inline);
-    border: var(--edge) solid var(--line-2);
-    border-radius: var(--radius-large);
-    background: var(--surface);
-    color: var(--muted);
-    font: inherit;
-    font-size: var(--text-label);
-    cursor: pointer;
-  }
-  .ch-settings:hover, .ch-settings:focus-visible { border-color: var(--kaki); color: var(--fg-strong); }
   .ch-update-package { display: flex; flex-wrap: wrap; justify-content: flex-start; align-items: center; gap: var(--space-inline); }
   .ch-update-package + .ch-update-package { margin-top: var(--space-row); }
   .ch-update-reading[data-state='available'] { color: var(--accent); }
-  @media (max-width: 720px), (max-height: 600px) {
-    .ch-view { grid-template-rows: 1fr auto; gap: var(--space-subsection); }
+  @media (max-width: 960px), (max-height: 600px) {
+    .ch-view { grid-template-columns: minmax(0, 1fr); grid-template-rows: 1fr auto auto; gap: var(--space-subsection); justify-items: center; }
+    .ch-frame, .ch-side { grid-column: 1; }
+    .ch-side { justify-self: center; flex-direction: row; flex-wrap: wrap; justify-content: center; width: 100%; }
+    .ch-side > .ch-door-small { width: var(--ch-side-w); }
     .ch-release { position: static; justify-self: end; align-self: end; max-width: 100%; }
   }
   .ch-update { padding: 0; border: 0; background: transparent; color: var(--muted); font: inherit; cursor: pointer; }
