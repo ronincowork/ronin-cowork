@@ -23,6 +23,7 @@
  *   home      {t:'home', rows}
  *   sessions  {t:'sessions', list}   — reduced into S.sessions (js/events.js) before anyone hears it
  *   teams     {t:'teams', rosters}   — the shape of GET /api/team-rosters
+ *   epics     {t:'epics', epics}     — every Epic (level-1 work item) whole, with its holder
  *   messages  {t:'messages', list}   — the message queue
  *   memory    {t:'memory', reading}  — the machine reading behind the memory gauge
  *
@@ -110,6 +111,7 @@ export function createStore({
     if (message.t === 'home' && Array.isArray(message.rows)) set('home', message.rows);
     else if (message.t === 'sessions' && Array.isArray(message.list)) set('sessions', message.list);
     else if (message.t === 'teams' && Array.isArray(message.rosters)) set('teams', message.rosters);
+    else if (message.t === 'epics' && Array.isArray(message.epics)) set('epics', message.epics);
     else if (message.t === 'messages' && Array.isArray(message.list)) set('messages', message.list);
     else if (message.t === 'memory' && message.reading && typeof message.reading === 'object') set('memory', message.reading);
     else if (message.t === 'wipeboard' && message.board && Array.isArray(message.posts)) set(`wipeboard:${message.board}`, { posts: message.posts, more: Boolean(message.more) });

@@ -166,7 +166,7 @@ its own stones of Workspaces (`workspaces-surface.js`, `workspaces.records`): a 
 Workspace, its folders ticked in a browser of this machine (owner, 2026-11-02), with GitHub CLI beside them;
 one read of the pinned folders per bench (`createRootsReading`, the detail route). Epics (owner, 2026-11-02;
 KAN-187) seats its own stones of Epics the same way (`epics-surface.js`, `epics.records`): the level-1 work items of
-the Campaign, a pressed one's reading (`renderItemDetail`) beside the rail, a dragged one whole (`epics.record`, no
+the Campaign — the store's pushed `epics`, no request (KAN-190) — a pressed one's reading (`renderItemDetail`) beside the rail, a dragged one whole (`epics.record`, no
 selector card, as a Team profile). The bar's crumb (`workspace-header.js`;
 owner, 2026-10-20) reads RoninCowork   Home • Teams • <Team title> on a Team page — a gap, not a dot,
 after the brand (`--space-subsection`; owner, 2026-10-24) — Home to `#/home`, Teams to `#/cowork`;

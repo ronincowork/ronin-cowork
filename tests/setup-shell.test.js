@@ -70,7 +70,7 @@ test('the Epics workbench: a stone per Epic in Tilespace 1, opened by Home\u2019
   assert.match(surface, /filter\(\(item\) => item\.level === 1\)/, 'Epics are the level-1 work items');
   assert.match(surface, /createPhalanx\(/, 'the stones are the kit phalanx');
   assert.match(surface, /renderItemDetail\(host, epic/, 'a pressed stone reads the item as Work Items does');
-  assert.match(surface, /\/api\/work-items\$\{query\}/, 'one read of the work items, over the Campaign');
+  assert.match(surface, /hear\('epics',/, 'the Epics are the store\u2019s pushed epics (KAN-190), over the Campaign');
 });
 
 test('two roots: the default Home and the current Home at #/current, one bar toggle between them (owner, 2026-10-19)', async () => {
