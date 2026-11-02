@@ -28,5 +28,7 @@ Only you. Explorer is behind Ronin's own sign-in, and nothing outside Ronin can 
 It does no work in the background. It keeps no search index, never scans your home folder, and
 makes no thumbnails. While it waits it costs about 60 MB of memory and no processing time.
 
+Explorer wears Ronin's colours and follows Ronin's light or dark mode and your skin as you change them.
+
 Explorer is [copyparty](https://github.com/9001/copyparty), restyled for Ronin with the parts Ronin
 does not use hidden. How it is wired: [Files](../architecture/files.md).

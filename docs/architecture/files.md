@@ -37,8 +37,13 @@ no CPU and about 60 MB of memory. Volume data lives under `--hist <data root>/co
 ## Look and chrome
 
 These are copyparty's own options, not patches:
-- **Theme:** `--theme 2` (flat dark, `html.bz`) with `--css-browser /files.css` (`public/files.css`),
-  which restates Ronin's tokens as copyparty's variables.
+- **Theme:** `--js-browser /files.js` (`public/files.js`). The frame shares Ronin's origin, so the
+  script reads the page around it. It follows Ronin's `<html data-theme>` with `settheme.go(2|3)`:
+  copyparty's flat dark or flat light. It copies Ronin's live tokens, skins included, into the frame
+  as `--ronin-*`. Two MutationObservers (the root's attributes and the head's styles) keep it
+  following without a reload.
+- **Colours:** `--css-browser /files.css` (`public/files.css`) maps copyparty's variables to those
+  `--ronin-*` tokens, for both themes.
 - **Hidden:** `--ui-nombar` (menu bar), `--ui-noacci` (account and permissions), `--ui-nosrvi`
   (server info), `--ui-nocpla` (control-panel link) and `--ui-norepl` (code console).
 
