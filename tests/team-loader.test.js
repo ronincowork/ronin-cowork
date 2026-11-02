@@ -70,6 +70,6 @@ test('a bare-metal row is placement, not birth material', async () => {
     { session_type: 'bare_metal_agent', name: 'one', project_root: 'ronin_lab', instructions: 'Go.', provider: 'anthropic', model: 'opus' },
     { name: 'agent', instructions: 'work', mandate: { reach: 'execute', recruit: 'nobody', output: ['open'] } },
   ]);
-  assert.deepEqual(calls[0].body, { session_type: 'bare_metal_agent', team: 'metal', name: 'one', project_root: 'ronin_lab', instructions: 'Go.', provider: 'anthropic', model: 'opus' });
+  assert.deepEqual(calls[0].body, { session_type: 'bare_metal_agent', team: 'metal', name: 'one', instructions: 'Go.', provider: 'anthropic', model: 'opus' });
   assert.equal(calls[1].body.session_type, 'cowork_agent');
 });

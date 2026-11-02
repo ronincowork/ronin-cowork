@@ -297,11 +297,6 @@ export function registerLaunch(app: express.Express): LaunchControl {
     if (!isValidName(name)) return res.status(400).json({ error: 'Use letters, digits, _ or - (no spaces, . or :).' });
     if (name === MIKA_SESSION && houseSeat !== 'mika') return res.status(409).json({ error: 'That name is reserved for Mika.', code: 'reserved_house_session' });
 
-    if (sessionType === 'bare_metal_agent') {
-      if (!String(req.body?.project_root ?? '').trim()) {
-        return res.status(400).json({ error: 'A `bare_metal_agent` requires `project_root` for its working directory; it is placement, not Ronin birth material.' });
-      }
-    }
     const form = spawnFormFromLaunchBody(req.body, houseSeat);
 
     let resolved;

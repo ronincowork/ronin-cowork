@@ -261,9 +261,7 @@ export async function buildPhone() {
     const team = route.team;
     teamBar(team);
     const pane = el('div', 'home-docs ph-docs');
-    const docs = buildDocs(pane,
-      (name) => membersOfTeam(team).some((member) => member.name === name),
-      () => teamByName(team)?.repos || []);
+    const docs = buildDocs(pane, (name) => membersOfTeam(team).some((member) => member.name === name));
     docsView = docs;
     main.replaceChildren(segment(team, 'docs'), pane);
     docs.enter();
