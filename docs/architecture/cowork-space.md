@@ -129,7 +129,7 @@ Add a workspace, GitHub CLI, Clone a repository — the folder they add taking t
 Settings' Workspace Folders surface stays as it is. Teams opens the Teams workbench at `#/cowork`
 (`cowork-view.js`; owner, 2026-10-20), the one Teams workbench: its Teams card
 (`team-roster-surface.js`) carries a Workspace question (many-of, blank All) and a Show question
-(Theme, State, Agents, Items; Theme on by default) above its stones, each stone the Team's name
+(Theme, State, Agents, Items; none picked to start) above its stones, each stone the Team's name
 with what Show picks under it as the phalanx's branch rows (Theme one row, State one row, each
 Agent a row with the lead first, each Item a row); the 人 mark in a stone's corner opens the
 Team page in a new tab; its selector offers Team roster, Cron jobs, New Team, New Agent and
