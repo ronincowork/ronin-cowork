@@ -114,11 +114,15 @@ function folderBrowser({ ticked, onTick, onLoad = () => {} }) {
  * (instructions and Mode), 3 Locations, one line per folder, with Add folders and Clone from GitHub; every
  * section folds to its answer. Lines inside one item sit tight; items are spaced as paragraphs.
  * `null` is a new Workspace. Returns the page and its Save (Create) action for the surface head. */
-export function workspacePage(w, { reading, campaignId, say, onSaved = () => {} }) {
+export function workspacePage(w, { reading, campaignId, onSaved = () => {} }) {
   const { createAction, createField } = WorkspaceKit.primitives;
   const isNew = !w;
   const draft = w ? JSON.parse(JSON.stringify(w)) : { name: '', title: '', objective: '', instructions: '', repos: [], folders: [], launch_mode: 'configured' };
   const page = el('div', 'ntf-form fs-steps workspace-form');
+  // The page's own status line, first under its head: what Save, a tick or Clone answered.
+  const line = status();
+  line.classList.add('workspace-status');
+  const say = sayInto(line);
   const text = (value, onInput, placeholder = '') => { const i = el('input'); i.type = 'text'; i.value = value; i.placeholder = placeholder; i.addEventListener('input', () => onInput(i.value)); return i; };
   const area = (value, onInput) => { const a = el('textarea'); a.rows = 4; a.value = value; a.addEventListener('input', () => onInput(a.value)); return a; };
   const open = { top: true, agents: false, locations: true, add: false, clone: false };
@@ -272,11 +276,16 @@ export function workspacePage(w, { reading, campaignId, say, onSaved = () => {} 
     void attach([browser.home(), ...decodeURIComponent(at[1]).split('/').filter(Boolean)].join('/'));
   });
 
-  const action = createAction({ label: isNew ? t('workspaces.create', 'Create') : t('workspaces.save', 'Save'), launch: true, size: 'compact', action: async () => {
+  // Save answers at the button too: Saving…, then Saved for a moment, or back to Save with the error above.
+  const label = isNew ? t('workspaces.create', 'Create') : t('workspaces.save', 'Save');
+  const action = createAction({ label, launch: true, size: 'compact', action: async () => {
+    const word = action.el.querySelector('span') || action.el;
     action.setDisabled(true);
+    word.textContent = t('workspaces.saving', 'Saving…');
     const saved = await save();
     action.setDisabled(false);
-    if (saved) onSaved(saved);
+    word.textContent = saved ? t('workspaces.saved_short', 'Saved') : label;
+    if (saved) { setTimeout(() => { word.textContent = label; }, 2000); onSaved(saved); }
   } });
 
   function paint() {
@@ -291,7 +300,7 @@ export function workspacePage(w, { reading, campaignId, say, onSaved = () => {} 
     cloneWhere.textContent = t('workspaces.clone_into', 'into {dir}', { dir: short(browser.current()) || '~' });
     paintRows();
   }
-  page.append(stepTop.el, stepAgents.el, stepLocations.el);
+  page.append(line, stepTop.el, stepAgents.el, stepLocations.el);
   paint();
   if (!reading.roots().length) void reading.read().then(() => { paint(); browser.paint(); });
   return { el: page, action };
@@ -343,7 +352,7 @@ export function createWorkspaceStones({ reading, workspacesRead, campaignId, wor
       host.scrollTop = 0;
       const w = workspacesRead.list().find((row) => row.name === (item.workspace || item.id));
       if (!w) return;
-      const page = workspacePage(w, { reading, campaignId, say, onSaved: () => void workspacesRead.read() });
+      const page = workspacePage(w, { reading, campaignId, onSaved: () => void workspacesRead.read() });
       const head = el('div', 'workspace-page-head');
       head.append(el('span', 'wk-surface-header-title', w.title || w.name), page.action.el);
       host.append(head, page.el);
@@ -381,15 +390,13 @@ export function createWorkspaceStones({ reading, workspacesRead, campaignId, wor
 export function createWorkspaceRecord(key, { reading, workspacesRead, campaignId }) {
   const { createSurface, setSurfaceState } = WorkspaceKit.primitives;
   const out = createSurface({ label: key, className: 'setup-surface workspaces-record' });
-  const messages = status();
-  const say = sayInto(messages);
   const paint = () => {
     const w = workspacesRead.list().find((row) => row.name === key);
-    out.content.replaceChildren(messages);
+    out.content.replaceChildren();
     if (!w) { setSurfaceState(out.el, 'empty', t('workspaces.gone', 'This Workspace is no longer here.')); return; }
     setSurfaceState(out.el, null, '');
     out.header.title.textContent = w.title || w.name;
-    const page = workspacePage(w, { reading, campaignId, say, onSaved: () => void workspacesRead.read() });
+    const page = workspacePage(w, { reading, campaignId, onSaved: () => void workspacesRead.read() });
     out.header.actions.replaceChildren(page.action.el);
     out.content.append(page.el);
   };
@@ -404,15 +411,13 @@ export function createWorkspaceRecord(key, { reading, workspacesRead, campaignId
 export function createWorkspaceNew({ reading, workspacesRead, campaignId, place }) {
   const { createSurface } = WorkspaceKit.primitives;
   const out = createSurface({ label: t('workspaces.new', 'New Workspace'), className: 'setup-surface workspaces-new' });
-  const messages = status();
-  const say = sayInto(messages);
   const paint = () => {
-    const page = workspacePage(null, { reading, campaignId, say, onSaved: async (saved) => {
+    const page = workspacePage(null, { reading, campaignId, onSaved: async (saved) => {
       await workspacesRead.read();
       place(saved.name);
     } });
     out.header.actions.replaceChildren(page.action.el);
-    out.content.replaceChildren(messages, page.el);
+    out.content.replaceChildren(page.el);
   };
   return { el: out.el, show: paint, destroy: () => {} };
 }
