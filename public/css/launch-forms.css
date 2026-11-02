@@ -406,6 +406,7 @@
   .workspace-locations { display: flex; flex-direction: column; }
   .workspace-location { display: flex; flex-direction: column; gap: var(--space-row); padding: var(--space-paragraph) 0; border-top: var(--edge) solid var(--line); }
   .workspace-location:first-child { border-top: 0; padding-top: 0; }
+  .workspace-location:last-child { padding-bottom: 0; }
   .workspace-location-line { display: flex; align-items: baseline; gap: var(--space-inline); min-width: 0; }
   .workspace-location-line b { color: var(--fg-strong); font-size: var(--form-key); font-weight: var(--weight-regular); white-space: nowrap; }
   .workspace-location-line code { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); background: transparent; padding: 0; }
@@ -419,8 +420,11 @@
   .workspace-how button { border: 0; background: transparent; color: var(--muted); padding: 0 var(--space-control); cursor: pointer; white-space: nowrap; }
   .workspace-how button[aria-pressed='true'] { background: var(--selected); color: var(--fg-strong); }
 
-  .workspace-location-tools { display: flex; gap: var(--space-inline); flex-wrap: wrap; }
-  .workspace-location-tools button[aria-pressed='true'] { background: var(--selected); }
+  /* Add folders and Clone from GitHub act on the list, not on its last entry: a rule above them, a
+     paragraph apart like the entries, and drawn as plain links so they weigh less than the entries. */
+  .workspace-location-tools { display: flex; gap: var(--space-section); flex-wrap: wrap; padding-top: var(--space-paragraph); border-top: var(--edge) solid var(--line); }
+  .workspace-location-tools button { border: 0; background: transparent; padding: 0; color: var(--link); cursor: pointer; }
+  .workspace-location-tools button[aria-pressed='true'] { color: var(--fg-strong); }
   .workspace-browser { display: flex; flex-direction: column; gap: var(--space-row); padding: var(--space-inline); border: var(--edge) solid var(--line-2); border-radius: var(--radius-small); }
   .workspace-browser-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-inline); }
   .workspace-clone { display: flex; align-items: center; gap: var(--space-inline); padding-top: var(--space-row); border-top: var(--edge) solid var(--line); }
