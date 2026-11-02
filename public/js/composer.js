@@ -57,11 +57,17 @@ export function buildComposer(body, hooks) {
   let drafted = { chars: 0, lines: 1 };
   const grow = (force = false) => {
     const now = { chars: ta.value.length, lines: ta.value.split('\n').length };
-    if (force || now.chars < drafted.chars || now.lines < drafted.lines) ta.style.height = 'auto';
+    // The measure collapses the box for a moment. Held at its own height meanwhile, the box
+    // never shrinks under Chat: a log that grew for that moment had its scroll clamped and
+    // came back short of the end, the conversation's last lines behind the box, bouncing
+    // on every keystroke (owner, 2026-11-02).
+    const measure = force || now.chars < drafted.chars || now.lines < drafted.lines;
+    if (measure) { wrap.style.minHeight = `${wrap.offsetHeight}px`; ta.style.height = 'auto'; }
     drafted = now;
     const border = ta.offsetHeight - ta.clientHeight;
     const height = Math.min(ta.scrollHeight + border, 160) + 'px';
     if (ta.style.height !== height) ta.style.height = height;
+    if (measure) wrap.style.minHeight = '';
   };
   // A tile made wider or narrower re-wraps the draft without a keystroke: measure again.
   let width = 0;
