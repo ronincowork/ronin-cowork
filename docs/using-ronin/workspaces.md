@@ -21,12 +21,14 @@ everything they need.
 
 ## Make or change a Workspace
 
-Open the **Workspaces** door on Ronin Home and press a Workspace, or **New Workspace**. Its page
-is the whole Workspace. Under **Locations**, open folders on this machine and tick the ones it
-uses; untick one, or press **Remove**, to take it out. Give each a note. For a folder with Git,
-say how Agents work in it: each in its own desk, reviewed, or all in one folder. To bring in a
-repository from GitHub, open the folder it should go in, type the repository and press **Clone
-here**. Where Files is on, you can also drag a folder from Files onto the page.
+Open the **Workspaces** door on Ronin Home and press a Workspace, or place **New Workspace** from
+the selector. Its page reads like New Team: **Name & objective**, then **Instructions** and **Mode**
+(each folded to its answer until you open it), then **Locations**: a row per folder with its note
+and, for a folder with Git, how Agents work in it (each in its own desk, reviewed, or all in one
+folder). Open **Add folders** to browse this machine and tick the folders it uses; untick one, or
+press ×, to take it out. Open **Clone from GitHub** to bring in a repository: it lands in the
+folder Add folders is open on. Where Files is on, you can also drag a folder from Files onto the
+page. **Save** (or **Create**) is at the top.
 
 Agents start in a folder Ronin keeps for each Workspace. You never need to open it; your
 project's files stay where they are.

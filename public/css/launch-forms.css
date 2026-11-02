@@ -384,12 +384,15 @@
   .bh-status[data-bad='true'] { color: var(--bad); }
 
 
-  /* A Workspace's page (workspaces-surface.js): its Locations, then the browser of this machine with a tick per folder. */
-  .workspace-page { --wa-list-height: 18rem; /* the folder list: about eight rows before it scrolls */ display: flex; flex-direction: column; gap: var(--space-row); }
+  /* A Workspace's page (workspaces-surface.js): the launch forms' sections; Locations a row per folder, the browser folded under them. */
+  .workspace-form { --wa-list-height: 18rem; /* the folder list: about eight rows before it scrolls */ }
+  .workspace-page-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-inline); padding-bottom: var(--space-row); border-bottom: var(--edge) solid var(--line); }
+  .workspace-locations { display: flex; flex-direction: column; gap: var(--space-paragraph); }
   .workspace-location { display: flex; flex-direction: column; gap: var(--space-row); }
-  .workspace-location-head { display: flex; align-items: baseline; gap: var(--space-inline); flex-wrap: wrap; }
-  .workspace-location-head code { color: var(--muted); font-size: var(--text-small); overflow-wrap: anywhere; }
-  .workspace-clone { display: flex; align-items: center; gap: var(--space-inline); flex-wrap: wrap; }
+  .workspace-location-head { display: flex; align-items: baseline; gap: var(--space-inline); min-width: 0; }
+  .workspace-location-head code { flex: 1 1 auto; min-width: 0; color: var(--muted); font-size: var(--text-small); overflow-wrap: anywhere; }
+  .workspace-location-remove { border: 0; background: transparent; color: var(--muted); font: inherit; cursor: pointer; padding: 0 var(--space-row); }
+  .workspace-location-remove:hover { color: var(--bad); }
   .wa-browser { display: flex; flex-direction: column; gap: var(--space-row); min-width: 0; }
   .wa-browser .folder-list { max-height: var(--wa-list-height); overflow: auto; }
   .wa-browser .folder-row { display: flex; align-items: center; gap: var(--space-inline); }
