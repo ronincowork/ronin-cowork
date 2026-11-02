@@ -194,15 +194,17 @@ export function workspacePage(w, { reading, campaignId, onSaved = () => {}, onDi
     settled();
     return answer.data.workspace;
   };
-  // How Agents work in a Git folder: two small switches, the chosen one filled.
+  // A repository's Mode (owner, 2026-11-02): the repository owns it, a Workspace only points at it.
+  // Reviewed: the Agent hands its work in to the Team lead; Direct: the Agent changes it directly.
   const howSwitch = (name, root) => {
     const box = el('div', 'workspace-how');
     box.setAttribute('role', 'group');
-    box.setAttribute('aria-label', t('workspaces.how', 'How Agents work in this repository'));
+    box.setAttribute('aria-label', t('workspaces.repo_mode', 'Mode'));
+    box.append(el('span', 'workspace-how-key', t('workspaces.repo_mode', 'Mode')));
     const now = pending.get(name) ?? howOf(root.repo_profile);
     for (const [key, label, sub] of [
-      ['desks', t('workspaces.how_worktrees', 'Worktrees'), t('workspaces.how_worktrees_sub', 'Each Agent opens its own worktree and hands in; the lead reviews and promotes.')],
-      ['folder', t('workspaces.how_checkout', 'Shared checkout'), t('workspaces.how_checkout_sub', 'Every Agent works in this one checkout; no hand-ins, no review.')],
+      ['desks', t('workspaces.mode_reviewed', 'Reviewed'), t('workspaces.mode_reviewed_sub', 'The Agent hands its work in to the Team lead, who checks and coordinates it.')],
+      ['folder', t('workspaces.mode_direct', 'Direct'), t('workspaces.mode_direct_sub', 'The Agent changes the repository directly.')],
     ]) {
       const b = el('button', null, label); b.type = 'button'; b.title = sub;
       b.setAttribute('aria-pressed', String(now === key));

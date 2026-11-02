@@ -418,6 +418,7 @@
   .workspace-location-remove { flex: 0 0 auto; border: 0; background: transparent; color: var(--muted); cursor: pointer; padding: 0 var(--space-row); }
   .workspace-location-remove:hover { color: var(--bad); }
   .workspace-how { display: inline-flex; flex: 0 0 auto; align-self: center; border: var(--edge) solid var(--line-2); border-radius: var(--radius-small); overflow: hidden; }
+  .workspace-how-key { align-self: center; padding: 0 var(--space-row) 0 var(--space-control); color: var(--muted); }
   .workspace-how button { border: 0; background: transparent; color: var(--muted); padding: 0 var(--space-control); cursor: pointer; white-space: nowrap; }
   .workspace-how button[aria-pressed='true'] { background: var(--selected); color: var(--fg-strong); }
 
