@@ -6,8 +6,10 @@
     --ch-horizon-h: 290px;
     --ch-horizon-ink: var(--kaki);
     --ch-glyph: 30px;
-    --ch-frame-w: 640px;
     --ch-door-h: 208px;
+    --ch-door-w: 208px; /* Home's stone before the triangle: a quarter of the old 860px row */
+    --ch-office-gap: var(--space-section); /* the one gap, across and down */
+    --ch-frame-w: calc(var(--ch-door-w) * 2 + var(--ch-office-gap));
     --ch-side-w: 168px;
     --ch-side-h: 104px;
     --ch-side-glyph: 18px;
@@ -17,8 +19,9 @@
     --ch-corner-x: 16px;
     --ch-corner-y: 14px;
     display: grid;
-    /* Ronin OFFICE Space centred, the smaller stones in a column on the right (owner, 2026-11-02). */
-    grid-template-columns: minmax(var(--ch-side-w), 1fr) minmax(0, var(--ch-frame-w)) minmax(var(--ch-side-w), 1fr);
+    /* The office centred, the smaller stones in a column on the right, inset (owner, 2026-11-02). */
+    --ch-side-room: calc(var(--ch-side-w) + var(--space-section));
+    grid-template-columns: minmax(var(--ch-side-room), 1fr) minmax(0, var(--ch-frame-w)) minmax(var(--ch-side-room), 1fr);
     align-items: center;
     column-gap: var(--space-section);
     min-height: 0;
@@ -41,23 +44,16 @@
   .ch-horizon { position: absolute; left: 0; bottom: 0; width: 100%; height: var(--ch-horizon-h); color: var(--ch-horizon-ink); opacity: var(--ch-horizon-opacity); z-index: 0; pointer-events: none; }
   .ch-frame { position: relative; z-index: 1; }
 
-  /* RONIN OFFICE SPACE (owner, 2026-11-02): Teams at the apex, Workspaces and Epics under it. */
-  .ch-office { display: flex; flex-direction: column; gap: var(--space-subsection); }
-  .ch-office-name {
-    margin: 0;
-    font-size: var(--text-display);
-    font-weight: var(--weight-strong);
-    line-height: var(--leading-tight);
-    color: var(--fg-strong);
-    text-align: center;
-  }
-  .ch-doors { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--space-subsection) var(--space-inline); }
-  .ch-doors > .ch-door[data-door='teams'] { grid-column: 1 / -1; justify-self: center; width: calc((100% - var(--space-inline)) / 2); }
+  /* THE OFFICE (owner, 2026-11-02; KAN-191): Teams centred over Workspaces and Epics, every stone
+     Home's size, one even gap between them across and down. */
+  .ch-doors { display: grid; grid-template-columns: repeat(2, var(--ch-door-w)); justify-content: center; gap: var(--ch-office-gap); }
+  .ch-doors > .ch-door[data-door='teams'] { grid-column: 1 / -1; justify-self: center; width: var(--ch-door-w); }
 
   /* Models, Help and Settings: smaller stones, one above the other, on the right of the page. */
   .ch-side {
     grid-column: 3;
     justify-self: end;
+    margin-inline-end: var(--space-section); /* inset from the page's edge (KAN-191) */
     position: relative;
     z-index: 1;
     display: flex;
@@ -174,7 +170,7 @@
   @media (max-width: 960px), (max-height: 600px) {
     .ch-view { grid-template-columns: minmax(0, 1fr); grid-template-rows: 1fr auto auto; gap: var(--space-subsection); justify-items: center; }
     .ch-frame, .ch-side { grid-column: 1; }
-    .ch-side { justify-self: center; flex-direction: row; flex-wrap: wrap; justify-content: center; width: 100%; }
+    .ch-side { justify-self: center; margin-inline-end: 0; flex-direction: row; flex-wrap: wrap; justify-content: center; width: 100%; }
     .ch-side > .ch-door-small { width: var(--ch-side-w); }
     .ch-release { position: static; justify-self: end; align-self: end; max-width: 100%; }
   }

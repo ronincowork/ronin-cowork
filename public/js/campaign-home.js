@@ -1,9 +1,10 @@
 /* part of the ronin-cowork client — see js/README.md */
 /**
  * RONIN HOME — the quiet root arrival and its doors out (PATTERNS.md, Home; owner, 2026-10-19).
- * RONIN OFFICE SPACE (owner, 2026-11-02; KAN-186): three stones in a triangle, Teams (who does the
- * work), Workspaces (where the work is) and Epics (what the work is); Models, Help and Settings
- * three smaller stones in a vertical line on the right of the page. Home stays a page; each door opens its own
+ * THE OFFICE (owner, 2026-11-02; KAN-186, KAN-191): three stones in a triangle, Teams (who does the
+ * work), Workspaces (where the work is) and Epics (what the work is), at Home's stone size with even
+ * room between them and no heading; Models, Help and Settings three smaller stones in a vertical
+ * line on the right of the page, inset from its edge. Home stays a page; each door opens its own
  * workbench in this tab (door-workbenches.js), the bar reading RoninCowork • Home • <door>
  * with Home the way back. A door is a link: a plain press navigates here, a modified press
  * opens the workbench in a new tab. THE GATE (owner, 2026-10-19, "let's have the gate"): as on
@@ -30,12 +31,12 @@ const el = (tag, cls, text) => {
   return out;
 };
 
-/** Ronin OFFICE Space: the triangle, Teams at its apex. */
+/** The office: the triangle, Teams at its apex. */
 function OFFICE() {
   return [
     { key: 'teams', route: 'cowork', glyph: '人人', name: t('campaign_home.teams', 'Teams'), is: t('campaign_home.teams_is', 'Who does the work') },
     { key: 'workspaces', route: 'workspaces', glyph: '⌂', name: t('campaign_home.workspaces', 'Workspaces'), is: t('campaign_home.workspaces_is', 'Where the work is') },
-    { key: 'epics', route: 'epics', glyph: '巻', name: t('campaign_home.epics', 'Epics'), is: t('campaign_home.epics_is', 'What the work is') },
+    { key: 'epics', route: 'epics', glyph: '◇', name: t('campaign_home.epics', 'Epics'), is: t('campaign_home.epics_is', 'What the work is') },
   ];
 }
 
@@ -74,12 +75,7 @@ export function createCampaignHome() {
   const root = el('main', 'ch-view');
   root.append(createSenmaida('page', 'ch-horizon'));
   const frame = el('div', 'ch-frame');
-  const office = el('section', 'ch-office');
-  const officeName = el('h1', 'ch-office-name', t('campaign_home.office', 'Ronin OFFICE Space'));
-  officeName.id = 'ch-office-name';
-  office.setAttribute('aria-labelledby', officeName.id);
   const doors = el('div', 'ch-doors');
-  office.append(officeName, doors);
   const side = el('nav', 'ch-side');
   side.setAttribute('aria-label', t('campaign_home.side', 'Models, Help and Settings'));
   const release = el('div', 'ch-release');
@@ -104,7 +100,7 @@ export function createCampaignHome() {
   answer.setAttribute('aria-live', 'polite');
   readings.setAttribute('aria-live', 'polite');
   release.append(readings, answer, check);
-  frame.append(office);
+  frame.append(doors);
   root.append(frame, side, release);
 
   let ctx = null;

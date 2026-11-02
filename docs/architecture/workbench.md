@@ -141,9 +141,9 @@ status as its own reads return.
 6. Async enrichment must not discard edits made after the first paint. Generation or
    ownership checks prevent stale responses from repainting replaced surfaces.
 
-**Ronin Home** (`campaign-home.js`; owner, 2026-10-19) stays a page, not a Workbench: **Ronin OFFICE
-Space** (owner, 2026-11-02), Teams, Workspaces and Epics in a triangle, with Models, Help and Settings
-smaller stones in a column on the right — each a link to a Workbench destination of its own,
+**Ronin Home** (`campaign-home.js`; owner, 2026-10-19) stays a page, not a Workbench: Teams,
+Workspaces and Epics in a triangle (owner, 2026-11-02), with Models, Help and Settings smaller stones
+in a column inset on the right — each a link to a Workbench destination of its own,
 opened in the same tab (a modified press opens a new tab through `workbenchLaunchUrl`). The
 Teams door opens the Teams workbench (`#/cowork`, `cowork-view.js`; owner, 2026-10-20). Models and
 Workspaces are one shape (`door-workbenches.js`): the Kit Workbench on a profile of the
