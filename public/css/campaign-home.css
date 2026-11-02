@@ -22,13 +22,13 @@
     --ch-corner-x: 16px;
     --ch-corner-y: 14px;
     display: grid;
-    /* The office centred, the smaller stones in a column on the right, inset (owner, 2026-11-02). */
-    --ch-side-inset: calc(var(--space-section) * 2); /* room right of Model Providers, Help, Settings (KAN-194) */
-    --ch-office-shift: calc(var(--space-section) * -2); /* the triangle a little left of centre (KAN-194) */
-    --ch-side-room: calc(var(--ch-side-w) + var(--ch-side-inset));
-    grid-template-columns: minmax(var(--ch-side-room), 1fr) minmax(0, var(--ch-frame-w)) minmax(var(--ch-side-room), 1fr);
+    /* The office and its column of smaller stones one group, centred together and set a little left
+       (owner, 2026-11-02; KAN-195): no column stuck at the page's right edge. */
+    --ch-group-gap: calc(var(--space-section) * 3); /* triangle to the small stones: near enough to read as one group (KAN-195) */
+    --ch-office-shift: calc(var(--space-section) * -2); /* the whole group a little left of centre (KAN-194, KAN-195) */
+    grid-template-columns: minmax(0, 1fr) minmax(0, var(--ch-frame-w)) var(--ch-side-w) minmax(0, 1fr);
     align-items: center;
-    column-gap: var(--space-section);
+    column-gap: var(--ch-group-gap);
     min-height: 0;
     height: 100%;
     /* the deeper foot lifts everything a little above the middle (KAN-194) */
@@ -56,11 +56,10 @@
   .ch-doors { display: grid; grid-template-columns: repeat(2, var(--ch-door-w)); justify-content: center; gap: var(--ch-office-gap); }
   .ch-doors > .ch-door[data-door='teams'] { grid-column: 1 / -1; justify-self: center; width: var(--ch-door-w); }
 
-  /* Models, Help and Settings: smaller stones, one above the other, on the right of the page. */
+  /* Model Providers, Help and Settings: smaller stones, one above the other, beside the triangle. */
   .ch-side {
     grid-column: 3;
-    justify-self: end;
-    margin-inline-end: var(--ch-side-inset); /* inset from the page's edge (KAN-191, KAN-194) */
+    translate: var(--ch-office-shift) 0;
     position: relative;
     z-index: 1;
     display: flex;
@@ -181,7 +180,7 @@
     .ch-view { grid-template-columns: minmax(0, 1fr); grid-template-rows: 1fr auto auto; gap: var(--space-subsection); justify-items: center; }
     .ch-frame, .ch-side { grid-column: 1; }
     .ch-frame { translate: none; }
-    .ch-side { justify-self: center; margin-inline-end: 0; flex-direction: row; flex-wrap: wrap; justify-content: center; width: 100%; }
+    .ch-side { justify-self: center; translate: none; flex-direction: row; flex-wrap: wrap; justify-content: center; width: 100%; }
     .ch-side > .ch-door-small { width: var(--ch-side-w); }
     .ch-release { position: static; justify-self: end; align-self: end; max-width: 100%; }
   }
