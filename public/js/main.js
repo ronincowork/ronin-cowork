@@ -124,7 +124,6 @@ async function init() {
   guard('register the Setup destination', () => workspace.register('setup', createSetupView()));
   guard('register the Launch destination', () => workspace.register('launch', createLaunchView()));
   workspace.start();
-  document.getElementById('bootframe')?.remove();
 
   // THE DESKTOP FIRST PAINT ends here: the route's real workspace is mounted and the
   // header now belongs to it. Session discovery, event wiring and home catalogs below
