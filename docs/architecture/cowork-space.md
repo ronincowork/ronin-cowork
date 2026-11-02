@@ -155,11 +155,8 @@ Until one model provider is activated the Models, Workspaces, Teams and Epics do
 open, its Mika seat saying in one line that she needs a provider, pointing to Setup, and say so (the gate the old
 root had); Settings, the live stone, opens Setup until its five answers are recorded.
 
-The current root — Ronin Home as it was before 2026-10-18, with doors into the Desk, Team and
-Agent Workbenches (Desk and Team both open the Teams workbench at `#/cowork`; the Desk workbench
-was deleted on 2026-10-20) — stays at `#/current` (`public/js/current-home.js`) while pieces move from it
-to the new Home. One plain toggle in the bar, the same spot on both pages, swaps the two in one
-press: Current on the new Home, Next on the current one.
+There is one root (owner, 2026-11-02; KAN-197): the old Home at `#/current` and the bar's
+Current/Next toggle are deleted, and an old `#/current` link lands on Home.
 
 There is no Campaign picker, default star, archive action or New Campaign footer.
 

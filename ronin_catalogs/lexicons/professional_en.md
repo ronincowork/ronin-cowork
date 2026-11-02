@@ -287,12 +287,6 @@ nothing paints exactly this.
 
 - **campaign_home.ronin_home:** Ronin Home
 - **campaign_home.launch:** New Project
-- **campaign_home.desk:** Desk
-- **campaign_home.desk_is:** All Teams, Agents, and work
-- **campaign_home.team:** Team
-- **campaign_home.team_is:** Choose a Team and open its Workbench
-- **campaign_home.agent:** Agent
-- **campaign_home.agent_is:** Choose an Agent and open its Workbench
 - **campaign_home.settings:** Settings
 - **campaign_home.check_updates:** Check for updates
 - **setup.provider_gate:** Activate one model provider in Machine Setup to use this.

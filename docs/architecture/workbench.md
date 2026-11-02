@@ -189,14 +189,9 @@ stays open, owner 2026-10-21; with no provider its Mika seat is one line pointin
 provider is activated (`/api/setup/runtime`'s `activated_count`), each saying so under its name,
 and Settings is the one live stone — a new user's way in is Setup.
 
-**Two roots** (owner, 2026-10-19). The default root — what opens, what Home links to — is that
-three-door page. The current root, Ronin Home as it stood before 2026-10-18 with its doors into
-the Desk, Team and Agent Workbenches, is copied back from git (`current-home.js`; its Desk door opens
-the Teams workbench at `#/cowork` since the Desk workbench, a card-for-card duplicate of Cowork, was
-deleted on 2026-10-20) and
-keeps its own address, `#/current`, while pieces move from Current to Next; nothing of it is
-deleted. One plain toggle in the bar, the same spot on each (the view's leading slot), swaps
-between them in one press: it reads **Current** on the new Home and **Next** on the current one.
+**One root** (owner, 2026-11-02; KAN-197). That page is the only root: the old Home at `#/current`
+and the bar's Current/Next toggle are deleted, and an old `#/current` link falls to the safe view,
+Home.
 
 Campaign Defaults is the reference case. Its saved values are already in
 `campaign.config.defaults`, so it paints them immediately. Model choices come from the

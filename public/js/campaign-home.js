@@ -12,10 +12,8 @@
  * the old root, the doors are locked until one model provider is activated, Settings the one
  * live stone, so a new user's way in is Setup. Help is the one door outside the gate: a new user
  * needs it before Setup (owner, 2026-10-21). Settings opens Setup until its answers are recorded,
- * Settings after (`setupDefaultView`). TWO ROOTS (owner, 2026-10-19): this is the default root;
- * the current root (current-home.js, Home as it was before 2026-10-18) keeps its own address,
- * and one plain toggle in the bar, the same spot on each, swaps between them while pieces move
- * from Current to Next: it reads Current here and Next there.
+ * Settings after (`setupDefaultView`). ONE ROOT (owner, 2026-11-02; KAN-197): the old Home and the
+ * bar's Current/Next toggle are gone; an old #/current link lands here.
  */
 import { t } from './lexicon.js';
 import { request } from './request.js';
@@ -50,18 +48,6 @@ function SIDE() {
   ];
 }
 
-/** THE ROOT TOGGLE: a plain bar link to the other root, one press; a modified press is the browser's. */
-export function createRootToggle({ route, label, navigate }) {
-  const link = el('a', 'ui-bar-nav', label());
-  link.href = `#/${route}`;
-  link.dataset.rootToggle = route;
-  link.addEventListener('click', (event) => {
-    if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
-    event.preventDefault();
-    navigate(route);
-  });
-  return link;
-}
 
 function doorGlyph(glyph) {
   const host = el('span', 'ch-glyph');
@@ -72,7 +58,6 @@ function doorGlyph(glyph) {
 
 export function createCampaignHome() {
   const themeToggle = createThemeToggle();
-  const rootToggle = createRootToggle({ route: 'current', label: () => t('campaign_home.current', 'Current'), navigate: (route) => ctx?.navigate(route) });
   const root = el('main', 'ch-view');
   root.append(createSenmaida('page', 'ch-horizon'));
   const frame = el('div', 'ch-frame');
@@ -162,7 +147,7 @@ export function createCampaignHome() {
     el: root,
     glyph: '⛩',
     title: () => t('campaign_home.ronin_home', 'Ronin Home'),
-    header: { leading: [rootToggle], actions: [themeToggle] },
+    header: { actions: [themeToggle] },
     enter: (context) => {
       ctx = context;
       entered = true;

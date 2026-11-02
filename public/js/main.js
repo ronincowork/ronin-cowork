@@ -17,7 +17,6 @@ import { createWorkspace } from './workspace.js';
 import { createCoworkView } from './cowork-view.js';
 import { createAgentView } from './agent-view.js';
 import { createCampaignHome } from './campaign-home.js';
-import { createCurrentHome } from './current-home.js';
 import { createEpicsView, createHelpView, createModelsView, createWorkspacesView } from './door-workbenches.js';
 import { createCampaignView } from './campaign-view.js';
 import { createSetupView } from './setup-view.js';
@@ -112,8 +111,6 @@ async function init() {
   // page failing must cost the owner a page, never their terminals. `safeView` is this
   // one, so its own failure is reported rather than looping.
   guard('register the Ronin Home destination', () => workspace.register('home', createCampaignHome()));
-  // The current root, Home as it was before 2026-10-18, at its own address (owner, 2026-10-19).
-  guard('register the Current root destination', () => workspace.register('current', createCurrentHome()));
   // Home's Models and Workspaces doors, each a workbench of its own in the same tab (owner, 2026-10-19).
   guard('register the Models destination', () => workspace.register('models', createModelsView()));
   guard('register the Workspaces destination', () => workspace.register('workspaces', createWorkspacesView()));
