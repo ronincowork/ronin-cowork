@@ -52,8 +52,10 @@ is no install-wide switch. The Campaign's Ronin Worktrees choice defaults the fi
 a new project root (`declareArrangement`, `src/desks/arrangement.ts`). For an existing root,
 the editor reads the current publishing mode, owner-named branches, and Worktrees repository choice.
 After one exact before/after confirmation it rewrites `RONIN_REPO` directly and atomically
-(`PUT /api/project-roots/:name/repo-profile`, `setArrangementProfile`). It performs no
-migration or running-Agent reconciliation. A coding launch that gets no desk says why on its receipt (*no desk —
+(`PUT /api/project-roots/:name/repo-profile`, `setArrangementProfile`) and commits it in
+that repository, `RONIN_REPO` alone: the repository owns its Mode and a Workspace only points
+at it, so the checkout is never left dirty. A changed value edits its own line; a save that
+changes no value writes nothing. It performs no migration or running-Agent reconciliation. A coding launch that gets no desk says why on its receipt (*no desk —
 `<root>` has no RONIN_REPO*), and `bin/ronin-doctor` lists every project root's answer.
 
 ## Open
