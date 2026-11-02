@@ -384,18 +384,48 @@
   .bh-status[data-bad='true'] { color: var(--bad); }
 
 
-  /* A Workspace's page (workspaces-surface.js): the launch forms' sections; Locations a row per folder, the browser folded under them. */
-  .workspace-form { --wa-list-height: 18rem; /* the folder list: about eight rows before it scrolls */ }
+  /* A Workspace's page (workspaces-surface.js; owner, 2026-11-02). Two spacings only: LINES inside one
+     item sit tight (--space-row); ITEMS of a list sit a paragraph apart (--space-paragraph) with a rule
+     between; sections are the form's own steps. Each section stacks its head over its content so the
+     content has the panel's whole width. */
+  .workspace-form { --wa-list-height: 16rem; /* the folder list: about ten lines before it scrolls */ }
+  .workspace-form .fs-step { grid-template-columns: minmax(0, 1fr); gap: var(--space-paragraph); }
+  .workspace-form .fs-step-body { display: flex; flex-direction: column; gap: var(--space-paragraph); min-width: 0; }
+  .workspace-form .fs-step:has(> .fs-step-head) > .fs-step-body { grid-column: 1 / -1; }
+  .workspace-form .fs-step-body[hidden], .workspace-form [hidden] { display: none; }
+  .workspace-form .wk-field { gap: var(--space-row); }
+  .workspace-form .workspace-fixed { border: 0; background: transparent; padding: 0; color: var(--fg-strong); font-family: var(--font-mono); }
   .workspace-page-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-inline); padding-bottom: var(--space-row); border-bottom: var(--edge) solid var(--line); }
-  .workspace-locations { display: flex; flex-direction: column; gap: var(--space-paragraph); }
-  .workspace-location { display: flex; flex-direction: column; gap: var(--space-row); }
-  .workspace-location-head { display: flex; align-items: baseline; gap: var(--space-inline); min-width: 0; }
-  .workspace-location-head code { flex: 1 1 auto; min-width: 0; color: var(--muted); font-size: var(--text-small); overflow-wrap: anywhere; }
-  .workspace-location-remove { border: 0; background: transparent; color: var(--muted); font: inherit; cursor: pointer; padding: 0 var(--space-row); }
+
+  .workspace-locations { display: flex; flex-direction: column; }
+  .workspace-location { display: flex; flex-direction: column; gap: var(--space-row); padding: var(--space-paragraph) 0; border-top: var(--edge) solid var(--line); }
+  .workspace-location:first-child { border-top: 0; padding-top: 0; }
+  .workspace-location-line { display: flex; align-items: center; gap: var(--space-inline); min-width: 0; }
+  .workspace-location-line b { color: var(--fg-strong); white-space: nowrap; }
+  .workspace-location-line code { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); font-size: var(--text-small); }
+  .workspace-location .folder-kind { flex: 0 0 auto; min-width: 2.2em; color: var(--muted); font-size: var(--text-small); }
+  .workspace-location-note { width: 100%; border: 0; background: transparent; color: var(--fg); padding: 0 0 0 calc(2.2em + var(--space-inline)); font: inherit; font-size: var(--text-small); }
+  .workspace-location-note::placeholder { color: var(--muted); }
+  .workspace-location-note:focus { outline: none; background: var(--inset); }
+  .workspace-location-remove { flex: 0 0 auto; border: 0; background: transparent; color: var(--muted); font: inherit; cursor: pointer; padding: 0 var(--space-row); }
   .workspace-location-remove:hover { color: var(--bad); }
+  .workspace-how { display: inline-flex; flex: 0 0 auto; border: var(--edge) solid var(--line-2); border-radius: var(--radius-small); overflow: hidden; }
+  .workspace-how button { border: 0; background: transparent; color: var(--muted); padding: 0 var(--space-control); font: inherit; font-size: var(--text-small); cursor: pointer; white-space: nowrap; }
+  .workspace-how button[aria-pressed='true'] { background: var(--selected); color: var(--fg-strong); font-weight: var(--weight-strong); }
+
+  .workspace-location-tools { display: flex; gap: var(--space-inline); flex-wrap: wrap; }
+  .workspace-location-tools button[aria-pressed='true'] { background: var(--selected); }
+  .workspace-browser { display: flex; flex-direction: column; gap: var(--space-row); padding: var(--space-inline); border: var(--edge) solid var(--line-2); border-radius: var(--radius-small); }
+  .workspace-browser[hidden], .workspace-clone[hidden] { display: none; }
+  .workspace-browser-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-inline); }
+  .workspace-clone { display: flex; align-items: center; gap: var(--space-inline); padding-top: var(--space-row); border-top: var(--edge) solid var(--line); }
+  .workspace-clone input { flex: 1 1 auto; min-width: 0; }
   .wa-browser { display: flex; flex-direction: column; gap: var(--space-row); min-width: 0; }
-  .wa-browser .folder-list { max-height: var(--wa-list-height); overflow: auto; }
-  .wa-browser .folder-row { display: flex; align-items: center; gap: var(--space-inline); }
-  .wa-browser .folder-open:hover { background: var(--selected); }
+  .wa-browser .folder-crumbs button { border: 0; background: transparent; padding: 0; color: var(--link); }
+  .wa-browser .folder-list { max-height: var(--wa-list-height); overflow: auto; border: 0; }
+  .wa-browser .folder-row { display: flex; align-items: center; gap: var(--space-inline); padding: var(--space-row) 0; border-bottom: var(--edge) solid var(--line); }
+  .wa-browser .folder-row button.folder-open { flex: 1 1 auto; min-width: 0; border: 0; background: transparent; padding: 0; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .wa-browser .folder-open:hover { color: var(--fg-strong); text-decoration: none; background: var(--selected); }
+  .wa-browser .folder-kind { color: var(--muted); font-size: var(--text-small); }
 
 }
