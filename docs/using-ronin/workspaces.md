@@ -26,9 +26,10 @@ the selector. **Show** above the stones picks what hangs under each one: the Tea
 like New Team, every section folding to its answer: **Name & objective** (the
 title and name are chosen once, when the Workspace is made; Teams refer to them), then
 **Agent info**, its instructions and Mode (folded until you open it), then **Locations**: a row per folder with its note
-and, for a folder with Git, its **Mode**, which belongs to the repository: **Reviewed** (the Agent hands its work in
-to the Team lead, who checks and coordinates it) or **Direct** (the Agent changes the repository
-directly). Open **Add folders** to browse this machine and tick the folders it uses; untick one, or
+and, for a folder with Git, its **Mode**, which belongs to the repository: **Reviewed** (each Agent works in its
+own worktree and hands its work in to the Team lead, who checks it and promotes it to the
+repository's dev) or **Direct** (every Agent works in the repository's one checkout and commits
+straight to it; no hand-in, no check). Open **Add folders** to browse this machine and tick the folders it uses; untick one, or
 press ×, to take it out. Open **Clone from GitHub** to bring in a repository: it lands in the
 folder Add folders is open on. Where Explorer is on, you can also drag a folder from [Explorer](explorer.md)
 onto the page. Nothing is kept until you press **Save** (or **Create**) at the top: it lights up once there

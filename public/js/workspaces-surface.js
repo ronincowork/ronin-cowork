@@ -194,26 +194,24 @@ export function workspacePage(w, { reading, campaignId, onSaved = () => {}, onDi
     settled();
     return answer.data.workspace;
   };
-  // A repository's Mode (owner, 2026-11-02): the repository owns it, a Workspace only points at it.
-  // Reviewed: the Agent hands its work in to the Team lead; Direct: the Agent changes it directly.
-  const howSwitch = (name, root) => {
-    const box = el('div', 'workspace-how');
-    box.setAttribute('role', 'group');
-    box.setAttribute('aria-label', t('workspaces.repo_mode', 'Mode'));
-    box.append(el('span', 'workspace-how-key', t('workspaces.repo_mode', 'Mode')));
+  // A repository's Mode (owner, 2026-11-02): the repository owns it, a Workspace only points at it. Asked
+  // with ERABI (ask.js), as every question is; written to the repository on Save.
+  // ERABI flips a one-of-two question (owner, 2026-10-03), so the chosen Mode's line reads under it.
+  const MODE_SUBS = {
+    desks: t('workspaces.mode_reviewed_sub', 'Each Agent works in its own worktree and hands its work in to the Team lead, who checks it and promotes it to the repository’s dev.'),
+    folder: t('workspaces.mode_direct_sub', 'Every Agent works in the repository’s one checkout and commits straight to it; no hand-in, no check.'),
+  };
+  const repoMode = (name, root) => {
+    const box = el('div', 'workspace-repo-mode');
     const now = pending.get(name) ?? howOf(root.repo_profile);
-    for (const [key, label, sub] of [
-      ['desks', t('workspaces.mode_reviewed', 'Reviewed'), t('workspaces.mode_reviewed_sub', 'The Agent hands its work in to the Team lead, who checks and coordinates it.')],
-      ['folder', t('workspaces.mode_direct', 'Direct'), t('workspaces.mode_direct_sub', 'The Agent changes the repository directly.')],
-    ]) {
-      const b = el('button', null, label); b.type = 'button'; b.title = sub;
-      b.setAttribute('aria-pressed', String(now === key));
-      b.addEventListener('click', () => {
-        if (now === key) return;
-        pending.set(name, key); changed(); paint();
-      });
-      box.append(b);
-    }
+    const help = el('p', 'fs-step-help', MODE_SUBS[now]);
+    const question = ask([{ fields: [{ key: 'mode', label: t('workspaces.repo_mode', 'Mode'), options: [
+      { v: 'desks', l: t('workspaces.mode_reviewed', 'Reviewed'), sub: MODE_SUBS.desks },
+      { v: 'folder', l: t('workspaces.mode_direct', 'Direct'), sub: MODE_SUBS.folder },
+    ] }] }], { value: { mode: now }, density: 'tight', onChange: (value) => {
+      pending.set(name, value.mode); help.textContent = MODE_SUBS[value.mode]; changed();
+    } });
+    box.append(question.el, help);
     return box;
   };
   const paintRows = () => {
@@ -227,12 +225,11 @@ export function workspacePage(w, { reading, campaignId, onSaved = () => {}, onDi
       const remove = el('button', 'workspace-location-remove', '×'); remove.type = 'button';
       remove.setAttribute('aria-label', t('workspaces.remove_named', 'Remove {name}', { name }));
       remove.addEventListener('click', () => { picked.delete(name); changed(); paint(); browser.paint(); });
-      line.append(el('small', 'folder-kind', git ? t('workspaces.git', 'Git') : t('workspaces.dir', 'Dir')), el('b', null, root?.title || name), el('code', null, short(root?.dir || '')));
-      if (git) line.append(howSwitch(name, root));
-      line.append(remove);
+      line.append(el('small', 'folder-kind', git ? t('workspaces.git', 'Git') : t('workspaces.dir', 'Dir')), el('b', null, root?.title || name), el('code', null, short(root?.dir || '')), remove);
       const noteInput = text(note, (v) => { picked.set(name, v); changed(); }, t('workspaces.add_note', 'Add a note…'));
       noteInput.className = 'workspace-location-note';
       row.append(line, noteInput);
+      if (git) row.append(repoMode(name, root));
       rows.append(row);
     }
   };
