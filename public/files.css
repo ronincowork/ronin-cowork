@@ -1,43 +1,43 @@
-/* Files (KAN-146): copyparty's own flat dark theme (--theme 2, html.bz) wearing Ronin's values.
- * copyparty includes this sheet through --css-browser (src/files.ts); it runs in the frame's own
- * document, so Ronin's tokens are restated here from style.css's :root, not inherited. */
-html.bz {
+/* Explorer (KAN-146): copyparty's flat themes, dark (html.bz) and light (html.by), wearing Ronin's colours.
+ * files.js copies Ronin's live tokens into the frame as --ronin-* and picks the theme to match Ronin's
+ * light or dark, so a skin or a theme change reaches Explorer too. Included through --css-browser. */
+html.bz, html.by {
   --font-main: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
-  --fg: #c5c8c6;
-  --fg-max: #d7e3f7;
-  --fg-weak: #949eb0;
-  --bg: #0b0e14;
-  --bgg: #0b0e14;
-  --bg-max: #0b0e14;
-  --bg-d1: #131826;
-  --bg-d2: #131826;
-  --bg-d3: #3d475c;
-  --bg-u1: #131826;
-  --bg-u2: #131826;
-  --bg-u3: #131826;
-  --bg-u4: #131826;
-  --bg-u5: #3d475c;
-  --bg-u6: #515e77;
-  --row-alt: #0f131c;
-  --tree-bg: #0b0e14;
-  --a: #81a2be;
-  --a-b: #e0af68;
-  --a-hil: #d7e3f7;
-  --a-gray: #949eb0;
-  --tab-alt: #e0af68;
-  --scroll: #e0af68;
-  --btn-fg: #c5c8c6;
-  --btn-bg: #131826;
-  --btn-h-fg: #d7e3f7;
-  --btn-h-bg: #3d475c;
-  --btn-1-fg: #0b0e14;
-  --btn-1-bg: #e0af68;
-  --btn-1h-bg: #d8a13a;
-  --f-h-b1: #3d475c;
-  --srv-1: #81a2be;
-  --g-sel-bg: #d8a13a;
-  --g-fsel-bg: #e0af68;
+  --fg: var(--ronin-fg);
+  --fg-max: var(--ronin-fg-strong);
+  --fg-weak: var(--ronin-muted);
+  --bg: var(--ronin-surface);
+  --bgg: var(--ronin-surface);
+  --bg-max: var(--ronin-surface);
+  --bg-d1: var(--ronin-inset);
+  --bg-d2: var(--ronin-inset);
+  --bg-d3: var(--ronin-line);
+  --bg-u1: var(--ronin-inset);
+  --bg-u2: var(--ronin-inset);
+  --bg-u3: var(--ronin-inset);
+  --bg-u4: var(--ronin-inset);
+  --bg-u5: var(--ronin-line);
+  --bg-u6: var(--ronin-line-2);
+  --row-alt: color-mix(in srgb, var(--ronin-inset) 50%, var(--ronin-surface));
+  --tree-bg: var(--ronin-surface);
+  --a: var(--ronin-accent-2);
+  --a-b: var(--ronin-accent);
+  --a-hil: var(--ronin-fg-strong);
+  --a-gray: var(--ronin-muted);
+  --tab-alt: var(--ronin-accent);
+  --scroll: var(--ronin-accent);
+  --btn-fg: var(--ronin-fg);
+  --btn-bg: var(--ronin-inset);
+  --btn-h-fg: var(--ronin-fg-strong);
+  --btn-h-bg: var(--ronin-line);
+  --btn-1-fg: var(--ronin-surface);
+  --btn-1-bg: var(--ronin-accent);
+  --btn-1h-bg: var(--ronin-accent-deep);
+  --f-h-b1: var(--ronin-line);
+  --srv-1: var(--ronin-accent-2);
+  --g-sel-bg: var(--ronin-accent-deep);
+  --g-fsel-bg: var(--ronin-accent);
   text-shadow: none;
 }
-html.bz #path { text-shadow: none; }
+html.bz #path, html.by #path { text-shadow: none; }
