@@ -37,7 +37,7 @@ test('Ronin Home\u2019s Models and Workspaces doors each open their own workbenc
   assert.match(doors, /seat: WORKBENCH_TYPES\.modelStones,/, 'Models seats its own stones of providers');
   assert.match(catalog, /profiles\.define\(WORKBENCH_PROFILES\.models, \[WORKBENCH_TYPES\.modelStones, WORKBENCH_TYPES\.modelRefresh, WORKBENCH_TYPES\.modelDefaults, WORKBENCH_TYPES\.modelProvider\]\)/, 'Model refresh then Defaults follow Models; a provider whole is placeable on Models, by a dragged stone or its card');
   assert.match(doors, /seats: \{ workspace1: WORKBENCH_TYPES\.workspaceRecords, workspace2: WORKBENCH_TYPES\.folderStones \}/, 'Workspaces seats its Workspaces in Workspace 1 and its repositories and folders in Workspace 2');
-  assert.match(catalog, /profiles\.define\(WORKBENCH_PROFILES\.workspaces, \[WORKBENCH_TYPES\.workspaceRecords, WORKBENCH_TYPES\.folderStones, WORKBENCH_TYPES\.folder, WORKBENCH_TYPES\.folderAdd, WORKBENCH_TYPES\.folderNew, WORKBENCH_TYPES\.folderGithub, WORKBENCH_TYPES\.folderClone\]\)/, 'a folder whole and the three admin doors are placeable on Workspaces');
+  assert.match(catalog, /profiles\.define\(WORKBENCH_PROFILES\.workspaces, \[WORKBENCH_TYPES\.workspaceRecords, WORKBENCH_TYPES\.folderStones, WORKBENCH_TYPES\.folder, WORKBENCH_TYPES\.folderGithub\]\)/, 'a folder whole and GitHub CLI are placeable on Workspaces');
   assert.match(home, /key: 'teams', route: 'cowork'/, 'the Teams door opens the Teams workbench at #/cowork (owner, 2026-10-20)');
   // The crumb (owner, 2026-10-20): RoninCowork • Home • Teams • <Team title>; before, a Team page read
   // 'RoninCowork • Teams' with no Home and no name, and Home's doors hid the Teams step.

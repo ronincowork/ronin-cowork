@@ -15,8 +15,8 @@
  *             Only for "and GitHub": Private/Public and the sign-in line. None is an ordinary
  *             folder: nothing more is asked, Git is not started.
  * Own desks need Git, not GitHub; GitHub only adds the remote copy. Add sits in the tile head
- * like Launch. The folder added takes the workspace. Sits beside the old form (createFolderNew)
- * while the owner compares them.
+ * like Launch. It opens under a Workspace's Locations as Add a location (workspaces-surface.js);
+ * the folder it adds is registered and picked in that Workspace (owner, 2026-11-02).
  */
 import { WorkspaceKit } from './workspace-kit.js';
 import { createStep, el } from './form-steps.js';
@@ -93,7 +93,7 @@ export function createWorkspaceAdd({ campaignId, placeFolder, signIn }) {
   const draft = { method: 'new', dir: '', repository: '', name: '', nameTouched: false, repo: null, profile: null, git: 'local', how: 'desks', where: '', visibility: 'private' };
 
   const add = createAction({ label: t('roots.add_save', 'Add'), launch: true, size: 'compact', disabled: true, action: () => void doAdd() });
-  const surface = createSurface({ label: t('roots.add_stone', 'Add a workspace'), className: 'setup-surface wa-surface', actions: [add] });
+  const surface = createSurface({ label: t('workspaces.add_location', 'Add a location'), className: 'setup-surface wa-surface', actions: [add] });
   surface.header?.el.classList.add('launch-form-head');
   surface.content.classList.add('wa-content');
   const form = el('div', 'fs-steps wa-form');

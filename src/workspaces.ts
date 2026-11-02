@@ -4,6 +4,9 @@
  * repositories its Agents work in (by their registered names), folder pointers with notes, and
  * the Mode its Agents launch in. Every Team is launched in one; its Agents inherit it.
  *
+ * Repositories and folders are Workspace Folders, by registered name: the repositories are the
+ * ones with Git, the folders the rest.
+ *
  * Records live at <workspaces>/<campaign>/<name>.json. Beside each record Ronin keeps the
  * Workspace's launch folder, <workspaces>/<campaign>/<name>/: where its Agents start, Ronin's
  * own, never project material. An Agent without a Workspace starts in Ronin house.
@@ -14,7 +17,7 @@ import { storeDir } from './resources.js';
 import type { LaunchMode } from './agent-defaults.js';
 
 export interface WorkspaceRepo { name: string; note: string }
-export interface WorkspaceFolder { path: string; note: string }
+export interface WorkspaceFolder { name: string; note: string }
 export interface Workspace {
   name: string;
   campaign_id: string;
@@ -50,7 +53,7 @@ export function normalizeWorkspace(campaign_id: string, name: string, v: Record<
     objective: text(v.objective, 2000),
     instructions: text(v.instructions, 8000),
     repos: rows(v.repos, (r) => (text(r.name, 64) ? { name: text(r.name, 64), note: text(r.note, 300) } : null)),
-    folders: rows(v.folders, (r) => (text(r.path, 1024) ? { path: text(r.path, 1024), note: text(r.note, 300) } : null)),
+    folders: rows(v.folders, (r) => (text(r.name, 64) ? { name: text(r.name, 64), note: text(r.note, 300) } : null)),
     launch_mode: v.launch_mode === 'live_dangerously' ? 'live_dangerously' : 'configured',
   };
 }

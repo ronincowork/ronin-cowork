@@ -5,23 +5,23 @@
  * Folders surface, and draw with the same drawing (projectroots.js createRootDrawing: a folder's
  * stone, its page, the add form) over the same read, one per workbench (`createRootsReading`,
  * /api/project-roots/detail, every surface hearing it).
- *   WS1 `createFolderStones`: Phalanx A/B stones of folders, only folders — the three admin
- *   stones are selector cards here. A stone pressed opens the folder's page beside the rail; a
- *   stone dragged into a workspace places the folder there whole (`createFolder`), no rail.
- *   The selector lists one card per folder (`folderOffers`) and three dotted cards: Add a
- *   workspace (`createFolderNew`, the add form; the folder it adds takes its workspace), GitHub
- *   CLI and Clone a repository (`createFolderGithub`, `createFolderClone`: the boxes
- *   github-workspace-setup.js draws for Setup; a clone's folder takes the workspace too).
+ *   WS1 `createWorkspaceStones`: the Workspaces; a pressed one's page holds its title, objective,
+ *   instructions, Mode and one Locations list, with Add a location under it (workspace-add.js).
+ *   WS2 `createFolderStones`: the Workspace Folders, for their upkeep. A stone pressed opens the
+ *   folder's page beside the rail; a stone dragged into a workspace places the folder there whole
+ *   (`createFolder`), no rail. The selector lists one card per folder (`folderOffers`) and GitHub
+ *   CLI as a dotted card (`createFolderGithub`: the box github-workspace-setup.js draws for Setup).
  */
 import { WorkspaceKit } from './workspace-kit.js';
 import { el } from './form-steps.js';
 import { createPhalanx } from './phalanx.js';
 import { request } from './request.js';
-import { createRootDrawing, NEW, rootStone } from './projectroots.js';
+import { createRootDrawing, rootStone } from './projectroots.js';
 import { SURFACE_DRAG } from './workbench.js';
 import { WORKBENCH_TYPES } from './workbench-catalog.js';
 import { t } from './lexicon.js';
 import { ask } from './ask.js';
+import { createWorkspaceAdd } from './workspace-add.js';
 
 /** The one read of the folders for a workbench: every surface on it paints from this and hears it. */
 export function createRootsReading() {
@@ -127,25 +127,7 @@ export function createFolder(key, { reading, campaignId }) {
   };
 }
 
-/** Add a workspace: the add form in a workspace of its own; the folder it adds takes the workspace. */
-export function createFolderNew({ reading, campaignId, placeFolder }) {
-  const { createSurface } = WorkspaceKit.primitives;
-  const out = createSurface({ label: t('roots.add_stone', 'Add a workspace'), className: 'setup-surface workspaces-new' });
-  const messages = status();
-  const page = el('div', 'workspaces-new-page');
-  out.content.append(messages, page);
-  const drawing = createRootDrawing({
-    stones: true, campaignId,
-    refresh: () => reading.read(), render: () => paint(), say: sayInto(messages),
-    select: (name) => { if (name) placeFolder(name); else paint(); }, refreshDetail: () => paint(), focusStone: () => {},
-    focusForm: () => page.querySelector('.pr-form input:not([disabled])')?.focus(),
-    report: (node) => messages.prepend(node),
-  });
-  const paint = () => { drawing.edit(NEW); page.replaceChildren(drawing.addCard()); };
-  return { el: out.el, show: paint, destroy: () => {} };
-}
-
-/** GitHub CLI and Clone a repository: Setup's two boxes, each a workspace of its own. */
+/** GitHub CLI: Setup's sign-in box, a workspace of its own. */
 const githubBox = (label, className, item) => {
   const { createSurface } = WorkspaceKit.primitives;
   const out = createSurface({ label, className: `setup-surface ${className}` });
@@ -157,12 +139,11 @@ const githubBox = (label, className, item) => {
   };
 };
 export const createFolderGithub = (github) => githubBox(t('roots.github_auth_stone', 'GitHub CLI'), 'workspaces-github', github.items[0]);
-export const createFolderClone = (github) => githubBox(t('roots.github_clone_stone', 'Clone a repository'), 'workspaces-clone', github.items[1]);
 
 /** WS1: the stones of Workspaces (owner, 2026-11-01: a Workspace is a project, its brief: objective,
  * instructions, repositories, folder pointers, Mode). A stone pressed opens its page beside the rail;
  * "New Workspace" opens the same page empty. `reading` is the folder read, for the repository choices. */
-export function createWorkspaceStones({ reading, campaignId }) {
+export function createWorkspaceStones({ reading, campaignId, signIn }) {
   const { createSurface } = WorkspaceKit.primitives;
   const out = createSurface({ label: t('workspaces.title', 'Workspaces'), className: 'setup-surface workspaces-records' });
   const messages = status();
@@ -192,13 +173,15 @@ export function createWorkspaceStones({ reading, campaignId }) {
       field(t('workspaces.objective', 'Objective'), area(draft.objective, (v) => { draft.objective = v; })),
       field(t('workspaces.instructions', 'Instructions'), area(draft.instructions, (v) => { draft.instructions = v; })),
     );
-    const repoRows = () => reading.roots().filter((root) => !root.archived && root.facts?.repo).map((root) => ({ v: root.name, l: root.title || root.name }));
-    const noteFor = (option) => input(draft.repos.find((r) => r.name === option.v)?.note || '', (v) => {
-      const repo = draft.repos.find((r) => r.name === option.v); if (repo) repo.note = v;
-    }, t('workspaces.note', 'Note'));
+    // LOCATIONS (owner, 2026-11-02): one list of Workspace Folders, Git or not, each with a note.
+    // On disk the ones with Git are the repositories, the rest the folders, all by name.
+    const notes = Object.fromEntries([...draft.repos, ...draft.folders].map((row) => [row.name, row.note]));
+    const live = () => reading.roots().filter((root) => !root.archived);
+    const locationRows = () => live().map((root) => ({ v: root.name, l: root.title || root.name, sub: root.facts?.repo ? t('workspaces.git', 'Git') : t('workspaces.folder', 'Folder') }));
+    const noteFor = (option) => input(notes[option.v] || '', (v) => { notes[option.v] = v; }, t('workspaces.note', 'Note'));
     const choices = ask([
-      { group: t('workspaces.repositories', 'Repositories'), fields: [
-        { key: 'repos', label: t('workspaces.repositories', 'Repositories'), many: true, options: repoRows, row: noteFor },
+      { group: t('workspaces.locations', 'Locations'), fields: [
+        { key: 'locations', label: t('workspaces.locations', 'Locations'), many: true, options: locationRows, row: noteFor },
       ] },
       { group: t('launch_mode.mode', 'Mode'), fields: [
         { key: 'launch_mode', label: t('launch_mode.mode', 'Mode'), options: [
@@ -207,41 +190,47 @@ export function createWorkspaceStones({ reading, campaignId }) {
         ] },
       ] },
     ], {
-      value: { repos: draft.repos.map((r) => r.name), launch_mode: draft.launch_mode },
+      value: { locations: [...draft.repos, ...draft.folders].map((row) => row.name), launch_mode: draft.launch_mode },
       density: 'tight',
-      onChange: (value) => {
-        draft.repos = value.repos.map((name) => draft.repos.find((r) => r.name === name) || { name, note: '' });
-        draft.launch_mode = value.launch_mode;
-      },
+      onChange: (value) => { picked = value.locations || []; draft.launch_mode = value.launch_mode; },
     });
+    let picked = [...draft.repos, ...draft.folders].map((row) => row.name);
     page.append(choices.el);
-    const folders = el('div', 'workspace-folders');
-    const paintFolders = () => {
-      folders.replaceChildren(el('span', 'workspace-field-label', t('workspaces.folders', 'Folders')));
-      draft.folders.forEach((folder, index) => {
-        const row = el('div', 'workspace-folder-row');
-        const remove = el('button', 'wk-btn', t('workspaces.remove', 'Remove')); remove.type = 'button';
-        remove.addEventListener('click', () => { draft.folders.splice(index, 1); paintFolders(); });
-        row.append(input(folder.path, (v) => { folder.path = v; }, t('workspaces.path', 'Path')), input(folder.note, (v) => { folder.note = v; }, t('workspaces.note', 'Note')), remove);
-        folders.append(row);
-      });
-      const add = el('button', 'wk-btn', t('workspaces.add_folder', 'Add a folder')); add.type = 'button';
-      add.addEventListener('click', () => { draft.folders.push({ path: '', note: '' }); paintFolders(); });
-      folders.append(add);
-    };
-    paintFolders();
+    // Add a location: a new folder, a folder on this machine, or a GitHub clone, registered and
+    // picked here in one step (workspace-add.js).
+    const adding = el('div', 'workspace-add-location');
+    adding.hidden = true;
+    let form = null;
+    const addLocation = el('button', 'wk-btn', t('workspaces.add_location', 'Add a location')); addLocation.type = 'button';
+    addLocation.addEventListener('click', () => {
+      adding.hidden = !adding.hidden;
+      if (!adding.hidden && !form) {
+        form = createWorkspaceAdd({ campaignId, signIn, placeFolder: async (name) => {
+          await reading.read();
+          picked = [...new Set([...picked, name])];
+          choices.set('locations', picked);
+          adding.hidden = true; form.destroy(); form = null; adding.replaceChildren();
+        } });
+        adding.append(form.el);
+      }
+    });
+    page.append(addLocation, adding);
     const save = el('button', 'wk-btn primary', isNew ? t('workspaces.create', 'Create Workspace') : t('workspaces.save', 'Save')); save.type = 'button';
     save.addEventListener('click', async () => {
       save.disabled = true;
+      const git = new Set(live().filter((root) => root.facts?.repo).map((root) => root.name));
+      const row = (name) => ({ name, note: notes[name] || '' });
+      draft.repos = picked.filter((name) => git.has(name)).map(row);
+      draft.folders = picked.filter((name) => !git.has(name)).map(row);
       const answer = await request(`/api/workspaces/${encodeURIComponent(draft.name)}`, { method: 'PUT', json: { ...draft, campaign_id: campaignId() || undefined } });
       save.disabled = false;
       if (!answer.ok) { say(answer.message, true); return; }
       say(t('workspaces.saved', 'Saved {name}.', { name: answer.data.workspace.title || answer.data.workspace.name }));
       await load(); stones.select(answer.data.workspace.name);
     });
-    page.append(folders, save);
+    page.append(save);
     host.append(page);
-    if (!reading.roots().length) void reading.read().then(() => choices.paint());
+    if (!reading.roots().length) void reading.read().then(() => choices.options('locations', locationRows));
   };
   const stones = createPhalanx({
     className: 'workspace-record-stones',
