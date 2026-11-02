@@ -2,7 +2,6 @@
 
 - **label:** Checkout
 - **scope:** conditional
-- **requires:** arrangement:checkout
 - **installation:** —
 
 This Workspace Folder uses its checkout. Before editing, announce the files you will

@@ -13,6 +13,7 @@ route depends on the task, not on who is reading.
 | Finish setup and start one working Agent | [Get started](getting-started/get-started.md), [Ronin Setup](getting-started/setup-workbench.md), and [provider sign-in](getting-started/provider-sign-in.md) |
 | Find and arrange my work | [Workbench](using-ronin/workbench.md) and [the tile](using-ronin/tile.md) |
 | Choose where Ronin works | [Workspace Folders](getting-started/workspace-folders.md) |
+| Browse and manage the machine's files | [Explorer](using-ronin/explorer.md) |
 | Give an Agent a file, image, or screenshot | [Share a file with an Agent](using-ronin/share-a-file.md) |
 | Start a Team | [New Team](using-ronin/new-team.md) |
 | Track work and coordinate Agents | [Work record](using-ronin/work-record.md), [work items](using-ronin/work-items.md), [wipeboards](using-ronin/wipeboards.md) and [Jira](using-ronin/jira.md) |
@@ -41,6 +42,7 @@ change area to its code, UI, stores, Services, documentation, and tests.
 | How do configuration and owner customizations resolve? | [Installations](architecture/installations.md), [shadowing](architecture/shadowing.md), and [templates](architecture/templates.md) |
 | Where do state and work live? | [State inventory](state-inventory.md), [coordination trace](coordination-trace.md), and [Workspace Folders](architecture/project-roots.md) |
 | How does server state reach the browser? | [The data path](architecture/data-path.md): the server pushes on change, a surface subscribes when it opens, nothing polls |
+| What does an Agent's Chat and status read? | [Agent output](architecture/agent-output.md): a log read and a terminal read write one file per Agent; Chat and status only read it |
 | How does the server run terminals and optional parts? | [Runtime connection](architecture/tmux-connection.md) and [Services contracts](https://github.com/ronincowork/ronin-services/blob/dev/README.md#understand-or-change-services) |
 | How are provider CLIs integrated and launched? | [Agent launch method](architecture/agent-launches.md), [Agent integrations](agents/README.md), and [provider catalog](architecture/model-providers.md) |
 | How do Workbenches place, restore, launch, and load their surfaces? | [Workbench construction](architecture/workbench.md) and [Workspace Kit](architecture/workspace-kit.md) |

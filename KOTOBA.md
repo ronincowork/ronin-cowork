@@ -44,9 +44,11 @@ Macro, action, SOP, and Agent role are not additional composition layers. “Act
 |---|---|
 | Ronin | The product; a repository, artifact, installed copy, and running operator are distinct things ([Release](docs/development/release.md)) |
 | Coworkspace | The whole browser UI ([Workbench](docs/using-ronin/workbench.md)) |
-| Surface | A visible UI held in a workspace; contributor change areas are navigation categories, not UI objects or directories |
+| Surface | A visible UI held in a tilespace; contributor change areas are navigation categories, not UI objects or directories |
 | Phalanx | A shared collection surface: stones stand in formation at rest, then move into a side rail when one is selected so that stone's detail can occupy the surface ([Workbench](docs/architecture/workbench.md)) |
-| Workspace | A numbered browser slot holding a tile or another surface |
+| Tilespace | A numbered slot of a workbench holding a tile or another surface; `workspace1`…`workspace4` in code. Not a Workspace |
+| Workspace | A project: objective, instructions, its folders and Mode; every Team works in one ([Workspaces](docs/using-ronin/workspaces.md)) |
+| Explorer (Files) | The machine's file browser from the home folder: copyparty at `/files/`, where Ronin finds Python at start; `/files/<path>` is `$HOME/<path>`. Explorer is the card, Files the code (`ronin.files`, `src/files.ts`) ([Explorer](docs/using-ronin/explorer.md)) |
 | Tile | The UI for one session; a tmux pane is the terminal underneath ([Tile](docs/using-ronin/tile.md)) |
 | Ronin Home / Ronin Setup / Ronin Settings | Home destination, first-use workbench, and ongoing Desk configuration workbench |
 | Desk | Engagement context for Teams and inherited configuration; internal compatibility identifiers retain `campaign` ([Desks](docs/using-ronin/campaigns.md)) |
@@ -67,7 +69,7 @@ Macro, action, SOP, and Agent role are not additional composition layers. “Act
 | Board | Ronin has none; a user who wants one uses Jira or Trello |
 | Wipeboard / message queue / Cron jobs | Team announcements, pending session delivery, and scheduled requests; distinct stores and delivery lifecycles |
 | Ronin Lab | A Workspace Folder for ideas, research, plans, and notes across or before projects; users and Ronin creators each have their own Lab, rather than a code repository for one specific project |
-| Workspace Folder (`project_root`) | A registered folder Ronin may work in; not a browser workspace ([Workspace folders](docs/architecture/project-roots.md)) |
+| Workspace Folder (`project_root`) | A registered folder Ronin may work in; not a tilespace ([Workspace folders](docs/architecture/project-roots.md)) |
 | Worktree | Private working folder and branch with explicit custody for managed repository work; distinct from an engagement Desk and a Desk profile ([Worktrees](docs/architecture/worktrees.md)) |
 | Commit / hand-in / promotion / Git push | Private checkpoint / admission to Team review / admission to global dev / remote publication; not synonyms |
 | Desk profile | Owner-selected presentation defaults ([Desk profiles](docs/architecture/desk-profiles.md)) |
@@ -79,7 +81,7 @@ Macro, action, SOP, and Agent role are not additional composition layers. “Act
 | All view (`all_view`) | Everything the journal holds, injected lines and tool output included; the complete view ([Tile](docs/using-ronin/tile.md)) |
 | Term (`term_view`) | The live terminal in the tile; not a reading, and what the view toggle returns to ([Tile](docs/using-ronin/tile.md)) |
 | View toggle (`view_toggle`) | The tile-head control cycling `term_view` → `chat_view` → `notes_view` → `work_view` → `all_view` → `term_view` on a desk, and `term_view` ↔ `chat_view` on a phone; it names where you are, goes opaque when the Agent has nothing to show, and says why on press ([Tile](docs/using-ronin/tile.md)) |
-| Agent stance (`agent_stance`) | What an Agent is doing now: working, replying, awaiting you, asking, unknown. Derived by the backend and sent; the tile never infers it ([Tile](docs/using-ronin/tile.md)) |
+| Agent stance (`agent_stance`) | What an Agent is doing now: working, awaiting you, asking, unknown. The newest line of the Agent's output, sent by the backend; the tile never infers it ([Tile](docs/using-ronin/tile.md)) |
 
 ## Services and state
 
@@ -131,6 +133,7 @@ Every physical or fleet surface carries the `office_` prefix; `control_plane`, `
 
 | Term | Meaning |
 |---|---|
+| Ronin as a Service (`raas`) | The whole hosted offering: offices on office_hosts, the control_plane, front_door, billing and office_export. The house name; Ronin Cloud is the same offering as the customer hears it |
 | Office (`office`) | The product unit: one customer's full Ronin with its own kernel and disk, running on an office_host. The customer sees and buys offices and Agents running, never the machinery |
 | Office host (`office_host`) | The physical machine Ronin rents, running many offices under one hypervisor. Ronin administers it; no customer touches it |
 | Hypervisor (`hypervisor`) | The software on an office_host that carves it into offices and exposes the API the control_plane drives: Proxmox VE |

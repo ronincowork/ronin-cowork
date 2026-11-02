@@ -21,6 +21,7 @@ export type ModelsSource =
   | { read: 'claude-cache' }
   | { read: 'codex-cache' }
   | { read: 'command'; argv: readonly string[] }
+  | { read: 'hermes-setups' }
   | { read: 'none' };
 
 export interface AgentOperations {
@@ -29,6 +30,7 @@ export interface AgentOperations {
   selfUpdates: boolean;
   version: readonly string[];
   models: ModelsSource;
+  setup?: readonly string[];
   session: {
     discovery: 'explicit-argv' | 'unsupported';
   };
@@ -94,16 +96,17 @@ export const AGENTS = [
     label: 'Hermes',
     operations: {
       install: '',
+      setup: ['model'],
       // Vendor docs require an explicit update: https://github.com/NousResearch/hermes-agent/blob/main/website/docs/getting-started/updating.md
       update: { shell: '', argv: ['update'] },
       selfUpdates: false,
       version: ['--version'],
-      models: { read: 'none' },
+      models: { read: 'hermes-setups' },
       session: { discovery: 'unsupported' },
     } as AgentOperations,
     credentials: [],
     parked: "Ronin cannot install this one yet — Nous's own installer needs system packages it has to ask you for, and does not finish without them. Install it from their site and it appears here.",
-    screen: { busy: [], asking: [], ready: [] },
+    screen: { busy: [], asking: ['Set up a provider now\\?'], ready: [] },
   },
 ] as const;
 
@@ -156,6 +159,11 @@ export interface LaunchArgv {
   parked: boolean;
 }
 
+export function initialBriefArgs(grammar: AgentLaunches | null, brief: string): string[] {
+  if (!brief || !grammar || grammar.initial === 'none') return [];
+  return grammar.initial === 'positional' ? [brief] : renderLaunch(grammar.initial, { brief });
+}
+
 export async function launchArgv(cmd: string, brief: string): Promise<LaunchArgv> {
   const parts = cmd.trim().split(/\s+/).filter(Boolean);
   if (!parts.length) return { argv: [], parked: false };
@@ -166,7 +174,8 @@ export async function launchArgv(cmd: string, brief: string): Promise<LaunchArgv
   const bin = probed?.path || (head.includes('/') ? head : '');
   if (!bin) return { argv: [], parked: false };
   const grammar = spec ? await readAgentLaunches(spec.id) : null;
-  if (grammar?.initial === 'positional' && brief) return { argv: [bin, ...rest, brief], parked: false };
+  const initial = initialBriefArgs(grammar, brief);
+  if (initial.length) return { argv: [bin, ...rest, ...initial], parked: false };
   return { argv: [bin, ...rest], parked: !!brief };
 }
 

@@ -176,7 +176,7 @@
     min-height: calc(var(--sp-ask-rows) + 2 * var(--space-row)); /* and its padding */
   }
   .sp-row input { min-width: 0; border: 0; background: transparent; color: var(--fg-strong); padding: var(--space-row) 0; font: inherit; }
-  .sp-row .fs-pair { display: flex; gap: var(--space-inline); min-width: 0; }
+  .sp-row .fs-pair { display: flex; flex-wrap: wrap; gap: var(--space-inline); min-width: 0; }
   .sp-row .fs-pair select { max-width: var(--sp-select-w); border: 0; border-bottom: var(--edge) solid transparent; background: transparent; color: var(--accent); padding: var(--space-row) 0; font: inherit; }
   .sp-row .fs-pair select:hover { border-bottom-color: var(--accent); }
   .sp-row .fs-pair select:disabled { color: var(--muted); }
@@ -304,6 +304,7 @@
   .na-defaults-links { margin-top: var(--space-row) !important; font-weight: var(--weight-strong); }
   .na-defaults-links a { color: inherit; font: inherit; text-decoration: none; }
   .fs-head { margin: var(--space-row) 0 0; color: var(--muted); font-size: var(--form-key); text-transform: uppercase; letter-spacing: var(--tracking-wide); }
+  .fs-connection-note { grid-column: 1 / -1; }
   .fs-pair { display: grid; grid-template-columns: repeat(auto-fit, minmax(var(--fs-pair-w), 1fr)); gap: var(--space-row) var(--space-inline); }
 
   .fs-gridlabel { display: block; color: var(--muted); font-size: var(--form-key); text-transform: uppercase; letter-spacing: var(--tracking-wide); }
@@ -383,21 +384,59 @@
   .bh-status[data-bad='true'] { color: var(--bad); }
 
 
-  /* Add a workspace (workspace-add.js): the launch forms' sections; the browser's rows are the folder picker's. */
-  .wa-surface {
-    --wa-list-height: 18rem; /* the folder list: about eight rows before it scrolls */
-  }
-  .wa-content { padding: 0 var(--space-inset); }
+  /* A Workspace's page (workspaces-surface.js; owner, 2026-11-02). Two spacings only: LINES inside one
+     item sit tight (--space-row); ITEMS of a list sit a paragraph apart (--space-paragraph) with a rule
+     between. Four type roles only, the forms' own, one family (--font-ui): a section's head --form-head,
+     a key (a field's label, a folder's name, the page's title) --form-key, every value and control
+     --form-input, a help line --form-note. Each section stacks its head over its content. */
+  .workspace-form, .workspace-page-head { --wa-list-height: 16rem; /* the folder list: about ten lines before it scrolls */ font-family: var(--font-ui); font-size: var(--form-input); }
+  .workspace-form :is(input, textarea, button, code, small, b) { font-family: var(--font-ui); font-size: var(--form-input); }
+  .workspace-form .fs-step { grid-template-columns: minmax(0, 1fr); gap: var(--space-paragraph); }
+  .workspace-form .fs-step-body { display: flex; flex-direction: column; gap: var(--space-paragraph); min-width: 0; }
+  .workspace-form .fs-step:has(> .fs-step-head) > .fs-step-body { grid-column: 1 / -1; }
+  .workspace-form .fs-step-body[hidden], .workspace-form [hidden] { display: none; }
+  .workspace-form .fs-step-head h3 { font-size: var(--form-head); }
+  .workspace-form .fs-sum, .workspace-form .fs-chev, .workspace-form .fs-step-help { font-size: var(--form-note); }
+  .workspace-form .wk-field { gap: var(--space-row); }
+  .workspace-form .wk-field-label { font-size: var(--form-key); font-weight: var(--weight-regular); }
+  .workspace-form .workspace-fixed { border: 0; background: transparent; padding: 0; color: var(--fg-strong); }
+  .workspace-page-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-inline); padding-bottom: var(--space-row); border-bottom: var(--edge) solid var(--line); }
+  .workspace-page-actions { display: flex; align-items: center; gap: var(--space-row); }
+  .workspace-page-head .wk-surface-header-title { font-size: var(--form-key); color: var(--fg-strong); }
+
+  .workspace-locations { display: flex; flex-direction: column; }
+  /* A location is one grid row: kind · name and path · Mode · ×; the note and the Mode's line span under it. */
+  .workspace-location { display: grid; grid-template-columns: 2.2em minmax(0, 1fr) auto auto; column-gap: var(--space-inline); row-gap: var(--space-row); align-items: center; padding: var(--space-paragraph) 0; border-top: var(--edge) solid var(--line); }
+  .workspace-location:first-child { border-top: 0; padding-top: 0; }
+  .workspace-location:last-child { padding-bottom: 0; }
+  .workspace-location-where { display: flex; align-items: baseline; gap: var(--space-inline); min-width: 0; }
+  .workspace-location-where b { color: var(--fg-strong); font-size: var(--form-key); font-weight: var(--weight-regular); white-space: nowrap; }
+  .workspace-location-where code { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); background: transparent; padding: 0; }
+  .workspace-location .folder-kind { color: var(--muted); }
+  .workspace-location-note, .workspace-location-help { grid-column: 2 / -1; }
+  .workspace-location-note { width: 100%; border: 0; background: transparent; color: var(--fg); padding: 0; }
+  .workspace-location-note::placeholder { color: var(--muted); }
+  .workspace-location-note:focus { outline: none; background: var(--inset); }
+  .workspace-location-help { margin: 0; color: var(--muted); font-size: var(--form-note); line-height: var(--leading-body); }
+  .workspace-location-remove { border: 0; background: transparent; color: var(--muted); cursor: pointer; padding: 0 var(--space-row); }
+  .workspace-location-remove:hover { color: var(--bad); }
+
+  /* Add folders and Clone from GitHub act on the list, not on its last entry: a rule above them, a
+     paragraph apart like the entries, and drawn as plain links so they weigh less than the entries. */
+  .workspace-location-tools { display: flex; gap: var(--space-section); flex-wrap: wrap; padding-top: var(--space-paragraph); border-top: var(--edge) solid var(--line); }
+  .workspace-location-tools button { border: 0; background: transparent; padding: 0; color: var(--link); cursor: pointer; }
+  .workspace-location-tools button[aria-pressed='true'] { color: var(--fg-strong); }
+  .workspace-browser { display: flex; flex-direction: column; gap: var(--space-row); padding: var(--space-inline); border: var(--edge) solid var(--line-2); border-radius: var(--radius-small); }
+  .workspace-browser-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-inline); }
+  .workspace-clone { display: flex; align-items: center; gap: var(--space-inline); padding-top: var(--space-row); border-top: var(--edge) solid var(--line); }
+  .workspace-clone input { flex: 1 1 auto; min-width: 0; }
   .wa-browser { display: flex; flex-direction: column; gap: var(--space-row); min-width: 0; }
-  .wa-browser .folder-list { max-height: var(--wa-list-height); overflow: auto; }
-  .wa-browser .folder-open:hover { background: var(--selected); }
-  .wa-browser .folder-all { align-self: flex-end; color: var(--muted); font-size: var(--text-small); }
-  .wa-browser .folder-all[hidden] { display: none; }
-  .wa-form > .fs-step:nth-last-child(1 of :not([hidden])) { border-bottom: 0; }
-  .wa-reading { color: var(--fg); }
-  .wa-link { border: 0; background: transparent; padding: 0; color: var(--link); font: inherit; text-align: start; cursor: pointer; } /* reads as text: a wrapped one starts each line at the start, as text does */
-  .wa-status { margin: 0; padding: var(--space-row) 0 var(--space-inset); color: var(--muted); font-size: var(--form-note); }
-  .wa-status:empty { display: none; }
-  .wa-status[data-kind='bad'] { color: var(--bad); }
+  .wa-browser .folder-crumbs { font-size: var(--form-input); }
+  .wa-browser .folder-crumbs button { border: 0; background: transparent; padding: 0; color: var(--link); font: inherit; }
+  .wa-browser .folder-list { max-height: var(--wa-list-height); overflow: auto; border: 0; }
+  .wa-browser .folder-row { display: flex; align-items: center; gap: var(--space-inline); padding: var(--space-row) 0; border-bottom: var(--edge) solid var(--line); }
+  .wa-browser .folder-row button.folder-open { flex: 1 1 auto; min-width: 0; border: 0; background: transparent; padding: 0; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: inherit; color: var(--fg); }
+  .wa-browser .folder-open:hover { color: var(--fg-strong); background: var(--selected); }
+  .wa-browser .folder-kind { color: var(--muted); }
 
 }

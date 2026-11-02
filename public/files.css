@@ -1,0 +1,49 @@
+/* Explorer (KAN-146): copyparty's flat themes, dark (html.bz) and light (html.by), wearing Ronin's colours and type.
+ * files.js copies Ronin's live tokens into the frame as --ronin-* and picks the theme to match Ronin's
+ * light or dark, so a skin or a theme change reaches Explorer too. Included through --css-browser. */
+html.bz, html.by {
+  /* copyparty sizes everything in em from the root, so Ronin's body size here rescales it whole */
+  font-size: var(--ronin-text-body);
+  line-height: var(--ronin-leading-body);
+  --font-main: var(--ronin-font-ui);
+  --font-mono: var(--ronin-font-mono);
+  --radius: var(--ronin-radius-small);
+  --fg: var(--ronin-fg);
+  --fg-max: var(--ronin-fg-strong);
+  --fg-weak: var(--ronin-muted);
+  --bg: var(--ronin-surface);
+  --bgg: var(--ronin-surface);
+  --bg-max: var(--ronin-surface);
+  --bg-d1: var(--ronin-inset);
+  --bg-d2: var(--ronin-inset);
+  --bg-d3: var(--ronin-line);
+  --bg-u1: var(--ronin-inset);
+  --bg-u2: var(--ronin-inset);
+  --bg-u3: var(--ronin-inset);
+  --bg-u4: var(--ronin-inset);
+  --bg-u5: var(--ronin-line);
+  --bg-u6: var(--ronin-line-2);
+  --row-alt: color-mix(in srgb, var(--ronin-inset) 50%, var(--ronin-surface));
+  --tree-bg: var(--ronin-surface);
+  --a: var(--ronin-accent-2);
+  --a-b: var(--ronin-accent);
+  --a-hil: var(--ronin-fg-strong);
+  --a-gray: var(--ronin-muted);
+  --tab-alt: var(--ronin-accent);
+  --scroll: var(--ronin-accent);
+  --btn-fg: var(--ronin-fg);
+  --btn-bg: var(--ronin-inset);
+  --btn-h-fg: var(--ronin-fg-strong);
+  --btn-h-bg: var(--ronin-line);
+  --btn-1-fg: var(--ronin-surface);
+  --btn-1-bg: var(--ronin-accent);
+  --btn-1h-bg: var(--ronin-accent-deep);
+  --f-h-b1: var(--ronin-line);
+  --srv-1: var(--ronin-accent-2);
+  --g-sel-bg: var(--ronin-accent-deep);
+  --g-fsel-bg: var(--ronin-accent);
+  text-shadow: none;
+}
+html.bz #path, html.by #path { text-shadow: none; font-size: var(--ronin-text-label); }
+/* The lead column ("c": a folder's zip link) is not Ronin's; downloading a selection still zips */
+#files th[name='lead'], #files tbody td:first-child { display: none; }

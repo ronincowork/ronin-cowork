@@ -44,7 +44,7 @@ test('the stock catalog names every provider with its CLI, its family words and 
   assert.deepEqual(launchable.map((entry) => entry.cli), ['claude', 'codex', 'gemini', 'grok', 'hermes'], 'one launchable section per CLI the registry knows');
   for (const entry of launchable) {
     assert.ok(AGENTS.some((agent) => agent.id === entry.cli), `${entry.label}: cli ${entry.cli} is in src/agents.ts`);
-    assert.ok(entry.families?.length, `${entry.label}: family words give its models their tiers`);
+    if (entry.cli !== 'hermes') assert.ok(entry.families?.length, `${entry.label}: family words give its models their tiers`);
     assert.ok(!('models' in entry), `${entry.label}: model facts are model info's, not the catalog's`);
   }
   assert.deepEqual(providers.filter((entry) => entry.models_dev).map((entry) => [entry.provider, entry.models_dev]),
@@ -63,7 +63,7 @@ test('the join: Native first, then every model the CLI listed in its order with 
     },
   }));
   assert.deepEqual(rows.map((entry) => [entry.provider, entry.operational, entry.off]), [
-    ['anthropic', true, false], ['openai', true, false], ['google', false, true], ['xai', false, false], ['nous', false, false], ['openrouter', false, false],
+    ['anthropic', true, false], ['openai', true, false], ['google', false, true], ['xai', false, false], ['hermes', false, false], ['openrouter', false, false],
   ], 'launchable providers first, catalog order within');
   const anthropic = rows[0];
   assert.equal(anthropic.cli_label, 'Claude Code');
@@ -148,7 +148,7 @@ test("the owner's copy is an overlay: a section of a shipped id replaces it in p
     assert.equal(read.origin, 'user');
     assert.equal(read.path, mine);
     assert.deepEqual(read.providers.map((p) => [p.provider, p.origin, p.shadowed]), [
-      ['anthropic', 'user', true], ['openai', 'stock', false], ['google', 'user', true], ['nous', 'stock', false], ['openrouter', 'stock', false], ['example', 'user', false],
+      ['anthropic', 'user', true], ['openai', 'stock', false], ['google', 'user', true], ['hermes', 'stock', false], ['openrouter', 'stock', false], ['example', 'user', false],
     ], 'anthropic and google replace in place; xai is hidden; example appends');
     assert.equal(read.providers[0].label, 'Anthropic (mine)', 'the heading is the copy\'s, the key was the id');
     assert.deepEqual(read.providers[0].families, [{ family: 'fable', tier: 'frontier' }], 'the section replaced whole — the shipped family words do not merge in');
@@ -227,7 +227,7 @@ test('each CLI\'s own list is read the way the registry says — the real cache 
   const home = await mkdtemp(path.join(os.tmpdir(), 'ronin-model-lists-'));
   const now = () => '2026-09-25T18:00:00.000Z';
   try {
-    assert.deepEqual(AGENTS.map((agent) => [agent.id, agent.operations.models.read]), [['claude', 'claude-cache'], ['codex', 'codex-cache'], ['gemini', 'none'], ['grok', 'command'], ['hermes', 'none']]);
+    assert.deepEqual(AGENTS.map((agent) => [agent.id, agent.operations.models.read]), [['claude', 'claude-cache'], ['codex', 'codex-cache'], ['gemini', 'none'], ['grok', 'command'], ['hermes', 'hermes-setups']]);
     // Nothing on disk yet: not guessed.
     assert.deepEqual(await summary.readModels(agent('claude'), { home, version: '2.1.282', now }), { read_at: now(), by: '2.1.282', rows: [], unavailable: 'No readable model list from Claude Code.' });
     await mkdir(path.join(home, '.claude', 'cache', 'model-catalog'), { recursive: true });

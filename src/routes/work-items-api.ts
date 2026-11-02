@@ -41,7 +41,7 @@ export function holderFrom(body: Record<string, unknown> | undefined): Holder {
   const team = text(body?.team)?.trim();
   const session = text(body?.session)?.trim();
   if (Boolean(team) === Boolean(session)) throw new WorkItemBadInput('name the holder as team or session, one of them.');
-  return team ? { kind: 'team', name: team } : { kind: 'agent', name: session! };
+  return team ? { kind: 'team', name: team } : { kind: 'agent', name: session!.replace(/^agent:/, '') };
 }
 
 /** "none" or blank is no parent. */

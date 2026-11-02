@@ -193,7 +193,7 @@ const defaultSessionOps: ProviderSessionOps = {
     await mkdir(rootDir('user'), { recursive: true });
     await createSetupSession(name, spec.id, rootDir('user'), { agent: false, argv: [] });
     void collectBirthLines(name, true);
-    await runCommand(name, launch.argv.map((arg) => "'" + arg.replace(/'/g, "'\\''") + "'").join(' '));
+    await runCommand(name, [...launch.argv, ...(spec.operations.setup ?? [])].map((arg) => "'" + arg.replace(/'/g, "'\\''") + "'").join(' '));
   },
   async openUpdate(provider, name) {
     const spec = AGENTS.find((agent) => agent.id === provider);
@@ -568,7 +568,8 @@ export async function removeGithubAuthentication(ops: GithubSetupOps = defaultGi
   return githubSetupAnswer(ops);
 }
 
-export async function cloneGithubWorkspace(repository: unknown): Promise<{ name: string; dir: string }> {
+/** Clone a GitHub repository into `parent` (Ronin's own folder when none is named) and pin it. */
+export async function cloneGithubWorkspace(repository: unknown, parent?: unknown): Promise<{ name: string; dir: string }> {
   const entered = typeof repository === 'string' ? repository.trim() : '';
   const match = /^(?:https:\/\/github\.com\/|git@github\.com:|ssh:\/\/git@github\.com\/)?([A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+?)(?:\.git)?$/.exec(entered);
   if (!match) throw new Error('Repository must be owner/name or an HTTPS or SSH github.com URL.');
@@ -579,7 +580,7 @@ export async function cloneGithubWorkspace(repository: unknown): Promise<{ name:
   const known = await peekProjectRoots();
   let name = base;
   for (let suffix = 2; known.some((root) => root.name === name); suffix++) name = `${base}-${suffix}`;
-  const dir = path.join(rootDir('user'), name);
+  const dir = path.join(typeof parent === 'string' && parent.trim() ? path.resolve(parent.trim()) : rootDir('user'), slug.split('/')[1]);
   if (await exists(dir)) throw new Error(`The destination ${dir} already exists.`);
   const git = await discoverExecutable('git');
   if (!git) throw new Error('Git is not installed or is not available to the owner’s login shell.');

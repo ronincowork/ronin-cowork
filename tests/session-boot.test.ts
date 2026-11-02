@@ -96,7 +96,7 @@ test('every selector phrase has an exact meaning in floor or capability teaching
   const selector = await readFile(path.resolve('public/js/terminal-controls.js'), 'utf8');
   const style = await readFile(path.resolve('public/style.css'), 'utf8');
   const teaching = (await Promise.all([
-    'ronin_catalogs/behaviours/floor/cowork-agent.md',
+    'ronin_catalogs/behaviours/conditional/cowork-agent.md',
     'ronin_catalogs/capabilities/agent_session.md',
     'ronin_catalogs/capabilities/edges.md',
     'ronin_catalogs/capabilities/work-record.md',
@@ -147,7 +147,7 @@ test('the real stock shelf compiles to one read: contracts first, glossary point
     // with every listed tool present.
     const applied = [
       ...await resolveFloorBehaviours(),
-      ...await resolveConditionalBehaviours({ arrangement: 'managed', team: true, lead: true }),
+      ...await resolveConditionalBehaviours({ arrangement: 'managed', team: true, lead: true, cowork: true, new_owner: false }),
     ].map((row) => row.file);
     const boot = [...applied, ...await bootFiles('', [
       'routine/ronin_host/HOST_ABILITIES.md',
@@ -168,10 +168,9 @@ test('the real stock shelf compiles to one read: contracts first, glossary point
     assert.equal(text.lastIndexOf('\n## '), text.lastIndexOf('\n## Words with the owner'), 'the glossary pointer is last');
     // The two rules a newborn most often breaks sit inside the first window it opens.
     const firstWindow = text.split('\n').slice(0, 250).join('\n');
-    assert.match(firstWindow, /Read the complete Build Brief before acting/);
-    assert.match(firstWindow, /do not reproduce its guarded operation/);
+    assert.match(firstWindow, /Your birth brief is the authority for this session/);
+    assert.match(firstWindow, /do not reproduce its guarded\s+operation/);
     assert.match(firstWindow, /Read the roster and wipeboard before directing work/);
-    assert.match(firstWindow, /^## Managed worktree/m);
     // The glossary stays out of the packet; the packet points at the tool.
     assert.doesNotMatch(text, /^## KOTOBA_GLOSSARY/m);
     assert.match(text, /`ronin-help <word>`/);
@@ -197,8 +196,9 @@ test('the real stock shelf compiles to one read: contracts first, glossary point
 
 test('floor and capability teaching own ordinary work; system reading stays installation-selected', async () => {
   const repo = path.join(path.dirname(new URL(import.meta.url).pathname), '..');
-  const [cowork, sessions, edges, worktrees, machine] = await Promise.all([
-    readFile(path.join(repo, 'ronin_catalogs', 'behaviours', 'floor', 'cowork-agent.md'), 'utf8'),
+  const [base, cowork, sessions, edges, worktrees, machine] = await Promise.all([
+    readFile(path.join(repo, 'ronin_catalogs', 'behaviours', 'floor', 'base-agent.md'), 'utf8'),
+    readFile(path.join(repo, 'ronin_catalogs', 'behaviours', 'conditional', 'cowork-agent.md'), 'utf8'),
     readFile(path.join(repo, 'ronin_catalogs', 'capabilities', 'agent_session.md'), 'utf8'),
     readFile(path.join(repo, 'ronin_catalogs', 'capabilities', 'edges.md'), 'utf8'),
     readFile(path.join(repo, 'ronin_catalogs/behaviours', 'conditional', 'worktree-root.md'), 'utf8'),
@@ -206,7 +206,7 @@ test('floor and capability teaching own ordinary work; system reading stays inst
   ]);
 
   assert.match(cowork, /Keep your work record truthful/);
-  assert.match(cowork, /do not reproduce its guarded operation/);
+  assert.match(base, /do not reproduce its guarded\s+operation/);
   assert.match(sessions, /Fork[\s\S]*fork it[\s\S]*session_create/i);
   assert.match(edges, /edges wipeboard/);
   assert.match(edges, /edges read/);

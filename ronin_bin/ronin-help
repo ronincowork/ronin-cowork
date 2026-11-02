@@ -13,6 +13,7 @@ usage() { cat <<'EOF_USAGE'
 Usage:
   ronin-help            the topics: the four must-reads first, then the rest of Help
   ronin-help <topic>    that topic's document, whole (e.g. edges, work-items, desks)
+  ronin-help <brief>    a brief by its file name, the owner's copy over stock (e.g. worktree-root)
   ronin-help <word>     a Ronin word's row or section in the KOTOBA glossary
 EOF_USAGE
 }
@@ -56,7 +57,20 @@ if [ -n "$path" ]; then
   exit 0
 fi
 
-# Not a topic: the install's glossary.
+# Not a topic: a brief by its file name (ronin_catalogs/behaviours/<scope>/<name>.md), the
+# owner's copy in the ways store over stock.
+name=${want%.md}
+case "$name" in */*|.*) name='';; esac
+WAYS=${RONIN_WAYS_DIR:-${RONIN_USER_ROOT:-$HOME/ronin}/ways}
+if [ -n "$name" ]; then
+  for scope in floor conditional selected sought; do
+    for file in "$WAYS/$scope/$name.md" "$ROOT/ronin_catalogs/behaviours/$scope/$name.md"; do
+      if [ -f "$file" ]; then cat "$file"; exit 0; fi
+    done
+  done
+fi
+
+# Not a topic or a brief: the install's glossary.
 found=$(awk -v w="$want" '
   /^## / { section = $0; head = ""; inside = (index(tolower($0), w) > 0); if (inside) print; next }
   inside { print; next }
@@ -68,5 +82,5 @@ found=$(awk -v w="$want" '
     print
   }' "$ROOT/KOTOBA_GLOSSARY.md")
 if [ -n "$found" ]; then printf '%s\n' "$found"; exit 0; fi
-echo "No topic or glossary word matches \"$1\"; run ronin-help for the topics."
+echo "No topic, brief or glossary word matches \"$1\"; run ronin-help for the topics."
 exit 3

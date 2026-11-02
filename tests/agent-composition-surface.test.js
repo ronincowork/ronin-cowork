@@ -15,9 +15,9 @@ test('Configuration is the New Agent form in existing-Agent mode', () => {
   assert.match(form, /configure \? t\('agent_composition\.send', 'Send'\) : t\('forms\.launch', 'Launch'\)/);
   assert.match(form, /box\.disabled = !!configure/);
   assert.match(form, /TYPES\(\)\.filter\(\(row\) => !configure \|\| row\.key === draft\.type\)/);
-  for (const field of ['provider', 'model', 'root', 'launchMode']) assert.match(form, new RegExp(`key: '${field}'[^\\n]*fixed: !!configure`));
+  for (const field of ['provider', 'model']) assert.match(form, new RegExp(`key: '${field}'[^\\n]*fixed: !!configure`));
   assert.match(form, /key: 'agentId'[\s\S]*fixed: true/);
-  assert.match(form, /questions\.show\(\['provider', 'model', 'role', 'reach', 'recruit', 'output', 'root', 'launchMode'\]\)/);
+  assert.match(form, /questions\.show\(\['provider', 'model', 'role', 'reach', 'recruit', 'output'\]\)/);
   assert.match(form, /row\.requires\?\.includes\('role:epic_lead'\)[\s\S]*draft\.role === 'epic_lead'/);
   assert.match(form, /row\.requires\?\.includes\('role:coordinator'\)[\s\S]*draft\.role === 'coordinator'/);
   assert.match(form, /row\.requires\?\.includes\('lead'\)[\s\S]*draft\.role === 'lead'/);

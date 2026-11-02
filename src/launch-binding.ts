@@ -1,3 +1,4 @@
+import { prepareHermesHome } from './hermes-setups.js';
 /** One launch processor. The CLI grammar owns identity capability; this module owns
  * sequencing and the artifact Ronin sets before starting the process. No provider list.
  */
@@ -34,12 +35,20 @@ async function isolate(grammar: AgentLaunches, key: string): Promise<{ home: str
   const home = path.join(storeDir('session'), key, 'cli-home');
   await mkdir(home, { recursive: true, mode: 0o700 });
   const entries = await readdir(source).catch((e: NodeJS.ErrnoException) => { if (e.code === 'ENOENT') return []; throw e; });
-  await mkdir(path.join(home, declaration.private), { recursive: true, mode: 0o700 });
-  for (const entry of entries.filter(entry => entry !== declaration.private)) {
+  if (declaration.shared !== undefined && declaration.private !== undefined) throw new Error('Isolation must choose shared or private entries, not both.');
+  const privateEntries = typeof declaration.private === 'string' ? [declaration.private] : declaration.private ?? [];
+  const namedEntries = declaration.shared ?? privateEntries;
+  if (namedEntries.some(entry => !entry || path.basename(entry) !== entry || entry === '.' || entry === '..')) throw new Error('Isolation entries must be home-relative basenames.');
+  // Legacy string declares a directory. Shared lists inherit only explicitly named entries.
+  if (typeof declaration.private === 'string') await mkdir(path.join(home, declaration.private), { recursive: true, mode: 0o700 });
+  const inherited = entries.filter(entry => declaration.shared ? declaration.shared.includes(entry) : !privateEntries.includes(entry));
+  for (const entry of inherited) {
     await symlink(path.join(source, entry), path.join(home, entry));
   }
   return { home, env: { [declaration.env]: home } };
 }
+
+const provisioners = { 'hermes-setup': prepareHermesHome };
 
 const strategies = {
   minted: async (_grammar: AgentLaunches, _key: string) => ({ env: {} }),
@@ -58,6 +67,8 @@ export function processLaunch(request: LaunchRequest,
     const retained = request.resume ? await readLaunchIdentity(key) : null;
     const prepared: { home?: string; env: Record<string, string> } = retained ?? await strategies[assigned.strategy](grammar!, key);
     const home = prepared.home;
+    const provision = grammar?.isolation?.provision;
+    if (!retained && home && provision && request.env?.RONIN_SETUP_ID) await provisioners[provision](request.env.RONIN_SETUP_ID, home);
     const identity: LaunchIdentity = {
       key, cli: request.cli, strategy: retained?.strategy ?? assigned.strategy,
       providerSession: assigned.id, home, env: prepared.env,

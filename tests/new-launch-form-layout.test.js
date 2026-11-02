@@ -33,11 +33,7 @@ test('New Agent uses one ruled ask() spec after its three session types', async 
   assert.match(form, /key: 'role'[\s\S]*Coworker[\s\S]*Lead[\s\S]*Epic Lead[\s\S]*Coordinator/);
   assert.doesNotMatch(form, /key: 'teamLead'/);
   assert.doesNotMatch(form, /switch: \[[^\]]+\], word:/);
-  assert.match(form, /group: t\('where\.label', 'Where it works'\)/);
-  assert.match(form, /group: t\('where\.label', 'Where it works'\), fields: \[[\s\S]*key: 'root'[\s\S]*key: 'repos'[\s\S]*key: 'launchMode'/);
-  assert.match(form, /key: 'launchMode', label: t\('launch_mode\.mode', 'Mode'\)/);
-  assert.match(form, /questions\.show\(draft\.type === 'terminal' \? \[\] : draft\.type === 'bare_metal_agent' \? \['provider', 'model', 'root', 'launchMode'\] : null\)/);
-  assert.match(form, /session_type: 'bare_metal_agent'[\s\S]*launch_mode: draft\.launchMode/);
+  assert.match(form, /questions\.show\(draft\.type === 'terminal' \? \[\] : draft\.type === 'bare_metal_agent' \? \['provider', 'model'\] : null\)/);
   assert.match(form, /teamQuestions\.show\(isCowork\(\) \? null : \['team'\]\)/);
   assert.match(form, /questions\.el\.hidden = draft\.type === 'terminal'/);
   assert.match(form, /\? \{ session_type: 'terminal', name, team \}/);
@@ -80,29 +76,6 @@ test('choosing New team requires a valid name before any session type can launch
   assert.match(form, /draft\.teamMode !== 'new' \|\| isValidTeamName\(chosenTeam\(\)\)/);
   assert.match(form, /if \(draft\.teamMode === 'new'\) \{[\s\S]*if \(!isValidTeamName\(team\)\)/);
   assert.doesNotMatch(form, /unnamed new team is no team|isCowork\(\) && team/);
-});
-
-test('Where it works keeps birthplace separate and offers all workspaces to Cowork Agents', async () => {
-  const form = await source('new-agent.js');
-  assert.match(form, /request\('\/api\/project-roots\/detail'\)/);
-  assert.match(form, /rootRows\.data\?\.roots/);
-  assert.doesNotMatch(form, /worktrees/);
-  assert.match(form, /v: row\.name, l: row\.title \|\| row\.name/, 'root choices submit the Workspace Folder handle and display the optional title');
-  assert.match(form, /label: t\('where\.born_in', 'Born in'\), options: rootRows/);
-  assert.match(form, /label: t\('new_agent\.workspaces', 'Workspaces'\), many: true, options: rootRows/,
-    'Workspaces never depends on Born in: a dependent clear reads as the hand and blocks the Born in default');
-  assert.match(form, /draft\.type === 'bare_metal_agent' \? \['provider', 'model', 'root', 'launchMode'\]/,
-    'bare-metal Agents choose one birthplace and are not offered additional workspaces');
-  assert.match(form, /if \(!touched\.repos\) draft\.repos = draft\.root \? \[draft\.root\] : \[\]/);
-  assert.match(form, /draft\.repos = workspaceRepos\(\{ root: draft\.root, teamRepos:/);
-  assert.doesNotMatch(form, /no auto desk|extra sessions/i);
-});
-
-test('New Team and New Agent forms consume Campaign Cowork workspace defaults', async () => {
-  const [team, agent] = await Promise.all([source('new-team-form.js'), source('new-agent.js')]);
-  assert.match(team, /draft\.root = value\('project_root'\) \|\| ''/);
-  assert.match(team, /draft\.repos = Array\.isArray\(value\('repos'\)\)/);
-  assert.match(agent, /teamRepos: selected\?\.repos \|\| value\('repos'\) \|\| \[\]/);
 });
 
 test('the old New Agent selector implementation and CSS are deleted', async () => {
@@ -191,7 +164,7 @@ test('Add Agent confirms a draft into a compact row with the one selector utilit
   assert.match(agents, /team_lead: row\.team_lead === true/);
   assert.doesNotMatch(agents, /routines_/);
   assert.match(team, /loadProviderCatalog\(\)/, 'New Team loads provider choices for its inline Agent editor');
-  assert.match(team, /Promise\.all\(\[[\s\S]*request\('\/api\/project-roots'\),[\s\S]*loadProviderCatalog\(\)/,
+  assert.match(team, /Promise\.all\(\[[\s\S]*request\('\/api\/workspaces'\),[\s\S]*loadProviderCatalog\(\)/,
     'provider choices load as part of entering the New Team surface');
 });
 
@@ -219,13 +192,8 @@ test('New Team routes each selector region through ask() and leaves Templates br
   assert.match(form, /ruledRows\('kind', \['open', \.\.\.KINDS\]/);
   assert.match(form, /const whereQuestions = ask\(/);
   assert.match(form, /kitQuestions = ask\(/);
-  assert.match(form, /key: 'launchMode', label: t\('launch_mode\.mode', 'Mode'\)/);
-  assert.doesNotMatch(form, /after: 'root'/, 'Workspaces never depends on Born in: picking Born in must default it, not clear it');
-  assert.match(form, /key === 'root' && !reposTouched/);
-  assert.match(form, /row: branchField/);
   assert.match(form, /group: t\('behaviours', 'Behaviours'\)/);
   assert.doesNotMatch(form, /availableFeatures|group: t\('features'/);
-  assert.match(form, /options: LAUNCH_MODES\(\)\.map/);
   assert.match(form, /trayHost: kitHost/, 'launch mode opens below the full kit row without moving Behaviours');
   assert.match(form, /many: true, shape: 'tall', options: shelfRows/);
   assert.equal((form.match(/density: 'tight'/g) || []).length, 2, 'both defaults regions use launch density');

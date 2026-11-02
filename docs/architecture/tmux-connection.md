@@ -39,8 +39,9 @@ in `src/tmux-client.ts` is the server's single door to tmux:
   replies and server-wide notifications only. The roster and the recorder's sweep skip
   `grid_*` names.
 - `tmux.on(kind, handler)` delivers notifications. `src/ws/events.ts` pushes the session
-  list and the home rows to browsers on `%sessions-changed`, renames and window changes,
-  with the 2 s clock kept as a heartbeat; each tick takes one session listing for both, and
+  list and the home rows to browsers on `%sessions-changed`, renames, window changes and the
+  activity subscription (a pane had output, which also wakes the transcript part's terminal
+  read through `onPaneActivity`); there is no clock. Each tick takes one session listing for both, and
   each is sent only when a field the UI paints moved (`sessionsSignature` leaves out
   `activity`), so a notification that changed nothing painted sends nothing. A row's
   `activity` comes from the listing. [The data path](data-path.md) states the rule and the
@@ -90,6 +91,12 @@ only when the painted fields moved (`homeSignature` leaves out a row's `activity
 and classified only when its `#{window_activity}` stamp moved since the last
 classification (`createActivityCache` in `src/status.ts`); an unchanged session keeps its
 last status, ctx and model.
+
+Which panes had output comes from one tmux subscription on the control client,
+`ACTIVITY_SUBSCRIPTION` in `src/tmux-client.ts`: `name:stamp` per session, comma-separated.
+The comma is written `#,` because a bare comma inside `#{S:…}` is tmux's own separator and is
+dropped. `activityMoved` in `src/ws/events.ts` names the sessions whose stamp moved; each
+wakes the terminal read (`onPaneActivity`) and a home push.
 
 ## Parts: what is on disk, and what runs
 

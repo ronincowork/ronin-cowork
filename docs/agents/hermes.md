@@ -2,27 +2,58 @@
 
 - **stop_keys:** C-c
 - **clear_keys:** C-c
-- **launch_native:** ["hermes", "chat", "--provider", "{provider}"]
-- **launch_model:** ["hermes", "chat", "--provider", "{provider}", "-m", "{model}"]
-- **launch_native_dangerously:** ["hermes", "chat", "--provider", "{provider}", "--yolo"]
-- **launch_model_dangerously:** ["hermes", "chat", "--provider", "{provider}", "-m", "{model}", "--yolo"]
+- **launch_native:** ["hermes", "chat"]
+- **launch_model:** ["hermes", "chat", "-m", "{model}"]
+- **launch_native_dangerously:** ["hermes", "chat", "--yolo"]
+- **launch_model_dangerously:** ["hermes", "chat", "-m", "{model}", "--yolo"]
 - **launch_resume:** ["hermes", "--resume", "{session_id}"]
 - **launch_new_session_id:** —
-- **launch_isolation:** —
-- **transcript_journal:** —
-- **launch_initial:** none
+- **launch_isolation:** {"env":"HERMES_HOME","home":"~/.hermes","shared":["auth.json",".env","config.yaml","skills","SOUL.md","hermes-agent","tools","installs"],"provision":"hermes-setup"}
+- **transcript_journal:** {"format":"hermes-state","root":"{home}","pattern":"state.db"}
+- **launch_initial:** ["--query", "{brief}"]
 
-CLI id: `hermes`. Catalog provider: Nous Research and other inference providers. Reviewed 2026-09-14.
-Version: **not installed**. Documentation only; installed behavior is not certified.
+CLI id: `hermes`. Catalog provider: `hermes`.
+
+The Hermes Models worksurface manages API connections and named setups, rather than
+subscription sign-in. Add a named OpenAI, Mistral or OpenAI-compatible HTTPS connection,
+enter its API key, and Discover models. This requests that endpoint's `/models` list;
+it verifies listing access, not inference or tool support for every returned model.
+Create a named setup selecting its model, reasoning and approvals. Non-OpenAI
+connections currently use provider-default reasoning.
+
+New Agent keeps its two fields: Model provider = Hermes, Model = the setup name.
+Each Cowork birth creates a private `cli-home/` directory inside that session's record,
+with a configuration snapshot and empty memory/history. Hermes uses `shared` to link only
+`auth.json`, `.env`, `config.yaml`, `skills`, `SOUL.md`, `hermes-agent`, `tools`, and `installs` from
+its installed home. `installs` holds the dependency generations and installation records,
+so a fresh data home reuses the installed runtime instead of installing dependencies. Named setups replace the inherited config with their snapshot and
+point `.env` at the connection credential. Everything else starts private, including
+new runtime files introduced by Hermes updates. Codex retains its existing `private` form.
+Each birth owns its gateway and conversation store: Hermes mints conversation IDs itself,
+`--continue` selects the newest conversation in a store, and a shared gateway would make
+one gateway failure affect every Agent. Its `.env` links to the
+connection's private credential file. Key rotation is picked up at process restart;
+running processes may retain their old key in memory. Setup edits affect future births.
+No subscription credentials are borrowed. Setup metadata is stored in the credential
+store's `hermes-setups.json`; secrets remain in private `hermes-<connection-id>.env` files.
+Deleting a connection is blocked while a setup references it. Its credential file is
+retained for existing agents; revocation is performed at the API provider.
+
+Existing provider credentials appear automatically: OPENAI_API_KEY and MISTRAL_API_KEY
+use their provider endpoints; another compatible API uses NAME_API_KEY plus NAME_BASE_URL.
+Ronin reads its environment/.env and the native Hermes .env, records the provider reference,
+and prepares the private credential file used by agent homes. No import action is required.
+Environment-backed connections are removed at their source; explicit form connections
+remain managed in Ronin. Configured means a key is present, not that inference was tested.
+Named setups currently require Cowork agent births; bare-metal launches are refused.
+Archive/restore remains unsupported. The hermes-state transcript declaration identifies the private state.db; the reader is delivered separately by KAN-155. Raw native Hermes commands
+continue to use Hermes's own defaults and do not select a Ronin setup automatically.
 
 ## Ronin launch sequence
 
-| Model | Launch mode | Command core |
-|---|---|---|
-| Native | Native | `hermes chat --provider <provider>` |
-| Named | Native | `hermes chat --provider <provider> -m <model>` |
-| Native | Dangerously | `hermes chat --provider <provider> --yolo` |
-| Named | Dangerously | `hermes chat --provider <provider> -m <model> --yolo` |
+A named setup launches `hermes chat -m <actual-model>` with a fresh HERMES_HOME.
+Its API provider and endpoint come from that home's saved configuration. The optional
+Dangerously launch mode appends `--yolo`; otherwise the setup's approvals setting applies.
 
 Resume is separate: Hermes documents `hermes --resume <session-id>`, but Ronin cannot use
 it until exact conversation discovery is supported.
@@ -32,19 +63,13 @@ provider/model selected in the catalog. Ronin has no automated installer for it;
 manual installation can be detected. Update and declared resume arguments are registry
 data, but exact conversation discovery is unsupported, so Archive refuses.
 
-The initial brief is parked rather than positional. Hermes calls Ronin's Dangerously
+The initial brief is passed as one literal `--query` argument. On a TTY Hermes submits it as the first turn and keeps the session interactive. Hermes calls Ronin's Dangerously
 intent `--yolo`, which bypasses its dangerous-command approval prompts. Services' gbrain scripts do not implement Hermes MCP registration,
 and Agent launch does not provision one.
 
-Hermes's provider-specific middle policies live in configuration as
-`approvals.mode: smart` (the default) and `manual`; `off` is the persistent equivalent of
-`--yolo`. Ronin records these for drift review but does not mutate owner configuration or
-offer them as shared launch modes.
-
 Stop and Clear send Ctrl+C once. The official [TUI README](https://github.com/NousResearch/hermes-agent/blob/main/ui-tui/README.md#main-chat-input)
 documents interruption during activity, clearing the current draft, and exit when nothing
-is pending. This mapping follows that documented TUI behavior; Hermes is not installed
-here. The classic CLI guide separately documents Ctrl+C interruption and double-press
+is pending. This mapping follows that documented TUI behavior. The classic CLI guide separately documents Ctrl+C interruption and double-press
 force exit. Ronin adds no state classification. Browser drafts clear entirely locally.
 
 

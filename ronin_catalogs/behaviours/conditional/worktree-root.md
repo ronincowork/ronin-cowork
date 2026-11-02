@@ -2,7 +2,6 @@
 
 - **label:** Managed worktree
 - **scope:** conditional
-- **requires:** arrangement:managed
 - **installation:** —
 
 Run `worktree-desk --help` before the first worktree command in a session. The tool owns the

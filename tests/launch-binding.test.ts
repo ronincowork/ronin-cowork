@@ -4,7 +4,7 @@ import { mkdtemp, mkdir, readFile, readdir, realpath, rm, writeFile } from 'node
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { newProviderSession } from '../src/agents.js';
+import { newProviderSession, initialBriefArgs } from '../src/agents.js';
 import { readAgentLaunches } from '../src/agent-launches.js';
 import { processLaunch, readLaunchIdentity } from '../src/launch-binding.js';
 import { resolveLaunchJournal } from '../src/launch-journal.js';
@@ -38,9 +38,9 @@ test('strategy follows grammar rather than a provider list', async () => {
 test('isolated launch mirrors newly discovered settings but owns its journal; restore reuses home', async t => {
   const root = await mkdtemp(path.join(tmpdir(), 'launch-isolation-'));
   const source = path.join(root, 'original-home'), store = path.join(root, 'sessions');
-  await mkdir(source); await mkdir(path.join(source, isolated.isolation!.private));
+  await mkdir(source); await mkdir(path.join(source, isolated.isolation!.private as string));
   await writeFile(path.join(source, 'future-setting'), 'preserve me');
-  await writeFile(path.join(source, isolated.isolation!.private, 'neighbour.jsonl'), 'foreign');
+  await writeFile(path.join(source, isolated.isolation!.private as string, 'neighbour.jsonl'), 'foreign');
   const envName = isolated.isolation!.env;
   const oldHome = process.env[envName], oldStore = process.env.RONIN_SESSION_DIR;
   process.env[envName] = source; process.env.RONIN_SESSION_DIR = store;
@@ -78,4 +78,54 @@ test('all process starts pass through one serial entry, including unbound shells
   assert.deepEqual(events, ['a']); release();
   const result = await Promise.all([first, second]);
   assert.deepEqual(events, ['a', 'b']); assert.ok(result.every(r => r.strategy === 'unbound'));
+});
+
+
+test('Hermes isolates SQLite files and memory, and records its cli-home before startup', async t => {
+  const root = await mkdtemp(path.join(tmpdir(), 'hermes-isolation-'));
+  const source = path.join(root, 'source'); await mkdir(source);
+  for (const file of ['state.db', 'state.db-wal', 'state.db-shm', 'state.db.fts_rebuild.lock', 'state.db.quarantine.lock', 'gateway.sock', 'gateway.sock.path', 'gateway.pid', 'gateway.lock', 'gateway_state.json', 'gateway-starts.log', 'gateway_voice_mode.json', 'unknown-future-runtime.sock', 'config.yaml', 'auth.json', '.env', 'SOUL.md']) await writeFile(path.join(source, file), 'source');
+  for (const entry of ['skills', 'hermes-agent', 'tools', 'installs']) await mkdir(path.join(source, entry));
+  await mkdir(path.join(source, 'profiles')); await writeFile(path.join(source, 'profiles', 'foreign-profile'), 'shared gateway owns this');
+  await mkdir(path.join(source, 'runtime')); await writeFile(path.join(source, 'runtime', 'active_sessions.lock'), 'runtime');
+  await mkdir(path.join(source, 'bot-desktop')); await writeFile(path.join(source, 'bot-desktop', 'rfb.sock'), 'runtime');
+  await mkdir(path.join(source, 'memories')); await writeFile(path.join(source, 'memories', 'MEMORY.md'), 'private');
+  const old = process.env.HERMES_HOME, oldStore = process.env.RONIN_SESSION_DIR;
+  process.env.HERMES_HOME = source; process.env.RONIN_SESSION_DIR = path.join(root, 'sessions');
+  t.after(async () => { if (old === undefined) delete process.env.HERMES_HOME; else process.env.HERMES_HOME = old; if (oldStore === undefined) delete process.env.RONIN_SESSION_DIR; else process.env.RONIN_SESSION_DIR = oldStore; await rm(root, { recursive: true, force: true }); });
+  const result = await processLaunch({ name: 'hermes', key: 'hermes-birth', cli: 'hermes', argv: ['hermes', 'chat'], cwd: root }, async (_argv, env, identity) => {
+    assert.equal(identity.strategy, 'isolated');
+    assert.equal(identity.home, path.join(root, 'sessions', 'hermes-birth', 'cli-home'));
+    assert.equal(env.HERMES_HOME, identity.home);
+    assert.equal((await readLaunchIdentity('hermes-birth'))?.home, identity.home);
+    assert.deepEqual((await readdir(identity.home!)).sort(), ['.env', 'SOUL.md', 'auth.json', 'config.yaml', 'hermes-agent', 'skills', 'tools', 'installs'].sort());
+    for (const entry of ['.env', 'SOUL.md', 'auth.json', 'skills', 'hermes-agent', 'tools', 'installs']) assert.equal(await realpath(path.join(identity.home!, entry)), path.join(source, entry));
+    assert.equal(await realpath(path.join(identity.home!, 'config.yaml')), path.join(source, 'config.yaml'));
+    await writeFile(path.join(identity.home!, 'state.db'), 'own database');
+  });
+  assert.equal(await readFile(path.join(source, 'state.db'), 'utf8'), 'source');
+  assert.equal(await readFile(path.join(result.home!, 'state.db'), 'utf8'), 'own database');
+});
+
+test('a journal declared with no idPath is one store file the birth owns (Hermes state.db)', async t => {
+  const root = await mkdtemp(path.join(tmpdir(), 'launch-store-'));
+  t.after(async () => { await rm(root, { recursive: true, force: true }); });
+  const { resolveLaunchSegments } = await import('../src/launch-journal.js');
+  const identity = { key: 'h-key', cli: 'hermes', strategy: 'isolated' as const, providerSession: '', home: root, env: {},
+    journal: { format: 'hermes-state', root, pattern: 'state.db' } };
+  // Known from birth: handed out before the CLI writes it, so the folder is watched from the start.
+  assert.deepEqual(await resolveLaunchSegments(identity), { files: [path.join(root, 'state.db')], session: 'h-key' });
+  await writeFile(path.join(root, 'state.db'), '');
+  assert.deepEqual(await resolveLaunchSegments(identity), { files: [path.join(root, 'state.db')], session: 'h-key' });
+  assert.equal(await resolveLaunchJournal(identity), path.join(root, 'state.db'));
+});
+
+
+test('Hermes receives the birth brief as one literal interactive query argument', async () => {
+  const grammar = await readAgentLaunches('hermes');
+  const brief = 'Read the birth packet.\nQuotes "hello", $(nothing), `literal`, and --flags stay text.';
+  assert.deepEqual(initialBriefArgs(grammar, brief), ['--query', brief]);
+  assert.deepEqual(initialBriefArgs(grammar, ''), []);
+  assert.deepEqual(initialBriefArgs({ ...grammar, initial: 'positional' }, brief), [brief]);
+  assert.deepEqual(initialBriefArgs({ ...grammar, initial: 'none' }, brief), []);
 });

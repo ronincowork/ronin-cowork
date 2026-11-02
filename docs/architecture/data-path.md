@@ -26,7 +26,7 @@ standing in for a close. When something seems to need one, the shape upstream is
 
 ```
  tmux notifications ─┐                              ┌─ subscribe / unsubscribe
- 2 s heartbeat ──────┤   src/ws/events.ts           │        ▲
+ pane activity ──────┤   src/ws/events.ts           │        ▲
  store-folder watch ─┤   one tick → one listing     │   surfaces (tile, roster, wipeboard …)
  write routes ───────┤   signature-diffed pushes ───┼──▶ public/js/store.js
  services (gbrain,   │   held values on connect     │   one socket, one copy per resource
@@ -48,6 +48,7 @@ snapshot: no browser reads these over REST.
 | `{t:'sessions', list}` | the session listing with its Team and lead axes | a tmux notification, or a painted field moved on the tick |
 | `{t:'home', rows}` | one row per session: stance, model, context gauge, work record | a painted field moved on the tick |
 | `{t:'teams', rosters}` | the Team rosters, the shape of `GET /api/team-rosters`; each row carries the Team's `board`, its epic (the root it holds, else its lead's; none is null) and `items` (what the Team and its members hold, each with its holder), built server-side from the Team reading (`work-items-read.ts`) | a roster, work-item, membership or lead write |
+| `{t:'epics', epics}` | every Epic — the level-1 work items, whole, each with its holder (`everyItemReading`) — the Epics workbench's stones (`epics-surface.js`, narrowed to the tab's Campaign there; KAN-190) | a roster, work-item, membership or lead write, read with the rosters |
 | `{t:'messages', list}` | the message queue | a file in the queue folder changed |
 | `{t:'memory', reading}` | the machine reading behind the memory gauge; `{off:true}` once when watching is off | the machine service's reading moved |
 
@@ -110,8 +111,9 @@ poll.
 
 ## The server side
 
-- **One tick, one listing.** A tmux notification, or the 2 s heartbeat while a browser is
-  connected, takes one session listing and builds `sessions` and `home` from it. Each is
+- **One tick, one listing.** A tmux notification (the session set changed, or a pane had
+  output: tmux's activity subscription), or a transcript read writing a line (`rowChanged`),
+  takes one session listing and builds `sessions` and `home` from it. Each is
   signed on the painted fields (`activity` and a stance's `at` are left out) and sent only
   when the signature moved. A connection that joins mid-tick is sent only what it missed.
 - **Write routes push.** Roster routes push `teams` after a successful write;
@@ -128,9 +130,9 @@ poll.
 
 The server's clocks, and why each exists: cron (`jikan`), session retention, the message
 delivery queue, the pty heartbeat, the HQ confirmation wait while a registration is
-pending, the machine service's one-minute reading, and the 2 s tick. None of them exists
-for the browser's sake. The tick is the one place the server observes rather than is told,
-because the context gauge is painted by the CLI on its own screen and announced to nobody.
+pending, and the machine service's one-minute reading. None of them exists for the browser's
+sake. There is no session tick on a clock: a pane's output is announced by tmux, and that is
+when its context gauge and its terminal read are looked at again.
 
 ## Adding a pushed resource
 

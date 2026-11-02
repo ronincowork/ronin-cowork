@@ -10,10 +10,10 @@
  */
 export async function launchTeamAgents(request, team, rows = []) {
   // A BARE-METAL ROW is the native agent itself, born with no Ronin packet: the route
-  // wants its working folder and its opening words, and refuses birth material by name.
+  // wants its opening words and refuses birth material by name.
   const chosen = (row) => ({ ...(row.provider ? { provider: row.provider } : {}), ...(row.model ? { model: row.model } : {}) });
   const body = (row) => row.session_type === 'bare_metal_agent'
-    ? { session_type: 'bare_metal_agent', ...(team ? { team } : {}), name: row.name, project_root: row.project_root, instructions: row.instructions, ...chosen(row) }
+    ? { session_type: 'bare_metal_agent', ...(team ? { team } : {}), name: row.name, instructions: row.instructions, ...chosen(row) }
     : {
       session_type: 'cowork_agent',
       ...(team ? { team } : {}),

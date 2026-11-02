@@ -65,7 +65,7 @@ export function createSurface(options = {}) {
 }
 
 /** The one thing behind every Workbench surface: a quiet place, not another workflow. */
-function createBlankSurface(label = t('team.workspace_blank', 'Workspace')) {
+function createBlankSurface(label = t('team.workspace_blank', 'Tilespace')) {
   const surface = createSurface({ label, className: 'wk-blank-surface' });
   const mark = node('div', 'tile-empty-mark');
   mark.setAttribute('aria-hidden', 'true');

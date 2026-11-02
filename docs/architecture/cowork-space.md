@@ -119,8 +119,20 @@ else does.
 ### The root landing
 
 The bare `/` route is the landing, not a remembered workspace and not a Campaign editor.
-It has four doors — **Models**, **Workspaces**, **Teams**, **Help** — each opening its own Workbench in
-the same tab (`public/js/door-workbenches.js`; owner, 2026-10-19). Models is its own stones of
+Its centre is three stones in a triangle (owner, 2026-11-02; KAN-186, KAN-191, KAN-194), no heading over it,
+read Who, What, Where: **Teams** (who does the work) at the apex, **Epics** (what the work is, ◇, drawn
+at ⌂'s visual size and weight: `--ch-glyph-epics`) bottom left and **Workspaces** (where the work is)
+bottom right, each at Home's stone size from before (208px square) with one even gap across and down
+(`--ch-office-gap`, `--space-section` + `--space-subsection`). **Model Providers**, **Help** and
+**Settings** are three smaller stones in a vertical line on the right (in a row under the triangle on a
+narrow window). On a wide window the page is ten even tracks: the triangle's centre sits at 40% of the
+page width and the line's at 85%, both lifted a little above the middle (KAN-194, KAN-196). Each stone's who/what/where line shows on hover at `--text-heading`.
+Each stone opens its own Workbench in
+the same tab (`public/js/door-workbenches.js`; owner, 2026-10-19). Epics (owner, 2026-11-02; KAN-187)
+seats a stone per Epic — the level-1 work items, over the Campaign this tab looks at — in Workspace 1
+(`epics-surface.js`): a pressed stone reads the item beside the rail as Work Items does
+(`renderItemDetail`); a stone dragged into a workspace places that Epic whole there; the selector
+offers the Epics card alone. Models is its own stones of
 providers in Workspace 1 (`models-surface.js`): a stone dragged into a workspace, or its selector
 card, places that provider's page there whole, no rail; Settings' Model Providers surface stays
 as it is, both drawing with the one exported drawing. Workspaces is its own stones of folders in
@@ -129,7 +141,7 @@ Add a workspace, GitHub CLI, Clone a repository — the folder they add taking t
 Settings' Workspace Folders surface stays as it is. Teams opens the Teams workbench at `#/cowork`
 (`cowork-view.js`; owner, 2026-10-20), the one Teams workbench: its Teams card
 (`team-roster-surface.js`) carries a Workspace question (many-of, blank All) and a Show question
-(Theme, State, Agents, Items; Theme on by default) above its stones, each stone the Team's name
+(Theme, State, Agents, Items; none picked to start) above its stones, each stone the Team's name
 with what Show picks under it as the phalanx's branch rows (Theme one row, State one row, each
 Agent a row with the lead first, each Item a row); the 人 mark in a stone's corner opens the
 Team page in a new tab; its selector offers Team roster, Cron jobs, New Team, New Agent and
@@ -139,15 +151,12 @@ under a headline of what Ronin is for (the headline alone on a phone); 'START HE
 Getting started and Using Ronin; each of the six opens one level down to Return and its pages (the four's level is the four), the page being read pressed; a pressed page read beside the rail through
 `/api/file?product=1`) in Workspace 1 and Mika (`help.mika`) in Workspace 2, her tile opened on its
 reading (`createMikaTilePool({ opensOn: 'reading' })`); both are solid cards.
-Until one model provider is activated the Models, Workspaces and Teams doors are locked; Help stays
+Until one model provider is activated the Models, Workspaces, Teams and Epics doors are locked; Help stays
 open, its Mika seat saying in one line that she needs a provider, pointing to Setup, and say so (the gate the old
 root had); Settings, the live stone, opens Setup until its five answers are recorded.
 
-The current root — Ronin Home as it was before 2026-10-18, with doors into the Desk, Team and
-Agent Workbenches (Desk and Team both open the Teams workbench at `#/cowork`; the Desk workbench
-was deleted on 2026-10-20) — stays at `#/current` (`public/js/current-home.js`) while pieces move from it
-to the new Home. One plain toggle in the bar, the same spot on both pages, swaps the two in one
-press: Current on the new Home, Next on the current one.
+There is one root (owner, 2026-11-02; KAN-197): the old Home at `#/current` and the bar's
+Current/Next toggle are deleted, and an old `#/current` link lands on Home.
 
 There is no Campaign picker, default star, archive action or New Campaign footer.
 

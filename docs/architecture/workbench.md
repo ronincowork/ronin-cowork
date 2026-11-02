@@ -141,8 +141,9 @@ status as its own reads return.
 6. Async enrichment must not discard edits made after the first paint. Generation or
    ownership checks prevent stale responses from repainting replaced surfaces.
 
-**Ronin Home** (`campaign-home.js`; owner, 2026-10-19) stays a page, not a Workbench, with three
-doors — **Models**, **Workspaces**, **Teams**, **Help** — each a link to a Workbench destination of its own,
+**Ronin Home** (`campaign-home.js`; owner, 2026-10-19) stays a page, not a Workbench: Teams,
+Workspaces and Epics in a triangle (owner, 2026-11-02), with Models, Help and Settings smaller stones
+in a column inset on the right — each a link to a Workbench destination of its own,
 opened in the same tab (a modified press opens a new tab through `workbenchLaunchUrl`). The
 Teams door opens the Teams workbench (`#/cowork`, `cowork-view.js`; owner, 2026-10-20). Models and
 Workspaces are one shape (`door-workbenches.js`): the Kit Workbench on a profile of the
@@ -161,15 +162,15 @@ a new Team lead and Mika start on: ⚙ Configuration's own `models` section draw
 'models' })`), each row saving itself — one record, two views. Settings' Model
 Providers surface is untouched; all draw with the one drawing `provider-surface.js` exports
 (`createProviderDrawing`, `createRefreshAll`, `providerStones`) over the same record and measure. Workspaces seats
-its own stones of folders the same way (`workspaces-surface.js`, `workspaces.stones`; a dropped
-stone or a folder's card places the folder whole, `workspaces.folder`), its three admin doors —
-Add a workspace (`workspace-add.js`: one surface, four sections the same in every path — How, Name, Where, Git; the old form stays beside it as "Add a workspace (old form)" while the owner compares), GitHub CLI, Clone a repository — dotted selector cards in the New Agent format,
-the folder they add taking their workspace; Settings' Workspace Folders surface is untouched,
-both drawing with `projectroots.js`'s exported drawing (`createRootDrawing`, `rootStone`) over
-one read per bench (`createRootsReading`, the detail route). The bar's crumb (`workspace-header.js`;
+its own stones of Workspaces (`workspaces-surface.js`, `workspaces.records`): a pressed one's page is the whole
+Workspace, its folders ticked in a browser of this machine (owner, 2026-11-02), with GitHub CLI beside them;
+one read of the pinned folders per bench (`createRootsReading`, the detail route). Epics (owner, 2026-11-02;
+KAN-187) seats its own stones of Epics the same way (`epics-surface.js`, `epics.records`): the level-1 work items of
+the Campaign — the store's pushed `epics`, no request (KAN-190) — a pressed one's reading (`renderItemDetail`) beside the rail, a dragged one whole (`epics.record`, no
+selector card, as a Team profile). The bar's crumb (`workspace-header.js`;
 owner, 2026-10-20) reads RoninCowork   Home • Teams • <Team title> on a Team page — a gap, not a dot,
 after the brand (`--space-subsection`; owner, 2026-10-24) — Home to `#/home`, Teams to `#/cowork`;
-the Teams workbench ends at Teams, and a view naming its own `place` (Models, Workspaces, Help,
+the Teams workbench ends at Teams, and a view naming its own `place` (Models, Workspaces, Epics, Help,
 Setup, Settings) reads RoninCowork   Home • <place>.
 The Teams workbench's Teams card (`team-roster-surface.js`; owner, 2026-10-20) carries, above its
 stones, the Workspace question (many-of, blank All) and the Show question (Theme on; State,
@@ -188,14 +189,9 @@ stays open, owner 2026-10-21; with no provider its Mika seat is one line pointin
 provider is activated (`/api/setup/runtime`'s `activated_count`), each saying so under its name,
 and Settings is the one live stone — a new user's way in is Setup.
 
-**Two roots** (owner, 2026-10-19). The default root — what opens, what Home links to — is that
-three-door page. The current root, Ronin Home as it stood before 2026-10-18 with its doors into
-the Desk, Team and Agent Workbenches, is copied back from git (`current-home.js`; its Desk door opens
-the Teams workbench at `#/cowork` since the Desk workbench, a card-for-card duplicate of Cowork, was
-deleted on 2026-10-20) and
-keeps its own address, `#/current`, while pieces move from Current to Next; nothing of it is
-deleted. One plain toggle in the bar, the same spot on each (the view's leading slot), swaps
-between them in one press: it reads **Current** on the new Home and **Next** on the current one.
+**One root** (owner, 2026-11-02; KAN-197). That page is the only root: the old Home at `#/current`
+and the bar's Current/Next toggle are deleted, and an old `#/current` link falls to the safe view,
+Home.
 
 Campaign Defaults is the reference case. Its saved values are already in
 `campaign.config.defaults`, so it paints them immediately. Model choices come from the
@@ -323,16 +319,13 @@ The door's own destination over the provider drawing Settings and Setup share.
 
 ### Workspaces (`workspaces` profile)
 
-The door's own destination over the folder drawing Settings and Setup share, one read of the
-folders per bench (`/api/project-roots/detail`) that every surface on it hears.
+The door's own destination: the Workspaces and their pages, over one read of the pinned folders per
+bench (`/api/project-roots/detail`).
 
 | Surface | Required data and owner |
 |---|---|
-| Folder stones (`workspaces.stones`) | the bench's folder read; its selector cards (`folderOffers`) read the same |
-| Folder (`workspaces.folder`) | the one folder named in its detail from the same read; its writes re-read it for every surface |
-| Add a workspace (`workspaces.add`, `workspace-add.js`) | one surface in the launch forms' sections, four in every path: 1 How (three cards: New folder · A folder on this machine · From GitHub), 2 Name (prefilled from the folder or repository), 3 Where (location only: where the new folder goes, the folder you choose, or the repository and where it lands), 4 Git. Git reads a folder that already has Git in one line (`Git · on this machine`, `Git · GitHub owner/repo`; a GitHub clone too) and asks nothing; otherwise one question, None · On this machine · On this machine and GitHub (default On this machine), and the answer decides whether Git starts. Inside it, only when Git is on: How Agents work here (Own desks · One folder), folded with its default and a line per option; only for "and GitHub": Private/Public and the sign-in line. None is an ordinary folder. Reads the folders (`/api/folders`; a folder that is already a workspace is left out, with everything inside it, until the discreet Show all under the list), inspect, the GitHub sign-in state; writes `/api/folders`, `/api/project-roots` (`init_git` starts Git in the folder before its profile is read), the clone route, `/api/setup/github/create` and the repo profile. The folder it adds takes its workspace. Owner, 2026-10-21/22; Lab wip/buildouts/ADD_A_WORKSPACE.md |
-| Add a workspace (old form) (`workspaces.new`) | the add form `projectroots.js` draws, kept beside the new one while the owner compares them; the folder it adds takes its workspace |
-| GitHub CLI / Clone a repository (`workspaces.github`, `workspaces.clone`) | the GitHub setup read and session attachment `github-workspace-setup.js` owns, one instance per bench |
+| Workspaces (`workspaces.records`) | `/api/workspaces` for the Campaign the tab looks at; the page writes `PUT /api/workspaces/:name`. Its Locations: a browser of this machine from the home folder (`/api/folders`), a tick box per folder; ticking pins a folder not pinned yet (`POST /api/project-roots`) and holds it by name, the ones with Git as repositories, the rest as folders. A Git folder's How Agents work here writes the repo profile. Clone from GitHub (`/api/setup/github/clone` with `parent`) clones into the folder the browser is open on. A `/files/<path>` link dropped from Files adds `$HOME/<path>`. Owner, 2026-11-02 |
+| GitHub CLI (`workspaces.github`) | the GitHub setup read and session attachment `github-workspace-setup.js` owns, one instance per bench |
 
 ### Agent (`agent` profile)
 

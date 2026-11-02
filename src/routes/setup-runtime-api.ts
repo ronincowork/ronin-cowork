@@ -1,3 +1,4 @@
+import { hermesSettingsAnswer, saveHermesConnection, discoverHermesModels, saveHermesSetup, deleteHermesEntry } from '../hermes-setups.js';
 import { homedir } from 'node:os';
 import { dispatchInstall } from '../agent-install.js';
 import type express from 'express';
@@ -41,6 +42,25 @@ const answer = async (summary?: ProviderSummary) => {
 };
 
 export function registerSetupRuntime(app: express.Express): void {
+  app.get('/api/hermes', async (_req, res) => {
+    try { res.json(await hermesSettingsAnswer()); } catch { res.status(500).json({ error: 'Could not read Hermes setups.' }); }
+  });
+  app.post('/api/hermes/:action', async (req, res) => {
+    try {
+      switch (req.params.action) {
+        case 'connection': await saveHermesConnection(req.body); break;
+        case 'discover': await discoverHermesModels(String(req.body.id)); break;
+        case 'setup': await saveHermesSetup(req.body); break;
+        case 'delete':
+          if (req.body.kind !== 'connections' && req.body.kind !== 'setups') throw new Error('Invalid entry type.');
+          await deleteHermesEntry(req.body.kind, String(req.body.id)); break;
+        default: return res.status(404).json({ error: 'Unknown Hermes action.' });
+      }
+      await measureAndRecordProviders();
+      res.json(await hermesSettingsAnswer());
+    } catch (error) { res.status(400).json({ error: errMsg(error) }); }
+  });
+
   app.get('/api/setup/user-intro', async (_req, res) => {
     try { res.json(await readUserIntro()); }
     catch (error) { res.status(500).json({ error: errMsg(error) }); }
@@ -195,7 +215,7 @@ export function registerSetupRuntime(app: express.Express): void {
   });
 
   app.post('/api/setup/github/clone', async (req, res) => {
-    try { res.json({ ok: true, workspace: await cloneGithubWorkspace(req.body?.repository) }); }
+    try { res.json({ ok: true, workspace: await cloneGithubWorkspace(req.body?.repository, req.body?.parent) }); }
     catch (error) { res.status(400).json({ error: errMsg(error) }); }
   });
 

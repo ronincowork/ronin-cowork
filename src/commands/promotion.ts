@@ -18,6 +18,7 @@ import type { ByoinMode } from '../promotion/promote.js';
 import { clearFunnel, diagnoseFunnel, listFunnelReceipts, preserveFunnel, readFunnelReceipt } from '../promotion/funnel-recovery.js';
 import { storeDir } from '../resources.js';
 import { findLeads } from '../desks/lead.js';
+import { teamRepos } from '../workspaces.js';
 
 const args = process.argv.slice(2);
 const flag = (name: string): boolean => args.includes(name);
@@ -32,7 +33,7 @@ async function reposForTeam(team: string): Promise<RepoSpec[]> {
   const roster = await readTeamRoster(team);
   if (!roster) throw new Error(await missingRosterMessage(team));
   const roots = await listProjectRoots();
-  const defaults = roster.repos.length ? roster.repos : roster.project_root ? [roster.project_root] : [];
+  const defaults = await teamRepos(roster);
   const overrides = new Map(args.filter((a, i) => args[i - 1] === '--repo' && a.includes('=')).map((a) => a.split('=') as [string, string]));
   const accepted = await unpromotedAcceptedLines(await acceptedLinesForTeam(team), async ({ repo, line }) => {
     const dir = overrides.get(repo) ?? roots.find((root) => root.name === repo)?.dir;
@@ -55,7 +56,8 @@ async function reposForTeam(team: string): Promise<RepoSpec[]> {
     const dir = overrides.get(name) ?? roots.find((r) => r.name === name)?.dir;
     if (!dir) throw new Error(`repo '${name}' is not a project_root here — pass --repo ${name}=/path`);
     const arr = await readArrangement(name, dir);
-    if (arr.mode === 'direct') throw new Error(`${name} is declared direct (${arr.source}) — a direct repository has no team line to promote`);
+    // A Workspace may hold a direct repository (the Lab): it has no team line, so nothing to promote.
+    if (arr.mode === 'direct') continue;
     specs.push({ repo: name, dir, line: acceptedByRepo.get(name) || roster.branch || teamLineBranch(team), target: arr.working });
   }
   return specs;

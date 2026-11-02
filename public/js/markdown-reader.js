@@ -1,4 +1,4 @@
-/* Shared read-only Markdown presentation. Authored HTML stays text and unsafe links do not
+/* Shared read-only Markdown presentation (headings, lists, code, pipe tables). Authored HTML stays text and unsafe links do not
  * become executable. Editing surfaces swap this DOM reading for their own source control. */
 const safeHref = (value) => {
   const href = String(value || '').trim();
@@ -8,7 +8,9 @@ const safeHref = (value) => {
 export const markdownHeadingId = (text) => String(text).toLowerCase().replace(/[^\w\s-]/g, '').trim().replace(/\s+/g, '-');
 
 const inline = (parent, text, doc, onLink, resolveHref) => {
-  const pattern = /(`[^`]+`|\[[^\]]+\]\([^)]+\)|\*\*[^*]+\*\*|__[^_]+__|\*[^*]+\*|_[^_]+_)/g;
+  // An underscore inside a word is part of it (ronin_lab, snake_case), never emphasis: as in
+  // CommonMark, `_` and `__` only open and close at a word's edge.
+  const pattern = /(`[^`]+`|\[[^\]]+\]\([^)]+\)|\*\*[^*]+\*\*|(?<!\w)__[^_]+__(?!\w)|\*[^*]+\*|(?<!\w)_[^_]+_(?!\w))/g;
   let cursor = 0;
   for (const match of String(text).matchAll(pattern)) {
     if (match.index > cursor) parent.append(doc.createTextNode(text.slice(cursor, match.index)));
@@ -24,6 +26,14 @@ const inline = (parent, text, doc, onLink, resolveHref) => {
   if (cursor < text.length) parent.append(doc.createTextNode(text.slice(cursor)));
 };
 
+const LIST = /^(\s*)([-+*]|\d+[.)])\s+(.*)$/;
+const leading = (line) => line.match(/^\s*/)[0].length;
+
+/* A pipe table: a row of cells, then a rule of dashes under the header (GitHub's markdown). */
+const isRow = (line) => /^\s*\|.*\|\s*$/.test(line || '');
+const isRule = (line) => /^\s*\|?(\s*:?-{3,}:?\s*\|)+\s*(:?-{3,}:?\s*)?\|?\s*$/.test(line || '');
+const cells = (line) => line.trim().replace(/^\||\|$/g, '').split(/(?<!\\)\|/).map((cell) => cell.trim().replace(/\\\|/g, '|'));
+
 export function renderMarkdownDocument(source, doc = document, { onLink, resolveHref } = {}) {
   const article = doc.createElement('article'); article.className = 'markdown-reader';
   const lines = String(source || '').replace(/\r\n?/g, '\n').split('\n');
@@ -33,9 +43,45 @@ export function renderMarkdownDocument(source, doc = document, { onLink, resolve
     if (heading) { const node = doc.createElement(`h${heading[1].length}`); node.id = markdownHeadingId(heading[2]); inline(node, heading[2], doc, onLink, resolveHref); article.append(node); index++; continue; }
     const fence = lines[index].match(/^\s*```([^`]*)$/);
     if (fence) { const body = []; for (index++; index < lines.length && !/^\s*```\s*$/.test(lines[index]); index++) body.push(lines[index]); index++; const pre = doc.createElement('pre'); const code = doc.createElement('code'); code.textContent = body.join('\n'); pre.append(code); article.append(pre); continue; }
-    const list = lines[index].match(/^\s*([-+*]|\d+[.)])\s+(.+)$/);
-    if (list) { const ordered = /^\d/.test(list[1]); const node = doc.createElement(ordered ? 'ol' : 'ul'); while (index < lines.length) { const item = lines[index].match(/^\s*([-+*]|\d+[.)])\s+(.+)$/); if (!item || /^\d/.test(item[1]) !== ordered) break; const li = doc.createElement('li'); inline(li, item[2], doc, onLink, resolveHref); node.append(li); index++; } article.append(node); continue; }
-    const body = []; while (index < lines.length && lines[index].trim() && !/^\s{0,3}#{1,6}\s+/.test(lines[index]) && !/^\s*```/.test(lines[index]) && !/^\s*(?:[-+*]|\d+[.)])\s+/.test(lines[index])) body.push(lines[index++].trim());
+    if (isRow(lines[index]) && isRule(lines[index + 1])) {
+      const table = doc.createElement('table'); const head = doc.createElement('thead'); const body = doc.createElement('tbody');
+      const row = (line, tag) => { const tr = doc.createElement('tr'); for (const text of cells(line)) { const cell = doc.createElement(tag); inline(cell, text, doc, onLink, resolveHref); tr.append(cell); } return tr; };
+      head.append(row(lines[index], 'th'));
+      for (index += 2; index < lines.length && isRow(lines[index]); index++) body.append(row(lines[index], 'td'));
+      table.append(head, body);
+      // Wide tables scroll inside their own box rather than widening the page.
+      const box = doc.createElement('div'); box.className = 'markdown-table'; box.append(table); article.append(box); continue;
+    }
+    const list = lines[index].match(LIST);
+    if (list) {
+      // A LIST ITEM IS ITS MARKER LINE PLUS EVERYTHING INDENTED UNDER IT, blank lines included:
+      // the way GPT models write a numbered point with its paragraph beneath (owner, 2026-11-01,
+      // "pretty ugly" on hermes_sol). A blank line between items keeps the list going; an item's
+      // body is read as markdown in its own right, so lists nest.
+      const ordered = /^\d/.test(list[2]); const indent = list[1].length;
+      const node = doc.createElement(ordered ? 'ol' : 'ul');
+      if (ordered && parseInt(list[2], 10) !== 1) node.setAttribute('start', String(parseInt(list[2], 10)));
+      const sameList = (line) => { const m = (line || '').match(LIST); return !!m && m[1].length === indent && /^\d/.test(m[2]) === ordered; };
+      const nextFilled = (from) => { let k = from; while (k < lines.length && !lines[k].trim()) k++; return k; };
+      while (index < lines.length) {
+        if (!lines[index].trim()) { const k = nextFilled(index); if (k < lines.length && sameList(lines[k])) { index = k; continue; } break; }
+        if (!sameList(lines[index])) break;
+        const item = lines[index].match(LIST); const column = item[1].length + item[2].length + 1; index++;
+        const more = [];
+        while (index < lines.length) {
+          const line = lines[index];
+          if (!line.trim()) { const k = nextFilled(index); if (k < lines.length && leading(lines[k]) > indent && !sameList(lines[k])) { more.push(''); index++; continue; } break; }
+          if (leading(line) <= indent) break;
+          more.push(line.slice(Math.min(leading(line), column))); index++;
+        }
+        const li = doc.createElement('li');
+        if (!more.length) inline(li, item[3], doc, onLink, resolveHref);
+        else for (const child of [...renderMarkdownDocument([item[3], ...more].join('\n'), doc, { onLink, resolveHref }).children]) li.append(child);
+        node.append(li);
+      }
+      article.append(node); continue;
+    }
+    const body = []; while (index < lines.length && lines[index].trim() && !/^\s{0,3}#{1,6}\s+/.test(lines[index]) && !/^\s*```/.test(lines[index]) && !/^\s*(?:[-+*]|\d+[.)])\s+/.test(lines[index]) && !(isRow(lines[index]) && isRule(lines[index + 1]))) body.push(lines[index++].trim());
     const node = doc.createElement('p'); inline(node, body.join(' '), doc, onLink, resolveHref); article.append(node);
   }
   return article;

@@ -2470,6 +2470,14 @@ body {
 .home-docs[data-view='view'] .dc-save {
   display: none;
 }
+.files-frame { /* Files: copyparty at /files/, the whole card (files-surface.js) */
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  border: 0;
+  background: var(--surface);
+}
+.files-surface .wk-surface-content { display: flex; flex-direction: column; min-height: 0; flex: 1; }
 .dc-frame {
   flex: 1;
   min-height: 0;
@@ -3139,8 +3147,12 @@ body {
    opens the view, which says why in full. */
 .tile-head button.transcript-toggle.off { opacity: 0.4; }
 .tile-transcript-entry[data-kind='note'] { color: var(--muted); font-style: italic; }
-.tile-transcript-entry[data-kind='act'],
-.tile-transcript-entry[data-kind='code'] { color: var(--muted); font-family: var(--mono, monospace); font-size: 0.9em; }
+/* Tool lines and code read in the terminal's own face and size, so commands and paths line up
+   as they do there (KAN-147). */
+.tile-transcript-entry[data-kind='tool'],
+.tile-transcript-entry[data-kind='done'] { color: var(--muted); font: var(--term-size)/var(--leading-body) var(--font-term); }
+/* The Agent stopped at a question: its words, in the colour that means act. */
+.tile-transcript-entry[data-kind='ask'] { color: var(--bad); }
 .tile .tile-transcript { display: none; }
 /* Chat is a column: the log that scrolls, then the message box. The log ends where the box
    begins, so nothing of the conversation is ever under it and "at the end" is what you see
@@ -3154,6 +3166,11 @@ body {
   position: static;
   flex: none;
 }
+/* In Chat the box is written in the face and size Chat is read in. */
+.tile .tile-body[data-surface='chat'] > .composer textarea { font: var(--text-label)/var(--leading-body) var(--font-ui); }
+@media (pointer: coarse) {
+  .tile .tile-body[data-surface='chat'] > .composer textarea { font-size: var(--text-heading); }
+}
 .tile-body[data-surface='chat'] > .tile-transcript {
   display: block;
   flex: 1 1 auto;
@@ -3166,7 +3183,12 @@ body {
   padding: var(--space-inline) var(--space-inline) var(--space-subsection);
   color: var(--fg);
   background: var(--tile-bg);
-  font: var(--text-body)/var(--leading-body) var(--font-mono);
+  /* A READING VIEW, NOT A SECOND TERMINAL (KAN-147, owner 2026-11-01): Chat has no grid to keep,
+     so its words are in the UI's own face at a reading size, larger than Terminal's 13px. */
+  font: var(--text-label)/var(--leading-body) var(--font-ui);
+}
+@media (pointer: coarse) {
+  .tile-body[data-surface='chat'] > .tile-transcript { font-size: var(--text-heading); }
 }
 /*
  * SPACE SAYS WHAT IT SEPARATES (owner, 2026-10-22: "one big, long series of lines"). Lines
@@ -3184,6 +3206,39 @@ body {
 .tile-transcript-entry[data-role='user'] + .tile-transcript-entry:not([data-role='user']),
 .tile-transcript-entry:not([data-role='user']) + .tile-transcript-entry[data-role='user'] { margin-top: var(--space-subsection); }
 .tile-transcript-para { margin: 0; }
+/* The Agent's words as markdown: real bold and lists, code in the terminal's face. */
+.tile-transcript-entry[data-md='true'] { white-space: normal; }
+/* The Docs reader caps its column at 72ch and centres it, on the window's width. A Chat line
+   is as wide as the tile, the person's and the Agent's alike (owner, 2026-11-01). */
+.tile-transcript-entry .markdown-reader { max-width: none; margin: 0; }
+.tile-transcript-entry .markdown-reader > :first-child { margin-top: 0; }
+.tile-transcript-entry .markdown-reader > :last-child { margin-bottom: 0; }
+.tile-transcript-entry .markdown-reader :is(p, ul, ol, pre) { margin: 0 0 var(--space-paragraph); }
+.tile-transcript-entry .markdown-reader :is(h1, h2, h3, h4, h5, h6) { margin: var(--space-subsection) 0 var(--space-row); color: var(--fg-strong); font-size: 1em; font-weight: var(--weight-strong); line-height: var(--leading-tight); }
+.tile-transcript-entry .markdown-reader :is(ul, ol) { padding-left: var(--space-subsection); }
+.tile-transcript-entry .markdown-reader li + li { margin-top: var(--space-row); }
+.tile-transcript-entry .markdown-reader :is(code, pre) { font: var(--term-size)/var(--leading-body) var(--font-term); }
+.tile-transcript-entry .markdown-reader :not(pre) > code { padding: 0 var(--space-row); border-radius: var(--radius-small); background: var(--inset); }
+.tile-transcript-entry .markdown-reader pre { overflow: auto; padding: var(--space-inline); border-radius: var(--radius-small); background: var(--inset); white-space: pre; }
+.tile-transcript-entry .markdown-reader a { color: var(--accent); }
+/* Sent, and not yet written down by the CLI: the person's words in a lighter shade until they land. */
+.tile-transcript-entry[data-role='user'][data-pending='true'] { color: var(--muted); }
+/* A pipe table, wherever markdown is read (Chat, Docs, Help): a heavier rule under the header
+   and a light one between rows, as the terminal draws it; a wide one scrolls in its own box. */
+/* A list item that holds paragraphs (its body indented under it) ends without a trailing gap. */
+.markdown-reader li > :last-child { margin-bottom: 0; }
+.markdown-reader .markdown-table { max-width: 100%; overflow-x: auto; margin: 0 0 var(--space-paragraph); }
+.markdown-reader table { border-collapse: collapse; }
+.markdown-reader :is(th, td) { padding: var(--space-row) var(--space-inline); text-align: left; vertical-align: top; }
+.markdown-reader :is(th, td):first-child { padding-left: 0; white-space: nowrap; }
+.markdown-reader th { border-bottom: calc(var(--edge) * 2) solid var(--line-2); color: var(--fg-strong); font-weight: var(--weight-strong); white-space: nowrap; }
+.markdown-reader tbody tr + tr td { border-top: var(--edge) solid var(--line); }
+/* Markdown off shows what the Agent wrote, marks and all, in the terminal's type, so a table or
+   an indent lines up as it was written. */
+.tile-transcript-entry[data-role='agent'][data-kind='say']:not([data-md]) { font: var(--term-size)/var(--leading-body) var(--font-term); }
+/* The Agent working aloud between tool calls: quieter than its reply, and in italic, the way
+   markdown marks an aside, with Markdown on or off (owner, 2026-11-01). */
+.tile-transcript-entry[data-narration='true'] { color: var(--muted); font-style: italic; }
 .tile-transcript-para + .tile-transcript-para { margin-top: var(--space-paragraph); }
 /*
  * WHOSE LINE IS THIS. The Agent's turns are the reading, in the strongest ink; the person
@@ -3224,6 +3279,7 @@ body {
   animation: transcript-thinking var(--motion-hint) ease-in-out infinite;
 }
 .tile-transcript-stance i:nth-child(2) { animation-delay: var(--motion-quick); }
+.tile-transcript-doing { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: var(--text-small) var(--font-term); }
 .tile-transcript-stance i:nth-child(3) { animation-delay: var(--motion-settle); }
 @keyframes transcript-thinking {
   0%, 60%, 100% { transform: translateY(0); opacity: 0.45; }
@@ -3414,7 +3470,8 @@ body {
   resize: none;
   min-height: var(--control-height-small);
   max-height: 160px;
-  padding: var(--space-row) var(--space-control);
+  /* Even room round the text: the line's own leading tops up the rows to the sides' inline space. */
+  padding: var(--space-row) var(--space-inline);
   border: var(--edge) solid var(--term-input-line);
   border-radius: var(--radius-small);
   background: var(--inset);
@@ -3461,7 +3518,7 @@ body {
 }
 @media (pointer: coarse) {
 
-  .tile:is(.tape-on, .keys-on, .transcript-on) .composer textarea { font-size: 16px; }
+  .tile:is(.tape-on, .keys-on, .transcript-on) .composer textarea { font-size: var(--text-heading); }
 }
 
 .tile-head .lock.armed { color: var(--ok-2); }
@@ -4302,20 +4359,6 @@ button.wk-card { cursor: pointer; }
 .wk-explorer-layout { grid-template-columns: minmax(12rem, 2fr) minmax(0, 5fr); overflow: hidden; }
 
 .wk-workbench-layout { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); overflow: hidden; }
-/* PHONE FIRST PAINT. The boot skeleton is the first frame the browser paints, before any
-   script runs. It is not a [data-workspace-view], so it must claim the ViewHost's width
-   itself: without this it shrinks to its content in the row-flex host (30px on a phone,
-   two thin slivers stacked at the left edge — the frame Glen photographed), and the
-   stacked phone shape below only fills the viewport once script replaces the frame. */
-#bootframe { flex: 1 1 auto; min-width: 0; min-height: 0; }
-.boot-workbench-layout { grid-template-columns: minmax(0, 2fr) minmax(11rem, 1fr) minmax(0, 2fr); }
-.boot-surface, .boot-selector { border: var(--edge) solid var(--define-line); border-radius: var(--radius-large); background: var(--surface); }
-.boot-surface { height: 100%; }
-.boot-selector { padding: var(--space-inline); }
-.boot-selector-head, .boot-selector-card { border-radius: var(--radius-small); background: var(--surface); }
-.boot-selector-head { height: var(--row-head); margin-bottom: var(--space-paragraph); }
-.boot-selector-card { height: 5rem; margin-bottom: var(--space-paragraph); animation: boot-pulse 1.1s ease-in-out infinite alternate; }
-@keyframes boot-pulse { to { opacity: .45; } }
 .wk-workbench-layout > .wk-layout-surface[hidden] { display: none; }
 .wk-explorer-rail { min-width: 0; min-height: 0; border: var(--edge) solid var(--line); border-radius: var(--radius-large); background: var(--surface); overflow: auto; }
 .wk-explorer-head { display: flex; justify-content: flex-end; border-bottom: var(--edge) solid var(--line); padding: var(--space-inline); }
@@ -4407,7 +4450,9 @@ button.wk-card { cursor: pointer; }
   display: none;
 }
 
-.tile.keys-on:not(.tape-on) .tile-body {
+/* Not in Chat: there the box is in the column, under the log, and reserving its height again
+   left that much empty screen under it on the phone (KAN-147). */
+.tile.keys-on:not(.tape-on) .tile-body:not([data-surface='chat']) {
   /* FitAddon reads computed height: give it the content area, excluding controls. */
   box-sizing: content-box;
   padding-bottom: var(--composer-clearance, 0);
@@ -4439,8 +4484,12 @@ button.wk-card { cursor: pointer; }
     min-height: var(--band);
   }
 }
+/* The phone fills the application, which is the visible rectangle (body, js/appheight.js):
+   absolute to the fixed body, never fixed to the screen. Fixed, it reached behind the
+   keyboard; the box and the newest lines sat under the keys, iOS panned to the box and
+   left a gap beneath it (owner, 2026-11-02). */
 #phone {
-  position: fixed;
+  position: absolute;
   inset: 0;
   display: flex;
   flex-direction: column;
@@ -4913,3 +4962,20 @@ html[data-screen='inside'] #phone .ph-bar .ph-title[data-boot='inside'] { displa
   .help-mika-none { margin: 0; padding: var(--space-inset); color: var(--fg); font-size: var(--text-body); }
   .help-mika-none a { color: var(--link); }
 }
+
+/* Hermes API connections and named models share the Models workbench seat. */
+.hermes-settings { display: grid; gap: var(--space-paragraph); min-width: 0; }
+.hermes-settings p { margin: 0; color: var(--muted); line-height: var(--leading-body); }
+.hermes-card, .hermes-editor { display: grid; gap: var(--space-inline); padding: var(--space-inset); border: var(--edge) solid var(--line); border-radius: var(--radius-small); min-width: 0; }
+.hermes-field { display: grid; gap: var(--space-row); color: var(--muted); font-size: var(--form-note); }
+.hermes-field input, .hermes-field select { width: 100%; min-width: 0; min-height: var(--control-height); box-sizing: border-box; background: var(--inset); color: var(--fg); border: var(--edge) solid var(--line); border-radius: var(--radius-small); padding: var(--space-row) var(--space-control); font: inherit; font-size: var(--form-input); }
+.hermes-card p { overflow-wrap: anywhere; }
+
+.hermes-settings .wk-action { width: 140px; min-height: 40px; flex: 0 0 140px; }
+.hermes-settings .wk-action-bar { display: flex; flex-wrap: wrap; gap: var(--space-inline); }
+
+.hermes-card { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-inline) var(--space-control); }
+.hermes-card-summary { display: flex; flex: 1 1 16rem; flex-wrap: wrap; align-items: baseline; gap: var(--space-row) var(--space-inline); min-width: 0; }
+.hermes-card-summary span { color: var(--muted); overflow-wrap: anywhere; }
+.hermes-card .wk-action-bar { flex: 0 0 auto; }
+.hermes-card .wk-action { width: auto; flex: 0 0 auto; min-width: 4rem; }

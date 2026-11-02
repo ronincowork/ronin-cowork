@@ -5,8 +5,8 @@
  * No DOM, no store: team-roster-surface.js paints, this says what.
  */
 
-/** The workspace folders the rosters name, each once, for the Workspace question. */
-export const workspaces = (rosters) => [...new Set(rosters.map((team) => team.project_root).filter(Boolean))].sort();
+/** The Workspaces the rosters name, each once, for the Workspace question. */
+export const workspaces = (rosters) => [...new Set(rosters.map((team) => team.workspace).filter(Boolean))].sort();
 
 /**
  * One row per Team in the chosen workspaces (none chosen is all): its name and title,
@@ -15,7 +15,7 @@ export const workspaces = (rosters) => [...new Set(rosters.map((team) => team.pr
  */
 export function teamsRows(rosters, membersOf, { roots = [] } = {}) {
   return rosters
-    .filter((team) => !roots.length || roots.includes(team.project_root))
+    .filter((team) => !roots.length || roots.includes(team.workspace))
     .map((team) => ({
       id: team.name,
       label: team.title || team.name,

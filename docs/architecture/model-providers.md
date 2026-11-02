@@ -77,6 +77,29 @@ catalog object carries `withdrawn`, the shipped providers the copy set aside. Se
 with the house header (`seedUserCatalog`) or copy one section out of the shipped file to
 start from.
 
+## Hermes connections and named setups
+
+Hermes is one provider in the existing Model provider dropdown. Its Model dropdown
+lists Ronin-owned setup names, identified by stable UUIDs. Each setup references an API
+connection and pins an actual model, reasoning effort and approvals. Connection discovery
+asks the selected endpoint's `/models`; only returned model IDs can be saved in setups.
+This proves model-list access, not per-model inference compatibility.
+
+`hermes-setups.ts` owns validation, serialized mutation, secret-free projection and fresh
+home provisioning. `/api/hermes` reads the projection; POST `/api/hermes/{connection,
+discover,setup,delete}` owns writes. The credential store holds metadata plus one
+private dotenv credential file per connection. Keys never enter catalog or route answers.
+The Models worksurface has connection and setup editors instead of Authenticate/Ready.
+Provider-key environment pairs are reconciled on read and appear automatically, without
+an import action. Environment credentials remain authoritative for those connections.
+
+The launch join maps setup UUIDs to explicit actual-model commands. Cowork launch creates
+`<session-record>/cli-home`, saves immutable settings and links the connection credential.
+Two agents using the same setup have independent histories and memories. Setup changes
+apply to future launches; key rotation reaches existing homes on process restart. Removing
+a referenced connection is refused; removed connection credentials are retained for live
+agents. Hosted tenant isolation is not supplied by these local profiles.
+
 ## Model info
 
 `src/model-info.ts` owns it. One shape in three places:
@@ -181,7 +204,7 @@ What this machine *has* is measured, not derived on every read. The Campaign rec
 `catalog.config.models[].id` and `.name`, only the `main` section its own picker offers — the
 `overflow` generations are still served but not offered), `codex-cache` (`~/.codex/models_cache.json`,
 `models[]` with `slug`, `display_name`, and `visibility: list`), `command` (run the CLI with
-the argv and read the list under *Available models:* — Grok), or `none` (Gemini, Hermes:
+the argv and read the list under *Available models:* — Grok), or `hermes-setups` (Hermes named setups), or `none` (Gemini:
 Model: Native only, and the surface says so). `readModels` walks that table; no CLI id
 appears in it. A new way to read a list is a new key, never an `if`.
 

@@ -4,9 +4,10 @@
 - **blurb:** Follow the stated reach, recruiting, and output choices.
 - **installation:** —
 - **order:** 10
-- **scope:** floor
+- **scope:** conditional
+- **requires:** cowork
 
-Every Cowork Agent receives this floor behaviour. It remains cataloged and editable, but
+Every Cowork Agent receives this behaviour. It remains cataloged and editable, but
 is never a Campaign, Team, template, or New Agent selection.
 
 Each axis has one value, stated below as yours:

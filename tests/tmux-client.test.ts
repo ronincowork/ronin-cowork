@@ -277,7 +277,7 @@ test("on('subscription') installs the activity session loop and parses its value
   const child = await childAt(children);
   assert.equal(
     await written(child),
-    "'refresh-client' '-B' 'activity::#{S:#{session_name}:#{window_activity},}'\n",
+    "'refresh-client' '-B' 'activity::#{S:#{session_name}:#{window_activity}#,}'\n",
   );
   child.send('%begin 3 1 0', '%end 3 1 0');
   await new Promise((resolve) => setImmediate(resolve));

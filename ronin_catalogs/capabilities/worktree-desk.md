@@ -7,12 +7,12 @@
 
 Reach for this bundle when a repository uses managed worktrees or a later assignment needs
 a managed worktree. It is a private branch and working folder leased to you. Status,
-sync, commit, and hand-in are distinct; none is Git push. Read
-`ronin_catalogs/behaviours/conditional/worktree-root.md` before writing in a managed worktree.
+sync, commit, and hand-in are distinct; none is Git push. `worktree-desk open` answers with
+the brief to read before your first write: `ronin-help worktree-root`.
 
 If `worktree-desk open` reports that the repository uses its checkout, use ordinary Git in
-that checkout and read `ronin_catalogs/behaviours/conditional/checkout.md`; no worktree or
-hand-in applies there.
+that checkout and read the brief it names (`ronin-help checkout`); no worktree or hand-in
+applies there.
 
 **Hand in** means submit committed worktree work to the Team review line with
 `worktree-desk hand-in`; it does not promote or push.

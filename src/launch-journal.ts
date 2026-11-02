@@ -54,6 +54,16 @@ export async function resolveLaunchSegments(identity: LaunchIdentity): Promise<S
   const declaration = identity.journal;
   if (!declaration) return { gap: 'journal_pending' };
   const pattern = declaration.pattern.replaceAll('{session_id}', identity.providerSession);
+  // ONE STORE, NOT SEGMENTS: a CLI that keeps its conversation in a database the birth owns
+  // (Hermes's state.db under its own home) declares no idPath. The file is the journal; there
+  // is no header to place it by and no chain to order.
+  // Its path is known from birth, before the CLI creates it: the source is handed out at once,
+  // so the part watches the folder from the start and reads the store the moment it appears.
+  // Answering "pending" until then left a fresh Hermes Agent unread until someone opened its
+  // Chat (owner, 2026-11-01: hermes_parallel_check answered and Chat stayed empty).
+  if (!declaration.idPath) {
+    return { files: [path.join(declaration.root, pattern)], session: identity.providerSession || identity.key };
+  }
   const found: { file: string; ts: string; id: string }[] = [];
   for (const file of await files(declaration.root, pattern)) {
     const row = await header(file);
@@ -80,6 +90,8 @@ export async function resolveLaunchJournal(identity: LaunchIdentity): Promise<st
   if (!identity.journal || identity.strategy === 'unbound') return null;
   const declaration = identity.journal;
   const pattern = declaration.pattern.replaceAll('{session_id}', identity.providerSession);
+  if (!declaration.idPath) return path.join(declaration.root, pattern); // one store the birth owns (see resolveLaunchSegments)
+  const idPath = declaration.idPath;
   for (const file of await files(declaration.root, pattern)) {
     if (identity.providerSession && declaration.pattern.includes('{session_id}')) {
       identity.journalFile = file;
@@ -97,7 +109,7 @@ export async function resolveLaunchJournal(identity: LaunchIdentity): Promise<st
     } finally { await handle.close(); }
     const child = declaration.childPath ? field(row, declaration.childPath) : undefined;
     if (child === true || (child !== null && typeof child === 'object')) continue;
-    const id = field(row, declaration.idPath);
+    const id = field(row, idPath);
     if (typeof id !== 'string' || !id) return null;
     // Named/minted identities select their declared id; isolated identities own this directory.
     if (identity.providerSession && identity.providerSession !== id) continue;
@@ -130,7 +142,11 @@ export async function resolveTranscriptSource(name: string): Promise<import('./s
   }
   const identity = await readLaunchIdentity(key.trim());
   if (!identity) return { gap: 'no_identity' };
-  if (!identity.journal) return { gap: 'unbound' };
+  // A CLI that keeps no log still has an output, in its own session folder: the terminal
+  // read writes it, in the same shape as every other Agent's.
+  if (!identity.journal) {
+    return { source: { format: 'terminal', provider: identity.cli, dir: sessionDir(key.trim()), file: '', session: identity.providerSession } };
+  }
   const common = { format: identity.journal.format, provider: identity.cli, dir: sessionDir(key.trim()) };
   // An isolated birth owns its journal root, so its journal is the ordered chain of parent
   // segments in it and the newest is merely the current one. Nothing is written here.
@@ -138,7 +154,7 @@ export async function resolveTranscriptSource(name: string): Promise<import('./s
     const chain = await resolveLaunchSegments(identity);
     if ('gap' in chain) return { gap: chain.gap };
     const files = chain.files;
-    return { source: { ...common, file: files[files.length - 1], files, session: chain.session } };
+    return { source: { ...common, file: files[files.length - 1], files, session: chain.session, root: identity.journal.root } };
   }
   const file = await resolveLaunchJournal(identity);
   if (!file) return { gap: 'journal_pending' };

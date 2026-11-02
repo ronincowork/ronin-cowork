@@ -1,8 +1,7 @@
 # Workspace folders
 
-A workspace folder is where an Agent does its work: a project, a notes folder, a site. You
-pick one each time you start an Agent or a Team, and the Agent opens its files and runs
-its commands there.
+A workspace folder is a repository or folder Ronin knows by name: a project, a notes folder,
+a site. A [Workspace](../using-ronin/workspaces.md) picks the ones its Agents work in.
 
 Ronin starts you with two:
 
@@ -16,7 +15,7 @@ That's enough to start. Add your own whenever you have work somewhere else.
 Open **Workspace folders** in [Ronin Setup](setup-workbench.md), or the **Workspaces** door
 on Ronin Home.
 
-1. Press **Add a workspace**.
+1. Press **Add a repository or folder**.
 2. Browse to the folder you want. Folders that are repositories are listed first.
 3. Press **Keep** beside it.
 4. Give it a name if you like, and press **Add**.
@@ -27,7 +26,7 @@ The name is only what you see in Ronin. Changing it later never moves or renames
 
 To work on a repository that isn't on this machine yet, use the **GitHub CLI** stone:
 **Install**, then **Authenticate** to sign in to GitHub. Then press **Clone a repository**,
-pick it, and it becomes a workspace folder like any other.
+pick it, and it becomes a workspace folder like any other, ready to add to a Workspace.
 
 Folders already on the machine don't need GitHub.
 

@@ -85,7 +85,7 @@ export function createCoworkView(options = {}) {
     for (const seat of Object.values(seats)) {
       if (seat.pool.active) seat.empty?.el.remove();
       else if (!seat.empty) {
-        const blank = createSurface({ label: t('team.workspace_blank', 'Workspace'), className: 'tw-blank' });
+        const blank = createSurface({ label: t('team.workspace_blank', 'Tilespace'), className: 'tw-blank' });
         // The header already says Workspace; the body saying it again read as a stutter
         const mark = el('div', 'tile-empty-mark');
         mark.setAttribute('aria-hidden', 'true');
@@ -104,10 +104,10 @@ export function createCoworkView(options = {}) {
   };
   const touch = (id) => { bench?.select(id); };
   const seats = {
-    workspace1: makeSeat('workspace1', t('team.workspace_1', 'Workspace 1')),
-    workspace2: makeSeat('workspace2', t('team.workspace_2', 'Workspace 2')),
-    workspace3: makeSeat('workspace3', t('team.workspace_3', 'Workspace 3')),
-    workspace4: makeSeat('workspace4', t('team.workspace_4', 'Workspace 4')),
+    workspace1: makeSeat('workspace1', t('team.workspace_1', 'Tilespace 1')),
+    workspace2: makeSeat('workspace2', t('team.workspace_2', 'Tilespace 2')),
+    workspace3: makeSeat('workspace3', t('team.workspace_3', 'Tilespace 3')),
+    workspace4: makeSeat('workspace4', t('team.workspace_4', 'Tilespace 4')),
   };
   let bench = null;
   const cellPlace = (id, value) => bench?.placeNode(id, value);
@@ -130,8 +130,7 @@ export function createCoworkView(options = {}) {
         t('workspace.tab_cron_count', '{scheduled} scheduled, {paused} paused', { scheduled, paused })),
     });
     const docsPane = el('div', 'home-docs tw-docs');
-    const docs = buildDocs(docsPane,
-      (name) => membersOfTeam(team).some((m) => m.name === name), () => teamByName(team)?.repos || []);
+    const docs = buildDocs(docsPane, (name) => membersOfTeam(team).some((m) => m.name === name));
     const docsService = {
       el: docsPane, mount: () => {},
       enter: () => { docs.enter(); },
@@ -429,7 +428,7 @@ export function createCoworkView(options = {}) {
   function placeMikaWorkspaceTwo() {
     const held = holds('workspace2');
     if (held && !(held === 'mika_agent' || (held === 'session' && seats.workspace2.pool.active === 'mika_agent'))) {
-      toast(t('mika.workspace_two_busy', 'Workspace 2 is in use. Move or close that work before opening Mika.'), false);
+      toast(t('mika.workspace_two_busy', 'Tilespace 2 is in use. Move or close that work before opening Mika.'), false);
       return false;
     }
     return putSession('mika_agent', 'workspace2');

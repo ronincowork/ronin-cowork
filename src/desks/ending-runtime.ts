@@ -11,11 +11,12 @@ import { listSessions } from '../tmux.js';
 import { readTeamRoster } from '../team-rosters.js';
 import { teamLineBranch } from './schema.js';
 import { branchExists, revParse, worktreeOf } from './git.js';
+import { teamRepos } from '../workspaces.js';
 
 async function teamLineInputs(team: string, owners: string[]): Promise<EndingDeskInput[]> {
   const roster = await readTeamRoster(team);
   if (!roster) return [];
-  const repos = [...new Set([...(roster.repos ?? []), roster.project_root].filter(Boolean))];
+  const repos = await teamRepos(roster);
   const out: EndingDeskInput[] = [];
   for (const repo of repos) {
     const arrangement = await arrangementOf(repo).catch(() => null);

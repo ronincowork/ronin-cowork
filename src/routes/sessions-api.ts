@@ -36,7 +36,7 @@ import { count } from '../counts.js';
 import { broadcastEvent, pushTeams } from '../ws/events.js';
 import { announceTeamChanges } from './wipeboards-api.js';
 import { memberEnded, teamChanged, writeConfiguration, writeTeams } from '../tegami.js';
-import { conditionalBehaviourPath } from '../behaviours.js';
+import { briefPointer } from '../behaviours.js';
 import { readAgentComposition } from '../agent-composition.js';
 import { configurationSends, updateConfiguration } from '../agent-configuration.js';
 import { mandate } from '../agent-defaults.js';
@@ -63,9 +63,9 @@ import { listDesks } from '../desks/registry.js';
 
 interface PreparedEnding { proceed: boolean; acknowledgement?: Record<string, unknown> }
 
-export const teamLeadAcknowledgement = (teams: readonly string[], reading?: string): string =>
+export const teamLeadAcknowledgement = (teams: readonly string[], pointer: string): string =>
   `You are now the team_lead of ${teams.map((team) => `"${team}"`).join(', ')}. ` +
-  `Reading assignment: read ${reading ?? 'the Team lead conditional Behavior'} now for what a Team lead does.`;
+  `For what a Team lead does, ${pointer}.`;
 
 interface ShutdownOperation extends ShutdownProgress {
   id: string;
@@ -494,8 +494,7 @@ export function registerSessions(app: express.Express): void {
       const fresh = leads.filter((t) => !before.includes(t));
       let delivered: string | null = null;
       if (fresh.length) {
-        const reading = await conditionalBehaviourPath('team-lead');
-        const msg = teamLeadAcknowledgement(fresh, reading);
+        const msg = teamLeadAcknowledgement(fresh, await briefPointer('team-lead'));
         delivered = await enqueueMessage(name, msg, 'house').then(() => 'queued', () => 'not queued');
       }
       res.json({ ok: true, team_lead: leads, tags, delivery: delivered });

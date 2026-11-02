@@ -32,7 +32,7 @@ runtime parts, while Agent capabilities teach tools (`docs/architecture/tool-sur
 | Desk workbench | **Ronin Settings** | Ongoing Desk configuration workbench. |
 | stone work surface | **stone work surface** | Select a collection item: stones move to a left rail, details open on the right. Reused by Presets, Workspace Folders, and Model Providers. |
 | tile | **tile** | One cell showing one session. Never "pane". |
-| `workspace` | **workspace** | One slot of the coworkspace. It holds a tile or a commons. |
+| `workspace1`…`workspace4` | **tilespace** | One numbered slot of a workbench. It holds a tile or a commons. Never call it a workspace. |
 | `campaign_commons` | **the commons** | The Desk's shared surface. |
 | `team_commons` | **team commons** | Roster, Docs, Wipeboard, Messages, Cron jobs, Configuration. |
 | `cowork_commons` | **cowork commons** | Machine, account, desk profile, Workspace Folders. |
@@ -56,7 +56,8 @@ runtime parts, while Agent capabilities teach tools (`docs/architecture/tool-sur
 | `session_mandate` | **mandate** | **Reach** how far an Agent goes · **Recruit** how it builds a Team · **Output** what it hands back. |
 | instruction cascade | **installation** · **behaviour** | Installations enable; behaviors guide (floor, conditional, selected, sought). Mandate teaching is floor. |
 | `message_queue` | **message queue** | Messages waiting to enter a live session. |
-| `project_root` | **workspace folder** | A registered folder Ronin may work in. Not a numbered browser workspace. |
+| `project_root` | **workspace folder** | A repository or folder Ronin knows by name; a Workspace picks the ones its Agents use. |
+| `workspace` (record) | **Workspace** | A project: objective, instructions, repositories, folders and Mode. Every Team works in one. |
 | `desk_profile` | **desk profile** | The owner's standing defaults: skin, words, layout. |
 | harakiri | **harakiri** | A session ends itself. |
 | Desk | **Desk** | The engagement context containing Teams, Agents, and work. It is not a Git worktree. |

@@ -82,6 +82,8 @@ await fs.writeFile(
   }),
 );
 process.env.RONIN_LEDGER_DIR = path.join(temp, 'ledger');
+process.env.RONIN_WORKSPACES_DIR = path.join(temp, 'workspaces');
+process.env.RONIN_HOUSE_DIR = path.join(temp, 'house');
 
 // A book on each core level, so the reading list has something to be identical ABOUT.
 for (const [level, name, book] of [
@@ -93,17 +95,25 @@ for (const [level, name, book] of [
   await fs.writeFile(path.join(dir, book), `# ${book}`);
 }
 
-// A team roster, so the team layer has context to contribute.
+// A team roster, so the team layer has context to contribute; two more launched in Workspaces.
 process.env.RONIN_TEAM_ROSTERS_DIR = path.join(temp, 'team_rosters');
 await fs.mkdir(path.join(temp, 'team_rosters'), { recursive: true });
 await fs.writeFile(
   path.join(temp, 'team_rosters', 'scratchteam.md'),
   [
-    '# scratchteam', '', '- **objective:** prove the parity', '- **project_root:** beta',
+    '# scratchteam', '', '- **objective:** prove the parity',
     '- **agent_defaults:** {"provider":"","model":"","reach":"discuss","recruit":"nobody","output":"ideas","launch_mode":"configured","gbrain_mode":"disconnected"}',
     '- **state:** active', '',
   ].join('\n'),
 );
+for (const [team, workspace] of [['wsteam', 'alpha'], ['wildteam', 'wild']]) {
+  await fs.writeFile(path.join(temp, 'team_rosters', `${team}.md`), `# ${team}\n\n- **workspace:** ${workspace}\n- **state:** active\n`);
+}
+
+const { saveWorkspace, workspaceLaunchFolder, roninHouse } = await import('../src/workspaces.js');
+for (const [name, launch_mode] of [['alpha', 'configured'], ['wild', 'live_dangerously']] as const) {
+  await saveWorkspace({ name, campaign_id: 'home_machine', title: name, objective: '', instructions: '', repos: [], folders: [], launch_mode });
+}
 
 const { resolveForm, resolveFacts, resolveReading } = await import('../src/spawn.js');
 const { mikaLaunchBody } = await import('../src/routes/launch.js');
@@ -112,7 +122,6 @@ type SpawnForm = import('../src/spawn.js').SpawnForm;
 /** What the ＋ New form posts: the axes, the picks, and the owner's words. */
 const commonsForm = (over: Partial<SpawnForm> = {}): SpawnForm => ({
   campaign_id: 'home_machine',
-  project_root: 'alpha',
   prompt: 'Work out the shape of the thing.',
   ...over,
 });
@@ -127,7 +136,7 @@ const forkitForm = (over: Partial<SpawnForm> = {}): SpawnForm =>
 
 /** Everything the mechanism decides. A caller may pick these; it may never compute them. */
 const mechanism = (r: Awaited<ReturnType<typeof resolveForm>>) => ({
-  project_root: r.project_root,
+  workspace: r.workspace,
   dir: r.dir,
   cmd: r.cmd,
   agent: r.agent,
@@ -174,7 +183,6 @@ test('session_type is the only birth-path key', async () => {
   assert.equal(terminal.agent, false);
   assert.equal(terminal.brief, '');
   assert.deepEqual(terminal.birth_reading, []);
-  assert.equal(terminal.assignment, null);
 });
 
 test('bare_metal_agent resolves a real CLI without Ronin birth machinery', async () => {
@@ -194,7 +202,6 @@ test('bare_metal_agent resolves a real CLI without Ronin birth machinery', async
   assert.equal(bare.brief, '', 'Ronin composes no brief');
   assert.deepEqual(bare.birth_reading, [], 'Ronin reads no boot shelf');
   assert.deepEqual(bare.behaviours, [], 'Campaign and Team behaviour defaults never reach bare metal');
-  assert.equal(bare.assignment, null, 'Ronin opens no managed repository desk');
   assert.deepEqual(bare.tags, ['scratchteam'], 'Team is only an addressing tag');
   assert.equal(bare.team_objective, '', 'the Team roster does not resolve into the launch');
 });
@@ -230,21 +237,21 @@ test('the gbrain installation stays separate from the Behaviour catalog', async 
     'the installation does not inject a removed Behaviour');
 });
 
-test('and to the same role-free reading list — all + root, compiled once', async () => {
+test('and to the same role-free reading list — all + the Workspace\'s root shelf, compiled once', async () => {
   const fromCommons = await resolveForm(commonsForm(), new Set());
   const fromForkit = await resolveForm(forkitForm({ prompt: commonsForm().prompt }), new Set());
 
   const books = reading(fromCommons.brief);
-  // The levels a fork used to get NONE of.
-  for (const book of ['ALL_BOOK.md', 'ROOT_BOOK.md']) {
-    assert.ok(books.includes(book), `the Build Brief must carry ${book}`);
-  }
+  // The level a fork used to get NONE of.
+  assert.ok(books.includes('ALL_BOOK.md'), 'the Build Brief must carry ALL_BOOK.md');
   const forkBooks = reading(fromForkit.brief);
-  for (const book of ['ALL_BOOK.md', 'ROOT_BOOK.md']) {
-    assert.ok(forkBooks.includes(book), `the forked Build Brief must carry ${book}`);
-  }
+  assert.ok(forkBooks.includes('ALL_BOOK.md'), 'the forked Build Brief must carry ALL_BOOK.md');
   assert.deepEqual(fromCommons.birth_reading.map((file) => path.basename(file)).sort(), books);
   assert.deepEqual(fromForkit.birth_reading.map((file) => path.basename(file)).sort(), forkBooks);
+  // The root shelf is keyed by the Workspace name.
+  assert.ok(!books.includes('ROOT_BOOK.md'), 'no Workspace, no root shelf');
+  const inWorkspace = await resolveForm(commonsForm({ team: 'wsteam' }), new Set());
+  assert.ok(reading(inWorkspace.brief).includes('ROOT_BOOK.md'), 'the Workspace launch carries its root shelf');
 });
 
 test('resolved birth readings include the startup shelves and explicit seeds', async () => {
@@ -271,16 +278,13 @@ test("forkit's own inputs change its words and nothing about the mechanism", asy
   assert.deepEqual({ ...mechanism(forked) }, { ...mechanism(plain) });
 });
 
-test('project_root defaulting is the mechanism\'s — top active root, or the TEAM\'s', async () => {
-  // Omit it and the TOP ACTIVE root is selected — the same rule the ＋ New picker shows.
-  const commons = await resolveForm(commonsForm({ project_root: undefined }), new Set());
-  assert.equal(commons.project_root, 'alpha');
-  // A TEAM launch inherits the roster's root instead: the team is the context.
-  const forkit = await resolveForm(forkitForm({ project_root: undefined }), new Set());
-  assert.equal(forkit.project_root, 'beta', "the roster's project_root seeds the launch");
-  // And an explicit pick still beats it — a default, never a constraint.
-  const explicit = await resolveForm(forkitForm({ project_root: 'alpha' }), new Set());
-  assert.equal(explicit.project_root, 'alpha');
+test('where an Agent starts is the mechanism\'s — Ronin house, or the Team\'s Workspace launch folder', async () => {
+  const commons = await resolveForm(commonsForm(), new Set());
+  assert.equal(commons.workspace, '');
+  assert.equal(commons.dir, roninHouse());
+  const inWorkspace = await resolveForm(commonsForm({ team: 'wsteam' }), new Set());
+  assert.equal(inWorkspace.workspace, 'alpha', "the roster's Workspace is the Agent's");
+  assert.equal(inWorkspace.dir, workspaceLaunchFolder('home_machine', 'alpha'));
 });
 
 test('the model cascade is the mechanism\'s: blank inherits, explicit wins, identically', async () => {
@@ -301,29 +305,19 @@ test('the model cascade is the mechanism\'s: blank inherits, explicit wins, iden
 });
 
 
-test('launch_mode selects the Agent document’s Native or Dangerously command', async () => {
-  const configured = await resolveForm(commonsForm({
-    provider: 'anthropic', model: 'claude-opus-5', launch_mode: 'configured',
-  }), new Set());
+test('the Workspace\'s Mode selects the Agent document\'s Native or Dangerously command', async () => {
+  const configured = await resolveForm(commonsForm({ provider: 'anthropic', model: 'claude-opus-5' }), new Set());
   assert.equal(configured.cmd, 'claude --model claude-opus-5');
   assert.equal(configured.launch_mode, 'configured');
-  assert.deepEqual(configured.stated_by.launch_mode, [{ layer: 'launch', source: 'launch request' }]);
+  assert.equal(configured.stated_by.launch_mode[0]?.layer, 'campaign', 'an Agent without a Workspace takes the Campaign default');
 
-  const dangerous = await resolveForm(commonsForm({
-    provider: 'anthropic', model: 'claude-opus-5', launch_mode: 'live_dangerously',
-  }), new Set());
+  const dangerous = await resolveForm(commonsForm({ team: 'wildteam', provider: 'anthropic', model: 'claude-opus-5' }), new Set());
   assert.equal(dangerous.cmd, 'claude --model claude-opus-5 --dangerously-skip-permissions');
   assert.equal(dangerous.launch_mode, 'live_dangerously');
 
-  const bareDangerous = await resolveForm(commonsForm({
-    session_type: 'bare_metal_agent', provider: 'openai', model: 'gpt-5.6-terra', launch_mode: 'live_dangerously',
-  }), new Set());
-  assert.match(bareDangerous.cmd, /--dangerously-bypass-approvals-and-sandbox/);
-
-  await assert.rejects(
-    () => resolveForm(commonsForm({ cmd: 'custom-agent', launch_mode: 'live_dangerously' }), new Set()),
-    /declares no Dangerously command/,
-  );
+  const undeclared = await resolveForm(commonsForm({ team: 'wildteam', cmd: 'custom-agent' }), new Set());
+  assert.equal(undeclared.cmd, 'custom-agent', 'a provider with no Dangerously command launches Native');
+  assert.equal(undeclared.launch_mode, 'configured');
 });
 
 
@@ -358,16 +352,14 @@ test('a ronin launch is legal, and so is a launch onto a tag-only team', async (
 test('stated_by carries the settled launch, Team, and Campaign layers', async () => {
   const explicit = await resolveForm(commonsForm({
     name: 'attribution-proof',
-    project_root: 'beta',
     cmd: 'claude --model claude-haiku-4-5-20251001',
   }), new Set());
-  for (const key of ['name', 'project_root', 'cmd']) {
+  for (const key of ['name', 'cmd']) {
     assert.deepEqual(explicit.stated_by[key], [{ layer: 'launch', source: 'launch request' }], key);
   }
 
-  const inherited = await resolveForm(forkitForm({ project_root: undefined }), new Set());
-  assert.equal(inherited.stated_by.project_root[0]?.layer, 'team_roster');
-  assert.match(inherited.stated_by.project_root[0]?.source ?? '', /team_rosters\/scratchteam\.md$/);
+  const inherited = await resolveForm(commonsForm({ team: 'wsteam' }), new Set());
+  assert.equal(inherited.stated_by.workspace[0]?.layer, 'team_roster');
 
   const campaign = await resolveForm(commonsForm(), new Set());
 });
@@ -417,7 +409,7 @@ test('an ordinary assisted launch starts an agent with the full brief', async ()
   assert.equal(r.agent, true, 'an ordinary launch starts a CLI');
   assert.ok(r.cmd, 'and has a command to start');
   assert.ok(r.launchAgent, 'and stamps which CLI it started');
-  assert.ok(r.project_root, 'a session is always born somewhere');
+  assert.ok(r.dir, 'a session is always born somewhere');
   assert.match(r.brief, /Read first:/, 'the Build Brief carries its reading list');
   assert.ok(reading(r.brief).length >= 3, 'the levels, not a bare prompt');
 });
@@ -444,8 +436,7 @@ test('Mika house mechanics resolve explicitly', async () => {
     prompt: 'Help me with Ronin.',
   }, new Set());
   assert.equal(mika.name, 'mika_agent');
-  assert.match(mika.dir, /\/mika$/);
-  assert.equal(mika.project_root, 'mika_home');
+  assert.equal(mika.dir, roninHouse());
   assert.equal(mika.capExempt, true);
   assert.equal(mika.contributions.every((contribution) => !contribution.enabled), true);
   assert.equal(mika.ack, false);
@@ -455,6 +446,9 @@ test('Mika house mechanics resolve explicitly', async () => {
   assert.equal((mika.brief.split('\n')[0].match(/\. /g) || []).length, 1, 'two sentences typed; the rules live in her birth brief');
   assert.match(mika.brief, /You are the Mika Assist/);
   assert.ok(!mika.birth_reading.some((file) => file.includes('MikaAssist')));
+  const reads = (tail: string) => mika.birth_reading.some((file) => file.endsWith(tail));
+  assert.ok(['/behaviours/floor/base-agent.md', '/behaviours/conditional/mika.md', '/routine/mika/START_HERE.md', '/routine/mika/MIKA_TIPS.md'].every(reads), 'her brief: the base brief, hers, and her reading');
+  assert.ok(!['/conditional/cowork-agent.md', '/conditional/write_it_down.md'].some(reads) && !mika.birth_reading.some((file) => path.basename(file) === 'MANDATES.md'), 'no cowork briefs for a house Agent');
   assert.equal(mika.stated_by.capExempt[0]?.layer, 'house');
   const door = mikaLaunchBody({});
   assert.deepEqual(door.mandate, { reach: 'discuss', recruit: 'nobody', output: ['ideas'] }, 'she discusses, recruits nobody, hands back ideas');
@@ -466,7 +460,7 @@ test('a name alone resolves the ordinary Cowork Agent birth', async () => {
   const born = await resolveForm({ name: 'name_only' });
   assert.equal(born.session_type, 'cowork_agent');
   assert.equal(born.name, 'name_only');
-  assert.equal(born.project_root, 'alpha', 'the existing top-active-root chain answers placement');
+  assert.equal(born.dir, roninHouse(), 'an Agent without a Workspace starts in Ronin house');
   assert.ok(born.installations.length > 0, 'the receipt source carries every installation');
   assert.ok(!born.installations.some((installation) => installation.name === 'cowork_agent'), 'the Cowork Agent is not an installation switch');
   assert.deepEqual(born.mandate, { reach: 'plan', recruit: 'propose agents', output: ['open'] });
@@ -479,14 +473,15 @@ test('kind and behaviours resolve at birth, with unusable books reported as unde
     mandate: { reach: 'plan', recruit: 'nobody', output: ['a plan', 'ideas'] },
   }), new Set());
   assert.equal(born.kind, 'coding');
-  assert.deepEqual(born.behaviours.map((row) => row.book), ['mandates', 'cowork-agent', 'user-intro', 'write_it_down', 'checkout', 'visual_staging']);
+  assert.deepEqual(born.behaviours.map((row) => row.book), ['base-agent', 'user-intro', 'mandates', 'cowork-agent', 'write_it_down', 'visual_staging']);
   // w73: the Mandates page in the brief stated `open` whatever the Agent held.
   const mandates = born.birth_reading.find((file) => path.basename(file) === 'MANDATES.md');
-  assert.ok(mandates, 'the floor folder is applied, Mandates as the Agent\'s own copy');
+  assert.ok(mandates, 'Mandates is applied as the Agent\'s own copy');
   assert.match(await fs.readFile(mandates!, 'utf8'), /Reach `plan` · Recruit `nobody` · Output `a plan`, `ideas`/);
-  assert.ok(born.birth_reading.some((file) => file.endsWith('/behaviours/floor/cowork-agent.md')), 'every Cowork Agent receives its floor guidance');
+  assert.ok(born.birth_reading.some((file) => file.endsWith('/behaviours/floor/base-agent.md')), 'every Agent receives the base brief');
+  assert.ok(born.birth_reading.some((file) => file.endsWith('/behaviours/conditional/cowork-agent.md')), 'every Cowork Agent receives its cowork guidance');
   assert.ok(born.birth_reading.some((file) => file.endsWith('/behaviours/floor/user-intro.md')), 'the stock-empty user introduction has a stable floor coordinate');
-  assert.ok(born.birth_reading.some((file) => file.endsWith('/behaviours/floor/write_it_down.md')), 'every Cowork Agent is born with Write it Down');
+  assert.ok(born.birth_reading.some((file) => file.endsWith('/behaviours/conditional/write_it_down.md')), 'every Cowork Agent is born with Write it Down');
   assert.ok(born.birth_reading.some((file) => file.endsWith('/behaviours/selected/visual_staging.md')));
   assert.deepEqual(born.ignored, []);
   assert.deepEqual(born.undelivered, ['ways:not_there']);

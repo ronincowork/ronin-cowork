@@ -5,6 +5,7 @@ import { listBehaviours, type BehaviourRow } from './resource-adapters.js';
 export interface DeliveredBehaviour {
   book: string;
   file: string;
+  reading?: string[];
 }
 
 export interface ResolvedBehaviours {
@@ -47,9 +48,13 @@ export async function resolveFloorBehaviours(): Promise<DeliveredBehaviour[]> {
 
 export interface BehaviourFacts {
   arrangement: 'managed' | 'checkout' | 'none';
-  role?: 'coworker' | 'lead' | 'epic_lead' | 'coordinator';
+  role?: 'coworker' | 'lead' | 'epic_lead' | 'coordinator' | 'mika';
   team: boolean;
   lead: boolean;
+  /** Every Agent that is not a house Agent. */
+  cowork: boolean;
+  /** The Campaign has no Team yet: the owner has not launched their first one. */
+  new_owner: boolean;
 }
 
 const conditionHolds = (requirement: string, facts: BehaviourFacts): boolean => {
@@ -58,6 +63,8 @@ const conditionHolds = (requirement: string, facts: BehaviourFacts): boolean => 
   if (kind === 'role') return facts.role === value;
   if (kind === 'team') return facts.team;
   if (kind === 'lead') return facts.lead;
+  if (kind === 'cowork') return facts.cowork;
+  if (kind === 'new_owner') return facts.new_owner;
   return false;
 };
 
@@ -65,12 +72,14 @@ const conditionHolds = (requirement: string, facts: BehaviourFacts): boolean => 
 export async function resolveConditionalBehaviours(facts: BehaviourFacts): Promise<DeliveredBehaviour[]> {
   return (await listBehaviours())
     .filter((row: BehaviourRow) => row.scope === 'conditional' && row.requires.length > 0 && row.requires.every((requirement) => conditionHolds(requirement, facts)))
-    .map((row) => ({ book: row.name, file: row.page }));
+    .map((row) => ({ book: row.name, file: row.page, reading: row.reading }));
 }
 
-/** The resolved stock-or-owner page named by an acknowledgement outside birth. */
-export async function conditionalBehaviourPath(name: string): Promise<string | undefined> {
-  return (await listBehaviours()).find((row) => row.scope === 'conditional' && row.name === name)?.page;
+/** What an acknowledgement outside birth says to read: the brief's file name, its label,
+ * and the tool that reads it (`ronin-help <name>`, the owner's copy over stock). */
+export async function briefPointer(name: string): Promise<string> {
+  const row = (await listBehaviours()).find((entry) => entry.name === name);
+  return `read ${name}.md (${row?.label ?? name}): ronin-help ${name}`;
 }
 
 /** Sought pages are indexed, never applied. The folder itself is the registry. */

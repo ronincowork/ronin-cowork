@@ -14,9 +14,10 @@ import { teamChanged } from '../tegami.js';
 import { callerOf } from './work-items-api.js';
 import { announceTeamChanges } from './wipeboards-api.js';
 import { pushTeams } from '../ws/events.js';
-import { assertSameCampaignRoot, campaignFilter, campaignResolver, initialCampaignId, machineCampaignId } from '../campaign-scope.js';
+import { campaignFilter, campaignResolver, initialCampaignId, machineCampaignId } from '../campaign-scope.js';
 import { retireTeam } from '../team-retire.js';
 import { readCampaign } from '../campaigns.js';
+import { readWorkspace } from '../workspaces.js';
 import { teamAgentDefaults } from '../agent-defaults.js';
 import { rosterReading, teamBoard } from '../work-items-read.js';
 
@@ -39,15 +40,13 @@ async function creationEdit(campaign_id: string, stated: RosterEdit): Promise<Ro
   const cowork = object(campaign.config.cowork_defaults);
   const edit: RosterEdit = {
     ...(typeof cowork.kind === 'string' ? { kind: cowork.kind as RosterEdit['kind'] } : {}),
-    ...(typeof cowork.project_root === 'string' ? { project_root: cowork.project_root } : {}),
-    ...(Array.isArray(cowork.repos) ? { repos: cowork.repos.map(String) } : {}),
     ...(typeof cowork.branch === 'string' ? { branch: cowork.branch } : {}),
     ...(object(cowork.branches) ? { branches: Object.fromEntries(Object.entries(object(cowork.branches)).map(([k, v]) => [k, String(v)])) } : {}),
     ...stated,
     behaviours: stated.behaviours ?? { selected: [...inherited.behaviours], required: [] },
     agent_defaults: { ...teamAgentDefaults(inherited), ...(stated.agent_defaults ?? {}) },
   };
-  await assertSameCampaignRoot(campaign_id, edit.project_root ?? '');
+  if (edit.workspace && !(await readWorkspace(campaign_id, edit.workspace))) throw new Error(`No Workspace "${edit.workspace}" in Campaign ${campaign_id}.`);
   return edit;
 }
 
@@ -72,9 +71,7 @@ function editOf(body: unknown): RosterEdit {
     edit.kind = kind as RosterEdit['kind'];
   }
   if (b.objective !== undefined) edit.objective = String(b.objective).trim().slice(0, 2000);
-  if (b.project_root !== undefined) edit.project_root = String(b.project_root).trim().slice(0, 128);
-  if (b.repos !== undefined) edit.repos = (Array.isArray(b.repos) ? b.repos : String(b.repos).split(','))
-    .map(String).map((v) => v.trim().slice(0, 128)).filter(Boolean);
+  if (b.workspace !== undefined) edit.workspace = String(b.workspace).trim().slice(0, 64);
   if (b.branches !== undefined) edit.branches = b.branches && typeof b.branches === 'object' && !Array.isArray(b.branches)
     ? Object.fromEntries(Object.entries(b.branches as Record<string, unknown>)
         .map(([repo, branch]) => [repo.trim().slice(0, 128), String(branch ?? '').trim().slice(0, 128)])

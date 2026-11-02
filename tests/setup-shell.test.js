@@ -19,7 +19,7 @@ test('Ronin Home\u2019s Models and Workspaces doors each open their own workbenc
     source('js/campaign-home.js'), source('js/door-workbenches.js'), source('js/workbench-catalog.js'), source('js/workspace-contract.js'), source('js/workspace-header.js'), source('js/main.js'), source('js/cowork-view.js'),
   ]);
   assert.match(home, /Ronin Home/);
-  for (const key of ['models', 'workspaces']) {
+  for (const key of ['models', 'workspaces', 'epics']) {
     assert.match(home, new RegExp(`key: '${key}', route: '${key}'`), `the ${key} door navigates to its own destination`);
     assert.match(main, new RegExp(`workspace\\.register\\('${key}', `), `the ${key} destination is registered`);
     assert.match(contract, new RegExp(`'${key}'`), `${key} is a Workbench appearance, so the tab machinery applies`);
@@ -36,8 +36,8 @@ test('Ronin Home\u2019s Models and Workspaces doors each open their own workbenc
   assert.match(home, /campaign_home\.settings', 'Settings'/);
   assert.match(doors, /seat: WORKBENCH_TYPES\.modelStones,/, 'Models seats its own stones of providers');
   assert.match(catalog, /profiles\.define\(WORKBENCH_PROFILES\.models, \[WORKBENCH_TYPES\.modelStones, WORKBENCH_TYPES\.modelRefresh, WORKBENCH_TYPES\.modelDefaults, WORKBENCH_TYPES\.modelProvider\]\)/, 'Model refresh then Defaults follow Models; a provider whole is placeable on Models, by a dragged stone or its card');
-  assert.match(doors, /seat: WORKBENCH_TYPES\.folderStones,/, 'Workspaces seats its own stones of folders');
-  assert.match(catalog, /profiles\.define\(WORKBENCH_PROFILES\.workspaces, \[WORKBENCH_TYPES\.folderStones, WORKBENCH_TYPES\.folder, WORKBENCH_TYPES\.folderAdd, WORKBENCH_TYPES\.folderNew, WORKBENCH_TYPES\.folderGithub, WORKBENCH_TYPES\.folderClone\]\)/, 'a folder whole and the three admin doors are placeable on Workspaces');
+  assert.match(doors, /seats: \{ workspace1: WORKBENCH_TYPES\.workspaceRecords, workspace2: FILES_ON \? WORKBENCH_TYPES\.files : WORKBENCH_TYPES\.folderGithub \}/, 'Workspaces seats its Workspaces in Workspace 1 and Explorer in Workspace 2 where Ronin found Python, GitHub CLI otherwise (KAN-146)');
+  assert.match(catalog, /profiles\.define\(WORKBENCH_PROFILES\.workspaces, \[WORKBENCH_TYPES\.workspaceRecords, WORKBENCH_TYPES\.workspaceRecord, WORKBENCH_TYPES\.workspaceNew, WORKBENCH_TYPES\.folderGithub, FILES_TYPE\]\)/, 'Workspaces, a Workspace whole, New Workspace, GitHub CLI and Explorer are placeable on Workspaces');
   assert.match(home, /key: 'teams', route: 'cowork'/, 'the Teams door opens the Teams workbench at #/cowork (owner, 2026-10-20)');
   // The crumb (owner, 2026-10-20): RoninCowork • Home • Teams • <Team title>; before, a Team page read
   // 'RoninCowork • Teams' with no Home and no name, and Home's doors hid the Teams step.
@@ -46,19 +46,48 @@ test('Ronin Home\u2019s Models and Workspaces doors each open their own workbenc
   assert.match(cowork, /place: \(\) => campaign \? '' : readableTeam\(team\)/, 'a Team page ends the crumb with the Team title');
 });
 
-test('two roots: the default Home and the current Home at #/current, one bar toggle between them (owner, 2026-10-19)', async () => {
-  const [home, current, main, header, style] = await Promise.all([
-    source('js/campaign-home.js'), source('js/current-home.js'), source('js/main.js'), source('js/workspace-header.js'), source('css/campaign-home.css'),
-  ]);
-  assert.match(main, /workspace\.register\('home', createCampaignHome\(\)\)/, 'the default root is the three-door page');
-  assert.match(main, /workspace\.register\('current', createCurrentHome\(\)\)/, 'the current root keeps its own address');
-  for (const key of ['desk', 'team', 'agent']) assert.match(current, new RegExp(`key: '${key}', route: '`), `the current root keeps its ${key} door`);
-  assert.match(current, /api\/setup\/runtime/, 'the current root keeps its provider gate as it was');
-  assert.match(home, /createRootToggle\(\{ route: 'current', label: \(\) => t\('campaign_home\.current', 'Current'\)/, 'the new Home reads Current');
-  assert.match(current, /createRootToggle\(\{ route: 'home', label: \(\) => t\('campaign_home\.next', 'Next'\)/, 'the current Home reads Next');
-  for (const page of [home, current]) assert.match(page, /header: \{ leading: \[rootToggle\], actions: \[themeToggle\] \}/, 'the toggle sits in the same bar spot on each');
-  assert.match(header, /active\.id === 'home' \|\| active\.id === 'current'/, 'both roots are landings to the bar');
-  for (const key of ['desk', 'team', 'agent']) assert.match(style, new RegExp(`\\.ch-door\\[data-door='${key}'\\]`), `the ${key} door keeps its tone`);
+test('Home: Teams, Epics and Workspaces in a triangle at Home\u2019s stone size; Model Providers, Help and Settings smaller, inset on the right (owner, 2026-11-02; KAN-186, KAN-191, KAN-194)', async () => {
+  const [home, style] = await Promise.all([source('js/campaign-home.js'), source('css/campaign-home.css')]);
+  assert.doesNotMatch(home, /OFFICE Space|ch-office/, 'no heading over the triangle (KAN-191)');
+  assert.match(home, /key: 'epics'[^\n]*glyph: '◇'/, 'Epics carries a plain symbol, no kanji (KAN-191)');
+  const office = home.slice(home.indexOf('function OFFICE()'), home.indexOf('function SIDE()'));
+  const side = home.slice(home.indexOf('function SIDE()'), home.indexOf('/** THE ROOT TOGGLE'));
+  assert.deepEqual([...office.matchAll(/key: '(\w+)'/g)].map((m) => m[1]), ['teams', 'epics', 'workspaces'], 'Teams at the apex, then Epics bottom left and Workspaces bottom right: Who, What, Where (KAN-194)');
+  assert.match(side, /key: 'models'[^\n]*'Model Providers'/, 'the Models stone reads Model Providers (KAN-194)');
+  assert.deepEqual([...side.matchAll(/key: '(\w+)'/g)].map((m) => m[1]), ['models', 'help', 'settings'], 'the smaller stones, top to bottom');
+  assert.match(office, /Who does the work[\s\S]*What the work is[\s\S]*Where the work is/);
+  assert.match(side, /key: 'settings', route: null[^\n]*gated: false/, 'Settings is a live stone whose route is read at paint');
+  assert.match(home, /const route = door\.route \|\| setupDefaultView\(setupCampaign\)/, 'Settings opens Setup until its answers are recorded');
+  assert.doesNotMatch(home, /ch-settings/, 'the corner Settings button is now a stone');
+  assert.match(style, /\.ch-doors > \.ch-door\[data-door='teams'\] \{ grid-column: 1 \/ -1;/, 'Teams spans the apex');
+  assert.match(style, /--ch-door-w: 208px;/, 'the main stones keep Home\u2019s size from before the triangle');
+  assert.match(style, /\.ch-doors \{[^}]*grid-template-columns: repeat\(2, var\(--ch-door-w\)\);[^}]*gap: var\(--ch-office-gap\);/, 'one even gap across and down');
+  assert.match(style, /\.ch-frame \{[^}]*grid-column: 1 \/ 9;[^}]*justify-self: center;/, 'the triangle centred at 40% of the page (KAN-196)');
+  assert.match(style, /\.ch-side \{[^}]*grid-column: 8 \/ 11;[^}]*justify-self: center;/, 'the side stones centred at 85% of the page (KAN-196)');
+  assert.match(style, /\.ch-is \{[^}]*font-size: var\(--text-heading\);/, 'the who, what, where line reads at a glance (KAN-194)');
+  assert.match(style, /\.ch-door\[data-door='epics'\] \.ch-glyph \{ font-size: var\(--ch-glyph-epics\);/, '◇ is drawn at ⌂\u2019s visual size, not the glyph size (KAN-192)');
+  assert.match(style, /\.ch-side \{[^}]*grid-column: 8 \/ 11;[^}]*flex-direction: column;/, 'the side stones stand in a column on the right');
+});
+
+test('the Epics workbench: a stone per Epic in Tilespace 1, opened by Home\u2019s Epics stone (owner, 2026-11-02; KAN-187)', async () => {
+  const [doors, catalog, surface, main] = await Promise.all([source('js/door-workbenches.js'), source('js/workbench-catalog.js'), source('js/epics-surface.js'), source('js/main.js')]);
+  assert.match(main, /workspace\.register\('epics', createEpicsView\(\)\)/);
+  assert.match(doors, /id: 'epics', profile: WORKBENCH_PROFILES\.epics,[^\n]*seat: WORKBENCH_TYPES\.epicRecords,/, 'Epics seats its stones in Tilespace 1');
+  assert.match(catalog, /profiles\.define\(WORKBENCH_PROFILES\.epics, \[WORKBENCH_TYPES\.epicRecords, WORKBENCH_TYPES\.epicRecord\]\)/);
+  assert.match(catalog, /type: WORKBENCH_TYPES\.epicRecord, header: 'surface', discover: \(\) => \[\]/, 'an Epic whole is placed by a dragged stone, never a selector card');
+  assert.match(surface, /filter\(\(item\) => item\.level === 1\)/, 'Epics are the level-1 work items');
+  assert.match(surface, /createPhalanx\(/, 'the stones are the kit phalanx');
+  assert.match(surface, /renderItemDetail\(host, epic/, 'a pressed stone reads the item as Work Items does');
+  assert.match(surface, /hear\('epics',/, 'the Epics are the store\u2019s pushed epics (KAN-190), over the Campaign');
+});
+
+test('one root: no old Home at #/current and no Current/Next toggle in the bar (owner, 2026-11-02; KAN-197)', async () => {
+  const [home, main, header] = await Promise.all([source('js/campaign-home.js'), source('js/main.js'), source('js/workspace-header.js')]);
+  await assert.rejects(source('js/current-home.js'), 'the old Home is deleted');
+  assert.match(main, /workspace\.register\('home', createCampaignHome\(\)\)/, 'the one root is the Office Home');
+  assert.doesNotMatch(main, /current-home|register\('current'/, 'an old #/current link falls to the safe view, Home');
+  assert.doesNotMatch(home, /createRootToggle|campaign_home\.current/, 'no Current/Next toggle');
+  assert.doesNotMatch(header, /'current'/);
 });
 
 test('Ronin Home and Setup share the same persisted light and dark control', async () => {
@@ -67,7 +96,7 @@ test('Ronin Home and Setup share the same persisted light and dark control', asy
     source('js/workspace.js'), source('js/ramrpm.js'), source('js/services-activation.js'), source('js/workspace-contract.js'),
   ]);
   assert.match(home, /const themeToggle = createThemeToggle\(\)/);
-  assert.match(home, /header: \{ leading: \[rootToggle\], actions: \[themeToggle\] \}/);
+  assert.match(home, /header: \{ actions: \[themeToggle\] \}/);
   assert.doesNotMatch(home, /ronin-home-active/);
   assert.match(setup, /const themeToggle = createThemeToggle\(\)/);
   assert.match(setup, /workbenchView\('setup'/);

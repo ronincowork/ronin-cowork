@@ -21,15 +21,18 @@ native-approval/dangerous command combinations, plus Resume, new-session-id and
 initial-prompt forms. `src/agent-launches.ts` reads those argv
 fields; unsupported forms are `—`. A nonempty `launch_new_session_id` chooses command-owned
 identity (`minted`); an existing explicitly named id is kept, never minted over. Otherwise
-`launch_isolation` declares an environment variable, its default home, and the one journal
-subdirectory to keep private (`isolated`). With neither capability, the outcome is
+`launch_isolation` declares an environment variable, its default home, and which entries to inherit (`isolated`). With neither capability, the outcome is
 `unbound`. Every process start, including restore and plain shells, passes through
 `src/launch-binding.ts`; the strategy table prepares identity before starting the process.
 
-`launch_isolation` mirrors every existing home entry by symlink except its declared
-private journal directory, which is a real directory under the Ronin session store.
-There is no per-file inheritance list. `transcript_journal` declares the source format,
-root, filename pattern, header id field and child-record marker. The model catalog carries
+`launch_isolation` supports two exclusive forms: `shared: [names]` links only those
+home entries; everything else starts private. `private: name` retains the legacy
+behavior of sharing other entries and creating that private directory; a private list
+excludes named files or directories without creating them. Hermes uses `shared`; Codex
+keeps its private journal directory. Names must be home-relative basenames. `transcript_journal` declares the source format,
+root, filename pattern, header id field and child-record marker. A journal with no header id
+field (`idPath`) is one store file the birth owns, such as Hermes's `state.db`, read as a
+whole rather than placed and chained by its first line. The model catalog carries
 descriptive source observations; executable CLI mechanics live here. This keeps the commands we use in one auditable place
 beside the upstream alternatives we deliberately do not use. `src/agents.ts` owns
 install/update/version and identity-discovery adapters. Each Agent page also owns its

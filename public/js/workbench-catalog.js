@@ -3,6 +3,7 @@
 import { WorkspaceKit } from './workspace-kit.js';
 import { t } from './lexicon.js';
 import { FEEDBACK_TYPE, registerFeedbackSurface } from './feedback.js';
+import { FILES_TYPE, registerFilesSurface } from './files-surface.js';
 import { BEHAVIOUR_SURFACE_TYPE, registerBehaviourSurface } from './behaviour-surface.js';
 import { PRESETS_TYPE, registerPresetsSurface } from './presets.js';
 import { SETUP_SURFACE_TYPES, registerSetupSurfaces } from './setup-surfaces.js';
@@ -13,9 +14,9 @@ import { AGENT_COMPOSITION_TYPE } from './agent-composition.js';
 import { WORK_ITEMS_TYPE } from './work-items-surface.js';
 import { HELP_PAGE_TYPE } from './help-outline.js';
 
-export const WORKBENCH_PROFILES = Object.freeze({ campaign: 'campaign', launch: 'launch', cowork: 'cowork', team: 'team', agent: 'agent', models: 'models', workspaces: 'workspaces', help: 'help' });
+export const WORKBENCH_PROFILES = Object.freeze({ campaign: 'campaign', launch: 'launch', cowork: 'cowork', team: 'team', agent: 'agent', models: 'models', workspaces: 'workspaces', epics: 'epics', help: 'help' });
 export const WORKBENCH_TYPES = Object.freeze({
-  document: 'document', terminal: 'session.terminal', behaviours: BEHAVIOUR_SURFACE_TYPE, feedback: FEEDBACK_TYPE,
+  document: 'document', terminal: 'session.terminal', behaviours: BEHAVIOUR_SURFACE_TYPE, feedback: FEEDBACK_TYPE, files: FILES_TYPE,
   launchTeam: 'launch.team', launchAgent: 'launch.agent', launchHelp: 'launch.help',
   commons: 'team.commons', workItems: WORK_ITEMS_TYPE, cron: 'cowork.cron-jobs',
   roster: 'cowork.team-roster', sessionRoster: 'cowork.session-roster', newTeamForm: 'cowork.new-team-form', newAgent: 'session.new-agent',
@@ -25,13 +26,14 @@ export const WORKBENCH_TYPES = Object.freeze({
   campaignIdentity: 'campaign.identity', campaignInstallations: 'campaign.installations', campaignCreate: 'campaign.new', campaignJira: 'campaign.jira', campaignJiraItems: 'campaign.jira-items', campaignJiraPairs: 'campaign.jira-pairs',
   modelStones: 'models.stones', modelRefresh: 'models.refresh', modelDefaults: 'models.defaults', modelProvider: 'models.provider',
   helpOutline: 'help.outline', helpMika: 'help.mika', helpPage: HELP_PAGE_TYPE,
-  folderStones: 'workspaces.stones', folder: 'workspaces.folder', folderAdd: 'workspaces.add', folderNew: 'workspaces.new', folderGithub: 'workspaces.github', folderClone: 'workspaces.clone',
+  workspaceRecords: 'workspaces.records', workspaceRecord: 'workspaces.record', workspaceNew: 'workspaces.new', folderGithub: 'workspaces.github',
+  epicRecords: 'epics.records', epicRecord: 'epics.record',
 });
 
 let registered = false;
 export function registerWorkbenchCatalog() {
   if (registered) return;
-  registerFeedbackSurface(); registerBehaviourSurface(); registerPresetsSurface();
+  registerFeedbackSurface(); registerFilesSurface(); registerBehaviourSurface(); registerPresetsSurface();
   registerSetupSurfaces(); registerPasswordSurface();
   const { library, profiles } = WorkspaceKit.workbench;
   const add = (definition) => { if (!library.has(definition.type)) library.register(definition); };
@@ -88,16 +90,18 @@ export function registerWorkbenchCatalog() {
   add({ type: WORKBENCH_TYPES.modelDefaults, header: 'surface', className: 'wk-selector-utility', label: () => t('models.defaults', 'Defaults'), summary: () => t('models.defaults_summary', 'Agent · Team lead · Mika'), create: ({ workspace, environment }) => environment.modelDefaults(workspace) });
   add({ type: WORKBENCH_TYPES.modelProvider, header: 'surface', className: 'wk-selector-entity', discover: (_t, e) => e.providers(), create: ({ workspace, detail, environment }) => environment.modelProvider(workspace, detail) });
   profiles.define(WORKBENCH_PROFILES.models, [WORKBENCH_TYPES.modelStones, WORKBENCH_TYPES.modelRefresh, WORKBENCH_TYPES.modelDefaults, WORKBENCH_TYPES.modelProvider]);
-  // THE WORKSPACES WORKBENCH (owner, 2026-10-19): its own stones of folders in Workspace 1; one folder
-  // whole in a workspace, placed by a dragged stone or its selector card; the three admin doors are
-  // dotted cards, the New Agent format (workspaces-surface.js).
-  add({ type: WORKBENCH_TYPES.folderStones, header: 'surface', className: 'wk-selector-utility', label: () => t('campaign_home.workspaces', 'Workspaces'), create: ({ workspace, environment }) => environment.folderStones(workspace) });
-  add({ type: WORKBENCH_TYPES.folder, header: 'surface', className: 'wk-selector-entity', discover: (_t, e) => e.folders(), create: ({ workspace, detail, environment }) => environment.folder(workspace, detail) });
-  add({ type: WORKBENCH_TYPES.folderAdd, header: 'surface', className: 'wk-selector-utility', label: () => t('roots.add_stone', 'Add a workspace'), summary: () => t('workspace_add.card_summary', 'A new folder, a folder on this machine, or a GitHub repository.'), variant: 'dotted', create: ({ workspace, environment }) => environment.folderAdd(workspace) });
-  add({ type: WORKBENCH_TYPES.folderNew, header: 'surface', className: 'wk-selector-utility', label: () => t('roots.add_stone_old', 'Add a workspace (old form)'), summary: () => t('roots.keep_hint', 'Keep a folder on this machine for Teams and Agents to start in.'), variant: 'dotted', create: ({ workspace, environment }) => environment.folderNew(workspace) });
+  // THE WORKSPACES WORKBENCH (owner, 2026-11-02): the stones of Workspaces in Tilespace 1, a pressed one's
+  // page beside them; a card per Workspace, opened whole; New Workspace and GitHub CLI dotted (workspaces-surface.js).
+  add({ type: WORKBENCH_TYPES.workspaceRecords, header: 'surface', className: 'wk-selector-utility', label: () => t('workspaces.title', 'Workspaces'), create: ({ workspace, environment }) => environment.workspaceRecords(workspace) });
+  add({ type: WORKBENCH_TYPES.workspaceRecord, header: 'surface', className: 'wk-selector-entity', discover: (_t, e) => e.workspaces(), create: ({ workspace, detail, environment }) => environment.workspaceRecord(workspace, detail) });
+  add({ type: WORKBENCH_TYPES.workspaceNew, header: 'surface', className: 'wk-selector-utility', label: () => t('workspaces.new', 'New Workspace'), summary: () => t('workspaces.new_state', 'a project for your Teams'), variant: 'dotted', create: ({ workspace, environment }) => environment.workspaceNew(workspace) });
   add({ type: WORKBENCH_TYPES.folderGithub, header: 'surface', className: 'wk-selector-utility', label: () => t('roots.github_auth_stone', 'GitHub CLI'), summary: () => t('roots.github_auth_state', 'Connect account'), variant: 'dotted', create: ({ workspace, environment }) => environment.folderGithub(workspace) });
-  add({ type: WORKBENCH_TYPES.folderClone, header: 'surface', className: 'wk-selector-utility', label: () => t('roots.github_clone_stone', 'Clone a repository'), summary: () => t('roots.github_clone_ready_state', 'Uses existing Git access'), variant: 'dotted', create: ({ workspace, environment }) => environment.folderClone(workspace) });
-  profiles.define(WORKBENCH_PROFILES.workspaces, [WORKBENCH_TYPES.folderStones, WORKBENCH_TYPES.folder, WORKBENCH_TYPES.folderAdd, WORKBENCH_TYPES.folderNew, WORKBENCH_TYPES.folderGithub, WORKBENCH_TYPES.folderClone]);
+  profiles.define(WORKBENCH_PROFILES.workspaces, [WORKBENCH_TYPES.workspaceRecords, WORKBENCH_TYPES.workspaceRecord, WORKBENCH_TYPES.workspaceNew, WORKBENCH_TYPES.folderGithub, FILES_TYPE]);
+  // THE EPICS WORKBENCH (owner, 2026-11-02; KAN-187): a stone per Epic in Tilespace 1, a pressed one's reading
+  // beside them; a dragged stone places that Epic whole, never offered in the selector (epics-surface.js).
+  add({ type: WORKBENCH_TYPES.epicRecords, header: 'surface', className: 'wk-selector-utility', label: () => t('epics.title', 'Epics'), create: ({ workspace, environment }) => environment.epicRecords(workspace) });
+  add({ type: WORKBENCH_TYPES.epicRecord, header: 'surface', discover: () => [], create: ({ workspace, detail, environment }) => environment.epicRecord(workspace, detail) });
+  profiles.define(WORKBENCH_PROFILES.epics, [WORKBENCH_TYPES.epicRecords, WORKBENCH_TYPES.epicRecord]);
   // THE HELP WORKBENCH (owner, 2026-10-21): the help outline and Mika in chat, both solid cards (door-workbenches.js).
   add({ type: WORKBENCH_TYPES.helpOutline, header: 'surface', className: 'wk-selector-utility', label: () => t('help_outline.title', 'Help'), summary: () => t('help_outline.summary', 'The guides, starting with the four things to know'), create: ({ environment }) => environment.helpOutline() });
   add({ type: WORKBENCH_TYPES.helpMika, header: 'terminal', className: 'wk-selector-utility', label: () => 'Mika', summary: () => t('help_outline.mika_summary', 'Ask in plain words'), create: ({ environment }) => environment.helpMika() });

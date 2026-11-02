@@ -1,8 +1,8 @@
-import { readFile } from 'node:fs/promises';
+import { mkdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { resolveLaunchCommand, sessionsFor, type SessionsDefaults } from './launch-command.js';
 import { REPO_ROOT } from './resources.js';
-import { WORDS_READING, bootFiles, cachedReading, ensureShelf } from './birth-brief.js';
+import { WORDS_READING, bootFiles, cachedReading, declaredFiles, ensureShelf } from './birth-brief.js';
 import { listProjectRoots, USER_PROJECT_ROOTS_MD, type ProjectRootInfo } from './project-roots.js';
 import { listSessionLaunchSpecs } from './model-providers.js';
 import { agentSpec } from './agents.js';
@@ -10,12 +10,11 @@ import { readAgentsSection, readSetupSection } from './machine-state.js';
 import { offAt, readProviderSummary } from './provider-summary.js';
 import { storeDir } from './resources.js';
 import { contributionReading, listBehaviours, listInstallations } from './resource-adapters.js';
-import { isCreatableTeamName as isTeamName, readTeamRoster, teamRosterFile, type TeamRoster } from './team-rosters.js';
+import { isCreatableTeamName as isTeamName, listTeamRosters, readTeamRoster, teamRosterFile, type TeamRoster } from './team-rosters.js';
 import { resolveLaunchProfile, type LaunchProfile, type StatedBy } from './launch-profile.js';
 import { readCampaign } from './campaigns.js';
-import { primaryWorkLocation, renderDeskBlock, renderWorkLocations, resolveLaunchDesks, type DeskChoice } from './launch-desks.js';
-import type { ResolvedWorktreesRepository } from './worktrees-resolution.js';
-import type { Assignment } from './desks/schema.js';
+import { readWorkspace, roninHouse, workspaceLaunchFolder, type Workspace } from './workspaces.js';
+import { arrangementOf, desksManaged } from './desks/arrangement.js';
 import { mandate, type LaunchMode, type Mandate } from './agent-defaults.js';
 import { availableBehaviours, resolveContributions, type ResolvedContribution } from './instruction-cascade.js';
 import { resolveInstallations, type ResolvedInstallation } from './installations.js';
@@ -33,8 +32,6 @@ import { templateProvenance } from './template-provenance.js';
 import { profileDir, resolveHouseSeatProfile, type HouseSeat } from './house-seats.js';
 import { renderCapabilitiesOverview, resolveCapabilities, type ResolvedCapability } from './capabilities.js';
 
-const WORKTREE_SOP = path.join(REPO_ROOT, 'ronin_catalogs', 'behaviours', 'conditional', 'worktree-root.md');
-const CHECKOUT_SOP = path.join(REPO_ROOT, 'ronin_catalogs', 'behaviours', 'conditional', 'checkout.md');
 const CORE_CONTRIBUTION: ResolvedContribution = {
   name: 'cowork_agent', origin: 'stock', shadowed: false, label: 'Cowork Agent', blurb: '',
   reading: [], reading_off: [],
@@ -55,16 +52,12 @@ export interface SpawnForm {
   behaviours?: string[]; template?: string; // preset is validated provenance only, never reapplied
   prompt?: string;
   name?: string;
-  project_root?: string;
   cmd?: string;
-  launch_mode?: LaunchMode;
   
   tags?: string[];
   seed?: string[];
   inject?: string;
   reference?: string;
-  desk?: DeskChoice;
-  repos?: string[];
 }
 
 export interface Resolved {
@@ -75,9 +68,8 @@ export interface Resolved {
   tags: string[];
   mandate: Mandate;
   team: string;
-  project_root: string;
-  assignment: Assignment | null;
-  work_locations: ResolvedWorktreesRepository[];
+  /** The Workspace the Agent is launched in; '' for none (it starts in Ronin house). */
+  workspace: string;
   brief: string;
   agent: boolean;
   capExempt: boolean;
@@ -110,15 +102,37 @@ const ACK_RULE =
   'that is unclear or looks wrong. Quote the last line of the document you were told to read first — ' +
   'it names itself — so the owner can see the whole packet reached you. Then wait for the owner.';
 
+/** THE WORKSPACE SECTION of the birth brief (owner-approved wording, 2026-11-01): what the
+ * Agent's project is and the places it works in. Agents read it; no tables. */
+export function renderWorkspaceSection(
+  workspace: Workspace,
+  repositories: { name: string; dir: string; note: string; managed: boolean }[],
+  folders: { name: string; dir: string; note: string }[],
+): string {
+  const lines = [`## Workspace — ${workspace.title || workspace.name}`];
+  if (workspace.objective) lines.push('', workspace.objective);
+  if (workspace.instructions) lines.push('', workspace.instructions);
+  if (repositories.length) {
+    lines.push('', 'Repositories, opened when your work needs one:');
+    for (const repo of repositories) {
+      const how = repo.managed ? `worktree: \`worktree-desk open ${repo.name}\`` : 'shared checkout';
+      lines.push(`- ${repo.name} ${repo.dir} — ${how}${repo.note ? ` (${repo.note})` : ''}`);
+    }
+  }
+  if (folders.length) {
+    lines.push('', 'Folders:');
+    for (const folder of folders) lines.push(`- ${folder.name} ${folder.dir}${folder.note ? ` — ${folder.note}` : ''}`);
+  }
+  return lines.join('\n');
+}
+
 export function buildBrief(
   profile: LaunchProfile,
-  root: ProjectRootInfo | undefined,
+  workspaceSection: string,
   form: SpawnForm,
   referenceDir?: string,
   boot: string[] = [],
   roster?: TeamRoster | null,
-  assignment?: Assignment | null,
-  workLocations: ResolvedWorktreesRepository[] = [],
   resolvedMandate: Mandate = mandate(form.mandate),
 ): string {
   const parts: string[] = [];
@@ -153,21 +167,7 @@ export function buildBrief(
     ...mandateLines,
   ];
   if (birthContract.length) parts.push(birthContract.join('\n'));
-  if ((form.session_type ?? 'cowork_agent') === 'cowork_agent') {
-    parts.push(
-      `Repository approaches: read ${CHECKOUT_SOP} when a repository uses its shared checkout; ` +
-      `read ${WORKTREE_SOP} when it uses managed worktrees. The repository's RONIN_REPO decides which applies.`,
-    );
-  }
-  if (workLocations.length) parts.push(renderWorkLocations(workLocations, roster?.branches ?? {}));
-  if (root) {
-    const arrangement = workLocations.find((row) => row.repo === root.name);
-    const line = arrangement?.mode === 'managed'
-      ? ` Arrangement: worktree root (read ${WORKTREE_SOP} before your first write).`
-      : ` Arrangement: checkout (read ${CHECKOUT_SOP} before your first write).`;
-    parts.push(`Born in workspace-folder-handle: ${root.name} at path: ${root.dir}.${arrangement ? line : ''}`);
-  }
-  if (assignment?.desks.length) parts.push(renderDeskBlock(assignment));
+  if (workspaceSection) parts.push(workspaceSection);
   const reading = [...boot, ...(form.seed ?? [])].filter(Boolean);
   if (reading.length) parts.push(`Read first: ${reading.join(', ')}.`);
   const prompt = form.prompt?.trim() ?? '';
@@ -256,12 +256,14 @@ export async function resolveFacts(form: SpawnForm, taken: Set<string>, proposed
         ? proposedRoster
         : await readTeamRoster(form.team, campaignId) ?? await readTeamRoster(form.team, ''))
     : null;
+  const workspace: Workspace | null = roster?.workspace ? await readWorkspace(roster.campaign_id || campaignId, roster.workspace) : null;
+  if (roster?.workspace && !workspace) throw new Error(`Team "${roster.name}" is launched in Workspace "${roster.workspace}", which does not exist.`);
   const profile = resolveHouseSeatProfile(form.house_seat, resolveLaunchProfile());
   const parentSeed = coworkAgent && campaign
     ? resolveLaunchSeed({
         campaign,
         roster,
-        roots,
+        workspace,
         sessions: agentsSet.sessions as SessionsDefaults | undefined,
         lead: !!form.team && !!form.team_lead,
         installations: installationCatalog,
@@ -269,29 +271,13 @@ export async function resolveFacts(form: SpawnForm, taken: Set<string>, proposed
       })
     : null;
 
-  const active = roots.filter((r) => !r.archived);
-  const houseRoot = form.house_seat === 'mika' ? {
-    name: 'mika_home', title: '', dir: profileDir(profile), memory: '', remit: 'Ronin help only', match: [],
-    docs: [], plans: [], archived: false, campaign_id: campaignId,
-  } : undefined;
-  const rosterRoot = roster?.project_root ? roots.find((r) => r.name === roster.project_root) : undefined;
-  const root = houseRoot ?? (form.project_root
-    ? roots.find((r) => r.name === form.project_root)
-    : bareMetalAgent
-      ? undefined
-      : (rosterRoot && !rosterRoot.archived ? rosterRoot : active[0]));
-  if (form.project_root && !root) {
-    throw new Error(`No Workspace Folder has the handle "${form.project_root}" (see your PROJECT_ROOTS.md).`);
-  }
-  if (!root) {
-    throw new Error(
-      bareMetalAgent
-        ? 'A `bare_metal_agent` requires `project_root` for its working directory; Ronin does not derive one from a Team or Campaign.'
-        : 'This box has no active project_root, so there is nowhere to be born. ' +
-        'Add or unarchive one in ⚙ Configuration, then launch again.',
-    );
-  }
-  if (!houseRoot) await ensureShelf(roots.map((r) => r.name));
+  // WHERE AN AGENT STARTS is Ronin's (owner, 2026-11-01): a Team's Agents in their Workspace's
+  // launch folder, every other Agent in Ronin house. Mika keeps her own home.
+  const place = form.house_seat === 'mika'
+    ? profileDir(profile)
+    : workspace ? workspaceLaunchFolder(workspace.campaign_id, workspace.name) : roninHouse();
+  await mkdir(place, { recursive: true });
+  if (workspace) await ensureShelf([workspace.name]);
 
   const wanted = form.name ? sanitizeName(form.name) : '';
   if (form.name && !wanted) {
@@ -307,27 +293,17 @@ export async function resolveFacts(form: SpawnForm, taken: Set<string>, proposed
   const installations = resolveInstallations(installationCatalog, campaign?.config.installations);
   const contributions = form.house_seat === 'mika' ? [] : [CORE_CONTRIBUTION, ...cascade.contributions];
   const name = wanted || slugName(form.team || (agent ? 'agent' : 'terminal'), form.prompt ?? '', taken);
-  const worktrees = bareMetalAgent || sessionType === 'terminal'
-    ? { assignment: null, repositories: [] }
-    : await resolveLaunchDesks({
-    session: name,
-    team: form.team ?? '',
-    project_root: root.name,
-    agent,
-    desk: form.desk,
-    repos: form.repos,
-  });
-  const assignment = worktrees.assignment;
-  // A MANAGED DESK IS A LAUNCH FACT, NOT A BIRTH-ROOT FACT. An Agent born in a checkout
-  // root with a managed desk assigned elsewhere still works at that desk; the desk tools
-  // and the worktree capability follow the resolved assignment (bundle_commands, 2026-09-13:
-  // three Agents born in the lab checkout with a cowork desk had no desk tool on PATH).
-  const managedDesk = !!assignment?.desks.length || worktrees.repositories.some((row) => row.mode === 'managed');
-  const arrangement: 'managed' | 'checkout' | 'none' = managedDesk ? 'managed' : worktrees.repositories.length ? 'checkout' : 'none';
+  // Repositories are the Workspace's; an Agent opens a worktree when its work needs one.
+  const repositories = await Promise.all((workspace?.repos ?? []).map(async (repo) => {
+    const arrangement = await arrangementOf(repo.name, roots).catch(() => null);
+    return { ...repo, dir: arrangement?.dir ?? roots.find((root) => root.name === repo.name)?.dir ?? '', managed: !!arrangement && desksManaged(arrangement) };
+  }));
+  const folders = (workspace?.folders ?? []).map((folder) => ({ ...folder, dir: roots.find((root) => root.name === folder.name)?.dir ?? '' }));
+  const arrangement: 'managed' | 'checkout' | 'none' = repositories.some((repo) => repo.managed) ? 'managed' : repositories.length ? 'checkout' : 'none';
   const kind = form.kind ?? String(parentSeed?.seeds.kind.value ?? 'open');
   return {
     sessionType, coworkAgent, bareMetalAgent, campaignId, roots, agentsSet, campaign, launchSpecs, preset, roster, profile,
-    parentSeed, root, agent, cascade, installations, contributions, name, worktrees, assignment, arrangement, kind,
+    parentSeed, workspace, place, repositories, folders, agent, cascade, installations, contributions, name, arrangement, kind,
   };
 }
 export type LaunchFacts = Awaited<ReturnType<typeof resolveFacts>>;
@@ -359,42 +335,44 @@ async function resolveLaunch(form: SpawnForm, facts: LaunchFacts) {
       throw new Error(`${label} is turned off on this machine — Ronin is not using it. Turn it on under Model providers; your sign-in is kept.`);
     }
   }
-  const launchMode = agent ? (form.launch_mode ?? parentSeed?.seeds.launch_mode.value ?? 'configured') as LaunchMode : 'configured';
-  if (launchMode === 'live_dangerously') {
-    if (!spec?.dangerousCmd) {
-      throw new Error(`docs/agents/${spec?.cli ?? 'unknown'}.md declares no Dangerously command for this launch.`);
-    }
-    cmd = spec.dangerousCmd;
-  }
+  // Mode is the Workspace's; Dangerously where the provider declares it, Native otherwise.
+  const wanted = agent ? (parentSeed?.seeds.launch_mode.value ?? 'configured') as LaunchMode : 'configured';
+  const launchMode: LaunchMode = wanted === 'live_dangerously' && spec?.dangerousCmd ? 'live_dangerously' : 'configured';
+  if (launchMode === 'live_dangerously' && spec?.dangerousCmd) cmd = spec.dangerousCmd;
   return { cmd, spec, chosen, launchMode };
 }
 
 /** THE READING: the behaviours (floor, conditional, chosen), the capabilities and the shelf,
  * as the birth packet lists them, from the facts alone. */
 export async function resolveReading(form: SpawnForm, facts: LaunchFacts) {
-  const { coworkAgent, agent, contributions, cascade, arrangement, campaign, installations, root, name } = facts;
+  const { coworkAgent, agent, contributions, cascade, arrangement, campaign, installations, workspace, name } = facts;
   const enabledReading = contributionReading(contributions);
-  const resolvedBehaviours = coworkAgent && agent
+  // A house Agent (Mika) is born on the floor and her own conditional brief; the cowork
+  // briefs, selected and sought behaviours, capabilities and the shelf are a cowork Agent's.
+  const briefed = coworkAgent && agent;
+  const cowork = briefed && form.house_seat !== 'mika';
+  const resolvedBehaviours = cowork
     ? await resolveBehaviourBooks(cascade.selected)
     : { delivered: [], ignored: [] };
-  const floorBehaviours = coworkAgent && agent
-    ? await Promise.all((await resolveFloorBehaviours()).map(async (row) => row.book === 'mandates'
-      ? { ...row, file: await ownMandates(row.file, resolveMandate(form, facts), name) }
-      : row))
-    : [];
-  const conditionalBehaviours = coworkAgent && agent
-    ? await resolveConditionalBehaviours({
+  const floorBehaviours = briefed ? await resolveFloorBehaviours() : [];
+  const conditionalBehaviours = briefed
+    ? await Promise.all((await resolveConditionalBehaviours({
         arrangement,
-        role: form.role ?? (form.team_lead ? 'lead' : 'coworker'),
+        role: cowork ? form.role ?? (form.team_lead ? 'lead' : 'coworker') : 'mika',
         team: !!form.team,
         lead: !!form.team_lead && !!form.team,
-      })
+        cowork,
+        new_owner: !(await listTeamRosters()).some((roster) => roster.campaign_id === (campaign?.id ?? '') && roster.state !== 'archived'),
+      })).map(async (row) => row.book === 'mandates'
+        ? { ...row, file: await ownMandates(row.file, resolveMandate(form, facts), name) }
+        : row))
     : [];
-  const soughtBehaviours = coworkAgent && agent ? await resolveSoughtBehaviours() : [];
+  const conditionalReading = conditionalBehaviours.flatMap((row) => row.reading ?? []);
+  const soughtBehaviours = cowork ? await resolveSoughtBehaviours() : [];
   // CAPABILITY BUNDLES: the folder decides what exists, and facts select the knowledge.
   // Installed Cowork tools remain universal; feature facts decide feature projection.
   // Mika keeps her own curated toolset.
-  const capabilities = coworkAgent && agent && form.house_seat !== 'mika'
+  const capabilities = cowork
     ? await resolveCapabilities({
         arrangement,
         installations: new Set(installations.filter((installation) => installation.enabled).map((installation) => installation.name)),
@@ -404,15 +382,15 @@ export async function resolveReading(form: SpawnForm, facts: LaunchFacts) {
         lead: !!form.team_lead && !!form.team,
       })
     : [];
-  const shelfReading = coworkAgent && agent
+  const shelfReading = cowork
     ? await bootReading(
-        root.name,
-        enabledReading,
-        form.house_seat === 'mika' ? undefined : renderCapabilitiesOverview(capabilities),
+        workspace?.name ?? '',
+        [...enabledReading, ...conditionalReading],
+        renderCapabilitiesOverview(capabilities),
         name,
         soughtBehaviours.length ? await renderSoughtOverview(soughtBehaviours) : undefined,
       )
-    : [];
+    : briefed ? await declaredFiles(conditionalReading) : [];
   // The selected capability documents are reached through the overview's own
   // "Full document" line, not as shelf cards: the packet has a one-read budget and the
   // fullest stock birth already sits within 2 KB of it with the overview inlined.
@@ -439,7 +417,7 @@ export async function resolveForm(
   proposedRoster?: TeamRoster,
 ): Promise<Resolved> {
   const facts = await resolveFacts(form, taken, proposedRoster);
-  const { sessionType, coworkAgent, campaign, preset, roster, profile, parentSeed, root, agent, cascade, installations, contributions, name, worktrees, assignment, kind } = facts;
+  const { sessionType, coworkAgent, campaign, preset, roster, profile, parentSeed, workspace, place, repositories, folders, agent, cascade, installations, contributions, name, kind } = facts;
   const { cmd, spec, chosen, launchMode } = await resolveLaunch(form, facts);
   const { birthReading, completeReading, appliedBehaviours, capabilities, ignored } = await resolveReading(form, facts);
   const explicit: StatedBy[] = [{ layer: 'launch', source: 'launch request' }];
@@ -450,11 +428,7 @@ export async function resolveForm(
         source: proposedRoster?.name === roster.name ? 'proposed Team draft' : teamRosterFile(roster.name),
       }]
     : system;
-  const rootSource: StatedBy[] = form.project_root
-    ? explicit
-    : roster?.project_root
-      ? rosterSource
-      : [{ layer: 'system', source: USER_PROJECT_ROOTS_MD }];
+  const workspaceSource: StatedBy[] = workspace ? [{ layer: 'team_roster', source: `Workspace ${workspace.name}` }] : system;
   const cmdSource: StatedBy[] = chosen.source === 'explicit_launch'
     ? explicit
     : chosen.source === 'settei_provider'
@@ -474,9 +448,7 @@ export async function resolveForm(
   return {
     session_type: sessionType,
     name,
-    dir: profileDir(profile) || primaryWorkLocation(worktrees.repositories, root.name) || root.dir || '',
-    assignment,
-    work_locations: worktrees.repositories,
+    dir: place,
     cmd,
     tags: [...(form.team ? [form.team] : []), ...(form.tags ?? [])]
       .filter(Boolean)
@@ -485,17 +457,15 @@ export async function resolveForm(
     // Collaboration is the launch default, not an Agent-selectable setting.
     mandate: resolvedMandate,
     team: form.team ?? '',
-    project_root: root.name,
+    workspace: workspace?.name ?? '',
     brief: coworkAgent && agent
       ? buildBrief(
           profile,
-          root,
+          workspace ? renderWorkspaceSection(workspace, repositories, folders) : '',
           form,
           referenceDir,
           completeReading,
           roster,
-          assignment,
-          worktrees.repositories,
           resolvedMandate,
         )
       : '',
@@ -525,8 +495,7 @@ export async function resolveForm(
     capabilities,
     stated_by: {
       name: form.name ? explicit : system,
-      dir: profile.dir ? profile.stated_by.dir : assignment ? system : rootSource,
-      assignment: form.desk || form.repos ? explicit : system,
+      dir: profile.dir ? profile.stated_by.dir : workspaceSource,
       cmd: cmdSource,
       tags: unique(roster ? rosterSource : [], form.tags?.length ? explicit : []),
       session_type: explicit,
@@ -535,15 +504,13 @@ export async function resolveForm(
         ? [{ layer: 'campaign', source: `#/campaign (${campaign.id}: defaults)` }]
         : system),
       team: form.team ? explicit : system,
-      project_root: rootSource,
+      workspace: workspaceSource,
       brief: unique(preset.brief ? preset.source! : explicit,
-        profile.stated_by.opening, roster ? rosterSource : [], rootSource),
+        profile.stated_by.opening, roster ? rosterSource : [], workspaceSource),
       agent: profile.stated_by.agent,
       capExempt: profile.stated_by.capExempt,
       launchAgent: cmdSource,
-      launch_mode: form.launch_mode !== undefined
-        ? explicit
-        : parentSeed?.seeds.launch_mode.stated_by ?? system,
+      launch_mode: parentSeed?.seeds.launch_mode.stated_by ?? system,
       ack: profile.stated_by.ack,
       opening: profile.stated_by.opening,
       posture: profile.stated_by.posture,
@@ -559,9 +526,7 @@ export async function resolveForm(
       kind: form.kind !== undefined ? explicit : parentSeed?.seeds.kind.stated_by ?? system,
       contributions: contributions.flatMap((contribution) => [{ layer: contribution.stated_by, source: `${contribution.stated_by} contribution` }]),
       capabilities: capabilities.length ? [{ layer: 'conditional', source: 'ronin_catalogs/capabilities' }] : [],
-      arrangement: worktrees.repositories.length
-        ? [{ layer: 'conditional', source: `RONIN_REPO for ${root.name}` }]
-        : [],
+      arrangement: repositories.length ? workspaceSource : [],
     },
   };
 }

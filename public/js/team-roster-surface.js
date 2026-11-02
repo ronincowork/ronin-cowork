@@ -1,23 +1,23 @@
 /* The Cowork workbench's one reading of every Team: a Phalanx stone per Team. */
-import { membersOfTeam, subscribe, teamsFromState, UNASSIGNED } from './team-controller.js';
+import { membersOfTeam, subscribe, teamsFromState } from './team-controller.js';
 import { WorkspaceKit } from './workspace-kit.js';
 import { t } from './lexicon.js';
 import { createPhalanx } from './phalanx.js';
 import { ask } from './ask.js';
-import { orderCoworkTeams } from './cowork-workbench-contract.js';
-import { STEERCO } from './roster-groups.js';
 import { SURFACE_DRAG } from './workbench.js';
 import { WORKBENCH_TYPES } from './workbench-catalog.js';
 import { openWorkspaceTab } from './workspace.js';
 import { teamsRows, workspaces } from './teams-surface-rows.js';
 
 const SHOW = ['theme', 'state', 'agents', 'items'];
+/** Ronin Helpers' Agents are on the roster; the Teams workbench shows no stone for it (owner, 2026-11-02). */
+const HELPERS = 'ronin_helpers';
 const words = () => ({ theme: t('teams_surface.theme', 'Theme'), state: t('teams_surface.state', 'State'), agents: t('league.agents', 'Agents'), items: t('teams_surface.items', 'Items') });
 
 /**
  * A stone per Team, the name only, under two questions (owner, 2026-10-20; ask.js): Workspace,
  * many-of, blank All, narrows the stones to the Teams in those workspace folders; Show, many-of,
- * Theme on by default, says what hangs under each stone, a cell per topic laid as rows across
+ * blank to start, says what hangs under each stone, a cell per topic laid as rows across
  * the stones (phalanx.js, `branches: 'column'`): Theme, the roster objective, and State, the
  * status of the Team's epic (no epic, blank), plain text; each Agent a branch row, the lead
  * first; each Item a branch row. The rows are teams-surface-rows.js over the pushed rosters (each with its `board` and
@@ -31,7 +31,7 @@ export function createTeamRosterSurface({ teamDetail } = {}) {
   const label = t('campaign.coworks', 'Teams');
   const word = words();
   let roots = []; // the workspaces chosen
-  let show = ['theme']; // what Show picks
+  let show = []; // what Show picks
   const surface = createSurface({ label, className: 'team-roster-surface' });
   const filter = ask([{ fields: [
     { key: 'root', label: t('teams_surface.workspace', 'Workspace'), blank: t('teams_surface.all', 'All'), many: true, options: [] },
@@ -63,10 +63,8 @@ export function createTeamRosterSurface({ teamDetail } = {}) {
   const under = (row) => SHOW.filter((kind) => show.includes(kind)).map((kind) => cell(row, kind));
   const items = () => {
     const rows = new Map(teamsRows(teamsFromState(), membersOfTeam, { roots }).map((row) => [row.id, row]));
-    return orderCoworkTeams(teamsFromState(), {
-      helperName: STEERCO,
-      noTeam: { name: UNASSIGNED, title: t('league.ronin', 'Ronin: no team'), objective: '' },
-    }).filter((team) => rows.has(team.name)).map((team) => {
+    const teams = teamsFromState().filter((team) => !team.holding && team.name !== HELPERS && rows.has(team.name));
+    return teams.sort((a, b) => a.name.localeCompare(b.name)).map((team) => {
       const name = String(team.title ?? '').trim() || team.name;
       return {
         id: team.name, label: name, marker: mark(team.name), ...(show.length ? { under: under(rows.get(team.name)) } : {}),

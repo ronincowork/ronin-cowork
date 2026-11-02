@@ -15,7 +15,8 @@ export function dropName(original: string, at = new Date()): string {
 }
 
 /** A file handed to an Agent from the browser: it lands in the session's own drop/, the
- * Docs tab lists it from there, and its path is typed into the Agent's input, no Enter. */
+ * Docs tab lists it from there, and its path goes where the person is writing: the tile's
+ * message box when it shows one (`into=box`, placed by the tile), else the Agent's input. */
 export function registerDrop(app: express.Express): void {
   const raw = express.raw({ type: () => true, limit: DROP_LIMIT_BYTES });
   app.post('/api/sessions/:name/drop', (req, res, next) => raw(req, res, (e?: unknown) => (e
@@ -31,6 +32,13 @@ export function registerDrop(app: express.Express): void {
       await mkdir(dir, { recursive: true });
       const file = path.join(dir, dropName(String(req.query.name ?? '')));
       await writeFile(file, body, { flag: 'wx' });
+      // A tile showing its message box (Chat, a phone) puts the path there itself: typing it
+      // into the terminal's input would land it where the person is not writing (owner,
+      // 2026-11-01). Otherwise the path is typed at the Agent's prompt, no Enter.
+      if (req.query.into === 'box') {
+        res.json({ ok: true, path: file, bytes: body.length, typed: false, into: 'box' });
+        return;
+      }
       const typed = await typeAtPrompt(name, file).catch((e) => ({ delivered: false, reason: String((e as Error)?.message ?? e) }));
       res.json({ ok: true, path: file, bytes: body.length, typed: typed.delivered, reason: typed.reason });
     } catch (e) {

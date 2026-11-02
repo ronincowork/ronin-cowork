@@ -15,6 +15,7 @@ import { soloDeskBranch, teamDeskBranch, type DeskNotice, type DeskRecord, type 
 import { linkNodeModules } from '../worktree-runtime.js';
 import { withManagedTransaction } from './lifecycle-ledger.js';
 import { listSessions, sessionDir, stopSessionTree } from '../tmux.js';
+import { briefPointer } from '../behaviours.js';
 
 export async function syncthingHazard(dir: string): Promise<string> {
   let d = path.resolve(dir);
@@ -66,7 +67,7 @@ export interface OpenInput {
 export async function openDesk(input: OpenInput): Promise<DeskStatus> {
   const a = await arrangementOf(input.repo);
   if (!desksManaged(a)) {
-    throw new Error(`${a.repo} uses its checkout at ${a.dir}; no managed worktree was opened`);
+    throw new Error(`${a.repo} uses its checkout at ${a.dir}; no managed worktree was opened. ${await briefPointer('checkout')}`);
   }
   const hazard = await syncthingHazard(a.dir);
   if (hazard) console.warn(`${hazard}; opening the requested worktree anyway.`);

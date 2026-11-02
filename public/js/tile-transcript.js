@@ -1,7 +1,26 @@
 /* The journal view is independent of the terminal socket and old Output selector. */
 import { request } from './request.js';
-import { transcriptHandlers, watchTranscript } from './events.js';
+import { transcriptHandlers, transcriptWatch } from './events.js';
 import { t } from './lexicon.js';
+import { renderMarkdownDocument } from './markdown-reader.js';
+
+/*
+ * MARKDOWN ON OR OFF, per Agent (owner, 2026-11-01: "when i select MD or not in one tile it
+ * impacts all tiles"): on draws the Agent's bold, lists and code; off shows exactly what it
+ * wrote, marks and all, for copying. Kept in this browser for that Agent; a tile showing
+ * another Agent is untouched.
+ */
+const markdownKey = (session) => `ronin.chat.markdown.${session}`;
+export function chatMarkdown(session) {
+  try { return globalThis.localStorage?.getItem(markdownKey(session)) !== 'off'; } catch { return true; }
+}
+export function setChatMarkdown(session, on) {
+  try { globalThis.localStorage?.setItem(markdownKey(session), on ? 'on' : 'off'); } catch { /* storage is optional */ }
+  for (const view of views) if (view.shows() === session) view.redraw();
+}
+const views = new Set();
+/** What the person has sent and the CLI has not yet written down, shown light until it lands. */
+const said = (text) => String(text || '').replace(/\s+/g, ' ').trim();
 
 /**
  * @param onState  told after every read what the route said about this Agent's transcript:
@@ -9,10 +28,10 @@ import { t } from './lexicon.js';
  *                 and the T-levels come from here, never from a list kept in the tile.
  */
 /**
- * @param watch  tells the server what this tab is showing; the server sends only that
+ * @param watch  this view's own slot in what the tab tells the server it shows; the server sends only that
  *               Agent's records, already cut to that reading. Injected for testing.
  */
-export function makeTileTranscript({ read = request, watch = watchTranscript, onState = () => {}, cache = null } = {}) {
+export function makeTileTranscript({ read = request, watch = transcriptWatch(), onState = () => {}, cache = null } = {}) {
   const el = document.createElement('div');
   el.className = 'tile-transcript';
   el.setAttribute('role', 'log');
@@ -34,6 +53,7 @@ export function makeTileTranscript({ read = request, watch = watchTranscript, on
   let rendered = false; // whether this reading has ever shown a record — the header's 'empty'
   let probing = 0; // the live probe; hide() and a newer probe outdate an older one
   let stance = ''; // what the Agent is doing, as the roster row last said
+  let doing = ''; // the tool it is working on, as the row names it: name and target
   /*
    * A READER AT THE END STAYS AT THE END. Where they are is read when they scroll, not at each
    * change: by the time a record or the dots arrive, a longer draft or a smaller tile may
@@ -88,14 +108,14 @@ export function makeTileTranscript({ read = request, watch = watchTranscript, on
       seq: Number(entry.dataset.seq),
       role: entry.dataset.role || '',
       kind: entry.dataset.kind || '',
-      text: entry.querySelector?.('.tile-transcript-para')
-        ? [...entry.children].map((para) => para.textContent).join('\n\n') : entry.textContent || '',
+      ...(entry.dataset.narration ? { narration: true } : {}),
+      text: entry.rawText ?? entry.textContent ?? '',
     })).filter((record) => Number.isFinite(record.seq));
     const key = cacheKey();
     cache.delete(key); // refresh insertion order as well as expiry: the limit is true LRU
     cache.set(key, {
       records, frontier, committed, exhausted, rendered, resolved, lastState,
-      scrollTop: el.scrollTop, expiresAt: now + CACHE_TTL,
+      scrollTop: el.scrollTop, following, expiresAt: now + CACHE_TTL,
     });
     while (cache.size > CACHE_LIMIT) cache.delete(cache.keys().next().value);
   }
@@ -103,7 +123,7 @@ export function makeTileTranscript({ read = request, watch = watchTranscript, on
   /**
    * THE END OF THE CONVERSATION, as it stands right now.
    *
-   * Three bouncing dots on the Agent's side while it is working or replying, exactly where
+   * Three bouncing dots on the Agent's side while it is working, exactly where
    * its next line will appear; nothing at all when it is your turn, because an empty end is
    * how a conversation says it is waiting for you. `asking` is neither: the Agent cannot go
    * on until the person answers, and that is worth a sentence rather than a decoration.
@@ -112,7 +132,7 @@ export function makeTileTranscript({ read = request, watch = watchTranscript, on
    * as the last child of the log so the view scrolls to it like any other line.
    */
   function paintStance() {
-    const shows = active && (stance === 'working' || stance === 'replying' || stance === 'asking');
+    const shows = active && (stance === 'working' || stance === 'asking');
     if (!shows) {
       stanceNode?.remove();
       stanceNode = null;
@@ -123,15 +143,26 @@ export function makeTileTranscript({ read = request, watch = watchTranscript, on
       stanceNode.className = 'tile-transcript-stance';
       stanceNode.setAttribute('aria-live', 'polite');
     }
-    if (stanceNode.getAttribute?.('data-stance') !== stance) {
+    const key = `${stance}\u0000${doing}`;
+    if (stanceNode.getAttribute?.('data-key') !== key) {
+      stanceNode.setAttribute('data-key', key);
       stanceNode.setAttribute('data-stance', stance);
       stanceNode.replaceChildren();
       const words = stance === 'asking'
         ? t('transcript.stance_asking', 'Waiting for your answer')
         : t('transcript.stance_working', 'Working');
       if (stance === 'asking') stanceNode.textContent = words;
-      else for (let i = 0; i < 3; i++) stanceNode.append(document.createElement('i'));
-      stanceNode.setAttribute('aria-label', words);
+      else {
+        for (let i = 0; i < 3; i++) stanceNode.append(document.createElement('i'));
+        // The live flow's latest step: the tool it is in, by name and target.
+        if (doing) {
+          const step = document.createElement('span');
+          step.className = 'tile-transcript-doing';
+          step.textContent = doing;
+          stanceNode.append(step);
+        }
+      }
+      stanceNode.setAttribute('aria-label', doing && stance !== 'asking' ? `${words}: ${doing}` : words);
     }
     // Always last: records append above it, so the end of the conversation stays the end.
     el.append(stanceNode);
@@ -160,15 +191,26 @@ export function makeTileTranscript({ read = request, watch = watchTranscript, on
     const entry = document.createElement('div');
     entry.className = 'tile-transcript-entry';
     // Who and what, for the stylesheet: a note reads quieter than speech, a tool call
-    // quieter still. The text itself is exactly what the route sent.
+    // quieter still. The text itself is exactly what the route sent, and kept as sent.
     // Its own place in the conversation, so a record arriving late can be put where it goes.
     if (typeof rec.seq === 'number') entry.setAttribute('data-seq', String(rec.seq));
     entry.setAttribute('data-role', rec.role || '');
     entry.setAttribute('data-kind', rec.kind || '');
+    // The Agent working aloud between tool calls, not its reply: drawn quieter.
+    if (rec.narration) entry.setAttribute('data-narration', 'true');
+    const text = String(rec.text || '');
+    entry.rawText = text;
+    // The Agent's words are read as markdown, the way Docs reads a file; the person's own words,
+    // tool lines and notes stay as written.
+    if (rec.role === 'agent' && rec.kind === 'say' && chatMarkdown(session)) {
+      entry.setAttribute('data-md', 'true');
+      entry.append(renderMarkdownDocument(text, document));
+      return entry;
+    }
     // A blank line in what was written is a paragraph break, drawn as the paragraph space
-    // rather than one empty line; tool calls and code keep their text as it came.
-    const paras = rec.kind === 'act' || rec.kind === 'code' ? [] : String(rec.text || '').split(/\n[ \t]*\n\s*/).filter((part) => part.trim());
-    if (paras.length < 2) { entry.textContent = rec.text || ''; return entry; }
+    // rather than one empty line; tool calls keep their text as it came.
+    const paras = rec.kind === 'tool' || rec.kind === 'done' ? [] : text.split(/\n[ \t]*\n\s*/).filter((part) => part.trim());
+    if (paras.length < 2) { entry.textContent = text; return entry; }
     for (const part of paras) {
       const para = document.createElement('p');
       para.className = 'tile-transcript-para';
@@ -176,6 +218,50 @@ export function makeTileTranscript({ read = request, watch = watchTranscript, on
       entry.append(para);
     }
     return entry;
+  }
+
+  /** Every drawn record again, from the text it was sent: the markdown switch moved. */
+  function redraw() {
+    for (const entry of [...el.children]) {
+      const seq = Number(entry.getAttribute?.('data-seq'));
+      if (!Number.isFinite(seq) || entry.rawText === undefined) continue;
+      const next = entryFor({ seq, role: entry.getAttribute('data-role'), kind: entry.getAttribute('data-kind'), text: entry.rawText,
+        narration: entry.getAttribute('data-narration') === 'true' });
+      el.insertBefore(next, entry);
+      entry.remove();
+    }
+    follow();
+  }
+
+  /*
+   * SENT, NOT YET LANDED (owner, 2026-11-01). Chat draws only what the CLI wrote down, and a
+   * busy CLI writes a message when it takes it, so what you sent is shown at once in a lighter
+   * shade and turns normal when its own record arrives. One that never lands stays light.
+   */
+  const sent = []; // { node, text, after }
+  function pending(text) {
+    if (!active || !said(text)) return () => {};
+    const node = document.createElement('div');
+    node.className = 'tile-transcript-entry';
+    node.setAttribute('data-role', 'user');
+    node.setAttribute('data-kind', 'say');
+    node.setAttribute('data-pending', 'true');
+    node.textContent = text;
+    const mark = { node, text: said(text), after: frontier ?? -1 };
+    sent.push(mark);
+    clearMessage();
+    el.append(node);
+    paintStance(); // the dots stay the end, after what is on its way
+    follow();
+    return () => { const at = sent.indexOf(mark); if (at >= 0) sent.splice(at, 1); node.remove(); };
+  }
+  /** A person's record arrived: the light copy of the same words goes. */
+  function landed(rec) {
+    if (rec.role !== 'user' || typeof rec.seq !== 'number') return;
+    const at = sent.findIndex((mark) => rec.seq > mark.after && mark.text === said(rec.text));
+    if (at < 0) return;
+    sent[at].node.remove();
+    sent.splice(at, 1);
   }
 
   /** The log was showing a message ('Loading…', a reason); the first record replaces it. */
@@ -235,7 +321,10 @@ export function makeTileTranscript({ read = request, watch = watchTranscript, on
         frontier = frontier === null ? rec.seq : Math.max(frontier, rec.seq);
       }
       insertInOrder(entryFor(rec), rec.seq);
+      landed(rec);
     }
+    // What is still on its way stays after everything that has landed.
+    for (const mark of sent) el.append(mark.node);
     paintStance(); // the end-of-conversation indicator stays the end
     letGo();
     follow();
@@ -456,11 +545,13 @@ export function makeTileTranscript({ read = request, watch = watchTranscript, on
     report(result.data, records.length);
   }
 
-  /** The home row's word on what this Agent is doing. */
-  function setStance(next) {
+  /** The home row's word on what this Agent is doing, and the tool it is in. */
+  function setStance(next, tool) {
     const value = typeof next === 'string' ? next : '';
-    if (value === stance) return;
+    const step = tool?.name ? [tool.name, tool.target].filter(Boolean).join(' · ') : '';
+    if (value === stance && step === doing) return;
     stance = value;
+    doing = step;
     paintStance();
   }
 
@@ -480,6 +571,7 @@ export function makeTileTranscript({ read = request, watch = watchTranscript, on
     lastState = null;
     el.replaceChildren();
     stanceNode = null;
+    sent.length = 0;
     let saved = cache?.get?.(cacheKey(name, view));
     if (saved?.expiresAt <= Date.now()) {
       cache.delete(cacheKey(name, view));
@@ -495,7 +587,14 @@ export function makeTileTranscript({ read = request, watch = watchTranscript, on
       lastState = saved.lastState || null;
       if (lastState) onState(lastState);
       if (!rendered) message(t('transcript.empty', 'No transcript output yet.'));
-      queueMicrotask(() => { if (active && session === name && reading === view) { el.scrollTop = saved.scrollTop || 0; following = atEnd(); } });
+      // A reader who left at the end comes back to the end. Measured from the saved FACT, not
+      // re-read: the view can still be hidden here, where every scroll position reads 0, and
+      // re-reading it put the phone back at the top of the conversation (KAN-147).
+      queueMicrotask(() => {
+        if (!active || session !== name || reading !== view) return;
+        following = saved.following !== false;
+        if (following) follow(); else el.scrollTop = saved.scrollTop || 0;
+      });
     } else {
       message(t('transcript.loading', 'Loading transcript…'));
     }
@@ -508,13 +607,19 @@ export function makeTileTranscript({ read = request, watch = watchTranscript, on
 
   // Scrolled to the very top, with more conversation above: fetch it. Scrolled to the end:
   // stay there.
+  // A scroll that comes with a new height is the layout moving (the message box grew, a paste
+  // landed), not the reader: WebKit clamps the position and fires one, and reading it as the
+  // reader leaving the end stranded the view a few lines up. Only a scroll at the same height
+  // says where the reader is.
+  let seenHeight = el.clientHeight;
   el.addEventListener?.('scroll', () => {
+    if (el.clientHeight !== seenHeight) { seenHeight = el.clientHeight; follow(); return; }
     following = atEnd();
     if (following) letGo();
     if (el.scrollTop <= 0) void earlier(generation);
   });
   // The log's own box changes too: the message box grows with a draft, the tile resizes.
-  if (globalThis.ResizeObserver) new ResizeObserver(follow).observe(el);
+  if (globalThis.ResizeObserver) new ResizeObserver(() => { seenHeight = el.clientHeight; follow(); }).observe(el);
 
   /** Same Agent, another T-level: start the reading over from its first record. */
   function setReading(view) {
@@ -527,6 +632,7 @@ export function makeTileTranscript({ read = request, watch = watchTranscript, on
   function hide() {
     stash();
     stop();
+    sent.length = 0;
     watch('', ''); // nothing is being shown: the server stops sending
     active = false;
     reaching = false;
@@ -542,8 +648,9 @@ export function makeTileTranscript({ read = request, watch = watchTranscript, on
   // The view listens for its Agent's records for as long as it exists. `delivered` ignores
   // anything for another session, so a stale registration cannot write into the wrong tile.
   transcriptHandlers.add(delivered);
-
-  return { el, show, hide, probe, setReading, setStance,
+  const self = { el, show, hide, probe, setReading, setStance, pending, redraw, shows: () => session,
     /** For tests and teardown: stop listening. */
-    dispose() { stash(); stop(); active = false; transcriptHandlers.delete(delivered); watch('', ''); } };
+    dispose() { stash(); stop(); active = false; transcriptHandlers.delete(delivered); views.delete(self); watch('', ''); } };
+  views.add(self);
+  return self;
 }

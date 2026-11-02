@@ -45,7 +45,7 @@ class Node {
 
 // getElementById answers for the phone document only when a test says it is on one: the
 // tile asks that question to decide how far its cycle goes.
-globalThis.document = { createElement: () => new Node(), activeElement: null,
+globalThis.document = { createElement: () => new Node(), createTextNode: (text) => Object.assign(new Node(), { textContent: text }), activeElement: null,
   getElementById: (id) => (id === 'phone' && globalThis.__onPhone ? new Node() : null) };
 globalThis.window = { matchMedia: () => ({ matches: false }), addEventListener() {} };
 Object.defineProperty(globalThis, 'navigator', { value: { platform: 'Linux' }, configurable: true });
@@ -60,8 +60,9 @@ const [{ makeTileTranscript }, { Tile }, { syncTileHead }, { S }, { transcriptHa
 const tick = () => new Promise((resolve) => setImmediate(resolve));
 const record = (text) => ({ role: 'agent', kind: 'say', text });
 const answer = (records, since, seq) => ({ ok: true, data: { available: true, records, since, seq } });
+// What each entry was sent: the Agent's words are drawn as markdown, so the drawing is not the text.
 const contents = (el) => el.children.filter((n) => n.className === 'tile-transcript-entry')
-  .map((n) => n.textContent);
+  .map((n) => n.rawText ?? n.textContent);
 
 test('header toggle appears only with loaded Rireki and changes its label', () => {
   const button = new Node();
@@ -293,8 +294,10 @@ test('the end of the conversation says what the Agent is doing, from the row and
   view.setStance('working');
   assert.equal(indicator()?.children.length, 3, 'three dots');
   assert.equal(view.el.children.at(-1), indicator(), 'and they are the end of the conversation');
-  view.setStance('replying');
-  assert.equal(indicator()?.children.length, 3);
+  // In a tool: the dots, then the tool by name and target — never its input.
+  view.setStance('working', { name: 'Bash', target: 'npm test' });
+  assert.equal(indicator()?.children.length, 4);
+  assert.equal(indicator()?.children.at(-1).textContent, 'Bash · npm test');
 
   // Your turn: the end of the conversation is empty, which is how it says so.
   view.setStance('awaiting_you');
@@ -739,7 +742,7 @@ test('a walk that fails halfway still owes the whole gap, and the next one pays 
   view.dispose();
 });
 
-test('a finger opens on the reading; a desk still opens on the terminal', () => {
+test('a tile opens on Chat, on a desk as on a phone, and an Agent with nothing yet on its terminal', () => {
   const make = () => {
     const shown = [];
     const tile = {
@@ -787,9 +790,110 @@ test('a finger opens on the reading; a desk still opens on the terminal', () => 
     globalThis.window.matchMedia = coarse;
   }
 
-  // A desk is unchanged: no intention is ever set there, so the terminal stays the way in.
+  // A desk too (owner, 2026-11-01): Chat is the default everywhere.
   const d = make();
+  d.tile.transcriptWantChat = true;
   land(d.tile, live);
-  assert.equal(d.tile.transcriptOn, false);
-  assert.deepEqual(d.shown, []);
+  assert.equal(d.tile.transcriptOn, true);
+  assert.deepEqual(d.shown, [['show', 'chat']]);
+});
+
+test('the Agent\'s words are drawn as markdown, and the switch redraws them exactly as written', async () => {
+  const { setChatMarkdown } = await import('../public/js/tile-transcript.js');
+  const store = new Map();
+  globalThis.localStorage = { getItem: (k) => store.get(k) ?? null, setItem: (k, v) => store.set(k, v) };
+  try {
+    const view = makeTileTranscript({
+      read: async () => ({ ok: true, data: { available: true, records: [{ seq: 1, role: 'agent', kind: 'say', text: '**done**' }, { seq: 2, role: 'user', kind: 'say', text: '**mine**' }], since: 1, seq: 2, view: 'chat', readings: READINGS } }),
+      watch: () => {},
+    });
+    view.show('agent', 'chat');
+    await tick();
+    const agent = () => view.el.children.find((n) => n.getAttribute('data-role') === 'agent');
+    assert.equal(agent().getAttribute('data-md'), 'true', 'the Agent\'s words are markdown');
+    assert.equal(view.el.children.find((n) => n.getAttribute('data-role') === 'user').textContent, '**mine**', 'the person\'s stay as typed');
+    setChatMarkdown('another', false);
+    assert.equal(agent().getAttribute('data-md'), 'true', 'another Agent\'s switch leaves this tile alone');
+    setChatMarkdown('agent', false);
+    assert.equal(agent().getAttribute('data-md'), undefined);
+    assert.equal(agent().textContent, '**done**', 'off shows the marks as written');
+    view.dispose();
+  } finally { delete globalThis.localStorage; }
+});
+
+test('a sent message shows at once, light, and goes when the CLI writes it down', async () => {
+  const view = makeTileTranscript({
+    read: async () => ({ ok: true, data: { available: true, records: [record('earlier')].map((r) => ({ ...r, seq: 4 })), since: 1, seq: 5, view: 'chat', readings: READINGS } }),
+    watch: () => {},
+  });
+  view.show('agent', 'chat');
+  await tick();
+  view.pending('check  the\nreceipt');
+  const light = () => view.el.children.filter((n) => n.getAttribute('data-pending') === 'true');
+  assert.equal(light().length, 1);
+  assert.equal(view.el.children.at(-1), light()[0], 'at the end, where it was sent');
+  for (const handler of transcriptHandlers) handler({ t: 'transcript', session: 'agent', reading: 'chat', records: [{ seq: 5, role: 'user', kind: 'say', text: 'check the receipt' }] });
+  assert.equal(light().length, 0, 'its own record replaced it');
+  assert.deepEqual(contents(view.el), ['earlier', 'check the receipt']);
+  view.dispose();
+});
+
+test('a tile leaving its Chat never stops another tile\'s Chat hearing its Agent', async () => {
+  // Owner, 2026-11-01: "the balls stopped bouncing and then nothing". The tab had one watch
+  // slot; any tile that stopped showing a Chat cleared it for every tile on the page.
+  const { store } = await import('../public/js/store.js');
+  const sent = [];
+  const original = store.send;
+  store.send = (message) => { sent.push(message); return true; };
+  try {
+    const read = async () => ({ ok: true, data: { available: true, records: [], since: 0, seq: 0, view: 'chat', readings: READINGS } });
+    const mine = makeTileTranscript({ read });
+    const other = makeTileTranscript({ read });
+    mine.show('alpha', 'chat');
+    other.show('bravo', 'chat');
+    other.hide();
+    assert.deepEqual(sent.at(-1).watches, [{ session: 'alpha', reading: 'chat' }], 'alpha is still watched');
+    other.show('bravo', 'chat');
+    other.dispose();
+    assert.deepEqual(sent.at(-1).watches, [{ session: 'alpha', reading: 'chat' }], 'and a tile that goes away takes only its own');
+    mine.dispose();
+    assert.deepEqual(sent.at(-1).watches, []);
+  } finally { store.send = original; }
+});
+
+test('the Agent working aloud is marked, and keeps its mark when the markdown switch redraws it', async () => {
+  const { setChatMarkdown } = await import('../public/js/tile-transcript.js');
+  const view = makeTileTranscript({
+    read: async () => ({ ok: true, data: { available: true, records: [{ seq: 1, role: 'agent', kind: 'say', text: 'Checking the shots.', narration: true }, { seq: 2, role: 'agent', kind: 'say', text: 'Done.' }], since: 1, seq: 2, view: 'chat', readings: READINGS } }),
+    watch: () => {},
+  });
+  view.show('agent', 'chat');
+  await tick();
+  const marked = () => view.el.children.filter((n) => n.getAttribute('data-narration') === 'true').map((n) => n.rawText);
+  assert.deepEqual(marked(), ['Checking the shots.'], 'the reply is not marked');
+  setChatMarkdown('agent', false);
+  assert.deepEqual(marked(), ['Checking the shots.']);
+  setChatMarkdown('agent', true);
+  view.dispose();
+});
+
+test('a pipe table in the Agent\'s words is drawn as a table', async () => {
+  const { renderMarkdownDocument } = await import('../public/js/markdown-reader.js');
+  const article = renderMarkdownDocument('Before.\n| A | B |\n|---|---|\n| one | two \\| three |\n\nAfter.', globalThis.document);
+  const box = article.children.find((n) => n.className === 'markdown-table');
+  assert.ok(box, 'the table is drawn, not run into a paragraph');
+  const [table] = box.children;
+  const [head, body] = table.children;
+  assert.equal(head.children[0].children.length, 2, 'two header cells');
+  assert.equal(body.children[0].children[1].children[0].textContent, 'two | three', 'an escaped pipe stays in its cell');
+  assert.equal(article.children.at(-1).children[0].textContent, 'After.');
+});
+
+test('a numbered point with its paragraph indented beneath stays one list (how GPT models write)', async () => {
+  const { renderMarkdownDocument } = await import('../public/js/markdown-reader.js');
+  const article = renderMarkdownDocument('Six areas:\n\n1. Front door\n\n   Put ingress in its own office.\n\n2. Browser content\n\n   Separate origins.\n\nAfter.', globalThis.document);
+  const ol = article.children[1];
+  assert.equal(article.children.length, 3, 'one paragraph, ONE list, one paragraph: not a list per item');
+  assert.equal(ol.children.length, 2, 'two items');
+  assert.equal(ol.children[0].children[1].children[0].textContent, 'Put ingress in its own office.', 'the indented paragraph is inside its item');
 });

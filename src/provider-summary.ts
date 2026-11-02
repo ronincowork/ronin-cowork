@@ -1,3 +1,4 @@
+import { hermesConfigured, readHermesSettings } from './hermes-setups.js';
 /**
  * MEASURING THE PROVIDERS — the one place the machine is asked what it has, and the
  * Campaign record that keeps the answer.
@@ -24,7 +25,7 @@ import { AGENTS, listAgentAvailability, type AgentAvailability, type ModelsSourc
 import { execFile } from './spawn-broker.js';
 import { ensureInitialCampaign, initialCampaign, writeCampaignProviders } from './campaigns.js';
 import { readSetupSection } from './machine-state.js';
-import { listProviderCatalog, type ModelList, type ModelRow, type ProviderCatalogEntry, type ProviderSummary } from './model-providers.js';
+import { listProviderCatalog, type ModelConnection, type ModelList, type ModelRow, type ProviderCatalogEntry, type ProviderSummary } from './model-providers.js';
 
 interface SetupSection { providers?: Record<string, { activated_at?: unknown; off_at?: unknown }>; [key: string]: unknown }
 export type Agent = typeof AGENTS[number];
@@ -55,6 +56,7 @@ async function exists(file: string): Promise<boolean> {
 
 /** The CLI signed in on this machine and left its credential file; Ronin reads only that it exists. */
 export async function providerSignedIn(cli: string, home = os.homedir()): Promise<boolean> {
+  if (cli === 'hermes') return hermesConfigured();
   const files = AGENTS.find((agent) => agent.id === cli)?.credentials ?? [];
   for (const file of files) if (await exists(path.join(home, file))) return true;
   return false;
@@ -118,7 +120,7 @@ const text = (v: unknown): string => (typeof v === 'string' ? v : '');
  * registry's declaration (`operations.models`), so no CLI id appears here. Each returns
  * the rows in the CLI's own order, or null when it found no readable list.
  */
-const READERS: Record<ModelsSource['read'], (agent: Agent, home: string, file: string) => Promise<ModelRow[] | null>> = {
+const READERS: Record<ModelsSource['read'], (agent: Agent, home: string, file: string) => Promise<ModelRow[] | { connections: ModelConnection[] } | null>> = {
   // Claude Code keeps the catalog it fetched under ~/.claude/cache/model-catalog/*-cc.json:
   // `catalog.config.models[]`, each with `id`, `name` ("Opus 5.5"), `short_name` ("Opus") and
   // `section`: `main` is what its own picker offers, `overflow` the older generations it
@@ -154,6 +156,7 @@ const READERS: Record<ModelsSource['read'], (agent: Agent, home: string, file: s
     const { stdout, stderr } = await execFile(file, [...agent.operations.models.argv], { timeout: 20_000 });
     return commandModels(`${stdout}\n${stderr}`);
   },
+  'hermes-setups': async () => (await readHermesSettings()).setups.map(setup => ({ id: setup.id, name: setup.name })),
   none: async () => null,
 };
 
@@ -162,8 +165,13 @@ export async function readModels(agent: Agent, { home = os.homedir(), file = '',
   const read_at = (now ?? (() => new Date().toISOString()))();
   const source = agent.operations.models;
   if (source.read === 'none') return { read_at, by: version, rows: [], unavailable: `${agent.label} publishes no model list Ronin can read.` };
-  let rows: ModelRow[] | null = null;
-  try { rows = await READERS[source.read](agent, home, file); } catch { rows = null; }
+  let inventory: ModelRow[] | { connections: ModelConnection[] } | null = null;
+  try { inventory = await READERS[source.read](agent, home, file); } catch { inventory = null; }
+  if (inventory && !Array.isArray(inventory)) {
+    return { read_at, by: version, rows: [], connections: inventory.connections,
+      ...(!inventory.connections.length ? { unavailable: 'No API connections configured. Open connection setup, then refresh.' } : {}) };
+  }
+  const rows = inventory;
   if (!rows?.length) return { read_at, by: version, rows: [], unavailable: `No readable model list from ${agent.label}.` };
   return { read_at, by: version, rows };
 }

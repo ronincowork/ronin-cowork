@@ -8,6 +8,7 @@ import { createMenuButton } from './menu.js';
 import { buildWorkRecord, heldAttachments } from './work-record.js';
 import { readDesks } from './desks.js';
 import { t } from './lexicon.js';
+import { chatMarkdown, setChatMarkdown } from './tile-transcript.js';
 
 /**
  * THE HEADER, left to right. One row per control; see the file header for the columns.
@@ -67,12 +68,12 @@ const HEADER = () => {
       title: t('me.agent_title', 'This Agent — work record, docs, file, mention, output, delete'),
       host: () => tile.el, groups: () => tileMenu(tile) }),
     help: t('me.agent_title', 'This Agent — work record, docs, file, mention, output, delete'),
-    quiet: t('head.menu_quiet', 'Menu — no Agent in this workspace') },
+    quiet: t('head.menu_quiet', 'Menu — no Agent in this tilespace') },
 
   // The window control terminates the header at its outside edge: minus stops viewing.
   { key: 'minimizeBtn', cls: 'window-control minimize', text: '−', needs: 'session',
     help: t('head.minimize_help', 'Close this view — the Agent keeps running'),
-    quiet: t('head.minimize_quiet', 'Close view — no Agent in this workspace'),
+    quiet: t('head.minimize_quiet', 'Close view — no Agent in this tilespace'),
     on: (tile) => tile.minimize() },
 
   ];
@@ -187,6 +188,11 @@ export function tileMenu(tile) {
     tile.servicesOff() || outputs.length < 2 ? null : {
       items: outputs.map(([value, label]) => ({ kind: 'radio', label, checked: tile.output === value,
         run: () => tile.setOutput(value) })) },
+    // Chat's reading of the Agent's words: drawn, or exactly as written (per device).
+    tile.transcriptOn ? { items: [
+      { kind: 'check', label: t('me.markdown', 'Markdown'), hint: t('me.markdown_hint', 'off shows the marks as written'),
+        checked: chatMarkdown(tile.session), run: (on) => setChatMarkdown(tile.session, on) },
+    ] } : null,
     { items: [
       { glyph: '☰', label: t('me.work_record', 'Work record'), run: () => void openWorkRecord(tile) },
       { glyph: '⚙', label: t('me.configuration', 'Configuration'), hint: t('me.configuration_hint', 'mandate, Behaviors'),

@@ -1,3 +1,4 @@
+import { mountHermesSurface } from './hermes-surface.js';
 /* part of the ronin-cowork client — see js/README.md */
 /**
  * ONE MODEL PROVIDERS SURFACE, TWO SEATS. Ronin Setup's Model providers card and Ronin
@@ -100,7 +101,7 @@ export function providerStones(runtime) {
       const own = rows.filter((row) => row.cli === provider.id);
       const vendor = own[0]?.provider_label || provider.from || '';
       const entry = (providerCatalog().providers || []).find((candidate) => candidate.cli === provider.id);
-      return stoneOf(String(provider.id), provider.label || provider.id, own.length ? t('setup_surface.provider_models_n', '{vendor} · {n} models', { vendor, n: own.length }) : vendor, providerPresentation(provider).inventoryState, provider.activated === true, createStatusMarker(entry?.maturity));
+      return stoneOf(String(provider.id), provider.label || provider.id, own.length ? t('setup_surface.provider_models_n', '{vendor} · {n} models', { vendor, n: own.length }) : vendor, provider.id === 'hermes' ? (own.length ? 'Setups available' : 'Add a connection and setup') : providerPresentation(provider).inventoryState, provider.activated === true, createStatusMarker(entry?.maturity));
     }),
     ...catalogOnly(runtime).map((entry) => ({
       ...stoneOf(entry.provider, entry.label, entry.models.length ? t('setup_surface.provider_models_n', '{vendor} · {n} models', { vendor: entry.label, n: entry.models.length }) : '', entry.models.length ? t('setup_surface.no_cli_state', 'No CLI') : '', false, createStatusMarker(entry.maturity)),
@@ -493,9 +494,9 @@ export function createProviderDrawing(context, { repaint, say = () => {} }) {
     if (list.unavailable) return list.unavailable;
     return t('setup_surface.models_read', 'Model list read {date} by {cli} {version}', { date: list.read_at, cli: entry.label || entry.id, version: list.by || '' }).trim();
   };
-  const paintCatalog = (rows, entry, host) => {
+  const paintCatalog = (rows, entry, host, label = '') => {
     const section = el('section', 'setup-provider-catalog');
-    section.append(el('h3', 'setup-provider-eyebrow', t('setup_surface.section_models', 'Models')));
+    section.append(el('h3', 'setup-provider-eyebrow', label || t('setup_surface.section_models', 'Models')));
     const facts = el('dl', 'setup-provider-facts');
     for (const [label, on] of [
       [t('setup_surface.fact_installed', 'Installed'), entry?.installed === true],
@@ -538,6 +539,7 @@ export function createProviderDrawing(context, { repaint, say = () => {} }) {
     const provider = providerFromRuntime(runtime, id);
     const rows = providerCatalog().rows.filter((row) => (provider ? row.cli === provider.id : row.provider === id));
     if (!provider && !rows.length) { host.append(el('p', 'setup-notice bad', t('setup_surface.provider_missing', 'This provider is no longer in the model-provider catalog.'))); return null; }
+    if (id === 'hermes') return mountHermesSurface(host, provider, paint);
     const yours = el('section', 'setup-provider-yours');
     yours.append(el('h3', 'setup-provider-eyebrow', t('setup_surface.section_yours', 'Yours')));
     if (provider) paintYours(provider, yours);
@@ -545,7 +547,23 @@ export function createProviderDrawing(context, { repaint, say = () => {} }) {
       yours.append(el('h2', '', rows[0].provider_label), el('p', 'setup-fine', t('setup_surface.no_cli', 'No CLI in Ronin’s registry serves this provider, so it cannot be installed or signed in here.')));
     }
     host.append(yours);
-    paintCatalog(rows, provider, host);
+    const connections = providerCatalog().providers.filter(entry => entry.cli === id && entry.connections);
+    if (provider?.installed && connections.length) {
+      const section = el('section', 'setup-provider-catalog');
+      section.append(el('h3', 'setup-provider-eyebrow', t('setup_surface.api_connections', 'API connections')));
+      section.append(el('p', 'setup-fine', t('setup_surface.api_connections_help', 'Add or change API connections in the native setup. Each connection keeps its own models. Finish setup, then refresh to update Ronin.')));
+      if (!connections.some(entry => entry.inference_provider)) section.append(el('p', 'setup-fine', t('setup_surface.api_connections_empty', 'No API connections configured yet.')));
+      if (!provider.off && !provider.login_open) section.append(action(t('setup_surface.manage_connections', 'Manage API connections'), '', async () => {
+        const result = await request(`/api/setup/providers/${encodeURIComponent(provider.id)}/login`, { method: 'POST', json: {} });
+        if (!result.ok) { section.append(el('p', 'setup-notice bad', result.message)); return; }
+        await paint();
+      }));
+      host.append(section);
+    }
+    const configured = connections.filter(entry => entry.inference_provider);
+    if (configured.length) {
+      for (const connection of configured) paintCatalog(connection.models, provider, host, connection.label);
+    } else paintCatalog(rows, provider, host);
     if (alignedProvider !== id) {
       alignedProvider = id;
       requestAnimationFrame(() => {

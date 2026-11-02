@@ -6,22 +6,38 @@
     --ch-horizon-h: 290px;
     --ch-horizon-ink: var(--kaki);
     --ch-glyph: 30px;
-    --ch-frame-w: 860px;
+    --ch-glyph-epics: 18px; /* ◇ draws ~1.7× the ink of ⌂ at one size; this matches them (KAN-192) */
+    --ch-glyph-epics-weight: .5px; /* and its outline is lighter than ⌂'s */
+    --ch-glyph-epics-drop: 3px; /* centred in the box it sits above ⌂'s baseline */
     --ch-door-h: 208px;
+    --ch-door-w: 208px; /* Home's stone before the triangle: a quarter of the old 860px row */
+    --ch-office-gap: calc(var(--space-section) + var(--space-subsection)); /* the one gap, across and down; spread (KAN-194) */
+    --ch-frame-w: calc(var(--ch-door-w) * 2 + var(--ch-office-gap));
+    --ch-side-w: 168px;
+    --ch-side-h: 104px;
+    --ch-side-glyph: 18px;
     --ch-caption-top: 144px;
     --ch-caption-x: 20px;
     --ch-caption-lift: 4px;
     --ch-corner-x: 16px;
     --ch-corner-y: 14px;
     display: grid;
-    place-items: center;
+    /* Ten even tracks, edge to edge: the triangle centred over tracks 1-8 (its centre at 40% of the
+       page), the line of smaller stones over tracks 8-10 (its centre at 85%) (owner, 2026-11-02; KAN-196). */
+    grid-template-columns: repeat(10, minmax(0, 1fr));
+    align-items: center;
+    column-gap: 0;
     min-height: 0;
     height: 100%;
-    padding: var(--space-inset) var(--space-inset);
+    /* the deeper foot lifts everything a little above the middle (KAN-194) */
+    padding: var(--space-inset) 0 calc(var(--space-section) * 3); /* no side padding: the tracks are the page's width */
     overflow: auto;
     position: relative;
   }
   .ch-frame {
+    grid-column: 1 / 9;
+    grid-row: 1;
+    justify-self: center;
     width: 100%;
     max-width: var(--ch-frame-w);
     display: flex;
@@ -34,7 +50,23 @@
   .ch-horizon { position: absolute; left: 0; bottom: 0; width: 100%; height: var(--ch-horizon-h); color: var(--ch-horizon-ink); opacity: var(--ch-horizon-opacity); z-index: 0; pointer-events: none; }
   .ch-frame { position: relative; z-index: 1; }
 
-  .ch-doors { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-subsection) var(--space-inline); }
+  /* THE OFFICE (owner, 2026-11-02; KAN-191, KAN-194): Teams centred over Epics (left) and Workspaces, every stone
+     Home's size, one even gap between them across and down. */
+  .ch-doors { display: grid; grid-template-columns: repeat(2, var(--ch-door-w)); justify-content: center; gap: var(--ch-office-gap); }
+  .ch-doors > .ch-door[data-door='teams'] { grid-column: 1 / -1; justify-self: center; width: var(--ch-door-w); }
+
+  /* Model Providers, Help and Settings: smaller stones, one above the other, on the right. */
+  .ch-side {
+    grid-column: 8 / 11;
+    grid-row: 1;
+    justify-self: center;
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-inline);
+    width: var(--ch-side-w);
+  }
 
   .ch-door {
     --ch-edge-hover: color-mix(in srgb, var(--ch-tone) 45%, var(--line-3));
@@ -73,9 +105,8 @@
   .ch-door[data-door='workspaces'] { --ch-tone: var(--accent-2); }
   .ch-door[data-door='teams'] { --ch-tone: var(--ok-2); }
   .ch-door[data-door='help'] { --ch-tone: var(--define-line); }
-  .ch-door[data-door='desk'] { --ch-tone: var(--kaki); }
-  .ch-door[data-door='team'] { --ch-tone: var(--accent-2); }
-  .ch-door[data-door='agent'] { --ch-tone: var(--ok-2); }
+  .ch-door[data-door='epics'] { --ch-tone: var(--kaki); }
+  .ch-door[data-door='settings'] { --ch-tone: var(--line-3); }
   .ch-gate { margin: var(--space-subsection) 0 0; font-size: var(--text-body); color: var(--muted); }
 
   .ch-door:hover {
@@ -84,6 +115,9 @@
     box-shadow: var(--shadow-menu);
   }
   .ch-glyph { display: block; height: var(--ch-glyph); font-size: var(--ch-glyph); line-height: var(--leading-none); color: var(--ch-tone); white-space: nowrap; }
+  /* The glyph box keeps its height so every name lines up; only ◇'s ink is brought to ⌂'s, its
+     baseline kept where ⌂'s is. */
+  .ch-door[data-door='epics'] .ch-glyph { font-size: var(--ch-glyph-epics); line-height: calc(var(--ch-glyph) + var(--ch-glyph-epics-drop) * 2); -webkit-text-stroke: var(--ch-glyph-epics-weight) currentColor; }
   .ch-glyph svg { display: block; width: var(--ch-glyph); height: var(--ch-glyph); fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: square; stroke-linejoin: round; }
   .ch-door h2 {
     margin: var(--space-section) 0 0;
@@ -101,7 +135,7 @@
     margin: 0;
     padding-top: var(--space-paragraph);
     border-top: var(--edge) solid var(--ch-caption-line);
-    font-size: var(--text-body);
+    font-size: var(--text-heading); /* who, what, where: the key line, read at a glance (KAN-194) */
     line-height: var(--leading-body);
     color: var(--muted);
     opacity: 0;
@@ -114,6 +148,12 @@
     transform: none;
     transition-delay: var(--motion-quick);
   }
+
+  .ch-door-small { min-height: var(--ch-side-h); padding: var(--space-inline) var(--space-inline) var(--space-inline) var(--space-inset); }
+  .ch-door-small .ch-glyph { --ch-glyph: var(--ch-side-glyph); }
+  .ch-door-small h2 { margin-top: var(--space-paragraph); font-size: var(--text-heading); }
+  .ch-door-small .ch-is, .ch-door-small .ch-gate { position: static; opacity: 1; transform: none; margin-top: var(--space-row); padding-top: 0; border-top: 0; font-size: var(--text-small); }
+  .ch-door-small:not(:hover):not(:focus-visible) .ch-is { display: none; }
 
   .ch-release {
     position: absolute;
@@ -130,26 +170,14 @@
     text-align: left;
     overflow-wrap: anywhere;
   }
-  .ch-settings {
-    position: absolute;
-    z-index: 2;
-    right: var(--ch-corner-x);
-    bottom: var(--ch-corner-y);
-    padding: var(--space-row) var(--space-inline);
-    border: var(--edge) solid var(--line-2);
-    border-radius: var(--radius-large);
-    background: var(--surface);
-    color: var(--muted);
-    font: inherit;
-    font-size: var(--text-label);
-    cursor: pointer;
-  }
-  .ch-settings:hover, .ch-settings:focus-visible { border-color: var(--kaki); color: var(--fg-strong); }
   .ch-update-package { display: flex; flex-wrap: wrap; justify-content: flex-start; align-items: center; gap: var(--space-inline); }
   .ch-update-package + .ch-update-package { margin-top: var(--space-row); }
   .ch-update-reading[data-state='available'] { color: var(--accent); }
-  @media (max-width: 720px), (max-height: 600px) {
-    .ch-view { grid-template-rows: 1fr auto; gap: var(--space-subsection); }
+  @media (max-width: 960px), (max-height: 600px) {
+    .ch-view { grid-template-columns: minmax(0, 1fr); grid-template-rows: 1fr auto auto; gap: var(--space-subsection); justify-items: center; padding-inline: var(--space-inset); }
+    .ch-frame, .ch-side { grid-column: 1; grid-row: auto; }
+    .ch-side { justify-self: center; flex-direction: row; flex-wrap: wrap; justify-content: center; width: 100%; }
+    .ch-side > .ch-door-small { width: var(--ch-side-w); }
     .ch-release { position: static; justify-self: end; align-self: end; max-width: 100%; }
   }
   .ch-update { padding: 0; border: 0; background: transparent; color: var(--muted); font: inherit; cursor: pointer; }

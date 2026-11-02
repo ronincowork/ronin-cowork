@@ -9,7 +9,7 @@ import { WorkspacePrimitives } from './workspace-primitives.js';
 
 let docsSequence = 0; // one id per shelf, so two lists on one page never collide
 
-export function buildDocs(root, only = null, reposFirst = () => []) {
+export function buildDocs(root, only = null) {
   let openPath = null; // normalized target, or null while the list is showing
   let dirty = false; // the owner has typed since the last load or save
   // Only rebuild the list when it actually changed — see refresh(). null, not '', so the
@@ -251,7 +251,7 @@ export function buildDocs(root, only = null, reposFirst = () => []) {
         }),
       );
       list.appendChild(h);
-      // A group folds: on a shelf, the team's own repos come open and the rest closed.
+      // A group folds: on a shelf, an archived repo comes closed.
       const body = document.createElement('div');
       body.className = 'dc-group';
       body.hidden = !!s.folded;
@@ -307,10 +307,9 @@ export function buildDocs(root, only = null, reposFirst = () => []) {
         });
         return;
       }
-      const first = new Set(reposFirst());
       const rows = shelves[shelf]
         .filter((g) => g.files.length)
-        .map((g) => ({ name: g.root, docs: g.files, folded: first.size ? !first.has(g.root) : g.archived }))
+        .map((g) => ({ name: g.root, docs: g.files, folded: g.archived }))
         .sort((a, b) => Number(!!a.folded) - Number(!!b.folded));
       const next = shelf + rows.map((s) => s.name + ':' + s.docs.join('|')).join('\n');
       if (next === sig) return;

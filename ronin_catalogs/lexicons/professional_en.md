@@ -287,12 +287,6 @@ nothing paints exactly this.
 
 - **campaign_home.ronin_home:** Ronin Home
 - **campaign_home.launch:** New Project
-- **campaign_home.desk:** Desk
-- **campaign_home.desk_is:** All Teams, Agents, and work
-- **campaign_home.team:** Team
-- **campaign_home.team_is:** Choose a Team and open its Workbench
-- **campaign_home.agent:** Agent
-- **campaign_home.agent_is:** Choose an Agent and open its Workbench
 - **campaign_home.settings:** Settings
 - **campaign_home.check_updates:** Check for updates
 - **setup.provider_gate:** Activate one model provider in Machine Setup to use this.
@@ -348,7 +342,6 @@ nothing paints exactly this.
 
 ## home — home.js (the status words and the launch receipt)
 - **home.stance_working:** working…
-- **home.stance_replying:** replying…
 - **home.stance_awaiting_you:** awaiting you
 - **home.stance_asking:** asking you
 
@@ -532,15 +525,15 @@ nothing paints exactly this.
 - **work_items.attachments:** Attachments
 - **work_items.links:** Links
 - **work_items.history:** History
-- **team.workspace_1:** Workspace 1
-- **team.workspace_2:** Workspace 2
+- **team.workspace_1:** Tilespace 1
+- **team.workspace_2:** Tilespace 2
 - **team.commons_card:** Commons
 - **team.commons_summary:** See Roster / Docs / Wipeboard / Messages / Configuration
-- **team.workspace_blank:** Workspace
+- **team.workspace_blank:** Tilespace
 - **workspace.close_surface:** Close this work surface
 - **cowork.tab_archives:** Archived
-- **team.workspace_3:** Workspace 3
-- **team.workspace_4:** Workspace 4
+- **team.workspace_3:** Tilespace 3
+- **team.workspace_4:** Tilespace 4
 - **team.roster_title:** Roster
 - **team.commons:** Commons
 - **team.arranged_by:** arranged by {from}
@@ -1156,7 +1149,7 @@ The catalog entry goes. {dir} is not touched.
 - **head.rename_failed:** Could not rename session: {reason}
 - **head.gauge_help:** Context gauge — how full this session's context window is, read off the pane's own status line. Hidden until there is a reading.
 - **head.minimize_help:** Close this view — the Agent keeps running
-- **head.minimize_quiet:** Close view — no Agent in this workspace
+- **head.minimize_quiet:** Close view — no Agent in this tilespace
 
 ## pad — pad.js (the pad's widget captions)
 - **pad.w_encoder:** encoder — volume and play/pause; it speaks media-key only, so it cannot drive Ronin
@@ -1189,8 +1182,10 @@ The catalog entry goes. {dir} is not touched.
 - **me.docs_none:** No attachments on the items this Agent holds.
 - **me.attach:** Send a file
 - **me.attach_hint:** or drag one onto the tile
+- **me.markdown:** Markdown
+- **me.markdown_hint:** off shows the marks as written
 - **me.no_record:** This Agent has not written a work record yet.
-- **head.menu_quiet:** Menu — no Agent in this workspace
+- **head.menu_quiet:** Menu — no Agent in this tilespace
 - **menu.empty:** Nothing here yet.
 
 ## keys — keysrow.js (the composer's keys row)
@@ -1413,6 +1408,8 @@ The catalog entry goes. {dir} is not touched.
 - **customize.desk_profiles_blurb:** Your standing defaults for the surfaces you work at — a skin, a lexicon, a campaign kind, a Team page arrangement. Choosing one is a setting, on the gear.
 - **customize.lexicons:** Lexicons
 - **customize.lexicons_blurb:** The words a surface uses — a wording or a language, one file each. Say only what changes; the rest uses the stock words.
+- **files.title:** Explorer
+- **files.summary:** Your home folder: view, move, manage and edit
 - **feedback.button:** Feedback
 - **feedback.title:** Feedback
 - **feedback.message:** What would you like to tell us?

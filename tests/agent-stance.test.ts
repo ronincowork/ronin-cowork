@@ -1,46 +1,44 @@
 /**
- * STANCE — what an Agent is doing, and where each answer comes from.
- *
- * Ronin used to answer this by matching the CLI's spinner glyphs on a capture of the pane,
- * for every session every two seconds. The journal states four of the five outright. The
- * fifth, `asking`, cannot come from a journal in any CLI — a permission prompt is drawn on
- * a screen and writes no line — so it stays a pane read, and it wins, because an Agent
- * stopped at a question is `working` as far as its journal knows.
+ * WHAT THE TERMINAL READ ASKS THE SCREEN. Status is the newest line of an Agent's output
+ * (AGENT_OUTPUT.md); the screen is read by the terminal read alone, for what no log writes:
+ * an open question, and for a CLI with no log, whether it is at work.
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { asksForInput, classifyStatus } from '../src/status.js';
+import { execFileSync } from 'node:child_process';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { activityMoved } from '../src/ws/events.js';
+import { ACTIVITY_SUBSCRIPTION } from '../src/tmux-client.js';
 
-/** The precedence as the roster loop applies it (src/routes/launch.ts). */
-const stanceOfRow = (asking: boolean, fromJournal?: string) => (asking ? 'asking' : (fromJournal ?? 'unknown'));
-
-test('a dialog on the pane outranks whatever the journal last saw', () => {
-  // The journal cannot know: the last thing it recorded was a tool going out.
-  assert.equal(stanceOfRow(true, 'working'), 'asking');
-  assert.equal(stanceOfRow(true, 'awaiting_you'), 'asking');
-  assert.equal(stanceOfRow(true, undefined), 'asking');
-});
-
-test('with no dialog the journal has the answer, and no journal is never a guess', () => {
-  assert.equal(stanceOfRow(false, 'working'), 'working');
-  assert.equal(stanceOfRow(false, 'replying'), 'replying');
-  assert.equal(stanceOfRow(false, 'awaiting_you'), 'awaiting_you');
-  // An Agent born before Ronin recorded its conversation contributes nothing, and the row
-  // says so rather than borrowing the screen's opinion.
-  assert.equal(stanceOfRow(false, undefined), 'unknown');
-});
-
-test('the pane is asked one question now, not three', () => {
+test('a question on the screen is told apart from work and from a ready prompt', () => {
   const asking = 'Do you want to proceed?\n❯ 1. Yes\n  2. No';
   const working = '✻ Cerebrating… (12s · esc to interrupt)';
   const ready = '│ > ';
   assert.equal(asksForInput(asking), true);
-  // These two used to become `thinking` and `ready` on the board. They are the journal's
-  // business now, and this function does not answer for them.
   assert.equal(asksForInput(working), false);
   assert.equal(asksForInput(ready), false);
-  // The full table stays for Mika's one-shot startup read, which asks something else:
-  // is this newly launched CLI up yet.
   assert.equal(classifyStatus(working), 'thinking');
   assert.equal(classifyStatus(ready), 'ready');
+});
+
+test('tmux\'s activity report wakes only the panes whose output moved', () => {
+  const last = new Map<string, string>();
+  assert.deepEqual(activityMoved('alpha:100,bravo:200,', last), [], 'the first report is a baseline');
+  assert.deepEqual(activityMoved('alpha:100,bravo:201,', last), ['bravo']);
+  assert.deepEqual(activityMoved('alpha:100,bravo:201,', last), [], 'nothing moved, nothing woken');
+});
+
+test('the activity subscription, as real tmux expands it, reads one entry per session', (t) => {
+  // An isolated server: its own socket directory, made first (a missing one falls back to the live socket).
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'act-'));
+  const tmux = (...args: string[]) => execFileSync('tmux', ['-S', path.join(dir, 's'), ...args], { encoding: 'utf8' });
+  t.after(() => { try { tmux('kill-server'); } catch { /* already gone */ } fs.rmSync(dir, { recursive: true, force: true }); });
+  tmux('new-session', '-d', '-s', 'alpha'); tmux('new-session', '-d', '-s', 'bravo');
+  const value = tmux('display-message', '-p', ACTIVITY_SUBSCRIPTION.replace(/^activity::/, '')).trim();
+  const last = new Map<string, string>();
+  activityMoved(value, last);
+  assert.deepEqual([...last.keys()].sort(), ['alpha', 'bravo'], value);
 });

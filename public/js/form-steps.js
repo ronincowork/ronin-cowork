@@ -237,32 +237,31 @@ export const modelWord = (row) => row?.model === NATIVE_MODEL || !row?.tier
 export function providerModelPair(read, write, field, { fixed = '', classes = '', blank = {}, labels = {} } = {}) {
   const providerSelect = el('select', classes);
   const modelSelect = el('select', classes);
-  const option = (label, value, disabled = false) => { const out = el('option', null, label); out.value = value; if (disabled) out.disabled = true; return out; };
-  const empty = { provider: blank.provider ?? t('forms.default', 'default'), model: blank.model ?? t('forms.default', 'default') };
+  providerSelect.setAttribute('aria-label', labels.provider ?? t('forms.provider', 'model provider'));
+  modelSelect.setAttribute('aria-label', labels.model ?? t('forms.model', 'model'));
+  const option = (label, value, disabled = false) => { const out = el('option', null, label); out.value = value; out.disabled = disabled; return out; };
   const paint = () => {
-    const rows = providerCatalog().rows;
     const current = read() || {};
-    if (!fixed) {
-      const seen = rows.filter((row, index) => rows.findIndex((other) => other.provider === row.provider) === index);
-      providerSelect.replaceChildren(option(empty.provider, ''));
-      for (const row of seen) providerSelect.add(option(row.operational ? row.provider_label : row.off ? t('forms.provider_turned_off', '{name} — turned off', { name: row.provider_label }) : t('forms.provider_off', '{name} — not on this machine', { name: row.provider_label }), row.provider, !row.operational));
-      providerSelect.value = seen.some((row) => row.provider === current.provider) ? String(current.provider) : '';
+    const providers = providerCatalog().providers;
+    providerSelect.replaceChildren(option(blank.provider ?? t('forms.default', 'default'), ''));
+    for (const entry of providers) {
+      const name = entry.cli_label || entry.label;
+      const label = entry.operational ? name : entry.off ? t('forms.provider_turned_off', '{name} — turned off', { name }) : entry.cli === 'hermes' ? `${name} — add a setup in Models` : t('forms.provider_off', '{name} — not on this machine', { name });
+      providerSelect.add(option(label, entry.provider, !entry.operational));
     }
+    providerSelect.value = current.provider || '';
     const chosen = fixed || providerSelect.value;
-    const offered = rows.filter((row) => row.provider === chosen);
-    modelSelect.replaceChildren(option(empty.model, ''));
-    for (const row of offered) {
-      const unavailable = row.selectable !== true;
-      const label = fixed && !row.operational
-        ? (row.off ? t('forms.model_turned_off', '{model} — turned off', { model: modelWord(row) }) : t('forms.model_off', '{model} — not on this machine', { model: modelWord(row) }))
-        : modelWord(row);
-      modelSelect.add(option(label, row.model, !row.operational || unavailable));
+    const rows = providerCatalog().rows.filter(row => row.provider === chosen);
+    modelSelect.replaceChildren(option(blank.model ?? t('forms.default', 'default'), ''));
+    for (const row of rows) {
+      const label = fixed && !row.operational ? (row.off ? t('forms.model_turned_off', '{model} — turned off', { model: modelWord(row) }) : t('forms.model_off', '{model} — not on this machine', { model: modelWord(row) })) : modelWord(row);
+      modelSelect.add(option(label, row.model, !row.selectable));
     }
-    modelSelect.value = offered.some((row) => row.model === current.model) ? String(current.model) : '';
+    modelSelect.value = current.model || '';
     modelSelect.disabled = !chosen;
   };
   providerSelect.addEventListener('change', () => { write(providerSelect.value, ''); paint(); });
-  modelSelect.addEventListener('change', () => { write(fixed || providerSelect.value, modelSelect.value); });
+  modelSelect.addEventListener('change', () => write(fixed || providerSelect.value, modelSelect.value));
   const wrap = el('div', 'fs-pair');
   if (!fixed) wrap.append(field(labels.provider ?? t('forms.provider', 'model provider'), providerSelect));
   wrap.append(field(labels.model ?? t('forms.model', 'model'), modelSelect));

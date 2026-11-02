@@ -7,12 +7,14 @@
  * on a profile of the door's surfaces (workbench-catalog.js), the door's surface seated in
  * Workspace 1 on first open. Models seats its own stones of providers (models-surface.js), a
  * stone dragged into a workspace or a selector card placing that provider whole; Workspaces
- * seats its own stones of folders (workspaces-surface.js) the same way, its three admin doors
+ * seats its own stones of Workspaces (workspaces-surface.js) and GitHub CLI beside them, its admin doors
  * dotted selector cards. Help (owner, 2026-10-21) seats the help outline in Workspace 1 and Mika
  * in Workspace 2 (a page stone dragged into a workspace reads that page there), her ordinary tile opened on her reading: a chat, not a terminal. Help is outside
- * Home's provider gate; with no provider Mika's seat says so in one line instead of her tile.
+ * Home's provider gate; with no provider Mika's seat says so in one line instead of her tile. Epics
+ * (owner, 2026-11-02; KAN-187) seats its own stones of Epics (epics-surface.js), as Workspaces seats its Workspaces.
  */
 import { WorkspaceKit } from './workspace-kit.js';
+import { FILES_ON } from './files-surface.js';
 import { t } from './lexicon.js';
 import { workbenchView } from './workspace-contract.js';
 import { registerWorkbenchCatalog, WORKBENCH_PROFILES, WORKBENCH_TYPES } from './workbench-catalog.js';
@@ -20,9 +22,9 @@ import { createProviderSetupSessionMount } from './provider-setup-session.js';
 import { loadProviderCatalog } from './form-steps.js';
 import { createModelDefaults, createModelProvider, createModelRefresh, createModelStones, providerOffers } from './models-surface.js';
 import { createGithubWorkspaceSetup } from './github-workspace-setup.js';
-import { createFolder, createFolderClone, createFolderGithub, createFolderNew, createFolderStones, createRootsReading, folderOffers } from './workspaces-surface.js';
-import { createWorkspaceAdd } from './workspace-add.js';
+import { createFolderGithub, createRootsReading, createWorkspaceNew, createWorkspaceRecord, createWorkspacesRead, createWorkspaceStones, workspaceOffers } from './workspaces-surface.js';
 import { campaignById, loadCampaigns, normalizeSelection } from './campaigns.js';
+import { createEpicRecord, createEpicsRead, createEpicStones } from './epics-surface.js';
 import { createHelpOutline, createHelpPage } from './help-outline.js';
 import { createMikaTilePool, reportMikaView } from './mika.js';
 import { readyMika } from './mika-ready.js';
@@ -109,9 +111,11 @@ export function createModelsView() {
   });
 }
 
-/** Workspaces: the stones of folders in Workspace 1 over the Campaign this tab looks at, a folder whole where a
- * stone is dropped or its card placed, one card per folder; Add a workspace, GitHub CLI and Clone a repository
- * as dotted cards, the folder they add taking their workspace. One read of the folders for the whole bench. */
+/** Workspaces: the stones of Workspaces in Tilespace 1 over the Campaign this tab looks at, a pressed one's page
+ * beside them; every Workspace a selector card, opened whole where a stone is dropped or its card placed; New
+ * Workspace a dotted card (owner, 2026-11-02); Files in Tilespace 2 where Ronin found Python (KAN-146),
+ * GitHub CLI there otherwise, the sign-in a private clone needs.
+ * One read of the pinned folders and one of the Workspaces for the whole bench. */
 export function createWorkspacesView() {
   const campaign = (ctx) => campaignById(normalizeSelection(ctx()?.state?.campaignSelection).primary_campaign_id);
   const providerSessions = createProviderSetupSessionMount();
@@ -119,30 +123,48 @@ export function createWorkspacesView() {
   const made = [];
   const keep = (surface) => { made.push(surface); return surface; };
   let github = null;
-  let cloneSeat = 'workspace2';
   return doorWorkbench({
-    id: 'workspaces', profile: WORKBENCH_PROFILES.workspaces, label: t('campaign_home.workspaces', 'Workspaces'), seat: WORKBENCH_TYPES.folderStones,
+    id: 'workspaces', profile: WORKBENCH_PROFILES.workspaces, label: t('campaign_home.workspaces', 'Workspaces'), seat: WORKBENCH_TYPES.workspaceRecords,
+    seats: { workspace1: WORKBENCH_TYPES.workspaceRecords, workspace2: FILES_ON ? WORKBENCH_TYPES.files : WORKBENCH_TYPES.folderGithub },
     loaded: loadCampaigns,
     environment: ({ bench, ctx }) => {
       const campaignId = () => campaign(ctx)?.id || '';
-      const placeFolder = (name, workspace) => bench().place(WORKBENCH_TYPES.folder, workspace, { key: name });
+      const workspacesRead = createWorkspacesRead(campaignId);
       const environment = {
         mountProviderSetupSession: providerSessions.mountProviderSetupSession,
-        folders: () => folderOffers(reading),
-        folderStones: () => keep(createFolderStones({ reading, campaignId, workbench: bench() })),
-        folder: (_workspace, detail) => keep(createFolder(detail.key, { reading, campaignId })),
-        folderNew: (workspace) => keep(createFolderNew({ reading, campaignId, placeFolder: (name) => placeFolder(name, workspace) })),
-        folderAdd: (workspace) => keep(createWorkspaceAdd({ campaignId, placeFolder: async (name) => { await reading.read(); placeFolder(name, workspace); }, signIn: () => bench().place(WORKBENCH_TYPES.folderGithub, workspace === 'workspace1' ? 'workspace2' : 'workspace1') })),
+        workspaces: () => workspaceOffers(workspacesRead),
+        workspaceRecords: () => keep(createWorkspaceStones({ reading, workspacesRead, campaignId, workbench: bench() })),
+        workspaceRecord: (_workspace, detail) => keep(createWorkspaceRecord(detail.key, { reading, workspacesRead, campaignId })),
+        workspaceNew: (workspace) => keep(createWorkspaceNew({ reading, workspacesRead, campaignId, place: (name) => bench().place(WORKBENCH_TYPES.workspaceRecord, workspace, { key: name }) })),
         folderGithub: () => keep(createFolderGithub(github ??= boxes())),
-        folderClone: (workspace) => { cloneSeat = workspace; return keep(createFolderClone(github ??= boxes())); },
       };
       const boxes = () => createGithubWorkspaceSetup({
         environment, workspace: 'workspace2',
-        onCloned: async (root) => { await reading.read(); if (root?.name) placeFolder(root.name, cloneSeat); },
+        onCloned: () => reading.read(),
       });
       return environment;
     },
     destroy: () => { for (const surface of made.splice(0)) surface.destroy?.(); github?.destroy(); github = null; providerSessions.destroyAll(); },
+  });
+}
+
+/** Epics (owner, 2026-11-02; KAN-187): a stone per Epic in Tilespace 1 over the Campaign this tab looks at,
+ * a pressed one's reading beside them, a dragged one whole where it is dropped; one read of the work items. */
+export function createEpicsView() {
+  const campaign = (ctx) => campaignById(normalizeSelection(ctx()?.state?.campaignSelection).primary_campaign_id);
+  const made = [];
+  const keep = (surface) => { made.push(surface); return surface; };
+  return doorWorkbench({
+    id: 'epics', profile: WORKBENCH_PROFILES.epics, label: t('campaign_home.epics', 'Epics'), seat: WORKBENCH_TYPES.epicRecords,
+    loaded: loadCampaigns,
+    environment: ({ bench, ctx }) => {
+      const epicsRead = createEpicsRead(() => campaign(ctx)?.id || '');
+      return {
+        epicRecords: () => keep(createEpicStones({ epicsRead, workbench: bench() })),
+        epicRecord: (_workspace, detail) => keep(createEpicRecord(detail.key, { epicsRead })),
+      };
+    },
+    destroy: () => { for (const surface of made.splice(0)) surface.destroy?.(); },
   });
 }
 

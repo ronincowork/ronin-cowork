@@ -5,18 +5,18 @@ import { listSessions, type SessionInfo } from '../tmux.js';
 import { tmux, type TmuxClient } from '../tmux-client.js';
 import { withAxes, type SessionWithAxes } from '../tegami.js';
 import { unwatch, watchFor } from './watchers.js';
-import { emitTranscriptWatch } from '../sockets.js';
+import { emitPaneActivity, emitTranscriptWatch, onRowChanged } from '../sockets.js';
 
 const eventClients = new Set<WebSocket>();
 
 /*
- * THE PUSH — the browser store holds what arrives here. Each tick (a tmux notification, or
- * the 2s clock while a browser is connected) takes ONE session listing and builds both
+ * THE PUSH — the browser store holds what arrives here. Each tick (a tmux notification, a
+ * pane's output, or a read writing a line) takes ONE session listing and builds both
  * messages from it: {t:'sessions', list} and {t:'home', rows}, each sent only when a field
  * the UI paints moved. While a GitHub or git setup session is attached, the tick also sends
  * {t:'github-setup', github} when that answer moved.
  *
- * HELD messages ({t:'teams'}, {t:'messages'}, {t:'memory'}) are published when their
+ * HELD messages ({t:'teams'}, {t:'epics'}, {t:'messages'}, {t:'memory'}) are published when their
  * resource changes, sent only when they differ from the last, and sent whole to every fresh
  * connection. A board's or a Team's cron jobs are asked for: {t:'want', resource, board|team}
  * answers that one connection with the message every connection is sent on a write.
@@ -31,6 +31,8 @@ export interface Feed {
   list: () => Promise<SessionInfo[]>;
   home: (sessions: SessionWithAxes[]) => Promise<unknown[]>;
   teams: () => Promise<unknown[]>;
+  /** Every Epic (a level-1 work item) whole, with its holder: the Epics workbench's stones (KAN-190). */
+  epics: () => Promise<unknown[]>;
   messages: () => Promise<unknown[]>;
   wipeboard: (board: string) => Promise<Record<string, unknown> | null>;
   jikan: (team: string) => Promise<unknown[] | null>;
@@ -38,7 +40,7 @@ export interface Feed {
   shutdown: (id: string) => object | null;
 }
 const empty: Feed = {
-  list: listSessions, home: async () => [], teams: async () => [], messages: async () => [],
+  list: listSessions, home: async () => [], teams: async () => [], epics: async () => [], messages: async () => [],
   wipeboard: async () => null, jikan: async () => null, github: { attached: async () => false, answer: async () => null },
   shutdown: () => null,
 };
@@ -133,11 +135,14 @@ export function tick(): Promise<Tick> {
   return ticking;
 }
 
-// Called after every roster write: one read of the rosters for every connected tab.
+// Called after every roster or work-item write: one read of the rosters, and one of the
+// Epics, for every connected tab; each is sent only when it moved.
 export function pushTeams(): Promise<void> {
   teamsRead = teamsRead.then(async () => {
     const rosters = await feed.teams().catch(() => undefined);
     if (rosters) publishHeld({ t: 'teams', rosters });
+    const epics = await feed.epics().catch(() => undefined);
+    if (epics) publishHeld({ t: 'epics', epics });
   });
   return teamsRead;
 }
@@ -216,7 +221,7 @@ export function handleEvents(ws: WebSocket): void {
   // The one thing a browser says on this socket. Everything else it sends is ignored: this
   // is a feed, and an unknown message from a client is not a reason to drop the connection.
   ws.on('message', (raw) => {
-    let msg: { t?: string; session?: unknown; reading?: unknown; resource?: unknown; board?: unknown; team?: unknown; id?: unknown };
+    let msg: { t?: string; session?: unknown; reading?: unknown; watches?: unknown[]; resource?: unknown; board?: unknown; team?: unknown; id?: unknown };
     try {
       msg = JSON.parse(String(raw)) as typeof msg;
     } catch {
@@ -235,12 +240,14 @@ export function handleEvents(ws: WebSocket): void {
       return;
     }
     if (msg?.t !== 'watch') return;
-    const session = typeof msg.session === 'string' ? msg.session : '';
-    watchFor(ws, session, typeof msg.reading === 'string' ? msg.reading : '');
-    // Somebody is now looking at this Agent: a good moment for whoever follows journals to
-    // make sure it is following this one. Already following is nothing at all; not following
+    const watches = (Array.isArray(msg.watches) ? msg.watches : [])
+      .filter((w): w is { session: string; reading?: unknown } => !!w && typeof w === 'object' && typeof (w as { session?: unknown }).session === 'string')
+      .map((w) => ({ session: w.session, reading: typeof w.reading === 'string' ? w.reading : '' }));
+    watchFor(ws, watches);
+    // Somebody is now looking at these Agents: a good moment for whoever follows journals to
+    // make sure it is following them. Already following is nothing at all; not following
     // means installing a watcher, which catches up what was missed.
-    if (session) emitTranscriptWatch(session);
+    for (const session of new Set(watches.map((w) => w.session))) if (session) emitTranscriptWatch(session);
   });
   // A fresh connection gets each message exactly once. The held ones it is sent now, as every
   // other tab holds them; a later publish is a newer change. The session list and the rows
@@ -269,13 +276,43 @@ export function wireTmuxNotifications(client: Pick<TmuxClient, 'on'>, refresh: (
   return () => unsubscribes.forEach((unsubscribe) => unsubscribe());
 }
 
+/**
+ * WHICH PANES HAD OUTPUT, from tmux's activity subscription: `name:stamp,` per session. Only
+ * the sessions whose stamp moved since the last report are returned.
+ */
+export function activityMoved(value: string, last: Map<string, string>): string[] {
+  const moved: string[] = [];
+  const now = new Map<string, string>();
+  for (const entry of value.split(',')) {
+    const at = entry.lastIndexOf(':');
+    if (at <= 0) continue;
+    const name = entry.slice(0, at);
+    const stamp = entry.slice(at + 1);
+    now.set(name, stamp);
+    if (last.has(name) && last.get(name) !== stamp) moved.push(name);
+  }
+  last.clear();
+  for (const [name, stamp] of now) last.set(name, stamp);
+  return moved;
+}
+
+/*
+ * NO CLOCK. The push runs when something changed: tmux says the session set changed, tmux says a
+ * pane had output (which is also what wakes the terminal read), or a read wrote a line (the
+ * part calls rowChanged). An Agent doing nothing costs nothing; the beat stays, carrying no data.
+ */
 export function startSessionsBroadcast(next: Feed): void {
   feedEvents(next);
   void pushTeams();
   void pushMessages();
   wireTmuxNotifications(tmux, () => { void tick(); });
-  onClock('sessions_broadcast', 2000, async () => {
-    await tick();
+  const stamps = new Map<string, string>();
+  tmux.on('subscription', (n) => {
+    if (!n.subscription?.startsWith('activity')) return;
+    const moved = activityMoved(n.value ?? '', stamps);
+    for (const name of moved) emitPaneActivity(name);
+    if (moved.length) void tick();
   });
+  onRowChanged(() => { void tick(); });
   onClock('events_beat', BEAT_MS, async () => { broadcastEvent({ t: 'beat' }); });
 }
