@@ -21,6 +21,8 @@ const box = await mkdtemp(path.join(os.tmpdir(), 'ronin-provider-catalog-api-'))
 process.env.BIND = '127.0.0.1'; // src/machine-settings.ts must not shell `tailscale` at import
 process.env.RONIN_USER_ROOT = path.join(box, 'ronin');
 process.env.RONIN_CATALOGS_DIR = path.join(box, 'ronin', 'catalogs');
+process.env.HERMES_HOME = path.join(box, 'hermes');
+process.env.DOTENV_CONFIG_PATH = path.join(box, '.env');
 const { registerCatalogs } = await import('../src/routes/catalogs.js');
 const { providerCatalogAnswer, STOCK_CATALOG_MD } = await import('../src/model-providers.js');
 
@@ -45,11 +47,16 @@ test('GET /api/provider-catalog is the catalog object, whole and dated', async (
   assert.deepEqual(body.withdrawn, []);
   assert.ok(body.providers.length >= 5);
   for (const entry of body.providers) {
-    assert.deepEqual(Object.keys(entry).filter((key) => !['maturity', 'native', 'nativeDangerousCmd', 'launch_modes'].includes(key)).sort(), ['cli', 'cli_label', 'label', 'launchable', 'models', 'models_dev', 'off', 'operational', 'origin', 'provider', 'shadowed'].filter((key) => key !== 'models_dev' || entry.models_dev));
+    assert.deepEqual(Object.keys(entry).filter((key) => !['maturity', 'native', 'nativeDangerousCmd', 'launch_modes'].includes(key)).sort(), ['cli', 'cli_label', ...(entry.cli === 'hermes' ? ['connections'] : []), 'label', 'launchable', 'models', 'models_dev', 'off', 'operational', 'origin', 'provider', 'shadowed'].filter((key) => key !== 'models_dev' || entry.models_dev));
     assert.equal(entry.origin, 'stock');
     assert.equal(entry.operational, false);
     if (entry.maturity === 'comingSoon') assert.deepEqual(entry.models, [], `${entry.label} is visible but unavailable`);
-    else {
+    else if (entry.cli === 'hermes') {
+      assert.equal(entry.connections, false, 'Hermes stays one harness in the provider picker');
+      assert.equal(entry.native, undefined, 'Hermes launches a named setup, not an implicit Native model');
+      assert.deepEqual(entry.models, [], 'a fresh installation has no saved Hermes setups');
+      assert.deepEqual(entry.launch_modes, ['configured', 'live_dangerously']);
+    } else {
       assert.ok(entry.native, `${entry.label} carries its native launch`);
       assert.ok(entry.launch_modes.includes('configured'), `${entry.label} carries supported launch modes`);
       assert.deepEqual(entry.models.map((row: { model: string; name: string; selectable: boolean }) => [row.model, row.name, row.selectable]), [['native', 'Native', false]], `${entry.label}: nothing read from its CLI, so Native alone and not selectable`);
