@@ -66,8 +66,7 @@ else that uses the shape takes `tool.name` and `tool.target` only.
   name and target), `ask` is *asking you*, `turn` is *awaiting you*, anything else is
   *working*, and an empty file is *unknown*. The CLI's injected text and a log's notes are
   passed over, so a compaction (its summary, then *session started*) leaves an idle Agent
-  *awaiting you*. An Agent whose newest lines predate the update (no `turn` lines, tools as
-  `act`) and end on a reply is *awaiting you* too. Each write calls `rowChanged`, and Core pushes the
+  *awaiting you*. Each write calls `rowChanged`, and Core pushes the
   home rows then; there is no clock.
 - **Stale or current** is the `ts` of the newest line; which tool lines count as meaningful
   work is the reader's call.
