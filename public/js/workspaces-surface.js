@@ -18,6 +18,7 @@ import { createPhalanx } from './phalanx.js';
 import { request } from './request.js';
 import { t } from './lexicon.js';
 import { ask } from './ask.js';
+import { subscribe as subscribeTeams, teamsFromState } from './team-controller.js';
 import { SURFACE_DRAG } from './workbench.js';
 import { WORKBENCH_TYPES } from './workbench-catalog.js';
 
@@ -326,8 +327,10 @@ const dragWorkspace = (stone) => ({
   } },
 });
 
-/** The stones of Workspaces, each its name only (owner, 2026-11-02); a pressed one's page beside the
- * rail; a stone dragged into a tilespace opens that Workspace there whole. */
+/** The stones of Workspaces, each its name only (owner, 2026-11-02), with the Teams launched in it and
+ * their Epics (each Team's epic, the pushed rosters' `board`) as branch rows under it, as the Teams
+ * workbench lays them; a pressed stone or row opens the Workspace's page beside the rail; a stone
+ * dragged into a tilespace opens that Workspace there whole. */
 export function createWorkspaceStones({ reading, workspacesRead, campaignId, workbench }) {
   const { createSurface } = WorkspaceKit.primitives;
   const out = createSurface({ label: t('workspaces.title', 'Workspaces'), className: 'setup-surface workspaces-records' });
@@ -335,9 +338,10 @@ export function createWorkspaceStones({ reading, workspacesRead, campaignId, wor
   const say = sayInto(messages);
   const stones = createPhalanx({
     className: 'workspace-record-stones',
+    branches: 'column',
     renderDetail: (item, host) => {
       host.scrollTop = 0;
-      const w = workspacesRead.list().find((row) => row.name === item.id);
+      const w = workspacesRead.list().find((row) => row.name === (item.workspace || item.id));
       if (!w) return;
       const page = workspacePage(w, { reading, campaignId, say, onSaved: () => void workspacesRead.read() });
       const head = el('div', 'workspace-page-head');
@@ -348,15 +352,28 @@ export function createWorkspaceStones({ reading, workspacesRead, campaignId, wor
   stones.mount(out.content, { before: [messages] });
   const paint = (answer) => {
     if (answer && !answer.ok) { say(answer.message, true); return; }
-    if (!workspacesRead.list().length) say(t('workspaces.none', 'No Workspaces yet. Place New Workspace from the selector.'));
-    stones.setItems(workspacesRead.list().map((w) => dragWorkspace({ id: w.name, label: w.title || w.name })));
+    if (answer) say(workspacesRead.list().length ? '' : t('workspaces.none', 'No Workspaces yet. Place New Workspace from the selector.'));
+    const teams = teamsFromState().filter((team) => team.durable);
+    const next = workspacesRead.list().map((w) => {
+      const own = teams.filter((team) => team.workspace === w.name);
+      const epics = [...new Map(own.filter((team) => team.board?.title).map((team) => [team.board.title, team.board])).values()];
+      return dragWorkspace({ id: w.name, label: w.title || w.name, under: [
+        own.map((team, n) => ({ id: `${w.name}:team:${n}`, label: team.title || team.name, state: t('workspaces.team', 'Team'), workspace: w.name })),
+        epics.map((epic, n) => ({ id: `${w.name}:epic:${n}`, label: epic.title, state: epic.status || t('workspaces.epic', 'Epic'), workspace: w.name })),
+      ] });
+    });
+    // A Teams push that moves nothing a stone shows leaves the stones and an open page alone.
+    const signature = JSON.stringify(next.map(({ id, label, under }) => [id, label, under]));
+    if (signature !== shown) { shown = signature; stones.setItems(next); }
     workbench?.refreshSelector?.();
   };
+  let shown = null;
   const stop = workspacesRead.subscribe(paint);
+  const stopTeams = subscribeTeams(() => paint());
   return {
     el: out.el,
     show: () => { void workspacesRead.read(); },
-    destroy: () => { stop(); stones.destroy(); },
+    destroy: () => { stop(); stopTeams?.(); stones.destroy(); },
   };
 }
 

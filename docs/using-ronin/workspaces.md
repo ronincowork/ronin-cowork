@@ -22,7 +22,8 @@ everything they need.
 ## Make or change a Workspace
 
 Open the **Workspaces** door on Ronin Home and press a Workspace, or place **New Workspace** from
-the selector. Its page reads like New Team, every section folding to its answer: **Name & objective** (the
+the selector. Each stone lists the Teams launched in the Workspace and the Epics they work on. Its page reads
+like New Team, every section folding to its answer: **Name & objective** (the
 name is chosen once, when the Workspace is made; Teams hold it), then
 **Agent info**, its instructions and Mode (folded until you open it), then **Locations**: a row per folder with its note
 and, for a folder with Git, how Agents work in it (each in its own desk, reviewed, or all in one
