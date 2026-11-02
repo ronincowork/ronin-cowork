@@ -109,8 +109,8 @@ function folderBrowser({ ticked, onTick }) {
   return { el: shell, current: () => current, home: () => home, paint, load };
 }
 
-/** A Workspace's page in the launch forms' format (owner, 2026-11-02): 1 Name & objective, 2 Instructions
- * and 3 Mode folded to their answer, 4 Locations with Add folders and Clone from GitHub folded under it.
+/** A Workspace's page in the launch forms' format (owner, 2026-11-02): 1 Name & objective, 2 Instructions,
+ * 3 Mode, 4 Locations with Add folders and Clone from GitHub under it; every section folds to its answer.
  * `null` is a new Workspace. Returns the page and its Save (Create) action for the surface head. */
 export function workspacePage(w, { reading, campaignId, say, onSaved = () => {} }) {
   const { createAction, createField } = WorkspaceKit.primitives;
@@ -119,11 +119,11 @@ export function workspacePage(w, { reading, campaignId, say, onSaved = () => {} 
   const page = el('div', 'ntf-form fs-steps workspace-form');
   const text = (value, onInput, placeholder = '') => { const i = el('input'); i.type = 'text'; i.value = value; i.placeholder = placeholder; i.addEventListener('input', () => onInput(i.value)); return i; };
   const area = (value, onInput) => { const a = el('textarea'); a.rows = 4; a.value = value; a.addEventListener('input', () => onInput(a.value)); return a; };
-  const open = { instructions: false, mode: false, add: false, clone: false };
+  const open = { top: true, instructions: false, mode: false, locations: true, add: false, clone: false };
   const MODES = { configured: t('launch_mode.configured', 'Native'), live_dangerously: t('launch_mode.live', 'Dangerously') };
 
   /* ---- 1 · Name & objective ---- */
-  const stepTop = createStep({ n: 1, key: 'top', title: t('workspaces.step_top', 'Name & objective') });
+  const stepTop = createStep({ n: 1, key: 'top', title: t('workspaces.step_top', 'Name & objective'), onToggle: () => { open.top = !open.top; paint(); } });
   stepTop.body.append(createField({ label: t('workspaces.field_title', 'Title'), control: text(draft.title, (v) => { draft.title = v; }) }).el);
   if (isNew) stepTop.body.append(createField({ label: t('workspaces.name', 'Name'), control: text('', (v) => { draft.name = v.trim().toLowerCase(); }, t('new_team.name_placeholder', 'lowercase, digits, - _')) }).el);
   stepTop.body.append(createField({ label: t('workspaces.objective', 'Objective'), control: area(draft.objective, (v) => { draft.objective = v; }) }).el);
@@ -143,7 +143,7 @@ export function workspacePage(w, { reading, campaignId, say, onSaved = () => {} 
   stepMode.body.append(mode.el);
 
   /* ---- 4 · Locations: a row per folder; Add folders and Clone from GitHub folded under them ---- */
-  const stepLocations = createStep({ n: 4, key: 'locations', title: t('workspaces.locations', 'Locations') });
+  const stepLocations = createStep({ n: 4, key: 'locations', title: t('workspaces.locations', 'Locations'), onToggle: () => { open.locations = !open.locations; paint(); } });
   const picked = new Map([...draft.repos, ...draft.folders].map((row) => [row.name, row.note]));
   const rootByName = (name) => reading.roots().find((root) => root.name === name);
   const rootByDir = (dir) => reading.roots().find((root) => root.dir === dir);
@@ -253,7 +253,8 @@ export function workspacePage(w, { reading, campaignId, say, onSaved = () => {} 
     const first = draft.instructions.trim().split('\n')[0];
     stepInstructions.setCollapsed(!open.instructions, first || t('workspaces.none_yet', 'None'), true);
     stepMode.setCollapsed(!open.mode, MODES[draft.launch_mode], true);
-    stepLocations.setCollapsed(false, '', false);
+    stepTop.setCollapsed(!open.top, draft.title || draft.name || t('workspaces.none_yet', 'None'), true);
+    stepLocations.setCollapsed(!open.locations, picked.size === 1 ? t('workspaces.one_folder', '1 folder') : t('workspaces.folders_n', '{n} folders', { n: picked.size }), true);
     stepAdd.setCollapsed(!open.add, '', true);
     stepClone.setCollapsed(!open.clone, '', true);
     cloneWhere.textContent = t('workspaces.clone_where', 'Cloned into {dir}: open another folder under Add folders to change it.', { dir: browser.current() || '~' });
