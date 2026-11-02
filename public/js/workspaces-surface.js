@@ -109,8 +109,8 @@ function folderBrowser({ ticked, onTick }) {
   return { el: shell, current: () => current, home: () => home, paint, load };
 }
 
-/** A Workspace's page in the launch forms' format (owner, 2026-11-02): 1 Name & objective, 2 Instructions,
- * 3 Mode, 4 Locations with Add folders and Clone from GitHub under it; every section folds to its answer.
+/** A Workspace's page in the launch forms' format (owner, 2026-11-02): 1 Name & objective, 2 Agent info
+ * (instructions and Mode), 3 Locations with Add folders and Clone from GitHub under it; every section folds to its answer.
  * `null` is a new Workspace. Returns the page and its Save (Create) action for the surface head. */
 export function workspacePage(w, { reading, campaignId, say, onSaved = () => {} }) {
   const { createAction, createField } = WorkspaceKit.primitives;
@@ -119,31 +119,34 @@ export function workspacePage(w, { reading, campaignId, say, onSaved = () => {} 
   const page = el('div', 'ntf-form fs-steps workspace-form');
   const text = (value, onInput, placeholder = '') => { const i = el('input'); i.type = 'text'; i.value = value; i.placeholder = placeholder; i.addEventListener('input', () => onInput(i.value)); return i; };
   const area = (value, onInput) => { const a = el('textarea'); a.rows = 4; a.value = value; a.addEventListener('input', () => onInput(a.value)); return a; };
-  const open = { top: true, instructions: false, mode: false, locations: true, add: false, clone: false };
+  const open = { top: true, agents: false, locations: true, add: false, clone: false };
   const MODES = { configured: t('launch_mode.configured', 'Native'), live_dangerously: t('launch_mode.live', 'Dangerously') };
 
   /* ---- 1 · Name & objective ---- */
   const stepTop = createStep({ n: 1, key: 'top', title: t('workspaces.step_top', 'Name & objective'), onToggle: () => { open.top = !open.top; paint(); } });
   stepTop.body.append(createField({ label: t('workspaces.field_title', 'Title'), control: text(draft.title, (v) => { draft.title = v; }) }).el);
-  if (isNew) stepTop.body.append(createField({ label: t('workspaces.name', 'Name'), control: text('', (v) => { draft.name = v.trim().toLowerCase(); }, t('new_team.name_placeholder', 'lowercase, digits, - _')) }).el);
+  // The name is chosen once: Teams and their Agents hold it, so a created Workspace shows it and never changes it.
+  stepTop.body.append(isNew
+    ? createField({ label: t('workspaces.name', 'Name'), control: text('', (v) => { draft.name = v.trim().toLowerCase(); }, t('new_team.name_placeholder', 'lowercase, digits, - _')) }).el
+    : createField({ label: t('workspaces.name', 'Name'), control: el('code', null, draft.name) }).el);
   stepTop.body.append(createField({ label: t('workspaces.objective', 'Objective'), control: area(draft.objective, (v) => { draft.objective = v; }) }).el);
 
   /* ---- 2 · Instructions, folded to its first line ---- */
-  const stepInstructions = createStep({ n: 2, key: 'instructions', title: t('workspaces.instructions', 'Instructions'), onToggle: () => { open.instructions = !open.instructions; paint(); } });
-  stepInstructions.body.append(area(draft.instructions, (v) => { draft.instructions = v; }));
+  /* ---- 2 · Agent info: what every Agent in it is told, and the Mode they launch in ---- */
+  const stepAgents = createStep({ n: 2, key: 'agents', title: t('workspaces.agent_info', 'Agent info'), onToggle: () => { open.agents = !open.agents; paint(); } });
+  stepAgents.body.append(createField({ label: t('workspaces.instructions', 'Instructions'), control: area(draft.instructions, (v) => { draft.instructions = v; }) }).el);
 
   /* ---- 3 · Mode, folded to its answer ---- */
-  const stepMode = createStep({ n: 3, key: 'mode', title: t('launch_mode.mode', 'Mode'), onToggle: () => { open.mode = !open.mode; paint(); } });
   const mode = ask([{ fields: [
     { key: 'launch_mode', label: t('launch_mode.mode', 'Mode'), options: [
       { v: 'configured', l: MODES.configured, sub: t('launch_mode.configured_sub', 'Do not override the provider CLI’s approval behavior. Model selection is separate.') },
       { v: 'live_dangerously', l: MODES.live_dangerously, sub: t('workspaces.live_sub', 'Each provider’s own approval-bypass launch; Native where a provider has none.') },
     ] },
   ] }], { value: { launch_mode: draft.launch_mode }, density: 'tight', onChange: (value) => { draft.launch_mode = value.launch_mode; paint(); } });
-  stepMode.body.append(mode.el);
+  stepAgents.body.append(mode.el);
 
   /* ---- 4 · Locations: a row per folder; Add folders and Clone from GitHub folded under them ---- */
-  const stepLocations = createStep({ n: 4, key: 'locations', title: t('workspaces.locations', 'Locations'), onToggle: () => { open.locations = !open.locations; paint(); } });
+  const stepLocations = createStep({ n: 3, key: 'locations', title: t('workspaces.locations', 'Locations'), onToggle: () => { open.locations = !open.locations; paint(); } });
   const picked = new Map([...draft.repos, ...draft.folders].map((row) => [row.name, row.note]));
   const rootByName = (name) => reading.roots().find((root) => root.name === name);
   const rootByDir = (dir) => reading.roots().find((root) => root.dir === dir);
@@ -251,8 +254,7 @@ export function workspacePage(w, { reading, campaignId, say, onSaved = () => {} 
 
   function paint() {
     const first = draft.instructions.trim().split('\n')[0];
-    stepInstructions.setCollapsed(!open.instructions, first || t('workspaces.none_yet', 'None'), true);
-    stepMode.setCollapsed(!open.mode, MODES[draft.launch_mode], true);
+    stepAgents.setCollapsed(!open.agents, [MODES[draft.launch_mode], first].filter(Boolean).join(' · '), true);
     stepTop.setCollapsed(!open.top, draft.title || draft.name || t('workspaces.none_yet', 'None'), true);
     stepLocations.setCollapsed(!open.locations, picked.size === 1 ? t('workspaces.one_folder', '1 folder') : t('workspaces.folders_n', '{n} folders', { n: picked.size }), true);
     stepAdd.setCollapsed(!open.add, '', true);
@@ -260,7 +262,7 @@ export function workspacePage(w, { reading, campaignId, say, onSaved = () => {} 
     cloneWhere.textContent = t('workspaces.clone_where', 'Cloned into {dir}: open another folder under Add folders to change it.', { dir: browser.current() || '~' });
     paintRows();
   }
-  page.append(stepTop.el, stepInstructions.el, stepMode.el, stepLocations.el);
+  page.append(stepTop.el, stepAgents.el, stepLocations.el);
   paint();
   if (!reading.roots().length) void reading.read().then(() => { paint(); browser.paint(); });
   return { el: page, action };

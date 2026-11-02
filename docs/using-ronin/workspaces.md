@@ -22,8 +22,9 @@ everything they need.
 ## Make or change a Workspace
 
 Open the **Workspaces** door on Ronin Home and press a Workspace, or place **New Workspace** from
-the selector. Its page reads like New Team, every section folding to its answer: **Name & objective**, then
-**Instructions** and **Mode** (folded until you open them), then **Locations**: a row per folder with its note
+the selector. Its page reads like New Team, every section folding to its answer: **Name & objective** (the
+name is chosen once, when the Workspace is made; Teams hold it), then
+**Agent info**, its instructions and Mode (folded until you open it), then **Locations**: a row per folder with its note
 and, for a folder with Git, how Agents work in it (each in its own desk, reviewed, or all in one
 folder). Open **Add folders** to browse this machine and tick the folders it uses; untick one, or
 press ×, to take it out. Open **Clone from GitHub** to bring in a repository: it lands in the
