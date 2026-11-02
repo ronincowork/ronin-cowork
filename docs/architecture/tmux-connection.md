@@ -92,6 +92,12 @@ and classified only when its `#{window_activity}` stamp moved since the last
 classification (`createActivityCache` in `src/status.ts`); an unchanged session keeps its
 last status, ctx and model.
 
+Which panes had output comes from one tmux subscription on the control client,
+`ACTIVITY_SUBSCRIPTION` in `src/tmux-client.ts`: `name:stamp` per session, comma-separated.
+The comma is written `#,` because a bare comma inside `#{S:…}` is tmux's own separator and is
+dropped. `activityMoved` in `src/ws/events.ts` names the sessions whose stamp moved; each
+wakes the terminal read (`onPaneActivity`) and a home push.
+
 ## Parts: what is on disk, and what runs
 
 The Services parts live under `src/services/` (a placed copy; see the services repo's

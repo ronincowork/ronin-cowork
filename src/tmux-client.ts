@@ -61,7 +61,10 @@ interface StartupReply {
 export const TMUX_CONTROL_HOLDER = 'grid_ctl';
 const DEFAULT_TIMEOUT_MS = 5_000;
 const BACKOFF_MS = [200, 1_000, 5_000] as const;
-const ACTIVITY_SUBSCRIPTION = 'activity::#{S:#{session_name}:#{window_activity},}';
+/* `#,` and not `,`: a bare comma inside #{S:} is tmux's own separator and is dropped, so every
+ * session ran into the next ("a:1b:2"), no pane was ever seen to move, and the terminal read
+ * never ran: no question reached Chat (owner, 2026-11-02). */
+export const ACTIVITY_SUBSCRIPTION = 'activity::#{S:#{session_name}:#{window_activity}#,}';
 const tmuxEnvironment = (): string => `${process.env.TMUX ?? ''}\0${process.env.TMUX_TMPDIR ?? ''}`;
 
 class ConnectionLostError extends Error {}
