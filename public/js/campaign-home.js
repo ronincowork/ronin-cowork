@@ -1,9 +1,10 @@
 /* part of the ronin-cowork client — see js/README.md */
 /**
  * RONIN HOME — the quiet root arrival and its doors out (PATTERNS.md, Home; owner, 2026-10-19).
- * THE OFFICE (owner, 2026-11-02; KAN-186, KAN-191): three stones in a triangle, Teams (who does the
- * work), Workspaces (where the work is) and Epics (what the work is), at Home's stone size with even
- * room between them and no heading; Models, Help and Settings three smaller stones in a vertical
+ * THE OFFICE (owner, 2026-11-02; KAN-186, KAN-191, KAN-194): three stones in a triangle read Who,
+ * What, Where: Teams (who does the work) on top, Epics (what the work is) bottom left, Workspaces
+ * (where the work is) bottom right, at Home's stone size with even room between them, no heading,
+ * a little left of centre; Model Providers, Help and Settings three smaller stones in a vertical
  * line on the right of the page, inset from its edge. Home stays a page; each door opens its own
  * workbench in this tab (door-workbenches.js), the bar reading RoninCowork • Home • <door>
  * with Home the way back. A door is a link: a plain press navigates here, a modified press
@@ -35,15 +36,15 @@ const el = (tag, cls, text) => {
 function OFFICE() {
   return [
     { key: 'teams', route: 'cowork', glyph: '人人', name: t('campaign_home.teams', 'Teams'), is: t('campaign_home.teams_is', 'Who does the work') },
-    { key: 'workspaces', route: 'workspaces', glyph: '⌂', name: t('campaign_home.workspaces', 'Workspaces'), is: t('campaign_home.workspaces_is', 'Where the work is') },
     { key: 'epics', route: 'epics', glyph: '◇', name: t('campaign_home.epics', 'Epics'), is: t('campaign_home.epics_is', 'What the work is') },
+    { key: 'workspaces', route: 'workspaces', glyph: '⌂', name: t('campaign_home.workspaces', 'Workspaces'), is: t('campaign_home.workspaces_is', 'Where the work is') },
   ];
 }
 
 /** The smaller stones on the right, one above the other. Settings' route is read at paint. */
 function SIDE() {
   return [
-    { key: 'models', route: 'models', glyph: '✶', name: t('campaign_home.models', 'Models'), is: t('campaign_home.models_is', 'Model providers on this machine: install, sign in, choose') },
+    { key: 'models', route: 'models', glyph: '✶', name: t('campaign_home.model_providers', 'Model Providers'), is: t('campaign_home.models_is', 'Model providers on this machine: install, sign in, choose') },
     { key: 'help', route: 'help', glyph: 'ミ', name: t('campaign_home.help', 'Help'), is: t('campaign_home.help_is', 'The guides, and Mika to ask'), gated: false },
     { key: 'settings', route: null, glyph: '⚙', name: t('campaign_home.settings', 'Settings'), is: t('campaign_home.settings_is', 'Setup, and this machine’s settings'), gated: false },
   ];

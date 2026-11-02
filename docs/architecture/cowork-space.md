@@ -119,11 +119,14 @@ else does.
 ### The root landing
 
 The bare `/` route is the landing, not a remembered workspace and not a Campaign editor.
-Its centre is three stones in a triangle (owner, 2026-11-02; KAN-186, KAN-191), no heading over it:
-**Teams** (who does the work) at the apex, **Workspaces** (where the work is) and **Epics** (what the
-work is, ◇, drawn at ⌂'s visual size and weight: `--ch-glyph-epics`) under it, each at Home's stone size from before (208px square) with one even gap across
-and down (`--space-section`). **Models**, **Help** and **Settings** are three smaller stones in a vertical
-line on the right of the page, inset from its edge by `--space-section` (in a row under the triangle
+Its centre is three stones in a triangle (owner, 2026-11-02; KAN-186, KAN-191, KAN-194), no heading over it,
+read Who, What, Where: **Teams** (who does the work) at the apex, **Epics** (what the work is, ◇, drawn
+at ⌂'s visual size and weight: `--ch-glyph-epics`) bottom left and **Workspaces** (where the work is)
+bottom right, each at Home's stone size from before (208px square) with one even gap across and down
+(`--ch-office-gap`, `--space-section` + `--space-subsection`), set a little left of centre and lifted a
+little above the middle. Each stone's who/what/where line shows on hover at `--text-heading`.
+**Model Providers**, **Help** and **Settings** are three smaller stones in a vertical line on the right of
+the page, inset from its edge by `--ch-side-inset` (twice `--space-section`; in a row under the triangle
 on a narrow window). Each stone opens its own Workbench in
 the same tab (`public/js/door-workbenches.js`; owner, 2026-10-19). Epics (owner, 2026-11-02; KAN-187)
 seats a stone per Epic — the level-1 work items, over the Campaign this tab looks at — in Workspace 1

@@ -46,22 +46,24 @@ test('Ronin Home\u2019s Models and Workspaces doors each open their own workbenc
   assert.match(cowork, /place: \(\) => campaign \? '' : readableTeam\(team\)/, 'a Team page ends the crumb with the Team title');
 });
 
-test('Home: Teams, Workspaces and Epics in a triangle at Home\u2019s stone size; Models, Help and Settings smaller, inset on the right (owner, 2026-11-02; KAN-186, KAN-191)', async () => {
+test('Home: Teams, Epics and Workspaces in a triangle at Home\u2019s stone size; Model Providers, Help and Settings smaller, inset on the right (owner, 2026-11-02; KAN-186, KAN-191, KAN-194)', async () => {
   const [home, style] = await Promise.all([source('js/campaign-home.js'), source('css/campaign-home.css')]);
   assert.doesNotMatch(home, /OFFICE Space|ch-office/, 'no heading over the triangle (KAN-191)');
   assert.match(home, /key: 'epics'[^\n]*glyph: '◇'/, 'Epics carries a plain symbol, no kanji (KAN-191)');
   const office = home.slice(home.indexOf('function OFFICE()'), home.indexOf('function SIDE()'));
   const side = home.slice(home.indexOf('function SIDE()'), home.indexOf('/** THE ROOT TOGGLE'));
-  assert.deepEqual([...office.matchAll(/key: '(\w+)'/g)].map((m) => m[1]), ['teams', 'workspaces', 'epics'], 'Teams at the apex, then Workspaces and Epics');
+  assert.deepEqual([...office.matchAll(/key: '(\w+)'/g)].map((m) => m[1]), ['teams', 'epics', 'workspaces'], 'Teams at the apex, then Epics bottom left and Workspaces bottom right: Who, What, Where (KAN-194)');
+  assert.match(side, /key: 'models'[^\n]*'Model Providers'/, 'the Models stone reads Model Providers (KAN-194)');
   assert.deepEqual([...side.matchAll(/key: '(\w+)'/g)].map((m) => m[1]), ['models', 'help', 'settings'], 'the smaller stones, top to bottom');
-  assert.match(office, /Who does the work[\s\S]*Where the work is[\s\S]*What the work is/);
+  assert.match(office, /Who does the work[\s\S]*What the work is[\s\S]*Where the work is/);
   assert.match(side, /key: 'settings', route: null[^\n]*gated: false/, 'Settings is a live stone whose route is read at paint');
   assert.match(home, /const route = door\.route \|\| setupDefaultView\(setupCampaign\)/, 'Settings opens Setup until its answers are recorded');
   assert.doesNotMatch(home, /ch-settings/, 'the corner Settings button is now a stone');
   assert.match(style, /\.ch-doors > \.ch-door\[data-door='teams'\] \{ grid-column: 1 \/ -1;/, 'Teams spans the apex');
   assert.match(style, /--ch-door-w: 208px;/, 'the main stones keep Home\u2019s size from before the triangle');
   assert.match(style, /\.ch-doors \{[^}]*grid-template-columns: repeat\(2, var\(--ch-door-w\)\);[^}]*gap: var\(--ch-office-gap\);/, 'one even gap across and down');
-  assert.match(style, /\.ch-side \{[^}]*margin-inline-end: var\(--space-section\);/, 'the side stones are inset from the page edge');
+  assert.match(style, /\.ch-side \{[^}]*margin-inline-end: var\(--ch-side-inset\);/, 'the side stones are inset from the page edge');
+  assert.match(style, /\.ch-is \{[^}]*font-size: var\(--text-heading\);/, 'the who, what, where line reads at a glance (KAN-194)');
   assert.match(style, /\.ch-door\[data-door='epics'\] \.ch-glyph \{ font-size: var\(--ch-glyph-epics\);/, '◇ is drawn at ⌂\u2019s visual size, not the glyph size (KAN-192)');
   assert.match(style, /\.ch-side \{[^}]*grid-column: 3;[^}]*flex-direction: column;/, 'the side stones stand in a column on the right');
 });

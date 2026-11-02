@@ -11,7 +11,7 @@
     --ch-glyph-epics-drop: 3px; /* centred in the box it sits above ⌂'s baseline */
     --ch-door-h: 208px;
     --ch-door-w: 208px; /* Home's stone before the triangle: a quarter of the old 860px row */
-    --ch-office-gap: var(--space-section); /* the one gap, across and down */
+    --ch-office-gap: calc(var(--space-section) + var(--space-subsection)); /* the one gap, across and down; spread (KAN-194) */
     --ch-frame-w: calc(var(--ch-door-w) * 2 + var(--ch-office-gap));
     --ch-side-w: 168px;
     --ch-side-h: 104px;
@@ -23,13 +23,16 @@
     --ch-corner-y: 14px;
     display: grid;
     /* The office centred, the smaller stones in a column on the right, inset (owner, 2026-11-02). */
-    --ch-side-room: calc(var(--ch-side-w) + var(--space-section));
+    --ch-side-inset: calc(var(--space-section) * 2); /* room right of Model Providers, Help, Settings (KAN-194) */
+    --ch-office-shift: calc(var(--space-section) * -2); /* the triangle a little left of centre (KAN-194) */
+    --ch-side-room: calc(var(--ch-side-w) + var(--ch-side-inset));
     grid-template-columns: minmax(var(--ch-side-room), 1fr) minmax(0, var(--ch-frame-w)) minmax(var(--ch-side-room), 1fr);
     align-items: center;
     column-gap: var(--space-section);
     min-height: 0;
     height: 100%;
-    padding: var(--space-inset) var(--space-inset);
+    /* the deeper foot lifts everything a little above the middle (KAN-194) */
+    padding: var(--space-inset) var(--space-inset) calc(var(--space-section) * 3);
     overflow: auto;
     position: relative;
   }
@@ -40,6 +43,7 @@
     display: flex;
     flex-direction: column;
     gap: var(--space-subsection);
+    translate: var(--ch-office-shift) 0;
   }
 
   /* The house horizon, giving the root its ground. The drawing crops at the
@@ -47,7 +51,7 @@
   .ch-horizon { position: absolute; left: 0; bottom: 0; width: 100%; height: var(--ch-horizon-h); color: var(--ch-horizon-ink); opacity: var(--ch-horizon-opacity); z-index: 0; pointer-events: none; }
   .ch-frame { position: relative; z-index: 1; }
 
-  /* THE OFFICE (owner, 2026-11-02; KAN-191): Teams centred over Workspaces and Epics, every stone
+  /* THE OFFICE (owner, 2026-11-02; KAN-191, KAN-194): Teams centred over Epics (left) and Workspaces, every stone
      Home's size, one even gap between them across and down. */
   .ch-doors { display: grid; grid-template-columns: repeat(2, var(--ch-door-w)); justify-content: center; gap: var(--ch-office-gap); }
   .ch-doors > .ch-door[data-door='teams'] { grid-column: 1 / -1; justify-self: center; width: var(--ch-door-w); }
@@ -56,7 +60,7 @@
   .ch-side {
     grid-column: 3;
     justify-self: end;
-    margin-inline-end: var(--space-section); /* inset from the page's edge (KAN-191) */
+    margin-inline-end: var(--ch-side-inset); /* inset from the page's edge (KAN-191, KAN-194) */
     position: relative;
     z-index: 1;
     display: flex;
@@ -135,7 +139,7 @@
     margin: 0;
     padding-top: var(--space-paragraph);
     border-top: var(--edge) solid var(--ch-caption-line);
-    font-size: var(--text-body);
+    font-size: var(--text-heading); /* who, what, where: the key line, read at a glance (KAN-194) */
     line-height: var(--leading-body);
     color: var(--muted);
     opacity: 0;
@@ -176,6 +180,7 @@
   @media (max-width: 960px), (max-height: 600px) {
     .ch-view { grid-template-columns: minmax(0, 1fr); grid-template-rows: 1fr auto auto; gap: var(--space-subsection); justify-items: center; }
     .ch-frame, .ch-side { grid-column: 1; }
+    .ch-frame { translate: none; }
     .ch-side { justify-self: center; margin-inline-end: 0; flex-direction: row; flex-wrap: wrap; justify-content: center; width: 100%; }
     .ch-side > .ch-door-small { width: var(--ch-side-w); }
     .ch-release { position: static; justify-self: end; align-self: end; max-width: 100%; }
