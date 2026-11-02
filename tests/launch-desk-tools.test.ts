@@ -49,12 +49,15 @@ async function makeRepo(name: string, roninRepo: string | null): Promise<string>
 // A managed repository (worktree root) and a checkout of documents with no arrangement.
 const cowork = await makeRepo('cowork', 'mode=reviewed\nworking=dev\nstable=master\ndesks=managed\n');
 const roninLab = await makeRepo('ronin_lab', null);
+const papers = path.join(tmp, 'papers');
+await fs.mkdir(papers, { recursive: true });
 
 await fs.mkdir(process.env.RONIN_CATALOGS_DIR!, { recursive: true });
 await fs.writeFile(path.join(process.env.RONIN_CATALOGS_DIR!, 'PROJECT_ROOTS.md'), [
   '# roots', '',
   '## cowork', `- **dir:** ${cowork}`, '- **remit:** the code', '',
   '## ronin_lab', `- **dir:** ${roninLab}`, '- **remit:** the papers', '',
+  '## papers', `- **dir:** ${papers}`, '',
 ].join('\n'));
 await fs.mkdir(path.join(tmp, 'config'), { recursive: true });
 await fs.writeFile(path.join(tmp, 'config', 'machine_settings.json'), JSON.stringify({
@@ -71,7 +74,7 @@ const { resolveForm } = await import('../src/spawn.js');
 // The Team's Workspace holds the managed cowork repository, the ronin_lab checkout and a folder.
 await saveWorkspace({
   name: 'papers_ws', campaign_id: 'home_machine', title: 'Papers', objective: 'write it up from the code', instructions: '',
-  repos: [{ name: 'cowork', note: '' }, { name: 'ronin_lab', note: 'notes' }], folders: [{ path: '/srv/papers', note: 'drafts' }], launch_mode: 'configured',
+  repos: [{ name: 'cowork', note: '' }, { name: 'ronin_lab', note: 'notes' }], folders: [{ name: 'papers', note: 'drafts' }], launch_mode: 'configured',
 });
 await createTeamRoster('papers', { objective: 'write it up from the code', workspace: 'papers_ws', branch: '' }, 'home_machine');
 
@@ -82,7 +85,7 @@ test('a Team Agent starts in its Workspace launch folder, its brief naming the r
   assert.match(resolved.brief, /^## Workspace — Papers$/m);
   assert.match(resolved.brief, /^- cowork .* — worktree: `worktree-desk open cowork`$/m, 'a managed repository is opened when needed');
   assert.match(resolved.brief, /^- ronin_lab .* — shared checkout \(notes\)$/m);
-  assert.match(resolved.brief, /^- \/srv\/papers — drafts$/m);
+  assert.ok(resolved.brief.split('\n').includes(`- papers ${papers} — drafts`), 'a folder is a Workspace Folder, by name and path');
   assert.doesNotMatch(resolved.brief, /Born in|Repository approaches/);
   assert.equal(resolved.capabilities.find((row) => row.name === 'worktree-desk')?.selected, true, 'desk teaching is ready for managed work');
 });

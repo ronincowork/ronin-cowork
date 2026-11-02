@@ -104,7 +104,11 @@ const ACK_RULE =
 
 /** THE WORKSPACE SECTION of the birth brief (owner-approved wording, 2026-11-01): what the
  * Agent's project is and the places it works in. Agents read it; no tables. */
-export function renderWorkspaceSection(workspace: Workspace, repositories: { name: string; dir: string; note: string; managed: boolean }[]): string {
+export function renderWorkspaceSection(
+  workspace: Workspace,
+  repositories: { name: string; dir: string; note: string; managed: boolean }[],
+  folders: { name: string; dir: string; note: string }[],
+): string {
   const lines = [`## Workspace — ${workspace.title || workspace.name}`];
   if (workspace.objective) lines.push('', workspace.objective);
   if (workspace.instructions) lines.push('', workspace.instructions);
@@ -115,9 +119,9 @@ export function renderWorkspaceSection(workspace: Workspace, repositories: { nam
       lines.push(`- ${repo.name} ${repo.dir} — ${how}${repo.note ? ` (${repo.note})` : ''}`);
     }
   }
-  if (workspace.folders.length) {
+  if (folders.length) {
     lines.push('', 'Folders:');
-    for (const folder of workspace.folders) lines.push(`- ${folder.path}${folder.note ? ` — ${folder.note}` : ''}`);
+    for (const folder of folders) lines.push(`- ${folder.name} ${folder.dir}${folder.note ? ` — ${folder.note}` : ''}`);
   }
   return lines.join('\n');
 }
@@ -294,11 +298,12 @@ export async function resolveFacts(form: SpawnForm, taken: Set<string>, proposed
     const arrangement = await arrangementOf(repo.name, roots).catch(() => null);
     return { ...repo, dir: arrangement?.dir ?? roots.find((root) => root.name === repo.name)?.dir ?? '', managed: !!arrangement && desksManaged(arrangement) };
   }));
+  const folders = (workspace?.folders ?? []).map((folder) => ({ ...folder, dir: roots.find((root) => root.name === folder.name)?.dir ?? '' }));
   const arrangement: 'managed' | 'checkout' | 'none' = repositories.some((repo) => repo.managed) ? 'managed' : repositories.length ? 'checkout' : 'none';
   const kind = form.kind ?? String(parentSeed?.seeds.kind.value ?? 'open');
   return {
     sessionType, coworkAgent, bareMetalAgent, campaignId, roots, agentsSet, campaign, launchSpecs, preset, roster, profile,
-    parentSeed, workspace, place, repositories, agent, cascade, installations, contributions, name, arrangement, kind,
+    parentSeed, workspace, place, repositories, folders, agent, cascade, installations, contributions, name, arrangement, kind,
   };
 }
 export type LaunchFacts = Awaited<ReturnType<typeof resolveFacts>>;
@@ -412,7 +417,7 @@ export async function resolveForm(
   proposedRoster?: TeamRoster,
 ): Promise<Resolved> {
   const facts = await resolveFacts(form, taken, proposedRoster);
-  const { sessionType, coworkAgent, campaign, preset, roster, profile, parentSeed, workspace, place, repositories, agent, cascade, installations, contributions, name, kind } = facts;
+  const { sessionType, coworkAgent, campaign, preset, roster, profile, parentSeed, workspace, place, repositories, folders, agent, cascade, installations, contributions, name, kind } = facts;
   const { cmd, spec, chosen, launchMode } = await resolveLaunch(form, facts);
   const { birthReading, completeReading, appliedBehaviours, capabilities, ignored } = await resolveReading(form, facts);
   const explicit: StatedBy[] = [{ layer: 'launch', source: 'launch request' }];
@@ -456,7 +461,7 @@ export async function resolveForm(
     brief: coworkAgent && agent
       ? buildBrief(
           profile,
-          workspace ? renderWorkspaceSection(workspace, repositories) : '',
+          workspace ? renderWorkspaceSection(workspace, repositories, folders) : '',
           form,
           referenceDir,
           completeReading,

@@ -20,8 +20,7 @@ import { createProviderSetupSessionMount } from './provider-setup-session.js';
 import { loadProviderCatalog } from './form-steps.js';
 import { createModelDefaults, createModelProvider, createModelRefresh, createModelStones, providerOffers } from './models-surface.js';
 import { createGithubWorkspaceSetup } from './github-workspace-setup.js';
-import { createFolder, createFolderClone, createFolderGithub, createFolderNew, createFolderStones, createRootsReading, createWorkspaceStones, folderOffers } from './workspaces-surface.js';
-import { createWorkspaceAdd } from './workspace-add.js';
+import { createFolder, createFolderGithub, createFolderStones, createRootsReading, createWorkspaceStones, folderOffers } from './workspaces-surface.js';
 import { campaignById, loadCampaigns, normalizeSelection } from './campaigns.js';
 import { createHelpOutline, createHelpPage } from './help-outline.js';
 import { createMikaTilePool, reportMikaView } from './mika.js';
@@ -110,9 +109,9 @@ export function createModelsView() {
 }
 
 /** Workspaces: the stones of Workspaces in Workspace 1 over the Campaign this tab looks at, a pressed one's page
- * beside them; the repositories and folders Ronin knows in Workspace 2, one whole where a stone is dropped or its
- * card placed; Add a repository or folder, GitHub CLI and Clone a repository as dotted cards. One read of the
- * folders for the whole bench. */
+ * beside them, where its locations are picked and added; the Workspace Folders Ronin knows in Workspace 2, for
+ * their upkeep, one whole where a stone is dropped or its card placed; GitHub CLI as a dotted card. One read of
+ * the folders for the whole bench. */
 export function createWorkspacesView() {
   const campaign = (ctx) => campaignById(normalizeSelection(ctx()?.state?.campaignSelection).primary_campaign_id);
   const providerSessions = createProviderSetupSessionMount();
@@ -120,28 +119,23 @@ export function createWorkspacesView() {
   const made = [];
   const keep = (surface) => { made.push(surface); return surface; };
   let github = null;
-  let cloneSeat = 'workspace2';
   return doorWorkbench({
     id: 'workspaces', profile: WORKBENCH_PROFILES.workspaces, label: t('campaign_home.workspaces', 'Workspaces'), seat: WORKBENCH_TYPES.workspaceRecords,
     seats: { workspace1: WORKBENCH_TYPES.workspaceRecords, workspace2: WORKBENCH_TYPES.folderStones },
     loaded: loadCampaigns,
     environment: ({ bench, ctx }) => {
       const campaignId = () => campaign(ctx)?.id || '';
-      const placeFolder = (name, workspace) => bench().place(WORKBENCH_TYPES.folder, workspace, { key: name });
       const environment = {
         mountProviderSetupSession: providerSessions.mountProviderSetupSession,
         folders: () => folderOffers(reading),
-        workspaceRecords: () => keep(createWorkspaceStones({ reading, campaignId })),
+        workspaceRecords: (workspace) => keep(createWorkspaceStones({ reading, campaignId, signIn: () => bench().place(WORKBENCH_TYPES.folderGithub, workspace === 'workspace1' ? 'workspace2' : 'workspace1') })),
         folderStones: () => keep(createFolderStones({ reading, campaignId, workbench: bench() })),
         folder: (_workspace, detail) => keep(createFolder(detail.key, { reading, campaignId })),
-        folderNew: (workspace) => keep(createFolderNew({ reading, campaignId, placeFolder: (name) => placeFolder(name, workspace) })),
-        folderAdd: (workspace) => keep(createWorkspaceAdd({ campaignId, placeFolder: async (name) => { await reading.read(); placeFolder(name, workspace); }, signIn: () => bench().place(WORKBENCH_TYPES.folderGithub, workspace === 'workspace1' ? 'workspace2' : 'workspace1') })),
         folderGithub: () => keep(createFolderGithub(github ??= boxes())),
-        folderClone: (workspace) => { cloneSeat = workspace; return keep(createFolderClone(github ??= boxes())); },
       };
       const boxes = () => createGithubWorkspaceSetup({
         environment, workspace: 'workspace2',
-        onCloned: async (root) => { await reading.read(); if (root?.name) placeFolder(root.name, cloneSeat); },
+        onCloned: () => reading.read(),
       });
       return environment;
     },
