@@ -4484,8 +4484,12 @@ button.wk-card { cursor: pointer; }
     min-height: var(--band);
   }
 }
+/* The phone fills the application, which is the visible rectangle (body, js/appheight.js):
+   absolute to the fixed body, never fixed to the screen. Fixed, it reached behind the
+   keyboard; the box and the newest lines sat under the keys, iOS panned to the box and
+   left a gap beneath it (owner, 2026-11-02). */
 #phone {
-  position: fixed;
+  position: absolute;
   inset: 0;
   display: flex;
   flex-direction: column;
