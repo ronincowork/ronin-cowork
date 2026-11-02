@@ -336,9 +336,9 @@ const dragWorkspace = (stone) => ({
   } },
 });
 
-/** The stones of Workspaces, each its name only (owner, 2026-11-02), with the Teams launched in it and
- * their Epics (each Team's epic, the pushed rosters' `board`) as branch rows under it, as the Teams
- * workbench lays them; a pressed stone or row opens the Workspace's page beside the rail; a stone
+/** The stones of Workspaces, each its name only (owner, 2026-11-02), under a Show question as the Teams
+ * stones have: Teams (those launched in it) and Epics (each Team's epic, the pushed rosters' `board`)
+ * hang under each stone as branch rows when picked; a pressed stone or row opens the Workspace's page beside the rail; a stone
  * dragged into a tilespace opens that Workspace there whole. */
 export function createWorkspaceStones({ reading, workspacesRead, campaignId, workbench }) {
   const { createSurface } = WorkspaceKit.primitives;
@@ -358,7 +358,17 @@ export function createWorkspaceStones({ reading, workspacesRead, campaignId, wor
       host.append(head, page.el);
     },
   });
-  stones.mount(out.content, { before: [messages] });
+  // SHOW (owner, 2026-11-02; the Teams stones' own question, team-roster-surface.js): many-of, blank to
+  // start, says what hangs under each stone as branch rows, a cell per picked topic in this order.
+  const SHOW = ['teams', 'epics'];
+  let show = [];
+  const filter = ask([{ fields: [
+    { key: 'show', label: t('teams_surface.show', 'Show'), many: true, options: [
+      { v: 'teams', l: t('campaign.coworks', 'Teams') },
+      { v: 'epics', l: t('workspaces.epics', 'Epics') },
+    ] },
+  ] }], { value: { show }, density: 'tight', onChange: ({ show: next }) => { show = (next || []).map(String); paint(); } });
+  stones.mount(out.content, { before: [messages, filter.el] });
   const paint = (answer) => {
     if (answer && !answer.ok) { say(answer.message, true); return; }
     if (answer) say(workspacesRead.list().length ? '' : t('workspaces.none', 'No Workspaces yet. Place New Workspace from the selector.'));
@@ -366,10 +376,12 @@ export function createWorkspaceStones({ reading, workspacesRead, campaignId, wor
     const next = workspacesRead.list().map((w) => {
       const own = teams.filter((team) => team.workspace === w.name);
       const epics = [...new Map(own.filter((team) => team.board?.title).map((team) => [team.board.title, team.board])).values()];
-      return dragWorkspace({ id: w.name, label: w.title || w.name, under: [
-        own.map((team, n) => ({ id: `${w.name}:team:${n}`, label: team.title || team.name, state: t('workspaces.team', 'Team'), workspace: w.name })),
-        epics.map((epic, n) => ({ id: `${w.name}:epic:${n}`, label: epic.title, state: epic.status || t('workspaces.epic', 'Epic'), workspace: w.name })),
-      ] });
+      const cell = {
+        teams: () => own.map((team, n) => ({ id: `${w.name}:team:${n}`, label: team.title || team.name, state: t('workspaces.team', 'Team'), workspace: w.name })),
+        epics: () => epics.map((epic, n) => ({ id: `${w.name}:epic:${n}`, label: epic.title, state: epic.status || t('workspaces.epic', 'Epic'), workspace: w.name })),
+      };
+      const under = SHOW.filter((kind) => show.includes(kind)).map((kind) => cell[kind]());
+      return dragWorkspace({ id: w.name, label: w.title || w.name, ...(show.length ? { under } : {}) });
     });
     // A Teams push that moves nothing a stone shows leaves the stones and an open page alone.
     const signature = JSON.stringify(next.map(({ id, label, under }) => [id, label, under]));
@@ -382,7 +394,7 @@ export function createWorkspaceStones({ reading, workspacesRead, campaignId, wor
   return {
     el: out.el,
     show: () => { void workspacesRead.read(); },
-    destroy: () => { stop(); stopTeams?.(); stones.destroy(); },
+    destroy: () => { stop(); stopTeams?.(); filter.destroy(); stones.destroy(); },
   };
 }
 
