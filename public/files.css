@@ -1,9 +1,13 @@
-/* Explorer (KAN-146): copyparty's flat themes, dark (html.bz) and light (html.by), wearing Ronin's colours.
+/* Explorer (KAN-146): copyparty's flat themes, dark (html.bz) and light (html.by), wearing Ronin's colours and type.
  * files.js copies Ronin's live tokens into the frame as --ronin-* and picks the theme to match Ronin's
  * light or dark, so a skin or a theme change reaches Explorer too. Included through --css-browser. */
 html.bz, html.by {
-  --font-main: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+  /* copyparty sizes everything in em from the root, so Ronin's body size here rescales it whole */
+  font-size: var(--ronin-text-body);
+  line-height: var(--ronin-leading-body);
+  --font-main: var(--ronin-font-ui);
+  --font-mono: var(--ronin-font-mono);
+  --radius: var(--ronin-radius-small);
   --fg: var(--ronin-fg);
   --fg-max: var(--ronin-fg-strong);
   --fg-weak: var(--ronin-muted);
@@ -40,4 +44,6 @@ html.bz, html.by {
   --g-fsel-bg: var(--ronin-accent);
   text-shadow: none;
 }
-html.bz #path, html.by #path { text-shadow: none; }
+html.bz #path, html.by #path { text-shadow: none; font-size: var(--ronin-text-label); }
+/* The lead column ("c": a folder's zip link) is not Ronin's; downloading a selection still zips */
+#files th[name='lead'], #files tbody td:first-child { display: none; }
