@@ -18,7 +18,7 @@ import { createCoworkView } from './cowork-view.js';
 import { createAgentView } from './agent-view.js';
 import { createCampaignHome } from './campaign-home.js';
 import { createCurrentHome } from './current-home.js';
-import { createHelpView, createModelsView, createWorkspacesView } from './door-workbenches.js';
+import { createEpicsView, createHelpView, createModelsView, createWorkspacesView } from './door-workbenches.js';
 import { createCampaignView } from './campaign-view.js';
 import { createSetupView } from './setup-view.js';
 import { createLaunchView } from './launch-view.js';
@@ -117,6 +117,7 @@ async function init() {
   // Home's Models and Workspaces doors, each a workbench of its own in the same tab (owner, 2026-10-19).
   guard('register the Models destination', () => workspace.register('models', createModelsView()));
   guard('register the Workspaces destination', () => workspace.register('workspaces', createWorkspacesView()));
+  guard('register the Epics destination', () => workspace.register('epics', createEpicsView()));
   guard('register the Help destination', () => workspace.register('help', createHelpView()));
   // the same workbench, selector column, persistence, recall and drag/drop as the Cowork
   // space, offering a Campaign's own configuration instead of its Coworks and Agents.
