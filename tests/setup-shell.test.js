@@ -19,7 +19,7 @@ test('Ronin Home\u2019s Models and Workspaces doors each open their own workbenc
     source('js/campaign-home.js'), source('js/door-workbenches.js'), source('js/workbench-catalog.js'), source('js/workspace-contract.js'), source('js/workspace-header.js'), source('js/main.js'), source('js/cowork-view.js'),
   ]);
   assert.match(home, /Ronin Home/);
-  for (const key of ['models', 'workspaces']) {
+  for (const key of ['models', 'workspaces', 'epics']) {
     assert.match(home, new RegExp(`key: '${key}', route: '${key}'`), `the ${key} door navigates to its own destination`);
     assert.match(main, new RegExp(`workspace\\.register\\('${key}', `), `the ${key} destination is registered`);
     assert.match(contract, new RegExp(`'${key}'`), `${key} is a Workbench appearance, so the tab machinery applies`);
@@ -44,6 +44,33 @@ test('Ronin Home\u2019s Models and Workspaces doors each open their own workbenc
   assert.match(header, /home\.hidden = landing/, 'Home stands in the bar everywhere off the landing');
   assert.match(header, /const underTeams = !landing && \(!placed \|\| active\.id === 'team'\)/, 'a Team page sits under Teams; another placed view under Home alone');
   assert.match(cowork, /place: \(\) => campaign \? '' : readableTeam\(team\)/, 'a Team page ends the crumb with the Team title');
+});
+
+test('Ronin OFFICE Space: Teams, Workspaces and Epics in a triangle; Models, Help and Settings smaller on the right (owner, 2026-11-02; KAN-186)', async () => {
+  const [home, style] = await Promise.all([source('js/campaign-home.js'), source('css/campaign-home.css')]);
+  assert.match(home, /campaign_home\.office', 'Ronin OFFICE Space'/, 'the triangle carries the owner\u2019s name');
+  const office = home.slice(home.indexOf('function OFFICE()'), home.indexOf('function SIDE()'));
+  const side = home.slice(home.indexOf('function SIDE()'), home.indexOf('/** THE ROOT TOGGLE'));
+  assert.deepEqual([...office.matchAll(/key: '(\w+)'/g)].map((m) => m[1]), ['teams', 'workspaces', 'epics'], 'Teams at the apex, then Workspaces and Epics');
+  assert.deepEqual([...side.matchAll(/key: '(\w+)'/g)].map((m) => m[1]), ['models', 'help', 'settings'], 'the smaller stones, top to bottom');
+  assert.match(office, /Who does the work[\s\S]*Where the work is[\s\S]*What the work is/);
+  assert.match(side, /key: 'settings', route: null[^\n]*gated: false/, 'Settings is a live stone whose route is read at paint');
+  assert.match(home, /const route = door\.route \|\| setupDefaultView\(setupCampaign\)/, 'Settings opens Setup until its answers are recorded');
+  assert.doesNotMatch(home, /ch-settings/, 'the corner Settings button is now a stone');
+  assert.match(style, /\.ch-doors > \.ch-door\[data-door='teams'\] \{ grid-column: 1 \/ -1;/, 'Teams spans the apex');
+  assert.match(style, /\.ch-side \{[^}]*grid-column: 3;[^}]*flex-direction: column;/, 'the side stones stand in a column on the right');
+});
+
+test('the Epics workbench: a stone per Epic in Tilespace 1, opened by Home\u2019s Epics stone (owner, 2026-11-02; KAN-187)', async () => {
+  const [doors, catalog, surface, main] = await Promise.all([source('js/door-workbenches.js'), source('js/workbench-catalog.js'), source('js/epics-surface.js'), source('js/main.js')]);
+  assert.match(main, /workspace\.register\('epics', createEpicsView\(\)\)/);
+  assert.match(doors, /id: 'epics', profile: WORKBENCH_PROFILES\.epics,[^\n]*seat: WORKBENCH_TYPES\.epicRecords,/, 'Epics seats its stones in Tilespace 1');
+  assert.match(catalog, /profiles\.define\(WORKBENCH_PROFILES\.epics, \[WORKBENCH_TYPES\.epicRecords, WORKBENCH_TYPES\.epicRecord\]\)/);
+  assert.match(catalog, /type: WORKBENCH_TYPES\.epicRecord, header: 'surface', discover: \(\) => \[\]/, 'an Epic whole is placed by a dragged stone, never a selector card');
+  assert.match(surface, /filter\(\(item\) => item\.level === 1\)/, 'Epics are the level-1 work items');
+  assert.match(surface, /createPhalanx\(/, 'the stones are the kit phalanx');
+  assert.match(surface, /renderItemDetail\(host, epic/, 'a pressed stone reads the item as Work Items does');
+  assert.match(surface, /\/api\/work-items\$\{query\}/, 'one read of the work items, over the Campaign');
 });
 
 test('two roots: the default Home and the current Home at #/current, one bar toggle between them (owner, 2026-10-19)', async () => {
