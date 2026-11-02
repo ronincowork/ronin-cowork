@@ -1414,6 +1414,8 @@ The catalog entry goes. {dir} is not touched.
 - **customize.desk_profiles_blurb:** Your standing defaults for the surfaces you work at — a skin, a lexicon, a campaign kind, a Team page arrangement. Choosing one is a setting, on the gear.
 - **customize.lexicons:** Lexicons
 - **customize.lexicons_blurb:** The words a surface uses — a wording or a language, one file each. Say only what changes; the rest uses the stock words.
+- **files.title:** Explorer
+- **files.summary:** Your home folder: view, move, manage and edit
 - **feedback.button:** Feedback
 - **feedback.title:** Feedback
 - **feedback.message:** What would you like to tell us?

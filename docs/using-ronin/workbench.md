@@ -6,7 +6,9 @@ plus the Models, Workspaces, Teams and Help workbenches Ronin Home's doors open.
 guides in tilespace 1, *Start here: 4 things you need to know* first, then *Getting started* and
 *Using Ronin*, each opening to its pages; drag any page into a tilespace to read it there. Mika is
 in tilespace 2, opened on her Chat reading so you talk to her as a conversation. Help opens before
-any model provider is set up; Mika needs one and says so until then. Setup seats its
+any model provider is set up; Mika needs one and says so until then. The Workspaces
+workbench seats the Workspaces in tilespace 1 and [Explorer](explorer.md) in tilespace 2, or GitHub CLI
+there where Explorer is off. Setup seats its
 Garden in tilespace 1 and opens its ordered selector surfaces in tilespace 2; the other
 workbenches retain their ordinary two/four arrangement.
 

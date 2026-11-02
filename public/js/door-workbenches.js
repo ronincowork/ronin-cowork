@@ -13,6 +13,7 @@
  * Home's provider gate; with no provider Mika's seat says so in one line instead of her tile.
  */
 import { WorkspaceKit } from './workspace-kit.js';
+import { FILES_ON } from './files-surface.js';
 import { t } from './lexicon.js';
 import { workbenchView } from './workspace-contract.js';
 import { registerWorkbenchCatalog, WORKBENCH_PROFILES, WORKBENCH_TYPES } from './workbench-catalog.js';
@@ -110,7 +111,8 @@ export function createModelsView() {
 
 /** Workspaces: the stones of Workspaces in Tilespace 1 over the Campaign this tab looks at, a pressed one's page
  * beside them; every Workspace a selector card, opened whole where a stone is dropped or its card placed; New
- * Workspace a dotted card (owner, 2026-11-02); GitHub CLI in Tilespace 2, the sign-in a private clone needs.
+ * Workspace a dotted card (owner, 2026-11-02); Files in Tilespace 2 where Ronin found Python (KAN-146),
+ * GitHub CLI there otherwise, the sign-in a private clone needs.
  * One read of the pinned folders and one of the Workspaces for the whole bench. */
 export function createWorkspacesView() {
   const campaign = (ctx) => campaignById(normalizeSelection(ctx()?.state?.campaignSelection).primary_campaign_id);
@@ -121,7 +123,7 @@ export function createWorkspacesView() {
   let github = null;
   return doorWorkbench({
     id: 'workspaces', profile: WORKBENCH_PROFILES.workspaces, label: t('campaign_home.workspaces', 'Workspaces'), seat: WORKBENCH_TYPES.workspaceRecords,
-    seats: { workspace1: WORKBENCH_TYPES.workspaceRecords, workspace2: WORKBENCH_TYPES.folderGithub },
+    seats: { workspace1: WORKBENCH_TYPES.workspaceRecords, workspace2: FILES_ON ? WORKBENCH_TYPES.files : WORKBENCH_TYPES.folderGithub },
     loaded: loadCampaigns,
     environment: ({ bench, ctx }) => {
       const campaignId = () => campaign(ctx)?.id || '';

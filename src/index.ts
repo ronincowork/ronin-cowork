@@ -73,6 +73,7 @@ import type { ServiceRegistration } from './sockets-contract.js';
 import { resourceRequestCache, storeDir } from './resources.js';
 import { compressResponse } from './http-performance.js';
 import { startSpawnBroker, stopSpawnBroker } from './spawn-broker.js';
+import { filesProxy, startFiles, stopFiles, PYTHON } from './files.js';
 import { ensureInstalledRoots, githubSetupAnswer, githubSetupAttached } from './setup-runtime.js';
 import { registerSetupRuntime } from './routes/setup-runtime-api.js';
 import { registerSetupProgress } from './routes/setup-progress-api.js';
@@ -96,6 +97,7 @@ const isBoxInstance = isEntryPoint
 if (isEntryPoint) startSpawnBroker(); // before routes, services, caches, and server state make this process large
 
 const app = express();
+app.use('/files', signIn, filesProxy()); // Files: before compression and body parsing — src/files.ts
 app.use(compressResponse);
 app.use(express.json());
 const cliToken = randomBytes(32).toString('base64url');
@@ -138,6 +140,17 @@ function issueSession(res: express.Response): boolean {
   return true;
 }
 
+// Ronin's sign-in: every route below it, and /files ahead of the body parsers.
+function signIn(req: express.Request, res: express.Response, next: express.NextFunction) {
+  // A peer on the operator's own socket is the user: the 0600 mode was the credential.
+  if (isOperatorPeer(req) || checkAuth(req.headers)) return next();
+  if (passwordAuthEnabled() && req.method === 'GET' && req.accepts(['json', 'html']) === 'html') {
+    return res.redirect(`/login?next=${encodeURIComponent(req.originalUrl)}`);
+  }
+  if (authEnabled) res.set('WWW-Authenticate', 'Basic realm="tmux-ronin"');
+  res.status(401).send('Authentication required.');
+}
+
 app.get('/login', (_req, res) => res.sendFile(path.join(PUBLIC, 'login.html')));
 registerPasskeyLogin(app, issueSession); // /api/passkey/{options,login,recover} — src/routes/passkey-api.ts
 app.post('/api/login', async (req, res) => {
@@ -163,15 +176,7 @@ app.use('/brand', express.static(path.join(PUBLIC, 'brand')));
 // The token sheet holds no secret; the login page links it so it wears the same values.
 app.get('/style.css', (_req, res) => res.sendFile(path.join(PUBLIC, 'style.css')));
 
-app.use((req, res, next) => {
-  // A peer on the operator's own socket is the user: the 0600 mode was the credential.
-  if (isOperatorPeer(req) || checkAuth(req.headers)) return next();
-  if (passwordAuthEnabled() && req.method === 'GET' && req.accepts(['json', 'html']) === 'html') {
-    return res.redirect(`/login?next=${encodeURIComponent(req.originalUrl)}`);
-  }
-  if (authEnabled) res.set('WWW-Authenticate', 'Basic realm="tmux-ronin"');
-  res.status(401).send('Authentication required.');
-});
+app.use(signIn);
 
 app.get('/vendor/xterm.css', (_req, res) => res.sendFile(path.join(NM, '@xterm/xterm/css/xterm.css')));
 app.get('/vendor/xterm.js', (_req, res) => res.sendFile(path.join(NM, '@xterm/xterm/lib/xterm.js')));
@@ -179,7 +184,7 @@ app.get('/vendor/addon-fit.js', (_req, res) => res.sendFile(path.join(NM, '@xter
 
 // The client's version and its serving rules live in assets.ts, which owns why.
 const assetVersion = publicFingerprint(PUBLIC);
-const readDocument = (file: string) => fs.readFileSync(path.join(PUBLIC, file), 'utf8').replaceAll('__RONIN_ASSET_VERSION__', assetVersion);
+const readDocument = (file: string) => fs.readFileSync(path.join(PUBLIC, file), 'utf8').replaceAll('__RONIN_ASSET_VERSION__', assetVersion).replaceAll('__RONIN_FILES__', PYTHON ? 'on' : 'off');
 const indexHtml = readDocument('index.html');
 // THE MOBILE DOCUMENT. A phone downloads mobile.html — the bar, an empty list and
 // js/phone.js — and never the desktop page, so the first frame it paints is the mobile bar:
@@ -430,6 +435,7 @@ await tmuxClient.connect(); // only the long-lived server opts into control mode
 const removed = await cleanupViewers();
 if (removed) console.log(`[tmux-ronin] cleaned up ${removed} stale viewer session(s)`);
 await startBootHooks();
+startFiles(ROOT); // copyparty at /files where python3 is found — src/files.ts
 const stopSessionRetention = startSessionRetention(); // closed session folders outlive the retention period by nothing
 // /events: pushes the session list, the home rows, the Team rosters, the message queue, boards,
 // cron jobs and GitHub setup when they change — src/ws/events.ts
@@ -492,6 +498,7 @@ for (const sig of ['SIGINT', 'SIGTERM'] as const) {
     stopBootHooks();
     stopSessionRetention();
     stopSpawnBroker();
+    stopFiles();
     setTimeout(() => process.exit(0), 2000).unref();
     // Only the socket this process bound comes down with it. Nothing shared is touched:
     // a dev run or a test stopping here must leave the live operator exactly as it found it.

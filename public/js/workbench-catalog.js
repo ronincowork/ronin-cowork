@@ -3,6 +3,7 @@
 import { WorkspaceKit } from './workspace-kit.js';
 import { t } from './lexicon.js';
 import { FEEDBACK_TYPE, registerFeedbackSurface } from './feedback.js';
+import { FILES_TYPE, registerFilesSurface } from './files-surface.js';
 import { BEHAVIOUR_SURFACE_TYPE, registerBehaviourSurface } from './behaviour-surface.js';
 import { PRESETS_TYPE, registerPresetsSurface } from './presets.js';
 import { SETUP_SURFACE_TYPES, registerSetupSurfaces } from './setup-surfaces.js';
@@ -15,7 +16,7 @@ import { HELP_PAGE_TYPE } from './help-outline.js';
 
 export const WORKBENCH_PROFILES = Object.freeze({ campaign: 'campaign', launch: 'launch', cowork: 'cowork', team: 'team', agent: 'agent', models: 'models', workspaces: 'workspaces', help: 'help' });
 export const WORKBENCH_TYPES = Object.freeze({
-  document: 'document', terminal: 'session.terminal', behaviours: BEHAVIOUR_SURFACE_TYPE, feedback: FEEDBACK_TYPE,
+  document: 'document', terminal: 'session.terminal', behaviours: BEHAVIOUR_SURFACE_TYPE, feedback: FEEDBACK_TYPE, files: FILES_TYPE,
   launchTeam: 'launch.team', launchAgent: 'launch.agent', launchHelp: 'launch.help',
   commons: 'team.commons', workItems: WORK_ITEMS_TYPE, cron: 'cowork.cron-jobs',
   roster: 'cowork.team-roster', sessionRoster: 'cowork.session-roster', newTeamForm: 'cowork.new-team-form', newAgent: 'session.new-agent',
@@ -31,7 +32,7 @@ export const WORKBENCH_TYPES = Object.freeze({
 let registered = false;
 export function registerWorkbenchCatalog() {
   if (registered) return;
-  registerFeedbackSurface(); registerBehaviourSurface(); registerPresetsSurface();
+  registerFeedbackSurface(); registerFilesSurface(); registerBehaviourSurface(); registerPresetsSurface();
   registerSetupSurfaces(); registerPasswordSurface();
   const { library, profiles } = WorkspaceKit.workbench;
   const add = (definition) => { if (!library.has(definition.type)) library.register(definition); };
@@ -94,7 +95,7 @@ export function registerWorkbenchCatalog() {
   add({ type: WORKBENCH_TYPES.workspaceRecord, header: 'surface', className: 'wk-selector-entity', discover: (_t, e) => e.workspaces(), create: ({ workspace, detail, environment }) => environment.workspaceRecord(workspace, detail) });
   add({ type: WORKBENCH_TYPES.workspaceNew, header: 'surface', className: 'wk-selector-utility', label: () => t('workspaces.new', 'New Workspace'), summary: () => t('workspaces.new_state', 'a project for your Teams'), variant: 'dotted', create: ({ workspace, environment }) => environment.workspaceNew(workspace) });
   add({ type: WORKBENCH_TYPES.folderGithub, header: 'surface', className: 'wk-selector-utility', label: () => t('roots.github_auth_stone', 'GitHub CLI'), summary: () => t('roots.github_auth_state', 'Connect account'), variant: 'dotted', create: ({ workspace, environment }) => environment.folderGithub(workspace) });
-  profiles.define(WORKBENCH_PROFILES.workspaces, [WORKBENCH_TYPES.workspaceRecords, WORKBENCH_TYPES.workspaceRecord, WORKBENCH_TYPES.workspaceNew, WORKBENCH_TYPES.folderGithub]);
+  profiles.define(WORKBENCH_PROFILES.workspaces, [WORKBENCH_TYPES.workspaceRecords, WORKBENCH_TYPES.workspaceRecord, WORKBENCH_TYPES.workspaceNew, WORKBENCH_TYPES.folderGithub, FILES_TYPE]);
   // THE HELP WORKBENCH (owner, 2026-10-21): the help outline and Mika in chat, both solid cards (door-workbenches.js).
   add({ type: WORKBENCH_TYPES.helpOutline, header: 'surface', className: 'wk-selector-utility', label: () => t('help_outline.title', 'Help'), summary: () => t('help_outline.summary', 'The guides, starting with the four things to know'), create: ({ environment }) => environment.helpOutline() });
   add({ type: WORKBENCH_TYPES.helpMika, header: 'terminal', className: 'wk-selector-utility', label: () => 'Mika', summary: () => t('help_outline.mika_summary', 'Ask in plain words'), create: ({ environment }) => environment.helpMika() });

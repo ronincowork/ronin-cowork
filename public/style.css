@@ -2470,6 +2470,14 @@ body {
 .home-docs[data-view='view'] .dc-save {
   display: none;
 }
+.files-frame { /* Files: copyparty at /files/, the whole card (files-surface.js) */
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  border: 0;
+  background: var(--surface);
+}
+.files-surface .wk-surface-content { display: flex; flex-direction: column; min-height: 0; flex: 1; }
 .dc-frame {
   flex: 1;
   min-height: 0;

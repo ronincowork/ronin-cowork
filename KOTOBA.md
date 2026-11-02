@@ -48,6 +48,7 @@ Macro, action, SOP, and Agent role are not additional composition layers. “Act
 | Phalanx | A shared collection surface: stones stand in formation at rest, then move into a side rail when one is selected so that stone's detail can occupy the surface ([Workbench](docs/architecture/workbench.md)) |
 | Tilespace | A numbered slot of a workbench holding a tile or another surface; `workspace1`…`workspace4` in code. Not a Workspace |
 | Workspace | A project: objective, instructions, its folders and Mode; every Team works in one ([Workspaces](docs/using-ronin/workspaces.md)) |
+| Explorer (Files) | The machine's file browser from the home folder: copyparty at `/files/`, where Ronin finds Python at start; `/files/<path>` is `$HOME/<path>`. Explorer is the card, Files the code (`ronin.files`, `src/files.ts`) ([Explorer](docs/using-ronin/explorer.md)) |
 | Tile | The UI for one session; a tmux pane is the terminal underneath ([Tile](docs/using-ronin/tile.md)) |
 | Ronin Home / Ronin Setup / Ronin Settings | Home destination, first-use workbench, and ongoing Desk configuration workbench |
 | Desk | Engagement context for Teams and inherited configuration; internal compatibility identifiers retain `campaign` ([Desks](docs/using-ronin/campaigns.md)) |

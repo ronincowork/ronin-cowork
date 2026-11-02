@@ -26,7 +26,7 @@ is the whole Workspace. Under **Locations**, open folders on this machine and ti
 uses; untick one, or press **Remove**, to take it out. Give each a note. For a folder with Git,
 say how Agents work in it: each in its own desk, reviewed, or all in one folder. To bring in a
 repository from GitHub, open the folder it should go in, type the repository and press **Clone
-here**. Where Files is on, you can also drag a folder from Files onto the page.
+here**. Where Explorer is on, you can also drag a folder from [Explorer](explorer.md) onto the page.
 
 Agents start in a folder Ronin keeps for each Workspace. You never need to open it; your
 project's files stay where they are.

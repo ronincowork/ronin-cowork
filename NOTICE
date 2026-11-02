@@ -2,3 +2,8 @@ Ronin Cowork
 Copyright 2026 Glen Osmond
 
 Licensed under the Apache License, Version 2.0 — see the LICENSE file.
+
+Third-party
+
+libexec/copyparty/copyparty-sfx.py — copyparty 1.20.26 (https://github.com/9001/copyparty),
+MIT License, copyright ed <oss@ocv.me>. sha256 8f9a0def8a9c15252a06395781ec083372043b60caa80fb33c3d6dafa7f1b40a
