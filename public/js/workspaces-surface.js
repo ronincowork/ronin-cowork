@@ -114,7 +114,7 @@ function folderBrowser({ ticked, onTick, onLoad = () => {} }) {
  * (instructions and Mode), 3 Locations, one line per folder, with Add folders and Clone from GitHub; every
  * section folds to its answer. Lines inside one item sit tight; items are spaced as paragraphs.
  * `null` is a new Workspace. Returns the page and its Save (Create) action for the surface head. */
-export function workspacePage(w, { reading, campaignId, onSaved = () => {} }) {
+export function workspacePage(w, { reading, campaignId, onSaved = () => {}, onDiscard = () => {} }) {
   const { createAction, createField } = WorkspaceKit.primitives;
   const isNew = !w;
   const draft = w ? JSON.parse(JSON.stringify(w)) : { name: '', title: '', objective: '', instructions: '', repos: [], folders: [], launch_mode: 'configured' };
@@ -126,27 +126,36 @@ export function workspacePage(w, { reading, campaignId, onSaved = () => {} }) {
   const text = (value, onInput, placeholder = '') => { const i = el('input'); i.type = 'text'; i.value = value; i.placeholder = placeholder; i.addEventListener('input', () => onInput(i.value)); return i; };
   const area = (value, onInput) => { const a = el('textarea'); a.rows = 4; a.value = value; a.addEventListener('input', () => onInput(a.value)); return a; };
   const open = { top: true, agents: false, locations: true, add: false, clone: false };
+  // EVERY EDIT WAITS FOR SAVE (owner, 2026-11-02): a change lights Save (kaki, what needs you) and
+  // the − beside it, which throws the changes away back to the saved Workspace.
+  let dirty = false;
+  const changed = () => { dirty = true; action.el.dataset.attention = 'true'; discard.setDisabled(false); };
+  const settled = () => { dirty = false; delete action.el.dataset.attention; discard.setDisabled(true); };
   const MODES = { configured: t('launch_mode.configured', 'Native'), live_dangerously: t('launch_mode.live', 'Dangerously') };
 
   /* ---- 1 · Name & objective ---- */
   const stepTop = createStep({ n: 1, key: 'top', title: t('workspaces.step_top', 'Name & objective'), onToggle: () => { open.top = !open.top; paint(); } });
-  stepTop.body.append(createField({ label: t('workspaces.field_title', 'Title'), control: text(draft.title, (v) => { draft.title = v; }) }).el);
-  // The name is chosen once: Teams and their Agents hold it, so a created Workspace shows it and never changes it.
+  // Title and name are chosen once (owner, 2026-11-02): Teams and their Agents refer to them, so a created
+  // Workspace shows both and never changes them.
+  const fixed = (label, value) => createField({ label, control: el('span', 'workspace-fixed', value) }).el;
   stepTop.body.append(isNew
-    ? createField({ label: t('workspaces.name', 'Name'), control: text('', (v) => { draft.name = v.trim().toLowerCase(); }, t('new_team.name_placeholder', 'lowercase, digits, - _')) }).el
-    : createField({ label: t('workspaces.name', 'Name'), control: el('span', 'workspace-fixed', draft.name) }).el);
-  stepTop.body.append(createField({ label: t('workspaces.objective', 'Objective'), control: area(draft.objective, (v) => { draft.objective = v; }) }).el);
+    ? createField({ label: t('workspaces.field_title', 'Title'), control: text('', (v) => { draft.title = v; changed(); }) }).el
+    : fixed(t('workspaces.field_title', 'Title'), draft.title || draft.name));
+  stepTop.body.append(isNew
+    ? createField({ label: t('workspaces.name', 'Name'), control: text('', (v) => { draft.name = v.trim().toLowerCase(); changed(); }, t('new_team.name_placeholder', 'lowercase, digits, - _')) }).el
+    : fixed(t('workspaces.name', 'Name'), draft.name));
+  stepTop.body.append(createField({ label: t('workspaces.objective', 'Objective'), control: area(draft.objective, (v) => { draft.objective = v; changed(); }) }).el);
 
-    /* ---- 2 · Agent info: what every Agent in it is told, and the Mode they launch in ---- */
+  /* ---- 2 · Agent info: what every Agent in it is told, and the Mode they launch in ---- */
   const stepAgents = createStep({ n: 2, key: 'agents', title: t('workspaces.agent_info', 'Agent info'), onToggle: () => { open.agents = !open.agents; paint(); } });
-  stepAgents.body.append(createField({ label: t('workspaces.instructions', 'Instructions'), control: area(draft.instructions, (v) => { draft.instructions = v; }) }).el);
+  stepAgents.body.append(createField({ label: t('workspaces.instructions', 'Instructions'), control: area(draft.instructions, (v) => { draft.instructions = v; changed(); }) }).el);
 
   const mode = ask([{ fields: [
     { key: 'launch_mode', label: t('launch_mode.mode', 'Mode'), options: [
       { v: 'configured', l: MODES.configured, sub: t('launch_mode.configured_sub', 'Do not override the provider CLI’s approval behavior. Model selection is separate.') },
       { v: 'live_dangerously', l: MODES.live_dangerously, sub: t('workspaces.live_sub', 'Each provider’s own approval-bypass launch; Native where a provider has none.') },
     ] },
-  ] }], { value: { launch_mode: draft.launch_mode }, density: 'tight', onChange: (value) => { draft.launch_mode = value.launch_mode; paint(); } });
+  ] }], { value: { launch_mode: draft.launch_mode }, density: 'tight', onChange: (value) => { draft.launch_mode = value.launch_mode; changed(); paint(); } });
   stepAgents.body.append(mode.el);
 
   /* ---- 3 · Locations: one line per folder, its note under it; Add folders and Clone from GitHub as buttons ---- */
@@ -165,7 +174,16 @@ export function workspacePage(w, { reading, campaignId, onSaved = () => {} }) {
   const panel = el('div', 'workspace-browser');
   stepLocations.body.append(rows, tools, panel);
 
+  const pending = new Map(); // a Git folder's worktree switch, written on Save
+  const profileOf = (key, root) => ({ ...HOW[key], stable: key === 'folder' ? (root.repo_profile?.stable || 'main') : HOW.desks.stable });
   const save = async () => {
+    for (const [name, key] of pending) {
+      const root = rootByName(name);
+      if (!root || howOf(root.repo_profile) === key) continue;
+      const answer = await request(`/api/project-roots/${encodeURIComponent(name)}/repo-profile`, { method: 'PUT', json: { profile: profileOf(key, root) } });
+      if (!answer.ok) { say(answer.message, true); return false; }
+    }
+    if (pending.size) { pending.clear(); await reading.read(); }
     const git = (name) => !!rootByName(name)?.facts?.repo;
     const row = (name) => ({ name, note: picked.get(name) || '' });
     draft.repos = [...picked.keys()].filter(git).map(row);
@@ -173,26 +191,24 @@ export function workspacePage(w, { reading, campaignId, onSaved = () => {} }) {
     const answer = await request(`/api/workspaces/${encodeURIComponent(draft.name)}`, { method: 'PUT', json: { ...draft, campaign_id: campaignId() || undefined } });
     if (!answer.ok) { say(answer.message, true); return false; }
     say(t('workspaces.saved', 'Saved {name}.', { name: answer.data.workspace.title || answer.data.workspace.name }));
+    settled();
     return answer.data.workspace;
   };
-  const keep = () => { if (!isNew) void save(); };
   // How Agents work in a Git folder: two small switches, the chosen one filled.
   const howSwitch = (name, root) => {
     const box = el('div', 'workspace-how');
     box.setAttribute('role', 'group');
     box.setAttribute('aria-label', t('workspaces.how', 'How Agents work in this repository'));
-    const now = howOf(root.repo_profile);
+    const now = pending.get(name) ?? howOf(root.repo_profile);
     for (const [key, label, sub] of [
       ['desks', t('workspaces.how_worktrees', 'Worktrees'), t('workspaces.how_worktrees_sub', 'Each Agent opens its own worktree and hands in; the lead reviews and promotes.')],
       ['folder', t('workspaces.how_checkout', 'Shared checkout'), t('workspaces.how_checkout_sub', 'Every Agent works in this one checkout; no hand-ins, no review.')],
     ]) {
       const b = el('button', null, label); b.type = 'button'; b.title = sub;
       b.setAttribute('aria-pressed', String(now === key));
-      b.addEventListener('click', async () => {
+      b.addEventListener('click', () => {
         if (now === key) return;
-        const profile = { ...HOW[key], stable: key === 'folder' ? (root.repo_profile?.stable || 'main') : HOW.desks.stable };
-        const answer = await request(`/api/project-roots/${encodeURIComponent(name)}/repo-profile`, { method: 'PUT', json: { profile } });
-        if (!answer.ok) say(answer.message, true); else { await reading.read(); paint(); }
+        pending.set(name, key); changed(); paint();
       });
       box.append(b);
     }
@@ -208,13 +224,12 @@ export function workspacePage(w, { reading, campaignId, onSaved = () => {} }) {
       const line = el('div', 'workspace-location-line');
       const remove = el('button', 'workspace-location-remove', '×'); remove.type = 'button';
       remove.setAttribute('aria-label', t('workspaces.remove_named', 'Remove {name}', { name }));
-      remove.addEventListener('click', () => { picked.delete(name); paint(); browser.paint(); keep(); });
+      remove.addEventListener('click', () => { picked.delete(name); changed(); paint(); browser.paint(); });
       line.append(el('small', 'folder-kind', git ? t('workspaces.git', 'Git') : t('workspaces.dir', 'Dir')), el('b', null, root?.title || name), el('code', null, short(root?.dir || '')));
       if (git) line.append(howSwitch(name, root));
       line.append(remove);
-      const noteInput = text(note, (v) => { picked.set(name, v); }, t('workspaces.add_note', 'Add a note…'));
+      const noteInput = text(note, (v) => { picked.set(name, v); changed(); }, t('workspaces.add_note', 'Add a note…'));
       noteInput.className = 'workspace-location-note';
-      noteInput.addEventListener('change', keep);
       row.append(line, noteInput);
       rows.append(row);
     }
@@ -230,13 +245,13 @@ export function workspacePage(w, { reading, campaignId, onSaved = () => {} }) {
       root = rootByDir(dir);
     }
     if (!root) return;
-    if (!picked.has(root.name)) picked.set(root.name, '');
-    paint(); browser.paint(); keep();
+    if (!picked.has(root.name)) { picked.set(root.name, ''); changed(); }
+    paint(); browser.paint();
   };
   const detach = (dir) => {
     const root = rootByDir(dir);
-    if (root) picked.delete(root.name);
-    paint(); browser.paint(); keep();
+    if (root && picked.delete(root.name)) changed();
+    paint(); browser.paint();
   };
   const browser = folderBrowser({
     ticked: (dir) => { const root = rootByDir(dir); return !!root && picked.has(root.name); },
@@ -287,6 +302,7 @@ export function workspacePage(w, { reading, campaignId, onSaved = () => {} }) {
     word.textContent = saved ? t('workspaces.saved_short', 'Saved') : label;
     if (saved) { setTimeout(() => { word.textContent = label; }, 2000); onSaved(saved); }
   } });
+  const discard = createAction({ label: '−', title: t('workspaces.discard', 'Discard changes'), size: 'compact', disabled: true, action: () => { if (dirty) onDiscard(); } });
 
   function paint() {
     const first = draft.instructions.trim().split('\n')[0];
@@ -303,7 +319,7 @@ export function workspacePage(w, { reading, campaignId, onSaved = () => {} }) {
   page.append(line, stepTop.el, stepAgents.el, stepLocations.el);
   paint();
   if (!reading.roots().length) void reading.read().then(() => { paint(); browser.paint(); });
-  return { el: page, action };
+  return { el: page, action, discard };
 }
 
 /** The Workspaces of the Campaign a bench looks at: one read, every surface on the bench hears it. */
@@ -352,9 +368,11 @@ export function createWorkspaceStones({ reading, workspacesRead, campaignId, wor
       host.scrollTop = 0;
       const w = workspacesRead.list().find((row) => row.name === (item.workspace || item.id));
       if (!w) return;
-      const page = workspacePage(w, { reading, campaignId, onSaved: () => void workspacesRead.read() });
+      const page = workspacePage(w, { reading, campaignId, onSaved: () => void workspacesRead.read(), onDiscard: () => stones.refreshDetail() });
       const head = el('div', 'workspace-page-head');
-      head.append(el('span', 'wk-surface-header-title', w.title || w.name), page.action.el);
+      const actions = el('div', 'workspace-page-actions');
+      actions.append(page.action.el, page.discard.el);
+      head.append(el('span', 'wk-surface-header-title', w.title || w.name), actions);
       host.append(head, page.el);
     },
   });
@@ -408,8 +426,8 @@ export function createWorkspaceRecord(key, { reading, workspacesRead, campaignId
     if (!w) { setSurfaceState(out.el, 'empty', t('workspaces.gone', 'This Workspace is no longer here.')); return; }
     setSurfaceState(out.el, null, '');
     out.header.title.textContent = w.title || w.name;
-    const page = workspacePage(w, { reading, campaignId, onSaved: () => void workspacesRead.read() });
-    out.header.actions.replaceChildren(page.action.el);
+    const page = workspacePage(w, { reading, campaignId, onSaved: () => void workspacesRead.read(), onDiscard: () => paint() });
+    out.header.actions.replaceChildren(page.action.el, page.discard.el);
     out.content.append(page.el);
   };
   return {
@@ -427,8 +445,8 @@ export function createWorkspaceNew({ reading, workspacesRead, campaignId, place 
     const page = workspacePage(null, { reading, campaignId, onSaved: async (saved) => {
       await workspacesRead.read();
       place(saved.name);
-    } });
-    out.header.actions.replaceChildren(page.action.el);
+    }, onDiscard: () => paint() });
+    out.header.actions.replaceChildren(page.action.el, page.discard.el);
     out.content.replaceChildren(page.el);
   };
   return { el: out.el, show: paint, destroy: () => {} };

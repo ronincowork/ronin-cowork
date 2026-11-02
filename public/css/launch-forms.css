@@ -401,6 +401,7 @@
   .workspace-form .wk-field-label { font-size: var(--form-key); font-weight: var(--weight-regular); }
   .workspace-form .workspace-fixed { border: 0; background: transparent; padding: 0; color: var(--fg-strong); }
   .workspace-page-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-inline); padding-bottom: var(--space-row); border-bottom: var(--edge) solid var(--line); }
+  .workspace-page-actions { display: flex; align-items: center; gap: var(--space-row); }
   .workspace-page-head .wk-surface-header-title { font-size: var(--form-key); color: var(--fg-strong); }
 
   .workspace-locations { display: flex; flex-direction: column; }
