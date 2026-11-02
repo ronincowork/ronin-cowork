@@ -44,9 +44,10 @@ Macro, action, SOP, and Agent role are not additional composition layers. “Act
 |---|---|
 | Ronin | The product; a repository, artifact, installed copy, and running operator are distinct things ([Release](docs/development/release.md)) |
 | Coworkspace | The whole browser UI ([Workbench](docs/using-ronin/workbench.md)) |
-| Surface | A visible UI held in a workspace; contributor change areas are navigation categories, not UI objects or directories |
+| Surface | A visible UI held in a tilespace; contributor change areas are navigation categories, not UI objects or directories |
 | Phalanx | A shared collection surface: stones stand in formation at rest, then move into a side rail when one is selected so that stone's detail can occupy the surface ([Workbench](docs/architecture/workbench.md)) |
-| Workspace | A numbered browser slot holding a tile or another surface |
+| Tilespace | A numbered slot of a workbench holding a tile or another surface; `workspace1`…`workspace4` in code. Not a Workspace |
+| Workspace | A project: objective, instructions, its folders and Mode; every Team works in one ([Workspaces](docs/using-ronin/workspaces.md)) |
 | Tile | The UI for one session; a tmux pane is the terminal underneath ([Tile](docs/using-ronin/tile.md)) |
 | Ronin Home / Ronin Setup / Ronin Settings | Home destination, first-use workbench, and ongoing Desk configuration workbench |
 | Desk | Engagement context for Teams and inherited configuration; internal compatibility identifiers retain `campaign` ([Desks](docs/using-ronin/campaigns.md)) |
@@ -67,7 +68,7 @@ Macro, action, SOP, and Agent role are not additional composition layers. “Act
 | Board | Ronin has none; a user who wants one uses Jira or Trello |
 | Wipeboard / message queue / Cron jobs | Team announcements, pending session delivery, and scheduled requests; distinct stores and delivery lifecycles |
 | Ronin Lab | A Workspace Folder for ideas, research, plans, and notes across or before projects; users and Ronin creators each have their own Lab, rather than a code repository for one specific project |
-| Workspace Folder (`project_root`) | A registered folder Ronin may work in; not a browser workspace ([Workspace folders](docs/architecture/project-roots.md)) |
+| Workspace Folder (`project_root`) | A registered folder Ronin may work in; not a tilespace ([Workspace folders](docs/architecture/project-roots.md)) |
 | Worktree | Private working folder and branch with explicit custody for managed repository work; distinct from an engagement Desk and a Desk profile ([Worktrees](docs/architecture/worktrees.md)) |
 | Commit / hand-in / promotion / Git push | Private checkpoint / admission to Team review / admission to global dev / remote publication; not synonyms |
 | Desk profile | Owner-selected presentation defaults ([Desk profiles](docs/architecture/desk-profiles.md)) |

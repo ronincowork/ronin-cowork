@@ -1,8 +1,10 @@
 /* part of the ronin-cowork client — see js/README.md */
 /**
- * THE WORKSPACES WORKBENCH'S SURFACES (owner, 2026-11-02). Workspace 1 holds the Workspaces
- * (`createWorkspaceStones`): a pressed one's page is the whole Workspace — title, objective,
- * instructions, Mode and its Locations. Locations are folders on this machine, ticked in a
+ * THE WORKSPACES WORKBENCH'S SURFACES (owner, 2026-11-02). Tilespace 1 holds the Workspaces
+ * (`createWorkspaceStones`), each stone its name only. A pressed one's page (`workspacePage`) is
+ * the whole Workspace — title, objective, instructions, Mode and its Locations. Every Workspace is
+ * also a selector card, and a stone dragged or a card placed opens it whole in a tilespace
+ * (`createWorkspaceRecord`); New Workspace is a dotted card (`createWorkspaceNew`). Locations are folders on this machine, ticked in a
  * browser from the home folder; ticking pins the folder (a Workspace Folder, registered behind
  * the scenes) and adds it. Each ticked folder has a note, and a Git one says how Agents work in
  * it. Clone from GitHub asks the repository and puts it in the folder the browser is open on.
@@ -16,6 +18,8 @@ import { createPhalanx } from './phalanx.js';
 import { request } from './request.js';
 import { t } from './lexicon.js';
 import { ask } from './ask.js';
+import { SURFACE_DRAG } from './workbench.js';
+import { WORKBENCH_TYPES } from './workbench-catalog.js';
 
 /** The one read of the pinned folders for a workbench: every surface on it paints from this. */
 export function createRootsReading() {
@@ -105,162 +109,224 @@ function folderBrowser({ ticked, onTick }) {
   return { el: shell, current: () => current, home: () => home, paint, load };
 }
 
-/** WS1: the stones of Workspaces (owner, 2026-11-01: a Workspace is a project, its brief). A stone
- * pressed opens its page beside the rail; "New Workspace" opens the same page empty. */
-export function createWorkspaceStones({ reading, campaignId }) {
+/** A Workspace's page: the whole Workspace (null: a new one). `onSaved` hears the record saved. */
+export function workspacePage(w, { reading, campaignId, say, onSaved = () => {} }) {
+  const isNew = !w;
+  const draft = w ? JSON.parse(JSON.stringify(w)) : { name: '', title: '', objective: '', instructions: '', repos: [], folders: [], launch_mode: 'configured' };
+  const page = el('div', 'workspace-page');
+  const field = (label, control) => { const row = el('label', 'workspace-field'); row.append(el('span', 'workspace-field-label', label), control); return row; };
+  const input = (value, onInput, placeholder = '') => { const i = el('input', 'wk-field-control'); i.type = 'text'; i.value = value; i.placeholder = placeholder; i.addEventListener('input', () => onInput(i.value)); return i; };
+  const area = (value, onInput) => { const a = el('textarea', 'wk-field-control'); a.rows = 4; a.value = value; a.addEventListener('input', () => onInput(a.value)); return a; };
+  if (isNew) page.append(field(t('workspaces.name', 'Name'), input('', (v) => { draft.name = v.trim().toLowerCase(); }, t('new_team.name_placeholder', 'lowercase, digits, - _'))));
+  page.append(
+    field(t('workspaces.field_title', 'Title'), input(draft.title, (v) => { draft.title = v; })),
+    field(t('workspaces.objective', 'Objective'), area(draft.objective, (v) => { draft.objective = v; })),
+    field(t('workspaces.instructions', 'Instructions'), area(draft.instructions, (v) => { draft.instructions = v; })),
+  );
+  const mode = ask([{ fields: [
+    { key: 'launch_mode', label: t('launch_mode.mode', 'Mode'), options: [
+      { v: 'configured', l: t('launch_mode.configured', 'Native'), sub: t('launch_mode.configured_sub', 'Do not override the provider CLI’s approval behavior. Model selection is separate.') },
+      { v: 'live_dangerously', l: t('launch_mode.live', 'Dangerously'), sub: t('workspaces.live_sub', 'Each provider’s own approval-bypass launch; Native where a provider has none.') },
+    ] },
+  ] }], { value: { launch_mode: draft.launch_mode }, density: 'tight', onChange: (value) => { draft.launch_mode = value.launch_mode; } });
+  page.append(mode.el);
+
+  // LOCATIONS: the pinned folders this Workspace holds, by name, each with its note.
+  const picked = new Map([...draft.repos, ...draft.folders].map((row) => [row.name, row.note]));
+  const rootByName = (name) => reading.roots().find((root) => root.name === name);
+  const rootByDir = (dir) => reading.roots().find((root) => root.dir === dir);
+  const locations = el('div', 'workspace-locations');
+  const save = async () => {
+    const git = (name) => !!rootByName(name)?.facts?.repo;
+    const row = (name) => ({ name, note: picked.get(name) || '' });
+    draft.repos = [...picked.keys()].filter(git).map(row);
+    draft.folders = [...picked.keys()].filter((name) => !git(name)).map(row);
+    const answer = await request(`/api/workspaces/${encodeURIComponent(draft.name)}`, { method: 'PUT', json: { ...draft, campaign_id: campaignId() || undefined } });
+    if (!answer.ok) { say(answer.message, true); return false; }
+    say(t('workspaces.saved', 'Saved {name}.', { name: answer.data.workspace.title || answer.data.workspace.name }));
+    return answer.data.workspace;
+  };
+  const keep = () => { if (!isNew) void save(); };
+  const paintLocations = () => {
+    locations.replaceChildren(el('span', 'workspace-field-label', t('workspaces.locations', 'Locations')));
+    if (!picked.size) locations.append(el('p', 'fs-step-help', t('workspaces.locations_none', 'Tick folders below, or drag one in from Files.')));
+    for (const [name, note] of picked) {
+      const root = rootByName(name);
+      const row = el('div', 'workspace-location');
+      const head = el('div', 'workspace-location-head');
+      head.append(el('b', null, root?.title || name), el('small', 'folder-kind', root?.facts?.repo ? t('workspaces.git', 'Git') : t('workspaces.folder', 'Folder')), el('code', null, root?.dir || ''));
+      const remove = el('button', 'wk-btn', t('workspaces.remove', 'Remove')); remove.type = 'button';
+      remove.addEventListener('click', () => { picked.delete(name); paintLocations(); browser.paint(); keep(); });
+      head.append(remove);
+      const noteInput = input(note, (v) => { picked.set(name, v); }, t('workspaces.note', 'Note'));
+      noteInput.addEventListener('change', keep);
+      row.append(head, noteInput);
+      if (root?.facts?.repo) {
+        const how = ask([{ fields: [{ key: 'how', label: t('workspace_add.agents', 'How Agents work here'), options: [
+          { v: 'desks', l: t('workspace_add.how_desks', 'Own desks'), sub: t('workspace_add.how_desks_sub', 'Each Agent in its own desk; work is reviewed before it lands: hand-ins on dev, the lead promotes to master.') },
+          { v: 'folder', l: t('workspace_add.how_folder', 'One folder'), sub: t('workspace_add.how_folder_sub', 'Everyone works in this one folder on its branch; no review.') },
+        ] }] }], { value: { how: howOf(root.repo_profile) }, density: 'tight', onChange: async (value) => {
+          const profile = { ...HOW[value.how], stable: value.how === 'folder' ? (root.repo_profile?.stable || 'main') : HOW.desks.stable };
+          const answer = await request(`/api/project-roots/${encodeURIComponent(name)}/repo-profile`, { method: 'PUT', json: { profile } });
+          if (!answer.ok) say(answer.message, true); else void reading.read();
+        } });
+        row.append(how.el);
+      }
+      locations.append(row);
+    }
+  };
+  // Tick a folder: pin it when it is not pinned yet, then hold it here.
+  const attach = async (dir) => {
+    let root = rootByDir(dir);
+    if (!root) {
+      const name = pinName(dir, new Set(reading.roots().map((entry) => entry.name)));
+      const made = await request('/api/project-roots', { method: 'POST', json: { name, dir, campaign_id: campaignId() || undefined } });
+      if (!made.ok) { say(made.message, true); browser.paint(); return; }
+      await reading.read();
+      root = rootByDir(dir);
+    }
+    if (!root) return;
+    if (!picked.has(root.name)) picked.set(root.name, '');
+    paintLocations(); browser.paint(); keep();
+  };
+  const detach = (dir) => {
+    const root = rootByDir(dir);
+    if (root) picked.delete(root.name);
+    paintLocations(); browser.paint(); keep();
+  };
+  const browser = folderBrowser({
+    ticked: (dir) => { const root = rootByDir(dir); return !!root && picked.has(root.name); },
+    onTick: (dir, on) => void (on ? attach(dir) : detach(dir)),
+  });
+  // Clone from GitHub: the repository, into the folder the browser is open on.
+  const repository = input('', () => {}, t('workspace_add.repository_placeholder', 'owner/repo or a github.com link'));
+  const clone = el('button', 'wk-btn', t('workspaces.clone_here', 'Clone here')); clone.type = 'button';
+  clone.addEventListener('click', async () => {
+    if (!repository.value.trim()) return;
+    clone.disabled = true;
+    say(t('workspaces.cloning', 'Cloning into {dir}…', { dir: browser.current() }));
+    const answer = await request('/api/setup/github/clone', { method: 'POST', json: { repository: repository.value.trim(), parent: browser.current() } });
+    clone.disabled = false;
+    if (!answer.ok) { say(answer.message, true); return; }
+    repository.value = '';
+    await reading.read();
+    await browser.load();
+    await attach(answer.data.workspace.dir);
+  });
+  const cloneRow = el('div', 'workspace-clone');
+  cloneRow.append(el('span', 'workspace-field-label', t('workspaces.clone', 'Clone from GitHub')), repository, clone);
+  // A folder dragged in from Files: /files/<path under home> is that folder.
+  page.addEventListener('dragover', (event) => { if (event.dataTransfer?.types.includes('text/uri-list')) event.preventDefault(); });
+  page.addEventListener('drop', (event) => {
+    const link = event.dataTransfer?.getData('text/uri-list') || '';
+    const at = /\/files\/(.*?)\/?$/.exec(new URL(link.split('\n')[0] || '/', location.href).pathname);
+    if (!at || !browser.home()) return;
+    event.preventDefault();
+    void attach([browser.home(), ...decodeURIComponent(at[1]).split('/').filter(Boolean)].join('/'));
+  });
+  const create = el('button', 'wk-btn primary', isNew ? t('workspaces.create', 'Create Workspace') : t('workspaces.save', 'Save')); create.type = 'button';
+  create.addEventListener('click', async () => {
+    create.disabled = true;
+    const saved = await save();
+    create.disabled = false;
+    if (saved) onSaved(saved);
+  });
+  page.append(locations, browser.el, cloneRow, create);
+  paintLocations();
+  if (!reading.roots().length) void reading.read().then(() => { paintLocations(); browser.paint(); });
+  return page;
+}
+
+/** The Workspaces of the Campaign a bench looks at: one read, every surface on the bench hears it. */
+export function createWorkspacesRead(campaignId) {
+  let workspaces = [];
+  const listeners = new Set();
+  return {
+    list: () => workspaces,
+    read: async () => {
+      const query = campaignId() ? `?campaign_id=${encodeURIComponent(campaignId())}` : '';
+      const answer = await request(`/api/workspaces${query}`, { cache: 'no-store' });
+      if (answer.ok) workspaces = answer.data?.workspaces || [];
+      for (const listener of listeners) listener(answer);
+      return answer;
+    },
+    subscribe: (listener) => { listeners.add(listener); return () => listeners.delete(listener); },
+  };
+}
+
+/** The selector's cards: one per Workspace, its name. */
+export const workspaceOffers = (workspacesRead) => workspacesRead.list().map((w) => ({ key: w.name, label: w.title || w.name }));
+
+const dragWorkspace = (stone) => ({
+  ...stone,
+  draggable: true,
+  events: { dragstart: (event) => {
+    event.dataTransfer.setData(SURFACE_DRAG, JSON.stringify({ type: WORKBENCH_TYPES.workspaceRecord, detail: { key: stone.id } }));
+    event.dataTransfer.setData('text/plain', stone.label);
+    event.dataTransfer.effectAllowed = 'copy';
+  } },
+});
+
+/** The stones of Workspaces, each its name only (owner, 2026-11-02); a pressed one's page beside the
+ * rail; a stone dragged into a tilespace opens that Workspace there whole. */
+export function createWorkspaceStones({ reading, workspacesRead, campaignId, workbench }) {
   const { createSurface } = WorkspaceKit.primitives;
   const out = createSurface({ label: t('workspaces.title', 'Workspaces'), className: 'setup-surface workspaces-records' });
   const messages = status();
   const say = sayInto(messages);
-  let workspaces = [];
-  const NEW_ID = '__new_workspace';
-  const query = () => (campaignId() ? `?campaign_id=${encodeURIComponent(campaignId())}` : '');
-  const load = async () => {
-    const answer = await request(`/api/workspaces${query()}`, { cache: 'no-store' });
-    if (!answer.ok) { say(answer.message, true); return; }
-    workspaces = answer.data?.workspaces || [];
-    stones.setItems([
-      ...workspaces.map((w) => ({ id: w.name, label: w.title || w.name, state: w.objective || t('workspaces.no_objective', 'no objective yet') })),
-      { id: NEW_ID, label: t('workspaces.new', 'New Workspace'), state: t('workspaces.new_state', 'a project for your Teams'), className: 'add' },
-    ]);
-  };
-  const editor = (w, host) => {
-    const isNew = !w;
-    const draft = w ? JSON.parse(JSON.stringify(w)) : { name: '', title: '', objective: '', instructions: '', repos: [], folders: [], launch_mode: 'configured' };
-    const page = el('div', 'workspace-page');
-    const field = (label, control) => { const row = el('label', 'workspace-field'); row.append(el('span', 'workspace-field-label', label), control); return row; };
-    const input = (value, onInput, placeholder = '') => { const i = el('input', 'wk-field-control'); i.type = 'text'; i.value = value; i.placeholder = placeholder; i.addEventListener('input', () => onInput(i.value)); return i; };
-    const area = (value, onInput) => { const a = el('textarea', 'wk-field-control'); a.rows = 4; a.value = value; a.addEventListener('input', () => onInput(a.value)); return a; };
-    if (isNew) page.append(field(t('workspaces.name', 'Name'), input('', (v) => { draft.name = v.trim().toLowerCase(); }, t('new_team.name_placeholder', 'lowercase, digits, - _'))));
-    page.append(
-      field(t('workspaces.field_title', 'Title'), input(draft.title, (v) => { draft.title = v; })),
-      field(t('workspaces.objective', 'Objective'), area(draft.objective, (v) => { draft.objective = v; })),
-      field(t('workspaces.instructions', 'Instructions'), area(draft.instructions, (v) => { draft.instructions = v; })),
-    );
-    const mode = ask([{ fields: [
-      { key: 'launch_mode', label: t('launch_mode.mode', 'Mode'), options: [
-        { v: 'configured', l: t('launch_mode.configured', 'Native'), sub: t('launch_mode.configured_sub', 'Do not override the provider CLI’s approval behavior. Model selection is separate.') },
-        { v: 'live_dangerously', l: t('launch_mode.live', 'Dangerously'), sub: t('workspaces.live_sub', 'Each provider’s own approval-bypass launch; Native where a provider has none.') },
-      ] },
-    ] }], { value: { launch_mode: draft.launch_mode }, density: 'tight', onChange: (value) => { draft.launch_mode = value.launch_mode; } });
-    page.append(mode.el);
-
-    // LOCATIONS: the pinned folders this Workspace holds, by name, each with its note.
-    const picked = new Map([...draft.repos, ...draft.folders].map((row) => [row.name, row.note]));
-    const rootByName = (name) => reading.roots().find((root) => root.name === name);
-    const rootByDir = (dir) => reading.roots().find((root) => root.dir === dir);
-    const locations = el('div', 'workspace-locations');
-    const save = async () => {
-      const git = (name) => !!rootByName(name)?.facts?.repo;
-      const row = (name) => ({ name, note: picked.get(name) || '' });
-      draft.repos = [...picked.keys()].filter(git).map(row);
-      draft.folders = [...picked.keys()].filter((name) => !git(name)).map(row);
-      const answer = await request(`/api/workspaces/${encodeURIComponent(draft.name)}`, { method: 'PUT', json: { ...draft, campaign_id: campaignId() || undefined } });
-      if (!answer.ok) { say(answer.message, true); return false; }
-      say(t('workspaces.saved', 'Saved {name}.', { name: answer.data.workspace.title || answer.data.workspace.name }));
-      return answer.data.workspace;
-    };
-    const keep = () => { if (!isNew) void save(); };
-    const paintLocations = () => {
-      locations.replaceChildren(el('span', 'workspace-field-label', t('workspaces.locations', 'Locations')));
-      if (!picked.size) locations.append(el('p', 'fs-step-help', t('workspaces.locations_none', 'Tick folders below, or drag one in from Files.')));
-      for (const [name, note] of picked) {
-        const root = rootByName(name);
-        const row = el('div', 'workspace-location');
-        const head = el('div', 'workspace-location-head');
-        head.append(el('b', null, root?.title || name), el('small', 'folder-kind', root?.facts?.repo ? t('workspaces.git', 'Git') : t('workspaces.folder', 'Folder')), el('code', null, root?.dir || ''));
-        const remove = el('button', 'wk-btn', t('workspaces.remove', 'Remove')); remove.type = 'button';
-        remove.addEventListener('click', () => { picked.delete(name); paintLocations(); browser.paint(); keep(); });
-        head.append(remove);
-        const noteInput = input(note, (v) => { picked.set(name, v); }, t('workspaces.note', 'Note'));
-        noteInput.addEventListener('change', keep);
-        row.append(head, noteInput);
-        if (root?.facts?.repo) {
-          const how = ask([{ fields: [{ key: 'how', label: t('workspace_add.agents', 'How Agents work here'), options: [
-            { v: 'desks', l: t('workspace_add.how_desks', 'Own desks'), sub: t('workspace_add.how_desks_sub', 'Each Agent in its own desk; work is reviewed before it lands: hand-ins on dev, the lead promotes to master.') },
-            { v: 'folder', l: t('workspace_add.how_folder', 'One folder'), sub: t('workspace_add.how_folder_sub', 'Everyone works in this one folder on its branch; no review.') },
-          ] }] }], { value: { how: howOf(root.repo_profile) }, density: 'tight', onChange: async (value) => {
-            const profile = { ...HOW[value.how], stable: value.how === 'folder' ? (root.repo_profile?.stable || 'main') : HOW.desks.stable };
-            const answer = await request(`/api/project-roots/${encodeURIComponent(name)}/repo-profile`, { method: 'PUT', json: { profile } });
-            if (!answer.ok) say(answer.message, true); else void reading.read();
-          } });
-          row.append(how.el);
-        }
-        locations.append(row);
-      }
-    };
-    // Tick a folder: pin it when it is not pinned yet, then hold it here.
-    const attach = async (dir) => {
-      let root = rootByDir(dir);
-      if (!root) {
-        const name = pinName(dir, new Set(reading.roots().map((entry) => entry.name)));
-        const made = await request('/api/project-roots', { method: 'POST', json: { name, dir, campaign_id: campaignId() || undefined } });
-        if (!made.ok) { say(made.message, true); browser.paint(); return; }
-        await reading.read();
-        root = rootByDir(dir);
-      }
-      if (!root) return;
-      if (!picked.has(root.name)) picked.set(root.name, '');
-      paintLocations(); browser.paint(); keep();
-    };
-    const detach = (dir) => {
-      const root = rootByDir(dir);
-      if (root) picked.delete(root.name);
-      paintLocations(); browser.paint(); keep();
-    };
-    const browser = folderBrowser({
-      ticked: (dir) => { const root = rootByDir(dir); return !!root && picked.has(root.name); },
-      onTick: (dir, on) => void (on ? attach(dir) : detach(dir)),
-    });
-    // Clone from GitHub: the repository, into the folder the browser is open on.
-    const repository = input('', () => {}, t('workspace_add.repository_placeholder', 'owner/repo or a github.com link'));
-    const clone = el('button', 'wk-btn', t('workspaces.clone_here', 'Clone here')); clone.type = 'button';
-    clone.addEventListener('click', async () => {
-      if (!repository.value.trim()) return;
-      clone.disabled = true;
-      say(t('workspaces.cloning', 'Cloning into {dir}…', { dir: browser.current() }));
-      const answer = await request('/api/setup/github/clone', { method: 'POST', json: { repository: repository.value.trim(), parent: browser.current() } });
-      clone.disabled = false;
-      if (!answer.ok) { say(answer.message, true); return; }
-      repository.value = '';
-      await reading.read();
-      await browser.load();
-      await attach(answer.data.workspace.dir);
-    });
-    const cloneRow = el('div', 'workspace-clone');
-    cloneRow.append(el('span', 'workspace-field-label', t('workspaces.clone', 'Clone from GitHub')), repository, clone);
-    // A folder dragged in from Files: /files/<path under home> is that folder.
-    page.addEventListener('dragover', (event) => { if (event.dataTransfer?.types.includes('text/uri-list')) event.preventDefault(); });
-    page.addEventListener('drop', (event) => {
-      const link = event.dataTransfer?.getData('text/uri-list') || '';
-      const at = /\/files\/(.*?)\/?$/.exec(new URL(link.split('\n')[0] || '/', location.href).pathname);
-      if (!at || !browser.home()) return;
-      event.preventDefault();
-      void attach([browser.home(), ...decodeURIComponent(at[1]).split('/').filter(Boolean)].join('/'));
-    });
-    const create = el('button', 'wk-btn primary', isNew ? t('workspaces.create', 'Create Workspace') : t('workspaces.save', 'Save')); create.type = 'button';
-    create.addEventListener('click', async () => {
-      create.disabled = true;
-      const saved = await save();
-      create.disabled = false;
-      if (saved) { await load(); stones.select(saved.name); }
-    });
-    page.append(locations, browser.el, cloneRow, create);
-    host.append(page);
-    paintLocations();
-    if (!reading.roots().length) void reading.read().then(() => { paintLocations(); browser.paint(); });
-  };
   const stones = createPhalanx({
     className: 'workspace-record-stones',
     renderDetail: (item, host) => {
       host.scrollTop = 0;
-      editor(item.id === NEW_ID ? null : workspaces.find((w) => w.name === item.id) || null, host);
+      const w = workspacesRead.list().find((row) => row.name === item.id);
+      if (w) host.append(workspacePage(w, { reading, campaignId, say, onSaved: () => void workspacesRead.read() }));
     },
   });
   stones.mount(out.content, { before: [messages] });
+  const paint = (answer) => {
+    if (answer && !answer.ok) { say(answer.message, true); return; }
+    if (!workspacesRead.list().length) say(t('workspaces.none', 'No Workspaces yet. Place New Workspace from the selector.'));
+    stones.setItems(workspacesRead.list().map((w) => dragWorkspace({ id: w.name, label: w.title || w.name })));
+    workbench?.refreshSelector?.();
+  };
+  const stop = workspacesRead.subscribe(paint);
   return {
     el: out.el,
-    show: () => { void load(); },
-    destroy: () => stones.destroy(),
+    show: () => { void workspacesRead.read(); },
+    destroy: () => { stop(); stones.destroy(); },
   };
+}
+
+/** One Workspace whole in a tilespace: its page, no rail. */
+export function createWorkspaceRecord(key, { reading, workspacesRead, campaignId }) {
+  const { createSurface, setSurfaceState } = WorkspaceKit.primitives;
+  const out = createSurface({ label: key, className: 'setup-surface workspaces-record' });
+  const messages = status();
+  const say = sayInto(messages);
+  const paint = () => {
+    const w = workspacesRead.list().find((row) => row.name === key);
+    out.content.replaceChildren(messages);
+    if (!w) { setSurfaceState(out.el, 'empty', t('workspaces.gone', 'This Workspace is no longer here.')); return; }
+    setSurfaceState(out.el, null, '');
+    out.header.title.textContent = w.title || w.name;
+    out.content.append(workspacePage(w, { reading, campaignId, say, onSaved: () => void workspacesRead.read() }));
+  };
+  return {
+    el: out.el,
+    show: () => { if (workspacesRead.list().length) paint(); else void workspacesRead.read().then(paint); },
+    destroy: () => {},
+  };
+}
+
+/** New Workspace: the empty page in a tilespace; once created, that tilespace holds the new Workspace. */
+export function createWorkspaceNew({ reading, workspacesRead, campaignId, place }) {
+  const { createSurface } = WorkspaceKit.primitives;
+  const out = createSurface({ label: t('workspaces.new', 'New Workspace'), className: 'setup-surface workspaces-new' });
+  const messages = status();
+  const say = sayInto(messages);
+  const paint = () => out.content.replaceChildren(messages, workspacePage(null, { reading, campaignId, say, onSaved: async (saved) => {
+    await workspacesRead.read();
+    place(saved.name);
+  } }));
+  return { el: out.el, show: paint, destroy: () => {} };
 }

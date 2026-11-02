@@ -20,7 +20,7 @@ import { createProviderSetupSessionMount } from './provider-setup-session.js';
 import { loadProviderCatalog } from './form-steps.js';
 import { createModelDefaults, createModelProvider, createModelRefresh, createModelStones, providerOffers } from './models-surface.js';
 import { createGithubWorkspaceSetup } from './github-workspace-setup.js';
-import { createFolderGithub, createRootsReading, createWorkspaceStones } from './workspaces-surface.js';
+import { createFolderGithub, createRootsReading, createWorkspaceNew, createWorkspaceRecord, createWorkspacesRead, createWorkspaceStones, workspaceOffers } from './workspaces-surface.js';
 import { campaignById, loadCampaigns, normalizeSelection } from './campaigns.js';
 import { createHelpOutline, createHelpPage } from './help-outline.js';
 import { createMikaTilePool, reportMikaView } from './mika.js';
@@ -108,9 +108,10 @@ export function createModelsView() {
   });
 }
 
-/** Workspaces: the stones of Workspaces in Workspace 1 over the Campaign this tab looks at, a pressed one's page
- * beside them, the whole Workspace with its ticked folders (owner, 2026-11-02); GitHub CLI in Workspace 2, the
- * sign-in a private clone needs. One read of the pinned folders for the whole bench. */
+/** Workspaces: the stones of Workspaces in Tilespace 1 over the Campaign this tab looks at, a pressed one's page
+ * beside them; every Workspace a selector card, opened whole where a stone is dropped or its card placed; New
+ * Workspace a dotted card (owner, 2026-11-02); GitHub CLI in Tilespace 2, the sign-in a private clone needs.
+ * One read of the pinned folders and one of the Workspaces for the whole bench. */
 export function createWorkspacesView() {
   const campaign = (ctx) => campaignById(normalizeSelection(ctx()?.state?.campaignSelection).primary_campaign_id);
   const providerSessions = createProviderSetupSessionMount();
@@ -124,9 +125,13 @@ export function createWorkspacesView() {
     loaded: loadCampaigns,
     environment: ({ bench, ctx }) => {
       const campaignId = () => campaign(ctx)?.id || '';
+      const workspacesRead = createWorkspacesRead(campaignId);
       const environment = {
         mountProviderSetupSession: providerSessions.mountProviderSetupSession,
-        workspaceRecords: () => keep(createWorkspaceStones({ reading, campaignId })),
+        workspaces: () => workspaceOffers(workspacesRead),
+        workspaceRecords: () => keep(createWorkspaceStones({ reading, workspacesRead, campaignId, workbench: bench() })),
+        workspaceRecord: (_workspace, detail) => keep(createWorkspaceRecord(detail.key, { reading, workspacesRead, campaignId })),
+        workspaceNew: (workspace) => keep(createWorkspaceNew({ reading, workspacesRead, campaignId, place: (name) => bench().place(WORKBENCH_TYPES.workspaceRecord, workspace, { key: name }) })),
         folderGithub: () => keep(createFolderGithub(github ??= boxes())),
       };
       const boxes = () => createGithubWorkspaceSetup({

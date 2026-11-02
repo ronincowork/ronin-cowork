@@ -531,15 +531,15 @@ nothing paints exactly this.
 - **work_items.attachments:** Attachments
 - **work_items.links:** Links
 - **work_items.history:** History
-- **team.workspace_1:** Workspace 1
-- **team.workspace_2:** Workspace 2
+- **team.workspace_1:** Tilespace 1
+- **team.workspace_2:** Tilespace 2
 - **team.commons_card:** Commons
 - **team.commons_summary:** See Roster / Docs / Wipeboard / Messages / Configuration
-- **team.workspace_blank:** Workspace
+- **team.workspace_blank:** Tilespace
 - **workspace.close_surface:** Close this work surface
 - **cowork.tab_archives:** Archived
-- **team.workspace_3:** Workspace 3
-- **team.workspace_4:** Workspace 4
+- **team.workspace_3:** Tilespace 3
+- **team.workspace_4:** Tilespace 4
 - **team.roster_title:** Roster
 - **team.commons:** Commons
 - **team.arranged_by:** arranged by {from}
@@ -1155,7 +1155,7 @@ The catalog entry goes. {dir} is not touched.
 - **head.rename_failed:** Could not rename session: {reason}
 - **head.gauge_help:** Context gauge — how full this session's context window is, read off the pane's own status line. Hidden until there is a reading.
 - **head.minimize_help:** Close this view — the Agent keeps running
-- **head.minimize_quiet:** Close view — no Agent in this workspace
+- **head.minimize_quiet:** Close view — no Agent in this tilespace
 
 ## pad — pad.js (the pad's widget captions)
 - **pad.w_encoder:** encoder — volume and play/pause; it speaks media-key only, so it cannot drive Ronin
@@ -1191,7 +1191,7 @@ The catalog entry goes. {dir} is not touched.
 - **me.markdown:** Markdown
 - **me.markdown_hint:** off shows the marks as written
 - **me.no_record:** This Agent has not written a work record yet.
-- **head.menu_quiet:** Menu — no Agent in this workspace
+- **head.menu_quiet:** Menu — no Agent in this tilespace
 - **menu.empty:** Nothing here yet.
 
 ## keys — keysrow.js (the composer's keys row)

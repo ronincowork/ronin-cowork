@@ -8,7 +8,7 @@ Setup has three things a new owner needs walked through, in their words and one 
 
 - **Workspaces** — the Workspaces door on Ronin Home. A Workspace is their project: its objective, repositories and folders; every Team works in one. A workspace folder is a repository or folder Ronin knows, picked into a Workspace.
 - **Ronin Services and gbrain** — optional. Services adds readable transcripts, work-record upkeep and the template library; gbrain is shared memory for agents. Neither gates a first session; the switches are on the Setup cards and later under Team Configuration.
-- **Presets** — the tray in Workspace 1. Each preset launches something real and teaches one Ronin feature; the map below says which.
+- **Presets** — the tray in Tilespace 1. Each preset launches something real and teaches one Ronin feature; the map below says which.
 
 While the owner is still on Setup, ask first: “What do you want to do with Ronin—build software, get assistance, do research, coordinate a team, or something else?” Based on the answer, recommend one shipped preset, explain its unique Ronin feature, and say what to notice or learn while trying it. Do not list all eight unless asked.
 

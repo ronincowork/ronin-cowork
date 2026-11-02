@@ -68,12 +68,12 @@ const HEADER = () => {
       title: t('me.agent_title', 'This Agent — work record, docs, file, mention, output, delete'),
       host: () => tile.el, groups: () => tileMenu(tile) }),
     help: t('me.agent_title', 'This Agent — work record, docs, file, mention, output, delete'),
-    quiet: t('head.menu_quiet', 'Menu — no Agent in this workspace') },
+    quiet: t('head.menu_quiet', 'Menu — no Agent in this tilespace') },
 
   // The window control terminates the header at its outside edge: minus stops viewing.
   { key: 'minimizeBtn', cls: 'window-control minimize', text: '−', needs: 'session',
     help: t('head.minimize_help', 'Close this view — the Agent keeps running'),
-    quiet: t('head.minimize_quiet', 'Close view — no Agent in this workspace'),
+    quiet: t('head.minimize_quiet', 'Close view — no Agent in this tilespace'),
     on: (tile) => tile.minimize() },
 
   ];

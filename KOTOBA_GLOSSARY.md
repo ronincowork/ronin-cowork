@@ -32,7 +32,7 @@ runtime parts, while Agent capabilities teach tools (`docs/architecture/tool-sur
 | Desk workbench | **Ronin Settings** | Ongoing Desk configuration workbench. |
 | stone work surface | **stone work surface** | Select a collection item: stones move to a left rail, details open on the right. Reused by Presets, Workspace Folders, and Model Providers. |
 | tile | **tile** | One cell showing one session. Never "pane". |
-| `workspace` | **workspace** | One slot of the coworkspace. It holds a tile or a commons. |
+| `workspace1`…`workspace4` | **tilespace** | One numbered slot of a workbench. It holds a tile or a commons. Never call it a workspace. |
 | `campaign_commons` | **the commons** | The Desk's shared surface. |
 | `team_commons` | **team commons** | Roster, Docs, Wipeboard, Messages, Cron jobs, Configuration. |
 | `cowork_commons` | **cowork commons** | Machine, account, desk profile, Workspace Folders. |

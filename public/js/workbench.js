@@ -119,9 +119,9 @@ export function createWorkbench(options = {}) {
     preferenceScope: options.hintsPreferenceScope || '',
   }));
   const declaration = { slots: [
-    { name: 'workspace1', label: t('team.workspace_1', 'Workspace 1'), width: 40, composite: true },
+    { name: 'workspace1', label: t('team.workspace_1', 'Tilespace 1'), width: 40, composite: true },
     { name: 'selector', label: options.label || profile.name, width: 20, min: 6, compact: 176 },
-    { name: 'workspace2', label: t('team.workspace_2', 'Workspace 2'), width: 40, composite: true },
+    { name: 'workspace2', label: t('team.workspace_2', 'Tilespace 2'), width: 40, composite: true },
   ], priorDefaultOrders: [['workspace1', 'workspace2', 'selector']] };
   const layout = createWorkbenchLayout({
     declaration,

@@ -162,7 +162,7 @@ export function createMikaHelpPanel({ selector, header, createAction, t, ready, 
     panel.hidden = false;
     if (helpButton) helpButton.hidden = true;
     close.el.hidden = false;
-    if (headerEl) { headerEl.draggable = true; headerEl.classList.add('wk-mika-handle'); headerEl.title = t('mika.drag_hint', 'Drag onto a workspace to move Mika there'); }
+    if (headerEl) { headerEl.draggable = true; headerEl.classList.add('wk-mika-handle'); headerEl.title = t('mika.drag_hint', 'Drag onto a tilespace to move Mika there'); }
     loading.textContent = t('mika.starting', '人 Starting Mika…');
     stage.replaceChildren(loading);
     if (view) void reportMikaView(view());

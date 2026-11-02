@@ -53,7 +53,7 @@ export function createAgentView() {
   let bench = null, context = null, agent = '', unsubscribe = null, entered = false;
 
   const blank = (id) => {
-    const surface = WorkspaceKit.primitives.createSurface({ label: t('team.workspace_blank', 'Workspace'), className: 'tw-blank' });
+    const surface = WorkspaceKit.primitives.createSurface({ label: t('team.workspace_blank', 'Tilespace'), className: 'tw-blank' });
     const mark = el('div', 'tile-empty-mark'); mark.setAttribute('aria-hidden', 'true');
     mark.append(WorkspaceKit.primitives.ninMark()); surface.content.append(mark);
     return surface.el;
