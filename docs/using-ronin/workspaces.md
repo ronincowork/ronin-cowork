@@ -25,7 +25,7 @@ Open the **Workspaces** door on Ronin Home and press a Workspace, or place **New
 the selector. **Show** above the stones picks what hangs under each one: the Teams launched in it, the Epics they work on, or both. Its page reads
 like New Team, every section folding to its answer: **Name & objective** (the
 title and name are chosen once, when the Workspace is made; Teams refer to them), then
-**Agent info**, its instructions and Mode (folded until you open it), then **Locations**: a row per folder with its note
+**Agent info**, its instructions and Mode (folded until you open it), then **Locations**: a row per folder with its note for Agents (what the folder is for; it goes into their brief)
 and, for a folder with Git, its **Mode**, which belongs to the repository: **Reviewed** (each Agent works in its
 own worktree and hands its work in to the Team lead, who checks it and promotes it to the
 repository's dev) or **Direct** (every Agent works in the repository's one checkout and commits

@@ -405,19 +405,20 @@
   .workspace-page-head .wk-surface-header-title { font-size: var(--form-key); color: var(--fg-strong); }
 
   .workspace-locations { display: flex; flex-direction: column; }
-  .workspace-location { display: flex; flex-direction: column; gap: var(--space-row); padding: var(--space-paragraph) 0; border-top: var(--edge) solid var(--line); }
+  /* A location is one grid row: kind · name and path · Mode · ×; the note and the Mode's line span under it. */
+  .workspace-location { display: grid; grid-template-columns: 2.2em minmax(0, 1fr) auto auto; column-gap: var(--space-inline); row-gap: var(--space-row); align-items: center; padding: var(--space-paragraph) 0; border-top: var(--edge) solid var(--line); }
   .workspace-location:first-child { border-top: 0; padding-top: 0; }
   .workspace-location:last-child { padding-bottom: 0; }
-  .workspace-location-line { display: flex; align-items: baseline; gap: var(--space-inline); min-width: 0; }
-  .workspace-location-line b { color: var(--fg-strong); font-size: var(--form-key); font-weight: var(--weight-regular); white-space: nowrap; }
-  .workspace-location-line code { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); background: transparent; padding: 0; }
-  .workspace-location .folder-kind { flex: 0 0 auto; min-width: 2.2em; color: var(--muted); }
-  .workspace-repo-mode { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-row); margin-left: calc(2.2em + var(--space-inline)); }
-  .workspace-repo-mode .fs-step-help { margin: 0; }
-  .workspace-location-note { width: 100%; border: 0; background: transparent; color: var(--fg); padding: 0 0 0 calc(2.2em + var(--space-inline)); }
+  .workspace-location-where { display: flex; align-items: baseline; gap: var(--space-inline); min-width: 0; }
+  .workspace-location-where b { color: var(--fg-strong); font-size: var(--form-key); font-weight: var(--weight-regular); white-space: nowrap; }
+  .workspace-location-where code { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); background: transparent; padding: 0; }
+  .workspace-location .folder-kind { color: var(--muted); }
+  .workspace-location-note, .workspace-location-help { grid-column: 2 / -1; }
+  .workspace-location-note { width: 100%; border: 0; background: transparent; color: var(--fg); padding: 0; }
   .workspace-location-note::placeholder { color: var(--muted); }
   .workspace-location-note:focus { outline: none; background: var(--inset); }
-  .workspace-location-remove { flex: 0 0 auto; border: 0; background: transparent; color: var(--muted); cursor: pointer; padding: 0 var(--space-row); }
+  .workspace-location-help { margin: 0; color: var(--muted); font-size: var(--form-note); line-height: var(--leading-body); }
+  .workspace-location-remove { border: 0; background: transparent; color: var(--muted); cursor: pointer; padding: 0 var(--space-row); }
   .workspace-location-remove:hover { color: var(--bad); }
 
   /* Add folders and Clone from GitHub act on the list, not on its last entry: a rule above them, a

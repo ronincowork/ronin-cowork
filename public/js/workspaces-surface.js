@@ -202,17 +202,15 @@ export function workspacePage(w, { reading, campaignId, onSaved = () => {}, onDi
     folder: t('workspaces.mode_direct_sub', 'Every Agent works in the repository’s one checkout and commits straight to it; no hand-in, no check.'),
   };
   const repoMode = (name, root) => {
-    const box = el('div', 'workspace-repo-mode');
     const now = pending.get(name) ?? howOf(root.repo_profile);
-    const help = el('p', 'fs-step-help', MODE_SUBS[now]);
+    const help = el('p', 'workspace-location-help', MODE_SUBS[now]);
     const question = ask([{ fields: [{ key: 'mode', label: t('workspaces.repo_mode', 'Mode'), options: [
       { v: 'desks', l: t('workspaces.mode_reviewed', 'Reviewed'), sub: MODE_SUBS.desks },
       { v: 'folder', l: t('workspaces.mode_direct', 'Direct'), sub: MODE_SUBS.folder },
     ] }] }], { value: { mode: now }, density: 'tight', onChange: (value) => {
       pending.set(name, value.mode); help.textContent = MODE_SUBS[value.mode]; changed();
     } });
-    box.append(question.el, help);
-    return box;
+    return { question: question.el, help };
   };
   const paintRows = () => {
     rows.replaceChildren();
@@ -220,16 +218,20 @@ export function workspacePage(w, { reading, campaignId, onSaved = () => {}, onDi
     for (const [name, note] of picked) {
       const root = rootByName(name);
       const git = !!root?.facts?.repo;
+      // ONE ROW per location (owner, 2026-11-02): kind · name · path · Mode on the right · ×, then the
+      // note for Agents under it, then the chosen Mode's line.
       const row = el('div', 'workspace-location');
-      const line = el('div', 'workspace-location-line');
       const remove = el('button', 'workspace-location-remove', '×'); remove.type = 'button';
       remove.setAttribute('aria-label', t('workspaces.remove_named', 'Remove {name}', { name }));
       remove.addEventListener('click', () => { picked.delete(name); changed(); paint(); browser.paint(); });
-      line.append(el('small', 'folder-kind', git ? t('workspaces.git', 'Git') : t('workspaces.dir', 'Dir')), el('b', null, root?.title || name), el('code', null, short(root?.dir || '')), remove);
-      const noteInput = text(note, (v) => { picked.set(name, v); changed(); }, t('workspaces.add_note', 'Add a note…'));
+      const where = el('div', 'workspace-location-where');
+      where.append(el('b', null, root?.title || name), el('code', null, short(root?.dir || '')));
+      const mode = git ? repoMode(name, root) : null;
+      row.append(el('small', 'folder-kind', git ? t('workspaces.git', 'Git') : t('workspaces.dir', 'Dir')), where, mode ? mode.question : el('span'), remove);
+      const noteInput = text(note, (v) => { picked.set(name, v); changed(); }, t('workspaces.note_for_agents', 'Note for Agents: what this folder is for…'));
       noteInput.className = 'workspace-location-note';
-      row.append(line, noteInput);
-      if (git) row.append(repoMode(name, root));
+      row.append(noteInput);
+      if (mode) row.append(mode.help);
       rows.append(row);
     }
   };
