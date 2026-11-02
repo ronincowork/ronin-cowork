@@ -62,6 +62,7 @@ test('Home: Teams, Workspaces and Epics in a triangle at Home\u2019s stone size;
   assert.match(style, /--ch-door-w: 208px;/, 'the main stones keep Home\u2019s size from before the triangle');
   assert.match(style, /\.ch-doors \{[^}]*grid-template-columns: repeat\(2, var\(--ch-door-w\)\);[^}]*gap: var\(--ch-office-gap\);/, 'one even gap across and down');
   assert.match(style, /\.ch-side \{[^}]*margin-inline-end: var\(--space-section\);/, 'the side stones are inset from the page edge');
+  assert.match(style, /\.ch-door\[data-door='epics'\] \.ch-glyph \{ font-size: var\(--ch-glyph-epics\);/, '◇ is drawn at ⌂\u2019s visual size, not the glyph size (KAN-192)');
   assert.match(style, /\.ch-side \{[^}]*grid-column: 3;[^}]*flex-direction: column;/, 'the side stones stand in a column on the right');
 });
 

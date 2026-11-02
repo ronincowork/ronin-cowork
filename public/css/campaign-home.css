@@ -6,6 +6,9 @@
     --ch-horizon-h: 290px;
     --ch-horizon-ink: var(--kaki);
     --ch-glyph: 30px;
+    --ch-glyph-epics: 18px; /* ◇ draws ~1.7× the ink of ⌂ at one size; this matches them (KAN-192) */
+    --ch-glyph-epics-weight: .5px; /* and its outline is lighter than ⌂'s */
+    --ch-glyph-epics-drop: 3px; /* centred in the box it sits above ⌂'s baseline */
     --ch-door-h: 208px;
     --ch-door-w: 208px; /* Home's stone before the triangle: a quarter of the old 860px row */
     --ch-office-gap: var(--space-section); /* the one gap, across and down */
@@ -112,6 +115,9 @@
     box-shadow: var(--shadow-menu);
   }
   .ch-glyph { display: block; height: var(--ch-glyph); font-size: var(--ch-glyph); line-height: var(--leading-none); color: var(--ch-tone); white-space: nowrap; }
+  /* The glyph box keeps its height so every name lines up; only ◇'s ink is brought to ⌂'s, its
+     baseline kept where ⌂'s is. */
+  .ch-door[data-door='epics'] .ch-glyph { font-size: var(--ch-glyph-epics); line-height: calc(var(--ch-glyph) + var(--ch-glyph-epics-drop) * 2); -webkit-text-stroke: var(--ch-glyph-epics-weight) currentColor; }
   .ch-glyph svg { display: block; width: var(--ch-glyph); height: var(--ch-glyph); fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: square; stroke-linejoin: round; }
   .ch-door h2 {
     margin: var(--space-section) 0 0;
