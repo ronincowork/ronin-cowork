@@ -215,7 +215,7 @@ export function registerSetupRuntime(app: express.Express): void {
   });
 
   app.post('/api/setup/github/clone', async (req, res) => {
-    try { res.json({ ok: true, workspace: await cloneGithubWorkspace(req.body?.repository) }); }
+    try { res.json({ ok: true, workspace: await cloneGithubWorkspace(req.body?.repository, req.body?.parent) }); }
     catch (error) { res.status(400).json({ error: errMsg(error) }); }
   });
 

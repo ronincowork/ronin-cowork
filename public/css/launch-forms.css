@@ -384,21 +384,15 @@
   .bh-status[data-bad='true'] { color: var(--bad); }
 
 
-  /* Add a workspace (workspace-add.js): the launch forms' sections; the browser's rows are the folder picker's. */
-  .wa-surface {
-    --wa-list-height: 18rem; /* the folder list: about eight rows before it scrolls */
-  }
-  .wa-content { padding: 0 var(--space-inset); }
+  /* A Workspace's page (workspaces-surface.js): its Locations, then the browser of this machine with a tick per folder. */
+  .workspace-page { --wa-list-height: 18rem; /* the folder list: about eight rows before it scrolls */ display: flex; flex-direction: column; gap: var(--space-row); }
+  .workspace-location { display: flex; flex-direction: column; gap: var(--space-row); }
+  .workspace-location-head { display: flex; align-items: baseline; gap: var(--space-inline); flex-wrap: wrap; }
+  .workspace-location-head code { color: var(--muted); font-size: var(--text-small); overflow-wrap: anywhere; }
+  .workspace-clone { display: flex; align-items: center; gap: var(--space-inline); flex-wrap: wrap; }
   .wa-browser { display: flex; flex-direction: column; gap: var(--space-row); min-width: 0; }
   .wa-browser .folder-list { max-height: var(--wa-list-height); overflow: auto; }
+  .wa-browser .folder-row { display: flex; align-items: center; gap: var(--space-inline); }
   .wa-browser .folder-open:hover { background: var(--selected); }
-  .wa-browser .folder-all { align-self: flex-end; color: var(--muted); font-size: var(--text-small); }
-  .wa-browser .folder-all[hidden] { display: none; }
-  .wa-form > .fs-step:nth-last-child(1 of :not([hidden])) { border-bottom: 0; }
-  .wa-reading { color: var(--fg); }
-  .wa-link { border: 0; background: transparent; padding: 0; color: var(--link); font: inherit; text-align: start; cursor: pointer; } /* reads as text: a wrapped one starts each line at the start, as text does */
-  .wa-status { margin: 0; padding: var(--space-row) 0 var(--space-inset); color: var(--muted); font-size: var(--form-note); }
-  .wa-status:empty { display: none; }
-  .wa-status[data-kind='bad'] { color: var(--bad); }
 
 }
