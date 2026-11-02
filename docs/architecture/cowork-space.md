@@ -124,9 +124,9 @@ read Who, What, Where: **Teams** (who does the work) at the apex, **Epics** (wha
 at ⌂'s visual size and weight: `--ch-glyph-epics`) bottom left and **Workspaces** (where the work is)
 bottom right, each at Home's stone size from before (208px square) with one even gap across and down
 (`--ch-office-gap`, `--space-section` + `--space-subsection`). **Model Providers**, **Help** and
-**Settings** are three smaller stones in a vertical line beside it (in a row under it on a narrow window), `--ch-group-gap` away; triangle and
-line are one group, centred together, set a little left (`--ch-office-shift`) and lifted a little above
-the middle (KAN-194, KAN-195). Each stone's who/what/where line shows on hover at `--text-heading`.
+**Settings** are three smaller stones in a vertical line on the right (in a row under the triangle on a
+narrow window). On a wide window the page is ten even tracks: the triangle's centre sits at 40% of the
+page width and the line's at 85%, both lifted a little above the middle (KAN-194, KAN-196). Each stone's who/what/where line shows on hover at `--text-heading`.
 Each stone opens its own Workbench in
 the same tab (`public/js/door-workbenches.js`; owner, 2026-10-19). Epics (owner, 2026-11-02; KAN-187)
 seats a stone per Epic — the level-1 work items, over the Campaign this tab looks at — in Workspace 1

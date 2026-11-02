@@ -62,11 +62,11 @@ test('Home: Teams, Epics and Workspaces in a triangle at Home\u2019s stone size;
   assert.match(style, /\.ch-doors > \.ch-door\[data-door='teams'\] \{ grid-column: 1 \/ -1;/, 'Teams spans the apex');
   assert.match(style, /--ch-door-w: 208px;/, 'the main stones keep Home\u2019s size from before the triangle');
   assert.match(style, /\.ch-doors \{[^}]*grid-template-columns: repeat\(2, var\(--ch-door-w\)\);[^}]*gap: var\(--ch-office-gap\);/, 'one even gap across and down');
-  assert.match(style, /grid-template-columns: minmax\(0, 1fr\) minmax\(0, var\(--ch-frame-w\)\) var\(--ch-side-w\) minmax\(0, 1fr\);/, 'the triangle and the side stones are one centred group (KAN-195)');
-  assert.match(style, /\.ch-side \{[^}]*translate: var\(--ch-office-shift\) 0;/, 'the side stones shift left with the triangle (KAN-195)');
+  assert.match(style, /\.ch-frame \{[^}]*grid-column: 1 \/ 9;[^}]*justify-self: center;/, 'the triangle centred at 40% of the page (KAN-196)');
+  assert.match(style, /\.ch-side \{[^}]*grid-column: 8 \/ 11;[^}]*justify-self: center;/, 'the side stones centred at 85% of the page (KAN-196)');
   assert.match(style, /\.ch-is \{[^}]*font-size: var\(--text-heading\);/, 'the who, what, where line reads at a glance (KAN-194)');
   assert.match(style, /\.ch-door\[data-door='epics'\] \.ch-glyph \{ font-size: var\(--ch-glyph-epics\);/, '◇ is drawn at ⌂\u2019s visual size, not the glyph size (KAN-192)');
-  assert.match(style, /\.ch-side \{[^}]*grid-column: 3;[^}]*flex-direction: column;/, 'the side stones stand in a column on the right');
+  assert.match(style, /\.ch-side \{[^}]*grid-column: 8 \/ 11;[^}]*flex-direction: column;/, 'the side stones stand in a column on the right');
 });
 
 test('the Epics workbench: a stone per Epic in Tilespace 1, opened by Home\u2019s Epics stone (owner, 2026-11-02; KAN-187)', async () => {
