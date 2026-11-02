@@ -56,7 +56,8 @@ async function reposForTeam(team: string): Promise<RepoSpec[]> {
     const dir = overrides.get(name) ?? roots.find((r) => r.name === name)?.dir;
     if (!dir) throw new Error(`repo '${name}' is not a project_root here — pass --repo ${name}=/path`);
     const arr = await readArrangement(name, dir);
-    if (arr.mode === 'direct') throw new Error(`${name} is declared direct (${arr.source}) — a direct repository has no team line to promote`);
+    // A Workspace may hold a direct repository (the Lab): it has no team line, so nothing to promote.
+    if (arr.mode === 'direct') continue;
     specs.push({ repo: name, dir, line: acceptedByRepo.get(name) || roster.branch || teamLineBranch(team), target: arr.working });
   }
   return specs;
