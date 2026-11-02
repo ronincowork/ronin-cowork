@@ -113,37 +113,6 @@ export async function declareArrangement(dir: string, desks: 'managed' | 'none')
   return text;
 }
 
-async function setDesks(dir: string, desks: 'managed' | 'none'): Promise<RepoArrangement> {
-  try { await access(path.join(dir, '.git')); } catch { throw new Error(`${dir} is not a git repository — desks need a repository to declare`); }
-  const file = path.join(dir, RONIN_REPO_FILE);
-  let text: string | null = null;
-  try { text = await readFile(file, 'utf8'); } catch { text = null; }
-  if (text === null) {
-    await declareArrangement(dir, desks);
-    return readArrangement(path.basename(dir), dir);
-  }
-  const lines = text.split('\n');
-  const set = (key: string, value: string) => {
-    const at = lines.findIndex((l) => l.trim().startsWith(`${key}=`));
-    if (at >= 0) lines[at] = `${key}=${value}`;
-    else {
-      let last = -1;
-      lines.forEach((l, i) => { if (/^[a-z]+=/.test(l.trim())) last = i; });
-      lines.splice(last + 1, 0, `${key}=${value}`);
-    }
-  };
-  const has = (key: string) => lines.some((l) => l.trim().startsWith(`${key}=`));
-  const current = parseArrangement(path.basename(dir), dir, text);
-  if (desks === 'managed' && current.mode !== 'reviewed') {
-    set('mode', 'reviewed');
-    if (!has('working')) set('working', 'dev');
-    set('stable', current.stable && current.stable !== 'main' ? current.stable : 'master');
-  }
-  set('desks', desks);
-  await writeFile(file, lines.join('\n').replace(/\n*$/, '\n'), 'utf8');
-  return readArrangement(path.basename(dir), dir);
-}
-
 export function validateArrangementProfile(value: unknown): RepoProfile {
   const p = (value && typeof value === 'object' ? value : {}) as Partial<RepoProfile>;
   if (p.mode !== 'reviewed' && p.mode !== 'direct') throw new Error('mode must be reviewed or direct.');
@@ -160,6 +129,22 @@ export function validateArrangementProfile(value: unknown): RepoProfile {
   return { mode: p.mode, working: p.mode === 'reviewed' ? working : '', stable, worktrees: p.worktrees };
 }
 
+/**
+ * THE REPOSITORY OWNS ITS MODE (owner, 2026-11-02): a Workspace only points at it, so a Mode
+ * saved in Ronin is committed in that repository, RONIN_REPO alone (other staged work is left
+ * staged). An uncommitted RONIN_REPO left dev's checkout dirty and refused promotion twice.
+ */
+async function commitMode(dir: string, profile: RepoProfile): Promise<void> {
+  const named = async (key: string) => (await run('git', ['-C', dir, 'config', key]).catch(() => ({ stdout: '' }))).stdout.trim();
+  const identity = [
+    ...(await named('user.name') ? [] : ['-c', 'user.name=Ronin']),
+    ...(await named('user.email') ? [] : ['-c', 'user.email=ronin@localhost']),
+  ];
+  const line = profile.mode === 'reviewed' ? `${profile.working} → ${profile.stable}` : profile.stable;
+  await run('git', ['-C', dir, 'add', '--', RONIN_REPO_FILE]);
+  await run('git', ['-C', dir, ...identity, 'commit', '-q', '-m', `Mode: ${profile.mode} (${line}), saved in Ronin`, '--', RONIN_REPO_FILE]);
+}
+
 export async function setArrangementProfile(dir: string, proposed: unknown): Promise<RepoArrangement> {
   try { await access(path.join(dir, '.git')); } catch { throw new Error(`${dir} is not a git repository — it has no repository profile`); }
   const profile = validateArrangementProfile(proposed);
@@ -167,10 +152,16 @@ export async function setArrangementProfile(dir: string, proposed: unknown): Pro
   let text: string | null = null;
   try { text = await readFile(file, 'utf8'); } catch { text = null; }
 
+  // A value change edits its own line; a key that is missing goes in after the key before it
+  // in this order, so a round trip through direct and back leaves the file as it was.
   const lines = text === null ? [] : text.split('\n');
+  const ORDER = ['mode', 'working', 'stable', 'desks'];
+  const at = (key: string) => lines.findIndex((l) => l.trim().startsWith(`${key}=`));
   const set = (key: string, value: string) => {
-    const at = lines.findIndex((l) => l.trim().startsWith(`${key}=`));
-    if (at >= 0) lines[at] = `${key}=${value}`;
+    const found = at(key);
+    if (found >= 0) { lines[found] = `${key}=${value}`; return; }
+    const before = ORDER.slice(0, ORDER.indexOf(key)).map(at).filter((i) => i >= 0);
+    if (before.length) lines.splice(Math.max(...before) + 1, 0, `${key}=${value}`);
     else lines.push(`${key}=${value}`);
   };
   const drop = (key: string) => {
@@ -180,7 +171,10 @@ export async function setArrangementProfile(dir: string, proposed: unknown): Pro
   if (profile.mode === 'reviewed') set('working', profile.working); else drop('working');
   set('stable', profile.stable);
   set('desks', profile.worktrees === 'enabled' ? 'managed' : 'none');
-  const body = lines.join('\n').replace(/^\n+|\n*$/g, '') + '\n';
+  const tidy = (t: string) => t.replace(/^\n+|\n*$/g, '') + '\n';
+  const body = tidy(lines.join('\n'));
+  // A save that changes no value writes nothing.
+  if (text !== null && body === tidy(text)) return readArrangement(path.basename(dir), dir);
   const temp = path.join(dir, `.${RONIN_REPO_FILE}.${process.pid}.${Date.now()}.tmp`);
   try {
     await writeFile(temp, body, { encoding: 'utf8', mode: 0o644, flag: 'wx' });
@@ -189,6 +183,7 @@ export async function setArrangementProfile(dir: string, proposed: unknown): Pro
     await unlink(temp).catch(() => undefined);
     throw e;
   }
+  await commitMode(dir, profile);
   return readArrangement(path.basename(dir), dir);
 }
 

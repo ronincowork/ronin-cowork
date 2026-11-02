@@ -109,3 +109,29 @@ test('compatibility storage normalizes to the pure resolver input without decidi
     applicability_source: 'absent', branches: { working: '', stable: '' },
   });
 });
+
+test('a Mode saved in Ronin is committed in its repository, in place, and an unchanged save writes nothing', async () => {
+  const dir = await repo('dev');
+  const git = (...args: string[]) => execFileSync('git', ['-C', dir, '-c', 'user.name=t', '-c', 'user.email=t@t', ...args], { encoding: 'utf8' });
+  try {
+    const declared = '# note\nmode=reviewed\nworking=dev\nstable=master\ndesks=managed\n';
+    await writeFile(path.join(dir, 'RONIN_REPO'), declared);
+    await writeFile(path.join(dir, 'other.txt'), 'staged elsewhere\n');
+    git('add', 'RONIN_REPO'); git('commit', '-q', '-m', 'declared');
+    git('add', 'other.txt');
+    const commits = () => Number(git('rev-list', '--count', 'HEAD').trim());
+
+    await setArrangementProfile(dir, { mode: 'reviewed', working: 'dev', stable: 'master', worktrees: 'enabled' });
+    assert.equal(commits(), 1, 'nothing changed: no commit');
+    assert.equal(await readFile(path.join(dir, 'RONIN_REPO'), 'utf8'), declared);
+
+    await setArrangementProfile(dir, { mode: 'direct', working: '', stable: 'master', worktrees: 'enabled' });
+    assert.equal(commits(), 2);
+    assert.equal(git('status', '--porcelain', '--', 'RONIN_REPO'), '', 'the checkout is not left dirty');
+    assert.match(git('status', '--porcelain', '--', 'other.txt'), /^A /, 'other staged work stays staged, uncommitted');
+
+    await setArrangementProfile(dir, { mode: 'reviewed', working: 'dev', stable: 'master', worktrees: 'enabled' });
+    assert.equal(await readFile(path.join(dir, 'RONIN_REPO'), 'utf8'), declared, 'back to reviewed: every line in its place');
+    assert.equal(commits(), 3);
+  } finally { await rm(dir, { recursive: true, force: true }); }
+});
