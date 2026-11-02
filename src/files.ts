@@ -35,7 +35,7 @@ export function filesArgs(root: string, home = HOME, data = DATA): string[] {
     path.join(root, 'libexec', 'copyparty', 'copyparty-sfx.py'), '-q',
     '-i', `unix:700:${path.join(data, 'files.sock')}`, '--rp-loc', '/files',
     '-v', `${home}::rwmd.,*`, '--hist', path.join(data, 'copyparty'),
-    '--http-only', '--no-robots', '--no-thumb',
+    '--http-only', '--no-robots', '--no-thumb', '--no-readme', '--no-logues', '--no-script', '--no-mime',
     '--ui-nombar', '--ui-noacci', '--ui-nosrvi', '--ui-nocpla', '--ui-norepl',
     '--theme', '2', '--css-browser', '/files.css', '--js-browser', '/files.js',
   ];

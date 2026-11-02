@@ -34,6 +34,13 @@ folder.
 `--no-thumb`, no `-e2d*` (no database, no scan) and `--http-only` (no TLS certificate). Idle, it uses
 no CPU and about 60 MB of memory. Volume data lives under `--hist <data root>/copyparty`.
 
+## Same origin, no scripts from files
+
+Explorer is framed in Ronin's own origin, so a file from the home folder must never run script there:
+an HTML file opened from `~/Downloads` would otherwise reach Ronin's API as the user. `--no-script`
+serves every file with `Content-Security-Policy: script-src 'none'`. `--no-mime` stops `?mime=` from
+changing a file's type.
+
 ## Look and chrome
 
 These are copyparty's own options, not patches:
@@ -42,8 +49,12 @@ These are copyparty's own options, not patches:
   copyparty's flat dark or flat light. It copies Ronin's live tokens, skins included, into the frame
   as `--ronin-*`. Two MutationObservers (the root's attributes and the head's styles) keep it
   following without a reload.
-- **Colours:** `--css-browser /files.css` (`public/files.css`) maps copyparty's variables to those
-  `--ronin-*` tokens, for both themes.
+- **Colours and type:** `--css-browser /files.css` (`public/files.css`) maps copyparty's variables
+  to those `--ronin-*` tokens, for both themes. copyparty sizes everything in em from the root, so
+  the root takes Ronin's `--text-body` and the whole UI scales with it. The lead column (`c`, a
+  folder's zip link) is hidden; a selection still downloads as a zip.
+- **No folder documents:** `--no-readme` and `--no-logues`, so a folder's README is not rendered
+  under the list.
 - **Hidden:** `--ui-nombar` (menu bar), `--ui-noacci` (account and permissions), `--ui-nosrvi`
   (server info), `--ui-nocpla` (control-panel link) and `--ui-norepl` (code console).
 
