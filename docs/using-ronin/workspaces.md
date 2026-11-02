@@ -26,8 +26,8 @@ the selector. Each stone lists the Teams launched in the Workspace and the Epics
 like New Team, every section folding to its answer: **Name & objective** (the
 name is chosen once, when the Workspace is made; Teams hold it), then
 **Agent info**, its instructions and Mode (folded until you open it), then **Locations**: a row per folder with its note
-and, for a folder with Git, how Agents work in it (each in its own desk, reviewed, or all in one
-folder). Open **Add folders** to browse this machine and tick the folders it uses; untick one, or
+and, for a folder with Git, how Agents work in it: **Worktrees** (each Agent in its own worktree,
+handing in for the lead to review) or **Shared checkout** (all in the one folder, no review). Open **Add folders** to browse this machine and tick the folders it uses; untick one, or
 press ×, to take it out. Open **Clone from GitHub** to bring in a repository: it lands in the
 folder Add folders is open on. Where Explorer is on, you can also drag a folder from [Explorer](explorer.md)
 onto the page. **Save** (or **Create**) is at the top.

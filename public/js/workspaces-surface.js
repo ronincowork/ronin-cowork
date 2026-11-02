@@ -180,11 +180,11 @@ export function workspacePage(w, { reading, campaignId, onSaved = () => {} }) {
   const howSwitch = (name, root) => {
     const box = el('div', 'workspace-how');
     box.setAttribute('role', 'group');
-    box.setAttribute('aria-label', t('workspace_add.agents', 'How Agents work here'));
+    box.setAttribute('aria-label', t('workspaces.how', 'How Agents work in this repository'));
     const now = howOf(root.repo_profile);
     for (const [key, label, sub] of [
-      ['desks', t('workspace_add.how_desks', 'Own desks'), t('workspace_add.how_desks_sub', 'Each Agent in its own desk; work is reviewed before it lands: hand-ins on dev, the lead promotes to master.')],
-      ['folder', t('workspace_add.how_folder', 'One folder'), t('workspace_add.how_folder_sub', 'Everyone works in this one folder on its branch; no review.')],
+      ['desks', t('workspaces.how_worktrees', 'Worktrees'), t('workspaces.how_worktrees_sub', 'Each Agent opens its own worktree and hands in; the lead reviews and promotes.')],
+      ['folder', t('workspaces.how_checkout', 'Shared checkout'), t('workspaces.how_checkout_sub', 'Every Agent works in this one checkout; no hand-ins, no review.')],
     ]) {
       const b = el('button', null, label); b.type = 'button'; b.title = sub;
       b.setAttribute('aria-pressed', String(now === key));
