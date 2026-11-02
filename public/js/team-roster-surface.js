@@ -17,7 +17,7 @@ const words = () => ({ theme: t('teams_surface.theme', 'Theme'), state: t('teams
 /**
  * A stone per Team, the name only, under two questions (owner, 2026-10-20; ask.js): Workspace,
  * many-of, blank All, narrows the stones to the Teams in those workspace folders; Show, many-of,
- * Theme on by default, says what hangs under each stone, a cell per topic laid as rows across
+ * blank to start, says what hangs under each stone, a cell per topic laid as rows across
  * the stones (phalanx.js, `branches: 'column'`): Theme, the roster objective, and State, the
  * status of the Team's epic (no epic, blank), plain text; each Agent a branch row, the lead
  * first; each Item a branch row. The rows are teams-surface-rows.js over the pushed rosters (each with its `board` and
@@ -31,7 +31,7 @@ export function createTeamRosterSurface({ teamDetail } = {}) {
   const label = t('campaign.coworks', 'Teams');
   const word = words();
   let roots = []; // the workspaces chosen
-  let show = ['theme']; // what Show picks
+  let show = []; // what Show picks
   const surface = createSurface({ label, className: 'team-roster-surface' });
   const filter = ask([{ fields: [
     { key: 'root', label: t('teams_surface.workspace', 'Workspace'), blank: t('teams_surface.all', 'All'), many: true, options: [] },
