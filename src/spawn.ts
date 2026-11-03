@@ -13,7 +13,7 @@ import { contributionReading, listBehaviours, listInstallations } from './resour
 import { isCreatableTeamName as isTeamName, listTeamRosters, readTeamRoster, teamRosterFile, type TeamRoster } from './team-rosters.js';
 import { resolveLaunchProfile, type LaunchProfile, type StatedBy } from './launch-profile.js';
 import { readCampaign } from './campaigns.js';
-import { readWorkspace, roninHouse, workspaceLaunchFolder, type Workspace } from './workspaces.js';
+import { readWorkspace, roninHouse, type Workspace } from './workspaces.js';
 import { arrangementOf, desksManaged } from './desks/arrangement.js';
 import { mandate, type LaunchMode, type Mandate } from './agent-defaults.js';
 import { availableBehaviours, resolveContributions, type ResolvedContribution } from './instruction-cascade.js';
@@ -271,11 +271,9 @@ export async function resolveFacts(form: SpawnForm, taken: Set<string>, proposed
       })
     : null;
 
-  // WHERE AN AGENT STARTS is Ronin's (owner, 2026-11-01): a Team's Agents in their Workspace's
-  // launch folder, every other Agent in Ronin house. Mika keeps her own home.
-  const place = form.house_seat === 'mika'
-    ? profileDir(profile)
-    : workspace ? workspaceLaunchFolder(workspace.campaign_id, workspace.name) : roninHouse();
+  // WHERE AN AGENT STARTS is Ronin's: one folder for every Agent, Ronin house (owner, 2026-11-03), so
+  // a provider asks to trust it once, not once per Workspace. Mika keeps her own home.
+  const place = form.house_seat === 'mika' ? profileDir(profile) : roninHouse();
   await mkdir(place, { recursive: true });
   if (workspace) await ensureShelf([workspace.name]);
 

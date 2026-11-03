@@ -110,7 +110,7 @@ for (const [team, workspace] of [['wsteam', 'alpha'], ['wildteam', 'wild']]) {
   await fs.writeFile(path.join(temp, 'team_rosters', `${team}.md`), `# ${team}\n\n- **workspace:** ${workspace}\n- **state:** active\n`);
 }
 
-const { saveWorkspace, workspaceLaunchFolder, roninHouse } = await import('../src/workspaces.js');
+const { saveWorkspace, roninHouse } = await import('../src/workspaces.js');
 for (const [name, launch_mode] of [['alpha', 'configured'], ['wild', 'live_dangerously']] as const) {
   await saveWorkspace({ name, campaign_id: 'home_machine', title: name, objective: '', instructions: '', repos: [], folders: [], launch_mode });
 }
@@ -278,13 +278,13 @@ test("forkit's own inputs change its words and nothing about the mechanism", asy
   assert.deepEqual({ ...mechanism(forked) }, { ...mechanism(plain) });
 });
 
-test('where an Agent starts is the mechanism\'s — Ronin house, or the Team\'s Workspace launch folder', async () => {
+test('where an Agent starts is the mechanism\'s — Ronin house, Workspace or not', async () => {
   const commons = await resolveForm(commonsForm(), new Set());
   assert.equal(commons.workspace, '');
   assert.equal(commons.dir, roninHouse());
   const inWorkspace = await resolveForm(commonsForm({ team: 'wsteam' }), new Set());
   assert.equal(inWorkspace.workspace, 'alpha', "the roster's Workspace is the Agent's");
-  assert.equal(inWorkspace.dir, workspaceLaunchFolder('home_machine', 'alpha'));
+  assert.equal(inWorkspace.dir, roninHouse());
 });
 
 test('the model cascade is the mechanism\'s: blank inherits, explicit wins, identically', async () => {
