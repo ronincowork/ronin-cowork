@@ -137,18 +137,17 @@ export function workspacePage(w, { reading, campaignId, onSaved = () => {}, onDi
   const settled = () => { dirty = false; delete action.el.dataset.attention; discard.setDisabled(true); };
   const MODES = { configured: t('launch_mode.configured', 'Native'), live_dangerously: t('launch_mode.live', 'Dangerously') };
 
-  /* ---- 1 · Name & objective ---- */
-  const stepTop = createStep({ n: 1, key: 'top', title: t('workspaces.step_top', 'Name & objective'), onToggle: () => { open.top = !open.top; paint(); } });
-  // Title and name are chosen once (owner, 2026-11-02): Teams and their Agents refer to them, so a created
-  // Workspace shows both and never changes them.
-  const fixed = (label, value) => createField({ label, control: el('span', 'workspace-fixed', value) }).el;
-  stepTop.body.append(isNew
-    ? createField({ label: t('workspaces.field_title', 'Title'), control: text('', (v) => { draft.title = v; changed(); }) }).el
-    : fixed(t('workspaces.field_title', 'Title'), draft.title || draft.name));
-  stepTop.body.append(isNew
-    ? createField({ label: t('workspaces.name', 'Name'), control: text('', (v) => { draft.name = v.trim().toLowerCase(); changed(); }, t('new_team.name_placeholder', 'lowercase, digits, - _')) }).el
-    : fixed(t('workspaces.name', 'Name'), draft.name));
-  stepTop.body.append(createField({ label: t('workspaces.objective', 'Objective'), control: area(draft.objective, (v) => { draft.objective = v; changed(); }) }).el);
+  /* ---- 1 · Name & objective; once created, Objective alone ---- */
+  // Title and name are chosen once (owner, 2026-11-02): Teams and their Agents refer to them. A created
+  // Workspace's title is the page head already, so the section asks only what can still change (2026-11-03).
+  const stepTop = createStep({ n: 1, key: 'top', title: isNew ? t('workspaces.step_top', 'Name & objective') : t('workspaces.objective', 'Objective'), onToggle: () => { open.top = !open.top; paint(); } });
+  if (isNew) {
+    stepTop.body.append(createField({ label: t('workspaces.field_title', 'Title'), control: text('', (v) => { draft.title = v; changed(); }) }).el);
+    stepTop.body.append(createField({ label: t('workspaces.name', 'Name'), control: text('', (v) => { draft.name = v.trim().toLowerCase(); changed(); }, t('new_team.name_placeholder', 'lowercase, digits, - _')) }).el);
+    stepTop.body.append(createField({ label: t('workspaces.objective', 'Objective'), control: area(draft.objective, (v) => { draft.objective = v; changed(); }) }).el);
+  } else {
+    stepTop.body.append(createField({ label: t('workspaces.objective_what', 'What this Workspace is for'), control: area(draft.objective, (v) => { draft.objective = v; changed(); }) }).el);
+  }
 
   /* ---- 3 · Agent info: what every Agent in it is told, and the Mode they launch in (owner, 2026-11-03:
      the extra, so it comes last) ---- */
@@ -211,35 +210,48 @@ export function workspacePage(w, { reading, campaignId, onSaved = () => {}, onDi
   };
   const repoMode = (name, root) => {
     const now = pending.get(name) ?? howOf(root.repo_profile);
-    const help = el('p', 'workspace-location-help', MODE_SUBS[now]);
     const question = ask([{ fields: [{ key: 'mode', label: t('workspaces.repo_mode', 'Mode'), options: [
       { v: 'desks', l: t('workspaces.mode_reviewed', 'Reviewed'), sub: MODE_SUBS.desks },
       { v: 'folder', l: t('workspaces.mode_direct', 'Direct'), sub: MODE_SUBS.folder },
     ] }] }], { value: { mode: now }, density: 'tight', onChange: (value) => {
-      pending.set(name, value.mode); help.textContent = MODE_SUBS[value.mode]; changed();
+      pending.set(name, value.mode); changed();
     } });
-    return { question: question.el, help };
+    return question.el;
   };
+  // The two Modes are said once, above the rows (owner, 2026-11-03); a row carries its Mode word only.
+  const legend = el('p', 'workspace-location-legend');
+  for (const [key, word] of [['desks', t('workspaces.mode_reviewed', 'Reviewed')], ['folder', t('workspaces.mode_direct', 'Direct')]]) {
+    const line = el('span');
+    line.append(el('b', null, word), document.createTextNode(` ${MODE_SUBS[key]}`));
+    legend.append(line);
+  }
+  const noting = new Set(); // rows whose empty note was opened for writing
   const paintRows = () => {
     rows.replaceChildren();
     if (!picked.size) rows.append(el('p', 'fs-step-help', t('workspaces.locations_none', 'No folders yet. Add a folder or clone a repo, or drag one in from Explorer.')));
+    if ([...picked.keys()].some((name) => rootByName(name)?.facts?.repo)) rows.append(legend);
     for (const [name, note] of picked) {
       const root = rootByName(name);
       const git = !!root?.facts?.repo;
-      // ONE ROW per location (owner, 2026-11-02): kind · name · path · Mode on the right · ×, then the
-      // note for Agents under it, then the chosen Mode's line.
+      // ONE ROW per location (owner, 2026-11-02): kind · name · path · Mode word · + note · ×; a written
+      // note for Agents reads under it (2026-11-03: an empty note is a link, not a line).
       const row = el('div', 'workspace-location');
       const remove = el('button', 'workspace-location-remove', '×'); remove.type = 'button';
       remove.setAttribute('aria-label', t('workspaces.remove_named', 'Remove {name}', { name }));
       remove.addEventListener('click', () => { picked.delete(name); changed(); paint(); browser.paint(); });
       const where = el('div', 'workspace-location-where');
       where.append(el('b', null, root?.title || name), el('code', null, short(root?.dir || '')));
-      const mode = git ? repoMode(name, root) : null;
-      row.append(el('small', 'folder-kind', git ? t('workspaces.git', 'Git') : t('workspaces.dir', 'Dir')), where, mode ? mode.question : el('span'), remove);
+      const writing = !!note || noting.has(name);
+      const addNote = el('button', 'workspace-location-add-note', t('workspaces.add_note', '+ note')); addNote.type = 'button';
+      addNote.title = t('workspaces.add_note_title', 'A note for Agents: what this folder is for. It goes into their brief.');
+      addNote.hidden = writing;
+      row.append(el('small', 'folder-kind', git ? t('workspaces.git', 'Git') : t('workspaces.dir', 'Dir')), where, git ? repoMode(name, root) : el('span'), addNote, remove);
       const noteInput = text(note, (v) => { picked.set(name, v); changed(); }, t('workspaces.note_for_agents', 'Note for Agents: what this folder is for…'));
       noteInput.className = 'workspace-location-note';
+      noteInput.hidden = !writing;
+      noteInput.addEventListener('blur', () => { if (!noteInput.value.trim()) { noting.delete(name); noteInput.hidden = true; addNote.hidden = false; } });
+      addNote.addEventListener('click', () => { noting.add(name); addNote.hidden = true; noteInput.hidden = false; noteInput.focus(); });
       row.append(noteInput);
-      if (mode) row.append(mode.help);
       rows.append(row);
     }
   };
@@ -325,7 +337,7 @@ export function workspacePage(w, { reading, campaignId, onSaved = () => {}, onDi
   function paint() {
     const first = draft.instructions.trim().split('\n')[0];
     stepAgents.setCollapsed(!open.agents, [MODES[draft.launch_mode], first].filter(Boolean).join(' · '), true);
-    stepTop.setCollapsed(!open.top, draft.title || draft.name || t('workspaces.none_yet', 'None'), true);
+    stepTop.setCollapsed(!open.top, (isNew ? draft.title || draft.name : draft.objective.trim().split('\n')[0]) || t('workspaces.none_yet', 'None'), true);
     stepLocations.setCollapsed(!open.locations, picked.size === 1 ? t('workspaces.one_folder', '1 folder') : t('workspaces.folders_n', '{n} folders', { n: picked.size }), true);
     folderPanel.hidden = open.adding !== 'folder';
     clonePanel.hidden = open.adding !== 'clone';
@@ -406,7 +418,9 @@ export function createWorkspaceStones({ reading, workspacesRead, campaignId, wor
       { v: 'teams', l: t('campaign.coworks', 'Teams') },
       { v: 'epics', l: t('workspaces.epics', 'Epics') },
     ] },
-  ] }], { value: { show }, density: 'tight', onChange: ({ show: next }) => { show = (next || []).map(String); paint(); } });
+  ] }], { value: { show }, density: 'tight', onChange: ({ show: next }) => { show = (next || []).map(String); out.el.dataset.bare = String(!show.length); paint(); } });
+  // With nothing to show under them, the stones are the name alone (owner, 2026-11-03).
+  out.el.dataset.bare = 'true';
   stones.mount(out.content, { before: [messages, filter.el] });
   const paint = (answer) => {
     if (answer && !answer.ok) { say(answer.message, true); return; }
