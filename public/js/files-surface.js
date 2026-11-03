@@ -8,9 +8,20 @@ import { t } from './lexicon.js';
 export const FILES_TYPE = 'ronin.files';
 export const FILES_ON = document.documentElement.dataset.files === 'on';
 
+/* An iframe swallows every drag that crosses it, so a stone or selector dropped on Explorer's tile would
+ * land in copyparty (as an upload) instead of replacing the tile. While a drag started in Ronin is under
+ * way, the frame lets the pointer through (html.ronin-dragging, style.css). Files dragged in from the
+ * desktop start no drag here, so they still reach copyparty and upload. */
+function passDragsThrough() {
+  const root = document.documentElement;
+  document.addEventListener('dragstart', () => root.classList.add('ronin-dragging'), true);
+  for (const end of ['dragend', 'drop']) document.addEventListener(end, () => root.classList.remove('ronin-dragging'), true);
+}
+
 export function registerFilesSurface() {
   const { library } = WorkspaceKit.workbench;
   if (library.has(FILES_TYPE)) return;
+  passDragsThrough();
   library.register({
     type: FILES_TYPE,
     header: 'surface',
