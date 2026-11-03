@@ -33,7 +33,7 @@ test('a Home door reports itself, and Help names the page being read', () => {
     'Workspace 1 shows help.outline.',
     'The selected workspace is 1.',
   ].join('\n'));
-  for (const workbench of ['models', 'workspaces']) assert.ok(putMikaView('browser_1234', { workbench }, 1));
+  for (const workbench of ['models', 'workspaces', 'epics']) assert.ok(putMikaView('browser_1234', { workbench }, 1));
 });
 
 test('Mika view identity is exact, validated, and expires without a latest-tab fallback', () => {

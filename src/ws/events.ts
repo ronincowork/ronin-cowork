@@ -16,7 +16,7 @@ const eventClients = new Set<WebSocket>();
  * the UI paints moved. While a GitHub or git setup session is attached, the tick also sends
  * {t:'github-setup', github} when that answer moved.
  *
- * HELD messages ({t:'teams'}, {t:'messages'}, {t:'memory'}) are published when their
+ * HELD messages ({t:'teams'}, {t:'epics'}, {t:'messages'}, {t:'memory'}) are published when their
  * resource changes, sent only when they differ from the last, and sent whole to every fresh
  * connection. A board's or a Team's cron jobs are asked for: {t:'want', resource, board|team}
  * answers that one connection with the message every connection is sent on a write.
@@ -31,6 +31,8 @@ export interface Feed {
   list: () => Promise<SessionInfo[]>;
   home: (sessions: SessionWithAxes[]) => Promise<unknown[]>;
   teams: () => Promise<unknown[]>;
+  /** Every Epic (a level-1 work item) whole, with its holder: the Epics workbench's stones (KAN-190). */
+  epics: () => Promise<unknown[]>;
   messages: () => Promise<unknown[]>;
   wipeboard: (board: string) => Promise<Record<string, unknown> | null>;
   jikan: (team: string) => Promise<unknown[] | null>;
@@ -38,7 +40,7 @@ export interface Feed {
   shutdown: (id: string) => object | null;
 }
 const empty: Feed = {
-  list: listSessions, home: async () => [], teams: async () => [], messages: async () => [],
+  list: listSessions, home: async () => [], teams: async () => [], epics: async () => [], messages: async () => [],
   wipeboard: async () => null, jikan: async () => null, github: { attached: async () => false, answer: async () => null },
   shutdown: () => null,
 };
@@ -133,11 +135,14 @@ export function tick(): Promise<Tick> {
   return ticking;
 }
 
-// Called after every roster write: one read of the rosters for every connected tab.
+// Called after every roster or work-item write: one read of the rosters, and one of the
+// Epics, for every connected tab; each is sent only when it moved.
 export function pushTeams(): Promise<void> {
   teamsRead = teamsRead.then(async () => {
     const rosters = await feed.teams().catch(() => undefined);
     if (rosters) publishHeld({ t: 'teams', rosters });
+    const epics = await feed.epics().catch(() => undefined);
+    if (epics) publishHeld({ t: 'epics', epics });
   });
   return teamsRead;
 }

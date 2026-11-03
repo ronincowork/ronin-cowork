@@ -6,12 +6,10 @@ For contributors: what each Setup surface shows and measures, in full. The user'
 
 ## Where it is
 
-**Ronin Home** has four doors — **Models**, **Workspaces**, **Teams** and **Help** — and a
-**Settings** button. Settings opens **Ronin Setup** until each of Setup's five
+**Ronin Home** has the doors **Teams**, **Epics** and **Workspaces**, and the smaller stones
+**Model Providers**, **Help** and **Settings**. Settings opens **Ronin Setup** until each of Setup's five
 steps has been answered, and **Ronin Settings**, the full configuration workbench, after
-that. The older Home at `#/current` keeps its **Desk**, **Team** and **Agent** doors, which
-stay unavailable until one model provider is activated. The place name in the
-top bar switches between them without reloading. Models, Workspaces and Teams wait for a model provider too; Help
+that. Teams, Epics, Workspaces and Model Providers wait for a model provider; Help
 is open from the start.
 
 ### Going back to Setup
@@ -145,7 +143,7 @@ step waits.
 |---|---|---|
 | **Install** | whether the CLI is on this machine | **Install** opens the provider's installer and first-run setup in a tile on this surface; a provider Ronin cannot install safely gets an **Install guide** link |
 | **Authenticate** | whether the provider is signed in here | **Authenticate** opens the provider's own sign-in in a tile on this surface; **Done** records it, **Cancel** ends the terminal session |
-| **Ready** | activation, which unlocks the Desk, Team and Agent doors on `#/current` and the preset stones | **Turn off** stops Ronin measuring, updating and launching the provider — tiles already running are not touched and the sign-in is kept; **Turn on** brings it back, and nothing needs signing in again |
+| **Ready** | activation, which unlocks Home's doors and the preset stones | **Turn off** stops Ronin measuring, updating and launching the provider — tiles already running are not touched and the sign-in is kept; **Turn on** brings it back, and nothing needs signing in again |
 
 The install window can continue directly into the provider's sign-in. The temporary
 terminal has a normal tmux shell: exiting the CLI returns to its prompt. Installation,

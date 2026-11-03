@@ -141,8 +141,9 @@ status as its own reads return.
 6. Async enrichment must not discard edits made after the first paint. Generation or
    ownership checks prevent stale responses from repainting replaced surfaces.
 
-**Ronin Home** (`campaign-home.js`; owner, 2026-10-19) stays a page, not a Workbench, with three
-doors — **Models**, **Workspaces**, **Teams**, **Help** — each a link to a Workbench destination of its own,
+**Ronin Home** (`campaign-home.js`; owner, 2026-10-19) stays a page, not a Workbench: Teams,
+Workspaces and Epics in a triangle (owner, 2026-11-02), with Models, Help and Settings smaller stones
+in a column inset on the right — each a link to a Workbench destination of its own,
 opened in the same tab (a modified press opens a new tab through `workbenchLaunchUrl`). The
 Teams door opens the Teams workbench (`#/cowork`, `cowork-view.js`; owner, 2026-10-20). Models and
 Workspaces are one shape (`door-workbenches.js`): the Kit Workbench on a profile of the
@@ -163,10 +164,13 @@ Providers surface is untouched; all draw with the one drawing `provider-surface.
 (`createProviderDrawing`, `createRefreshAll`, `providerStones`) over the same record and measure. Workspaces seats
 its own stones of Workspaces (`workspaces-surface.js`, `workspaces.records`): a pressed one's page is the whole
 Workspace, its folders ticked in a browser of this machine (owner, 2026-11-02), with GitHub CLI beside them;
-one read of the pinned folders per bench (`createRootsReading`, the detail route). The bar's crumb (`workspace-header.js`;
+one read of the pinned folders per bench (`createRootsReading`, the detail route). Epics (owner, 2026-11-02;
+KAN-187) seats its own stones of Epics the same way (`epics-surface.js`, `epics.records`): the level-1 work items of
+the Campaign — the store's pushed `epics`, no request (KAN-190) — a pressed one's reading (`renderItemDetail`) beside the rail, a dragged one whole (`epics.record`, no
+selector card, as a Team profile). The bar's crumb (`workspace-header.js`;
 owner, 2026-10-20) reads RoninCowork   Home • Teams • <Team title> on a Team page — a gap, not a dot,
 after the brand (`--space-subsection`; owner, 2026-10-24) — Home to `#/home`, Teams to `#/cowork`;
-the Teams workbench ends at Teams, and a view naming its own `place` (Models, Workspaces, Help,
+the Teams workbench ends at Teams, and a view naming its own `place` (Models, Workspaces, Epics, Help,
 Setup, Settings) reads RoninCowork   Home • <place>.
 The Teams workbench's Teams card (`team-roster-surface.js`; owner, 2026-10-20) carries, above its
 stones, the Workspace question (many-of, blank All) and the Show question (Theme on; State,
@@ -185,14 +189,9 @@ stays open, owner 2026-10-21; with no provider its Mika seat is one line pointin
 provider is activated (`/api/setup/runtime`'s `activated_count`), each saying so under its name,
 and Settings is the one live stone — a new user's way in is Setup.
 
-**Two roots** (owner, 2026-10-19). The default root — what opens, what Home links to — is that
-three-door page. The current root, Ronin Home as it stood before 2026-10-18 with its doors into
-the Desk, Team and Agent Workbenches, is copied back from git (`current-home.js`; its Desk door opens
-the Teams workbench at `#/cowork` since the Desk workbench, a card-for-card duplicate of Cowork, was
-deleted on 2026-10-20) and
-keeps its own address, `#/current`, while pieces move from Current to Next; nothing of it is
-deleted. One plain toggle in the bar, the same spot on each (the view's leading slot), swaps
-between them in one press: it reads **Current** on the new Home and **Next** on the current one.
+**One root** (owner, 2026-11-02; KAN-197). That page is the only root: the old Home at `#/current`
+and the bar's Current/Next toggle are deleted, and an old `#/current` link falls to the safe view,
+Home.
 
 Campaign Defaults is the reference case. Its saved values are already in
 `campaign.config.defaults`, so it paints them immediately. Model choices come from the

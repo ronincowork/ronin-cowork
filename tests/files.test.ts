@@ -27,7 +27,8 @@ test('copyparty is rooted at home, served under /files, its chrome hidden', () =
   assert.equal(after('-v'), '/home/u::rwmd.,*');
   for (const flag of ['--no-thumb', '--no-readme', '--no-logues', '--no-script', '--no-mime', '--ui-nombar', '--ui-noacci', '--ui-nosrvi', '--ui-nocpla', '--ui-norepl']) assert.ok(args.includes(flag), flag);
   assert.ok(!args.some((a) => a.startsWith('-e2')), 'no index of the home folder');
-  assert.equal(after('--js-browser'), '/files.js', 'Explorer follows Ronin\'s light and dark');
+  assert.equal(after('--css-browser'), '/copyparty/ronin.css');
+  assert.equal(after('--js-browser'), '/copyparty/ronin.js', 'Explorer follows Ronin\'s light and dark');
 });
 
 const listen = (server: Server, at: string | number) => new Promise<void>((done) => server.listen(at, done));

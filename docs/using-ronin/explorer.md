@@ -11,6 +11,8 @@ Python, so Cloud always has Explorer.
 
 On Ronin Home, open the **Workspaces** door. Explorer is in tilespace 2, and its card is in the
 Workspaces selector. Press or drag the card to open it in another tilespace.
+Drop another card or stone on Explorer's tilespace to replace it. Files dragged in from your
+desktop upload into the open folder instead.
 
 ## Explorer and Workspaces
 

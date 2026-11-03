@@ -31,6 +31,7 @@ process.env.RONIN_TEAM_ROSTERS_DIR = path.join(dir, 'team_rosters');
 const { registerWorkItems } = await import('../src/routes/work-items-api.js');
 const { createTeamRoster, readTeamRoster } = await import('../src/team-rosters.js');
 const { readLetterHolds, seedTegami } = await import('../src/tegami.js');
+const { readTegami } = await import('../src/tegami-read.js');
 const { createItem, readItem } = await import('../src/work-items.js');
 
 await createTeamRoster('crew', { objective: 'hold things' });
@@ -141,11 +142,32 @@ test('item is the one tool for work items: team and work-record have no item act
   assert.notEqual((await run('work-record', ['update_record', '--phase', 'p'])).status, 0);
 });
 
+test('work-record add_doc holding no item puts the document on the work record itself, and the reading shows it', async () => {
+  await seedTegami('loner');
+  const doc = path.join(dir, 'loner-plan.md');
+  writeFileSync(doc, '# plan\n');
+  const added = await run('work-record', ['add_doc', doc], 'loner');
+  assert.deepEqual([added.status, added.stderr], [0, ''], 'no refusal: owner 2026-11-02');
+  assert.equal(added.stdout.trim(), `@loner's work record has ${doc}`);
+  assert.deepEqual((JSON.parse(await tool('work-record', ['read', '--json'], 'loner')) as { documents: string[] }).documents, [doc]);
+  assert.match(await tool('work-record', ['read'], 'loner'), new RegExp(`## Documents\\n- ${doc}`));
+  assert.deepEqual((await readTegami('loner'))!.docs, [doc], 'the tile\'s Docs lists the document by its own path');
+  await tool('work-record', ['add_doc', doc], 'loner');
+  assert.deepEqual((await readTegami('loner'))!.docs, [doc], 'adding it again keeps one');
+  assert.equal((await run('work-record', ['add_doc', path.join(dir, 'nope.md')], 'loner')).status, 2);
+
+  // Holding an item now: --remove still takes the record's own one off; the item is untouched.
+  const held = made(await tool('item', ['create', '--title', 'Loner work']));
+  await tool('item', ['assign', held, 'loner']);
+  assert.equal((await tool('work-record', ['add_doc', '--remove', doc], 'loner')).trim(), `@loner's work record has ${doc} removed`);
+  assert.deepEqual((await readTegami('loner'))!.docs, []);
+  assert.deepEqual((await readItem(held))!.attachments, []);
+});
+
 test('work-record add_doc adds a document to the item you hold; holding several, --item names one', async () => {
   await seedTegami('writer');
   const doc = path.join(dir, 'idea.md');
   writeFileSync(doc, '# idea\n');
-  assert.match((await run('work-record', ['add_doc', doc], 'writer')).stderr, /^NO-ITEM: you hold no work item/);
   const first = made(await tool('item', ['create', '--title', 'Idea']));
   await tool('item', ['assign', first, 'writer']);
   await tool('work-record', ['add_doc', doc], 'writer');
@@ -156,6 +178,8 @@ test('work-record add_doc adds a document to the item you hold; holding several,
   assert.deepEqual([several.status, several.stderr.trim()], [2, `BAD-ARG: you hold ${first} ${second}; name one with --item <id>`]);
   await tool('work-record', ['add_doc', doc, '--item', second], 'writer');
   assert.deepEqual((await readItem(second))!.attachments, [doc]);
+  await tool('work-record', ['add_doc', '--remove', doc, '--item', second], 'writer');
+  assert.deepEqual((await readItem(second))!.attachments, []);
 });
 
 test('an id no route can hold answers "No work item <id>", and a reply that is not JSON names its HTTP status', async () => {

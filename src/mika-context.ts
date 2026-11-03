@@ -8,7 +8,7 @@ import { mikaHomeDir } from './mika-runtime.js';
 export const MIKA_VIEW_TTL_MS = 15 * 60_000;
 const TAB_RE = /^[A-Za-z0-9_-]{8,64}$/;
 export const isMikaTab = (value: unknown): value is string => typeof value === 'string' && TAB_RE.test(value);
-const WORKBENCHES = new Set(['campaign', 'cowork', 'team', 'setup', 'phone', 'help', 'models', 'workspaces']);
+const WORKBENCHES = new Set(['campaign', 'cowork', 'team', 'setup', 'phone', 'help', 'models', 'workspaces', 'epics']);
 const WORKSPACES = ['workspace1', 'workspace2', 'workspace3', 'workspace4'] as const;
 
 export interface MikaView {

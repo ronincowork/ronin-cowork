@@ -39,7 +39,7 @@ export function installWorkspaceHeader(workspace) {
     const appearance = workspaceHeaderAppearance(active);
     if (appearance) document.documentElement.dataset.workbench = appearance;
     else delete document.documentElement.dataset.workbench;
-    const landing = !active || active.id === 'home' || active.id === 'current';
+    const landing = !active || active.id === 'home';
     const placed = active?.view?.place ? active.view.place() : '';
     const underTeams = !landing && (!placed || active.id === 'team');
     if (home) { home.textContent = t('bar.home', 'Home'); home.hidden = landing; }

@@ -14,7 +14,7 @@ export interface Tegami {
   holds: string[];
   /** The items held, each with its status, and a paired one's Jira link: what the tile and the roster show. */
   items: Array<WorkItem & { jira_url?: string }>;
-  /** The documents of every item the session holds, and files dropped on it. */
+  /** The record's own documents (dropped on it, or added holding no item) and every held item's attachments. */
   docs: string[];
   chip: { text: string; gate: boolean };
   /** When the work record was last written (epoch ms): the browser works out the age, so the push stays still. */
@@ -39,11 +39,16 @@ async function readDocs(v: unknown): Promise<string[]> {
   return alive.filter((p): p is string => p !== null);
 }
 
-/** Files the owner handed this Agent from the browser, in the session's own drop/. */
+/** The record's own documents, in the session's own drop/: files the owner handed this Agent
+ * from the browser, and links `work-record add_doc` makes holding no item, each read as the
+ * document it names. */
 async function dropped(key: string): Promise<string[]> {
   const dir = path.join(sessionDir(key), 'drop');
   const names = await fs.readdir(dir).catch(() => [] as string[]);
-  return names.filter((n) => !n.startsWith('.')).sort().map((n) => path.join(dir, n));
+  return Promise.all(names.filter((n) => !n.startsWith('.')).sort().map(async (n) => {
+    const at = path.join(dir, n);
+    return fs.readlink(at).catch(() => at);
+  }));
 }
 
 /** The tile's and the roster's readout: the items held with their status (a flag marks an
