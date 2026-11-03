@@ -1,7 +1,7 @@
 /* Explorer follows Ronin (KAN-146): copyparty includes this through --js-browser (src/files.ts). The frame
  * shares Ronin's origin, so it reads the page around it: light or dark from <html data-theme>, which
  * becomes copyparty's flat light (3) or flat dark (2) theme, and Ronin's colours, type and sizes, skins
- * included, which become --ronin-* for files.css. It follows every change to either without a reload. */
+ * included, which become --ronin-* for ronin.css. It follows every change to either without a reload. */
 (function () {
   var host = parent.document.documentElement;
   var tokens = ['surface', 'inset', 'line', 'line-2', 'fg', 'fg-strong', 'muted', 'accent', 'accent-2', 'accent-deep',

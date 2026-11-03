@@ -2478,6 +2478,7 @@ body {
   background: var(--surface);
 }
 .files-surface .wk-surface-content { display: flex; flex-direction: column; min-height: 0; flex: 1; }
+.ronin-dragging .files-frame { pointer-events: none; } /* a stone dragged in Ronin reaches the tile, not copyparty */
 .dc-frame {
   flex: 1;
   min-height: 0;
