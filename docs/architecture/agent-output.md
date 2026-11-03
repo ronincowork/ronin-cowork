@@ -58,6 +58,8 @@ else that uses the shape takes `tool.name` and `tool.target` only.
 ## Who reads it
 
 - **Chat** (`public/js/tile-transcript.js`) shows the `chat` reading: `say` and `ask` lines.
+  Nothing reaches or leaves Chat by its words: a line is the CLI's own by the CLI's flag or
+  machine tag, and a question by the CLI's numbered choices or a `(y/n)` on screen.
   The Agent's words are rendered as markdown through `markdown-reader.js`, in `--font-ui` at
   `--text-label` (`--text-heading` on a phone); code and tool lines use Terminal's
   `--font-term` at `--term-size`. The Markdown check on the tile's メ menu turns the rendering
