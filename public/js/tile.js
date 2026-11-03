@@ -11,7 +11,7 @@ import { installFileDrops } from './tilefiles.js';
 import { dvrStep } from './dvr.js';
 import { TapeView } from './tapeview.js';
 import { TermView } from './termview.js';
-import { installTileControls, runTerminalAction, buildMobileControlButtons } from './terminal-controls.js';
+import { installTileControls, runTerminalAction, buildMobileControlButtons, buildBoxControlButtons } from './terminal-controls.js';
 import { TileWire } from './tilewire.js';
 import { buildComposer } from './composer.js';
 import { sendComposerMessage } from './composer-rules.js';
@@ -544,6 +544,10 @@ export class Tile {
           latest: () => this.jumpLatest(),
         }).el);
         this.el.classList.add('keys-on');
+      } else {
+        // A desktop has Esc, but not always the focus to aim it: the buttons are always there.
+        const send = this.composer.el.querySelector('.csend');
+        for (const button of buildBoxControlButtons(this)) this.composer.el.insertBefore(button, send);
       }
     }
     this.composer.show(on);

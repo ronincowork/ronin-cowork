@@ -26,7 +26,7 @@ A failed locked-terminal selection attempt expands Session controls and flashes 
 instead of showing a popup. Mobile has no Hints card. Its composer keys row offers Clear,
 Stop, Escape, Tab, Shift-Tab, arrows, and jump-to-latest; Copy also appears in the live
 terminal view, where it opens a still snapshot for native selection. Close remains in the
-Agent menu, and transcript readings use native selection instead of a Copy button. The output area ends above the
+Agent menu, and transcript readings use native selection instead of a Copy button. On a desktop, the message box has **Clear** and **Stop** beside Enter, in Enter's shape; only Enter is kaki. Escape stops the Agent from the Chat conversation as well as from the box. The output area ends above the
 controls and entry box, including when the draft grows or the phone keyboard opens.
 Desktop Hints uses bold labels and wrapping text, without action buttons or help links.
 

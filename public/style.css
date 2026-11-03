@@ -3513,6 +3513,18 @@ body {
   font-size: var(--text-label);
   cursor: pointer;
 }
+/* Clear and Stop: Enter's shape, quiet; only Enter is kaki. */
+.tile:is(.tape-on, .keys-on, .transcript-on) .composer .cctl {
+  height: var(--control-height-small);
+  min-width: 38px;
+  padding: 0 var(--space-inline);
+  border: var(--edge) solid var(--term-input-line);
+  border-radius: var(--radius-small);
+  background: var(--inset);
+  color: var(--term-input-fg);
+  font: var(--text-label)/1 var(--font-ui);
+  cursor: pointer;
+}
 
 .tile.tape-on .tape {
   bottom: var(--composer-clearance, 0px);
