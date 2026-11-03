@@ -85,3 +85,14 @@ test('environment credentials appear automatically without exposing values or du
   const mistral = second.connections.find(c => c.credentialEnv === 'MISTRAL_API_KEY')!;
   await assert.rejects(h.deleteHermesEntry('connections', mistral.id), /environment/);
 });
+
+
+test('managed local gateway connections allow only explicit 127.0.0.1 HTTP with a port', async () => {
+  for (const baseUrl of ['http://127.0.0.2:4912/v1', 'http://127.0.0.1.evil.test:4912/v1', 'http://127.0.0.1/v1', 'http://127.0.0.1:4912/v1?key=x', 'http://user@127.0.0.1:4912/v1']) {
+    await assert.rejects(h.saveHermesConnection({ name: 'bad gateway', provider: 'custom', baseUrl, apiKey: 'fixture-house-token' }), /HTTPS/);
+  }
+  const c = await h.saveHermesConnection({ name: 'House test', provider: 'custom', baseUrl: 'http://127.0.0.1:4912/v1', apiKey: 'fixture-house-token' });
+  assert.equal(c.baseUrl, 'http://127.0.0.1:4912/v1');
+  assert.equal(c.provider, 'custom');
+  await h.deleteHermesEntry('connections', c.id);
+});

@@ -33,8 +33,10 @@ export async function saveHermesConnection(input: Record<string, unknown>): Prom
     if (input.id && !existing) throw new Error('Connection no longer exists.');
     const provider = input.provider;
     if (provider !== 'openai' && provider !== 'mistral' && provider !== 'custom') throw new Error('Select an API provider.');
-    const url = new URL(required(input.baseUrl, 'Base URL'));
-    if (url.protocol !== 'https:' || url.username || url.password || url.search || url.hash) throw new Error('Use an HTTPS API base URL without credentials, query or fragment.');
+    const endpoint = required(input.baseUrl, 'Base URL');
+    const url = new URL(endpoint);
+    const localGateway = url.protocol === 'http:' && url.hostname === '127.0.0.1' && !!url.port && /^http:\/\/127\.0\.0\.1:\d+\//.test(endpoint);
+    if ((!localGateway && url.protocol !== 'https:') || url.username || url.password || url.search || url.hash) throw new Error('Use an HTTPS API base URL (or http://127.0.0.1:port/ for a local gateway) without credentials, query or fragment.');
     const apiKey = typeof input.apiKey === 'string' ? input.apiKey.trim() : '';
     if (/[\r\n'"\\]/.test(apiKey)) throw new Error('Invalid API key format.');
     if (!existing && !apiKey) throw new Error('API key is required.');
