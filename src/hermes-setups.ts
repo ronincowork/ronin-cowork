@@ -8,7 +8,7 @@ import { parse } from 'dotenv';
 import { readCredential, writeCredential } from './credential-store.js';
 import { storeDir, REPO_ROOT } from './resources.js';
 
-export interface HermesConnection { id: string; name: string; provider: 'openai' | 'mistral' | 'custom'; baseUrl: string; models: string[]; discoveredAt?: string; credentialEnv?: string }
+export interface HermesConnection { id: string; name: string; provider: 'openai' | 'mistral' | 'custom'; baseUrl: string; wireApi?: 'chat' | 'responses'; models: string[]; discoveredAt?: string; credentialEnv?: string }
 export interface HermesSetup { id: string; name: string; connection: string; model: string; reasoning: string; approvals: 'off' | 'prompt' }
 export interface HermesSettings { connections: HermesConnection[]; setups: HermesSetup[] }
 const empty = (): HermesSettings => ({ connections: [], setups: [] });
@@ -33,6 +33,8 @@ export async function saveHermesConnection(input: Record<string, unknown>): Prom
     if (input.id && !existing) throw new Error('Connection no longer exists.');
     const provider = input.provider;
     if (provider !== 'openai' && provider !== 'mistral' && provider !== 'custom') throw new Error('Select an API provider.');
+    const wireApi = input.wireApi ?? existing?.wireApi;
+    if (wireApi !== undefined && wireApi !== 'chat' && wireApi !== 'responses') throw new Error('Select Chat Completions or Responses.');
     const endpoint = required(input.baseUrl, 'Base URL');
     const url = new URL(endpoint);
     const localGateway = url.protocol === 'http:' && url.hostname === '127.0.0.1' && !!url.port && /^http:\/\/127\.0\.0\.1:\d+\//.test(endpoint);
@@ -45,7 +47,7 @@ export async function saveHermesConnection(input: Record<string, unknown>): Prom
     const id = existing?.id || randomUUID();
     const changed = !existing || existing.baseUrl !== baseUrl || existing.provider !== provider || !!apiKey;
     if (existing?.credentialEnv && !apiKey && existing.baseUrl !== baseUrl) throw new Error('Update the endpoint in the credential environment, or enter a key here.');
-    const connection: HermesConnection = { ...(!apiKey && existing?.credentialEnv ? { credentialEnv: existing.credentialEnv } : {}), id, name: required(input.name, 'Connection name'), provider, baseUrl,
+    const connection: HermesConnection = { ...(!apiKey && existing?.credentialEnv ? { credentialEnv: existing.credentialEnv } : {}), id, name: required(input.name, 'Connection name'), provider, baseUrl, ...(wireApi ? { wireApi } : {}),
       models: changed ? [] : existing.models, ...(!changed && existing.discoveredAt ? { discoveredAt: existing.discoveredAt } : {}) };
     if (apiKey) {
       await mkdir(path.dirname(keyPath(id)), { recursive: true });
@@ -168,11 +170,15 @@ export async function prepareHermesHome(setupId: string, home: string) {
   await mkdir(home, { recursive: true, mode: 0o700 });
   // Remove inherited links themselves, never write through them into the default home.
   for (const file of ['config.yaml', '.env', 'ronin-setup.json']) await rm(path.join(home, file), { force: true });
-  const config = { model: { provider: connection.provider === 'openai' ? 'openai' : 'custom', default: setup.model, base_url: connection.baseUrl },
+  // Hermes ignores a bare custom model.api_mode=codex_responses on proxy URLs.
+  // A named custom provider is its supported explicit transport contract.
+  const apiMode = connection.wireApi === 'responses' ? 'codex_responses' : 'chat_completions';
+  const config = { model: { provider: connection.wireApi ? 'custom:ronin' : connection.provider === 'openai' ? 'openai' : 'custom', default: setup.model, base_url: connection.baseUrl, ...(connection.wireApi ? { api_mode: apiMode } : {}) },
+    ...(connection.wireApi ? { providers: { ronin: { name: 'ronin', base_url: connection.baseUrl, key_env: 'OPENAI_API_KEY', api_mode: apiMode } } } : {}),
     agent: setup.reasoning === 'default' ? {} : { reasoning_effort: setup.reasoning }, approvals: { mode: setup.approvals === 'off' ? 'off' : 'manual' },
     telemetry: { enabled: false } };
   await writeFile(path.join(home, 'config.yaml'), JSON.stringify(config, null, 2), { mode: 0o600 });
-  await writeFile(path.join(home, 'ronin-setup.json'), JSON.stringify({ setup, connection: { id: connection.id, name: connection.name, provider: connection.provider, baseUrl: connection.baseUrl } }, null, 2), { mode: 0o600 });
+  await writeFile(path.join(home, 'ronin-setup.json'), JSON.stringify({ setup, connection: { id: connection.id, name: connection.name, provider: connection.provider, baseUrl: connection.baseUrl, wireApi: connection.wireApi } }, null, 2), { mode: 0o600 });
   await symlink(keyPath(connection.id), path.join(home, '.env'));
   return { HERMES_HOME: home };
 }

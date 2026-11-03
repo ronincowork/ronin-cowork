@@ -96,3 +96,25 @@ test('managed local gateway connections allow only explicit 127.0.0.1 HTTP with 
   assert.equal(c.provider, 'custom');
   await h.deleteHermesEntry('connections', c.id);
 });
+
+
+test('connection wire API pins the named Hermes transport; old connections keep their defaults', async () => {
+  const original = (await h.readHermesSettings()).connections.find(c => !c.credentialEnv)!;
+  const setup = (await h.readHermesSettings()).setups.find(s => s.connection === original.id)!;
+  assert.equal(original.wireApi, undefined);
+  const oldHome = path.join(box, 'transport-legacy');
+  await h.prepareHermesHome(setup.id, oldHome);
+  assert.equal(JSON.parse(await readFile(path.join(oldHome, 'config.yaml'), 'utf8')).model.api_mode, undefined);
+  for (const [wireApi, mode] of [['responses', 'codex_responses'], ['chat', 'chat_completions']]) {
+    await h.saveHermesConnection({ ...original, wireApi });
+    const home = path.join(box, 'transport-' + wireApi);
+    await h.prepareHermesHome(setup.id, home);
+    const config = JSON.parse(await readFile(path.join(home, 'config.yaml'), 'utf8'));
+    assert.equal(config.model.provider, 'custom:ronin');
+    assert.equal(config.model.api_mode, mode);
+    assert.equal(config.providers.ronin.api_mode, mode);
+    assert.equal(config.providers.ronin.key_env, 'OPENAI_API_KEY');
+    assert.equal(config.providers.ronin.base_url, original.baseUrl);
+  }
+  await assert.rejects(h.saveHermesConnection({ ...original, wireApi: 'invented' }), /Chat Completions or Responses/);
+});

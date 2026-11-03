@@ -36,11 +36,14 @@ export function mountHermesSurface(host, provider, onChanged) {
     const name = input(connection.name || '');
     const providerChoice = select([['openai', 'OpenAI API'], ['mistral', 'Mistral API'], ['custom', 'OpenAI-compatible API']], connection.provider);
     const url = input(connection.baseUrl || 'https://api.openai.com/v1', 'url');
+    const inferredWireApi = connection.provider === 'openai' && connection.baseUrl === 'https://api.openai.com/v1' ? 'responses' : 'chat';
+    const wireApi = select([['chat', 'Chat Completions'], ['responses', 'Responses']], connection.wireApi || inferredWireApi);
+    let wireChanged = false; wireApi.addEventListener('change', () => { wireChanged = true; });
     const key = input('', 'password'); key.autocomplete = 'new-password';
     providerChoice.addEventListener('change', () => { url.value = providerChoice.value === 'mistral' ? 'https://api.mistral.ai/v1' : providerChoice.value === 'openai' ? 'https://api.openai.com/v1' : ''; });
-    form.append(el('h3', connection.id ? 'Edit API connection' : 'Add API connection'), field('Name', name), field('API provider', providerChoice), field('Base URL', url), field(connection.id ? 'API key (leave blank to keep)' : 'API key', key));
+    form.append(el('h3', connection.id ? 'Edit API connection' : 'Add API connection'), field('Name', name), field('API provider', providerChoice), field('Base URL', url), field('Wire API', wireApi), field(connection.id ? 'API key (leave blank to keep)' : 'API key', key));
     const save = button('Save connection', () => {}); save.type = 'submit'; form.append(actions(save, button('Cancel', () => editor.replaceChildren())));
-    form.addEventListener('submit', async event => { event.preventDefault(); save.disabled = true; try { await run('connection', { id: connection.id, name: name.value, provider: providerChoice.value, baseUrl: url.value, apiKey: key.value }); } finally { key.value = ''; save.disabled = false; } });
+    form.addEventListener('submit', async event => { event.preventDefault(); save.disabled = true; try { await run('connection', { id: connection.id, name: name.value, provider: providerChoice.value, baseUrl: url.value, wireApi: !connection.id || wireChanged ? wireApi.value : connection.wireApi, apiKey: key.value }); } finally { key.value = ''; save.disabled = false; } });
     editor.append(form); name.focus();
   };
   const editSetup = (setup = {}) => {
