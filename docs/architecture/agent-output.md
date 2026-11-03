@@ -26,7 +26,8 @@ on across both.
   (Core's activity subscription, the `onPaneActivity` socket). It reads the screen once and
   writes only what no log holds:
   - for every Agent, an `ask` when a question or permission prompt opens and a `note` when it
-    closes;
+    closes. A prompt is the CLI's numbered choices or a `(y/n)`, never the Agent's own words:
+    a reply that ends on a question is not one;
   - for a CLI with no log read (Grok, or Gemini until it has one; a Hermes Agent born before its
     home was its own), the conversation as far as
     the screen shows it: a `note` when work starts, then a `say` of what the screen newly shows
