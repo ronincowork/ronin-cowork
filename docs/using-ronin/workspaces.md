@@ -39,5 +39,6 @@ for; it goes into their brief). Where Explorer is on, you can also drag a folder
 onto the page. Nothing is kept until you press **Save** (or **Create**) at the top: it lights up once there
 is a change, and **−** beside it throws the changes away.
 
-Agents start in a folder Ronin keeps for each Workspace. You never need to open it; your
-project's files stay where they are.
+Every Agent starts in the same folder, one Ronin keeps for all of them, whatever its
+Workspace: a provider asks to trust that folder once, not once per Workspace. You never need
+to open it; your project's files stay where they are.
