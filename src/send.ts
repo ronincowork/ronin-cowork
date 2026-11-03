@@ -12,7 +12,8 @@ export function parsePrompt(raw: string): PromptRead {
   const cannotTell: PromptRead = { found: false, text: null, menu: false };
   const lines = raw.split('\n');
   while (lines.length && lines[lines.length - 1].trim() === '') lines.pop();
-  const at = lines.findLastIndex((l) => /[❯›]/.test(l));
+  let at = lines.length - 1;
+  while (at >= 0 && !/[❯›]/.test(lines[at])) at--;
   if (at < 0) return cannotTell;
   const line = lines[at];
   const bare = line
