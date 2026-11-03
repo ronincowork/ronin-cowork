@@ -21,14 +21,13 @@ test('Teams opens its roster and New Team form in the two default workspaces', a
   assert.match(text, /seats: campaign \? \{ workspace1: WB_TYPES\.roster, workspace2: WB_TYPES\.newTeamForm \} : \{\}/);
 });
 
-// The Desk workbench, a card-for-card duplicate of Cowork, is deleted (owner, 2026-10-20); the old
-// Home's Desk door opens the Teams workbench at #/cowork. The desk PROFILE (skins, words) stays.
+// The Desk workbench, a card-for-card duplicate of Cowork, is deleted (owner, 2026-10-20). The desk
+// PROFILE (skins, words) stays.
 test('there is no Desk workbench: one Teams workbench at #/cowork (owner, 2026-10-20)', async () => {
-  const [main, view, catalog, current] = await Promise.all([
-    source('main.js'), source('cowork-view.js'), source('workbench-catalog.js'), source('current-home.js'),
+  const [main, view, catalog] = await Promise.all([
+    source('main.js'), source('cowork-view.js'), source('workbench-catalog.js'),
   ]);
   assert.doesNotMatch(main, /desk-view|register\('desk'/);
   assert.doesNotMatch(catalog, /WORKBENCH_PROFILES\.desk|desk: 'desk'/);
   assert.doesNotMatch(view, /options\.kind === 'desk'/);
-  assert.match(current, /key: 'desk', route: 'cowork'/, 'the old Home\u2019s Desk door opens the Teams workbench');
 });

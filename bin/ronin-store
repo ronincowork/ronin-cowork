@@ -37,6 +37,8 @@ wipeboards|user|wipeboards
 jikan|user|jikan
 campaigns|user|campaigns
 team_rosters|user|team_rosters
+workspaces|user|workspaces
+house|user|house
 work_items|data|work-items
 desks|user|desks
 worktrees|user|worktrees

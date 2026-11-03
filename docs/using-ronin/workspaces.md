@@ -22,15 +22,18 @@ everything they need.
 ## Make or change a Workspace
 
 Open the **Workspaces** door on Ronin Home and press a Workspace, or place **New Workspace** from
-the selector. Each stone lists the Teams launched in the Workspace and the Epics they work on. Its page reads
+the selector. **Show** above the stones picks what hangs under each one: the Teams launched in it, the Epics they work on, or both. Its page reads
 like New Team, every section folding to its answer: **Name & objective** (the
-name is chosen once, when the Workspace is made; Teams hold it), then
-**Agent info**, its instructions and Mode (folded until you open it), then **Locations**: a row per folder with its note
-and, for a folder with Git, how Agents work in it: **Worktrees** (each Agent in its own worktree,
-handing in for the lead to review) or **Shared checkout** (all in the one folder, no review). Open **Add folders** to browse this machine and tick the folders it uses; untick one, or
+title and name are chosen once, when the Workspace is made; Teams refer to them), then
+**Agent info**, its instructions and Mode (folded until you open it), then **Locations**: a row per folder with its note for Agents (what the folder is for; it goes into their brief)
+and, for a folder with Git, its **Mode**, which belongs to the repository: **Reviewed** (each Agent works in its
+own worktree and hands its work in to the Team lead, who checks it and promotes it to the
+repository's dev) or **Direct** (every Agent works in the repository's one checkout and commits
+straight to it; no hand-in, no check). Open **Add folders** to browse this machine and tick the folders it uses; untick one, or
 press ×, to take it out. Open **Clone from GitHub** to bring in a repository: it lands in the
 folder Add folders is open on. Where Explorer is on, you can also drag a folder from [Explorer](explorer.md)
-onto the page. **Save** (or **Create**) is at the top.
+onto the page. Nothing is kept until you press **Save** (or **Create**) at the top: it lights up once there
+is a change, and **−** beside it throws the changes away.
 
 Agents start in a folder Ronin keeps for each Workspace. You never need to open it; your
 project's files stay where they are.

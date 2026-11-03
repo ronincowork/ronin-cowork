@@ -10,7 +10,8 @@
  * seats its own stones of Workspaces (workspaces-surface.js) and GitHub CLI beside them, its admin doors
  * dotted selector cards. Help (owner, 2026-10-21) seats the help outline in Workspace 1 and Mika
  * in Workspace 2 (a page stone dragged into a workspace reads that page there), her ordinary tile opened on her reading: a chat, not a terminal. Help is outside
- * Home's provider gate; with no provider Mika's seat says so in one line instead of her tile.
+ * Home's provider gate; with no provider Mika's seat says so in one line instead of her tile. Epics
+ * (owner, 2026-11-02; KAN-187) seats its own stones of Epics (epics-surface.js), as Workspaces seats its Workspaces.
  */
 import { WorkspaceKit } from './workspace-kit.js';
 import { FILES_ON } from './files-surface.js';
@@ -23,6 +24,7 @@ import { createModelDefaults, createModelProvider, createModelRefresh, createMod
 import { createGithubWorkspaceSetup } from './github-workspace-setup.js';
 import { createFolderGithub, createRootsReading, createWorkspaceNew, createWorkspaceRecord, createWorkspacesRead, createWorkspaceStones, workspaceOffers } from './workspaces-surface.js';
 import { campaignById, loadCampaigns, normalizeSelection } from './campaigns.js';
+import { createEpicRecord, createEpicsRead, createEpicStones } from './epics-surface.js';
 import { createHelpOutline, createHelpPage } from './help-outline.js';
 import { createMikaTilePool, reportMikaView } from './mika.js';
 import { readyMika } from './mika-ready.js';
@@ -143,6 +145,26 @@ export function createWorkspacesView() {
       return environment;
     },
     destroy: () => { for (const surface of made.splice(0)) surface.destroy?.(); github?.destroy(); github = null; providerSessions.destroyAll(); },
+  });
+}
+
+/** Epics (owner, 2026-11-02; KAN-187): a stone per Epic in Tilespace 1 over the Campaign this tab looks at,
+ * a pressed one's reading beside them, a dragged one whole where it is dropped; one read of the work items. */
+export function createEpicsView() {
+  const campaign = (ctx) => campaignById(normalizeSelection(ctx()?.state?.campaignSelection).primary_campaign_id);
+  const made = [];
+  const keep = (surface) => { made.push(surface); return surface; };
+  return doorWorkbench({
+    id: 'epics', profile: WORKBENCH_PROFILES.epics, label: t('campaign_home.epics', 'Epics'), seat: WORKBENCH_TYPES.epicRecords,
+    loaded: loadCampaigns,
+    environment: ({ bench, ctx }) => {
+      const epicsRead = createEpicsRead(() => campaign(ctx)?.id || '');
+      return {
+        epicRecords: () => keep(createEpicStones({ epicsRead, workbench: bench() })),
+        epicRecord: (_workspace, detail) => keep(createEpicRecord(detail.key, { epicsRead })),
+      };
+    },
+    destroy: () => { for (const surface of made.splice(0)) surface.destroy?.(); },
   });
 }
 
