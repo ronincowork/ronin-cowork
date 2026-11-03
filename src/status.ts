@@ -7,8 +7,10 @@ const SHELL_PROMPT = /[$%#]\s*$/m;
 const HOUSE: { status: SessionStatus; re: RegExp }[] = [
   { status: 'thinking', re: /^\s*[✻✳✢✶✽·∗]\s+\S+…/m },
   // Not "do you want": an Agent's own reply says it, and an idle Agent showed as asking (owner,
-  // 2026-11-03). A CLI's real prompt is its numbered choices, the vendors' rows below.
-  { status: 'awaiting-input', re: /\(y\/n\)|\[y\/n\]/i },
+  // 2026-11-03). A CLI's real prompt is its numbered choices (the vendors' rows below) or its
+  // dialog footer.
+  // A CLI's dialog footer: Claude's trust prompt has no numbered choices (KAN-215).
+  { status: 'awaiting-input', re: /\(y\/n\)|\[y\/n\]|Esc to cancel/i },
   { status: 'ready', re: /^\s*[│┃]\s*>\s/m },
 ];
 

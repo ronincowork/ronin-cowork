@@ -33,7 +33,9 @@ is best effort and never claims that the Agent processed the message.
 ## Preflight and the two-minute limit
 
 The worker resolves the current session by name and checks its input before typing. A
-recognized draft or dialog holds the message without inserting anything.
+recognized draft or dialog holds the message without inserting anything. A dialog is the
+CLI's numbered choices or its footer (`Esc to cancel`), so a trust prompt with no numbers
+is one.
 Thinking by itself does not hold delivery, and must not hide a draft or dialog.
 Unknown screens do not hold delivery. The preflight is deliberately best effort.
 
