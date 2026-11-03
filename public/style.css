@@ -3530,8 +3530,19 @@ body {
   bottom: var(--composer-clearance, 0px);
 }
 @media (pointer: coarse) {
-
-  .tile:is(.tape-on, .keys-on, .transcript-on) .composer textarea { font-size: var(--text-heading); }
+  /* A thumb's box: two rows to type in, and Enter as tall as both, so it is easy to hit. */
+  .tile:is(.tape-on, .keys-on, .transcript-on) .composer {
+    --composer-two-rows: calc(2 * var(--text-heading) * var(--leading-body) + 2 * var(--space-row) + 2 * var(--edge));
+  }
+  .tile:is(.tape-on, .keys-on, .transcript-on) .composer textarea {
+    font-size: var(--text-heading);
+    min-height: var(--composer-two-rows);
+  }
+  .tile:is(.tape-on, .keys-on, .transcript-on) .composer .csend {
+    height: var(--composer-two-rows);
+    min-width: var(--composer-two-rows);
+    font-size: var(--text-heading);
+  }
 }
 
 .tile-head .lock.armed { color: var(--ok-2); }
