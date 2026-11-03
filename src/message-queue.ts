@@ -82,8 +82,8 @@ export async function dismissMessages(ids: readonly string[]): Promise<{ dismiss
 
 interface Delivery { safe: typeof deliverSafe; force: typeof deliverForce }
 
-/** One worker owns delivery. A recognizable draft/dialog is the only reason to retain a
- * letter before its deadline. Every attempted or undeliverable letter is then shredded. */
+/** One worker owns delivery. An open dialog holds a letter until it is answered; a draft
+ * holds it until its deadline. Every attempted or undeliverable letter is then shredded. */
 export async function processMessageQueue(options: { now?: number; delivery?: Delivery } = {}): Promise<void> {
   if (processing) return;
   processing = true;
@@ -98,8 +98,14 @@ export async function processMessageQueue(options: { now?: number; delivery?: De
       const overdue = now - Date.parse(item.created_at) >= AUTO_FORCE_AFTER_MS;
       try {
         const text = deliveryText(item);
-        const result = overdue ? await delivery.force(item.target, text) : await delivery.safe(item.target, text);
-        if (!overdue && !result.delivered && !result.submitted) continue;
+        // An open dialog holds a letter until it is answered, deadline or not: its Enter would
+        // choose an option (a trust prompt's "No, exit" ended an Agent, KAN-215). Past the
+        // deadline, only a draft is pushed past.
+        const result = await delivery.safe(item.target, text);
+        if (!result.delivered && !result.submitted) {
+          if (!overdue || result.reason === 'dialog is open') continue;
+          await delivery.force(item.target, text);
+        }
       } catch { /* one failed attempt is still finished */ }
       await remove(item.id);
     }
