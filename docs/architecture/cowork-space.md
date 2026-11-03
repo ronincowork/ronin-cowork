@@ -130,9 +130,10 @@ page width and the line's at 85%, both lifted a little above the middle (KAN-194
 Each stone opens its own Workbench in
 the same tab (`public/js/door-workbenches.js`; owner, 2026-10-19). Epics (owner, 2026-11-02; KAN-187)
 seats a stone per Epic — the level-1 work items, over the Campaign this tab looks at — in Workspace 1
-(`epics-surface.js`): a pressed stone reads the item beside the rail as Work Items does
-(`renderItemDetail`); a stone dragged into a workspace places that Epic whole there; the selector
-offers the Epics card alone. Models is its own stones of
+(`epics-surface.js`): a pressed Epic shows a shadow per status with its count, a pressed shadow
+bringing that status's items out (In Review out on arrival; KAN-206); an item reads its holder,
+which opens that Agent, and its statuses as buttons, never history; a stone dragged into a
+workspace, or an Epic's selector card, places that Epic whole there. Models is its own stones of
 providers in Workspace 1 (`models-surface.js`): a stone dragged into a workspace, or its selector
 card, places that provider's page there whole, no rail; Settings' Model Providers surface stays
 as it is, both drawing with the one exported drawing. Workspaces is its own stones of folders in

@@ -24,7 +24,7 @@ import { createModelDefaults, createModelProvider, createModelRefresh, createMod
 import { createGithubWorkspaceSetup } from './github-workspace-setup.js';
 import { createFolderGithub, createRootsReading, createWorkspaceNew, createWorkspaceRecord, createWorkspacesRead, createWorkspaceStones, workspaceOffers } from './workspaces-surface.js';
 import { campaignById, loadCampaigns, normalizeSelection } from './campaigns.js';
-import { createEpicRecord, createEpicsRead, createEpicStones } from './epics-surface.js';
+import { createEpicRecord, createEpicsRead, createEpicStones, epicOffers } from './epics-surface.js';
 import { createHelpOutline, createHelpPage } from './help-outline.js';
 import { createMikaTilePool, reportMikaView } from './mika.js';
 import { readyMika } from './mika-ready.js';
@@ -160,6 +160,7 @@ export function createEpicsView() {
     environment: ({ bench, ctx }) => {
       const epicsRead = createEpicsRead(() => campaign(ctx)?.id || '');
       return {
+        epics: () => epicOffers(epicsRead),
         epicRecords: () => keep(createEpicStones({ epicsRead, workbench: bench() })),
         epicRecord: (_workspace, detail) => keep(createEpicRecord(detail.key, { epicsRead })),
       };

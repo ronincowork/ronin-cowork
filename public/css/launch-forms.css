@@ -90,6 +90,20 @@
   /* A row's notes under its stone: plain muted text, wrapping, clamped to six lines (the ask-name clamp; owner, 2026-10-20). */
   .sws-branch-note { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 6; width: var(--sws-stone); margin: 0; overflow: hidden; overflow-wrap: anywhere; color: var(--muted); font-size: var(--form-note); line-height: var(--leading-body); }
   .wi-flagged::before { background: var(--status-red); /* flagged: an impediment */ }
+  /* EPICS (KAN-206): a status not brought out is a shadow, its count large; brought out, a plain outline ahead of its items. */
+  .epic-shadow { border-style: dashed; background: transparent; }
+  .epic-shadow::before { display: none; }
+  .epic-shadow .sws-label { color: var(--muted); }
+  .epic-shadow .sws-state { order: -1; color: var(--muted); font-size: var(--text-display); line-height: var(--leading-none); }
+  .sws-stone.epic-shadow[aria-pressed='true'] { border-style: solid; background: transparent; box-shadow: none; }
+  .epic-shadow[aria-pressed='true'] .sws-label { color: var(--fg-strong); }
+  .epic-item-head { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-inline); margin-bottom: var(--space-paragraph); }
+  .epic-statuses { display: flex; flex-wrap: wrap; gap: var(--space-row); }
+  .epic-holder.is-none { color: var(--muted); font-size: var(--text-body); }
+  .epic-answer { margin: 0 0 var(--space-paragraph); color: var(--muted); font-size: var(--text-small); }
+  .epic-answer:empty { display: none; }
+  .epic-answer[data-state='failed'] { color: var(--bad); }
+  .epic-source { margin: 0 0 var(--space-row); color: var(--muted); font-size: var(--text-small); }
   .wi-meta, .wi-notice, .wi-when { color: var(--muted); }
   .wi-facts { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--space-row) var(--space-inline); }
   .wi-facts dt { color: var(--muted); }

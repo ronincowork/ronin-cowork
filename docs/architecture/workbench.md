@@ -166,8 +166,11 @@ its own stones of Workspaces (`workspaces-surface.js`, `workspaces.records`): a 
 Workspace, its folders ticked in a browser of this machine (owner, 2026-11-02), with GitHub CLI beside them;
 one read of the pinned folders per bench (`createRootsReading`, the detail route). Epics (owner, 2026-11-02;
 KAN-187) seats its own stones of Epics the same way (`epics-surface.js`, `epics.records`): the level-1 work items of
-the Campaign — the store's pushed `epics`, no request (KAN-190) — a pressed one's reading (`renderItemDetail`) beside the rail, a dragged one whole (`epics.record`, no
-selector card, as a Team profile). The bar's crumb (`workspace-header.js`;
+the Campaign — the store's pushed `epics` and `epicItems`, no request (KAN-190, KAN-206). A pressed Epic goes one
+level down: a shadow stone per status with its count, a pressed shadow bringing its items out after it (In Review out on
+arrival), the Epic's reading without history beside the rail; a pressed item reads its holder (opening that Agent or
+Team), its statuses as buttons (`/transition`) and its reading without history. An Epic is placed whole by a dragged
+stone or its selector card (`epics.record`). The bar's crumb (`workspace-header.js`;
 owner, 2026-10-20) reads RoninCowork   Home • Teams • <Team title> on a Team page — a gap, not a dot,
 after the brand (`--space-subsection`; owner, 2026-10-24) — Home to `#/home`, Teams to `#/cowork`;
 the Teams workbench ends at Teams, and a view naming its own `place` (Models, Workspaces, Epics, Help,

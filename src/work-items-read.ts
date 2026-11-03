@@ -156,6 +156,36 @@ async function teamBoards(team: string, sessions: Array<{ name: string; tags: st
     .flatMap((reading) => [reading.board, ...reading.items]);
 }
 
+/** An item under an Epic as the Epics workbench draws it (KAN-206): no history, comments or
+ * attachments; its Jira key when paired, and the Epic it sits under. */
+export interface EpicItem {
+  id: string; title: string; status: string; holder: string; parent: string | null; level: number;
+  kind: string; flagged: boolean; campaign_id: string; jira: string; epic: string;
+}
+
+/** THE EPICS PUSH (KAN-190, KAN-206): every Epic whole, and every item under one, slim. */
+export function epicsPush(every: HeldItem[]): { epics: HeldItem[]; items: EpicItem[] } {
+  const byId = new Map(every.map((item) => [item.id, item]));
+  const epicOf = (item: HeldItem): string => {
+    let at: HeldItem | undefined = item;
+    for (let steps = 0; at?.parent && steps < every.length; steps += 1) {
+      at = byId.get(at.parent);
+      if (at?.level === 1) return at.id;
+    }
+    return '';
+  };
+  const items: EpicItem[] = [];
+  for (const item of every) {
+    const epic = item.level === 1 ? '' : epicOf(item);
+    if (!epic) continue;
+    items.push({
+      id: item.id, title: item.title, status: item.status, holder: item.holder, parent: item.parent, level: item.level,
+      kind: item.kind, flagged: item.flagged, campaign_id: item.campaign_id, jira: item.external.jira?.key ?? '', epic,
+    });
+  }
+  return { epics: every.filter((item) => item.level === 1), items };
+}
+
 export async function everyItemReading(): Promise<HeldItem[]> {
   const held = await heldIds();
   return (await listItems()).map((item) => {

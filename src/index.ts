@@ -33,7 +33,7 @@ import { registerSessions, shutdownOperation } from './routes/sessions-api.js';
 import { registerTeams, teamRosters } from './routes/teams-api.js';
 import { registerWorkspaces } from './routes/workspaces-api.js';
 import { registerWorkItems } from './routes/work-items-api.js';
-import { everyItemReading } from './work-items-read.js';
+import { epicsPush, everyItemReading } from './work-items-read.js';
 import { registerDocs } from './routes/docs-api.js';
 import { registerDrop } from './routes/drop-api.js';
 import { registerDesks } from './routes/desks-api.js';
@@ -444,7 +444,7 @@ startSessionsBroadcast({
   list: listSessions,
   home: homeRows,
   teams: () => teamRosters(),
-  epics: async () => (await everyItemReading()).filter((item) => item.level === 1),
+  epics: async () => epicsPush(await everyItemReading()),
   messages: listQueuedMessages,
   wipeboard: (board) => isValidBoardName(board) ? wipeboardAnswer(board, 100) : Promise.resolve(null),
   jikan: (team) => team === '*' ? listAllJobs() : isValidTeam(team) ? listJobs(team) : Promise.resolve(null),

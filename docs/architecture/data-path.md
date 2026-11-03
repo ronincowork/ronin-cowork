@@ -48,7 +48,7 @@ snapshot: no browser reads these over REST.
 | `{t:'sessions', list}` | the session listing with its Team and lead axes | a tmux notification, or a painted field moved on the tick |
 | `{t:'home', rows}` | one row per session: stance, model, context gauge, work record | a painted field moved on the tick |
 | `{t:'teams', rosters}` | the Team rosters, the shape of `GET /api/team-rosters`; each row carries the Team's `board`, its epic (the root it holds, else its lead's; none is null) and `items` (what the Team and its members hold, each with its holder), built server-side from the Team reading (`work-items-read.ts`) | a roster, work-item, membership or lead write |
-| `{t:'epics', epics}` | every Epic — the level-1 work items, whole, each with its holder (`everyItemReading`) — the Epics workbench's stones (`epics-surface.js`, narrowed to the tab's Campaign there; KAN-190) | a roster, work-item, membership or lead write, read with the rosters |
+| `{t:'epics', epics, items}` | every Epic — the level-1 work items, whole, each with its holder — and every item under one, slim: no history or comments, with its Epic and Jira key (`epicsPush`, held as `epicItems`) — the Epics workbench's stones and shadows (`epics-surface.js`, narrowed to the tab's Campaign there; KAN-190, KAN-206) | a roster, work-item, membership or lead write, read with the rosters |
 | `{t:'messages', list}` | the message queue | a file in the queue folder changed |
 | `{t:'memory', reading}` | the machine reading behind the memory gauge; `{off:true}` once when watching is off | the machine service's reading moved |
 

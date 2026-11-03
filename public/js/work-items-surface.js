@@ -63,8 +63,9 @@ export function itemStones(items, { all = items, holder = () => '' } = {}) {
   });
 }
 
-/** One item's reading: objective, priority, comments, attachments (each opens), links and history. */
-export function renderItemDetail(host, item, { holder = '', openAttachment = null } = {}) {
+/** One item's reading: objective, priority, comments, attachments (each opens), links and history
+ * (`history: false` leaves the history out: the Epics workbench, KAN-206). */
+export function renderItemDetail(host, item, { holder = '', openAttachment = null, history = true } = {}) {
   host.append(el('h2', '', item.title || item.id),
     el('p', 'wi-meta', [item.id, item.kind, item.status, item.flagged ? `${FLAG_MARK} ${t('work_items.flagged', 'flagged')}` : ''].filter(Boolean).join(' · ')),
     el('p', 'wi-objective', item.objective || ''));
@@ -100,7 +101,7 @@ export function renderItemDetail(host, item, { holder = '', openAttachment = nul
     return row;
   }));
   section(t('work_items.links', 'Links'), (item.links || []).map((link) => el('li', '', `${link.type} ${link.to}`)));
-  section(t('work_items.history', 'History'), (item.trail || []).map((line) => el('li', 'wi-when',
+  if (history) section(t('work_items.history', 'History'), (item.trail || []).map((line) => el('li', 'wi-when',
     [String(line.at || '').slice(0, 16).replace('T', ' '), line.by, line.op, [line.from, line.to].filter(Boolean).join(' → '), line.note].filter(Boolean).join(' · '))));
 }
 
