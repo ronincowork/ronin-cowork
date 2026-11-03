@@ -86,7 +86,7 @@ export async function saveHermesSetup(input: Record<string, unknown>): Promise<H
     if (!c.models.includes(model)) throw new Error('Select a model discovered from this connection.');
     const reasoning = required(input.reasoning, 'Reasoning');
     if (!efforts.includes(reasoning)) throw new Error('Unsupported reasoning setting.');
-    if (c.provider !== 'openai' && reasoning !== 'default') throw new Error('Use provider default reasoning for this connection.');
+    if (c.provider !== 'openai' && c.wireApi !== 'responses' && reasoning !== 'default') throw new Error('Use provider default reasoning for this connection.');
     if (input.approvals !== 'off' && input.approvals !== 'prompt') throw new Error('Select an approval mode.');
     if (input.id && !state.setups.some(s => s.id === input.id)) throw new Error('Setup no longer exists.');
     const name = required(input.name, 'Setup name');

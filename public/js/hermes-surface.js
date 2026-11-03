@@ -56,7 +56,7 @@ export function mountHermesSurface(host, provider, onChanged) {
     const populate = () => {
       const c = state.connections.find(c => c.id === connection.value);
       const options = select((c?.models || []).map(id => [id, id]), setup.connection === c?.id ? setup.model : ''); model.replaceChildren(...options.childNodes); model.value = setup.connection === c?.id && c.models.includes(setup.model) ? setup.model : c?.models[0] || '';
-      const levels = c?.provider === 'openai' ? ['default', 'none', 'low', 'medium', 'high', 'xhigh', 'max'] : ['default'];
+      const levels = c?.provider === 'openai' || c?.wireApi === 'responses' ? ['default', 'none', 'low', 'medium', 'high', 'xhigh', 'max'] : ['default'];
       const choices = select(levels.map(id => [id, id === 'default' ? 'Provider default' : id]), levels.includes(setup.reasoning) ? setup.reasoning : c?.provider === 'openai' ? 'medium' : 'default');
       const chosen = choices.value; reasoning.replaceChildren(...choices.childNodes); reasoning.value = chosen;
     };

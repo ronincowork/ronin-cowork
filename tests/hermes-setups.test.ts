@@ -118,3 +118,24 @@ test('connection wire API pins the named Hermes transport; old connections keep 
   }
   await assert.rejects(h.saveHermesConnection({ ...original, wireApi: 'invented' }), /Chat Completions or Responses/);
 });
+
+
+test('custom Responses setups retain explicit effort; other custom transports keep provider defaults', async () => {
+  const c = await h.saveHermesConnection({ name: 'Reasoning gateway', provider: 'custom', baseUrl: 'http://127.0.0.1:4912/v1', apiKey: 'fixture-reasoning-token' });
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => new Response(JSON.stringify({ data: [{ id: 'openai/gpt-6-luna' }] }));
+  try { await h.discoverHermesModels(c.id); } finally { globalThis.fetch = originalFetch; }
+  const input = { name: 'Gateway medium', connection: c.id, model: 'openai/gpt-6-luna', reasoning: 'medium', approvals: 'off' };
+  await assert.rejects(h.saveHermesSetup(input), /provider default/);
+  await h.saveHermesConnection({ ...c, wireApi: 'chat' });
+  await assert.rejects(h.saveHermesSetup(input), /provider default/);
+  const setup = await h.saveHermesSetup({ ...input, reasoning: 'default' });
+  await h.saveHermesConnection({ ...c, wireApi: 'responses' });
+  await h.saveHermesSetup({ ...setup, reasoning: 'medium' });
+  const home = path.join(box, 'custom-responses-medium');
+  await h.prepareHermesHome(setup.id, home);
+  const config = JSON.parse(await readFile(path.join(home, 'config.yaml'), 'utf8'));
+  assert.equal(config.agent.reasoning_effort, 'medium');
+  assert.equal(config.providers.ronin.api_mode, 'codex_responses');
+  await assert.rejects(h.saveHermesSetup({ ...setup, reasoning: 'invented' }), /Unsupported reasoning/);
+});
