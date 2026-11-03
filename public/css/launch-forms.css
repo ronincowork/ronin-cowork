@@ -399,6 +399,12 @@
   .workspace-form .fs-sum, .workspace-form .fs-chev, .workspace-form .fs-step-help { font-size: var(--form-note); }
   .workspace-form .wk-field { gap: var(--space-row); }
   .workspace-form .wk-field-label { font-size: var(--form-key); font-weight: var(--weight-regular); }
+  /* One accent for state (owner, 2026-11-03): the fold mark and a folded section's answer are muted;
+     kaki is left to Save when there is a change. The mark is the chevron alone. */
+  .workspace-form .fs-chev { color: var(--muted); font-size: 0; }
+  .workspace-form .fs-chev::before { margin-right: 0; font-size: var(--form-note); }
+  .workspace-form .fs-sum { color: var(--muted); }
+  .workspaces-records[data-bare='true'] .workspace-record-stones .sws-stone { aspect-ratio: auto; }
   .workspace-form .workspace-fixed { border: 0; background: transparent; padding: 0; color: var(--fg-strong); }
   .workspace-page-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-inline); padding-bottom: var(--space-row); border-bottom: var(--edge) solid var(--line); }
   .workspace-page-actions { display: flex; align-items: center; gap: var(--space-row); }
@@ -407,25 +413,40 @@
   /* The list sits under the add choices, a rule and a paragraph apart. */
   .workspace-locations { display: flex; flex-direction: column; padding-top: var(--space-paragraph); border-top: var(--edge) solid var(--line); }
   /* A location is one grid row: kind · name and path · Mode · ×; the note and the Mode's line span under it. */
-  .workspace-location { display: grid; grid-template-columns: 2.2em minmax(0, 1fr) auto auto; column-gap: var(--space-inline); row-gap: var(--space-row); align-items: center; padding: var(--space-paragraph) 0; border-top: var(--edge) solid var(--line); }
+  .workspace-location { display: grid; grid-template-columns: 2.2em minmax(0, 1fr) auto auto auto; column-gap: var(--space-inline); row-gap: var(--space-row); align-items: center; padding: var(--space-paragraph) 0; border-top: var(--edge) solid var(--line); }
   .workspace-location:first-child { border-top: 0; padding-top: 0; }
   .workspace-location:last-child { padding-bottom: 0; }
   .workspace-location-where { display: flex; align-items: baseline; gap: var(--space-inline); min-width: 0; }
   .workspace-location-where b { color: var(--fg-strong); font-size: var(--form-key); font-weight: var(--weight-regular); white-space: nowrap; }
   .workspace-location-where code { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); background: transparent; padding: 0; }
   .workspace-location .folder-kind { color: var(--muted); }
-  .workspace-location-note, .workspace-location-help { grid-column: 2 / -1; }
+  .workspace-location-note { grid-column: 2 / -1; }
+  .workspace-location-note[hidden], .workspace-location-add-note[hidden] { display: none; }
   .workspace-location-note { width: 100%; border: 0; background: transparent; color: var(--fg); padding: 0; }
   .workspace-location-note::placeholder { color: var(--muted); }
   .workspace-location-note:focus { outline: none; background: var(--inset); }
-  .workspace-location-help { margin: 0; color: var(--muted); font-size: var(--form-note); line-height: var(--leading-body); }
+  /* The two Modes, said once above the rows. */
+  .workspace-location-legend { display: grid; gap: var(--space-row); margin: 0 0 var(--space-paragraph); color: var(--muted); font-size: var(--form-note); line-height: var(--leading-body); }
+  .workspace-location-legend b { color: var(--fg); font-weight: var(--weight-regular); }
+  .workspace-location .workspace-location-add-note { border: 0; background: transparent; padding: 0; color: var(--muted); cursor: pointer; font: inherit; font-size: var(--form-note); }
+  .workspace-location .workspace-location-add-note:hover { color: var(--fg-strong); }
+  /* A row's Mode is a word in the row's own type (owner, 2026-11-03): ERABI's flip, without its stone. */
+  .workspace-form .workspace-location .ask, .workspace-location .ask-group, .workspace-location .ask-fields { display: block; gap: 0; }
+  .workspace-form .workspace-location .ask-group-head { display: none; }
+  .workspace-form .workspace-location .ask .ask-stone { flex: none; width: auto; height: auto; border: 0; background: transparent; box-shadow: none; padding: 0 1.2em 0 0; }
+  .workspace-form .workspace-location .ask-stone:is([aria-expanded='true'], [aria-selected='true']) { background: transparent; box-shadow: none; }
+  .workspace-form .workspace-location .ask-label { display: none; }
+  .workspace-form .workspace-location .ask-reading { padding-right: 0; color: var(--fg); font-size: var(--form-input); font-weight: var(--weight-regular); }
+  .workspace-form .workspace-location .ask-stone:hover .ask-reading { color: var(--fg-strong); }
+  .workspace-form .workspace-location .ask-stone::after { right: 0; top: 50%; bottom: auto; transform: translateY(-50%); color: var(--muted); }
   .workspace-location-remove { border: 0; background: transparent; color: var(--muted); cursor: pointer; padding: 0 var(--space-row); }
   .workspace-location-remove:hover { color: var(--bad); }
 
   /* Add a folder or Clone a repo, first in the section (owner, 2026-11-03): plain links, each opening its
      own panel; the open one reads strong. */
   .workspace-location-tools { display: flex; gap: var(--space-section); flex-wrap: wrap; }
-  .workspace-location-tools button { border: 0; background: transparent; padding: 0; color: var(--link); cursor: pointer; }
+  .workspace-location-tools button { border: 0; background: transparent; padding: 0; color: var(--muted); cursor: pointer; }
+  .workspace-location-tools button:hover { color: var(--fg-strong); }
   .workspace-location-tools button[aria-pressed='true'] { color: var(--fg-strong); }
   .workspace-browser { display: flex; flex-direction: column; gap: var(--space-row); padding: var(--space-inline); border: var(--edge) solid var(--line-2); border-radius: var(--radius-small); }
   .workspace-browser-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-inline); }
