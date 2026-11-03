@@ -69,7 +69,8 @@ const pinName = (dir, taken) => {
   return name;
 };
 
-/** The folders on this machine from the home folder: crumbs, then a row per folder with its tick. */
+/** The folders on this machine from the home folder: crumbs, then a row per folder, with its tick when
+ * the browser picks folders (without `onTick` it only walks to a folder). */
 function folderBrowser({ ticked, onTick, onLoad = () => {} }) {
   const shell = el('div', 'wa-browser');
   const crumbs = el('div', 'folder-crumbs');
@@ -82,14 +83,17 @@ function folderBrowser({ ticked, onTick, onLoad = () => {} }) {
     list.replaceChildren();
     for (const folder of folders) {
       const row = el('div', 'folder-row');
-      const tick = el('input', 'folder-tick');
-      tick.type = 'checkbox';
-      tick.checked = ticked(folder.dir);
-      tick.setAttribute('aria-label', t('workspaces.tick', 'In this Workspace: {name}', { name: folder.name }));
-      tick.addEventListener('change', () => onTick(folder.dir, tick.checked));
+      if (onTick) {
+        const tick = el('input', 'folder-tick');
+        tick.type = 'checkbox';
+        tick.checked = ticked(folder.dir);
+        tick.setAttribute('aria-label', t('workspaces.tick', 'In this Workspace: {name}', { name: folder.name }));
+        tick.addEventListener('change', () => onTick(folder.dir, tick.checked));
+        row.append(tick);
+      }
       const open = el('button', 'folder-open', folder.name); open.type = 'button';
       open.addEventListener('click', () => void load(folder.dir));
-      row.append(tick, open, el('small', 'folder-kind', folder.repository ? t('workspaces.git', 'Git') : ''));
+      row.append(open, el('small', 'folder-kind', folder.repository ? t('workspaces.git', 'Git') : ''));
       list.append(row);
     }
     if (!folders.length) list.append(el('span', 'folder-empty', t('folders.empty', 'No matching folders here.')));
@@ -110,9 +114,9 @@ function folderBrowser({ ticked, onTick, onLoad = () => {} }) {
   return { el: shell, current: () => current, home: () => home, paint, load };
 }
 
-/** A Workspace's page in the launch forms' format (owner, 2026-11-02): 1 Name & objective, 2 Agent info
- * (instructions and Mode), 3 Locations, one line per folder, with Add folders and Clone from GitHub; every
- * section folds to its answer. Lines inside one item sit tight; items are spaced as paragraphs.
+/** A Workspace's page in the launch forms' format (owner, 2026-11-02/03): 1 Name & objective, 2 Locations
+ * (Add a folder or Clone a repo at its top, then one row per folder), 3 Agent info (instructions and
+ * Mode), the extra; every section folds to its answer. Lines inside one item sit tight; items are spaced as paragraphs.
  * `null` is a new Workspace. Returns the page and its Save (Create) action for the surface head. */
 export function workspacePage(w, { reading, campaignId, onSaved = () => {}, onDiscard = () => {} }) {
   const { createAction, createField } = WorkspaceKit.primitives;
@@ -125,7 +129,7 @@ export function workspacePage(w, { reading, campaignId, onSaved = () => {}, onDi
   const say = sayInto(line);
   const text = (value, onInput, placeholder = '') => { const i = el('input'); i.type = 'text'; i.value = value; i.placeholder = placeholder; i.addEventListener('input', () => onInput(i.value)); return i; };
   const area = (value, onInput) => { const a = el('textarea'); a.rows = 4; a.value = value; a.addEventListener('input', () => onInput(a.value)); return a; };
-  const open = { top: true, agents: false, locations: true, add: false, clone: false };
+  const open = { top: true, agents: false, locations: true, adding: '' }; // adding: '' | 'folder' | 'clone'
   // EVERY EDIT WAITS FOR SAVE (owner, 2026-11-02): a change lights Save (kaki, what needs you) and
   // the − beside it, which throws the changes away back to the saved Workspace.
   let dirty = false;
@@ -146,8 +150,9 @@ export function workspacePage(w, { reading, campaignId, onSaved = () => {}, onDi
     : fixed(t('workspaces.name', 'Name'), draft.name));
   stepTop.body.append(createField({ label: t('workspaces.objective', 'Objective'), control: area(draft.objective, (v) => { draft.objective = v; changed(); }) }).el);
 
-  /* ---- 2 · Agent info: what every Agent in it is told, and the Mode they launch in ---- */
-  const stepAgents = createStep({ n: 2, key: 'agents', title: t('workspaces.agent_info', 'Agent info'), onToggle: () => { open.agents = !open.agents; paint(); } });
+  /* ---- 3 · Agent info: what every Agent in it is told, and the Mode they launch in (owner, 2026-11-03:
+     the extra, so it comes last) ---- */
+  const stepAgents = createStep({ n: 3, key: 'agents', title: t('workspaces.agent_info', 'Agent info'), onToggle: () => { open.agents = !open.agents; paint(); } });
   stepAgents.body.append(createField({ label: t('workspaces.instructions', 'Instructions'), control: area(draft.instructions, (v) => { draft.instructions = v; changed(); }) }).el);
 
   const mode = ask([{ fields: [
@@ -158,21 +163,24 @@ export function workspacePage(w, { reading, campaignId, onSaved = () => {}, onDi
   ] }], { value: { launch_mode: draft.launch_mode }, density: 'tight', onChange: (value) => { draft.launch_mode = value.launch_mode; changed(); paint(); } });
   stepAgents.body.append(mode.el);
 
-  /* ---- 3 · Locations: one line per folder, its note under it; Add folders and Clone from GitHub as buttons ---- */
-  const stepLocations = createStep({ n: 3, key: 'locations', title: t('workspaces.locations', 'Locations'), onToggle: () => { open.locations = !open.locations; paint(); } });
+  /* ---- 2 · Locations: what matters most, so second (owner, 2026-11-03). Add a folder or Clone a repo at
+     the top, each opening its own panel; then one row per folder, its note under it ---- */
+  const stepLocations = createStep({ n: 2, key: 'locations', title: t('workspaces.locations', 'Locations'), onToggle: () => { open.locations = !open.locations; paint(); } });
   const picked = new Map([...draft.repos, ...draft.folders].map((row) => [row.name, row.note]));
   const rootByName = (name) => reading.roots().find((root) => root.name === name);
   const rootByDir = (dir) => reading.roots().find((root) => root.dir === dir);
   const short = (dir) => (browser.home() && (dir === browser.home() || dir.startsWith(`${browser.home()}/`)) ? `~${dir.slice(browser.home().length)}` : dir);
   const rows = el('div', 'workspace-locations');
   const tools = el('div', 'workspace-location-tools');
-  const addButton = el('button', 'wk-btn', t('workspaces.add_folders', '+ Add folders')); addButton.type = 'button';
-  const cloneButton = el('button', 'wk-btn', t('workspaces.clone', '+ Clone from GitHub')); cloneButton.type = 'button';
-  addButton.addEventListener('click', () => { open.add = !open.add; paint(); });
-  cloneButton.addEventListener('click', () => { open.clone = !open.clone; open.add = open.add || open.clone; paint(); });
+  const addButton = el('button', 'wk-btn', t('workspaces.add_folder', '+ Add a folder')); addButton.type = 'button';
+  const cloneButton = el('button', 'wk-btn', t('workspaces.clone_repo', '+ Clone a repo')); cloneButton.type = 'button';
+  const choose = (which) => { open.adding = open.adding === which ? '' : which; paint(); };
+  addButton.addEventListener('click', () => choose('folder'));
+  cloneButton.addEventListener('click', () => choose('clone'));
   tools.append(addButton, cloneButton);
-  const panel = el('div', 'workspace-browser');
-  stepLocations.body.append(rows, tools, panel);
+  const folderPanel = el('div', 'workspace-browser');
+  const clonePanel = el('div', 'workspace-browser');
+  stepLocations.body.append(tools, folderPanel, clonePanel, rows);
 
   const pending = new Map(); // a Git folder's worktree switch, written on Save
   const profileOf = (key, root) => ({ ...HOW[key], stable: key === 'folder' ? (root.repo_profile?.stable || 'main') : HOW.desks.stable });
@@ -214,7 +222,7 @@ export function workspacePage(w, { reading, campaignId, onSaved = () => {}, onDi
   };
   const paintRows = () => {
     rows.replaceChildren();
-    if (!picked.size) rows.append(el('p', 'fs-step-help', t('workspaces.locations_none', 'No folders yet. Add folders, or drag one in from Files.')));
+    if (!picked.size) rows.append(el('p', 'fs-step-help', t('workspaces.locations_none', 'No folders yet. Add a folder or clone a repo, or drag one in from Explorer.')));
     for (const [name, note] of picked) {
       const root = rootByName(name);
       const git = !!root?.facts?.repo;
@@ -259,29 +267,38 @@ export function workspacePage(w, { reading, campaignId, onSaved = () => {}, onDi
     onTick: (dir, on) => void (on ? attach(dir) : detach(dir)),
     onLoad: () => paint(),
   });
-  const done = el('button', 'wk-btn', t('workspaces.done', 'Done')); done.type = 'button';
-  done.addEventListener('click', () => { open.add = false; open.clone = false; paint(); });
-  const panelHead = el('div', 'workspace-browser-head');
-  panelHead.append(el('span', 'fs-step-help', t('workspaces.add_help', 'Open folders; tick the ones this Workspace uses.')), done);
-  // Clone from GitHub: one line, into the folder the browser is open on.
-  const repository = text('', () => {}, t('workspace_add.repository_placeholder', 'owner/repo or a github.com link'));
+  const done = (help) => {
+    const button = el('button', 'wk-btn', t('workspaces.done', 'Done')); button.type = 'button';
+    button.addEventListener('click', () => { open.adding = ''; paint(); });
+    const head = el('div', 'workspace-browser-head');
+    head.append(el('span', 'fs-step-help', help), button);
+    return head;
+  };
+  folderPanel.append(done(t('workspaces.add_help', 'Open folders; tick the ones this Workspace uses.')), browser.el);
+  // Clone a repo: the repository first, then where it goes, walked to in its own browser.
+  const repoName = (value) => (value.trim().replace(/\.git$/, '').replace(/\/+$/, '').split(/[/:]/).pop() || '');
+  const repository = text('', () => paint(), t('workspace_add.repository_placeholder', 'owner/repo or a github.com link'));
+  const into = folderBrowser({ onLoad: () => paint() });
   const cloneWhere = el('span', 'fs-step-help');
   const clone = el('button', 'wk-btn', t('workspaces.clone_here', 'Clone')); clone.type = 'button';
   clone.addEventListener('click', async () => {
     if (!repository.value.trim()) return;
     clone.disabled = true;
-    say(t('workspaces.cloning', 'Cloning into {dir}…', { dir: short(browser.current()) }));
-    const answer = await request('/api/setup/github/clone', { method: 'POST', json: { repository: repository.value.trim(), parent: browser.current() } });
+    say(t('workspaces.cloning', 'Cloning into {dir}…', { dir: short(into.current()) }));
+    const answer = await request('/api/setup/github/clone', { method: 'POST', json: { repository: repository.value.trim(), parent: into.current() } });
     clone.disabled = false;
     if (!answer.ok) { say(answer.message, true); return; }
     repository.value = '';
     await reading.read();
-    await browser.load();
+    await into.load();
     await attach(answer.data.workspace.dir);
   });
   const cloneLine = el('div', 'workspace-clone');
-  cloneLine.append(repository, cloneWhere, clone);
-  panel.append(panelHead, browser.el, cloneLine);
+  cloneLine.append(cloneWhere, clone);
+  clonePanel.append(done(t('workspaces.clone_help', 'Clone a GitHub repository into a folder on this machine.')),
+    createField({ label: t('workspaces.repository', 'Repository'), control: repository }).el,
+    createField({ label: t('workspaces.clone_where', 'Where to put it'), control: into.el }).el,
+    cloneLine);
   // A folder dragged in from Files: /files/<path under home> is that folder.
   page.addEventListener('dragover', (event) => { if (event.dataTransfer?.types.includes('text/uri-list')) event.preventDefault(); });
   page.addEventListener('drop', (event) => {
@@ -310,14 +327,17 @@ export function workspacePage(w, { reading, campaignId, onSaved = () => {}, onDi
     stepAgents.setCollapsed(!open.agents, [MODES[draft.launch_mode], first].filter(Boolean).join(' · '), true);
     stepTop.setCollapsed(!open.top, draft.title || draft.name || t('workspaces.none_yet', 'None'), true);
     stepLocations.setCollapsed(!open.locations, picked.size === 1 ? t('workspaces.one_folder', '1 folder') : t('workspaces.folders_n', '{n} folders', { n: picked.size }), true);
-    panel.hidden = !open.add;
-    cloneLine.hidden = !open.clone;
-    addButton.setAttribute('aria-pressed', String(open.add));
-    cloneButton.setAttribute('aria-pressed', String(open.clone));
-    cloneWhere.textContent = t('workspaces.clone_into', 'into {dir}', { dir: short(browser.current()) || '~' });
+    folderPanel.hidden = open.adding !== 'folder';
+    clonePanel.hidden = open.adding !== 'clone';
+    addButton.setAttribute('aria-pressed', String(open.adding === 'folder'));
+    cloneButton.setAttribute('aria-pressed', String(open.adding === 'clone'));
+    const at = short(into.current()) || '~';
+    const named = repoName(repository.value);
+    cloneWhere.textContent = named ? t('workspaces.clone_lands', 'Lands in {dir}', { dir: `${at}/${named}` }) : t('workspaces.clone_into', 'Into {dir}', { dir: at });
+    clone.disabled = !named;
     paintRows();
   }
-  page.append(line, stepTop.el, stepAgents.el, stepLocations.el);
+  page.append(line, stepTop.el, stepLocations.el, stepAgents.el);
   paint();
   if (!reading.roots().length) void reading.read().then(() => { paint(); browser.paint(); });
   return { el: page, action, discard };
