@@ -25,13 +25,15 @@ Open the **Workspaces** door on Ronin Home and press a Workspace, or place **New
 the selector. **Show** above the stones picks what hangs under each one: the Teams launched in it, the Epics they work on, or both. Its page reads
 like New Team, every section folding to its answer: **Name & objective** (the
 title and name are chosen once, when the Workspace is made; Teams refer to them), then
-**Agent info**, its instructions and Mode (folded until you open it), then **Locations**: a row per folder with its note for Agents (what the folder is for; it goes into their brief)
+**Locations**, then **Agent info**, its instructions and Mode (folded until you open it).
+Locations opens with two choices. **Add a folder** browses this machine: tick the folders the
+Workspace uses; untick one, or press ×, to take it out. **Clone a repo** asks for the
+repository, then where to put it: walk to a folder and press **Clone**. Under the choices is a
+row per folder with its note for Agents (what the folder is for; it goes into their brief)
 and, for a folder with Git, its **Mode**, which belongs to the repository: **Reviewed** (each Agent works in its
 own worktree and hands its work in to the Team lead, who checks it and promotes it to the
 repository's dev) or **Direct** (every Agent works in the repository's one checkout and commits
-straight to it; no hand-in, no check). Open **Add folders** to browse this machine and tick the folders it uses; untick one, or
-press ×, to take it out. Open **Clone from GitHub** to bring in a repository: it lands in the
-folder Add folders is open on. Where Explorer is on, you can also drag a folder from [Explorer](explorer.md)
+straight to it; no hand-in, no check). Where Explorer is on, you can also drag a folder from [Explorer](explorer.md)
 onto the page. Nothing is kept until you press **Save** (or **Create**) at the top: it lights up once there
 is a change, and **−** beside it throws the changes away.
 
