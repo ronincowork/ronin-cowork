@@ -90,20 +90,36 @@
   /* A row's notes under its stone: plain muted text, wrapping, clamped to six lines (the ask-name clamp; owner, 2026-10-20). */
   .sws-branch-note { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 6; width: var(--sws-stone); margin: 0; overflow: hidden; overflow-wrap: anywhere; color: var(--muted); font-size: var(--form-note); line-height: var(--leading-body); }
   .wi-flagged::before { background: var(--status-red); /* flagged: an impediment */ }
-  /* EPICS (KAN-206): a status not brought out is a shadow, its count large; brought out, a plain outline ahead of its items. */
-  .epic-shadow { border-style: dashed; background: transparent; }
-  .epic-shadow::before { display: none; }
-  .epic-shadow .sws-label { color: var(--muted); }
-  .epic-shadow .sws-state { order: -1; color: var(--muted); font-size: var(--text-display); line-height: var(--leading-none); }
-  .sws-stone.epic-shadow[aria-pressed='true'] { border-style: solid; background: transparent; box-shadow: none; }
-  .epic-shadow[aria-pressed='true'] .sws-label { color: var(--fg-strong); }
-  .epic-item-head { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-inline); margin-bottom: var(--space-paragraph); }
+  /* EPICS (KAN-206): an Epic's worksurface. One row of statuses (a hidden one carries its count, an out one
+     is plain), then each status that is out as its items' cards; a card's title wraps whole. */
+  .epics-record .wk-surface-content { display: flex; flex-direction: column; gap: var(--space-subsection); padding: var(--space-inset); overflow: auto; }
+  .epic-source { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-inline); color: var(--muted); font-size: var(--text-small); }
+  .epic-filter { position: sticky; top: calc(var(--space-inset) * -1); z-index: 1; display: flex; flex-wrap: wrap; gap: var(--space-inline); padding-block: var(--space-row); background: var(--surface); }
+  .epic-chip { display: inline-flex; align-items: baseline; gap: var(--space-inline); padding: var(--space-row) var(--space-inset); border: var(--edge) dashed var(--line-2); border-radius: var(--radius-small); background: transparent; color: var(--muted); font: inherit; font-size: var(--text-label); cursor: pointer; }
+  .epic-chip:hover { border-color: var(--line-3); color: var(--fg-strong); }
+  .epic-chip[aria-pressed='true'] { border-style: solid; border-color: var(--kaki); color: var(--fg-strong); font-weight: var(--weight-strong); }
+  .epic-count { font-variant-numeric: tabular-nums; font-weight: var(--weight-strong); color: var(--fg); }
+  .epic-groups { display: flex; flex-direction: column; gap: var(--space-section); }
+  .epic-group-heading { margin: 0 0 var(--space-paragraph); color: var(--muted); font-size: var(--text-small); font-weight: var(--weight-strong); letter-spacing: var(--tracking-wide); text-transform: uppercase; }
+  .epic-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: var(--space-inline); align-items: start; }
+  .epic-card { display: flex; flex-direction: column; gap: var(--space-row); min-width: 0; padding: var(--space-inline) var(--space-inset); border: var(--edge) solid var(--line-2); border-inline-start: var(--edge-2) solid var(--accent); border-radius: var(--radius-hair); background: var(--surface); }
+  .epic-card.is-flagged { border-inline-start-color: var(--status-red); }
+  .epic-card:has(.epic-card-body) { grid-column: 1 / -1; border-color: var(--kaki); }
+  .epic-card-title { padding: 0; border: 0; background: none; color: var(--fg-strong); font: inherit; font-size: var(--text-label); font-weight: var(--weight-strong); line-height: var(--leading-tight); text-align: left; overflow-wrap: anywhere; cursor: pointer; }
+  .epic-card-title:hover { color: var(--accent); }
+  .epic-card-meta { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-inline); font-size: var(--text-small); color: var(--muted); }
+  .epic-holder { padding: 0; border: 0; background: none; color: var(--accent); font: inherit; cursor: pointer; }
+  .epic-holder:hover { text-decoration: underline; }
+  .epic-holder.is-none { color: var(--muted); cursor: default; }
+  .epic-card-body { display: flex; flex-direction: column; gap: var(--space-paragraph); padding-top: var(--space-paragraph); border-top: var(--edge) solid var(--line); }
   .epic-statuses { display: flex; flex-wrap: wrap; gap: var(--space-row); }
-  .epic-holder.is-none { color: var(--muted); font-size: var(--text-body); }
-  .epic-answer { margin: 0 0 var(--space-paragraph); color: var(--muted); font-size: var(--text-small); }
+  .epic-answer { margin: 0; color: var(--muted); font-size: var(--text-small); }
   .epic-answer:empty { display: none; }
   .epic-answer[data-state='failed'] { color: var(--bad); }
-  .epic-source { margin: 0 0 var(--space-row); color: var(--muted); font-size: var(--text-small); }
+  .epic-objective { margin: 0; color: var(--fg); font-size: var(--text-body); line-height: var(--leading-body); white-space: pre-wrap; }
+  .epic-comment small { color: var(--muted); font-size: var(--text-small); }
+  .epic-comment p { margin: var(--space-row) 0 0; font-size: var(--text-body); line-height: var(--leading-body); }
+  .epic-empty { margin: 0; color: var(--muted); font-size: var(--text-body); }
   .wi-meta, .wi-notice, .wi-when { color: var(--muted); }
   .wi-facts { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--space-row) var(--space-inline); }
   .wi-facts dt { color: var(--muted); }

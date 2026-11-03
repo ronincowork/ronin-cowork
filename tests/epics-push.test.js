@@ -63,16 +63,18 @@ test('epicsPush: every Epic whole, and every item under one slim, with its Epic 
   assert.ok(items.every((one) => !('trail' in one) && !('comments' in one)), 'no history or comments on the push');
 });
 
-test('an Epic pressed: shadows with counts per status, In Review out on arrival, status buttons, Epics in the selector (KAN-206)', async () => {
-  const [surface, catalog, doors, wi] = await Promise.all(['public/js/epics-surface.js', 'public/js/workbench-catalog.js', 'public/js/door-workbenches.js', 'public/js/work-items-surface.js']
+test('an Epic pressed opens its worksurface in Tilespace 2: statuses in one row, items as cards, no rail (KAN-206)', async () => {
+  const [surface, catalog, doors] = await Promise.all(['public/js/epics-surface.js', 'public/js/workbench-catalog.js', 'public/js/door-workbenches.js']
     .map((path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8')));
+  assert.match(surface, /action: \(\) => workbench\?\.place\?\.\(WORKBENCH_TYPES\.epicRecord, 'workspace2', \{ key: epic\.id \}\)/, 'a pressed Epic opens in Tilespace 2');
+  assert.doesNotMatch(surface, /renderDetail|items: statusesOf/, 'no side rail: the stones do not go down a level');
   assert.match(surface, /const shown = new Set\(\['In Review'\]\)/, 'In Review is out on arrival');
-  assert.match(surface, /state: shown\.has\(status\) \? '' : String\(items\.length\)/, 'the count lives on the shadow only');
+  assert.match(surface, /if \(!at\.length && !isOut\) continue;/, 'an empty status is not shown');
+  assert.match(surface, /if \(!isOut\) chip\.append\(el\('span', 'epic-count'/, 'the count lives on a hidden status only');
   assert.match(surface, /\/transition`, \{ method: 'POST', json: \{ status \} \}/, 'a status button moves the item');
-  assert.match(surface, /history: false/, 'no history on the Epic page');
+  assert.doesNotMatch(surface, /renderItemDetail|trail/, 'no history and no Jira fields on the worksurface');
   assert.match(catalog, /WORKBENCH_TYPES\.epicRecord, header: 'surface', className: 'wk-selector-entity', discover: \(_t, e\) => e\.epics\(\)/, 'every Epic is a selector card');
   assert.match(doors, /epics: \(\) => epicOffers\(epicsRead\)/);
-  assert.match(wi, /if \(history\) section/);
   const { statusesOf, holderOfItem } = await import('../public/js/epics-surface.js');
   assert.deepEqual(statusesOf([{ status: 'Blocked' }]), ['To Do', 'In Progress', 'In Review', 'Done', 'Blocked']);
   assert.deepEqual(holderOfItem({ holder: 'team:system' }), { kind: 'team', name: 'system' });
