@@ -208,7 +208,9 @@ export function stepItem({ key, n, label, state = '', detail = '', status = '', 
  * models.dev on its own route. `onStep(key, state, answer)` hears each step start and end
  * (`lists` | `info`, `running` | `done` | `failed`); a host that draws the steps listens.
  */
-export function createRefreshAll(drawing, { onStep = () => {} } = {}) {
+/** `between` (KAN-236): a step the Agent Harness workbench's Refresh runs after the harnesses and before model info — each
+ * account's Discover; it resolves true when every account answered. Settings' surface passes none. */
+export function createRefreshAll(drawing, { onStep = () => {}, between = null } = {}) {
   const bar = el('div', 'setup-provider-refresh');
   const lastRan = el('p', 'setup-fine setup-provider-last-ran');
   const made = WorkspaceKit.primitives.createAction({ label: t('setup_surface.refresh_all', 'Refresh all model providers'), kind: '', action: async () => {
@@ -217,6 +219,12 @@ export function createRefreshAll(drawing, { onStep = () => {} } = {}) {
     onStep('lists', 'running');
     const ok = await drawing.measure(true);
     onStep('lists', ok ? 'done' : 'failed');
+    if (ok && between) {
+      button.textContent = t('setup_surface.refreshing_accounts', 'Reading account lists…');
+      onStep('accounts', 'running');
+      const answered = await between().catch(() => false);
+      onStep('accounts', answered ? 'done' : 'failed');
+    }
     if (ok) {
       button.textContent = t('setup_surface.refreshing_info', 'Fetching model info…');
       onStep('info', 'running');

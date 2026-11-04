@@ -21,6 +21,8 @@ import { registerWorkbenchCatalog, WORKBENCH_PROFILES, WORKBENCH_TYPES } from '.
 import { createProviderSetupSessionMount } from './provider-setup-session.js';
 import { loadProviderCatalog } from './form-steps.js';
 import { createModelDefaults, createModelProvider, createModelRefresh, createModelStones, providerOffers } from './models-surface.js';
+import { createAccountsSurface } from './accounts-surface.js';
+import { createModelsRecords } from './models-records-surface.js';
 import { createGithubWorkspaceSetup } from './github-workspace-setup.js';
 import { createFolderGithub, createRootsReading, createWorkspaceNew, createWorkspaceRecord, createWorkspacesRead, createWorkspaceStones, workspaceOffers } from './workspaces-surface.js';
 import { campaignById, loadCampaigns, normalizeSelection } from './campaigns.js';
@@ -41,7 +43,7 @@ const blank = (id) => WorkspaceKit.primitives.createBlankSurface(id.replace('wor
  * Campaign); `reading` names the Help page being read; `destroy` lets the surfaces go with the view.
  * Every change reports this tab's view for Mika's `owner_view`, as the other workbenches do.
  */
-function doorWorkbench({ id, profile, label, seat, seats = { workspace1: seat }, environment, cards = true, loaded = null, reading = () => '', destroy = () => {} }) {
+function doorWorkbench({ id, profile, label, seat, seats = { workspace1: seat }, count = 2, environment, cards = true, loaded = null, reading = () => '', destroy = () => {} }) {
   registerWorkbenchCatalog();
   const { normalizeWorkbenchState } = WorkspaceKit.contract;
   let ctx = null, entered = false, bench = null;
@@ -68,7 +70,7 @@ function doorWorkbench({ id, profile, label, seat, seats = { workspace1: seat },
     enter: (context) => {
       ctx = context; entered = true;
       const { state: entry } = context.workbenchEntry({
-        count: 2, selected: 'workspace1',
+        count, selected: 'workspace1',
         arrangement: normalizeWorkbenchState(null, bench.declaration).arrangement,
         seats,
       });
@@ -87,14 +89,17 @@ function doorWorkbench({ id, profile, label, seat, seats = { workspace1: seat },
   };
 }
 
-/** Models: the stones of providers in Workspace 1, a provider whole where a stone is dropped or its card
- * placed, one card per provider; the sign-in tile mounted as on Setup. */
+/** Agent Harness (KAN-236; owner, 2026-11-04), Home's door where Model Providers was: four tilespaces on first open —
+ * the stones of harnesses (Harness) in 1, Accounts in 2, Models in 3, Refresh in 4; a harness whole where a stone is
+ * dropped or its card placed, one card per harness; the sign-in tile mounted as on Setup. The route id stays `models`
+ * so saved arrangements survive. */
 export function createModelsView() {
   const providerSessions = createProviderSetupSessionMount();
   const made = [];
   const keep = (surface) => { made.push(surface); return surface; };
   return doorWorkbench({
-    id: 'models', profile: WORKBENCH_PROFILES.models, label: t('campaign_home.models', 'Models'), seat: WORKBENCH_TYPES.modelStones,
+    id: 'models', profile: WORKBENCH_PROFILES.models, label: t('campaign_home.agent_harness', 'Agent Harness'), seat: WORKBENCH_TYPES.modelStones,
+    count: 4, seats: { workspace1: WORKBENCH_TYPES.modelStones, workspace2: WORKBENCH_TYPES.accountsRecords, workspace3: WORKBENCH_TYPES.modelsRecords, workspace4: WORKBENCH_TYPES.modelRefresh },
     loaded: loadProviderCatalog,
     environment: ({ bench }) => {
       const environment = {
@@ -103,6 +108,8 @@ export function createModelsView() {
         modelStones: (workspace) => keep(createModelStones({ workspace, detail: {}, environment, workbench: bench() })),
         modelRefresh: (workspace) => keep(createModelRefresh({ workspace, detail: {}, environment, workbench: bench() })),
         modelDefaults: () => createModelDefaults(),
+        accounts: (workspace) => keep(createAccountsSurface({ workspace, detail: {}, environment, workbench: bench() })),
+        modelsRecords: (workspace) => keep(createModelsRecords({ workspace, detail: {}, environment, workbench: bench() })),
         modelProvider: (workspace, detail) => keep(createModelProvider(detail.key, { workspace, detail, environment, workbench: bench() })),
       };
       return environment;

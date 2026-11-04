@@ -38,7 +38,7 @@ const draggable = (stone) => ({
 /** WS1: the stones of providers; the pressed one's page beside the rail. */
 export function createModelStones(context) {
   const { createSurface } = WorkspaceKit.primitives;
-  const out = createSurface({ label: t('setup_surface.providers', 'Model providers'), className: 'setup-surface setup-provider-surface models-stones' });
+  const out = createSurface({ label: t('harness.stones', 'Harness'), className: 'setup-surface setup-provider-surface models-stones' });
   const notice = el('p', 'setup-fine setup-provider-notice'); notice.hidden = true;
   const say = (text, bad = false) => { notice.className = `${bad ? 'setup-notice bad' : 'setup-fine'} setup-provider-notice`; notice.textContent = text; notice.hidden = !text; };
   const drawing = createProviderDrawing(context, { repaint: () => repaint(), say });
@@ -74,15 +74,27 @@ export function createModelStones(context) {
  */
 export function createModelRefresh(context) {
   const { createSurface } = WorkspaceKit.primitives;
-  const out = createSurface({ label: t('models.refresh', 'Model refresh'), className: 'setup-surface models-refresh' });
+  const out = createSurface({ label: t('harness.refresh', 'Refresh'), className: 'setup-surface models-refresh' });
   const notice = el('p', 'setup-fine setup-provider-notice'); notice.hidden = true;
   const say = (text, bad = false) => { notice.className = `${bad ? 'setup-notice bad' : 'setup-fine'} setup-provider-notice`; notice.textContent = text; notice.hidden = !text; };
   const drawing = createProviderDrawing(context, { repaint: () => repaint(), say });
   // What each step is doing now: '' at rest (it says what the record holds), or the door's state.
-  const live = { lists: '', info: '' };
+  const live = { lists: '', accounts: '', info: '' };
   let review = null;
   let infoFailure = '';
-  const refresh = createRefreshAll(drawing, { onStep: (key, state, answer) => {
+  // The accounts (KAN-236): read with the record, discovered one by one when the door runs.
+  let accounts = [];
+  const readAccounts = async () => { const result = await request('/api/accounts', { cache: 'no-store' }); if (result.ok) accounts = result.data.accounts || []; return result.ok; };
+  const discoverAccounts = async () => {
+    let every = true;
+    for (const account of accounts.filter((row) => row.configured && !row.seeded)) {
+      const result = await request('/api/accounts/discover', { method: 'POST', json: { id: account.id } });
+      if (!result.ok) every = false;
+    }
+    await readAccounts();
+    return every;
+  };
+  const refresh = createRefreshAll(drawing, { between: discoverAccounts, onStep: (key, state, answer) => {
     live[key] = state;
     if (key === 'info' && state === 'done') review = answer;
     if (key === 'info') infoFailure = state === 'failed' ? String(answer || '') : '';
@@ -114,6 +126,7 @@ export function createModelRefresh(context) {
   const paintSteps = () => {
     flow.replaceChildren(
       listsStep(drawing.runtime(), live.lists),
+      accountsStep(accounts, live.accounts),
       infoStep(review, live.info, infoFailure),
       reviewStep(review, live, { send, view }),
     );
@@ -124,6 +137,7 @@ export function createModelRefresh(context) {
     show: async () => {
       const read = await request('/api/model-info', { cache: 'no-store' });
       if (read.ok) review = read.data;
+      await readAccounts();
       await drawing.showRecord();
     },
     destroy: () => { drawing.destroy(); },
@@ -162,13 +176,13 @@ const factsOf = (made) => {
 };
 const link = (href, text) => { const a = el('a', null, text); a.href = href; a.target = '_blank'; a.rel = 'noopener noreferrer'; return a; };
 
-/** Step 1: each CLI and what its own list said, from the record the door just wrote. */
+/** Step 1: each harness (CLI) — its version, the newer release, and what its own list said, from the record the door just wrote. */
 function listsStep(runtime, state) {
   const providers = Array.isArray(runtime?.providers) ? runtime.providers : [];
   const read = String(runtime?.refreshed_at || '');
-  const made = stepItem({ key: 'lists', n: 1, label: t('models.step_lists', 'Model lists'),
+  const made = stepItem({ key: 'lists', n: 1, label: t('harness.step_harnesses', 'Harnesses'),
     ...stepState(state, read ? { state: t('models.lists_read', 'Read {date}', { date: dayTime(read) }), done: true } : { state: t('models.lists_never', 'Not read yet') }),
-    detail: t('models.lists_detail', 'Each signed-in CLI is asked for its own list. Only these models can launch.') });
+    detail: t('harness.step_harnesses_detail', 'Each activated CLI: its version, the newest release, and its own model list. Only these models can launch on a subscription.') });
   for (const provider of providers.filter((row) => row.installed)) {
     const list = provider.model_list;
     const version = provider.version ? ` ${provider.version}` : '';
@@ -182,13 +196,29 @@ function listsStep(runtime, state) {
   return made.item;
 }
 
-/** Step 2: where model info comes from, what the last fetch kept, and which copy is in use. */
+/** Step 2 (KAN-236): each account asked for its model list — today's Hermes Discover, run for every configured account. */
+function accountsStep(accounts, state) {
+  const rows = accounts.filter((row) => !row.seeded);
+  const dated = rows.map((row) => row.discoveredAt).filter(Boolean).sort().pop();
+  const made = stepItem({ key: 'accounts', n: 2, label: t('accounts.title', 'Accounts'),
+    ...stepState(state, dated ? { state: t('models.lists_read', 'Read {date}', { date: dayTime(dated) }), done: true } : { state: rows.length ? t('models.lists_never', 'Not read yet') : t('accounts.none_yet', 'None yet') }),
+    detail: t('accounts.step_detail', 'Each Personal API and Ronin API account is asked for its list; you tick what it offers on Accounts.') });
+  for (const row of rows) {
+    const said = !row.configured ? t('accounts.key_missing', 'Key missing')
+      : row.discoveredAt ? t('accounts.models_n', '{n} models · {m} offered', { n: row.models.length, m: row.offered.length })
+      : t('models.lists_not_read', 'not read yet');
+    factsOf(made).append(line(row.name, said));
+  }
+  return made.item;
+}
+
+/** Step 3: where model info comes from, what the last fetch kept, and which copy is in use. */
 function infoStep(review, state, failure) {
   const check = review?.check;
   const failed = state === 'failed' || (!state && check?.outcome === 'failed');
   const rest = check && check.outcome !== 'failed' ? { state: t('models.info_fetched', 'Fetched {date}', { date: dayTime(check.at) }), done: true }
     : { state: t('models.info_never', 'Not fetched yet') };
-  const made = stepItem({ key: 'info', n: 2, label: t('models.step_info', 'Model info'), ...stepState(failed ? 'failed' : state, rest),
+  const made = stepItem({ key: 'info', n: 3, label: t('models.step_info', 'Model info'), ...stepState(failed ? 'failed' : state, rest),
     detail: t('models.info_detail', 'Names, descriptions, prices and limits for those models, from the public models.dev catalog.') });
   const source = review?.source;
   if (source) {
@@ -224,16 +254,16 @@ const fieldWord = (field) => ({
   open_weights: t('models.field_open_weights', 'open weights'), 'modalities.input': t('models.field_modalities_in', 'inputs'), 'modalities.output': t('models.field_modalities_out', 'outputs'),
 }[field] || field);
 
-/** Step 3: the update waiting, one row per model in the provider table's columns, and the three choices. */
+/** Step 4: the update waiting, one row per model in the provider table's columns, and the three choices. */
 function reviewStep(review, live, { send, view }) {
   const pending = review?.pending;
-  const running = live.lists === 'running' || live.info === 'running';
+  const running = live.lists === 'running' || live.accounts === 'running' || live.info === 'running';
   const changes = pending?.changes ?? [];
   const rest = pending
     ? { state: t('models.review_waiting', '{n} changed · nothing changes until you accept', { n: changes.length === 1 ? t('models.one_model', '1 model') : t('models.n_models', '{n} models', { n: changes.length }) }), current: true }
     : review?.check?.outcome === 'same' ? { state: t('models.review_same', 'Nothing waiting: models.dev matches the model info in use'), done: true }
     : { state: t('models.review_none', 'Nothing waiting') };
-  const made = stepItem({ key: 'review', n: 3, label: t('models.step_review', 'Review'), ...(running ? { state: t('models.review_after', 'After step 2') } : rest),
+  const made = stepItem({ key: 'review', n: 4, label: t('models.step_review', 'Review'), ...(running ? { state: t('models.review_after_info', 'After step 3') } : rest),
     detail: pending ? t('models.review_detail', 'Fetched {date}, compared with the model info Ronin uses now.', { date: dayTime(pending.fetched_at) }) : '' });
   if (!pending || running) return made.item;
   const table = el('table', 'setup-provider-models models-review');

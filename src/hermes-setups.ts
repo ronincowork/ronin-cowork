@@ -8,7 +8,10 @@ import { parse } from 'dotenv';
 import { readCredential, writeCredential } from './credential-store.js';
 import { storeDir, REPO_ROOT } from './resources.js';
 
-export interface HermesConnection { id: string; name: string; provider: 'openai' | 'mistral' | 'custom'; baseUrl: string; wireApi?: 'chat' | 'responses'; models: string[]; discoveredAt?: string; credentialEnv?: string }
+/** A connection is an account in the Agent Harness workbench (KAN-236): `kind`, the harnesses it serves and the
+ * models it offers are optional facts on the same record; absent, src/accounts.ts derives them. */
+export type AccountKind = 'personal_api' | 'ronin_api';
+export interface HermesConnection { id: string; name: string; provider: 'openai' | 'mistral' | 'custom'; baseUrl: string; wireApi?: 'chat' | 'responses'; models: string[]; discoveredAt?: string; credentialEnv?: string; kind?: AccountKind; harnesses?: string[]; offered?: string[] }
 export interface HermesSetup { id: string; name: string; connection: string; model: string; reasoning: string; approvals: 'off' | 'prompt' }
 export interface HermesSettings { connections: HermesConnection[]; setups: HermesSetup[] }
 const empty = (): HermesSettings => ({ connections: [], setups: [] });
@@ -47,8 +50,12 @@ export async function saveHermesConnection(input: Record<string, unknown>): Prom
     const id = existing?.id || randomUUID();
     const changed = !existing || existing.baseUrl !== baseUrl || existing.provider !== provider || !!apiKey;
     if (existing?.credentialEnv && !apiKey && existing.baseUrl !== baseUrl) throw new Error('Update the endpoint in the credential environment, or enter a key here.');
+    const kind = input.kind ?? existing?.kind;
+    if (kind !== undefined && kind !== 'personal_api' && kind !== 'ronin_api') throw new Error('Select an account kind.');
+    const harnesses = input.harnesses === undefined ? existing?.harnesses : harnessList(input.harnesses);
     const connection: HermesConnection = { ...(!apiKey && existing?.credentialEnv ? { credentialEnv: existing.credentialEnv } : {}), id, name: required(input.name, 'Connection name'), provider, baseUrl, ...(wireApi ? { wireApi } : {}),
-      models: changed ? [] : existing.models, ...(!changed && existing.discoveredAt ? { discoveredAt: existing.discoveredAt } : {}) };
+      models: changed ? [] : existing.models, ...(!changed && existing.discoveredAt ? { discoveredAt: existing.discoveredAt } : {}),
+      ...(kind ? { kind } : {}), ...(harnesses ? { harnesses } : {}), ...(!changed && existing?.offered ? { offered: existing.offered } : {}) };
     if (apiKey) {
       await mkdir(path.dirname(keyPath(id)), { recursive: true });
       const tmp = `${keyPath(id)}.tmp`;
@@ -58,6 +65,27 @@ export async function saveHermesConnection(input: Record<string, unknown>): Prom
     state.connections = [...state.connections.filter(c => c.id !== id), connection];
     await writeCredential('hermes-setups', state);
     return connection;
+  });
+}
+const harnessPattern = /^[a-z][a-z0-9_-]*$/;
+/** A tick list of harness ids, validated and de-duplicated; a list that is not an array is refused. */
+function harnessList(value: unknown): string[] {
+  if (!Array.isArray(value)) throw new Error('Harnesses must be a list.');
+  return [...new Set(value.map(row => { if (typeof row !== 'string' || !harnessPattern.test(row)) throw new Error('Invalid harness id.'); return row; }))];
+}
+/** The two tick lists on an account (KAN-236): the harnesses it serves and the discovered models it offers.
+ * Either may be left out; `offered` must be a subset of the discovered models. Nothing else on the record moves. */
+export async function updateHermesConnectionLists(id: string, input: { harnesses?: unknown; offered?: unknown }): Promise<HermesConnection> {
+  return mutation(async () => {
+    const state = await readStoredSettings(); const c = state.connections.find(c => c.id === id);
+    if (!c) throw new Error('Connection no longer exists.');
+    if (input.harnesses !== undefined) c.harnesses = harnessList(input.harnesses);
+    if (input.offered !== undefined) {
+      if (!Array.isArray(input.offered)) throw new Error('Offered models must be a list.');
+      const offered = [...new Set(input.offered.map(row => { if (typeof row !== 'string' || !c.models.includes(row)) throw new Error('Offer only models discovered from this connection.'); return row; }))];
+      c.offered = offered;
+    }
+    await writeCredential('hermes-setups', state); return c;
   });
 }
 export async function discoverHermesModels(id: string): Promise<string[]> {

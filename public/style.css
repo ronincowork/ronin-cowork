@@ -5003,3 +5003,18 @@ html[data-screen='inside'] #phone .ph-bar .ph-title[data-boot='inside'] { displa
 .hermes-card-summary span { color: var(--muted); overflow-wrap: anywhere; }
 .hermes-card .wk-action-bar { flex: 0 0 auto; }
 .hermes-card .wk-action { width: auto; flex: 0 0 auto; min-width: 4rem; }
+
+/* THE AGENT HARNESS WORKBENCH'S ACCOUNTS AND MODELS TILESPACES (KAN-236): account cards in the Hermes card's
+   shape, their two tick lists side by side, and the Models tilespace's sections. */
+.accounts-body, .models-records-body { display: grid; gap: var(--space-subsection); }
+.accounts-list { display: grid; gap: var(--space-inline); }
+.accounts-card { display: grid; gap: var(--space-inline); }
+.accounts-card[data-seeded="true"] .hermes-card-summary { color: var(--muted); }
+.accounts-lists { display: grid; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); gap: var(--space-control); }
+.accounts-list-block { display: grid; gap: var(--space-row); min-width: 0; }
+.accounts-ticks { display: grid; gap: var(--space-row); }
+.accounts-tick { display: flex; align-items: center; gap: var(--space-inline); font-size: var(--form-note); min-width: 0; }
+.accounts-tick span { overflow-wrap: anywhere; }
+.accounts-tick input { margin: 0; }
+.models-records-section { display: grid; gap: var(--space-inline); }
+.models-records-section h3 { margin: 0; }

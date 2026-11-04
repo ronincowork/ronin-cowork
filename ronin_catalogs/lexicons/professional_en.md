@@ -289,9 +289,91 @@ nothing paints exactly this.
 - **campaign_home.launch:** New Project
 - **campaign_home.settings:** Settings
 - **campaign_home.check_updates:** Check for updates
+- **campaign_home.agent_harness:** Agent Harness
+- **campaign_home.agent_harness_is:** The CLIs on this machine, the accounts they launch on, and the models
 - **setup.provider_gate:** Activate one model provider in Machine Setup to use this.
 - **setup.open_settings:** Open Ronin Settings
 - **setup.open_setup:** Open Ronin Setup
+
+## harness — models-surface.js, workbench-catalog.js (the Agent Harness workbench's stones and Refresh; KAN-236)
+
+- **harness.stones:** Harness
+- **harness.stones_summary:** The CLIs: install, sign in, ready
+- **harness.refresh:** Refresh
+- **harness.refresh_summary:** One press: harnesses, accounts, model info
+- **harness.step_harnesses:** Harnesses
+- **harness.step_harnesses_detail:** Each activated CLI: its version, the newest release, and its own model list. Only these models can launch on a subscription.
+
+## accounts — accounts-surface.js, account-editors.js (the Accounts tilespace and the forms every page shares; KAN-236)
+
+- **accounts.title:** Accounts
+- **accounts.card_summary:** Personal API · Ronin API: which harnesses, which models
+- **accounts.lede:** Accounts a harness can launch on, apart from its own sign-in. A key added here, or on a harness page, is one record; the harnesses it serves and the models it offers are yours to tick.
+- **accounts.kind_subscription:** Subscription
+- **accounts.kind_personal_api:** Personal API
+- **accounts.kind_ronin_api:** Ronin API
+- **accounts.ronin_api_name:** Ronin API
+- **accounts.ronin_api_note:** From Ronin Cloud onboarding, or the house gateway running on this machine. Usage is stamped by the gateway.
+- **accounts.add_title:** Add {kind}
+- **accounts.edit_title:** Edit {kind}
+- **accounts.field_name:** Name
+- **accounts.field_vendor:** API provider
+- **accounts.field_url:** Base URL
+- **accounts.field_wire:** Wire API
+- **accounts.field_key:** API key
+- **accounts.field_key_keep:** API key (leave blank to keep)
+- **accounts.field_endpoint:** Gateway endpoint
+- **accounts.field_token:** House token
+- **accounts.field_token_keep:** House token (leave blank to keep)
+- **accounts.vendor_openai:** OpenAI API
+- **accounts.vendor_mistral:** Mistral API
+- **accounts.vendor_custom:** OpenAI-compatible API
+- **accounts.wire_chat:** Chat Completions
+- **accounts.wire_responses:** Responses
+- **accounts.save:** Save
+- **accounts.cancel:** Cancel
+- **accounts.add_personal_api:** Add Personal API
+- **accounts.add_ronin_api:** Add Ronin API
+- **accounts.add_token:** Add token
+- **accounts.discover:** Discover
+- **accounts.edit:** Edit
+- **accounts.remove:** Remove
+- **accounts.serves:** Serves
+- **accounts.offers:** Offers
+- **accounts.offers_dated:** Offers · discovered {date}
+- **accounts.discover_first:** Press Discover to read this endpoint’s model list.
+- **accounts.no_binding:** no binding yet
+- **accounts.seeded:** add a token to use it
+- **accounts.configured:** Configured
+- **accounts.key_missing:** Key missing
+- **accounts.models_n:** {n} models · {m} offered
+- **accounts.not_discovered:** Models not discovered
+- **accounts.none_yet:** None yet
+- **accounts.step_detail:** Each Personal API and Ronin API account is asked for its list; you tick what it offers on Accounts.
+- **accounts.missing_account:** Missing account
+- **accounts.approvals_off:** YOLO — approvals off
+- **accounts.approvals_off_short:** YOLO
+- **accounts.approvals_prompt:** Ask for approval
+- **accounts.reasoning_default:** Provider default
+- **accounts.preset_add:** Add preset
+- **accounts.preset_edit:** Edit preset
+- **accounts.preset_name:** Name shown under Model
+- **accounts.preset_account:** Account
+- **accounts.preset_model:** Model
+- **accounts.preset_reasoning:** Reasoning effort
+- **accounts.preset_approvals:** Approvals
+
+## models — models-records-surface.js, models-surface.js (the Models tilespace; KAN-236)
+
+- **models.records:** Models
+- **models.records_summary:** Model info · offered · presets · defaults
+- **models.model_info:** Model info
+- **models.offered:** Offered per account
+- **models.offered_none:** No accounts yet. Add one on Accounts or on a harness page.
+- **models.presets:** Presets
+- **models.presets_lede:** A preset names harness, account, model and knobs; it appears under Model in New Agent. Today every preset is a Hermes named setup.
+- **models.review_on_refresh:** The row-by-row comparison is on Refresh.
+- **models.review_after_info:** After step 3
 
 ## launch — launch-view.js (the Workbench where Teams and Agents begin)
 
@@ -1460,6 +1542,7 @@ The catalog entry goes. {dir} is not touched.
 - **setup_surface.no_cli_state:** No CLI
 - **setup_surface.no_models:** The catalog lists no models for this provider.
 - **setup_surface.refresh_all:** Refresh all model providers
+- **setup_surface.refreshing_accounts:** Reading account lists…
 - **setup_surface.last_ran:** Last ran {date}
 - **setup_surface.never_ran:** Never run — every provider offers Native only until it runs.
 - **setup_surface.models_read:** Model list read {date} by {cli} {version}

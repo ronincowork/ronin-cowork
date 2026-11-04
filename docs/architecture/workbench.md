@@ -159,7 +159,14 @@ its surface is the Refresh all control Settings' provider surface carries — th
 last-ran line and notice — with an empty slot under it for the models.dev update (owner, 2026-10-20). The third card,
 **Defaults** (`models.defaults`, solid utility, after Model refresh; owner, 2026-10-21), sets the model a new Agent,
 a new Team lead and Mika start on: ⚙ Configuration's own `models` section drawn alone (`buildMachineSettings(…, { only:
-'models' })`), each row saving itself — one record, two views. Settings' Model
+'models' })`), each row saving itself — one record, two views. **The Agent Harness workbench** (KAN-236; owner,
+2026-11-04) is this door under its new word on Home, opened in the four-tilespace shape: the stones (now the **Harness**
+card) in tilespace 1, **Accounts** (`accounts.records`, `accounts-surface.js`) in 2, **Models** (`models.records`,
+`models-records-surface.js`, with the Defaults surface embedded) in 3 and **Refresh** (`models.refresh` under its new
+word) in 4; Model refresh's steps read Harnesses · Accounts · Model info · Review, the Accounts step each account's
+Discover. Accounts and presets are one reading of the Hermes record (`src/accounts.ts`, `/api/accounts`, `/api/presets`):
+a key added on Accounts is the connection the Hermes page shows. The existing types, surfaces and stones are
+unchanged but for their words; the route id stays `models` so saved arrangements survive. Settings' Model
 Providers surface is untouched; all draw with the one drawing `provider-surface.js` exports
 (`createProviderDrawing`, `createRefreshAll`, `providerStones`) over the same record and measure. Workspaces seats
 its own stones of Workspaces (`workspaces-surface.js`, `workspaces.records`): a pressed one's page is the whole
