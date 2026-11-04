@@ -159,13 +159,14 @@ export interface WorkItem {
 
 export interface HandIn { receipt: string | null; by: string; at: string }
 
-/** Where a handed-in item waits (6a): 'ready', on dev since its last hand-in or handed in from
- * a checkout, so the person can try it; else 'lead', for the lead to review and promote. */
+/** Where a handed-in item waits (6a): 'lead' only when its last recorded hand-in came from a
+ * desk (a receipt) and no promotion has put it on dev since, for the lead to review and promote;
+ * else 'ready', for the person to try. An item with no hand-ins recorded (handed in before the
+ * signals were kept, its code already on dev) is ready, as is a checkout's (no code to promote). */
 export function handInStage(item: Pick<WorkItem, 'hand_ins' | 'on_dev'>): 'lead' | 'ready' {
   const last = item.hand_ins?.at(-1);
-  if (last && last.receipt === null) return 'ready';
-  if (item.on_dev && (!last || item.on_dev.at >= last.at)) return 'ready';
-  return 'lead';
+  if (!last || last.receipt === null) return 'ready';
+  return item.on_dev && item.on_dev.at >= last.at ? 'ready' : 'lead';
 }
 
 /** What every write answers: the item as it now is, the line it appended, and who its notices

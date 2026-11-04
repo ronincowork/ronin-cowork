@@ -349,3 +349,15 @@ test('Waiting on you draws With the lead before Ready to accept, both with Accep
   const words = await fs.readFile(new URL('../ronin_catalogs/lexicons/professional_en.md', import.meta.url), 'utf8');
   assert.match(words, /- \*\*team_waiting\.with_lead:\*\* With the lead/);
 });
+
+test('an item In Review with no hand-ins recorded (handed in before the signals) is ready to accept, not with the lead', async () => {
+  const { teamWork } = await import('../src/work-items-read.js');
+  assert.equal(items.handInStage({}), 'ready', 'no hand_ins at all');
+  assert.equal(items.handInStage({ hand_ins: [] }), 'ready', 'an empty list too');
+  assert.equal(items.handInStage({ hand_ins: [{ receipt: 'hi_1', by: 'mem', at: '2026-11-04T10:00:00Z' }] }), 'lead', 'a desk hand-in, not on dev');
+  assert.equal(items.handInStage({ hand_ins: [{ receipt: 'hi_1', by: 'mem', at: '2026-11-04T10:00:00Z' }], on_dev: { promotion: 'p', at: '2026-11-04T09:00:00Z' } }), 'lead', 'on dev before the last hand-in');
+  // As a pre-signal item stands on the board: In Review, handed_in kept, no hand_ins, no on_dev.
+  const old = (await items.createItem({ title: 'handed in yesterday', parent: epic.id, status: 'In Review' }, 'boss')).item;
+  const work = teamWork([{ ...old, handed_in: { by: 'mem', at: '2026-11-03T10:00:00Z' }, holder: 'team:crew' }], await items.listItems());
+  assert.deepEqual([work.lead.map((one) => one.id), work.review.map((one) => one.id)], [[], [old.id]]);
+});
