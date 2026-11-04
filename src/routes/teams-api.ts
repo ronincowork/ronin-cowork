@@ -173,8 +173,9 @@ export function registerTeams(app: express.Express): void {
 
   app.get('/api/team-rosters/:name', async (req, res) => {
     try {
-      const roster = await readTeamRoster(req.params.name);
-      if (!roster) return res.status(404).json({ error: `Team "${req.params.name}" has no roster.` });
+      const named = typeof req.query?.campaign_id === 'string' && req.query.campaign_id.trim() ? req.query.campaign_id.trim() : undefined;
+      const roster = await readTeamRoster(req.params.name, named);
+      if (!roster) return res.status(404).json({ error: `Team "${req.params.name}" has no roster${named ? ` in Campaign ${named}` : ''}.` });
       res.json({ ...roster, wipeboard_exists: await boardExists(roster.wipeboard) });
     } catch (e) {
       res.status(400).json({ error: errMsg(e) });
@@ -214,11 +215,13 @@ export function registerTeams(app: express.Express): void {
       .slice(0, 32);
     try {
       const edit = editOf(req.body);
-      const existing = await readTeamRoster(name);
+      // A Campaign named finds the Team inside it: a name may be in more than one Campaign.
+      const named = typeof req.body?.campaign_id === 'string' && req.body.campaign_id.trim() ? req.body.campaign_id.trim() as string : undefined;
+      const existing = await readTeamRoster(name, named);
       const campaign_id = await campaignOf(req.body?.campaign_id);
       const reapplyCampaign = req.body?.campaign_defaults === true;
       const roster = existing
-        ? await writeTeamRoster(name, reapplyCampaign ? await creationEdit(campaign_id, edit) : edit)
+        ? await writeTeamRoster(name, reapplyCampaign ? await creationEdit(campaign_id, edit) : edit, named)
         : await createTeamRoster(name, await creationEdit(campaign_id, edit), campaign_id);
       count(existing ? 'team.update' : 'team.create');
       const live = new Set((await listSessions()).map((s) => s.name));

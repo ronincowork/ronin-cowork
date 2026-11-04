@@ -140,3 +140,19 @@ test.after(async () => {
   server.close();
   await fs.rm(temp, { recursive: true, force: true });
 });
+
+test('a Team name in two Campaigns: the write and the read name the Campaign, and touch only that one', async () => {
+  const { createTeamRoster, readTeamRoster } = await import('../src/team-rosters.js');
+  await createTeamRoster('pair_team', { objective: 'home pair' }, 'home_machine');
+  await createTeamRoster('pair_team', { objective: 'other pair' }, 'other');
+  const put = (body: Record<string, unknown>) => fetch(`${base}/api/team`, { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name: 'pair_team', ...body }) });
+  const refused = await put({ behaviours: { selected: ['project-management'] } });
+  assert.equal(refused.status, 400);
+  assert.match((await refused.json() as { error: string }).error, /more than one Campaign/);
+  const done = await put({ campaign_id: 'home_machine', behaviours: { selected: ['project-management'], required: [] } });
+  assert.equal(done.status, 200);
+  assert.deepEqual((await readTeamRoster('pair_team', 'home_machine'))!.behaviours, { selected: ['project-management'], required: [] });
+  assert.deepEqual((await readTeamRoster('pair_team', 'other'))!.behaviours.selected, [], 'the other Campaign\'s Team is untouched');
+  const read = await fetch(`${base}/api/team-rosters/pair_team?campaign_id=other`);
+  assert.equal(((await read.json()) as { objective: string }).objective, 'other pair');
+});
