@@ -1,4 +1,4 @@
-import { mkdir, readFile, rename, stat, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, realpath, rename, stat, writeFile } from 'node:fs/promises';
 import { execFile as execFileP } from './spawn-broker.js';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
@@ -227,6 +227,11 @@ export interface RootFacts {
   exists: boolean;
   repo?: { remote: string; branch: string };
   project_context?: string[];
+  /** READY (2026-11-04) means every check below passed: the folder exists, and where it holds a
+   * `.git` it is a Git repository Ronin can read with its current branch known. Otherwise
+   * `not_ready` says which check failed. */
+  ready: boolean;
+  not_ready?: 'missing' | 'git_unreadable' | 'branch_unknown';
 }
 
 const git = async (executable: string, dir: string, args: string[]) => {
@@ -236,25 +241,34 @@ const git = async (executable: string, dir: string, args: string[]) => {
 
 export async function repoFacts(root: ProjectRootInfo): Promise<RootFacts> {
   const dir = expand(root.dir);
-  const out: RootFacts = { name: root.name, dir, exists: false };
+  const out: RootFacts = { name: root.name, dir, exists: false, ready: false, not_ready: 'missing' };
   try {
     out.exists = (await stat(dir)).isDirectory();
   } catch {
     return out;
   }
+  if (!out.exists) return out;
   const contextCandidates = ['AGENTS.md', 'CLAUDE.md', '.claude/CLAUDE.md', '.claude/settings.json', '.codex/config.toml'];
   out.project_context = (await Promise.all(contextCandidates.map(async (candidate) =>
     stat(path.join(dir, candidate)).then(() => candidate, () => ''),
   ))).filter(Boolean);
   try {
     const executable = await discoverExecutable('git');
-    if (!executable || (await git(executable, dir, ['rev-parse', '--show-toplevel'])) !== dir) return out;
-    out.repo = {
-      remote: await git(executable, dir, ['remote', 'get-url', 'origin']).catch(() => ''),
-      branch: await git(executable, dir, ['branch', '--show-current']).catch(() => ''),
-    };
+    const top = executable ? await git(executable, dir, ['rev-parse', '--show-toplevel']) : '';
+    if (top && (top === dir || top === await realpath(dir).catch(() => dir))) {
+      out.repo = {
+        remote: await git(executable, dir, ['remote', 'get-url', 'origin']).catch(() => ''),
+        branch: await git(executable, dir, ['branch', '--show-current']).catch(() => ''),
+      };
+    }
   } catch {
   }
+  // A `.git` here means a repository was meant: unreadable (no git, dubious ownership, broken
+  // repository) or without a branch (detached HEAD) it is not Ready.
+  const marked = await stat(path.join(dir, '.git')).then(() => true, () => false);
+  out.not_ready = marked && !out.repo ? 'git_unreadable' : out.repo && !out.repo.branch ? 'branch_unknown' : undefined;
+  out.ready = !out.not_ready;
+  if (out.ready) delete out.not_ready;
   return out;
 }
 

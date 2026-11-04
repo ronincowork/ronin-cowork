@@ -12,9 +12,16 @@ import { finalizeTeamName, sanitizeTeamName } from './new-team-draft.js';
 /** The add stone's handle: `editing` while the add form is open; no root has it. */
 export const NEW = '\0new';
 
+/** What stops a folder being Ready, in words: the check the server says failed. */
+const notReady = (r) => ({
+  missing: t('roots.stone_missing', 'Folder missing'),
+  git_unreadable: t('roots.git_unreadable', 'Git repository Ronin cannot read'),
+  branch_unknown: t('roots.branch_unknown', 'Repository · no current branch'),
+}[r.facts?.ready === false ? r.facts.not_ready || 'missing' : ''] || '');
+
 const stoneState = (r) => {
   if (r.archived) return t('roots.chip_archived', 'Archived');
-  if (!r.facts?.exists) return t('roots.stone_missing', 'Folder missing');
+  if (notReady(r)) return notReady(r);
   if (!r.facts.repo) return t('roots.stone_plain_folder', 'Plain folder');
   if (!r.facts.repo.remote) return t('roots.stone_repo_no_remote', 'Repository · no remote');
   return r.arrangement?.source !== 'absent' && r.repo_profile?.worktrees === 'enabled'
@@ -567,10 +574,13 @@ export function createRootDrawing(deps) {
     heading.append(make('h3', 'pr-detail-name', r.title || r.name));
     const go = make('div', 'pr-detail-go');
     heading.append(go);
-    const words = [r.archived ? t('roots.chip_archived', 'Archived') : !exists ? t('roots.stone_missing', 'Folder missing') : t('roots.stone_ready', 'Ready')];
+    // READY only when the server's checks passed (2026-11-04): the folder exists and, where it holds
+    // a repository, Git reads it with its branch known; that branch reads beside it.
+    const ready = exists && !notReady(r);
+    const words = [r.archived ? t('roots.chip_archived', 'Archived') : !ready ? notReady(r) : r.facts.repo ? t('roots.stone_ready_on', 'Ready · on {branch}', { branch: r.facts.repo.branch }) : t('roots.stone_ready', 'Ready')];
     if (r.sessions) words.push(r.sessions === 1 ? t('roots.sessions_one', '{n} session', { n: r.sessions }) : t('roots.sessions_many', '{n} sessions', { n: r.sessions }));
     const state = make('p', 'pr-detail-state', words.join(' · '));
-    state.dataset.tone = r.archived ? 'muted' : exists ? 'ok' : 'bad';
+    state.dataset.tone = r.archived ? 'muted' : ready ? 'ok' : 'bad';
     head.append(heading, state);
     d.append(head);
 
