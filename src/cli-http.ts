@@ -19,9 +19,9 @@ export function operatorTarget(env: NodeJS.ProcessEnv = process.env): OperatorTa
 
 type Raw = { status: number; body: string };
 
-function overSocket(socketPath: string, route: string, payload: string): Promise<Raw> {
+function overSocket(socketPath: string, route: string, payload: string, method = 'POST'): Promise<Raw> {
   return new Promise((resolve, reject) => {
-    const req = http.request({ socketPath, path: route, method: 'POST', headers: { 'content-type': 'application/json' } }, (res) => {
+    const req = http.request({ socketPath, path: route, method, headers: { 'content-type': 'application/json' } }, (res) => {
       let body = '';
       res.setEncoding('utf8');
       res.on('data', (chunk) => { body += chunk; });
@@ -32,23 +32,24 @@ function overSocket(socketPath: string, route: string, payload: string): Promise
   });
 }
 
-async function overHttp(target: { url: string; token: string }, route: string, payload: string): Promise<Raw> {
+async function overHttp(target: { url: string; token: string }, route: string, payload: string, method = 'POST'): Promise<Raw> {
   const basic = process.env.GRID_USER && process.env.GRID_PASS
     ? `Basic ${Buffer.from(`${process.env.GRID_USER}:${process.env.GRID_PASS}`).toString('base64')}` : '';
   const res = await fetch(new URL(route.replace(/^\//, ''), target.url), {
-    method: 'POST',
+    method,
     headers: { 'content-type': 'application/json', ...(target.token ? { authorization: `Bearer ${target.token}` } : basic ? { authorization: basic } : {}) },
     body: payload,
   });
   return { status: res.status, body: await res.text() };
 }
 
-/** One POST to a route of the running Ronin, so the write is the server's and its sockets
- *  fire (a write from another process reaches the store but no socket). Returns the JSON. */
-export async function operatorPost<T = Record<string, unknown>>(route: string, body: unknown): Promise<T> {
+/** One POST (or, named, another write method) to a route of the running Ronin, so the write is
+ *  the server's and its sockets fire (a write from another process reaches the store but no
+ *  socket). Returns the JSON. */
+export async function operatorPost<T = Record<string, unknown>>(route: string, body: unknown, method: 'POST' | 'PUT' = 'POST'): Promise<T> {
   const target = operatorTarget();
   const payload = JSON.stringify(body);
-  const raw = target.kind === 'socket' ? await overSocket(target.path, route, payload) : await overHttp(target, route, payload);
+  const raw = target.kind === 'socket' ? await overSocket(target.path, route, payload, method) : await overHttp(target, route, payload, method);
   let reply: T & { error?: string };
   try { reply = JSON.parse(raw.body) as T & { error?: string }; } catch { reply = {} as T & { error?: string }; }
   if (raw.status < 200 || raw.status >= 300) throw new Error(reply.error || `HTTP ${raw.status}`);

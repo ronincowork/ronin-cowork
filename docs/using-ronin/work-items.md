@@ -79,11 +79,12 @@ A Desk paired to a Jira space uses that space's names, and a new item starts at 
 first status.
 
 Agents move their items themselves with `item transition <id> "<status>"`, by name. Any status
-to any status is allowed. Two moves are made for them: a hand-in that names the item
-(`worktree-desk hand-in <repo> --item <id>`) moves it to In Review, and the promotion that
-carries that hand-in moves it to Done, each only where the space has that status. An item paired to Jira is the exception: promotion
-leaves it as it is, and it is Done only when the Jira user moves it to Done, which comes back
-by polling. A hand-in that names no item moves no status.
+to any status is allowed. One move is made for them: a hand-in that names the item
+(`worktree-desk hand-in <repo> --item <id>`) moves it to In Review, where the space has that
+status, and gives it to the Team. A promotion never changes a status; it puts its receipt on
+the item's trail. Done is set only by the person accepting the item: on the Team workbench's
+Waiting on you, or, for an item paired to Jira, by the Jira user, which comes back by polling.
+A hand-in that names no item moves no status.
 
 ## The item tool
 
@@ -181,9 +182,9 @@ item handoff w12 none           the giver lets go
 item handoff w12 builder --from team:surface   builder takes the Team's item off the Team
 ```
 
-Assigning adds a holder and removes nobody. When an Agent ends, what it held goes back to
-its Team, or to nobody when it has no Team or several; other holders stay. Its Done items go
-to nobody, and nobody is told: Done work needs no holder, and `item search` still finds it.
+Assigning adds a holder and removes nobody. When an Agent ends, what it held goes to nobody,
+sitting on its epic for the lead, and nobody is told; other holders stay. `item search` still
+finds it.
 
 A lead uses assign to give out work: an item for each member, or the Team for work not yet
 given to anyone. Before handing over an item, the lead makes sure it says what is wanted:

@@ -134,12 +134,13 @@ subtasks. A stone shows the id, title, kind, status and ⚑ when flagged; press 
 its objective, priority, Jira fields, comments, attachments (each opens), links and history beside the
 stones. These are readings: every change goes through the `item` tool.
 
-## Receipts move Land and Done
+## Receipts on the trail
 
 Name the item on a hand-in with `worktree-desk hand-in <repo> --item <id>`. An accepted
-hand-in moves the item to In Review, with the receipt on its trail. A completed promotion
-moves every item named on the hand-ins it carries to Done, with the promotion receipt; an item
-paired to Jira is left as it is until the Jira user moves it to Done. No
+hand-in moves the item to In Review and gives it to the Team, with the receipt on its trail.
+A promotion is a code step and never changes a status: each item named on the hand-ins it
+carries gets the promotion receipt on its trail, nothing more. Done is set only by the person
+accepting the item (Waiting on you, or the Jira user for an item paired to Jira). No
 association is guessed from names or repositories.
 
 A supporting Agent and an assignment are two operations owned by their tools:

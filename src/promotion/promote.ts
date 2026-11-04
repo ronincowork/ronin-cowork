@@ -5,7 +5,7 @@ import { queuePromotionContinuation } from './continuation.js';
 import { houseSend } from '../desks/lead.js';
 import { receiptById } from '../desks/receipts.js';
 import { operatorPost } from '../cli-http.js';
-import { readItem, type TrailLine } from '../work-items.js';
+import { readItem } from '../work-items.js';
 import { REPO_ROOT } from '../resources.js';
 import {
   acquirePromotionLock, advanceState, anyAdvanced, lastGoodPromotion, listReceipts, newReceipt, newReceiptId, now, readReceipt, releasePromotionLock, writeReceipt, PROMOTION_LEDGER_DIR,
@@ -56,41 +56,35 @@ export async function announcePromotion(r: PromotionReceipt, primary: string, fx
     const receipt = id.startsWith('hi_') ? await receiptById(repo.repo, id).catch(() => null) : null;
     if (receipt?.project_id && !associated.some((item) => item.id === receipt.project_id)) associated.push({ id: receipt.project_id, session: receipt.session });
   }
-  // Every item named on a carried hand-in moves to "Done", the promotion receipt on its trail;
-  // one paired to Jira is left as it is: it is Done only when the Jira user accepts it, and that
-  // comes back by polling (owner ruling, 2026-10-28). Through the running server, so the move
-  // is its write and the ITEM socket (Jira) sees it.
-  const keep = new Map<string, string>();
+  // A promotion is a code step and never changes an item's status: only the person accepting
+  // sets Done (owner ruling, 2026-11-04; WORK_ITEMS_DESIGN.md section 3, step 5). Each item
+  // named on a carried hand-in gets the promotion receipt on its trail, a line that changes
+  // nothing and tells nobody; one paired to Jira is left as it is. Through the running server,
+  // so the line is its write.
   for (const { id } of associated) {
     try {
-      if ((await readItem(id))?.external.jira) { log(`  done  ${id}: paired to Jira, left as it is`); continue; }
-      const moved = await operatorPost<{ line: TrailLine; acknowledgement: string }>(`/api/work-items/${encodeURIComponent(id)}/transition`,
-        { status: 'Done', by: r.by || 'promotion', note: `promotion ${r.id}` });
-      keep.set(id, moved.acknowledgement);
-      log(`  done  ${id}: ${moved.line.op} ${moved.line.from ?? ''} → ${moved.line.to ?? ''}`);
+      if ((await readItem(id))?.external.jira) { log(`  item  ${id}: paired to Jira, left as it is`); continue; }
+      await operatorPost(`/api/work-items/${encodeURIComponent(id)}`, { by: r.by || 'promotion', note: `promotion ${r.id}` }, 'PUT');
+      log(`  item  ${id}: promotion ${r.id} on its trail, status unchanged`);
     } catch (e) {
-      log(`  done  ${id}: not moved — ${(e as Error).message}`);
+      log(`  item  ${id}: receipt not written — ${(e as Error).message}`);
     }
   }
-  const projectNext = [...keep.values()].map((line) => ` ${line}.`).join('');
-  await fx.notify(primary, r.team, `from promotion: ${r.id} is COMPLETE — ${promotedLine(r)}; ${r.restart ? 'restart and health passed' : 'no restart requested'}.${projectNext} Every desk: worktree-desk status says whether you are behind ${r.repos[0]?.target ?? 'dev'}; each contributor has been told its desk is on ${r.repos[0]?.target ?? 'dev'}.`);
+  await fx.notify(primary, r.team, `from promotion: ${r.id} is COMPLETE — ${promotedLine(r)}; ${r.restart ? 'restart and health passed' : 'no restart requested'}. Every desk: worktree-desk status says whether you are behind ${r.repos[0]?.target ?? 'dev'}; each contributor has been told its desk is on ${r.repos[0]?.target ?? 'dev'}.`);
   if (!fx.tell) return;
   const per = new Map<string, string[]>();
-  const projects = new Map<string, Set<string>>();
   for (const repo of r.repos) {
     for (const id of repo.hand_in_receipts) {
       const receipt = id.startsWith('hi_') ? await receiptById(repo.repo, id).catch(() => null) : null;
       const session = receipt?.session;
       if (!session) continue;
-      if (receipt.project_id) projects.set(session, new Set([...(projects.get(session) ?? []), receipt.project_id]));
       const what = `${id}${receipt?.desk ? ` (${repo.repo}:${receipt.desk})` : ''} → ${repo.target}@${repo.candidate.slice(0, 7)}`;
       per.set(session, [...(per.get(session) ?? []), what]);
     }
     for (const session of repo.sessions) if (!per.has(session)) per.set(session, [`${repo.repo} → ${repo.target}@${repo.candidate.slice(0, 7)}`]);
   }
   for (const [session, items] of per) {
-    const next = [...(projects.get(session) ?? [])].map((id) => keep.get(id)).filter(Boolean).map((line) => ` ${line}.`).join('');
-    const text = `from promotion: your hand-in is on ${r.repos[0]?.target ?? 'dev'} — ${items.join('; ')} [${r.id}].${next} Your worktree is finished and certified clean: stay parked for more work, or go with session_end — the worktree ends with you, never before you.`;
+    const text = `from promotion: your hand-in is on ${r.repos[0]?.target ?? 'dev'} — ${items.join('; ')} [${r.id}]. Your worktree is finished and certified clean: stay parked for more work, or go with session_end — the worktree ends with you, never before you.`;
     try {
       log(`  told  ${session}: ${await fx.tell(session, text)}`);
     } catch (e) {
