@@ -55,4 +55,21 @@ test('the Ronin API is seeded greyed until a token arrives; a personal API is th
   assert.equal(ronin.length, 1); assert.equal(ronin[0].seeded, undefined); assert.equal(ronin[0].configured, true);
   assert.equal(ronin[0].baseUrl, a.RONIN_API_BASE_URL); assert.equal(ronin[0].wire, 'responses'); assert.equal(ronin[0].provider, 'custom');
   assert.doesNotMatch(JSON.stringify(answer), /house-token/);
+
+  // system_lead's condition (2026-11-04): the gateway connection with the new fields present still provisions the
+  // same custom:ronin Hermes config — api_mode codex_responses, key_env OPENAI_API_KEY — and no secret leaves the store.
+  await a.updateAccountLists(ronin[0].id, { harnesses: ['hermes', 'codex'] });
+  globalThis.fetch = async () => new Response(JSON.stringify({ data: [{ id: 'openai/gpt-6-luna' }] }), { status: 200 });
+  try { await a.discoverAccount(ronin[0].id); } finally { globalThis.fetch = originalFetch; }
+  await a.savePreset({ name: 'House', account: ronin[0].id, model: 'openai/gpt-6-luna', reasoning: 'medium', approvals: 'off' });
+  const house = (await a.accountsAnswer()).presets.find(p => p.name === 'House')!;
+  const home = path.join(box, 'house-home');
+  await h.prepareHermesHome(house.id, home);
+  const { readFile } = await import('node:fs/promises');
+  const config = JSON.parse(await readFile(path.join(home, 'config.yaml'), 'utf8'));
+  assert.equal(config.model.provider, 'custom:ronin'); assert.equal(config.model.api_mode, 'codex_responses');
+  assert.equal(config.model.base_url, a.RONIN_API_BASE_URL); assert.equal(config.model.default, 'openai/gpt-6-luna');
+  assert.deepEqual(config.providers.ronin, { name: 'ronin', base_url: a.RONIN_API_BASE_URL, key_env: 'OPENAI_API_KEY', api_mode: 'codex_responses' });
+  assert.doesNotMatch(await readFile(path.join(home, 'ronin-setup.json'), 'utf8'), /house-token|harnesses|offered/);
+  assert.match(await readFile(path.join(home, '.env'), 'utf8'), /OPENAI_API_KEY='house-token'/);
 });
