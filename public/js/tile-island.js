@@ -15,10 +15,15 @@
  * (owner, 2026-11-04, KAN-238) — so the colours explain themselves. The bar again, or a
  * pill, puts it back. A pill pressed again closes its item.
  *
+ * THE HAND-IN MARK (WORK_ITEMS_DESIGN.md 6a, piece E): beside the dot and the flag, an item In
+ * Review carries the latest of its signals, "handed in" or "on dev", with how long ago, so a
+ * tile says what its Agent just handed in. At rest it is the mark alone; down, its words.
+ *
  * The items are the tile's `tegami.items` — the work record on the pushed home row, which the
  * tile re-reads on every push (tile.js refreshTegami). Nothing here asks the server.
  */
 import { t } from './lexicon.js';
+import { humanAge } from './work-record.js';
 
 const SVG = 'http://www.w3.org/2000/svg';
 const FLAG_MARK = '⚑'; // work-items-surface.js's mark; not imported: that module reaches the kit, which reaches the tile
@@ -69,8 +74,26 @@ export function kindMark(kind) {
   return svg;
 }
 
+const HANDIN_MARK = '↑';
+
+/** An item In Review's latest signal (6a): 'handed' at its last hand-in, or 'dev' once a
+ * promotion put that hand-in on dev; null when it is not In Review or was never handed in. */
+export function handInSignal(item) {
+  if (statusKey(item?.status) !== 'review') return null;
+  const last = (Array.isArray(item.hand_ins) && item.hand_ins.at(-1)) || item.handed_in || null;
+  if (!last?.at) return null;
+  return item.on_dev?.at && item.on_dev.at >= last.at ? { kind: 'dev', at: item.on_dev.at } : { kind: 'handed', at: last.at };
+}
+
+/** The mark's words: "handed in 2h", "on dev 5m". */
+export function handInWords(signal, now = Date.now()) {
+  if (!signal) return '';
+  const ago = humanAge(Math.max(0, now - Date.parse(signal.at) || 0));
+  return `${signal.kind === 'dev' ? t('island.on_dev', 'on dev') : t('island.handed_in', 'handed in')} ${ago}`;
+}
+
 /** What a pill says when read aloud or hovered: its words, since it shows none. */
-export const pillWords = (item) => [item.id, item.kind, item.status, item.flagged ? t('work_items.flagged', 'flagged') : '', item.title]
+export const pillWords = (item) => [item.id, item.kind, item.status, item.flagged ? t('work_items.flagged', 'flagged') : '', handInWords(handInSignal(item)), item.title]
   .filter(Boolean).join(' · ');
 
 /**
@@ -120,6 +143,14 @@ export function createItemIsland({ open, shut, isOpen }) {
     dot.className = 'item-pill-status';
     const flag = Object.assign(document.createElement('span'), { className: 'item-pill-flag', textContent: item.flagged ? FLAG_MARK : FLAG_OUTLINE });
     node.append(kindMark(item.kind), words, dot, flag);
+    const signal = handInSignal(item);
+    if (signal) {
+      node.dataset.handin = signal.kind;
+      const handin = Object.assign(document.createElement('span'), { className: 'item-pill-handin' });
+      handin.title = new Date(signal.at).toLocaleString();
+      handin.append(HANDIN_MARK, Object.assign(document.createElement('span'), { className: 'item-pill-handin-words', textContent: ` ${handInWords(signal)}` }));
+      node.append(handin);
+    }
     // One press opens the item, the same press again closes it.
     node.addEventListener('click', () => {
       place(false);
@@ -134,7 +165,7 @@ export function createItemIsland({ open, shut, isOpen }) {
     if (name !== session) { session = name; drawn = ''; place(false); }
     items = next;
     el.hidden = !session || !next.length;
-    const signature = JSON.stringify(next.map((item) => [item.id, item.kind, item.status, !!item.flagged, item.title]));
+    const signature = JSON.stringify(next.map((item) => [item.id, item.kind, item.status, !!item.flagged, item.title, handInSignal(item)]));
     if (signature === drawn) return;
     drawn = signature;
     pills.replaceChildren(...next.map(pill));

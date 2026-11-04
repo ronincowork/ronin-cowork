@@ -5,7 +5,6 @@ import { queuePromotionContinuation } from './continuation.js';
 import { houseSend } from '../desks/lead.js';
 import { receiptById } from '../desks/receipts.js';
 import { operatorPost } from '../cli-http.js';
-import { readItem } from '../work-items.js';
 import { REPO_ROOT } from '../resources.js';
 import {
   acquirePromotionLock, advanceState, anyAdvanced, lastGoodPromotion, listReceipts, newReceipt, newReceiptId, now, readReceipt, releasePromotionLock, writeReceipt, PROMOTION_LEDGER_DIR,
@@ -57,17 +56,16 @@ export async function announcePromotion(r: PromotionReceipt, primary: string, fx
     if (receipt?.project_id && !associated.some((item) => item.id === receipt.project_id)) associated.push({ id: receipt.project_id, session: receipt.session });
   }
   // A promotion is a code step and never changes an item's status: only the person accepting
-  // sets Done (owner ruling, 2026-11-04; WORK_ITEMS_DESIGN.md section 3, step 5). Each item
-  // named on a carried hand-in gets the promotion receipt on its trail, a line that changes
-  // nothing and tells nobody; one paired to Jira is left as it is. Through the running server,
-  // so the line is its write.
+  // sets Done (owner ruling, 2026-11-04). It is the promotion signal (WORK_ITEMS_DESIGN.md 6a):
+  // each item named on a carried hand-in is marked on dev, { promotion, at }, with the receipt
+  // on its trail, and nobody is told: it shows under Ready to accept. A paired item too: on dev
+  // is not a status, so Jira is not touched. Through the running server, so the line is its write.
   for (const { id } of associated) {
     try {
-      if ((await readItem(id))?.external.jira) { log(`  item  ${id}: paired to Jira, left as it is`); continue; }
-      await operatorPost(`/api/work-items/${encodeURIComponent(id)}`, { by: r.by || 'promotion', note: `promotion ${r.id}` }, 'PUT');
-      log(`  item  ${id}: promotion ${r.id} on its trail, status unchanged`);
+      await operatorPost(`/api/work-items/${encodeURIComponent(id)}/on-dev`, { by: r.by || 'promotion', promotion: r.id });
+      log(`  item  ${id}: on dev by ${r.id}, status unchanged`);
     } catch (e) {
-      log(`  item  ${id}: receipt not written — ${(e as Error).message}`);
+      log(`  item  ${id}: not marked on dev — ${(e as Error).message}`);
     }
   }
   await fx.notify(primary, r.team, `from promotion: ${r.id} is COMPLETE — ${promotedLine(r)}; ${r.restart ? 'restart and health passed' : 'no restart requested'}. Every desk: worktree-desk status says whether you are behind ${r.repos[0]?.target ?? 'dev'}; each contributor has been told its desk is on ${r.repos[0]?.target ?? 'dev'}.`);

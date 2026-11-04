@@ -149,6 +149,23 @@ export interface WorkItem {
   created: { at: string; by: string };
   /** The last hand-in: the Agent that handed it in, and when. Send back returns it there. */
   handed_in?: { by: string; at: string };
+  /** THE HAND-IN SIGNAL (WORK_ITEMS_DESIGN.md 6a): every accepted hand-in, oldest first, even
+   * one never promoted; `receipt` null for a checkout's (no desk, no code to promote). */
+  hand_ins?: HandIn[];
+  /** THE PROMOTION SIGNAL (6a): the last promotion that carried a hand-in of this item to dev.
+   * Not a status: the item stays In Review, and Jira is not touched. */
+  on_dev?: { promotion: string; at: string };
+}
+
+export interface HandIn { receipt: string | null; by: string; at: string }
+
+/** Where a handed-in item waits (6a): 'ready', on dev since its last hand-in or handed in from
+ * a checkout, so the person can try it; else 'lead', for the lead to review and promote. */
+export function handInStage(item: Pick<WorkItem, 'hand_ins' | 'on_dev'>): 'lead' | 'ready' {
+  const last = item.hand_ins?.at(-1);
+  if (last && last.receipt === null) return 'ready';
+  if (item.on_dev && (!last || item.on_dev.at >= last.at)) return 'ready';
+  return 'lead';
 }
 
 /** What every write answers: the item as it now is, the line it appended, and who its notices
@@ -598,14 +615,22 @@ async function handInTeam(item: WorkItem, session: string): Promise<string | nul
  * trail line. A desk's hand-in is told by the desk's own message (desks/lead.ts); a checkout's
  * (a move to In Review by its holder) tells the Team's lead from here. An item already In
  * Review and on its Team gets a line that changes nothing and tells nobody. */
-async function handInUnlocked(given: string, session: string, opts: { desk: boolean; note?: string }): Promise<Acknowledged> {
+async function handInUnlocked(given: string, session: string, opts: { desk: boolean; note?: string; receipts?: string[] }): Promise<Acknowledged> {
   const item = await load(given);
   const id = item.id;
   oneOf('status', REVIEW, spaceNames(item.campaign_id).statuses);
   const team = await handInTeam(item, session);
   const held = await holdersOf(id);
   const moving = Boolean(team) && !held.some((holder) => holder.kind === 'team' && holder.name === team);
-  if (item.status === REVIEW && !moving) return appendTrail(id, session, () => ({ op: 'edit', note: [opts.note, 'no change'].filter(Boolean).join('; ') }), () => false);
+  const at = new Date().toISOString();
+  const recorded = (it: WorkItem) => {
+    // A desk's hand-in names its receipts; only a checkout's, with no code to promote, is null.
+    const receipts: Array<string | null> = opts.desk ? opts.receipts?.length ? opts.receipts : [''] : [null];
+    it.hand_ins = [...(it.hand_ins ?? []), ...receipts.map((receipt) => ({ receipt, by: session, at }))];
+    it.handed_in = { by: session, at };
+  };
+  // Already In Review and on its Team: no status moves, the hand-in is still recorded.
+  if (item.status === REVIEW && !moving) return appendTrail(id, session, (it) => { recorded(it); return { op: 'edit', note: [opts.note, 'handed in again'].filter(Boolean).join('; ') }; }, () => false);
   if (team) {
     for (const list of await heldLists()) {
       if (list.holder.kind === 'agent' && list.holder.name === session && list.holds.includes(id)) await list.set(list.holds.filter((one) => one !== id));
@@ -616,7 +641,7 @@ async function handInUnlocked(given: string, session: string, opts: { desk: bool
   const before = item.status;
   const done = await appendTrail(id, session, (it) => {
     it.status = REVIEW;
-    it.handed_in = { by: session, at: new Date().toISOString() };
+    recorded(it);
     return { op: 'status', from: before, to: REVIEW, note: [opts.note, `handed in by ${session}${team ? `, given to team:${team}` : ''}`].filter(Boolean).join('; ') };
   }, () => false);
   const leads = team ? (await listSessions()).filter((one) => one.leads.includes(team) && one.name !== session).map((one) => one.name) : [];
@@ -627,7 +652,16 @@ async function handInUnlocked(given: string, session: string, opts: { desk: bool
   return done;
 }
 
-export const handInItem = (id: string, session: string, opts: { desk: boolean; note?: string }) => withIssuer(() => handInUnlocked(id, session, opts));
+export const handInItem = (id: string, session: string, opts: { desk: boolean; note?: string; receipts?: string[] }) => withIssuer(() => handInUnlocked(id, session, opts));
+
+/** The promotion marks an item it carried on dev (6a): `on_dev`, one trail line naming the
+ * promotion, no status change and nobody told. A paired item too: it is not a status. */
+export function markOnDev(given: string, promotion: string, by: string): Promise<Acknowledged> {
+  return withIssuer(() => appendTrail(given, by, (it) => {
+    it.on_dev = { promotion, at: new Date().toISOString() };
+    return { op: 'edit', note: `promotion ${promotion}; on dev` };
+  }, () => false));
+}
 
 /** SEND BACK (section 3, step 5): the item goes to In Progress with the comment, back to the
  * Agent that handed it in, which is told; if that Agent has ended it stays with the Team, whose

@@ -15,6 +15,7 @@ import { randomUUID } from 'node:crypto';
 import { withManagedTransaction } from '../desks/lifecycle-ledger.js';
 import { shutdownAgent, ShutdownRefused } from '../desks/session-shutdown.js';
 import { didLine, readItem } from '../work-items.js';
+import { projectManagementOn } from '../agent-composition.js';
 import { briefPointer } from '../behaviours.js';
 
 const out = (s = '') => process.stdout.write(s + '\n');
@@ -199,6 +200,10 @@ async function main(): Promise<void> {
         } else targets = [await pickOne(session, positional[0] ?? '', 'hand-in')];
         const projectId = str(flags.get('item'));
         if (projectId && !(await readItem(projectId))) die(`NO-ITEM: there is no work item ${projectId}`, 3);
+        // A hand-in names its item under project management (WORK_ITEMS_DESIGN.md 6a).
+        if (!projectId && await projectManagementOn(session)) {
+          die(`NO-ITEM: under project management a hand-in names its work item.\n  NEXT: worktree-desk hand-in ${positional[0] ?? '<repo>'}${flags.get('assignment') ? ' --assignment' : ''} --item <id>`, 2);
+        }
         let worst = 0;
         const { outcomes, moved, unmoved } = await handInAssignment({ desks: flags.get('assignment') ? targets : [targets[0]!], projectId, session });
         for (const [i, { receipt, notices, tidy }] of outcomes.entries()) {

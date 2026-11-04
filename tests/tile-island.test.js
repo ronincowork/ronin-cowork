@@ -4,7 +4,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { kindKey, statusKey } from '../public/js/tile-island.js';
+import { handInSignal, handInWords, kindKey, pillWords, statusKey } from '../public/js/tile-island.js';
 
 const read = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
 
@@ -28,7 +28,8 @@ test('the tile header carries the island, fed by the pushed work record, and a p
   assert.match(head, /tile\.island\?\.update\?\.\(tile\.session, islandItems\(tile\.tegami\)\)/);
   assert.match(head, /renderItemDetail\(detail, item/);
   // w279: a lead's island adds the Epics its Teams hold after its own items.
-  assert.match(head, /islandItems = \(letter\) => \[\.\.\.\(letter\?\.items \|\| \[\]\), \.\.\.\(letter\?\.teamEpics \|\| \[\]\)\]/);
+  // Piece E: then what the Agent handed in that still waits In Review, before a lead's Epics.
+  assert.match(head, /islandItems = \(letter\) => \[\.\.\.\(letter\?\.items \|\| \[\]\), \.\.\.\(letter\?\.handedIn \|\| \[\]\), \.\.\.\(letter\?\.teamEpics \|\| \[\]\)\]/);
   assert.match(head, /isOpen: \(id\) => !!openItemLayer\(tile, id\)/);
   const island = await read('public/js/tile-island.js');
   assert.doesNotMatch(island, /request\(|fetch\(|setInterval/, 'no polling: the push is the only reading');
@@ -50,4 +51,26 @@ test('the tile menu\'s Docs lists the record\'s documents (tegami.docs), as the 
   assert.match(head, /t\('me\.docs_none', 'No documents on this Agent\\'s record\.'\)/);
   assert.doesNotMatch(head + await read('public/js/work-record.js'), /heldAttachments/, 'held items\' attachments alone are gone');
   assert.match(await read('ronin_catalogs/lexicons/professional_en.md'), /- \*\*me\.docs_none:\*\* No documents on this Agent's record\./);
+});
+
+test('the hand-in mark: handed in, then on dev once a promotion follows the last hand-in, with how long ago', () => {
+  const now = Date.parse('2026-11-04T12:00:00Z');
+  const handed = { id: 'w1', status: 'In Review', hand_ins: [{ receipt: 'hi_1', by: 'mem', at: '2026-11-04T10:00:00Z' }] };
+  assert.deepEqual(handInSignal(handed), { kind: 'handed', at: '2026-11-04T10:00:00Z' });
+  assert.equal(handInWords(handInSignal(handed), now), 'handed in 2h');
+  const onDev = { ...handed, on_dev: { promotion: 'p1', at: '2026-11-04T11:55:00Z' } };
+  assert.equal(handInWords(handInSignal(onDev), now), 'on dev 5m');
+  const again = { ...onDev, hand_ins: [...onDev.hand_ins, { receipt: 'hi_2', by: 'mem', at: '2026-11-04T11:58:00Z' }] };
+  assert.equal(handInSignal(again).kind, 'handed', 'a later hand-in is not on dev yet');
+  assert.equal(handInSignal({ ...onDev, status: 'In Progress' }), null, 'sent back: no mark');
+  assert.equal(handInSignal({ id: 'w2', status: 'In Review' }), null, 'never handed in: no mark');
+  assert.match(pillWords(handed), /handed in \d+[mhd]/, 'the words read aloud carry it');
+});
+
+test('the island draws the mark beside the dot and the flag, its words only when down', async () => {
+  const island = await read('public/js/tile-island.js');
+  assert.match(island, /node\.append\(kindMark\(item\.kind\), words, dot, flag\);\n    const signal = handInSignal\(item\);/);
+  const css = await read('public/style.css');
+  assert.match(css, /\.item-pill \.item-pill-handin-words \{ display: none; \}/);
+  assert.match(css, /\.item-island\[data-state='down'\] \.item-pill-handin-words \{ display: inline;/);
 });

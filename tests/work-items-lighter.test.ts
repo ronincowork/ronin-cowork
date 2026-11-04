@@ -101,13 +101,14 @@ test('search --text matches every word in the title or objective, any case', asy
 test('a desk hand-in gives the item to the Team, records who, and the item tells nobody', async () => {
   const { item } = await items.createItem({ title: 'desk work', parent: epic.id, holder: mem }, 'boss');
   await quiet();
-  const done = await items.handInItem(item.id, 'mem', { desk: true, note: 'hand-in r1' });
+  const done = await items.handInItem(item.id, 'mem', { desk: true, note: 'hand-in r1', receipts: ['r1'] });
   assert.equal(done.item.status, 'In Review');
   assert.equal(done.item.handed_in?.by, 'mem');
   assert.deepEqual(await holding(item.id), ['team:crew']);
   assert.deepEqual((await said()).filter(([, text]) => text.includes(item.id)), [], 'the desk\'s own message is the one notice');
-  const again = await items.handInItem(item.id, 'mem', { desk: true, note: 'hand-in r2' });
-  assert.equal(again.line.note, 'hand-in r2; no change');
+  const again = await items.handInItem(item.id, 'mem', { desk: true, note: 'hand-in r2', receipts: ['r2'] });
+  assert.equal(again.line.note, 'hand-in r2; handed in again');
+  assert.deepEqual(again.item.hand_ins!.map((one) => [one.receipt, one.by]), [['r1', 'mem'], ['r2', 'mem']], 'every hand-in is recorded, the status moved or not');
 });
 
 test('a move to In Review by its holder is a checkout hand-in: the Team takes it and its lead is told once', async () => {
@@ -288,4 +289,63 @@ test('a Ronin item put back tells nobody: only a Jira item goes to traffic_contr
   const back = await call('POST', `/api/work-items/${item.id}/handoff`, { none: true, by: 'mem' });
   assert.equal(back.data.notified, undefined);
   assert.deepEqual(await said(), []);
+});
+
+/* THE THREE SIGNALS (section 6a; KAN-239 piece E). */
+
+test('the promotion signal: on dev is not a status, a paired item too, and it tells nobody', async () => {
+  const { item } = await items.createItem({ title: 'promoted work', parent: epic.id, holder: mem }, 'boss');
+  await items.handInItem(item.id, 'mem', { desk: true, receipts: ['hi_a'] });
+  await quiet();
+  const marked = await call('POST', `/api/work-items/${item.id}/on-dev`, { promotion: 'promo_a', by: 'cap' });
+  assert.equal(marked.status, 200);
+  assert.deepEqual([marked.data.item.status, marked.data.item.on_dev.promotion], ['In Review', 'promo_a']);
+  assert.deepEqual(await said(), []);
+  const paired = (await items.createItem({ title: 'paired promoted', parent: epic.id, jira: { id: '88', key: 'KAN-988' } }, 'jira:x')).item;
+  assert.equal((await items.markOnDev(paired.id, 'promo_a', 'cap')).item.on_dev?.promotion, 'promo_a');
+  assert.equal((await call('POST', `/api/work-items/${item.id}/on-dev`, { by: 'cap' })).status, 400, 'the promotion is named');
+});
+
+test('Waiting on you splits: With the lead until on dev after the last hand-in; a checkout hand-in is ready at once', async () => {
+  const { teamWork } = await import('../src/work-items-read.js');
+  const desk = (await items.createItem({ title: 'desk signal', parent: epic.id, holder: mem }, 'boss')).item;
+  const checkout = (await items.createItem({ title: 'checkout signal', parent: epic.id, holder: mem }, 'boss')).item;
+  await items.handInItem(desk.id, 'mem', { desk: true, receipts: ['hi_1'] });
+  await items.editItem(checkout.id, { status: 'In Review' }, 'mem');
+  const stage = async (id: string) => items.handInStage((await items.readItem(id))!);
+  assert.equal(await stage(desk.id), 'lead', 'handed in, not on dev');
+  assert.equal(await stage(checkout.id), 'ready', 'a checkout has no code to promote');
+  await items.markOnDev(desk.id, 'promo_1', 'cap');
+  assert.equal(await stage(desk.id), 'ready', 'on dev after the last hand-in');
+  await new Promise((resolve) => setTimeout(resolve, 5));
+  await items.handInItem(desk.id, 'mem', { desk: true, receipts: ['hi_2'] });
+  assert.equal(await stage(desk.id), 'lead', 'a new hand-in waits for its own promotion');
+  const all = await items.listItems();
+  const held = all.filter((one) => [desk.id, checkout.id].includes(one.id)).map((one) => ({ ...one, holder: 'team:crew' }));
+  const work = teamWork(held, all);
+  assert.deepEqual([work.lead.map((one) => one.id), work.review.map((one) => one.id)], [[desk.id], [checkout.id]]);
+});
+
+test('a hand-in names its item under project management: the switch is read from the Agent\'s behaviours', async () => {
+  const { projectManagementOn } = await import('../src/agent-composition.js');
+  const { sessionDir } = await import('../src/session-dir.js');
+  for (const [name, books] of [['pm_on', ['base-agent', 'project-management']], ['pm_off', ['base-agent']]] as const) {
+    const dir = sessionDir(name);
+    await fs.mkdir(dir, { recursive: true });
+    await fs.writeFile(path.join(dir, 'birth-receipt.json'), JSON.stringify({ behaviours: books.map((book) => ({ book, file: `/x/${book}.md` })) }));
+  }
+  assert.equal(await projectManagementOn('pm_on'), true);
+  assert.equal(await projectManagementOn('pm_off'), false);
+  assert.equal(await projectManagementOn('pm_nobody'), false, 'no record: not under it');
+  const desk = await fs.readFile(new URL('../src/commands/desk.ts', import.meta.url), 'utf8');
+  assert.match(desk, /if \(!projectId && await projectManagementOn\(session\)\)/);
+  assert.match(desk, /NEXT: worktree-desk hand-in \$\{positional\[0\] \?\? '<repo>'\}.*--item <id>/);
+});
+
+test('Waiting on you draws With the lead before Ready to accept, both with Accept and Send back', async () => {
+  const ui = await fs.readFile(new URL('../public/js/team-waiting.js', import.meta.url), 'utf8');
+  assert.match(ui, /if \(lead\.length\) groups\.append\(group\('lead', t\('team_waiting\.with_lead', 'With the lead'\), lead\)\);\n    if \(review\.length\)/);
+  assert.match(ui, /if \(group === 'review' \|\| group === 'lead'\) \{/);
+  const words = await fs.readFile(new URL('../ronin_catalogs/lexicons/professional_en.md', import.meta.url), 'utf8');
+  assert.match(words, /- \*\*team_waiting\.with_lead:\*\* With the lead/);
 });

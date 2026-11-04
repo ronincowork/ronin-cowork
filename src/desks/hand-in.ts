@@ -132,7 +132,7 @@ export async function handInAssignment(assignment: { desks: Array<{ repo: string
   const accepted = outcomes.filter(({ receipt }) => receipt.result === 'accepted').map(({ receipt }) => receipt.id);
   if (!assignment.projectId || !accepted.length) return { outcomes, moved: null };
   try {
-    return { outcomes, moved: await handInItem(assignment.projectId, assignment.session, { desk: true, note: `hand-in ${accepted.join(', ')}` }) };
+    return { outcomes, moved: await handInItem(assignment.projectId, assignment.session, { desk: true, note: `hand-in ${accepted.join(', ')}`, receipts: accepted }) };
   } catch (error) {
     if (!(error instanceof WorkItemBadInput)) throw error;
     return { outcomes, moved: null, unmoved: error.message };

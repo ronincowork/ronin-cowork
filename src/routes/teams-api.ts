@@ -120,7 +120,7 @@ export async function teamRosters(named: string[] = []): Promise<unknown[]> {
         campaign_id: resolve(r.campaign_id),
         board: board && { title: board.title, status: board.status },
         items: reading.items.map(({ title }) => ({ title })),
-        waiting: { review: work.review, stuck: work.stuck },
+        waiting: { lead: work.lead, review: work.review, stuck: work.stuck },
         epics: work.epics,
       };
     }),

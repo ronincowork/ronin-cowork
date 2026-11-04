@@ -3,9 +3,11 @@
  * THE TEAM WORKBENCH'S WAITING ON YOU AND EPICS (owner, 2026-11-04; KAN-232). Two selector cards
  * on the Team workbench, each a surface on a tilespace.
  *
- * WAITING ON YOU (`createTeamWaiting`): the Team's items that wait on the person, in two groups,
- * each oldest first, each line with how long it has waited. Ready to accept: the items In Review;
- * Accept moves one to Done, Send back asks for a comment, puts it on the item and moves it to In
+ * WAITING ON YOU (`createTeamWaiting`): the Team's items that wait on the person, in three groups,
+ * each oldest first, each line with how long it has waited. The items In Review split by the
+ * signals (WORK_ITEMS_DESIGN.md 6a): With the lead, handed in and not on dev since; Ready to
+ * accept, on dev since the last hand-in or handed in from a checkout. On both, Accept moves one
+ * to Done, Send back asks for a comment, puts it on the item and moves it to In
  * Progress, back to the Agent that handed it in (to the Team if it has ended). Stuck: the
  * flagged items, each with its flag's reason; Reply puts a comment on the item, which its
  * holders hear. Every change is the work-item routes' transition, send-back and comment.
@@ -43,12 +45,14 @@ const pill = (label, action, pressed = null) => {
 
 /** The Team's row on the teams push: its `waiting` ({ review, stuck }) and its `epics` (ids). */
 export const teamWaiting = (row) => ({
+  lead: Array.isArray(row?.waiting?.lead) ? row.waiting.lead : [],
   review: Array.isArray(row?.waiting?.review) ? row.waiting.review : [],
   stuck: Array.isArray(row?.waiting?.stuck) ? row.waiting.stuck : [],
 });
 export const teamEpicIds = (row) => new Set(Array.isArray(row?.epics) ? row.epics : []);
 
-/** Waiting on you: Ready to accept, then Stuck, each line an item card with its actions. */
+/** Waiting on you: With the lead, Ready to accept, then Stuck, each line an item card with its
+ * actions (WORK_ITEMS_DESIGN.md 6a: you accept what you can try, what is on dev). */
 export function createTeamWaiting({ team }) {
   const { createSurface } = WorkspaceKit.primitives;
   const out = createSurface({ label: t('team_waiting.title', 'Waiting on you'), className: 'setup-surface team-waiting' });
@@ -106,7 +110,7 @@ export function createTeamWaiting({ team }) {
     acts.setAttribute('role', 'group');
     const open = (kind) => composing?.id === item.id && composing.kind === kind;
     const toggle = (kind) => () => { composing = open(kind) ? null : { id: item.id, kind }; paint(true); };
-    if (group === 'review') {
+    if (group === 'review' || group === 'lead') {
       acts.append(
         pill(t('team_waiting.accept', 'Accept'), (event) => { event.currentTarget.disabled = true; void write(item.id, [{ path: 'transition', json: { status: 'Done' } }]); }),
         pill(t('team_waiting.send_back', 'Send back'), toggle('send_back'), open('send_back')),
@@ -135,17 +139,18 @@ export function createTeamWaiting({ team }) {
   }
 
   function paint(force = false) {
-    const { review, stuck } = teamWaiting(teamByName(team()));
-    const signature = JSON.stringify([team(), review, stuck]);
+    const { lead, review, stuck } = teamWaiting(teamByName(team()));
+    const signature = JSON.stringify([team(), lead, review, stuck]);
     if (!force && signature === drawn) return;
     drawn = signature;
     // A push redraws the lines; the comment box being typed in keeps its words, its caret and focus.
     const typing = out.content.querySelector?.('textarea:focus');
     const caret = typing ? { key: typing.dataset.compose, start: typing.selectionStart, end: typing.selectionEnd } : null;
     const groups = el('div', 'epic-groups team-waiting-groups');
+    if (lead.length) groups.append(group('lead', t('team_waiting.with_lead', 'With the lead'), lead));
     if (review.length) groups.append(group('review', t('team_waiting.ready', 'Ready to accept'), review));
     if (stuck.length) groups.append(group('stuck', t('team_waiting.stuck', 'Stuck'), stuck));
-    if (!review.length && !stuck.length) groups.append(el('p', 'epic-empty', t('team_waiting.none', 'Nothing is waiting on you.')));
+    if (!lead.length && !review.length && !stuck.length) groups.append(el('p', 'epic-empty', t('team_waiting.none', 'Nothing is waiting on you.')));
     const scroll = out.content.scrollTop;
     out.content.replaceChildren(groups);
     out.content.scrollTop = scroll;

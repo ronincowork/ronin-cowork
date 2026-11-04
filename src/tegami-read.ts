@@ -3,7 +3,9 @@ import path from 'node:path';
 import { sessionDir, sessionKey } from './session-dir.js';
 import { tegamiPath } from './tegami.js';
 import { agentReading, type AgentReading } from './work-items-read.js';
-import { jiraLink, type WorkItem } from './work-items.js';
+import { jiraLink, readItem, type WorkItem } from './work-items.js';
+import { readTeamRoster } from './team-rosters.js';
+import { listSessions } from './tmux.js';
 import { mandate, type Mandate } from './agent-defaults.js';
 
 export interface Tegami {
@@ -17,6 +19,10 @@ export interface Tegami {
   /** The Epics the Teams this Agent leads hold, and not the Agent itself: a lead's item island
    * shows them beside its own items (owner, 2026-11-04, w279). Empty for an Agent leading none. */
   teamEpics: Array<WorkItem & { jira_url?: string }>;
+  /** What this Agent handed in that still waits In Review (WORK_ITEMS_DESIGN.md 6a): a hand-in
+   * gives the item to the Team, so it is found on the rosters of the Agent's Teams. The item
+   * island shows it with its hand-in mark, so a tile says what its Agent just handed in. */
+  handedIn: Array<WorkItem & { jira_url?: string }>;
   /** The record's own documents (dropped on it, or added holding no item) and every held item's attachments. */
   docs: string[];
   chip: { text: string; gate: boolean };
@@ -65,6 +71,15 @@ export function chipFor(items: WorkItem[]): { text: string; gate: boolean } {
 
 const linked = (item: WorkItem): WorkItem & { jira_url?: string } => ({ ...item, ...(jiraLink(item) ? { jira_url: jiraLink(item) } : {}) });
 
+/** The items this Agent handed in, still In Review, from its Teams' holds (a handful each). */
+async function handedInBy(name: string, own: Set<string>): Promise<Array<WorkItem & { jira_url?: string }>> {
+  const teams = (await listSessions().catch(() => [])).find((session) => session.name === name)?.tags ?? [];
+  const ids = new Set<string>();
+  for (const team of teams) for (const id of (await readTeamRoster(team).catch(() => null))?.holds ?? []) if (!own.has(id)) ids.add(id);
+  const items = await Promise.all([...ids].map((id) => readItem(id).catch(() => null)));
+  return items.filter((item): item is WorkItem => !!item && item.status === 'In Review' && item.handed_in?.by === name).map(linked);
+}
+
 /** The Epics (level 1) its led Teams hold, once each, leaving out those the Agent holds itself. */
 export function teamEpics(reading: AgentReading): Array<WorkItem & { jira_url?: string }> {
   const own = new Set(reading.items.map((item) => item.id));
@@ -109,6 +124,7 @@ export async function readTegami(name: string): Promise<Tegami | null> {
       holds: reading.items.map((item) => item.id),
       items: reading.items.map(linked),
       teamEpics: teamEpics(reading),
+      handedIn: await handedInBy(name, new Set(reading.items.map((item) => item.id))),
       docs: await readDocs([...reading.attachments, ...(await dropped(key))]),
       chip: chipFor(reading.items),
       quietSince: stat.mtimeMs,

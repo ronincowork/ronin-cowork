@@ -6,7 +6,7 @@
 import type express from 'express';
 import {
   WorkItemBadInput, WorkItemMissing, WorkItemRefused,
-  addComment, assignItem, attachDoc, connectionOf, createItem, deleteItem, editComment, editItem, flagItem, handoffItem, holderLabel, holdersOf, linkItem, listItems, readItem, resolveId, sendBack, watchItem, watchedIds,
+  addComment, assignItem, attachDoc, connectionOf, createItem, deleteItem, editComment, editItem, flagItem, handoffItem, holderLabel, holdersOf, linkItem, listItems, markOnDev, readItem, resolveId, sendBack, watchItem, watchedIds,
   didLine, oneNoticePerCommand, type Acknowledged, type Holder, type JiraPair, type WorkItem,
 } from '../work-items.js';
 import { agentReading, everyItemReading, teamReading } from '../work-items-read.js';
@@ -207,6 +207,12 @@ export function registerWorkItems(app: express.Express): void {
     if (verb === 'delete') app.delete('/api/work-items/:id', handler);
     else app.post(`/api/work-items/:id/${verb}`, handler);
   }
+  // The promotion marks a carried item on dev (WORK_ITEMS_DESIGN.md 6a): { promotion }, no status change.
+  app.post('/api/work-items/:id/on-dev', guarded(async (req, res) => {
+    const promotion = text(req.body?.promotion)?.trim();
+    if (!promotion) throw new WorkItemBadInput('name the promotion: { promotion }.');
+    acknowledge(res, await markOnDev(req.params.id!, promotion, callerOf(req)));
+  }));
   // Send back (Waiting on you): In Progress with the comment, back to the Agent that handed it in.
   app.post('/api/work-items/:id/send-back', guarded(async (req, res) => {
     acknowledge(res, await sendBack(req.params.id!, text(req.body?.text), callerOf(req)));
@@ -229,7 +235,7 @@ export function registerWorkItems(app: express.Express): void {
   // Anything else under /api/work-items names no item (an id like surface/7 is not one):
   // a JSON 404 naming it, so a tool can say so rather than parse an HTML error page.
   app.all('/api/work-items/*', (req, res) => {
-    const id = req.path.slice('/api/work-items/'.length).replace(/\/(assign|handoff|watch|unwatch|transition|flag|unflag|attach|link|comment|send-back)$/, '');
+    const id = req.path.slice('/api/work-items/'.length).replace(/\/(assign|handoff|watch|unwatch|transition|flag|unflag|attach|link|comment|send-back|on-dev)$/, '');
     res.status(404).json({ ok: false, error: `No work item ${id}.` });
   });
 }

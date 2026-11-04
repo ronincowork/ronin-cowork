@@ -1161,6 +1161,11 @@ body {
 .item-pill[data-status='review'] .item-pill-status { background: var(--accent); }
 .item-pill[data-status='done'] .item-pill-status { background: var(--ok); }
 .item-pill .item-pill-flag { color: var(--warn); font-size: var(--text-small); line-height: 1; }
+/* The hand-in mark (6a): the flag's size, In Review's accent when handed in, ok once on dev; its words only down. */
+.item-pill .item-pill-handin { color: var(--accent); font-size: var(--text-small); line-height: 1; white-space: nowrap; }
+.item-pill[data-handin='dev'] .item-pill-handin { color: var(--ok); }
+.item-pill .item-pill-handin-words { display: none; }
+.item-island[data-state='down'] .item-pill-handin-words { display: inline; color: var(--muted); }
 
 .tile-head .sess {
   flex: 0 1 auto;

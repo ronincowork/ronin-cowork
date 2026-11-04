@@ -630,6 +630,7 @@ nothing paints exactly this.
 
 ## team_waiting — team-waiting.js (the Team workbench's Waiting on you and Epics cards; KAN-232)
 - **team_waiting.title:** Waiting on you
+- **team_waiting.with_lead:** With the lead
 - **team_waiting.ready:** Ready to accept
 - **team_waiting.stuck:** Stuck
 - **team_waiting.accept:** Accept
@@ -1247,6 +1248,8 @@ The catalog entry goes. {dir} is not touched.
 - **island.items:** Work items held
 - **island.down:** Show the work items with their status
 - **island.up:** Put the work items back in the header
+- **island.handed_in:** handed in
+- **island.on_dev:** on dev
 
 ## head — tilehead.js (the tile head's help and quiet words)
 - **head.rename_help:** Edit this Agent title

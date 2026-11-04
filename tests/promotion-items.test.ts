@@ -37,7 +37,7 @@ type Receipt = Parameters<typeof appendReceipt>[0];
 type Promotion = Parameters<typeof announcePromotion>[0];
 type Fx = Parameters<typeof announcePromotion>[2];
 
-test('promotion leaves each carried item in its status, the receipt on its trail, and its notices say nothing of it', async () => {
+test('promotion leaves each carried item in its status and marks it on dev, the receipt on its trail, its notices saying nothing of it', async () => {
   const { item } = await createItem({ title: 'Promoted', status: 'In Review' }, 'fable');
   await appendReceipt({
     id: 'hi_1', repo: 'cowork', line: 'team/comp/dev', desk: 'team/comp/fable', session: 'fable', result: 'accepted',
@@ -57,7 +57,8 @@ test('promotion leaves each carried item in its status, the receipt on its trail
   const back = (await readItem(item.id))!;
   assert.equal(back.status, 'In Review', 'only the person accepting sets Done');
   assert.equal(back.trail.length, 2, 'create, then one line for the promotion');
-  assert.deepEqual([back.trail[1]!.op, back.trail[1]!.note, back.trail[1]!.by], ['edit', 'promotion promo_1; no change', 'lead']);
+  assert.deepEqual([back.trail[1]!.op, back.trail[1]!.note, back.trail[1]!.by], ['edit', 'promotion promo_1; on dev', 'lead']);
+  assert.equal(back.on_dev?.promotion, 'promo_1', 'the promotion signal: on dev');
   assert.equal(notices.length, 2);
   for (const text of notices) assert.ok(!text.includes(item.id), text);
 });

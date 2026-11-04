@@ -15,7 +15,7 @@ import { readLetterHolds } from './tegami.js';
 import { sessionKey } from './session-dir.js';
 import { readTeamRoster, type TeamRoster } from './team-rosters.js';
 import { listSessions } from './tmux.js';
-import { WorkItemMissing, heldIds, holderLabel, listItems, readItem, type WorkItem } from './work-items.js';
+import { WorkItemMissing, handInStage, heldIds, holderLabel, listItems, readItem, type WorkItem } from './work-items.js';
 
 export interface AgentReading {
   holder: string;
@@ -157,16 +157,19 @@ async function teamBoards(team: string, sessions: Array<{ name: string; tags: st
 }
 
 /** A line on the Team workbench's Waiting on you (owner, 2026-11-04; KAN-232): an item, how long
- * it has waited (`since`, from the trail: its last move to In Review, or its last flag raised),
- * and for a flagged one the flag's reason. */
+ * it has waited (`since`: With the lead, from its last hand-in; Ready to accept, from when it
+ * went on dev, or its checkout hand-in; Stuck, from its last flag raised), and for a flagged one
+ * the flag's reason. */
 export interface WaitingItem {
   id: string; title: string; status: string; holder: string; jira: string; since: string; reason: string;
 }
 
 /** What the teams push carries for the Team workbench's Waiting on you and Epics cards: the items
- * In Review (`review`) and the flagged ones (`stuck`), each oldest first, and the Team's Epics
+ * In Review split by the signals (WORK_ITEMS_DESIGN.md 6a) into `lead` (With the lead: handed
+ * in, not on dev since) and `review` (Ready to accept: on dev since the last hand-in, or handed
+ * in from a checkout), the flagged ones (`stuck`), each oldest first, and the Team's Epics
  * (`epics`): those it or its members hold, and the Epic above each item they hold. */
-export interface TeamWork { review: WaitingItem[]; stuck: WaitingItem[]; epics: string[] }
+export interface TeamWork { lead: WaitingItem[]; review: WaitingItem[]; stuck: WaitingItem[]; epics: string[] }
 
 export function teamWork(items: HeldItem[], every: WorkItem[]): TeamWork {
   const byId = new Map(every.map((item) => [item.id, item]));
@@ -176,8 +179,11 @@ export function teamWork(items: HeldItem[], every: WorkItem[]): TeamWork {
     id: item.id, title: item.title, status: item.status, holder: item.holder, jira: item.external.jira?.key ?? '', since, reason,
   });
   const oldest = (a: WaitingItem, b: WaitingItem) => a.since.localeCompare(b.since);
-  const review = held.filter((item) => item.status === 'In Review')
-    .map((item) => line(item, last(item, 'status', 'In Review')?.at ?? item.created.at)).sort(oldest);
+  const handedIn = held.filter((item) => item.status === 'In Review');
+  const handed = (item: WorkItem) => item.hand_ins?.at(-1)?.at ?? last(item, 'status', 'In Review')?.at ?? item.created.at;
+  const lead = handedIn.filter((item) => handInStage(item) === 'lead').map((item) => line(item, handed(item))).sort(oldest);
+  const review = handedIn.filter((item) => handInStage(item) === 'ready')
+    .map((item) => line(item, item.on_dev && item.hand_ins?.at(-1)?.receipt !== null ? item.on_dev.at : handed(item))).sort(oldest);
   const stuck = held.filter((item) => item.flagged).map((item) => {
     const flag = last(item, 'flag', 'true');
     return line(item, flag?.at ?? item.created.at, flag?.note ?? '');
@@ -188,7 +194,7 @@ export function teamWork(items: HeldItem[], every: WorkItem[]): TeamWork {
     for (let steps = 0; at && at.level !== 1 && steps < every.length; steps += 1) at = at.parent ? byId.get(at.parent) : undefined;
     if (at?.level === 1) epics.add(at.id);
   }
-  return { review, stuck, epics: [...epics] };
+  return { lead, review, stuck, epics: [...epics] };
 }
 
 /** An item under an Epic as the Epics workbench draws it (KAN-206): no history, comments or
