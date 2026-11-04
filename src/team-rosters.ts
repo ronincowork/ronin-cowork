@@ -23,7 +23,7 @@ export interface TeamRoster {
   agent_defaults: TeamAgentDefaults;
   /** Work item ids this Team holds. The items live in the work item store. */
   holds: string[];
-  /** Work item ids this Team watches; its lead hears their moves (work-items.ts hearers). */
+  /** Work item ids this Team watches; its lead hears a status change on each (work-items.ts tellWatchers). Its members' items do not make it a watcher. */
   watches: string[];
 }
 

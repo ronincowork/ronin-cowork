@@ -7,7 +7,7 @@ import type express from 'express';
 import {
   WorkItemBadInput, WorkItemMissing, WorkItemRefused,
   addComment, assignItem, attachDoc, connectionOf, createItem, deleteItem, editComment, editItem, flagItem, handoffItem, holderLabel, holdersOf, linkItem, listItems, readItem, resolveId, sendBack, watchItem, watchedIds,
-  didLine, type Acknowledged, type Holder, type JiraPair, type WorkItem,
+  didLine, oneNoticePerCommand, type Acknowledged, type Holder, type JiraPair, type WorkItem,
 } from '../work-items.js';
 import { agentReading, everyItemReading, teamReading } from '../work-items-read.js';
 import { pushTeams } from '../ws/events.js';
@@ -25,7 +25,7 @@ export const acknowledge = (res: express.Response, done: Acknowledged, extra: Re
   res.json({
     ok: true, item: done.item, line: done.line, ...(done.notified?.length ? { notified: done.notified } : {}), ...extra,
     acknowledgement: didLine(done)
-      + `${done.notified?.length ? `\nTold ${done.notified.map((name) => `@${name}`).join(', ')} of the arrival.` : ''}`,
+      + `${done.notified?.length ? `\nTold ${done.notified.map((name) => `@${name}`).join(', ')}.` : ''}`,
   });
 
 export function answerError(res: express.Response, error: unknown): void {
@@ -56,8 +56,15 @@ const jiraOf = (value: unknown): JiraPair | null => {
 };
 
 type Handler = (req: express.Request, res: express.Response) => Promise<unknown>;
+/** Every route is one command: whoever it tells hears once, in one message (work-items.ts
+ * notices), queued before the answer goes, so a caller reading its answer finds them sent. */
 const guarded = (handler: Handler): express.RequestHandler => (req, res) => {
-  handler(req, res).catch((error) => answerError(res, error));
+  let answered: (() => void) | null = null;
+  const json = res.json.bind(res);
+  res.json = ((body: unknown) => { answered = () => void json(body); return res; }) as typeof res.json;
+  oneNoticePerCommand(() => handler(req, res))
+    .catch((error) => { answered = null; res.json = json; answerError(res, error); })
+    .finally(() => { res.json = json; answered?.(); });
 };
 
 export function registerWorkItems(app: express.Express): void {

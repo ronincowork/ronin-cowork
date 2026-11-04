@@ -210,3 +210,82 @@ test('delete: an item from Jira needs --in-jira; every delete emits one event pe
   assert.equal(many.data.ok, true, 'an item made in Ronin needs no flag');
   assert.equal(await items.readItem(mine.id), null);
 });
+
+/* NOTICES (section 4; KAN-239 piece B): the five, nothing else, none twice, one per command. */
+
+test('a call for help goes to the lead of the Team above; a flag cleared tells nobody', async () => {
+  const { item } = await items.createItem({ title: 'stuck work', parent: epic.id, holder: mem }, 'boss');
+  await quiet();
+  await call('POST', `/api/work-items/${item.id}/flag`, { comment: 'Waiting on cap: which API', by: 'mem' });
+  assert.deepEqual(await said(), [['cap', `${item.id} 'stuck work' needs help: Waiting on cap: which API (flagged by mem).`]]);
+  await quiet();
+  await call('POST', `/api/work-items/${item.id}/unflag`, { by: 'mem' });
+  assert.deepEqual(await said(), []);
+});
+
+test('a call for help under an epic an Agent holds goes to that Agent (an epic_lead)', async () => {
+  await seedTegami('elead');
+  const own = (await items.createItem({ title: 'led epic', kind: 'Epic', holder: { kind: 'agent', name: 'elead' } }, 'boss')).item;
+  const { item } = await items.createItem({ title: 'under the epic_lead', parent: own.id, holder: mem }, 'boss');
+  await quiet();
+  await items.flagItem(item.id, true, 'Waiting on elead: scope', 'mem');
+  assert.deepEqual((await said()).map(([to]) => to), ['elead']);
+});
+
+test('a status change reaches a watcher of that item only; not its holder, not the Team of its member', async () => {
+  await seedTegami('eye');
+  await seedTegami('far');
+  const { item } = await items.createItem({ title: 'watched work', parent: epic.id, holder: mem }, 'boss');
+  await items.watchItem(item.id, { kind: 'agent', name: 'eye' }, true);
+  await items.watchItem(epic.id, { kind: 'agent', name: 'far' }, true);
+  await quiet();
+  await call('POST', `/api/work-items/${item.id}/transition`, { status: 'In Progress', by: 'boss' });
+  assert.deepEqual(await said(), [['eye', `${item.id}: status To Do → In Progress by boss.`]]);
+  await items.watchItem(epic.id, { kind: 'agent', name: 'far' }, false);
+});
+
+test('a comment by someone else reaches the Agent working the item, and nobody else', async () => {
+  const { item } = await items.createItem({ title: 'commented work', parent: epic.id, holder: mem }, 'boss');
+  await quiet();
+  await call('POST', `/api/work-items/${item.id}/comment`, { text: 'try the other port', by: 'cap' });
+  assert.deepEqual(await said(), [['mem', `${item.id}: a comment from cap: try the other port`]]);
+  await quiet();
+  await call('POST', `/api/work-items/${item.id}/comment`, { text: 'done that', by: 'mem' });
+  assert.deepEqual(await said(), [], 'nobody hears their own change');
+});
+
+test('nothing else is a notice: create, assign, handoff, put back, edit, attach, link, rename, delete', async () => {
+  await quiet();
+  const made = await call('POST', '/api/work-items', { title: 'quiet one', parent: epic.id, team: 'crew', by: 'boss' });
+  const id = made.data.item.id as string;
+  const other = (await items.createItem({ title: 'quiet two', parent: epic.id }, 'boss')).item;
+  await call('POST', `/api/work-items/${id}/assign`, { session: 'mem', by: 'boss' });
+  await call('POST', `/api/work-items/${id}/handoff`, { session: 'cap', from: 'mem', by: 'boss' });
+  await call('POST', `/api/work-items/${id}/handoff`, { none: true, from: 'cap', by: 'boss' });
+  await call('PUT', `/api/work-items/${id}`, { title: 'quiet one, renamed', by: 'boss' });
+  await call('POST', `/api/work-items/${id}/attach`, { path: 'https://example.com/a.md', by: 'boss' });
+  await call('POST', `/api/work-items/${id}/link`, { type: 'Blocks', to: other.id, by: 'boss' });
+  await items.renameItem(id, 'KAN-902', 'jira:Ronin');
+  await call('DELETE', `/api/work-items/${other.id}`, { by: 'boss' });
+  assert.deepEqual(await said(), []);
+});
+
+test('one notice per person per command: several items, or one reached twice, is one message', async () => {
+  await seedTegami('both');
+  const both = { kind: 'agent', name: 'both' } as const;
+  const a = (await items.createItem({ title: 'pair a', parent: epic.id, holder: both }, 'boss')).item;
+  const b = (await items.createItem({ title: 'pair b', parent: epic.id }, 'boss')).item;
+  await items.watchItem(a.id, both, true);
+  await items.watchItem(b.id, both, true);
+  await quiet();
+  await call('POST', '/api/work-items/many/transition', { ids: [a.id, b.id], status: 'In Progress', by: 'boss' });
+  assert.deepEqual(await said(), [['both', `${a.id}: status To Do → In Progress by boss.\n${b.id}: status To Do → In Progress by boss.`]]);
+});
+
+test('a Ronin item put back tells nobody: only a Jira item goes to traffic_control', async () => {
+  const { item } = await items.createItem({ title: 'put back', parent: epic.id, holder: mem }, 'boss');
+  await quiet();
+  const back = await call('POST', `/api/work-items/${item.id}/handoff`, { none: true, by: 'mem' });
+  assert.equal(back.data.notified, undefined);
+  assert.deepEqual(await said(), []);
+});
