@@ -1081,9 +1081,9 @@ body {
   flex: 1;
 }
 
-/* THE ITEM ISLAND (w271; js/tile-island.js): a capsule of pills in the header, one per held
-   work item. Rest: in the header. Down: dropped over the top of the tile, larger, for a
-   moment. Hidden: the grip alone, lit when something moved. */
+/* THE ITEM ISLAND (w271, w272; js/tile-island.js): a capsule of pills in the header, one per
+   held work item. Rest: in the header. Down (its bar pressed): over the top of the tile,
+   larger, with the legend of what the dots and the flag mean. */
 .tile-head .item-island {
   position: relative;
   z-index: 16; /* over the tile's overlays (.work-overlay is 14) when it comes down */
@@ -1097,16 +1097,38 @@ body {
   border-radius: var(--radius-pill);
   background: var(--surface);
   transform-origin: top center;
-  transition: transform var(--motion-settle) var(--ease), box-shadow var(--motion-settle) var(--ease);
 }
 .tile-head .item-island[hidden] { display: none; }
+/* Down, it leaves the header's row (so the header keeps its height) and hangs centred under it. */
+.tile-head:has(> .item-island[data-state='down']) { position: relative; }
 .tile-head .item-island[data-state='down'] {
-  transform: translateY(calc(var(--row-head) + var(--space-inline))) scale(1.35);
+  position: absolute;
+  top: calc(100% + var(--space-inline));
+  left: 50%;
+  max-width: 90%;
+  flex-wrap: wrap;
+  justify-content: center;
+  border-radius: var(--radius-large);
   border-color: var(--accent);
   box-shadow: var(--shadow-menu);
+  transform: translateX(-50%) scale(1.15);
 }
-.tile-head .item-island[data-state='hidden'] { padding: var(--space-row); }
-.tile-head .item-island[data-state='hidden'] .item-island-pills { display: none; }
+.tile-head .item-island-legend { display: none; }
+.tile-head .item-island[data-state='down'] .item-island-legend {
+  display: flex;
+  flex: 1 0 100%;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-row) var(--space-inline);
+  margin: 0;
+  padding: var(--space-row) 0 0;
+  list-style: none;
+  color: var(--muted);
+  font-size: var(--text-small);
+  white-space: nowrap;
+}
+.item-island-legend .item-pill { display: inline-flex; align-items: center; gap: var(--space-row); }
+.item-island-legend .item-island-flagged[data-flagged='false'] .item-pill-flag { color: var(--muted); }
 .tile-head .item-island-pills { display: flex; align-items: center; gap: var(--space-row); min-width: 0; overflow: hidden; }
 .tile-head .item-island button.item-island-grip {
   width: 14px;
@@ -1117,7 +1139,7 @@ body {
   background: var(--line-3);
 }
 .tile-head .item-island button.item-island-grip:hover { background: var(--accent); }
-.tile-head .item-island button.item-island-grip[data-notify='true'] { background: var(--warn); }
+.tile-head .item-island button.item-island-grip[aria-expanded='true'] { background: var(--accent); }
 .tile-head .item-island button.item-pill {
   display: inline-flex;
   align-items: center;
@@ -1146,7 +1168,6 @@ body {
 .item-pill[data-status='review'] .item-pill-status { background: var(--accent); }
 .item-pill[data-status='done'] .item-pill-status { background: var(--ok); }
 .item-pill .item-pill-flag { color: var(--warn); font-size: var(--text-small); line-height: 1; }
-@media (prefers-reduced-motion: reduce) { .tile-head .item-island { transition: none; } }
 
 .tile-head .sess {
   flex: 0 1 auto;

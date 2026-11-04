@@ -17,16 +17,18 @@ column, or drag its card into the workspace where you want to see it.
 
 In the middle of the header sits a capsule with a pill for every work item the Agent
 holds. A pill has no words: it shows the item's kind with Jira's symbol (Epic, Story, Task,
-Bug, Feature, Subtask), a dot for its status (grey To Do, blue In Progress, amber In Review,
-green Done), and ⚑ when the item is flagged. Hover a pill to read its key, kind, status and
-title. Press it, and the item opens over the tile: its description, priority, holder,
-parent, comments and attachments. Close or Escape returns to the terminal.
+Bug, Feature, Subtask), a dot for its status, and ⚑ when the item is flagged. Hover a pill
+to read its key, kind, status and title.
 
-When an item arrives, moves to another status or is flagged, the island comes down over the
-top of the tile for a few seconds, then goes back into the header. Holding the pointer on it
-keeps it down. The small grip at its left hides the pills; press it again to bring them
-back. Ronin remembers this per Agent on this device. While the pills are hidden, a change
-lights the grip instead of bringing the island down.
+Press a pill and the item opens over the tile: its description, priority, holder, parent,
+comments and attachments. Press the same pill again, or Close, or Escape, to return to the
+terminal.
+
+The island stays in the header; it does not move when an item changes. Press the small bar
+at its left to bring it down over the top of the tile with its legend: each status's dot
+with its name (grey To Do, blue In Progress, amber In Review, green Done) and the flag,
+an outline when nothing held is flagged and solid when something is. Press the bar again,
+or a pill, to put it back in the header.
 
 The island follows the Agent's work record as it changes; nothing needs refreshing.
 

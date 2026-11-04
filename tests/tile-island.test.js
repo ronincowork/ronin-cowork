@@ -1,9 +1,9 @@
-// The item island (w271): a pill per held work item in the tile header, Jira's kind symbol, a
-// status dot, the flag; it drops when an item moves, and its grip hides and recalls it.
+// The item island (w271, w272): a pill per held work item in the tile header, Jira's kind symbol,
+// a status dot, the flag; its bar brings it down with a legend; a pill opens and closes its item.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { kindKey, statusKey, noticeable } from '../public/js/tile-island.js';
+import { kindKey, statusKey, statusLegend } from '../public/js/tile-island.js';
 
 const read = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
 
@@ -21,15 +21,9 @@ test('a status folds to the family its dot is coloured by', () => {
   assert.equal(statusKey('Done'), 'done');
 });
 
-test('the island drops for an item new to the Agent, a moved status or a raised flag, never on the first reading', () => {
-  const item = { id: 'w1', status: 'To Do', flagged: false };
-  const before = new Map([['w1', { status: 'To Do', flagged: false }]]);
-  assert.equal(noticeable(null, [item]), false);
-  assert.equal(noticeable(before, [item]), false);
-  assert.equal(noticeable(before, [{ ...item, status: 'In Progress' }]), true);
-  assert.equal(noticeable(before, [{ ...item, flagged: true }]), true);
-  assert.equal(noticeable(before, [item, { id: 'w2', status: 'To Do', flagged: false }]), true);
-  assert.equal(noticeable(new Map([['w1', { status: 'To Do', flagged: true }]]), [item]), false, 'a lowered flag is not news');
+test('the legend names every status family, in workflow order', () => {
+  assert.deepEqual(statusLegend().map(([key]) => key), ['todo', 'progress', 'review', 'done']);
+  assert.deepEqual(statusLegend().map(([, words]) => words), ['To Do', 'In Progress', 'In Review', 'Done']);
 });
 
 test('the tile header carries the island, fed by the pushed work record, and a pill opens the item over the tile', async () => {
@@ -37,6 +31,10 @@ test('the tile header carries the island, fed by the pushed work record, and a p
   assert.match(head, /key: 'island', widget: \(tile\) => createItemIsland/);
   assert.match(head, /tile\.island\?\.update\?\.\(tile\.session, tile\.tegami\?\.items\)/);
   assert.match(head, /renderItemDetail\(detail, item/);
+  assert.match(head, /isOpen: \(id\) => !!openItemLayer\(tile, id\)/);
   const island = await read('public/js/tile-island.js');
   assert.doesNotMatch(island, /request\(|fetch\(|setInterval/, 'no polling: the push is the only reading');
+  // w272: nothing moves on its own: no timer, no drop on a change, no notify light, no kept hide.
+  assert.doesNotMatch(island, /setTimeout|noticeable|notify|localStorage/);
+  assert.match(island, /if \(isOpen\(item\.id\)\) shut\(item\.id\);/);
 });

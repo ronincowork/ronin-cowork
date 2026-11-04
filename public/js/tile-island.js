@@ -8,10 +8,11 @@
  * title) are its accessible name and its hover help. Pressed, the item's description opens in
  * the full overlay over the tile (tilehead.js openItem → work-items-surface.js renderItemDetail).
  *
- * The island rests in the header. When a held item arrives, moves status or is flagged, it
- * comes down over the top of the tile for a moment and goes back; a pointer on it holds it
- * down. The grip hides it and recalls it (remembered per Agent on this device); hidden, a
- * change lights the grip instead of dropping.
+ * The island rests in the header and moves only when asked (owner, 2026-11-04, w272: "this
+ * assumes people are watching. they are not"): nothing drops or pulses on a change. The bar
+ * brings it down over the top of the tile with the status names beside their dots, so the
+ * colours explain themselves; the bar again, or a pill, puts it back. A pill pressed again
+ * closes its item.
  *
  * The items are the tile's `tegami.items` — the work record on the pushed home row, which the
  * tile re-reads on every push (tile.js refreshTegami). Nothing here asks the server.
@@ -19,9 +20,8 @@
 import { t } from './lexicon.js';
 
 const SVG = 'http://www.w3.org/2000/svg';
-const FLAG_MARK = '⚑'; // work-items-surface.js's mark; not imported: that module reaches the kit, which reaches the tile
-export const DROP_MS = 6000;
-const HIDDEN_KEY = 'ronin.itemIsland.hidden';
+const FLAG_MARK = '⚑';
+const FLAG_OUTLINE = '⚐'; // the flag's silhouette: the legend's, while nothing held is flagged // work-items-surface.js's mark; not imported: that module reaches the kit, which reaches the tile
 
 /** The kind's name, as Jira spells its types, folded to one of the symbols below. */
 export function kindKey(kind) {
@@ -72,23 +72,22 @@ export function kindMark(kind) {
 export const pillWords = (item) => [item.id, item.kind, item.status, item.flagged ? t('work_items.flagged', 'flagged') : '', item.title]
   .filter(Boolean).join(' · ');
 
-/** What moved between two readings: an item new to the Agent, a status moved, a flag raised. */
-export function noticeable(before, items) {
-  if (!before) return false;
-  return items.some((item) => {
-    const was = before.get(item.id);
-    return !was || was.status !== item.status || (!was.flagged && item.flagged);
-  });
+/** The status families in workflow order, with the words the legend shows beside each dot. */
+export function statusLegend() {
+  return [
+    ['todo', t('island.todo', 'To Do')],
+    ['progress', t('island.progress', 'In Progress')],
+    ['review', t('island.review', 'In Review')],
+    ['done', t('island.done', 'Done')],
+  ];
 }
 
-const readHidden = () => { try { return new Set(JSON.parse(localStorage.getItem(HIDDEN_KEY) || '[]')); } catch { return new Set(); } };
-const writeHidden = (set) => { try { localStorage.setItem(HIDDEN_KEY, JSON.stringify([...set])); } catch { /* a private window keeps it for this page only */ } };
-
 /**
- * The island for one tile. `open(item)` is the press; `update(session, items)` is called on
+ * The island for one tile. `open(item)` opens an item over the tile and `shut(id)` closes it;
+ * `isOpen(id)` says whether that item is the one open. `update(session, items)` is called on
  * every reading of the work record and redraws only when what it shows moved.
  */
-export function createItemIsland({ open }) {
+export function createItemIsland({ open, shut, isOpen }) {
   const el = document.createElement('div');
   el.className = 'item-island';
   el.hidden = true;
@@ -100,41 +99,37 @@ export function createItemIsland({ open }) {
   pills.className = 'item-island-pills';
   pills.setAttribute('role', 'group');
   pills.setAttribute('aria-label', t('island.items', 'Work items held'));
-  el.append(grip, pills);
+  const legend = document.createElement('ul');
+  legend.className = 'item-island-legend';
+  for (const [key, words] of statusLegend()) {
+    const entry = document.createElement('li');
+    entry.className = 'item-pill';
+    entry.dataset.status = key;
+    const dot = document.createElement('span');
+    dot.className = 'item-pill-status';
+    entry.append(dot, words);
+    legend.append(entry);
+  }
+  // The flag: its silhouette always, solid when an item held is flagged (owner, 2026-11-04).
+  const flagEntry = document.createElement('li');
+  flagEntry.className = 'item-pill item-island-flagged';
+  const flagMark = Object.assign(document.createElement('span'), { className: 'item-pill-flag', textContent: FLAG_OUTLINE });
+  flagEntry.append(flagMark, t('island.flagged', 'Flagged'));
+  legend.append(flagEntry);
+  el.append(grip, pills, legend);
 
   let session = null;
-  let before = null; // id -> { status, flagged }: the last reading, for what moved
   let drawn = '';
   let items = [];
-  let timer = null;
-  let holding = false;
-  const hidden = () => readHidden().has(session);
 
-  const settle = () => {
-    const hide = hidden();
-    if (hide) el.dataset.state = 'hidden';
-    else if (el.dataset.state === 'hidden') el.dataset.state = 'rest';
-    if (!hide) delete grip.dataset.notify;
-    grip.setAttribute('aria-expanded', String(!hide));
-    grip.title = hide ? t('island.recall', 'Show the work items this Agent holds') : t('island.hide', 'Hide the work items');
+  const place = (down) => {
+    el.dataset.state = down ? 'down' : 'rest';
+    grip.setAttribute('aria-expanded', String(down));
+    grip.title = down ? t('island.up', 'Put the work items back in the header') : t('island.down', 'Show the work items with what their colours mean');
     grip.setAttribute('aria-label', grip.title);
   };
-  const rise = () => { clearTimeout(timer); timer = null; if (el.dataset.state === 'down') el.dataset.state = 'rest'; };
-  const later = () => { clearTimeout(timer); timer = setTimeout(() => { if (!holding) rise(); }, DROP_MS); };
-  const drop = () => {
-    if (hidden()) { grip.dataset.notify = 'true'; return; }
-    el.dataset.state = 'down';
-    later();
-  };
-  el.addEventListener('pointerenter', () => { holding = true; });
-  el.addEventListener('pointerleave', () => { holding = false; if (el.dataset.state === 'down') later(); });
-  grip.addEventListener('click', () => {
-    const set = readHidden();
-    if (set.has(session)) set.delete(session); else set.add(session);
-    writeHidden(set);
-    rise();
-    settle();
-  });
+  place(false);
+  grip.addEventListener('click', () => place(el.dataset.state !== 'down'));
 
   function pill(item) {
     const node = document.createElement('button');
@@ -149,25 +144,28 @@ export function createItemIsland({ open }) {
     dot.className = 'item-pill-status';
     node.append(kindMark(item.kind), dot);
     if (item.flagged) node.append(Object.assign(document.createElement('span'), { className: 'item-pill-flag', textContent: FLAG_MARK }));
-    node.addEventListener('click', () => { rise(); open(items.find((one) => one.id === item.id) || item); });
+    // One press opens the item, the same press again closes it.
+    node.addEventListener('click', () => {
+      place(false);
+      if (isOpen(item.id)) shut(item.id);
+      else open(items.find((one) => one.id === item.id) || item);
+    });
     return node;
   }
 
   function update(name, list) {
     const next = Array.isArray(list) ? list : [];
-    if (name !== session) { session = name; before = null; drawn = ''; rise(); }
+    if (name !== session) { session = name; drawn = ''; place(false); }
     items = next;
-    const signature = JSON.stringify(next.map((item) => [item.id, item.kind, item.status, !!item.flagged, item.title]));
-    const moved = noticeable(before, next);
-    before = new Map(next.map((item) => [item.id, { status: item.status, flagged: !!item.flagged }]));
     el.hidden = !session || !next.length;
-    settle();
-    if (signature !== drawn) {
-      drawn = signature;
-      pills.replaceChildren(...next.map(pill));
-    }
-    if (moved && !el.hidden) drop();
+    const flagged = next.some((item) => item.flagged);
+    flagEntry.dataset.flagged = String(flagged);
+    flagMark.textContent = flagged ? FLAG_MARK : FLAG_OUTLINE;
+    const signature = JSON.stringify(next.map((item) => [item.id, item.kind, item.status, !!item.flagged, item.title]));
+    if (signature === drawn) return;
+    drawn = signature;
+    pills.replaceChildren(...next.map(pill));
   }
 
-  return { el, update, destroy: () => clearTimeout(timer) };
+  return { el, update };
 }

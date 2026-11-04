@@ -35,11 +35,14 @@ const HEADER = () => {
 
   { grow: true },
 
-  // THE ITEM ISLAND (owner, 2026-11-04; w271): a pill per work item this Agent holds — Jira's
-  // kind symbol, a status dot, ⚑ when flagged, no text. It comes down over the tile when an
-  // item moves and goes back; its grip hides and recalls it. A pill opens the item over the
-  // tile (openItem below). Read off the work record on every push: js/tile-island.js.
-  { key: 'island', widget: (tile) => createItemIsland({ open: (item) => void openItem(tile, item) }),
+  // THE ITEM ISLAND (owner, 2026-11-04; w271, w272): a pill per work item this Agent holds —
+  // Jira's kind symbol, a status dot, ⚑ when flagged, no text. Its bar brings it down with
+  // what the colours mean. A pill opens its item over the tile (openItem below) and closes it
+  // pressed again. Read off the work record on every push: js/tile-island.js.
+  { key: 'island', widget: (tile) => createItemIsland({
+      open: (item) => void openItem(tile, item),
+      isOpen: (id) => !!openItemLayer(tile, id),
+      shut: (id) => openItemLayer(tile, id)?.remove() }),
     read: (tile) => { tile.island?.update?.(tile.session, tile.tegami?.items); return ''; } },
 
   { grow: true },
@@ -256,9 +259,11 @@ async function openWorkRecord(tile) {
 
 /** One held item over the tile, as the Work Items reader draws it (work-items-surface.js):
  *  its title, kind, status and flag, its description, its facts, comments and attachments. */
+const openItemLayer = (tile, id) => [...tile.body.querySelectorAll(':scope > .work-overlay')].find((layer) => layer.dataset.item === id) || null;
 async function openItem(tile, item) {
   const { renderItemDetail } = await import('./work-items-surface.js');
   await overTile(tile, item.jira || item.id, (box) => {
+    box.dataset.item = item.id;
     const detail = document.createElement('div');
     detail.className = 'tile-item-detail';
     renderItemDetail(detail, item, { holder: tile.session || '', openAttachment: (path) => tile.openDoc(path), history: false });
