@@ -43,7 +43,7 @@ const HEADER = () => {
       open: (item) => void openItem(tile, item),
       isOpen: (id) => !!openItemLayer(tile, id),
       shut: (id) => openItemLayer(tile, id)?.remove() }),
-    read: (tile) => { tile.island?.update?.(tile.session, tile.tegami?.items); return ''; } },
+    read: (tile) => { tile.island?.update?.(tile.session, islandItems(tile.tegami)); return ''; } },
 
   { grow: true },
 
@@ -92,6 +92,11 @@ const HEADER = () => {
   ];
   return rows;
 };
+
+/** What the island shows: the items the Agent holds, then, on a lead, the Epics its Teams hold
+ *  (owner, 2026-11-04, w279: the Epic generally sits on the Team). A Team's other items are not
+ *  the lead's unless it holds them itself. */
+export const islandItems = (letter) => [...(letter?.items || []), ...(letter?.teamEpics || [])];
 
 /** Is this row live, and if not, why not? '' when live. */
 function quietReason(row, tile) {

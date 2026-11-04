@@ -2,7 +2,7 @@ import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { sessionDir, sessionKey } from './session-dir.js';
 import { tegamiPath } from './tegami.js';
-import { agentReading } from './work-items-read.js';
+import { agentReading, type AgentReading } from './work-items-read.js';
 import { jiraLink, type WorkItem } from './work-items.js';
 import { mandate, type Mandate } from './agent-defaults.js';
 
@@ -14,6 +14,9 @@ export interface Tegami {
   holds: string[];
   /** The items held, each with its status, and a paired one's Jira link: what the tile and the roster show. */
   items: Array<WorkItem & { jira_url?: string }>;
+  /** The Epics the Teams this Agent leads hold, and not the Agent itself: a lead's item island
+   * shows them beside its own items (owner, 2026-11-04, w279). Empty for an Agent leading none. */
+  teamEpics: Array<WorkItem & { jira_url?: string }>;
   /** The record's own documents (dropped on it, or added holding no item) and every held item's attachments. */
   docs: string[];
   chip: { text: string; gate: boolean };
@@ -60,6 +63,16 @@ export function chipFor(items: WorkItem[]): { text: string; gate: boolean } {
   return { text: [...named, ...more].join(' · '), gate: items.some((item) => item.flagged) };
 }
 
+const linked = (item: WorkItem): WorkItem & { jira_url?: string } => ({ ...item, ...(jiraLink(item) ? { jira_url: jiraLink(item) } : {}) });
+
+/** The Epics (level 1) its led Teams hold, once each, leaving out those the Agent holds itself. */
+export function teamEpics(reading: AgentReading): Array<WorkItem & { jira_url?: string }> {
+  const own = new Set(reading.items.map((item) => item.id));
+  const seen = new Map<string, WorkItem>();
+  for (const team of reading.teams) for (const item of team.items) if (item.level === 1 && !own.has(item.id)) seen.set(item.id, item);
+  return [...seen.values()].map(linked);
+}
+
 export async function readTegami(name: string): Promise<Tegami | null> {
   try {
     const key = await sessionKey(name);
@@ -94,7 +107,8 @@ export async function readTegami(name: string): Promise<Tegami | null> {
           })
         : [],
       holds: reading.items.map((item) => item.id),
-      items: reading.items.map((item) => ({ ...item, ...(jiraLink(item) ? { jira_url: jiraLink(item) } : {}) })),
+      items: reading.items.map(linked),
+      teamEpics: teamEpics(reading),
       docs: await readDocs([...reading.attachments, ...(await dropped(key))]),
       chip: chipFor(reading.items),
       quietSince: stat.mtimeMs,

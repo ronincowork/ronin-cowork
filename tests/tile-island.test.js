@@ -25,8 +25,10 @@ test('a status folds to the family its dot is coloured by', () => {
 test('the tile header carries the island, fed by the pushed work record, and a pill opens the item over the tile', async () => {
   const head = await read('public/js/tilehead.js');
   assert.match(head, /key: 'island', widget: \(tile\) => createItemIsland/);
-  assert.match(head, /tile\.island\?\.update\?\.\(tile\.session, tile\.tegami\?\.items\)/);
+  assert.match(head, /tile\.island\?\.update\?\.\(tile\.session, islandItems\(tile\.tegami\)\)/);
   assert.match(head, /renderItemDetail\(detail, item/);
+  // w279: a lead's island adds the Epics its Teams hold after its own items.
+  assert.match(head, /islandItems = \(letter\) => \[\.\.\.\(letter\?\.items \|\| \[\]\), \.\.\.\(letter\?\.teamEpics \|\| \[\]\)\]/);
   assert.match(head, /isOpen: \(id\) => !!openItemLayer\(tile, id\)/);
   const island = await read('public/js/tile-island.js');
   assert.doesNotMatch(island, /request\(|fetch\(|setInterval/, 'no polling: the push is the only reading');

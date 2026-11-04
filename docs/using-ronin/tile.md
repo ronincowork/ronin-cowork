@@ -30,6 +30,10 @@ row. Each row reads: the kind's symbol, the status in words (To Do, In Progress,
 Done), its dot (grey, blue, amber, green), and the flag: solid when the item is flagged,
 an outline when it is not. Press the bar again, or a pill, to put it back in the header.
 
+On a Team lead, the island also shows the Epics its Teams hold, after the items the lead
+holds itself: an Epic generally sits on the Team. A Team's other items (Tasks, Stories, Bugs,
+Subtasks) appear on the lead's island only when the lead holds them itself.
+
 The island follows the Agent's work record as it changes; nothing needs refreshing.
 
 ## The menu
