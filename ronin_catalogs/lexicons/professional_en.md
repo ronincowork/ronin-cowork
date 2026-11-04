@@ -217,7 +217,7 @@ nothing paints exactly this.
 - **jira.token_help:** Kept by Ronin with Services; never shown again.
 - **jira.expiry:** Token expiry
 - **jira.expiry_help:** No call returns it: the date from the Review page.
-- **jira.connect_warning:** Connect puts on the space, assigned to the account, what Ronin’s items says: nothing (Off), epics and everything under them, or every work item. Then, in Jira, assign one work item to the account and press Sync now.
+- **jira.connect_warning:** Connect puts on the space, labelled ronin-do and unassigned, what Ronin’s items says: nothing (Off), epics and everything under them, or every work item. Then, in Jira, assign one work item to the account or label it ronin-do, and press Sync now.
 - **jira.connection:** Connection
 - **jira.account:** Account
 - **jira.renew:** The token expires in {n} days. Make a new one (steps 3–4), paste it here, then revoke the old one.
@@ -264,7 +264,7 @@ nothing paints exactly this.
 - **jira.how_sync_text:** always reads: the space checked, one read, what is waiting sent, and the deleted-item check.
 - **jira.items_n:** {n} items · {p} paired
 - **jira.items_connected:** On Jira, the key; not yet, goes up if How it runs sends it, else stays in Ronin.
-- **jira.items_preview:** What Connect will put on the space, assigned to the account, under How it runs as set now.
+- **jira.items_preview:** What Connect will put on the space, labelled ronin-do and unassigned, under How it runs as set now.
 - **jira.open_items:** Open
 - **jira.open_pairs:** Open
 - **jira.off:** Services › Jira is off for this Desk. Turn it on in Installations › Ronin Services, then come back here.

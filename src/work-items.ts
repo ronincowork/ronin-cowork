@@ -32,7 +32,7 @@ import { listSessions } from './tmux.js';
 import { emitItemChanged } from './sockets.js';
 
 export const ITEM_LEVELS = [1, 0, -1] as const;
-export const TRAIL_OPS = ['create', 'assign', 'handoff', 'release', 'move', 'status', 'edit', 'comment', 'flag', 'attach', 'link', 'holder-ended', 'rename'] as const;
+export const TRAIL_OPS = ['create', 'assign', 'handoff', 'release', 'move', 'status', 'edit', 'comment', 'flag', 'attach', 'link', 'holder-ended', 'rename', 'delete'] as const;
 
 export type ItemLevel = typeof ITEM_LEVELS[number];
 export type TrailOp = typeof TRAIL_OPS[number];
@@ -72,6 +72,8 @@ export function setSpaceNames(campaign: string, names: SpaceNames | null): void 
   if (names) SPACES.set(campaign, names); else SPACES.delete(campaign);
 }
 export const spaceNames = (campaign: string): SpaceNames => SPACES.get(campaign) ?? JIRA_NAMES;
+/** Whether the bridge has named this campaign's space: a Jira-connected campaign. */
+export const jiraConnected = (campaign: string): boolean => SPACES.has(campaign);
 /** A paired item's Jira issue address, derived from its space's site; none when unpaired or the site is unnamed. */
 export function jiraLink(item: WorkItem): string | undefined {
   const site = spaceNames(item.campaign_id).site;
@@ -102,6 +104,23 @@ const levelOfKind = (names: SpaceNames, kind: string): ItemLevel => {
   return names.kinds.find((one) => one.name === kind)!.level;
 };
 
+/** THE SHAPES JIRA REFUSES (WORK_ITEMS_DESIGN.md section 5; JIRA_RONIN_BRIDGE.md section 7, the
+ * live failures): on a Jira-connected campaign an item may not take a parent or kind Jira's
+ * hierarchy would refuse, so Ronin and Jira never part. An epic sits under nothing; a level-0
+ * item (Task, Story, Bug, Feature) under an epic or nothing; a Subtask only under a level-0
+ * item; and a paired item never changes kind across levels, nor does a paired child made to
+ * follow. Jira's own changes (by jira:*) are Jira's shape already and are not checked. */
+function jiraShape(campaign: string, by: string, item: { id: string; kind: string; level: number; paired: boolean; was?: number }, parent: WorkItem | null): void {
+  if (!jiraConnected(campaign) || by.startsWith('jira:')) return;
+  const refuse = (why: string) => { throw new WorkItemRefused(`Jira would refuse this, so Ronin does too: ${why}`); };
+  const named = item.id ? `${item.id} (${item.kind})` : `a ${item.kind}`;
+  if (item.paired && item.was !== undefined && item.was !== item.level) refuse(`${named} is on Jira, and Jira cannot change a work item's kind across levels; make a new item instead.`);
+  const under = parent ? `${parent.id} is a ${parent.kind}` : 'it has no parent';
+  if (item.level === 1 && parent) refuse(`an epic goes under nothing; ${under}.`);
+  if (item.level === 0 && parent && parent.level !== 1) refuse(`${named} goes only under an epic or nothing; ${under}.`);
+  if (item.level === -1 && parent?.level !== 0) refuse(`a Subtask goes only under a Task, Story, Bug or Feature; ${under}.`);
+}
+
 export interface WorkItem {
   id: string;
   campaign_id: string;
@@ -127,6 +146,8 @@ export interface WorkItem {
   jiraFields?: Record<string, string>;
   trail: TrailLine[];
   created: { at: string; by: string };
+  /** The last hand-in: the Agent that handed it in, and when. Send back returns it there. */
+  handed_in?: { by: string; at: string };
 }
 
 /** What every write answers: the item as it now is, the line it appended, and who was told
@@ -168,10 +189,38 @@ async function save(item: WorkItem): Promise<void> {
   await rename(tmp, target);
 }
 
+/** EVERY ID AN ITEM HAS HAD still finds it (WORK_ITEMS_DESIGN.md section 5): a w id renamed to
+ * its Jira key is an alias, read from the item's "rename" trail lines, so nothing is stored
+ * twice. Found aliases are remembered; one that no longer leads to a file is looked up again. */
+const aliases = new Map<string, string>();
+async function aliasOf(id: string): Promise<string | null> {
+  const known = aliases.get(id);
+  if (known && existsSync(fileOf(known))) return known;
+  aliases.clear();
+  let names: string[];
+  try { names = await readdir(dir()); } catch { return null; }
+  for (const name of names) {
+    if (!name.endsWith('.json') || !isItemId(name.slice(0, -5))) continue;
+    const item = await readFile(path.join(dir(), name), 'utf8').then((text) => JSON.parse(text) as WorkItem).catch(() => null);
+    for (const line of item?.trail ?? []) if (line.op === 'rename' && line.from) aliases.set(line.from, item!.id);
+  }
+  return aliases.get(id) ?? null;
+}
+
+/** The id an item goes by now, given any id it has had; a refusal when none matches. */
+export async function resolveId(id: string): Promise<string> {
+  const given = String(id ?? '').trim();
+  if (!isItemId(given)) throw new WorkItemMissing(`"${given}" is not a work item id; ids look like w12 or KAN-65.`);
+  if (existsSync(fileOf(given))) return given;
+  const now = await aliasOf(given);
+  if (!now) throw new WorkItemMissing(`No work item ${given}.`);
+  return now;
+}
+
 async function load(id: string): Promise<WorkItem> {
-  if (!isItemId(id)) throw new WorkItemMissing(`"${id}" is not a work item id; ids look like w12 or KAN-65.`);
+  const at = await resolveId(id);
   try {
-    return JSON.parse(await readFile(fileOf(id), 'utf8')) as WorkItem;
+    return JSON.parse(await readFile(fileOf(at), 'utf8')) as WorkItem;
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === 'ENOENT') throw new WorkItemMissing(`No work item ${id}.`);
     throw error;
@@ -416,6 +465,7 @@ export async function createItemUnlocked(input: NewItem, by: string): Promise<Ac
   if (agent && item.level !== 1 && !(await underEpic(parent))) throw new WorkItemRefused('A new item needs an epic above it: name one with --parent <id>.');
   await follow(item, item.parent, item.level);
   item.kind = named || kindAt(names, item.level);
+  if (!input.jira) jiraShape(campaign_id, by, { id: '', kind: item.kind, level: item.level, paired: false }, parent);
   const list = holder ? await listFor(holder) : null;
   await save(item);
   if (list) { await list.set([...list.holds, item.id]); await ackHolds([holder ?? null], by); }
@@ -450,6 +500,13 @@ export function editItem(id: string, edit: ItemEdit, by: string, note?: string):
     const current = await load(id);
     const names = spaceNames(current.campaign_id);
     if (edit.status !== undefined) oneOf('status', edit.status.trim(), names.statuses);
+    // A move to In Review by the Agent holding the item is a hand-in from a checkout.
+    const only = Object.entries(edit).filter(([, value]) => value !== undefined).map(([key]) => key);
+    if (only.join() === 'status' && edit.status!.trim() === REVIEW && current.status !== REVIEW
+      && (await holdersOf(current.id)).some((holder) => holder.kind === 'agent' && holder.name === by)
+      && (await listSessions()).some((session) => session.name === by)) {
+      return handInUnlocked(current.id, by, { desk: false, note });
+    }
     if (edit.priority !== undefined) oneOf('priority', edit.priority.trim(), names.priorities);
     const reparent = edit.parent !== undefined && edit.parent !== current.parent;
     const under = reparent && edit.parent ? await load(edit.parent) : null;
@@ -458,6 +515,13 @@ export function editItem(id: string, edit: ItemEdit, by: string, note?: string):
     const level = named ? levelOfKind(names, named) : under ? levelUnder(under) : current.level;
     const children = level !== current.level || reparent ? await follow(current, parent, level) : [];
     const kind = named || (level === current.level ? current.kind : kindAt(names, level));
+    if (reparent || named) {
+      jiraShape(current.campaign_id, by, { id: current.id, kind, level, paired: Boolean(current.external.jira), was: current.level }, reparent ? under : current.parent ? await readItem(current.parent) : null);
+      const paired = children.find(({ child }) => child.external.jira);
+      if (paired && jiraConnected(current.campaign_id) && !by.startsWith('jira:')) {
+        throw new WorkItemRefused(`Jira would refuse this, so Ronin does too: ${paired.child.id} is on Jira under ${current.id} and would have to change kind across levels.`);
+      }
+    }
     // The bridge storing the Jira key alone is not news: the rename that follows is told.
     let paired = false;
     let unchanged = false;
@@ -492,6 +556,109 @@ export function editItem(id: string, edit: ItemEdit, by: string, note?: string):
     await settle(children, done.item, by);
     return reparent ? { ...done, notified: await announceArrival(done.item, by) } : done;
   });
+}
+
+const REVIEW = 'In Review';
+
+/** A status change told to the watchers of that item, not of an item above it (section 4):
+ * each Agent watching it, and the lead of each Team watching it, once each, never `except`. */
+async function tellWatchers(item: WorkItem, text: string, except: string[]): Promise<string[]> {
+  const names = new Set<string>();
+  for (const letter of await listLetterHolds()) if (letter.watches.includes(item.id)) names.add(letter.name);
+  const rosters = (await listTeamRosters()).filter((roster) => roster.watches.includes(item.id)).map((roster) => roster.name);
+  if (rosters.length) for (const session of await listSessions()) if (session.leads.some((led) => rosters.includes(led))) names.add(session.name);
+  for (const name of except) names.delete(name);
+  for (const name of names) await enqueueMessage(name, text, 'house', 'Work items');
+  return [...names];
+}
+const WORKING = 'In Progress';
+
+/** The Team a hand-in gives the item to: the hander's Team that holds the item or an item
+ * above it; else the hander's one Team; else the Team holding the nearest item above; else
+ * none, and the item stays where it is. */
+async function handInTeam(item: WorkItem, session: string): Promise<string | null> {
+  const mine = (await listSessions()).find((one) => one.name === session)?.tags ?? [];
+  const lists = (await heldLists()).filter((list) => list.holder.kind === 'team');
+  const above = await ancestry(item);
+  const holding = (id: string) => lists.filter((list) => list.holds.includes(id)).map((list) => list.holder.name);
+  for (const id of above) { const team = holding(id).find((name) => mine.includes(name)); if (team) return team; }
+  const rostered = mine.filter((name) => lists.some((list) => list.holder.name === name));
+  if (rostered.length === 1) return rostered[0]!;
+  for (const id of above) { const team = holding(id)[0]; if (team) return team; }
+  return null;
+}
+
+/** THE HAND-IN (WORK_ITEMS_DESIGN.md section 3, step 4): the item moves to In Review, is given
+ * to the Team (the hander comes off, the Team goes on) and records who handed it in, in one
+ * trail line. A desk's hand-in is told by the desk's own message (desks/lead.ts); a checkout's
+ * (a move to In Review by its holder) tells the Team's lead from here. An item already In
+ * Review and on its Team gets a line that changes nothing and tells nobody. */
+async function handInUnlocked(given: string, session: string, opts: { desk: boolean; note?: string }): Promise<Acknowledged> {
+  const item = await load(given);
+  const id = item.id;
+  oneOf('status', REVIEW, spaceNames(item.campaign_id).statuses);
+  const team = await handInTeam(item, session);
+  const held = await holdersOf(id);
+  const moving = Boolean(team) && !held.some((holder) => holder.kind === 'team' && holder.name === team);
+  if (item.status === REVIEW && !moving) return appendTrail(id, session, () => ({ op: 'edit', note: [opts.note, 'no change'].filter(Boolean).join('; ') }), () => false);
+  if (team) {
+    for (const list of await heldLists()) {
+      if (list.holder.kind === 'agent' && list.holder.name === session && list.holds.includes(id)) await list.set(list.holds.filter((one) => one !== id));
+    }
+    const target = await listFor({ kind: 'team', name: team });
+    if (!target.holds.includes(id)) await target.set([...target.holds, id]);
+    await ackHolds([{ kind: 'team', name: team }], session);
+  }
+  const before = item.status;
+  const done = await appendTrail(id, session, (it) => {
+    it.status = REVIEW;
+    it.handed_in = { by: session, at: new Date().toISOString() };
+    return { op: 'status', from: before, to: REVIEW, note: [opts.note, `handed in by ${session}${team ? `, given to team:${team}` : ''}`].filter(Boolean).join('; ') };
+  }, () => false);
+  const leads = team ? (await listSessions()).filter((one) => one.leads.includes(team) && one.name !== session).map((one) => one.name) : [];
+  if (!opts.desk) {
+    for (const lead of leads) await enqueueMessage(lead, `${id} '${item.title}' was handed in by ${session}; it waits on you to accept or send back (Team workbench, Waiting on you).`, 'house', 'Work items');
+  }
+  await tellWatchers(done.item, `${id}: status ${before} → ${REVIEW} by ${session}.`, [session, ...leads]);
+  return done;
+}
+
+export const handInItem = (id: string, session: string, opts: { desk: boolean; note?: string }) => withIssuer(() => handInUnlocked(id, session, opts));
+
+/** SEND BACK (section 3, step 5): the item goes to In Progress with the comment, back to the
+ * Agent that handed it in, which is told; if that Agent has ended it stays with the Team, whose
+ * lead sees it on Epics. One trail line. */
+export function sendBack(given: string, words: string | undefined, by: string): Promise<Acknowledged> {
+  return withIssuer(async () => {
+    const item = await load(given);
+    const id = item.id;
+    oneOf('status', WORKING, spaceNames(item.campaign_id).statuses);
+    const text = String(words ?? '').trim();
+    const handed = item.handed_in?.by;
+    const agent = handed && (await listSessions()).some((one) => one.name === handed) ? handed : null;
+    let to = labels(await holdersOf(id));
+    if (agent) {
+      await ackHolds(await takeOffEveryList(id), by);
+      const target = await listFor({ kind: 'agent', name: agent });
+      if (!target.holds.includes(id)) await target.set([...target.holds, id]);
+      to = `agent:${agent}`;
+    }
+    const before = item.status;
+    const done = await appendTrail(id, by, (it) => {
+      it.status = WORKING;
+      if (text) it.comments.push({ by: by.trim() || 'unknown', at: new Date().toISOString(), text });
+      return { op: 'status', from: before, to: WORKING, note: `sent back to ${to}${text ? `: ${text}` : ''}` };
+    }, () => false);
+    if (agent && agent !== by) await enqueueMessage(agent, `${id} '${item.title}' was sent back to you by ${by}${text ? `: ${text}` : ''}. It is In Progress and yours again.`, 'house', 'Work items');
+    return done;
+  });
+}
+
+/** What session_end stops for (section 3, step 7): the items an Agent holds In Progress or To Do. */
+export async function unfinishedHolds(session: string): Promise<WorkItem[]> {
+  const letter = await readLetterHolds(await sessionKey(session)).catch(() => null);
+  const items = await Promise.all((letter?.holds ?? []).map((id) => readItem(id)));
+  return items.filter((item): item is WorkItem => Boolean(item) && [spaceNames(item!.campaign_id).statuses[0], WORKING].includes(item!.status));
 }
 
 /** The bridge, in-process, sets a paired item's Jira fields; no route writes them. With a note
@@ -564,10 +731,10 @@ export async function attachDoc(id: string, target: string, by: string, remove =
 
 /** Jira's issue link, by the space's link type name (Blocks: this item blocks `to`). Kept on
  * this item; a read of the other shows it inward. */
-export async function linkItem(id: string, type: string, to: string, by: string, remove = false): Promise<Acknowledged> {
+export async function linkItem(id: string, type: string, other: string, by: string, remove = false): Promise<Acknowledged> {
   return withIssuer(async () => {
     oneOf('a link', type, spaceNames((await load(id)).campaign_id).links);
-    await load(to);
+    const to = (await load(other)).id;
     return appendTrail(id, by, (item) => {
       const same = (link: Link) => link.type === type && link.to === to;
       if (remove) item.links = item.links.filter((link) => !same(link));
@@ -577,12 +744,17 @@ export async function linkItem(id: string, type: string, to: string, by: string,
   });
 }
 
-/** Jira's delete. The item goes, and with it its subtasks (as Jira deletes an issue's
- * subtasks); any other child is left with no parent (as an epic's children are). Links to
- * it go, every holder lets go of it, and each holding Agent is told. */
-export function deleteItem(id: string, by: string): Promise<{ deleted: string[]; orphaned: string[] }> {
+/** Jira's delete (WORK_ITEMS_DESIGN.md 5a). The item goes, and with it its subtasks (as Jira
+ * deletes an issue's subtasks); any other child is left with no parent (as an epic's children
+ * are). Links to it go and every holder lets go of it. An item that came from Jira
+ * (created.by jira:<user>), or a subtask that did, goes only with `inJira`: the refusal names
+ * the flag. THE DELETE EVENT (agreed with the bridge, the only Jira writer): before any file
+ * goes, one emitItemChanged per deleted item, the named item first, then its subtasks; the
+ * item as it was, and a line { op: 'delete', by: the deleter, to: 'in-jira' when asked,
+ * from: the named id on a subtask taken with it }. */
+export function deleteItem(given: string, by: string, opts: { inJira?: boolean } = {}): Promise<{ deleted: string[]; orphaned: string[] }> {
   return withIssuer(async () => {
-    await load(id);
+    const id = (await load(given)).id;
     const all = await listItems();
     const deleted: string[] = [];
     const collect = (at: string): void => {
@@ -590,6 +762,10 @@ export function deleteItem(id: string, by: string): Promise<{ deleted: string[];
       for (const child of all.filter((other) => other.parent === at && other.level === -1 && !deleted.includes(other.id))) collect(child.id);
     };
     collect(id);
+    const fromJira = deleted.map((at) => all.find((item) => item.id === at)!).filter((item) => item.created.by.startsWith('jira:'));
+    if (fromJira.length && !opts.inJira) {
+      throw new WorkItemRefused(`${fromJira.map((item) => `${item.id} came from Jira (made by ${item.created.by})`).join('; ')}: it is not deleted. To delete it in Ronin and in Jira, run item delete ${id} --in-jira.`);
+    }
     const orphaned: string[] = [];
     for (const other of all.filter((item) => !deleted.includes(item.id))) {
       const orphan = other.parent !== null && deleted.includes(other.parent);
@@ -609,6 +785,10 @@ export function deleteItem(id: string, by: string): Promise<{ deleted: string[];
       await ackHolders(other, lines[0]!);
     }
     for (const at of deleted) {
+      const item = all.find((one) => one.id === at)!;
+      emitItemChanged({ item, line: lineOf(by, 'delete', { to: opts.inJira ? 'in-jira' : undefined, from: at === id ? undefined : id }) });
+    }
+    for (const at of deleted) {
       await ackHolds(await takeOffEveryList(at), by);
       await rm(fileOf(at));
     }
@@ -621,9 +801,10 @@ export function deleteItem(id: string, by: string): Promise<{ deleted: string[];
  * id, each child's parent, every link pointing at it, and each holder's holds; the item gets one
  * trail line, "renamed from <old>", and its holding Agents are told. Trails, comments,
  * receipts and the promotion ledger stay as written. */
-export function renameItem(from: string, to: string, by: string): Promise<Acknowledged> {
+export function renameItem(was: string, to: string, by: string): Promise<Acknowledged> {
   return withIssuer(async () => {
-    const item = await load(from);
+    const item = await load(was);
+    const from = item.id;
     item.id = to;
     for (const other of await listItems()) {
       if (other.id === from || (other.parent !== from && !other.links.some((link) => link.to === from))) continue;
@@ -720,8 +901,8 @@ async function ackHolds(holders: Array<Holder | null>, by: string): Promise<void
   }
 }
 
-export async function assignUnlocked(id: string, to: Holder, by: string, note?: string): Promise<Acknowledged> {
-  await load(id);
+export async function assignUnlocked(given: string, to: Holder, by: string, note?: string): Promise<Acknowledged> {
+  const id = (await load(given)).id;
   const target = await listFor(to);
   if (!target.holds.includes(id)) await target.set([...target.holds, id]);
   await ackHolds(to.kind === 'agent' ? [] : [to], by);
@@ -732,9 +913,10 @@ export const assignItem = (id: string, to: Holder, by: string, note?: string) =>
 
 /** The giver comes off and the receiver goes on in the same issuer step. `to` null is how
  * a holder lets go; any other holders remain. */
-export function handoffItem(id: string, from: Holder, to: Holder | null, by: string, note?: string): Promise<Acknowledged> {
+export function handoffItem(given: string, from: Holder, to: Holder | null, by: string, note?: string): Promise<Acknowledged> {
   return withIssuer(async () => {
-    const item = await load(id);
+    const item = await load(given);
+    const id = item.id;
     const source = await listFor(from);
     if (source.holds.includes(id)) await source.set(source.holds.filter((held) => held !== id));
     if (to) {
@@ -749,9 +931,9 @@ export function handoffItem(id: string, from: Holder, to: Holder | null, by: str
 }
 
 /** Park: the id leaves every list. It is found again under its parent, or unassigned. */
-export function releaseItem(id: string, by: string, note?: string): Promise<Acknowledged> {
+export function releaseItem(given: string, by: string, note?: string): Promise<Acknowledged> {
   return withIssuer(async () => {
-    await load(id);
+    const id = (await load(given)).id;
     const from = await takeOffEveryList(id);
     await ackHolds(from, by);
     return appendTrail(id, by, () => ({ op: 'release', from: labels(from), to: 'none', note }));
@@ -764,8 +946,10 @@ export function releaseItem(id: string, by: string, note?: string): Promise<Ackn
  * under it (hearers). */
 
 /** Watch adds the id to the watcher's watches; unwatch takes it off (a deleted item too). */
-export function watchItem(id: string, watcher: Holder, watch: boolean): Promise<{ id: string; watches: string[] }> {
+export function watchItem(given: string, watcher: Holder, watch: boolean): Promise<{ id: string; watches: string[] }> {
   return withIssuer(async () => {
+    // Unwatch takes off a deleted item's id too, so only a watch needs the item to exist.
+    const id = watch ? await resolveId(given) : await resolveId(given).catch(() => given);
     const list = await watchListFor(watcher);
     const kept = list.watches.filter((watched) => watched !== id);
     const watches = watch ? [...kept, id] : kept;
@@ -801,15 +985,16 @@ async function rewriteWatches(change: (watches: string[]) => string[]): Promise<
 }
 
 /** What the act did, read from its trail line alone: "w39 moved under w40, level -1",
- * "w9 moved to In Progress", "w9 is held by agent:x", "w12 was created". Status, kind and level
- * appear only when the act changed them. Every acknowledgement is this one line. */
+ * "w9 moved to In Progress", "w9 is held by agent:x". Status, kind and level appear only when
+ * the act changed them. Every acknowledgement is this one line. A create says it first, for
+ * scripts and Agents to read: "created w12 under KAN-239", or "created w12 with no parent". */
 export function didLine({ item, line }: Acknowledged): string {
+  if (line.op === 'create') return `created ${item.id} ${item.parent ? `under ${item.parent}` : 'with no parent'}`;
   const what = line.op === 'status' ? `moved to ${line.to}`
     : line.op === 'move' ? (line.to === 'none' ? `moved to no parent, ${line.note}` : `moved under ${line.to}, ${line.note}`)
       : line.op === 'assign' ? `is held by ${line.to}`
         : line.op === 'handoff' ? (line.to === 'none' ? `${line.from} let go` : `was handed from ${line.from} to ${line.to}`)
         : line.op === 'release' || line.op === 'holder-ended' ? (line.to && line.to !== 'none' ? `went back to ${line.to}` : 'is held by nobody')
-          : line.op === 'create' ? 'was created'
           : line.op === 'rename' ? `was renamed from ${line.from}`
               : line.op === 'comment' ? (line.from ? `comment ${line.from} was edited` : `has a comment from ${line.by}: ${line.note}`)
               : line.op === 'flag' ? `is ${line.to === 'true' ? 'flagged' : 'unflagged'}${line.note ? `: ${line.note}` : ''}`
@@ -819,35 +1004,43 @@ export function didLine({ item, line }: Acknowledged): string {
   return `${item.id} ${what}`;
 }
 
-/** An Agent going away takes its lists with it: it watches nothing, and each item it held gets
- * one holder-ended line and goes back to its Team when its letter names exactly one, else to
- * nobody, found again under its parent or unassigned. A Done item goes to nobody, and nobody is
- * told: Done work needs no holder. Restore does not reclaim. */
+/** An Agent going away takes its lists with it (section 3, step 7): it watches nothing, and
+ * each item it held goes to nobody with one holder-ended line, unfinished work sitting on its
+ * epic for the lead, and nobody is told: Epics shows it. Restore does not reclaim. */
 export function releaseHolder(session: string, key: string, how: string): Promise<Acknowledged[]> {
   return withIssuer(async () => {
     const letter = await readLetterHolds(key);
     if (letter?.watches.length) await writeLetterWatches(key, []);
     if (!letter?.holds.length) return [];
-    const team = letter.teams.length === 1 ? await readTeamRoster(letter.teams[0]!) : null;
-    const released: Acknowledged[] = [];
-    // Off the list first, so the ended Agent is not acked for its own release.
     await writeLetterHolds(key, []);
+    const released: Acknowledged[] = [];
     for (const id of letter.holds) {
-      const item = await readItem(id);
-      if (!item) continue;
-      const line = lineOf('ronin', 'holder-ended', { from: `agent:${session}`, to: 'none', note: how });
-      if (item.status === 'Done') {
-        item.trail.push(line);
-        await save(item);
-        emitItemChanged({ item, line });
-        released.push(answer(item, line));
-        continue;
-      }
-      if (team) await writeTeamRoster(team.name, { holds: [...new Set([...(await readTeamRoster(team.name))!.holds, id])] }, team.campaign_id);
-      released.push(await appendTrail(id, 'ronin', () => ({ op: 'holder-ended', from: line.from, to: team ? `team:${team.name}` : 'none', note: how })));
+      if (!(await readItem(id))) continue;
+      released.push(await appendTrail(id, 'ronin', () => ({ op: 'holder-ended', from: `agent:${session}`, to: 'none', note: how }), () => false));
     }
     return released;
   });
+}
+
+/** A crash: an Agent whose session is gone without an end through Ronin still holds its items.
+ * A sweep finds each record holding items whose session is not live, and on the second sweep in
+ * a row that finds it so, releases it as an ending would. A sweep that sees no live session at
+ * all (tmux unreadable) does nothing. */
+const missing = new Map<string, number>();
+export async function releaseEndedHolders(): Promise<string[]> {
+  const live = new Set((await listSessions().catch(() => [])).map((one) => one.name));
+  if (!live.size) return [];
+  const ended: string[] = [];
+  for (const letter of await listLetterHolds()) {
+    if (!letter.holds.length || live.has(letter.name)) { missing.delete(letter.name); continue; }
+    const seen = (missing.get(letter.name) ?? 0) + 1;
+    missing.set(letter.name, seen);
+    if (seen < 2) continue;
+    await releaseHolder(letter.name, letter.key, 'session gone');
+    missing.delete(letter.name);
+    ended.push(letter.name);
+  }
+  return ended;
 }
 
 /** The Jira bridge's word to an item's holding Agents, when a change of theirs was not sent. */

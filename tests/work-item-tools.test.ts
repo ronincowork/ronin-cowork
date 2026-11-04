@@ -83,7 +83,7 @@ async function oneLine(id: string, args: string[], as = 'probe') {
   assert.match(out, new RegExp(`^${id} `), 'the acknowledgement is the line of what the act did');
   return after.at(-1)!;
 }
-const made = (out: string) => /^(w\d+) was created/m.exec(out)![1]!;
+const made = (out: string) => /^created (w\d+) /m.exec(out)![1]!;
 
 test('item acts, each naming its item, one trail line each', async () => {
   const epic = made(await tool('item', ['create', '--title', 'Overall', '--kind', 'Epic']));
@@ -279,4 +279,20 @@ test('work-record read and read --json take a reading over 128 KB, the most one 
   const json = await run('work-record', ['read', '--json'], 'big_probe');
   assert.equal(json.status, 0, json.stderr);
   assert.equal((JSON.parse(json.stdout) as { items: unknown[] }).items.length, 40);
+});
+
+test('item takes several ids where an act allows them, --text in search, and --in-jira on delete', async () => {
+  const epic = made(await tool('item', ['create', '--title', 'Many epic', '--kind', 'Epic']));
+  const created = await tool('item', ['create', '--title', 'Many one', '--objective', 'Done looks like: a quokka', '--parent', epic]);
+  assert.match(created.split('\n')[0]!, new RegExp(`^created w\\d+ under ${epic}$`), 'create says so on line 1');
+  const one = made(created);
+  const two = made(await tool('item', ['create', '--title', 'Many two', '--parent', epic]));
+  const out = await tool('item', ['transition', one, two, 'In Progress']);
+  assert.deepEqual(out.trim().split('\n'), [`${one} moved to In Progress`, `${two} moved to In Progress`]);
+  await tool('item', ['watch', one, two]);
+  assert.deepEqual((await readLetterHolds('probe'))!.watches.slice(-2), [one, two]);
+  const found = JSON.parse(await tool('item', ['search', '--text', 'QUOKKA'])) as { items: Array<{ id: string }> };
+  assert.deepEqual(found.items.map((item) => item.id), [one]);
+  assert.equal((await run('item', ['delete', one, '--in-jra'])).status, 2, 'a mistyped flag is refused');
+  assert.deepEqual((await tool('item', ['delete', one, two, '--in-jira'])).trim().split('\n'), [`${one} was deleted`, `${two} was deleted`]);
 });

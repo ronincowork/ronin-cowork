@@ -6,8 +6,9 @@
  * WAITING ON YOU (`createTeamWaiting`): the Team's items that wait on the person, in two groups,
  * each oldest first, each line with how long it has waited. Ready to accept: the items In Review;
  * Accept moves one to Done, Send back asks for a comment, puts it on the item and moves it to In
- * Progress. Stuck: the flagged items, each with its flag's reason; Reply puts a comment on the
- * item, which its holders hear. Every change is the work-item routes' transition and comment.
+ * Progress, back to the Agent that handed it in (to the Team if it has ended). Stuck: the
+ * flagged items, each with its flag's reason; Reply puts a comment on the item, which its
+ * holders hear. Every change is the work-item routes' transition, send-back and comment.
  *
  * EPICS (`createTeamEpics`): the Team's Epics. One opens straight onto its record
  * (`createEpicRecord`); several are a phalanx of Epic stones (`createEpicStones`), a pressed one
@@ -81,10 +82,8 @@ export function createTeamWaiting({ team }) {
     const send = pill(label, async () => {
       const text = words.value.trim();
       send.disabled = true;
-      const steps = [
-        ...(text ? [{ path: 'comment', json: { text } }] : []),
-        ...(kind === 'send_back' ? [{ path: 'transition', json: { status: 'In Progress' } }] : []),
-      ];
+      // Send back is one act: In Progress with the comment, back to the Agent that handed it in.
+      const steps = kind === 'send_back' ? [{ path: 'send-back', json: { text } }] : text ? [{ path: 'comment', json: { text } }] : [];
       if (await write(item.id, steps)) { drafts.delete(key); composing = null; paint(true); }
       send.disabled = false;
     });

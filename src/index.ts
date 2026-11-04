@@ -80,7 +80,7 @@ import { registerSetupRuntime } from './routes/setup-runtime-api.js';
 import { registerSetupProgress } from './routes/setup-progress-api.js';
 import { registerMikaContext } from './mika-context.js';
 import { migrateSopsToBehaviours } from './behaviour-store-migration.js';
-import { migrateItems } from './work-items.js';
+import { migrateItems, releaseEndedHolders } from './work-items.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(__dirname, '..');
@@ -92,6 +92,13 @@ if (isEntryPoint) await migrateSopsToBehaviours();
 if (isEntryPoint) await migrateItems().then((done) => {
   if (done.migrated.length) console.log(`[work-items] ${done.migrated.length} of ${done.before} items took Jira's names`);
 }).catch((error) => console.error(`[work-items] migration: ${(error as Error).message}`));
+// An Agent that vanished without an end through Ronin (a crash) gives up its items like any
+// ending (WORK_ITEMS_DESIGN.md section 3, step 7): a sweep every five minutes, two misses in a row.
+if (isEntryPoint) setInterval(() => {
+  void releaseEndedHolders().then((ended) => {
+    if (ended.length) console.log(`[work-items] released the items of ended ${ended.join(', ')}`);
+  }).catch((error) => console.error(`[work-items] sweep: ${(error as Error).message}`));
+}, 5 * 60_000).unref();
 const isBoxInstance = isEntryPoint
   && process.env.NODE_ENV === 'production'
   && process.env.RONIN_TEST_RUNNER !== '1';

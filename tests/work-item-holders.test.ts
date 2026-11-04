@@ -8,6 +8,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import { existsSync } from 'node:fs';
 
 const temp = await fs.mkdtemp(path.join(os.tmpdir(), 'ronin-holders-'));
 // Every store under private roots, whoever runs this file: holder scans and arrival
@@ -227,7 +228,10 @@ test('renameItem moves the id: the file, a child\'s parent, a link to it, every 
 
   const done = await items.renameItem(item.id, 'KAN-65', 'jira:Ronin');
   assert.equal(done.item.id, 'KAN-65');
-  assert.equal(await items.readItem(item.id), null, 'the old file is gone');
+  assert.equal(existsSync(path.join(process.env.RONIN_WORK_ITEMS_DIR!, `${item.id}.json`)), false, 'the old file is gone');
+  assert.equal((await items.readItem(item.id))!.id, 'KAN-65', 'every id an item has had still finds it');
+  assert.equal((await items.editItem(item.id, { title: 'made in Ronin' }, 'lead')).item.id, 'KAN-65', 'an act by the old id acts on the item');
+  assert.equal((await items.createItem({ title: 'under the old id', parent: item.id }, 'lead')).item.parent, 'KAN-65', '--parent by the old id');
   assert.equal((await items.readItem('KAN-65'))!.title, 'made in Ronin');
   assert.equal((await items.readItem(child.id))!.parent, 'KAN-65');
   assert.deepEqual((await items.readItem(other.id))!.links, [{ type: 'Blocks', to: 'KAN-65' }]);
@@ -235,7 +239,7 @@ test('renameItem moves the id: the file, a child\'s parent, a link to it, every 
   assert.deepEqual(await listsHolding(item.id), []);
   const trail = (await items.readItem('KAN-65'))!.trail;
   assert.equal(trail.filter((line) => line.op === 'rename').length, 1);
-  assert.equal(trail.at(-1)!.note, `renamed from ${item.id}`);
+  assert.equal(trail.find((line) => line.op === 'rename')!.note, `renamed from ${item.id}`);
   assert.ok((await items.listItems()).some((one) => one.id === 'KAN-65'), 'a key is listed');
   const told = (await listQueuedMessages()).find((message) => message.target === 'renamer');
   assert.equal(told?.text, `${item.id} is now KAN-65 (its Jira key); nothing to do.`);
@@ -448,20 +452,21 @@ test('a lead of several teams names one; without it the create is refused naming
 });
 
 /* AN AGENT ENDS — its items go back to its one Team, Done ones to nobody with nobody told. */
-test('an ending member\'s open items go back to its Team; its Done items to nobody, silently', async (t) => {
+test('an ending member\'s items go to nobody, on their epic, and nobody is told (crash, archive, Shut down)', async (t) => {
   await withLead(t);
   const { listQueuedMessages, dismissMessages } = await import('../src/message-queue.js');
   await seedTegami('leaver', { repo: '', branch: '' }, [{ team: 'crew', team_role: 'member', objective: '' }]);
   const leaver = { kind: 'agent', name: 'leaver' } as const;
-  const open = (await items.createItem({ title: 'still open', holder: leaver }, 'boss')).item;
+  const epic = (await items.createItem({ title: 'leaver epic', kind: 'Epic', holder: team }, 'boss')).item;
+  const open = (await items.createItem({ title: 'still open', parent: epic.id, holder: leaver }, 'boss')).item;
   const done = (await items.createItem({ title: 'finished', status: 'Done', holder: leaver }, 'boss')).item;
   await dismissMessages((await listQueuedMessages()).map((message) => message.id));
   const released = await items.releaseHolder('leaver', 'leaver', 'session ended');
-  assert.deepEqual(released.map(({ item, line }) => [item.id, line.op, line.to]), [[open.id, 'holder-ended', 'team:crew'], [done.id, 'holder-ended', 'none']]);
-  assert.deepEqual(await listsHolding(open.id), ['team:crew']);
+  assert.deepEqual(released.map(({ item, line }) => [item.id, line.op, line.to]), [[open.id, 'holder-ended', 'none'], [done.id, 'holder-ended', 'none']]);
+  assert.deepEqual(await listsHolding(open.id), []);
   assert.deepEqual(await listsHolding(done.id), []);
-  assert.ok((await readTeamRoster('crew'))!.holds.includes(open.id));
-  assert.deepEqual((await listQueuedMessages()).map((message) => message.text).filter((text) => text.includes(done.id)), [], 'the Done item tells nobody');
+  assert.equal((await items.readItem(open.id))!.parent, epic.id, 'it sits on its epic');
+  assert.deepEqual((await listQueuedMessages()).map((message) => message.text), [], 'nobody is told');
 });
 
 test('a lead\'s reading shows its Team\'s items: what the Team holds and watches, and what each member holds and watches', async (t) => {

@@ -25,8 +25,8 @@ was off goes when it comes back on:
   Off, they stay in Ronin.
 - **Ronin's items** (up, Ronin → Jira) is a pick of three: **Off** sends nothing made in Ronin;
   **Under an epic** sends epics and everything under them, while items with no epic stay in
-  Ronin; **All** sends every item. Sent items are created on Jira, assigned to the account,
-  and their changes go out. Widening it sends what newly qualifies, parents first. An item
+  Ronin; **All** sends every item. Sent items are created on Jira, labelled ronin-do and
+  unassigned (the Assignee is the Jira people's), and their changes go out. Widening it sends what newly qualifies, parents first. An item
   that came from Jira is never created there again.
 - **Sync now** always reads: the space checked, one read, what is waiting sent, and the check
   for items gone from Jira.
@@ -103,9 +103,9 @@ not its name: `KAN` in `KAN-1`),
 to fix, keeps the token with Services (it is never shown again), and runs the first sync.
 Until every check passes the campaign is not connected: the panel shows these fields again,
 filled with what you entered (the token aside), and what to fix above them.
-It first puts on the space, assigned to the account, what **Ronin's items** says: nothing,
-the epics and everything under them, or every work item. Then assign one work
-item to the account in Jira and press **Sync now**.
+It first puts on the space, labelled ronin-do and unassigned, what **Ronin's items** says:
+nothing, the epics and everything under them, or every work item. Then, in Jira, assign one
+work item to the account or label it ronin-do, and press **Sync now**.
 
 ## Connected
 

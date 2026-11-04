@@ -95,7 +95,7 @@ test('delete, as Jira: its subtasks go with it, an epic\'s children are left wit
 
 test('status, kind and priority are the space\'s names exactly, the rest refused naming the set; the kind sets the level', async () => {
   const bug = await items.createItem({ title: 'Crash', kind: 'Bug' }, 'probe');
-  assert.equal(items.didLine(bug), `${bug.item.id} was created`);
+  assert.equal(items.didLine(bug), `created ${bug.item.id} with no parent`);
   assert.equal(bug.item.priority, 'Medium', 'a new item holds the default priority');
   assert.equal(items.didLine(await items.editItem(bug.item.id, { kind: 'Story' }, 'probe')), `${bug.item.id} changed: kind Story`);
   await assert.rejects(items.createItem({ title: 'Odd', kind: 'bug' }, 'probe'), /kind is one of Epic, Task, Story, Bug, Feature, Subtask; not "bug"/);
@@ -240,7 +240,7 @@ test('routes acknowledge with the item and the appended line; refusals answer 40
     const made = await call('POST', base, { title: 'Routed', objective: 'o', kind: 'Task', by: 'probe' });
     assert.equal(made.status, 200);
     const id = made.data.item.id as string;
-    assert.equal(made.data.acknowledgement, `${id} was created`);
+    assert.equal(made.data.acknowledgement, `created ${id} with no parent`);
     assert.ok((await call('GET', `${base}?holder=none`)).data.items.some((item: { id: string }) => item.id === id), 'holder none: the items nobody holds');
     assert.equal((await call('PUT', `${base}/${id}`, { jira: 'RON-1', by: 'probe' })).status, 400, 'jira is { id, key } or null');
     await call('PUT', `${base}/${id}`, { jira: { id: '10001', key: 'RON-1' }, by: 'probe' });

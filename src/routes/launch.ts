@@ -27,7 +27,6 @@ import { count } from '../counts.js';
 import { listTeamRosters } from '../team-rosters.js';
 import { announceTeamChanges } from './wipeboards-api.js';
 import { checkoutAt, deriveTeams, parkBrief, seedTegami, teamChanged, withAxes, writeConfiguration, type SessionWithAxes } from '../tegami.js';
-import { createItem } from '../work-items.js';
 import { callerOf } from './work-items-api.js';
 import { collectBirthLines, collectRowFields } from '../sockets.js';
 import { broadcastEvent, listening, pushTeams } from '../ws/events.js';
@@ -511,12 +510,9 @@ export function registerLaunch(app: express.Express): LaunchControl {
       const birthLines = await collectBirthLines(resolved.name, true);
       const shelved = [launch.parked ? resolved.brief : '', birthLines].filter(Boolean).join('\n');
       if (!shelved) return;
-      const at = await parkBrief(resolved.name, shelved);
-      // A brief that never reached the Agent is one work item the owner sees on the tile,
-      // held by the Agent, its objective saying where the brief is.
-      if (at && launch.parked) {
-        await createItem({ title: `${resolved.name}'s parked brief`, holder: { kind: 'agent', name: resolved.name }, objective: 'Your brief could not be handed to this agent at launch, so it is parked in brief.md beside this session. Read it there.' }, 'ronin');
-      }
+      // A brief that never reached the Agent is parked in brief.md beside the session; no
+      // work item is made for it (WORK_ITEMS_DESIGN.md section 1: items only for work).
+      await parkBrief(resolved.name, shelved);
     })().catch((e) => console.error(`[ronin] spawn ${resolved.name}:`, e));
   };
   const launchJob: express.RequestHandler = (req, res) => launch(req, res);

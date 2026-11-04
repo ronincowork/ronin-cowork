@@ -41,7 +41,7 @@ import { readAgentComposition } from '../agent-composition.js';
 import { configurationSends, updateConfiguration } from '../agent-configuration.js';
 import { mandate } from '../agent-defaults.js';
 import { emitSessionEnd } from '../sockets.js';
-import { releaseHolder } from '../work-items.js';
+import { releaseHolder, unfinishedHolds } from '../work-items.js';
 import { resumeAgentArgv } from '../agents.js';
 import { listTeamRosters } from '../team-rosters.js';
 import { assertSameCampaignRoot, assertSameCampaignTeams } from '../campaign-scope.js';
@@ -379,6 +379,13 @@ export function registerSessions(app: express.Express): void {
     const name = await sessionOfPane(pane);
     if (!name) return res.status(404).json({ error: `No session owns pane ${pane}.` });
     try {
+      // session_end stops while the Agent holds work In Progress or To Do, and names the one
+      // command that puts it back (WORK_ITEMS_DESIGN.md section 3, step 7). Shut down Agent
+      // and the other endings do not stop: Ronin puts the items back itself.
+      const held = await unfinishedHolds(name);
+      if (held.length) {
+        throw new ShutdownRefused([{ desk: 'work items', reasons: [`you hold ${held.map((item) => `${item.id} (${item.status})`).join(', ')}`], next_action: `put them back on their epic: item handoff ${held.map((item) => item.id).join(' ')} none` }]);
+      }
       const closed = await performAgentShutdown(name, () => {});
       res.json({ ok: true, session: name, closed });
       console.log(`[ronin] harakiri: ${name} (pane ${pane}); closed ${closed.length} desk(s)`);
