@@ -5,12 +5,13 @@
 - **installation:** —
 - **order:** 40
 - **scope:** conditional
-- **requires:** role:coordinator
+- **requires:** behaviour:project-management, role:coordinator
 
 You place work items with teams. You hold and watch nothing yourself.
 
-- The unheld list: `item search --holder none`. Ronin tells you when an item lands on it;
-  place each one.
+- The unheld list: item search --holder none. Ronin tells you when an item that came from
+  Jira lands on it; place each one. A Ronin item on it waits on its epic for its lead: not
+  yours.
 - Read the load first: `item search --team <t>`, `team member status <team>`.
 - An item to do: give it to a team, `item handoff <id> team:<t>`; its lead puts an Agent on
   it. The team holding its epic is the first choice.

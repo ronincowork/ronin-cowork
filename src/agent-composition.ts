@@ -52,7 +52,9 @@ async function currentRoleAt(dir: string, born: BehaviourRow[], leads: string[])
     if (['coworker', 'lead', 'epic_lead', 'coordinator'].includes(String(role))) return role as AgentRole;
   } catch {}
   const names = new Set(born.map((row) => row.name));
-  return names.has('traffic_control') ? 'coordinator' : names.has('epic_agent') ? 'epic_lead' : leads.length ? 'lead' : 'coworker';
+  // The Steerco cells, by their names since KAN-243 and before (traffic_control, epic_agent).
+  return names.has('project-management-traffic-control') || names.has('traffic_control') ? 'coordinator'
+    : names.has('project-management-epic-lead') || names.has('epic_agent') ? 'epic_lead' : leads.length ? 'lead' : 'coworker';
 }
 export async function writeCurrentRole(name: string, role: AgentRole): Promise<void> {
   return writeCurrentRoleAt(sessionDir(await sessionKey(name)), role);

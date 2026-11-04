@@ -361,6 +361,7 @@ export async function resolveReading(form: SpawnForm, facts: LaunchFacts) {
         lead: !!form.team_lead && !!form.team,
         cowork,
         new_owner: !(await listTeamRosters()).some((roster) => roster.campaign_id === (campaign?.id ?? '') && roster.state !== 'archived'),
+        behaviours: cowork ? cascade.selected : [],
       })).map(async (row) => row.book === 'mandates'
         ? { ...row, file: await ownMandates(row.file, resolveMandate(form, facts), name) }
         : row))

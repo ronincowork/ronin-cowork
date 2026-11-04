@@ -422,11 +422,14 @@ test('team_lead is explicit and applies its conditional Behavior at birth', asyn
   assert.ok(!ordinary.birth_reading.some((file) => file.endsWith('/conditional/team-lead.md')));
 });
 
-test('an explicit Role applies its conditional Behavior in the first birth reading', async () => {
-  const epic = await resolveForm(commonsForm({ role: 'epic_lead' }), new Set());
-  assert.ok(epic.birth_reading.some((file) => file.endsWith('/conditional/epic_agent.md')));
-  const coordinator = await resolveForm(commonsForm({ role: 'coordinator' }), new Set());
-  assert.ok(coordinator.birth_reading.some((file) => file.endsWith('/conditional/traffic_control.md')));
+test('an explicit Role applies its conditional Behavior in the first birth reading, project management switched on', async () => {
+  const epic = await resolveForm(commonsForm({ role: 'epic_lead', behaviours: ['project-management'] }), new Set());
+  assert.ok(epic.birth_reading.some((file) => file.endsWith('/conditional/project-management-epic-lead.md')));
+  assert.ok(epic.birth_reading.some((file) => file.endsWith('/selected/project-management.md')), 'the Everyone cell with it');
+  const coordinator = await resolveForm(commonsForm({ role: 'coordinator', behaviours: ['project-management'] }), new Set());
+  assert.ok(coordinator.birth_reading.some((file) => file.endsWith('/conditional/project-management-traffic-control.md')));
+  const off = await resolveForm(commonsForm({ role: 'coordinator' }), new Set());
+  assert.ok(!off.birth_reading.some((file) => file.includes('project-management')), 'switched off: no project-management cell');
 });
 
 test('Mika house mechanics resolve explicitly', async () => {

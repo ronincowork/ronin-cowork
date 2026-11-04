@@ -4,6 +4,7 @@
 # Usage: team roster write <team> [--objective <text>] [--role <team_role>] [--root <project_root>]
 #                              [--repos a,b] [--branch <b>] [--wipeboard <board>]
 #                              [--state active|archived] [--campaign-defaults] [--add s1,s2]
+#                              [--select b1,b2] [--deselect b1,b2]
 #
 # ONE UPSERT (owner, 2026-08-26). A team with no roster is CREATED from whatever you
 # name; a team with one is UPDATED in the fields you name and untouched elsewhere.
@@ -26,8 +27,11 @@ Usage:
   team roster write <team> [--objective <text>] [--role <role>] [--root <path>]
                         [--repos a,b] [--branch <branch>] [--wipeboard <board>]
                         [--state active|archived] [--campaign-defaults] [--add s1,s2]
+                        [--select b1,b2] [--deselect b1,b2]
 
 Create a Team by naming one that has no record; otherwise only named fields change.
+--select adds selected behaviours to the Team's list and --deselect takes them off; the rest
+of the list, and its required ones, stay (project-management is the work-items switch).
 --add adds live Agents and never removes members. To move an Agent between Teams, add
 the destination membership, then remove the old Team on that Team's page in the
 coworkspace. Set or change its lead with `session_set <agent> --team <team> --lead`.
@@ -43,7 +47,7 @@ die() { printf '%s\n' "$1" >&2; exit "${2:-4}"; }
 NAME="${1:-}"
 [ -n "$NAME" ] && [ "${NAME#-}" = "$NAME" ] || die "usage: team roster write <team> [options]. Run team --help." 2
 shift
-OBJ="" ROLE="" ROOT="" REPOS="" BRANCH="" BOARD="" STATE="" ADD="" CAMPAIGN_DEFAULTS=""
+OBJ="" ROLE="" ROOT="" REPOS="" BRANCH="" BOARD="" STATE="" ADD="" CAMPAIGN_DEFAULTS="" SELECT="" DESELECT=""
 while [ $# -gt 0 ]; do
   case "$1" in
     --objective) OBJ="${2:-}"; shift 2 ;;
@@ -55,6 +59,8 @@ while [ $# -gt 0 ]; do
     --state) STATE="${2:-}"; shift 2 ;;
     --campaign-defaults) CAMPAIGN_DEFAULTS=1; shift ;;
     --add) ADD="${2:-}"; shift 2 ;;
+    --select) SELECT="${2:-}"; shift 2 ;;
+    --deselect) DESELECT="${2:-}"; shift 2 ;;
     *) die "BAD-ARG: $1. Run team --help." 2 ;;
   esac
 done
@@ -63,8 +69,14 @@ done
 ronin_connect || exit $?
 
 BY=$(ronin_session_me 2>/dev/null) || BY=""
+# --select / --deselect change the Team's behaviour list as it stands: read it first.
+CURRENT='{}'
+if [ -n "$SELECT$DESELECT" ]; then
+  CURRENT=$(curl -sS -m 20 "${RONIN_CURL[@]+"${RONIN_CURL[@]}"}" "$url/api/team-rosters/$NAME" 2>/dev/null) || die "UNREACHABLE: Ronin did not answer at $url" 5
+fi
 body=$(BY="$BY" NAME="$NAME" OBJ="$OBJ" ROLE="$ROLE" ROOT="$ROOT" REPOS="$REPOS" BRANCH="$BRANCH" \
-       BOARD="$BOARD" STATE="$STATE" ADD="$ADD" CAMPAIGN_DEFAULTS="$CAMPAIGN_DEFAULTS" python3 - <<'PY'
+       BOARD="$BOARD" STATE="$STATE" ADD="$ADD" CAMPAIGN_DEFAULTS="$CAMPAIGN_DEFAULTS" \
+       SELECT="$SELECT" DESELECT="$DESELECT" CURRENT="$CURRENT" python3 - <<'PY'
 import json, os
 e = os.environ
 b = {"name": e["NAME"]}
@@ -75,6 +87,13 @@ for k, v in (("objective", "OBJ"), ("team_role", "ROLE"), ("project_root", "ROOT
 for k, v in (("repos", "REPOS"), ("session_names", "ADD")):
     if e[v]: b[k] = [t.strip() for t in e[v].split(",") if t.strip()]
 if e["CAMPAIGN_DEFAULTS"]: b["campaign_defaults"] = True
+if e["SELECT"] or e["DESELECT"]:
+    try: now = (json.loads(e["CURRENT"]) or {}).get("behaviours") or {}
+    except Exception: now = {}
+    names = lambda v: [t.strip() for t in v.split(",") if t.strip()]
+    selected = [n for n in (now.get("selected") or []) if n not in names(e["DESELECT"])]
+    selected += [n for n in names(e["SELECT"]) if n not in selected]
+    b["behaviours"] = {"selected": selected, "required": now.get("required") or []}
 print(json.dumps(b))
 PY
 ) || die "BAD-ARG: could not build the request" 2

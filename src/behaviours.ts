@@ -55,6 +55,8 @@ export interface BehaviourFacts {
   cowork: boolean;
   /** The Campaign has no Team yet: the owner has not launched their first one. */
   new_owner: boolean;
+  /** The selected behaviours this Agent receives (Agent → Team → Campaign): `behaviour:<name>`. */
+  behaviours?: readonly string[];
 }
 
 const conditionHolds = (requirement: string, facts: BehaviourFacts): boolean => {
@@ -65,6 +67,7 @@ const conditionHolds = (requirement: string, facts: BehaviourFacts): boolean => 
   if (kind === 'lead') return facts.lead;
   if (kind === 'cowork') return facts.cowork;
   if (kind === 'new_owner') return facts.new_owner;
+  if (kind === 'behaviour') return (facts.behaviours ?? []).includes(value);
   return false;
 };
 
