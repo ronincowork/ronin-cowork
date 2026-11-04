@@ -120,6 +120,15 @@
   .epic-comment small { color: var(--muted); font-size: var(--text-small); }
   .epic-comment p { margin: var(--space-row) 0 0; font-size: var(--text-body); line-height: var(--leading-body); }
   .epic-empty { margin: 0; color: var(--muted); font-size: var(--text-body); }
+  /* WAITING ON YOU AND EPICS on the Team workbench (KAN-232): the Epic card format, a line's title plain
+     (not a button), its wait in tabular figures, a comment box on --inset; the Team's Epics card is flush
+     (createSurface's flush): the stones or record inside keep their own inset, and nothing here reaches into the kit. */
+  .team-epics .epics-records, .team-epics .epics-record { flex: 1 1 auto; min-height: 0; border: 0; }
+  .team-waiting-title { color: var(--fg-strong); font-size: var(--text-label); font-weight: var(--weight-strong); line-height: var(--leading-tight); overflow-wrap: anywhere; }
+  .team-waiting-age { font-variant-numeric: tabular-nums; }
+  .team-waiting-compose { gap: var(--space-row); }
+  .team-waiting-words { min-width: 0; resize: vertical; border: 0; border-radius: var(--radius-hair); background: var(--inset); color: var(--fg); padding: var(--space-row) var(--space-control); font: inherit; }
+  .team-waiting-act.is-send { align-self: flex-start; font-weight: var(--weight-strong); }
   .wi-meta, .wi-notice, .wi-when { color: var(--muted); }
   .wi-facts { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--space-row) var(--space-inline); }
   .wi-facts dt { color: var(--muted); }

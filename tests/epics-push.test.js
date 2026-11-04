@@ -66,7 +66,8 @@ test('epicsPush: every Epic whole, and every item under one slim, with its Epic 
 test('an Epic pressed opens its worksurface in Tilespace 2: statuses in one row, items as cards, no rail (KAN-206)', async () => {
   const [surface, catalog, doors] = await Promise.all(['public/js/epics-surface.js', 'public/js/workbench-catalog.js', 'public/js/door-workbenches.js']
     .map((path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8')));
-  assert.match(surface, /action: \(\) => workbench\?\.place\?\.\(WORKBENCH_TYPES\.epicRecord, 'workspace2', \{ key: epic\.id \}\)/, 'a pressed Epic opens in Tilespace 2');
+  assert.match(surface, /seat = 'workspace2'/, 'a pressed Epic opens in Tilespace 2 unless its bench names another seat');
+  assert.match(surface, /action: \(\) => workbench\?\.place\?\.\(WORKBENCH_TYPES\.epicRecord, typeof seat === 'function' \? seat\(\) : seat, \{ key: epic\.id \}\)/);
   assert.doesNotMatch(surface, /renderDetail|items: statusesOf/, 'no side rail: the stones do not go down a level');
   assert.match(surface, /const shown = new Set\(\['In Review'\]\)/, 'In Review is out on arrival');
   assert.match(surface, /if \(!at\.length && !isOut\) continue;/, 'an empty status is not shown');
@@ -79,4 +80,21 @@ test('an Epic pressed opens its worksurface in Tilespace 2: statuses in one row,
   assert.deepEqual(statusesOf([{ status: 'Blocked' }]), ['To Do', 'In Progress', 'In Review', 'Done', 'Blocked']);
   assert.deepEqual(holderOfItem({ holder: 'team:system' }), { kind: 'team', name: 'system' });
   assert.equal(holderOfItem({ holder: '' }), null);
+});
+
+test('teamWork: the Team’s items In Review and flagged, oldest first, with their wait and flag reason, and its Epics (KAN-232)', async () => {
+  const { teamWork } = await import('../src/work-items-read.ts');
+  const item = (id, level, parent, extra = {}) => ({ id, level, parent, title: id, status: 'To Do', holder: 'agent:sam', kind: 'Task', flagged: false, campaign_id: 'home', external: {}, trail: [], comments: [], created: { at: '2026-11-01T00:00:00.000Z', by: 'x' }, ...extra });
+  const every = [
+    item('E1', 1, null), item('E2', 1, null), item('E3', 1, null),
+    item('a', 0, 'E1', { status: 'In Review', external: { jira: { id: '1', key: 'KAN-1' } }, trail: [{ op: 'status', to: 'In Review', at: '2026-11-03T00:00:00.000Z' }] }),
+    item('b', -1, 'a', { status: 'In Review', trail: [{ op: 'status', to: 'In Review', at: '2026-11-02T00:00:00.000Z' }, { op: 'status', to: 'In Progress', at: '2026-11-02T01:00:00.000Z' }, { op: 'status', to: 'In Review', at: '2026-11-02T02:00:00.000Z' }] }),
+    item('c', 0, 'E2', { flagged: true, trail: [{ op: 'flag', to: 'true', at: '2026-11-04T00:00:00.000Z', note: 'needs a key' }] }),
+    item('E3', 1, null, { holder: 'team:t' }),
+  ];
+  const held = ['a', 'b', 'c', 'a'].map((id) => every.find((one) => one.id === id)).concat([every.at(-1)]);
+  const { review, stuck, epics } = teamWork(held, every);
+  assert.deepEqual(review.map((one) => [one.id, one.since, one.jira]), [['b', '2026-11-02T02:00:00.000Z', ''], ['a', '2026-11-03T00:00:00.000Z', 'KAN-1']], 'oldest first, since its last move to In Review, once each');
+  assert.deepEqual(stuck.map((one) => [one.id, one.reason, one.holder]), [['c', 'needs a key', 'agent:sam']]);
+  assert.deepEqual(epics.sort(), ['E1', 'E2', 'E3'], 'an Epic held, and the Epic above each held item, a subtask included');
 });

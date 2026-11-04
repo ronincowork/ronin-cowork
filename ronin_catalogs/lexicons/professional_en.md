@@ -539,6 +539,18 @@ nothing paints exactly this.
 - **team.arranged_by:** arranged by {from}
 - **team.state:** State
 
+## team_waiting — team-waiting.js (the Team workbench's Waiting on you and Epics cards; KAN-232)
+- **team_waiting.title:** Waiting on you
+- **team_waiting.ready:** Ready to accept
+- **team_waiting.stuck:** Stuck
+- **team_waiting.accept:** Accept
+- **team_waiting.send_back:** Send back
+- **team_waiting.reply:** Reply
+- **team_waiting.comment:** Comment
+- **team_waiting.none:** Nothing is waiting on you.
+- **team_epics.none:** No Epics for this Team yet.
+- **epics.title:** Epics
+
 ## services — services-card.js (the Services activation card)
 - **services.stage_not_requested:** Not requested
 - **services.stage_not_requested_blurb:** Ronin Services are not switched on for this machine.

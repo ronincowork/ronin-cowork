@@ -156,6 +156,41 @@ async function teamBoards(team: string, sessions: Array<{ name: string; tags: st
     .flatMap((reading) => [reading.board, ...reading.items]);
 }
 
+/** A line on the Team workbench's Waiting on you (owner, 2026-11-04; KAN-232): an item, how long
+ * it has waited (`since`, from the trail: its last move to In Review, or its last flag raised),
+ * and for a flagged one the flag's reason. */
+export interface WaitingItem {
+  id: string; title: string; status: string; holder: string; jira: string; since: string; reason: string;
+}
+
+/** What the teams push carries for the Team workbench's Waiting on you and Epics cards: the items
+ * In Review (`review`) and the flagged ones (`stuck`), each oldest first, and the Team's Epics
+ * (`epics`): those it or its members hold, and the Epic above each item they hold. */
+export interface TeamWork { review: WaitingItem[]; stuck: WaitingItem[]; epics: string[] }
+
+export function teamWork(items: HeldItem[], every: WorkItem[]): TeamWork {
+  const byId = new Map(every.map((item) => [item.id, item]));
+  const held = [...new Map(items.map((item) => [item.id, item])).values()];
+  const last = (item: WorkItem, op: string, to: string) => [...item.trail].reverse().find((line) => line.op === op && line.to === to);
+  const line = (item: HeldItem, since: string, reason = ''): WaitingItem => ({
+    id: item.id, title: item.title, status: item.status, holder: item.holder, jira: item.external.jira?.key ?? '', since, reason,
+  });
+  const oldest = (a: WaitingItem, b: WaitingItem) => a.since.localeCompare(b.since);
+  const review = held.filter((item) => item.status === 'In Review')
+    .map((item) => line(item, last(item, 'status', 'In Review')?.at ?? item.created.at)).sort(oldest);
+  const stuck = held.filter((item) => item.flagged).map((item) => {
+    const flag = last(item, 'flag', 'true');
+    return line(item, flag?.at ?? item.created.at, flag?.note ?? '');
+  }).sort(oldest);
+  const epics = new Set<string>();
+  for (const item of held) {
+    let at: WorkItem | undefined = item;
+    for (let steps = 0; at && at.level !== 1 && steps < every.length; steps += 1) at = at.parent ? byId.get(at.parent) : undefined;
+    if (at?.level === 1) epics.add(at.id);
+  }
+  return { review, stuck, epics: [...epics] };
+}
+
 /** An item under an Epic as the Epics workbench draws it (KAN-206): no history, comments or
  * attachments; its Jira key when paired, and the Epic it sits under. */
 export interface EpicItem {

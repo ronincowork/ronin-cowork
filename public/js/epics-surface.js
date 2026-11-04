@@ -77,10 +77,22 @@ function openHolder({ kind, name }) {
   return openWorkspaceTab(kind === 'team' ? 'team' : 'agent', name, tab);
 }
 
-/** The Epic stones, at rest; pressed, the Epic opens in Tilespace 2. */
-export function createEpicStones({ epicsRead, workbench }) {
+/** An item's holder as a button that opens that Agent (or Team); a quiet word when nobody holds it. */
+export function holderButton(item) {
+  const holder = holderOfItem(item);
+  if (!holder) return el('span', 'epic-holder is-none', t('epics.unassigned', 'Unassigned'));
+  const button = el('button', 'epic-holder', `@${holder.name}`);
+  button.type = 'button';
+  button.title = holder.kind === 'team' ? t('epics.open_team', 'Open this Team') : t('epics.open_agent', 'Open this Agent');
+  button.addEventListener('click', () => openHolder(holder));
+  return button;
+}
+
+/** The Epic stones, at rest; pressed, the Epic opens in `seat` (Tilespace 2 on the Epics workbench).
+ * `header: false` draws them headless, inside a surface that heads them (the Team's Epics card). */
+export function createEpicStones({ epicsRead, workbench, seat = 'workspace2', header = true }) {
   const { createSurface } = WorkspaceKit.primitives;
-  const out = createSurface({ label: t('epics.title', 'Epics'), className: 'setup-surface epics-records' });
+  const out = createSurface({ label: t('epics.title', 'Epics'), className: 'setup-surface epics-records', header });
   const messages = el('div', 'pr-status');
   messages.setAttribute('role', 'status');
   const say = (message) => {
@@ -98,7 +110,7 @@ export function createEpicStones({ epicsRead, workbench }) {
       return {
         id: epic.id, label,
         secondary: epic.external?.jira?.key || t('epics.ronin_only', 'Ronin only'),
-        action: () => workbench?.place?.(WORKBENCH_TYPES.epicRecord, 'workspace2', { key: epic.id }),
+        action: () => workbench?.place?.(WORKBENCH_TYPES.epicRecord, typeof seat === 'function' ? seat() : seat, { key: epic.id }),
         draggable: true,
         events: { dragstart: (event) => {
           event.dataTransfer.setData(SURFACE_DRAG, JSON.stringify({ type: WORKBENCH_TYPES.epicRecord, detail: { key: epic.id } }));
@@ -120,22 +132,12 @@ export function createEpicStones({ epicsRead, workbench }) {
 }
 
 /** One Epic's worksurface: its statuses in one row, the items of each status out as cards. */
-export function createEpicRecord(key, { epicsRead }) {
+export function createEpicRecord(key, { epicsRead, header = true }) {
   const { createSurface, setSurfaceState } = WorkspaceKit.primitives;
-  const out = createSurface({ label: key, className: 'setup-surface epics-record' });
+  const out = createSurface({ label: key, className: 'setup-surface epics-record', header });
   const shown = new Set(['In Review']); // the statuses out, kept while the surface lives
   const open = new Set(); // the cards opened in place
   const whole = new Map(); // id -> { seen, item }: an opened card's whole reading, read again only when it moved
-
-  const holderButton = (item) => {
-    const holder = holderOfItem(item);
-    if (!holder) return el('span', 'epic-holder is-none', t('epics.unassigned', 'Unassigned'));
-    const button = el('button', 'epic-holder', `@${holder.name}`);
-    button.type = 'button';
-    button.title = holder.kind === 'team' ? t('epics.open_team', 'Open this Team') : t('epics.open_agent', 'Open this Agent');
-    button.addEventListener('click', () => openHolder(holder));
-    return button;
-  };
 
   /** An opened card: the statuses as buttons, then the objective and the comments. */
   function body(item) {
@@ -200,7 +202,7 @@ export function createEpicRecord(key, { epicsRead }) {
     const epic = epicsRead.list().find((row) => row.id === key);
     if (!epic) { out.content.replaceChildren(); setSurfaceState(out.el, 'empty', t('epics.gone', 'This Epic is no longer here.')); return; }
     setSurfaceState(out.el, null, '');
-    out.header.title.textContent = epic.title || epic.id;
+    if (out.header) out.header.title.textContent = epic.title || epic.id;
     const items = epicsRead.items(epic.id);
     const source = el('div', 'epic-source');
     source.append(el('span', '', epic.external?.jira?.key ? `Jira ${epic.external.jira.key}` : t('epics.ronin_only', 'Ronin only')), holderButton(epic));
