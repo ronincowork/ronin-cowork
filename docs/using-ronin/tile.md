@@ -25,10 +25,10 @@ comments and attachments. Press the same pill again, or Close, or Escape, to ret
 terminal.
 
 The island stays in the header; it does not move when an item changes. Press the small bar
-at its left to bring it down over the top of the tile with its legend: each status's dot
-with its name (grey To Do, blue In Progress, amber In Review, green Done) and the flag,
-an outline when nothing held is flagged and solid when something is. Press the bar again,
-or a pill, to put it back in the header.
+at its left to bring it down under the header, with the pills in a column, one item to a
+row. Each row reads: the kind's symbol, the status in words (To Do, In Progress, In Review,
+Done), its dot (grey, blue, amber, green), and the flag: solid when the item is flagged,
+an outline when it is not. Press the bar again, or a pill, to put it back in the header.
 
 The island follows the Agent's work record as it changes; nothing needs refreshing.
 

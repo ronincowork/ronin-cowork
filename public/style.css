@@ -1081,9 +1081,10 @@ body {
   flex: 1;
 }
 
-/* THE ITEM ISLAND (w271, w272; js/tile-island.js): a capsule of pills in the header, one per
-   held work item. Rest: in the header. Down (its bar pressed): over the top of the tile,
-   larger, with the legend of what the dots and the flag mean. */
+/* THE ITEM ISLAND (w271, w272, KAN-238; js/tile-island.js): a capsule of pills in the header,
+   one per held work item. Rest: in the header, side by side, symbol, dot and a raised flag.
+   Down (its bar pressed): under the header, the pills in a column, each with its status
+   words and its flag, solid or the outline. */
 .tile-head .item-island {
   position: relative;
   z-index: 16; /* over the tile's overlays (.work-overlay is 14) when it comes down */
@@ -1106,29 +1107,21 @@ body {
   top: calc(100% + var(--space-inline));
   left: 50%;
   max-width: 90%;
-  flex-wrap: wrap;
-  justify-content: center;
+  flex-direction: column;
+  align-items: stretch;
+  padding: var(--space-inline);
   border-radius: var(--radius-large);
   border-color: var(--accent);
   box-shadow: var(--shadow-menu);
-  transform: translateX(-50%) scale(1.15);
+  transform: translateX(-50%);
 }
-.tile-head .item-island-legend { display: none; }
-.tile-head .item-island[data-state='down'] .item-island-legend {
-  display: flex;
-  flex: 1 0 100%;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: var(--space-row) var(--space-inline);
-  margin: 0;
-  padding: var(--space-row) 0 0;
-  list-style: none;
-  color: var(--muted);
-  font-size: var(--text-small);
-  white-space: nowrap;
-}
-.item-island-legend .item-pill { display: inline-flex; align-items: center; gap: var(--space-row); }
-.item-island-legend .item-island-flagged[data-flagged='false'] .item-pill-flag { color: var(--muted); }
+.tile-head .item-island[data-state='down'] .item-island-grip { align-self: center; }
+.tile-head .item-island[data-state='down'] .item-island-pills { flex-direction: column; align-items: stretch; overflow: visible; }
+.tile-head .item-island[data-state='down'] button.item-pill { height: auto; padding: var(--space-row) var(--space-control); gap: var(--space-inline); }
+.item-pill .item-pill-words { display: none; }
+.item-island[data-state='down'] .item-pill-words { display: inline; flex: 1 1 auto; color: var(--fg); font-size: var(--text-small); text-align: left; white-space: nowrap; }
+.item-pill:not([data-flagged='true']) .item-pill-flag { display: none; }
+.item-island[data-state='down'] .item-pill:not([data-flagged='true']) .item-pill-flag { display: inline; color: var(--muted); }
 .tile-head .item-island-pills { display: flex; align-items: center; gap: var(--space-row); min-width: 0; overflow: hidden; }
 .tile-head .item-island button.item-island-grip {
   width: 14px;
