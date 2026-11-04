@@ -27,6 +27,7 @@ import { subscribe as hear } from './store.js';
 import { SURFACE_DRAG } from './workbench.js';
 import { WORKBENCH_TYPES } from './workbench-catalog.js';
 import { openWorkspaceTab, reserveWorkspaceTab } from './workspace.js';
+import { ask } from './ask.js';
 
 /** The statuses in workflow order (Jira's, the store's default); a space's own extra names follow. */
 export const STATUSES = ['To Do', 'In Progress', 'In Review', 'Done'];
@@ -35,6 +36,12 @@ export const statusesOf = (items) => [...STATUSES, ...new Set((items || []).map(
 /** The Epics of a reading: its level-1 items, by title. */
 export const epicsOf = (items) => (items || []).filter((item) => item.level === 1)
   .sort((a, b) => String(a.title || a.id).localeCompare(String(b.title || b.id)));
+
+/** Assigned: an Agent holds it. Unassigned: only a Team holds it, or nobody does. */
+export const isAssigned = (item) => holderOfItem(item)?.kind === 'agent';
+/** The items Show lets through: picked `assigned`, `unassigned`, both, or nothing picked (all). */
+export const byAssignment = (items, show = []) => (!show.length || show.length === 2 ? items
+  : items.filter((item) => isAssigned(item) === show.includes('assigned')));
 
 /** Who works an item: { kind: 'agent' | 'team', name }, or null when nobody holds it. */
 export function holderOfItem(item) {
@@ -138,6 +145,19 @@ export function createEpicRecord(key, { epicsRead, header = true }) {
   const shown = new Set(['In Review']); // the statuses out, kept while the surface lives
   const open = new Set(); // the cards opened in place
   const whole = new Map(); // id -> { seen, item }: an opened card's whole reading, read again only when it moved
+  // SHOW (owner, 2026-11-04, w280): the Teams worksurface's question row (ask.js), here to show or
+  // hide the assigned and the unassigned items; nothing picked is all. Built once, so a push
+  // that redraws the cards leaves an open tray alone.
+  let show = [];
+  const filter = ask([{ fields: [
+    { key: 'show', label: t('epics.show', 'Show'), blank: t('epics.all', 'All'), many: true, options: [
+      { v: 'assigned', l: t('epics.assigned', 'Assigned') },
+      { v: 'unassigned', l: t('epics.unassigned', 'Unassigned') },
+    ] },
+  ] }], { value: { show }, density: 'tight', onChange: ({ show: next }) => { show = (next || []).map(String); paint(); } });
+  const sourceHost = el('div', 'epic-source-host');
+  const bodyHost = el('div', 'epic-record-body');
+  out.content.append(sourceHost, filter.el, bodyHost);
 
   /** An opened card: the statuses as buttons, then the objective and the comments. */
   function body(item) {
@@ -200,10 +220,12 @@ export function createEpicRecord(key, { epicsRead, header = true }) {
 
   function paint() {
     const epic = epicsRead.list().find((row) => row.id === key);
-    if (!epic) { out.content.replaceChildren(); setSurfaceState(out.el, 'empty', t('epics.gone', 'This Epic is no longer here.')); return; }
+    if (!epic) { sourceHost.replaceChildren(); bodyHost.replaceChildren(); filter.el.hidden = true; setSurfaceState(out.el, 'empty', t('epics.gone', 'This Epic is no longer here.')); return; }
+    filter.el.hidden = false;
     setSurfaceState(out.el, null, '');
     if (out.header) out.header.title.textContent = epic.title || epic.id;
-    const items = epicsRead.items(epic.id);
+    const every = epicsRead.items(epic.id);
+    const items = byAssignment(every, show);
     const source = el('div', 'epic-source');
     source.append(el('span', '', epic.external?.jira?.key ? `Jira ${epic.external.jira.key}` : t('epics.ronin_only', 'Ronin only')), holderButton(epic));
     const row = el('div', 'epic-filter');
@@ -231,16 +253,18 @@ export function createEpicRecord(key, { epicsRead, header = true }) {
       section.append(cards);
       groups.append(section);
     }
-    if (!items.length) groups.append(el('p', 'epic-empty', t('epics.no_items', 'No work items under this Epic yet.')));
+    if (!every.length) groups.append(el('p', 'epic-empty', t('epics.no_items', 'No work items under this Epic yet.')));
+    else if (!items.length) groups.append(el('p', 'epic-empty', t('epics.none_shown', 'No items here for what Show picks.')));
     else if (!groups.children.length) groups.append(el('p', 'epic-empty', t('epics.pick', 'Pick a status to bring its items out.')));
     const scroll = out.content.scrollTop;
-    out.content.replaceChildren(source, row, groups);
+    sourceHost.replaceChildren(source);
+    bodyHost.replaceChildren(row, groups);
     out.content.scrollTop = scroll;
   }
   let stop = null;
   return {
     el: out.el,
     show: () => { stop ??= epicsRead.subscribe(paint); paint(); },
-    destroy: () => { stop?.(); stop = null; },
+    destroy: () => { stop?.(); stop = null; filter.destroy(); },
   };
 }

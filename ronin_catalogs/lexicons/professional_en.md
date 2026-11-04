@@ -621,6 +621,13 @@ nothing paints exactly this.
 - **team.arranged_by:** arranged by {from}
 - **team.state:** State
 
+## epics — epics-surface.js (the Epic worksurface's Show question; w280)
+- **epics.show:** Show
+- **epics.all:** All
+- **epics.assigned:** Assigned
+- **epics.unassigned:** Unassigned
+- **epics.none_shown:** No items here for what Show picks.
+
 ## team_waiting — team-waiting.js (the Team workbench's Waiting on you and Epics cards; KAN-232)
 - **team_waiting.title:** Waiting on you
 - **team_waiting.ready:** Ready to accept

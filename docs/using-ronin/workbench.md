@@ -114,6 +114,11 @@ each item they hold. With one Epic, the card opens straight onto that Epic's rec
 statuses and its items as cards, as on the Epics workbench. With several, it shows a stone
 per Epic; press one to open its record in the other tilespace.
 
+An Epic's record, here and on the Epics workbench, starts with a **Show** question, the same
+kind of buttons the Teams surface uses. Pick **Assigned** for the items an Agent holds,
+**Unassigned** for those only a Team holds or nobody holds, or leave it at **All**. The status
+row's counts and the cards follow what Show picks.
+
 Each Agent's tile on a Team shows the work items that Agent holds as pills in its header,
 in the **item island**: the kind's Jira symbol, the status and the flag, and the item's
 description when you press one. See [the tile](tile.md#the-item-island).
