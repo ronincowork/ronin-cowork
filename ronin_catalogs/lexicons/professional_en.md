@@ -1236,6 +1236,11 @@ The catalog entry goes. {dir} is not touched.
 - **request.malformed:** Ronin answered, but the answer did not arrive whole
 - **request.unreachable:** could not reach Ronin — network or server down
 
+## island — tile-island.js (the item island in the tile header: a pill per held work item; w271)
+- **island.items:** Work items held
+- **island.hide:** Hide the work items
+- **island.recall:** Show the work items this Agent holds
+
 ## head — tilehead.js (the tile head's help and quiet words)
 - **head.rename_help:** Edit this Agent title
 - **head.rename_quiet:** Rename session — no session in this tile yet

@@ -114,6 +114,10 @@ each item they hold. With one Epic, the card opens straight onto that Epic's rec
 statuses and its items as cards, as on the Epics workbench. With several, it shows a stone
 per Epic; press one to open its record in the other tilespace.
 
+Each Agent's tile on a Team shows the work items that Agent holds as pills in its header,
+in the **item island**: the kind's Jira symbol, the status and the flag, and the item's
+description when you press one. See [the tile](tile.md#the-item-island).
+
 ## Finding your way back
 
 Ronin remembers the Workbench arrangement for that route: whether it has two or four

@@ -9,6 +9,7 @@ import { buildWorkRecord, heldAttachments } from './work-record.js';
 import { readDesks } from './desks.js';
 import { t } from './lexicon.js';
 import { chatMarkdown, setChatMarkdown } from './tile-transcript.js';
+import { createItemIsland } from './tile-island.js';
 
 /**
  * THE HEADER, left to right. One row per control; see the file header for the columns.
@@ -31,6 +32,15 @@ const HEADER = () => {
   // A workspace owns which Agent it holds. The tile only names that session; switching
   // happens by placing or dragging a roster card into the workspace, never in its head.
   { key: 'sessionName', tag: 'span', cls: 'sess' },
+
+  { grow: true },
+
+  // THE ITEM ISLAND (owner, 2026-11-04; w271): a pill per work item this Agent holds — Jira's
+  // kind symbol, a status dot, ⚑ when flagged, no text. It comes down over the tile when an
+  // item moves and goes back; its grip hides and recalls it. A pill opens the item over the
+  // tile (openItem below). Read off the work record on every push: js/tile-island.js.
+  { key: 'island', widget: (tile) => createItemIsland({ open: (item) => void openItem(tile, item) }),
+    read: (tile) => { tile.island?.update?.(tile.session, tile.tegami?.items); return ''; } },
 
   { grow: true },
 
@@ -242,6 +252,18 @@ async function openWorkRecord(tile) {
     ? buildWorkRecord(tile.tegami, desks, { openDoc: (path) => { layer.remove(); tile.openDoc(path); } })
     : Object.assign(document.createElement('p'), { className: 'menu-empty',
       textContent: t('me.no_record', 'This Agent has not written a work record yet.') })));
+}
+
+/** One held item over the tile, as the Work Items reader draws it (work-items-surface.js):
+ *  its title, kind, status and flag, its description, its facts, comments and attachments. */
+async function openItem(tile, item) {
+  const { renderItemDetail } = await import('./work-items-surface.js');
+  await overTile(tile, item.jira || item.id, (box) => {
+    const detail = document.createElement('div');
+    detail.className = 'tile-item-detail';
+    renderItemDetail(detail, item, { holder: tile.session || '', openAttachment: (path) => tile.openDoc(path), history: false });
+    box.append(detail);
+  });
 }
 
 /** The Agent's configuration: the composition reader the Team profile already shows —
