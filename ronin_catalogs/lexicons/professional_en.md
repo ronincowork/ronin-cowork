@@ -1285,7 +1285,7 @@ The catalog entry goes. {dir} is not touched.
 - **me.docs:** Docs
 - **me.configuration:** Configuration
 - **me.configuration_hint:** mandate, Behaviors
-- **me.docs_none:** No attachments on the items this Agent holds.
+- **me.docs_none:** No documents on this Agent's record.
 - **me.attach:** Send a file
 - **me.attach_hint:** or drag one onto the tile
 - **me.markdown:** Markdown

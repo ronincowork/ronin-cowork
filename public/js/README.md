@@ -93,7 +93,7 @@ below describes implementation ownership; use the surface index above to find a 
 | `gbrain-setup-state.js` | the Ronin Setup gbrain surface's state: one status, one next line, at most one action from the snapshot |
 | `services-setup-state.js` | the Ronin Setup Services surface's state: registration, installed facts and the activation record → one status, one next line, at most one action |
 | `system.js` | `buildSystemPanel` — the Account tab's Release & update and Log out rooms (release identity, updates, log out, passkeys) in `cowork-commons.js` |
-| `work-record.js` | `buildWorkRecord` — the tile's ☰ Work record (held items first, each with status, flag and attachments; then objective, worktrees, Teams), `heldAttachments` for the tile's Docs list, and its age helpers |
+| `work-record.js` | `buildWorkRecord` — the tile's ☰ Work record (held items first, each with status, flag and attachments; then objective, worktrees, Teams), and its age helpers |
 | `work-items-surface.js` | `createWorkItemsSurface`, `createItemPhalanx`, `holderOf` — work items as phalanx stones grouped by parent, each pressed to its reading in place; a reading surface, changes go through the `item` tool |
 | `tile.js` / `surface-host.js` | `class Tile` — one cell of the coworkspace; its surface host owns the catalogued sibling tenants and names the one active tenant |
 | `tilehead.js` | `buildTileHead` — the cell's chrome, one table and a loop: name, item island, reading toggle, メ, window control; `tileMenu` — the tile's menu (send a file, mention, output, work record, configuration, docs, delete or archive); reads open in the full overlay over the tile body (`overTile`), a held item among them (`openItem`) |

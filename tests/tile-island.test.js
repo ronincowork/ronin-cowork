@@ -42,3 +42,12 @@ test('the tile header carries the island, fed by the pushed work record, and a p
   const style = await read('public/style.css');
   assert.match(style, /\.item-island\[data-state='down'\] \.item-island-pills \{ flex-direction: column;/);
 });
+
+test('the tile menu\'s Docs lists the record\'s documents (tegami.docs), as the Commons Docs does, so a lead shows its own', async () => {
+  const head = await read('public/js/tilehead.js');
+  assert.match(head, /hint: String\(\(tile\.tegami\?\.docs \|\| \[\]\)\.length \|\| ''\)/, 'the count');
+  assert.match(head, /list: \(\) => \(tile\.tegami\?\.docs \|\| \[\]\)\.map\(/, 'the list');
+  assert.match(head, /t\('me\.docs_none', 'No documents on this Agent\\'s record\.'\)/);
+  assert.doesNotMatch(head + await read('public/js/work-record.js'), /heldAttachments/, 'held items\' attachments alone are gone');
+  assert.match(await read('ronin_catalogs/lexicons/professional_en.md'), /- \*\*me\.docs_none:\*\* No documents on this Agent's record\./);
+});

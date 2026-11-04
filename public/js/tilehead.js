@@ -5,7 +5,7 @@ import { pickFile } from './tilefiles.js';
 import { S, serviceMissing } from './state.js';
 import { OUTPUTS } from './output.js';
 import { createMenuButton } from './menu.js';
-import { buildWorkRecord, heldAttachments } from './work-record.js';
+import { buildWorkRecord } from './work-record.js';
 import { readDesks } from './desks.js';
 import { t } from './lexicon.js';
 import { chatMarkdown, setChatMarkdown } from './tile-transcript.js';
@@ -215,10 +215,11 @@ export function tileMenu(tile) {
       { glyph: '☰', label: t('me.work_record', 'Work record'), run: () => void openWorkRecord(tile) },
       { glyph: '⚙', label: t('me.configuration', 'Configuration'), hint: t('me.configuration_hint', 'mandate, Behaviors'),
         run: () => void openConfiguration(tile) },
-      // The held items' attachments, the same ones the work record lists: one opens over the tile.
-      { glyph: '📄', label: t('me.docs', 'Docs'), kind: 'list', hint: String(heldAttachments(tile.tegami).length || ''),
-        empty: t('me.docs_none', 'No attachments on the items this Agent holds.'),
-        list: () => heldAttachments(tile.tegami).map((path) => {
+      // The record's documents (tegami.docs: held items' attachments and the record's own, as
+      // the Commons Docs lists them), so a lead, holding nothing, shows its own: one opens over the tile.
+      { glyph: '📄', label: t('me.docs', 'Docs'), kind: 'list', hint: String((tile.tegami?.docs || []).length || ''),
+        empty: t('me.docs_none', 'No documents on this Agent\'s record.'),
+        list: () => (tile.tegami?.docs || []).map((path) => {
           const parts = path.split('/');
           return { label: parts.pop(), hint: parts.slice(-2).join('/'), run: () => tile.openDoc(path) };
         }) },
