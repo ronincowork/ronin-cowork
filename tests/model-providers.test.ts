@@ -41,7 +41,7 @@ test('the stock catalog names every provider with its CLI, its family words and 
   assert.equal(read.origin, 'stock');
   const providers = read.providers;
   const launchable = providers.filter((entry) => entry.launchable);
-  assert.deepEqual(launchable.map((entry) => entry.cli), ['claude', 'codex', 'gemini', 'grok', 'hermes'], 'one launchable section per CLI the registry knows');
+  assert.deepEqual(launchable.map((entry) => entry.cli), ['claude', 'codex', 'agy', 'grok', 'hermes'], 'one launchable section per CLI the registry knows');
   for (const entry of launchable) {
     assert.ok(AGENTS.some((agent) => agent.id === entry.cli), `${entry.label}: cli ${entry.cli} is in src/agents.ts`);
     if (entry.cli !== 'hermes') assert.ok(entry.families?.length, `${entry.label}: family words give its models their tiers`);
@@ -56,7 +56,7 @@ test('the stock catalog names every provider with its CLI, its family words and 
 
 test('the join: Native first, then every model the CLI listed in its order with the CLI\'s own name, catalog metadata where the id matches, launchable providers first', async () => {
   const rows = await catalog.providerRows(measured({
-    installed: ['claude', 'codex', 'gemini'], signed_in: ['claude', 'codex'], operational: ['codex', 'claude'], off: ['gemini'], activated_count: 2,
+    installed: ['claude', 'codex', 'agy'], signed_in: ['claude', 'codex'], operational: ['codex', 'claude'], off: ['agy'], activated_count: 2,
     models: {
       claude: listed([['claude-opus-5-5', 'Opus 5.5'], ['claude-fable-5-1', 'Fable 5.1'], ['claude-sonnet-6', 'Sonnet 6'], ['claude-mystery-1', 'Mystery 1'], ['bad id;rm', 'Nope']]),
       codex: listed([['gpt-5.6-sol', 'GPT-5.6-Sol']]),
@@ -140,7 +140,7 @@ test("the owner's copy is an overlay: a section of a shipped id replaces it in p
     '# mine', '',
     '### Anthropic (mine)', '', '- **provider:** `anthropic`', '- **cli:** `claude`', '- **families:** `fable=frontier`', '',
     '### xAI', '', '- **provider:** `xai`', '- **hidden:** yes', '',
-    '### Google', '', '- **provider:** `google`', '- **cli:** `gemini`', '',
+    '### Google', '', '- **provider:** `google`', '- **cli:** `agy`', '',
     '### Example', '', '- **provider:** `example`', '- **cli:** `codex`', '',
   ].join('\n'));
   try {
@@ -174,30 +174,30 @@ test("the owner's copy is an overlay: a section of a shipped id replaces it in p
 });
 
 test('the summary is what was measured, dated, and survives the record round trip; a record from before 2026-09-25 reads into today\'s shape', async () => {
-  const facts = await summary.measureProviders({ providers: { codex: { activated_at: '2026-09-01T00:00:00.000Z' }, gemini: { activated_at: 'x', off_at: '2026-09-02T00:00:00.000Z' } } }, {
+  const facts = await summary.measureProviders({ providers: { codex: { activated_at: '2026-09-01T00:00:00.000Z' }, agy: { activated_at: 'x', off_at: '2026-09-02T00:00:00.000Z' } } }, {
     availability: [
       { id: 'claude', label: 'Claude Code', get: 'x', parked: '', cmd: 'claude', installed: true, path: '/bin/claude' },
       { id: 'codex', label: 'Codex', get: 'x', parked: '', cmd: 'codex', installed: true, path: '/bin/codex' },
-      { id: 'gemini', label: 'Gemini CLI', get: 'x', parked: '', cmd: 'gemini', installed: true, path: '/bin/gemini' },
+      { id: 'agy', label: 'Antigravity CLI', get: 'x', parked: '', cmd: 'agy', installed: true, path: '/bin/agy' },
     ],
     signedIn: async (id) => id === 'claude' || id === 'grok',
     now: () => '2026-09-08T10:00:00.000Z',
-    version: async (file, argv) => { if (file === '/bin/gemini') throw new Error('gemini was asked: a provider not activated gets nothing spent on it'); return (file === '/bin/codex' && argv[0] === '--version' ? 'codex-cli 0.151.0' : file === '/bin/claude' ? '2.1.263 (Claude Code)' : ''); },
+    version: async (file, argv) => { if (file === '/bin/agy') throw new Error('agy was asked: a provider not activated gets nothing spent on it'); return (file === '/bin/codex' && argv[0] === '--version' ? 'codex-cli 0.151.0' : file === '/bin/claude' ? '2.1.263 (Claude Code)' : ''); },
     models: async () => { throw new Error('an ordinary measure reads no model list'); },
   });
   assert.deepEqual(facts, {
     measured_at: '2026-09-08T10:00:00.000Z',
     refreshed_at: '',
-    installed: ['claude', 'codex', 'gemini'],
+    installed: ['claude', 'codex', 'agy'],
     signed_in: ['claude', 'grok'],
     operational: ['claude', 'codex'],
-    off: ['gemini'],
+    off: ['agy'],
     activated_count: 2,
-    paths: { claude: '/bin/claude', codex: '/bin/codex', gemini: '/bin/gemini' },
+    paths: { claude: '/bin/claude', codex: '/bin/codex', agy: '/bin/agy' },
     versions: { claude: '2.1.263', codex: '0.151.0' },
     models: {},
     latest: {},
-  }, 'gemini is installed and recorded but turned off; grok has a file but no CLI; a CLI that would not say its version is simply absent');
+  }, 'agy is installed and recorded but turned off; grok has a file but no CLI; a CLI that would not say its version is simply absent');
 
   assert.equal(await summary.readProviderSummary(), null, 'nothing measured yet, nothing guessed');
   await summary.recordProviderSummary(facts);
@@ -210,10 +210,10 @@ test('the summary is what was measured, dated, and survives the record round tri
   assert.equal(catalog.parseProviderSummary(null), null);
   assert.equal(catalog.parseProviderSummary({ installed: ['claude'] }), null, 'undated is unmeasured');
   assert.deepEqual(catalog.parseProviderSummary({ measured_at: 't', installed: ['claude', 'claude', 7], operational: ['bad id!'], paths: { claude: '/x', codex: 3 }, versions: { codex: '0.151.0', claude: 9 }, latest: { codex: { version: '0.153.4', checked_at: 'c' }, claude: { version: '' } },
-    models: { claude: { read_at: 'r', by: '2.1.281', rows: [{ id: 'claude-opus-5-5', name: 'Opus 5.5' }, { id: 'x' }] }, codex: { read_at: '', rows: [] }, gemini: { read_at: 'r', by: '', rows: [], unavailable: 'why' } } }), {
+    models: { claude: { read_at: 'r', by: '2.1.281', rows: [{ id: 'claude-opus-5-5', name: 'Opus 5.5' }, { id: 'x' }] }, codex: { read_at: '', rows: [] }, agy: { read_at: 'r', by: '', rows: [], unavailable: 'why' } } }), {
     measured_at: 't', refreshed_at: '', installed: ['claude'], signed_in: [], operational: [], off: [], activated_count: 0, paths: { claude: '/x' },
     versions: { codex: '0.151.0' }, latest: { codex: { version: '0.153.4', checked_at: 'c' } },
-    models: { claude: { read_at: 'r', by: '2.1.281', rows: [{ id: 'claude-opus-5-5', name: 'Opus 5.5' }, { id: 'x', name: 'x' }] }, gemini: { read_at: 'r', by: '', rows: [], unavailable: 'why' } },
+    models: { claude: { read_at: 'r', by: '2.1.281', rows: [{ id: 'claude-opus-5-5', name: 'Opus 5.5' }, { id: 'x', name: 'x' }] }, agy: { read_at: 'r', by: '', rows: [], unavailable: 'why' } },
   }, 'a summary recorded before some field existed reads back with empty maps, never undefined; an undated list is dropped');
   // The shape recorded until 2026-09-25: the CLI's raw cache under `model_lists`. Read once, never blanked.
   const legacy = catalog.parseProviderSummary({ measured_at: 't', installed: ['claude'], model_lists: { claude: {
@@ -227,7 +227,7 @@ test('each CLI\'s own list is read the way the registry says — the real cache 
   const home = await mkdtemp(path.join(os.tmpdir(), 'ronin-model-lists-'));
   const now = () => '2026-09-25T18:00:00.000Z';
   try {
-    assert.deepEqual(AGENTS.map((agent) => [agent.id, agent.operations.models.read]), [['claude', 'claude-cache'], ['codex', 'codex-cache'], ['gemini', 'none'], ['grok', 'command'], ['hermes', 'hermes-setups']]);
+    assert.deepEqual(AGENTS.map((agent) => [agent.id, agent.operations.models.read]), [['claude', 'claude-cache'], ['codex', 'codex-cache'], ['agy', 'none'], ['grok', 'command'], ['hermes', 'hermes-setups']]);
     // Nothing on disk yet: not guessed.
     assert.deepEqual(await summary.readModels(agent('claude'), { home, version: '2.1.282', now }), { read_at: now(), by: '2.1.282', rows: [], unavailable: 'No readable model list from Claude Code.' });
     await mkdir(path.join(home, '.claude', 'cache', 'model-catalog'), { recursive: true });
@@ -245,7 +245,7 @@ test('each CLI\'s own list is read the way the registry says — the real cache 
     assert.equal((await summary.readModels(agent('codex'), { home, now })).unavailable, 'No readable model list from Codex.', 'unparseable is not measured');
     assert.deepEqual(summary.commandModels(await readFile(new URL('grok-models.txt', fixtures), 'utf8')), [{ id: 'grok-4.6', name: 'grok-4.6' }, { id: 'grok-4.3', name: 'grok-4.3' }]);
     assert.equal(summary.commandModels('You are not authenticated.'), null);
-    assert.deepEqual(await summary.readModels(agent('gemini'), { home, version: '0.61.0', now }), { read_at: now(), by: '0.61.0', rows: [], unavailable: 'Gemini CLI publishes no model list Ronin can read.' });
+    assert.deepEqual(await summary.readModels(agent('agy'), { home, version: '1.5.1', now }), { read_at: now(), by: '1.5.1', rows: [], unavailable: 'Antigravity CLI publishes no model list Ronin can read.' });
   } finally { await rm(home, { recursive: true, force: true }); }
 });
 
@@ -293,20 +293,19 @@ test('Refresh all reads every activated CLI\'s list again and asks npm; an ordin
 test('latest is asked only of a CLI whose install line names an npm package, and every ask is an egress line', async () => {
   const asked: string[] = [];
   const egress: Array<Record<string, unknown>> = [];
-  const latest = await summary.latestVersions(['claude', 'codex', 'gemini', 'hermes'], {
-    npmView: async (pkg) => { asked.push(pkg); if (pkg === '@openai/codex') return '0.153.4'; if (pkg === '@google/gemini-cli') return '0.59.0'; if (pkg === '@anthropic-ai/claude-code') throw new Error('offline'); return ''; },
+  const latest = await summary.latestVersions(['claude', 'codex', 'agy', 'hermes'], {
+    npmView: async (pkg) => { asked.push(pkg); if (pkg === '@openai/codex') return '0.153.4'; if (pkg === '@anthropic-ai/claude-code') throw new Error('offline'); return ''; },
     egress: async (line) => { egress.push(line as unknown as Record<string, unknown>); },
     now: () => '2026-09-09T12:00:00.000Z',
   });
-  assert.deepEqual(asked, ['@anthropic-ai/claude-code', '@openai/codex', '@google/gemini-cli'], 'every npm-installed CLI is asked from its install source; hermes has no npm source');
-  assert.deepEqual(latest, { codex: { version: '0.153.4', checked_at: '2026-09-09T12:00:00.000Z' }, gemini: { version: '0.59.0', checked_at: '2026-09-09T12:00:00.000Z' } }, 'an ask that failed leaves no answer — unknown, never guessed');
+  assert.deepEqual(asked, ['@anthropic-ai/claude-code', '@openai/codex'], 'every npm-installed CLI is asked from its install source; agy and hermes have no npm source');
+  assert.deepEqual(latest, { codex: { version: '0.153.4', checked_at: '2026-09-09T12:00:00.000Z' } }, 'an ask that failed leaves no answer — unknown, never guessed');
   assert.deepEqual(egress.map((line) => [line.host, line.path, line.outcome, line.status]), [
     ['registry.npmjs.org', '/@anthropic-ai/claude-code', 'unreachable', 0],
     ['registry.npmjs.org', '/@openai/codex', 'ok', 200],
-    ['registry.npmjs.org', '/@google/gemini-cli', 'ok', 200],
   ], 'answered or not, each ask is on the egress record');
   assert.equal(summary.npmPackageOf('npm install -g @openai/codex@latest'), '@openai/codex');
-  assert.equal(summary.npmPackageOf('npm install -g @google/gemini-cli'), '@google/gemini-cli');
+  assert.equal(summary.npmPackageOf('curl -fsSL https://antigravity.google/cli/install.sh | bash'), '');
   assert.equal(summary.npmPackageOf(''), '');
   assert.equal(catalog.newerVersion('0.151.0', '0.153.4'), true);
   assert.equal(catalog.newerVersion('2.1.265', '2.1.265'), false);

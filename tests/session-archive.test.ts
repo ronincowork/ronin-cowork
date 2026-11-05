@@ -68,8 +68,8 @@ test('provider lifecycle syntax comes from the Agent document', async () => {
   assert.match(stamped.id, /^[0-9a-f-]{36}$/);
   assert.deepEqual(stamped.argv, ['/bin/claude', '--session-id', stamped.id, '--model', 'opus', 'brief']);
   assert.deepEqual((await readAgentLaunches('codex')).resume, ['codex', 'resume', '{session_id}']);
-  assert.deepEqual((await readAgentLaunches('gemini')).resume, ['gemini', '--resume', '{session_id}']);
-  assert.equal(AGENTS.find((agent) => agent.id === 'gemini')?.operations.session.discovery, 'unsupported');
+  assert.deepEqual((await readAgentLaunches('agy')).resume, ['agy', '--conversation', '{session_id}']);
+  assert.equal(AGENTS.find((agent) => agent.id === 'agy')?.operations.session.discovery, 'unsupported');
 });
 
 test('archive ids cannot escape the archive directory', async () => {

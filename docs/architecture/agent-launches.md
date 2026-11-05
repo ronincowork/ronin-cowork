@@ -48,7 +48,7 @@ Future CLIs must declare that mapping before Ronin offers the mode.
 
 The shared Launch mode vocabulary is **Native** and **Dangerously**. Providers also
 offer intermediate policies—Claude permission modes, Codex approval/sandbox policies,
-Gemini `auto_edit` and `plan`, and Grok approval modes—but Ronin does not expose them yet.
+Antigravity `accept-edits`, `auto` and `plan` modes, and Grok approval modes—but Ronin does not expose them yet.
 Their meanings do not line up cleanly, so they must not be squeezed into a misleading
 universal label.
 

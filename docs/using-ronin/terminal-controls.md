@@ -5,9 +5,9 @@ your browser shortcuts. These controls work on desktop and mobile, locked or unl
 
 ## Default shortcuts
 
-| Input | Codex | Claude | Gemini | Grok | Hermes |
+| Input | Codex | Claude | Antigravity | Grok | Hermes |
 |---|---|---|---|---|---|
-| Escape — Stop | Escape | Escape | Ctrl+C | Ctrl+C | Ctrl+C |
+| Escape — Stop | Escape | Escape | Escape | Ctrl+C | Ctrl+C |
 | Ctrl+Shift+Backspace — Clear | Ctrl+C | Escape | Ctrl+C | Ctrl+C | Ctrl+C |
 | Ctrl+Shift+X — Close | Confirm | Confirm | Confirm | Confirm | Confirm |
 | Ctrl+C | Blocked | Blocked | Blocked | Blocked | Blocked |
@@ -59,7 +59,7 @@ open Ronin sheet/menu first. No shortcut leaks through that sheet into the Agent
 
 Clear removes the browser's entire unsent draft when that is the focused input. It
 never recalls a message already accepted by the delivery queue. At the CLI, Clear sends
-its registered native sequence once: Claude gets Escape; Codex, Gemini, Grok and Hermes
+its registered native sequence once: Claude gets Escape; Codex, Antigravity, Grok and Hermes
 get Ctrl+C. Ronin does
 not classify the screen or reinterpret the result. These keys retain the CLI's native
 behavior, including interrupting activity or handling an empty prompt differently.
