@@ -26,10 +26,11 @@ cell of topic × audience; an Agent reads only its own cells.
 |---|---|---|
 | `behaviours/selected/project-management.md` | every Agent: the five reasons, structure, status, notices, don'ts | (selected) |
 | `behaviours/conditional/project-management-coworker.md` | coworkers: take, start, side work, put back, hand in, leave | `behaviour:project-management, role:coworker` |
-| `behaviours/conditional/project-management-lead.md` | Team leads: the three kinds of ask, the epic, giving out work, promote | `behaviour:project-management, lead` |
+| `behaviours/conditional/project-management-lead.md` | Team leads: the three kinds of ask, offering an order, the epic from it with `plan:` attached, closing it, giving out work, promote | `behaviour:project-management, lead` |
 | `behaviours/conditional/project-management-epic-lead.md` | an epic_lead on Steerco | `behaviour:project-management, role:epic_lead` |
 | `behaviours/conditional/project-management-traffic-control.md` | traffic_control on Steerco: placing Jira's unheld items | `behaviour:project-management, role:coordinator` |
 | `capabilities/work-item.md` | every Agent, in YOUR TOOLS: the `item` tools table and syntax only | `behaviour:project-management` |
+| `capabilities/plan.md` | Team leads, in YOUR TOOLS: the `plan` tools table and syntax (an epic_lead's one read is in its brief; anyone else finds it in `ronin-help planning`) | `behaviour:project-management, lead` |
 
 `behaviours/conditional/cowork-agent.md` and `team-lead.md` carry no item text. The role comes
 from the session's behaviours (`currentRoleAt` in `src/agent-composition.ts`; a role file wins, then the Steerco cell names, then lead or coworker); `behaviour:` is a

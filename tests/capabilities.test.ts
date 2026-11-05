@@ -193,9 +193,9 @@ test('the folder is the catalog: an owner file shadows a stock name whole, a new
 
 test('the stock capability documents are well-formed and carry no retired vocabulary', async () => {
   const files = (await readdir(STOCK)).filter((name) => name.endsWith('.md') && name !== 'README.md').sort();
-  assert.deepEqual(files, ['agent_session.md', 'cowork_team.md', 'edges.md', 'machine-settings.md', 'mika.md', 'ronin-help.md', 'ronin-host.md', 'work-item.md', 'work-record.md', 'worktree-desk.md']);
+  assert.deepEqual(files, ['agent_session.md', 'cowork_team.md', 'edges.md', 'machine-settings.md', 'mika.md', 'plan.md', 'ronin-help.md', 'ronin-host.md', 'work-item.md', 'work-record.md', 'worktree-desk.md']);
   const rows = await withUserCatalogs(() => listCapabilities());
-  assert.deepEqual(rows.map((item) => item.name), ['edges', 'work-record', 'work-item', 'agent_session', 'worktree-desk', 'machine-settings', 'cowork_team', 'ronin-host', 'mika', 'ronin-help'], 'ordered by `order`');
+  assert.deepEqual(rows.map((item) => item.name), ['edges', 'work-record', 'work-item', 'plan', 'agent_session', 'worktree-desk', 'machine-settings', 'cowork_team', 'ronin-host', 'mika', 'ronin-help'], 'ordered by `order`');
   for (const item of rows) {
     const text = await readFile(item.file, 'utf8');
     assert.ok(item.label && item.blurb, `${item.name} has a label and a blurb`);
@@ -214,6 +214,7 @@ test('the stock capability documents are well-formed and carry no retired vocabu
   assert.deepEqual(by['machine-settings'].requires, ['campaign']);
   assert.deepEqual(by.cowork_team.requires, []);
   assert.deepEqual(by['work-item'].requires, ['behaviour:project-management'], 'the item tools come with the project-management switch');
+  assert.deepEqual(by.plan.requires, ['behaviour:project-management', 'lead'], 'the plan tools are taught to leads only (KAN-256)');
   assert.deepEqual(by['ronin-host'].requires, []);
   assert.deepEqual(by.mika.requires, ['installation:ronin_services']);
   assert.deepEqual(by.mika.tools.map((tool) => tool.name), ['mika']);
@@ -223,6 +224,7 @@ test('the stock capability documents are well-formed and carry no retired vocabu
   // bundle names that boundary but does not duplicate the Session tool row.
   const priority = (name: string) => by[name].tools.filter((tool) => tool.priority).map((tool) => tool.command);
   assert.deepEqual(priority('work-record'), ['work-record update_record', 'work-record workspace', 'work-record read', 'work-record add_doc']);
+  assert.deepEqual(priority('plan'), ['plan ls', 'plan read', 'plan write', 'plan order', 'plan close']);
   assert.deepEqual(priority('work-item'), ['item create', 'item read', 'item search', 'item edit', 'item transition', 'item flag', 'item unflag', 'item assign', 'item handoff', 'item watch', 'item comment', 'item attach', 'item link', 'item delete']);
   assert.deepEqual(priority('edges'), ['edges send', 'edges wipeboard', 'edges read', 'edges team']);
   assert.deepEqual(priority('worktree-desk'), ['worktree-desk status', 'worktree-desk sync', 'worktree-desk hand-in']);
