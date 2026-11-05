@@ -98,18 +98,10 @@ setup names; each setup pins a connection, actual API model, reasoning and appro
 Each Cowork launch receives a separate Hermes home. Credentials belong to the API
 connection, not the setup. See `docs/agents/hermes.md` for setup and current limits.
 
-### OpenRouter
-
-- **provider:** `openrouter`
-- **cli:** `openrouter`
-- **transcript_source:** No launchable CLI integration or verified transcript source declared.
-- **maturity:** `comingSoon`
-
-OpenRouter is listed for visibility only: it is not offered by model selectors and
-cannot be launched.
-
 Other providers (pi, perplexity, …) arrive the same way: a contributor PR adding a
-section, or a section in your own shadow copy.
+section, or a section in your own shadow copy. A third-party API service such as
+OpenRouter is not a harness and gets no section: it is an account a harness launches on
+(Agent Harness workbench → Accounts).
 
 **Other launch settings** a spawn may carry (not role-level; chosen per session):
 launch mode (`configured` / `live_dangerously`).

@@ -49,9 +49,7 @@ test('the stock catalog names every provider with its CLI, its family words and 
   }
   assert.deepEqual(providers.filter((entry) => entry.models_dev).map((entry) => [entry.provider, entry.models_dev]),
     [['anthropic', 'anthropic'], ['openai', 'openai'], ['google', 'google'], ['xai', 'xai']], 'Nous is not on models.dev');
-  assert.deepEqual(providers.find((entry) => entry.provider === 'openrouter'), {
-    provider: 'openrouter', cli: 'openrouter', label: 'OpenRouter', origin: 'stock', shadowed: false, launchable: false, maturity: 'comingSoon',
-  }, 'a coming-soon provider is catalog data and launches nothing');
+  assert.equal(providers.find((entry) => entry.provider === 'openrouter'), undefined, 'OpenRouter is an account a harness launches on, not a harness section');
 });
 
 test('the join: Native first, then every model the CLI listed in its order with the CLI\'s own name, catalog metadata where the id matches, launchable providers first', async () => {
@@ -63,7 +61,7 @@ test('the join: Native first, then every model the CLI listed in its order with 
     },
   }));
   assert.deepEqual(rows.map((entry) => [entry.provider, entry.operational, entry.off]), [
-    ['anthropic', true, false], ['openai', true, false], ['google', false, true], ['xai', false, false], ['hermes', false, false], ['openrouter', false, false],
+    ['anthropic', true, false], ['openai', true, false], ['google', false, true], ['xai', false, false], ['hermes', false, false],
   ], 'launchable providers first, catalog order within');
   const anthropic = rows[0];
   assert.equal(anthropic.cli_label, 'Claude Code');
@@ -87,7 +85,6 @@ test('the join: Native first, then every model the CLI listed in its order with 
   assert.deepEqual(rows[1].models.map((row) => row.name), ['Native', 'GPT-5.6-Sol']);
   const google = rows[2];
   assert.deepEqual(google.models.map((row) => [row.model, row.operational, row.off, row.selectable]), [['native', false, true, false]], 'turned off: Native only, greyed with that word');
-  assert.deepEqual(rows[5].models, [], 'a coming-soon provider has no rows, not even Native');
   const flat = await catalog.listSessionLaunchSpecs(measured({ operational: ['claude'], models: { claude: listed(['claude-sonnet-5']) } }));
   assert.deepEqual(flat.filter((row) => row.provider === 'anthropic').map((row) => row.cmd), ['claude', 'claude --model claude-sonnet-5']);
   assert.equal(catalog.providerDefault(flat, 'anthropic')?.model, 'native', 'a provider with no preference delegates the model to its CLI');
@@ -148,7 +145,7 @@ test("the owner's copy is an overlay: a section of a shipped id replaces it in p
     assert.equal(read.origin, 'user');
     assert.equal(read.path, mine);
     assert.deepEqual(read.providers.map((p) => [p.provider, p.origin, p.shadowed]), [
-      ['anthropic', 'user', true], ['openai', 'stock', false], ['google', 'user', true], ['hermes', 'stock', false], ['openrouter', 'stock', false], ['example', 'user', false],
+      ['anthropic', 'user', true], ['openai', 'stock', false], ['google', 'user', true], ['hermes', 'stock', false], ['example', 'user', false],
     ], 'anthropic and google replace in place; xai is hidden; example appends');
     assert.equal(read.providers[0].label, 'Anthropic (mine)', 'the heading is the copy\'s, the key was the id');
     assert.deepEqual(read.providers[0].families, [{ family: 'fable', tier: 'frontier' }], 'the section replaced whole — the shipped family words do not merge in');
