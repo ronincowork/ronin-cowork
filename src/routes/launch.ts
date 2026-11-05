@@ -511,7 +511,7 @@ export function registerLaunch(app: express.Express): LaunchControl {
       const shelved = [launch.parked ? resolved.brief : '', birthLines].filter(Boolean).join('\n');
       if (!shelved) return;
       // A brief that never reached the Agent is parked in brief.md beside the session; no
-      // work item is made for it (WORK_ITEMS_DESIGN.md section 1: items only for work).
+      // work item is made for it (docs/using-ronin/project-management.md: items only for work).
       await parkBrief(resolved.name, shelved);
     })().catch((e) => console.error(`[ronin] spawn ${resolved.name}:`, e));
   };

@@ -19,7 +19,7 @@ export interface Tegami {
   /** The Epics the Teams this Agent leads hold, and not the Agent itself: a lead's item island
    * shows them beside its own items (owner, 2026-11-04, w279). Empty for an Agent leading none. */
   teamEpics: Array<WorkItem & { jira_url?: string }>;
-  /** What this Agent handed in that still waits In Review (WORK_ITEMS_DESIGN.md 6a): a hand-in
+  /** What this Agent handed in that still waits In Review (docs/using-ronin/project-management.md, Three signals): a hand-in
    * gives the item to the Team, so it is found on the rosters of the Agent's Teams. The item
    * island shows it with its hand-in mark, so a tile says what its Agent just handed in. */
   handedIn: Array<WorkItem & { jira_url?: string }>;

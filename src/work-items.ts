@@ -9,7 +9,7 @@
  * and an Agent's new item needs an epic above it (createItemUnlocked).
  *
  * THE SHAPE MATCHES JIRA (docs/using-ronin/work-items.md). One object at every level, and one
- * exact value (Lab JIRA_RONIN_BRIDGE keystone 10): `status`, `kind`, `priority` and a link's
+ * exact value (ronin-services docs/jira-bridge.md, What flows each way): `status`, `kind`, `priority` and a link's
  * `type` are the space's own names (spaceNames), anything else refused naming the set;
  * `level` is the kind's level (1 epic · 0 story, task, bug · -1 subtask); `flagged` an
  * impediment; `comments` a list.
@@ -39,7 +39,7 @@ export type ItemLevel = typeof ITEM_LEVELS[number];
 export type TrailOp = typeof TRAIL_OPS[number];
 
 export interface TrailLine { at: string; by: string; op: TrailOp; from?: string; to?: string; note?: string }
-/** The pair (JIRA_RONIN_BRIDGE keystone 3): the Jira issue's id, which never changes, and the
+/** The pair (ronin-services docs/jira-bridge.md, Pairing): the Jira issue's id, which never changes, and the
  * key it shows (PAY-123). Only the bridge writes it. */
 export interface JiraPair { id: string; key: string }
 export interface External { trello?: string; jira?: JiraPair; github?: string }
@@ -105,7 +105,7 @@ const levelOfKind = (names: SpaceNames, kind: string): ItemLevel => {
   return names.kinds.find((one) => one.name === kind)!.level;
 };
 
-/** THE SHAPES JIRA REFUSES (WORK_ITEMS_DESIGN.md section 5; JIRA_RONIN_BRIDGE.md section 7, the
+/** THE SHAPES JIRA REFUSES (docs/using-ronin/work-items.md; ronin-services docs/jira-bridge.md, Pairing: the
  * live failures): on a Jira-connected campaign an item may not take a parent or kind Jira's
  * hierarchy would refuse, so Ronin and Jira never part. An epic sits under nothing; a level-0
  * item (Task, Story, Bug, Feature) under an epic or nothing; a Subtask only under a level-0
@@ -149,7 +149,7 @@ export interface WorkItem {
   created: { at: string; by: string };
   /** The last hand-in: the Agent that handed it in, and when. Send back returns it there. */
   handed_in?: { by: string; at: string };
-  /** THE HAND-IN SIGNAL (WORK_ITEMS_DESIGN.md 6a): every accepted hand-in, oldest first, even
+  /** THE HAND-IN SIGNAL (docs/using-ronin/project-management.md, Three signals): every accepted hand-in, oldest first, even
    * one never promoted; `receipt` null for a checkout's (no desk, no code to promote). */
   hand_ins?: HandIn[];
   /** THE PROMOTION SIGNAL (6a): the last promotion that carried a hand-in of this item to dev.
@@ -208,7 +208,7 @@ async function save(item: WorkItem): Promise<void> {
   await rename(tmp, target);
 }
 
-/** EVERY ID AN ITEM HAS HAD still finds it (WORK_ITEMS_DESIGN.md section 5): a w id renamed to
+/** EVERY ID AN ITEM HAS HAD still finds it (docs/using-ronin/work-items.md): a w id renamed to
  * its Jira key is an alias, read from the item's "rename" trail lines, so nothing is stored
  * twice. Found aliases are remembered; one that no longer leads to a file is looked up again. */
 const aliases = new Map<string, string>();
@@ -300,7 +300,7 @@ export async function appendTrail(id: string, by: string, change: (item: WorkIte
   return notified.length ? { ...answer(item, line), notified } : answer(item, line);
 }
 
-/* NOTICES (WORK_ITEMS_DESIGN.md section 4): a notice tells someone something they must act on,
+/* NOTICES (docs/using-ronin/project-management.md, Who is told what): a notice tells someone something they must act on,
  * and there are five, sent from here and nowhere else in the store:
  *   1. a hand-in, to the lead of the Team now holding it: a desk's own message (desks/lead.ts)
  *      is the notice, so only a checkout's is sent here (handInUnlocked);
@@ -611,7 +611,7 @@ async function handInTeam(item: WorkItem, session: string): Promise<string | nul
   return null;
 }
 
-/** THE HAND-IN (WORK_ITEMS_DESIGN.md section 3, step 4): the item moves to In Review, is given
+/** THE HAND-IN (docs/using-ronin/project-management.md, How an item lives): the item moves to In Review, is given
  * to the Team (the hander comes off, the Team goes on) and records who handed it in, in one
  * trail line. A desk's hand-in is told by the desk's own message (desks/lead.ts); a checkout's
  * (a move to In Review by its holder) tells the Team's lead from here. An item already In
@@ -784,7 +784,7 @@ export async function linkItem(id: string, type: string, other: string, by: stri
   });
 }
 
-/** Jira's delete (WORK_ITEMS_DESIGN.md 5a). The item goes, and with it its subtasks (as Jira
+/** Jira's delete (docs/using-ronin/project-management.md, Jira). The item goes, and with it its subtasks (as Jira
  * deletes an issue's subtasks); any other child is left with no parent (as an epic's children
  * are). Links to it go and every holder lets go of it. An item that came from Jira
  * (created.by jira:<user>), or a subtask that did, goes only with `inJira`: the refusal names

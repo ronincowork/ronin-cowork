@@ -36,16 +36,15 @@ was off goes when it comes back on:
 A paired item's Ronin id is its Jira key (`KAN-65`), so Agents and Jira users say the same
 name. An item from Jira comes in with its key. An item made in Ronin is `w101` until the sync
 that creates it on Jira renames it; a key changed in Jira (the space's key renamed, the item
-moved) renames it the same way. Children, links and holders follow, and each holder is told:
-"w101 is now KAN-65 (its Jira key); nothing to do." Without a connection, items
-stay `w101`.
+moved) renames it the same way. Children, links and holders follow, and every id it has had still
+finds it; nobody is told. Without a connection, items stay `w101`.
 
 ## Jira wins
 
 Jira is the source; Ronin keeps the item as Jira had it at the last sync, and compares.
 
-- **A change in Jira** replaces the Ronin item at the next read, and its holders hear of it
-  as of any change.
+- **A change in Jira** replaces the Ronin item at the next read; the Agent working it hears
+  of a comment or a change that beat its own, as of any change by someone else.
 - **A change in Ronin** goes up at once, but only if Jira has not changed the item since the
   last sync. If it has, Jira's item replaces Ronin's and each holding Agent is told: "KAN-27
   changed on Jira (by jira:Alice); your change was not sent. Read the item and redo it if it

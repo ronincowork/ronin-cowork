@@ -5,7 +5,7 @@
  *
  * WAITING ON YOU (`createTeamWaiting`): the Team's items that wait on the person, in three groups,
  * each oldest first, each line with how long it has waited. The items In Review split by the
- * signals (WORK_ITEMS_DESIGN.md 6a): With the lead, handed in and not on dev since; Ready to
+ * signals (docs/using-ronin/project-management.md, Three signals): With the lead, handed in and not on dev since; Ready to
  * accept, on dev since the last hand-in or handed in from a checkout. On both, Accept moves one
  * to Done, Send back asks for a comment, puts it on the item and moves it to In
  * Progress, back to the Agent that handed it in (to the Team if it has ended). Stuck: the
@@ -52,7 +52,7 @@ export const teamWaiting = (row) => ({
 export const teamEpicIds = (row) => new Set(Array.isArray(row?.epics) ? row.epics : []);
 
 /** Waiting on you: With the lead, Ready to accept, then Stuck, each line an item card with its
- * actions (WORK_ITEMS_DESIGN.md 6a: you accept what you can try, what is on dev). */
+ * actions (docs/using-ronin/project-management.md, Three signals: you accept what you can try, what is on dev). */
 export function createTeamWaiting({ team }) {
   const { createSurface } = WorkspaceKit.primitives;
   const out = createSurface({ label: t('team_waiting.title', 'Waiting on you'), className: 'setup-surface team-waiting' });

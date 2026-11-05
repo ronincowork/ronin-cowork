@@ -56,7 +56,7 @@ async function currentRoleAt(dir: string, born: BehaviourRow[], leads: string[])
   return names.has('project-management-traffic-control') || names.has('traffic_control') ? 'coordinator'
     : names.has('project-management-epic-lead') || names.has('epic_agent') ? 'epic_lead' : leads.length ? 'lead' : 'coworker';
 }
-/** Whether an Agent works under project management (WORK_ITEMS_DESIGN.md section 6): its current
+/** Whether an Agent works under project management (docs/architecture/project-management.md, the briefs): its current
  * behaviours, as born and changed since, include the project-management switch. An Agent with
  * no readable record is not under it. */
 export async function projectManagementOn(name: string): Promise<boolean> {

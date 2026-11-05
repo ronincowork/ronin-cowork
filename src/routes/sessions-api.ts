@@ -380,7 +380,7 @@ export function registerSessions(app: express.Express): void {
     if (!name) return res.status(404).json({ error: `No session owns pane ${pane}.` });
     try {
       // session_end stops while the Agent holds work In Progress or To Do, and names the one
-      // command that puts it back (WORK_ITEMS_DESIGN.md section 3, step 7). Shut down Agent
+      // command that puts it back (docs/using-ronin/project-management.md, How an item lives). Shut down Agent
       // and the other endings do not stop: Ronin puts the items back itself.
       const held = await unfinishedHolds(name);
       if (held.length) {

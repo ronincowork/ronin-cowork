@@ -93,7 +93,7 @@ if (isEntryPoint) await migrateItems().then((done) => {
   if (done.migrated.length) console.log(`[work-items] ${done.migrated.length} of ${done.before} items took Jira's names`);
 }).catch((error) => console.error(`[work-items] migration: ${(error as Error).message}`));
 // An Agent that vanished without an end through Ronin (a crash) gives up its items like any
-// ending (WORK_ITEMS_DESIGN.md section 3, step 7): a sweep every five minutes, two misses in a row.
+// ending (docs/using-ronin/project-management.md, How an item lives): a sweep every five minutes, two misses in a row.
 if (isEntryPoint) setInterval(() => {
   void releaseEndedHolders().then((ended) => {
     if (ended.length) console.log(`[work-items] released the items of ended ${ended.join(', ')}`);

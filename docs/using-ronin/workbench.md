@@ -95,13 +95,16 @@ Two cards in a Team's discovery column, after Commons, show that Team's work. "T
 work" is what the Team holds plus what its Agents hold: the same items `team member status`
 reads.
 
-**Waiting on you** lists the items that wait on you, in two groups, oldest first. Each line
+**Waiting on you** lists the items that wait on you, in three groups, oldest first. Each line
 shows the item, who holds it, its key, and how long it has waited.
 
-- **Ready to accept** holds the items In Review, timed from their last move to In Review.
-  **Accept** moves an item to Done. **Send back** opens a comment box: write what needs
-  doing and press **Send back** again; the comment goes on the item and the item moves to
-  In Progress.
+- **With the lead** holds the items handed in and not yet on dev: the lead reviews and
+  promotes them.
+- **Ready to accept** holds the items on dev since their last hand-in (or handed in from a
+  checkout, with no code to promote). **Accept** moves an item to Done. **Send back** opens a
+  comment box: write what needs doing and press **Send back** again; the comment goes on the
+  item, and the item moves to In Progress, back to the Agent that handed it in (to the Team if
+  that Agent has ended).
 - **Stuck** holds the flagged items, timed from when each was flagged, with the flag's
   reason. **Reply** opens a comment box; the comment goes on the item, and the Agents
   holding it hear it.

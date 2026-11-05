@@ -165,7 +165,7 @@ export interface WaitingItem {
 }
 
 /** What the teams push carries for the Team workbench's Waiting on you and Epics cards: the items
- * In Review split by the signals (WORK_ITEMS_DESIGN.md 6a) into `lead` (With the lead: handed
+ * In Review split by the signals (docs/using-ronin/project-management.md, Three signals) into `lead` (With the lead: handed
  * in, not on dev since) and `review` (Ready to accept: on dev since the last hand-in, or handed
  * in from a checkout), the flagged ones (`stuck`), each oldest first, and the Team's Epics
  * (`epics`): those it or its members hold, and the Epic above each item they hold. */

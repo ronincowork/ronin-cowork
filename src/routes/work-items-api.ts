@@ -135,7 +135,7 @@ export function registerWorkItems(app: express.Express): void {
     }, callerOf(req), text(b.note)));
   }));
 
-  // THE ACTS THAT TAKE SEVERAL IDS (WORK_ITEMS_DESIGN.md section 5): transition, assign, handoff,
+  // THE ACTS THAT TAKE SEVERAL IDS (docs/using-ronin/work-items.md): transition, assign, handoff,
   // watch, unwatch, flag, unflag, delete. Each is one function of (id, body, caller) answering
   // its acknowledgement; POST /api/work-items/:id/<act> (DELETE /api/work-items/:id) runs it on
   // one item, POST /api/work-items/many/<act> { ids } on each in turn, every id answering.
@@ -207,7 +207,7 @@ export function registerWorkItems(app: express.Express): void {
     if (verb === 'delete') app.delete('/api/work-items/:id', handler);
     else app.post(`/api/work-items/:id/${verb}`, handler);
   }
-  // The promotion marks a carried item on dev (WORK_ITEMS_DESIGN.md 6a): { promotion }, no status change.
+  // The promotion marks a carried item on dev (docs/using-ronin/project-management.md, Three signals): { promotion }, no status change.
   app.post('/api/work-items/:id/on-dev', guarded(async (req, res) => {
     const promotion = text(req.body?.promotion)?.trim();
     if (!promotion) throw new WorkItemBadInput('name the promotion: { promotion }.');

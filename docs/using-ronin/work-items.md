@@ -49,8 +49,7 @@ No parent is normal. Not every task belongs to an epic.
 - **id**: `w12`, or, for an item paired with Jira, its Jira key (`KAN-65`), so Agents and Jira
   users say the same name. One made in Ronin is `w101` until it goes to Jira, then takes its
   key; a key changed in Jira renames it again. Its children, links and holders follow, the
-  history says "renamed from w101", and each holding Agent is told: "w101 is now KAN-65 (its Jira
-  key); nothing to do."
+  history says "renamed from w101", and every id it has had still finds it. Nobody is told.
 
 - **Jira fields**: an item paired with Jira also shows Jira's Sprint, Due date, Rank,
   Reporter, Created, Resolved, Story point estimate, Labels, Components and Fix versions,
@@ -115,12 +114,11 @@ item read w12
 item transition w12 "In Progress"
 ```
 
-**Big work is broken down.** Each step gets its own subtask, moved through its own status,
-so anyone can see how far along the work is.
+**Side work that belongs to the item is a subtask.** Only a step someone else may take, or
+work the item turned out to need; never a subtask per step.
 
 ```text
-item create --parent w12 --title "Write the migration"
-item create --parent w12 --title "Update the docs"
+item create --parent w12 --title "Migrate the old field"
 ```
 
 **Findings and decisions are comments.** What it learned, what it chose and why, the answer
@@ -160,7 +158,8 @@ item link w15 Blocks w12
 
 **Keep the objective true.** If the job changes, `item edit w12 --objective "<new>"`.
 
-**Finished.** A hand-in with the item named; it moves the item to In Review.
+**Finished.** A hand-in with the item named; it moves the item to In Review and gives it to
+the Team. Under project management a hand-in without `--item` is refused.
 
 ```text
 worktree-desk hand-in ronin_cowork --item w12
@@ -201,50 +200,27 @@ item can have any number of watchers. Watching changes no holders; a Team's watc
 its roster beside its holds. `work-record read` lists what you watch, and `item unwatch w3`
 stops.
 
-A watcher hears the moves on the item and everything under it, its children and theirs:
-a status change, a flag raised or cleared, a new child (created under or moved under), a
-holder change (assign, handoff, let go, holder ended). Comments, edits, links and Jira
-fields stay the holders'.
+A watcher is told of a status change on the item it watches, nothing else.
 
-## A Team's four lists
+## A Team's lists
 
-A Team hears through its lead, whoever is lead now, so a new lead hears with no step.
-
-- **What the Team holds** (its roster): the lead gets the holder messages.
-- **What the Team watches** (its roster): the lead gets the watcher messages.
-- **What its members hold:** the lead gets the watcher messages, never the holder ones.
-- **What its members watch:** the lead hears nothing; they are shown only.
-
-The lead's `work-record read` shows all four, read from the roster and the members' own
-records when it reads.
+A Team hears through its lead, whoever is lead now, so a new lead hears with no step. Its
+roster holds what the Team holds and what it watches; its members' holds and watches are read
+from their own records. The lead's `work-record read` shows all four.
 
 ## Notices
 
-A change is told to two lists, with two messages. The one who made it is never told. Each
-list reaches an Agent once; the two are never compared, so an Agent on both gets both.
-
-- **Holders:** the Agents holding the item, and each Team holding it through its lead. They
-  hear every change: "w5: status To Do → In Review by builder." or "w5: a comment from
-  jira:glen." A new child under an item they hold: "w9 Fix login was added under w7, which
-  you hold. Handle it as you see fit."; a lead hearing for its Team, "…which your team holds."
-- **Watchers:** the Agents watching the item or anything above it, and through its lead each
-  Team watching it or anything above it, or with a member holding it. Holding the item puts
-  a Team on no watchers list. They hear only a status change, a flag, a new child and a holder
-  change, named with what they watch: "w9 (under w3, which you watch): status To Do → In
-  Review by builder." Watching the item itself, the "(under …)" part is dropped.
-
-A line that changes nothing, such as a hand-in or a promotion on an item already there,
-stays on the trail and tells nobody. When the holders themselves change, each Agent whose
-list moved also hears "Your work record changed; please read it."
+Five, and none twice; [Project management](project-management.md#who-is-told-what) has the
+table. Each person gets one notice per change, and a command on several items sends one notice
+listing them. An Agent's own changes tell nobody, and neither does an item taking its Jira key.
 
 The Agent reads the item, then answers with an edit or a comment. A comment is how it
-replies to a person, from Ronin or from Jira. A change is never left unanswered.
-
-An Agent's own changes notify nobody. If someone needs to know, it tells them.
+replies to a person, from Ronin or from Jira.
 
 ## Don'ts
 
 - Don't do work without an item. If there is none, create one under its epic; it is yours.
+- Don't move an item to Done. Done is the accepting person's.
 - Don't keep work only in your head or in your chat. If it matters, it is on the item:
   a comment, an attachment, a subtask or a status.
 - Don't leave an item in a status the work has left. Move it when the work moves.

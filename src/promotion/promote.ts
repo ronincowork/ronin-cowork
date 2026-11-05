@@ -56,7 +56,7 @@ export async function announcePromotion(r: PromotionReceipt, primary: string, fx
     if (receipt?.project_id && !associated.some((item) => item.id === receipt.project_id)) associated.push({ id: receipt.project_id, session: receipt.session });
   }
   // A promotion is a code step and never changes an item's status: only the person accepting
-  // sets Done (owner ruling, 2026-11-04). It is the promotion signal (WORK_ITEMS_DESIGN.md 6a):
+  // sets Done (owner ruling, 2026-11-04). It is the promotion signal (docs/using-ronin/project-management.md, Three signals):
   // each item named on a carried hand-in is marked on dev, { promotion, at }, with the receipt
   // on its trail, and nobody is told: it shows under Ready to accept. A paired item too: on dev
   // is not a status, so Jira is not touched. Through the running server, so the line is its write.

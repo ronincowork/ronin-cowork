@@ -1,5 +1,5 @@
 /**
- * WORK ITEMS, LIGHTER (WORK_ITEMS_DESIGN.md sections 3 and 5; KAN-239 piece A): every id an item
+ * WORK ITEMS, LIGHTER (docs/using-ronin/project-management.md and docs/using-ronin/work-items.md; KAN-239 piece A): every id an item
  * has had finds it; several ids per act; create's first line; search --text; a hand-in gives
  * the item to the Team and records who; Send back returns it to that Agent, or leaves it with
  * the Team when the Agent has ended; session_end's list of unfinished holds; an ending or a

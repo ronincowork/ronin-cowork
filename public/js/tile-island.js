@@ -15,7 +15,7 @@
  * (owner, 2026-11-04, KAN-238) — so the colours explain themselves. The bar again, or a
  * pill, puts it back. A pill pressed again closes its item.
  *
- * THE HAND-IN MARK (WORK_ITEMS_DESIGN.md 6a, piece E): beside the dot and the flag, an item In
+ * THE HAND-IN MARK (docs/using-ronin/project-management.md, Three signals): beside the dot and the flag, an item In
  * Review carries the latest of its signals, "handed in" or "on dev", with how long ago, so a
  * tile says what its Agent just handed in. At rest it is the mark alone; down, its words.
  *

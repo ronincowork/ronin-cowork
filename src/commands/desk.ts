@@ -200,7 +200,7 @@ async function main(): Promise<void> {
         } else targets = [await pickOne(session, positional[0] ?? '', 'hand-in')];
         const projectId = str(flags.get('item'));
         if (projectId && !(await readItem(projectId))) die(`NO-ITEM: there is no work item ${projectId}`, 3);
-        // A hand-in names its item under project management (WORK_ITEMS_DESIGN.md 6a).
+        // A hand-in names its item under project management (docs/using-ronin/project-management.md, Three signals).
         if (!projectId && await projectManagementOn(session)) {
           die(`NO-ITEM: under project management a hand-in names its work item.\n  NEXT: worktree-desk hand-in ${positional[0] ?? '<repo>'}${flags.get('assignment') ? ' --assignment' : ''} --item <id>`, 2);
         }
