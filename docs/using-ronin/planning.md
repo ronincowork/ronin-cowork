@@ -10,7 +10,7 @@ Workspace and reached only through the `plan` tool: you never need their folder.
 The **planner**: usually the lead the user asks, once the user says yes to a plan; or the
 owner, or any Agent the owner asks. Fill it in with the user: their words for the objective,
 your proposal for the Teams and epics, their yes on what done looks like. Then the epics are
-made from it, and the planner is done with it until it closes.
+made from it, and the planner is done with it.
 
 ## What goes in it
 
@@ -37,7 +37,6 @@ made from it, and the planner is done with it until it closes.
 |---|---|---|
 | **Draft** | being written with the user; rewrite it as often as you like | `plan write` |
 | **Ordered** | the user said yes; not rewritten; the epics are made from it | `plan order` |
-| **Closed** | the epics are Done and the Closed line is written | `plan close` |
 
 The status is the line under the title, `Status: Ordered · 2026-11-05 · pm_lead`. The tool
 writes it; anything you put there is replaced.
@@ -45,12 +44,11 @@ writes it; anything you put there is replaced.
 ## The plan tool
 
 ```text
-plan ls [--status Draft|Ordered|Closed]   the Workspace's plans: name, status, date, by
+plan ls [--status Draft|Ordered]          the Workspace's plans: name, status, date, by
 plan read <name>                          one plan, whole; <workspace>/<name> reads another Workspace's
 plan read --template                      the blank to fill in
 plan write <name> [--file <path>]         create or replace a Draft (from stdin without --file)
 plan order <name>                         Draft → Ordered: not rewritten from here
-plan close <name> "<line>"                Ordered → Closed: writes the Closed line, once
 ```
 
 - The Workspace is your Team's. On several Teams, or none, add `--workspace <name>`; the tool
@@ -65,11 +63,6 @@ plan close <name> "<line>"                Ordered → Closed: writes the Closed 
 3. The lead makes its epic: the title, and what done looks like as the objective. It attaches the
    plan: `item attach <epic> plan:<name>`. The epic's record and Docs open it from there.
 4. The work runs on the epics. A change of scope changes an epic; the plan stays as ordered.
-
-## Closing
-
-When the epics are Done, the planner reads the plan once more and closes it:
-`plan close <name> "<did we do what we said>"`. That is the only write after it is ordered.
 
 ## Don'ts
 
@@ -108,8 +101,4 @@ One per Team, usually. Each row becomes an epic, made by the Team's lead with th
 | <title> | <team> | <what someone can see or try when it is finished; clear enough to stop at> |
 
 Not started yet: <paragraphs for the parts that come later, or "none">.
-
-## Closed
-
-<Filled by plan close: did we do what we said?>
 ```

@@ -96,7 +96,7 @@ const ok = async (name: string, args: string[], as = 'lead', input = '') => {
   return r.stdout;
 };
 
-const ORDER = `# Shop fit\n\nStatus: Ordered · 1999-01-01 · someone\n\nAsked by the owner.\n\n## Epics\n\n| Epic | Team | What done looks like |\n|---|---|---|\n| Shelves | crew | the shelves stand |\n\n## Closed\n\n<Filled by plan close: did we do what we said?>\n`;
+const ORDER = `# Shop fit\n\nStatus: Ordered · 1999-01-01 · someone\n\nAsked by the owner.\n\n## Epics\n\n| Epic | Team | What done looks like |\n|---|---|---|\n| Shelves | crew | the shelves stand |\n`;
 const shopDir = path.join(lab, 'camp', 'shop', 'plans');
 
 test('the template is the one block in planning.md, read by plan read --template', async () => {
@@ -122,37 +122,24 @@ test('write is a Draft at the default place, the header the tool\'s, one file co
   await fs.rm(path.join(lab, 'other.md'));
 });
 
-test('no guards: write keeps the status, order and close work from any status', async () => {
+test('no guards: write keeps the status, order works from any status; Draft and Ordered only', async () => {
   // A plan with no Epics rows orders all the same; the docs and briefs steer, the tool doesn't.
   const blankEpics = (await ok('plan', ['read', '--template'])).replace('# <Project name>', '# Empty');
+  assert.doesNotMatch(blankEpics, /Closed/);
   await ok('plan', ['write', 'empty', '--workspace', 'shop'], 'solo', blankEpics);
   assert.match(await ok('plan', ['order', 'empty']), /^Ordered shop\/empty\..*\nStatus: Ordered · /);
 
-  // Close works on a Draft; a second close replaces the Closed line.
-  await ok('plan', ['write', 'rough'], 'lead', '# Rough\n');
-  assert.match(await ok('plan', ['close', 'rough', 'Dropped.']), /^Closed shop\/rough\.\nStatus: Closed · /);
-  assert.match(await ok('plan', ['close', 'rough', 'Dropped for good.']), /^Closed shop\/rough\./);
-  const rough = await fs.readFile(path.join(shopDir, 'rough.md'), 'utf8');
-  assert.match(rough, /## Closed\n\nDropped for good\. \(\d{4}-\d\d-\d\d\)\n$/);
-  assert.doesNotMatch(rough, /Dropped\. \(/);
-  await fs.rm(path.join(shopDir, 'rough.md'));
-  git(lab, 'add', '-A', '--', 'camp/shop/plans/rough.md');
-  git(lab, 'commit', '-q', '-m', 'test: rough gone', '--', 'camp/shop/plans/rough.md');
-
   // A write keeps the status the plan has: an Ordered plan rewritten is still Ordered.
   assert.match(await ok('plan', ['order', 'fit']), /^Ordered shop\/fit\. .*\nStatus: Ordered · /);
-  assert.match(await ok('plan', ['write', 'fit'], 'lead', ORDER), /^Rewrote shop\/fit \(Ordered\)\.\nStatus: Ordered · /);
+  assert.match(await ok('plan', ['write', 'fit'], 'lead', `${ORDER}\nMore.\n`), /^Rewrote shop\/fit \(Ordered\)\.\nStatus: Ordered · /);
   assert.match(await ok('plan', ['order', 'fit']), /^Ordered shop\/fit\./);
+  assert.deepEqual(git(lab, 'log', '-2', '--format=%s').trim().split('\n'), ['plan fit: write', 'plan fit: order']);
 
-  assert.match(await ok('plan', ['close', 'fit', 'Yes: the shelves stand.']), /^Closed shop\/fit\.\nStatus: Closed · /);
-  const closed = await fs.readFile(path.join(shopDir, 'fit.md'), 'utf8');
-  assert.match(closed, /## Closed\n\nYes: the shelves stand\. \(\d{4}-\d\d-\d\d\)\n$/);
-  // The rewrite matched what was there, so it had nothing to commit.
-  assert.deepEqual(git(lab, 'log', '-3', '--format=%s').trim().split('\n'), ['plan fit: close', 'plan fit: order', 'test: rough gone']);
-
-  assert.equal(await ok('plan', ['ls', '--status', 'Closed']), `fit\tClosed\t${closed.match(/Closed · (\S+)/)![1]}\tlead\n`);
-  assert.match(await ok('plan', ['ls']), /^empty\tOrdered\t.*\nfit\tClosed/);
-  assert.equal((await run('plan', ['ls', '--status', 'Done'])).status, 3);
+  const fit = await fs.readFile(path.join(shopDir, 'fit.md'), 'utf8');
+  assert.equal(await ok('plan', ['ls', '--status', 'Ordered']), `empty\tOrdered\t${fit.match(/Ordered · (\S+)/)![1]}\tlead\nfit\tOrdered\t${fit.match(/Ordered · (\S+)/)![1]}\tlead\n`);
+  assert.equal(await ok('plan', ['ls', '--status', 'Draft']), 'No plans in shop.\n');
+  for (const gone of ['Closed', 'Done']) assert.equal((await run('plan', ['ls', '--status', gone])).status, 3);
+  assert.equal((await run('plan', ['close', 'fit', 'done'])).status, 2, 'there is no plan close');
   assert.match((await run('plan', ['write', 'Bad_Name'], 'lead', ORDER)).stderr, /lowercase letters, digits and -/);
 });
 

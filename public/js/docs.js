@@ -268,7 +268,7 @@ export function buildDocs(root, only = null) {
           Object.assign(document.createElement('b'), { textContent: parts.pop() }),
           // The last two directories, so two files called HOW_TO.md are told apart
           // without printing an absolute path on a phone-width row.
-          // A plan says its status instead (the Plans shelf: Draft, Ordered, Closed).
+          // A plan says its status instead (the Plans shelf: Draft, Ordered).
           Object.assign(document.createElement('span'), { textContent: s.hints?.[n] || parts.slice(-2).join('/') }),
         );
         b.addEventListener('click', () => open(p));

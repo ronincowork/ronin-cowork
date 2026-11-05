@@ -1,13 +1,13 @@
 /**
  * PLANS (KAN-256; docs/using-ronin/planning.md). A plan is written once with the user,
- * ordered, and closed with one line at the end. The tool steers nothing: the planning doc and the
+ * then ordered. The tool steers nothing: the planning doc and the
  * briefs say the flow (the plan isn't rewritten: the work runs on the epics). It lives on the Workspace, at
  * `<ronin_lab>/<campaign>/<workspace>/plans/<name>.md` unless the Workspace names another place
  * (`plans: { location, path }`, src/workspaces.ts). No Agent sees the path: everything goes through
  * `ronin_bin/plan` over /api/plans (src/routes/plans-api.ts).
  *
- * The header is the tool's, the line under the title: `Status: <Draft|Ordered|Closed> · <date> · <by>`.
- * Where the plans folder is in a Git repository, each write, order and close commits that one file
+ * The header is the tool's, the line under the title: `Status: <Draft|Ordered> · <date> · <by>`.
+ * Where the plans folder is in a Git repository, each write and order commits that one file
  * only, and pushes once when the branch has an upstream.
  */
 import { mkdir, readFile, readdir, rename, stat, unlink, writeFile, copyFile } from 'node:fs/promises';
@@ -25,7 +25,7 @@ export class PlanRefused extends Error {}
 export class PlanMissing extends Error {}
 export class PlanBadInput extends Error {}
 
-export const PLAN_STATUSES = ['Draft', 'Ordered', 'Closed'] as const;
+export const PLAN_STATUSES = ['Draft', 'Ordered'] as const;
 export type PlanStatus = (typeof PLAN_STATUSES)[number];
 
 export interface PlanHeader { status: PlanStatus; date: string; by: string }
@@ -38,7 +38,7 @@ export const isValidPlanName = (s: string): boolean => /^[a-z0-9][a-z0-9-]{0,63}
 
 const DEFAULT_LOCATION = 'ronin_lab';
 const today = (): string => new Date().toISOString().slice(0, 10);
-const HEADER = /^Status: (Draft|Ordered|Closed) · (\S+) · (.+)$/;
+const HEADER = /^Status: (Draft|Ordered) · (\S+) · (.+)$/;
 export const headerLine = (h: PlanHeader): string => `Status: ${h.status} · ${h.date} · ${h.by}`;
 
 /* ---------- where ---------- */
@@ -134,17 +134,6 @@ export function withHeader(text: string, header: PlanHeader, name: string): stri
   while (rest.length && !rest[0]!.trim()) rest.shift();
   const body = [...lines.slice(0, at + 1), '', headerLine(header), '', ...rest].join('\n').replace(/\n*$/, '\n');
   return body;
-}
-
-/** The Closed section, written once: its body becomes the line and the date. */
-export function withClosed(text: string, line: string, date: string): string {
-  const closed = `${line.trim()} (${date})`;
-  const lines = text.replace(/\n*$/, '').split('\n');
-  const at = lines.findIndex((one) => /^## +Closed\b/i.test(one));
-  if (at === -1) return `${lines.join('\n')}\n\n## Closed\n\n${closed}\n`;
-  let end = lines.findIndex((one, i) => i > at && /^## /.test(one));
-  if (end === -1) end = lines.length;
-  return [...lines.slice(0, at + 1), '', closed, ...(end < lines.length ? ['', ...lines.slice(end)] : [])].join('\n') + '\n';
 }
 
 const fileOf = (dir: string, name: string): string => path.join(dir, `${name}.md`);
@@ -264,19 +253,6 @@ export function orderPlan(w: Workspace, name: string, by: string): Promise<PlanA
     await writeFile(plan.path, withHeader(plan.text, { status: 'Ordered', date: today(), by }, name), 'utf8');
     const history = await commitOnly(dir, [plan.path], `plan ${name}: order`);
     return answer(`Ordered ${w.name}/${name}. Make each epic from its row and item attach <epic> plan:${w.name}/${name}.`, (await readAt(dir, w.name, name))!, history);
-  });
-}
-
-export function closePlan(w: Workspace, name: string, line: string, by: string): Promise<PlanAnswer> {
-  if (!String(line ?? '').trim()) throw new PlanBadInput(`plan close takes the line: plan close ${name} "<did we do what we said?>".`);
-  return serial(async () => {
-    // From any status; a Closed line already there is replaced.
-    const plan = await readPlan(w, name);
-    const { dir } = await placeOf(w);
-    const date = today();
-    await writeFile(plan.path, withHeader(withClosed(plan.text, line, date), { status: 'Closed', date, by }, name), 'utf8');
-    const history = await commitOnly(dir, [plan.path], `plan ${name}: close`);
-    return answer(`Closed ${w.name}/${name}.`, (await readAt(dir, w.name, name))!, history);
   });
 }
 

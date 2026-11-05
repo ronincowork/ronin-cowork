@@ -40,7 +40,7 @@ predicate in `src/behaviours.ts`.
 | Tool | Does |
 |---|---|
 | `item` (`ronin_bin/item`) | create, read, search, edit, transition, flag, unflag, assign, handoff, watch, comment, attach, link, delete; `item --help` |
-| `plan` (`ronin_bin/plan`) | ls, read (`<workspace>/<name>`, `--template`), write, order, close, over `/api/plans`; the Workspace is the caller's Team's unless `--workspace`; `plan --help` |
+| `plan` (`ronin_bin/plan`) | ls, read (`<workspace>/<name>`, `--template`), write, order, over `/api/plans`; the Workspace is the caller's Team's unless `--workspace`; `plan --help` |
 | `worktree-desk hand-in <repo> --item <id>` | the hand-in signal: In Review, given to the Team, recorded on the item; refused without `--item` under project management (`src/commands/desk.ts`, `src/desks/hand-in.ts`) |
 | `bin/ronin-promote <team>` | the promotion signal: marks each carried item `on_dev`, no status change (`src/promotion/promote.ts`) |
 | `session_end` | refuses while the Agent holds unfinished items, naming the command that puts them back (`src/routes/sessions-api.ts`) |
@@ -52,7 +52,7 @@ predicate in `src/behaviours.ts`.
 |---|---|
 | `src/work-items.ts` | the store: `plan:<workspace>/<name>` attachments (`planAttachment`), shapes Jira refuses (`jiraShape`), every id resolving, hand-in and `handInStage`, send-back, delete, the five notices (`noticesOf`, one per command) |
 | `src/plans.ts` | plans on the Workspace: the place (`plansPlace`: Ronin Lab's `<campaign>/<workspace>/plans`, or `plans: { location, path }` on the record, any Location), the header, the states (no guards: the docs and briefs steer), one-file commits and the push, the move on a changed place, stopped by a name clash, `plan:` resolving |
-| `src/routes/plans-api.ts` | `/api/plans`: ls, read, template, write, order, close, and `resolve` for the readers of a `plan:` attachment |
+| `src/routes/plans-api.ts` | `/api/plans`: ls, read, template, write, order, and `resolve` for the readers of a `plan:` attachment |
 | `src/workspaces.ts`, `src/routes/workspaces-api.ts`, `public/js/workspaces-surface.js` | the Workspace's `plans` field, kept by `normalizeWorkspace`; the PUT that moves the plans; the page's Plans row |
 | `public/js/plan-attachment.js`, `src/routes/docs-api.ts` | a `plan:` attachment opened or shown gone; the Docs pane's Plans shelf, the Workspaces' plans by status |
 | `src/work-items-read.ts` | the Team readings: Waiting on you's three groups, the Team's epics |
@@ -75,7 +75,7 @@ each way and **every Jira call it makes** are in ronin-services
 The owner's decisions, 2026-11-04:
 
 - An item serves one of five reasons, or it isn't made. A plan is a document on the Workspace, not an item; nothing ahead of the work.
-- The plan is written once and not kept current; it is read again only to close it (2026-11-05).
+- The plan is written once and not kept current; its statuses are Draft and Ordered (2026-11-05).
 - A hand-in gives the item to the Team, so an Agent's list empties as its work finishes.
 - A hand-in, a promotion and a flag are three signals; only the accepting person sets Done.
 - Five notices, none twice. The rest is seen, not told.
