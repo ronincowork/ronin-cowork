@@ -275,7 +275,7 @@ test('delete: an item from Jira needs --in-jira; every delete emits one event pe
   assert.equal(await items.readItem(mine.id), null);
 });
 
-/* NOTICES (section 4; KAN-239 piece B): the five, nothing else, none twice, one per command. */
+/* NOTICES (section 4; KAN-239 piece B): the six, nothing else, none twice, one per command. */
 
 test('a call for help goes to the lead of the Team above; a flag cleared tells nobody', async () => {
   const { item } = await items.createItem({ title: 'stuck work', parent: epic.id, holder: mem }, 'boss');
@@ -478,4 +478,33 @@ test('session_end\'s refusal: To Do settled first, each item named with status a
   assert.match(harakiri, /you hold \$\{item\.id\} \(\$\{item\.status\}\) \$\{item\.title\}/);
   assert.match(harakiri, /item handover \$\{items\.map\(\(item\) => item\.id\)\.join\(' '\)\}/);
   assert.doesNotMatch(harakiri, /handoff .* none/, 'no way out that drops the item');
+});
+
+/* NOTICE 6 (w300): a move to Done tells the Agent that handed the item in, once. */
+test('a move to Done tells the Agent that handed it in, once; not the Team\'s lead; an Agent that ended hears nothing', async () => {
+  const { item } = await items.createItem({ title: 'to be accepted', parent: epic.id, holder: mem }, 'boss');
+  await items.handInItem(item.id, 'mem', { desk: true, receipts: ['a1'] });
+  await items.handInItem(item.id, 'mem', { desk: true, receipts: ['a2'] });
+  await items.watchItem(item.id, mem, true);
+  await quiet();
+  const accept = await call('POST', `/api/work-items/${item.id}/transition`, { status: 'Done', by: 'owner' });
+  assert.equal(accept.status, 200);
+  assert.deepEqual(await said(), [['mem', `${item.id} 'to be accepted' is Done (accepted by owner).`]], 'once, though it handed in twice and watches it; cap is not told');
+  assert.deepEqual(accept.data.notified, ['mem']);
+  await items.watchItem(item.id, mem, false);
+  // Handed in by an Agent that has since ended: nobody is told.
+  const gone = (await items.createItem({ title: 'accepted after its end', parent: epic.id, holder: mem }, 'boss')).item;
+  await items.handInItem(gone.id, 'mem', { desk: true, receipts: ['g1'] });
+  await quiet();
+  await live(['cap']);
+  try {
+    await items.editItem(gone.id, { status: 'Done' }, 'jira:someone');
+    assert.deepEqual(await said(), []);
+  } finally { await live(['cap', 'mem']); }
+  // The Agent that moves it itself hears nothing.
+  const own = (await items.createItem({ title: 'self done', parent: epic.id, holder: mem }, 'boss')).item;
+  await items.handInItem(own.id, 'mem', { desk: true, receipts: ['s1'] });
+  await quiet();
+  await items.editItem(own.id, { status: 'Done' }, 'mem');
+  assert.deepEqual(await said(), []);
 });
