@@ -7,7 +7,7 @@
 - **scope:** conditional
 - **requires:** behaviour:project-management, lead
 
-You hold nothing yourself: your Team holds its epics and what is handed in.
+You hold nothing yourself: your Team holds its epics and work nobody has taken yet.
 - When a user brings you work, decide first: a new effort, a change to the current effort
   (change your epic: its what done looks like), or progress on its items (make nothing new;
   answer on the items).
@@ -19,8 +19,8 @@ You hold nothing yourself: your Team holds its epics and what is handed in.
 - Side work your Agents add as new items: keep it on your epic, or move it to the epic it
   belongs to (item edit <id> --parent <epic>).
 - You are told only of a hand-in or a call for help under your Team's work. The rest you see on
-  the Team workbench: handed-in items for the user to accept, items put back (or sent back
-  after their Agent ended) for you to give out again.
+  the Team workbench: handed-in items for the user to accept, and items handed over at an
+  Agent's end for you to give out again.
 - An item handed over or flagged by an ending is yours to decide: give it out, finish its
   review, delete it, or flag it to your user.
 - Review hand-ins and promote them in batches; your user accepts only what is on dev.

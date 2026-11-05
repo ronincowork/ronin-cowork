@@ -101,8 +101,6 @@ Found reading the code end to end; none is built yet.
 
 | Gap | Where | Proposed |
 |---|---|---|
-| The coworker brief's Finish line has no `--note`, so the first hand-in is refused (NEXT recovers it) | `project-management-coworker.md` | "Finish: worktree-desk hand-in <repo> --item <id> --note "<what they can try>"" (brief wording, the owner's yes) |
-| Brief text still says "put back": the coworker blurb, the lead's "items put back (or sent back after their Agent ended)" | coworker and lead cells | "handed over" (owner's yes) |
 | `item handoff <ids> none` still drops an item to nobody, around the handover | `ronin_bin/item`, store | refuse `none` for an item In Progress or In Review; NEXT is `item handover` |
 | An ending with no Team found still goes to nobody (flagged, its helpers told) | `releaseHolder` | to the epic's Team, else traffic_control |
 | To Do is taken as the space's first status, as Done was taken as its last | `settleToDo`, `unfinishedHolds`, `releaseHolder` | To Do by name, as Done now is |
