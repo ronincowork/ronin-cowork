@@ -247,7 +247,7 @@ from their own records. The lead's `work-record read` shows all four.
 
 ## Notices
 
-Five, and none twice; [Project management](project-management.md#who-is-told-what) has the
+Six, and none twice; [Project management](project-management.md#who-is-told-what) has the
 table. Each person gets one notice per change, and a command on several items sends one notice
 listing them. An Agent's own changes tell nobody, and neither does an item taking its Jira key.
 

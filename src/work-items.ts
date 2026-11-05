@@ -323,7 +323,7 @@ export async function appendTrail(id: string, by: string, change: (item: WorkIte
 }
 
 /* NOTICES (docs/using-ronin/project-management.md, Who is told what): a notice tells someone something they must act on,
- * and there are five, sent from here and nowhere else in the store:
+ * and there are six, sent from here and nowhere else in the store:
  *   1. a hand-in, to the lead of the Team now holding it: a desk's own message (desks/lead.ts)
  *      is the notice, so only a checkout's is sent here (handInUnlocked);
  *   2. a call for help, a flag raised, to the lead of the Team above the item or the holder
@@ -335,7 +335,10 @@ export async function appendTrail(id: string, by: string, change: (item: WorkIte
  *   4. someone else's change on an Agent's item: a comment, a Send back (sendBack), a Jira change
  *      that beat theirs (tellHolders), to the Agent working it;
  *   5. a Jira item with nobody, to the Campaign's Coordinator (traffic_control) to place it
- *      (announceUnheld); a Ronin item never goes there.
+ *      (announceUnheld); a Ronin item never goes there;
+ *   6. a move to Done (Accept, item transition or Jira), to each live Agent that handed the item
+ *      in (its hand-ins), once, never to the one who moved it; not to the Team or its lead,
+ *      who see it on the board (noticesOf).
  * Nothing else: not a new item, a start, a holder change, an Agent's own end, an attachment, a
  * rename, a delete or a flag cleared. Nobody hears their own change. A Team is told through its
  * lead, and only as holder of the epic above or as a watcher: its members' items do not make it
@@ -363,7 +366,13 @@ export async function oneNoticePerCommand<T>(command: () => Promise<T>): Promise
 /** The notices a trail line sends, by its op: a status change to the item's watchers, a flag
  * raised to whoever helps (helpOf), a comment to the Agents holding the item. Answers who was told. */
 async function noticesOf(item: WorkItem, line: TrailLine): Promise<string[]> {
-  if (line.op === 'status') return tellWatchers(item, `${item.id}: status ${line.from} → ${line.to} by ${line.by}.`, [line.by]);
+  if (line.op === 'status') {
+    // Notice 6: a move to Done tells the Agents that handed it in, each once, while alive.
+    const done = line.to === spaceNames(item.campaign_id).statuses.at(-1) ? await handersOf(item, line.by) : [];
+    for (const name of done) await notice(name, `${item.id} '${item.title}' is Done (accepted by ${line.by}).`);
+    const watching = await tellWatchers(item, `${item.id}: status ${line.from} → ${line.to} by ${line.by}.`, [line.by, ...done]);
+    return [...done, ...watching];
+  }
   if (line.op === 'flag' && line.to === 'true') {
     const told = (await helpOf(item)).filter((name) => name !== line.by);
     for (const name of told) await notice(name, `${item.id} '${item.title}' needs help${line.note ? `: ${line.note}` : ''} (flagged by ${line.by}).`);
@@ -375,6 +384,15 @@ async function noticesOf(item: WorkItem, line: TrailLine): Promise<string[]> {
     return told;
   }
   return [];
+}
+
+/** The Agents that handed an item in (its hand-ins, each once), alive and not `except`. */
+async function handersOf(item: WorkItem, except: string): Promise<string[]> {
+  const handers = new Set([...(item.hand_ins ?? []).map((one) => one.by), ...(item.handed_in ? [item.handed_in.by] : [])]);
+  handers.delete(except);
+  if (!handers.size) return [];
+  const live = new Set((await listSessions().catch(() => [])).map((one) => one.name));
+  return [...handers].filter((name) => live.has(name));
 }
 
 /** The Agents holding an item: who works it. */

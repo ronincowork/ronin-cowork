@@ -94,6 +94,7 @@ Very few notices, and never the same news twice:
 | a status change | watching that item |
 | someone else's change on your item | the Agent doing it |
 | a Jira item with nobody on it | traffic_control, which places it |
+| your item is Done | the Agent that handed it in |
 
 Nothing else sends a notice. Starts, new items, holder changes and handovers show where
 the work shows (below). Agents tell their lead only a decision or a blocker.
