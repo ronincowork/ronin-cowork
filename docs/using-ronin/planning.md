@@ -18,10 +18,12 @@ made from it, and the planner is done with it.
   not, if that saves an argument later.
 - **Teams:** the structure to start with. Three or four Agents and a lead works well. It's a
   recommendation; leads shape their own Teams.
-- **Epics:** usually one per Team. Each has **what done looks like**: something a person can see
-  or try, clear enough that the Team knows when to stop. This text is the epic's objective,
-  word for word.
-- **Not started yet:** later parts stay paragraphs, not epics.
+- **Epics:** usually one per Team. Each is a title and a short list of topics.
+- **Topics:** the parts of an epic, one bullet each: `Topic: what done looks like`. One line a
+  person can see or try, clear enough to stop at. The list is the epic's objective, word for word.
+- **Needs:** on a topic only when it waits on someone outside the Team: the owner, an
+  account, another Team.
+- **Not started yet:** later parts, one bullet each, not epics.
 
 ## Size
 
@@ -30,6 +32,13 @@ made from it, and the planner is done with it.
 | Small | short | one | one |
 | Large | the same template | several | roughly one per epic |
 | Larger still | the same template | several | several, plus an epic_lead to keep them on the objective |
+
+## One epic or several
+
+- **One epic:** one Team can do every topic, and they finish together.
+- **Several epics:** a topic needs other skills or another Team, or it ships and is judged on its own.
+- **Topics are not items:** no keys, holders or statuses. The Team makes items from a topic
+  when it starts it.
 
 ## Status
 
@@ -64,14 +73,15 @@ plan order <name>                         Draft → Ordered: not rewritten from 
 
 1. `plan order <name>` once the user agrees it.
 2. Each Team's lead gets its row of the plan.
-3. The lead makes its epic: the title, and what done looks like as the objective. It attaches the
+3. The lead makes its epic: the title, and its topics as the objective. It attaches the
    plan: `item attach <epic> plan:<name>`. The epic's record and Docs open it from there.
 4. The work runs on the epics. A change of scope changes an epic; the plan stays as ordered.
 
 ## Don'ts
 
 - Don't keep it current. It is the plan as agreed, not the state.
-- Don't list items. Items are made with the work, under the epics.
+- Don't list items. Topics are the parts; items are made with the work, under the epics.
+- Don't write a paragraph where a bullet will do.
 - Don't copy the epics' progress into it.
 
 ## The template
@@ -83,8 +93,9 @@ Asked by <who>. The plan is not updated: what is live is on the epics.
 
 ## Objective
 
-What this piece of work is, and why. Two or three paragraphs: the outcome someone will see
-when it is finished, and what it is not.
+- **What:** <the outcome someone will see when it is finished, one or two lines>.
+- **Why:** <the reason, in the asker's words>.
+- **Not:** <what it is not, if that saves an argument later>.
 
 ## Teams
 
@@ -98,11 +109,15 @@ Epic lead: <name, or "none": only when several Teams must stay on one objective>
 
 ## Epics
 
-One per Team, usually. Each row becomes an epic, made by the Team's lead with this text.
+One per Team, usually. Each becomes an epic, made by the Team's lead; its topics are the
+objective, word for word.
 
-| Epic | Team | What done looks like |
-|---|---|---|
-| <title> | <team> | <what someone can see or try when it is finished; clear enough to stop at> |
+### <Epic title> · <team>
 
-Not started yet: <paragraphs for the parts that come later, or "none">.
+- <Topic>: <what someone can see or try when it is done>.
+- <Topic>: <…>. *Needs: <who or what, only if outside the Team>.*
+
+## Not started yet
+
+- <a later part, one line>, or "none".
 ```
