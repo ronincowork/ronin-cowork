@@ -91,12 +91,23 @@ export const statusChoices = (item) => [...new Set([...ITEM_STATUSES, item?.stat
 
 const when = (at) => String(at || '').slice(0, 16).replace('T', ' ');
 
+/** An item's hand-in, in one line: "↑ by item_pills · 2026-11-05 10:33 · on dev 10:34
+ * (receipt)"; '' when it was never handed in. The last hand-in counts; on dev only when that
+ * promotion came after it (the island's handInSignal, tile-island.js). */
+export function handInRecord(item) {
+  const last = (Array.isArray(item?.hand_ins) && item.hand_ins.at(-1)) || item?.handed_in || null;
+  if (!last?.at) return '';
+  const words = [`↑ ${t('work_items.handed_in_by', 'by {who}', { who: last.by || '—' })}`, when(last.at)];
+  if (item.on_dev?.at && item.on_dev.at >= last.at) words.push(t('work_items.on_dev_at', 'on dev {at}', { at: when(item.on_dev.at).slice(11) }) + (item.on_dev.promotion ? ` (${item.on_dev.promotion})` : ''));
+  return words.join(' · ');
+}
+
 /** Where an item started (w299): "from Jira (<reporter>)" when Jira made it (created.by
  * jira:<user>), else "Ronin (<who>)"; '—' when the reading does not say. */
 export function originWords(item) {
   const by = String(item?.created?.by || '');
   if (!by) return '—';
-  if (by.startsWith('jira:')) return t('work_items.from_jira', 'from Jira ({who})', { who: item.jiraFields?.Reporter || by.slice(5) });
+  if (by.startsWith('jira:')) return t('work_items.from_jira', 'from Jira ({who})', { who: String(item.jiraFields?.Reporter || by.slice(5)).replace(/^jira:/, '') });
   return t('work_items.from_ronin', 'Ronin ({who})', { who: by });
 }
 
@@ -141,9 +152,15 @@ export function renderItemDetail(host, item, { holder = '', openAttachment = nul
   // What the user reads first: what done looks like, and what to try.
   if (item.objective) step('objective', t('work_items.objective', 'Objective'), () => item.objective.split('\n')[0], el('p', 'wi-objective', item.objective));
   const handed = handedInComment(item);
-  if (handed) {
-    step('handed_in', t('work_items.handed_in', 'Handed in'), () => handed.text.slice(HANDED_IN.length).split('\n')[0], el('p', 'wi-objective wi-handed-in', handed.text.slice(HANDED_IN.length)),
-      el('small', 'wi-when', `${handed.by || ''} · ${when(handed.at)}`));
+  // The hand-in itself (owner, 2026-11-05: "the pill has the hand in status but it's not in the
+  // item overlay"): who handed it in and when, and the promotion that put it on dev, from the
+  // item's own record — the same facts the island's pill marks; then the note, when one was left.
+  const record = handInRecord(item);
+  if (record || handed) {
+    const lines = [];
+    if (record) lines.push(el('p', 'wi-text wi-handin', record));
+    if (handed) lines.push(el('p', 'wi-objective wi-handed-in', handed.text.slice(HANDED_IN.length)), el('small', 'wi-when', `${handed.by || ''} · ${when(handed.at)}`));
+    step('handed_in', t('work_items.handed_in', 'Handed in'), () => record || handed.text.slice(HANDED_IN.length).split('\n')[0], ...lines);
   }
 
   // Status: any status to any status, as Jira's transition; the push that follows redraws the
