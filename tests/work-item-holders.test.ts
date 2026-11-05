@@ -101,18 +101,18 @@ test('the 2026-09-24 duplicate cannot recur: concurrent holding changes never co
   assert.equal(all.filter((item) => item.title === 'surface/1').length, 1);
 });
 
-test('an ended Agent orphans nothing: each item gets holder-ended and is found under its parent or unassigned', async () => {
+test('an ended Agent orphans nothing: each item gets holder-ended, to the Team above it, or unassigned with no Team found', async () => {
   await seedTegami('gone');
   const gone = { kind: 'agent', name: 'gone' } as const;
   const parent = (await items.createItem({ title: 'team overall', holder: team }, 'lead')).item;
   const child = (await items.createItem({ title: 'piece', parent: parent.id, holder: gone }, 'lead')).item;
   const loose = (await items.createItem({ title: 'loose', holder: gone }, 'lead')).item;
   const released = await items.releaseHolder('gone', 'gone', 'session ended');
-  assert.deepEqual(released.map(({ line }) => [line.op, line.from, line.note]), [
-    ['holder-ended', 'agent:gone', 'session ended'], ['holder-ended', 'agent:gone', 'session ended'],
+  assert.deepEqual(released.map(({ line }) => [line.op, line.from, line.to, line.note]), [
+    ['holder-ended', 'agent:gone', 'team:crew', 'session ended'], ['holder-ended', 'agent:gone', 'none', 'session ended'],
   ]);
   assert.deepEqual((await readLetterHolds('gone'))!.holds, []);
-  assert.deepEqual(await listsHolding(child.id), []);
+  assert.deepEqual(await listsHolding(child.id), ['team:crew'], 'To Do goes to the Team holding the item above it');
   assert.deepEqual(await listsHolding(loose.id), []);
   assert.equal((await items.readItem(child.id))!.parent, parent.id, 'still found under its parent');
   assert.deepEqual(await items.releaseHolder('gone', 'gone', 'again'), [], 'a second end finds nothing to release');
@@ -285,8 +285,8 @@ test('a lead of several teams names one; without it the create is refused naming
   await assert.rejects(items.createItem({ title: 'which team', kind: 'Epic' }, 'cap'), /You lead crew, second; name one with --team/);
 });
 
-/* AN AGENT ENDS — its items go back to its one Team, Done ones to nobody with nobody told. */
-test('an ending member\'s items go to nobody, on their epic, and nobody is told (crash, archive, Shut down)', async (t) => {
+/* AN AGENT ENDS — its items go back to its one Team, Done ones to nobody; To Do tells nobody. */
+test('an ending member\'s To Do goes to its Team, Done to nobody, and nobody is told (crash, archive, Shut down)', async (t) => {
   await withLead(t);
   const { listQueuedMessages, dismissMessages } = await import('../src/message-queue.js');
   await seedTegami('leaver', { repo: '', branch: '' }, [{ team: 'crew', team_role: 'member', objective: '' }]);
@@ -296,8 +296,8 @@ test('an ending member\'s items go to nobody, on their epic, and nobody is told 
   const done = (await items.createItem({ title: 'finished', status: 'Done', holder: leaver }, 'boss')).item;
   await dismissMessages((await listQueuedMessages()).map((message) => message.id));
   const released = await items.releaseHolder('leaver', 'leaver', 'session ended');
-  assert.deepEqual(released.map(({ item, line }) => [item.id, line.op, line.to]), [[open.id, 'holder-ended', 'none'], [done.id, 'holder-ended', 'none']]);
-  assert.deepEqual(await listsHolding(open.id), []);
+  assert.deepEqual(released.map(({ item, line }) => [item.id, line.op, line.to]), [[open.id, 'holder-ended', 'team:crew'], [done.id, 'holder-ended', 'none']]);
+  assert.deepEqual(await listsHolding(open.id), ['team:crew']);
   assert.deepEqual(await listsHolding(done.id), []);
   assert.equal((await items.readItem(open.id))!.parent, epic.id, 'it sits on its epic');
   assert.deepEqual((await listQueuedMessages()).map((message) => message.text), [], 'nobody is told');

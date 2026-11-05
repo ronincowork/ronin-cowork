@@ -13,11 +13,12 @@
 | `item read` | read: one item with its children, comments, attachments, links and history | priority | `item --help` |
 | `item search` | read: items by Campaign, Team, holder, parent, status, kind, or `--text` in the title or objective | priority | `item --help` |
 | `item edit` | write: one item's fields; `--parent` moves it, the level following | priority | `item --help` |
-| `item transition` | write: the status of one or several items | priority | `item --help` |
+| `item transition` | write: the status of one or several items; a hand-in to In Review takes `--note`, the Handed in comment for the user | priority | `item --help` |
 | `item flag` | write: one or several items are stuck, with the reason as a comment | priority | `item --help` |
 | `item unflag` | write: one or several items are clear | priority | `item --help` |
 | `item assign` | write: add an Agent or Team as a holder of one or several items, removing nobody | priority | `item --help` |
 | `item handoff` | write: the giver (you, or `--from` an Agent or `team:<name>`) comes off one or several items and the receiver goes on; `none` puts them back on their epic | priority | `item --help` |
+| `item handover` | write: an ending Agent hands one or several items to its Team or an Agent, with where each stands and what is next (a Handover comment); `--to-do`, `--flag "<the question>"` | priority | `item --help` |
 | `item watch` | write: track one or several items without holding them; `item unwatch` stops | priority | `item --help` |
 | `item comment` | write: one comment, or `--edit <n>` changes one | priority | `item --help` |
 | `item attach` | write: attach or remove a document, visible in Docs | priority | `item --help` |
@@ -28,7 +29,7 @@
 
 - An id is `w12` or a Jira key (`KAN-65`); every id an item has had still finds it.
 - Where a tool takes several ids, list them: `item transition w12 w13 "In Progress"`,
-  `item handoff w12 w13 none`.
+  `item handover w12 w13 team:surface "<where they stand; what is next>"`.
 - Status, kind, priority and link type are the space's names exactly (`item --help` lists
   them); anything else is refused, naming the set.
 - Flag as `item flag <id> "Waiting on <who>: <what>"`.

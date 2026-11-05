@@ -616,6 +616,9 @@ nothing paints exactly this.
 - **work_items.moving:** Moving…
 - **work_items.move_failed:** The status did not change.
 - **work_items.subtasks:** Subtasks
+- **work_items.handed_in:** Handed in
+- **work_items.comment_one:** comment
+- **work_items.comment_many:** comments
 - **work_items.done_n:** Done ({n})
 - **work_items.count:** {n}
 - **work_items.comment_box:** Add a comment

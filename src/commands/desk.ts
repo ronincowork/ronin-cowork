@@ -14,7 +14,7 @@ import { arrangementOf } from '../desks/arrangement.js';
 import { randomUUID } from 'node:crypto';
 import { withManagedTransaction } from '../desks/lifecycle-ledger.js';
 import { shutdownAgent, ShutdownRefused } from '../desks/session-shutdown.js';
-import { didLine, readItem } from '../work-items.js';
+import { didLine, handInNoteProblem, readItem } from '../work-items.js';
 import { projectManagementOn } from '../agent-composition.js';
 import { briefPointer } from '../behaviours.js';
 
@@ -68,7 +68,7 @@ const str = (v: string | true | undefined): string => (typeof v === 'string' ? v
 const USAGE = `usage: worktree-desk status [<repo[:branch]>] [--session s | --team t | --repo r]
        worktree-desk open <repo[:branch]> [--team t] [--session s] [--source dev|team]
        worktree-desk assign <repo[:branch]> --session s --team t [--source dev|team]
-       worktree-desk hand-in [<repo[:branch]>] [--assignment] [--item <id>]
+       worktree-desk hand-in [<repo[:branch]>] [--assignment] [--item <id>] [--note "<what they can try>"]
        worktree-desk sync [<repo[:branch]>] [--source dev|team|lead|<repo:branch>]
        worktree-desk close [<repo[:branch]>] [--with-session]
        worktree-desk handoff <repo[:branch]> --to <session[,session]>
@@ -202,10 +202,18 @@ async function main(): Promise<void> {
         if (projectId && !(await readItem(projectId))) die(`NO-ITEM: there is no work item ${projectId}`, 3);
         // A hand-in names its item under project management (docs/using-ronin/project-management.md, Three signals).
         if (!projectId && await projectManagementOn(session)) {
-          die(`NO-ITEM: under project management a hand-in names its work item.\n  NEXT: worktree-desk hand-in ${positional[0] ?? '<repo>'}${flags.get('assignment') ? ' --assignment' : ''} --item <id>`, 2);
+          die(`NO-ITEM: under project management a hand-in names its work item.\n  NEXT: worktree-desk hand-in ${positional[0] ?? '<repo>'}${flags.get('assignment') ? ' --assignment' : ''} --item <id> --note "<what they can try>"`, 2);
+        }
+        // The Handed in note: the one comment the user reads (docs/using-ronin/project-management.md,
+        // How an item lives). Short by construction; under project management a hand-in carries one.
+        const forUser = str(flags.get('note')).trim();
+        const long = handInNoteProblem(forUser);
+        if (long) die(`REFUSED: ${long}`, 2);
+        if (projectId && !forUser && await projectManagementOn(session)) {
+          die(`NO-NOTE: a hand-in carries a note for the user: what they can try, in their words.\n  NEXT: worktree-desk hand-in ${positional[0] ?? '<repo>'}${flags.get('assignment') ? ' --assignment' : ''} --item ${projectId} --note "<what they can try>"`, 2);
         }
         let worst = 0;
-        const { outcomes, moved, unmoved } = await handInAssignment({ desks: flags.get('assignment') ? targets : [targets[0]!], projectId, session });
+        const { outcomes, moved, unmoved } = await handInAssignment({ desks: flags.get('assignment') ? targets : [targets[0]!], projectId, session, forUser });
         for (const [i, { receipt, notices, tidy }] of outcomes.entries()) {
           const d = targets[i]!;
           out(`${receipt.result.toUpperCase()} ${deskId(d)} → ${d.line}${receipt.result === 'accepted' ? ` now ${receipt.line_sha.slice(0, 10)}` : ''}${receipt.reason ? ` — ${receipt.reason}` : ''}${receipt.conflict_files.length ? ` — files: ${receipt.conflict_files.join(', ')}` : ''}  [${receipt.id}]`);

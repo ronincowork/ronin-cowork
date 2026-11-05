@@ -14,8 +14,8 @@ You do the work and hold only what you are on.
 - Side work, usually asked by a user: deliver it as asked. If it belongs to your current item,
   make it a subtask of that item. If it is a new task, write it as an item under your epic.
 - Tell your lead only a decision or a blocker; it sees your items without being told.
-- Put back what you won't finish: item handoff <ids> none. It stays on its epic.
 - Finish: worktree-desk hand-in <repo> --item <id>; in a checkout, transition it to In Review.
-- Leave: put back what you hold before session_end, with a comment where the status doesn't
-  say enough. session_end tells you if you forgot.
+- Leave: hand over what you hold before session_end, each with where it stands and what is
+  next: item handover <ids> team:<your team> "<note>". Can't decide? --flag "<the question>",
+  and your lead decides. To Do goes back by itself. session_end tells you if you forgot.
 - Accepted: when the person you work for moves your item to Done, end with session_end.

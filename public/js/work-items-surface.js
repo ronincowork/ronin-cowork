@@ -74,17 +74,23 @@ export const statusChoices = (item) => [...new Set([...ITEM_STATUSES, item?.stat
 
 const when = (at) => String(at || '').slice(0, 16).replace('T', ' ');
 
+/** The comment headed "Handed in: " (src/work-items.ts HANDED_IN): what the user can try. */
+export const HANDED_IN = 'Handed in: ';
+/** The item's last Handed in comment, or null. */
+export const handedInComment = (item) => [...(item?.comments || [])].reverse().find((comment) => String(comment.text || '').startsWith(HANDED_IN)) || null;
+
 /** Which sections of an item's reading are open, kept for the page's life so a fold stays
  * where the owner left it from one item to the next. Done starts folded. */
 const FOLDS = new Map([['done', false]]);
 const isDone = (item) => /done|closed|resolved|complete/i.test(String(item?.status || ''));
 
 /** One item's reading, in the launch forms' format (owner, 2026-11-05): a head with the kind's
- * symbol, the title and the key, then label-left steps — Status (an ERABI question that moves
- * the item: the work-item routes' transition), Objective, Details, Subtasks, Done (the Subtasks
- * that are, owner w297), Comments (with a box: the comment route, whose notice reaches the Agents
- * holding the item), Attachments (each opens), Links and History (`history: false` leaves it
- * out: the Epics workbench, KAN-206). Every step folds with the form steps' own fold
+ * symbol, the title and the key, then label-left steps — what the user reads first, the
+ * Objective and the Handed in note (ITEM_HANDOVER), then Status (an ERABI question that moves
+ * the item: the work-item routes' transition), Details, Subtasks, Done (the Subtasks that are,
+ * owner w297), Comments (the others, folded, and a box: the comment route, whose notice reaches
+ * the Agents holding the item), Attachments (each opens), Links and History (`history: false`
+ * leaves it out: the Epics workbench, KAN-206). Every step folds with the form steps' own fold
  * (form-steps.js), showing its one-line answer folded. Every size is a form token. */
 export function renderItemDetail(host, item, { holder = '', openAttachment = null, history = true, children = [], openChild = null } = {}) {
   const form = el('div', 'ntf-form wi-form');
@@ -105,6 +111,14 @@ export function renderItemDetail(host, item, { holder = '', openAttachment = nul
     form.append(one.el);
     return { ...one, paint };
   };
+
+  // What the user reads first: what done looks like, and what to try.
+  if (item.objective) step('objective', t('work_items.objective', 'Objective'), () => item.objective.split('\n')[0], el('p', 'wi-objective', item.objective));
+  const handed = handedInComment(item);
+  if (handed) {
+    step('handed_in', t('work_items.handed_in', 'Handed in'), () => handed.text.slice(HANDED_IN.length).split('\n')[0], el('p', 'wi-objective wi-handed-in', handed.text.slice(HANDED_IN.length)),
+      el('small', 'wi-when', `${handed.by || ''} · ${when(handed.at)}`));
+  }
 
   // Status: any status to any status, as Jira's transition; the push that follows redraws the
   // rest of the page, and the line under the question says what happened until then.
@@ -127,7 +141,6 @@ export function renderItemDetail(host, item, { holder = '', openAttachment = nul
   });
   statusStep = step('status', t('work_items.status', 'Status'), () => status, question.el, answer);
 
-  if (item.objective) step('objective', t('work_items.objective', 'Objective'), () => item.objective.split('\n')[0], el('p', 'wi-objective', item.objective));
   const facts = el('dl', 'wi-facts');
   for (const [label, value] of [
     [t('work_items.priority', 'Priority'), item.priority || '—'],
@@ -167,6 +180,7 @@ export function renderItemDetail(host, item, { holder = '', openAttachment = nul
     list.append(...rows);
     return { list, step: step(id, label, () => counted(list.children.length), list, ...after) };
   };
+  const commentCount = (n) => `${n} ${n === 1 ? t('work_items.comment_one', 'comment') : t('work_items.comment_many', 'comments')}`;
   const commentRow = (comment) => {
     const row = el('li', 'wi-comment');
     row.append(el('small', 'wi-when', `${comment.by || ''} · ${when(comment.at)}`), el('p', 'wi-text', comment.text || ''));
@@ -194,7 +208,6 @@ export function renderItemDetail(host, item, { holder = '', openAttachment = nul
     if (!result.ok) { said.dataset.state = 'failed'; said.textContent = result.message || t('work_items.comment_failed', 'The comment was not added.'); return; }
     const added = result.data?.item?.comments?.at(-1) || { by: '', at: new Date().toISOString(), text };
     comments.list.append(commentRow(added));
-    comments.list.hidden = false;
     comments.step.paint();
     box.value = '';
     const told = result.data?.notified || [];
@@ -202,11 +215,23 @@ export function renderItemDetail(host, item, { holder = '', openAttachment = nul
       : t('work_items.comment_nobody', 'Added. No Agent holds this item, so nobody was sent it.');
   } });
   compose.append(box, post.el, said);
-  comments = section('comments', t('work_items.comments', 'Comments'), (item.comments || []).map(commentRow), compose);
-  comments.list.hidden = !comments.list.children.length;
+  // The comments the Handed in note does not show, folded (KAN-259): the decisions between Agent
+  // and lead are the item's record, one press away; the box stays open under them (w297).
+  const folded = el('details', 'wi-comments');
+  const summary = el('summary', '');
+  comments = { list: el('ul', 'wi-list') };
+  comments.list.append(...(item.comments || []).filter((comment) => comment !== handed).map(commentRow));
+  const recount = () => { summary.textContent = commentCount(comments.list.children.length); folded.hidden = !comments.list.children.length; };
+  folded.append(summary, comments.list);
+  recount();
+  comments.step = step('comments', t('work_items.comments', 'Comments'), () => commentCount(comments.list.children.length), folded, compose);
+  const paintComments = comments.step.paint;
+  comments.step.paint = () => { recount(); paintComments(); };
 
   section('attachments', t('work_items.attachments', 'Attachments'), (item.attachments || []).map((path) => {
     const row = el('li');
+    // The epic's plan, by name: opened through the plan read, or gone (plan-attachment.js).
+    if (isPlanRef(path)) { row.append(planAttachment(path, { className: 'wi-attachment', campaignId: item.campaign_id, open: openAttachment })); return row; }
     // A file kept in Jira is its link, opened there; a path opens here.
     const link = /^https?:\/\//.test(path);
     const opener = el(link ? 'a' : openAttachment ? 'button' : 'span', 'wi-attachment', decodeURIComponent(path.split('/').pop()));

@@ -42,6 +42,7 @@ const { seedTegami } = await import('../src/tegami.js');
 const { listQueuedMessages, dismissMessages } = await import('../src/message-queue.js');
 const { sockets } = await import('../src/sockets.js');
 const { registerWorkItems } = await import('../src/routes/work-items-api.js');
+const { teamWork } = await import('../src/work-items-read.js');
 
 await createTeamRoster('crew', { objective: 'hold things' });
 await seedTegami('mem', { repo: '', branch: '' }, [{ team: 'crew', team_role: 'member', objective: '' }]);
@@ -146,26 +147,88 @@ test('Send back to an Agent that has ended leaves the item with the Team', async
   } finally { await live(['cap', 'mem']); }
 });
 
-test('session_end\'s list: what the Agent holds To Do or In Progress, not In Review or Done', async () => {
-  await seedTegami('ender');
+/* AN ENDING HANDS OVER, NEVER DROPS (ITEM_HANDOVER; docs/using-ronin/project-management.md, How an item lives). */
+test('session_end: To Do settles to the Team; In Progress and In Review are named for a handover; Done is left alone', async () => {
+  await seedTegami('ender', { repo: '', branch: '' }, [{ team: 'crew', team_role: 'member', objective: '' }]);
   const ender = { kind: 'agent', name: 'ender' } as const;
   const todo = (await items.createItem({ title: 'todo', parent: epic.id, holder: ender }, 'boss')).item;
   const doing = (await items.createItem({ title: 'doing', parent: epic.id, holder: ender, status: 'In Progress' }, 'boss')).item;
-  await items.createItem({ title: 'review', parent: epic.id, holder: ender, status: 'In Review' }, 'boss');
-  await items.createItem({ title: 'done', parent: epic.id, holder: ender, status: 'Done' }, 'boss');
-  assert.deepEqual((await items.unfinishedHolds('ender')).map((item) => item.id), [todo.id, doing.id]);
+  const review = (await items.createItem({ title: 'review', parent: epic.id, holder: ender, status: 'In Review' }, 'boss')).item;
+  const done = (await items.createItem({ title: 'done', parent: epic.id, holder: ender, status: 'Done' }, 'boss')).item;
+  assert.deepEqual((await items.unfinishedHolds('ender')).map((item) => item.id), [todo.id, doing.id, review.id], 'In Review stops session_end too');
+  await quiet();
+  const settled = await items.settleToDo('ender');
+  assert.deepEqual(settled.map(({ item, line }) => [item.id, line.op, line.to]), [[todo.id, 'handoff', 'team:crew']]);
+  assert.deepEqual(await holding(todo.id), ['team:crew'], 'To Do goes back to the Team, for its lead');
+  assert.equal((await items.readItem(todo.id))!.status, 'To Do');
+  const named = await items.unfinishedHolds('ender');
+  assert.deepEqual(named.map((item) => [item.id, item.status, item.team]), [[doing.id, 'In Progress', 'crew'], [review.id, 'In Review', 'crew']], 'each named with its status and the Team NEXT names');
+  // The handover, several ids with one note: the note a Handover comment, the holder moved, the status kept.
+  const over = await call('POST', '/api/work-items/many/handover', { ids: [doing.id, review.id], team: 'crew', note: 'the store is done; the CSS is next', by: 'ender' });
+  assert.equal(over.status, 200, JSON.stringify(over.data));
+  for (const [id, status] of [[doing.id, 'In Progress'], [review.id, 'In Review']] as const) {
+    const item = (await items.readItem(id))!;
+    assert.equal(item.status, status, 'the status stays as it is');
+    assert.equal(item.comments.at(-1)!.text, 'Handover from ender: the store is done; the CSS is next');
+    assert.deepEqual(await holding(id), ['team:crew']);
+  }
+  assert.deepEqual(await items.unfinishedHolds('ender'), [], 'nothing left: session_end goes ahead');
+  assert.deepEqual(await holding(done.id), ['agent:ender'], 'Done is untouched');
+  assert.equal((await items.readItem(done.id))!.status, 'Done');
+  assert.deepEqual(await said(), [], 'a handover without a flag tells nobody: the board shows it');
 });
 
-test('a crash: a record holding items whose session is gone is released on the second sweep, silently', async () => {
-  await seedTegami('crashed');
-  const { item } = await items.createItem({ title: 'crashed work', parent: epic.id, holder: { kind: 'agent', name: 'crashed' } }, 'boss');
+test('a handover: --to-do puts it back in the same line; --flag asks the lead, told once; a handover with neither note nor flag is refused', async () => {
+  const back = (await items.createItem({ title: 'not finishing', parent: epic.id, holder: mem, status: 'In Progress' }, 'boss')).item;
+  await quiet();
+  const one = await call('POST', `/api/work-items/${back.id}/handover`, { team: 'crew', note: 'not started on the UI', to_do: true, by: 'mem' });
+  assert.equal(one.status, 200);
+  assert.equal(one.data.item.status, 'To Do');
+  assert.equal(one.data.line.op, 'handoff');
+  assert.match(one.data.line.note, /In Progress → To Do/);
+  const stuck = (await items.createItem({ title: 'cannot decide', parent: epic.id, holder: mem, status: 'In Review' }, 'boss')).item;
+  const asked = await call('POST', `/api/work-items/${stuck.id}/handover`, { team: 'crew', flag: 'Waiting on cap: keep or delete?', by: 'mem' });
+  assert.equal(asked.status, 200);
+  assert.equal(asked.data.item.flagged, true);
+  assert.deepEqual(await holding(stuck.id), ['team:crew']);
+  const told = (await said()).filter(([, text]) => text.includes(stuck.id));
+  assert.deepEqual(told.map(([to]) => to), ['cap'], 'the lead is told, once');
+  assert.match(told[0]![1]!, /needs help: Waiting on cap: keep or delete\?/);
+  const all = await items.listItems();
+  const work = teamWork([{ ...(await items.readItem(stuck.id))!, holder: 'team:crew' }], all);
+  assert.equal(work.stuck[0]!.reason, 'Waiting on cap: keep or delete?', 'it shows under Stuck with the question');
+  const blank = await call('POST', `/api/work-items/${back.id}/handover`, { team: 'crew', by: 'mem' });
+  assert.equal(blank.status, 400);
+  assert.match(blank.data.error, /where .* stands and what is next/);
+});
+
+test('a crash: on the second sweep each item goes by its status, never to nobody; the unfinished flagged, the lead told once', async () => {
+  await seedTegami('crashed', { repo: '', branch: '' }, [{ team: 'crew', team_role: 'member', objective: '' }]);
+  const crashed = { kind: 'agent', name: 'crashed' } as const;
+  const todo = (await items.createItem({ title: 'crash todo', parent: epic.id, holder: crashed }, 'boss')).item;
+  const doing = (await items.createItem({ title: 'crash doing', parent: epic.id, holder: crashed, status: 'In Progress' }, 'boss')).item;
+  const review = (await items.createItem({ title: 'crash review', parent: epic.id, holder: crashed, status: 'In Review' }, 'boss')).item;
+  const done = (await items.createItem({ title: 'crash done', parent: epic.id, holder: crashed, status: 'Done' }, 'boss')).item;
   await quiet();
   assert.deepEqual(await items.releaseEndedHolders(), [], 'one miss is not an end');
-  assert.deepEqual(await holding(item.id), ['agent:crashed']);
+  assert.deepEqual(await holding(doing.id), ['agent:crashed']);
   assert.ok((await items.releaseEndedHolders()).includes('crashed'));
-  assert.deepEqual(await holding(item.id), []);
-  assert.equal((await items.readItem(item.id))!.parent, epic.id);
-  assert.deepEqual(await said(), []);
+  for (const id of [todo.id, doing.id, review.id]) assert.deepEqual(await holding(id), ['team:crew'], `${id} is on the Team`);
+  assert.deepEqual(await holding(done.id), [], 'Done is off every list');
+  assert.equal((await items.readItem(todo.id))!.flagged, false, 'To Do goes back as it is');
+  for (const [id, status] of [[doing.id, 'In Progress'], [review.id, 'In Review']] as const) {
+    const item = (await items.readItem(id))!;
+    assert.equal(item.flagged, true);
+    assert.equal(item.status, status);
+    assert.equal(item.comments.at(-1)!.text, `Ended without handover: crashed, ${status}`);
+  }
+  const told = await said();
+  assert.deepEqual(told.map(([to]) => to), ['cap'], 'one notice, to the lead');
+  assert.match(told[0]![1]!, new RegExp(`crashed ended without a handover .*${doing.id}.*${review.id}`));
+  assert.ok(!told[0]![1]!.includes(todo.id), 'To Do needs no decision');
+  const all = await items.listItems();
+  const work = teamWork(all.filter((item) => [doing.id, review.id].includes(item.id)).map((item) => ({ ...item, holder: 'team:crew' })), all);
+  assert.deepEqual(work.stuck.map((one) => one.reason), [`Ended without handover: crashed, In Progress`, `Ended without handover: crashed, In Review`], 'they show under Stuck');
 });
 
 test('on a Jira-connected campaign the shapes Jira refuses are refused, with the reason', async () => {
@@ -307,7 +370,6 @@ test('the promotion signal: on dev is not a status, a paired item too, and it te
 });
 
 test('Waiting on you splits: With the lead until on dev after the last hand-in; a checkout hand-in is ready at once', async () => {
-  const { teamWork } = await import('../src/work-items-read.js');
   const desk = (await items.createItem({ title: 'desk signal', parent: epic.id, holder: mem }, 'boss')).item;
   const checkout = (await items.createItem({ title: 'checkout signal', parent: epic.id, holder: mem }, 'boss')).item;
   await items.handInItem(desk.id, 'mem', { desk: true, receipts: ['hi_1'] });
@@ -351,7 +413,6 @@ test('Waiting on you draws With the lead before Ready to accept, both with Accep
 });
 
 test('an item In Review with no hand-ins recorded (handed in before the signals) is ready to accept, not with the lead', async () => {
-  const { teamWork } = await import('../src/work-items-read.js');
   assert.equal(items.handInStage({}), 'ready', 'no hand_ins at all');
   assert.equal(items.handInStage({ hand_ins: [] }), 'ready', 'an empty list too');
   assert.equal(items.handInStage({ hand_ins: [{ receipt: 'hi_1', by: 'mem', at: '2026-11-04T10:00:00Z' }] }), 'lead', 'a desk hand-in, not on dev');
@@ -360,4 +421,61 @@ test('an item In Review with no hand-ins recorded (handed in before the signals)
   const old = (await items.createItem({ title: 'handed in yesterday', parent: epic.id, status: 'In Review' }, 'boss')).item;
   const work = teamWork([{ ...old, handed_in: { by: 'mem', at: '2026-11-03T10:00:00Z' }, holder: 'team:crew' }], await items.listItems());
   assert.deepEqual([work.lead.map((one) => one.id), work.review.map((one) => one.id)], [[], [old.id]]);
+});
+
+/* THE HAND-IN NOTE: one short comment for the user, headed Handed in (ITEM_HANDOVER). */
+test('a hand-in carries a note for the user: the Handed in comment, at most 280 characters; Waiting on you shows it first', async () => {
+  const { item } = await items.createItem({ title: 'noted work', objective: 'A lead sees the note first.', parent: epic.id, holder: mem }, 'boss');
+  await items.addComment(item.id, 'decided with the lead: no receipts in the note', 'cap');
+  const long = await call('POST', `/api/work-items/${item.id}/transition`, { status: 'In Review', note: 'x'.repeat(281), by: 'mem' });
+  assert.equal(long.status, 409);
+  assert.match(long.data.error, /^Keep it for the user: what they can try\. The detail is in the diff\./);
+  assert.equal((await items.readItem(item.id))!.status, 'To Do', 'refused: nothing moved');
+  const ok = await call('POST', `/api/work-items/${item.id}/transition`, { status: 'In Review', note: 'Open a Team; Waiting on you shows the note.', by: 'mem' });
+  assert.equal(ok.status, 200, JSON.stringify(ok.data));
+  assert.equal(ok.data.item.comments.at(-1).text, 'Handed in: Open a Team; Waiting on you shows the note.');
+  assert.equal(items.handedInNote(ok.data.item), 'Open a Team; Waiting on you shows the note.');
+  const all = await items.listItems();
+  const work = teamWork([{ ...ok.data.item, holder: 'team:crew' }], all);
+  const line = work.review.find((one) => one.id === item.id)!;
+  assert.equal(line.objective, 'A lead sees the note first.');
+  assert.equal(line.handed_in, 'Open a Team; Waiting on you shows the note.');
+  assert.deepEqual(line.comments.map((one) => one.text), ['decided with the lead: no receipts in the note'], 'the other comments, folded under it');
+  // A desk's hand-in carries it the same way.
+  const desk = (await items.createItem({ title: 'desk noted', parent: epic.id, holder: mem }, 'boss')).item;
+  const handed = await items.handInItem(desk.id, 'mem', { desk: true, note: 'hand-in r9', receipts: ['r9'], forUser: 'Try the tile.' });
+  assert.equal(handed.item.comments.at(-1)!.text, 'Handed in: Try the tile.');
+  assert.equal(handed.line.note, 'hand-in r9; handed in by mem, given to team:crew', 'the receipt stays on the trail, not in the note');
+  await assert.rejects(items.handInItem(desk.id, 'mem', { desk: true, forUser: 'y'.repeat(281) }), /Keep it for the user/);
+  assert.equal(items.handInNoteProblem('z'.repeat(280)), null);
+});
+
+test('under project management a move to In Review without a note is refused, NEXT showing --note; with one it goes', async () => {
+  const { sessionDir } = await import('../src/session-dir.js');
+  const dir = sessionDir('pmer');
+  await fs.mkdir(dir, { recursive: true });
+  await fs.writeFile(path.join(dir, 'birth-receipt.json'), JSON.stringify({ behaviours: [{ book: 'project-management', file: '/x/project-management.md' }] }));
+  await seedTegami('pmer', { repo: '', branch: '' }, [{ team: 'crew', team_role: 'member', objective: '' }]);
+  await live(['cap', 'mem', 'pmer']);
+  try {
+    const { item } = await items.createItem({ title: 'pm checkout', parent: epic.id, holder: { kind: 'agent', name: 'pmer' } }, 'boss');
+    const bare = await call('POST', `/api/work-items/${item.id}/transition`, { status: 'In Review', by: 'pmer' });
+    assert.equal(bare.status, 409);
+    assert.match(bare.data.error, new RegExp(`NEXT: item transition ${item.id} "In Review" --note "<what they can try>"`));
+    const noted = await call('POST', `/api/work-items/${item.id}/transition`, { status: 'In Review', note: 'Try it.', by: 'pmer' });
+    assert.equal(noted.status, 200);
+    assert.equal(noted.data.item.status, 'In Review');
+  } finally { await live(['cap', 'mem']); }
+  const desk = await fs.readFile(new URL('../src/commands/desk.ts', import.meta.url), 'utf8');
+  assert.match(desk, /if \(projectId && !forUser && await projectManagementOn\(session\)\)/, 'a desk hand-in under project management needs --note too');
+  assert.match(desk, /const long = handInNoteProblem\(forUser\);\n\s+if \(long\) die/, 'a long note is refused before any code is handed in');
+});
+
+test('session_end\'s refusal: To Do settled first, each item named with status and title, NEXT the handover, never a drop', async () => {
+  const route = await fs.readFile(new URL('../src/routes/sessions-api.ts', import.meta.url), 'utf8');
+  const harakiri = route.slice(route.indexOf("app.post('/api/harakiri'"), route.indexOf("app.get('/api/sessions/:name/project-root'"));
+  assert.ok(harakiri.indexOf('await settleToDo(name)') < harakiri.indexOf('await unfinishedHolds(name)'));
+  assert.match(harakiri, /you hold \$\{item\.id\} \(\$\{item\.status\}\) \$\{item\.title\}/);
+  assert.match(harakiri, /item handover \$\{items\.map\(\(item\) => item\.id\)\.join\(' '\)\}/);
+  assert.doesNotMatch(harakiri, /handoff .* none/, 'no way out that drops the item');
 });

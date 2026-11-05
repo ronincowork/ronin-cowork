@@ -11,6 +11,8 @@
  * Progress, back to the Agent that handed it in (to the Team if it has ended). Stuck: the
  * flagged items, each with its flag's reason; Reply puts a comment on the item, which its
  * holders hear. Every change is the work-item routes' transition, send-back and comment.
+ * Each card shows what the user reads first (ITEM_HANDOVER): the objective, what done looks
+ * like, and the Handed in note, what to try; the other comments fold under them.
  *
  * EPICS (`createTeamEpics`): the Team's Epics. One opens straight onto its record
  * (`createEpicRecord`); several are a phalanx of Epic stones (`createEpicStones`), a pressed one
@@ -50,6 +52,31 @@ export const teamWaiting = (row) => ({
   stuck: Array.isArray(row?.waiting?.stuck) ? row.waiting.stuck : [],
 });
 export const teamEpicIds = (row) => new Set(Array.isArray(row?.epics) ? row.epics : []);
+
+/** What the user reads first on an item (ITEM_HANDOVER): its objective, its Handed in note
+ * headed so, then every other comment folded under "Comments · n". The tile's item view reads
+ * in the same order (work-items-surface.js renderItemDetail). */
+export function readFirst(item) {
+  const out = [];
+  if (item.objective) out.push(el('p', 'epic-objective team-waiting-objective', item.objective));
+  if (item.handed_in) {
+    const note = el('p', 'epic-objective team-waiting-note');
+    note.append(el('b', '', t('team_waiting.handed_in', 'Handed in')), document.createTextNode(` ${item.handed_in}`));
+    out.push(note);
+  }
+  const comments = Array.isArray(item.comments) ? item.comments : [];
+  if (comments.length) {
+    const fold = el('details', 'team-waiting-comments');
+    fold.append(el('summary', '', `${t('team_waiting.comments', 'Comments')} · ${comments.length}`));
+    for (const comment of comments) {
+      const row = el('div', 'epic-comment');
+      row.append(el('small', '', [comment.by, String(comment.at || '').slice(0, 16).replace('T', ' ')].filter(Boolean).join(' · ')), el('p', '', comment.text || ''));
+      fold.append(row);
+    }
+    out.push(fold);
+  }
+  return out;
+}
 
 /** Waiting on you: With the lead, Ready to accept, then Stuck, each line an item card with its
  * actions (docs/using-ronin/project-management.md, Three signals: you accept what you can try, what is on dev). */
@@ -105,6 +132,7 @@ export function createTeamWaiting({ team }) {
     if (item.since) waited.title = new Date(item.since).toLocaleString();
     meta.append(holderButton(item), el('span', 'epic-card-key', item.jira || item.id), waited);
     node.append(meta);
+    node.append(...readFirst(item));
     if (group === 'stuck' && item.reason) node.append(el('p', 'epic-objective team-waiting-reason', item.reason));
     const acts = el('div', 'epic-statuses');
     acts.setAttribute('role', 'group');

@@ -119,10 +119,10 @@ export async function handIn(repo: string, branch: string, opts: { maxRetries?: 
 
 /** One hand-in call over one or more desks. When it names a work item and any desk was
  * accepted, the item is handed in once (work-items.ts handInItem): In Review, given to the
- * Team, the hander recorded, the accepted receipts on its trail; the desk's message to the lead
- * (lead.ts) is the one notice. On an item already there the line changes nothing and acks
+ * Team, the hander recorded, its Handed in note (forUser) the comment the user reads, the
+ * accepted receipts on its trail; the desk's message to the lead (lead.ts) is the one notice. On an item already there the line changes nothing and acks
  * nobody; a space with no such status leaves it, and `unmoved` says why. */
-export async function handInAssignment(assignment: { desks: Array<{ repo: string; branch: string }>; projectId?: string; session: string }): Promise<{
+export async function handInAssignment(assignment: { desks: Array<{ repo: string; branch: string }>; projectId?: string; session: string; forUser?: string }): Promise<{
   outcomes: HandInOutcome[];
   moved: Acknowledged | null;
   unmoved?: string;
@@ -132,7 +132,7 @@ export async function handInAssignment(assignment: { desks: Array<{ repo: string
   const accepted = outcomes.filter(({ receipt }) => receipt.result === 'accepted').map(({ receipt }) => receipt.id);
   if (!assignment.projectId || !accepted.length) return { outcomes, moved: null };
   try {
-    return { outcomes, moved: await handInItem(assignment.projectId, assignment.session, { desk: true, note: `hand-in ${accepted.join(', ')}`, receipts: accepted }) };
+    return { outcomes, moved: await handInItem(assignment.projectId, assignment.session, { desk: true, note: `hand-in ${accepted.join(', ')}`, receipts: accepted, forUser: assignment.forUser }) };
   } catch (error) {
     if (!(error instanceof WorkItemBadInput)) throw error;
     return { outcomes, moved: null, unmoved: error.message };
