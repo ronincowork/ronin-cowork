@@ -161,7 +161,8 @@ except Exception: r = {}
 if not r.get("ok"):
     print("\n(Ronin did not answer: the work items you hold are not shown.)"); raise SystemExit
 items = r.get("items") or []
-# A Done item stays on the record until it is archived: shown as "Done · <how long ago>".
+# OPEN ITEMS ONLY (owner, 2026-11-05; KAN-271): a Done item waiting for the five-day archive is
+# off the open lists at once; under each list it is counted on one line, ids only, newest first.
 import datetime, re
 def since(i):
     for l in reversed(i.get("trail") or []):
@@ -176,20 +177,26 @@ def status(i):
     if i.get("status") != "Done": return i.get("status")
     when = ago(since(i) or "")
     return "Done · %s" % when if when else "Done"
+def listed(held, watched=()):
+    for i in held or []:
+        if i.get("status") != "Done": print(line(i))
+    for i in watched or []:
+        if i.get("status") != "Done": print(line(i) + " · watched")
+    done = sorted([i for i in list(held or []) + list(watched or []) if i.get("status") == "Done"], key=lambda i: since(i) or "", reverse=True)
+    ids = list(dict.fromkeys(i["id"] for i in done))
+    if ids: print("- Done, not yet archived: %d (%s%s)" % (len(ids), ", ".join(ids[:8]), ", …" if len(ids) > 8 else ""))
 print("\n## Work items you hold" if items else "\n## You hold no work items — your team holds your work; item create puts it there" if r.get("teams") else "\n## You hold no work items — item create --parent <epic> makes one yours")
 line = lambda i: "- %s %s · %s%s" % (i["id"], i["title"], status(i), " · flagged" if i.get("flagged") else "")
-for i in items:
-    print(line(i))
+listed(items)
 if r.get("watching"):
     print("\n## Work items you watch")
-    for i in r["watching"]: print(line(i))
+    listed(r["watching"])
 for t in r.get("teams") or []:
     print("\n## Work items of team %s" % t["team"])
     for who, held, watched in [("The team", t.get("items"), t.get("watching"))] + [(m["name"], m.get("items"), m.get("watching")) for m in t.get("members") or []]:
         if not held and not watched: continue
         print("\n### %s" % who)
-        for i in held or []: print(line(i))
-        for i in watched or []: print(line(i) + " · watched")
+        listed(held, watched)
 docs = list(dict.fromkeys(json.loads(os.environ.get("OWN_DOCS") or "[]") + (r.get("attachments") or [])))
 if docs:
     print("\n## Documents\n" + "\n".join("- " + doc for doc in docs))

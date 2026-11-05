@@ -320,3 +320,25 @@ test('item handover: several ids, one note, to the Team; --to-do and --flag; tra
   await tool('item', ['transition', four, 'In Review', '--note', 'Try the tile.']);
   assert.equal((await readItem(four))!.status, 'In Review');
 });
+
+test('work-record read lists open items only; Done waiting for the archive is one line, ids only, newest first, at most 8', async () => {
+  const { createItem, editItem } = await import('../src/work-items.js');
+  await seedTegami('done_probe');
+  const holder = { kind: 'agent', name: 'done_probe' } as const;
+  const open = (await createItem({ title: 'still open', holder }, 'lead')).item.id;
+  const done: string[] = [];
+  for (let n = 0; n < 10; n++) {
+    const id = (await createItem({ title: `finished ${n}`, holder }, 'lead')).item.id;
+    await editItem(id, { status: 'Done' }, 'owner');
+    done.unshift(id); // newest first
+  }
+  const text = await run('work-record', ['read'], 'done_probe');
+  assert.equal(text.status, 0, text.stderr);
+  assert.match(text.stdout, new RegExp(`- ${open} still open · To Do`));
+  assert.doesNotMatch(text.stdout, /finished \d/, 'no Done item has a line of its own');
+  assert.ok(text.stdout.includes(`- Done, not yet archived: 10 (${done.slice(0, 8).join(', ')}, …)`), text.stdout);
+  const json = JSON.parse((await run('work-record', ['read', '--json'], 'done_probe')).stdout) as { items: unknown[] };
+  assert.equal(json.items.length, 11, '--json stays whole, for scripts');
+  const { readTegami } = await import('../src/tegami-read.js');
+  assert.equal((await readTegami('done_probe'))!.chip.text, `${open} To Do`, 'the header chip names only open items');
+});

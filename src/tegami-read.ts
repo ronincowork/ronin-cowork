@@ -57,9 +57,11 @@ async function dropped(key: string): Promise<string[]> {
   }));
 }
 
-/** The tile's and the roster's readout: the items held with their status (a flag marks an
- * impediment), the first three named and the rest counted. */
-export function chipFor(items: WorkItem[]): { text: string; gate: boolean } {
+/** The tile's and the roster's readout: the open items held with their status (a flag marks an
+ * impediment), the first three named and the rest counted. Done waiting for the archive is left
+ * out (owner, 2026-11-05; KAN-271): it would crowd the work. */
+export function chipFor(held: WorkItem[]): { text: string; gate: boolean } {
+  const items = held.filter((item) => item.status !== 'Done');
   if (!items.length) return { text: '—', gate: false };
   const named = items.slice(0, 3).map((item) => `${item.flagged ? '⚑ ' : ''}${item.id} ${item.status}`);
   const more = items.length > 3 ? [`+${items.length - 3}`] : [];

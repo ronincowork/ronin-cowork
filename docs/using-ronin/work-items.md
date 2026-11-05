@@ -218,9 +218,11 @@ item handover w12 team:surface "where it stands; what is next"   an ending Agent
 
 Assigning adds a holder and removes nobody. When an Agent ends, what it held goes by its
 status (project-management.md, How an item lives): To Do back to its Team, In Progress and In
-Review handed over with a note, Done left where it is until it is archived, five days after
-Done: off every list, the Epics workbench and `item search` unless `--archived`; Ronin only, never
-Jira's issue. Leaving Done (a Send back, a Jira reopen) brings it back. An ending with no Agent to ask (Shut down
+Review handed over with a note, Done to nobody. A Done item is off the open lists at once: the
+work record, the tile's record and its header chip count it on one line ("Done, not yet archived:
+N (ids)", newest first) until it is archived, five days after Done: off every list, the Epics
+workbench and `item search` unless `--archived`; Ronin only, never Jira's issue. Leaving Done (a
+Send back, a Jira reopen) brings it back. An ending with no Agent to ask (Shut down
 Agent, archive, a crash) gives the unfinished ones to the Team flagged, and its lead is told
 once. Other holders stay. `item search` still finds it.
 

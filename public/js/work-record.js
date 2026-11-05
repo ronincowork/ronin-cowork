@@ -4,8 +4,9 @@
  *
  * Three surfaces, one payload, no second data path:
  *   the chip    a fixed-width readout in the tile header: the items held, with their status
- *   the record  the tile's Work record: the items held first, each with its status, flag and
- *               attachments; then the objective, worktrees and Teams
+ *   the record  the tile's Work record: the open items held first, each with its status, flag
+ *               and attachments, Done waiting for the archive counted on one line; then the
+ *               objective, worktrees and Teams
  *   the roster  the same chip as a row per session, in the commons ⌂ Roster
  *
  * A work item mirrors Jira (owner, 2026-10-22). Everything on this side is read-only: no
@@ -17,6 +18,15 @@ import { isPlanRef, planAttachment } from './plan-attachment.js';
 export function clampTip(s, room = 120) {
   return s.length > room ? s.slice(0, room - 1) + '…' : s;
 }
+
+/** When an item went Done: its last move there (src/work-items.ts doneSince), else its birth. */
+const doneAt = (item) => [...(item.trail || [])].reverse().find((one) => (one.op === 'status' && one.to === 'Done')
+  || (one.op === 'edit' && /(^|, |; )status Done(,|;|$)/.test(one.note || '')))?.at || item.created?.at || '';
+/** The Done items of a list, newest first. */
+export const doneWaiting = (items) => (items || []).filter((item) => item.status === 'Done').sort((a, b) => doneAt(b).localeCompare(doneAt(a)));
+/** "Done, not yet archived: N (KAN-1, KAN-2, …)": ids only, at most eight. */
+export const doneLine = (done) => t('work_record.done_waiting', 'Done, not yet archived: {n} ({ids})',
+  { n: done.length, ids: done.slice(0, 8).map((item) => item.id).join(', ') + (done.length > 8 ? ', …' : '') });
 
 /** The work record: the items held with their status, flag and attachments; then what the
  *  Agent is doing, where it works and its Teams. */
@@ -37,8 +47,12 @@ export function buildWorkRecord(letter, deskEntry = null, { openDoc = null } = {
   const line = (cls, text) => Object.assign(document.createElement('p'), { className: cls, textContent: text });
 
   const held = section(t('work_record.items', 'Work items'), 'wr-items');
-  if (letter.items?.length) {
-    for (const item of letter.items) {
+  // Open items only (owner, 2026-11-05; KAN-271): Done waiting for the five-day archive is one
+  // line under them, ids only, newest first, at most eight.
+  const open = (letter.items || []).filter((item) => item.status !== 'Done');
+  const done = doneWaiting(letter.items);
+  if (open.length) {
+    for (const item of open) {
       const row = document.createElement('div');
       row.className = 'wr-item' + (item.flagged ? ' flagged' : '');
       // A paired item's id is its Jira issue, opened there; any other id is text.
@@ -64,7 +78,8 @@ export function buildWorkRecord(letter, deskEntry = null, { openDoc = null } = {
       }
       held.appendChild(row);
     }
-  } else held.appendChild(line('wr-empty', t('work_record.no_items', 'No work items held.')));
+  } else if (!done.length) held.appendChild(line('wr-empty', t('work_record.no_items', 'No work items held.')));
+  if (done.length) held.appendChild(line('wr-action wr-done', doneLine(done)));
 
   const task = section(t('work_record.task_at_hand', 'Task at hand'), 'wr-task');
   task.appendChild(line('', letter.objective || t('work_record.task_unstated', 'No task stated in this work record.')));

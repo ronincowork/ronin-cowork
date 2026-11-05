@@ -103,3 +103,15 @@ test('handInRecord: the last hand-in, and on dev only when its promotion came af
   assert.equal(handInRecord({ handed_in: { by: 'a', at: '2026-11-05T11:00:00Z' }, on_dev: { at: '2026-11-05T10:00:00Z' } }), '↑ by a · 2026-11-05 11:00', 'an older promotion is not this hand-in');
   assert.match(surface, /if \(record \|\| handed\) \{/, 'the row shows for a hand-in with no note too');
 });
+
+// The tile's work record lists open items only; Done waiting for the archive is one line (KAN-271).
+test('the tile\'s work record lists open items, and counts Done on one line, newest first, at most eight', async () => {
+  const record = await read('public/js/work-record.js');
+  const body = record.slice(record.indexOf('export function buildWorkRecord'));
+  assert.match(body, /const open = \(letter\.items \|\| \[\]\)\.filter\(\(item\) => item\.status !== 'Done'\);/);
+  assert.match(body, /for \(const item of open\)/);
+  assert.match(body, /held\.appendChild\(line\('wr-action wr-done', doneLine\(done\)\)\)/);
+  assert.match(record, /'Done, not yet archived: \{n\} \(\{ids\}\)'/);
+  assert.match(record, /done\.slice\(0, 8\)/);
+  assert.match(record, /sort\(\(a, b\) => doneAt\(b\)\.localeCompare\(doneAt\(a\)\)\)/, 'newest first');
+});

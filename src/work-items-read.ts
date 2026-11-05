@@ -202,7 +202,8 @@ export function teamWork(items: HeldItem[], every: WorkItem[]): TeamWork {
   const lead = handedIn.filter((item) => handInStage(item) === 'lead').map((item) => line(item, handed(item))).sort(oldest);
   const review = handedIn.filter((item) => handInStage(item) === 'ready')
     .map((item) => line(item, item.on_dev && item.hand_ins?.at(-1)?.receipt !== null ? item.on_dev.at : handed(item))).sort(oldest);
-  const stuck = held.filter((item) => item.flagged).map((item) => {
+  // Never Done (KAN-271): a Done item left flagged is not stuck.
+  const stuck = held.filter((item) => item.flagged && item.status !== 'Done').map((item) => {
     const flag = last(item, 'flag', 'true');
     return line(item, flag?.at ?? item.created.at, flag?.note ?? '');
   }).sort(oldest);

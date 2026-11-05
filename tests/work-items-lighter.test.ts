@@ -553,3 +553,12 @@ test('Waiting on you still reads the Team\'s items and its members\' items: a he
   const work = teamWork(reading.items, await items.listItems());
   assert.ok(work.lead.some((one) => one.id === item.id && one.holder === 'agent:mem'), 'the member\'s item waits on the lead');
 });
+
+test('Waiting on you never shows Done: a Done item left flagged is not under Stuck', async () => {
+  const { item } = await items.createItem({ title: 'done but flagged', parent: epic.id, holder: mem }, 'boss');
+  await items.flagItem(item.id, true, 'Waiting on cap: a question', 'mem');
+  await items.editItem(item.id, { status: 'Done' }, 'owner');
+  const all = await items.listItems();
+  const work = teamWork([{ ...(await items.readItem(item.id))!, holder: 'agent:mem' }], all);
+  assert.deepEqual([work.lead, work.review, work.stuck].map((group) => group.length), [0, 0, 0]);
+});
