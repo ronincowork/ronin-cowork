@@ -8,7 +8,7 @@ where it is built or taught.
 
 | Doc | What it holds |
 |---|---|
-| [Project management](../using-ronin/project-management.md) | **The README.** Plan, epic, item; how an item lives; the three signals; the five notices; where the work shows (Jira Kanban or Scrum, Epics, Waiting on you, the item island) |
+| [Project management](../using-ronin/project-management.md) | **The README.** Plan, epic, item; how an item lives; the three signals; the six notices; where the work shows (Jira Kanban or Scrum, Epics, Waiting on you, the item island) |
 | [Writing a plan](../using-ronin/planning.md) | the plan: who writes it, its status, the `plan` tool, from plan to epics, closing, and the one copy of the template (`plan read --template` reads it) |
 | [Work items](../using-ronin/work-items.md) | the fields, levels, statuses and every `item` command |
 | [Jira](../using-ronin/jira.md) | connecting a space: the panel, the switches, Connect, Jira wins |
@@ -50,7 +50,7 @@ predicate in `src/behaviours.ts`.
 
 | File | Holds |
 |---|---|
-| `src/work-items.ts` | the store: `plan:<workspace>/<name>` attachments (`planAttachment`), shapes Jira refuses (`jiraShape`), every id resolving, hand-in and `handInStage`, send-back, delete, the five notices (`noticesOf`, one per command) |
+| `src/work-items.ts` | the store: `plan:<workspace>/<name>` attachments (`planAttachment`), shapes Jira refuses (`jiraShape`), every id resolving, hand-in and `handInStage`, send-back, delete, the six notices (`noticesOf`, one per command) |
 | `src/plans.ts` | plans on the Workspace: the place (`plansPlace`: Ronin Lab's `<campaign>/<workspace>/plans`, or `plans: { location, path }` on the record, any Location), the header, the states (no guards: the docs and briefs steer), one-file commits and the push, the move on a changed place, stopped by a name clash, `plan:` resolving |
 | `src/routes/plans-api.ts` | `/api/plans`: ls, read, template, write, order, and `resolve` for the readers of a `plan:` attachment |
 | `src/workspaces.ts`, `src/routes/workspaces-api.ts`, `public/js/workspaces-surface.js` | the Workspace's `plans` field, kept by `normalizeWorkspace`; the PUT that moves the plans; the page's Plans row |
@@ -78,7 +78,7 @@ The owner's decisions, 2026-11-04:
 - The plan is written once and not kept current; its statuses are Draft and Ordered (2026-11-05).
 - A hand-in gives the item to the Team, so an Agent's list empties as its work finishes.
 - A hand-in, a promotion and a flag are three signals; only the accepting person sets Done.
-- Five notices, none twice. The rest is seen, not told.
+- Six notices, none twice; the sixth (your item is Done) tells the Agent that handed it in. The rest is seen, not told.
 - Send back goes to the Agent that handed in (to the Team if it has ended).
 - An Agent ending puts its unfinished items back on their epic, with no notice.
 - Ronin refuses any shape Jira would refuse, so the two never part.
