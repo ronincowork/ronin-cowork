@@ -27,8 +27,7 @@ Press one to open it in the Task's place.
 
 Press a pill and the item's reading opens over the tile, in the launch forms' format: its
 Status (press it to move the item to any status), objective, details, comments and attachments
-(docs/using-ronin/work-items.md, An item's reading), a Task's Subtasks with the Done ones
-folded apart, and a box to comment, sent to the Agent holding it. Every row folds. Press the same pill again, or Close, or
+(docs/using-ronin/work-items.md, An item's reading), and a Task's Subtasks. Press the same pill again, or Close, or
 Escape, to return to the terminal.
 
 The island stays in the header; it does not move when an item changes. Press the small bar

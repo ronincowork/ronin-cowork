@@ -89,21 +89,11 @@ which comes back by polling. A hand-in that names no item moves no status.
 place on the Work Items stones. It is drawn in the launch forms' format: a head with the kind's
 symbol, the title, and the key, kind, status and flag, then label-left rows: **Status**,
 **Objective**, **Details** (priority, holder, parent, a paired item's Jira fields), **Subtasks**
-(over a tile: a Task's open ones, each opening in its place), **Done (n)** (its Done ones,
-folded to begin with), **Comments**, **Attachments** (each opens), **Links** and, on Work Items,
-**History**. Status is an ERABI question: press it, pick any status, and the item moves (the
-transition, one trail line, its holders and watchers told). The line under it says what
-changed, or why the move was refused, and the answer goes back.
-
-Every row folds: press its name. Folded, it keeps one line (the status, the first line of the
-objective, the priority and holder, a count). A fold stays as you left it from one item to the
-next until the page reloads.
-
-Under the comments is a box: type, press **Comment**, and the comment goes on the item (the
-comment route, as `item comment`). The store sends it to each Agent holding the item, straight
-to its dialog box, and the line under the box names who it reached. An item only a Team holds
-(after a hand-in, say) has no Agent to send it to; the line says so, and the comment waits on
-the item.
+(over a tile: a Task's, each opening in its place), **Comments**,
+**Attachments** (each opens), **Links** and, on Work Items, **History**. Status is an ERABI
+question: press it, pick any status, and the item moves (the transition, one trail line, its
+holders and watchers told). The line under it says what changed, or why the move was refused,
+and the answer goes back.
 
 ## The item tool
 

@@ -154,10 +154,6 @@
   .wi-child .item-kind { width: var(--form-input); height: var(--form-input); flex: 0 0 auto; margin-top: var(--space-row); }
   .wi-child-words { display: flex; flex-direction: column; gap: var(--space-row); min-width: 0; }
   .wi-child-title { font-size: var(--form-input); overflow-wrap: anywhere; }
-  .wi-compose { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-row); }
-  .wi-compose-words { width: 100%; min-width: 0; box-sizing: border-box; resize: vertical; border: var(--edge) solid var(--line-2); border-radius: var(--radius-small); background: var(--inset); color: var(--fg); padding: var(--space-row) var(--space-inline); font: inherit; }
-  .wi-compose-words:focus-visible { border-color: var(--accent); outline: none; }
-  .wi-list[hidden] { display: none; }
   .wi-attachment { padding: 0; border: 0; background: none; color: var(--accent-2); font: inherit; text-align: left; cursor: pointer; text-decoration: none; }
   .wi-attachment:hover, .wi-attachment:focus-visible { color: var(--accent); }
   /* The full overlay (js/work-details.js): one layer over a host, the tile its one user. */

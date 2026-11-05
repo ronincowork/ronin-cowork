@@ -10,16 +10,7 @@ test('the reader is drawn as form steps, and Status is an ask() that posts the t
   const surface = await read('public/js/work-items-surface.js');
   const body = surface.slice(surface.indexOf('export function renderItemDetail'), surface.indexOf('/** A phalanx of item stones'));
   assert.match(body, /el\('div', 'ntf-form wi-form'\)/);
-  // w297: every step folds with the form steps' own fold, and the fold is kept between items.
-  assert.match(body, /createStep\(\{ key: id, title, onToggle: \(\) => \{ FOLDS\.set\(id, !\(FOLDS\.get\(id\) \?\? true\)\); paint\(\); \} \}\)/);
-  assert.match(body, /one\.setCollapsed\(!\(FOLDS\.get\(id\) \?\? true\), meta\(\), true\)/);
-  assert.match(surface, /const FOLDS = new Map\(\[\['done', false\]\]\);/, 'Done starts folded');
-  // w297: the Done Subtasks have their own section; the open ones stay in Subtasks.
-  assert.match(body, /const open = children\.filter\(\(child\) => !isDone\(child\)\);/);
-  assert.match(body, /step\('done', t\('work_items\.done_n', 'Done \(\{n\}\)', \{ n: done\.length \}\)/);
-  // w297: the comment box posts to the work-item comment route and says who it reached.
-  assert.match(body, /\/comment`, \{ method: 'POST', json: \{ text \} \}/);
-  assert.match(body, /result\.data\?\.notified/);
+  assert.match(body, /createStep\(\{ key: title, title \}\)/);
   assert.match(body, /ask\(\[\{ fields: \[\{ key: 'status'/);
   assert.match(body, /\/transition`, \{ method: 'POST', json: \{ status: next \} \}/);
   assert.match(body, /else \{ question\.set\('status', was\)/, 'a refused move puts the answer back');
