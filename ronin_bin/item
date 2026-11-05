@@ -8,7 +8,7 @@ usage() { cat <<'EOF_USAGE'
 Usage:
   item create --title <t> [--kind <type>] [--parent <id>] [--objective <o>] [--priority <p>] [--team <t>]
   item read <id>
-  item search [--campaign <id>] [--team <t>] [--holder <name>|none] [--parent <id>|--no-parent] [--status <s>] [--kind <k>] [--text <words>]
+  item search [--campaign <id>] [--team <t>] [--holder <name>|none] [--parent <id>|--no-parent] [--status <s>] [--kind <k>] [--text <words>] [--archived]
   item edit <id> --title|--objective|--kind|--parent <id|none>|--priority|--trello|--github <value> ...
   item transition <ids> "<status>" [--note "<what they can try>"]
   item assign <ids> <agent>|team:<name>
@@ -23,7 +23,8 @@ Usage:
 <ids> is one id or several (w12 w13 KAN-65), each acted on in turn; every id an item has had
 finds it (a w id still finds the item after it takes its Jira key), here, in read, edit and
 --parent. create answers "created <id> under <parent>" on its first line. --text matches
-every word in the title or objective, any case.
+every word in the title or objective, any case. An item Done five days is archived: off
+every list and out of search unless --archived; item read still finds it.
 Status, kind, priority and link type are the space's own names, exactly; unconnected,
 Jira's: To Do, In Progress, In Review, Done; Epic, Task, Story, Bug, Feature, Subtask;
 Highest, High, Medium, Low, Lowest; Blocks, Relates, Duplicate, Cloners. Anything else is
@@ -74,7 +75,8 @@ case "$verb" in
       case "$1" in
         --campaign|--team|--holder|--parent|--status|--kind|--text) [ -n "${2:-}" ] || die "BAD-ARG: $1 needs a value"; q="$q&${1#--}=$(quote "$2")"; shift 2 ;;
         --no-parent) q="$q&no_parent=1"; shift ;;
-        *) die "BAD-ARG: item search takes --campaign, --team, --holder, --parent, --no-parent, --status, --kind or --text, not $1" ;;
+        --archived) q="$q&archived=1"; shift ;;
+        *) die "BAD-ARG: item search takes --campaign, --team, --holder, --parent, --no-parent, --status, --kind, --text or --archived, not $1" ;;
       esac
     done
     ronin_item_call GET "/api/work-items?${q#&}"; exit $? ;;

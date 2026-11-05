@@ -81,7 +81,7 @@ import { registerSetupRuntime } from './routes/setup-runtime-api.js';
 import { registerSetupProgress } from './routes/setup-progress-api.js';
 import { registerMikaContext } from './mika-context.js';
 import { migrateSopsToBehaviours } from './behaviour-store-migration.js';
-import { migrateItems, releaseEndedHolders } from './work-items.js';
+import { archiveDone, migrateItems, releaseEndedHolders } from './work-items.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(__dirname, '..');
@@ -99,6 +99,10 @@ if (isEntryPoint) setInterval(() => {
   void releaseEndedHolders().then((ended) => {
     if (ended.length) console.log(`[work-items] released the items of ended ${ended.join(', ')}`);
   }).catch((error) => console.error(`[work-items] sweep: ${(error as Error).message}`));
+  // Done five days is archived (docs/using-ronin/project-management.md, How an item lives).
+  void archiveDone().then((archived) => {
+    if (archived.length) console.log(`[work-items] archived, Done five days: ${archived.join(', ')}`);
+  }).catch((error) => console.error(`[work-items] archive: ${(error as Error).message}`));
 }, 5 * 60_000).unref();
 const isBoxInstance = isEntryPoint
   && process.env.NODE_ENV === 'production'

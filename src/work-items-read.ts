@@ -223,8 +223,10 @@ export interface EpicItem {
 }
 
 /** THE EPICS PUSH (KAN-190, KAN-206): every Epic whole, and every item under one, slim. */
-export function epicsPush(every: HeldItem[]): { epics: HeldItem[]; items: EpicItem[] } {
-  const byId = new Map(every.map((item) => [item.id, item]));
+export function epicsPush(all: HeldItem[]): { epics: Array<HeldItem & { archived_under: number }>; items: EpicItem[] } {
+  // Archived items (Done five days, KAN-266) are off the workbench: each Epic counts its own.
+  const byId = new Map(all.map((item) => [item.id, item]));
+  const every = all.filter((item) => !item.archived);
   const epicOf = (item: HeldItem): string => {
     let at: HeldItem | undefined = item;
     for (let steps = 0; at?.parent && steps < every.length; steps += 1) {
@@ -242,7 +244,13 @@ export function epicsPush(every: HeldItem[]): { epics: HeldItem[]; items: EpicIt
       kind: item.kind, flagged: item.flagged, campaign_id: item.campaign_id, jira: item.external.jira?.key ?? '', epic,
     });
   }
-  return { epics: every.filter((item) => item.level === 1), items };
+  const archivedUnder = new Map<string, number>();
+  for (const item of all) {
+    if (!item.archived || item.level === 1) continue;
+    const epic = epicOf(item);
+    if (epic) archivedUnder.set(epic, (archivedUnder.get(epic) ?? 0) + 1);
+  }
+  return { epics: every.filter((item) => item.level === 1).map((epic) => ({ ...epic, archived_under: archivedUnder.get(epic.id) ?? 0 })), items };
 }
 
 export async function everyItemReading(): Promise<HeldItem[]> {

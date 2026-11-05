@@ -78,7 +78,7 @@ export function registerWorkItems(app: express.Express): void {
   app.get('/api/work-items', guarded(async (req, res) => {
     // Search (Jira's JQL, as filters): ?session= (an Agent's), ?team= (a Team's), or every
     // item; each narrowed by ?holder=<name> (none: the unheld list, held and watched by nobody and not Done), ?parent=<id> (any id it has had),
-    // ?no_parent=1, ?status=, ?kind=, ?text=<words> (every word in the title or objective, any case).
+    // ?no_parent=1, ?archived=1, ?status=, ?kind=, ?text=<words> (every word in the title or objective, any case).
     const team = text(req.query.team)?.trim();
     const session = text(req.query.session)?.trim();
     const holder = text(req.query.holder)?.trim();
@@ -89,12 +89,14 @@ export function registerWorkItems(app: express.Express): void {
     const status = text(req.query.status)?.trim().toLowerCase();
     const kind = text(req.query.kind)?.trim().toLowerCase();
     const campaign = text(req.query.campaign)?.trim();
+    // Archived items (Done five days) are left out unless ?archived=1 (item search --archived).
+    const archived = Boolean(text(req.query.archived));
     const watched = holder === 'none' ? await watchedIds() : new Set<string>();
     const narrow = <T extends WorkItem & { holder?: string }>(items: T[]): T[] => items.filter((item) =>
       (!holder || (holder === 'none' && !item.holder && !watched.has(item.id) && item.status !== 'Done') || item.holder === `agent:${holder}` || item.holder === `team:${holder}` || item.holder === holder)
       && (!parent || item.parent === parent) && (!orphans || !item.parent)
       && (!status || item.status.toLowerCase() === status) && (!kind || item.kind.toLowerCase() === kind)
-      && (!campaign || item.campaign_id === campaign)
+      && (!campaign || item.campaign_id === campaign) && (archived || !item.archived)
       && words.every((word) => `${item.title}\n${item.objective}`.toLowerCase().includes(word)));
     if (session) { const reading = await agentReading(session); return res.json({ ok: true, ...reading, items: narrow(reading.items) }); }
     if (team) {

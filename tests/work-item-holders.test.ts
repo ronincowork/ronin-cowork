@@ -422,3 +422,59 @@ test('a list holding an item under its old w id and its Jira key reads it once, 
   const reading = await teamReading('crew');
   assert.equal(reading.items.filter((one) => one.id === 'KAN-9261').length, 1, 'the Team reading shows it once');
 });
+
+/* THE ARCHIVE (KAN-266): Done five days is off every list, the Epics push and default search. */
+test('Done five days is archived, however it went Done: off every list, the Epics push and search; read finds it; leaving Done brings it back', async () => {
+  const day = 24 * 60 * 60 * 1000;
+  const { epicsPush, everyItemReading } = await import('../src/work-items-read.js');
+  const epic = (await items.createItem({ title: 'archive epic', kind: 'Epic', holder: team }, 'lead')).item;
+  const ways: Array<[string, (id: string) => Promise<unknown>]> = [
+    ['Accept', (id) => items.editItem(id, { status: 'Done' }, 'owner')],
+    ['item transition', (id) => items.editItem(id, { status: 'Done' }, 'lead')],
+    ['Jira', (id) => items.editItem(id, { status: 'Done', title: 'renamed by Jira too' }, 'jira:someone')],
+  ];
+  const ids: string[] = [];
+  for (const [way, done] of ways) {
+    const { item } = await items.createItem({ title: `archive by ${way}`, parent: epic.id, holder: team }, 'lead');
+    await items.assignItem(item.id, ann, 'lead');
+    await done(item.id);
+    ids.push(item.id);
+  }
+  const at = Date.parse(items.doneSince((await items.readItem(ids[0]!))!));
+  assert.deepEqual((await items.archiveDone(at + 4 * day)).filter((id) => ids.includes(id)), [], 'four days on: still on its lists');
+  for (const id of ids) assert.deepEqual(await listsHolding(id), ['agent:ann', 'team:crew']);
+  assert.deepEqual((await items.archiveDone(at + 5 * day + 60_000)).filter((id) => ids.includes(id)), ids, 'five days on: every way out is archived');
+  for (const id of ids) {
+    const item = (await items.readItem(id))!;
+    assert.ok(item.archived, `${id} read still finds it, archived`);
+    assert.equal(item.status, 'Done');
+    assert.deepEqual(await listsHolding(id), [], 'off every list');
+    assert.deepEqual([item.trail.at(-1)!.op, item.trail.at(-1)!.note, item.trail.at(-1)!.from], ['release', 'archived: Done 5 days', 'team:crew, agent:ann']);
+    assert.ok(item.external.jira === undefined, 'Ronin only: no pair made or changed');
+  }
+  const push = epicsPush(await everyItemReading());
+  assert.ok(!push.items.some((one) => ids.includes(one.id)), 'off the Epics workbench');
+  assert.equal(push.epics.find((one) => one.id === epic.id)!.archived_under, 3, 'its Epic counts them');
+  assert.deepEqual(await items.archiveDone(at + 9 * day), [], 'a second sweep finds nothing');
+  // Leaving Done brings it back.
+  await items.editItem(ids[2]!, { status: 'In Progress' }, 'jira:someone');
+  assert.equal((await items.readItem(ids[2]!))!.archived, undefined, 'a Jira reopen brings it back');
+  assert.ok(epicsPush(await everyItemReading()).items.some((one) => one.id === ids[2]));
+});
+
+test('item search leaves archived items out unless --archived', async () => {
+  const express = (await import('express')).default;
+  const { registerWorkItems } = await import('../src/routes/work-items-api.js');
+  const app = express(); app.use(express.json()); registerWorkItems(app);
+  const server = app.listen(0);
+  try {
+    const base = `http://127.0.0.1:${(server.address() as import('node:net').AddressInfo).port}`;
+    const { item } = await items.createItem({ title: 'searchable archive', holder: team }, 'lead');
+    await items.editItem(item.id, { status: 'Done' }, 'owner');
+    await items.archiveDone(Date.now() + 6 * 24 * 60 * 60 * 1000);
+    const ids = async (q: string) => ((await (await fetch(`${base}/api/work-items?text=searchable${q}`)).json()) as { items: Array<{ id: string }> }).items.map((one) => one.id);
+    assert.deepEqual(await ids(''), []);
+    assert.deepEqual(await ids('&archived=1'), [item.id]);
+    assert.equal(((await (await fetch(`${base}/api/work-items/${item.id}`)).json()) as { item: { id: string } }).item.id, item.id, 'item read finds it');
+  } finally { server.close(); }
+});

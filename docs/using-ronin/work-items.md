@@ -123,7 +123,7 @@ the item.
 ```text
 item create --title "…" [--kind Task] [--parent w3] [--objective "…"] [--priority High] [--team surface]
 item read w12                       # fields, children, comments, attachments, links, history
-item search [--campaign home_machine] [--team surface] [--holder builder | none] [--parent w3 | --no-parent] [--status "In Progress"] [--kind Bug]
+item search [--campaign home_machine] [--team surface] [--holder builder | none] [--parent w3 | --no-parent] [--status "In Progress"] [--kind Bug] [--archived]
 item edit w12 --objective "…" --priority High
 item transition w12 "In Review" --note "…"   # a hand-in: --note is the Handed in comment for the user, at most 280 characters
 item flag w12 "waiting on the API"  # item unflag w12 when clear
@@ -218,7 +218,9 @@ item handover w12 team:surface "where it stands; what is next"   an ending Agent
 
 Assigning adds a holder and removes nobody. When an Agent ends, what it held goes by its
 status (project-management.md, How an item lives): To Do back to its Team, In Progress and In
-Review handed over with a note, Done left where it is. An ending with no Agent to ask (Shut down
+Review handed over with a note, Done left where it is until it is archived, five days after
+Done: off every list, the Epics workbench and `item search` unless `--archived`; Ronin only, never
+Jira's issue. Leaving Done (a Send back, a Jira reopen) brings it back. An ending with no Agent to ask (Shut down
 Agent, archive, a crash) gives the unfinished ones to the Team flagged, and its lead is told
 once. Other holders stay. `item search` still finds it.
 

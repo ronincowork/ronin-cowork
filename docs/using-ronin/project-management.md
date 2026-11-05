@@ -50,12 +50,13 @@ When you bring work to a lead, it decides first which of three it is:
 | Accepted or sent back | you | Accept makes it Done. Send back returns it, In Progress, to the Agent that handed it in, with your comment |
 | Handed over | the Agent, as it ends | to the Team (or a named Agent) with a **Handover** comment: where it stands, what is next. Its status stays |
 | Done | you | it stays on its holders' lists, shown "Done · <how long ago>". Only the person accepting sets Done |
+| Archived | Ronin, five days after Done | off every list, the Epics workbench and `item search` (`--archived` finds it); `item read` and its documents still open. Jira's issue is untouched. Leaving Done brings it back |
 
 **An Agent's end hands over, never drops.** By status:
 
 | The item is | At the Agent's end | Decided by |
 |---|---|---|
-| Done | nothing: it stays where it is | — |
+| Done | nothing: it stays where it is until it is archived, five days after Done | — |
 | To Do | back to the Team, for its lead to give out again | automatic |
 | In Progress | a handover: where it stands and what comes next, to the Team or a named Agent | the Agent; the lead if the Agent asks |
 | In Review | a handover: what is left for you (what to try, what is not done) | the Agent; then the lead and you, as an In Review item always is |

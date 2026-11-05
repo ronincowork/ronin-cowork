@@ -155,6 +155,10 @@ export interface WorkItem {
   /** THE PROMOTION SIGNAL (6a): the last promotion that carried a hand-in of this item to dev.
    * Not a status: the item stays In Review, and Jira is not touched. */
   on_dev?: { promotion: string; at: string };
+  /** ARCHIVED (owner, 2026-11-05; KAN-266): Done five days, so off every holder list, the Epics
+   * workbench and default search; `item read` still finds it. Ronin's alone: never sent to Jira.
+   * An item that leaves Done is no longer archived (save). */
+  archived?: { at: string };
 }
 
 export interface HandIn { receipt: string | null; by: string; at: string }
@@ -223,6 +227,8 @@ export function withIssuer<T>(action: () => Promise<T>): Promise<T> {
 
 let written = 0;
 async function save(item: WorkItem): Promise<void> {
+  // Leaving Done (a Send back, a Jira reopen, any transition) brings an archived item back.
+  if (item.archived && item.status !== DONE) delete item.archived;
   await mkdir(dir(), { recursive: true });
   const target = fileOf(item.id);
   const tmp = `${target}.tmp-${process.pid}-${++written}`;
@@ -1271,6 +1277,35 @@ export async function releaseEndedHolders(): Promise<string[]> {
     ended.push(letter.name);
   }
   return ended;
+}
+
+/** THE ARCHIVE (owner, 2026-11-05: "Jira can do what it likes. Ronin can do 5 ttl to archive";
+ * KAN-266): an item Done for ARCHIVE_AFTER_MS since its move to Done is archived by a sweep
+ * (every five minutes, beside releaseEndedHolders), however it went Done (Accept, item
+ * transition, several ids, Jira): off every holder list, off the Epics workbench and default
+ * search, in one trail line "archived: Done 5 days", told to nobody. Until then it shows "Done ·
+ * <how long ago>". Ronin only: the Jira issue and the pair are never touched, and the item stays
+ * in the store, so `item read` and its documents still find it. Answers the ids it archived. */
+export const ARCHIVE_AFTER_MS = 5 * 24 * 60 * 60 * 1000;
+/** When an item went Done: its last move there (a transition, or an edit that set it), else its birth. */
+export function doneSince(item: Pick<WorkItem, 'trail' | 'created'>): string {
+  const line = [...item.trail].reverse().find((one) => (one.op === 'status' && one.to === DONE) || (one.op === 'edit' && /(^|, |; )status Done(,|;|$)/.test(one.note ?? '')));
+  return line?.at ?? item.created.at;
+}
+export function archiveDone(now = Date.now()): Promise<string[]> {
+  return withIssuer(async () => {
+    const archived: string[] = [];
+    for (const item of await listItems()) {
+      if (item.status !== DONE || item.archived || now - Date.parse(doneSince(item)) < ARCHIVE_AFTER_MS) continue;
+      const from = await takeOffEveryList(item.id);
+      await appendTrail(item.id, 'ronin', (it) => {
+        it.archived = { at: new Date(now).toISOString() };
+        return { op: 'release', from: labels(from), to: 'none', note: 'archived: Done 5 days' };
+      }, () => false);
+      archived.push(item.id);
+    }
+    return archived;
+  });
 }
 
 /** The Jira bridge's word to an item's holding Agents, when a change of theirs was not sent. */
