@@ -32,7 +32,8 @@ test('the tile header carries the island, fed by the pushed work record, and a p
   assert.match(head, /islandHeld = \(letter\) => \[\.\.\.new Map\(\[\.\.\.\(letter\?\.items \|\| \[\]\), \.\.\.\(letter\?\.handedIn \|\| \[\]\), \.\.\.\(letter\?\.teamItems \|\| \[\]\)\]\.map\(\(item\) => \[item\.id, item\]\)\)\.values\(\)\]/);
   // Owner, 2026-11-05: Done leaves the island; a Task's reading still lists all its Subtasks.
   assert.match(head, /islandItems = \(letter\) => islandHeld\(letter\)\.filter\(\(item\) => statusKey\(item\.status\) !== 'done'\)/);
-  assert.match(head, /children = islandHeld\(tile\.tegami\)\.filter\(\(one\) => one\.parent === item\.id\)/);
+  // w299: the Subtasks come from the item read, so a Done one the Team holds stays listed.
+  assert.match(head, /const children = read\.ok && Array\.isArray\(read\.data\?\.children\) \? read\.data\.children/);
   assert.match(head, /isOpen: \(id\) => !!openItemLayer\(tile, id\)/);
   const island = await read('public/js/tile-island.js');
   assert.doesNotMatch(island, /request\(|fetch\(|setInterval/, 'no polling: the push is the only reading');

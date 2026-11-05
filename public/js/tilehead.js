@@ -274,15 +274,22 @@ async function openWorkRecord(tile) {
  *  its title, kind, status and flag, its description, its facts, comments and attachments. */
 const openItemLayer = (tile, id) => [...tile.body.querySelectorAll(':scope > .work-overlay')].find((layer) => layer.dataset.item === id) || null;
 async function openItem(tile, item) {
-  const { renderItemDetail } = await import('./work-items-surface.js');
+  const { renderItemDetail, holderOf } = await import('./work-items-surface.js');
+  // Who holds it, every holder (w299): one read of the item as it opens, not a watch.
+  const { request } = await import('./request.js');
+  const read = await request(`/api/work-items/${encodeURIComponent(item.id)}`, { cache: 'no-store' });
+  const holder = holderOf({ ...item, held_by: read.ok ? read.data?.held_by : undefined, holder: item.holder || '' }) || (read.ok ? '' : `@${tile.session || ''}`);
   // The reader's own head carries the key and the title, so the overlay's row is only its Close.
   await overTile(tile, '', (box) => {
     box.dataset.item = item.id;
     const detail = document.createElement('div');
     detail.className = 'tile-item-detail';
-    // Its Subtasks, from what the tile holds, each opening in its place (owner, 2026-11-05).
-    const children = islandHeld(tile.tegami).filter((one) => one.parent === item.id);
-    renderItemDetail(detail, item, { holder: tile.session || '', openAttachment: (path) => tile.openDoc(path), history: false,
+    // Its Subtasks, each opening in its place (owner, 2026-11-05): every one, from the item read,
+    // whoever holds it — a handed-in Subtask is the Team's, so the tile's own record loses it
+    // once it is Done (owner, w299: "it disappeared"). The tile's record only when the read failed.
+    const children = read.ok && Array.isArray(read.data?.children) ? read.data.children
+      : islandHeld(tile.tegami).filter((one) => one.parent === item.id);
+    renderItemDetail(detail, item, { holder, openAttachment: (path) => tile.openDoc(path), history: false,
       children, openChild: (child) => void openItem(tile, child) });
     box.append(detail);
   });

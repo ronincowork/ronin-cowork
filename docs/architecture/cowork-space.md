@@ -133,7 +133,7 @@ seats a stone per Epic — the level-1 work items, over the Campaign this tab lo
 (`epics-surface.js`): a pressed Epic opens in Workspace 2 as its worksurface (KAN-206): a Show
 question, the Teams worksurface's ask() row, showing the Assigned, the Unassigned or (nothing
 picked) all of its items (w280); one row of statuses, a hidden one carrying its count; each status that is out as its items' cards (In Review
-out on arrival), a card's holder opening that Agent, a card pressed opening in place to its
+out on arrival), a card's holder (`@<agent>`, or `Team <name> (lead <lead>)`: work-items-surface.js holderWords) opening that Agent or Team, a card pressed opening in place to its
 statuses as buttons, objective and comments, never history. A stone dragged into a workspace, or
 an Epic's selector card, places that Epic's worksurface there. Models is its own stones of
 providers in Workspace 1 (`models-surface.js`): a stone dragged into a workspace, or its selector
