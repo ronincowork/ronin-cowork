@@ -8,6 +8,7 @@ import { createMenuButton } from './menu.js';
 import { buildWorkRecord } from './work-record.js';
 import { readDesks } from './desks.js';
 import { t } from './lexicon.js';
+import { isPlanRef, planName } from './plan-attachment.js';
 import { chatMarkdown, setChatMarkdown } from './tile-transcript.js';
 import { createItemIsland } from './tile-island.js';
 
@@ -221,6 +222,8 @@ export function tileMenu(tile) {
       { glyph: '📄', label: t('me.docs', 'Docs'), kind: 'list', hint: String((tile.tegami?.docs || []).length || ''),
         empty: t('me.docs_none', 'No documents on this Agent\'s record.'),
         list: () => (tile.tegami?.docs || []).map((path) => {
+          // A plan still named plan:<workspace>/<name> here no longer resolves (work-items-read.ts).
+          if (isPlanRef(path)) return { label: planName(path), hint: t('plans.gone_hint', 'gone'), run: () => {} };
           const parts = path.split('/');
           return { label: parts.pop(), hint: parts.slice(-2).join('/'), run: () => tile.openDoc(path) };
         }) },

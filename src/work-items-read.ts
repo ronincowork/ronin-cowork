@@ -67,10 +67,19 @@ export async function agentReading(session: string): Promise<AgentReading> {
   return {
     holder: `agent:${session}`,
     items,
-    attachments: [...new Set([...items, ...teams.flatMap((team) => team.items)].flatMap((item) => item.attachments))],
+    attachments: await openedAttachments([...items, ...teams.flatMap((team) => team.items)]),
     watching: await read(letter?.watches),
     teams,
   };
+}
+
+/** Every held item's attachments, each once: a `plan:<workspace>/<name>` opened through the plan
+ * read to where it is now (src/plans.ts), or left as written when it no longer resolves (gone). */
+async function openedAttachments(items: WorkItem[]): Promise<string[]> {
+  const { resolvePlanRef } = await import('./plans.js');
+  const opened = await Promise.all(items.flatMap((item) => item.attachments.map(async (doc) =>
+    doc.startsWith('plan:') ? (await resolvePlanRef(item.campaign_id, doc)) ?? doc : doc)));
+  return [...new Set(opened)];
 }
 
 /** Parents first, each child straight after its parent; order otherwise kept. */

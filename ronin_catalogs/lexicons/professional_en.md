@@ -605,6 +605,9 @@ nothing paints exactly this.
 - **work_items.parent:** Parent
 - **work_items.comments:** Comments
 - **work_items.attachments:** Attachments
+- **plans.attachment:** Plan {name}
+- **plans.gone:** {name} · gone
+- **plans.gone_hint:** gone
 - **work_items.links:** Links
 - **work_items.history:** History
 - **work_items.status:** Status
@@ -869,7 +872,6 @@ The pad's current config downloads as a backup first.
 - **roots.fact_directory:** Directory
 - **roots.fact_handle:** Workspace Folder handle
 - **roots.fact_docs:** Docs
-- **roots.fact_plans:** Plans
 - **roots.fact_match:** Match
 - **roots.fact_remote:** Remote
 - **roots.fact_branch:** Branch
@@ -959,11 +961,10 @@ The catalog entry goes. {dir} is not touched.
 - **docs.pill_tracked:** Tracked
 - **docs.pill_plans:** Plans
 - **docs.pill_docs:** Docs
-- **docs.shelf_empty:** Nothing on this shelf — a workspace folder names its places on its record (Workspace folders → docs / plans).
+- **docs.shelf_empty:** Nothing on this shelf — a workspace folder names its docs on its record (Workspace folders → docs).
+- **docs.plans_empty:** No plans yet. A lead writes one with the user: plan write <name>.
 - **roots.f_docs:** docs
 - **roots.f_docs_hint:** Where this root keeps its documentation — directories or files, relative to the directory
-- **roots.f_plans:** plans
-- **roots.f_plans_hint:** Where this root keeps its build-out plans
 - **roots.group_root:** Workspace folder
 - **roots.group_root_help:** An existing directory on this machine where Agents may work.
 - **roots.group_repository:** Advanced repository workflow

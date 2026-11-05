@@ -44,8 +44,10 @@ function extractBlock(text: string): unknown | null {
 
 async function readDocs(v: unknown): Promise<string[]> {
   if (!Array.isArray(v)) return [];
-  const want = [...new Set(v.filter((x): x is string => typeof x === 'string' && x.startsWith('/')))];
-  const alive = await Promise.all(want.map((p) => fs.stat(p).then(() => p).catch(() => null)));
+  // A `plan:` attachment still here is one that no longer resolves (work-items-read.ts): kept, so
+  // the Docs list says it is gone.
+  const want = [...new Set(v.filter((x): x is string => typeof x === 'string' && (x.startsWith('/') || x.startsWith('plan:'))))];
+  const alive = await Promise.all(want.map((p) => (p.startsWith('plan:') ? p : fs.stat(p).then(() => p).catch(() => null))));
   return alive.filter((p): p is string => p !== null);
 }
 

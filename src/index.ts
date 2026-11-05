@@ -32,6 +32,7 @@ import { registerPasswordSettings } from './routes/password-api.js';
 import { registerSessions, shutdownOperation } from './routes/sessions-api.js';
 import { registerTeams, teamRosters } from './routes/teams-api.js';
 import { registerWorkspaces } from './routes/workspaces-api.js';
+import { registerPlans } from './routes/plans-api.js';
 import { registerWorkItems } from './routes/work-items-api.js';
 import { epicsPush, everyItemReading } from './work-items-read.js';
 import { registerDocs } from './routes/docs-api.js';
@@ -252,6 +253,7 @@ registerCatalogs(app); // catalogs and configuration resources — src/routes/ca
 registerDocs(app); // /api/docs?shelf=plans|docs — the ▧ Docs tab's shelves — src/routes/docs-api.ts
 registerTeams(app); // /api/team-rosters* — the durable half of every team — src/routes/teams-api.ts
 registerWorkspaces(app); // /api/workspaces* — a Campaign's Workspaces — src/routes/workspaces-api.ts
+registerPlans(app); // /api/plans* — the plan tool's door — src/routes/plans-api.ts
 registerWorkItems(app); // /api/work-items* — the one door to the work item store — src/routes/work-items-api.ts
 registerDesks(app); // /api/desks?session=<name> and funnel recovery — derived desk state — src/routes/desks-api.ts
 registerTeamPage(app); // /api/teams/:team/page — the team page's view, and drafts an agent hands it — src/routes/team-page-api.ts

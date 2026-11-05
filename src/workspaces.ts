@@ -18,6 +18,9 @@ import type { LaunchMode } from './agent-defaults.js';
 
 export interface WorkspaceRepo { name: string; note: string }
 export interface WorkspaceFolder { name: string; note: string }
+/** Where the Workspace keeps its plans (src/plans.ts): a Workspace Folder by name and a subfolder in
+ * it. Absent is the default, Ronin Lab's <campaign>/<workspace>/plans. */
+export interface WorkspacePlans { location: string; path: string }
 export interface Workspace {
   name: string;
   campaign_id: string;
@@ -27,6 +30,7 @@ export interface Workspace {
   repos: WorkspaceRepo[];
   folders: WorkspaceFolder[];
   launch_mode: LaunchMode;
+  plans?: WorkspacePlans;
 }
 
 export const isValidWorkspaceName = (s: string): boolean => /^[a-z0-9][a-z0-9_-]{0,63}$/.test(s);
@@ -53,7 +57,15 @@ export function normalizeWorkspace(campaign_id: string, name: string, v: Record<
     repos: rows(v.repos, (r) => (text(r.name, 64) ? { name: text(r.name, 64), note: text(r.note, 300) } : null)),
     folders: rows(v.folders, (r) => (text(r.name, 64) ? { name: text(r.name, 64), note: text(r.note, 300) } : null)),
     launch_mode: v.launch_mode === 'live_dangerously' ? 'live_dangerously' : 'configured',
+    ...plansOf(v.plans),
   };
+}
+
+/** The Plans place, kept through every Save: a page that never shows it must not wipe it. */
+function plansOf(v: unknown): { plans?: WorkspacePlans } {
+  const p = v && typeof v === 'object' ? v as Record<string, unknown> : null;
+  const location = text(p?.location, 64);
+  return p && location ? { plans: { location, path: text(p.path, 300) } } : {};
 }
 
 export async function readWorkspace(campaign: string, name: string): Promise<Workspace | null> {

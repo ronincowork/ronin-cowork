@@ -474,6 +474,13 @@
   .workspace-location .folder-kind { color: var(--muted); }
   .workspace-location-note { grid-column: 2 / -1; }
   .workspace-location-note[hidden], .workspace-location-add-note[hidden] { display: none; }
+  /* Plans (KAN-256): one row under the Locations, its place and "recommended"; pressed, the choice under it. */
+  .workspace-plans { display: flex; flex-direction: column; gap: var(--space-row); padding-top: var(--space-paragraph); border-top: var(--edge) solid var(--line); }
+  .workspace-plans-row { display: flex; align-items: baseline; gap: var(--space-inline); min-width: 0; background: transparent; border: 0; padding: 0; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+  .workspace-plans-row b { color: var(--fg-strong); font-size: var(--form-key); font-weight: var(--weight-regular); white-space: nowrap; }
+  .workspace-plans-row code { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); background: transparent; padding: 0; }
+  .workspace-plans-row .folder-kind { color: var(--muted); }
+  [data-gone="true"] { color: var(--muted); text-decoration: line-through; }
   .workspace-location-note { width: 100%; border: 0; background: transparent; color: var(--fg); padding: 0; }
   .workspace-location-note::placeholder { color: var(--muted); }
   .workspace-location-note:focus { outline: none; background: var(--inset); }

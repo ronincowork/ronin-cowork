@@ -9,6 +9,7 @@ import { t } from './lexicon.js';
 import { ask } from './ask.js';
 import { createStep } from './form-steps.js';
 import { kindMark } from './tile-island.js';
+import { isPlanRef, planAttachment } from './plan-attachment.js';
 
 export const WORK_ITEMS_TYPE = 'work-items';
 /** Jira's flag: an impediment, marked the same way on every surface. */
@@ -139,6 +140,8 @@ export function renderItemDetail(host, item, { holder = '', openAttachment = nul
   }));
   section(t('work_items.attachments', 'Attachments'), (item.attachments || []).map((path) => {
     const row = el('li');
+    // The epic's plan, by name: opened through the plan read, or gone (plan-attachment.js).
+    if (isPlanRef(path)) { row.append(planAttachment(path, { className: 'wi-attachment', campaignId: item.campaign_id, open: openAttachment })); return row; }
     // A file kept in Jira is its link, opened there; a path opens here.
     const link = /^https?:\/\//.test(path);
     const open = el(link ? 'a' : openAttachment ? 'button' : 'span', 'wi-attachment', decodeURIComponent(path.split('/').pop()));
