@@ -20,10 +20,6 @@ export interface Tegami {
    * Epics (w279) and their unassigned Tasks (KAN-251), which a lead's item island shows beside
    * its own items. Empty for an Agent leading none. */
   teamItems: Array<WorkItem & { jira_url?: string }>;
-  /** What this Agent handed in that still waits In Review (docs/using-ronin/project-management.md, Three signals): a hand-in
-   * gives the item to the Team, so it is found on the rosters of the Agent's Teams. The item
-   * island shows it with its hand-in mark, so a tile says what its Agent just handed in. */
-  handedIn: Array<WorkItem & { jira_url?: string }>;
   /** The record's own documents (dropped on it, or added holding no item) and every held item's attachments. */
   docs: string[];
   chip: { text: string; gate: boolean };
@@ -74,15 +70,6 @@ export function chipFor(items: WorkItem[]): { text: string; gate: boolean } {
 
 const linked = (item: WorkItem): WorkItem & { jira_url?: string } => ({ ...item, ...(jiraLink(item) ? { jira_url: jiraLink(item) } : {}) });
 
-/** The items this Agent handed in, still In Review, from its Teams' holds (a handful each). */
-async function handedInBy(name: string, own: Set<string>): Promise<Array<WorkItem & { jira_url?: string }>> {
-  const teams = (await listSessions().catch(() => [])).find((session) => session.name === name)?.tags ?? [];
-  const ids = new Set<string>();
-  for (const team of teams) for (const id of (await readTeamRoster(team).catch(() => null))?.holds ?? []) if (!own.has(id)) ids.add(id);
-  const items = await Promise.all([...ids].map((id) => readItem(id).catch(() => null)));
-  return items.filter((item): item is WorkItem => !!item && item.status === 'In Review' && item.handed_in?.by === name).map(linked);
-}
-
 /** What its led Teams hold at levels 1 and 0 — their Epics and their unassigned Tasks, which
  * show nowhere else (owner, KAN-251) — once each, leaving out those the Agent holds itself.
  * Subtasks (-1) stay out. */
@@ -129,7 +116,6 @@ export async function readTegami(name: string): Promise<Tegami | null> {
       holds: reading.items.map((item) => item.id),
       items: reading.items.map(linked),
       teamItems: teamItems(reading),
-      handedIn: await handedInBy(name, new Set(reading.items.map((item) => item.id))),
       docs: await readDocs([...reading.attachments, ...(await dropped(key))]),
       chip: chipFor(reading.items),
       quietSince: stat.mtimeMs,

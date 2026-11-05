@@ -94,13 +94,12 @@ const HEADER = () => {
   return rows;
 };
 
-/** What the island shows: the items the Agent holds, what it handed in, then, on a lead, the
- *  Epics and Tasks its Teams hold — the Epic generally sits on the Team (w279), and a Task on the
- *  Team is one nobody has taken (KAN-251). A Team's Subtasks are the lead's only when it holds
- *  them itself. Once each: a Team-held item the lead handed in is in both handedIn and teamItems.
- *  Done is not shown (owner, 2026-11-05): the island is the work still open. `islandHeld` keeps
- *  Done, for a Task's reading to list all its Subtasks. */
-export const islandHeld = (letter) => [...new Map([...(letter?.items || []), ...(letter?.handedIn || []), ...(letter?.teamItems || [])].map((item) => [item.id, item])).values()];
+/** What the island shows (owner, 2026-11-05: "only show on your list, items you hold"): the
+ *  items the Agent holds, then, on a lead, the Epics and Tasks its Teams hold — the Epic sits on
+ *  the Team (w279), and a Task on the Team is one nobody has taken (KAN-251). Once each. Done is
+ *  not shown: the island is the work still open. `islandHeld` keeps Done, as a fallback for a
+ *  Task's Subtasks when the item read fails. */
+export const islandHeld = (letter) => [...new Map([...(letter?.items || []), ...(letter?.teamItems || [])].map((item) => [item.id, item])).values()];
 export const islandItems = (letter) => islandHeld(letter).filter((item) => statusKey(item.status) !== 'done');
 
 /** Is this row live, and if not, why not? '' when live. */
