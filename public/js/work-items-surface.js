@@ -74,11 +74,18 @@ export const statusChoices = (item) => [...new Set([...ITEM_STATUSES, item?.stat
 
 const when = (at) => String(at || '').slice(0, 16).replace('T', ' ');
 
+/** Which sections of an item's reading are open, kept for the page's life so a fold stays
+ * where the owner left it from one item to the next. Done starts folded. */
+const FOLDS = new Map([['done', false]]);
+const isDone = (item) => /done|closed|resolved|complete/i.test(String(item?.status || ''));
+
 /** One item's reading, in the launch forms' format (owner, 2026-11-05): a head with the kind's
  * symbol, the title and the key, then label-left steps — Status (an ERABI question that moves
- * the item: the work-item routes' transition), Objective, Details, Comments, Attachments (each
- * opens), Links and History (`history: false` leaves it out: the Epics workbench, KAN-206).
- * Every size is a form token; nothing takes the terminal's face. */
+ * the item: the work-item routes' transition), Objective, Details, Subtasks, Done (the Subtasks
+ * that are, owner w297), Comments (with a box: the comment route, whose notice reaches the Agents
+ * holding the item), Attachments (each opens), Links and History (`history: false` leaves it
+ * out: the Epics workbench, KAN-206). Every step folds with the form steps' own fold
+ * (form-steps.js), showing its one-line answer folded. Every size is a form token. */
 export function renderItemDetail(host, item, { holder = '', openAttachment = null, history = true, children = [], openChild = null } = {}) {
   const form = el('div', 'ntf-form wi-form');
   const head = el('header', 'wi-head');
@@ -89,11 +96,14 @@ export function renderItemDetail(host, item, { holder = '', openAttachment = nul
   words.append(el('h2', 'wi-title', item.title || item.id), key);
   head.append(kindMark(item.kind), words);
   form.append(head);
-  const step = (title, ...nodes) => {
-    const one = createStep({ key: title, title });
+  /** A folding step: `id` keys its fold, `meta()` is its folded answer. */
+  const step = (id, title, meta, ...nodes) => {
+    const one = createStep({ key: id, title, onToggle: () => { FOLDS.set(id, !(FOLDS.get(id) ?? true)); paint(); } });
+    const paint = () => one.setCollapsed(!(FOLDS.get(id) ?? true), meta(), true);
     one.body.append(...nodes);
+    paint();
     form.append(one.el);
-    return one;
+    return { ...one, paint };
   };
 
   // Status: any status to any status, as Jira's transition; the push that follows redraws the
@@ -101,6 +111,7 @@ export function renderItemDetail(host, item, { holder = '', openAttachment = nul
   let status = item.status;
   const answer = el('p', 'fs-step-help wi-answer');
   answer.setAttribute('role', 'status');
+  let statusStep = null;
   const question = ask([{ fields: [{ key: 'status', label: t('work_items.status', 'Status'),
     options: statusChoices(item).map((v) => ({ v, l: v })) }] }], {
     value: { status }, density: 'tight',
@@ -110,13 +121,13 @@ export function renderItemDetail(host, item, { holder = '', openAttachment = nul
       answer.dataset.state = '';
       answer.textContent = t('work_items.moving', 'Moving…');
       const result = await request(`/api/work-items/${encodeURIComponent(item.id)}/transition`, { method: 'POST', json: { status: next } });
-      if (result.ok) { status = next; sayKey(next); answer.textContent = `${was} → ${next}`; }
+      if (result.ok) { status = next; sayKey(next); statusStep?.paint(); answer.textContent = `${was} → ${next}`; }
       else { question.set('status', was); answer.dataset.state = 'failed'; answer.textContent = result.message || t('work_items.move_failed', 'The status did not change.'); }
     },
   });
-  step(t('work_items.status', 'Status'), question.el, answer);
+  statusStep = step('status', t('work_items.status', 'Status'), () => status, question.el, answer);
 
-  if (item.objective) step(t('work_items.objective', 'Objective'), el('p', 'wi-objective', item.objective));
+  if (item.objective) step('objective', t('work_items.objective', 'Objective'), () => item.objective.split('\n')[0], el('p', 'wi-objective', item.objective));
   const facts = el('dl', 'wi-facts');
   for (const [label, value] of [
     [t('work_items.priority', 'Priority'), item.priority || '—'],
@@ -125,13 +136,14 @@ export function renderItemDetail(host, item, { holder = '', openAttachment = nul
     // A paired item's Jira fields, by Jira's own names.
     ...Object.entries(item.jiraFields || {}),
   ]) facts.append(el('dt', '', label), el('dd', '', value));
-  step(t('work_items.details', 'Details'), facts);
+  step('details', t('work_items.details', 'Details'), () => [item.priority, holder ? `@${holder}` : ''].filter(Boolean).join(' · '), facts);
 
   // A Task's Subtasks sit under it (owner, 2026-11-05): each its symbol, key, title and status,
-  // opening in the Task's place when there is somewhere to open it.
-  if (children.length) {
+  // opening in the Task's place when there is somewhere to open it. The Done ones have their
+  // own section, folded to begin with (w297), so the open ones and the comments stay in reach.
+  const childList = (rows) => {
     const list = el('ul', 'wi-list wi-children');
-    for (const child of children) {
+    for (const child of rows) {
       const row = el('li');
       const open = el(openChild ? 'button' : 'div', 'wi-child');
       if (openChild) { open.type = 'button'; open.addEventListener('click', () => openChild(child)); }
@@ -141,35 +153,71 @@ export function renderItemDetail(host, item, { holder = '', openAttachment = nul
       row.append(open);
       list.append(row);
     }
-    step(t('work_items.subtasks', 'Subtasks'), list);
-  }
+    return list;
+  };
+  const counted = (n) => t('work_items.count', '{n}', { n });
+  const open = children.filter((child) => !isDone(child));
+  const done = children.filter(isDone);
+  if (open.length) step('subtasks', t('work_items.subtasks', 'Subtasks'), () => counted(open.length), childList(open));
+  if (done.length) step('done', t('work_items.done_n', 'Done ({n})', { n: done.length }), () => null, childList(done)); // its name carries the count;
 
-  const section = (label, rows) => {
-    if (!rows.length) return;
+  const section = (id, label, rows, ...after) => {
+    if (!rows.length && !after.length) return null;
     const list = el('ul', 'wi-list');
     list.append(...rows);
-    step(label, list);
+    return { list, step: step(id, label, () => counted(list.children.length), list, ...after) };
   };
-  section(t('work_items.comments', 'Comments'), (item.comments || []).map((comment) => {
+  const commentRow = (comment) => {
     const row = el('li', 'wi-comment');
     row.append(el('small', 'wi-when', `${comment.by || ''} · ${when(comment.at)}`), el('p', 'wi-text', comment.text || ''));
     return row;
-  }));
-  section(t('work_items.attachments', 'Attachments'), (item.attachments || []).map((path) => {
+  };
+  // The comment box: the work-item comment route; its notice is sent by the store to the Agents
+  // holding the item (src/work-items.ts noticesOf), straight to their dialog box.
+  const compose = el('div', 'wi-compose');
+  const box = el('textarea', 'wi-compose-words');
+  box.rows = 3;
+  box.setAttribute('aria-label', t('work_items.comment_box', 'Add a comment'));
+  box.placeholder = t('work_items.comment_box', 'Add a comment');
+  const said = el('p', 'fs-step-help wi-answer');
+  said.setAttribute('role', 'status');
+  const { createAction } = WorkspaceKit.primitives;
+  let comments = null;
+  const post = createAction({ label: t('work_items.comment_send', 'Comment'), size: 'compact', action: async () => {
+    const text = box.value.trim();
+    if (!text) { box.focus(); return; }
+    post.el.disabled = true;
+    said.dataset.state = '';
+    said.textContent = t('work_items.comment_sending', 'Sending…');
+    const result = await request(`/api/work-items/${encodeURIComponent(item.id)}/comment`, { method: 'POST', json: { text } });
+    post.el.disabled = false;
+    if (!result.ok) { said.dataset.state = 'failed'; said.textContent = result.message || t('work_items.comment_failed', 'The comment was not added.'); return; }
+    const added = result.data?.item?.comments?.at(-1) || { by: '', at: new Date().toISOString(), text };
+    comments.list.append(commentRow(added));
+    comments.list.hidden = false;
+    comments.step.paint();
+    box.value = '';
+    const told = result.data?.notified || [];
+    said.textContent = told.length ? t('work_items.comment_told', 'Added; sent to {names}.', { names: told.map((name) => `@${name}`).join(', ') })
+      : t('work_items.comment_nobody', 'Added. No Agent holds this item, so nobody was sent it.');
+  } });
+  compose.append(box, post.el, said);
+  comments = section('comments', t('work_items.comments', 'Comments'), (item.comments || []).map(commentRow), compose);
+  comments.list.hidden = !comments.list.children.length;
+
+  section('attachments', t('work_items.attachments', 'Attachments'), (item.attachments || []).map((path) => {
     const row = el('li');
-    // The epic's plan, by name: opened through the plan read, or gone (plan-attachment.js).
-    if (isPlanRef(path)) { row.append(planAttachment(path, { className: 'wi-attachment', campaignId: item.campaign_id, open: openAttachment })); return row; }
     // A file kept in Jira is its link, opened there; a path opens here.
     const link = /^https?:\/\//.test(path);
-    const open = el(link ? 'a' : openAttachment ? 'button' : 'span', 'wi-attachment', decodeURIComponent(path.split('/').pop()));
-    open.title = path;
-    if (link) { open.href = path; open.target = '_blank'; open.rel = 'noopener'; }
-    else if (openAttachment) { open.type = 'button'; open.addEventListener('click', () => openAttachment(path)); }
-    row.append(open);
+    const opener = el(link ? 'a' : openAttachment ? 'button' : 'span', 'wi-attachment', decodeURIComponent(path.split('/').pop()));
+    opener.title = path;
+    if (link) { opener.href = path; opener.target = '_blank'; opener.rel = 'noopener'; }
+    else if (openAttachment) { opener.type = 'button'; opener.addEventListener('click', () => openAttachment(path)); }
+    row.append(opener);
     return row;
   }));
-  section(t('work_items.links', 'Links'), (item.links || []).map((link) => el('li', 'wi-text', `${link.type} ${link.to}`)));
-  if (history) section(t('work_items.history', 'History'), (item.trail || []).map((line) => el('li', 'wi-when',
+  section('links', t('work_items.links', 'Links'), (item.links || []).map((link) => el('li', 'wi-text', `${link.type} ${link.to}`)));
+  if (history) section('history', t('work_items.history', 'History'), (item.trail || []).map((line) => el('li', 'wi-when',
     [when(line.at), line.by, line.op, [line.from, line.to].filter(Boolean).join(' → '), line.note].filter(Boolean).join(' · '))));
   host.append(form);
 }

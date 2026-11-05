@@ -616,6 +616,14 @@ nothing paints exactly this.
 - **work_items.moving:** Moving…
 - **work_items.move_failed:** The status did not change.
 - **work_items.subtasks:** Subtasks
+- **work_items.done_n:** Done ({n})
+- **work_items.count:** {n}
+- **work_items.comment_box:** Add a comment
+- **work_items.comment_send:** Comment
+- **work_items.comment_sending:** Sending…
+- **work_items.comment_failed:** The comment was not added.
+- **work_items.comment_told:** Added; sent to {names}.
+- **work_items.comment_nobody:** Added. No Agent holds this item, so nobody was sent it.
 - **team.workspace_1:** Tilespace 1
 - **team.workspace_2:** Tilespace 2
 - **team.commons_card:** Commons

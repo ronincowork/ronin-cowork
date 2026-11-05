@@ -84,5 +84,5 @@ test('a Subtask whose Task is on the island folds under it: the Task pill carrie
   assert.match(island, /mark\.append\(kindMark\('Subtask'\), String\(count\)\)/);
   assert.match(island, /pills\.replaceChildren\(\.\.\.shape\.top\.map\(pill\)\)/);
   const surface = await read('public/js/work-items-surface.js');
-  assert.match(surface, /step\(t\('work_items\.subtasks', 'Subtasks'\), list\)/);
+  assert.match(surface, /step\('subtasks', t\('work_items\.subtasks', 'Subtasks'\)/);
 });
