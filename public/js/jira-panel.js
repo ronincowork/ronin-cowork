@@ -410,7 +410,7 @@ export function createJiraPanel(selected, { openItems = null, openPairs = null }
       createField({ label: t('jira.space', 'Space key'), control: space, description: t('jira.space_help', 'The space’s short code, not its name: KAN in KAN-1. Also in Space settings › Details.') }).el,
       createField({ label: t('jira.token', 'API token'), control: token, description: t('jira.token_help', 'Kept by Ronin with Services; never shown again.') }).el,
       createField({ label: t('jira.expiry', 'Token expiry'), control: expiry, description: t('jira.expiry_help', 'No call returns it: the date from the Review page.') }).el,
-      read(t('jira.connect_warning', 'Connect puts on the space, assigned to the account, what Ronin’s items says: nothing (Off), epics and everything under them, or every work item. Then, in Jira, assign one work item to the account and press Sync now.')),
+      read(t('jira.connect_warning', 'Connect puts on the space, labelled ronin-do and unassigned, what Ronin’s items says: nothing (Off), epics and everything under them, or every work item. Then, in Jira, assign one work item to the account or label it ronin-do, and press Sync now.')),
       createActionBar({ actions: [go] }).el,
       spot('connect'),
     );
@@ -529,7 +529,7 @@ export function createJiraPanel(selected, { openItems = null, openPairs = null }
     const step = section(n, 'items', t('jira.items', 'Work items by level'), t('jira.items_n', '{n} items · {p} paired', { n: items.length, p: paired }));
     step.body.append(read(snap.connected
       ? t('jira.items_connected', 'On Jira, the key; not yet, goes up if How it runs sends it, else stays in Ronin.')
-      : t('jira.items_preview', 'What Connect will put on the space, assigned to the account, under How it runs as set now.')));
+      : t('jira.items_preview', 'What Connect will put on the space, labelled ronin-do and unassigned, under How it runs as set now.')));
     if (openItems) step.body.append(createActionBar({ actions: [createAction({ label: t('jira.open_items', 'Open'), size: 'compact', action: () => openItems() })] }).el);
     // Before Connect the table follows the draft as it changes, without repainting the fields.
     const host = el('div');

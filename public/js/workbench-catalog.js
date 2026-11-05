@@ -20,11 +20,13 @@ export const WORKBENCH_TYPES = Object.freeze({
   launchTeam: 'launch.team', launchAgent: 'launch.agent', launchHelp: 'launch.help',
   commons: 'team.commons', workItems: WORK_ITEMS_TYPE, cron: 'cowork.cron-jobs',
   roster: 'cowork.team-roster', sessionRoster: 'cowork.session-roster', newTeamForm: 'cowork.new-team-form', newAgent: 'session.new-agent',
-  team: 'team.profile', archives: 'cowork.archives',
+  team: 'team.profile', archives: 'cowork.archives', teamWaiting: 'team.waiting', teamEpics: 'team.epics',
   agentDocuments: 'agent.documents', agentTeams: 'agent.team-membership', agentComposition: AGENT_COMPOSITION_TYPE,
   campaignMachine: 'campaign.machine', campaignDefaults: 'campaign.defaults', campaignRoots: 'campaign.project-roots',
   campaignIdentity: 'campaign.identity', campaignInstallations: 'campaign.installations', campaignCreate: 'campaign.new', campaignJira: 'campaign.jira', campaignJiraItems: 'campaign.jira-items', campaignJiraPairs: 'campaign.jira-pairs',
   modelStones: 'models.stones', modelRefresh: 'models.refresh', modelDefaults: 'models.defaults', modelProvider: 'models.provider',
+  // THE AGENT HARNESS WORKBENCH'S TWO NEW TILESPACES (KAN-236): Accounts and Models, beside the stones and Refresh.
+  accountsRecords: 'accounts.records', modelsRecords: 'models.records',
   helpOutline: 'help.outline', helpMika: 'help.mika', helpPage: HELP_PAGE_TYPE,
   workspaceRecords: 'workspaces.records', workspaceRecord: 'workspaces.record', workspaceNew: 'workspaces.new', folderGithub: 'workspaces.github',
   epicRecords: 'epics.records', epicRecord: 'epics.record',
@@ -45,6 +47,9 @@ export function registerWorkbenchCatalog() {
   via(WORKBENCH_TYPES.launchAgent, 'surface', 'agent', { label: () => t('launch.new_agent', 'New Agent'), summary: () => t('launch.new_agent_summary', 'Start an Agent in a Team or on its own.') });
   via(WORKBENCH_TYPES.launchHelp, 'surface', 'help', { label: () => t('help.title', 'Help'), summary: () => t('help.card_summary', 'What each step means, beside the step you are on.'), variant: 'dotted' });
   via(WORKBENCH_TYPES.commons, 'tabs', 'teamCommons', { className: 'wk-selector-utility', label: () => t('team.commons_card', 'Commons'), summary: () => t('team.commons_summary', 'See Roster / Docs / Wipeboard / Messages / Configuration') });
+  // WAITING ON YOU AND EPICS (owner, 2026-11-04; KAN-232): the Team's items waiting on the person, and its Epics (team-waiting.js).
+  via(WORKBENCH_TYPES.teamWaiting, 'surface', 'teamWaiting', { className: 'wk-selector-utility', label: () => t('team_waiting.title', 'Waiting on you') });
+  via(WORKBENCH_TYPES.teamEpics, 'surface', 'teamEpics', { className: 'wk-selector-utility', label: () => t('epics.title', 'Epics') });
   add({ type: WORKBENCH_TYPES.workItems, header: 'surface', className: 'wk-selector-utility', label: () => t('work_items.title', 'Work Items'), discover: (_t, e) => e.workItemOffers(), create: ({ environment }) => environment.workItems() });
   via(WORKBENCH_TYPES.roster, 'surface', 'roster', { className: 'wk-selector-utility', label: () => t('campaign.coworks', 'Teams') });
   via(WORKBENCH_TYPES.sessionRoster, 'surface', 'sessionRoster', { className: 'wk-selector-utility', label: () => t('league.team_roster', 'Team roster') });
@@ -70,10 +75,6 @@ export function registerWorkbenchCatalog() {
   if (MULTIPLE_CAMPAIGNS_ENABLED) campaign(WORKBENCH_TYPES.campaignCreate, 'surface', () => t('campaign.new', 'New Desk'), 'campaignCreate', () => t('campaign_view.new_summary', 'Set the stage. It creates no Team and launches no Agent.'), { variant: 'dotted' });
   profiles.define(WORKBENCH_PROFILES.launch, [WORKBENCH_TYPES.launchTeam, WORKBENCH_TYPES.launchAgent, WORKBENCH_TYPES.launchHelp, BEHAVIOUR_SURFACE_TYPE, WORKBENCH_TYPES.document, FEEDBACK_TYPE]);
   profiles.define(WORKBENCH_PROFILES.cowork, [WORKBENCH_TYPES.roster, WORKBENCH_TYPES.sessionRoster, WORKBENCH_TYPES.cron, WORKBENCH_TYPES.team, WORKBENCH_TYPES.terminal, WORKBENCH_TYPES.newTeamForm, WORKBENCH_TYPES.newAgent, WORKBENCH_TYPES.archives, WORKBENCH_TYPES.document, BEHAVIOUR_SURFACE_TYPE, PRESETS_TYPE, FEEDBACK_TYPE]);
-  // THE TEAM PAGE (owner, 2026-10-18): the selector holds Commons, the Agents, New Agent and the
-  // hints (Agent vocabulary, Session controls — the selector's own, workbench.js). The composition
-  // reader, Behaviors and Feedback stay placeable: the roster, New Agent and the bar place them.
-  profiles.define(WORKBENCH_PROFILES.team, [WORKBENCH_TYPES.commons, WORKBENCH_TYPES.terminal, WORKBENCH_TYPES.newAgent, WORKBENCH_TYPES.agentComposition, BEHAVIOUR_SURFACE_TYPE, FEEDBACK_TYPE]);
   profiles.define(WORKBENCH_PROFILES.agent, [WORKBENCH_TYPES.terminal, WORKBENCH_TYPES.agentComposition, WORKBENCH_TYPES.agentDocuments, WORKBENCH_TYPES.agentTeams, WORKBENCH_TYPES.workItems, WORKBENCH_TYPES.document, FEEDBACK_TYPE]);
   profiles.define(WORKBENCH_PROFILES.campaign, [WORKBENCH_TYPES.terminal, WORKBENCH_TYPES.campaignMachine, BEHAVIOUR_SURFACE_TYPE, PASSWORD_SURFACE_TYPE, WORKBENCH_TYPES.campaignInstallations, PROVIDER_SURFACE_TYPE, SETUP_SURFACE_TYPES.register, FEEDBACK_TYPE, WORKBENCH_TYPES.campaignIdentity, WORKBENCH_TYPES.campaignDefaults, WORKBENCH_TYPES.campaignRoots, SETUP_SURFACE_TYPES.launchOwn, WORKBENCH_TYPES.document, WORKBENCH_TYPES.campaignJira, WORKBENCH_TYPES.campaignJiraItems, WORKBENCH_TYPES.campaignJiraPairs, ...(MULTIPLE_CAMPAIGNS_ENABLED ? [WORKBENCH_TYPES.campaignCreate] : [])]);
   // HOME'S DOORS (owner, 2026-10-19; door-workbenches.js): Models and Workspaces are workbenches of
@@ -83,13 +84,18 @@ export function registerWorkbenchCatalog() {
   // TEAM PAGE (owner, 2026-10-20): a provider's or folder's card is an entity card like an Agent's
   // (wk-selector-entity, the terminal's class); the three admin doors are dotted like New Agent; the
   // stones surface heads the selector as a solid card, as the Teams card heads the Cowork selector.
-  add({ type: WORKBENCH_TYPES.modelStones, header: 'surface', className: 'wk-selector-utility', label: () => t('campaign_home.models', 'Models'), create: ({ workspace, environment }) => environment.modelStones(workspace) });
-  // Model refresh (owner, 2026-10-20): the Refresh all door the Models stones do not carry, a solid utility card after Models.
-  add({ type: WORKBENCH_TYPES.modelRefresh, header: 'surface', className: 'wk-selector-utility', label: () => t('models.refresh', 'Model refresh'), create: ({ workspace, environment }) => environment.modelRefresh(workspace) });
+  // THE AGENT HARNESS WORKBENCH (KAN-236; owner, 2026-11-04): the same stones, now the Harness card; Accounts and
+  // Models two new solid utility cards after it; Refresh the Model refresh surface under its new word. Nothing
+  // existing is removed: the types, surfaces and stones keep working under the new words.
+  add({ type: WORKBENCH_TYPES.modelStones, header: 'surface', className: 'wk-selector-utility', label: () => t('harness.stones', 'Harness'), summary: () => t('harness.stones_summary', 'The CLIs: install, sign in, ready'), create: ({ workspace, environment }) => environment.modelStones(workspace) });
+  add({ type: WORKBENCH_TYPES.accountsRecords, header: 'surface', className: 'wk-selector-utility', label: () => t('accounts.title', 'Accounts'), summary: () => t('accounts.card_summary', 'Personal API · Ronin API: which harnesses, which models'), create: ({ workspace, environment }) => environment.accounts(workspace) });
+  add({ type: WORKBENCH_TYPES.modelsRecords, header: 'surface', className: 'wk-selector-utility', label: () => t('models.records', 'Models'), summary: () => t('models.records_summary', 'Model info · offered · presets · defaults'), create: ({ workspace, environment }) => environment.modelsRecords(workspace) });
+  // Refresh (owner, 2026-10-20; the word 2026-11-04): the Refresh all door the stones do not carry, a solid utility card.
+  add({ type: WORKBENCH_TYPES.modelRefresh, header: 'surface', className: 'wk-selector-utility', label: () => t('harness.refresh', 'Refresh'), summary: () => t('harness.refresh_summary', 'One press: harnesses, accounts, model info'), create: ({ workspace, environment }) => environment.modelRefresh(workspace) });
   // Defaults (owner, 2026-10-21): the model a new Agent, a new Team lead and Mika start on, a solid utility card after Model refresh.
   add({ type: WORKBENCH_TYPES.modelDefaults, header: 'surface', className: 'wk-selector-utility', label: () => t('models.defaults', 'Defaults'), summary: () => t('models.defaults_summary', 'Agent · Team lead · Mika'), create: ({ workspace, environment }) => environment.modelDefaults(workspace) });
   add({ type: WORKBENCH_TYPES.modelProvider, header: 'surface', className: 'wk-selector-entity', discover: (_t, e) => e.providers(), create: ({ workspace, detail, environment }) => environment.modelProvider(workspace, detail) });
-  profiles.define(WORKBENCH_PROFILES.models, [WORKBENCH_TYPES.modelStones, WORKBENCH_TYPES.modelRefresh, WORKBENCH_TYPES.modelDefaults, WORKBENCH_TYPES.modelProvider]);
+  profiles.define(WORKBENCH_PROFILES.models, [WORKBENCH_TYPES.modelStones, WORKBENCH_TYPES.accountsRecords, WORKBENCH_TYPES.modelsRecords, WORKBENCH_TYPES.modelRefresh, WORKBENCH_TYPES.modelDefaults, WORKBENCH_TYPES.modelProvider]);
   // THE WORKSPACES WORKBENCH (owner, 2026-11-02): the stones of Workspaces in Tilespace 1, a pressed one's
   // page beside them; a card per Workspace, opened whole; New Workspace and GitHub CLI dotted (workspaces-surface.js).
   add({ type: WORKBENCH_TYPES.workspaceRecords, header: 'surface', className: 'wk-selector-utility', label: () => t('workspaces.title', 'Workspaces'), create: ({ workspace, environment }) => environment.workspaceRecords(workspace) });
@@ -100,8 +106,14 @@ export function registerWorkbenchCatalog() {
   // THE EPICS WORKBENCH (owner, 2026-11-02; KAN-187): a stone per Epic in Tilespace 1, a pressed one's reading
   // beside them; a dragged stone places that Epic whole, never offered in the selector (epics-surface.js).
   add({ type: WORKBENCH_TYPES.epicRecords, header: 'surface', className: 'wk-selector-utility', label: () => t('epics.title', 'Epics'), create: ({ workspace, environment }) => environment.epicRecords(workspace) });
-  add({ type: WORKBENCH_TYPES.epicRecord, header: 'surface', discover: () => [], create: ({ workspace, detail, environment }) => environment.epicRecord(workspace, detail) });
+  add({ type: WORKBENCH_TYPES.epicRecord, header: 'surface', className: 'wk-selector-entity', discover: (_t, e) => e.epics(), create: ({ workspace, detail, environment }) => environment.epicRecord(workspace, detail) });
   profiles.define(WORKBENCH_PROFILES.epics, [WORKBENCH_TYPES.epicRecords, WORKBENCH_TYPES.epicRecord]);
+  // THE TEAM PAGE (owner, 2026-10-18): the selector holds Commons, the Agents, New Agent and the
+  // hints (Agent vocabulary, Session controls — the selector's own, workbench.js). The composition
+  // reader, Behaviors and Feedback stay placeable: the roster, New Agent and the bar place them.
+  // Waiting on you and Epics follow Commons (KAN-232); an Epic's record is placed by a pressed Epic stone, never a card.
+  // Defined after the Epics types: a profile names only registered types.
+  profiles.define(WORKBENCH_PROFILES.team, [WORKBENCH_TYPES.commons, WORKBENCH_TYPES.teamWaiting, WORKBENCH_TYPES.teamEpics, WORKBENCH_TYPES.epicRecord, WORKBENCH_TYPES.terminal, WORKBENCH_TYPES.newAgent, WORKBENCH_TYPES.agentComposition, BEHAVIOUR_SURFACE_TYPE, FEEDBACK_TYPE]);
   // THE HELP WORKBENCH (owner, 2026-10-21): the help outline and Mika in chat, both solid cards (door-workbenches.js).
   add({ type: WORKBENCH_TYPES.helpOutline, header: 'surface', className: 'wk-selector-utility', label: () => t('help_outline.title', 'Help'), summary: () => t('help_outline.summary', 'The guides, starting with the four things to know'), create: ({ environment }) => environment.helpOutline() });
   add({ type: WORKBENCH_TYPES.helpMika, header: 'terminal', className: 'wk-selector-utility', label: () => 'Mika', summary: () => t('help_outline.mika_summary', 'Ask in plain words'), create: ({ environment }) => environment.helpMika() });

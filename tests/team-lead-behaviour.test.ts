@@ -14,11 +14,18 @@ test('Team lead is one ordinary conditional Behavior selected only by the explic
   ).some((row) => row.book === 'team-lead'));
 });
 
-test('Agent roles select their conditional brief', async () => {
+test('Project management: its cells need the switch (behaviour:project-management), each to its role', async () => {
   const facts = { arrangement: 'none' as const, team: false, lead: false, cowork: true, new_owner: false };
-  assert.ok((await resolveConditionalBehaviours({ ...facts, role: 'epic_lead' })).some((row) => row.book === 'epic_agent'));
-  assert.ok((await resolveConditionalBehaviours({ ...facts, role: 'coordinator' })).some((row) => row.book === 'traffic_control'));
-  assert.ok(!(await resolveConditionalBehaviours({ ...facts, role: 'coworker' })).some((row) => ['epic_agent', 'traffic_control'].includes(row.book)));
+  const on = { ...facts, behaviours: ['project-management'] };
+  const books = async (given: Parameters<typeof resolveConditionalBehaviours>[0]) => (await resolveConditionalBehaviours(given)).map((row) => row.book);
+  const cells = ['project-management-coworker', 'project-management-lead', 'project-management-epic-lead', 'project-management-traffic-control'];
+  assert.ok((await books({ ...on, role: 'epic_lead' })).includes('project-management-epic-lead'));
+  assert.ok((await books({ ...on, role: 'coordinator' })).includes('project-management-traffic-control'));
+  assert.deepEqual((await books({ ...on, role: 'coworker' })).filter((book) => cells.includes(book)), ['project-management-coworker'], 'behaviour:<name> and role:coworker both resolve');
+  assert.deepEqual((await books({ ...on, role: 'lead', team: true, lead: true })).filter((book) => cells.includes(book)), ['project-management-lead']);
+  for (const role of ['coworker', 'lead', 'epic_lead', 'coordinator'] as const) {
+    assert.deepEqual((await books({ ...facts, role, team: true, lead: role === 'lead' })).filter((book) => cells.includes(book)), [], `switched off, ${role} reads no project-management cell`);
+  }
 });
 
 test('Mika is born on the base brief and hers, never the cowork briefs; the install check only for a new owner', async () => {

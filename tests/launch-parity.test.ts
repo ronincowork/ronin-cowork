@@ -110,7 +110,7 @@ for (const [team, workspace] of [['wsteam', 'alpha'], ['wildteam', 'wild']]) {
   await fs.writeFile(path.join(temp, 'team_rosters', `${team}.md`), `# ${team}\n\n- **workspace:** ${workspace}\n- **state:** active\n`);
 }
 
-const { saveWorkspace, workspaceLaunchFolder, roninHouse } = await import('../src/workspaces.js');
+const { saveWorkspace, roninHouse } = await import('../src/workspaces.js');
 for (const [name, launch_mode] of [['alpha', 'configured'], ['wild', 'live_dangerously']] as const) {
   await saveWorkspace({ name, campaign_id: 'home_machine', title: name, objective: '', instructions: '', repos: [], folders: [], launch_mode });
 }
@@ -278,13 +278,13 @@ test("forkit's own inputs change its words and nothing about the mechanism", asy
   assert.deepEqual({ ...mechanism(forked) }, { ...mechanism(plain) });
 });
 
-test('where an Agent starts is the mechanism\'s — Ronin house, or the Team\'s Workspace launch folder', async () => {
+test('where an Agent starts is the mechanism\'s — Ronin house, Workspace or not', async () => {
   const commons = await resolveForm(commonsForm(), new Set());
   assert.equal(commons.workspace, '');
   assert.equal(commons.dir, roninHouse());
   const inWorkspace = await resolveForm(commonsForm({ team: 'wsteam' }), new Set());
   assert.equal(inWorkspace.workspace, 'alpha', "the roster's Workspace is the Agent's");
-  assert.equal(inWorkspace.dir, workspaceLaunchFolder('home_machine', 'alpha'));
+  assert.equal(inWorkspace.dir, roninHouse());
 });
 
 test('the model cascade is the mechanism\'s: blank inherits, explicit wins, identically', async () => {
@@ -422,11 +422,14 @@ test('team_lead is explicit and applies its conditional Behavior at birth', asyn
   assert.ok(!ordinary.birth_reading.some((file) => file.endsWith('/conditional/team-lead.md')));
 });
 
-test('an explicit Role applies its conditional Behavior in the first birth reading', async () => {
-  const epic = await resolveForm(commonsForm({ role: 'epic_lead' }), new Set());
-  assert.ok(epic.birth_reading.some((file) => file.endsWith('/conditional/epic_agent.md')));
-  const coordinator = await resolveForm(commonsForm({ role: 'coordinator' }), new Set());
-  assert.ok(coordinator.birth_reading.some((file) => file.endsWith('/conditional/traffic_control.md')));
+test('an explicit Role applies its conditional Behavior in the first birth reading, project management switched on', async () => {
+  const epic = await resolveForm(commonsForm({ role: 'epic_lead', behaviours: ['project-management'] }), new Set());
+  assert.ok(epic.birth_reading.some((file) => file.endsWith('/conditional/project-management-epic-lead.md')));
+  assert.ok(epic.birth_reading.some((file) => file.endsWith('/selected/project-management.md')), 'the Everyone cell with it');
+  const coordinator = await resolveForm(commonsForm({ role: 'coordinator', behaviours: ['project-management'] }), new Set());
+  assert.ok(coordinator.birth_reading.some((file) => file.endsWith('/conditional/project-management-traffic-control.md')));
+  const off = await resolveForm(commonsForm({ role: 'coordinator' }), new Set());
+  assert.ok(!off.birth_reading.some((file) => file.includes('project-management')), 'switched off: no project-management cell');
 });
 
 test('Mika house mechanics resolve explicitly', async () => {

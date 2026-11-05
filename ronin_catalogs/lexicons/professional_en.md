@@ -217,7 +217,7 @@ nothing paints exactly this.
 - **jira.token_help:** Kept by Ronin with Services; never shown again.
 - **jira.expiry:** Token expiry
 - **jira.expiry_help:** No call returns it: the date from the Review page.
-- **jira.connect_warning:** Connect puts on the space, assigned to the account, what Ronin’s items says: nothing (Off), epics and everything under them, or every work item. Then, in Jira, assign one work item to the account and press Sync now.
+- **jira.connect_warning:** Connect puts on the space, labelled ronin-do and unassigned, what Ronin’s items says: nothing (Off), epics and everything under them, or every work item. Then, in Jira, assign one work item to the account or label it ronin-do, and press Sync now.
 - **jira.connection:** Connection
 - **jira.account:** Account
 - **jira.renew:** The token expires in {n} days. Make a new one (steps 3–4), paste it here, then revoke the old one.
@@ -264,7 +264,7 @@ nothing paints exactly this.
 - **jira.how_sync_text:** always reads: the space checked, one read, what is waiting sent, and the deleted-item check.
 - **jira.items_n:** {n} items · {p} paired
 - **jira.items_connected:** On Jira, the key; not yet, goes up if How it runs sends it, else stays in Ronin.
-- **jira.items_preview:** What Connect will put on the space, assigned to the account, under How it runs as set now.
+- **jira.items_preview:** What Connect will put on the space, labelled ronin-do and unassigned, under How it runs as set now.
 - **jira.open_items:** Open
 - **jira.open_pairs:** Open
 - **jira.off:** Services › Jira is off for this Desk. Turn it on in Installations › Ronin Services, then come back here.
@@ -289,9 +289,91 @@ nothing paints exactly this.
 - **campaign_home.launch:** New Project
 - **campaign_home.settings:** Settings
 - **campaign_home.check_updates:** Check for updates
+- **campaign_home.agent_harness:** Agent Harness
+- **campaign_home.agent_harness_is:** The CLIs on this machine, the accounts they launch on, and the models
 - **setup.provider_gate:** Activate one model provider in Machine Setup to use this.
 - **setup.open_settings:** Open Ronin Settings
 - **setup.open_setup:** Open Ronin Setup
+
+## harness — models-surface.js, workbench-catalog.js (the Agent Harness workbench's stones and Refresh; KAN-236)
+
+- **harness.stones:** Harness
+- **harness.stones_summary:** The CLIs: install, sign in, ready
+- **harness.refresh:** Refresh
+- **harness.refresh_summary:** One press: harnesses, accounts, model info
+- **harness.step_harnesses:** Harnesses
+- **harness.step_harnesses_detail:** Each activated CLI: its version, the newest release, and its own model list. Only these models can launch on a subscription.
+
+## accounts — accounts-surface.js, account-editors.js (the Accounts tilespace and the forms every page shares; KAN-236)
+
+- **accounts.title:** Accounts
+- **accounts.card_summary:** Personal API · Ronin API: which harnesses, which models
+- **accounts.lede:** Accounts a harness can launch on, apart from its own sign-in. A key added here, or on a harness page, is one record; the harnesses it serves and the models it offers are yours to tick.
+- **accounts.kind_subscription:** Subscription
+- **accounts.kind_personal_api:** Personal API
+- **accounts.kind_ronin_api:** Ronin API
+- **accounts.ronin_api_name:** Ronin API
+- **accounts.ronin_api_note:** From Ronin Cloud onboarding, or the house gateway running on this machine. Usage is stamped by the gateway.
+- **accounts.add_title:** Add {kind}
+- **accounts.edit_title:** Edit {kind}
+- **accounts.field_name:** Name
+- **accounts.field_vendor:** API provider
+- **accounts.field_url:** Base URL
+- **accounts.field_wire:** Wire API
+- **accounts.field_key:** API key
+- **accounts.field_key_keep:** API key (leave blank to keep)
+- **accounts.field_endpoint:** Gateway endpoint
+- **accounts.field_token:** House token
+- **accounts.field_token_keep:** House token (leave blank to keep)
+- **accounts.vendor_openai:** OpenAI API
+- **accounts.vendor_mistral:** Mistral API
+- **accounts.vendor_custom:** OpenAI-compatible API
+- **accounts.wire_chat:** Chat Completions
+- **accounts.wire_responses:** Responses
+- **accounts.save:** Save
+- **accounts.cancel:** Cancel
+- **accounts.add_personal_api:** Add Personal API
+- **accounts.add_ronin_api:** Add Ronin API
+- **accounts.add_token:** Add token
+- **accounts.discover:** Discover
+- **accounts.edit:** Edit
+- **accounts.remove:** Remove
+- **accounts.serves:** Serves
+- **accounts.offers:** Offers
+- **accounts.offers_dated:** Offers · discovered {date}
+- **accounts.discover_first:** Press Discover to read this endpoint’s model list.
+- **accounts.no_binding:** no binding yet
+- **accounts.seeded:** add a token to use it
+- **accounts.configured:** Configured
+- **accounts.key_missing:** Key missing
+- **accounts.models_n:** {n} models · {m} offered
+- **accounts.not_discovered:** Models not discovered
+- **accounts.none_yet:** None yet
+- **accounts.step_detail:** Each Personal API and Ronin API account is asked for its list; you tick what it offers on Accounts.
+- **accounts.missing_account:** Missing account
+- **accounts.approvals_off:** YOLO — approvals off
+- **accounts.approvals_off_short:** YOLO
+- **accounts.approvals_prompt:** Ask for approval
+- **accounts.reasoning_default:** Provider default
+- **accounts.preset_add:** Add preset
+- **accounts.preset_edit:** Edit preset
+- **accounts.preset_name:** Name shown under Model
+- **accounts.preset_account:** Account
+- **accounts.preset_model:** Model
+- **accounts.preset_reasoning:** Reasoning effort
+- **accounts.preset_approvals:** Approvals
+
+## models — models-records-surface.js, models-surface.js (the Models tilespace; KAN-236)
+
+- **models.records:** Models
+- **models.records_summary:** Model info · offered · presets · defaults
+- **models.model_info:** Model info
+- **models.offered:** Offered per account
+- **models.offered_none:** No accounts yet. Add one on Accounts or on a harness page.
+- **models.presets:** Presets
+- **models.presets_lede:** A preset names harness, account, model and knobs; it appears under Model in New Agent. Today every preset is a Hermes named setup.
+- **models.review_on_refresh:** The row-by-row comparison is on Refresh.
+- **models.review_after_info:** After step 3
 
 ## launch — launch-view.js (the Workbench where Teams and Agents begin)
 
@@ -523,8 +605,37 @@ nothing paints exactly this.
 - **work_items.parent:** Parent
 - **work_items.comments:** Comments
 - **work_items.attachments:** Attachments
+- **plans.attachment:** Plan {name}
+- **plans.gone:** {name} · gone
+- **plans.gone_hint:** gone
 - **work_items.links:** Links
 - **work_items.history:** History
+- **work_items.status:** Status
+- **work_items.objective:** Objective
+- **work_items.details:** Details
+- **work_items.moving:** Moving…
+- **work_items.move_failed:** The status did not change.
+- **work_items.subtasks:** Subtasks
+- **work_items.team_held_by:** Team {team} (lead {lead})
+- **work_items.team_held:** Team {team}
+- **work_items.id:** Id
+- **work_items.kind:** Kind
+- **work_items.origin:** Started in
+- **work_items.from_jira:** from Jira ({who})
+- **work_items.from_ronin:** Ronin ({who})
+- **work_items.handed_in:** Handed in
+- **work_items.handed_in_by:** by {who}
+- **work_items.on_dev_at:** on dev {at}
+- **work_items.comment_one:** comment
+- **work_items.comment_many:** comments
+- **work_items.done_n:** Done ({n})
+- **work_items.count:** {n}
+- **work_items.comment_box:** Add a comment
+- **work_items.comment_send:** Comment
+- **work_items.comment_sending:** Sending…
+- **work_items.comment_failed:** The comment was not added.
+- **work_items.comment_told:** Added; sent to {names}.
+- **work_items.comment_nobody:** Added. No Agent holds this item, so nobody was sent it.
 - **team.workspace_1:** Tilespace 1
 - **team.workspace_2:** Tilespace 2
 - **team.commons_card:** Commons
@@ -538,6 +649,26 @@ nothing paints exactly this.
 - **team.commons:** Commons
 - **team.arranged_by:** arranged by {from}
 - **team.state:** State
+
+## epics — epics-surface.js (the Epic worksurface's Show question; w280)
+- **epics.show:** Show
+- **epics.all:** All
+- **epics.assigned:** Assigned
+- **epics.unassigned:** Unassigned
+- **epics.none_shown:** No items here for what Show picks.
+
+## team_waiting — team-waiting.js (the Team workbench's Waiting on you and Epics cards; KAN-232)
+- **team_waiting.title:** Waiting on you
+- **team_waiting.with_lead:** With the lead
+- **team_waiting.ready:** Ready to accept
+- **team_waiting.stuck:** Stuck
+- **team_waiting.accept:** Accept
+- **team_waiting.send_back:** Send back
+- **team_waiting.reply:** Reply
+- **team_waiting.comment:** Comment
+- **team_waiting.none:** Nothing is waiting on you.
+- **team_epics.none:** No Epics for this Team yet.
+- **epics.title:** Epics
 
 ## services — services-card.js (the Services activation card)
 - **services.stage_not_requested:** Not requested
@@ -762,7 +893,6 @@ The pad's current config downloads as a backup first.
 - **roots.fact_directory:** Directory
 - **roots.fact_handle:** Workspace Folder handle
 - **roots.fact_docs:** Docs
-- **roots.fact_plans:** Plans
 - **roots.fact_match:** Match
 - **roots.fact_remote:** Remote
 - **roots.fact_branch:** Branch
@@ -845,6 +975,10 @@ The catalog entry goes. {dir} is not touched.
 - **roots.github_cloning:** Cloning repository…
 - **roots.github_cloned:** Added {name} as a workspace.
 
+## help_outline — help-outline.js (the Help workbench's pages)
+- **help_outline.project_management:** Project management
+- **help_outline.planning:** Writing a plan
+
 ## docs — docs.js (the ▧ Docs tab)
 - **docs.back_title:** Back to the list
 - **docs.close_agent:** Close documents and return to this Agent
@@ -852,11 +986,10 @@ The catalog entry goes. {dir} is not touched.
 - **docs.pill_tracked:** Tracked
 - **docs.pill_plans:** Plans
 - **docs.pill_docs:** Docs
-- **docs.shelf_empty:** Nothing on this shelf — a workspace folder names its places on its record (Workspace folders → docs / plans).
+- **docs.shelf_empty:** Nothing on this shelf — a workspace folder names its docs on its record (Workspace folders → docs).
+- **docs.plans_empty:** No plans yet. A lead writes one with the user: plan write <name>.
 - **roots.f_docs:** docs
 - **roots.f_docs_hint:** Where this root keeps its documentation — directories or files, relative to the directory
-- **roots.f_plans:** plans
-- **roots.f_plans_hint:** Where this root keeps its build-out plans
 - **roots.group_root:** Workspace folder
 - **roots.group_root_help:** An existing directory on this machine where Agents may work.
 - **roots.group_repository:** Advanced repository workflow
@@ -1142,6 +1275,14 @@ The catalog entry goes. {dir} is not touched.
 - **request.malformed:** Ronin answered, but the answer did not arrive whole
 - **request.unreachable:** could not reach Ronin — network or server down
 
+## island — tile-island.js (the item island in the tile header: a pill per held work item; w271, w272, KAN-238)
+- **island.items:** Work items held
+- **island.down:** Show the work items with their status
+- **island.up:** Put the work items back in the header
+- **island.subtasks:** {n} subtasks
+- **island.handed_in:** handed in
+- **island.on_dev:** on dev
+
 ## head — tilehead.js (the tile head's help and quiet words)
 - **head.rename_help:** Edit this Agent title
 - **head.rename_quiet:** Rename session — no session in this tile yet
@@ -1179,7 +1320,7 @@ The catalog entry goes. {dir} is not touched.
 - **me.docs:** Docs
 - **me.configuration:** Configuration
 - **me.configuration_hint:** mandate, Behaviors
-- **me.docs_none:** No attachments on the items this Agent holds.
+- **me.docs_none:** No documents on this Agent's record.
 - **me.attach:** Send a file
 - **me.attach_hint:** or drag one onto the tile
 - **me.markdown:** Markdown
@@ -1448,6 +1589,7 @@ The catalog entry goes. {dir} is not touched.
 - **setup_surface.no_cli_state:** No CLI
 - **setup_surface.no_models:** The catalog lists no models for this provider.
 - **setup_surface.refresh_all:** Refresh all model providers
+- **setup_surface.refreshing_accounts:** Reading account lists…
 - **setup_surface.last_ran:** Last ran {date}
 - **setup_surface.never_ran:** Never run — every provider offers Native only until it runs.
 - **setup_surface.models_read:** Model list read {date} by {cli} {version}

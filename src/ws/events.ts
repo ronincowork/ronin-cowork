@@ -31,8 +31,9 @@ export interface Feed {
   list: () => Promise<SessionInfo[]>;
   home: (sessions: SessionWithAxes[]) => Promise<unknown[]>;
   teams: () => Promise<unknown[]>;
-  /** Every Epic (a level-1 work item) whole, with its holder: the Epics workbench's stones (KAN-190). */
-  epics: () => Promise<unknown[]>;
+  /** Every Epic (a level-1 work item) whole, with its holder, and every item under one, slim:
+   * the Epics workbench's stones (KAN-190, KAN-206). */
+  epics: () => Promise<{ epics: unknown[]; items: unknown[] }>;
   messages: () => Promise<unknown[]>;
   wipeboard: (board: string) => Promise<Record<string, unknown> | null>;
   jikan: (team: string) => Promise<unknown[] | null>;
@@ -40,7 +41,7 @@ export interface Feed {
   shutdown: (id: string) => object | null;
 }
 const empty: Feed = {
-  list: listSessions, home: async () => [], teams: async () => [], epics: async () => [], messages: async () => [],
+  list: listSessions, home: async () => [], teams: async () => [], epics: async () => ({ epics: [], items: [] }), messages: async () => [],
   wipeboard: async () => null, jikan: async () => null, github: { attached: async () => false, answer: async () => null },
   shutdown: () => null,
 };
@@ -142,7 +143,7 @@ export function pushTeams(): Promise<void> {
     const rosters = await feed.teams().catch(() => undefined);
     if (rosters) publishHeld({ t: 'teams', rosters });
     const epics = await feed.epics().catch(() => undefined);
-    if (epics) publishHeld({ t: 'epics', epics });
+    if (epics) publishHeld({ t: 'epics', epics: epics.epics, items: epics.items });
   });
   return teamsRead;
 }

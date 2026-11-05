@@ -39,7 +39,6 @@ session_create — create one new Agent
 
 Usage:
   session_create <name> [--prompt <text>] [--team <team>]
-                        [--root <workspace-folder-handle>]
                         [--provider <provider>] [--model <model>]
                         [--behaviour ways:<book>]…
                         [--mode manual|assisted] [--cmd <cli>]
@@ -49,8 +48,8 @@ Usage:
 
 Creation is always explicit. An existing name is refused rather than read or updated.
 With no --team, the new Agent joins the caller's first Team when there is one.
---root selects a registered Workspace Folder by its handle (for example, ronin_lab),
-not by its filesystem path. Use `machine-settings project-root list` to read the handles.
+Every Agent starts in the same folder, Ronin's own; where it works comes from its Team's
+Workspace, which its brief lists.
 The mandate is chosen here and carried in the birth brief; never set it after birth.
 --reach open|discuss|plan|execute · --recruit open|nobody|"propose agents"|"staff agents"
 --output takes several, comma-separated: open, a plan, ideas, code, an artifact, the team, no code.
@@ -107,12 +106,11 @@ need_value() {
 NAME="${1:-}"
 [ -n "$NAME" ] && [ "${NAME#-}" = "$NAME" ] || die "usage: session_create <name> [options]. Run session_create --help." 2
 shift
-PROMPT="" TEAM="" ROOT="" PROVIDER="" MODE="" CMD="" MODEL="" MCP="" TAGS="" SEED="" BEHAVIOURS="" REACH="" RECRUIT="" OUTPUT="" ROLE=""
+PROMPT="" TEAM="" PROVIDER="" MODE="" CMD="" MODEL="" MCP="" TAGS="" SEED="" BEHAVIOURS="" REACH="" RECRUIT="" OUTPUT="" ROLE=""
 while [ $# -gt 0 ]; do
   case "$1" in
     --prompt) need_value "$@"; PROMPT="$2"; shift 2 ;;
     --team) need_value "$@"; TEAM="$2"; shift 2 ;;
-    --root|--project_root) need_value "$@"; ROOT="$2"; shift 2 ;;
     --provider) need_value "$@"; PROVIDER="$2"; shift 2 ;;
     --behaviour|--behavior) need_value "$@"; BEHAVIOURS="${BEHAVIOURS}${BEHAVIOURS:+
 }$2"; shift 2 ;;
@@ -133,13 +131,13 @@ done
 . "$TOOL_DIR/ronin-http.sh"
 ronin_connect || exit $?
 CALLER=$(ronin_session_me 2>/dev/null || true)
-body=$(NAME="$NAME" CALLER="$CALLER" PROMPT="$PROMPT" TEAM="$TEAM" ROOT="$ROOT" \
+body=$(NAME="$NAME" CALLER="$CALLER" PROMPT="$PROMPT" TEAM="$TEAM" \
        PROVIDER="$PROVIDER" MODE="$MODE" CMD="$CMD" MODEL="$MODEL" MCP="$MCP" TAGS="$TAGS" SEED="$SEED" BEHAVIOURS="$BEHAVIOURS" REACH="$REACH" RECRUIT="$RECRUIT" OUTPUT="$OUTPUT" ROLE="$ROLE" python3 - <<'PY'
 import json, os
 e = os.environ
 b = {"name": e["NAME"]}
 if e["CALLER"]: b["caller"] = e["CALLER"]
-for k, v in (("prompt", "PROMPT"), ("team", "TEAM"), ("project_root", "ROOT"),
+for k, v in (("prompt", "PROMPT"), ("team", "TEAM"),
              ("provider", "PROVIDER"), ("mode", "MODE"), ("cmd", "CMD"), ("model", "MODEL"), ("role", "ROLE")):
     if e[v]: b[k] = e[v]
 if e["MCP"]: b["mcp"] = e["MCP"].lower() in ("on", "true", "1", "yes")

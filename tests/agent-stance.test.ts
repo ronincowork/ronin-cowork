@@ -20,6 +20,9 @@ test('a question on the screen is told apart from work and from a ready prompt',
   assert.equal(asksForInput(asking), true);
   assert.equal(asksForInput(working), false);
   assert.equal(asksForInput(ready), false);
+  // An idle Claude whose reply ends on a question is not asking: the prompt is empty.
+  const idle = '  Which of these do you want, and is anything missing?\n✻ Worked for 22s · done 6:45 AM\n────\n❯\n────\n  ⏵⏵ bypass permissions on';
+  assert.equal(asksForInput(idle), false);
   assert.equal(classifyStatus(working), 'thinking');
   assert.equal(classifyStatus(ready), 'ready');
 });

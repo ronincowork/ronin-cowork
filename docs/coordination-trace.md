@@ -21,9 +21,10 @@ surface or a new work-record store.
    promotion verifies and admits the Team line to global `dev`; release review later moves
    `dev` to the stable line.
 7. **Work Items reads the work items.** It shows what the Team and its members
-   hold. A hand-in naming an item moves it to Land and a promotion moves it to Done, each a
-   trail line naming its receipt; an item paired to Jira stays at Land (In Review) until the
-   Jira user moves it to Done. It never guesses from phase prose.
+   hold. A hand-in naming an item moves it to Land (In Review) and gives it to the Team; a
+   promotion is a code step and changes no status, its receipt only a trail line. The item is
+   Done when the person accepting it moves it there, in Ronin or, paired, in Jira. It never
+   guesses from phase prose.
 8. **Completion closes the right records.** The work item moves to Done only when its definition
    of completion is met. Standing truth lands in code/docs; finished temporary plans are
    removed; desk and session cleanup follow their own explicit lifecycle.

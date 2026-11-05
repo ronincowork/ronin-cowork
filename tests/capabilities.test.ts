@@ -203,7 +203,7 @@ test('the stock capability documents are well-formed and carry no retired vocabu
     assert.ok(item.tools.length > 0, `${item.name} groups at least one actual tool`);
     assert.doesNotMatch(text, /tejun|MACROS\.md|ACTIONS\.md|\+\w+:/, `${item.name} teaches no retired name`);
     assert.doesNotMatch(text, /initial revision|revision-aware|revision counter is|reclaim|park a project|a verdict of|the decider/i, `${item.name} carries no retired project field`);
-    for (const requirement of item.requires) assert.equal(checkRequirement(requirement, { ...none, everything: false, arrangement: 'managed', installations: new Set(['x', 'ronin_services']), behaviours: new Set(['x', 'ronin_host', 'gbrain', 'trello', 'perplexity']), campaign: true, team: true, lead: true }), '', `${item.name} requires ${requirement}`);
+    for (const requirement of item.requires) assert.equal(checkRequirement(requirement, { ...none, everything: false, arrangement: 'managed', installations: new Set(['x', 'ronin_services']), behaviours: new Set(['x', 'ronin_host', 'gbrain', 'trello', 'perplexity', 'project-management']), campaign: true, team: true, lead: true }), '', `${item.name} requires ${requirement}`);
     for (const tool of item.tools) assert.match(tool.name, /^[a-z][a-z0-9_-]*$/, `${item.name}: ${tool.command}`);
   }
   const by = Object.fromEntries(rows.map((item) => [item.name, item]));
@@ -213,6 +213,7 @@ test('the stock capability documents are well-formed and carry no retired vocabu
   assert.deepEqual(by['worktree-desk'].requires, []);
   assert.deepEqual(by['machine-settings'].requires, ['campaign']);
   assert.deepEqual(by.cowork_team.requires, []);
+  assert.deepEqual(by['work-item'].requires, ['behaviour:project-management'], 'the item tools come with the project-management switch');
   assert.deepEqual(by['ronin-host'].requires, []);
   assert.deepEqual(by.mika.requires, ['installation:ronin_services']);
   assert.deepEqual(by.mika.tools.map((tool) => tool.name), ['mika']);
@@ -222,7 +223,7 @@ test('the stock capability documents are well-formed and carry no retired vocabu
   // bundle names that boundary but does not duplicate the Session tool row.
   const priority = (name: string) => by[name].tools.filter((tool) => tool.priority).map((tool) => tool.command);
   assert.deepEqual(priority('work-record'), ['work-record update_record', 'work-record workspace', 'work-record read', 'work-record add_doc']);
-  assert.deepEqual(priority('work-item'), ['item create', 'item read', 'item search', 'item edit', 'item transition', 'item flag', 'item unflag', 'item assign', 'item handoff', 'item watch', 'item comment', 'item attach', 'item link', 'item delete']);
+  assert.deepEqual(priority('work-item'), ['item create', 'item read', 'item search', 'item edit', 'item transition', 'item flag', 'item unflag', 'item assign', 'item handoff', 'item handover', 'item watch', 'item comment', 'item attach', 'item link', 'item delete']);
   assert.deepEqual(priority('edges'), ['edges send', 'edges wipeboard', 'edges read', 'edges team']);
   assert.deepEqual(priority('worktree-desk'), ['worktree-desk status', 'worktree-desk sync', 'worktree-desk hand-in']);
   assert.deepEqual(priority('agent_session'), ['session_check', 'session_create']);

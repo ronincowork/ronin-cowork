@@ -33,16 +33,19 @@ is best effort and never claims that the Agent processed the message.
 ## Preflight and the two-minute limit
 
 The worker resolves the current session by name and checks its input before typing. A
-recognized draft or dialog holds the message without inserting anything.
+recognized draft or dialog holds the message without inserting anything. A dialog is the
+CLI's numbered choices or its footer (`Esc to cancel`), so a trust prompt with no numbers
+is one.
 Thinking by itself does not hold delivery, and must not hide a draft or dialog.
 Unknown screens do not hold delivery. The preflight is deliberately best effort.
 
-Waiting messages retry every two seconds. At two minutes from acceptance, Ronin bypasses
-Control and input checks and sends once. Continued typing and retries do not reset the
-deadline. This deliberately accepts colliding with an unfinished draft or a dialog.
+Waiting messages retry every two seconds. At two minutes from acceptance, Ronin sends once
+past a draft. Continued typing and retries do not reset the deadline. An open dialog is
+never sent past: its Enter would choose an option (a trust prompt's "No, exit" ends the
+Agent), so the letter waits until the dialog is answered.
 The deadline is fixed; the former `messages.auto_force_after_s` setting is no longer used.
 A stopped server cannot meet the deadline; waiting letters are considered when it runs.
-At the deadline the worker attempts delivery once and deletes the letter regardless of outcome.
+Past the deadline, with no dialog open, the worker attempts delivery once and deletes the letter regardless of outcome.
 
 Ronin's message box posts plain text to `POST /api/messages`, in either terminal view,
 and enters the same queue as every other complete message. It does not depend on the
@@ -60,8 +63,8 @@ Direct human terminal input does not enter this queue.
 
 ## Retention and actions
 
-A letter remains only while a recognized draft or dialog holds it before the two-minute
-deadline. A missing target is shredded. A reused name receives the letter. A transport
+A letter remains while a recognized dialog is open, or while a draft holds it before the
+two-minute deadline. A missing target is shredded. A reused name receives the letter. A transport
 failure is shredded after the attempt. There are no failure states, negative acknowledgements,
 birth bindings, attempt counters, manual retry, or manual force. Dismiss removes a waiting
 letter. Wipeboard posts and durable work receipts remain separate from interruption copies.

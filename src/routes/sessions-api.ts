@@ -41,7 +41,7 @@ import { readAgentComposition } from '../agent-composition.js';
 import { configurationSends, updateConfiguration } from '../agent-configuration.js';
 import { mandate } from '../agent-defaults.js';
 import { emitSessionEnd } from '../sockets.js';
-import { releaseHolder } from '../work-items.js';
+import { releaseHolder, settleToDo, unfinishedHolds } from '../work-items.js';
 import { resumeAgentArgv } from '../agents.js';
 import { listTeamRosters } from '../team-rosters.js';
 import { assertSameCampaignRoot, assertSameCampaignTeams } from '../campaign-scope.js';
@@ -379,6 +379,21 @@ export function registerSessions(app: express.Express): void {
     const name = await sessionOfPane(pane);
     if (!name) return res.status(404).json({ error: `No session owns pane ${pane}.` });
     try {
+      // session_end hands over, never drops (docs/using-ronin/project-management.md, How an item
+      // lives): To Do goes back to the Team by itself; it stops while the Agent holds anything In
+      // Progress or In Review, naming each, and NEXT is the handover with the note left for the
+      // Agent to write. Shut down Agent and the other endings can't ask: releaseHolder flags them.
+      await settleToDo(name);
+      const held = await unfinishedHolds(name);
+      if (held.length) {
+        const byTeam = new Map<string, typeof held>();
+        for (const item of held) byTeam.set(item.team ?? '', [...(byTeam.get(item.team ?? '') ?? []), item]);
+        throw new ShutdownRefused([...byTeam].map(([team, items]) => ({
+          desk: 'work items',
+          reasons: items.map((item) => `you hold ${item.id} (${item.status}) ${item.title}`),
+          next_action: `hand each over with where it stands and what is next: item handover ${items.map((item) => item.id).join(' ')} ${team ? `team:${team}` : '<agent>|team:<name>'} "<where it stands; what is next>". Can't decide? --flag "<the question>", and your lead decides.`,
+        })));
+      }
       const closed = await performAgentShutdown(name, () => {});
       res.json({ ok: true, session: name, closed });
       console.log(`[ronin] harakiri: ${name} (pane ${pane}); closed ${closed.length} desk(s)`);

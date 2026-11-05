@@ -12,14 +12,17 @@ export function parsePrompt(raw: string): PromptRead {
   const cannotTell: PromptRead = { found: false, text: null, menu: false };
   const lines = raw.split('\n');
   while (lines.length && lines[lines.length - 1].trim() === '') lines.pop();
-  const line = lines
-    .filter((l) => /[❯›]/.test(l))
-    .pop();
-  if (line === undefined) return cannotTell;
+  let at = lines.length - 1;
+  while (at >= 0 && !/[❯›]/.test(lines[at])) at--;
+  if (at < 0) return cannotTell;
+  const line = lines[at];
   const bare = line
     .replace(/\x1b\[[0-9;]*m/g, '')
     .replace(/ /g, ' ');
   if (/[❯›]\s*\d+\.\s/.test(bare)) return { found: true, text: null, menu: true };
+  // A dialog without numbers (Claude's trust prompt: "❯ No, exit") is known by the CLI's own
+  // footer under it. Read as a draft, its Enter chose "No, exit" and ended the Agent (KAN-215).
+  if (lines.slice(at + 1).some((l) => /Esc to cancel/.test(l))) return { found: true, text: null, menu: true };
   if (/\x1b\[2m/.test(line)) return { found: true, text: null, menu: false };
   const text = line
     .replace(/\x1b\[[0-9;]*m/g, '')

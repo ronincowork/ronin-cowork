@@ -2,7 +2,7 @@ import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { sessionDir, sessionKey } from './session-dir.js';
 import { tegamiPath } from './tegami.js';
-import { agentReading } from './work-items-read.js';
+import { agentReading, type AgentReading } from './work-items-read.js';
 import { jiraLink, type WorkItem } from './work-items.js';
 import { mandate, type Mandate } from './agent-defaults.js';
 
@@ -14,6 +14,10 @@ export interface Tegami {
   holds: string[];
   /** The items held, each with its status, and a paired one's Jira link: what the tile and the roster show. */
   items: Array<WorkItem & { jira_url?: string }>;
+  /** What the Teams this Agent leads hold at levels 1 and 0, and not the Agent itself: their
+   * Epics (w279) and their unassigned Tasks (KAN-251), which a lead's item island shows beside
+   * its own items. Empty for an Agent leading none. */
+  teamItems: Array<WorkItem & { jira_url?: string }>;
   /** The record's own documents (dropped on it, or added holding no item) and every held item's attachments. */
   docs: string[];
   chip: { text: string; gate: boolean };
@@ -34,8 +38,10 @@ function extractBlock(text: string): unknown | null {
 
 async function readDocs(v: unknown): Promise<string[]> {
   if (!Array.isArray(v)) return [];
-  const want = [...new Set(v.filter((x): x is string => typeof x === 'string' && x.startsWith('/')))];
-  const alive = await Promise.all(want.map((p) => fs.stat(p).then(() => p).catch(() => null)));
+  // A `plan:` attachment still here is one that no longer resolves (work-items-read.ts): kept, so
+  // the Docs list says it is gone.
+  const want = [...new Set(v.filter((x): x is string => typeof x === 'string' && (x.startsWith('/') || x.startsWith('plan:'))))];
+  const alive = await Promise.all(want.map((p) => (p.startsWith('plan:') ? p : fs.stat(p).then(() => p).catch(() => null))));
   return alive.filter((p): p is string => p !== null);
 }
 
@@ -58,6 +64,18 @@ export function chipFor(items: WorkItem[]): { text: string; gate: boolean } {
   const named = items.slice(0, 3).map((item) => `${item.flagged ? '⚑ ' : ''}${item.id} ${item.status}`);
   const more = items.length > 3 ? [`+${items.length - 3}`] : [];
   return { text: [...named, ...more].join(' · '), gate: items.some((item) => item.flagged) };
+}
+
+const linked = (item: WorkItem): WorkItem & { jira_url?: string } => ({ ...item, ...(jiraLink(item) ? { jira_url: jiraLink(item) } : {}) });
+
+/** What its led Teams hold at levels 1 and 0 — their Epics and their unassigned Tasks, which
+ * show nowhere else (owner, KAN-251) — once each, leaving out those the Agent holds itself.
+ * Subtasks (-1) stay out. */
+export function teamItems(reading: AgentReading): Array<WorkItem & { jira_url?: string }> {
+  const own = new Set(reading.items.map((item) => item.id));
+  const seen = new Map<string, WorkItem>();
+  for (const team of reading.teams) for (const item of team.items) if ((item.level === 1 || item.level === 0) && !own.has(item.id)) seen.set(item.id, item);
+  return [...seen.values()].map(linked);
 }
 
 export async function readTegami(name: string): Promise<Tegami | null> {
@@ -94,7 +112,8 @@ export async function readTegami(name: string): Promise<Tegami | null> {
           })
         : [],
       holds: reading.items.map((item) => item.id),
-      items: reading.items.map((item) => ({ ...item, ...(jiraLink(item) ? { jira_url: jiraLink(item) } : {}) })),
+      items: reading.items.map(linked),
+      teamItems: teamItems(reading),
       docs: await readDocs([...reading.attachments, ...(await dropped(key))]),
       chip: chipFor(reading.items),
       quietSince: stat.mtimeMs,

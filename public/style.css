@@ -49,6 +49,12 @@
   --bad-ground: #3a1416;
   --bad-fg: #f2d6d6;
   --info: #6ea8fe;
+  /* Jira's own work-type colours, the same in every theme: the item island's kind symbols (js/tile-island.js). */
+  --jira-epic: #904ee2;
+  --jira-story: #63ba3c;
+  --jira-task: #4bade8;
+  --jira-bug: #e5493a;
+  --jira-feature: #65ba43;
   --on-strong: #fff;
   --chart-ink: rgb(11 14 20 / 82%);
 
@@ -1074,6 +1080,95 @@ body {
 .tile-head .grow {
   flex: 1;
 }
+
+/* THE ITEM ISLAND (w271, w272, KAN-238; js/tile-island.js): a capsule of pills in the header,
+   one per held work item. Rest: in the header, side by side, symbol, dot and a raised flag.
+   Down (its bar pressed): under the header, the pills in a column, each with its status
+   words and its flag, solid or the outline. */
+.tile-head .item-island {
+  position: relative;
+  z-index: 16; /* over the tile's overlays (.work-overlay is 14) when it comes down */
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-row);
+  min-width: 0;
+  max-width: 50%;
+  padding: var(--space-row) var(--space-inline);
+  border: var(--edge) solid var(--line-2);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  transform-origin: top center;
+}
+.tile-head .item-island[hidden] { display: none; }
+/* Down, it leaves the header's row (so the header keeps its height) and hangs centred under it. */
+.tile-head:has(> .item-island[data-state='down']) { position: relative; }
+.tile-head .item-island[data-state='down'] {
+  position: absolute;
+  top: calc(100% + var(--space-inline));
+  left: 50%;
+  max-width: 90%;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-inline);
+  padding: var(--space-inset); /* owner, 2026-11-05: more room in the list */
+  border-radius: var(--radius-large);
+  border-color: var(--accent);
+  box-shadow: var(--shadow-menu);
+  transform: translateX(-50%);
+}
+.tile-head .item-island[data-state='down'] .item-island-grip { align-self: center; width: 32px; }
+.tile-head .item-island[data-state='down'] .item-island-pills { flex-direction: column; align-items: stretch; gap: var(--space-inline); overflow: visible; }
+.tile-head .item-island[data-state='down'] button.item-pill { height: auto; padding: var(--space-row) var(--space-control); gap: var(--space-inline); }
+.item-pill .item-pill-words { display: none; }
+.item-island[data-state='down'] .item-pill-words { display: inline; flex: 1 1 auto; color: var(--fg); font-size: var(--text-small); text-align: left; white-space: nowrap; }
+.item-pill:not([data-flagged='true']) .item-pill-flag { display: none; }
+.item-island[data-state='down'] .item-pill:not([data-flagged='true']) .item-pill-flag { display: inline; color: var(--muted); }
+.tile-head .item-island-pills { display: flex; align-items: center; gap: var(--space-row); min-width: 0; overflow: hidden; }
+.tile-head .item-island button.item-island-grip {
+  width: 20px; /* owner, 2026-11-05: a little bigger */
+  height: 6px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--line-3);
+}
+.tile-head .item-island button.item-island-grip:hover { background: var(--accent); }
+.tile-head .item-island button.item-island-grip[aria-expanded='true'] { background: var(--accent); }
+.tile-head .item-island button.item-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-row);
+  width: auto;
+  height: 20px;
+  padding: 0 var(--space-row);
+  border: var(--edge) solid var(--line);
+  border-radius: var(--radius-pill);
+  background: transparent;
+}
+.tile-head .item-island button.item-pill:hover, .tile-head .item-island button.item-pill:focus-visible { border-color: var(--accent); }
+.tile-head .item-island button.item-pill[data-flagged='true'] { border-color: var(--warn); }
+.item-pill .item-kind { width: 14px; height: 14px; flex: 0 0 auto; }
+.item-kind .ground { fill: var(--jira-task); }
+.item-kind[data-kind='epic'] .ground { fill: var(--jira-epic); }
+.item-kind[data-kind='story'] .ground { fill: var(--jira-story); }
+.item-kind[data-kind='bug'] .ground { fill: var(--jira-bug); }
+.item-kind[data-kind='feature'] .ground { fill: var(--jira-feature); }
+.item-kind[data-kind='other'] .ground { fill: var(--muted); }
+.item-kind .ink { fill: var(--on-strong); }
+.item-kind .stroke { fill: none; stroke: var(--on-strong); stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+.item-kind .stroke.thin { stroke-width: 1.3; }
+.item-pill .item-pill-status { width: 8px; height: 8px; border-radius: var(--radius-round); background: var(--muted); }
+.item-pill[data-status='progress'] .item-pill-status { background: var(--info); }
+.item-pill[data-status='review'] .item-pill-status { background: var(--accent); }
+.item-pill[data-status='done'] .item-pill-status { background: var(--ok); }
+.item-pill .item-pill-subtasks { display: inline-flex; align-items: center; gap: var(--space-row); color: var(--muted); font-size: var(--text-small); line-height: 1; font-variant-numeric: tabular-nums; }
+.item-pill .item-pill-subtasks .item-kind { width: 10px; height: 10px; }
+.item-pill .item-pill-flag { color: var(--warn); font-size: var(--text-small); line-height: 1; }
+/* The hand-in mark (6a): the flag's size, In Review's accent when handed in, ok once on dev; its words only down. */
+.item-pill .item-pill-handin { color: var(--accent); font-size: var(--text-small); line-height: 1; white-space: nowrap; }
+.item-pill[data-handin='dev'] .item-pill-handin { color: var(--ok); }
+.item-pill .item-pill-handin-words { display: none; }
+.item-island[data-state='down'] .item-pill-handin-words { display: inline; color: var(--muted); }
 
 .tile-head .sess {
   flex: 0 1 auto;
@@ -3513,13 +3608,36 @@ body {
   font-size: var(--text-label);
   cursor: pointer;
 }
+/* Clear and Stop: Enter's shape, quiet; only Enter is kaki. */
+.tile:is(.tape-on, .keys-on, .transcript-on) .composer .cctl {
+  height: var(--control-height-small);
+  width: 38px; /* Enter's size, never bigger */
+  padding: 0;
+  border: var(--edge) solid var(--term-input-line);
+  border-radius: var(--radius-small);
+  background: var(--inset);
+  color: var(--term-input-fg);
+  font: var(--text-small)/1 var(--font-ui);
+  cursor: pointer;
+}
 
 .tile.tape-on .tape {
   bottom: var(--composer-clearance, 0px);
 }
 @media (pointer: coarse) {
-
-  .tile:is(.tape-on, .keys-on, .transcript-on) .composer textarea { font-size: var(--text-heading); }
+  /* A thumb's box: two rows to type in, and Enter as tall as both, so it is easy to hit. */
+  .tile:is(.tape-on, .keys-on, .transcript-on) .composer {
+    --composer-two-rows: calc(2 * var(--text-heading) * var(--leading-body) + 2 * var(--space-row) + 2 * var(--edge));
+  }
+  .tile:is(.tape-on, .keys-on, .transcript-on) .composer textarea {
+    font-size: var(--text-heading);
+    min-height: var(--composer-two-rows);
+  }
+  .tile:is(.tape-on, .keys-on, .transcript-on) .composer .csend {
+    height: var(--composer-two-rows);
+    min-width: var(--composer-two-rows);
+    font-size: var(--text-heading);
+  }
 }
 
 .tile-head .lock.armed { color: var(--ok-2); }
@@ -3613,7 +3731,7 @@ body {
 .menu-empty { margin: 0; padding: var(--space-row) var(--space-inline); color: var(--muted); }
 /* The work record: the full overlay (work-details.js) over the tile's body, the terminal
    untouched beneath it. */
-.tile-body > .work-overlay { position: absolute; inset: 0; z-index: 14; overflow-y: auto; box-sizing: border-box; padding: var(--space-inset) var(--space-inset); background: var(--tile-bg); }
+.tile-body > .work-overlay { position: absolute; inset: 0; z-index: 14; overflow-y: auto; box-sizing: border-box; padding: var(--space-inset) var(--space-inset); background: var(--tile-bg); font-family: var(--font-ui); font-size: var(--form-input); white-space: normal; /* a reader, not the terminal: the UI face */ }
 .tile-body > .work-overlay .menu-empty { padding: var(--space-row) 0; }
 .tile-record-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-inline); margin-bottom: var(--space-paragraph); }
 .tile-record-head > h2 { margin: 0; color: var(--fg-strong); font-size: var(--text-heading); font-weight: var(--weight-strong); }
@@ -4980,3 +5098,18 @@ html[data-screen='inside'] #phone .ph-bar .ph-title[data-boot='inside'] { displa
 .hermes-card-summary span { color: var(--muted); overflow-wrap: anywhere; }
 .hermes-card .wk-action-bar { flex: 0 0 auto; }
 .hermes-card .wk-action { width: auto; flex: 0 0 auto; min-width: 4rem; }
+
+/* THE AGENT HARNESS WORKBENCH'S ACCOUNTS AND MODELS TILESPACES (KAN-236): account cards in the Hermes card's
+   shape, their two tick lists side by side, and the Models tilespace's sections. */
+.accounts-body, .models-records-body { display: grid; gap: var(--space-subsection); }
+.accounts-list { display: grid; gap: var(--space-inline); }
+.accounts-card { display: grid; gap: var(--space-inline); }
+.accounts-card[data-seeded="true"] .hermes-card-summary { color: var(--muted); }
+.accounts-lists { display: grid; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); gap: var(--space-control); }
+.accounts-list-block { display: grid; gap: var(--space-row); min-width: 0; }
+.accounts-ticks { display: grid; gap: var(--space-row); }
+.accounts-tick { display: flex; align-items: center; gap: var(--space-inline); font-size: var(--form-note); min-width: 0; }
+.accounts-tick span { overflow-wrap: anywhere; }
+.accounts-tick input { margin: 0; }
+.models-records-section { display: grid; gap: var(--space-inline); }
+.models-records-section h3 { margin: 0; }

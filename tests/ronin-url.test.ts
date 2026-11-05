@@ -96,6 +96,7 @@ test('every agent-facing API caller connects through the one library and carries
     'machine-settings',
     'mika',
     'owner_view',
+    'plan',
     'session_archive',
     'session_check',
     'session_create',

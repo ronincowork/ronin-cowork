@@ -1,0 +1,83 @@
+#!/usr/bin/env bash
+. "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/tool-count.sh" plan "$@"
+set -u -o pipefail
+. "$(dirname "$(readlink "${BASH_SOURCE[0]}" 2>/dev/null || printf '%s' "${BASH_SOURCE[0]}")")/tool-path.sh"
+TOOL_DIR=$(dirname "$SELF")
+die() { echo "$1" >&2; exit "${2:-2}"; }
+usage() { cat <<'EOF_USAGE'
+Usage:
+  plan ls [--status Draft|Ordered]          every plan in the Workspace: name, status, date, by
+  plan read <name>                          one plan, whole
+  plan read --template                      the blank, from docs/using-ronin/planning.md
+  plan write <name> [--file <path>]         create or replace a plan (stdin when no --file)
+  plan order <name>                         Draft → Ordered: not rewritten from here
+Any command takes --workspace <name>. Without it the Workspace is your Team's, when you are on
+exactly one Team with a Workspace; otherwise the tool names the Workspaces to choose from.
+<name> is lowercase letters, digits and -, in that Workspace; <workspace>/<name> names a plan
+anywhere in your Campaign, as an epic attaches it: item attach <epic> plan:<workspace>/<name>.
+The line under the title, Status: <status> · <date> · <by>, is the tool's: a Status line you
+write is replaced. A write keeps the plan's status; a new plan is a Draft. The plan isn't
+rewritten: the work runs on the epics.
+Related: ronin-help planning; item --help
+EOF_USAGE
+}
+case "${1:-}" in -h|--help|'') [ "$#" -le 1 ] || die 'Run plan --help.'; usage; [ "$#" -eq 1 ]; exit $?;; esac
+. "$TOOL_DIR/ronin-http.sh"
+ronin_connect || exit $?
+BY=$(ronin_session_me 2>/dev/null || id -un)
+verb=$1; shift
+# --workspace may stand anywhere.
+workspace=''; args=()
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --workspace) [ -n "${2:-}" ] || die 'BAD-ARG: --workspace needs a name'; workspace=$2; shift 2 ;;
+    *) args+=("$1"); shift ;;
+  esac
+done
+set -- "${args[@]+"${args[@]}"}"
+# plan_call METHOD PATH [JSON]: the acknowledgement (or the reply) printed, an error to stderr
+# (exit 4 when it asks which Workspace or a move would overwrite a plan, 3 otherwise).
+plan_call() {
+  local method=$1 path=$2 body=${3-} out
+  local opts=(-sS -m 60 "${RONIN_CURL[@]+"${RONIN_CURL[@]}"}" -X "$method")
+  [ -z "$body" ] || opts+=(-H 'content-type: application/json' --data-binary @-)
+  out=$(printf '%s' "$body" | curl "${opts[@]}" -w '\n%{http_code}' "$url$path") || { echo "UNREACHABLE: Ronin did not answer at $url" >&2; return 5; }
+  printf '%s' "${out%$'\n'*}" | REPLY_STATUS=${out##*$'\n'} VERB=$verb python3 -c '
+import json, os, sys
+try: d = json.loads(sys.stdin.read())
+except Exception: print("HTTP %s: Ronin answered %s without JSON" % (os.environ["REPLY_STATUS"], sys.argv[1]), file=sys.stderr); sys.exit(3)
+if d.get("error"):
+    print(d["error"], file=sys.stderr); sys.exit(4 if d.get("refused") else 3)
+if d.get("acknowledgement"): print(d["acknowledgement"])
+elif "plans" in d:
+    if not d["plans"]: print("No plans in %s." % d["workspace"])
+    for p in d["plans"]: print("%s\t%s\t%s\t%s" % (p["name"], p["status"], p["date"], p["by"]))
+elif "text" in d: sys.stdout.write(d["text"])
+elif "plan" in d: sys.stdout.write(d["plan"]["text"])
+' "$method $path"
+}
+json() { python3 -c 'import json,sys; a=sys.argv[1:]; d=dict(zip(a[::2], a[1::2])); print(json.dumps({k: v for k, v in d.items() if v != ""}))' by "$BY" workspace "$workspace" "$@"; }
+query() { python3 -c 'import sys,urllib.parse; a=sys.argv[1:]; print(urllib.parse.urlencode({k: v for k, v in zip(a[::2], a[1::2]) if v}))' by "$BY" workspace "$workspace" "$@"; }
+case "$verb" in
+  ls) status=''
+    if [ "$#" -eq 2 ] && [ "$1" = --status ]; then status=$2; set --; fi
+    [ "$#" -eq 0 ] || die 'BAD-ARG: plan ls takes [--status Draft|Ordered] [--workspace <name>]'
+    plan_call GET "/api/plans?$(query status "$status")" ;;
+  read)
+    if [ "${1:-}" = --template ]; then [ "$#" -eq 1 ] || die 'BAD-ARG: plan read --template takes nothing else'; plan_call GET /api/plans/template; exit $?; fi
+    [ "$#" -eq 1 ] || die 'BAD-ARG: plan read takes <name> or --template'
+    plan_call GET "/api/plans/read?$(query name "$1")" ;;
+  write)
+    [ "$#" -ge 1 ] || die 'BAD-ARG: plan write takes <name> [--file <path>]'
+    name=$1; shift
+    if [ "$#" -eq 2 ] && [ "$1" = --file ]; then
+      [ -f "$2" ] || die "BAD-ARG: no such file: $2"; body=$(cat -- "$2")
+    elif [ "$#" -eq 0 ]; then
+      [ -t 0 ] && die 'BAD-ARG: plan write takes the text on stdin, or --file <path>'
+      body=$(cat)
+    else die 'BAD-ARG: plan write takes <name> [--file <path>]'; fi
+    plan_call POST /api/plans/write "$(json name "$name" text "$body")" ;;
+  order) [ "$#" -eq 1 ] || die 'BAD-ARG: plan order takes <name>'
+    plan_call POST /api/plans/order "$(json name "$1")" ;;
+  *) usage >&2; exit 2 ;;
+esac

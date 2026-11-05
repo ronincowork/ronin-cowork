@@ -76,3 +76,9 @@ force exit. Ronin adds no state classification. Browser drafts clear entirely lo
 Shared [code ownership and test boundaries](README.md#code-ownership) apply to this CLI.
 
 [Upstream reference](https://hermes-agent.nousresearch.com/docs/user-guide/cli). Update the evidence/version when changing this integration.
+
+A connection may explicitly select `wireApi: chat | responses`. Ronin writes a named
+`custom:ronin` provider with `api_mode: chat_completions | codex_responses`; Hermes 0.22.5
+ignores a bare custom Responses pin on a proxy URL. Connections without this field retain
+their existing provider defaults. Explicit loopback HTTP endpoints with a port are accepted
+for managed local gateway connections; environment-discovered endpoints remain HTTPS-only.

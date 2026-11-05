@@ -1,12 +1,22 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { classifyStatus } from '../src/status.js';
-import { parsePrompt } from '../src/send.js';
+import { deliverSafe, parsePrompt } from '../src/send.js';
 
 test('Codex trust choice is a dialog, never a ready prompt', () => {
   const screen = 'Do you trust the contents of this directory?\n\n› 1. Yes, continue\n  2. No, quit';
   assert.equal(classifyStatus(screen), 'awaiting-input');
   assert.deepEqual(parsePrompt(screen), { found: true, text: null, menu: true });
+});
+
+test('Claude trust prompt has no numbers and is still a dialog, never a draft (KAN-215)', async () => {
+  const screen = ' Do you trust the files in this folder?\n\n ❯ No, exit\n   Yes, I trust this folder\n\n Enter to confirm · Esc to cancel\n';
+  assert.deepEqual(parsePrompt(screen), { found: true, text: null, menu: true });
+  const sent: string[] = [];
+  const io = { read: async () => screen, type: async (t: string) => { sent.push(t); }, enter: async () => { sent.push('Enter'); } };
+  const result = await deliverSafe('trusting', 'From Ronin House [House notice]:\nKAN-209 handoff', undefined, io);
+  assert.equal(result.reason, 'dialog is open', 'the queue holds a dialog past its deadline; a draft it would force');
+  assert.deepEqual(sent, [], 'no Enter reaches "No, exit"');
 });
 
 test('Codex ready row is recognized and its dim suggestion is not owner text', () => {
@@ -67,6 +77,6 @@ test('the composed list answers the roster exactly as the hand-written one did',
   assert.equal(classifyStatus('glen3@box:~$ '), 'ready');
   assert.equal(classifyStatus('working… (esc to interrupt)'), 'thinking');
   assert.equal(classifyStatus('✻ Cerebrating…'), 'thinking');
-  assert.equal(classifyStatus('Do you want to continue?'), 'awaiting-input');
+  assert.equal(classifyStatus(' ❯ No, exit\n   Yes, I trust this folder\n Enter to confirm · Esc to cancel'), 'awaiting-input');
   assert.equal(classifyStatus('Do you trust the contents of this directory?\n› 1. Yes'), 'awaiting-input');
 });

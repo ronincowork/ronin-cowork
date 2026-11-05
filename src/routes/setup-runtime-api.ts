@@ -1,4 +1,5 @@
 import { hermesSettingsAnswer, saveHermesConnection, discoverHermesModels, saveHermesSetup, deleteHermesEntry } from '../hermes-setups.js';
+import { accountsAnswer, saveAccount, discoverAccount, updateAccountLists, deleteAccount, savePreset, deletePreset } from '../accounts.js';
 import { homedir } from 'node:os';
 import { dispatchInstall } from '../agent-install.js';
 import type express from 'express';
@@ -58,6 +59,39 @@ export function registerSetupRuntime(app: express.Express): void {
       }
       await measureAndRecordProviders();
       res.json(await hermesSettingsAnswer());
+    } catch (error) { res.status(400).json({ error: errMsg(error) }); }
+  });
+
+  // ACCOUNTS AND PRESETS (KAN-236): the Agent Harness workbench's reading of the same Hermes record,
+  // for the Accounts and Models tilespaces and every harness page. The /api/hermes routes above keep answering.
+  app.get('/api/accounts', async (_req, res) => {
+    try { res.json(await accountsAnswer()); } catch { res.status(500).json({ error: 'Could not read accounts.' }); }
+  });
+  app.post('/api/accounts/:action', async (req, res) => {
+    try {
+      switch (req.params.action) {
+        case 'save': await saveAccount(req.body); break;
+        case 'discover': await discoverAccount(String(req.body.id)); break;
+        case 'lists': await updateAccountLists(String(req.body.id), { harnesses: req.body.harnesses, offered: req.body.offered }); break;
+        case 'delete': await deleteAccount(String(req.body.id)); break;
+        default: return res.status(404).json({ error: 'Unknown account action.' });
+      }
+      await measureAndRecordProviders();
+      res.json(await accountsAnswer());
+    } catch (error) { res.status(400).json({ error: errMsg(error) }); }
+  });
+  app.get('/api/presets', async (_req, res) => {
+    try { res.json({ presets: (await accountsAnswer()).presets }); } catch { res.status(500).json({ error: 'Could not read presets.' }); }
+  });
+  app.post('/api/presets/:action', async (req, res) => {
+    try {
+      switch (req.params.action) {
+        case 'save': await savePreset(req.body); break;
+        case 'delete': await deletePreset(String(req.body.id)); break;
+        default: return res.status(404).json({ error: 'Unknown preset action.' });
+      }
+      await measureAndRecordProviders();
+      res.json(await accountsAnswer());
     } catch (error) { res.status(400).json({ error: errMsg(error) }); }
   });
 

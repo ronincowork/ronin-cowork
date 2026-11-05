@@ -83,7 +83,7 @@ async function oneLine(id: string, args: string[], as = 'probe') {
   assert.match(out, new RegExp(`^${id} `), 'the acknowledgement is the line of what the act did');
   return after.at(-1)!;
 }
-const made = (out: string) => /^(w\d+) was created/m.exec(out)![1]!;
+const made = (out: string) => /^created (w\d+) /m.exec(out)![1]!;
 
 test('item acts, each naming its item, one trail line each', async () => {
   const epic = made(await tool('item', ['create', '--title', 'Overall', '--kind', 'Epic']));
@@ -279,4 +279,44 @@ test('work-record read and read --json take a reading over 128 KB, the most one 
   const json = await run('work-record', ['read', '--json'], 'big_probe');
   assert.equal(json.status, 0, json.stderr);
   assert.equal((JSON.parse(json.stdout) as { items: unknown[] }).items.length, 40);
+});
+
+test('item takes several ids where an act allows them, --text in search, and --in-jira on delete', async () => {
+  const epic = made(await tool('item', ['create', '--title', 'Many epic', '--kind', 'Epic']));
+  const created = await tool('item', ['create', '--title', 'Many one', '--objective', 'Done looks like: a quokka', '--parent', epic]);
+  assert.match(created.split('\n')[0]!, new RegExp(`^created w\\d+ under ${epic}$`), 'create says so on line 1');
+  const one = made(created);
+  const two = made(await tool('item', ['create', '--title', 'Many two', '--parent', epic]));
+  const out = await tool('item', ['transition', one, two, 'In Progress']);
+  assert.deepEqual(out.trim().split('\n'), [`${one} moved to In Progress`, `${two} moved to In Progress`]);
+  await tool('item', ['watch', one, two]);
+  assert.deepEqual((await readLetterHolds('probe'))!.watches.slice(-2), [one, two]);
+  const found = JSON.parse(await tool('item', ['search', '--text', 'QUOKKA'])) as { items: Array<{ id: string }> };
+  assert.deepEqual(found.items.map((item) => item.id), [one]);
+  assert.equal((await run('item', ['delete', one, '--in-jra'])).status, 2, 'a mistyped flag is refused');
+  assert.deepEqual((await tool('item', ['delete', one, two, '--in-jira'])).trim().split('\n'), [`${one} was deleted`, `${two} was deleted`]);
+});
+
+test('item handover: several ids, one note, to the Team; --to-do and --flag; transition takes --note', async () => {
+  const { holdersOf, holderLabel, readItem } = await import('../src/work-items.js');
+  const epic = made(await tool('item', ['create', '--title', 'Handover epic', '--kind', 'Epic']));
+  const one = made(await tool('item', ['create', '--title', 'Hand one', '--parent', epic]));
+  const two = made(await tool('item', ['create', '--title', 'Hand two', '--parent', epic]));
+  await tool('item', ['transition', one, two, 'In Progress']);
+  const out = await tool('item', ['handover', one, two, 'team:crew', 'store done; CSS next', '--to-do']);
+  assert.deepEqual(out.trim().split('\n'), [`${one} was handed from agent:probe to team:crew`, `${two} was handed from agent:probe to team:crew`]);
+  for (const id of [one, two]) {
+    const item = (await readItem(id))!;
+    assert.deepEqual([item.status, item.comments.at(-1)!.text], ['To Do', 'Handover from probe: store done; CSS next']);
+    assert.deepEqual((await holdersOf(id)).map(holderLabel), ['team:crew']);
+  }
+  const three = made(await tool('item', ['create', '--title', 'Hand three', '--parent', epic]));
+  assert.match(await tool('item', ['handover', three, 'team:crew', '--flag', 'Waiting on the lead: keep it?']), new RegExp(`${three} is flagged: Waiting on the lead: keep it\\?`));
+  assert.equal((await readItem(three))!.flagged, true);
+  assert.equal((await run('item', ['handover', three, 'none', 'x'])).status, 2, 'a handover goes to someone');
+  assert.equal((await run('item', ['handover', three, 'team:crew', 'a', 'b'])).status, 2, 'one note');
+  assert.equal((await run('item', ['transition', three, 'In Review', '--nope', 'x'])).status, 2);
+  const four = made(await tool('item', ['create', '--title', 'Hand four', '--parent', epic]));
+  await tool('item', ['transition', four, 'In Review', '--note', 'Try the tile.']);
+  assert.equal((await readItem(four))!.status, 'In Review');
 });

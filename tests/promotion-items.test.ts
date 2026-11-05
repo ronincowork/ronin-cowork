@@ -1,7 +1,7 @@
 /**
- * A completed promotion moves every work item named on the hand-ins it carries to Done,
- * with the promotion receipt on the item's trail, and its notices name the item and the
- * write that keeps it current (owner, 2026-09-28: acknowledgements nag, tools do not).
+ * A promotion is a code step and never changes an item's status: only the person accepting
+ * sets Done (owner, 2026-11-04). Every work item named on the hand-ins it carries gets the
+ * promotion receipt on its trail, a line that changes nothing and tells nobody.
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -37,7 +37,7 @@ type Receipt = Parameters<typeof appendReceipt>[0];
 type Promotion = Parameters<typeof announcePromotion>[0];
 type Fx = Parameters<typeof announcePromotion>[2];
 
-test('promotion moves each carried item to Done once and says so', async () => {
+test('promotion leaves each carried item in its status and marks it on dev, the receipt on its trail, its notices saying nothing of it', async () => {
   const { item } = await createItem({ title: 'Promoted', status: 'In Review' }, 'fable');
   await appendReceipt({
     id: 'hi_1', repo: 'cowork', line: 'team/comp/dev', desk: 'team/comp/fable', session: 'fable', result: 'accepted',
@@ -55,10 +55,10 @@ test('promotion moves each carried item to Done once and says so', async () => {
   await announcePromotion(receipt, tmp, fx, () => undefined);
 
   const back = (await readItem(item.id))!;
-  assert.equal(back.status, 'Done');
+  assert.equal(back.status, 'In Review', 'only the person accepting sets Done');
   assert.equal(back.trail.length, 2, 'create, then one line for the promotion');
-  assert.deepEqual([back.trail[1]!.op, back.trail[1]!.from, back.trail[1]!.to, back.trail[1]!.note, back.trail[1]!.by], ['status', 'In Review', 'Done', 'promotion promo_1', 'lead']);
-  const keep = `${item.id} moved to Done.`;
+  assert.deepEqual([back.trail[1]!.op, back.trail[1]!.note, back.trail[1]!.by], ['edit', 'promotion promo_1; on dev', 'lead']);
+  assert.equal(back.on_dev?.promotion, 'promo_1', 'the promotion signal: on dev');
   assert.equal(notices.length, 2);
-  for (const text of notices) assert.ok(text.includes(keep), text);
+  for (const text of notices) assert.ok(!text.includes(item.id), text);
 });

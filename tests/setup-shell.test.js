@@ -35,7 +35,7 @@ test('Ronin Home\u2019s Models and Workspaces doors each open their own workbenc
   assert.match(home, /setup\.provider_gate/, 'a locked door says where the way in is');
   assert.match(home, /campaign_home\.settings', 'Settings'/);
   assert.match(doors, /seat: WORKBENCH_TYPES\.modelStones,/, 'Models seats its own stones of providers');
-  assert.match(catalog, /profiles\.define\(WORKBENCH_PROFILES\.models, \[WORKBENCH_TYPES\.modelStones, WORKBENCH_TYPES\.modelRefresh, WORKBENCH_TYPES\.modelDefaults, WORKBENCH_TYPES\.modelProvider\]\)/, 'Model refresh then Defaults follow Models; a provider whole is placeable on Models, by a dragged stone or its card');
+  assert.match(catalog, /profiles\.define\(WORKBENCH_PROFILES\.models, \[WORKBENCH_TYPES\.modelStones, WORKBENCH_TYPES\.accountsRecords, WORKBENCH_TYPES\.modelsRecords, WORKBENCH_TYPES\.modelRefresh, WORKBENCH_TYPES\.modelDefaults, WORKBENCH_TYPES\.modelProvider\]\)/, 'Harness, then Accounts and Models (KAN-236), then Refresh and Defaults; a harness whole is placeable, by a dragged stone or its card');
   assert.match(doors, /seats: \{ workspace1: WORKBENCH_TYPES\.workspaceRecords, workspace2: FILES_ON \? WORKBENCH_TYPES\.files : WORKBENCH_TYPES\.folderGithub \}/, 'Workspaces seats its Workspaces in Workspace 1 and Explorer in Workspace 2 where Ronin found Python, GitHub CLI otherwise (KAN-146)');
   assert.match(catalog, /profiles\.define\(WORKBENCH_PROFILES\.workspaces, \[WORKBENCH_TYPES\.workspaceRecords, WORKBENCH_TYPES\.workspaceRecord, WORKBENCH_TYPES\.workspaceNew, WORKBENCH_TYPES\.folderGithub, FILES_TYPE\]\)/, 'Workspaces, a Workspace whole, New Workspace, GitHub CLI and Explorer are placeable on Workspaces');
   assert.match(home, /key: 'teams', route: 'cowork'/, 'the Teams door opens the Teams workbench at #/cowork (owner, 2026-10-20)');
@@ -53,7 +53,7 @@ test('Home: Teams, Epics and Workspaces in a triangle at Home\u2019s stone size;
   const office = home.slice(home.indexOf('function OFFICE()'), home.indexOf('function SIDE()'));
   const side = home.slice(home.indexOf('function SIDE()'), home.indexOf('/** THE ROOT TOGGLE'));
   assert.deepEqual([...office.matchAll(/key: '(\w+)'/g)].map((m) => m[1]), ['teams', 'epics', 'workspaces'], 'Teams at the apex, then Epics bottom left and Workspaces bottom right: Who, What, Where (KAN-194)');
-  assert.match(side, /key: 'models'[^\n]*'Model Providers'/, 'the Models stone reads Model Providers (KAN-194)');
+  assert.match(side, /key: 'models'[^\n]*'Agent Harness'/, 'the Models stone reads Agent Harness (KAN-194; KAN-236, owner 2026-11-04)');
   assert.deepEqual([...side.matchAll(/key: '(\w+)'/g)].map((m) => m[1]), ['models', 'help', 'settings'], 'the smaller stones, top to bottom');
   assert.match(office, /Who does the work[\s\S]*What the work is[\s\S]*Where the work is/);
   assert.match(side, /key: 'settings', route: null[^\n]*gated: false/, 'Settings is a live stone whose route is read at paint');
@@ -74,10 +74,11 @@ test('the Epics workbench: a stone per Epic in Tilespace 1, opened by Home\u2019
   assert.match(main, /workspace\.register\('epics', createEpicsView\(\)\)/);
   assert.match(doors, /id: 'epics', profile: WORKBENCH_PROFILES\.epics,[^\n]*seat: WORKBENCH_TYPES\.epicRecords,/, 'Epics seats its stones in Tilespace 1');
   assert.match(catalog, /profiles\.define\(WORKBENCH_PROFILES\.epics, \[WORKBENCH_TYPES\.epicRecords, WORKBENCH_TYPES\.epicRecord\]\)/);
-  assert.match(catalog, /type: WORKBENCH_TYPES\.epicRecord, header: 'surface', discover: \(\) => \[\]/, 'an Epic whole is placed by a dragged stone, never a selector card');
+  assert.match(catalog, /type: WORKBENCH_TYPES\.epicRecord, header: 'surface', className: 'wk-selector-entity', discover: \(_t, e\) => e\.epics\(\)/, 'an Epic is placed by a dragged stone or its selector card (KAN-206)');
   assert.match(surface, /filter\(\(item\) => item\.level === 1\)/, 'Epics are the level-1 work items');
   assert.match(surface, /createPhalanx\(/, 'the stones are the kit phalanx');
-  assert.match(surface, /renderItemDetail\(host, epic/, 'a pressed stone reads the item as Work Items does');
+  assert.match(surface, /seat = 'workspace2'/, 'a pressed stone opens that Epic in Tilespace 2 (KAN-206)');
+  assert.match(surface, /place\?\.\(WORKBENCH_TYPES\.epicRecord, typeof seat === 'function' \? seat\(\) : seat/);
   assert.match(surface, /hear\('epics',/, 'the Epics are the store\u2019s pushed epics (KAN-190), over the Campaign');
 });
 

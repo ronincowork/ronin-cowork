@@ -7,9 +7,9 @@
  * Repositories and folders are Workspace Folders, by registered name: the repositories are the
  * ones with Git, the folders the rest.
  *
- * Records live at <workspaces>/<campaign>/<name>.json. Beside each record Ronin keeps the
- * Workspace's launch folder, <workspaces>/<campaign>/<name>/: where its Agents start, Ronin's
- * own, never project material. An Agent without a Workspace starts in Ronin house.
+ * Records live at <workspaces>/<campaign>/<name>.json. Every Agent starts in Ronin house, one
+ * folder for all (owner, 2026-11-03): a folder per Workspace made each provider ask "trust this
+ * folder?" for every new Workspace.
  */
 import { mkdir, readFile, readdir, rename, unlink, writeFile } from 'node:fs/promises';
 import path from 'node:path';
@@ -18,6 +18,9 @@ import type { LaunchMode } from './agent-defaults.js';
 
 export interface WorkspaceRepo { name: string; note: string }
 export interface WorkspaceFolder { name: string; note: string }
+/** Where the Workspace keeps its plans (src/plans.ts): a Workspace Folder by name and a subfolder in
+ * it. Absent is the default, Ronin Lab's <campaign>/<workspace>/plans. */
+export interface WorkspacePlans { location: string; path: string }
 export interface Workspace {
   name: string;
   campaign_id: string;
@@ -27,6 +30,7 @@ export interface Workspace {
   repos: WorkspaceRepo[];
   folders: WorkspaceFolder[];
   launch_mode: LaunchMode;
+  plans?: WorkspacePlans;
 }
 
 export const isValidWorkspaceName = (s: string): boolean => /^[a-z0-9][a-z0-9_-]{0,63}$/.test(s);
@@ -34,9 +38,7 @@ export const isValidWorkspaceName = (s: string): boolean => /^[a-z0-9][a-z0-9_-]
 const campaignDir = (campaign: string): string => path.join(storeDir('workspaces'), campaign);
 const recordFile = (campaign: string, name: string): string => path.join(campaignDir(campaign), `${name}.json`);
 
-/** Where a Workspace's Agents start. */
-export const workspaceLaunchFolder = (campaign: string, name: string): string => path.join(campaignDir(campaign), name);
-/** Where every Agent without a Workspace starts: a catch-all, not material. */
+/** Where every Agent starts: one folder, Ronin's own, never project material. */
 export const roninHouse = (): string => storeDir('house');
 
 const text = (v: unknown, max: number): string => String(v ?? '').trim().slice(0, max);
@@ -55,7 +57,15 @@ export function normalizeWorkspace(campaign_id: string, name: string, v: Record<
     repos: rows(v.repos, (r) => (text(r.name, 64) ? { name: text(r.name, 64), note: text(r.note, 300) } : null)),
     folders: rows(v.folders, (r) => (text(r.name, 64) ? { name: text(r.name, 64), note: text(r.note, 300) } : null)),
     launch_mode: v.launch_mode === 'live_dangerously' ? 'live_dangerously' : 'configured',
+    ...plansOf(v.plans),
   };
+}
+
+/** The Plans place, kept through every Save: a page that never shows it must not wipe it. */
+function plansOf(v: unknown): { plans?: WorkspacePlans } {
+  const p = v && typeof v === 'object' ? v as Record<string, unknown> : null;
+  const location = text(p?.location, 64);
+  return p && location ? { plans: { location, path: text(p.path, 300) } } : {};
 }
 
 export async function readWorkspace(campaign: string, name: string): Promise<Workspace | null> {
@@ -72,11 +82,11 @@ export async function listWorkspaces(campaign: string): Promise<Workspace[]> {
   return all.filter((w): w is Workspace => !!w);
 }
 
-/** Write the whole record and make sure its launch folder exists. */
+/** Write the whole record. */
 export async function saveWorkspace(w: Workspace): Promise<Workspace> {
   if (!w.campaign_id || !isValidWorkspaceName(w.name)) throw new Error(`A Workspace name is lowercase letters, digits, _ and -: "${w.name}".`);
   const clean = normalizeWorkspace(w.campaign_id, w.name, w as unknown as Record<string, unknown>);
-  await mkdir(workspaceLaunchFolder(clean.campaign_id, clean.name), { recursive: true });
+  await mkdir(campaignDir(clean.campaign_id), { recursive: true });
   const file = recordFile(clean.campaign_id, clean.name);
   const { name: _n, campaign_id: _c, ...body } = clean;
   await writeFile(`${file}.tmp`, `${JSON.stringify(body, null, 2)}\n`, 'utf8');
@@ -84,7 +94,7 @@ export async function saveWorkspace(w: Workspace): Promise<Workspace> {
   return clean;
 }
 
-/** Remove the record; the launch folder stays as Ronin's history of where Agents ran. */
+/** Remove the record. */
 export async function deleteWorkspace(campaign: string, name: string): Promise<void> {
   try { await unlink(recordFile(campaign, name)); }
   catch (e) { if ((e as NodeJS.ErrnoException).code !== 'ENOENT') throw e; }

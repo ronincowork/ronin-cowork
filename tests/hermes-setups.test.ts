@@ -85,3 +85,57 @@ test('environment credentials appear automatically without exposing values or du
   const mistral = second.connections.find(c => c.credentialEnv === 'MISTRAL_API_KEY')!;
   await assert.rejects(h.deleteHermesEntry('connections', mistral.id), /environment/);
 });
+
+
+test('managed local gateway connections allow only explicit 127.0.0.1 HTTP with a port', async () => {
+  for (const baseUrl of ['http://127.0.0.2:4912/v1', 'http://127.0.0.1.evil.test:4912/v1', 'http://127.0.0.1/v1', 'http://127.0.0.1:4912/v1?key=x', 'http://user@127.0.0.1:4912/v1']) {
+    await assert.rejects(h.saveHermesConnection({ name: 'bad gateway', provider: 'custom', baseUrl, apiKey: 'fixture-house-token' }), /HTTPS/);
+  }
+  const c = await h.saveHermesConnection({ name: 'House test', provider: 'custom', baseUrl: 'http://127.0.0.1:4912/v1', apiKey: 'fixture-house-token' });
+  assert.equal(c.baseUrl, 'http://127.0.0.1:4912/v1');
+  assert.equal(c.provider, 'custom');
+  await h.deleteHermesEntry('connections', c.id);
+});
+
+
+test('connection wire API pins the named Hermes transport; old connections keep their defaults', async () => {
+  const original = (await h.readHermesSettings()).connections.find(c => !c.credentialEnv)!;
+  const setup = (await h.readHermesSettings()).setups.find(s => s.connection === original.id)!;
+  assert.equal(original.wireApi, undefined);
+  const oldHome = path.join(box, 'transport-legacy');
+  await h.prepareHermesHome(setup.id, oldHome);
+  assert.equal(JSON.parse(await readFile(path.join(oldHome, 'config.yaml'), 'utf8')).model.api_mode, undefined);
+  for (const [wireApi, mode] of [['responses', 'codex_responses'], ['chat', 'chat_completions']]) {
+    await h.saveHermesConnection({ ...original, wireApi });
+    const home = path.join(box, 'transport-' + wireApi);
+    await h.prepareHermesHome(setup.id, home);
+    const config = JSON.parse(await readFile(path.join(home, 'config.yaml'), 'utf8'));
+    assert.equal(config.model.provider, 'custom:ronin');
+    assert.equal(config.model.api_mode, mode);
+    assert.equal(config.providers.ronin.api_mode, mode);
+    assert.equal(config.providers.ronin.key_env, 'OPENAI_API_KEY');
+    assert.equal(config.providers.ronin.base_url, original.baseUrl);
+  }
+  await assert.rejects(h.saveHermesConnection({ ...original, wireApi: 'invented' }), /Chat Completions or Responses/);
+});
+
+
+test('custom Responses setups retain explicit effort; other custom transports keep provider defaults', async () => {
+  const c = await h.saveHermesConnection({ name: 'Reasoning gateway', provider: 'custom', baseUrl: 'http://127.0.0.1:4912/v1', apiKey: 'fixture-reasoning-token' });
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => new Response(JSON.stringify({ data: [{ id: 'openai/gpt-6-luna' }] }));
+  try { await h.discoverHermesModels(c.id); } finally { globalThis.fetch = originalFetch; }
+  const input = { name: 'Gateway medium', connection: c.id, model: 'openai/gpt-6-luna', reasoning: 'medium', approvals: 'off' };
+  await assert.rejects(h.saveHermesSetup(input), /provider default/);
+  await h.saveHermesConnection({ ...c, wireApi: 'chat' });
+  await assert.rejects(h.saveHermesSetup(input), /provider default/);
+  const setup = await h.saveHermesSetup({ ...input, reasoning: 'default' });
+  await h.saveHermesConnection({ ...c, wireApi: 'responses' });
+  await h.saveHermesSetup({ ...setup, reasoning: 'medium' });
+  const home = path.join(box, 'custom-responses-medium');
+  await h.prepareHermesHome(setup.id, home);
+  const config = JSON.parse(await readFile(path.join(home, 'config.yaml'), 'utf8'));
+  assert.equal(config.agent.reasoning_effort, 'medium');
+  assert.equal(config.providers.ronin.api_mode, 'codex_responses');
+  await assert.rejects(h.saveHermesSetup({ ...setup, reasoning: 'invented' }), /Unsupported reasoning/);
+});

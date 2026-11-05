@@ -302,11 +302,12 @@ test('a hand-in naming a work item leaves one trail line and the item at In Revi
   assert.equal(back.status, 'In Review');
   assert.equal(back.trail.length, 2, 'create, then exactly one line for the hand-in');
   assert.deepEqual([back.trail[1]!.op, back.trail[1]!.from, back.trail[1]!.to, back.trail[1]!.by], ['status', 'In Progress', 'In Review', 'fable']);
-  assert.equal(back.trail[1]!.note, `hand-in ${outcomes[0]!.receipt.id}`);
+  assert.equal(back.trail[1]!.note, `hand-in ${outcomes[0]!.receipt.id}; handed in by fable`);
+  assert.equal(back.handed_in?.by, 'fable', 'the hand-in records who handed it in');
   assert.equal(moved?.line.op, 'status');
 });
 
-test('a hand-in that moves an item to In Review tells its holder and watcher; one on an item already there tells nobody', async () => {
+test('a hand-in that moves an item to In Review tells its watcher, not its holder (the desk\'s message is the hand-in notice); one on an item already there tells nobody', async () => {
   const { seedTegami } = await import('../src/tegami.js');
   const { listQueuedMessages, dismissMessages } = await import('../src/message-queue.js');
   const { watchItem } = await import('../src/work-items.js');
@@ -318,7 +319,7 @@ test('a hand-in that moves an item to In Review tells its holder and watcher; on
   await dismissMessages((await listQueuedMessages()).map((message) => message.id));
   await commitFile(deskWorktree('cowork', 'team/comp/fable'), 'quiet.txt', 'quiet\n');
   await handInAssignment({ desks: [{ repo: 'cowork', branch: 'team/comp/fable' }], projectId: item.id, session: 'fable' });
-  assert.deepEqual(await heard(), ['keeper', 'onlooker'], 'the move to In Review is news');
+  assert.deepEqual(await heard(), ['onlooker'], 'the move to In Review is a watcher\'s news');
   await dismissMessages((await listQueuedMessages()).map((message) => message.id));
   await handInAssignment({ desks: [{ repo: 'cowork', branch: 'team/comp/fable' }], projectId: item.id, session: 'fable' });
   assert.deepEqual(await heard(), [], 'already In Review: the line changes nothing');
