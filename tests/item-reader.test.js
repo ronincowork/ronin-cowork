@@ -31,3 +31,22 @@ test('every size in the reader is a token, and the tile overlay reads in the UI 
   assert.match(style, /\.tile-body > \.work-overlay \{[^}]*font-family: var\(--font-ui\)/);
   assert.match(await read('public/js/tilehead.js'), /await overTile\(tile, '', \(box\) =>/, 'the reader\'s head carries the key: no second title');
 });
+
+// What the user reads first (ITEM_HANDOVER): the objective and the Handed in note, before
+// Status; the other comments folded. Waiting on you reads in the same order.
+test('the reader and Waiting on you show the objective and the Handed in note first, other comments folded', async () => {
+  const surface = await read('public/js/work-items-surface.js');
+  const body = surface.slice(surface.indexOf('export function renderItemDetail'), surface.indexOf('/** A phalanx of item stones'));
+  const at = (what) => { const i = body.indexOf(what); assert.ok(i >= 0, what); return i; };
+  assert.ok(at("step(t('work_items.objective'") < at("step(t('work_items.handed_in'"), 'the objective, then the note');
+  assert.ok(at("step(t('work_items.handed_in'") < at("step(t('work_items.status'"), 'both before Status');
+  assert.match(body, /\.filter\(\(comment\) => comment !== handed\)/, 'the note is not repeated among the comments');
+  assert.match(body, /\{ fold: true \}\);/, 'the other comments fold');
+  assert.match(surface, /export const HANDED_IN = 'Handed in: ';/);
+  assert.match(await read('src/work-items.ts'), /export const HANDED_IN = 'Handed in: ';/, 'one heading, server and client');
+  const waiting = await read('public/js/team-waiting.js');
+  const card = waiting.slice(waiting.indexOf('function card(item, group)'));
+  assert.ok(card.indexOf('node.append(...readFirst(item))') < card.indexOf("const acts = el('div', 'epic-statuses')"), 'read first, then the actions');
+  const first = waiting.slice(waiting.indexOf('export function readFirst'), waiting.indexOf('/** Waiting on you: With the lead'));
+  assert.ok(first.indexOf('item.objective') < first.indexOf('item.handed_in') && first.indexOf('item.handed_in') < first.indexOf("el('details'"));
+});

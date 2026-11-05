@@ -169,6 +169,28 @@ export function handInStage(item: Pick<WorkItem, 'hand_ins' | 'on_dev'>): 'lead'
   return item.on_dev && item.on_dev.at >= last.at ? 'ready' : 'lead';
 }
 
+/* THE NOTES A USER READS (docs/using-ronin/project-management.md, How an item lives): two
+ * comments headed by their words, so Jira shows them as Ronin does. "Handed in: <note>" is what
+ * the user can try, written at a hand-in (--note, at most 280 characters; no commit ids, no
+ * receipts: those stay on the trail). "Handover from <agent>: <note>" is where an item stands
+ * and what is next, written when an ending Agent hands it over (handoverItem). */
+export const HANDED_IN = 'Handed in: ';
+export const HANDOVER_FROM = 'Handover from ';
+export const NOTE_MAX = 280;
+export const NOTE_TOO_LONG = 'Keep it for the user: what they can try. The detail is in the diff.';
+
+/** What is wrong with a hand-in note, or null: only its length, at most NOTE_MAX characters. */
+export function handInNoteProblem(note: string | undefined): string | null {
+  const text = String(note ?? '').trim();
+  return text.length > NOTE_MAX ? `${NOTE_TOO_LONG} (${text.length} characters; at most ${NOTE_MAX}.)` : null;
+}
+
+/** The item's last Handed in note, without its heading; '' with none. */
+export function handedInNote(item: Pick<WorkItem, 'comments'>): string {
+  const comment = [...(item.comments ?? [])].reverse().find((one) => one.text.startsWith(HANDED_IN));
+  return comment ? comment.text.slice(HANDED_IN.length) : '';
+}
+
 /** What every write answers: the item as it now is, the line it appended, and who its notices
  * told (section 4). What the act did is read from the line (didLine). */
 export interface Acknowledged { item: WorkItem; line: TrailLine; notified?: string[] }
@@ -305,14 +327,16 @@ export async function appendTrail(id: string, by: string, change: (item: WorkIte
  *   1. a hand-in, to the lead of the Team now holding it: a desk's own message (desks/lead.ts)
  *      is the notice, so only a checkout's is sent here (handInUnlocked);
  *   2. a call for help, a flag raised, to the lead of the Team above the item or the holder
- *      of the epic above it (helpOf);
+ *      of the epic above it (helpOf); a handover's --flag also tells the lead of the Team it
+ *      goes to (handoverItem), and an Agent ended without a handover flags its unfinished items,
+ *      its receiving Team's lead told once, every item listed (releaseHolder);
  *   3. a status change, to a watcher of that item, not of an item above it (tellWatchers),
  *      never to anyone the hand-in already told;
  *   4. someone else's change on an Agent's item: a comment, a Send back (sendBack), a Jira change
  *      that beat theirs (tellHolders), to the Agent working it;
  *   5. a Jira item with nobody, to the Campaign's Coordinator (traffic_control) to place it
  *      (announceUnheld); a Ronin item never goes there.
- * Nothing else: not a new item, a start, a holder change, an Agent ending, an attachment, a
+ * Nothing else: not a new item, a start, a holder change, an Agent's own end, an attachment, a
  * rename, a delete or a flag cleared. Nobody hears their own change. A Team is told through its
  * lead, and only as holder of the epic above or as a watcher: its members' items do not make it
  * one. ONE NOTICE PER PERSON PER COMMAND: inside oneNoticePerCommand (every route runs in one)
@@ -521,7 +545,12 @@ export function editItem(id: string, edit: ItemEdit, by: string, note?: string):
     if (only.join() === 'status' && edit.status!.trim() === REVIEW && current.status !== REVIEW
       && (await holdersOf(current.id)).some((holder) => holder.kind === 'agent' && holder.name === by)
       && (await listSessions()).some((session) => session.name === by)) {
-      return handInUnlocked(current.id, by, { desk: false, note });
+      // Its note is the Handed in note; under project management a hand-in carries one.
+      const forUser = String(note ?? '').trim();
+      if (!forUser && await import('./agent-composition.js').then((m) => m.projectManagementOn(by)).catch(() => false)) {
+        throw new WorkItemRefused(`a hand-in carries a note for the user: what they can try, in their words.\n  NEXT: item transition ${current.id} "${REVIEW}" --note "<what they can try>"`);
+      }
+      return handInUnlocked(current.id, by, { desk: false, forUser });
     }
     if (edit.priority !== undefined) oneOf('priority', edit.priority.trim(), names.priorities);
     const reparent = edit.parent !== undefined && edit.parent !== current.parent;
@@ -600,7 +629,11 @@ async function ancestry(item: WorkItem): Promise<string[]> {
  * above it; else the hander's one Team; else the Team holding the nearest item above; else
  * none, and the item stays where it is. */
 async function handInTeam(item: WorkItem, session: string): Promise<string | null> {
-  const mine = (await listSessions()).find((one) => one.name === session)?.tags ?? [];
+  return teamFor(item, (await listSessions()).find((one) => one.name === session)?.tags ?? []);
+}
+
+/** handInTeam's rule over a given list of the Agent's Teams (an ending reads them from its letter). */
+async function teamFor(item: WorkItem, mine: string[]): Promise<string | null> {
   const lists = (await heldLists()).filter((list) => list.holder.kind === 'team');
   const above = await ancestry(item);
   const holding = (id: string) => lists.filter((list) => list.holds.includes(id)).map((list) => list.holder.name);
@@ -616,10 +649,13 @@ async function handInTeam(item: WorkItem, session: string): Promise<string | nul
  * trail line. A desk's hand-in is told by the desk's own message (desks/lead.ts); a checkout's
  * (a move to In Review by its holder) tells the Team's lead from here. An item already In
  * Review and on its Team gets a line that changes nothing and tells nobody. */
-async function handInUnlocked(given: string, session: string, opts: { desk: boolean; note?: string; receipts?: string[] }): Promise<Acknowledged> {
+async function handInUnlocked(given: string, session: string, opts: HandInOptions): Promise<Acknowledged> {
   const item = await load(given);
   const id = item.id;
   oneOf('status', REVIEW, spaceNames(item.campaign_id).statuses);
+  const forUser = String(opts.forUser ?? '').trim();
+  const long = handInNoteProblem(forUser);
+  if (long) throw new WorkItemRefused(long);
   const team = await handInTeam(item, session);
   const held = await holdersOf(id);
   const moving = Boolean(team) && !held.some((holder) => holder.kind === 'team' && holder.name === team);
@@ -629,6 +665,8 @@ async function handInUnlocked(given: string, session: string, opts: { desk: bool
     const receipts: Array<string | null> = opts.desk ? opts.receipts?.length ? opts.receipts : [''] : [null];
     it.hand_ins = [...(it.hand_ins ?? []), ...receipts.map((receipt) => ({ receipt, by: session, at }))];
     it.handed_in = { by: session, at };
+    // The Handed in note: the one comment a user reads on Waiting on you and in Jira.
+    if (forUser) it.comments.push({ by: session, at, text: `${HANDED_IN}${forUser}` });
   };
   // Already In Review and on its Team: no status moves, the hand-in is still recorded.
   if (item.status === REVIEW && !moving) return appendTrail(id, session, (it) => { recorded(it); return { op: 'edit', note: [opts.note, 'handed in again'].filter(Boolean).join('; ') }; }, () => false);
@@ -653,7 +691,10 @@ async function handInUnlocked(given: string, session: string, opts: { desk: bool
   return done;
 }
 
-export const handInItem = (id: string, session: string, opts: { desk: boolean; note?: string; receipts?: string[] }) => withIssuer(() => handInUnlocked(id, session, opts));
+/** A hand-in: from a desk (its receipts) or a checkout; `note` is the trail's, `forUser` the
+ * Handed in note (at most NOTE_MAX characters). */
+export interface HandInOptions { desk: boolean; note?: string; receipts?: string[]; forUser?: string }
+export const handInItem = (id: string, session: string, opts: HandInOptions) => withIssuer(() => handInUnlocked(id, session, opts));
 
 /** The promotion marks an item it carried on dev (6a): `on_dev`, one trail line naming the
  * promotion, no status change and nobody told. A paired item too: it is not a status. */
@@ -693,11 +734,93 @@ export function sendBack(given: string, words: string | undefined, by: string): 
   });
 }
 
-/** What session_end stops for (section 3, step 7): the items an Agent holds In Progress or To Do. */
-export async function unfinishedHolds(session: string): Promise<WorkItem[]> {
+/** What session_end stops for (docs/using-ronin/project-management.md, How an item lives): the
+ * items an Agent holds To Do, In Progress or In Review, each with the Team a handover gives it
+ * to (null when no Team is found). session_end first settles To Do (settleToDo), so what it
+ * names is what needs a handover. */
+export async function unfinishedHolds(session: string): Promise<Array<WorkItem & { team: string | null }>> {
   const letter = await readLetterHolds(await sessionKey(session)).catch(() => null);
-  const items = await Promise.all((letter?.holds ?? []).map((id) => readItem(id)));
-  return items.filter((item): item is WorkItem => Boolean(item) && [spaceNames(item!.campaign_id).statuses[0], WORKING].includes(item!.status));
+  const items = (await Promise.all((letter?.holds ?? []).map((id) => readItem(id))))
+    .filter((item): item is WorkItem => Boolean(item) && [spaceNames(item!.campaign_id).statuses[0], WORKING, REVIEW].includes(item!.status));
+  const teams = await endingTeams(session, letter?.teams ?? []);
+  return Promise.all(items.map(async (item) => ({ ...item, team: await teamFor(item, teams) })));
+}
+
+/** An ending Agent's Teams: its letter's, and its live session's tags while it has one. */
+async function endingTeams(session: string, lettered: string[]): Promise<string[]> {
+  const tags = (await listSessions().catch(() => [])).find((one) => one.name === session)?.tags ?? [];
+  return [...new Set([...lettered, ...tags])];
+}
+
+/** The leads of a Team: the live sessions that lead it. */
+const leadsOf = async (team: string): Promise<string[]> => (await listSessions()).filter((one) => one.leads.includes(team)).map((one) => one.name);
+
+/** Move one id from an Agent's list to a Team's, under the issuer. */
+async function toTeam(id: string, session: string, team: string): Promise<void> {
+  for (const list of await heldLists()) {
+    if (list.holder.kind === 'agent' && list.holder.name === session && list.holds.includes(id)) await list.set(list.holds.filter((one) => one !== id));
+  }
+  const target = await listFor({ kind: 'team', name: team });
+  if (!target.holds.includes(id)) await target.set([...target.holds, id]);
+}
+
+/** TO DO SETTLES ITSELF at session_end: each To Do item the Agent holds goes back to its Team,
+ * for the lead to give out again, one handoff line each, nobody told. One with no Team found
+ * stays, and session_end names it. Answers what it moved. */
+export function settleToDo(session: string): Promise<Acknowledged[]> {
+  return withIssuer(async () => {
+    const letter = await readLetterHolds(await sessionKey(session)).catch(() => null);
+    const teams = await endingTeams(session, letter?.teams ?? []);
+    const moved: Acknowledged[] = [];
+    for (const id of letter?.holds ?? []) {
+      const item = await readItem(id);
+      if (!item || item.status !== spaceNames(item.campaign_id).statuses[0]) continue;
+      const team = await teamFor(item, teams);
+      if (!team) continue;
+      await toTeam(item.id, session, team);
+      moved.push(await appendTrail(item.id, session, () => ({ op: 'handoff', from: `agent:${session}`, to: `team:${team}`, note: `${item.status}, back to the Team at ${session}'s end` }), () => false));
+    }
+    return moved;
+  });
+}
+
+/** THE HANDOVER (docs/using-ronin/project-management.md, How an item lives): an ending Agent
+ * hands an item on with where it stands and what is next. The note is a comment headed
+ * "Handover from <agent>", the caller comes off and the receiver goes on, the status stays,
+ * in one handoff line; `toDo` puts In Progress back to To Do in the same line. `flag` is the
+ * Agent's question when it can't decide: the item is flagged with it (a second line, the flag's),
+ * and the lead of the receiving Team, with whoever helps above the item, is told (notice 2). */
+export interface Handover { note?: string; toDo?: boolean; flag?: string }
+export function handoverItem(given: string, to: Holder, by: string, opts: Handover): Promise<Acknowledged> {
+  return withIssuer(async () => {
+    const item = await load(given);
+    const id = item.id;
+    const note = String(opts.note ?? '').trim();
+    const question = String(opts.flag ?? '').trim();
+    if (!note && !question) throw new WorkItemBadInput(`a handover says where ${id} stands and what is next: item handover ${id} ${holderLabel(to)} "<note>", or --flag "<the question>".`);
+    const giver: Holder = { kind: 'agent', name: by };
+    const source = await listFor(giver).catch(() => null);
+    if (source?.holds.includes(id)) await source.set(source.holds.filter((held) => held !== id));
+    const target = await listFor(to);
+    if (!target.holds.includes(id)) await target.set([...target.holds, id]);
+    const first = spaceNames(item.campaign_id).statuses[0]!;
+    const before = item.status;
+    let done = await appendTrail(id, by, (it) => {
+      if (note) it.comments.push({ by, at: new Date().toISOString(), text: `${HANDOVER_FROM}${by}: ${note}` });
+      if (opts.toDo) it.status = first;
+      const moved = opts.toDo && before !== first ? `; ${before} → ${first}` : '';
+      return { op: 'handoff', from: holderLabel(giver), to: holderLabel(to), note: `handover${note ? `: ${note}` : ''}${moved}` };
+    }, () => false);
+    if (!question) return done;
+    done = await appendTrail(id, by, (it) => {
+      it.flagged = true;
+      it.comments.push({ by, at: new Date().toISOString(), text: question });
+      return { op: 'flag', to: 'true', note: question };
+    }, () => false);
+    const told = [...new Set([...(await helpOf(done.item)), ...(to.kind === 'team' ? await leadsOf(to.name) : [to.name])])].filter((name) => name !== by);
+    for (const name of told) await notice(name, `${id} '${item.title}' needs help: ${question} (flagged by ${by} at its handover to ${holderLabel(to)}).`);
+    return told.length ? { ...done, notified: told } : done;
+  });
 }
 
 /** The bridge, in-process, sets a paired item's Jira fields; no route writes them. With a note
@@ -1048,19 +1171,45 @@ export function didLine({ item, line }: Acknowledged): string {
   return `${item.id} ${what}`;
 }
 
-/** An Agent going away takes its lists with it (section 3, step 7): it watches nothing, and
- * each item it held goes to nobody with one holder-ended line, unfinished work sitting on its
- * epic for the lead, and nobody is told: Epics shows it. Restore does not reclaim. */
+/** AN ENDING WITH NO AGENT TO ASK (Shut down Agent, archive, a crash; docs/using-ronin/
+ * project-management.md, How an item lives): the Agent watches nothing, and each item it held
+ * goes by its status, never to nobody while a Team is found. Done goes to nobody; To Do goes to
+ * the Team for its lead to give out again; anything else (In Progress, In Review) goes to the
+ * Team flagged "Ended without handover: <agent>, <status>", and shows under Stuck. The flags are
+ * one call for help (notice 2): each lead of a receiving Team is told once, every item listed
+ * (with no Team found, whoever helps above the item). Restore does not reclaim. */
 export function releaseHolder(session: string, key: string, how: string): Promise<Acknowledged[]> {
   return withIssuer(async () => {
     const letter = await readLetterHolds(key);
     if (letter?.watches.length) await writeLetterWatches(key, []);
     if (!letter?.holds.length) return [];
+    const teams = letter.teams;
+    const placed = new Map<string, string>();
+    for (const id of letter.holds) {
+      const item = await readItem(id);
+      if (item && item.status !== 'Done') { const team = await teamFor(item, teams); if (team) placed.set(id, team); }
+    }
     await writeLetterHolds(key, []);
     const released: Acknowledged[] = [];
+    const tell = new Map<string, string[]>(); // who -> the lines naming its items
     for (const id of letter.holds) {
-      if (!(await readItem(id))) continue;
-      released.push(await appendTrail(id, 'ronin', () => ({ op: 'holder-ended', from: `agent:${session}`, to: 'none', note: how }), () => false));
+      const item = await readItem(id);
+      if (!item) continue;
+      const team = placed.get(id) ?? null;
+      if (team) { const list = await listFor({ kind: 'team', name: team }); if (!list.holds.includes(id)) await list.set([...list.holds, id]); }
+      const to = team ? `team:${team}` : 'none';
+      released.push(await appendTrail(id, 'ronin', () => ({ op: 'holder-ended', from: `agent:${session}`, to, note: how }), () => false));
+      if (item.status === 'Done' || item.status === spaceNames(item.campaign_id).statuses[0]) continue;
+      const reason = `Ended without handover: ${session}, ${item.status}`;
+      released.push(await appendTrail(id, 'ronin', (it) => {
+        it.flagged = true;
+        it.comments.push({ by: 'ronin', at: new Date().toISOString(), text: reason });
+        return { op: 'flag', to: 'true', note: reason };
+      }, () => false));
+      for (const name of team ? await leadsOf(team) : await helpOf(item)) tell.set(name, [...(tell.get(name) ?? []), `${id} '${item.title}' (${item.status}) on ${to}`]);
+    }
+    for (const [name, lines] of tell) {
+      await notice(name, `${session} ended without a handover (${how}). Flagged, yours to decide (give it out, finish its review, delete it, or flag it to your user): ${lines.join('; ')}.`);
     }
     return released;
   });

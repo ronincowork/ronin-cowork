@@ -42,28 +42,45 @@ When you bring work to a lead, it decides first which of three it is:
 
 | Step | Who | What happens |
 |---|---|---|
-| Made | the lead as it gives out work, or the Agent as it takes it | under the epic; its objective is what done looks like |
+| Made | the lead as it gives out work, or the Agent as it takes it | under the epic; its objective is what done looks like to you, in your words, one or two sentences |
 | Started | the Agent | In Progress |
 | Stuck | the Agent | flagged "Waiting on <who>: <what>"; it shows under Stuck |
-| Handed in | the Agent | In Review, held by the Team; it shows under With the lead |
+| Handed in | the Agent | In Review, held by the Team, with one short **Handed in** comment for you: what you can try. It shows under With the lead |
 | On dev | the lead's promotion | still In Review; it moves to Ready to accept |
 | Accepted or sent back | you | Accept makes it Done. Send back returns it, In Progress, to the Agent that handed it in, with your comment |
-| Put back | the Agent | work it won't finish goes back on the epic, held by nobody, for the lead |
+| Handed over | the Agent, as it ends | to the Team (or a named Agent) with a **Handover** comment: where it stands, what is next. Its status stays |
 | Done | you | held by nobody, off every list. Only the person accepting sets Done |
 
-An Agent can't `session_end` while it holds unfinished items; if it ends any other way, Ronin
-puts them back on their epic. An item nobody wants any more is deleted, not left in To Do.
-An epic is Done when what done looks like is met.
+**An Agent's end hands over, never drops.** By status:
+
+| The item is | At the Agent's end | Decided by |
+|---|---|---|
+| Done | nothing: it is off every list | — |
+| To Do | back to the Team, for its lead to give out again | automatic |
+| In Progress | a handover: where it stands and what comes next, to the Team or a named Agent | the Agent; the lead if the Agent asks |
+| In Review | a handover: what is left for you (what to try, what is not done) | the Agent; then the lead and you, as an In Review item always is |
+
+`session_end` refuses while the Agent holds anything In Progress or In Review, naming each, and
+its NEXT is the handover: `item handover <ids> team:<team> "<where it stands; what is next>"`.
+An Agent that can't decide adds `--flag "<the question>"`, and its lead decides. Shut down Agent,
+archive and a crash can't ask the Agent: each unfinished item goes to the Team flagged "Ended
+without handover: <agent>, <status>", it shows under Stuck, and the lead is told once. Nothing
+goes to nobody. An item nobody wants any more is deleted, not left in To Do. An epic is Done
+when what done looks like is met.
+
+On Waiting on you and in an item's view on the tile, the objective and the Handed in note come
+first; the other comments (the Agent and lead deciding things, the item's record) fold under them.
 
 ## Three signals
 
 | Signal | Made by | Means | Who is told |
 |---|---|---|---|
-| **Hand-in** | the Agent: `worktree-desk hand-in <repo> --item <id>` | my work is done; review it | the lead |
+| **Hand-in** | the Agent: `worktree-desk hand-in <repo> --item <id> --note "<what you can try>"` | my work is done; review it | the lead |
 | **Promotion** | the lead: `bin/ronin-promote <team>` | it is on dev; you can try it | nobody: it shows under Ready to accept |
 | **Flag** | anyone: `item flag` | I am stuck on someone | the lead or epic holder above it |
 
-A hand-in must name its item. A promotion never changes a status. You accept only what is on
+A hand-in must name its item and carry its note: at most 280 characters, for you, with no commit
+ids or receipts (those stay on the item's trail; the diff is the detail). A promotion never changes a status. You accept only what is on
 dev (or what was handed in from a checkout, with no code to promote).
 
 ## Who is told what
@@ -73,12 +90,12 @@ Very few notices, and never the same news twice:
 | You are told of | If you are |
 |---|---|
 | a hand-in | the lead of the Team holding the work (one message, from the hand-in itself) |
-| a call for help (a flag) | the lead or epic holder above the item |
+| a call for help (a flag), or an Agent ended without a handover | the lead or epic holder above the item; for an ending, the lead of the Team its items went to, once |
 | a status change | watching that item |
 | someone else's change on your item | the Agent doing it |
 | a Jira item with nobody on it | traffic_control, which places it |
 
-Nothing else sends a notice. Starts, new items, holder changes and Agents ending show where
+Nothing else sends a notice. Starts, new items, holder changes and handovers show where
 the work shows (below). Agents tell their lead only a decision or a blocker.
 
 ## Where the work shows

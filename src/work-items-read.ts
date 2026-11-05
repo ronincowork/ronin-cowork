@@ -15,7 +15,7 @@ import { readLetterHolds } from './tegami.js';
 import { sessionKey } from './session-dir.js';
 import { readTeamRoster, type TeamRoster } from './team-rosters.js';
 import { listSessions } from './tmux.js';
-import { WorkItemMissing, handInStage, heldIds, holderLabel, listItems, readItem, type WorkItem } from './work-items.js';
+import { HANDED_IN, WorkItemMissing, handInStage, handedInNote, heldIds, holderLabel, listItems, readItem, type Comment, type WorkItem } from './work-items.js';
 
 export interface AgentReading {
   holder: string;
@@ -168,9 +168,11 @@ async function teamBoards(team: string, sessions: Array<{ name: string; tags: st
 /** A line on the Team workbench's Waiting on you (owner, 2026-11-04; KAN-232): an item, how long
  * it has waited (`since`: With the lead, from its last hand-in; Ready to accept, from when it
  * went on dev, or its checkout hand-in; Stuck, from its last flag raised), and for a flagged one
- * the flag's reason. */
+ * the flag's reason. What the user reads comes first (owner, 2026-11-05; ITEM_HANDOVER): the
+ * objective and the Handed in note (`handed_in`); the other comments follow, folded. */
 export interface WaitingItem {
   id: string; title: string; status: string; holder: string; jira: string; since: string; reason: string;
+  objective: string; handed_in: string; comments: Comment[];
 }
 
 /** What the teams push carries for the Team workbench's Waiting on you and Epics cards: the items
@@ -184,9 +186,14 @@ export function teamWork(items: HeldItem[], every: WorkItem[]): TeamWork {
   const byId = new Map(every.map((item) => [item.id, item]));
   const held = [...new Map(items.map((item) => [item.id, item])).values()];
   const last = (item: WorkItem, op: string, to: string) => [...item.trail].reverse().find((line) => line.op === op && line.to === to);
-  const line = (item: HeldItem, since: string, reason = ''): WaitingItem => ({
-    id: item.id, title: item.title, status: item.status, holder: item.holder, jira: item.external.jira?.key ?? '', since, reason,
-  });
+  const line = (item: HeldItem, since: string, reason = ''): WaitingItem => {
+    const note = handedInNote(item);
+    const shown = note ? [...item.comments].reverse().find((one) => one.text === `${HANDED_IN}${note}`) : undefined;
+    return {
+      id: item.id, title: item.title, status: item.status, holder: item.holder, jira: item.external.jira?.key ?? '', since, reason,
+      objective: item.objective, handed_in: note, comments: (item.comments ?? []).filter((one) => one !== shown),
+    };
+  };
   const oldest = (a: WaitingItem, b: WaitingItem) => a.since.localeCompare(b.since);
   const handedIn = held.filter((item) => item.status === 'In Review');
   const handed = (item: WorkItem) => item.hand_ins?.at(-1)?.at ?? last(item, 'status', 'In Review')?.at ?? item.created.at;

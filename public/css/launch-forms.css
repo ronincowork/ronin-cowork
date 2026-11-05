@@ -129,6 +129,12 @@
   .team-waiting-compose { gap: var(--space-row); }
   .team-waiting-words { min-width: 0; resize: vertical; border: 0; border-radius: var(--radius-hair); background: var(--inset); color: var(--fg); padding: var(--space-row) var(--space-control); font: inherit; }
   .team-waiting-act.is-send { align-self: flex-start; font-weight: var(--weight-strong); }
+  /* What the user reads first (ITEM_HANDOVER): the objective, the Handed in note under its own
+     word, then the other comments folded. */
+  .team-waiting-note b { color: var(--fg-strong); font-weight: var(--weight-strong); }
+  .team-waiting-comments summary, .wi-comments summary { color: var(--muted); font-size: var(--text-small); cursor: pointer; }
+  .team-waiting-comments[open] { display: flex; flex-direction: column; gap: var(--space-row); }
+  .wi-comments[open] > .wi-list { margin-top: var(--space-paragraph); }
   /* AN ITEM'S READING (work-items-surface.js renderItemDetail; owner, 2026-11-05): the launch
      forms' furniture — a head, then label-left .fs-step rows — in the UI face, at the form tokens
      only: the title at --text-heading, step names at --form-head, values at --form-input, ids,

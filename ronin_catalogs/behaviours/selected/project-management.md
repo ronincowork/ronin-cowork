@@ -24,6 +24,9 @@ outside Ronin looks different from the item, tell your lead and stop.
 A Subtask goes only under a level-0 item, and a level-0 item only under an epic or nothing.
 Ronin refuses any other shape and says why. Every id an item has had still finds it.
 
+Write the objective as what done looks like to the person accepting it, in their words, one or
+two sentences. The technical detail belongs in the design doc or the commit.
+
 ### Status
 | Status | Moved by |
 |---|---|
@@ -38,7 +41,8 @@ back, a change from Jira. Answer on the item. Your own changes tell nobody, and 
 telling: the board shows them.
 
 ### Everyone
-- Answer a person on the item, with a comment.
+- Answer a person on the item, with a comment. A hand-in carries one for the user: --note
+  "<what they can try>", short; the diff is the detail.
 - Stuck: item flag <id> "Waiting on <who>: <what>"; item unflag when moving again. The flag
   is how your lead hears.
 - Several items: one command takes several ids.

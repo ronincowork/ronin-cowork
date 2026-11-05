@@ -102,10 +102,11 @@ item create --title "…" [--kind Task] [--parent w3] [--objective "…"] [--pri
 item read w12                       # fields, children, comments, attachments, links, history
 item search [--campaign home_machine] [--team surface] [--holder builder | none] [--parent w3 | --no-parent] [--status "In Progress"] [--kind Bug]
 item edit w12 --objective "…" --priority High
-item transition w12 "In Review"
+item transition w12 "In Review" --note "…"   # a hand-in: --note is the Handed in comment for the user, at most 280 characters
 item flag w12 "waiting on the API"  # item unflag w12 when clear
 item assign w12 builder             # adds builder; or team:surface
 item handoff w12 builder            # the giver comes off; or team:surface, or none; --from team:surface names the giver
+item handover w12 team:surface "…"  # an ending hands over: a Handover comment, the holder moved, the status kept; --to-do, --flag "…"
 item watch w3                       # track it and everything under it; or name builder, team:surface; item unwatch w3 stops
 item comment w12 "…"                # --edit <n> changes one
 item attach w12 docs/plan.md        # or a link; --remove <path> takes it off
@@ -189,11 +190,14 @@ item assign w12 team:surface    the Team holds it
 item handoff w12 builder        the giver comes off and builder goes on
 item handoff w12 none           the giver lets go
 item handoff w12 builder --from team:surface   builder takes the Team's item off the Team
+item handover w12 team:surface "where it stands; what is next"   an ending Agent hands it over
 ```
 
-Assigning adds a holder and removes nobody. When an Agent ends, what it held goes to nobody,
-sitting on its epic for the lead, and nobody is told; other holders stay. `item search` still
-finds it.
+Assigning adds a holder and removes nobody. When an Agent ends, what it held goes by its
+status (project-management.md, How an item lives): To Do back to its Team, In Progress and In
+Review handed over with a note, Done off every list. An ending with no Agent to ask (Shut down
+Agent, archive, a crash) gives the unfinished ones to the Team flagged, and its lead is told
+once. Other holders stay. `item search` still finds it.
 
 A lead uses assign to give out work: an item for each member, or the Team for work not yet
 given to anyone. Before handing over an item, the lead makes sure it says what is wanted:

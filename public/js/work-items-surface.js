@@ -74,11 +74,17 @@ export const statusChoices = (item) => [...new Set([...ITEM_STATUSES, item?.stat
 
 const when = (at) => String(at || '').slice(0, 16).replace('T', ' ');
 
+/** The comment headed "Handed in: " (src/work-items.ts HANDED_IN): what the user can try. */
+export const HANDED_IN = 'Handed in: ';
+/** The item's last Handed in comment, or null. */
+export const handedInComment = (item) => [...(item?.comments || [])].reverse().find((comment) => String(comment.text || '').startsWith(HANDED_IN)) || null;
+
 /** One item's reading, in the launch forms' format (owner, 2026-11-05): a head with the kind's
- * symbol, the title and the key, then label-left steps — Status (an ERABI question that moves
- * the item: the work-item routes' transition), Objective, Details, Comments, Attachments (each
- * opens), Links and History (`history: false` leaves it out: the Epics workbench, KAN-206).
- * Every size is a form token; nothing takes the terminal's face. */
+ * symbol, the title and the key, then label-left steps — what the user reads first, the
+ * Objective and the Handed in note (ITEM_HANDOVER), then Status (an ERABI question that moves
+ * the item: the work-item routes' transition), Details, Comments (the others, folded),
+ * Attachments (each opens), Links and History (`history: false` leaves it out: the Epics
+ * workbench, KAN-206). Every size is a form token; nothing takes the terminal's face. */
 export function renderItemDetail(host, item, { holder = '', openAttachment = null, history = true, children = [], openChild = null } = {}) {
   const form = el('div', 'ntf-form wi-form');
   const head = el('header', 'wi-head');
@@ -95,6 +101,14 @@ export function renderItemDetail(host, item, { holder = '', openAttachment = nul
     form.append(one.el);
     return one;
   };
+
+  // What the user reads first: what done looks like, and what to try.
+  if (item.objective) step(t('work_items.objective', 'Objective'), el('p', 'wi-objective', item.objective));
+  const handed = handedInComment(item);
+  if (handed) {
+    step(t('work_items.handed_in', 'Handed in'), el('p', 'wi-objective wi-handed-in', handed.text.slice(HANDED_IN.length)),
+      el('small', 'wi-when', `${handed.by || ''} · ${when(handed.at)}`));
+  }
 
   // Status: any status to any status, as Jira's transition; the push that follows redraws the
   // rest of the page, and the line under the question says what happened until then.
@@ -116,7 +130,6 @@ export function renderItemDetail(host, item, { holder = '', openAttachment = nul
   });
   step(t('work_items.status', 'Status'), question.el, answer);
 
-  if (item.objective) step(t('work_items.objective', 'Objective'), el('p', 'wi-objective', item.objective));
   const facts = el('dl', 'wi-facts');
   for (const [label, value] of [
     [t('work_items.priority', 'Priority'), item.priority || '—'],
@@ -144,17 +157,21 @@ export function renderItemDetail(host, item, { holder = '', openAttachment = nul
     step(t('work_items.subtasks', 'Subtasks'), list);
   }
 
-  const section = (label, rows) => {
+  const section = (label, rows, { fold = false } = {}) => {
     if (!rows.length) return;
     const list = el('ul', 'wi-list');
     list.append(...rows);
-    step(label, list);
+    if (!fold) return void step(label, list);
+    // Folded: the decisions between Agent and lead are the item's record, one press away.
+    const folded = el('details', 'wi-comments');
+    folded.append(el('summary', '', `${rows.length} ${rows.length === 1 ? t('work_items.comment_one', 'comment') : t('work_items.comment_many', 'comments')}`), list);
+    step(label, folded);
   };
-  section(t('work_items.comments', 'Comments'), (item.comments || []).map((comment) => {
+  section(t('work_items.comments', 'Comments'), (item.comments || []).filter((comment) => comment !== handed).map((comment) => {
     const row = el('li', 'wi-comment');
     row.append(el('small', 'wi-when', `${comment.by || ''} · ${when(comment.at)}`), el('p', 'wi-text', comment.text || ''));
     return row;
-  }));
+  }), { fold: true });
   section(t('work_items.attachments', 'Attachments'), (item.attachments || []).map((path) => {
     const row = el('li');
     // The epic's plan, by name: opened through the plan read, or gone (plan-attachment.js).

@@ -10,9 +10,10 @@ Usage:
   item read <id>
   item search [--campaign <id>] [--team <t>] [--holder <name>|none] [--parent <id>|--no-parent] [--status <s>] [--kind <k>] [--text <words>]
   item edit <id> --title|--objective|--kind|--parent <id|none>|--priority|--trello|--github <value> ...
-  item transition <ids> "<status>"
+  item transition <ids> "<status>" [--note "<what they can try>"]
   item assign <ids> <agent>|team:<name>
   item handoff <ids> <agent>|team:<name>|none [--from <agent>|team:<name>]
+  item handover <ids> <agent>|team:<name> "<where it stands; what is next>" [--to-do] [--flag "<the question>"]
   item watch <ids> [<agent>|team:<name>]  item unwatch <ids> [<agent>|team:<name>]
   item flag <ids> [<why>]             item unflag <ids> [<comment>]
   item comment <id> <text>            item comment <id> --edit <n> <text>
@@ -34,7 +35,11 @@ create lands on you, or on your team when you lead one; leading several, name it
 --team. A new item needs an epic above it (--parent), unless it is an Epic.
 attach plan:<name> points an epic at its order (plan --help): stored as plan:<workspace>/<name>.
 watch tracks an item without holding it (yourself unless named; a team's on its roster).
-A move to In Review by its holder is a hand-in: the item goes to the Team. On a Jira-connected
+A move to In Review by its holder is a hand-in: the item goes to the Team, and --note is the
+Handed in comment for the user (at most 280 characters; required under project management).
+handover is how an ending Agent hands an item on: the note becomes a comment headed "Handover
+from <you>", you come off, the receiver goes on, the status stays (--to-do puts it back to To
+Do). Can't decide? --flag "<the question>": it is flagged and your lead is told. On a Jira-connected
 campaign, a parent or kind Jira would refuse is refused here, with the reason.
 handoff takes you off and the receiver on; --from names the giver instead: take your team's
 item with item handoff <id> <you> --from team:<name>, and it shows on the team through you.
@@ -80,7 +85,7 @@ id=${1:-}; [ -n "$id" ] || die "BAD-ARG: item $verb needs the item's id"; shift
 # same body, each id answered on its own line.
 ids=("$id")
 case "$verb" in
-  transition|handoff|assign|watch|unwatch|flag|unflag|delete)
+  transition|handoff|handover|assign|watch|unwatch|flag|unflag|delete)
     while [ "$#" -gt 0 ] && [[ $1 =~ ^(w[1-9][0-9]*|[A-Z][A-Z0-9_]+-[1-9][0-9]*)$ ]]; do ids+=("$1"); shift; done ;;
 esac
 # item_act <act> <method> <body>: the one route for one id, the many route for several.
@@ -95,8 +100,24 @@ case "$verb" in
   read) [ "$#" -eq 0 ] || die 'BAD-ARG: item read takes only <id>'; ronin_item_call GET "/api/work-items/$id" ;;
   edit) [ "$#" -ge 2 ] || die 'BAD-ARG: item edit takes <id> --field <value> ...'
     body=$(fields title,objective,kind,parent,priority,trello,github "$@") || exit 2; ronin_item_call PUT "/api/work-items/$id" "$body" ;;
-  transition) [ "$#" -eq 1 ] || die 'BAD-ARG: item transition takes <ids> <status>'
-    item_act transition POST "$(json status "$1")" ;;
+  transition) [ "$#" -eq 1 ] || { [ "$#" -eq 3 ] && [ "$2" = --note ]; } || die 'BAD-ARG: item transition takes <ids> <status> [--note "<what they can try>"]'
+    item_act transition POST "$(json status "$1" ${3:+note "$3"})" ;;
+  handover) [ "$#" -ge 1 ] || die 'BAD-ARG: item handover takes <ids> <agent>|team:<name> "<note>" [--to-do] [--flag "<the question>"]'
+    to=$1; shift; note=''; todo=''; flag=''
+    while [ "$#" -gt 0 ]; do
+      case "$1" in
+        --to-do) todo=true; shift ;;
+        --flag) [ -n "${2:-}" ] || die 'BAD-ARG: --flag needs the question, quoted'; flag=$2; shift 2 ;;
+        --*) die "BAD-ARG: item handover takes --to-do or --flag, not $1" ;;
+        *) [ -z "$note" ] || die 'BAD-ARG: item handover takes one note, quoted'; note=$1; shift ;;
+      esac
+    done
+    case "$to" in
+      team:*) who=(team "${to#team:}") ;;
+      none) die 'BAD-ARG: a handover goes to your team (team:<name>) or an Agent, never none' ;;
+      *) who=(session "$to") ;;
+    esac
+    item_act handover POST "$(json "${who[@]}" ${note:+note "$note"} ${todo:+to_do "$todo"} ${flag:+flag "$flag"})" ;;
   assign) [ "$#" -eq 1 ] || die 'BAD-ARG: item assign takes <ids> <agent>|team:<name>'
     case "$1" in
       none) die 'BAD-ARG: use item handoff <id> none to let go' ;;
