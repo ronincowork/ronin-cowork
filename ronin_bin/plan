@@ -10,7 +10,7 @@ Usage:
   plan read <name>                          one plan, whole
   plan read --template                      the blank, from docs/using-ronin/planning.md
   plan write <name> [--file <path>]         create or replace a plan (stdin when no --file)
-  plan order <name>                         Draft → Ordered: frozen from here
+  plan order <name>                         Draft → Ordered: not rewritten from here
   plan close <name> "<line>"                Ordered → Closed: writes the Closed section
 Any command takes --workspace <name>. Without it the Workspace is your Team's, when you are on
 exactly one Team with a Workspace; otherwise the tool names the Workspaces to choose from.

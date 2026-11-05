@@ -36,7 +36,7 @@ made from it, and the planner is done with it until it closes.
 | Status | Means | Set by |
 |---|---|---|
 | **Draft** | being written with the user; rewrite it as often as you like | `plan write` |
-| **Ordered** | the user said yes; frozen; the epics are made from it | `plan order` |
+| **Ordered** | the user said yes; not rewritten; the epics are made from it | `plan order` |
 | **Closed** | the epics are Done and the Closed line is written | `plan close` |
 
 The status is the line under the title, `Status: Ordered · 2026-11-05 · pm_lead`. The tool
@@ -49,7 +49,7 @@ plan ls [--status Draft|Ordered|Closed]   the Workspace's plans: name, status, d
 plan read <name>                          one plan, whole; <workspace>/<name> reads another Workspace's
 plan read --template                      the blank to fill in
 plan write <name> [--file <path>]         create or replace a Draft (from stdin without --file)
-plan order <name>                         Draft → Ordered: frozen from here
+plan order <name>                         Draft → Ordered: not rewritten from here
 plan close <name> "<line>"                Ordered → Closed: writes the Closed line, once
 ```
 
