@@ -226,7 +226,7 @@ export function workspacePage(w, { reading, campaignId, onSaved = () => {}, onDi
     line.append(el('b', null, word), document.createTextNode(` ${MODE_SUBS[key]}`));
     legend.append(line);
   }
-  /* ---- PLANS (KAN-256): where this Workspace keeps its orders, a row under the Locations. The default
+  /* ---- PLANS (KAN-256): where this Workspace keeps its plans, a row under the Locations. The default
      is Ronin Lab's <campaign>/<workspace>/plans, said "recommended"; pressed, it picks any of the
      Workspace's Locations and a subfolder. On Save the plans move there; a plan of the same name already
      there stops the Save, so one file never overwrites another. ---- */

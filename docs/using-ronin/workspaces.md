@@ -9,7 +9,7 @@ A Workspace holds:
 - **Instructions** — anything every Agent on it should know.
 - **Locations** — the folders and repositories its Agents work in, each with a short note.
 - **Mode** — Native, or Dangerously for providers that offer it (Native where they don't).
-- **Plans** — where its orders are kept ([Writing a plan](planning.md)).
+- **Plans** — where its plans are kept ([Writing a plan](planning.md)).
 
 ## Teams work in a Workspace
 

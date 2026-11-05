@@ -9,7 +9,7 @@ where it is built or taught.
 | Doc | What it holds |
 |---|---|
 | [Project management](../using-ronin/project-management.md) | **The README.** Plan, epic, item; how an item lives; the three signals; the five notices; where the work shows (Jira Kanban or Scrum, Epics, Waiting on you, the item island) |
-| [Writing a plan](../using-ronin/planning.md) | the order: who writes it, its status, the `plan` tool, from plan to epics, closing, and the one copy of the template (`plan read --template` reads it) |
+| [Writing a plan](../using-ronin/planning.md) | the plan: who writes it, its status, the `plan` tool, from plan to epics, closing, and the one copy of the template (`plan read --template` reads it) |
 | [Work items](../using-ronin/work-items.md) | the fields, levels, statuses and every `item` command |
 | [Jira](../using-ronin/jira.md) | connecting a space: the panel, the switches, Connect, Jira wins |
 | [Workbench](../using-ronin/workbench.md#waiting-on-you-and-epics-on-a-team) | Waiting on you and Epics on the Team workbench |
@@ -26,7 +26,7 @@ cell of topic × audience; an Agent reads only its own cells.
 |---|---|---|
 | `behaviours/selected/project-management.md` | every Agent: the five reasons, structure, status, notices, don'ts | (selected) |
 | `behaviours/conditional/project-management-coworker.md` | coworkers: take, start, side work, put back, hand in, leave | `behaviour:project-management, role:coworker` |
-| `behaviours/conditional/project-management-lead.md` | Team leads: the three kinds of ask, offering an order, the epic from it with `plan:` attached, closing it, giving out work, promote | `behaviour:project-management, lead` |
+| `behaviours/conditional/project-management-lead.md` | Team leads: the three kinds of ask, when to offer a plan (`ronin-help planning`), giving out work, promote | `behaviour:project-management, lead` |
 | `behaviours/conditional/project-management-epic-lead.md` | an epic_lead on Steerco | `behaviour:project-management, role:epic_lead` |
 | `behaviours/conditional/project-management-traffic-control.md` | traffic_control on Steerco: placing Jira's unheld items | `behaviour:project-management, role:coordinator` |
 | `capabilities/work-item.md` | every Agent, in YOUR TOOLS: the `item` tools table and syntax only | `behaviour:project-management` |
@@ -74,8 +74,8 @@ each way and **every Jira call it makes** are in ronin-services
 
 The owner's decisions, 2026-11-04:
 
-- An item serves one of five reasons, or it isn't made. A plan is an order, not an item; nothing ahead of the work.
-- The order is written once and not kept current; it is read again only to close it (2026-11-05).
+- An item serves one of five reasons, or it isn't made. A plan is a document on the Workspace, not an item; nothing ahead of the work.
+- The plan is written once and not kept current; it is read again only to close it (2026-11-05).
 - A hand-in gives the item to the Team, so an Agent's list empties as its work finishes.
 - A hand-in, a promotion and a flag are three signals; only the accepting person sets Done.
 - Five notices, none twice. The rest is seen, not told.

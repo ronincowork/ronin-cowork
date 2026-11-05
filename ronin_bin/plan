@@ -17,7 +17,7 @@ exactly one Team with a Workspace; otherwise the tool names the Workspaces to ch
 <name> is lowercase letters, digits and -, in that Workspace; <workspace>/<name> names a plan
 anywhere in your Campaign, as an epic attaches it: item attach <epic> plan:<workspace>/<name>.
 The line under the title, Status: <status> · <date> · <by>, is the tool's: a Status line you
-write is replaced. A write keeps the plan's status; a new plan is a Draft. The order isn't
+write is replaced. A write keeps the plan's status; a new plan is a Draft. The plan isn't
 rewritten: the work runs on the epics.
 Related: ronin-help planning; item --help
 EOF_USAGE

@@ -1,13 +1,13 @@
 # Writing a plan
 
-A plan is an **order**: someone asks for a piece of work, and the plan turns the ask into
+A **plan** starts the work: someone asks for a piece of work, and the plan turns the ask into
 Teams and epics. It is written once, at the start, from the template at the end of this page.
 After that the work runs on the epics, and nobody updates the plan. Plans are kept on the
 Workspace and reached only through the `plan` tool: you never need their folder.
 
 ## Who writes it
 
-The **planner**: usually the lead the user asks, once the user says yes to an order; or the
+The **planner**: usually the lead the user asks, once the user says yes to a plan; or the
 owner, or any Agent the owner asks. Fill it in with the user: their words for the objective,
 your proposal for the Teams and epics, their yes on what done looks like. Then the epics are
 made from it, and the planner is done with it until it closes.
@@ -56,7 +56,7 @@ plan close <name> "<line>"                Ordered → Closed: writes the Closed 
 - The Workspace is your Team's. On several Teams, or none, add `--workspace <name>`; the tool
   names the ones to choose from.
 - A name is lowercase letters, digits and `-`.
-- The order isn't rewritten: the work runs on the epics. Change the epics instead.
+- The plan isn't rewritten: the work runs on the epics. Change the epics instead.
 
 ## From plan to epics
 
@@ -69,11 +69,11 @@ plan close <name> "<line>"                Ordered → Closed: writes the Closed 
 ## Closing
 
 When the epics are Done, the planner reads the plan once more and closes it:
-`plan close <name> "<did we do what we said>"`. That is the only write after the order.
+`plan close <name> "<did we do what we said>"`. That is the only write after it is ordered.
 
 ## Don'ts
 
-- Don't keep it current. It is the order, not the state.
+- Don't keep it current. It is the plan as agreed, not the state.
 - Don't list items. Items are made with the work, under the epics.
 - Don't copy the epics' progress into it.
 
@@ -82,7 +82,7 @@ When the epics are Done, the planner reads the plan once more and closes it:
 ```markdown
 # <Project name>
 
-Asked by <who>. The order is not updated: what is live is on the epics.
+Asked by <who>. The plan is not updated: what is live is on the epics.
 
 ## Objective
 

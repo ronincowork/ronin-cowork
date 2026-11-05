@@ -1,7 +1,7 @@
 /**
- * PLANS (KAN-256; docs/using-ronin/planning.md). A plan is an order: written once with the user,
+ * PLANS (KAN-256; docs/using-ronin/planning.md). A plan is written once with the user,
  * ordered, and closed with one line at the end. The tool steers nothing: the planning doc and the
- * briefs say the flow (the order isn't rewritten: the work runs on the epics). It lives on the Workspace, at
+ * briefs say the flow (the plan isn't rewritten: the work runs on the epics). It lives on the Workspace, at
  * `<ronin_lab>/<campaign>/<workspace>/plans/<name>.md` unless the Workspace names another place
  * (`plans: { location, path }`, src/workspaces.ts). No Agent sees the path: everything goes through
  * `ronin_bin/plan` over /api/plans (src/routes/plans-api.ts).

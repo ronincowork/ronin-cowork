@@ -1,6 +1,6 @@
 /* part of the ronin-cowork client — see js/README.md */
 /**
- * AN EPIC'S PLAN (KAN-256): an attachment `plan:<workspace>/<name>` names an order on its Workspace
+ * AN EPIC'S PLAN (KAN-256): an attachment `plan:<workspace>/<name>` names a plan on its Workspace
  * (src/plans.ts), never a path. Each reader shows it by that name and opens it through the plan read
  * (/api/plans/resolve: where the file is now); one that no longer resolves says gone.
  */

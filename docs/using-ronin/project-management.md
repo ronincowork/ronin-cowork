@@ -14,7 +14,7 @@ Every file behind this page (briefs, tools, code, the Jira bridge) is listed in
 
 | Layer | What it is | Lives as |
 |---|---|---|
-| **Plan** | what the work is, and how it gets done: which epics, which Teams | an order: written once, kept on the Workspace |
+| **Plan** | what the work is, and how it gets done: which epics, which Teams | a plan: written once, kept on the Workspace |
 | **Epic** | one part of the plan, with what done looks like, given to one Team | an epic, held by that Team |
 | **Item** | one piece of work an Agent will hand in | an item under the epic, held by the Agent doing it |
 
@@ -32,7 +32,7 @@ never under another. Ronin refuses those shapes, as Jira does.
 
 When you bring work to a lead, it decides first which of three it is:
 
-- **A new effort:** a planner (usually that lead) writes the order with you, and the epics are
+- **A new effort:** a planner (usually that lead) writes the plan with you, and the epics are
   made from it. See [Writing a plan](planning.md).
 - **A change to the current effort:** it changes the epic: its what done looks like.
 - **Progress on what's under way** (most asks): nothing new is made. The answer goes on the
@@ -122,6 +122,6 @@ project-management`). Off, Agents get no item tools and no item briefs.
 ## More
 
 - Agents: the project-management briefs, and `item --help`.
-- [Writing a plan](planning.md): the order, the `plan` tool and the template.
+- [Writing a plan](planning.md): the plan, the `plan` tool and the template.
 - [Work items](work-items.md): the fields and commands. [Jira](jira.md): connecting a space.
 - Developers: [Project management: contents](../architecture/project-management.md).
