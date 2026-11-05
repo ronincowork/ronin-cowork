@@ -243,7 +243,6 @@ export function createRootDrawing(deps) {
     mk(t('roots.f_match', 'match'), 'match', (existing.match || []).join(', '), t('roots.f_match_hint', 'Words that suggest this workspace folder from free-form intent'), t('roots.f_match_placeholder', 'comma separated'));
     // THE DOC SHELVES (owner, 2026-08-28) — where the ▧ Docs tab's Docs and Plans pills look.
     mk(t('roots.f_docs', 'docs'), 'docs', (existing.docs || []).join(', '), t('roots.f_docs_hint', 'Where this root keeps its documentation — directories or files, relative to the directory'), 'docs, README.md');
-    mk(t('roots.f_plans', 'plans'), 'plans', (existing.plans || []).join(', '), t('roots.f_plans_hint', 'Where this root keeps its build-out plans'), 'wip/buildouts, wip/handoffs');
 
     // Existing repositories expose the complete checked-in profile. The repository alone
     // declares whether it is a worktree root or a checkout.
@@ -608,7 +607,6 @@ export function createRootDrawing(deps) {
       [t('roots.fact_handle', 'Workspace Folder handle'), r.name],
       [t('roots.fact_directory', 'Directory'), r.dir, { tone: exists ? '' : 'bad' }],
       [t('roots.fact_docs', 'Docs'), (r.docs || []).join(', ')],
-      [t('roots.fact_plans', 'Plans'), (r.plans || []).join(', ')],
       [t('roots.fact_match', 'Match'), (r.match || []).join(', ')],
     ]));
     // The one maintenance job that arrives on its own: a directory moved or deleted out
@@ -691,7 +689,7 @@ export function createRootDrawing(deps) {
       lede.dataset.tone = 'muted';
       lede.textContent = t('roots.keep_lede', 'Keep a folder on this machine for Teams and Agents to start in; a folder not kept is simply left alone.');
       head.append(heading, lede);
-      const f = form({ name: '', title: '', dir: '', remit: '', match: [], docs: [], plans: [] }, true);
+      const f = form({ name: '', title: '', dir: '', remit: '', match: [], docs: [] }, true);
       go.append(f.querySelector('.pr-frow')); // Add and Cancel on the head line
       d.append(head, f);
       return d;
@@ -704,7 +702,7 @@ export function createRootDrawing(deps) {
       const h = document.createElement('b');
       h.textContent = t('roots.add', '＋ Add workspace folder');
       top.append(h);
-      b.append(top, form({ name: '', title: '', dir: '', remit: '', match: [], docs: [], plans: [] }, true));
+      b.append(top, form({ name: '', title: '', dir: '', remit: '', match: [], docs: [] }, true));
       return b;
     }
     return b;

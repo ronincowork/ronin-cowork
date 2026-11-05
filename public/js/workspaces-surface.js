@@ -179,7 +179,7 @@ export function workspacePage(w, { reading, campaignId, onSaved = () => {}, onDi
   tools.append(addButton, cloneButton);
   const folderPanel = el('div', 'workspace-browser');
   const clonePanel = el('div', 'workspace-browser');
-  stepLocations.body.append(tools, folderPanel, clonePanel, rows);
+  stepLocations.body.append(tools, folderPanel, clonePanel, rows, plansBox);
 
   const pending = new Map(); // a Git folder's worktree switch, written on Save
   const profileOf = (key, root) => ({ ...HOW[key], stable: key === 'folder' ? (root.repo_profile?.stable || 'main') : HOW.desks.stable });
@@ -195,9 +195,10 @@ export function workspacePage(w, { reading, campaignId, onSaved = () => {}, onDi
     const row = (name) => ({ name, note: picked.get(name) || '' });
     draft.repos = [...picked.keys()].filter(git).map(row);
     draft.folders = [...picked.keys()].filter((name) => !git(name)).map(row);
-    const answer = await request(`/api/workspaces/${encodeURIComponent(draft.name)}`, { method: 'PUT', json: { ...draft, campaign_id: campaignId() || undefined } });
+    const answer = await request(`/api/workspaces/${encodeURIComponent(draft.name)}`, { method: 'PUT', json: { ...draft, plans: draft.plans?.location ? draft.plans : null, plans_place: undefined, campaign_id: campaignId() || undefined } });
     if (!answer.ok) { say(answer.message, true); return false; }
-    say(t('workspaces.saved', 'Saved {name}.', { name: answer.data.workspace.title || answer.data.workspace.name }));
+    const moved = answer.data.moved?.length ? ` ${t('workspaces.plans_moved', 'Moved {n} plans.', { n: answer.data.moved.length })}` : '';
+    say(`${t('workspaces.saved', 'Saved {name}.', { name: answer.data.workspace.title || answer.data.workspace.name })}${moved}`);
     settled();
     return answer.data.workspace;
   };
@@ -225,6 +226,51 @@ export function workspacePage(w, { reading, campaignId, onSaved = () => {}, onDi
     line.append(el('b', null, word), document.createTextNode(` ${MODE_SUBS[key]}`));
     legend.append(line);
   }
+  /* ---- PLANS (KAN-256): where this Workspace keeps its orders, a row under the Locations. The default
+     is Ronin Lab's <campaign>/<workspace>/plans, said "recommended"; pressed, it picks another Location
+     and a subfolder: only a Direct one or a folder without Git, since the plan tool writes in place. On
+     Save the plans move there; a name already there refuses the Save. ---- */
+  const LAB = 'ronin_lab';
+  const plansBox = el('div', 'workspace-plans');
+  let plansOpen = false;
+  const placeWords = () => {
+    if (draft.plans?.location) return { where: `${draft.plans.location}/${draft.plans.path}`.replace(/\/$/, ''), recommended: false };
+    const place = w?.plans_place?.recommended ? w.plans_place : null;
+    return { where: place ? `${place.location}/${place.path}` : `${LAB}/…/${draft.name || '<workspace>'}/plans`, recommended: true };
+  };
+  const writable = (name) => {
+    const root = rootByName(name);
+    if (!root) return false;
+    if (!root.facts?.repo) return true;
+    return (pending.get(name) ?? howOf(root.repo_profile)) === 'folder';
+  };
+  const paintPlans = () => {
+    plansBox.replaceChildren();
+    const { where, recommended } = placeWords();
+    const row = el('button', 'workspace-plans-row'); row.type = 'button';
+    row.setAttribute('aria-expanded', String(plansOpen));
+    row.append(el('b', null, t('workspaces.plans', 'Plans')), el('code', null, where), el('small', 'folder-kind', recommended ? t('workspaces.plans_recommended', 'recommended') : ''));
+    row.addEventListener('click', () => { plansOpen = !plansOpen; paintPlans(); });
+    plansBox.append(row);
+    if (!plansOpen) return;
+    const names = [...new Set([LAB, ...picked.keys()])];
+    const options = names.map((name) => ({ v: name, l: rootByName(name)?.title || name,
+      ...(writable(name) ? {} : { off: t('workspaces.plans_reviewed', 'Reviewed: its checkout is shared; plans are written in place.') }) }));
+    const chosen = draft.plans?.location || LAB;
+    const question = ask([{ fields: [{ key: 'location', label: t('workspaces.plans_location', 'Location'), options }] }], {
+      value: { location: chosen }, density: 'tight',
+      onChange: (value) => {
+        const location = value.location;
+        // Ronin Lab is the recommended place itself; another Location starts at its plans folder.
+        draft.plans = location === LAB ? undefined : { location, path: location === draft.plans?.location ? draft.plans.path : 'plans' };
+        changed(); paintPlans();
+      },
+    });
+    const sub = text(draft.plans?.path ?? '', (v) => { if (draft.plans) { draft.plans.path = v.trim(); changed(); } }, t('workspaces.plans_subfolder_hint', 'a folder inside it, such as plans'));
+    sub.hidden = !draft.plans;
+    plansBox.append(question.el, ...(draft.plans ? [createField({ label: t('workspaces.plans_subfolder', 'Subfolder'), control: sub }).el] : []),
+      el('p', 'fs-step-help', t('workspaces.plans_help', 'On Save, this Workspace’s plans move to the new place; a plan of the same name already there stops the Save.')));
+  };
   const noting = new Set(); // rows whose empty note was opened for writing
   const paintRows = () => {
     rows.replaceChildren();
@@ -348,6 +394,7 @@ export function workspacePage(w, { reading, campaignId, onSaved = () => {}, onDi
     cloneWhere.textContent = named ? t('workspaces.clone_lands', 'Lands in {dir}', { dir: `${at}/${named}` }) : t('workspaces.clone_into', 'Into {dir}', { dir: at });
     clone.disabled = !named;
     paintRows();
+    paintPlans();
   }
   page.append(line, stepTop.el, stepLocations.el, stepAgents.el);
   paint();

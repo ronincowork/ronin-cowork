@@ -29,7 +29,6 @@ export interface ProjectRootInfo {
   match: string[];
   remit: string;
   docs: string[];
-  plans: string[];
   archived: boolean;
   campaign_id: string;
 }
@@ -95,7 +94,6 @@ function parseRoots(raw: string): ProjectRootInfo[] {
         .filter(Boolean),
       remit: field('remit'),
       docs: listField(field('docs'), ['docs', 'README.md']),
-      plans: listField(field('plans'), ['wip/buildouts', 'wip/handoffs']),
       archived: /^yes$/i.test(field('archived')),
       campaign_id: field('campaign_id'),
     });
@@ -122,7 +120,9 @@ const NEW_USER_FILE = `# PROJECT_ROOTS — your directories (user scope)
 > \`MODEL_PROVIDERS.md\`, not here; your own copy of that file beside this one shadows it.
 `;
 
-const FIELD_ORDER = ['title', 'dir', 'memory', 'match', 'remit', 'docs', 'plans', 'archived', 'campaign_id'] as const;
+// A root's old `plans` line (build-out plans, retired with KAN-256: plans live on the Workspace,
+// src/plans.ts) is no field: a stored one is ignored.
+const FIELD_ORDER = ['title', 'dir', 'memory', 'match', 'remit', 'docs', 'archived', 'campaign_id'] as const;
 export type RootField = (typeof FIELD_ORDER)[number];
 
 export const isValidRootName = (n: string) => /^[a-z0-9][a-z0-9_-]*$/.test(n) && n.length <= 32;

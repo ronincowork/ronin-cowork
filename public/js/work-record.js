@@ -12,6 +12,7 @@
  * element built in this module can touch a session.
  */
 import { t } from './lexicon.js';
+import { isPlanRef, planAttachment } from './plan-attachment.js';
 
 export function clampTip(s, room = 120) {
   return s.length > room ? s.slice(0, room - 1) + '…' : s;
@@ -48,6 +49,8 @@ export function buildWorkRecord(letter, deskEntry = null, { openDoc = null } = {
       action.prepend(id, ' · ');
       row.append(line('', item.title), action);
       for (const path of item.attachments || []) {
+        // The epic's plan, by name: opened through the plan read, or gone (plan-attachment.js).
+        if (isPlanRef(path)) { row.appendChild(planAttachment(path, { className: 'wr-doc', campaignId: item.campaign_id, open: openDoc })); continue; }
         // Where the reader can open a document (the tile's menu), each one is a press.
         // A file kept in Jira is its link, opened there.
         const link = /^https?:\/\//.test(path);

@@ -14,11 +14,11 @@ Every file behind this page (briefs, tools, code, the Jira bridge) is listed in
 
 | Layer | What it is | Lives as |
 |---|---|---|
-| **Plan** | what the work is, and how it gets done: which epics, which Teams | a document, never an item |
+| **Plan** | what the work is, and how it gets done: which epics, which Teams | an order: written once, kept on the Workspace |
 | **Epic** | one part of the plan, with what done looks like, given to one Team | an epic, held by that Team |
 | **Item** | one piece of work an Agent will hand in | an item under the epic, held by the Agent doing it |
 
-- A small project is one plan doc, one epic and one Team. A large one has several epics,
+- A small project is one plan, one epic and one Team. A large one has several epics,
   roughly a Team each, and may have an **epic_lead** on Steerco to keep the Teams on what
   done looks like.
 - Nothing sits above an epic, and epics don't nest. Where one depends on another, link them.
@@ -32,8 +32,9 @@ never under another. Ronin refuses those shapes, as Jira does.
 
 When you bring work to a lead, it decides first which of three it is:
 
-- **A new effort:** it writes a plan doc, then makes the epic when the work starts.
-- **A change to the current effort:** it changes the plan doc first, then the epic.
+- **A new effort:** a planner (usually that lead) writes the order with you, and the epics are
+  made from it. See [Writing a plan](planning.md).
+- **A change to the current effort:** it changes the epic: its what done looks like.
 - **Progress on what's under way** (most asks): nothing new is made. The answer goes on the
   items already there, as a comment, a status or your Accept.
 
@@ -52,7 +53,7 @@ When you bring work to a lead, it decides first which of three it is:
 
 An Agent can't `session_end` while it holds unfinished items; if it ends any other way, Ronin
 puts them back on their epic. An item nobody wants any more is deleted, not left in To Do.
-An epic is Done when what done looks like is met, and its plan doc says so.
+An epic is Done when what done looks like is met.
 
 ## Three signals
 
@@ -121,5 +122,6 @@ project-management`). Off, Agents get no item tools and no item briefs.
 ## More
 
 - Agents: the project-management briefs, and `item --help`.
+- [Writing a plan](planning.md): the order, the `plan` tool and the template.
 - [Work items](work-items.md): the fields and commands. [Jira](jira.md): connecting a space.
 - Developers: [Project management: contents](../architecture/project-management.md).

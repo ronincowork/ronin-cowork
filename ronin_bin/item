@@ -16,7 +16,7 @@ Usage:
   item watch <ids> [<agent>|team:<name>]  item unwatch <ids> [<agent>|team:<name>]
   item flag <ids> [<why>]             item unflag <ids> [<comment>]
   item comment <id> <text>            item comment <id> --edit <n> <text>
-  item attach <id> <path>|<url>       item attach <id> --remove <path>|<url>
+  item attach <id> <path>|<url>|plan:<name>   item attach <id> --remove <path>|<url>|plan:<name>
   item link <id> <type> <id> [--remove]
   item delete <ids> [--in-jira]
 <ids> is one id or several (w12 w13 KAN-65), each acted on in turn; every id an item has had
@@ -32,6 +32,7 @@ level stays). The one rule: nothing goes below -1; children follow their parent
 ("w39 can't go there.").
 create lands on you, or on your team when you lead one; leading several, name it with
 --team. A new item needs an epic above it (--parent), unless it is an Epic.
+attach plan:<name> points an epic at its order (plan --help): stored as plan:<workspace>/<name>.
 watch tracks an item without holding it (yourself unless named; a team's on its roster).
 A move to In Review by its holder is a hand-in: the item goes to the Team. On a Jira-connected
 campaign, a parent or kind Jira would refuse is refused here, with the reason.
@@ -133,9 +134,10 @@ print(json.dumps(d))' "$BY" "$from") ;;
     item_act "$verb" POST "$(json ${1:+comment "$1"})" ;;
   attach)
     remove=''; [ "${1:-}" = --remove ] && { remove=true; shift; }
-    [ "$#" -eq 1 ] || die 'BAD-ARG: item attach takes <id> [--remove] <path>|<url>'
+    [ "$#" -eq 1 ] || die 'BAD-ARG: item attach takes <id> [--remove] <path>|<url>|plan:<name>'
     # A path is resolved here, against the caller's cwd: the item stores the absolute path.
-    case "$1" in http://*|https://*) at=$1 ;; *) at=$(python3 -c 'import os,sys; print(os.path.abspath(os.path.expanduser(sys.argv[1])))' "$1") ;; esac
+    # plan:<name> or plan:<workspace>/<name> goes as written: the store resolves it (plan --help).
+    case "$1" in http://*|https://*|plan:*) at=$1 ;; *) at=$(python3 -c 'import os,sys; print(os.path.abspath(os.path.expanduser(sys.argv[1])))' "$1") ;; esac
     ronin_item_call POST "/api/work-items/$id/attach" "$(json path "$at" ${remove:+remove true})" ;;
   link)
     remove=''; args=()

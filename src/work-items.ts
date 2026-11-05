@@ -760,8 +760,27 @@ function attachment(target: string, remove: boolean): string {
   return at;
 }
 
+/** `plan:<name>` or `plan:<workspace>/<name>` (KAN-256): stored whole, `plan:<workspace>/<name>`,
+ * the item's Campaign the third part. A new one must resolve; a removal takes what is stored. */
+async function planAttachment(id: string, target: string, by: string, remove: boolean): Promise<string> {
+  const { PlanBadInput: Bad, planTarget, resolvePlanRef } = await import('./plans.js');
+  const item = await load(id);
+  const ref = target.trim().slice('plan:'.length);
+  if (remove && ref.includes('/')) return `plan:${ref}`;
+  let full: string;
+  try {
+    const { workspace, name } = await planTarget({ campaign: item.campaign_id, by }, ref);
+    full = `${workspace.name}/${name}`;
+  } catch (e) {
+    if (remove) { const kept = item.attachments.find((doc) => doc.endsWith(`/${ref}`) && doc.startsWith('plan:')); if (kept) return kept; }
+    throw e instanceof Bad ? new WorkItemBadInput((e as Error).message) : new WorkItemRefused((e as Error).message);
+  }
+  if (!remove && !(await resolvePlanRef(item.campaign_id, full))) throw new WorkItemBadInput(`no plan ${full}; plan ls lists them.`);
+  return `plan:${full}`;
+}
+
 export async function attachDoc(id: string, target: string, by: string, remove = false): Promise<Acknowledged> {
-  const at = attachment(target, remove);
+  const at = /^plan:/.test(String(target ?? '').trim()) ? await planAttachment(id, String(target), by, remove) : attachment(target, remove);
   return withIssuer(() => appendTrail(id, by, (item) => {
     const kept = item.attachments.filter((doc) => doc !== at);
     item.attachments = remove ? kept : [at, ...kept];
