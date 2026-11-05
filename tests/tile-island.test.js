@@ -29,9 +29,7 @@ test('the tile header carries the island, fed by the pushed work record, and a p
   assert.match(head, /renderItemDetail\(detail, item/);
   // w279: a lead's island adds the Epics its Teams hold after its own items.
   // Piece E: then what the Agent handed in that still waits In Review, before a lead's Epics.
-  // Owner, 2026-11-05: only what the Agent holds (and, on a lead, what its Teams hold); no handed-in list.
   assert.match(head, /islandHeld = \(letter\) => \[\.\.\.new Map\(\[\.\.\.\(letter\?\.items \|\| \[\]\), \.\.\.\(letter\?\.teamItems \|\| \[\]\)\]\.map\(\(item\) => \[item\.id, item\]\)\)\.values\(\)\]/);
-  assert.doesNotMatch(head, /handedIn/);
   // Owner, 2026-11-05: Done leaves the island; a Task's reading still lists all its Subtasks.
   assert.match(head, /islandItems = \(letter\) => islandHeld\(letter\)\.filter\(\(item\) => statusKey\(item\.status\) !== 'done'\)/);
   // w299: the Subtasks come from the item read, so a Done one the Team holds stays listed.

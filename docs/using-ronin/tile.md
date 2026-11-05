@@ -36,7 +36,8 @@ at its left to bring it down under the header, with the pills in a column, one i
 row. Each row reads: the kind's symbol, the status in words (To Do, In Progress, In Review,
 Done), its dot (grey, blue, amber, green), and the flag: solid when the item is flagged,
 an outline when it is not. An item In Review also carries its latest signal, "handed in" or
-"on dev", with how long ago. Press the bar again, or a pill, to put it back in the header.
+"on dev", with how long ago, read from the item's own hand-ins: a hand-in leaves the item with its
+Agent, so the island shows only what its Agent holds. Press the bar again, or a pill, to put it back in the header.
 
 On a Team lead, the island also shows what its Teams hold at the Epic and Task level, after
 the items the lead holds itself. An Epic generally sits on the Team, and a Task the Team holds is

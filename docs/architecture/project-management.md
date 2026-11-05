@@ -41,7 +41,7 @@ predicate in `src/behaviours.ts`.
 |---|---|
 | `item` (`ronin_bin/item`) | create, read, search (`--text`, `--archived`), edit, transition (`--note` on a hand-in), flag, unflag, assign, handoff, handover, watch, comment, attach (a path, a link or `plan:<name>`), link, delete; `item --help` |
 | `plan` (`ronin_bin/plan`) | ls (`--status Draft\|Ordered`), read (`<workspace>/<name>`, `--template`), write, order, over `/api/plans`; the Workspace is the caller's Team's unless `--workspace`; `plan --help`. Taught by `ronin-help planning`, not by a brief |
-| `worktree-desk hand-in <repo> --item <id> --note "<what they can try>"` | the hand-in signal: In Review, given to the Team, recorded in `hand_ins`, the note posted as the **Handed in** comment (280 characters at most). Under project management, refused without `--item` or without `--note` (`src/commands/desk.ts`, `src/desks/hand-in.ts`) |
+| `worktree-desk hand-in <repo> --item <id> --note "<what they can try>"` | the hand-in signal: In Review, the Agent keeping the hold, recorded in `hand_ins`, the note posted as the **Handed in** comment (280 characters at most). Under project management, refused without `--item` or without `--note` (`src/commands/desk.ts`, `src/desks/hand-in.ts`) |
 | `bin/ronin-promote <team>` | the promotion signal: marks each carried item `on_dev`, no status change (`src/promotion/promote.ts`) |
 | `session_end` | settles To Do back to the Team, then refuses while the Agent holds anything In Progress or In Review; NEXT is `item handover` (`src/routes/sessions-api.ts`, `settleToDo`, `unfinishedHolds`) |
 | `team-roster-write --select / --deselect` | turns project management on or off for a Team (`libexec/team-roster-write`) |
@@ -79,11 +79,11 @@ The owner's decisions, 2026-11-04 and 05:
 - An item serves one of five reasons, or it isn't made. Nothing ahead of the work.
 - A plan is written once with the user and not kept current: Draft, then Ordered. It lives on
   the Workspace, reached only through `plan`; epics attach it as `plan:<name>`.
-- A hand-in gives the item to the Team and carries one short note for the user; objectives are
-  what done looks like to the person accepting, in their words.
+- A hand-in moves the item to In Review and the Agent keeps it; it carries one short note for
+  the user; objectives are what done looks like to the person accepting, in their words.
 - A hand-in, a promotion and a flag are three signals; only the accepting person sets Done.
 - Six notices, none twice. The rest is seen, not told.
-- Send back goes to the Agent that handed in (to the Team if it has ended).
+- Send back stays with whoever holds the item, who is told; Done tells the Agent holding it.
 - An ending hands over, never drops: To Do to the Team, In Progress and In Review with a
   Handover note; an ending that can't ask flags them for the lead.
 - Done stays five days, then is archived in Ronin only; Jira keeps its own view.
@@ -103,7 +103,6 @@ Found reading the code end to end; none is built yet.
 |---|---|---|
 | The coworker brief's Finish line has no `--note`, so the first hand-in is refused (NEXT recovers it) | `project-management-coworker.md` | "Finish: worktree-desk hand-in <repo> --item <id> --note "<what they can try>"" (brief wording, the owner's yes) |
 | Brief text still says "put back": the coworker blurb, the lead's "items put back (or sent back after their Agent ended)" | coworker and lead cells | "handed over" (owner's yes) |
-| A checkout hand-in tells the lead it "waits on you to accept or send back"; accepting is the user's | `handInUnlocked` | "…handed in by <agent>; review and promote it" |
 | `item handoff <ids> none` still drops an item to nobody, around the handover | `ronin_bin/item`, store | refuse `none` for an item In Progress or In Review; NEXT is `item handover` |
 | An ending with no Team found still goes to nobody (flagged, its helpers told) | `releaseHolder` | to the epic's Team, else traffic_control |
 | To Do is taken as the space's first status, as Done was taken as its last | `settleToDo`, `unfinishedHolds`, `releaseHolder` | To Do by name, as Done now is |

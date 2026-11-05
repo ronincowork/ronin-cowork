@@ -99,27 +99,27 @@ test('search --text matches every word in the title or objective, any case', asy
   assert.deepEqual(found.data.items.map((one: { id: string }) => one.id), [hit.id]);
 });
 
-test('a desk hand-in gives the item to the Team, records who, and the item tells nobody', async () => {
+test('a desk hand-in keeps the Agent\'s hold, records who, and the item tells nobody', async () => {
   const { item } = await items.createItem({ title: 'desk work', parent: epic.id, holder: mem }, 'boss');
   await quiet();
   const done = await items.handInItem(item.id, 'mem', { desk: true, note: 'hand-in r1', receipts: ['r1'] });
   assert.equal(done.item.status, 'In Review');
   assert.equal(done.item.handed_in?.by, 'mem');
-  assert.deepEqual(await holding(item.id), ['team:crew']);
+  assert.deepEqual(await holding(item.id), ['agent:mem'], 'handing in code does not hand in the item');
   assert.deepEqual((await said()).filter(([, text]) => text.includes(item.id)), [], 'the desk\'s own message is the one notice');
   const again = await items.handInItem(item.id, 'mem', { desk: true, note: 'hand-in r2', receipts: ['r2'] });
   assert.equal(again.line.note, 'hand-in r2; handed in again');
   assert.deepEqual(again.item.hand_ins!.map((one) => [one.receipt, one.by]), [['r1', 'mem'], ['r2', 'mem']], 'every hand-in is recorded, the status moved or not');
 });
 
-test('a move to In Review by its holder is a checkout hand-in: the Team takes it and its lead is told once', async () => {
+test('a move to In Review by its holder is a checkout hand-in: the Agent keeps it and its lead is told once', async () => {
   const { item } = await items.createItem({ title: 'checkout work', parent: epic.id, holder: mem }, 'boss');
   await quiet();
   await items.editItem(item.id, { status: 'In Review' }, 'mem');
-  assert.deepEqual(await holding(item.id), ['team:crew']);
+  assert.deepEqual(await holding(item.id), ['agent:mem']);
   const told = (await said()).filter(([, text]) => text.includes(item.id));
   assert.deepEqual(told.map(([to]) => to), ['cap']);
-  assert.match(told[0]![1]!, /handed in by mem/);
+  assert.equal(told[0]![1]!, `${item.id} 'checkout work' was handed in by mem; review and promote it.`);
 });
 
 test('Send back: In Progress with the comment, back to the Agent that handed it in, which is told', async () => {
@@ -134,17 +134,18 @@ test('Send back: In Progress with the comment, back to the Agent that handed it 
   assert.deepEqual((await said()).filter(([, text]) => text.includes(item.id)).map(([to]) => to), ['mem']);
 });
 
-test('Send back to an Agent that has ended leaves the item with the Team', async () => {
-  const { item } = await items.createItem({ title: 'orphaned hand-in', parent: epic.id, holder: mem }, 'boss');
-  await items.handInItem(item.id, 'mem', { desk: true });
-  await live(['cap']);
-  try {
-    await quiet();
-    await items.sendBack(item.id, 'redo', 'owner');
-    assert.deepEqual(await holding(item.id), ['team:crew']);
-    assert.equal((await items.readItem(item.id))!.status, 'In Progress');
-    assert.deepEqual(await said(), [], 'the lead sees it on Epics');
-  } finally { await live(['cap', 'mem']); }
+test('Send back with nobody holding it (its Agent ended) leaves it where its ending put it; an old Team-held item still goes back', async () => {
+  const { item } = await items.createItem({ title: 'orphaned hand-in', parent: epic.id, status: 'In Review' }, 'boss');
+  await quiet();
+  await items.sendBack(item.id, 'redo', 'owner');
+  assert.deepEqual(await holding(item.id), []);
+  assert.equal((await items.readItem(item.id))!.status, 'In Progress');
+  assert.deepEqual(await said(), [], 'nobody holds it: nobody is told');
+  const old = (await items.createItem({ title: 'team-held review', parent: epic.id, status: 'In Review', holder: team }, 'boss')).item;
+  await items.sendBack(old.id, 'redo too', 'owner');
+  assert.deepEqual(await holding(old.id), ['team:crew'], 'an existing Team-held item stays on the Team');
+  assert.equal((await items.readItem(old.id))!.status, 'In Progress');
+  assert.equal((await items.editItem(old.id, { status: 'Done' }, 'owner')).item.status, 'Done', 'and Accept still works');
 });
 
 /* AN ENDING HANDS OVER, NEVER DROPS (ITEM_HANDOVER; docs/using-ronin/project-management.md, How an item lives). */
@@ -445,7 +446,7 @@ test('a hand-in carries a note for the user: the Handed in comment, at most 280 
   const desk = (await items.createItem({ title: 'desk noted', parent: epic.id, holder: mem }, 'boss')).item;
   const handed = await items.handInItem(desk.id, 'mem', { desk: true, note: 'hand-in r9', receipts: ['r9'], forUser: 'Try the tile.' });
   assert.equal(handed.item.comments.at(-1)!.text, 'Handed in: Try the tile.');
-  assert.equal(handed.line.note, 'hand-in r9; handed in by mem, given to team:crew', 'the receipt stays on the trail, not in the note');
+  assert.equal(handed.line.note, 'hand-in r9; handed in by mem', 'the receipt stays on the trail, not in the note');
   await assert.rejects(items.handInItem(desk.id, 'mem', { desk: true, forUser: 'y'.repeat(281) }), /Keep it for the user/);
   assert.equal(items.handInNoteProblem('z'.repeat(280)), null);
 });
@@ -521,4 +522,34 @@ test('notice 6 by Done\'s name: on a space that lists Done second, a move to In 
     await items.editItem(item.id, { status: 'Done' }, 'owner');
     assert.deepEqual((await said()).map(([to]) => to), ['mem']);
   } finally { items.setSpaceNames('jorder6', null); }
+});
+
+/* HANDING IN CODE DOESN'T HAND IN THE ITEM (owner, 2026-11-05; KAN-269). */
+test('a hand-in keeps the holder; Send back goes to the holder, who hears it; Done tells the holder once and it stays on its list', async () => {
+  const { item } = await items.createItem({ title: 'kept work', parent: epic.id, holder: mem }, 'boss');
+  await items.handInItem(item.id, 'mem', { desk: true, receipts: ['k1'], forUser: 'Try it.' });
+  assert.deepEqual(await holding(item.id), ['agent:mem']);
+  assert.equal((await items.readItem(item.id))!.status, 'In Review');
+  await quiet();
+  const back = await call('POST', `/api/work-items/${item.id}/send-back`, { text: 'one more thing', by: 'owner' });
+  assert.equal(back.status, 200);
+  assert.equal(back.data.item.status, 'In Progress');
+  assert.deepEqual(await holding(item.id), ['agent:mem'], 'no holder moves');
+  assert.deepEqual((await said()).map(([to, text]) => [to, text]), [['mem', `${item.id} 'kept work' was sent back to you by owner: one more thing. It is In Progress again.`]]);
+  await items.handInItem(item.id, 'mem', { desk: true, receipts: ['k2'] });
+  await quiet();
+  await call('POST', `/api/work-items/${item.id}/transition`, { status: 'Done', by: 'owner' });
+  assert.deepEqual(await said(), [['mem', `${item.id} 'kept work' is Done (accepted by owner).`]], 'the holder is told once');
+  assert.deepEqual(await holding(item.id), ['agent:mem'], 'Done stays on its list until the archive');
+});
+
+test('Waiting on you still reads the Team\'s items and its members\' items: a held hand-in shows With the lead', async () => {
+  const { rosterReading } = await import('../src/work-items-read.js');
+  const { readTeamRoster } = await import('../src/team-rosters.js');
+  const { item } = await items.createItem({ title: 'waits with its Agent', parent: epic.id, holder: mem }, 'boss');
+  await items.handInItem(item.id, 'mem', { desk: true, receipts: ['w1'] });
+  const sessions = [{ name: 'cap', key: 'cap', tags: ['crew'] }, { name: 'mem', key: 'mem', tags: ['crew'] }];
+  const reading = await rosterReading((await readTeamRoster('crew'))!, sessions);
+  const work = teamWork(reading.items, await items.listItems());
+  assert.ok(work.lead.some((one) => one.id === item.id && one.holder === 'agent:mem'), 'the member\'s item waits on the lead');
 });
