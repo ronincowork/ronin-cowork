@@ -352,3 +352,47 @@ test('a w id is never issued twice: renamed to its Jira key, its number stays us
   const after = (await items.createItem({ title: 'after a fresh start' }, 'lead')).item.id;
   assert.ok(Number(after.slice(1)) > Number(next.slice(1)), `${after} after ${next}`);
 });
+
+/* KAN-261: Done leaves every list, however it got there; no id twice on a list. */
+test('any move to Done takes every holder off, by item transition or by Jira, in the one status line', async () => {
+  for (const by of ['owner', 'jira:someone']) {
+    const { item } = await items.createItem({ title: `done by ${by}`, holder: team }, 'lead');
+    await items.assignItem(item.id, ann, 'lead');
+    const done = await items.editItem(item.id, { status: 'Done' }, by);
+    assert.equal(done.line.op, 'status');
+    assert.equal(done.line.note, 'off team:crew, agent:ann');
+    assert.deepEqual(await listsHolding(item.id), [], `${by}: on nobody's list`);
+    assert.equal((await items.editItem(item.id, { status: 'Done' }, by)).line.note, 'no change', 'Done again changes nothing');
+  }
+  const { item } = await items.createItem({ title: 'not done yet', holder: team }, 'lead');
+  await items.editItem(item.id, { status: 'In Progress' }, 'owner');
+  assert.deepEqual(await listsHolding(item.id), ['team:crew'], 'any other status keeps its holders');
+});
+
+test('an id is on a holds list once: a doubled list reads once, and writes back once', async () => {
+  const { writeTeamRoster } = await import('../src/team-rosters.js');
+  const { writeLetterHolds } = await import('../src/tegami.js');
+  const { item } = await items.createItem({ title: 'twice' }, 'lead');
+  const roster = (await readTeamRoster('crew'))!;
+  await writeTeamRoster('crew', { holds: [...roster.holds, item.id, item.id] }, roster.campaign_id);
+  assert.equal((await readTeamRoster('crew'))!.holds.filter((id) => id === item.id).length, 1);
+  await writeLetterHolds('bo', [item.id, item.id]);
+  assert.deepEqual((await readLetterHolds('bo'))!.holds, [item.id]);
+  await items.assignItem(item.id, team, 'lead');
+  await items.handInItem(item.id, 'ann', { desk: true, receipts: ['r1'] });
+  await items.handInItem(item.id, 'ann', { desk: true, receipts: ['r2'] });
+  assert.equal((await readTeamRoster('crew'))!.holds.filter((id) => id === item.id).length, 1, 'a second hand-in adds no second copy');
+});
+
+test('a work record seeded with the old watches line is corrected on its next write: a status change only', async () => {
+  const { tegamiPath, writeLetterWatches } = await import('../src/tegami.js');
+  await seedTegami('oldrec');
+  const file = tegamiPath('oldrec');
+  const fresh = await fs.readFile(file, 'utf8');
+  assert.match(fresh, /you hear\n>   of a status change on that item, nothing else\./);
+  await fs.writeFile(file, fresh.replace('>   of a status change on that item, nothing else.', '>   the moves under each (status, flag, a new child, a holder change).'));
+  await writeLetterWatches('oldrec', []);
+  const after = await fs.readFile(file, 'utf8');
+  assert.doesNotMatch(after, /a new child, a holder change/);
+  assert.match(after, /of a status change on that item, nothing else\./);
+});

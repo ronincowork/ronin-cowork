@@ -567,6 +567,12 @@ export function editItem(id: string, edit: ItemEdit, by: string, note?: string):
         throw new WorkItemRefused(`Jira would refuse this, so Ronin does too: ${paired.child.id} is on Jira under ${current.id} and would have to change kind across levels.`);
       }
     }
+    // DONE LEAVES EVERY LIST (KAN-261): any move to the space's last status (Done), by Accept,
+    // item transition or Jira, takes every holder off, as an item Done is held by nobody; the
+    // status line names them.
+    const doneName = names.statuses.at(-1)!;
+    const off = edit.status !== undefined && edit.status.trim() === doneName && current.status !== doneName ? await takeOffEveryList(current.id) : [];
+    const offNote = off.length ? `off ${labels(off)}` : '';
     // The bridge storing the Jira key alone is not news; nor is a line that changes nothing.
     let paired = false;
     let unchanged = false;
@@ -591,7 +597,7 @@ export function editItem(id: string, edit: ItemEdit, by: string, note?: string):
         if (value.trim()) item.external[key] = value.trim(); else delete item.external[key];
         changed.push(`${key} ${item.external[key] ?? 'cleared'}`);
       }
-      const said = note || undefined;
+      const said = [note, offNote].filter(Boolean).join('; ') || undefined;
       paired = changed.length === 1 && changed[0]!.startsWith('jira ') && Boolean(item.external.jira);
       unchanged = !changed.length;
       if (changed.length === 1 && changed[0]!.startsWith('status ')) return { op: 'status', from: before, to: item.status, note: said };
