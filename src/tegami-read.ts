@@ -3,9 +3,7 @@ import path from 'node:path';
 import { sessionDir, sessionKey } from './session-dir.js';
 import { tegamiPath } from './tegami.js';
 import { agentReading, type AgentReading } from './work-items-read.js';
-import { jiraLink, readItem, type WorkItem } from './work-items.js';
-import { readTeamRoster } from './team-rosters.js';
-import { listSessions } from './tmux.js';
+import { jiraLink, type WorkItem } from './work-items.js';
 import { mandate, type Mandate } from './agent-defaults.js';
 
 export interface Tegami {
