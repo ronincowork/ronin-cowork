@@ -28,6 +28,7 @@ import { SURFACE_DRAG } from './workbench.js';
 import { WORKBENCH_TYPES } from './workbench-catalog.js';
 import { openWorkspaceTab, reserveWorkspaceTab } from './workspace.js';
 import { ask } from './ask.js';
+import { holderWords } from './work-items-surface.js';
 
 /** The statuses in workflow order (Jira's, the store's default); a space's own extra names follow. */
 export const STATUSES = ['To Do', 'In Progress', 'In Review', 'Done'];
@@ -88,7 +89,7 @@ function openHolder({ kind, name }) {
 export function holderButton(item) {
   const holder = holderOfItem(item);
   if (!holder) return el('span', 'epic-holder is-none', t('epics.unassigned', 'Unassigned'));
-  const button = el('button', 'epic-holder', `@${holder.name}`);
+  const button = el('button', 'epic-holder', holderWords(holder)); // the one wording (w299): label only
   button.type = 'button';
   button.title = holder.kind === 'team' ? t('epics.open_team', 'Open this Team') : t('epics.open_agent', 'Open this Agent');
   button.addEventListener('click', () => openHolder(holder));

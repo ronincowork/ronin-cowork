@@ -88,12 +88,20 @@ which comes back by polling. A hand-in that names no item moves no status.
 **An item's reading** is the same wherever an item opens: over a tile from its item island, or in
 place on the Work Items stones. It is drawn in the launch forms' format: a head with the kind's
 symbol, the title, and the key, kind, status and flag, then label-left rows: **Status**,
-**Objective**, **Details** (priority, holder, parent, a paired item's Jira fields), **Subtasks**
+**Objective**, **Details** (the id, the kind with its level, where it started, priority, holder,
+parent, a paired item's Jira fields), **Subtasks**
 (over a tile: a Task's open ones, each opening in its place), **Done (n)** (its Done ones,
 folded to begin with), **Comments**, **Attachments** (each opens), **Links** and, on Work Items,
 **History**. Status is an ERABI question: press it, pick any status, and the item moves (the
 transition, one trail line, its holders and watchers told). The line under it says what
 changed, or why the move was refused, and the answer goes back.
+
+**Who holds it, and where it started.** A holder reads the same on the reader, the Work Items
+stones, the Epic cards and Waiting on you: an Agent is `@<agent>`, a Team is `Team <name> (lead
+<lead>)`, so an item the Team holds never reads as its lead's own; when several hold it, each is
+named. Details also give the id (and the Jira key, when it has one), the kind with its level
+(`Epic · 1`, `Task · 0`, `Subtask · -1`), and **Started in**: `from Jira (<reporter>)` for an
+item made on Jira, else `Ronin (<who made it>)`.
 
 Every row folds: press its name. Folded, it keeps one line (the status, the first line of the
 objective, the priority and holder, a count). A fold stays as you left it from one item to the

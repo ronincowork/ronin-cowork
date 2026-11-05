@@ -60,3 +60,31 @@ test('the reader and Waiting on you show the objective and the Handed in note fi
   const first = waiting.slice(waiting.indexOf('export function readFirst'), waiting.indexOf('/** Waiting on you: With the lead'));
   assert.ok(first.indexOf('item.objective') < first.indexOf('item.handed_in') && first.indexOf('item.handed_in') < first.indexOf("el('details'"));
 });
+
+// w299 (owner via pm_lead): a Team's item reads as the Team's, with its lead; an Agent's as
+// "@<agent>"; every holder when several; Details carry the id, the kind with its level, and
+// where the item started (Jira or Ronin).
+test('holderWords and holderOf say who holds an item; originWords where it started', async () => {
+  const surface = await read('public/js/work-items-surface.js');
+  const lift = (name) => surface.match(new RegExp(`export (?:const|function) ${name}[\\s\\S]*?\\n(?=\\n)`))[0].replace(/^export /, '');
+  const t = (_key, literal, vars) => literal.replace(/\{(\w+)\}/g, (_m, k) => String(vars[k]));
+  const membersOfTeam = (team) => (team === 'system' ? [{ name: 'system_lead', team_lead: true }, { name: 'item_pills' }] : []);
+  const { holderWords, holderOf, originWords } = new Function('t', 'membersOfTeam',
+    `${lift('teamLead')}\n${lift('holderWords')}\n${lift('holderOf')}\n${lift('originWords')}\nreturn { holderWords, holderOf, originWords };`)(t, membersOfTeam);
+  assert.equal(holderWords('team:system'), 'Team system (lead system_lead)');
+  assert.equal(holderWords({ kind: 'team', name: 'boot' }), 'Team boot');
+  assert.equal(holderWords({ kind: 'agent', name: 'item_pills' }), '@item_pills');
+  assert.equal(holderOf({ holder: 'team:system' }), 'Team system (lead system_lead)');
+  assert.equal(holderOf({ holder: 'team:system', held_by: ['agent:item_pills', 'team:system'] }), '@item_pills, Team system (lead system_lead)');
+  assert.equal(holderOf({ holder: 'team:pm', held_by: [] }, 'pm_lead'), 'Team pm (lead pm_lead)');
+  assert.equal(holderOf({}), '');
+  assert.equal(originWords({ created: { by: 'jira:Glen' }, jiraFields: { Reporter: 'Glen Osmond' } }), 'from Jira (Glen Osmond)');
+  assert.equal(originWords({ created: { by: 'jira:glen' } }), 'from Jira (glen)');
+  assert.equal(originWords({ created: { by: 'system_lead' } }), 'Ronin (system_lead)');
+  // Details: the id, the kind with its level, the origin; the Epic cards' holder through holderWords, label only.
+  assert.match(surface, /\[t\('work_items\.kind', 'Kind'\), \[item\.kind, item\.level\]/);
+  assert.match(surface, /\[t\('work_items\.origin', 'Started in'\), originWords\(item\)\]/);
+  const epics = await read('public/js/epics-surface.js');
+  assert.match(epics, /el\('button', 'epic-holder', holderWords\(holder\)\)/);
+  assert.match(epics, /button\.addEventListener\('click', \(\) => openHolder\(holder\)\)/, 'the button still opens the holder');
+});

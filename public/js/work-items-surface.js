@@ -3,7 +3,7 @@
 import { WorkspaceKit } from './workspace-kit.js';
 import { carryItem } from './team-drag.js';
 import { createPhalanx } from './phalanx.js';
-import { subscribe } from './team-controller.js';
+import { membersOfTeam, subscribe } from './team-controller.js';
 import { request } from './request.js';
 import { t } from './lexicon.js';
 import { ask } from './ask.js';
@@ -19,9 +19,26 @@ const el = (tag, cls = '', text = '') => {
   const out = document.createElement(tag); out.className = cls; out.textContent = text; return out;
 };
 
-/** Who works an item now: its Agent, or the lead when the Team holds it; nobody when parked. */
-export const holderOf = (item, leadName) => String(item.holder || '').startsWith('agent:') ? item.holder.slice(6)
-  : String(item.holder || '').startsWith('team:') ? leadName : '';
+/** A Team's lead, from the Team's members as the page reads them; '' when it has none. */
+export const teamLead = (team) => membersOfTeam(team).find((member) => member.team_lead)?.name || '';
+
+/** One holder in words (owner via pm_lead, w299): an Agent is "@<agent>"; a Team is "Team <name>
+ * (lead <lead>)", so a Team's item never reads as its lead's own. `holder` is { kind, name } or a
+ * label (team:<name>, agent:<name>). The one wording: the reader, the stones, the Epic cards and
+ * Waiting on you (epics-surface.js holderButton) all say a holder this way. */
+export function holderWords(holder, lead = null) {
+  const one = typeof holder === 'string' ? (() => { const [kind, ...rest] = holder.split(':'); return rest.length ? { kind, name: rest.join(':') } : { kind: 'agent', name: kind }; })() : holder;
+  if (!one?.name) return '';
+  if (one.kind !== 'team') return `@${one.name}`;
+  const led = lead ?? teamLead(one.name);
+  return led ? t('work_items.team_held_by', 'Team {team} (lead {lead})', { team: one.name, lead: led }) : t('work_items.team_held', 'Team {team}', { team: one.name });
+}
+
+/** Who holds an item, in words: every holder when there are several (`held_by`, the item read's
+ * labels), else the one it is found on; '' when nobody holds it. `leadName` names the lead of
+ * the Team it is read under, when the caller knows it better than the page. */
+export const holderOf = (item, leadName = '') => [...new Set(Array.isArray(item?.held_by) && item.held_by.length ? item.held_by : [item?.holder].filter(Boolean))]
+  .map((label) => holderWords(label, String(label).startsWith('team:') && leadName ? leadName : null)).filter(Boolean).join(', ');
 
 /** The Work Items surface's availability: the task_manager part installed and running. */
 export function workItemsAvailability(installed) {
@@ -58,7 +75,7 @@ export function itemStones(items, { all = items, holder = () => '' } = {}) {
     const owner = holder(item);
     return {
       id: item.id, item, group, label: item.title || item.id,
-      secondary: owner ? `@${owner}` : '',
+      secondary: owner,
       state: [item.id, item.kind, item.status, item.flagged ? FLAG_MARK : ''].filter(Boolean).join(' · '),
       className: `wi-level-${item.level === 1 ? 'epic' : item.level === -1 ? 'subtask' : 'item'}${item.flagged ? ' wi-flagged' : ''}`,
       attrs: { 'data-item': item.id }, draggable: true,
@@ -73,6 +90,15 @@ export const ITEM_STATUSES = ['To Do', 'In Progress', 'In Review', 'Done'];
 export const statusChoices = (item) => [...new Set([...ITEM_STATUSES, item?.status].filter(Boolean))];
 
 const when = (at) => String(at || '').slice(0, 16).replace('T', ' ');
+
+/** Where an item started (w299): "from Jira (<reporter>)" when Jira made it (created.by
+ * jira:<user>), else "Ronin (<who>)"; '—' when the reading does not say. */
+export function originWords(item) {
+  const by = String(item?.created?.by || '');
+  if (!by) return '—';
+  if (by.startsWith('jira:')) return t('work_items.from_jira', 'from Jira ({who})', { who: item.jiraFields?.Reporter || by.slice(5) });
+  return t('work_items.from_ronin', 'Ronin ({who})', { who: by });
+}
 
 /** The comment headed "Handed in: " (src/work-items.ts HANDED_IN): what the user can try. */
 export const HANDED_IN = 'Handed in: ';
@@ -143,13 +169,16 @@ export function renderItemDetail(host, item, { holder = '', openAttachment = nul
 
   const facts = el('dl', 'wi-facts');
   for (const [label, value] of [
+    [t('work_items.id', 'Id'), [item.id, item.jira && item.jira !== item.id ? item.jira : ''].filter(Boolean).join(' · ')],
+    [t('work_items.kind', 'Kind'), [item.kind, item.level].filter((part) => part !== undefined && part !== null && part !== '').join(' · ')],
+    [t('work_items.origin', 'Started in'), originWords(item)],
+    [t('work_items.holder', 'Holder'), holder || t('work_items.nobody', 'nobody')],
     [t('work_items.priority', 'Priority'), item.priority || '—'],
-    [t('work_items.holder', 'Holder'), holder ? `@${holder}` : t('work_items.nobody', 'nobody')],
     [t('work_items.parent', 'Parent'), item.parent || '—'],
     // A paired item's Jira fields, by Jira's own names.
     ...Object.entries(item.jiraFields || {}),
   ]) facts.append(el('dt', '', label), el('dd', '', value));
-  step('details', t('work_items.details', 'Details'), () => [item.priority, holder ? `@${holder}` : ''].filter(Boolean).join(' · '), facts);
+  step('details', t('work_items.details', 'Details'), () => [item.priority, holder].filter(Boolean).join(' · '), facts);
 
   // A Task's Subtasks sit under it (owner, 2026-11-05): each its symbol, key, title and status,
   // opening in the Task's place when there is somewhere to open it. The Done ones have their
