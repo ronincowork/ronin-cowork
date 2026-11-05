@@ -47,7 +47,7 @@ test('bad, duplicate, browser and typing chords are rejected', () => {
 test('Clear reads the Agent document without classifying CLI state', async () => {
   assert.deepEqual(await agentControlKeys('codex', 'clear'), ['C-c']);
   assert.deepEqual(await agentControlKeys('claude', 'clear'), ['Escape']);
-  for (const cli of ['gemini', 'grok', 'hermes']) {
+  for (const cli of ['agy', 'grok', 'hermes']) {
     assert.deepEqual(await agentControlKeys(cli, 'clear'), ['C-c']);
   }
   assert.deepEqual(await agentControlKeys('codex', 'stop'), ['Escape']);

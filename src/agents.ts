@@ -72,21 +72,23 @@ export const AGENTS = [
     screen: { busy: ['esc to interrupt'], asking: ['›\\s*\\d+\\.\\s'], ready: ['^\\s*›(?:\\s|$)'] },
   },
   {
-    id: 'gemini',
-    cmd: 'gemini',
-    label: 'Gemini CLI',
+    id: 'agy',
+    cmd: 'agy',
+    label: 'Antigravity CLI',
     operations: {
-      install: 'npm install -g @google/gemini-cli',
-      // general.enableAutoUpdate defaults true: https://github.com/google-gemini/gemini-cli/blob/main/docs/cli/settings.md
-      update: { shell: 'npm install -g @google/gemini-cli@latest', argv: [] },
+      // Google's installer: a checksum-verified binary to ~/.local/bin, no npm package.
+      install: 'curl -fsSL https://antigravity.google/cli/install.sh | bash',
+      // "automatically self-updates in the background during regular runs" (the installer); `agy update` on demand.
+      update: { shell: '', argv: ['update'] },
       selfUpdates: true,
       version: ['--version'],
       models: { read: 'none' },
       session: { discovery: 'unsupported' },
     } as AgentOperations,
     parked: '',
-    credentials: ['.gemini/oauth_creds.json'],
-    screen: { busy: [], asking: ['●\\s*\\d+\\.\\s'], ready: [] },
+    credentials: [],
+    // Its choice menu, measured on 1.5.1's sign-in screen: "> 1. Google OAuth".
+    screen: { busy: [], asking: ['(?:^|\\n)\\s*>\\s*\\d+\\.\\s'], ready: [] },
   },
   // [cli] auto_update defaults true: https://github.com/xai-org/grok-build/blob/main/crates/codegen/xai-grok-pager/docs/user-guide/05-configuration.md
   { id: 'grok', cmd: 'grok', label: 'Grok CLI', operations: { install: 'npm install -g @xai-official/grok', update: { shell: 'npm install -g @xai-official/grok@latest', argv: [] }, selfUpdates: true, version: ['--version'], models: { read: 'command', argv: ['models'] }, session: { discovery: 'unsupported' } } as AgentOperations, parked: '', credentials: ['.grok/auth.json'], screen: { busy: [], asking: [], ready: [] } },

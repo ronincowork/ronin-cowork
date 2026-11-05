@@ -65,14 +65,14 @@ refused by Codex in the new tile, and Ronin never substitutes.
 ### Google
 
 - **provider:** `google`
-- **cli:** `gemini`
+- **cli:** `agy`
 - **models_dev:** `google`
 - **families:** `pro=frontier flash=standard flash-lite=light`
-- **transcript_source:** Observed 2026-09-22: `~/.gemini/tmp/<project>/chats/session-*.jsonl`; appended `$set` mutations replace the complete messages array. An adapter must apply mutations and diff messages, not map each line to a message; not implemented here.
+- **transcript_source:** Reported, not yet observed here: `~/.gemini/antigravity-cli/brain/<conversation-id>/.system_generated/logs/transcript.jsonl`. No adapter yet.
 
-Model ids are passed unchanged to Gemini CLI's `--model` option. The free tier serves
-Flash models only; Pro needs a paid plan. Not yet exercised end to end through Ronin; the
-first real launch of each model is the proof, per `docs/architecture/model-providers.md`.
+Model ids are passed unchanged to Antigravity CLI's `--model` option. Not yet exercised
+end to end through Ronin; the first real launch of each model is the proof, per
+`docs/architecture/model-providers.md`.
 
 ### xAI
 

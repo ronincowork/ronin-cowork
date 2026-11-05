@@ -1,6 +1,6 @@
 # Provider sign-in
 
-Ronin runs the Agents you already pay for: Claude Code, Codex, Gemini CLI and others, each
+Ronin runs the Agents you already pay for: Claude Code, Codex, Antigravity CLI and others, each
 signed in with your own account. Nobody sits between you and the provider, and you can
 add another provider whenever you like. One is enough to start.
 

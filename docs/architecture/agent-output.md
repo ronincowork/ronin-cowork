@@ -29,7 +29,7 @@ on across both.
     closes. A prompt is the CLI's numbered choices, its dialog footer (`Esc to cancel`) or a
     `(y/n)`, never the Agent's own words:
     a reply that ends on a question is not one;
-  - for a CLI with no log read (Grok, or Gemini until it has one; a Hermes Agent born before its
+  - for a CLI with no log read (Grok, or Antigravity until it has one; a Hermes Agent born before its
     home was its own), the conversation as far as
     the screen shows it: a `note` when work starts, then a `say` of what the screen newly shows
     and a `turn` when the CLI is ready again. Less complete than a log, in the same shape.

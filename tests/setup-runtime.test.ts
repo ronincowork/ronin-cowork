@@ -31,7 +31,7 @@ const row = (a: Awaited<ReturnType<typeof answer>>, id: string) => a.providers.f
 
 test('provider facts come from the measured summary: absent, installable, installed, login open, activated, and count bands', async () => {
   const none = await answer({}, []);
-  assert.deepEqual(none.providers.map((provider) => provider.id), ['claude', 'codex', 'gemini', 'grok', 'hermes'], 'one row per CLI the registry knows, in its order');
+  assert.deepEqual(none.providers.map((provider) => provider.id), ['claude', 'codex', 'agy', 'grok', 'hermes'], 'one row per CLI the registry knows, in its order');
   assert.equal(row(none, 'claude').state, 'installable');
   assert.equal(row(none, 'codex').state, 'installable', 'whether a CLI can be installed is the registry\'s fact, not the probe\'s');
   assert.equal(row(none, 'hermes').state, 'absent', 'a CLI with no install line and not on PATH is absent');
@@ -85,8 +85,8 @@ test('an activated CLI\'s row says its version, what Refresh last learned of the
   assert.equal(row(before, 'codex').latest, null, 'never asked yet');
   assert.equal(row(before, 'codex').updatable, true, 'activated and the registry has an update line');
   assert.equal(row(before, 'codex').update_available, false, 'no latest, no claim');
-  assert.equal(row(before, 'gemini').updatable, false, 'not installed: nothing to update');
-  assert.equal(row(before, 'gemini').update, null);
+  assert.equal(row(before, 'agy').updatable, false, 'not installed: nothing to update');
+  assert.equal(row(before, 'agy').update, null);
   // Installed but not activated: nothing asked, nothing offered — not a stale version, not "not read".
   const quiet = await measured({}, ['claude', 'codex']);
   assert.deepEqual(quiet.versions, {}, 'no activated provider, no exec at all');
@@ -100,7 +100,7 @@ test('an activated CLI\'s row says its version, what Refresh last learned of the
   assert.equal(row(after, 'codex').update_available, true);
   assert.equal(row(after, 'claude').update_available, false, 'latest known but the installed version is not: no claim either way');
   assert.equal(row(after, 'codex').askable, true, 'its update line names an npm package');
-  assert.equal(row(after, 'gemini').askable, true, 'gemini has an npm package source even though the old argv update did not name it');
+  assert.equal(row(after, 'agy').askable, false, 'its installer is not an npm package: latest is unknown, never guessed');
 });
 
 test('off is the one switch: it outranks a credential file and Done, spends nothing on the provider, keeps the sign-in, and on clears one field', async () => {
@@ -150,7 +150,7 @@ test('an update runs in a temporary provider_setup session, and the one Close en
   assert.equal(row(shown, 'codex').update_open, true);
   assert.deepEqual(row(shown, 'codex').attachment, { type: 'session', key: 'provider_setup_codex_update', team: 'provider_setup', temporary: true }, 'the same attachment shape a sign-in gets');
   assert.equal(row(shown, 'codex').state, 'installed', 'an update is not a sign-in state');
-  await assert.rejects(() => runtime.openProviderUpdate('gemini', ops, available(['claude', 'codex'])), /not installed/);
+  await assert.rejects(() => runtime.openProviderUpdate('agy', ops, available(['claude', 'codex'])), /not installed/);
   await assert.rejects(() => runtime.openProviderUpdate('nope', ops, available([])), /Unknown provider/);
   live.add('install_codex');
   await ops.open('codex', 'provider_setup_codex');
@@ -240,8 +240,8 @@ test('Done records completion and closes; Close before completion only closes', 
   assert.deepEqual(recorded.at(-1), ['codex', '2026-09-05T02:03:04.000Z'], 'Done accepts first-run authentication in the install session');
   assert.equal(live.has('install_codex'), false);
 
-  live.add('provider_setup_gemini');
-  assert.deepEqual(await runtime.closeProviderLogin('gemini', ops), { session: 'provider_setup_gemini', closed: true });
+  live.add('provider_setup_agy');
+  assert.deepEqual(await runtime.closeProviderLogin('agy', ops), { session: 'provider_setup_agy', closed: true });
   assert.equal(recorded.length, 2, 'Close did not record activation');
 });
 

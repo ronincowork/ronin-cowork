@@ -4,7 +4,7 @@ Each CLI has one maintained integration page:
 
 - [Codex](codex.md)
 - [Claude Code](claude.md)
-- [Gemini CLI](gemini.md)
+- [Antigravity CLI](agy.md)
 - [Grok](grok.md)
 - [Hermes](hermes.md)
 

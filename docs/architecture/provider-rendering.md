@@ -2,7 +2,7 @@
 
 **One file, a section per agent, because they all face the same three questions.** Ronin
 paints the pane; the agent paints inside it, and every CLI answers differently. This is the
-record of what we have had to do per agent, so the next one — Gemini, Grok, Hermes — is a
+record of what we have had to do per agent, so the next one — Antigravity, Grok, Hermes — is a
 section rather than a rediscovery.
 
 `docs/architecture/ui.md` is the design system. This is the compatibility layer around it.
@@ -85,7 +85,7 @@ under the light shell, so anything painting from the cube always had the ground 
 written for. Making the terminal follow the shell took that away from every program that
 addresses the cube instead of the sixteen slots. Claude Code was unaffected; Codex was not.
 
-## Adding the next one — Gemini, Grok, Hermes
+## Adding the next one — Antigravity, Grok, Hermes
 
 1. **Find out what it emits.** Attach it, then read its tape out of the `session` store
    (`ronin-store session` resolves it — never hardcode the path — the store table is `src/resources.ts`):

@@ -18,7 +18,7 @@ answer it. A step gets a check once you've answered it, by doing it or by saying
 ## The steps
 
 **Model providers.** Install and sign in to the Agents you want to use: Claude Code, Codex,
-Gemini CLI and others. One is enough. See [Provider sign-in](provider-sign-in.md).
+Antigravity CLI and others. One is enough. See [Provider sign-in](provider-sign-in.md).
 
 **Register.** Optional. Tell us a little about yourself, with your email or anonymously.
 Your email is what unlocks Ronin Services. The form also asks for a two-line introduction
