@@ -96,7 +96,8 @@ const HEADER = () => {
 /** What the island shows: the items the Agent holds, then, on a lead, the Epics its Teams hold
  *  (owner, 2026-11-04, w279: the Epic generally sits on the Team). A Team's other items are not
  *  the lead's unless it holds them itself. */
-export const islandItems = (letter) => [...(letter?.items || []), ...(letter?.handedIn || []), ...(letter?.teamEpics || [])];
+// Once each: a Team-held item the lead handed in is in both handedIn and teamItems.
+export const islandItems = (letter) => [...new Map([...(letter?.items || []), ...(letter?.handedIn || []), ...(letter?.teamItems || [])].map((item) => [item.id, item])).values()];
 
 /** Is this row live, and if not, why not? '' when live. */
 function quietReason(row, tile) {

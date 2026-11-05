@@ -18,7 +18,7 @@ export interface Tegami {
   items: Array<WorkItem & { jira_url?: string }>;
   /** The Epics the Teams this Agent leads hold, and not the Agent itself: a lead's item island
    * shows them beside its own items (owner, 2026-11-04, w279). Empty for an Agent leading none. */
-  teamEpics: Array<WorkItem & { jira_url?: string }>;
+  teamItems: Array<WorkItem & { jira_url?: string }>;
   /** What this Agent handed in that still waits In Review (docs/using-ronin/project-management.md, Three signals): a hand-in
    * gives the item to the Team, so it is found on the rosters of the Agent's Teams. The item
    * island shows it with its hand-in mark, so a tile says what its Agent just handed in. */
@@ -80,11 +80,13 @@ async function handedInBy(name: string, own: Set<string>): Promise<Array<WorkIte
   return items.filter((item): item is WorkItem => !!item && item.status === 'In Review' && item.handed_in?.by === name).map(linked);
 }
 
-/** The Epics (level 1) its led Teams hold, once each, leaving out those the Agent holds itself. */
-export function teamEpics(reading: AgentReading): Array<WorkItem & { jira_url?: string }> {
+/** What its led Teams hold at levels 1 and 0 — their Epics and their unassigned Tasks, which
+ * show nowhere else (owner, KAN-251) — once each, leaving out those the Agent holds itself.
+ * Subtasks (-1) stay out. */
+export function teamItems(reading: AgentReading): Array<WorkItem & { jira_url?: string }> {
   const own = new Set(reading.items.map((item) => item.id));
   const seen = new Map<string, WorkItem>();
-  for (const team of reading.teams) for (const item of team.items) if (item.level === 1 && !own.has(item.id)) seen.set(item.id, item);
+  for (const team of reading.teams) for (const item of team.items) if ((item.level === 1 || item.level === 0) && !own.has(item.id)) seen.set(item.id, item);
   return [...seen.values()].map(linked);
 }
 
@@ -123,7 +125,7 @@ export async function readTegami(name: string): Promise<Tegami | null> {
         : [],
       holds: reading.items.map((item) => item.id),
       items: reading.items.map(linked),
-      teamEpics: teamEpics(reading),
+      teamItems: teamItems(reading),
       handedIn: await handedInBy(name, new Set(reading.items.map((item) => item.id))),
       docs: await readDocs([...reading.attachments, ...(await dropped(key))]),
       chip: chipFor(reading.items),

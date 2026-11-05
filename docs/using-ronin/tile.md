@@ -31,9 +31,11 @@ Done), its dot (grey, blue, amber, green), and the flag: solid when the item is 
 an outline when it is not. An item In Review also carries its latest signal, "handed in" or
 "on dev", with how long ago. Press the bar again, or a pill, to put it back in the header.
 
-On a Team lead, the island also shows the Epics its Teams hold, after the items the lead
-holds itself: an Epic generally sits on the Team. A Team's other items (Tasks, Stories, Bugs,
-Subtasks) appear on the lead's island only when the lead holds them itself.
+On a Team lead, the island also shows what its Teams hold at the Epic and Task level, after
+the items the lead holds itself. An Epic generally sits on the Team, and a Task the Team holds is
+one no member has taken yet, so the lead's island is where unassigned work shows. Once a member
+takes it, it leaves the lead's island. A Team's Subtasks, and anything only watched, appear only
+when the lead holds them itself.
 
 The island follows the Agent's work record as it changes; nothing needs refreshing.
 

@@ -23,7 +23,7 @@ process.env.TMUX_TMPDIR = await fs.mkdtemp(path.join(os.tmpdir(), 'ronin-tegami-
 process.env.RONIN_SESSION_DIR = temp;
 process.env.RONIN_WORK_ITEMS_DIR = path.join(temp, '.work-items');
 
-const { readTegami, teamEpics } = await import('../src/tegami-read.js');
+const { readTegami, teamItems } = await import('../src/tegami-read.js');
 const { createItem, flagItem } = await import('../src/work-items.js');
 
 // No tmux server answers here, so a session key is its bare name and the letter is read
@@ -94,7 +94,7 @@ test('a paired item carries its Jira issue link, from its space\'s site; an unpa
   setSpaceNames('linked', null);
 });
 
-test("a lead's island Epics: those its Teams hold, once each, not its own and not the Teams' other items (w279)", () => {
+test("a lead's island Team items: the Epics and Tasks its Teams hold, once each, not its own and not Subtasks (w279, KAN-251)", () => {
   const at = (id: string, level: number) => ({ id, level, title: id, kind: level === 1 ? 'Epic' : 'Task', status: 'To Do' }) as never;
   const reading = {
     holder: 'agent:lead', attachments: [], watching: [],
@@ -104,6 +104,6 @@ test("a lead's island Epics: those its Teams hold, once each, not its own and no
       { team: 'b', watching: [], members: [], items: [at('KAN-2', 1), at('KAN-3', 1)] },
     ],
   };
-  assert.deepEqual(teamEpics(reading).map((item) => item.id), ['KAN-2', 'KAN-3']);
-  assert.deepEqual(teamEpics({ ...reading, teams: [] }), []);
+  assert.deepEqual(teamItems(reading).map((item) => item.id), ['KAN-2', 'w2', 'KAN-3']);
+  assert.deepEqual(teamItems({ ...reading, teams: [] }), []);
 });

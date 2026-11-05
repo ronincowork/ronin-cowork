@@ -29,7 +29,7 @@ test('the tile header carries the island, fed by the pushed work record, and a p
   assert.match(head, /renderItemDetail\(detail, item/);
   // w279: a lead's island adds the Epics its Teams hold after its own items.
   // Piece E: then what the Agent handed in that still waits In Review, before a lead's Epics.
-  assert.match(head, /islandItems = \(letter\) => \[\.\.\.\(letter\?\.items \|\| \[\]\), \.\.\.\(letter\?\.handedIn \|\| \[\]\), \.\.\.\(letter\?\.teamEpics \|\| \[\]\)\]/);
+  assert.match(head, /islandItems = \(letter\) => \[\.\.\.new Map\(\[\.\.\.\(letter\?\.items \|\| \[\]\), \.\.\.\(letter\?\.handedIn \|\| \[\]\), \.\.\.\(letter\?\.teamItems \|\| \[\]\)\]\.map\(\(item\) => \[item\.id, item\]\)\)\.values\(\)\]/);
   assert.match(head, /isOpen: \(id\) => !!openItemLayer\(tile, id\)/);
   const island = await read('public/js/tile-island.js');
   assert.doesNotMatch(island, /request\(|fetch\(|setInterval/, 'no polling: the push is the only reading');
