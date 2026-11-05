@@ -508,3 +508,17 @@ test('a move to Done tells the Agent that handed it in, once; not the Team\'s le
   await items.editItem(own.id, { status: 'Done' }, 'mem');
   assert.deepEqual(await said(), []);
 });
+
+test('notice 6 by Done\'s name: on a space that lists Done second, a move to In Review tells nobody it is Done', async () => {
+  items.setSpaceNames('jorder6', { ...items.JIRA_NAMES, statuses: ['To Do', 'Done', 'In Progress', 'In Review'] });
+  try {
+    const { item } = await items.createItem({ title: 'ordered', holder: mem, campaign_id: 'jorder6' }, 'boss');
+    await items.handInItem(item.id, 'mem', { desk: true, receipts: ['o1'] });
+    await items.editItem(item.id, { status: 'In Progress' }, 'owner');
+    await quiet();
+    await items.editItem(item.id, { status: 'In Review' }, 'owner');
+    assert.deepEqual(await said(), [], 'In Review is not Done');
+    await items.editItem(item.id, { status: 'Done' }, 'owner');
+    assert.deepEqual((await said()).map(([to]) => to), ['mem']);
+  } finally { items.setSpaceNames('jorder6', null); }
+});

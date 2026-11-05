@@ -368,7 +368,7 @@ export async function oneNoticePerCommand<T>(command: () => Promise<T>): Promise
 async function noticesOf(item: WorkItem, line: TrailLine): Promise<string[]> {
   if (line.op === 'status') {
     // Notice 6: a move to Done tells the Agents that handed it in, each once, while alive.
-    const done = line.to === spaceNames(item.campaign_id).statuses.at(-1) ? await handersOf(item, line.by) : [];
+    const done = line.to === DONE ? await handersOf(item, line.by) : [];
     for (const name of done) await notice(name, `${item.id} '${item.title}' is Done (accepted by ${line.by}).`);
     const watching = await tellWatchers(item, `${item.id}: status ${line.from} → ${line.to} by ${line.by}.`, [line.by, ...done]);
     return [...done, ...watching];
@@ -585,12 +585,6 @@ export function editItem(id: string, edit: ItemEdit, by: string, note?: string):
         throw new WorkItemRefused(`Jira would refuse this, so Ronin does too: ${paired.child.id} is on Jira under ${current.id} and would have to change kind across levels.`);
       }
     }
-    // DONE LEAVES EVERY LIST (KAN-261): any move to the space's last status (Done), by Accept,
-    // item transition or Jira, takes every holder off, as an item Done is held by nobody; the
-    // status line names them.
-    const doneName = names.statuses.at(-1)!;
-    const off = edit.status !== undefined && edit.status.trim() === doneName && current.status !== doneName ? await takeOffEveryList(current.id) : [];
-    const offNote = off.length ? `off ${labels(off)}` : '';
     // The bridge storing the Jira key alone is not news; nor is a line that changes nothing.
     let paired = false;
     let unchanged = false;
@@ -615,7 +609,7 @@ export function editItem(id: string, edit: ItemEdit, by: string, note?: string):
         if (value.trim()) item.external[key] = value.trim(); else delete item.external[key];
         changed.push(`${key} ${item.external[key] ?? 'cleared'}`);
       }
-      const said = [note, offNote].filter(Boolean).join('; ') || undefined;
+      const said = note || undefined;
       paired = changed.length === 1 && changed[0]!.startsWith('jira ') && Boolean(item.external.jira);
       unchanged = !changed.length;
       if (changed.length === 1 && changed[0]!.startsWith('status ')) return { op: 'status', from: before, to: item.status, note: said };
@@ -628,6 +622,11 @@ export function editItem(id: string, edit: ItemEdit, by: string, note?: string):
 }
 
 const REVIEW = 'In Review';
+/** Done by its name, as In Progress and In Review are: a Jira space lists its statuses in its own
+ * order (home_machine: To Do, Done, In Progress, In Review), so the last one is not Done. Jira's
+ * status category ('done') would survive a space renaming Done, but the bridge does not read
+ * categories yet, so the name it is. */
+export const DONE = 'Done';
 
 /** A status change told to the watchers of that item, not of an item above it (section 4):
  * each Agent watching it, and the lead of each Team watching it, once each, never `except`. */
@@ -1225,7 +1224,7 @@ export function releaseHolder(session: string, key: string, how: string): Promis
     const placed = new Map<string, string>();
     for (const id of letter.holds) {
       const item = await readItem(id);
-      if (item && item.status !== 'Done') { const team = await teamFor(item, teams); if (team) placed.set(id, team); }
+      if (item && item.status !== DONE) { const team = await teamFor(item, teams); if (team) placed.set(id, team); }
     }
     await writeLetterHolds(key, []);
     const released: Acknowledged[] = [];
@@ -1237,7 +1236,7 @@ export function releaseHolder(session: string, key: string, how: string): Promis
       if (team) { const list = await listFor({ kind: 'team', name: team }); if (!list.holds.includes(id)) await list.set([...list.holds, id]); }
       const to = team ? `team:${team}` : 'none';
       released.push(await appendTrail(id, 'ronin', () => ({ op: 'holder-ended', from: `agent:${session}`, to, note: how }), () => false));
-      if (item.status === 'Done' || item.status === spaceNames(item.campaign_id).statuses[0]) continue;
+      if (item.status === DONE || item.status === spaceNames(item.campaign_id).statuses[0]) continue;
       const reason = `Ended without handover: ${session}, ${item.status}`;
       released.push(await appendTrail(id, 'ronin', (it) => {
         it.flagged = true;

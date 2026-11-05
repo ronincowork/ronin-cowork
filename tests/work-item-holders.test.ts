@@ -354,19 +354,30 @@ test('a w id is never issued twice: renamed to its Jira key, its number stays us
 });
 
 /* KAN-261: Done leaves every list, however it got there; no id twice on a list. */
-test('any move to Done takes every holder off, by item transition or by Jira, in the one status line', async () => {
-  for (const by of ['owner', 'jira:someone']) {
-    const { item } = await items.createItem({ title: `done by ${by}`, holder: team }, 'lead');
+test('a move to Done keeps its holders, however it went Done: the record shows it Done', async () => {
+  for (const [way, by] of [['Accept', 'owner'], ['item transition', 'lead'], ['Jira', 'jira:someone']]) {
+    const { item } = await items.createItem({ title: `done by ${way}`, holder: team }, 'lead');
     await items.assignItem(item.id, ann, 'lead');
-    const done = await items.editItem(item.id, { status: 'Done' }, by);
-    assert.equal(done.line.op, 'status');
-    assert.equal(done.line.note, 'off team:crew, agent:ann');
-    assert.deepEqual(await listsHolding(item.id), [], `${by}: on nobody's list`);
-    assert.equal((await items.editItem(item.id, { status: 'Done' }, by)).line.note, 'no change', 'Done again changes nothing');
+    const done = await items.editItem(item.id, { status: 'Done' }, by!);
+    assert.equal(done.line.note, undefined, `${way}: the status line names no holder taken off`);
+    assert.deepEqual(await listsHolding(item.id), ['agent:ann', 'team:crew'], `${way}: still on its lists`);
   }
-  const { item } = await items.createItem({ title: 'not done yet', holder: team }, 'lead');
-  await items.editItem(item.id, { status: 'In Progress' }, 'owner');
-  assert.deepEqual(await listsHolding(item.id), ['team:crew'], 'any other status keeps its holders');
+});
+
+test('Done by its name on a Jira space that lists Done second: a move to In Review keeps its holders', async () => {
+  items.setSpaceNames('jorder', { ...items.JIRA_NAMES, statuses: ['To Do', 'Done', 'In Progress', 'In Review'] });
+  try {
+    const { item } = await items.createItem({ title: 'jira order', holder: team, campaign_id: 'jorder' }, 'lead');
+    await items.editItem(item.id, { status: 'In Review' }, 'owner');
+    assert.deepEqual(await listsHolding(item.id), ['team:crew'], 'In Review keeps its holders');
+    assert.equal(items.DONE, 'Done');
+  } finally { items.setSpaceNames('jorder', null); }
+});
+
+test('the work record shows a Done item as "Done · <how long ago>" while it waits', async () => {
+  const read = await fs.readFile(new URL('../libexec/work-record-read', import.meta.url), 'utf8');
+  assert.match(read, /return "Done · %s" % when if when else "Done"/);
+  assert.match(read, /line = lambda i: "- %s %s · %s%s" % \(i\["id"\], i\["title"\], status\(i\)/);
 });
 
 test('an id is on a holds list once: a doubled list reads once, and writes back once', async () => {

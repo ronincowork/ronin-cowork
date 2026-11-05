@@ -218,7 +218,7 @@ item handover w12 team:surface "where it stands; what is next"   an ending Agent
 
 Assigning adds a holder and removes nobody. When an Agent ends, what it held goes by its
 status (project-management.md, How an item lives): To Do back to its Team, In Progress and In
-Review handed over with a note, Done off every list. An ending with no Agent to ask (Shut down
+Review handed over with a note, Done left where it is. An ending with no Agent to ask (Shut down
 Agent, archive, a crash) gives the unfinished ones to the Team flagged, and its lead is told
 once. Other holders stay. `item search` still finds it.
 

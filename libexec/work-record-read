@@ -161,10 +161,25 @@ except Exception: r = {}
 if not r.get("ok"):
     print("\n(Ronin did not answer: the work items you hold are not shown.)"); raise SystemExit
 items = r.get("items") or []
+# A Done item stays on the record until it is archived: shown as "Done · <how long ago>".
+import datetime, re
+def since(i):
+    for l in reversed(i.get("trail") or []):
+        if (l.get("op") == "status" and l.get("to") == "Done") or (l.get("op") == "edit" and re.search(r"(^|, |; )status Done(,|;|$)", l.get("note") or "")):
+            return l.get("at")
+    return (i.get("created") or {}).get("at")
+def ago(at):
+    try: s = (datetime.datetime.now(datetime.timezone.utc) - datetime.datetime.fromisoformat(at.replace("Z", "+00:00"))).total_seconds()
+    except Exception: return ""
+    return "%d min ago" % max(1, s // 60) if s < 3600 else "%d h ago" % (s // 3600) if s < 172800 else "%d days ago" % (s // 86400)
+def status(i):
+    if i.get("status") != "Done": return i.get("status")
+    when = ago(since(i) or "")
+    return "Done · %s" % when if when else "Done"
 print("\n## Work items you hold" if items else "\n## You hold no work items — your team holds your work; item create puts it there" if r.get("teams") else "\n## You hold no work items — item create --parent <epic> makes one yours")
+line = lambda i: "- %s %s · %s%s" % (i["id"], i["title"], status(i), " · flagged" if i.get("flagged") else "")
 for i in items:
-    print("- %s %s · %s%s" % (i["id"], i["title"], i["status"], " · flagged" if i.get("flagged") else ""))
-line = lambda i: "- %s %s · %s%s" % (i["id"], i["title"], i["status"], " · flagged" if i.get("flagged") else "")
+    print(line(i))
 if r.get("watching"):
     print("\n## Work items you watch")
     for i in r["watching"]: print(line(i))
