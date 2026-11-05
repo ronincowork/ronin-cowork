@@ -102,9 +102,9 @@ export function buildDocs(root, only = null) {
   area.addEventListener('pointerdown', (event) => event.stopPropagation());
   ed.append(bar, frame, area);
   root.append(pills, list, ed);
-  // A page — or a file handed to an Agent (its session's drop/), which the browser shows as
+  // A page, an image or a PDF — or a file handed to an Agent (its session's drop/), which the browser shows as
   // itself: an image or a PDF in a textarea would be garbage, and a Save would write it back.
-  const isPage = (p) => /\.html?$/i.test(p) || (/\/drop\/[^/]+$/.test(p) && !/\.(md|txt)$/i.test(p));
+  const isPage = (p) => /\.(html?|png|jpe?g|gif|webp|svg|pdf)$/i.test(p) || (/\/drop\/[^/]+$/.test(p) && !/\.(md|txt)$/i.test(p));
   const rawUrl = (p) => '/raw' + p.split('/').map(encodeURIComponent).join('/');
   const targetOf = (value) => {
     if (typeof value === 'string' && value) return { key: `absolute:${value}`, path: value, title: value };
