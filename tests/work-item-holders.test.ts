@@ -396,3 +396,18 @@ test('a work record seeded with the old watches line is corrected on its next wr
   assert.doesNotMatch(after, /a new child, a holder change/);
   assert.match(after, /of a status change on that item, nothing else\./);
 });
+
+test('a list holding an item under its old w id and its Jira key reads it once, and writes back once', async () => {
+  const { writeTeamRoster } = await import('../src/team-rosters.js');
+  const { item } = await items.createItem({ title: 'keyed twice', holder: team }, 'lead');
+  const was = item.id;
+  await items.renameItem(was, 'KAN-9261', 'jira:Ronin');
+  const roster = (await readTeamRoster('crew'))!;
+  assert.ok(roster.holds.includes('KAN-9261') && !roster.holds.includes(was), 'a rename rewrites the old id on the list');
+  // A write from elsewhere brings the old id back beside the key, as on the live roster.
+  await writeTeamRoster('crew', { holds: [...roster.holds, was] }, roster.campaign_id);
+  assert.deepEqual(await listsHolding('KAN-9261'), ['team:crew'], 'the store reads the old id as the key');
+  assert.deepEqual((await readTeamRoster('crew'))!.holds.filter((id) => id === 'KAN-9261' || id === was), ['KAN-9261'], 'and writes the list back clean at once');
+  const reading = await teamReading('crew');
+  assert.equal(reading.items.filter((one) => one.id === 'KAN-9261').length, 1, 'the Team reading shows it once');
+});

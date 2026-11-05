@@ -46,7 +46,9 @@ export interface TeamReading {
   boards: HeldItem[];
 }
 
-const present = (items: Array<WorkItem | null>): WorkItem[] => items.filter((item): item is WorkItem => item !== null);
+/** The items found, each once by the id it goes by now: a list holding an item under its old w id
+ * and its Jira key reads it once (KAN-261). */
+const present = (items: Array<WorkItem | null>): WorkItem[] => [...new Map(items.filter((item): item is WorkItem => item !== null).map((item) => [item.id, item])).values()];
 
 const read = (ids: string[] = []) => Promise.all(ids.map((id) => readItem(id))).then(present);
 

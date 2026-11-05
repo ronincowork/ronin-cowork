@@ -1039,17 +1039,31 @@ export const holderLabel = (holder: Holder): string => `${holder.kind}:${holder.
 
 interface HeldList { holder: Holder; holds: string[]; set(holds: string[]): Promise<unknown> }
 
+/** A list's ids as the items go by now (KAN-261): an id from before the item took its Jira key
+ * reads as the key, and the item is on the list once, however it was written (a write from
+ * another process can bring back an id a rename replaced). An id no item has is kept as it is.
+ * A list read otherwise is written back clean at once. */
+async function canonical(ids: string[], write: (holds: string[]) => Promise<unknown>): Promise<string[]> {
+  const out: string[] = [];
+  for (const id of ids) {
+    const now = await resolveId(id).catch(() => id);
+    if (!out.includes(now)) out.push(now);
+  }
+  if (out.join() !== ids.join()) await write(out).catch((error) => console.error('[work-items] cleaning a holds list:', error));
+  return out;
+}
+
 async function heldLists(): Promise<HeldList[]> {
-  const teams = (await listTeamRosters()).map((roster): HeldList => ({
+  const teams = await Promise.all((await listTeamRosters()).map(async (roster): Promise<HeldList> => ({
     holder: { kind: 'team', name: roster.name },
-    holds: roster.holds,
+    holds: await canonical(roster.holds, (holds) => writeTeamRoster(roster.name, { holds }, roster.campaign_id)),
     set: (holds) => writeTeamRoster(roster.name, { holds }, roster.campaign_id),
-  }));
-  const agents = (await listLetterHolds()).map((letter): HeldList => ({
+  })));
+  const agents = await Promise.all((await listLetterHolds()).map(async (letter): Promise<HeldList> => ({
     holder: { kind: 'agent', name: letter.name },
-    holds: letter.holds,
+    holds: await canonical(letter.holds, (holds) => writeLetterHolds(letter.key, holds)),
     set: (holds) => writeLetterHolds(letter.key, holds),
-  }));
+  })));
   return [...teams, ...agents];
 }
 
@@ -1057,10 +1071,10 @@ async function listFor(holder: Holder): Promise<HeldList> {
   if (holder.kind === 'team') {
     const roster = await readTeamRoster(holder.name);
     if (!roster) throw new WorkItemBadInput(`Team "${holder.name}" has no roster.`);
-    return { holder, holds: roster.holds, set: (holds) => writeTeamRoster(roster.name, { holds }, roster.campaign_id) };
+    return { holder, holds: await canonical(roster.holds, (holds) => writeTeamRoster(roster.name, { holds }, roster.campaign_id)), set: (holds) => writeTeamRoster(roster.name, { holds }, roster.campaign_id) };
   }
   const letter = await letterOf(holder.name, 'hold work in');
-  return { holder, holds: letter.holds, set: (holds) => writeLetterHolds(letter.key, holds) };
+  return { holder, holds: await canonical(letter.holds, (holds) => writeLetterHolds(letter.key, holds)), set: (holds) => writeLetterHolds(letter.key, holds) };
 }
 
 async function letterOf(name: string, to: string) {
