@@ -9,11 +9,11 @@ where it is built or taught.
 | Doc | What it holds |
 |---|---|
 | [Project management](../using-ronin/project-management.md) | **The README.** Plan, epic, item; how an item lives; the three signals; the six notices; where the work shows (Jira Kanban or Scrum, Epics, Waiting on you, the item island) |
-| [Writing a plan](../using-ronin/planning.md) | the plan: who writes it, its status, the `plan` tool, from plan to epics, closing, and the one copy of the template (`plan read --template` reads it) |
+| [Writing a plan](../using-ronin/planning.md) | the plan: who writes it, Draft and Ordered, the `plan` tool, from plan to epics, and the one copy of the template (`plan read --template` reads it) |
 | [Work items](../using-ronin/work-items.md) | the fields, levels, statuses and every `item` command |
 | [Jira](../using-ronin/jira.md) | connecting a space: the panel, the switches, Connect, Jira wins |
 | [Workbench](../using-ronin/workbench.md#waiting-on-you-and-epics-on-a-team) | Waiting on you and Epics on the Team workbench |
-| [The tile](../using-ronin/tile.md#the-item-island) | the item island: a pill per held item |
+| [The tile](../using-ronin/tile.md#the-item-island) | the item island: a pill per open item, Subtasks folded under their Task; an item's reading |
 
 ## For Agents: the briefs
 
@@ -24,9 +24,9 @@ cell of topic × audience; an Agent reads only its own cells.
 
 | Brief (`ronin_catalogs/`) | Read by | `requires` |
 |---|---|---|
-| `behaviours/selected/project-management.md` | every Agent: the five reasons, structure, status, notices, don'ts | (selected) |
-| `behaviours/conditional/project-management-coworker.md` | coworkers: take, start, side work, put back, hand in, leave | `behaviour:project-management, role:coworker` |
-| `behaviours/conditional/project-management-lead.md` | Team leads: the three kinds of ask, when to offer a plan (`ronin-help planning`), giving out work, promote | `behaviour:project-management, lead` |
+| `behaviours/selected/project-management.md` | every Agent: the five reasons, structure, objectives in the user's words, status, notices, the hand-in note, don'ts | (selected) |
+| `behaviours/conditional/project-management-coworker.md` | coworkers: take, start, side work, hand in, hand over at the end, end when accepted | `behaviour:project-management, role:coworker` |
+| `behaviours/conditional/project-management-lead.md` | Team leads: the three kinds of ask, when to offer a plan (`ronin-help planning`), giving out work, deciding what an ending handed over or flagged, promote in batches | `behaviour:project-management, lead` |
 | `behaviours/conditional/project-management-epic-lead.md` | an epic_lead on Steerco | `behaviour:project-management, role:epic_lead` |
 | `behaviours/conditional/project-management-traffic-control.md` | traffic_control on Steerco: placing Jira's unheld items | `behaviour:project-management, role:coordinator` |
 | `capabilities/work-item.md` | every Agent, in YOUR TOOLS: the `item` tools table and syntax only | `behaviour:project-management` |
@@ -39,30 +39,32 @@ predicate in `src/behaviours.ts`.
 
 | Tool | Does |
 |---|---|
-| `item` (`ronin_bin/item`) | create, read, search, edit, transition, flag, unflag, assign, handoff, watch, comment, attach, link, delete; `item --help` |
-| `plan` (`ronin_bin/plan`) | ls, read (`<workspace>/<name>`, `--template`), write, order, over `/api/plans`; the Workspace is the caller's Team's unless `--workspace`; `plan --help` |
-| `worktree-desk hand-in <repo> --item <id>` | the hand-in signal: In Review, given to the Team, recorded on the item; refused without `--item` under project management (`src/commands/desk.ts`, `src/desks/hand-in.ts`) |
+| `item` (`ronin_bin/item`) | create, read, search (`--text`, `--archived`), edit, transition (`--note` on a hand-in), flag, unflag, assign, handoff, handover, watch, comment, attach (a path, a link or `plan:<name>`), link, delete; `item --help` |
+| `plan` (`ronin_bin/plan`) | ls (`--status Draft\|Ordered`), read (`<workspace>/<name>`, `--template`), write, order, over `/api/plans`; the Workspace is the caller's Team's unless `--workspace`; `plan --help`. Taught by `ronin-help planning`, not by a brief |
+| `worktree-desk hand-in <repo> --item <id> --note "<what they can try>"` | the hand-in signal: In Review, given to the Team, recorded in `hand_ins`, the note posted as the **Handed in** comment (280 characters at most). Under project management, refused without `--item` or without `--note` (`src/commands/desk.ts`, `src/desks/hand-in.ts`) |
 | `bin/ronin-promote <team>` | the promotion signal: marks each carried item `on_dev`, no status change (`src/promotion/promote.ts`) |
-| `session_end` | refuses while the Agent holds unfinished items, naming the command that puts them back (`src/routes/sessions-api.ts`) |
+| `session_end` | settles To Do back to the Team, then refuses while the Agent holds anything In Progress or In Review; NEXT is `item handover` (`src/routes/sessions-api.ts`, `settleToDo`, `unfinishedHolds`) |
 | `team-roster-write --select / --deselect` | turns project management on or off for a Team (`libexec/team-roster-write`) |
 
 ## The code
 
 | File | Holds |
 |---|---|
-| `src/work-items.ts` | the store: `plan:<workspace>/<name>` attachments (`planAttachment`), shapes Jira refuses (`jiraShape`), every id resolving, hand-in and `handInStage`, send-back, delete, the six notices (`noticesOf`, one per command) |
-| `src/plans.ts` | plans on the Workspace: the place (`plansPlace`: Ronin Lab's `<campaign>/<workspace>/plans`, or `plans: { location, path }` on the record, any Location), the header, the states (no guards: the docs and briefs steer), one-file commits and the push, the move on a changed place, stopped by a name clash, `plan:` resolving |
-| `src/routes/plans-api.ts` | `/api/plans`: ls, read, template, write, order, and `resolve` for the readers of a `plan:` attachment |
-| `src/workspaces.ts`, `src/routes/workspaces-api.ts`, `public/js/workspaces-surface.js` | the Workspace's `plans` field, kept by `normalizeWorkspace`; the PUT that moves the plans; the page's Plans row |
-| `public/js/plan-attachment.js`, `src/routes/docs-api.ts` | a `plan:` attachment opened or shown gone; the Docs pane's Plans shelf, the Workspaces' plans by status |
-| `src/work-items-read.ts` | the Team readings: Waiting on you's three groups, the Team's epics |
-| `src/routes/work-items-api.ts` | `/api/work-items`: CRUD, `many/:act`, `:id/on-dev`, `:id/send-back`, comment, attach, link |
-| `src/tegami-read.ts` | the work record's items, for the tile |
-| `public/js/epics-surface.js` | the Epics workbench: stones, an epic's record |
-| `public/js/team-waiting.js` | the Team workbench: Waiting on you, Epics |
-| `public/js/tile-island.js` | the item island and its hand-in mark |
+| `src/work-items.ts` | the store. Shapes Jira refuses (`jiraShape`); every id resolving (`resolveId`); the hand-in (`handInUnlocked`, `handInStage`, the Handed in note); `markOnDev`; Send back; the handover (`handoverItem`), To Do settling (`settleToDo`), an ending without a handover (`releaseHolder`: to the Team, flagged, the lead told once) and the crash sweep (`releaseEndedHolders`); the six notices (`noticesOf`, one per person per command); Done by name (`DONE`); the archive (`archiveDone`, `ARCHIVE_AFTER_MS`, five days from `doneSince`); delete; `plan:` attachments |
+| `src/index.ts` | the five-minute sweeps: crashed holders, then the archive |
+| `src/work-items-read.ts` | the Team readings: Waiting on you's three groups, the Team's epics, the Epics push (archived items left out, counted per epic); lists read by the id each item goes by now, once |
+| `src/routes/work-items-api.ts` | `/api/work-items`: CRUD, `many/:act`, `:id/on-dev`, `:id/send-back`, `:id/handover`, comment, attach, link; search leaves archived out unless `?archived=1` |
+| `src/routes/sessions-api.ts` | `session_end`'s refusal and its NEXT |
+| `src/tegami-read.ts`, `libexec/work-record-read` | the work record's items, for the tile and `work-record read` (Done shown with how long ago) |
+| `src/plans.ts`, `src/routes/plans-api.ts` | plans on the Workspace: the place (Ronin Lab's `<campaign>/<workspace>/plans`, or `plans: { location, path }`), the header, Draft and Ordered (no guards: the docs steer), one-file commits and the push, the move on a changed place; `resolve` for `plan:` |
+| `src/workspaces.ts`, `src/routes/workspaces-api.ts`, `public/js/workspaces-surface.js` | the Workspace's `plans` field and the page's Plans row |
+| `public/js/plan-attachment.js`, `src/routes/docs-api.ts` | a `plan:` attachment opened or shown gone; the Docs pane's Plans shelf |
+| `public/js/epics-surface.js` | the Epics workbench: stones, an epic's record, its Show question, `holderButton` |
+| `public/js/team-waiting.js` | the Team workbench: Waiting on you (objective and Handed in note first), Epics |
+| `public/js/work-items-surface.js` | an item's reading (the overlay): `holderWords` ("Team <t> (lead <l>)", "@agent"), id, kind · level, origin |
+| `public/js/tile-island.js` | the item island: Done hidden, Subtasks folded under their Task, the hand-in mark |
 | `public/js/jira-panel.js` | Settings › Jira |
-| `tests/plans.test.ts`, `tests/work-items*.test.ts`, `tests/work-item-*.test.ts`, `tests/tile-island.test.js`, `tests/epics-*.test.js`, `tests/jira-panel-ui.test.js` | the tests |
+| `tests/work-items*.test.ts`, `tests/work-item-*.test.ts`, `tests/plans.test.ts`, `tests/item-reader.test.js`, `tests/tile-island.test.js`, `tests/epics-*.test.js`, `tests/jira-panel-ui.test.js` | the tests |
 
 ## Jira
 
@@ -72,18 +74,41 @@ each way and **every Jira call it makes** are in ronin-services
 
 ## Why it is shaped this way
 
-The owner's decisions, 2026-11-04:
+The owner's decisions, 2026-11-04 and 05:
 
-- An item serves one of five reasons, or it isn't made. A plan is a document on the Workspace, not an item; nothing ahead of the work.
-- The plan is written once and not kept current; its statuses are Draft and Ordered (2026-11-05).
-- A hand-in gives the item to the Team, so an Agent's list empties as its work finishes.
+- An item serves one of five reasons, or it isn't made. Nothing ahead of the work.
+- A plan is written once with the user and not kept current: Draft, then Ordered. It lives on
+  the Workspace, reached only through `plan`; epics attach it as `plan:<name>`.
+- A hand-in gives the item to the Team and carries one short note for the user; objectives are
+  what done looks like to the person accepting, in their words.
 - A hand-in, a promotion and a flag are three signals; only the accepting person sets Done.
-- Six notices, none twice; the sixth (your item is Done) tells the Agent that handed it in. The rest is seen, not told.
+- Six notices, none twice. The rest is seen, not told.
 - Send back goes to the Agent that handed in (to the Team if it has ended).
-- An Agent ending puts its unfinished items back on their epic, with no notice.
-- Ronin refuses any shape Jira would refuse, so the two never part.
-- A delete reaches Jira; one from Jira needs `--in-jira`.
+- An ending hands over, never drops: To Do to the Team, In Progress and In Review with a
+  Handover note; an ending that can't ask flags them for the lead.
+- Done stays five days, then is archived in Ronin only; Jira keeps its own view.
+- Ronin refuses any shape Jira would refuse, so the two never part. A delete reaches Jira; one
+  from Jira needs `--in-jira`.
 
-What led there (2026-10-20 to 11-04): items made only to hand in against; Agents keeping
+What led there (2026-10-20 to 11-05): items made only to hand in against; Agents keeping
 everything they ever held; progress and plans filed as items; leads told of every move, often
-twice; ids changing under people; Agents setting Done; handed-in work with nowhere to show.
+twice; ids changing under people; Agents setting Done; handed-in work with nowhere to show;
+136 items In Review under one epic, left by Agents that ended without deciding them.
+
+## Known gaps (2026-11-05)
+
+Found reading the code end to end; none is built yet.
+
+| Gap | Where | Proposed |
+|---|---|---|
+| The coworker brief's Finish line has no `--note`, so the first hand-in is refused (NEXT recovers it) | `project-management-coworker.md` | "Finish: worktree-desk hand-in <repo> --item <id> --note "<what they can try>"" (brief wording, the owner's yes) |
+| Brief text still says "put back": the coworker blurb, the lead's "items put back (or sent back after their Agent ended)" | coworker and lead cells | "handed over" (owner's yes) |
+| A checkout hand-in tells the lead it "waits on you to accept or send back"; accepting is the user's | `handInUnlocked` | "…handed in by <agent>; review and promote it" |
+| `item handoff <ids> none` still drops an item to nobody, around the handover | `ronin_bin/item`, store | refuse `none` for an item In Progress or In Review; NEXT is `item handover` |
+| An ending with no Team found still goes to nobody (flagged, its helpers told) | `releaseHolder` | to the epic's Team, else traffic_control |
+| To Do is taken as the space's first status, as Done was taken as its last | `settleToDo`, `unfinishedHolds`, `releaseHolder` | To Do by name, as Done now is |
+| Accept is open to whoever views Waiting on you, a lead included | `team-waiting.js`, the transition route | the owner's call: leave it, or Accept only for the user |
+| The Epics record gets each epic's archived count but doesn't show it | `epics-surface.js` | "N archived" under the status row |
+| A Jira change that is only the echo of Ronin's own delete beats Ronin's next change (KAN-232 went back to In Review) | ronin-services `jira/bridge.ts` | treat a parent cleared by a Ronin delete as Ronin's own write |
+| Waiting on you still lists items one by one; the owner asked for less | `team-waiting.js` | accept by promotion: one line per promotion, one Accept (a design, if wanted) |
+| "Your work record changed" pings still go to every Agent whose lists move | `ackRecord`, `src/tegami.ts` | only for the Agent's own items, Teams or settings (owner's open question) |

@@ -47,14 +47,18 @@ writes it; anything you put there is replaced.
 plan ls [--status Draft|Ordered]          the Workspace's plans: name, status, date, by
 plan read <name>                          one plan, whole; <workspace>/<name> reads another Workspace's
 plan read --template                      the blank to fill in
-plan write <name> [--file <path>]         create or replace a Draft (from stdin without --file)
+plan write <name> [--file <path>]         create a plan, or replace one; it keeps its status (stdin without --file)
 plan order <name>                         Draft → Ordered: not rewritten from here
 ```
 
 - The Workspace is your Team's. On several Teams, or none, add `--workspace <name>`; the tool
   names the ones to choose from.
 - A name is lowercase letters, digits and `-`.
-- The plan isn't rewritten: the work runs on the epics. Change the epics instead.
+- The tool doesn't stop a write to an Ordered plan; don't make one. The work runs on the epics:
+  change the epics instead.
+- Where the plans folder is in Git, each write and order is one commit of that file, pushed
+  when the branch has an upstream.
+- The Docs pane's **Plans** shelf lists the Workspaces' plans by status.
 
 ## From plan to epics
 

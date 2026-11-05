@@ -112,15 +112,20 @@ an item has a link on the Jira item that opens its chat.
 
 - **Epics workbench** (Campaign home › Epics, "What the work is"): a stone per epic in the
   Campaign. Press one and its record opens: where it comes from (its Jira key, or Ronin only),
-  who holds it, its statuses with counts, and its items as cards, each with its holder.
+  who holds it, its statuses with counts, and its items as cards, each with its holder
+  ("Team surface (lead surface_lead)", or "@agent"). **Show** picks Assigned, Unassigned or All.
+  Archived items are not on it.
 - **Team workbench › Waiting on you:** what waits on you, oldest first. **With the lead**
   (handed in, not yet on dev), **Ready to accept** (Accept, Send back) and **Stuck** (Reply).
 - **Team workbench › Epics:** the Team's epics; one opens straight onto its record, several
   show as stones.
-- **The item island:** on every Agent's tile, a pill for each item it holds: the kind's Jira
-  symbol, a status dot, ⚑ when flagged, and "handed in" or "on dev" with how long ago. Press a
-  pill to read the item. A lead's island also shows its Teams' epics. See
-  [the tile](tile.md#the-item-island).
+- **The item island:** on every Agent's tile, a pill for each open item it holds (Done is not
+  on it, and Subtasks fold under their Task): the kind's Jira symbol, a status dot, ⚑ when
+  flagged, and "handed in" or "on dev" with how long ago. Press a pill to read the item: its
+  Status, objective, details (id, kind and level, where it started, who holds it), comments
+  and attachments. A lead's island also shows its Teams' epics and the Tasks no member has
+  taken yet. See [the tile](tile.md#the-item-island).
+- **Docs › Plans:** the Workspaces' plans, by status.
 - **The work record** (tile › ☰ Work record): what the Agent holds and watches.
 
 ## Jira
