@@ -45,9 +45,9 @@ When you bring work to a lead, it decides first which of three it is:
 | Made | the lead as it gives out work, or the Agent as it takes it | under the epic; its objective is what done looks like to you, in your words, one or two sentences |
 | Started | the Agent | In Progress |
 | Stuck | the Agent | flagged "Waiting on <who>: <what>"; it shows under Stuck |
-| Handed in | the Agent | In Review, held by the Team, with one short **Handed in** comment for you: what you can try. It shows under With the lead |
+| Handed in | the Agent | In Review, still held by the Agent (handing in code doesn't hand in the item), with one short **Handed in** comment for you: what you can try. It shows under With the lead |
 | On dev | the lead's promotion | still In Review; it moves to Ready to accept |
-| Accepted or sent back | you | Accept makes it Done. Send back returns it, In Progress, to the Agent that handed it in, with your comment |
+| Accepted or sent back | you | Accept makes it Done, and the Agent holding it is told. Send back makes it In Progress with your comment, held where it is; the Agent holding it is told |
 | Handed over | the Agent, as it ends | to the Team (or a named Agent) with a **Handover** comment: where it stands, what is next. Its status stays |
 | Done | you | it stays on its holders' lists, shown "Done · <how long ago>". Only the person accepting sets Done |
 | Archived | Ronin, five days after Done | off every list, the Epics workbench and `item search` (`--archived` finds it); `item read` and its documents still open. Jira's issue is untouched. Leaving Done brings it back |
