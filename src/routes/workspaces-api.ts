@@ -3,7 +3,7 @@ import type express from 'express';
 import { initialCampaignId } from '../campaign-scope.js';
 import { listTeamRosters } from '../team-rosters.js';
 import { deleteWorkspace, isValidWorkspaceName, listWorkspaces, normalizeWorkspace, readWorkspace, saveWorkspace, type Workspace } from '../workspaces.js';
-import { PlanBadInput, PlanMissing, PlanRefused, movePlans, plansLocationRefusal, plansPlace } from '../plans.js';
+import { PlanBadInput, PlanMissing, PlanRefused, movePlans, plansPlace } from '../plans.js';
 
 const errMsg = (e: unknown): string => String((e as Error)?.message ?? e);
 const campaignOf = async (stated: unknown): Promise<string> => (typeof stated === 'string' && stated.trim()) || initialCampaignId();
@@ -29,18 +29,14 @@ export function registerWorkspaces(app: express.Express): void {
       const campaign = await campaignOf(req.body?.campaign_id);
       const was = await readWorkspace(campaign, name);
       // PLANS (KAN-256): a body without `plans` keeps the place it had; `plans: null` is the default.
-      // A changed place must be a Direct Location or a folder without Git, and the plans move there
-      // first: a name already there refuses the Save, naming the clashes.
+      // On a changed place the plans move there first: a name already there stops the Save, naming the
+      // clashes, so one plan file never overwrites another. Any Location will do.
       const body = { ...(req.body ?? {}) } as Record<string, unknown>;
       if (!('plans' in body) && was?.plans) body.plans = was.plans;
       const next = normalizeWorkspace(campaign, name, body);
       const changed = JSON.stringify(was?.plans ?? null) !== JSON.stringify(next.plans ?? null);
       let moved: string[] = [];
-      if (changed && next.plans) {
-        const refusal = await plansLocationRefusal(next.plans.location);
-        if (refusal) return res.status(409).json({ error: refusal });
-        await plansPlace(campaign, name, next.plans);
-      }
+      if (changed && next.plans) await plansPlace(campaign, name, next.plans);
       if (changed && was) moved = (await movePlans(campaign, name, was.plans, next.plans)).moved;
       res.json({ ok: true, workspace: await withPlace(await saveWorkspace(next)), ...(moved.length ? { moved } : {}) });
     } catch (e) {

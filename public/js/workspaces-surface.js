@@ -227,9 +227,9 @@ export function workspacePage(w, { reading, campaignId, onSaved = () => {}, onDi
     legend.append(line);
   }
   /* ---- PLANS (KAN-256): where this Workspace keeps its orders, a row under the Locations. The default
-     is Ronin Lab's <campaign>/<workspace>/plans, said "recommended"; pressed, it picks another Location
-     and a subfolder: only a Direct one or a folder without Git, since the plan tool writes in place. On
-     Save the plans move there; a name already there refuses the Save. ---- */
+     is Ronin Lab's <campaign>/<workspace>/plans, said "recommended"; pressed, it picks any of the
+     Workspace's Locations and a subfolder. On Save the plans move there; a plan of the same name already
+     there stops the Save, so one file never overwrites another. ---- */
   const LAB = 'ronin_lab';
   const plansBox = el('div', 'workspace-plans');
   let plansOpen = false;
@@ -237,12 +237,6 @@ export function workspacePage(w, { reading, campaignId, onSaved = () => {}, onDi
     if (draft.plans?.location) return { where: `${draft.plans.location}/${draft.plans.path}`.replace(/\/$/, ''), recommended: false };
     const place = w?.plans_place?.recommended ? w.plans_place : null;
     return { where: place ? `${place.location}/${place.path}` : `${LAB}/…/${draft.name || '<workspace>'}/plans`, recommended: true };
-  };
-  const writable = (name) => {
-    const root = rootByName(name);
-    if (!root) return false;
-    if (!root.facts?.repo) return true;
-    return (pending.get(name) ?? howOf(root.repo_profile)) === 'folder';
   };
   const paintPlans = () => {
     plansBox.replaceChildren();
@@ -254,8 +248,7 @@ export function workspacePage(w, { reading, campaignId, onSaved = () => {}, onDi
     plansBox.append(row);
     if (!plansOpen) return;
     const names = [...new Set([LAB, ...picked.keys()])];
-    const options = names.map((name) => ({ v: name, l: rootByName(name)?.title || name,
-      ...(writable(name) ? {} : { off: t('workspaces.plans_reviewed', 'Reviewed: its checkout is shared; plans are written in place.') }) }));
+    const options = names.map((name) => ({ v: name, l: rootByName(name)?.title || name }));
     const chosen = draft.plans?.location || LAB;
     const question = ask([{ fields: [{ key: 'location', label: t('workspaces.plans_location', 'Location'), options }] }], {
       value: { location: chosen }, density: 'tight',

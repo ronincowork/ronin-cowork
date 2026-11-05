@@ -1,6 +1,6 @@
 /** /api/plans — the `plan` tool's one door (ronin_bin/plan, src/plans.ts). Every command names its
  * caller (`by`, the session); the Workspace is `workspace`, else the caller's Team's. A write, order
- * or close answers one line, then the plan's header; a refusal is one line with the next step (409). */
+ * or close answers one line, then the plan's header. The one 409 asks which Workspace, by name. */
 import type express from 'express';
 import { initialCampaignId } from '../campaign-scope.js';
 import { listSessions } from '../tmux.js';

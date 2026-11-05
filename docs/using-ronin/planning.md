@@ -56,7 +56,7 @@ plan close <name> "<line>"                Ordered → Closed: writes the Closed 
 - The Workspace is your Team's. On several Teams, or none, add `--workspace <name>`; the tool
   names the ones to choose from.
 - A name is lowercase letters, digits and `-`.
-- An Ordered plan is not rewritten: `plan write` refuses it. Change the epics instead.
+- The order isn't rewritten: the work runs on the epics. Change the epics instead.
 
 ## From plan to epics
 

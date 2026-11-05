@@ -30,7 +30,6 @@ cell of topic × audience; an Agent reads only its own cells.
 | `behaviours/conditional/project-management-epic-lead.md` | an epic_lead on Steerco | `behaviour:project-management, role:epic_lead` |
 | `behaviours/conditional/project-management-traffic-control.md` | traffic_control on Steerco: placing Jira's unheld items | `behaviour:project-management, role:coordinator` |
 | `capabilities/work-item.md` | every Agent, in YOUR TOOLS: the `item` tools table and syntax only | `behaviour:project-management` |
-| `capabilities/plan.md` | Team leads, in YOUR TOOLS: the `plan` tools table and syntax (an epic_lead's one read is in its brief; anyone else finds it in `ronin-help planning`) | `behaviour:project-management, lead` |
 
 `behaviours/conditional/cowork-agent.md` and `team-lead.md` carry no item text. The role comes
 from the session's behaviours (`currentRoleAt` in `src/agent-composition.ts`; a role file wins, then the Steerco cell names, then lead or coworker); `behaviour:` is a
@@ -52,7 +51,7 @@ predicate in `src/behaviours.ts`.
 | File | Holds |
 |---|---|
 | `src/work-items.ts` | the store: `plan:<workspace>/<name>` attachments (`planAttachment`), shapes Jira refuses (`jiraShape`), every id resolving, hand-in and `handInStage`, send-back, delete, the five notices (`noticesOf`, one per command) |
-| `src/plans.ts` | plans on the Workspace: the place (`plansPlace`: Ronin Lab's `<campaign>/<workspace>/plans`, or `plans: { location, path }` on the record, Direct or non-Git only), the header, the states and refusals, one-file commits and the push, the move on a changed place with its clash refusal, `plan:` resolving |
+| `src/plans.ts` | plans on the Workspace: the place (`plansPlace`: Ronin Lab's `<campaign>/<workspace>/plans`, or `plans: { location, path }` on the record, any Location), the header, the states (no guards: the docs and briefs steer), one-file commits and the push, the move on a changed place, stopped by a name clash, `plan:` resolving |
 | `src/routes/plans-api.ts` | `/api/plans`: ls, read, template, write, order, close, and `resolve` for the readers of a `plan:` attachment |
 | `src/workspaces.ts`, `src/routes/workspaces-api.ts`, `public/js/workspaces-surface.js` | the Workspace's `plans` field, kept by `normalizeWorkspace`; the PUT that moves the plans; the page's Plans row |
 | `public/js/plan-attachment.js`, `src/routes/docs-api.ts` | a `plan:` attachment opened or shown gone; the Docs pane's Plans shelf, the Workspaces' plans by status |

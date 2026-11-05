@@ -1,6 +1,7 @@
 /**
  * PLANS (KAN-256; docs/using-ronin/planning.md). A plan is an order: written once with the user,
- * ordered (frozen), and closed with one line at the end. It lives on the Workspace, at
+ * ordered, and closed with one line at the end. The tool steers nothing: the planning doc and the
+ * briefs say the flow (the order isn't rewritten: the work runs on the epics). It lives on the Workspace, at
  * `<ronin_lab>/<campaign>/<workspace>/plans/<name>.md` unless the Workspace names another place
  * (`plans: { location, path }`, src/workspaces.ts). No Agent sees the path: everything goes through
  * `ronin_bin/plan` over /api/plans (src/routes/plans-api.ts).
@@ -15,8 +16,7 @@ import { fileURLToPath } from 'node:url';
 import { execFile } from './spawn-broker.js';
 import { discoverExecutable } from './agents.js';
 import { rootDir } from './resources.js';
-import { listProjectRoots, repoFacts, type ProjectRootInfo } from './project-roots.js';
-import { readArrangement } from './desks/arrangement.js';
+import { listProjectRoots, type ProjectRootInfo } from './project-roots.js';
 import { listTeamRosters } from './team-rosters.js';
 import { listSessions } from './tmux.js';
 import { listWorkspaces, readWorkspace, type Workspace, type WorkspacePlans } from './workspaces.js';
@@ -74,27 +74,12 @@ export async function plansDir(campaign: string, workspace: string): Promise<str
   return (await plansPlace(campaign, workspace, w?.plans)).dir;
 }
 
-/** Only a Direct Location or a folder without Git can hold plans: the tool writes in place, and a
- * Reviewed repository's checkout is shared. Answers the refusal, or '' when it can. */
-export async function plansLocationRefusal(location: string): Promise<string> {
-  const root = (await rootsByName()).get(location);
-  if (!root) return `${location} is not a Workspace Folder; pick one of the Workspace's Locations.`;
-  const facts = await repoFacts(root);
-  if (!facts.exists) return `${location} (${root.dir}) is not on this machine.`;
-  if (!facts.repo) return '';
-  const arrangement = await readArrangement(root.name, facts.dir).catch(() => null);
-  if (arrangement && (arrangement.mode === 'reviewed' || arrangement.desks === 'managed')) {
-    return `${location} is Reviewed: its checkout is shared, and plans are written in place. Pick a Direct Location or a folder without Git.`;
-  }
-  return '';
-}
-
 /* ---------- which Workspace ---------- */
 
 export interface Caller { campaign: string; by: string }
 
 /** The Workspace a command means: the one named, else the Workspace of the caller's Team when it is
- * on exactly one Team with a Workspace (a lead's Teams included); otherwise refused, naming them. */
+ * on exactly one Team with a Workspace (a lead's Teams included); otherwise it asks for one by name. */
 export async function whichWorkspace(caller: Caller, stated?: string): Promise<Workspace> {
   const named = String(stated ?? '').trim();
   if (named) {
@@ -149,24 +134,6 @@ export function withHeader(text: string, header: PlanHeader, name: string): stri
   while (rest.length && !rest[0]!.trim()) rest.shift();
   const body = [...lines.slice(0, at + 1), '', headerLine(header), '', ...rest].join('\n').replace(/\n*$/, '\n');
   return body;
-}
-
-/** The Epics section's rows, the template's placeholder row not counted. */
-export function epicRows(text: string): string[][] {
-  const lines = text.split('\n');
-  const start = lines.findIndex((line) => /^## +Epics\b/i.test(line));
-  if (start === -1) return [];
-  const rows: string[][] = [];
-  let seenSeparator = false;
-  for (const line of lines.slice(start + 1)) {
-    if (/^## /.test(line)) break;
-    if (!line.trim().startsWith('|')) continue;
-    const cells = line.trim().replace(/^\||\|$/g, '').split('|').map((cell) => cell.trim());
-    if (cells.every((cell) => /^:?-+:?$/.test(cell))) { seenSeparator = true; continue; }
-    if (!seenSeparator) continue;
-    if (cells[0] && !/^<.*>$/.test(cells[0])) rows.push(cells);
-  }
-  return rows;
 }
 
 /** The Closed section, written once: its body becomes the line and the date. */
@@ -279,34 +246,32 @@ export function writePlan(w: Workspace, name: string, text: string, by: string):
   if (!String(text ?? '').trim()) throw new PlanBadInput('The plan is empty: give its text with --file <path> or on stdin. plan read --template is the blank.');
   return serial(async () => {
     const { dir } = await placeOf(w);
+    // A write keeps the status the plan has; a new plan is a Draft.
     const was = await readAt(dir, w.name, name);
-    if (was && was.status !== 'Draft') throw new PlanRefused(`${name} is ${was.status}: an order isn't rewritten. Change the epics.`);
+    const status = was?.status ?? 'Draft';
     await mkdir(dir, { recursive: true });
     const at = fileOf(dir, name);
-    await writeFile(at, withHeader(text, { status: 'Draft', date: today(), by }, name), 'utf8');
+    await writeFile(at, withHeader(text, { status, date: today(), by }, name), 'utf8');
     const history = await commitOnly(dir, [at], `plan ${name}: write`);
-    return answer(`${was ? 'Rewrote' : 'Wrote'} ${w.name}/${name}, a Draft.`, (await readAt(dir, w.name, name))!, history);
+    return answer(`${was ? 'Rewrote' : 'Wrote'} ${w.name}/${name} (${status}).`, (await readAt(dir, w.name, name))!, history);
   });
 }
 
 export function orderPlan(w: Workspace, name: string, by: string): Promise<PlanAnswer> {
   return serial(async () => {
     const plan = await readPlan(w, name);
-    if (plan.status !== 'Draft') throw new PlanRefused(`${name} is already ${plan.status}: an order is ordered once.`);
-    if (!epicRows(plan.text).length) throw new PlanRefused(`${name} has no Epics rows: add one per epic (plan write ${name}), then order it.`);
     const { dir } = await placeOf(w);
     await writeFile(plan.path, withHeader(plan.text, { status: 'Ordered', date: today(), by }, name), 'utf8');
     const history = await commitOnly(dir, [plan.path], `plan ${name}: order`);
-    return answer(`Ordered ${w.name}/${name}: frozen from here. Make each epic from its row and item attach <epic> plan:${w.name}/${name}.`, (await readAt(dir, w.name, name))!, history);
+    return answer(`Ordered ${w.name}/${name}. Make each epic from its row and item attach <epic> plan:${w.name}/${name}.`, (await readAt(dir, w.name, name))!, history);
   });
 }
 
 export function closePlan(w: Workspace, name: string, line: string, by: string): Promise<PlanAnswer> {
   if (!String(line ?? '').trim()) throw new PlanBadInput(`plan close takes the line: plan close ${name} "<did we do what we said?>".`);
   return serial(async () => {
+    // From any status; a Closed line already there is replaced.
     const plan = await readPlan(w, name);
-    if (plan.status === 'Draft') throw new PlanRefused(`${name} is a Draft: order it first (plan order ${name}).`);
-    if (plan.status === 'Closed') throw new PlanRefused(`${name} is already Closed: the Closed line is written once.`);
     const { dir } = await placeOf(w);
     const date = today();
     await writeFile(plan.path, withHeader(withClosed(plan.text, line, date), { status: 'Closed', date, by }, name), 'utf8');
@@ -339,8 +304,8 @@ const moveFile = async (from: string, to: string): Promise<void> => {
   }
 };
 
-/** A Workspace's plans move with its Plans place: refused, moving nothing, when a name already exists
- * at the new place; else every plan file moves, a commit on each side where there is Git. */
+/** A Workspace's plans move with its Plans place: stopped, moving nothing, when a name already exists
+ * at the new place (one plan file must not overwrite another); else every plan file moves, a commit on each side where there is Git. */
 export function movePlans(campaign: string, workspace: string, from: WorkspacePlans | null | undefined, to: WorkspacePlans | null | undefined): Promise<{ moved: string[]; history: string[] }> {
   return serial(async () => {
     const old = await plansPlace(campaign, workspace, from).catch(() => null);
