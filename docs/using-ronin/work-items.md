@@ -96,6 +96,11 @@ folded to begin with), **Comments**, **Attachments** (each opens), **Links** and
 transition, one trail line, its holders and watchers told). The line under it says what
 changed, or why the move was refused, and the answer goes back.
 
+**Handed in** shows whenever the item was handed in, note or not: who handed it in and when,
+and, once a promotion put that hand-in on dev, when and its receipt (`↑ by item_pills ·
+2026-11-05 10:33 · on dev 10:34 (<receipt>)`), the same hand-in the island's pill marks. The
+Handed in note, when one was left, reads under it.
+
 **Who holds it, and where it started.** A holder reads the same on the reader, the Work Items
 stones, the Epic cards and Waiting on you: an Agent is `@<agent>`, a Team is `Team <name> (lead
 <lead>)`, so an item the Team holds never reads as its lead's own; when several hold it, each is

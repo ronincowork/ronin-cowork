@@ -80,6 +80,7 @@ test('holderWords and holderOf say who holds an item; originWords where it start
   assert.equal(holderOf({}), '');
   assert.equal(originWords({ created: { by: 'jira:Glen' }, jiraFields: { Reporter: 'Glen Osmond' } }), 'from Jira (Glen Osmond)');
   assert.equal(originWords({ created: { by: 'jira:glen' } }), 'from Jira (glen)');
+  assert.equal(originWords({ created: { by: 'jira:x' }, jiraFields: { Reporter: 'jira:ronin_machine' } }), 'from Jira (ronin_machine)');
   assert.equal(originWords({ created: { by: 'system_lead' } }), 'Ronin (system_lead)');
   // Details: the id, the kind with its level, the origin; the Epic cards' holder through holderWords, label only.
   assert.match(surface, /\[t\('work_items\.kind', 'Kind'\), \[item\.kind, item\.level\]/);
@@ -87,4 +88,18 @@ test('holderWords and holderOf say who holds an item; originWords where it start
   const epics = await read('public/js/epics-surface.js');
   assert.match(epics, /el\('button', 'epic-holder', holderWords\(holder\)\)/);
   assert.match(epics, /button\.addEventListener\('click', \(\) => openHolder\(holder\)\)/, 'the button still opens the holder');
+});
+
+// Owner, 2026-11-05: the overlay says the hand-in the pill marks — who, when, and on dev.
+test('handInRecord: the last hand-in, and on dev only when its promotion came after', async () => {
+  const surface = await read('public/js/work-items-surface.js');
+  const lift = (name) => surface.match(new RegExp(`export (?:const|function) ${name}[\\s\\S]*?\\n(?=\\n)`))[0].replace(/^export /, '');
+  const t = (_key, literal, vars) => literal.replace(/\{(\w+)\}/g, (_m, k) => String(vars[k]));
+  const when = (at) => String(at || '').slice(0, 16).replace('T', ' ');
+  const handInRecord = new Function('t', 'when', `${lift('handInRecord')}\nreturn handInRecord;`)(t, when);
+  assert.equal(handInRecord({}), '');
+  assert.equal(handInRecord({ handed_in: { by: 'item_pills', at: '2026-11-05T10:33:29Z' } }), '↑ by item_pills · 2026-11-05 10:33');
+  assert.equal(handInRecord({ handed_in: { by: 'item_pills', at: '2026-11-05T10:33:29Z' }, on_dev: { at: '2026-11-05T10:34:33Z', promotion: 'r1' } }), '↑ by item_pills · 2026-11-05 10:33 · on dev 10:34 (r1)');
+  assert.equal(handInRecord({ handed_in: { by: 'a', at: '2026-11-05T11:00:00Z' }, on_dev: { at: '2026-11-05T10:00:00Z' } }), '↑ by a · 2026-11-05 11:00', 'an older promotion is not this hand-in');
+  assert.match(surface, /if \(record \|\| handed\) \{/, 'the row shows for a hand-in with no note too');
 });
