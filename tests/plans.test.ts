@@ -96,7 +96,7 @@ const ok = async (name: string, args: string[], as = 'lead', input = '') => {
   return r.stdout;
 };
 
-const ORDER = `# Shop fit\n\nStatus: Ordered · 1999-01-01 · someone\n\nAsked by the owner.\n\n## Epics\n\n| Epic | Team | What done looks like |\n|---|---|---|\n| Shelves | crew | the shelves stand |\n\n## Closed\n\n<Filled by plan close: did we do what we said?>\n`;
+const ORDER = `# Shop fit\n\nStatus: Ordered · 1999-01-01 · someone\n\nAsked by the owner.\n\n## Epics\n\n| Epic | Team | What done looks like |\n|---|---|---|\n| Shelves | crew | the shelves stand |\n`;
 const shopDir = path.join(lab, 'camp', 'shop', 'plans');
 
 test('the template is the one block in planning.md, read by plan read --template', async () => {
@@ -111,7 +111,7 @@ test('write is a Draft at the default place, the header the tool\'s, one file co
   await fs.writeFile(path.join(lab, 'other.md'), 'not mine\n');
   git(lab, 'add', 'other.md');
   const out = await ok('plan', ['write', 'fit'], 'lead', ORDER);
-  assert.match(out, /^Wrote shop\/fit, a Draft\.\nStatus: Draft · \d{4}-\d\d-\d\d · lead\nCommitted\.\n$/);
+  assert.match(out, /^Wrote shop\/fit \(Draft\)\.\nStatus: Draft · \d{4}-\d\d-\d\d · lead\nCommitted\.\n$/);
   const text = await fs.readFile(path.join(shopDir, 'fit.md'), 'utf8');
   assert.match(text, /^# Shop fit\n\nStatus: Draft · \S+ · lead\n\nAsked by the owner\./);
   assert.equal(text.match(/^Status:/gm)?.length, 1, 'the writer\'s own Status line is replaced');
@@ -122,31 +122,24 @@ test('write is a Draft at the default place, the header the tool\'s, one file co
   await fs.rm(path.join(lab, 'other.md'));
 });
 
-test('the states and their refusals', async () => {
+test('no guards: write keeps the status, order works from any status; Draft and Ordered only', async () => {
+  // A plan with no Epics rows orders all the same; the docs and briefs steer, the tool doesn't.
   const blankEpics = (await ok('plan', ['read', '--template'])).replace('# <Project name>', '# Empty');
+  assert.doesNotMatch(blankEpics, /Closed/);
   await ok('plan', ['write', 'empty', '--workspace', 'shop'], 'solo', blankEpics);
-  const noRows = await run('plan', ['order', 'empty'], 'lead');
-  assert.equal(noRows.status, 4);
-  assert.equal(noRows.stderr.trim(), 'empty has no Epics rows: add one per epic (plan write empty), then order it.');
+  assert.match(await ok('plan', ['order', 'empty']), /^Ordered shop\/empty\..*\nStatus: Ordered · /);
 
-  const draftClose = await run('plan', ['close', 'fit', 'done'], 'lead');
-  assert.equal(draftClose.stderr.trim(), 'fit is a Draft: order it first (plan order fit).');
+  // A write keeps the status the plan has: an Ordered plan rewritten is still Ordered.
+  assert.match(await ok('plan', ['order', 'fit']), /^Ordered shop\/fit\. .*\nStatus: Ordered · /);
+  assert.match(await ok('plan', ['write', 'fit'], 'lead', `${ORDER}\nMore.\n`), /^Rewrote shop\/fit \(Ordered\)\.\nStatus: Ordered · /);
+  assert.match(await ok('plan', ['order', 'fit']), /^Ordered shop\/fit\./);
+  assert.deepEqual(git(lab, 'log', '-2', '--format=%s').trim().split('\n'), ['plan fit: write', 'plan fit: order']);
 
-  assert.match(await ok('plan', ['order', 'fit']), /^Ordered shop\/fit: frozen from here\..*\nStatus: Ordered · /);
-  const rewrite = await run('plan', ['write', 'fit'], 'lead', ORDER);
-  assert.equal(rewrite.status, 4);
-  assert.equal(rewrite.stderr.trim(), "fit is Ordered: an order isn't rewritten. Change the epics.");
-  assert.match((await run('plan', ['order', 'fit'])).stderr, /already Ordered/);
-
-  assert.match(await ok('plan', ['close', 'fit', 'Yes: the shelves stand.']), /^Closed shop\/fit\.\nStatus: Closed · /);
-  const closed = await fs.readFile(path.join(shopDir, 'fit.md'), 'utf8');
-  assert.match(closed, /## Closed\n\nYes: the shelves stand\. \(\d{4}-\d\d-\d\d\)\n$/);
-  assert.match((await run('plan', ['close', 'fit', 'again'])).stderr, /already Closed: the Closed line is written once/);
-  assert.deepEqual(git(lab, 'log', '-3', '--format=%s').trim().split('\n'), ['plan fit: close', 'plan fit: order', 'plan empty: write']);
-
-  assert.equal(await ok('plan', ['ls', '--status', 'Closed']), `fit\tClosed\t${closed.match(/Closed · (\S+)/)![1]}\tlead\n`);
-  assert.match(await ok('plan', ['ls']), /^empty\tDraft\t.*\nfit\tClosed/);
-  assert.equal((await run('plan', ['ls', '--status', 'Done'])).status, 3);
+  const fit = await fs.readFile(path.join(shopDir, 'fit.md'), 'utf8');
+  assert.equal(await ok('plan', ['ls', '--status', 'Ordered']), `empty\tOrdered\t${fit.match(/Ordered · (\S+)/)![1]}\tlead\nfit\tOrdered\t${fit.match(/Ordered · (\S+)/)![1]}\tlead\n`);
+  assert.equal(await ok('plan', ['ls', '--status', 'Draft']), 'No plans in shop.\n');
+  for (const gone of ['Closed', 'Done']) assert.equal((await run('plan', ['ls', '--status', gone])).status, 3);
+  assert.equal((await run('plan', ['close', 'fit', 'done'])).status, 2, 'there is no plan close');
   assert.match((await run('plan', ['write', 'Bad_Name'], 'lead', ORDER)).stderr, /lowercase letters, digits and -/);
 });
 
@@ -172,18 +165,8 @@ test('plan: attachments go through the item tool, open where the plan is, and sa
   assert.equal(((await r.json()) as { path: string }).path, path.join(shopDir, 'fit.md'));
 });
 
-test('a changed Plans place: Reviewed refused, a clash refused, else the plans move and every plan: still opens', async () => {
-  // A Reviewed repository's checkout is shared: refused.
-  const reviewed = path.join(dir, 'reviewed');
-  await fs.mkdir(reviewed);
-  git(reviewed, 'init', '-q');
-  await fs.writeFile(path.join(reviewed, 'RONIN_REPO'), 'mode=reviewed\ndesks=managed\n');
-  await upsertProjectRoot('rev', { dir: reviewed });
-  const refused = await put('/api/workspaces/shop', { ...blank, campaign_id: 'camp', plans: { location: 'rev', path: 'plans' } });
-  assert.equal(refused.status, 409, JSON.stringify(refused.body));
-  assert.match(String(refused.body.error), /rev is Reviewed/);
-
-  // A folder without Git that already has fit.md: refused, nothing moved.
+test('a changed Plans place: any Location, a clash stops the Save, else the plans move and every plan: still opens', async () => {
+  // A folder without Git that already has fit.md: stopped, nothing moved.
   const notes = path.join(dir, 'notes');
   await fs.mkdir(path.join(notes, 'plans'), { recursive: true });
   await fs.writeFile(path.join(notes, 'plans', 'fit.md'), 'theirs\n');
@@ -194,12 +177,24 @@ test('a changed Plans place: Reviewed refused, a clash refused, else the plans m
   assert.equal((await readWorkspace('camp', 'shop'))!.plans, undefined);
   await fs.rm(path.join(notes, 'plans', 'fit.md'));
 
+  // A Reviewed repository is a Location like any other.
+  const reviewed = path.join(dir, 'reviewed');
+  await fs.mkdir(reviewed);
+  git(reviewed, 'init', '-q');
+  await fs.writeFile(path.join(reviewed, 'RONIN_REPO'), 'mode=reviewed\ndesks=managed\n');
+  await upsertProjectRoot('rev', { dir: reviewed });
+  const toRev = await put('/api/workspaces/shop', { ...blank, campaign_id: 'camp', plans: { location: 'rev', path: 'plans' } });
+  assert.equal(toRev.status, 200, JSON.stringify(toRev.body));
+  assert.deepEqual((toRev.body.moved as string[]).sort(), ['empty', 'fit']);
+  assert.deepEqual(await fs.readdir(shopDir), []);
+  assert.match(git(lab, 'log', '-1', '--format=%s'), /^plans: moved to rev\/plans/);
+  assert.match(git(reviewed, 'log', '-1', '--format=%s'), /^plans: moved from ronin_lab\/camp\/shop\/plans/);
+
   const moved = await put('/api/workspaces/shop', { ...blank, campaign_id: 'camp', plans: { location: 'notes', path: 'plans' } });
   assert.equal(moved.status, 200, JSON.stringify(moved.body));
   assert.deepEqual((moved.body.moved as string[]).sort(), ['empty', 'fit']);
   assert.deepEqual((await readWorkspace('camp', 'shop'))!.plans, { location: 'notes', path: 'plans' });
-  assert.deepEqual(await fs.readdir(shopDir), []);
-  assert.match(git(lab, 'log', '-1', '--format=%s'), /^plans: moved to notes\/plans/);
+  assert.match(git(reviewed, 'log', '-1', '--format=%s'), /^plans: moved to notes\/plans/);
   assert.equal(await plans.resolvePlanRef('camp', 'plan:shop/fit'), path.join(notes, 'plans', 'fit.md'));
 
   // A Save that doesn't mention plans keeps the place (the page's other edits never wipe it).
@@ -223,6 +218,6 @@ test('a branch with an upstream is pushed once; a failed push is said and the wr
 
   git(lab, 'remote', 'set-url', 'origin', path.join(dir, 'no-such-remote.git'));
   const failed = await ok('plan', ['write', 'up', '--workspace', 'pushed'], 'solo', '# Up again\n');
-  assert.match(failed, /^Rewrote pushed\/up, a Draft\.\n.*\nCommitted; the push to origin\/main failed: /);
+  assert.match(failed, /^Rewrote pushed\/up \(Draft\)\.\n.*\nCommitted; the push to origin\/main failed: /);
   assert.match(await fs.readFile(path.join(lab, 'camp', 'pushed', 'plans', 'up.md'), 'utf8'), /^# Up again/);
 });

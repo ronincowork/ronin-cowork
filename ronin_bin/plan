@@ -6,18 +6,18 @@ TOOL_DIR=$(dirname "$SELF")
 die() { echo "$1" >&2; exit "${2:-2}"; }
 usage() { cat <<'EOF_USAGE'
 Usage:
-  plan ls [--status Draft|Ordered|Closed]   every plan in the Workspace: name, status, date, by
+  plan ls [--status Draft|Ordered]          every plan in the Workspace: name, status, date, by
   plan read <name>                          one plan, whole
   plan read --template                      the blank, from docs/using-ronin/planning.md
-  plan write <name> [--file <path>]         create or replace a Draft (stdin when no --file)
-  plan order <name>                         Draft → Ordered: frozen from here
-  plan close <name> "<line>"                Ordered → Closed: writes the Closed section, once
+  plan write <name> [--file <path>]         create or replace a plan (stdin when no --file)
+  plan order <name>                         Draft → Ordered: not rewritten from here
 Any command takes --workspace <name>. Without it the Workspace is your Team's, when you are on
 exactly one Team with a Workspace; otherwise the tool names the Workspaces to choose from.
 <name> is lowercase letters, digits and -, in that Workspace; <workspace>/<name> names a plan
 anywhere in your Campaign, as an epic attaches it: item attach <epic> plan:<workspace>/<name>.
 The line under the title, Status: <status> · <date> · <by>, is the tool's: a Status line you
-write is replaced. An Ordered plan isn't rewritten; the work runs on the epics.
+write is replaced. A write keeps the plan's status; a new plan is a Draft. The plan isn't
+rewritten: the work runs on the epics.
 Related: ronin-help planning; item --help
 EOF_USAGE
 }
@@ -36,7 +36,7 @@ while [ "$#" -gt 0 ]; do
 done
 set -- "${args[@]+"${args[@]}"}"
 # plan_call METHOD PATH [JSON]: the acknowledgement (or the reply) printed, an error to stderr
-# (exit 4 on a refusal, 3 otherwise).
+# (exit 4 when it asks which Workspace or a move would overwrite a plan, 3 otherwise).
 plan_call() {
   local method=$1 path=$2 body=${3-} out
   local opts=(-sS -m 60 "${RONIN_CURL[@]+"${RONIN_CURL[@]}"}" -X "$method")
@@ -61,7 +61,7 @@ query() { python3 -c 'import sys,urllib.parse; a=sys.argv[1:]; print(urllib.pars
 case "$verb" in
   ls) status=''
     if [ "$#" -eq 2 ] && [ "$1" = --status ]; then status=$2; set --; fi
-    [ "$#" -eq 0 ] || die 'BAD-ARG: plan ls takes [--status Draft|Ordered|Closed] [--workspace <name>]'
+    [ "$#" -eq 0 ] || die 'BAD-ARG: plan ls takes [--status Draft|Ordered] [--workspace <name>]'
     plan_call GET "/api/plans?$(query status "$status")" ;;
   read)
     if [ "${1:-}" = --template ]; then [ "$#" -eq 1 ] || die 'BAD-ARG: plan read --template takes nothing else'; plan_call GET /api/plans/template; exit $?; fi
@@ -79,7 +79,5 @@ case "$verb" in
     plan_call POST /api/plans/write "$(json name "$name" text "$body")" ;;
   order) [ "$#" -eq 1 ] || die 'BAD-ARG: plan order takes <name>'
     plan_call POST /api/plans/order "$(json name "$1")" ;;
-  close) [ "$#" -eq 2 ] || die 'BAD-ARG: plan close takes <name> "<did we do what we said?>", the line quoted'
-    plan_call POST /api/plans/close "$(json name "$1" line "$2")" ;;
   *) usage >&2; exit 2 ;;
 esac

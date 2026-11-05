@@ -1,11 +1,11 @@
 /** /api/plans — the `plan` tool's one door (ronin_bin/plan, src/plans.ts). Every command names its
- * caller (`by`, the session); the Workspace is `workspace`, else the caller's Team's. A write, order
- * or close answers one line, then the plan's header; a refusal is one line with the next step (409). */
+ * caller (`by`, the session); the Workspace is `workspace`, else the caller's Team's. A write or order
+ * answers one line, then the plan's header. The one 409 asks which Workspace, by name. */
 import type express from 'express';
 import { initialCampaignId } from '../campaign-scope.js';
 import { listSessions } from '../tmux.js';
 import {
-  PlanBadInput, PlanMissing, PlanRefused, closePlan, headerLine, listPlans, orderPlan, planTarget, planTemplate, readPlan, resolvePlanRef, whichWorkspace, writePlan,
+  PlanBadInput, PlanMissing, PlanRefused, headerLine, listPlans, orderPlan, planTarget, planTemplate, readPlan, resolvePlanRef, whichWorkspace, writePlan,
   type Caller, type PlanAnswer,
 } from '../plans.js';
 
@@ -73,10 +73,4 @@ export function registerPlans(app: express.Express): void {
     acted(res, await orderPlan(workspace, name, caller.by));
   }));
 
-  app.post('/api/plans/close', route(async (req, res) => {
-    const b = req.body ?? {};
-    const caller = await callerOf(b, req);
-    const { workspace, name } = await planTarget(caller, text(b.name), text(b.workspace));
-    acted(res, await closePlan(workspace, name, text(b.line), caller.by));
-  }));
 }

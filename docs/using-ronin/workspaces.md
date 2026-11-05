@@ -9,7 +9,7 @@ A Workspace holds:
 - **Instructions** — anything every Agent on it should know.
 - **Locations** — the folders and repositories its Agents work in, each with a short note.
 - **Mode** — Native, or Dangerously for providers that offer it (Native where they don't).
-- **Plans** — where its orders are kept ([Writing a plan](planning.md)).
+- **Plans** — where its plans are kept ([Writing a plan](planning.md)).
 
 ## Teams work in a Workspace
 
@@ -39,8 +39,8 @@ explained once, above the rows. **+ note** on a row adds a note for Agents (what
 for; it goes into their brief). Where Explorer is on, you can also drag a folder from [Explorer](explorer.md)
 onto the page. Under the rows, **Plans** says where the Workspace keeps its plans: Ronin Lab's
 `<campaign>/<workspace>/plans`, marked recommended. Press it to pick another Location and a
-subfolder; only a Direct one or a folder without Git is offered, since plans are written in
-place. On Save the plans move there, and a plan of the same name already there stops the Save.
+subfolder. On Save the plans move there; a plan of the same name already there stops the Save,
+so one plan never overwrites another.
 Agents never see the folder: they use the `plan` tool. Nothing is kept until you press **Save** (or **Create**) at the top: it lights up once there
 is a change, and **−** beside it throws the changes away.
 
