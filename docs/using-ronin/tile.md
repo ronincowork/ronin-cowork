@@ -20,9 +20,10 @@ holds. A pill has no words: it shows the item's kind with Jira's symbol (Epic, S
 Bug, Feature, Subtask), a dot for its status, and ⚑ when the item is flagged. Hover a pill
 to read its key, kind, status and title.
 
-Press a pill and the item opens over the tile: its description, priority, holder, parent,
-comments and attachments. Press the same pill again, or Close, or Escape, to return to the
-terminal.
+Press a pill and the item's reading opens over the tile, in the launch forms' format: its
+Status (press it to move the item to any status), objective, details, comments and attachments
+(docs/using-ronin/work-items.md, An item's reading). Press the same pill again, or Close, or
+Escape, to return to the terminal.
 
 The island stays in the header; it does not move when an item changes. Press the small bar
 at its left to bring it down under the header, with the pills in a column, one item to a

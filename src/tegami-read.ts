@@ -16,8 +16,9 @@ export interface Tegami {
   holds: string[];
   /** The items held, each with its status, and a paired one's Jira link: what the tile and the roster show. */
   items: Array<WorkItem & { jira_url?: string }>;
-  /** The Epics the Teams this Agent leads hold, and not the Agent itself: a lead's item island
-   * shows them beside its own items (owner, 2026-11-04, w279). Empty for an Agent leading none. */
+  /** What the Teams this Agent leads hold at levels 1 and 0, and not the Agent itself: their
+   * Epics (w279) and their unassigned Tasks (KAN-251), which a lead's item island shows beside
+   * its own items. Empty for an Agent leading none. */
   teamItems: Array<WorkItem & { jira_url?: string }>;
   /** What this Agent handed in that still waits In Review (docs/using-ronin/project-management.md, Three signals): a hand-in
    * gives the item to the Team, so it is found on the rosters of the Agent's Teams. The item

@@ -82,8 +82,17 @@ to any status is allowed. One move is made for them: a hand-in that names the it
 (`worktree-desk hand-in <repo> --item <id>`) moves it to In Review, where the space has that
 status, and gives it to the Team. A promotion never changes a status; it puts its receipt on
 the item's trail. Done is set only by the person accepting the item: on the Team workbench's
-Waiting on you, or, for an item paired to Jira, by the Jira user, which comes back by polling.
-A hand-in that names no item moves no status.
+Waiting on you, in an item's reading (below), or, for an item paired to Jira, by the Jira user,
+which comes back by polling. A hand-in that names no item moves no status.
+
+**An item's reading** is the same wherever an item opens: over a tile from its item island, or in
+place on the Work Items stones. It is drawn in the launch forms' format: a head with the kind's
+symbol, the title, and the key, kind, status and flag, then label-left rows: **Status**,
+**Objective**, **Details** (priority, holder, parent, a paired item's Jira fields), **Comments**,
+**Attachments** (each opens), **Links** and, on Work Items, **History**. Status is an ERABI
+question: press it, pick any status, and the item moves (the transition, one trail line, its
+holders and watchers told). The line under it says what changed, or why the move was refused,
+and the answer goes back.
 
 ## The item tool
 

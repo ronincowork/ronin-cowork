@@ -6,6 +6,9 @@ import { createPhalanx } from './phalanx.js';
 import { subscribe } from './team-controller.js';
 import { request } from './request.js';
 import { t } from './lexicon.js';
+import { ask } from './ask.js';
+import { createStep } from './form-steps.js';
+import { kindMark } from './tile-island.js';
 
 export const WORK_ITEMS_TYPE = 'work-items';
 /** Jira's flag: an impediment, marked the same way on every surface. */
@@ -63,12 +66,56 @@ export function itemStones(items, { all = items, holder = () => '' } = {}) {
   });
 }
 
-/** One item's reading: objective, priority, comments, attachments (each opens), links and history
- * (`history: false` leaves the history out: the Epics workbench, KAN-206). */
+/** The statuses an item can move to, in workflow order (Jira's, JIRA_NAMES in src/work-items.ts),
+ * and the item's own when its space names another. */
+export const ITEM_STATUSES = ['To Do', 'In Progress', 'In Review', 'Done'];
+export const statusChoices = (item) => [...new Set([...ITEM_STATUSES, item?.status].filter(Boolean))];
+
+const when = (at) => String(at || '').slice(0, 16).replace('T', ' ');
+
+/** One item's reading, in the launch forms' format (owner, 2026-11-05): a head with the kind's
+ * symbol, the title and the key, then label-left steps — Status (an ERABI question that moves
+ * the item: the work-item routes' transition), Objective, Details, Comments, Attachments (each
+ * opens), Links and History (`history: false` leaves it out: the Epics workbench, KAN-206).
+ * Every size is a form token; nothing takes the terminal's face. */
 export function renderItemDetail(host, item, { holder = '', openAttachment = null, history = true } = {}) {
-  host.append(el('h2', '', item.title || item.id),
-    el('p', 'wi-meta', [item.id, item.kind, item.status, item.flagged ? `${FLAG_MARK} ${t('work_items.flagged', 'flagged')}` : ''].filter(Boolean).join(' · ')),
-    el('p', 'wi-objective', item.objective || ''));
+  const form = el('div', 'ntf-form wi-form');
+  const head = el('header', 'wi-head');
+  const key = el('p', 'wi-key');
+  const sayKey = (status) => { key.textContent = [item.jira || item.id, item.kind, status, item.flagged ? `${FLAG_MARK} ${t('work_items.flagged', 'flagged')}` : ''].filter(Boolean).join(' · '); };
+  sayKey(item.status);
+  const words = el('div', 'wi-head-words');
+  words.append(el('h2', 'wi-title', item.title || item.id), key);
+  head.append(kindMark(item.kind), words);
+  form.append(head);
+  const step = (title, ...nodes) => {
+    const one = createStep({ key: title, title });
+    one.body.append(...nodes);
+    form.append(one.el);
+    return one;
+  };
+
+  // Status: any status to any status, as Jira's transition; the push that follows redraws the
+  // rest of the page, and the line under the question says what happened until then.
+  let status = item.status;
+  const answer = el('p', 'fs-step-help wi-answer');
+  answer.setAttribute('role', 'status');
+  const question = ask([{ fields: [{ key: 'status', label: t('work_items.status', 'Status'),
+    options: statusChoices(item).map((v) => ({ v, l: v })) }] }], {
+    value: { status }, density: 'tight',
+    onChange: async ({ status: next }) => {
+      if (!next || next === status) return;
+      const was = status;
+      answer.dataset.state = '';
+      answer.textContent = t('work_items.moving', 'Moving…');
+      const result = await request(`/api/work-items/${encodeURIComponent(item.id)}/transition`, { method: 'POST', json: { status: next } });
+      if (result.ok) { status = next; sayKey(next); answer.textContent = `${was} → ${next}`; }
+      else { question.set('status', was); answer.dataset.state = 'failed'; answer.textContent = result.message || t('work_items.move_failed', 'The status did not change.'); }
+    },
+  });
+  step(t('work_items.status', 'Status'), question.el, answer);
+
+  if (item.objective) step(t('work_items.objective', 'Objective'), el('p', 'wi-objective', item.objective));
   const facts = el('dl', 'wi-facts');
   for (const [label, value] of [
     [t('work_items.priority', 'Priority'), item.priority || '—'],
@@ -77,16 +124,17 @@ export function renderItemDetail(host, item, { holder = '', openAttachment = nul
     // A paired item's Jira fields, by Jira's own names.
     ...Object.entries(item.jiraFields || {}),
   ]) facts.append(el('dt', '', label), el('dd', '', value));
-  host.append(facts);
+  step(t('work_items.details', 'Details'), facts);
+
   const section = (label, rows) => {
     if (!rows.length) return;
     const list = el('ul', 'wi-list');
     list.append(...rows);
-    host.append(el('h3', '', label), list);
+    step(label, list);
   };
   section(t('work_items.comments', 'Comments'), (item.comments || []).map((comment) => {
-    const row = el('li');
-    row.append(el('small', 'wi-when', `${comment.by || ''} · ${String(comment.at || '').slice(0, 16).replace('T', ' ')}`), el('p', 'wi-text', comment.text || ''));
+    const row = el('li', 'wi-comment');
+    row.append(el('small', 'wi-when', `${comment.by || ''} · ${when(comment.at)}`), el('p', 'wi-text', comment.text || ''));
     return row;
   }));
   section(t('work_items.attachments', 'Attachments'), (item.attachments || []).map((path) => {
@@ -100,9 +148,10 @@ export function renderItemDetail(host, item, { holder = '', openAttachment = nul
     row.append(open);
     return row;
   }));
-  section(t('work_items.links', 'Links'), (item.links || []).map((link) => el('li', '', `${link.type} ${link.to}`)));
+  section(t('work_items.links', 'Links'), (item.links || []).map((link) => el('li', 'wi-text', `${link.type} ${link.to}`)));
   if (history) section(t('work_items.history', 'History'), (item.trail || []).map((line) => el('li', 'wi-when',
-    [String(line.at || '').slice(0, 16).replace('T', ' '), line.by, line.op, [line.from, line.to].filter(Boolean).join(' → '), line.note].filter(Boolean).join(' · '))));
+    [when(line.at), line.by, line.op, [line.from, line.to].filter(Boolean).join(' → '), line.note].filter(Boolean).join(' · '))));
+  host.append(form);
 }
 
 /** A phalanx of item stones with the reading as its detail. */

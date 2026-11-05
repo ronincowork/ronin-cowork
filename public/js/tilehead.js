@@ -93,10 +93,10 @@ const HEADER = () => {
   return rows;
 };
 
-/** What the island shows: the items the Agent holds, then, on a lead, the Epics its Teams hold
- *  (owner, 2026-11-04, w279: the Epic generally sits on the Team). A Team's other items are not
- *  the lead's unless it holds them itself. */
-// Once each: a Team-held item the lead handed in is in both handedIn and teamItems.
+/** What the island shows: the items the Agent holds, what it handed in, then, on a lead, the
+ *  Epics and Tasks its Teams hold — the Epic generally sits on the Team (w279), and a Task on the
+ *  Team is one nobody has taken (KAN-251). A Team's Subtasks are the lead's only when it holds
+ *  them itself. Once each: a Team-held item the lead handed in is in both handedIn and teamItems. */
 export const islandItems = (letter) => [...new Map([...(letter?.items || []), ...(letter?.handedIn || []), ...(letter?.teamItems || [])].map((item) => [item.id, item])).values()];
 
 /** Is this row live, and if not, why not? '' when live. */
@@ -269,7 +269,8 @@ async function openWorkRecord(tile) {
 const openItemLayer = (tile, id) => [...tile.body.querySelectorAll(':scope > .work-overlay')].find((layer) => layer.dataset.item === id) || null;
 async function openItem(tile, item) {
   const { renderItemDetail } = await import('./work-items-surface.js');
-  await overTile(tile, item.jira || item.id, (box) => {
+  // The reader's own head carries the key and the title, so the overlay's row is only its Close.
+  await overTile(tile, '', (box) => {
     box.dataset.item = item.id;
     const detail = document.createElement('div');
     detail.className = 'tile-item-detail';

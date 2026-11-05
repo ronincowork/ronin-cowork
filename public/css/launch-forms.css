@@ -129,13 +129,26 @@
   .team-waiting-compose { gap: var(--space-row); }
   .team-waiting-words { min-width: 0; resize: vertical; border: 0; border-radius: var(--radius-hair); background: var(--inset); color: var(--fg); padding: var(--space-row) var(--space-control); font: inherit; }
   .team-waiting-act.is-send { align-self: flex-start; font-weight: var(--weight-strong); }
-  .wi-meta, .wi-notice, .wi-when { color: var(--muted); }
-  .wi-facts { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--space-row) var(--space-inline); }
+  /* AN ITEM'S READING (work-items-surface.js renderItemDetail; owner, 2026-11-05): the launch
+     forms' furniture — a head, then label-left .fs-step rows — in the UI face, at the form tokens
+     only: the title at --text-heading, step names at --form-head, values at --form-input, ids,
+     times and help at --form-note. */
+  .wi-form { font-family: var(--font-ui); font-size: var(--form-input); line-height: var(--leading-body); color: var(--fg); margin-bottom: 0; }
+  .wi-head { display: flex; align-items: flex-start; gap: var(--space-inline); padding-bottom: var(--space-inset); border-bottom: var(--edge) solid var(--line); }
+  .wi-head .item-kind { width: var(--text-heading); height: var(--text-heading); flex: 0 0 auto; margin-top: var(--space-row); }
+  .wi-head-words { display: flex; flex-direction: column; gap: var(--space-row); min-width: 0; }
+  .wi-title { margin: 0; color: var(--fg-strong); font-size: var(--text-heading); font-weight: var(--weight-strong); line-height: var(--leading-tight); overflow-wrap: anywhere; }
+  .wi-key, .wi-notice, .wi-when { margin: 0; color: var(--muted); font-size: var(--form-note); }
+  .wi-answer:empty { display: none; }
+  .wi-answer[data-state='failed'] { color: var(--status-red); }
+  .wi-facts { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--space-row) var(--space-inset); margin: 0; }
   .wi-facts dt { color: var(--muted); }
+  .wi-facts dt, .wi-facts dd { font-size: var(--form-input); }
   .wi-facts dd { margin: 0; overflow-wrap: anywhere; }
-  .wi-objective, .wi-text { margin: 0; overflow-wrap: anywhere; white-space: pre-wrap; }
-  .wi-list { display: flex; flex-direction: column; gap: var(--space-row); margin: 0; padding: 0; list-style: none; }
-  .wi-attachment { padding: 0; border: 0; background: none; color: var(--accent-2); font: inherit; text-align: left; cursor: pointer; }
+  .wi-objective, .wi-text { margin: 0; overflow-wrap: anywhere; white-space: pre-wrap; font-size: var(--form-input); }
+  .wi-list { display: flex; flex-direction: column; gap: var(--space-paragraph); margin: 0; padding: 0; list-style: none; }
+  .wi-comment { display: flex; flex-direction: column; gap: var(--space-row); }
+  .wi-attachment { padding: 0; border: 0; background: none; color: var(--accent-2); font: inherit; text-align: left; cursor: pointer; text-decoration: none; }
   .wi-attachment:hover, .wi-attachment:focus-visible { color: var(--accent); }
   /* The full overlay (js/work-details.js): one layer over a host, the tile its one user. */
   .work-overlay { position: absolute; inset: 0; overflow-y: auto; background: var(--surface); }

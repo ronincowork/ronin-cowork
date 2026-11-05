@@ -607,6 +607,11 @@ nothing paints exactly this.
 - **work_items.attachments:** Attachments
 - **work_items.links:** Links
 - **work_items.history:** History
+- **work_items.status:** Status
+- **work_items.objective:** Objective
+- **work_items.details:** Details
+- **work_items.moving:** Moving…
+- **work_items.move_failed:** The status did not change.
 - **team.workspace_1:** Tilespace 1
 - **team.workspace_2:** Tilespace 2
 - **team.commons_card:** Commons
