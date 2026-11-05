@@ -128,6 +128,21 @@ export function createItemIsland({ open, shut, isOpen }) {
   place(false);
   grip.addEventListener('click', () => place(el.dataset.state !== 'down'));
 
+  /** A Subtask whose Task is also on the island is not a pill of its own: it is under its
+   *  Task (owner, 2026-11-05), whose pill carries the Subtask mark and their count, and whose
+   *  reading lists them. */
+  const folded = (list) => {
+    const shown = new Set(list.map((item) => item.id));
+    const under = new Map();
+    const top = [];
+    for (const item of list) {
+      if (kindKey(item.kind) === 'subtask' && item.parent && shown.has(item.parent)) under.set(item.parent, (under.get(item.parent) || 0) + 1);
+      else top.push(item);
+    }
+    return { top, under };
+  };
+  let under = new Map();
+
   function pill(item) {
     const node = document.createElement('button');
     node.type = 'button';
@@ -151,6 +166,15 @@ export function createItemIsland({ open, shut, isOpen }) {
       handin.append(HANDIN_MARK, Object.assign(document.createElement('span'), { className: 'item-pill-handin-words', textContent: ` ${handInWords(signal)}` }));
       node.append(handin);
     }
+    const count = under.get(item.id) || 0;
+    if (count) {
+      const mark = Object.assign(document.createElement('span'), { className: 'item-pill-subtasks' });
+      mark.append(kindMark('Subtask'), String(count));
+      node.dataset.subtasks = String(count);
+      node.title = `${node.title} · ${t('island.subtasks', '{n} subtasks', { n: count })}`;
+      node.setAttribute('aria-label', node.title);
+      node.append(mark);
+    }
     // One press opens the item, the same press again closes it.
     node.addEventListener('click', () => {
       place(false);
@@ -165,10 +189,12 @@ export function createItemIsland({ open, shut, isOpen }) {
     if (name !== session) { session = name; drawn = ''; place(false); }
     items = next;
     el.hidden = !session || !next.length;
-    const signature = JSON.stringify(next.map((item) => [item.id, item.kind, item.status, !!item.flagged, item.title, handInSignal(item)]));
+    const signature = JSON.stringify(next.map((item) => [item.id, item.kind, item.status, !!item.flagged, item.title, item.parent, handInSignal(item)]));
     if (signature === drawn) return;
     drawn = signature;
-    pills.replaceChildren(...next.map(pill));
+    const shape = folded(next);
+    under = shape.under;
+    pills.replaceChildren(...shape.top.map(pill));
   }
 
   return { el, update };

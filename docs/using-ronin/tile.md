@@ -20,9 +20,14 @@ holds. A pill has no words: it shows the item's kind with Jira's symbol (Epic, S
 Bug, Feature, Subtask), a dot for its status, and ⚑ when the item is flagged. Hover a pill
 to read its key, kind, status and title.
 
+The island is the work still open: a Done item is not on it. A Subtask whose Task is on the
+island is not a pill of its own: the Task's pill carries the Subtask mark and how many of its
+Subtasks are open, and the Task's reading lists all of them, Done included, under **Subtasks**.
+Press one to open it in the Task's place.
+
 Press a pill and the item's reading opens over the tile, in the launch forms' format: its
 Status (press it to move the item to any status), objective, details, comments and attachments
-(docs/using-ronin/work-items.md, An item's reading). Press the same pill again, or Close, or
+(docs/using-ronin/work-items.md, An item's reading), and a Task's Subtasks. Press the same pill again, or Close, or
 Escape, to return to the terminal.
 
 The island stays in the header; it does not move when an item changes. Press the small bar

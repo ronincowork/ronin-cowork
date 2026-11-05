@@ -29,7 +29,10 @@ test('the tile header carries the island, fed by the pushed work record, and a p
   assert.match(head, /renderItemDetail\(detail, item/);
   // w279: a lead's island adds the Epics its Teams hold after its own items.
   // Piece E: then what the Agent handed in that still waits In Review, before a lead's Epics.
-  assert.match(head, /islandItems = \(letter\) => \[\.\.\.new Map\(\[\.\.\.\(letter\?\.items \|\| \[\]\), \.\.\.\(letter\?\.handedIn \|\| \[\]\), \.\.\.\(letter\?\.teamItems \|\| \[\]\)\]\.map\(\(item\) => \[item\.id, item\]\)\)\.values\(\)\]/);
+  assert.match(head, /islandHeld = \(letter\) => \[\.\.\.new Map\(\[\.\.\.\(letter\?\.items \|\| \[\]\), \.\.\.\(letter\?\.handedIn \|\| \[\]\), \.\.\.\(letter\?\.teamItems \|\| \[\]\)\]\.map\(\(item\) => \[item\.id, item\]\)\)\.values\(\)\]/);
+  // Owner, 2026-11-05: Done leaves the island; a Task's reading still lists all its Subtasks.
+  assert.match(head, /islandItems = \(letter\) => islandHeld\(letter\)\.filter\(\(item\) => statusKey\(item\.status\) !== 'done'\)/);
+  assert.match(head, /children = islandHeld\(tile\.tegami\)\.filter\(\(one\) => one\.parent === item\.id\)/);
   assert.match(head, /isOpen: \(id\) => !!openItemLayer\(tile, id\)/);
   const island = await read('public/js/tile-island.js');
   assert.doesNotMatch(island, /request\(|fetch\(|setInterval/, 'no polling: the push is the only reading');
@@ -73,4 +76,13 @@ test('the island draws the mark beside the dot and the flag, its words only when
   const css = await read('public/style.css');
   assert.match(css, /\.item-pill \.item-pill-handin-words \{ display: none; \}/);
   assert.match(css, /\.item-island\[data-state='down'\] \.item-pill-handin-words \{ display: inline;/);
+});
+
+test('a Subtask whose Task is on the island folds under it: the Task pill carries the mark and count', async () => {
+  const island = await read('public/js/tile-island.js');
+  assert.match(island, /kindKey\(item\.kind\) === 'subtask' && item\.parent && shown\.has\(item\.parent\)/);
+  assert.match(island, /mark\.append\(kindMark\('Subtask'\), String\(count\)\)/);
+  assert.match(island, /pills\.replaceChildren\(\.\.\.shape\.top\.map\(pill\)\)/);
+  const surface = await read('public/js/work-items-surface.js');
+  assert.match(surface, /step\(t\('work_items\.subtasks', 'Subtasks'\), list\)/);
 });

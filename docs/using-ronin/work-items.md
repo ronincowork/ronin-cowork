@@ -88,7 +88,8 @@ which comes back by polling. A hand-in that names no item moves no status.
 **An item's reading** is the same wherever an item opens: over a tile from its item island, or in
 place on the Work Items stones. It is drawn in the launch forms' format: a head with the kind's
 symbol, the title, and the key, kind, status and flag, then label-left rows: **Status**,
-**Objective**, **Details** (priority, holder, parent, a paired item's Jira fields), **Comments**,
+**Objective**, **Details** (priority, holder, parent, a paired item's Jira fields), **Subtasks**
+(over a tile: a Task's, each opening in its place), **Comments**,
 **Attachments** (each opens), **Links** and, on Work Items, **History**. Status is an ERABI
 question: press it, pick any status, and the item moves (the transition, one trail line, its
 holders and watchers told). The line under it says what changed, or why the move was refused,

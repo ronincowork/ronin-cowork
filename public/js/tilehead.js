@@ -9,7 +9,7 @@ import { buildWorkRecord } from './work-record.js';
 import { readDesks } from './desks.js';
 import { t } from './lexicon.js';
 import { chatMarkdown, setChatMarkdown } from './tile-transcript.js';
-import { createItemIsland } from './tile-island.js';
+import { createItemIsland, statusKey } from './tile-island.js';
 
 /**
  * THE HEADER, left to right. One row per control; see the file header for the columns.
@@ -96,8 +96,11 @@ const HEADER = () => {
 /** What the island shows: the items the Agent holds, what it handed in, then, on a lead, the
  *  Epics and Tasks its Teams hold — the Epic generally sits on the Team (w279), and a Task on the
  *  Team is one nobody has taken (KAN-251). A Team's Subtasks are the lead's only when it holds
- *  them itself. Once each: a Team-held item the lead handed in is in both handedIn and teamItems. */
-export const islandItems = (letter) => [...new Map([...(letter?.items || []), ...(letter?.handedIn || []), ...(letter?.teamItems || [])].map((item) => [item.id, item])).values()];
+ *  them itself. Once each: a Team-held item the lead handed in is in both handedIn and teamItems.
+ *  Done is not shown (owner, 2026-11-05): the island is the work still open. `islandHeld` keeps
+ *  Done, for a Task's reading to list all its Subtasks. */
+export const islandHeld = (letter) => [...new Map([...(letter?.items || []), ...(letter?.handedIn || []), ...(letter?.teamItems || [])].map((item) => [item.id, item])).values()];
+export const islandItems = (letter) => islandHeld(letter).filter((item) => statusKey(item.status) !== 'done');
 
 /** Is this row live, and if not, why not? '' when live. */
 function quietReason(row, tile) {
@@ -274,7 +277,10 @@ async function openItem(tile, item) {
     box.dataset.item = item.id;
     const detail = document.createElement('div');
     detail.className = 'tile-item-detail';
-    renderItemDetail(detail, item, { holder: tile.session || '', openAttachment: (path) => tile.openDoc(path), history: false });
+    // Its Subtasks, from what the tile holds, each opening in its place (owner, 2026-11-05).
+    const children = islandHeld(tile.tegami).filter((one) => one.parent === item.id);
+    renderItemDetail(detail, item, { holder: tile.session || '', openAttachment: (path) => tile.openDoc(path), history: false,
+      children, openChild: (child) => void openItem(tile, child) });
     box.append(detail);
   });
 }

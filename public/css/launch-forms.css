@@ -148,6 +148,12 @@
   .wi-objective, .wi-text { margin: 0; overflow-wrap: anywhere; white-space: pre-wrap; font-size: var(--form-input); }
   .wi-list { display: flex; flex-direction: column; gap: var(--space-paragraph); margin: 0; padding: 0; list-style: none; }
   .wi-comment { display: flex; flex-direction: column; gap: var(--space-row); }
+  .wi-child { display: flex; align-items: flex-start; gap: var(--space-inline); width: 100%; padding: 0; border: 0; background: none; color: var(--fg); font: inherit; text-align: left; }
+  button.wi-child { cursor: pointer; }
+  button.wi-child:hover .wi-child-title, button.wi-child:focus-visible .wi-child-title { color: var(--accent); }
+  .wi-child .item-kind { width: var(--form-input); height: var(--form-input); flex: 0 0 auto; margin-top: var(--space-row); }
+  .wi-child-words { display: flex; flex-direction: column; gap: var(--space-row); min-width: 0; }
+  .wi-child-title { font-size: var(--form-input); overflow-wrap: anywhere; }
   .wi-attachment { padding: 0; border: 0; background: none; color: var(--accent-2); font: inherit; text-align: left; cursor: pointer; text-decoration: none; }
   .wi-attachment:hover, .wi-attachment:focus-visible { color: var(--accent); }
   /* The full overlay (js/work-details.js): one layer over a host, the tile its one user. */

@@ -612,6 +612,7 @@ nothing paints exactly this.
 - **work_items.details:** Details
 - **work_items.moving:** Moving…
 - **work_items.move_failed:** The status did not change.
+- **work_items.subtasks:** Subtasks
 - **team.workspace_1:** Tilespace 1
 - **team.workspace_2:** Tilespace 2
 - **team.commons_card:** Commons
@@ -1253,6 +1254,7 @@ The catalog entry goes. {dir} is not touched.
 - **island.items:** Work items held
 - **island.down:** Show the work items with their status
 - **island.up:** Put the work items back in the header
+- **island.subtasks:** {n} subtasks
 - **island.handed_in:** handed in
 - **island.on_dev:** on dev
 

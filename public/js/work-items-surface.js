@@ -78,7 +78,7 @@ const when = (at) => String(at || '').slice(0, 16).replace('T', ' ');
  * the item: the work-item routes' transition), Objective, Details, Comments, Attachments (each
  * opens), Links and History (`history: false` leaves it out: the Epics workbench, KAN-206).
  * Every size is a form token; nothing takes the terminal's face. */
-export function renderItemDetail(host, item, { holder = '', openAttachment = null, history = true } = {}) {
+export function renderItemDetail(host, item, { holder = '', openAttachment = null, history = true, children = [], openChild = null } = {}) {
   const form = el('div', 'ntf-form wi-form');
   const head = el('header', 'wi-head');
   const key = el('p', 'wi-key');
@@ -125,6 +125,23 @@ export function renderItemDetail(host, item, { holder = '', openAttachment = nul
     ...Object.entries(item.jiraFields || {}),
   ]) facts.append(el('dt', '', label), el('dd', '', value));
   step(t('work_items.details', 'Details'), facts);
+
+  // A Task's Subtasks sit under it (owner, 2026-11-05): each its symbol, key, title and status,
+  // opening in the Task's place when there is somewhere to open it.
+  if (children.length) {
+    const list = el('ul', 'wi-list wi-children');
+    for (const child of children) {
+      const row = el('li');
+      const open = el(openChild ? 'button' : 'div', 'wi-child');
+      if (openChild) { open.type = 'button'; open.addEventListener('click', () => openChild(child)); }
+      const words = el('span', 'wi-child-words');
+      words.append(el('span', 'wi-child-title', child.title || child.id), el('span', 'wi-when', [child.jira || child.id, child.status].filter(Boolean).join(' · ')));
+      open.append(kindMark(child.kind), words);
+      row.append(open);
+      list.append(row);
+    }
+    step(t('work_items.subtasks', 'Subtasks'), list);
+  }
 
   const section = (label, rows) => {
     if (!rows.length) return;
