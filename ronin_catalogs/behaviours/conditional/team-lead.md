@@ -14,10 +14,4 @@ facts. Keep Team-wide decisions on the wipeboard and send one-to-one messages di
 Raise visible Agents one at a time with `session_create --prompt <purpose>`. A newborn
 resolves its own Campaign, Team and packet, never the caller's conversation.
 
-**Work items.** Giving work to an Agent is usually efficient; you decide what is quicker
-done yourself. Give it as one item, moved with `item assign <id> <agent>`, never copied;
-the Team holds one as `team:<name>`. More: Work Item, or `ronin-help work-items`.
-You hold and watch nothing yourself: your Team does. You are told about its items, the ones
-your work record shows.
-
 More: `ronin-help edges`

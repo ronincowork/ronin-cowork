@@ -31,6 +31,7 @@ process.env.RONIN_TEAM_ROSTERS_DIR = path.join(dir, 'team_rosters');
 const { registerWorkItems } = await import('../src/routes/work-items-api.js');
 const { createTeamRoster, readTeamRoster } = await import('../src/team-rosters.js');
 const { readLetterHolds, seedTegami } = await import('../src/tegami.js');
+const { readTegami } = await import('../src/tegami-read.js');
 const { createItem, readItem } = await import('../src/work-items.js');
 
 await createTeamRoster('crew', { objective: 'hold things' });
@@ -82,7 +83,7 @@ async function oneLine(id: string, args: string[], as = 'probe') {
   assert.match(out, new RegExp(`^${id} `), 'the acknowledgement is the line of what the act did');
   return after.at(-1)!;
 }
-const made = (out: string) => /^(w\d+) was created/m.exec(out)![1]!;
+const made = (out: string) => /^created (w\d+) /m.exec(out)![1]!;
 
 test('item acts, each naming its item, one trail line each', async () => {
   const epic = made(await tool('item', ['create', '--title', 'Overall', '--kind', 'Epic']));
@@ -141,11 +142,32 @@ test('item is the one tool for work items: team and work-record have no item act
   assert.notEqual((await run('work-record', ['update_record', '--phase', 'p'])).status, 0);
 });
 
+test('work-record add_doc holding no item puts the document on the work record itself, and the reading shows it', async () => {
+  await seedTegami('loner');
+  const doc = path.join(dir, 'loner-plan.md');
+  writeFileSync(doc, '# plan\n');
+  const added = await run('work-record', ['add_doc', doc], 'loner');
+  assert.deepEqual([added.status, added.stderr], [0, ''], 'no refusal: owner 2026-11-02');
+  assert.equal(added.stdout.trim(), `@loner's work record has ${doc}`);
+  assert.deepEqual((JSON.parse(await tool('work-record', ['read', '--json'], 'loner')) as { documents: string[] }).documents, [doc]);
+  assert.match(await tool('work-record', ['read'], 'loner'), new RegExp(`## Documents\\n- ${doc}`));
+  assert.deepEqual((await readTegami('loner'))!.docs, [doc], 'the tile\'s Docs lists the document by its own path');
+  await tool('work-record', ['add_doc', doc], 'loner');
+  assert.deepEqual((await readTegami('loner'))!.docs, [doc], 'adding it again keeps one');
+  assert.equal((await run('work-record', ['add_doc', path.join(dir, 'nope.md')], 'loner')).status, 2);
+
+  // Holding an item now: --remove still takes the record's own one off; the item is untouched.
+  const held = made(await tool('item', ['create', '--title', 'Loner work']));
+  await tool('item', ['assign', held, 'loner']);
+  assert.equal((await tool('work-record', ['add_doc', '--remove', doc], 'loner')).trim(), `@loner's work record has ${doc} removed`);
+  assert.deepEqual((await readTegami('loner'))!.docs, []);
+  assert.deepEqual((await readItem(held))!.attachments, []);
+});
+
 test('work-record add_doc adds a document to the item you hold; holding several, --item names one', async () => {
   await seedTegami('writer');
   const doc = path.join(dir, 'idea.md');
   writeFileSync(doc, '# idea\n');
-  assert.match((await run('work-record', ['add_doc', doc], 'writer')).stderr, /^NO-ITEM: you hold no work item/);
   const first = made(await tool('item', ['create', '--title', 'Idea']));
   await tool('item', ['assign', first, 'writer']);
   await tool('work-record', ['add_doc', doc], 'writer');
@@ -156,6 +178,8 @@ test('work-record add_doc adds a document to the item you hold; holding several,
   assert.deepEqual([several.status, several.stderr.trim()], [2, `BAD-ARG: you hold ${first} ${second}; name one with --item <id>`]);
   await tool('work-record', ['add_doc', doc, '--item', second], 'writer');
   assert.deepEqual((await readItem(second))!.attachments, [doc]);
+  await tool('work-record', ['add_doc', '--remove', doc, '--item', second], 'writer');
+  assert.deepEqual((await readItem(second))!.attachments, []);
 });
 
 test('an id no route can hold answers "No work item <id>", and a reply that is not JSON names its HTTP status', async () => {
@@ -255,4 +279,66 @@ test('work-record read and read --json take a reading over 128 KB, the most one 
   const json = await run('work-record', ['read', '--json'], 'big_probe');
   assert.equal(json.status, 0, json.stderr);
   assert.equal((JSON.parse(json.stdout) as { items: unknown[] }).items.length, 40);
+});
+
+test('item takes several ids where an act allows them, --text in search, and --in-jira on delete', async () => {
+  const epic = made(await tool('item', ['create', '--title', 'Many epic', '--kind', 'Epic']));
+  const created = await tool('item', ['create', '--title', 'Many one', '--objective', 'Done looks like: a quokka', '--parent', epic]);
+  assert.match(created.split('\n')[0]!, new RegExp(`^created w\\d+ under ${epic}$`), 'create says so on line 1');
+  const one = made(created);
+  const two = made(await tool('item', ['create', '--title', 'Many two', '--parent', epic]));
+  const out = await tool('item', ['transition', one, two, 'In Progress']);
+  assert.deepEqual(out.trim().split('\n'), [`${one} moved to In Progress`, `${two} moved to In Progress`]);
+  await tool('item', ['watch', one, two]);
+  assert.deepEqual((await readLetterHolds('probe'))!.watches.slice(-2), [one, two]);
+  const found = JSON.parse(await tool('item', ['search', '--text', 'QUOKKA'])) as { items: Array<{ id: string }> };
+  assert.deepEqual(found.items.map((item) => item.id), [one]);
+  assert.equal((await run('item', ['delete', one, '--in-jra'])).status, 2, 'a mistyped flag is refused');
+  assert.deepEqual((await tool('item', ['delete', one, two, '--in-jira'])).trim().split('\n'), [`${one} was deleted`, `${two} was deleted`]);
+});
+
+test('item handover: several ids, one note, to the Team; --to-do and --flag; transition takes --note', async () => {
+  const { holdersOf, holderLabel, readItem } = await import('../src/work-items.js');
+  const epic = made(await tool('item', ['create', '--title', 'Handover epic', '--kind', 'Epic']));
+  const one = made(await tool('item', ['create', '--title', 'Hand one', '--parent', epic]));
+  const two = made(await tool('item', ['create', '--title', 'Hand two', '--parent', epic]));
+  await tool('item', ['transition', one, two, 'In Progress']);
+  const out = await tool('item', ['handover', one, two, 'team:crew', 'store done; CSS next', '--to-do']);
+  assert.deepEqual(out.trim().split('\n'), [`${one} was handed from agent:probe to team:crew`, `${two} was handed from agent:probe to team:crew`]);
+  for (const id of [one, two]) {
+    const item = (await readItem(id))!;
+    assert.deepEqual([item.status, item.comments.at(-1)!.text], ['To Do', 'Handover from probe: store done; CSS next']);
+    assert.deepEqual((await holdersOf(id)).map(holderLabel), ['team:crew']);
+  }
+  const three = made(await tool('item', ['create', '--title', 'Hand three', '--parent', epic]));
+  assert.match(await tool('item', ['handover', three, 'team:crew', '--flag', 'Waiting on the lead: keep it?']), new RegExp(`${three} is flagged: Waiting on the lead: keep it\\?`));
+  assert.equal((await readItem(three))!.flagged, true);
+  assert.equal((await run('item', ['handover', three, 'none', 'x'])).status, 2, 'a handover goes to someone');
+  assert.equal((await run('item', ['handover', three, 'team:crew', 'a', 'b'])).status, 2, 'one note');
+  assert.equal((await run('item', ['transition', three, 'In Review', '--nope', 'x'])).status, 2);
+  const four = made(await tool('item', ['create', '--title', 'Hand four', '--parent', epic]));
+  await tool('item', ['transition', four, 'In Review', '--note', 'Try the tile.']);
+  assert.equal((await readItem(four))!.status, 'In Review');
+});
+
+test('work-record read lists open items only; Done waiting for the archive is one line, ids only, newest first, at most 8', async () => {
+  const { createItem, editItem } = await import('../src/work-items.js');
+  await seedTegami('done_probe');
+  const holder = { kind: 'agent', name: 'done_probe' } as const;
+  const open = (await createItem({ title: 'still open', holder }, 'lead')).item.id;
+  const done: string[] = [];
+  for (let n = 0; n < 10; n++) {
+    const id = (await createItem({ title: `finished ${n}`, holder }, 'lead')).item.id;
+    await editItem(id, { status: 'Done' }, 'owner');
+    done.unshift(id); // newest first
+  }
+  const text = await run('work-record', ['read'], 'done_probe');
+  assert.equal(text.status, 0, text.stderr);
+  assert.match(text.stdout, new RegExp(`- ${open} still open · To Do`));
+  assert.doesNotMatch(text.stdout, /finished \d/, 'no Done item has a line of its own');
+  assert.ok(text.stdout.includes(`- Done, not yet archived: 10 (${done.slice(0, 8).join(', ')}, …)`), text.stdout);
+  const json = JSON.parse((await run('work-record', ['read', '--json'], 'done_probe')).stdout) as { items: unknown[] };
+  assert.equal(json.items.length, 11, '--json stays whole, for scripts');
+  const { readTegami } = await import('../src/tegami-read.js');
+  assert.equal((await readTegami('done_probe'))!.chip.text, `${open} To Do`, 'the header chip names only open items');
 });

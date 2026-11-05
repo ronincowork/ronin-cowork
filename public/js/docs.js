@@ -102,9 +102,9 @@ export function buildDocs(root, only = null) {
   area.addEventListener('pointerdown', (event) => event.stopPropagation());
   ed.append(bar, frame, area);
   root.append(pills, list, ed);
-  // A page — or a file handed to an Agent (its session's drop/), which the browser shows as
+  // A page, an image or a PDF — or a file handed to an Agent (its session's drop/), which the browser shows as
   // itself: an image or a PDF in a textarea would be garbage, and a Save would write it back.
-  const isPage = (p) => /\.html?$/i.test(p) || (/\/drop\/[^/]+$/.test(p) && !/\.(md|txt)$/i.test(p));
+  const isPage = (p) => /\.(html?|png|jpe?g|gif|webp|svg|pdf)$/i.test(p) || (/\/drop\/[^/]+$/.test(p) && !/\.(md|txt)$/i.test(p));
   const rawUrl = (p) => '/raw' + p.split('/').map(encodeURIComponent).join('/');
   const targetOf = (value) => {
     if (typeof value === 'string' && value) return { key: `absolute:${value}`, path: value, title: value };
@@ -237,7 +237,8 @@ export function buildDocs(root, only = null) {
   const render = (rows) => {
     list.innerHTML = '';
     if (!rows.length) {
-      if (shelf !== 'tracked') empty(t('docs.shelf_empty', 'Nothing on this shelf — a workspace folder names its places on its record (Workspace folders → docs / plans).'));
+      if (shelf === 'plans') empty(t('docs.plans_empty', 'No plans yet. A lead writes one with the user: plan write <name>.'));
+      else if (shelf !== 'tracked') empty(t('docs.shelf_empty', 'Nothing on this shelf — a workspace folder names its docs on its record (Workspace folders → docs).'));
       else empty(only ? t('docs.empty_team', 'No tracked documents.') : t('docs.empty', 'No session has listed a doc yet. An agent adds one with: work-record add_doc <path>'));
       return;
     }
@@ -258,7 +259,7 @@ export function buildDocs(root, only = null) {
       h.addEventListener('click', () => { body.hidden = !body.hidden; h.classList.toggle('folded', body.hidden); });
       h.classList.toggle('folded', body.hidden);
       list.appendChild(body);
-      for (const p of s.docs) {
+      for (const [n, p] of s.docs.entries()) {
         const parts = p.split('/');
         const b = document.createElement('button');
         b.className = 'dc-row';
@@ -267,7 +268,8 @@ export function buildDocs(root, only = null) {
           Object.assign(document.createElement('b'), { textContent: parts.pop() }),
           // The last two directories, so two files called HOW_TO.md are told apart
           // without printing an absolute path on a phone-width row.
-          Object.assign(document.createElement('span'), { textContent: parts.slice(-2).join('/') }),
+          // A plan says its status instead (the Plans shelf: Draft, Ordered).
+          Object.assign(document.createElement('span'), { textContent: s.hints?.[n] || parts.slice(-2).join('/') }),
         );
         b.addEventListener('click', () => open(p));
         // the last directory and the name, what the row shows — and the tile's composer
@@ -309,9 +311,9 @@ export function buildDocs(root, only = null) {
       }
       const rows = shelves[shelf]
         .filter((g) => g.files.length)
-        .map((g) => ({ name: g.root, docs: g.files, folded: g.archived }))
+        .map((g) => ({ name: g.root, docs: g.files, hints: g.hints, folded: g.archived }))
         .sort((a, b) => Number(!!a.folded) - Number(!!b.folded));
-      const next = shelf + rows.map((s) => s.name + ':' + s.docs.join('|')).join('\n');
+      const next = shelf + rows.map((s) => s.name + ':' + s.docs.join('|') + (s.hints || []).join('|')).join('\n');
       if (next === sig) return;
       sig = next;
       render(rows);

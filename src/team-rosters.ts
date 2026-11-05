@@ -23,7 +23,7 @@ export interface TeamRoster {
   agent_defaults: TeamAgentDefaults;
   /** Work item ids this Team holds. The items live in the work item store. */
   holds: string[];
-  /** Work item ids this Team watches; its lead hears their moves (work-items.ts hearers). */
+  /** Work item ids this Team watches; its lead hears a status change on each (work-items.ts tellWatchers). Its members' items do not make it a watcher. */
   watches: string[];
 }
 
@@ -88,8 +88,9 @@ function parse(name: string, raw: string, campaign_id = ''): TeamRoster {
       ? { selected: strings(behaviourMap.selected, 160), required: strings(behaviourMap.required, 160) }
       : { selected: [], required: [] },
     agent_defaults: teamAgentDefaults(json('agent_defaults')),
-    holds: strings(json('holds'), 32),
-    watches: strings(json('watches'), 32),
+    // An id is on a list once (KAN-261): a list written twice by an old race reads clean.
+    holds: [...new Set(strings(json('holds'), 32))],
+    watches: [...new Set(strings(json('watches'), 32))],
   };
 }
 
@@ -191,8 +192,8 @@ function render(name: string, r: TeamRoster): string {
     line('state', r.state),
     line('behaviours', JSON.stringify(r.behaviours)),
     line('agent_defaults', JSON.stringify(r.agent_defaults)),
-    line('holds', JSON.stringify(r.holds)),
-    line('watches', JSON.stringify(r.watches)),
+    line('holds', JSON.stringify([...new Set(r.holds)])),
+    line('watches', JSON.stringify([...new Set(r.watches)])),
     '',
   ].join('\n');
 }

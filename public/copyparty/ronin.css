@@ -1,5 +1,5 @@
 /* Explorer (KAN-146): copyparty's flat themes, dark (html.bz) and light (html.by), wearing Ronin's colours and type.
- * files.js copies Ronin's live tokens into the frame as --ronin-* and picks the theme to match Ronin's
+ * ronin.js copies Ronin's live tokens into the frame as --ronin-* and picks the theme to match Ronin's
  * light or dark, so a skin or a theme change reaches Explorer too. Included through --css-browser. */
 html.bz, html.by {
   /* copyparty sizes everything in em from the root, so Ronin's body size here rescales it whole */

@@ -83,7 +83,7 @@ function seedShell(
 > - **holds:** the work items you hold; their status shows here. Work items:
 >   the Work Item capability.
 > - **watches:** the work items you track without holding: \`item watch <id>\`; you hear
->   the moves under each (status, flag, a new child, a holder change).
+>   of a status change on that item, nothing else.
 > - **teams**, **configuration:** Ronin writes these and tells you when they change.
 
 \`\`\`json
@@ -110,11 +110,15 @@ function letterBlock(text: string): { match: RegExpMatchArray; body: Record<stri
   }
 }
 
+const OLD_WATCHES = '>   the moves under each (status, flag, a new child, a holder change).';
+const NEW_WATCHES = '>   of a status change on that item, nothing else.';
+
 async function replaceLetterBlock(file: string, text: string, parsed: ReturnType<typeof letterBlock>, body: Record<string, unknown>): Promise<void> {
   if (!parsed) throw new Error('work record has no valid JSON block');
   const block = JSON.stringify(body, null, 2);
   const start = parsed.match.index! + parsed.match[0].indexOf(parsed.match[1]);
-  const out = text.slice(0, start) + block + text.slice(start + parsed.match[1].length);
+  // A record seeded before KAN-261 says watchers hear more than a status change; any write corrects it.
+  const out = (text.slice(0, start) + block + text.slice(start + parsed.match[1].length)).replace(OLD_WATCHES, NEW_WATCHES);
   const tmp = `${file}.project.${process.pid}`;
   await fs.writeFile(tmp, out, 'utf8');
   await fs.rename(tmp, file);
@@ -134,7 +138,8 @@ export interface LetterHolds {
 
 function holdsOfBody(key: string, text: string, body: Record<string, unknown>): LetterHolds {
   const name = text.match(/^# TEGAMI — (.+)$/m)?.[1]?.trim() || key;
-  const ids = (list: unknown) => Array.isArray(list) ? list.filter((id): id is string => typeof id === 'string') : [];
+  // An id is on a list once (KAN-261): a list written twice by an old race reads clean.
+  const ids = (list: unknown) => Array.isArray(list) ? [...new Set(list.filter((id): id is string => typeof id === 'string'))] : [];
   return { key, name, objective: typeof body.objective === 'string' ? body.objective : '', holds: ids(body.holds), watches: ids(body.watches),
     teams: Array.isArray(body.teams) ? body.teams.map((entry) => (entry as TeamEntry)?.team).filter((team): team is string => typeof team === 'string') : [] };
 }
@@ -162,7 +167,7 @@ async function writeLetterList(key: string, list: 'holds' | 'watches', ids: stri
   const text = await fs.readFile(file, 'utf8');
   const parsed = letterBlock(text);
   if (!parsed) throw new Error(`the work record at ${file} has no readable JSON block`);
-  parsed.body[list] = ids;
+  parsed.body[list] = [...new Set(ids)];
   await replaceLetterBlock(file, text, parsed, parsed.body);
   return holdsOfBody(key, text, parsed.body);
 }

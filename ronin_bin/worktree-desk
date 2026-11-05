@@ -4,7 +4,7 @@
 #
 # Usage: worktree-desk status [--session s | --team t | --repo r]   per worktree: clean/dirty · ahead · pending · blocked
 #        worktree-desk open <repo[:branch]> [--team t]              get a worktree from current local dev
-#        worktree-desk hand-in [<repo[:branch]>] [--assignment] [--item <id>]  hand your committed delta to the team line
+#        worktree-desk hand-in [<repo[:branch]>] [--assignment] [--item <id>] [--note "<what they can try>"]  hand your committed delta to the team line
 #        worktree-desk sync [<repo[:branch]>] [--source dev|team|lead|<repo:branch>]                       merge the selected committed source into the worktree
 #        worktree-desk close [<repo[:branch]>]                      remove a clean worktree whose tip is on its line
 #        worktree-desk repository-init <existing-project-root>      initialize a local repository
@@ -28,7 +28,7 @@ Usage:
   worktree-desk assign <repo[:branch]> --session <name> --team <team> [--source dev|team]
   worktree-desk status [<repo[:branch]>] [--assignment]
   worktree-desk sync [<repo[:branch]>] [--source dev|team|lead|<repo:branch>]
-  worktree-desk hand-in [<repo[:branch]>] [--assignment] [--item <id>]
+  worktree-desk hand-in [<repo[:branch]>] [--assignment] [--item <id>] [--note "<what they can try>"]
   worktree-desk close [<repo[:branch]>] [--with-session]
   worktree-desk receipts [<repo>] [--line | --id <receipt-id>]
   worktree-desk reply <repo> <receipt-id> <message…>
@@ -44,6 +44,8 @@ Common tasks:
   Only committed work is merged. Unsaved source files stay at the source.
   The acknowledgement names the exact source commit and before/after destination HEAD.
   Check the result: merged, already contained, pending, or conflicted. Then hand in.
+  A hand-in's --note is the Handed in comment on its item, for the user: what they can try,
+  at most 280 characters. Under project management a hand-in with --item carries one.
 
 Open creates a private worktree; sync merges your selected source; hand-in admits committed work to
 the Team review line. Assign lets the lead choose the same source for another Agent;

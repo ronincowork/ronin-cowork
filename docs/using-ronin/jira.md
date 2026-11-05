@@ -25,8 +25,8 @@ was off goes when it comes back on:
   Off, they stay in Ronin.
 - **Ronin's items** (up, Ronin → Jira) is a pick of three: **Off** sends nothing made in Ronin;
   **Under an epic** sends epics and everything under them, while items with no epic stay in
-  Ronin; **All** sends every item. Sent items are created on Jira, assigned to the account,
-  and their changes go out. Widening it sends what newly qualifies, parents first. An item
+  Ronin; **All** sends every item. Sent items are created on Jira, labelled ronin-do and
+  unassigned (the Assignee is the Jira people's), and their changes go out. Widening it sends what newly qualifies, parents first. An item
   that came from Jira is never created there again.
 - **Sync now** always reads: the space checked, one read, what is waiting sent, and the check
   for items gone from Jira.
@@ -36,16 +36,15 @@ was off goes when it comes back on:
 A paired item's Ronin id is its Jira key (`KAN-65`), so Agents and Jira users say the same
 name. An item from Jira comes in with its key. An item made in Ronin is `w101` until the sync
 that creates it on Jira renames it; a key changed in Jira (the space's key renamed, the item
-moved) renames it the same way. Children, links and holders follow, and each holder is told:
-"w101 is now KAN-65 (its Jira key); nothing to do." Without a connection, items
-stay `w101`.
+moved) renames it the same way. Children, links and holders follow, and every id it has had still
+finds it; nobody is told. Without a connection, items stay `w101`.
 
 ## Jira wins
 
 Jira is the source; Ronin keeps the item as Jira had it at the last sync, and compares.
 
-- **A change in Jira** replaces the Ronin item at the next read, and its holders hear of it
-  as of any change.
+- **A change in Jira** replaces the Ronin item at the next read; the Agent working it hears
+  of a comment or a change that beat its own, as of any change by someone else.
 - **A change in Ronin** goes up at once, but only if Jira has not changed the item since the
   last sync. If it has, Jira's item replaces Ronin's and each holding Agent is told: "KAN-27
   changed on Jira (by jira:Alice); your change was not sent. Read the item and redo it if it
@@ -75,8 +74,8 @@ Subtask; Highest to Lowest, Medium by default; Blocks, Relates, Duplicate, Clone
 reads the space's own; a list Jira will not give keeps the last one read, or Jira's defaults,
 and the Sync section says so. The level is the kind's: an epic is 1, a subtask -1, the rest 0.
 Ronin never closes a Jira item: a hand-in moves it to In Review, if the space has that
-status; promotion leaves it as it is; it is Done when the Jira user moves it there, and that
-comes back with the next read.
+status; promotion never changes a status; it is Done when the Jira user moves it there, and
+that comes back with the next read.
 
 ## Connect
 
@@ -103,9 +102,9 @@ not its name: `KAN` in `KAN-1`),
 to fix, keeps the token with Services (it is never shown again), and runs the first sync.
 Until every check passes the campaign is not connected: the panel shows these fields again,
 filled with what you entered (the token aside), and what to fix above them.
-It first puts on the space, assigned to the account, what **Ronin's items** says: nothing,
-the epics and everything under them, or every work item. Then assign one work
-item to the account in Jira and press **Sync now**.
+It first puts on the space, labelled ronin-do and unassigned, what **Ronin's items** says:
+nothing, the epics and everything under them, or every work item. Then, in Jira, assign one
+work item to the account or label it ronin-do, and press **Sync now**.
 
 ## Connected
 

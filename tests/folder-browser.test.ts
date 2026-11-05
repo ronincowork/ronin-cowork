@@ -57,9 +57,30 @@ test('folder creation stays under home and can initialize local git without a re
     const made = await createFolder(base, 'New Work', true);
     assert.equal(made.git, true);
     const { repoFacts } = await import('../src/project-roots.js');
-    const facts = await repoFacts({ name: 'new-work', title: '', dir: made.dir, match: [], remit: '', docs: [], plans: [], archived: false, campaign_id: '' });
+    const facts = await repoFacts({ name: 'new-work', title: '', dir: made.dir, match: [], remit: '', docs: [], archived: false, campaign_id: '' });
     assert.equal(facts.repo?.remote, '');
     await assert.rejects(() => createFolder('/tmp', 'outside'), /inside your home/);
     await assert.rejects(() => createFolder(base, '../outside'), /without slashes/);
+  } finally { await rm(base, { recursive: true, force: true }); }
+});
+
+test('a repository location Git cannot read is not Ready; a plain folder and a readable repository are', async () => {
+  const base = await mkdtemp(path.join(os.homedir(), '.ronin-folder-test-'));
+  try {
+    const { createFolder } = await import('../src/folder-browser.js');
+    const { repoFacts } = await import('../src/project-roots.js');
+    const facts = (dir: string) => repoFacts({ name: 'x', title: '', dir, match: [], remit: '', docs: [], archived: false, campaign_id: '' });
+    const broken = path.join(base, 'Broken');
+    await mkdir(broken);
+    await writeFile(path.join(broken, '.git'), 'gitdir: /nowhere/at/all\n');
+    assert.deepEqual([(await facts(broken)).ready, (await facts(broken)).not_ready], [false, 'git_unreadable']);
+    const plain = path.join(base, 'Plain');
+    await mkdir(plain);
+    assert.equal((await facts(plain)).ready, true);
+    const repo = await createFolder(base, 'Repo', true);
+    const read = await facts(repo.dir);
+    assert.equal(read.ready, true);
+    assert.ok(read.repo?.branch, 'a Ready repository has its branch known');
+    assert.deepEqual([(await facts(path.join(base, 'Gone'))).ready, (await facts(path.join(base, 'Gone'))).not_ready], [false, 'missing']);
   } finally { await rm(base, { recursive: true, force: true }); }
 });

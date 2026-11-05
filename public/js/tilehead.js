@@ -5,10 +5,12 @@ import { pickFile } from './tilefiles.js';
 import { S, serviceMissing } from './state.js';
 import { OUTPUTS } from './output.js';
 import { createMenuButton } from './menu.js';
-import { buildWorkRecord, heldAttachments } from './work-record.js';
+import { buildWorkRecord } from './work-record.js';
 import { readDesks } from './desks.js';
 import { t } from './lexicon.js';
+import { isPlanRef, planName } from './plan-attachment.js';
 import { chatMarkdown, setChatMarkdown } from './tile-transcript.js';
+import { createItemIsland, statusKey } from './tile-island.js';
 
 /**
  * THE HEADER, left to right. One row per control; see the file header for the columns.
@@ -31,6 +33,18 @@ const HEADER = () => {
   // A workspace owns which Agent it holds. The tile only names that session; switching
   // happens by placing or dragging a roster card into the workspace, never in its head.
   { key: 'sessionName', tag: 'span', cls: 'sess' },
+
+  { grow: true },
+
+  // THE ITEM ISLAND (owner, 2026-11-04; w271, w272): a pill per work item this Agent holds —
+  // Jira's kind symbol, a status dot, ⚑ when flagged, no text. Its bar brings it down with
+  // what the colours mean. A pill opens its item over the tile (openItem below) and closes it
+  // pressed again. Read off the work record on every push: js/tile-island.js.
+  { key: 'island', widget: (tile) => createItemIsland({
+      open: (item) => void openItem(tile, item),
+      isOpen: (id) => !!openItemLayer(tile, id),
+      shut: (id) => openItemLayer(tile, id)?.remove() }),
+    read: (tile) => { tile.island?.update?.(tile.session, islandItems(tile.tegami)); return ''; } },
 
   { grow: true },
 
@@ -79,6 +93,15 @@ const HEADER = () => {
   ];
   return rows;
 };
+
+/** What the island shows: the items the Agent holds (a hand-in keeps the hold, KAN-269, so what
+ *  it handed in is among them, marked from its own hand_ins), then, on a lead, the Epics and Tasks
+ *  its Teams hold — the Epic generally sits on the Team (w279), and a Task on the Team is one
+ *  nobody has taken (KAN-251). A Team's Subtasks are the lead's only when it holds them itself.
+ *  Once each. Done is not shown (owner, 2026-11-05): the island is the work still open. `islandHeld` keeps
+ *  Done, for a Task's reading to list all its Subtasks. */
+export const islandHeld = (letter) => [...new Map([...(letter?.items || []), ...(letter?.teamItems || [])].map((item) => [item.id, item])).values()];
+export const islandItems = (letter) => islandHeld(letter).filter((item) => statusKey(item.status) !== 'done');
 
 /** Is this row live, and if not, why not? '' when live. */
 function quietReason(row, tile) {
@@ -197,10 +220,13 @@ export function tileMenu(tile) {
       { glyph: '☰', label: t('me.work_record', 'Work record'), run: () => void openWorkRecord(tile) },
       { glyph: '⚙', label: t('me.configuration', 'Configuration'), hint: t('me.configuration_hint', 'mandate, Behaviors'),
         run: () => void openConfiguration(tile) },
-      // The held items' attachments, the same ones the work record lists: one opens over the tile.
-      { glyph: '📄', label: t('me.docs', 'Docs'), kind: 'list', hint: String(heldAttachments(tile.tegami).length || ''),
-        empty: t('me.docs_none', 'No attachments on the items this Agent holds.'),
-        list: () => heldAttachments(tile.tegami).map((path) => {
+      // The record's documents (tegami.docs: held items' attachments and the record's own, as
+      // the Commons Docs lists them), so a lead, holding nothing, shows its own: one opens over the tile.
+      { glyph: '📄', label: t('me.docs', 'Docs'), kind: 'list', hint: String((tile.tegami?.docs || []).length || ''),
+        empty: t('me.docs_none', 'No documents on this Agent\'s record.'),
+        list: () => (tile.tegami?.docs || []).map((path) => {
+          // A plan still named plan:<workspace>/<name> here no longer resolves (work-items-read.ts).
+          if (isPlanRef(path)) return { label: planName(path), hint: t('plans.gone_hint', 'gone'), run: () => {} };
           const parts = path.split('/');
           return { label: parts.pop(), hint: parts.slice(-2).join('/'), run: () => tile.openDoc(path) };
         }) },
@@ -242,6 +268,31 @@ async function openWorkRecord(tile) {
     ? buildWorkRecord(tile.tegami, desks, { openDoc: (path) => { layer.remove(); tile.openDoc(path); } })
     : Object.assign(document.createElement('p'), { className: 'menu-empty',
       textContent: t('me.no_record', 'This Agent has not written a work record yet.') })));
+}
+
+/** One held item over the tile, as the Work Items reader draws it (work-items-surface.js):
+ *  its title, kind, status and flag, its description, its facts, comments and attachments. */
+const openItemLayer = (tile, id) => [...tile.body.querySelectorAll(':scope > .work-overlay')].find((layer) => layer.dataset.item === id) || null;
+async function openItem(tile, item) {
+  const { renderItemDetail, holderOf } = await import('./work-items-surface.js');
+  // Who holds it, every holder (w299): one read of the item as it opens, not a watch.
+  const { request } = await import('./request.js');
+  const read = await request(`/api/work-items/${encodeURIComponent(item.id)}`, { cache: 'no-store' });
+  const holder = holderOf({ ...item, held_by: read.ok ? read.data?.held_by : undefined, holder: item.holder || '' }) || (read.ok ? '' : `@${tile.session || ''}`);
+  // The reader's own head carries the key and the title, so the overlay's row is only its Close.
+  await overTile(tile, '', (box) => {
+    box.dataset.item = item.id;
+    const detail = document.createElement('div');
+    detail.className = 'tile-item-detail';
+    // Its Subtasks, each opening in its place (owner, 2026-11-05): every one, from the item read,
+    // whoever holds it — a handed-in Subtask is the Team's, so the tile's own record loses it
+    // once it is Done (owner, w299: "it disappeared"). The tile's record only when the read failed.
+    const children = read.ok && Array.isArray(read.data?.children) ? read.data.children
+      : islandHeld(tile.tegami).filter((one) => one.parent === item.id);
+    renderItemDetail(detail, item, { holder, openAttachment: (path) => tile.openDoc(path), history: false,
+      children, openChild: (child) => void openItem(tile, child) });
+    box.append(detail);
+  });
 }
 
 /** The Agent's configuration: the composition reader the Team profile already shows —

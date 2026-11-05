@@ -29,6 +29,14 @@ proxy. `--rp-loc /files` makes copyparty draw every link as `/files/...`. So `/f
 `$HOME/<path>`: the Workspace page (`workspaces-surface.js`) adds a dropped `/files/` link as that
 folder.
 
+## Drags over the frame
+
+An iframe takes every drag that crosses it, so a card or stone dropped on Explorer's tilespace would
+reach copyparty as an upload, not the tile. `files-surface.js` marks `<html>` with `ronin-dragging`
+from any `dragstart` in Ronin until `dragend` or `drop`. While it is marked, `.files-frame` has
+`pointer-events: none`. A drag from the desktop starts no `dragstart` in Ronin, so it still reaches
+copyparty and uploads.
+
 ## Cost
 
 `--no-thumb`, no `-e2d*` (no database, no scan) and `--http-only` (no TLS certificate). Idle, it uses
@@ -44,12 +52,12 @@ changing a file's type.
 ## Look and chrome
 
 These are copyparty's own options, not patches:
-- **Theme:** `--js-browser /files.js` (`public/files.js`). The frame shares Ronin's origin, so the
+- **Theme:** `--js-browser /copyparty/ronin.js` (`public/copyparty/ronin.js`). The frame shares Ronin's origin, so the
   script reads the page around it. It follows Ronin's `<html data-theme>` with `settheme.go(2|3)`:
   copyparty's flat dark or flat light. It copies Ronin's live tokens, skins included, into the frame
   as `--ronin-*`. Two MutationObservers (the root's attributes and the head's styles) keep it
   following without a reload.
-- **Colours and type:** `--css-browser /files.css` (`public/files.css`) maps copyparty's variables
+- **Colours and type:** `--css-browser /copyparty/ronin.css` (`public/copyparty/ronin.css`) maps copyparty's variables
   to those `--ronin-*` tokens, for both themes. copyparty sizes everything in em from the root, so
   the root takes Ronin's `--text-body` and the whole UI scales with it. The lead column (`c`, a
   folder's zip link) is hidden; a selection still downloads as a zip.

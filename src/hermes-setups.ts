@@ -8,7 +8,10 @@ import { parse } from 'dotenv';
 import { readCredential, writeCredential } from './credential-store.js';
 import { storeDir, REPO_ROOT } from './resources.js';
 
-export interface HermesConnection { id: string; name: string; provider: 'openai' | 'mistral' | 'custom'; baseUrl: string; models: string[]; discoveredAt?: string; credentialEnv?: string }
+/** A connection is an account in the Agent Harness workbench (KAN-236): `kind`, the harnesses it serves and the
+ * models it offers are optional facts on the same record; absent, src/accounts.ts derives them. */
+export type AccountKind = 'personal_api' | 'ronin_api';
+export interface HermesConnection { id: string; name: string; provider: 'openai' | 'mistral' | 'custom'; baseUrl: string; wireApi?: 'chat' | 'responses'; models: string[]; discoveredAt?: string; credentialEnv?: string; kind?: AccountKind; harnesses?: string[]; offered?: string[] }
 export interface HermesSetup { id: string; name: string; connection: string; model: string; reasoning: string; approvals: 'off' | 'prompt' }
 export interface HermesSettings { connections: HermesConnection[]; setups: HermesSetup[] }
 const empty = (): HermesSettings => ({ connections: [], setups: [] });
@@ -33,8 +36,12 @@ export async function saveHermesConnection(input: Record<string, unknown>): Prom
     if (input.id && !existing) throw new Error('Connection no longer exists.');
     const provider = input.provider;
     if (provider !== 'openai' && provider !== 'mistral' && provider !== 'custom') throw new Error('Select an API provider.');
-    const url = new URL(required(input.baseUrl, 'Base URL'));
-    if (url.protocol !== 'https:' || url.username || url.password || url.search || url.hash) throw new Error('Use an HTTPS API base URL without credentials, query or fragment.');
+    const wireApi = input.wireApi ?? existing?.wireApi;
+    if (wireApi !== undefined && wireApi !== 'chat' && wireApi !== 'responses') throw new Error('Select Chat Completions or Responses.');
+    const endpoint = required(input.baseUrl, 'Base URL');
+    const url = new URL(endpoint);
+    const localGateway = url.protocol === 'http:' && url.hostname === '127.0.0.1' && !!url.port && /^http:\/\/127\.0\.0\.1:\d+\//.test(endpoint);
+    if ((!localGateway && url.protocol !== 'https:') || url.username || url.password || url.search || url.hash) throw new Error('Use an HTTPS API base URL (or http://127.0.0.1:port/ for a local gateway) without credentials, query or fragment.');
     const apiKey = typeof input.apiKey === 'string' ? input.apiKey.trim() : '';
     if (/[\r\n'"\\]/.test(apiKey)) throw new Error('Invalid API key format.');
     if (!existing && !apiKey) throw new Error('API key is required.');
@@ -43,8 +50,12 @@ export async function saveHermesConnection(input: Record<string, unknown>): Prom
     const id = existing?.id || randomUUID();
     const changed = !existing || existing.baseUrl !== baseUrl || existing.provider !== provider || !!apiKey;
     if (existing?.credentialEnv && !apiKey && existing.baseUrl !== baseUrl) throw new Error('Update the endpoint in the credential environment, or enter a key here.');
-    const connection: HermesConnection = { ...(!apiKey && existing?.credentialEnv ? { credentialEnv: existing.credentialEnv } : {}), id, name: required(input.name, 'Connection name'), provider, baseUrl,
-      models: changed ? [] : existing.models, ...(!changed && existing.discoveredAt ? { discoveredAt: existing.discoveredAt } : {}) };
+    const kind = input.kind ?? existing?.kind;
+    if (kind !== undefined && kind !== 'personal_api' && kind !== 'ronin_api') throw new Error('Select an account kind.');
+    const harnesses = input.harnesses === undefined ? existing?.harnesses : harnessList(input.harnesses);
+    const connection: HermesConnection = { ...(!apiKey && existing?.credentialEnv ? { credentialEnv: existing.credentialEnv } : {}), id, name: required(input.name, 'Connection name'), provider, baseUrl, ...(wireApi ? { wireApi } : {}),
+      models: changed ? [] : existing.models, ...(!changed && existing.discoveredAt ? { discoveredAt: existing.discoveredAt } : {}),
+      ...(kind ? { kind } : {}), ...(harnesses ? { harnesses } : {}), ...(!changed && existing?.offered ? { offered: existing.offered } : {}) };
     if (apiKey) {
       await mkdir(path.dirname(keyPath(id)), { recursive: true });
       const tmp = `${keyPath(id)}.tmp`;
@@ -54,6 +65,27 @@ export async function saveHermesConnection(input: Record<string, unknown>): Prom
     state.connections = [...state.connections.filter(c => c.id !== id), connection];
     await writeCredential('hermes-setups', state);
     return connection;
+  });
+}
+const harnessPattern = /^[a-z][a-z0-9_-]*$/;
+/** A tick list of harness ids, validated and de-duplicated; a list that is not an array is refused. */
+function harnessList(value: unknown): string[] {
+  if (!Array.isArray(value)) throw new Error('Harnesses must be a list.');
+  return [...new Set(value.map(row => { if (typeof row !== 'string' || !harnessPattern.test(row)) throw new Error('Invalid harness id.'); return row; }))];
+}
+/** The two tick lists on an account (KAN-236): the harnesses it serves and the discovered models it offers.
+ * Either may be left out; `offered` must be a subset of the discovered models. Nothing else on the record moves. */
+export async function updateHermesConnectionLists(id: string, input: { harnesses?: unknown; offered?: unknown }): Promise<HermesConnection> {
+  return mutation(async () => {
+    const state = await readStoredSettings(); const c = state.connections.find(c => c.id === id);
+    if (!c) throw new Error('Connection no longer exists.');
+    if (input.harnesses !== undefined) c.harnesses = harnessList(input.harnesses);
+    if (input.offered !== undefined) {
+      if (!Array.isArray(input.offered)) throw new Error('Offered models must be a list.');
+      const offered = [...new Set(input.offered.map(row => { if (typeof row !== 'string' || !c.models.includes(row)) throw new Error('Offer only models discovered from this connection.'); return row; }))];
+      c.offered = offered;
+    }
+    await writeCredential('hermes-setups', state); return c;
   });
 }
 export async function discoverHermesModels(id: string): Promise<string[]> {
@@ -82,7 +114,7 @@ export async function saveHermesSetup(input: Record<string, unknown>): Promise<H
     if (!c.models.includes(model)) throw new Error('Select a model discovered from this connection.');
     const reasoning = required(input.reasoning, 'Reasoning');
     if (!efforts.includes(reasoning)) throw new Error('Unsupported reasoning setting.');
-    if (c.provider !== 'openai' && reasoning !== 'default') throw new Error('Use provider default reasoning for this connection.');
+    if (c.provider !== 'openai' && c.wireApi !== 'responses' && reasoning !== 'default') throw new Error('Use provider default reasoning for this connection.');
     if (input.approvals !== 'off' && input.approvals !== 'prompt') throw new Error('Select an approval mode.');
     if (input.id && !state.setups.some(s => s.id === input.id)) throw new Error('Setup no longer exists.');
     const name = required(input.name, 'Setup name');
@@ -166,11 +198,15 @@ export async function prepareHermesHome(setupId: string, home: string) {
   await mkdir(home, { recursive: true, mode: 0o700 });
   // Remove inherited links themselves, never write through them into the default home.
   for (const file of ['config.yaml', '.env', 'ronin-setup.json']) await rm(path.join(home, file), { force: true });
-  const config = { model: { provider: connection.provider === 'openai' ? 'openai' : 'custom', default: setup.model, base_url: connection.baseUrl },
+  // Hermes ignores a bare custom model.api_mode=codex_responses on proxy URLs.
+  // A named custom provider is its supported explicit transport contract.
+  const apiMode = connection.wireApi === 'responses' ? 'codex_responses' : 'chat_completions';
+  const config = { model: { provider: connection.wireApi ? 'custom:ronin' : connection.provider === 'openai' ? 'openai' : 'custom', default: setup.model, base_url: connection.baseUrl, ...(connection.wireApi ? { api_mode: apiMode } : {}) },
+    ...(connection.wireApi ? { providers: { ronin: { name: 'ronin', base_url: connection.baseUrl, key_env: 'OPENAI_API_KEY', api_mode: apiMode } } } : {}),
     agent: setup.reasoning === 'default' ? {} : { reasoning_effort: setup.reasoning }, approvals: { mode: setup.approvals === 'off' ? 'off' : 'manual' },
     telemetry: { enabled: false } };
   await writeFile(path.join(home, 'config.yaml'), JSON.stringify(config, null, 2), { mode: 0o600 });
-  await writeFile(path.join(home, 'ronin-setup.json'), JSON.stringify({ setup, connection: { id: connection.id, name: connection.name, provider: connection.provider, baseUrl: connection.baseUrl } }, null, 2), { mode: 0o600 });
+  await writeFile(path.join(home, 'ronin-setup.json'), JSON.stringify({ setup, connection: { id: connection.id, name: connection.name, provider: connection.provider, baseUrl: connection.baseUrl, wireApi: connection.wireApi } }, null, 2), { mode: 0o600 });
   await symlink(keyPath(connection.id), path.join(home, '.env'));
   return { HERMES_HOME: home };
 }

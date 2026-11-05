@@ -32,8 +32,9 @@ import { registerPasswordSettings } from './routes/password-api.js';
 import { registerSessions, shutdownOperation } from './routes/sessions-api.js';
 import { registerTeams, teamRosters } from './routes/teams-api.js';
 import { registerWorkspaces } from './routes/workspaces-api.js';
+import { registerPlans } from './routes/plans-api.js';
 import { registerWorkItems } from './routes/work-items-api.js';
-import { everyItemReading } from './work-items-read.js';
+import { epicsPush, everyItemReading } from './work-items-read.js';
 import { registerDocs } from './routes/docs-api.js';
 import { registerDrop } from './routes/drop-api.js';
 import { registerDesks } from './routes/desks-api.js';
@@ -80,7 +81,7 @@ import { registerSetupRuntime } from './routes/setup-runtime-api.js';
 import { registerSetupProgress } from './routes/setup-progress-api.js';
 import { registerMikaContext } from './mika-context.js';
 import { migrateSopsToBehaviours } from './behaviour-store-migration.js';
-import { migrateItems } from './work-items.js';
+import { archiveDone, migrateItems, releaseEndedHolders } from './work-items.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(__dirname, '..');
@@ -92,6 +93,17 @@ if (isEntryPoint) await migrateSopsToBehaviours();
 if (isEntryPoint) await migrateItems().then((done) => {
   if (done.migrated.length) console.log(`[work-items] ${done.migrated.length} of ${done.before} items took Jira's names`);
 }).catch((error) => console.error(`[work-items] migration: ${(error as Error).message}`));
+// An Agent that vanished without an end through Ronin (a crash) gives up its items like any
+// ending (docs/using-ronin/project-management.md, How an item lives): a sweep every five minutes, two misses in a row.
+if (isEntryPoint) setInterval(() => {
+  void releaseEndedHolders().then((ended) => {
+    if (ended.length) console.log(`[work-items] released the items of ended ${ended.join(', ')}`);
+  }).catch((error) => console.error(`[work-items] sweep: ${(error as Error).message}`));
+  // Done five days is archived (docs/using-ronin/project-management.md, How an item lives).
+  void archiveDone().then((archived) => {
+    if (archived.length) console.log(`[work-items] archived, Done five days: ${archived.join(', ')}`);
+  }).catch((error) => console.error(`[work-items] archive: ${(error as Error).message}`));
+}, 5 * 60_000).unref();
 const isBoxInstance = isEntryPoint
   && process.env.NODE_ENV === 'production'
   && process.env.RONIN_TEST_RUNNER !== '1';
@@ -245,6 +257,7 @@ registerCatalogs(app); // catalogs and configuration resources — src/routes/ca
 registerDocs(app); // /api/docs?shelf=plans|docs — the ▧ Docs tab's shelves — src/routes/docs-api.ts
 registerTeams(app); // /api/team-rosters* — the durable half of every team — src/routes/teams-api.ts
 registerWorkspaces(app); // /api/workspaces* — a Campaign's Workspaces — src/routes/workspaces-api.ts
+registerPlans(app); // /api/plans* — the plan tool's door — src/routes/plans-api.ts
 registerWorkItems(app); // /api/work-items* — the one door to the work item store — src/routes/work-items-api.ts
 registerDesks(app); // /api/desks?session=<name> and funnel recovery — derived desk state — src/routes/desks-api.ts
 registerTeamPage(app); // /api/teams/:team/page — the team page's view, and drafts an agent hands it — src/routes/team-page-api.ts
@@ -444,7 +457,7 @@ startSessionsBroadcast({
   list: listSessions,
   home: homeRows,
   teams: () => teamRosters(),
-  epics: async () => (await everyItemReading()).filter((item) => item.level === 1),
+  epics: async () => epicsPush(await everyItemReading()),
   messages: listQueuedMessages,
   wipeboard: (board) => isValidBoardName(board) ? wipeboardAnswer(board, 100) : Promise.resolve(null),
   jikan: (team) => team === '*' ? listAllJobs() : isValidTeam(team) ? listJobs(team) : Promise.resolve(null),

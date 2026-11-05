@@ -90,13 +90,81 @@
   /* A row's notes under its stone: plain muted text, wrapping, clamped to six lines (the ask-name clamp; owner, 2026-10-20). */
   .sws-branch-note { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 6; width: var(--sws-stone); margin: 0; overflow: hidden; overflow-wrap: anywhere; color: var(--muted); font-size: var(--form-note); line-height: var(--leading-body); }
   .wi-flagged::before { background: var(--status-red); /* flagged: an impediment */ }
-  .wi-meta, .wi-notice, .wi-when { color: var(--muted); }
-  .wi-facts { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--space-row) var(--space-inline); }
+  /* EPICS (KAN-206): an Epic's worksurface. One row of statuses (a hidden one carries its count, an out one
+     is plain), then each status that is out as its items' cards; a card's title wraps whole. */
+  .epics-record .wk-surface-content { display: flex; flex-direction: column; gap: var(--space-subsection); padding: var(--space-inset); overflow: auto; }
+  .epic-source { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-inline); color: var(--muted); font-size: var(--text-small); }
+  .epic-filter { position: sticky; top: calc(var(--space-inset) * -1); z-index: 1; display: flex; flex-wrap: wrap; gap: var(--space-inline); padding-block: var(--space-row); background: var(--surface); }
+  .epic-chip { display: inline-flex; align-items: baseline; gap: var(--space-inline); padding: var(--space-row) var(--space-inset); border: var(--edge) dashed var(--line-2); border-radius: var(--radius-small); background: transparent; color: var(--muted); font: inherit; font-size: var(--text-label); cursor: pointer; }
+  .epic-chip:hover { border-color: var(--line-3); color: var(--fg-strong); }
+  .epic-chip[aria-pressed='true'] { border-style: solid; border-color: var(--kaki); color: var(--fg-strong); font-weight: var(--weight-strong); }
+  .epic-count { font-variant-numeric: tabular-nums; font-weight: var(--weight-strong); color: var(--fg); }
+  .epic-groups { display: flex; flex-direction: column; gap: var(--space-section); }
+  .epic-group-heading { margin: 0 0 var(--space-paragraph); color: var(--muted); font-size: var(--text-small); font-weight: var(--weight-strong); letter-spacing: var(--tracking-wide); text-transform: uppercase; }
+  .epic-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: var(--space-inline); align-items: start; }
+  .epic-card { display: flex; flex-direction: column; gap: var(--space-row); min-width: 0; padding: var(--space-inline) var(--space-inset); border: var(--edge) solid var(--line-2); border-inline-start: var(--edge-2) solid var(--accent); border-radius: var(--radius-hair); background: var(--surface); }
+  .epic-card.is-flagged { border-inline-start-color: var(--status-red); }
+  .epic-card:has(.epic-card-body) { grid-column: 1 / -1; border-color: var(--kaki); }
+  .epic-card-title { padding: 0; border: 0; background: none; color: var(--fg-strong); font: inherit; font-size: var(--text-label); font-weight: var(--weight-strong); line-height: var(--leading-tight); text-align: left; overflow-wrap: anywhere; cursor: pointer; }
+  .epic-card-title:hover { color: var(--accent); }
+  .epic-card-meta { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-inline); font-size: var(--text-small); color: var(--muted); }
+  .epic-holder { padding: 0; border: 0; background: none; color: var(--accent); font: inherit; cursor: pointer; }
+  .epic-holder:hover { text-decoration: underline; }
+  .epic-holder.is-none { color: var(--muted); cursor: default; }
+  .epic-card-body { display: flex; flex-direction: column; gap: var(--space-paragraph); padding-top: var(--space-paragraph); border-top: var(--edge) solid var(--line); }
+  .epic-statuses { display: flex; flex-wrap: wrap; gap: var(--space-row); }
+  .epic-answer { margin: 0; color: var(--muted); font-size: var(--text-small); }
+  .epic-answer:empty { display: none; }
+  .epic-answer[data-state='failed'] { color: var(--bad); }
+  .epic-objective { margin: 0; color: var(--fg); font-size: var(--text-body); line-height: var(--leading-body); white-space: pre-wrap; }
+  .epic-comment small { color: var(--muted); font-size: var(--text-small); }
+  .epic-comment p { margin: var(--space-row) 0 0; font-size: var(--text-body); line-height: var(--leading-body); }
+  .epic-empty { margin: 0; color: var(--muted); font-size: var(--text-body); }
+  /* WAITING ON YOU AND EPICS on the Team workbench (KAN-232): the Epic card format, a line's title plain
+     (not a button), its wait in tabular figures, a comment box on --inset; the Team's Epics card is flush
+     (createSurface's flush): the stones or record inside keep their own inset, and nothing here reaches into the kit. */
+  .team-epics .epics-records, .team-epics .epics-record { flex: 1 1 auto; min-height: 0; border: 0; }
+  .team-waiting-title { color: var(--fg-strong); font-size: var(--text-label); font-weight: var(--weight-strong); line-height: var(--leading-tight); overflow-wrap: anywhere; }
+  .team-waiting-age { font-variant-numeric: tabular-nums; }
+  .team-waiting-compose { gap: var(--space-row); }
+  .team-waiting-words { min-width: 0; resize: vertical; border: 0; border-radius: var(--radius-hair); background: var(--inset); color: var(--fg); padding: var(--space-row) var(--space-control); font: inherit; }
+  .team-waiting-act.is-send { align-self: flex-start; font-weight: var(--weight-strong); }
+  /* What the user reads first (ITEM_HANDOVER): the objective, the Handed in note under its own
+     word, then the other comments folded. */
+  .team-waiting-note b { color: var(--fg-strong); font-weight: var(--weight-strong); }
+  .team-waiting-comments summary, .wi-comments summary { color: var(--muted); font-size: var(--text-small); cursor: pointer; }
+  .team-waiting-comments[open] { display: flex; flex-direction: column; gap: var(--space-row); }
+  .wi-comments[open] > .wi-list { margin-top: var(--space-paragraph); }
+  /* AN ITEM'S READING (work-items-surface.js renderItemDetail; owner, 2026-11-05): the launch
+     forms' furniture — a head, then label-left .fs-step rows — in the UI face, at the form tokens
+     only: the title at --text-heading, step names at --form-head, values at --form-input, ids,
+     times and help at --form-note. */
+  .wi-form { font-family: var(--font-ui); font-size: var(--form-input); line-height: var(--leading-body); color: var(--fg); margin-bottom: 0; }
+  .wi-head { display: flex; align-items: flex-start; gap: var(--space-inline); padding-bottom: var(--space-inset); border-bottom: var(--edge) solid var(--line); }
+  .wi-head .item-kind { width: var(--text-heading); height: var(--text-heading); flex: 0 0 auto; margin-top: var(--space-row); }
+  .wi-head-words { display: flex; flex-direction: column; gap: var(--space-row); min-width: 0; }
+  .wi-title { margin: 0; color: var(--fg-strong); font-size: var(--text-heading); font-weight: var(--weight-strong); line-height: var(--leading-tight); overflow-wrap: anywhere; }
+  .wi-key, .wi-notice, .wi-when { margin: 0; color: var(--muted); font-size: var(--form-note); }
+  .wi-answer:empty { display: none; }
+  .wi-answer[data-state='failed'] { color: var(--status-red); }
+  .wi-facts { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--space-row) var(--space-inset); margin: 0; }
   .wi-facts dt { color: var(--muted); }
+  .wi-facts dt, .wi-facts dd { font-size: var(--form-input); }
   .wi-facts dd { margin: 0; overflow-wrap: anywhere; }
-  .wi-objective, .wi-text { margin: 0; overflow-wrap: anywhere; white-space: pre-wrap; }
-  .wi-list { display: flex; flex-direction: column; gap: var(--space-row); margin: 0; padding: 0; list-style: none; }
-  .wi-attachment { padding: 0; border: 0; background: none; color: var(--accent-2); font: inherit; text-align: left; cursor: pointer; }
+  .wi-objective, .wi-text { margin: 0; overflow-wrap: anywhere; white-space: pre-wrap; font-size: var(--form-input); }
+  .wi-list { display: flex; flex-direction: column; gap: var(--space-paragraph); margin: 0; padding: 0; list-style: none; }
+  .wi-comment { display: flex; flex-direction: column; gap: var(--space-row); }
+  .wi-child { display: flex; align-items: flex-start; gap: var(--space-inline); width: 100%; padding: 0; border: 0; background: none; color: var(--fg); font: inherit; text-align: left; }
+  button.wi-child { cursor: pointer; }
+  button.wi-child:hover .wi-child-title, button.wi-child:focus-visible .wi-child-title { color: var(--accent); }
+  .wi-child .item-kind { width: var(--form-input); height: var(--form-input); flex: 0 0 auto; margin-top: var(--space-row); }
+  .wi-child-words { display: flex; flex-direction: column; gap: var(--space-row); min-width: 0; }
+  .wi-child-title { font-size: var(--form-input); overflow-wrap: anywhere; }
+  .wi-compose { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-row); }
+  .wi-compose-words { width: 100%; min-width: 0; box-sizing: border-box; resize: vertical; border: var(--edge) solid var(--line-2); border-radius: var(--radius-small); background: var(--inset); color: var(--fg); padding: var(--space-row) var(--space-inline); font: inherit; }
+  .wi-compose-words:focus-visible { border-color: var(--accent); outline: none; }
+  .wi-list[hidden] { display: none; }
+  .wi-attachment { padding: 0; border: 0; background: none; color: var(--accent-2); font: inherit; text-align: left; cursor: pointer; text-decoration: none; }
   .wi-attachment:hover, .wi-attachment:focus-visible { color: var(--accent); }
   /* The full overlay (js/work-details.js): one layer over a host, the tile its one user. */
   .work-overlay { position: absolute; inset: 0; overflow-y: auto; background: var(--surface); }
@@ -399,37 +467,66 @@
   .workspace-form .fs-sum, .workspace-form .fs-chev, .workspace-form .fs-step-help { font-size: var(--form-note); }
   .workspace-form .wk-field { gap: var(--space-row); }
   .workspace-form .wk-field-label { font-size: var(--form-key); font-weight: var(--weight-regular); }
+  /* One accent for state (owner, 2026-11-03): the fold mark and a folded section's answer are muted;
+     kaki is left to Save when there is a change. The mark is the chevron alone. */
+  .workspace-form .fs-chev { color: var(--muted); font-size: 0; }
+  .workspace-form .fs-chev::before { margin-right: 0; font-size: var(--form-note); }
+  .workspace-form .fs-sum { color: var(--muted); }
+  .workspaces-records[data-bare='true'] .workspace-record-stones .sws-stone { aspect-ratio: auto; }
   .workspace-form .workspace-fixed { border: 0; background: transparent; padding: 0; color: var(--fg-strong); }
   .workspace-page-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-inline); padding-bottom: var(--space-row); border-bottom: var(--edge) solid var(--line); }
   .workspace-page-actions { display: flex; align-items: center; gap: var(--space-row); }
   .workspace-page-head .wk-surface-header-title { font-size: var(--form-key); color: var(--fg-strong); }
 
-  .workspace-locations { display: flex; flex-direction: column; }
+  /* The list sits under the add choices, a rule and a paragraph apart. */
+  .workspace-locations { display: flex; flex-direction: column; padding-top: var(--space-paragraph); border-top: var(--edge) solid var(--line); }
   /* A location is one grid row: kind · name and path · Mode · ×; the note and the Mode's line span under it. */
-  .workspace-location { display: grid; grid-template-columns: 2.2em minmax(0, 1fr) auto auto; column-gap: var(--space-inline); row-gap: var(--space-row); align-items: center; padding: var(--space-paragraph) 0; border-top: var(--edge) solid var(--line); }
+  .workspace-location { display: grid; grid-template-columns: 2.2em minmax(0, 1fr) auto auto auto; column-gap: var(--space-inline); row-gap: var(--space-row); align-items: center; padding: var(--space-paragraph) 0; border-top: var(--edge) solid var(--line); }
   .workspace-location:first-child { border-top: 0; padding-top: 0; }
   .workspace-location:last-child { padding-bottom: 0; }
   .workspace-location-where { display: flex; align-items: baseline; gap: var(--space-inline); min-width: 0; }
   .workspace-location-where b { color: var(--fg-strong); font-size: var(--form-key); font-weight: var(--weight-regular); white-space: nowrap; }
   .workspace-location-where code { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); background: transparent; padding: 0; }
   .workspace-location .folder-kind { color: var(--muted); }
-  .workspace-location-note, .workspace-location-help { grid-column: 2 / -1; }
+  .workspace-location-note { grid-column: 2 / -1; }
+  .workspace-location-note[hidden], .workspace-location-add-note[hidden] { display: none; }
+  /* Plans (KAN-256): one row under the Locations, its place and "recommended"; pressed, the choice under it. */
+  .workspace-plans { display: flex; flex-direction: column; gap: var(--space-row); padding-top: var(--space-paragraph); border-top: var(--edge) solid var(--line); }
+  .workspace-plans-row { display: flex; align-items: baseline; gap: var(--space-inline); min-width: 0; background: transparent; border: 0; padding: 0; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+  .workspace-plans-row b { color: var(--fg-strong); font-size: var(--form-key); font-weight: var(--weight-regular); white-space: nowrap; }
+  .workspace-plans-row code { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); background: transparent; padding: 0; }
+  .workspace-plans-row .folder-kind { color: var(--muted); }
+  [data-gone="true"] { color: var(--muted); text-decoration: line-through; }
   .workspace-location-note { width: 100%; border: 0; background: transparent; color: var(--fg); padding: 0; }
   .workspace-location-note::placeholder { color: var(--muted); }
   .workspace-location-note:focus { outline: none; background: var(--inset); }
-  .workspace-location-help { margin: 0; color: var(--muted); font-size: var(--form-note); line-height: var(--leading-body); }
+  /* The two Modes, said once above the rows. */
+  .workspace-location-legend { display: grid; gap: var(--space-row); margin: 0 0 var(--space-paragraph); color: var(--muted); font-size: var(--form-note); line-height: var(--leading-body); }
+  .workspace-location-legend b { color: var(--fg); font-weight: var(--weight-regular); }
+  .workspace-location .workspace-location-add-note { border: 0; background: transparent; padding: 0; color: var(--muted); cursor: pointer; font: inherit; font-size: var(--form-note); }
+  .workspace-location .workspace-location-add-note:hover { color: var(--fg-strong); }
+  /* A row's Mode is a word in the row's own type (owner, 2026-11-03): ERABI's flip, without its stone. */
+  .workspace-form .workspace-location .ask, .workspace-location .ask-group, .workspace-location .ask-fields { display: block; gap: 0; }
+  .workspace-form .workspace-location .ask-group-head { display: none; }
+  .workspace-form .workspace-location .ask .ask-stone { flex: none; width: auto; height: auto; border: 0; background: transparent; box-shadow: none; padding: 0 1.2em 0 0; }
+  .workspace-form .workspace-location .ask-stone:is([aria-expanded='true'], [aria-selected='true']) { background: transparent; box-shadow: none; }
+  .workspace-form .workspace-location .ask-label { display: none; }
+  .workspace-form .workspace-location .ask-reading { padding-right: 0; color: var(--fg); font-size: var(--form-input); font-weight: var(--weight-regular); }
+  .workspace-form .workspace-location .ask-stone:hover .ask-reading { color: var(--fg-strong); }
+  .workspace-form .workspace-location .ask-stone::after { right: 0; top: 50%; bottom: auto; transform: translateY(-50%); color: var(--muted); }
   .workspace-location-remove { border: 0; background: transparent; color: var(--muted); cursor: pointer; padding: 0 var(--space-row); }
   .workspace-location-remove:hover { color: var(--bad); }
 
-  /* Add folders and Clone from GitHub act on the list, not on its last entry: a rule above them, a
-     paragraph apart like the entries, and drawn as plain links so they weigh less than the entries. */
-  .workspace-location-tools { display: flex; gap: var(--space-section); flex-wrap: wrap; padding-top: var(--space-paragraph); border-top: var(--edge) solid var(--line); }
-  .workspace-location-tools button { border: 0; background: transparent; padding: 0; color: var(--link); cursor: pointer; }
+  /* Add a folder or Clone a repo, first in the section (owner, 2026-11-03): plain links, each opening its
+     own panel; the open one reads strong. */
+  .workspace-location-tools { display: flex; gap: var(--space-section); flex-wrap: wrap; }
+  .workspace-location-tools button { border: 0; background: transparent; padding: 0; color: var(--muted); cursor: pointer; }
+  .workspace-location-tools button:hover { color: var(--fg-strong); }
   .workspace-location-tools button[aria-pressed='true'] { color: var(--fg-strong); }
   .workspace-browser { display: flex; flex-direction: column; gap: var(--space-row); padding: var(--space-inline); border: var(--edge) solid var(--line-2); border-radius: var(--radius-small); }
   .workspace-browser-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-inline); }
-  .workspace-clone { display: flex; align-items: center; gap: var(--space-inline); padding-top: var(--space-row); border-top: var(--edge) solid var(--line); }
-  .workspace-clone input { flex: 1 1 auto; min-width: 0; }
+  .workspace-clone { display: flex; align-items: center; justify-content: space-between; gap: var(--space-inline); padding-top: var(--space-row); border-top: var(--edge) solid var(--line); }
+  .workspace-browser > .wk-field + .wk-field { padding-top: var(--space-paragraph); }
   .wa-browser { display: flex; flex-direction: column; gap: var(--space-row); min-width: 0; }
   .wa-browser .folder-crumbs { font-size: var(--form-input); }
   .wa-browser .folder-crumbs button { border: 0; background: transparent; padding: 0; color: var(--link); font: inherit; }

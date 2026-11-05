@@ -12,9 +12,16 @@ import { finalizeTeamName, sanitizeTeamName } from './new-team-draft.js';
 /** The add stone's handle: `editing` while the add form is open; no root has it. */
 export const NEW = '\0new';
 
+/** What stops a folder being Ready, in words: the check the server says failed. */
+const notReady = (r) => ({
+  missing: t('roots.stone_missing', 'Folder missing'),
+  git_unreadable: t('roots.git_unreadable', 'Git repository Ronin cannot read'),
+  branch_unknown: t('roots.branch_unknown', 'Repository · no current branch'),
+}[r.facts?.ready === false ? r.facts.not_ready || 'missing' : ''] || '');
+
 const stoneState = (r) => {
   if (r.archived) return t('roots.chip_archived', 'Archived');
-  if (!r.facts?.exists) return t('roots.stone_missing', 'Folder missing');
+  if (notReady(r)) return notReady(r);
   if (!r.facts.repo) return t('roots.stone_plain_folder', 'Plain folder');
   if (!r.facts.repo.remote) return t('roots.stone_repo_no_remote', 'Repository · no remote');
   return r.arrangement?.source !== 'absent' && r.repo_profile?.worktrees === 'enabled'
@@ -236,7 +243,6 @@ export function createRootDrawing(deps) {
     mk(t('roots.f_match', 'match'), 'match', (existing.match || []).join(', '), t('roots.f_match_hint', 'Words that suggest this workspace folder from free-form intent'), t('roots.f_match_placeholder', 'comma separated'));
     // THE DOC SHELVES (owner, 2026-08-28) — where the ▧ Docs tab's Docs and Plans pills look.
     mk(t('roots.f_docs', 'docs'), 'docs', (existing.docs || []).join(', '), t('roots.f_docs_hint', 'Where this root keeps its documentation — directories or files, relative to the directory'), 'docs, README.md');
-    mk(t('roots.f_plans', 'plans'), 'plans', (existing.plans || []).join(', '), t('roots.f_plans_hint', 'Where this root keeps its build-out plans'), 'wip/buildouts, wip/handoffs');
 
     // Existing repositories expose the complete checked-in profile. The repository alone
     // declares whether it is a worktree root or a checkout.
@@ -567,10 +573,13 @@ export function createRootDrawing(deps) {
     heading.append(make('h3', 'pr-detail-name', r.title || r.name));
     const go = make('div', 'pr-detail-go');
     heading.append(go);
-    const words = [r.archived ? t('roots.chip_archived', 'Archived') : !exists ? t('roots.stone_missing', 'Folder missing') : t('roots.stone_ready', 'Ready')];
+    // READY only when the server's checks passed (2026-11-04): the folder exists and, where it holds
+    // a repository, Git reads it with its branch known; that branch reads beside it.
+    const ready = exists && !notReady(r);
+    const words = [r.archived ? t('roots.chip_archived', 'Archived') : !ready ? notReady(r) : r.facts.repo ? t('roots.stone_ready_on', 'Ready · on {branch}', { branch: r.facts.repo.branch }) : t('roots.stone_ready', 'Ready')];
     if (r.sessions) words.push(r.sessions === 1 ? t('roots.sessions_one', '{n} session', { n: r.sessions }) : t('roots.sessions_many', '{n} sessions', { n: r.sessions }));
     const state = make('p', 'pr-detail-state', words.join(' · '));
-    state.dataset.tone = r.archived ? 'muted' : exists ? 'ok' : 'bad';
+    state.dataset.tone = r.archived ? 'muted' : ready ? 'ok' : 'bad';
     head.append(heading, state);
     d.append(head);
 
@@ -598,7 +607,6 @@ export function createRootDrawing(deps) {
       [t('roots.fact_handle', 'Workspace Folder handle'), r.name],
       [t('roots.fact_directory', 'Directory'), r.dir, { tone: exists ? '' : 'bad' }],
       [t('roots.fact_docs', 'Docs'), (r.docs || []).join(', ')],
-      [t('roots.fact_plans', 'Plans'), (r.plans || []).join(', ')],
       [t('roots.fact_match', 'Match'), (r.match || []).join(', ')],
     ]));
     // The one maintenance job that arrives on its own: a directory moved or deleted out
@@ -681,7 +689,7 @@ export function createRootDrawing(deps) {
       lede.dataset.tone = 'muted';
       lede.textContent = t('roots.keep_lede', 'Keep a folder on this machine for Teams and Agents to start in; a folder not kept is simply left alone.');
       head.append(heading, lede);
-      const f = form({ name: '', title: '', dir: '', remit: '', match: [], docs: [], plans: [] }, true);
+      const f = form({ name: '', title: '', dir: '', remit: '', match: [], docs: [] }, true);
       go.append(f.querySelector('.pr-frow')); // Add and Cancel on the head line
       d.append(head, f);
       return d;
@@ -694,7 +702,7 @@ export function createRootDrawing(deps) {
       const h = document.createElement('b');
       h.textContent = t('roots.add', '＋ Add workspace folder');
       top.append(h);
-      b.append(top, form({ name: '', title: '', dir: '', remit: '', match: [], docs: [], plans: [] }, true));
+      b.append(top, form({ name: '', title: '', dir: '', remit: '', match: [], docs: [] }, true));
       return b;
     }
     return b;

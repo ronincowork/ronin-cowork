@@ -237,9 +237,14 @@ test('a changed tmux socket environment retires the old connection', async () =>
 test('a timeout kills the wedged pipe and is not replayed', async () => {
   const { client, children, execs } = fixture();
   const result = client.run(['wait-for', 'never'], { timeoutMs: 5 });
+  // Expect the rejection before anything is awaited (w306): under load the 5 ms timer can fire
+  // while the test is still finding the child, and a rejection with no handler yet is an
+  // unhandledRejection that fails the run. The proof is unchanged: it times out, it is killed,
+  // and it is not replayed.
+  const timedOut = assert.rejects(result, /timed out after 5 ms/);
   const child = await childAt(children);
   await written(child);
-  await assert.rejects(result, /timed out after 5 ms/);
+  await timedOut;
   assert.equal(child.killed, true);
   assert.equal(execs.filter((call) => call.args[0] === 'wait-for').length, 0);
 });

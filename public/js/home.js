@@ -16,7 +16,7 @@ export let homeData = null;
 export const homeFault = null;
 subscribe('home', (rows) => { homeData = rows; });
 
-export let projectData = null; // /api/project-roots: [{name, title, dir, match[], remit, docs[], plans[]}]
+export let projectData = null; // /api/project-roots: [{name, title, dir, match[], remit, docs[]}]
 // The provider catalog is not cached here: form-steps.js reads it for the one picker and
 // the Campaign's Model providers surface, fresh on every surface entry.
 

@@ -106,7 +106,7 @@ export const AGENTS = [
     } as AgentOperations,
     credentials: [],
     parked: "Ronin cannot install this one yet — Nous's own installer needs system packages it has to ask you for, and does not finish without them. Install it from their site and it appears here.",
-    screen: { busy: [], asking: ['Set up a provider now\\?'], ready: [] },
+    screen: { busy: [], asking: [], ready: [] },
   },
 ] as const;
 

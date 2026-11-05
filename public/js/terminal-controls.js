@@ -85,7 +85,9 @@ export function installTileControls(tile) {
     }
     const target = e.target;
     const composer = target === tile.composerTa;
-    const terminal = !!target.closest?.('.xterm') || target === tile.body;
+    // Chat's conversation is the session's output as much as the terminal is: Esc there stops
+    // the Agent too (owner, 2026-11-03).
+    const terminal = !!target.closest?.('.xterm, .tile-transcript') || target === tile.body;
     if (!composer && !terminal) return;
     // Native browser clipboard/editing stays native in the Ronin textarea.
     if (composer && (e.ctrlKey || e.metaKey) && ['c', 'x', 'v', 'z', 'y', 'a'].includes(e.key.toLowerCase()) && !e.shiftKey && !e.altKey) return;
@@ -99,6 +101,15 @@ export function installTileControls(tile) {
 export function buildMobileControlButtons(tile) {
   return ['copy', 'clear', 'stop'].map((action) =>
     actionButton(action, () => { tile.activate?.(); return tile.controlAction(action); }));
+}
+
+/** Beside the box's Enter on a desktop: Clear and Stop, the phone's keys row's two (owner, 2026-11-03). */
+export function buildBoxControlButtons(tile) {
+  return ['clear', 'stop'].map((action) => {
+    const button = actionButton(action, () => { tile.activate?.(); return tile.controlAction(action); });
+    button.className = 'cctl';
+    return button;
+  });
 }
 
 function actionButton(action, run) {

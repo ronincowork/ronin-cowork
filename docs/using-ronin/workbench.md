@@ -42,7 +42,7 @@ not separate layout systems.
 |---|---|
 | Campaign | Campaign settings and Campaign-level resources |
 | Teams collection | Teams, Agents, shared resources, and creation surfaces available in the selected Campaign context |
-| Team | that Team's Agents, Commons, New Agent and Agent composition |
+| Team | that Team's Agents, Commons, Waiting on you, Epics, New Agent and Agent composition |
 | Agent | Self, Documents, Team membership, and Work Items: the work items the Agent holds across its Teams |
 | Setup | the Garden plus Model providers, Register, Workspace folders, Installations, Password and Launch |
 
@@ -88,6 +88,43 @@ Each tilespace owns its own rendered copy and local presentation state. You may 
 same kind of surface in two tilespaces: the second copy does not move, close, reset, or
 change the first. Tabs, scrolling, and other local choices remain independent in each
 tilespace even when both copies read the same underlying data.
+
+## Waiting on you and Epics on a Team
+
+Two cards in a Team's discovery column, after Commons, show that Team's work. "The Team's
+work" is what the Team holds plus what its Agents hold: the same items `team member status`
+reads.
+
+**Waiting on you** lists the items that wait on you, in three groups, oldest first. Each line
+shows the item, who holds it, its key, and how long it has waited.
+
+- **With the lead** holds the items handed in and not yet on dev: the lead reviews and
+  promotes them.
+- **Ready to accept** holds the items on dev since their last hand-in (or handed in from a
+  checkout, with no code to promote). **Accept** moves an item to Done. **Send back** opens a
+  comment box: write what needs doing and press **Send back** again; the comment goes on the
+  item, and the item moves to In Progress, back to the Agent that handed it in (to the Team if
+  that Agent has ended).
+- **Stuck** holds the flagged items, timed from when each was flagged, with the flag's
+  reason. **Reply** opens a comment box; the comment goes on the item, and the Agents
+  holding it hear it.
+
+Accepting a Jira-paired item is you accepting it in Jira too: Done is yours to give. The
+lines change as soon as the item does; nothing needs refreshing.
+
+**Epics** shows the Team's Epics: those the Team or its Agents hold, and the Epic above
+each item they hold. With one Epic, the card opens straight onto that Epic's record: its
+statuses and its items as cards, as on the Epics workbench. With several, it shows a stone
+per Epic; press one to open its record in the other tilespace.
+
+An Epic's record, here and on the Epics workbench, starts with a **Show** question, the same
+kind of buttons the Teams surface uses. Pick **Assigned** for the items an Agent holds,
+**Unassigned** for those only a Team holds or nobody holds, or leave it at **All**. The status
+row's counts and the cards follow what Show picks.
+
+Each Agent's tile on a Team shows the work items that Agent holds as pills in its header,
+in the **item island**: the kind's Jira symbol, the status and the flag, and the item's
+description when you press one. See [the tile](tile.md#the-item-island).
 
 ## Finding your way back
 

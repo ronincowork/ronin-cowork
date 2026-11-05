@@ -2,7 +2,7 @@ import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { sessionDir, sessionKey } from './session-dir.js';
 import { tegamiPath } from './tegami.js';
-import { agentReading } from './work-items-read.js';
+import { agentReading, type AgentReading } from './work-items-read.js';
 import { jiraLink, type WorkItem } from './work-items.js';
 import { mandate, type Mandate } from './agent-defaults.js';
 
@@ -14,7 +14,11 @@ export interface Tegami {
   holds: string[];
   /** The items held, each with its status, and a paired one's Jira link: what the tile and the roster show. */
   items: Array<WorkItem & { jira_url?: string }>;
-  /** The documents of every item the session holds, and files dropped on it. */
+  /** What the Teams this Agent leads hold at levels 1 and 0, and not the Agent itself: their
+   * Epics (w279) and their unassigned Tasks (KAN-251), which a lead's item island shows beside
+   * its own items. Empty for an Agent leading none. */
+  teamItems: Array<WorkItem & { jira_url?: string }>;
+  /** The record's own documents (dropped on it, or added holding no item) and every held item's attachments. */
   docs: string[];
   chip: { text: string; gate: boolean };
   /** When the work record was last written (epoch ms): the browser works out the age, so the push stays still. */
@@ -34,25 +38,46 @@ function extractBlock(text: string): unknown | null {
 
 async function readDocs(v: unknown): Promise<string[]> {
   if (!Array.isArray(v)) return [];
-  const want = [...new Set(v.filter((x): x is string => typeof x === 'string' && x.startsWith('/')))];
-  const alive = await Promise.all(want.map((p) => fs.stat(p).then(() => p).catch(() => null)));
+  // A `plan:` attachment still here is one that no longer resolves (work-items-read.ts): kept, so
+  // the Docs list says it is gone.
+  const want = [...new Set(v.filter((x): x is string => typeof x === 'string' && (x.startsWith('/') || x.startsWith('plan:'))))];
+  const alive = await Promise.all(want.map((p) => (p.startsWith('plan:') ? p : fs.stat(p).then(() => p).catch(() => null))));
   return alive.filter((p): p is string => p !== null);
 }
 
-/** Files the owner handed this Agent from the browser, in the session's own drop/. */
+/** The record's own documents, in the session's own drop/: files the owner handed this Agent
+ * from the browser, and links `work-record add_doc` makes holding no item, each read as the
+ * document it names. */
 async function dropped(key: string): Promise<string[]> {
   const dir = path.join(sessionDir(key), 'drop');
   const names = await fs.readdir(dir).catch(() => [] as string[]);
-  return names.filter((n) => !n.startsWith('.')).sort().map((n) => path.join(dir, n));
+  return Promise.all(names.filter((n) => !n.startsWith('.')).sort().map(async (n) => {
+    const at = path.join(dir, n);
+    return fs.readlink(at).catch(() => at);
+  }));
 }
 
-/** The tile's and the roster's readout: the items held with their status (a flag marks an
- * impediment), the first three named and the rest counted. */
-export function chipFor(items: WorkItem[]): { text: string; gate: boolean } {
+/** The tile's and the roster's readout: the open items held with their status (a flag marks an
+ * impediment), the first three named and the rest counted. Done waiting for the archive is left
+ * out (owner, 2026-11-05; KAN-271): it would crowd the work. */
+export function chipFor(held: WorkItem[]): { text: string; gate: boolean } {
+  const items = held.filter((item) => item.status !== 'Done');
   if (!items.length) return { text: '—', gate: false };
   const named = items.slice(0, 3).map((item) => `${item.flagged ? '⚑ ' : ''}${item.id} ${item.status}`);
   const more = items.length > 3 ? [`+${items.length - 3}`] : [];
   return { text: [...named, ...more].join(' · '), gate: items.some((item) => item.flagged) };
+}
+
+const linked = (item: WorkItem): WorkItem & { jira_url?: string } => ({ ...item, ...(jiraLink(item) ? { jira_url: jiraLink(item) } : {}) });
+
+/** What its led Teams hold at levels 1 and 0 — their Epics and their unassigned Tasks, which
+ * show nowhere else (owner, KAN-251) — once each, leaving out those the Agent holds itself.
+ * Subtasks (-1) stay out. */
+export function teamItems(reading: AgentReading): Array<WorkItem & { jira_url?: string }> {
+  const own = new Set(reading.items.map((item) => item.id));
+  const seen = new Map<string, WorkItem>();
+  for (const team of reading.teams) for (const item of team.items) if ((item.level === 1 || item.level === 0) && !own.has(item.id)) seen.set(item.id, item);
+  return [...seen.values()].map(linked);
 }
 
 export async function readTegami(name: string): Promise<Tegami | null> {
@@ -89,7 +114,8 @@ export async function readTegami(name: string): Promise<Tegami | null> {
           })
         : [],
       holds: reading.items.map((item) => item.id),
-      items: reading.items.map((item) => ({ ...item, ...(jiraLink(item) ? { jira_url: jiraLink(item) } : {}) })),
+      items: reading.items.map(linked),
+      teamItems: teamItems(reading),
       docs: await readDocs([...reading.attachments, ...(await dropped(key))]),
       chip: chipFor(reading.items),
       quietSince: stat.mtimeMs,

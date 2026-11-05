@@ -42,7 +42,7 @@ function OFFICE() {
 /** The smaller stones on the right, one above the other. Settings' route is read at paint. */
 function SIDE() {
   return [
-    { key: 'models', route: 'models', glyph: '✶', name: t('campaign_home.model_providers', 'Model Providers'), is: t('campaign_home.models_is', 'Model providers on this machine: install, sign in, choose') },
+    { key: 'models', route: 'models', glyph: '✶', name: t('campaign_home.agent_harness', 'Agent Harness'), is: t('campaign_home.agent_harness_is', 'The CLIs on this machine, the accounts they launch on, and the models') },
     { key: 'help', route: 'help', glyph: 'ミ', name: t('campaign_home.help', 'Help'), is: t('campaign_home.help_is', 'The guides, and Mika to ask'), gated: false },
     { key: 'settings', route: null, glyph: '⚙', name: t('campaign_home.settings', 'Settings'), is: t('campaign_home.settings_is', 'Setup, and this machine’s settings'), gated: false },
   ];

@@ -7,7 +7,7 @@ import { DocumentPathError, legacyDocumentPath, resolveDocumentFile, resolveProd
 import type { ProjectRootInfo } from '../src/project-roots.js';
 
 const rootInfo = (name: string, dir: string): ProjectRootInfo => ({
-  name, title: '', dir, match: [], remit: '', docs: ['README.md'], plans: [], archived: false, campaign_id: '',
+  name, title: '', dir, match: [], remit: '', docs: ['README.md'], archived: false, campaign_id: '',
 });
 
 test('a root-relative Markdown document resolves inside its registered workspace folder', async () => {

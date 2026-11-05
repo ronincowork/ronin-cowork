@@ -107,6 +107,46 @@ STORE="$(cd "$(dirname "$SELF")/../bin" && pwd)/ronin-store"
 [ -x "$STORE" ] || STORE=ronin-store
 SESSION_STORE="$("$STORE" session)"
 
+# THE RECORD'S OWN DOCUMENTS — `work-record add_doc` with no item held, and its --remove.
+#
+# Not a field of the letter: a document on the record is a link in the session's own drop/,
+# the folder the tile's Docs already lists beside the held items' attachments (src/tegami-read.ts,
+# dropped). The link's target is the document, so the list shows the document's own path.
+# --remove takes off only a link; a file the owner dropped stays theirs.
+case "${1-}" in
+  --doc-add|--doc-remove)
+    [ "$#" -eq 2 ] && [ -n "$2" ] || die "work-record update_record: $1 takes one <path>|<url>"
+    NAME=$(me) || exit 3
+    DROP="$SESSION_STORE/$(key_of "$NAME")/drop"
+    python3 - "$DROP" "$1" "$2" "$NAME" <<'DOCMARK'
+import datetime, os, re, sys
+drop, verb, doc, name = sys.argv[1:5]
+if not re.match(r"https?://", doc):
+    doc = os.path.abspath(os.path.expanduser(doc))
+links = [os.path.join(drop, n) for n in (sorted(os.listdir(drop)) if os.path.isdir(drop) else []) if not n.startswith(".")]
+mine = [p for p in links if os.path.islink(p) and os.readlink(p) == doc]
+if verb == "--doc-remove":
+    if not mine:
+        print("BAD-ARG: %s is not on your work record; work-record read lists it" % doc, file=sys.stderr); sys.exit(2)
+    for p in mine: os.unlink(p)
+    print("@%s's work record has %s removed" % (name, doc)); sys.exit(0)
+if not doc.startswith("http") and not os.path.exists(doc):
+    print("BAD-ARG: no such file: %s" % doc, file=sys.stderr); sys.exit(2)
+if mine:
+    print("@%s's work record has %s" % (name, doc)); sys.exit(0)
+os.makedirs(drop, exist_ok=True)
+# Named as a browser drop is (src/routes/drop-api.ts dropName), so the folder sorts by arrival.
+base = re.sub(r"^[._]+", "", re.sub(r"[^A-Za-z0-9._-]+", "_", os.path.basename(doc.rstrip("/"))))[-120:] or "file"
+stamp = datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%d-%H%M%S")
+link, n = os.path.join(drop, "%s-%s" % (stamp, base)), 1
+while os.path.lexists(link):
+    n += 1; link = os.path.join(drop, "%s-%d-%s" % (stamp, n, base))
+os.symlink(doc, link)
+print("@%s's work record has %s" % (name, doc))
+DOCMARK
+    exit $? ;;
+esac
+
 STATE=""
 # Field verbs collect here as "verb<US>arg<US>arg" and apply in order, after the parse.
 US=$(printf '\037'); EDITS=()

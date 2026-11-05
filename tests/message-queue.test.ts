@@ -53,7 +53,7 @@ test('the worker shreds a letter whose current target is missing', async (t) => 
   assert.deepEqual(await q.listQueuedMessages(), []);
 });
 
-test('a draft is the only hold; the deadline forces once and shreds failure', async (t) => {
+test('a draft holds until the deadline, which forces once and shreds failure', async (t) => {
   const q = await queue(t, 'deadline');
   const name = await target(t, 'queue_deadline_target');
   const item = await q.enqueueMessage(name, 'letter', 'tell');
@@ -67,7 +67,30 @@ test('a draft is the only hold; the deadline forces once and shreds failure', as
   assert.deepEqual(calls, ['safe']);
   assert.equal((await q.listQueuedMessages()).length, 1);
   await q.processMessageQueue({ now: born + q.AUTO_FORCE_AFTER_MS, delivery });
-  assert.deepEqual(calls, ['safe', 'force']);
+  assert.deepEqual(calls, ['safe', 'safe', 'force']);
+  assert.deepEqual(await q.listQueuedMessages(), []);
+});
+
+test('an open dialog holds a letter past its deadline: its Enter would choose an option (KAN-215)', async (t) => {
+  const q = await queue(t, 'dialog');
+  const name = await target(t, 'queue_dialog_target');
+  const item = await q.enqueueMessage(name, 'handoff notice', 'house');
+  const calls: string[] = [];
+  let dialog = true;
+  const delivery = {
+    safe: async () => {
+      calls.push('safe');
+      return dialog ? { delivered: false, submitted: false, reason: 'dialog is open' } : { delivered: true, submitted: true, reason: 'sent' };
+    },
+    force: async () => { calls.push('force'); return { delivered: true, submitted: true, reason: 'forced' }; },
+  };
+  const born = Date.parse(item.created_at);
+  await q.processMessageQueue({ now: born + q.AUTO_FORCE_AFTER_MS + 1, delivery });
+  assert.deepEqual(calls, ['safe'], 'a trust prompt on screen: nothing is typed, nothing forced');
+  assert.equal((await q.listQueuedMessages()).length, 1);
+  dialog = false;
+  await q.processMessageQueue({ now: born + q.AUTO_FORCE_AFTER_MS + 5_000, delivery });
+  assert.deepEqual(calls, ['safe', 'safe'], 'answered, the letter goes the ordinary way');
   assert.deepEqual(await q.listQueuedMessages(), []);
 });
 

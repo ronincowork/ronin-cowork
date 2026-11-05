@@ -45,7 +45,7 @@ import {
 
 const errMsg = (e: unknown) => String((e as Error)?.message ?? e).replaceAll(homedir(), '~');
 
-const ROOT_FIELDS: RootField[] = ['title', 'dir', 'memory', 'match', 'remit', 'docs', 'plans', 'campaign_id'];
+const ROOT_FIELDS: RootField[] = ['title', 'dir', 'memory', 'match', 'remit', 'docs', 'campaign_id'];
 const bodyFields = (body: unknown) => {
   const out: Partial<Record<RootField, string>> = {};
   for (const k of ROOT_FIELDS) {
@@ -187,7 +187,7 @@ export function registerCatalogs(app: express.Express): void {
     const dir = String(req.query.dir ?? '').trim();
     if (!dir) return res.status(400).json({ error: 'A directory is required.' });
     try {
-      const facts = await repoFacts({ name: 'candidate', title: '', dir, memory: '', remit: '', match: [], docs: [], plans: [], archived: false, campaign_id: '' });
+      const facts = await repoFacts({ name: 'candidate', title: '', dir, memory: '', remit: '', match: [], docs: [], archived: false, campaign_id: '' });
       const arrangement = facts.repo ? await readArrangement('candidate', facts.dir).catch(() => null) : null;
       res.json({
         ...facts,
@@ -221,7 +221,7 @@ export function registerCatalogs(app: express.Express): void {
         return res.status(409).json({ error: `"${name}" is already in the catalog.` });
       }
       if (req.body?.init_git === true) await startGit(fields.dir); // the folder gets Git before its profile is read
-      const facts = await repoFacts({ name, title: fields.title ?? '', dir: fields.dir, memory: '', remit: '', match: [], docs: [], plans: [], archived: false, campaign_id: '' });
+      const facts = await repoFacts({ name, title: fields.title ?? '', dir: fields.dir, memory: '', remit: '', match: [], docs: [], archived: false, campaign_id: '' });
       if (facts.repo && req.body?.profile !== undefined) validateArrangementProfile(req.body.profile);
       const currentProfile = facts.repo && req.body?.profile !== undefined
         ? arrangementProfile(await readArrangement(name, fields.dir)) : null;

@@ -38,6 +38,8 @@ import { BEHAVIOUR_SURFACE_TYPE } from './behaviour-surface.js';
 import { createItemPhalanx, holderOf } from './work-items-surface.js';
 import { registerWorkbenchCatalog, WORKBENCH_PROFILES as WB_PROFILES, WORKBENCH_TYPES as WB_TYPES } from './workbench-catalog.js';
 import { createAgentCompositionSurface } from './agent-composition.js';
+import { createTeamEpics, createTeamWaiting } from './team-waiting.js';
+import { createEpicRecord, createEpicsRead } from './epics-surface.js';
 
 const el = (tag, cls, text) => {
   const out = document.createElement(tag);
@@ -205,6 +207,8 @@ export function createCoworkView(options = {}) {
     return commonsBySeat[id];
   };
   const extras = new Set();
+  const teamSurfaces = [];
+  const keepTeamSurface = (surface) => { teamSurfaces.push(surface); return surface; };
   // its roster exists, so the form that made it hands the workspace over to it and goes
   // back to empty. Staffing happens from inside the Team, through Add Agent.
   const newTeamFormBySeat = {};
@@ -282,6 +286,11 @@ export function createCoworkView(options = {}) {
       onTrackedRoots: onProjects,
       navigateToSurface: (type, detail) => type === 'setup.roots' && navigateToWorkspaceFolders(ctx, detail),
     }, workspace: id }),
+    // Waiting on you and Epics (KAN-232): the bench keeps one per seat across Teams, so each reads the Team entered now.
+    teamWaiting: () => keepTeamSurface(createTeamWaiting({ team: () => team })),
+    teamEpics: (id) => keepTeamSurface(createTeamEpics({ team: () => team, workbench: bench, seat: () => oppositeSeat(id) })),
+    epics: () => [],
+    epicRecord: (_id, detail) => keepTeamSurface(createEpicRecord(detail.key, { epicsRead: createEpicsRead(() => '') })),
     archives: (id) => ({ el: archivesBySeat[id].el, show: () => void archivesBySeat[id].room.enter() }),
     document: (detail = {}) => createDocumentWorkspaceAdapter({ root: detail.root, path: detail.path || detail.key }),
     team: (id, detail) => createLeagueTeamSurface(detail.key, id),
@@ -859,6 +868,7 @@ export function createCoworkView(options = {}) {
       for (const seat of Object.values(seats)) { seat.pool.destroyAll(); seat.empty?.destroy(); }
       for (const commons of builtCommons()) commons.channels.destroy();
       for (const view of Object.values(newAgentBySeat)) view.destroy();
+      for (const surface of teamSurfaces.splice(0)) surface.destroy?.();
     },
   };
 }

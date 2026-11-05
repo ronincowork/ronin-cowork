@@ -29,7 +29,7 @@ export function findPython(searchPath = process.env.PATH ?? ''): string | null {
 export const PYTHON = findPython();
 
 /** copyparty's command line: $HOME read and write at /files/, its own chrome hidden, Ronin's look on top
- * (files.css, and files.js, which follows Ronin's light or dark and its colours). */
+ * (public/copyparty/ronin.css, and ronin.js, which follows Ronin's light or dark and its colours). */
 export function filesArgs(root: string, home = HOME, data = DATA): string[] {
   return [
     path.join(root, 'libexec', 'copyparty', 'copyparty-sfx.py'), '-q',
@@ -37,7 +37,7 @@ export function filesArgs(root: string, home = HOME, data = DATA): string[] {
     '-v', `${home}::rwmd.,*`, '--hist', path.join(data, 'copyparty'),
     '--http-only', '--no-robots', '--no-thumb', '--no-readme', '--no-logues', '--no-script', '--no-mime',
     '--ui-nombar', '--ui-noacci', '--ui-nosrvi', '--ui-nocpla', '--ui-norepl',
-    '--theme', '2', '--css-browser', '/files.css', '--js-browser', '/files.js',
+    '--theme', '2', '--css-browser', '/copyparty/ronin.css', '--js-browser', '/copyparty/ronin.js',
   ];
 }
 

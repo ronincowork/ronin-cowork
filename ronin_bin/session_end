@@ -29,7 +29,9 @@ contained in their Team lines close automatically, including immediately after a
 ACCEPTED hand-in; global-dev promotion and a separate worktree close are not required.
 Dirty files, pending/rejected hand-ins, unique commits, shared custody, or another
 session in the worktree keep every worktree and this Agent alive and print exact NEXT
-actions. Nothing is implicitly discarded. Related: worktree-desk --help.
+actions. Work items you hold In Progress or In Review keep you alive too, each named, with
+the handover as NEXT (item handover <ids> team:<your team> "<where it stands; what is next>");
+To Do goes back to your Team by itself. Nothing is implicitly discarded. Related: worktree-desk --help, item --help.
 EOF
 }
 

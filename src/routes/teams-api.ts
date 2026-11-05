@@ -19,7 +19,8 @@ import { retireTeam } from '../team-retire.js';
 import { readCampaign } from '../campaigns.js';
 import { readWorkspace } from '../workspaces.js';
 import { teamAgentDefaults } from '../agent-defaults.js';
-import { rosterReading, teamBoard } from '../work-items-read.js';
+import { rosterReading, teamBoard, teamWork } from '../work-items-read.js';
+import { listItems } from '../work-items.js';
 
 const errMsg = (e: unknown): string => String((e as Error)?.message ?? e);
 
@@ -99,22 +100,28 @@ function editOf(body: unknown): RosterEdit {
 // What GET /api/team-rosters answers, and, for this machine's Campaign, what /events pushes
 // as {t:'teams', rosters}. Each row carries the Team's work as the Teams workbench reads it
 // (owner, 2026-10-18): `board`, the Team's epic by the rule in work-items-read.ts, its title
-// and status, and `items`, the titles of the items the Team and its members hold.
+// and status, and `items`, the titles of the items the Team and its members hold; and for the
+// Team workbench (owner, 2026-11-04; KAN-232) `waiting`, its items In Review and flagged with how
+// long each has waited, and `epics`, the ids of its Epics (teamWork in work-items-read.ts).
 export async function teamRosters(named: string[] = []): Promise<unknown[]> {
   const resolve = await campaignResolver();
   const wanted = named.length ? named : [await machineCampaignId()].filter(Boolean);
   const keep = await campaignFilter(wanted);
   const rosters = (await listTeamRosters()).filter((r) => keep(r.campaign_id));
   const sessions = await listSessions();
+  const every = rosters.length ? await listItems() : [];
   return Promise.all(
     rosters.map(async (r) => {
       const reading = await rosterReading(r, sessions);
+      const work = teamWork(reading.items, every);
       const board = teamBoard(reading, sessions.find((s) => s.leads.includes(r.name))?.name ?? '');
       return {
         ...r,
         campaign_id: resolve(r.campaign_id),
         board: board && { title: board.title, status: board.status },
         items: reading.items.map(({ title }) => ({ title })),
+        waiting: { lead: work.lead, review: work.review, stuck: work.stuck },
+        epics: work.epics,
       };
     }),
   );
@@ -166,8 +173,9 @@ export function registerTeams(app: express.Express): void {
 
   app.get('/api/team-rosters/:name', async (req, res) => {
     try {
-      const roster = await readTeamRoster(req.params.name);
-      if (!roster) return res.status(404).json({ error: `Team "${req.params.name}" has no roster.` });
+      const named = typeof req.query?.campaign_id === 'string' && req.query.campaign_id.trim() ? req.query.campaign_id.trim() : undefined;
+      const roster = await readTeamRoster(req.params.name, named);
+      if (!roster) return res.status(404).json({ error: `Team "${req.params.name}" has no roster${named ? ` in Campaign ${named}` : ''}.` });
       res.json({ ...roster, wipeboard_exists: await boardExists(roster.wipeboard) });
     } catch (e) {
       res.status(400).json({ error: errMsg(e) });
@@ -207,11 +215,13 @@ export function registerTeams(app: express.Express): void {
       .slice(0, 32);
     try {
       const edit = editOf(req.body);
-      const existing = await readTeamRoster(name);
+      // A Campaign named finds the Team inside it: a name may be in more than one Campaign.
+      const named = typeof req.body?.campaign_id === 'string' && req.body.campaign_id.trim() ? req.body.campaign_id.trim() as string : undefined;
+      const existing = await readTeamRoster(name, named);
       const campaign_id = await campaignOf(req.body?.campaign_id);
       const reapplyCampaign = req.body?.campaign_defaults === true;
       const roster = existing
-        ? await writeTeamRoster(name, reapplyCampaign ? await creationEdit(campaign_id, edit) : edit)
+        ? await writeTeamRoster(name, reapplyCampaign ? await creationEdit(campaign_id, edit) : edit, named)
         : await createTeamRoster(name, await creationEdit(campaign_id, edit), campaign_id);
       count(existing ? 'team.update' : 'team.create');
       const live = new Set((await listSessions()).map((s) => s.name));

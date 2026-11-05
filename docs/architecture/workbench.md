@@ -159,15 +159,26 @@ its surface is the Refresh all control Settings' provider surface carries — th
 last-ran line and notice — with an empty slot under it for the models.dev update (owner, 2026-10-20). The third card,
 **Defaults** (`models.defaults`, solid utility, after Model refresh; owner, 2026-10-21), sets the model a new Agent,
 a new Team lead and Mika start on: ⚙ Configuration's own `models` section drawn alone (`buildMachineSettings(…, { only:
-'models' })`), each row saving itself — one record, two views. Settings' Model
+'models' })`), each row saving itself — one record, two views. **The Agent Harness workbench** (KAN-236; owner,
+2026-11-04) is this door under its new word on Home, opened in the four-tilespace shape: the stones (now the **Harness**
+card) in tilespace 1, **Accounts** (`accounts.records`, `accounts-surface.js`) in 2, **Models** (`models.records`,
+`models-records-surface.js`, with the Defaults surface embedded) in 3 and **Refresh** (`models.refresh` under its new
+word) in 4; Model refresh's steps read Harnesses · Accounts · Model info · Review, the Accounts step each account's
+Discover. Accounts and presets are one reading of the Hermes record (`src/accounts.ts`, `/api/accounts`, `/api/presets`):
+a key added on Accounts is the connection the Hermes page shows. The existing types, surfaces and stones are
+unchanged but for their words; the route id stays `models` so saved arrangements survive. Settings' Model
 Providers surface is untouched; all draw with the one drawing `provider-surface.js` exports
 (`createProviderDrawing`, `createRefreshAll`, `providerStones`) over the same record and measure. Workspaces seats
 its own stones of Workspaces (`workspaces-surface.js`, `workspaces.records`): a pressed one's page is the whole
 Workspace, its folders ticked in a browser of this machine (owner, 2026-11-02), with GitHub CLI beside them;
 one read of the pinned folders per bench (`createRootsReading`, the detail route). Epics (owner, 2026-11-02;
 KAN-187) seats its own stones of Epics the same way (`epics-surface.js`, `epics.records`): the level-1 work items of
-the Campaign — the store's pushed `epics`, no request (KAN-190) — a pressed one's reading (`renderItemDetail`) beside the rail, a dragged one whole (`epics.record`, no
-selector card, as a Team profile). The bar's crumb (`workspace-header.js`;
+the Campaign — the store's pushed `epics` and `epicItems`, no request (KAN-190, KAN-206). The stones stay at rest (no
+side rail): a pressed Epic opens in Tilespace 2 as its worksurface (`epics.record`), as a dragged stone or its selector
+card places it anywhere. The worksurface: where it comes from (Jira key, or Ronin only) and its holder; one row of
+statuses, a hidden one carrying its count, an empty one not shown; each status that is out as its items' cards (In
+Review out on arrival), a card's title whole and its holder, which opens that Agent or Team; a card pressed opens in
+place to its statuses as buttons (`/transition`), objective and comments. No history, no Jira fields. The bar's crumb (`workspace-header.js`;
 owner, 2026-10-20) reads RoninCowork   Home • Teams • <Team title> on a Team page — a gap, not a dot,
 after the brand (`--space-subsection`; owner, 2026-10-24) — Home to `#/home`, Teams to `#/cowork`;
 the Teams workbench ends at Teams, and a view naming its own `place` (Models, Workspaces, Epics, Help,
@@ -324,7 +335,7 @@ bench (`/api/project-roots/detail`).
 
 | Surface | Required data and owner |
 |---|---|
-| Workspaces (`workspaces.records`) | `/api/workspaces` for the Campaign the tab looks at; the page writes `PUT /api/workspaces/:name`. Its Locations: a browser of this machine from the home folder (`/api/folders`), a tick box per folder; ticking pins a folder not pinned yet (`POST /api/project-roots`) and holds it by name, the ones with Git as repositories, the rest as folders. A Git folder's How Agents work here writes the repo profile. Clone from GitHub (`/api/setup/github/clone` with `parent`) clones into the folder the browser is open on. A `/files/<path>` link dropped from Files adds `$HOME/<path>`. Owner, 2026-11-02 |
+| Workspaces (`workspaces.records`) | `/api/workspaces` for the Campaign the tab looks at; the page writes `PUT /api/workspaces/:name`. Its Locations: a browser of this machine from the home folder (`/api/folders`), a tick box per folder; ticking pins a folder not pinned yet (`POST /api/project-roots`) and holds it by name, the ones with Git as repositories, the rest as folders. A Git folder's How Agents work here writes the repo profile. Clone a repo (`/api/setup/github/clone` with `parent`) asks the repository, then clones into the folder its own browser is open on. Section order: Name & objective, Locations, Agent info. A `/files/<path>` link dropped from Files adds `$HOME/<path>`. Owner, 2026-11-02/03 |
 | GitHub CLI (`workspaces.github`) | the GitHub setup read and session attachment `github-workspace-setup.js` owns, one instance per bench |
 
 ### Agent (`agent` profile)

@@ -10,7 +10,7 @@ Usage:
   work-record update_record --objective <text>
   work-record update_record --on_tangent | --on_track
   work-record update_record --repo <repo-or-url>[:<branch>] | --unrepo <repo-or-url>[:<branch>]
-  work-record add_doc <path>|<url> [--item <id>]
+  work-record add_doc [--remove] <path>|<url> [--item <id>]
   work-record workspace list
   work-record workspace add <repo-or-url> [--branch <branch>]
   work-record workspace remove <repo-or-url> [--branch <branch>]
@@ -21,7 +21,9 @@ Update fields are --objective, --repo, --unrepo, --on_tangent and --on_track. A 
 JSON record is accepted on stdin. read shows the record, the items held and watched, each with
 its status, and their documents; a lead's also shows each team it leads: what the team and
 each member hold and watch. add_doc adds a document to the item you hold; holding
-several, name one with --item. Work items are the item tool's: item --help.
+several, name one with --item; holding none, it goes on your work record itself.
+--remove takes one off. read and the tile's Docs list the record's own documents and
+every held item's attachments. Work items are the item tool's: item --help.
 Related: item --help; session_create --help; team --help
 EOF
 }
@@ -34,23 +36,29 @@ case "${1:-}" in
   -h|--help) [ "$#" -eq 1 ] || { echo 'Run work-record --help.' >&2; exit 2; }; usage ;;
   read) shift; read_impl "$@" ;;
   add_doc) shift
-    doc=''; id=''
+    doc=''; id=''; remove=''; verb=--doc-add
     while [ "$#" -gt 0 ]; do
       case "$1" in
         --item) [ -n "${2:-}" ] || { echo 'BAD-ARG: --item takes an id' >&2; exit 2; }; id=$2; shift 2 ;;
-        *) [ -z "$doc" ] && [ -n "$1" ] || { echo 'BAD-ARG: work-record add_doc takes <path>|<url> [--item <id>]' >&2; exit 2; }; doc=$1; shift ;;
+        --remove) remove=true; verb=--doc-remove; shift ;;
+        *) [ -z "$doc" ] && [ -n "$1" ] || { echo 'BAD-ARG: work-record add_doc takes [--remove] <path>|<url> [--item <id>]' >&2; exit 2; }; doc=$1; shift ;;
       esac
     done
-    [ -n "$doc" ] || { echo 'BAD-ARG: work-record add_doc takes <path>|<url> [--item <id>]' >&2; exit 2; }
+    [ -n "$doc" ] || { echo 'BAD-ARG: work-record add_doc takes [--remove] <path>|<url> [--item <id>]' >&2; exit 2; }
     if [ -z "$id" ]; then
+      # A document on the record itself comes off the record first, whatever is held now.
+      if [ -n "$remove" ]; then
+        bash "$ROOT/libexec/work-record-write" --doc-remove "$doc" 2>/dev/null && exit 0
+      fi
       held=$(bash "$ROOT/libexec/work-record-read" --json | python3 -c 'import json,sys; print(" ".join(i["id"] for i in json.load(sys.stdin).get("items") or []))') || exit 3
       case "$held" in
-        '') echo 'NO-ITEM: you hold no work item to add it to: item create --parent <epic> makes one yours' >&2; exit 2 ;;
+        # Holding no item, the document goes on the work record itself (owner, 2026-11-02).
+        '') exec bash "$ROOT/libexec/work-record-write" "$verb" "$doc" ;;
         *' '*) echo "BAD-ARG: you hold $held; name one with --item <id>" >&2; exit 2 ;;
       esac
       id=$held
     fi
-    exec bash "$ROOT/ronin_bin/item" attach "$id" "$doc" ;;
+    exec bash "$ROOT/ronin_bin/item" attach "$id" ${remove:+--remove} "$doc" ;;
   update_record) shift; case "${1:-}" in -h|--help) write_impl --help;; esac; write_impl "$@" ;;
   workspace)
     verb=${2:-}; shift 2 || true

@@ -8,9 +8,44 @@ column, or drag its card into the workspace where you want to see it.
 | Control | What it does |
 |---|---|
 | Title / ⛩ | Edit the Agent's displayed title; its session name remains its identity |
+| Item island | A pill for every work item the Agent holds (below) |
 | Term / Chat | When Terminal transcript is active, switch between the terminal and the Agent's conversation |
 | メ | Open the menu for this Agent (below) |
 | − | Close this view while the Agent keeps running |
+
+## The item island
+
+In the middle of the header sits a capsule with a pill for every work item the Agent
+holds. A pill has no words: it shows the item's kind with Jira's symbol (Epic, Story, Task,
+Bug, Feature, Subtask), a dot for its status, and ⚑ when the item is flagged. Hover a pill
+to read its key, kind, status and title.
+
+The island is the work still open: a Done item is not on it. A Subtask whose Task is on the
+island is not a pill of its own: the Task's pill carries the Subtask mark and how many of its
+Subtasks are open, and the Task's reading lists all of them, Done included, under **Subtasks**.
+Press one to open it in the Task's place.
+
+Press a pill and the item's reading opens over the tile, in the launch forms' format: its
+Status (press it to move the item to any status), objective, details, comments and attachments
+(docs/using-ronin/work-items.md, An item's reading), a Task's Subtasks with the Done ones
+folded apart, and a box to comment, sent to the Agent holding it. Every row folds. Press the same pill again, or Close, or
+Escape, to return to the terminal.
+
+The island stays in the header; it does not move when an item changes. Press the small bar
+at its left to bring it down under the header, with the pills in a column, one item to a
+row. Each row reads: the kind's symbol, the status in words (To Do, In Progress, In Review,
+Done), its dot (grey, blue, amber, green), and the flag: solid when the item is flagged,
+an outline when it is not. An item In Review also carries its latest signal, "handed in" or
+"on dev", with how long ago, read from the item's own hand-ins: a hand-in leaves the item with its
+Agent, so the island shows only what its Agent holds. Press the bar again, or a pill, to put it back in the header.
+
+On a Team lead, the island also shows what its Teams hold at the Epic and Task level, after
+the items the lead holds itself. An Epic generally sits on the Team, and a Task the Team holds is
+one no member has taken yet, so the lead's island is where unassigned work shows. Once a member
+takes it, it leaves the lead's island. A Team's Subtasks, and anything only watched, appear only
+when the lead holds them itself.
+
+The island follows the Agent's work record as it changes; nothing needs refreshing.
 
 ## The menu
 
@@ -23,9 +58,9 @@ it; the arrow keys move through it.
 | 📎 Send a file | Send a file from Finder, or the photo library on a phone — see [Share a file with an Agent](share-a-file.md) |
 | @ Mention a session | Choose a session; its name goes into the message box |
 | Output | **Terminal Mirror** — the live terminal — or **Locked**, the same terminal to watch without typing into it. Not shown when this Agent has no Ronin Services |
-| ☰ Work record | Opens over the whole tile, leaving the terminal untouched beneath it: the work items it holds first, each with its status, flag and attachments, then its task at hand, worktrees and Teams. Press an attachment to open it over the tile; Close or Escape returns to the terminal |
+| ☰ Work record | Opens over the whole tile, leaving the terminal untouched beneath it: the open work items it holds first, each with its status, flag and attachments, Done ones waiting for the archive counted on one line ("Done, not yet archived: N (ids)"), then its task at hand, worktrees and Teams. Press an attachment to open it over the tile; Close or Escape returns to the terminal |
 | ⚙ Configuration | Opens over the whole tile in three sections. **Agent** shows the work-record objective, title, Workspace, role, and Team. **Mandate** shows Reach, Recruit, and Output. **Behaviors** opens every behavior as ERABI choices; always-on and conditional guidance is fixed and says why, while optional guidance can be chosen. **Send** is the only configuration act; it can always be pressed, to resend the brief unchanged, and highlights after a change. Pressed, it turns green and says Sending… until the brief is out. It writes the changed fields, rebuilds the brief from current facts and files, tells the Agent to read it, then refreshes the surface. Closing without sending discards the draft. |
-| 📄 Docs | The attachments of the work items this Agent holds, with how many; press one to open it over the tile |
+| 📄 Docs | The documents on this Agent's work record (files dropped on the tile, and those it added holding no item) and the attachments of the work items it holds, with how many; press one to open it over the tile |
 | × Delete or archive… | Open the archive/delete choices; it stays at the foot of the menu |
 
 The context gauge appears when Ronin has a reading from the session. An empty workspace

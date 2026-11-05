@@ -123,9 +123,10 @@ gives "Your work record changed".
 - **Work items** in a Team on the Teams workbench, and under an opened Agent on the Team
   roster.
 - The tile's **☰ Work record**: the held items first, each with its status, flag and
-  attachments (a Jira-paired item's id opens its Jira issue), then the objective, worktrees and Teams. **📄 Docs** lists the held items'
-  attachments.
-- `work-record read`: what the Agent holds and watches. A lead also sees each Team it leads:
+  attachments (a Jira-paired item's id opens its Jira issue), then the objective, worktrees and Teams. **📄 Docs** lists the record's
+  own documents and the held items' attachments.
+- `work-record read`: what the Agent holds and watches, and under Documents the record's own
+  documents and the held items' attachments (`--json`: `documents` and `attachments`). A lead also sees each Team it leads:
   what the Team holds and watches, and what each member holds and watches, read when asked.
 
 Items show as stones grouped by parent: each epic, then its items, each followed by its
@@ -133,12 +134,13 @@ subtasks. A stone shows the id, title, kind, status and ⚑ when flagged; press 
 its objective, priority, Jira fields, comments, attachments (each opens), links and history beside the
 stones. These are readings: every change goes through the `item` tool.
 
-## Receipts move Land and Done
+## Receipts on the trail
 
 Name the item on a hand-in with `worktree-desk hand-in <repo> --item <id>`. An accepted
-hand-in moves the item to In Review, with the receipt on its trail. A completed promotion
-moves every item named on the hand-ins it carries to Done, with the promotion receipt; an item
-paired to Jira is left as it is until the Jira user moves it to Done. No
+hand-in moves the item to In Review and gives it to the Team, with the receipt on its trail.
+A promotion is a code step and never changes a status: each item named on the hand-ins it
+carries gets the promotion receipt on its trail, nothing more. Done is set only by the person
+accepting the item (Waiting on you, or the Jira user for an item paired to Jira). No
 association is guessed from names or repositories.
 
 A supporting Agent and an assignment are two operations owned by their tools:
@@ -148,13 +150,25 @@ session_create board_reader --prompt "Take w12 and read it with item read w12."
 item assign w12 board_reader
 ```
 
-## Documents live on items
+## Documents live on items, or on the record
 
-Documents are an item's attachments, and travel with it when it moves between Agents. The
-tile's Docs lists the attachments of every item you hold: a document you did
-not attach is one the owner cannot reach. `work-record add_doc <path>|<url>` adds one to
-the item you hold; holding several, name it with `--item <id>`. Every Agent is born with
-Write it Down, which asks for this and for a short, current list.
+Documents are an item's attachments, and travel with it when it moves between Agents. An
+Agent holding no item keeps its documents on its work record itself; those stay with the
+Agent. The tile's Docs lists the record's own documents, the files dropped on the tile among
+them, and the attachments of every item you hold (a lead's, its Teams' held items too): a
+document on neither is one the owner cannot reach.
+
+```text
+work-record add_doc plans/IDEA.md                 # holding one item: on the item
+work-record add_doc plans/IDEA.md --item w12      # holding several: name one
+work-record add_doc plans/IDEA.md                 # holding none: on the work record
+work-record add_doc --remove plans/IDEA.md        # takes it off: the record's first, else the item's
+```
+
+`--remove` takes a document off as `item attach --remove` does. Without `--item` it comes off
+the record when the record has it, else off the item you hold. A file the owner dropped on
+the tile is not removed by it. Every Agent is born with Write it Down, which asks for this
+and for a short, current list.
 
 ## The work record
 

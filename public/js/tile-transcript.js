@@ -36,6 +36,8 @@ export function makeTileTranscript({ read = request, watch = transcriptWatch(), 
   el.className = 'tile-transcript';
   el.setAttribute('role', 'log');
   el.setAttribute('aria-label', t('transcript.title', 'Transcript'));
+  // Focusable, so a click here keeps the keys on this tile: Esc stops the Agent (owner, 2026-11-03).
+  el.tabIndex = -1;
   let session = null;
   let active = false;
   let generation = 0;
