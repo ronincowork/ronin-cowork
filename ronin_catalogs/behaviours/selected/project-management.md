@@ -32,7 +32,7 @@ two sentences. The technical detail belongs in the design doc or the commit.
 |---|---|
 | To Do | new items start here |
 | In Progress | you, when you start |
-| In Review | your hand-in, which also gives the item to your Team |
+| In Review | your hand-in; the item stays yours until it is accepted or sent back |
 | Done | whoever accepts it; never you |
 
 ### Notices
