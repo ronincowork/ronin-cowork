@@ -467,7 +467,7 @@ nothing paints exactly this.
 - **settei.group_services:** services
 - **settei.ronin_services:** Ronin Services
 - **settei.group_subscription:** subscription
-- **settei.subscription:** subscription
+- **settei.services_activation:** Services activation
 - **settei.group_needed:** still needed
 - **settei.needed_nothing:** nothing
 - **settei.needed_satisfied:** your choices are satisfied
