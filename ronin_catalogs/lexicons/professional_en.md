@@ -954,6 +954,10 @@ The catalog entry goes. {dir} is not touched.
 - **roots.github_cloning:** Cloning repository…
 - **roots.github_cloned:** Added {name} as a workspace.
 
+## help_outline — help-outline.js (the Help workbench's pages)
+- **help_outline.project_management:** Project management
+- **help_outline.planning:** Writing a plan
+
 ## docs — docs.js (the ▧ Docs tab)
 - **docs.back_title:** Back to the list
 - **docs.close_agent:** Close documents and return to this Agent
