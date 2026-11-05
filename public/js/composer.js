@@ -167,6 +167,9 @@ export function buildComposer(body, hooks) {
       e.preventDefault();
       ta.setRangeText('\n', ta.selectionStart, ta.selectionEnd, 'end');
       grow();
+      // At full height the browser does not scroll to a new empty last line: follow it, so
+      // the cursor stays in view (owner, 2026-11-05).
+      if (ta.selectionEnd === ta.value.length) ta.scrollTop = ta.scrollHeight;
       return;
     }
     e.preventDefault();
