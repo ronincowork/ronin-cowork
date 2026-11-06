@@ -335,6 +335,9 @@ test('Services setup model keeps installation and registration as separate facts
   const hostedBare = servicesSetupModel(reg('optional'), { ok: true, data: { services: { installed: false, parts: [] } } }, { ok: true, data: { stage: 'not_requested', office } });
   assert.equal(hostedBare.state, 'office_missing_services'); assert.equal(hostedBare.tone, 'bad');
   assert.equal(hostedBare.steps.some((s: Step) => s.act === 'install' || s.act === 'register'), false);
+  const unreadable = servicesSetupModel(reg('optional'), here(), { ok: true, data: { stage: 'not_requested', office: { hosting: 'unreadable', error: 'office_id must be letters' } } });
+  assert.equal(unreadable.state, 'office_record_unreadable'); assert.equal(unreadable.tone, 'bad'); assert.match(unreadable.next, /office_id must be letters/);
+  assert.equal(unreadable.steps.some((s: Step) => s.act === 'install' || s.act === 'register'), false, 'a fault is not self-hosted: no Register, no Install');
   const selfHosted = servicesSetupModel(reg('optional'), here(), { ok: true, data: { stage: 'not_requested', office: { hosting: 'self_hosted', host: 'box' } } });
   assert.deepEqual(selfHosted.steps.slice(0, 3).map((s: Step) => s.id), ['register', 'install', 'switch'], 'self-hosted keeps its three steps');
   // Installed on the live box without any registration: installed, usable, switchable, and Register stays an optional step.
