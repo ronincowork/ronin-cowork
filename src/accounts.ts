@@ -13,12 +13,12 @@ import { deleteHermesEntry, discoverHermesModels, hermesSettingsAnswer, saveHerm
 /** The house gateway's office door on a developer's own box (ronin-services/model_gateway side by side). */
 export const RONIN_API_BASE_URL = 'http://127.0.0.1:4912/v1';
 /** Where this Ronin's house calls go: the office record's gateway_office when it is an office on an
- * office_host, the local door when self-hosted. A record that will not read is a fault, thrown, never
+ * office_park, the local door when self-hosted. A record that will not read is a fault, thrown, never
  * a fallback: the reader contract has no third hosting state. */
 export async function roninApiBaseUrl(): Promise<string> {
   const office = await readOfficeRecord();
   if (office.hosting === 'unreadable') throw new Error(`office record unreadable: ${office.error}`);
-  return office.hosting === 'office_host' ? `${office.record.gateway_office}/v1` : RONIN_API_BASE_URL;
+  return office.hosting === 'office_unit' ? `${office.record.gateway_office}/v1` : RONIN_API_BASE_URL;
 }
 export const RONIN_API_SEED_ID = 'ronin_api';
 /** The Ronin API does not serve Claude Code (owner, 2026-11-03). */

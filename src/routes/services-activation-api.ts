@@ -19,7 +19,7 @@ async function activationAnswer(): Promise<Record<string, unknown>> {
   return {
     ...publicState(await readState()),
     entitled: await isEntitled(),
-    // Self-hosted, or an office on an office_host: Setup hides Register and Install on an office_host.
+    // Self-hosted, or an office on an office_park: Setup hides Register and Install on an office_park.
     office: await readOfficeRecord(),
     egress: await readEgress(20),
     receipts: await listReceipts(10),

@@ -3,7 +3,7 @@
  * THE OFFICE AND ACCOUNT CARD — read-only, two sections that must agree on one value.
  *
  * OFFICE is where this Ronin lives: the office record (GET /api/office, src/office-record.ts)
- * says self-hosted, or an office on an office_host with its office_id, office_host and house
+ * says self-hosted, or an office on an office_park with its office_id, office_park and house
  * gateway. It is this machine's own fact and shows for everyone, Services or not.
  *
  * ACCOUNT is the user's standing with Ronin HQ: which account, its subscription status as HQ
@@ -41,14 +41,14 @@ export function officeModel(result) {
   switch (v.hosting) {
     case 'self_hosted':
       return { title: t('office.self_hosted', 'Self-hosted'), blurb: t('office.self_hosted_blurb', 'This Ronin runs on its own machine. There is no office record.'), rows: [[t('office.host', 'machine'), v.host || '—']], office_id: null };
-    case 'office_host': {
+    case 'office_unit': {
       const r = v.record || {};
       return {
-        title: t('office.office_host', 'Hosted office'),
-        blurb: t('office.office_host_blurb', 'An office on an office_host, as its office record says.'),
+        title: t('office.office_park', 'Hosted office'),
+        blurb: t('office.office_park_blurb', 'An office on an office_park, as its office record says.'),
         rows: [
           [t('office.office_id', 'office'), r.office_id || '—'],
-          [t('office.office_host_name', 'office_host'), r.office_host || '—'],
+          [t('office.office_park_name', 'office park'), r.office_park || '—'],
           [t('office.gateway', 'house gateway'), r.gateway_office || '—'],
           [t('office.provisioned', 'provisioned'), when(r.provisioned_at)],
         ],

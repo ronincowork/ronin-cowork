@@ -347,7 +347,7 @@ function createRegisterSurface(context) {
   const stopProgress = watchSetupProgress(context.environment, paint);
   if (zone) out.content.append(zone.el);
   body.append(identity, form, userIntro, declined, recoveryOptions, notice); out.content.append(body);
-  // An office on an office_host has its registration managed by its provisioning: no form, no
+  // An office on an office_park has its registration managed by its provisioning: no form, no
   // header zone, no Delete registration (which would drop the office's entitlement). One
   // sentence says so; it claims nothing about completed registration, which only HQ knows. A
   // record that will not read is a fault, treated the same way, never as self-hosted. The put-away

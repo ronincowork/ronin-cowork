@@ -32,7 +32,7 @@ export async function sendDuePackets(): Promise<SendReport> {
   // Tool counts leave hosted offices only (owner): a self-hosted Ronin never sends, whatever it holds,
   // and a record that will not read is a fault, not a reason to send.
   const office = await readOfficeRecord();
-  if (office.hosting !== 'office_host') { report.skipped = office.hosting === 'unreadable' ? 'office-unreadable' : 'self-hosted'; return report; }
+  if (office.hosting !== 'office_unit') { report.skipped = office.hosting === 'unreadable' ? 'office-unreadable' : 'self-hosted'; return report; }
   const token = await getEntitlementToken();
   if (!token) {
     report.skipped = 'no-entitlement';

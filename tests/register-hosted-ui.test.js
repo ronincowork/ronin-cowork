@@ -52,7 +52,7 @@ globalThis.fetch = async (url, options = {}) => {
 const texts = (node) => [node.textContent, ...[...node.walk()].map((n) => n.textContent)].join('\n');
 const visibleForm = (node) => [...node.walk()].some((n) => n.tagName === 'FORM' && !n.hidden);
 
-test('Register: put away on an office_host, said as a fault when unreadable, and back in full when the record reads self-hosted again', async () => {
+test('Register: put away on an office_park, said as a fault when unreadable, and back in full when the record reads self-hosted again', async () => {
   const { setupSurfaceDefinitions, SETUP_SURFACE_TYPES } = await import('../public/js/setup-surfaces.js');
   const definition = setupSurfaceDefinitions().find((d) => d.type === SETUP_SURFACE_TYPES.register);
   let refreshed = 0;
@@ -64,10 +64,10 @@ test('Register: put away on an office_host, said as a fault when unreadable, and
   assert.doesNotMatch(texts(surface.el), /Hosted office/);
 
   // Hosted: one sentence, no form, no Delete registration, and the summary says managed, not registered.
-  office = { hosting: 'office_host', record: { office_id: 'glen', office_host: 'oh-1', gateway_office: 'http://10.0.0.2:4912', provisioned_at: 'x' } };
+  office = { hosting: 'office_unit', record: { office_id: 'glen', office_park: 'oh-1', gateway_office: 'http://10.0.0.2:4912', provisioned_at: 'x' } };
   await surface.show();
   assert.match(texts(surface.el), /Hosted office: registration is managed when this office is provisioned/);
-  assert.equal(visibleForm(surface.el), false, 'no form on an office_host');
+  assert.equal(visibleForm(surface.el), false, 'no form on an office_park');
   assert.doesNotMatch(texts(surface.el), /Delete registration|Registered\b/);
   assert.equal(definition.summary(), 'managed by provisioning');
   assert.ok(refreshed >= 1, 'the selector is told');

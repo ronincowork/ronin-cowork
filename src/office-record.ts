@@ -2,8 +2,8 @@
  * THE OFFICE RECORD — hosted is a fact, not an inference.
  *
  * One file, `office.json` in the `office` store, written once by whoever provisions the
- * office (cloud-init on an office_host; a hand step on the test office) and never by Ronin.
- * Present: this Ronin is an office running on an office_host. Absent: it is self-hosted.
+ * office (cloud-init on an office_park; a hand step on the test office) and never by Ronin.
+ * Present: this Ronin is an office running on an office_park. Absent: it is self-hosted.
  * There is no third hosting state; a present file that cannot be read is a provisioning
  * fault and is reported as such, never as self-hosted.
  *
@@ -22,8 +22,8 @@ import { storeDir } from './resources.js';
 export interface OfficeRecord {
   /** This office, as the office_registry and HQ name it. */
   office_id: string;
-  /** The office_host this office runs on, as the fleet names it. */
-  office_host: string;
+  /** The office_park this office runs on, as the fleet names it. */
+  office_park: string;
   /** The gateway_office this office's house calls go to, reachable from inside the office. */
   gateway_office: string;
   provisioned_at: string;
@@ -31,7 +31,7 @@ export interface OfficeRecord {
 
 export type OfficeView =
   | { hosting: 'self_hosted'; host: string }
-  | { hosting: 'office_host'; record: OfficeRecord }
+  | { hosting: 'office_unit'; record: OfficeRecord }
   | { hosting: 'unreadable'; error: string };
 
 export const officeRecordFile = (): string => path.join(storeDir('office'), 'office.json');
@@ -56,7 +56,7 @@ export function parseOfficeRecord(raw: unknown): OfficeRecord {
   }
   const provisioned_at = r.provisioned_at;
   if (typeof provisioned_at !== 'string' || Number.isNaN(Date.parse(provisioned_at))) throw new Error('provisioned_at must be a date');
-  return { office_id: name(r, 'office_id'), office_host: name(r, 'office_host'), gateway_office: url.href.replace(/\/$/, ''), provisioned_at };
+  return { office_id: name(r, 'office_id'), office_park: name(r, 'office_park'), gateway_office: url.href.replace(/\/$/, ''), provisioned_at };
 }
 
 export async function readOfficeRecord(): Promise<OfficeView> {
@@ -68,7 +68,7 @@ export async function readOfficeRecord(): Promise<OfficeView> {
     return { hosting: 'unreadable', error: (e as Error).message };
   }
   try {
-    return { hosting: 'office_host', record: parseOfficeRecord(JSON.parse(text)) };
+    return { hosting: 'office_unit', record: parseOfficeRecord(JSON.parse(text)) };
   } catch (e) {
     return { hosting: 'unreadable', error: (e as Error).message };
   }
@@ -76,5 +76,5 @@ export async function readOfficeRecord(): Promise<OfficeView> {
 
 /** The one question most callers have. */
 export async function isOfficeHost(): Promise<boolean> {
-  return (await readOfficeRecord()).hosting === 'office_host';
+  return (await readOfficeRecord()).hosting === 'office_unit';
 }

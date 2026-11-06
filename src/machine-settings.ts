@@ -511,7 +511,7 @@ async function readObserved(jobKeyNames: string[]): Promise<Record<string, unkno
       contract: CONTRACT_V,
       services: listServices(),
     },
-    // Self-hosted, or an office on an office_host: the office record, the same fact the browser's Office section shows.
+    // Self-hosted, or an office on an office_park: the office record, the same fact the browser's Office section shows.
     office: await readOfficeRecord(),
     routes: routes(),
     reach: await sshReach(),

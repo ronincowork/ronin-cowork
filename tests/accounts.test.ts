@@ -74,7 +74,7 @@ test('the Ronin API is seeded greyed until a token arrives; a personal API is th
   assert.match(await readFile(path.join(home, '.env'), 'utf8'), /OPENAI_API_KEY='house-token'/);
 });
 
-test('in an office on an office_host the Ronin API default is the record\'s gateway, seed and save alike; an unreadable record is a fault, not localhost', async () => {
+test('in an office on an office_park the Ronin API default is the record\'s gateway, seed and save alike; an unreadable record is a fault, not localhost', async () => {
   const { mkdir, writeFile } = await import('node:fs/promises');
   const officeDir = path.join(box, 'office');
   await mkdir(officeDir, { recursive: true });
@@ -86,7 +86,7 @@ test('in an office on an office_host the Ronin API default is the record\'s gate
       for (const preset of before.presets.filter(p => p.account === row.id)) await a.deletePreset(preset.id);
       await a.deleteAccount(row.id);
     }
-    await writeFile(path.join(officeDir, 'office.json'), JSON.stringify({ office_id: 'glen', office_host: 'oh-1', gateway_office: 'http://10.0.0.2:4912', provisioned_at: '2026-11-06T09:00:00Z' }));
+    await writeFile(path.join(officeDir, 'office.json'), JSON.stringify({ office_id: 'glen', office_park: 'oh-1', gateway_office: 'http://10.0.0.2:4912', provisioned_at: '2026-11-06T09:00:00Z' }));
     assert.equal(await a.roninApiBaseUrl(), 'http://10.0.0.2:4912/v1');
     // The seed shows the record's gateway...
     const shown = (await a.accountsAnswer()).accounts.find(r => r.kind === 'ronin_api')!;

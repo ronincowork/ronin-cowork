@@ -72,12 +72,12 @@ test('every account state is shown in its own words; only an absent part hides t
   assert.equal(broken.hidden, undefined); assert.equal(broken.blurb, 'boom');
 });
 
-test('the Office section says self-hosted or office_host from the office record, and a differing office_id is said', async () => {
+test('the Office section says self-hosted or office_park from the office record, and a differing office_id is said', async () => {
   const { officeModel, officeAgreement, accountModel } = await import('../public/js/account-card.js');
   const self = officeModel({ ok: true, status: 200, data: { hosting: 'self_hosted', host: 'dohyo-unified' } });
   assert.equal(self.title, 'Self-hosted'); assert.deepEqual(self.rows, [['machine', 'dohyo-unified']]); assert.equal(self.office_id, null);
-  const record = { office_id: 'glen', office_host: 'oh-1', gateway_office: 'http://10.0.0.2:4912', provisioned_at: '2026-11-06T09:00:00Z' };
-  const hosted = officeModel({ ok: true, status: 200, data: { hosting: 'office_host', record } });
+  const record = { office_id: 'glen', office_park: 'oh-1', gateway_office: 'http://10.0.0.2:4912', provisioned_at: '2026-11-06T09:00:00Z' };
+  const hosted = officeModel({ ok: true, status: 200, data: { hosting: 'office_unit', record } });
   assert.equal(hosted.title, 'Hosted office'); assert.equal(hosted.office_id, 'glen');
   assert.deepEqual(hosted.rows.map((r) => r[1]), ['glen', 'oh-1', 'http://10.0.0.2:4912', '2026-11-06 09:00']);
   const wrong = officeModel({ ok: true, status: 200, data: { hosting: 'unreadable', error: 'office_id must be letters' } });
