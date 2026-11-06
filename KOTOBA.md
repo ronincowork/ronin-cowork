@@ -135,11 +135,11 @@ stays; what the customer hears for a unit is not settled (owner, 6 Nov 2026).
 | Term | Meaning |
 |---|---|
 | Ronin as a Service (`raas`) | The whole hosted offering: office_units on office_parks, each park's office_kohai, front_door, billing and office_export. The house name; Ronin Cloud is the same offering as the customer hears it |
-| Office unit (`office_unit`) | The product unit: one customer's virtual machine with its own kernel and disk, carved from an office_park. A ronin_install runs inside it. The customer sees and buys units and Agents running, never the machinery (was `office`; owner, 6 Nov 2026) |
+| Office unit (`office_unit`) | The product unit: one customer's virtual machine with its own kernel and disk, carved from an office_park. A ronin_install runs inside it. This is what the customer buys, with Agents running, never the machinery; what the customer calls it is not settled (was `office`; owner, 6 Nov 2026) |
 | Ronin install (`ronin_install`) | One installed, running copy of Ronin: inside an office_unit, or self-hosted on the customer's own machine. Ronin is the software; the unit is where one copy of it lives. Registration, the entitlement and the account view all belong to a ronin_install |
-| Office park (`office_park`) | The physical machine Ronin rents, carved into office_units under one hypervisor. Ronin administers it; no customer touches it (was `office_park`; owner, 6 Nov 2026) |
+| Office park (`office_park`) | The physical machine Ronin rents, carved into office_units under one hypervisor. Ronin administers it; no customer touches it (was `office_host`; owner, 6 Nov 2026) |
 | Hypervisor (`hypervisor`) | The software on an office_park that carves it into office_units and exposes the API the office_kohai drives: Proxmox VE |
-| Office kohai (`office_kohai`) | The head of an office_park: HQ-controlled, living on the park beside gateway_office, never reachable by customers. It provisions the park's units, keeps their records, stops, meters and updates them (was `office_kohai`, a separate machine; owner, 6 Nov 2026) |
+| Office kohai (`office_kohai`) | The head of an office_park: HQ-controlled, living on the park beside gateway_office, never reachable by customers. It provisions the park's units, keeps their records, stops, meters and updates them (was `control_plane`, a separate machine; owner, 6 Nov 2026) |
 | Office registry (`office_registry`) | The office_kohai's record of its park's units: account, unit, private address, state, stop_clock. Which park an account's unit is on is HQ's to know |
 | Front door (`front_door`) | The public entry on an office_park: Caddy, OAuth2 Proxy and Keycloak. Maps the hostname to an office, then checks that the signed-in user owns it; signing in alone opens nothing |
 | SSH gateway (`ssh_gateway`) | SSH entry at the same name as the front_door; no office address is ever shown |
