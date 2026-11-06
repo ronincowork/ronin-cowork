@@ -15,7 +15,7 @@ import { readLetterHolds } from './tegami.js';
 import { sessionKey } from './session-dir.js';
 import { readTeamRoster, type TeamRoster } from './team-rosters.js';
 import { listSessions } from './tmux.js';
-import { HANDED_IN, WorkItemMissing, handInStage, handedInNote, heldIds, holderLabel, listItems, readItem, type Comment, type WorkItem } from './work-items.js';
+import { HANDED_IN, WorkItemMissing, handInStage, handedInNote, heldIds, holderLabel, listItems, readItem, type Comment, type HandIn, type WorkItem } from './work-items.js';
 
 export interface AgentReading {
   holder: string;
@@ -221,7 +221,19 @@ export function teamWork(items: HeldItem[], every: WorkItem[]): TeamWork {
 export interface EpicItem {
   id: string; title: string; status: string; holder: string; parent: string | null; level: number;
   kind: string; flagged: boolean; campaign_id: string; jira: string; epic: string;
+  /** What a bar says it is (owner, 2026-11-06, w334): the objective cut short, its last comment
+   * cut short, how many comments, when it last moved, and its last hand-in and promotion. */
+  objective: string; said: { by: string; at: string; text: string } | null; comment_count: number;
+  moved: string; hand_ins: HandIn[]; on_dev?: { promotion: string; at: string };
 }
+
+/** A push's words, cut at a word near `max` characters. */
+const cut = (text: string, max: number): string => {
+  const flat = String(text || '').replace(/\s+/g, ' ').trim();
+  if (flat.length <= max) return flat;
+  const at = flat.lastIndexOf(' ', max);
+  return `${flat.slice(0, at > max * 0.6 ? at : max)}…`;
+};
 
 /** THE EPICS PUSH (KAN-190, KAN-206): every Epic whole, and every item under one, slim. */
 export function epicsPush(all: HeldItem[]): { epics: Array<HeldItem & { archived_under: number }>; items: EpicItem[] } {
@@ -243,6 +255,12 @@ export function epicsPush(all: HeldItem[]): { epics: Array<HeldItem & { archived
     items.push({
       id: item.id, title: item.title, status: item.status, holder: item.holder, parent: item.parent, level: item.level,
       kind: item.kind, flagged: item.flagged, campaign_id: item.campaign_id, jira: item.external.jira?.key ?? '', epic,
+      objective: cut(item.objective, 280),
+      said: item.comments?.length ? (({ by, at, text }) => ({ by, at, text: cut(text, 200) }))(item.comments.at(-1)!) : null,
+      comment_count: item.comments?.length ?? 0,
+      moved: item.trail?.at(-1)?.at ?? item.created?.at ?? '',
+      hand_ins: item.hand_ins?.length ? [item.hand_ins.at(-1)!] : [],
+      ...(item.on_dev ? { on_dev: item.on_dev } : {}),
     });
   }
   const archivedUnder = new Map<string, number>();
