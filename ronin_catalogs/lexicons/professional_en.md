@@ -1282,6 +1282,14 @@ The catalog entry goes. {dir} is not touched.
 - **island.subtasks:** {n} subtasks
 - **island.handed_in:** handed in
 - **island.on_dev:** on dev
+- **island.wide:** More detail
+- **island.narrow:** Less detail
+- **island.priority:** {p} priority
+- **island.under:** under {id}
+- **island.attachments:** {n} attached
+- **island.comment:** 1 comment
+- **island.comments:** {n} comments
+- **island.moved:** moved {age} ago
 
 ## head — tilehead.js (the tile head's help and quiet words)
 - **head.rename_help:** Edit this Agent title

@@ -4,7 +4,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { handInSignal, handInWords, kindKey, pillWords, statusKey } from '../public/js/tile-island.js';
+import { barFacts, handInSignal, handInWords, kindKey, lastComment, pillWords, statusKey } from '../public/js/tile-island.js';
 
 const read = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
 
@@ -86,4 +86,22 @@ test('a Subtask whose Task is on the island folds under it: the Task pill carrie
   assert.match(island, /pills\.replaceChildren\(\.\.\.shape\.top\.map\(pill\)\)/);
   const surface = await read('public/js/work-items-surface.js');
   assert.match(surface, /step\('subtasks', t\('work_items\.subtasks', 'Subtasks'\)/);
+});
+
+test('w322: the wide list, a bar per item with its description, last comment and facts', async () => {
+  const now = Date.parse('2026-11-06T12:00:00Z');
+  const item = { id: 'w1', priority: 'High', parent: 'KAN-253', attachments: ['/a'], comments: [{ by: 'a', at: '2026-11-06T09:00:00Z', text: 'one' }, { by: 'b', at: '2026-11-06T11:00:00Z', text: 'two' }],
+    trail: [{ at: '2026-11-06T11:30:00Z', by: 'b', op: 'comment' }] };
+  assert.equal(lastComment(item).text, 'two');
+  assert.equal(lastComment({ comments: [] }), null);
+  assert.deepEqual(barFacts(item, 2, now), ['High priority', 'under KAN-253', '2 subtasks', '1 attached', '2 comments', 'moved 30m ago']);
+  assert.ok(barFacts({ comments: [{}] }, 0, now).includes('1 comment'));
+  assert.deepEqual(barFacts({ id: 'w2' }, 0, now), [], 'an empty fact is left out');
+  const island = await read('public/js/tile-island.js');
+  assert.match(island, /el\.append\(grip, pills, bars, more\)/);
+  assert.match(island, /more\.addEventListener\('click', \(\) => place\(el\.dataset\.state === 'wide' \? 'down' : 'wide'\)\)/);
+  assert.match(island, /node\.className = sub \? 'item-bar item-bar-sub' : 'item-bar'/, 'a bar is not a pill: the pill counts stay the pills');
+  const css = await read('public/style.css');
+  assert.match(css, /\.tile-head \.item-island\[data-state='wide'\] \{\n  position: absolute;/);
+  assert.match(css, /\.item-bar \.item-bar-comment \{ -webkit-line-clamp: 1;/);
 });
