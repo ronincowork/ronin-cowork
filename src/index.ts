@@ -40,7 +40,7 @@ import { registerDrop } from './routes/drop-api.js';
 import { registerDesks } from './routes/desks-api.js';
 import { registerTeamPage } from './routes/team-page-api.js';
 import { startTomodachiSender } from './activation/tomodachi.js';
-import { registerServicesActivation, resumeInstallWatch, servicesSetupWrites, startConfirmationCheck } from './routes/services-activation-api.js';
+import { registerServicesActivation, resumeInstallWatch, servicesSetupWrites } from './routes/services-activation-api.js';
 import { registerMachineSettings } from './routes/machine-settings-api.js';
 import { registerCampaigns } from './routes/campaigns-api.js';
 import { ensureInitialCampaign } from './campaigns.js';
@@ -50,6 +50,7 @@ import { registerUpdate } from './routes/update-api.js';
 import { registerMachineRestart } from './routes/machine-restart-api.js';
 import { registerJikan, startHouseJikan } from './routes/jikan-api.js';
 import { registerInstalled } from './routes/installed-api.js';
+import { registerOffice } from './routes/office-api.js';
 import { registerVersion } from './routes/version.js';
 import { registerWipeboards, wipeboardAnswer } from './routes/wipeboards-api.js';
 import { registerTerminalControls } from './terminal-controls.js';
@@ -267,6 +268,7 @@ registerMachineRestart(app); // /api/machine/restart — the Setup Services Rest
 registerMachineSettings(app); // /api/machine-settings — the install record, and writes BY NAME only — src/routes/machine-settings-api.ts
 registerCampaigns(app); // /api/campaigns* — the durable record of each body of work — src/routes/campaigns-api.ts
 startTomodachiSender(); // AGERU's weekly packet actually leaves here — src/activation/tomodachi.ts
+registerOffice(app); // /api/office — the office record: self-hosted, or an office on an office_host — src/office-record.ts
 registerInstalled(app); // /api/installed — what is on this machine: installed · activated · switched, one answer — src/routes/installed-api.ts
 registerSetupRuntime(app); // /api/setup/runtime and provider login completion — explicit readiness facts for Ronin Setup
 registerSetupProgress(app); // one server-owned Setup completion record, scan and answer resource
@@ -320,7 +322,6 @@ for (const s of services) {
 mountServiceRoutes(app);
 
 void resumeInstallWatch();
-startConfirmationCheck(); // asks Ronin HQ while a Services request awaits its emailed link
 
 registerSessions(app); // per-session: kill/harakiri, meta, ctx, tegami, send — src/routes/sessions-api.ts
 registerWipeboards(app); // /api/wipeboards* — src/routes/wipeboards-api.ts

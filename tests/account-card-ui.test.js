@@ -4,7 +4,7 @@ import { readFile } from 'node:fs/promises';
 
 const read = (file) => readFile(new URL(`../${file}`, import.meta.url), 'utf8');
 
-test('the Cloud account card sits under the Services card and reads /api/account alone', async () => {
+test('the Office and account card sits under the Services card and reads /api/office and /api/account alone', async () => {
   const card = await read('public/js/account-card.js');
   const settings = await read('public/js/machine-settings.js');
   assert.match(settings, /card = servicesCard\(body\);\n[^\n]*\n\s*account\?\.stop\(\);\n\s*account = accountCard\(body\);/);
@@ -12,7 +12,7 @@ test('the Cloud account card sits under the Services card and reads /api/account
   assert.match(settings, /t\('settei\.services_activation', 'Services activation'\), st\.subscription/);
   assert.doesNotMatch(settings, /t\('settei\.subscription'/);
   // Read-only: one GET, no method, no other route.
-  assert.deepEqual([...new Set(card.match(/\/api\/[a-z/]+/g))], ['/api/account']);
+  assert.deepEqual([...new Set(card.match(/\/api\/[a-z/]+/g))].sort(), ['/api/account', '/api/office']);
   assert.doesNotMatch(card, /method:|fetch\(/);
 });
 
@@ -54,11 +54,13 @@ test('every account state is shown in its own words; only an absent part hides t
   assert.equal(odd.rows[2][1], 'Unknown'); assert.equal(odd.usage.known, false); assert.doesNotMatch(odd.usage.text, /\b0\b/);
   const words = (state, extra = {}) => ok({ state, read_at: 'x', usage: { state: 'unknown', reason: 'no_account' }, ...extra });
   assert.equal(words('not_activated').title, 'Not connected');
+  assert.equal(words('not_hosted').title, 'No Ronin HQ account');
+  assert.equal(words('office_unreadable').title, 'Office record unreadable');
   assert.equal(words('not_mapped').title, 'No Cloud account');
   assert.match(words('refused', { code: 'office_mismatch' }).blurb, /office_mismatch/);
   const down = words('hq_unavailable');
   assert.equal(down.title, 'Ronin HQ unavailable'); assert.deepEqual(down.rows, []);
-  for (const m of [words('not_activated'), words('not_mapped'), words('refused'), down]) {
+  for (const m of [words('not_activated'), words('not_hosted'), words('not_mapped'), words('refused'), down]) {
     assert.equal(m.hidden, undefined); assert.equal(m.usage, null);
     assert.equal(m.rows.some((r) => /Active/.test(r[1])), false);
   }
@@ -68,4 +70,23 @@ test('every account state is shown in its own words; only an absent part hides t
   // A failing operator is said, not hidden.
   const broken = accountModel({ ok: false, status: 500, message: 'boom' });
   assert.equal(broken.hidden, undefined); assert.equal(broken.blurb, 'boom');
+});
+
+test('the Office section says self-hosted or office_host from the office record, and a differing office_id is said', async () => {
+  const { officeModel, officeAgreement, accountModel } = await import('../public/js/account-card.js');
+  const self = officeModel({ ok: true, status: 200, data: { hosting: 'self_hosted', host: 'dohyo-unified' } });
+  assert.equal(self.title, 'Self-hosted'); assert.deepEqual(self.rows, [['machine', 'dohyo-unified']]); assert.equal(self.office_id, null);
+  const record = { office_id: 'glen', office_host: 'oh-1', gateway_office: 'http://10.0.0.2:4912', provisioned_at: '2026-11-06T09:00:00Z' };
+  const hosted = officeModel({ ok: true, status: 200, data: { hosting: 'office_host', record } });
+  assert.equal(hosted.title, 'Hosted office'); assert.equal(hosted.office_id, 'glen');
+  assert.deepEqual(hosted.rows.map((r) => r[1]), ['glen', 'oh-1', 'http://10.0.0.2:4912', '2026-11-06 09:00']);
+  const wrong = officeModel({ ok: true, status: 200, data: { hosting: 'unreadable', error: 'office_id must be letters' } });
+  assert.equal(wrong.title, 'Office record unreadable'); assert.match(wrong.blurb, /office_id must be letters/); assert.notEqual(wrong.title, 'Self-hosted');
+  assert.equal(officeModel({ ok: false, status: 500, message: 'boom' }).blurb, 'boom');
+  // Agreement on the one shared value.
+  const facts = { account: { account_id: 'a', display_name: null, user_id: 'glen' }, office: { office_id: 'glen', entitlement_id: null, mapped_at: null }, subscription: { status: 'none', plan: null, changed_at: null } };
+  const current = accountModel({ ok: true, status: 200, data: { state: 'current', read_at: 'x', facts, usage: { state: 'unknown', reason: 'no_usage_ids' } } });
+  assert.equal(officeAgreement(hosted, current), null);
+  assert.match(officeAgreement(hosted, { ...current, office_id: 'other' }), /mapped to office other; the office record says glen/);
+  assert.equal(officeAgreement(self, current), null, 'self-hosted carries no office_id to disagree with');
 });
