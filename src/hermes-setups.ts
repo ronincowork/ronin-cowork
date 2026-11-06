@@ -1,5 +1,6 @@
 /** Ronin-owned Hermes connections and named launch setups. Secrets never enter projections. */
 import { appendEgress } from './activation/egress.js';
+import { readOfficeRecord } from './office-record.js';
 import { randomUUID } from 'node:crypto';
 import { mkdir, readFile, writeFile, rename, symlink, rm } from 'node:fs/promises';
 import path from 'node:path';
@@ -41,7 +42,11 @@ export async function saveHermesConnection(input: Record<string, unknown>): Prom
     const endpoint = required(input.baseUrl, 'Base URL');
     const url = new URL(endpoint);
     const localGateway = url.protocol === 'http:' && url.hostname === '127.0.0.1' && !!url.port && /^http:\/\/127\.0\.0\.1:\d+\//.test(endpoint);
-    if ((!localGateway && url.protocol !== 'https:') || url.username || url.password || url.search || url.hash) throw new Error('Use an HTTPS API base URL (or http://127.0.0.1:port/ for a local gateway) without credentials, query or fragment.');
+    // In an office on an office_host the house gateway is the record's gateway_office, on the office network; plain
+    // HTTP to exactly that origin is allowed, nothing else off HTTPS.
+    const office = await readOfficeRecord();
+    const hostedGateway = office.hosting === 'office_host' && url.origin === new URL(office.record.gateway_office).origin;
+    if ((!localGateway && !hostedGateway && url.protocol !== 'https:') || url.username || url.password || url.search || url.hash) throw new Error('Use an HTTPS API base URL (or http://127.0.0.1:port/ for a local gateway, or this office\'s own house gateway) without credentials, query or fragment.');
     const apiKey = typeof input.apiKey === 'string' ? input.apiKey.trim() : '';
     if (/[\r\n'"\\]/.test(apiKey)) throw new Error('Invalid API key format.');
     if (!existing && !apiKey) throw new Error('API key is required.');

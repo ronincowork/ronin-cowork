@@ -146,7 +146,7 @@ export function presetForm(preset = {}, accounts = [], { onSaved = () => {}, onC
 export function accountSummary(account) {
   const node = el('div', 'hermes-card-summary');
   const facts = [
-    account.baseUrl.replace(/^https?:\/\//, ''),
+    account.fault ? t('accounts.fault', 'no gateway address: {fault}', { fault: account.fault }) : account.baseUrl.replace(/^https?:\/\//, ''),
     account.credentialEnv ? account.credentialEnv : '',
     account.seeded ? t('accounts.seeded', 'add a token to use it') : account.configured ? t('accounts.configured', 'Configured') : t('accounts.key_missing', 'Key missing'),
     account.discoveredAt ? t('accounts.models_n', '{n} models · {m} offered', { n: account.models.length, m: account.offered.length }) : t('accounts.not_discovered', 'Models not discovered'),
