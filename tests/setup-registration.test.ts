@@ -326,6 +326,17 @@ test('Services setup model keeps installation and registration as separate facts
     assert.equal(model.steps.length, state === 'restart_needed' ? 4 : 3, 'Restart appears only while a restart is due');
     assert.doesNotMatch(`${model.status} ${model.next} ${model.steps.map((s: Step) => s.label).join(' ')}`, /HTTP|undefined|null/);
   }
+  // An office on an office_host: Services came with the image and HQ already knows the office, so
+  // Register and Install are not offered; a missing install there is a provisioning fault, said as such.
+  const office = { hosting: 'office_host', record: { office_id: 'glen', office_host: 'oh-1', gateway_office: 'http://10.0.0.2:4912', provisioned_at: 'x' } };
+  const hostedOn = servicesSetupModel(reg('optional'), here({ switched_on: true }), { ok: true, data: { stage: 'installed', office } });
+  assert.deepEqual(hostedOn.steps.map((s: Step) => s.id), ['switch'], 'no Register, no Install on an office_host');
+  assert.equal(hostedOn.state, 'active');
+  const hostedBare = servicesSetupModel(reg('optional'), { ok: true, data: { services: { installed: false, parts: [] } } }, { ok: true, data: { stage: 'not_requested', office } });
+  assert.equal(hostedBare.state, 'office_missing_services'); assert.equal(hostedBare.tone, 'bad');
+  assert.equal(hostedBare.steps.some((s: Step) => s.act === 'install' || s.act === 'register'), false);
+  const selfHosted = servicesSetupModel(reg('optional'), here(), { ok: true, data: { stage: 'not_requested', office: { hosting: 'self_hosted', host: 'box' } } });
+  assert.deepEqual(selfHosted.steps.slice(0, 3).map((s: Step) => s.id), ['register', 'install', 'switch'], 'self-hosted keeps its three steps');
   // Installed on the live box without any registration: installed, usable, switchable, and Register stays an optional step.
   const live = servicesSetupModel(reg('optional'), here(), act('not_requested'));
   assert.equal(live.steps[2].act, 'switch_on');

@@ -26,7 +26,7 @@ function registrationRow(registration) {
 /**
  * @param {{ok:boolean,data?:object}|null} registration  GET /api/setup/registration
  * @param {{ok:boolean,data?:object}|null} installed     GET /api/installed
- * @param {{ok:boolean,data?:object}|null} activation    GET /api/services/activation
+ * @param {{ok:boolean,data?:object}|null} activation    GET /api/services/activation (carries `office`, the office record view)
  */
 export function servicesSetupModel(registration, installed, activation = null) {
   const facts = installed?.ok ? installed.data?.services || {} : {};
@@ -49,9 +49,17 @@ export function servicesSetupModel(registration, installed, activation = null) {
     : { ...step('switch', switchCaption, t('services_setup.turn_on', 'Turn on'), { act: 'switch_on', enabled: parts, title: parts ? '' : t('services_setup.install_first', 'Install first') }), pressed: false };
   // A moved switch waits on a restart of Ronin; the Restart control appears only then.
   const restartStep = parts && facts.restart_needed ? step('restart', t('services_setup.step_restart', 'Restart'), t('services_setup.restart', 'Restart'), { act: 'restart' }) : null;
-  const steps = [reg.step, installStep, switchStep, ...(restartStep ? [restartStep] : [])];
+  // An office on an office_host: Services came with the office image, and the office is already
+  // registered with Ronin HQ by its provisioning. Register and Install are not offered; a missing
+  // install there is a provisioning fault, said as such.
+  const hosted = record.office?.hosting === 'office_host';
+  const steps = hosted ? [switchStep, ...(restartStep ? [restartStep] : [])] : [reg.step, installStep, switchStep, ...(restartStep ? [restartStep] : [])];
   const model = (state, tone, status, next) => ({ state, tone, status, next, steps, summary: '' });
 
+  if (hosted && !parts) {
+    return { ...model('office_missing_services', 'bad', t('services_setup.status_office_missing', 'Hosted office · Services missing'),
+      t('services_setup.next_office_missing', 'This office runs on an office_host and its image should carry Services. Nothing here installs them; tell Ronin.')), summary: t('services_setup.summary_office_missing', 'services missing') };
+  }
   if (!parts) {
     if (installing) {
       return { ...model('installing', 'warn', t('services_setup.status_installing', 'Installing Services…'),

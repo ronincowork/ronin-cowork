@@ -4,6 +4,8 @@ import { storeDir } from '../resources.js';
 
 const dir = () => storeDir('services_secrets');
 const tokenFile = () => path.join(dir(), 'entitlement_token');
+// A hosted office's own credential for the model gateway, written by the provisioner; Ronin never mints it.
+const houseTokenFile = () => path.join(dir(), 'house_token');
 
 async function writeSecret(file: string, value: string): Promise<void> {
   await fs.mkdir(path.dirname(file), { recursive: true, mode: 0o700 });
@@ -23,6 +25,8 @@ async function readSecret(file: string): Promise<string | null> {
 
 export const putEntitlementToken = (v: string) => writeSecret(tokenFile(), v);
 export const getEntitlementToken = () => readSecret(tokenFile());
+export const getHouseToken = () => readSecret(houseTokenFile());
+export const putHouseToken = (v: string) => writeSecret(houseTokenFile(), v);
 
 export async function clearEntitlementToken(): Promise<void> {
   await fs.rm(tokenFile(), { force: true });
