@@ -23,8 +23,16 @@ test('the Cloud Account is its own worksurface in the Settings selector, Machine
   // Offered right after Machine, so it sits under the Machine Settings heading.
   assert.match(catalog, /WORKBENCH_PROFILES\.campaign, \[WORKBENCH_TYPES\.terminal, WORKBENCH_TYPES\.campaignMachine, WORKBENCH_TYPES\.campaignCloudAccount,/);
   // Built from the same card; reread each time it is shown; an absent part is said, not blank.
-  assert.match(view, /campaignCloudAccount: \(\) => \{[\s\S]{0,300}accountCard\(el, \{ absent: /);
+  assert.match(view, /campaignCloudAccount: \(\) => \{[\s\S]{0,600}accountCard\(el, \{ absent: /);
   assert.match(view, /if \(card\) void card\.load\(\)/);
+  // Placement: a 'surface' type must hand the Workbench an element that carries the standard
+  // surface header, or placing it throws ("did not use its surface Workbench header") — what
+  // 91014cdf did. The card sits in createSurface's content and surface.el is what is returned.
+  const builder = view.slice(view.indexOf('campaignCloudAccount: () => {'), view.indexOf('campaignCreate:'));
+  assert.match(builder, /WorkspaceKit\.primitives\.createSurface\(\{ label: t\('campaign_view\.cloud_account', 'Cloud Account'\)/);
+  assert.match(builder, /surface\.content\.append\(el\)/);
+  assert.match(builder, /return \{ el: surface\.el, show:/);
+  assert.doesNotMatch(builder, /return \{ el, show:/);
 });
 
 test('every account state is shown in its own words; only an absent part hides the card', async () => {

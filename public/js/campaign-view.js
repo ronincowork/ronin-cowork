@@ -114,9 +114,11 @@ export function createCampaignView() {
     },
     // Read when shown, not on a timer: reopening the surface is how a change at HQ arrives.
     campaignCloudAccount: () => {
+      const surface = WorkspaceKit.primitives.createSurface({ label: t('campaign_view.cloud_account', 'Cloud Account'), className: 'cv-surface' });
       const el = elem('div', 'st-surface');
+      surface.content.append(el);
       let card = null;
-      return { el, show: () => { if (card) void card.load(); else card = accountCard(el, { absent: t('account.absent', 'Not installed: this Ronin has no Services account part.') }); } };
+      return { el: surface.el, show: () => { if (card) void card.load(); else card = accountCard(el, { absent: t('account.absent', 'Not installed: this Ronin has no Services account part.') }); } };
     },
     campaignCreate: ({ workspace }) => {
       const surface = createNewCampaignSurface(async (fields) => {
