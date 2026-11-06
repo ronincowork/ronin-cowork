@@ -203,11 +203,9 @@ worktree-desk hand-in ronin_cowork --item w12
 
 An item can be held by several Agents and Teams, or by nobody. A new item lands on whoever
 made it: a lead's on its Team (a lead of several Teams names one, `--team surface`, or the
-create is refused naming its Teams), any other Agent's on itself. A new item goes under
-your Team's epic, `--parent` naming the epic or an item under one; without one the create is
-refused, naming the Team's open epics. An epic is the lead's: one an Agent that leads nothing
-makes goes to its Team (its first, or `--team`), not to itself. Items from Jira come as Jira
-has them.
+create is refused naming its Teams), any other Agent's on itself. Any kind, an Epic
+too, with a parent or none: an item with no parent is normal (the board's No epic, `item search
+--no-parent`). Items from Jira come as Jira has them.
 
 ```text
 item handoff w12 builder        the giver comes off and builder goes on

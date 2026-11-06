@@ -24,6 +24,15 @@ outside Ronin looks different from the item, tell your lead and stop.
 A Subtask goes only under a level-0 item, and a level-0 item only under an epic or nothing.
 Ronin refuses any other shape and says why. Every id an item has had still finds it.
 
+### Which kind
+- **Epic:** a goal bigger than one hand-in, with what done looks like; several items go under it. You don't work on an epic itself: make an item under it for each piece, and hand in on the item.
+- **Story:** something a person will see or use when it's done.
+- **Feature:** a new thing the product can do. Story or Feature: either is fine.
+- **Task:** work that needs doing that nobody sees directly: setup, research, docs, a check.
+- **Bug:** something that should work and doesn't.
+- **Subtask:** a step of one of those that someone else may take.
+- Unsure: Task. Put it under the epic it belongs to; if none fits, leave it with no parent.
+
 Write the objective as what done looks like to the person accepting it, in their words, one or
 two sentences. The technical detail belongs in the design doc or the commit.
 

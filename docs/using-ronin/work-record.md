@@ -80,9 +80,8 @@ item delete w12                     # with its subtasks; an epic's other childre
 ```
 
 A new item lands on whoever made it: a lead's on its Team (a lead of several names one with
-`--team`, or the create is refused naming its Teams), any other Agent's on itself. An Agent's
-new item goes under its Team's epic, or the create is refused naming the Team's open epics; an
-epic is the lead's, and one a member makes goes to its Team. Items from Jira come as Jira has them. Parent is a field, as in Jira:
+`--team`, or the create is refused naming its Teams), any other Agent's on itself. An Agent
+makes any kind, an Epic too, with a parent or none. Items from Jira come as Jira has them. Parent is a field, as in Jira:
 `item edit --parent` changes the parent and the level in one act, one below the new
 parent; with no parent the level stays. Any level-0 item moved under another becomes a
 subtask (Jira's convert to subtask).
