@@ -2,8 +2,7 @@
  * THE SERVICES ACTIVATION LEG — the parts that can be judged without a machine.
  *
  * A unit test here is a gate in BYOIN's sense, so it opens no socket and touches no store.
- * The end-to-end walk (request → email → confirm → poll → entitlement) needs both legs
- * running and lives in ronin-shiwake's acceptance script, not here.
+ * The Submit → install path is driven in self-hosted-install.test.ts.
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -11,7 +10,7 @@ import { readFile } from 'node:fs/promises';
 import { maskEmail, publicState } from '../src/activation/state.js';
 import { EgressRefused } from '../src/activation/transport.js';
 import { servicesSubscription, setteiServices } from '../src/machine-settings.js';
-import { showsConfirmationAddress, showsServicesHeader } from '../public/js/services-activation.js';
+import { showsServicesHeader } from '../public/js/services-activation.js';
 
 test('an address is masked for display and never shown back in full', () => {
   assert.equal(maskEmail('person@example.com'), 'p*****@example.com');
@@ -21,12 +20,10 @@ test('an address is masked for display and never shown back in full', () => {
 
 test('the state the browser sees carries no secret, only an identifier', () => {
   const view = publicState({
-    stage: 'verified',
+    stage: 'installed',
     email_masked: 'p*****@example.com',
-    activation_id: 'act_abc',
     entitlement_id: 'ent_abc',
-    terms_version: '2026-08-01',
-    requested_at: 'x', verified_at: 'y', expires_at: 'z', resend_available_at: null,
+    verified_at: 'y',
     error_at_stage: null, error_message: null, updated_at: 'now',
   });
 
@@ -39,18 +36,15 @@ test('the state the browser sees carries no secret, only an identifier', () => {
   assert.equal(view.email_masked, 'p*****@example.com');
   assert.equal(view.error_at_stage, null);
 
-  // The activation id is not part of the browser's view either: it is the thing the claim
-  // secret authenticates against, and there is no reason for a page to hold it.
-  assert.ok(!keys.includes('activation_id'));
+  // The email-confirmation loop is gone, and nothing of it reaches the browser.
+  for (const gone of ['activation_id', 'terms_version', 'expires_at', 'resend_available_at']) assert.ok(!keys.includes(gone), gone);
 });
 
 test('SETTEI derives subscription identity from the activation result', () => {
   const activation = {
-    stage: 'verified' as const,
-    email_masked: 'p*****@example.com',
-    activation_id: 'act_abc', entitlement_id: 'ent_abc',
-    terms_version: '2026-08-01', requested_at: 'x', verified_at: 'y', expires_at: 'z',
-    resend_available_at: null, error_at_stage: null, error_message: null, updated_at: 'now',
+    stage: 'installed' as const,
+    email_masked: 'p*****@example.com', entitlement_id: 'ent_abc', verified_at: 'y',
+    error_at_stage: null, error_message: null, updated_at: 'now',
   };
 
   const set = setteiServices(activation);
@@ -62,41 +56,27 @@ test('SETTEI derives subscription identity from the activation result', () => {
 
 test('SETTEI reports the activation lifecycle accurately before entitlement', () => {
   const base = {
-    email_masked: 'p*****@example.com', activation_id: 'act_abc', entitlement_id: null,
-    terms_version: '2026-08-01', requested_at: 'x', verified_at: null, expires_at: 'z',
-    resend_available_at: null, error_at_stage: null, error_message: null, updated_at: 'now',
+    email_masked: null, entitlement_id: null, verified_at: null,
+    error_at_stage: null, error_message: null, updated_at: 'now',
   };
-  assert.equal(servicesSubscription(publicState({ ...base, stage: 'awaiting_email' })),
-    'free cowork: Services confirmation pending');
   assert.equal(servicesSubscription(publicState({
-    ...base, stage: 'error', error_at_stage: 'awaiting_email', error_message: 'HQ unavailable',
+    ...base, stage: 'error', error_at_stage: 'installing', error_message: 'download failed',
   })), 'free cowork: Services activation needs attention');
   assert.equal(servicesSubscription(publicState({ ...base, stage: 'not_requested' })),
     'free cowork: no entitlement recorded');
 });
 
-test('workspace status checks Shiwake only after the owner presses Check status', async () => {
+test('the Services header contacts nothing: no Check status, no confirmation recovery', async () => {
   const source = await readFile(new URL('../public/js/services-activation.js', import.meta.url), 'utf8');
-  assert.match(source, /Check status/);
-  assert.match(source, /activation\/poll/);
-  assert.equal((source.match(/activation\/poll/g) || []).length, 1,
-    'the Shiwake poll endpoint appears only in the Check status click handler');
+  assert.doesNotMatch(source, /activation\/poll|registration\/recovery|Check status|Resend confirmation/);
   assert.doesNotMatch(source, /visibilityState|setInterval/, 'returning to the page asks nothing; the push and the socket\'s reopen keep it current');
   assert.match(source, /store\.listen\('services-setup'/);
   assert.match(source, /store\.onOpen\(\(\) => \{ void refresh\(\); \}\)/);
 });
 
-test('the dropdown stops showing a confirmation address once confirmation is complete', () => {
-  assert.equal(showsConfirmationAddress({ stage: 'awaiting_email' }), true);
-  assert.equal(showsConfirmationAddress({ stage: 'expired' }), true);
-  assert.equal(showsConfirmationAddress({ stage: 'error', error_at_stage: 'awaiting_email' }), true);
-  for (const stage of ['verified', 'installing', 'installed']) {
-    assert.equal(showsConfirmationAddress({ stage }), false, `${stage} has no pending confirmation address`);
-  }
-});
-
 test('the Services header finishes as a transient acknowledgement, not a permanent badge', () => {
-  assert.equal(showsServicesHeader(true, 'awaiting_email'), true);
+  assert.equal(showsServicesHeader(true, 'error'), true);
+  assert.equal(showsServicesHeader(true, 'not_requested'), false);
   assert.equal(showsServicesHeader(true, 'installing'), true);
   assert.equal(showsServicesHeader(true, 'installed', false), true,
     'the transition into installed may briefly acknowledge success');
@@ -124,8 +104,7 @@ test('EgressRefused exists as its own kind, so a blocked call is not read as a n
  * roster, and a stall becomes an error that keeps the entitlement.
  */
 test('the states an install can end in are exactly: installed, or an error that keeps the entitlement', () => {
-  const stages = ['not_requested', 'requesting', 'awaiting_email', 'verified',
-                  'installing', 'installed', 'expired', 'cancelled', 'address_changed', 'error'];
+  const stages = ['not_requested', 'installing', 'installed', 'error'];
 
   // `installing` is a transient, and the two ways out of it are both terminal and both named.
   assert.ok(stages.includes('installed'), 'success has a name');
@@ -133,17 +112,15 @@ test('the states an install can end in are exactly: installed, or an error that 
 
   // The rule the walk proved we needed: an install that stalls must not stay "installing".
   // Nothing may report success without the roster, and nothing may report failure by
-  // discarding the entitlement — retrying an install costs no new email.
+  // discarding an entitlement this machine already holds.
   const view = publicState({
-    stage: 'error', email_masked: 'g***@example.com', activation_id: 'act_x',
-    entitlement_id: 'ent_x', terms_version: '2026-08-01', requested_at: 'a',
-    verified_at: 'b', expires_at: 'c', resend_available_at: null,
+    stage: 'error', email_masked: 'g***@example.com', entitlement_id: 'ent_x', verified_at: 'b',
     error_at_stage: 'installing',
-    error_message: 'Services did not finish installing. Your entitlement is safe.',
+    error_message: 'Ronin Services did not install: could not download release v1.7.0',
     updated_at: 'now',
   });
   assert.equal(view.entitlement_id, 'ent_x', 'the entitlement survives a failed install');
-  assert.match(view.error_message!, /entitlement is safe/);
+  assert.match(view.error_message!, /did not install/);
 });
 
 /**

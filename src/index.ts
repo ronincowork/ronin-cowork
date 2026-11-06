@@ -40,7 +40,7 @@ import { registerDrop } from './routes/drop-api.js';
 import { registerDesks } from './routes/desks-api.js';
 import { registerTeamPage } from './routes/team-page-api.js';
 import { startTomodachiSender } from './activation/tomodachi.js';
-import { registerServicesActivation, resumeInstallWatch, servicesSetupWrites, startConfirmationCheck } from './routes/services-activation-api.js';
+import { registerServicesActivation, resumeInstallWatch, servicesSetupWrites } from './routes/services-activation-api.js';
 import { registerMachineSettings } from './routes/machine-settings-api.js';
 import { registerCampaigns } from './routes/campaigns-api.js';
 import { ensureInitialCampaign } from './campaigns.js';
@@ -320,7 +320,6 @@ for (const s of services) {
 mountServiceRoutes(app);
 
 void resumeInstallWatch();
-startConfirmationCheck(); // asks Ronin HQ while a Services request awaits its emailed link
 
 registerSessions(app); // per-session: kill/harakiri, meta, ctx, tegami, send — src/routes/sessions-api.ts
 registerWipeboards(app); // /api/wipeboards* — src/routes/wipeboards-api.ts
