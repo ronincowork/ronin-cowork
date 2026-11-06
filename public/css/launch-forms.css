@@ -113,12 +113,9 @@
   .epic-items[hidden] { display: none; }
   .epic-bars { display: flex; flex-direction: column; gap: var(--space-inline); }
   .epic-bars > button.item-bar { font-family: inherit; }
-  /* The picked Epic's own bar (KAN-309): its details, read only; its status moves by the field beside the filters. */
-  .epic-detail > button.item-bar { width: 100%; font-family: inherit; cursor: default; }
-  .epic-board .epic-detail > button.item-bar:hover { border-color: var(--line-2); }
-  .epic-answer { margin: calc(var(--space-subsection) * -1 + var(--space-row)) 0 0; color: var(--muted); font-size: var(--form-note); }
-  .epic-answer:empty { display: none; }
-  .epic-answer[data-state='failed'] { color: var(--status-red); }
+  /* The picked Epic's own bar (KAN-309): its details; pressed, its reading opens under it as any bar's (KAN-310). */
+  .epic-detail { display: flex; flex-direction: column; gap: var(--space-inline); }
+  .epic-detail > button.item-bar { width: 100%; font-family: inherit; }
   .epic-reading { margin-left: var(--space-inset); padding: var(--space-inline) var(--space-inset); border: var(--edge) solid var(--line); border-radius: var(--radius-large); background: var(--surface); }
   /* THE TEAM'S EPICS on the Team workbench (KAN-232): the card is flush (createSurface's flush): the
      board inside keeps its own inset, and nothing here reaches into the kit. */

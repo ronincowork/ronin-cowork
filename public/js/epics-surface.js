@@ -6,16 +6,16 @@
  * THE BOARD (owner, 2026-11-06, w334, w340): every Epic surface is `createEpicBoard`, borrowed
  * from the phalanx but its own: a row of stones across the top, one per Epic; the pressed one is
  * the Epic shown below (where it comes from and its holder, then its own details as the island's
- * bar: KAN-309), under two ERABI questions, Assigned (Yes / No) and Status (the open ones on
- * arrival), with the Epic's own status, a single pick, beside them; its items as the item island's bars
+ * bar, pressed open to its reading like any bar, its Status moved there: KAN-309, KAN-310), under
+ * two ERABI questions, Assigned (Yes / No) and Status (the open ones on arrival); its items as the item island's bars
  * (tile-island.js itemBar) grouped by status. A stone switches the Epic on the same surface;
  * nothing opens another. The Epics workbench's Tilespace 1 starts on none picked; an Epic's
  * selector card, a dragged stone (`createEpicRecord`) and a Team's Epics card start on theirs.
  *
  * The Epics and their items are the store's pushed `epics` and `epicItems` (js/store.js;
  * KAN-190), narrowed to the Campaign this tab looks at (`createEpicsRead`). Nothing asks the
- * server on a push: the only requests are an opened bar's whole reading (its status moves there)
- * and the Epic's own status moved (the work-item transition route, as every status change).
+ * server on a push: the only request is an opened bar's whole reading (its status moves there),
+ * the Epic's own bar included.
  */
 import { WorkspaceKit } from './workspace-kit.js';
 import { t } from './lexicon.js';
@@ -101,9 +101,8 @@ export const byStatus = (items, picked = []) => (picked.length ? items.filter((i
 
 /**
  * ONE EPIC'S ITEMS (owner, 2026-11-06, w334): two questions in ERABI (ask.js) — Assigned (Yes /
- * No) and Status, the open ones picked on arrival — and in the same row the Epic's own status
- * (KAN-309), one pick of the space's statuses, moved through /transition (a refusal puts it
- * back and says why on the line under the row) — then the items as the island's bars
+ * No) and Status, the open ones picked on arrival — under the Epic's own bar (KAN-309), which
+ * opens to its reading as any bar does (KAN-310) — then the items as the island's bars
  * (tile-island.js itemBar) going down the page, grouped by status in workflow order. A Subtask
  * whose Task is shown follows it as a slimmer bar. A bar pressed opens the item's reading under
  * it (work-items-surface.js renderItemDetail: its status to move, comments, a box to comment);
@@ -115,48 +114,25 @@ function epicItems(epicId, { epicsRead }) {
   const open = new Set();
   const root = el('div', 'epic-items');
   const epicNow = () => epicsRead.list().find((row) => row.id === epicId);
-  // The Epic's own status (KAN-309): known from the push, moved through the transition route.
-  let epicStatus = epicNow()?.status || '';
-  const epicStatusRows = () => statusesOf([epicNow()]).map((status) => ({ v: status, l: status }));
-  const answer = el('p', 'epic-answer');
-  answer.setAttribute('role', 'status');
-  async function moveEpic(next) {
-    if (!next || next === epicStatus) return;
-    const was = epicStatus;
-    answer.dataset.state = '';
-    answer.textContent = t('work_items.moving', 'Moving…');
-    const result = await request(`/api/work-items/${encodeURIComponent(epicId)}/transition`, { method: 'POST', json: { status: next } });
-    if (result.ok) { epicStatus = next; answer.textContent = `${was} → ${next}`; return; }
-    questions.set('epic_status', was);
-    answer.dataset.state = 'failed';
-    answer.textContent = result.message || t('work_items.move_failed', 'The status did not change.');
-  }
   const questions = ask([{ fields: [
     { key: 'assigned', label: t('epics.assigned', 'Assigned'), blank: t('epics.all', 'All'), many: true, options: [
       { v: 'yes', l: t('epics.yes', 'Yes') }, { v: 'no', l: t('epics.no', 'No') },
     ] },
     { key: 'status', label: t('epics.status', 'Status'), blank: t('epics.all', 'All'), many: true,
       options: STATUSES.map((status) => ({ v: status, l: status })) },
-    { key: 'epic_status', label: t('epics.epic_status', 'Epic status'), options: epicStatusRows() },
-  ] }], { value: { assigned, status: statuses, epic_status: epicStatus }, density: 'tight', onChange: ({ assigned: a, status: st, epic_status: mine }, key) => {
-    if (key === 'epic_status') { void moveEpic(String(mine || '')); return; }
+  ] }], { value: { assigned, status: statuses }, density: 'tight', onChange: ({ assigned: a, status: st }) => {
     assigned = (a || []).map(String);
     statuses = (st || []).map(String);
     paint();
   } });
-  /** A push that moved the Epic's status (here or anywhere) moves the field to it. */
-  function hearEpic() {
-    const now = epicNow()?.status || '';
-    if (now === epicStatus && questions.value().epic_status === now) return;
-    epicStatus = now;
-    questions.options('epic_status', epicStatusRows());
-    questions.set('epic_status', now);
-  }
   const groups = el('div', 'epic-groups');
-  root.append(questions.el, answer, groups);
+  // The Epic's own bar (KAN-309, KAN-310): its details as the island's bar reads any item; pressed,
+  // it opens its reading under it as an item's bar does, its Status to move there.
+  const detail = el('div', 'epic-detail');
+  root.append(detail, questions.el, groups);
 
   /** An opened bar's reading, from the item's whole read (the push is slim). */
-  function reading(item) {
+  function reading(item, { children = true } = {}) {
     const host = el('div', 'epic-reading');
     host.dataset.item = item.id;
     void request(`/api/work-items/${encodeURIComponent(item.id)}`, { cache: 'no-store' }).then(async (result) => {
@@ -165,14 +141,21 @@ function epicItems(epicId, { epicsRead }) {
       const { renderItemDetail, holderOf } = await import('./work-items-surface.js');
       const whole = result.data.item;
       renderItemDetail(host, whole, { holder: holderOf({ ...whole, held_by: result.data.held_by }), history: false,
-        children: Array.isArray(result.data.children) ? result.data.children : [],
+        children: children && Array.isArray(result.data.children) ? result.data.children : [], // an Epic's are the board below
         openChild: (child) => { open.add(child.id); paint(); } });
     });
     return host;
   }
 
   function paint() {
-    hearEpic();
+    const epic = epicNow();
+    if (epic) {
+      const holder = holderOfItem(epic);
+      const node = itemBar(epic, { extra: [holder ? holderWords(holder) : t('epics.unassigned', 'Unassigned')],
+        onPress: () => { if (!open.delete(epic.id)) open.add(epic.id); paint(); } });
+      node.setAttribute('aria-expanded', String(open.has(epic.id)));
+      detail.replaceChildren(node, ...(open.has(epic.id) ? [reading(epic, { children: false })] : []));
+    } else detail.replaceChildren();
     const every = epicsRead.items(epicId);
     const items = byStatus(byAssigned(every, assigned), statuses);
     const shown = new Set(items.map((item) => item.id));
@@ -226,7 +209,6 @@ export function createEpicBoard({ epicsRead, header = true, initial = '' }) {
   let selected = initial;
   let view = null;
   let source = null;
-  let detail = null;
   let drawn = '';
 
   function stone(epic) {
@@ -271,14 +253,8 @@ export function createEpicBoard({ epicsRead, header = true, initial = '' }) {
       strip.replaceChildren(...(epics.length ? epics.map(stone) : [el('p', 'epic-empty', t('epics.none', 'No Epics yet.'))]));
     }
     if (!epic) { below.replaceChildren(...(epics.length ? [el('p', 'epic-empty', t('epics.pick_epic', 'Pick an Epic to see its work items.'))] : [])); return; }
-    if (!view) { source = el('div', 'epic-source'); detail = el('div', 'epic-detail'); view = epicItems(selected, { epicsRead }); below.replaceChildren(source, detail, view.el); }
+    if (!view) { source = el('div', 'epic-source'); view = epicItems(selected, { epicsRead }); below.replaceChildren(source, view.el); }
     source.replaceChildren(el('span', '', epic.external?.jira?.key ? `Jira ${epic.external.jira.key}` : t('epics.ronin_only', 'Ronin only')), holderButton(epic));
-    // The Epic's own details (KAN-309), as the island's bar reads any item: kind, key, title,
-    // status, objective, last comment, holder. Its status is moved by the field beside the filters.
-    const holder = holderOfItem(epic);
-    const bar = itemBar(epic, { extra: [holder ? holderWords(holder) : t('epics.unassigned', 'Unassigned')] });
-    bar.tabIndex = -1;
-    detail.replaceChildren(bar);
     view.paint();
   }
   let stop = null;

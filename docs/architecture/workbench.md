@@ -181,10 +181,9 @@ bars (`tile-island.js` `itemBar`) grouped by status in workflow order, a Subtask
 a bar says (`epicsPush`: the objective and last comment cut short, comment count, last move, last hand-in). A bar
 pressed opens the item's reading under it (`renderItemDetail`, its own read). Every Epic surface is that board (w340,
 owner 2026-11-06): the selected Epic's source line (Jira key, holder) heads its items, then the Epic's own details as
-the island's bar (KAN-309: kind, key, title, status, objective, last comment, holder; read only), and the Epic's own
-status is a third, single-pick ERABI field beside Assigned and Status (`epics.epic_status`, the space's statuses,
-`statusesOf`), written through `POST /api/work-items/:id/transition` like every status change, a refusal put back and
-said on the line under the row; a push that moves it moves the field. Another stone switches
+the island's bar (KAN-309: kind, key, title, status, objective, last comment, holder); pressed, it opens the Epic's
+reading under it exactly as an item's bar does (KAN-310: `renderItemDetail`, its Status moved there through
+`POST /api/work-items/:id/transition`; the Epic's children are left out, they are the board below). Another stone switches
 to that Epic on the same surface, nothing placed elsewhere. A dragged stone or an Epic's selector card places a
 board starting on that Epic (`epics.record`, `createEpicRecord`), and a Team's Epics card is the board over the
 Team's Epics (`createTeamEpics`; one Epic shows itself). The bar's crumb (`workspace-header.js`;

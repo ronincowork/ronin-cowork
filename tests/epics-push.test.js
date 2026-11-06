@@ -100,13 +100,10 @@ test('teamWork: the Team’s Epics, an Epic held and the Epic above each held it
   assert.deepEqual(epics.sort(), ['E1', 'E2', 'E3'], 'an Epic held, and the Epic above each held item, a subtask included');
 });
 
-test('the picked Epic shows its own bar and its own status as a single pick beside the filters (KAN-309)', async () => {
+test('the picked Epic is its own bar, opening to its reading as an item bar does; no Epic status beside the filters (KAN-309, KAN-310)', async () => {
   const surface = await readFile(new URL('../public/js/epics-surface.js', import.meta.url), 'utf8');
-  assert.match(surface, /\{ key: 'epic_status', label: t\('epics\.epic_status', 'Epic status'\), options: epicStatusRows\(\) \}/, 'one pick, in the same ask() row as Assigned and Status');
-  assert.match(surface, /const epicStatusRows = \(\) => statusesOf\(\[epicNow\(\)\]\)/, 'the space\'s statuses');
-  assert.match(surface, /request\(`\/api\/work-items\/\$\{encodeURIComponent\(epicId\)\}\/transition`, \{ method: 'POST', json: \{ status: next \} \}\)/, 'moved through the transition route');
-  assert.match(surface, /questions\.set\('epic_status', was\)/, 'a refusal puts the field back');
-  assert.match(surface, /itemBar\(epic, \{ extra: \[holder \? holderWords\(holder\)/, 'the Epic\'s details are the island\'s bar');
-  const lexicon = await readFile(new URL('../ronin_catalogs/lexicons/professional_en.md', import.meta.url), 'utf8');
-  assert.match(lexicon, /\*\*epics\.epic_status:\*\* Epic status/);
+  assert.doesNotMatch(surface, /epic_status/, 'the filter row is Assigned and Status only');
+  assert.match(surface, /itemBar\(epic, \{ extra: \[holder \? holderWords\(holder\)[^\n]*\n\s*onPress: \(\) => \{ if \(!open\.delete\(epic\.id\)\) open\.add\(epic\.id\); paint\(\); \} \}\)/, 'pressed, it opens as any bar');
+  assert.match(surface, /reading\(epic, \{ children: false \}\)/, 'the same reading path; its children are the board below');
+  assert.match(surface, /root\.append\(detail, questions\.el, groups\)/, 'the bar heads the filters');
 });
