@@ -650,9 +650,10 @@ nothing paints exactly this.
 - **team.arranged_by:** arranged by {from}
 - **team.state:** State
 
-## epics — epics-surface.js (the Epics board: a row of Epic stones, its Assigned and Status questions, its items as bars; w334)
+## epics — epics-surface.js (the Epics board: a row of Epic stones, the picked Epic's bar, its Assigned and Status questions and its own Epic status, its items as bars; w334, KAN-309)
 - **epics.all:** All
 - **epics.assigned:** Assigned
+- **epics.epic_status:** Epic status
 - **epics.yes:** Yes
 - **epics.no:** No
 - **epics.unassigned:** Unassigned

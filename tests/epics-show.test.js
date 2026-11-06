@@ -44,7 +44,7 @@ test('w334: the Epics board — a row of stones, two ERABI questions, the items 
 test('w340: every Epic surface is the board, a stone switching the Epic in place; nothing opens elsewhere', async () => {
   assert.match(source, /export const createEpicRecord = \(key, options\) => createEpicBoard\(\{ \.\.\.options, initial: key \}\);/, 'a selector card or dragged stone starts the board on its Epic');
   assert.match(source, /if \(!selected && epics\.length === 1\) selected = epics\[0\]\.id;/, 'one Epic shows itself');
-  assert.match(source, /below\.replaceChildren\(source, view\.el\)/, 'the source line heads the items');
+  assert.match(source, /below\.replaceChildren\(source, detail, view\.el\)/, 'the source line, then the Epic\'s own bar (KAN-309), head the items');
   assert.doesNotMatch(source, /createEpicStones|workbench\?\.place/, 'no stone places a surface elsewhere');
   const team = await readFile(new URL('../public/js/team-epics.js', import.meta.url), 'utf8');
   assert.match(team, /const board = createEpicBoard\(\{ epicsRead: read, header: false \}\);/, 'a Team\'s Epics card is the board over its Epics');
