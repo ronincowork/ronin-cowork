@@ -64,7 +64,7 @@ Team and each Agent; assigning moves the id from one list to another and never t
 item. **Parent** is one id on the item, or none. A Team holds; it does not contain.
 
 ```text
-item create --title "Agent-authored items" [--kind Task] [--parent w3] [--objective "…"] [--priority High] [--team surface]
+item create --parent w3 --title "Agent-authored items" [--kind Task] [--objective "…"] [--priority High]   # lands on you
 item read w12                       # fields, children, comments, attachments, links, history
 item search [--team surface] [--holder builder | none] [--parent w3 | --no-parent] [--status "In Progress"] [--kind Bug]
 item edit w12 --priority High

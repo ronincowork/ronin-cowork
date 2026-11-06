@@ -5,7 +5,7 @@ its work is without asking, so Agents keep them true as they go, never only at t
 Ronin has no board: a user who wants one uses Jira or Trello. You read items on the
 Agent workbench's **Work Items**, in a Team's **Work items**, and on a tile's
 ☰ Work record; every change goes through the `item` tool, and `item --help` has the exact
-syntax.
+syntax (`item <command> --help` for one command and its rule).
 
 ## The structure
 
@@ -121,7 +121,7 @@ the item.
 ## The item tool
 
 ```text
-item create --title "…" [--kind Task] [--parent w3] [--objective "…"] [--priority High] [--team surface]
+item create --parent w3 --title "…" [--kind Task] [--objective "…"] [--priority High]   # lands on you; a lead adds --team to give it out
 item read w12                       # fields, children, comments, attachments, links, history
 item search [--campaign home_machine] [--team surface] [--holder builder | none] [--parent w3 | --no-parent] [--status "In Progress"] [--kind Bug] [--archived]
 item edit w12 --objective "…" --priority High

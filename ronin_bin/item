@@ -22,8 +22,7 @@ Usage:
   item delete <ids> [--in-jira]
 <ids> is one id or several (w12 w13 KAN-65), each acted on in turn; every id an item has had
 finds it (a w id still finds the item after it takes its Jira key), here, in read, edit and
---parent. create answers "created <id> under <parent>" on its first line. --text matches
-every word in the title or objective, any case. An item Done five days is archived: off
+--parent. --text matches every word in the title or objective, any case. An item Done five days is archived: off
 every list and out of search unless --archived; item read still finds it.
 Status, kind, priority and link type are the space's own names, exactly; unconnected,
 Jira's: To Do, In Progress, In Review, Done; Epic, Task, Story, Bug, Feature, Subtask;
@@ -31,26 +30,40 @@ Highest, High, Medium, Low, Lowest; Blocks, Relates, Duplicate, Cloners. Anythin
 refused, naming the set. The kind sets the level: 1 Epic, 0 Task/Story/Bug/Feature,
 -1 Subtask; a new item is one below its parent, and --parent moves it there (to none, the
 level stays). The one rule: nothing goes below -1; children follow their parent
-("w39 can't go there.").
-create lands on you, or on your team when you lead one; leading several, name it with
---team. A new item needs an epic above it (--parent), unless it is an Epic.
+("w39 can't go there."). On a Jira-connected campaign, a parent or kind Jira would refuse
+is refused here, with the reason.
+create lands on you; --team is for a lead giving out work (a lead's create lands on its team;
+leading several, name it). A new item needs an epic above it (--parent), unless it is an
+Epic. It answers "created <id> under <parent>" on its first line.
 attach plan:<name> points an epic at its order (plan --help): stored as plan:<workspace>/<name>.
 watch tracks an item without holding it (yourself unless named; a team's on its roster).
-A move to In Review by its holder is a hand-in: the item goes to the Team, and --note is the
+transition to In Review by its holder is a hand-in: the item goes to the Team, and --note is the
 Handed in comment for the user (at most 280 characters; required under project management).
 handover is how an ending Agent hands an item on: the note becomes a comment headed "Handover
 from <you>", you come off, the receiver goes on, the status stays (--to-do puts it back to To
-Do). Can't decide? --flag "<the question>": it is flagged and your lead is told. On a Jira-connected
-campaign, a parent or kind Jira would refuse is refused here, with the reason.
+Do). Can't decide? --flag "<the question>": it is flagged and your lead is told.
 handoff takes you off and the receiver on; --from names the giver instead: take your team's
 item with item handoff <id> <you> --from team:<name>, and it shows on the team through you.
 delete takes the item's subtasks with it, in Ronin and in Jira; an epic's other children are
 left with no parent. An item that came from Jira is deleted only with --in-jira.
---trello, --github set an external key; blank clears. Every change adds a trail line.
+edit --trello, --github set an external key; blank clears. Every change adds a trail line.
 Related: work-record --help; team --help
 EOF_USAGE
 }
 case "${1:-}" in -h|--help|'') [ "$#" -le 1 ] || die 'Run item --help.'; usage; [ "$#" -eq 1 ]; exit $?;; esac
+# item <command> --help: that command's usage lines and its rule, not the whole page. The rules
+# come last in usage, each starting with its command's name, so a rule runs to the next one.
+for a in "$@"; do case "$a" in -h|--help) usage | python3 -c 'import re,sys
+v, text = sys.argv[1], sys.stdin.read().splitlines()
+verbs = {m for l in text if l.startswith("  ") for m in re.findall(r"\bitem (\w+)", l)}
+if v not in verbs: sys.exit("BAD-ARG: no item command %s; run item --help" % v)
+out, keep = [l for l in text if re.match(r"  item (un)?%s\b" % v, l)], False
+for l in text:
+    if l.startswith(("  ", "Usage", "Related")): keep = False; continue
+    first = l.split(" ", 1)[0]
+    if first in verbs: keep = first == v
+    if keep: out.append(l)
+print("\n".join(out))' "$1"; exit $?;; esac; done
 . "$TOOL_DIR/ronin-http.sh"
 ronin_connect || exit $?
 # The caller is named on every trail line: this session, or the shell user.
