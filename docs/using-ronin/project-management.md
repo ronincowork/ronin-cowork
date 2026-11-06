@@ -110,17 +110,20 @@ an item has a link on the Jira item that opens its chat.
 
 **In Ronin:**
 
-- **Epics workbench** (Campaign home › Epics, "What the work is"): a row of stones across the
-  top, one per epic in the Campaign, each with its Jira key (or Ronin only) and how many of
-  its items are open. Press one and below come **Assigned** (Yes / No) and **Status**, then its
-  items as bars grouped by status, each saying what the item is and who holds it
-  ("Team surface (lead surface_lead)", or "@agent"); a bar opens the item's reading. Drag a
-  stone into a tilespace to place that epic there. Press another stone to switch epics on the
-  same surface; a Team's Epics card is the same board. Archived items are not on it.
+- **Epics workbench** (Campaign home › Epics, "What the work is"): the Epics board. A row
+  of stones across the top, one per epic in the Campaign, each with its Jira key (or Ronin
+  only) and how many of its items are open. Press one and the epic shows below on the same
+  surface: its Jira key and who holds it, then **Assigned** (Yes / No) and **Status** (the open
+  statuses on arrival), then its items as bars grouped by status. A bar says what the item is
+  (its description, last comment, kind, who holds it, "Team surface (lead surface_lead)" or
+  "@agent", and when it last moved), and pressing it opens the item's reading under it. Press
+  another stone to switch epics there; nothing opens elsewhere. An epic's selector card, or a
+  stone dragged into a tilespace, places the same board starting on that epic. Archived items
+  are not on it.
 - **Team workbench › Waiting on you:** what waits on you, oldest first. **With the lead**
   (handed in, not yet on dev), **Ready to accept** (Accept, Send back) and **Stuck** (Reply).
-- **Team workbench › Epics:** the Team's epics; one opens straight onto its record, several
-  show as stones.
+- **Team workbench › Epics:** the same Epics board over the Team's epics, switching on the
+  one card; with a single epic, that one is shown.
 - **The item island:** on every Agent's tile, a pill for each open item it holds (Done is not
   on it, and Subtasks fold under their Task): the kind's Jira symbol, a status dot, ⚑ when
   flagged, and "handed in" or "on dev" with how long ago. Press a pill to read the item: its
