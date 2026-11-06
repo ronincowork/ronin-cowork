@@ -84,7 +84,7 @@ test('an Epic is a selector card, its stone drags to a tilespace, and its status
   assert.equal(holderOfItem({ holder: '' }), null);
 });
 
-test('teamWork: the Team’s items In Review and flagged, oldest first, with their wait and flag reason, and its Epics (KAN-232)', async () => {
+test('teamWork: the Team’s Epics, an Epic held and the Epic above each held item (KAN-232)', async () => {
   const { teamWork } = await import('../src/work-items-read.ts');
   const item = (id, level, parent, extra = {}) => ({ id, level, parent, title: id, status: 'To Do', holder: 'agent:sam', kind: 'Task', flagged: false, campaign_id: 'home', external: {}, trail: [], comments: [], created: { at: '2026-11-01T00:00:00.000Z', by: 'x' }, ...extra });
   const every = [
@@ -95,8 +95,7 @@ test('teamWork: the Team’s items In Review and flagged, oldest first, with the
     item('E3', 1, null, { holder: 'team:t' }),
   ];
   const held = ['a', 'b', 'c', 'a'].map((id) => every.find((one) => one.id === id)).concat([every.at(-1)]);
-  const { review, stuck, epics } = teamWork(held, every);
-  assert.deepEqual(review.map((one) => [one.id, one.since, one.jira]), [['b', '2026-11-02T02:00:00.000Z', ''], ['a', '2026-11-03T00:00:00.000Z', 'KAN-1']], 'oldest first, since its last move to In Review, once each');
-  assert.deepEqual(stuck.map((one) => [one.id, one.reason, one.holder]), [['c', 'needs a key', 'agent:sam']]);
+  const { epics, ...rest } = teamWork(held, every);
+  assert.deepEqual(rest, {}, 'the Team row carries its Epics only: no waiting reading (KAN-304)');
   assert.deepEqual(epics.sort(), ['E1', 'E2', 'E3'], 'an Epic held, and the Epic above each held item, a subtask included');
 });

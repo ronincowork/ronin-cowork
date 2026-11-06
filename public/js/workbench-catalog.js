@@ -20,7 +20,7 @@ export const WORKBENCH_TYPES = Object.freeze({
   launchTeam: 'launch.team', launchAgent: 'launch.agent', launchHelp: 'launch.help',
   commons: 'team.commons', workItems: WORK_ITEMS_TYPE, cron: 'cowork.cron-jobs',
   roster: 'cowork.team-roster', sessionRoster: 'cowork.session-roster', newTeamForm: 'cowork.new-team-form', newAgent: 'session.new-agent',
-  team: 'team.profile', archives: 'cowork.archives', teamWaiting: 'team.waiting', teamEpics: 'team.epics',
+  team: 'team.profile', archives: 'cowork.archives', teamEpics: 'team.epics',
   agentDocuments: 'agent.documents', agentTeams: 'agent.team-membership', agentComposition: AGENT_COMPOSITION_TYPE,
   campaignMachine: 'campaign.machine', campaignCloudAccount: 'campaign.cloud-account', campaignDefaults: 'campaign.defaults', campaignRoots: 'campaign.project-roots',
   campaignIdentity: 'campaign.identity', campaignInstallations: 'campaign.installations', campaignCreate: 'campaign.new', campaignJira: 'campaign.jira', campaignJiraItems: 'campaign.jira-items', campaignJiraPairs: 'campaign.jira-pairs',
@@ -47,8 +47,7 @@ export function registerWorkbenchCatalog() {
   via(WORKBENCH_TYPES.launchAgent, 'surface', 'agent', { label: () => t('launch.new_agent', 'New Agent'), summary: () => t('launch.new_agent_summary', 'Start an Agent in a Team or on its own.') });
   via(WORKBENCH_TYPES.launchHelp, 'surface', 'help', { label: () => t('help.title', 'Help'), summary: () => t('help.card_summary', 'What each step means, beside the step you are on.'), variant: 'dotted' });
   via(WORKBENCH_TYPES.commons, 'tabs', 'teamCommons', { className: 'wk-selector-utility', label: () => t('team.commons_card', 'Commons'), summary: () => t('team.commons_summary', 'See Roster / Docs / Wipeboard / Messages / Configuration') });
-  // WAITING ON YOU AND EPICS (owner, 2026-11-04; KAN-232): the Team's items waiting on the person, and its Epics (team-waiting.js).
-  via(WORKBENCH_TYPES.teamWaiting, 'surface', 'teamWaiting', { className: 'wk-selector-utility', label: () => t('team_waiting.title', 'Waiting on you') });
+  // EPICS (KAN-232): the Team's Epics on the Epics board (team-epics.js).
   via(WORKBENCH_TYPES.teamEpics, 'surface', 'teamEpics', { className: 'wk-selector-utility', label: () => t('epics.title', 'Epics') });
   add({ type: WORKBENCH_TYPES.workItems, header: 'surface', className: 'wk-selector-utility', label: () => t('work_items.title', 'Work Items'), discover: (_t, e) => e.workItemOffers(), create: ({ environment }) => environment.workItems() });
   via(WORKBENCH_TYPES.roster, 'surface', 'roster', { className: 'wk-selector-utility', label: () => t('campaign.coworks', 'Teams') });
@@ -114,9 +113,9 @@ export function registerWorkbenchCatalog() {
   // THE TEAM PAGE (owner, 2026-10-18): the selector holds Commons, the Agents, New Agent and the
   // hints (Agent vocabulary, Session controls — the selector's own, workbench.js). The composition
   // reader, Behaviors and Feedback stay placeable: the roster, New Agent and the bar place them.
-  // Waiting on you and Epics follow Commons (KAN-232); an Epic's record is placed by a pressed Epic stone, never a card.
+  // Epics follows Commons (KAN-232); an Epic's record is placed by a pressed Epic stone, never a card.
   // Defined after the Epics types: a profile names only registered types.
-  profiles.define(WORKBENCH_PROFILES.team, [WORKBENCH_TYPES.commons, WORKBENCH_TYPES.teamWaiting, WORKBENCH_TYPES.teamEpics, WORKBENCH_TYPES.epicRecord, WORKBENCH_TYPES.terminal, WORKBENCH_TYPES.newAgent, WORKBENCH_TYPES.agentComposition, BEHAVIOUR_SURFACE_TYPE, FEEDBACK_TYPE]);
+  profiles.define(WORKBENCH_PROFILES.team, [WORKBENCH_TYPES.commons, WORKBENCH_TYPES.teamEpics, WORKBENCH_TYPES.epicRecord, WORKBENCH_TYPES.terminal, WORKBENCH_TYPES.newAgent, WORKBENCH_TYPES.agentComposition, BEHAVIOUR_SURFACE_TYPE, FEEDBACK_TYPE]);
   // THE HELP WORKBENCH (owner, 2026-10-21): the help outline and Mika in chat, both solid cards (door-workbenches.js).
   add({ type: WORKBENCH_TYPES.helpOutline, header: 'surface', className: 'wk-selector-utility', label: () => t('help_outline.title', 'Help'), summary: () => t('help_outline.summary', 'The guides, starting with the four things to know'), create: ({ environment }) => environment.helpOutline() });
   add({ type: WORKBENCH_TYPES.helpMika, header: 'terminal', className: 'wk-selector-utility', label: () => 'Mika', summary: () => t('help_outline.mika_summary', 'Ask in plain words'), create: ({ environment }) => environment.helpMika() });

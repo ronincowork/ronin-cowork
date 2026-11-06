@@ -69,7 +69,7 @@ without handover: <agent>, <status>", it shows under Stuck, and the lead is told
 goes to nobody. An item nobody wants any more is deleted, not left in To Do. An epic is Done
 when what done looks like is met.
 
-On Waiting on you and in an item's view on the tile, the objective and the Handed in note come
+In an item's view on the tile, the objective and the Handed in note come
 first; the other comments (the Agent and lead deciding things, the item's record) fold under them.
 
 ## Three signals
@@ -120,8 +120,6 @@ an item has a link on the Jira item that opens its chat.
   another stone to switch epics there; nothing opens elsewhere. An epic's selector card, or a
   stone dragged into a tilespace, places the same board starting on that epic. Archived items
   are not on it.
-- **Team workbench › Waiting on you:** what waits on you, oldest first. **With the lead**
-  (handed in, not yet on dev), **Ready to accept** (Accept, Send back) and **Stuck** (Reply).
 - **Team workbench › Epics:** the same Epics board over the Team's epics, switching on the
   one card; with a single epic, that one is shown.
 - **The item island:** on every Agent's tile, a pill for each open item it holds (Done is not

@@ -661,16 +661,7 @@ nothing paints exactly this.
 - **epics.pick_epic:** Pick an Epic to see its work items.
 - **epics.none_picked:** No items for what Assigned and Status pick.
 
-## team_waiting — team-waiting.js (the Team workbench's Waiting on you and Epics cards; KAN-232)
-- **team_waiting.title:** Waiting on you
-- **team_waiting.with_lead:** With the lead
-- **team_waiting.ready:** Ready to accept
-- **team_waiting.stuck:** Stuck
-- **team_waiting.accept:** Accept
-- **team_waiting.send_back:** Send back
-- **team_waiting.reply:** Reply
-- **team_waiting.comment:** Comment
-- **team_waiting.none:** Nothing is waiting on you.
+## team_epics — team-epics.js (the Team workbench's Epics card; KAN-232)
 - **team_epics.none:** No Epics for this Team yet.
 - **epics.title:** Epics
 

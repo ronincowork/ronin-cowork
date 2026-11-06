@@ -42,8 +42,8 @@ test('every size in the reader is a token, and the tile overlay reads in the UI 
 });
 
 // What the user reads first (ITEM_HANDOVER): the objective and the Handed in note, before
-// Status; the other comments folded. Waiting on you reads in the same order.
-test('the reader and Waiting on you show the objective and the Handed in note first, other comments folded', async () => {
+// Status; the other comments folded.
+test('the reader shows the objective and the Handed in note first, other comments folded', async () => {
   const surface = await read('public/js/work-items-surface.js');
   const body = surface.slice(surface.indexOf('export function renderItemDetail'), surface.indexOf('/** A phalanx of item stones'));
   const at = (what) => { const i = body.indexOf(what); assert.ok(i >= 0, what); return i; };
@@ -54,11 +54,6 @@ test('the reader and Waiting on you show the objective and the Handed in note fi
   assert.match(body, /const folded = el\('details', 'wi-comments'\);/, 'the other comments fold');
   assert.match(surface, /export const HANDED_IN = 'Handed in: ';/);
   assert.match(await read('src/work-items.ts'), /export const HANDED_IN = 'Handed in: ';/, 'one heading, server and client');
-  const waiting = await read('public/js/team-waiting.js');
-  const card = waiting.slice(waiting.indexOf('function card(item, group)'));
-  assert.ok(card.indexOf('node.append(...readFirst(item))') < card.indexOf("const acts = el('div', 'epic-statuses')"), 'read first, then the actions');
-  const first = waiting.slice(waiting.indexOf('export function readFirst'), waiting.indexOf('/** Waiting on you: With the lead'));
-  assert.ok(first.indexOf('item.objective') < first.indexOf('item.handed_in') && first.indexOf('item.handed_in') < first.indexOf("el('details'"));
 });
 
 // w299 (owner via pm_lead): a Team's item reads as the Team's, with its lead; an Agent's as

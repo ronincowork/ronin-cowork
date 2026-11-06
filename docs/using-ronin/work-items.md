@@ -81,8 +81,7 @@ Agents move their items themselves with `item transition <id> "<status>"`, by na
 to any status is allowed. One move is made for them: a hand-in that names the item
 (`worktree-desk hand-in <repo> --item <id>`) moves it to In Review, where the space has that
 status; the Agent keeps holding it (handing in code doesn't hand in the item). A promotion never changes a status; it puts its receipt on
-the item's trail. Done is set only by the person accepting the item: on the Team workbench's
-Waiting on you, in an item's reading (below), or, for an item paired to Jira, by the Jira user,
+the item's trail. Done is set only by the person accepting the item: in an item's reading (below), or, for an item paired to Jira, by the Jira user,
 which comes back by polling. A hand-in that names no item moves no status.
 
 **An item's reading** is the same wherever an item opens: over a tile from its item island, or in
@@ -102,7 +101,7 @@ and, once a promotion put that hand-in on dev, when and its receipt (`↑ by ite
 Handed in note, when one was left, reads under it.
 
 **Who holds it, and where it started.** A holder reads the same on the reader, the Work Items
-stones, the Epic cards and Waiting on you: an Agent is `@<agent>`, a Team is `Team <name> (lead
+stones and the Epic cards: an Agent is `@<agent>`, a Team is `Team <name> (lead
 <lead>)`, so an item the Team holds never reads as its lead's own; when several hold it, each is
 named. Details also give the id (and the Jira key, when it has one), the kind with its level
 (`Epic · 1`, `Task · 0`, `Subtask · -1`), and **Started in**: `from Jira (<reporter>)` for an
