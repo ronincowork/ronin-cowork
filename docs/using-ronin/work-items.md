@@ -121,7 +121,7 @@ the item.
 ## The item tool
 
 ```text
-item create --parent w3 --title "…" [--kind Task] [--objective "…"] [--priority High]   # lands on you; a lead adds --team to give it out
+item create --parent w3 --title "…" [--kind Task] [--objective "…"] [--priority High]   # lands on you; --team surface puts it on a Team
 item read w12                       # fields, children, comments, attachments, links, history
 item search [--campaign home_machine] [--team surface] [--holder builder | none] [--parent w3 | --no-parent] [--status "In Progress"] [--kind Bug] [--archived]
 item edit w12 --objective "…" --priority High

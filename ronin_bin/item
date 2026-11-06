@@ -32,8 +32,9 @@ refused, naming the set. The kind sets the level: 1 Epic, 0 Task/Story/Bug/Featu
 level stays). The one rule: nothing goes below -1; children follow their parent
 ("w39 can't go there."). On a Jira-connected campaign, a parent or kind Jira would refuse
 is refused here, with the reason.
-create lands on you; --team is for a lead giving out work (a lead's create lands on its team;
-leading several, name it). Any kind, an Epic too, with --parent or none. It answers "created <id> under <parent>" on its first line.
+create lands on you, or with --team <t> on that Team (a lead's create lands on its team;
+leading several, name it). Any kind, an Epic too, with --parent or none. It answers
+"created <id> under <parent>" on its first line.
 attach plan:<name> points an epic at its order (plan --help): stored as plan:<workspace>/<name>.
 watch tracks an item without holding it (yourself unless named; a team's on its roster).
 transition to In Review by its holder is a hand-in: the item goes to the Team, and --note is the
