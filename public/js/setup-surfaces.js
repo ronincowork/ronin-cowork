@@ -347,14 +347,29 @@ function createRegisterSurface(context) {
   const stopProgress = watchSetupProgress(context.environment, paint);
   if (zone) out.content.append(zone.el);
   body.append(identity, form, userIntro, declined, recoveryOptions, notice); out.content.append(body);
+  // An office on an office_host is registered by its provisioning: no form, no header zone, no
+  // Delete registration (which would drop the office's entitlement). One sentence says so. A
+  // record that will not read is a fault, treated the same way, never as self-hosted.
+  const hostedNotice = el('p', 'setup-notice setup-register-hosted');
+  const putAwayForHosted = (office) => {
+    const unreadable = office.hosting === 'unreadable';
+    hostedNotice.textContent = unreadable
+      ? t('setup_surface.register_office_unreadable', 'Office record unreadable: {error}. Registration waits until the record reads.', { error: office.error || '—' })
+      : t('setup_surface.register_hosted', 'Hosted office: registered by its provisioning. There is nothing to register here.');
+    hostedNotice.dataset.tone = unreadable ? 'bad' : 'ok';
+    out.content.replaceChildren(hostedNotice);
+    notifySummary(SETUP_SURFACE_TYPES.register, 'registered', context.workbench);
+  };
   return { el: out.el, show: async () => {
     const routeKind = context.environment?.kinds?.get?.()[0] || '';
     kind.set({ build: 'build_software', life: 'life_assistants', research: 'research_writing', other: 'other' }[routeKind] || '');
     own.value = context.environment?.setupRuntime?.preferences?.path_note || '';
-    const [result, intro] = await Promise.all([
+    const [office, result, intro] = await Promise.all([
+      request('/api/office', { cache: 'no-store' }),
       request('/api/setup/registration', { cache: 'no-store' }),
       request('/api/setup/user-intro', { cache: 'no-store' }),
     ]);
+    if (office.ok && office.data?.hosting !== 'self_hosted') { putAwayForHosted(office.data); return; }
     current = result.ok ? result.data : null;
     if (intro.ok) {
       userIntroText.value = intro.data?.intro || '';
