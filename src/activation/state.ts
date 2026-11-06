@@ -2,21 +2,16 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { storeDir } from '../resources.js';
 
-export type Stage =
-  | 'not_requested' | 'requesting' | 'awaiting_email' | 'verified'
-  | 'installing' | 'installed'
-  | 'expired' | 'cancelled' | 'address_changed' | 'error';
+/** Where the Services install stands. The email-confirmation stages are gone: a stored
+ * record still carrying one reads as not_requested, so its Install action is offered again. */
+export type Stage = 'not_requested' | 'installing' | 'installed' | 'error';
+const STAGES: readonly Stage[] = ['not_requested', 'installing', 'installed', 'error'];
 
 export interface ActivationState {
   stage: Stage;
   email_masked: string | null;
-  activation_id: string | null;
   entitlement_id: string | null;
-  terms_version: string | null;
-  requested_at: string | null;
   verified_at: string | null;
-  expires_at: string | null;
-  resend_available_at: string | null;
   error_at_stage: Stage | null;
   error_message: string | null;
   updated_at: string;
@@ -24,8 +19,7 @@ export interface ActivationState {
 
 const EMPTY: ActivationState = {
   stage: 'not_requested',
-  email_masked: null, activation_id: null, entitlement_id: null, terms_version: null,
-  requested_at: null, verified_at: null, expires_at: null, resend_available_at: null,
+  email_masked: null, entitlement_id: null, verified_at: null,
   error_at_stage: null, error_message: null, updated_at: new Date(0).toISOString(),
 };
 
@@ -40,11 +34,21 @@ export function maskEmail(value: string): string {
 
 export async function readState(): Promise<ActivationState> {
   try {
-    const raw = await fs.readFile(file(), 'utf8');
-    return { ...EMPTY, ...(JSON.parse(raw) as Partial<ActivationState>) };
+    const raw = JSON.parse(await fs.readFile(file(), 'utf8')) as Record<string, unknown>;
+    const s: ActivationState = { ...EMPTY };
+    for (const key of Object.keys(EMPTY) as (keyof ActivationState)[]) if (key in raw) (s as any)[key] = raw[key];
+    return normalize(s);
   } catch {
     return { ...EMPTY };
   }
+}
+
+/** An obsolete email-loop stage (or an error raised in one) becomes not_requested. Nothing
+ * else is touched: the entitlement identifier and the token file stay as they are. */
+function normalize(s: ActivationState): ActivationState {
+  const obsoleteError = s.stage === 'error' && s.error_at_stage !== 'installing';
+  if (STAGES.includes(s.stage) && !obsoleteError) return s;
+  return { ...s, stage: 'not_requested', error_at_stage: null, error_message: null };
 }
 
 export async function writeState(patch: Partial<ActivationState>): Promise<ActivationState> {
@@ -64,11 +68,7 @@ export function publicState(s: ActivationState) {
     stage: s.stage,
     email_masked: s.email_masked,
     entitlement_id: s.entitlement_id,        // an identifier, not a credential
-    terms_version: s.terms_version,
-    requested_at: s.requested_at,
     verified_at: s.verified_at,
-    expires_at: s.expires_at,
-    resend_available_at: s.resend_available_at,
     error_at_stage: s.error_at_stage,
     error_message: s.error_message,
   };

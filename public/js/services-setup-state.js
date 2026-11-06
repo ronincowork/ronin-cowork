@@ -7,47 +7,20 @@ import { t } from './lexicon.js';
 
 const step = (id, caption, label, { done = false, enabled = true, act = null, title = '' } = {}) => ({ id, caption, label, done, enabled, act, title });
 
-/** Where the registration stands: its state, tone words, and the Register step. */
-function registrationRow(registration, record) {
+/** Where the registration stands: its state, tone words, and the Register step. Submitting
+ * the form completes registration (email or anonymous); no confirmation is asked for. */
+function registrationRow(registration) {
   const reg = registration?.ok ? registration.data || {} : {};
-  const stage = record.stage || reg.services_activation || 'not_requested';
   const caption = t('services_setup.step_register', 'Register');
   const row = (state, tone, status, next, stepIn) => ({ state, tone, status, next, step: stepIn });
-  if (reg.services_entitled === true) {
-    return row('entitled', 'ok', t('services_setup.status_entitled', 'Registered · Ready to install'),
-      t('services_setup.next_entitled', 'Install fetches Services from Ronin HQ, verifies it, and restarts Ronin’s server. The page reconnects when Ronin returns.'),
+  if (reg.status === 'registered' || reg.status === 'anonymous') {
+    return row('registered', 'ok', t('services_setup.status_registered', 'Registered · Ready to install'),
+      t('services_setup.next_registered', 'Install fetches Services, verifies it, and restarts Ronin’s server. The page reconnects when Ronin returns.'),
       step('register', caption, t('services_setup.done', 'Done'), { done: true, enabled: false }));
   }
-  if (!registration?.ok || !reg.status || reg.status === 'optional') {
-    return row('unregistered', '', t('services_setup.status_not_installed', 'Not installed on this machine'),
-      t('services_setup.next_register', 'Register with an email address and Ronin installs Services from HQ. Local Ronin keeps working without it.'),
-      step('register', caption, t('services_setup.register', 'Register'), { act: 'register' }));
-  }
-  if (reg.status === 'anonymous') {
-    return row('anonymous', '', t('services_setup.status_anonymous', 'Not installed · anonymous hello sent'),
-      t('services_setup.next_anonymous', 'The hosted install goes to an email address. Register with one to continue.'),
-      step('register', caption, t('services_setup.register', 'Register'), { act: 'register' }));
-  }
-  if (stage === 'requesting') {
-    return row('sending', 'warn', t('services_setup.status_sending', 'Sending the confirmation email…'),
-      t('services_setup.next_sending', 'Ronin is asking HQ to send it. This surface updates when it is sent.'),
-      step('register', caption, t('services_setup.sending', 'Sending…'), { enabled: false }));
-  }
-  if (stage === 'expired') {
-    return row('expired', 'bad', t('services_setup.status_expired', 'Confirmation link expired'),
-      t('services_setup.next_expired', 'Ask for a fresh email from Register. Nothing else changed.'),
-      step('register', caption, t('services_setup.register', 'Register'), { act: 'register' }));
-  }
-  if (stage === 'error' && record.error_at_stage !== 'installing') {
-    return row('send_failed', 'bad', t('services_setup.status_send_failed', 'Waiting to send'),
-      t('services_setup.next_send_failed', 'HQ could not be reached. Ronin retries on its own; Check status asks again now.'),
-      step('register', caption, t('services_setup.check', 'Check status'), { act: 'check' }));
-  }
-  const email = reg.email_masked || record.email_masked || '';
-  return row('awaiting_email', 'warn',
-    email ? t('services_setup.status_awaiting_to', 'Confirmation email sent to {email}', { email }) : t('services_setup.status_awaiting', 'Confirmation email sent'),
-    t('services_setup.next_awaiting', 'Open the link in that email; any device works. Resend or change the address from Register.'),
-    step('register', caption, t('services_setup.check', 'Check status'), { act: 'check' }));
+  return row('unregistered', '', t('services_setup.status_not_installed', 'Not installed on this machine'),
+    t('services_setup.next_register', 'Register and Ronin installs Services. Local Ronin keeps working without it.'),
+    step('register', caption, t('services_setup.register', 'Register'), { act: 'register' }));
 }
 
 /**
@@ -60,18 +33,17 @@ export function servicesSetupModel(registration, installed, activation = null) {
   const record = activation?.ok ? activation.data || {} : {};
   const stage = record.stage || facts.stage || 'not_requested';
   const parts = facts.installed === true || (Array.isArray(facts.parts) && facts.parts.length > 0);
-  const entitled = registration?.ok && registration.data?.services_entitled === true;
   const on = facts.switched_on === true;
-  const reg = registrationRow(registration, record);
+  const reg = registrationRow(registration);
   const installCaption = t('services_setup.step_install', 'Install');
   const switchCaption = t('services_setup.step_switch_on', 'Switch on');
-  const installing = !parts && entitled && stage === 'installing';
-  const installFailed = !parts && entitled && stage === 'error' && record.error_at_stage === 'installing';
+  const installing = !parts && stage === 'installing';
+  const installFailed = !parts && stage === 'error' && record.error_at_stage === 'installing';
 
   const installStep = parts ? step('install', installCaption, t('services_setup.done', 'Done'), { done: true, enabled: false })
     : installing ? step('install', installCaption, t('services_setup.installing', 'Installing…'), { enabled: false })
     : installFailed ? step('install', installCaption, t('services_setup.try_again', 'Try again'), { act: 'install' })
-    : step('install', installCaption, t('services_setup.install', 'Install'), { act: 'install', enabled: entitled, title: entitled ? '' : t('services_setup.register_first', 'Register first') });
+    : step('install', installCaption, t('services_setup.install', 'Install'), { act: 'install' });
   // The switch is a toggle, never Done: it drives the Campaign's choice and cascades to new teams and Agents.
   const switchStep = on ? { ...step('switch', switchCaption, t('services_setup.turn_off', 'Turn off'), { act: 'switch_off' }), pressed: true }
     : { ...step('switch', switchCaption, t('services_setup.turn_on', 'Turn on'), { act: 'switch_on', enabled: parts, title: parts ? '' : t('services_setup.install_first', 'Install first') }), pressed: false };
@@ -90,9 +62,7 @@ export function servicesSetupModel(registration, installed, activation = null) {
         record.error_message || t('services_setup.next_install_failed', 'The installer did not finish. Nothing else was changed.')), summary: t('services_setup.summary_install_failed', 'install failed') };
     }
     const summary = {
-      entitled: t('services_setup.summary_ready', 'ready to install'), sending: t('services_setup.summary_sending', 'sending'),
-      awaiting_email: t('services_setup.summary_awaiting', 'confirm email'), expired: t('services_setup.summary_expired', 'link expired'),
-      send_failed: t('services_setup.summary_send_failed', 'waiting to send'),
+      registered: t('services_setup.summary_ready', 'ready to install'),
     }[reg.state] || t('services_setup.summary_not_installed', 'not installed');
     return { ...model(reg.state, reg.tone, reg.status, reg.next), summary };
   }

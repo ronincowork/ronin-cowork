@@ -459,7 +459,7 @@ async function readSet(): Promise<Record<string, unknown>> {
 
 export function setteiServices(activation: ActivationState) {
   return {
-    selected: activation.stage !== 'not_requested' && activation.stage !== 'cancelled',
+    selected: activation.stage !== 'not_requested',
     activation: publicState(activation),
   };
 }
@@ -471,11 +471,7 @@ export function servicesSubscription(activation: PublicActivation): string {
     return `services: ${activation.entitlement_id}`
       + (activation.verified_at ? `, verified ${activation.verified_at}` : '');
   }
-  if (activation.stage === 'requesting' || activation.stage === 'awaiting_email'
-      || activation.stage === 'address_changed') {
-    return 'free cowork: Services confirmation pending';
-  }
-  if (activation.stage === 'expired' || activation.stage === 'error') {
+  if (activation.stage === 'error') {
     return 'free cowork: Services activation needs attention';
   }
   return 'free cowork: no entitlement recorded';
