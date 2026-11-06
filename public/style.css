@@ -1847,6 +1847,12 @@ body {
   overflow-y: auto;
   padding: var(--space-inset) var(--space-inset) var(--space-inset);
 }
+.st-surface {
+  height: 100%;
+  box-sizing: border-box;
+  overflow-y: auto;
+  padding: var(--space-inset);
+}
 .st-head {
   display: flex;
   align-items: baseline;

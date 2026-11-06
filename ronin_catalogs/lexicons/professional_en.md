@@ -1630,6 +1630,8 @@ The catalog entry goes. {dir} is not touched.
 - **campaign_view.machine:** Machine
 - **campaign_view.workspaces:** Workspaces
 - **campaign_view.machine_settings:** Machine Settings
+- **campaign_view.cloud_account:** Cloud Account
+- **campaign_view.cloud_account_summary:** Account, office, subscription and house-model usage, as Ronin HQ records it. Read-only.
 
 ## behaviours — behaviour-surface.js
 - **behaviours.title:** Behaviors

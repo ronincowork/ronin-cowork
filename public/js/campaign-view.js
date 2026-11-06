@@ -11,6 +11,7 @@ import { createWorkspaceFoldersSurface } from './workspace-folders-surface.js';
 import { createJiraItemsSurface, createJiraPairsSurface, createJiraPanel } from './jira-panel.js';
 import { request } from './request.js';
 import { coworkCommons } from './cowork-commons.js';
+import { accountCard } from './account-card.js';
 import { createFeedbackSurface, FEEDBACK_TYPE } from './feedback.js';
 import { createGbrainSurface, createServicesSurface } from './setup-surfaces.js';
 import { readyMika } from './mika-ready.js';
@@ -110,6 +111,12 @@ export function createCampaignView() {
     campaignMachine: () => {
       const surface = coworkCommons({ tabs: MACHINE_TABS, label: t('campaign_view.machine', 'Machine'), campaign: selected });
       return { el: surface.el, show: () => surface.select(surface.current() || 'themes') };
+    },
+    // Read when shown, not on a timer: reopening the surface is how a change at HQ arrives.
+    campaignCloudAccount: () => {
+      const el = elem('div', 'st-surface');
+      let card = null;
+      return { el, show: () => { if (card) void card.load(); else card = accountCard(el, { absent: t('account.absent', 'Not installed: this Ronin has no Services account part.') }); } };
     },
     campaignCreate: ({ workspace }) => {
       const surface = createNewCampaignSurface(async (fields) => {

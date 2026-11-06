@@ -76,7 +76,11 @@ export function accountModel(result) {
   }
 }
 
-export function accountCard(container) {
+/**
+ * `absent`: what to say when the part is not installed. Inside Configuration the card simply
+ * disappears; the Cloud Account worksurface (campaign-view.js) is the card alone, so it says so.
+ */
+export function accountCard(container, { absent = null } = {}) {
   const wrap = document.createElement('div');
   wrap.className = 'st-account';
   container.appendChild(wrap);
@@ -94,7 +98,10 @@ export function accountCard(container) {
   };
   function render(model) {
     wrap.replaceChildren();
-    if (model.hidden) return;
+    if (model.hidden) {
+      if (absent) wrap.appendChild(row(t('account.title', 'Cloud account'), absent));
+      return;
+    }
     wrap.appendChild(row(t('account.title', 'Cloud account'), model.title));
     if (model.blurb) {
       const say = document.createElement('div');

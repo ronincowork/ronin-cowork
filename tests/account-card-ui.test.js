@@ -16,6 +16,17 @@ test('the Cloud account card sits under the Services card and reads /api/account
   assert.doesNotMatch(card, /method:|fetch\(/);
 });
 
+test('the Cloud Account is its own worksurface in the Settings selector, Machine Settings group', async () => {
+  const [catalog, view] = await Promise.all([read('public/js/workbench-catalog.js'), read('public/js/campaign-view.js')]);
+  assert.match(catalog, /campaignCloudAccount: 'campaign\.cloud-account'/);
+  assert.match(catalog, /campaign\(WORKBENCH_TYPES\.campaignCloudAccount, 'surface', \(\) => t\('campaign_view\.cloud_account', 'Cloud Account'\)/);
+  // Offered right after Machine, so it sits under the Machine Settings heading.
+  assert.match(catalog, /WORKBENCH_PROFILES\.campaign, \[WORKBENCH_TYPES\.terminal, WORKBENCH_TYPES\.campaignMachine, WORKBENCH_TYPES\.campaignCloudAccount,/);
+  // Built from the same card; reread each time it is shown; an absent part is said, not blank.
+  assert.match(view, /campaignCloudAccount: \(\) => \{[\s\S]{0,300}accountCard\(el, \{ absent: /);
+  assert.match(view, /if \(card\) void card\.load\(\)/);
+});
+
 test('every account state is shown in its own words; only an absent part hides the card', async () => {
   const { accountModel } = await import('../public/js/account-card.js');
   assert.deepEqual(accountModel({ ok: false, status: 404 }), { hidden: true });
