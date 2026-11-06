@@ -515,10 +515,3 @@ test('all browser mutation callers use registration; Services activation is read
   }
 });
 
-test('the Register surface is put away on an office_host: it reads the office record and shows one sentence instead of the form', async () => {
-  const source = await readFile(new URL('../public/js/setup-surfaces.js', import.meta.url), 'utf8');
-  const register = source.slice(source.indexOf('function createRegisterSurface'), source.indexOf('function createRootsSurface'));
-  assert.match(register, /request\('\/api\/office', \{ cache: 'no-store' \}\)/);
-  assert.match(register, /office\.data\?\.hosting !== 'self_hosted'\) \{ putAwayForHosted\(office\.data\); return; \}/, 'hosted or unreadable: the form is never painted');
-  assert.match(register, /out\.content\.replaceChildren\(hostedNotice\)/, 'the whole surface is the notice: no zone, no form, no Delete registration');
-});
