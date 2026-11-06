@@ -503,33 +503,51 @@ async function underEpic(item: WorkItem | null): Promise<boolean> {
   return false;
 }
 
+/** The refusal of a new item with no epic above it, naming the open epics of the caller's Teams
+ * (what item search --team shows: the Team's and its members' holds), so it has a --parent. */
+async function epicsToUse(agent: { tags: string[]; leads: string[] }, holder?: Holder): Promise<string> {
+  const teams = [...new Set([...(holder?.kind === 'team' ? [holder.name] : []), ...agent.leads, ...agent.tags])];
+  const { teamReading } = await import('./work-items-read.js');
+  const said: string[] = [];
+  for (const team of teams) {
+    const items = await teamReading(team).then((reading) => reading.items).catch(() => []);
+    const epics = [...new Map(items.filter((item) => item.level === 1 && item.status !== DONE && !item.archived).map((item) => [item.id, item])).values()];
+    said.push(epics.length ? `Team ${team}'s open epics: ${epics.map((epic) => `${epic.id} '${epic.title}'`).join(', ')}.` : `Team ${team} has no open epic; ask its lead.`);
+  }
+  return ['A new item needs an epic above it: name one with --parent <id>.', ...said].join(' ');
+}
+
 /** Issue an id and write the item; born paired, its id is its Jira key. Unlocked: callers hold
  * the issuer. A create by an Agent (a live session) lands on its Team when it leads one, else on
- * itself; a lead of several names one (the holder), and an Agent's new item needs an epic above
- * it unless it is one. The owner, Ronin and the Jira bridge (a paired item) create as named. */
+ * itself; a lead of several names one (the holder). An epic is a lead's: one made by an Agent
+ * that leads nothing goes to its Team (its session's first tag, or --team), not to itself
+ * (KAN-295). Any other new item by an Agent needs an epic above it, and the refusal names its
+ * Team's open epics to use as --parent. The owner, Ronin and the Jira bridge (a paired item) create as named. */
 export async function createItemUnlocked(input: NewItem, by: string): Promise<Acknowledged> {
   const title = String(input.title ?? '').trim();
   if (!title) throw new WorkItemBadInput('A work item needs a title.');
   const parent = input.parent ? await load(input.parent) : null;
   const agent = input.jira ? undefined : (await listSessions()).find((session) => session.name === by);
   if (agent && !input.holder && agent.leads.length > 1) throw new WorkItemRefused(`You lead ${agent.leads.join(', ')}; name one with --team <team>.`);
-  const holder: Holder | undefined = input.holder ?? (agent ? (agent.leads.length ? { kind: 'team', name: agent.leads[0]! } : { kind: 'agent', name: by }) : undefined);
+  const named = input.kind?.trim();
+  const level = named ? levelOfKind(spaceNames(input.campaign_id ?? agent?.campaign_id ?? await initialCampaignId()), named) : levelUnder(parent);
+  const team = agent?.leads[0] ?? (level === 1 ? agent?.tags[0] : undefined);
+  const holder: Holder | undefined = input.holder ?? (agent ? (team ? { kind: 'team', name: team } : { kind: 'agent', name: by }) : undefined);
   const campaign_id = input.campaign_id ?? agent?.campaign_id ?? await initialCampaignId();
   const names = spaceNames(campaign_id);
-  const named = input.kind?.trim();
   const item: WorkItem = {
     ...blank(title, by),
     id: input.jira?.key ?? await nextId(),
     campaign_id,
     objective: String(input.objective ?? '').trim(),
-    level: named ? levelOfKind(names, named) : levelUnder(parent),
+    level,
     status: oneOf('status', input.status?.trim() || names.statuses[0]!, names.statuses),
     priority: oneOf('priority', input.priority?.trim() || names.priority, names.priorities),
     parent: parent?.id ?? null,
     attachments: input.attachments ?? [],
     external: input.jira ? { jira: { id: input.jira.id, key: input.jira.key } } : {},
   };
-  if (agent && item.level !== 1 && !(await underEpic(parent))) throw new WorkItemRefused('A new item needs an epic above it: name one with --parent <id>.');
+  if (agent && item.level !== 1 && !(await underEpic(parent))) throw new WorkItemRefused(await epicsToUse(agent, input.holder));
   await follow(item, item.parent, item.level);
   item.kind = named || kindAt(names, item.level);
   if (!input.jira) jiraShape(campaign_id, by, { id: '', kind: item.kind, level: item.level, paired: false }, parent);

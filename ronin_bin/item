@@ -33,8 +33,8 @@ level stays). The one rule: nothing goes below -1; children follow their parent
 ("w39 can't go there."). On a Jira-connected campaign, a parent or kind Jira would refuse
 is refused here, with the reason.
 create lands on you; --team is for a lead giving out work (a lead's create lands on its team;
-leading several, name it). A new item needs an epic above it (--parent), unless it is an
-Epic. It answers "created <id> under <parent>" on its first line.
+leading several, name it). A new item goes under your Team's epic (--parent); an epic is
+your lead's, and one you make goes to your Team. It answers "created <id> under <parent>" on its first line.
 attach plan:<name> points an epic at its order (plan --help): stored as plan:<workspace>/<name>.
 watch tracks an item without holding it (yourself unless named; a team's on its roster).
 transition to In Review by its holder is a hand-in: the item goes to the Team, and --note is the

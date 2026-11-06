@@ -276,6 +276,17 @@ test('an Agent\'s new item needs an epic above it; the owner, Ronin and Jira are
   assert.ok((await items.createItem({ title: 'owner\'s' }, 'owner')).item.id);
 });
 
+test('KAN-295: an Epic made by a member goes to its Team, not itself; a create with no epic names the Team\'s open epics', async (t) => {
+  await withLead(t);
+  const epic = (await items.createItem({ title: 'member made epic', kind: 'Epic' }, 'mem')).item;
+  assert.deepEqual(await listsHolding(epic.id), ['team:crew'], 'an epic is the lead\'s: it lands on the Team');
+  assert.equal(epic.trail[0]!.to, 'team:crew');
+  const done = (await items.createItem({ title: 'finished epic', kind: 'Epic', status: 'Done', holder: team }, 'boss')).item;
+  await assert.rejects(items.createItem({ title: 'loose piece' }, 'mem'), (error: Error) => error instanceof items.WorkItemRefused
+    && /needs an epic above it: name one with --parent <id>\. Team crew's open epics: /.test(error.message)
+    && error.message.includes(`${epic.id} 'member made epic'`) && !error.message.includes(done.id));
+});
+
 test('a lead of several teams names one; without it the create is refused naming its teams', async (t) => {
   const lead = await withLead(t);
   await createTeamRoster('second', { objective: 'another' });
