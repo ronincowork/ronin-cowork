@@ -91,19 +91,19 @@ export const statusChoices = (item) => [...new Set([...ITEM_STATUSES, item?.stat
 
 const when = (at) => String(at || '').slice(0, 16).replace('T', ' ');
 
-/** An item's hand-in as one line of steps, each a word and a time (owner, KAN-311): "Handed in
- * by item_pills 2026-11-05 10:33 · on team line · with the lead | promoted to dev 10:34"; '' when
- * it was never handed in. The last hand-in counts; promoted only when that promotion came after
- * it (the island's handInSignal, tile-island.js). "· live" is added by the reader once the
- * promotion's receipt says it restarted and passed health (`promotionToCheck`, /api/promotions). */
+/** An item's hand-in as one line of steps, each a word and a time (owner, KAN-311): not yet
+ * promoted, "Handed in by item_pills 2026-11-05 10:33 · on team line · with the lead"; promoted,
+ * "… · on team line · promoted to dev 10:34" in place of "with the lead"; '' when it was never
+ * handed in. The last hand-in counts; promoted only when that promotion came after it (the
+ * island's handInSignal, tile-island.js). "· live" is added by the reader once the promotion's
+ * receipt says it restarted and passed health (`promotionToCheck`, /api/promotions). */
 export function handInRecord(item) {
   const last = (Array.isArray(item?.hand_ins) && item.hand_ins.at(-1)) || item?.handed_in || null;
   if (!last?.at) return '';
-  const handed = [t('work_items.handed_in_by', 'Handed in by {who} {at}', { who: last.by || '—', at: when(last.at) }),
-    t('work_items.on_team_line', 'on team line'), t('work_items.with_lead', 'with the lead')].join(' · ');
-  if (!(item.on_dev?.at && item.on_dev.at >= last.at)) return handed;
+  const steps = [t('work_items.handed_in_by', 'Handed in by {who} {at}', { who: last.by || '—', at: when(last.at) }), t('work_items.on_team_line', 'on team line')];
+  if (!(item.on_dev?.at && item.on_dev.at >= last.at)) return [...steps, t('work_items.with_lead', 'with the lead')].join(' · ');
   const at = when(item.on_dev.at);
-  return `${handed} | ${t('work_items.promoted_at', 'promoted to dev {at}', { at: at.slice(0, 10) === when(last.at).slice(0, 10) ? at.slice(11) : at })}`;
+  return [...steps, t('work_items.promoted_at', 'promoted to dev {at}', { at: at.slice(0, 10) === when(last.at).slice(0, 10) ? at.slice(11) : at })].join(' · ');
 }
 
 /** The promotion whose receipt says whether the hand-in went live: the one that put this hand-in on dev, or ''. */

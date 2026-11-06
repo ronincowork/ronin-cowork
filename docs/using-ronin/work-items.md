@@ -96,8 +96,9 @@ transition, one trail line, its holders and watchers told). The line under it sa
 changed, or why the move was refused, and the answer goes back.
 
 **Handed in** shows whenever the item was handed in, note or not, as one line of steps, each a
-word and a time (KAN-311): `Handed in by item_pills 2026-11-05 10:33 · on team line · with the lead
-| promoted to dev 10:34 · live`. "promoted to dev" appears once a promotion put that hand-in on dev
+word and a time (KAN-311): `Handed in by item_pills 2026-11-05 10:33 · on team line · with the lead`
+until it is promoted, then `Handed in by item_pills 2026-11-05 10:33 · on team line · promoted to dev
+10:34 · live`. "promoted to dev" takes the place of "with the lead" once a promotion put that hand-in on dev
 (the same hand-in the island's pill marks); "live" only when that promotion's receipt in the
 promotion ledger says it restarted and passed health (`GET /api/promotions/:id/live`,
 `src/routes/promotions-api.ts`), so a `--no-restart` promotion reads "promoted to dev" alone. There
