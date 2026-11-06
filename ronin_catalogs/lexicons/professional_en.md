@@ -671,60 +671,26 @@ nothing paints exactly this.
 - **epics.title:** Epics
 
 ## services — services-card.js (the Services activation card)
-- **services.stage_not_requested:** Not requested
-- **services.stage_not_requested_blurb:** Ronin Services are not switched on for this machine.
-- **services.stage_requesting:** Sending…
-- **services.stage_requesting_blurb:** Asking Ronin to send your confirmation email.
-- **services.stage_awaiting_email:** Check your email
-- **services.stage_awaiting_email_blurb:** Open the link we sent. Any device is fine — your phone works.
-- **services.stage_verified:** Email confirmed
-- **services.stage_verified_blurb:** Ronin has what it needs. Services install next.
+- **services.stage_not_requested:** Not installed
+- **services.stage_not_requested_blurb:** Ronin Services are not installed on this machine.
 - **services.stage_installing:** Installing Services
 - **services.stage_installing_blurb:** This machine is fetching and verifying the download.
 - **services.stage_installed:** Services are ready
 - **services.stage_installed_blurb:** Nothing further to do.
-- **services.stage_expired:** This link expired
-- **services.stage_expired_blurb:** Ask for a fresh confirmation email below.
-- **services.stage_cancelled:** Request cancelled
-- **services.stage_cancelled_blurb:** Nothing was switched on, and the address was not kept.
-- **services.stage_address_changed:** Address changed
-- **services.stage_address_changed_blurb:** A new confirmation email is on its way.
-- **services.stage_error:** Waiting to send
-- **services.stage_error_blurb:** Ronin HQ could not be reached. This will retry.
+- **services.stage_error:** Needs attention
+- **services.stage_error_blurb:** The Services install did not finish.
 - **services.unreachable:** could not reach the operator
 - **services.entitlement:** entitlement
-- **services.email:** Your email address
-- **services.disclosure:** Ronin receives this address, the accepted terms version, and a request from 
-- **services.send_confirmation:** Send confirmation email
-- **services.check_status:** Check status
-- **services.resend:** Resend
-- **services.change_address:** Change address
-- **services.cancel_request:** Cancel request
-- **services.resend_after:** you can resend after {time}
-- **services.change_and_retry:** Change address and try again
 - **services.install_now:** Install Services now
 - **services.egress_summary:** what this machine has sent ({n})
 - **services.working:** working…
 - **services.failed:** that did not work
-- **services.new_address_prompt:** New email address for Ronin Services
 
 ## services — services-activation.js (the bar's Services state and pop-over)
-- **services.resend_confirmation:** Resend confirmation
-- **services.change_email:** Change email
-- **services.cancel_services:** Cancel Ronin Services
 - **services.bar_ready:** Services ready
 - **services.bar_installing:** Installing Ronin Services…
-- **services.bar_verified:** Confirmation received
-- **services.bar_awaiting_email:** Email confirmation required
-- **services.bar_expired:** Services confirmation expired
 - **services.bar_error:** Ronin Services needs attention
-- **services.confirmation_address:** Confirmation address: {email}
 - **services.activation:** Ronin Services activation
-- **services.checking:** Checking…
-- **services.sending:** Sending…
-- **services.cancelling:** Cancelling…
-- **services.new_confirmation_prompt:** Send the new confirmation to:
-- **services.changing:** Changing…
 
 ## machine — machine-panel.js (the desk's machine block)
 - **machine.head:** this machine

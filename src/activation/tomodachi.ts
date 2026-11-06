@@ -5,6 +5,7 @@ import path from 'node:path';
 import { storeDir } from '../resources.js';
 import { callHq } from './transport.js';
 import { getEntitlementToken } from './secrets.js';
+import { isOfficeHost } from '../office-record.js';
 
 const outboxDir = () => path.join(storeDir('telemetry'), 'outbox');
 const receiptDir = () => path.join(storeDir('telemetry'), 'receipts');
@@ -21,13 +22,15 @@ export interface SendReport {
   sent: number;
   alreadyStored: number;
   failed: number;
-  skipped: 'disabled' | 'no-entitlement' | 'nothing-due' | null;
+  skipped: 'disabled' | 'self-hosted' | 'no-entitlement' | 'nothing-due' | null;
 }
 
 export async function sendDuePackets(): Promise<SendReport> {
   const report: SendReport = { attempted: 0, sent: 0, alreadyStored: 0, failed: 0, skipped: null };
 
   if (!listServices().includes('counting')) { report.skipped = 'disabled'; return report; }
+  // Tool counts leave hosted offices only (owner): a self-hosted Ronin never sends, whatever it holds.
+  if (!await isOfficeHost()) { report.skipped = 'self-hosted'; return report; }
   const token = await getEntitlementToken();
   if (!token) {
     report.skipped = 'no-entitlement';

@@ -144,6 +144,7 @@ Every physical or fleet surface carries the `office_` prefix; `control_plane`, `
 | Office network (`office_network`) | The private network on an office_host; offices reach out through NAT, never each other, the office_host or the control_plane |
 | Office image (`office_image`) | The Ronin image an office boots from once; after that Ronin updates itself |
 | Office disk (`office_disk`) | The whole disk of one office, the one persistence unit; its backup is an `office_snapshot` |
+| Office record (`office_record`) | The one file in an office that says it is an office: `office.json` in the `office` store, written once by the provisioner, never by Ronin. Present means an office on an office_host (office_id, office_host, gateway_office, provisioned_at); absent means self-hosted. Everything that behaves differently when hosted asks this record and nothing else |
 | Stop clock (`stop_clock`) | The 30 days a stopped office is kept before deletion |
 | Kill switch (`kill_switch`) | The control_plane's stops from outside an office: stop it, cut its network, drop its front_door route, revoke its house_token. Works when control inside the office is lost |
 | Model gateway (`model_gateway`) | Holds Ronin's provider key outside every office; an office speaks to it with its house_token |
