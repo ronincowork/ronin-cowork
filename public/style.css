@@ -1235,7 +1235,7 @@ body {
   font-size: var(--text-small);
 }
 .tile-head .item-island button.item-island-more:hover, .tile-head .item-island button.item-island-more:focus-visible { border-color: var(--accent); color: var(--fg); }
-.tile-head .item-island button.item-bar {
+:is(.tile-head .item-island, .epic-bars) button.item-bar {
   display: flex;
   flex-direction: column;
   align-items: stretch;
@@ -1252,11 +1252,11 @@ body {
   font-size: var(--text-small);
   text-align: left;
 }
-.tile-head .item-island button.item-bar:hover, .tile-head .item-island button.item-bar:focus-visible { border-color: var(--accent); }
-.tile-head .item-island button.item-bar[data-status='progress'] { border-left-color: var(--info); }
-.tile-head .item-island button.item-bar[data-status='review'] { border-left-color: var(--accent); }
-.tile-head .item-island button.item-bar[data-flagged='true'] { border-top-color: var(--warn); border-right-color: var(--warn); border-bottom-color: var(--warn); }
-.tile-head .item-island button.item-bar.item-bar-sub { margin-left: var(--space-inset); padding-block: var(--space-row); }
+:is(.tile-head .item-island, .epic-bars) button.item-bar:hover, :is(.tile-head .item-island, .epic-bars) button.item-bar:focus-visible { border-color: var(--accent); }
+:is(.tile-head .item-island, .epic-bars) button.item-bar[data-status='progress'] { border-left-color: var(--info); }
+:is(.tile-head .item-island, .epic-bars) button.item-bar[data-status='review'] { border-left-color: var(--accent); }
+:is(.tile-head .item-island, .epic-bars) button.item-bar[data-flagged='true'] { border-top-color: var(--warn); border-right-color: var(--warn); border-bottom-color: var(--warn); }
+:is(.tile-head .item-island, .epic-bars) button.item-bar.item-bar-sub { margin-left: var(--space-inset); padding-block: var(--space-row); }
 .item-bar .item-bar-head { display: flex; align-items: center; gap: var(--space-inline); min-width: 0; }
 .item-bar .item-kind { width: 14px; height: 14px; flex: 0 0 auto; }
 .item-bar .item-bar-id { flex: 0 0 auto; color: var(--muted); font-variant-numeric: tabular-nums; }

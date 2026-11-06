@@ -149,16 +149,16 @@ export function handInWords(signal, now = Date.now()) {
 export const subtaskWords = (n) => (n === 1 ? t('island.subtask', '1 subtask') : t('island.subtasks', '{n} subtasks', { n }));
 
 /** An item's newest comment, or null. */
-export const lastComment = (item) => (Array.isArray(item?.comments) && item.comments.at(-1)) || null;
+export const lastComment = (item) => (Array.isArray(item?.comments) && item.comments.at(-1)) || item?.said || null;
 
 /** A wide bar's facts line (owner, 2026-11-06, w322): what sizes the item up at a glance, the
  *  empty ones left out — its kind in words, the Task it is under, its open Subtasks here, attachments,
  *  how many comments, and when it last moved. Ages are worked out when the bar is drawn. */
 export function barFacts(item, subtasks = 0, now = Date.now()) {
   const age = (at) => humanAge(Math.max(0, now - Date.parse(at) || 0));
-  const comments = Array.isArray(item?.comments) ? item.comments.length : 0;
+  const comments = Array.isArray(item?.comments) ? item.comments.length : Number(item?.comment_count) || 0;
   const attachments = Array.isArray(item?.attachments) ? item.attachments.length : 0;
-  const moved = (Array.isArray(item?.trail) && item.trail.at(-1)?.at) || item?.created?.at || '';
+  const moved = (Array.isArray(item?.trail) && item.trail.at(-1)?.at) || item?.moved || item?.created?.at || '';
   return [
     item?.kind || '', // owner, 2026-11-06 (w325): its kind in words, the symbols not yet known; priority is rarely set
     item?.parent ? t('island.under', 'under {id}', { id: item.parent }) : '',
@@ -172,6 +172,45 @@ export function barFacts(item, subtasks = 0, now = Date.now()) {
 /** What a pill says when read aloud or hovered: its words, since it shows none. */
 export const pillWords = (item) => [item.id, item.kind, item.status, item.flagged ? t('work_items.flagged', 'flagged') : '', handInWords(handInSignal(item)), item.title]
   .filter(Boolean).join(' · ');
+
+const span = (className, textContent = '') => Object.assign(document.createElement('span'), { className, textContent });
+
+/**
+ * AN ITEM BAR (w322; shared with the Epics worksurface, w334): the pill's head (symbol, key,
+ * title, status, flag, hand-in), then what the item is: its description, its last comment and
+ * a line of facts. A slim item (the Epics push) carries `said`, `comment_count` and `moved` in
+ * place of its comments and trail. `sub` draws a Subtask's slimmer bar; `extra` adds facts
+ * (the Epics worksurface's holder) after the kind; `onPress` is what the bar opens.
+ */
+export function itemBar(item, { sub = false, subtasks = 0, extra = [], onPress } = {}) {
+  const node = document.createElement('button');
+  node.type = 'button';
+  node.className = sub ? 'item-bar item-bar-sub' : 'item-bar';
+  node.dataset.item = item.id;
+  node.dataset.status = statusKey(item.status);
+  if (item.flagged) node.dataset.flagged = 'true';
+  node.setAttribute('aria-label', pillWords(item));
+  const head = span('item-bar-head');
+  const state = span('item-bar-state');
+  state.append(span('item-pill-status'), span('item-bar-status', item.status || ''));
+  if (item.flagged) state.append(span('item-pill-flag', FLAG_MARK));
+  const signal = handInSignal(item);
+  if (signal) { node.dataset.handin = signal.kind; state.append(span('item-bar-handin', `${HANDIN_MARK} ${handInWords(signal)}`)); }
+  head.append(kindMark(item.kind), span('item-bar-id', item.jira || item.id), span('item-bar-title', item.title || ''), state);
+  node.append(head);
+  if (!sub && item.objective) node.append(span('item-bar-objective', item.objective));
+  const said = !sub && lastComment(item);
+  if (said) {
+    const line = span('item-bar-comment');
+    line.append(span('item-bar-who', `@${said.by} · ${humanAge(Math.max(0, Date.now() - Date.parse(said.at) || 0))}`), ` ${said.text}`);
+    node.append(line);
+  }
+  const facts = barFacts(item, subtasks);
+  if (extra.length) facts.splice(facts.length && item?.kind ? 1 : 0, 0, ...extra.filter(Boolean));
+  if (!sub && facts.length) node.append(span('item-bar-facts', facts.join(' · ')));
+  if (onPress) node.addEventListener('click', onPress);
+  return node;
+}
 
 /**
  * The island for one tile. `open(item)` opens an item over the tile and `shut(id)` closes it;
@@ -285,38 +324,9 @@ export function createItemIsland({ open, shut, isOpen }) {
     else open(items.find((one) => one.id === item.id) || item);
   }
 
-  const span = (className, textContent = '') => Object.assign(document.createElement('span'), { className, textContent });
-
   /** A wide bar: the pill's head (symbol, key, title, status, flag, hand-in), then what the item
    *  is, its last comment, and its facts. A Subtask under a Task here is a slimmer bar after it. */
-  function bar(item, sub = false) {
-    const node = document.createElement('button');
-    node.type = 'button';
-    node.className = sub ? 'item-bar item-bar-sub' : 'item-bar';
-    node.dataset.item = item.id;
-    node.dataset.status = statusKey(item.status);
-    if (item.flagged) node.dataset.flagged = 'true';
-    node.setAttribute('aria-label', pillWords(item));
-    const head = span('item-bar-head');
-    const state = span('item-bar-state');
-    state.append(span('item-pill-status'), span('item-bar-status', item.status || ''));
-    if (item.flagged) state.append(span('item-pill-flag', FLAG_MARK));
-    const signal = handInSignal(item);
-    if (signal) { node.dataset.handin = signal.kind; state.append(span('item-bar-handin', `${HANDIN_MARK} ${handInWords(signal)}`)); }
-    head.append(kindMark(item.kind), span('item-bar-id', item.id), span('item-bar-title', item.title || ''), state);
-    node.append(head);
-    if (!sub && item.objective) node.append(span('item-bar-objective', item.objective));
-    const said = !sub && lastComment(item);
-    if (said) {
-      const line = span('item-bar-comment');
-      line.append(span('item-bar-who', `@${said.by} · ${humanAge(Math.max(0, Date.now() - Date.parse(said.at) || 0))}`), ` ${said.text}`);
-      node.append(line);
-    }
-    const facts = barFacts(item, sub ? 0 : under.get(item.id) || 0);
-    if (!sub && facts.length) node.append(span('item-bar-facts', facts.join(' · ')));
-    node.addEventListener('click', () => press(item));
-    return node;
-  }
+  const bar = (item, sub = false) => itemBar(item, { sub, subtasks: sub ? 0 : under.get(item.id) || 0, onPress: () => press(item) });
 
   let stanceDrawn = '';
   /** The stance, redrawn only when it or what the harness reports moved. */

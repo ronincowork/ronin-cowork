@@ -110,11 +110,12 @@ an item has a link on the Jira item that opens its chat.
 
 **In Ronin:**
 
-- **Epics workbench** (Campaign home › Epics, "What the work is"): a stone per epic in the
-  Campaign. Press one and its record opens: where it comes from (its Jira key, or Ronin only),
-  who holds it, its statuses with counts, and its items as cards, each with its holder
-  ("Team surface (lead surface_lead)", or "@agent"). **Show** picks Assigned, Unassigned or All.
-  Archived items are not on it.
+- **Epics workbench** (Campaign home › Epics, "What the work is"): a row of stones across the
+  top, one per epic in the Campaign, each with its Jira key (or Ronin only) and how many of
+  its items are open. Press one and below come **Assigned** (Yes / No) and **Status**, then its
+  items as bars grouped by status, each saying what the item is and who holds it
+  ("Team surface (lead surface_lead)", or "@agent"); a bar opens the item's reading. Drag a
+  stone into a tilespace to place that epic there. Archived items are not on it.
 - **Team workbench › Waiting on you:** what waits on you, oldest first. **With the lead**
   (handed in, not yet on dev), **Ready to accept** (Accept, Send back) and **Stuck** (Reply).
 - **Team workbench › Epics:** the Team's epics; one opens straight onto its record, several

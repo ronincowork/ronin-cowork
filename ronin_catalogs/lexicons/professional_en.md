@@ -650,12 +650,16 @@ nothing paints exactly this.
 - **team.arranged_by:** arranged by {from}
 - **team.state:** State
 
-## epics — epics-surface.js (the Epic worksurface's Show question; w280)
-- **epics.show:** Show
+## epics — epics-surface.js (the Epics board: a row of Epic stones, its Assigned and Status questions, its items as bars; w334)
 - **epics.all:** All
 - **epics.assigned:** Assigned
+- **epics.yes:** Yes
+- **epics.no:** No
 - **epics.unassigned:** Unassigned
-- **epics.none_shown:** No items here for what Show picks.
+- **epics.group:** {status} · {n}
+- **epics.open_n:** {n} open
+- **epics.pick_epic:** Pick an Epic to see its work items.
+- **epics.none_picked:** No items for what Assigned and Status pick.
 
 ## team_waiting — team-waiting.js (the Team workbench's Waiting on you and Epics cards; KAN-232)
 - **team_waiting.title:** Waiting on you
