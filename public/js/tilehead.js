@@ -44,7 +44,8 @@ const HEADER = () => {
       open: (item) => void openItem(tile, item),
       isOpen: (id) => !!openItemLayer(tile, id),
       shut: (id) => openItemLayer(tile, id)?.remove() }),
-    read: (tile) => { tile.island?.update?.(tile.session, islandItems(tile.tegami)); return ''; } },
+    // w331: the stance rides the same home row: rireki's reading, and what this harness reports.
+    read: (tile) => { const row = tile.homeRow?.(); tile.island?.update?.(tile.session, islandItems(tile.tegami), { stance: row?.stance, reports: row?.stance_reports }); return ''; } },
 
   { grow: true },
 

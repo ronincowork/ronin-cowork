@@ -1170,6 +1170,34 @@ body {
 .item-pill .item-pill-handin-words { display: none; }
 .item-island[data-state='down'] .item-pill-handin-words { display: inline; color: var(--muted); }
 
+/* The stance mark (w331): a circle, so the Agent never reads as one of its items; only what
+   needs the owner. Question is kaki (what needs you), your turn its quieter tint, stopped bad. */
+.tile-head .item-island .item-island-stance { display: inline-flex; align-items: center; gap: var(--space-inline); flex: 0 0 auto; }
+.tile-head .item-island .item-island-stance[hidden] { display: none; }
+.item-stance { width: 14px; height: 14px; flex: 0 0 auto; }
+.item-stance .ground { fill: var(--muted); }
+.item-stance[data-stance='question'] .ground { fill: var(--kaki-fill); }
+.item-stance[data-stance='turn'] .ground { fill: color-mix(in srgb, var(--kaki) 35%, var(--surface)); }
+.item-stance[data-stance='stopped'] .ground { fill: var(--bad); }
+.item-stance .ink { fill: var(--on-strong); }
+.item-stance .stroke { fill: none; stroke: var(--on-strong); stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+.item-stance .stroke.thin { stroke-width: 1.5; }
+.item-stance[data-stance='question'] .ink { fill: var(--kaki-fill-ink); }
+.item-stance[data-stance='question'] .stroke { stroke: var(--kaki-fill-ink); }
+.item-stance[data-stance='turn'] .ink { fill: var(--fg); }
+.item-stance[data-stance='turn'] .stroke { stroke: var(--fg); }
+.item-island-stance .item-island-stance-words { display: none; }
+/* Down or wide, the bar leads and the stance is the first row, in words. */
+.tile-head .item-island:is([data-state='down'], [data-state='wide']) .item-island-grip { order: -1; }
+.tile-head .item-island:is([data-state='down'], [data-state='wide']) .item-island-stance {
+  padding: var(--space-row) var(--space-control);
+  border: var(--edge) solid var(--line);
+  border-radius: var(--radius-pill);
+}
+.tile-head .item-island[data-state='wide'] .item-island-stance { border-radius: var(--radius-large); }
+.item-island:is([data-state='down'], [data-state='wide']) .item-island-stance-words { display: inline; color: var(--fg); font-size: var(--text-small); white-space: nowrap; }
+.tile-head .item-island:is([data-state='down'], [data-state='wide']) button.item-island-more[hidden] { display: none; }
+
 /* The wide list (owner, 2026-11-06, w322): the dropped list's surface at the tile's width,
    only as tall as its bars; a bar per item, in the pills' own marks, with what the item is. */
 .tile-head:has(> .item-island[data-state='wide']) { position: relative; }

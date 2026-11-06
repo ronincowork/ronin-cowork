@@ -53,7 +53,17 @@ one no member has taken yet, so the lead's island is where unassigned work shows
 takes it, it leaves the lead's island. A Team's Subtasks, and anything only watched, appear only
 when the lead holds them itself.
 
-The island follows the Agent's work record as it changes; nothing needs refreshing.
+Left of the island's bar, a round mark says when the Agent needs you. It shows only three
+things: **question** (kaki, a ?: a dialog or survey is open and waiting for your answer),
+**your turn** (a soft kaki ›: the turn ended), and **stopped** (red, !: interrupted, or the
+last tool failed). While the Agent is working, replying, or its state is unknown there is no
+mark; the transcript's dots already say it is busy. An Agent holding no items still shows its
+island when one of these is up. Down or wide, the first row says it in words, and its hover
+names what this harness cannot report: not every CLI's log says every one of these, and a
+mark its harness cannot supply never shows. The round mark is the Agent; the square ones are
+its items.
+
+The island follows the Agent's work record and its stance as they change; nothing needs refreshing.
 
 ## The menu
 

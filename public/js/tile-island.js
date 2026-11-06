@@ -61,22 +61,70 @@ const MARKS = {
   other: [['circle', { cx: 8, cy: 8, r: 2, class: 'ink' }]],
 };
 
-export function kindMark(kind) {
-  const key = kindKey(kind);
+/** One 16×16 mark: a ground and its white parts. The kinds stand on a rounded square, the
+ *  Agent's stance on a circle, so the Agent never reads as one of its items (w331). */
+function mark(cls, data, ground, parts) {
   const svg = document.createElementNS(SVG, 'svg');
   svg.setAttribute('viewBox', '0 0 16 16');
   svg.setAttribute('aria-hidden', 'true');
-  svg.setAttribute('class', 'item-kind');
-  svg.dataset.kind = key;
-  const ground = document.createElementNS(SVG, 'rect');
-  for (const [name, value] of Object.entries({ x: 0, y: 0, width: 16, height: 16, rx: 3, class: 'ground' })) ground.setAttribute(name, String(value));
-  svg.append(ground);
-  for (const [tag, attrs] of MARKS[key]) {
+  svg.setAttribute('class', cls);
+  Object.assign(svg.dataset, data);
+  for (const [tag, attrs] of [ground, ...parts]) {
     const part = document.createElementNS(SVG, tag);
     for (const [name, value] of Object.entries(attrs)) part.setAttribute(name, String(value));
     svg.append(part);
   }
   return svg;
+}
+
+export function kindMark(kind) {
+  const key = kindKey(kind);
+  return mark('item-kind', { kind: key }, ['rect', { x: 0, y: 0, width: 16, height: 16, rx: 3, class: 'ground' }], MARKS[key]);
+}
+
+/**
+ * THE STANCE MARK (owner, 2026-11-06, w331, with cmux and chat_read): left of the island's bar,
+ * only what the owner would act on. The home row's stance (rireki's reading, per harness)
+ * folds to three: a dialog is open (question), the turn ended (your turn), it stopped on an
+ * interruption or a failed tool (stopped). Working, replying and unknown show nothing: the
+ * transcript's dots already say busy.
+ */
+export function stanceKey(stance) {
+  if (stance === 'asking') return 'question';
+  if (stance === 'awaiting_you') return 'turn';
+  if (stance === 'interrupted' || stance === 'error') return 'stopped';
+  return '';
+}
+
+const STANCE_MARKS = {
+  question: [['path', { d: 'M6 6.2a2 2 0 1 1 2.8 1.8c-.6.3-.8.7-.8 1.3v.5', class: 'stroke thin' }], ['circle', { cx: 8, cy: 11.8, r: 0.9, class: 'ink' }]],
+  turn: [['path', { d: 'M6 4.6 9.4 8 6 11.4', class: 'stroke' }]],
+  stopped: [['path', { d: 'M8 4.2v4.6', class: 'stroke' }], ['circle', { cx: 8, cy: 11.6, r: 1, class: 'ink' }]],
+};
+
+export function stanceMark(stance) {
+  const key = stanceKey(stance);
+  return key ? mark('item-stance', { stance: key }, ['circle', { cx: 8, cy: 8, r: 8, class: 'ground' }], STANCE_MARKS[key]) : null;
+}
+
+/** The stance in words: the row's when down, the mark's name and hover help at rest. */
+export function stanceWords(stance) {
+  return {
+    asking: t('island.stance_asking', 'Question: a dialog is waiting for you'),
+    awaiting_you: t('island.stance_awaiting_you', 'Your turn: the turn ended'),
+    interrupted: t('island.stance_interrupted', 'Stopped: interrupted'),
+    error: t('island.stance_error', 'Stopped: a tool failed'),
+  }[stance] || '';
+}
+
+/** What this harness cannot report, from the home row's `stance_reports` (the stances its
+ *  adapter supplies); '' when the row does not say. */
+export function stanceGaps(reports) {
+  if (!Array.isArray(reports)) return '';
+  const names = { asking: t('island.gap_question', 'a question'), awaiting_you: t('island.gap_turn', 'the end of a turn'),
+    interrupted: t('island.gap_interrupted', 'an interruption'), error: t('island.gap_error', 'a failed tool') };
+  const missing = Object.keys(names).filter((one) => !reports.includes(one)).map((one) => names[one]);
+  return missing.length ? t('island.stance_gaps', 'This harness cannot report {list}', { list: missing.join(', ') }) : '';
 }
 
 const HANDIN_MARK = '↑';
@@ -152,7 +200,11 @@ export function createItemIsland({ open, shut, isOpen }) {
   const more = document.createElement('button');
   more.type = 'button';
   more.className = 'item-island-more';
-  el.append(grip, pills, bars, more);
+  // The Agent's stance (w331): its mark left of the bar at rest; down or wide, the top row in words.
+  const stance = document.createElement('span');
+  stance.className = 'item-island-stance';
+  stance.hidden = true;
+  el.append(stance, grip, pills, bars, more);
 
   let session = null;
   let drawn = '';
@@ -266,11 +318,31 @@ export function createItemIsland({ open, shut, isOpen }) {
     return node;
   }
 
-  function update(name, list) {
+  let stanceDrawn = '';
+  /** The stance, redrawn only when it or what the harness reports moved. */
+  function drawStance({ stance: now = '', reports } = {}) {
+    const sig = JSON.stringify([now, reports]);
+    if (sig === stanceDrawn) return;
+    stanceDrawn = sig;
+    const shown = stanceMark(now);
+    stance.hidden = !shown;
+    stance.dataset.stance = stanceKey(now);
+    if (!shown) { stance.replaceChildren(); stance.removeAttribute('title'); stance.removeAttribute('aria-label'); return; }
+    const words = stanceWords(now);
+    stance.title = [words, stanceGaps(reports)].filter(Boolean).join(' · ');
+    stance.setAttribute('aria-label', stance.title);
+    stance.replaceChildren(shown, Object.assign(document.createElement('span'), { className: 'item-island-stance-words', textContent: words }));
+  }
+
+  /** `live` is the home row's { stance, reports } (tilehead.js), read off the same push. */
+  function update(name, list, live = {}) {
     const next = Array.isArray(list) ? list : [];
-    if (name !== session) { session = name; drawn = ''; place(false); }
+    if (name !== session) { session = name; drawn = ''; stanceDrawn = ''; place(false); }
     items = next;
-    el.hidden = !session || !next.length;
+    drawStance(live);
+    // An Agent holding nothing still shows its island when it needs you.
+    el.hidden = !session || (!next.length && stance.hidden);
+    more.hidden = !next.length;
     const signature = JSON.stringify(next.map((item) => [item.id, item.kind, item.status, !!item.flagged, item.title, item.parent, handInSignal(item),
       item.objective, item.priority, lastComment(item)?.at, item.comments?.length, item.attachments?.length, item.trail?.length]));
     if (signature === drawn) return;

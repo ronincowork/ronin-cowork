@@ -1283,6 +1283,15 @@ The catalog entry goes. {dir} is not touched.
 - **island.subtasks:** {n} subtasks
 - **island.handed_in:** handed in
 - **island.on_dev:** on dev
+- **island.stance_asking:** Question: a dialog is waiting for you
+- **island.stance_awaiting_you:** Your turn: the turn ended
+- **island.stance_interrupted:** Stopped: interrupted
+- **island.stance_error:** Stopped: a tool failed
+- **island.stance_gaps:** This harness cannot report {list}
+- **island.gap_question:** a question
+- **island.gap_turn:** the end of a turn
+- **island.gap_interrupted:** an interruption
+- **island.gap_error:** a failed tool
 - **island.wide:** More detail
 - **island.narrow:** Less detail
 - **island.under:** under {id}
