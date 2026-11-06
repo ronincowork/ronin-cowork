@@ -1,6 +1,6 @@
 /**
- * A TEAM'S ITEM TELLS ITS LEAD (KAN-307): a comment, a status change or a flag on an item a Team
- * holds reaches the Team's live lead(s), never the author. Leads are read from a private tmux server.
+ * A TEAM IS TOLD THROUGH ITS LEAD (KAN-307): a comment, a status change or a flag on an item a Team
+ * holds or watches reaches the Team's live lead(s), never the author; with no lead, no one. Leads are read from a private tmux server.
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -34,4 +34,11 @@ test('a comment, status change or flag on a Team-held item reaches its lead, not
   assert.deepEqual((await items.flagItem(one.id, true, 'stuck', 'owner')).notified, ['boss']);
   // The lead's own change tells nobody.
   assert.equal((await items.addComment(one.id, 'mine', 'boss')).notified, undefined);
+
+  // A Team watching an item hears a comment through its lead too; a Team with no lead alive, no one.
+  await createTeamRoster('quiet', { objective: 'no lead' });
+  const two = (await items.createItem({ title: 'two', holder: { kind: 'team', name: 'quiet' } }, 'owner')).item;
+  assert.equal((await items.addComment(two.id, 'anyone?', 'owner')).notified, undefined);
+  await items.watchItem(two.id, { kind: 'team', name: 'crew' }, true);
+  assert.deepEqual((await items.addComment(two.id, 'now?', 'owner')).notified, ['boss']);
 });

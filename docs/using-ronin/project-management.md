@@ -92,10 +92,15 @@ Very few notices, and never the same news twice:
 |---|---|
 | a hand-in | the lead of the Team holding the work (one message, from the hand-in itself) |
 | a call for help (a flag), or an Agent ended without a handover | the lead of the Team holding the item, and the lead or epic holder above it; for an ending, the lead of the Team its items went to, once |
-| a status change | watching that item, or the lead of the Team holding it |
-| someone else's comment or change on an item | the Agent doing it, or the lead of the Team holding it |
+| a status change | holding a Team item's Team (as its lead), or watching the item |
+| a comment | holding or watching the item |
+| someone else's change on your item | the Agent doing it |
 | a Jira item with nobody on it | traffic_control, which places it |
 | your item is Done | the Agent that handed it in |
+
+A Team is told through its lead. Where a Team holds or watches an item, its notices go to the
+Team's lead(s); with no lead running, to no one. On an item an Agent works, the lead is not
+told of its changes: only when the Agent asks for help or hands in.
 
 Nothing else sends a notice. Starts, new items, holder changes and handovers show where
 the work shows (below). Agents tell their lead only a decision or a blocker.
