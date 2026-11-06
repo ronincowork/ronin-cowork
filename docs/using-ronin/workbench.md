@@ -117,10 +117,14 @@ each item they hold. With one Epic, the card opens straight onto that Epic's rec
 statuses and its items as cards, as on the Epics workbench. With several, it shows a stone
 per Epic; press one to open its record in the other tilespace.
 
-An Epic's record, here and on the Epics workbench, starts with a **Show** question, the same
-kind of buttons the Teams surface uses. Pick **Assigned** for the items an Agent holds,
-**Unassigned** for those only a Team holds or nobody holds, or leave it at **All**. The status
-row's counts and the cards follow what Show picks.
+An Epic's record, here and on the Epics workbench, asks two questions: **Assigned** (**Yes**
+for the items an Agent holds, **No** for those only a Team holds or nobody holds, or **All**)
+and **Status** (To Do, In Progress and In Review on arrival; pick Done to see it). Under them,
+its items as bars, the item island's own, grouped by status: each bar its kind's symbol, key,
+title, status, flag and hand-in, then its description, its last comment, and its facts (kind,
+holder, the Task it is under, Subtasks, comments, when it last moved). A Subtask follows its
+Task. Press a bar to open the item's reading under it (its status, details, comments and a box
+to comment); press it again to fold it.
 
 Each Agent's tile on a Team shows the work items that Agent holds as pills in its header,
 in the **item island**: the kind's Jira symbol, the status and the flag, and the item's

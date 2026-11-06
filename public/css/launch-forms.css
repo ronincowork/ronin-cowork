@@ -94,11 +94,6 @@
      is plain), then each status that is out as its items' cards; a card's title wraps whole. */
   .epics-record .wk-surface-content { display: flex; flex-direction: column; gap: var(--space-subsection); padding: var(--space-inset); overflow: auto; }
   .epic-source { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-inline); color: var(--muted); font-size: var(--text-small); }
-  .epic-filter { position: sticky; top: calc(var(--space-inset) * -1); z-index: 1; display: flex; flex-wrap: wrap; gap: var(--space-inline); padding-block: var(--space-row); background: var(--surface); }
-  .epic-chip { display: inline-flex; align-items: baseline; gap: var(--space-inline); padding: var(--space-row) var(--space-inset); border: var(--edge) dashed var(--line-2); border-radius: var(--radius-small); background: transparent; color: var(--muted); font: inherit; font-size: var(--text-label); cursor: pointer; }
-  .epic-chip:hover { border-color: var(--line-3); color: var(--fg-strong); }
-  .epic-chip[aria-pressed='true'] { border-style: solid; border-color: var(--kaki); color: var(--fg-strong); font-weight: var(--weight-strong); }
-  .epic-count { font-variant-numeric: tabular-nums; font-weight: var(--weight-strong); color: var(--fg); }
   .epic-groups { display: flex; flex-direction: column; gap: var(--space-section); }
   .epic-group-heading { margin: 0 0 var(--space-paragraph); color: var(--muted); font-size: var(--text-small); font-weight: var(--weight-strong); letter-spacing: var(--tracking-wide); text-transform: uppercase; }
   .epic-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: var(--space-inline); align-items: start; }
@@ -120,6 +115,22 @@
   .epic-comment small { color: var(--muted); font-size: var(--text-small); }
   .epic-comment p { margin: var(--space-row) 0 0; font-size: var(--text-body); line-height: var(--leading-body); }
   .epic-empty { margin: 0; color: var(--muted); font-size: var(--text-body); }
+  /* THE EPICS BOARD (owner, 2026-11-06, w334): the phalanx's stones, but a row across the top;
+     the picked Epic's questions and its items as the island's bars (style.css button.item-bar) below. */
+  .epic-board { display: flex; flex-direction: column; gap: var(--space-subsection); min-width: 0; padding: var(--space-inset); }
+  .epic-strip { display: flex; flex: 0 0 auto; gap: var(--space-inline); padding-bottom: var(--space-row); overflow-x: auto; }
+  .epic-stone { position: relative; display: flex; flex: 0 0 auto; flex-direction: column; justify-content: space-between; gap: var(--space-row); width: var(--setup-stone-size); min-height: calc(var(--setup-stone-size) / 2); padding: var(--space-inline) var(--space-inset); overflow: hidden; border: var(--edge) solid var(--line-2); border-radius: var(--radius-hair); background: var(--surface); color: var(--fg); font: inherit; text-align: left; cursor: pointer; }
+  .epic-stone::before { content: ''; position: absolute; inset: 0 auto 0 0; width: var(--edge-2); background: var(--accent); /* the phalanx's mark */ }
+  .epic-stone:hover { border-color: var(--kaki); }
+  .epic-stone[aria-pressed='true'] { border-color: var(--kaki); background: var(--selected); box-shadow: inset var(--edge-2) 0 var(--kaki); }
+  .epic-stone[aria-pressed='true']::before { display: none; }
+  .epic-stone-label { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; color: var(--fg-strong); font-size: var(--text-label); font-weight: var(--weight-strong); line-height: var(--leading-tight); overflow-wrap: anywhere; }
+  .epic-stone-meta { overflow: hidden; color: var(--muted); font-size: var(--form-note); text-overflow: ellipsis; white-space: nowrap; }
+  .epic-board-body, .epic-items { display: flex; flex-direction: column; gap: var(--space-subsection); min-width: 0; }
+  .epic-items[hidden] { display: none; }
+  .epic-bars { display: flex; flex-direction: column; gap: var(--space-inline); }
+  .epic-bars > button.item-bar { font-family: inherit; }
+  .epic-reading { margin-left: var(--space-inset); padding: var(--space-inline) var(--space-inset); border: var(--edge) solid var(--line); border-radius: var(--radius-large); background: var(--surface); }
   /* WAITING ON YOU AND EPICS on the Team workbench (KAN-232): the Epic card format, a line's title plain
      (not a button), its wait in tabular figures, a comment box on --inset; the Team's Epics card is flush
      (createSurface's flush): the stones or record inside keep their own inset, and nothing here reaches into the kit. */
