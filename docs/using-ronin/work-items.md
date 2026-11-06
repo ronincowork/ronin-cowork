@@ -133,6 +133,7 @@ item watch w3                       # track it and everything under it; or name 
 item comment w12 "…"                # --edit <n> changes one
 item attach w12 docs/plan.md        # or a link; --remove <path> takes it off
 item link w12 Blocks w14            # or Relates, Duplicate, Cloners; --remove takes it off
+item archive w12                    # a Done item off every list now; --done [--team surface] clears every Done item you or your Teams hold
 item delete w12                     # with its subtasks
 ```
 
@@ -219,11 +220,14 @@ with any Team of the caller's that holds the item and any Team of the receiver's
 (an Agent's Teams are its Teams): a lead giving out Team work takes the Team off, and so does the
 owner or traffic_control giving a Team's item to a member. `--from` names the giver instead;
 `--keep-holding`, the rare case, keeps it on too. Any other holder stays, so a second Agent
-handed the item leaves the first on. There is no receiver `none`: letting go is a release. When an Agent ends, what it held goes by its
-status (project-management.md, How an item lives): To Do back to its Team, In Progress and In
+handed the item leaves the first on. There is no receiver `none`: nothing goes to nobody. Work
+given back goes to its Team, `item handoff w12 team:surface`; an ending is a handover.
+
+When an Agent ends, what it held goes by its status (project-management.md, How an item lives): To Do back to its Team, In Progress and In
 Review handed over with a note, Done to nobody. A Done item is off the open lists at once: the
 work record, the tile's record and its header chip count it on one line ("Done, not yet archived:
-N (ids)", newest first) until it is archived, five days after Done: off every list, the Epics
+N (ids)", newest first) until it is archived, five days after Done or at once with `item archive` (`--done` for
+every Done item you or your Teams hold): off every list, the Epics
 workbench and `item search` unless `--archived`; Ronin only, never Jira's issue. Leaving Done (a
 Send back, a Jira reopen) brings it back. An ending with no Agent to ask (Shut down
 Agent, archive, a crash) gives the unfinished ones to the Team flagged, and its lead is told

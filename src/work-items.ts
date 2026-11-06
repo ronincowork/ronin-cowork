@@ -1111,7 +1111,7 @@ const labels = (holders: Holder[]): string => holders.length ? holders.map(holde
  * are its session's tags). So a lead giving out Team work takes the Team off, and the owner or
  * traffic_control giving a Team's item to a member does too. `keepHolding`, the rare case, leaves
  * the giver on as well. Every other holder stays: a second Agent handed it leaves the first on.
- * There is no receiver none: letting go is release; an ending is handover. */
+ * There is no receiver none, as nothing goes to nobody: work given back goes to its Team; an ending is handover. */
 export function handoffItem(given: string, to: Holder, by: string, options: { from?: Holder; keepHolding?: boolean; note?: string } = {}): Promise<Acknowledged> {
   return withIssuer(async () => {
     const id = (await load(given)).id;
@@ -1201,6 +1201,7 @@ export function didLine({ item, line }: Acknowledged): string {
     : line.op === 'move' ? (line.to === 'none' ? `moved to no parent, ${line.note}` : `moved under ${line.to}, ${line.note}`)
       : line.op === 'assign' ? `is held by ${line.to}`
         : line.op === 'handoff' ? (line.to === 'none' ? `${line.from} let go` : line.from && line.from !== 'none' ? `was handed from ${line.from} to ${line.to}` : `is held by ${line.to}`)
+        : line.op === 'release' && line.note?.startsWith('archived') ? 'is archived'
         : line.op === 'release' || line.op === 'holder-ended' ? (line.to && line.to !== 'none' ? `went back to ${line.to}` : 'is held by nobody')
           : line.op === 'rename' ? `was renamed from ${line.from}`
               : line.op === 'comment' ? (line.from ? `comment ${line.from} was edited` : `has a comment from ${line.by}: ${line.note}`)
@@ -1302,6 +1303,42 @@ export function archiveDone(now = Date.now()): Promise<string[]> {
       archived.push(item.id);
     }
     return archived;
+  });
+}
+
+/** Archive now (KAN-292, owner: "we shouldnt have to wait to clear the deck"): what archiveDone
+ * does at five days, done at once by whoever asks: off every list, archived, one trail line
+ * "archived: by <caller>", told to nobody, Jira untouched; `item read` still finds it. The archive
+ * means Done, so an item not Done is refused, named; leaving Done brings it back (save). */
+export function archiveItem(given: string, by: string): Promise<Acknowledged> {
+  return withIssuer(() => archiveUnlocked(given, by));
+}
+
+async function archiveUnlocked(given: string, by: string): Promise<Acknowledged> {
+  const item = await load(given);
+  if (item.status !== DONE) throw new WorkItemRefused(`${item.id} is ${item.status}, not Done: only a Done item is archived.`);
+  if (item.archived) throw new WorkItemRefused(`${item.id} is archived already.`);
+  const from = await takeOffEveryList(item.id);
+  return appendTrail(item.id, by, (it) => {
+    it.archived = { at: new Date().toISOString() };
+    return { op: 'release', from: labels(from), to: 'none', note: `archived: by ${by}` };
+  }, () => false);
+}
+
+/** `item archive --done`: every Done item, not archived, that the caller or its Teams hold (an
+ * Agent's Teams are its session's tags and the Teams it leads); `team` narrows it to that Team's.
+ * Answers one acknowledgement per item archived, none when there is nothing to clear. */
+export function archiveHeldDone(by: string, team?: string): Promise<Acknowledged[]> {
+  return withIssuer(async () => {
+    const session = (await listSessions().catch(() => [])).find((one) => one.name === by);
+    const holders = new Set(team ? [`team:${team}`] : [`agent:${by}`, ...[...(session?.tags ?? []), ...(session?.leads ?? [])].map((name) => `team:${name}`)]);
+    const ids = new Set((await heldLists()).filter((list) => holders.has(holderLabel(list.holder))).flatMap((list) => list.holds));
+    const done: Acknowledged[] = [];
+    for (const id of ids) {
+      const item = await readItem(id);
+      if (item && item.status === DONE && !item.archived) done.push(await archiveUnlocked(id, by));
+    }
+    return done;
   });
 }
 

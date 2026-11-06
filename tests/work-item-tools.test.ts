@@ -269,6 +269,36 @@ test('a member takes its team\'s item by handoff --from team:<name>: off the tea
   assert.deepEqual((await holdersOf(id)).map(holderLabel).sort(), ['agent:probe', 'team:crew'], '--keep-holding keeps the giver on');
 });
 
+test('item archive clears Done now: off every list, archived, one trail line, nobody told; not Done is refused; --done clears what you or a Team hold', async () => {
+  const { holdersOf } = await import('../src/work-items.js');
+  const epic = made(await tool('item', ['create', '--title', 'Deck', '--kind', 'Epic']));
+  const [done, open, mine, teams] = [
+    made(await tool('item', ['create', '--title', 'Finished', '--parent', epic])),
+    made(await tool('item', ['create', '--title', 'Still going', '--parent', epic])),
+    made(await tool('item', ['create', '--title', 'Mine done', '--parent', epic])),
+    made(await tool('item', ['create', '--title', 'Team done', '--parent', epic])),
+  ];
+  await tool('item', ['handoff', done, open, 'team:crew']);
+  await tool('item', ['handoff', mine, 'probe']);
+  await tool('item', ['handoff', teams, 'team:crew']);
+  await tool('item', ['transition', done, mine, teams, 'Done']);
+
+  const line = await oneLine(done, ['archive', done]);
+  assert.deepEqual([line.op, line.from, line.note], ['release', 'team:crew', 'archived: by probe']);
+  assert.ok((await readItem(done))!.archived, 'archived at once, not in five days');
+  assert.deepEqual(await holdersOf(done), []);
+  assert.match(await tool('item', ['read', done]), /"archived"/, 'item read still finds it');
+  const refused = await run('item', ['archive', open]);
+  assert.notEqual(refused.status, 0);
+  assert.match(refused.stderr + refused.stdout, new RegExp(`${open} is To Do, not Done`));
+
+  assert.match(await tool('item', ['archive', '--done']), new RegExp(`${mine} is archived`), 'your own Done items');
+  assert.equal((await readItem(teams))!.archived, undefined, 'a Team you are not in is not yours');
+  assert.match(await tool('item', ['archive', '--done', '--team', 'crew']), new RegExp(`${teams} is archived`));
+  assert.match(await tool('item', ['archive', '--done', '--team', 'crew']), /Nothing Done to archive/);
+  assert.equal((await run('item', ['archive', '--done', 'extra'])).status, 2);
+});
+
 test('work-record read and read --json take a reading over 128 KB, the most one env string may hold', async () => {
   const { createItem } = await import('../src/work-items.js');
   await seedTegami('big_probe');

@@ -49,8 +49,8 @@ When you bring work to a lead, it decides first which of three it is:
 | On dev | the lead's promotion | still In Review; it moves to Ready to accept |
 | Accepted or sent back | you | Accept makes it Done, and the Agent holding it is told. Send back makes it In Progress with your comment, held where it is; the Agent holding it is told |
 | Handed over | the Agent, as it ends | to the Team (or a named Agent) with a **Handover** comment: where it stands, what is next. Its status stays |
-| Done | you | off the open lists at once, counted until it is archived ("Done, not yet archived: N (ids)" on the work record). Only the person accepting sets Done |
-| Archived | Ronin, five days after Done | off every list, the Epics workbench and `item search` (`--archived` finds it); `item read` and its documents still open. Jira's issue is untouched. Leaving Done brings it back |
+| Done | you | off the open lists at once, counted until it is archived ("Done, not yet archived: N (ids)" on the work record); the lead need not wait: `item archive --done` clears the deck. Only the person accepting sets Done |
+| Archived | Ronin, five days after Done; or anyone at once, `item archive <ids>` or `item archive --done [--team <t>]` (a Done item only) | off every list, the Epics workbench and `item search` (`--archived` finds it); `item read` and its documents still open. Jira's issue is untouched. Leaving Done brings it back |
 
 **An Agent's end hands over, never drops.** By status:
 

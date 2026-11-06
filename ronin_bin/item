@@ -18,6 +18,7 @@ Usage:
   item comment <id> <text>            item comment <id> --edit <n> <text>
   item attach <id> <path>|<url>|plan:<name>   item attach <id> --remove <path>|<url>|plan:<name>
   item link <id> <type> <id> [--remove]
+  item archive <ids>                  item archive --done [--team <t>]
   item delete <ids> [--in-jira]
 <ids> is one id or several (w12 w13 KAN-65), each acted on in turn; every id an item has had
 finds it (a w id still finds the item after it takes its Jira key), here, in read, edit and
@@ -44,7 +45,11 @@ Do). Can't decide? --flag "<the question>": it is flagged and your lead is told.
 handoff takes the giver off and the receiver on. The giver is you, with any Team of yours
 that holds the item and any Team of the receiver's that holds it; --from names it instead.
 --keep-holding, the rare case, keeps the giver on too. Any other holder stays: a second Agent
-handed it leaves the first on. Letting go is release; an ending is handover.
+handed it leaves the first on. Nothing goes to nobody: give work back with item handoff
+<id> team:<t>; an ending is handover.
+archive takes a Done item off every list now, as five days Done does: archived, one trail line,
+nobody told, Jira untouched; item read still finds it, and leaving Done brings it back. An item
+not Done is refused. --done archives every Done item you or your Teams hold; --team narrows it.
 delete takes the item's subtasks with it, in Ronin and in Jira; an epic's other children are
 left with no parent. An item that came from Jira is deleted only with --in-jira.
 edit --trello, --github set an external key; blank clears. Every change adds a trail line.
@@ -94,6 +99,10 @@ case "$verb" in
       esac
     done
     ronin_item_call GET "/api/work-items?${q#&}"; exit $? ;;
+  archive) [ "${1:-}" = --done ] && {
+      shift; team=''
+      if [ "$#" -eq 2 ] && [ "$1" = --team ]; then team=$2; elif [ "$#" -ne 0 ]; then die 'BAD-ARG: item archive takes <ids>, or --done [--team <t>]'; fi
+      ronin_item_call POST /api/work-items/archive-done "$(json ${team:+team "$team"})"; exit $?; } ;;
 esac
 id=${1:-}; [ -n "$id" ] || die "BAD-ARG: item $verb needs the item's id"; shift
 # SEVERAL IDS: the acts that take them read every leading argument that is an id (w12, KAN-65).
@@ -101,7 +110,7 @@ id=${1:-}; [ -n "$id" ] || die "BAD-ARG: item $verb needs the item's id"; shift
 # same body, each id answered on its own line.
 ids=("$id")
 case "$verb" in
-  transition|handoff|handover|watch|unwatch|flag|unflag|delete)
+  transition|handoff|handover|archive|watch|unwatch|flag|unflag|delete)
     while [ "$#" -gt 0 ] && [[ $1 =~ ^(w[1-9][0-9]*|[A-Z][A-Z0-9_]+-[1-9][0-9]*)$ ]]; do ids+=("$1"); shift; done ;;
 esac
 # item_act <act> <method> <body>: the one route for one id, the many route for several.
@@ -178,6 +187,8 @@ case "$verb" in
     for a in "$@"; do [ "$a" = --remove ] && remove=true || args+=("$a"); done
     [ "${#args[@]}" -eq 2 ] || die 'BAD-ARG: item link takes <id> <type> <id> [--remove], the type as the space names it (Blocks)'
     ronin_item_call POST "/api/work-items/$id/link" "$(json type "${args[0]}" to "${args[1]}" ${remove:+remove true})" ;;
+  archive) [ "$#" -eq 0 ] || die 'BAD-ARG: item archive takes <ids>, or --done [--team <t>]'
+    item_act archive POST "$(json)" ;;
   delete) [ "$#" -eq 0 ] || { [ "$#" -eq 1 ] && [ "$1" = --in-jira ]; } || die 'BAD-ARG: item delete takes <ids> [--in-jira]'
     item_act delete DELETE "$(json ${1:+in_jira true})" ;;
   *) usage >&2; exit 2 ;;

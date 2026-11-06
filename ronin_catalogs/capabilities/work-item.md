@@ -22,6 +22,7 @@
 | `item comment` | write: one comment, or `--edit <n>` changes one | priority | `item --help` |
 | `item attach` | write: attach or remove a document, visible in Docs | priority | `item --help` |
 | `item link` | write: a link by type name (Blocks, Relates, …) | priority | `item --help` |
+| `item archive` | write: one or several Done items off every list now, as five days Done does; `--done [--team <t>]` clears every Done item you or your Teams hold; an item not Done is refused | priority | `item --help` |
 | `item delete` | write: one or several items go, with their subtasks, in Ronin and in Jira; one that came from Jira only with `--in-jira` | priority | `item --help` |
 
 ## Syntax
