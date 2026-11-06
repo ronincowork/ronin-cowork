@@ -58,7 +58,23 @@ export type InstallStart =
  * to launch), so a caller can say Installing truthfully. The download and install run on in
  * the background; watchForServices reports how they end.
  */
-async function startInstall(): Promise<InstallStart> {
+let starting: Promise<InstallStart> | null = null;
+
+/**
+ * One start at a time. The check of the stage and the launch are not atomic, so a second
+ * Submit or Install arriving mid-start waits for the first and is told it is in progress,
+ * never launching a second updater onto the same log and exit files.
+ */
+export async function startInstall(): Promise<InstallStart> {
+  if (starting) {
+    await starting.catch(() => {});
+    return { started: false, reason: 'in_progress' };
+  }
+  starting = launchInstall();
+  try { return await starting; } finally { starting = null; }
+}
+
+async function launchInstall(): Promise<InstallStart> {
   if (rosterVerdict().whole) return { started: false, reason: 'already_installed' };
   if ((await readState()).stage === 'installing') return { started: false, reason: 'in_progress' };
   const run = installRun();

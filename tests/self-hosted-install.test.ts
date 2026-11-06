@@ -135,3 +135,17 @@ test('a stored email-confirmation stage reads as an actionable not_requested and
   assert.equal((await readState()).stage, 'error', 'an install error stays an install error');
   assert.equal(await getEntitlementToken(), 'held-token', 'the token file is untouched');
 });
+
+test('concurrent Submit and Install launch exactly one updater run', async () => {
+  await reset();
+  const before = (await launched()).length;
+  const answers = await Promise.all([
+    call('POST /api/setup/registration', { identity_mode: 'email', email: 'race@example.com' }),
+    call('POST /api/services/install'),
+    call('POST /api/services/install'),
+  ]);
+  const installs = answers.map((a) => a.body.install);
+  assert.equal(installs.filter((i) => i.started).length, 1, 'one start');
+  assert.equal(installs.filter((i) => !i.started && i.reason === 'in_progress').length, 2, 'the others are told it is in progress');
+  assert.equal((await launched()).length, before + 1, 'one updater launch, so one log and one exit file');
+});
