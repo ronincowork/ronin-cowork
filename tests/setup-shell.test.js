@@ -76,9 +76,8 @@ test('the Epics workbench: a stone per Epic in Tilespace 1, opened by Home\u2019
   assert.match(catalog, /profiles\.define\(WORKBENCH_PROFILES\.epics, \[WORKBENCH_TYPES\.epicRecords, WORKBENCH_TYPES\.epicRecord\]\)/);
   assert.match(catalog, /type: WORKBENCH_TYPES\.epicRecord, header: 'surface', className: 'wk-selector-entity', discover: \(_t, e\) => e\.epics\(\)/, 'an Epic is placed by a dragged stone or its selector card (KAN-206)');
   assert.match(surface, /filter\(\(item\) => item\.level === 1\)/, 'Epics are the level-1 work items');
-  assert.match(surface, /createPhalanx\(/, 'the stones are the kit phalanx');
-  assert.match(surface, /seat = 'workspace2'/, 'a pressed stone opens that Epic in Tilespace 2 (KAN-206)');
-  assert.match(surface, /place\?\.\(WORKBENCH_TYPES\.epicRecord, typeof seat === 'function' \? seat\(\) : seat/);
+  // w340 (owner, 2026-11-06): the board's stones switch the Epic in place; none places it in Tilespace 2.
+  assert.match(surface, /node\.addEventListener\('click', \(\) => \{ if \(epic\.id !== selected\) select\(epic\.id\); \}\);/);
   assert.match(surface, /hear\('epics',/, 'the Epics are the store\u2019s pushed epics (KAN-190), over the Campaign');
 });
 

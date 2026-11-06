@@ -288,7 +288,7 @@ export function createCoworkView(options = {}) {
     }, workspace: id }),
     // Waiting on you and Epics (KAN-232): the bench keeps one per seat across Teams, so each reads the Team entered now.
     teamWaiting: () => keepTeamSurface(createTeamWaiting({ team: () => team })),
-    teamEpics: (id) => keepTeamSurface(createTeamEpics({ team: () => team, workbench: bench, seat: () => oppositeSeat(id) })),
+    teamEpics: () => keepTeamSurface(createTeamEpics({ team: () => team })),
     epics: () => [],
     epicRecord: (_id, detail) => keepTeamSurface(createEpicRecord(detail.key, { epicsRead: createEpicsRead(() => '') })),
     archives: (id) => ({ el: archivesBySeat[id].el, show: () => void archivesBySeat[id].room.enter() }),

@@ -35,8 +35,19 @@ test('w334: the Epics board — a row of stones, two ERABI questions, the items 
   assert.match(source, /const items = byStatus\(byAssigned\(every, assigned\), statuses\);/);
   assert.match(source, /import \{ itemBar \} from '\.\/tile-island\.js';/, 'the island’s own bar');
   assert.match(source, /for \(const status of statusesOf\(items\)\)/, 'grouped by status, in workflow order');
-  assert.match(source, /node\.addEventListener\('click', \(\) => \{ select\(epic\.id === selected \? '' : epic\.id\); \}\);/, 'a stone selects in place; again, none');
+  assert.match(source, /node\.addEventListener\('click', \(\) => \{ if \(epic\.id !== selected\) select\(epic\.id\); \}\);/, 'a stone switches the Epic in place');
   assert.match(source, /renderItemDetail\(host, whole,/, 'a bar opens the item’s reading under it');
   const doors = await readFile(new URL('../public/js/door-workbenches.js', import.meta.url), 'utf8');
   assert.match(doors, /epicRecords: \(\) => keep\(createEpicBoard\(\{ epicsRead \}\)\)/);
+});
+
+test('w340: every Epic surface is the board, a stone switching the Epic in place; nothing opens elsewhere', async () => {
+  assert.match(source, /export const createEpicRecord = \(key, options\) => createEpicBoard\(\{ \.\.\.options, initial: key \}\);/, 'a selector card or dragged stone starts the board on its Epic');
+  assert.match(source, /if \(!selected && epics\.length === 1\) selected = epics\[0\]\.id;/, 'one Epic shows itself');
+  assert.match(source, /below\.replaceChildren\(source, view\.el\)/, 'the source line heads the items');
+  assert.doesNotMatch(source, /createEpicStones|workbench\?\.place/, 'no stone places a surface elsewhere');
+  const team = await readFile(new URL('../public/js/team-waiting.js', import.meta.url), 'utf8');
+  assert.match(team, /const board = createEpicBoard\(\{ epicsRead: read, header: false \}\);/, 'a Team\'s Epics card is the board over its Epics');
+  const view = await readFile(new URL('../public/js/cowork-view.js', import.meta.url), 'utf8');
+  assert.match(view, /teamEpics: \(\) => keepTeamSurface\(createTeamEpics\(\{ team: \(\) => team \}\)\)/);
 });

@@ -113,11 +113,12 @@ Accepting a Jira-paired item is you accepting it in Jira too: Done is yours to g
 lines change as soon as the item does; nothing needs refreshing.
 
 **Epics** shows the Team's Epics: those the Team or its Agents hold, and the Epic above
-each item they hold. With one Epic, the card opens straight onto that Epic's record: its
-statuses and its items as cards, as on the Epics workbench. With several, it shows a stone
-per Epic; press one to open its record in the other tilespace.
+each item they hold. It is the Epics board, as on the Epics workbench: a stone per Epic
+across the top, and the pressed one below it. Press another stone to switch to that Epic
+on the same card; nothing opens elsewhere. With one Epic, that one is shown.
 
-An Epic's record, here and on the Epics workbench, asks two questions: **Assigned** (**Yes**
+Under the stones, an Epic shows where it comes from (its Jira key, or Ronin only) and who
+holds it, then asks two questions: **Assigned** (**Yes**
 for the items an Agent holds, **No** for those only a Team holds or nobody holds, or **All**)
 and **Status** (To Do, In Progress and In Review on arrival; pick Done to see it). Under them,
 its items as bars, the item island's own, grouped by status: each bar its kind's symbol, key,
