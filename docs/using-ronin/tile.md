@@ -40,7 +40,7 @@ an outline when it is not. An item In Review also carries its latest signal, "ha
 Agent, so the island shows only what its Agent holds. Press the bar again, or a pill, to put it back in the header.
 
 Down, **More detail** widens the list to the tile's width: a bar per item, only as tall as the
-items need (past the tile's foot it scrolls). Each bar reads the pill's row (symbol, key, title,
+items need (past the tile's foot the bars scroll, and the bar above them and **Less detail** below stay in view). Each bar reads the pill's row (symbol, key, title,
 status, flag, hand-in) and under it what the item is: its description (two lines), its last
 comment (who, how long ago, the first line), and its facts: priority, the Task it is under,
 how many Subtasks are open, attachments, comments, and when it last moved. A Task's open

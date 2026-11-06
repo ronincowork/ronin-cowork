@@ -97,6 +97,9 @@ export function handInWords(signal, now = Date.now()) {
   return `${signal.kind === 'dev' ? t('island.on_dev', 'on dev') : t('island.handed_in', 'handed in')} ${ago}`;
 }
 
+/** "1 subtask", "3 subtasks" (w323): the bar's facts and the pill's hover say it the same. */
+export const subtaskWords = (n) => (n === 1 ? t('island.subtask', '1 subtask') : t('island.subtasks', '{n} subtasks', { n }));
+
 /** An item's newest comment, or null. */
 export const lastComment = (item) => (Array.isArray(item?.comments) && item.comments.at(-1)) || null;
 
@@ -111,7 +114,7 @@ export function barFacts(item, subtasks = 0, now = Date.now()) {
   return [
     item?.priority ? t('island.priority', '{p} priority', { p: item.priority }) : '',
     item?.parent ? t('island.under', 'under {id}', { id: item.parent }) : '',
-    subtasks ? t('island.subtasks', '{n} subtasks', { n: subtasks }) : '',
+    subtasks ? subtaskWords(subtasks) : '',
     attachments ? t('island.attachments', '{n} attached', { n: attachments }) : '',
     comments === 1 ? t('island.comment', '1 comment') : comments ? t('island.comments', '{n} comments', { n: comments }) : '',
     moved ? t('island.moved', 'moved {age} ago', { age: age(moved) }) : '',
@@ -215,7 +218,7 @@ export function createItemIsland({ open, shut, isOpen }) {
       const mark = Object.assign(document.createElement('span'), { className: 'item-pill-subtasks' });
       mark.append(kindMark('Subtask'), String(count));
       node.dataset.subtasks = String(count);
-      node.title = `${node.title} · ${t('island.subtasks', '{n} subtasks', { n: count })}`;
+      node.title = `${node.title} · ${subtaskWords(count)}`;
       node.setAttribute('aria-label', node.title);
       node.append(mark);
     }

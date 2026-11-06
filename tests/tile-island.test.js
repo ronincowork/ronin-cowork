@@ -4,7 +4,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { barFacts, handInSignal, handInWords, kindKey, lastComment, pillWords, statusKey } from '../public/js/tile-island.js';
+import { barFacts, handInSignal, handInWords, kindKey, lastComment, pillWords, statusKey, subtaskWords } from '../public/js/tile-island.js';
 
 const read = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
 
@@ -104,4 +104,15 @@ test('w322: the wide list, a bar per item with its description, last comment and
   const css = await read('public/style.css');
   assert.match(css, /\.tile-head \.item-island\[data-state='wide'\] \{\n  position: absolute;/);
   assert.match(css, /\.item-bar \.item-bar-comment \{ -webkit-line-clamp: 1;/);
+});
+
+test('w323: one subtask is singular; wide, the bars scroll and the way out stays in view', async () => {
+  assert.equal(subtaskWords(1), '1 subtask');
+  assert.equal(subtaskWords(3), '3 subtasks');
+  assert.ok(barFacts({ parent: 'KAN-1' }, 1).includes('1 subtask'));
+  const island = await read('public/js/tile-island.js');
+  assert.match(island, /node\.title = `\$\{node\.title\} · \$\{subtaskWords\(count\)\}`/, 'the pill hover');
+  const css = await read('public/style.css');
+  assert.match(css, /\[data-state='wide'\] \{[^}]*overflow: hidden;/);
+  assert.match(css, /\[data-state='wide'\] \.item-island-bars \{[^}]*min-height: 0; overflow-y: auto;/);
 });

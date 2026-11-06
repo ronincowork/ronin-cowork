@@ -1279,6 +1279,7 @@ The catalog entry goes. {dir} is not touched.
 - **island.items:** Work items held
 - **island.down:** Show the work items with their status
 - **island.up:** Put the work items back in the header
+- **island.subtask:** 1 subtask
 - **island.subtasks:** {n} subtasks
 - **island.handed_in:** handed in
 - **island.on_dev:** on dev
