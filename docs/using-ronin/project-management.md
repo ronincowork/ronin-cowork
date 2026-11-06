@@ -92,7 +92,7 @@ Very few notices, and never the same news twice:
 |---|---|
 | a hand-in | the lead of the Team holding the work (one message, from the hand-in itself) |
 | a call for help (a flag), or an Agent ended without a handover | the lead of the Team holding the item, and the lead or epic holder above it; for an ending, the lead of the Team its items went to, once |
-| a status change | holding a Team item's Team (as its lead), or watching the item |
+| a status change | the lead of the Team holding the item, or watching it |
 | a comment | holding or watching the item |
 | someone else's change on your item | the Agent doing it |
 | a Jira item with nobody on it | traffic_control, which places it |
