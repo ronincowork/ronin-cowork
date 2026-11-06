@@ -671,8 +671,8 @@ nothing paints exactly this.
 - **epics.title:** Epics
 
 ## services — services-card.js (the Services activation card)
-- **services.stage_not_requested:** Not requested
-- **services.stage_not_requested_blurb:** Ronin Services are not switched on for this machine.
+- **services.stage_not_requested:** Not installed
+- **services.stage_not_requested_blurb:** Ronin Services are not installed on this machine.
 - **services.stage_installing:** Installing Services
 - **services.stage_installing_blurb:** This machine is fetching and verifying the download.
 - **services.stage_installed:** Services are ready
@@ -681,9 +681,6 @@ nothing paints exactly this.
 - **services.stage_error_blurb:** The Services install did not finish.
 - **services.unreachable:** could not reach the operator
 - **services.entitlement:** entitlement
-- **services.email:** Your email address
-- **services.disclosure:** Ronin receives this address, the accepted terms version, and a request from 
-- **services.send_confirmation:** Send confirmation email
 - **services.install_now:** Install Services now
 - **services.egress_summary:** what this machine has sent ({n})
 - **services.working:** working…

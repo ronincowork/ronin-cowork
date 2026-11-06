@@ -1,24 +1,24 @@
 /**
  * THE SERVICES CARD — the activation flow as a person sees it.
  *
- * One card, six states, and the state comes from the operator rather than from what this
+ * One card, four states, and the state comes from the operator rather than from what this
  * page remembers doing. A reload, a second tab, or an operator restart all land on the
  * truth, because the durable stage lives on disk and this only renders it.
  *
- * NO SECRET REACHES THIS FILE. The claim secret and the entitlement token stay with the
- * operator; the browser sees a masked address, a stage, and an entitlement id — which
- * identifies and cannot authorize.
+ * NO SECRET REACHES THIS FILE. An entitlement token, where a machine holds one, stays with
+ * the operator; the browser sees a stage and an entitlement id — which identifies and cannot
+ * authorize.
  */
 import { request } from './request.js';
 import { store } from './store.js';
-import { button, field, status } from './ui.js';
+import { button, status } from './ui.js';
 import { t } from './lexicon.js';
 
 /** How the four durable stages read to a person, in their words rather than ours.
  *  A function, not a table: the lexicon loads after this module is evaluated. */
 function stageWords() {
   return {
-    not_requested: [t('services.stage_not_requested', 'Not requested'), t('services.stage_not_requested_blurb', 'Ronin Services are not switched on for this machine.')],
+    not_requested: [t('services.stage_not_requested', 'Not installed'), t('services.stage_not_requested_blurb', 'Ronin Services are not installed on this machine.')],
     installing: [t('services.stage_installing', 'Installing Services'), t('services.stage_installing_blurb', 'This machine is fetching and verifying the download.')],
     installed: [t('services.stage_installed', 'Services are ready'), t('services.stage_installed_blurb', 'Nothing further to do.')],
     error: [t('services.stage_error', 'Needs attention'), t('services.stage_error_blurb', 'The Services install did not finish.')],
@@ -75,33 +75,9 @@ export function servicesCard(container, onChange) {
     const actions = document.createElement('div');
     actions.className = 'st-row';
 
-    if (state.stage === 'not_requested') {
-      const email = document.createElement('input');
-      email.type = 'email';
-      email.className = 'st-inp';
-      email.placeholder = 'you@example.com';
-      const f = field(email, { label: t('services.email', 'Your email address'), sr: false });
-      f.el.classList.add('st-field');
-      // The same disclosure as first run, because a person may meet Services for the first
-      // time here rather than there. docs/architecture/services-activation.md lists what this must say;
-      // about the product rather than a description of it.
-      f.say(t('services.disclosure', 'Ronin receives this address, the accepted terms version, and a request from '
-        + 'this install — enough to verify you and manage Services access. Services then '
-        + 'sends the weekly operating statistics described in the terms: counts, never code '
-        + 'and never what was typed. Free Cowork sends none of this merely because it is '
-        + 'installed. A pending request can be cancelled, and Services can be uninstalled later.'));
-      wrap.appendChild(f.el);
-
-      // The action names what it DOES. "Save" would hide an immediate, disclosed account
-      // action behind a word that means "write this down".
-      actions.appendChild(nodeOf(button(t('services.send_confirmation', 'Send confirmation email'), {
-        onClick: () => act(f, '/api/setup/registration', { email: email.value.trim() }),
-      })));
-    }
-
-    if (state.stage === 'error') {
-      // Recovery only. Installation normally starts by itself when registration is
-      // submitted; this is for the case where it failed and somebody wants to try again.
+    if (state.stage === 'not_requested' || state.stage === 'error') {
+      // Installing needs no registration or entitlement. The same press retries a failed
+      // install; the answer says only whether the installer started.
       actions.appendChild(nodeOf(button(t('services.install_now', 'Install Services now'), {
         onClick: () => act(line, '/api/services/install', {}),
       })));

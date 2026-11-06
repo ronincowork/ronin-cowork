@@ -155,3 +155,32 @@ test('the ⚙ Services card follows an install by push and never polls', async (
   store.receive({ t: 'services-setup', services: { activation: { stage: 'installing' } } });
   assert.match(texts(host), /Services are ready/, 'stopped: the push is not heard');
 });
+
+test('the ⚙ Services card offers Install Services now with plain copy, and no email form', async () => {
+  const { servicesCard } = await import('../public/js/services-card.js');
+  asked.length = 0;
+  let stage = 'not_requested';
+  answer = (url, options) => (url === '/api/services/install' && options.method === 'POST'
+    ? { activation: { stage: 'installing' }, install: { started: true } }
+    : { stage });
+  const host = new FakeNode('div');
+  const card = servicesCard(host);
+  await settle();
+  const painted = texts(host);
+  assert.match(painted, /Not installed/);
+  assert.match(painted, /Ronin Services are not installed on this machine\./);
+  assert.doesNotMatch(painted, /confirm|verify|email|pending request|cancel|weekly|statistics/i, 'no confirmation, email or sharing words');
+  assert.equal([...host.walk()].some((n) => n.tagName === 'INPUT'), false, 'no email field');
+  const install = [...host.walk()].find((n) => n.tagName === 'BUTTON' && n.textContent === 'Install Services now');
+  assert.ok(install, 'Install Services now is offered when nothing is installed');
+  install.click();
+  await settle();
+  assert.deepEqual(asked, ['GET /api/services/activation', 'POST /api/services/install'], 'the press asks once, at the install route');
+  assert.match(texts(host), /Installing Services/, 'and paints the answer it got');
+  assert.equal([...host.walk()].some((n) => n.tagName === 'BUTTON' && n.textContent === 'Install Services now'), false, 'no Install while installing');
+
+  store.receive({ t: 'services-setup', services: { activation: { stage: 'error', error_at_stage: 'installing', error_message: 'Ronin Services did not install: could not download release v1.7.0' } } });
+  assert.match(texts(host), /could not download release v1\.7\.0/, 'a failed install says why');
+  assert.ok([...host.walk()].find((n) => n.tagName === 'BUTTON' && n.textContent === 'Install Services now'), 'and offers the same press again');
+  card.stop();
+});

@@ -14,7 +14,7 @@ Services before any optional part is loaded.
 | `src/activation/secrets.ts` | Protected entitlement credential, when a machine holds one |
 | `src/routes/services-activation-api.ts` | Registration, install start and install watch |
 | `public/js/services-setup-state.js` | Derive the Setup actions from measured registration, installation, and activation facts |
-| `src/update-run.ts` | Shared updater launcher |
+| `src/update-run.ts` | Shared updater launcher, through `systemd-run` or the spawn broker |
 | `src/activation/tomodachi.ts` | Send Services packets through the existing HQ transport |
 
 The remote wire contract belongs to Ronin HQ (Shiwake). Services part discovery and
@@ -46,7 +46,8 @@ needs an entitlement. A machine that holds an entitlement still fetches through 
 release grant. Without one, the updater uses the public feed, so Services releases must be
 readable without credentials for that path to complete.
 
-Starting is not installing. The answer says only whether the updater was launched. The run
+Starting is not installing. One start runs at a time, so concurrent presses launch one
+updater. The answer says only whether the updater was launched. The run
 writes its output and exit code beside the activation record, and the install watch turns a
 failed run into an error carrying the updater's reason. Installation completion needs
 runtime evidence (the loaded roster), not a downloaded artifact or a token. An install

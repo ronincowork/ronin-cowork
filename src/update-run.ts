@@ -1,4 +1,3 @@
-import { spawn } from 'node:child_process';
 import { join } from 'node:path';
 import { REPO_ROOT } from './resources.js';
 import { execFile } from './spawn-broker.js';
@@ -35,10 +34,11 @@ export function runUpdater(pkg: Package, result?: RunResult): Promise<Started> {
       ...args,
     ], { timeout: 10000 }).then(
     () => ({ via: 'systemd-run' as const }),
-    () => {
-      const child = spawn(args[0]!, args.slice(1), { detached: true, stdio: 'ignore', env: { ...process.env, ...env } });
-      child.unref();
-      return { via: 'detached' as const };
-    },
+    // No systemd: start the same command through the broker, its only door. setsid -f
+    // leaves Ronin's process group as the old detached spawn did, and the redirect stops
+    // execFile waiting on inherited pipes. (system_lead, 2026-11-06)
+    () => execFile('/bin/sh', ['-c', 'setsid -f "$0" "$@" >/dev/null 2>&1', ...args],
+      { timeout: 10000, env: { ...process.env, ...env } })
+      .then(() => ({ via: 'detached' as const })),
   );
 }
