@@ -7,10 +7,16 @@
  * launching Agents, not Ronin Cloud customer or subscription accounts.
  */
 import { listProviderCatalog } from './model-providers.js';
+import { readOfficeRecord } from './office-record.js';
 import { deleteHermesEntry, discoverHermesModels, hermesSettingsAnswer, saveHermesConnection, saveHermesSetup, updateHermesConnectionLists, type AccountKind, type HermesConnection } from './hermes-setups.js';
 
-/** The house gateway's office door, where Hermes reaches it today (ronin-services/model_gateway). */
+/** The house gateway's office door on a developer's own box (ronin-services/model_gateway side by side). */
 export const RONIN_API_BASE_URL = 'http://127.0.0.1:4912/v1';
+/** Where this Ronin's house calls go: the office record's gateway_office when it is an office on an office_host, else the local door. */
+export async function roninApiBaseUrl(): Promise<string> {
+  const office = await readOfficeRecord();
+  return office.hosting === 'office_host' ? `${office.record.gateway_office}/v1` : RONIN_API_BASE_URL;
+}
 export const RONIN_API_SEED_ID = 'ronin_api';
 /** The Ronin API does not serve Claude Code (owner, 2026-11-03). */
 const NOT_ON_RONIN_API = new Set(['claude']);
@@ -27,6 +33,7 @@ export interface Preset { id: string; name: string; harness: 'hermes'; account: 
 export interface AccountsAnswer { accounts: Account[]; presets: Preset[]; kinds: AccountKind[] }
 
 const isGateway = (baseUrl: string) => /^http:\/\/127\.0\.0\.1:\d+(\/|$)/.test(baseUrl);
+/** A connection with no saved kind is the house gateway when it points at the local door; a hosted office's seed carries its kind. */
 export const accountKind = (c: Pick<HermesConnection, 'kind' | 'baseUrl'>): AccountKind => c.kind ?? (isGateway(c.baseUrl) ? 'ronin_api' : 'personal_api');
 
 async function roninApiHarnesses(): Promise<string[]> {
@@ -52,7 +59,7 @@ export async function accountsAnswer(): Promise<AccountsAnswer> {
   const state = await hermesSettingsAnswer();
   const accounts = await Promise.all(state.connections.map(project));
   if (!accounts.some(a => a.kind === 'ronin_api')) {
-    accounts.push({ id: RONIN_API_SEED_ID, kind: 'ronin_api', name: 'Ronin API', provider: 'custom', baseUrl: RONIN_API_BASE_URL, wire: 'responses', configured: false, seeded: true,
+    accounts.push({ id: RONIN_API_SEED_ID, kind: 'ronin_api', name: 'Ronin API', provider: 'custom', baseUrl: await roninApiBaseUrl(), wire: 'responses', configured: false, seeded: true,
       harnesses: await roninApiHarnesses(), bound: BOUND_HARNESSES, models: [], offered: [] });
   }
   const presets: Preset[] = state.setups.map(s => ({ id: s.id, name: s.name, harness: 'hermes', account: s.connection, model: s.model, reasoning: s.reasoning, approvals: s.approvals }));

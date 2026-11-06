@@ -12,12 +12,15 @@ import { buildKansou, sendKansou } from '../activation/kansou.js';
 import { registrationAnswer, submitRegistration } from '../activation/registration.js';
 import { deleteRegistration } from '../activation/registration.js';
 import { installedAnswer } from './installed-api.js';
+import { readOfficeRecord } from '../office-record.js';
 import { broadcastEvent } from '../ws/events.js';
 
 async function activationAnswer(): Promise<Record<string, unknown>> {
   return {
     ...publicState(await readState()),
     entitled: await isEntitled(),
+    // Self-hosted, or an office on an office_host: Setup hides Register and Install on an office_host.
+    office: await readOfficeRecord(),
     egress: await readEgress(20),
     receipts: await listReceipts(10),
   };

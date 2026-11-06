@@ -21,6 +21,22 @@ The remote wire contract belongs to Ronin HQ (Shiwake). Services part discovery 
 registration belong to the [Services connector contract](https://github.com/ronincowork/ronin-services/blob/dev/connector-contract.md).
 Do not create a second activation aggregate in Services or in machine-settings projections.
 
+## Self-hosted and hosted
+
+Hosted is a fact, not an inference. An office on an office_host carries an office record
+(`office.json` in the `office` store: `office_id`, `office_host`, `gateway_office`,
+`provisioned_at`), written once by the provisioner together with the office's two credentials
+in `services_secrets` (`entitlement_token` for Ronin HQ, `house_token` for the model gateway).
+Self-hosted has no record and holds nothing HQ-related. `readOfficeRecord()` is the only reader;
+a present file that does not read is `unreadable`, a provisioning fault, never self-hosted.
+
+What asks it: the Services account part (no record, no HQ call; `GET /api/account` answers
+`not_hosted`), the Tomodachi sender (sends from hosted offices only), the Hermes house-gateway
+seed (the record's `gateway_office`, else the developer's local door), the Setup posture (an
+office_host hides Register and Install; a missing install there is said as a fault) and the
+machine reading (`observed.office`), which is how Agents see it. Settings shows the two
+sections, Office and Account, which must agree on the `office_id`; a disagreement is said.
+
 ## Registration and runtime state
 
 `/api/setup/registration` owns the registration surface. There is no email confirmation:
@@ -58,7 +74,7 @@ and remain server-side.
 ## Outbound measurements
 
 Services produces aggregate packets; Cowork's HQ sender owns transport, authentication,
-receipts, and retries. A packet remains pending until acknowledged; closed refusals are
+receipts, and retries, and sends only from an office on an office_host (the office record). A packet remains pending until acknowledged; closed refusals are
 retained separately rather than retried forever. The connection record covers this HQ
 transport, not provider CLI traffic or all machine networking.
 
@@ -68,6 +84,7 @@ must not be presented as proof of seven days of activity.
 
 ## Verification
 
+`tests/office-record.test.ts` checks the three readings of the office record;
 `tests/services-activation.test.ts` checks the local state with isolated dependencies;
 `tests/self-hosted-install.test.ts` drives Submit → install start and failure reporting with
 a fake launcher.

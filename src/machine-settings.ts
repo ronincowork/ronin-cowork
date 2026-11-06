@@ -11,6 +11,7 @@ import { roninIdentity } from './routes/version.js';
 import { listProjectRoots } from './project-roots.js';
 import { listProviderCatalog, listSessionLaunchSpecs, parseProviderSummary, TIERS } from './model-providers.js';
 import { storeDir } from './resources.js';
+import { readOfficeRecord } from './office-record.js';
 import { AGENTS, listAgentAvailability } from './agents.js';
 import { execFile as brokerExecFile } from './spawn-broker.js';
 import { tmux } from './tmux-client.js';
@@ -510,6 +511,8 @@ async function readObserved(jobKeyNames: string[]): Promise<Record<string, unkno
       contract: CONTRACT_V,
       services: listServices(),
     },
+    // Self-hosted, or an office on an office_host: the office record, the same fact the browser's Office section shows.
+    office: await readOfficeRecord(),
     routes: routes(),
     reach: await sshReach(),
     weights: await localWeights(),

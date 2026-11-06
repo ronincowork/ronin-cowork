@@ -118,7 +118,7 @@ export function createCampaignView() {
       const el = elem('div', 'st-surface');
       surface.content.append(el);
       let card = null;
-      return { el: surface.el, show: () => { if (card) void card.load(); else card = accountCard(el, { absent: t('account.absent', 'Not installed: this Ronin has no Services account part.') }); } };
+      return { el: surface.el, show: () => { if (card) void card.load(); else card = accountCard(el, { absent: t('account.absent_no_part', 'No Ronin HQ account: this Ronin has no Services account part.') }); } };
     },
     campaignCreate: ({ workspace }) => {
       const surface = createNewCampaignSurface(async (fields) => {
