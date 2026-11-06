@@ -14,9 +14,9 @@
  * Each card shows what the user reads first (ITEM_HANDOVER): the objective, what done looks
  * like, and the Handed in note, what to try; the other comments fold under them.
  *
- * EPICS (`createTeamEpics`): the Team's Epics. One opens straight onto its record
- * (`createEpicRecord`); several are a phalanx of Epic stones (`createEpicStones`), a pressed one
- * opening its record in the other tilespace, as the Epics workbench does.
+ * EPICS (`createTeamEpics`): the Team's Epics on the Epics board (`createEpicBoard`; owner,
+ * 2026-11-06, w340): a stone per Epic across the top, the pressed one shown below on this same
+ * card; with one Epic, that one.
  *
  * "The Team's items" are what the Team holds and what its members hold, the set `team member
  * status` reads. The teams push carries both readings on the Team's row (`waiting`, `epics`;
@@ -27,7 +27,7 @@ import { WorkspaceKit } from './workspace-kit.js';
 import { t } from './lexicon.js';
 import { request } from './request.js';
 import { subscribe as hearTeams, teamByName } from './team-controller.js';
-import { createEpicRecord, createEpicStones, createEpicsRead, holderButton } from './epics-surface.js';
+import { createEpicBoard, createEpicsRead, holderButton } from './epics-surface.js';
 import { humanAge } from './work-record.js';
 
 const el = (tag, cls = '', text = '') => {
@@ -194,11 +194,10 @@ export function createTeamWaiting({ team }) {
   };
 }
 
-/** The Team's Epics: one opens onto its record, several are Epic stones. `seat` names the
- * tilespace a pressed stone opens its record in. */
-export function createTeamEpics({ team, workbench, seat }) {
+/** The Team's Epics: the Epics board over the Epics the Team or its Agents hold. */
+export function createTeamEpics({ team }) {
   const { createSurface, setSurfaceState } = WorkspaceKit.primitives;
-  const out = createSurface({ label: t('epics.title', 'Epics'), className: 'setup-surface team-epics', flush: true }); // the stones or record inside keep their own inset
+  const out = createSurface({ label: t('epics.title', 'Epics'), className: 'setup-surface team-epics', flush: true }); // the board inside keeps its own inset
   const every = createEpicsRead(() => '');
   const mine = () => teamEpicIds(teamByName(team()));
   const read = {
@@ -210,40 +209,19 @@ export function createTeamEpics({ team, workbench, seat }) {
       return () => { stopEpics(); stopTeams(); };
     },
   };
-  let stones = null;
-  const records = new Map(); // epic id -> its record, made the first time it is the only one
-  let at = null; // what is drawn: 'stones', an epic id, or 'none'
-  const hide = () => { for (const child of out.content.children) child.hidden = true; };
-
+  const board = createEpicBoard({ epicsRead: read, header: false });
+  out.content.append(board.el);
   function paint() {
     const epics = read.list();
-    const next = epics.length === 1 ? epics[0].id : epics.length ? 'stones' : 'none';
-    out.header.title.textContent = epics.length === 1 ? (epics[0].title || epics[0].id) : t('epics.title', 'Epics');
-    setSurfaceState(out.el, next === 'none' ? 'empty' : null, next === 'none' ? t('team_epics.none', 'No Epics for this Team yet.') : '');
-    if (next === at) return;
-    at = next;
-    hide();
-    if (next === 'stones') {
-      if (!stones) { stones = createEpicStones({ epicsRead: read, workbench, seat, header: false }); out.content.append(stones.el); }
-      stones.el.hidden = false;
-      stones.show();
-    } else if (next !== 'none') {
-      if (!records.has(next)) { const record = createEpicRecord(next, { epicsRead: read, header: false }); records.set(next, record); out.content.append(record.el); }
-      const record = records.get(next);
-      record.el.hidden = false;
-      record.show();
-    }
+    const one = epics.length === 1 ? epics[0] : null;
+    out.header.title.textContent = one ? (one.title || one.id) : t('epics.title', 'Epics');
+    setSurfaceState(out.el, epics.length ? null : 'empty', epics.length ? '' : t('team_epics.none', 'No Epics for this Team yet.'));
+    board.el.hidden = !epics.length;
   }
-
   let stop = null;
   return {
     el: out.el,
-    show: () => { stop ??= read.subscribe(paint); paint(); },
-    destroy: () => {
-      stop?.(); stop = null;
-      stones?.destroy(); stones = null;
-      for (const record of records.values()) record.destroy();
-      records.clear();
-    },
+    show: () => { stop ??= read.subscribe(paint); paint(); board.show(); },
+    destroy: () => { stop?.(); stop = null; board.destroy(); },
   };
 }

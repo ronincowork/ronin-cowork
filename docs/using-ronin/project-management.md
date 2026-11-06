@@ -115,7 +115,8 @@ an item has a link on the Jira item that opens its chat.
   its items are open. Press one and below come **Assigned** (Yes / No) and **Status**, then its
   items as bars grouped by status, each saying what the item is and who holds it
   ("Team surface (lead surface_lead)", or "@agent"); a bar opens the item's reading. Drag a
-  stone into a tilespace to place that epic there. Archived items are not on it.
+  stone into a tilespace to place that epic there. Press another stone to switch epics on the
+  same surface; a Team's Epics card is the same board. Archived items are not on it.
 - **Team workbench › Waiting on you:** what waits on you, oldest first. **With the lead**
   (handed in, not yet on dev), **Ready to accept** (Accept, Send back) and **Stuck** (Reply).
 - **Team workbench › Epics:** the Team's epics; one opens straight onto its record, several

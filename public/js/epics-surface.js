@@ -1,24 +1,21 @@
 /* part of the ronin-cowork client — see js/README.md */
 /**
- * THE EPICS WORKBENCH'S SURFACES (owner, 2026-11-02; KAN-187, KAN-206). Epics are work items, the
- * level-1 parents (work-items.ts). Tilespace 1 holds a stone per Epic (`createEpicStones`), each
- * its title only; every Epic is also a selector card. Dragged into a tilespace, a stone places
- * that Epic there (`createEpicRecord`).
+ * THE EPICS WORKBENCH'S SURFACES (owner, 2026-11-02; KAN-187). Epics are work items, the level-1
+ * parents (work-items.ts); every Epic is also a selector card.
  *
- * THE BOARD (owner, 2026-11-06, w334; it replaced KAN-206's stones-then-Tilespace-2): the Epics
- * workbench's Tilespace 1 is `createEpicBoard`, borrowed from the phalanx but its own: a row of
- * Epic stones across the top; one pressed is selected and its items come below, under two ERABI
- * questions, Assigned (Yes / No) and Status (the open ones on arrival), as the item island's
- * bars (tile-island.js itemBar) grouped by status. A bar opens the item's reading under it. A
- * stone dragged, or an Epic's selector card, still places one Epic (`createEpicRecord`, the same
- * questions and bars under where it comes from). A Team's Epics card keeps `createEpicStones`.
+ * THE BOARD (owner, 2026-11-06, w334, w340): every Epic surface is `createEpicBoard`, borrowed
+ * from the phalanx but its own: a row of stones across the top, one per Epic; the pressed one is
+ * the Epic shown below (where it comes from and its holder), under two ERABI questions, Assigned
+ * (Yes / No) and Status (the open ones on arrival), its items as the item island's bars
+ * (tile-island.js itemBar) grouped by status. A stone switches the Epic on the same surface;
+ * nothing opens another. The Epics workbench's Tilespace 1 starts on none picked; an Epic's
+ * selector card, a dragged stone (`createEpicRecord`) and a Team's Epics card start on theirs.
  *
  * The Epics and their items are the store's pushed `epics` and `epicItems` (js/store.js;
  * KAN-190), narrowed to the Campaign this tab looks at (`createEpicsRead`). Nothing asks the
  * server on a push: the only request is an opened bar's whole reading (its status moves there).
  */
 import { WorkspaceKit } from './workspace-kit.js';
-import { createPhalanx } from './phalanx.js';
 import { t } from './lexicon.js';
 import { request } from './request.js';
 import { subscribe as hear } from './store.js';
@@ -90,49 +87,6 @@ export function holderButton(item) {
   button.title = holder.kind === 'team' ? t('epics.open_team', 'Open this Team') : t('epics.open_agent', 'Open this Agent');
   button.addEventListener('click', () => openHolder(holder));
   return button;
-}
-
-/** The Epic stones, at rest; pressed, the Epic opens in `seat` (Tilespace 2 on the Epics workbench).
- * `header: false` draws them headless, inside a surface that heads them (the Team's Epics card). */
-export function createEpicStones({ epicsRead, workbench, seat = 'workspace2', header = true }) {
-  const { createSurface } = WorkspaceKit.primitives;
-  const out = createSurface({ label: t('epics.title', 'Epics'), className: 'setup-surface epics-records', header });
-  const messages = el('div', 'pr-status');
-  messages.setAttribute('role', 'status');
-  const say = (message) => {
-    messages.replaceChildren();
-    if (message) messages.append(el('div', 'pr-empty', message));
-  };
-  const stones = createPhalanx({ className: 'epic-stones' });
-  stones.mount(out.content, { before: [messages] });
-  let drawn = null;
-  function paint() {
-    const epics = epicsRead.list();
-    say(epics.length ? '' : t('epics.none', 'No Epics yet.'));
-    const next = epics.map((epic) => {
-      const label = epic.title || epic.id;
-      return {
-        id: epic.id, label,
-        secondary: epic.external?.jira?.key || t('epics.ronin_only', 'Ronin only'),
-        action: () => workbench?.place?.(WORKBENCH_TYPES.epicRecord, typeof seat === 'function' ? seat() : seat, { key: epic.id }),
-        draggable: true,
-        events: { dragstart: (event) => {
-          event.dataTransfer.setData(SURFACE_DRAG, JSON.stringify({ type: WORKBENCH_TYPES.epicRecord, detail: { key: epic.id } }));
-          event.dataTransfer.setData('text/plain', label);
-          event.dataTransfer.effectAllowed = 'copy';
-        } },
-      };
-    });
-    const signature = JSON.stringify(next.map(({ id, label, secondary }) => [id, label, secondary]));
-    if (signature !== drawn) { drawn = signature; stones.setItems(next); }
-    workbench?.refreshSelector?.();
-  }
-  let stop = null;
-  return {
-    el: out.el,
-    show: () => { stop ??= epicsRead.subscribe(paint); paint(); },
-    destroy: () => { stop?.(); stop = null; stones.destroy(); },
-  };
 }
 
 /** The statuses the Status question picks on arrival: the open ones (owner, 2026-11-06, w334). */
@@ -221,13 +175,13 @@ function epicItems(epicId, { epicsRead }) {
 }
 
 /**
- * THE EPICS BOARD (owner, 2026-11-06, w334): the Epics workbench's worksurface. Borrowed from the
- * phalanx, but its own: a row of stones across the top, one per Epic (its title, its Jira key
- * or Ronin only, how many of its items are open); pressed, it is the one selected and its items
- * come below (epicItems). Pressed again, nothing is selected. A stone dragged into another
- * tilespace still places that Epic there (createEpicRecord).
+ * THE EPICS BOARD (owner, 2026-11-06, w334, w340): every Epic surface. A row of stones across
+ * the top, one per Epic (its title, its Jira key or Ronin only, how many of its items are open);
+ * the pressed one is the Epic below: its source line, then its items (epicItems). Another stone
+ * pressed switches to that Epic here. `initial` is the Epic it starts on; with one Epic, that one.
+ * A stone dragged into another tilespace places a board starting on that Epic (createEpicRecord).
  */
-export function createEpicBoard({ epicsRead, header = true }) {
+export function createEpicBoard({ epicsRead, header = true, initial = '' }) {
   const { createSurface } = WorkspaceKit.primitives;
   const out = createSurface({ label: t('epics.title', 'Epics'), className: 'setup-surface epics-board', header });
   const strip = el('div', 'epic-strip');
@@ -237,8 +191,9 @@ export function createEpicBoard({ epicsRead, header = true }) {
   const board = el('div', 'epic-board');
   board.append(strip, below);
   out.content.append(board);
-  let selected = '';
+  let selected = initial;
   let view = null;
+  let source = null;
   let drawn = '';
 
   function stone(epic) {
@@ -257,7 +212,7 @@ export function createEpicBoard({ epicsRead, header = true }) {
       event.dataTransfer.setData('text/plain', label);
       event.dataTransfer.effectAllowed = 'copy';
     });
-    node.addEventListener('click', () => { select(epic.id === selected ? '' : epic.id); });
+    node.addEventListener('click', () => { if (epic.id !== selected) select(epic.id); });
     return node;
   }
 
@@ -271,15 +226,20 @@ export function createEpicBoard({ epicsRead, header = true }) {
 
   function paint() {
     const epics = epicsRead.list();
-    if (selected && !epics.some((epic) => epic.id === selected)) { selected = ''; view?.destroy(); view = null; }
+    // An Epic gone from a push that has Epics is let go; before the first push, the one to start on is kept.
+    if (selected && epics.length && !epics.some((epic) => epic.id === selected)) { selected = ''; view?.destroy(); view = null; }
+    if (!selected && epics.length === 1) selected = epics[0].id;
+    const epic = epics.find((row) => row.id === selected);
+    if (out.header) out.header.title.textContent = epic ? (epic.title || epic.id) : t('epics.title', 'Epics');
     const signature = JSON.stringify([selected, epics.map((epic) => [epic.id, epic.title, epic.external?.jira?.key,
       epicsRead.items(epic.id).filter((item) => item.status !== 'Done').length])]);
     if (signature !== drawn) {
       drawn = signature;
       strip.replaceChildren(...(epics.length ? epics.map(stone) : [el('p', 'epic-empty', t('epics.none', 'No Epics yet.'))]));
     }
-    if (!selected) { below.replaceChildren(...(epics.length ? [el('p', 'epic-empty', t('epics.pick_epic', 'Pick an Epic to see its work items.'))] : [])); return; }
-    if (!view) { view = epicItems(selected, { epicsRead }); below.replaceChildren(view.el); }
+    if (!epic) { below.replaceChildren(...(epics.length ? [el('p', 'epic-empty', t('epics.pick_epic', 'Pick an Epic to see its work items.'))] : [])); return; }
+    if (!view) { source = el('div', 'epic-source'); view = epicItems(selected, { epicsRead }); below.replaceChildren(source, view.el); }
+    source.replaceChildren(el('span', '', epic.external?.jira?.key ? `Jira ${epic.external.jira.key}` : t('epics.ronin_only', 'Ronin only')), holderButton(epic));
     view.paint();
   }
   let stop = null;
@@ -290,29 +250,5 @@ export function createEpicBoard({ epicsRead, header = true }) {
   };
 }
 
-/** One Epic's worksurface (a dragged stone, its selector card, a Team's Epics card): where it
- *  comes from and who holds it, then its items as the board shows them (epicItems, w334). */
-export function createEpicRecord(key, { epicsRead, header = true }) {
-  const { createSurface, setSurfaceState } = WorkspaceKit.primitives;
-  const out = createSurface({ label: key, className: 'setup-surface epics-record', header });
-  const sourceHost = el('div', 'epic-source-host');
-  const view = epicItems(key, { epicsRead });
-  out.content.append(sourceHost, view.el);
-  function paint() {
-    const epic = epicsRead.list().find((row) => row.id === key);
-    if (!epic) { sourceHost.replaceChildren(); view.el.hidden = true; setSurfaceState(out.el, 'empty', t('epics.gone', 'This Epic is no longer here.')); return; }
-    view.el.hidden = false;
-    setSurfaceState(out.el, null, '');
-    if (out.header) out.header.title.textContent = epic.title || epic.id;
-    const source = el('div', 'epic-source');
-    source.append(el('span', '', epic.external?.jira?.key ? `Jira ${epic.external.jira.key}` : t('epics.ronin_only', 'Ronin only')), holderButton(epic));
-    sourceHost.replaceChildren(source);
-    view.paint();
-  }
-  let stop = null;
-  return {
-    el: out.el,
-    show: () => { stop ??= epicsRead.subscribe(paint); paint(); },
-    destroy: () => { stop?.(); stop = null; view.destroy(); },
-  };
-}
+/** One Epic's worksurface (its selector card, a dragged stone): the board, starting on that Epic. */
+export const createEpicRecord = (key, options) => createEpicBoard({ ...options, initial: key });

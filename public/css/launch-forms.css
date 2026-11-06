@@ -90,9 +90,7 @@
   /* A row's notes under its stone: plain muted text, wrapping, clamped to six lines (the ask-name clamp; owner, 2026-10-20). */
   .sws-branch-note { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 6; width: var(--sws-stone); margin: 0; overflow: hidden; overflow-wrap: anywhere; color: var(--muted); font-size: var(--form-note); line-height: var(--leading-body); }
   .wi-flagged::before { background: var(--status-red); /* flagged: an impediment */ }
-  /* EPICS (KAN-206): an Epic's worksurface. One row of statuses (a hidden one carries its count, an out one
-     is plain), then each status that is out as its items' cards; a card's title wraps whole. */
-  .epics-record .wk-surface-content { display: flex; flex-direction: column; gap: var(--space-subsection); padding: var(--space-inset); overflow: auto; }
+  /* EPICS: an Epic's source line (Jira key, holder), and the cards Waiting on you still uses. */
   .epic-source { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-inline); color: var(--muted); font-size: var(--text-small); }
   .epic-groups { display: flex; flex-direction: column; gap: var(--space-section); }
   .epic-group-heading { margin: 0 0 var(--space-paragraph); color: var(--muted); font-size: var(--text-small); font-weight: var(--weight-strong); letter-spacing: var(--tracking-wide); text-transform: uppercase; }
@@ -133,8 +131,8 @@
   .epic-reading { margin-left: var(--space-inset); padding: var(--space-inline) var(--space-inset); border: var(--edge) solid var(--line); border-radius: var(--radius-large); background: var(--surface); }
   /* WAITING ON YOU AND EPICS on the Team workbench (KAN-232): the Epic card format, a line's title plain
      (not a button), its wait in tabular figures, a comment box on --inset; the Team's Epics card is flush
-     (createSurface's flush): the stones or record inside keep their own inset, and nothing here reaches into the kit. */
-  .team-epics .epics-records, .team-epics .epics-record { flex: 1 1 auto; min-height: 0; border: 0; }
+     (createSurface's flush): the board inside keeps its own inset, and nothing here reaches into the kit. */
+  .team-epics .epics-board { flex: 1 1 auto; min-height: 0; border: 0; }
   .team-waiting-title { color: var(--fg-strong); font-size: var(--text-label); font-weight: var(--weight-strong); line-height: var(--leading-tight); overflow-wrap: anywhere; }
   .team-waiting-age { font-variant-numeric: tabular-nums; }
   .team-waiting-compose { gap: var(--space-row); }

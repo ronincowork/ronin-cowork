@@ -179,8 +179,11 @@ stones across the top (title, Jira key or Ronin only, open count); a pressed one
 under two ERABI questions (ask.js), Assigned (Yes / No) and Status (the open ones on arrival), as the item island's
 bars (`tile-island.js` `itemBar`) grouped by status in workflow order, a Subtask under its Task. The push carries what
 a bar says (`epicsPush`: the objective and last comment cut short, comment count, last move, last hand-in). A bar
-pressed opens the item's reading under it (`renderItemDetail`, its own read). A dragged stone or an Epic's selector
-card places one Epic (`epics.record`: where it comes from and its holder, then the same questions and bars). The bar's crumb (`workspace-header.js`;
+pressed opens the item's reading under it (`renderItemDetail`, its own read). Every Epic surface is that board (w340,
+owner 2026-11-06): the selected Epic's source line (Jira key, holder) heads its items, and another stone switches
+to that Epic on the same surface, nothing placed elsewhere. A dragged stone or an Epic's selector card places a
+board starting on that Epic (`epics.record`, `createEpicRecord`), and a Team's Epics card is the board over the
+Team's Epics (`createTeamEpics`; one Epic shows itself). The bar's crumb (`workspace-header.js`;
 owner, 2026-10-20) reads RoninCowork   Home • Teams • <Team title> on a Team page — a gap, not a dot,
 after the brand (`--space-subsection`; owner, 2026-10-24) — Home to `#/home`, Teams to `#/cowork`;
 the Teams workbench ends at Teams, and a view naming its own `place` (Models, Workspaces, Epics, Help,
