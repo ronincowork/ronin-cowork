@@ -95,7 +95,7 @@ Very few notices, and never the same news twice:
 | a status change | the lead of the Team holding the item, or watching it |
 | a comment | holding or watching the item |
 | someone else's change on your item | the Agent doing it |
-| a Jira item with nobody on it | traffic_control, which places it |
+| a Jira item with nobody on it (it comes in on the Team holding its parent, if any) | traffic_control, which places it |
 | your item is Done | the Agent that handed it in |
 
 A Team is told through its lead. Where a Team holds or watches an item, its notices go to the

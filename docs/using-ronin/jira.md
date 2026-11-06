@@ -34,7 +34,8 @@ was off goes when it comes back on:
 ## The key is the id
 
 A paired item's Ronin id is its Jira key (`KAN-65`), so Agents and Jira users say the same
-name. An item from Jira comes in with its key. An item made in Ronin is `w101` until the sync
+name. An item from Jira comes in with its key, held by the Team that holds its parent; with no
+parent, or a parent no Team holds, it is held by nobody and traffic_control places it. An item made in Ronin is `w101` until the sync
 that creates it on Jira renames it; a key changed in Jira (the space's key renamed, the item
 moved) renames it the same way. Children, links and holders follow, and every id it has had still
 finds it; nobody is told. Without a connection, items stay `w101`.

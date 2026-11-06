@@ -518,14 +518,17 @@ async function announceUnheld(item: WorkItem, by: string): Promise<string[]> {
  * the issuer. A create by an Agent (a live session) lands on its Team when it leads one, else on
  * itself; a lead of several names one (the holder). Any kind, an Epic too, with a parent or none
  * (owner, 2026-11-06): an item with no parent is normal (the board's No epic; item search
- * --no-parent). The owner, Ronin and the Jira bridge (a paired item) create as named. */
+ * --no-parent). The owner, Ronin and the Jira bridge (a paired item) create as named; a Jira
+ * item with no holder named lands on the Team holding its parent, else on nobody. */
 export async function createItemUnlocked(input: NewItem, by: string): Promise<Acknowledged> {
   const title = String(input.title ?? '').trim();
   if (!title) throw new WorkItemBadInput('A work item needs a title.');
   const parent = input.parent ? await load(input.parent) : null;
   const agent = input.jira ? undefined : (await listSessions()).find((session) => session.name === by);
   if (agent && !input.holder && agent.leads.length > 1) throw new WorkItemRefused(`You lead ${agent.leads.join(', ')}; name one with --team <team>.`);
-  const holder: Holder | undefined = input.holder ?? (agent ? (agent.leads.length ? { kind: 'team', name: agent.leads[0]! } : { kind: 'agent', name: by }) : undefined);
+  // From Jira with nobody named: the Team holding its parent (owner, 2026-11-06; KAN-308).
+  const parentTeam = input.jira && !input.holder && parent ? (await holdersOf(parent.id)).find((one) => one.kind === 'team') : undefined;
+  const holder: Holder | undefined = input.holder ?? parentTeam ?? (agent ? (agent.leads.length ? { kind: 'team', name: agent.leads[0]! } : { kind: 'agent', name: by }) : undefined);
   const campaign_id = input.campaign_id ?? agent?.campaign_id ?? await initialCampaignId();
   const names = spaceNames(campaign_id);
   const named = input.kind?.trim();
