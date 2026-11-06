@@ -9,9 +9,11 @@
  * SHIWAKE is a deployed service, not a library, and importing its source here would both
  * break the boundary the contract exists to hold and prove something other than what ships.
  *
- * Everything on this side is the real thing: `flow.ts` requests and polls, `secrets.ts`
- * stores the credentials, `tomodachi.ts` sends the packet, and `libexec/ronin-hq.sh` — the
- * code `ronin-update --services` actually runs — fetches the authorized release.
+ * Everything on this side is the real thing: `transport.ts` carries every call, `secrets.ts`
+ * stores the entitlement, `tomodachi.ts` sends the packet, and `libexec/ronin-hq.sh` — the
+ * code `ronin-update --services` actually runs — fetches the authorized release. Cowork no
+ * longer runs an email confirmation; the walk takes its entitlement from SHIWAKE's own
+ * activation API directly, as an operator would, so the shared seams stay proven.
  *
  * Skips itself, loudly, if the SHIWAKE checkout is not beside this one.
  */
@@ -142,54 +144,42 @@ async function tokenFromInbox(): Promise<string> {
   return /token=([A-Za-z0-9_-]+)/.exec(last.text)![1]!;
 }
 
-test('THE WALK: real Cowork modules take a real install from nothing to entitled', async (t) => {
+test('THE WALK: an entitlement from SHIWAKE is held by the real secrets store and read by SETTEI', async (t) => {
   if (!available) return t.skip(unavailable);
 
-  // THE REAL FLOW MODULE — not a reimplementation of it.
-  const { request, poll } = await import('../../src/activation/flow.js');
-  const { getClaimSecret, getEntitlementToken } = await import('../../src/activation/secrets.js');
-  const { readState } = await import('../../src/activation/state.js');
+  const { callHq } = await import('../../src/activation/transport.js');
+  const { getEntitlementToken, putEntitlementToken } = await import('../../src/activation/secrets.js');
+  const { writeState } = await import('../../src/activation/state.js');
   const { readMachineSettings } = await import('../../src/machine-settings.js');
 
-  const requested = await request(EMAIL);
-  assert.equal(requested.stage, 'awaiting_email');
-  assert.ok(await getClaimSecret(), 'the claim secret is on disk before success was reported');
-  assert.equal(requested.email_masked, 'w*****@example.com');
-
+  // SHIWAKE's activation API, driven over the real transport (it records egress).
+  const requested = await callHq<{ activation_id: string; claim_secret: string }>('POST', '/v1/services/activations', {
+    body: { email: EMAIL, terms_version: '2026-08-01' },
+  });
+  assert.ok(requested.body, 'SHIWAKE accepted the activation request');
   await drainMail();
-
-  // Polling before the click hands over nothing.
-  assert.equal((await poll()).stage, 'awaiting_email');
-  assert.equal(await getEntitlementToken(), null);
-
-  // The person clicks on a phone. Nothing about this touches the install.
   const token = await tokenFromInbox();
   const clicked = await fetch(`${base}/v1/services/verify?token=${token}`);
   assert.equal(clicked.status, 200);
+  const polled = await callHq<{ stage: string; entitlement_id: string; entitlement_token: string }>(
+    'GET', `/v1/services/activations/${requested.body!.activation_id}`, { token: requested.body!.claim_secret });
+  assert.equal(polled.body?.stage, 'verified');
+  assert.match(String(polled.body?.entitlement_id), /^ent_/);
 
-  // The install discovers it by asking — the loop closing.
-  const verified = await poll();
-  assert.equal(verified.stage, 'verified');
-  assert.match(String(verified.entitlement_id), /^ent_/);
+  await putEntitlementToken(polled.body!.entitlement_token);
+  assert.ok(await getEntitlementToken(), 'a durable token is now held');
+  await writeState({ entitlement_id: polled.body!.entitlement_id, verified_at: new Date().toISOString() });
 
-  const entToken = await getEntitlementToken();
-  assert.ok(entToken, 'a durable token is now held');
-  assert.equal(await getClaimSecret(), null, 'the spent claim secret is gone');
-
-  // The durable stage survives a fresh read, which is what an operator restart does.
-  assert.equal((await readState()).stage, 'verified');
-
-  // SETTEI reads that same durable aggregate. It must not wait for a second browser PUT
-  // or consult the retired manually written services fields in ronin.json.
+  // SETTEI reads that same durable aggregate; there is no second entitlement record.
   const settei = await readMachineSettings();
   const services = settei.set.services as {
     activation: { entitlement_id: string | null };
     entitlement?: unknown;
   };
-  assert.equal(services.activation.entitlement_id, verified.entitlement_id);
+  assert.equal(services.activation.entitlement_id, polled.body!.entitlement_id);
   assert.ok(!Object.hasOwn(services, 'entitlement'),
     'there is no second SETTEI entitlement record to reconcile');
-  assert.match(String(settei.status.subscription), new RegExp(String(verified.entitlement_id)));
+  assert.match(String(settei.status.subscription), new RegExp(String(polled.body!.entitlement_id)));
 });
 
 test('THE EGRESS RECORD names every call, and carries no secret', async (t) => {

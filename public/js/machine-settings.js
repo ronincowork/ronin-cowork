@@ -330,9 +330,8 @@ export function buildMachineSettings(root, isShowing, { only = null } = {}) {
     // Ronin HQ, not a subscription. The subscription itself is the Cloud account card's.
     body.appendChild(obsRow(t('settei.services_activation', 'Services activation'), st.subscription,
       activation.email_masked ? ` ${activation.email_masked}` : ''));
-    // The operator asks Ronin HQ, the person confirms on whatever device they are holding,
-    // and each step arrives by push. The card renders the durable stage rather than what
-    // this page remembers doing, so a reload or a second tab lands on the truth.
+    // The install's steps arrive by push. The card renders the durable stage rather than
+    // what this page remembers doing, so a reload or a second tab lands on the truth.
     card?.stop();
     card = servicesCard(body);
     // Read-only, from the Services `account` part; hidden only when that part is absent.

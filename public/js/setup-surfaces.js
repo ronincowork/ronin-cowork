@@ -183,7 +183,7 @@ function createRegisterSurface(context) {
   fit.append(
     el('h3', '', t('setup_surface.ronin_fit', 'What brings you here')), preferredFeature.wrap, reasons.wrap,
   );
-  const consent = el('p', 'setup-fine setup-register-consent', t('setup_surface.consent_exact', 'Email registration sends a confirmation and supports Ronin Services and Bounty participation. Anonymous registration shares these answers without contact details.'));
+  const consent = el('p', 'setup-fine setup-register-consent', t('setup_surface.consent_exact', 'Email registration supports Ronin Services and Bounty participation. Anonymous registration shares these answers without contact details.'));
   const declined = el('p', 'setup-register-declined', t('setup_surface.no_thanks_message', 'Enjoy using Ronin. If you’d like to share feedback later, we’d be glad to hear from you at a later date.'));
   declined.hidden = true;
   const userIntro = el('section', 'setup-register-group setup-user-intro');
@@ -210,6 +210,11 @@ function createRegisterSurface(context) {
     userIntroActions,
     userIntroNotice,
   );
+  /** What the Submit started — the installer's start, never a finished install. */
+  const installWords = (install) => !install ? ''
+    : install.started ? t('setup_surface.installing_services', 'Installing Ronin Services.')
+    : install.reason === 'failed' ? t('setup_surface.install_not_started', 'Ronin Services did not start installing: {error}', { error: install.error })
+    : '';
   const registerAction = action(t('setup_surface.register_action', 'Send'), '', async () => {
     notice.textContent = t('setup_surface.saving', 'Saving…');
     const anonymous = identityMode.value.value !== 'email';
@@ -221,7 +226,8 @@ function createRegisterSurface(context) {
       intended_use: [], theme_preference: '', own_words: '',
     } });
     notice.textContent = result.ok
-      ? anonymous ? t('setup_surface.anonymous_saved', 'Thanks — your anonymous hello was sent to Ronin.') : t('setup_surface.confirm_email', 'Registration saved. Confirm your email to complete registration.')
+      ? [anonymous ? t('setup_surface.anonymous_saved', 'Thanks — your anonymous hello was sent to Ronin.') : t('setup_surface.registration_complete', 'Registration complete.'),
+        installWords(result.data?.install)].filter(Boolean).join(' ')
       : result.message;
     if (result.ok) { current = result.data; paint(); context.environment?.onRegistrationChoice?.('acted'); }
   });
@@ -248,8 +254,7 @@ function createRegisterSurface(context) {
   const recovery = el('div', 'setup-registration-recovery');
   const recoveryOptions = el('section', 'setup-register-group setup-register-options');
   recoveryOptions.append(
-    el('h3', '', t('setup_surface.registration_confirmation', 'Registration confirmation')),
-    el('p', 'setup-lede', t('setup_surface.registration_confirmation_lede', 'Required only if you want to install Ronin Services.')),
+    el('h3', '', t('setup_surface.registration_heading', 'Registration')),
     recovery,
   );
   /** The submitted summary speaks the same words the form showed, never a stored key. */
@@ -260,11 +265,10 @@ function createRegisterSurface(context) {
     return words.filter(Boolean).join(' · ');
   };
   const paint = () => {
-    const registered = current?.status === 'registered';
     const anonymous = current?.status === 'anonymous';
     identity.hidden = !current?.submitted_at;
-    identity.dataset.tone = current?.status === 'pending' ? 'pending' : 'ok';
-    identity.replaceChildren(el('strong', '', anonymous ? t('setup_surface.registered_anonymous', 'Registered anonymously') : registered ? t('setup_surface.registered', 'Registered') : t('setup_surface.check_email', 'Check your email')),
+    identity.dataset.tone = 'ok';
+    identity.replaceChildren(el('strong', '', anonymous ? t('setup_surface.registered_anonymous', 'Registered anonymously') : t('setup_surface.registered', 'Registered')),
       el('span', '', summaryWords()));
     form.hidden = !formOnShow();
     // Follow the form, not the answer record. hideForm paints immediately while the PATCH is
@@ -275,32 +279,19 @@ function createRegisterSurface(context) {
     recoveryOptions.hidden = !current?.submitted_at;
     recovery.replaceChildren();
     const changeEmail = () => action(t('setup_surface.change_registration_email', 'Change email'), '', async () => {
-      const next = window.prompt(t('setup_surface.new_registration_email', 'Send registration confirmation to:'));
+      const next = window.prompt(t('setup_surface.new_registration_email', 'New registration email:'));
       if (!next?.trim()) return;
-      const result = await request('/api/setup/registration/recovery', { method: 'POST', json: {
-        action: 'change_address', identity_mode: 'email', email: next.trim(), purpose: current.purpose,
+      const result = await request('/api/setup/registration', { method: 'POST', json: {
+        identity_mode: 'email', email: next.trim(), purpose: current.purpose,
         kind: current.kind, kind_other: current.kind_other, user_type: current.user_type, goals: current.goals,
         preferred_feature: current.preferred_feature, reasons: current.reasons, reason_other: current.reason_other, run_location: current.run_location,
         intended_use: current.intended_use,
         theme_preference: current.theme_preference, own_words: current.own_words,
       } });
-      notice.textContent = result.ok ? t('setup_surface.registration_address_changed', 'Registration email changed; check the new address.') : result.message;
+      notice.textContent = result.ok ? t('setup_surface.registration_address_changed', 'Registration email changed.') : result.message;
       if (result.ok) { current = result.data; paint(); }
     });
-    if (current?.status === 'pending') {
-      recovery.append(
-        action(t('setup_surface.check_registration', 'Check confirmation'), 'primary', async () => {
-          const result = await request('/api/setup/registration/recovery', { method: 'POST', json: { action: 'check' } });
-          notice.textContent = result.ok ? t('setup_surface.registration_checked', 'Registration status updated.') : result.message;
-          if (result.ok) { current = result.data; paint(); }
-        }),
-        action(t('setup_surface.resend_registration', 'Resend confirmation'), '', async () => {
-          const result = await request('/api/setup/registration/recovery', { method: 'POST', json: { action: 'resend' } });
-          notice.textContent = result.ok ? t('setup_surface.registration_resent', 'Confirmation resent.') : result.message;
-        }),
-        changeEmail(),
-      );
-    } else if (current?.submitted_at && !anonymous) recovery.append(changeEmail());
+    if (current?.submitted_at && !anonymous) recovery.append(changeEmail());
     if (current?.submitted_at) recovery.append(action(t('setup_surface.delete_registration', 'Delete registration'), 'danger', async () => {
       if (!window.confirm(t('setup_surface.delete_registration_confirm', 'Delete this registration and its Services entitlement from this machine? Communication preferences will also be removed.'))) return;
       const result = await request('/api/setup/registration', { method: 'DELETE' });
@@ -340,7 +331,6 @@ function createRegisterSurface(context) {
     const answer = recordedAnswer();
     zone.paint({
       state: current?.status === 'anonymous' ? 'Said hello anonymously.'
-        : current?.status === 'pending' ? 'Registration sent. Confirm the link in your email.'
         : 'Register to join the community and share your experience — it makes Ronin better for everyone.',
       picks: [
         // Shows the form; it does NOT send it. registerAction POSTs on the spot, and with no
@@ -549,10 +539,10 @@ export function createServicesSurface(context) {
           if (item.act === 'register') { openRegister(); return; }
           button.disabled = true; said = ''; notice.textContent = '';
           if (item.act === 'restart') { await restartRonin(state); return; }
-          // Install and Check status answer with the services object; a switch's new facts arrive by push.
+          // Install answers with the services object; a switch's new facts arrive by push.
           const switching = item.act === 'switch_on' || item.act === 'switch_off';
           const result = switching ? await switchServices(item.act === 'switch_on')
-            : await request(item.act === 'install' ? '/api/services/install' : '/api/services/activation/poll', { method: 'POST', json: {} });
+            : await request('/api/services/install', { method: 'POST', json: {} });
           if (!result.ok) {
             said = result.message;
             notice.textContent = said; notice.classList.add('bad');

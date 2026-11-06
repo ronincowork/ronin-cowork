@@ -2,11 +2,10 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { randomBytes } from 'node:crypto';
 import { storeDir } from '../resources.js';
-import { isEntitled } from './flow.js';
-import { clearClaimSecret, clearEntitlementToken } from './secrets.js';
+import { clearEntitlementToken, isEntitled } from './secrets.js';
 import { maskEmail, readState as readActivation, writeState as writeActivation } from './state.js';
 
-export type RegistrationStatus = 'optional' | 'anonymous' | 'pending' | 'registered';
+export type RegistrationStatus = 'optional' | 'anonymous' | 'registered';
 
 export interface CommunicationPreferences {
   newsletter: boolean;
@@ -114,14 +113,11 @@ export async function deleteRegistration(): Promise<void> {
   await Promise.all([
     fs.rm(file(), { force: true }),
     fs.rm(userIntroFile(), { force: true }),
-    clearClaimSecret(),
     clearEntitlementToken(),
   ]);
   await writeActivation({
-    stage: 'not_requested', email_masked: null, activation_id: null,
-    entitlement_id: null, terms_version: null, requested_at: null, verified_at: null,
-    expires_at: null, resend_available_at: null, error_at_stage: null,
-    error_message: null,
+    stage: 'not_requested', email_masked: null, entitlement_id: null, verified_at: null,
+    error_at_stage: null, error_message: null,
   });
 }
 
@@ -157,8 +153,9 @@ export async function registrationAnswer() {
   const [record, activation, entitled] = await Promise.all([
     readRegistration(), readActivation(), isEntitled().catch(() => false),
   ]);
+  // Submitting the form completes registration; no email confirmation is asked for.
   const status: RegistrationStatus = entitled ? 'registered' : record.submitted_at
-    ? record.identity_mode === 'anonymous' ? 'anonymous' : 'pending'
+    ? record.identity_mode === 'anonymous' ? 'anonymous' : 'registered'
     : 'optional';
   return {
     status,
