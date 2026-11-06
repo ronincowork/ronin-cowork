@@ -16,10 +16,14 @@ process.env.RONIN_HQ_BASE = 'http://127.0.0.1:9'; // nothing listens: the anonym
 const fakeBin = path.join(box, 'bin');
 const launches = path.join(box, 'launches.log');
 const failFlag = path.join(box, 'fail-download');
+const noLaunchFlag = path.join(box, 'fail-launch');
 await fs.mkdir(fakeBin, { recursive: true });
 // Records each launch. With the fail flag present it plays the updater's private-feed
 // failure: the ✗ line in the run log and exit 1, exactly as the wrapper would write them.
+// With the no-launch flag present, systemd-run and the broker's setsid fallback both
+// refuse, so the updater never starts.
 await fs.writeFile(path.join(fakeBin, 'systemd-run'), `#!/bin/sh
+if [ -f "${noLaunchFlag}" ]; then echo "no user manager" >&2; exit 1; fi
 echo "$@" >> "${launches}"
 for a in "$@"; do case "$a" in
   --setenv=RONIN_RUN_LOG=*) log="\${a#--setenv=RONIN_RUN_LOG=}" ;;
@@ -30,6 +34,10 @@ if [ -f "${failFlag}" ] && [ -n "$log" ]; then
   echo 1 > "$ex"
 fi
 exit 0
+`, { mode: 0o755 });
+await fs.writeFile(path.join(fakeBin, 'setsid'), `#!/bin/sh
+if [ -f "${noLaunchFlag}" ]; then echo "setsid: refused" >&2; exit 1; fi
+exec /usr/bin/setsid "$@"
 `, { mode: 0o755 });
 process.env.PATH = `${fakeBin}:${process.env.PATH}`;
 
@@ -148,4 +156,23 @@ test('concurrent Submit and Install launch exactly one updater run', async () =>
   assert.equal(installs.filter((i) => i.started).length, 1, 'one start');
   assert.equal(installs.filter((i) => !i.started && i.reason === 'in_progress').length, 2, 'the others are told it is in progress');
   assert.equal((await launched()).length, before + 1, 'one updater launch, so one log and one exit file');
+});
+
+test('concurrent presses when the installer cannot start all get the failure, not in_progress', async () => {
+  await reset();
+  await fs.writeFile(noLaunchFlag, '');
+  try {
+    const answers = await Promise.all([
+      call('POST /api/services/install'),
+      call('POST /api/services/install'),
+      call('POST /api/services/install'),
+    ]);
+    for (const a of answers) {
+      assert.equal(a.status, 500, 'a waiter is told the start failed');
+      assert.match(a.body.error, /the installer did not start/);
+    }
+    const s = await readState();
+    assert.equal(s.stage, 'error');
+    assert.equal(s.error_at_stage, 'installing');
+  } finally { await fs.rm(noLaunchFlag, { force: true }); }
 });

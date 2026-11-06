@@ -65,13 +65,15 @@ let starting: Promise<InstallStart> | null = null;
 
 /**
  * One start at a time. The check of the stage and the launch are not atomic, so a second
- * Submit or Install arriving mid-start waits for the first and is told it is in progress,
- * never launching a second updater onto the same log and exit files.
+ * Submit or Install arriving mid-start waits for the first, never launching a second updater
+ * onto the same log and exit files. It gets the first start's outcome: in progress only if
+ * that start launched, otherwise the same failure or already-installed answer.
  */
 export async function startInstall(): Promise<InstallStart> {
   if (starting) {
-    await starting.catch(() => {});
-    return { started: false, reason: 'in_progress' };
+    const first = await starting.catch((e): InstallStart =>
+      ({ started: false, reason: 'failed', error: `the installer did not start: ${(e as Error)?.message ?? e}` }));
+    return first.started ? { started: false, reason: 'in_progress' } : first;
   }
   starting = launchInstall();
   try { return await starting; } finally { starting = null; }
