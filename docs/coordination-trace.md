@@ -10,7 +10,7 @@ surface or a new work-record store.
    Campaign/Team context, Workspace Folder handle, mandate, behaviors, capabilities, and repository
    placement resolved before birth.
 3. **The Agent owns its work.** Assignment transfers a Team-held work item into the Agent's
-   work record. `item create` then `item assign <id> <agent>` is the other entry when work
+   work record. `item create` then `item handoff <id> <agent>` is the other entry when work
    arrives without a Team-held item; `item edit` updates it. Stable identity and provenance
    survive custody changes; there is no second shared mutable checklist.
 4. **Work produces evidence.** The Agent keeps its record current and commits coherent desk

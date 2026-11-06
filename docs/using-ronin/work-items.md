@@ -127,8 +127,7 @@ item search [--campaign home_machine] [--team surface] [--holder builder | none]
 item edit w12 --objective "…" --priority High
 item transition w12 "In Review" --note "…"   # a hand-in: --note is the Handed in comment for the user, at most 280 characters
 item flag w12 "waiting on the API"  # item unflag w12 when clear
-item assign w12 builder             # adds builder; or team:surface
-item handoff w12 builder            # the giver comes off; or team:surface, or none; --from team:surface names the giver
+item handoff w12 builder            # the giver comes off, builder goes on; or team:surface; --from names the giver; --keep-holding
 item handover w12 team:surface "…"  # an ending hands over: a Handover comment, the holder moved, the status kept; --to-do, --flag "…"
 item watch w3                       # track it and everything under it; or name builder, team:surface; item unwatch w3 stops
 item comment w12 "…"                # --edit <n> changes one
@@ -208,15 +207,19 @@ above it, `--parent` naming the epic or an item under one; an Epic needs none. I
 Jira come as Jira has them.
 
 ```text
-item assign w12 builder         an Agent holds it
-item assign w12 team:surface    the Team holds it
 item handoff w12 builder        the giver comes off and builder goes on
-item handoff w12 none           the giver lets go
+item handoff w12 team:surface   the Team holds it
 item handoff w12 builder --from team:surface   builder takes the Team's item off the Team
+item handoff w12 builder --keep-holding        builder goes on and the giver stays on too
 item handover w12 team:surface "where it stands; what is next"   an ending Agent hands it over
 ```
 
-Assigning adds a holder and removes nobody. When an Agent ends, what it held goes by its
+A handoff takes the giver off and puts the receiver on, in one step. The giver is the caller,
+with any Team of the caller's that holds the item and any Team of the receiver's that holds it
+(an Agent's Teams are its Teams): a lead giving out Team work takes the Team off, and so does the
+owner or traffic_control giving a Team's item to a member. `--from` names the giver instead;
+`--keep-holding`, the rare case, keeps it on too. Any other holder stays, so a second Agent
+handed the item leaves the first on. There is no receiver `none`: letting go is a release. When an Agent ends, what it held goes by its
 status (project-management.md, How an item lives): To Do back to its Team, In Progress and In
 Review handed over with a note, Done to nobody. A Done item is off the open lists at once: the
 work record, the tile's record and its header chip count it on one line ("Done, not yet archived:

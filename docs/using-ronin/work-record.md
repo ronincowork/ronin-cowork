@@ -71,7 +71,7 @@ item edit w12 --priority High
 item edit w12 --parent w3           # parent and level together; --parent none keeps the level
 item transition w12 "In Review"     # any status to any status, by name, as Jira's transition
 item flag w12 "waiting on the API"  # Jira's Add flag; the reason is a comment. item unflag w12
-item assign w12 builder             # or team:surface, or none
+item handoff w12 builder            # you come off, builder goes on; or team:surface
 item comment w12 "commit 0123456789: store round-trips"
 item comment w12 --edit 1 "commit 0123456789: the store round-trips"
 item attach w12 docs/using-ronin/work-record.md     # --remove <path> takes it off
@@ -147,7 +147,7 @@ A supporting Agent and an assignment are two operations owned by their tools:
 
 ```text
 session_create board_reader --prompt "Take w12 and read it with item read w12."
-item assign w12 board_reader
+item handoff w12 board_reader
 ```
 
 ## Documents live on items, or on the record
