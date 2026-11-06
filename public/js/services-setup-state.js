@@ -52,10 +52,16 @@ export function servicesSetupModel(registration, installed, activation = null) {
   // An office on an office_host: Services came with the office image, and the office is already
   // registered with Ronin HQ by its provisioning. Register and Install are not offered; a missing
   // install there is a provisioning fault, said as such.
-  const hosted = record.office?.hosting === 'office_host';
+  // A record that will not read is a fault, never self-hosted: Register and Install are not offered either.
+  const hosting = record.office?.hosting;
+  const hosted = hosting === 'office_host' || hosting === 'unreadable';
   const steps = hosted ? [switchStep, ...(restartStep ? [restartStep] : [])] : [reg.step, installStep, switchStep, ...(restartStep ? [restartStep] : [])];
   const model = (state, tone, status, next) => ({ state, tone, status, next, steps, summary: '' });
 
+  if (hosting === 'unreadable') {
+    return { ...model('office_record_unreadable', 'bad', t('services_setup.status_office_unreadable', 'Office record unreadable'),
+      t('services_setup.next_office_unreadable', 'office.json is present but wrong: {error}. Nothing here is self-hosted; fix the record before anything else.', { error: record.office.error || '—' })), summary: t('services_setup.summary_office_unreadable', 'office record unreadable') };
+  }
   if (hosted && !parts) {
     return { ...model('office_missing_services', 'bad', t('services_setup.status_office_missing', 'Hosted office · Services missing'),
       t('services_setup.next_office_missing', 'This office runs on an office_host and its image should carry Services. Nothing here installs them; tell Ronin.')), summary: t('services_setup.summary_office_missing', 'services missing') };
