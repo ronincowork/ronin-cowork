@@ -39,6 +39,14 @@ an outline when it is not. An item In Review also carries its latest signal, "ha
 "on dev", with how long ago, read from the item's own hand-ins: a hand-in leaves the item with its
 Agent, so the island shows only what its Agent holds. Press the bar again, or a pill, to put it back in the header.
 
+Down, **More detail** widens the list to the tile's width: a bar per item, only as tall as the
+items need (past the tile's foot it scrolls). Each bar reads the pill's row (symbol, key, title,
+status, flag, hand-in) and under it what the item is: its description (two lines), its last
+comment (who, how long ago, the first line), and its facts: priority, the Task it is under,
+how many Subtasks are open, attachments, comments, and when it last moved. A Task's open
+Subtasks follow it as slimmer bars. Press a bar to open the item's reading; **Less detail**
+goes back to the column, and the bar or Escape puts it all back in the header.
+
 On a Team lead, the island also shows what its Teams hold at the Epic and Task level, after
 the items the lead holds itself. An Epic generally sits on the Team, and a Task the Team holds is
 one no member has taken yet, so the lead's island is where unassigned work shows. Once a member
