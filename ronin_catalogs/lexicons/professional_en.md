@@ -1285,7 +1285,6 @@ The catalog entry goes. {dir} is not touched.
 - **island.on_dev:** on dev
 - **island.wide:** More detail
 - **island.narrow:** Less detail
-- **island.priority:** {p} priority
 - **island.under:** under {id}
 - **island.attachments:** {n} attached
 - **island.comment:** 1 comment

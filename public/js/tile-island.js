@@ -104,7 +104,7 @@ export const subtaskWords = (n) => (n === 1 ? t('island.subtask', '1 subtask') :
 export const lastComment = (item) => (Array.isArray(item?.comments) && item.comments.at(-1)) || null;
 
 /** A wide bar's facts line (owner, 2026-11-06, w322): what sizes the item up at a glance, the
- *  empty ones left out — priority, the Task it is under, its open Subtasks here, attachments,
+ *  empty ones left out — its kind in words, the Task it is under, its open Subtasks here, attachments,
  *  how many comments, and when it last moved. Ages are worked out when the bar is drawn. */
 export function barFacts(item, subtasks = 0, now = Date.now()) {
   const age = (at) => humanAge(Math.max(0, now - Date.parse(at) || 0));
@@ -112,7 +112,7 @@ export function barFacts(item, subtasks = 0, now = Date.now()) {
   const attachments = Array.isArray(item?.attachments) ? item.attachments.length : 0;
   const moved = (Array.isArray(item?.trail) && item.trail.at(-1)?.at) || item?.created?.at || '';
   return [
-    item?.priority ? t('island.priority', '{p} priority', { p: item.priority }) : '',
+    item?.kind || '', // owner, 2026-11-06 (w325): its kind in words, the symbols not yet known; priority is rarely set
     item?.parent ? t('island.under', 'under {id}', { id: item.parent }) : '',
     subtasks ? subtaskWords(subtasks) : '',
     attachments ? t('island.attachments', '{n} attached', { n: attachments }) : '',

@@ -42,7 +42,7 @@ Agent, so the island shows only what its Agent holds. Press the bar again, or a 
 Down, **More detail** widens the list to the tile's width: a bar per item, only as tall as the
 items need (past the tile's foot the bars scroll, and the bar above them and **Less detail** below stay in view). Each bar reads the pill's row (symbol, key, title,
 status, flag, hand-in) and under it what the item is: its description (two lines), its last
-comment (who, how long ago, the first line), and its facts: priority, the Task it is under,
+comment (who, how long ago, the first line), and its facts: its kind in words (Task, Bug, Epic…), the Task it is under,
 how many Subtasks are open, attachments, comments, and when it last moved. A Task's open
 Subtasks follow it as slimmer bars. Press a bar to open the item's reading; **Less detail**
 goes back to the column, and the bar or Escape puts it all back in the header.

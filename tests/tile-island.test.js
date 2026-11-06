@@ -90,11 +90,11 @@ test('a Subtask whose Task is on the island folds under it: the Task pill carrie
 
 test('w322: the wide list, a bar per item with its description, last comment and facts', async () => {
   const now = Date.parse('2026-11-06T12:00:00Z');
-  const item = { id: 'w1', priority: 'High', parent: 'KAN-253', attachments: ['/a'], comments: [{ by: 'a', at: '2026-11-06T09:00:00Z', text: 'one' }, { by: 'b', at: '2026-11-06T11:00:00Z', text: 'two' }],
+  const item = { id: 'w1', kind: 'Bug', priority: 'High', parent: 'KAN-253', attachments: ['/a'], comments: [{ by: 'a', at: '2026-11-06T09:00:00Z', text: 'one' }, { by: 'b', at: '2026-11-06T11:00:00Z', text: 'two' }],
     trail: [{ at: '2026-11-06T11:30:00Z', by: 'b', op: 'comment' }] };
   assert.equal(lastComment(item).text, 'two');
   assert.equal(lastComment({ comments: [] }), null);
-  assert.deepEqual(barFacts(item, 2, now), ['High priority', 'under KAN-253', '2 subtasks', '1 attached', '2 comments', 'moved 30m ago']);
+  assert.deepEqual(barFacts(item, 2, now), ['Bug', 'under KAN-253', '2 subtasks', '1 attached', '2 comments', 'moved 30m ago']);
   assert.ok(barFacts({ comments: [{}] }, 0, now).includes('1 comment'));
   assert.deepEqual(barFacts({ id: 'w2' }, 0, now), [], 'an empty fact is left out');
   const island = await read('public/js/tile-island.js');
