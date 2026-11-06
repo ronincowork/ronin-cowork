@@ -333,23 +333,24 @@ export async function appendTrail(id: string, by: string, change: (item: WorkIte
  * and there are six, sent from here and nowhere else in the store:
  *   1. a hand-in, to the lead of the hander's Team: a desk's own message (desks/lead.ts)
  *      is the notice, so only a checkout's is sent here (handInUnlocked);
- *   2. a call for help, a flag raised, to the lead of the Team above the item or the holder
- *      of the epic above it (helpOf); a handover's --flag also tells the lead of the Team it
+ *   2. a call for help, a flag raised, to the lead of each Team holding the item (leadsOn) and
+ *      the lead of the Team above the item or the holder of the epic above it (helpOf); a handover's --flag also tells the lead of the Team it
  *      goes to (handoverItem), and an Agent ended without a handover flags its unfinished items,
  *      its receiving Team's lead told once, every item listed (releaseHolder);
- *   3. a status change, to a watcher of that item, not of an item above it (tellWatchers),
- *      never to anyone the hand-in already told;
- *   4. someone else's change on an Agent's item: a comment, a Send back (sendBack), a Jira change
- *      that beat theirs (tellHolders), to the Agent working it;
+ *   3. a status change, to a watcher of that item, not of an item above it (tellWatchers), and
+ *      to the lead of each Team holding it (leadsOn), never to anyone the hand-in already told;
+ *   4. someone else's change on an item: a comment, to the Agents holding it and the lead of
+ *      each Team holding it (leadsOn); a Send back (sendBack), a Jira change that beat theirs
+ *      (tellHolders), to the Agent working it;
  *   5. a Jira item with nobody, to the Campaign's Coordinator (traffic_control) to place it
  *      (announceUnheld); a Ronin item never goes there;
  *   6. a move to Done (Accept, item transition or Jira), to each live Agent holding the item
  *      (for an older item a Team holds, the Agents in its hand-ins), once, never to the one who
- *      moved it; not to the Team or its lead, who see it on the board (noticesOf, handersOf).
+ *      moved it (noticesOf, handersOf); a Team holding it hears it through its lead, as 3.
  * Nothing else: not a new item, a start, a holder change, an Agent's own end, an attachment, a
  * rename, a delete or a flag cleared. Nobody hears their own change. A Team is told through its
- * lead, and only as holder of the epic above or as a watcher: its members' items do not make it
- * one. ONE NOTICE PER PERSON PER COMMAND: inside oneNoticePerCommand (every route runs in one)
+ * lead, as the item's holder, as holder of the epic above, or as a watcher: its members' items
+ * do not make it one. ONE NOTICE PER PERSON PER COMMAND: inside oneNoticePerCommand (every route runs in one)
  * what one person is told is gathered and sent as one message when the command ends. */
 const gathering = new AsyncLocalStorage<Map<string, string[]>>();
 
@@ -377,16 +378,19 @@ async function noticesOf(item: WorkItem, line: TrailLine): Promise<string[]> {
     // Notice 6: a move to Done tells the Agents holding it, each once, while alive.
     const done = line.to === DONE ? await handersOf(item, line.by) : [];
     for (const name of done) await notice(name, `${item.id} '${item.title}' is Done (accepted by ${line.by}).`);
-    const watching = await tellWatchers(item, `${item.id}: status ${line.from} → ${line.to} by ${line.by}.`, [line.by, ...done]);
-    return [...done, ...watching];
+    const text = `${item.id}: status ${line.from} → ${line.to} by ${line.by}.`;
+    const watching = await tellWatchers(item, text, [line.by, ...done]);
+    const leads = (await leadsOn(item.id)).filter((name) => name !== line.by && !done.includes(name) && !watching.includes(name));
+    for (const name of leads) await notice(name, text);
+    return [...done, ...watching, ...leads];
   }
   if (line.op === 'flag' && line.to === 'true') {
-    const told = (await helpOf(item)).filter((name) => name !== line.by);
+    const told = [...new Set([...(await leadsOn(item.id)), ...(await helpOf(item))])].filter((name) => name !== line.by);
     for (const name of told) await notice(name, `${item.id} '${item.title}' needs help${line.note ? `: ${line.note}` : ''} (flagged by ${line.by}).`);
     return told;
   }
   if (line.op === 'comment' && !line.from) {
-    const told = (await agentsOn(item.id)).filter((name) => name !== line.by);
+    const told = [...new Set([...(await agentsOn(item.id)), ...(await leadsOn(item.id))])].filter((name) => name !== line.by);
     for (const name of told) await notice(name, `${item.id}: a comment from ${line.by}: ${line.note}`);
     return told;
   }
@@ -407,6 +411,13 @@ async function handersOf(item: WorkItem, except: string): Promise<string[]> {
 
 /** The Agents holding an item: who works it. */
 const agentsOn = async (id: string): Promise<string[]> => (await holdersOf(id)).filter((holder) => holder.kind === 'agent').map((holder) => holder.name);
+
+/** The live leads of each Team holding an item (KAN-307): a Team is told through its lead. */
+async function leadsOn(id: string): Promise<string[]> {
+  const teams = (await holdersOf(id)).filter((holder) => holder.kind === 'team').map((holder) => holder.name);
+  if (!teams.length) return [];
+  return (await listSessions().catch(() => [])).filter((session) => session.leads.some((led) => teams.includes(led))).map((session) => session.name);
+}
 
 /** Who hears a call for help: going up from the item's parent, the first item anyone holds
  * names them: the lead of each Team holding it, and each Agent holding it (an epic_lead). */

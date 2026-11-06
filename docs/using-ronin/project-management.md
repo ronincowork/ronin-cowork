@@ -91,9 +91,9 @@ Very few notices, and never the same news twice:
 | You are told of | If you are |
 |---|---|
 | a hand-in | the lead of the Team holding the work (one message, from the hand-in itself) |
-| a call for help (a flag), or an Agent ended without a handover | the lead or epic holder above the item; for an ending, the lead of the Team its items went to, once |
-| a status change | watching that item |
-| someone else's change on your item | the Agent doing it |
+| a call for help (a flag), or an Agent ended without a handover | the lead of the Team holding the item, and the lead or epic holder above it; for an ending, the lead of the Team its items went to, once |
+| a status change | watching that item, or the lead of the Team holding it |
+| someone else's comment or change on an item | the Agent doing it, or the lead of the Team holding it |
 | a Jira item with nobody on it | traffic_control, which places it |
 | your item is Done | the Agent that handed it in |
 
