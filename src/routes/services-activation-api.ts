@@ -2,7 +2,6 @@ import type express from 'express';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { readEgress } from '../activation/egress.js';
-import { listReceipts } from '../activation/tomodachi.js';
 import { listServices, listServiceFailures } from '../sockets.js';
 import { isEntitled } from '../activation/secrets.js';
 import { storeDir } from '../resources.js';
@@ -22,7 +21,6 @@ async function activationAnswer(): Promise<Record<string, unknown>> {
     // Self-hosted, or an office on an office_park: Setup hides Register and Install on an office_park.
     office: await readOfficeRecord(),
     egress: await readEgress(20),
-    receipts: await listReceipts(10),
   };
 }
 

@@ -288,7 +288,8 @@ test('THE TOMODACHI LOOP: the real sender delivers a dropped packet and keeps th
 
     const { noteService } = await import('../../src/sockets.js');
     noteService('counting');
-    const { sendDuePackets, listReceipts } = await import('../../src/activation/tomodachi.js');
+    // The sender lives in the Services account part now (KAN-300); the dev-sync copy sits under src/services.
+    const { sendDuePackets, listReceipts } = await import('../../src/services/account/tomodachi-send.js');
 
     // Nothing dropped yet: an empty outbox is the normal state between weeks.
     assert.equal((await sendDuePackets()).skipped, 'nothing-due');

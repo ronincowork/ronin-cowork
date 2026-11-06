@@ -15,7 +15,6 @@ Services before any optional part is loaded.
 | `src/routes/services-activation-api.ts` | Registration, install start and install watch |
 | `public/js/services-setup-state.js` | Derive the Setup actions from measured registration, installation, and activation facts |
 | `src/update-run.ts` | Shared updater launcher, through `systemd-run` or the spawn broker |
-| `src/activation/tomodachi.ts` | Send Services packets through the existing HQ transport |
 
 The remote wire contract belongs to Ronin HQ (Shiwake). Services part discovery and
 registration belong to the [Services connector contract](https://github.com/ronincowork/ronin-services/blob/dev/connector-contract.md).
@@ -73,8 +72,10 @@ and remain server-side.
 
 ## Outbound measurements
 
-Services produces aggregate packets; Cowork's HQ sender owns transport, authentication,
-receipts, and retries, and sends only from an office on an office_park (the office record). A packet remains pending until acknowledged; closed refusals are
+Services produces aggregate packets and sends them itself: the account part's sender
+(ronin-services `account/tomodachi-send.ts`) posts through Cowork's HQ transport with the
+entitlement, keeps receipts and retries, and sends only from an office_unit (the office record).
+Cowork carries no sender and no daily drop any more (KAN-300). A packet remains pending until acknowledged; closed refusals are
 retained separately rather than retried forever. The connection record covers this HQ
 transport, not provider CLI traffic or all machine networking.
 

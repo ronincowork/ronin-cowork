@@ -39,7 +39,6 @@ import { registerDocs } from './routes/docs-api.js';
 import { registerDrop } from './routes/drop-api.js';
 import { registerDesks } from './routes/desks-api.js';
 import { registerTeamPage } from './routes/team-page-api.js';
-import { startTomodachiSender } from './activation/tomodachi.js';
 import { registerServicesActivation, resumeInstallWatch, servicesSetupWrites } from './routes/services-activation-api.js';
 import { registerMachineSettings } from './routes/machine-settings-api.js';
 import { registerCampaigns } from './routes/campaigns-api.js';
@@ -267,7 +266,6 @@ registerUpdate(app); // /api/update/* — the ⚙ gear's check + run, press-only
 registerMachineRestart(app); // /api/machine/restart — the Setup Services Restart press; answers, then runs ronin-host restart — src/routes/machine-restart-api.ts
 registerMachineSettings(app); // /api/machine-settings — the install record, and writes BY NAME only — src/routes/machine-settings-api.ts
 registerCampaigns(app); // /api/campaigns* — the durable record of each body of work — src/routes/campaigns-api.ts
-startTomodachiSender(); // AGERU's weekly packet actually leaves here — src/activation/tomodachi.ts
 registerOffice(app); // /api/office — the office record: self-hosted, or an office on an office_park — src/office-record.ts
 registerInstalled(app); // /api/installed — what is on this machine: installed · activated · switched, one answer — src/routes/installed-api.ts
 registerSetupRuntime(app); // /api/setup/runtime and provider login completion — explicit readiness facts for Ronin Setup
