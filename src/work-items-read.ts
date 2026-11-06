@@ -15,7 +15,7 @@ import { readLetterHolds } from './tegami.js';
 import { sessionKey } from './session-dir.js';
 import { readTeamRoster, type TeamRoster } from './team-rosters.js';
 import { listSessions } from './tmux.js';
-import { HANDED_IN, WorkItemMissing, handInStage, handedInNote, heldIds, holderLabel, listItems, readItem, type Comment, type HandIn, type WorkItem } from './work-items.js';
+import { WorkItemMissing, heldIds, holderLabel, listItems, readItem, type HandIn, type WorkItem } from './work-items.js';
 
 export interface AgentReading {
   holder: string;
@@ -167,53 +167,20 @@ async function teamBoards(team: string, sessions: Array<{ name: string; tags: st
     .flatMap((reading) => [reading.board, ...reading.items]);
 }
 
-/** A line on the Team workbench's Waiting on you (owner, 2026-11-04; KAN-232): an item, how long
- * it has waited (`since`: With the lead, from its last hand-in; Ready to accept, from when it
- * went on dev, or its checkout hand-in; Stuck, from its last flag raised), and for a flagged one
- * the flag's reason. What the user reads comes first (owner, 2026-11-05; ITEM_HANDOVER): the
- * objective and the Handed in note (`handed_in`); the other comments follow, folded. */
-export interface WaitingItem {
-  id: string; title: string; status: string; holder: string; jira: string; since: string; reason: string;
-  objective: string; handed_in: string; comments: Comment[];
-}
-
-/** What the teams push carries for the Team workbench's Waiting on you and Epics cards: the items
- * In Review split by the signals (docs/using-ronin/project-management.md, Three signals) into `lead` (With the lead: handed
- * in, not on dev since) and `review` (Ready to accept: on dev since the last hand-in, or handed
- * in from a checkout), the flagged ones (`stuck`), each oldest first, and the Team's Epics
- * (`epics`): those it or its members hold, and the Epic above each item they hold. */
-export interface TeamWork { lead: WaitingItem[]; review: WaitingItem[]; stuck: WaitingItem[]; epics: string[] }
+/** The Team's Epics for the Team workbench's Epics card (`epics`): those the Team or its members
+ * hold, and the Epic above each item they hold. */
+export interface TeamWork { epics: string[] }
 
 export function teamWork(items: HeldItem[], every: WorkItem[]): TeamWork {
   const byId = new Map(every.map((item) => [item.id, item]));
   const held = [...new Map(items.map((item) => [item.id, item])).values()];
-  const last = (item: WorkItem, op: string, to: string) => [...item.trail].reverse().find((line) => line.op === op && line.to === to);
-  const line = (item: HeldItem, since: string, reason = ''): WaitingItem => {
-    const note = handedInNote(item);
-    const shown = note ? [...item.comments].reverse().find((one) => one.text === `${HANDED_IN}${note}`) : undefined;
-    return {
-      id: item.id, title: item.title, status: item.status, holder: item.holder, jira: item.external.jira?.key ?? '', since, reason,
-      objective: item.objective, handed_in: note, comments: (item.comments ?? []).filter((one) => one !== shown),
-    };
-  };
-  const oldest = (a: WaitingItem, b: WaitingItem) => a.since.localeCompare(b.since);
-  const handedIn = held.filter((item) => item.status === 'In Review');
-  const handed = (item: WorkItem) => item.hand_ins?.at(-1)?.at ?? last(item, 'status', 'In Review')?.at ?? item.created.at;
-  const lead = handedIn.filter((item) => handInStage(item) === 'lead').map((item) => line(item, handed(item))).sort(oldest);
-  const review = handedIn.filter((item) => handInStage(item) === 'ready')
-    .map((item) => line(item, item.on_dev && item.hand_ins?.at(-1)?.receipt !== null ? item.on_dev.at : handed(item))).sort(oldest);
-  // Never Done (KAN-271): a Done item left flagged is not stuck.
-  const stuck = held.filter((item) => item.flagged && item.status !== 'Done').map((item) => {
-    const flag = last(item, 'flag', 'true');
-    return line(item, flag?.at ?? item.created.at, flag?.note ?? '');
-  }).sort(oldest);
   const epics = new Set<string>();
   for (const item of held) {
     let at: WorkItem | undefined = item;
     for (let steps = 0; at && at.level !== 1 && steps < every.length; steps += 1) at = at.parent ? byId.get(at.parent) : undefined;
     if (at?.level === 1) epics.add(at.id);
   }
-  return { lead, review, stuck, epics: [...epics] };
+  return { epics: [...epics] };
 }
 
 /** An item under an Epic as the Epics workbench draws it (KAN-206): no history, comments or

@@ -38,7 +38,7 @@ import { BEHAVIOUR_SURFACE_TYPE } from './behaviour-surface.js';
 import { createItemPhalanx, holderOf } from './work-items-surface.js';
 import { registerWorkbenchCatalog, WORKBENCH_PROFILES as WB_PROFILES, WORKBENCH_TYPES as WB_TYPES } from './workbench-catalog.js';
 import { createAgentCompositionSurface } from './agent-composition.js';
-import { createTeamEpics, createTeamWaiting } from './team-waiting.js';
+import { createTeamEpics } from './team-epics.js';
 import { createEpicRecord, createEpicsRead } from './epics-surface.js';
 
 const el = (tag, cls, text) => {
@@ -286,8 +286,7 @@ export function createCoworkView(options = {}) {
       onTrackedRoots: onProjects,
       navigateToSurface: (type, detail) => type === 'setup.roots' && navigateToWorkspaceFolders(ctx, detail),
     }, workspace: id }),
-    // Waiting on you and Epics (KAN-232): the bench keeps one per seat across Teams, so each reads the Team entered now.
-    teamWaiting: () => keepTeamSurface(createTeamWaiting({ team: () => team })),
+    // Epics (KAN-232): the bench keeps one per seat across Teams, so it reads the Team entered now.
     teamEpics: () => keepTeamSurface(createTeamEpics({ team: () => team })),
     epics: () => [],
     epicRecord: (_id, detail) => keepTeamSurface(createEpicRecord(detail.key, { epicsRead: createEpicsRead(() => '') })),

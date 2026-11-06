@@ -8,11 +8,11 @@ where it is built or taught.
 
 | Doc | What it holds |
 |---|---|
-| [Project management](../using-ronin/project-management.md) | **The README.** Plan, epic, item; how an item lives; the three signals; the six notices; where the work shows (Jira Kanban or Scrum, Epics, Waiting on you, the item island) |
+| [Project management](../using-ronin/project-management.md) | **The README.** Plan, epic, item; how an item lives; the three signals; the six notices; where the work shows (Jira Kanban or Scrum, Epics, the item island) |
 | [Writing a plan](../using-ronin/planning.md) | the plan: who writes it, Draft and Ordered, the `plan` tool, from plan to epics, and the one copy of the template (`plan read --template` reads it) |
 | [Work items](../using-ronin/work-items.md) | the fields, levels, statuses and every `item` command |
 | [Jira](../using-ronin/jira.md) | connecting a space: the panel, the switches, Connect, Jira wins |
-| [Workbench](../using-ronin/workbench.md#waiting-on-you-and-epics-on-a-team) | Waiting on you and Epics on the Team workbench |
+| [Workbench](../using-ronin/workbench.md#epics-on-a-team) | Epics on the Team workbench |
 | [The tile](../using-ronin/tile.md#the-item-island) | the item island: a pill per open item, Subtasks folded under their Task; an item's reading |
 
 ## For Agents: the briefs
@@ -52,7 +52,7 @@ predicate in `src/behaviours.ts`.
 |---|---|
 | `src/work-items.ts` | the store. Shapes Jira refuses (`jiraShape`); every id resolving (`resolveId`); the hand-in (`handInUnlocked`, `handInStage`, the Handed in note); `markOnDev`; Send back; the handover (`handoverItem`), To Do settling (`settleToDo`), an ending without a handover (`releaseHolder`: to the Team, flagged, the lead told once) and the crash sweep (`releaseEndedHolders`); the six notices (`noticesOf`, one per person per command); Done by name (`DONE`); the archive (`archiveDone`, `ARCHIVE_AFTER_MS`, five days from `doneSince`); delete; `plan:` attachments |
 | `src/index.ts` | the five-minute sweeps: crashed holders, then the archive |
-| `src/work-items-read.ts` | the Team readings: Waiting on you's three groups, the Team's epics, the Epics push (archived items left out, counted per epic); lists read by the id each item goes by now, once |
+| `src/work-items-read.ts` | the Team readings: the Team's epics, the Epics push (archived items left out, counted per epic); lists read by the id each item goes by now, once |
 | `src/routes/work-items-api.ts` | `/api/work-items`: CRUD, `many/:act`, `:id/on-dev`, `:id/send-back`, `:id/handover`, comment, attach, link; search leaves archived out unless `?archived=1` |
 | `src/routes/sessions-api.ts` | `session_end`'s refusal and its NEXT |
 | `src/tegami-read.ts`, `libexec/work-record-read` | the work record's items, for the tile and `work-record read` (Done shown with how long ago) |
@@ -60,7 +60,7 @@ predicate in `src/behaviours.ts`.
 | `src/workspaces.ts`, `src/routes/workspaces-api.ts`, `public/js/workspaces-surface.js` | the Workspace's `plans` field and the page's Plans row |
 | `public/js/plan-attachment.js`, `src/routes/docs-api.ts` | a `plan:` attachment opened or shown gone; the Docs pane's Plans shelf |
 | `public/js/epics-surface.js` | the Epics workbench: stones, an epic's record, its Show question, `holderButton` |
-| `public/js/team-waiting.js` | the Team workbench: Waiting on you (objective and Handed in note first), Epics |
+| `public/js/team-epics.js` | the Team workbench's Epics card |
 | `public/js/work-items-surface.js` | an item's reading (the overlay): `holderWords` ("Team <t> (lead <l>)", "@agent"), id, kind · level, origin |
 | `public/js/tile-island.js` | the item island: Done hidden, Subtasks folded under their Task, the hand-in mark |
 | `public/js/jira-panel.js` | Settings › Jira |
@@ -103,8 +103,6 @@ Found reading the code end to end; none is built yet.
 |---|---|---|
 | An ending with no Team found still goes to nobody (flagged, its helpers told) | `releaseHolder` | to the epic's Team, else traffic_control |
 | To Do is taken as the space's first status, as Done was taken as its last | `settleToDo`, `unfinishedHolds`, `releaseHolder` | To Do by name, as Done now is |
-| Accept is open to whoever views Waiting on you, a lead included | `team-waiting.js`, the transition route | the owner's call: leave it, or Accept only for the user |
 | The Epics record gets each epic's archived count but doesn't show it | `epics-surface.js` | "N archived" under the status row |
 | A Jira change that is only the echo of Ronin's own delete beats Ronin's next change (KAN-232 went back to In Review) | ronin-services `jira/bridge.ts` | treat a parent cleared by a Ronin delete as Ronin's own write |
-| Waiting on you still lists items one by one; the owner asked for less | `team-waiting.js` | accept by promotion: one line per promotion, one Accept (a design, if wanted) |
 | "Your work record changed" pings still go to every Agent whose lists move | `ackRecord`, `src/tegami.ts` | only for the Agent's own items, Teams or settings (owner's open question) |

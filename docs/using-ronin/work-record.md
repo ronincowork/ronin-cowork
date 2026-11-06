@@ -139,7 +139,7 @@ Name the item on a hand-in with `worktree-desk hand-in <repo> --item <id>`. An a
 hand-in moves the item to In Review and gives it to the Team, with the receipt on its trail.
 A promotion is a code step and never changes a status: each item named on the hand-ins it
 carries gets the promotion receipt on its trail, nothing more. Done is set only by the person
-accepting the item (Waiting on you, or the Jira user for an item paired to Jira). No
+accepting the item (in its reading, or the Jira user for an item paired to Jira). No
 association is guessed from names or repositories.
 
 A supporting Agent and a handoff are two operations owned by their tools:
