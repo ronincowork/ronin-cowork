@@ -347,19 +347,23 @@ function createRegisterSurface(context) {
   const stopProgress = watchSetupProgress(context.environment, paint);
   if (zone) out.content.append(zone.el);
   body.append(identity, form, userIntro, declined, recoveryOptions, notice); out.content.append(body);
-  // An office on an office_host is registered by its provisioning: no form, no header zone, no
-  // Delete registration (which would drop the office's entitlement). One sentence says so. A
-  // record that will not read is a fault, treated the same way, never as self-hosted.
+  // An office on an office_host has its registration managed by its provisioning: no form, no
+  // header zone, no Delete registration (which would drop the office's entitlement). One
+  // sentence says so; it claims nothing about completed registration, which only HQ knows. A
+  // record that will not read is a fault, treated the same way, never as self-hosted. The put-away
+  // is reversible: show() restores the zone and the form when the record reads self-hosted again.
   const hostedNotice = el('p', 'setup-notice setup-register-hosted');
+  const original = [...out.content.childNodes];
   const putAwayForHosted = (office) => {
     const unreadable = office.hosting === 'unreadable';
     hostedNotice.textContent = unreadable
       ? t('setup_surface.register_office_unreadable', 'Office record unreadable: {error}. Registration waits until the record reads.', { error: office.error || '—' })
-      : t('setup_surface.register_hosted', 'Hosted office: registered by its provisioning. There is nothing to register here.');
+      : t('setup_surface.register_hosted', 'Hosted office: registration is managed when this office is provisioned. There is nothing to register here.');
     hostedNotice.dataset.tone = unreadable ? 'bad' : 'ok';
     out.content.replaceChildren(hostedNotice);
-    notifySummary(SETUP_SURFACE_TYPES.register, 'registered', context.workbench);
+    notifySummary(SETUP_SURFACE_TYPES.register, unreadable ? t('setup_surface.summary_office_unreadable', 'office record unreadable') : t('setup_surface.summary_managed', 'managed by provisioning'), context.workbench);
   };
+  const restoreForSelfHosted = () => { if (out.content.childNodes[0] === hostedNotice) out.content.replaceChildren(...original); };
   return { el: out.el, show: async () => {
     const routeKind = context.environment?.kinds?.get?.()[0] || '';
     kind.set({ build: 'build_software', life: 'life_assistants', research: 'research_writing', other: 'other' }[routeKind] || '');
@@ -370,6 +374,7 @@ function createRegisterSurface(context) {
       request('/api/setup/user-intro', { cache: 'no-store' }),
     ]);
     if (office.ok && office.data?.hosting !== 'self_hosted') { putAwayForHosted(office.data); return; }
+    restoreForSelfHosted();
     current = result.ok ? result.data : null;
     if (intro.ok) {
       userIntroText.value = intro.data?.intro || '';
