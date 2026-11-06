@@ -34,6 +34,7 @@ import { registerTeams, teamRosters } from './routes/teams-api.js';
 import { registerWorkspaces } from './routes/workspaces-api.js';
 import { registerPlans } from './routes/plans-api.js';
 import { registerWorkItems } from './routes/work-items-api.js';
+import { registerPromotions } from './routes/promotions-api.js';
 import { epicsPush, everyItemReading } from './work-items-read.js';
 import { registerDocs } from './routes/docs-api.js';
 import { registerDrop } from './routes/drop-api.js';
@@ -259,6 +260,7 @@ registerTeams(app); // /api/team-rosters* — the durable half of every team —
 registerWorkspaces(app); // /api/workspaces* — a Campaign's Workspaces — src/routes/workspaces-api.ts
 registerPlans(app); // /api/plans* — the plan tool's door — src/routes/plans-api.ts
 registerWorkItems(app); // /api/work-items* — the one door to the work item store — src/routes/work-items-api.ts
+registerPromotions(app); // /api/promotions/:id/live — whether a promotion restarted and passed health (KAN-311) — src/routes/promotions-api.ts
 registerDesks(app); // /api/desks?session=<name> and funnel recovery — derived desk state — src/routes/desks-api.ts
 registerTeamPage(app); // /api/teams/:team/page — the team page's view, and drafts an agent hands it — src/routes/team-page-api.ts
 registerVersion(app); // /api/version — release string, or the commit this process started from — src/routes/version.ts

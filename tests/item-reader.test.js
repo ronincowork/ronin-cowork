@@ -85,17 +85,23 @@ test('holderWords and holderOf say who holds an item; originWords where it start
   assert.match(epics, /button\.addEventListener\('click', \(\) => openHolder\(holder\)\)/, 'the button still opens the holder');
 });
 
-// Owner, 2026-11-05: the overlay says the hand-in the pill marks — who, when, and on dev.
-test('handInRecord: the last hand-in, and on dev only when its promotion came after', async () => {
+// Owner, 2026-11-05: the overlay says the hand-in the pill marks. KAN-311: as one line of steps.
+test('handInRecord: one line of steps, promoted only when its promotion came after; live from the receipt', async () => {
   const surface = await read('public/js/work-items-surface.js');
   const lift = (name) => surface.match(new RegExp(`export (?:const|function) ${name}[\\s\\S]*?\\n(?=\\n)`))[0].replace(/^export /, '');
   const t = (_key, literal, vars) => literal.replace(/\{(\w+)\}/g, (_m, k) => String(vars[k]));
   const when = (at) => String(at || '').slice(0, 16).replace('T', ' ');
-  const handInRecord = new Function('t', 'when', `${lift('handInRecord')}\nreturn handInRecord;`)(t, when);
+  const { handInRecord, promotionToCheck } = new Function('t', 'when', `${lift('handInRecord')}\n${lift('promotionToCheck')}\nreturn { handInRecord, promotionToCheck };`)(t, when);
+  const handed = 'Handed in by item_pills 2026-11-05 10:33 · on team line · with the lead';
   assert.equal(handInRecord({}), '');
-  assert.equal(handInRecord({ handed_in: { by: 'item_pills', at: '2026-11-05T10:33:29Z' } }), '↑ by item_pills · 2026-11-05 10:33');
-  assert.equal(handInRecord({ handed_in: { by: 'item_pills', at: '2026-11-05T10:33:29Z' }, on_dev: { at: '2026-11-05T10:34:33Z', promotion: 'r1' } }), '↑ by item_pills · 2026-11-05 10:33 · on dev 10:34 (r1)');
-  assert.equal(handInRecord({ handed_in: { by: 'a', at: '2026-11-05T11:00:00Z' }, on_dev: { at: '2026-11-05T10:00:00Z' } }), '↑ by a · 2026-11-05 11:00', 'an older promotion is not this hand-in');
+  assert.equal(handInRecord({ handed_in: { by: 'item_pills', at: '2026-11-05T10:33:29Z' } }), handed);
+  assert.equal(handInRecord({ hand_ins: [{ receipt: 'h1', by: 'item_pills', at: '2026-11-05T10:33:29Z' }], on_dev: { at: '2026-11-05T10:34:33Z', promotion: 'r1' } }), `${handed} | promoted to dev 10:34`);
+  assert.equal(handInRecord({ handed_in: { by: 'item_pills', at: '2026-11-05T10:33:29Z' }, on_dev: { at: '2026-11-06T09:00:00Z', promotion: 'r1' } }), `${handed} | promoted to dev 2026-11-06 09:00`, 'another day carries its date');
+  assert.equal(handInRecord({ handed_in: { by: 'a', at: '2026-11-05T11:00:00Z' }, on_dev: { at: '2026-11-05T10:00:00Z' } }), 'Handed in by a 2026-11-05 11:00 · on team line · with the lead', 'an older promotion is not this hand-in');
+  assert.equal(promotionToCheck({ handed_in: { by: 'a', at: '2026-11-05T10:00:00Z' }, on_dev: { at: '2026-11-05T10:01:00Z', promotion: 'r1' } }), 'r1');
+  assert.equal(promotionToCheck({ handed_in: { by: 'a', at: '2026-11-05T11:00:00Z' }, on_dev: { at: '2026-11-05T10:00:00Z', promotion: 'r0' } }), '');
+  assert.match(surface, /request\(`\/api\/promotions\/\$\{encodeURIComponent\(promotion\)\}\/live`/, 'live is the promotion receipt read');
+  assert.doesNotMatch(surface.slice(surface.indexOf('export function handInRecord'), surface.indexOf('export function originWords')), /github|master/i, 'no GitHub/master step');
   assert.match(surface, /if \(record \|\| handed\) \{/, 'the row shows for a hand-in with no note too');
 });
 

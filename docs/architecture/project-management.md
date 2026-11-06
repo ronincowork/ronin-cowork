@@ -54,6 +54,7 @@ predicate in `src/behaviours.ts`.
 | `src/index.ts` | the five-minute sweeps: crashed holders, then the archive |
 | `src/work-items-read.ts` | the Team readings: the Team's epics, the Epics push (archived items left out, counted per epic); lists read by the id each item goes by now, once |
 | `src/routes/work-items-api.ts` | `/api/work-items`: CRUD, `many/:act`, `:id/on-dev`, `:id/send-back`, `:id/handover`, comment, attach, link; search leaves archived out unless `?archived=1` |
+| `src/routes/promotions-api.ts` | `GET /api/promotions/:id/live`: a read of the promotion ledger receipt (`readReceipt`), live = complete, restart ok, health passed; the item reader's Handed in line ends "· live" by it (KAN-311) |
 | `src/routes/sessions-api.ts` | `session_end`'s refusal and its NEXT |
 | `src/tegami-read.ts`, `libexec/work-record-read` | the work record's items, for the tile and `work-record read` (Done shown with how long ago) |
 | `src/plans.ts`, `src/routes/plans-api.ts` | plans on the Workspace: the place (Ronin Lab's `<campaign>/<workspace>/plans`, or `plans: { location, path }`), the header, Draft and Ordered (no guards: the docs steer), one-file commits and the push, the move on a changed place; `resolve` for `plan:` |

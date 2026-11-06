@@ -91,15 +91,25 @@ export const statusChoices = (item) => [...new Set([...ITEM_STATUSES, item?.stat
 
 const when = (at) => String(at || '').slice(0, 16).replace('T', ' ');
 
-/** An item's hand-in, in one line: "↑ by item_pills · 2026-11-05 10:33 · on dev 10:34
- * (receipt)"; '' when it was never handed in. The last hand-in counts; on dev only when that
- * promotion came after it (the island's handInSignal, tile-island.js). */
+/** An item's hand-in as one line of steps, each a word and a time (owner, KAN-311): "Handed in
+ * by item_pills 2026-11-05 10:33 · on team line · with the lead | promoted to dev 10:34"; '' when
+ * it was never handed in. The last hand-in counts; promoted only when that promotion came after
+ * it (the island's handInSignal, tile-island.js). "· live" is added by the reader once the
+ * promotion's receipt says it restarted and passed health (`promotionToCheck`, /api/promotions). */
 export function handInRecord(item) {
   const last = (Array.isArray(item?.hand_ins) && item.hand_ins.at(-1)) || item?.handed_in || null;
   if (!last?.at) return '';
-  const words = [`↑ ${t('work_items.handed_in_by', 'by {who}', { who: last.by || '—' })}`, when(last.at)];
-  if (item.on_dev?.at && item.on_dev.at >= last.at) words.push(t('work_items.on_dev_at', 'on dev {at}', { at: when(item.on_dev.at).slice(11) }) + (item.on_dev.promotion ? ` (${item.on_dev.promotion})` : ''));
-  return words.join(' · ');
+  const handed = [t('work_items.handed_in_by', 'Handed in by {who} {at}', { who: last.by || '—', at: when(last.at) }),
+    t('work_items.on_team_line', 'on team line'), t('work_items.with_lead', 'with the lead')].join(' · ');
+  if (!(item.on_dev?.at && item.on_dev.at >= last.at)) return handed;
+  const at = when(item.on_dev.at);
+  return `${handed} | ${t('work_items.promoted_at', 'promoted to dev {at}', { at: at.slice(0, 10) === when(last.at).slice(0, 10) ? at.slice(11) : at })}`;
+}
+
+/** The promotion whose receipt says whether the hand-in went live: the one that put this hand-in on dev, or ''. */
+export function promotionToCheck(item) {
+  const last = (Array.isArray(item?.hand_ins) && item.hand_ins.at(-1)) || item?.handed_in || null;
+  return last?.at && item?.on_dev?.at >= last.at ? String(item.on_dev.promotion || '') : '';
 }
 
 /** Where an item started (w299): "from Jira (<reporter>)" when Jira made it (created.by
@@ -158,7 +168,15 @@ export function renderItemDetail(host, item, { holder = '', openAttachment = nul
   const record = handInRecord(item);
   if (record || handed) {
     const lines = [];
-    if (record) lines.push(el('p', 'wi-text wi-handin', record));
+    if (record) {
+      const line = el('p', 'wi-text wi-handin', record);
+      lines.push(line);
+      // Live: that promotion restarted and passed health (its ledger receipt); a --no-restart one never reads live.
+      const promotion = promotionToCheck(item);
+      if (promotion) void request(`/api/promotions/${encodeURIComponent(promotion)}/live`, { cache: 'no-store' }).then((result) => {
+        if (result.ok && result.data?.live && line.isConnected) line.textContent = `${record} · ${t('work_items.live', 'live')}`;
+      });
+    }
     if (handed) lines.push(el('p', 'wi-objective wi-handed-in', handed.text.slice(HANDED_IN.length)), el('small', 'wi-when', `${handed.by || ''} · ${when(handed.at)}`));
     step('handed_in', t('work_items.handed_in', 'Handed in'), () => record || handed.text.slice(HANDED_IN.length).split('\n')[0], ...lines);
   }

@@ -95,10 +95,13 @@ folded to begin with), **Comments**, **Attachments** (each opens), **Links** and
 transition, one trail line, its holders and watchers told). The line under it says what
 changed, or why the move was refused, and the answer goes back.
 
-**Handed in** shows whenever the item was handed in, note or not: who handed it in and when,
-and, once a promotion put that hand-in on dev, when and its receipt (`↑ by item_pills ·
-2026-11-05 10:33 · on dev 10:34 (<receipt>)`), the same hand-in the island's pill marks. The
-Handed in note, when one was left, reads under it.
+**Handed in** shows whenever the item was handed in, note or not, as one line of steps, each a
+word and a time (KAN-311): `Handed in by item_pills 2026-11-05 10:33 · on team line · with the lead
+| promoted to dev 10:34 · live`. "promoted to dev" appears once a promotion put that hand-in on dev
+(the same hand-in the island's pill marks); "live" only when that promotion's receipt in the
+promotion ledger says it restarted and passed health (`GET /api/promotions/:id/live`,
+`src/routes/promotions-api.ts`), so a `--no-restart` promotion reads "promoted to dev" alone. There
+is no GitHub or master step. The Handed in note, when one was left, reads under it.
 
 **Who holds it, and where it started.** A holder reads the same on the reader, the Work Items
 stones and the Epic cards: an Agent is `@<agent>`, a Team is `Team <name> (lead

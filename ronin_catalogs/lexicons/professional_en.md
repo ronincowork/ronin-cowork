@@ -624,8 +624,11 @@ nothing paints exactly this.
 - **work_items.from_jira:** from Jira ({who})
 - **work_items.from_ronin:** Ronin ({who})
 - **work_items.handed_in:** Handed in
-- **work_items.handed_in_by:** by {who}
-- **work_items.on_dev_at:** on dev {at}
+- **work_items.handed_in_by:** Handed in by {who} {at}
+- **work_items.on_team_line:** on team line
+- **work_items.with_lead:** with the lead
+- **work_items.promoted_at:** promoted to dev {at}
+- **work_items.live:** live
 - **work_items.comment_one:** comment
 - **work_items.comment_many:** comments
 - **work_items.done_n:** Done ({n})
