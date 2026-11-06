@@ -105,27 +105,27 @@ test('gbrain paints the install from its own answer, then from pushes, and never
   assert.doesNotMatch(texts(root), /after close/, 'closed: the push is not heard');
 });
 
-test('the Services surface follows a confirmation and an install by push, and never polls', async () => {
+test('the Services surface follows a registration and an install by push, and never polls', async () => {
   const { createServicesSurface } = await import('../public/js/setup-surfaces.js');
   asked.length = 0;
-  const reg = (extra = {}) => ({ status: 'pending', services_entitled: false, ...extra });
+  const reg = (extra = {}) => ({ status: 'optional', services_entitled: false, ...extra });
   const bare = { services: { installed: false, switched_on: false, restart_needed: false, parts: [], loaded: [] } };
   answer = (url, options) => {
-    if (url.startsWith('/api/setup/registration')) return reg({ email_masked: 'p***@example.com' });
+    if (url.startsWith('/api/setup/registration')) return reg();
     if (url.startsWith('/api/installed')) return bare;
-    if (url.startsWith('/api/services/activation')) return { stage: 'awaiting_email' };
-    if (url === '/api/services/install' && options.method === 'POST') return { registration: reg({ services_entitled: true }), installed: bare, activation: { stage: 'installing' } };
+    if (url.startsWith('/api/services/activation')) return { stage: 'not_requested' };
+    if (url === '/api/services/install' && options.method === 'POST') return { registration: reg({ status: 'registered' }), installed: bare, activation: { stage: 'installing' }, install: { started: true } };
     if (url.startsWith('/api/campaigns')) return [];
     return {};
   };
   const surface = createServicesSurface({ tenant: {}, environment: {}, workspace: 'workspace2' });
   await surface.show();
-  assert.match(texts(surface.el), /Confirmation email sent to p\*\*\*@example.com/);
+  assert.match(texts(surface.el), /Not installed on this machine/);
   const opened = asked.length;
 
-  store.receive({ t: 'services-setup', services: { registration: reg({ services_entitled: true }), installed: bare, activation: { stage: 'verified' } } });
-  assert.match(texts(surface.el), /Registered · Ready to install/, 'the confirmation lands by push');
-  assert.equal(asked.length, opened, 'no request while waiting on the email');
+  store.receive({ t: 'services-setup', services: { registration: reg({ status: 'registered' }), installed: bare, activation: { stage: 'not_requested' } } });
+  assert.match(texts(surface.el), /Registered · Ready to install/, 'the registration lands by push');
+  assert.equal(asked.length, opened, 'no request while nothing is pressed');
 
   [...surface.el.walk()].find((n) => n.tagName === 'BUTTON' && n.dataset.step === 'install').click();
   await settle();
@@ -133,7 +133,7 @@ test('the Services surface follows a confirmation and an install by push, and ne
   assert.match(texts(surface.el), /Installing Services…/, 'and paints its own answer');
 
   surface.leave();
-  store.receive({ t: 'services-setup', services: { registration: reg({ services_entitled: true }), installed: bare, activation: { stage: 'verified' } } });
+  store.receive({ t: 'services-setup', services: { registration: reg({ status: 'registered' }), installed: bare, activation: { stage: 'not_requested' } } });
   assert.match(texts(surface.el), /Installing Services…/, 'closed: the push is not heard');
 });
 

@@ -3,7 +3,6 @@ import path from 'node:path';
 import { storeDir } from '../resources.js';
 
 const dir = () => storeDir('services_secrets');
-const claimFile = () => path.join(dir(), 'claim_secret');
 const tokenFile = () => path.join(dir(), 'entitlement_token');
 
 async function writeSecret(file: string, value: string): Promise<void> {
@@ -22,8 +21,6 @@ async function readSecret(file: string): Promise<string | null> {
   }
 }
 
-export const putClaimSecret = (v: string) => writeSecret(claimFile(), v);
-export const getClaimSecret = () => readSecret(claimFile());
 export const putEntitlementToken = (v: string) => writeSecret(tokenFile(), v);
 export const getEntitlementToken = () => readSecret(tokenFile());
 
@@ -31,6 +28,7 @@ export async function clearEntitlementToken(): Promise<void> {
   await fs.rm(tokenFile(), { force: true });
 }
 
-export async function clearClaimSecret(): Promise<void> {
-  await fs.rm(claimFile(), { force: true });
+/** An entitlement is held when its token file is. Identity transport only: it unlocks nothing. */
+export async function isEntitled(): Promise<boolean> {
+  return (await getEntitlementToken()) !== null;
 }

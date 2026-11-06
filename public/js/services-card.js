@@ -14,20 +14,14 @@ import { store } from './store.js';
 import { button, field, status } from './ui.js';
 import { t } from './lexicon.js';
 
-/** How the six durable stages read to a person, in their words rather than ours.
+/** How the four durable stages read to a person, in their words rather than ours.
  *  A function, not a table: the lexicon loads after this module is evaluated. */
 function stageWords() {
   return {
     not_requested: [t('services.stage_not_requested', 'Not requested'), t('services.stage_not_requested_blurb', 'Ronin Services are not switched on for this machine.')],
-    requesting: [t('services.stage_requesting', 'Sending…'), t('services.stage_requesting_blurb', 'Asking Ronin to send your confirmation email.')],
-    awaiting_email: [t('services.stage_awaiting_email', 'Check your email'), t('services.stage_awaiting_email_blurb', 'Open the link we sent. Any device is fine — your phone works.')],
-    verified: [t('services.stage_verified', 'Email confirmed'), t('services.stage_verified_blurb', 'Ronin has what it needs. Services install next.')],
     installing: [t('services.stage_installing', 'Installing Services'), t('services.stage_installing_blurb', 'This machine is fetching and verifying the download.')],
     installed: [t('services.stage_installed', 'Services are ready'), t('services.stage_installed_blurb', 'Nothing further to do.')],
-    expired: [t('services.stage_expired', 'This link expired'), t('services.stage_expired_blurb', 'Ask for a fresh confirmation email below.')],
-    cancelled: [t('services.stage_cancelled', 'Request cancelled'), t('services.stage_cancelled_blurb', 'Nothing was switched on, and the address was not kept.')],
-    address_changed: [t('services.stage_address_changed', 'Address changed'), t('services.stage_address_changed_blurb', 'A new confirmation email is on its way.')],
-    error: [t('services.stage_error', 'Waiting to send'), t('services.stage_error_blurb', 'Ronin HQ could not be reached. This will retry.')],
+    error: [t('services.stage_error', 'Needs attention'), t('services.stage_error_blurb', 'The Services install did not finish.')],
   };
 }
 
@@ -81,7 +75,7 @@ export function servicesCard(container, onChange) {
     const actions = document.createElement('div');
     actions.className = 'st-row';
 
-    if (state.stage === 'not_requested' || state.stage === 'cancelled' || state.stage === 'expired') {
+    if (state.stage === 'not_requested') {
       const email = document.createElement('input');
       email.type = 'email';
       email.className = 'st-inp';
@@ -105,45 +99,9 @@ export function servicesCard(container, onChange) {
       })));
     }
 
-    if (state.stage === 'awaiting_email'
-        || (state.stage === 'error' && state.error_at_stage === 'awaiting_email')) {
-      actions.appendChild(nodeOf(button(t('services.check_status', 'Check status'), {
-        cls: 'services-check',
-        onClick: () => act(line, '/api/services/activation/poll', null),
-      })));
-      const resend = button(t('services.resend', 'Resend'), {
-        onClick: () => act(line, '/api/setup/registration/recovery', { action: 'resend' }),
-      });
-      const change = button(t('services.change_address', 'Change address'), { onClick: () => changeAddress() });
-      const cancel = button(t('services.cancel_request', 'Cancel request'), {
-        onClick: () => act(line, '/api/setup/registration', null, 'DELETE'),
-      });
-      actions.append(nodeOf(resend), nodeOf(change), nodeOf(cancel));
-      if (state.resend_available_at) {
-        const when = new Date(state.resend_available_at);
-        if (when > new Date()) {
-          resend.disabled = true;
-          // The server owns the cooldown; the page reports it rather than guessing.
-          const n = document.createElement('span');
-          n.className = 'st-note';
-          n.textContent = ' ' + t('services.resend_after', 'you can resend after {time}', { time: when.toLocaleTimeString() });
-          actions.appendChild(n);
-        }
-      }
-    }
-
-    if (state.stage === 'error' && state.error_at_stage === 'requesting') {
-      actions.append(nodeOf(button(t('services.change_and_retry', 'Change address and try again'), {
-        onClick: () => changeAddress(),
-      })), nodeOf(button(t('services.cancel_request', 'Cancel request'), {
-        onClick: () => act(line, '/api/setup/registration', null, 'DELETE'),
-      })));
-    }
-
-    if (state.stage === 'verified' || (state.stage === 'error' && state.entitled)) {
-      // Recovery only. Installation normally starts by itself the moment an entitlement
-      // arrives; this is for the case where it failed and somebody wants to try again
-      // without another email.
+    if (state.stage === 'error') {
+      // Recovery only. Installation normally starts by itself when registration is
+      // submitted; this is for the case where it failed and somebody wants to try again.
       actions.appendChild(nodeOf(button(t('services.install_now', 'Install Services now'), {
         onClick: () => act(line, '/api/services/install', {}),
       })));
@@ -193,15 +151,9 @@ export function servicesCard(container, onChange) {
     const r = await request(route, { method: method || 'POST', ...(json ? { json } : {}) });
     if (!r.ok) { where.say(r.message || t('services.failed', 'that did not work'), 'bad'); return; }
     where.say('');
-    // Check status and Install answer with the services object; the registration presses'
-    // new activation arrives as {t:'services-setup'}.
+    // Install answers with the services object; a registration's new activation arrives as
+    // {t:'services-setup'}.
     if (r.data?.activation) render(r.data.activation);
-  }
-
-  async function changeAddress() {
-    const next = window.prompt(t('services.new_address_prompt', 'New email address for Ronin Services'));
-    if (!next) return;
-    await act(line, '/api/setup/registration/recovery', { action: 'change_address', email: next.trim() });
   }
 
   async function load() {
@@ -210,12 +162,11 @@ export function servicesCard(container, onChange) {
     // carried a `.json`. Reading the wrong name handed render() `undefined` on SUCCESS,
     // which took the !state branch and returned before the card was ever built: the ⚙
     // Services card drew nothing at all, and with it went the only UI caller of
-    // POST /api/services/install — the one escape for a box stranded at `verified`.
+    // POST /api/services/install — the one way to retry a failed install.
     render(r.ok ? r.data : null);
   }
 
-  // OPEN reads the activation and listens: each step, an install's end and a confirmation
-  // arrive by push, and a reopened socket (Ronin back from a restart) reads again. `stop` is CLOSE.
+  // OPEN reads the activation and listens: each step and an install's end arrive by push, and a reopened socket (Ronin back from a restart) reads again. `stop` is CLOSE.
   const unlisten = store.listen('services-setup', (m) => render(m.services?.activation ?? null));
   const unopen = store.onOpen(() => { void load(); });
   void load();
