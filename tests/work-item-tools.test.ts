@@ -91,10 +91,13 @@ test('item acts, each naming its item, one trail line each', async () => {
   const id = made(await tool('item', ['create', '--title', 'Piece', '--objective', 'part', '--parent', epic, '--kind', 'Task']));
   assert.match(await tool('item', ['read', id]), /"level": 0/);
 
-  assert.equal((await oneLine(id, ['assign', id, 'probe'])).to, 'agent:probe');
+  assert.equal((await oneLine(id, ['handoff', id, 'probe'])).to, 'agent:probe');
   assert.deepEqual((await readLetterHolds('probe'))!.holds, [id]);
-  assert.equal((await oneLine(id, ['assign', id, 'team:crew'])).to, 'team:crew');
-  assert.equal((await oneLine(id, ['handoff', id, 'none'])).op, 'handoff');
+  const back = await oneLine(id, ['handoff', id, 'team:crew', '--from', 'probe']);
+  assert.deepEqual([back.op, back.from, back.to], ['handoff', 'agent:probe', 'team:crew']);
+  assert.deepEqual((await readLetterHolds('probe'))!.holds, [], 'the giver came off');
+  assert.equal((await run('item', ['handoff', id, 'none'])).status, 2, 'no receiver none: letting go is release');
+  assert.equal((await run('item', ['assign', id, 'probe'])).status, 2, 'assign is gone: handoff is the one tool');
   assert.equal((await oneLine(id, ['transition', id, 'Done'])).to, 'Done');
   assert.equal((await run('item', ['edit', id, '--status', 'In Progress'])).status, 2, 'status is transition\'s, not edit\'s');
   const flagged = await oneLine(id, ['flag', id, 'stuck on the API']);
@@ -158,7 +161,7 @@ test('work-record add_doc holding no item puts the document on the work record i
 
   // Holding an item now: --remove still takes the record's own one off; the item is untouched.
   const held = made(await tool('item', ['create', '--title', 'Loner work']));
-  await tool('item', ['assign', held, 'loner']);
+  await tool('item', ['handoff', held, 'loner']);
   assert.equal((await tool('work-record', ['add_doc', '--remove', doc], 'loner')).trim(), `@loner's work record has ${doc} removed`);
   assert.deepEqual((await readTegami('loner'))!.docs, []);
   assert.deepEqual((await readItem(held))!.attachments, []);
@@ -169,11 +172,11 @@ test('work-record add_doc adds a document to the item you hold; holding several,
   const doc = path.join(dir, 'idea.md');
   writeFileSync(doc, '# idea\n');
   const first = made(await tool('item', ['create', '--title', 'Idea']));
-  await tool('item', ['assign', first, 'writer']);
+  await tool('item', ['handoff', first, 'writer']);
   await tool('work-record', ['add_doc', doc], 'writer');
   assert.deepEqual((await readItem(first))!.attachments, [doc]);
   const second = made(await tool('item', ['create', '--title', 'Concept']));
-  await tool('item', ['assign', second, 'writer']);
+  await tool('item', ['handoff', second, 'writer']);
   const several = await run('work-record', ['add_doc', doc], 'writer');
   assert.deepEqual([several.status, several.stderr.trim()], [2, `BAD-ARG: you hold ${first} ${second}; name one with --item <id>`]);
   await tool('work-record', ['add_doc', doc, '--item', second], 'writer');
@@ -262,8 +265,38 @@ test('a member takes its team\'s item by handoff --from team:<name>: off the tea
   const line = await oneLine(id, ['handoff', id, 'probe', '--from', 'team:crew']);
   assert.deepEqual([line.from, line.to], ['team:crew', 'agent:probe']);
   assert.deepEqual((await holdersOf(id)).map(holderLabel), ['agent:probe']);
-  await tool('item', ['handoff', id, 'none', '--from', 'probe']);
-  assert.deepEqual((await holdersOf(id)).map(holderLabel), [], '--from names an Agent too, and none lets it go');
+  await tool('item', ['handoff', id, 'team:crew', '--from', 'probe', '--keep-holding']);
+  assert.deepEqual((await holdersOf(id)).map(holderLabel).sort(), ['agent:probe', 'team:crew'], '--keep-holding keeps the giver on');
+});
+
+test('item archive clears Done now: off every list, archived, one trail line, nobody told; not Done is refused; --done clears what you or a Team hold', async () => {
+  const { holdersOf } = await import('../src/work-items.js');
+  const epic = made(await tool('item', ['create', '--title', 'Deck', '--kind', 'Epic']));
+  const [done, open, mine, teams] = [
+    made(await tool('item', ['create', '--title', 'Finished', '--parent', epic])),
+    made(await tool('item', ['create', '--title', 'Still going', '--parent', epic])),
+    made(await tool('item', ['create', '--title', 'Mine done', '--parent', epic])),
+    made(await tool('item', ['create', '--title', 'Team done', '--parent', epic])),
+  ];
+  await tool('item', ['handoff', done, open, 'team:crew']);
+  await tool('item', ['handoff', mine, 'probe']);
+  await tool('item', ['handoff', teams, 'team:crew']);
+  await tool('item', ['transition', done, mine, teams, 'Done']);
+
+  const line = await oneLine(done, ['archive', done]);
+  assert.deepEqual([line.op, line.from, line.note], ['release', 'team:crew', 'archived: by probe']);
+  assert.ok((await readItem(done))!.archived, 'archived at once, not in five days');
+  assert.deepEqual(await holdersOf(done), []);
+  assert.match(await tool('item', ['read', done]), /"archived"/, 'item read still finds it');
+  const refused = await run('item', ['archive', open]);
+  assert.notEqual(refused.status, 0);
+  assert.match(refused.stderr + refused.stdout, new RegExp(`${open} is To Do, not Done`));
+
+  assert.match(await tool('item', ['archive', '--done']), new RegExp(`${mine} is archived`), 'your own Done items');
+  assert.equal((await readItem(teams))!.archived, undefined, 'a Team you are not in is not yours');
+  assert.match(await tool('item', ['archive', '--done', '--team', 'crew']), new RegExp(`${teams} is archived`));
+  assert.match(await tool('item', ['archive', '--done', '--team', 'crew']), /Nothing Done to archive/);
+  assert.equal((await run('item', ['archive', '--done', 'extra'])).status, 2);
 });
 
 test('work-record read and read --json take a reading over 128 KB, the most one env string may hold', async () => {

@@ -39,7 +39,7 @@ predicate in `src/behaviours.ts`.
 
 | Tool | Does |
 |---|---|
-| `item` (`ronin_bin/item`) | create, read, search (`--text`, `--archived`), edit, transition (`--note` on a hand-in), flag, unflag, assign, handoff, handover, watch, comment, attach (a path, a link or `plan:<name>`), link, delete; `item --help` |
+| `item` (`ronin_bin/item`) | create, read, search (`--text`, `--archived`), edit, transition (`--note` on a hand-in), flag, unflag, handoff (`--from`, `--keep-holding`), handover, archive (`<ids>`, `--done [--team]`), watch, comment, attach (a path, a link or `plan:<name>`), link, delete; `item --help` |
 | `plan` (`ronin_bin/plan`) | ls (`--status Draft\|Ordered`), read (`<workspace>/<name>`, `--template`), write, order, over `/api/plans`; the Workspace is the caller's Team's unless `--workspace`; `plan --help`. Taught by `ronin-help planning`, not by a brief |
 | `worktree-desk hand-in <repo> --item <id> --note "<what they can try>"` | the hand-in signal: In Review, the Agent keeping the hold, recorded in `hand_ins`, the note posted as the **Handed in** comment (280 characters at most). Under project management, refused without `--item` or without `--note` (`src/commands/desk.ts`, `src/desks/hand-in.ts`) |
 | `bin/ronin-promote <team>` | the promotion signal: marks each carried item `on_dev`, no status change (`src/promotion/promote.ts`) |
@@ -101,7 +101,6 @@ Found reading the code end to end; none is built yet.
 
 | Gap | Where | Proposed |
 |---|---|---|
-| `item handoff <ids> none` still drops an item to nobody, around the handover | `ronin_bin/item`, store | refuse `none` for an item In Progress or In Review; NEXT is `item handover` |
 | An ending with no Team found still goes to nobody (flagged, its helpers told) | `releaseHolder` | to the epic's Team, else traffic_control |
 | To Do is taken as the space's first status, as Done was taken as its last | `settleToDo`, `unfinishedHolds`, `releaseHolder` | To Do by name, as Done now is |
 | Accept is open to whoever views Waiting on you, a lead included | `team-waiting.js`, the transition route | the owner's call: leave it, or Accept only for the user |

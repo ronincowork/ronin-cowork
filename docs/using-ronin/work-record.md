@@ -35,7 +35,7 @@ not holding an item: holding is how work is found, never permission.
   "external": { "jira": { "id": "10012", "key": "RON-12" } },
   "trail": [
     { "at": "2026-09-28T15:02:11Z", "by": "lead", "op": "create", "to": "none", "note": "Agent-authored items; under w3" },
-    { "at": "2026-09-28T15:04:40Z", "by": "lead", "op": "assign", "from": "none", "to": "agent:builder" }
+    { "at": "2026-09-28T15:04:40Z", "by": "lead", "op": "handoff", "from": "team:surface", "to": "agent:builder" }
   ],
   "created": { "at": "2026-09-28T15:02:11Z", "by": "lead" }
 }
@@ -59,19 +59,19 @@ One object serves every level; a field that means nothing at a level is simply u
 Jira. An epic's status is set by hand. Adding a child never changes an item's level. There
 is no ladder: Jira has none.
 
-Two relations are kept apart. **Holding** (assign, held by) is a list of item ids on each
-Team and each Agent; assigning moves the id from one list to another and never touches the
+Two relations are kept apart. **Holding** (handoff, held by) is a list of item ids on each
+Team and each Agent; a handoff moves the id from one list to another and never touches the
 item. **Parent** is one id on the item, or none. A Team holds; it does not contain.
 
 ```text
-item create --title "Agent-authored items" [--kind Task] [--parent w3] [--objective "…"] [--priority High] [--team surface]
+item create --parent w3 --title "Agent-authored items" [--kind Task] [--objective "…"] [--priority High]   # lands on you
 item read w12                       # fields, children, comments, attachments, links, history
 item search [--team surface] [--holder builder | none] [--parent w3 | --no-parent] [--status "In Progress"] [--kind Bug]
 item edit w12 --priority High
 item edit w12 --parent w3           # parent and level together; --parent none keeps the level
 item transition w12 "In Review"     # any status to any status, by name, as Jira's transition
 item flag w12 "waiting on the API"  # Jira's Add flag; the reason is a comment. item unflag w12
-item assign w12 builder             # or team:surface, or none
+item handoff w12 builder            # you come off, builder goes on; or team:surface
 item comment w12 "commit 0123456789: store round-trips"
 item comment w12 --edit 1 "commit 0123456789: the store round-trips"
 item attach w12 docs/using-ronin/work-record.md     # --remove <path> takes it off
@@ -143,11 +143,11 @@ carries gets the promotion receipt on its trail, nothing more. Done is set only 
 accepting the item (Waiting on you, or the Jira user for an item paired to Jira). No
 association is guessed from names or repositories.
 
-A supporting Agent and an assignment are two operations owned by their tools:
+A supporting Agent and a handoff are two operations owned by their tools:
 
 ```text
 session_create board_reader --prompt "Take w12 and read it with item read w12."
-item assign w12 board_reader
+item handoff w12 board_reader
 ```
 
 ## Documents live on items, or on the record

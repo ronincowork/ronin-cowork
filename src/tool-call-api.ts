@@ -16,7 +16,7 @@ const operations: Array<[string, RegExp, string]> = [
   ['POST', /^\/api\/work-items$/, 'item create'],
   ['PUT', /^\/api\/work-items\/[^/]+$/, 'item edit'],
   ['DELETE', /^\/api\/work-items\/[^/]+$/, 'item delete'],
-  ...['assign', 'transition', 'flag', 'unflag', 'comment', 'attach', 'link'].map(verb =>
+  ...['handoff', 'transition', 'flag', 'unflag', 'comment', 'attach', 'link'].map(verb =>
     ['POST', new RegExp('^/api/work-items/[^/]+/' + verb + '$'), 'item ' + verb] as [string, RegExp, string]),
 ];
 export const countBrowserTool: RequestHandler = (req, _res, next) => {

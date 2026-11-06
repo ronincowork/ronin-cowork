@@ -87,7 +87,7 @@ test('several ids in one act: each answered on its own line, a bad one named', a
   assert.deepEqual(done.data.answers.map((one: { ok: boolean }) => one.ok), [true, true, false]);
   assert.equal(done.data.acknowledgement.split('\n')[2], 'w99999: No work item w99999.');
   assert.deepEqual([(await items.readItem(a.id))!.status, (await items.readItem(b.id))!.status], ['In Progress', 'In Progress']);
-  const none = await call('POST', '/api/work-items/many/handoff', { ids: ['w99998'], none: true, by: 'boss' });
+  const none = await call('POST', '/api/work-items/many/handoff', { ids: ['w99998'], session: 'mem', by: 'boss' });
   assert.equal(none.status, 409, 'every id failing is the error path');
   assert.equal((await call('POST', '/api/work-items/many/comment', { ids: [a.id], by: 'boss' })).status, 400, 'comment takes one id');
 });
@@ -319,14 +319,13 @@ test('a comment by someone else reaches the Agent working the item, and nobody e
   assert.deepEqual(await said(), [], 'nobody hears their own change');
 });
 
-test('nothing else is a notice: create, assign, handoff, put back, edit, attach, link, rename, delete', async () => {
+test('nothing else is a notice: create, handoff, edit, attach, link, rename, delete', async () => {
   await quiet();
   const made = await call('POST', '/api/work-items', { title: 'quiet one', parent: epic.id, team: 'crew', by: 'boss' });
   const id = made.data.item.id as string;
   const other = (await items.createItem({ title: 'quiet two', parent: epic.id }, 'boss')).item;
-  await call('POST', `/api/work-items/${id}/assign`, { session: 'mem', by: 'boss' });
+  await call('POST', `/api/work-items/${id}/handoff`, { session: 'mem', by: 'boss' });
   await call('POST', `/api/work-items/${id}/handoff`, { session: 'cap', from: 'mem', by: 'boss' });
-  await call('POST', `/api/work-items/${id}/handoff`, { none: true, from: 'cap', by: 'boss' });
   await call('PUT', `/api/work-items/${id}`, { title: 'quiet one, renamed', by: 'boss' });
   await call('POST', `/api/work-items/${id}/attach`, { path: 'https://example.com/a.md', by: 'boss' });
   await call('POST', `/api/work-items/${id}/link`, { type: 'Blocks', to: other.id, by: 'boss' });
@@ -345,14 +344,6 @@ test('one notice per person per command: several items, or one reached twice, is
   await quiet();
   await call('POST', '/api/work-items/many/transition', { ids: [a.id, b.id], status: 'In Progress', by: 'boss' });
   assert.deepEqual(await said(), [['both', `${a.id}: status To Do → In Progress by boss.\n${b.id}: status To Do → In Progress by boss.`]]);
-});
-
-test('a Ronin item put back tells nobody: only a Jira item goes to traffic_control', async () => {
-  const { item } = await items.createItem({ title: 'put back', parent: epic.id, holder: mem }, 'boss');
-  await quiet();
-  const back = await call('POST', `/api/work-items/${item.id}/handoff`, { none: true, by: 'mem' });
-  assert.equal(back.data.notified, undefined);
-  assert.deepEqual(await said(), []);
 });
 
 /* THE THREE SIGNALS (section 6a; KAN-239 piece E). */

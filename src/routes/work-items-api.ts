@@ -6,7 +6,7 @@
 import type express from 'express';
 import {
   WorkItemBadInput, WorkItemMissing, WorkItemRefused,
-  addComment, assignItem, attachDoc, connectionOf, createItem, deleteItem, editComment, editItem, flagItem, handoffItem, handoverItem, holderLabel, holdersOf, linkItem, listItems, markOnDev, readItem, resolveId, sendBack, watchItem, watchedIds,
+  addComment, attachDoc, connectionOf, createItem, deleteItem, editComment, editItem, archiveHeldDone, archiveItem, flagItem, handoffItem, handoverItem, holderLabel, holdersOf, linkItem, listItems, markOnDev, readItem, resolveId, sendBack, watchItem, watchedIds,
   didLine, oneNoticePerCommand, type Acknowledged, type Holder, type JiraPair, type WorkItem,
 } from '../work-items.js';
 import { agentReading, everyItemReading, teamReading } from '../work-items-read.js';
@@ -137,7 +137,7 @@ export function registerWorkItems(app: express.Express): void {
     }, callerOf(req), text(b.note)));
   }));
 
-  // THE ACTS THAT TAKE SEVERAL IDS (docs/using-ronin/work-items.md): transition, assign, handoff, handover,
+  // THE ACTS THAT TAKE SEVERAL IDS (docs/using-ronin/work-items.md): transition, handoff, handover, archive,
   // watch, unwatch, flag, unflag, delete. Each is one function of (id, body, caller) answering
   // its acknowledgement; POST /api/work-items/:id/<act> (DELETE /api/work-items/:id) runs it on
   // one item, POST /api/work-items/many/<act> { ids } on each in turn, every id answering.
@@ -150,21 +150,21 @@ export function registerWorkItems(app: express.Express): void {
       if (!status) throw new WorkItemBadInput('name the status, one of the space\'s.');
       return acted(await editItem(id, { status }, by, text(b.note)));
     },
-    // Assign adds a holder and removes nobody.
-    assign: async (id, b, by) => acted(await assignItem(id, holderFrom(b), by, text(b.note))),
-    // Handoff removes the giver and adds the receiver; none only lets the giver go. The giver is
-    // the caller, or { from } named: an Agent, or team:<name> (an Agent taking its team's item).
+    // Handoff, the one tool: the giver comes off and the receiver goes on (handoffItem). The
+    // giver is { from } when named, an Agent or team:<name>; else the caller and the Teams around
+    // it and the receiver. { keep_holding } leaves the giver on too.
     handoff: async (id, b, by) => {
-      const to = b.none === true || b.none === 'true' ? null : holderFrom(b);
       const named = text(b.from)?.trim();
-      const from: Holder = named ? (named.startsWith('team:') ? { kind: 'team', name: named.slice(5) } : { kind: 'agent', name: named.replace(/^agent:/, '') }) : { kind: 'agent', name: by };
-      return acted(await handoffItem(id, from, to, by, text(b.note)));
+      const from: Holder | undefined = named ? (named.startsWith('team:') ? { kind: 'team', name: named.slice(5) } : { kind: 'agent', name: named.replace(/^agent:/, '') }) : undefined;
+      return acted(await handoffItem(id, holderFrom(b), by, { from, keepHolding: b.keep_holding === true || b.keep_holding === 'true', note: text(b.note) }));
     },
     // The handover: { note } where it stands and what is next, the caller off and the receiver
     // on, the status kept; { to_do } puts it back to To Do too; { flag } the question for the lead.
     handover: async (id, b, by) => acted(await handoverItem(id, holderFrom(b), by, {
       note: text(b.note), flag: text(b.flag), toDo: b.to_do === true || b.to_do === 'true',
     })),
+    // Archive now: a Done item off every list at once, as the five-day sweep does (archiveItem).
+    archive: async (id, _b, by) => acted(await archiveItem(id, by)),
     // Jira's delete; an item that came from Jira goes only with { in_jira } (5a).
     delete: async (id, b, by) => {
       const { deleted, orphaned } = await deleteItem(id, by, { inJira: b.in_jira === true || b.in_jira === 'true' });
@@ -189,6 +189,11 @@ export function registerWorkItems(app: express.Express): void {
   for (const [verb, flagged] of [['flag', true], ['unflag', false]] as const) {
     acts[verb] = async (id, b, by) => acted(await flagItem(id, flagged, text(b.comment), by));
   }
+  // item archive --done: every Done item the caller or its Teams hold; { team } narrows it.
+  app.post('/api/work-items/archive-done', guarded(async (req, res) => {
+    const done = await archiveHeldDone(callerOf(req), text(req.body?.team)?.trim() || undefined);
+    res.json({ ok: true, archived: done.map(({ item }) => item.id), acknowledgement: done.length ? done.map(didLine).join('\n') : 'Nothing Done to archive.' });
+  }));
   app.post('/api/work-items/many/:act', guarded(async (req, res) => {
     const act = acts[req.params.act!];
     if (!act) throw new WorkItemBadInput(`several ids go to ${Object.keys(acts).join(', ')}; not ${req.params.act}.`);
@@ -242,7 +247,7 @@ export function registerWorkItems(app: express.Express): void {
   // Anything else under /api/work-items names no item (an id like surface/7 is not one):
   // a JSON 404 naming it, so a tool can say so rather than parse an HTML error page.
   app.all('/api/work-items/*', (req, res) => {
-    const id = req.path.slice('/api/work-items/'.length).replace(/\/(assign|handoff|handover|watch|unwatch|transition|flag|unflag|attach|link|comment|send-back|on-dev)$/, '');
+    const id = req.path.slice('/api/work-items/'.length).replace(/\/(handoff|handover|archive|watch|unwatch|transition|flag|unflag|attach|link|comment|send-back|on-dev)$/, '');
     res.status(404).json({ ok: false, error: `No work item ${id}.` });
   });
 }

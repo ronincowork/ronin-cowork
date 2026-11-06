@@ -1027,8 +1027,8 @@ export function renameItem(was: string, to: string, by: string): Promise<Acknowl
 }
 
 /* HOLDING — a list of item ids on each Team (roster.holds) and each Agent (the letter's
- * holds). Assignment adds an id; handoff removes the giver and adds the receiver. Neither
- * touches the item's content or parent, and both run under the issuer lock. */
+ * holds). Handoff removes the giver and adds the receiver; release removes it from every
+ * list. Neither touches the item's content or parent, and both run under the issuer lock. */
 
 export type Holder = { kind: 'team' | 'agent'; name: string };
 export const holderLabel = (holder: Holder): string => `${holder.kind}:${holder.name}`;
@@ -1105,31 +1105,37 @@ async function takeOffEveryList(id: string, except?: Holder): Promise<Holder[]> 
 
 const labels = (holders: Holder[]): string => holders.length ? holders.map(holderLabel).join(', ') : 'none';
 
-export async function assignUnlocked(given: string, to: Holder, by: string, note?: string): Promise<Acknowledged> {
-  const id = (await load(given)).id;
-  const target = await listFor(to);
-  if (!target.holds.includes(id)) await target.set([...target.holds, id]);
-  return appendTrail(id, by, () => ({ op: 'assign', to: holderLabel(to), note }));
+/** Handoff, the one tool (2026-11-06): the giver comes off and the receiver goes on, in the
+ * same issuer step. The giver is `from` when named; else the caller, with any Team of the
+ * caller's that holds the item and any Team of the receiver's that holds it (an Agent's Teams
+ * are its session's tags). So a lead giving out Team work takes the Team off, and the owner or
+ * traffic_control giving a Team's item to a member does too. `keepHolding`, the rare case, leaves
+ * the giver on as well. Every other holder stays: a second Agent handed it leaves the first on.
+ * There is no receiver none, as nothing goes to nobody: work given back goes to its Team; an ending is handover. */
+export function handoffItem(given: string, to: Holder, by: string, options: { from?: Holder; keepHolding?: boolean; note?: string } = {}): Promise<Acknowledged> {
+  return withIssuer(async () => {
+    const id = (await load(given)).id;
+    if (options.from) await listFor(options.from);
+    const givers = new Set(options.keepHolding ? [] : (options.from ? [options.from] : await giversFor(by, to)).map(holderLabel));
+    givers.delete(holderLabel(to));
+    const removed: Holder[] = [];
+    for (const list of await heldLists()) {
+      if (!list.holds.includes(id) || !givers.has(holderLabel(list.holder))) continue;
+      await list.set(list.holds.filter((held) => held !== id));
+      removed.push(list.holder);
+    }
+    const target = await listFor(to);
+    if (!target.holds.includes(id)) await target.set([...target.holds, id]);
+    return appendTrail(id, by, () => ({ op: 'handoff', from: labels(removed), to: holderLabel(to), note: options.note }));
+  });
 }
 
-export const assignItem = (id: string, to: Holder, by: string, note?: string) => withIssuer(() => assignUnlocked(id, to, by, note));
-
-/** The giver comes off and the receiver goes on in the same issuer step. `to` null is how
- * a holder lets go; any other holders remain. */
-export function handoffItem(given: string, from: Holder, to: Holder | null, by: string, note?: string): Promise<Acknowledged> {
-  return withIssuer(async () => {
-    const item = await load(given);
-    const id = item.id;
-    const source = await listFor(from);
-    if (source.holds.includes(id)) await source.set(source.holds.filter((held) => held !== id));
-    if (to) {
-      const target = await listFor(to);
-      if (!target.holds.includes(id)) await target.set([...target.holds, id]);
-    }
-    const done = await appendTrail(id, by, () => ({ op: 'handoff', from: holderLabel(from), to: to ? holderLabel(to) : 'none', note }));
-    const notified = await announceUnheld(item, by);
-    return notified.length ? { ...done, notified } : done;
-  });
+/** The default giver: the caller and its Teams, and the receiver's Teams when it is an Agent. */
+async function giversFor(by: string, to: Holder): Promise<Holder[]> {
+  const sessions = await listSessions().catch(() => []);
+  const tagsOf = (name: string) => sessions.find((one) => one.name === name)?.tags ?? [];
+  const teams = [...tagsOf(by), ...(to.kind === 'agent' ? tagsOf(to.name) : [])];
+  return [{ kind: 'agent', name: by }, ...teams.map((name): Holder => ({ kind: 'team', name }))];
 }
 
 /** Park: the id leaves every list. It is found again under its parent, or unassigned. */
@@ -1194,7 +1200,8 @@ export function didLine({ item, line }: Acknowledged): string {
   const what = line.op === 'status' ? `moved to ${line.to}`
     : line.op === 'move' ? (line.to === 'none' ? `moved to no parent, ${line.note}` : `moved under ${line.to}, ${line.note}`)
       : line.op === 'assign' ? `is held by ${line.to}`
-        : line.op === 'handoff' ? (line.to === 'none' ? `${line.from} let go` : `was handed from ${line.from} to ${line.to}`)
+        : line.op === 'handoff' ? (line.to === 'none' ? `${line.from} let go` : line.from && line.from !== 'none' ? `was handed from ${line.from} to ${line.to}` : `is held by ${line.to}`)
+        : line.op === 'release' && line.note?.startsWith('archived') ? 'is archived'
         : line.op === 'release' || line.op === 'holder-ended' ? (line.to && line.to !== 'none' ? `went back to ${line.to}` : 'is held by nobody')
           : line.op === 'rename' ? `was renamed from ${line.from}`
               : line.op === 'comment' ? (line.from ? `comment ${line.from} was edited` : `has a comment from ${line.by}: ${line.note}`)
@@ -1296,6 +1303,42 @@ export function archiveDone(now = Date.now()): Promise<string[]> {
       archived.push(item.id);
     }
     return archived;
+  });
+}
+
+/** Archive now (KAN-292, owner: "we shouldnt have to wait to clear the deck"): what archiveDone
+ * does at five days, done at once by whoever asks: off every list, archived, one trail line
+ * "archived: by <caller>", told to nobody, Jira untouched; `item read` still finds it. The archive
+ * means Done, so an item not Done is refused, named; leaving Done brings it back (save). */
+export function archiveItem(given: string, by: string): Promise<Acknowledged> {
+  return withIssuer(() => archiveUnlocked(given, by));
+}
+
+async function archiveUnlocked(given: string, by: string): Promise<Acknowledged> {
+  const item = await load(given);
+  if (item.status !== DONE) throw new WorkItemRefused(`${item.id} is ${item.status}, not Done: only a Done item is archived.`);
+  if (item.archived) throw new WorkItemRefused(`${item.id} is archived already.`);
+  const from = await takeOffEveryList(item.id);
+  return appendTrail(item.id, by, (it) => {
+    it.archived = { at: new Date().toISOString() };
+    return { op: 'release', from: labels(from), to: 'none', note: `archived: by ${by}` };
+  }, () => false);
+}
+
+/** `item archive --done`: every Done item, not archived, that the caller or its Teams hold (an
+ * Agent's Teams are its session's tags and the Teams it leads); `team` narrows it to that Team's.
+ * Answers one acknowledgement per item archived, none when there is nothing to clear. */
+export function archiveHeldDone(by: string, team?: string): Promise<Acknowledged[]> {
+  return withIssuer(async () => {
+    const session = (await listSessions().catch(() => [])).find((one) => one.name === by);
+    const holders = new Set(team ? [`team:${team}`] : [`agent:${by}`, ...[...(session?.tags ?? []), ...(session?.leads ?? [])].map((name) => `team:${name}`)]);
+    const ids = new Set((await heldLists()).filter((list) => holders.has(holderLabel(list.holder))).flatMap((list) => list.holds));
+    const done: Acknowledged[] = [];
+    for (const id of ids) {
+      const item = await readItem(id);
+      if (item && item.status === DONE && !item.archived) done.push(await archiveUnlocked(id, by));
+    }
+    return done;
   });
 }
 
