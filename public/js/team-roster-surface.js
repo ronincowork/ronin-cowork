@@ -8,10 +8,10 @@ import { SURFACE_DRAG } from './workbench.js';
 import { WORKBENCH_TYPES } from './workbench-catalog.js';
 import { openWorkspaceTab } from './workspace.js';
 import { teamsRows, workspaces } from './teams-surface-rows.js';
+import { listedTeam } from './roster-groups.js';
 
 const SHOW = ['theme', 'state', 'agents', 'items'];
-/** Ronin Helpers' Agents are on the roster; the Teams workbench shows no stone for it (owner, 2026-11-02). */
-const HELPERS = 'ronin_helpers';
+/** The house Teams (Steerco, and Ronin Helpers before it) have no stone: listedTeam, the phone's rule too (owner, 2026-11-02; KAN-305). */
 const words = () => ({ theme: t('teams_surface.theme', 'Theme'), state: t('teams_surface.state', 'State'), agents: t('league.agents', 'Agents'), items: t('teams_surface.items', 'Items') });
 
 /**
@@ -63,7 +63,7 @@ export function createTeamRosterSurface({ teamDetail } = {}) {
   const under = (row) => SHOW.filter((kind) => show.includes(kind)).map((kind) => cell(row, kind));
   const items = () => {
     const rows = new Map(teamsRows(teamsFromState(), membersOfTeam, { roots }).map((row) => [row.id, row]));
-    const teams = teamsFromState().filter((team) => !team.holding && team.name !== HELPERS && rows.has(team.name));
+    const teams = teamsFromState().filter((team) => !team.holding && listedTeam(team) && rows.has(team.name));
     return teams.sort((a, b) => a.name.localeCompare(b.name)).map((team) => {
       const name = String(team.title ?? '').trim() || team.name;
       return {
