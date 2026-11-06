@@ -116,3 +116,11 @@ test('the tile\'s work record lists open items, and counts Done on one line, new
   assert.match(record, /done\.slice\(0, 8\)/);
   assert.match(record, /sort\(\(a, b\) => doneAt\(b\)\.localeCompare\(doneAt\(a\)\)\)/, 'newest first');
 });
+
+test('a narrow reading stacks its steps so nothing runs past the edge (KAN-312)', async () => {
+  const css = await read('public/css/launch-forms.css');
+  assert.match(css, /\.wi-form \{ container: item-reading \/ inline-size; \}/);
+  const block = css.slice(css.indexOf('@container item-reading (max-width: 22rem)'));
+  assert.match(block, /\.wi-form \.fs-step \{ grid-template-columns: minmax\(0, 1fr\); \}/);
+  assert.match(block, /\.wi-form \.fs-step:has\(> \.fs-step-head\.fs-togglable\) > \.fs-step-body \{ grid-column: 1; \}/);
+});

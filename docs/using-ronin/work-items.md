@@ -104,6 +104,10 @@ promotion ledger says it restarted and passed health (`GET /api/promotions/:id/l
 `src/routes/promotions-api.ts`), so a `--no-restart` promotion reads "promoted to dev" alone. There
 is no GitHub or master step. The Handed in note, when one was left, reads under it.
 
+**In a narrow reading** (a narrow tile, a phone; KAN-312) each section stacks: its name above, its
+body under it across the full width, so the Status stone and the details never run past the edge.
+A reading wider than 22rem keeps the name on the left.
+
 **Who holds it, and where it started.** A holder reads the same on the reader, the Work Items
 stones and the Epic cards: an Agent is `@<agent>`, a Team is `Team <name> (lead
 <lead>)`, so an item the Team holds never reads as its lead's own; when several hold it, each is

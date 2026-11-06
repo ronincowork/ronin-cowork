@@ -126,6 +126,14 @@
      only: the title at --text-heading, step names at --form-head, values at --form-input, ids,
      times and help at --form-note. */
   .wi-form { font-family: var(--font-ui); font-size: var(--form-input); line-height: var(--leading-body); color: var(--fg); margin-bottom: 0; }
+  /* A NARROW READING (KAN-312): label-left steps need the name column and a 140px stone side by
+     side; in a reading narrower than that (a narrow tile, a phone), each step stacks, its body
+     under its name across the full width, so the Status stone and the facts never run past the edge. */
+  .wi-form { container: item-reading / inline-size; }
+  @container item-reading (max-width: 22rem) {
+    .wi-form .fs-step { grid-template-columns: minmax(0, 1fr); }
+    .wi-form .fs-step > .fs-step-body, .wi-form .fs-step:has(> .fs-step-head.fs-togglable) > .fs-step-body { grid-column: 1; }
+  }
   .wi-head { display: flex; align-items: flex-start; gap: var(--space-inline); padding-bottom: var(--space-inset); border-bottom: var(--edge) solid var(--line); }
   .wi-head .item-kind { width: var(--text-heading); height: var(--text-heading); flex: 0 0 auto; margin-top: var(--space-row); }
   .wi-head-words { display: flex; flex-direction: column; gap: var(--space-row); min-width: 0; }
