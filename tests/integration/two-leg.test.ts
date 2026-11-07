@@ -294,7 +294,7 @@ test('THE TOOL-COUNT LOOP: the real sender delivers the weekly packet to the acc
     await fs.mkdir(outbox, { recursive: true });
     const packetId = `pkt_${'b'.repeat(26)}`;
     const packet = {
-      envelope_version: 1, kind: 'tomodachi', body_schema_version: 2, packet_id: packetId,
+      envelope_version: 1, kind: 'tool_counts', body_schema_version: 2, packet_id: packetId,
       body: { period_start: '2026-10-05', period_end: '2026-10-11', active_days: 3,
               counts: [{ tool: 'session_create', source: 'user_mobile', count: 3 }] },
     };
