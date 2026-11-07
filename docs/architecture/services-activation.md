@@ -22,7 +22,7 @@ Do not create a second activation aggregate in Services or in machine-settings p
 
 ## Self-hosted and hosted
 
-Hosted is a fact, not an inference. An office on an office_park carries an office record
+Hosted is a fact, not an inference. An office_unit carries an office record
 (`office.json` in the `office` store: `office_id`, `office_park`, `gateway_office`,
 `provisioned_at`), written once by the provisioner together with the office's two credentials
 in `services_secrets` (`entitlement_token` for Ronin HQ, `house_token` for the model gateway).
@@ -30,9 +30,11 @@ Self-hosted has no record and holds nothing HQ-related. `readOfficeRecord()` is 
 a present file that does not read is `unreadable`, a provisioning fault, never self-hosted.
 
 What asks it: the Services account part (no record, no HQ call; `GET /api/account` answers
-`not_hosted`), the Tomodachi sender (sends from hosted offices only), the Hermes house-gateway
-seed (the record's `gateway_office`, else the developer's local door), the Setup posture (an
-office_park hides Register and Install; a missing install there is said as a fault) and the
+`not_hosted`), the Tomodachi sender in the account part (`account/tomodachi-send.ts`: sends from
+an office_unit only, to HQ's `POST /v1/account/tool-counts`, setting aside packets from before
+`provisioned_at`), the Hermes house-gateway seed (the record's `gateway_office`, else the
+developer's local door), the Setup posture (an office_unit hides Register and Install; a missing
+install there is said as a fault) and the
 machine reading (`observed.office`), which is how Agents see it. Settings shows the two
 sections, Office and Account, which must agree on the `office_id`; a disagreement is said.
 
