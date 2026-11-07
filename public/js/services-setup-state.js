@@ -62,9 +62,11 @@ export function servicesSetupModel(registration, installed, activation = null) {
   const hosting = record.office?.hosting;
   const hosted = hosting === 'office_unit' || hosting === 'unreadable';
   const steps = hosted ? [switchStep, ...(restartStep ? [restartStep] : [])] : [reg.step, installStep, switchStep, ...(restartStep ? [restartStep] : [])];
-  // The Services key field: offered on a self-hosted machine until Services is installed.
-  const keyField = !hosted && !parts && !installing;
-  const model = (state, tone, status, next) => ({ state, tone, status, next, steps, summary: '', keyField });
+  // The Services key field, on a self-hosted machine: Install with it before Services is
+  // installed; afterwards Save, to replace a key that registering again has replaced.
+  const keyField = !hosted && !installing;
+  const keyAction = parts ? 'save' : 'install';
+  const model = (state, tone, status, next) => ({ state, tone, status, next, steps, summary: '', keyField, keyAction });
 
   if (hosting === 'unreadable') {
     return { ...model('office_record_unreadable', 'bad', t('services_setup.status_office_unreadable', 'Office record unreadable'),

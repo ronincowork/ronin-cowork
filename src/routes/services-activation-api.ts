@@ -244,14 +244,29 @@ export function registerServicesActivation(app: express.Express): void {
     res.json(await activationAnswer());
   });
 
-  // The pasted Services key: kept in services_secrets, then the install starts with it.
+  // The pasted Services key: kept in services_secrets. With Services not yet installed, the
+  // install starts with it; with Services installed, the key is only saved (a replacement
+  // after registering again), and nothing reinstalls.
   app.post('/api/setup/services-key', async (req, res) => {
+    // A hosted office holds its office credential in the same file, written by its
+    // provisioning: a self-hosted key must never replace it, whatever the page showed.
+    const office = await readOfficeRecord();
+    if (office.hosting !== 'self_hosted') {
+      res.status(409).json({ error: office.hosting === 'unreadable'
+        ? 'The office record does not read; nothing was saved.'
+        : 'This is a hosted office: its Ronin HQ credential comes with the office, and a Services key is not used here.' });
+      return;
+    }
     const key = String((req.body as { key?: unknown } | undefined)?.key ?? '').trim();
     if (!SERVICES_KEY.test(key)) {
       res.status(400).json({ error: 'That is not a Ronin Services key. Paste the key from the email exactly.' });
       return;
     }
     await putEntitlementToken(key);
+    if ((await installedAnswer()).services.installed) {
+      res.json({ ...await servicesSetupAnswer(), install: null, key_saved: true });
+      return;
+    }
     const install = await startInstall();
     if (!install.started && install.reason === 'failed') {
       res.status(500).json({ error: install.error });

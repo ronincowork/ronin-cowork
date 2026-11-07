@@ -201,3 +201,37 @@ test('concurrent presses when the installer cannot start all get the failure, no
     assert.equal(s.error_at_stage, 'installing');
   } finally { await fs.rm(noLaunchFlag, { force: true }); }
 });
+
+test('on a hosted office, or with an unreadable office record, a pasted key is refused and the office credential is left alone', async () => {
+  const { officeRecordFile } = await import('../src/office-record.js');
+  await putEntitlementToken('office-credential');
+  await fs.mkdir(path.dirname(officeRecordFile()), { recursive: true });
+  const before = (await launched()).length;
+  try {
+    await fs.writeFile(officeRecordFile(), JSON.stringify({ office_id: 'unit', office_park: 'park', gateway_office: 'http://10.0.0.2:4912', provisioned_at: '2026-11-01T00:00:00Z' }));
+    const hosted = await call('POST /api/setup/services-key', { key: KEY });
+    assert.equal(hosted.status, 409);
+    assert.match(hosted.body.error, /hosted office/);
+    await fs.writeFile(officeRecordFile(), '{broken');
+    const unreadable = await call('POST /api/setup/services-key', { key: KEY });
+    assert.equal(unreadable.status, 409);
+    assert.match(unreadable.body.error, /does not read/);
+    assert.equal(await getEntitlementToken(), 'office-credential', 'nothing was written');
+    assert.equal((await launched()).length, before, 'nothing was installed');
+  } finally { await fs.rm(officeRecordFile(), { force: true }); }
+});
+
+// Last: marking a Services part as loaded stays for the rest of this process.
+test('with Services installed, a pasted key replaces the saved one and nothing reinstalls', async () => {
+  await reset();
+  const { noteService } = await import('../src/sockets.js');
+  noteService('counting');
+  const before = (await launched()).length;
+  const replacement = 'r'.repeat(43);
+  const { status, body } = await call('POST /api/setup/services-key', { key: replacement });
+  assert.equal(status, 200);
+  assert.equal(body.key_saved, true);
+  assert.equal(body.install, null);
+  assert.equal(await getEntitlementToken(), replacement, 'the new key is the one kept');
+  assert.equal((await launched()).length, before, 'no updater launch: Services stays as installed');
+});

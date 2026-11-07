@@ -226,7 +226,8 @@ test('Register delivery: anonymous keeps its Ronin message; an email Submit asks
   assert.doesNotMatch(submit, /startInstall/, 'Submit never starts an install: the key does');
   // The pasted key is kept, then the install starts with it.
   const keyed = source.slice(source.indexOf("app.post('/api/setup/services-key'"), source.indexOf("app.post('/api/services/install'"));
-  assert.match(keyed, /SERVICES_KEY\.test\(key\)[\s\S]*await putEntitlementToken\(key\);\s*const install = await startInstall\(\);/);
+  assert.match(keyed, /readOfficeRecord\(\)[\s\S]*hosting !== 'self_hosted'[\s\S]*SERVICES_KEY\.test\(key\)[\s\S]*await putEntitlementToken\(key\);[\s\S]*installedAnswer\(\)\)\.services\.installed[\s\S]*const install = await startInstall\(\);/,
+    'the office is checked before anything is written; an installed machine only saves the key');
   assert.doesNotMatch(source, /request\(str\(body\.email\)\)|activation\/flow|startConfirmationCheck/);
 });
 
@@ -371,7 +372,10 @@ test('Services setup model keeps installation and registration as separate facts
   // The Services key field: offered on a self-hosted machine until Services is installed.
   assert.equal(servicesSetupModel(reg('registered'), inst(), act('not_requested')).keyField, true);
   assert.equal(servicesSetupModel(reg('optional'), inst(), act('not_requested')).keyField, true, 'a key from anywhere can be pasted');
-  assert.equal(servicesSetupModel(entitled(), here(), act('installed')).keyField, false, 'not once Services is installed');
+  const installedKey = servicesSetupModel(entitled(), here(), act('installed'));
+  assert.equal(installedKey.keyField, true, 'kept after install, to replace a key that registering again replaced');
+  assert.equal(installedKey.keyAction, 'save', 'after install the key is saved, nothing reinstalls');
+  assert.equal(servicesSetupModel(reg('registered'), inst(), act('not_requested')).keyAction, 'install');
   assert.equal(servicesSetupModel(reg('registered'), inst(), act('installing')).keyField, false, 'not while installing');
   assert.equal(servicesSetupModel(reg('optional'), { ok: true, data: { services: { installed: false, parts: [] } } }, { ok: true, data: { stage: 'not_requested', office } }).keyField, false, 'never on an office_park');
   assert.equal(servicesSetupModel(reg('optional'), inst(), act('not_requested')).steps[2].enabled, false, 'nothing to switch on before parts are installed');

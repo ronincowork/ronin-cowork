@@ -589,7 +589,8 @@ export function createServicesSurface(context) {
       const keyInput = el('input', 'setup-services-key-input');
       Object.assign(keyInput, { type: 'text', autocomplete: 'off', spellcheck: false, name: 'services-key' });
       keyInput.placeholder = t('services_setup.key_placeholder', 'Paste the key from your email');
-      const keyInstall = action(t('services_setup.key_install', 'Install'), 'primary', async () => {
+      const keyLabelText = model.keyAction === 'save' ? t('services_setup.key_save', 'Save key') : t('services_setup.key_install', 'Install');
+      const keyInstall = action(keyLabelText, model.keyAction === 'save' ? '' : 'primary', async () => {
         keyInstall.disabled = true; said = ''; notice.textContent = ''; notice.classList.remove('bad');
         const result = await request('/api/setup/services-key', { method: 'POST', json: { key: keyInput.value } });
         if (!result.ok) {
@@ -599,6 +600,10 @@ export function createServicesSurface(context) {
         }
         context.environment?.onInstallationChoice?.();
         paint(...answers(result.data));
+        if (result.data?.key_saved) {
+          const saved = body.querySelector('.setup-services-notice');
+          if (saved) saved.textContent = t('services_setup.key_saved', 'Services key saved. Updates use it from now on.');
+        }
       });
       keyInstall.classList.add('setup-services-key-install');
       const keyRow = el('div', 'setup-services-key');
