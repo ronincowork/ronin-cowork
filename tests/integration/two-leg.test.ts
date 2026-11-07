@@ -10,10 +10,11 @@
  * break the boundary the contract exists to hold and prove something other than what ships.
  *
  * Everything on this side is the real thing: `transport.ts` carries every call, `secrets.ts`
- * stores the entitlement, `tomodachi.ts` sends the packet, and `libexec/ronin-hq.sh` — the
- * code `ronin-update --services` actually runs — fetches the authorized release. Cowork no
- * longer runs an email confirmation; the walk takes its entitlement from SHIWAKE's own
- * activation API directly, as an operator would, so the shared seams stay proven.
+ * stores the entitlement, the Services sender posts the weekly packet, and
+ * `libexec/ronin-hq.sh` — the code `ronin-update --services` actually runs — fetches the
+ * authorized release. The entitlement is provisioned as a hosted office's is: SHIWAKE's own
+ * operator CLI mints it (`entitlement create`) and maps it to an account, and the office
+ * record says this install is an office_unit. There is no email activation (KAN-314).
  *
  * Skips itself, loudly, if the SHIWAKE checkout is not beside this one.
  */
@@ -34,7 +35,7 @@ const exec = promisify(execFile);
 // directory and skipped here forever without anyone being able to act on the reason.
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const SHIWAKE = process.env.SHIWAKE_REPO ?? path.resolve(HERE, '../../../ronin-shiwake');
-const EMAIL = 'walker@example.com';
+const OFFICE = 'walk-office';
 
 let server: ChildProcess | undefined;
 let dataRoot = '';
@@ -63,9 +64,7 @@ test.before(async () => {
     env: {
       ...process.env,
       SHIWAKE_DATA: dataRoot, SHIWAKE_HOST: '127.0.0.1', SHIWAKE_PORT: String(port),
-      SHIWAKE_MAIL: 'fake', SHIWAKE_PUBLIC_URL: base,
-      SHIWAKE_GRANT_KEY: 'walk-grant-key', SHIWAKE_TOKEN_KEY: 'walk-token-key',
-      SHIWAKE_RESEND_COOLDOWN_MS: '50',
+      SHIWAKE_MAIL: 'fake', SHIWAKE_GRANT_KEY: 'walk-grant-key',
     },
     stdio: 'ignore',
   });
@@ -76,6 +75,7 @@ test.before(async () => {
   process.env.RONIN_CONFIG_DIR = path.join(userRoot, 'config');
   process.env.RONIN_TELEMETRY_DIR = path.join(userRoot, 'telemetry');
   process.env.RONIN_SESSION_DIR = path.join(userRoot, 'sessions');
+  process.env.RONIN_OFFICE_DIR = path.join(userRoot, 'office');
   process.env.RONIN_HQ_BASE = base;
   process.env.RONIN_HQ_HOST = '127.0.0.1';
 
@@ -124,51 +124,39 @@ test.after(async () => {
   if (userRoot) await fs.rm(userRoot, { recursive: true, force: true });
 });
 
-/** Run one tick of SHIWAKE's mail worker, in its own process, exactly as the timer does. */
-async function drainMail(): Promise<void> {
-  await exec(path.join(SHIWAKE, 'node_modules/.bin/tsx'), ['app/src/mail-tick.ts'], {
+/** SHIWAKE's operator CLI against the walk's data root, exactly as the provisioner runs it. */
+async function shiwake(args: string[]): Promise<any> {
+  const { stdout } = await exec(path.join(SHIWAKE, 'node_modules/.bin/tsx'), ['app/src/cli.ts', ...args], {
     cwd: SHIWAKE,
-    env: {
-      ...process.env,
-      SHIWAKE_DATA: dataRoot, SHIWAKE_MAIL: 'fake', SHIWAKE_PUBLIC_URL: base,
-      SHIWAKE_GRANT_KEY: 'walk-grant-key', SHIWAKE_TOKEN_KEY: 'walk-token-key',
-    },
-  }).catch(() => { /* 'idle' exits 0; a failed send is asserted on by the caller */ });
+    env: { ...process.env, SHIWAKE_DATA: dataRoot, SHIWAKE_GRANT_KEY: 'walk-grant-key' },
+  });
+  return JSON.parse(stdout);
 }
 
-/** Read the link out of the fake outbox — this stands in for the person's inbox. */
-async function tokenFromInbox(): Promise<string> {
-  const dir = path.join(dataRoot, 'mail', 'outbox-fake');
-  const names = (await fs.readdir(dir)).sort();
-  const last = JSON.parse(await fs.readFile(path.join(dir, names[names.length - 1]!), 'utf8'));
-  return /token=([A-Za-z0-9_-]+)/.exec(last.text)![1]!;
-}
-
-test('THE WALK: an entitlement from SHIWAKE is held by the real secrets store and read by SETTEI', async (t) => {
+test('THE WALK: a provisioned entitlement is held by the real secrets store, read by SETTEI, and opens the account', async (t) => {
   if (!available) return t.skip(unavailable);
 
   const { callHq } = await import('../../src/activation/transport.js');
   const { getEntitlementToken, putEntitlementToken } = await import('../../src/activation/secrets.js');
   const { writeState } = await import('../../src/activation/state.js');
   const { readMachineSettings } = await import('../../src/machine-settings.js');
+  const { officeRecordFile } = await import('../../src/office-record.js');
 
-  // SHIWAKE's activation API, driven over the real transport (it records egress).
-  const requested = await callHq<{ activation_id: string; claim_secret: string }>('POST', '/v1/services/activations', {
-    body: { email: EMAIL, terms_version: '2026-08-01' },
-  });
-  assert.ok(requested.body, 'SHIWAKE accepted the activation request');
-  await drainMail();
-  const token = await tokenFromInbox();
-  const clicked = await fetch(`${base}/v1/services/verify?token=${token}`);
-  assert.equal(clicked.status, 200);
-  const polled = await callHq<{ stage: string; entitlement_id: string; entitlement_token: string }>(
-    'GET', `/v1/services/activations/${requested.body!.activation_id}`, { token: requested.body!.claim_secret });
-  assert.equal(polled.body?.stage, 'verified');
-  assert.match(String(polled.body?.entitlement_id), /^ent_/);
+  // The provisioner's step: mint the office's entitlement, map it, write the office record.
+  const tokenFile = path.join(userRoot, 'entitlement-token');
+  const minted = await shiwake(['entitlement', 'create', '--office-id', OFFICE, '--by', 'walk', '--token-out', tokenFile]);
+  assert.match(String(minted.entitlement_id), /^ent_/);
+  const account = await shiwake(['account', 'create', '--user-id', 'walker', '--name', 'Walker', '--by', 'walk']);
+  await shiwake(['account', 'map', account.account_id, '--entitlement', minted.entitlement_id, '--office-id', OFFICE, '--by', 'walk']);
+  await fs.mkdir(path.dirname(officeRecordFile()), { recursive: true });
+  await fs.writeFile(officeRecordFile(), JSON.stringify({
+    office_id: OFFICE, office_park: 'walk-park', gateway_office: 'http://127.0.0.1:4912',
+    provisioned_at: '2026-10-01T00:00:00Z',
+  }));
 
-  await putEntitlementToken(polled.body!.entitlement_token);
+  await putEntitlementToken((await fs.readFile(tokenFile, 'utf8')).trim());
   assert.ok(await getEntitlementToken(), 'a durable token is now held');
-  await writeState({ entitlement_id: polled.body!.entitlement_id, verified_at: new Date().toISOString() });
+  await writeState({ entitlement_id: minted.entitlement_id, verified_at: new Date().toISOString() });
 
   // SETTEI reads that same durable aggregate; there is no second entitlement record.
   const settei = await readMachineSettings();
@@ -176,10 +164,17 @@ test('THE WALK: an entitlement from SHIWAKE is held by the real secrets store an
     activation: { entitlement_id: string | null };
     entitlement?: unknown;
   };
-  assert.equal(services.activation.entitlement_id, polled.body!.entitlement_id);
+  assert.equal(services.activation.entitlement_id, minted.entitlement_id);
   assert.ok(!Object.hasOwn(services, 'entitlement'),
     'there is no second SETTEI entitlement record to reconcile');
-  assert.match(String(settei.status.subscription), new RegExp(String(polled.body!.entitlement_id)));
+  assert.match(String(settei.status.subscription), new RegExp(String(minted.entitlement_id)));
+
+  // The account view, over the real transport (it records egress).
+  const view = await callHq<{ office: { office_id: string }; account: { account_id: string } }>(
+    'GET', `/v1/account?office_id=${OFFICE}`, { token: (await getEntitlementToken())! });
+  assert.equal(view.status, 200, JSON.stringify(view.body ?? view.error));
+  assert.equal(view.body?.office.office_id, OFFICE);
+  assert.equal(view.body?.account.account_id, account.account_id);
 });
 
 test('THE EGRESS RECORD names every call, and carries no secret', async (t) => {
@@ -187,14 +182,13 @@ test('THE EGRESS RECORD names every call, and carries no secret', async (t) => {
   const { readEgress } = await import('../../src/activation/egress.js');
   const lines = await readEgress(50);
 
-  assert.ok(lines.length >= 2, 'the request and the polls were recorded');
-  assert.ok(lines.some((l) => l.path === '/v1/services/activations'));
+  assert.ok(lines.length >= 1, 'the account read was recorded');
+  assert.ok(lines.some((l) => String(l.path).startsWith('/v1/account')));
 
   const raw = JSON.stringify(lines);
   const { getEntitlementToken } = await import('../../src/activation/secrets.js');
   const tok = await getEntitlementToken();
   assert.ok(!raw.includes(tok!), 'the entitlement token is not in the egress record');
-  assert.ok(!raw.includes(EMAIL), 'the address is not in the egress record');
 });
 
 test('THE UPDATER SEAM: libexec/ronin-hq.sh fetches an authorized release and verifies it',
@@ -282,7 +276,7 @@ test('THE UPDATER SEAM: libexec/ronin-hq.sh fetches an authorized release and ve
     await fs.rm(work, { recursive: true, force: true });
   });
 
-test('THE TOMODACHI LOOP: the real sender delivers a dropped packet and keeps the receipt',
+test('THE TOOL-COUNT LOOP: the real sender delivers the weekly packet to the account upload and keeps the receipt',
   async (t) => {
     if (!available) return t.skip(unavailable);
 
@@ -294,13 +288,15 @@ test('THE TOMODACHI LOOP: the real sender delivers a dropped packet and keeps th
     // Nothing dropped yet: an empty outbox is the normal state between weeks.
     assert.equal((await sendDuePackets()).skipped, 'nothing-due');
 
-    // The producer drops a v1 packet — exactly the shape ronin-services builds.
+    // Counting drops the weekly packet — exactly the shape ronin-services builds — for a
+    // period after the office was provisioned (THE WALK wrote the record and mapped it).
     const outbox = path.join(process.env.RONIN_TELEMETRY_DIR!, 'outbox');
     await fs.mkdir(outbox, { recursive: true });
     const packetId = `pkt_${'b'.repeat(26)}`;
     const packet = {
-      envelope_version: 1, kind: 'tomodachi', body_schema_version: 1,
-      packet_id: packetId, body: { sessions_started: 4, days_active: 3 },
+      envelope_version: 1, kind: 'tomodachi', body_schema_version: 2, packet_id: packetId,
+      body: { period_start: '2026-10-05', period_end: '2026-10-11', active_days: 3,
+              counts: [{ tool: 'session_create', source: 'user_mobile', count: 3 }] },
     };
     await fs.writeFile(path.join(outbox, `${packetId}.json`), JSON.stringify(packet));
 
