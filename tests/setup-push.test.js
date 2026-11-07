@@ -114,7 +114,7 @@ test('the Services surface follows a registration and an install by push, and ne
     if (url.startsWith('/api/setup/registration')) return reg();
     if (url.startsWith('/api/installed')) return bare;
     if (url.startsWith('/api/services/activation')) return { stage: 'not_requested' };
-    if (url === '/api/services/install' && options.method === 'POST') return { registration: reg({ status: 'registered' }), installed: bare, activation: { stage: 'installing' }, install: { started: true } };
+    if (url === '/api/services/install' && options.method === 'POST') return { registration: reg({ status: 'registered', services_entitled: true }), installed: bare, activation: { stage: 'installing' }, install: { started: true } };
     if (url.startsWith('/api/campaigns')) return [];
     return {};
   };
@@ -123,7 +123,8 @@ test('the Services surface follows a registration and an install by push, and ne
   assert.match(texts(surface.el), /Not installed on this machine/);
   const opened = asked.length;
 
-  store.receive({ t: 'services-setup', services: { registration: reg({ status: 'registered' }), installed: bare, activation: { stage: 'not_requested' } } });
+  // Registered with a Services key held (KAN-323: without one, Install waits for the key).
+  store.receive({ t: 'services-setup', services: { registration: reg({ status: 'registered', services_entitled: true }), installed: bare, activation: { stage: 'not_requested' } } });
   assert.match(texts(surface.el), /Registered · Ready to install/, 'the registration lands by push');
   assert.equal(asked.length, opened, 'no request while nothing is pressed');
 

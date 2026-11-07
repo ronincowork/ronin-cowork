@@ -226,7 +226,7 @@ test('Register delivery: anonymous keeps its Ronin message; an email Submit asks
   assert.doesNotMatch(submit, /startInstall/, 'Submit never starts an install: the key does');
   // The pasted key is kept, then the install starts with it.
   const keyed = source.slice(source.indexOf("app.post('/api/setup/services-key'"), source.indexOf("app.post('/api/services/install'"));
-  assert.match(keyed, /readOfficeRecord\(\)[\s\S]*hosting !== 'self_hosted'[\s\S]*SERVICES_KEY\.test\(key\)[\s\S]*await putEntitlementToken\(key\);[\s\S]*installedAnswer\(\)\)\.services\.installed[\s\S]*const install = await startInstall\(\);/,
+  assert.match(keyed, /readOfficeRecord\(\)[\s\S]*hosting !== 'self_hosted'[\s\S]*SERVICES_KEY\.test\(key\)[\s\S]*await putEntitlementToken\(key\);[\s\S]*servicesOnMachine\.present\(\)[\s\S]*const install = await startInstall\(\);/,
     'the office is checked before anything is written; an installed machine only saves the key');
   assert.doesNotMatch(source, /request\(str\(body\.email\)\)|activation\/flow|startConfirmationCheck/);
 });

@@ -32,6 +32,10 @@ export async function requestServicesKey(email: string): Promise<KeyRequest> {
   }
 }
 
+/** Whether Services is on this machine (its parts found on disk, loaded or parked): then a
+ * pasted key is only saved. One place, so a test can state the machine it means. */
+export const servicesOnMachine = { present: async (): Promise<boolean> => (await installedAnswer()).services.installed };
+
 /** A Services key as Ronin HQ mints it: 32 random bytes, base64url. */
 const SERVICES_KEY = /^[A-Za-z0-9_-]{43}$/;
 
@@ -263,7 +267,7 @@ export function registerServicesActivation(app: express.Express): void {
       return;
     }
     await putEntitlementToken(key);
-    if ((await installedAnswer()).services.installed) {
+    if (await servicesOnMachine.present()) {
       res.json({ ...await servicesSetupAnswer(), install: null, key_saved: true });
       return;
     }

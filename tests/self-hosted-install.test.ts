@@ -42,7 +42,10 @@ exec /usr/bin/setsid "$@"
 `, { mode: 0o755 });
 process.env.PATH = `${fakeBin}:${process.env.PATH}`;
 
-const { registerServicesActivation } = await import('../src/routes/services-activation-api.js');
+const { registerServicesActivation, servicesOnMachine } = await import('../src/routes/services-activation-api.js');
+// The machine these tests mean: no Services on disk, whatever the checkout carries (a gate
+// dev-syncs Services into src/services). The installed case states its own machine below.
+servicesOnMachine.present = async () => false;
 const { readState, writeState } = await import('../src/activation/state.js');
 const { clearEntitlementToken, getEntitlementToken, putEntitlementToken } = await import('../src/activation/secrets.js');
 const { storeDir } = await import('../src/resources.js');
@@ -226,6 +229,7 @@ test('with Services installed, a pasted key replaces the saved one and nothing r
   await reset();
   const { noteService } = await import('../src/sockets.js');
   noteService('counting');
+  servicesOnMachine.present = async () => true;
   const before = (await launched()).length;
   const replacement = 'r'.repeat(43);
   const { status, body } = await call('POST /api/setup/services-key', { key: replacement });
