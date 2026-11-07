@@ -4338,6 +4338,8 @@ body {
 .setup-services-step-action[data-step='restart']:disabled { border-color: var(--line-2); background: var(--surface); color: var(--muted); font-weight: var(--weight-regular); }
 .setup-services-step-action[data-step='restart']:enabled:hover { filter: brightness(1.08); }
 .setup-services-notice { min-height: 1.45em; margin: 0; }
+.setup-services-key { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: var(--space-inline); }
+.setup-services-key-input { font-family: var(--font-mono); }
 .setup-services-components { gap: 0; }
 .setup-services-components .setup-services-benefit { grid-template-columns: 5rem minmax(7rem, .8fr) minmax(0, 1.6fr); align-items: center; border-top: var(--edge) solid var(--line-2); gap: var(--space-inline); padding: var(--space-inset) 0; }
 .setup-services-components .ask-label { display: none; }

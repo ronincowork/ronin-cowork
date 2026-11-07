@@ -1,7 +1,8 @@
 /**
- * SELF-HOSTED: Submit the registration form, and the Services install starts. No email
- * confirmation, no entitlement required. A fake `systemd-run` on PATH stands in for the
- * updater launch, so no real download or restart ever happens here.
+ * SELF-HOSTED: Submit the registration form with an email, and Ronin HQ is asked to email a
+ * Services key; nothing installs. Pasting the key keeps it and starts the install (KAN-323).
+ * A fake `systemd-run` on PATH stands in for the updater launch, so no real download or
+ * restart ever happens here.
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -12,7 +13,7 @@ import path from 'node:path';
 const box = await fs.mkdtemp(path.join(os.tmpdir(), 'ronin-self-hosted-install-'));
 process.env.RONIN_USER_ROOT = path.join(box, 'user');
 process.env.RONIN_DATA_ROOT = path.join(box, 'data');
-process.env.RONIN_HQ_BASE = 'http://127.0.0.1:9'; // nothing listens: the anonymous hello fails fast
+process.env.RONIN_HQ_BASE = 'http://127.0.0.1:9'; // nothing listens: HQ calls fail fast
 const fakeBin = path.join(box, 'bin');
 const launches = path.join(box, 'launches.log');
 const failFlag = path.join(box, 'fail-download');
@@ -43,7 +44,7 @@ process.env.PATH = `${fakeBin}:${process.env.PATH}`;
 
 const { registerServicesActivation } = await import('../src/routes/services-activation-api.js');
 const { readState, writeState } = await import('../src/activation/state.js');
-const { getEntitlementToken, putEntitlementToken } = await import('../src/activation/secrets.js');
+const { clearEntitlementToken, getEntitlementToken, putEntitlementToken } = await import('../src/activation/secrets.js');
 const { storeDir } = await import('../src/resources.js');
 
 const handlers = new Map<string, Function>();
@@ -74,36 +75,60 @@ test.after(async () => {
   await fs.rm(box, { recursive: true, force: true });
 });
 
-test('an email Submit completes registration and starts the Services install, with no entitlement', async () => {
+const KEY = 'k'.repeat(43);
+
+test('an email Submit completes registration and asks Ronin HQ for a Services key; nothing installs', async () => {
   const before = (await launched()).length;
   const { status, body } = await call('POST /api/setup/registration', { identity_mode: 'email', email: 'any@example.com' });
   assert.equal(status, 200);
   assert.equal(body.status, 'registered');
-  assert.equal(body.services_entitled, false, 'no entitlement was asked for or minted');
-  assert.deepEqual(body.install, { started: true });
-  const runs = await launched();
-  assert.equal(runs.length, before + 1, 'the updater was launched once');
-  assert.match(runs.at(-1)!, /bin\/ronin-update --services/);
-  assert.match(runs.at(-1)!, /--setenv=RONIN_RUN_EXIT=/, 'the run reports its exit code');
-  assert.equal((await readState()).stage, 'installing');
+  assert.equal(body.services_entitled, false, 'no key is held until the person pastes one');
+  assert.equal(body.services_key.sent, false, 'HQ is unreachable here, and the answer says so');
+  assert.match(body.services_key.error, /could not be reached|answered/);
+  assert.equal(body.install, undefined, 'Submit never starts an install');
+  assert.equal((await launched()).length, before, 'no updater launch');
+  assert.notEqual((await readState()).stage, 'installing');
 });
 
-test('a second Submit while installing does not launch another install', async () => {
+test('an anonymous Submit asks for no key and installs nothing', async () => {
   const before = (await launched()).length;
-  const { body } = await call('POST /api/setup/registration', { identity_mode: 'email', email: 'other@example.com' });
-  assert.deepEqual(body.install, { started: false, reason: 'in_progress' });
+  const { body } = await call('POST /api/setup/registration', { identity_mode: 'anonymous' });
+  assert.equal(body.status, 'anonymous');
+  assert.equal(body.services_key, null);
   assert.equal((await launched()).length, before);
 });
 
-test('an anonymous Submit starts the install too', async () => {
+test('a malformed Services key is refused and nothing is kept', async () => {
+  const before = (await launched()).length;
+  for (const key of ['', 'short', 'k'.repeat(44), `${'k'.repeat(42)}!`]) {
+    const { status, body } = await call('POST /api/setup/services-key', { key });
+    assert.equal(status, 400, key);
+    assert.match(body.error, /not a Ronin Services key/);
+  }
+  assert.equal(await getEntitlementToken(), null);
+  assert.equal((await launched()).length, before);
+});
+
+test('a pasted Services key is kept exactly and starts the install once; a second paste waits', async () => {
   await reset();
-  const { body } = await call('POST /api/setup/registration', { identity_mode: 'anonymous' });
-  assert.equal(body.status, 'anonymous');
+  const before = (await launched()).length;
+  const { status, body } = await call('POST /api/setup/services-key', { key: `  ${KEY}\n` });
+  assert.equal(status, 200);
+  assert.equal(await getEntitlementToken(), KEY, 'trimmed, otherwise exactly as pasted');
   assert.deepEqual(body.install, { started: true });
+  assert.equal(body.registration.services_entitled, true);
+  const runs = await launched();
+  assert.equal(runs.length, before + 1, 'the updater was launched once');
+  assert.match(runs.at(-1)!, /bin\/ronin-update --services/);
+  assert.equal((await readState()).stage, 'installing');
+  const again = await call('POST /api/setup/services-key', { key: KEY });
+  assert.deepEqual(again.body.install, { started: false, reason: 'in_progress' });
+  assert.equal((await launched()).length, before + 1);
 });
 
 test('Install with no entitlement is not refused', async () => {
   await reset();
+  await clearEntitlementToken();
   assert.equal(await getEntitlementToken(), null);
   const { status, body } = await call('POST /api/services/install');
   assert.equal(status, 200);
@@ -144,11 +169,11 @@ test('a stored email-confirmation stage reads as an actionable not_requested and
   assert.equal(await getEntitlementToken(), 'held-token', 'the token file is untouched');
 });
 
-test('concurrent Submit and Install launch exactly one updater run', async () => {
+test('a concurrent key paste and Install launch exactly one updater run', async () => {
   await reset();
   const before = (await launched()).length;
   const answers = await Promise.all([
-    call('POST /api/setup/registration', { identity_mode: 'email', email: 'race@example.com' }),
+    call('POST /api/setup/services-key', { key: KEY }),
     call('POST /api/services/install'),
     call('POST /api/services/install'),
   ]);

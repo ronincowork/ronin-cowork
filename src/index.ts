@@ -251,7 +251,7 @@ app.get('/api/health', (_req, res) =>
 registerPasskeyManage(app); // /api/passkey/{list,register-options,register,remove} — BEHIND the gate on purpose
 registerPasswordSettings(app, issueSession); // /api/password — saved browser password setting, behind the same gate
 app.use(countBrowserTool);
-app.use(['/api/setup/registration', '/api/services', '/api/campaigns', '/api/machine-settings'], servicesSetupWrites); // each write pushes {t:'services-setup'}
+app.use(['/api/setup/registration', '/api/setup/services-key', '/api/services', '/api/campaigns', '/api/machine-settings'], servicesSetupWrites); // each write pushes {t:'services-setup'}
 registerLaunch(app); // /api/launch (both variants), /api/sessions — src/routes/launch.ts
 registerMikaContext(app); // /api/mika/context/:tab — tiny tab-scoped owner_view/show seam
 registerCatalogs(app); // catalogs and configuration resources — src/routes/catalogs.ts

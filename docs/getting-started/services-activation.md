@@ -9,10 +9,10 @@ without them. They're free.
 Open **Installations** in [Ronin Setup](setup-workbench.md) and press **Ronin Services**.
 You'll see three controls, done in order:
 
-1. **Register** — fill in the form and press **Send**. Registration is complete straight
-   away, and the Services install starts by itself.
-2. **Install** — downloads the Services package to this machine. You can also press it
-   without registering.
+1. **Register** — fill in the form with your email and press **Send**. Ronin HQ emails you a
+   **Services key**.
+2. **Install** — paste the key into **Services key** and press **Install**. It downloads the
+   Services package to this machine.
 3. **Switch on** — press **Turn on** to give Services to your new Teams and Agents.
 
 Each control reads **Done** once it is. If a **Restart** appears, press it; the page updates
@@ -24,11 +24,13 @@ With **Jira** on, **Settings › Jira** connects a Desk to a Jira space: see [Ji
 
 ## What is sent
 
-An anonymous registration sends the answers on the form to Ronin HQ. An email registration
-stays on this machine. Nothing else about you is attached.
+An email registration sends only your email address to Ronin HQ, so it can email you your
+Services key. An anonymous registration sends the answers on the form, with no email. Nothing
+else about you is attached.
 
-Usage stats send a weekly count of which Ronin tools were used. They never include your
-code, prompts, file names, messages or conversations. The
+A Ronin on your own machine never sends usage stats. A hosted office sends a weekly count of
+which Ronin tools were used. It never includes your code, prompts, file names, messages or
+conversations. The
 [Stats guide](https://github.com/ronincowork/ronin-services/blob/dev/docs/stats.md) lists
 exactly what is counted.
 
@@ -39,5 +41,7 @@ you can use.
 
 - **Install failed** — the message says why. Press **Install** again; you don't need to
   register again.
+- **Lost your key** — register again with the same email. A new key arrives, and the old one
+  stops working.
 - **A feature you switched on isn't there** — press **Restart** if it's shown, then look
   again.

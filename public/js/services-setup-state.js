@@ -7,19 +7,23 @@ import { t } from './lexicon.js';
 
 const step = (id, caption, label, { done = false, enabled = true, act = null, title = '' } = {}) => ({ id, caption, label, done, enabled, act, title });
 
-/** Where the registration stands: its state, tone words, and the Register step. Submitting
- * the form completes registration (email or anonymous); no confirmation is asked for. */
+/** Where the registration stands: its state, tone words, and the Register step. Registering
+ * with an email has Ronin HQ email a Services key; the key, pasted here, is what installs. */
 function registrationRow(registration) {
   const reg = registration?.ok ? registration.data || {} : {};
   const caption = t('services_setup.step_register', 'Register');
   const row = (state, tone, status, next, stepIn) => ({ state, tone, status, next, step: stepIn });
-  if (reg.status === 'registered' || reg.status === 'anonymous') {
+  const done = step('register', caption, t('services_setup.done', 'Done'), { done: true, enabled: false });
+  if (reg.services_entitled === true) {
     return row('registered', 'ok', t('services_setup.status_registered', 'Registered · Ready to install'),
-      t('services_setup.next_registered', 'Install fetches Services, verifies it, and restarts Ronin’s server. The page reconnects when Ronin returns.'),
-      step('register', caption, t('services_setup.done', 'Done'), { done: true, enabled: false }));
+      t('services_setup.next_registered', 'Install fetches Services, verifies it, and restarts Ronin’s server. The page reconnects when Ronin returns.'), done);
+  }
+  if (reg.status === 'registered' || reg.status === 'anonymous') {
+    return row('awaiting_key', '', t('services_setup.status_awaiting_key', 'Registered · Services key needed'),
+      t('services_setup.next_awaiting_key', 'Paste the Services key from your email below and press Install. No email? Register with an email address to get one.'), done);
   }
   return row('unregistered', '', t('services_setup.status_not_installed', 'Not installed on this machine'),
-    t('services_setup.next_register', 'Register and Ronin installs Services. Local Ronin keeps working without it.'),
+    t('services_setup.next_register', 'Register with your email and Ronin HQ emails you a Services key. Local Ronin keeps working without it.'),
     step('register', caption, t('services_setup.register', 'Register'), { act: 'register' }));
 }
 
@@ -39,11 +43,13 @@ export function servicesSetupModel(registration, installed, activation = null) {
   const switchCaption = t('services_setup.step_switch_on', 'Switch on');
   const installing = !parts && stage === 'installing';
   const installFailed = !parts && stage === 'error' && record.error_at_stage === 'installing';
+  const keyed = (registration?.ok && registration.data?.services_entitled === true) || record.entitled === true;
 
   const installStep = parts ? step('install', installCaption, t('services_setup.done', 'Done'), { done: true, enabled: false })
     : installing ? step('install', installCaption, t('services_setup.installing', 'Installing…'), { enabled: false })
     : installFailed ? step('install', installCaption, t('services_setup.try_again', 'Try again'), { act: 'install' })
-    : step('install', installCaption, t('services_setup.install', 'Install'), { act: 'install' });
+    : keyed ? step('install', installCaption, t('services_setup.install', 'Install'), { act: 'install' })
+    : step('install', installCaption, t('services_setup.install', 'Install'), { act: 'install', enabled: false, title: t('services_setup.key_first', 'Paste your Services key first') });
   // The switch is a toggle, never Done: it drives the Campaign's choice and cascades to new teams and Agents.
   const switchStep = on ? { ...step('switch', switchCaption, t('services_setup.turn_off', 'Turn off'), { act: 'switch_off' }), pressed: true }
     : { ...step('switch', switchCaption, t('services_setup.turn_on', 'Turn on'), { act: 'switch_on', enabled: parts, title: parts ? '' : t('services_setup.install_first', 'Install first') }), pressed: false };
@@ -56,7 +62,9 @@ export function servicesSetupModel(registration, installed, activation = null) {
   const hosting = record.office?.hosting;
   const hosted = hosting === 'office_unit' || hosting === 'unreadable';
   const steps = hosted ? [switchStep, ...(restartStep ? [restartStep] : [])] : [reg.step, installStep, switchStep, ...(restartStep ? [restartStep] : [])];
-  const model = (state, tone, status, next) => ({ state, tone, status, next, steps, summary: '' });
+  // The Services key field: offered on a self-hosted machine until Services is installed.
+  const keyField = !hosted && !parts && !installing;
+  const model = (state, tone, status, next) => ({ state, tone, status, next, steps, summary: '', keyField });
 
   if (hosting === 'unreadable') {
     return { ...model('office_record_unreadable', 'bad', t('services_setup.status_office_unreadable', 'Office record unreadable'),
@@ -77,6 +85,7 @@ export function servicesSetupModel(registration, installed, activation = null) {
     }
     const summary = {
       registered: t('services_setup.summary_ready', 'ready to install'),
+      awaiting_key: t('services_setup.summary_awaiting_key', 'Services key needed'),
     }[reg.state] || t('services_setup.summary_not_installed', 'not installed');
     return { ...model(reg.state, reg.tone, reg.status, reg.next), summary };
   }

@@ -3,7 +3,8 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { readEgress } from '../activation/egress.js';
 import { listServices, listServiceFailures } from '../sockets.js';
-import { isEntitled } from '../activation/secrets.js';
+import { isEntitled, putEntitlementToken } from '../activation/secrets.js';
+import { callHq } from '../activation/transport.js';
 import { storeDir } from '../resources.js';
 import { publicState, readState, writeState } from '../activation/state.js';
 import { runUpdater, type RunResult } from '../update-run.js';
@@ -13,6 +14,26 @@ import { deleteRegistration } from '../activation/registration.js';
 import { installedAnswer } from './installed-api.js';
 import { readOfficeRecord } from '../office-record.js';
 import { broadcastEvent } from '../ws/events.js';
+
+/** What asking Ronin HQ for a Services key came to. The key itself goes only to the email. */
+export type KeyRequest = { sent: true } | { sent: false; error: string };
+
+/**
+ * ASK RONIN HQ TO EMAIL A SERVICES KEY to the address that registered (contracts/v1/account.md,
+ * Register). The person pastes it in; nothing else is ever sent from this machine for it.
+ */
+export async function requestServicesKey(email: string): Promise<KeyRequest> {
+  try {
+    const res = await callHq<{ sent: boolean }>('POST', '/v1/accounts/register', { body: { email } });
+    if (res.status === 202) return { sent: true };
+    return { sent: false, error: res.error?.message ?? `Ronin HQ answered ${res.status}` };
+  } catch {
+    return { sent: false, error: 'Ronin HQ could not be reached. Send again in a moment.' };
+  }
+}
+
+/** A Services key as Ronin HQ mints it: 32 random bytes, base64url. */
+const SERVICES_KEY = /^[A-Za-z0-9_-]{43}$/;
 
 async function activationAnswer(): Promise<Record<string, unknown>> {
   return {
@@ -187,10 +208,10 @@ export function registerServicesActivation(app: express.Express): void {
           message, feedback_kind: ['other'], using_ronin_for: saved.intended_use,
         })).catch(() => {}); // the packet is durable before immediate delivery is attempted
       }
-      // Submitting completes registration; the Services install starts straight away. The
-      // answer says whether the installer started, never that Services are installed.
-      const install = await startInstall();
-      res.json({ ...await registrationAnswer(), install });
+      // Submitting completes registration. With an email, Ronin HQ emails a Services key to
+      // it; the person pastes the key into Ronin Services to install. Nothing installs here.
+      const services_key = anonymous ? null : await requestServicesKey(String(body.email ?? '').trim());
+      res.json({ ...await registrationAnswer(), services_key });
     } catch (error) {
       res.status(400).json({ error: error instanceof Error ? error.message : 'Registration was not saved.' });
     }
@@ -221,6 +242,22 @@ export function registerServicesActivation(app: express.Express): void {
   });
   app.get('/api/services/activation', async (_req, res) => {
     res.json(await activationAnswer());
+  });
+
+  // The pasted Services key: kept in services_secrets, then the install starts with it.
+  app.post('/api/setup/services-key', async (req, res) => {
+    const key = String((req.body as { key?: unknown } | undefined)?.key ?? '').trim();
+    if (!SERVICES_KEY.test(key)) {
+      res.status(400).json({ error: 'That is not a Ronin Services key. Paste the key from the email exactly.' });
+      return;
+    }
+    await putEntitlementToken(key);
+    const install = await startInstall();
+    if (!install.started && install.reason === 'failed') {
+      res.status(500).json({ error: install.error });
+      return;
+    }
+    res.json({ ...await servicesSetupAnswer(), install });
   });
 
   app.post('/api/services/install', async (_req, res) => {

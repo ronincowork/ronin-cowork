@@ -319,3 +319,49 @@ test('THE TOOL-COUNT LOOP: the real sender delivers the weekly packet to the acc
     assert.equal(again.sent, 0, 'no duplicate was created');
     assert.equal((await listReceipts()).length, 1, 'still one receipt');
   });
+
+test('THE SELF-HOSTED KEY: Register has HQ email a Services key; pasted in, it fetches Services and confirms the email',
+  async (t) => {
+    if (!available) return t.skip(unavailable);
+    const { requestServicesKey } = await import('../../src/routes/services-activation-api.js');
+    const { putEntitlementToken } = await import('../../src/activation/secrets.js');
+    const { officeRecordFile } = await import('../../src/office-record.js');
+    await fs.rm(officeRecordFile(), { force: true }); // a self-hosted machine: no office record
+
+    const email = 'self-hosted@example.com';
+    assert.deepEqual(await requestServicesKey(email), { sent: true }, 'the Register Submit path');
+
+    // The person's inbox: SHIWAKE's fake mail adapter, under its own data root.
+    const inbox = path.join(dataRoot, 'mail', 'outbox-fake');
+    const mails = await Promise.all((await fs.readdir(inbox)).map(async (n) => JSON.parse(await fs.readFile(path.join(inbox, n), 'utf8'))));
+    const mail = mails.find((m) => m.to === email && m.subject === 'Your Ronin Services key');
+    const key = /^([A-Za-z0-9_-]{43})$/m.exec(mail?.text ?? '')?.[1];
+    assert.ok(key, 'the key arrived by email');
+
+    // The person pastes it: the route keeps it exactly so, then installs.
+    await putEntitlementToken(key!);
+    const work = await fs.mkdtemp(path.join(os.tmpdir(), 'walk-keyed-'));
+    const homeDir = await fs.mkdtemp(path.join(os.tmpdir(), 'walk-keyed-home-'));
+    await fs.mkdir(path.join(homeDir, 'current', 'src'), { recursive: true });
+    await fs.writeFile(path.join(homeDir, 'current', 'src', 'sockets-contract.ts'), 'export const CONTRACT_V = 1;\n');
+    const repo = path.resolve(import.meta.dirname, '../..');
+    const { stdout } = await exec('sh', ['-c', `
+      set -e
+      say() { :; }
+      fail() { echo "FAIL: $*" >&2; exit 1; }
+      SELF='${repo}'
+      HOME_DIR='${homeDir}'
+      . '${repo}/libexec/ronin-hq.sh'
+      hq_fetch_services '${work}'
+    `], { env: { ...process.env, RONIN_HQ_BASE: base, RONIN_SERVICES_SECRETS_DIR: process.env.RONIN_SERVICES_SECRETS_DIR! } });
+    assert.equal(stdout.trim(), 'v1.2.3', 'the Services key fetched the release through HQ');
+
+    // HQ marked the account's email confirmed on that first grant.
+    const accounts = path.join(dataRoot, 'accounts');
+    const records = await Promise.all((await fs.readdir(accounts)).map(async (n) => JSON.parse(await fs.readFile(path.join(accounts, n), 'utf8'))));
+    const account = records.find((a) => a.email === email);
+    assert.ok(account?.email_confirmed_at, 'the key email was the confirmation round trip');
+
+    await fs.rm(work, { recursive: true, force: true });
+    await fs.rm(homeDir, { recursive: true, force: true });
+  });

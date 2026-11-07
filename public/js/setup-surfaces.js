@@ -210,11 +210,10 @@ function createRegisterSurface(context) {
     userIntroActions,
     userIntroNotice,
   );
-  /** What the Submit started — the installer's start, never a finished install. */
-  const installWords = (install) => !install ? ''
-    : install.started ? t('setup_surface.installing_services', 'Installing Ronin Services.')
-    : install.reason === 'failed' ? t('setup_surface.install_not_started', 'Ronin Services did not start installing: {error}', { error: install.error })
-    : '';
+  /** What the Submit asked of Ronin HQ: a Services key, emailed to the address. */
+  const keyWords = (key) => !key ? ''
+    : key.sent ? t('setup_surface.services_key_sent', 'Check your email for your Ronin Services key, then paste it into Ronin Services.')
+    : t('setup_surface.services_key_not_sent', 'The Services key was not sent: {error}', { error: key.error });
   const registerAction = action(t('setup_surface.register_action', 'Send'), '', async () => {
     notice.textContent = t('setup_surface.saving', 'Saving…');
     const anonymous = identityMode.value.value !== 'email';
@@ -227,7 +226,7 @@ function createRegisterSurface(context) {
     } });
     notice.textContent = result.ok
       ? [anonymous ? t('setup_surface.anonymous_saved', 'Thanks — your anonymous hello was sent to Ronin.') : t('setup_surface.registration_complete', 'Registration complete.'),
-        installWords(result.data?.install)].filter(Boolean).join(' ')
+        keyWords(result.data?.services_key)].filter(Boolean).join(' ')
       : result.message;
     if (result.ok) { current = result.data; paint(); context.environment?.onRegistrationChoice?.('acted'); }
   });
@@ -474,7 +473,7 @@ export function createServicesSurface(context) {
     for (const words of [
       t('services_setup.intro', 'Ronin Services are incremental features and are not required for agent coworking functionality.'),
       t('services_setup.beta_copy', 'These are beta projects and often require working with third parties. The code is open code, not open source: free to read, not to commercialise.'),
-      t('services_setup.registration_copy', 'Filling out the registration and sharing your email opens access to Ronin Services free of charge. We also ask that you help build Ronin and share a weekly count of tool calls. This is not linked to your identity and carries no code, tiles, name, or alpha of any kind.'),
+      t('services_setup.registration_copy', 'Register with your email and Ronin HQ emails you a Services key, free of charge. Paste it below to install. A Ronin on your own machine sends nothing else.'),
     ]) copy.append(el('p', '', words));
     intro.append(lockup, copy);
     return intro;
@@ -584,6 +583,30 @@ export function createServicesSurface(context) {
     };
     paintSteps(model);
     body.append(steps);
+    // The Services key from the Register email: pasted here, kept on this machine, and the
+    // install starts with it.
+    if (model.keyField) {
+      const keyInput = el('input', 'setup-services-key-input');
+      Object.assign(keyInput, { type: 'text', autocomplete: 'off', spellcheck: false, name: 'services-key' });
+      keyInput.placeholder = t('services_setup.key_placeholder', 'Paste the key from your email');
+      const keyInstall = action(t('services_setup.key_install', 'Install'), 'primary', async () => {
+        keyInstall.disabled = true; said = ''; notice.textContent = ''; notice.classList.remove('bad');
+        const result = await request('/api/setup/services-key', { method: 'POST', json: { key: keyInput.value } });
+        if (!result.ok) {
+          said = result.message; notice.textContent = said; notice.classList.add('bad');
+          keyInstall.disabled = false;
+          return;
+        }
+        context.environment?.onInstallationChoice?.();
+        paint(...answers(result.data));
+      });
+      keyInstall.classList.add('setup-services-key-install');
+      const keyRow = el('div', 'setup-services-key');
+      const keyLabel = el('label', 'setup-field setup-services-key-field');
+      keyLabel.append(el('span', 'setup-register-question', t('services_setup.key_label', 'Services key')), keyInput);
+      keyRow.append(keyLabel, keyInstall);
+      body.append(keyRow);
+    }
     notice.setAttribute('aria-live', 'polite');
     const campaign = campaignById(context.tenant?.campaign) || campaigns()[0];
     let desired = campaign?.config?.services?.parts || installed.data?.services?.capabilities?.desired || {};
