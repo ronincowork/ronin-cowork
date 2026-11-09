@@ -12,6 +12,7 @@
  * board:      one epic's root and every item under it (boardReadings), each with its holder.
  */
 import { readLetterHolds } from './tegami.js';
+import type { TeamLayers } from './team-layers.js';
 import { sessionKey } from './session-dir.js';
 import { readTeamRoster, type TeamRoster } from './team-rosters.js';
 import { listSessions } from './tmux.js';
@@ -24,6 +25,8 @@ export interface AgentReading {
   watching: WorkItem[];
   /** Each Team the Agent leads, read from its roster and its members' records. */
   teams: LedTeam[];
+  /** Each Team the Agent is on or leads: its four layers, live (team-layers.ts; KAN-331). */
+  layers: TeamLayers[];
 }
 
 export interface LedTeam {
@@ -66,12 +69,17 @@ export async function agentReading(session: string): Promise<AgentReading> {
     }
     teams.push({ team, items: await read(roster?.holds), watching: await read(roster?.watches), members });
   }
+  const me = sessions.find((one) => one.name === session);
+  const { teamLayers } = await import('./team-layers.js');
+  const every = await listItems();
+  const layers = await Promise.all([...new Set([...(me?.leads ?? []), ...(me?.tags ?? [])])].map((team) => teamLayers(team, sessions, every).catch(() => null)));
   return {
     holder: `agent:${session}`,
     items,
     attachments: await openedAttachments([...items, ...teams.flatMap((team) => team.items)]),
     watching: await read(letter?.watches),
     teams,
+    layers: layers.filter((one): one is TeamLayers => one !== null),
   };
 }
 

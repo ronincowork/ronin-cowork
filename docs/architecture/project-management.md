@@ -57,6 +57,7 @@ predicate in `src/behaviours.ts`.
 | `src/routes/promotions-api.ts` | `GET /api/promotions/:id/live`: a read of the promotion ledger receipt (`readReceipt`), live = complete, restart ok, health passed; the item reader's Handed in line ends "· live" by it (KAN-311) |
 | `src/routes/sessions-api.ts` | `session_end`'s refusal and its NEXT |
 | `src/tegami-read.ts`, `libexec/work-record-read` | the work record's items, for the tile and `work-record read` (Done shown with how long ago) |
+| `src/team-layers.ts` | a Team in four layers (KAN-331): Workspace, Plans, Canvases, Epics read live for every member (`teamLayers`, in `agentReading`'s `layers`); the lead's grouped "work record changed" (`layersMayHaveChanged`, `settleLayers`: a ~3 s quiet spell, each lead told only when its own layers moved), fed by `onItemChanged`, the plans routes and the Workspace PUT |
 | `src/plans.ts`, `src/routes/plans-api.ts` | plans on the Workspace: the place (Ronin Lab's `<campaign>/<workspace>/plans`, or `plans: { location, path }`), the header, Draft and Ordered (no guards: the docs steer), one-file commits and the push, the move on a changed place; `resolve` for `plan:` |
 | `src/workspaces.ts`, `src/routes/workspaces-api.ts`, `public/js/workspaces-surface.js` | the Workspace's `plans` field and the page's Plans row |
 | `public/js/plan-attachment.js`, `src/routes/docs-api.ts` | a `plan:` attachment opened or shown gone; the Docs pane's Plans shelf |

@@ -127,6 +127,8 @@ gives "Your work record changed".
 - `work-record read`: what the Agent holds and watches, and under Documents the record's own
   documents and the held items' attachments (`--json`: `documents` and `attachments`). A lead also sees each Team it leads:
   what the Team holds and watches, and what each member holds and watches, read when asked.
+- `work-record read`, under **Team <name>**: each Team the Agent is on, in four lines (see
+  [A Team in four layers](#a-team-in-four-layers)).
 
 Items show as stones grouped by parent: each epic, then its items, each followed by its
 subtasks. A stone shows the id, title, kind, status and ⚑ when flagged; press one to read
@@ -168,6 +170,29 @@ work-record add_doc --remove plans/IDEA.md        # takes it off: the record's f
 the record when the record has it, else off the item you hold. A file the owner dropped on
 the tile is not removed by it. Every Agent is born with Write it Down, which asks for this
 and for a short, current list.
+
+## A Team in four layers
+
+Every Agent on a Team, its lead included, reads the Team in four lines on `work-record read`,
+each read live from where it lives and each naming the command that reads it whole:
+
+| Line | What it shows | Read it whole |
+|---|---|---|
+| Workspace | its title, objective, repos and folders | `work-record workspace list` |
+| Plans | each plan's name and status (Draft or Ordered) | `plan read <name>` |
+| Canvases | each canvas's name | `canvas read <name>` |
+| Epics | each epic, who holds it, its status | `item read <id>` |
+
+The Workspace is the Team's (its roster's `workspace`), the plans and canvases are that
+Workspace's, and the epics are those the Team or its members hold, the epic above each item
+they hold, and the epics under the Workspace's plans. Nothing is copied: a plan's text stays in
+the plan. `work-record workspace list` puts the Team's Workspace first, each repo and folder with
+its directory, then the Agent's own entries. Canvases read nothing until the `canvas` tool exists.
+
+When a line changes for a lead's Team (a plan written or ordered, a canvas added or removed, an
+epic made, moved or closed, a repo or folder added), the lead alone gets the usual "Your work
+record changed", once for writes that come together: an ordered plan that makes several epics is
+one notice. Editing a canvas's entries tells nobody, and members are never told.
 
 ## The work record
 

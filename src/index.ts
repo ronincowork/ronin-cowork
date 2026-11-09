@@ -67,6 +67,7 @@ import { originAllowed, allowedOrigins } from './ws/origin.js';
 import { mountAssets, noCacheClient, publicFingerprint } from './assets.js';
 import { DocumentPathError, legacyDocumentPath, readDocumentFile, readProductDocumentFile, saveDocumentFile } from './document-file.js';
 import { checkTmuxServerCgroup } from './host-guard.js';
+import { startTeamLayers } from './team-layers.js';
 import { sockets, startBootHooks, stopBootHooks, mountServiceRoutes, noteService, noteServiceCapabilityPlan, noteServiceFailure, noteServiceParked } from './sockets.js';
 import { startSessionRetention } from './session-retention.js';
 import { discoverParts, partsToLoad } from './parts.js';
@@ -450,6 +451,8 @@ await tmuxClient.connect(); // only the long-lived server opts into control mode
 const removed = await cleanupViewers();
 if (removed) console.log(`[tmux-ronin] cleaned up ${removed} stale viewer session(s)`);
 await startBootHooks();
+// A TEAM'S FOUR LAYERS (KAN-331): remember every lead's, and tell a lead when its own move.
+void startTeamLayers((cb) => sockets.onItemChanged(cb));
 startFiles(ROOT); // copyparty at /files where python3 is found — src/files.ts
 const stopSessionRetention = startSessionRetention(); // closed session folders outlive the retention period by nothing
 // /events: pushes the session list, the home rows, the Team rosters, the message queue, boards,

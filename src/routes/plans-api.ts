@@ -1,6 +1,7 @@
 /** /api/plans — the `plan` tool's one door (ronin_bin/plan, src/plans.ts). Every command names its
  * caller (`by`, the session); the Workspace is `workspace`, else the caller's Team's. A write or order
  * answers one line, then the plan's header. The one 409 asks which Workspace, by name. */
+import { layersMayHaveChanged } from '../team-layers.js';
 import type express from 'express';
 import { initialCampaignId } from '../campaign-scope.js';
 import { listSessions } from '../tmux.js';
@@ -64,6 +65,7 @@ export function registerPlans(app: express.Express): void {
     const caller = await callerOf(b, req);
     const { workspace, name } = await planTarget(caller, text(b.name), text(b.workspace));
     acted(res, await writePlan(workspace, name, text(b.text), caller.by));
+    layersMayHaveChanged();
   }));
 
   app.post('/api/plans/order', route(async (req, res) => {
@@ -71,6 +73,7 @@ export function registerPlans(app: express.Express): void {
     const caller = await callerOf(b, req);
     const { workspace, name } = await planTarget(caller, text(b.name), text(b.workspace));
     acted(res, await orderPlan(workspace, name, caller.by));
+    layersMayHaveChanged();
   }));
 
 }
