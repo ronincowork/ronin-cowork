@@ -179,6 +179,7 @@ export function workspacePage(w, { reading, campaignId, onSaved = () => {}, onDi
   tools.append(addButton, cloneButton);
   const folderPanel = el('div', 'workspace-browser');
   const clonePanel = el('div', 'workspace-browser');
+  const plansBox = el('div', 'workspace-plans'); // PLANS (KAN-256) below; declared before it is placed
   stepLocations.body.append(tools, folderPanel, clonePanel, rows, plansBox);
 
   const pending = new Map(); // a Git folder's worktree switch, written on Save
@@ -231,7 +232,6 @@ export function workspacePage(w, { reading, campaignId, onSaved = () => {}, onDi
      Workspace's Locations and a subfolder. On Save the plans move there; a plan of the same name already
      there stops the Save, so one file never overwrites another. ---- */
   const LAB = 'ronin_lab';
-  const plansBox = el('div', 'workspace-plans');
   let plansOpen = false;
   const placeWords = () => {
     if (draft.plans?.location) return { where: `${draft.plans.location}/${draft.plans.path}`.replace(/\/$/, ''), recommended: false };
