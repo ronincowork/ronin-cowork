@@ -101,23 +101,22 @@ function parseRoots(raw: string): ProjectRootInfo[] {
   return roots;
 }
 
-const NEW_USER_FILE = `# PROJECT_ROOTS — your directories (user scope)
+const NEW_USER_FILE = `# PROJECT_ROOTS — your Workspace Folders (user scope)
 
 > Ronin made this file; Ronin never replaces it. It is yours, outside every repo, and an
-> upgrade cannot touch it. Hand-edit it freely — the commons' ▣ Project root tab is a
-> co-editor, not an owner.
+> upgrade cannot touch it. Hand-edit it freely, or use the Workspaces page, which edits it too.
 >
-> One \`## <handle>\` block per directory, with \`- **key:** value\` lines under it
-> (\`title\`, \`dir\`, \`memory\`, \`match\`, \`remit\`).
+> One \`## <handle>\` block per folder, with \`- **key:** value\` lines under it (\`title\`, \`dir\`,
+> \`match\`, \`remit\`, \`docs\`, \`archived\`, \`campaign_id\`). A folder is a directory, often one
+> repository; \`remit\` says what that folder is.
 >
-> \`- **archived:** yes\` retires a root without losing it: it comes off the new-session
-> picker and stays on the ▣ Project root tab, where one button puts it back. Sessions
-> already born under it are untouched — the name never stops meaning what it meant.
+> Workspaces group these folders: a Workspace (Ronin's Workspaces page, stored under
+> workspaces/) names the repos and folders its work spans, and a Team is launched in one.
+> An Agent learns its Workspace from its work record (\`work-record read\`, \`work-record
+> workspace list\`), never from this file.
 >
-> What a session here READS at birth is not a field — it is the files on this root's
-> shelf. Ask \`ronin-store session_boot\` for it, and see docs/architecture/session-boot.md.
-> The provider catalog (providers and models) is stock and lives in the install's
-> \`MODEL_PROVIDERS.md\`, not here; your own copy of that file beside this one shadows it.
+> \`- **archived:** yes\` retires a folder without losing it: it comes off the pickers and stays
+> listed, where one button puts it back. Agents already born under it are untouched.
 `;
 
 // A root's old `plans` line (build-out plans, retired with KAN-256: plans live on the Workspace,
