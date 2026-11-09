@@ -69,27 +69,29 @@ Usage:
   work-record workspace list
   work-record workspace add <repo-or-url> [--branch <branch>]
   work-record workspace remove <repo-or-url> [--branch <branch>]
-list shows your Team's Workspace first (title, objective, each repo and folder with its
-directory), then your own entries. add and remove edit only your own entries.
+list prints one JSON document: "workspace", your Team's Workspace (title, objective, team,
+each repo and folder with its directory; null on no Workspace), and "repos", your own entries. add and remove edit only your own entries.
 These edit the repositories in your Work Record. A remove without --branch removes every
 row for that exact repository. They do not change the birth directory or open a desk.
 To change the live session's recorded Workspace Folder, use session_set --help.
 EOF
         ;;
       list) [ "$#" -eq 0 ] || { usage >&2; exit 2; }
-        # The Team's Workspace first (KAN-331), then this Agent's own entries.
+        # The Team's Workspace first (KAN-331), then this Agent's own entries: one JSON document,
+        # {"workspace": {...} | null, "repos": [...]}, so a caller can parse it.
         bash "$ROOT/libexec/work-record-read" --json | python3 -c '
 import json, sys
 d = json.load(sys.stdin)
+ws = None
 for l in d.get("layers") or []:
     w = l.get("workspace")
     if not w: continue
-    print("Workspace %s (Team %s): %s" % (w.get("title") or w["name"], l["team"], w.get("objective") or "no objective"))
-    for kind in ("repos", "folders"):
-        for name in w.get(kind) or []:
-            print("  %s %s  %s" % (kind[:-1], name, (w.get("dirs") or {}).get(name) or "(not a registered folder)"))
-print("Your entries:")
-print(json.dumps(d.get("repos", []), indent=2))
+    dirs = w.get("dirs") or {}
+    ws = {"name": w["name"], "title": w.get("title") or w["name"], "objective": w.get("objective") or "", "team": l["team"],
+          "repos": [{"name": n, "dir": dirs.get(n) or ""} for n in w.get("repos") or []],
+          "folders": [{"name": n, "dir": dirs.get(n) or ""} for n in w.get("folders") or []]}
+    break
+print(json.dumps({"workspace": ws, "repos": d.get("repos", [])}, indent=2, ensure_ascii=False))
 ' ;;
       add|remove)
         [ "$#" -ge 1 ] && [ -n "$1" ] || { usage >&2; exit 2; }

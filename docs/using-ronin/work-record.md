@@ -186,8 +186,9 @@ each read live from where it lives and each naming the command that reads it who
 The Workspace is the Team's (its roster's `workspace`), the plans and canvases are that
 Workspace's, and the epics are those the Team or its members hold, the epic above each item
 they hold, and the epics under the Workspace's plans. Nothing is copied: a plan's text stays in
-the plan. `work-record workspace list` puts the Team's Workspace first, each repo and folder with
-its directory, then the Agent's own entries. Canvases read nothing until the `canvas` tool exists.
+the plan. `work-record workspace list` prints one JSON document: `workspace`, the Team's Workspace (title,
+objective, team, each repo and folder with its directory; `null` when there is none), and `repos`,
+the Agent's own entries. Canvases read nothing until the `canvas` tool exists.
 
 When a line changes for a lead's Team (a plan written or ordered, a canvas added or removed, an
 epic made, moved or closed, a repo or folder added), the lead alone gets the usual "Your work

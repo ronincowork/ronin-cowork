@@ -98,10 +98,10 @@ test('the notice: only the lead whose layers moved is told, once for a burst; th
   assert.deepEqual(told, ['cap', 'other', 'cap']);
 });
 
-test('work-record read prints the Team, one line per layer with its command; the Workspace list puts the Team\'s Workspace first', async () => {
+test('work-record read prints the Team, one line per layer with its command; workspace list is one JSON document with the Team\'s Workspace', async () => {
   const read = await fs.readFile(path.resolve(import.meta.dirname, '../libexec/work-record-read'), 'utf8');
   for (const pointer of ['(work-record workspace list)', '(plan read <name>)', '(canvas read <name>)', '(item read <id>)']) assert.ok(read.includes(pointer), pointer);
   assert.match(read, /print\("\\n## Team %s" % l\["team"\]\)/);
   const tool = await fs.readFile(path.resolve(import.meta.dirname, '../ronin_bin/work-record'), 'utf8');
-  assert.match(tool, /The Team's Workspace first \(KAN-331\), then this Agent's own entries\./);
+  assert.match(tool, /print\(json\.dumps\(\{"workspace": ws, "repos": d\.get\("repos", \[\]\)\}/, 'workspace list stays one JSON document');
 });

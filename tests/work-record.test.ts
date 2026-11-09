@@ -105,7 +105,8 @@ test('workspace commands edit exact repository URLs and acknowledge changed rows
   assert.deepEqual(block(f.letter).repos, [{ repo: next, branch: 'main' }]);
   result = call(['workspace', 'list']);
   assert.equal(result.status, 0, result.stderr);
-  assert.deepEqual(JSON.parse(result.stdout), [{ repo: next, branch: 'main' }]);
+  // KAN-331: one JSON document, the Team's Workspace (none here: no Ronin answers) beside the entries.
+  assert.deepEqual(JSON.parse(result.stdout), { workspace: null, repos: [{ repo: next, branch: 'main' }] });
   result = call(['update_record', '--unrepo', `${next}:main`]);
   assert.equal(result.status, 0, result.stderr);
   assert.match(result.stderr, /1 row\(s\) removed/);
