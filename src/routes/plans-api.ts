@@ -1,12 +1,13 @@
 /** /api/plans — the `plan` tool's one door (ronin_bin/plan, src/plans.ts). Every command names its
- * caller (`by`, the session); the Workspace is `workspace`, else the caller's Team's. A write or order
+ * caller (`by`, the session); the Workspace is `workspace`, else the caller's Team's; a new plan's
+ * Team is `team`, else the caller's one Team in that Workspace (plans.ts teamFor). A write, order or team
  * answers one line, then the plan's header. The one 409 asks which Workspace, by name. */
 import { layersMayHaveChanged } from '../team-layers.js';
 import type express from 'express';
 import { initialCampaignId } from '../campaign-scope.js';
 import { listSessions } from '../tmux.js';
 import {
-  PlanBadInput, PlanMissing, PlanRefused, headerLine, listPlans, orderPlan, planTarget, planTemplate, readPlan, resolvePlanRef, whichWorkspace, writePlan,
+  PlanBadInput, PlanMissing, PlanRefused, headerLine, listPlans, orderPlan, planTarget, planTemplate, readPlan, resolvePlanRef, setPlanTeam, teamFor, whichWorkspace, writePlan,
   type Caller, type PlanAnswer,
 } from '../plans.js';
 
@@ -64,7 +65,19 @@ export function registerPlans(app: express.Express): void {
     const b = req.body ?? {};
     const caller = await callerOf(b, req);
     const { workspace, name } = await planTarget(caller, text(b.name), text(b.workspace));
-    acted(res, await writePlan(workspace, name, text(b.text), caller.by));
+    // A new plan takes the writer's Team; a rewrite keeps the plan's unless --team names one.
+    const stated = text(b.team).trim();
+    acted(res, await writePlan(workspace, name, text(b.text), caller.by, (had) => (stated || !had ? teamFor(caller, workspace, stated) : Promise.resolve(undefined))));
+    layersMayHaveChanged();
+  }));
+
+  app.post('/api/plans/team', route(async (req, res) => {
+    const b = req.body ?? {};
+    const caller = await callerOf(b, req);
+    const { workspace, name } = await planTarget(caller, text(b.name), text(b.workspace));
+    const team = text(b.team).trim();
+    if (!team) throw new PlanBadInput('plan team takes <name> <team>, or <name> none.');
+    acted(res, await setPlanTeam(workspace, name, await teamFor(caller, workspace, team)));
     layersMayHaveChanged();
   }));
 

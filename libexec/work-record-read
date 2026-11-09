@@ -197,7 +197,7 @@ for l in r.get("layers") or []:
         print("- Workspace %s: %s · repos %s · folders %s (work-record workspace list)" % (w.get("title") or w["name"], w.get("objective") or "no objective", ", ".join(w.get("repos") or []) or "none", ", ".join(w.get("folders") or []) or "none"))
     else:
         print("- Workspace: none (the Team is launched in no Workspace)")
-    print("- Plans: %s (plan read <name>)" % ("; ".join("%s · %s" % (p["name"], p["status"]) for p in l.get("plans") or []) or "none"))
+    print("- Plans: %s (plan read <name>)" % ("; ".join("%s · %s · %s" % (p["name"], p["status"], ("Team %s" % p["team"]) if p.get("team") else "no Team") for p in l.get("plans") or []) or "none"))
     print("- Canvases: %s (canvas read <name>)" % ("; ".join(c["name"] for c in l.get("canvases") or []) or "none"))
     print("- Epics: %s (item read <id>)" % ("; ".join("%s %s · %s · %s" % (e["id"], e["title"], who(e.get("holder") or ""), e["status"]) for e in l.get("epics") or []) or "none"))
 print("\n## Work items you hold" if items else "\n## You hold no work items — your team holds your work; item create puts it there" if r.get("teams") else "\n## You hold no work items — item create --parent <epic> makes one yours")

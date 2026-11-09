@@ -3,7 +3,7 @@
  * record, one line each, each pointing at the command that reads it whole:
  *
  *   Workspace  title, objective, repos, folders   work-record workspace list
- *   Plans      name and status (Draft / Ordered)  plan read <name>
+ *   Plans      name, status, Team                 plan read <name>
  *   Canvases   name                               canvas read <name>
  *   Epics      epic, holder, status               item read <id>
  *
@@ -28,7 +28,8 @@ import { rosterReading, teamWork } from './work-items-read.js';
 
 /** `dirs`: each repo's and folder's directory, from the Workspace Folder registry (project-roots.ts). */
 export interface LayerWorkspace { name: string; title: string; objective: string; repos: string[]; folders: string[]; dirs: Record<string, string> }
-export interface LayerPlan { name: string; status: string }
+/** `team`: the Team the plan is for (plans.ts header); '' is none. */
+export interface LayerPlan { name: string; status: string; team: string }
 export interface LayerCanvas { name: string }
 export interface LayerEpic { id: string; title: string; holder: string; status: string }
 export interface TeamLayers {
@@ -64,16 +65,19 @@ async function listCanvases(_w: Workspace): Promise<LayerCanvas[]> {
 
 const epicLine = (item: WorkItem, holderOf: Map<string, string>): LayerEpic => ({ id: item.id, title: item.title, holder: holderOf.get(item.id) ?? '', status: item.status });
 
-/** One Team's four layers, live: what its lead and every member read. The epics are those the Team or its members
- * hold, the epic above each item they hold (work-items-read.ts teamWork), and the epics under the
- * Workspace's plans (an epic attached `plan:<workspace>/<name>`). Archived epics are left out. */
+/** One Team's four layers, live: what its lead and every member read. The plans are every plan of
+ * the Workspace, each with its Team. The epics are those the Team or its members hold, the epic
+ * above each item they hold (work-items-read.ts teamWork), and the epics under the Workspace's
+ * plans that are this Team's (an epic attached `plan:<workspace>/<name>`; KAN-332): an epic
+ * reached only through another Team's plan, or a plan of no Team, is not on the line. Archived
+ * epics are left out. */
 export async function teamLayers(team: string, sessions?: SessionRow[], every?: WorkItem[]): Promise<TeamLayers> {
   const roster = await readTeamRoster(team);
   if (!roster) throw new Error(`Team "${team}" has no roster.`);
   const w = await workspaceOf(roster);
   const all = every ?? await listItems();
   const { listPlans } = await import('./plans.js');
-  const plans = w ? (await listPlans(w).catch(() => [])).map(({ name, status }) => ({ name, status })) : [];
+  const plans = w ? (await listPlans(w).catch(() => [])).map(({ name, status, team: of }) => ({ name, status, team: of })) : [];
   const ids = new Set<string>();
   const holderOf = new Map<string, string>();
   if (roster) {
@@ -82,7 +86,7 @@ export async function teamLayers(team: string, sessions?: SessionRow[], every?: 
     for (const item of reading.items) if (item.level === 1) holderOf.set(item.id, item.holder);
   }
   if (w) {
-    const refs = new Set(plans.map((plan) => `plan:${w.name}/${plan.name}`));
+    const refs = new Set(plans.filter((plan) => plan.team === team).map((plan) => `plan:${w.name}/${plan.name}`));
     for (const item of all) if (item.level === 1 && item.attachments.some((doc) => refs.has(doc))) ids.add(item.id);
   }
   const shown = all.filter((item) => ids.has(item.id) && !item.archived);

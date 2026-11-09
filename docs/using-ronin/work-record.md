@@ -179,18 +179,19 @@ each read live from where it lives and each naming the command that reads it who
 | Line | What it shows | Read it whole |
 |---|---|---|
 | Workspace | its title, objective, repos and folders | `work-record workspace list` |
-| Plans | each plan's name and status (Draft or Ordered) | `plan read <name>` |
+| Plans | each plan of the Workspace: its name, status (Draft or Ordered) and Team | `plan read <name>` |
 | Canvases | each canvas's name | `canvas read <name>` |
 | Epics | each epic, who holds it, its status | `item read <id>` |
 
 The Workspace is the Team's (its roster's `workspace`), the plans and canvases are that
 Workspace's, and the epics are those the Team or its members hold, the epic above each item
-they hold, and the epics under the Workspace's plans. Nothing is copied: a plan's text stays in
+they hold, and the epics under the Workspace's plans that are this Team's. An epic reached only
+through another Team's plan, or a plan of no Team, is not on the line. Nothing is copied: a plan's text stays in
 the plan. `work-record workspace list` prints one JSON document: `workspace`, the Team's Workspace (title,
 objective, team, each repo and folder with its directory; `null` when there is none), and `repos`,
 the Agent's own entries. Canvases read nothing until the `canvas` tool exists.
 
-When a line changes for a lead's Team (a plan written or ordered, a canvas added or removed, an
+When a line changes for a lead's Team (a plan written, ordered or given to a Team, a canvas added or removed, an
 epic made, moved or closed, a repo or folder added), the lead alone gets the usual "Your work
 record changed", once for writes that come together: an ordered plan that makes several epics is
 one notice. Editing a canvas's entries tells nobody, and members are never told.

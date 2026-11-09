@@ -49,27 +49,32 @@ for (const name of ['cap', 'mem', 'other']) await seedTegami(name, { repo: '', b
 // The Workspace's plans, where plans.ts keeps them by default: Ronin Lab's camp/shop/plans.
 const plansAt = path.join(dir, 'user', 'ronin_lab', 'camp', 'shop', 'plans');
 await fs.mkdir(plansAt, { recursive: true });
-const plan = (name: string, status: 'Draft' | 'Ordered') => fs.writeFile(path.join(plansAt, `${name}.md`), withHeader(`# ${name}\n\nbody text never shown`, { status, date: '2026-11-09', by: 'cap' }, name));
+const plan = (name: string, status: 'Draft' | 'Ordered', team = 'crew') => fs.writeFile(path.join(plansAt, `${name}.md`), withHeader(`# ${name}\n\nbody text never shown`, { status, date: '2026-11-09', by: 'cap', team }, name));
 await plan('launch', 'Draft');
+await plan('loan', 'Ordered', 'yard'); // yard's plan in crew's Workspace (KAN-332)
 
 const epic = (await createItem({ title: 'Open the shop', kind: 'Epic', holder: { kind: 'team', name: 'crew' } }, 'cap')).item;
 const elsewhere = (await createItem({ title: 'Not crew\'s', kind: 'Epic', holder: { kind: 'team', name: 'yard' } }, 'other')).item;
 const sessions = async () => (await listSessions()) as never;
 
-test('teamLayers reads the four layers live: Workspace with dirs, plans by name and status, no canvases yet, the Team\'s epics only', async () => {
+test('teamLayers reads the four layers live: Workspace with dirs, every plan with its Team, no canvases yet, the Team\'s epics only', async () => {
   const l = await layers.teamLayers('crew');
   assert.deepEqual(l.workspace, { name: 'shop', title: 'Shop', objective: 'Sell things', repos: ['shop_repo'], folders: [], dirs: { shop_repo: repo } });
-  assert.deepEqual(l.plans, [{ name: 'launch', status: 'Draft' }], 'name and status, never the text');
+  assert.deepEqual(l.plans, [{ name: 'launch', status: 'Draft', team: 'crew' }, { name: 'loan', status: 'Ordered', team: 'yard' }], 'name, status and Team, never the text');
   assert.deepEqual(l.canvases, [], 'nothing until canvas ls lands (KAN-329)');
   assert.deepEqual(l.epics.map((e) => [e.id, e.holder, e.status]), [[epic.id, 'team:crew', epic.status]]);
   assert.ok(!l.epics.some((e) => e.id === elsewhere.id), 'another Team\'s epic is not on crew\'s line');
 });
 
-test('an epic under one of the Workspace\'s plans is on the line though the Team holds nothing of it', async () => {
+test('an epic under one of the Team\'s own plans is on the line though the Team holds nothing of it; one under another Team\'s plan is not', async () => {
   const { attachDoc } = await import('../src/work-items.js');
   const planned = (await createItem({ title: 'Planned epic', kind: 'Epic' }, 'cap')).item;
   await attachDoc(planned.id, 'plan:shop/launch', 'cap');
-  assert.ok((await layers.teamLayers('crew')).epics.some((e) => e.id === planned.id));
+  const lent = (await createItem({ title: 'Yard\'s epic', kind: 'Epic' }, 'other')).item;
+  await attachDoc(lent.id, 'plan:shop/loan', 'other');
+  const epics = (await layers.teamLayers('crew')).epics.map((e) => e.id);
+  assert.ok(epics.includes(planned.id));
+  assert.ok(!epics.includes(lent.id), 'reached only through yard\'s plan');
 });
 
 test('every member reads the same four lines; an Agent reads only the Teams it is on', async () => {
@@ -100,6 +105,7 @@ test('the notice: only the lead whose layers moved is told, once for a burst; th
 
 test('work-record read prints the Team, one line per layer with its command; workspace list is one JSON document with the Team\'s Workspace', async () => {
   const read = await fs.readFile(path.resolve(import.meta.dirname, '../libexec/work-record-read'), 'utf8');
+  assert.ok(read.includes('("Team %s" % p["team"]) if p.get("team") else "no Team"'), 'each plan with its Team');
   for (const pointer of ['(work-record workspace list)', '(plan read <name>)', '(canvas read <name>)', '(item read <id>)']) assert.ok(read.includes(pointer), pointer);
   assert.match(read, /print\("\\n## Team %s" % l\["team"\]\)/);
   const tool = await fs.readFile(path.resolve(import.meta.dirname, '../ronin_bin/work-record'), 'utf8');

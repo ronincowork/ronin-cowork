@@ -47,21 +47,26 @@ made from it, and the planner is done with it.
 | **Draft** | being written with the user; rewrite it as often as you like | `plan write` |
 | **Ordered** | the user said yes; not rewritten; the epics are made from it | `plan order` |
 
-The status is the line under the title, `Status: Ordered · 2026-11-05 · pm_lead`. The tool
-writes it; anything you put there is replaced.
+The status is the line under the title, `Status: Ordered · 2026-11-05 · pm_lead · Team web-page`.
+The tool writes it; anything you put there is replaced. The Team is the one the plan is for: a new
+plan takes the writer's Team in that Workspace, a rewrite and an order keep it, and `plan team`
+changes it. A plan whose line names no Team is no Team's. A Team's work record shows every plan
+of its Workspace with its Team, but only the epics under its own plans.
 
 ## The plan tool
 
 ```text
-plan ls [--status Draft|Ordered]          the Workspace's plans: name, status, date, by
+plan ls [--status Draft|Ordered]          the Workspace's plans: name, status, date, by, Team
 plan read <name>                          one plan, whole; <workspace>/<name> reads another Workspace's
 plan read --template                      the blank to fill in
-plan write <name> [--file <path>]         create a plan, or replace one; it keeps its status (stdin without --file)
+plan write <name> [--file <path>] [--team <team>]
+                                          create a plan, or replace one; it keeps its status and Team (stdin without --file)
 plan order <name>                         Draft → Ordered: not rewritten from here
+plan team <name> <team>|none              the Team the plan is for
 ```
 
 - The Workspace is your Team's. On several Teams, or none, add `--workspace <name>`; the tool
-  names the ones to choose from.
+  names the ones to choose from. On several Teams in that Workspace, a new plan needs `--team <name>`.
 - A name is lowercase letters, digits and `-`.
 - The tool doesn't stop a write to an Ordered plan; don't make one. The work runs on the epics:
   change the epics instead.
