@@ -132,7 +132,7 @@ export function createCoworkView(options = {}) {
         t('workspace.tab_cron_count', '{scheduled} scheduled, {paused} paused', { scheduled, paused })),
     });
     const docsPane = el('div', 'home-docs tw-docs');
-    const docs = buildDocs(docsPane, (name) => membersOfTeam(team).some((m) => m.name === name));
+    const docs = buildDocs(docsPane, (name) => membersOfTeam(team).some((m) => m.name === name), { team: () => (team === UNASSIGNED ? '' : team) });
     const docsService = {
       el: docsPane, mount: () => {},
       enter: () => { docs.enter(); },

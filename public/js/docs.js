@@ -9,7 +9,18 @@ import { WorkspacePrimitives } from './workspace-primitives.js';
 
 let docsSequence = 0; // one id per shelf, so two lists on one page never collide
 
-export function buildDocs(root, only = null) {
+/** A document elsewhere — an http(s) link on a work record (`work-record add_doc <url>`) — is not a
+ * file: it is never read, framed or saved here, only opened in a tab of its own. */
+export const isLinkDoc = (p) => typeof p === 'string' && /^https?:\/\//i.test(p);
+export const openLinkDoc = (url) => { window.open(url, '_blank', 'noopener'); };
+
+/**
+ * `only` keeps the Tracked shelf to the sessions it names; `team` (a name, or a function giving
+ * the current one) scopes Plans and Docs to that Team's Workspace, and each shelf then says its
+ * scope in a line over the list (KAN-326). Without a team they are every Workspace's.
+ */
+export function buildDocs(root, only = null, { team = null } = {}) {
+  const teamName = () => String((typeof team === 'function' ? team() : team) || '');
   let openPath = null; // normalized target, or null while the list is showing
   let dirty = false; // the owner has typed since the last load or save
   // Only rebuild the list when it actually changed — see refresh(). null, not '', so the
@@ -19,7 +30,8 @@ export function buildDocs(root, only = null) {
 
   /* ---------- the rectangular shelf tabs, then the list ---------- */
   let shelf = 'tracked';
-  const shelves = { plans: null, docs: null }; // fetched on demand, kept for the session
+  const shelves = {}; // `<shelf>|<team>` → its answer, fetched on demand and kept for the session
+  const shelfKey = () => `${shelf}|${teamName()}`;
   // THE SHELF IS THREE TABS OVER ONE PANEL: the list below them is the tabpanel, and the
   // arrow keys come from the tab set's own decision (workspace-tabs.js).
   const pills = document.createElement('div');
@@ -132,6 +144,7 @@ export function buildDocs(root, only = null) {
   /* ---------- opening and saving ---------- */
 
   const open = async (requested) => {
+    if (isLinkDoc(requested)) { openLinkDoc(requested); return false; }
     const target = targetOf(requested);
     if (!target) { say(t('docs.bad_path', 'Choose a document in a workspace folder.'), true); return false; }
     // Arriving on a doc while another is open and typed in asks first, as ← does.
@@ -218,8 +231,24 @@ export function buildDocs(root, only = null) {
 
   /* ---------- the list ---------- */
 
+  // THE SCOPE IN WORDS: what this list is drawn from, so a Team's shelf never reads as everything.
+  const scopeLine = () => {
+    const name = teamName();
+    const scope = shelves[shelfKey()]?.scope;
+    let text = '';
+    if (shelf === 'tracked') text = only && name ? t('docs.scope_tracked', 'Documents on the work records of {team}\'s Agents', { team: name }) : '';
+    else if (scope?.workspace) {
+      text = shelf === 'plans'
+        ? t('docs.scope_plans', 'Plans of Workspace {workspace}', { workspace: scope.workspace })
+        : t('docs.scope_docs', 'Docs of {folders} — Workspace {workspace}', { folders: (scope.folders || []).join(', ') || '—', workspace: scope.workspace });
+    } else if (shelves[shelfKey()]) text = shelf === 'plans' ? t('docs.scope_plans_all', 'Plans of every Workspace') : t('docs.scope_docs_all', 'Docs of every Workspace Folder');
+    if (!text) return;
+    list.appendChild(Object.assign(document.createElement('p'), { className: 'dc-scope', textContent: text }));
+  };
+
   const empty = (msg) => {
     list.innerHTML = '';
+    scopeLine();
     const e = document.createElement('div');
     e.className = 'dc-empty';
     e.textContent = msg;
@@ -242,6 +271,7 @@ export function buildDocs(root, only = null) {
       else empty(only ? t('docs.empty_team', 'No tracked documents.') : t('docs.empty', 'No session has listed a doc yet. An agent adds one with: work-record add_doc <path>'));
       return;
     }
+    scopeLine();
     for (const s of rows) {
       const h = document.createElement('div');
       h.className = 'dc-who';
@@ -260,7 +290,9 @@ export function buildDocs(root, only = null) {
       h.classList.toggle('folded', body.hidden);
       list.appendChild(body);
       for (const [n, p] of s.docs.entries()) {
-        const parts = p.split('/');
+        const link = isLinkDoc(p);
+        // A link reads as its last segment over its host and path, with ↗: it leaves for a tab.
+        const parts = link ? p.replace(/^https?:\/\//i, '').replace(/\/+$/, '').split('/') : p.split('/');
         const b = document.createElement('button');
         b.className = 'dc-row';
         b.title = p;
@@ -269,7 +301,7 @@ export function buildDocs(root, only = null) {
           // The last two directories, so two files called HOW_TO.md are told apart
           // without printing an absolute path on a phone-width row.
           // A plan says its status instead (the Plans shelf: Draft, Ordered).
-          Object.assign(document.createElement('span'), { textContent: s.hints?.[n] || parts.slice(-2).join('/') }),
+          Object.assign(document.createElement('span'), { textContent: s.hints?.[n] || (link ? `${parts.join('/')} ↗` : parts.slice(-2).join('/')) }),
         );
         b.addEventListener('click', () => open(p));
         // the last directory and the name, what the row shows — and the tile's composer
@@ -277,7 +309,7 @@ export function buildDocs(root, only = null) {
         // path: a reference in a message is for reading, and the agent can find the file.
         b.draggable = true;
         b.addEventListener('dragstart', (event) => {
-          const short = p.split('/').slice(-2).join('/');
+          const short = link ? p : p.split('/').slice(-2).join('/');
           event.dataTransfer.setData(DOC_MIME, short);
           event.dataTransfer.setData('text/plain', short);
           event.dataTransfer.effectAllowed = 'copy';
@@ -299,21 +331,35 @@ export function buildDocs(root, only = null) {
   const refresh = (force = false) => {
     if (openPath) return; // the editor is up; the list underneath can wait
     if (shelf !== 'tracked') {
-      if (!shelves[shelf] || force) {
-        if (!shelves[shelf]) empty(t('docs.loading', 'loading…'));
-        void request('/api/docs?shelf=' + shelf, { cache: 'no-store' }).then((r) => {
+      const key = shelfKey();
+      if (!shelves[key] || force) {
+        if (!shelves[key]) empty(t('docs.loading', 'loading…'));
+        const query = new URLSearchParams({ shelf });
+        if (teamName()) query.set('team', teamName());
+        void request('/api/docs?' + query.toString(), { cache: 'no-store' }).then((r) => {
           if (!r.ok) { empty(r.message); return; }
-          shelves[shelf] = r.data.groups || [];
+          shelves[key] = { groups: r.data.groups || [], scope: r.data.scope || null };
           sig = null;
           refresh();
         });
         return;
       }
-      const rows = shelves[shelf]
-        .filter((g) => g.files.length)
-        .map((g) => ({ name: g.root, docs: g.files, hints: g.hints, folded: g.archived }))
-        .sort((a, b) => Number(!!a.folded) - Number(!!b.folded));
-      const next = shelf + rows.map((s) => s.name + ':' + s.docs.join('|') + (s.hints || []).join('|')).join('\n');
+      const groups = shelves[key].groups.filter((g) => g.files.length);
+      // DOCS FOLD BY FOLDER: each Workspace Folder's docs group by the directory they sit in
+      // (ronin_cowork · docs/architecture), every group closed, so a shelf of a hundred is a
+      // short list of places. Plans stay one group per Workspace, open.
+      const rows = (shelf === 'docs' ? groups.flatMap((g) => {
+        const by = new Map();
+        for (const f of g.files) {
+          const rel = f.startsWith(g.dir + '/') ? f.slice(g.dir.length + 1) : f;
+          const dir = rel.includes('/') ? rel.slice(0, rel.lastIndexOf('/')) : '';
+          if (!by.has(dir)) by.set(dir, []);
+          by.get(dir).push(f);
+        }
+        return [...by].sort(([a], [b]) => a.localeCompare(b)).map(([dir, docs]) => ({ name: dir ? `${g.root} · ${dir}` : g.root, docs, folded: true, archived: g.archived }));
+      }) : groups.map((g) => ({ name: g.root, docs: g.files, hints: g.hints, folded: g.archived, archived: g.archived })))
+        .sort((a, b) => Number(!!a.archived) - Number(!!b.archived));
+      const next = key + rows.map((s) => s.name + ':' + s.docs.join('|') + (s.hints || []).join('|')).join('\n');
       if (next === sig) return;
       sig = next;
       render(rows);

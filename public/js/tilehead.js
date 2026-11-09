@@ -9,6 +9,7 @@ import { buildWorkRecord } from './work-record.js';
 import { readDesks } from './desks.js';
 import { t } from './lexicon.js';
 import { isPlanRef, planName } from './plan-attachment.js';
+import { isLinkDoc, openLinkDoc } from './docs.js';
 import { chatMarkdown, setChatMarkdown } from './tile-transcript.js';
 import { createItemIsland, statusKey } from './tile-island.js';
 
@@ -228,6 +229,8 @@ export function tileMenu(tile) {
         list: () => (tile.tegami?.docs || []).map((path) => {
           // A plan still named plan:<workspace>/<name> here no longer resolves (work-items-read.ts).
           if (isPlanRef(path)) return { label: planName(path), hint: t('plans.gone_hint', 'gone'), run: () => {} };
+          // A link is a document elsewhere: it opens in a tab of its own, never over the tile.
+          if (isLinkDoc(path)) return { label: path.replace(/\/+$/, '').split('/').pop(), hint: `${path.replace(/^https?:\/\//i, '').split('/')[0]} ↗`, run: () => openLinkDoc(path) };
           const parts = path.split('/');
           return { label: parts.pop(), hint: parts.slice(-2).join('/'), run: () => tile.openDoc(path) };
         }) },

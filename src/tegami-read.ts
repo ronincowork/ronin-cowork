@@ -39,9 +39,11 @@ function extractBlock(text: string): unknown | null {
 async function readDocs(v: unknown): Promise<string[]> {
   if (!Array.isArray(v)) return [];
   // A `plan:` attachment still here is one that no longer resolves (work-items-read.ts): kept, so
-  // the Docs list says it is gone.
-  const want = [...new Set(v.filter((x): x is string => typeof x === 'string' && (x.startsWith('/') || x.startsWith('plan:'))))];
-  const alive = await Promise.all(want.map((p) => (p.startsWith('plan:') ? p : fs.stat(p).then(() => p).catch(() => null))));
+  // the Docs list says it is gone. An http(s) link is a document elsewhere: kept as written, never
+  // stat'ed, and the browser opens it in a tab of its own (public/js/docs.js).
+  const link = (x: string) => /^https?:\/\//i.test(x);
+  const want = [...new Set(v.filter((x): x is string => typeof x === 'string' && (x.startsWith('/') || x.startsWith('plan:') || link(x))))];
+  const alive = await Promise.all(want.map((p) => (p.startsWith('plan:') || link(p) ? p : fs.stat(p).then(() => p).catch(() => null))));
   return alive.filter((p): p is string => p !== null);
 }
 
