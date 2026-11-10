@@ -4,7 +4,7 @@
 - **blurb:** Use any outside service a user connects the common way: its own tools, its keys, a PR, the preview, the record.
 - **installation:** —
 - **order:** 23
-- **scope:** selected
+- **scope:** sought
 
 Ronin has one common way for any outside service a user brings: hosting, a database, mail,
 anything. You already know how to use the service. This says where things are and what to
