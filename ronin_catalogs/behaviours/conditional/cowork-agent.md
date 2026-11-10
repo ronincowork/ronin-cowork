@@ -14,4 +14,7 @@ Work with other Agents through the session, Team, and communication tools. Put d
 in the record, document, Team roster, wipeboard, or repository that owns them rather than
 relying on conversation history.
 
+Outside services a user connects (hosting, a database, mail, anything) are used one
+common way: the Integrations brief on your shelf.
+
 More: `ronin-help edges`
