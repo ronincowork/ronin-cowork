@@ -73,3 +73,14 @@ test('Connect refuses a malformed key or value, and Jira connects in its own pan
   assert.equal(jira.bridge_state, 'parked');
   assert.equal(jira.token_file, path.join(root, 'services_secrets', 'jira-c1.json'));
 });
+
+test('Mika indexes the integrations README, never a record, stock or an Agent\'s', async () => {
+  const { compileMikaKnowledgeAt } = await import('../src/mika-knowledge.js');
+  const owner = path.join(root, 'catalogs');
+  for (let n = 0; n < 40; n++) await writeFile(path.join(owner, 'integrations', `provider${n}.md`), `# P${n}\n- **label:** P${n}\n- **blurb:** ${'x'.repeat(200)}.\n`);
+  const built = await compileMikaKnowledgeAt(await mkdtemp(path.join(tmpdir(), 'ronin-mika-')), { ownerRoots: {
+    docs: '', 'ronin_catalogs/behaviours': '', ronin_catalogs: owner, ronin_session_boot: '', ronin_library: '',
+  } });
+  const ids = built.entries.map((row) => row.id).filter((id) => id.includes('/integrations/'));
+  assert.deepEqual(ids, ['ronin_catalogs/integrations/README.md']);
+});
