@@ -34,6 +34,7 @@ import { registerTeams, teamRosters } from './routes/teams-api.js';
 import { registerWorkspaces } from './routes/workspaces-api.js';
 import { registerIntegrations } from './routes/integrations-api.js';
 import { registerPlans } from './routes/plans-api.js';
+import { registerSecrets } from './routes/secrets-api.js';
 import { registerWorkItems } from './routes/work-items-api.js';
 import { registerPromotions } from './routes/promotions-api.js';
 import { epicsPush, everyItemReading } from './work-items-read.js';
@@ -262,6 +263,7 @@ registerTeams(app); // /api/team-rosters* — the durable half of every team —
 registerWorkspaces(app); // /api/workspaces* — a Campaign's Workspaces — src/routes/workspaces-api.ts
 registerIntegrations(app); // /api/integrations* — the integrations index, live state, Connect/Disconnect — src/routes/integrations-api.ts
 registerPlans(app); // /api/plans* — the plan tool's door — src/routes/plans-api.ts
+registerSecrets(app); // /api/secrets* — the secret tool's door: save, ask, names; never a value — src/routes/secrets-api.ts
 registerWorkItems(app); // /api/work-items* — the one door to the work item store — src/routes/work-items-api.ts
 registerPromotions(app); // /api/promotions/:id/live — whether a promotion restarted and passed health (KAN-311) — src/routes/promotions-api.ts
 registerDesks(app); // /api/desks?session=<name> and funnel recovery — derived desk state — src/routes/desks-api.ts

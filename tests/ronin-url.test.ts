@@ -98,6 +98,7 @@ test('every agent-facing API caller connects through the one library and carries
     'netlify',
     'owner_view',
     'plan',
+    'secret',
     'session_archive',
     'session_check',
     'session_create',

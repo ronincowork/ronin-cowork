@@ -39,6 +39,7 @@ These exact files are the source catalog for the virtual `YOUR TOOLS` view:
 | Core | `agent_session.md` | live Agent/session inspection and lifecycle tools |
 | Core | `worktree-desk.md` | live worktree tool and managed-worktree teaching available to every Cowork Agent |
 | Core | `machine-settings.md` | typed Campaign, installation, provider, and machine settings |
+| Core | `secret.md` | the owner hands an Agent a password or key through its tile; the Agent uses it by its file |
 | Core | `ronin-help.md` | Help's user docs and the glossary, read from the install |
 | Core | `cowork_team.md` | live Cowork Team roster, work item, custody, and member-status tools; designated-lead teaching is conditionally embedded |
 | Conditional | `ronin-host.md` | advanced host inspection and guarded restart tool |

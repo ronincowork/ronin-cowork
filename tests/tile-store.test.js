@@ -27,6 +27,7 @@ function fakeTile(session) {
     headHelp: {},
     gauge: { set: (value) => painted.gauge.push(value) },
     transcriptView: { setStance: (stance) => { painted.stance = stance; } },
+    secretAsk: { sync: (row) => { painted.secretAsk = row?.secret_ask ?? null; } },
     setFooter: (pct, model) => painted.footer.push([pct, model]),
   });
   return { tile, painted };

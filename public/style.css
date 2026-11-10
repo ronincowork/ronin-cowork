@@ -785,6 +785,39 @@ body {
 }
 .tile-body[data-surface='docs'] > .tile-doc-view { display: flex; }
 .tile-body[data-surface='docs'] > .composer { display: none !important; }
+.tile-secret-ask {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-inline);
+  background: var(--tile-bg);
+}
+.tile-secret-ask[hidden] { display: none; }
+.tile-secret-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-row);
+  width: min(100%, 28rem);
+  padding: var(--space-inline);
+  border: var(--edge) solid var(--line);
+  border-radius: var(--radius-large);
+  background: var(--surface);
+}
+.tile-secret-title { margin: 0; color: var(--fg-strong); font-weight: 600; }
+.tile-secret-for { margin: 0; color: var(--muted); }
+.tile-secret-value {
+  font: inherit;
+  padding: var(--space-row) var(--space-inline);
+  border: var(--edge) solid var(--line);
+  border-radius: var(--radius-large);
+  background: var(--inset);
+  color: var(--fg-strong);
+}
+.tile-secret-notice { margin: 0; color: var(--muted); }
+.tile-secret-notice:empty { display: none; }
 .tile-doc-close {
   align-self: flex-end;
   border: var(--edge) solid var(--line);
