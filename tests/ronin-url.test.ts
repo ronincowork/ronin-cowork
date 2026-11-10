@@ -95,6 +95,7 @@ test('every agent-facing API caller connects through the one library and carries
     'lookup',
     'machine-settings',
     'mika',
+    'netlify',
     'owner_view',
     'plan',
     'session_archive',
