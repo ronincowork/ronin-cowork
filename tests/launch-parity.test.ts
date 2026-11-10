@@ -206,36 +206,22 @@ test('bare_metal_agent resolves a real CLI without Ronin birth machinery', async
   assert.equal(bare.team_objective, '', 'the Team roster does not resolve into the launch');
 });
 
-test('an unavailable gbrain changes teaching without changing the provider command', async () => {
-  const cowork = await resolveForm(commonsForm({
-    session_type: 'cowork_agent',
-    name: 'gbrain-off-proof',
-    provider: 'openai',
-    model: 'gpt-5.6-terra',
-  }), new Set());
-  const gbrain = cowork.installations.find((installation) => installation.name === 'gbrain');
-
-  assert.equal(gbrain?.enabled, false, 'the receipt source says the gbrain installation is off');
-  assert.equal(cowork.cmd, 'codex --model gpt-5.6-terra');
-  assert.ok(!cowork.behaviours.some((behaviour) => behaviour.book === 'gbrain'),
-    'no gbrain behaviour is delivered while its installation is off');
-});
-
-test('the gbrain installation stays separate from the Behaviour catalog', async () => {
-  const cowork = await resolveForm(commonsForm({
-    session_type: 'cowork_agent',
-    campaign_id: 'gbrain_connected',
-    name: 'gbrain-on-proof',
-    provider: 'openai',
-    model: 'gpt-5.6-terra',
-  }), new Set());
-  const gbrain = cowork.installations.find((installation) => installation.name === 'gbrain');
-
-  assert.equal(gbrain?.enabled, true, 'the receipt source says the gbrain installation is on');
-  assert.equal(cowork.cmd, 'codex --model gpt-5.6-terra');
-  assert.ok(!cowork.behaviours.some((behaviour) => behaviour.book === 'gbrain'),
-    'the installation does not inject a removed Behaviour');
-});
+// gbrain is an integration (ronin_catalogs/integrations, KAN-337), not an installation: a
+// Campaign's old gbrain switch, on or off, changes neither the teaching nor the command.
+for (const [campaign_id, word] of [['home_machine', 'off'], ['gbrain_connected', 'on']] as const) {
+  test(`a Campaign's old gbrain switch (${word}) is no installation and delivers nothing`, async () => {
+    const cowork = await resolveForm(commonsForm({
+      session_type: 'cowork_agent',
+      campaign_id,
+      name: `gbrain-${word}-proof`,
+      provider: 'openai',
+      model: 'gpt-5.6-terra',
+    }), new Set());
+    assert.equal(cowork.installations.find((installation) => installation.name === 'gbrain'), undefined);
+    assert.equal(cowork.cmd, 'codex --model gpt-5.6-terra');
+    assert.ok(!cowork.behaviours.some((behaviour) => behaviour.book === 'gbrain'));
+  });
+}
 
 test('and to the same role-free reading list — all + the Workspace\'s root shelf, compiled once', async () => {
   const fromCommons = await resolveForm(commonsForm(), new Set());

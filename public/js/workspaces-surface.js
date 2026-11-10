@@ -121,7 +121,8 @@ function folderBrowser({ ticked, onTick, onLoad = () => {} }) {
 export function workspacePage(w, { reading, campaignId, onSaved = () => {}, onDiscard = () => {} }) {
   const { createAction, createField } = WorkspaceKit.primitives;
   const isNew = !w;
-  const draft = w ? JSON.parse(JSON.stringify(w)) : { name: '', title: '', objective: '', instructions: '', repos: [], folders: [], launch_mode: 'configured' };
+  const draft = w ? JSON.parse(JSON.stringify(w)) : { name: '', title: '', objective: '', instructions: '', repos: [], folders: [], launch_mode: 'configured', integrations: [] };
+  if (!Array.isArray(draft.integrations)) draft.integrations = [];
   const page = el('div', 'ntf-form fs-steps workspace-form');
   // The page's own status line, first under its head: what Save, a tick or Clone answered.
   const line = status();
@@ -129,7 +130,7 @@ export function workspacePage(w, { reading, campaignId, onSaved = () => {}, onDi
   const say = sayInto(line);
   const text = (value, onInput, placeholder = '') => { const i = el('input'); i.type = 'text'; i.value = value; i.placeholder = placeholder; i.addEventListener('input', () => onInput(i.value)); return i; };
   const area = (value, onInput) => { const a = el('textarea'); a.rows = 4; a.value = value; a.addEventListener('input', () => onInput(a.value)); return a; };
-  const open = { top: true, agents: false, locations: true, adding: '' }; // adding: '' | 'folder' | 'clone'
+  const open = { top: true, agents: false, locations: true, integrations: false, adding: '' }; // adding: '' | 'folder' | 'clone'
   // EVERY EDIT WAITS FOR SAVE (owner, 2026-11-02): a change lights Save (kaki, what needs you) and
   // the − beside it, which throws the changes away back to the saved Workspace.
   let dirty = false;
@@ -151,7 +152,7 @@ export function workspacePage(w, { reading, campaignId, onSaved = () => {}, onDi
 
   /* ---- 3 · Agent info: what every Agent in it is told, and the Mode they launch in (owner, 2026-11-03:
      the extra, so it comes last) ---- */
-  const stepAgents = createStep({ n: 3, key: 'agents', title: t('workspaces.agent_info', 'Agent info'), onToggle: () => { open.agents = !open.agents; paint(); } });
+  const stepAgents = createStep({ n: 4, key: 'agents', title: t('workspaces.agent_info', 'Agent info'), onToggle: () => { open.agents = !open.agents; paint(); } });
   stepAgents.body.append(createField({ label: t('workspaces.instructions', 'Instructions'), control: area(draft.instructions, (v) => { draft.instructions = v; changed(); }) }).el);
 
   const mode = ask([{ fields: [
@@ -161,6 +162,46 @@ export function workspacePage(w, { reading, campaignId, onSaved = () => {}, onDi
     ] },
   ] }], { value: { launch_mode: draft.launch_mode }, density: 'tight', onChange: (value) => { draft.launch_mode = value.launch_mode; changed(); paint(); } });
   stepAgents.body.append(mode.el);
+
+  /* ---- 3 · Integrations (KAN-338): the outside services this Workspace uses, from the integrations
+     index; each row a provider, its other facts (a bridge's `site`) kept as they are. Agents read them
+     on the Team's Workspace line. Connecting one is Settings › Integrations. ---- */
+  const stepIntegrations = createStep({ n: 3, key: 'integrations', title: t('workspaces.integrations', 'Integrations'), onToggle: () => { open.integrations = !open.integrations; paint(); } });
+  const integrationRows = el('div', 'workspace-locations workspace-integrations');
+  const addIntegration = el('select', 'workspace-integration-add');
+  stepIntegrations.body.append(integrationRows, addIntegration,
+    el('p', 'fs-step-help', t('workspaces.integrations_help', 'Agents in this Workspace use these, with the token Settings › Integrations connects.')));
+  let index = [];
+  addIntegration.addEventListener('change', () => {
+    const provider = addIntegration.value;
+    if (!provider) return;
+    draft.integrations.push({ provider });
+    changed(); paint();
+  });
+  const paintIntegrations = () => {
+    integrationRows.replaceChildren();
+    if (!draft.integrations.length) integrationRows.append(el('p', 'fs-step-help', t('workspaces.integrations_none', 'None yet.')));
+    for (const entry of draft.integrations) {
+      const record = index.find((one) => one.name === entry.provider);
+      const row = el('div', 'workspace-location');
+      const remove = el('button', 'workspace-location-remove', '×'); remove.type = 'button';
+      remove.setAttribute('aria-label', t('workspaces.remove_named', 'Remove {name}', { name: record?.label || entry.provider }));
+      remove.addEventListener('click', () => { draft.integrations = draft.integrations.filter((one) => one !== entry); changed(); paint(); });
+      const where = el('div', 'workspace-location-where');
+      const facts = Object.entries(entry).filter(([k]) => k !== 'provider').map(([k, v]) => `${k} ${v}`).join(' · ');
+      where.append(el('b', null, record?.label || entry.provider), el('code', null, facts || record?.for || ''));
+      const state = !record ? t('workspaces.integration_unlisted', 'not in the index')
+        : record.connected ? t('integrations.connected', 'Connected') : t('integrations.not_connected', 'Not connected');
+      row.append(el('small', 'folder-kind', ''), where, el('small', 'folder-kind', state), el('span'), remove);
+      integrationRows.append(row);
+    }
+    const chosen = new Set(draft.integrations.map((one) => one.provider));
+    addIntegration.replaceChildren(Object.assign(el('option', null, t('workspaces.add_integration', '+ Add an integration')), { value: '' }),
+      ...index.filter((one) => !chosen.has(one.name)).map((one) => Object.assign(el('option', null, one.label), { value: one.name })));
+    addIntegration.hidden = addIntegration.options.length < 2;
+  };
+  void request(`/api/integrations${campaignId() ? `?campaign_id=${encodeURIComponent(campaignId())}` : ''}`, { cache: 'no-store' })
+    .then((answer) => { if (answer.ok) { index = answer.data.integrations || []; paint(); } });
 
   /* ---- 2 · Locations: what matters most, so second (owner, 2026-11-03). Add a folder or Clone a repo at
      the top, each opening its own panel; then one row per folder, its note under it ---- */
@@ -377,6 +418,8 @@ export function workspacePage(w, { reading, campaignId, onSaved = () => {}, onDi
     const first = draft.instructions.trim().split('\n')[0];
     stepAgents.setCollapsed(!open.agents, [MODES[draft.launch_mode], first].filter(Boolean).join(' · '), true);
     stepTop.setCollapsed(!open.top, (isNew ? draft.title || draft.name : draft.objective.trim().split('\n')[0]) || t('workspaces.none_yet', 'None'), true);
+    stepIntegrations.setCollapsed(!open.integrations, draft.integrations.map((one) => index.find((r) => r.name === one.provider)?.label || one.provider).join(', ') || t('workspaces.none_yet', 'None'), true);
+    paintIntegrations();
     stepLocations.setCollapsed(!open.locations, picked.size === 1 ? t('workspaces.one_folder', '1 folder') : t('workspaces.folders_n', '{n} folders', { n: picked.size }), true);
     folderPanel.hidden = open.adding !== 'folder';
     clonePanel.hidden = open.adding !== 'clone';
@@ -389,7 +432,7 @@ export function workspacePage(w, { reading, campaignId, onSaved = () => {}, onDi
     paintRows();
     paintPlans();
   }
-  page.append(line, stepTop.el, stepLocations.el, stepAgents.el);
+  page.append(line, stepTop.el, stepLocations.el, stepIntegrations.el, stepAgents.el);
   paint();
   if (!reading.roots().length) void reading.read().then(() => { paint(); browser.paint(); });
   return { el: page, action, discard };

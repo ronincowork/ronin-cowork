@@ -9,6 +9,7 @@ import { createInstallationsSurface, installationsSummary } from './campaign-ins
 import { createProviderSetupSessionMount } from './provider-setup-session.js';
 import { createWorkspaceFoldersSurface } from './workspace-folders-surface.js';
 import { createJiraItemsSurface, createJiraPairsSurface, createJiraPanel } from './jira-panel.js';
+import { createIntegrationsPanel } from './integrations-panel.js';
 import { request } from './request.js';
 import { coworkCommons } from './cowork-commons.js';
 import { accountCard } from './account-card.js';
@@ -29,7 +30,7 @@ import { setupProgressHandlers } from './events.js';
 const PROFILE = WORKBENCH_PROFILES.campaign;
 const MIKA_SESSION = 'mika_agent';
 const TERMINAL_TYPE = WORKBENCH_TYPES.terminal;
-const TYPES = Object.freeze({ machine: WORKBENCH_TYPES.campaignMachine, defaults: WORKBENCH_TYPES.campaignDefaults, roots: WORKBENCH_TYPES.campaignRoots, identity: WORKBENCH_TYPES.campaignIdentity, jira: WORKBENCH_TYPES.campaignJira, jiraItems: WORKBENCH_TYPES.campaignJiraItems, jiraPairs: WORKBENCH_TYPES.campaignJiraPairs, document: WORKBENCH_TYPES.document });
+const TYPES = Object.freeze({ machine: WORKBENCH_TYPES.campaignMachine, defaults: WORKBENCH_TYPES.campaignDefaults, roots: WORKBENCH_TYPES.campaignRoots, identity: WORKBENCH_TYPES.campaignIdentity, integrations: WORKBENCH_TYPES.campaignIntegrations, jira: WORKBENCH_TYPES.campaignJira, jiraItems: WORKBENCH_TYPES.campaignJiraItems, jiraPairs: WORKBENCH_TYPES.campaignJiraPairs, document: WORKBENCH_TYPES.document });
 /** The machine's tabs of the cowork commons — everything about this install that is not already a surface here. */
 const MACHINE_TABS = Object.freeze(['themes', 'account', 'archives', 'messages', 'help', 'keypad', 'health']);
 const elem = (tag, cls, text) => { const out = document.createElement(tag); if (cls) out.className = cls; if (text != null) out.textContent = text; return out; };
@@ -99,12 +100,14 @@ export function createCampaignView() {
       openItems: () => bench.place(TYPES.jiraItems, workspace === 'workspace1' ? 'workspace2' : 'workspace1'),
       openPairs: () => bench.place(TYPES.jiraPairs, workspace === 'workspace1' ? 'workspace2' : 'workspace1'),
     })),
+    // Each record with a panel of its own shows it inside the frame: Jira's as on its own card.
+    campaignIntegrations: ({ workspace }) => enterable(createIntegrationsPanel(selected, { panels: integrationPanels(workspace) })),
     campaignJiraItems: () => enterable(createJiraItemsSurface(selected)),
     campaignJiraPairs: () => enterable(createJiraPairsSurface(selected)),
     campaignInstallations: (context) => {
       const surface = createInstallationsSurface(selected, {
         ...context,
-        createInstallationSurface: (id, shared) => id === 'ronin_services' ? createServicesSurface(shared) : id === 'gbrain' ? createGbrainSurface(shared) : null,
+        createInstallationSurface: (id, shared) => id === 'ronin_services' ? createServicesSurface(shared) : null,
       });
       return { el: surface.el, show: () => surface.enter(), destroy: () => surface.destroy() };
     },
@@ -147,6 +150,14 @@ export function createCampaignView() {
       mikaPool.show(detail.key || MIKA_SESSION, false);
     } }),
   };
+  const other = (workspace) => (workspace === 'workspace1' ? 'workspace2' : 'workspace1');
+  const integrationPanels = (workspace) => ({
+    jira: () => createJiraPanel(selected, {
+      openItems: () => bench.place(TYPES.jiraItems, other(workspace)),
+      openPairs: () => bench.place(TYPES.jiraPairs, other(workspace)),
+    }),
+    gbrain: () => createGbrainSurface({ environment, workbench: bench, workspace }),
+  });
   const ensureAndPlaceMika = async (workspace = 'workspace1') => {
     const ready = await readyMika('help');
     if (!ready || (!ready.ok && ready.data?.state !== 'action_required')) {
@@ -166,7 +177,7 @@ export function createCampaignView() {
     for (const [type, label] of [
       [TYPES.machine, t('campaign_view.machine_settings', 'Machine Settings')],
       [TYPES.identity, t('campaign_view.desk_settings', 'Desk Settings')],
-      [TYPES.jira, t('jira.title', 'Jira')],
+      [TYPES.integrations, t('integrations.title', 'Integrations')],
     ]) {
       const first = cards.querySelector(`[data-workbench-offer-type="${type}"]`);
       if (first) first.before(elem('h3', 'wk-selector-group', label));

@@ -6,6 +6,7 @@ import {
   findDefinition,
   listAgentTemplates,
   listInstallations,
+  listIntegrations,
   listBehaviours,
   listTeamTemplates,
   type DefinitionKind,
@@ -141,7 +142,8 @@ const FILES = ['TOOLS.md', 'PROJECT_ROOTS.md', 'MODEL_PROVIDERS.md'];
 
 await surfacingDefinitions('desk_profiles', listDeskProfiles);
 await surfacingDefinitions('lexicons', listLexicons);
-await surfacingDefinitions('installations', listInstallations);
+await surfacingDefinitions('services', listInstallations);
+await surfacingDefinitions('integrations', listIntegrations);
 await surfacingDefinitions('behaviours', listBehaviours);
 await surfacingDefinitions('templates/agents', listAgentTemplates);
 await surfacingDefinitions('templates/teams', listTeamTemplates);

@@ -22,8 +22,8 @@ have none of Ronin.
 | **Installations** | each installed component, on or off | the whole machine; never a Team or Agent question |
 | **Defaults** | the behaviours a new Team starts from | the next New Team form and a teamless Agent form; existing Teams are untouched |
 
-An installation definition (`ronin_catalogs/installations/<name>.md`) has one of two
-effects. A `system` installation contributes its reading, tools, and server parts to every
+An installation definition (`ronin_catalogs/services/<name>.md`: Ronin Services, Ronin's
+own) has one of two effects. A `system` installation contributes its reading, tools, and server parts to every
 Cowork Agent when on, and its `reading_off` page when off. A
 `provider` installation makes its named behaviours available to choose. The
 effect name is implementation vocabulary; the owner still sees an Installation.
@@ -31,6 +31,16 @@ effect name is implementation vocabulary; the owner still sees an Installation.
 An installation may require another. Unmet requirements grey it out and name the
 requirement. Turning one off changes the next birth; server parts follow at Ronin
 restart, and a running Agent never changes.
+
+## Integrations
+
+Outside services a user brings (hosting, a tracker, research, memory) are not
+installations. Each is a record in the integrations index, `ronin_catalogs/integrations/`
+(an Agent's additions in the owner store's `catalogs/integrations/`): what it is for,
+where its token lives, its tools, and its bridge if Ronin has one. A Workspace lists the
+integrations it uses. Tokens are one `.env` per provider per Campaign in
+`~/ronin/services_secrets/` (Jira keeps `jira-<campaign>.json`). Settings › Integrations
+shows them all in one panel and connects any of them.
 
 ## The cascade: behaviours
 
@@ -110,7 +120,7 @@ MCP configuration is outside Agent launch resolution.
 
 ## Catalog definitions
 
-Definitions live in `ronin_catalogs/installations/` and `ronin_catalogs/behaviours/`, one
+Definitions live in `ronin_catalogs/services/` and `ronin_catalogs/behaviours/`, one
 Markdown file per name; each directory's README carries the format. The owner's stores
 shadow a stock definition whole. Campaign and Team records hold only switches and names.
 

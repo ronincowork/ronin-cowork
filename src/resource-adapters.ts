@@ -4,7 +4,7 @@ import { STOCK_DIR, entryValue, isKeyLine, resolveFiles, resolveTreeFiles, type 
 import { storeDir } from './resources.js';
 
 export type DefinitionKind =
-  | 'desk_profiles' | 'lexicons' | 'installations' | 'behaviours' | 'capabilities'
+  | 'desk_profiles' | 'lexicons' | 'services' | 'integrations' | 'behaviours' | 'capabilities'
   | 'templates/agents' | 'templates/teams';
 
 export interface Definition {
@@ -134,13 +134,48 @@ const contribution = (d: Definition): ContributionRow => ({
   parts: splitDefinitionList(d.get('parts')),
 });
 
+/** Ronin's own switchable contributions (ronin_catalogs/services: Ronin Services). Integrations are not here. */
 export async function listInstallations(): Promise<InstallationRow[]> {
-  return (await readDefinitions('installations')).map((d) => ({
+  return (await readDefinitions('services')).map((d) => ({
     ...contribution(d),
     effect: d.get('effect') === 'system' ? 'system' : 'provider',
     maturity: d.get('maturity'),
     provides: splitDefinitionList(d.get('provides')),
     requires: splitDefinitionList(d.get('requires')),
+  }));
+}
+
+/**
+ * THE INTEGRATIONS INDEX (KAN-337): one record per outside service, stock in
+ * ronin_catalogs/integrations, an Agent's additions in the owner store's catalogs/integrations.
+ * A record names no Workspace; the Workspace lists its integrations (workspaces.ts).
+ */
+export interface IntegrationRow {
+  name: string; origin: Origin; shadowed: boolean;
+  label: string; blurb: string; for: string; tools: string;
+  /** The bridge Ronin has (a Services part or a command); '' is none. */
+  bridge: string;
+  /** The file in services_secrets holding its token, `{campaign}` unfilled. */
+  token: string;
+  /** The .env keys Connect asks for. */
+  keys: string[];
+  /** A panel of its own (jira); '' is none. */
+  panel: string;
+  /** Where a running bridge reports live state (an /api/ path, `{campaign}` `{workspace}` unfilled); '' is none. */
+  state: string;
+}
+
+const none = (v: string): string => (/^[\u2013\u2014-]$/.test(v.trim()) ? '' : v.trim());
+
+export async function listIntegrations(): Promise<IntegrationRow[]> {
+  return (await readDefinitions('integrations')).map((d) => ({
+    name: d.name, origin: d.origin, shadowed: d.shadowed,
+    label: d.get('label') || d.name, blurb: d.get('blurb'), for: none(d.get('for')), tools: none(d.get('tools')),
+    bridge: none(d.get('bridge')),
+    token: path.basename(none(d.get('token'))) || `${d.name}-{campaign}.env`,
+    keys: splitDefinitionList(d.get('keys')),
+    panel: none(d.get('panel')),
+    state: none(d.get('state')).startsWith('/api/') ? none(d.get('state')) : '',
   }));
 }
 

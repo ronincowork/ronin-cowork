@@ -40,7 +40,7 @@ async function checkCatalogFile(dir: string, file: string, label: string): Promi
 
 async function checkDefinitionsSurface(catalogsDir: string): Promise<void> {
   const kinds: DefinitionKind[] = [
-    'lexicons', 'desk_profiles', 'installations', 'capabilities', 'templates/agents', 'templates/teams',
+    'lexicons', 'desk_profiles', 'services', 'integrations', 'capabilities', 'templates/agents', 'templates/teams',
   ];
   for (const kind of kinds) {
     const dir = path.join(catalogsDir, kind);
