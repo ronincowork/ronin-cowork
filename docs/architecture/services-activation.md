@@ -23,9 +23,11 @@ Do not create a second activation aggregate in Services or in machine-settings p
 ## Self-hosted and hosted
 
 Hosted is a fact, not an inference. An office_unit carries an office record
-(`office.json` in the `office` store: `office_id`, `office_park`, `gateway_office`,
+(`office_record.json` in the `office_unit` store: `office_id`, `office_park`, `gateway_office`,
 `provisioned_at`), written once by the provisioner together with the office's two credentials
-in `services_secrets` (`entitlement_token` for Ronin HQ, `house_token` for the model gateway).
+beside it in the same store (`entitlement_token` for Ronin HQ, `house_token` for the model
+gateway; directory 0700, files 0600). The house token is on disk once: the Hermes connection to
+the record's `gateway_office` reads it there and writes it into each birth's own Hermes home.
 Self-hosted has no record and holds nothing HQ-related. `readOfficeRecord()` is the only reader;
 a present file that does not read is `unreadable`, a provisioning fault, never self-hosted.
 
@@ -70,7 +72,7 @@ failed run into an error carrying the updater's reason. Installation completion 
 runtime evidence (the loaded roster), not a downloaded artifact or a token. An install
 failure keeps any entitlement for retry. Restarting the operator does not restart
 the separate tmux server. Credentials live in the resolved `services_secrets` user store
-and remain server-side.
+(the entitlement beside the office record, in `office_unit`) and remain server-side.
 
 ## Outbound measurements
 

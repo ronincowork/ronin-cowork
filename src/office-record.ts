@@ -1,7 +1,7 @@
 /**
  * THE OFFICE RECORD — hosted is a fact, not an inference.
  *
- * One file, `office.json` in the `office` store, written once by whoever provisions the
+ * One file, `office_record.json` in the `office_unit` store, written once by whoever provisions the
  * office (cloud-init on an office_park; a hand step on the test office) and never by Ronin.
  * Present: this Ronin is an office running on an office_park. Absent: it is self-hosted.
  * There is no third hosting state; a present file that cannot be read is a provisioning
@@ -11,8 +11,8 @@
  * Services account part, the Tomodachi sender, the Hermes house-gateway seed, the Setup
  * posture. `office_id` is an identifier, not authority (owner, 3 Nov 2026): HQ and the
  * gateway go on authorizing by their own credentials. The record only stops three parties
- * guessing the same string. Credentials never live in this file; they stay in
- * `services_secrets`.
+ * guessing the same string. Credentials never live in this file; the office's two
+ * tokens sit beside it in the same store (src/activation/secrets.ts).
  */
 import fs from 'node:fs/promises';
 import os from 'node:os';
@@ -34,7 +34,7 @@ export type OfficeView =
   | { hosting: 'office_unit'; record: OfficeRecord }
   | { hosting: 'unreadable'; error: string };
 
-export const officeRecordFile = (): string => path.join(storeDir('office'), 'office.json');
+export const officeRecordFile = (): string => path.join(storeDir('office_unit'), 'office_record.json');
 
 const NAME = /^[A-Za-z0-9][A-Za-z0-9_.-]{0,63}$/;
 const name = (raw: Record<string, unknown>, key: keyof OfficeRecord): string => {
@@ -45,7 +45,7 @@ const name = (raw: Record<string, unknown>, key: keyof OfficeRecord): string => 
 
 /** The record's shape, checked; throws with the field at fault. */
 export function parseOfficeRecord(raw: unknown): OfficeRecord {
-  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) throw new Error('office.json must be one object');
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) throw new Error('office_record.json must be one object');
   const r = raw as Record<string, unknown>;
   const gateway = r.gateway_office;
   if (typeof gateway !== 'string') throw new Error('gateway_office must be a URL');

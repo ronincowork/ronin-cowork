@@ -76,9 +76,9 @@ test('the Ronin API is seeded greyed until a token arrives; a personal API is th
 
 test('in an office on an office_park the Ronin API default is the record\'s gateway, seed and save alike; an unreadable record is a fault, not localhost', async () => {
   const { mkdir, writeFile } = await import('node:fs/promises');
-  const officeDir = path.join(box, 'office');
+  const officeDir = path.join(box, 'office_unit');
   await mkdir(officeDir, { recursive: true });
-  process.env.RONIN_OFFICE_DIR = officeDir;
+  process.env.RONIN_OFFICE_UNIT_DIR = officeDir;
   try {
     // Start with no gateway connection, so the seed is what shows.
     const before = await a.accountsAnswer();
@@ -86,7 +86,7 @@ test('in an office on an office_park the Ronin API default is the record\'s gate
       for (const preset of before.presets.filter(p => p.account === row.id)) await a.deletePreset(preset.id);
       await a.deleteAccount(row.id);
     }
-    await writeFile(path.join(officeDir, 'office.json'), JSON.stringify({ office_id: 'glen', office_park: 'oh-1', gateway_office: 'http://10.0.0.2:4912', provisioned_at: '2026-11-06T09:00:00Z' }));
+    await writeFile(path.join(officeDir, 'office_record.json'), JSON.stringify({ office_id: 'glen', office_park: 'oh-1', gateway_office: 'http://10.0.0.2:4912', provisioned_at: '2026-11-06T09:00:00Z' }));
     assert.equal(await a.roninApiBaseUrl(), 'http://10.0.0.2:4912/v1');
     // The seed shows the record's gateway...
     const shown = (await a.accountsAnswer()).accounts.find(r => r.kind === 'ronin_api')!;
@@ -97,13 +97,13 @@ test('in an office on an office_park the Ronin API default is the record\'s gate
     await assert.rejects(a.saveAccount({ kind: 'personal_api', name: 'Elsewhere', provider: 'custom', baseUrl: 'http://10.0.0.3:4912/v1', apiKey: 'k' }), /HTTPS/, 'another plain-HTTP origin is still refused');
     await a.deleteAccount(saved.id);
     // A record that will not read: the seed says so and the save is refused with the reason; nothing falls back to localhost.
-    await writeFile(path.join(officeDir, 'office.json'), '{broken');
+    await writeFile(path.join(officeDir, 'office_record.json'), '{broken');
     await assert.rejects(a.roninApiBaseUrl(), /office record unreadable/);
     const seed = (await a.accountsAnswer()).accounts.find(r => r.kind === 'ronin_api' && r.seeded)!;
     assert.equal(seed.baseUrl, ''); assert.match(seed.fault!, /office record unreadable/);
     await assert.rejects(a.saveAccount({ kind: 'ronin_api', token: 'house-token-office' }), /office record unreadable/);
   } finally {
-    delete process.env.RONIN_OFFICE_DIR;
+    delete process.env.RONIN_OFFICE_UNIT_DIR;
     await rm(officeDir, { recursive: true, force: true });
   }
 });

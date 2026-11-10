@@ -26,11 +26,11 @@ HQ_BASE="${RONIN_HQ_BASE:-https://hq.ronincowork.com}"
 hq_token() {
   # THIS INSTALL'S OWN ronin-store, by absolute path — never whatever PATH happens to
   # resolve. On a machine with a cowork checkout lying around, bare `ronin-store` finds the
-  # checkout's copy, and an older one does not know the services_secrets store at all. It
+  # checkout's copy, and an older one does not know the office_unit store at all. It
   # then reports "unknown store", the entitlement is never found, and the install falls back
   # to the ungated public feed having said nothing. Measured on the E2E walk: the authorized
   # path was never taken and the log read as a perfectly normal install.
-  store="$("$SELF/bin/ronin-store" services_secrets 2>/dev/null || true)"
+  store="$("$SELF/bin/ronin-store" office_unit 2>/dev/null || true)"
   [ -n "$store" ] && [ -r "$store/entitlement_token" ] || return 1
   tok="$(cat "$store/entitlement_token" 2>/dev/null | tr -d '\r\n')"
   [ -n "$tok" ] || return 1

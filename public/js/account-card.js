@@ -56,7 +56,7 @@ export function officeModel(result) {
       };
     }
     case 'unreadable':
-      return { title: t('office.record_unreadable', 'Office record unreadable'), blurb: t('office.record_unreadable_blurb', 'office.json is present but wrong: {error}. This is a provisioning fault; nothing here is self-hosted.', { error: v.error || '—' }), rows: [], office_id: null };
+      return { title: t('office.record_unreadable', 'Office record unreadable'), blurb: t('office.record_unreadable_blurb', 'office_record.json is present but wrong: {error}. This is a provisioning fault; nothing here is self-hosted.', { error: v.error || '—' }), rows: [], office_id: null };
     default:
       return { title: STATUS_WORDS().unknown, blurb: '', rows: [], office_id: null };
   }

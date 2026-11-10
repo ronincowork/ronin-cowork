@@ -248,7 +248,7 @@ export function registerServicesActivation(app: express.Express): void {
     res.json(await activationAnswer());
   });
 
-  // The pasted Services key: kept in services_secrets. With Services not yet installed, the
+  // The pasted Services key: kept as entitlement_token (src/activation/secrets.ts). With Services not yet installed, the
   // install starts with it; with Services installed, the key is only saved (a replacement
   // after registering again), and nothing reinstalls.
   app.post('/api/setup/services-key', async (req, res) => {

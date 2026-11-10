@@ -53,7 +53,7 @@ gbrain_brain|user|gbrain_brain
 gbrain_service|user|gbrain_service
 promotion_ledger|data|promotion-ledger
 services_secrets|user|services_secrets
-office|user|office
+office_unit|user|office_unit
 jira|user|jira"
 
 root_dir() {

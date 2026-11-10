@@ -79,7 +79,7 @@ test('Register: put away on an office_park, said as a fault when unreadable, and
   assert.equal(visibleForm(surface.el), false);
   assert.equal(definition.summary(), 'office record unreadable');
 
-  // Deleting office.json reverses it on the same surface: zone and form are back, the notice gone.
+  // Deleting office_record.json reverses it on the same surface: zone and form are back, the notice gone.
   office = { hosting: 'self_hosted', host: 'box' };
   await surface.show();
   assert.equal(visibleForm(surface.el), true, 'the form is restored without recreating the surface');

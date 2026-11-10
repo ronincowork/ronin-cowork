@@ -8,7 +8,7 @@ import path from 'node:path';
 // and a present file that will not read is a fault, never self-hosted.
 test('office record: absent is self-hosted, present is office_park, wrong is unreadable', async () => {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'ronin-office-'));
-  process.env.RONIN_OFFICE_DIR = dir;
+  process.env.RONIN_OFFICE_UNIT_DIR = dir;
   try {
     const { readOfficeRecord, isOfficeHost, parseOfficeRecord } = await import('../src/office-record.js');
     let v = await readOfficeRecord();
@@ -17,13 +17,13 @@ test('office record: absent is self-hosted, present is office_park, wrong is unr
     assert.equal(await isOfficeHost(), false);
 
     const record = { office_id: 'glen', office_park: 'oh-1', gateway_office: 'http://10.0.0.2:4912/', provisioned_at: '2026-11-06T09:00:00Z' };
-    await fs.writeFile(path.join(dir, 'office.json'), JSON.stringify(record));
+    await fs.writeFile(path.join(dir, 'office_record.json'), JSON.stringify(record));
     v = await readOfficeRecord();
     assert.equal(v.hosting, 'office_unit');
     assert.deepEqual(v.hosting === 'office_unit' && v.record, { ...record, gateway_office: 'http://10.0.0.2:4912' });
     assert.equal(await isOfficeHost(), true);
 
-    await fs.writeFile(path.join(dir, 'office.json'), '{not json');
+    await fs.writeFile(path.join(dir, 'office_record.json'), '{not json');
     v = await readOfficeRecord();
     assert.equal(v.hosting, 'unreadable');
     assert.equal(await isOfficeHost(), false);
@@ -39,7 +39,7 @@ test('office record: absent is self-hosted, present is office_park, wrong is unr
       null,
     ]) assert.throws(() => parseOfficeRecord(bad), `${JSON.stringify(bad)} must not parse`);
   } finally {
-    delete process.env.RONIN_OFFICE_DIR;
+    delete process.env.RONIN_OFFICE_UNIT_DIR;
     await fs.rm(dir, { recursive: true, force: true });
   }
 });

@@ -146,7 +146,7 @@ stays; what the customer hears for a unit is not settled (owner, 6 Nov 2026).
 | Office network (`office_network`) | The private network on an office_park; offices reach out through NAT, never each other, the office_park or the office_kohai |
 | Office image (`office_image`) | The Ronin image an office boots from once; after that Ronin updates itself |
 | Office disk (`office_disk`) | The whole disk of one office, the one persistence unit; its backup is an `office_snapshot` |
-| Office record (`office_record`) | The one file in a ronin_install that says which office_unit it lives in: `office.json` in the `office` store, written once by the office_kohai, never by Ronin. Present means an office_unit on an office_park (office_id, office_park, gateway_office, provisioned_at); absent means self-hosted. Everything that behaves differently when hosted asks this record and nothing else |
+| Office record (`office_record`) | The one file in a ronin_install that says which office_unit it lives in: `office_record.json` in the `office_unit` store, written once by the office_kohai, never by Ronin. Present means an office_unit on an office_park (office_id, office_park, gateway_office, provisioned_at); absent means self-hosted. Everything that behaves differently when hosted asks this record and nothing else |
 | Stop clock (`stop_clock`) | The 30 days a stopped office is kept before deletion |
 | Kill switch (`kill_switch`) | The office_kohai's stops from outside an office: stop it, cut its network, drop its front_door route, revoke its house_token. Works when control inside the office is lost |
 | Model gateway (`model_gateway`) | Holds Ronin's provider key outside every office; an office speaks to it with its house_token |

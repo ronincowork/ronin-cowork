@@ -2,7 +2,8 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { storeDir } from '../resources.js';
 
-const dir = () => storeDir('services_secrets');
+// The office_unit store (mode 0700): the tokens sit beside office_record.json, not in services_secrets.
+const dir = () => storeDir('office_unit');
 const tokenFile = () => path.join(dir(), 'entitlement_token');
 // A hosted office's own credential for the model gateway, written by the provisioner; Ronin never mints it.
 const houseTokenFile = () => path.join(dir(), 'house_token');

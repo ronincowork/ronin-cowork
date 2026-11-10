@@ -75,7 +75,7 @@ test.before(async () => {
   process.env.RONIN_CONFIG_DIR = path.join(userRoot, 'config');
   process.env.RONIN_TELEMETRY_DIR = path.join(userRoot, 'telemetry');
   process.env.RONIN_SESSION_DIR = path.join(userRoot, 'sessions');
-  process.env.RONIN_OFFICE_DIR = path.join(userRoot, 'office');
+  process.env.RONIN_OFFICE_UNIT_DIR = path.join(userRoot, 'office_unit');
   process.env.RONIN_HQ_BASE = base;
   process.env.RONIN_HQ_HOST = '127.0.0.1';
 

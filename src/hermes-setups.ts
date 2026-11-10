@@ -1,5 +1,6 @@
 /** Ronin-owned Hermes connections and named launch setups. Secrets never enter projections. */
 import { appendEgress } from './activation/egress.js';
+import { getHouseToken } from './activation/secrets.js';
 import { readOfficeRecord } from './office-record.js';
 import { randomUUID } from 'node:crypto';
 import { mkdir, readFile, writeFile, rename, symlink, rm } from 'node:fs/promises';
@@ -24,11 +25,21 @@ const efforts = ['default', 'none', 'low', 'medium', 'high', 'xhigh', 'max'];
 function required(value: unknown, label: string): string { if (typeof value !== 'string' || !value.trim()) throw new Error(`${label} is required.`); return value.trim(); }
 let pending: Promise<unknown> = Promise.resolve();
 function mutation<T>(fn: () => Promise<T>): Promise<T> { const next = pending.then(fn); pending = next.catch(() => {}); return next; }
-async function readKey(id: string): Promise<string> { if (!idPattern.test(id)) return ''; try { return parse(await readFile(keyPath(id))).OPENAI_API_KEY || ''; } catch { return ''; } }
-export async function hermesConfigured(): Promise<boolean> { const state = await readHermesSettings(); for (const c of state.connections) if (await readKey(c.id)) return true; return false; }
+/** In an office_unit the connection to its gateway_office holds no key of its own: the house token is on disk once,
+ * `house_token` in the office_unit store, written by the office's provisioning and only read here. */
+async function isHouse(baseUrl: string): Promise<boolean> {
+  const office = await readOfficeRecord();
+  return office.hosting === 'office_unit' && new URL(baseUrl).origin === new URL(office.record.gateway_office).origin;
+}
+async function readKey(c: Pick<HermesConnection, 'id' | 'baseUrl'>): Promise<string> {
+  if (await isHouse(c.baseUrl)) { const token = await getHouseToken(); return token && !/[\r\n'"\\]/.test(token) ? token : ''; }
+  if (!idPattern.test(c.id)) return '';
+  try { return parse(await readFile(keyPath(c.id))).OPENAI_API_KEY || ''; } catch { return ''; }
+}
+export async function hermesConfigured(): Promise<boolean> { const state = await readHermesSettings(); for (const c of state.connections) if (await readKey(c)) return true; return false; }
 export async function hermesSettingsAnswer() {
   const state = await readHermesSettings();
-  return { ...state, connections: await Promise.all(state.connections.map(async c => ({ ...c, configured: !!await readKey(c.id) }))) };
+  return { ...state, connections: await Promise.all(state.connections.map(async c => ({ ...c, configured: !!await readKey(c) }))) };
 }
 export async function saveHermesConnection(input: Record<string, unknown>): Promise<HermesConnection> {
   return mutation(async () => {
@@ -44,17 +55,17 @@ export async function saveHermesConnection(input: Record<string, unknown>): Prom
     const localGateway = url.protocol === 'http:' && url.hostname === '127.0.0.1' && !!url.port && /^http:\/\/127\.0\.0\.1:\d+\//.test(endpoint);
     // In an office on an office_park the house gateway is the record's gateway_office, on the office network; plain
     // HTTP to exactly that origin is allowed, nothing else off HTTPS.
-    const office = await readOfficeRecord();
-    const hostedGateway = office.hosting === 'office_unit' && url.origin === new URL(office.record.gateway_office).origin;
+    const hostedGateway = await isHouse(url.href);
     if ((!localGateway && !hostedGateway && url.protocol !== 'https:') || url.username || url.password || url.search || url.hash) throw new Error('Use an HTTPS API base URL (or http://127.0.0.1:port/ for a local gateway, or this office\'s own house gateway) without credentials, query or fragment.');
-    const apiKey = typeof input.apiKey === 'string' ? input.apiKey.trim() : '';
+    // The house gateway's key is the office's house_token, read where it lies: a key entered here is not kept.
+    const apiKey = !hostedGateway && typeof input.apiKey === 'string' ? input.apiKey.trim() : '';
     if (/[\r\n'"\\]/.test(apiKey)) throw new Error('Invalid API key format.');
-    if (!existing && !apiKey) throw new Error('API key is required.');
+    if (!existing && !apiKey && !hostedGateway) throw new Error('API key is required.');
     const baseUrl = url.href.replace(/\/$/, '');
-    if (existing && existing.baseUrl !== baseUrl && !apiKey) throw new Error('Enter a key for the changed endpoint.');
+    if (existing && existing.baseUrl !== baseUrl && !apiKey && !hostedGateway) throw new Error('Enter a key for the changed endpoint.');
     const id = existing?.id || randomUUID();
     const changed = !existing || existing.baseUrl !== baseUrl || existing.provider !== provider || !!apiKey;
-    if (existing?.credentialEnv && !apiKey && existing.baseUrl !== baseUrl) throw new Error('Update the endpoint in the credential environment, or enter a key here.');
+    if (existing?.credentialEnv && !apiKey && !hostedGateway && existing.baseUrl !== baseUrl) throw new Error('Update the endpoint in the credential environment, or enter a key here.');
     const kind = input.kind ?? existing?.kind;
     if (kind !== undefined && kind !== 'personal_api' && kind !== 'ronin_api') throw new Error('Select an account kind.');
     const harnesses = input.harnesses === undefined ? existing?.harnesses : harnessList(input.harnesses);
@@ -97,7 +108,7 @@ export async function discoverHermesModels(id: string): Promise<string[]> {
   return mutation(async () => {
     const state = await readStoredSettings(); const c = state.connections.find(c => c.id === id);
     if (!c) throw new Error('Connection no longer exists.');
-    const key = await readKey(c.id); if (!key) throw new Error('API key missing.');
+    const key = await readKey(c); if (!key) throw new Error('API key missing.');
     let response: Response;
     const started = Date.now();
     const record = (status: number) => appendEgress({ at: new Date().toISOString(), host: new URL(c.baseUrl).host, path: new URL(c.baseUrl).pathname + '/models', method: 'GET', status, outcome: status >= 200 && status < 300 ? 'ok' : 'failed', ms: Date.now() - started }).catch(() => {});
@@ -195,11 +206,13 @@ export function readHermesSettings(environment?: NodeJS.ProcessEnv): Promise<Her
     return state;
   });
 }
-/** Fresh home per birth; immutable settings snapshot, shared credential link for rotation on restart. */
+/** Fresh home per birth; immutable settings snapshot. A personal key is a shared credential link, for rotation on
+ * restart; the house connection's .env is written here from the office_unit's house_token, never stored as a copy. */
 export async function prepareHermesHome(setupId: string, home: string) {
   const state = await readStoredSettings(); const setup = state.setups.find(s => s.id === setupId);
   const connection = state.connections.find(c => c.id === setup?.connection);
-  if (!setup || !connection || !await readKey(connection.id)) throw new Error('Hermes setup or API credential is unavailable.');
+  const key = connection ? await readKey(connection) : '';
+  if (!setup || !connection || !key) throw new Error('Hermes setup or API credential is unavailable.');
   await mkdir(home, { recursive: true, mode: 0o700 });
   // Remove inherited links themselves, never write through them into the default home.
   for (const file of ['config.yaml', '.env', 'ronin-setup.json']) await rm(path.join(home, file), { force: true });
@@ -212,6 +225,7 @@ export async function prepareHermesHome(setupId: string, home: string) {
     telemetry: { enabled: false } };
   await writeFile(path.join(home, 'config.yaml'), JSON.stringify(config, null, 2), { mode: 0o600 });
   await writeFile(path.join(home, 'ronin-setup.json'), JSON.stringify({ setup, connection: { id: connection.id, name: connection.name, provider: connection.provider, baseUrl: connection.baseUrl, wireApi: connection.wireApi } }, null, 2), { mode: 0o600 });
-  await symlink(keyPath(connection.id), path.join(home, '.env'));
+  if (await isHouse(connection.baseUrl)) await writeFile(path.join(home, '.env'), `OPENAI_API_KEY='${key}'\nOPENAI_BASE_URL='${connection.baseUrl}'\n`, { mode: 0o600 });
+  else await symlink(keyPath(connection.id), path.join(home, '.env'));
   return { HERMES_HOME: home };
 }

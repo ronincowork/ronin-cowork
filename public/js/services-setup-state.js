@@ -70,7 +70,7 @@ export function servicesSetupModel(registration, installed, activation = null) {
 
   if (hosting === 'unreadable') {
     return { ...model('office_record_unreadable', 'bad', t('services_setup.status_office_unreadable', 'Office record unreadable'),
-      t('services_setup.next_office_unreadable', 'office.json is present but wrong: {error}. Nothing here is self-hosted; fix the record before anything else.', { error: record.office.error || '—' })), summary: t('services_setup.summary_office_unreadable', 'office record unreadable') };
+      t('services_setup.next_office_unreadable', 'office_record.json is present but wrong: {error}. Nothing here is self-hosted; fix the record before anything else.', { error: record.office.error || '—' })), summary: t('services_setup.summary_office_unreadable', 'office record unreadable') };
   }
   if (hosted && !parts) {
     return { ...model('office_missing_services', 'bad', t('services_setup.status_office_missing', 'Hosted office · Services missing'),
