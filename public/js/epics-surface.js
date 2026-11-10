@@ -82,6 +82,8 @@ function openHolder({ kind, name }) {
 
 /** An item's holder as a button that opens that Agent (or Team); a quiet word when nobody holds it. */
 export function holderButton(item) {
+  // Held by a Workspace (its Icebox, KAN-352): parked, not waiting to be given out; a quiet word.
+  if (String(item?.holder || '').startsWith('workspace:')) return el('span', 'epic-holder is-none', holderWords(item.holder));
   const holder = holderOfItem(item);
   if (!holder) return el('span', 'epic-holder is-none', t('epics.unassigned', 'Unassigned'));
   const button = el('button', 'epic-holder', holderWords(holder)); // the one wording (w299): label only

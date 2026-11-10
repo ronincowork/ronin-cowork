@@ -126,3 +126,40 @@ export async function deleteWorkspace(campaign: string, name: string): Promise<v
 export async function teamRepos(roster: { campaign_id: string; workspace: string }): Promise<string[]> {
   return (await readWorkspace(roster.campaign_id, roster.workspace))?.repos.map((repo) => repo.name) ?? [];
 }
+
+/* WHAT A WORKSPACE HOLDS (owner, 2026-11-10; KAN-352). A Workspace holds items as a Team or an
+ * Agent does: its Icebox epic, made by Ronin, and the parked ideas under it. The list lives
+ * beside the record, <workspaces>/<campaign>/<name>.holds.json, so a page Save of the record
+ * never races an item write (the issuer lock owns this file). `icebox` is the epic's id. */
+export interface WorkspaceHolds { campaign_id: string; name: string; holds: string[]; icebox: string }
+
+const holdsFile = (campaign: string, name: string): string => path.join(campaignDir(campaign), `${name}.holds.json`);
+
+export async function readWorkspaceHolds(campaign: string, name: string): Promise<WorkspaceHolds> {
+  try {
+    const v = JSON.parse(await readFile(holdsFile(campaign, name), 'utf8')) as Record<string, unknown>;
+    const holds = Array.isArray(v.holds) ? v.holds.map((id) => text(id, 64)).filter(Boolean) : [];
+    return { campaign_id: campaign, name, holds, icebox: text(v.icebox, 64) };
+  } catch (e) {
+    if ((e as NodeJS.ErrnoException).code === 'ENOENT') return { campaign_id: campaign, name, holds: [], icebox: '' };
+    throw e;
+  }
+}
+
+export async function writeWorkspaceHolds(campaign: string, name: string, change: { holds?: string[]; icebox?: string }): Promise<void> {
+  const was = await readWorkspaceHolds(campaign, name);
+  await mkdir(campaignDir(campaign), { recursive: true });
+  const file = holdsFile(campaign, name);
+  await writeFile(`${file}.tmp`, `${JSON.stringify({ holds: change.holds ?? was.holds, icebox: change.icebox ?? was.icebox }, null, 2)}\n`, 'utf8');
+  await rename(`${file}.tmp`, file);
+}
+
+/** Every Workspace's holds, in every Campaign: one row per Workspace record. */
+export async function listWorkspaceHolds(): Promise<WorkspaceHolds[]> {
+  let campaigns: string[] = [];
+  try { campaigns = (await readdir(storeDir('workspaces'), { withFileTypes: true })).filter((d) => d.isDirectory()).map((d) => d.name); }
+  catch (e) { if ((e as NodeJS.ErrnoException).code !== 'ENOENT') throw e; }
+  const out: WorkspaceHolds[] = [];
+  for (const campaign of campaigns) for (const w of await listWorkspaces(campaign)) out.push(await readWorkspaceHolds(campaign, w.name));
+  return out;
+}

@@ -11,6 +11,9 @@ Usage:
   plan read --template                      the blank, from docs/using-ronin/planning.md
   plan write <name> [--file <path>] [--team <team>]
                                             create or replace a plan (stdin when no --file)
+  plan park <name> [--idea "<idea>"] [--file <path>] [--team <team>]
+                                            park an idea: write the Draft plan and make its item,
+                                            "Draft the plan for <idea>", in the Workspace's Icebox
   plan order <name>                         Draft → Ordered: not rewritten from here
   plan team <name> <team>|none              the Team the plan is for
 Any command takes --workspace <name>. Without it the Workspace is your Team's, when you are on
@@ -21,6 +24,8 @@ The line under the title, Status: <status> · <date> · <by> · Team <team>, is 
 Status line you write is replaced. A write keeps the plan's status; a new plan is a Draft. A new
 plan is your Team's in that Workspace (on several there, name one with --team); a rewrite and an
 order keep the Team; plan team changes it. The plan isn't rewritten: the work runs on the epics.
+Park: the idea is the plan's title unless --idea names it. The item is the Workspace's, on no
+Team's or Agent's record; an epic that attaches the plan takes it up and Ronin moves it to Done.
 Related: ronin-help planning; item --help
 EOF_USAGE
 }
@@ -82,6 +87,18 @@ case "$verb" in
       body=$(cat)
     else die 'BAD-ARG: plan write takes <name> [--file <path>] [--team <team>]'; fi
     plan_call POST /api/plans/write "$(json name "$name" text "$body" team "$team")" ;;
+  park)
+    [ "$#" -ge 1 ] || die 'BAD-ARG: plan park takes <name> [--idea "<idea>"] [--file <path>] [--team <team>]'
+    name=$1; shift; team=''; idea=''; file=''
+    while [ "$#" -gt 0 ]; do
+      case "$1" in
+        --idea|--file|--team) [ -n "${2:-}" ] || die "BAD-ARG: $1 needs a value"; v=$2; case "$1" in --idea) idea=$v;; --file) file=$v;; --team) team=$v;; esac; shift 2 ;;
+        *) die "BAD-ARG: plan park takes <name> [--idea \"<idea>\"] [--file <path>] [--team <team>], not $1" ;;
+      esac
+    done
+    if [ -n "$file" ]; then [ -f "$file" ] || die "BAD-ARG: no such file: $file"; body=$(cat -- "$file")
+    else [ -t 0 ] && die 'BAD-ARG: plan park takes the plan on stdin, or --file <path>'; body=$(cat); fi
+    plan_call POST /api/plans/park "$(json name "$name" text "$body" team "$team" idea "$idea")" ;;
   order) [ "$#" -eq 1 ] || die 'BAD-ARG: plan order takes <name>'
     plan_call POST /api/plans/order "$(json name "$1")" ;;
   team) [ "$#" -eq 2 ] || die 'BAD-ARG: plan team takes <name> <team>|none'

@@ -29,6 +29,7 @@ export const teamLead = (team) => membersOfTeam(team).find((member) => member.te
 export function holderWords(holder, lead = null) {
   const one = typeof holder === 'string' ? (() => { const [kind, ...rest] = holder.split(':'); return rest.length ? { kind, name: rest.join(':') } : { kind: 'agent', name: kind }; })() : holder;
   if (!one?.name) return '';
+  if (one.kind === 'workspace') return t('work_items.workspace_held', 'Workspace {workspace}', { workspace: one.name });
   if (one.kind !== 'team') return `@${one.name}`;
   const led = lead ?? teamLead(one.name);
   return led ? t('work_items.team_held_by', 'Team {team} (lead {lead})', { team: one.name, lead: led }) : t('work_items.team_held', 'Team {team}', { team: one.name });

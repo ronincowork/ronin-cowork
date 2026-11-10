@@ -188,7 +188,7 @@ def listed(held, watched=()):
     if ids: print("- Done, not yet archived: %d (%s%s)" % (len(ids), ", ".join(ids[:8]), ", …" if len(ids) > 8 else ""))
 # A TEAM, IN FOUR LAYERS (KAN-331; src/team-layers.ts): each Team you are on, one line per layer,
 # read live where it lives, each naming the command that reads it whole.
-one = lambda h: "@" + h[6:] if h.startswith("agent:") else "Team " + h[5:] if h.startswith("team:") else h
+one = lambda h: "@" + h[6:] if h.startswith("agent:") else "Team " + h[5:] if h.startswith("team:") else "Workspace " + h[10:] if h.startswith("workspace:") else h
 who = lambda h: ", ".join(one(x.strip()) for x in h.split(",") if x.strip()) or "nobody"
 for l in r.get("layers") or []:
     print("\n## Team %s" % l["team"])

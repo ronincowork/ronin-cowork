@@ -32,6 +32,7 @@ import { AsyncLocalStorage } from 'node:async_hooks';
 import { initialCampaignId } from './campaign-scope.js';
 import { listSessions } from './tmux.js';
 import { emitItemChanged } from './sockets.js';
+import { listWorkspaceHolds, readWorkspace, readWorkspaceHolds, writeWorkspaceHolds } from './workspaces.js';
 
 export const ITEM_LEVELS = [1, 0, -1] as const;
 export const TRAIL_OPS = ['create', 'assign', 'handoff', 'release', 'move', 'status', 'edit', 'comment', 'flag', 'attach', 'link', 'holder-ended', 'rename', 'delete'] as const;
@@ -526,8 +527,9 @@ export async function createItemUnlocked(input: NewItem, by: string): Promise<Ac
   const parent = input.parent ? await load(input.parent) : null;
   const agent = input.jira ? undefined : (await listSessions()).find((session) => session.name === by);
   if (agent && !input.holder && agent.leads.length > 1) throw new WorkItemRefused(`You lead ${agent.leads.join(', ')}; name one with --team <team>.`);
-  // From Jira with nobody named: the Team holding its parent (owner, 2026-11-06; KAN-308).
-  const parentTeam = input.jira && !input.holder && parent ? (await holdersOf(parent.id)).find((one) => one.kind === 'team') : undefined;
+  // From Jira with nobody named: the Team holding its parent (owner, 2026-11-06; KAN-308), or the
+  // Workspace holding it (an idea parked from Jira under the Icebox; KAN-352).
+  const parentTeam = input.jira && !input.holder && parent ? (await holdersOf(parent.id)).find((one) => one.kind === 'team' || one.kind === 'workspace') : undefined;
   const holder: Holder | undefined = input.holder ?? parentTeam ?? (agent ? (agent.leads.length ? { kind: 'team', name: agent.leads[0]! } : { kind: 'agent', name: by }) : undefined);
   const campaign_id = input.campaign_id ?? agent?.campaign_id ?? await initialCampaignId();
   const names = spaceNames(campaign_id);
@@ -936,11 +938,13 @@ async function planAttachment(id: string, target: string, by: string, remove: bo
 
 export async function attachDoc(id: string, target: string, by: string, remove = false): Promise<Acknowledged> {
   const at = /^plan:/.test(String(target ?? '').trim()) ? await planAttachment(id, String(target), by, remove) : attachment(target, remove);
-  return withIssuer(() => appendTrail(id, by, (item) => {
+  const done = await withIssuer(() => appendTrail(id, by, (item) => {
     const kept = item.attachments.filter((doc) => doc !== at);
     item.attachments = remove ? kept : [at, ...kept];
     return { op: 'attach', to: at, ...(remove ? { from: 'removed' } : {}) };
   }));
+  if (!remove && at.startsWith('plan:')) await takenUp(done.item.id, at).catch((e) => console.error('[icebox] taken up:', e));
+  return done;
 }
 
 /** Jira's issue link, by the space's link type name (Blocks: this item blocks `to`). Kept on
@@ -1042,7 +1046,9 @@ export function renameItem(was: string, to: string, by: string): Promise<Acknowl
  * holds). Handoff removes the giver and adds the receiver; release removes it from every
  * list. Neither touches the item's content or parent, and both run under the issuer lock. */
 
-export type Holder = { kind: 'team' | 'agent'; name: string };
+/** A Workspace holds too (KAN-352): its Icebox and the ideas parked in it. Its name is the
+ * Workspace's; `campaign` says which Campaign's, and the label leaves it out. */
+export type Holder = { kind: 'team' | 'agent'; name: string } | { kind: 'workspace'; name: string; campaign: string };
 export const holderLabel = (holder: Holder): string => `${holder.kind}:${holder.name}`;
 
 interface HeldList { holder: Holder; holds: string[]; set(holds: string[]): Promise<unknown> }
@@ -1072,10 +1078,20 @@ async function heldLists(): Promise<HeldList[]> {
     holds: await canonical(letter.holds, (holds) => writeLetterHolds(letter.key, holds)),
     set: (holds) => writeLetterHolds(letter.key, holds),
   })));
-  return [...teams, ...agents];
+  const workspaces = await Promise.all((await listWorkspaceHolds()).map(async (w): Promise<HeldList> => ({
+    holder: { kind: 'workspace', name: w.name, campaign: w.campaign_id },
+    holds: await canonical(w.holds, (holds) => writeWorkspaceHolds(w.campaign_id, w.name, { holds })),
+    set: (holds) => writeWorkspaceHolds(w.campaign_id, w.name, { holds }),
+  })));
+  return [...teams, ...agents, ...workspaces];
 }
 
 async function listFor(holder: Holder): Promise<HeldList> {
+  if (holder.kind === 'workspace') {
+    if (!(await readWorkspace(holder.campaign, holder.name))) throw new WorkItemBadInput(`Workspace "${holder.name}" has no record.`);
+    const w = await readWorkspaceHolds(holder.campaign, holder.name);
+    return { holder, holds: await canonical(w.holds, (holds) => writeWorkspaceHolds(holder.campaign, holder.name, { holds })), set: (holds) => writeWorkspaceHolds(holder.campaign, holder.name, { holds }) };
+  }
   if (holder.kind === 'team') {
     const roster = await readTeamRoster(holder.name);
     if (!roster) throw new WorkItemBadInput(`Team "${holder.name}" has no roster.`);
@@ -1381,4 +1397,82 @@ export function migrateItems(by = 'ronin'): Promise<{ before: number; migrated: 
     }
     return { before: items.length, migrated };
   });
+}
+
+/* THE ICEBOX (owner, 2026-11-10; KAN-352; docs/using-ronin/planning.md, Park it). Every
+ * Workspace has one epic, made by Ronin and held by the Workspace: parked ideas only, never work
+ * being done. Held by the Workspace, it and its items are on no Team's or Agent's work record,
+ * not in anyone's put-back list (held by nobody) and never Jira's unheld notice. It is on the
+ * Epics workbench and in Jira as an epic. One item per idea, "Draft the plan for <idea>", with
+ * its Draft plan attached; it is finished when the plan is taken up (an epic attaches it: Ronin
+ * moves the item to Done) or when the idea is dropped (the person moves it to Done). */
+export const iceboxTitle = (workspace: string): string => `Icebox: ${workspace}`;
+
+async function iceboxUnlocked(campaign: string, workspace: string): Promise<WorkItem> {
+  const w = await readWorkspace(campaign, workspace);
+  if (!w) throw new WorkItemMissing(`Workspace "${workspace}" has no record.`);
+  const had = await readWorkspaceHolds(campaign, workspace);
+  const found = had.icebox ? await readItem(had.icebox) : null;
+  if (found) {
+    if (found.id !== had.icebox) await writeWorkspaceHolds(campaign, workspace, { icebox: found.id });
+    return found;
+  }
+  const holder: Holder = { kind: 'workspace', name: workspace, campaign };
+  const made = await createItemUnlocked({
+    title: iceboxTitle(workspace), campaign_id: campaign, kind: kindAt(spaceNames(campaign), 1), holder,
+    objective: `Ideas parked for Workspace ${w.title || workspace}: one item each, "Draft the plan for <idea>", with its Draft plan. Never work being done.`,
+  }, 'ronin');
+  await writeWorkspaceHolds(campaign, workspace, { icebox: made.item.id });
+  return made.item;
+}
+
+/** The Workspace's Icebox, made now if it has none (or its epic was deleted). */
+export const ensureIcebox = (campaign: string, workspace: string): Promise<WorkItem> => withIssuer(() => iceboxUnlocked(campaign, workspace));
+
+/** Every Icebox epic's id now, in every Campaign. */
+export async function iceboxIds(): Promise<Set<string>> {
+  const ids = new Set<string>();
+  for (const w of await listWorkspaceHolds()) if (w.icebox) ids.add(await resolveId(w.icebox).catch(() => w.icebox));
+  return ids;
+}
+
+/** Every Workspace given its Icebox: once at start, so a Workspace made before KAN-352 has one. */
+export async function ensureEveryIcebox(): Promise<string[]> {
+  const made: string[] = [];
+  for (const w of await listWorkspaceHolds()) {
+    if (w.icebox && await readItem(w.icebox)) continue;
+    made.push((await ensureIcebox(w.campaign_id, w.name).catch((e) => { console.error(`[icebox] ${w.campaign_id}/${w.name}:`, e); return null; }))?.id ?? '');
+  }
+  return made.filter(Boolean);
+}
+
+/** Park it: the idea's item in the Workspace's Icebox, held by the Workspace, its plan attached
+ * (`plan:<workspace>/<name>`, already written as a Draft by the caller). */
+export function parkIdea(campaign: string, workspace: string, idea: string, plan: string, by: string): Promise<Acknowledged> {
+  const what = String(idea ?? '').trim();
+  if (!what) throw new WorkItemBadInput('park an idea: name it (--idea "<idea>"), or give the plan a title.');
+  return withIssuer(async () => {
+    const icebox = await iceboxUnlocked(campaign, workspace);
+    return createItemUnlocked({
+      title: `Draft the plan for ${what}`, campaign_id: campaign, parent: icebox.id,
+      holder: { kind: 'workspace', name: workspace, campaign },
+      objective: 'Finished when the plan is taken up (ordered, with its epic made) or the idea is dropped.',
+      attachments: [`plan:${workspace}/${plan}`],
+    }, by);
+  });
+}
+
+/** Taken up: an epic outside the Icebox now carries the plan, so each open Icebox item carrying it
+ * is Done, by Ronin, with the epic named. */
+async function takenUp(epicId: string, plan: string): Promise<string[]> {
+  const epic = await readItem(epicId);
+  const iceboxes = await iceboxIds();
+  if (!epic || epic.level !== 1 || iceboxes.has(epic.id)) return [];
+  const done: string[] = [];
+  for (const item of await listItems()) {
+    if (item.status === DONE || !item.parent || !iceboxes.has(item.parent) || !item.attachments.includes(plan)) continue;
+    await editItem(item.id, { status: DONE }, 'ronin', `taken up: ${epic.id} carries ${plan}`);
+    done.push(item.id);
+  }
+  return done;
 }
