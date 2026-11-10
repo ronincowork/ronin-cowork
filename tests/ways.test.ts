@@ -33,11 +33,11 @@ test('behaviours merge owner books over stock whole-file and append new names', 
   }
 });
 
-test('the general selectable stock shelf has the owner-approved five labels', async () => {
+test('the general selectable stock shelf has the owner-approved six labels', async () => {
   const { listWays } = await import('../src/resources.js');
   const rows = (await listWays()).filter((row) => row.scope === 'selected' && !row.installation && row.origin === 'stock');
   assert.deepEqual(rows.map((row) => row.label), [
-    'Planning', 'Project management', 'Team Work', 'Visual Staging', 'Working with the User',
+    'Planning', 'Project management', 'Integrations', 'Team Work', 'Visual Staging', 'Working with the User',
   ]);
   assert.equal(rows.some((row) => ['codebase_team', 'more_checkpoints'].includes(row.name)), false);
 });

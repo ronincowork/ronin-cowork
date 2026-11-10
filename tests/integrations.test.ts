@@ -84,3 +84,19 @@ test('Mika indexes the integrations README, never a record, stock or an Agent\'s
   const ids = built.entries.map((row) => row.id).filter((id) => id.includes('/integrations/'));
   assert.deepEqual(ids, ['ronin_catalogs/integrations/README.md']);
 });
+
+test('the Integrations brief is a shelf card when selected, and the Cowork Agent seed points at it', async () => {
+  const { listBehaviours } = await import('../src/resource-adapters.js');
+  const { compileBirthBriefAt, isShelfTeaching } = await import('../src/birth-brief.js');
+  const brief = (await listBehaviours()).find((row) => row.name === 'integrations');
+  assert.equal(brief?.scope, 'selected');
+  assert.equal(isShelfTeaching(brief!.page), false, 'a selected brief is a card, not inlined');
+  const seed = (await listBehaviours()).find((row) => row.name === 'cowork-agent')!;
+  assert.match(await readFile(seed.page, 'utf8'), /the Integrations brief on your shelf/);
+  const packet = await readFile(await compileBirthBriefAt(await mkdtemp(path.join(tmpdir(), 'ronin-brief-')), [seed.page, brief!.page], 'probe', isShelfTeaching), 'utf8');
+  assert.match(packet, /\| Integrations \| [^|]+ \| `[^`]*selected\/integrations\.md` \|/);
+  // Every path the brief names that is not a placeholder exists: the shipped index beside it.
+  const text = await readFile(brief!.page, 'utf8');
+  assert.match(text, /`\.\.\/\.\.\/integrations\/`/);
+  await stat(path.join(path.dirname(brief!.page), '..', '..', 'integrations', 'README.md'));
+});
