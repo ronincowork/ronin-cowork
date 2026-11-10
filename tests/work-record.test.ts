@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { execFileSync, spawnSync } from 'node:child_process';
+import { execFileSync, spawn, spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -158,4 +158,24 @@ export TMUX=/tmp/tmux,1,9
 ronin_session_me
 `, 'bash', path.join(root, 'ronin_bin', 'tool-path.sh')], { encoding: 'utf8' });
   assert.deepEqual(resolver.trim().split('\n'), ['pane-session', 'id-session']);
+});
+
+test('the Team\'s Workspace carries its integrations: read names each provider, workspace list keeps the rows as they are (KAN-342)', async (t) => {
+  const f = fixture();
+  // Ronin's reading, served as a file: the Team's layers with one integration.
+  const served = path.join(f.dir, 'served');
+  mkdirSync(path.join(served, 'api'), { recursive: true });
+  const workspace = { name: 'shop', title: 'Shop', objective: 'Sell', repos: [], folders: [], dirs: {}, integrations: [{ provider: 'netlify', site: 'x' }, { provider: 'github', repo: 'o/r' }] };
+  writeFileSync(path.join(served, 'api', 'work-items'), JSON.stringify({ ok: true, items: [], layers: [{ team: 'crew', workspace, plans: [], canvases: [], epics: [] }] }));
+  const server = spawn('python3', ['-u', '-m', 'http.server', '0', '--bind', '127.0.0.1', '--directory', served], { stdio: ['ignore', 'pipe', 'pipe'] });
+  t.after(() => { server.kill(); rmSync(f.dir, { recursive: true, force: true }); });
+  const port = await new Promise<string>((resolve) => server.stdout.on('data', (b) => { const m = /port (\d+)/.exec(String(b)); if (m) resolve(m[1]!); }));
+  const env = { ...f.env, RONIN_URL: `http://127.0.0.1:${port}` };
+  execFileSync(tool, ['workspace', 'add', 'https://github.com/o/r.git'], { encoding: 'utf8', env: f.env, stdio: 'pipe' }); // the letter
+  const list = JSON.parse(execFileSync(tool, ['workspace', 'list'], { encoding: 'utf8', env }));
+  assert.deepEqual(list.workspace.integrations, workspace.integrations);
+  assert.match(execFileSync(tool, ['read'], { encoding: 'utf8', env }), /- Workspace Shop: Sell · repos none · folders none · integrations netlify, github \(work-record workspace list\)/);
+  writeFileSync(path.join(served, 'api', 'work-items'), JSON.stringify({ ok: true, items: [], layers: [{ team: 'crew', workspace: { ...workspace, integrations: [] }, plans: [], canvases: [], epics: [] }] }));
+  assert.deepEqual(JSON.parse(execFileSync(tool, ['workspace', 'list'], { encoding: 'utf8', env })).workspace.integrations, []);
+  assert.match(execFileSync(tool, ['read'], { encoding: 'utf8', env }), / · integrations none \(work-record workspace list\)/);
 });

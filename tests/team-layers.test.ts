@@ -59,7 +59,7 @@ const sessions = async () => (await listSessions()) as never;
 
 test('teamLayers reads the four layers live: Workspace with dirs, every plan with its Team, no canvases yet, the Team\'s epics only', async () => {
   const l = await layers.teamLayers('crew');
-  assert.deepEqual(l.workspace, { name: 'shop', title: 'Shop', objective: 'Sell things', repos: ['shop_repo'], folders: [], dirs: { shop_repo: repo } });
+  assert.deepEqual(l.workspace, { name: 'shop', title: 'Shop', objective: 'Sell things', repos: ['shop_repo'], folders: [], dirs: { shop_repo: repo }, integrations: [] }, 'no integrations on the Workspace: []');
   assert.deepEqual(l.plans, [{ name: 'launch', status: 'Draft', team: 'crew' }, { name: 'loan', status: 'Ordered', team: 'yard' }], 'name, status and Team, never the text');
   assert.deepEqual(l.canvases, [], 'nothing until canvas ls lands (KAN-329)');
   assert.deepEqual(l.epics.map((e) => [e.id, e.holder, e.status]), [[epic.id, 'team:crew', epic.status]]);
