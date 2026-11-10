@@ -524,6 +524,6 @@ test('a Cowork Agent with no behaviours selected gets the Integrations seed and 
   const file = await compileBirthBriefAt(await fs.mkdtemp(path.join(os.tmpdir(), 'ronin-packet-')), agent.birth_reading, 'integrations-proof', isShelfTeaching);
   const packet = await fs.readFile(file, 'utf8');
   if (process.env.RONIN_PACKET_PROOF) await fs.copyFile(file, process.env.RONIN_PACKET_PROOF);
-  assert.match(packet, /^Outside services a user connects \(hosting, a database, mail, anything\) are used one$/m);
+  assert.match(packet, /^Outside services a user connects \(hosting, a database, mail, anything\) are used one\ncommon way: open the Integrations card in your brief when one comes up\.$/m);
   assert.match(packet, /^\| Integrations \| [^|]+ \| `[^`]*\/behaviours\/sought\/integrations\.md` \|$/m);
 });

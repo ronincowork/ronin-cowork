@@ -94,7 +94,7 @@ test('every Cowork Agent gets the Integrations card with nothing selected, and t
   assert.ok(sought.some((row) => row.book === 'integrations'), 'the folder is the registry: no selection needed');
   assert.match(await renderSoughtOverview(sought), /\| Integrations \| [^|]+ \| `[^`]*sought\/integrations\.md` \|/);
   const seed = (await listBehaviours()).find((row) => row.name === 'cowork-agent')!;
-  assert.match(await readFile(seed.page, 'utf8'), /the Integrations brief on your shelf/);
+  assert.match(await readFile(seed.page, 'utf8'), /common way: open the Integrations card in your brief when one comes up\./);
   // The shipped index the brief names, relative to it, resolves from where it lives.
   assert.match(await readFile(brief!.page, 'utf8'), /`\.\.\/\.\.\/integrations\/`/);
   await stat(path.join(path.dirname(brief!.page), '..', '..', 'integrations', 'README.md'));
