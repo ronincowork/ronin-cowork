@@ -8,7 +8,8 @@
  *             hold, each child after its parent where the lead made any; and its epics
  *             (the epic → Teams rule, boardReadings), plus the roots nobody's work reaches,
  *             each whole.
- * every:      every item, each with the holder it is found on ('' when nobody holds it).
+ * every:      every item, each with the holder it is found on (team:, agent: or workspace:<name>;
+ *             '' when nobody holds it).
  * board:      one epic's root and every item under it (boardReadings), each with its holder.
  */
 import { readLetterHolds } from './tegami.js';
@@ -168,10 +169,11 @@ export async function boardReadings(sessions?: Array<{ name: string; tags: strin
   return [...out.values()];
 }
 
-/** A Team's epics by the rule above, plus the roots no Team reaches, every item under them. */
+/** A Team's epics by the rule above, plus the roots no Team reaches, every item under them. A root
+ * a Workspace holds (its Icebox, KAN-352) is no Team's: it is on no Team's reading. */
 async function teamBoards(team: string, sessions: Array<{ name: string; tags: string[] }>): Promise<HeldItem[]> {
   return (await boardReadings(sessions))
-    .filter((reading) => reading.teams.includes(team) || !reading.teams.length)
+    .filter((reading) => reading.teams.includes(team) || (!reading.teams.length && !reading.board.holder.startsWith('workspace:')))
     .flatMap((reading) => [reading.board, ...reading.items]);
 }
 

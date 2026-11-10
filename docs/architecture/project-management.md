@@ -9,7 +9,7 @@ where it is built or taught.
 | Doc | What it holds |
 |---|---|
 | [Project management](../using-ronin/project-management.md) | **The README.** Plan, epic, item; how an item lives; the three signals; the six notices; where the work shows (Jira Kanban or Scrum, Epics, the item island) |
-| [Writing a plan](../using-ronin/planning.md) | the plan: who writes it, Draft and Ordered, the `plan` tool, from plan to epics, and the one copy of the template (`plan read --template` reads it) |
+| [Writing a plan](../using-ronin/planning.md) | the plan: who writes it, Draft and Ordered, the `plan` tool, from plan to epics, Park it (the Icebox), and the one copy of the template (`plan read --template` reads it) |
 | [Work items](../using-ronin/work-items.md) | the fields, levels, statuses and every `item` command |
 | [Jira](../using-ronin/jira.md) | connecting a space: the panel, the switches, Connect, Jira wins |
 | [Workbench](../using-ronin/workbench.md#epics-on-a-team) | Epics on the Team workbench |
@@ -40,7 +40,7 @@ predicate in `src/behaviours.ts`.
 | Tool | Does |
 |---|---|
 | `item` (`ronin_bin/item`) | create, read, search (`--text`, `--archived`), edit, transition (`--note` on a hand-in), flag, unflag, handoff (`--from`, `--keep-holding`), handover, archive (`<ids>`, `--done [--team]`), watch, comment, attach (a path, a link or `plan:<name>`), link, delete; `item --help` |
-| `plan` (`ronin_bin/plan`) | ls (`--status Draft\|Ordered`), read (`<workspace>/<name>`, `--template`), write, order, over `/api/plans`; the Workspace is the caller's Team's unless `--workspace`; `plan --help`. Taught by `ronin-help planning`, not by a brief |
+| `plan` (`ronin_bin/plan`) | ls (`--status Draft\|Ordered`), read (`<workspace>/<name>`, `--template`), write, park (`--idea`: the Draft plan and its Icebox item, `/api/plans/park`), order, over `/api/plans`; the Workspace is the caller's Team's unless `--workspace`; `plan --help`. Taught by `ronin-help planning`, which `conditional/cowork-agent.md` points to when an Agent is asked to plan |
 | `worktree-desk hand-in <repo> --item <id> --note "<what they can try>"` | the hand-in signal: In Review, the Agent keeping the hold, recorded in `hand_ins`, the note posted as the **Handed in** comment (280 characters at most). Under project management, refused without `--item` or without `--note` (`src/commands/desk.ts`, `src/desks/hand-in.ts`) |
 | `bin/ronin-promote <team>` | the promotion signal: marks each carried item `on_dev`, no status change (`src/promotion/promote.ts`) |
 | `session_end` | settles To Do back to the Team, then refuses while the Agent holds anything In Progress or In Review; NEXT is `item handover` (`src/routes/sessions-api.ts`, `settleToDo`, `unfinishedHolds`) |
@@ -51,8 +51,10 @@ predicate in `src/behaviours.ts`.
 | File | Holds |
 |---|---|
 | `src/work-items.ts` | the store. Shapes Jira refuses (`jiraShape`); every id resolving (`resolveId`); the hand-in (`handInUnlocked`, `handInStage`, the Handed in note); `markOnDev`; Send back; the handover (`handoverItem`), To Do settling (`settleToDo`), an ending without a handover (`releaseHolder`: to the Team, flagged, the lead told once) and the crash sweep (`releaseEndedHolders`); the six notices (`noticesOf`, one per person per command); Done by name (`DONE`); the archive (`archiveDone`, `ARCHIVE_AFTER_MS`, five days from `doneSince`); delete; `plan:` attachments |
-| `src/index.ts` | the five-minute sweeps: crashed holders, then the archive |
-| `src/work-items-read.ts` | the Team readings: the Team's epics, the Epics push (archived items left out, counted per epic); lists read by the id each item goes by now, once |
+| `src/index.ts` | the five-minute sweeps: crashed holders, the archive, then every Workspace's Icebox (`ensureEveryIcebox`) |
+| `src/work-items.ts`, the Icebox | a Workspace as a holder (`Holder` kind `workspace`, `heldLists`, `listFor`); `ensureIcebox`, `iceboxIds`, `parkIdea`; `takenUp` (an epic attaching a parked plan moves its Icebox item to Done, from `attachDoc`) |
+| `src/workspaces.ts`, the holds | `<workspaces>/<campaign>/<name>.holds.json`: the Workspace's `holds` and its `icebox` id, beside the record so a page Save never races an item write (`readWorkspaceHolds`, `writeWorkspaceHolds`, `listWorkspaceHolds`) |
+| `src/work-items-read.ts` | the Team readings: the Team's epics (a root a Workspace holds, its Icebox, on none), the Epics push (archived items left out, counted per epic); lists read by the id each item goes by now, once |
 | `src/routes/work-items-api.ts` | `/api/work-items`: CRUD, `many/:act`, `:id/on-dev`, `:id/send-back`, `:id/handover`, comment, attach, link; search leaves archived out unless `?archived=1` |
 | `src/routes/promotions-api.ts` | `GET /api/promotions/:id/live`: a read of the promotion ledger receipt (`readReceipt`), live = complete, restart ok, health passed; the item reader's Handed in line ends "· live" by it (KAN-311) |
 | `src/routes/sessions-api.ts` | `session_end`'s refusal and its NEXT |
@@ -89,6 +91,10 @@ The owner's decisions, 2026-11-04 and 05:
 - An ending hands over, never drops: To Do to the Team, In Progress and In Review with a
   Handover note; an ending that can't ask flags them for the lead.
 - Done stays five days, then is archived in Ronin only; Jira keeps its own view.
+- Every Workspace has one Icebox epic, made by Ronin and held by the Workspace, for parked ideas
+  only: one item per idea, "Draft the plan for <idea>", its Draft plan attached; finished when the
+  plan is taken up or the idea dropped. Parking is one act, `plan park` (2026-11-10). Held by the
+  Workspace, it is on no Team's or Agent's record and never reads as work waiting to be given out.
 - Ronin refuses any shape Jira would refuse, so the two never part. A delete reaches Jira; one
   from Jira needs `--in-jira`.
 

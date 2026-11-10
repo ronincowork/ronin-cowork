@@ -208,7 +208,11 @@ worktree-desk hand-in ronin_cowork --item w12
 
 ## Holding and assigning
 
-An item can be held by several Agents and Teams, or by nobody. A new item lands on whoever
+An item can be held by several Agents and Teams, or by nobody. A Workspace holds too: its
+Icebox epic and the ideas parked in it ([Writing a plan](planning.md#park-it-the-icebox)), made
+by `plan park`. What a Workspace holds is on no Team's or Agent's work record and not in the
+unheld list; it reads **Workspace &lt;name&gt;**, and `item search --holder workspace:<name>`
+finds it. A Jira item made under the Icebox lands on its Workspace. A new item lands on whoever
 made it: a lead's on its Team (a lead of several Teams names one, `--team surface`, or the
 create is refused naming its Teams), any other Agent's on itself. Any kind, an Epic
 too, with a parent or none: an item with no parent is normal (the board's No epic, `item search

@@ -71,6 +71,23 @@ export function registerPlans(app: express.Express): void {
     layersMayHaveChanged();
   }));
 
+  /** Park it (KAN-352; planning.md): the Draft plan written as `write` writes it, then the idea's
+   * item in the Workspace's Icebox with the plan attached, held by the Workspace. One act. */
+  app.post('/api/plans/park', route(async (req, res) => {
+    const b = req.body ?? {};
+    const caller = await callerOf(b, req);
+    const { workspace, name } = await planTarget(caller, text(b.name), text(b.workspace));
+    const stated = text(b.team).trim();
+    const done = await writePlan(workspace, name, text(b.text), caller.by, (had) => (stated || !had ? teamFor(caller, workspace, stated) : Promise.resolve(undefined)));
+    const { parkIdea } = await import('../work-items.js');
+    const parked = await parkIdea(workspace.campaign_id, workspace.name, text(b.idea).trim() || done.plan.title, name, caller.by);
+    res.json({
+      ok: true, plan: { ...done.plan, text: undefined }, item: parked.item,
+      acknowledgement: [done.line, headerLine(done.plan), done.history, `Parked: ${parked.item.id} '${parked.item.title}' in the Icebox ${parked.item.parent}, held by Workspace ${workspace.name}, ${name} attached.`].filter(Boolean).join('\n'),
+    });
+    layersMayHaveChanged();
+  }));
+
   app.post('/api/plans/team', route(async (req, res) => {
     const b = req.body ?? {};
     const caller = await callerOf(b, req);

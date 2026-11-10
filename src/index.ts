@@ -85,7 +85,7 @@ import { registerSetupRuntime } from './routes/setup-runtime-api.js';
 import { registerSetupProgress } from './routes/setup-progress-api.js';
 import { registerMikaContext } from './mika-context.js';
 import { migrateSopsToBehaviours } from './behaviour-store-migration.js';
-import { archiveDone, migrateItems, releaseEndedHolders } from './work-items.js';
+import { archiveDone, ensureEveryIcebox, migrateItems, releaseEndedHolders } from './work-items.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(__dirname, '..');
@@ -107,6 +107,11 @@ if (isEntryPoint) setInterval(() => {
   void archiveDone().then((archived) => {
     if (archived.length) console.log(`[work-items] archived, Done five days: ${archived.join(', ')}`);
   }).catch((error) => console.error(`[work-items] archive: ${(error as Error).message}`));
+  // Every Workspace has its Icebox (docs/using-ronin/planning.md, Park it): one made by Ronin
+  // for a Workspace that has none yet; parking makes it at once.
+  void ensureEveryIcebox().then((made) => {
+    if (made.length) console.log(`[work-items] Icebox made: ${made.join(', ')}`);
+  }).catch((error) => console.error(`[work-items] icebox: ${(error as Error).message}`));
 }, 5 * 60_000).unref();
 const isBoxInstance = isEntryPoint
   && process.env.NODE_ENV === 'production'

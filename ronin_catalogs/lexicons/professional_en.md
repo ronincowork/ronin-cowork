@@ -618,6 +618,7 @@ nothing paints exactly this.
 - **work_items.subtasks:** Subtasks
 - **work_items.team_held_by:** Team {team} (lead {lead})
 - **work_items.team_held:** Team {team}
+- **work_items.workspace_held:** Workspace {workspace}
 - **work_items.id:** Id
 - **work_items.kind:** Kind
 - **work_items.origin:** Started in
