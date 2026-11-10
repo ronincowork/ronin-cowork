@@ -42,7 +42,7 @@ input; identical subject names across directories do not make the documents inte
 | `installations/` | `gbrain.md`, `perplexity.md`, `ronin_services.md`, `trello.md`. | What can be installed or enabled on a machine and what that installation contributes. An installation is not an Agent capability. |
 | `desk_profiles/` | `home.md`, `league.md`, `professional.md`, `terminal.md`, `vibe_code.md`. | Named presentation and workspace defaults copied into Campaign configuration. |
 | `lexicons/` | `home_en.md`, `league_en.md`, `professional_en.md`, `terminal_en.md`, `vibe_code_en.md`. | Surface-language overrides; `professional_en.md` is the complete floor. |
-| `templates/` | `teams/*.md` plus its `README.md`. | Authored starting compositions offered as reusable choices, not runtime authority. |
+| `templates/` | `agents/*.md`, `teams/*.md`, `canvases/*.md` (Integrations), each shelf with its `README.md`. | Authored starting compositions offered as reusable choices, not runtime authority. |
 | catalog root | `MODEL_PROVIDERS.md`, `MODEL_INFO.json`, `PROJECT_ROOTS.md`, `SKINS.md`, `TOOLS.md`. | Flat stock registries whose formats do not need another grouping directory. `TOOLS.md` inventories executable operations; capability files select and teach them. |
 
 Every subdirectory has a `README.md` for its exact file format. This map owns location and

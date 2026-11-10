@@ -1,11 +1,15 @@
-# templates — two shelves, two trays
+# templates — three shelves
 
 One preset per file, named by its token, on the shelf that says what it is:
 
 ```text
 templates/agents/<token>.md   ← a PERSON you assign: one session's loadout
 templates/teams/<token>.md    ← a PROJECT: the cast that delivers it, one marked lead
+templates/canvases/<token>.md ← a CANVAS outline: the blocks a Workspace canvas starts from
 ```
+
+The canvas shelf has its own format and lookup (the canvas tool, not a form): [canvases/README.md](canvases/README.md).
+The rest of this page is about the agent and team shelves.
 
 Agents are people, teams are projects: a box named like a job
 title — designer, bookkeeper, health checker — is an agent; a box named like a task —
