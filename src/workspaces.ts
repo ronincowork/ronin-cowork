@@ -7,6 +7,11 @@
  * Repositories and folders are Workspace Folders, by registered name: the repositories are the
  * ones with Git, the folders the rest.
  *
+ * INTEGRATIONS (KAN-338): the outside services this Workspace uses, each a row naming its
+ * `provider` (a record in the integrations index, resource-adapters.ts listIntegrations) and
+ * any other short facts a bridge reads (Netlify's bridge reads `site`), kept as written.
+ * The index names no Workspace: the link lives here, in one place.
+ *
  * Records live at <workspaces>/<campaign>/<name>.json. Every Agent starts in Ronin house, one
  * folder for all (owner, 2026-11-03): a folder per Workspace made each provider ask "trust this
  * folder?" for every new Workspace.
@@ -21,6 +26,8 @@ export interface WorkspaceFolder { name: string; note: string }
 /** Where the Workspace keeps its plans (src/plans.ts): a Workspace Folder by name and a subfolder in
  * it. Absent is the default, Ronin Lab's <campaign>/<workspace>/plans. */
 export interface WorkspacePlans { location: string; path: string }
+/** One integration this Workspace uses: `provider` names its index record; the rest are its facts (`site`, `note`). */
+export type WorkspaceIntegration = { provider: string } & Record<string, string>;
 export interface Workspace {
   name: string;
   campaign_id: string;
@@ -31,6 +38,7 @@ export interface Workspace {
   folders: WorkspaceFolder[];
   launch_mode: LaunchMode;
   plans?: WorkspacePlans;
+  integrations: WorkspaceIntegration[];
 }
 
 export const isValidWorkspaceName = (s: string): boolean => /^[a-z0-9][a-z0-9_-]{0,63}$/.test(s);
@@ -58,7 +66,21 @@ export function normalizeWorkspace(campaign_id: string, name: string, v: Record<
     folders: rows(v.folders, (r) => (text(r.name, 64) ? { name: text(r.name, 64), note: text(r.note, 300) } : null)),
     launch_mode: v.launch_mode === 'live_dangerously' ? 'live_dangerously' : 'configured',
     ...plansOf(v.plans),
+    integrations: integrationsOf(v.integrations),
   };
+}
+
+/** Each row a provider, once, with its other facts as short strings; a bare name is a row too. */
+function integrationsOf(v: unknown): WorkspaceIntegration[] {
+  const seen = new Set<string>();
+  return (Array.isArray(v) ? v : []).flatMap((row) => {
+    const r = typeof row === 'string' ? { provider: row } : row && typeof row === 'object' ? row as Record<string, unknown> : null;
+    const provider = text(r?.provider, 64).toLowerCase();
+    if (!r || !/^[a-z0-9][a-z0-9_-]*$/.test(provider) || seen.has(provider)) return [];
+    seen.add(provider);
+    const facts = Object.entries(r).filter(([k, val]) => k !== 'provider' && /^[a-z][a-z0-9_]{0,31}$/.test(k) && ['string', 'number'].includes(typeof val)).slice(0, 16);
+    return [{ ...Object.fromEntries(facts.map(([k, val]) => [k, text(val, 300)])), provider } as WorkspaceIntegration];
+  });
 }
 
 /** The Plans place, kept through every Save: a page that never shows it must not wipe it. */

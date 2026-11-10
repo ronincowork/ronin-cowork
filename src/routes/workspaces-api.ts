@@ -34,6 +34,8 @@ export function registerWorkspaces(app: express.Express): void {
       // clashes, so one plan file never overwrites another. Any Location will do.
       const body = { ...(req.body ?? {}) } as Record<string, unknown>;
       if (!('plans' in body) && was?.plans) body.plans = was.plans;
+      // INTEGRATIONS (KAN-338): likewise, a body without `integrations` keeps the ones it had.
+      if (!('integrations' in body) && was) body.integrations = was.integrations;
       const next = normalizeWorkspace(campaign, name, body);
       const changed = JSON.stringify(was?.plans ?? null) !== JSON.stringify(next.plans ?? null);
       let moved: string[] = [];

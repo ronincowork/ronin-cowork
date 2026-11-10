@@ -500,7 +500,7 @@ test('Setup has one Installations card, Account has no gbrain tab, and Machine S
   assert.match(machine, /tickRow\(observed\.ronin\.services\.includes\('gbrain'\)/, 'the measured gbrain row remains');
   assert.doesNotMatch(machine, /settei\.use_gbrain|family: 'gbrain'/);
   assert.match(installations, /context\.createInstallationSurface\?\.\(installation\.id, sharedContext\)/);
-  assert.match(surfaces, /createInstallationSurface: \(id, shared\) => id === 'ronin_services' \? createServicesSurface\(shared\) : id === 'gbrain' \? createGbrainSurface\(shared\) : null/);
+  assert.match(surfaces, /createInstallationSurface: \(id, shared\) => id === 'ronin_services' \? createServicesSurface\(shared\) : null/);
   // A collection surface opens showing its collection: forcing Ronin Services open put the
   // surface straight into operation mode, which is the one view the header zone is not in.
   assert.doesNotMatch(installations, /stoneSurface\.select\('ronin_services'\)/);

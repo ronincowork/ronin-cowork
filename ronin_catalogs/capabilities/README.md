@@ -5,7 +5,7 @@ tools the Agent is taught at birth. The document states the question those tools
 their authority, and the teaching around them. It is not itself executable. A capability
 may contain several tools or one tool, and a tool may be taught by more than one capability
 without being renamed. A document with no actual tool is not a capability: put installation
-facts in `../installations/`, working guidance in `../behaviours/`, and system explanation
+facts in `../services/`, working guidance in `../behaviours/`, and system explanation
 in `../../docs/`.
 
 A capability document is a teaching layer, not an authority layer. Selection changes what

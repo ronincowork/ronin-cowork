@@ -9,9 +9,11 @@ test('the Jira panel is a Settings surface over the bridge routes alone', async 
   const catalog = await read('public/js/workbench-catalog.js');
   const campaign = await read('public/js/campaign-view.js');
   assert.match(catalog, /campaignJira: 'campaign\.jira'/);
-  assert.match(catalog, /WORKBENCH_TYPES\.document, WORKBENCH_TYPES\.campaignJira,/);
+  assert.match(catalog, /WORKBENCH_TYPES\.document, WORKBENCH_TYPES\.campaignIntegrations, WORKBENCH_TYPES\.campaignJira,/);
   assert.match(campaign, /campaignJira: \(\{ workspace \}\) => enterable\(createJiraPanel\(selected, \{/);
-  assert.match(campaign, /\[TYPES\.jira, t\('jira\.title', 'Jira'\)\]/);
+  // Jira's card sits in the Integrations group, and its panel shows inside the Integrations frame.
+  assert.match(campaign, /\[TYPES\.integrations, t\('integrations\.title', 'Integrations'\)\]/);
+  assert.match(campaign, /jira: \(\) => createJiraPanel\(selected, \{/);
   // Only the bridge's own routes: GET, PUT, DELETE, check, sync, sync one.
   assert.deepEqual([...new Set(panel.match(/api\([^)]*\)/g))].sort(), ['api()', 'api(tail)'].sort());
   assert.match(panel, /`\/api\/jira\/\$\{encodeURIComponent\(campaign\(\)\)\}\$\{tail\}`/);

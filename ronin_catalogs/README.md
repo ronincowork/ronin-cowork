@@ -39,7 +39,8 @@ input; identical subject names across directories do not make the documents inte
 | `behaviours/conditional/` | `cowork-agent.md`, `mandates.md`, `write_it_down.md` (`cowork`); `team-lead.md`, `lead-worktrees.md`; `project-management-coworker.md`, `project-management-lead.md`, `project-management-epic-lead.md`, `project-management-traffic-control.md` (`behaviour:project-management`); `mika.md`, `atarashi.md`; `checkout.md`, `worktree-root.md` | Candidates applied from launch facts declared in each file. |
 | `behaviours/selected/` | General choices display as Planning, Project management, Team Work, Visual Staging, and Working with the User; installation-owned files remain separate candidates | Candidates applied through Agent → Team → Campaign selection. Hidden compatibility files are not offered. |
 | `behaviours/sought/` | empty | Future awareness-only pages; the folder would generate its own index. |
-| `installations/` | `gbrain.md`, `perplexity.md`, `ronin_services.md`, `trello.md`. | What can be installed or enabled on a machine and what that installation contributes. An installation is not an Agent capability. |
+| `services/` | `ronin_services.md`. | Ronin Services: Ronin's own switchable contribution and the parts it runs. Not an Agent capability. |
+| `integrations/` | `gbrain.md`, `jira.md`, `netlify.md`, `perplexity.md`. | The integrations index: one record per outside service, what it is for, where its token lives, its tools and bridge. Agents add records in the owner store's `catalogs/integrations/`. |
 | `desk_profiles/` | `home.md`, `league.md`, `professional.md`, `terminal.md`, `vibe_code.md`. | Named presentation and workspace defaults copied into Campaign configuration. |
 | `lexicons/` | `home_en.md`, `league_en.md`, `professional_en.md`, `terminal_en.md`, `vibe_code_en.md`. | Surface-language overrides; `professional_en.md` is the complete floor. |
 | `templates/` | `teams/*.md` plus its `README.md`. | Authored starting compositions offered as reusable choices, not runtime authority. |
@@ -64,9 +65,10 @@ keys to strings with a `base:` to fall through to. Both shadow whole-file by nam
 (`docs/architecture/shadowing.md`); each directory's README carries the format. The rule for words:
 `professional_en` is the floor and complete, and a lexicon says only what it changes. `docs/architecture/desk-profiles.md`, `docs/architecture/lexicons.md`.
 
-## Adding an INSTALLATION, a FEATURE, or a BEHAVIOUR
+## Adding an INSTALLATION, an INTEGRATION, or a BEHAVIOUR
 
-`installations/<name>.md` is one machine installation: `effect` is `system` (its reading,
+`integrations/<name>.md` is one outside service (its README carries the fields).
+`services/<name>.md` is one machine installation: `effect` is `system` (its reading,
 tools and parts join every Cowork Agent birth) or `provider` (it `provides`
 behaviours). `behaviours/<scope>/<name>.md` is one scoped page on how ordinary work is
 done. Each directory's `README.md` carries the exact

@@ -32,6 +32,7 @@ import { registerPasswordSettings } from './routes/password-api.js';
 import { registerSessions, shutdownOperation } from './routes/sessions-api.js';
 import { registerTeams, teamRosters } from './routes/teams-api.js';
 import { registerWorkspaces } from './routes/workspaces-api.js';
+import { registerIntegrations } from './routes/integrations-api.js';
 import { registerPlans } from './routes/plans-api.js';
 import { registerWorkItems } from './routes/work-items-api.js';
 import { registerPromotions } from './routes/promotions-api.js';
@@ -259,6 +260,7 @@ registerCatalogs(app); // catalogs and configuration resources — src/routes/ca
 registerDocs(app); // /api/docs?shelf=plans|docs — the ▧ Docs tab's shelves — src/routes/docs-api.ts
 registerTeams(app); // /api/team-rosters* — the durable half of every team — src/routes/teams-api.ts
 registerWorkspaces(app); // /api/workspaces* — a Campaign's Workspaces — src/routes/workspaces-api.ts
+registerIntegrations(app); // /api/integrations* — the integrations index, live state, Connect/Disconnect — src/routes/integrations-api.ts
 registerPlans(app); // /api/plans* — the plan tool's door — src/routes/plans-api.ts
 registerWorkItems(app); // /api/work-items* — the one door to the work item store — src/routes/work-items-api.ts
 registerPromotions(app); // /api/promotions/:id/live — whether a promotion restarted and passed health (KAN-311) — src/routes/promotions-api.ts
