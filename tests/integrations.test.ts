@@ -85,18 +85,17 @@ test('Mika indexes the integrations README, never a record, stock or an Agent\'s
   assert.deepEqual(ids, ['ronin_catalogs/integrations/README.md']);
 });
 
-test('the Integrations brief is a shelf card when selected, and the Cowork Agent seed points at it', async () => {
+test('every Cowork Agent gets the Integrations card with nothing selected, and the seed points at it', async () => {
   const { listBehaviours } = await import('../src/resource-adapters.js');
-  const { compileBirthBriefAt, isShelfTeaching } = await import('../src/birth-brief.js');
+  const { resolveSoughtBehaviours, renderSoughtOverview } = await import('../src/behaviours.js');
   const brief = (await listBehaviours()).find((row) => row.name === 'integrations');
-  assert.equal(brief?.scope, 'selected');
-  assert.equal(isShelfTeaching(brief!.page), false, 'a selected brief is a card, not inlined');
+  assert.equal(brief?.scope, 'sought');
+  const sought = await resolveSoughtBehaviours();
+  assert.ok(sought.some((row) => row.book === 'integrations'), 'the folder is the registry: no selection needed');
+  assert.match(await renderSoughtOverview(sought), /\| Integrations \| [^|]+ \| `[^`]*sought\/integrations\.md` \|/);
   const seed = (await listBehaviours()).find((row) => row.name === 'cowork-agent')!;
   assert.match(await readFile(seed.page, 'utf8'), /the Integrations brief on your shelf/);
-  const packet = await readFile(await compileBirthBriefAt(await mkdtemp(path.join(tmpdir(), 'ronin-brief-')), [seed.page, brief!.page], 'probe', isShelfTeaching), 'utf8');
-  assert.match(packet, /\| Integrations \| [^|]+ \| `[^`]*selected\/integrations\.md` \|/);
-  // Every path the brief names that is not a placeholder exists: the shipped index beside it.
-  const text = await readFile(brief!.page, 'utf8');
-  assert.match(text, /`\.\.\/\.\.\/integrations\/`/);
+  // The shipped index the brief names, relative to it, resolves from where it lives.
+  assert.match(await readFile(brief!.page, 'utf8'), /`\.\.\/\.\.\/integrations\/`/);
   await stat(path.join(path.dirname(brief!.page), '..', '..', 'integrations', 'README.md'));
 });

@@ -515,3 +515,15 @@ test('the facts and the reading alone give a brief the reading birth gave it', a
   assert.deepEqual(reading.appliedBehaviours.map((book) => book.book), whole.behaviours.map((book) => book.book));
   assert.deepEqual(reading.capabilities, whole.capabilities);
 });
+
+// THE INTEGRATIONS CARD (KAN-336): a sought brief, so every Cowork Agent's packet carries its card
+// with no Agent, Team or Campaign selecting it, and the Cowork Agent seed that points at it.
+test('a Cowork Agent with no behaviours selected gets the Integrations seed and card', async () => {
+  const { compileBirthBriefAt, isShelfTeaching } = await import('../src/birth-brief.js');
+  const agent = await resolveForm(commonsForm({ session_type: 'cowork_agent', name: 'integrations-proof' }), new Set());
+  const file = await compileBirthBriefAt(await fs.mkdtemp(path.join(os.tmpdir(), 'ronin-packet-')), agent.birth_reading, 'integrations-proof', isShelfTeaching);
+  const packet = await fs.readFile(file, 'utf8');
+  if (process.env.RONIN_PACKET_PROOF) await fs.copyFile(file, process.env.RONIN_PACKET_PROOF);
+  assert.match(packet, /^Outside services a user connects \(hosting, a database, mail, anything\) are used one$/m);
+  assert.match(packet, /^\| Integrations \| [^|]+ \| `[^`]*\/behaviours\/sought\/integrations\.md` \|$/m);
+});
