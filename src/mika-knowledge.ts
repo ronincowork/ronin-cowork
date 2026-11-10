@@ -151,6 +151,9 @@ async function resolvedEntries(nodes: MikaTaxonomyNode[], options: MikaKnowledge
     const names = [...new Set([...stock.keys(), ...owner.keys()])]
       // Her own shelf folder is read whole at birth, never indexed as a source.
       .filter((name) => !(node.root === 'ronin_session_boot' && name.startsWith('routine/mika/')))
+      // INTEGRATIONS (KAN-337): the README explains them; the records are Agents' to add, one per
+      // provider, and never count against her index (owner via web_lead, 2026-11-10).
+      .filter((name) => !(node.root === 'ronin_catalogs' && name.startsWith('integrations/') && name !== 'integrations/README.md'))
       // A more specific taxonomy root owns its subtree and its owner overlay.
       .filter((name) => !delegated.some((root) => name === root || name.startsWith(`${root}/`)))
       .sort((a, b) => Buffer.from(a).compare(Buffer.from(b)));
