@@ -72,7 +72,7 @@ failed run into an error carrying the updater's reason. Installation completion 
 runtime evidence (the loaded roster), not a downloaded artifact or a token. An install
 failure keeps any entitlement for retry. Restarting the operator does not restart
 the separate tmux server. Credentials live in the resolved `services_secrets` user store
-(the entitlement beside the office record, in `office_unit`) and remain server-side.
+(a hosted office's entitlement beside its office record, in `office_unit`) and remain server-side.
 
 ## Outbound measurements
 

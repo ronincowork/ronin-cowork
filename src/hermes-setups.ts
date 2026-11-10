@@ -78,6 +78,8 @@ export async function saveHermesConnection(input: Record<string, unknown>): Prom
       await writeFile(tmp, `OPENAI_API_KEY='${apiKey}'\nOPENAI_BASE_URL='${baseUrl}'\n`, { mode: 0o600 });
       await rename(tmp, keyPath(id));
     }
+    // A connection that was keyed and now points at the house gateway keeps no copy of any key.
+    if (hostedGateway) await rm(keyPath(id), { force: true });
     state.connections = [...state.connections.filter(c => c.id !== id), connection];
     await writeCredential('hermes-setups', state);
     return connection;

@@ -207,11 +207,12 @@ test('concurrent presses when the installer cannot start all get the failure, no
 
 test('on a hosted office, or with an unreadable office record, a pasted key is refused and the office credential is left alone', async () => {
   const { officeRecordFile } = await import('../src/office-record.js');
-  await putEntitlementToken('office-credential');
   await fs.mkdir(path.dirname(officeRecordFile()), { recursive: true });
   const before = (await launched()).length;
   try {
     await fs.writeFile(officeRecordFile(), JSON.stringify({ office_id: 'unit', office_park: 'park', gateway_office: 'http://10.0.0.2:4912', provisioned_at: '2026-11-01T00:00:00Z' }));
+    // The office's credential lies beside its record, so it is placed once the record is there.
+    await putEntitlementToken('office-credential');
     const hosted = await call('POST /api/setup/services-key', { key: KEY });
     assert.equal(hosted.status, 409);
     assert.match(hosted.body.error, /hosted office/);
