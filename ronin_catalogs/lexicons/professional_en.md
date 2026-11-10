@@ -397,7 +397,7 @@ nothing paints exactly this.
 - **help.agents:** Agents
 - **help.agents_body:** The Agents this Team is raised with. A row is short on purpose — a name and what that Agent does — and opens for its mandate when you want it. 人 marks the lead; this form offers one, though a running Team may gain more. Raising creates the Team and then births every named row, the lead last. A Team with no rows is ordinary and raises fine.
 - **help.behaviours:** What a Behavior is
-- **help.behaviours_body:** Behaviors are specific guidance given to Agents at birth. Planning, Team Work, Visual Staging, and Working with the User are selectable; Write it Down, All Cowork Agents and Conditional Behaviors are applied by Ronin when their rules match.
+- **help.behaviours_body:** Behaviors are specific guidance given to Agents at birth. Team Work, Visual Staging, and Working with the User are selectable; Write it Down, All Cowork Agents and Conditional Behaviors are applied by Ronin when their rules match.
 - **help.type:** New session
 - **help.type_body:** Three kinds of thing can start here. A Cowork Agent is born with everything Ronin provides on this box. A bare-metal Agent is the provider’s own CLI and nothing else. A terminal is a shell with no agent. The choice decides which of the steps below exist — a terminal is asked three things because there are only three to ask.
 - **help.top:** Name & kind

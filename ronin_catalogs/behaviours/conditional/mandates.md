@@ -12,6 +12,6 @@ is never a Campaign, Team, template, or New Agent selection.
 
 Each axis has one value, stated below as yours:
 
-- **Reach:** `open` follows the request; `discuss` discusses only; `plan` plans using `buildout`; `execute` completes agreed work.
+- **Reach:** `open` follows the request; `discuss` discusses only; `plan` plans as `ronin-help planning` teaches; `execute` completes agreed work.
 - **Recruit:** `open` recruits as useful; `nobody` works alone; `propose agents` proposes and waits; `staff agents` may recruit using `recruit`.
 - **Output:** `open` returns the useful outcome; `code` follows the repository arrangement; any other value is the output to return.

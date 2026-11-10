@@ -8,7 +8,7 @@ test('behaviours merge owner books over stock whole-file and append new names', 
   const root = await mkdtemp(path.join(os.tmpdir(), 'ronin-ways-'));
   process.env.RONIN_WAYS_DIR = path.join(root, 'ways');
   await mkdir(path.join(process.env.RONIN_WAYS_DIR, 'selected'), { recursive: true });
-  await writeFile(path.join(process.env.RONIN_WAYS_DIR, 'selected', 'buildout.md'), '# My Buildout\n- **scope:** selected\n\nMine.\n');
+  await writeFile(path.join(process.env.RONIN_WAYS_DIR, 'selected', 'visual_staging.md'), '# My Buildout\n- **scope:** selected\n\nMine.\n');
   await writeFile(
     path.join(process.env.RONIN_WAYS_DIR, 'selected', 'my_way.md'),
     '# My Way\n- **scope:** selected\n- **kinds:** work, household, no_such_kind\n\nNew.\n',
@@ -16,7 +16,7 @@ test('behaviours merge owner books over stock whole-file and append new names', 
   try {
     const { listWays } = await import('../src/resources.js');
     const rows = await listWays();
-    const buildout = rows.find((row) => row.name === 'buildout');
+    const buildout = rows.find((row) => row.name === 'visual_staging');
     assert.equal(buildout?.label, 'My Buildout');
     assert.equal(buildout?.content, '# My Buildout\n- **scope:** selected\n\nMine.\n');
     assert.equal(buildout?.scope, 'selected');
@@ -33,11 +33,11 @@ test('behaviours merge owner books over stock whole-file and append new names', 
   }
 });
 
-test('the general selectable stock shelf has the owner-approved five labels', async () => {
+test('the general selectable stock shelf has the owner-approved four labels', async () => {
   const { listWays } = await import('../src/resources.js');
   const rows = (await listWays()).filter((row) => row.scope === 'selected' && !row.installation && row.origin === 'stock');
   assert.deepEqual(rows.map((row) => row.label), [
-    'Planning', 'Project management', 'Team Work', 'Visual Staging', 'Working with the User',
+    'Project management', 'Team Work', 'Visual Staging', 'Working with the User',
   ]);
   assert.equal(rows.some((row) => ['codebase_team', 'more_checkpoints'].includes(row.name)), false);
 });

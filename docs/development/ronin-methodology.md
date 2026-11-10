@@ -33,8 +33,8 @@ that scrolls away.
 ### 2. Give unfinished thinking one mortal document
 
 A mandate of reach `plan` produces a document the owner can read and edit, and then
-waits — no code is cut from it until they have been through it. The `buildout` behaviour
-says how the house writes one. Ronin creators keep iteration in the creators' Lab,
+waits — no code is cut from it until they have been through it. `ronin-help planning`
+says how a plan is written. Ronin creators keep iteration in the creators' Lab,
 normally `wip/buildouts/<topic>.md`, or `wip/handoffs/<topic>.md` when another session
 needs the context. Do not put creator WIP in the Cowork product repository. A build-out holds the goal, remaining legs, constraints, verification
 and definition of done. It is where the owner and agents riff on the work before and

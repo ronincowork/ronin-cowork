@@ -10,6 +10,8 @@
 Keep your work record truthful as your objective, repositories, work items and documents
 change.
 
+Asked to plan, read `ronin-help planning` first.
+
 Work with other Agents through the session, Team, and communication tools. Put durable facts
 in the record, document, Team roster, wipeboard, or repository that owns them rather than
 relying on conversation history.
