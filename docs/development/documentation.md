@@ -39,8 +39,8 @@ it must not be the only place an implemented rule is specified.
 
 Do not put session names, temporary preview URLs, dated approval directions, resume
 checklists, or implementation proposals in user guides. A user asking an Agent to plan
-*their own work* is ordinary product use, so work-record instructions and the selectable
-buildout behavior still belong in the product.
+*their own work* is ordinary product use, so work-record instructions and the planning
+guide (`docs/using-ronin/planning.md`) still belong in the product.
 
 ## Change checklist
 

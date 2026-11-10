@@ -13,14 +13,14 @@ test('Behavior shelf resolves owner additions and whole-file shadows with readab
   process.env.RONIN_WAYS_DIR = path.join(temp, 'sops');
   try {
     await mkdir(path.join(process.env.RONIN_WAYS_DIR, 'selected'), { recursive: true });
-    await writeFile(path.join(process.env.RONIN_WAYS_DIR, 'selected', 'buildout.md'), '# My buildout\n\nOwner process.\n');
+    await writeFile(path.join(process.env.RONIN_WAYS_DIR, 'selected', 'visual_staging.md'), '# My buildout\n\nOwner process.\n');
     await writeFile(path.join(process.env.RONIN_WAYS_DIR, 'selected', 'local-only.md'), '# Local only\n\nMy own procedure.\n');
     await writeFile(path.join(process.env.RONIN_WAYS_DIR, 'README.md'), '# Not an SOP\n');
     await writeFile(path.join(temp, 'outside.md'), '# Outside\n\nMust not be served.\n');
     await symlink(path.join(temp, 'outside.md'), path.join(process.env.RONIN_WAYS_DIR, 'selected', 'linked.md'));
 
     const rows = await listWays();
-    const shadow = rows.find((row) => row.name === 'buildout');
+    const shadow = rows.find((row) => row.name === 'visual_staging');
     assert.deepEqual(
       shadow && { label: shadow.label, origin: shadow.origin, shadowed: shadow.shadowed, content: shadow.content },
       { label: 'My buildout', origin: 'user', shadowed: true, content: '# My buildout\n\nOwner process.\n' },
@@ -31,7 +31,7 @@ test('Behavior shelf resolves owner additions and whole-file shadows with readab
     assert.equal(added?.blurb, 'My own procedure.');
     assert.equal(rows.some((row) => row.name === 'README'), false);
     assert.equal(rows.some((row) => row.name === 'linked'), false);
-    assert.equal(rows.filter((row) => row.name === 'buildout').length, 1);
+    assert.equal(rows.filter((row) => row.name === 'visual_staging').length, 1);
   } finally {
     if (previous === undefined) delete process.env.RONIN_WAYS_DIR;
     else process.env.RONIN_WAYS_DIR = previous;
@@ -76,5 +76,5 @@ test('catalog routes expose the resolved Behavior shelf as JSON', async () => {
   await handler({}, res);
   assert.equal(status, 200);
   assert.ok(Array.isArray(body));
-  assert.ok(body.some((row) => row.name === 'buildout' && typeof row.content === 'string'));
+  assert.ok(body.some((row) => row.name === 'visual_staging' && typeof row.content === 'string'));
 });
