@@ -2,7 +2,8 @@
  * A TEAM'S FOUR LAYERS (owner, 2026-11-09; KAN-331): what a lead reads of its Team on its work
  * record, one line each, each pointing at the command that reads it whole:
  *
- *   Workspace  title, objective, repos, folders   work-record workspace list
+ *   Workspace  title, objective, repos, folders,  work-record workspace list
+ *              integrations (providers)
  *   Plans      name, status, Team                 plan read <name>
  *   Canvases   name                               canvas read <name>
  *   Epics      epic, holder, status               item read <id>
@@ -26,8 +27,11 @@ import { readWorkspace, type Workspace } from './workspaces.js';
 import { holderLabel, holdersOf, listItems, type WorkItem } from './work-items.js';
 import { rosterReading, teamWork } from './work-items-read.js';
 
-/** `dirs`: each repo's and folder's directory, from the Workspace Folder registry (project-roots.ts). */
-export interface LayerWorkspace { name: string; title: string; objective: string; repos: string[]; folders: string[]; dirs: Record<string, string> }
+/** A Workspace integration as the Workspace record keeps it (KAN-338): its provider and its facts. */
+export type LayerIntegration = { provider: string } & Record<string, unknown>;
+/** `dirs`: each repo's and folder's directory, from the Workspace Folder registry (project-roots.ts).
+ * `integrations`: the Workspace's rows as they are, [] when it has none. */
+export interface LayerWorkspace { name: string; title: string; objective: string; repos: string[]; folders: string[]; dirs: Record<string, string>; integrations: LayerIntegration[] }
 /** `team`: the Team the plan is for (plans.ts header); '' is none. */
 export interface LayerPlan { name: string; status: string; team: string }
 export interface LayerCanvas { name: string }
@@ -48,7 +52,10 @@ async function workspaceLayer(w: Workspace | null): Promise<LayerWorkspace | nul
   const roots = await peekProjectRoots().catch(() => []);
   const names = [...w.repos, ...w.folders].map((row) => row.name);
   const dirs = Object.fromEntries(names.map((name) => [name, roots.find((root) => root.name === name)?.dir ?? '']));
-  return { name: w.name, title: w.title, objective: w.objective, repos: w.repos.map((repo) => repo.name), folders: w.folders.map((folder) => folder.name), dirs };
+  // Read loosely: the field lands in workspaces.ts with KAN-338; until then there is none.
+  const rows = (w as Workspace & { integrations?: unknown }).integrations;
+  const integrations = Array.isArray(rows) ? rows.filter((row): row is LayerIntegration => !!row && typeof row === 'object' && typeof (row as { provider?: unknown }).provider === 'string') : [];
+  return { name: w.name, title: w.title, objective: w.objective, repos: w.repos.map((repo) => repo.name), folders: w.folders.map((folder) => folder.name), dirs, integrations };
 }
 
 async function workspaceOf(roster: TeamRoster | null): Promise<Workspace | null> {

@@ -70,7 +70,7 @@ Usage:
   work-record workspace add <repo-or-url> [--branch <branch>]
   work-record workspace remove <repo-or-url> [--branch <branch>]
 list prints one JSON document: "workspace", your Team's Workspace (title, objective, team,
-each repo and folder with its directory; null on no Workspace), and "repos", your own entries. add and remove edit only your own entries.
+each repo and folder with its directory, its integrations; null on no Workspace), and "repos", your own entries. add and remove edit only your own entries.
 These edit the repositories in your Work Record. A remove without --branch removes every
 row for that exact repository. They do not change the birth directory or open a desk.
 To change the live session's recorded Workspace Folder, use session_set --help.
@@ -89,7 +89,8 @@ for l in d.get("layers") or []:
     dirs = w.get("dirs") or {}
     ws = {"name": w["name"], "title": w.get("title") or w["name"], "objective": w.get("objective") or "", "team": l["team"],
           "repos": [{"name": n, "dir": dirs.get(n) or ""} for n in w.get("repos") or []],
-          "folders": [{"name": n, "dir": dirs.get(n) or ""} for n in w.get("folders") or []]}
+          "folders": [{"name": n, "dir": dirs.get(n) or ""} for n in w.get("folders") or []],
+          "integrations": w.get("integrations") or []}
     break
 print(json.dumps({"workspace": ws, "repos": d.get("repos", [])}, indent=2, ensure_ascii=False))
 ' ;;

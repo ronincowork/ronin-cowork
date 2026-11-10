@@ -194,7 +194,7 @@ for l in r.get("layers") or []:
     print("\n## Team %s" % l["team"])
     w = l.get("workspace")
     if w:
-        print("- Workspace %s: %s · repos %s · folders %s (work-record workspace list)" % (w.get("title") or w["name"], w.get("objective") or "no objective", ", ".join(w.get("repos") or []) or "none", ", ".join(w.get("folders") or []) or "none"))
+        print("- Workspace %s: %s · repos %s · folders %s · integrations %s (work-record workspace list)" % (w.get("title") or w["name"], w.get("objective") or "no objective", ", ".join(w.get("repos") or []) or "none", ", ".join(w.get("folders") or []) or "none", ", ".join(str(i.get("provider")) for i in w.get("integrations") or []) or "none"))
     else:
         print("- Workspace: none (the Team is launched in no Workspace)")
     print("- Plans: %s (plan read <name>)" % ("; ".join("%s · %s · %s" % (p["name"], p["status"], ("Team %s" % p["team"]) if p.get("team") else "no Team") for p in l.get("plans") or []) or "none"))

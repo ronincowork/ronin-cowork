@@ -178,7 +178,7 @@ each read live from where it lives and each naming the command that reads it who
 
 | Line | What it shows | Read it whole |
 |---|---|---|
-| Workspace | its title, objective, repos and folders | `work-record workspace list` |
+| Workspace | its title, objective, repos, folders and integrations (each by provider) | `work-record workspace list` |
 | Plans | each plan of the Workspace: its name, status (Draft or Ordered) and Team | `plan read <name>` |
 | Canvases | each canvas's name | `canvas read <name>` |
 | Epics | each epic, who holds it, its status | `item read <id>` |
@@ -188,7 +188,8 @@ Workspace's, and the epics are those the Team or its members hold, the epic abov
 they hold, and the epics under the Workspace's plans that are this Team's. An epic reached only
 through another Team's plan, or a plan of no Team, is not on the line. Nothing is copied: a plan's text stays in
 the plan. `work-record workspace list` prints one JSON document: `workspace`, the Team's Workspace (title,
-objective, team, each repo and folder with its directory; `null` when there is none), and `repos`,
+objective, team, each repo and folder with its directory, and `integrations`, the Workspace's rows
+as they are, `[]` when it has none; `null` when there is no Workspace), and `repos`,
 the Agent's own entries. Canvases read nothing until the `canvas` tool exists.
 
 When a line changes for a lead's Team (a plan written, ordered or given to a Team, a canvas added or removed, an
