@@ -6,8 +6,9 @@ builds, tags, checksums, installation, and rollback.
 
 ## Publication boundaries
 
-Cowork's public release, Services' public artifact, and HQ's authenticated Services
-release registry are separate publication targets. A version present in one is not
+Cowork's public release, Services' private release (`ronincowork/ronin-releases`, copied there
+by `bin/feed-publish`), and HQ's authenticated Services release registry are separate
+publication targets. A version present in one is not
 proof that another serves it. The installed Cowork/Services connector versions must
 match; release selection uses that compatibility contract.
 

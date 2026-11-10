@@ -61,9 +61,10 @@ entitlement identifier and token file are left as they are.
 
 The existing updater checks release integrity and the Cowork/Services connector version.
 A registration Submit and `POST /api/services/install` both start that updater; neither
-needs an entitlement. A machine that holds an entitlement still fetches through the HQ
-release grant. Without one, the updater uses the public feed, so Services releases must be
-readable without credentials for that path to complete.
+needs an entitlement. A machine that holds an entitlement fetches through the HQ release
+grant. Without one the updater stops and says so: register with Ronin HQ and paste the Services
+key. There is no anonymous feed (the release repo is private); a tarball already on disk installs
+with `bin/ronin-update --services --file`.
 
 Starting is not installing. One start runs at a time, so concurrent presses launch one
 updater. The answer says only whether the updater was launched. The run
