@@ -3,7 +3,8 @@
  * THE SECRET ASK — an Agent's `secret ask <name>` as a paste field over its tile (w385). The
  * ask rides the Agent's home row (`secret_ask`); the field opens while it is there and closes
  * when it goes. The value goes from this field to the server and to its file, and nothing
- * sends it back: the field is cleared the moment it is sent.
+ * sends it back: the field is cleared the moment it is sent. Save shows "Saving…" at once, then
+ * "Saved" (or "Cancelled") for a moment before the field closes; a refusal stays open and says why.
  */
 import { t } from './lexicon.js';
 import { request } from './request.js';
@@ -39,17 +40,30 @@ export function buildSecretAsk(tile) {
 
   let open = null; // the ask on screen: { name, for }
   let busy = false;
+  let shown = null; // the confirmation's timer: the field stays until it is up
+  let next; // the row that came while saving or confirming: the server drops the ask before it answers
+
+  const settle = (state, text) => {
+    card.dataset.state = state || '';
+    input.hidden = !!state;
+    input.disabled = save.el.disabled = cancel.el.disabled = state === 'saving';
+    notice.textContent = text || '';
+  };
 
   async function send(value) {
-    if (!open || busy) return;
+    if (!open || busy || shown) return;
     busy = true;
-    notice.textContent = '';
+    next = undefined;
+    const { name } = open;
     const json = value == null ? { session: tile.session, cancel: true } : { session: tile.session, value };
     input.value = '';
-    const result = await request(`/api/secrets/${encodeURIComponent(open.name)}`, { method: 'POST', json });
+    settle('saving', value == null ? t('secret.cancelling', 'Cancelling…') : t('secret.saving', 'Saving…'));
+    const result = await request(`/api/secrets/${encodeURIComponent(name)}`, { method: 'POST', json });
     busy = false;
-    // A good answer closes the field through the row; a refusal stays and says why.
-    if (!result.ok) notice.textContent = result.message;
+    if (!result.ok) { settle('', result.message); if (next !== undefined) view.sync(next); input.focus(); return; }
+    if (value == null) settle('cancelled', t('secret.cancelled', 'Cancelled'));
+    else settle('saved', t('secret.saved', 'Saved: {name}', { name }));
+    shown = setTimeout(() => { shown = null; open = null; view.sync(next ?? null); }, value == null ? 1000 : 2000);
   }
 
   root.addEventListener('submit', (event) => {
@@ -59,15 +73,16 @@ export function buildSecretAsk(tile) {
   });
   root.addEventListener('keydown', (event) => { if (event.key === 'Escape') { event.stopPropagation(); void send(null); } });
 
-  return {
+  const view = {
     el: root,
     /** Follow the row: open on a new ask, close when it is answered. */
     sync(row) {
+      if (busy || shown) { next = row; return; }
       const ask = row?.secret_ask || null;
       if (open && ask && open.name === ask.name) return;
       open = ask;
       input.value = '';
-      notice.textContent = '';
+      settle('');
       root.hidden = !ask;
       if (!ask) return;
       title.textContent = t('secret.title', '{agent} asks for {name}', { agent: tile.sessionName?.textContent || tile.session, name: ask.name });
@@ -75,4 +90,5 @@ export function buildSecretAsk(tile) {
       input.focus();
     },
   };
+  return view;
 }

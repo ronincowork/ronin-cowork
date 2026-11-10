@@ -818,6 +818,11 @@ body {
 }
 .tile-secret-notice { margin: 0; color: var(--muted); }
 .tile-secret-notice:empty { display: none; }
+/* The answer shows a moment before the field closes: Saved in the success look, Cancelled plain. */
+.tile-secret-card[data-state='saved'] { border-color: var(--ok); }
+.tile-secret-card[data-state='saved'] .tile-secret-notice { color: var(--ok); font-weight: 600; }
+.tile-secret-card[data-state='saved'] .tile-secret-notice::before { content: '✓ '; }
+.tile-secret-card:is([data-state='saved'], [data-state='cancelled']) .wk-action-bar { display: none; }
 .tile-doc-close {
   align-self: flex-end;
   border: var(--edge) solid var(--line);
