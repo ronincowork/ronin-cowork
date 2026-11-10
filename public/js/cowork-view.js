@@ -38,7 +38,7 @@ import { BEHAVIOUR_SURFACE_TYPE } from './behaviour-surface.js';
 import { createItemPhalanx, holderOf } from './work-items-surface.js';
 import { registerWorkbenchCatalog, WORKBENCH_PROFILES as WB_PROFILES, WORKBENCH_TYPES as WB_TYPES } from './workbench-catalog.js';
 import { createAgentCompositionSurface } from './agent-composition.js';
-import { createTeamEpics, createTeamWaiting } from './team-waiting.js';
+import { createTeamEpics } from './team-epics.js';
 import { createEpicRecord, createEpicsRead } from './epics-surface.js';
 
 const el = (tag, cls, text) => {
@@ -132,7 +132,7 @@ export function createCoworkView(options = {}) {
         t('workspace.tab_cron_count', '{scheduled} scheduled, {paused} paused', { scheduled, paused })),
     });
     const docsPane = el('div', 'home-docs tw-docs');
-    const docs = buildDocs(docsPane, (name) => membersOfTeam(team).some((m) => m.name === name));
+    const docs = buildDocs(docsPane, (name) => membersOfTeam(team).some((m) => m.name === name), { team: () => (team === UNASSIGNED ? '' : team) });
     const docsService = {
       el: docsPane, mount: () => {},
       enter: () => { docs.enter(); },
@@ -286,9 +286,8 @@ export function createCoworkView(options = {}) {
       onTrackedRoots: onProjects,
       navigateToSurface: (type, detail) => type === 'setup.roots' && navigateToWorkspaceFolders(ctx, detail),
     }, workspace: id }),
-    // Waiting on you and Epics (KAN-232): the bench keeps one per seat across Teams, so each reads the Team entered now.
-    teamWaiting: () => keepTeamSurface(createTeamWaiting({ team: () => team })),
-    teamEpics: (id) => keepTeamSurface(createTeamEpics({ team: () => team, workbench: bench, seat: () => oppositeSeat(id) })),
+    // Epics (KAN-232): the bench keeps one per seat across Teams, so it reads the Team entered now.
+    teamEpics: () => keepTeamSurface(createTeamEpics({ team: () => team })),
     epics: () => [],
     epicRecord: (_id, detail) => keepTeamSurface(createEpicRecord(detail.key, { epicsRead: createEpicsRead(() => '') })),
     archives: (id) => ({ el: archivesBySeat[id].el, show: () => void archivesBySeat[id].room.enter() }),

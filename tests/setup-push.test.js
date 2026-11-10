@@ -105,27 +105,28 @@ test('gbrain paints the install from its own answer, then from pushes, and never
   assert.doesNotMatch(texts(root), /after close/, 'closed: the push is not heard');
 });
 
-test('the Services surface follows a confirmation and an install by push, and never polls', async () => {
+test('the Services surface follows a registration and an install by push, and never polls', async () => {
   const { createServicesSurface } = await import('../public/js/setup-surfaces.js');
   asked.length = 0;
-  const reg = (extra = {}) => ({ status: 'pending', services_entitled: false, ...extra });
+  const reg = (extra = {}) => ({ status: 'optional', services_entitled: false, ...extra });
   const bare = { services: { installed: false, switched_on: false, restart_needed: false, parts: [], loaded: [] } };
   answer = (url, options) => {
-    if (url.startsWith('/api/setup/registration')) return reg({ email_masked: 'p***@example.com' });
+    if (url.startsWith('/api/setup/registration')) return reg();
     if (url.startsWith('/api/installed')) return bare;
-    if (url.startsWith('/api/services/activation')) return { stage: 'awaiting_email' };
-    if (url === '/api/services/install' && options.method === 'POST') return { registration: reg({ services_entitled: true }), installed: bare, activation: { stage: 'installing' } };
+    if (url.startsWith('/api/services/activation')) return { stage: 'not_requested' };
+    if (url === '/api/services/install' && options.method === 'POST') return { registration: reg({ status: 'registered', services_entitled: true }), installed: bare, activation: { stage: 'installing' }, install: { started: true } };
     if (url.startsWith('/api/campaigns')) return [];
     return {};
   };
   const surface = createServicesSurface({ tenant: {}, environment: {}, workspace: 'workspace2' });
   await surface.show();
-  assert.match(texts(surface.el), /Confirmation email sent to p\*\*\*@example.com/);
+  assert.match(texts(surface.el), /Not installed on this machine/);
   const opened = asked.length;
 
-  store.receive({ t: 'services-setup', services: { registration: reg({ services_entitled: true }), installed: bare, activation: { stage: 'verified' } } });
-  assert.match(texts(surface.el), /Registered · Ready to install/, 'the confirmation lands by push');
-  assert.equal(asked.length, opened, 'no request while waiting on the email');
+  // Registered with a Services key held (KAN-323: without one, Install waits for the key).
+  store.receive({ t: 'services-setup', services: { registration: reg({ status: 'registered', services_entitled: true }), installed: bare, activation: { stage: 'not_requested' } } });
+  assert.match(texts(surface.el), /Registered · Ready to install/, 'the registration lands by push');
+  assert.equal(asked.length, opened, 'no request while nothing is pressed');
 
   [...surface.el.walk()].find((n) => n.tagName === 'BUTTON' && n.dataset.step === 'install').click();
   await settle();
@@ -133,7 +134,7 @@ test('the Services surface follows a confirmation and an install by push, and ne
   assert.match(texts(surface.el), /Installing Services…/, 'and paints its own answer');
 
   surface.leave();
-  store.receive({ t: 'services-setup', services: { registration: reg({ services_entitled: true }), installed: bare, activation: { stage: 'verified' } } });
+  store.receive({ t: 'services-setup', services: { registration: reg({ status: 'registered' }), installed: bare, activation: { stage: 'not_requested' } } });
   assert.match(texts(surface.el), /Installing Services…/, 'closed: the push is not heard');
 });
 
@@ -154,4 +155,33 @@ test('the ⚙ Services card follows an install by push and never polls', async (
   card.stop();
   store.receive({ t: 'services-setup', services: { activation: { stage: 'installing' } } });
   assert.match(texts(host), /Services are ready/, 'stopped: the push is not heard');
+});
+
+test('the ⚙ Services card offers Install Services now with plain copy, and no email form', async () => {
+  const { servicesCard } = await import('../public/js/services-card.js');
+  asked.length = 0;
+  let stage = 'not_requested';
+  answer = (url, options) => (url === '/api/services/install' && options.method === 'POST'
+    ? { activation: { stage: 'installing' }, install: { started: true } }
+    : { stage });
+  const host = new FakeNode('div');
+  const card = servicesCard(host);
+  await settle();
+  const painted = texts(host);
+  assert.match(painted, /Not installed/);
+  assert.match(painted, /Ronin Services are not installed on this machine\./);
+  assert.doesNotMatch(painted, /confirm|verify|email|pending request|cancel|weekly|statistics/i, 'no confirmation, email or sharing words');
+  assert.equal([...host.walk()].some((n) => n.tagName === 'INPUT'), false, 'no email field');
+  const install = [...host.walk()].find((n) => n.tagName === 'BUTTON' && n.textContent === 'Install Services now');
+  assert.ok(install, 'Install Services now is offered when nothing is installed');
+  install.click();
+  await settle();
+  assert.deepEqual(asked, ['GET /api/services/activation', 'POST /api/services/install'], 'the press asks once, at the install route');
+  assert.match(texts(host), /Installing Services/, 'and paints the answer it got');
+  assert.equal([...host.walk()].some((n) => n.tagName === 'BUTTON' && n.textContent === 'Install Services now'), false, 'no Install while installing');
+
+  store.receive({ t: 'services-setup', services: { activation: { stage: 'error', error_at_stage: 'installing', error_message: 'Ronin Services did not install: could not download release v1.7.0' } } });
+  assert.match(texts(host), /could not download release v1\.7\.0/, 'a failed install says why');
+  assert.ok([...host.walk()].find((n) => n.tagName === 'BUTTON' && n.textContent === 'Install Services now'), 'and offers the same press again');
+  card.stop();
 });

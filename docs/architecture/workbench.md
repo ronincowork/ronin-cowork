@@ -173,12 +173,20 @@ its own stones of Workspaces (`workspaces-surface.js`, `workspaces.records`): a 
 Workspace, its folders ticked in a browser of this machine (owner, 2026-11-02), with GitHub CLI beside them;
 one read of the pinned folders per bench (`createRootsReading`, the detail route). Epics (owner, 2026-11-02;
 KAN-187) seats its own stones of Epics the same way (`epics-surface.js`, `epics.records`): the level-1 work items of
-the Campaign — the store's pushed `epics` and `epicItems`, no request (KAN-190, KAN-206). The stones stay at rest (no
-side rail): a pressed Epic opens in Tilespace 2 as its worksurface (`epics.record`), as a dragged stone or its selector
-card places it anywhere. The worksurface: where it comes from (Jira key, or Ronin only) and its holder; one row of
-statuses, a hidden one carrying its count, an empty one not shown; each status that is out as its items' cards (In
-Review out on arrival), a card's title whole and its holder, which opens that Agent or Team; a card pressed opens in
-place to its statuses as buttons (`/transition`), objective and comments. No history, no Jira fields. The bar's crumb (`workspace-header.js`;
+the Campaign — the store's pushed `epics` and `epicItems`, no request (KAN-190, KAN-206). Since w334 (owner,
+2026-11-06) Tilespace 1 is the Epics board (`createEpicBoard`), borrowed from the phalanx but its own: a row of Epic
+stones across the top (title, Jira key or Ronin only, open count); a pressed one is selected and its items come below
+under two ERABI questions (ask.js), Assigned (Yes / No) and Status (the open ones on arrival), as the item island's
+bars (`tile-island.js` `itemBar`) grouped by status in workflow order, a Subtask under its Task. The push carries what
+a bar says (`epicsPush`: the objective and last comment cut short, comment count, last move, last hand-in). A bar
+pressed opens the item's reading under it (`renderItemDetail`, its own read). Every Epic surface is that board (w340,
+owner 2026-11-06): the selected Epic's source line (Jira key, holder) heads its items, then the Epic's own details as
+the island's bar (KAN-309: kind, key, title, status, objective, last comment, holder); pressed, it opens the Epic's
+reading under it exactly as an item's bar does (KAN-310: `renderItemDetail`, its Status moved there through
+`POST /api/work-items/:id/transition`; the Epic's children are left out, they are the board below). Another stone switches
+to that Epic on the same surface, nothing placed elsewhere. A dragged stone or an Epic's selector card places a
+board starting on that Epic (`epics.record`, `createEpicRecord`), and a Team's Epics card is the board over the
+Team's Epics (`createTeamEpics`; one Epic shows itself). The bar's crumb (`workspace-header.js`;
 owner, 2026-10-20) reads RoninCowork   Home • Teams • <Team title> on a Team page — a gap, not a dot,
 after the brand (`--space-subsection`; owner, 2026-10-24) — Home to `#/home`, Teams to `#/cowork`;
 the Teams workbench ends at Teams, and a view naming its own `place` (Models, Workspaces, Epics, Help,

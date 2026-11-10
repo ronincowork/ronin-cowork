@@ -56,7 +56,7 @@ Macro, action, SOP, and Agent role are not additional composition layers. “Act
 | Team record (`team_roster`) | Durable Team identity, defaults, and held work; membership and leads derive from sessions ([Team workspace](docs/architecture/team-workspace.md)) |
 | Session | A running Cowork Agent, bare-metal Agent, or terminal; archived sessions have separate restore manifests ([Session identity](docs/architecture/session-identity.md)) |
 | Work record | An Agent's objective, repositories, and the work items it holds, each with its status ([Work records](docs/using-ronin/what-agents-write-down.md)) |
-| Work item | One object stored once by id, matching Jira: title, objective, `level`, `kind`, `status`, `flagged`, `priority`, `comments`, `attachments`, `links`, `external` keys and a trail; **held by** one Team or Agent, or by nobody (`item assign` moves the id between holders' lists), and **under** one parent or none. Holding is never permission. The `item` tool does Jira's item acts (create, read, search, edit, transition, flag, assign, comment, attach, link, delete), the item named. Never called a project ([Work items](docs/using-ronin/work-items.md)) |
+| Work item | One object stored once by id, matching Jira: title, objective, `level`, `kind`, `status`, `flagged`, `priority`, `comments`, `attachments`, `links`, `external` keys and a trail; **held by** one Team or Agent, or by nobody (`item handoff` moves the id between holders' lists), and **under** one parent or none. Holding is never permission. The `item` tool does Jira's item acts (create, read, search, edit, transition, flag, handoff, comment, attach, link, delete), the item named. Never called a project ([Work items](docs/using-ronin/work-items.md)) |
 | Level | Stored on the item: `1` epic, `0` story/task/bug, `-1` subtask. A new item is one below its parent, `0` with none; adding a child never changes it. A default, never a guard |
 | Epic | A work item at level 1. It keeps its own fields; its status is set by hand |
 | Story / Task / Bug | A work item at level 0; story, task, bug or feature is its `kind`, any work type name, blank by default, with no fixed list |
@@ -128,28 +128,31 @@ categories. Use the tool and composition terms above.
 
 These terms name the hosted offer's surfaces; the plan is
 `samurai_lab/wip/ronin_cloud/RONIN_CLOUD.md` and the build is `MVP_ARCHITECTURE.md` beside it.
-Every physical or fleet surface carries the `office_` prefix; `control_plane`, `front_door`,
-`model_gateway` and `kill_switch` stand alone because nothing else shares the word.
+Every physical or fleet surface carries the `office_` prefix; `front_door`, `model_gateway` and
+`kill_switch` stand alone because nothing else shares the word. In prose the plain word office
+stays; what the customer hears for a unit is not settled (owner, 6 Nov 2026).
 
 | Term | Meaning |
 |---|---|
-| Ronin as a Service (`raas`) | The whole hosted offering: offices on office_hosts, the control_plane, front_door, billing and office_export. The house name; Ronin Cloud is the same offering as the customer hears it |
-| Office (`office`) | The product unit: one customer's full Ronin with its own kernel and disk, running on an office_host. The customer sees and buys offices and Agents running, never the machinery |
-| Office host (`office_host`) | The physical machine Ronin rents, running many offices under one hypervisor. Ronin administers it; no customer touches it |
-| Hypervisor (`hypervisor`) | The software on an office_host that carves it into offices and exposes the API the control_plane drives: Proxmox VE |
-| Control plane (`control_plane`) | The separate small machine that runs the fleet from outside every office over a private link: office_registry, provisioner, kill_switch, meter, fleet updates |
-| Office registry (`office_registry`) | The control_plane's record: account, office, office_host, private address, state, stop_clock |
-| Front door (`front_door`) | The public entry on an office_host: Caddy, OAuth2 Proxy and Keycloak. Maps the hostname to an office, then checks that the signed-in user owns it; signing in alone opens nothing |
+| Ronin as a Service (`raas`) | The whole hosted offering: office_units on office_parks, each park's office_kohai, front_door, billing and office_export. The house name; Ronin Cloud is the same offering as the customer hears it |
+| Office unit (`office_unit`) | The product unit: one customer's virtual machine with its own kernel and disk, carved from an office_park. A ronin_install runs inside it. This is what the customer buys, with Agents running, never the machinery; what the customer calls it is not settled (was `office`; owner, 6 Nov 2026) |
+| Ronin install (`ronin_install`) | One installed, running copy of Ronin: inside an office_unit, or self-hosted on the customer's own machine. Ronin is the software; the unit is where one copy of it lives. Registration, the entitlement and the account view all belong to a ronin_install |
+| Office park (`office_park`) | The physical machine Ronin rents, carved into office_units under one hypervisor. Ronin administers it; no customer touches it (was `office_host`; owner, 6 Nov 2026) |
+| Hypervisor (`hypervisor`) | The software on an office_park that carves it into office_units and exposes the API the office_kohai drives: Proxmox VE |
+| Office kohai (`office_kohai`) | The head of an office_park: HQ-controlled, living on the park beside gateway_office, never reachable by customers. It provisions the park's units, keeps their records, stops, meters and updates them (was `control_plane`, a separate machine; owner, 6 Nov 2026) |
+| Office registry (`office_registry`) | The office_kohai's record of its park's units: account, unit, private address, state, stop_clock. Which park an account's unit is on is HQ's to know |
+| Front door (`front_door`) | The public entry on an office_park: Caddy, OAuth2 Proxy and Keycloak. Maps the hostname to an office, then checks that the signed-in user owns it; signing in alone opens nothing |
 | SSH gateway (`ssh_gateway`) | SSH entry at the same name as the front_door; no office address is ever shown |
-| Office network (`office_network`) | The private network on an office_host; offices reach out through NAT, never each other, the office_host or the control_plane |
+| Office network (`office_network`) | The private network on an office_park; offices reach out through NAT, never each other, the office_park or the office_kohai |
 | Office image (`office_image`) | The Ronin image an office boots from once; after that Ronin updates itself |
 | Office disk (`office_disk`) | The whole disk of one office, the one persistence unit; its backup is an `office_snapshot` |
+| Office record (`office_record`) | The one file in a ronin_install that says which office_unit it lives in: `office_record.json` in the `office_unit` store, written once by the office_kohai, never by Ronin. Present means an office_unit on an office_park (office_id, office_park, gateway_office, provisioned_at); absent means self-hosted. Everything that behaves differently when hosted asks this record and nothing else |
 | Stop clock (`stop_clock`) | The 30 days a stopped office is kept before deletion |
-| Kill switch (`kill_switch`) | The control_plane's stops from outside an office: stop it, cut its network, drop its front_door route, revoke its house_token. Works when control inside the office is lost |
+| Kill switch (`kill_switch`) | The office_kohai's stops from outside an office: stop it, cut its network, drop its front_door route, revoke its house_token. Works when control inside the office is lost |
 | Model gateway (`model_gateway`) | Holds Ronin's provider key outside every office; an office speaks to it with its house_token |
 | House token (`house_token`) | One office's credential for the model_gateway; revoking it is part of the kill_switch |
 | Office export (`office_export`) | The off-ramp: the office as self-hosted Ronin on the customer's own computer |
 
 Server, host, guest, VM, workspace, customer machine and edge are not Cloud terms. "VM" named
-two layers at once, the rented machine and the customer's slice; say office_host and office.
+two layers at once, the rented machine and the customer's slice; say office_park and office.
 "Edge" is the `edges` message tool.

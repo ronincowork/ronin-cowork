@@ -19,8 +19,9 @@ may be a registered handle or a URL. --branch is separate so URLs parse exactly.
 entries do not change the Agent's birth directory or open a managed desk.
 Update fields are --objective, --repo, --unrepo, --on_tangent and --on_track. A whole
 JSON record is accepted on stdin. read shows the record, the items held and watched, each with
-its status, and their documents; a lead's also shows each team it leads: what the team and
-each member hold and watch. add_doc adds a document to the item you hold; holding
+its status, and their documents; each Team you are on in four lines (Workspace, Plans,
+Canvases, Epics), each naming the command that reads it whole; a lead's also shows each team
+it leads: what the team and each member hold and watch. add_doc adds a document to the item you hold; holding
 several, name one with --item; holding none, it goes on your work record itself.
 --remove takes one off. read and the tile's Docs list the record's own documents and
 every held item's attachments. Work items are the item tool's: item --help.
@@ -68,12 +69,31 @@ Usage:
   work-record workspace list
   work-record workspace add <repo-or-url> [--branch <branch>]
   work-record workspace remove <repo-or-url> [--branch <branch>]
+list prints one JSON document: "workspace", your Team's Workspace (title, objective, team,
+each repo and folder with its directory, its integrations; null on no Workspace), and "repos", your own entries. add and remove edit only your own entries.
 These edit the repositories in your Work Record. A remove without --branch removes every
 row for that exact repository. They do not change the birth directory or open a desk.
 To change the live session's recorded Workspace Folder, use session_set --help.
 EOF
         ;;
-      list) [ "$#" -eq 0 ] || { usage >&2; exit 2; }; list_field repos ;;
+      list) [ "$#" -eq 0 ] || { usage >&2; exit 2; }
+        # The Team's Workspace first (KAN-331), then this Agent's own entries: one JSON document,
+        # {"workspace": {...} | null, "repos": [...]}, so a caller can parse it.
+        bash "$ROOT/libexec/work-record-read" --json | python3 -c '
+import json, sys
+d = json.load(sys.stdin)
+ws = None
+for l in d.get("layers") or []:
+    w = l.get("workspace")
+    if not w: continue
+    dirs = w.get("dirs") or {}
+    ws = {"name": w["name"], "title": w.get("title") or w["name"], "objective": w.get("objective") or "", "team": l["team"],
+          "repos": [{"name": n, "dir": dirs.get(n) or ""} for n in w.get("repos") or []],
+          "folders": [{"name": n, "dir": dirs.get(n) or ""} for n in w.get("folders") or []],
+          "integrations": w.get("integrations") or []}
+    break
+print(json.dumps({"workspace": ws, "repos": d.get("repos", [])}, indent=2, ensure_ascii=False))
+' ;;
       add|remove)
         [ "$#" -ge 1 ] && [ -n "$1" ] || { usage >&2; exit 2; }
         repo=$1; shift; branch=''

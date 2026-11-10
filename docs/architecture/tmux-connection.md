@@ -104,9 +104,8 @@ The Services parts live under `src/services/` (a placed copy; see the services r
 `bin/dev-sync`). Whether a part **runs** is decided at start by `src/parts.ts`:
 
 - An installation claims the parts it runs — `- **parts:** …` in
-  `ronin_catalogs/installations/<name>.md`; Ronin Services claims `counting, jira, kanban, koe,
-  koshi, koshi_weights, machine, project_management, rireki`, and the `gbrain` installation claims
-  `gbrain`. A claimed part loads only while that installation is on. Off means the part is
+  `ronin_catalogs/services/<name>.md`; Ronin Services claims `counting, gbrain, jira, koe,
+  koshi, koshi_weights, machine, project_management, rireki`. A claimed part loads only while that installation is on. Off means the part is
   never imported: no timers, no routes, no recorder, and `/api/version` reports
   `stream: false`, so every tile is Locked.
 - A claimed part must also have its **capability** switched on. `SERVICE_CAPABILITY_PARTS`

@@ -8,14 +8,16 @@
  *             hold, each child after its parent where the lead made any; and its epics
  *             (the epic → Teams rule, boardReadings), plus the roots nobody's work reaches,
  *             each whole.
- * every:      every item, each with the holder it is found on ('' when nobody holds it).
+ * every:      every item, each with the holder it is found on (team:, agent: or workspace:<name>;
+ *             '' when nobody holds it).
  * board:      one epic's root and every item under it (boardReadings), each with its holder.
  */
 import { readLetterHolds } from './tegami.js';
+import type { TeamLayers } from './team-layers.js';
 import { sessionKey } from './session-dir.js';
 import { readTeamRoster, type TeamRoster } from './team-rosters.js';
 import { listSessions } from './tmux.js';
-import { HANDED_IN, WorkItemMissing, handInStage, handedInNote, heldIds, holderLabel, listItems, readItem, type Comment, type WorkItem } from './work-items.js';
+import { WorkItemMissing, heldIds, holderLabel, listItems, readItem, type HandIn, type WorkItem } from './work-items.js';
 
 export interface AgentReading {
   holder: string;
@@ -24,6 +26,8 @@ export interface AgentReading {
   watching: WorkItem[];
   /** Each Team the Agent leads, read from its roster and its members' records. */
   teams: LedTeam[];
+  /** Each Team the Agent is on or leads: its four layers, live (team-layers.ts; KAN-331). */
+  layers: TeamLayers[];
 }
 
 export interface LedTeam {
@@ -66,12 +70,17 @@ export async function agentReading(session: string): Promise<AgentReading> {
     }
     teams.push({ team, items: await read(roster?.holds), watching: await read(roster?.watches), members });
   }
+  const me = sessions.find((one) => one.name === session);
+  const { teamLayers } = await import('./team-layers.js');
+  const every = await listItems();
+  const layers = await Promise.all([...new Set([...(me?.leads ?? []), ...(me?.tags ?? [])])].map((team) => teamLayers(team, sessions, every).catch(() => null)));
   return {
     holder: `agent:${session}`,
     items,
     attachments: await openedAttachments([...items, ...teams.flatMap((team) => team.items)]),
     watching: await read(letter?.watches),
     teams,
+    layers: layers.filter((one): one is TeamLayers => one !== null),
   };
 }
 
@@ -160,60 +169,28 @@ export async function boardReadings(sessions?: Array<{ name: string; tags: strin
   return [...out.values()];
 }
 
-/** A Team's epics by the rule above, plus the roots no Team reaches, every item under them. */
+/** A Team's epics by the rule above, plus the roots no Team reaches, every item under them. A root
+ * a Workspace holds (its Icebox, KAN-352) is no Team's: it is on no Team's reading. */
 async function teamBoards(team: string, sessions: Array<{ name: string; tags: string[] }>): Promise<HeldItem[]> {
   return (await boardReadings(sessions))
-    .filter((reading) => reading.teams.includes(team) || !reading.teams.length)
+    .filter((reading) => reading.teams.includes(team) || (!reading.teams.length && !reading.board.holder.startsWith('workspace:')))
     .flatMap((reading) => [reading.board, ...reading.items]);
 }
 
-/** A line on the Team workbench's Waiting on you (owner, 2026-11-04; KAN-232): an item, how long
- * it has waited (`since`: With the lead, from its last hand-in; Ready to accept, from when it
- * went on dev, or its checkout hand-in; Stuck, from its last flag raised), and for a flagged one
- * the flag's reason. What the user reads comes first (owner, 2026-11-05; ITEM_HANDOVER): the
- * objective and the Handed in note (`handed_in`); the other comments follow, folded. */
-export interface WaitingItem {
-  id: string; title: string; status: string; holder: string; jira: string; since: string; reason: string;
-  objective: string; handed_in: string; comments: Comment[];
-}
-
-/** What the teams push carries for the Team workbench's Waiting on you and Epics cards: the items
- * In Review split by the signals (docs/using-ronin/project-management.md, Three signals) into `lead` (With the lead: handed
- * in, not on dev since) and `review` (Ready to accept: on dev since the last hand-in, or handed
- * in from a checkout), the flagged ones (`stuck`), each oldest first, and the Team's Epics
- * (`epics`): those it or its members hold, and the Epic above each item they hold. */
-export interface TeamWork { lead: WaitingItem[]; review: WaitingItem[]; stuck: WaitingItem[]; epics: string[] }
+/** The Team's Epics for the Team workbench's Epics card (`epics`): those the Team or its members
+ * hold, and the Epic above each item they hold. */
+export interface TeamWork { epics: string[] }
 
 export function teamWork(items: HeldItem[], every: WorkItem[]): TeamWork {
   const byId = new Map(every.map((item) => [item.id, item]));
   const held = [...new Map(items.map((item) => [item.id, item])).values()];
-  const last = (item: WorkItem, op: string, to: string) => [...item.trail].reverse().find((line) => line.op === op && line.to === to);
-  const line = (item: HeldItem, since: string, reason = ''): WaitingItem => {
-    const note = handedInNote(item);
-    const shown = note ? [...item.comments].reverse().find((one) => one.text === `${HANDED_IN}${note}`) : undefined;
-    return {
-      id: item.id, title: item.title, status: item.status, holder: item.holder, jira: item.external.jira?.key ?? '', since, reason,
-      objective: item.objective, handed_in: note, comments: (item.comments ?? []).filter((one) => one !== shown),
-    };
-  };
-  const oldest = (a: WaitingItem, b: WaitingItem) => a.since.localeCompare(b.since);
-  const handedIn = held.filter((item) => item.status === 'In Review');
-  const handed = (item: WorkItem) => item.hand_ins?.at(-1)?.at ?? last(item, 'status', 'In Review')?.at ?? item.created.at;
-  const lead = handedIn.filter((item) => handInStage(item) === 'lead').map((item) => line(item, handed(item))).sort(oldest);
-  const review = handedIn.filter((item) => handInStage(item) === 'ready')
-    .map((item) => line(item, item.on_dev && item.hand_ins?.at(-1)?.receipt !== null ? item.on_dev.at : handed(item))).sort(oldest);
-  // Never Done (KAN-271): a Done item left flagged is not stuck.
-  const stuck = held.filter((item) => item.flagged && item.status !== 'Done').map((item) => {
-    const flag = last(item, 'flag', 'true');
-    return line(item, flag?.at ?? item.created.at, flag?.note ?? '');
-  }).sort(oldest);
   const epics = new Set<string>();
   for (const item of held) {
     let at: WorkItem | undefined = item;
     for (let steps = 0; at && at.level !== 1 && steps < every.length; steps += 1) at = at.parent ? byId.get(at.parent) : undefined;
     if (at?.level === 1) epics.add(at.id);
   }
-  return { lead, review, stuck, epics: [...epics] };
+  return { epics: [...epics] };
 }
 
 /** An item under an Epic as the Epics workbench draws it (KAN-206): no history, comments or
@@ -221,7 +198,19 @@ export function teamWork(items: HeldItem[], every: WorkItem[]): TeamWork {
 export interface EpicItem {
   id: string; title: string; status: string; holder: string; parent: string | null; level: number;
   kind: string; flagged: boolean; campaign_id: string; jira: string; epic: string;
+  /** What a bar says it is (owner, 2026-11-06, w334): the objective cut short, its last comment
+   * cut short, how many comments, when it last moved, and its last hand-in and promotion. */
+  objective: string; said: { by: string; at: string; text: string } | null; comment_count: number;
+  moved: string; hand_ins: HandIn[]; on_dev?: { promotion: string; at: string };
 }
+
+/** A push's words, cut at a word near `max` characters. */
+const cut = (text: string, max: number): string => {
+  const flat = String(text || '').replace(/\s+/g, ' ').trim();
+  if (flat.length <= max) return flat;
+  const at = flat.lastIndexOf(' ', max);
+  return `${flat.slice(0, at > max * 0.6 ? at : max)}…`;
+};
 
 /** THE EPICS PUSH (KAN-190, KAN-206): every Epic whole, and every item under one, slim. */
 export function epicsPush(all: HeldItem[]): { epics: Array<HeldItem & { archived_under: number }>; items: EpicItem[] } {
@@ -243,6 +232,12 @@ export function epicsPush(all: HeldItem[]): { epics: Array<HeldItem & { archived
     items.push({
       id: item.id, title: item.title, status: item.status, holder: item.holder, parent: item.parent, level: item.level,
       kind: item.kind, flagged: item.flagged, campaign_id: item.campaign_id, jira: item.external.jira?.key ?? '', epic,
+      objective: cut(item.objective, 280),
+      said: item.comments?.length ? (({ by, at, text }) => ({ by, at, text: cut(text, 200) }))(item.comments.at(-1)!) : null,
+      comment_count: item.comments?.length ?? 0,
+      moved: item.trail?.at(-1)?.at ?? item.created?.at ?? '',
+      hand_ins: item.hand_ins?.length ? [item.hand_ins.at(-1)!] : [],
+      ...(item.on_dev ? { on_dev: item.on_dev } : {}),
     });
   }
   const archivedUnder = new Map<string, number>();

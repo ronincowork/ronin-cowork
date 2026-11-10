@@ -17,6 +17,7 @@ import { buildComposer } from './composer.js';
 import { sendComposerMessage } from './composer-rules.js';
 import { buildKeysRow } from './keysrow.js';
 import { buildTileDocView } from './tile-doc-view.js';
+import { buildSecretAsk } from './secret-ask.js';
 import { refreshKaki, setKakiPolicy } from './output.js';
 import { closeMenu } from './menu.js';
 import { get, subscribe } from './store.js';
@@ -107,6 +108,8 @@ export class Tile {
     installTileControls(this);
     this.docView = buildTileDocView(this);
     this.body.append(this.docView.el);
+    this.secretAsk = buildSecretAsk(this);
+    this.body.append(this.secretAsk.el);
 
     // THE SOCKET — beside both views, owned by neither.
     this.wire = new TileWire({
@@ -170,6 +173,7 @@ export class Tile {
       this.refreshCtx();
       this.refreshTegami();
       this.refreshStance();
+      this.secretAsk.sync(this.homeRow());
     });
   }
 
@@ -200,6 +204,7 @@ export class Tile {
     this.refreshCtx();
     this.refreshTegami();
     this.refreshStance();
+    this.secretAsk.sync(this.homeRow());
   }
 
   /** Point the gauge at the session's context reading (null = no reading, gauge hides). */

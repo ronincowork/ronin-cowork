@@ -48,6 +48,10 @@ export const STORES: readonly Store[] = [
   store('gbrain_service', 'user', 'gbrain_service'),
   store('promotion_ledger', 'data', 'promotion-ledger'),
   store('services_secrets', 'user', 'services_secrets'),
+  // An office_unit's own filing, written once by whoever provisions it and never by Ronin:
+  // office_record.json says whether this Ronin is self-hosted or an office on an office_park
+  // (src/office-record.ts); the office's entitlement_token and house_token sit beside it (src/activation/secrets.ts).
+  store('office_unit', 'user', 'office_unit'),
   store('jira', 'user', 'jira'),
 ];
 const storesById = new Map(STORES.map((row) => [row.id, row]));

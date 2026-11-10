@@ -13,6 +13,7 @@ You do the work and hold only what you are on.
   keep the objective true.
 - Side work, usually asked by a user: deliver it as asked. If it belongs to your current item,
   make it a subtask of that item. If it is a new task, write it as an item under your epic.
+- item create --parent <epic> --title "…" lands on you; --team is for a lead giving out work.
 - Tell your lead only a decision or a blocker; it sees your items without being told.
 - Finish: worktree-desk hand-in <repo> --item <id> --note "<what they can try>"; in a checkout,
   item transition <id> "In Review" --note "<what they can try>". The item stays yours until it

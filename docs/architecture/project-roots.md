@@ -9,6 +9,11 @@ New Agent form, the Workspaces door, session identity, and recall all resolve th
 The title is presentation only: changing it never changes the handle,
 directory, session identity, or repository identity.
 
+A Workspace Folder is one directory, not a project: its remit says what that folder is.
+Workspaces (`src/workspaces.ts`) group folders, naming the repos and folders their work spans,
+and resolve each name to its directory here. An Agent learns its Workspace from its work record
+(`work-record read`, `work-record workspace list`; KAN-331), never from the catalog file.
+
 The resolved Agent instruction names both authorities explicitly. For example:
 
 ```text

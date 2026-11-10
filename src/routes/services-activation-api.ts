@@ -1,25 +1,51 @@
 import type express from 'express';
+import fs from 'node:fs/promises';
+import path from 'node:path';
 import { readEgress } from '../activation/egress.js';
-import { listReceipts } from '../activation/tomodachi.js';
 import { listServices, listServiceFailures } from '../sockets.js';
-import {
-  cancel, changeAddress, FlowError, poll, request, resend, isEntitled,
-} from '../activation/flow.js';
+import { isEntitled, putEntitlementToken } from '../activation/secrets.js';
+import { callHq } from '../activation/transport.js';
+import { storeDir } from '../resources.js';
 import { publicState, readState, writeState } from '../activation/state.js';
-import { runUpdater } from '../update-run.js';
+import { runUpdater, type RunResult } from '../update-run.js';
 import { buildKansou, sendKansou } from '../activation/kansou.js';
 import { registrationAnswer, submitRegistration } from '../activation/registration.js';
 import { deleteRegistration } from '../activation/registration.js';
 import { installedAnswer } from './installed-api.js';
-import { broadcastEvent, listening } from '../ws/events.js';
-import { onClock } from '../jikan.js';
+import { readOfficeRecord } from '../office-record.js';
+import { broadcastEvent } from '../ws/events.js';
+
+/** What asking Ronin HQ for a Services key came to. The key itself goes only to the email. */
+export type KeyRequest = { sent: true } | { sent: false; error: string };
+
+/**
+ * ASK RONIN HQ TO EMAIL A SERVICES KEY to the address that registered (contracts/v1/account.md,
+ * Register). The person pastes it in; nothing else is ever sent from this machine for it.
+ */
+export async function requestServicesKey(email: string): Promise<KeyRequest> {
+  try {
+    const res = await callHq<{ sent: boolean }>('POST', '/v1/accounts/register', { body: { email } });
+    if (res.status === 202) return { sent: true };
+    return { sent: false, error: res.error?.message ?? `Ronin HQ answered ${res.status}` };
+  } catch {
+    return { sent: false, error: 'Ronin HQ could not be reached. Send again in a moment.' };
+  }
+}
+
+/** Whether Services is on this machine (its parts found on disk, loaded or parked): then a
+ * pasted key is only saved. One place, so a test can state the machine it means. */
+export const servicesOnMachine = { present: async (): Promise<boolean> => (await installedAnswer()).services.installed };
+
+/** A Services key as Ronin HQ mints it: 32 random bytes, base64url. */
+const SERVICES_KEY = /^[A-Za-z0-9_-]{43}$/;
 
 async function activationAnswer(): Promise<Record<string, unknown>> {
   return {
     ...publicState(await readState()),
     entitled: await isEntitled(),
+    // Self-hosted, or an office on an office_park: Setup hides Register and Install on an office_park.
+    office: await readOfficeRecord(),
     egress: await readEgress(20),
-    receipts: await listReceipts(10),
   };
 }
 
@@ -41,18 +67,56 @@ export const servicesSetupWrites: express.RequestHandler = (req, res, next) => {
   next();
 };
 
-async function startInstall(): Promise<void> {
-  try {
-    await writeState({ stage: 'installing', error_at_stage: null, error_message: null });
-    await runUpdater('services');
-  } catch {
-    await writeState({
-      stage: 'error', error_at_stage: 'installing',
-      error_message: 'the installer did not start — you can try again without a new email',
-    }).catch(() => {});
-    return;
+/** The Services install's own report: the updater's output and, once it ends, its exit code. */
+const installRun = (): RunResult => ({
+  log: path.join(storeDir('config'), 'services-install.log'),
+  exit: path.join(storeDir('config'), 'services-install.exit'),
+});
+
+/** What a Submit or an Install press learned: whether the installer actually started. */
+export type InstallStart =
+  | { started: true }
+  | { started: false; reason: 'already_installed' | 'in_progress' }
+  | { started: false; reason: 'failed'; error: string };
+
+/**
+ * Start the Services install. Answers only after the updater has been launched (or failed
+ * to launch), so a caller can say Installing truthfully. The download and install run on in
+ * the background; watchForServices reports how they end.
+ */
+let starting: Promise<InstallStart> | null = null;
+
+/**
+ * One start at a time. The check of the stage and the launch are not atomic, so a second
+ * Submit or Install arriving mid-start waits for the first, never launching a second updater
+ * onto the same log and exit files. It gets the first start's outcome: in progress only if
+ * that start launched, otherwise the same failure or already-installed answer.
+ */
+export async function startInstall(): Promise<InstallStart> {
+  if (starting) {
+    const first = await starting.catch((e): InstallStart =>
+      ({ started: false, reason: 'failed', error: `the installer did not start: ${(e as Error)?.message ?? e}` }));
+    return first.started ? { started: false, reason: 'in_progress' } : first;
   }
-  void watchForServices().finally(pushServicesSetup);
+  starting = launchInstall();
+  try { return await starting; } finally { starting = null; }
+}
+
+async function launchInstall(): Promise<InstallStart> {
+  if (rosterVerdict().whole) return { started: false, reason: 'already_installed' };
+  if ((await readState()).stage === 'installing') return { started: false, reason: 'in_progress' };
+  const run = installRun();
+  try {
+    await Promise.all([fs.rm(run.log, { force: true }), fs.rm(run.exit, { force: true })]);
+    await writeState({ stage: 'installing', error_at_stage: null, error_message: null });
+    await runUpdater('services', run);
+  } catch (e) {
+    const error = `the installer did not start: ${(e as Error)?.message ?? e}`;
+    await writeState({ stage: 'error', error_at_stage: 'installing', error_message: error }).catch(() => {});
+    return { started: false, reason: 'failed', error };
+  }
+  void watchForServices().finally(pushServicesSetup).catch(() => { /* a failed push never takes the server down */ });
+  return { started: true };
 }
 
 const INSTALL_TIMEOUT_MS = 10 * 60_000;
@@ -64,10 +128,22 @@ function rosterVerdict(): { whole: boolean; loaded: string[]; failed: { name: st
   return { whole: loaded.length > 0 && failed.length === 0, loaded, failed };
 }
 
+/** The updater's exit code once it has ended, and the line it stopped on. */
+async function updaterEnded(): Promise<{ code: number; reason: string } | null> {
+  const run = installRun();
+  let code: number;
+  try { code = Number((await fs.readFile(run.exit, 'utf8')).trim()); } catch { return null; }
+  const log = await fs.readFile(run.log, 'utf8').catch(() => '');
+  const lines = log.split('\n').map((l) => l.trim()).filter(Boolean);
+  const reason = [...lines].reverse().find((l) => l.startsWith('✗'))?.replace(/^✗\s*/, '') ?? lines.at(-1) ?? '';
+  return { code: Number.isFinite(code) ? code : 1, reason };
+}
+
 async function watchForServices(now = () => Date.now()): Promise<void> {
   const deadline = now() + INSTALL_TIMEOUT_MS;
   while (now() < deadline) {
-    await new Promise((r) => setTimeout(r, INSTALL_POLL_MS));
+    // Unref'd: the server keeps the process alive; a watch alone never should.
+    await new Promise((r) => setTimeout(r, INSTALL_POLL_MS).unref());
     const { whole, failed } = rosterVerdict();
     if (whole) {
       await writeState({
@@ -79,8 +155,15 @@ async function watchForServices(now = () => Date.now()): Promise<void> {
       await writeState({
         stage: 'error', error_at_stage: 'installing',
         error_message: `Services installed but did not all start: ${failed.map((f) => f.name).join(', ')}. `
-          + 'Your entitlement is safe — retrying needs no new email. The reason is in the '
-          + 'journal (journalctl --user -u ronin.service).',
+          + 'The reason is in the journal (journalctl --user -u ronin.service).',
+      }).catch(() => {});
+      return;
+    }
+    const ended = await updaterEnded();
+    if (ended && ended.code !== 0) {
+      await writeState({
+        stage: 'error', error_at_stage: 'installing',
+        error_message: `Ronin Services did not install: ${ended.reason || `the installer stopped (exit ${ended.code})`}`,
       }).catch(() => {});
       return;
     }
@@ -89,41 +172,17 @@ async function watchForServices(now = () => Date.now()): Promise<void> {
   }
   await writeState({
     stage: 'error', error_at_stage: 'installing',
-    error_message: 'Services did not finish installing. Your entitlement is safe — '
-      + 'retrying needs no new email. The updater log is in the journal '
+    error_message: 'Services did not finish installing. The updater log is in the journal '
       + '(journalctl --user -u "ronin-update-*").',
   }).catch(() => {});
-}
-
-// The emailed link is confirmed at Ronin HQ, not here. While a request waits on it and a
-// browser is connected, the server asks HQ every 15 seconds; when the stage moves it pushes,
-// and a confirmation starts the install exactly as the Check status press does.
-export function startConfirmationCheck(): void {
-  onClock('services_confirmation', 15_000, async () => {
-    const before = await readState().catch(() => null);
-    if (!before || !['requesting', 'awaiting_email'].includes(before.stage) || !listening()) return;
-    const after = await poll().catch(() => null);
-    if (!after || after.stage === before.stage) return;
-    if (after.stage === 'verified') await startInstall();
-    await pushServicesSetup();
-  });
 }
 
 export async function resumeInstallWatch(): Promise<void> {
   const s = await readState().catch(() => null);
   if (s?.stage !== 'installing') return;
-  void watchForServices().finally(pushServicesSetup);
+  void watchForServices().finally(pushServicesSetup).catch(() => { /* a failed push never takes the server down */ });
 }
 
-function fail(res: express.Response, e: unknown): void {
-  if (e instanceof FlowError) {
-    res.status(e.status).json({ error: e.message });
-    return;
-  }
-  res.status(503).json({ error: 'Ronin HQ could not be reached — this will retry' });
-}
-
-const str = (v: unknown): string => (typeof v === 'string' ? v.trim() : '');
 export function registerServicesActivation(app: express.Express): void {
   app.get('/api/setup/registration', async (_req, res) => {
     res.json(await registrationAnswer());
@@ -152,39 +211,18 @@ export function registerServicesActivation(app: express.Express): void {
         await sendKansou(buildKansou(saved.anonymous_packet_id, {
           message, feedback_kind: ['other'], using_ronin_for: saved.intended_use,
         })).catch(() => {}); // the packet is durable before immediate delivery is attempted
-        res.json(await registrationAnswer());
-        return;
       }
-      const current = await readState();
-      if (!await isEntitled() && !['awaiting_email', 'requesting', 'verified', 'installing', 'installed'].includes(current.stage)) {
-        await request(str(body.email));
-      }
-      res.json(await registrationAnswer());
+      // Submitting completes registration. With an email, Ronin HQ emails a Services key to
+      // it; the person pastes the key into Ronin Services to install. Nothing installs here.
+      const services_key = anonymous ? null : await requestServicesKey(String(body.email ?? '').trim());
+      res.json({ ...await registrationAnswer(), services_key });
     } catch (error) {
-      if (error instanceof FlowError) { fail(res, error); return; }
       res.status(400).json({ error: error instanceof Error ? error.message : 'Registration was not saved.' });
     }
   });
 
-  app.post('/api/setup/registration/recovery', async (req, res) => {
-    const action = str((req.body as { action?: unknown })?.action);
-    try {
-      if (action === 'check') await poll();
-      else if (action === 'resend') await resend();
-      else if (action === 'change_address') {
-        const email = str((req.body as { email?: unknown })?.email);
-        if (!email) { res.status(400).json({ error: 'An email address is required.' }); return; }
-        await submitRegistration({ ...(req.body ?? {}), email });
-        await changeAddress(email);
-      } else { res.status(400).json({ error: 'Recovery action must be check, resend, or change_address.' }); return; }
-      res.json(await registrationAnswer());
-    } catch (error) { fail(res, error); }
-  });
-
   app.delete('/api/setup/registration', async (_req, res) => {
     try {
-      const activation = await readState();
-      if (!['verified', 'installed'].includes(activation.stage)) await cancel().catch(() => {});
       await deleteRegistration();
       res.json(await registrationAnswer());
     } catch (error) {
@@ -210,20 +248,43 @@ export function registerServicesActivation(app: express.Express): void {
     res.json(await activationAnswer());
   });
 
-  app.post('/api/services/activation/poll', async (_req, res) => {
-    try {
-      const state = await poll();
-      if (state.stage === 'verified') await startInstall();
-      res.json(await servicesSetupAnswer());
-    } catch (e) { fail(res, e); }
+  // The pasted Services key: kept in services_secrets. With Services not yet installed, the
+  // install starts with it; with Services installed, the key is only saved (a replacement
+  // after registering again), and nothing reinstalls.
+  app.post('/api/setup/services-key', async (req, res) => {
+    // A hosted office holds its office credential in the same file, written by its
+    // provisioning: a self-hosted key must never replace it, whatever the page showed.
+    const office = await readOfficeRecord();
+    if (office.hosting !== 'self_hosted') {
+      res.status(409).json({ error: office.hosting === 'unreadable'
+        ? 'The office record does not read; nothing was saved.'
+        : 'This is a hosted office: its Ronin HQ credential comes with the office, and a Services key is not used here.' });
+      return;
+    }
+    const key = String((req.body as { key?: unknown } | undefined)?.key ?? '').trim();
+    if (!SERVICES_KEY.test(key)) {
+      res.status(400).json({ error: 'That is not a Ronin Services key. Paste the key from the email exactly.' });
+      return;
+    }
+    await putEntitlementToken(key);
+    if (await servicesOnMachine.present()) {
+      res.json({ ...await servicesSetupAnswer(), install: null, key_saved: true });
+      return;
+    }
+    const install = await startInstall();
+    if (!install.started && install.reason === 'failed') {
+      res.status(500).json({ error: install.error });
+      return;
+    }
+    res.json({ ...await servicesSetupAnswer(), install });
   });
 
   app.post('/api/services/install', async (_req, res) => {
-    if (!(await isEntitled())) {
-      res.status(409).json({ error: 'There is no entitlement on this machine yet.' });
+    const install = await startInstall();
+    if (!install.started && install.reason === 'failed') {
+      res.status(500).json({ error: install.error });
       return;
     }
-    await startInstall();
-    res.json(await servicesSetupAnswer());
+    res.json({ ...await servicesSetupAnswer(), install });
   });
 }

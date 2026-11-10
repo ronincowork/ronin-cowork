@@ -146,6 +146,7 @@ if r.get("ok"):
     d["attachments"] = r.get("attachments") or []
     d["items"] = [{k: i.get(k) for k in ("id", "title", "level", "kind", "status", "flagged", "parent")} for i in r.get("items") or []]
     d["watching"] = [{k: i.get(k) for k in ("id", "title", "level", "kind", "status", "flagged", "parent")} for i in r.get("watching") or []]
+    d["layers"] = r.get("layers") or []
     brief = lambda items: [{k: i.get(k) for k in ("id", "title", "level", "kind", "status", "flagged", "parent")} for i in items or []]
     if r.get("teams"):
         d["team_items"] = [{"team": t["team"], "items": brief(t.get("items")), "watching": brief(t.get("watching")),
@@ -185,6 +186,20 @@ def listed(held, watched=()):
     done = sorted([i for i in list(held or []) + list(watched or []) if i.get("status") == "Done"], key=lambda i: since(i) or "", reverse=True)
     ids = list(dict.fromkeys(i["id"] for i in done))
     if ids: print("- Done, not yet archived: %d (%s%s)" % (len(ids), ", ".join(ids[:8]), ", …" if len(ids) > 8 else ""))
+# A TEAM, IN FOUR LAYERS (KAN-331; src/team-layers.ts): each Team you are on, one line per layer,
+# read live where it lives, each naming the command that reads it whole.
+one = lambda h: "@" + h[6:] if h.startswith("agent:") else "Team " + h[5:] if h.startswith("team:") else "Workspace " + h[10:] if h.startswith("workspace:") else h
+who = lambda h: ", ".join(one(x.strip()) for x in h.split(",") if x.strip()) or "nobody"
+for l in r.get("layers") or []:
+    print("\n## Team %s" % l["team"])
+    w = l.get("workspace")
+    if w:
+        print("- Workspace %s: %s · repos %s · folders %s · integrations %s (work-record workspace list)" % (w.get("title") or w["name"], w.get("objective") or "no objective", ", ".join(w.get("repos") or []) or "none", ", ".join(w.get("folders") or []) or "none", ", ".join(str(i.get("provider")) for i in w.get("integrations") or []) or "none"))
+    else:
+        print("- Workspace: none (the Team is launched in no Workspace)")
+    print("- Plans: %s (plan read <name>)" % ("; ".join("%s · %s · %s" % (p["name"], p["status"], ("Team %s" % p["team"]) if p.get("team") else "no Team") for p in l.get("plans") or []) or "none"))
+    print("- Canvases: %s (canvas read <name>)" % ("; ".join(c["name"] for c in l.get("canvases") or []) or "none"))
+    print("- Epics: %s (item read <id>)" % ("; ".join("%s %s · %s · %s" % (e["id"], e["title"], who(e.get("holder") or ""), e["status"]) for e in l.get("epics") or []) or "none"))
 print("\n## Work items you hold" if items else "\n## You hold no work items — your team holds your work; item create puts it there" if r.get("teams") else "\n## You hold no work items — item create --parent <epic> makes one yours")
 line = lambda i: "- %s %s · %s%s" % (i["id"], i["title"], status(i), " · flagged" if i.get("flagged") else "")
 listed(items)

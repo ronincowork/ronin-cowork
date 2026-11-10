@@ -2,15 +2,17 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 
-test('Campaign Installations is the shared stone surface with the Setup Services and gbrain pages', async () => {
+test('Campaign Installations is the shared stone surface: Ronin Services, then the integrations', async () => {
   const source = await readFile(new URL('../public/js/campaign-installations.js', import.meta.url), 'utf8');
   const campaign = await readFile(new URL('../public/js/campaign-view.js', import.meta.url), 'utf8');
   assert.match(source, /createPhalanx/);
-  assert.match(source, /\['ronin_services', 'gbrain', 'trello', 'perplexity'\]/);
+  assert.match(source, /const INSTALLATION_ORDER = \['ronin_services'\];/);
+  assert.match(source, /createIntegrationsPanel\(campaign, \{ panels: context\.integrationPanels \|\| \{\}, embedded: true \}\)/);
   assert.match(source, /createStatusMarker\(installation\.maturity\)/);
   assert.doesNotMatch(source, /INSTALLATION_STATUS/);
   assert.match(source, /context\.createInstallationSurface\?\.\(installation\.id, sharedContext\)/);
-  assert.match(campaign, /createInstallationSurface: \(id, shared\) => id === 'ronin_services' \? createServicesSurface\(shared\) : id === 'gbrain' \? createGbrainSurface\(shared\) : null/);
+  assert.match(campaign, /createInstallationSurface: \(id, shared\) => id === 'ronin_services' \? createServicesSurface\(shared\) : null/);
+  assert.match(campaign, /gbrain: \(\) => createGbrainSurface\(\{ environment, workbench: bench, workspace \}\)/);
   assert.match(source, /key: 'available'.*switch: \[t\('campaign_view\.on', 'On'\), t\('campaign_view\.off', 'Off'\)\]/);
   assert.match(source, /key: 'defaultForAll'.*switch: \[t\('campaign_view\.on', 'On'\), t\('campaign_view\.off', 'Off'\)\]/);
   assert.match(source, /turn Available on first/);
@@ -24,9 +26,7 @@ test('Campaign Installations is the shared stone surface with the Setup Services
   // A collection surface opens showing its collection: forcing Ronin Services open put the
   // surface straight into operation mode, which is the one view the header zone is not in.
   assert.doesNotMatch(source, /stoneSurface\.select\('ronin_services'\)/);
-  assert.match(source, /Ronin Services required/);
-  assert.match(source, /name === 'trello' \|\| name === 'perplexity'/);
-  assert.match(source, /values\.ronin_services === true.*installed\?\.services\?\.parts/);
+  assert.doesNotMatch(source, /trello|perplexity|'gbrain'/);
   assert.doesNotMatch(source, /servicesSell|installBlock|cv-choice|type = 'checkbox'|Available to Teams and Agents/);
 });
 

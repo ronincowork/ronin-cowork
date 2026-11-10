@@ -61,11 +61,13 @@ test('busy status does not erase a possible draft from preflight', () => {
  * "awaiting-input" is how they know which tile to open.
  */
 
-test("gemini's measured trust dialog is legible on the roster, bullet and all", () => {
+test("antigravity's measured choice menu is legible on the roster", () => {
   const screen = [
-    ' │ Do you trust the files in this folder?                    │',
-    ' │ ● 1. Trust folder (some-dir)                              │',
-    ' │   2. Trust parent folder (tmp)                            │',
+    ' Welcome to the Antigravity CLI. You are currently not signed in.',
+    ' Select login method:',
+    ' > 1. Google OAuth',
+    '   2. Use a Google Cloud project',
+    '   ↑/↓ Navigate · enter Select',
   ].join('\n');
   assert.equal(classifyStatus(screen), 'awaiting-input');
 });

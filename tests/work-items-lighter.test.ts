@@ -42,7 +42,6 @@ const { seedTegami } = await import('../src/tegami.js');
 const { listQueuedMessages, dismissMessages } = await import('../src/message-queue.js');
 const { sockets } = await import('../src/sockets.js');
 const { registerWorkItems } = await import('../src/routes/work-items-api.js');
-const { teamWork } = await import('../src/work-items-read.js');
 
 await createTeamRoster('crew', { objective: 'hold things' });
 await seedTegami('mem', { repo: '', branch: '' }, [{ team: 'crew', team_role: 'member', objective: '' }]);
@@ -87,7 +86,7 @@ test('several ids in one act: each answered on its own line, a bad one named', a
   assert.deepEqual(done.data.answers.map((one: { ok: boolean }) => one.ok), [true, true, false]);
   assert.equal(done.data.acknowledgement.split('\n')[2], 'w99999: No work item w99999.');
   assert.deepEqual([(await items.readItem(a.id))!.status, (await items.readItem(b.id))!.status], ['In Progress', 'In Progress']);
-  const none = await call('POST', '/api/work-items/many/handoff', { ids: ['w99998'], none: true, by: 'boss' });
+  const none = await call('POST', '/api/work-items/many/handoff', { ids: ['w99998'], session: 'mem', by: 'boss' });
   assert.equal(none.status, 409, 'every id failing is the error path');
   assert.equal((await call('POST', '/api/work-items/many/comment', { ids: [a.id], by: 'boss' })).status, 400, 'comment takes one id');
 });
@@ -195,9 +194,6 @@ test('a handover: --to-do puts it back in the same line; --flag asks the lead, t
   const told = (await said()).filter(([, text]) => text.includes(stuck.id));
   assert.deepEqual(told.map(([to]) => to), ['cap'], 'the lead is told, once');
   assert.match(told[0]![1]!, /needs help: Waiting on cap: keep or delete\?/);
-  const all = await items.listItems();
-  const work = teamWork([{ ...(await items.readItem(stuck.id))!, holder: 'team:crew' }], all);
-  assert.equal(work.stuck[0]!.reason, 'Waiting on cap: keep or delete?', 'it shows under Stuck with the question');
   const blank = await call('POST', `/api/work-items/${back.id}/handover`, { team: 'crew', by: 'mem' });
   assert.equal(blank.status, 400);
   assert.match(blank.data.error, /where .* stands and what is next/);
@@ -227,9 +223,6 @@ test('a crash: on the second sweep each item goes by its status, never to nobody
   assert.deepEqual(told.map(([to]) => to), ['cap'], 'one notice, to the lead');
   assert.match(told[0]![1]!, new RegExp(`crashed ended without a handover .*${doing.id}.*${review.id}`));
   assert.ok(!told[0]![1]!.includes(todo.id), 'To Do needs no decision');
-  const all = await items.listItems();
-  const work = teamWork(all.filter((item) => [doing.id, review.id].includes(item.id)).map((item) => ({ ...item, holder: 'team:crew' })), all);
-  assert.deepEqual(work.stuck.map((one) => one.reason), [`Ended without handover: crashed, In Progress`, `Ended without handover: crashed, In Review`], 'they show under Stuck');
 });
 
 test('on a Jira-connected campaign the shapes Jira refuses are refused, with the reason', async () => {
@@ -319,14 +312,13 @@ test('a comment by someone else reaches the Agent working the item, and nobody e
   assert.deepEqual(await said(), [], 'nobody hears their own change');
 });
 
-test('nothing else is a notice: create, assign, handoff, put back, edit, attach, link, rename, delete', async () => {
+test('nothing else is a notice: create, handoff, edit, attach, link, rename, delete', async () => {
   await quiet();
   const made = await call('POST', '/api/work-items', { title: 'quiet one', parent: epic.id, team: 'crew', by: 'boss' });
   const id = made.data.item.id as string;
   const other = (await items.createItem({ title: 'quiet two', parent: epic.id }, 'boss')).item;
-  await call('POST', `/api/work-items/${id}/assign`, { session: 'mem', by: 'boss' });
+  await call('POST', `/api/work-items/${id}/handoff`, { session: 'mem', by: 'boss' });
   await call('POST', `/api/work-items/${id}/handoff`, { session: 'cap', from: 'mem', by: 'boss' });
-  await call('POST', `/api/work-items/${id}/handoff`, { none: true, from: 'cap', by: 'boss' });
   await call('PUT', `/api/work-items/${id}`, { title: 'quiet one, renamed', by: 'boss' });
   await call('POST', `/api/work-items/${id}/attach`, { path: 'https://example.com/a.md', by: 'boss' });
   await call('POST', `/api/work-items/${id}/link`, { type: 'Blocks', to: other.id, by: 'boss' });
@@ -347,14 +339,6 @@ test('one notice per person per command: several items, or one reached twice, is
   assert.deepEqual(await said(), [['both', `${a.id}: status To Do → In Progress by boss.\n${b.id}: status To Do → In Progress by boss.`]]);
 });
 
-test('a Ronin item put back tells nobody: only a Jira item goes to traffic_control', async () => {
-  const { item } = await items.createItem({ title: 'put back', parent: epic.id, holder: mem }, 'boss');
-  await quiet();
-  const back = await call('POST', `/api/work-items/${item.id}/handoff`, { none: true, by: 'mem' });
-  assert.equal(back.data.notified, undefined);
-  assert.deepEqual(await said(), []);
-});
-
 /* THE THREE SIGNALS (section 6a; KAN-239 piece E). */
 
 test('the promotion signal: on dev is not a status, a paired item too, and it tells nobody', async () => {
@@ -370,7 +354,7 @@ test('the promotion signal: on dev is not a status, a paired item too, and it te
   assert.equal((await call('POST', `/api/work-items/${item.id}/on-dev`, { by: 'cap' })).status, 400, 'the promotion is named');
 });
 
-test('Waiting on you splits: With the lead until on dev after the last hand-in; a checkout hand-in is ready at once', async () => {
+test('a hand-in is with the lead until on dev after the last hand-in; a checkout hand-in is ready at once', async () => {
   const desk = (await items.createItem({ title: 'desk signal', parent: epic.id, holder: mem }, 'boss')).item;
   const checkout = (await items.createItem({ title: 'checkout signal', parent: epic.id, holder: mem }, 'boss')).item;
   await items.handInItem(desk.id, 'mem', { desk: true, receipts: ['hi_1'] });
@@ -383,10 +367,6 @@ test('Waiting on you splits: With the lead until on dev after the last hand-in; 
   await new Promise((resolve) => setTimeout(resolve, 5));
   await items.handInItem(desk.id, 'mem', { desk: true, receipts: ['hi_2'] });
   assert.equal(await stage(desk.id), 'lead', 'a new hand-in waits for its own promotion');
-  const all = await items.listItems();
-  const held = all.filter((one) => [desk.id, checkout.id].includes(one.id)).map((one) => ({ ...one, holder: 'team:crew' }));
-  const work = teamWork(held, all);
-  assert.deepEqual([work.lead.map((one) => one.id), work.review.map((one) => one.id)], [[desk.id], [checkout.id]]);
 });
 
 test('a hand-in names its item under project management: the switch is read from the Agent\'s behaviours', async () => {
@@ -405,43 +385,25 @@ test('a hand-in names its item under project management: the switch is read from
   assert.match(desk, /NEXT: worktree-desk hand-in \$\{positional\[0\] \?\? '<repo>'\}.*--item <id>/);
 });
 
-test('Waiting on you draws With the lead before Ready to accept, both with Accept and Send back', async () => {
-  const ui = await fs.readFile(new URL('../public/js/team-waiting.js', import.meta.url), 'utf8');
-  assert.match(ui, /if \(lead\.length\) groups\.append\(group\('lead', t\('team_waiting\.with_lead', 'With the lead'\), lead\)\);\n    if \(review\.length\)/);
-  assert.match(ui, /if \(group === 'review' \|\| group === 'lead'\) \{/);
-  const words = await fs.readFile(new URL('../ronin_catalogs/lexicons/professional_en.md', import.meta.url), 'utf8');
-  assert.match(words, /- \*\*team_waiting\.with_lead:\*\* With the lead/);
-});
-
 test('an item In Review with no hand-ins recorded (handed in before the signals) is ready to accept, not with the lead', async () => {
   assert.equal(items.handInStage({}), 'ready', 'no hand_ins at all');
   assert.equal(items.handInStage({ hand_ins: [] }), 'ready', 'an empty list too');
   assert.equal(items.handInStage({ hand_ins: [{ receipt: 'hi_1', by: 'mem', at: '2026-11-04T10:00:00Z' }] }), 'lead', 'a desk hand-in, not on dev');
   assert.equal(items.handInStage({ hand_ins: [{ receipt: 'hi_1', by: 'mem', at: '2026-11-04T10:00:00Z' }], on_dev: { promotion: 'p', at: '2026-11-04T09:00:00Z' } }), 'lead', 'on dev before the last hand-in');
-  // As a pre-signal item stands on the board: In Review, handed_in kept, no hand_ins, no on_dev.
-  const old = (await items.createItem({ title: 'handed in yesterday', parent: epic.id, status: 'In Review' }, 'boss')).item;
-  const work = teamWork([{ ...old, handed_in: { by: 'mem', at: '2026-11-03T10:00:00Z' }, holder: 'team:crew' }], await items.listItems());
-  assert.deepEqual([work.lead.map((one) => one.id), work.review.map((one) => one.id)], [[], [old.id]]);
 });
 
 /* THE HAND-IN NOTE: one short comment for the user, headed Handed in (ITEM_HANDOVER). */
-test('a hand-in carries a note for the user: the Handed in comment, at most 280 characters; Waiting on you shows it first', async () => {
+test('a hand-in carries a note for the user: the Handed in comment, at most 280 characters', async () => {
   const { item } = await items.createItem({ title: 'noted work', objective: 'A lead sees the note first.', parent: epic.id, holder: mem }, 'boss');
   await items.addComment(item.id, 'decided with the lead: no receipts in the note', 'cap');
   const long = await call('POST', `/api/work-items/${item.id}/transition`, { status: 'In Review', note: 'x'.repeat(281), by: 'mem' });
   assert.equal(long.status, 409);
   assert.match(long.data.error, /^Keep it for the user: what they can try\. The detail is in the diff\./);
   assert.equal((await items.readItem(item.id))!.status, 'To Do', 'refused: nothing moved');
-  const ok = await call('POST', `/api/work-items/${item.id}/transition`, { status: 'In Review', note: 'Open a Team; Waiting on you shows the note.', by: 'mem' });
+  const ok = await call('POST', `/api/work-items/${item.id}/transition`, { status: 'In Review', note: 'Open the item; the note reads first.', by: 'mem' });
   assert.equal(ok.status, 200, JSON.stringify(ok.data));
-  assert.equal(ok.data.item.comments.at(-1).text, 'Handed in: Open a Team; Waiting on you shows the note.');
-  assert.equal(items.handedInNote(ok.data.item), 'Open a Team; Waiting on you shows the note.');
-  const all = await items.listItems();
-  const work = teamWork([{ ...ok.data.item, holder: 'team:crew' }], all);
-  const line = work.review.find((one) => one.id === item.id)!;
-  assert.equal(line.objective, 'A lead sees the note first.');
-  assert.equal(line.handed_in, 'Open a Team; Waiting on you shows the note.');
-  assert.deepEqual(line.comments.map((one) => one.text), ['decided with the lead: no receipts in the note'], 'the other comments, folded under it');
+  assert.equal(ok.data.item.comments.at(-1).text, 'Handed in: Open the item; the note reads first.');
+  assert.equal(items.handedInNote(ok.data.item), 'Open the item; the note reads first.');
   // A desk's hand-in carries it the same way.
   const desk = (await items.createItem({ title: 'desk noted', parent: epic.id, holder: mem }, 'boss')).item;
   const handed = await items.handInItem(desk.id, 'mem', { desk: true, note: 'hand-in r9', receipts: ['r9'], forUser: 'Try the tile.' });
@@ -543,22 +505,3 @@ test('a hand-in keeps the holder; Send back goes to the holder, who hears it; Do
   assert.deepEqual(await holding(item.id), ['agent:mem'], 'Done stays on its list until the archive');
 });
 
-test('Waiting on you still reads the Team\'s items and its members\' items: a held hand-in shows With the lead', async () => {
-  const { rosterReading } = await import('../src/work-items-read.js');
-  const { readTeamRoster } = await import('../src/team-rosters.js');
-  const { item } = await items.createItem({ title: 'waits with its Agent', parent: epic.id, holder: mem }, 'boss');
-  await items.handInItem(item.id, 'mem', { desk: true, receipts: ['w1'] });
-  const sessions = [{ name: 'cap', key: 'cap', tags: ['crew'] }, { name: 'mem', key: 'mem', tags: ['crew'] }];
-  const reading = await rosterReading((await readTeamRoster('crew'))!, sessions);
-  const work = teamWork(reading.items, await items.listItems());
-  assert.ok(work.lead.some((one) => one.id === item.id && one.holder === 'agent:mem'), 'the member\'s item waits on the lead');
-});
-
-test('Waiting on you never shows Done: a Done item left flagged is not under Stuck', async () => {
-  const { item } = await items.createItem({ title: 'done but flagged', parent: epic.id, holder: mem }, 'boss');
-  await items.flagItem(item.id, true, 'Waiting on cap: a question', 'mem');
-  await items.editItem(item.id, { status: 'Done' }, 'owner');
-  const all = await items.listItems();
-  const work = teamWork([{ ...(await items.readItem(item.id))!, holder: 'agent:mem' }], all);
-  assert.deepEqual([work.lead, work.review, work.stuck].map((group) => group.length), [0, 0, 0]);
-});

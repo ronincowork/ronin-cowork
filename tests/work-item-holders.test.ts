@@ -1,6 +1,6 @@
 /**
  * HOLDING — lists of item ids on Teams and Agents, never copies of items.
- * Checks: concurrent assigns add holders; handoff removes only the giver; release leaves
+ * Checks: concurrent handoffs add holders; handoff removes only the giver; release leaves
  * it on none.
  */
 import test from 'node:test';
@@ -41,26 +41,26 @@ async function listsHolding(id: string): Promise<string[]> {
   return (await items.holdersOf(id)).map(items.holderLabel).sort();
 }
 
-test('two concurrent assigns of one id add every holder', async () => {
+test('two concurrent handoffs of one id add every holder', async () => {
   for (let round = 0; round < 5; round++) {
     const { item } = await items.createItem({ title: `race ${round}` }, 'lead');
-    await Promise.all([items.assignItem(item.id, ann, 'lead'), items.assignItem(item.id, bo, 'lead'), items.assignItem(item.id, team, 'lead')]);
+    await Promise.all([items.handoffItem(item.id, ann, 'lead'), items.handoffItem(item.id, bo, 'lead'), items.handoffItem(item.id, team, 'lead')]);
     const held = await listsHolding(item.id);
     assert.deepEqual(held, ['agent:ann', 'agent:bo', 'team:crew'], `round ${round}`);
-    const trail = (await items.readItem(item.id))!.trail.filter((line) => line.op === 'assign');
+    const trail = (await items.readItem(item.id))!.trail.filter((line) => line.op === 'handoff');
     assert.equal(trail.length, 3, 'every call acknowledged with its own line');
     assert.equal(trail.at(-1)!.to, 'team:crew', 'the last line names the added holder');
   }
 });
 
-test('assign adds a holder and handoff moves only the giver; content and parent stay put', async () => {
+test('handoff moves only the giver; content and parent stay put', async () => {
   const parent = (await items.createItem({ title: 'overall' }, 'lead')).item;
   const { item } = await items.createItem({ title: 'piece', parent: parent.id }, 'lead');
-  await items.assignItem(item.id, team, 'lead');
+  await items.handoffItem(item.id, team, 'lead');
   assert.ok((await readTeamRoster('crew'))!.holds.includes(item.id));
-  await items.assignItem(item.id, ann, 'lead');
+  await items.handoffItem(item.id, ann, 'lead');
   assert.deepEqual(await listsHolding(item.id), ['agent:ann', 'team:crew']);
-  const moved = await items.handoffItem(item.id, team, bo, 'lead');
+  const moved = await items.handoffItem(item.id, bo, 'lead', { from: team });
   assert.deepEqual([moved.line.from, moved.line.to], ['team:crew', 'agent:bo']);
   assert.deepEqual(await listsHolding(item.id), ['agent:ann', 'agent:bo']);
   assert.equal(moved.item.parent, parent.id);
@@ -70,17 +70,17 @@ test('assign adds a holder and handoff moves only the giver; content and parent 
 test('release leaves the id on no list; the other held item stays', async () => {
   const first = (await items.createItem({ title: 'first' }, 'lead')).item;
   const second = (await items.createItem({ title: 'second' }, 'lead')).item;
-  await items.assignItem(first.id, bo, 'lead');
-  await items.assignItem(second.id, bo, 'lead');
+  await items.handoffItem(first.id, bo, 'lead');
+  await items.handoffItem(second.id, bo, 'lead');
   const released = await items.releaseItem(first.id, 'bo');
   assert.equal(released.line.op, 'release');
   assert.deepEqual(await listsHolding(first.id), []);
   assert.ok((await readLetterHolds('bo'))!.holds.includes(second.id));
 });
 
-test('no permission: anyone may assign or release, and it is on the trail', async () => {
+test('no permission: anyone may hand off or release, and it is on the trail', async () => {
   const { item } = await items.createItem({ title: 'open' }, 'lead');
-  await items.assignItem(item.id, ann, 'somebody_else');
+  await items.handoffItem(item.id, ann, 'somebody_else');
   const back = await items.releaseItem(item.id, 'a_passer_by');
   assert.equal(back.line.by, 'a_passer_by');
 });
@@ -91,11 +91,11 @@ test('the 2026-09-24 duplicate cannot recur: concurrent holding changes never co
   // per id and holding is a list of ids, moved under one lock.
   const one = (await items.createItem({ title: 'surface/1', holder: team }, 'lead')).item;
   const two = (await items.createItem({ title: 'surface/2', holder: team }, 'lead')).item;
-  await items.assignItem(two.id, bo, 'lead');
+  await items.handoffItem(two.id, bo, 'lead');
   const before = (await items.listItems()).length;
-  await Promise.all([items.assignItem(two.id, team, 'bo'), items.assignItem(one.id, ann, 'lead')]);
+  await Promise.all([items.handoffItem(two.id, team, 'bo'), items.handoffItem(one.id, ann, 'lead')]);
   assert.deepEqual(await listsHolding(one.id), ['agent:ann', 'team:crew']);
-  assert.deepEqual(await listsHolding(two.id), ['agent:bo', 'team:crew']);
+  assert.deepEqual(await listsHolding(two.id), ['team:crew'], 'bo gave it to the Team and came off');
   const all = await items.listItems();
   assert.equal(all.length, before, 'no second item was made');
   assert.equal(all.filter((item) => item.title === 'surface/1').length, 1);
@@ -162,7 +162,7 @@ test('renameItem moves the id: the file, a child\'s parent, a link to it, every 
   await seedTegami('renamer');
   const renamer = { kind: 'agent', name: 'renamer' } as const;
   const { item } = await items.createItem({ title: 'made in Ronin', holder: renamer }, 'lead');
-  await items.assignItem(item.id, team, 'lead');
+  await items.handoffItem(item.id, team, 'lead');
   const child = (await items.createItem({ title: 'under it', parent: item.id }, 'lead')).item;
   const other = (await items.createItem({ title: 'blocks it' }, 'lead')).item;
   await items.linkItem(other.id, 'Blocks', item.id, 'lead');
@@ -266,14 +266,22 @@ test('a lead\'s create lands on its Team, a member\'s on itself, and neither is 
   assert.deepEqual(await listsHolding(named.id), ['agent:ann'], 'a holder named wins');
 });
 
-test('an Agent\'s new item needs an epic above it; the owner, Ronin and Jira are not refused', async (t) => {
+test('an Agent creates any kind, with a parent or none (owner, 2026-11-06): nothing refused for a missing epic', async (t) => {
   await withLead(t);
   const story = (await items.createItem({ title: 'a loose story' }, 'boss')).item;
-  await assert.rejects(items.createItem({ title: 'no epic' }, 'mem'), (error: Error) => error instanceof items.WorkItemRefused && /needs an epic above it/.test(error.message));
-  await assert.rejects(items.createItem({ title: 'under a story with no epic', parent: story.id }, 'cap'), /needs an epic above it/);
+  const loose = (await items.createItem({ title: 'no epic' }, 'mem')).item;
+  assert.equal(loose.parent, null, 'no parent is normal');
+  assert.deepEqual(await listsHolding(loose.id), ['agent:mem']);
+  assert.equal((await items.createItem({ title: 'under a story with no epic', parent: story.id }, 'cap')).item.parent, story.id);
   const paired = (await items.createItem({ title: 'from Jira', jira: { id: '99001', key: 'KAN-901' } }, 'mem')).item;
   assert.equal(paired.id, 'KAN-901', 'a paired item is the bridge\'s');
   assert.ok((await items.createItem({ title: 'owner\'s' }, 'owner')).item.id);
+});
+
+test('an Agent may make an Epic and holds it: a member\'s Epic lands on itself, a lead\'s on its Team', async (t) => {
+  await withLead(t);
+  const epic = (await items.createItem({ title: 'member made epic', kind: 'Epic' }, 'mem')).item;
+  assert.deepEqual(await listsHolding(epic.id), ['agent:mem']);
 });
 
 test('a lead of several teams names one; without it the create is refused naming its teams', async (t) => {
@@ -357,7 +365,7 @@ test('a w id is never issued twice: renamed to its Jira key, its number stays us
 test('a move to Done keeps its holders, however it went Done: the record shows it Done', async () => {
   for (const [way, by] of [['Accept', 'owner'], ['item transition', 'lead'], ['Jira', 'jira:someone']]) {
     const { item } = await items.createItem({ title: `done by ${way}`, holder: team }, 'lead');
-    await items.assignItem(item.id, ann, 'lead');
+    await items.handoffItem(item.id, ann, 'lead');
     const done = await items.editItem(item.id, { status: 'Done' }, by!);
     assert.equal(done.line.note, undefined, `${way}: the status line names no holder taken off`);
     assert.deepEqual(await listsHolding(item.id), ['agent:ann', 'team:crew'], `${way}: still on its lists`);
@@ -389,7 +397,7 @@ test('an id is on a holds list once: a doubled list reads once, and writes back 
   assert.equal((await readTeamRoster('crew'))!.holds.filter((id) => id === item.id).length, 1);
   await writeLetterHolds('bo', [item.id, item.id]);
   assert.deepEqual((await readLetterHolds('bo'))!.holds, [item.id]);
-  await items.assignItem(item.id, team, 'lead');
+  await items.handoffItem(item.id, team, 'lead');
   await items.handInItem(item.id, 'ann', { desk: true, receipts: ['r1'] });
   await items.handInItem(item.id, 'ann', { desk: true, receipts: ['r2'] });
   assert.equal((await readTeamRoster('crew'))!.holds.filter((id) => id === item.id).length, 1, 'a second hand-in adds no second copy');
@@ -436,7 +444,7 @@ test('Done five days is archived, however it went Done: off every list, the Epic
   const ids: string[] = [];
   for (const [way, done] of ways) {
     const { item } = await items.createItem({ title: `archive by ${way}`, parent: epic.id, holder: team }, 'lead');
-    await items.assignItem(item.id, ann, 'lead');
+    await items.handoffItem(item.id, ann, 'lead');
     await done(item.id);
     ids.push(item.id);
   }

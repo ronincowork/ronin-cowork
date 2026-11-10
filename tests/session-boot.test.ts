@@ -365,7 +365,7 @@ test('a system installation reads one way or the other', async () => {
   assert.deepEqual(contributionReading(routines), ['routine/a/ON.md', 'routine/b/OFF.md']);
   const repo = path.join(path.dirname(new URL(import.meta.url).pathname), '..');
   for (const name of ['ronin_services']) {
-    const manifest = await readFile(path.join(repo, 'ronin_catalogs', 'installations', `${name}.md`), 'utf8');
+    const manifest = await readFile(path.join(repo, 'ronin_catalogs', 'services', `${name}.md`), 'utf8');
     assert.match(manifest, new RegExp(`\\*\\*reading_off:\\*\\* routine/${name}/OFF\\.md`));
     const off = await readFile(path.join(repo, 'ronin_session_boot', 'routine', name, 'OFF.md'), 'utf8');
     assert.match(off, /working without/);

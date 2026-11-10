@@ -7,10 +7,19 @@
  * launching Agents, not Ronin Cloud customer or subscription accounts.
  */
 import { listProviderCatalog } from './model-providers.js';
+import { readOfficeRecord } from './office-record.js';
 import { deleteHermesEntry, discoverHermesModels, hermesSettingsAnswer, saveHermesConnection, saveHermesSetup, updateHermesConnectionLists, type AccountKind, type HermesConnection } from './hermes-setups.js';
 
-/** The house gateway's office door, where Hermes reaches it today (ronin-services/model_gateway). */
+/** The house gateway's office door on a developer's own box (ronin-services/model_gateway side by side). */
 export const RONIN_API_BASE_URL = 'http://127.0.0.1:4912/v1';
+/** Where this Ronin's house calls go: the office record's gateway_office when it is an office on an
+ * office_park, the local door when self-hosted. A record that will not read is a fault, thrown, never
+ * a fallback: the reader contract has no third hosting state. */
+export async function roninApiBaseUrl(): Promise<string> {
+  const office = await readOfficeRecord();
+  if (office.hosting === 'unreadable') throw new Error(`office record unreadable: ${office.error}`);
+  return office.hosting === 'office_unit' ? `${office.record.gateway_office}/v1` : RONIN_API_BASE_URL;
+}
 export const RONIN_API_SEED_ID = 'ronin_api';
 /** The Ronin API does not serve Claude Code (owner, 2026-11-03). */
 const NOT_ON_RONIN_API = new Set(['claude']);
@@ -22,11 +31,14 @@ const NATIVE_HARNESSES: Record<HermesConnection['provider'], string[]> = { opena
 export interface Account {
   id: string; kind: AccountKind; name: string; provider: HermesConnection['provider']; baseUrl: string; wire: 'chat' | 'responses';
   configured: boolean; seeded?: boolean; credentialEnv?: string; harnesses: string[]; bound: string[]; models: string[]; offered: string[]; discoveredAt?: string;
+  /** The seed only: why no gateway address can be offered (the office record will not read). */
+  fault?: string;
 }
 export interface Preset { id: string; name: string; harness: 'hermes'; account: string; model: string; reasoning: string; approvals: 'off' | 'prompt' }
 export interface AccountsAnswer { accounts: Account[]; presets: Preset[]; kinds: AccountKind[] }
 
 const isGateway = (baseUrl: string) => /^http:\/\/127\.0\.0\.1:\d+(\/|$)/.test(baseUrl);
+/** A connection with no saved kind is the house gateway when it points at the local door; a hosted office's seed carries its kind. */
 export const accountKind = (c: Pick<HermesConnection, 'kind' | 'baseUrl'>): AccountKind => c.kind ?? (isGateway(c.baseUrl) ? 'ronin_api' : 'personal_api');
 
 async function roninApiHarnesses(): Promise<string[]> {
@@ -52,8 +64,11 @@ export async function accountsAnswer(): Promise<AccountsAnswer> {
   const state = await hermesSettingsAnswer();
   const accounts = await Promise.all(state.connections.map(project));
   if (!accounts.some(a => a.kind === 'ronin_api')) {
-    accounts.push({ id: RONIN_API_SEED_ID, kind: 'ronin_api', name: 'Ronin API', provider: 'custom', baseUrl: RONIN_API_BASE_URL, wire: 'responses', configured: false, seeded: true,
-      harnesses: await roninApiHarnesses(), bound: BOUND_HARNESSES, models: [], offered: [] });
+    // An unreadable office record is said on the seed, not papered over with the local door.
+    let baseUrl = '', fault: string | undefined;
+    try { baseUrl = await roninApiBaseUrl(); } catch (e) { fault = (e as Error).message; }
+    accounts.push({ id: RONIN_API_SEED_ID, kind: 'ronin_api', name: 'Ronin API', provider: 'custom', baseUrl, wire: 'responses', configured: false, seeded: true,
+      harnesses: await roninApiHarnesses(), bound: BOUND_HARNESSES, models: [], offered: [], ...(fault ? { fault } : {}) });
   }
   const presets: Preset[] = state.setups.map(s => ({ id: s.id, name: s.name, harness: 'hermes', account: s.connection, model: s.model, reasoning: s.reasoning, approvals: s.approvals }));
   return { accounts, presets, kinds: ['personal_api', 'ronin_api'] };
@@ -65,7 +80,8 @@ export async function saveAccount(input: Record<string, unknown>) {
   const id = input.id === RONIN_API_SEED_ID ? undefined : input.id;
   if (kind === 'ronin_api') {
     return saveHermesConnection({ id, kind, name: typeof input.name === 'string' && input.name.trim() ? input.name : 'Ronin API', provider: 'custom', wireApi: 'responses',
-      baseUrl: typeof input.baseUrl === 'string' && input.baseUrl.trim() ? input.baseUrl : RONIN_API_BASE_URL, apiKey: input.apiKey ?? input.token, harnesses: input.harnesses });
+      // The same office-aware default the seed shows; an unreadable record refuses the save with its reason.
+      baseUrl: typeof input.baseUrl === 'string' && input.baseUrl.trim() ? input.baseUrl : await roninApiBaseUrl(), apiKey: input.apiKey ?? input.token, harnesses: input.harnesses });
   }
   return saveHermesConnection({ ...input, id, kind });
 }

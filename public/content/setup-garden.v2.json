@@ -122,7 +122,7 @@
         {
           "id": "installations-terms",
           "kind": "instruction",
-          "body": "In return Ronin counts tool use — never your code, prompts or messages — and asks you not to commercialize the tools."
+          "body": "Ronin asks you not to commercialize the tools. A Ronin on your own machine sends no usage counts."
         }
       ],
       "media": [

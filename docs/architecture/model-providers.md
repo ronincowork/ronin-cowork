@@ -35,7 +35,7 @@ One `### <Vendor>` section per provider. The section's fields:
 | Field | Meaning |
 |---|---|
 | `provider` | the vendor id a launch names (`anthropic`, `openai`, `google`, `xai`, `nous`) and the key of `agents.sessions.by_provider` |
-| `cli` | the id of the CLI that serves it in `src/agents.ts` (`claude`, `codex`, `gemini`, `grok`, `hermes`) |
+| `cli` | the id of the CLI that serves it in `src/agents.ts` (`claude`, `codex`, `agy`, `grok`, `hermes`) |
 | `models_dev` | optional: the provider key models.dev files this vendor's models under; without one its models show no model info |
 | `families` | `word=tier` pairs (`sonnet=standard`): a listed id takes the tier of the longest word standing whole in it, else in its models.dev family |
 | `maturity` | optional: `comingSoon` shows the provider and never launches it |
@@ -204,7 +204,7 @@ What this machine *has* is measured, not derived on every read. The Campaign rec
 `catalog.config.models[].id` and `.name`, only the `main` section its own picker offers — the
 `overflow` generations are still served but not offered), `codex-cache` (`~/.codex/models_cache.json`,
 `models[]` with `slug`, `display_name`, and `visibility: list`), `command` (run the CLI with
-the argv and read the list under *Available models:* — Grok), or `hermes-setups` (Hermes named setups), or `none` (Gemini:
+the argv and read the list under *Available models:* — Grok), or `hermes-setups` (Hermes named setups), or `none` (Antigravity:
 Model: Native only, and the surface says so). `readModels` walks that table; no CLI id
 appears in it. A new way to read a list is a new key, never an `if`.
 

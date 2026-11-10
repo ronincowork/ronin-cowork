@@ -48,7 +48,9 @@ test('registration records purpose fields but never stores the plain email', asy
   const brief = await compileBirthBriefAt(path.join(root, 'session'), [resolvedIntro!.file], 'newborn', isShelfTeaching);
   assert.match(await readFile(brief, 'utf8'), /^## User intro[\s\S]*^### About the user/m);
   assert.equal(JSON.stringify(record).includes('person@example.com'), false);
-  assert.equal((await registrationAnswer()).status, 'pending', 'submission is not entitlement');
+  const answer = await registrationAnswer();
+  assert.equal(answer.status, 'registered', 'submitting completes registration; no email confirmation');
+  assert.equal(answer.services_entitled, false, 'registration mints no entitlement');
 });
 
 test('anonymous registration needs no email and keeps a stable outgoing packet identity', async () => {
@@ -67,7 +69,7 @@ test('registration rejects a missing or malformed email', async () => {
   await assert.rejects(submitRegistration({ email: 'not-an-email' }), /valid email/);
 });
 
-test('registration recovery keeps consent separate and deletion removes local identity and entitlement', async () => {
+test('an entitlement keeps consent separate, and deletion removes local identity and entitlement', async () => {
   await putEntitlementToken('server-only-entitlement');
   let answer = await registrationAnswer();
   assert.equal(answer.status, 'registered');
@@ -172,9 +174,12 @@ test('Register presents one open profile flow with card choices and anonymous de
   assert.match(source, /el\('span', '', summaryWords\(\)\)/);
   assert.doesNotMatch(source, /\.\.\.\(current\?\.reasons \|\| \[\]\)\]\.filter\(Boolean\)/);
   assert.doesNotMatch(source, /Communication choices|No communication|Update preferences/);
-  assert.match(source, /registration_confirmation', 'Registration confirmation'/);
-  assert.match(source, /Required only if you want to install Ronin Services\./);
-  assert.match(source, /identity\.dataset\.tone = current\?\.status === 'pending' \? 'pending' : 'ok'/);
+  assert.match(source, /registration_heading', 'Registration'/);
+  // The Services key comes by email (KAN-323), but there is still no link to confirm and nothing to resend.
+  assert.doesNotMatch(source, /Required only if you want to install Ronin Services|Confirm the link|check_registration|resend_registration/);
+  assert.match(source, /Check your email for your Ronin Services key/);
+  assert.match(source, /'Email registration supports Ronin Services and Bounty participation\. Anonymous registration shares these answers without contact details\.'/,
+    'the fine print loses only "sends a confirmation and"');
   assert.match(css, /\.setup-register-group \{[^}]*border-top: var\(--edge-2\) solid var\(--kaki\)/, 'groups open with a kaki rule');
   assert.doesNotMatch(css, /\.setup-register-group \{[^}]*(?:border: var\(--edge\)|background: var\(--panel\))/, 'groups are not boxes');
   for (const label of ['With email', 'Anonymous', 'No thank you', 'Work from anywhere', 'Multiple providers without lock-in', 'Agents with team coordination skills']) assert.match(source, new RegExp(label));
@@ -211,11 +216,19 @@ test('Register presents one open profile flow with card choices and anonymous de
   assert.doesNotMatch(source, /registration_pending'[\s\S]*?Registration pending/);
 });
 
-test('anonymous Register delivery uses the durable Ronin message path and never starts email activation', async () => {
+test('Register delivery: anonymous keeps its Ronin message; an email Submit asks HQ to email a Services key and installs nothing', async () => {
   const source = await (await import('node:fs/promises')).readFile(new URL('../src/routes/services-activation-api.ts', import.meta.url), 'utf8');
   assert.match(source, /if \(anonymous\)[\s\S]*?sendKansou\(buildKansou/);
   assert.match(source, /the packet is durable before immediate delivery is attempted/);
-  assert.match(source, /if \(anonymous\)[\s\S]*?return;[\s\S]*?await request\(str\(body\.email\)\)/);
+  assert.match(source, /const services_key = anonymous \? null : await requestServicesKey\(/);
+  assert.match(source, /callHq<\{ sent: boolean \}>\('POST', '\/v1\/accounts\/register', \{ body: \{ email \} \}\)/);
+  const submit = source.slice(source.indexOf("app.post('/api/setup/registration'"), source.indexOf("app.delete('/api/setup/registration'"));
+  assert.doesNotMatch(submit, /startInstall/, 'Submit never starts an install: the key does');
+  // The pasted key is kept, then the install starts with it.
+  const keyed = source.slice(source.indexOf("app.post('/api/setup/services-key'"), source.indexOf("app.post('/api/services/install'"));
+  assert.match(keyed, /readOfficeRecord\(\)[\s\S]*hosting !== 'self_hosted'[\s\S]*SERVICES_KEY\.test\(key\)[\s\S]*await putEntitlementToken\(key\);[\s\S]*servicesOnMachine\.present\(\)[\s\S]*const install = await startInstall\(\);/,
+    'the office is checked before anything is written; an installed machine only saves the key');
+  assert.doesNotMatch(source, /request\(str\(body\.email\)\)|activation\/flow|startConfirmationCheck/);
 });
 
 test('Services retains registration, installation, master, and explicit restart authority', async () => {
@@ -235,7 +248,8 @@ test('Services retains registration, installation, master, and explicit restart 
   assert.match(source, /setAttribute\('aria-live', 'polite'\)/);
   assert.match(source, /if \(item\.act === 'register'\) \{ openRegister\(\); return; \}/);
   assert.match(source, /workbench\?\.place\(SETUP_SURFACE_TYPES\.register/);
-  assert.match(source, /item\.act === 'install' \? '\/api\/services\/install' : '\/api\/services\/activation\/poll'/);
+  assert.match(source, /: await request\('\/api\/services\/install', \{ method: 'POST', json: \{\} \}\)/);
+  assert.doesNotMatch(source, /activation\/poll/);
   // The On step is the Campaign's own installation switch.
   assert.match(source, /request\('\/api\/installations'\)/);
   assert.match(source, /ronin_services: on/);
@@ -302,14 +316,11 @@ test('Services setup model keeps installation and registration as separate facts
   const shape = (m: { steps: Step[] }) => m.steps.map((s) => `${s.id}:${s.label}:${s.done ? 'done' : s.enabled ? s.act : 'off'}`).join(' ');
   const cases: Array<[string, unknown, unknown, unknown, string, string, string]> = [
     ['unregistered', { ok: false, status: 500 }, inst(), null, 'not installed', 'Not installed on this machine', 'register:Register:register install:Install:off switch:Turn on:off'],
-    ['anonymous', reg('anonymous'), inst(), act('not_requested'), 'not installed', 'Not installed · anonymous hello sent', 'register:Register:register install:Install:off switch:Turn on:off'],
-    ['sending', reg('pending'), inst(), act('requesting'), 'sending', 'Sending the confirmation email…', 'register:Sending…:off install:Install:off switch:Turn on:off'],
-    ['awaiting_email', reg('pending', { email_masked: 'p*****@example.com' }), inst(), act('awaiting_email'), 'confirm email', 'Confirmation email sent to p*****@example.com', 'register:Check status:check install:Install:off switch:Turn on:off'],
-    ['expired', reg('pending'), inst(), act('expired'), 'link expired', 'Confirmation link expired', 'register:Register:register install:Install:off switch:Turn on:off'],
-    ['send_failed', reg('pending'), inst(), act('error', { error_at_stage: 'awaiting_email' }), 'waiting to send', 'Waiting to send', 'register:Check status:check install:Install:off switch:Turn on:off'],
-    ['entitled', entitled(), inst(), act('verified'), 'ready to install', 'Registered · Ready to install', 'register:Done:done install:Install:install switch:Turn on:off'],
-    ['installing', entitled(), inst(), act('installing'), 'installing', 'Installing Services…', 'register:Done:done install:Installing…:off switch:Turn on:off'],
-    ['install_failed', entitled(), inst(), act('error', { error_at_stage: 'installing', error_message: 'the installer did not start' }), 'install failed', 'Install did not finish', 'register:Done:done install:Try again:install switch:Turn on:off'],
+    ['awaiting_key', reg('anonymous'), inst(), act('not_requested'), 'Services key needed', 'Registered · Services key needed', 'register:Done:done install:Install:off switch:Turn on:off'],
+    ['awaiting_key', reg('registered'), inst(), act('not_requested'), 'Services key needed', 'Registered · Services key needed', 'register:Done:done install:Install:off switch:Turn on:off'],
+    ['registered', entitled(), inst(), act('not_requested'), 'ready to install', 'Registered · Ready to install', 'register:Done:done install:Install:install switch:Turn on:off'],
+    ['installing', reg('registered'), inst(), act('installing'), 'installing', 'Installing Services…', 'register:Done:done install:Installing…:off switch:Turn on:off'],
+    ['install_failed', reg('registered'), inst(), act('error', { error_at_stage: 'installing', error_message: 'Ronin Services did not install: could not download release v1.7.0' }), 'install failed', 'Install did not finish', 'register:Done:done install:Try again:install switch:Turn on:off'],
     ['switched_off', reg('optional'), here(), act('not_requested'), 'switched off', 'Installed · switched off', 'register:Register:register install:Done:done switch:Turn on:switch_on'],
     ['restart_needed', reg('optional'), here({ switched_on: true, restart_needed: true }), act('not_requested'), 'restart needed', 'Switched on · not yet running', 'register:Register:register install:Done:done switch:Turn off:switch_off restart:Restart:restart'],
     ['active', entitled(), here({ switched_on: true }), act('installed'), 'active', 'Active on this Cowork', 'register:Done:done install:Done:done switch:Turn off:switch_off'],
@@ -325,6 +336,20 @@ test('Services setup model keeps installation and registration as separate facts
     assert.equal(model.steps.length, state === 'restart_needed' ? 4 : 3, 'Restart appears only while a restart is due');
     assert.doesNotMatch(`${model.status} ${model.next} ${model.steps.map((s: Step) => s.label).join(' ')}`, /HTTP|undefined|null/);
   }
+  // An office on an office_park: Services came with the image and HQ already knows the office, so
+  // Register and Install are not offered; a missing install there is a provisioning fault, said as such.
+  const office = { hosting: 'office_unit', record: { office_id: 'glen', office_park: 'oh-1', gateway_office: 'http://10.0.0.2:4912', provisioned_at: 'x' } };
+  const hostedOn = servicesSetupModel(reg('optional'), here({ switched_on: true }), { ok: true, data: { stage: 'installed', office } });
+  assert.deepEqual(hostedOn.steps.map((s: Step) => s.id), ['switch'], 'no Register, no Install on an office_park');
+  assert.equal(hostedOn.state, 'active');
+  const hostedBare = servicesSetupModel(reg('optional'), { ok: true, data: { services: { installed: false, parts: [] } } }, { ok: true, data: { stage: 'not_requested', office } });
+  assert.equal(hostedBare.state, 'office_missing_services'); assert.equal(hostedBare.tone, 'bad');
+  assert.equal(hostedBare.steps.some((s: Step) => s.act === 'install' || s.act === 'register'), false);
+  const unreadable = servicesSetupModel(reg('optional'), here(), { ok: true, data: { stage: 'not_requested', office: { hosting: 'unreadable', error: 'office_id must be letters' } } });
+  assert.equal(unreadable.state, 'office_record_unreadable'); assert.equal(unreadable.tone, 'bad'); assert.match(unreadable.next, /office_id must be letters/);
+  assert.equal(unreadable.steps.some((s: Step) => s.act === 'install' || s.act === 'register'), false, 'a fault is not self-hosted: no Register, no Install');
+  const selfHosted = servicesSetupModel(reg('optional'), here(), { ok: true, data: { stage: 'not_requested', office: { hosting: 'self_hosted', host: 'box' } } });
+  assert.deepEqual(selfHosted.steps.slice(0, 3).map((s: Step) => s.id), ['register', 'install', 'switch'], 'self-hosted keeps its three steps');
   // Installed on the live box without any registration: installed, usable, switchable, and Register stays an optional step.
   const live = servicesSetupModel(reg('optional'), here(), act('not_requested'));
   assert.equal(live.steps[2].act, 'switch_on');
@@ -342,14 +367,22 @@ test('Services setup model keeps installation and registration as separate facts
   const offButRunning = servicesSetupModel(reg('optional'), here({ restart_needed: true }), act('not_requested'));
   assert.equal(offButRunning.steps[3]?.act, 'restart', 'switching off also waits on a restart, so Restart is offered');
   assert.equal(liveOn.steps[1].enabled, false, 'Done install has nothing to press');
-  assert.equal(servicesSetupModel(reg('optional'), inst(), act('not_requested')).steps[1].enabled, false, 'the hosted install waits for the entitlement the API demands');
+  assert.equal(servicesSetupModel(reg('optional'), inst(), act('not_requested')).steps[1].enabled, false, 'Install waits for a Services key');
+  assert.equal(servicesSetupModel(reg('optional'), inst(), act('not_requested', { entitled: true })).steps[1].enabled, true, 'a key on the machine is enough, registered here or not');
+  // The Services key field: offered on a self-hosted machine until Services is installed.
+  assert.equal(servicesSetupModel(reg('registered'), inst(), act('not_requested')).keyField, true);
+  assert.equal(servicesSetupModel(reg('optional'), inst(), act('not_requested')).keyField, true, 'a key from anywhere can be pasted');
+  const installedKey = servicesSetupModel(entitled(), here(), act('installed'));
+  assert.equal(installedKey.keyField, true, 'kept after install, to replace a key that registering again replaced');
+  assert.equal(installedKey.keyAction, 'save', 'after install the key is saved, nothing reinstalls');
+  assert.equal(servicesSetupModel(reg('registered'), inst(), act('not_requested')).keyAction, 'install');
+  assert.equal(servicesSetupModel(reg('registered'), inst(), act('installing')).keyField, false, 'not while installing');
+  assert.equal(servicesSetupModel(reg('optional'), { ok: true, data: { services: { installed: false, parts: [] } } }, { ok: true, data: { stage: 'not_requested', office } }).keyField, false, 'never on an office_park');
   assert.equal(servicesSetupModel(reg('optional'), inst(), act('not_requested')).steps[2].enabled, false, 'nothing to switch on before parts are installed');
-  const installedAwaiting = servicesSetupModel(reg('pending', { email_masked: 'p*****@example.com' }), here(), act('awaiting_email'));
-  assert.equal(installedAwaiting.state, 'switched_off');
-  assert.equal(installedAwaiting.steps[0].act, 'check');
   assert.equal(servicesSetupModel(null, null, null).state, 'unregistered', 'no reads at all still paint a truthful floor');
   assert.match(servicesSetupModel(entitled(), here({ restart_needed: true }), act('installed')).next, /still running/);
   assert.match(servicesSetupModel(entitled(), inst(), act('error', { error_at_stage: 'installing', error_message: 'the installer did not start' })).next, /did not start/);
+  assert.doesNotMatch(JSON.stringify(cases.map(([, r, i, a]) => servicesSetupModel(r as never, i as never, a as never))), /confirm|Check status|link expired|Sending/i);
   assert.equal(servicesSetupModel(entitled(), here({ switched_on: true }), act('installing')).state, 'active', 'parts present and switched on outrank a stale installing stage');
   assert.deepEqual(new Set(cases.map(([, r, i, a]) => servicesSetupModel(r as never, i as never, a as never).tone)), new Set(['', 'warn', 'bad', 'ok']));
 });
@@ -467,23 +500,11 @@ test('Setup has one Installations card, Account has no gbrain tab, and Machine S
   assert.match(machine, /tickRow\(observed\.ronin\.services\.includes\('gbrain'\)/, 'the measured gbrain row remains');
   assert.doesNotMatch(machine, /settei\.use_gbrain|family: 'gbrain'/);
   assert.match(installations, /context\.createInstallationSurface\?\.\(installation\.id, sharedContext\)/);
-  assert.match(surfaces, /createInstallationSurface: \(id, shared\) => id === 'ronin_services' \? createServicesSurface\(shared\) : id === 'gbrain' \? createGbrainSurface\(shared\) : null/);
+  assert.match(surfaces, /createInstallationSurface: \(id, shared\) => id === 'ronin_services' \? createServicesSurface\(shared\) : null/);
   // A collection surface opens showing its collection: forcing Ronin Services open put the
   // surface straight into operation mode, which is the one view the header zone is not in.
   assert.doesNotMatch(installations, /stoneSurface\.select\('ronin_services'\)/);
   assert.match(installations, /context\.onInstallationsState\?\.\(\{ \.\.\.values \}\)/, 'Setup completion follows the saved installation map');
-});
-
-test('Register resend confirmation remains wired from its button to the live recovery action', async () => {
-  const fs = await import('node:fs/promises');
-  const [surface, api] = await Promise.all([
-    fs.readFile(new URL('../public/js/setup-surfaces.js', import.meta.url), 'utf8'),
-    fs.readFile(new URL('../src/routes/services-activation-api.ts', import.meta.url), 'utf8'),
-  ]);
-  assert.match(surface, /resend_registration[\s\S]*\/api\/setup\/registration\/recovery[\s\S]*action: 'resend'/,
-    'the visible Resend confirmation action posts the recovery request');
-  assert.match(api, /action === 'resend'\) await resend\(\)/,
-    'the live recovery route dispatches that request to HQ resend');
 });
 
 test('registration routes are live, and the retired Services mutation routes are gone', async () => {
@@ -497,9 +518,10 @@ test('registration routes are live, and the retired Services mutation routes are
   const { registerServicesActivation } = await import('../src/routes/services-activation-api.js');
   registerServicesActivation(app as never);
   assert.ok(handlers.has('POST /api/setup/registration'));
-  assert.ok(handlers.has('POST /api/setup/registration/recovery'));
   assert.ok(handlers.has('DELETE /api/setup/registration'));
+  assert.ok(handlers.has('POST /api/services/install'));
   for (const route of [
+    'POST /api/setup/registration/recovery', 'POST /api/services/activation/poll',
     'POST /api/services/activation', 'POST /api/services/activation/resend',
     'POST /api/services/activation/address', 'DELETE /api/services/activation',
   ]) assert.equal(handlers.has(route), false, route);
@@ -512,3 +534,4 @@ test('all browser mutation callers use registration; Services activation is read
     assert.doesNotMatch(source, /['"]\/api\/services\/activation(?:\/resend|\/address)?['"][\s\S]{0,80}(?:method:\s*['"](?:POST|DELETE)|,\s*['"]DELETE)/, file);
   }
 });
+

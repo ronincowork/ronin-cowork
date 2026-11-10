@@ -49,8 +49,8 @@ When you bring work to a lead, it decides first which of three it is:
 | On dev | the lead's promotion | still In Review; it moves to Ready to accept |
 | Accepted or sent back | you | Accept makes it Done, and the Agent holding it is told. Send back makes it In Progress with your comment, held where it is; the Agent holding it is told |
 | Handed over | the Agent, as it ends | to the Team (or a named Agent) with a **Handover** comment: where it stands, what is next. Its status stays |
-| Done | you | off the open lists at once, counted until it is archived ("Done, not yet archived: N (ids)" on the work record). Only the person accepting sets Done |
-| Archived | Ronin, five days after Done | off every list, the Epics workbench and `item search` (`--archived` finds it); `item read` and its documents still open. Jira's issue is untouched. Leaving Done brings it back |
+| Done | you | off the open lists at once, counted until it is archived ("Done, not yet archived: N (ids)" on the work record); the lead need not wait: `item archive --done` clears the deck. Only the person accepting sets Done |
+| Archived | Ronin, five days after Done; or anyone at once, `item archive <ids>` or `item archive --done [--team <t>]` (a Done item only) | off every list, the Epics workbench and `item search` (`--archived` finds it); `item read` and its documents still open. Jira's issue is untouched. Leaving Done brings it back |
 
 **An Agent's end hands over, never drops.** By status:
 
@@ -69,7 +69,7 @@ without handover: <agent>, <status>", it shows under Stuck, and the lead is told
 goes to nobody. An item nobody wants any more is deleted, not left in To Do. An epic is Done
 when what done looks like is met.
 
-On Waiting on you and in an item's view on the tile, the objective and the Handed in note come
+In an item's view on the tile, the objective and the Handed in note come
 first; the other comments (the Agent and lead deciding things, the item's record) fold under them.
 
 ## Three signals
@@ -91,11 +91,16 @@ Very few notices, and never the same news twice:
 | You are told of | If you are |
 |---|---|
 | a hand-in | the lead of the Team holding the work (one message, from the hand-in itself) |
-| a call for help (a flag), or an Agent ended without a handover | the lead or epic holder above the item; for an ending, the lead of the Team its items went to, once |
-| a status change | watching that item |
+| a call for help (a flag), or an Agent ended without a handover | the lead of the Team holding the item, and the lead or epic holder above it; for an ending, the lead of the Team its items went to, once |
+| a status change | the lead of the Team holding the item, or watching it |
+| a comment | holding or watching the item |
 | someone else's change on your item | the Agent doing it |
-| a Jira item with nobody on it | traffic_control, which places it |
+| a Jira item with nobody on it (it comes in on the Team holding its parent, if any) | traffic_control, which places it |
 | your item is Done | the Agent that handed it in |
+
+A Team is told through its lead. Where a Team holds or watches an item, its notices go to the
+Team's lead(s); with no lead running, to no one. On an item an Agent works, the lead is not
+told of its changes: only when the Agent asks for help or hands in.
 
 Nothing else sends a notice. Starts, new items, holder changes and handovers show where
 the work shows (below). Agents tell their lead only a decision or a blocker.
@@ -110,15 +115,18 @@ an item has a link on the Jira item that opens its chat.
 
 **In Ronin:**
 
-- **Epics workbench** (Campaign home › Epics, "What the work is"): a stone per epic in the
-  Campaign. Press one and its record opens: where it comes from (its Jira key, or Ronin only),
-  who holds it, its statuses with counts, and its items as cards, each with its holder
-  ("Team surface (lead surface_lead)", or "@agent"). **Show** picks Assigned, Unassigned or All.
-  Archived items are not on it.
-- **Team workbench › Waiting on you:** what waits on you, oldest first. **With the lead**
-  (handed in, not yet on dev), **Ready to accept** (Accept, Send back) and **Stuck** (Reply).
-- **Team workbench › Epics:** the Team's epics; one opens straight onto its record, several
-  show as stones.
+- **Epics workbench** (Campaign home › Epics, "What the work is"): the Epics board. A row
+  of stones across the top, one per epic in the Campaign, each with its Jira key (or Ronin
+  only) and how many of its items are open. Press one and the epic shows below on the same
+  surface: its Jira key and who holds it, then **Assigned** (Yes / No) and **Status** (the open
+  statuses on arrival), then its items as bars grouped by status. A bar says what the item is
+  (its description, last comment, kind, who holds it, "Team surface (lead surface_lead)" or
+  "@agent", and when it last moved), and pressing it opens the item's reading under it. Press
+  another stone to switch epics there; nothing opens elsewhere. An epic's selector card, or a
+  stone dragged into a tilespace, places the same board starting on that epic. Archived items
+  are not on it.
+- **Team workbench › Epics:** the same Epics board over the Team's epics, switching on the
+  one card; with a single epic, that one is shown.
 - **The item island:** on every Agent's tile, a pill for each open item it holds (Done is not
   on it, and Subtasks fold under their Task): the kind's Jira symbol, a status dot, ⚑ when
   flagged, and "handed in" or "on dev" with how long ago. Press a pill to read the item: its

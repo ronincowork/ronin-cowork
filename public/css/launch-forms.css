@@ -90,56 +90,50 @@
   /* A row's notes under its stone: plain muted text, wrapping, clamped to six lines (the ask-name clamp; owner, 2026-10-20). */
   .sws-branch-note { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 6; width: var(--sws-stone); margin: 0; overflow: hidden; overflow-wrap: anywhere; color: var(--muted); font-size: var(--form-note); line-height: var(--leading-body); }
   .wi-flagged::before { background: var(--status-red); /* flagged: an impediment */ }
-  /* EPICS (KAN-206): an Epic's worksurface. One row of statuses (a hidden one carries its count, an out one
-     is plain), then each status that is out as its items' cards; a card's title wraps whole. */
-  .epics-record .wk-surface-content { display: flex; flex-direction: column; gap: var(--space-subsection); padding: var(--space-inset); overflow: auto; }
+  /* EPICS: an Epic's source line (Jira key, holder), its groups and its holder button. */
   .epic-source { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-inline); color: var(--muted); font-size: var(--text-small); }
-  .epic-filter { position: sticky; top: calc(var(--space-inset) * -1); z-index: 1; display: flex; flex-wrap: wrap; gap: var(--space-inline); padding-block: var(--space-row); background: var(--surface); }
-  .epic-chip { display: inline-flex; align-items: baseline; gap: var(--space-inline); padding: var(--space-row) var(--space-inset); border: var(--edge) dashed var(--line-2); border-radius: var(--radius-small); background: transparent; color: var(--muted); font: inherit; font-size: var(--text-label); cursor: pointer; }
-  .epic-chip:hover { border-color: var(--line-3); color: var(--fg-strong); }
-  .epic-chip[aria-pressed='true'] { border-style: solid; border-color: var(--kaki); color: var(--fg-strong); font-weight: var(--weight-strong); }
-  .epic-count { font-variant-numeric: tabular-nums; font-weight: var(--weight-strong); color: var(--fg); }
   .epic-groups { display: flex; flex-direction: column; gap: var(--space-section); }
   .epic-group-heading { margin: 0 0 var(--space-paragraph); color: var(--muted); font-size: var(--text-small); font-weight: var(--weight-strong); letter-spacing: var(--tracking-wide); text-transform: uppercase; }
-  .epic-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: var(--space-inline); align-items: start; }
-  .epic-card { display: flex; flex-direction: column; gap: var(--space-row); min-width: 0; padding: var(--space-inline) var(--space-inset); border: var(--edge) solid var(--line-2); border-inline-start: var(--edge-2) solid var(--accent); border-radius: var(--radius-hair); background: var(--surface); }
-  .epic-card.is-flagged { border-inline-start-color: var(--status-red); }
-  .epic-card:has(.epic-card-body) { grid-column: 1 / -1; border-color: var(--kaki); }
-  .epic-card-title { padding: 0; border: 0; background: none; color: var(--fg-strong); font: inherit; font-size: var(--text-label); font-weight: var(--weight-strong); line-height: var(--leading-tight); text-align: left; overflow-wrap: anywhere; cursor: pointer; }
-  .epic-card-title:hover { color: var(--accent); }
-  .epic-card-meta { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-inline); font-size: var(--text-small); color: var(--muted); }
   .epic-holder { padding: 0; border: 0; background: none; color: var(--accent); font: inherit; cursor: pointer; }
   .epic-holder:hover { text-decoration: underline; }
   .epic-holder.is-none { color: var(--muted); cursor: default; }
-  .epic-card-body { display: flex; flex-direction: column; gap: var(--space-paragraph); padding-top: var(--space-paragraph); border-top: var(--edge) solid var(--line); }
-  .epic-statuses { display: flex; flex-wrap: wrap; gap: var(--space-row); }
-  .epic-answer { margin: 0; color: var(--muted); font-size: var(--text-small); }
-  .epic-answer:empty { display: none; }
-  .epic-answer[data-state='failed'] { color: var(--bad); }
-  .epic-objective { margin: 0; color: var(--fg); font-size: var(--text-body); line-height: var(--leading-body); white-space: pre-wrap; }
-  .epic-comment small { color: var(--muted); font-size: var(--text-small); }
-  .epic-comment p { margin: var(--space-row) 0 0; font-size: var(--text-body); line-height: var(--leading-body); }
   .epic-empty { margin: 0; color: var(--muted); font-size: var(--text-body); }
-  /* WAITING ON YOU AND EPICS on the Team workbench (KAN-232): the Epic card format, a line's title plain
-     (not a button), its wait in tabular figures, a comment box on --inset; the Team's Epics card is flush
-     (createSurface's flush): the stones or record inside keep their own inset, and nothing here reaches into the kit. */
-  .team-epics .epics-records, .team-epics .epics-record { flex: 1 1 auto; min-height: 0; border: 0; }
-  .team-waiting-title { color: var(--fg-strong); font-size: var(--text-label); font-weight: var(--weight-strong); line-height: var(--leading-tight); overflow-wrap: anywhere; }
-  .team-waiting-age { font-variant-numeric: tabular-nums; }
-  .team-waiting-compose { gap: var(--space-row); }
-  .team-waiting-words { min-width: 0; resize: vertical; border: 0; border-radius: var(--radius-hair); background: var(--inset); color: var(--fg); padding: var(--space-row) var(--space-control); font: inherit; }
-  .team-waiting-act.is-send { align-self: flex-start; font-weight: var(--weight-strong); }
-  /* What the user reads first (ITEM_HANDOVER): the objective, the Handed in note under its own
-     word, then the other comments folded. */
-  .team-waiting-note b { color: var(--fg-strong); font-weight: var(--weight-strong); }
-  .team-waiting-comments summary, .wi-comments summary { color: var(--muted); font-size: var(--text-small); cursor: pointer; }
-  .team-waiting-comments[open] { display: flex; flex-direction: column; gap: var(--space-row); }
+  /* THE EPICS BOARD (owner, 2026-11-06, w334): the phalanx's stones, but a row across the top;
+     the picked Epic's questions and its items as the island's bars (style.css button.item-bar) below. */
+  .epic-board { display: flex; flex-direction: column; gap: var(--space-subsection); min-width: 0; padding: var(--space-inset); }
+  .epic-strip { display: flex; flex: 0 0 auto; gap: var(--space-inline); padding-bottom: var(--space-row); overflow-x: auto; }
+  .epic-stone { position: relative; display: flex; flex: 0 0 auto; flex-direction: column; justify-content: space-between; gap: var(--space-row); width: var(--setup-stone-size); min-height: calc(var(--setup-stone-size) / 2); padding: var(--space-inline) var(--space-inset); overflow: hidden; border: var(--edge) solid var(--line-2); border-radius: var(--radius-hair); background: var(--surface); color: var(--fg); font: inherit; text-align: left; cursor: pointer; }
+  .epic-stone::before { content: ''; position: absolute; inset: 0 auto 0 0; width: var(--edge-2); background: var(--accent); /* the phalanx's mark */ }
+  .epic-stone:hover { border-color: var(--kaki); }
+  .epic-stone[aria-pressed='true'] { border-color: var(--kaki); background: var(--selected); box-shadow: inset var(--edge-2) 0 var(--kaki); }
+  .epic-stone[aria-pressed='true']::before { display: none; }
+  .epic-stone-label { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; color: var(--fg-strong); font-size: var(--text-label); font-weight: var(--weight-strong); line-height: var(--leading-tight); overflow-wrap: anywhere; }
+  .epic-stone-meta { overflow: hidden; color: var(--muted); font-size: var(--form-note); text-overflow: ellipsis; white-space: nowrap; }
+  .epic-board-body, .epic-items { display: flex; flex-direction: column; gap: var(--space-subsection); min-width: 0; }
+  .epic-items[hidden] { display: none; }
+  .epic-bars { display: flex; flex-direction: column; gap: var(--space-inline); }
+  .epic-bars > button.item-bar { font-family: inherit; }
+  /* The picked Epic's own bar (KAN-309): its details; pressed, its reading opens under it as any bar's (KAN-310). */
+  .epic-detail { display: flex; flex-direction: column; gap: var(--space-inline); }
+  .epic-detail > button.item-bar { width: 100%; font-family: inherit; }
+  .epic-reading { margin-left: var(--space-inset); padding: var(--space-inline) var(--space-inset); border: var(--edge) solid var(--line); border-radius: var(--radius-large); background: var(--surface); }
+  /* THE TEAM'S EPICS on the Team workbench (KAN-232): the card is flush (createSurface's flush): the
+     board inside keeps its own inset, and nothing here reaches into the kit. */
+  .team-epics .epics-board { flex: 1 1 auto; min-height: 0; border: 0; }
   .wi-comments[open] > .wi-list { margin-top: var(--space-paragraph); }
   /* AN ITEM'S READING (work-items-surface.js renderItemDetail; owner, 2026-11-05): the launch
      forms' furniture — a head, then label-left .fs-step rows — in the UI face, at the form tokens
      only: the title at --text-heading, step names at --form-head, values at --form-input, ids,
      times and help at --form-note. */
   .wi-form { font-family: var(--font-ui); font-size: var(--form-input); line-height: var(--leading-body); color: var(--fg); margin-bottom: 0; }
+  /* A NARROW READING (KAN-312): label-left steps need the name column and a 140px stone side by
+     side; in a reading narrower than that (a narrow tile, a phone), each step stacks, its body
+     under its name across the full width, so the Status stone and the facts never run past the edge. */
+  .wi-form { container: item-reading / inline-size; }
+  @container item-reading (max-width: 22rem) {
+    .wi-form .fs-step { grid-template-columns: minmax(0, 1fr); }
+    .wi-form .fs-step > .fs-step-body, .wi-form .fs-step:has(> .fs-step-head.fs-togglable) > .fs-step-body { grid-column: 1; }
+  }
   .wi-head { display: flex; align-items: flex-start; gap: var(--space-inline); padding-bottom: var(--space-inset); border-bottom: var(--edge) solid var(--line); }
   .wi-head .item-kind { width: var(--text-heading); height: var(--text-heading); flex: 0 0 auto; margin-top: var(--space-row); }
   .wi-head-words { display: flex; flex-direction: column; gap: var(--space-row); min-width: 0; }

@@ -15,6 +15,11 @@
  * (owner, 2026-11-04, KAN-238) — so the colours explain themselves. The bar again, or a
  * pill, puts it back. A pill pressed again closes its item.
  *
+ * THE WIDE LIST (owner, 2026-11-06, w322): the fourth layer. Down, "More detail" turns the
+ * column into bars across the tile, only as tall as the items: each bar the pill's head (symbol,
+ * key, title, status, flag, hand-in), then the item's description, its last comment and a line
+ * of facts (barFacts). A Subtask under its Task is a slimmer bar after it. A bar opens its item.
+ *
  * THE HAND-IN MARK (docs/using-ronin/project-management.md, Three signals): beside the dot and the flag, an item In
  * Review carries the latest of its signals, "handed in" or "on dev", with how long ago, so a
  * tile says what its Agent just handed in. At rest it is the mark alone; down, its words.
@@ -56,22 +61,70 @@ const MARKS = {
   other: [['circle', { cx: 8, cy: 8, r: 2, class: 'ink' }]],
 };
 
-export function kindMark(kind) {
-  const key = kindKey(kind);
+/** One 16×16 mark: a ground and its white parts. The kinds stand on a rounded square, the
+ *  Agent's stance on a circle, so the Agent never reads as one of its items (w331). */
+function mark(cls, data, ground, parts) {
   const svg = document.createElementNS(SVG, 'svg');
   svg.setAttribute('viewBox', '0 0 16 16');
   svg.setAttribute('aria-hidden', 'true');
-  svg.setAttribute('class', 'item-kind');
-  svg.dataset.kind = key;
-  const ground = document.createElementNS(SVG, 'rect');
-  for (const [name, value] of Object.entries({ x: 0, y: 0, width: 16, height: 16, rx: 3, class: 'ground' })) ground.setAttribute(name, String(value));
-  svg.append(ground);
-  for (const [tag, attrs] of MARKS[key]) {
+  svg.setAttribute('class', cls);
+  Object.assign(svg.dataset, data);
+  for (const [tag, attrs] of [ground, ...parts]) {
     const part = document.createElementNS(SVG, tag);
     for (const [name, value] of Object.entries(attrs)) part.setAttribute(name, String(value));
     svg.append(part);
   }
   return svg;
+}
+
+export function kindMark(kind) {
+  const key = kindKey(kind);
+  return mark('item-kind', { kind: key }, ['rect', { x: 0, y: 0, width: 16, height: 16, rx: 3, class: 'ground' }], MARKS[key]);
+}
+
+/**
+ * THE STANCE MARK (owner, 2026-11-06, w331, with cmux and chat_read): left of the island's bar,
+ * only what the owner would act on. The home row's stance (rireki's reading, per harness)
+ * folds to three: a dialog is open (question), the turn ended (your turn), it stopped on an
+ * interruption or a failed tool (stopped). Working, replying and unknown show nothing: the
+ * transcript's dots already say busy.
+ */
+export function stanceKey(stance) {
+  if (stance === 'asking') return 'question';
+  if (stance === 'awaiting_you') return 'turn';
+  if (stance === 'interrupted' || stance === 'error') return 'stopped';
+  return '';
+}
+
+const STANCE_MARKS = {
+  question: [['path', { d: 'M6 6.2a2 2 0 1 1 2.8 1.8c-.6.3-.8.7-.8 1.3v.5', class: 'stroke thin' }], ['circle', { cx: 8, cy: 11.8, r: 0.9, class: 'ink' }]],
+  turn: [['path', { d: 'M6 4.6 9.4 8 6 11.4', class: 'stroke' }]],
+  stopped: [['path', { d: 'M8 4.2v4.6', class: 'stroke' }], ['circle', { cx: 8, cy: 11.6, r: 1, class: 'ink' }]],
+};
+
+export function stanceMark(stance) {
+  const key = stanceKey(stance);
+  return key ? mark('item-stance', { stance: key }, ['circle', { cx: 8, cy: 8, r: 8, class: 'ground' }], STANCE_MARKS[key]) : null;
+}
+
+/** The stance in words: the row's when down, the mark's name and hover help at rest. */
+export function stanceWords(stance) {
+  return {
+    asking: t('island.stance_asking', 'Question: a dialog is waiting for you'),
+    awaiting_you: t('island.stance_awaiting_you', 'Your turn: the turn ended'),
+    interrupted: t('island.stance_interrupted', 'Stopped: interrupted'),
+    error: t('island.stance_error', 'Stopped: a tool failed'),
+  }[stance] || '';
+}
+
+/** What this harness cannot report, from the home row's `stance_reports` (the stances its
+ *  adapter supplies); '' when the row does not say. */
+export function stanceGaps(reports) {
+  if (!Array.isArray(reports)) return '';
+  const names = { asking: t('island.gap_question', 'a question'), awaiting_you: t('island.gap_turn', 'the end of a turn'),
+    interrupted: t('island.gap_interrupted', 'an interruption'), error: t('island.gap_error', 'a failed tool') };
+  const missing = Object.keys(names).filter((one) => !reports.includes(one)).map((one) => names[one]);
+  return missing.length ? t('island.stance_gaps', 'This harness cannot report {list}', { list: missing.join(', ') }) : '';
 }
 
 const HANDIN_MARK = '↑';
@@ -92,9 +145,72 @@ export function handInWords(signal, now = Date.now()) {
   return `${signal.kind === 'dev' ? t('island.on_dev', 'on dev') : t('island.handed_in', 'handed in')} ${ago}`;
 }
 
+/** "1 subtask", "3 subtasks" (w323): the bar's facts and the pill's hover say it the same. */
+export const subtaskWords = (n) => (n === 1 ? t('island.subtask', '1 subtask') : t('island.subtasks', '{n} subtasks', { n }));
+
+/** An item's newest comment, or null. */
+export const lastComment = (item) => (Array.isArray(item?.comments) && item.comments.at(-1)) || item?.said || null;
+
+/** A wide bar's facts line (owner, 2026-11-06, w322): what sizes the item up at a glance, the
+ *  empty ones left out — its kind in words, the Task it is under, its open Subtasks here, attachments,
+ *  how many comments, and when it last moved. Ages are worked out when the bar is drawn. */
+export function barFacts(item, subtasks = 0, now = Date.now()) {
+  const age = (at) => humanAge(Math.max(0, now - Date.parse(at) || 0));
+  const comments = Array.isArray(item?.comments) ? item.comments.length : Number(item?.comment_count) || 0;
+  const attachments = Array.isArray(item?.attachments) ? item.attachments.length : 0;
+  const moved = (Array.isArray(item?.trail) && item.trail.at(-1)?.at) || item?.moved || item?.created?.at || '';
+  return [
+    item?.kind || '', // owner, 2026-11-06 (w325): its kind in words, the symbols not yet known; priority is rarely set
+    item?.parent ? t('island.under', 'under {id}', { id: item.parent }) : '',
+    subtasks ? subtaskWords(subtasks) : '',
+    attachments ? t('island.attachments', '{n} attached', { n: attachments }) : '',
+    comments === 1 ? t('island.comment', '1 comment') : comments ? t('island.comments', '{n} comments', { n: comments }) : '',
+    moved ? t('island.moved', 'moved {age} ago', { age: age(moved) }) : '',
+  ].filter(Boolean);
+}
+
 /** What a pill says when read aloud or hovered: its words, since it shows none. */
 export const pillWords = (item) => [item.id, item.kind, item.status, item.flagged ? t('work_items.flagged', 'flagged') : '', handInWords(handInSignal(item)), item.title]
   .filter(Boolean).join(' · ');
+
+const span = (className, textContent = '') => Object.assign(document.createElement('span'), { className, textContent });
+
+/**
+ * AN ITEM BAR (w322; shared with the Epics worksurface, w334): the pill's head (symbol, key,
+ * title, status, flag, hand-in), then what the item is: its description, its last comment and
+ * a line of facts. A slim item (the Epics push) carries `said`, `comment_count` and `moved` in
+ * place of its comments and trail. `sub` draws a Subtask's slimmer bar; `extra` adds facts
+ * (the Epics worksurface's holder) after the kind; `onPress` is what the bar opens.
+ */
+export function itemBar(item, { sub = false, subtasks = 0, extra = [], onPress } = {}) {
+  const node = document.createElement('button');
+  node.type = 'button';
+  node.className = sub ? 'item-bar item-bar-sub' : 'item-bar';
+  node.dataset.item = item.id;
+  node.dataset.status = statusKey(item.status);
+  if (item.flagged) node.dataset.flagged = 'true';
+  node.setAttribute('aria-label', pillWords(item));
+  const head = span('item-bar-head');
+  const state = span('item-bar-state');
+  state.append(span('item-pill-status'), span('item-bar-status', item.status || ''));
+  if (item.flagged) state.append(span('item-pill-flag', FLAG_MARK));
+  const signal = handInSignal(item);
+  if (signal) { node.dataset.handin = signal.kind; state.append(span('item-bar-handin', `${HANDIN_MARK} ${handInWords(signal)}`)); }
+  head.append(kindMark(item.kind), span('item-bar-id', item.jira || item.id), span('item-bar-title', item.title || ''), state);
+  node.append(head);
+  if (!sub && item.objective) node.append(span('item-bar-objective', item.objective));
+  const said = !sub && lastComment(item);
+  if (said) {
+    const line = span('item-bar-comment');
+    line.append(span('item-bar-who', `@${said.by} · ${humanAge(Math.max(0, Date.now() - Date.parse(said.at) || 0))}`), ` ${said.text}`);
+    node.append(line);
+  }
+  const facts = barFacts(item, subtasks);
+  if (extra.length) facts.splice(facts.length && item?.kind ? 1 : 0, 0, ...extra.filter(Boolean));
+  if (!sub && facts.length) node.append(span('item-bar-facts', facts.join(' · ')));
+  if (onPress) node.addEventListener('click', onPress);
+  return node;
+}
 
 /**
  * The island for one tile. `open(item)` opens an item over the tile and `shut(id)` closes it;
@@ -113,20 +229,42 @@ export function createItemIsland({ open, shut, isOpen }) {
   pills.className = 'item-island-pills';
   pills.setAttribute('role', 'group');
   pills.setAttribute('aria-label', t('island.items', 'Work items held'));
-  el.append(grip, pills);
+  // THE WIDE LIST (owner, 2026-11-06, w322): the fourth layer, between the dropped list and one
+  // item's reading. The tile's width, only as tall as its items: a bar per item saying what it
+  // is — its description, its last comment, its facts — in the dropped list's style.
+  const bars = document.createElement('div');
+  bars.className = 'item-island-bars';
+  bars.setAttribute('role', 'group');
+  bars.setAttribute('aria-label', t('island.items', 'Work items held'));
+  const more = document.createElement('button');
+  more.type = 'button';
+  more.className = 'item-island-more';
+  // The Agent's stance (w331): its mark left of the bar at rest; down or wide, the top row in words.
+  const stance = document.createElement('span');
+  stance.className = 'item-island-stance';
+  stance.hidden = true;
+  el.append(stance, grip, pills, bars, more);
 
   let session = null;
   let drawn = '';
   let items = [];
 
-  const place = (down) => {
-    el.dataset.state = down ? 'down' : 'rest';
-    grip.setAttribute('aria-expanded', String(down));
-    grip.title = down ? t('island.up', 'Put the work items back in the header') : t('island.down', 'Show the work items with their status');
+  /** 'rest' in the header, 'down' the column of pills, 'wide' the bars. */
+  const place = (state) => {
+    const to = state === true ? 'down' : state || 'rest';
+    el.dataset.state = to;
+    grip.setAttribute('aria-expanded', String(to !== 'rest'));
+    grip.title = to !== 'rest' ? t('island.up', 'Put the work items back in the header') : t('island.down', 'Show the work items with their status');
     grip.setAttribute('aria-label', grip.title);
+    more.textContent = to === 'wide' ? t('island.narrow', 'Less detail') : t('island.wide', 'More detail');
+    // Wide, it stops short of the tile's foot and scrolls past that.
+    const body = el.closest('.tile')?.querySelector('.tile-body');
+    el.style.maxHeight = to === 'wide' && body ? `${Math.max(120, body.clientHeight - 16)}px` : '';
   };
-  place(false);
-  grip.addEventListener('click', () => place(el.dataset.state !== 'down'));
+  place('rest');
+  grip.addEventListener('click', () => place(el.dataset.state === 'rest' ? 'down' : 'rest'));
+  more.addEventListener('click', () => place(el.dataset.state === 'wide' ? 'down' : 'wide'));
+  el.addEventListener('keydown', (event) => { if (event.key === 'Escape' && el.dataset.state !== 'rest') { place('rest'); grip.focus(); } });
 
   /** A Subtask whose Task is also on the island is not a pill of its own: it is under its
    *  Task (owner, 2026-11-05), whose pill carries the Subtask mark and their count, and whose
@@ -171,30 +309,59 @@ export function createItemIsland({ open, shut, isOpen }) {
       const mark = Object.assign(document.createElement('span'), { className: 'item-pill-subtasks' });
       mark.append(kindMark('Subtask'), String(count));
       node.dataset.subtasks = String(count);
-      node.title = `${node.title} · ${t('island.subtasks', '{n} subtasks', { n: count })}`;
+      node.title = `${node.title} · ${subtaskWords(count)}`;
       node.setAttribute('aria-label', node.title);
       node.append(mark);
     }
-    // One press opens the item, the same press again closes it.
-    node.addEventListener('click', () => {
-      place(false);
-      if (isOpen(item.id)) shut(item.id);
-      else open(items.find((one) => one.id === item.id) || item);
-    });
+    node.addEventListener('click', () => press(item));
     return node;
   }
 
-  function update(name, list) {
+  /** One press opens the item, the same press again closes it; either puts the island back. */
+  function press(item) {
+    place('rest');
+    if (isOpen(item.id)) shut(item.id);
+    else open(items.find((one) => one.id === item.id) || item);
+  }
+
+  /** A wide bar: the pill's head (symbol, key, title, status, flag, hand-in), then what the item
+   *  is, its last comment, and its facts. A Subtask under a Task here is a slimmer bar after it. */
+  const bar = (item, sub = false) => itemBar(item, { sub, subtasks: sub ? 0 : under.get(item.id) || 0, onPress: () => press(item) });
+
+  let stanceDrawn = '';
+  /** The stance, redrawn only when it or what the harness reports moved. */
+  function drawStance({ stance: now = '', reports } = {}) {
+    const sig = JSON.stringify([now, reports]);
+    if (sig === stanceDrawn) return;
+    stanceDrawn = sig;
+    const shown = stanceMark(now);
+    stance.hidden = !shown;
+    stance.dataset.stance = stanceKey(now);
+    if (!shown) { stance.replaceChildren(); stance.removeAttribute('title'); stance.removeAttribute('aria-label'); return; }
+    const words = stanceWords(now);
+    stance.title = [words, stanceGaps(reports)].filter(Boolean).join(' · ');
+    stance.setAttribute('aria-label', stance.title);
+    stance.replaceChildren(shown, Object.assign(document.createElement('span'), { className: 'item-island-stance-words', textContent: words }));
+  }
+
+  /** `live` is the home row's { stance, reports } (tilehead.js), read off the same push. */
+  function update(name, list, live = {}) {
     const next = Array.isArray(list) ? list : [];
-    if (name !== session) { session = name; drawn = ''; place(false); }
+    if (name !== session) { session = name; drawn = ''; stanceDrawn = ''; place(false); }
     items = next;
-    el.hidden = !session || !next.length;
-    const signature = JSON.stringify(next.map((item) => [item.id, item.kind, item.status, !!item.flagged, item.title, item.parent, handInSignal(item)]));
+    drawStance(live);
+    // An Agent holding nothing still shows its island when it needs you.
+    el.hidden = !session || (!next.length && stance.hidden);
+    more.hidden = !next.length;
+    const signature = JSON.stringify(next.map((item) => [item.id, item.kind, item.status, !!item.flagged, item.title, item.parent, handInSignal(item),
+      item.objective, item.priority, lastComment(item)?.at, item.comments?.length, item.attachments?.length, item.trail?.length]));
     if (signature === drawn) return;
     drawn = signature;
     const shape = folded(next);
     under = shape.under;
     pills.replaceChildren(...shape.top.map(pill));
+    bars.replaceChildren(...shape.top.flatMap((item) => [bar(item),
+      ...(under.get(item.id) ? next.filter((one) => one.parent === item.id && kindKey(one.kind) === 'subtask').map((one) => bar(one, true)) : [])]));
   }
 
   return { el, update };

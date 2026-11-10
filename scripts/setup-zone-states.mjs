@@ -44,7 +44,6 @@ const CASES = [
   { tag: 'register · fresh', card: 1, answers: {}, registration: { status: 'optional' } },
   { tag: 'register · declined', card: 1, answers: { register: 'not_now' }, registration: { status: 'optional' } },
   { tag: 'register · anonymous', card: 1, answers: { register: 'acted' }, registration: { status: 'anonymous', submitted_at: '2026-01-01T00:00:00Z' } },
-  { tag: 'register · pending', card: 1, answers: { register: 'acted' }, registration: { status: 'pending', submitted_at: '2026-01-01T00:00:00Z' } },
   { tag: 'register · registered', card: 1, answers: { register: 'acted' }, registration: { status: 'registered', submitted_at: '2026-01-01T00:00:00Z' } },
   { tag: 'workspace · settled', card: 2, answers: { workspace: 'acted' } },
   { tag: 'installations · settled', card: 3, answers: { installations: 'acted' } },

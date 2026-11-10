@@ -32,15 +32,17 @@ import { registerPasswordSettings } from './routes/password-api.js';
 import { registerSessions, shutdownOperation } from './routes/sessions-api.js';
 import { registerTeams, teamRosters } from './routes/teams-api.js';
 import { registerWorkspaces } from './routes/workspaces-api.js';
+import { registerIntegrations } from './routes/integrations-api.js';
 import { registerPlans } from './routes/plans-api.js';
+import { registerSecrets } from './routes/secrets-api.js';
 import { registerWorkItems } from './routes/work-items-api.js';
+import { registerPromotions } from './routes/promotions-api.js';
 import { epicsPush, everyItemReading } from './work-items-read.js';
 import { registerDocs } from './routes/docs-api.js';
 import { registerDrop } from './routes/drop-api.js';
 import { registerDesks } from './routes/desks-api.js';
 import { registerTeamPage } from './routes/team-page-api.js';
-import { startTomodachiSender } from './activation/tomodachi.js';
-import { registerServicesActivation, resumeInstallWatch, servicesSetupWrites, startConfirmationCheck } from './routes/services-activation-api.js';
+import { registerServicesActivation, resumeInstallWatch, servicesSetupWrites } from './routes/services-activation-api.js';
 import { registerMachineSettings } from './routes/machine-settings-api.js';
 import { registerCampaigns } from './routes/campaigns-api.js';
 import { ensureInitialCampaign } from './campaigns.js';
@@ -50,6 +52,7 @@ import { registerUpdate } from './routes/update-api.js';
 import { registerMachineRestart } from './routes/machine-restart-api.js';
 import { registerJikan, startHouseJikan } from './routes/jikan-api.js';
 import { registerInstalled } from './routes/installed-api.js';
+import { registerOffice } from './routes/office-api.js';
 import { registerVersion } from './routes/version.js';
 import { registerWipeboards, wipeboardAnswer } from './routes/wipeboards-api.js';
 import { registerTerminalControls } from './terminal-controls.js';
@@ -66,6 +69,7 @@ import { originAllowed, allowedOrigins } from './ws/origin.js';
 import { mountAssets, noCacheClient, publicFingerprint } from './assets.js';
 import { DocumentPathError, legacyDocumentPath, readDocumentFile, readProductDocumentFile, saveDocumentFile } from './document-file.js';
 import { checkTmuxServerCgroup } from './host-guard.js';
+import { startTeamLayers } from './team-layers.js';
 import { sockets, startBootHooks, stopBootHooks, mountServiceRoutes, noteService, noteServiceCapabilityPlan, noteServiceFailure, noteServiceParked } from './sockets.js';
 import { startSessionRetention } from './session-retention.js';
 import { discoverParts, partsToLoad } from './parts.js';
@@ -81,7 +85,7 @@ import { registerSetupRuntime } from './routes/setup-runtime-api.js';
 import { registerSetupProgress } from './routes/setup-progress-api.js';
 import { registerMikaContext } from './mika-context.js';
 import { migrateSopsToBehaviours } from './behaviour-store-migration.js';
-import { archiveDone, migrateItems, releaseEndedHolders } from './work-items.js';
+import { archiveDone, ensureEveryIcebox, migrateItems, releaseEndedHolders } from './work-items.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(__dirname, '..');
@@ -103,6 +107,11 @@ if (isEntryPoint) setInterval(() => {
   void archiveDone().then((archived) => {
     if (archived.length) console.log(`[work-items] archived, Done five days: ${archived.join(', ')}`);
   }).catch((error) => console.error(`[work-items] archive: ${(error as Error).message}`));
+  // Every Workspace has its Icebox (docs/using-ronin/planning.md, Park it): one made by Ronin
+  // for a Workspace that has none yet; parking makes it at once.
+  void ensureEveryIcebox().then((made) => {
+    if (made.length) console.log(`[work-items] Icebox made: ${made.join(', ')}`);
+  }).catch((error) => console.error(`[work-items] icebox: ${(error as Error).message}`));
 }, 5 * 60_000).unref();
 const isBoxInstance = isEntryPoint
   && process.env.NODE_ENV === 'production'
@@ -250,15 +259,18 @@ app.get('/api/health', (_req, res) =>
 registerPasskeyManage(app); // /api/passkey/{list,register-options,register,remove} — BEHIND the gate on purpose
 registerPasswordSettings(app, issueSession); // /api/password — saved browser password setting, behind the same gate
 app.use(countBrowserTool);
-app.use(['/api/setup/registration', '/api/services', '/api/campaigns', '/api/machine-settings'], servicesSetupWrites); // each write pushes {t:'services-setup'}
+app.use(['/api/setup/registration', '/api/setup/services-key', '/api/services', '/api/campaigns', '/api/machine-settings'], servicesSetupWrites); // each write pushes {t:'services-setup'}
 registerLaunch(app); // /api/launch (both variants), /api/sessions — src/routes/launch.ts
 registerMikaContext(app); // /api/mika/context/:tab — tiny tab-scoped owner_view/show seam
 registerCatalogs(app); // catalogs and configuration resources — src/routes/catalogs.ts
 registerDocs(app); // /api/docs?shelf=plans|docs — the ▧ Docs tab's shelves — src/routes/docs-api.ts
 registerTeams(app); // /api/team-rosters* — the durable half of every team — src/routes/teams-api.ts
 registerWorkspaces(app); // /api/workspaces* — a Campaign's Workspaces — src/routes/workspaces-api.ts
+registerIntegrations(app); // /api/integrations* — the integrations index, live state, Connect/Disconnect — src/routes/integrations-api.ts
 registerPlans(app); // /api/plans* — the plan tool's door — src/routes/plans-api.ts
+registerSecrets(app); // /api/secrets* — the secret tool's door: save, ask, names; never a value — src/routes/secrets-api.ts
 registerWorkItems(app); // /api/work-items* — the one door to the work item store — src/routes/work-items-api.ts
+registerPromotions(app); // /api/promotions/:id/live — whether a promotion restarted and passed health (KAN-311) — src/routes/promotions-api.ts
 registerDesks(app); // /api/desks?session=<name> and funnel recovery — derived desk state — src/routes/desks-api.ts
 registerTeamPage(app); // /api/teams/:team/page — the team page's view, and drafts an agent hands it — src/routes/team-page-api.ts
 registerVersion(app); // /api/version — release string, or the commit this process started from — src/routes/version.ts
@@ -266,7 +278,7 @@ registerUpdate(app); // /api/update/* — the ⚙ gear's check + run, press-only
 registerMachineRestart(app); // /api/machine/restart — the Setup Services Restart press; answers, then runs ronin-host restart — src/routes/machine-restart-api.ts
 registerMachineSettings(app); // /api/machine-settings — the install record, and writes BY NAME only — src/routes/machine-settings-api.ts
 registerCampaigns(app); // /api/campaigns* — the durable record of each body of work — src/routes/campaigns-api.ts
-startTomodachiSender(); // AGERU's weekly packet actually leaves here — src/activation/tomodachi.ts
+registerOffice(app); // /api/office — the office record: self-hosted, or an office on an office_park — src/office-record.ts
 registerInstalled(app); // /api/installed — what is on this machine: installed · activated · switched, one answer — src/routes/installed-api.ts
 registerSetupRuntime(app); // /api/setup/runtime and provider login completion — explicit readiness facts for Ronin Setup
 registerSetupProgress(app); // one server-owned Setup completion record, scan and answer resource
@@ -320,7 +332,6 @@ for (const s of services) {
 mountServiceRoutes(app);
 
 void resumeInstallWatch();
-startConfirmationCheck(); // asks Ronin HQ while a Services request awaits its emailed link
 
 registerSessions(app); // per-session: kill/harakiri, meta, ctx, tegami, send — src/routes/sessions-api.ts
 registerWipeboards(app); // /api/wipeboards* — src/routes/wipeboards-api.ts
@@ -449,6 +460,8 @@ await tmuxClient.connect(); // only the long-lived server opts into control mode
 const removed = await cleanupViewers();
 if (removed) console.log(`[tmux-ronin] cleaned up ${removed} stale viewer session(s)`);
 await startBootHooks();
+// A TEAM'S FOUR LAYERS (KAN-331): remember every lead's, and tell a lead when its own move.
+void startTeamLayers((cb) => sockets.onItemChanged(cb));
 startFiles(ROOT); // copyparty at /files where python3 is found — src/files.ts
 const stopSessionRetention = startSessionRetention(); // closed session folders outlive the retention period by nothing
 // /events: pushes the session list, the home rows, the Team rosters, the message queue, boards,

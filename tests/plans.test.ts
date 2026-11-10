@@ -25,12 +25,13 @@ process.env.RONIN_WORK_ITEMS_DIR = path.join(dir, 'work-items');
 process.env.RONIN_TEAM_ROSTERS_DIR = path.join(dir, 'team_rosters');
 
 // The live sessions, as a stub tmux answers them: lead leads crew (in Workspace shop); solo is on
-// no Team; both is on crew and on yard (Workspace depot). A tool call runs as FAKE_SESSION.
+// no Team; both is on crew and on yard (Workspace depot); pair is on crew and dock, both in shop.
+// A tool call runs as FAKE_SESSION.
 const bin = path.join(dir, 'bin');
 await fs.mkdir(bin);
 const rows = path.join(bin, 'rows');
 const row = (name: string, tags: string, leads: string) => [name, '', '1', '0', '1', tags, leads, name, '', 'camp', '', '0', ''].join('\t');
-await fs.writeFile(rows, [row('lead', 'crew', 'crew'), row('solo', '', ''), row('both', 'crew,yard', '')].join('\n') + '\n');
+await fs.writeFile(rows, [row('lead', 'crew', 'crew'), row('solo', '', ''), row('both', 'crew,yard', ''), row('pair', 'crew,dock', '')].join('\n') + '\n');
 await fs.writeFile(path.join(bin, 'tmux'), [
   '#!/bin/sh',
   'S=${FAKE_SESSION:-lead}',
@@ -69,6 +70,7 @@ await saveWorkspace({ ...blank, name: 'shop', campaign_id: 'camp' });
 await saveWorkspace({ ...blank, name: 'depot', campaign_id: 'camp' });
 await createTeamRoster('crew', { objective: 'build', workspace: 'shop' }, 'camp');
 await createTeamRoster('yard', { objective: 'store', workspace: 'depot' }, 'camp');
+await createTeamRoster('dock', { objective: 'ship', workspace: 'shop' }, 'camp');
 await seedTegami('lead');
 
 const app = express();
@@ -111,9 +113,9 @@ test('write is a Draft at the default place, the header the tool\'s, one file co
   await fs.writeFile(path.join(lab, 'other.md'), 'not mine\n');
   git(lab, 'add', 'other.md');
   const out = await ok('plan', ['write', 'fit'], 'lead', ORDER);
-  assert.match(out, /^Wrote shop\/fit \(Draft\)\.\nStatus: Draft · \d{4}-\d\d-\d\d · lead\nCommitted\.\n$/);
+  assert.match(out, /^Wrote shop\/fit \(Draft\)\.\nStatus: Draft · \d{4}-\d\d-\d\d · lead · Team crew\nCommitted\.\n$/, 'a new plan takes the writer\'s Team');
   const text = await fs.readFile(path.join(shopDir, 'fit.md'), 'utf8');
-  assert.match(text, /^# Shop fit\n\nStatus: Draft · \S+ · lead\n\nAsked by the owner\./);
+  assert.match(text, /^# Shop fit\n\nStatus: Draft · \S+ · lead · Team crew\n\nAsked by the owner\./);
   assert.equal(text.match(/^Status:/gm)?.length, 1, 'the writer\'s own Status line is replaced');
   assert.equal(git(lab, 'log', '-1', '--format=%s'), 'plan fit: write\n');
   assert.deepEqual(git(lab, 'show', '--name-only', '--format=', 'HEAD').trim().split('\n'), ['camp/shop/plans/fit.md']);
@@ -136,7 +138,8 @@ test('no guards: write keeps the status, order works from any status; Draft and 
   assert.deepEqual(git(lab, 'log', '-2', '--format=%s').trim().split('\n'), ['plan fit: write', 'plan fit: order']);
 
   const fit = await fs.readFile(path.join(shopDir, 'fit.md'), 'utf8');
-  assert.equal(await ok('plan', ['ls', '--status', 'Ordered']), `empty\tOrdered\t${fit.match(/Ordered · (\S+)/)![1]}\tlead\nfit\tOrdered\t${fit.match(/Ordered · (\S+)/)![1]}\tlead\n`);
+  assert.match(fit, /^Status: Ordered · \S+ · lead · Team crew$/m, 'a rewrite and an order keep the Team');
+  assert.equal(await ok('plan', ['ls', '--status', 'Ordered']), `empty\tOrdered\t${fit.match(/Ordered · (\S+)/)![1]}\tlead\tno Team\nfit\tOrdered\t${fit.match(/Ordered · (\S+)/)![1]}\tlead\tcrew\n`);
   assert.equal(await ok('plan', ['ls', '--status', 'Draft']), 'No plans in shop.\n');
   for (const gone of ['Closed', 'Done']) assert.equal((await run('plan', ['ls', '--status', gone])).status, 3);
   assert.equal((await run('plan', ['close', 'fit', 'done'])).status, 2, 'there is no plan close');
@@ -152,6 +155,25 @@ test('--workspace and the one-Team rule; <workspace>/<name> anywhere in the Camp
   assert.match(await ok('plan', ['ls', '--workspace', 'depot'], 'both'), /^No plans in depot\./);
   assert.match(await ok('plan', ['read', 'shop/fit'], 'solo'), /^# Shop fit/);
   assert.match((await run('plan', ['ls', '--workspace', 'nowhere'], 'solo')).stderr, /No Workspace nowhere in camp/);
+});
+
+test('the Team: one of several in the Workspace is named; plan team changes it and nothing else; no Team line is no Team', async () => {
+  const two = await run('plan', ['write', 'dual'], 'pair', ORDER);
+  assert.equal(two.status, 4);
+  assert.match(two.stderr, /^Your Teams in shop are crew, dock; name one with --team <name>\./);
+  assert.match(await ok('plan', ['write', 'dual', '--team', 'dock'], 'pair', ORDER), /· pair · Team dock\n/);
+  assert.match(await ok('plan', ['write', 'dual'], 'pair', ORDER), /^Rewrote .*\nStatus: Draft · \S+ · pair · Team dock\n/, 'a rewrite keeps it');
+  const before = await fs.readFile(path.join(shopDir, 'dual.md'), 'utf8');
+  assert.match(await ok('plan', ['team', 'dual', 'crew', '--workspace', 'shop'], 'solo'), /^shop\/dual is Team crew's\.\nStatus: Draft · \S+ · pair · Team crew\n/);
+  assert.equal(await fs.readFile(path.join(shopDir, 'dual.md'), 'utf8'), before.replace('Team dock', 'Team crew'), 'only the Team moved');
+  assert.equal(git(lab, 'log', '-1', '--format=%s'), 'plan dual: team crew\n');
+  assert.match(await ok('plan', ['team', 'dual', 'none']), /is no Team's\.\nStatus: Draft · \S+ · pair\n/);
+  assert.match((await run('plan', ['team', 'dual', 'nobody'])).stderr, /No Team nobody/);
+  await fs.writeFile(path.join(shopDir, 'old.md'), '# Old\n\nStatus: Ordered · 2026-11-01 · web_lead\n\nBefore Teams.\n');
+  assert.equal((await plans.readPlan((await readWorkspace('camp', 'shop'))!, 'old')).team, '', 'read as no Team; no migration');
+  await fs.rm(path.join(shopDir, 'old.md'));
+  git(lab, 'rm', '-q', 'camp/shop/plans/dual.md');
+  git(lab, 'commit', '-q', '-m', 'test: dual gone');
 });
 
 test('plan: attachments go through the item tool, open where the plan is, and say gone', async () => {

@@ -11,6 +11,7 @@ import { roninIdentity } from './routes/version.js';
 import { listProjectRoots } from './project-roots.js';
 import { listProviderCatalog, listSessionLaunchSpecs, parseProviderSummary, TIERS } from './model-providers.js';
 import { storeDir } from './resources.js';
+import { readOfficeRecord } from './office-record.js';
 import { AGENTS, listAgentAvailability } from './agents.js';
 import { execFile as brokerExecFile } from './spawn-broker.js';
 import { tmux } from './tmux-client.js';
@@ -459,7 +460,7 @@ async function readSet(): Promise<Record<string, unknown>> {
 
 export function setteiServices(activation: ActivationState) {
   return {
-    selected: activation.stage !== 'not_requested' && activation.stage !== 'cancelled',
+    selected: activation.stage !== 'not_requested',
     activation: publicState(activation),
   };
 }
@@ -471,11 +472,7 @@ export function servicesSubscription(activation: PublicActivation): string {
     return `services: ${activation.entitlement_id}`
       + (activation.verified_at ? `, verified ${activation.verified_at}` : '');
   }
-  if (activation.stage === 'requesting' || activation.stage === 'awaiting_email'
-      || activation.stage === 'address_changed') {
-    return 'free cowork: Services confirmation pending';
-  }
-  if (activation.stage === 'expired' || activation.stage === 'error') {
+  if (activation.stage === 'error') {
     return 'free cowork: Services activation needs attention';
   }
   return 'free cowork: no entitlement recorded';
@@ -514,6 +511,8 @@ async function readObserved(jobKeyNames: string[]): Promise<Record<string, unkno
       contract: CONTRACT_V,
       services: listServices(),
     },
+    // Self-hosted, or an office on an office_park: the office record, the same fact the browser's Office section shows.
+    office: await readOfficeRecord(),
     routes: routes(),
     reach: await sshReach(),
     weights: await localWeights(),

@@ -61,19 +61,21 @@ test('epicsPush: every Epic whole, and every item under one slim, with its Epic 
   assert.deepEqual(epics.map((epic) => epic.id), ['E']);
   assert.deepEqual(items.map((one) => [one.id, one.epic, one.jira, one.holder]), [['a', 'E', 'KAN-1', 'agent:sam'], ['s', 'E', '', '']]);
   assert.ok(items.every((one) => !('trail' in one) && !('comments' in one)), 'no history or comments on the push');
+  // w334: what a bar says it is, cut short: the objective, the last comment, counts, when it moved.
+  const long = 'word '.repeat(100);
+  const [one] = epicsPush([item('E', 1, null), item('b', 0, 'E', { objective: long, comments: [{ by: 'a', at: '1', text: 'old' }, { by: 'sam', at: '2026-11-06T00:00:00Z', text: long }], trail: [{ op: 'status', at: '2026-11-06T01:00:00Z' }], hand_ins: [{ receipt: 'r1', by: 'x', at: '1' }, { receipt: 'r2', by: 'x', at: '2' }] })]).items;
+  assert.ok(one.objective.length <= 281 && one.objective.endsWith('…'));
+  assert.equal(one.said.by, 'sam');
+  assert.ok(one.said.text.length <= 201);
+  assert.equal(one.comment_count, 2);
+  assert.equal(one.moved, '2026-11-06T01:00:00Z');
+  assert.deepEqual(one.hand_ins.map((h) => h.receipt), ['r2'], 'the last hand-in only');
 });
 
-test('an Epic pressed opens its worksurface in Tilespace 2: statuses in one row, items as cards, no rail (KAN-206)', async () => {
+test('an Epic is a selector card, its stone drags to a tilespace, and its statuses run in workflow order (KAN-206, w334)', async () => {
   const [surface, catalog, doors] = await Promise.all(['public/js/epics-surface.js', 'public/js/workbench-catalog.js', 'public/js/door-workbenches.js']
     .map((path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8')));
-  assert.match(surface, /seat = 'workspace2'/, 'a pressed Epic opens in Tilespace 2 unless its bench names another seat');
-  assert.match(surface, /action: \(\) => workbench\?\.place\?\.\(WORKBENCH_TYPES\.epicRecord, typeof seat === 'function' \? seat\(\) : seat, \{ key: epic\.id \}\)/);
-  assert.doesNotMatch(surface, /renderDetail|items: statusesOf/, 'no side rail: the stones do not go down a level');
-  assert.match(surface, /const shown = new Set\(\['In Review'\]\)/, 'In Review is out on arrival');
-  assert.match(surface, /if \(!at\.length && !isOut\) continue;/, 'an empty status is not shown');
-  assert.match(surface, /if \(!isOut\) chip\.append\(el\('span', 'epic-count'/, 'the count lives on a hidden status only');
-  assert.match(surface, /\/transition`, \{ method: 'POST', json: \{ status \} \}/, 'a status button moves the item');
-  assert.doesNotMatch(surface, /renderItemDetail|trail/, 'no history and no Jira fields on the worksurface');
+  assert.match(surface, /event\.dataTransfer\.setData\(SURFACE_DRAG, JSON\.stringify\(\{ type: WORKBENCH_TYPES\.epicRecord, detail: \{ key: epic\.id \} \}\)\)/);
   assert.match(catalog, /WORKBENCH_TYPES\.epicRecord, header: 'surface', className: 'wk-selector-entity', discover: \(_t, e\) => e\.epics\(\)/, 'every Epic is a selector card');
   assert.match(doors, /epics: \(\) => epicOffers\(epicsRead\)/);
   const { statusesOf, holderOfItem } = await import('../public/js/epics-surface.js');
@@ -82,7 +84,7 @@ test('an Epic pressed opens its worksurface in Tilespace 2: statuses in one row,
   assert.equal(holderOfItem({ holder: '' }), null);
 });
 
-test('teamWork: the Team’s items In Review and flagged, oldest first, with their wait and flag reason, and its Epics (KAN-232)', async () => {
+test('teamWork: the Team’s Epics, an Epic held and the Epic above each held item (KAN-232)', async () => {
   const { teamWork } = await import('../src/work-items-read.ts');
   const item = (id, level, parent, extra = {}) => ({ id, level, parent, title: id, status: 'To Do', holder: 'agent:sam', kind: 'Task', flagged: false, campaign_id: 'home', external: {}, trail: [], comments: [], created: { at: '2026-11-01T00:00:00.000Z', by: 'x' }, ...extra });
   const every = [
@@ -93,8 +95,15 @@ test('teamWork: the Team’s items In Review and flagged, oldest first, with the
     item('E3', 1, null, { holder: 'team:t' }),
   ];
   const held = ['a', 'b', 'c', 'a'].map((id) => every.find((one) => one.id === id)).concat([every.at(-1)]);
-  const { review, stuck, epics } = teamWork(held, every);
-  assert.deepEqual(review.map((one) => [one.id, one.since, one.jira]), [['b', '2026-11-02T02:00:00.000Z', ''], ['a', '2026-11-03T00:00:00.000Z', 'KAN-1']], 'oldest first, since its last move to In Review, once each');
-  assert.deepEqual(stuck.map((one) => [one.id, one.reason, one.holder]), [['c', 'needs a key', 'agent:sam']]);
+  const { epics, ...rest } = teamWork(held, every);
+  assert.deepEqual(rest, {}, 'the Team row carries its Epics only: no waiting reading (KAN-304)');
   assert.deepEqual(epics.sort(), ['E1', 'E2', 'E3'], 'an Epic held, and the Epic above each held item, a subtask included');
+});
+
+test('the picked Epic is its own bar, opening to its reading as an item bar does; no Epic status beside the filters (KAN-309, KAN-310)', async () => {
+  const surface = await readFile(new URL('../public/js/epics-surface.js', import.meta.url), 'utf8');
+  assert.doesNotMatch(surface, /epic_status/, 'the filter row is Assigned and Status only');
+  assert.match(surface, /itemBar\(epic, \{ extra: \[holder \? holderWords\(holder\)[^\n]*\n\s*onPress: \(\) => \{ if \(!open\.delete\(epic\.id\)\) open\.add\(epic\.id\); paint\(\); \} \}\)/, 'pressed, it opens as any bar');
+  assert.match(surface, /reading\(epic, \{ children: false \}\)/, 'the same reading path; its children are the board below');
+  assert.match(surface, /root\.append\(detail, questions\.el, groups\)/, 'the bar heads the filters');
 });

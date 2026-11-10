@@ -4,7 +4,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { handInSignal, handInWords, kindKey, pillWords, statusKey } from '../public/js/tile-island.js';
+import { barFacts, stanceGaps, stanceKey, stanceWords, handInSignal, handInWords, kindKey, lastComment, pillWords, statusKey, subtaskWords } from '../public/js/tile-island.js';
 
 const read = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
 
@@ -25,7 +25,7 @@ test('a status folds to the family its dot is coloured by', () => {
 test('the tile header carries the island, fed by the pushed work record, and a pill opens the item over the tile', async () => {
   const head = await read('public/js/tilehead.js');
   assert.match(head, /key: 'island', widget: \(tile\) => createItemIsland/);
-  assert.match(head, /tile\.island\?\.update\?\.\(tile\.session, islandItems\(tile\.tegami\)\)/);
+  assert.match(head, /tile\.island\?\.update\?\.\(tile\.session, islandItems\(tile\.tegami\), \{ stance: row\?\.stance, reports: row\?\.stance_reports \}\)/);
   assert.match(head, /renderItemDetail\(detail, item/);
   // w279: a lead's island adds the Epics its Teams hold after its own items.
   // Piece E: then what the Agent handed in that still waits In Review, before a lead's Epics.
@@ -37,7 +37,8 @@ test('the tile header carries the island, fed by the pushed work record, and a p
   assert.match(head, /isOpen: \(id\) => !!openItemLayer\(tile, id\)/);
   const island = await read('public/js/tile-island.js');
   assert.doesNotMatch(island, /request\(|fetch\(|setInterval/, 'no polling: the push is the only reading');
-  // w272: nothing moves on its own: no timer, no drop on a change, no notify light, no kept hide.
+  // w272: nothing drops or pulses on a change: no timer, no auto-drop, no notify light, no kept state.
+  // A mark that shows its current value on each push (the stance, w331) is fine.
   assert.doesNotMatch(island, /setTimeout|noticeable|notify|localStorage/);
   assert.match(island, /if \(isOpen\(item\.id\)\) shut\(item\.id\);/);
   // KAN-238: an expanded pill reads <symbol> <status> <dot> <flag>, the flag solid or its outline; no legend.
@@ -86,4 +87,52 @@ test('a Subtask whose Task is on the island folds under it: the Task pill carrie
   assert.match(island, /pills\.replaceChildren\(\.\.\.shape\.top\.map\(pill\)\)/);
   const surface = await read('public/js/work-items-surface.js');
   assert.match(surface, /step\('subtasks', t\('work_items\.subtasks', 'Subtasks'\)/);
+});
+
+test('w322: the wide list, a bar per item with its description, last comment and facts', async () => {
+  const now = Date.parse('2026-11-06T12:00:00Z');
+  const item = { id: 'w1', kind: 'Bug', priority: 'High', parent: 'KAN-253', attachments: ['/a'], comments: [{ by: 'a', at: '2026-11-06T09:00:00Z', text: 'one' }, { by: 'b', at: '2026-11-06T11:00:00Z', text: 'two' }],
+    trail: [{ at: '2026-11-06T11:30:00Z', by: 'b', op: 'comment' }] };
+  assert.equal(lastComment(item).text, 'two');
+  assert.equal(lastComment({ comments: [] }), null);
+  assert.deepEqual(barFacts(item, 2, now), ['Bug', 'under KAN-253', '2 subtasks', '1 attached', '2 comments', 'moved 30m ago']);
+  assert.ok(barFacts({ comments: [{}] }, 0, now).includes('1 comment'));
+  assert.deepEqual(barFacts({ id: 'w2' }, 0, now), [], 'an empty fact is left out');
+  const island = await read('public/js/tile-island.js');
+  assert.match(island, /el\.append\(stance, grip, pills, bars, more\)/);
+  assert.match(island, /more\.addEventListener\('click', \(\) => place\(el\.dataset\.state === 'wide' \? 'down' : 'wide'\)\)/);
+  assert.match(island, /node\.className = sub \? 'item-bar item-bar-sub' : 'item-bar'/, 'a bar is not a pill: the pill counts stay the pills');
+  const css = await read('public/style.css');
+  assert.match(css, /\.tile-head \.item-island\[data-state='wide'\] \{\n  position: absolute;/);
+  assert.match(css, /\.item-bar \.item-bar-comment \{ -webkit-line-clamp: 1;/);
+});
+
+test('w323: one subtask is singular; wide, the bars scroll and the way out stays in view', async () => {
+  assert.equal(subtaskWords(1), '1 subtask');
+  assert.equal(subtaskWords(3), '3 subtasks');
+  assert.ok(barFacts({ parent: 'KAN-1' }, 1).includes('1 subtask'));
+  const island = await read('public/js/tile-island.js');
+  assert.match(island, /node\.title = `\$\{node\.title\} · \$\{subtaskWords\(count\)\}`/, 'the pill hover');
+  const css = await read('public/style.css');
+  assert.match(css, /\[data-state='wide'\] \{[^}]*overflow: hidden;/);
+  assert.match(css, /\[data-state='wide'\] \.item-island-bars \{[^}]*min-height: 0; overflow-y: auto;/);
+});
+
+test('w331: the stance folds to three marks, only what needs the owner, read off the same push', async () => {
+  assert.equal(stanceKey('asking'), 'question');
+  assert.equal(stanceKey('awaiting_you'), 'turn');
+  assert.equal(stanceKey('interrupted'), 'stopped');
+  assert.equal(stanceKey('error'), 'stopped');
+  for (const busy of ['working', 'replying', 'unknown', '', undefined]) assert.equal(stanceKey(busy), '', `${busy}: no mark`);
+  assert.match(stanceWords('error'), /^Stopped/);
+  assert.equal(stanceGaps(undefined), '', 'a row that does not say names no gaps');
+  assert.equal(stanceGaps(['asking', 'awaiting_you', 'interrupted', 'error']), '');
+  assert.equal(stanceGaps(['awaiting_you']), 'This harness cannot report a question, an interruption, a failed tool');
+  const island = await read('public/js/tile-island.js');
+  assert.match(island, /el\.append\(stance, grip, pills, bars, more\)/);
+  assert.match(island, /mark\('item-stance', \{ stance: key \}, \['circle', \{ cx: 8, cy: 8, r: 8, class: 'ground' \}\]/, 'a circle, not the kinds\' square');
+  assert.match(island, /el\.hidden = !session \|\| \(!next\.length && stance\.hidden\)/, 'an Agent holding nothing still shows when it needs you');
+  const css = await read('public/style.css');
+  assert.match(css, /\.item-stance\[data-stance='question'\] \.ground \{ fill: var\(--kaki-fill\); \}/);
+  assert.match(css, /\.item-stance\[data-stance='stopped'\] \.ground \{ fill: var\(--bad\); \}/);
 });

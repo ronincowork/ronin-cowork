@@ -21,8 +21,8 @@ then unconditionally sends Enter, and one second later sends Enter once more (ow
 2026-10-24): the CLI handles some pastes asynchronously — a long one becomes a
 `[Pasted text #N]` chip, an image path an `[Image #N]` chip, and no rule over the text says
 which — so an Enter that arrives before the chip finds an empty box and the message sits
-unsubmitted; on a box that did submit, the second Enter is a no-op (Claude Code, Codex and
-Gemini CLI each ignore Enter on an empty composer). A carriage return sent through
+unsubmitted; on a box that did submit, the second Enter is a no-op (Claude Code and Codex
+each ignore Enter on an empty composer). A carriage return sent through
 `paste-buffer` is still pasted data and is not a keypress. Raw `send-keys -l` does not
 mark a paste, and a fixed pause cannot repair either boundary. There are no screen checks between them, no
 fingerprints, no prompt-disappearance verification, and no repeated Enter loop: one timer, two Enters.

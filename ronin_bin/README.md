@@ -5,7 +5,7 @@ on PATH at birth. Capability documents decide which tools the brief teaches, not
 commands the Agent may discover:
 
 - **every Cowork Agent** — `edges`, `session_create`, `session_check`, `session_set`,
-  `session_end`, `session_archive`, `session_restore`, `work-record`, `item`, `team`,
+  `session_end`, `session_archive`, `session_restore`, `work-record`, `item`, `team`, `secret`,
   `ronin-help`, and `ronin-url`, the operator address the others source;
 - **with a managed worktree** — `worktree-desk`;
 - **with the Ronin Host behaviour** — `ronin-host` and its dynamically available `--help`;

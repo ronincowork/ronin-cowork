@@ -74,6 +74,22 @@ test('docs are every held item\'s attachments, only what exists', async () => {
   assert.deepEqual(t.docs, [real, second]);
 });
 
+test("a record's own link is a doc as written: an https add_doc reaches the rows beside its files", async () => {
+  const name = 'tegami-read-links';
+  const real = path.join(temp, 'RAAS_CHECKLIST.md');
+  await fs.writeFile(real, 'x');
+  await writeLetter(name, '{ "objective": "links" }');
+  const drop = path.join(temp, name, 'drop');
+  await fs.mkdir(drop, { recursive: true });
+  const url = 'https://claude.ai/artifact/XyW6oPFjqGs9VJWmzxqZXw';
+  await fs.symlink(real, path.join(drop, '20261109-071437-RAAS_CHECKLIST.md'));
+  await fs.symlink(url, path.join(drop, '20261109-071436-XyW6oPFjqGs9VJWmzxqZXw'));
+  await fs.symlink(path.join(temp, 'gone.md'), path.join(drop, '20261109-071438-gone.md'));
+  const t = await readTegami(name);
+  assert.ok(t);
+  assert.deepEqual(t.docs, [url, real], 'the link is kept unread; a local file that is gone is not');
+});
+
 test('an unfenced bare object still parses — an agent that drops the fence keeps its readout', async () => {
   await fs.mkdir(path.join(temp, 'tegami-read-bare'), { recursive: true });
   await fs.writeFile(path.join(temp, 'tegami-read-bare', 'tegami.md'), '# letter\n{ "objective": "no fence" }\n');

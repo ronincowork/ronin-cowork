@@ -16,13 +16,13 @@
 | `item transition` | write: the status of one or several items; a hand-in to In Review takes `--note`, the Handed in comment for the user | priority | `item --help` |
 | `item flag` | write: one or several items are stuck, with the reason as a comment | priority | `item --help` |
 | `item unflag` | write: one or several items are clear | priority | `item --help` |
-| `item assign` | write: add an Agent or Team as a holder of one or several items, removing nobody | priority | `item --help` |
-| `item handoff` | write: the giver (you, or `--from` an Agent or `team:<name>`) comes off one or several items and the receiver goes on; `none` puts them back on their epic | priority | `item --help` |
+| `item handoff` | write: the giver comes off one or several items and the receiver (an Agent or `team:<name>`) goes on. The giver is you, with any Team of yours or of the receiver's that holds it; `--from` names it; `--keep-holding` keeps it on too | priority | `item --help` |
 | `item handover` | write: an ending Agent hands one or several items to its Team or an Agent, with where each stands and what is next (a Handover comment); `--to-do`, `--flag "<the question>"` | priority | `item --help` |
 | `item watch` | write: track one or several items without holding them; `item unwatch` stops | priority | `item --help` |
 | `item comment` | write: one comment, or `--edit <n>` changes one | priority | `item --help` |
 | `item attach` | write: attach or remove a document, visible in Docs | priority | `item --help` |
 | `item link` | write: a link by type name (Blocks, Relates, …) | priority | `item --help` |
+| `item archive` | write: one or several Done items off every list now, as five days Done does; `--done [--team <t>]` clears every Done item you or your Teams hold; an item not Done is refused | priority | `item --help` |
 | `item delete` | write: one or several items go, with their subtasks, in Ronin and in Jira; one that came from Jira only with `--in-jira` | priority | `item --help` |
 
 ## Syntax

@@ -130,8 +130,8 @@ letter's `watches` names the item or one above it, and the lead of each Team who
 `watches` does, or whose member holds the item, found at send time and stored nowhere) hear
 status, flag, holder and new-child moves, in a message naming what they watch. Holding puts a
 Team on no watchers list. Each list reaches an Agent once and gets its own message; the two are
-never compared. A create by an Agent lands on its Team when it leads one, else on itself, and
-needs an epic above it (`createItemUnlocked`); an ending Agent's items go back to its one Team,
+never compared. A create by an Agent lands on its Team when it leads one, else on itself, any
+kind, parent or none (`createItemUnlocked`); an ending Agent's items go back to its one Team,
 its Done items to nobody, untold (`releaseHolder`). Every act
 names its item, one per Jira item act (`item --help`); the Agent's work record shows the
 items it holds, each with its status. `deleteItem` is Jira's delete: the item and its

@@ -35,7 +35,7 @@ not holding an item: holding is how work is found, never permission.
   "external": { "jira": { "id": "10012", "key": "RON-12" } },
   "trail": [
     { "at": "2026-09-28T15:02:11Z", "by": "lead", "op": "create", "to": "none", "note": "Agent-authored items; under w3" },
-    { "at": "2026-09-28T15:04:40Z", "by": "lead", "op": "assign", "from": "none", "to": "agent:builder" }
+    { "at": "2026-09-28T15:04:40Z", "by": "lead", "op": "handoff", "from": "team:surface", "to": "agent:builder" }
   ],
   "created": { "at": "2026-09-28T15:02:11Z", "by": "lead" }
 }
@@ -59,19 +59,19 @@ One object serves every level; a field that means nothing at a level is simply u
 Jira. An epic's status is set by hand. Adding a child never changes an item's level. There
 is no ladder: Jira has none.
 
-Two relations are kept apart. **Holding** (assign, held by) is a list of item ids on each
-Team and each Agent; assigning moves the id from one list to another and never touches the
+Two relations are kept apart. **Holding** (handoff, held by) is a list of item ids on each
+Team and each Agent; a handoff moves the id from one list to another and never touches the
 item. **Parent** is one id on the item, or none. A Team holds; it does not contain.
 
 ```text
-item create --title "Agent-authored items" [--kind Task] [--parent w3] [--objective "…"] [--priority High] [--team surface]
+item create --parent w3 --title "Agent-authored items" [--kind Task] [--objective "…"] [--priority High]   # lands on you
 item read w12                       # fields, children, comments, attachments, links, history
 item search [--team surface] [--holder builder | none] [--parent w3 | --no-parent] [--status "In Progress"] [--kind Bug]
 item edit w12 --priority High
 item edit w12 --parent w3           # parent and level together; --parent none keeps the level
 item transition w12 "In Review"     # any status to any status, by name, as Jira's transition
 item flag w12 "waiting on the API"  # Jira's Add flag; the reason is a comment. item unflag w12
-item assign w12 builder             # or team:surface, or none
+item handoff w12 builder            # you come off, builder goes on; or team:surface
 item comment w12 "commit 0123456789: store round-trips"
 item comment w12 --edit 1 "commit 0123456789: the store round-trips"
 item attach w12 docs/using-ronin/work-record.md     # --remove <path> takes it off
@@ -80,9 +80,8 @@ item delete w12                     # with its subtasks; an epic's other childre
 ```
 
 A new item lands on whoever made it: a lead's on its Team (a lead of several names one with
-`--team`, or the create is refused naming its Teams), any other Agent's on itself. An Agent's
-new item needs an epic above it, or the create is refused saying so; an Epic needs none, and
-items from Jira come as Jira has them. Parent is a field, as in Jira:
+`--team`, or the create is refused naming its Teams), any other Agent's on itself. An Agent
+makes any kind, an Epic too, with a parent or none. Items from Jira come as Jira has them. Parent is a field, as in Jira:
 `item edit --parent` changes the parent and the level in one act, one below the new
 parent; with no parent the level stays. Any level-0 item moved under another becomes a
 subtask (Jira's convert to subtask).
@@ -128,6 +127,8 @@ gives "Your work record changed".
 - `work-record read`: what the Agent holds and watches, and under Documents the record's own
   documents and the held items' attachments (`--json`: `documents` and `attachments`). A lead also sees each Team it leads:
   what the Team holds and watches, and what each member holds and watches, read when asked.
+- `work-record read`, under **Team <name>**: each Team the Agent is on, in four lines (see
+  [A Team in four layers](#a-team-in-four-layers)).
 
 Items show as stones grouped by parent: each epic, then its items, each followed by its
 subtasks. A stone shows the id, title, kind, status and ⚑ when flagged; press one to read
@@ -140,14 +141,14 @@ Name the item on a hand-in with `worktree-desk hand-in <repo> --item <id>`. An a
 hand-in moves the item to In Review and gives it to the Team, with the receipt on its trail.
 A promotion is a code step and never changes a status: each item named on the hand-ins it
 carries gets the promotion receipt on its trail, nothing more. Done is set only by the person
-accepting the item (Waiting on you, or the Jira user for an item paired to Jira). No
+accepting the item (in its reading, or the Jira user for an item paired to Jira). No
 association is guessed from names or repositories.
 
-A supporting Agent and an assignment are two operations owned by their tools:
+A supporting Agent and a handoff are two operations owned by their tools:
 
 ```text
 session_create board_reader --prompt "Take w12 and read it with item read w12."
-item assign w12 board_reader
+item handoff w12 board_reader
 ```
 
 ## Documents live on items, or on the record
@@ -169,6 +170,32 @@ work-record add_doc --remove plans/IDEA.md        # takes it off: the record's f
 the record when the record has it, else off the item you hold. A file the owner dropped on
 the tile is not removed by it. Every Agent is born with Write it Down, which asks for this
 and for a short, current list.
+
+## A Team in four layers
+
+Every Agent on a Team, its lead included, reads the Team in four lines on `work-record read`,
+each read live from where it lives and each naming the command that reads it whole:
+
+| Line | What it shows | Read it whole |
+|---|---|---|
+| Workspace | its title, objective, repos, folders and integrations (each by provider) | `work-record workspace list` |
+| Plans | each plan of the Workspace: its name, status (Draft or Ordered) and Team | `plan read <name>` |
+| Canvases | each canvas's name | `canvas read <name>` |
+| Epics | each epic, who holds it, its status | `item read <id>` |
+
+The Workspace is the Team's (its roster's `workspace`), the plans and canvases are that
+Workspace's, and the epics are those the Team or its members hold, the epic above each item
+they hold, and the epics under the Workspace's plans that are this Team's. An epic reached only
+through another Team's plan, or a plan of no Team, is not on the line. Nothing is copied: a plan's text stays in
+the plan. `work-record workspace list` prints one JSON document: `workspace`, the Team's Workspace (title,
+objective, team, each repo and folder with its directory, and `integrations`, the Workspace's rows
+as they are, `[]` when it has none; `null` when there is no Workspace), and `repos`,
+the Agent's own entries. Canvases read nothing until the `canvas` tool exists.
+
+When a line changes for a lead's Team (a plan written, ordered or given to a Team, a canvas added or removed, an
+epic made, moved or closed, a repo or folder added), the lead alone gets the usual "Your work
+record changed", once for writes that come together: an ordered plan that makes several epics is
+one notice. Editing a canvas's entries tells nobody, and members are never told.
 
 ## The work record
 

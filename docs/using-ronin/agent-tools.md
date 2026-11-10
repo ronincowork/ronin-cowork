@@ -14,10 +14,28 @@ Tools do jobs and report what happened. Every Cowork Agent has:
 - **worktree-desk**: a private folder and branch for code, and a hand-in when the work is ready for review. See [managed worktrees](desks.md).
 - **machine-settings** and **ronin-host**: read this machine's settings and health.
 - **mika**: ask Mika, the house assistant.
+- **secret**: get a password or key from you without it passing through chat. See [Handing an Agent a secret](#handing-an-agent-a-secret).
 - **ronin-help**: the pages you are reading now, and the meaning of a Ronin word: `ronin-help` lists the topics, `ronin-help <topic>` prints one, `ronin-help <brief>` prints a brief by its file name, `ronin-help <word>` looks a word up.
 
 The provider's own tools (reading files, running commands, searching) are there too;
 Ronin adds to them and takes nothing away.
+
+## Handing an Agent a secret
+
+When an Agent needs a password or key (a KVM login, an API token), it never needs to see it
+in chat, and you never paste it into a message.
+
+- **The Agent asks:** `secret ask <name> --for "<what it is>"`. A paste field opens over its
+  tile. Click into it, paste, and press **Save**, or **Cancel** (Escape in the field cancels too).
+  Save says *Saving…*, then *Saved* shows for a moment before the field closes; if the save is
+  refused, it stays open and says why. The Agent hears
+  only `saved: <name>` or `cancelled: <name>`.
+- **The Agent uses it by its file:** `secret path <name>` prints where it is, to pass as
+  `--password-file` or read in its own script. `secret ls` lists the names.
+
+Each secret is one file in `~/ronin/services_secrets`, readable only by you. Ronin never
+prints a value, and no reply, log or chat carries one. A name is lowercase letters, digits,
+`_` and `-`.
 
 ## Behaviours
 

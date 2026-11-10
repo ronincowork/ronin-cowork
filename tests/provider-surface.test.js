@@ -46,12 +46,12 @@ const ANTHROPIC = { provider: 'anthropic', cli: 'claude', native: 'claude', labe
 ] };
 const OPENAI = { provider: 'openai', cli: 'codex', native: 'codex', label: 'OpenAI', cli_label: 'Codex', models: [{ model: 'gpt-5.6-sol', tier: 'frontier', cost: '$5 in · $30 out per M tokens (2026-09)', good_at: 'the hardest coding', not_good_at: 'bulk loops' }] };
 const PI = { provider: 'pi', cli: 'pi', native: 'pi', label: 'Pi', cli_label: 'pi', models: [{ model: 'pi-1', tier: 'standard', cost: 'free (2026-09)', good_at: 'chat', not_good_at: 'code' }] };
-const OPENROUTER = { provider: 'openrouter', cli: 'openrouter', cli_label: 'openrouter', label: 'OpenRouter', maturity: 'comingSoon', origin: 'stock', shadowed: false, operational: false, off: false, models: [] };
+const SOON = { provider: 'soon', cli: 'soon', cli_label: 'soon', label: 'Soon', maturity: 'comingSoon', origin: 'stock', shadowed: false, operational: false, off: false, models: [] };
 const stockCatalog = () => ({ origin: 'stock', path: '/stock/MODEL_PROVIDERS.md', model_info: { origin: 'stock', fetched_at: '2026-09-08T10:00:00.000Z' }, withdrawn: [], measured_at: '2026-09-08T11:00:00.000Z', refreshed_at: '', providers: [
   joined(ANTHROPIC, true, [['opus', 'Opus 5'], ['haiku', 'Haiku 4.5']]),
   joined(OPENAI, false),
   joined(PI, false),
-  OPENROUTER,
+  SOON,
 ] });
 let catalog = stockCatalog();
 const CLAUDE_LIST = { read_at: '2026-09-08T06:00:00.000Z', by: '2.1.263', rows: [{ id: 'opus', name: 'Opus 5' }, { id: 'haiku', name: 'Haiku 4.5' }] };
@@ -122,8 +122,8 @@ test('showing the surface paints the recorded inventory without starting a secon
   assert.equal(ctx.refreshed.count, 1);
   assert.deepEqual(ctx.environment.setupRuntime, machine);
   const stones = byClass(made.el, 'sws-stone');
-  assert.deepEqual(stones.map((stone) => stone.attributes['data-provider']), ['claude', 'codex', 'grok', 'pi', 'openrouter']);
-  assert.deepEqual(stones.map((stone) => byClass(stone, 'sws-label')[0].textContent), ['Claude Code', 'Codex', 'Grok Build', 'Pi', 'OpenRouter']);
+  assert.deepEqual(stones.map((stone) => stone.attributes['data-provider']), ['claude', 'codex', 'grok', 'pi', 'soon']);
+  assert.deepEqual(stones.map((stone) => byClass(stone, 'sws-label')[0].textContent), ['Claude Code', 'Codex', 'Grok Build', 'Pi', 'Soon']);
   assert.deepEqual(stones.slice(0, 4).map((stone) => byClass(stone, 'sws-state')[0].textContent), ['Activated', 'Sign-in open', 'Not installed', 'No CLI']);
   assert.deepEqual(stones.slice(0, 4).map((stone) => byClass(stone, 'sws-secondary')[0].textContent), ['Anthropic · 3 models', 'OpenAI · 1 models', 'xAI', 'Pi · 1 models']);
   assert.deepEqual(stones.map((stone) => stone.attributes['data-activated']), ['true', 'false', 'false', 'false', 'false']);

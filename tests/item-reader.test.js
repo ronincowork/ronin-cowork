@@ -42,8 +42,8 @@ test('every size in the reader is a token, and the tile overlay reads in the UI 
 });
 
 // What the user reads first (ITEM_HANDOVER): the objective and the Handed in note, before
-// Status; the other comments folded. Waiting on you reads in the same order.
-test('the reader and Waiting on you show the objective and the Handed in note first, other comments folded', async () => {
+// Status; the other comments folded.
+test('the reader shows the objective and the Handed in note first, other comments folded', async () => {
   const surface = await read('public/js/work-items-surface.js');
   const body = surface.slice(surface.indexOf('export function renderItemDetail'), surface.indexOf('/** A phalanx of item stones'));
   const at = (what) => { const i = body.indexOf(what); assert.ok(i >= 0, what); return i; };
@@ -54,11 +54,6 @@ test('the reader and Waiting on you show the objective and the Handed in note fi
   assert.match(body, /const folded = el\('details', 'wi-comments'\);/, 'the other comments fold');
   assert.match(surface, /export const HANDED_IN = 'Handed in: ';/);
   assert.match(await read('src/work-items.ts'), /export const HANDED_IN = 'Handed in: ';/, 'one heading, server and client');
-  const waiting = await read('public/js/team-waiting.js');
-  const card = waiting.slice(waiting.indexOf('function card(item, group)'));
-  assert.ok(card.indexOf('node.append(...readFirst(item))') < card.indexOf("const acts = el('div', 'epic-statuses')"), 'read first, then the actions');
-  const first = waiting.slice(waiting.indexOf('export function readFirst'), waiting.indexOf('/** Waiting on you: With the lead'));
-  assert.ok(first.indexOf('item.objective') < first.indexOf('item.handed_in') && first.indexOf('item.handed_in') < first.indexOf("el('details'"));
 });
 
 // w299 (owner via pm_lead): a Team's item reads as the Team's, with its lead; an Agent's as
@@ -90,17 +85,23 @@ test('holderWords and holderOf say who holds an item; originWords where it start
   assert.match(epics, /button\.addEventListener\('click', \(\) => openHolder\(holder\)\)/, 'the button still opens the holder');
 });
 
-// Owner, 2026-11-05: the overlay says the hand-in the pill marks — who, when, and on dev.
-test('handInRecord: the last hand-in, and on dev only when its promotion came after', async () => {
+// Owner, 2026-11-05: the overlay says the hand-in the pill marks. KAN-311: as one line of steps.
+test('handInRecord: one line of steps, promoted only when its promotion came after; live from the receipt', async () => {
   const surface = await read('public/js/work-items-surface.js');
   const lift = (name) => surface.match(new RegExp(`export (?:const|function) ${name}[\\s\\S]*?\\n(?=\\n)`))[0].replace(/^export /, '');
   const t = (_key, literal, vars) => literal.replace(/\{(\w+)\}/g, (_m, k) => String(vars[k]));
   const when = (at) => String(at || '').slice(0, 16).replace('T', ' ');
-  const handInRecord = new Function('t', 'when', `${lift('handInRecord')}\nreturn handInRecord;`)(t, when);
+  const { handInRecord, promotionToCheck } = new Function('t', 'when', `${lift('handInRecord')}\n${lift('promotionToCheck')}\nreturn { handInRecord, promotionToCheck };`)(t, when);
+  const handed = 'Handed in by item_pills 2026-11-05 10:33 · on team line';
   assert.equal(handInRecord({}), '');
-  assert.equal(handInRecord({ handed_in: { by: 'item_pills', at: '2026-11-05T10:33:29Z' } }), '↑ by item_pills · 2026-11-05 10:33');
-  assert.equal(handInRecord({ handed_in: { by: 'item_pills', at: '2026-11-05T10:33:29Z' }, on_dev: { at: '2026-11-05T10:34:33Z', promotion: 'r1' } }), '↑ by item_pills · 2026-11-05 10:33 · on dev 10:34 (r1)');
-  assert.equal(handInRecord({ handed_in: { by: 'a', at: '2026-11-05T11:00:00Z' }, on_dev: { at: '2026-11-05T10:00:00Z' } }), '↑ by a · 2026-11-05 11:00', 'an older promotion is not this hand-in');
+  assert.equal(handInRecord({ handed_in: { by: 'item_pills', at: '2026-11-05T10:33:29Z' } }), `${handed} · with the lead`);
+  assert.equal(handInRecord({ hand_ins: [{ receipt: 'h1', by: 'item_pills', at: '2026-11-05T10:33:29Z' }], on_dev: { at: '2026-11-05T10:34:33Z', promotion: 'r1' } }), `${handed} · promoted to dev 10:34`, 'promoted in place of with the lead');
+  assert.equal(handInRecord({ handed_in: { by: 'item_pills', at: '2026-11-05T10:33:29Z' }, on_dev: { at: '2026-11-06T09:00:00Z', promotion: 'r1' } }), `${handed} · promoted to dev 2026-11-06 09:00`, 'another day carries its date');
+  assert.equal(handInRecord({ handed_in: { by: 'a', at: '2026-11-05T11:00:00Z' }, on_dev: { at: '2026-11-05T10:00:00Z' } }), 'Handed in by a 2026-11-05 11:00 · on team line · with the lead', 'an older promotion is not this hand-in');
+  assert.equal(promotionToCheck({ handed_in: { by: 'a', at: '2026-11-05T10:00:00Z' }, on_dev: { at: '2026-11-05T10:01:00Z', promotion: 'r1' } }), 'r1');
+  assert.equal(promotionToCheck({ handed_in: { by: 'a', at: '2026-11-05T11:00:00Z' }, on_dev: { at: '2026-11-05T10:00:00Z', promotion: 'r0' } }), '');
+  assert.match(surface, /request\(`\/api\/promotions\/\$\{encodeURIComponent\(promotion\)\}\/live`/, 'live is the promotion receipt read');
+  assert.doesNotMatch(surface.slice(surface.indexOf('export function handInRecord'), surface.indexOf('export function originWords')), /github|master|' \| '/i, 'no GitHub/master step, no divider');
   assert.match(surface, /if \(record \|\| handed\) \{/, 'the row shows for a hand-in with no note too');
 });
 
@@ -114,4 +115,12 @@ test('the tile\'s work record lists open items, and counts Done on one line, new
   assert.match(record, /'Done, not yet archived: \{n\} \(\{ids\}\)'/);
   assert.match(record, /done\.slice\(0, 8\)/);
   assert.match(record, /sort\(\(a, b\) => doneAt\(b\)\.localeCompare\(doneAt\(a\)\)\)/, 'newest first');
+});
+
+test('a narrow reading stacks its steps so nothing runs past the edge (KAN-312)', async () => {
+  const css = await read('public/css/launch-forms.css');
+  assert.match(css, /\.wi-form \{ container: item-reading \/ inline-size; \}/);
+  const block = css.slice(css.indexOf('@container item-reading (max-width: 22rem)'));
+  assert.match(block, /\.wi-form \.fs-step \{ grid-template-columns: minmax\(0, 1fr\); \}/);
+  assert.match(block, /\.wi-form \.fs-step:has\(> \.fs-step-head\.fs-togglable\) > \.fs-step-body \{ grid-column: 1; \}/);
 });

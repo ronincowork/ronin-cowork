@@ -16,6 +16,7 @@ import { guard, showFailure } from './errors.js';
 import { sayWhenUnreachable, sessionsHandlers } from './events.js';
 import { connect } from './store.js';
 import { membersOfTeam, subscribe, teamByName, teamsFromState, UNASSIGNED, unassignedSessions } from './team-controller.js';
+import { listedTeam } from './roster-groups.js';
 import { loadProjects, projectData } from './home.js';
 import { buildDocs } from './docs.js';
 import { createTerminalTileHost } from './terminal-tile-host.js';
@@ -116,7 +117,7 @@ export async function buildPhone() {
   const paintTeams = () => {
     teamsBar();
     const list = el('div', 'ph-list');
-    const teams = teamsFromState().filter((team) => !team.holding || unassignedSessions().length);
+    const teams = teamsFromState().filter((team) => listedTeam(team) && (!team.holding || unassignedSessions().length));
     for (const team of teams) {
       const card = el('a', 'ph-card');
       card.href = teamHash(team.name);
@@ -261,7 +262,7 @@ export async function buildPhone() {
     const team = route.team;
     teamBar(team);
     const pane = el('div', 'home-docs ph-docs');
-    const docs = buildDocs(pane, (name) => membersOfTeam(team).some((member) => member.name === name));
+    const docs = buildDocs(pane, (name) => membersOfTeam(team).some((member) => member.name === name), { team: team === UNASSIGNED ? '' : team });
     docsView = docs;
     main.replaceChildren(segment(team, 'docs'), pane);
     docs.enter();

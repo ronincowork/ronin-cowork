@@ -9,8 +9,10 @@ import { createPhalanx } from './phalanx.js';
 import { completeInstallationMap as completeMap } from './installation-map.js';
 import { createStatusMarker } from './status-marker.js';
 import { createSetupZone, setupStep, watchSetupProgress } from './setup-zone.js';
+import { createIntegrationsPanel } from './integrations-panel.js';
 
-const INSTALLATION_ORDER = ['ronin_services', 'gbrain', 'trello', 'perplexity'];
+/** Ronin's own (ronin_catalogs/services). Outside services are integrations (integrations-panel.js). */
+const INSTALLATION_ORDER = ['ronin_services'];
 const el = (tag, cls = '', text = null) => {
   const out = document.createElement(tag);
   if (cls) out.className = cls;
@@ -43,10 +45,7 @@ export function createInstallationsSurface(campaign, context = {}) {
     return available(installation) ? t('campaign_view.on', 'On') : t('campaign_view.not_configured', 'Not configured');
   };
 
-  const servicesReady = () => values.ronin_services === true && (installed?.services?.parts || []).length > 0;
-  const gated = (name) => (name === 'trello' || name === 'perplexity') && !servicesReady();
-  const blockedReason = (installation) => comingSoon(installation) ? t('status.coming_soon', 'Coming soon')
-    : gated(installation.name) ? t('campaign_view.services_required', 'Ronin Services required') : '';
+  const blockedReason = (installation) => comingSoon(installation) ? t('status.coming_soon', 'Coming soon') : '';
   const itemFor = (installation) => ({
     ...installation,
     id: installation.name,
@@ -191,7 +190,7 @@ export function createInstallationsSurface(campaign, context = {}) {
    * The states are the STEP's and never a single stone's (designer, 2026-09-20): a stone's
    * own condition already has .status-marker and .sws-state to live on, which is where
    * 'Coming soon' and a registration gate belong. So the zone says whether anything at all
-   * is installed, and never names Ronin Services, gbrain, Trello or Perplexity.
+   * is installed, and never names Ronin Services.
    */
   const environment = context.environment;
   const zone = environment?.answerSetupStep ? createSetupZone() : null;
@@ -227,7 +226,10 @@ export function createInstallationsSurface(campaign, context = {}) {
 
   // Answering does not reload this surface, so the zone listens for the record it reads.
   const stopProgress = watchSetupProgress(environment, paintZone);
-  stoneSurface.mount(surface.content, { before: zone ? [zone.el, reading] : [reading] });
+  // Ronin Services under a heading of its own, the integrations below it (KAN-337).
+  const servicesHeading = el('h3', 'integrations-heading', t('campaign_view.ronin_services', 'Ronin Services'));
+  const integrations = createIntegrationsPanel(campaign, { panels: context.integrationPanels || {}, embedded: true });
+  stoneSurface.mount(surface.content, { before: zone ? [zone.el, reading, servicesHeading] : [reading, servicesHeading], after: [integrations.el] });
 
   const enter = async () => {
     const [catalogResult, installedResult] = await Promise.all([
@@ -257,11 +259,12 @@ export function createInstallationsSurface(campaign, context = {}) {
     context.onInstallationsState?.({ ...values });
     defaultBehaviours = Array.isArray(campaign()?.config?.defaults?.behaviours) ? [...campaign().config.defaults.behaviours] : [];
     stoneSurface.setItems(catalog.map(itemFor));
+    void integrations.enter();
     // A collection surface opens showing its collection. Forcing Ronin Services open put the
     // surface straight into operation mode, which is the one view the header zone is not in.
   };
 
-  return { el: surface.el, enter, destroy: () => { stopProgress(); stoneSurface.destroy(); } };
+  return { el: surface.el, enter, destroy: () => { stopProgress(); stoneSurface.destroy(); integrations.destroy(); } };
 }
 
 export function installationsSummary(campaign) {

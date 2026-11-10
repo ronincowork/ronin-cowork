@@ -1,11 +1,13 @@
 /** /api/plans — the `plan` tool's one door (ronin_bin/plan, src/plans.ts). Every command names its
- * caller (`by`, the session); the Workspace is `workspace`, else the caller's Team's. A write or order
+ * caller (`by`, the session); the Workspace is `workspace`, else the caller's Team's; a new plan's
+ * Team is `team`, else the caller's one Team in that Workspace (plans.ts teamFor). A write, order or team
  * answers one line, then the plan's header. The one 409 asks which Workspace, by name. */
+import { layersMayHaveChanged } from '../team-layers.js';
 import type express from 'express';
 import { initialCampaignId } from '../campaign-scope.js';
 import { listSessions } from '../tmux.js';
 import {
-  PlanBadInput, PlanMissing, PlanRefused, headerLine, listPlans, orderPlan, planTarget, planTemplate, readPlan, resolvePlanRef, whichWorkspace, writePlan,
+  PlanBadInput, PlanMissing, PlanRefused, headerLine, listPlans, orderPlan, planTarget, planTemplate, readPlan, resolvePlanRef, setPlanTeam, teamFor, whichWorkspace, writePlan,
   type Caller, type PlanAnswer,
 } from '../plans.js';
 
@@ -63,7 +65,37 @@ export function registerPlans(app: express.Express): void {
     const b = req.body ?? {};
     const caller = await callerOf(b, req);
     const { workspace, name } = await planTarget(caller, text(b.name), text(b.workspace));
-    acted(res, await writePlan(workspace, name, text(b.text), caller.by));
+    // A new plan takes the writer's Team; a rewrite keeps the plan's unless --team names one.
+    const stated = text(b.team).trim();
+    acted(res, await writePlan(workspace, name, text(b.text), caller.by, (had) => (stated || !had ? teamFor(caller, workspace, stated) : Promise.resolve(undefined))));
+    layersMayHaveChanged();
+  }));
+
+  /** Park it (KAN-352; planning.md): the Draft plan written as `write` writes it, then the idea's
+   * item in the Workspace's Icebox with the plan attached, held by the Workspace. One act. */
+  app.post('/api/plans/park', route(async (req, res) => {
+    const b = req.body ?? {};
+    const caller = await callerOf(b, req);
+    const { workspace, name } = await planTarget(caller, text(b.name), text(b.workspace));
+    const stated = text(b.team).trim();
+    const done = await writePlan(workspace, name, text(b.text), caller.by, (had) => (stated || !had ? teamFor(caller, workspace, stated) : Promise.resolve(undefined)));
+    const { parkIdea } = await import('../work-items.js');
+    const parked = await parkIdea(workspace.campaign_id, workspace.name, text(b.idea).trim() || done.plan.title, name, caller.by);
+    res.json({
+      ok: true, plan: { ...done.plan, text: undefined }, item: parked.item,
+      acknowledgement: [done.line, headerLine(done.plan), done.history, `Parked: ${parked.item.id} '${parked.item.title}' in the Icebox ${parked.item.parent}, held by Workspace ${workspace.name}, ${name} attached.`].filter(Boolean).join('\n'),
+    });
+    layersMayHaveChanged();
+  }));
+
+  app.post('/api/plans/team', route(async (req, res) => {
+    const b = req.body ?? {};
+    const caller = await callerOf(b, req);
+    const { workspace, name } = await planTarget(caller, text(b.name), text(b.workspace));
+    const team = text(b.team).trim();
+    if (!team) throw new PlanBadInput('plan team takes <name> <team>, or <name> none.');
+    acted(res, await setPlanTeam(workspace, name, await teamFor(caller, workspace, team)));
+    layersMayHaveChanged();
   }));
 
   app.post('/api/plans/order', route(async (req, res) => {
@@ -71,6 +103,7 @@ export function registerPlans(app: express.Express): void {
     const caller = await callerOf(b, req);
     const { workspace, name } = await planTarget(caller, text(b.name), text(b.workspace));
     acted(res, await orderPlan(workspace, name, caller.by));
+    layersMayHaveChanged();
   }));
 
 }

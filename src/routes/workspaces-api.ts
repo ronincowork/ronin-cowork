@@ -1,4 +1,5 @@
 /** /api/workspaces — a Campaign's Workspaces (src/workspaces.ts): list, save whole, delete. */
+import { layersMayHaveChanged } from '../team-layers.js';
 import type express from 'express';
 import { initialCampaignId } from '../campaign-scope.js';
 import { listTeamRosters } from '../team-rosters.js';
@@ -33,12 +34,15 @@ export function registerWorkspaces(app: express.Express): void {
       // clashes, so one plan file never overwrites another. Any Location will do.
       const body = { ...(req.body ?? {}) } as Record<string, unknown>;
       if (!('plans' in body) && was?.plans) body.plans = was.plans;
+      // INTEGRATIONS (KAN-338): likewise, a body without `integrations` keeps the ones it had.
+      if (!('integrations' in body) && was) body.integrations = was.integrations;
       const next = normalizeWorkspace(campaign, name, body);
       const changed = JSON.stringify(was?.plans ?? null) !== JSON.stringify(next.plans ?? null);
       let moved: string[] = [];
       if (changed && next.plans) await plansPlace(campaign, name, next.plans);
       if (changed && was) moved = (await movePlans(campaign, name, was.plans, next.plans)).moved;
       res.json({ ok: true, workspace: await withPlace(await saveWorkspace(next)), ...(moved.length ? { moved } : {}) });
+      layersMayHaveChanged(); // a Team's Workspace line (team-layers.ts)
     } catch (e) {
       res.status(e instanceof PlanRefused ? 409 : e instanceof PlanMissing ? 404 : 400).json({ error: errMsg(e) });
     }

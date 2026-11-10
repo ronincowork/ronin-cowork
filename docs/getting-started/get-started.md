@@ -17,7 +17,7 @@ either by doing it or by saying not now.
 
 ## 1. Connect a model provider
 
-Choose **Model providers** and pick the Agent you want to use: Claude Code, Codex, Gemini
+Choose **Model providers** and pick the Agent you want to use: Claude Code, Codex, Antigravity
 CLI, and others. Install it if needed, then sign in with your own subscription or API
 account. One provider is enough to start. [Provider sign-in](provider-sign-in.md) walks
 through it.

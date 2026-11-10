@@ -48,7 +48,7 @@ const action = (label, kind, onClick) => {
 const servicesReady = (runtime = {}) => runtime?.services?.active === true || runtime?.services?.installed === true || runtime?.services?.switched_on === true;
 
 const SERVICE_COMPONENTS = Object.freeze([
-  { id: 'task_manager', label: 'Project management', status: 'beta', needs: 'Work items, the work record on each tile, and Agents trained to keep their items true. Mapping to Jira, Trello and others comes later.' },
+  { id: 'task_manager', label: 'Project management', status: 'beta', needs: 'Work items, the work record on each tile, and Agents trained to keep their items true. Jira pairs with it as an integration.' },
   { id: 'terminal_transcript', label: 'Terminal transcript', status: 'beta', needs: 'Records terminal activity for transcript views and downstream summaries.' },
   { id: 'voice_hotwords', label: 'Voice & Hotwords', status: 'comingSoon', needs: 'Adds voice tools and corrections for words dictation commonly mishears.' },
   { id: 'usage_stats', label: 'Usage stats', status: 'beta', needs: 'Keeps local usage counts without storing transcript content.' },
@@ -183,7 +183,7 @@ function createRegisterSurface(context) {
   fit.append(
     el('h3', '', t('setup_surface.ronin_fit', 'What brings you here')), preferredFeature.wrap, reasons.wrap,
   );
-  const consent = el('p', 'setup-fine setup-register-consent', t('setup_surface.consent_exact', 'Email registration sends a confirmation and supports Ronin Services and Bounty participation. Anonymous registration shares these answers without contact details.'));
+  const consent = el('p', 'setup-fine setup-register-consent', t('setup_surface.consent_exact', 'Email registration supports Ronin Services and Bounty participation. Anonymous registration shares these answers without contact details.'));
   const declined = el('p', 'setup-register-declined', t('setup_surface.no_thanks_message', 'Enjoy using Ronin. If you’d like to share feedback later, we’d be glad to hear from you at a later date.'));
   declined.hidden = true;
   const userIntro = el('section', 'setup-register-group setup-user-intro');
@@ -210,6 +210,10 @@ function createRegisterSurface(context) {
     userIntroActions,
     userIntroNotice,
   );
+  /** What the Submit asked of Ronin HQ: a Services key, emailed to the address. */
+  const keyWords = (key) => !key ? ''
+    : key.sent ? t('setup_surface.services_key_sent', 'Check your email for your Ronin Services key, then paste it into Ronin Services.')
+    : t('setup_surface.services_key_not_sent', 'The Services key was not sent: {error}', { error: key.error });
   const registerAction = action(t('setup_surface.register_action', 'Send'), '', async () => {
     notice.textContent = t('setup_surface.saving', 'Saving…');
     const anonymous = identityMode.value.value !== 'email';
@@ -221,7 +225,8 @@ function createRegisterSurface(context) {
       intended_use: [], theme_preference: '', own_words: '',
     } });
     notice.textContent = result.ok
-      ? anonymous ? t('setup_surface.anonymous_saved', 'Thanks — your anonymous hello was sent to Ronin.') : t('setup_surface.confirm_email', 'Registration saved. Confirm your email to complete registration.')
+      ? [anonymous ? t('setup_surface.anonymous_saved', 'Thanks — your anonymous hello was sent to Ronin.') : t('setup_surface.registration_complete', 'Registration complete.'),
+        keyWords(result.data?.services_key)].filter(Boolean).join(' ')
       : result.message;
     if (result.ok) { current = result.data; paint(); context.environment?.onRegistrationChoice?.('acted'); }
   });
@@ -248,8 +253,7 @@ function createRegisterSurface(context) {
   const recovery = el('div', 'setup-registration-recovery');
   const recoveryOptions = el('section', 'setup-register-group setup-register-options');
   recoveryOptions.append(
-    el('h3', '', t('setup_surface.registration_confirmation', 'Registration confirmation')),
-    el('p', 'setup-lede', t('setup_surface.registration_confirmation_lede', 'Required only if you want to install Ronin Services.')),
+    el('h3', '', t('setup_surface.registration_heading', 'Registration')),
     recovery,
   );
   /** The submitted summary speaks the same words the form showed, never a stored key. */
@@ -260,11 +264,10 @@ function createRegisterSurface(context) {
     return words.filter(Boolean).join(' · ');
   };
   const paint = () => {
-    const registered = current?.status === 'registered';
     const anonymous = current?.status === 'anonymous';
     identity.hidden = !current?.submitted_at;
-    identity.dataset.tone = current?.status === 'pending' ? 'pending' : 'ok';
-    identity.replaceChildren(el('strong', '', anonymous ? t('setup_surface.registered_anonymous', 'Registered anonymously') : registered ? t('setup_surface.registered', 'Registered') : t('setup_surface.check_email', 'Check your email')),
+    identity.dataset.tone = 'ok';
+    identity.replaceChildren(el('strong', '', anonymous ? t('setup_surface.registered_anonymous', 'Registered anonymously') : t('setup_surface.registered', 'Registered')),
       el('span', '', summaryWords()));
     form.hidden = !formOnShow();
     // Follow the form, not the answer record. hideForm paints immediately while the PATCH is
@@ -275,32 +278,19 @@ function createRegisterSurface(context) {
     recoveryOptions.hidden = !current?.submitted_at;
     recovery.replaceChildren();
     const changeEmail = () => action(t('setup_surface.change_registration_email', 'Change email'), '', async () => {
-      const next = window.prompt(t('setup_surface.new_registration_email', 'Send registration confirmation to:'));
+      const next = window.prompt(t('setup_surface.new_registration_email', 'New registration email:'));
       if (!next?.trim()) return;
-      const result = await request('/api/setup/registration/recovery', { method: 'POST', json: {
-        action: 'change_address', identity_mode: 'email', email: next.trim(), purpose: current.purpose,
+      const result = await request('/api/setup/registration', { method: 'POST', json: {
+        identity_mode: 'email', email: next.trim(), purpose: current.purpose,
         kind: current.kind, kind_other: current.kind_other, user_type: current.user_type, goals: current.goals,
         preferred_feature: current.preferred_feature, reasons: current.reasons, reason_other: current.reason_other, run_location: current.run_location,
         intended_use: current.intended_use,
         theme_preference: current.theme_preference, own_words: current.own_words,
       } });
-      notice.textContent = result.ok ? t('setup_surface.registration_address_changed', 'Registration email changed; check the new address.') : result.message;
+      notice.textContent = result.ok ? t('setup_surface.registration_address_changed', 'Registration email changed.') : result.message;
       if (result.ok) { current = result.data; paint(); }
     });
-    if (current?.status === 'pending') {
-      recovery.append(
-        action(t('setup_surface.check_registration', 'Check confirmation'), 'primary', async () => {
-          const result = await request('/api/setup/registration/recovery', { method: 'POST', json: { action: 'check' } });
-          notice.textContent = result.ok ? t('setup_surface.registration_checked', 'Registration status updated.') : result.message;
-          if (result.ok) { current = result.data; paint(); }
-        }),
-        action(t('setup_surface.resend_registration', 'Resend confirmation'), '', async () => {
-          const result = await request('/api/setup/registration/recovery', { method: 'POST', json: { action: 'resend' } });
-          notice.textContent = result.ok ? t('setup_surface.registration_resent', 'Confirmation resent.') : result.message;
-        }),
-        changeEmail(),
-      );
-    } else if (current?.submitted_at && !anonymous) recovery.append(changeEmail());
+    if (current?.submitted_at && !anonymous) recovery.append(changeEmail());
     if (current?.submitted_at) recovery.append(action(t('setup_surface.delete_registration', 'Delete registration'), 'danger', async () => {
       if (!window.confirm(t('setup_surface.delete_registration_confirm', 'Delete this registration and its Services entitlement from this machine? Communication preferences will also be removed.'))) return;
       const result = await request('/api/setup/registration', { method: 'DELETE' });
@@ -340,7 +330,6 @@ function createRegisterSurface(context) {
     const answer = recordedAnswer();
     zone.paint({
       state: current?.status === 'anonymous' ? 'Said hello anonymously.'
-        : current?.status === 'pending' ? 'Registration sent. Confirm the link in your email.'
         : 'Register to join the community and share your experience — it makes Ronin better for everyone.',
       picks: [
         // Shows the form; it does NOT send it. registerAction POSTs on the spot, and with no
@@ -357,14 +346,34 @@ function createRegisterSurface(context) {
   const stopProgress = watchSetupProgress(context.environment, paint);
   if (zone) out.content.append(zone.el);
   body.append(identity, form, userIntro, declined, recoveryOptions, notice); out.content.append(body);
+  // An office on an office_park has its registration managed by its provisioning: no form, no
+  // header zone, no Delete registration (which would drop the office's entitlement). One
+  // sentence says so; it claims nothing about completed registration, which only HQ knows. A
+  // record that will not read is a fault, treated the same way, never as self-hosted. The put-away
+  // is reversible: show() restores the zone and the form when the record reads self-hosted again.
+  const hostedNotice = el('p', 'setup-notice setup-register-hosted');
+  const original = [...out.content.childNodes];
+  const putAwayForHosted = (office) => {
+    const unreadable = office.hosting === 'unreadable';
+    hostedNotice.textContent = unreadable
+      ? t('setup_surface.register_office_unreadable', 'Office record unreadable: {error}. Registration waits until the record reads.', { error: office.error || '—' })
+      : t('setup_surface.register_hosted', 'Hosted office: registration is managed when this office is provisioned. There is nothing to register here.');
+    hostedNotice.dataset.tone = unreadable ? 'bad' : 'ok';
+    out.content.replaceChildren(hostedNotice);
+    notifySummary(SETUP_SURFACE_TYPES.register, unreadable ? t('setup_surface.summary_office_unreadable', 'office record unreadable') : t('setup_surface.summary_managed', 'managed by provisioning'), context.workbench);
+  };
+  const restoreForSelfHosted = () => { if (out.content.childNodes[0] === hostedNotice) out.content.replaceChildren(...original); };
   return { el: out.el, show: async () => {
     const routeKind = context.environment?.kinds?.get?.()[0] || '';
     kind.set({ build: 'build_software', life: 'life_assistants', research: 'research_writing', other: 'other' }[routeKind] || '');
     own.value = context.environment?.setupRuntime?.preferences?.path_note || '';
-    const [result, intro] = await Promise.all([
+    const [office, result, intro] = await Promise.all([
+      request('/api/office', { cache: 'no-store' }),
       request('/api/setup/registration', { cache: 'no-store' }),
       request('/api/setup/user-intro', { cache: 'no-store' }),
     ]);
+    if (office.ok && office.data?.hosting !== 'self_hosted') { putAwayForHosted(office.data); return; }
+    restoreForSelfHosted();
     current = result.ok ? result.data : null;
     if (intro.ok) {
       userIntroText.value = intro.data?.intro || '';
@@ -464,7 +473,7 @@ export function createServicesSurface(context) {
     for (const words of [
       t('services_setup.intro', 'Ronin Services are incremental features and are not required for agent coworking functionality.'),
       t('services_setup.beta_copy', 'These are beta projects and often require working with third parties. The code is open code, not open source: free to read, not to commercialise.'),
-      t('services_setup.registration_copy', 'Filling out the registration and sharing your email opens access to Ronin Services free of charge. We also ask that you help build Ronin and share a weekly count of tool calls. This is not linked to your identity and carries no code, tiles, name, or alpha of any kind.'),
+      t('services_setup.registration_copy', 'Register with your email and Ronin HQ emails you a Services key, free of charge. Paste it below to install. A Ronin on your own machine sends nothing else.'),
     ]) copy.append(el('p', '', words));
     intro.append(lockup, copy);
     return intro;
@@ -549,10 +558,10 @@ export function createServicesSurface(context) {
           if (item.act === 'register') { openRegister(); return; }
           button.disabled = true; said = ''; notice.textContent = '';
           if (item.act === 'restart') { await restartRonin(state); return; }
-          // Install and Check status answer with the services object; a switch's new facts arrive by push.
+          // Install answers with the services object; a switch's new facts arrive by push.
           const switching = item.act === 'switch_on' || item.act === 'switch_off';
           const result = switching ? await switchServices(item.act === 'switch_on')
-            : await request(item.act === 'install' ? '/api/services/install' : '/api/services/activation/poll', { method: 'POST', json: {} });
+            : await request('/api/services/install', { method: 'POST', json: {} });
           if (!result.ok) {
             said = result.message;
             notice.textContent = said; notice.classList.add('bad');
@@ -574,6 +583,35 @@ export function createServicesSurface(context) {
     };
     paintSteps(model);
     body.append(steps);
+    // The Services key from the Register email: pasted here, kept on this machine, and the
+    // install starts with it.
+    if (model.keyField) {
+      const keyInput = el('input', 'setup-services-key-input');
+      Object.assign(keyInput, { type: 'text', autocomplete: 'off', spellcheck: false, name: 'services-key' });
+      keyInput.placeholder = t('services_setup.key_placeholder', 'Paste the key from your email');
+      const keyLabelText = model.keyAction === 'save' ? t('services_setup.key_save', 'Save key') : t('services_setup.key_install', 'Install');
+      const keyInstall = action(keyLabelText, model.keyAction === 'save' ? '' : 'primary', async () => {
+        keyInstall.disabled = true; said = ''; notice.textContent = ''; notice.classList.remove('bad');
+        const result = await request('/api/setup/services-key', { method: 'POST', json: { key: keyInput.value } });
+        if (!result.ok) {
+          said = result.message; notice.textContent = said; notice.classList.add('bad');
+          keyInstall.disabled = false;
+          return;
+        }
+        context.environment?.onInstallationChoice?.();
+        paint(...answers(result.data));
+        if (result.data?.key_saved) {
+          const saved = body.querySelector('.setup-services-notice');
+          if (saved) saved.textContent = t('services_setup.key_saved', 'Services key saved. Updates use it from now on.');
+        }
+      });
+      keyInstall.classList.add('setup-services-key-install');
+      const keyRow = el('div', 'setup-services-key');
+      const keyLabel = el('label', 'setup-field setup-services-key-field');
+      keyLabel.append(el('span', 'setup-register-question', t('services_setup.key_label', 'Services key')), keyInput);
+      keyRow.append(keyLabel, keyInstall);
+      body.append(keyRow);
+    }
     notice.setAttribute('aria-live', 'polite');
     const campaign = campaignById(context.tenant?.campaign) || campaigns()[0];
     let desired = campaign?.config?.services?.parts || installed.data?.services?.capabilities?.desired || {};
@@ -733,7 +771,7 @@ function createSetupInstallationsSurface(context) {
     ...context,
     onInstallationsState: (values) => context.environment?.onInstallationsState?.(values),
     onInstallationChange: () => context.environment?.onInstallationChoice?.(),
-    createInstallationSurface: (id, shared) => id === 'ronin_services' ? createServicesSurface(shared) : id === 'gbrain' ? createGbrainSurface(shared) : null,
+    createInstallationSurface: (id, shared) => id === 'ronin_services' ? createServicesSurface(shared) : null,
   });
   // Step 4 answers in its header zone (see campaign-installations.js); the footer is retired.
   // Setup chooses and sequences the shared page; it does not change the page's controls.

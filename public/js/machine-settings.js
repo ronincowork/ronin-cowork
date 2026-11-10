@@ -3,6 +3,7 @@ import { request } from './request.js';
 import { button, field, status } from './ui.js';
 import { pm, getPath, currentOf, optionsOf, pickerProvider, toRequest } from './machine-settings-schema.js';
 import { servicesCard } from './services-card.js';
+import { accountCard } from './account-card.js';
 import { t } from './lexicon.js';
 import { loadProviderCatalog, providerCatalog, modelLabel } from './form-steps.js';
 import { ask } from './ask.js';
@@ -186,6 +187,7 @@ export function buildMachineSettings(root, isShowing, { only = null } = {}) {
   };
 
   let card = null; // the Services card of the last render; a new render closes it first
+  let account = null; // the Cloud account card of the last render, likewise
   const render = () => {
     body.innerHTML = '';
     const { set, observed, status: st, schema } = rec;
@@ -324,13 +326,17 @@ export function buildMachineSettings(root, isShowing, { only = null } = {}) {
     /* the deal — Ronin Services the subscription, a different thing from the sockets above */
     group(t('settei.group_subscription', 'subscription'));
     const activation = set.services.activation ?? {};
-    body.appendChild(obsRow(t('settei.subscription', 'subscription'), st.subscription,
+    // The activation stage, labelled as what it is: activation is identity transport to
+    // Ronin HQ, not a subscription. The subscription itself is the Cloud account card's.
+    body.appendChild(obsRow(t('settei.services_activation', 'Services activation'), st.subscription,
       activation.email_masked ? ` ${activation.email_masked}` : ''));
-    // The operator asks Ronin HQ, the person confirms on whatever device they are holding,
-    // and each step arrives by push. The card renders the durable stage rather than what
-    // this page remembers doing, so a reload or a second tab lands on the truth.
+    // The install's steps arrive by push. The card renders the durable stage rather than
+    // what this page remembers doing, so a reload or a second tab lands on the truth.
     card?.stop();
     card = servicesCard(body);
+    // Read-only, from the Services `account` part; hidden only when that part is absent.
+    account?.stop();
+    account = accountCard(body);
 
     group(t('settei.group_needed', 'still needed'));
     for (const n of rec.needed ?? []) {

@@ -6,7 +6,9 @@
  * (`plans: { location, path }`, src/workspaces.ts). No Agent sees the path: everything goes through
  * `ronin_bin/plan` over /api/plans (src/routes/plans-api.ts).
  *
- * The header is the tool's, the line under the title: `Status: <Draft|Ordered> · <date> · <by>`.
+ * The header is the tool's, the line under the title: `Status: <Draft|Ordered> · <date> · <by> · Team <team>`.
+ * THE TEAM (KAN-332): a new plan takes the writer's Team in the plan's Workspace (teamFor); a
+ * rewrite and an order keep it; `plan team` changes it. A header without the Team is no Team.
  * Where the plans folder is in a Git repository, each write and order commits that one file
  * only, and pushes once when the branch has an upstream.
  */
@@ -17,7 +19,7 @@ import { execFile } from './spawn-broker.js';
 import { discoverExecutable } from './agents.js';
 import { rootDir } from './resources.js';
 import { listProjectRoots, type ProjectRootInfo } from './project-roots.js';
-import { listTeamRosters } from './team-rosters.js';
+import { listTeamRosters, readTeamRoster } from './team-rosters.js';
 import { listSessions } from './tmux.js';
 import { listWorkspaces, readWorkspace, type Workspace, type WorkspacePlans } from './workspaces.js';
 
@@ -28,8 +30,9 @@ export class PlanBadInput extends Error {}
 export const PLAN_STATUSES = ['Draft', 'Ordered'] as const;
 export type PlanStatus = (typeof PLAN_STATUSES)[number];
 
-export interface PlanHeader { status: PlanStatus; date: string; by: string }
-export interface PlanRow extends PlanHeader { name: string; workspace: string; title: string }
+/** `team`: the Team the plan is for; '' or absent is none. */
+export interface PlanHeader { status: PlanStatus; date: string; by: string; team?: string }
+export interface PlanRow extends PlanHeader { name: string; workspace: string; title: string; team: string }
 export interface Plan extends PlanRow { text: string; path: string }
 /** Where a Workspace's plans are: the folder, and what it is named by. */
 export interface PlansPlace { dir: string; location: string; path: string; recommended: boolean }
@@ -38,8 +41,8 @@ export const isValidPlanName = (s: string): boolean => /^[a-z0-9][a-z0-9-]{0,63}
 
 const DEFAULT_LOCATION = 'ronin_lab';
 const today = (): string => new Date().toISOString().slice(0, 10);
-const HEADER = /^Status: (Draft|Ordered) · (\S+) · (.+)$/;
-export const headerLine = (h: PlanHeader): string => `Status: ${h.status} · ${h.date} · ${h.by}`;
+const HEADER = /^Status: (Draft|Ordered) · (\S+) · (.+?)(?: · Team (\S+))?$/;
+export const headerLine = (h: PlanHeader): string => `Status: ${h.status} · ${h.date} · ${h.by}${h.team ? ` · Team ${h.team}` : ''}`;
 
 /* ---------- where ---------- */
 
@@ -100,6 +103,23 @@ export async function whichWorkspace(caller: Caller, stated?: string): Promise<W
   throw new PlanRefused(`No Team of yours has a Workspace; name one with --workspace <name>. ${await choose(caller.campaign)}`);
 }
 
+/** The Team a new plan is for: the one named (`none` is no Team), else the caller's one Team in the
+ * plan's Workspace (a lead's Teams included); none there is no Team; several asks for one by name. */
+export async function teamFor(caller: Caller, w: Workspace, stated?: string): Promise<string> {
+  const named = String(stated ?? '').trim();
+  if (named === 'none') return '';
+  if (named) {
+    if (!await readTeamRoster(named)) throw new PlanMissing(`No Team ${named}. team roster list lists them.`);
+    return named;
+  }
+  const session = (await listSessions()).find((one) => one.name === caller.by);
+  const teams = new Set([...(session?.tags ?? []), ...(session?.leads ?? [])]);
+  const here = (await listTeamRosters()).filter((roster) => teams.has(roster.name) && roster.state !== 'archived'
+    && roster.workspace === w.name && (!roster.campaign_id || roster.campaign_id === w.campaign_id)).map((roster) => roster.name).sort();
+  if (here.length > 1) throw new PlanRefused(`Your Teams in ${w.name} are ${here.join(', ')}; name one with --team <name>.`);
+  return here[0] ?? '';
+}
+
 async function choose(campaign: string): Promise<string> {
   const names = (await listWorkspaces(campaign)).map((w) => w.name);
   return names.length ? `Workspaces: ${names.join(', ')}.` : 'This Campaign has no Workspaces yet.';
@@ -122,7 +142,7 @@ export function parsePlan(text: string): { title: string; header: PlanHeader | n
   const title = (lines.find((line) => /^# /.test(line)) ?? '').replace(/^# +/, '').trim();
   const at = lines.findIndex((line) => HEADER.test(line.trim()));
   const m = at === -1 ? null : HEADER.exec(lines[at]!.trim());
-  return { title, header: m ? { status: m[1] as PlanStatus, date: m[2]!, by: m[3]!.trim() } : null };
+  return { title, header: m ? { status: m[1] as PlanStatus, date: m[2]!, by: m[3]!.trim(), team: m[4] ?? '' } : null };
 }
 
 /** The writer's text with the tool's header under its title: a writer's own Status line goes. */
@@ -144,7 +164,7 @@ async function readAt(dir: string, workspace: string, name: string): Promise<Pla
   try { text = await readFile(at, 'utf8'); }
   catch (e) { if ((e as NodeJS.ErrnoException).code === 'ENOENT') return null; throw e; }
   const { title, header } = parsePlan(text);
-  return { name, workspace, title, text, path: at, ...(header ?? { status: 'Draft', date: '', by: '' }) };
+  return { name, workspace, title, text, path: at, ...(header ?? { status: 'Draft', date: '', by: '' }), team: header?.team ?? '' };
 }
 
 /* ---------- history ---------- */
@@ -210,7 +230,7 @@ export async function listPlans(w: Workspace, status?: string): Promise<PlanRow[
   const { dir } = await placeOf(w);
   const names = (await readdir(dir).catch(() => [] as string[])).filter((file) => file.endsWith('.md')).map((file) => file.slice(0, -3)).filter(isValidPlanName).sort();
   const plans = (await Promise.all(names.map((name) => readAt(dir, w.name, name)))).filter((plan): plan is Plan => !!plan);
-  return plans.filter((plan) => !wanted || plan.status === wanted).map(({ name, workspace, title, status: s, date, by }) => ({ name, workspace, title, status: s, date, by }));
+  return plans.filter((plan) => !wanted || plan.status === wanted).map(({ name, workspace, title, status: s, date, by, team }) => ({ name, workspace, title, status: s, date, by, team }));
 }
 
 export async function readPlan(w: Workspace, name: string): Promise<Plan> {
@@ -231,16 +251,19 @@ export async function resolvePlanRef(campaign: string, ref: string): Promise<str
   } catch { return null; }
 }
 
-export function writePlan(w: Workspace, name: string, text: string, by: string): Promise<PlanAnswer> {
+/** `team(had)`: the plan's Team (teamFor), asked knowing whether the plan was there; undefined keeps
+ * the Team the plan has, so a rewrite keeps it unless one is named. */
+export function writePlan(w: Workspace, name: string, text: string, by: string, team?: (had: boolean) => Promise<string | undefined>): Promise<PlanAnswer> {
   if (!String(text ?? '').trim()) throw new PlanBadInput('The plan is empty: give its text with --file <path> or on stdin. plan read --template is the blank.');
   return serial(async () => {
     const { dir } = await placeOf(w);
     // A write keeps the status the plan has; a new plan is a Draft.
     const was = await readAt(dir, w.name, name);
     const status = was?.status ?? 'Draft';
+    const forTeam = (await team?.(!!was)) ?? was?.team ?? '';
     await mkdir(dir, { recursive: true });
     const at = fileOf(dir, name);
-    await writeFile(at, withHeader(text, { status, date: today(), by }, name), 'utf8');
+    await writeFile(at, withHeader(text, { status, date: today(), by, team: forTeam }, name), 'utf8');
     const history = await commitOnly(dir, [at], `plan ${name}: write`);
     return answer(`${was ? 'Rewrote' : 'Wrote'} ${w.name}/${name} (${status}).`, (await readAt(dir, w.name, name))!, history);
   });
@@ -250,9 +273,20 @@ export function orderPlan(w: Workspace, name: string, by: string): Promise<PlanA
   return serial(async () => {
     const plan = await readPlan(w, name);
     const { dir } = await placeOf(w);
-    await writeFile(plan.path, withHeader(plan.text, { status: 'Ordered', date: today(), by }, name), 'utf8');
+    await writeFile(plan.path, withHeader(plan.text, { status: 'Ordered', date: today(), by, team: plan.team }, name), 'utf8');
     const history = await commitOnly(dir, [plan.path], `plan ${name}: order`);
     return answer(`Ordered ${w.name}/${name}. Make each epic from its row and item attach <epic> plan:${w.name}/${name}.`, (await readAt(dir, w.name, name))!, history);
+  });
+}
+
+/** The plan's Team changed, nothing else: status, date and by stay. `team` '' is no Team. */
+export function setPlanTeam(w: Workspace, name: string, team: string): Promise<PlanAnswer> {
+  return serial(async () => {
+    const plan = await readPlan(w, name);
+    const { dir } = await placeOf(w);
+    await writeFile(plan.path, withHeader(plan.text, { status: plan.status, date: plan.date || today(), by: plan.by || 'unknown', team }, name), 'utf8');
+    const history = await commitOnly(dir, [plan.path], `plan ${name}: team ${team || 'none'}`);
+    return answer(team ? `${w.name}/${name} is Team ${team}'s.` : `${w.name}/${name} is no Team's.`, (await readAt(dir, w.name, name))!, history);
   });
 }
 
