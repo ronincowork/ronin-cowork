@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import type { WebSocket } from 'ws';
 import type { SessionInfo } from '../src/tmux.js';
-import { feedEvents, handleEvents, homeSignature, publishHeld, pushJikan, pushMessages, pushTeams, pushWipeboard, sessionsSignature, tick, watchStore } from '../src/ws/events.js';
+import { changed, feedEvents, handleEvents, homeSignature, publishHeld, pushJikan, pushMessages, pushTeams, pushWipeboard, sessionsSignature, tick, watchStore } from '../src/ws/events.js';
 
 // A browser on /events: records what it is sent, and can close.
 function browser() {
@@ -127,6 +127,25 @@ test('a connection arriving while a tick is in flight receives each message once
     assert.equal(b.got('sessions').length, 1, 'the session list once: broadcast, or sent because the broadcast missed it');
     assert.equal(b.got('home').length, 1, 'the rows once: the broadcast reached it');
   }
+});
+
+test('a change during a tick that already read the rows runs one more tick, so it is never held back', async (t) => {
+  let ask: unknown = null;
+  let gate = deferred<void>();
+  let read = deferred<void>();
+  feedEvents({ teams: async () => [], list: async () => [session('a')], home: async () => { const rows = [{ name: 'a', secret_ask: ask }]; read.resolve(); await gate.promise; return rows; } });
+  const b = open(t);
+  gate.resolve();
+  await settle();
+  gate = deferred<void>();
+  read = deferred<void>();
+  changed(); // a tick reads the rows and waits
+  await read.promise;
+  ask = { name: 'test_key3' };
+  changed(); // the ask lands after that read
+  gate.resolve();
+  for (let i = 0; i < 100 && b.got('home').length < 2; i++) await new Promise((resolve) => setTimeout(resolve, 5));
+  assert.deepEqual(b.got('home').at(-1), { t: 'home', rows: [{ name: 'a', secret_ask: { name: 'test_key3' } }] });
 });
 
 test('the session list pushes when a painted field moves, and never for activity alone', async (t) => {

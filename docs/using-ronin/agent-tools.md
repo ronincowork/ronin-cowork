@@ -26,8 +26,9 @@ When an Agent needs a password or key (a KVM login, an API token), it never need
 in chat, and you never paste it into a message.
 
 - **The Agent asks:** `secret ask <name> --for "<what it is>"`. A paste field opens over its
-  tile. Paste and press **Save**, or **Cancel**. The field shows *Saving…*, then *Saved* for a
-  moment before it closes; if the save is refused, it stays open and says why. The Agent hears
+  tile. Click into it, paste, and press **Save**, or **Cancel** (Escape in the field cancels too).
+  Save says *Saving…*, then *Saved* shows for a moment before the field closes; if the save is
+  refused, it stays open and says why. The Agent hears
   only `saved: <name>` or `cancelled: <name>`.
 - **The Agent uses it by its file:** `secret path <name>` prints where it is, to pass as
   `--password-file` or read in its own script. `secret ls` lists the names.

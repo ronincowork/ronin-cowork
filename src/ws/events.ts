@@ -65,6 +65,8 @@ let heldRows: unknown[] | undefined;
 // only what it missed.
 type Tick = { reached: Map<string, ReadonlySet<WebSocket>> };
 let ticking: Promise<Tick> | undefined;
+// Something changed while a tick was in flight: that tick may have read before it, so one more runs.
+let rerun = false;
 // Roster reads run in write order, so an older read never lands after a newer one.
 let teamsRead: Promise<void> = Promise.resolve();
 
@@ -132,8 +134,17 @@ export function tick(): Promise<Tick> {
     return { reached };
   })()
     .catch(() => ({ reached }))
-    .finally(() => { ticking = undefined; });
+    .finally(() => {
+      ticking = undefined;
+      if (rerun) { rerun = false; void tick(); }
+    });
   return ticking;
+}
+
+/** Something changed: tick now, or once more after the tick in flight, which may have read before the change. */
+export function changed(): void {
+  if (ticking) rerun = true;
+  else void tick();
 }
 
 // Called after every roster or work-item write: one read of the rosters, and one of the
@@ -306,14 +317,14 @@ export function startSessionsBroadcast(next: Feed): void {
   feedEvents(next);
   void pushTeams();
   void pushMessages();
-  wireTmuxNotifications(tmux, () => { void tick(); });
+  wireTmuxNotifications(tmux, changed);
   const stamps = new Map<string, string>();
   tmux.on('subscription', (n) => {
     if (!n.subscription?.startsWith('activity')) return;
     const moved = activityMoved(n.value ?? '', stamps);
     for (const name of moved) emitPaneActivity(name);
-    if (moved.length) void tick();
+    if (moved.length) changed();
   });
-  onRowChanged(() => { void tick(); });
+  onRowChanged(changed);
   onClock('events_beat', BEAT_MS, async () => { broadcastEvent({ t: 'beat' }); });
 }
