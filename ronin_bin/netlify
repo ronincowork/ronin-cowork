@@ -1,0 +1,98 @@
+#!/usr/bin/env bash
+# netlify — the Netlify bridge: a few lines from Netlify for this Workspace's site. The Ronin
+# Services part `netlify` (/api/netlify/*) reads the Campaign's .env and makes the call; this
+# tool only carries the words. Anything that is not one of its tools goes to Netlify's own CLI.
+. "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/tool-count.sh" netlify "$@"
+set -u -o pipefail
+. "$(dirname "$(readlink "${BASH_SOURCE[0]}" 2>/dev/null || printf '%s' "${BASH_SOURCE[0]}")")/tool-path.sh"
+TOOL_DIR=$(dirname "$SELF")
+die() { echo "$1" >&2; exit "${2:-2}"; }
+usage() { cat <<'EOF_USAGE'
+Usage:
+  netlify sites                             every site: live and latest deploy (failures first), repo; * is yours
+  netlify traffic [--days N]                page views and visitors by day, top pages (Netlify Analytics)
+  netlify forms [<form>] [--limit N]        the site's forms; with a name, its latest submissions
+  netlify deploy [<dir>] [--prod] [--message <m>]
+                                            a folder to the site, for a Workspace with no repo: a draft
+                                            preview URL, or live with --prod
+  netlify env                               the site's variables: keys and contexts, never values
+  netlify env set <KEY> <value> [--context all|production|deploy-preview|branch-deploy|dev] [--branch <b>]
+Any tool takes --site <name|domain|id> and --workspace <name>. The site is --site, else the one
+linked to your Workspace, else NETLIFY_SITE_ID in the .env. The token is NETLIFY_AUTH_TOKEN in
+~/ronin/services_secrets/netlify-<campaign>.env; with it missing, the tool says what to set.
+The bridge is only a shortcut: Netlify's API and its own CLI work with the same .env
+(set -a; . <that file>; set +a). Any other command goes to Netlify's CLI when it is installed.
+Related: preview; ronin-help integrations
+EOF_USAGE
+}
+case "${1:-}" in -h|--help|'') usage; exit 0;; esac
+
+# Netlify's own CLI, for anything that is not the bridge's: the next `netlify` on PATH that is not this file.
+case "$1" in
+  sites|traffic|forms|deploy|env) ;;
+  *)
+    IFS=: read -r -a dirs <<<"$PATH"
+    for d in "${dirs[@]}"; do
+      [ -x "$d/netlify" ] && [ "$(readlink -f "$d/netlify")" != "$(readlink -f "$SELF")" ] && exec "$d/netlify" "$@"
+    done
+    die "netlify $1: not a bridge tool (netlify --help), and Netlify's own CLI isn't installed (npm i -g netlify-cli)." 2 ;;
+esac
+
+. "$TOOL_DIR/ronin-http.sh"
+ronin_connect || exit $?
+BY=$(ronin_session_me 2>/dev/null || id -un)
+tool=$1; shift
+site=''; workspace=''; days=''; limit=''; prod=false; message=''; context=''; branch=''; args=()
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --site|--workspace|--days|--limit|--message|--context|--branch)
+      [ "$#" -ge 2 ] || die "BAD-ARG: $1 needs a value"
+      v=$2; case "$1" in --site) site=$v;; --workspace) workspace=$v;; --days) days=$v;; --limit) limit=$v;; --message) message=$v;; --context) context=$v;; --branch) branch=$v;; esac
+      shift 2 ;;
+    --prod) prod=true; shift ;;
+    -h|--help) usage; exit 0 ;;
+    *) args+=("$1"); shift ;;
+  esac
+done
+set -- "${args[@]+"${args[@]}"}"
+
+# netlify_call METHOD PATH [JSON]: the lines printed, or the one sentence of what is wrong
+# (exit 4 when something is not set, 3 when Netlify or Ronin failed, 5 unreachable).
+netlify_call() {
+  local method=$1 path=$2 body=${3-} out
+  local opts=(-sS -m 180 "${RONIN_CURL[@]+"${RONIN_CURL[@]}"}" -X "$method")
+  if [ -n "$body" ]; then opts+=(-H 'content-type: application/json' --data-binary @-)
+  else opts+=(-G --data-urlencode "by=$BY" --data-urlencode "site=$site" --data-urlencode "workspace=$workspace" --data-urlencode "days=$days" --data-urlencode "limit=$limit" --data-urlencode "form=${form-}")
+  fi
+  out=$(printf '%s' "$body" | curl "${opts[@]}" -w '\n%{http_code}' "$url$path") || { echo "UNREACHABLE: Ronin did not answer at $url" >&2; return 5; }
+  printf '%s' "${out%$'\n'*}" | REPLY_STATUS=${out##*$'\n'} python3 -c '
+import json, os, sys
+status = os.environ["REPLY_STATUS"]
+try: d = json.loads(sys.stdin.read())
+except Exception:
+    if status == "404":
+        print("The Netlify bridge (a Ronin Services part) is not running here. Use Netlify'"'"'s API or CLI with the token in ~/ronin/services_secrets/netlify-<campaign>.env.", file=sys.stderr); sys.exit(4)
+    print("HTTP %s: Ronin answered without JSON" % status, file=sys.stderr); sys.exit(3)
+if not d.get("ok"):
+    print(d.get("error") or "HTTP %s" % status, file=sys.stderr); sys.exit(4 if d.get("missing") else 3)
+print("\n".join(d.get("lines", [])))
+'
+}
+json() { python3 -c 'import json, sys; a = sys.argv[1:]; print(json.dumps({a[i]: (a[i+1] == "true" if a[i+1] in ("true", "false") else a[i+1]) for i in range(0, len(a), 2) if a[i+1] != ""}))' "$@"; }
+
+case "$tool" in
+  sites|traffic) [ "$#" -eq 0 ] || die "BAD-ARG: netlify $tool takes no words (netlify --help)"; netlify_call GET "/api/netlify/$tool" ;;
+  forms) [ "$#" -le 1 ] || die 'BAD-ARG: netlify forms [<form>]'; form=${1-}; netlify_call GET /api/netlify/forms ;;
+  deploy)
+    [ "$#" -le 1 ] || die 'BAD-ARG: netlify deploy [<dir>] [--prod]'
+    dir=$(cd "${1:-.}" 2>/dev/null && pwd) || die "No folder ${1:-.}" 2
+    netlify_call POST /api/netlify/deploy "$(json by "$BY" site "$site" workspace "$workspace" dir "$dir" prod "$prod" message "$message")" ;;
+  env)
+    case "${1:-list}" in
+      list) [ "$#" -le 1 ] || die 'BAD-ARG: netlify env [list]'; netlify_call GET /api/netlify/env ;;
+      set)
+        [ "$#" -eq 3 ] || die 'BAD-ARG: netlify env set <KEY> <value> [--context <c>] [--branch <b>]'
+        netlify_call POST /api/netlify/env "$(json by "$BY" site "$site" workspace "$workspace" key "$2" value "$3" context "$context" branch "$branch")" ;;
+      *) die "BAD-ARG: netlify env list | set (netlify --help)" ;;
+    esac ;;
+esac

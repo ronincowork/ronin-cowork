@@ -1,0 +1,87 @@
+#!/usr/bin/env bash
+# preview — find a PR's preview link, from any host, and add it to your Documents. It reads
+# what the host already reports on the PR through gh: its deployments, the links on its checks,
+# then the links in its comments. No host is named to Ronin and nothing is kept here.
+. "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/tool-count.sh" preview "$@"
+set -u -o pipefail
+. "$(dirname "$(readlink "${BASH_SOURCE[0]}" 2>/dev/null || printf '%s' "${BASH_SOURCE[0]}")")/tool-path.sh"
+TOOL_DIR=$(dirname "$SELF")
+usage() { cat <<'EOF_USAGE'
+Usage:
+  preview [<pr>] [--repo <owner/name>] [--item <id>] [--print]
+<pr> is a number, URL or branch; without it, the PR of the branch checked out here. The link
+comes from the PR's deployments (environment URL), else its checks' links, else its comments,
+taking preview hosts (netlify.app, vercel.app, pages.dev, …) over dashboards. It is added with
+work-record add_doc (--item for the item it belongs to); --print only prints it.
+No link yet: it says what the checks say (pending, failed) so you know whether to wait.
+Related: gh pr checks; work-record add_doc; netlify --help
+EOF_USAGE
+}
+pr=''; repo=(); item=(); print=0
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    -h|--help) usage; exit 0 ;;
+    --repo) [ -n "${2:-}" ] || { echo 'BAD-ARG: --repo needs owner/name' >&2; exit 2; }; repo=(-R "$2"); shift 2 ;;
+    --item) [ -n "${2:-}" ] || { echo 'BAD-ARG: --item needs an id' >&2; exit 2; }; item=(--item "$2"); shift 2 ;;
+    --print) print=1; shift ;;
+    *) [ -z "$pr" ] || { echo 'BAD-ARG: one PR (preview --help)' >&2; exit 2; }; pr=$1; shift ;;
+  esac
+done
+command -v gh >/dev/null || { echo 'preview reads the PR through gh, which is not installed.' >&2; exit 4; }
+
+found=$(PR=$pr python3 - "${repo[@]+"${repo[@]}"}" <<'EOF_PY'
+import json, os, re, subprocess, sys
+repo = sys.argv[1:]
+def gh(*args):
+    r = subprocess.run(["gh", *args], capture_output=True, text=True)
+    if r.returncode: raise SystemExit("gh %s: %s" % (args[0], (r.stderr or r.stdout).strip().splitlines()[-1] if (r.stderr or r.stdout).strip() else "failed"))
+    return json.loads(r.stdout or "null")
+pr_args = [os.environ["PR"]] if os.environ["PR"] else []
+try:
+    pr = gh("pr", "view", *pr_args, *repo, "--json", "number,url,headRefOid,statusCheckRollup,comments")
+except SystemExit as e:
+    print("ERR\t%s" % e, flush=True); sys.exit(0)
+num, owner_name = pr["number"], "/".join(pr["url"].split("/")[3:5])
+PREVIEW = re.compile(r"(deploy-preview-\d+--|\.netlify\.app|\.vercel\.app|\.pages\.dev|\.onrender\.com|\.fly\.dev|\.herokuapp\.com|\.surge\.sh|\.github\.io|\.azurestaticapps\.net|\.web\.app|\.firebaseapp\.com|\.amplifyapp\.com|\.railway\.app|\.up\.railway\.app)", re.I)
+DASH = re.compile(r"^https?://(app\.netlify\.com|vercel\.com|github\.com|dash\.cloudflare\.com|dashboard\.render\.com)/", re.I)
+URL = re.compile(r"https?://[^\s)<>\]\"'`]+")
+found = []
+# 1. Deployments for the head commit: the host's own statement of where it is.
+try:
+    for dep in gh("api", "repos/%s/deployments?sha=%s&per_page=10" % (owner_name, pr["headRefOid"])) or []:
+        for st in gh("api", "repos/%s/deployments/%s/statuses?per_page=5" % (owner_name, dep["id"])) or []:
+            if st.get("environment_url") and st.get("state") == "success":
+                found.append((st["environment_url"], "deployment %s" % dep.get("environment", ""))); break
+except SystemExit: pass
+# 2. Links on the checks, preview hosts only.
+checks = pr.get("statusCheckRollup") or []
+for c in checks:
+    link = c.get("targetUrl") or c.get("detailsUrl") or ""
+    if link and PREVIEW.search(link) and not DASH.match(link):
+        found.append((link, "check %s" % (c.get("context") or c.get("name") or "")))
+# 3. Links in comments (a host's bot), newest first, preview hosts only.
+for cm in reversed(pr.get("comments") or []):
+    for link in URL.findall(cm.get("body") or ""):
+        if PREVIEW.search(link) and not DASH.match(link):
+            found.append((link.rstrip(".,"), "comment by %s" % (cm.get("author") or {}).get("login", "?")))
+if found:
+    url, source = found[0]
+    print("OK\t%s\t%s\t%s" % (num, url, source))
+else:
+    state = lambda c: (c.get("conclusion") or c.get("state") or c.get("status") or "").lower()
+    open_or_bad = ["%s %s" % (c.get("context") or c.get("name") or "check", state(c)) for c in checks if state(c) not in ("success", "skipped", "neutral")]
+    ok = len(checks) - len(open_or_bad)
+    words = (", ".join(open_or_bad[:6]) + (", and %d more" % (len(open_or_bad) - 6) if len(open_or_bad) > 6 else "")) if open_or_bad else ""
+    print("NONE\t%s\t%s" % (num, "; ".join(filter(None, [words, "%d passed or skipped" % ok if ok else ""])) or "no checks"))
+EOF_PY
+) || exit 3
+IFS=$'\t' read -r kind a b c <<<"$found"
+case "$kind" in
+  ERR) echo "$a" >&2; exit 3 ;;
+  NONE) echo "No preview link on PR #$a yet. Checks: $b."; exit 4 ;;
+  OK)
+    echo "Preview for PR #$a: $b (from $c)"
+    [ "$print" = 1 ] && exit 0
+    "$TOOL_DIR/work-record" add_doc "$b" "${item[@]+"${item[@]}"}" ;;
+  *) echo "preview: no answer from gh" >&2; exit 3 ;;
+esac
