@@ -27,7 +27,7 @@ export interface WorkspaceFolder { name: string; note: string }
  * it. Absent is the default, Ronin Lab's <campaign>/<workspace>/plans. */
 export interface WorkspacePlans { location: string; path: string }
 /** One integration this Workspace uses: `provider` names its index record; the rest are its facts (`site`, `note`). */
-export type WorkspaceIntegration = { provider: string } & Record<string, string>;
+export type WorkspaceIntegration = { provider: string; [fact: string]: unknown };
 export interface Workspace {
   name: string;
   campaign_id: string;
