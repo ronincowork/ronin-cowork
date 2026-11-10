@@ -193,9 +193,9 @@ test('the folder is the catalog: an owner file shadows a stock name whole, a new
 
 test('the stock capability documents are well-formed and carry no retired vocabulary', async () => {
   const files = (await readdir(STOCK)).filter((name) => name.endsWith('.md') && name !== 'README.md').sort();
-  assert.deepEqual(files, ['agent_session.md', 'cowork_team.md', 'edges.md', 'machine-settings.md', 'mika.md', 'ronin-help.md', 'ronin-host.md', 'work-item.md', 'work-record.md', 'worktree-desk.md']);
+  assert.deepEqual(files, ['agent_session.md', 'cowork_team.md', 'edges.md', 'machine-settings.md', 'mika.md', 'ronin-help.md', 'ronin-host.md', 'secret.md', 'work-item.md', 'work-record.md', 'worktree-desk.md']);
   const rows = await withUserCatalogs(() => listCapabilities());
-  assert.deepEqual(rows.map((item) => item.name), ['edges', 'work-record', 'work-item', 'agent_session', 'worktree-desk', 'machine-settings', 'cowork_team', 'ronin-host', 'mika', 'ronin-help'], 'ordered by `order`');
+  assert.deepEqual(rows.map((item) => item.name), ['edges', 'work-record', 'work-item', 'agent_session', 'worktree-desk', 'machine-settings', 'cowork_team', 'ronin-host', 'mika', 'secret', 'ronin-help'], 'ordered by `order`');
   for (const item of rows) {
     const text = await readFile(item.file, 'utf8');
     assert.ok(item.label && item.blurb, `${item.name} has a label and a blurb`);
