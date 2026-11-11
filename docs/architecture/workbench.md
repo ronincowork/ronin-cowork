@@ -176,7 +176,7 @@ KAN-187) seats its own stones of Epics the same way (`epics-surface.js`, `epics.
 the Campaign — the store's pushed `epics` and `epicItems`, no request (KAN-190, KAN-206). Since w334 (owner,
 2026-11-06) Tilespace 1 is the Epics board (`createEpicBoard`), borrowed from the phalanx but its own: a row of Epic
 stones across the top (title, Jira key or Ronin only, open count); a pressed one is selected and its items come below
-under two ERABI questions (ask.js), Assigned (Yes / No) and Status (the open ones on arrival), as the item island's
+under three ERABI questions (ask.js), Assigned (Yes / No), Flagged (Yes / No; w409) and Status (the open ones on arrival), as the item island's
 bars (`tile-island.js` `itemBar`) grouped by status in workflow order, a Subtask under its Task. The push carries what
 a bar says (`epicsPush`: the objective and last comment cut short, comment count, last move, last hand-in). A bar
 pressed opens the item's reading under it (`renderItemDetail`, its own read). Every Epic surface is that board (w340,
