@@ -425,7 +425,7 @@ test('under project management a move to In Review without a note is refused, NE
     assert.equal(noted.data.item.status, 'In Review');
   } finally { await live(['cap', 'mem']); }
   const desk = await fs.readFile(new URL('../src/commands/desk.ts', import.meta.url), 'utf8');
-  assert.match(desk, /if \(projectId && !forUser && await projectManagementOn\(session\)\)/, 'a desk hand-in under project management needs --note too');
+  assert.match(desk, /if \(projectId && !forUser && underPm\)/, 'an item handed in from a desk under project management needs --note too; a hand-in with no item does not (w415)');
   assert.match(desk, /const long = handInNoteProblem\(forUser\);\n\s+if \(long\) die/, 'a long note is refused before any code is handed in');
 });
 
