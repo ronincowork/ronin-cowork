@@ -126,8 +126,8 @@ categories. Use the tool and composition terms above.
 
 ## Ronin Cloud
 
-These terms name the hosted offer's surfaces; the plan is
-`samurai_lab/wip/ronin_cloud/RONIN_CLOUD.md` and the build is `MVP_ARCHITECTURE.md` beside it.
+These terms name the hosted offer's surfaces. Current reference: `samurai_lab/ronin_cloud/README.md`.
+Implementation proposal: `plan read ronin_cowork/hosted-first-office` (Draft).
 Every physical or fleet surface carries the `office_` prefix; `front_door`, `model_gateway` and
 `kill_switch` stand alone because nothing else shares the word. In prose the plain word office
 stays; what the customer hears for a unit is not settled (owner, 6 Nov 2026).
