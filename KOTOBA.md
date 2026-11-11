@@ -141,7 +141,7 @@ stays; what the customer hears for a unit is not settled (owner, 6 Nov 2026).
 | Hypervisor (`hypervisor`) | The software on an office_park that carves it into office_units and exposes the API the office_kohai drives: Proxmox VE |
 | Office kohai (`office_kohai`) | The head of an office_park: HQ-controlled, living on the park beside gateway_office, never reachable by customers. It provisions the park's units, keeps their records, stops, meters and updates them (was `control_plane`, a separate machine; owner, 6 Nov 2026) |
 | Office registry (`office_registry`) | The office_kohai's record of its park's units: account, unit, private address, state, stop_clock. Which park an account's unit is on is HQ's to know |
-| Front door (`front_door`) | The public entry on an office_park: Caddy, OAuth2 Proxy and Keycloak. Maps the hostname to an office, then checks that the signed-in user owns it; signing in alone opens nothing |
+| Front door (`front_door`) | How a person reaches their own office_unit, with no Ronin code: Cloudflare (DNS, certificates, one tunnel per office_park), WorkOS AuthKit (sign-in) and one stock OAuth2 Proxy guard per office_unit on the office_park host, admitting the account's email only. Signing in alone opens nothing |
 | SSH gateway (`ssh_gateway`) | SSH entry at the same name as the front_door; no office address is ever shown |
 | Office network (`office_network`) | The private network on an office_park; offices reach out through NAT, never each other, the office_park or the office_kohai |
 | Office image (`office_image`) | The Ronin image an office boots from once; after that Ronin updates itself |
