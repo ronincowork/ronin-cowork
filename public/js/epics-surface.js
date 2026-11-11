@@ -7,7 +7,7 @@
  * from the phalanx but its own: a row of stones across the top, one per Epic; the pressed one is
  * the Epic shown below (where it comes from and its holder, then its own details as the island's
  * bar, pressed open to its reading like any bar, its Status moved there: KAN-309, KAN-310), under
- * two ERABI questions, Assigned (Yes / No) and Status (the open ones on arrival); its items as the item island's bars
+ * three ERABI questions, Assigned (Yes / No), Flagged (Yes / No; w409) and Status (the open ones on arrival); its items as the item island's bars
  * (tile-island.js itemBar) grouped by status. A stone switches the Epic on the same surface;
  * nothing opens another. The Epics workbench's Tilespace 1 starts on none picked; an Epic's
  * selector card, a dragged stone (`createEpicRecord`) and a Team's Epics card start on theirs.
@@ -98,12 +98,15 @@ export const OPEN_STATUSES = ['To Do', 'In Progress', 'In Review'];
 /** Assigned, as the question asks it: 'yes', 'no', both or nothing picked (all). */
 export const byAssigned = (items, picked = []) => (!picked.length || picked.length === 2 ? items
   : items.filter((item) => isAssigned(item) === picked.includes('yes')));
+/** Flagged, as the question asks it (owner, 2026-11-11, w409): 'yes', 'no', both or nothing picked (all). */
+export const byFlagged = (items, picked = []) => (!picked.length || picked.length === 2 ? items
+  : items.filter((item) => Boolean(item.flagged) === picked.includes('yes')));
 /** The Status question's pick: nothing picked is every status. */
 export const byStatus = (items, picked = []) => (picked.length ? items.filter((item) => picked.includes(item.status)) : items);
 
 /**
- * ONE EPIC'S ITEMS (owner, 2026-11-06, w334): two questions in ERABI (ask.js) — Assigned (Yes /
- * No) and Status, the open ones picked on arrival — under the Epic's own bar (KAN-309), which
+ * ONE EPIC'S ITEMS (owner, 2026-11-06, w334): three questions in ERABI (ask.js) — Assigned (Yes /
+ * No), Flagged (Yes / No; w409) and Status, the open ones picked on arrival — under the Epic's own bar (KAN-309), which
  * opens to its reading as any bar does (KAN-310) — then the items as the island's bars
  * (tile-island.js itemBar) going down the page, grouped by status in workflow order. A Subtask
  * whose Task is shown follows it as a slimmer bar. A bar pressed opens the item's reading under
@@ -112,6 +115,7 @@ export const byStatus = (items, picked = []) => (picked.length ? items.filter((i
  */
 function epicItems(epicId, { epicsRead }) {
   let assigned = [];
+  let flagged = [];
   let statuses = [...OPEN_STATUSES];
   const open = new Set();
   const root = el('div', 'epic-items');
@@ -120,10 +124,14 @@ function epicItems(epicId, { epicsRead }) {
     { key: 'assigned', label: t('epics.assigned', 'Assigned'), blank: t('epics.all', 'All'), many: true, options: [
       { v: 'yes', l: t('epics.yes', 'Yes') }, { v: 'no', l: t('epics.no', 'No') },
     ] },
+    { key: 'flagged', label: t('epics.flagged', 'Flagged'), blank: t('epics.all', 'All'), many: true, options: [
+      { v: 'yes', l: t('epics.yes', 'Yes') }, { v: 'no', l: t('epics.no', 'No') },
+    ] },
     { key: 'status', label: t('epics.status', 'Status'), blank: t('epics.all', 'All'), many: true,
       options: STATUSES.map((status) => ({ v: status, l: status })) },
-  ] }], { value: { assigned, status: statuses }, density: 'tight', onChange: ({ assigned: a, status: st }) => {
+  ] }], { value: { assigned, flagged, status: statuses }, density: 'tight', onChange: ({ assigned: a, flagged: f, status: st }) => {
     assigned = (a || []).map(String);
+    flagged = (f || []).map(String);
     statuses = (st || []).map(String);
     paint();
   } });
@@ -159,7 +167,7 @@ function epicItems(epicId, { epicsRead }) {
       detail.replaceChildren(node, ...(open.has(epic.id) ? [reading(epic, { children: false })] : []));
     } else detail.replaceChildren();
     const every = epicsRead.items(epicId);
-    const items = byStatus(byAssigned(every, assigned), statuses);
+    const items = byStatus(byFlagged(byAssigned(every, assigned), flagged), statuses);
     const shown = new Set(items.map((item) => item.id));
     const folded = (item) => item.level === -1 && item.parent && shown.has(item.parent);
     const subsOf = (item) => items.filter((one) => one.level === -1 && one.parent === item.id);
@@ -185,7 +193,7 @@ function epicItems(epicId, { epicsRead }) {
       sections.push(section);
     }
     if (!every.length) sections.push(el('p', 'epic-empty', t('epics.no_items', 'No work items under this Epic yet.')));
-    else if (!items.length) sections.push(el('p', 'epic-empty', t('epics.none_picked', 'No items for what Assigned and Status pick.')));
+    else if (!items.length) sections.push(el('p', 'epic-empty', t('epics.none_picked', 'No items for what Assigned, Flagged and Status pick.')));
     groups.replaceChildren(...sections);
   }
   return { el: root, paint, destroy: () => questions.destroy() };

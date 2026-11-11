@@ -654,16 +654,17 @@ nothing paints exactly this.
 - **team.arranged_by:** arranged by {from}
 - **team.state:** State
 
-## epics — epics-surface.js (the Epics board: a row of Epic stones, the picked Epic's bar (pressed, its reading), its Assigned and Status questions, its items as bars; w334, KAN-309, KAN-310)
+## epics — epics-surface.js (the Epics board: a row of Epic stones, the picked Epic's bar (pressed, its reading), its Assigned, Flagged and Status questions, its items as bars; w334, KAN-309, KAN-310)
 - **epics.all:** All
 - **epics.assigned:** Assigned
+- **epics.flagged:** Flagged
 - **epics.yes:** Yes
 - **epics.no:** No
 - **epics.unassigned:** Unassigned
 - **epics.group:** {status} · {n}
 - **epics.open_n:** {n} open
 - **epics.pick_epic:** Pick an Epic to see its work items.
-- **epics.none_picked:** No items for what Assigned and Status pick.
+- **epics.none_picked:** No items for what Assigned, Flagged and Status pick.
 
 ## team_epics — team-epics.js (the Team workbench's Epics card; KAN-232)
 - **team_epics.none:** No Epics for this Team yet.

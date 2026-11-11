@@ -9,7 +9,7 @@ const source = await readFile(new URL('../public/js/epics-surface.js', import.me
 const lift = (name) => source.slice(source.indexOf(`export const ${name}`)).split(';\n')[0].replace(/^export /, '');
 const holderOfItem = (item) => { const [kind, ...rest] = String(item?.holder || '').split(':'); const name = rest.join(':'); return (kind === 'agent' || kind === 'team') && name ? { kind, name } : null; };
 // eslint-disable-next-line no-new-func
-const { isAssigned, byAssigned, byStatus } = new Function('holderOfItem', `${lift('isAssigned')};\n${lift('byAssigned')};\n${lift('byStatus')};\nreturn { isAssigned, byAssigned, byStatus };`)(holderOfItem);
+const { isAssigned, byAssigned, byFlagged, byStatus } = new Function('holderOfItem', `${lift('isAssigned')};\n${lift('byAssigned')};\n${lift('byFlagged')};\n${lift('byStatus')};\nreturn { isAssigned, byAssigned, byFlagged, byStatus };`)(holderOfItem);
 
 test('assigned is held by an Agent; a Team alone, or nobody, is unassigned', () => {
   assert.equal(isAssigned({ holder: 'agent:item_pills' }), true);
@@ -28,11 +28,21 @@ test('w334: Assigned lets through Yes, No, or both; nothing or both picked is al
   assert.deepEqual(ids(byStatus(items, ['To Do', 'In Review'])), ['a', 'n']);
 });
 
-test('w334: the Epics board — a row of stones, two ERABI questions, the items as the island’s bars grouped by status', async () => {
+test('w409: Flagged lets through Yes, No, or both; nothing or both picked is all', () => {
+  const items = [{ id: 'f', flagged: true }, { id: 'u', flagged: false }, { id: 'x' }];
+  const ids = (list) => list.map((item) => item.id);
+  assert.deepEqual(ids(byFlagged(items, [])), ['f', 'u', 'x']);
+  assert.deepEqual(ids(byFlagged(items, ['yes', 'no'])), ['f', 'u', 'x']);
+  assert.deepEqual(ids(byFlagged(items, ['yes'])), ['f']);
+  assert.deepEqual(ids(byFlagged(items, ['no'])), ['u', 'x']);
+});
+
+test('w334: the Epics board — a row of stones, three ERABI questions, the items as the island’s bars grouped by status', async () => {
   assert.match(source, /key: 'assigned', label: t\('epics\.assigned', 'Assigned'\), blank: t\('epics\.all', 'All'\), many: true/);
+  assert.match(source, /key: 'flagged', label: t\('epics\.flagged', 'Flagged'\), blank: t\('epics\.all', 'All'\), many: true/);
   assert.match(source, /key: 'status', label: t\('epics\.status', 'Status'\), blank: t\('epics\.all', 'All'\), many: true/);
   assert.match(source, /let statuses = \[\.\.\.OPEN_STATUSES\];/, 'the open statuses picked on arrival');
-  assert.match(source, /const items = byStatus\(byAssigned\(every, assigned\), statuses\);/);
+  assert.match(source, /const items = byStatus\(byFlagged\(byAssigned\(every, assigned\), flagged\), statuses\);/);
   assert.match(source, /import \{ itemBar \} from '\.\/tile-island\.js';/, 'the island’s own bar');
   assert.match(source, /for \(const status of statusesOf\(items\)\)/, 'grouped by status, in workflow order');
   assert.match(source, /node\.addEventListener\('click', \(\) => \{ if \(epic\.id !== selected\) select\(epic\.id\); \}\);/, 'a stone switches the Epic in place');
