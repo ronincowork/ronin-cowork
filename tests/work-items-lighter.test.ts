@@ -364,7 +364,7 @@ test('a hand-in is with the lead until on dev after the last hand-in; a checkout
   assert.equal(await stage(desk.id), 'lead', 'a new hand-in waits for its own promotion');
 });
 
-test('a hand-in names its item under project management: the switch is read from the Agent\'s behaviours', async () => {
+test('project management is read from the Agent\'s behaviours; a hand-in never needs an item under it (w415)', async () => {
   const { projectManagementOn } = await import('../src/agent-composition.js');
   const { sessionDir } = await import('../src/session-dir.js');
   for (const [name, books] of [['pm_on', ['base-agent', 'project-management']], ['pm_off', ['base-agent']]] as const) {
@@ -376,8 +376,8 @@ test('a hand-in names its item under project management: the switch is read from
   assert.equal(await projectManagementOn('pm_off'), false);
   assert.equal(await projectManagementOn('pm_nobody'), false, 'no record: not under it');
   const desk = await fs.readFile(new URL('../src/commands/desk.ts', import.meta.url), 'utf8');
-  assert.match(desk, /if \(!projectId && await projectManagementOn\(session\)\)/);
-  assert.match(desk, /NEXT: worktree-desk hand-in \$\{positional\[0\] \?\? '<repo>'\}.*--item <id>/);
+  assert.doesNotMatch(desk, /under project management a hand-in names its work item/);
+  assert.match(desk, /Check your work items/);
 });
 
 test('an item In Review with no hand-ins recorded (handed in before the signals) is ready to accept, not with the lead', async () => {

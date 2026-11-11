@@ -4,7 +4,7 @@
 #
 # Usage: worktree-desk status [--session s | --team t | --repo r]   per worktree: clean/dirty · ahead · pending · blocked
 #        worktree-desk open <repo[:branch]> [--team t]              get a worktree from current local dev
-#        worktree-desk hand-in [<repo[:branch]>] [--assignment] [--item <id>] [--note "<what they can try>"]  hand your committed delta to the team line
+#        worktree-desk hand-in [<repo[:branch]>] [--assignment] [--item <id>] [--note "<what they can try>"]  hand your committed delta to the team line; --item optional, never Done
 #        worktree-desk sync [<repo[:branch]>] [--source dev|team|lead|<repo:branch>]                       merge the selected committed source into the worktree
 #        worktree-desk close [<repo[:branch]>]                      remove a clean worktree whose tip is on its line
 #        worktree-desk repository-init <existing-project-root>      initialize a local repository

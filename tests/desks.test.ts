@@ -240,6 +240,27 @@ test('a hand-in with --item ends by naming the item and the write that keeps it 
   assert.equal((await readItem(item.id))!.status, 'In Review');
 });
 
+test('under project management a hand-in needs no item: the code goes in, nothing moves, and the reply says to check your items (w415)', async () => {
+  const { sessionDir } = await import('../src/session-dir.js');
+  const dir = sessionDir('pm_hander');
+  await fs.mkdir(dir, { recursive: true });
+  await fs.writeFile(path.join(dir, 'birth-receipt.json'), JSON.stringify({ behaviours: [{ book: 'project-management', file: '/x/project-management.md' }] }));
+  const desk = await openDesk({ repo: 'cowork', session: 'pm_hander', team: 'comp' });
+  await commitFile(desk.worktree, 'no-item.txt', 'docs only\n');
+  const { item } = await createItem({ title: 'Untouched' }, 'pm_hander');
+  const output = execFileSync(process.execPath, [
+    '--import', 'tsx', path.resolve('src/commands/desk.ts'), 'hand-in', 'cowork', '--note', 'read the doc',
+  ], {
+    cwd: path.resolve('.'),
+    env: { ...process.env, RONIN_SESSION: 'pm_hander', RONIN_TEAMS: 'comp' },
+  }).toString();
+  assert.match(output, /ACCEPTED cowork:team\/comp\/pm_hander/);
+  assert.match(output, /No work item was named; no status moved/);
+  assert.match(output, /--note was not kept/);
+  assert.match(output, /Check your work items \(item search --holder pm_hander\).*"In Review".*never moves an item to Done/);
+  assert.equal((await readItem(item.id))!.status, 'To Do', 'a hand-in with no item moves none');
+});
+
 test('openDesk keeps managed branch names private and reports the checkout route for direct repositories', async () => {
   for (const branch of ['dev', 'team/comp/dev', 'master']) {
     const desk = await openDesk({ repo: 'cowork', session: `x-${branch.replaceAll('/', '-')}`, team: 'comp', branch });

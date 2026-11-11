@@ -74,7 +74,11 @@ const USAGE = `usage: worktree-desk status [<repo[:branch]>] [--session s | --te
        worktree-desk handoff <repo[:branch]> --to <session[,session]>
        worktree-desk discard <repo[:branch]> --confirm "DISCARD repo:branch"
        worktree-desk reply <repo> <receipt id> <message…>
-       worktree-desk receipts [<repo>] [--line [--accepted | --since <line sha>] | --id <receipt id>]`;
+       worktree-desk receipts [<repo>] [--line [--accepted | --since <line sha>] | --id <receipt id>]
+
+hand-in hands in the repo's committed work; it never needs a work item. Name one with --item and
+it goes to In Review with --note, what the user can try; with none, the reply says to check your
+work items. A hand-in never moves an item to Done: the person accepting does.`;
 
 function row(d: DeskStatus): string {
   const bits = [
@@ -200,16 +204,17 @@ async function main(): Promise<void> {
         } else targets = [await pickOne(session, positional[0] ?? '', 'hand-in')];
         const projectId = str(flags.get('item'));
         if (projectId && !(await readItem(projectId))) die(`NO-ITEM: there is no work item ${projectId}`, 3);
-        // A hand-in names its item under project management (docs/using-ronin/project-management.md, Three signals).
-        if (!projectId && await projectManagementOn(session)) {
-          die(`NO-ITEM: under project management a hand-in names its work item.\n  NEXT: worktree-desk hand-in ${positional[0] ?? '<repo>'}${flags.get('assignment') ? ' --assignment' : ''} --item <id> --note "<what they can try>"`, 2);
-        }
+        // A hand-in is the repo's and never needs an item (owner, 2026-11-11; w415): without one the
+        // code goes in and the acknowledgement tells the Agent to check its work items. Named, the
+        // item goes to In Review with its note; a hand-in never moves an item to Done
+        // (docs/using-ronin/project-management.md, Three signals).
+        const underPm = await projectManagementOn(session);
         // The Handed in note: the one comment the user reads (docs/using-ronin/project-management.md,
-        // How an item lives). Short by construction; under project management a hand-in carries one.
+        // How an item lives). Short by construction; an item handed in under project management carries one.
         const forUser = str(flags.get('note')).trim();
         const long = handInNoteProblem(forUser);
         if (long) die(`REFUSED: ${long}`, 2);
-        if (projectId && !forUser && await projectManagementOn(session)) {
+        if (projectId && !forUser && underPm) {
           die(`NO-NOTE: a hand-in carries a note for the user: what they can try, in their words.\n  NEXT: worktree-desk hand-in ${positional[0] ?? '<repo>'}${flags.get('assignment') ? ' --assignment' : ''} --item ${projectId} --note "<what they can try>"`, 2);
         }
         let worst = 0;
@@ -237,6 +242,11 @@ async function main(): Promise<void> {
                 : `  Lead notification was automatic: delivered to ${dlv.to} ${dlv.how === 'house-send' ? 'at the tile' : 'on the Team wipeboard'}. No further notification from the Agent is required.`);
             }
           }
+        }
+        // The acknowledgement: with no item named, check the items you hold (w415).
+        if (!projectId && outcomes.some(({ receipt }) => receipt.result === 'accepted')) {
+          if (forUser) out('The --note was not kept: it is a work item\'s Handed in note, and no item was named.');
+          if (underPm) out(`Check your work items (item search --holder ${session}): one whose work is now handed in may be ready for review — item transition <id> "In Review" --note "<what they can try>". A hand-in never moves an item to Done.`);
         }
         if (moved) {
           out(`Code handed in for ${projectId}: ${moved.line.op} ${moved.line.from ?? ''} → ${moved.line.to ?? ''} (${moved.line.note}).`);
