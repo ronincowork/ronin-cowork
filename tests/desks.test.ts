@@ -257,8 +257,7 @@ test('under project management a hand-in needs no item: the code goes in, nothin
   assert.match(output, /ACCEPTED cowork:team\/comp\/pm_hander/);
   assert.match(output, /No work item was named; no status moved/);
   assert.match(output, /--note was not kept/);
-  assert.match(output, /Handing in code is not Done: consider your work items/);
-  assert.match(output, new RegExp(`${item.id} To Do 'Untouched': if this work started it`));
+  assert.match(output, /Check your work items \(item search --holder pm_hander\).*"In Review".*never moves an item to Done/);
   assert.equal((await readItem(item.id))!.status, 'To Do', 'a hand-in with no item moves none');
 });
 

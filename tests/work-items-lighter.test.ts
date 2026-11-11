@@ -377,7 +377,7 @@ test('project management is read from the Agent\'s behaviours; a hand-in never n
   assert.equal(await projectManagementOn('pm_nobody'), false, 'no record: not under it');
   const desk = await fs.readFile(new URL('../src/commands/desk.ts', import.meta.url), 'utf8');
   assert.doesNotMatch(desk, /under project management a hand-in names its work item/);
-  assert.match(desk, /consider your work items/);
+  assert.match(desk, /Check your work items/);
 });
 
 test('an item In Review with no hand-ins recorded (handed in before the signals) is ready to accept, not with the lead', async () => {
