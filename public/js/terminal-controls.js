@@ -149,7 +149,10 @@ const STOP_WAIT_MS = 8000;
  * seconds is said, and a later stop still lands. An Agent with no stance gets "sent" only.
  */
 function followStop(tile) {
-  const stance = tile.homeRow?.()?.stance;
+  const row = tile.homeRow?.();
+  // Ronin's own word that it stopped (stopped_at) can land before this answer does.
+  if (row?.stopped_at) { say(tile, 'success', t('controls.stopped', 'Stopped. The Agent is no longer working.')); return; }
+  const stance = row?.stance;
   if (!stance || stance === 'unknown') { say(tile, 'success', t('controls.stop_sent', 'Stop sent.')); return; }
   if (stance !== 'working') { say(tile, 'success', t('controls.stop_idle', 'Stop sent. The Agent was not working.')); return; }
   say(tile, 'info', t('controls.stop_waiting', 'Stop sent. Waiting for the Agent to stop…'));
