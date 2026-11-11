@@ -45,7 +45,7 @@ When you bring work to a lead, it decides first which of three it is:
 | Made | the lead as it gives out work, or the Agent as it takes it | under the epic; its objective is what done looks like to you, in your words, one or two sentences |
 | Started | the Agent | In Progress |
 | Stuck | the Agent | flagged "Waiting on <who>: <what>"; it shows under Stuck |
-| Handed in | the Agent | In Review, still held by the Agent, with one short **Handed in** comment for you: what you can try. It shows under With the lead. Handing in code is the repo's and needs no item: `worktree-desk hand-in <repo>` alone puts the code in, and its reply tells the Agent to check its items; `--item` hands in both at once. Handing in code doesn't hand in the item, and a hand-in never makes an item Done |
+| Handed in | the Agent | In Review, still held by the Agent, with one short **Handed in** comment for you: what you can try. It shows under With the lead. Handing in code is the repo's and needs no item: `worktree-desk hand-in <repo>` alone puts the code in, and its reply lists the items the Agent holds, each with what to consider; `--item` hands in both at once. Handing in code doesn't hand in the item, and a hand-in never makes an item Done |
 | On dev | the lead's promotion | still In Review; it moves to Ready to accept |
 | Accepted or sent back | you | Accept makes it Done, and the Agent holding it is told. Send back makes it In Progress with your comment, held where it is; the Agent holding it is told |
 | Handed over | the Agent, as it ends | to the Team (or a named Agent) with a **Handover** comment: where it stands, what is next. Its status stays |
@@ -81,8 +81,8 @@ first; the other comments (the Agent and lead deciding things, the item's record
 | **Flag** | anyone: `item flag` | I am stuck on someone | the lead or epic holder above it |
 
 A code hand-in is the repo's: `worktree-desk hand-in <repo>` never needs an item. With none
-named, the code goes to the Team line, the lead is told, and the reply tells the Agent to check
-its work items, one of which may now be ready to hand in for review. An item handed in carries
+named, the code goes to the Team line and the lead is told. Every hand-in's reply lists the items the
+Agent holds and what to consider for each: one In Progress may now be ready for review. An item handed in carries
 its note: at most 280 characters, for you, with no commit ids or receipts (those stay on the
 item's trail; the diff is the detail). A hand-in moves a named item to In Review and no further;
 a promotion never changes a status; only you make an item Done. You accept only what is on dev (or what was

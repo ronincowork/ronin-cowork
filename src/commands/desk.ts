@@ -16,6 +16,8 @@ import { withManagedTransaction } from '../desks/lifecycle-ledger.js';
 import { shutdownAgent, ShutdownRefused } from '../desks/session-shutdown.js';
 import { didLine, handInNoteProblem, readItem } from '../work-items.js';
 import { projectManagementOn } from '../agent-composition.js';
+import { readLetterHolds } from '../tegami.js';
+import { sessionKey } from '../session-dir.js';
 import { briefPointer } from '../behaviours.js';
 
 const out = (s = '') => process.stdout.write(s + '\n');
@@ -77,8 +79,31 @@ const USAGE = `usage: worktree-desk status [<repo[:branch]>] [--session s | --te
        worktree-desk receipts [<repo>] [--line [--accepted | --since <line sha>] | --id <receipt id>]
 
 hand-in hands in the repo's committed work; it never needs a work item. Name one with --item and
-it goes to In Review with --note, what the user can try; with none, the reply says to check your
-work items. A hand-in never moves an item to Done: the person accepting does.`;
+it goes to In Review with --note, what the user can try. Either way, under project management the
+reply lists the items you hold and what to consider for each. A hand-in never moves an item to
+Done: the person accepting does.`;
+
+/** After a hand-in under project management: the items the Agent holds, each with what it might
+ * do next. Handing in code is the repo's; it never moves an item to Done (w415). */
+async function itemsToConsider(session: string): Promise<string[]> {
+  const holds = (await readLetterHolds(await sessionKey(session)).catch(() => null))?.holds ?? [];
+  const items = (await Promise.all(holds.map((id) => readItem(id).catch(() => null))))
+    .filter((item): item is NonNullable<typeof item> => Boolean(item) && item!.status !== 'Done');
+  const lines = ['Your code is in. Handing in code is not Done: consider your work items.'];
+  if (!items.length) {
+    lines.push('  You hold no open work item. If this was work for one, write it under your epic: item create --parent <epic> --title "…"');
+    return lines;
+  }
+  for (const item of items) {
+    const next = item.status === 'In Review'
+      ? 'with the lead; Done only when the person you work for accepts it'
+      : item.status === 'In Progress'
+        ? `if this finishes it: item transition ${item.id} "In Review" --note "<what they can try>"; if not, keep its objective true and carry on`
+        : `if this work started it: item transition ${item.id} "In Progress"`;
+    lines.push(`  ${item.id} ${item.status} '${item.title}': ${next}`);
+  }
+  return lines;
+}
 
 function row(d: DeskStatus): string {
   const bits = [
@@ -243,16 +268,15 @@ async function main(): Promise<void> {
             }
           }
         }
-        // The acknowledgement: with no item named, check the items you hold (w415).
-        if (!projectId && outcomes.some(({ receipt }) => receipt.result === 'accepted')) {
-          if (forUser) out('The --note was not kept: it is a work item\'s Handed in note, and no item was named.');
-          if (underPm) out(`Check your work items (item search --holder ${session}): one whose work is now handed in may be ready for review — item transition <id> "In Review" --note "<what they can try>". A hand-in never moves an item to Done.`);
-        }
+        const accepted = outcomes.some(({ receipt }) => receipt.result === 'accepted');
+        if (!projectId && accepted && forUser) out('The --note was not kept: it is a work item\'s Handed in note, and no item was named.');
         if (moved) {
           out(`Code handed in for ${projectId}: ${moved.line.op} ${moved.line.from ?? ''} → ${moved.line.to ?? ''} (${moved.line.note}).`);
           out(didLine(moved));
         }
         if (unmoved) out(`Code handed in for ${projectId}; its status did not move: ${unmoved}`);
+        // The acknowledgement (owner, 2026-11-11; w415): the code is in, so look at your work items.
+        if (accepted && underPm) for (const line of await itemsToConsider(session)) out(line);
         process.exit(worst);
       }
       case 'sync': {
