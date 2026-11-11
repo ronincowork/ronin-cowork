@@ -14,6 +14,7 @@ Usage:
   plan park <name> [--idea "<idea>"] [--file <path>] [--team <team>]
                                             park an idea: write the Draft plan and make its item,
                                             "Draft the plan for <idea>", in the Workspace's Icebox
+  plan delete <name>                        the plan goes, any status; its history stays where it is kept
   plan order <name>                         Draft → Ordered: not rewritten from here
   plan team <name> <team>|none              the Team the plan is for
 Any command takes --workspace <name>. Without it the Workspace is your Team's, when you are on
@@ -101,6 +102,8 @@ case "$verb" in
     plan_call POST /api/plans/park "$(json name "$name" text "$body" team "$team" idea "$idea")" ;;
   order) [ "$#" -eq 1 ] || die 'BAD-ARG: plan order takes <name>'
     plan_call POST /api/plans/order "$(json name "$1")" ;;
+  delete) [ "$#" -eq 1 ] || die 'BAD-ARG: plan delete takes <name>'
+    plan_call POST /api/plans/delete "$(json name "$1")" ;;
   team) [ "$#" -eq 2 ] || die 'BAD-ARG: plan team takes <name> <team>|none'
     plan_call POST /api/plans/team "$(json name "$1" team "$2")" ;;
   *) usage >&2; exit 2 ;;
