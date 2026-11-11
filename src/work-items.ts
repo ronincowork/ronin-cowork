@@ -962,13 +962,14 @@ export async function linkItem(id: string, type: string, other: string, by: stri
   });
 }
 
-/** Jira's delete (docs/using-ronin/project-management.md, Jira). The item goes, and with it its subtasks (as Jira
- * deletes an issue's subtasks); any other child is left with no parent (as an epic's children
- * are). Links to it go and every holder lets go of it. No flag: the bridge decides what Jira
- * does (an item made in Ronin goes there too; one that came from Jira stays there). THE DELETE EVENT (agreed with the bridge, the only Jira writer): before any file
- * goes, one emitItemChanged per deleted item, the named item first, then its subtasks; the
- * item as it was, and a line { op: 'delete', by: the deleter,
- * from: the named id on a subtask taken with it }. */
+/** Jira's delete (docs/using-ronin/project-management.md, Jira). The item goes, and with it
+ * its subtasks (as Jira deletes an issue's subtasks); any other child is left with no parent (as
+ * an epic's children are). Links to it go and every holder lets go of it. No flag: the bridge
+ * decides what Jira does (an item made in Ronin goes there too; one that came from Jira stays
+ * there). THE DELETE EVENT (agreed with the bridge, the only Jira writer): before any file goes,
+ * one emitItemChanged per deleted item, the named item first, then its subtasks; the item as it
+ * was, and a line { op: 'delete', by: the deleter, from: the named id on a subtask taken with
+ * it }. */
 export function deleteItem(given: string, by: string): Promise<{ deleted: string[]; orphaned: string[] }> {
   return withIssuer(async () => {
     const id = (await load(given)).id;
