@@ -42,7 +42,7 @@ const HEADER = () => {
   // what the colours mean. A pill opens its item over the tile (openItem below) and closes it
   // pressed again. Read off the work record on every push: js/tile-island.js.
   { key: 'island', widget: (tile) => createItemIsland({
-      open: (item) => void openItem(tile, item),
+      open: (item) => openItem(tile, item), // settles once the item shows: the pill is busy until then (w416)
       isOpen: (id) => !!openItemLayer(tile, id),
       shut: (id) => openItemLayer(tile, id)?.remove() }),
     // w331: the stance rides the same home row: rireki's reading, and what this harness reports.

@@ -213,7 +213,8 @@ export function itemBar(item, { sub = false, subtasks = 0, extra = [], onPress }
 }
 
 /**
- * The island for one tile. `open(item)` opens an item over the tile and `shut(id)` closes it;
+ * The island for one tile. `open(item)` opens an item over the tile (a promise, settled once it
+ * shows: the pill is busy until then, w416) and `shut(id)` closes it;
  * `isOpen(id)` says whether that item is the one open. `update(session, items)` is called on
  * every reading of the work record and redraws only when what it shows moved.
  */
@@ -313,20 +314,28 @@ export function createItemIsland({ open, shut, isOpen }) {
       node.setAttribute('aria-label', node.title);
       node.append(mark);
     }
-    node.addEventListener('click', () => press(item));
-    return node;
+    node.addEventListener('click', () => void press(item));
+    return markBusy(node, item.id);
   }
 
-  /** One press opens the item, the same press again closes it; either puts the island back. */
-  function press(item) {
+  /** One press opens the item, the same press again closes it; either puts the island back.
+   *  THE PRESS ANSWERS AT ONCE (w416): while the item is on its way (its read, ~0.1 s) its pill and
+   *  bar are busy, greyed with a progress cursor, and further presses on it are ignored. */
+  const loading = new Set();
+  const markBusy = (node, id) => { if (loading.has(id)) node.setAttribute('aria-busy', 'true'); else node.removeAttribute('aria-busy'); return node; };
+  const busy = (id) => { for (const node of el.querySelectorAll('[data-item]')) if (node.dataset.item === id) markBusy(node, id); };
+  async function press(item) {
+    if (loading.has(item.id)) return;
     place('rest');
-    if (isOpen(item.id)) shut(item.id);
-    else open(items.find((one) => one.id === item.id) || item);
+    if (isOpen(item.id)) { shut(item.id); return; }
+    loading.add(item.id);
+    busy(item.id);
+    try { await open(items.find((one) => one.id === item.id) || item); } finally { loading.delete(item.id); busy(item.id); }
   }
 
   /** A wide bar: the pill's head (symbol, key, title, status, flag, hand-in), then what the item
    *  is, its last comment, and its facts. A Subtask under a Task here is a slimmer bar after it. */
-  const bar = (item, sub = false) => itemBar(item, { sub, subtasks: sub ? 0 : under.get(item.id) || 0, onPress: () => press(item) });
+  const bar = (item, sub = false) => markBusy(itemBar(item, { sub, subtasks: sub ? 0 : under.get(item.id) || 0, onPress: () => void press(item) }), item.id);
 
   let stanceDrawn = '';
   /** The stance, redrawn only when it or what the harness reports moved. */
