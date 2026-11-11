@@ -3769,6 +3769,21 @@ body {
   font-size: var(--text-label);
   cursor: pointer;
 }
+/* What Clear, Stop or Copy did: the kit's notice, a line of its own above the box. */
+.tile:is(.tape-on, .keys-on, .transcript-on) .composer .cnote {
+  flex-basis: 100%;
+  font: var(--text-body)/var(--leading-tight) var(--font-ui);
+}
+.tile:is(.tape-on, .keys-on, .transcript-on) .composer .cnote[hidden] { display: none; }
+/* Enter answers the press too: a press shows before the send lands. */
+.tile:is(.tape-on, .keys-on, .transcript-on) .composer .csend:is(:active, .pressed) { filter: brightness(0.82); }
+/* A press on its way says so ("Stopping…"): the button widens for the word, then returns. */
+.tile:is(.tape-on, .keys-on, .transcript-on) .composer .cctl[data-busy] {
+  width: auto;
+  min-width: 38px;
+  padding: 0 var(--space-row);
+  cursor: progress;
+}
 /* Clear and Stop: Enter's shape, quiet; only Enter is kaki. */
 .tile:is(.tape-on, .keys-on, .transcript-on) .composer .cctl {
   height: var(--control-height-small);
@@ -4736,7 +4751,8 @@ button.wk-card { cursor: pointer; }
   font-size: var(--text-label);
   cursor: pointer;
 }
-.tile:is(.tape-on, .keys-on, .transcript-on) .composer .keysrow button:active {
+.tile:is(.tape-on, .keys-on, .transcript-on) .composer .keysrow button:is(:active, .pressed),
+.tile:is(.tape-on, .keys-on, .transcript-on) .composer .cctl:is(:active, .pressed) {
   background: var(--kaki); /* kaki: the action, or what needs you */
   border-color: var(--kaki);
   color: var(--on-strong);

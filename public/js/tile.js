@@ -313,6 +313,7 @@ export class Tile {
   refreshStance() {
     const row = this.homeRow();
     this.transcriptView.setStance(row?.stance || '', row?.tool);
+    this.stopWatch?.(row); // a Stop waiting to hear the Agent stopped (terminal-controls.js)
   }
 
   /** The route's word on this Agent's transcript arrived; the header reads it from here. */
