@@ -9,7 +9,8 @@ import {
   addComment, attachDoc, connectionOf, createItem, deleteItem, editComment, editItem, archiveHeldDone, archiveItem, flagItem, handoffItem, handoverItem, holderLabel, holdersOf, linkItem, listItems, markOnDev, readItem, resolveId, sendBack, watchItem, watchedIds,
   didLine, oneNoticePerCommand, type Acknowledged, type Holder, type JiraPair, type WorkItem,
 } from '../work-items.js';
-import { agentReading, everyItemReading, teamReading } from '../work-items-read.js';
+import { agentReading, epicCards, everyItemReading, teamReading, type HeldItem } from '../work-items-read.js';
+import { liveRows, rowOf } from '../work-items-index.js';
 import { pushTeams } from '../ws/events.js';
 
 const text = (value: unknown): string | undefined => typeof value === 'string' ? value : value === undefined || value === null ? undefined : String(value);
@@ -92,18 +93,28 @@ export function registerWorkItems(app: express.Express): void {
     // Archived items (Done five days) are left out unless ?archived=1 (item search --archived).
     const archived = Boolean(text(req.query.archived));
     const watched = holder === 'none' ? await watchedIds() : new Set<string>();
-    const narrow = <T extends WorkItem & { holder?: string }>(items: T[]): T[] => items.filter((item) =>
+    // Rows from the live index (w418), narrowed by every filter but ?text.
+    type Listed = { id: string; title: string; status: string; kind: string; parent: string | null; campaign_id: string; holder?: string };
+    const narrow = <T extends Listed>(items: T[]): T[] => items.filter((item) =>
       (!holder || (holder === 'none' && !item.holder && !watched.has(item.id) && item.status !== 'Done') || item.holder === `agent:${holder}` || item.holder === `team:${holder}` || item.holder === holder)
       && (!parent || item.parent === parent) && (!orphans || !item.parent)
       && (!status || item.status.toLowerCase() === status) && (!kind || item.kind.toLowerCase() === kind)
-      && (!campaign || item.campaign_id === campaign) && (archived || !item.archived)
-      && words.every((word) => `${item.title}\n${item.objective}`.toLowerCase().includes(word)));
-    if (session) { const reading = await agentReading(session); return res.json({ ok: true, ...reading, items: narrow(reading.items) }); }
+      && (!campaign || item.campaign_id === campaign));
+    // ?text skips the index: each item the other filters leave is opened, its title and objective read.
+    const texted = async <T extends Listed>(items: T[]): Promise<T[]> => {
+      if (!words.length) return items;
+      const bodies = await Promise.all(items.map((item) => readItem(item.id)));
+      return items.filter((_, i) => { const body = bodies[i]; return Boolean(body) && words.every((word) => `${body!.title}\n${body!.objective}`.toLowerCase().includes(word)); });
+    };
+    if (session) { const reading = await agentReading(session); return res.json({ ok: true, ...reading, items: await texted(narrow(reading.items)) }); }
     if (team) {
       const reading = await teamReading(team);
-      return res.json({ ok: true, ...reading, items: narrow(reading.items) });
+      return res.json({ ok: true, ...reading, items: await texted(narrow(reading.items)) });
     }
-    res.json({ ok: true, items: narrow(await everyItemReading()) });
+    const every: Array<HeldItem & { archived?: { at: string } }> = await everyItemReading();
+    // ?archived=1: history too. Archived items have no row, so their files are read (item search --archived).
+    if (archived) for (const item of await listItems()) if (item.archived) every.push({ ...rowOf(item), holders: [], holder: '', archived: item.archived });
+    res.json({ ok: true, items: await texted(narrow(every)) });
   }));
 
   app.post('/api/work-items', guarded(async (req, res) => {
@@ -117,12 +128,21 @@ export function registerWorkItems(app: express.Express): void {
   app.get('/api/work-items/:id', guarded(async (req, res) => {
     const item = await readItem(req.params.id);
     if (!item) throw new WorkItemMissing(`No work item ${req.params.id}.`);
-    // Jira's read: the fields, comments, attachments, links both ways and history (trail).
-    const all = await listItems();
-    const children = all.filter((other) => other.parent === item.id);
-    const inward = all.flatMap((other) => other.links.filter((link) => link.to === item.id).map((link) => ({ type: link.type, from: other.id })));
-    const connection = connectionOf(item, all.find((other) => other.id === item.parent) ?? null);
+    // Jira's read: the fields, comments, attachments, links both ways and history (trail). The
+    // item's own file, and the live index for the rest (w418): its children (rows), the links to
+    // it, its parent's key, its holders. No other item file is read.
+    const rows = await liveRows();
+    const children = rows.filter((other) => other.parent === item.id);
+    const inward = rows.flatMap((other) => other.links.filter((link) => link.to === item.id).map((link) => ({ type: link.type, from: other.id })));
+    const parent = item.parent ? rows.find((other) => other.id === item.parent) ?? await readItem(item.parent) : null;
+    const connection = connectionOf(item, parent);
     res.json({ ok: true, item, held_by: (await holdersOf(item.id)).map(holderLabel), ...(children.length ? { children } : {}), ...(inward.length ? { linked_from: inward } : {}), ...(connection ? { connection } : {}) });
+  }));
+
+  // The Epics board's card words for the picked Epic (w418): the bodies of it and the items under it.
+  app.get('/api/work-items/:id/cards', guarded(async (req, res) => {
+    const id = await resolveId(req.params.id);
+    res.json({ ok: true, cards: await epicCards(id) });
   }));
 
   app.put('/api/work-items/:id', guarded(async (req, res) => {

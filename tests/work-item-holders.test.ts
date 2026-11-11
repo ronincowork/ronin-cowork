@@ -416,7 +416,7 @@ test('a work record seeded with the old watches line is corrected on its next wr
   assert.match(after, /of a status change on that item, nothing else\./);
 });
 
-test('a list holding an item under its old w id and its Jira key reads it once, and writes back once', async () => {
+test('a list holding an item under its old w id and its Jira key reads it once, and its next write is clean', async () => {
   const { writeTeamRoster } = await import('../src/team-rosters.js');
   const { item } = await items.createItem({ title: 'keyed twice', holder: team }, 'lead');
   const was = item.id;
@@ -426,7 +426,10 @@ test('a list holding an item under its old w id and its Jira key reads it once, 
   // A write from elsewhere brings the old id back beside the key, as on the live roster.
   await writeTeamRoster('crew', { holds: [...roster.holds, was] }, roster.campaign_id);
   assert.deepEqual(await listsHolding('KAN-9261'), ['team:crew'], 'the store reads the old id as the key');
-  assert.deepEqual((await readTeamRoster('crew'))!.holds.filter((id) => id === 'KAN-9261' || id === was), ['KAN-9261'], 'and writes the list back clean at once');
+  // The live index reads it once (w418); the list's next write through the store writes it clean.
+  const { item: other } = await items.createItem({ title: 'next write', holder: team }, 'lead');
+  await items.releaseItem(other.id, 'lead');
+  assert.deepEqual((await readTeamRoster('crew'))!.holds.filter((id) => id === 'KAN-9261' || id === was), ['KAN-9261'], 'and the next write puts the list back clean');
   const reading = await teamReading('crew');
   assert.equal(reading.items.filter((one) => one.id === 'KAN-9261').length, 1, 'the Team reading shows it once');
 });
@@ -462,7 +465,9 @@ test('Done five days is archived, however it went Done: off every list, the Epic
   }
   const push = epicsPush(await everyItemReading());
   assert.ok(!push.items.some((one) => ids.includes(one.id)), 'off the Epics workbench');
-  assert.equal(push.epics.find((one) => one.id === epic.id)!.archived_under, 3, 'its Epic counts them');
+  // Archived items are never read for live work (w418): no row, so no count of them on the Epic.
+  const { liveRow } = await import('../src/work-items-index.js');
+  for (const id of ids) assert.equal(await liveRow(id), null, `${id} has no live row`);
   assert.deepEqual(await items.archiveDone(at + 9 * day), [], 'a second sweep finds nothing');
   // Leaving Done brings it back.
   await items.editItem(ids[2]!, { status: 'In Progress' }, 'jira:someone');
@@ -485,4 +490,15 @@ test('item search leaves archived items out unless --archived', async () => {
     assert.deepEqual(await ids('&archived=1'), [item.id]);
     assert.equal(((await (await fetch(`${base}/api/work-items/${item.id}`)).json()) as { item: { id: string } }).item.id, item.id, 'item read finds it');
   } finally { server.close(); }
+});
+
+/* THE LIVE INDEX (w418): every write kept it, so a rebuild from the files finds the same rows. */
+test('the live index rebuilt from the item files and holds lists equals the one the writes kept', async () => {
+  const index = await import('../src/work-items-index.js');
+  const kept = await index.liveRows();
+  await index.indexSaved();
+  assert.ok(kept.length > 0, 'there are live rows to compare');
+  assert.deepEqual(index.rowsOf(await index.buildState()), kept, 'rebuilt = kept');
+  const saved = JSON.parse(await (await import('node:fs/promises')).readFile(index.indexFile(), 'utf8')) as { rows: unknown[] };
+  assert.deepEqual(saved.rows, kept, 'the file saved whole is the same');
 });

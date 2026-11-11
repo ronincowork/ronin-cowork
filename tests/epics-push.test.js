@@ -52,24 +52,27 @@ test('the server pushes epics with the rosters, after every roster or work-item 
   assert.match(store_, /set\('epicItems', Array\.isArray\(message\.items\) \? message\.items : \[\]\); set\('epics', message\.epics\);/);
 });
 
-test('epicsPush: every Epic whole, and every item under one slim, with its Epic and Jira key (KAN-206)', async () => {
-  const { epicsPush } = await import('../src/work-items-read.ts');
-  const item = (id, level, parent, extra = {}) => ({ id, level, parent, title: id, status: 'To Do', holder: '', kind: 'Task', flagged: false, campaign_id: 'home', external: {}, trail: [{ op: 'create' }], comments: [{ text: 'x' }], ...extra });
+test('epicsPush: every Epic\'s row, and every item under one, with its Epic and Jira key (KAN-206, w418)', async () => {
+  const { epicsPush, cardOf } = await import('../src/work-items-read.ts');
+  const row = (id, level, parent, extra = {}) => ({ id, level, parent, title: id, status: 'To Do', holder: '', holders: [], kind: 'Task', flagged: false, campaign_id: 'home', links: [], jira: '', hand_ins: [], moved: '', ...extra });
   const { epics, items } = epicsPush([
-    item('E', 1, null), item('a', 0, 'E', { external: { jira: { id: '1', key: 'KAN-1' } }, holder: 'agent:sam' }), item('s', -1, 'a'), item('loose', 0, null),
+    row('E', 1, null), row('a', 0, 'E', { jira: 'KAN-1', holder: 'agent:sam' }), row('s', -1, 'a'), row('loose', 0, null),
   ]);
   assert.deepEqual(epics.map((epic) => epic.id), ['E']);
   assert.deepEqual(items.map((one) => [one.id, one.epic, one.jira, one.holder]), [['a', 'E', 'KAN-1', 'agent:sam'], ['s', 'E', '', '']]);
-  assert.ok(items.every((one) => !('trail' in one) && !('comments' in one)), 'no history or comments on the push');
-  // w334: what a bar says it is, cut short: the objective, the last comment, counts, when it moved.
+  assert.ok(items.every((one) => !('trail' in one) && !('comments' in one) && !('objective' in one)), 'rows only: no history, comments or objective on the push');
+  // w334: what a bar says beyond its row, cut short, from the picked Epic's bodies (epicCards).
   const long = 'word '.repeat(100);
-  const [one] = epicsPush([item('E', 1, null), item('b', 0, 'E', { objective: long, comments: [{ by: 'a', at: '1', text: 'old' }, { by: 'sam', at: '2026-11-06T00:00:00Z', text: long }], trail: [{ op: 'status', at: '2026-11-06T01:00:00Z' }], hand_ins: [{ receipt: 'r1', by: 'x', at: '1' }, { receipt: 'r2', by: 'x', at: '2' }] })]).items;
+  const one = cardOf({ id: 'b', objective: long, comments: [{ by: 'a', at: '1', text: 'old' }, { by: 'sam', at: '2026-11-06T00:00:00Z', text: long }] });
   assert.ok(one.objective.length <= 281 && one.objective.endsWith('…'));
   assert.equal(one.said.by, 'sam');
   assert.ok(one.said.text.length <= 201);
   assert.equal(one.comment_count, 2);
-  assert.equal(one.moved, '2026-11-06T01:00:00Z');
-  assert.deepEqual(one.hand_ins.map((h) => h.receipt), ['r2'], 'the last hand-in only');
+  const { rowOf } = await import('../src/work-items-index.ts');
+  const r = rowOf({ id: 'b', campaign_id: 'home', title: 'b', objective: long, level: 0, kind: 'Task', status: 'To Do', flagged: false, priority: 'Medium', comments: [], parent: 'E', attachments: [], links: [], external: {}, trail: [{ op: 'status', at: '2026-11-06T01:00:00Z' }], created: { at: '1', by: 'x' }, hand_ins: [{ receipt: 'r1', by: 'x', at: '1' }, { receipt: 'r2', by: 'x', at: '2' }] });
+  assert.equal(r.moved, '2026-11-06T01:00:00Z');
+  assert.deepEqual(r.hand_ins.map((h) => h.receipt), ['r2'], 'the last hand-in only');
+  assert.ok(!('objective' in r) && !('trail' in r) && !('comments' in r), 'a row has no objective, trail or comments');
 });
 
 test('an Epic is a selector card, its stone drags to a tilespace, and its statuses run in workflow order (KAN-206, w334)', async () => {
@@ -103,7 +106,7 @@ test('teamWork: the Team’s Epics, an Epic held and the Epic above each held it
 test('the picked Epic is its own bar, opening to its reading as an item bar does; no Epic status beside the filters (KAN-309, KAN-310)', async () => {
   const surface = await readFile(new URL('../public/js/epics-surface.js', import.meta.url), 'utf8');
   assert.doesNotMatch(surface, /epic_status/, 'the filter row is Assigned and Status only');
-  assert.match(surface, /itemBar\(epic, \{ extra: \[holder \? holderWords\(holder\)[^\n]*\n\s*onPress: \(\) => \{ if \(!open\.delete\(epic\.id\)\) open\.add\(epic\.id\); paint\(\); \} \}\)/, 'pressed, it opens as any bar');
+  assert.match(surface, /itemBar\(withCard\(epic\), \{ extra: \[holder \? holderWords\(holder\)[^\n]*\n\s*onPress: \(\) => \{ if \(!open\.delete\(epic\.id\)\) open\.add\(epic\.id\); paint\(\); \} \}\)/, 'pressed, it opens as any bar');
   assert.match(surface, /reading\(epic, \{ children: false \}\)/, 'the same reading path; its children are the board below');
   assert.match(surface, /root\.append\(detail, questions\.el, groups\)/, 'the bar heads the filters');
 });

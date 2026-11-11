@@ -169,7 +169,8 @@ def since(i):
     for l in reversed(i.get("trail") or []):
         if (l.get("op") == "status" and l.get("to") == "Done") or (l.get("op") == "edit" and re.search(r"(^|, |; )status Done(,|;|$)", l.get("note") or "")):
             return l.get("at")
-    return (i.get("created") or {}).get("at")
+    # A row from the live index (w418) has no trail: when it last changed stands in.
+    return i.get("moved") or (i.get("created") or {}).get("at")
 def ago(at):
     try: s = (datetime.datetime.now(datetime.timezone.utc) - datetime.datetime.fromisoformat(at.replace("Z", "+00:00"))).total_seconds()
     except Exception: return ""

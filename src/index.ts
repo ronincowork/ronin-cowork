@@ -86,6 +86,7 @@ import { registerSetupProgress } from './routes/setup-progress-api.js';
 import { registerMikaContext } from './mika-context.js';
 import { migrateSopsToBehaviours } from './behaviour-store-migration.js';
 import { archiveDone, ensureEveryIcebox, migrateItems, releaseEndedHolders } from './work-items.js';
+import { rebuildIndex } from './work-items-index.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(__dirname, '..');
@@ -97,6 +98,10 @@ if (isEntryPoint) await migrateSopsToBehaviours();
 if (isEntryPoint) await migrateItems().then((done) => {
   if (done.migrated.length) console.log(`[work-items] ${done.migrated.length} of ${done.before} items took Jira's names`);
 }).catch((error) => console.error(`[work-items] migration: ${(error as Error).message}`));
+// The live index is rebuilt from the item files and the holds lists at every start (w418;
+// docs/architecture/project-management.md, The live index).
+if (isEntryPoint) await rebuildIndex().then((rows) => console.log(`[work-items] live index: ${rows.length} live items`))
+  .catch((error) => console.error(`[work-items] live index: ${(error as Error).message}`));
 // An Agent that vanished without an end through Ronin (a crash) gives up its items like any
 // ending (docs/using-ronin/project-management.md, How an item lives): a sweep every five minutes, two misses in a row.
 if (isEntryPoint) setInterval(() => {

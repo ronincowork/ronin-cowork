@@ -34,6 +34,8 @@ async function writeLetter(name: string, block: string): Promise<void> {
     path.join(temp, name, 'tegami.md'),
     `# TEGAMI — ${name}\n> prose the parser must ignore\n\n\`\`\`json\n${block}\n\`\`\`\n`,
   );
+  // Written past the store, so the live index (w418) learns its holds as a start does: rebuilt.
+  await (await import('../src/work-items-index.js')).rebuildIndex();
 }
 const item = async (title: string, docs: string[] = []) => (await createItem({ title, attachments: docs }, 'test')).item.id;
 

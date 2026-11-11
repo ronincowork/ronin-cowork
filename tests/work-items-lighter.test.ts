@@ -500,3 +500,14 @@ test('a hand-in keeps the holder; Send back goes to the holder, who hears it; Do
   assert.deepEqual(await holding(item.id), ['agent:mem'], 'Done stays on its list until the archive');
 });
 
+
+/* THE LIVE INDEX (w418): every write kept it, so a rebuild from the files finds the same rows. */
+test('the live index rebuilt from the item files and holds lists equals the one the writes kept', async () => {
+  const index = await import('../src/work-items-index.js');
+  const kept = await index.liveRows();
+  await index.indexSaved();
+  assert.ok(kept.length > 0, 'there are live rows to compare');
+  assert.deepEqual(index.rowsOf(await index.buildState()), kept, 'rebuilt = kept');
+  const saved = JSON.parse(await (await import('node:fs/promises')).readFile(index.indexFile(), 'utf8')) as { rows: unknown[] };
+  assert.deepEqual(saved.rows, kept, 'the file saved whole is the same');
+});

@@ -303,15 +303,16 @@ test('work-record read and read --json take a reading over 128 KB, the most one 
   const { createItem } = await import('../src/work-items.js');
   await seedTegami('big_probe');
   const ids: string[] = [];
-  for (let n = 0; n < 40; n++) ids.push((await createItem({ title: `big ${n}`, objective: 'x'.repeat(4000), holder: { kind: 'agent', name: 'big_probe' } }, 'lead')).item.id);
+  // Rows carry no objective (w418): enough items make the reading large.
+  for (let n = 0; n < 700; n++) ids.push((await createItem({ title: `big ${n}`, objective: 'x'.repeat(40), holder: { kind: 'agent', name: 'big_probe' } }, 'lead')).item.id);
   const reading = JSON.stringify((await (await fetch(`${env.RONIN_URL}/api/work-items?session=big_probe`)).json()));
   assert.ok(reading.length > 131072, `the reading is ${reading.length} bytes`);
   const text = await run('work-record', ['read'], 'big_probe');
   assert.equal(text.status, 0, text.stderr);
-  assert.match(text.stdout, new RegExp(`- ${ids.at(-1)} big 39 · To Do`));
+  assert.match(text.stdout, new RegExp(`- ${ids.at(-1)} big 699 · To Do`));
   const json = await run('work-record', ['read', '--json'], 'big_probe');
   assert.equal(json.status, 0, json.stderr);
-  assert.equal((JSON.parse(json.stdout) as { items: unknown[] }).items.length, 40);
+  assert.equal((JSON.parse(json.stdout) as { items: unknown[] }).items.length, 700);
 });
 
 test('item takes several ids where an act allows them, --text in search, and delete', async () => {

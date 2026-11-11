@@ -141,6 +141,23 @@ function epicItems(epicId, { epicsRead }) {
   const detail = el('div', 'epic-detail');
   root.append(detail, questions.el, groups);
 
+  // What a bar says beyond its row (w418): the objective cut short, the last comment, how many.
+  // The push is rows only; the picked Epic's bodies are read once it shows, and again when a push
+  // moves any of its items.
+  let cards = new Map();
+  let asked = '';
+  const withCard = (item) => ({ ...item, ...(cards.get(item.id) || {}) });
+  function askCards(epic, every) {
+    const sig = [epic, ...every].map((item) => `${item.id}@${item.moved || ''}`).join(' ');
+    if (sig === asked) return;
+    asked = sig;
+    void request(`/api/work-items/${encodeURIComponent(epicId)}/cards`, { cache: 'no-store' }).then((result) => {
+      if (!result.ok || asked !== sig || !root.isConnected) return;
+      cards = new Map((result.data.cards || []).map((card) => [card.id, card]));
+      paint();
+    });
+  }
+
   /** An opened bar's reading, from the item's whole read (the push is slim). */
   function reading(item, { children = true } = {}) {
     const host = el('div', 'epic-reading');
@@ -161,19 +178,20 @@ function epicItems(epicId, { epicsRead }) {
     const epic = epicNow();
     if (epic) {
       const holder = holderOfItem(epic);
-      const node = itemBar(epic, { extra: [holder ? holderWords(holder) : t('epics.unassigned', 'Unassigned')],
+      const node = itemBar(withCard(epic), { extra: [holder ? holderWords(holder) : t('epics.unassigned', 'Unassigned')],
         onPress: () => { if (!open.delete(epic.id)) open.add(epic.id); paint(); } });
       node.setAttribute('aria-expanded', String(open.has(epic.id)));
       detail.replaceChildren(node, ...(open.has(epic.id) ? [reading(epic, { children: false })] : []));
     } else detail.replaceChildren();
     const every = epicsRead.items(epicId);
+    if (epic) askCards(epic, every);
     const items = byStatus(byFlagged(byAssigned(every, assigned), flagged), statuses);
     const shown = new Set(items.map((item) => item.id));
     const folded = (item) => item.level === -1 && item.parent && shown.has(item.parent);
     const subsOf = (item) => items.filter((one) => one.level === -1 && one.parent === item.id);
     const bar = (item, sub = false) => {
       const holder = holderOfItem(item);
-      const node = itemBar(item, { sub, subtasks: sub ? 0 : subsOf(item).length,
+      const node = itemBar(withCard(item), { sub, subtasks: sub ? 0 : subsOf(item).length,
         extra: [holder ? holderWords(holder) : t('epics.unassigned', 'Unassigned')],
         onPress: () => { if (!open.delete(item.id)) open.add(item.id); paint(); } });
       node.setAttribute('aria-expanded', String(open.has(item.id)));

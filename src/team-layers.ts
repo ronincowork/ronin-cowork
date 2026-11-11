@@ -24,7 +24,8 @@
 import { listSessions } from './tmux.js';
 import { readTeamRoster, type TeamRoster } from './team-rosters.js';
 import { readWorkspace, type Workspace } from './workspaces.js';
-import { holderLabel, holdersOf, listItems, type WorkItem } from './work-items.js';
+import { readItem } from './work-items.js';
+import { liveRows, type ItemRow } from './work-items-index.js';
 import { rosterReading, teamWork } from './work-items-read.js';
 
 /** A Workspace integration as the Workspace record keeps it (KAN-338): its provider and its facts. */
@@ -70,7 +71,7 @@ async function listCanvases(_w: Workspace): Promise<LayerCanvas[]> {
   return [];
 }
 
-const epicLine = (item: WorkItem, holderOf: Map<string, string>): LayerEpic => ({ id: item.id, title: item.title, holder: holderOf.get(item.id) ?? '', status: item.status });
+const epicLine = (item: ItemRow, holderOf: Map<string, string>): LayerEpic => ({ id: item.id, title: item.title, holder: holderOf.get(item.id) ?? '', status: item.status });
 
 /** One Team's four layers, live: what its lead and every member read. The plans are every plan of
  * the Workspace, each with its Team. The epics are those the Team or its members hold, the epic
@@ -78,11 +79,11 @@ const epicLine = (item: WorkItem, holderOf: Map<string, string>): LayerEpic => (
  * plans that are this Team's (an epic attached `plan:<workspace>/<name>`; KAN-332): an epic
  * reached only through another Team's plan, or a plan of no Team, is not on the line. Archived
  * epics are left out. */
-export async function teamLayers(team: string, sessions?: SessionRow[], every?: WorkItem[]): Promise<TeamLayers> {
+export async function teamLayers(team: string, sessions?: SessionRow[], every?: ItemRow[]): Promise<TeamLayers> {
   const roster = await readTeamRoster(team);
   if (!roster) throw new Error(`Team "${team}" has no roster.`);
   const w = await workspaceOf(roster);
-  const all = every ?? await listItems();
+  const all = every ?? await liveRows();
   const { listPlans } = await import('./plans.js');
   const plans = w ? (await listPlans(w).catch(() => [])).map(({ name, status, team: of }) => ({ name, status, team: of })) : [];
   const ids = new Set<string>();
@@ -94,11 +95,15 @@ export async function teamLayers(team: string, sessions?: SessionRow[], every?: 
   }
   if (w) {
     const refs = new Set(plans.filter((plan) => plan.team === team).map((plan) => `plan:${w.name}/${plan.name}`));
-    for (const item of all) if (item.level === 1 && item.attachments.some((doc) => refs.has(doc))) ids.add(item.id);
+    // Attachments are not on a row: the live Epics' own files are read, only when the Team has plans.
+    if (refs.size) for (const row of all.filter((one) => one.level === 1)) {
+      if ((await readItem(row.id))?.attachments.some((doc) => refs.has(doc))) ids.add(row.id);
+    }
   }
-  const shown = all.filter((item) => ids.has(item.id) && !item.archived);
-  // An epic reached through a plan or a parent, held outside the Team: its holder from the store.
-  for (const item of shown) if (!holderOf.has(item.id)) holderOf.set(item.id, (await holdersOf(item.id).catch(() => [])).map(holderLabel).join(', '));
+  // Rows are live items only: an archived epic has none (w418).
+  const shown = all.filter((item) => ids.has(item.id));
+  // An epic reached through a plan or a parent, held outside the Team: its holders from its row.
+  for (const item of shown) if (!holderOf.has(item.id)) holderOf.set(item.id, item.holders.join(', '));
   const epics = shown.map((item) => epicLine(item, holderOf));
   return { team, workspace: await workspaceLayer(w), plans, canvases: w ? await listCanvases(w) : [], epics };
 }
@@ -113,7 +118,7 @@ const seen = new Map<string, string>(); // lead -> its layers as last read, one 
 
 async function leadSignatures(read: () => Promise<SessionRow[]>): Promise<Map<string, string>> {
   const sessions = await read();
-  const every = await listItems();
+  const every = await liveRows();
   const out = new Map<string, string>();
   for (const lead of sessions.filter((one) => one.leads.length)) {
     const layers = await Promise.all(lead.leads.map((team) => teamLayers(team, sessions, every)));
