@@ -1295,6 +1295,9 @@ body {
 :is(.tile-head .item-island, .epic-bars, .epic-detail) button.item-bar[data-status='review'] { border-left-color: var(--accent); }
 :is(.tile-head .item-island, .epic-bars, .epic-detail) button.item-bar[data-flagged='true'] { border-top-color: var(--warn); border-right-color: var(--warn); border-bottom-color: var(--warn); }
 :is(.tile-head .item-island, .epic-bars, .epic-detail) button.item-bar.item-bar-sub { margin-left: var(--space-inset); padding-block: var(--space-row); }
+/* A pressed item on its way (w416): the kit's greyed look (.wk-surface[data-state='inert'],
+   .58) with a progress cursor, until it shows; tile-island.js ignores presses meanwhile. */
+.tile-head .item-island button:is(.item-pill, .item-bar)[aria-busy='true'] { opacity: .58; cursor: progress; }
 .item-bar .item-bar-head { display: flex; align-items: center; gap: var(--space-inline); min-width: 0; }
 .item-bar .item-kind { width: 14px; height: 14px; flex: 0 0 auto; }
 .item-bar .item-bar-id { flex: 0 0 auto; color: var(--muted); font-variant-numeric: tabular-nums; }

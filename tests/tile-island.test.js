@@ -40,7 +40,7 @@ test('the tile header carries the island, fed by the pushed work record, and a p
   // w272: nothing drops or pulses on a change: no timer, no auto-drop, no notify light, no kept state.
   // A mark that shows its current value on each push (the stance, w331) is fine.
   assert.doesNotMatch(island, /setTimeout|noticeable|notify|localStorage/);
-  assert.match(island, /if \(isOpen\(item\.id\)\) shut\(item\.id\);/);
+  assert.match(island, /if \(isOpen\(item\.id\)\) \{ shut\(item\.id\); return; \}/);
   // KAN-238: an expanded pill reads <symbol> <status> <dot> <flag>, the flag solid or its outline; no legend.
   assert.match(island, /node\.append\(kindMark\(item\.kind\), words, dot, flag\)/);
   assert.match(island, /item\.flagged \? FLAG_MARK : FLAG_OUTLINE/);
@@ -135,4 +135,13 @@ test('w331: the stance folds to three marks, only what needs the owner, read off
   const css = await read('public/style.css');
   assert.match(css, /\.item-stance\[data-stance='question'\] \.ground \{ fill: var\(--kaki-fill\); \}/);
   assert.match(css, /\.item-stance\[data-stance='stopped'\] \.ground \{ fill: var\(--bad\); \}/);
+});
+
+test('a pressed item answers at once: busy until it shows, and further presses ignored (w416)', async () => {
+  const [island, head, css] = await Promise.all(['public/js/tile-island.js', 'public/js/tilehead.js', 'public/style.css'].map(read));
+  assert.match(head, /open: \(item\) => openItem\(tile, item\),/, 'open settles once the item shows');
+  assert.match(island, /if \(loading\.has\(item\.id\)\) return;/, 'a press while it loads is ignored');
+  assert.match(island, /try \{ await open\(items\.find\(\(one\) => one\.id === item\.id\) \|\| item\); \} finally \{ loading\.delete\(item\.id\); busy\(item\.id\); \}/);
+  assert.match(island, /return markBusy\(node, item\.id\);/, 'a pill redrawn mid-load stays busy');
+  assert.match(css, /\.tile-head \.item-island button:is\(\.item-pill, \.item-bar\)\[aria-busy='true'\] \{ opacity: \.58; cursor: progress; \}/);
 });

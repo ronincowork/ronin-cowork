@@ -31,6 +31,11 @@ Status (press it to move the item to any status), objective, details, comments a
 folded apart, and a box to comment, sent to the Agent holding it. Every row folds. Press the same pill again, or Close, or
 Escape, to return to the terminal.
 
+A press answers at once (w416): while the item is on its way (one read of it, about a tenth of
+a second, most of it the server finding its Subtasks among every item) the pill, or its bar when
+the island is down, greys out with a busy cursor, and pressing it again does nothing until the
+item has opened.
+
 The island stays in the header; it does not move when an item changes. Press the small bar
 at its left to bring it down under the header, with the pills in a column, one item to a
 row. Each row reads: the kind's symbol, the status in words (To Do, In Progress, In Review,
