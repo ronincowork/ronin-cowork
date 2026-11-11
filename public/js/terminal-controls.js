@@ -113,8 +113,9 @@ export function buildBoxControlButtons(tile) {
   });
 }
 
-// While a press is on its way the button says so; the box's notice then says how it went.
-const pressing = { clear: () => t('controls.clearing', 'Clearing…'), stop: () => t('controls.stopping', 'Stopping…') };
+// While a Stop is on its way the button says so; the box's notice then says how it went. Clear
+// needs no word: the box empties (owner, 2026-11-11); only its failure is said.
+const pressing = { stop: () => t('controls.stopping', 'Stopping…') };
 function actionButton(action, run) {
   const button = document.createElement('button');
   button.type = 'button';
@@ -175,10 +176,9 @@ export async function runTerminalAction(tile, action, target) {
     const composer = tile.composerTa;
     if (target === 'composer' || (target !== 'terminal' && composer && (document.activeElement === composer || composer.value))) {
       tile.composer.clear();
-      say(tile, 'success', t('controls.cleared_box', 'Cleared your draft.'));
       return;
     }
-    if (tile.pending) { tile.pending = ''; tile.renderPending(); say(tile, 'success', t('controls.cleared_box', 'Cleared your draft.')); return; }
+    if (tile.pending) { tile.pending = ''; tile.renderPending(); return; }
   }
   const session = S.sessions.find((row) => row.name === tile.session);
   const r = await request(`/api/sessions/${encodeURIComponent(tile.session)}/control-action`, { method: 'POST', json: { intent: action, key: tile.sessionKey || session?.key } });
@@ -189,7 +189,6 @@ export async function runTerminalAction(tile, action, target) {
     return;
   }
   if (action === 'stop') followStop(tile);
-  else say(tile, 'success', t('controls.clear_sent', 'Clear sent to the Agent’s input.'));
 }
 function terminalSnapshot(tile) {
   if (tile.tapeMode) return tile.tape?.el?.innerText || tile.body.innerText || '';

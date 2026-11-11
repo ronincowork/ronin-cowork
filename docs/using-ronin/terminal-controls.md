@@ -32,12 +32,12 @@ Desktop Hints uses bold labels and wrapping text, without action buttons or help
 
 ## What a press tells you
 
-Every button in the message box answers the press at once. **Clear** and **Stop** say
-*Clearing…* or *Stopping…* until Ronin has sent them. A line above the box then says what
-happened. You'll see *Clear sent* or *Cleared your draft*, or *not sent* with the reason. After
-*Stop sent*, the line follows the Agent: *Stopped* when it is no longer working, or *still
-working* if it carries on for more than a few seconds. An Agent whose state Ronin can't read
-shows only *Stop sent*. **Copy** says *Copied*.
+Every button in the message box answers the press at once. **Clear** empties the box, which
+says it worked; if it can't be sent, a line above the box says *Clear not sent* and why.
+**Stop** says *Stopping…* until Ronin has sent it, then the line says *Stop not sent* with the
+reason, or *Stop sent*. After that the line follows the Agent: *Stopped* when it is no longer
+working, or *still working* if it carries on for more than a few seconds. An Agent whose state
+Ronin can't read shows only *Stop sent*. **Copy** says *Copied*.
 
 ## Change your shortcuts
 

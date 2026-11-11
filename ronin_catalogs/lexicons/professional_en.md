@@ -1136,6 +1136,17 @@ The catalog entry goes. {dir} is not touched.
 - **composer.why_not_connected:** the tile is not connected
 - **composer.why_refused:** the session refused it
 
+## controls — terminal-controls.js (what Stop, Clear and Copy say in the box)
+- **controls.stopping:** Stopping…
+- **controls.stop_sent:** Stop sent.
+- **controls.stop_idle:** Stop sent. The Agent was not working.
+- **controls.stop_waiting:** Stop sent. Waiting for the Agent to stop…
+- **controls.stopped:** Stopped. The Agent is no longer working.
+- **controls.stop_working:** Stop sent, but the Agent is still working.
+- **controls.stop_failed:** Stop not sent: {why}
+- **controls.clear_failed:** Clear not sent: {why}
+- **controls.copied:** Copied.
+
 ## hotwords — hotwords.js (the ▥ Hotwords tab)
 - **hotwords.placeholder:** a word it keeps getting wrong
 - **hotwords.label:** a word dictation keeps getting wrong
