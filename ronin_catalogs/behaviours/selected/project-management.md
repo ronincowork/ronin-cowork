@@ -46,7 +46,7 @@ two sentences. The technical detail belongs in the design doc or the commit.
 
 ### Notices
 You are told only when someone else changes an item you are working on: a comment, a Send
-back, a change from Jira. Answer on the item. Your own changes tell nobody, and nobody needs
+back, a status move. Answer on the item. Your own changes tell nobody, and nobody needs
 telling: the board shows them.
 
 ### Everyone
@@ -61,7 +61,7 @@ telling: the board shows them.
 - Don't make an item, subtask or comment nobody will read: no subtask per step.
 - Don't move Done.
 - Don't go around Ronin to change an item anywhere else.
-- Don't delete to tidy. An item that came from Jira is deleted only with --in-jira, when the
-  person who asked for it says so.
+- Don't delete to tidy. An item you didn't make is deleted only when the person who asked for
+  it says so.
 
 More: ronin-help work-items
