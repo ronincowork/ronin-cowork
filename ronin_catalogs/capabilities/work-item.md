@@ -23,11 +23,11 @@
 | `item attach` | write: attach or remove a document, visible in Docs | priority | `item --help` |
 | `item link` | write: a link by type name (Blocks, Relates, …) | priority | `item --help` |
 | `item archive` | write: one or several Done items off every list now, as five days Done does; `--done [--team <t>]` clears every Done item you or your Teams hold; an item not Done is refused | priority | `item --help` |
-| `item delete` | write: one or several items go, with their subtasks, in Ronin and in Jira; one that came from Jira only with `--in-jira` | priority | `item --help` |
+| `item delete` | write: one or several items go, with their subtasks | priority | `item --help` |
 
 ## Syntax
 
-- An id is `w12` or a Jira key (`KAN-65`); every id an item has had still finds it.
+- An id is a plain id such as `w12` or `KAN-65`; every id an item has had still finds it.
 - Where a tool takes several ids, list them: `item transition w12 w13 "In Progress"`,
   `item handover w12 w13 team:surface "<where they stand; what is next>"`.
 - Status, kind, priority and link type are the space's names exactly (`item --help` lists

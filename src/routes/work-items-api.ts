@@ -165,9 +165,9 @@ export function registerWorkItems(app: express.Express): void {
     })),
     // Archive now: a Done item off every list at once, as the five-day sweep does (archiveItem).
     archive: async (id, _b, by) => acted(await archiveItem(id, by)),
-    // Jira's delete; an item that came from Jira goes only with { in_jira } (5a).
-    delete: async (id, b, by) => {
-      const { deleted, orphaned } = await deleteItem(id, by, { inJira: b.in_jira === true || b.in_jira === 'true' });
+    // Jira's delete: the item and its subtasks go (deleteItem).
+    delete: async (id, _b, by) => {
+      const { deleted, orphaned } = await deleteItem(id, by);
       const subtasks = deleted.slice(1);
       return { extra: { deleted, ...(orphaned.length ? { no_parent: orphaned } : {}) },
         acknowledgement: [`${deleted[0]} was deleted`, subtasks.length ? `with its subtasks ${subtasks.join(', ')}` : '', orphaned.length ? `${orphaned.join(', ')} now ${orphaned.length === 1 ? 'has' : 'have'} no parent` : ''].filter(Boolean).join('; ') };

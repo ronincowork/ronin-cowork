@@ -4,8 +4,8 @@
  * the item to the Team and records who; Send back returns it to that Agent, or leaves it with
  * the Team when the Agent has ended; session_end's list of unfinished holds; an ending or a
  * crash puts items on their epic, held by nobody, silently; on a Jira-connected campaign the
- * shapes Jira refuses are refused; a delete of an item from Jira needs --in-jira, and every
- * delete emits the agreed event.
+ * shapes Jira refuses are refused; a delete needs no flag, and every delete emits the agreed
+ * event.
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -248,24 +248,19 @@ test('on a Jira-connected campaign the shapes Jira refuses are refused, with the
   assert.equal(loose.kind, 'Subtask', 'an unconnected campaign is not checked');
 });
 
-test('delete: an item from Jira needs --in-jira; every delete emits one event per item, the named one first', async () => {
+test('delete: an item from Jira goes with no flag; every delete emits one event per item, the named one first', async () => {
   const events: Array<[string, string, string | undefined, string | undefined, string]> = [];
   sockets.onItemChanged(({ item, line }) => { if (line.op === 'delete') events.push([item.id, line.by, line.to, line.from, item.external.jira?.key ?? '']); });
   const fromJira = (await items.createItem({ title: 'from Jira', parent: epic.id, jira: { id: '77', key: 'KAN-977' } }, 'jira:alice')).item;
   const sub = (await items.createItem({ title: 'its sub', parent: fromJira.id }, 'boss')).item;
-  const refused = await call('DELETE', `/api/work-items/${fromJira.id}`, { by: 'mem' });
-  assert.equal(refused.status, 409);
-  assert.match(refused.data.error, /came from Jira \(made by jira:alice\).*--in-jira/);
-  assert.ok(await items.readItem(fromJira.id), 'nothing is deleted');
-  assert.deepEqual(events, [], 'a refused delete emits nothing');
-  const done = await call('DELETE', `/api/work-items/${fromJira.id}`, { by: 'mem', in_jira: true });
+  const done = await call('DELETE', `/api/work-items/${fromJira.id}`, { by: 'mem' });
   assert.deepEqual(done.data.deleted, [fromJira.id, sub.id]);
   await new Promise((resolve) => setImmediate(resolve));
-  assert.deepEqual(events, [[fromJira.id, 'mem', 'in-jira', undefined, 'KAN-977'], [sub.id, 'mem', 'in-jira', fromJira.id, '']]);
+  assert.deepEqual(events, [[fromJira.id, 'mem', undefined, undefined, 'KAN-977'], [sub.id, 'mem', undefined, fromJira.id, '']]);
   const mine = (await items.createItem({ title: 'made here', parent: epic.id }, 'boss')).item;
   const other = (await items.createItem({ title: 'made here too', parent: epic.id }, 'boss')).item;
   const many = await call('POST', '/api/work-items/many/delete', { ids: [mine.id, other.id], by: 'mem' });
-  assert.equal(many.data.ok, true, 'an item made in Ronin needs no flag');
+  assert.equal(many.data.ok, true);
   assert.equal(await items.readItem(mine.id), null);
 });
 

@@ -141,8 +141,9 @@ an item has a link on the Jira item that opens its chat.
 Jira is another view of the same items, through the bridge (Settings › Jira). A Jira user
 decides what the work is; Ronin decides who does it. The bridge is the only Jira writer:
 Agents use the `item` tool and never touch Jira. An item keeps its Ronin id and its Jira key,
-and either finds it. Deleting an item made in Ronin deletes it in Jira too; one that came from
-Jira needs `--in-jira`, when the person who asked for it says so. Done set in Jira comes back
+and either finds it. Deleting an item made in Ronin deletes it in Jira too. Deleting one that
+came from Jira removes it from Ronin only: the Jira issue stays, and the bridge never brings it
+back. Done set in Jira comes back
 with the next read.
 
 ## Turning it on

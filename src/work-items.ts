@@ -964,13 +964,12 @@ export async function linkItem(id: string, type: string, other: string, by: stri
 
 /** Jira's delete (docs/using-ronin/project-management.md, Jira). The item goes, and with it its subtasks (as Jira
  * deletes an issue's subtasks); any other child is left with no parent (as an epic's children
- * are). Links to it go and every holder lets go of it. An item that came from Jira
- * (created.by jira:<user>), or a subtask that did, goes only with `inJira`: the refusal names
- * the flag. THE DELETE EVENT (agreed with the bridge, the only Jira writer): before any file
+ * are). Links to it go and every holder lets go of it. No flag: the bridge decides what Jira
+ * does (an item made in Ronin goes there too; one that came from Jira stays there). THE DELETE EVENT (agreed with the bridge, the only Jira writer): before any file
  * goes, one emitItemChanged per deleted item, the named item first, then its subtasks; the
- * item as it was, and a line { op: 'delete', by: the deleter, to: 'in-jira' when asked,
+ * item as it was, and a line { op: 'delete', by: the deleter,
  * from: the named id on a subtask taken with it }. */
-export function deleteItem(given: string, by: string, opts: { inJira?: boolean } = {}): Promise<{ deleted: string[]; orphaned: string[] }> {
+export function deleteItem(given: string, by: string): Promise<{ deleted: string[]; orphaned: string[] }> {
   return withIssuer(async () => {
     const id = (await load(given)).id;
     const all = await listItems();
@@ -980,10 +979,6 @@ export function deleteItem(given: string, by: string, opts: { inJira?: boolean }
       for (const child of all.filter((other) => other.parent === at && other.level === -1 && !deleted.includes(other.id))) collect(child.id);
     };
     collect(id);
-    const fromJira = deleted.map((at) => all.find((item) => item.id === at)!).filter((item) => item.created.by.startsWith('jira:'));
-    if (fromJira.length && !opts.inJira) {
-      throw new WorkItemRefused(`${fromJira.map((item) => `${item.id} came from Jira (made by ${item.created.by})`).join('; ')}: it is not deleted. To delete it in Ronin and in Jira, run item delete ${id} --in-jira.`);
-    }
     const orphaned: string[] = [];
     for (const other of all.filter((item) => !deleted.includes(item.id))) {
       const orphan = other.parent !== null && deleted.includes(other.parent);
@@ -1003,7 +998,7 @@ export function deleteItem(given: string, by: string, opts: { inJira?: boolean }
     }
     for (const at of deleted) {
       const item = all.find((one) => one.id === at)!;
-      emitItemChanged({ item, line: lineOf(by, 'delete', { to: opts.inJira ? 'in-jira' : undefined, from: at === id ? undefined : id }) });
+      emitItemChanged({ item, line: lineOf(by, 'delete', { from: at === id ? undefined : id }) });
     }
     for (const at of deleted) {
       await takeOffEveryList(at);

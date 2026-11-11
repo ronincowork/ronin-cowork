@@ -95,8 +95,8 @@ The owner's decisions, 2026-11-04 and 05:
   only: one item per idea, "Draft the plan for <idea>", its Draft plan attached; finished when the
   plan is taken up or the idea dropped. Parking is one act, `plan park` (2026-11-10). Held by the
   Workspace, it is on no Team's or Agent's record and never reads as work waiting to be given out.
-- Ronin refuses any shape Jira would refuse, so the two never part. A delete reaches Jira; one
-  from Jira needs `--in-jira`.
+- Ronin refuses any shape Jira would refuse, so the two never part. A delete of an item made in
+  Ronin reaches Jira; one that came from Jira goes from Ronin only, its issue kept.
 
 What led there (2026-10-20 to 11-05): items made only to hand in against; Agents keeping
 everything they ever held; progress and plans filed as items; leads told of every move, often

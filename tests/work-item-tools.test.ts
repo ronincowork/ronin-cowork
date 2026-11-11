@@ -314,7 +314,7 @@ test('work-record read and read --json take a reading over 128 KB, the most one 
   assert.equal((JSON.parse(json.stdout) as { items: unknown[] }).items.length, 40);
 });
 
-test('item takes several ids where an act allows them, --text in search, and --in-jira on delete', async () => {
+test('item takes several ids where an act allows them, --text in search, and delete', async () => {
   const epic = made(await tool('item', ['create', '--title', 'Many epic', '--kind', 'Epic']));
   const created = await tool('item', ['create', '--title', 'Many one', '--objective', 'Done looks like: a quokka', '--parent', epic]);
   assert.match(created.split('\n')[0]!, new RegExp(`^created w\\d+ under ${epic}$`), 'create says so on line 1');
@@ -326,8 +326,8 @@ test('item takes several ids where an act allows them, --text in search, and --i
   assert.deepEqual((await readLetterHolds('probe'))!.watches.slice(-2), [one, two]);
   const found = JSON.parse(await tool('item', ['search', '--text', 'QUOKKA'])) as { items: Array<{ id: string }> };
   assert.deepEqual(found.items.map((item) => item.id), [one]);
-  assert.equal((await run('item', ['delete', one, '--in-jra'])).status, 2, 'a mistyped flag is refused');
-  assert.deepEqual((await tool('item', ['delete', one, two, '--in-jira'])).trim().split('\n'), [`${one} was deleted`, `${two} was deleted`]);
+  assert.equal((await run('item', ['delete', one, '--in-jira'])).status, 2, 'delete takes ids only');
+  assert.deepEqual((await tool('item', ['delete', one, two])).trim().split('\n'), [`${one} was deleted`, `${two} was deleted`]);
 });
 
 test('item handover: several ids, one note, to the Team; --to-do and --flag; transition takes --note', async () => {
