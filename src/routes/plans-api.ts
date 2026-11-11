@@ -7,7 +7,7 @@ import type express from 'express';
 import { initialCampaignId } from '../campaign-scope.js';
 import { listSessions } from '../tmux.js';
 import {
-  PlanBadInput, PlanMissing, PlanRefused, headerLine, listPlans, orderPlan, planTarget, planTemplate, readPlan, resolvePlanRef, setPlanTeam, teamFor, whichWorkspace, writePlan,
+  PlanBadInput, PlanMissing, PlanRefused, headerLine, listPlans, orderPlan, planTarget, planTemplate, readPlan, resolvePlanRef, deletePlan, setPlanTeam, teamFor, whichWorkspace, writePlan,
   type Caller, type PlanAnswer,
 } from '../plans.js';
 
@@ -85,6 +85,14 @@ export function registerPlans(app: express.Express): void {
       ok: true, plan: { ...done.plan, text: undefined }, item: parked.item,
       acknowledgement: [done.line, headerLine(done.plan), done.history, `Parked: ${parked.item.id} '${parked.item.title}' in the Icebox ${parked.item.parent}, held by Workspace ${workspace.name}, ${name} attached.`].filter(Boolean).join('\n'),
     });
+    layersMayHaveChanged();
+  }));
+
+  app.post('/api/plans/delete', route(async (req, res) => {
+    const b = req.body ?? {};
+    const caller = await callerOf(b, req);
+    const { workspace, name } = await planTarget(caller, text(b.name), text(b.workspace));
+    acted(res, await deletePlan(workspace, name));
     layersMayHaveChanged();
   }));
 

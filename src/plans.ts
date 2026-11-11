@@ -279,6 +279,18 @@ export function orderPlan(w: Workspace, name: string, by: string): Promise<PlanA
   });
 }
 
+/** The plan goes from the Workspace's plans place, any status (owner, 2026-11-11): one commit where
+ * the place is in Git, so its history keeps it. An epic's plan: attachment then reads gone. */
+export function deletePlan(w: Workspace, name: string): Promise<PlanAnswer> {
+  return serial(async () => {
+    const plan = await readPlan(w, name);
+    const { dir } = await placeOf(w);
+    await unlink(plan.path);
+    const history = await commitOnly(dir, [plan.path], `plan ${name}: delete`);
+    return answer(`Deleted ${w.name}/${name} (${plan.status}).`, plan, history);
+  });
+}
+
 /** The plan's Team changed, nothing else: status, date and by stay. `team` '' is no Team. */
 export function setPlanTeam(w: Workspace, name: string, team: string): Promise<PlanAnswer> {
   return serial(async () => {

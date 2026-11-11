@@ -63,6 +63,7 @@ plan write <name> [--file <path>] [--team <team>]
                                           create a plan, or replace one; it keeps its status and Team (stdin without --file)
 plan park <name> [--idea "<idea>"] [--file <path>] [--team <team>]
                                           park an idea: write the Draft plan and its Icebox item, in one act
+plan delete <name>                        the plan goes, any status: off plan ls, the Plans shelf and the record
 plan order <name>                         Draft → Ordered: not rewritten from here
 plan team <name> <team>|none              the Team the plan is for
 ```
@@ -72,8 +73,9 @@ plan team <name> <team>|none              the Team the plan is for
 - A name is lowercase letters, digits and `-`.
 - The tool doesn't stop a write to an Ordered plan; don't make one. The work runs on the epics:
   change the epics instead.
-- Where the plans folder is in Git, each write and order is one commit of that file, pushed
-  when the branch has an upstream.
+- Where the plans folder is in Git, each write, order, team and delete is one commit of that
+  file, pushed when the branch has an upstream, so a deleted plan stays in the history.
+- `plan delete` takes a plan of any status. An epic that attached it then reads it as gone.
 - The Docs pane's **Plans** shelf lists the Workspaces' plans by status.
 
 ## From plan to epics
