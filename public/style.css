@@ -785,30 +785,47 @@ body {
 }
 .tile-body[data-surface='docs'] > .tile-doc-view { display: flex; }
 .tile-body[data-surface='docs'] > .composer { display: none !important; }
+.tile-secret-ask[hidden] { display: none; }
+/* DOCKED AT THE FOOT, where the composer sits (KAN-416): the conversation or terminal above stays
+   readable and scrollable while the owner pastes. The composer stands down for it. Terminal and
+   the tape end above the field's measured height (--secret-clearance, js/secret-ask.js); Chat
+   holds it in its column, under the log. */
 .tile-secret-ask {
   position: absolute;
-  inset: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   z-index: 5;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: var(--space-inline);
+  max-height: 60%;
+  overflow-y: auto;
+  padding: var(--space-row) var(--space-inline);
   background: var(--tile-bg);
+  border-top: var(--edge) solid var(--term-panel-line);
+  font-family: var(--font-ui);
+  white-space: normal;
 }
-.tile-secret-ask[hidden] { display: none; }
+.tile-body[data-surface='chat'] > .tile-secret-ask { position: static; flex: none; order: 1; }
+.tile-body[data-secret-ask='open'] > .composer { display: none !important; }
+.tile .tile-body[data-secret-ask='open'][data-surface='term'] {
+  /* FitAddon reads computed height: give it the content area above the field. */
+  box-sizing: content-box;
+  padding-bottom: var(--secret-clearance);
+}
 .tile-secret-card {
   display: flex;
   flex-direction: column;
   gap: var(--space-row);
-  width: min(100%, 28rem);
-  padding: var(--space-inline);
+  padding: var(--space-row) var(--space-inline);
   border: var(--edge) solid var(--line);
   border-radius: var(--radius-large);
   background: var(--surface);
 }
+.tile-secret-entry { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-row); }
 .tile-secret-title { margin: 0; color: var(--fg-strong); font-weight: 600; }
 .tile-secret-for { margin: 0; color: var(--muted); }
 .tile-secret-value {
+  flex: 1 1 12rem;
+  min-width: 0;
   font: inherit;
   padding: var(--space-row) var(--space-inline);
   border: var(--edge) solid var(--line);
@@ -822,7 +839,7 @@ body {
 .tile-secret-card[data-state='saved'] { border-color: var(--ok); }
 .tile-secret-card[data-state='saved'] .tile-secret-notice { color: var(--ok); font-weight: 600; }
 .tile-secret-card[data-state='saved'] .tile-secret-notice::before { content: '✓ '; }
-.tile-secret-card:is([data-state='saved'], [data-state='cancelled']) .wk-action-bar { display: none; }
+.tile-secret-card:is([data-state='saved'], [data-state='cancelled']) .tile-secret-entry { display: none; }
 .tile-doc-close {
   align-self: flex-end;
   border: var(--edge) solid var(--line);
@@ -1488,6 +1505,10 @@ body {
 }
 
 .tile-body {
+  /* What the box and the secret ask cover at the foot, measured by each (js/composer.js,
+     js/secret-ask.js); none until they say. */
+  --composer-clearance: 0px;
+  --secret-clearance: 0px;
   container-type: inline-size;
   container-name: tile;
   flex: 1 1 auto;
@@ -3801,7 +3822,7 @@ body {
 }
 
 .tile.tape-on .tape {
-  bottom: var(--composer-clearance, 0px);
+  bottom: max(var(--composer-clearance), var(--secret-clearance)); /* the secret ask stands in for the box */
 }
 @media (pointer: coarse) {
   /* A thumb's box: two rows to type in, and Enter as tall as both, so it is easy to hit. */
@@ -4769,7 +4790,7 @@ button.wk-card { cursor: pointer; }
 .tile.keys-on:not(.tape-on) .tile-body:not([data-surface='chat']) {
   /* FitAddon reads computed height: give it the content area, excluding controls. */
   box-sizing: content-box;
-  padding-bottom: var(--composer-clearance, 0);
+  padding-bottom: max(var(--composer-clearance), var(--secret-clearance)); /* or the secret ask, standing in for it */
 }
 
 @media (max-width: 680px) {

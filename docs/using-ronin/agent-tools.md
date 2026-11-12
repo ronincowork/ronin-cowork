@@ -25,8 +25,10 @@ Ronin adds to them and takes nothing away.
 When an Agent needs a password or key (a KVM login, an API token), it never needs to see it
 in chat, and you never paste it into a message.
 
-- **The Agent asks:** `secret ask <name> --for "<what it is>"`. A paste field opens over its
-  tile. Click into it, paste, and press **Save**, or **Cancel** (Escape in the field cancels too).
+- **The Agent asks:** `secret ask <name> --for "<what it is>"`. A paste field opens at the foot
+  of its tile, where the message box sits, in Chat and in Terminal: the conversation or terminal
+  above stays readable and scrollable, so the Agent's instructions stay in view while you paste.
+  Click into it, paste, and press **Save**, or **Cancel** (Escape in the field cancels too).
   Save says *Saving…*, then *Saved* shows for a moment before the field closes; if the save is
   refused, it stays open and says why. The Agent hears
   only `saved: <name>` or `cancelled: <name>`.

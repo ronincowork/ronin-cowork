@@ -661,6 +661,7 @@ export class Tile {
     this.refreshCtx();
     this.refreshTegami();
     this.refreshStance();
+    this.secretAsk.sync(this.homeRow()); // an ask already standing opens on a tile seated after it
 
     this.term.reset();
     this.tapeMode = !this.locked;

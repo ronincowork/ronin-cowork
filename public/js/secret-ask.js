@@ -1,6 +1,9 @@
 /* part of the ronin-cowork client — see js/README.md */
 /**
- * THE SECRET ASK — an Agent's `secret ask <name>` as a paste field over its tile (w385). The
+ * THE SECRET ASK — an Agent's `secret ask <name>` as a paste field docked at its tile's foot
+ * (w385), where the composer sits (KAN-416, owner 2026-11-12: the field over the whole tile hid
+ * the Agent's instructions). The conversation or terminal above stays readable: Chat keeps it in
+ * its column under the log, and Terminal fits its rows above the field's measured height. The
  * ask rides the Agent's home row (`secret_ask`); the field opens while it is there and closes
  * when it goes. The value goes from this field to the server and to its file, and nothing
  * sends it back: the field is cleared the moment it is sent. The pressed button says "Saving…" at
@@ -40,8 +43,27 @@ export function buildSecretAsk(tile) {
   const CANCEL = t('secret.cancel', 'Cancel');
   const save = createAction({ label: SAVE, kind: 'primary', size: 'compact', action: () => root.requestSubmit() });
   const cancel = createAction({ label: CANCEL, size: 'compact', action: () => void send(null) });
-  card.append(title, what, input, notice, createActionBar({ actions: [save, cancel] }).el);
+  const entry = el('div', 'tile-secret-entry');
+  entry.append(input, createActionBar({ actions: [save, cancel] }).el);
+  card.append(title, what, entry, notice);
   root.append(card);
+
+  // The view above ends where the field begins. The reserve only grows while one ask is open, so
+  // the shorter Saved moment does not refit the terminal twice.
+  let reserved = 0;
+  const reserve = () => {
+    const height = root.hidden ? 0 : Math.ceil(root.getBoundingClientRect().height);
+    reserved = root.hidden ? 0 : Math.max(reserved, height);
+    tile.body.style.setProperty('--secret-clearance', `${reserved}px`);
+  };
+  new ResizeObserver(reserve).observe(root);
+  const show = (on) => {
+    root.hidden = !on;
+    if (on) tile.body.dataset.secretAsk = 'open';
+    else delete tile.body.dataset.secretAsk;
+    reserved = 0;
+    reserve();
+  };
 
   let open = null; // the ask on screen: { name, for }
   let busy = false;
@@ -103,7 +125,7 @@ export function buildSecretAsk(tile) {
       open = ask;
       input.value = '';
       settle('');
-      root.hidden = !ask;
+      show(!!ask);
       if (!ask) return;
       title.textContent = t('secret.title', '{agent} asks for {name}', { agent: tile.sessionName?.textContent || tile.session, name: ask.name });
       what.textContent = ask.for || t('secret.for_none', 'Saved as a file for this Agent to use. It never appears in chat.');
