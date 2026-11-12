@@ -1,4 +1,5 @@
 /* part of the tmux-ronin client — see js/README.md */
+import { createKeyedList } from './workspace-primitives.js';
 
 const element = (tag, className = '', text = '') => {
   const node = document.createElement(tag);
@@ -7,6 +8,19 @@ const element = (tag, className = '', text = '') => {
   return node;
 };
 let nextDetailId = 0;
+
+/** What a row shows, as a string to compare: a function is only its presence, a Node is its
+ * identity (the same marker node is the same marker), everything else by value. */
+const nodeIds = new WeakMap();
+let nextNodeId = 0;
+const said = (value) => JSON.stringify(value, (_key, one) => {
+  if (typeof one === 'function') return 'ƒ';
+  if (typeof Node !== 'undefined' && one instanceof Node) {
+    if (!nodeIds.has(one)) nodeIds.set(one, ++nextNodeId);
+    return `#node${nodeIds.get(one)}`;
+  }
+  return one;
+});
 
 /** A chart whose child columns stack deeper than this folds its grandchildren into counts. */
 export const CHART_DEPTH = 4;
@@ -142,7 +156,7 @@ export function createPhalanx({ items = [], selectedId = '', renderDetail, onSel
       const node = stone(row, { branch: true });
       if (folded) node.append(element('small', 'sws-branch-count', `+${folded}`));
       node.addEventListener('click', () => {
-        if (folded) { unfolded.add(String(row.id)); paint(); buttonFor(row.id)?.focus(); return; }
+        if (folded) { unfolded.add(String(row.id)); paint({ force: false }); buttonFor(row.id)?.focus(); return; }
         down(topId, { select: row.id });
       });
       return node;
@@ -170,78 +184,120 @@ export function createPhalanx({ items = [], selectedId = '', renderDetail, onSel
     return box;
   };
 
-  const paint = () => {
+  // ONE STONE MOVES, ONE STONE REPAINTS (owner, 2026-11-12, KAN-414): the kit's keyed list
+  // (WorkspacePrimitives.createKeyedList). Every cell of the grid (the Return stone, a group's
+  // section, an inline heading, a stone or its branch) is a row kept between paints; each
+  // compares what it shows and repaints only itself, a stone moves only when its order or
+  // group changes, and a push that moved nothing touches nothing. A drawn stone reads its row
+  // at press time, so a kept stone always acts on what the last push said.
+  const cellsList = createKeyedList({ key: (cell) => cell.key, shows: (cell) => cell.shows, draw: (cell) => cell.draw() });
+  const hosts = new Map(); // a group's id → its stones' container, as last drawn
+  const groupId = (item) => String(typeof item.group === 'object' ? item.group.id : item.group || '');
+  const pressed = (id, item) => {
+    const now = byId(id) || item;
+    if (typeof now.action === 'function') { now.action(now, api); return; }
+    if (full() && carries(now) && !path.length) { down(id); return; }
+    restoreId = id;
+    restoreElement = null;
+    externalDetail = null;
+    selected = selected === id ? '' : id;
+    paint();
+    buttonFor(id)?.focus();
+    notify();
+  };
+  const backCell = (owner) => ({ key: '!back', shows: said([owner.label, owner.id]), draw: () => {
+    // The way back is a small stone that says only Return, not another stone of the level.
+    const back = element('button', 'sws-stone sws-back');
+    back.type = 'button';
+    back.append(element('b', 'sws-label', 'Return'));
+    back.setAttribute('aria-label', `Return to all · ${owner.label || owner.id}`);
+    back.addEventListener('click', top);
+    return back;
+  } });
+  const groupCell = (group, id, empty) => ({ key: `!group:${id}`, shows: said([group, empty]), draw: () => {
+    const section = element('section', 'sws-group'); section.dataset.swsGroup = id;
+    const heading = element(group.action ? 'button' : 'h3', 'sws-group-heading', group.label || id);
+    if (group.action) { heading.type = 'button'; heading.addEventListener('click', () => group.action(group)); }
+    if (group.secondary) heading.append(element('small', 'sws-group-secondary', group.secondary));
+    const hint = element('p', 'sws-group-hint');
+    const stones = element('div', 'sws-group-stones');
+    section.append(heading, hint, stones);
+    for (const [eventName, callback] of Object.entries(group.events || {})) section.addEventListener(eventName, (event) => callback(event, group, api));
+    hosts.set(id, stones);
+    return section;
+  } });
+  const stoneCell = (item, branching) => {
+    const id = String(item.id);
+    const branch = branching && carries(item);
+    const opened = branch ? [...unfolded].filter((one) => descendants(item).some((row) => String(row.id) === one)) : [];
+    return { key: `!stone:${id}`, shows: said([{ ...item, group: undefined }, id === selected, branch, opened, root.dataset.density]), draw: () => {
+      const button = stone(item);
+      button.addEventListener('click', () => pressed(id, item));
+      return branch ? branchOf(item, button) : button;
+    } };
+  };
+
+  /** The open detail is drawn again only when what is open changes, or its own row does (or
+   * refreshDetail asks): a push that moved another stone leaves it, and what is typed in it, alone. */
+  let detailSaid = null;
+  const paintDetail = (force) => {
+    const { owner } = level();
+    const current = externalDetail || byId(selected) || owner;
+    const now = current ? said([externalDetail ? 'external' : current === owner ? 'level' : 'stone', current]) : '';
+    if (!force && now === detailSaid) return;
+    detailSaid = now;
     disposeDetail?.();
     disposeDetail = null;
-    grid.replaceChildren();
+    detail.replaceChildren();
+    detail.hidden = !current;
+    if (current && typeof renderDetail === 'function') disposeDetail = renderDetail(current, detail) || null;
+  };
+
+  const paint = ({ force = true } = {}) => {
     const { owner, shown } = level();
     if (!find(shown, selected)) selected = '';
     root.dataset.open = String(Boolean(selected || externalDetail || owner));
     root.dataset.level = String(path.length);
-    if (owner) {
-      // The way back is a small stone that says only Return, not another stone of the level.
-      const back = element('button', 'sws-stone sws-back');
-      back.type = 'button';
-      back.append(element('b', 'sws-label', 'Return'));
-      back.setAttribute('aria-label', `Return to all · ${owner.label || owner.id}`);
-      back.addEventListener('click', top);
-      grid.append(back);
-    }
     const groupOptions = typeof grouped === 'object' ? grouped : {};
     const declaredGroups = Array.isArray(groupOptions.groups) ? groupOptions.groups : [];
     const groups = grouped && !owner ? [...declaredGroups] : [];
     if (grouped && !owner) for (const item of shown) {
-      const id = String(typeof item.group === 'object' ? item.group.id : item.group || '');
+      const id = groupId(item);
       if (id && !groups.some((entry) => String(entry.id ?? entry) === id)) groups.push(typeof item.group === 'object' ? item.group : { id, label: id });
-    }
-    const hosts = new Map();
-    for (const entry of groups) {
-      const group = typeof entry === 'object' ? entry : { id: entry, label: entry };
-      const id = String(group.id || group.label || '');
-      const section = element('section', 'sws-group'); section.dataset.swsGroup = id;
-      const heading = element(group.action ? 'button' : 'h3', 'sws-group-heading', group.label || id);
-      if (group.action) { heading.type = 'button'; heading.addEventListener('click', () => group.action(group)); }
-      if (group.secondary) heading.append(element('small', 'sws-group-secondary', group.secondary));
-      const hint = element('p', 'sws-group-hint');
-      const stones = element('div', 'sws-group-stones');
-      if (group.empty && !shown.some((item) => String(typeof item.group === 'object' ? item.group.id : item.group || '') === id)) stones.append(element('p', 'sws-group-empty', group.empty));
-      section.append(heading, hint, stones);
-      for (const [eventName, callback] of Object.entries(group.events || {})) section.addEventListener(eventName, (event) => callback(event, group, api));
-      grid.append(section); hosts.set(id, stones);
     }
     // Branches draw only while a shown row carries something: rows with nothing rest in the ordinary grid.
     const branching = Boolean(branches) && full() && atRest() && shown.some(carries);
     root.dataset.branching = String(branching);
     // The grid's rows: the stones, then one per cell, as many as the fullest stone carries.
-    grid.style.setProperty('--sws-rows', String(1 + Math.max(0, ...shown.map((item) => cells(item).length))));
+    const gridRows = String(1 + Math.max(0, ...shown.map((item) => cells(item).length)));
+    if (grid.style.getPropertyValue?.('--sws-rows') !== gridRows) grid.style.setProperty('--sws-rows', gridRows);
+    const laid = owner ? [backCell(owner)] : [];
+    const inGroup = new Map();
+    for (const entry of groups) {
+      const group = typeof entry === 'object' ? entry : { id: entry, label: entry };
+      const id = String(group.id || group.label || '');
+      const members = shown.filter((item) => groupId(item) === id);
+      laid.push(groupCell(group, id, Boolean(group.empty && !members.length)));
+      inGroup.set(id, members.length ? members.map((item) => stoneCell(item, branching))
+        : group.empty ? [{ key: `!empty:${id}`, shows: group.empty, draw: () => element('p', 'sws-group-empty', group.empty) }] : []);
+    }
     let previousGroup = null;
+    let headings = 0;
     for (const item of shown) {
+      if (inGroup.has(groupId(item)) && groupId(item)) continue;
       // Existing consumers use inline group headings without declared group sections.
       if (!grouped && item.group && item.group !== previousGroup) {
         previousGroup = item.group;
-        grid.append(element('h3', 'sws-group sws-group-heading', item.group));
+        const words = item.group;
+        laid.push({ key: `!heading:${headings++}`, shows: said(words), draw: () => element('h3', 'sws-group sws-group-heading', words) });
       }
-      const id = String(item.id);
-      const button = stone(item);
-      button.addEventListener('click', () => {
-        if (typeof item.action === 'function') { item.action(item, api); return; }
-        if (full() && carries(item) && !path.length) { down(id); return; }
-        restoreId = id;
-        restoreElement = null;
-        externalDetail = null;
-        selected = selected === id ? '' : id;
-        paint();
-        buttonFor(id)?.focus();
-        notify();
-      });
-      const placed = branching && carries(item) ? branchOf(item, button) : button;
-      const groupId = String(typeof item.group === 'object' ? item.group.id : item.group || '');
-      (hosts.get(groupId) || grid).append(placed);
+      laid.push(stoneCell(item, branching));
     }
-    detail.replaceChildren();
-    const current = externalDetail || byId(selected) || owner;
-    detail.hidden = !current;
-    if (current && typeof renderDetail === 'function') disposeDetail = renderDetail(current, detail) || null;
+    cellsList.place(grid, laid);
+    for (const [id, members] of inGroup) cellsList.place(hosts.get(id), members);
+    cellsList.sweep();
+    for (const id of [...hosts.keys()]) if (!inGroup.has(id)) hosts.delete(id);
+    paintDetail(force);
   };
 
   root.addEventListener('keydown', (event) => {
@@ -263,7 +319,7 @@ export function createPhalanx({ items = [], selectedId = '', renderDetail, onSel
       host.replaceChildren(header, root, footer);
       return api;
     },
-    setItems(next) { rows = [...(next || [])]; paint(); return api; },
+    setItems(next) { rows = [...(next || [])]; paint({ force: false }); return api; },
     updateItems(next) {
       for (const patch of next || []) {
         const row = byId(patch.id);
@@ -320,7 +376,7 @@ export function createPhalanx({ items = [], selectedId = '', renderDetail, onSel
       notify();
       return api;
     },
-    destroy() { disposeDetail?.(); root.remove(); },
+    destroy() { disposeDetail?.(); cellsList.destroy(); root.remove(); },
   };
   paint();
   return api;

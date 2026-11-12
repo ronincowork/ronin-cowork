@@ -10,10 +10,13 @@ import { readFile } from 'node:fs/promises';
  */
 class FakeNode {
   constructor(tag = '') { this.tagName = tag.toUpperCase(); this.dataset = {}; this.children = []; this.listeners = {}; this.attributes = {}; this._text = ''; this.disabled = false; this.className = ''; this.hidden = false; this.style = { setProperty: (name, value) => { this.style[name] = value; } }; }
-  append(...nodes) { this.children.push(...nodes.flat().filter(Boolean).map((node) => typeof node === 'string' ? Object.assign(new FakeNode('#text'), { textContent: node }) : node)); }
+  append(...nodes) { for (const node of nodes.flat().filter(Boolean).map((one) => typeof one === 'string' ? Object.assign(new FakeNode('#text'), { textContent: one }) : one)) { node.parent?.children.splice(node.parent.children.indexOf(node), 1); node.parent = this; this.children.push(node); } }
+  get childNodes() { return this.children; }
+  insertBefore(node, ref) { node.parent?.children.splice(node.parent.children.indexOf(node), 1); const at = ref ? this.children.indexOf(ref) : -1; this.children.splice(at < 0 ? this.children.length : at, 0, node); node.parent = this; return node; }
+  replaceWith(node) { const parent = this.parent; if (!parent) return; const at = parent.children.indexOf(this); this.remove(); node.parent?.children.splice(node.parent.children.indexOf(node), 1); parent.children.splice(at, 0, node); node.parent = parent; }
+  remove() { if (this.parent) this.parent.children.splice(this.parent.children.indexOf(this), 1); this.parent = null; }
   replaceChildren(...nodes) { this.children = []; this.append(...nodes); }
   add(node) { this.append(node); }
-  remove() {}
   setAttribute(name, value) { this.attributes[name] = String(value); }
   removeAttribute(name) { delete this.attributes[name]; }
   addEventListener(name, callback) { (this.listeners[name] ||= []).push(callback); }
