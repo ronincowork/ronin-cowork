@@ -387,46 +387,26 @@ test('an item In Review with no hand-ins recorded (handed in before the signals)
   assert.equal(items.handInStage({ hand_ins: [{ receipt: 'hi_1', by: 'mem', at: '2026-11-04T10:00:00Z' }], on_dev: { promotion: 'p', at: '2026-11-04T09:00:00Z' } }), 'lead', 'on dev before the last hand-in');
 });
 
-/* THE HAND-IN NOTE: one short comment for the user, headed Handed in (ITEM_HANDOVER). */
-test('a hand-in carries a note for the user: the Handed in comment, at most 280 characters', async () => {
-  const { item } = await items.createItem({ title: 'noted work', objective: 'A lead sees the note first.', parent: epic.id, holder: mem }, 'boss');
-  await items.addComment(item.id, 'decided with the lead: no receipts in the note', 'cap');
-  const long = await call('POST', `/api/work-items/${item.id}/transition`, { status: 'In Review', note: 'x'.repeat(281), by: 'mem' });
-  assert.equal(long.status, 409);
-  assert.match(long.data.error, /^Keep it for the user: what they can try\. The detail is in the diff\./);
-  assert.equal((await items.readItem(item.id))!.status, 'To Do', 'refused: nothing moved');
-  const ok = await call('POST', `/api/work-items/${item.id}/transition`, { status: 'In Review', note: 'Open the item; the note reads first.', by: 'mem' });
-  assert.equal(ok.status, 200, JSON.stringify(ok.data));
-  assert.equal(ok.data.item.comments.at(-1).text, 'Handed in: Open the item; the note reads first.');
-  assert.equal(items.handedInNote(ok.data.item), 'Open the item; the note reads first.');
-  // A desk's hand-in carries it the same way.
-  const desk = (await items.createItem({ title: 'desk noted', parent: epic.id, holder: mem }, 'boss')).item;
-  const handed = await items.handInItem(desk.id, 'mem', { desk: true, note: 'hand-in r9', receipts: ['r9'], forUser: 'Try the tile.' });
-  assert.equal(handed.item.comments.at(-1)!.text, 'Handed in: Try the tile.');
-  assert.equal(handed.line.note, 'hand-in r9; handed in by mem', 'the receipt stays on the trail, not in the note');
-  await assert.rejects(items.handInItem(desk.id, 'mem', { desk: true, forUser: 'y'.repeat(281) }), /Keep it for the user/);
-  assert.equal(items.handInNoteProblem('z'.repeat(280)), null);
-});
-
-test('under project management a move to In Review without a note is refused, NEXT showing --note; with one it goes', async () => {
-  const { sessionDir } = await import('../src/session-dir.js');
-  const dir = sessionDir('pmer');
-  await fs.mkdir(dir, { recursive: true });
-  await fs.writeFile(path.join(dir, 'birth-receipt.json'), JSON.stringify({ behaviours: [{ book: 'project-management', file: '/x/project-management.md' }] }));
-  await seedTegami('pmer', { repo: '', branch: '' }, [{ team: 'crew', team_role: 'member', objective: '' }]);
-  await live(['cap', 'mem', 'pmer']);
-  try {
-    const { item } = await items.createItem({ title: 'pm checkout', parent: epic.id, holder: { kind: 'agent', name: 'pmer' } }, 'boss');
-    const bare = await call('POST', `/api/work-items/${item.id}/transition`, { status: 'In Review', by: 'pmer' });
-    assert.equal(bare.status, 409);
-    assert.match(bare.data.error, new RegExp(`NEXT: item transition ${item.id} "In Review" --note "<what they can try>"`));
-    const noted = await call('POST', `/api/work-items/${item.id}/transition`, { status: 'In Review', note: 'Try it.', by: 'pmer' });
-    assert.equal(noted.status, 200);
-    assert.equal(noted.data.item.status, 'In Review');
-  } finally { await live(['cap', 'mem']); }
+/* THE REVIEW LINE (KAN-429): the Handed in note says in one short line what to look at; a move to
+ * In Review without one, or with a long one, goes and is prompted; nothing is refused (no guards). */
+test('a move to In Review is never refused for its note: missing or long, the acknowledgement prompts', async () => {
+  await live(['cap', 'mem']);
+  const { item } = await items.createItem({ title: 'noted work', parent: epic.id, holder: mem }, 'boss');
+  const bare = await call('POST', `/api/work-items/${item.id}/transition`, { status: 'In Review', by: 'mem' });
+  assert.equal(bare.status, 200, JSON.stringify(bare.data));
+  assert.equal(bare.data.item.status, 'In Review');
+  assert.match(bare.data.acknowledgement, new RegExp(`PROMPT: ${item.id} has no review line.*item transition ${item.id} "In Review" --note "<what to look at>"`));
+  const long = await call('POST', `/api/work-items/${item.id}/transition`, { status: 'In Review', note: 'x'.repeat(300), by: 'mem' });
+  assert.equal(long.status, 200);
+  assert.match(long.data.acknowledgement, /review line is 300 characters/);
+  const ok = await call('POST', `/api/work-items/${item.id}/transition`, { status: 'In Review', note: 'The note reads first on the bar.', by: 'mem' });
+  assert.equal(items.handedInNote(ok.data.item), 'The note reads first on the bar.');
+  assert.doesNotMatch(ok.data.acknowledgement, /PROMPT/);
+  const { cardOf } = await import('../src/work-items-read.js');
+  assert.equal(cardOf(ok.data.item).review, 'The note reads first on the bar.', 'the Epics bar shows it');
   const desk = await fs.readFile(new URL('../src/commands/desk.ts', import.meta.url), 'utf8');
-  assert.match(desk, /if \(projectId && !forUser && underPm\)/, 'an item handed in from a desk under project management needs --note too; a hand-in with no item does not (w415)');
-  assert.match(desk, /const long = handInNoteProblem\(forUser\);\n\s+if \(long\) die/, 'a long note is refused before any code is handed in');
+  assert.doesNotMatch(desk, /NO-NOTE|REFUSED: \$\{long\}/, 'a desk hand-in is not refused for its note either');
+  assert.match(desk, /reviewPrompt\(moved\.item\)/);
 });
 
 test('session_end\'s refusal: To Do settled first, each item named with status and title, NEXT the handover, never a drop', async () => {

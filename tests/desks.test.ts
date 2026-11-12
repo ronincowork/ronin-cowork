@@ -234,8 +234,10 @@ test('a hand-in with --item ends by naming the item and the write that keeps it 
     cwd: path.resolve('.'),
     env: { ...process.env, RONIN_SESSION: 'reminder', RONIN_TEAMS: 'comp' },
   }).toString();
-  const last = output.trimEnd().split('\n').at(-1)!;
+  const lines = output.trimEnd().split('\n');
+  const last = lines.at(-2)!;
   assert.equal(last, `${item.id} moved to In Review`);
+  assert.match(lines.at(-1)!, new RegExp(`^PROMPT: ${item.id} has no review line`), 'no --note: prompted, not refused (KAN-429)');
   assert.ok(output.indexOf('ACCEPTED cowork:team/comp/reminder') < output.indexOf(last));
   assert.equal((await readItem(item.id))!.status, 'In Review');
 });

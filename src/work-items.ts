@@ -179,25 +179,31 @@ export function handInStage(item: Pick<WorkItem, 'hand_ins' | 'on_dev'>): 'lead'
 
 /* THE NOTES A USER READS (docs/using-ronin/project-management.md, How an item lives): two
  * comments headed by their words, so Jira shows them as Ronin does. "Handed in: <note>" is what
- * the user can try, written at a hand-in (--note, at most 280 characters; no commit ids, no
- * receipts: those stay on the trail). "Handover from <agent>: <note>" is where an item stands
+ * the owner should look at, in one short line, written at a hand-in (--note; no commit ids, no
+ * receipts: those stay on the trail; reviewPrompt asks for it when missing or long). "Handover from <agent>: <note>" is where an item stands
  * and what is next, written when an ending Agent hands it over (handoverItem). */
 export const HANDED_IN = 'Handed in: ';
 export const HANDOVER_FROM = 'Handover from ';
-export const NOTE_MAX = 280;
-export const NOTE_TOO_LONG = 'Keep it for the user: what they can try. The detail is in the diff.';
-
-/** What is wrong with a hand-in note, or null: only its length, at most NOTE_MAX characters. */
-export function handInNoteProblem(note: string | undefined): string | null {
-  const text = String(note ?? '').trim();
-  return text.length > NOTE_MAX ? `${NOTE_TOO_LONG} (${text.length} characters; at most ${NOTE_MAX}.)` : null;
-}
-
 /** The item's last Handed in note, without its heading; '' with none. */
 export function handedInNote(item: Pick<WorkItem, 'comments'>): string {
   const comment = [...(item.comments ?? [])].reverse().find((one) => one.text.startsWith(HANDED_IN));
   return comment ? comment.text.slice(HANDED_IN.length) : '';
 }
+
+/** THE REVIEW LINE (owner, 2026-11-12, KAN-429): an item In Review tells the owner in one short
+ * line what to look at — the Handed in note, shown on the item's bar where the owner reviews.
+ * Whoever moves an item to In Review without one, or with a long one, is prompted; nothing is
+ * refused (owner: no guards). '' when the item is not In Review or its line is short enough. */
+export function reviewPrompt(item: Pick<WorkItem, 'id' | 'status' | 'comments'>): string {
+  if (item.status !== 'In Review') return '';
+  const line = handedInNote(item).trim();
+  const next = `item transition ${item.id} "In Review" --note "<what to look at>"`;
+  if (!line) return `PROMPT: ${item.id} has no review line. Tell the owner in one short line what to look at: ${next}`;
+  if (line.length > REVIEW_LINE) return `PROMPT: ${item.id}'s review line is ${line.length} characters. The owner reads hundreds: say in one short line what to look at: ${next}`;
+  return '';
+}
+/** Past this, a review line is no longer one glance. */
+export const REVIEW_LINE = 120;
 
 /** What every write answers: the item as it now is, the line it appended, and who its notices
  * told (section 4). What the act did is read from the line (didLine). */
@@ -589,14 +595,12 @@ export function editItem(id: string, edit: ItemEdit, by: string, note?: string):
     if (edit.status !== undefined) oneOf('status', edit.status.trim(), names.statuses);
     // A move to In Review by the Agent holding the item is a hand-in from a checkout.
     const only = Object.entries(edit).filter(([, value]) => value !== undefined).map(([key]) => key);
-    if (only.join() === 'status' && edit.status!.trim() === REVIEW && current.status !== REVIEW
+    // Its note is the Handed in note, the review line; without one the move still goes and the
+    // acknowledgement prompts for it (reviewPrompt). Already In Review, a note is a new line.
+    const forUser = String(note ?? '').trim();
+    if (only.join() === 'status' && edit.status!.trim() === REVIEW && (current.status !== REVIEW || forUser)
       && (await holdersOf(current.id)).some((holder) => holder.kind === 'agent' && holder.name === by)
       && (await listSessions()).some((session) => session.name === by)) {
-      // Its note is the Handed in note; under project management a hand-in carries one.
-      const forUser = String(note ?? '').trim();
-      if (!forUser && await import('./agent-composition.js').then((m) => m.projectManagementOn(by)).catch(() => false)) {
-        throw new WorkItemRefused(`a hand-in carries a note for the user: what they can try, in their words.\n  NEXT: item transition ${current.id} "${REVIEW}" --note "<what they can try>"`);
-      }
       return handInUnlocked(current.id, by, { desk: false, forUser });
     }
     if (edit.priority !== undefined) oneOf('priority', edit.priority.trim(), names.priorities);
@@ -626,6 +630,11 @@ export function editItem(id: string, edit: ItemEdit, by: string, note?: string):
       if (edit.title !== undefined && edit.title.trim() !== item.title) { item.title = edit.title.trim(); changed.push('title'); }
       if (edit.objective !== undefined && edit.objective.trim() !== item.objective) { item.objective = edit.objective.trim(); changed.push('objective'); }
       if (edit.status !== undefined && edit.status.trim() !== item.status) { item.status = edit.status.trim(); changed.push(`status ${item.status}`); }
+      // Anyone moving an item to In Review with a note leaves the review line (KAN-429).
+      if (edit.status?.trim() === REVIEW && String(note ?? '').trim()) {
+        item.comments.push({ by: by.trim() || 'unknown', at: new Date().toISOString(), text: `${HANDED_IN}${String(note).trim()}` });
+        if (!changed.length) changed.push('review line');
+      }
       if (kind !== item.kind) { item.kind = kind; changed.push(`kind ${kind}`); }
       const priority = edit.priority?.trim();
       if (priority !== undefined && priority !== item.priority) { item.priority = priority; changed.push(`priority ${priority}`); }
@@ -705,8 +714,6 @@ async function handInUnlocked(given: string, session: string, opts: HandInOption
   const id = item.id;
   oneOf('status', REVIEW, spaceNames(item.campaign_id).statuses);
   const forUser = String(opts.forUser ?? '').trim();
-  const long = handInNoteProblem(forUser);
-  if (long) throw new WorkItemRefused(long);
   // The Team only finds the lead to tell: handing in code doesn't hand in the item (owner,
   // 2026-11-05; KAN-269). The Agent keeps the hold; no Team goes on, nobody comes off.
   const team = await handInTeam(item, session);
@@ -736,7 +743,7 @@ async function handInUnlocked(given: string, session: string, opts: HandInOption
 }
 
 /** A hand-in: from a desk (its receipts) or a checkout; `note` is the trail's, `forUser` the
- * Handed in note (at most NOTE_MAX characters). */
+ * Handed in note, the review line. */
 export interface HandInOptions { desk: boolean; note?: string; receipts?: string[]; forUser?: string }
 export const handInItem = (id: string, session: string, opts: HandInOptions) => withIssuer(() => handInUnlocked(id, session, opts));
 

@@ -37,7 +37,8 @@ leading several, name it). Any kind, an Epic too, with --parent or none. It answ
 attach plan:<name> points an epic at its order (plan --help): stored as plan:<workspace>/<name>.
 watch tracks an item without holding it (yourself unless named; a team's on its roster).
 transition to In Review by its holder is a hand-in: the item goes to the Team, and --note is the
-Handed in comment for the user (at most 280 characters; required under project management).
+Handed in comment: one short line telling the user what to look at. Without one, or long, the
+move still goes and the reply prompts for it; --note again on an item In Review replaces it.
 handover is how an ending Agent hands an item on: the note becomes a comment headed "Handover
 from <you>", you come off, the receiver goes on, the status stays (--to-do puts it back to To
 Do). Can't decide? --flag "<the question>": it is flagged and your lead is told.

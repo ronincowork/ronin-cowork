@@ -14,7 +14,7 @@ import { arrangementOf } from '../desks/arrangement.js';
 import { randomUUID } from 'node:crypto';
 import { withManagedTransaction } from '../desks/lifecycle-ledger.js';
 import { shutdownAgent, ShutdownRefused } from '../desks/session-shutdown.js';
-import { didLine, handInNoteProblem, readItem } from '../work-items.js';
+import { didLine, readItem, reviewPrompt } from '../work-items.js';
 import { projectManagementOn } from '../agent-composition.js';
 import { briefPointer } from '../behaviours.js';
 
@@ -210,13 +210,8 @@ async function main(): Promise<void> {
         // (docs/using-ronin/project-management.md, Three signals).
         const underPm = await projectManagementOn(session);
         // The Handed in note: the one comment the user reads (docs/using-ronin/project-management.md,
-        // How an item lives). Short by construction; an item handed in under project management carries one.
+        // How an item lives): the review line; missing or long, the acknowledgement prompts (KAN-429).
         const forUser = str(flags.get('note')).trim();
-        const long = handInNoteProblem(forUser);
-        if (long) die(`REFUSED: ${long}`, 2);
-        if (projectId && !forUser && underPm) {
-          die(`NO-NOTE: a hand-in carries a note for the user: what they can try, in their words.\n  NEXT: worktree-desk hand-in ${positional[0] ?? '<repo>'}${flags.get('assignment') ? ' --assignment' : ''} --item ${projectId} --note "<what they can try>"`, 2);
-        }
         let worst = 0;
         const { outcomes, moved, unmoved } = await handInAssignment({ desks: flags.get('assignment') ? targets : [targets[0]!], projectId, session, forUser });
         for (const [i, { receipt, notices, tidy }] of outcomes.entries()) {
@@ -251,6 +246,9 @@ async function main(): Promise<void> {
         if (moved) {
           out(`Code handed in for ${projectId}: ${moved.line.op} ${moved.line.from ?? ''} → ${moved.line.to ?? ''} (${moved.line.note}).`);
           out(didLine(moved));
+          // The review line (KAN-429): missing or long, a prompt; the hand-in is never refused.
+          const prompt = reviewPrompt(moved.item);
+          if (prompt) out(prompt);
         }
         if (unmoved) out(`Code handed in for ${projectId}; its status did not move: ${unmoved}`);
         process.exit(worst);

@@ -199,9 +199,13 @@ export function itemBar(item, { sub = false, subtasks = 0, extra = [], onPress }
   if (signal) { node.dataset.handin = signal.kind; state.append(span('item-bar-handin', `${HANDIN_MARK} ${handInWords(signal)}`)); }
   head.append(kindMark(item.kind), span('item-bar-id', item.jira || item.id), span('item-bar-title', item.title || ''), state);
   node.append(head);
+  // IN REVIEW, WHAT TO LOOK AT FIRST (owner, 2026-11-12, KAN-429): the Handed in note, the
+  // review line, leads the bar; the comment line does not repeat it.
+  const review = item.status === 'In Review' ? String(item.review || '') : '';
+  if (review) node.append(span('item-bar-review', t('island.look_at', 'Look at: {line}', { line: review })));
   if (!sub && item.objective) node.append(span('item-bar-objective', item.objective));
   const said = !sub && lastComment(item);
-  if (said) {
+  if (said && !(review && String(said.text || '').startsWith('Handed in: '))) {
     const line = span('item-bar-comment');
     line.append(span('item-bar-who', `@${said.by} · ${humanAge(Math.max(0, Date.now() - Date.parse(said.at) || 0))}`), ` ${said.text}`);
     node.append(line);

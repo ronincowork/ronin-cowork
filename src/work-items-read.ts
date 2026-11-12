@@ -19,7 +19,7 @@ import type { TeamLayers } from './team-layers.js';
 import { sessionKey } from './session-dir.js';
 import { readTeamRoster, type TeamRoster } from './team-rosters.js';
 import { listSessions } from './tmux.js';
-import { WorkItemMissing, readItem, type WorkItem } from './work-items.js';
+import { WorkItemMissing, handedInNote, readItem, type WorkItem } from './work-items.js';
 import { currentIds, liveRows, type ItemRow } from './work-items-index.js';
 
 export interface AgentReading {
@@ -240,7 +240,7 @@ export function epicsPush(all: HeldItem[]): { epics: HeldItem[]; items: EpicItem
 /** What a bar says beyond its row (owner, 2026-11-06, w334), for one picked Epic and every live
  * item under it (w418): the objective cut short, the last comment cut short, how many comments.
  * The one place the Epics board opens bodies. */
-export interface EpicCard { id: string; objective: string; said: { by: string; at: string; text: string } | null; comment_count: number }
+export interface EpicCard { id: string; objective: string; review: string; said: { by: string; at: string; text: string } | null; comment_count: number }
 export async function epicCards(epicId: string): Promise<EpicCard[]> {
   const rows = await liveRows();
   const { items } = epicsPush(rows.map(withHolder));
@@ -250,9 +250,11 @@ export async function epicCards(epicId: string): Promise<EpicCard[]> {
 }
 
 /** One bar's words from its item's file: the objective and last comment cut short, the count. */
-export const cardOf = (item: Pick<WorkItem, 'id' | 'objective' | 'comments'>): EpicCard => ({
+export const cardOf = (item: Pick<WorkItem, 'id' | 'objective' | 'comments' | 'status'>): EpicCard => ({
   id: item.id,
   objective: cut(item.objective, 280),
+  // In Review, what the owner should look at (KAN-429): the Handed in note.
+  review: item.status === 'In Review' ? cut(handedInNote(item), 200) : '',
   said: item.comments?.length ? (({ by, at, text }) => ({ by, at, text: cut(text, 200) }))(item.comments.at(-1)!) : null,
   comment_count: item.comments?.length ?? 0,
 });

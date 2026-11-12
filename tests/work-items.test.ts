@@ -246,7 +246,7 @@ test('routes acknowledge with the item and the appended line; refusals answer 40
     await call('PUT', `${base}/${id}`, { jira: { id: '10001', key: 'RON-1' }, by: 'probe' });
     assert.equal((await call('POST', `${base}/${id}/flag`, { by: 'probe' })).data.acknowledgement, `${id} is flagged`);
     const moved = await call('POST', `${base}/${id}/transition`, { status: 'In Review', by: 'probe' });
-    assert.equal(moved.data.acknowledgement, `${id} moved to In Review`);
+    assert.equal(moved.data.acknowledgement.split('\n')[0], `${id} moved to In Review`);
     assert.equal((await call('POST', `${base}/${id}/transition`, { status: 'To Do', by: 'probe' })).data.item.status, 'To Do', 'any status to any status');
     await call('POST', `${base}/${id}/transition`, { status: 'In Review', by: 'probe' });
     assert.equal((await call('PUT', `${base}/${id}`, { status: 'Done', by: 'probe' })).data.item.status, 'In Review', 'edit does not set status');

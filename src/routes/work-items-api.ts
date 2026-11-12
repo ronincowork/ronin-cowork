@@ -6,7 +6,7 @@
 import type express from 'express';
 import {
   WorkItemBadInput, WorkItemMissing, WorkItemRefused,
-  addComment, attachDoc, connectionOf, createItem, deleteItem, editComment, editItem, archiveHeldDone, archiveItem, flagItem, handoffItem, handoverItem, holderLabel, holdersOf, linkItem, listItems, markOnDev, readItem, resolveId, sendBack, watchItem, watchedIds,
+  addComment, attachDoc, connectionOf, createItem, deleteItem, editComment, editItem, archiveHeldDone, archiveItem, flagItem, handoffItem, reviewPrompt, handoverItem, holderLabel, holdersOf, linkItem, listItems, markOnDev, readItem, resolveId, sendBack, watchItem, watchedIds,
   didLine, oneNoticePerCommand, type Acknowledged, type Holder, type JiraPair, type WorkItem,
 } from '../work-items.js';
 import { agentReading, epicCards, everyItemReading, teamReading, type HeldItem } from '../work-items-read.js';
@@ -26,7 +26,8 @@ export const acknowledge = (res: express.Response, done: Acknowledged, extra: Re
   res.json({
     ok: true, item: done.item, line: done.line, ...(done.notified?.length ? { notified: done.notified } : {}), ...extra,
     acknowledgement: didLine(done)
-      + `${done.notified?.length ? `\nTold ${done.notified.map((name) => `@${name}`).join(', ')}.` : ''}`,
+      + `${done.notified?.length ? `\nTold ${done.notified.map((name) => `@${name}`).join(', ')}.` : ''}`
+      + (typeof extra.prompt === 'string' && extra.prompt ? `\n${extra.prompt}` : ''),
   });
 
 export function answerError(res: express.Response, error: unknown): void {
@@ -168,7 +169,9 @@ export function registerWorkItems(app: express.Express): void {
     transition: async (id, b, by) => {
       const status = text(b.status)?.trim();
       if (!status) throw new WorkItemBadInput('name the status, one of the space\'s.');
-      return acted(await editItem(id, { status }, by, text(b.note)));
+      const done = acted(await editItem(id, { status }, by, text(b.note)));
+      const prompt = reviewPrompt(done.done.item);
+      return prompt ? { ...done, acknowledgement: `${done.acknowledgement}\n${prompt}`, extra: { prompt } } : done;
     },
     // Handoff, the one tool: the giver comes off and the receiver goes on (handoffItem). The
     // giver is { from } when named, an Agent or team:<name>; else the caller and the Teams around
