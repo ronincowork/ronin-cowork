@@ -126,8 +126,32 @@ function createAction(options = {}) {
   if (options.endsEdit) el.dataset.endsEdit = '';
   if (options.selected != null) el.setAttribute('aria-pressed', String(!!options.selected));
   el.disabled = !!options.disabled;
-  if (options.action) el.addEventListener('click', options.action);
+  // EVERY BUTTON ANSWERS THE PRESS AT ONCE (owner, 2026-11-12: "If I push it, it looks
+  // clicked, so I know it's clicked, even if it takes a second"). A pointer shows it on the
+  // way down; a key, which has no way down, on its click.
+  el.addEventListener('pointerdown', () => { if (!el.disabled) flashPressed(el); });
+  if (options.action) {
+    let busy = false;
+    el.addEventListener('click', (event) => {
+      // Still at work on the last press: this one is the same press again.
+      if (busy) return;
+      if (event?.detail === 0) flashPressed(el);
+      const result = options.action(event);
+      if (typeof result?.then !== 'function') return result;
+      busy = true;
+      el.setAttribute('aria-busy', 'true');
+      const settle = () => { busy = false; el.removeAttribute('aria-busy'); };
+      return Promise.resolve(result).then(settle, (error) => { settle(); throw error; });
+    });
+  }
   return { el, setDisabled: (on = true) => { el.disabled = !!on; } };
+}
+
+const PRESS_FLASH_MS = 250;
+function flashPressed(el) {
+  el.classList.add('pressed');
+  clearTimeout(el.pressedTimer);
+  el.pressedTimer = setTimeout(() => el.classList.remove('pressed'), PRESS_FLASH_MS);
 }
 
 function createActionBar(options = {}) {

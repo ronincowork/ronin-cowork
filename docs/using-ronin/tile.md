@@ -177,6 +177,13 @@ log is read from its log, and one that keeps none is read from its terminal, les
 *Asking you* comes from the terminal for every CLI: a permission prompt is drawn on the screen
 and no CLI writes it down.
 
+A question with options is answered in Terminal, never in Chat. While an Agent is asking, Chat
+ends with *Waiting for your answer in Terminal* and an **Answer in Terminal** button; the press
+switches the tile to Terminal, as **Term** would. Once the Agent is no longer asking, a tile
+that went there by that button comes back to Chat by itself. If you switched yourself, or
+switched again after the press, the tile stays where you put it. Nothing switches without a
+press.
+
 See [Work record](work-record.md) for authored work and [Workbench](workbench.md) for
 arrangement and navigation. Contributors can find the implementation in the
 [UI ownership index](../../public/js/README.md) and [contributor map](../contributor-map.md#user-interface).

@@ -1227,7 +1227,8 @@ The catalog entry goes. {dir} is not touched.
 - **transcript.unavailable:** Transcript unavailable for this Agent.
 - **transcript.failed:** Transcript could not be loaded. Retrying…
 - **transcript.stance_working:** Working
-- **transcript.stance_asking:** Waiting for your answer
+- **transcript.stance_asking:** Waiting for your answer in Terminal
+- **transcript.answer_in_terminal:** Answer in Terminal
 
 ## output — output.js (the RIREKI view picker)
 - **output.locked:** Locked
