@@ -246,3 +246,22 @@ test('a push repaints only the stone that moved, moves a stone only with its gro
   surface.setItems([{ id: 'a', label: 'A2', group: 'todo' }, ...rows('B2', 'doing').slice(1)]);
   assert.deepEqual(rendered, ['a', 'a'], 'the open stone itself moved: its detail draws again');
 });
+
+test('a push on the open stone waits while its detail holds an unsent edit, and lands on submit (w451, KAN-414)', async () => {
+  const rendered = [];
+  const surface = createPhalanx({ renderDetail: (item, host) => { rendered.push(item.label); host.append(new FakeNode('form')); } });
+  surface.setItems([{ id: 'a', label: 'A' }, { id: 'b', label: 'B' }]);
+  surface.el.querySelectorAll('[data-sws-id]')[0].click();
+  const detail = surface.el.children[1];
+  const form = detail.children[0];
+  detail.dispatch('input', { isTrusted: true });
+  surface.setItems([{ id: 'a', label: 'A2' }, { id: 'b', label: 'B' }]);
+  assert.deepEqual(rendered, ['A'], 'the edited detail is not rebuilt by a push on its own stone');
+  assert.equal(detail.children[0], form);
+  detail.dispatch('submit');
+  await new Promise((resolve) => setTimeout(resolve, 5));
+  assert.deepEqual(rendered, ['A', 'A2'], 'the held push lands once the edit is sent');
+  detail.dispatch('input', { isTrusted: false });
+  surface.setItems([{ id: 'a', label: 'A3' }, { id: 'b', label: 'B' }]);
+  assert.deepEqual(rendered, ['A', 'A2', 'A3'], 'a surface\'s own scripted input is not an edit');
+});

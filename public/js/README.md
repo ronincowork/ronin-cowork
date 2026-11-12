@@ -164,10 +164,17 @@ push keeps one row per key with `WorkspacePrimitives.createKeyedList` (and `layN
 repaints only itself, moves only when its order or group changes, and is added or removed
 only when the set changes; an open row, a detail or a form being typed in is never rebuilt
 by a push that moved something else (owner, 2026-11-12, KAN-412, KAN-414). No surface keeps
-its own variant. Its users: the Epics surface ([epics-surface.js](epics-surface.js)) and
-the stone work surface ([phalanx.js](phalanx.js)): every stone, the Return stone and every
-group section is a kept row, a stone reads its row at press time, and the open detail is
-drawn again only when what is open changes, its own row moves, or `refreshDetail()` asks.
+its own variant. **Never under an edit:** a row the person has typed or changed something in
+holds its redraw; the newest row lands at once when the edit is sent or abandoned (`submit`,
+`reset`, a press on a button marked `data-ends-edit`, a `<details>` folding, or focus leaving
+with nothing changed). Every Send, Save or Cancel that is not a form submit carries
+`data-ends-edit` (`createAction({ endsEdit: true })`); `editHold()` is the same hold for one
+open detail. Its users: the Epics surface ([epics-surface.js](epics-surface.js)); the stone
+work surface ([phalanx.js](phalanx.js)): every stone, the Return stone and every group
+section is a kept row, a stone reads its row at press time, and the open detail is drawn
+again only when what is open changes, its own row moves (held under an edit), or
+`refreshDetail()` asks; the roster ([roster.js](roster.js)): every group block, heading and
+session row (a session under each group it is in) is a kept row.
 
 ## Verifying a change
 

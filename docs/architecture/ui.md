@@ -674,6 +674,9 @@ kit's keyed list (`WorkspacePrimitives.createKeyedList`, KAN-412): `setItems` wi
 redraws only the stones whose own row changed, moves a stone between group sections without
 drawing it again, and leaves the open detail as it is unless the open stone's own row moved.
 Selecting, opening a detail, going down a level and `refreshDetail()` draw the detail afresh.
+A push on the open stone waits while the person has an unsent edit in its detail (the kit's
+`editHold`): it lands at once on submit, reset, a press on a `data-ends-edit` button (Send,
+Save, Cancel: `createAction({ endsEdit: true })`), a fold, or focus leaving with nothing changed.
 A row's signature counts a function by its presence and a Node by its identity, so a consumer
 that hands a new marker node every push redraws that stone every push: hand the same node, or a string.
 

@@ -231,6 +231,7 @@ function createRegisterSurface(context) {
     if (result.ok) { current = result.data; paint(); context.environment?.onRegistrationChoice?.('acted'); }
   });
   registerAction.dataset.launch = 'true';
+  registerAction.dataset.endsEdit = '';
   const sendLabel = registerAction.textContent;
   registerAction.replaceChildren(WorkspaceKit.primitives.ninMark('wk-launch-mark'), el('span', '', sendLabel));
   const send = el('div', 'setup-register-send');
@@ -605,6 +606,7 @@ export function createServicesSurface(context) {
           if (saved) saved.textContent = t('services_setup.key_saved', 'Services key saved. Updates use it from now on.');
         }
       });
+      keyInstall.dataset.endsEdit = '';
       keyInstall.classList.add('setup-services-key-install');
       const keyRow = el('div', 'setup-services-key');
       const keyLabel = el('label', 'setup-field setup-services-key-field');
