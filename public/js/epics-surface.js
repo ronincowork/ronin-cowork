@@ -111,7 +111,7 @@ export const byStatus = (items, picked = []) => (picked.length ? items.filter((i
  * (tile-island.js itemBar) going down the page, grouped by status in workflow order. A Subtask
  * whose Task is shown follows it as a slimmer bar. A bar pressed opens the item's reading under
  * it (work-items-surface.js renderItemDetail: its status to move, comments, a box to comment);
- * pressed again it folds. Built once; a push redraws the bars and leaves the questions alone.
+ * pressed again it folds. Built once; a push repaints only the bars it moved (KAN-412) and leaves the questions alone.
  */
 function epicItems(epicId, { epicsRead }) {
   let assigned = [];
@@ -174,47 +174,72 @@ function epicItems(epicId, { epicsRead }) {
     return host;
   }
 
+  // ONE ITEM MOVES, ONE BAR CHANGES (owner, 2026-11-12, KAN-412): the kit's keyed list
+  // (WorkspacePrimitives.createKeyedList). One bar per item, kept between pushes, repaints only
+  // itself; a bar moves between groups only when its status moves; an opened reading is never
+  // rebuilt, and nothing is touched when nothing under this Epic moved.
+  const { createKeyedList } = WorkspaceKit.primitives;
+  const bars = createKeyedList({ create: (first) => {
+    let node = null;
+    let host = null;
+    let shown = '';
+    const update = ({ item, sub, subtasks, children }) => {
+      const holder = holderOfItem(item);
+      const card = withCard(item);
+      const now = JSON.stringify([card, sub, subtasks, holder]);
+      if (now !== shown) {
+        shown = now;
+        const fresh = itemBar(card, { sub, subtasks, extra: [holder ? holderWords(holder) : t('epics.unassigned', 'Unassigned')],
+          onPress: () => { if (!open.delete(item.id)) open.add(item.id); paint(); } });
+        node?.replaceWith(fresh);
+        node = fresh;
+      }
+      node.setAttribute('aria-expanded', String(open.has(item.id)));
+      if (open.has(item.id)) host ??= reading(item, { children });
+      else { host?.remove(); host = null; }
+    };
+    update(first);
+    return { nodes: () => (host ? [node, host] : [node]), update };
+  } });
+  const groupList = createKeyedList({ key: (row) => row.status, create: (first) => {
+    if (first.empty) { const word = el('p', 'epic-empty', first.empty); return { nodes: () => [word], update() {} }; }
+    const section = el('section', 'epic-group');
+    section.dataset.status = first.status;
+    const heading = el('h3', 'epic-group-heading');
+    const list = el('div', 'epic-bars');
+    section.append(heading, list);
+    const update = ({ status, count, rows }) => {
+      const words = t('epics.group', '{status} · {n}', { status, n: count });
+      if (heading.textContent !== words) heading.textContent = words;
+      bars.place(list, rows);
+    };
+    update(first);
+    return { nodes: () => [section], update };
+  } });
+
   function paint() {
     const epic = epicNow();
-    if (epic) {
-      const holder = holderOfItem(epic);
-      const node = itemBar(withCard(epic), { extra: [holder ? holderWords(holder) : t('epics.unassigned', 'Unassigned')],
-        onPress: () => { if (!open.delete(epic.id)) open.add(epic.id); paint(); } });
-      node.setAttribute('aria-expanded', String(open.has(epic.id)));
-      detail.replaceChildren(node, ...(open.has(epic.id) ? [reading(epic, { children: false })] : []));
-    } else detail.replaceChildren();
+    bars.place(detail, epic ? [{ id: epic.id, item: epic, children: false }] : []); // reading(epic, { children: false }): its children are the board below
     const every = epicsRead.items(epicId);
     if (epic) askCards(epic, every);
     const items = byStatus(byFlagged(byAssigned(every, assigned), flagged), statuses);
     const shown = new Set(items.map((item) => item.id));
     const folded = (item) => item.level === -1 && item.parent && shown.has(item.parent);
     const subsOf = (item) => items.filter((one) => one.level === -1 && one.parent === item.id);
-    const bar = (item, sub = false) => {
-      const holder = holderOfItem(item);
-      const node = itemBar(withCard(item), { sub, subtasks: sub ? 0 : subsOf(item).length,
-        extra: [holder ? holderWords(holder) : t('epics.unassigned', 'Unassigned')],
-        onPress: () => { if (!open.delete(item.id)) open.add(item.id); paint(); } });
-      node.setAttribute('aria-expanded', String(open.has(item.id)));
-      return open.has(item.id) ? [node, reading(item)] : [node];
-    };
     const sections = [];
     for (const status of statusesOf(items)) {
       const at = items.filter((item) => item.status === status && !folded(item));
       if (!at.length) continue;
-      const section = el('section', 'epic-group');
-      section.dataset.status = status;
       const count = at.reduce((n, item) => n + 1 + subsOf(item).length, 0); // what this group draws: a Subtask counts under its Task
-      section.append(el('h3', 'epic-group-heading', t('epics.group', '{status} · {n}', { status, n: count })));
-      const bars = el('div', 'epic-bars');
-      bars.append(...at.flatMap((item) => [...bar(item), ...subsOf(item).flatMap((one) => bar(one, true))]));
-      section.append(bars);
-      sections.push(section);
+      sections.push({ status, count, rows: at.flatMap((item) => [{ id: item.id, item, subtasks: subsOf(item).length },
+        ...subsOf(item).map((one) => ({ id: one.id, item: one, sub: true }))]) });
     }
-    if (!every.length) sections.push(el('p', 'epic-empty', t('epics.no_items', 'No work items under this Epic yet.')));
-    else if (!items.length) sections.push(el('p', 'epic-empty', t('epics.none_picked', 'No items for what Assigned, Flagged and Status pick.')));
-    groups.replaceChildren(...sections);
+    if (!every.length) sections.push({ status: '!none', empty: t('epics.no_items', 'No work items under this Epic yet.') });
+    else if (!items.length) sections.push({ status: '!picked', empty: t('epics.none_picked', 'No items for what Assigned, Flagged and Status pick.') });
+    groupList.set(groups, sections);
+    bars.sweep();
   }
-  return { el: root, paint, destroy: () => questions.destroy() };
+  return { el: root, paint, destroy: () => { questions.destroy(); bars.destroy(); groupList.destroy(); } };
 }
 
 /**
@@ -238,6 +263,7 @@ export function createEpicBoard({ epicsRead, header = true, initial = '' }) {
   let view = null;
   let source = null;
   let drawn = '';
+  let sourceSaid = '';
 
   function stone(epic) {
     const label = epic.title || epic.id;
@@ -281,8 +307,12 @@ export function createEpicBoard({ epicsRead, header = true, initial = '' }) {
       strip.replaceChildren(...(epics.length ? epics.map(stone) : [el('p', 'epic-empty', t('epics.none', 'No Epics yet.'))]));
     }
     if (!epic) { below.replaceChildren(...(epics.length ? [el('p', 'epic-empty', t('epics.pick_epic', 'Pick an Epic to see its work items.'))] : [])); return; }
-    if (!view) { source = el('div', 'epic-source'); view = epicItems(selected, { epicsRead }); below.replaceChildren(source, view.el); }
-    source.replaceChildren(el('span', '', epic.external?.jira?.key ? `Jira ${epic.external.jira.key}` : t('epics.ronin_only', 'Ronin only')), holderButton(epic));
+    if (!view) { source = el('div', 'epic-source'); sourceSaid = ''; view = epicItems(selected, { epicsRead }); below.replaceChildren(source, view.el); }
+    const said = JSON.stringify([selected, epic.external?.jira?.key, epic.holder]);
+    if (said !== sourceSaid) {
+      sourceSaid = said;
+      source.replaceChildren(el('span', '', epic.external?.jira?.key ? `Jira ${epic.external.jira.key}` : t('epics.ronin_only', 'Ronin only')), holderButton(epic));
+    }
     view.paint();
   }
   let stop = null;
