@@ -29,14 +29,15 @@ contained in their Team lines close automatically, including immediately after a
 ACCEPTED hand-in; global-dev promotion and a separate worktree close are not required.
 Dirty files, pending/rejected hand-ins, unique commits, shared custody, or another
 session in the worktree keep every worktree and this Agent alive and print exact NEXT
-actions. Work items you hold In Progress or In Review keep you alive too, each named, the
-same check archive and the UI's Delete make:
-  In Review    stay until it is Done: your lead or the owner closes it.
-  In Progress  hand it over: item handover <ids> team:<your team> "<where it stands; what is next>".
-  To Do        goes back to your Team by itself.
---ignore-items goes anyway: each item still goes to the Team, flagged "Ended without
-handover: <you>, <status>", and the lead is told once. Nothing goes to nobody; the worktree
-check still applies. Related: worktree-desk --help, item --help.
+actions. Work items you hold In Progress or In Review, not flagged, stop you once too, each
+named, the same check archive and the UI's Delete make. It is a nudge, never a wall:
+  1. Finish the item if you can (In Review is finished when your lead or the owner makes it Done).
+  2. If you can't, flag it: item flag <id> "<where it stands; what is missing>".
+  3. Clean your desks: commit and hand in.
+  4. Then session_end. An item you flagged needs nothing more; --ignore-items goes past the rest.
+Each item still goes to the Team, flagged "Ended without handover: <you>, <status>", and the
+lead is told once. To Do goes back to your Team by itself. Nothing goes to nobody; the
+worktree check still applies. Related: worktree-desk --help, item --help.
 EOF
 }
 

@@ -435,9 +435,11 @@ test('session_end\'s refusal: To Do settled first, each item named with status a
   assert.ok(harakiri.indexOf('await settleToDo(name)') < harakiri.indexOf('await heldItemsRefusal(name'));
   const check = route.slice(route.indexOf('async function heldItemsRefusal'), route.indexOf('/** A refusal\'s answer'));
   assert.match(check, /await unfinishedHolds\(name\)/, 'pm_lead\'s item check, reused');
-  assert.match(check, /\$\{who\} \$\{item\.id\} \(\$\{item\.status\}\) \$\{item\.title\}/);
-  assert.match(check, /stay until .* Done: your lead or the owner closes it/, 'In Review stays until Done (w453)');
-  assert.match(check, /item handover \$\{items\.map\(\(item\) => item\.id\)\.join\(' '\)\}/);
+  assert.match(check, /\$\{who\} \$\{item\.id\} \(\$\{item\.status\}\) \$\{item\.title\}, not flagged by /);
+  // A nudge, never a wall (KAN-415): finish, else flag, clean the desks, then go; the Agent's own flag passes.
+  const order = ['1. Finish', '2. If you can\'t, flag it: item flag', '3. Clean your desks: commit and hand in.', '4. Then go'].map((step) => check.indexOf(step));
+  assert.ok(order.every((at, n) => at > 0 && (n === 0 || at > order[n - 1]!)), 'the four steps, in order');
+  assert.match(check, /\.filter\(\(item\) => !flaggedBy\(item, name\)\)/, 'an item the Agent flagged itself needs no --ignore-items');
   assert.doesNotMatch(harakiri, /handoff .* none/, 'no way out that drops the item');
   // The same check on every way out, each with its acknowledgement (w453).
   assert.equal(route.match(/ignoringItems\(req\) \? null : await heldItemsRefusal\(name/g)?.length, 4, 'session_end, archive, DELETE, shutdown/Hard Delete');

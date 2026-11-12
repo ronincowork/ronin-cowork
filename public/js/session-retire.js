@@ -97,13 +97,13 @@ export function retireSession(name, retirementId, onDone = () => {}) {
      words and puts its label back if the action fails, the same shape js/koshi.js uses for
      its restart ('restarting…'). CSS carries the rest of the answer; see
      `.end-session-actions` in style.css. */
-  /* THE ITEM CHECK (src/routes/sessions-api.ts heldItemsRefusal): every way out is refused
-     while the Agent holds work In Progress or In Review. The refusal names the items, and the
-     kit's confirm asks to go anyway; yes sends the same action again with ignore_items, and
+  /* THE ITEM CHECK (src/routes/sessions-api.ts heldItemsRefusal), a nudge, never a wall: every
+     way out is refused once while the Agent holds work In Progress or In Review it has not
+     flagged. The refusal names the items, and the kit's confirm says the nudge in one line; yes sends the same action again with ignore_items, and
      the pressed button says it is working again. Each item still goes to the Team, flagged. */
   const closeAnyway = (held) => confirmDialog({
     label: t('retire.items_label', 'Work still held'),
-    message: t('retire.items_confirm', '{name} holds {items}: close anyway? Each goes to the Team flagged "Ended without handover", and its lead is told.', {
+    message: t('retire.items_confirm', '{name} holds {items}, not flagged: finish or flag it and hand in its desks first, or close anyway; it goes to the Team flagged, its lead told.', {
       name, items: held.map((item) => `${item.id} (${item.status})`).join(', '),
     }),
     confirmLabel: t('retire.items_anyway', 'Close anyway'),

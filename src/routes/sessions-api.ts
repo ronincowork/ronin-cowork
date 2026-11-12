@@ -41,7 +41,7 @@ import { readAgentComposition } from '../agent-composition.js';
 import { configurationSends, updateConfiguration } from '../agent-configuration.js';
 import { mandate } from '../agent-defaults.js';
 import { emitSessionEnd } from '../sockets.js';
-import { releaseHolder, settleToDo, unfinishedHolds } from '../work-items.js';
+import { releaseHolder, settleToDo, unfinishedHolds, type WorkItem } from '../work-items.js';
 import { resumeAgentArgv } from '../agents.js';
 import { listTeamRosters } from '../team-rosters.js';
 import { assertSameCampaignRoot, assertSameCampaignTeams } from '../campaign-scope.js';
@@ -94,34 +94,39 @@ async function openDeskRefusal(name: string): Promise<string> {
 }
 
 /** THE ITEM CHECK, the same on every way out (docs/using-ronin/project-management.md, How an
- * item lives): session_end, archive, Delete, Hard Delete. An Agent holding work In Progress or In
- * Review is refused, each item named, as the worktree check names its desks. In Review stays
- * until it is Done; In Progress is handed over. `ignore_items: true` (session_end
- * --ignore-items, session_archive --ignore-items, the UI's "close anyway?") goes anyway, and
+ * item lives): session_end, archive, Delete, Hard Delete. It is a nudge, never a wall (owner,
+ * 2026-11-12, KAN-415): an Agent holding work In Progress or In Review is refused once, each item
+ * named, with NEXT in order: finish it if you can; if not, flag it; clean your desks; then go.
+ * An item the Agent has flagged itself needs nothing more: the flag is the acknowledgement.
+ * `ignore_items: true` (--ignore-items, the UI's "close anyway?") goes past the rest. Either way
  * releaseHolds gives each to the Team flagged "Ended without handover", its lead told once.
  * To Do is not named: it goes back to the Team by itself (settleToDo, or releaseHolder). */
 class ItemsRefused extends ShutdownRefused {
   constructor(blockers: ShutdownRefused['blockers'], readonly items: Array<{ id: string; status: string; title: string }>) { super(blockers); }
 }
 
+/** Flagged, and the flag that stands is the Agent's own. */
+const flaggedBy = (item: WorkItem, name: string): boolean =>
+  item.flagged && [...item.trail].reverse().find((line) => line.op === 'flag')?.by === name;
+
 async function heldItemsRefusal(name: string, anyway: string, self = false): Promise<ItemsRefused | null> {
-  const held = (await unfinishedHolds(name)).filter((item) => item.status === 'In Progress' || item.status === 'In Review' || !item.team);
+  const held = (await unfinishedHolds(name))
+    .filter((item) => item.status === 'In Progress' || item.status === 'In Review' || !item.team)
+    .filter((item) => !flaggedBy(item, name));
   if (!held.length) return null;
   const who = self ? 'you hold' : `${name} holds`;
-  const blockers: ShutdownRefused['blockers'] = [];
-  const review = held.filter((item) => item.status === 'In Review');
-  if (review.length) blockers.push({
+  const ids = held.map((item) => item.id);
+  const first = ids.length === 1 ? ids[0] : '<id>';
+  const blockers: ShutdownRefused['blockers'] = [{
     desk: 'work items',
-    reasons: review.map((item) => `${who} ${item.id} (${item.status}) ${item.title}`),
-    next_action: `stay until ${review.length === 1 ? 'it is' : 'each is'} Done: your lead or the owner closes it. To go anyway: ${anyway}; ${review.length === 1 ? 'it goes' : 'each goes'} to the Team flagged, its lead told.`,
-  });
-  const byTeam = new Map<string, typeof held>();
-  for (const item of held.filter((one) => one.status !== 'In Review')) byTeam.set(item.team ?? '', [...(byTeam.get(item.team ?? '') ?? []), item]);
-  for (const [team, items] of byTeam) blockers.push({
-    desk: 'work items',
-    reasons: items.map((item) => `${who} ${item.id} (${item.status}) ${item.title}`),
-    next_action: `hand each over with where it stands and what is next: item handover ${items.map((item) => item.id).join(' ')} ${team ? `team:${team}` : '<agent>|team:<name>'} "<where it stands; what is next>". Can't decide? --flag "<the question>", and your lead decides. To go anyway: ${anyway}.`,
-  });
+    reasons: held.map((item) => `${who} ${item.id} (${item.status}) ${item.title}, not flagged by ${self ? 'you' : name}`),
+    next_action: [
+      `1. Finish ${ids.length === 1 ? 'it' : 'each'} if you can (In Review is finished when your lead or the owner makes it Done).`,
+      `2. If you can't, flag it: item flag ${first} "<where it stands; what is missing>".`,
+      '3. Clean your desks: commit and hand in.',
+      `4. Then go: a flagged item needs nothing more; for one left unflagged, ${anyway}. Each goes to the Team flagged, its lead told.`,
+    ].join(' '),
+  }];
   return new ItemsRefused(blockers, held.map(({ id, status, title }) => ({ id, status, title })));
 }
 
