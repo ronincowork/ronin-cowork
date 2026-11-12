@@ -185,14 +185,28 @@ export function renderItemDetail(host, item, { holder = '', openAttachment = nul
 
   // Status: any status to any status, as Jira's transition; the push that follows redraws the
   // rest of the page, and the line under the question says what happened until then.
+  // FLAGGED BESIDE IT (owner, 2026-11-12, KAN-428): Jira's flag is a field, not a status, so it is
+  // a switch next to the Status box, setting and clearing the flag (Add flag / Remove flag).
   let status = item.status;
+  let flagged = Boolean(item.flagged);
   const answer = el('p', 'fs-step-help wi-answer');
   answer.setAttribute('role', 'status');
   let statusStep = null;
+  const flaggedWords = [t('work_items.flag_on', 'Yes'), t('work_items.flag_off', 'No')];
   const question = ask([{ fields: [{ key: 'status', label: t('work_items.status', 'Status'),
-    options: statusChoices(item).map((v) => ({ v, l: v })) }] }], {
-    value: { status }, density: 'tight',
-    onChange: async ({ status: next }) => {
+    options: statusChoices(item).map((v) => ({ v, l: v })) },
+  { key: 'flagged', label: t('work_items.flagged_label', 'Flagged'), switch: flaggedWords }] }], {
+    value: { status, flagged }, density: 'tight',
+    onChange: async ({ status: next, flagged: flag }) => {
+      if (Boolean(flag) !== flagged) {
+        const want = Boolean(flag);
+        answer.dataset.state = '';
+        answer.textContent = t('work_items.saving', 'Saving…');
+        const result = await request(`/api/work-items/${encodeURIComponent(item.id)}/${want ? 'flag' : 'unflag'}`, { method: 'POST', json: {} });
+        if (result.ok) { flagged = want; item.flagged = want; sayKey(status); statusStep?.paint(); answer.textContent = want ? t('work_items.now_flagged', 'Flagged') : t('work_items.now_unflagged', 'Flag removed'); }
+        else { question.set('flagged', flagged); answer.dataset.state = 'failed'; answer.textContent = result.message || t('work_items.flag_failed', 'The flag did not change.'); }
+        return;
+      }
       if (!next || next === status) return;
       const was = status;
       answer.dataset.state = '';
@@ -202,7 +216,7 @@ export function renderItemDetail(host, item, { holder = '', openAttachment = nul
       else { question.set('status', was); answer.dataset.state = 'failed'; answer.textContent = result.message || t('work_items.move_failed', 'The status did not change.'); }
     },
   });
-  statusStep = step('status', t('work_items.status', 'Status'), () => status, question.el, answer);
+  statusStep = step('status', t('work_items.status', 'Status'), () => [status, flagged ? t('work_items.flagged_label', 'Flagged') : ''].filter(Boolean).join(' · '), question.el, answer);
 
   const facts = el('dl', 'wi-facts');
   for (const [label, value] of [
