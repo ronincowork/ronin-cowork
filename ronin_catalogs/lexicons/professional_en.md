@@ -1186,6 +1186,10 @@ The catalog entry goes. {dir} is not touched.
 - **retire.archiving:** archiving…
 - **retire.hard_delete_failed:** could not hard delete it
 - **retire.hard_deleting:** starting Hard Delete…
+- **retire.items_label:** Work still held
+- **retire.items_confirm:** {name} holds {items}: close anyway? Each goes to the Team flagged "Ended without handover", and its lead is told.
+- **retire.items_anyway:** Close anyway
+- **retire.items_keep:** Keep it open
 
 ## customize — the shadow-trade notice
 - **customize.shadow_trade:** Changing one of Ronin’s own entries makes it yours: it moves to your catalogs store, 

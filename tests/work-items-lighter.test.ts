@@ -432,10 +432,15 @@ test('under project management a move to In Review without a note is refused, NE
 test('session_end\'s refusal: To Do settled first, each item named with status and title, NEXT the handover, never a drop', async () => {
   const route = await fs.readFile(new URL('../src/routes/sessions-api.ts', import.meta.url), 'utf8');
   const harakiri = route.slice(route.indexOf("app.post('/api/harakiri'"), route.indexOf("app.get('/api/sessions/:name/project-root'"));
-  assert.ok(harakiri.indexOf('await settleToDo(name)') < harakiri.indexOf('await unfinishedHolds(name)'));
-  assert.match(harakiri, /you hold \$\{item\.id\} \(\$\{item\.status\}\) \$\{item\.title\}/);
-  assert.match(harakiri, /item handover \$\{items\.map\(\(item\) => item\.id\)\.join\(' '\)\}/);
+  assert.ok(harakiri.indexOf('await settleToDo(name)') < harakiri.indexOf('await heldItemsRefusal(name'));
+  const check = route.slice(route.indexOf('async function heldItemsRefusal'), route.indexOf('/** A refusal\'s answer'));
+  assert.match(check, /await unfinishedHolds\(name\)/, 'pm_lead\'s item check, reused');
+  assert.match(check, /\$\{who\} \$\{item\.id\} \(\$\{item\.status\}\) \$\{item\.title\}/);
+  assert.match(check, /stay until .* Done: your lead or the owner closes it/, 'In Review stays until Done (w453)');
+  assert.match(check, /item handover \$\{items\.map\(\(item\) => item\.id\)\.join\(' '\)\}/);
   assert.doesNotMatch(harakiri, /handoff .* none/, 'no way out that drops the item');
+  // The same check on every way out, each with its acknowledgement (w453).
+  assert.equal(route.match(/ignoringItems\(req\) \? null : await heldItemsRefusal\(name/g)?.length, 4, 'session_end, archive, DELETE, shutdown/Hard Delete');
 });
 
 /* NOTICE 6 (w300): a move to Done tells the Agent that handed the item in, once. */

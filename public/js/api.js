@@ -25,8 +25,10 @@ export async function setSessionTitle(name, title) {
   return r.data.title;
 }
 
-/** A 404 on a named session means it had already ended by itself. */
-const failure = (r) => Object.assign(new Error(r.message), r.status === 404 ? { gone: true } : {});
+/** A 404 on a named session means it had already ended by itself; a 409 with items_held is
+ * the item check (src/routes/sessions-api.ts heldItemsRefusal): the caller may ask to go anyway. */
+const failure = (r) => Object.assign(new Error(r.message), r.status === 404 ? { gone: true } : {},
+  Array.isArray(r.data?.items_held) && r.data.items_held.length ? { itemsHeld: r.data.items_held } : {});
 
 /** Start the observable safe Agent+desk shutdown transaction. */
 export async function startSessionShutdown(name, body) {
@@ -36,8 +38,8 @@ export async function startSessionShutdown(name, body) {
 }
 
 /** Retire a live session without keeping its tmux process resident. */
-export async function archiveSession(name) {
-  const r = await request('/api/sessions/' + encodeURIComponent(name) + '/archive', { method: 'POST' });
+export async function archiveSession(name, { ignoreItems = false } = {}) {
+  const r = await request('/api/sessions/' + encodeURIComponent(name) + '/archive', { method: 'POST', ...(ignoreItems ? { json: { ignore_items: true } } : {}) });
   if (!r.ok) throw failure(r);
   return r.data.archived;
 }
