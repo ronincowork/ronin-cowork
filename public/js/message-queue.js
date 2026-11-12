@@ -2,6 +2,7 @@
 import { t } from './lexicon.js';
 import { toast } from './ui.js';
 import { subscribe } from './store.js';
+import { createKeyedList } from './workspace-primitives.js';
 
 const el = (tag, cls, text) => {
   const node = document.createElement(tag);
@@ -46,34 +47,38 @@ export function buildMessageQueue(host, onCount = () => {}) {
 
   // The queue is the store's `messages`: held from connect, pushed on every post and
   // dismissal, so a dismissal is answered by the push that no longer carries it.
+  // ONE MESSAGE GOES, ONE CARD GOES (owner, 2026-11-12, KAN-414): the kit's keyed list. Each
+  // card is a kept row by the message's id; a dismissal's push lets go only its card.
+  const card = (message) => {
+    const card = el('article', 'mq-card mq-stuck');
+    const head = el('div', 'mq-head');
+    head.append(el('strong', '', typeOf(message.source)), el('span', 'mq-state', t('messages.state_age', '{state} · {age}', {
+      state: t('messages.waiting', 'Waiting'), age: arrivedAt(message.created_at),
+    })));
+    const route = el('dl', 'mq-route');
+    route.append(
+      el('dt', '', t('messages.from', 'From')), el('dd', '', message.from || typeOf(message.source)),
+      el('dt', '', t('messages.to_label', 'To')), el('dd', '', message.target),
+    );
+    const button = el('button', 'cc-btn', t('messages.dismiss', 'Dismiss'));
+    button.type = 'button';
+    button.addEventListener('click', async () => {
+      try { await dismiss([message.id]); }
+      catch (error) { toast(t('messages.action_failed', 'Message action failed — {reason}', { reason: error.message }), false); }
+    });
+    const actions = el('div', 'mq-actions'); actions.append(button);
+    card.append(head, route, el('pre', 'mq-text', message.text), actions);
+    return card;
+  };
+  const cards = createKeyedList({ key: (row) => row.key, shows: (row) => row.shows, draw: (row) => row.draw() });
   const render = (list) => {
     messages = list;
-    board.replaceChildren();
     tools.hidden = !messages.length;
     onCount(messages.length);
-    if (!messages.length) { board.append(empty); return; }
-    dismissAll.textContent = t('messages.dismiss_all_count', 'Dismiss All ({count})', { count: messages.length });
-    for (const message of messages) {
-      const card = el('article', 'mq-card mq-stuck');
-      const head = el('div', 'mq-head');
-      head.append(el('strong', '', typeOf(message.source)), el('span', 'mq-state', t('messages.state_age', '{state} · {age}', {
-        state: t('messages.waiting', 'Waiting'), age: arrivedAt(message.created_at),
-      })));
-      const route = el('dl', 'mq-route');
-      route.append(
-        el('dt', '', t('messages.from', 'From')), el('dd', '', message.from || typeOf(message.source)),
-        el('dt', '', t('messages.to_label', 'To')), el('dd', '', message.target),
-      );
-      const button = el('button', 'cc-btn', t('messages.dismiss', 'Dismiss'));
-      button.type = 'button';
-      button.addEventListener('click', async () => {
-        try { await dismiss([message.id]); }
-        catch (error) { toast(t('messages.action_failed', 'Message action failed — {reason}', { reason: error.message }), false); }
-      });
-      const actions = el('div', 'mq-actions'); actions.append(button);
-      card.append(head, route, el('pre', 'mq-text', message.text), actions);
-      board.append(card);
-    }
+    if (messages.length) dismissAll.textContent = t('messages.dismiss_all_count', 'Dismiss All ({count})', { count: messages.length });
+    cards.set(board, messages.length ? messages.map((message) => ({ key: message.id,
+      shows: JSON.stringify([message.source, message.created_at, message.from, message.target, message.text]), draw: () => card(message) }))
+      : [{ key: '!empty', shows: '', draw: () => empty }]);
   };
 
   dismissAll.addEventListener('click', async () => {

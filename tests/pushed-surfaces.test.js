@@ -9,12 +9,18 @@ const make = (tag = 'div') => {
   const node = {
     tagName: tag, children: [], options: [], dataset: {}, style: {}, textContent: '', className: '', hidden: false, value: '',
     classList: { add() {}, remove() {}, toggle() {}, contains: () => false },
-    append(...kids) { for (const kid of kids) if (kid && typeof kid === 'object') this.children.push(kid); else if (kid != null) this.children.push({ textContent: String(kid), children: [] }); },
+    append(...kids) { for (const kid of kids) if (kid && typeof kid === 'object') { kid.parentNode?.children.splice(kid.parentNode.children.indexOf(kid), 1); kid.parentNode = proxy; this.children.push(kid); } else if (kid != null) this.children.push({ textContent: String(kid), children: [] }); },
     appendChild(kid) { this.append(kid); return kid; },
-    replaceChildren(...kids) { this.children = []; this.append(...kids); },
+    replaceChildren(...kids) { for (const kid of this.children) kid.parentNode = null; this.children = []; this.append(...kids); },
+    // The kit's keyed list lays rows with these (workspace-primitives.js layNodes).
+    get childNodes() { return this.children; },
+    insertBefore(kid, ref) { kid.parentNode?.children.splice(kid.parentNode.children.indexOf(kid), 1); const at = ref ? this.children.indexOf(ref) : -1; this.children.splice(at < 0 ? this.children.length : at, 0, kid); kid.parentNode = proxy; return kid; },
+    remove() { if (this.parentNode) this.parentNode.children.splice(this.parentNode.children.indexOf(proxy), 1); this.parentNode = null; },
+    replaceWith(other) { const parent = this.parentNode; if (!parent) return; const at = parent.children.indexOf(proxy); this.remove(); parent.children.splice(at, 0, other); other.parentNode = parent; },
     get childElementCount() { return this.children.length; },
   };
-  return new Proxy(node, { get: (target, key) => (key in target ? target[key] : typeof key === 'string' ? () => make() : undefined) });
+  const proxy = new Proxy(node, { get: (target, key) => (key in target ? target[key] : key === 'parentNode' ? null : typeof key === 'string' ? () => make() : undefined) });
+  return proxy;
 };
 const text = (node) => [node.textContent || '', ...(node.children || []).map(text)].join(' ');
 

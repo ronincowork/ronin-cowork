@@ -25,6 +25,7 @@ import { S } from './state.js';
 import { t } from './lexicon.js';
 import { WorkspaceKit } from './workspace-kit.js';
 import { createFeedbackSurface } from './feedback.js';
+import { createKeyedList } from './workspace-primitives.js';
 
 const el = (tag, cls, text) => {
   const out = document.createElement(tag);
@@ -69,7 +70,18 @@ export async function buildPhone() {
   const main = root.querySelector('.ph-main');
   const connectionStatus = el('span', 'connection-state');
   connectionStatus.hidden = true;
-  const paintBar = (...nodes) => bar.replaceChildren(...nodes, connectionStatus);
+  // ONE THING MOVES, ONE THING REPAINTS (owner, 2026-11-12, KAN-414): the kit's keyed list
+  // lays the bar, the Teams list and a Team's Agents. A bar piece is a node kept by identity,
+  // or a row of words drawn again only when its words move; a card is a kept row by its
+  // Team or Agent name, so a push repaints only the card that moved and never detaches the
+  // one under a finger mid-tap.
+  const kept = () => createKeyedList({ key: (row) => row.key, shows: (row) => row.shows, draw: (row) => row.draw() });
+  const barCells = kept();
+  const nodeIds = new WeakMap();
+  let nextNodeId = 0;
+  const asCell = (one) => (one instanceof Node ? { key: `#${nodeIds.get(one) ?? (nodeIds.set(one, ++nextNodeId), nextNodeId)}`, shows: '', draw: () => one } : one);
+  const words = (key, shows, draw) => ({ key, shows, draw });
+  const paintBar = (...nodes) => barCells.set(bar, [...nodes, connectionStatus].map(asCell));
   // The mark is in the document's own markup; tapping it is the way to the Teams list.
   const brand = bar.querySelector('.brand');
   const feedbackAction = el('button', '', t('feedback.button', 'Feedback'));
@@ -83,11 +95,11 @@ export async function buildPhone() {
     back.title = t('phone.back', 'Back');
     return back;
   };
-  const teamsBar = () => paintBar(brand, el('span', 'ph-title', t('phone.coworks', 'Teams')));
-  const teamBar = (team) => paintBar(
-    backLink('#/'),
-    el('span', 'ph-title', teamLabel({ ...teamByName(team), name: team })),
-  );
+  const teamsBar = () => paintBar(brand, words('title', t('phone.coworks', 'Teams'), () => el('span', 'ph-title', t('phone.coworks', 'Teams'))));
+  const teamBar = (team) => {
+    const label = teamLabel({ ...teamByName(team), name: team });
+    paintBar(words('back:#/', '', () => backLink('#/')), words('title', label, () => el('span', 'ph-title', label)));
+  };
   // The document painted a bar for this address before any script ran (mobile.html);
   // the script's first act is to paint the same bar with its live pieces, so a stalled
   // server never shows a bare strip and nothing changes shape when the readings land.
@@ -114,20 +126,23 @@ export async function buildPhone() {
   const transcriptCache = new Map(); // session + reading → records/cursor retained while Tiles come and go
 
   /* ---------- screen 1 · the Teams ---------- */
+  const teamsList = el('div', 'ph-list');
+  const teamCards = kept();
   const paintTeams = () => {
     teamsBar();
-    const list = el('div', 'ph-list');
     const teams = teamsFromState().filter((team) => listedTeam(team) && (!team.holding || unassignedSessions().length));
-    for (const team of teams) {
-      const card = el('a', 'ph-card');
-      card.href = teamHash(team.name);
-      const line = el('div', 'ph-card-line');
-      line.append(el('span', 'ph-card-name', teamLabel(team)));
-      card.append(line);
-      list.append(card);
-    }
-    if (!teams.length) list.append(el('div', 'ph-empty', t('phone.no_coworks', 'No Teams yet.')));
-    main.replaceChildren(list);
+    teamCards.set(teamsList, teams.length ? teams.map((team) => {
+      const label = teamLabel(team);
+      return { key: team.name, shows: label, draw: () => {
+        const card = el('a', 'ph-card');
+        card.href = teamHash(team.name);
+        const line = el('div', 'ph-card-line');
+        line.append(el('span', 'ph-card-name', label));
+        card.append(line);
+        return card;
+      } };
+    }) : [{ key: '!none', shows: '', draw: () => el('div', 'ph-empty', t('phone.no_coworks', 'No Teams yet.')) }]);
+    if (main.firstChild !== teamsList || main.childNodes.length !== 1) main.replaceChildren(teamsList);
   };
 
   /* ---------- screen 2 · one Team: Agents | Docs ---------- */
