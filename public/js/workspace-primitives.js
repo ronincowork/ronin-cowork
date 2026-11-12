@@ -122,6 +122,8 @@ function createAction(options = {}) {
   if (options.title) el.title = options.title;
   if (options.kind) el.dataset.kind = options.kind;
   if (options.size) el.dataset.size = options.size;
+  // A Send, Save or Cancel: its press ends an edit, and the kit's held row lands (editHold).
+  if (options.endsEdit) el.dataset.endsEdit = '';
   if (options.selected != null) el.setAttribute('aria-pressed', String(!!options.selected));
   el.disabled = !!options.disabled;
   if (options.action) el.addEventListener('click', options.action);
@@ -426,7 +428,57 @@ function createLayoutMap(arrangement) {
  * what it shows) and `draw(row)` (its node), redrawn only when `shows` moves.
  * `place(parent, rows)` lays rows into parent in order; `sweep()` lets go every row not placed
  * since the last sweep; `set(parent, rows)` is both, for a list in one parent.
+ * NEVER UNDER AN EDIT (owner's rule, w451, KAN-414): a row whose nodes the person has typed or
+ * changed something in (a trusted `input` or `change`) is held: a push only keeps its newest
+ * row. It still moves with its order and group, and goes when its key does. The hold lets go,
+ * and the newest row lands at once, when the edit is sent or abandoned:
+ * - `submit` or `reset` in it;
+ * - a press on a button marked `data-ends-edit` in it: every Send, Save or Cancel that is not a
+ *   form submit carries that mark (the one way a button says the edit is over);
+ * - a `<details>` in it folds;
+ * - focus leaves it with every control the person touched back to what it was.
+ * `editHold()` is the same hold for a surface's one open detail (phalanx.js).
  */
+const valueOf = (control) => (control.type === 'checkbox' || control.type === 'radio' ? String(control.checked)
+  : control.isContentEditable ? control.textContent : String(control.value ?? ''));
+export function editHold() {
+  let dirty = false;
+  let cleared = null;
+  const watched = new Set();
+  const was = new Map(); // a control the person entered → its value before they touched it
+  const inside = (node) => [...watched].some((one) => one === node || one.contains?.(node));
+  const mark = (event) => { if (event?.isTrusted !== false) dirty = true; };
+  // After the surface's own handler, so what it sends reads the edit first.
+  const clear = () => setTimeout(() => { if (!dirty) return; dirty = false; was.clear(); cleared?.(); }, 0);
+  const entered = (event) => { const one = event.target; if (one && 'value' in one && !was.has(one)) was.set(one, valueOf(one)); };
+  const left = () => setTimeout(() => {
+    if (!dirty || inside(document.activeElement)) return;
+    if ([...was].every(([one, before]) => valueOf(one) === before)) clear();
+  }, 0);
+  const pressed = (event) => { if (event?.isTrusted !== false && event.target?.closest?.('[data-ends-edit]')) clear(); };
+  const folded = (event) => { if (event.target?.tagName === 'DETAILS' && !event.target.open) clear(); };
+  return {
+    watch(nodes) {
+      for (const one of nodes) {
+        if (!one?.addEventListener || watched.has(one)) continue;
+        watched.add(one);
+        one.addEventListener('input', mark);
+        one.addEventListener('change', mark);
+        one.addEventListener('submit', clear);
+        one.addEventListener('reset', clear);
+        one.addEventListener('click', pressed);
+        one.addEventListener('toggle', folded, true);
+        one.addEventListener('focusin', entered);
+        one.addEventListener('focusout', left);
+      }
+      for (const one of [...watched]) if (!nodes.includes(one) && !one.isConnected) watched.delete(one);
+    },
+    held: () => dirty,
+    release: () => { dirty = false; was.clear(); },
+    onClear: (callback) => { cleared = callback; },
+  };
+}
+
 export function layNodes(parent, nodes) {
   const wanted = new Set(nodes);
   for (const child of [...parent.childNodes]) if (!wanted.has(child)) child.remove();
@@ -448,7 +500,13 @@ export function createKeyedList({ key = (row) => row.id, create, shows, draw } =
     update(row);
     return { nodes: () => [el], update };
   };
-  const make = create || drawn;
+  const make = (row) => {
+    const one = (create || drawn)(row);
+    const hold = editHold();
+    let waiting = null;
+    hold.onClear(() => { if (!waiting) return; const next = waiting; waiting = null; one.update(next); hold.watch(one.nodes()); });
+    return { ...one, update: (next) => { if (hold.held()) waiting = next; else one.update(next); hold.watch(one.nodes()); }, watch: () => hold.watch(one.nodes()) };
+  };
   const rows = new Map();
   const placed = new Set();
   const place = (parent, list = []) => {
@@ -457,7 +515,7 @@ export function createKeyedList({ key = (row) => row.id, create, shows, draw } =
       const id = key(row);
       placed.add(id);
       const one = rows.get(id);
-      if (one) one.update(row); else rows.set(id, make(row));
+      if (one) one.update(row); else { rows.set(id, make(row)); rows.get(id).watch(); }
       nodes.push(...rows.get(id).nodes());
     }
     layNodes(parent, nodes);
@@ -495,4 +553,5 @@ export const WorkspacePrimitives = Object.freeze({
   ninMark,
   createKeyedList,
   layNodes,
+  editHold,
 });

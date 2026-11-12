@@ -332,6 +332,7 @@ export function createProviderDrawing(context, { repaint, say = () => {} }) {
         await press(path);
         button.disabled = false;
       });
+      button.dataset.endsEdit = '';
       button.classList.add('setup-provider-action');
       return button;
     };
@@ -367,6 +368,7 @@ export function createProviderDrawing(context, { repaint, say = () => {} }) {
         context.environment?.onProviderChoice?.(method === 'not_signed_in' ? 'not_now' : 'acted');
       };
       const submit = action(t('setup_surface.done', 'Done'), 'primary', () => saveAuthentication(path));
+      submit.dataset.endsEdit = '';
       const update = () => { authenticationDrafts.set(provider.id, { method, label: title.value }); field.hidden = method === 'not_signed_in'; submit.disabled = !method || (method !== 'not_signed_in' && !title.value.trim()); };
       const fields = el('div', 'setup-provider-authentication-fields');
       signInForm = ask([{ fields: [{ key: 'method', label: t('setup_surface.authentication_type', 'Authentication type'), options: [

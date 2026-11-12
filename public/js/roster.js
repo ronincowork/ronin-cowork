@@ -19,6 +19,7 @@ import { clampTip, humanAge } from './work-record.js';
 import { t } from './lexicon.js';
 import { deskLabel, deskReadout, deskTip, desksOf, refreshDesks } from './desks.js';
 import { partitionRosterGroups, rosterGroups, teamTag } from './roster-groups.js';
+import { createKeyedList } from './workspace-primitives.js';
 
 /**
  * @param {object} tile  rows connect into this tile
@@ -208,14 +209,108 @@ export function buildRoster(tile, host, options = {}) {
     return r;
   };
 
+  // ONE SESSION MOVES, ONE ROW REPAINTS (owner, 2026-11-12, KAN-414): the kit's keyed list
+  // (WorkspacePrimitives.createKeyedList). Every group block, its heading and every row (a
+  // session under each group it is in) is a kept cell; each compares what it shows and
+  // repaints only itself, a row moves only when its group or order changes, and a push that
+  // moved nothing touches nothing. A block's drop target reads the current rows at drop time.
+  const cells = createKeyedList({ key: (cell) => cell.key, shows: (cell) => cell.shows, draw: (cell) => cell.draw() });
+  let data = [];
+  /** What a row shows, in the words rowFor draws it with. */
+  const rowShows = (s) => {
+    const quiet = s.tegami?.quietSince ? Date.now() - s.tegami.quietSince : 0;
+    const dk = desksOf(s.name);
+    return JSON.stringify([s.name, s.leads, s.tegami?.chip && s.tegami.items?.length ? [s.tegami.chip.text, s.tegami.chip.gate, s.tegami.objective, quiet >= 60000 ? humanAge(quiet) : ''] : null,
+      s.stance, s.ctx, dk?.desks?.length ? [deskLabel(dk), deskReadout(dk), deskTip(dk), dk.rollup] : null, s.model]);
+  };
+  const rowCell = (s, where) => ({ key: `row:${where}:${s.name}`, shows: rowShows(s), draw: () => rowFor(s) });
+  const groupLabelOf = (text) => String(options.groupLabel?.(text) ?? '').trim() || text;
+  const headCell = (text, n, acceptsDrop) => ({ key: `head:${text}`, shows: JSON.stringify([groupLabelOf(text), n, acceptsDrop]), draw: () => {
+    const label = groupLabelOf(text);
+    const h = document.createElement('div');
+    h.className = 'home-grp';
+    h.append(Object.assign(document.createElement('b'), { textContent: label }));
+    const actions = acceptsDrop ? options.groupActions?.(text, n) || [] : [];
+    if (actions.length) {
+      const controls = document.createElement('span');
+      controls.className = 'home-grp-actions tile-head';
+      controls.append(...actions);
+      h.append(controls);
+    } else if (!options.hideGroupCounts) {
+      h.append(Object.assign(document.createElement('span'), { textContent: String(n) }));
+    }
+    if (acceptsDrop) h.title = t('roster.drop_here', 'Drop a session here to add it to {team}', { team: label });
+    return h;
+  } });
+  const blockCell = (text, acceptsDrop) => ({ key: `block:${acceptsDrop ? text : '!loose'}`, shows: '', draw: () => {
+    const container = document.createElement('div');
+    container.className = 'home-group';
+    if (!acceptsDrop) return container;
+    const h = () => container.querySelector('.home-grp');
+    container.addEventListener('dragover', (e) => {
+      if (!e.dataTransfer.types.includes('application/x-ronin-session')) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'copy';
+      h()?.classList.add('drop-ready');
+    });
+    container.addEventListener('dragleave', (e) => {
+      if (!container.contains(e.relatedTarget)) h()?.classList.remove('drop-ready');
+    });
+    container.addEventListener('drop', async (e) => {
+      e.preventDefault();
+      h()?.classList.remove('drop-ready');
+      const name = e.dataTransfer.getData('application/x-ronin-session');
+      const session = data.find((s) => s.name === name);
+      if (!session || (session.tags || []).includes(text)) return;
+      const wasPending = pendingGroups.has(text);
+      const optimistic = [...new Set([...(session.tags || []), text])].sort();
+      session.tags = optimistic;
+      const base = S.sessions.find((s) => s.name === name);
+      if (base) base.tags = optimistic;
+      pendingGroups.delete(text);
+      groupMessage.textContent = '';
+      tiles.forEach((t) => t.syncHeader());
+      render();
+
+      const fail = (message) => {
+        session.tags = (session.tags || []).filter((tag) => tag !== text);
+        if (base) base.tags = (base.tags || []).filter((tag) => tag !== text);
+        if (wasPending && !data.some((s) => (s.tags || []).includes(text))) pendingGroups.add(text);
+        groupMessage.textContent = t('roster.not_saved', 'not saved — {message}', { message });
+        tiles.forEach((t) => t.syncHeader());
+        render();
+      };
+      const current = await request('/api/sessions/' + encodeURIComponent(name) + '/teams');
+      if (!current.ok) {
+        fail(current.message);
+        return;
+      }
+      const tags = [...new Set([...(current.data.teams || []), text])].sort();
+      const result = await request('/api/sessions/' + encodeURIComponent(name) + '/teams', {
+        method: 'PUT',
+        json: { teams: tags },
+      });
+      if (!result.ok) {
+        fail(result.message);
+        return;
+      }
+      const saved = Array.isArray(result.data.teams) ? result.data.teams : tags;
+      session.tags = saved;
+      if (base) base.tags = saved;
+      tiles.forEach((t) => t.syncHeader());
+      render();
+    });
+    return container;
+  } });
+  const emptyCell = () => ({ key: 'empty', shows: '', draw: () => Object.assign(document.createElement('span'), { className: 'home-empty', textContent: t('roster.no_sessions', 'no sessions yet') }) });
+
   const render = () => {
     // The desk column rides the roster's refresh: a changed answer redraws once; a fresh
     // one (younger than the module's window) resolves false and nothing loops.
     void refreshDesks().then((changed) => { if (changed) render(); }).catch(() => {});
     stale.hidden = !homeFault;
     if (homeFault) stale.textContent = t('roster.stale', '⚠ roster may be stale — {fault}', { fault: homeFault });
-    const data = homeData || S.sessions.map((s) => ({ ...s, stance: 'unknown', ctx: null }));
-    list.innerHTML = '';
+    data = homeData || S.sessions.map((s) => ({ ...s, stance: 'unknown', ctx: null }));
     // Sorted by group, with a heading per group. A session in two groups is listed
     // under BOTH — that's what multi-valued tags mean, and either row opens the same
     // session. Untagged sessions fall to the bottom under "no group". When nothing is
@@ -224,111 +319,27 @@ export function buildRoster(tile, host, options = {}) {
     const liveGroups = new Set(data.flatMap((s) => s.tags || []));
     for (const group of liveGroups) pendingGroups.delete(group);
     const groups = rosterGroups(data, [...pendingGroups, ...(options.groups?.() || [])]);
+    const top = [];
+    const blocks = [];
     if (!groups.length) {
-      for (const s of data) list.appendChild(rowFor(s));
+      top.push(...data.map((s) => rowCell(s, '')));
     } else {
-      const heading = (text, n, container, acceptsDrop = true) => {
-        const named = options.groupLabel?.(text);
-        const label = String(named ?? '').trim() || text;
-        const h = document.createElement('div');
-        h.className = 'home-grp';
-        h.append(Object.assign(document.createElement('b'), { textContent: label }));
-        const actions = acceptsDrop ? options.groupActions?.(text, n) || [] : [];
-        if (actions.length) {
-          const controls = document.createElement('span');
-          // Tile-head controls are the house icon buttons; the roster reuses them whole.
-          controls.className = 'home-grp-actions tile-head';
-          controls.append(...actions);
-          h.append(controls);
-        } else if (!options.hideGroupCounts) {
-          h.append(Object.assign(document.createElement('span'), { textContent: String(n) }));
-        }
-        container.appendChild(h);
-        if (!acceptsDrop) return;
-        h.title = t('roster.drop_here', 'Drop a session here to add it to {team}', { team: label });
-        container.addEventListener('dragover', (e) => {
-          if (!e.dataTransfer.types.includes('application/x-ronin-session')) return;
-          e.preventDefault();
-          e.dataTransfer.dropEffect = 'copy';
-          h.classList.add('drop-ready');
-        });
-        container.addEventListener('dragleave', (e) => {
-          if (!container.contains(e.relatedTarget)) h.classList.remove('drop-ready');
-        });
-        container.addEventListener('drop', async (e) => {
-          e.preventDefault();
-          h.classList.remove('drop-ready');
-          const name = e.dataTransfer.getData('application/x-ronin-session');
-          const session = data.find((s) => s.name === name);
-          if (!session || (session.tags || []).includes(text)) return;
-          const wasPending = pendingGroups.has(text);
-          const optimistic = [...new Set([...(session.tags || []), text])].sort();
-          session.tags = optimistic;
-          const base = S.sessions.find((s) => s.name === name);
-          if (base) base.tags = optimistic;
-          pendingGroups.delete(text);
-          groupMessage.textContent = '';
-          tiles.forEach((t) => t.syncHeader());
-          render();
-
-          const fail = (message) => {
-            session.tags = (session.tags || []).filter((tag) => tag !== text);
-            if (base) base.tags = (base.tags || []).filter((tag) => tag !== text);
-            if (wasPending && !data.some((s) => (s.tags || []).includes(text))) pendingGroups.add(text);
-            groupMessage.textContent = t('roster.not_saved', 'not saved — {message}', { message });
-            tiles.forEach((t) => t.syncHeader());
-            render();
-          };
-          // Read immediately before writing so a drop never erases a group added from
-          // another tile since this roster's last poll.
-          const current = await request('/api/sessions/' + encodeURIComponent(name) + '/teams');
-          if (!current.ok) {
-            fail(current.message);
-            return;
-          }
-          const tags = [...new Set([...(current.data.teams || []), text])].sort();
-          const result = await request('/api/sessions/' + encodeURIComponent(name) + '/teams', {
-            method: 'PUT',
-            json: { teams: tags },
-          });
-          if (!result.ok) {
-            fail(result.message);
-            return;
-          }
-          const saved = Array.isArray(result.data.teams) ? result.data.teams : tags;
-          session.tags = saved;
-          if (base) base.tags = saved;
-          tiles.forEach((t) => t.syncHeader());
-          render();
-        });
+      const appendGroup = (g, mem, acceptsDrop = true) => {
+        const block = blockCell(g, acceptsDrop);
+        top.push(block);
+        blocks.push([block.key, [headCell(g, mem.length, acceptsDrop), ...mem.map((s) => rowCell(s, block.key))]]);
       };
-      const appendGroup = (g) => {
-        const mem = data.filter((s) => (s.tags || []).map(teamTag).includes(teamTag(g)));
-        const block = document.createElement('div');
-        block.className = 'home-group';
-        list.appendChild(block);
-        heading(g, mem.length, block);
-        for (const s of mem) block.appendChild(rowFor(s));
-      };
+      const members = (g) => data.filter((s) => (s.tags || []).map(teamTag).includes(teamTag(g)));
       const ordered = partitionRosterGroups(groups);
-      for (const g of ordered.ordinary) appendGroup(g);
-      // A stale tag without a real Team record is an orphaned membership, not a Team.
-      // Keep that session reachable under no team so the roster never hides it.
+      for (const g of ordered.ordinary) appendGroup(g, members(g));
       const loose = data.filter((s) => !groups.some((g) => (s.tags || []).map(teamTag).includes(teamTag(g))));
-      if (loose.length) {
-        const block = document.createElement('div');
-        block.className = 'home-group';
-        list.appendChild(block);
-        heading(t('roster.no_team', 'no team'), loose.length, block, false);
-        for (const s of loose) block.appendChild(rowFor(s));
-      }
-      // The helper Team follows even the no-team block in DOM order, so visual order,
-      // keyboard traversal and screen-reader reading order agree on what "last" means.
-      if (ordered.helper) appendGroup(ordered.helper);
+      if (loose.length) appendGroup(t('roster.no_team', 'no team'), loose, false);
+      if (ordered.helper) appendGroup(ordered.helper, members(ordered.helper));
     }
-    if (!data.length) {
-      list.appendChild(Object.assign(document.createElement('span'), { className: 'home-empty', textContent: t('roster.no_sessions', 'no sessions yet') }));
-    }
+    if (!data.length) top.push(emptyCell());
+    cells.place(list, top);
+    for (const [key, inside] of blocks) cells.place(cells.get(key).nodes()[0], inside);
+    cells.sweep();
   };
 
   return { render };

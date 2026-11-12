@@ -262,7 +262,7 @@ export function renderItemDetail(host, item, { holder = '', openAttachment = nul
   said.setAttribute('role', 'status');
   const { createAction } = WorkspaceKit.primitives;
   let comments = null;
-  const post = createAction({ label: t('work_items.comment_send', 'Comment'), size: 'compact', action: async () => {
+  const post = createAction({ label: t('work_items.comment_send', 'Comment'), size: 'compact', endsEdit: true, action: async () => {
     const text = box.value.trim();
     if (!text) { box.focus(); return; }
     post.el.disabled = true;

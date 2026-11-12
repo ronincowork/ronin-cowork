@@ -1,5 +1,5 @@
 /* part of the tmux-ronin client — see js/README.md */
-import { createKeyedList } from './workspace-primitives.js';
+import { createKeyedList, editHold } from './workspace-primitives.js';
 
 const element = (tag, className = '', text = '') => {
   const node = document.createElement(tag);
@@ -238,13 +238,20 @@ export function createPhalanx({ items = [], selectedId = '', renderDetail, onSel
   };
 
   /** The open detail is drawn again only when what is open changes, or its own row does (or
-   * refreshDetail asks): a push that moved another stone leaves it, and what is typed in it, alone. */
+   * refreshDetail asks): a push that moved another stone leaves it alone, and a push on its own
+   * stone waits while the person has an unsent edit in it (the kit's editHold: it lands on
+   * submit or reset). Pressing another stone is the person's own act and draws afresh. */
   let detailSaid = null;
+  const detailHold = editHold();
+  detailHold.watch([detail]);
+  detailHold.onClear(() => paintDetail(false));
   const paintDetail = (force) => {
     const { owner } = level();
     const current = externalDetail || byId(selected) || owner;
     const now = current ? said([externalDetail ? 'external' : current === owner ? 'level' : 'stone', current]) : '';
     if (!force && now === detailSaid) return;
+    if (!force && detailHold.held() && current && detailSaid) return;
+    detailHold.release();
     detailSaid = now;
     disposeDetail?.();
     disposeDetail = null;

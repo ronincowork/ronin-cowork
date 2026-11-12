@@ -403,7 +403,7 @@ export function workspacePage(w, { reading, campaignId, onSaved = () => {}, onDi
 
   // Save answers at the button too: Saving…, then Saved for a moment, or back to Save with the error above.
   const label = isNew ? t('workspaces.create', 'Create') : t('workspaces.save', 'Save');
-  const action = createAction({ label, launch: true, size: 'compact', action: async () => {
+  const action = createAction({ label, launch: true, size: 'compact', endsEdit: true, action: async () => {
     const word = action.el.querySelector('span') || action.el;
     action.setDisabled(true);
     word.textContent = t('workspaces.saving', 'Saving…');
