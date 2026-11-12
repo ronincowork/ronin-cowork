@@ -97,7 +97,7 @@ export async function buildPhone() {
   else if (route.screen === 'terminal') paintBar(backLink(teamHash(route.team)), el('span', 'ph-title', readable(route.session)));
   else paintBar(backLink('#/'), el('span', 'ph-title', ''));
 
-  let agentsPainted = ''; // what the Agents screen last drew — identical readings skip the repaint
+  let agentsPainted = ''; // the Team whose Agents screen is up; '' paints it fresh
   let host = null; // the one terminal host, alive only on the terminal screen
   let stageTile = null; // the mounted tile inside it — its transcript mode is remembered on close
   let docsView = null; // the Docs screen's editor — asked before it is left, in case of unsaved typing
@@ -221,36 +221,45 @@ export async function buildPhone() {
     return card;
   };
 
+  // ONE AGENT MOVES, ONE CARD CHANGES (KAN-413): the kit's keyed list. The Agents screen is
+  // built once per stay on a Team; a push redraws only the card whose Agent moved, so a card
+  // under a finger mid-tap stays the node it was, and the launch card — its form mid-typing —
+  // is one kept node, never rebuilt.
+  let agentsScreen = null; // { team, list, cards, bar } while the Agents screen of one Team is up
   const paintAgents = () => {
     const team = route.team;
-    // Never repaint over an open launch form — a feed event would wipe a name mid-typing.
-    if (main.querySelector('.ph-launch-form:not([hidden])')) return;
-    // And never repaint what has not moved: rebuilding identical cards detaches the node
-    // under a finger mid-tap — a tap that does nothing.
-    const signature = [team, teamLabel({ ...teamByName(team), name: team })].concat(membersOfTeam(team).map((member) => [member.name, member.title, member.team_lead === true].join('|'))).join('\n');
-    if (signature === agentsPainted) return;
-    agentsPainted = signature;
-    teamBar(team);
-    const list = el('div', 'ph-list');
-    for (const member of membersOfTeam(team)) {
-      const card = el('a', 'ph-card');
-      card.href = sessionHash(team, member.name);
-      const line = el('div', 'ph-card-line');
-      const identity = el('span', 'ph-card-identity');
-      if (member.team_lead) {
-        const lead = el('span', 'home-job lead', '人');
-        lead.title = t('league.team_lead', 'Team Lead');
-        lead.setAttribute('aria-label', t('league.team_lead', 'Team Lead'));
-        identity.append(lead);
-      }
-      identity.append(el('span', 'ph-card-name', agentLabel(member)));
-      line.append(identity);
-      card.append(line);
-      list.append(card);
+    if (!agentsPainted || agentsScreen?.team !== team || !agentsScreen.list.isConnected) {
+      agentsScreen?.cards.destroy();
+      const list = el('div', 'ph-list');
+      const cards = WorkspaceKit.primitives.createKeyedList({
+        key: (row) => row.key,
+        shows: (row) => JSON.stringify(row.member ? [row.member.name, agentLabel(row.member), row.member.team_lead === true] : row.key),
+        draw: (row) => (row.member ? agentCard(team, row.member) : row.key === '!launch' ? launchCard(team) : el('div', 'ph-empty', t('phone.no_agents', 'No Agents on this Team yet.'))),
+      });
+      agentsScreen = { team, list, cards, bar: '' };
+      agentsPainted = team;
+      main.replaceChildren(segment(team, 'agents'), list);
     }
-    if (!list.children.length) list.append(el('div', 'ph-empty', t('phone.no_agents', 'No Agents on this Team yet.')));
-    list.append(launchCard(team));
-    main.replaceChildren(segment(team, 'agents'), list);
+    const bar = teamLabel({ ...teamByName(team), name: team });
+    if (bar !== agentsScreen.bar) { agentsScreen.bar = bar; teamBar(team); }
+    const members = membersOfTeam(team).map((member) => ({ key: member.name, member }));
+    agentsScreen.cards.set(agentsScreen.list, [...(members.length ? members : [{ key: '!empty' }]), { key: '!launch' }]);
+  };
+  const agentCard = (team, member) => {
+    const card = el('a', 'ph-card');
+    card.href = sessionHash(team, member.name);
+    const line = el('div', 'ph-card-line');
+    const identity = el('span', 'ph-card-identity');
+    if (member.team_lead) {
+      const lead = el('span', 'home-job lead', '人');
+      lead.title = t('league.team_lead', 'Team Lead');
+      lead.setAttribute('aria-label', t('league.team_lead', 'Team Lead'));
+      identity.append(lead);
+    }
+    identity.append(el('span', 'ph-card-name', agentLabel(member)));
+    line.append(identity);
+    card.append(line);
+    return card;
   };
 
   /**
@@ -332,7 +341,7 @@ export async function buildPhone() {
       return;
     }
     if (route.screen === 'terminal' && !(next.screen === 'terminal' && next.session === route.session)) closeTerminal();
-    // A screen change always paints fresh; the skip-signature only spans one stay.
+    // A screen change always paints fresh; the kept Agents screen only spans one stay.
     if (next.screen !== route.screen || next.team !== route.team) agentsPainted = '';
     route = next;
     if (route.screen === 'teams') paintTeams();

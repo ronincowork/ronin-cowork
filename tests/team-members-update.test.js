@@ -13,10 +13,10 @@ test('w451: a push updates the People rows that moved and never redraws an opene
   assert.match(view, /if \(held\?\.team === team\) held\.update\(\);/);
   // Each row redraws only its head line, and only when what it shows moved.
   assert.match(members, /if \(now === shown\) return;/);
-  assert.match(members, /rows\.get\(member\.name\)\.update\(member\)/);
-  assert.doesNotMatch(members, /content\.append\(\.\.\.members\.map\(memberRow\)\)/);
-  // Re-laid only when the order moved, so a focused field is not blurred.
-  assert.match(members, /if \(order\.some\(\(node, index\) => content\.children\[index\] !== node\)/);
+  // The kit's keyed list (KAN-413): kept rows, laid out only where the order moved, so a focused field is not blurred.
+  assert.match(members, /createKeyedList\(\{ key: \(member\) => member\.name/);
+  assert.match(members, /rows\.set\(content, members\.length \? members : \[\{ name: '!empty', empty: true \}\]\)/);
+  assert.doesNotMatch(members, /content\.replaceChildren|content\.append\(\.\.\.members\.map\(memberRow\)\)/);
   // Reopening a row with an unsent draft keeps it.
   assert.match(members, /if \(!asked \|\| !composition\.dirty\(\)\) void composition\.show\(\);/);
   assert.match(composition, /dirty: view\.dirty/);

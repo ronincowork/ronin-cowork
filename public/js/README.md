@@ -114,7 +114,7 @@ below describes implementation ownership; use the surface index above to find a 
 | `keysrow.js` | `buildKeysRow` — Esc/Tab/Shift-Tab/arrows/⤓ docked on every coarse tile's composer |
 | `tilementions.js` | `insertMention`, `MENTION_MIME` — a session name into this tile's composer, from the menu or a drag |
 | `team-arrange.js` | `parseDraft`, `createArranger` — the team page's one controller: a draft (what changes; the rest stays) from a button or from an agent's `edges page`, run through the page's own verbs |
-| `team-members.js` | `buildTeamMembers`, `agentTitle`, `configSignature` — the Commons Roster: one line per Agent (人 first), a pressed row opening in place to the Agent's read, the one composition body and its action bar, a draggable row opening the Agent in a workspace, New Agent at the foot; `update()` redraws only the rows whose head line moved and never an opened configuration (a draft stays until Send, w451); and the changed-only fingerprint that keeps Configuration from redrawing an unchanged Team |
+| `team-members.js` | `buildTeamMembers`, `agentTitle`, `configSignature` — the Commons Roster: one line per Agent (人 first), a pressed row opening in place to the Agent's read, the one composition body and its action bar, a draggable row opening the Agent in a workspace, New Agent at the foot; `update()` lays its rows through the kit's keyed list and redraws only the rows whose head line moved, never an opened configuration (a draft stays until Send, w451, KAN-413); and the changed-only fingerprint that keeps Configuration from redrawing an unchanged Team |
 | `voice.js` | dictation: `wireDictation` (the 🎤 on the tile's compose box) |
 | `panels.js` | `toClipboard` |
 | `session-picker.js` | `buildSessionPicker` — the pad key's session switcher (on `ui.sheet`) |
@@ -167,7 +167,12 @@ by a push that moved something else (owner, 2026-11-12, KAN-412, KAN-414). No su
 its own variant. Its users: the Epics surface ([epics-surface.js](epics-surface.js)) and
 the stone work surface ([phalanx.js](phalanx.js)): every stone, the Return stone and every
 group section is a kept row, a stone reads its row at press time, and the open detail is
-drawn again only when what is open changes, its own row moves, or `refreshDetail()` asks.
+drawn again only when what is open changes, its own row moves, or `refreshDetail()` asks. Also
+(KAN-413): the item island's pills and bars ([tile-island.js](tile-island.js)), the People
+list ([team-members.js](team-members.js)), the League Team's Agents
+([cowork-view.js](cowork-view.js); a stance moves one row and never asks for the Work list
+again), the Docs shelf's groups and rows ([docs.js](docs.js); a group keeps its fold) and the
+phone's Agents cards ([phone.js](phone.js); the launch card, its form mid-typing, is one kept row).
 
 ## Verifying a change
 

@@ -29,6 +29,7 @@
  */
 import { t } from './lexicon.js';
 import { humanAge } from './work-record.js';
+import { WorkspacePrimitives } from './workspace-primitives.js';
 
 const SVG = 'http://www.w3.org/2000/svg';
 const FLAG_MARK = '⚑'; // work-items-surface.js's mark; not imported: that module reaches the kit, which reaches the tile
@@ -247,7 +248,6 @@ export function createItemIsland({ open, shut, isOpen }) {
   el.append(stance, grip, pills, bars, more);
 
   let session = null;
-  let drawn = '';
   let items = [];
 
   /** 'rest' in the header, 'down' the column of pills, 'wide' the bars. */
@@ -337,6 +337,13 @@ export function createItemIsland({ open, shut, isOpen }) {
    *  is, its last comment, and its facts. A Subtask under a Task here is a slimmer bar after it. */
   const bar = (item, sub = false) => markBusy(itemBar(item, { sub, subtasks: sub ? 0 : under.get(item.id) || 0, onPress: () => void press(item) }), item.id);
 
+  /** What one item's pill and bar show: a row redraws only when this moves. */
+  const shows = ({ item, count = 0, sub = false }) => JSON.stringify([item.id, item.kind, item.status, !!item.flagged, item.title, item.parent, handInSignal(item),
+    item.objective, item.priority, lastComment(item)?.at, item.comments?.length, item.attachments?.length, item.trail?.length, count, sub]);
+  const { createKeyedList } = WorkspacePrimitives;
+  const pillList = createKeyedList({ shows, draw: ({ item }) => pill(item) });
+  const barList = createKeyedList({ shows, draw: ({ item, sub }) => bar(item, !!sub) });
+
   let stanceDrawn = '';
   /** The stance, redrawn only when it or what the harness reports moved. */
   function drawStance({ stance: now = '', reports } = {}) {
@@ -356,21 +363,19 @@ export function createItemIsland({ open, shut, isOpen }) {
   /** `live` is the home row's { stance, reports } (tilehead.js), read off the same push. */
   function update(name, list, live = {}) {
     const next = Array.isArray(list) ? list : [];
-    if (name !== session) { session = name; drawn = ''; stanceDrawn = ''; place(false); }
+    if (name !== session) { session = name; stanceDrawn = ''; place(false); }
     items = next;
     drawStance(live);
     // An Agent holding nothing still shows its island when it needs you.
     el.hidden = !session || (!next.length && stance.hidden);
     more.hidden = !next.length;
-    const signature = JSON.stringify(next.map((item) => [item.id, item.kind, item.status, !!item.flagged, item.title, item.parent, handInSignal(item),
-      item.objective, item.priority, lastComment(item)?.at, item.comments?.length, item.attachments?.length, item.trail?.length]));
-    if (signature === drawn) return;
-    drawn = signature;
+    // ONE ITEM MOVES, ONE PILL AND ONE BAR CHANGE (KAN-413): the kit's keyed list. Each pill and
+    // bar compares what it shows and redraws only itself; the rest stay the nodes they were.
     const shape = folded(next);
     under = shape.under;
-    pills.replaceChildren(...shape.top.map(pill));
-    bars.replaceChildren(...shape.top.flatMap((item) => [bar(item),
-      ...(under.get(item.id) ? next.filter((one) => one.parent === item.id && kindKey(one.kind) === 'subtask').map((one) => bar(one, true)) : [])]));
+    pillList.set(pills, shape.top.map((item) => ({ id: item.id, item, count: under.get(item.id) || 0 })));
+    barList.set(bars, shape.top.flatMap((item) => [{ id: item.id, item, count: under.get(item.id) || 0 },
+      ...(under.get(item.id) ? next.filter((one) => one.parent === item.id && kindKey(one.kind) === 'subtask').map((one) => ({ id: one.id, item: one, sub: true })) : [])]));
   }
 
   return { el, update };
