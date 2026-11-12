@@ -10,7 +10,8 @@
  * once, then "Saved" (or "Cancelled") shows a moment before the field closes; a refusal stays
  * open and says why. An answered ask never reopens from a row that still carries it; a row
  * without it clears that, so a later ask of the same name opens. Nothing takes the focus: the
- * owner clicks into the field, and only there does Escape cancel.
+ * owner clicks into the field, and only there does Escape cancel. Beside the value sits an
+ * optional expiry date (KAN-417): Save sends both, and an empty date means no expiry.
  */
 import { t } from './lexicon.js';
 import { request } from './request.js';
@@ -38,13 +39,16 @@ export function buildSecretAsk(tile) {
   });
   input.setAttribute('autocapitalize', 'off');
   input.setAttribute('aria-label', t('secret.value', 'Secret'));
+  const expires = Object.assign(el('input', 'tile-secret-expires'), { type: 'date' });
+  expires.setAttribute('aria-label', t('secret.expires', 'Expires (optional)'));
+  expires.title = t('secret.expires', 'Expires (optional)');
   const notice = el('p', 'tile-secret-notice');
   const SAVE = t('secret.save', 'Save');
   const CANCEL = t('secret.cancel', 'Cancel');
   const save = createAction({ label: SAVE, kind: 'primary', size: 'compact', action: () => root.requestSubmit() });
   const cancel = createAction({ label: CANCEL, size: 'compact', action: () => void send(null) });
   const entry = el('div', 'tile-secret-entry');
-  entry.append(input, createActionBar({ actions: [save, cancel] }).el);
+  entry.append(input, expires, createActionBar({ actions: [save, cancel] }).el);
   card.append(title, what, entry, notice);
   root.append(card);
 
@@ -73,19 +77,20 @@ export function buildSecretAsk(tile) {
 
   const settle = (state, text) => {
     card.dataset.state = state || '';
-    input.hidden = !!state;
-    input.disabled = save.el.disabled = cancel.el.disabled = state === 'saving';
+    input.hidden = expires.hidden = !!state;
+    input.disabled = expires.disabled = save.el.disabled = cancel.el.disabled = state === 'saving';
     if (state !== 'saving') { save.el.textContent = SAVE; cancel.el.textContent = CANCEL; }
     notice.textContent = text || '';
   };
 
-  async function send(value) {
+  async function send(value, day = '') {
     if (!open || busy || shown) return;
     busy = true;
     next = undefined;
     const { name } = open;
-    const json = value == null ? { session: tile.session, cancel: true } : { session: tile.session, value };
+    const json = value == null ? { session: tile.session, cancel: true } : { session: tile.session, value, expires: day };
     input.value = '';
+    expires.value = '';
     settle('saving');
     if (value == null) cancel.el.textContent = t('secret.cancelling', 'Cancelling…');
     else save.el.textContent = t('secret.saving', 'Saving…');
@@ -94,6 +99,7 @@ export function buildSecretAsk(tile) {
     if (!result.ok) { settle('', result.message); if (next !== undefined) view.sync(next); input.focus(); return; }
     answered = name;
     if (value == null) settle('cancelled', t('secret.cancelled', 'Cancelled'));
+    else if (day) settle('saved', t('secret.saved_expires', 'Saved: {name}, expires {date}', { name, date: day }));
     else settle('saved', t('secret.saved', 'Saved: {name}', { name }));
     shown = setTimeout(() => { shown = null; open = null; view.sync(next ?? null); }, value == null ? 1000 : 2000);
   }
@@ -101,7 +107,7 @@ export function buildSecretAsk(tile) {
   root.addEventListener('submit', (event) => {
     event.preventDefault();
     if (!input.value) { notice.textContent = t('secret.empty', 'Paste the secret first, or Cancel.'); input.focus(); return; }
-    void send(input.value);
+    void send(input.value, expires.value);
   });
   input.addEventListener('keydown', (event) => { if (event.key === 'Escape') { event.stopPropagation(); void send(null); } });
 
@@ -124,6 +130,7 @@ export function buildSecretAsk(tile) {
       if (open && ask && open.name === ask.name) return;
       open = ask;
       input.value = '';
+      expires.value = '';
       settle('');
       show(!!ask);
       if (!ask) return;

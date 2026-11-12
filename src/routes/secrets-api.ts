@@ -1,7 +1,8 @@
 /** /api/secrets — the secret tool's door (src/secrets.ts, w385). No answer here carries a value. */
 import type express from 'express';
 import { homedir } from 'node:os';
-import { SecretBadInput, answerSecret, askSecret, dropAsk, secretNames, secretsDir } from '../secrets.js';
+import { SecretBadInput, answerSecret, askSecret, dropAsk, secretExpiries, secretFile, secretNames, secretsDir, setSecretExpiry } from '../secrets.js';
+import fs from 'node:fs';
 
 const text = (v: unknown): string => (typeof v === 'string' ? v : '');
 const fail = (res: express.Response, e: unknown): void => {
@@ -11,9 +12,23 @@ const fail = (res: express.Response, e: unknown): void => {
 };
 
 export function registerSecrets(app: express.Express): void {
-  /** The names, and the store they are in. */
+  /** The names, their expiry dates (only those that have one), and the store they are in. */
   app.get('/api/secrets', async (_req, res) => {
-    try { res.json({ dir: secretsDir(), names: await secretNames() }); } catch (e) { fail(res, e); }
+    try {
+      const names = await secretNames();
+      const all = await secretExpiries();
+      const expires = Object.fromEntries(names.filter((n) => all[n]).map((n) => [n, all[n]]));
+      res.json({ dir: secretsDir(), names, expires });
+    } catch (e) { fail(res, e); }
+  });
+
+  /** Set or clear a saved secret's expiry date ({ expires: "YYYY-MM-DD" | "" }); the value is not touched. */
+  app.post('/api/secrets/:name/expires', async (req, res) => {
+    try {
+      const name = req.params.name;
+      if (!fs.existsSync(secretFile(name))) throw new SecretBadInput(`No secret ${name} yet.`);
+      res.json({ ok: true, name, expires: await setSecretExpiry(name, text(req.body?.expires)) });
+    } catch (e) { fail(res, e); }
   });
 
   /** An Agent asks: held until the owner saves or cancels on its tile. */
@@ -28,11 +43,11 @@ export function registerSecrets(app: express.Express): void {
     } catch (e) { fail(res, e); }
   });
 
-  /** The owner's answer on a tile: save the value, or cancel the Agent's ask. */
+  /** The owner's answer on a tile: save the value (with its optional expiry date), or cancel the Agent's ask. */
   app.post('/api/secrets/:name', async (req, res) => {
     try {
       const value = req.body?.cancel ? null : text(req.body?.value);
-      const answer = await answerSecret(req.params.name, value, text(req.body?.session));
+      const answer = await answerSecret(req.params.name, value, text(req.body?.session), text(req.body?.expires));
       res.json({ ok: true, answer, name: req.params.name });
     } catch (e) { fail(res, e); }
   });

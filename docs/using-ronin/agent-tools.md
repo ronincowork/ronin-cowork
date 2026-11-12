@@ -29,13 +29,19 @@ in chat, and you never paste it into a message.
   of its tile, where the message box sits, in Chat and in Terminal: the conversation or terminal
   above stays readable and scrollable, so the Agent's instructions stay in view while you paste.
   Click into it, paste, and press **Save**, or **Cancel** (Escape in the field cancels too).
+  Beside the value is an optional **expiry date**: give it when the key lapses on a known day,
+  so it is noticed in time; leave it empty for no expiry.
   Save says *Saving…*, then *Saved* shows for a moment before the field closes; if the save is
   refused, it stays open and says why. The Agent hears
   only `saved: <name>` or `cancelled: <name>`.
 - **The Agent uses it by its file:** `secret path <name>` prints where it is, to pass as
-  `--password-file` or read in its own script. `secret ls` lists the names.
+  `--password-file` or read in its own script. `secret ls` lists the names, each with its expiry
+  date when it has one.
+- **A date for one already saved:** `secret expires <name> <YYYY-MM-DD>` sets it without
+  re-pasting, and `secret expires <name> none` clears it. Only the date changes.
 
-Each secret is one file in `~/ronin/services_secrets`, readable only by you. Ronin never
+Each secret is one file in `~/ronin/services_secrets`, readable only by you. Expiry dates are kept
+beside them in `secrets-expiry.json`, never inside a value file. Ronin never
 prints a value, and no reply, log or chat carries one. A name is lowercase letters, digits,
 `_` and `-`.
 

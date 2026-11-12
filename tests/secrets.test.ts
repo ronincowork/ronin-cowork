@@ -91,3 +91,21 @@ test('a cancel answers cancelled and saves nothing; a bad name is refused before
   assert.match(bad.stderr, /not a secret name/);
   assert.equal((await run(['path', 'router_key'])).status, 4, 'no file yet');
 });
+
+test('an expiry date rides beside the value, never in it; secret ls shows it; secret expires sets and clears it', async () => {
+  const saved = await post('/api/secrets/office_key', { value: VALUE, expires: '2027-05-11' });
+  assert.equal(saved.status, 200, saved.text);
+  const file = path.join(secretsDir(), 'office_key');
+  assert.equal(await fs.readFile(file, 'utf8'), VALUE, 'the value file is the value alone');
+  assert.equal((await fs.stat(path.join(secretsDir(), 'secrets-expiry.json'))).mode & 0o777, 0o600);
+  assert.match((await run(['ls'])).stdout, /^office_key {2}expires 2027-05-11$/m);
+  assert.equal((await run(['expires', 'office_key', 'none'])).stdout, 'office_key has no expiry\n');
+  assert.equal((await run(['expires', 'office_key', '2027-06-01'])).stdout, 'office_key expires 2027-06-01\n');
+  assert.equal(await fs.readFile(file, 'utf8'), VALUE, 'setting a date leaves the value alone');
+  const bad = await run(['expires', 'office_key', '2027-02-30']);
+  assert.notEqual(bad.status, 0);
+  assert.match(bad.stderr, /not a date/);
+  assert.match((await run(['expires', 'nobody_here', '2027-01-01'])).stderr, /No secret nobody_here/);
+  assert.equal((await post('/api/secrets/office_key', { value: VALUE, expires: 'soon' })).status, 400);
+  assert.equal(await fs.readFile(file, 'utf8'), VALUE, 'a refused date saves nothing');
+});
