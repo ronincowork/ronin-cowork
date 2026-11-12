@@ -103,7 +103,7 @@ test('w322: the wide list, a bar per item with its description, last comment and
   const island = await read('public/js/tile-island.js');
   assert.match(island, /el\.append\(stance, grip, pills, bars, more\)/);
   assert.match(island, /more\.addEventListener\('click', \(\) => place\(el\.dataset\.state === 'wide' \? 'down' : 'wide'\)\)/);
-  assert.match(island, /node\.className = sub \? 'item-bar item-bar-sub' : 'item-bar'/, 'a bar is not a pill: the pill counts stay the pills');
+  assert.match(island, /node\.className = \[sub \? 'item-bar item-bar-sub' : 'item-bar'/, 'a bar is not a pill: the pill counts stay the pills');
   const css = await read('public/style.css');
   assert.match(css, /\.tile-head \.item-island\[data-state='wide'\] \{\n  position: absolute;/);
   assert.match(css, /\.item-bar \.item-bar-comment \{ -webkit-line-clamp: 1;/);

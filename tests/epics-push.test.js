@@ -64,7 +64,7 @@ test('epicsPush: every Epic\'s row, and every item under one, with its Epic and 
   // w334: what a bar says beyond its row, cut short, from the picked Epic's bodies (epicCards).
   const long = 'word '.repeat(100);
   const one = cardOf({ id: 'b', objective: long, comments: [{ by: 'a', at: '1', text: 'old' }, { by: 'sam', at: '2026-11-06T00:00:00Z', text: long }] });
-  assert.ok(one.objective.length <= 281 && one.objective.endsWith('…'));
+  assert.equal(one.objective, long.trim(), 'the objective in full: the bar wraps it (KAN-429)');
   assert.equal(one.said.by, 'sam');
   assert.ok(one.said.text.length <= 201);
   assert.equal(one.comment_count, 2);

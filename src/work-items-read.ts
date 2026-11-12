@@ -252,7 +252,8 @@ export async function epicCards(epicId: string): Promise<EpicCard[]> {
 /** One bar's words from its item's file: the objective and last comment cut short, the count. */
 export const cardOf = (item: Pick<WorkItem, 'id' | 'objective' | 'comments'>): EpicCard => ({
   id: item.id,
-  objective: cut(item.objective, 280),
+  // In full: the Epics bar wraps it, never cuts it (owner, 2026-11-12, KAN-429).
+  objective: String(item.objective || '').trim(),
   said: item.comments?.length ? (({ by, at, text }) => ({ by, at, text: cut(text, 200) }))(item.comments.at(-1)!) : null,
   comment_count: item.comments?.length ?? 0,
 });

@@ -1347,6 +1347,11 @@ body {
 .item-bar .item-bar-comment { -webkit-line-clamp: 1; color: var(--muted); }
 .item-bar .item-bar-who { color: var(--accent); }
 .item-bar .item-bar-facts { color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* The Epics board's bar (KAN-429): wrapped in full or not there — no clamp, no ellipsis. */
+.item-bar.item-bar-lean .item-bar-head { flex-wrap: wrap; }
+.item-bar.item-bar-lean :is(.item-bar-title, .item-bar-objective, .item-bar-facts) {
+  display: block; -webkit-line-clamp: unset; white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: anywhere;
+}
 
 .tile-head .sess {
   flex: 0 1 auto;

@@ -184,11 +184,11 @@ const span = (className, textContent = '') => Object.assign(document.createEleme
  * (the Epics worksurface's holder) after the kind; `onPress` is what the bar opens.
  */
 /* `lean` (owner, 2026-11-12, KAN-429; the Epics board): the objective only — no hand-in mark, no
- * comment line; everything else is in the opened item. */
+ * comment line; everything else is in the opened item. Every line wraps in full, never "…". */
 export function itemBar(item, { sub = false, subtasks = 0, extra = [], onPress, lean = false } = {}) {
   const node = document.createElement('button');
   node.type = 'button';
-  node.className = sub ? 'item-bar item-bar-sub' : 'item-bar';
+  node.className = [sub ? 'item-bar item-bar-sub' : 'item-bar', lean ? 'item-bar-lean' : ''].filter(Boolean).join(' ');
   node.dataset.item = item.id;
   node.dataset.status = statusKey(item.status);
   if (item.flagged) node.dataset.flagged = 'true';
