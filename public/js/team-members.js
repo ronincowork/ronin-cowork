@@ -39,16 +39,20 @@ const itemsHeld = async (member) => {
   return result.ok && Array.isArray(result.data.items) ? result.data.items : [];
 };
 
+// ONE AGENT MOVES, ONE ROW CHANGES (w451). A push lands in update(): each row compares what it
+// shows with what it would show now and redraws only its own head line; an opened row's
+// Configuration is never torn down, so a draft survives every push, its own Agent's too.
+// Rows are only added or removed when the Team's members change.
 export const buildTeamMembers = (name, options = {}) => {
   const { createAction, createActionBar } = WorkspaceKit.primitives;
   const roster = el('section', 'league-team-roster');
-  const members = membersOfTeam(name);
   const heading = el('div', 'league-team-roster-heading');
   heading.append(el('h3', 'league-team-roster-title', t('league.people', 'People')));
   roster.append(heading);
   const content = el('div', 'league-team-people-content'); roster.append(content);
 
-  const memberRow = (member) => {
+  const memberRow = (first) => {
+    let member = first;
     const row = el('article', 'league-team-member');
     row.dataset.session = member.name;
     // Opening the Agent is a drag — the row onto a workspace — the Agent's own tile, as the
@@ -59,16 +63,29 @@ export const buildTeamMembers = (name, options = {}) => {
       event.dataTransfer.setData('text/plain', agentTitle(member)); event.dataTransfer.effectAllowed = 'copy';
     });
     const identity = el('div', 'league-team-member-identity');
-    const mark = el('span', 'league-team-member-mark', member.team_lead ? '人' : ''); mark.setAttribute('aria-hidden', 'true');
-    identity.append(mark, el('strong', 'league-team-member-title', agentTitle(member)));
-    const reading = options.reading?.(member) || {};
+    const mark = el('span', 'league-team-member-mark'); mark.setAttribute('aria-hidden', 'true');
+    const title = el('strong', 'league-team-member-title');
+    identity.append(mark, title);
     const status = el('div', 'league-team-member-reading');
-    for (const [className, value] of [
-      ['league-team-member-step', reading.step],
-      ['league-team-member-state', reading.status],
-      ['league-team-member-ctx', reading.ctx],
-      ['league-team-member-model', reading.model],
-    ]) if (value) status.append(el('span', className, value));
+    let shown = '';
+    const paintHead = () => {
+      const reading = options.reading?.(member) || {};
+      const spans = [
+        ['league-team-member-step', reading.step],
+        ['league-team-member-state', reading.status],
+        ['league-team-member-ctx', reading.ctx],
+        ['league-team-member-model', reading.model],
+      ].filter(([, value]) => value);
+      const now = JSON.stringify([member.team_lead, agentTitle(member), spans]);
+      if (now === shown) return;
+      shown = now;
+      mark.textContent = member.team_lead ? '人' : '';
+      title.textContent = agentTitle(member);
+      status.replaceChildren(...spans.map(([className, value]) => el('span', className, value)));
+      lead.el.textContent = member.team_lead ? t('league.team_lead', 'Team Lead') : t('league.make_team_lead', 'Make Lead');
+      lead.el.setAttribute('aria-pressed', String(!!member.team_lead));
+      if (!detail.hidden) toggle.setAttribute('aria-label', t('league.collapse_agent', 'Collapse {name}', { name: agentTitle(member) }));
+    };
     const disclosure = el('span', 'league-team-member-disclosure'); disclosure.setAttribute('aria-hidden', 'true');
     const toggle = el('button', 'league-team-member-toggle'); toggle.type = 'button';
     toggle.append(identity, status, disclosure);
@@ -94,6 +111,7 @@ export const buildTeamMembers = (name, options = {}) => {
     const eject = createAction({ label: t('league.remove_member', 'Remove'), title: t('league.remove_named_member', 'Remove {name} from this team', { name: member.name }), action: async () => { const result = await setTeamMembership(member.name, name, false); if (!result.ok) return options.onFailed?.(result.message); options.onChanged?.(); } });
     const close = options.onClose ? createAction({ label: t('league.close_agent', 'Close'), title: t('league.close_named_agent', 'Close {name}', { name: member.name }), action: () => options.onClose(member) }) : null;
     detail.append(el('p', 'ac-line', `${agentName(member)} · @${member.name}`), work.el, composition.el, word, createActionBar({ className: 'league-team-member-actions', actions: [composition.action, rename, lead, eject, close] }).el);
+    let asked = false;
     const open = (expanded) => {
       detail.hidden = !expanded;
       toggle.setAttribute('aria-expanded', String(expanded));
@@ -101,21 +119,34 @@ export const buildTeamMembers = (name, options = {}) => {
       disclosure.textContent = expanded ? '⌃' : '⌄';
       if (!expanded) return;
       void itemsHeld(member).then((list) => items.setItems(list));
-      void composition.show();
+      // A draft folded away is still the draft when the row opens again: only Send clears it.
+      if (!asked || !composition.dirty()) void composition.show();
+      asked = true;
     };
     toggle.addEventListener('click', () => open(detail.hidden));
     open(false);
-    row.append(toggle, detail); return row;
+    paintHead();
+    row.append(toggle, detail);
+    return { el: row, update: (now) => { member = now; paintHead(); }, destroy: composition.destroy };
   };
 
-  if (!members.length) content.append(el('p', 'league-team-empty', t('league.no_members', 'No Agents assigned yet.')));
-  else content.append(...members.map(memberRow));
+  const rows = new Map();
+  const empty = el('p', 'league-team-empty', t('league.no_members', 'No Agents assigned yet.'));
+  const update = () => {
+    const members = membersOfTeam(name);
+    for (const [key, one] of rows) if (!members.some((member) => member.name === key)) { one.el.remove(); one.destroy?.(); rows.delete(key); }
+    for (const member of members) if (rows.has(member.name)) rows.get(member.name).update(member); else rows.set(member.name, memberRow(member));
+    const order = members.length ? members.map((member) => rows.get(member.name).el) : [empty];
+    // Moving a node blurs the field being typed in, so the list is only re-laid when its order moved.
+    if (order.some((node, index) => content.children[index] !== node) || content.children.length !== order.length) content.replaceChildren(...order);
+  };
+  update();
   // Agents join a Team by dragging; the foot starts a new one — the New Agent form with this
   // Team chosen, opened the way the selector's New Agent card opens it.
   const foot = el('div', 'league-team-add');
   foot.append(createAction({ label: t('new_agent.title', 'New Agent'), action: () => options.onNew?.() }).el);
   roster.append(foot);
-  return roster;
+  return { el: roster, update, destroy: () => { for (const one of rows.values()) one.destroy?.(); rows.clear(); } };
 };
 
 // The roster reads what the tile's chip says: the items held with their status, and the

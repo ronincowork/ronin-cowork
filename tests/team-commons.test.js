@@ -10,7 +10,7 @@ test('Commons opens on its separate Roster and keeps Configuration separate', as
   assert.match(view, /tabs: \[\s*\{ id: 'roster'/);
   assert.match(view, /selected: 'roster'/);
   assert.match(view, /\{ id: 'roster'[^}]*panel: service\(roster\) \}[\s\S]*\{ id: 'team-configuration'[^}]*panel: service\(config\) \}/);
-  assert.match(view, /commons\.roster\.replaceChildren\(members\)/);
+  assert.match(view, /commons\.roster\.replaceChildren\(people\.el\)/);
   assert.match(view, /commons\.config\.replaceChildren\(config\)/);
   assert.doesNotMatch(view, /commons\.config\.replaceChildren\(members, config\)/);
 });

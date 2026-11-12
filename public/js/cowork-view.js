@@ -716,6 +716,7 @@ export function createCoworkView(options = {}) {
   // edit in progress (owner, 2026-09-13).
   let seenConfig = '';
   let seenRecord = '';
+  const peopleBySeat = {};
   function renderConfig(roster, live) {
     const members = membersOfTeam(team);
     const signature = configSignature(team) + JSON.stringify(members.map((member) => readingsOf(member).lines));
@@ -726,17 +727,24 @@ export function createCoworkView(options = {}) {
     seenConfig = signature;
     seenRecord = record;
     for (const [id, commons] of Object.entries(commonsBySeat)) {
-      const changed = () => { commons.channels.setState(); paint(); };
-      const members = buildTeamMembers(team, {
-        onChanged: changed,
-        onFailed: (message) => commons.channels.setState('failed', message),
-        idPrefix: id,
-        reading: readingsOf,
-        // The roster's New Agent opens the form with this Team chosen (the view's `team`).
-        onNew: () => bench.place(WB_TYPES.newAgent, oppositeSeat(id)),
-        onClose: (member) => retireSession(member.name, `commons-${id}-${member.name}`),
-      });
-      commons.roster.replaceChildren(members);
+      // One People list per seat and Team: a push updates the rows that moved (w451).
+      const held = peopleBySeat[id];
+      if (held?.team === team) held.update();
+      else {
+        held?.destroy();
+        const changed = () => { commons.channels.setState(); paint(); };
+        const people = buildTeamMembers(team, {
+          onChanged: changed,
+          onFailed: (message) => commons.channels.setState('failed', message),
+          idPrefix: id,
+          reading: readingsOf,
+          // The roster's New Agent opens the form with this Team chosen (the view's `team`).
+          onNew: () => bench.place(WB_TYPES.newAgent, oppositeSeat(id)),
+          onClose: (member) => retireSession(member.name, `commons-${id}-${member.name}`),
+        });
+        peopleBySeat[id] = { team, ...people };
+        commons.roster.replaceChildren(people.el);
+      }
       if (!recordMoved) continue;
       if (!roster) { renderTeamConfiguration(commons.config, null, { createAction }); continue; }
       const fields = el('div');

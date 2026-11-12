@@ -733,6 +733,8 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
       paint();
     },
     action: start,
+    // Configure only: an edit not yet sent (the form holds it until Send).
+    dirty: () => !!configure && loaded && JSON.stringify(configurationValue()) !== configured,
     destroy: () => {
       window.removeEventListener('ronin:behaviours-changed', refreshBehaviours);
       questions.destroy();

@@ -114,7 +114,7 @@ below describes implementation ownership; use the surface index above to find a 
 | `keysrow.js` | `buildKeysRow` — Esc/Tab/Shift-Tab/arrows/⤓ docked on every coarse tile's composer |
 | `tilementions.js` | `insertMention`, `MENTION_MIME` — a session name into this tile's composer, from the menu or a drag |
 | `team-arrange.js` | `parseDraft`, `createArranger` — the team page's one controller: a draft (what changes; the rest stays) from a button or from an agent's `edges page`, run through the page's own verbs |
-| `team-members.js` | `buildTeamMembers`, `agentTitle`, `configSignature` — the Commons Roster: one line per Agent (人 first), a pressed row opening in place to the Agent's read, the one composition body and its action bar, a draggable row opening the Agent in a workspace, New Agent at the foot; and the changed-only fingerprint that keeps Configuration from redrawing an unchanged Team |
+| `team-members.js` | `buildTeamMembers`, `agentTitle`, `configSignature` — the Commons Roster: one line per Agent (人 first), a pressed row opening in place to the Agent's read, the one composition body and its action bar, a draggable row opening the Agent in a workspace, New Agent at the foot; `update()` redraws only the rows whose head line moved and never an opened configuration (a draft stays until Send, w451); and the changed-only fingerprint that keeps Configuration from redrawing an unchanged Team |
 | `voice.js` | dictation: `wireDictation` (the 🎤 on the tile's compose box) |
 | `panels.js` | `toClipboard` |
 | `session-picker.js` | `buildSessionPicker` — the pad key's session switcher (on `ui.sheet`) |
