@@ -112,6 +112,9 @@ export const buildTeamMembers = (name, options = {}) => {
     const eject = createAction({ label: t('league.remove_member', 'Remove'), title: t('league.remove_named_member', 'Remove {name} from this team', { name: member.name }), action: async () => { const result = await setTeamMembership(member.name, name, false); if (!result.ok) return options.onFailed?.(result.message); options.onChanged?.(); } });
     const close = options.onClose ? createAction({ label: t('league.close_agent', 'Close'), title: t('league.close_named_agent', 'Close {name}', { name: member.name }), action: () => options.onClose(member) }) : null;
     detail.append(el('p', 'ac-line', `${agentName(member)} · @${member.name}`), work.el, composition.el, word, createActionBar({ className: 'league-team-member-actions', actions: [composition.action, rename, lead, eject, close] }).el);
+    // An unsent draft is the kit's edit hold (editHold, KAN-414): typed in and not yet Sent.
+    const draft = WorkspaceKit.primitives.editHold();
+    draft.watch([detail]);
     let asked = false;
     const open = (expanded) => {
       detail.hidden = !expanded;
@@ -121,7 +124,7 @@ export const buildTeamMembers = (name, options = {}) => {
       if (!expanded) return;
       void itemsHeld(member).then((list) => items.setItems(list));
       // A draft folded away is still the draft when the row opens again: only Send clears it.
-      if (!asked || !composition.dirty()) void composition.show();
+      if (!asked || !draft.held()) void composition.show();
       asked = true;
     };
     toggle.addEventListener('click', () => open(detail.hidden));

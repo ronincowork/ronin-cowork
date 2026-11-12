@@ -18,9 +18,11 @@ test('w451: a push updates the People rows that moved and never redraws an opene
   assert.match(members, /rows\.set\(content, members\.length \? members : \[\{ name: '!empty', empty: true \}\]\)/);
   assert.doesNotMatch(members, /content\.replaceChildren|content\.append\(\.\.\.members\.map\(memberRow\)\)/);
   // Reopening a row with an unsent draft keeps it.
-  assert.match(members, /if \(!asked \|\| !composition\.dirty\(\)\) void composition\.show\(\);/);
-  assert.match(composition, /dirty: view\.dirty/);
-  assert.match(newAgent, /dirty: \(\) => !!configure && loaded && JSON\.stringify\(configurationValue\(\)\) !== configured/);
+  // The draft is the kit's edit hold (KAN-414): Send ends it.
+  assert.match(members, /const draft = WorkspaceKit\.primitives\.editHold\(\);/);
+  assert.match(members, /if \(!asked \|\| !draft\.held\(\)\) void composition\.show\(\);/);
+  assert.doesNotMatch(composition, /dirty/);
+  assert.match(newAgent, /endsEdit: true,/);
   // Send answers the press.
   assert.match(newAgent, /t\('agent_composition\.sending', 'Sending…'\)/);
 });
