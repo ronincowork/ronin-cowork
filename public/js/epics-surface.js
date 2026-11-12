@@ -141,7 +141,7 @@ function epicItems(epicId, { epicsRead }) {
   const detail = el('div', 'epic-detail');
   root.append(detail, questions.el, groups);
 
-  // What a bar says beyond its row (w418): the objective cut short, the last comment, how many.
+  // What a bar says beyond its row (w418): the objective cut short; on this board nothing more (KAN-429).
   // The push is rows only; the picked Epic's bodies are read once it shows, and again when a push
   // moves any of its items.
   let cards = new Map();
@@ -189,7 +189,7 @@ function epicItems(epicId, { epicsRead }) {
       const now = JSON.stringify([card, sub, subtasks, holder]);
       if (now !== shown) {
         shown = now;
-        const fresh = itemBar(card, { sub, subtasks, extra: [holder ? holderWords(holder) : t('epics.unassigned', 'Unassigned')],
+        const fresh = itemBar(card, { sub, subtasks, lean: true, extra: [holder ? holderWords(holder) : t('epics.unassigned', 'Unassigned')],
           onPress: () => { if (!open.delete(item.id)) open.add(item.id); paint(); } });
         node?.replaceWith(fresh);
         node = fresh;

@@ -183,7 +183,9 @@ const span = (className, textContent = '') => Object.assign(document.createEleme
  * place of its comments and trail. `sub` draws a Subtask's slimmer bar; `extra` adds facts
  * (the Epics worksurface's holder) after the kind; `onPress` is what the bar opens.
  */
-export function itemBar(item, { sub = false, subtasks = 0, extra = [], onPress } = {}) {
+/* `lean` (owner, 2026-11-12, KAN-429; the Epics board): the objective only — no hand-in mark, no
+ * comment line; everything else is in the opened item. */
+export function itemBar(item, { sub = false, subtasks = 0, extra = [], onPress, lean = false } = {}) {
   const node = document.createElement('button');
   node.type = 'button';
   node.className = sub ? 'item-bar item-bar-sub' : 'item-bar';
@@ -195,12 +197,12 @@ export function itemBar(item, { sub = false, subtasks = 0, extra = [], onPress }
   const state = span('item-bar-state');
   state.append(span('item-pill-status'), span('item-bar-status', item.status || ''));
   if (item.flagged) state.append(span('item-pill-flag', FLAG_MARK));
-  const signal = handInSignal(item);
+  const signal = !lean && handInSignal(item);
   if (signal) { node.dataset.handin = signal.kind; state.append(span('item-bar-handin', `${HANDIN_MARK} ${handInWords(signal)}`)); }
   head.append(kindMark(item.kind), span('item-bar-id', item.jira || item.id), span('item-bar-title', item.title || ''), state);
   node.append(head);
   if (!sub && item.objective) node.append(span('item-bar-objective', item.objective));
-  const said = !sub && lastComment(item);
+  const said = !sub && !lean && lastComment(item);
   if (said) {
     const line = span('item-bar-comment');
     line.append(span('item-bar-who', `@${said.by} · ${humanAge(Math.max(0, Date.now() - Date.parse(said.at) || 0))}`), ` ${said.text}`);
