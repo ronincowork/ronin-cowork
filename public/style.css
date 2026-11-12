@@ -833,8 +833,8 @@ body {
   background: var(--inset);
   color: var(--fg-strong);
 }
-.tile-secret-expires {
-  flex: 0 0 auto;
+.tile-secret-expiry { flex: 0 0 auto; }
+.tile-secret-date, .tile-secret-count {
   font: inherit;
   padding: var(--space-row) var(--space-inline);
   border: var(--edge) solid var(--line);
@@ -842,6 +842,9 @@ body {
   background: var(--inset);
   color: var(--fg-strong);
 }
+.tile-secret-count { width: 6em; }
+.tile-secret-days { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-row); }
+.tile-secret-lands, .tile-secret-unit { color: var(--muted); }
 .tile-secret-notice { margin: 0; color: var(--muted); }
 .tile-secret-notice:empty { display: none; }
 /* The answer shows a moment before the field closes: Saved in the success look, Cancelled plain. */

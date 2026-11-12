@@ -22,7 +22,7 @@ export function registerSecrets(app: express.Express): void {
     } catch (e) { fail(res, e); }
   });
 
-  /** Set or clear a saved secret's expiry date ({ expires: "YYYY-MM-DD" | "" }); the value is not touched. */
+  /** Set or clear a saved secret's expiry date ({ expires: "YYYY-MM-DD" | "<N>d" | "never" | "" to clear }); the value is not touched. */
   app.post('/api/secrets/:name/expires', async (req, res) => {
     try {
       const name = req.params.name;

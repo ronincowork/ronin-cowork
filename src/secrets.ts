@@ -9,8 +9,9 @@
  * answered "saved" or "cancelled" only.
  *
  * A secret may carry an expiry date (KAN-417), so a key is noticed before it lapses. The dates
- * live beside the values in one file, `secrets-expiry.json` ({ name: "YYYY-MM-DD" }), never in a
- * value file, which tools read as-is. Its dot keeps it out of the names.
+ * live beside the values in one file, `secrets-expiry.json` ({ name: "YYYY-MM-DD" | "never" }),
+ * never in a value file, which tools read as-is. Its dot keeps it out of the names. No entry means
+ * nothing is known (w478: Nothing, a date, Never, or N days from today, stored as its date).
  */
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -45,12 +46,21 @@ export async function secretExpiries(): Promise<Record<string, string>> {
   } catch { return {}; }
 }
 
-/** A date as YYYY-MM-DD; empty (or "none") means no expiry. */
+/**
+ * An expiry as stored: a YYYY-MM-DD date, or "never" (it does not expire, which is not the same as
+ * unknown). Empty means nothing is recorded. "<N>d" is N days from today, stored as its date.
+ */
 export function expiryDate(date: string): string {
   const day = date.trim();
-  if (!day || day === 'none') return '';
+  if (!day || day === 'never') return day;
+  const days = /^(\d{1,5})d$/.exec(day);
+  if (days) {
+    const at = new Date();
+    at.setDate(at.getDate() + Number(days[1]));
+    return [at.getFullYear(), at.getMonth() + 1, at.getDate()].map((n, i) => String(n).padStart(i ? 2 : 4, '0')).join('-');
+  }
   const real = /^\d{4}-\d{2}-\d{2}$/.test(day) && new Date(`${day}T00:00:00Z`).toISOString().startsWith(day);
-  if (!real) throw new SecretBadInput(`"${day}" is not a date: use YYYY-MM-DD, or none.`);
+  if (!real) throw new SecretBadInput(`"${day}" is not an expiry: use YYYY-MM-DD, <N>d, never, or clear.`);
   return day;
 }
 
@@ -67,9 +77,9 @@ export async function setSecretExpiry(name: string, date: string): Promise<strin
 export async function saveSecret(name: string, value: string, expires = ''): Promise<string> {
   const file = secretFile(name);
   if (!value) throw new SecretBadInput('An empty secret is not saved.');
-  expiryDate(expires);
+  const day = expiryDate(expires);
   await writePrivate(file, value);
-  await setSecretExpiry(name, expires);
+  await setSecretExpiry(name, day);
   return file;
 }
 
