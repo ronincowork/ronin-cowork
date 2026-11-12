@@ -106,7 +106,33 @@ test('teamWork: the Team’s Epics, an Epic held and the Epic above each held it
 test('the picked Epic is its own bar, opening to its reading as an item bar does; no Epic status beside the filters (KAN-309, KAN-310)', async () => {
   const surface = await readFile(new URL('../public/js/epics-surface.js', import.meta.url), 'utf8');
   assert.doesNotMatch(surface, /epic_status/, 'the filter row is Assigned and Status only');
-  assert.match(surface, /itemBar\(withCard\(epic\), \{ extra: \[holder \? holderWords\(holder\)[^\n]*\n\s*onPress: \(\) => \{ if \(!open\.delete\(epic\.id\)\) open\.add\(epic\.id\); paint\(\); \} \}\)/, 'pressed, it opens as any bar');
-  assert.match(surface, /reading\(epic, \{ children: false \}\)/, 'the same reading path; its children are the board below');
+  assert.match(surface, /bars\.place\(detail, epic \? \[\{ id: epic\.id, item: epic, children: false \}\] : \[\]\)/, 'the Epic is a bar of the same keyed list, opening as any bar; its children are the board below');
   assert.match(surface, /root\.append\(detail, questions\.el, groups\)/, 'the bar heads the filters');
+});
+
+test('the kit\'s keyed list: a row repaints only itself, moves only with its group, an opened row is kept (KAN-412)', async () => {
+  const { createKeyedList } = await import('../public/js/workspace-primitives.js');
+  // Just enough DOM for the list: children, insertBefore, remove, replaceWith.
+  const fake = (name) => { const n = { name, parent: null, childNodes: [],
+    insertBefore(child, ref) { child.remove(); const at = ref ? this.childNodes.indexOf(ref) : -1; this.childNodes.splice(at < 0 ? this.childNodes.length : at, 0, child); child.parent = this; touched.push(child.name); },
+    remove() { if (this.parent) this.parent.childNodes.splice(this.parent.childNodes.indexOf(this), 1); this.parent = null; },
+    replaceWith(other) { const p = this.parent; const i = p.childNodes.indexOf(this); this.remove(); p.childNodes.splice(i, 0, other); other.parent = p; } }; return n; };
+  let touched = [];
+  let drawn = [];
+  const list = createKeyedList({ shows: (row) => row.title, draw: (row) => { drawn.push(row.id); return fake(row.id); } });
+  const todo = fake('todo'); const doing = fake('doing');
+  const push = (rows) => { touched = []; drawn = []; list.place(todo, rows.filter((r) => r.s === 'todo')); list.place(doing, rows.filter((r) => r.s === 'doing')); list.sweep(); };
+  const names = (p) => p.childNodes.map((n) => n.name);
+  push([{ id: 'a', title: 'A', s: 'todo' }, { id: 'b', title: 'B', s: 'todo' }, { id: 'c', title: 'C', s: 'doing' }]);
+  assert.deepEqual([names(todo), names(doing)], [['a', 'b'], ['c']]);
+  const b = todo.childNodes[1];
+  push([{ id: 'a', title: 'A', s: 'todo' }, { id: 'b', title: 'B', s: 'todo' }, { id: 'c', title: 'C', s: 'doing' }]);
+  assert.deepEqual([drawn, touched], [[], []], 'the same push again touches nothing');
+  push([{ id: 'a', title: 'A2', s: 'todo' }, { id: 'b', title: 'B', s: 'todo' }, { id: 'c', title: 'C', s: 'doing' }]);
+  assert.deepEqual([drawn, touched], [['a'], []], 'one row moved: only it repaints, in its place');
+  push([{ id: 'a', title: 'A2', s: 'todo' }, { id: 'b', title: 'B', s: 'doing' }, { id: 'c', title: 'C', s: 'doing' }]);
+  assert.deepEqual([names(todo), names(doing), drawn], [['a'], ['b', 'c'], []], 'a status move moves the row, not redraws it');
+  assert.equal(doing.childNodes[0], b, 'the same node, so what is open under it stays');
+  push([{ id: 'b', title: 'B', s: 'doing' }, { id: 'c', title: 'C', s: 'doing' }]);
+  assert.deepEqual([names(todo), touched], [[], []], 'a row gone is removed; the rest stay put');
 });

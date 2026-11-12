@@ -413,6 +413,68 @@ function createLayoutMap(arrangement) {
   return { el, destroy: () => { unsubscribe(); el.remove(); } };
 }
 
+/**
+ * ONE WAY TO REDRAW A LIST (owner, 2026-11-12, KAN-412; lifted from the People list's update(),
+ * w451, and the item island's update()). A keyed list keeps one row per key between pushes:
+ * - each row compares what it shows with what it would show now and repaints only itself;
+ * - a row is added or removed only when the set of keys changes (`sweep`);
+ * - a row's nodes move only when its order or its parent (its group) changes, and laying them
+ *   out touches only what moved, so an opened row, a field being typed in, keeps its place;
+ * - a row keeps its nodes when it moves from one parent to another.
+ * `create(row)` → { nodes(): Node[], update(row), destroy?() } — the row drawn; `update` hears every
+ * later `place` and decides for itself. Or, for a row that is one node: `shows(row)` (a string of
+ * what it shows) and `draw(row)` (its node), redrawn only when `shows` moves.
+ * `place(parent, rows)` lays rows into parent in order; `sweep()` lets go every row not placed
+ * since the last sweep; `set(parent, rows)` is both, for a list in one parent.
+ */
+export function layNodes(parent, nodes) {
+  const wanted = new Set(nodes);
+  for (const child of [...parent.childNodes]) if (!wanted.has(child)) child.remove();
+  nodes.forEach((one, index) => { if (parent.childNodes[index] !== one) parent.insertBefore(one, parent.childNodes[index] || null); });
+}
+
+export function createKeyedList({ key = (row) => row.id, create, shows, draw } = {}) {
+  const drawn = (row) => {
+    let el = null;
+    let said = null;
+    const update = (now) => {
+      const next = shows(now);
+      if (next === said) return;
+      said = next;
+      const fresh = draw(now);
+      el?.replaceWith(fresh);
+      el = fresh;
+    };
+    update(row);
+    return { nodes: () => [el], update };
+  };
+  const make = create || drawn;
+  const rows = new Map();
+  const placed = new Set();
+  const place = (parent, list = []) => {
+    const nodes = [];
+    for (const row of list) {
+      const id = key(row);
+      placed.add(id);
+      const one = rows.get(id);
+      if (one) one.update(row); else rows.set(id, make(row));
+      nodes.push(...rows.get(id).nodes());
+    }
+    layNodes(parent, nodes);
+  };
+  const sweep = () => {
+    for (const [id, one] of rows) if (!placed.has(id)) { for (const n of one.nodes()) n?.remove(); one.destroy?.(); rows.delete(id); }
+    placed.clear();
+  };
+  return {
+    place,
+    sweep,
+    set: (parent, list) => { place(parent, list); sweep(); },
+    get: (id) => rows.get(id),
+    destroy: () => { for (const one of rows.values()) one.destroy?.(); rows.clear(); placed.clear(); },
+  };
+}
+
 export const WorkspacePrimitives = Object.freeze({
   states: WORKSPACE_STATES,
   createLayoutMap,
@@ -431,4 +493,6 @@ export const WorkspacePrimitives = Object.freeze({
   createField,
   createForm,
   ninMark,
+  createKeyedList,
+  layNodes,
 });
