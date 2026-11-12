@@ -116,7 +116,7 @@
   /* The picked Epic's own bar (KAN-309): its details; pressed, its reading opens under it as any bar's (KAN-310). */
   .epic-detail { display: flex; flex-direction: column; gap: var(--space-inline); }
   .epic-detail > button.item-bar { width: 100%; font-family: inherit; }
-  .epic-reading { margin-left: var(--space-inset); padding: var(--space-inline) var(--space-inset); border: var(--edge) solid var(--line); border-radius: var(--radius-large); background: var(--surface); }
+  .epic-reading { padding: var(--space-inline) var(--space-inset); border: var(--edge) solid var(--line); border-radius: var(--radius-large); background: var(--surface); }
   /* THE TEAM'S EPICS on the Team workbench (KAN-232): the card is flush (createSurface's flush): the
      board inside keeps its own inset, and nothing here reaches into the kit. */
   .team-epics .epics-board { flex: 1 1 auto; min-height: 0; border: 0; }
@@ -141,8 +141,7 @@
   .wi-head.wi-head-closes { cursor: pointer; border-radius: var(--radius-large); }
   .wi-head.wi-head-closes:hover, .wi-head.wi-head-closes:focus-visible { background: color-mix(in srgb, var(--accent) 8%, transparent); }
   .wi-head.wi-head-closes:active { background: color-mix(in srgb, var(--accent) 16%, transparent); }
-  .wi-head .wi-head-close { margin-left: auto; flex: 0 0 auto; color: var(--muted); font-size: var(--text-heading); line-height: 1; padding: 0 var(--space-row); }
-  .wi-head.wi-head-closes:hover .wi-head-close { color: var(--fg); }
+  .wi-head > button.minimize { margin-left: auto; }
   .wi-title { margin: 0; color: var(--fg-strong); font-size: var(--text-heading); font-weight: var(--weight-strong); line-height: var(--leading-tight); overflow-wrap: anywhere; }
   .wi-key, .wi-notice, .wi-when { margin: 0; color: var(--muted); font-size: var(--form-note); }
   .wi-answer:empty { display: none; }

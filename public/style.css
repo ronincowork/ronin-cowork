@@ -1368,7 +1368,7 @@ body {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.tile-head button {
+.tile-head button, .wi-head > button.window-control {
   flex: 0 0 auto;
   background: var(--surface);
   border: var(--edge) solid var(--muted);
@@ -1379,7 +1379,7 @@ body {
   font-size: var(--text-body);
   cursor: pointer;
 }
-.tile-head button:hover {
+.tile-head button:hover, .wi-head > button.window-control:hover {
   border-color: var(--accent);
 }
 
@@ -1387,7 +1387,7 @@ body {
   width: 28px;
   font-size: var(--text-label);
 }
-.tile-head button:active {
+.tile-head button:active, .wi-head > button.window-control:active {
   color: var(--accent);
 }
 .tile-head button.kill:hover,
@@ -1395,7 +1395,7 @@ body {
   color: var(--bad);
   border-color: var(--bad);
 }
-.tile-head button.window-control {
+.tile-head button.window-control, .wi-head > button.window-control {
   font-size: var(--text-label);
   line-height: var(--leading-none);
 }

@@ -150,19 +150,23 @@ export function renderItemDetail(host, item, { holder = '', openAttachment = nul
   const words = el('div', 'wi-head-words');
   words.append(el('h2', 'wi-title', item.title || item.id), key);
   head.append(kindMark(item.kind), words);
-  // OPENED IN THE BAR'S PLACE (owner, 2026-11-12, KAN-431): where a bar opens into this reading,
-  // the bar goes and this head stands for it — pressed, it closes, as does its visible Close.
+  // EXPAND AND MINIMIZE (owner, 2026-11-12, KAN-431): where a bar opens into this reading, the bar
+  // goes and this head stands for it. Pressed, it minimizes, as does the tile header's own
+  // minimize mark (tilehead.js minimizeBtn, the − in a box) at its end.
   if (onClose) {
     head.classList.add('wi-head-closes');
     head.tabIndex = 0;
     head.setAttribute('role', 'button');
     head.setAttribute('aria-expanded', 'true');
-    head.title = t('work_items.close_reading', 'Close');
+    head.title = t('work_items.minimize', 'Minimize');
     head.addEventListener('click', () => onClose());
     head.addEventListener('keydown', (event) => { if (event.target === head && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); onClose(); } });
-    const close = el('span', 'wi-head-close', '×');
-    close.setAttribute('aria-hidden', 'true');
-    head.append(close);
+    const minimize = el('button', 'window-control minimize', '−');
+    minimize.type = 'button';
+    minimize.title = t('work_items.minimize', 'Minimize');
+    minimize.setAttribute('aria-label', minimize.title);
+    minimize.addEventListener('click', (event) => { event.stopPropagation(); onClose(); });
+    head.append(minimize);
   }
   form.append(head);
   /** A folding step: `id` keys its fold, `meta()` is its folded answer. */
@@ -343,7 +347,8 @@ export function renderItemDetail(host, item, { holder = '', openAttachment = nul
 /** A phalanx of item stones with the reading as its detail. */
 export function createItemPhalanx({ holder = () => '', openAttachment = null, className = '' } = {}) {
   const phalanx = createPhalanx({ grouped: true, className: `wi-phalanx ${className}`.trim(), renderDetail: ({ item }, host) => {
-    renderItemDetail(host, item, { holder: holder(item), openAttachment });
+    // Its head minimizes it back to the stones (KAN-431).
+    renderItemDetail(host, item, { holder: holder(item), openAttachment, onClose: () => phalanx.select('') });
   } });
   return { el: phalanx.el, phalanx, setItems: (items, all = items) => phalanx.setItems(itemStones(items, { all, holder })), destroy: () => phalanx.destroy() };
 }
