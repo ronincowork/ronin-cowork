@@ -134,7 +134,7 @@ The keypad's user-facing controls are documented in
 [`docs/using-ronin/terminal-controls.md`](../../docs/using-ronin/terminal-controls.md); the module rows above own
 the implementation split.
 
-## Four rules
+## Five rules
 
 **1. Reassignable shared state lives on `S` in `state.js`.** An imported binding is
 read-only for the importer, so `compose = x` from another module is a hard error. The
@@ -157,6 +157,17 @@ dismisses messages, `setup-surfaces.js` reads an SVG mark). Dialog-shaped surfac
 is used inside a function body, called after the graph has loaded. A top-level
 `const X = somethingImported()` reintroduces load-order fragility, which is the class of
 bug this split exists to prevent.
+
+**5. One way to redraw a list: the kit's keyed list.** A surface that paints rows from a
+push keeps one row per key with `WorkspacePrimitives.createKeyedList` (and `layNodes`) in
+[workspace-primitives.js](workspace-primitives.js): each row compares what it shows and
+repaints only itself, moves only when its order or group changes, and is added or removed
+only when the set changes; an open row, a detail or a form being typed in is never rebuilt
+by a push that moved something else (owner, 2026-11-12, KAN-412, KAN-414). No surface keeps
+its own variant. Its users: the Epics surface ([epics-surface.js](epics-surface.js)) and
+the stone work surface ([phalanx.js](phalanx.js)): every stone, the Return stone and every
+group section is a kept row, a stone reads its row at press time, and the open detail is
+drawn again only when what is open changes, its own row moves, or `refreshDetail()` asks.
 
 ## Verifying a change
 

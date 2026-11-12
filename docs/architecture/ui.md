@@ -669,6 +669,14 @@ own format: two numbered steps — Team (ID · Title · Kind, then Purpose) and 
 defaults (the groups) — at the forms' tight density. Its text entries are the kit's, beside
 the stones, not inside them. Contract and file list: `docs/architecture/team-workspace.md` § Durable Team record.
 
+**One stone moves, one stone repaints (KAN-414).** The Phalanx surface paints through the
+kit's keyed list (`WorkspacePrimitives.createKeyedList`, KAN-412): `setItems` with a push
+redraws only the stones whose own row changed, moves a stone between group sections without
+drawing it again, and leaves the open detail as it is unless the open stone's own row moved.
+Selecting, opening a detail, going down a level and `refreshDetail()` draw the detail afresh.
+A row's signature counts a function by its presence and a Node by its identity, so a consumer
+that hands a new marker node every push redraws that stone every push: hand the same node, or a string.
+
 **What is not an `ask()`.** The Phalanx surface (`phalanx.js`) is a page for
 browsing a collection whose item is the content — Presets, Workspace Folders, Model
 providers, Templates — and stays. Tabs, the Presets kind filter, and the
