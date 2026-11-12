@@ -3,6 +3,7 @@ import { request } from './request.js';
 import { transcriptHandlers, transcriptWatch } from './events.js';
 import { t } from './lexicon.js';
 import { renderMarkdownDocument } from './markdown-reader.js';
+import { WorkspacePrimitives } from './workspace-primitives.js';
 
 /*
  * MARKDOWN ON OR OFF, per Agent (owner, 2026-11-01: "when i select MD or not in one tile it
@@ -31,7 +32,7 @@ const said = (text) => String(text || '').replace(/\s+/g, ' ').trim();
  * @param watch  this view's own slot in what the tab tells the server it shows; the server sends only that
  *               Agent's records, already cut to that reading. Injected for testing.
  */
-export function makeTileTranscript({ read = request, watch = transcriptWatch(), onState = () => {}, cache = null } = {}) {
+export function makeTileTranscript({ read = request, watch = transcriptWatch(), onState = () => {}, cache = null, onAnswer = null } = {}) {
   const el = document.createElement('div');
   el.className = 'tile-transcript';
   el.setAttribute('role', 'log');
@@ -151,10 +152,21 @@ export function makeTileTranscript({ read = request, watch = transcriptWatch(), 
       stanceNode.setAttribute('data-stance', stance);
       stanceNode.replaceChildren();
       const words = stance === 'asking'
-        ? t('transcript.stance_asking', 'Waiting for your answer')
+        ? t('transcript.stance_asking', 'Waiting for your answer in Terminal')
         : t('transcript.stance_working', 'Working');
-      if (stance === 'asking') stanceNode.textContent = words;
-      else {
+      if (stance === 'asking') {
+        // The options are answered in Terminal only (owner, 2026-11-12): one press takes
+        // the tile there, and nothing switches without it. The tile owns the switch.
+        const said = document.createElement('span');
+        said.textContent = words;
+        stanceNode.append(said);
+        if (onAnswer) {
+          stanceNode.append(WorkspacePrimitives.createAction({
+            label: t('transcript.answer_in_terminal', 'Answer in Terminal'),
+            size: 'compact', className: 'tile-transcript-answer', action: () => onAnswer(),
+          }).el);
+        }
+      } else {
         for (let i = 0; i < 3; i++) stanceNode.append(document.createElement('i'));
         // The live flow's latest step: the tool it is in, by name and target.
         if (doing) {

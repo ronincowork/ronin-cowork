@@ -10,6 +10,7 @@ class Node {
     this.clientHeight = 100;
     this.attributes = {};
     this.listeners = {};
+    this.dataset = {};
     this.classList = {
       toggle: (name, force) => {
         const has = this.className.split(/\s+/).filter(Boolean);
@@ -305,8 +306,8 @@ test('the end of the conversation says what the Agent is doing, from the row and
 
   // Stopped at a question: words, not dots — the person has to do something.
   view.setStance('asking');
-  assert.equal(indicator()?.children.length, 0, 'no dots');
-  assert.equal(indicator()?.textContent, 'Waiting for your answer');
+  assert.equal(indicator()?.children.length, 1, 'no dots, and no button without a tile to switch');
+  assert.equal(indicator()?.children[0].textContent, 'Waiting for your answer in Terminal');
 
   // Nothing known: nothing shown, rather than a guess.
   view.setStance('unknown');
@@ -896,4 +897,49 @@ test('a numbered point with its paragraph indented beneath stays one list (how G
   assert.equal(article.children.length, 3, 'one paragraph, ONE list, one paragraph: not a list per item');
   assert.equal(ol.children.length, 2, 'two items');
   assert.equal(ol.children[0].children[1].children[0].textContent, 'Put ingress in its own office.', 'the indented paragraph is inside its item');
+});
+
+test('Answer in Terminal: the press switches through the tile, and only that press comes back', () => {
+  const pressed = [];
+  const asking = makeTileTranscript({ read: async () => ({ ok: true, data: { available: true, records: [] } }), watch: () => () => {}, onAnswer: () => pressed.push('answer') });
+  asking.show('agent');
+  asking.setStance('asking');
+  const end = asking.el.children.at(-1);
+  assert.equal(end.children[0].textContent, 'Waiting for your answer in Terminal');
+  const button = end.children[1];
+  assert.equal(button.textContent, 'Answer in Terminal');
+  button.dispatchEvent({ type: 'click' });
+  assert.deepEqual(pressed, ['answer']);
+
+  let stance = 'asking';
+  const tile = {
+    session: 'agent', transcriptOn: true, transcriptLevel: 0, transcriptReadings: READINGS, transcriptState: null,
+    transcriptAvailable: () => true, transcriptCycle: Tile.prototype.transcriptCycle,
+    syncSurface() {}, el: { classList: { toggle() {} } }, body: { contains: () => false },
+    transcriptView: { show() {}, setReading() {}, hide() {}, setStance() {} },
+    setComposer() {}, syncHeader() {}, doFit() {}, homeRow: () => ({ stance }),
+    toggleTranscript: Tile.prototype.toggleTranscript,
+  };
+  const refresh = () => Tile.prototype.refreshStance.call(tile);
+  // Pressed: Terminal; answered: Chat again.
+  Tile.prototype.answerInTerminal.call(tile);
+  assert.equal(tile.transcriptOn, false);
+  refresh();
+  assert.equal(tile.transcriptOn, false, 'still asking: stays in Terminal');
+  stance = 'working';
+  refresh();
+  assert.equal(tile.transcriptOn, true, 'answered: back to Chat');
+  // The owner switched by hand: nothing moves.
+  stance = 'asking';
+  tile.toggleTranscript();
+  stance = 'working';
+  refresh();
+  assert.equal(tile.transcriptOn, false, 'a hand switch is never undone');
+  // Pressed, then switched back by hand before answering: no return pending.
+  tile.toggleTranscript(); stance = 'asking';
+  Tile.prototype.answerInTerminal.call(tile);
+  tile.toggleTranscript(); tile.toggleTranscript();
+  stance = 'working';
+  refresh();
+  assert.equal(tile.transcriptOn, false, 'the hand switch cancelled the return');
 });

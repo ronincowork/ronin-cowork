@@ -3580,6 +3580,7 @@ body {
   color: var(--bad);
   font-weight: var(--weight-strong);
 }
+.tile-transcript-stance[data-stance='asking'] .tile-transcript-answer { font-weight: normal; }
 /* Motion is the whole point of the dots, so when motion is unwelcome they simply sit still —
    the indicator is still there, and still says the Agent is at work. */
 @media (prefers-reduced-motion: reduce) {

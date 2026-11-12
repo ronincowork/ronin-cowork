@@ -85,6 +85,7 @@ export class Tile {
     this.transcriptView = makeTileTranscript({
       cache: options.transcriptCache,
       onState: (state) => this.onTranscriptState(state),
+      onAnswer: () => this.answerInTerminal(),
     });
     this.body.append(this.transcriptView.el);
 
@@ -280,6 +281,7 @@ export class Tile {
    */
   toggleTranscript() {
     if (!this.session || !this.transcriptAvailable()) return;
+    this.answerReturns = false; // any switch but the answer's own cancels its way back
     const readings = this.transcriptCycle();
     const was = this.transcriptOn;
     const next = was ? this.transcriptLevel + 1 : 0;
@@ -313,7 +315,24 @@ export class Tile {
   refreshStance() {
     const row = this.homeRow();
     this.transcriptView.setStance(row?.stance || '', row?.tool);
+    // Answered: back to Chat, but only a tile that went to Terminal by Answer in Terminal.
+    if (this.answerReturns && row && row.stance !== 'asking') {
+      this.answerReturns = false;
+      if (!this.transcriptOn) this.toggleTranscript();
+    }
     this.stopWatch?.(row); // a Stop waiting to hear the Agent stopped (terminal-controls.js)
+  }
+
+  /**
+   * ANSWER IN TERMINAL — the Chat button under an Agent's question (owner, 2026-11-12).
+   * Chat cannot answer the options, so the press takes the tile to Terminal through its own
+   * Term/Chat switch, and remembers that it did: once the stance leaves 'asking' the tile
+   * comes back to Chat (refreshStance). The owner switching by hand cancels that.
+   */
+  answerInTerminal() {
+    if (!this.transcriptOn) return;
+    this.toggleTranscript();
+    this.answerReturns = !this.transcriptOn;
   }
 
   /** The route's word on this Agent's transcript arrived; the header reads it from here. */
@@ -628,6 +647,7 @@ export class Tile {
     if (changed && this.docView?.isOpen() && !this.docView.close()) return false;
     if (changed) {
       this.transcriptView.hide();
+      this.answerReturns = false;
       this.transcriptOn = false;
       this.transcriptLevel = -1;
       this.transcriptReadings = [];
