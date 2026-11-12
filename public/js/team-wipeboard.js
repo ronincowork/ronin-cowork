@@ -2,6 +2,7 @@
 import { request } from './request.js';
 import { subscribe } from './store.js';
 import { t } from './lexicon.js';
+import { createKeyedList } from './workspace-primitives.js';
 
 const el = (tag, cls, text) => {
   const out = document.createElement(tag);
@@ -58,11 +59,16 @@ export function createTeamWipeboard() {
   });
   ro.observe(thread);
 
-  const renderThread = (posts, cleared) => {
-    thread.replaceChildren();
-    if (cleared) thread.append(el('p', 'twb-cleared', t('team_wipeboard.cleared', '… earlier posts have cleared')));
-    for (const p of posts) thread.append(postNode(p));
-    if (!posts.length) quiet(t('team_wipeboard.empty', 'Nothing on the board right now — posts clear after 48 hours.'));
+  // ONE POST ARRIVES, ONE POST DRAWS (owner, 2026-11-12, KAN-414): the kit's keyed list. Each
+  // post is a kept row by its id, so a push adds the new post and leaves the thread, and where
+  // it is scrolled to, as it was; a post cleared after 48 hours is let go.
+  const posts = createKeyedList({ key: (row) => row.key, shows: (row) => row.shows, draw: (row) => row.draw() });
+  const renderThread = (list, cleared) => {
+    posts.set(thread, [
+      ...(cleared ? [{ key: '!cleared', shows: '', draw: () => el('p', 'twb-cleared', t('team_wipeboard.cleared', '… earlier posts have cleared')) }] : []),
+      ...list.map((p) => ({ key: p.id || `${p.at}|${p.author}|${p.text}`, shows: JSON.stringify([p.author, p.silent, p.to, p.at, p.text]), draw: () => postNode(p) })),
+    ]);
+    if (!list.length) quiet(t('team_wipeboard.empty', 'Nothing on the board right now — posts clear after 48 hours.'));
     else quiet('');
   };
 
@@ -101,6 +107,7 @@ export function createTeamWipeboard() {
     setBoard: (id) => {
       if (id === board) return;
       board = id || '';
+      posts.destroy(); // another board's thread starts fresh
       thread.replaceChildren();
       quiet(board ? '' : t('team_wipeboard.no_team', 'No Team resolved — nothing to read.'));
       watch();

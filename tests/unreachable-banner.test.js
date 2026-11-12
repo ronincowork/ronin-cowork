@@ -52,7 +52,7 @@ test('desktop and phone both install the quiet top-bar status', async () => {
   const desktop = await readFile(new URL('../public/index.html', import.meta.url), 'utf8');
   assert.match(main, /sayWhenUnreachable\(document\.getElementById\('connectionstate'\)\)/);
   assert.match(phone, /sayWhenUnreachable\(connectionStatus\)/);
-  assert.match(phone, /paintBar = \(\.\.\.nodes\) => bar\.replaceChildren\(\.\.\.nodes, connectionStatus\)/);
+  assert.match(phone, /paintBar = \(\.\.\.nodes\) => barCells\.set\(bar, \[\.\.\.nodes, connectionStatus\]\.map\(asCell\)\)/);
   assert.match(desktop, /id="connectionstate" class="connection-state" hidden/);
   assert.doesNotMatch(events, /showFailure|clearFailure|failbar|new Error/);
 });

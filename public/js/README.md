@@ -174,7 +174,11 @@ work surface ([phalanx.js](phalanx.js)): every stone, the Return stone and every
 section is a kept row, a stone reads its row at press time, and the open detail is drawn
 again only when what is open changes, its own row moves (held under an edit), or
 `refreshDetail()` asks; the roster ([roster.js](roster.js)): every group block, heading and
-session row (a session under each group it is in) is a kept row.
+session row (a session under each group it is in) is a kept row; the Team wipeboard
+([team-wipeboard.js](team-wipeboard.js)): each post by its id, so a push adds the new post
+and leaves the thread and its scroll; the message queue ([message-queue.js](message-queue.js)):
+each card by its message id; the phone ([phone.js](phone.js)): the bar's pieces, the Teams
+cards, a Team's Agent cards and its launch card, so a push never detaches a card mid-tap.
 
 ## Verifying a change
 
