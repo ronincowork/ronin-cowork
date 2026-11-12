@@ -167,7 +167,8 @@ that one needs you to do something and a decoration would not say it. If the dot
 unwelcome, a system "reduce motion" setting leaves them still.
 
 
-Each Agent's row says its **stance**: *working…*, *awaiting you*, or *asking you*. It is the
+Each Agent's row says its **stance**: *working…*, *awaiting you*, or *asking you*; before
+Ronin has read anything from it the row says nothing there (w452). It is the
 newest line of what the Agent has done: a tool going out, a finished turn, a question on its
 screen. While it works, the end of the conversation names the tool it is in (for example
 *Bash · npm test*). Every Agent gets this, whichever provider it runs on: a CLI that keeps a
