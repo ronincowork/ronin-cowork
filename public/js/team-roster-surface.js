@@ -49,6 +49,10 @@ export function createTeamRosterSurface({ teamDetail } = {}) {
     node.addEventListener('click', (event) => { event.stopPropagation(); openWorkspaceTab('team', team); });
     return node;
   };
+  // One mark per Team, kept: phalanx counts a Node by its identity, so a fresh one each push
+  // would redraw every stone (KAN-413).
+  const marks = new Map();
+  const markOf = (team) => { if (!marks.has(team)) marks.set(team, mark(team)); return marks.get(team); };
   // What Show picks, under the stone (owner, 2026-10-20): one cell per picked topic in Show's
   // order, the same under every stone so the phalanx lays them as rows across the stones —
   // Theme and State plain muted text (Theme wraps, clamped; the whole is in the Team's detail);
@@ -67,7 +71,7 @@ export function createTeamRosterSurface({ teamDetail } = {}) {
     return teams.sort((a, b) => a.name.localeCompare(b.name)).map((team) => {
       const name = String(team.title ?? '').trim() || team.name;
       return {
-        id: team.name, label: name, marker: mark(team.name), ...(show.length ? { under: under(rows.get(team.name)) } : {}),
+        id: team.name, label: name, marker: markOf(team.name), ...(show.length ? { under: under(rows.get(team.name)) } : {}),
         draggable: true,
         events: { dragstart: (event) => {
           event.dataTransfer.setData(SURFACE_DRAG, JSON.stringify({ type: WORKBENCH_TYPES.team, detail: { key: team.name } }));
@@ -83,14 +87,12 @@ export function createTeamRosterSurface({ teamDetail } = {}) {
   };
   const stones = createPhalanx({ className: 'team-roster-phalanx', items: [], renderDetail, branches: 'column' });
   stones.mount(surface.content, { before: [filter.el] });
-  // A push that moves nothing a stone shows leaves the grid and an open detail alone, so
-  // an edit in progress in the Team's configuration keeps its focus.
-  let shown = null;
+  // ONE TEAM MOVES, ONE STONE REPAINTS (KAN-413): the phalanx lays its stones through the kit's
+  // keyed list, so a push that moves nothing a stone shows leaves the grid and an open detail
+  // alone, and an edit in progress in the Team's configuration keeps its focus.
   const paint = () => {
     filter.options('root', workspaces(teamsFromState()).map((root) => ({ v: root, l: root })));
-    const next = items();
-    const signature = JSON.stringify(next.map(({ id, label: name, under: below }) => [id, name, below]));
-    if (signature !== shown) { shown = signature; stones.setItems(next); }
+    stones.setItems(items());
   };
   const stop = subscribe(paint);
   return {

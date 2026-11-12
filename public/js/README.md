@@ -179,7 +179,10 @@ session row (a session under each group it is in) is a kept row. Also (KAN-413):
 the League Team's Agents ([cowork-view.js](cowork-view.js); a stance moves one row and never
 asks for the Work list again), the Docs shelf's groups and rows ([docs.js](docs.js); a group
 keeps its fold) and the phone's Agents cards ([phone.js](phone.js); the launch card, its
-form mid-typing, is one kept row).
+form mid-typing, is one kept row). The Team roster ([team-roster-surface.js](team-roster-surface.js))
+and Workspaces ([workspaces-surface.js](workspaces-surface.js)) keep no signature of their own:
+they hand the phalanx every push (the roster keeps one launch mark per Team, so a stone is
+not redrawn for a fresh node).
 
 ## Verifying a change
 
