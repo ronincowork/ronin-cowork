@@ -584,28 +584,33 @@ export function createCoworkView(options = {}) {
     const main = el('div', 'league-team-edit-content');
     main.append(...(holding ? [steps.agents.el] : [steps.agents.el, steps.work.el, steps.config.el]));
     let held = new Map(); // agent name -> titles of the items it holds, from the Team reading
-    const paintAgents = () => {
-      const list = el('div');
-      for (const member of membersOfTeam(name)) {
-        const row = el('button', 'league-team-row league-team-agent');
-        row.type = 'button'; row.dataset.session = member.name;
-        row.addEventListener('click', () => openAgentWorkbench(member.name));
-        const live = el('i', 'home-live'); live.dataset.stance = rows.get(member.name)?.stance || 'unknown';
-        live.title = stanceLabel(rows.get(member.name)?.stance) || ''; live.setAttribute('aria-hidden', 'true');
+    // ONE AGENT MOVES, ONE ROW CHANGES (KAN-413): the kit's keyed list. Each Agent row compares
+    // what it shows (its stance, 人, title, what it holds) and redraws only itself.
+    const foot = holding ? null : el('div', 'league-team-add');
+    // Agents join a Team by dragging; the foot starts a new one — the New Agent form with
+    // this Team chosen, as the Commons roster's New Agent does (owner, 2026-10-20).
+    foot?.append(createAction({ label: t('new_agent.title', 'New Agent'), size: 'compact', action: () => bench.place(WB_TYPES.newAgent, oppositeSeat(seat), { team: name }) }).el);
+    const agentRows = WorkspaceKit.primitives.createKeyedList({
+      key: (row) => row.name,
+      shows: (row) => (row.foot ? '!foot' : JSON.stringify([row.name, row.stance, !!row.team_lead, row.title, row.holds])),
+      draw: (row) => {
+        if (row.foot) return foot;
+        const node = el('button', 'league-team-row league-team-agent');
+        node.type = 'button'; node.dataset.session = row.name;
+        node.addEventListener('click', () => openAgentWorkbench(row.name));
+        const live = el('i', 'home-live'); live.dataset.stance = row.stance || 'unknown';
+        live.title = stanceLabel(row.stance) || ''; live.setAttribute('aria-hidden', 'true');
         const words = el('span', 'league-team-agent-name');
-        if (member.team_lead) words.append(el('span', 'league-team-agent-lead', '人'));
-        words.append(agentTitle(member), el('span', 'league-team-agent-holds', (held.get(member.name) || []).join(' · ')));
-        row.append(live, words);
-        list.append(row);
-      }
-      if (!holding) {
-        // Agents join a Team by dragging; the foot starts a new one — the New Agent form with
-        // this Team chosen, as the Commons roster's New Agent does (owner, 2026-10-20).
-        const foot = el('div', 'league-team-add');
-        foot.append(createAction({ label: t('new_agent.title', 'New Agent'), size: 'compact', action: () => bench.place(WB_TYPES.newAgent, oppositeSeat(seat), { team: name }) }).el);
-        list.append(foot);
-      }
-      agents.replaceChildren(...list.children);
+        if (row.team_lead) words.append(el('span', 'league-team-agent-lead', '人'));
+        words.append(row.title, el('span', 'league-team-agent-holds', row.holds));
+        node.append(live, words);
+        return node;
+      },
+    });
+    const paintAgents = () => {
+      const list = membersOfTeam(name).map((member) => ({ name: member.name, stance: rows.get(member.name)?.stance, team_lead: member.team_lead,
+        title: agentTitle(member), holds: (held.get(member.name) || []).join(' · ') }));
+      agentRows.set(agents, foot ? [...list, { name: '!foot', foot: true }] : list);
     };
     const readWork = async () => {
       if (holding) return;
@@ -619,22 +624,23 @@ export function createCoworkView(options = {}) {
     };
     // Same contract as renderConfig below: every publish lands here, so the body only
     // rebuilds — and refetches the configuration's catalogs — when what it shows moved.
-    // The Agents follow the live signature; the configuration follows the saved record
-    // alone, so a session coming or going never repaints an edit in progress (owner, 2026-09-13).
+    // The configuration follows the saved record alone, so a session coming or going never
+    // repaints an edit in progress (owner, 2026-09-13). A stance moves only its Agent's row;
+    // the Work list is asked again only when the members moved, never on a stance (KAN-413).
     let seen = '';
     let seenRecord = '';
     const render = () => {
       const current = teamByName(name);
-      const signature = configSignature(name) + JSON.stringify(membersOfTeam(name).map((member) => rows.get(member.name)?.stance || ''));
+      const signature = configSignature(name);
       const record = JSON.stringify(current.durable ? current : null);
-      const rowsMoved = signature !== seen;
+      const membersMoved = signature !== seen;
       const recordMoved = record !== seenRecord;
-      if (!rowsMoved && !recordMoved) return;
+      paintAgents();
+      if (!membersMoved && !recordMoved) return;
       seen = signature;
       seenRecord = record;
       objective.textContent = current.objective || ''; objective.title = current.objective || ''; objective.hidden = !current.objective;
-      paintAgents();
-      if (rowsMoved) void readWork();
+      if (membersMoved) void readWork();
       if (recordMoved && !holding) {
         const fields = el('div', null);
         config.replaceChildren(fields, createActionBar({ actions: [remove] }).el);

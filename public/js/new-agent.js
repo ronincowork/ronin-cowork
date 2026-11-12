@@ -86,6 +86,7 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
     launch: true,
     size: 'compact',
     disabled: true,
+    endsEdit: true, // Send / Launch: the edit is over, and a held row lands (the kit's editHold)
     action: () => void (configure ? doSend() : doStart()),
   });
   const surface = createSurface({ label: configure ? t('me.configuration', 'Configuration') : t('new_agent.title', 'New Agent'), className: 'na-surface', actions: [start], header: !embedded });
@@ -733,8 +734,6 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
       paint();
     },
     action: start,
-    // Configure only: an edit not yet sent (the form holds it until Send).
-    dirty: () => !!configure && loaded && JSON.stringify(configurationValue()) !== configured,
     destroy: () => {
       window.removeEventListener('ronin:behaviours-changed', refreshBehaviours);
       questions.destroy();

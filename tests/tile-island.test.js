@@ -84,7 +84,9 @@ test('a Subtask whose Task is on the island folds under it: the Task pill carrie
   const island = await read('public/js/tile-island.js');
   assert.match(island, /kindKey\(item\.kind\) === 'subtask' && item\.parent && shown\.has\(item\.parent\)/);
   assert.match(island, /mark\.append\(kindMark\('Subtask'\), String\(count\)\)/);
-  assert.match(island, /pills\.replaceChildren\(\.\.\.shape\.top\.map\(pill\)\)/);
+  // One pill per top item, the kit's keyed list (KAN-413): a pill redraws only when what it shows moves.
+  assert.match(island, /pillList\.set\(pills, shape\.top\.map\(\(item\) => \(\{ id: item\.id, item, count: under\.get\(item\.id\) \|\| 0 \}\)\)\)/);
+  assert.doesNotMatch(island, /pills\.replaceChildren|bars\.replaceChildren/);
   const surface = await read('public/js/work-items-surface.js');
   assert.match(surface, /step\('subtasks', t\('work_items\.subtasks', 'Subtasks'\)/);
 });

@@ -680,6 +680,12 @@ Save, Cancel: `createAction({ endsEdit: true })`), a fold, or focus leaving with
 A row's signature counts a function by its presence and a Node by its identity, so a consumer
 that hands a new marker node every push redraws that stone every push: hand the same node, or a string.
 
+**One Agent, item or doc moves, one row repaints (KAN-413).** The same keyed list draws the
+item island's pills and bars, the People list, the League Team's Agents, the Docs shelf and the
+phone's Agents cards. A stance change repaints only that Agent's row and no longer asks the
+server for the Team's Work list; a Docs group keeps the fold the owner gave it across pushes;
+the phone's launch form, mid-typing, is one kept row, so a rename lands while it is open.
+
 **What is not an `ask()`.** The Phalanx surface (`phalanx.js`) is a page for
 browsing a collection whose item is the content — Presets, Workspace Folders, Model
 providers, Templates — and stays. Tabs, the Presets kind filter, and the

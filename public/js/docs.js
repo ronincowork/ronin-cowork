@@ -23,10 +23,6 @@ export function buildDocs(root, only = null, { team = null } = {}) {
   const teamName = () => String((typeof team === 'function' ? team() : team) || '');
   let openPath = null; // normalized target, or null while the list is showing
   let dirty = false; // the owner has typed since the last load or save
-  // Only rebuild the list when it actually changed — see refresh(). null, not '', so the
-  // first read always draws: an empty list signs as '' and would otherwise leave
-  // 'loading…' standing over a list that is legitimately empty.
-  let sig = null;
 
   /* ---------- the rectangular shelf tabs, then the list ---------- */
   let shelf = 'tracked';
@@ -50,7 +46,7 @@ export function buildDocs(root, only = null, { team = null } = {}) {
     b.setAttribute('role', 'tab');
     b.setAttribute('aria-controls', list.id);
     b.textContent = label;
-    b.addEventListener('click', () => { shelf = id; sig = null; paintPills(); refresh(true); });
+    b.addEventListener('click', () => { shelf = id; paintPills(); refresh(true); });
     pill[id] = b;
     pills.append(b);
   }
@@ -231,8 +227,12 @@ export function buildDocs(root, only = null, { team = null } = {}) {
 
   /* ---------- the list ---------- */
 
+  // ONE DOC MOVES, ONE ROW CHANGES (KAN-413): the kit's keyed list (WorkspacePrimitives.
+  // createKeyedList). The scope line, each group and each doc row are kept between pushes and
+  // repaint only themselves; a group keeps its fold, a row under a finger is never replaced.
+
   // THE SCOPE IN WORDS: what this list is drawn from, so a Team's shelf never reads as everything.
-  const scopeLine = () => {
+  const scopeRow = () => {
     const name = teamName();
     const scope = shelves[shelfKey()]?.scope;
     let text = '';
@@ -242,91 +242,90 @@ export function buildDocs(root, only = null, { team = null } = {}) {
         ? t('docs.scope_plans', 'Plans of Workspace {workspace}', { workspace: scope.workspace })
         : t('docs.scope_docs', 'Docs of {folders} — Workspace {workspace}', { folders: (scope.folders || []).join(', ') || '—', workspace: scope.workspace });
     } else if (shelves[shelfKey()]) text = shelf === 'plans' ? t('docs.scope_plans_all', 'Plans of every Workspace') : t('docs.scope_docs_all', 'Docs of every Workspace Folder');
-    if (!text) return;
-    list.appendChild(Object.assign(document.createElement('p'), { className: 'dc-scope', textContent: text }));
+    return text ? [{ key: '!scope', tag: 'p', cls: 'dc-scope', text }] : [];
+  };
+  const noteRow = () => (only && shelf === 'tracked'
+    ? [{ key: '!note', tag: 'p', cls: 'dc-work-record-note', text: t('docs.work_record_note', 'Ask an agent to add a document with work-record add_doc <path>. If a document is missing, ask the agent to update its work record.') }]
+    : []);
+
+  /** One doc's row: its name over the last two directories (a plan, its status). */
+  const docRow = (p, hint) => {
+    const link = isLinkDoc(p);
+    // A link reads as its last segment over its host and path, with ↗: it leaves for a tab.
+    const parts = link ? p.replace(/^https?:\/\//i, '').replace(/\/+$/, '').split('/') : p.split('/');
+    const b = document.createElement('button');
+    b.className = 'dc-row';
+    b.title = p;
+    b.append(
+      Object.assign(document.createElement('b'), { textContent: parts.pop() }),
+      // The last two directories, so two files called HOW_TO.md are told apart
+      // without printing an absolute path on a phone-width row.
+      // A plan says its status instead (the Plans shelf: Draft, Ordered).
+      Object.assign(document.createElement('span'), { textContent: hint || (link ? `${parts.join('/')} ↗` : parts.slice(-2).join('/')) }),
+    );
+    b.addEventListener('click', () => open(p));
+    // the last directory and the name, what the row shows — and the tile's composer
+    // takes it the way it takes a dropped @mention (js/composer.js). Not the absolute
+    // path: a reference in a message is for reading, and the agent can find the file.
+    b.draggable = true;
+    b.addEventListener('dragstart', (event) => {
+      const short = link ? p : p.split('/').slice(-2).join('/');
+      event.dataTransfer.setData(DOC_MIME, short);
+      event.dataTransfer.setData('text/plain', short);
+      event.dataTransfer.effectAllowed = 'copy';
+    });
+    return b;
   };
 
-  const empty = (msg) => {
-    list.innerHTML = '';
-    scopeLine();
-    const e = document.createElement('div');
-    e.className = 'dc-empty';
-    e.textContent = msg;
-    list.appendChild(e);
-    if (only && shelf === 'tracked') appendWorkRecordNote();
+  /** A line of words (the scope, an empty shelf, the work-record note): its text, kept. */
+  const lineRow = (first) => {
+    const node = Object.assign(document.createElement(first.tag), { className: first.cls });
+    const update = (row) => { if (node.textContent !== row.text) node.textContent = row.text; };
+    update(first);
+    return { nodes: () => [node], update };
   };
+  /** A group: its heading (who or where, how many), then its docs. A group folds: on a shelf,
+   *  an archived repo comes closed; the fold then stays what the owner made it. */
+  const groupRow = (first) => {
+    const h = document.createElement('div');
+    h.className = 'dc-who';
+    const count = document.createElement('span');
+    h.append(Object.assign(document.createElement('b'), { textContent: first.name }), count);
+    const body = document.createElement('div');
+    body.className = 'dc-group';
+    body.hidden = !!first.folded;
+    h.addEventListener('click', () => { body.hidden = !body.hidden; h.classList.toggle('folded', body.hidden); });
+    h.classList.toggle('folded', body.hidden);
+    const docs = WorkspacePrimitives.createKeyedList({ key: (doc) => doc.path, shows: (doc) => `${doc.path}\0${doc.hint}`, draw: (doc) => docRow(doc.path, doc.hint) });
+    const update = (row) => {
+      const words = row.docs.length === 1 ? t('docs.count_one', '1 doc') : t('docs.count_many', '{n} docs', { n: row.docs.length });
+      if (count.textContent !== words) count.textContent = words;
+      docs.set(body, row.docs.map((path, n) => ({ path, hint: row.hints?.[n] || '' })));
+    };
+    update(first);
+    return { nodes: () => [h, body], update, destroy: () => docs.destroy() };
+  };
+  const shelfRows = WorkspacePrimitives.createKeyedList({ key: (row) => row.key, create: (row) => (row.group ? groupRow(row) : lineRow(row)) });
 
-  const appendWorkRecordNote = () => {
-    const foot = document.createElement('p');
-    foot.className = 'dc-work-record-note';
-    foot.textContent = t('docs.work_record_note', 'Ask an agent to add a document with work-record add_doc <path>. If a document is missing, ask the agent to update its work record.');
-    list.appendChild(foot);
-  };
+  const empty = (msg) => shelfRows.set(list, [...scopeRow(), { key: '!empty', tag: 'div', cls: 'dc-empty', text: msg }, ...noteRow()]);
 
   const render = (rows) => {
-    list.innerHTML = '';
     if (!rows.length) {
       if (shelf === 'plans') empty(t('docs.plans_empty', 'No plans yet. A lead writes one with the user: plan write <name>.'));
       else if (shelf !== 'tracked') empty(t('docs.shelf_empty', 'Nothing on this shelf — a workspace folder names its docs on its record (Workspace folders → docs).'));
       else empty(only ? t('docs.empty_team', 'No tracked documents.') : t('docs.empty', 'No session has listed a doc yet. An agent adds one with: work-record add_doc <path>'));
       return;
     }
-    scopeLine();
-    for (const s of rows) {
-      const h = document.createElement('div');
-      h.className = 'dc-who';
-      h.append(
-        Object.assign(document.createElement('b'), { textContent: s.name }),
-        Object.assign(document.createElement('span'), {
-          textContent: s.docs.length === 1 ? t('docs.count_one', '1 doc') : t('docs.count_many', '{n} docs', { n: s.docs.length }),
-        }),
-      );
-      list.appendChild(h);
-      // A group folds: on a shelf, an archived repo comes closed.
-      const body = document.createElement('div');
-      body.className = 'dc-group';
-      body.hidden = !!s.folded;
-      h.addEventListener('click', () => { body.hidden = !body.hidden; h.classList.toggle('folded', body.hidden); });
-      h.classList.toggle('folded', body.hidden);
-      list.appendChild(body);
-      for (const [n, p] of s.docs.entries()) {
-        const link = isLinkDoc(p);
-        // A link reads as its last segment over its host and path, with ↗: it leaves for a tab.
-        const parts = link ? p.replace(/^https?:\/\//i, '').replace(/\/+$/, '').split('/') : p.split('/');
-        const b = document.createElement('button');
-        b.className = 'dc-row';
-        b.title = p;
-        b.append(
-          Object.assign(document.createElement('b'), { textContent: parts.pop() }),
-          // The last two directories, so two files called HOW_TO.md are told apart
-          // without printing an absolute path on a phone-width row.
-          // A plan says its status instead (the Plans shelf: Draft, Ordered).
-          Object.assign(document.createElement('span'), { textContent: s.hints?.[n] || (link ? `${parts.join('/')} ↗` : parts.slice(-2).join('/')) }),
-        );
-        b.addEventListener('click', () => open(p));
-        // the last directory and the name, what the row shows — and the tile's composer
-        // takes it the way it takes a dropped @mention (js/composer.js). Not the absolute
-        // path: a reference in a message is for reading, and the agent can find the file.
-        b.draggable = true;
-        b.addEventListener('dragstart', (event) => {
-          const short = link ? p : p.split('/').slice(-2).join('/');
-          event.dataTransfer.setData(DOC_MIME, short);
-          event.dataTransfer.setData('text/plain', short);
-          event.dataTransfer.effectAllowed = 'copy';
-        });
-        body.appendChild(b);
-      }
-    }
-    if (only && shelf === 'tracked') appendWorkRecordNote();
+    shelfRows.set(list, [...scopeRow(), ...rows.map((s) => ({ ...s, key: `${shelfKey()}\0${s.name}`, group: true })), ...noteRow()]);
   };
 
   /**
    * The tracked shelf is read off the home rows the store holds: each row carries its
    * session's letter, and the letter lists its docs. The other shelves are read on demand.
    *
-   * Rebuilt only when the list itself changed. It runs on every home push, most of which
-   * move some other part of a row (a stance, a gauge), and the rows are buttons that must
-   * not be replaced mid-click.
+   * It runs on every home push, most of which move some other part of a row (a stance, a
+   * gauge); the keyed list repaints only a doc row that moved, and the rows are buttons that
+   * must not be replaced mid-click.
    */
   const refresh = (force = false) => {
     if (openPath) return; // the editor is up; the list underneath can wait
@@ -339,7 +338,6 @@ export function buildDocs(root, only = null, { team = null } = {}) {
         void request('/api/docs?' + query.toString(), { cache: 'no-store' }).then((r) => {
           if (!r.ok) { empty(r.message); return; }
           shelves[key] = { groups: r.data.groups || [], scope: r.data.scope || null };
-          sig = null;
           refresh();
         });
         return;
@@ -359,9 +357,6 @@ export function buildDocs(root, only = null, { team = null } = {}) {
         return [...by].sort(([a], [b]) => a.localeCompare(b)).map(([dir, docs]) => ({ name: dir ? `${g.root} · ${dir}` : g.root, docs, folded: true, archived: g.archived }));
       }) : groups.map((g) => ({ name: g.root, docs: g.files, hints: g.hints, folded: g.archived, archived: g.archived })))
         .sort((a, b) => Number(!!a.archived) - Number(!!b.archived));
-      const next = key + rows.map((s) => s.name + ':' + s.docs.join('|') + (s.hints || []).join('|')).join('\n');
-      if (next === sig) return;
-      sig = next;
       render(rows);
       return;
     }
@@ -370,9 +365,6 @@ export function buildDocs(root, only = null, { team = null } = {}) {
     const rows = home
       .filter((s) => (!only || only(s.name)) && s.tegami && (s.tegami.docs || []).length)
       .map((s) => ({ name: s.name, docs: s.tegami.docs }));
-    const next = 'tracked' + rows.map((s) => s.name + ':' + s.docs.join('|')).join('\n');
-    if (next === sig) return;
-    sig = next;
     render(rows);
   };
 
@@ -384,7 +376,6 @@ export function buildDocs(root, only = null, { team = null } = {}) {
   empty('loading…');
   return {
     enter() {
-      sig = null; // returning to the tab always redraws, however stale the signature
       refresh(shelf !== 'tracked'); // a shelf re-reads on entry: files come and go
       unsubscribe ??= subscribe('home', () => refresh());
     },

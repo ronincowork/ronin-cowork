@@ -42,7 +42,8 @@ const itemsHeld = async (member) => {
 // ONE AGENT MOVES, ONE ROW CHANGES (w451). A push lands in update(): each row compares what it
 // shows with what it would show now and redraws only its own head line; an opened row's
 // Configuration is never torn down, so a draft survives every push, its own Agent's too.
-// Rows are only added or removed when the Team's members change.
+// Rows are only added or removed when the Team's members change. The list is the kit's
+// keyed list (WorkspacePrimitives.createKeyedList, KAN-413).
 export const buildTeamMembers = (name, options = {}) => {
   const { createAction, createActionBar } = WorkspaceKit.primitives;
   const roster = el('section', 'league-team-roster');
@@ -111,6 +112,9 @@ export const buildTeamMembers = (name, options = {}) => {
     const eject = createAction({ label: t('league.remove_member', 'Remove'), title: t('league.remove_named_member', 'Remove {name} from this team', { name: member.name }), action: async () => { const result = await setTeamMembership(member.name, name, false); if (!result.ok) return options.onFailed?.(result.message); options.onChanged?.(); } });
     const close = options.onClose ? createAction({ label: t('league.close_agent', 'Close'), title: t('league.close_named_agent', 'Close {name}', { name: member.name }), action: () => options.onClose(member) }) : null;
     detail.append(el('p', 'ac-line', `${agentName(member)} · @${member.name}`), work.el, composition.el, word, createActionBar({ className: 'league-team-member-actions', actions: [composition.action, rename, lead, eject, close] }).el);
+    // An unsent draft is the kit's edit hold (editHold, KAN-414): typed in and not yet Sent.
+    const draft = WorkspaceKit.primitives.editHold();
+    draft.watch([detail]);
     let asked = false;
     const open = (expanded) => {
       detail.hidden = !expanded;
@@ -120,7 +124,7 @@ export const buildTeamMembers = (name, options = {}) => {
       if (!expanded) return;
       void itemsHeld(member).then((list) => items.setItems(list));
       // A draft folded away is still the draft when the row opens again: only Send clears it.
-      if (!asked || !composition.dirty()) void composition.show();
+      if (!asked || !draft.held()) void composition.show();
       asked = true;
     };
     toggle.addEventListener('click', () => open(detail.hidden));
@@ -130,15 +134,16 @@ export const buildTeamMembers = (name, options = {}) => {
     return { el: row, update: (now) => { member = now; paintHead(); }, destroy: composition.destroy };
   };
 
-  const rows = new Map();
+  // The kit's keyed list (KAN-412, KAN-413): one row per member, kept between pushes.
   const empty = el('p', 'league-team-empty', t('league.no_members', 'No Agents assigned yet.'));
+  const rows = WorkspaceKit.primitives.createKeyedList({ key: (member) => member.name, create: (first) => {
+    if (first.empty) return { nodes: () => [empty], update() {} };
+    const one = memberRow(first);
+    return { nodes: () => [one.el], update: one.update, destroy: one.destroy };
+  } });
   const update = () => {
     const members = membersOfTeam(name);
-    for (const [key, one] of rows) if (!members.some((member) => member.name === key)) { one.el.remove(); one.destroy?.(); rows.delete(key); }
-    for (const member of members) if (rows.has(member.name)) rows.get(member.name).update(member); else rows.set(member.name, memberRow(member));
-    const order = members.length ? members.map((member) => rows.get(member.name).el) : [empty];
-    // Moving a node blurs the field being typed in, so the list is only re-laid when its order moved.
-    if (order.some((node, index) => content.children[index] !== node) || content.children.length !== order.length) content.replaceChildren(...order);
+    rows.set(content, members.length ? members : [{ name: '!empty', empty: true }]);
   };
   update();
   // Agents join a Team by dragging; the foot starts a new one — the New Agent form with this
@@ -146,7 +151,7 @@ export const buildTeamMembers = (name, options = {}) => {
   const foot = el('div', 'league-team-add');
   foot.append(createAction({ label: t('new_agent.title', 'New Agent'), action: () => options.onNew?.() }).el);
   roster.append(foot);
-  return { el: roster, update, destroy: () => { for (const one of rows.values()) one.destroy?.(); rows.clear(); } };
+  return { el: roster, update, destroy: () => rows.destroy() };
 };
 
 // The roster reads what the tile's chip says: the items held with their status, and the

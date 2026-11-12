@@ -7,7 +7,7 @@ export const AGENT_COMPOSITION_TYPE = 'agent.composition';
 /** Configuration is the New Agent form reopened on one existing Agent. */
 export function createAgentCompositionReader(agent) {
   const view = createNewAgentView(WorkspaceKit, { configure: agent, embedded: true });
-  return { el: view.el, action: view.action, show: view.enter, dirty: view.dirty, destroy: view.destroy };
+  return { el: view.el, action: view.action, show: view.enter, destroy: view.destroy };
 }
 
 export function createAgentCompositionSurface(agent) {

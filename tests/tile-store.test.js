@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 
 // Just enough browser for tile.js and its imports to evaluate; no Tile is constructed here.
 const noop = () => {};
-const inert = () => new Proxy({}, { get: (held, key) => (key in held ? held[key] : (key === 'style' || key === 'dataset' || key === 'classList') ? { add: noop, remove: noop, toggle: noop } : noop) });
+const inert = () => new Proxy({}, { get: (held, key) => (key in held ? held[key] : key === 'childNodes' ? [] : (key === 'style' || key === 'dataset' || key === 'classList') ? { add: noop, remove: noop, toggle: noop } : noop) });
 globalThis.window = { matchMedia: () => ({ matches: false, addEventListener: noop }), addEventListener: noop, location: { hash: '' } };
 globalThis.document = { addEventListener: noop, createElement: inert, querySelector: () => null, getElementById: () => null, documentElement: { dataset: {}, style: {} }, body: inert() };
 globalThis.localStorage = { getItem: () => null, setItem: noop, removeItem: noop };
