@@ -685,6 +685,8 @@ item island's pills and bars, the People list, the League Team's Agents, the Doc
 phone's Agents cards. A stance change repaints only that Agent's row and no longer asks the
 server for the Team's Work list; a Docs group keeps the fold the owner gave it across pushes;
 the phone's launch form, mid-typing, is one kept row, so a rename lands while it is open.
+The Team roster and Workspaces hand the phalanx every push and keep no signature of their
+own: one renamed Team repaints its one stone, and the open Team detail stays.
 
 **What is not an `ask()`.** The Phalanx surface (`phalanx.js`) is a page for
 browsing a collection whose item is the content — Presets, Workspace Folders, Model
