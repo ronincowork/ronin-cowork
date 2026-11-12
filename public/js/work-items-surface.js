@@ -141,7 +141,7 @@ const isDone = (item) => /done|closed|resolved|complete/i.test(String(item?.stat
  * the Agents holding the item), Attachments (each opens), Links and History (`history: false`
  * leaves it out: the Epics workbench, KAN-206). Every step folds with the form steps' own fold
  * (form-steps.js), showing its one-line answer folded. Every size is a form token. */
-export function renderItemDetail(host, item, { holder = '', openAttachment = null, history = true, children = [], openChild = null } = {}) {
+export function renderItemDetail(host, item, { holder = '', openAttachment = null, history = true, children = [], openChild = null, onClose = null } = {}) {
   const form = el('div', 'ntf-form wi-form');
   const head = el('header', 'wi-head');
   const key = el('p', 'wi-key');
@@ -150,6 +150,20 @@ export function renderItemDetail(host, item, { holder = '', openAttachment = nul
   const words = el('div', 'wi-head-words');
   words.append(el('h2', 'wi-title', item.title || item.id), key);
   head.append(kindMark(item.kind), words);
+  // OPENED IN THE BAR'S PLACE (owner, 2026-11-12, KAN-431): where a bar opens into this reading,
+  // the bar goes and this head stands for it — pressed, it closes, as does its visible Close.
+  if (onClose) {
+    head.classList.add('wi-head-closes');
+    head.tabIndex = 0;
+    head.setAttribute('role', 'button');
+    head.setAttribute('aria-expanded', 'true');
+    head.title = t('work_items.close_reading', 'Close');
+    head.addEventListener('click', () => onClose());
+    head.addEventListener('keydown', (event) => { if (event.target === head && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); onClose(); } });
+    const close = el('span', 'wi-head-close', '×');
+    close.setAttribute('aria-hidden', 'true');
+    head.append(close);
+  }
   form.append(head);
   /** A folding step: `id` keys its fold, `meta()` is its folded answer. */
   const step = (id, title, meta, ...nodes) => {

@@ -159,7 +159,7 @@ function epicItems(epicId, { epicsRead }) {
   }
 
   /** An opened bar's reading, from the item's whole read (the push is slim). */
-  function reading(item, { children = true } = {}) {
+  function reading(item, { children = true, onClose = null } = {}) {
     const host = el('div', 'epic-reading');
     host.dataset.item = item.id;
     void request(`/api/work-items/${encodeURIComponent(item.id)}`, { cache: 'no-store' }).then(async (result) => {
@@ -169,7 +169,7 @@ function epicItems(epicId, { epicsRead }) {
       const whole = result.data.item;
       renderItemDetail(host, whole, { holder: holderOf({ ...whole, held_by: result.data.held_by }), history: false,
         children: children && Array.isArray(result.data.children) ? result.data.children : [], // an Epic's are the board below
-        openChild: (child) => { open.add(child.id); paint(); } });
+        openChild: (child) => { open.add(child.id); paint(); }, onClose });
     });
     return host;
   }
@@ -194,8 +194,11 @@ function epicItems(epicId, { epicsRead }) {
         node?.replaceWith(fresh);
         node = fresh;
       }
-      node.setAttribute('aria-expanded', String(open.has(item.id)));
-      if (open.has(item.id)) host ??= reading(item, { children });
+      // Open, the reading takes the bar's place (KAN-431): the bar hides, the reading's head closes it.
+      const isOpen = open.has(item.id);
+      node.setAttribute('aria-expanded', String(isOpen));
+      node.hidden = isOpen;
+      if (isOpen) host ??= reading(item, { children, onClose: () => { open.delete(item.id); paint(); if (node.isConnected) node.focus(); } });
       else { host?.remove(); host = null; }
     };
     update(first);

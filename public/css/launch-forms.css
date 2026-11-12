@@ -137,6 +137,12 @@
   .wi-head { display: flex; align-items: flex-start; gap: var(--space-inline); padding-bottom: var(--space-inset); border-bottom: var(--edge) solid var(--line); }
   .wi-head .item-kind { width: var(--text-heading); height: var(--text-heading); flex: 0 0 auto; margin-top: var(--space-row); }
   .wi-head-words { display: flex; flex-direction: column; gap: var(--space-row); min-width: 0; }
+  /* A head that stands for its bar (KAN-431): pressed, it closes the reading. */
+  .wi-head.wi-head-closes { cursor: pointer; border-radius: var(--radius-large); }
+  .wi-head.wi-head-closes:hover, .wi-head.wi-head-closes:focus-visible { background: color-mix(in srgb, var(--accent) 8%, transparent); }
+  .wi-head.wi-head-closes:active { background: color-mix(in srgb, var(--accent) 16%, transparent); }
+  .wi-head .wi-head-close { margin-left: auto; flex: 0 0 auto; color: var(--muted); font-size: var(--text-heading); line-height: 1; padding: 0 var(--space-row); }
+  .wi-head.wi-head-closes:hover .wi-head-close { color: var(--fg); }
   .wi-title { margin: 0; color: var(--fg-strong); font-size: var(--text-heading); font-weight: var(--weight-strong); line-height: var(--leading-tight); overflow-wrap: anywhere; }
   .wi-key, .wi-notice, .wi-when { margin: 0; color: var(--muted); font-size: var(--form-note); }
   .wi-answer:empty { display: none; }

@@ -1316,6 +1316,7 @@ body {
   font-size: var(--text-small);
   text-align: left;
 }
+:is(.tile-head .item-island, .epic-bars, .epic-detail) button.item-bar[hidden] { display: none; } /* opened: its reading stands in its place (KAN-431) */
 :is(.tile-head .item-island, .epic-bars, .epic-detail) button.item-bar:hover, :is(.tile-head .item-island, .epic-bars, .epic-detail) button.item-bar:focus-visible { border-color: var(--accent); }
 :is(.tile-head .item-island, .epic-bars, .epic-detail) button.item-bar[data-status='progress'] { border-left-color: var(--info); }
 :is(.tile-head .item-island, .epic-bars, .epic-detail) button.item-bar[data-status='review'] { border-left-color: var(--accent); }
