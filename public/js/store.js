@@ -24,7 +24,7 @@
  *   sessions  {t:'sessions', list}   — reduced into S.sessions (js/events.js) before anyone hears it
  *   teams     {t:'teams', rosters}   — the shape of GET /api/team-rosters
  *   epics     {t:'epics', epics, items} — every Epic (level-1 work item) whole, with its holder;
- *                                     items (held as epicItems): every item under one, slim
+ *                                     items (held as epicItems): every live item, slim, with its Epic ('' under none)
  *   messages  {t:'messages', list}   — the message queue
  *   memory    {t:'memory', reading}  — the machine reading behind the memory gauge
  *

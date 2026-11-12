@@ -278,47 +278,65 @@ export function createWorkbench(options = {}) {
     const type = typeAt(id), key = resourceAt(id), detail = instanceDetails.get(holding(id)) || {};
     return [id, key ? { type, key, ...(['root', 'path', 'tab', 'doc'].reduce((kept, field) => detail[field] ? { ...kept, [field]: detail[field] } : kept, {})) } : type];
   })) });
+  // ONE OFFER MOVES, ONE CARD REPAINTS (owner, 2026-11-12, KAN-414): the kit's keyed list. A
+  // selector card is kept by its type and resource and repaints only when what it shows moves;
+  // its press, hover and drag read the newest offer, so a kept card never acts on an old one.
+  const selectorList = WorkspacePrimitives.createKeyedList({ key: (row) => row.key, shows: (row) => row.shows, draw: (row) => row.draw() });
+  const offersNow = new Map();
+  const offerCard = (cardKey) => {
+    const { definition, offer, detail, label, summary } = offersNow.get(cardKey);
+    const now = () => offersNow.get(cardKey);
+    const card = WorkspacePrimitives.createCard({ heading: label, summary, metadata: offer.metadata, mark: offer.mark, variant: offer.variant || definition.variant || null,
+      action: (event) => { const one = now(); return typeof one.offer.action === 'function' ? one.offer.action(event) : place(one.definition.type, options.selectorWorkspace || selected, one.detail); } });
+    card.el.dataset.workbenchOfferType = definition.type;
+    if (offersNow.get(cardKey).current) card.el.setAttribute('aria-current', 'page');
+    // A readable title is display text, not identity. Consumers such as the render gate
+    // address an offered resource by its fixed key even after its title is edited.
+    if (detail.key) card.el.dataset.workbenchOfferResource = detail.key;
+    for (const cls of [definition.className, offer.className]) {
+      if (cls) card.el.classList.add(...String(cls).split(/\s+/).filter(Boolean));
+    }
+    card.el.addEventListener('pointerenter', (event) => now().offer.onPointerEnter?.(event));
+    card.el.addEventListener('pointerleave', (event) => now().offer.onPointerLeave?.(event));
+    card.el.draggable = true;
+    card.el.addEventListener('dragstart', (event) => { const { definition, detail, label } = now(); event.dataTransfer.setData(SURFACE_DRAG, JSON.stringify({ type: definition.type, detail })); event.dataTransfer.setData('text/plain', label); event.dataTransfer.effectAllowed = 'copy'; });
+    return card.el;
+  };
   const refreshSelector = () => {
-    selectorCards.replaceChildren();
+    const rows = [];
     const renderedGroups = new Set();
+    offersNow.clear();
     for (const { definition, offer } of allowed()) {
       const label = offer.label ?? (typeof definition.label === 'function' ? definition.label(tenant, options.environment) : definition.label || definition.type);
       const summary = offer.summary ?? (typeof definition.summary === 'function' ? definition.summary(tenant, options.environment) : definition.summary || '');
       const detail = { ...offer, key: offer.key || '' };
       const groupKey = String(definition.groupKey || '');
       if (offer.groupKey && groupKey && !renderedGroups.has(groupKey)) {
-        const group = node('div', 'wk-selector-group');
-        group.textContent = typeof definition.label === 'function' ? definition.label(tenant, options.environment) : definition.label || definition.type;
-        selectorCards.append(group);
+        const words = typeof definition.label === 'function' ? definition.label(tenant, options.environment) : definition.label || definition.type;
+        rows.push({ key: `group:${groupKey}`, shows: String(words), draw: () => { const group = node('div', 'wk-selector-group'); group.textContent = words; return group; } });
         renderedGroups.add(groupKey);
       }
       // A selector card is a door, not a status lamp. The workspace itself already shows
       // what is placed there; painting every matching door as pressed made one of two
       // visible Agents look selected and the other not as seats changed underneath it.
-      const card = WorkspacePrimitives.createCard({ heading: label, summary, metadata: offer.metadata, mark: offer.mark, variant: offer.variant || definition.variant || null, action: typeof offer.action === 'function' ? offer.action : () => place(definition.type, options.selectorWorkspace || selected, detail) });
-      card.el.dataset.workbenchOfferType = definition.type;
+      let current = false;
       if (options.selectorCurrent) {
         const resource = String(detail.key || '');
-        const current = options.selectorCurrent === 'placed'
+        current = options.selectorCurrent === 'placed'
           ? locations(definition.type, resource).some((id) => visibleIds().includes(id))
           : (() => {
               const target = options.selectorWorkspace || selected;
               return typeAt(target) === definition.type && resourceAt(target) === resource;
             })();
-        if (current) card.el.setAttribute('aria-current', 'page');
       }
-      // A readable title is display text, not identity. Consumers such as the render gate
-      // address an offered resource by its fixed key even after its title is edited.
-      if (detail.key) card.el.dataset.workbenchOfferResource = detail.key;
-      for (const cls of [definition.className, offer.className]) {
-        if (cls) card.el.classList.add(...String(cls).split(/\s+/).filter(Boolean));
-      }
-      if (offer.onPointerEnter) card.el.addEventListener('pointerenter', offer.onPointerEnter);
-      if (offer.onPointerLeave) card.el.addEventListener('pointerleave', offer.onPointerLeave);
-      card.el.draggable = true;
-      card.el.addEventListener('dragstart', (event) => { event.dataTransfer.setData(SURFACE_DRAG, JSON.stringify({ type: definition.type, detail })); event.dataTransfer.setData('text/plain', label); event.dataTransfer.effectAllowed = 'copy'; });
-      selectorCards.append(card.el);
+      const base = `card:${definition.type}|${detail.key}`;
+      let cardKey = base;
+      for (let n = 2; offersNow.has(cardKey); n += 1) cardKey = `${base}#${n}`; // two offers of one type and resource stay two cards
+      offersNow.set(cardKey, { definition, offer, detail, label, summary, current });
+      rows.push({ key: cardKey, shows: JSON.stringify([label, summary, offer.metadata, offer.mark, offer.variant || definition.variant || null, current, definition.className, offer.className,
+        typeof offer.action === 'function', Boolean(offer.onPointerEnter), Boolean(offer.onPointerLeave)]), draw: () => offerCard(cardKey) });
     }
+    selectorList.set(selectorCards, rows);
     options.onSelectorRefresh?.(selectorCards);
   };
 

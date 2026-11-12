@@ -466,8 +466,8 @@ test('Setup gbrain keeps installation/default choice on Campaign Installations a
   assert.match(setup, /presetLaunchUrl\(result\.data \|\| \{\}, seatingPlan\('personal_assistant'/);
   assert.match(gbrain, /import \{ gbrainAssistantPrompt, gbrainSetupModel \} from '\.\/gbrain-setup-state\.js'/);
   assert.match(gbrain, /if \(!root\.querySelector\('\.setup-gbrain-compact'\)\) renderSetup\(undefined\)/);
-  assert.match(gbrain, /row\(t\('campaign_view\.available', 'Available'\)\)/);
-  assert.match(gbrain, /row\(t\('campaign_view\.default_for_all_agents', 'Default for all Agents'\)\)/);
+  assert.match(gbrain, /answer\(t\('campaign_view\.available', 'Available'\)/);
+  assert.match(gbrain, /answer\(t\('campaign_view\.default_for_all_agents', 'Default for all Agents'\)/);
   assert.match(setup, /installationControls: context\.installationControls/);
   assert.match(gbrain, /const mine = \+\+reads;[\s\S]*?if \(mine === reads\) renderSetup\(result\)/);
   assert.doesNotMatch(gbrain, /setInterval|setTimeout/, 'an install is followed by push, never polled');

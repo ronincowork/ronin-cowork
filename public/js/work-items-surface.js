@@ -5,6 +5,7 @@ import { carryItem } from './team-drag.js';
 import { createPhalanx } from './phalanx.js';
 import { membersOfTeam, subscribe } from './team-controller.js';
 import { request } from './request.js';
+import { subscribe as hear } from './store.js';
 import { t } from './lexicon.js';
 import { ask } from './ask.js';
 import { createStep } from './form-steps.js';
@@ -332,6 +333,7 @@ export function createWorkItemsSurface(options = {}) {
   async function refresh() {
     read?.abort();
     const controller = new AbortController(); read = controller;
+    scopeSaid = scopeOf();
     const { agent = '', teams = [] } = options.scope();
     notice.textContent = t('work_items.loading', 'Loading Work Items…');
     const [installed, ...results] = await Promise.all([
@@ -348,7 +350,16 @@ export function createWorkItemsSurface(options = {}) {
     stones.setItems(agent ? all.filter((item) => item.holder === `agent:${agent}`) : all, all);
     notice.textContent = '';
   }
-  const stop = subscribe(() => { if (entered) void refresh(); });
+  // A RE-READ ONLY WHEN SOMETHING OF ITS OWN MOVED (owner, 2026-11-12, KAN-414): the epics push,
+  // which carries every live item and moves on every item write, or this surface's scope (its
+  // Teams, its Agent). A sessions push, every few seconds, moves neither, and reads nothing.
+  // The phalanx then repaints only the stones whose item moved.
+  const scopeOf = () => JSON.stringify(options.scope());
+  let scopeSaid = null;
+  const stopScope = subscribe(() => { if (!entered) return; const now = scopeOf(); if (now !== scopeSaid) void refresh(); });
+  let heardItems = false; // the store hands what it holds at once; that first hand-over is not a change
+  const stopItems = hear('epicItems', () => { if (heardItems && entered) void refresh(); heardItems = true; });
+  const stop = () => { stopScope(); stopItems(); };
   return {
     el: surface.el,
     show: () => { entered = true; void refresh(); },

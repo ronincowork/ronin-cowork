@@ -59,7 +59,7 @@ test('epicsPush: every Epic\'s row, and every item under one, with its Epic and 
     row('E', 1, null), row('a', 0, 'E', { jira: 'KAN-1', holder: 'agent:sam' }), row('s', -1, 'a'), row('loose', 0, null),
   ]);
   assert.deepEqual(epics.map((epic) => epic.id), ['E']);
-  assert.deepEqual(items.map((one) => [one.id, one.epic, one.jira, one.holder]), [['a', 'E', 'KAN-1', 'agent:sam'], ['s', 'E', '', '']]);
+  assert.deepEqual(items.map((one) => [one.id, one.epic, one.jira, one.holder]), [['a', 'E', 'KAN-1', 'agent:sam'], ['s', 'E', '', ''], ['loose', '', '', '']], 'an item under no Epic rides the push with epic \'\' (KAN-414)');
   assert.ok(items.every((one) => !('trail' in one) && !('comments' in one) && !('objective' in one)), 'rows only: no history, comments or objective on the push');
   // w334: what a bar says beyond its row, cut short, from the picked Epic's bodies (epicCards).
   const long = 'word '.repeat(100);

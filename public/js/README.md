@@ -178,7 +178,16 @@ session row (a session under each group it is in) is a kept row; the Team wipebo
 ([team-wipeboard.js](team-wipeboard.js)): each post by its id, so a push adds the new post
 and leaves the thread and its scroll; the message queue ([message-queue.js](message-queue.js)):
 each card by its message id; the phone's bar pieces and Teams cards ([phone.js](phone.js)), so a push never detaches
-a card mid-tap. Also (KAN-413): the item island's pills and bars
+a card mid-tap; the Cron tab ([team-jikan.js](team-jikan.js)): its header row, each job's row
+by id, and the filter and form options; an Agent's Team membership ([agent-view.js](agent-view.js));
+the Workbench selector ([workbench.js](workbench.js)): each card by type and resource, its
+press, hover and drag reading the newest offer; the Services setup surface and the ⚙ Services
+card ([setup-surfaces.js](setup-surfaces.js), [services-card.js](services-card.js)): steps by
+id, the key row, switches built once and set in place, the egress list keeping its fold; the
+Setup zone's picks ([setup-zone.js](setup-zone.js)); gbrain's answers ([gbrain.js](gbrain.js)).
+Work Items ([work-items-surface.js](work-items-surface.js)) re-reads only when the `epics`
+push moves (it carries every live item, `epic: ''` under none) or its scope changes, never on
+a sessions push. Also (KAN-413): the item island's pills and bars
 ([tile-island.js](tile-island.js)), the People list ([team-members.js](team-members.js)),
 the League Team's Agents ([cowork-view.js](cowork-view.js); a stance moves one row and never
 asks for the Work list again), the Docs shelf's groups and rows ([docs.js](docs.js); a group

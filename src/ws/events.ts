@@ -31,7 +31,7 @@ export interface Feed {
   list: () => Promise<SessionInfo[]>;
   home: (sessions: SessionWithAxes[]) => Promise<unknown[]>;
   teams: () => Promise<unknown[]>;
-  /** Every Epic (a level-1 work item) whole, with its holder, and every item under one, slim:
+  /** Every Epic (a level-1 work item) whole, with its holder, and every live item, slim, with its Epic ('' under none, KAN-414):
    * the Epics workbench's stones (KAN-190, KAN-206). */
   epics: () => Promise<{ epics: unknown[]; items: unknown[] }>;
   messages: () => Promise<unknown[]>;

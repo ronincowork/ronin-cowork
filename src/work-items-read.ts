@@ -229,11 +229,11 @@ export function epicsPush(all: HeldItem[]): { epics: HeldItem[]; items: EpicItem
     }
     return '';
   };
+  // Every live item that is not an Epic, with the Epic above it ('' under none: KAN-414), so the
+  // push moves on any item write and Work Items needs no re-read on a push that moved nothing.
+  // Every reader of `items` picks by epic id, so an item under no Epic shows on no Epic's board.
   const items: EpicItem[] = [];
-  for (const item of all) {
-    const epic = item.level === 1 ? '' : epicOf(item);
-    if (epic) items.push({ ...item, epic });
-  }
+  for (const item of all) if (item.level !== 1) items.push({ ...item, epic: epicOf(item) });
   return { epics: all.filter((item) => item.level === 1), items };
 }
 

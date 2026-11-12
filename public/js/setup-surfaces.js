@@ -521,175 +521,192 @@ export function createServicesSurface(context) {
     if (!installed.ok && installed.kind === 'network' && body.dataset.state) return;
     paint(registration, installed, activation);
   };
+  // ONE FACT MOVES, ONE PART REPAINTS (owner, 2026-11-12, KAN-414): the kit's keyed list. The
+  // body's parts are kept rows: the intro, the four steps (each by its id, repainted only when
+  // its own step moves), the key row (a field being pasted into holds, the kit's edit hold),
+  // the switches (built once, set in place, never rebuilt under a choice), the notice and the
+  // status line. A read or push that moved nothing touches nothing.
+  const kept = () => WorkspaceKit.primitives.createKeyedList({ key: (row) => row.key, shows: (row) => row.shows, draw: (row) => row.draw() });
+  const parts = kept();
+  const stepList = kept();
+  const intro = explain();
+  const state = el('section', 'setup-services-status');
+  state.setAttribute('aria-live', 'polite');
+  const statusLine = el('p', 'setup-services-status-line');
+  const nextLine = el('p', 'setup-services-next');
+  const paintState = (model) => {
+    // A restart writes its own lines here; the next read puts the status back.
+    if (statusLine.parentNode !== state || state.childNodes.length !== 2) state.replaceChildren(statusLine, nextLine);
+    state.dataset.tone = model.tone;
+    if (statusLine.textContent !== model.status) statusLine.textContent = model.status;
+    if (nextLine.textContent !== model.next) nextLine.textContent = model.next;
+  };
+  const notice = el('p', 'setup-notice setup-services-notice');
+  notice.setAttribute('aria-live', 'polite');
+  let saving = false;
+  let now = { registration: null, installed: { ok: false }, activation: null }; // the last answers painted
+  // Four permanent slots; Restart stays inactive until the installed facts require it.
+  const steps = el('div', 'setup-services-steps');
+  steps.setAttribute('aria-label', 'Ronin Services beta');
+  steps.addEventListener('click', (event) => {
+    if (saving) { event.preventDefault(); event.stopImmediatePropagation(); }
+  }, { capture: true });
+  const stepNode = (item) => {
+    const wrap = el('div', 'setup-services-step');
+    const button = action(item.label, '', async () => {
+      if (item.act === 'register') { openRegister(); return; }
+      button.disabled = true; said = ''; notice.textContent = '';
+      if (item.act === 'restart') { await restartRonin(state); return; }
+      // Install answers with the services object; a switch's new facts arrive by push.
+      const switching = item.act === 'switch_on' || item.act === 'switch_off';
+      const result = switching ? await switchServices(item.act === 'switch_on')
+        : await request('/api/services/install', { method: 'POST', json: {} });
+      if (!result.ok) {
+        said = result.message;
+        notice.textContent = said; notice.classList.add('bad');
+        button.disabled = false;
+        return;
+      }
+      context.environment?.onInstallationChoice?.();
+      if (!switching) paint(...answers(result.data));
+    });
+    button.classList.add('setup-services-step-action');
+    button.dataset.step = item.id; button.dataset.done = String(item.done);
+    button.disabled = !item.enabled || !item.act;
+    if (item.title) button.title = item.title;
+    if (item.id === 'switch') button.setAttribute('aria-pressed', String(item.pressed === true));
+    wrap.append(el('span', 'setup-services-step-caption', item.caption), button);
+    return wrap;
+  };
+  const paintSteps = (nextModel) => {
+    const lifecycle = [...nextModel.steps];
+    if (!lifecycle.some((item) => item.id === 'restart')) lifecycle.push({
+      id: 'restart', caption: t('services_setup.step_restart', 'Restart'),
+      label: t('services_setup.restart', 'Restart'), act: 'restart', enabled: false,
+    });
+    stepList.set(steps, lifecycle.map((item) => ({ key: item.id, shows: JSON.stringify(item), draw: () => stepNode(item) })));
+  };
+  // The Services key from the Register email: pasted here, kept on this machine, and the
+  // install starts with it.
+  const keyRow = (keyAction) => {
+    const keyInput = el('input', 'setup-services-key-input');
+    Object.assign(keyInput, { type: 'text', autocomplete: 'off', spellcheck: false, name: 'services-key' });
+    keyInput.placeholder = t('services_setup.key_placeholder', 'Paste the key from your email');
+    const keyLabelText = keyAction === 'save' ? t('services_setup.key_save', 'Save key') : t('services_setup.key_install', 'Install');
+    const keyInstall = action(keyLabelText, keyAction === 'save' ? '' : 'primary', async () => {
+      keyInstall.disabled = true; said = ''; notice.textContent = ''; notice.classList.remove('bad');
+      const result = await request('/api/setup/services-key', { method: 'POST', json: { key: keyInput.value } });
+      if (!result.ok) {
+        said = result.message; notice.textContent = said; notice.classList.add('bad');
+        keyInstall.disabled = false;
+        return;
+      }
+      context.environment?.onInstallationChoice?.();
+      paint(...answers(result.data));
+      if (result.data?.key_saved) notice.textContent = t('services_setup.key_saved', 'Services key saved. Updates use it from now on.');
+    });
+    keyInstall.dataset.endsEdit = '';
+    keyInstall.classList.add('setup-services-key-install');
+    const row = el('div', 'setup-services-key');
+    const keyLabel = el('label', 'setup-field setup-services-key-field');
+    keyLabel.append(el('span', 'setup-register-question', t('services_setup.key_label', 'Services key')), keyInput);
+    row.append(keyLabel, keyInstall);
+    return row;
+  };
+  // The switches: built once, then set in place from each answer, so a choice being made is
+  // never redrawn under the person.
+  let desired = {};
+  let facts = null;
+  const controls = new Map();
+  const values = el('div', 'setup-services-benefits setup-services-components');
+  const updateControls = () => {
+    for (const row of serviceComponentRows(facts, facts?.services?.switched_on === true)) {
+      const control = controls.get(row.v);
+      if (control.question.value()[row.v] !== (desired[row.v] === true)) control.question.set(row.v, desired[row.v] === true);
+      const reason = row.off || (!now.installed.ok ? 'Currently unavailable' : '');
+      control.question.disable(row.v, reason);
+      control.button.setAttribute('aria-disabled', String(saving || control.button.disabled));
+      if (control.status.textContent !== reason) control.status.textContent = reason;
+    }
+  };
+  for (const component of SERVICE_COMPONENTS) {
+    const item = el('div', 'setup-services-benefit');
+    const heading = el('h3', '', component.label);
+    heading.append(createStatusMarker(component.status));
+    const copy = el('div', 'setup-services-feature-copy');
+    const status = el('span', 'setup-services-feature-status');
+    const caption = el('p', '', component.needs);
+    caption.id = `services-caption-${component.id}-${context.workspace || 'workspace2'}`;
+    copy.append(caption, status);
+    const question = ask([{ fields: [{ key: component.id, label: component.label, switch: ['On', 'Off'] }] }], {
+      value: { [component.id]: false },
+      onChange: async (answer) => {
+        if (saving) return;
+        const before = { ...desired };
+        desired = { ...desired, [component.id]: answer[component.id] };
+        saving = true;
+        updateControls();
+        notice.classList.remove('bad');
+        notice.textContent = t('campaign.saving', 'saving…');
+        const result = await switchComponents(SERVICE_COMPONENTS.filter((row) => desired[row.id] === true).map((row) => row.id));
+        if (!result.ok) {
+          desired = before;
+          notice.textContent = 'Could not save this choice. Please try again.';
+          notice.classList.add('bad');
+        } else {
+          notice.textContent = t('settei.saved', 'saved');
+          // One local facts read preserves runtime disagreement, including partial loads,
+          // and repaints only the steps and status, never the controls being chosen.
+          const fresh = await request('/api/installed', { cache: 'no-store' });
+          if (fresh.ok) {
+            facts = fresh.data;
+            context.onInstalledState?.(fresh.data);
+            const next = servicesSetupModel(now.registration, fresh, now.activation);
+            paintSteps(next);
+            body.dataset.state = next.state;
+            paintState(next);
+          } else {
+            notice.textContent = 'Saved. Could not check running Services; restart status is unconfirmed.';
+          }
+        }
+        saving = false;
+        updateControls();
+      },
+    });
+    const button = question.el.querySelector('[role="switch"]');
+    button.addEventListener('click', (event) => {
+      if (saving) { event.preventDefault(); event.stopImmediatePropagation(); }
+    }, { capture: true });
+    button.setAttribute('aria-label', component.label);
+    button.setAttribute('aria-describedby', caption.id);
+    controls.set(component.id, { question, button, status });
+    item.append(question.el, heading, copy);
+    values.append(item);
+  }
+  const fine = el('p', 'setup-fine', 'Template Library offers ready-made Teams and Agents with their books and tools. It has no separate Services switch.');
+  const gate = el('p', 'setup-fine setup-services-gate', t('services_setup.gate', 'The Grokbot Morning Briefing preset waits for Ronin Services to be active.'));
+  const node_ = (key, one) => ({ key, shows: '', draw: () => one });
+
   const paint = (registration, installed, activation) => {
     const model = servicesSetupModel(registration, installed, activation);
     if (installed.ok) context.onInstalledState?.(installed.data);
-    const intro = explain();
-    body.replaceChildren(intro);
+    now = { registration, installed, activation };
     body.dataset.state = model.state;
-    const state = el('section', 'setup-services-status');
-    state.dataset.tone = model.tone;
-    state.setAttribute('aria-live', 'polite');
-    state.append(el('p', 'setup-services-status-line', model.status), el('p', 'setup-services-next', model.next));
-
-    // Four permanent slots; Restart stays inactive until the installed facts require it.
-    const steps = el('div', 'setup-services-steps');
-    steps.setAttribute('aria-label', 'Ronin Services beta');
-    steps.addEventListener('click', (event) => {
-      if (saving) { event.preventDefault(); event.stopImmediatePropagation(); }
-    }, { capture: true });
-    const notice = el('p', 'setup-notice setup-services-notice', said);
-    if (said) notice.classList.add('bad');
-    let saving = false;
-    const stepNodes = new Map();
-    const paintSteps = (nextModel) => {
-      const lifecycle = [...nextModel.steps];
-      if (!lifecycle.some((item) => item.id === 'restart')) lifecycle.push({
-        id: 'restart', caption: t('services_setup.step_restart', 'Restart'),
-        label: t('services_setup.restart', 'Restart'), act: 'restart', enabled: false,
-      });
-      for (const item of lifecycle) {
-        const existing = stepNodes.get(item.id);
-        if (existing) {
-          existing.querySelector('button').disabled = !item.enabled || !item.act;
-          continue;
-        }
-        const wrap = el('div', 'setup-services-step');
-        const button = action(item.label, '', async () => {
-          if (item.act === 'register') { openRegister(); return; }
-          button.disabled = true; said = ''; notice.textContent = '';
-          if (item.act === 'restart') { await restartRonin(state); return; }
-          // Install answers with the services object; a switch's new facts arrive by push.
-          const switching = item.act === 'switch_on' || item.act === 'switch_off';
-          const result = switching ? await switchServices(item.act === 'switch_on')
-            : await request('/api/services/install', { method: 'POST', json: {} });
-          if (!result.ok) {
-            said = result.message;
-            notice.textContent = said; notice.classList.add('bad');
-            button.disabled = false;
-            return;
-          }
-          context.environment?.onInstallationChoice?.();
-          if (!switching) paint(...answers(result.data));
-        });
-        button.classList.add('setup-services-step-action');
-        button.dataset.step = item.id; button.dataset.done = String(item.done);
-        button.disabled = !item.enabled || !item.act;
-        if (item.title) button.title = item.title;
-        if (item.id === 'switch') button.setAttribute('aria-pressed', String(item.pressed === true));
-        wrap.append(el('span', 'setup-services-step-caption', item.caption), button);
-        steps.append(wrap);
-        stepNodes.set(item.id, wrap);
-      }
-    };
+    paintState(model);
+    if (notice.textContent !== said) notice.textContent = said;
+    notice.classList.toggle('bad', Boolean(said));
     paintSteps(model);
-    body.append(steps);
-    // The Services key from the Register email: pasted here, kept on this machine, and the
-    // install starts with it.
-    if (model.keyField) {
-      const keyInput = el('input', 'setup-services-key-input');
-      Object.assign(keyInput, { type: 'text', autocomplete: 'off', spellcheck: false, name: 'services-key' });
-      keyInput.placeholder = t('services_setup.key_placeholder', 'Paste the key from your email');
-      const keyLabelText = model.keyAction === 'save' ? t('services_setup.key_save', 'Save key') : t('services_setup.key_install', 'Install');
-      const keyInstall = action(keyLabelText, model.keyAction === 'save' ? '' : 'primary', async () => {
-        keyInstall.disabled = true; said = ''; notice.textContent = ''; notice.classList.remove('bad');
-        const result = await request('/api/setup/services-key', { method: 'POST', json: { key: keyInput.value } });
-        if (!result.ok) {
-          said = result.message; notice.textContent = said; notice.classList.add('bad');
-          keyInstall.disabled = false;
-          return;
-        }
-        context.environment?.onInstallationChoice?.();
-        paint(...answers(result.data));
-        if (result.data?.key_saved) {
-          const saved = body.querySelector('.setup-services-notice');
-          if (saved) saved.textContent = t('services_setup.key_saved', 'Services key saved. Updates use it from now on.');
-        }
-      });
-      keyInstall.dataset.endsEdit = '';
-      keyInstall.classList.add('setup-services-key-install');
-      const keyRow = el('div', 'setup-services-key');
-      const keyLabel = el('label', 'setup-field setup-services-key-field');
-      keyLabel.append(el('span', 'setup-register-question', t('services_setup.key_label', 'Services key')), keyInput);
-      keyRow.append(keyLabel, keyInstall);
-      body.append(keyRow);
-    }
-    notice.setAttribute('aria-live', 'polite');
-    const campaign = campaignById(context.tenant?.campaign) || campaigns()[0];
-    let desired = campaign?.config?.services?.parts || installed.data?.services?.capabilities?.desired || {};
-    let facts = installed.data;
-    const controls = new Map();
-    const values = el('div', 'setup-services-benefits setup-services-components');
-    const updateControls = () => {
-      for (const row of serviceComponentRows(facts, facts?.services?.switched_on === true)) {
-        const control = controls.get(row.v);
-        if (control.question.value()[row.v] !== (desired[row.v] === true)) control.question.set(row.v, desired[row.v] === true);
-        const reason = row.off || (!installed.ok ? 'Currently unavailable' : '');
-        control.question.disable(row.v, reason);
-        control.button.setAttribute('aria-disabled', String(saving || control.button.disabled));
-        control.status.textContent = reason;
-      }
-    };
-    for (const component of SERVICE_COMPONENTS) {
-      const item = el('div', 'setup-services-benefit');
-      const heading = el('h3', '', component.label);
-      heading.append(createStatusMarker(component.status));
-      const copy = el('div', 'setup-services-feature-copy');
-      const status = el('span', 'setup-services-feature-status');
-      const caption = el('p', '', component.needs);
-      caption.id = `services-caption-${component.id}-${context.workspace || 'workspace2'}`;
-      copy.append(caption, status);
-      const question = ask([{ fields: [{ key: component.id, label: component.label, switch: ['On', 'Off'] }] }], {
-        value: { [component.id]: desired[component.id] === true },
-        onChange: async (answer) => {
-          if (saving) return;
-          const before = { ...desired };
-          desired = { ...desired, [component.id]: answer[component.id] };
-          saving = true;
-          updateControls();
-          notice.classList.remove('bad');
-          notice.textContent = t('campaign.saving', 'saving…');
-          const result = await switchComponents(SERVICE_COMPONENTS.filter((row) => desired[row.id] === true).map((row) => row.id));
-          if (!result.ok) {
-            desired = before;
-            notice.textContent = 'Could not save this choice. Please try again.';
-            notice.classList.add('bad');
-          } else {
-            notice.textContent = t('settei.saved', 'saved');
-            // One local facts read preserves runtime disagreement, including partial loads,
-            // and repaints only the steps and status, never the controls being chosen.
-            const fresh = await request('/api/installed', { cache: 'no-store' });
-            if (fresh.ok) {
-              facts = fresh.data;
-              context.onInstalledState?.(fresh.data);
-              const next = servicesSetupModel(registration, fresh, activation);
-              paintSteps(next);
-              body.dataset.state = next.state;
-              state.dataset.tone = next.tone;
-              state.querySelector('.setup-services-status-line').textContent = next.status;
-              state.querySelector('.setup-services-next').textContent = next.next;
-            } else {
-              notice.textContent = 'Saved. Could not check running Services; restart status is unconfirmed.';
-            }
-          }
-          saving = false;
-          updateControls();
-        },
-      });
-      const button = question.el.querySelector('[role="switch"]');
-      button.addEventListener('click', (event) => {
-        if (saving) { event.preventDefault(); event.stopImmediatePropagation(); }
-      }, { capture: true });
-      button.setAttribute('aria-label', component.label);
-      button.setAttribute('aria-describedby', caption.id);
-      controls.set(component.id, { question, button, status });
-      item.append(question.el, heading, copy);
-      values.append(item);
+    if (!saving) {
+      const campaign = campaignById(context.tenant?.campaign) || campaigns()[0];
+      desired = campaign?.config?.services?.parts || installed.data?.services?.capabilities?.desired || {};
+      facts = installed.data;
     }
     updateControls();
-    body.append(values, notice, state);
-    body.append(el('p', 'setup-fine', 'Template Library offers ready-made Teams and Agents with their books and tools. It has no separate Services switch.'));
-    body.append(el('p', 'setup-fine setup-services-gate', t('services_setup.gate', 'The Grokbot Morning Briefing preset waits for Ronin Services to be active.')));
+    parts.set(body, [
+      node_('intro', intro), node_('steps', steps),
+      ...(model.keyField ? [{ key: 'key', shows: String(model.keyAction), draw: () => keyRow(model.keyAction) }] : []),
+      node_('values', values), node_('notice', notice), node_('state', state), node_('fine', fine), node_('gate', gate),
+    ]);
   };
   // OPEN reads the three answers and listens: an email confirmed, an install's steps and a
   // switch's new facts arrive as {t:'services-setup', services}; a reopened socket (Ronin
