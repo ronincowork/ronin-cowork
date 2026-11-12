@@ -402,8 +402,6 @@ test('a move to In Review is never refused for its note: missing or long, the ac
   const ok = await call('POST', `/api/work-items/${item.id}/transition`, { status: 'In Review', note: 'The note reads first on the bar.', by: 'mem' });
   assert.equal(items.handedInNote(ok.data.item), 'The note reads first on the bar.');
   assert.doesNotMatch(ok.data.acknowledgement, /PROMPT/);
-  const { cardOf } = await import('../src/work-items-read.js');
-  assert.equal(cardOf(ok.data.item).review, 'The note reads first on the bar.', 'the Epics bar shows it');
   const desk = await fs.readFile(new URL('../src/commands/desk.ts', import.meta.url), 'utf8');
   assert.doesNotMatch(desk, /NO-NOTE|REFUSED: \$\{long\}/, 'a desk hand-in is not refused for its note either');
   assert.match(desk, /reviewPrompt\(moved\.item\)/);

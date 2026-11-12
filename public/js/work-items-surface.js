@@ -164,23 +164,22 @@ export function renderItemDetail(host, item, { holder = '', openAttachment = nul
   // What the user reads first: what done looks like, and what to try.
   if (item.objective) step('objective', t('work_items.objective', 'Objective'), () => item.objective.split('\n')[0], el('p', 'wi-objective', item.objective));
   const handed = handedInComment(item);
+  // LOOK AT (owner, 2026-11-12, KAN-429): straight after the Objective, the hand-in note in full,
+  // wrapped — what the owner should look at. Handed in below keeps only who, when and the promotion.
+  if (handed) step('look_at', t('work_items.look_at', 'Look at'), () => handed.text.slice(HANDED_IN.length).split('\n')[0],
+    el('p', 'wi-objective wi-handed-in', handed.text.slice(HANDED_IN.length)), el('small', 'wi-when', `${handed.by || ''} · ${when(handed.at)}`));
   // The hand-in itself (owner, 2026-11-05: "the pill has the hand in status but it's not in the
   // item overlay"): who handed it in and when, and the promotion that put it on dev, from the
-  // item's own record — the same facts the island's pill marks; then the note, when one was left.
+  // item's own record — the same facts the island's pill marks. Its note is Look at, above.
   const record = handInRecord(item);
-  if (record || handed) {
-    const lines = [];
-    if (record) {
-      const line = el('p', 'wi-text wi-handin', record);
-      lines.push(line);
-      // Live: that promotion restarted and passed health (its ledger receipt); a --no-restart one never reads live.
-      const promotion = promotionToCheck(item);
-      if (promotion) void request(`/api/promotions/${encodeURIComponent(promotion)}/live`, { cache: 'no-store' }).then((result) => {
-        if (result.ok && result.data?.live && line.isConnected) line.textContent = `${record} · ${t('work_items.live', 'live')}`;
-      });
-    }
-    if (handed) lines.push(el('p', 'wi-objective wi-handed-in', handed.text.slice(HANDED_IN.length)), el('small', 'wi-when', `${handed.by || ''} · ${when(handed.at)}`));
-    step('handed_in', t('work_items.handed_in', 'Handed in'), () => record || handed.text.slice(HANDED_IN.length).split('\n')[0], ...lines);
+  if (record) {
+    const line = el('p', 'wi-text wi-handin', record);
+    // Live: that promotion restarted and passed health (its ledger receipt); a --no-restart one never reads live.
+    const promotion = promotionToCheck(item);
+    if (promotion) void request(`/api/promotions/${encodeURIComponent(promotion)}/live`, { cache: 'no-store' }).then((result) => {
+      if (result.ok && result.data?.live && line.isConnected) line.textContent = `${record} · ${t('work_items.live', 'live')}`;
+    });
+    step('handed_in', t('work_items.handed_in', 'Handed in'), () => record, line);
   }
 
   // Status: any status to any status, as Jira's transition; the push that follows redraws the

@@ -48,7 +48,8 @@ test('the reader shows the objective and the Handed in note first, other comment
   const body = surface.slice(surface.indexOf('export function renderItemDetail'), surface.indexOf('/** A phalanx of item stones'));
   const at = (what) => { const i = body.indexOf(what); assert.ok(i >= 0, what); return i; };
   // Each step names its fold first (w297): step('<id>', t(...), ...).
-  assert.ok(at("step('objective', t('work_items.objective'") < at("step('handed_in', t('work_items.handed_in'"), 'the objective, then the note');
+  assert.ok(at("step('objective', t('work_items.objective'") < at("step('look_at', t('work_items.look_at'"), 'the objective, then Look at, the note (KAN-429)');
+  assert.ok(at("step('look_at', t('work_items.look_at'") < at("step('handed_in', t('work_items.handed_in'"), 'then the hand-in record');
   assert.ok(at("step('handed_in', t('work_items.handed_in'") < at("step('status', t('work_items.status'"), 'both before Status');
   assert.match(body, /\.filter\(\(comment\) => comment !== handed\)/, 'the note is not repeated among the comments');
   assert.match(body, /const folded = el\('details', 'wi-comments'\);/, 'the other comments fold');
@@ -102,7 +103,7 @@ test('handInRecord: one line of steps, promoted only when its promotion came aft
   assert.equal(promotionToCheck({ handed_in: { by: 'a', at: '2026-11-05T11:00:00Z' }, on_dev: { at: '2026-11-05T10:00:00Z', promotion: 'r0' } }), '');
   assert.match(surface, /request\(`\/api\/promotions\/\$\{encodeURIComponent\(promotion\)\}\/live`/, 'live is the promotion receipt read');
   assert.doesNotMatch(surface.slice(surface.indexOf('export function handInRecord'), surface.indexOf('export function originWords')), /github|master|' \| '/i, 'no GitHub/master step, no divider');
-  assert.match(surface, /if \(record \|\| handed\) \{/, 'the row shows for a hand-in with no note too');
+  assert.match(surface, /if \(record\) \{/, 'the hand-in record shows with no note too');
 });
 
 // The tile's work record lists open items only; Done waiting for the archive is one line (KAN-271).

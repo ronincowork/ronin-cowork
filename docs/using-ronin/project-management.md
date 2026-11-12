@@ -89,8 +89,8 @@ A code hand-in is the repo's: `worktree-desk hand-in <repo>` never needs an item
 named, the code goes to the Team line, the lead is told, and the reply tells the Agent to check
 its work items, one of which may now be ready to hand in for review. An item handed in carries
 its review line: one short line telling you what to look at, with no commit ids or receipts
-(those stay on the item's trail; the diff is the detail). It leads the item's bar on the Epics
-board. Moved to In Review without one, or with a long one, the move still goes and whoever moved
+(those stay on the item's trail; the diff is the detail). Opened, the item shows it as **Look
+at**, straight after the Objective. Moved to In Review without one, or with a long one, the move still goes and whoever moved
 it is prompted to write it. A hand-in moves a named item to In Review and no further;
 a promotion never changes a status; only you make an item Done. You accept only what is on dev (or what was
 handed in from a checkout, with no code to promote).

@@ -1346,7 +1346,6 @@ body {
 .item-bar .item-bar-objective { color: var(--fg); }
 .item-bar .item-bar-comment { -webkit-line-clamp: 1; color: var(--muted); }
 .item-bar .item-bar-who { color: var(--accent); }
-.item-bar .item-bar-review { color: var(--accent); font-weight: var(--weight-strong); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .item-bar .item-bar-facts { color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 .tile-head .sess {
