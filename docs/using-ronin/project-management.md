@@ -58,19 +58,20 @@ When you bring work to a lead, it decides first which of three it is:
 |---|---|---|
 | Done | nothing: it stays where it is until it is archived, five days after Done | — |
 | To Do | back to the Team, for its lead to give out again | automatic |
-| In Progress | a handover: where it stands and what comes next, to the Team or a named Agent | the Agent; the lead if the Agent asks |
-| In Review | nothing: the Agent stays until it is Done, so a sent-back item still has its Agent | the lead or you, accepting or sending it back |
+| In Progress | finished if it can be; if not, flagged with where it stands and what is missing, or handed over | the Agent; then the lead |
+| In Review | the Agent stays until it is Done if it can, so a sent-back item still has its Agent; if it can't, it flags it and goes | the lead or you, accepting or sending it back |
 
 One check is made on every way out: `session_end`, `session_archive`, and Archive, Delete and
-Hard Delete on the tile. Each refuses while the Agent holds anything In Progress or In Review,
-naming each item, as the worktree check names its desks. In Review's NEXT is to stay until it is
-Done: the lead or you closes it. In Progress's NEXT is the handover: `item handover <ids>
-team:<team> "<where it stands; what is next>"`; an Agent that can't decide adds `--flag "<the
-question>"`, and its lead decides. Going anyway takes an acknowledgement: `session_end
---ignore-items` (or `session_archive <name> --ignore-items`), or "close anyway?" in the tile's
-confirm. Then, as after a crash, each unfinished item goes to the Team flagged "Ended without
-handover: <agent>, <status>", it shows under Stuck, and the lead is told once. Nothing goes to
-nobody. An item nobody wants any more is deleted, not left in To Do. An epic is Done
+Hard Delete on the tile. It is a nudge, never a wall. While the Agent holds anything In Progress
+or In Review it has not flagged, the first try is refused, each item named, as the worktree
+check names its desks, with NEXT in order: 1. finish the item if you can (In Review is finished
+when the lead or you make it Done); 2. if you can't, flag it: `item flag <id> "<where it stands;
+what is missing>"`; 3. clean your desks: commit and hand in; 4. then go. An item the Agent
+flagged itself needs nothing more: the flag is the acknowledgement. For one left unflagged,
+`session_end --ignore-items` (or `session_archive <name> --ignore-items`), or "close anyway" in
+the tile's confirm, goes anyway. Either way, as after a crash, each unfinished item goes to the
+Team flagged "Ended without handover: <agent>, <status>", it shows under Stuck, and the lead is
+told once. Nothing goes to nobody. An item nobody wants any more is deleted, not left in To Do. An epic is Done
 when what done looks like is met.
 
 In an item's view on the tile, the objective and the Handed in note come

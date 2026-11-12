@@ -200,7 +200,7 @@ test('an Agent holding work is refused, the confirm names each item, and Close a
     archive.listeners.click[0]();
     await new Promise((resolve) => setTimeout(resolve, 20));
     const copy = [...body.walk()].find((node) => node.className === 'ui-confirm-copy');
-    assert.match(copy.textContent, /^holder holds KAN-9 \(In Review\): close anyway\?/);
+    assert.match(copy.textContent, /^holder holds KAN-9 \(In Review\), not flagged: finish or flag it and hand in its desks first, or close anyway/);
     assert.equal(archive.textContent, 'archiving…', 'the pressed button still says it is working');
     const anyway = [...body.walk()].find((node) => node.tagName === 'BUTTON' && node.textContent === 'Close anyway');
     anyway.listeners.click[0]();

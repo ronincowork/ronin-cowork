@@ -213,8 +213,8 @@ when none matched. `session_set <name> --root <handle>` separately changes a liv
 session's recorded Workspace Folder. Neither edit changes its birth directory or opens
 a managed desk. These fields locate work; they do not replace commits, hand-ins, or evidence.
 
-Every way out first refuses while the Agent holds an item In Progress or In Review, unless it
-is acknowledged ([how an item lives](project-management.md#how-an-item-lives)).
+Every way out first stops once while the Agent holds an item In Progress or In Review it has
+not flagged, unless it is acknowledged ([how an item lives](project-management.md#how-an-item-lives)).
 When an Agent ends, is archived, or is Hard Deleted, what it held is released: each item
 gets a `holder-ended` line and goes back to the Agent's Team, or to nobody when it has no Team
 or several. A Done item goes to nobody and nobody is told. Restoring an archived Agent does

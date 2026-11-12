@@ -13,10 +13,11 @@ Usage:
 
 Archive records the provider conversation and session metadata before stopping the
 live session. A refusal leaves it running; this is not hard deletion.
-It refuses, as session_end does, while the Agent holds work items In Progress or In Review,
-naming each: In Review stays until it is Done; In Progress is handed over first. To Do goes
-back to the Team by itself. --ignore-items archives anyway: each item still goes to the
-Team, flagged "Ended without handover: <agent>, <status>", and the lead is told once.
+It refuses once, as session_end does, while the Agent holds work items In Progress or In
+Review it has not flagged, naming each, with the same nudge: finish it, or flag it; clean the
+desks; then go. A flagged item needs nothing more; --ignore-items archives past the rest.
+Each item still goes to the Team, flagged "Ended without handover: <agent>, <status>", and the
+lead is told once. To Do goes back to the Team by itself.
 Related: session_restore --help
 EOF
     exit 0 ;;
