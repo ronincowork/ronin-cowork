@@ -150,6 +150,21 @@
   .wi-facts dt { color: var(--muted); }
   .wi-facts dt, .wi-facts dd { font-size: var(--form-input); }
   .wi-facts dd { margin: 0; overflow-wrap: anywhere; }
+  /* DETAILS IN TWO COLUMNS (owner, 2026-11-12, KAN-434): where the reading is wide, the facts sit
+     two pairs to a row, so they take half the height; a narrow reading keeps one. */
+  @container item-reading (min-width: 34rem) {
+    .wi-facts { grid-template-columns: auto minmax(0, 1fr) auto minmax(0, 1fr); }
+  }
+  /* FIND ITEM (KAN-433): the number and its Find on one line, the reading under them. */
+  .find-item-ask { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--space-inline); }
+  .find-item-ask .wk-field { flex: 1 1 12rem; min-width: 0; }
+  .find-item-reading:not(:empty) { margin-top: var(--space-paragraph); }
+  /* THE AGENTS (KAN-435): the holder and the Agent it was started in, as stones that open the
+     Agent; sized to their words, which wrap in full. */
+  .wi-agents { display: flex; flex-wrap: wrap; gap: var(--space-inline); }
+  .wi-agents .sws-stone { flex: 0 1 auto; width: auto; max-width: 100%; aspect-ratio: auto; overflow: visible; gap: var(--space-row); padding: var(--space-row) var(--space-inset); }
+  .wi-agents .sws-label { margin-top: 0; overflow: visible; text-overflow: clip; overflow-wrap: anywhere; }
+  .wi-agents .sws-state { color: var(--muted); font-size: var(--form-note); }
   .wi-objective, .wi-text { margin: 0; overflow-wrap: anywhere; white-space: pre-wrap; font-size: var(--form-input); }
   .wi-list { display: flex; flex-direction: column; gap: var(--space-paragraph); margin: 0; padding: 0; list-style: none; }
   .wi-comment { display: flex; flex-direction: column; gap: var(--space-row); }

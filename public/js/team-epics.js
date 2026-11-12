@@ -18,7 +18,7 @@ import { createEpicBoard, createEpicsRead } from './epics-surface.js';
 export const teamEpicIds = (row) => new Set(Array.isArray(row?.epics) ? row.epics : []);
 
 /** The Team's Epics: the Epics board over the Epics the Team or its Agents hold. */
-export function createTeamEpics({ team }) {
+export function createTeamEpics({ team, openAgent = null }) {
   const { createSurface, setSurfaceState } = WorkspaceKit.primitives;
   const out = createSurface({ label: t('epics.title', 'Epics'), className: 'setup-surface team-epics', flush: true }); // the board inside keeps its own inset
   const every = createEpicsRead(() => '');
@@ -32,7 +32,7 @@ export function createTeamEpics({ team }) {
       return () => { stopEpics(); stopTeams(); };
     },
   };
-  const board = createEpicBoard({ epicsRead: read, header: false });
+  const board = createEpicBoard({ epicsRead: read, header: false, openAgent });
   out.content.append(board.el);
   function paint() {
     const epics = read.list();

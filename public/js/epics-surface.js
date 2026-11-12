@@ -113,7 +113,7 @@ export const byStatus = (items, picked = []) => (picked.length ? items.filter((i
  * it (work-items-surface.js renderItemDetail: its status to move, comments, a box to comment);
  * pressed again it folds. Built once; a push repaints only the bars it moved (KAN-412) and leaves the questions alone.
  */
-function epicItems(epicId, { epicsRead }) {
+function epicItems(epicId, { epicsRead, openAgent = null }) {
   let assigned = [];
   let flagged = [];
   let statuses = [...OPEN_STATUSES];
@@ -167,7 +167,7 @@ function epicItems(epicId, { epicsRead }) {
       if (!result.ok) { host.append(el('p', 'epic-empty', result.message || '')); return; }
       const { renderItemDetail, holderOf } = await import('./work-items-surface.js');
       const whole = result.data.item;
-      renderItemDetail(host, whole, { holder: holderOf({ ...whole, held_by: result.data.held_by }), history: false,
+      renderItemDetail(host, whole, { holder: holderOf({ ...whole, held_by: result.data.held_by }), heldBy: result.data.held_by, openAgent, history: false,
         children: children && Array.isArray(result.data.children) ? result.data.children : [], // an Epic's are the board below
         openChild: (child) => { open.add(child.id); paint(); }, onClose });
     });
@@ -252,7 +252,7 @@ function epicItems(epicId, { epicsRead }) {
  * pressed switches to that Epic here. `initial` is the Epic it starts on; with one Epic, that one.
  * A stone dragged into another tilespace places a board starting on that Epic (createEpicRecord).
  */
-export function createEpicBoard({ epicsRead, header = true, initial = '' }) {
+export function createEpicBoard({ epicsRead, header = true, initial = '', openAgent = null }) {
   const { createSurface } = WorkspaceKit.primitives;
   const out = createSurface({ label: t('epics.title', 'Epics'), className: 'setup-surface epics-board', header });
   const strip = el('div', 'epic-strip');
@@ -310,7 +310,7 @@ export function createEpicBoard({ epicsRead, header = true, initial = '' }) {
       strip.replaceChildren(...(epics.length ? epics.map(stone) : [el('p', 'epic-empty', t('epics.none', 'No Epics yet.'))]));
     }
     if (!epic) { below.replaceChildren(...(epics.length ? [el('p', 'epic-empty', t('epics.pick_epic', 'Pick an Epic to see its work items.'))] : [])); return; }
-    if (!view) { source = el('div', 'epic-source'); sourceSaid = ''; view = epicItems(selected, { epicsRead }); below.replaceChildren(source, view.el); }
+    if (!view) { source = el('div', 'epic-source'); sourceSaid = ''; view = epicItems(selected, { epicsRead, openAgent }); below.replaceChildren(source, view.el); }
     const said = JSON.stringify([selected, epic.external?.jira?.key, epic.holder]);
     if (said !== sourceSaid) {
       sourceSaid = said;

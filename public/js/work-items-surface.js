@@ -11,6 +11,7 @@ import { ask } from './ask.js';
 import { createStep } from './form-steps.js';
 import { kindMark } from './tile-island.js';
 import { isPlanRef, planAttachment } from './plan-attachment.js';
+import { openWorkspaceTab, reserveWorkspaceTab } from './workspace.js';
 
 export const WORK_ITEMS_TYPE = 'work-items';
 /** Jira's flag: an impediment, marked the same way on every surface. */
@@ -133,15 +134,47 @@ export const handedInComment = (item) => [...(item?.comments || [])].reverse().f
 const FOLDS = new Map([['done', false]]);
 const isDone = (item) => /done|closed|resolved|complete/i.test(String(item?.status || ''));
 
+/** The Agents of an item (KAN-435): its holders first (`heldBy`, the item read's labels, else the
+ * item's own holder; a Team stands as its lead, in the Team's words), then the Agent it was started
+ * in (created.by, when no Jira user made it). One row per Agent: { name, label, roles, holds, started }. */
+export function itemAgents(item, heldBy = null) {
+  const rows = new Map();
+  const add = (name, label, role, flag) => {
+    if (!name) return;
+    const row = rows.get(name) || { name, label, roles: [], holds: false, started: false };
+    if (!row.roles.includes(role)) row.roles.push(role);
+    row[flag] = true;
+    rows.set(name, row);
+  };
+  const labels = Array.isArray(heldBy) && heldBy.length ? heldBy : Array.isArray(item?.held_by) && item.held_by.length ? item.held_by : [item?.holder].filter(Boolean);
+  for (const label of new Set(labels)) {
+    const [kind, ...rest] = String(label).split(':');
+    const name = rest.join(':');
+    if (kind === 'agent' && name) add(name, `@${name}`, t('work_items.holder', 'Holder'), 'holds');
+    else if (kind === 'team' && name) add(teamLead(name), holderWords(label), t('work_items.holder', 'Holder'), 'holds');
+  }
+  const by = String(item?.created?.by || '');
+  if (by && !by.startsWith('jira:')) add(by, `@${by}`, t('work_items.origin', 'Started in'), 'started');
+  return [...rows.values()];
+}
+
+/** Where no work surface is at hand (a tile's overlay, the Work Items reader), an Agent opens on its own workbench. */
+function openAgentTab(name) {
+  openWorkspaceTab('agent', name, reserveWorkspaceTab());
+  return true;
+}
+
 /** One item's reading, in the launch forms' format (owner, 2026-11-05): a head with the kind's
- * symbol, the title and the key, then label-left steps — what the user reads first, the
- * Objective and the Handed in note (ITEM_HANDOVER), then Status (an ERABI question that moves
- * the item: the work-item routes' transition), Details, Subtasks, Done (the Subtasks that are,
+ * symbol, the title and the key, then label-left steps — Status first (an ERABI question that
+ * moves the item: the work-item routes' transition; KAN-435), what the user reads first, the
+ * Objective and the Handed in note (ITEM_HANDOVER), then Agents (itemAgents: stones that open
+ * the Agent, `openAgent(name)` — false when it cannot — else its own workbench), Details (two
+ * columns where the reading is wide, KAN-434), Subtasks, Done (the Subtasks that are,
  * owner w297), Comments (the others, folded, and a box: the comment route, whose notice reaches
  * the Agents holding the item), Attachments (each opens), Links and History (`history: false`
  * leaves it out: the Epics workbench, KAN-206). Every step folds with the form steps' own fold
  * (form-steps.js), showing its one-line answer folded. Every size is a form token. */
-export function renderItemDetail(host, item, { holder = '', openAttachment = null, history = true, children = [], openChild = null, onClose = null } = {}) {
+export function renderItemDetail(host, item, { holder = '', heldBy = null, openAgent = null, openAttachment = null, history = true, children = [], openChild = null, onClose = null } = {}) {
   const form = el('div', 'ntf-form wi-form');
   const head = el('header', 'wi-head');
   const key = el('p', 'wi-key');
@@ -179,27 +212,8 @@ export function renderItemDetail(host, item, { holder = '', openAttachment = nul
     return { ...one, paint };
   };
 
-  // What the user reads first: what done looks like, and what to try.
-  if (item.objective) step('objective', t('work_items.objective', 'Objective'), () => item.objective.split('\n')[0], el('p', 'wi-objective', item.objective));
-  const handed = handedInComment(item);
-  // LOOK AT (owner, 2026-11-12, KAN-429): straight after the Objective, the hand-in note in full,
-  // wrapped — what the owner should look at. Handed in below keeps only who, when and the promotion.
-  if (handed) step('look_at', t('work_items.look_at', 'Look at'), () => handed.text.slice(HANDED_IN.length).split('\n')[0],
-    el('p', 'wi-objective wi-handed-in', handed.text.slice(HANDED_IN.length)), el('small', 'wi-when', `${handed.by || ''} · ${when(handed.at)}`));
-  // The hand-in itself (owner, 2026-11-05: "the pill has the hand in status but it's not in the
-  // item overlay"): who handed it in and when, and the promotion that put it on dev, from the
-  // item's own record — the same facts the island's pill marks. Its note is Look at, above.
-  const record = handInRecord(item);
-  if (record) {
-    const line = el('p', 'wi-text wi-handin', record);
-    // Live: that promotion restarted and passed health (its ledger receipt); a --no-restart one never reads live.
-    const promotion = promotionToCheck(item);
-    if (promotion) void request(`/api/promotions/${encodeURIComponent(promotion)}/live`, { cache: 'no-store' }).then((result) => {
-      if (result.ok && result.data?.live && line.isConnected) line.textContent = `${record} · ${t('work_items.live', 'live')}`;
-    });
-    step('handed_in', t('work_items.handed_in', 'Handed in'), () => record, line);
-  }
-
+  // STATUS FIRST (owner, 2026-11-12, KAN-435): the reading opens on Status, then the Objective,
+  // Look at, the Agents and the Details.
   // Status: any status to any status, as Jira's transition; the push that follows redraws the
   // rest of the page, and the line under the question says what happened until then.
   // FLAGGED BESIDE IT (owner, 2026-11-12, KAN-428): Jira's flag is a field, not a status, so it is
@@ -235,12 +249,58 @@ export function renderItemDetail(host, item, { holder = '', openAttachment = nul
   });
   statusStep = step('status', t('work_items.status', 'Status'), () => [status, flagged ? t('work_items.flagged_label', 'Flagged') : ''].filter(Boolean).join(' · '), question.el, answer);
 
+  // What the user reads first: what done looks like, and what to try.
+  if (item.objective) step('objective', t('work_items.objective', 'Objective'), () => item.objective.split('\n')[0], el('p', 'wi-objective', item.objective));
+  const handed = handedInComment(item);
+  // LOOK AT (owner, 2026-11-12, KAN-429): straight after the Objective, the hand-in note in full,
+  // wrapped — what the owner should look at. Handed in below keeps only who, when and the promotion.
+  if (handed) step('look_at', t('work_items.look_at', 'Look at'), () => handed.text.slice(HANDED_IN.length).split('\n')[0],
+    el('p', 'wi-objective wi-handed-in', handed.text.slice(HANDED_IN.length)), el('small', 'wi-when', `${handed.by || ''} · ${when(handed.at)}`));
+  // The hand-in itself (owner, 2026-11-05: "the pill has the hand in status but it's not in the
+  // item overlay"): who handed it in and when, and the promotion that put it on dev, from the
+  // item's own record — the same facts the island's pill marks. Its note is Look at, above.
+  const record = handInRecord(item);
+  if (record) {
+    const line = el('p', 'wi-text wi-handin', record);
+    // Live: that promotion restarted and passed health (its ledger receipt); a --no-restart one never reads live.
+    const promotion = promotionToCheck(item);
+    if (promotion) void request(`/api/promotions/${encodeURIComponent(promotion)}/live`, { cache: 'no-store' }).then((result) => {
+      if (result.ok && result.data?.live && line.isConnected) line.textContent = `${record} · ${t('work_items.live', 'live')}`;
+    });
+    step('handed_in', t('work_items.handed_in', 'Handed in'), () => record, line);
+  }
+
+  // AGENTS (owner, 2026-11-12, KAN-435): above the Details, the holder first as stones, then the
+  // Agent the item was started in; a stone pressed opens that Agent on the work surface.
+  const agents = itemAgents(item, heldBy);
+  if (agents.length) {
+    const stones = el('div', 'wi-agents');
+    const said = el('p', 'fs-step-help wi-answer');
+    said.setAttribute('role', 'status');
+    const press = (name) => {
+      said.dataset.state = '';
+      const opened = (openAgent || openAgentTab)(name);
+      if (opened === false) { said.dataset.state = 'failed'; said.textContent = t('work_items.agent_not_running', '@{name} is not running.', { name }); }
+      else said.textContent = t('work_items.agent_opened', '@{name} opened.', { name });
+    };
+    WorkspaceKit.primitives.createKeyedList({ key: (row) => row.name, shows: (row) => JSON.stringify(row), draw: (row) => {
+      const stone = el('button', 'sws-stone wi-agent-stone');
+      stone.type = 'button';
+      stone.dataset.agent = row.name;
+      stone.append(el('b', 'sws-label', row.label), el('small', 'sws-state', row.roles.join(' · ')));
+      stone.addEventListener('click', () => press(row.name));
+      return stone;
+    } }).set(stones, agents);
+    step('agents', t('work_items.agents', 'Agents'), () => agents.map((row) => row.label).join(', '), stones, said);
+  }
+
   const facts = el('dl', 'wi-facts');
+  const startedByAgent = agents.some((row) => row.started);
   for (const [label, value] of [
     [t('work_items.id', 'Id'), [item.id, item.jira && item.jira !== item.id ? item.jira : ''].filter(Boolean).join(' · ')],
     [t('work_items.kind', 'Kind'), [item.kind, item.level].filter((part) => part !== undefined && part !== null && part !== '').join(' · ')],
-    [t('work_items.origin', 'Started in'), originWords(item)],
-    [t('work_items.holder', 'Holder'), holder || t('work_items.nobody', 'nobody')],
+    ...(startedByAgent ? [] : [[t('work_items.origin', 'Started in'), originWords(item)]]),
+    ...(agents.some((row) => row.holds) ? [] : [[t('work_items.holder', 'Holder'), holder || t('work_items.nobody', 'nobody')]]),
     [t('work_items.priority', 'Priority'), item.priority || '—'],
     [t('work_items.parent', 'Parent'), item.parent || '—'],
     // A paired item's Jira fields, by Jira's own names.

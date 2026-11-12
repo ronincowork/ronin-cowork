@@ -39,6 +39,7 @@ import { createItemPhalanx, holderOf } from './work-items-surface.js';
 import { registerWorkbenchCatalog, WORKBENCH_PROFILES as WB_PROFILES, WORKBENCH_TYPES as WB_TYPES } from './workbench-catalog.js';
 import { createAgentCompositionSurface } from './agent-composition.js';
 import { createTeamEpics } from './team-epics.js';
+import { createFindItem } from './team-find-item.js';
 import { createEpicRecord, createEpicsRead } from './epics-surface.js';
 
 const el = (tag, cls, text) => {
@@ -235,6 +236,7 @@ export function createCoworkView(options = {}) {
     const room = buildArchives({ connect: (name) => connectSession(name, id) }, host);
     return [id, { el: surface.el, room }];
   })) : {};
+  const openAgentBeside = (id) => (name) => S.sessions.some((session) => session.name === name) && connectSession(name, oppositeSeat(id));
   const environment = {
     feedback: (workspace) => createFeedbackSurface(() => bench.place(campaign ? WB_TYPES.roster : WB_TYPES.commons, workspace)),
     teamCommons: (id) => ({ el: commonsFor(id).el, show: (detail = {}) => { const item = commonsFor(id); if (!detail.doc && !detail.tab) item.attendQueueOnOpen(); item.channels.enter(ctx); if (detail.doc) { item.channels.select('docs'); void item.docs.open(detail.doc); } else if (detail.tab) item.channels.select(detail.tab); } }),
@@ -287,9 +289,12 @@ export function createCoworkView(options = {}) {
       navigateToSurface: (type, detail) => type === 'setup.roots' && navigateToWorkspaceFolders(ctx, detail),
     }, workspace: id }),
     // Epics (KAN-232): the bench keeps one per seat across Teams, so it reads the Team entered now.
-    teamEpics: () => keepTeamSurface(createTeamEpics({ team: () => team })),
+    // An Agent pressed in an item's reading opens in the other Tilespace, the item staying put
+    // (KAN-435); one not running says so (false).
+    teamEpics: (id) => keepTeamSurface(createTeamEpics({ team: () => team, openAgent: openAgentBeside(id) })),
+    teamFindItem: (id) => keepTeamSurface(createFindItem({ openAgent: openAgentBeside(id) })),
     epics: () => [],
-    epicRecord: (_id, detail) => keepTeamSurface(createEpicRecord(detail.key, { epicsRead: createEpicsRead(() => '') })),
+    epicRecord: (id, detail) => keepTeamSurface(createEpicRecord(detail.key, { epicsRead: createEpicsRead(() => ''), openAgent: openAgentBeside(id) })),
     archives: (id) => ({ el: archivesBySeat[id].el, show: () => void archivesBySeat[id].room.enter() }),
     document: (detail = {}) => createDocumentWorkspaceAdapter({ root: detail.root, path: detail.path || detail.key }),
     team: (id, detail) => createLeagueTeamSurface(detail.key, id),

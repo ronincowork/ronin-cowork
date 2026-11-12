@@ -293,7 +293,7 @@ async function openItem(tile, item) {
     // once it is Done (owner, w299: "it disappeared"). The tile's record only when the read failed.
     const children = read.ok && Array.isArray(read.data?.children) ? read.data.children
       : islandHeld(tile.tegami).filter((one) => one.parent === item.id);
-    renderItemDetail(detail, item, { holder, openAttachment: (path) => tile.openDoc(path), history: false,
+    renderItemDetail(detail, item, { holder, heldBy: read.ok ? read.data?.held_by : null, openAttachment: (path) => tile.openDoc(path), history: false,
       children, openChild: (child) => void openItem(tile, child),
       // Its head minimizes it, through the overlay's own Close (KAN-431).
       onClose: () => box.querySelector('.work-overlay-utility button')?.click() });
