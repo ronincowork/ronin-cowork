@@ -3809,6 +3809,10 @@ body {
   font: var(--text-body)/var(--leading-tight) var(--font-ui);
 }
 .tile:is(.tape-on, .keys-on, .transcript-on) .composer .cnote[hidden] { display: none; }
+/* Every kit button looks pressed the moment it is pushed, before what it does lands
+   (owner, 2026-11-12); the composer's own buttons keep their own flash below. */
+.wk-action:not(:disabled):is(:active, .pressed) { filter: brightness(0.82); }
+.wk-action[aria-busy='true'] { cursor: progress; }
 /* Enter answers the press too: a press shows before the send lands. */
 .tile:is(.tape-on, .keys-on, .transcript-on) .composer .csend:is(:active, .pressed) { filter: brightness(0.82); }
 /* A press on its way says so ("Stopping…"): the button widens for the word, then returns. */

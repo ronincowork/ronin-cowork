@@ -16,6 +16,7 @@ class FakeNode {
   replaceWith(node) { const parent = this.parent; if (!parent) return; const at = parent.children.indexOf(this); this.remove(); node.parent?.children.splice(node.parent.children.indexOf(node), 1); parent.children.splice(at, 0, node); node.parent = parent; }
   remove() { this.removed = true; if (this.parent) this.parent.children.splice(this.parent.children.indexOf(this), 1); this.parent = null; }
   setAttribute(name, value) { this.attributes[name] = String(value); }
+  removeAttribute(name) { delete this.attributes[name]; }
   addEventListener(name, fn) { (this.listeners[name] ||= []).push(fn); }
   matches(selector) {
     const attr = /^\[([\w-]+)="([^"]*)"\]$/.exec(selector);
