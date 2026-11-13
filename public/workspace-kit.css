@@ -52,7 +52,7 @@
   .wk-workbench-slot-content > * { flex: 1 1 auto; min-width: 0; min-height: 0; }
   .wk-workbench-column { display: grid; grid-template-rows: minmax(0, 1fr); gap: var(--space-row); min-height: 0; height: 100%; }
   .wk-workbench-column[data-count='4'] { grid-template-rows: minmax(0, 1fr) minmax(0, 1fr); }
-  .wk-workbench-cell { display: flex; min-height: 0; min-width: 0; }
+  .wk-workbench-cell { position: relative; display: flex; min-height: 0; min-width: 0; } /* a full overlay lies over the whole work surface */
   .wk-workbench-cell[hidden] { display: none; }
   .wk-workbench-cell > * { flex: 1 1 auto; min-height: 0; min-width: 0; }
   .wk-workbench-cell.wk-workbench-selected { outline: var(--edge) solid var(--accent); outline-offset: calc(-1 * var(--edge)); }

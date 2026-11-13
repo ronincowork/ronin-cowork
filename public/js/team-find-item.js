@@ -8,15 +8,13 @@
  *
  * THE ENTRY IS ONE BLOCK (owner, 2026-11-13, KAN-464): the number typed into an Erabi reading
  * stone, Find beside it at the stone's height, and a rule before the item shown. An Agent stone
- * in the item opens that Agent's own tile over Find item (`borrowAgent(name)`, the seat pool's
- * borrow, as Mika's Help does); its Close gives the tile back and Find item is as it was.
+ * in the item opens that Agent's own tile over this work surface (renderItemDetail's own).
  */
 import { WorkspaceKit } from './workspace-kit.js';
 import { t } from './lexicon.js';
 import { request } from './request.js';
 import { subscribe as hear } from './store.js';
 import { renderItemDetail, holderOf } from './work-items-surface.js';
-import { fullOverlay } from './work-details.js';
 
 const el = (tag, cls = '', text = '') => {
   const out = document.createElement(tag); out.className = cls; out.textContent = text; return out;
@@ -34,7 +32,7 @@ export function candidateIds(typed, knownIds = []) {
   return [given];
 }
 
-export function createFindItem({ borrowAgent = null, releaseAgent = () => {} } = {}) {
+export function createFindItem() {
   const { createSurface, createAction } = WorkspaceKit.primitives;
   const out = createSurface({ label: t('find_item.title', 'Find item'), className: 'setup-surface find-item' });
   // An Erabi reading stone (ask.css): its label over what is typed, the Find action beside it.
@@ -58,22 +56,6 @@ export function createFindItem({ borrowAgent = null, releaseAgent = () => {} } =
   out.content.append(ask, said, host);
   field.control.addEventListener('keydown', (event) => { if (event.key === 'Enter') { event.preventDefault(); void load(field.control.value); } });
 
-  /** An Agent over Find item: its own tile, borrowed; Close gives it back. */
-  let agentLayer = null;
-  const openAgent = (name) => {
-    agentLayer?.querySelector('.work-overlay-utility button')?.click(); // the one before goes back first
-    const tile = borrowAgent?.(name);
-    if (!tile) return false;
-    agentLayer = fullOverlay(out.el, (layer, through) => {
-      layer.classList.add('find-item-agent');
-      const head = el('div', 'tile-record-head');
-      const tools = el('div', 'wk-surface-header-actions');
-      tools.append(...through);
-      head.append(el('h2', '', `@${name}`), tools);
-      layer.append(head, tile);
-    }, { closed: () => { agentLayer = null; releaseAgent(name); } });
-    return true;
-  };
   let known = [];
   const stop = hear('epicItems', (items) => { known = Array.isArray(items) ? items.map((item) => item.id) : []; });
   let asked = 0;
@@ -91,7 +73,7 @@ export function createFindItem({ borrowAgent = null, releaseAgent = () => {} } =
       const whole = result.data.item;
       said.textContent = '';
       host.replaceChildren();
-      renderItemDetail(host, whole, { holder: holderOf({ ...whole, held_by: result.data.held_by }), heldBy: result.data.held_by, openAgent, history: false,
+      renderItemDetail(host, whole, { holder: holderOf({ ...whole, held_by: result.data.held_by }), heldBy: result.data.held_by, history: false,
         children: Array.isArray(result.data.children) ? result.data.children : [],
         openChild: (child) => { field.control.value = child.id; void load(child.id); },
         onClose: () => { host.replaceChildren(); field.control.focus(); } });
@@ -104,6 +86,6 @@ export function createFindItem({ borrowAgent = null, releaseAgent = () => {} } =
   return {
     el: out.el,
     show: () => { if (!host.childElementCount) field.control.focus(); },
-    destroy: () => { stop(); asked += 1; agentLayer?.querySelector('.work-overlay-utility button')?.click(); },
+    destroy: () => { stop(); asked += 1; },
   };
 }

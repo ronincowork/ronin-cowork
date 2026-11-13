@@ -57,7 +57,7 @@ test('w340: every Epic surface is the board, a stone switching the Epic in place
   assert.match(source, /below\.replaceChildren\(source, view\.el\)/, 'the source line heads the items (the Epic\'s own bar opens them: KAN-310)');
   assert.doesNotMatch(source, /createEpicStones|workbench\?\.place/, 'no stone places a surface elsewhere');
   const team = await readFile(new URL('../public/js/team-epics.js', import.meta.url), 'utf8');
-  assert.match(team, /const board = createEpicBoard\(\{ epicsRead: read, header: false, openAgent \}\);/, 'a Team\'s Epics card is the board over its Epics');
+  assert.match(team, /const board = createEpicBoard\(\{ epicsRead: read, header: false \}\);/, 'a Team\'s Epics card is the board over its Epics');
   const view = await readFile(new URL('../public/js/cowork-view.js', import.meta.url), 'utf8');
-  assert.match(view, /teamEpics: \(id\) => keepTeamSurface\(createTeamEpics\(\{ team: \(\) => team, openAgent: openAgentBeside\(id\) \}\)\)/);
+  assert.match(view, /teamEpics: \(\) => keepTeamSurface\(createTeamEpics\(\{ team: \(\) => team \}\)\)/);
 });
