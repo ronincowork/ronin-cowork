@@ -155,10 +155,20 @@
   @container item-reading (min-width: 34rem) {
     .wi-facts { grid-template-columns: auto minmax(0, 1fr) auto minmax(0, 1fr); }
   }
-  /* FIND ITEM (KAN-433): the number and its Find on one line, the reading under them. */
-  .find-item-ask { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--space-inline); }
-  .find-item-ask .wk-field { flex: 1 1 12rem; min-width: 0; }
-  .find-item-reading:not(:empty) { margin-top: var(--space-paragraph); }
+  /* FIND ITEM (KAN-433, KAN-464): one block — the number typed in an Erabi reading stone, Find
+     beside it at the stone's height — then a rule and space before the item shown. */
+  .find-item-ask .find-item-stone { cursor: text; }
+  .find-item-ask .find-item-stone::after { content: none; }
+  .find-item-ask .find-item-stone:focus-within { border-color: var(--kaki); border-left-color: var(--kaki); }
+  .find-item-number { width: 100%; min-width: 0; padding: 0; border: 0; background: transparent; outline: none; font-family: inherit; }
+  .find-item-number::placeholder { color: var(--muted); font-weight: var(--weight-regular); }
+  .find-item-ask .find-item-go { height: var(--ask-h); align-self: flex-start; }
+  .find-item-reading:not(:empty) { margin-top: var(--space-section); padding-top: var(--space-section); border-top: var(--edge) solid var(--line); }
+  /* An Agent over Find item (KAN-464): its own tile fills the layer under the Close. */
+  .find-item { position: relative; }
+  .work-overlay.find-item-agent { display: flex; flex-direction: column; overflow: hidden; z-index: 2; }
+  .work-overlay.find-item-agent > :last-child { flex: 1 1 auto; min-height: 0; }
+  .work-overlay.find-item-agent > .tile-record-head { margin: 0; padding: var(--space-row) var(--space-inset); }
   /* THE AGENTS (KAN-435): the holder and the Agent it was started in, as stones that open the
      Agent; sized to their words, which wrap in full. */
   .wi-agents { display: flex; flex-wrap: wrap; gap: var(--space-inline); }

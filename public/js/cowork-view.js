@@ -292,7 +292,15 @@ export function createCoworkView(options = {}) {
     // An Agent pressed in an item's reading opens in the other Tilespace, the item staying put
     // (KAN-435); one not running says so (false).
     teamEpics: (id) => keepTeamSurface(createTeamEpics({ team: () => team, openAgent: openAgentBeside(id) })),
-    teamFindItem: (id) => keepTeamSurface(createFindItem({ openAgent: openAgentBeside(id) })),
+    // On Find item an Agent opens over it, its own tile borrowed from this seat (KAN-464).
+    teamFindItem: (id) => keepTeamSurface(createFindItem({
+      borrowAgent: (name) => {
+        if (!S.sessions.some((session) => session.name === name)) return null;
+        if (!membersOfTeam(team).some((m) => m.name === name)) { extras.add(name); syncPools(membersOfTeam(team)); }
+        return seats[id].pool.borrow(name);
+      },
+      releaseAgent: (name) => seats[id].pool.releaseBorrow(name),
+    })),
     epics: () => [],
     epicRecord: (id, detail) => keepTeamSurface(createEpicRecord(detail.key, { epicsRead: createEpicsRead(() => ''), openAgent: openAgentBeside(id) })),
     archives: (id) => ({ el: archivesBySeat[id].el, show: () => void archivesBySeat[id].room.enter() }),

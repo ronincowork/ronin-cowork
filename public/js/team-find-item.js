@@ -5,12 +5,18 @@
  * renderItemDetail), its Subtasks opening in its place and its head closing it back to the
  * question. Any id the item has had finds it (the item read resolves renamed w ids); a bare
  * number is tried under each Jira key the pushed items carry, then as a w id.
+ *
+ * THE ENTRY IS ONE BLOCK (owner, 2026-11-13, KAN-464): the number typed into an Erabi reading
+ * stone, Find beside it at the stone's height, and a rule before the item shown. An Agent stone
+ * in the item opens that Agent's own tile over Find item (`borrowAgent(name)`, the seat pool's
+ * borrow, as Mika's Help does); its Close gives the tile back and Find item is as it was.
  */
 import { WorkspaceKit } from './workspace-kit.js';
 import { t } from './lexicon.js';
 import { request } from './request.js';
 import { subscribe as hear } from './store.js';
 import { renderItemDetail, holderOf } from './work-items-surface.js';
+import { fullOverlay } from './work-details.js';
 
 const el = (tag, cls = '', text = '') => {
   const out = document.createElement(tag); out.className = cls; out.textContent = text; return out;
@@ -28,22 +34,46 @@ export function candidateIds(typed, knownIds = []) {
   return [given];
 }
 
-export function createFindItem({ openAgent = null } = {}) {
-  const { createSurface, createField, createAction } = WorkspaceKit.primitives;
+export function createFindItem({ borrowAgent = null, releaseAgent = () => {} } = {}) {
+  const { createSurface, createAction } = WorkspaceKit.primitives;
   const out = createSurface({ label: t('find_item.title', 'Find item'), className: 'setup-surface find-item' });
-  const field = createField({ label: t('find_item.label', 'Item number') });
-  field.control.type = 'text';
-  field.control.autocomplete = 'off';
-  field.control.placeholder = t('find_item.placeholder', 'KAN-433, 433 or w475');
+  // An Erabi reading stone (ask.css): its label over what is typed, the Find action beside it.
+  const stone = el('label', 'ask-stone find-item-stone');
+  const control = el('input', 'ask-reading find-item-number');
+  control.type = 'text';
+  control.autocomplete = 'off';
+  control.spellcheck = false;
+  control.placeholder = t('find_item.placeholder', 'KAN-433, 433 or w475');
+  stone.append(el('span', 'ask-label', t('find_item.label', 'Item number')), control);
+  const field = { control };
   const said = el('p', 'fs-step-help wi-answer');
   said.setAttribute('role', 'status');
-  const find = createAction({ label: t('find_item.find', 'Find'), size: 'compact', action: () => void load(field.control.value) });
-  const ask = el('div', 'find-item-ask');
-  ask.append(field.el, find.el);
+  const find = createAction({ label: t('find_item.find', 'Find'), action: () => void load(field.control.value) });
+  find.el.classList.add('find-item-go');
+  const ask = el('div', 'ask find-item-ask');
+  const fields = el('div', 'ask-fields');
+  fields.append(stone, find.el);
+  ask.append(fields);
   const host = el('div', 'find-item-reading');
   out.content.append(ask, said, host);
   field.control.addEventListener('keydown', (event) => { if (event.key === 'Enter') { event.preventDefault(); void load(field.control.value); } });
 
+  /** An Agent over Find item: its own tile, borrowed; Close gives it back. */
+  let agentLayer = null;
+  const openAgent = (name) => {
+    agentLayer?.querySelector('.work-overlay-utility button')?.click(); // the one before goes back first
+    const tile = borrowAgent?.(name);
+    if (!tile) return false;
+    agentLayer = fullOverlay(out.el, (layer, through) => {
+      layer.classList.add('find-item-agent');
+      const head = el('div', 'tile-record-head');
+      const tools = el('div', 'wk-surface-header-actions');
+      tools.append(...through);
+      head.append(el('h2', '', `@${name}`), tools);
+      layer.append(head, tile);
+    }, { closed: () => { agentLayer = null; releaseAgent(name); } });
+    return true;
+  };
   let known = [];
   const stop = hear('epicItems', (items) => { known = Array.isArray(items) ? items.map((item) => item.id) : []; });
   let asked = 0;
@@ -74,6 +104,6 @@ export function createFindItem({ openAgent = null } = {}) {
   return {
     el: out.el,
     show: () => { if (!host.childElementCount) field.control.focus(); },
-    destroy: () => { stop(); asked += 1; },
+    destroy: () => { stop(); asked += 1; agentLayer?.querySelector('.work-overlay-utility button')?.click(); },
   };
 }
