@@ -200,9 +200,8 @@ over the pushed rosters' `board` (the Team's epic) and `items`): Theme and State
 each Item a branch row; the 人 mark in a stone's corner opens the Team page in a new tab.
 Help (owner, 2026-10-21) is the same door shape seating two workspaces: the help outline
 (`help.outline`, `help-outline.js`) in Workspace 1 and Mika (`help.mika`) in Workspace 2. A page stone
-dragged into a workspace reads that page whole there (`help.page`, no selector card). A Tile
-built with `opensOn: 'reading'` spends the touch screens' open-on-the-reading intention on a desk too,
-and before her record has anything in it; a Mika born by the seat gets a fresh tile once she is up.
+dragged into a workspace reads that page whole there (`help.page`, no selector card). Her tile
+opens on Chat like every tile, before her record has anything in it; a Mika born by the seat gets a fresh tile once she is up.
 The gate (owner, 2026-10-19): as on the old root, the Models, Workspaces and Teams doors are locked (Help
 stays open, owner 2026-10-21; with no provider its Mika seat is one line pointing to Setup) until one model
 provider is activated (`/api/setup/runtime`'s `activated_count`), each saying so under its name,

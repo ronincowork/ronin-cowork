@@ -151,7 +151,7 @@ test('the button cycles Term → Chat → Term, whatever else the route publishe
   toggle();
   assert.equal(tile.transcriptOn, true);
   assert.deepEqual(shown, [['show', '']]);
-  assert.equal(label(), 'Transcript', 'on, but the route has not named the reading yet');
+  assert.equal(label(), 'Chat', 'on, and the route\'s default is Chat before it names the reading');
   Tile.prototype.onTranscriptState.call(tile, { available: true, empty: false, reason: '', readings: READINGS, view: 'notes' });
   assert.equal(label(), 'Chat');
   assert.deepEqual(shown.at(-1), ['set', 'chat']);
@@ -743,7 +743,7 @@ test('a walk that fails halfway still owes the whole gap, and the next one pays 
   view.dispose();
 });
 
-test('a tile opens on Chat, on a desk as on a phone, and an Agent with nothing yet on its terminal', () => {
+test('a tile opens on Chat, on a desk as on a phone, a new Agent with nothing written yet too', () => {
   const make = () => {
     const shown = [];
     const tile = {
@@ -771,22 +771,38 @@ test('a tile opens on Chat, on a desk as on a phone, and an Agent with nothing y
     assert.deepEqual(a.shown, [['show', 'chat']], 'and it is Chat, not Notes or All');
     assert.equal(Tile.prototype.transcriptLabel.call(a.tile), 'Chat');
 
-    // An Agent with no record to show is still met at its terminal.
-    for (const dead of [{ ...live, available: false }, { ...live, empty: true }]) {
+    // An Agent with nothing to show yet opens on Chat too (owner, 2026-11-13, KAN-453): an
+    // empty record, or one not written yet, whose readings the route has not named.
+    for (const quiet of [{ ...live, empty: true }, { available: false, empty: true, reason: 'pending', readings: [], view: '' }]) {
       const b = make();
       b.tile.transcriptWantChat = true;
-      land(b.tile, dead);
-      assert.equal(b.tile.transcriptOn, false, `stays on the terminal for ${JSON.stringify({ available: dead.available, empty: dead.empty })}`);
-      assert.deepEqual(b.shown, []);
+      land(b.tile, quiet);
+      assert.equal(b.tile.transcriptOn, true, `opens on Chat for ${JSON.stringify({ available: quiet.available, empty: quiet.empty })}`);
+      assert.equal(Tile.prototype.transcriptLabel.call(b.tile), 'Chat');
     }
 
-    // Spent once: a later answer must not drag the view back off the terminal.
+    // Readings named later: the view moves to the first, Chat.
+    const p = make();
+    p.tile.transcriptWantChat = true;
+    land(p.tile, { available: false, empty: true, reason: 'pending', readings: [], view: '' });
+    assert.deepEqual(p.shown, [['show', '']], 'opened on the route default before readings are known');
+    land(p.tile, live);
+    assert.deepEqual(p.shown, [['show', ''], ['set', 'chat']]);
+
+    // The owner's press wins: switched to Term by hand before the answer, it stays there.
     const c = make();
     c.tile.transcriptWantChat = true;
-    land(c.tile, { ...live, available: false });
-    assert.equal(c.tile.transcriptWantChat, false, 'the intention is spent, not retried');
+    c.tile.toggleTranscript(); // on by hand, before the answer
+    c.tile.toggleTranscript(); // and back to Term
     land(c.tile, live);
-    assert.equal(c.tile.transcriptOn, false, 'a second answer does not reopen it');
+    assert.equal(c.tile.transcriptOn, false, 'the press spent the intention: the answer does not undo it');
+    const e = make();
+    e.tile.transcriptWantChat = true;
+    land(e.tile, live);
+    e.tile.toggleTranscript();
+    assert.equal(e.tile.transcriptOn, false, 'Term by hand');
+    land(e.tile, live);
+    assert.equal(e.tile.transcriptOn, false, 'a later answer does not drag it back to Chat');
   } finally {
     globalThis.window.matchMedia = coarse;
   }
@@ -942,4 +958,40 @@ test('Answer in Terminal: the press switches through the tile, and only that pre
   stance = 'working';
   refresh();
   assert.equal(tile.transcriptOn, false, 'the hand switch cancelled the return');
+});
+
+test('a Chat opened before the Agent wrote its journal fills in without a reload (KAN-453)', async () => {
+  let written = false;
+  const asked = [];
+  const watched = [];
+  const view = makeTileTranscript({
+    read: async (url) => {
+      asked.push(url);
+      return written
+        ? { ok: true, data: { available: true, view: 'chat', readings: READINGS, seq: 1, more: false, records: [{ seq: 0, role: 'agent', kind: 'say', text: 'hello' }] } }
+        : { ok: true, data: { available: false, gap: 'journal_pending', reason: 'This Agent has not written its first message yet.', records: [] } };
+    },
+    watch: (name, reading) => watched.push([name, reading]),
+  });
+  const timers = [];
+  const realTimeout = globalThis.setTimeout;
+  globalThis.setTimeout = (fn) => { timers.push(fn); return 0; };
+  try {
+    view.show('agent', '');
+    await tick();
+    assert.equal(asked.length, 1);
+    assert.equal(timers.length, 1, 'a pending journal is asked again');
+    written = true;
+    timers.shift()();
+    await tick();
+    assert.deepEqual(watched.at(-1), ['agent', ''], 'the watch is sent again, so the server follows the new journal');
+    assert.deepEqual(contents(view.el), ['hello'], 'and the first words are on screen');
+    assert.equal(timers.length, 0, 'nothing more to wait for');
+
+    // Any other gap is final; and a hidden view stops asking.
+    view.hide();
+  } finally {
+    globalThis.setTimeout = realTimeout;
+  }
+  view.dispose();
 });

@@ -101,6 +101,7 @@ export function makeTileTranscript({ read = request, watch = transcriptWatch(), 
   let lastState = null; // the header facts restored with a cached phone transcript
 
   const CACHE_TTL = 10 * 60 * 1000;
+  const PENDING_RETRY_MS = 2000; // how soon a Chat whose journal is not written yet asks again
   const CACHE_LIMIT = 12;
   const cacheKey = (name = session, view = reading) => `${name}\u0000${view}`;
   function stash() {
@@ -431,6 +432,18 @@ export function makeTileTranscript({ read = request, watch = transcriptWatch(), 
     if (result.data.available === false) {
       message(result.data.reason || t('transcript.unavailable', 'Transcript unavailable for this Agent.'));
       report(result.data, 0);
+      // A NEW AGENT'S CHAT FILLS WITHOUT A RELOAD (KAN-453). A tile opens on Chat before the
+      // CLI has written its journal, and nothing is following a journal that is not there
+      // yet, so nothing would ever arrive. While it is pending, ask again: the watch first,
+      // which has the server install the watcher once the journal exists, then the read.
+      // Any other gap is not going to change by waiting. A newer show() or hide() outdates it.
+      if (result.data.gap === 'journal_pending') {
+        setTimeout(() => {
+          if (!active || token !== generation) return;
+          watch(session, reading);
+          void open(token);
+        }, PENDING_RETRY_MS);
+      }
       return;
     }
     // The end the route reports, kept whether or not this reading showed any of it: an
@@ -587,7 +600,9 @@ export function makeTileTranscript({ read = request, watch = transcriptWatch(), 
     stanceNode = null;
     sent.length = 0;
     let saved = cache?.get?.(cacheKey(name, view));
-    if (saved?.expiresAt <= Date.now()) {
+    // Expired, or saved before the route ever answered with a record to read (a new Agent's
+    // pending journal): there is no end to catch up from, so it opens afresh.
+    if (saved && (saved.expiresAt <= Date.now() || saved.committed === null)) {
       cache.delete(cacheKey(name, view));
       saved = null;
     }

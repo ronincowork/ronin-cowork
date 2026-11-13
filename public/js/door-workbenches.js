@@ -180,7 +180,7 @@ export function createEpicsView() {
  * Seating her starts her the way her Settings card does, once Home's fact says a provider is activated. */
 export function createHelpView() {
   const MIKA = 'mika_agent';
-  const { surface: mikaSurface, pool: mikaPool } = createMikaTilePool({ opensOn: 'reading' });
+  const { surface: mikaSurface, pool: mikaPool } = createMikaTilePool();
   const outlines = [];
   let reading = '';
   const none = document.createElement('p');
