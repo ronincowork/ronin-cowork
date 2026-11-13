@@ -92,7 +92,8 @@ reading admits (`src/ws/watchers.ts`). A tab that reconnects says its list again
 what it missed by `seq`.
 
 A tile opens on Chat as soon as its Agent is born, usually before the CLI has written a
-journal. While a watched Agent's journal is still pending, Core watches the journal's declared
-root for that file (`src/journal-arrival.ts`); when it appears, Core raises the same transcript
-watch a tab raises, so the part follows the journal, catches up and pushes the first lines to
-the open Chat. The browser never asks again.
+journal (`journal_pending`). That Chat is an empty conversation with *Working* at its end.
+Each push of the Agent's home row sends the tile's watch again while it is so; the row moves
+when the CLI starts writing, and the server's answer to a watch is to follow that journal,
+catch up and push, so the Agent's first words start in the open Chat. Nothing asks on a timer,
+and once records arrive a row push sends nothing.

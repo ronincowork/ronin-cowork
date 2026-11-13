@@ -55,6 +55,7 @@ export function makeTileTranscript({ read = request, watch = transcriptWatch(), 
   let resolved = ''; // what the route called it — for display, never for matching
   let rendered = false; // whether this reading has ever shown a record — the header's 'empty'
   let probing = 0; // the live probe; hide() and a newer probe outdate an older one
+  let unwritten = false; // open on a journal the CLI has not written yet
   let stance = ''; // what the Agent is doing, as the roster row last said
   let doing = ''; // the tool it is working on, as the row names it: name and target
   /*
@@ -135,7 +136,9 @@ export function makeTileTranscript({ read = request, watch = transcriptWatch(), 
    * as the last child of the log so the view scrolls to it like any other line.
    */
   function paintStance() {
-    const shows = active && (stance === 'working' || stance === 'asking');
+    // A pending journal has no stance to read yet; the Agent is starting on its brief.
+    const now = unwritten && (!stance || stance === 'unknown') ? 'working' : stance;
+    const shows = active && (now === 'working' || now === 'asking');
     if (!shows) {
       stanceNode?.remove();
       stanceNode = null;
@@ -146,15 +149,15 @@ export function makeTileTranscript({ read = request, watch = transcriptWatch(), 
       stanceNode.className = 'tile-transcript-stance';
       stanceNode.setAttribute('aria-live', 'polite');
     }
-    const key = `${stance}\u0000${doing}`;
+    const key = `${now}\u0000${doing}`;
     if (stanceNode.getAttribute?.('data-key') !== key) {
       stanceNode.setAttribute('data-key', key);
-      stanceNode.setAttribute('data-stance', stance);
+      stanceNode.setAttribute('data-stance', now);
       stanceNode.replaceChildren();
-      const words = stance === 'asking'
+      const words = now === 'asking'
         ? t('transcript.stance_asking', 'Waiting for your answer in Terminal')
         : t('transcript.stance_working', 'Working');
-      if (stance === 'asking') {
+      if (now === 'asking') {
         // The options are answered in Terminal only (owner, 2026-11-12): one press takes
         // the tile there, and nothing switches without it. The tile owns the switch.
         const said = document.createElement('span');
@@ -176,7 +179,7 @@ export function makeTileTranscript({ read = request, watch = transcriptWatch(), 
           stanceNode.append(step);
         }
       }
-      stanceNode.setAttribute('aria-label', doing && stance !== 'asking' ? `${words}: ${doing}` : words);
+      stanceNode.setAttribute('aria-label', doing && now !== 'asking' ? `${words}: ${doing}` : words);
     }
     // Always last: records append above it, so the end of the conversation stays the end.
     el.append(stanceNode);
@@ -327,6 +330,7 @@ export function makeTileTranscript({ read = request, watch = transcriptWatch(), 
       })
       .sort((a, b) => (a.seq ?? 0) - (b.seq ?? 0));
     if (!fresh.length) return 0;
+    unwritten = false;
     clearMessage();
     rendered = true;
     for (const rec of fresh) {
@@ -428,12 +432,20 @@ export function makeTileTranscript({ read = request, watch = transcriptWatch(), 
       message(t('transcript.failed', 'Transcript could not be loaded. Retrying…'));
       return;
     }
+    // A NEW AGENT IS A CONVERSATION ALREADY (owner, 2026-11-13, KAN-453): its CLI has not
+    // written a journal yet, so Chat starts empty with Working at its end, and its words
+    // start there. rewatch() is how they arrive.
+    if (result.data.gap === 'journal_pending') {
+      unwritten = true;
+      el.replaceChildren();
+      stanceNode = null;
+      paintStance();
+      report(result.data, 0);
+      return;
+    }
     if (result.data.available === false) {
       message(result.data.reason || t('transcript.unavailable', 'Transcript unavailable for this Agent.'));
       report(result.data, 0);
-      // A journal not written yet is not the end of it: the watch sent in show() has the
-      // server follow it the moment the CLI writes it, and its records arrive on the socket
-      // like any others, replacing this message (src/journal-arrival.ts, KAN-453).
       return;
     }
     // The end the route reports, kept whether or not this reading showed any of it: an
@@ -562,6 +574,15 @@ export function makeTileTranscript({ read = request, watch = transcriptWatch(), 
     report(result.data, records.length);
   }
 
+  /**
+   * The row moved. On a pending journal, say again what this tab shows: the server's answer to
+   * a watch is to follow that Agent's journal, and the row moves when the CLI starts writing
+   * it. Nothing is asked on a timer; once records arrive this does nothing.
+   */
+  function rewatch() {
+    if (active && unwritten && session) watch(session, reading);
+  }
+
   /** The home row's word on what this Agent is doing, and the tool it is in. */
   function setStance(next, tool) {
     const value = typeof next === 'string' ? next : '';
@@ -585,6 +606,7 @@ export function makeTileTranscript({ read = request, watch = transcriptWatch(), 
     owed = null;
     exhausted = false;
     rendered = false;
+    unwritten = false;
     lastState = null;
     el.replaceChildren();
     stanceNode = null;
@@ -661,13 +683,14 @@ export function makeTileTranscript({ read = request, watch = transcriptWatch(), 
     committed = null;
     owed = null;
     exhausted = false;
+    unwritten = false;
     el.replaceChildren();
   }
 
   // The view listens for its Agent's records for as long as it exists. `delivered` ignores
   // anything for another session, so a stale registration cannot write into the wrong tile.
   transcriptHandlers.add(delivered);
-  const self = { el, show, hide, probe, setReading, setStance, pending, redraw, shows: () => session,
+  const self = { el, show, hide, probe, setReading, setStance, rewatch, pending, redraw, shows: () => session,
     /** For tests and teardown: stop listening. */
     dispose() { stash(); stop(); active = false; transcriptHandlers.delete(delivered); views.delete(self); watch('', ''); } };
   views.add(self);

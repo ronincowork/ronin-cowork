@@ -960,7 +960,7 @@ test('Answer in Terminal: the press switches through the tile, and only that pre
   assert.equal(tile.transcriptOn, false, 'the hand switch cancelled the return');
 });
 
-test('a Chat opened before the Agent wrote its journal fills from the push, with no asking again (KAN-453)', async () => {
+test('a new Agent\'s Chat is a conversation at once, and a row push re-sends its watch until it fills (KAN-453)', async () => {
   const asked = [];
   const watched = [];
   const view = makeTileTranscript({
@@ -972,10 +972,19 @@ test('a Chat opened before the Agent wrote its journal fills from the push, with
   });
   view.show('agent', '');
   await tick();
-  assert.deepEqual(watched, [['agent', '']], 'the watch is what the server waits on');
-  for (let i = 0; i < 5; i++) await new Promise((r) => setTimeout(r, 0));
-  assert.equal(asked.length, 1, 'one read: it does not poll');
+  const stanceOf = () => view.el.children.find((n) => n.className === 'tile-transcript-stance')?.getAttribute('data-stance');
+  assert.equal(view.el.children.some((n) => n.className === 'tile-transcript-message'), false, 'no "unavailable" sentence');
+  assert.equal(stanceOf(), 'working', 'an empty conversation, Working at its end');
+  view.setStance('unknown');
+  assert.equal(stanceOf(), 'working', 'the row has no stance to give yet');
+  assert.deepEqual(watched, [['agent', '']]);
+  assert.equal(asked.length, 1, 'one read: nothing on a timer');
+
+  view.rewatch(); // the row moved
+  assert.deepEqual(watched, [['agent', ''], ['agent', '']], 'the watch is said again, for the server to follow the journal');
   deliver({ t: 'transcript', session: 'agent', reading: '', records: [{ seq: 0, role: 'agent', kind: 'say', text: 'hello' }] });
-  assert.deepEqual(contents(view.el), ['hello'], 'the first words replace the message');
+  assert.deepEqual(contents(view.el), ['hello'], 'the Agent\'s words start in it');
+  view.rewatch();
+  assert.equal(watched.length, 2, 'once records arrive, a row push asks nothing');
   view.dispose();
 });

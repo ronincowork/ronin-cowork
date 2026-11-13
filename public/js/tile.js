@@ -313,6 +313,7 @@ export class Tile {
   refreshStance() {
     const row = this.homeRow();
     this.transcriptView.setStance(row?.stance || '', row?.tool);
+    if (this.transcriptOn) this.transcriptView.rewatch(); // a new Agent's Chat: see tile-transcript.js
     // Answered: back to Chat, but only a tile that went to Terminal by Answer in Terminal.
     if (this.answerReturns && row && row.stance !== 'asking') {
       this.answerReturns = false;

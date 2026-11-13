@@ -6,7 +6,6 @@ import { tmux, type TmuxClient } from '../tmux-client.js';
 import { withAxes, type SessionWithAxes } from '../tegami.js';
 import { unwatch, watchFor } from './watchers.js';
 import { emitPaneActivity, emitTranscriptWatch, onRowChanged } from '../sockets.js';
-import { awaitJournal } from '../journal-arrival.js';
 
 const eventClients = new Set<WebSocket>();
 
@@ -259,13 +258,8 @@ export function handleEvents(ws: WebSocket): void {
     watchFor(ws, watches);
     // Somebody is now looking at these Agents: a good moment for whoever follows journals to
     // make sure it is following them. Already following is nothing at all; not following
-    // means installing a watcher, which catches up what was missed. A journal not written
-    // yet is waited for, and the same call made when it appears (journal-arrival.ts).
-    for (const session of new Set(watches.map((w) => w.session))) {
-      if (!session) continue;
-      emitTranscriptWatch(session);
-      void awaitJournal(session).catch((e) => console.error('[journal-arrival]', session, e));
-    }
+    // means installing a watcher, which catches up what was missed.
+    for (const session of new Set(watches.map((w) => w.session))) if (session) emitTranscriptWatch(session);
   });
   // A fresh connection gets each message exactly once. The held ones it is sent now, as every
   // other tab holds them; a later publish is a newer change. The session list and the rows

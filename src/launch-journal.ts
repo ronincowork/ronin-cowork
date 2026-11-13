@@ -5,7 +5,7 @@ import { readLaunchIdentity, writeLaunchIdentity } from './launch-binding.js';
 import type { LaunchIdentity } from './sockets-contract.js';
 const field = (value: unknown, key: string): unknown => key.split('.').reduce<unknown>((v, k) =>
   v && typeof v === 'object' ? (v as Record<string, unknown>)[k] : undefined, value);
-export const matches = (name: string, pattern: string) => new RegExp('^' + pattern.split('*')
+const matches = (name: string, pattern: string) => new RegExp('^' + pattern.split('*')
   .map(s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('.*') + '$').test(name);
 async function files(root: string, pattern: string): Promise<string[]> {
   const rows = await readdir(root, { withFileTypes: true }).catch((e: NodeJS.ErrnoException) => {
@@ -121,18 +121,12 @@ export async function resolveLaunchJournal(identity: LaunchIdentity): Promise<st
   return null;
 }
 
-/** The Ronin key the live pane carries, or '' when there is no pane or no key. */
-export async function paneKey(name: string): Promise<string> {
-  const { tmux } = await import('./tmux-client.js');
-  const { exactPane } = await import('./tmux.js');
-  return tmux.run(['display-message', '-p', '-t', exactPane(name), '#{@ronin-key}']).catch(() => '');
-}
-
 /** The live pane selects a persisted birth, never an in-memory event subscription. */
 export async function resolveTranscriptSource(name: string): Promise<import('./sockets-contract.js').TranscriptLookup> {
   const { tmux } = await import('./tmux-client.js');
+  const { exactPane } = await import('./tmux.js');
   const { sessionDir } = await import('./session-dir.js');
-  const key = await paneKey(name);
+  const key = await tmux.run(['display-message', '-p', '-t', exactPane(name), '#{@ronin-key}']).catch(() => '');
   // Each step knows why it stopped, and says so. Collapsing these into one null made a
   // session that is merely not running read exactly like one whose CLI keeps no journal,
   // and the tile could only ever show a single sentence for both.
