@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Internal roster-write implementation for `team`.
 #
-# Usage: team roster write <team> [--objective <text>] [--role <team_role>] [--root <project_root>]
-#                              [--repos a,b] [--branch <b>] [--wipeboard <board>]
+# Usage: team roster write <team> [--objective <text>] [--workspace <handle>]
+#                              [--branch <b>] [--wipeboard <board>]
 #                              [--state active|archived] [--campaign-defaults] [--add s1,s2]
 #                              [--select b1,b2] [--deselect b1,b2] [--campaign <id>]
 #
@@ -13,7 +13,7 @@
 #
 # You rarely need this: a session is born onto your team by `session_create`, with no
 # team named at all. Come here to create a team, or to give one a brief worth
-# inheriting (`--objective`, `--root`, `--repos`, `--branch`).
+# inheriting (`--objective`, `--workspace`, `--branch`).
 #
 # Verdicts: CREATED <team> · UPDATED <team> — then `added: …` / `not live: …` when --add
 # was given. Exit 0 done, 2 bad arguments, 4 refused, 5 Ronin unreachable.
@@ -24,12 +24,13 @@ case "${1-}" in
 team roster write — create a Team or update its stated facts
 
 Usage:
-  team roster write <team> [--objective <text>] [--role <role>] [--root <path>]
-                        [--repos a,b] [--branch <branch>] [--wipeboard <board>]
+  team roster write <team> [--objective <text>] [--workspace <handle>]
+                        [--branch <branch>] [--wipeboard <board>]
                         [--state active|archived] [--campaign-defaults] [--add s1,s2]
                         [--select b1,b2] [--deselect b1,b2] [--campaign <id>]
 
 Create a Team by naming one that has no record; otherwise only named fields change.
+--workspace names the Team's Workspace by its handle; the Workspace holds the repositories.
 --select adds selected behaviours to the Team's list and --deselect takes them off; the rest
 of the list, and its required ones, stay (project-management is the work-items switch).
 --campaign names the Team's Campaign, for a Team name that is in more than one.
@@ -48,13 +49,11 @@ die() { printf '%s\n' "$1" >&2; exit "${2:-4}"; }
 NAME="${1:-}"
 [ -n "$NAME" ] && [ "${NAME#-}" = "$NAME" ] || die "usage: team roster write <team> [options]. Run team --help." 2
 shift
-OBJ="" ROLE="" ROOT="" REPOS="" BRANCH="" BOARD="" STATE="" ADD="" CAMPAIGN_DEFAULTS="" SELECT="" DESELECT="" CAMPAIGN=""
+OBJ="" WORKSPACE="" BRANCH="" BOARD="" STATE="" ADD="" CAMPAIGN_DEFAULTS="" SELECT="" DESELECT="" CAMPAIGN=""
 while [ $# -gt 0 ]; do
   case "$1" in
     --objective) OBJ="${2:-}"; shift 2 ;;
-    --role|--team_role) ROLE="${2:-}"; shift 2 ;;
-    --root|--project_root) ROOT="${2:-}"; shift 2 ;;
-    --repos) REPOS="${2:-}"; shift 2 ;;
+    --workspace) WORKSPACE="${2:-}"; shift 2 ;;
     --branch) BRANCH="${2:-}"; shift 2 ;;
     --wipeboard) BOARD="${2:-}"; shift 2 ;;
     --state) STATE="${2:-}"; shift 2 ;;
@@ -79,18 +78,17 @@ if [ -n "$SELECT$DESELECT" ]; then
   printf '%s' "$CURRENT" | python3 -c 'import json,sys; d=json.load(sys.stdin); sys.exit(0 if "name" in d or "has no roster" in d.get("error", "") else 1)' 2>/dev/null \
     || die "REFUSED: could not read Team $NAME's behaviour list: $(printf '%s' "$CURRENT" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("error",""))' 2>/dev/null)" 4
 fi
-body=$(BY="$BY" NAME="$NAME" OBJ="$OBJ" ROLE="$ROLE" ROOT="$ROOT" REPOS="$REPOS" BRANCH="$BRANCH" \
+body=$(BY="$BY" NAME="$NAME" OBJ="$OBJ" WORKSPACE="$WORKSPACE" BRANCH="$BRANCH" \
        BOARD="$BOARD" STATE="$STATE" ADD="$ADD" CAMPAIGN_DEFAULTS="$CAMPAIGN_DEFAULTS" \
        SELECT="$SELECT" DESELECT="$DESELECT" CURRENT="$CURRENT" CAMPAIGN="$CAMPAIGN" python3 - <<'PY'
 import json, os
 e = os.environ
 b = {"name": e["NAME"]}
 if e["BY"]: b["by"] = e["BY"]  # the lead editing its own roster is not acked
-for k, v in (("objective", "OBJ"), ("team_role", "ROLE"), ("project_root", "ROOT"),
+for k, v in (("objective", "OBJ"), ("workspace", "WORKSPACE"),
              ("branch", "BRANCH"), ("wipeboard", "BOARD"), ("state", "STATE")):
     if e[v]: b[k] = e[v]
-for k, v in (("repos", "REPOS"), ("session_names", "ADD")):
-    if e[v]: b[k] = [t.strip() for t in e[v].split(",") if t.strip()]
+if e["ADD"]: b["session_names"] = [t.strip() for t in e["ADD"].split(",") if t.strip()]
 if e["CAMPAIGN_DEFAULTS"]: b["campaign_defaults"] = True
 if e["CAMPAIGN"]: b["campaign_id"] = e["CAMPAIGN"]
 if e["SELECT"] or e["DESELECT"]:
