@@ -126,7 +126,7 @@ categories. Use the tool and composition terms above.
 
 ## Ronin Cloud
 
-These terms name the hosted offer's surfaces. Current reference: `samurai_lab/ronin_cloud/README.md`.
+These terms name the hosted offer's surfaces. Current reference: `samurai_lab/ronin_cloud/README_RONIN_CLOUD.md`.
 Implementation proposal: `plan read ronin_hosted/hosted-first-office` (Draft).
 Every physical or fleet surface carries the `office_` prefix; `model_gateway` and
 `kill_switch` stand alone because nothing else shares the word. In prose the plain word office
