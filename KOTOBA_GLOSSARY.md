@@ -30,6 +30,8 @@ runtime parts, while Agent capabilities teach tools (`docs/architecture/tool-sur
 | root layout | **Three Blocks** | Home's Settings, Teams, and New Project doors. |
 | Setup workbench | **Ronin Setup** | First-use workbench. |
 | Desk workbench | **Ronin Settings** | Ongoing Desk configuration workbench. |
+| `office_unit` (the office record in `~/ronin/office_unit/`) | **hosted office** | Cowork running inside an office_unit on an office_park. It shows no account, billing, subscription, registration or machine settings; self-hosted Cowork is the one without the record. |
+| Home side stone, hosted only | **Business Lounge** | A link from Home to https://hq.roninhosted.com/, where a hosted office's account, office and subscription are kept. Each person lands in their own lounge. |
 | stone work surface | **stone work surface** | Select a collection item: stones move to a left rail, details open on the right. Reused by Presets, Workspace Folders, and Model Providers. |
 | tile | **tile** | One cell showing one session. Never "pane". |
 | `workspace1`…`workspace4` | **tilespace** | One numbered slot of a workbench. It holds a tile or a commons. Never call it a workspace. |

@@ -32,6 +32,7 @@ import { createMikaTilePool, reportMikaView } from './mika.js';
 import { readyMika } from './mika-ready.js';
 import { S } from './state.js';
 import { request } from './request.js';
+import { HOSTED } from './hosted.js';
 
 const blank = (id) => WorkspaceKit.primitives.createBlankSurface(id.replace('workspace', 'Workspace ')).el;
 
@@ -186,7 +187,9 @@ export function createHelpView() {
   const none = document.createElement('p');
   none.className = 'help-mika-none';
   none.hidden = true;
-  const setup = Object.assign(document.createElement('a'), { href: '#/setup', textContent: t('help_outline.mika_setup', 'Setup') });
+  const setup = HOSTED // a hosted office has no Setup; its providers are signed in from Agent Harness
+    ? Object.assign(document.createElement('a'), { href: '#/models', textContent: t('campaign_home.agent_harness', 'Agent Harness') })
+    : Object.assign(document.createElement('a'), { href: '#/setup', textContent: t('help_outline.mika_setup', 'Setup') });
   none.append(t('help_outline.mika_needs_provider', 'Mika needs a model provider. Activate one in '), setup, '.');
   mikaSurface.content.append(none);
   // A terminal seat carries a tile head from the moment it is placed; until the provider read

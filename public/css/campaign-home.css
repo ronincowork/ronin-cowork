@@ -106,7 +106,9 @@
   .ch-door[data-door='teams'] { --ch-tone: var(--ok-2); }
   .ch-door[data-door='help'] { --ch-tone: var(--define-line); }
   .ch-door[data-door='epics'] { --ch-tone: var(--kaki); }
-  .ch-door[data-door='settings'] { --ch-tone: var(--line-3); }
+  .ch-door[data-door='settings'], .ch-door[data-door='lounge'] { --ch-tone: var(--line-3); }
+  /* The Lounge opens a new tab and this page stays, so the press itself must show. */
+  .ch-door[data-door='lounge']:active { transform: none; box-shadow: none; border-color: var(--ch-tone); }
   .ch-gate { margin: var(--space-subsection) 0 0; font-size: var(--text-body); color: var(--muted); }
 
   .ch-door:hover {

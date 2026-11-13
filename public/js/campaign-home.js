@@ -23,6 +23,7 @@ import { createSenmaida } from './senmaida.js';
 import { createThemeToggle } from './theme-toggle.js';
 import { campaignById, loadCampaigns, normalizeSelection, setupDefaultView } from './campaigns.js';
 import { workbenchLink } from './workspace.js';
+import { BUSINESS_LOUNGE, HOSTED } from './hosted.js';
 
 const el = (tag, cls, text) => {
   const out = document.createElement(tag);
@@ -40,12 +41,17 @@ function OFFICE() {
   ];
 }
 
-/** The smaller stones on the right, one above the other. Settings' route is read at paint. */
+/** The smaller stones on the right, one above the other. Settings' route is read at paint. A
+ *  hosted office (hosted.js) has no Setup, so its Settings opens Settings, and the Business Lounge
+ *  stands beside the others: a link out to Ronin HQ, where its account and office are kept. */
 function SIDE() {
   return [
     { key: 'models', route: 'models', glyph: '✶', name: t('campaign_home.agent_harness', 'Agent Harness'), is: t('campaign_home.agent_harness_is', 'The CLIs on this machine, the accounts they launch on, and the models'), gated: false },
     { key: 'help', route: 'help', glyph: 'ミ', name: t('campaign_home.help', 'Help'), is: t('campaign_home.help_is', 'The guides, and Mika to ask'), gated: false },
-    { key: 'settings', route: null, glyph: '⚙', name: t('campaign_home.settings', 'Settings'), is: t('campaign_home.settings_is', 'Setup, and this machine’s settings'), gated: false },
+    HOSTED
+      ? { key: 'settings', route: 'campaign', glyph: '⚙', name: t('campaign_home.settings', 'Settings'), is: t('campaign_home.settings_is_hosted', 'This Desk’s settings'), gated: false }
+      : { key: 'settings', route: null, glyph: '⚙', name: t('campaign_home.settings', 'Settings'), is: t('campaign_home.settings_is', 'Setup, and this machine’s settings'), gated: false },
+    ...(HOSTED ? [{ key: 'lounge', href: BUSINESS_LOUNGE, glyph: '◎', name: t('campaign_home.business_lounge', 'Business Lounge'), is: t('campaign_home.business_lounge_is', 'Your account, office and subscription, at Ronin HQ'), gated: false }] : []),
   ];
 }
 
@@ -64,7 +70,7 @@ export function createCampaignHome() {
   const frame = el('div', 'ch-frame');
   const doors = el('div', 'ch-doors');
   const side = el('nav', 'ch-side');
-  side.setAttribute('aria-label', t('campaign_home.side', 'Models, Help and Settings'));
+  side.setAttribute('aria-label', HOSTED ? t('campaign_home.side_hosted', 'Models, Help, Settings and the Business Lounge') : t('campaign_home.side', 'Models, Help and Settings'));
   const release = el('div', 'ch-release');
   const check = el('button', 'ch-update', t('campaign_home.check_updates', 'Check for updates'));
   const answer = el('span', 'ch-update-answer');
@@ -88,7 +94,8 @@ export function createCampaignHome() {
   readings.setAttribute('aria-live', 'polite');
   release.append(readings, answer, check);
   frame.append(doors);
-  root.append(frame, side, release);
+  root.append(frame, side);
+  if (!HOSTED) root.append(release); // a hosted office's release is the office_park's to change, not Home's
 
   let ctx = null;
   let entered = false;
@@ -102,6 +109,12 @@ export function createCampaignHome() {
   // one model provider is activated the door is locked, no link, and says where the way in is.
   function stone(door, small) {
     const card = el('a', small ? 'ch-door ch-door-small' : 'ch-door');
+    if (door.href) { // a link out of Cowork: a new tab, nothing here changes
+      Object.assign(card, { href: door.href, target: '_blank', rel: 'noopener' });
+      card.dataset.door = door.key;
+      card.append(doorGlyph(door.glyph), el('h2', null, door.name), el('p', 'ch-is', door.is));
+      return card;
+    }
     const locked = door.gated !== false && (!runtimeKnown || activatedCount < 1);
     const route = door.route || setupDefaultView(setupCampaign);
     if (!locked) workbenchLink(card, { destination: route, mode: 'overlay' });
@@ -111,7 +124,7 @@ export function createCampaignHome() {
       card.setAttribute('aria-disabled', 'true');
     }
     card.append(doorGlyph(door.glyph), el('h2', null, door.name), el('p', 'ch-is', door.is));
-    if (locked) card.append(el('p', 'ch-gate', t('setup.provider_gate', 'Activate one model provider in Setup or Agent Harness to use this.')));
+    if (locked) card.append(el('p', 'ch-gate', HOSTED ? t('setup.provider_gate_hosted', 'Activate one model provider in Agent Harness to use this.') : t('setup.provider_gate', 'Activate one model provider in Setup or Agent Harness to use this.')));
     card.addEventListener('click', (event) => {
       if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
       event.preventDefault();

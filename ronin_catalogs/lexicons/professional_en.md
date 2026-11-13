@@ -291,7 +291,12 @@ nothing paints exactly this.
 - **campaign_home.check_updates:** Check for updates
 - **campaign_home.agent_harness:** Agent Harness
 - **campaign_home.agent_harness_is:** The CLIs on this machine, the accounts they launch on, and the models
+- **campaign_home.settings_is_hosted:** This Desk’s settings
+- **campaign_home.business_lounge:** Business Lounge
+- **campaign_home.business_lounge_is:** Your account, office and subscription, at Ronin HQ
+- **campaign_home.side_hosted:** Models, Help, Settings and the Business Lounge
 - **setup.provider_gate:** Activate one model provider in Setup or Agent Harness to use this.
+- **setup.provider_gate_hosted:** Activate one model provider in Agent Harness to use this.
 - **setup.open_settings:** Open Ronin Settings
 - **setup.open_setup:** Open Ronin Setup
 

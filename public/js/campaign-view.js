@@ -26,6 +26,7 @@ import { returnFromWorkspaceFolders } from './workspace.js';
 import { registerWorkbenchCatalog, WORKBENCH_PROFILES, WORKBENCH_TYPES } from './workbench-catalog.js';
 import { SETUP_STEP_IDS } from './setup-progress.js';
 import { setupProgressHandlers } from './events.js';
+import { HOSTED } from './hosted.js';
 
 const PROFILE = WORKBENCH_PROFILES.campaign;
 const MIKA_SESSION = 'mika_agent';
@@ -175,7 +176,7 @@ export function createCampaignView() {
   let helpPanel = null;
   bench = WorkspaceKit.workbench.create({ profile: PROFILE, tenant: { kind: 'campaign', selected }, environment, defaultNode: blank, label: t('campaign.settings_short_title', 'Settings'), actions: [mikaHelp], selectorCurrent: 'placed', onSelectorRefresh: (cards) => {
     for (const [type, label] of [
-      [TYPES.machine, t('campaign_view.machine_settings', 'Machine Settings')],
+      [TYPES.machine, HOSTED ? t('campaign_view.machine', 'Machine') : t('campaign_view.machine_settings', 'Machine Settings')],
       [TYPES.identity, t('campaign_view.desk_settings', 'Desk Settings')],
       [TYPES.integrations, t('integrations.title', 'Integrations')],
     ]) {
@@ -185,7 +186,7 @@ export function createCampaignView() {
     // The way back to Setup heads the Machine Settings group. It is a door, not a surface,
     // so it is built here rather than registered as a Workbench type a drag could seat.
     const machine = cards.querySelector(`[data-workbench-offer-type="${TYPES.machine}"]`);
-    if (machine) machine.before(createSetupReturnCard(setupProgress(), openSetup));
+    if (machine && !HOSTED) machine.before(createSetupReturnCard(setupProgress(), openSetup)); // a hosted office has no Setup
   }, onStateChange: save, onPlacement: save });
   installBehaviourReader(bench, TYPES.document);
   helpPanel = createMikaHelpPanel({

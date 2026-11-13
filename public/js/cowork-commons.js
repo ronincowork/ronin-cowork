@@ -10,6 +10,7 @@ import { buildArchives } from './archives.js';
 import { askMika } from './mika.js';
 import { S, serviceOff } from './state.js';
 import { t } from './lexicon.js';
+import { HOSTED } from './hosted.js';
 import { buildMessageQueue } from './message-queue.js';
 import { choice } from './campaign-desk.js';
 import { saveCampaign } from './campaigns.js';
@@ -109,13 +110,15 @@ export function coworkCommons(options = {}) {
     box.append(el);
     return box;
   };
+  // A hosted office keeps no machine Configuration, release or log-out here: the office_park and
+  // the Business Lounge own them (hosted.js).
   const ACCOUNT_ROWS = [
     { id: 'settei', label: t('pane.settei', 'Configuration'), glyph: '⚙', build: (host) => buildMachineSettings(host, showing('account')) },
     { id: 'release', label: t('desk.row_release', 'Release & update'), glyph: '↑', build: (host) => { host.append(appBox(app.release)); return app; } },
     { id: 'hotwords', label: t('pane.hotwords', 'Hotwords'), glyph: '▥', build: (host) => buildHotwords(host, showing('account')) },
     { id: 'koshi', label: t('pane.koshi', 'Koshi'), glyph: '目', build: (host) => buildKoshi(host, showing('account')) },
     { id: 'account', label: t('desk.log_out', 'Log out'), glyph: '⏻', build: (host) => { host.append(appBox(app.account)); return app; } },
-  ];
+  ].filter((r) => !HOSTED || !['settei', 'release', 'account'].includes(r.id));
   const nav = node('div', 'desk-nav');
   const railTop = node('div', 'desk-railtop');
   const railBtn = node('button', 'desk-railbtn', '«');
@@ -135,7 +138,7 @@ export function coworkCommons(options = {}) {
   const accountRows = {};
   const accountPanes = {};
   const accountRoom = {};
-  let accountShowing = 'settei';
+  let accountShowing = ACCOUNT_ROWS[0].id;
   const showAccount = (id) => {
     accountShowing = id;
     for (const [rid, b] of Object.entries(accountRows)) b.classList.toggle('on', rid === id);

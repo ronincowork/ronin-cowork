@@ -13,6 +13,7 @@ import { MULTIPLE_CAMPAIGNS_ENABLED } from './campaigns.js';
 import { AGENT_COMPOSITION_TYPE } from './agent-composition.js';
 import { WORK_ITEMS_TYPE } from './work-items-surface.js';
 import { HELP_PAGE_TYPE } from './help-outline.js';
+import { HOSTED } from './hosted.js';
 
 export const WORKBENCH_PROFILES = Object.freeze({ campaign: 'campaign', launch: 'launch', cowork: 'cowork', team: 'team', agent: 'agent', models: 'models', workspaces: 'workspaces', epics: 'epics', help: 'help' });
 export const WORKBENCH_TYPES = Object.freeze({
@@ -82,7 +83,10 @@ export function registerWorkbenchCatalog() {
   profiles.define(WORKBENCH_PROFILES.launch, [WORKBENCH_TYPES.launchTeam, WORKBENCH_TYPES.launchAgent, WORKBENCH_TYPES.launchHelp, BEHAVIOUR_SURFACE_TYPE, WORKBENCH_TYPES.document, FEEDBACK_TYPE]);
   profiles.define(WORKBENCH_PROFILES.cowork, [WORKBENCH_TYPES.roster, WORKBENCH_TYPES.sessionRoster, WORKBENCH_TYPES.cron, WORKBENCH_TYPES.team, WORKBENCH_TYPES.terminal, WORKBENCH_TYPES.newTeamForm, WORKBENCH_TYPES.newAgent, WORKBENCH_TYPES.archives, WORKBENCH_TYPES.document, BEHAVIOUR_SURFACE_TYPE, PRESETS_TYPE, FEEDBACK_TYPE]);
   profiles.define(WORKBENCH_PROFILES.agent, [WORKBENCH_TYPES.terminal, WORKBENCH_TYPES.agentComposition, WORKBENCH_TYPES.agentDocuments, WORKBENCH_TYPES.agentTeams, WORKBENCH_TYPES.workItems, WORKBENCH_TYPES.document, FEEDBACK_TYPE]);
-  profiles.define(WORKBENCH_PROFILES.campaign, [WORKBENCH_TYPES.terminal, WORKBENCH_TYPES.campaignMachine, WORKBENCH_TYPES.campaignCloudAccount, BEHAVIOUR_SURFACE_TYPE, PASSWORD_SURFACE_TYPE, WORKBENCH_TYPES.campaignInstallations, PROVIDER_SURFACE_TYPE, SETUP_SURFACE_TYPES.register, FEEDBACK_TYPE, WORKBENCH_TYPES.campaignIdentity, WORKBENCH_TYPES.campaignDefaults, WORKBENCH_TYPES.campaignRoots, SETUP_SURFACE_TYPES.launchOwn, WORKBENCH_TYPES.document, WORKBENCH_TYPES.campaignIntegrations, WORKBENCH_TYPES.campaignJira, WORKBENCH_TYPES.campaignJiraItems, WORKBENCH_TYPES.campaignJiraPairs, ...(MULTIPLE_CAMPAIGNS_ENABLED ? [WORKBENCH_TYPES.campaignCreate] : [])]);
+  // A hosted office's Settings offers no account, registration, password or installations cards:
+  // those live in the Business Lounge and on the office_park (hosted.js).
+  const notHosted = (...types) => (HOSTED ? [] : types);
+  profiles.define(WORKBENCH_PROFILES.campaign, [WORKBENCH_TYPES.terminal, WORKBENCH_TYPES.campaignMachine, ...notHosted(WORKBENCH_TYPES.campaignCloudAccount), BEHAVIOUR_SURFACE_TYPE, ...notHosted(PASSWORD_SURFACE_TYPE, WORKBENCH_TYPES.campaignInstallations), PROVIDER_SURFACE_TYPE, ...notHosted(SETUP_SURFACE_TYPES.register), FEEDBACK_TYPE, WORKBENCH_TYPES.campaignIdentity, WORKBENCH_TYPES.campaignDefaults, WORKBENCH_TYPES.campaignRoots, SETUP_SURFACE_TYPES.launchOwn, WORKBENCH_TYPES.document, WORKBENCH_TYPES.campaignIntegrations, WORKBENCH_TYPES.campaignJira, WORKBENCH_TYPES.campaignJiraItems, WORKBENCH_TYPES.campaignJiraPairs, ...(MULTIPLE_CAMPAIGNS_ENABLED ? [WORKBENCH_TYPES.campaignCreate] : [])]);
   // HOME'S DOORS (owner, 2026-10-19; door-workbenches.js): Models and Workspaces are workbenches of
   // their own; Teams is the Cowork workbench above (owner, 2026-10-20).
   // THE MODELS WORKBENCH (owner, 2026-10-19): its own stones in Workspace 1; one provider whole in a

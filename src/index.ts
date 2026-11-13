@@ -63,6 +63,7 @@ import { listQueuedMessages, startMessageQueue } from './message-queue.js';
 import { isValidTeam, listAllJobs, listJobs } from './jikan.js';
 import { isValidBoardName, seedHouseBoard, WIPEBOARD_DIR } from './wipeboards.js';
 import { presence, stampInput } from './presence.js';
+import { readOfficeRecord } from './office-record.js';
 import { handleEvents, pushJikan, pushMessages, pushWipeboard, startSessionsBroadcast, watchStore } from './ws/events.js';
 import { tmux as tmuxClient } from './tmux-client.js';
 import { handlePty } from './ws/pty.js';
@@ -212,7 +213,10 @@ app.get('/vendor/addon-fit.js', (_req, res) => res.sendFile(path.join(NM, '@xter
 
 // The client's version and its serving rules live in assets.ts, which owns why.
 const assetVersion = publicFingerprint(PUBLIC);
-const readDocument = (file: string) => fs.readFileSync(path.join(PUBLIC, file), 'utf8').replaceAll('__RONIN_ASSET_VERSION__', assetVersion).replaceAll('__RONIN_FILES__', PYTHON ? 'on' : 'off');
+// A hosted office (an office_unit on an office_park) is read once, here: the page says so and the
+// client hides account and machine settings behind one Business Lounge link (KAN-475).
+const HOSTED = (await readOfficeRecord()).hosting !== 'self_hosted';
+const readDocument = (file: string) => fs.readFileSync(path.join(PUBLIC, file), 'utf8').replaceAll('__RONIN_ASSET_VERSION__', assetVersion).replaceAll('__RONIN_FILES__', PYTHON ? 'on' : 'off').replaceAll('__RONIN_HOSTED__', HOSTED ? 'on' : 'off');
 const indexHtml = readDocument('index.html');
 // THE MOBILE DOCUMENT. A phone downloads mobile.html — the bar, an empty list and
 // js/phone.js — and never the desktop page, so the first frame it paints is the mobile bar:
