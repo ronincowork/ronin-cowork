@@ -182,6 +182,8 @@
   .wi-attachment:hover, .wi-attachment:focus-visible { color: var(--accent); }
   /* The full overlay (js/work-details.js): one layer over a host, the tile its one user. */
   .work-overlay { position: absolute; inset: 0; overflow-y: auto; background: var(--surface); }
+  /* A tile's More detail (KAN-459): the Epics board's bars over the tile, inset as the board's. */
+  .tile-items-board > .epic-items { padding: var(--space-inset); }
   /* Its utility, small at the top right: Close. */
   .work-overlay-utility { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: var(--space-inline); }
   .work-overlay:focus { outline: none; }

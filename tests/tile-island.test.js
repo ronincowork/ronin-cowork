@@ -101,23 +101,19 @@ test('w322: the wide list, a bar per item with its description, last comment and
   assert.ok(barFacts({ comments: [{}] }, 0, now).includes('1 comment'));
   assert.deepEqual(barFacts({ id: 'w2' }, 0, now), [], 'an empty fact is left out');
   const island = await read('public/js/tile-island.js');
-  assert.match(island, /el\.append\(stance, grip, pills, bars, more\)/);
-  assert.match(island, /more\.addEventListener\('click', \(\) => place\(el\.dataset\.state === 'wide' \? 'down' : 'wide'\)\)/);
+  assert.match(island, /el\.append\(stance, grip, pills, more\)/);
+  assert.match(island, /more\.addEventListener\('click', \(\) => \{ place\('rest'\); showMore\(\); \}\)/, 'More detail opens the board over the tile (KAN-459)');
   assert.match(island, /node\.className = \[sub \? 'item-bar item-bar-sub' : 'item-bar'/, 'a bar is not a pill: the pill counts stay the pills');
   const css = await read('public/style.css');
-  assert.match(css, /\.tile-head \.item-island\[data-state='wide'\] \{\n  position: absolute;/);
   assert.match(css, /\.item-bar \.item-bar-comment \{ -webkit-line-clamp: 1;/);
 });
 
-test('w323: one subtask is singular; wide, the bars scroll and the way out stays in view', async () => {
+test('w323: one subtask is singular', async () => {
   assert.equal(subtaskWords(1), '1 subtask');
   assert.equal(subtaskWords(3), '3 subtasks');
   assert.ok(barFacts({ parent: 'KAN-1' }, 1).includes('1 subtask'));
   const island = await read('public/js/tile-island.js');
   assert.match(island, /node\.title = `\$\{node\.title\} · \$\{subtaskWords\(count\)\}`/, 'the pill hover');
-  const css = await read('public/style.css');
-  assert.match(css, /\[data-state='wide'\] \{[^}]*overflow: hidden;/);
-  assert.match(css, /\[data-state='wide'\] \.item-island-bars \{[^}]*min-height: 0; overflow-y: auto;/);
 });
 
 test('w331: the stance folds to three marks, only what needs the owner, read off the same push', async () => {
@@ -131,7 +127,7 @@ test('w331: the stance folds to three marks, only what needs the owner, read off
   assert.equal(stanceGaps(['asking', 'awaiting_you', 'interrupted', 'error']), '');
   assert.equal(stanceGaps(['awaiting_you']), 'This harness cannot report a question, an interruption, a failed tool');
   const island = await read('public/js/tile-island.js');
-  assert.match(island, /el\.append\(stance, grip, pills, bars, more\)/);
+  assert.match(island, /el\.append\(stance, grip, pills, more\)/);
   assert.match(island, /mark\('item-stance', \{ stance: key \}, \['circle', \{ cx: 8, cy: 8, r: 8, class: 'ground' \}\]/, 'a circle, not the kinds\' square');
   assert.match(island, /el\.hidden = !session \|\| \(!next\.length && stance\.hidden\)/, 'an Agent holding nothing still shows when it needs you');
   const css = await read('public/style.css');

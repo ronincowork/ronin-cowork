@@ -114,12 +114,27 @@ export const byStatus = (items, picked = []) => (picked.length ? items.filter((i
  * pressed again it folds. Built once; a push repaints only the bars it moved (KAN-412) and leaves the questions alone.
  */
 function epicItems(epicId, { epicsRead, openAgent = null }) {
+  return createItemBoard({
+    head: () => epicsRead.list().find((row) => row.id === epicId),
+    every: () => epicsRead.items(epicId),
+    cards: () => request(`/api/work-items/${encodeURIComponent(epicId)}/cards`, { cache: 'no-store' }).then((result) => (result.ok ? result.data.cards || [] : null)),
+    openAgent,
+    empty: t('epics.no_items', 'No work items under this Epic yet.'),
+  });
+}
+
+/**
+ * THE ITEMS BOARD (KAN-459): one Epic's items above, and the same board for any other set of
+ * items — a tile's More detail (tilehead.js openItemsBoard) shows its Agent's on it. `every()`
+ * is the items now; `head()` an item whose own bar heads them (the Epic), or none; `cards()` the
+ * bars' words (objective, last comment), a promise of rows or null, asked again when an item moves.
+ */
+export function createItemBoard({ every: everyNow, head = () => null, cards: readCards = null, openAgent = null, empty = '' }) {
   let assigned = [];
   let flagged = [];
   let statuses = [...OPEN_STATUSES];
   const open = new Set();
   const root = el('div', 'epic-items');
-  const epicNow = () => epicsRead.list().find((row) => row.id === epicId);
   const questions = ask([{ fields: [
     { key: 'assigned', label: t('epics.assigned', 'Assigned'), blank: t('epics.all', 'All'), many: true, options: [
       { v: 'yes', l: t('epics.yes', 'Yes') }, { v: 'no', l: t('epics.no', 'No') },
@@ -148,12 +163,13 @@ function epicItems(epicId, { epicsRead, openAgent = null }) {
   let asked = '';
   const withCard = (item) => ({ ...item, ...(cards.get(item.id) || {}) });
   function askCards(epic, every) {
-    const sig = [epic, ...every].map((item) => `${item.id}@${item.moved || ''}`).join(' ');
+    if (!readCards) return;
+    const sig = [epic, ...every].filter(Boolean).map((item) => `${item.id}@${item.moved || ''}`).join(' ');
     if (sig === asked) return;
     asked = sig;
-    void request(`/api/work-items/${encodeURIComponent(epicId)}/cards`, { cache: 'no-store' }).then((result) => {
-      if (!result.ok || asked !== sig || !root.isConnected) return;
-      cards = new Map((result.data.cards || []).map((card) => [card.id, card]));
+    void readCards(every).then((rows) => {
+      if (!rows || asked !== sig || !root.isConnected) return;
+      cards = new Map(rows.map((card) => [card.id, card]));
       paint();
     });
   }
@@ -221,10 +237,10 @@ function epicItems(epicId, { epicsRead, openAgent = null }) {
   } });
 
   function paint() {
-    const epic = epicNow();
+    const epic = head();
     bars.place(detail, epic ? [{ id: epic.id, item: epic, children: false }] : []); // reading(epic, { children: false }): its children are the board below
-    const every = epicsRead.items(epicId);
-    if (epic) askCards(epic, every);
+    const every = everyNow();
+    askCards(epic, every);
     const items = byStatus(byFlagged(byAssigned(every, assigned), flagged), statuses);
     const shown = new Set(items.map((item) => item.id));
     const folded = (item) => item.level === -1 && item.parent && shown.has(item.parent);
@@ -237,7 +253,7 @@ function epicItems(epicId, { epicsRead, openAgent = null }) {
       sections.push({ status, count, rows: at.flatMap((item) => [{ id: item.id, item, subtasks: subsOf(item).length },
         ...subsOf(item).map((one) => ({ id: one.id, item: one, sub: true }))]) });
     }
-    if (!every.length) sections.push({ status: '!none', empty: t('epics.no_items', 'No work items under this Epic yet.') });
+    if (!every.length) sections.push({ status: '!none', empty });
     else if (!items.length) sections.push({ status: '!picked', empty: t('epics.none_picked', 'No items for what Assigned, Flagged and Status pick.') });
     groupList.set(groups, sections);
     bars.sweep();

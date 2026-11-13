@@ -1254,42 +1254,18 @@ body {
 .item-stance[data-stance='turn'] .ink { fill: var(--fg); }
 .item-stance[data-stance='turn'] .stroke { stroke: var(--fg); }
 .item-island-stance .item-island-stance-words { display: none; }
-/* Down or wide, the bar leads and the stance is the first row, in words. */
-.tile-head .item-island:is([data-state='down'], [data-state='wide']) .item-island-grip { order: -1; }
-.tile-head .item-island:is([data-state='down'], [data-state='wide']) .item-island-stance {
+/* Down, the bar leads and the stance is the first row, in words. */
+.tile-head .item-island[data-state='down'] .item-island-grip { order: -1; }
+.tile-head .item-island[data-state='down'] .item-island-stance {
   padding: var(--space-row) var(--space-control);
   border: var(--edge) solid var(--line);
   border-radius: var(--radius-pill);
 }
-.tile-head .item-island[data-state='wide'] .item-island-stance { border-radius: var(--radius-large); }
-.item-island:is([data-state='down'], [data-state='wide']) .item-island-stance-words { display: inline; color: var(--fg); font-size: var(--text-small); white-space: nowrap; }
-.tile-head .item-island:is([data-state='down'], [data-state='wide']) button.item-island-more[hidden] { display: none; }
+.item-island[data-state='down'] .item-island-stance-words { display: inline; color: var(--fg); font-size: var(--text-small); white-space: nowrap; }
+.tile-head .item-island[data-state='down'] button.item-island-more[hidden] { display: none; }
 
-/* The wide list (owner, 2026-11-06, w322): the dropped list's surface at the tile's width,
-   only as tall as its bars; a bar per item, in the pills' own marks, with what the item is. */
-.tile-head:has(> .item-island[data-state='wide']) { position: relative; }
-.tile-head .item-island[data-state='wide'] {
-  position: absolute;
-  top: calc(100% + var(--space-inline));
-  left: var(--space-inline);
-  right: var(--space-inline);
-  max-width: none;
-  flex-direction: column;
-  align-items: stretch;
-  gap: var(--space-inline);
-  padding: var(--space-inset);
-  overflow: hidden; /* the bars scroll, not the surface: the grip and Less detail stay in view (w323) */
-  border-radius: var(--radius-large);
-  border-color: var(--accent);
-  box-shadow: var(--shadow-menu);
-}
-.tile-head .item-island[data-state='wide'] .item-island-grip { align-self: center; width: 32px; flex: 0 0 auto; }
-.tile-head .item-island[data-state='wide'] .item-island-pills { display: none; }
-.tile-head .item-island .item-island-bars { display: none; }
-.tile-head .item-island[data-state='wide'] .item-island-bars { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; overflow-y: auto; gap: var(--space-inline); }
-.tile-head .item-island[data-state='wide'] .item-island-more { flex: 0 0 auto; }
 .tile-head .item-island button.item-island-more { display: none; }
-.tile-head .item-island:is([data-state='down'], [data-state='wide']) button.item-island-more {
+.tile-head .item-island[data-state='down'] button.item-island-more {
   display: inline-flex;
   align-self: center;
   width: auto;

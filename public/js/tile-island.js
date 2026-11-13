@@ -15,10 +15,9 @@
  * (owner, 2026-11-04, KAN-238) — so the colours explain themselves. The bar again, or a
  * pill, puts it back. A pill pressed again closes its item.
  *
- * THE WIDE LIST (owner, 2026-11-06, w322): the fourth layer. Down, "More detail" turns the
- * column into bars across the tile, only as tall as the items: each bar the pill's head (symbol,
- * key, title, status, flag, hand-in), then the item's description, its last comment and a line
- * of facts (barFacts). A Subtask under its Task is a slimmer bar after it. A bar opens its item.
+ * MORE DETAIL (owner, 2026-11-12, KAN-459): down, "More detail" lays the Epics board's own bars
+ * (epics-surface.js createItemBoard) over the tile with this Agent's items (`more()`, tilehead.js
+ * openItemsBoard): a bar opens in place and minimizes back; the overlay's Close returns to the tile.
  *
  * THE HAND-IN MARK (docs/using-ronin/project-management.md, Three signals): beside the dot and the flag, an item In
  * Review carries the latest of its signals, "handed in" or "on dev", with how long ago, so a
@@ -221,7 +220,7 @@ export function itemBar(item, { sub = false, subtasks = 0, extra = [], onPress, 
  * `isOpen(id)` says whether that item is the one open. `update(session, items)` is called on
  * every reading of the work record and redraws only when what it shows moved.
  */
-export function createItemIsland({ open, shut, isOpen }) {
+export function createItemIsland({ open, shut, isOpen, more: showMore = () => {} }) {
   const el = document.createElement('div');
   el.className = 'item-island';
   el.hidden = true;
@@ -233,40 +232,30 @@ export function createItemIsland({ open, shut, isOpen }) {
   pills.className = 'item-island-pills';
   pills.setAttribute('role', 'group');
   pills.setAttribute('aria-label', t('island.items', 'Work items held'));
-  // THE WIDE LIST (owner, 2026-11-06, w322): the fourth layer, between the dropped list and one
-  // item's reading. The tile's width, only as tall as its items: a bar per item saying what it
-  // is — its description, its last comment, its facts — in the dropped list's style.
-  const bars = document.createElement('div');
-  bars.className = 'item-island-bars';
-  bars.setAttribute('role', 'group');
-  bars.setAttribute('aria-label', t('island.items', 'Work items held'));
   const more = document.createElement('button');
   more.type = 'button';
   more.className = 'item-island-more';
-  // The Agent's stance (w331): its mark left of the bar at rest; down or wide, the top row in words.
+  // The Agent's stance (w331): its mark left of the bar at rest; down, the top row in words.
   const stance = document.createElement('span');
   stance.className = 'item-island-stance';
   stance.hidden = true;
-  el.append(stance, grip, pills, bars, more);
+  el.append(stance, grip, pills, more);
 
   let session = null;
   let items = [];
 
-  /** 'rest' in the header, 'down' the column of pills, 'wide' the bars. */
+  /** 'rest' in the header, 'down' the column of pills. */
   const place = (state) => {
     const to = state === true ? 'down' : state || 'rest';
     el.dataset.state = to;
     grip.setAttribute('aria-expanded', String(to !== 'rest'));
     grip.title = to !== 'rest' ? t('island.up', 'Put the work items back in the header') : t('island.down', 'Show the work items with their status');
     grip.setAttribute('aria-label', grip.title);
-    more.textContent = to === 'wide' ? t('island.narrow', 'Less detail') : t('island.wide', 'More detail');
-    // Wide, it stops short of the tile's foot and scrolls past that.
-    const body = el.closest('.tile')?.querySelector('.tile-body');
-    el.style.maxHeight = to === 'wide' && body ? `${Math.max(120, body.clientHeight - 16)}px` : '';
+    more.textContent = t('island.wide', 'More detail');
   };
   place('rest');
   grip.addEventListener('click', () => place(el.dataset.state === 'rest' ? 'down' : 'rest'));
-  more.addEventListener('click', () => place(el.dataset.state === 'wide' ? 'down' : 'wide'));
+  more.addEventListener('click', () => { place('rest'); showMore(); });
   el.addEventListener('keydown', (event) => { if (event.key === 'Escape' && el.dataset.state !== 'rest') { place('rest'); grip.focus(); } });
 
   /** A Subtask whose Task is also on the island is not a pill of its own: it is under its
@@ -335,16 +324,11 @@ export function createItemIsland({ open, shut, isOpen }) {
     try { await open(items.find((one) => one.id === item.id) || item); } finally { loading.delete(item.id); busy(item.id); }
   }
 
-  /** A wide bar: the pill's head (symbol, key, title, status, flag, hand-in), then what the item
-   *  is, its last comment, and its facts. A Subtask under a Task here is a slimmer bar after it. */
-  const bar = (item, sub = false) => markBusy(itemBar(item, { sub, subtasks: sub ? 0 : under.get(item.id) || 0, onPress: () => void press(item) }), item.id);
-
-  /** What one item's pill and bar show: a row redraws only when this moves. */
+  /** What one item's pill shows: a row redraws only when this moves. */
   const shows = ({ item, count = 0, sub = false }) => JSON.stringify([item.id, item.kind, item.status, !!item.flagged, item.title, item.parent, handInSignal(item),
     item.objective, item.priority, lastComment(item)?.at, item.comments?.length, item.attachments?.length, item.trail?.length, count, sub]);
   const { createKeyedList } = WorkspacePrimitives;
   const pillList = createKeyedList({ shows, draw: ({ item }) => pill(item) });
-  const barList = createKeyedList({ shows, draw: ({ item, sub }) => bar(item, !!sub) });
 
   let stanceDrawn = '';
   /** The stance, redrawn only when it or what the harness reports moved. */
@@ -371,13 +355,11 @@ export function createItemIsland({ open, shut, isOpen }) {
     // An Agent holding nothing still shows its island when it needs you.
     el.hidden = !session || (!next.length && stance.hidden);
     more.hidden = !next.length;
-    // ONE ITEM MOVES, ONE PILL AND ONE BAR CHANGE (KAN-413): the kit's keyed list. Each pill and
-    // bar compares what it shows and redraws only itself; the rest stay the nodes they were.
+    // ONE ITEM MOVES, ONE PILL CHANGES (KAN-413): the kit's keyed list. Each pill compares what
+    // it shows and redraws only itself; the rest stay the nodes they were.
     const shape = folded(next);
     under = shape.under;
     pillList.set(pills, shape.top.map((item) => ({ id: item.id, item, count: under.get(item.id) || 0 })));
-    barList.set(bars, shape.top.flatMap((item) => [{ id: item.id, item, count: under.get(item.id) || 0 },
-      ...(under.get(item.id) ? next.filter((one) => one.parent === item.id && kindKey(one.kind) === 'subtask').map((one) => ({ id: one.id, item: one, sub: true })) : [])]));
   }
 
   return { el, update };
