@@ -30,6 +30,17 @@ Agent menu, and transcript readings use native selection instead of a Copy butto
 controls and entry box, including when the draft grows or the phone keyboard opens.
 Desktop Hints uses bold labels and wrapping text, without action buttons or help links.
 
+## What a press tells you
+
+Every button in the message box answers the press at once. **Clear** empties the box, which
+says it worked; if it can't be sent, a line above the box says *Clear not sent* and why.
+**Stop** says *Stopping…* until Ronin has sent it, then the line says *Stop not sent* with the
+reason, or *Stop sent*. After that the line follows the Agent: *Stopped* when it is no longer
+working, or *still working* if it carries on for more than a few seconds. Ronin knows it sent
+the Stop, so the Agent reads stopped even when its log says nothing (a Stop before its first
+reply, or a CLI with no log) until the Agent writes something or you send it a message.
+**Copy** says *Copied*.
+
 ## Change your shortcuts
 
 Ask your Agent to change a shortcut. There is no customization or Help button in Hints.

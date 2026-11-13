@@ -19,9 +19,10 @@ export function clampTip(s, room = 120) {
   return s.length > room ? s.slice(0, room - 1) + '…' : s;
 }
 
-/** When an item went Done: its last move there (src/work-items.ts doneSince), else its birth. */
+/** When an item went Done: its last move there (src/work-items.ts doneSince); a row from the live
+ * index (w418) has no trail, so when it last changed; else its birth. */
 const doneAt = (item) => [...(item.trail || [])].reverse().find((one) => (one.op === 'status' && one.to === 'Done')
-  || (one.op === 'edit' && /(^|, |; )status Done(,|;|$)/.test(one.note || '')))?.at || item.created?.at || '';
+  || (one.op === 'edit' && /(^|, |; )status Done(,|;|$)/.test(one.note || '')))?.at || item.moved || item.created?.at || '';
 /** The Done items of a list, newest first. */
 export const doneWaiting = (items) => (items || []).filter((item) => item.status === 'Done').sort((a, b) => doneAt(b).localeCompare(doneAt(a)));
 /** "Done, not yet archived: N (KAN-1, KAN-2, …)": ids only, at most eight. */

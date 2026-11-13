@@ -10,10 +10,13 @@ import { readFile } from 'node:fs/promises';
  */
 class FakeNode {
   constructor(tag = '') { this.tagName = tag.toUpperCase(); this.dataset = {}; this.children = []; this.listeners = {}; this.attributes = {}; this._text = ''; this.disabled = false; this.className = ''; this.hidden = false; this.style = { setProperty: (name, value) => { this.style[name] = value; } }; }
-  append(...nodes) { this.children.push(...nodes.flat().filter(Boolean).map((node) => typeof node === 'string' ? Object.assign(new FakeNode('#text'), { textContent: node }) : node)); }
+  append(...nodes) { for (const node of nodes.flat().filter(Boolean).map((one) => typeof one === 'string' ? Object.assign(new FakeNode('#text'), { textContent: one }) : one)) { node.parent?.children.splice(node.parent.children.indexOf(node), 1); node.parent = this; this.children.push(node); } }
+  get childNodes() { return this.children; }
+  insertBefore(node, ref) { node.parent?.children.splice(node.parent.children.indexOf(node), 1); const at = ref ? this.children.indexOf(ref) : -1; this.children.splice(at < 0 ? this.children.length : at, 0, node); node.parent = this; return node; }
+  replaceWith(node) { const parent = this.parent; if (!parent) return; const at = parent.children.indexOf(this); this.remove(); node.parent?.children.splice(node.parent.children.indexOf(node), 1); parent.children.splice(at, 0, node); node.parent = parent; }
+  remove() { if (this.parent) this.parent.children.splice(this.parent.children.indexOf(this), 1); this.parent = null; }
   replaceChildren(...nodes) { this.children = []; this.append(...nodes); }
   add(node) { this.append(node); }
-  remove() {}
   setAttribute(name, value) { this.attributes[name] = String(value); }
   removeAttribute(name) { delete this.attributes[name]; }
   addEventListener(name, callback) { (this.listeners[name] ||= []).push(callback); }
@@ -476,4 +479,25 @@ test('repainting an open setup terminal does not start another measurement from 
     assert.equal(ctx.mounts.length, count, 'the new terminal stays mounted');
     assert.equal(calls.filter(call => call.endsWith('/providers/refresh')).length, measurements);
   } finally { view.destroy(); }
+});
+
+test('a frame that leaves the open stone unchanged keeps its sign-in tile alive (KAN-472)', async () => {
+  const originalMachine = machine;
+  machine = { providers: [{ id: 'codex', label: 'Codex', installed: true, login_open: true, attachment: { type: 'session', key: 'provider_setup_codex' } }], activated_count: 0 };
+  const ctx = context();
+  let destroyed = 0;
+  const mount = ctx.environment.mountProviderSetupSession;
+  ctx.environment.mountProviderSetupSession = (args) => { const made = mount(args); return { ...made, destroy() { destroyed++; made.destroy(); } }; };
+  ctx.detail = { provider: 'codex' };
+  const view = surface.createProviderSurface(ctx);
+  try {
+    await view.show(); await settle();
+    byClass(view.el, 'sws-stone').find((n) => n.attributes['data-provider'] === 'codex').click();
+    const count = ctx.mounts.length;
+    assert.ok(count >= 1, 'the open sign-in is mounted');
+    const before = destroyed;
+    await view.show(); await settle();
+    assert.equal(destroyed, before, 'the record and the measure do not tear the live tile down');
+    assert.equal(ctx.mounts.length, count, 'nor mount it again');
+  } finally { view.destroy(); machine = originalMachine; }
 });

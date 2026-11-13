@@ -41,7 +41,7 @@ import { readAgentComposition } from '../agent-composition.js';
 import { configurationSends, updateConfiguration } from '../agent-configuration.js';
 import { mandate } from '../agent-defaults.js';
 import { emitSessionEnd } from '../sockets.js';
-import { releaseHolder, settleToDo, unfinishedHolds } from '../work-items.js';
+import { releaseHolder, settleToDo, unfinishedHolds, type WorkItem } from '../work-items.js';
 import { resumeAgentArgv } from '../agents.js';
 import { listTeamRosters } from '../team-rosters.js';
 import { assertSameCampaignRoot, assertSameCampaignTeams } from '../campaign-scope.js';
@@ -92,6 +92,51 @@ async function openDeskRefusal(name: string): Promise<string> {
     ? `Session "${name}" owns open desk${desks.length === 1 ? '' : 's'} ${desks.map((desk) => `${desk.repo}:${desk.branch}`).join(', ')}. Archive leaves managed-desk custody unchanged; run session_end or Shut down Agent after closeout instead.`
     : '';
 }
+
+/** THE ITEM CHECK, the same on every way out (docs/using-ronin/project-management.md, How an
+ * item lives): session_end, archive, Delete, Hard Delete. It is a nudge, never a wall (owner,
+ * 2026-11-12, KAN-415): an Agent holding work In Progress or In Review is refused once, each item
+ * named, with NEXT in order: finish it if you can; if not, flag it; clean your desks; then go.
+ * An item the Agent has flagged itself needs nothing more: the flag is the acknowledgement.
+ * `ignore_items: true` (--ignore-items, the UI's "close anyway?") goes past the rest. Either way
+ * releaseHolds gives each to the Team flagged "Ended without handover", its lead told once.
+ * To Do is not named: it goes back to the Team by itself (settleToDo, or releaseHolder). */
+class ItemsRefused extends ShutdownRefused {
+  constructor(blockers: ShutdownRefused['blockers'], readonly items: Array<{ id: string; status: string; title: string }>) { super(blockers); }
+}
+
+/** Flagged, and the flag that stands is the Agent's own. */
+const flaggedBy = (item: WorkItem, name: string): boolean =>
+  item.flagged && [...item.trail].reverse().find((line) => line.op === 'flag')?.by === name;
+
+async function heldItemsRefusal(name: string, anyway: string, self = false): Promise<ItemsRefused | null> {
+  const held = (await unfinishedHolds(name))
+    .filter((item) => item.status === 'In Progress' || item.status === 'In Review' || !item.team)
+    .filter((item) => !flaggedBy(item, name));
+  if (!held.length) return null;
+  const who = self ? 'you hold' : `${name} holds`;
+  const ids = held.map((item) => item.id);
+  const first = ids.length === 1 ? ids[0] : '<id>';
+  const blockers: ShutdownRefused['blockers'] = [{
+    desk: 'work items',
+    reasons: held.map((item) => `${who} ${item.id} (${item.status}) ${item.title}, not flagged by ${self ? 'you' : name}`),
+    next_action: [
+      `1. Finish ${ids.length === 1 ? 'it' : 'each'} if you can (In Review is finished when your lead or the owner makes it Done).`,
+      `2. If you can't, flag it: item flag ${first} "<where it stands; what is missing>".`,
+      '3. Clean your desks: commit and hand in.',
+      `4. Then go: a flagged item needs nothing more; for one left unflagged, ${anyway}. Each goes to the Team flagged, its lead told.`,
+    ].join(' '),
+  }];
+  return new ItemsRefused(blockers, held.map(({ id, status, title }) => ({ id, status, title })));
+}
+
+/** A refusal's answer: 409 with the items, so the UI can ask "close anyway?". */
+const refusedBody = (e: ShutdownRefused) => ({
+  error: e.message, blockers: e.blockers,
+  ...(e instanceof ItemsRefused ? { items_held: e.items, acknowledge: 'ignore_items' } : {}),
+});
+const UI_ANYWAY = 'close anyway in the confirm';
+const ignoringItems = (req: express.Request): boolean => req.body?.ignore_items === true;
 
 /** The ending Agent's holds are released and its leads' members lists drop it; an end never fails on either. */
 async function releaseHolds(name: string, key: string, how: string): Promise<void> {
@@ -195,6 +240,8 @@ export function registerSessions(app: express.Express): void {
     try {
       const refusal = await openDeskRefusal(name);
       if (refusal) return res.status(409).json({ error: refusal });
+      const items = ignoringItems(req) ? null : await heldItemsRefusal(name, `session_archive ${name} --ignore-items, or ${UI_ANYWAY}`);
+      if (items) return res.status(409).json(refusedBody(items));
       const prepared = await prepareSessionEnding(req, res, name, 'archive');
       if (!prepared.proceed) return;
       const key = await sessionKey(name);
@@ -279,15 +326,15 @@ export function registerSessions(app: express.Express): void {
     if (!isValidName(name)) return res.status(400).json({ error: 'Invalid name.' });
     const key = await sessionKey(name);
     try {
+      const items = ignoringItems(req) ? null : await heldItemsRefusal(name, UI_ANYWAY);
+      if (items) throw items;
       const result = await shutdownAgent(name);
       emitSessionEnd(name, key); // rireki deletes the tape: no graveyard, eventually is fine
       await releaseHolds(name, key, 'deleted');
       count('ended', { name, end: 'deleted' });
       res.json({ ok: true, closed: result.closed });
     } catch (e) {
-      if (e instanceof ShutdownRefused) {
-        return res.status(409).json({ error: e.message, blockers: e.blockers });
-      }
+      if (e instanceof ShutdownRefused) return res.status(409).json(refusedBody(e));
       res.status(500).json({ error: String((e as Error)?.message ?? e) });
     }
   });
@@ -301,6 +348,8 @@ export function registerSessions(app: express.Express): void {
       const expected = hardDeleteConfirmation(name);
       if (req.body?.confirmation !== expected) return res.status(409).json({ error: `Hard Delete is irreversible. Confirm the exact targets with: ${expected}` });
     }
+    const items = ignoringItems(req) ? null : await heldItemsRefusal(name, UI_ANYWAY);
+    if (items) return res.status(409).json(refusedBody(items));
     const existingId = shutdownSlots.current(name);
     const existing = existingId ? shutdownOperations.get(existingId) : undefined;
     if (existing?.state === 'running') return res.status(202).json(existing);
@@ -380,27 +429,16 @@ export function registerSessions(app: express.Express): void {
     if (!name) return res.status(404).json({ error: `No session owns pane ${pane}.` });
     try {
       // session_end hands over, never drops (docs/using-ronin/project-management.md, How an item
-      // lives): To Do goes back to the Team by itself; it stops while the Agent holds anything In
-      // Progress or In Review, naming each, and NEXT is the handover with the note left for the
-      // Agent to write. Shut down Agent and the other endings can't ask: releaseHolder flags them.
+      // lives): To Do goes back to the Team by itself; then the one item check every way out
+      // shares (heldItemsRefusal) names In Progress and In Review, unless --ignore-items.
       await settleToDo(name);
-      const held = await unfinishedHolds(name);
-      if (held.length) {
-        const byTeam = new Map<string, typeof held>();
-        for (const item of held) byTeam.set(item.team ?? '', [...(byTeam.get(item.team ?? '') ?? []), item]);
-        throw new ShutdownRefused([...byTeam].map(([team, items]) => ({
-          desk: 'work items',
-          reasons: items.map((item) => `you hold ${item.id} (${item.status}) ${item.title}`),
-          next_action: `hand each over with where it stands and what is next: item handover ${items.map((item) => item.id).join(' ')} ${team ? `team:${team}` : '<agent>|team:<name>'} "<where it stands; what is next>". Can't decide? --flag "<the question>", and your lead decides.`,
-        })));
-      }
+      const items = ignoringItems(req) ? null : await heldItemsRefusal(name, 'session_end --ignore-items', true);
+      if (items) throw items;
       const closed = await performAgentShutdown(name, () => {});
       res.json({ ok: true, session: name, closed });
       console.log(`[ronin] harakiri: ${name} (pane ${pane}); closed ${closed.length} desk(s)`);
     } catch (e) {
-      if (e instanceof ShutdownRefused) {
-        return res.status(409).json({ error: e.message, blockers: e.blockers });
-      }
+      if (e instanceof ShutdownRefused) return res.status(409).json(refusedBody(e));
       const error = String((e as Error)?.message ?? e);
       console.error(`[ronin] harakiri: ${name} (pane ${pane}) failed: ${error}`);
       res.status(500).json({ error });

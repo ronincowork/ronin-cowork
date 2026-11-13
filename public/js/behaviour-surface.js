@@ -52,7 +52,7 @@ function viewer(row, host, afterSave) {
     const save = node('button', 'wk-action', !document ? t('behaviours.create', 'Create Behavior') : document.origin === 'user' ? t('forms.save', 'Save') : t('behaviours.save_mine', 'Save my version'));
     const saveAs = node('button', 'wk-action', t('behaviours.save_as', 'Save As new'));
     const cancel = node('button', 'wk-action', t('forms.cancel', 'Cancel'));
-    for (const button of [save, saveAs, cancel]) button.type = 'button';
+    for (const button of [save, saveAs, cancel]) { button.type = 'button'; button.dataset.endsEdit = ''; }
     const form = node('div', 'bh-editor');
     form.append(name.wrap, label.wrap, blurb.wrap, guidance, save, saveAs, cancel, message);
     saveAs.hidden = !document;

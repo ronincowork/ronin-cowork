@@ -27,9 +27,11 @@ test('Ronin Home\u2019s Models and Workspaces doors each open their own workbenc
   assert.match(home, /ctx\?\.navigate\(route\)/, 'a plain press opens the workbench in this tab');
   // THE GATE (owner, 2026-10-19): as on the old root, the doors are locked until one model
   // provider is activated and Settings is the one live stone, so a new user's way in is Setup.
-  // Help is outside the gate: a new user needs it before Setup (owner, 2026-10-21).
+  // Help is outside the gate: a new user needs it before Setup (owner, 2026-10-21); Agent Harness
+  // too, where a provider is signed in (owner, 2026-11-13; KAN-472).
   assert.match(home, /const locked = door\.gated !== false && \(!runtimeKnown \|\| activatedCount < 1\);/, 'the doors lock until a provider is activated');
   assert.match(home, /key: 'help'[^\n]*gated: false/, 'Help opens before a provider');
+  assert.match(home, /key: 'models'[^\n]*gated: false/, 'Agent Harness opens before a provider: it is where one is signed in (KAN-472)');
   assert.match(home, /if \(locked\) return;\s*ctx\?\.navigate\(route\)/, 'a locked door does not open');
   assert.match(home, /request\('\/api\/setup\/runtime', \{ cache: 'no-store' \}\)/, 'the gate reads the runtime once on enter');
   assert.match(home, /setup\.provider_gate/, 'a locked door says where the way in is');
@@ -54,9 +56,12 @@ test('Home: Teams, Epics and Workspaces in a triangle at Home\u2019s stone size;
   const side = home.slice(home.indexOf('function SIDE()'), home.indexOf('/** THE ROOT TOGGLE'));
   assert.deepEqual([...office.matchAll(/key: '(\w+)'/g)].map((m) => m[1]), ['teams', 'epics', 'workspaces'], 'Teams at the apex, then Epics bottom left and Workspaces bottom right: Who, What, Where (KAN-194)');
   assert.match(side, /key: 'models'[^\n]*'Agent Harness'/, 'the Models stone reads Agent Harness (KAN-194; KAN-236, owner 2026-11-04)');
-  assert.deepEqual([...side.matchAll(/key: '(\w+)'/g)].map((m) => m[1]), ['models', 'help', 'settings'], 'the smaller stones, top to bottom');
+  assert.deepEqual([...new Set([...side.matchAll(/key: '(\w+)'/g)].map((m) => m[1]))], ['models', 'help', 'settings', 'lounge'], 'the smaller stones, top to bottom');
+  assert.match(side, /\.\.\.\(HOSTED \? \[\{ key: 'lounge', href: BUSINESS_LOUNGE,[^\n]*gated: false \}\] : \[\]\)/, 'the Business Lounge stone stands only in a hosted office, outside the gate (KAN-475)');
+  assert.match(home, /if \(door\.href\) \{[^\n]*\n\s*Object\.assign\(card, \{ href: door\.href, target: '_blank', rel: 'noopener' \}\);/, 'the Lounge opens in a new tab');
   assert.match(office, /Who does the work[\s\S]*What the work is[\s\S]*Where the work is/);
-  assert.match(side, /key: 'settings', route: null[^\n]*gated: false/, 'Settings is a live stone whose route is read at paint');
+  assert.match(side, /: \{ key: 'settings', route: null[^\n]*gated: false/, 'self-hosted, Settings is a live stone whose route is read at paint');
+  assert.match(side, /\? \{ key: 'settings', route: 'campaign'[^\n]*gated: false/, 'hosted, Settings opens Settings: a hosted office has no Setup');
   assert.match(home, /const route = door\.route \|\| setupDefaultView\(setupCampaign\)/, 'Settings opens Setup until its answers are recorded');
   assert.doesNotMatch(home, /ch-settings/, 'the corner Settings button is now a stone');
   assert.match(style, /\.ch-doors > \.ch-door\[data-door='teams'\] \{ grid-column: 1 \/ -1;/, 'Teams spans the apex');

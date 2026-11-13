@@ -31,7 +31,7 @@ export interface Feed {
   list: () => Promise<SessionInfo[]>;
   home: (sessions: SessionWithAxes[]) => Promise<unknown[]>;
   teams: () => Promise<unknown[]>;
-  /** Every Epic (a level-1 work item) whole, with its holder, and every item under one, slim:
+  /** Every Epic (a level-1 work item) whole, with its holder, and every live item, slim, with its Epic ('' under none, KAN-414):
    * the Epics workbench's stones (KAN-190, KAN-206). */
   epics: () => Promise<{ epics: unknown[]; items: unknown[] }>;
   messages: () => Promise<unknown[]>;
@@ -275,6 +275,8 @@ export function handleEvents(ws: WebSocket): void {
 // Whether any browser is on /events: a server-side check that exists only to be pushed can
 // skip its work when nobody would hear it.
 export const listening = (): boolean => eventClients.size > 0;
+/** How many browsers are on /events now: the office's presence count (src/presence.ts). */
+export const browserCount = (): number => eventClients.size;
 
 export function broadcastEvent(msg: Record<string, unknown>): number {
   const text = JSON.stringify(msg);

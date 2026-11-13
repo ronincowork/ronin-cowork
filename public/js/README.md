@@ -36,7 +36,7 @@ changing persistence. Browser state is presentation, not a second server authori
 |---|---|---|---|---|
 | Ronin Home | [campaign-home.js](campaign-home.js) (the default root: Teams, Epics and Workspaces in a triangle, with Model Providers, Help and Settings on the right; the one root, an old `#/current` link lands here), [door-workbenches.js](door-workbenches.js) (the Models, Workspaces, Epics and Help workbenches the doors open; the Teams door opens the Teams workbench at `#/cowork`), [layout.js](layout.js), [main.js](main.js) | [setup-runtime-api.ts](../../src/routes/setup-runtime-api.ts), [update-api.ts](../../src/routes/update-api.ts) | [setup-runtime.ts](../../src/setup-runtime.ts), [release-update-controller.js](release-update-controller.js) | [theme-boot.test.js](../../tests/theme-boot.test.js), [setup-runtime.test.ts](../../tests/setup-runtime.test.ts) |
 | Agent Harness workbench surfaces (KAN-236: tilespace 1 the stones of harnesses, 2 Accounts, 3 Models, 4 Refresh; a harness whole in a tilespace) | [models-surface.js](models-surface.js) (`createModelStones(context)`, `createModelRefresh(context)`, `createModelDefaults()`, `createModelProvider(key, context)`, `providerOffers()`), [accounts-surface.js](accounts-surface.js) (`createAccountsSurface(context)`), [models-records-surface.js](models-records-surface.js) (`createModelsRecords(context)`), [account-editors.js](account-editors.js) (the account and preset forms and tick lists every page shares), placed by the `models` destination in [door-workbenches.js](door-workbenches.js) | the setup runtime and catalog routes the provider drawing already reads; `/api/accounts` and `/api/presets` ([setup-runtime-api.ts](../../src/routes/setup-runtime-api.ts)) | [provider-surface.js](provider-surface.js) (`createProviderDrawing`, `createRefreshAll`, `providerStones`, `recordRuntime`: the one drawing and its Refresh all, shared with Settings and Setup); [accounts.ts](../../src/accounts.ts) reads the Hermes record ([hermes-setups.ts](../../src/hermes-setups.ts)) as accounts and presets, one store | [provider-surface.test.js](../../tests/provider-surface.test.js), [accounts.test.ts](../../tests/accounts.test.ts) |
-| Epics surfaces (the Epics board: a row of stones, one per Epic, the level-1 work items; the pressed one shown below on the same surface, its source line, its own bar (details; pressed, its reading with its Status: KAN-309, KAN-310), ERABI Assigned and Status, its items as the island's bars by status; a dragged stone or a selector card places a board starting on that Epic) | [epics-surface.js](epics-surface.js) (`createEpicsRead`, `createEpicBoard`, `createEpicRecord`, `epicOffers`), placed by the `epics` destination in [door-workbenches.js](door-workbenches.js) | the store's pushed `epics` and `epicItems` ([store.js](store.js); requests only for a pressed item's reading and a status change) | [work-items-surface.js](work-items-surface.js) (`renderItemDetail`), [tile-island.js](tile-island.js) (`itemBar`), the kit (`createSurface`) | [setup-shell.test.js](../../tests/setup-shell.test.js) (the Epics profile), [epics-push.test.js](../../tests/epics-push.test.js) |
+| Epics surfaces (the Epics board: a row of stones, one per Epic, the level-1 work items; the pressed one shown below on the same surface, its source line, its own bar (details; pressed, its reading with its Status: KAN-309, KAN-310), ERABI Assigned, Flagged and Status, its items as the island's bars by status; a dragged stone or a selector card places a board starting on that Epic) | [epics-surface.js](epics-surface.js) (`createEpicsRead`, `createEpicBoard`, `createEpicRecord`, `epicOffers`), placed by the `epics` destination in [door-workbenches.js](door-workbenches.js) | the store's pushed `epics` and `epicItems` ([store.js](store.js); requests only for a pressed item's reading and a status change) | [work-items-surface.js](work-items-surface.js) (`renderItemDetail`), [tile-island.js](tile-island.js) (`itemBar`), the kit (`createSurface`) | [setup-shell.test.js](../../tests/setup-shell.test.js) (the Epics profile), [epics-push.test.js](../../tests/epics-push.test.js) |
 | Team workbench Epics (the Team's Epics on the Epics board) | [team-epics.js](team-epics.js) (`createTeamEpics`), placed by the Team environment in [cowork-view.js](cowork-view.js) | the teams push's `epics` on each Team row ([teams-api.ts](../../src/routes/teams-api.ts), `teamWork` in [work-items-read.ts](../../src/work-items-read.ts)) | [epics-surface.js](epics-surface.js) (`createEpicBoard`, `createEpicsRead`), [team-controller.js](team-controller.js) | [epics-push.test.js](../../tests/epics-push.test.js), [team-commons.test.js](../../tests/team-commons.test.js) |
 | Workspaces workbench surfaces (workspace 1 Workspaces, each page the whole Workspace with its ticked folders and Clone; GitHub CLI) | [workspaces-surface.js](workspaces-surface.js) (`createRootsReading()`, `createWorkspaceStones`, `createFolderGithub`), placed by the `workspaces` destination in [door-workbenches.js](door-workbenches.js) | `/api/workspaces`, `/api/folders`, [catalogs.ts](../../src/routes/catalogs.ts) `/api/project-roots/detail` and `POST /api/project-roots`, the repo profile, `/api/setup/github/clone` | [github-workspace-setup.js](github-workspace-setup.js), the kit (`ask`, `createPhalanx`, `createSurface`) | [setup-shell.test.js](../../tests/setup-shell.test.js) (the Workspaces profile) |
 | The Teams card's questions and lines (Workspace, Show; what Show picks under each stone) | [team-roster-surface.js](team-roster-surface.js) (`createTeamRosterSurface({ teamDetail })`, the Cowork workbench's Teams card), [teams-surface-rows.js](teams-surface-rows.js) (the pure rows) | [teams-api.ts](../../src/routes/teams-api.ts) builds each roster row's `board` and `items`; [events.ts](../../src/ws/events.ts) pushes `teams` after roster, work-item, membership and lead writes | [team-controller.js](team-controller.js) (the projection of the pushed `teams` and `sessions`); [work-items-read.ts](../../src/work-items-read.ts) for the board rule | [teams-surface-rows.test.js](../../tests/teams-surface-rows.test.js), [work-item-holders.test.ts](../../tests/work-item-holders.test.ts) |
@@ -114,7 +114,7 @@ below describes implementation ownership; use the surface index above to find a 
 | `keysrow.js` | `buildKeysRow` — Esc/Tab/Shift-Tab/arrows/⤓ docked on every coarse tile's composer |
 | `tilementions.js` | `insertMention`, `MENTION_MIME` — a session name into this tile's composer, from the menu or a drag |
 | `team-arrange.js` | `parseDraft`, `createArranger` — the team page's one controller: a draft (what changes; the rest stays) from a button or from an agent's `edges page`, run through the page's own verbs |
-| `team-members.js` | `buildTeamMembers`, `agentTitle`, `configSignature` — the Commons Roster: one line per Agent (人 first), a pressed row opening in place to the Agent's read, the one composition body and its action bar, a draggable row opening the Agent in a workspace, New Agent at the foot; and the changed-only fingerprint that keeps Configuration from redrawing an unchanged Team |
+| `team-members.js` | `buildTeamMembers`, `agentTitle`, `configSignature` — the Commons Roster: one line per Agent (人 first), a pressed row opening in place to the Agent's read, the one composition body and its action bar, a draggable row opening the Agent in a workspace, New Agent at the foot; `update()` lays its rows through the kit's keyed list and redraws only the rows whose head line moved, never an opened configuration (a draft is the kit's edit hold and stays until Send, w451, KAN-413); and the changed-only fingerprint that keeps Configuration from redrawing an unchanged Team |
 | `voice.js` | dictation: `wireDictation` (the 🎤 on the tile's compose box) |
 | `panels.js` | `toClipboard` |
 | `session-picker.js` | `buildSessionPicker` — the pad key's session switcher (on `ui.sheet`) |
@@ -134,7 +134,7 @@ The keypad's user-facing controls are documented in
 [`docs/using-ronin/terminal-controls.md`](../../docs/using-ronin/terminal-controls.md); the module rows above own
 the implementation split.
 
-## Four rules
+## Five rules
 
 **1. Reassignable shared state lives on `S` in `state.js`.** An imported binding is
 read-only for the importer, so `compose = x` from another module is a hard error. The
@@ -157,6 +157,45 @@ dismisses messages, `setup-surfaces.js` reads an SVG mark). Dialog-shaped surfac
 is used inside a function body, called after the graph has loaded. A top-level
 `const X = somethingImported()` reintroduces load-order fragility, which is the class of
 bug this split exists to prevent.
+
+**5. One way to redraw a list: the kit's keyed list.** A surface that paints rows from a
+push keeps one row per key with `WorkspacePrimitives.createKeyedList` (and `layNodes`) in
+[workspace-primitives.js](workspace-primitives.js): each row compares what it shows and
+repaints only itself, moves only when its order or group changes, and is added or removed
+only when the set changes; an open row, a detail or a form being typed in is never rebuilt
+by a push that moved something else (owner, 2026-11-12, KAN-412, KAN-414). No surface keeps
+its own variant. **Never under an edit:** a row the person has typed or changed something in
+holds its redraw; the newest row lands at once when the edit is sent or abandoned (`submit`,
+`reset`, a press on a button marked `data-ends-edit`, a `<details>` folding, or focus leaving
+with nothing changed). Every Send, Save or Cancel that is not a form submit carries
+`data-ends-edit` (`createAction({ endsEdit: true })`); `editHold()` is the same hold for one
+open detail. Its users: the Epics surface ([epics-surface.js](epics-surface.js)); the stone
+work surface ([phalanx.js](phalanx.js)): every stone, the Return stone and every group
+section is a kept row, a stone reads its row at press time, and the open detail is drawn
+again only when what is open changes, its own row moves (held under an edit), or
+`refreshDetail()` asks; the roster ([roster.js](roster.js)): every group block, heading and
+session row (a session under each group it is in) is a kept row; the Team wipeboard
+([team-wipeboard.js](team-wipeboard.js)): each post by its id, so a push adds the new post
+and leaves the thread and its scroll; the message queue ([message-queue.js](message-queue.js)):
+each card by its message id; the phone's bar pieces and Teams cards ([phone.js](phone.js)), so a push never detaches
+a card mid-tap; the Cron tab ([team-jikan.js](team-jikan.js)): its header row, each job's row
+by id, and the filter and form options; an Agent's Team membership ([agent-view.js](agent-view.js));
+the Workbench selector ([workbench.js](workbench.js)): each card by type and resource, its
+press, hover and drag reading the newest offer; the Services setup surface and the ⚙ Services
+card ([setup-surfaces.js](setup-surfaces.js), [services-card.js](services-card.js)): steps by
+id, the key row, switches built once and set in place, the egress list keeping its fold; the
+Setup zone's picks ([setup-zone.js](setup-zone.js)); gbrain's answers ([gbrain.js](gbrain.js)).
+Work Items ([work-items-surface.js](work-items-surface.js)) re-reads only when the `epics`
+push moves (it carries every live item, `epic: ''` under none) or its scope changes, never on
+a sessions push. Also (KAN-413): the item island's pills and bars
+([tile-island.js](tile-island.js)), the People list ([team-members.js](team-members.js)),
+the League Team's Agents ([cowork-view.js](cowork-view.js); a stance moves one row and never
+asks for the Work list again), the Docs shelf's groups and rows ([docs.js](docs.js); a group
+keeps its fold) and the phone's Agents cards ([phone.js](phone.js); the launch card, its
+form mid-typing, is one kept row). The Team roster ([team-roster-surface.js](team-roster-surface.js))
+and Workspaces ([workspaces-surface.js](workspaces-surface.js)) keep no signature of their own:
+they hand the phalanx every push (the roster keeps one launch mark per Team, so a stone is
+not redrawn for a fresh node).
 
 ## Verifying a change
 

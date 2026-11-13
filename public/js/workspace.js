@@ -167,6 +167,31 @@ export function workbenchLaunchUrl({ destination, param = '', mode = 'replace', 
   return url.href;
 }
 
+/** The plain address of a destination, as a person reads it: this page and the route's hash,
+ * no tab id and no launch state (owner, 2026-11-13; KAN-473). */
+export function workbenchAddress({ destination, param = '' } = {}) {
+  const url = new URL(location.origin + location.pathname);
+  url.hash = hashFor(destination, param);
+  return url.href;
+}
+
+/**
+ * A link to a workbench (KAN-473): its href is the plain address, so hovering shows what a person
+ * reads; the tab id and launch state are made at the press. A Ctrl/Cmd/Shift or middle press opens
+ * the workbench in a new tab through openWorkbenchTab; a plain press is the caller's own (a
+ * navigation in this tab). `spec` may be a function, read at the press.
+ */
+export function workbenchLink(link, spec) {
+  const read = () => (typeof spec === 'function' ? spec() : spec);
+  link.href = workbenchAddress(read());
+  const open = (event) => { event.preventDefault(); openWorkbenchTab(read()); };
+  link.addEventListener('click', (event) => {
+    if (event.button === 0 && (event.metaKey || event.ctrlKey || event.shiftKey)) open(event);
+  });
+  link.addEventListener('auxclick', (event) => { if (event.button === 1) open(event); });
+  return link;
+}
+
 export function openWorkbenchTab(spec = {}, reserved = null) {
   const url = workbenchLaunchUrl(spec);
   if (!url) return null;

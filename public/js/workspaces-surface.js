@@ -403,7 +403,7 @@ export function workspacePage(w, { reading, campaignId, onSaved = () => {}, onDi
 
   // Save answers at the button too: Saving…, then Saved for a moment, or back to Save with the error above.
   const label = isNew ? t('workspaces.create', 'Create') : t('workspaces.save', 'Save');
-  const action = createAction({ label, launch: true, size: 'compact', action: async () => {
+  const action = createAction({ label, launch: true, size: 'compact', endsEdit: true, action: async () => {
     const word = action.el.querySelector('span') || action.el;
     action.setDisabled(true);
     word.textContent = t('workspaces.saving', 'Saving…');
@@ -519,12 +519,11 @@ export function createWorkspaceStones({ reading, workspacesRead, campaignId, wor
       const under = SHOW.filter((kind) => show.includes(kind)).map((kind) => cell[kind]());
       return dragWorkspace({ id: w.name, label: w.title || w.name, ...(show.length ? { under } : {}) });
     });
-    // A Teams push that moves nothing a stone shows leaves the stones and an open page alone.
-    const signature = JSON.stringify(next.map(({ id, label, under }) => [id, label, under]));
-    if (signature !== shown) { shown = signature; stones.setItems(next); }
+    // ONE WORKSPACE MOVES, ONE STONE REPAINTS (KAN-413): the phalanx's keyed list leaves every
+    // stone a Teams push did not move, and an open page, alone.
+    stones.setItems(next);
     workbench?.refreshSelector?.();
   };
-  let shown = null;
   const stop = workspacesRead.subscribe(paint);
   const stopTeams = subscribeTeams(() => paint());
   return {

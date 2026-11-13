@@ -62,6 +62,8 @@ import { registerCli } from './routes/cli-api.js';
 import { listQueuedMessages, startMessageQueue } from './message-queue.js';
 import { isValidTeam, listAllJobs, listJobs } from './jikan.js';
 import { isValidBoardName, seedHouseBoard, WIPEBOARD_DIR } from './wipeboards.js';
+import { presence, stampInput } from './presence.js';
+import { readOfficeRecord } from './office-record.js';
 import { handleEvents, pushJikan, pushMessages, pushWipeboard, startSessionsBroadcast, watchStore } from './ws/events.js';
 import { tmux as tmuxClient } from './tmux-client.js';
 import { handlePty } from './ws/pty.js';
@@ -86,6 +88,7 @@ import { registerSetupProgress } from './routes/setup-progress-api.js';
 import { registerMikaContext } from './mika-context.js';
 import { migrateSopsToBehaviours } from './behaviour-store-migration.js';
 import { archiveDone, ensureEveryIcebox, migrateItems, releaseEndedHolders } from './work-items.js';
+import { rebuildIndex } from './work-items-index.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(__dirname, '..');
@@ -97,6 +100,10 @@ if (isEntryPoint) await migrateSopsToBehaviours();
 if (isEntryPoint) await migrateItems().then((done) => {
   if (done.migrated.length) console.log(`[work-items] ${done.migrated.length} of ${done.before} items took Jira's names`);
 }).catch((error) => console.error(`[work-items] migration: ${(error as Error).message}`));
+// The live index is rebuilt from the item files and the holds lists at every start (w418;
+// docs/architecture/project-management.md, The live index).
+if (isEntryPoint) await rebuildIndex().then((rows) => console.log(`[work-items] live index: ${rows.length} live items`))
+  .catch((error) => console.error(`[work-items] live index: ${(error as Error).message}`));
 // An Agent that vanished without an end through Ronin (a crash) gives up its items like any
 // ending (docs/using-ronin/project-management.md, How an item lives): a sweep every five minutes, two misses in a row.
 if (isEntryPoint) setInterval(() => {
@@ -206,7 +213,10 @@ app.get('/vendor/addon-fit.js', (_req, res) => res.sendFile(path.join(NM, '@xter
 
 // The client's version and its serving rules live in assets.ts, which owns why.
 const assetVersion = publicFingerprint(PUBLIC);
-const readDocument = (file: string) => fs.readFileSync(path.join(PUBLIC, file), 'utf8').replaceAll('__RONIN_ASSET_VERSION__', assetVersion).replaceAll('__RONIN_FILES__', PYTHON ? 'on' : 'off');
+// A hosted office (an office_unit on an office_park) is read once, here: the page says so and the
+// client hides account and machine settings behind one Business Lounge link (KAN-475).
+const HOSTED = (await readOfficeRecord()).hosting !== 'self_hosted';
+const readDocument = (file: string) => fs.readFileSync(path.join(PUBLIC, file), 'utf8').replaceAll('__RONIN_ASSET_VERSION__', assetVersion).replaceAll('__RONIN_FILES__', PYTHON ? 'on' : 'off').replaceAll('__RONIN_HOSTED__', HOSTED ? 'on' : 'off');
 const indexHtml = readDocument('index.html');
 // THE MOBILE DOCUMENT. A phone downloads mobile.html — the bar, an empty list and
 // js/phone.js — and never the desktop page, so the first frame it paints is the mobile bar:
@@ -246,6 +256,7 @@ app.use('/api', (_req, res, next) => {
   next();
 });
 app.use('/api', resourceRequestCache);
+app.use('/api', stampInput); // office presence: when a person last acted — src/presence.ts
 
 app.get('/api/health', (_req, res) =>
   res.json({
@@ -253,6 +264,7 @@ app.get('/api/health', (_req, res) =>
     auth: authEnabled,
     login: passwordAuthEnabled(),
     transcribe: Boolean(config.scribeUrl),
+    presence: presence(),
   }),
 );
 

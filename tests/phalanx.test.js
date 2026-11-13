@@ -4,9 +4,12 @@ import { readFile } from 'node:fs/promises';
 
 class FakeNode {
   constructor(tag = '') { this.tagName = tag.toUpperCase(); this.children = []; this.dataset = {}; this.attributes = {}; this.listeners = {}; this.hidden = false; this.removed = false; this.style = { setProperty: (name, value) => { this.style[name] = value; } }; }
-  append(...nodes) { this.children.push(...nodes.filter(Boolean)); }
-  replaceChildren(...nodes) { this.children = []; this.append(...nodes); }
-  remove() { this.removed = true; }
+  get childNodes() { return this.children; }
+  append(...nodes) { for (const node of nodes.filter(Boolean)) { node.parent?.children.splice(node.parent.children.indexOf(node), 1); node.parent = this; this.children.push(node); } }
+  replaceChildren(...nodes) { for (const node of this.children) node.parent = null; this.children = []; this.append(...nodes); }
+  insertBefore(node, ref) { node.parent?.children.splice(node.parent.children.indexOf(node), 1); const at = ref ? this.children.indexOf(ref) : -1; this.children.splice(at < 0 ? this.children.length : at, 0, node); node.parent = this; this.inserted = (this.inserted || 0) + 1; return node; }
+  replaceWith(node) { const parent = this.parent; if (!parent) return; const at = parent.children.indexOf(this); this.remove(); node.parent?.children.splice(node.parent.children.indexOf(node), 1); parent.children.splice(at, 0, node); node.parent = parent; }
+  remove() { this.removed = true; if (this.parent) this.parent.children.splice(this.parent.children.indexOf(this), 1); this.parent = null; }
   focus() { this.focused = true; }
   setAttribute(name, value) { this.attributes[name] = String(value); }
   addEventListener(name, callback) { (this.listeners[name] ||= []).push(callback); }
@@ -217,4 +220,48 @@ test('a chart lays one column per child and folds a too-deep chart into counts u
   x.click();
   assert.deepEqual(branchIds(), ['x', 'd0', 'd1', 'd2', 'd3', 'd4', 'y'], 'pressing a folded child opens its column');
   assert.equal(surface.level(), null);
+});
+
+test('a push repaints only the stone that moved, moves a stone only with its group, and keeps the open detail (KAN-414)', () => {
+  const rendered = [];
+  const surface = createPhalanx({ grouped: true, renderDetail: (item, host) => { rendered.push(item.id); host.append(new FakeNode('form')); } });
+  const rows = (b = 'B', bGroup = 'todo') => [{ id: 'a', label: 'A', group: 'todo' }, { id: 'b', label: b, group: bGroup }, { id: 'c', label: 'C', group: 'doing' }];
+  surface.setItems(rows());
+  const stones = () => Object.fromEntries(surface.el.querySelectorAll('[data-sws-id]').map((node) => [node.dataset.swsId, node]));
+  stones().a.click();
+  const before = stones();
+  const form = surface.el.children[1].children[0];
+  assert.deepEqual(rendered, ['a']);
+  surface.setItems(rows());
+  assert.deepEqual(stones(), before, 'the same push again touches no stone');
+  surface.setItems(rows('B2'));
+  const after = stones();
+  assert.equal(after.a, before.a); assert.equal(after.c, before.c);
+  assert.notEqual(after.b, before.b, 'only the stone that moved is drawn again');
+  assert.equal(surface.el.children[1].children[0], form, 'the open detail is not rebuilt for another stone');
+  assert.deepEqual(rendered, ['a']);
+  surface.setItems(rows('B2', 'doing'));
+  assert.equal(stones().b, after.b, 'a group move moves the stone, not redraws it');
+  assert.equal(stones().b.parent.parent.dataset.swsGroup, 'doing');
+  surface.setItems([{ id: 'a', label: 'A2', group: 'todo' }, ...rows('B2', 'doing').slice(1)]);
+  assert.deepEqual(rendered, ['a', 'a'], 'the open stone itself moved: its detail draws again');
+});
+
+test('a push on the open stone waits while its detail holds an unsent edit, and lands on submit (w451, KAN-414)', async () => {
+  const rendered = [];
+  const surface = createPhalanx({ renderDetail: (item, host) => { rendered.push(item.label); host.append(new FakeNode('form')); } });
+  surface.setItems([{ id: 'a', label: 'A' }, { id: 'b', label: 'B' }]);
+  surface.el.querySelectorAll('[data-sws-id]')[0].click();
+  const detail = surface.el.children[1];
+  const form = detail.children[0];
+  detail.dispatch('input', { isTrusted: true });
+  surface.setItems([{ id: 'a', label: 'A2' }, { id: 'b', label: 'B' }]);
+  assert.deepEqual(rendered, ['A'], 'the edited detail is not rebuilt by a push on its own stone');
+  assert.equal(detail.children[0], form);
+  detail.dispatch('submit');
+  await new Promise((resolve) => setTimeout(resolve, 5));
+  assert.deepEqual(rendered, ['A', 'A2'], 'the held push lands once the edit is sent');
+  detail.dispatch('input', { isTrusted: false });
+  surface.setItems([{ id: 'a', label: 'A3' }, { id: 'b', label: 'B' }]);
+  assert.deepEqual(rendered, ['A', 'A2', 'A3'], 'a surface\'s own scripted input is not an edit');
 });

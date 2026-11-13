@@ -10,7 +10,7 @@ test('Commons opens on its separate Roster and keeps Configuration separate', as
   assert.match(view, /tabs: \[\s*\{ id: 'roster'/);
   assert.match(view, /selected: 'roster'/);
   assert.match(view, /\{ id: 'roster'[^}]*panel: service\(roster\) \}[\s\S]*\{ id: 'team-configuration'[^}]*panel: service\(config\) \}/);
-  assert.match(view, /commons\.roster\.replaceChildren\(members\)/);
+  assert.match(view, /commons\.roster\.replaceChildren\(people\.el\)/);
   assert.match(view, /commons\.config\.replaceChildren\(config\)/);
   assert.doesNotMatch(view, /commons\.config\.replaceChildren\(members, config\)/);
 });
@@ -57,7 +57,7 @@ test('Roster remains a roster; the Team page selector is Commons, Agents, New Ag
   assert.match(view, /createTeamRosterSurface\(\{\s*teamDetail: \(name\) => leagueTeamDetail\(name, id\)/);
   assert.doesNotMatch(view, /gear/);
   assert.match(catalog, /type: WORKBENCH_TYPES\.team, header: 'surface', discover: \(\) => \[\]/, 'the selector offers no per-Team card');
-  assert.match(catalog, /profiles\.define\(WORKBENCH_PROFILES\.team, \[WORKBENCH_TYPES\.commons, WORKBENCH_TYPES\.teamEpics, WORKBENCH_TYPES\.epicRecord, WORKBENCH_TYPES\.terminal, WORKBENCH_TYPES\.newAgent, WORKBENCH_TYPES\.agentComposition, BEHAVIOUR_SURFACE_TYPE, FEEDBACK_TYPE\]\)/, 'the Team page selector: Commons, Epics (KAN-232; Waiting on you removed, KAN-304), Agents, New Agent; the rest placeable only');
+  assert.match(catalog, /profiles\.define\(WORKBENCH_PROFILES\.team, \[WORKBENCH_TYPES\.commons, WORKBENCH_TYPES\.teamEpics, WORKBENCH_TYPES\.teamFindItem, WORKBENCH_TYPES\.epicRecord, WORKBENCH_TYPES\.terminal, WORKBENCH_TYPES\.newAgent, WORKBENCH_TYPES\.agentComposition, BEHAVIOUR_SURFACE_TYPE, FEEDBACK_TYPE\]\)/, 'the Team page selector: Commons, Epics (KAN-232; Waiting on you removed, KAN-304), Find item (KAN-433), Agents, New Agent; the rest placeable only');
   assert.doesNotMatch(view, /workItemOffers|createWorkItemsSurface/, 'the Team page offers no Work Items card; the Agent workbench keeps its own');
   // Owner 2026-09-28: the roster that existed (js/roster.js) is back on Cowork and Desk, as it was.
   assert.match(catalog, /WORKBENCH_PROFILES\.cowork, \[[^\n]*WORKBENCH_TYPES\.sessionRoster/);

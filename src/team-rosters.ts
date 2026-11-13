@@ -1,4 +1,5 @@
 import { mkdir, readFile, readdir, rename, unlink, writeFile } from 'node:fs/promises';
+import { holdsWritten, rosterListKey } from './holds-hook.js';
 import path from 'node:path';
 import { entryValue, isKeyLine } from './resources.js';
 import { storeDir } from './resources.js';
@@ -238,6 +239,7 @@ export async function createTeamRoster(name: string, edit: RosterEdit, campaign_
   const tmp = `${target}.tmp-${process.pid}`;
   await writeFile(tmp, render(name, roster), 'utf8');
   await rename(tmp, target);
+  holdsWritten(rosterListKey(campaign_id, name), `team:${name}`, roster.holds);
   return roster;
 }
 
@@ -278,6 +280,7 @@ export async function writeTeamRoster(name: string, edit: RosterEdit, campaign_i
   await rename(tmp, target);
   const back = await readTeamRoster(name, where);
   if (!back) throw new Error(`Refused: "${name}" does not read back after the edit.`);
+  holdsWritten(rosterListKey(where, name), `team:${name}`, back.holds);
   return back;
 }
 
@@ -287,6 +290,7 @@ export async function deleteTeamRoster(name: string, campaign_id?: string): Prom
   // memberships even when their roster file is already absent.
   if (existing) {
     await unlink(teamRosterFile(name, existing.campaign_id));
+    holdsWritten(rosterListKey(existing.campaign_id, name), '', []);
     return;
   }
   // Old stores could contain uppercase filenames that are no longer valid Team ids.

@@ -31,6 +31,11 @@ Status (press it to move the item to any status), objective, details, comments a
 folded apart, and a box to comment, sent to the Agent holding it. Every row folds. Press the same pill again, or Close, or
 Escape, to return to the terminal.
 
+A press answers at once (w416): while the item is on its way (one read of it, about a tenth of
+a second, most of it the server finding its Subtasks among every item) the pill, or its bar when
+the island is down, greys out with a busy cursor, and pressing it again does nothing until the
+item has opened.
+
 The island stays in the header; it does not move when an item changes. Press the small bar
 at its left to bring it down under the header, with the pills in a column, one item to a
 row. Each row reads: the kind's symbol, the status in words (To Do, In Progress, In Review,
@@ -111,8 +116,9 @@ same way. See [Share a file with an Agent](share-a-file.md).
 
 The separate **Transcript** button appears when Ronin Services has loaded Terminal
 transcript. It switches **Term → Chat → Term**; the button always names where you are
-now. A tile opens on Chat, on a desk as on a phone, once its Agent has something to show; an
-Agent with nothing written yet is met at its terminal. Chat is the conversation alone, as the CLI itself wrote it. The button is opaque when this Agent has nothing to show — born before Ronin
+now. A tile always opens on Chat, on a desk as on a phone, a new Agent's too: a new Agent's
+Chat is an empty conversation with *Working* at its end, and its first words start there as
+it writes them, with no reload. Chat is the conversation alone, as the CLI itself wrote it. The button is opaque when this Agent has nothing to show — born before Ronin
 recorded launch identity, started outside Ronin, or
 simply nothing written yet; pressing it says which. Switching the service on later, or a restart, does not lose
 an Agent whose identity was recorded. **Term** returns to the normal interactive terminal.
@@ -162,7 +168,8 @@ that one needs you to do something and a decoration would not say it. If the dot
 unwelcome, a system "reduce motion" setting leaves them still.
 
 
-Each Agent's row says its **stance**: *working…*, *awaiting you*, or *asking you*. It is the
+Each Agent's row says its **stance**: *working…*, *awaiting you*, or *asking you*; before
+Ronin has read anything from it the row says nothing there (w452). It is the
 newest line of what the Agent has done: a tool going out, a finished turn, a question on its
 screen. While it works, the end of the conversation names the tool it is in (for example
 *Bash · npm test*). Every Agent gets this, whichever provider it runs on: a CLI that keeps a
@@ -170,6 +177,13 @@ log is read from its log, and one that keeps none is read from its terminal, les
 
 *Asking you* comes from the terminal for every CLI: a permission prompt is drawn on the screen
 and no CLI writes it down.
+
+A question with options is answered in Terminal, never in Chat. While an Agent is asking, Chat
+ends with *Waiting for your answer in Terminal* and an **Answer in Terminal** button; the press
+switches the tile to Terminal, as **Term** would. Once the Agent is no longer asking, a tile
+that went there by that button comes back to Chat by itself. If you switched yourself, or
+switched again after the press, the tile stays where you put it. Nothing switches without a
+press.
 
 See [Work record](work-record.md) for authored work and [Workbench](workbench.md) for
 arrangement and navigation. Contributors can find the implementation in the

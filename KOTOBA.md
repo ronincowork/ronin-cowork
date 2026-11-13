@@ -126,29 +126,27 @@ categories. Use the tool and composition terms above.
 
 ## Ronin Cloud
 
-These terms name the hosted offer's surfaces; the plan is
-`samurai_lab/wip/ronin_cloud/RONIN_CLOUD.md` and the build is `MVP_ARCHITECTURE.md` beside it.
-Every physical or fleet surface carries the `office_` prefix; `front_door`, `model_gateway` and
+These terms name the hosted offer's surfaces. Current reference: `samurai_lab/ronin_cloud/README_RONIN_CLOUD.md`.
+Implementation proposal: `plan read ronin_hosted/hosted-first-office` (Draft).
+Every physical or fleet surface carries the `office_` prefix; `model_gateway` and
 `kill_switch` stand alone because nothing else shares the word. In prose the plain word office
 stays; what the customer hears for a unit is not settled (owner, 6 Nov 2026).
 
 | Term | Meaning |
 |---|---|
-| Ronin as a Service (`raas`) | The whole hosted offering: office_units on office_parks, each park's office_kohai, front_door, billing and office_export. The house name; Ronin Cloud is the same offering as the customer hears it |
+| Ronin as a Service (`raas`) | The whole hosted offering: office_units on office_parks, each park's office_kohai, sign-in, billing and office_export. The house name; Ronin Cloud is the same offering as the customer hears it |
 | Office unit (`office_unit`) | The product unit: one customer's virtual machine with its own kernel and disk, carved from an office_park. A ronin_install runs inside it. This is what the customer buys, with Agents running, never the machinery; what the customer calls it is not settled (was `office`; owner, 6 Nov 2026) |
 | Ronin install (`ronin_install`) | One installed, running copy of Ronin: inside an office_unit, or self-hosted on the customer's own machine. Ronin is the software; the unit is where one copy of it lives. Registration, the entitlement and the account view all belong to a ronin_install |
 | Office park (`office_park`) | The physical machine Ronin rents, carved into office_units under one hypervisor. Ronin administers it; no customer touches it (was `office_host`; owner, 6 Nov 2026) |
 | Hypervisor (`hypervisor`) | The software on an office_park that carves it into office_units and exposes the API the office_kohai drives: Proxmox VE |
-| Office kohai (`office_kohai`) | The head of an office_park: HQ-controlled, living on the park beside gateway_office, never reachable by customers. It provisions the park's units, keeps their records, stops, meters and updates them (was `control_plane`, a separate machine; owner, 6 Nov 2026) |
-| Office registry (`office_registry`) | The office_kohai's record of its park's units: account, unit, private address, state, stop_clock. Which park an account's unit is on is HQ's to know |
-| Front door (`front_door`) | The public entry on an office_park: Caddy, OAuth2 Proxy and Keycloak. Maps the hostname to an office, then checks that the signed-in user owns it; signing in alone opens nothing |
-| SSH gateway (`ssh_gateway`) | SSH entry at the same name as the front_door; no office address is ever shown |
+| Office kohai (`office_kohai`) | The head of an office_park: HQ-controlled (it polls HQ's `park_state`; HQ never calls it), living on the park beside gateway_office, never reachable by customers. It creates the park's units, keeps the office_registry, and starts, stops, deletes and updates them as HQ's state says (was `control_plane`, a separate machine; owner, 6 Nov 2026) |
+| Office registry (`office_registry`) | The office_kohai's record of its park's units: unit, VM id, private address, guard port, state. Accounts, the stop_clock and which park an account's unit is on are HQ's to know |
 | Office network (`office_network`) | The private network on an office_park; offices reach out through NAT, never each other, the office_park or the office_kohai |
 | Office image (`office_image`) | The Ronin image an office boots from once; after that Ronin updates itself |
 | Office disk (`office_disk`) | The whole disk of one office, the one persistence unit; its backup is an `office_snapshot` |
 | Office record (`office_record`) | The one file in a ronin_install that says which office_unit it lives in: `office_record.json` in the `office_unit` store, written once by the office_kohai, never by Ronin. Present means an office_unit on an office_park (office_id, office_park, gateway_office, provisioned_at); absent means self-hosted. Everything that behaves differently when hosted asks this record and nothing else |
 | Stop clock (`stop_clock`) | The 30 days a stopped office is kept before deletion |
-| Kill switch (`kill_switch`) | The office_kohai's stops from outside an office: stop it, cut its network, drop its front_door route, revoke its house_token. Works when control inside the office is lost |
+| Kill switch (`kill_switch`) | The stops from outside an office: the office_kohai stops it, cuts its network and drops its tunnel route; Shiwake has gateway_base revoke its house_token. Works when control inside the office is lost |
 | Model gateway (`model_gateway`) | Holds Ronin's provider key outside every office; an office speaks to it with its house_token |
 | House token (`house_token`) | One office's credential for the model_gateway; revoking it is part of the kill_switch |
 | Office export (`office_export`) | The off-ramp: the office as self-hosted Ronin on the customer's own computer |

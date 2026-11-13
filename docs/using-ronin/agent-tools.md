@@ -25,15 +25,26 @@ Ronin adds to them and takes nothing away.
 When an Agent needs a password or key (a KVM login, an API token), it never needs to see it
 in chat, and you never paste it into a message.
 
-- **The Agent asks:** `secret ask <name> --for "<what it is>"`. A paste field opens over its
-  tile. Click into it, paste, and press **Save**, or **Cancel** (Escape in the field cancels too).
+- **The Agent asks:** `secret ask <name> --for "<what it is>"`. A paste field opens at the foot
+  of its tile, where the message box sits, in Chat and in Terminal: the conversation or terminal
+  above stays readable and scrollable, so the Agent's instructions stay in view while you paste.
+  Click into it, paste, and press **Save**, or **Cancel** (Escape in the field cancels too).
+  Beside the value is **Expires**, one choice of four: **Nothing** (the default: not known),
+  **A date** (a date picker), **Never** (it does not expire, recorded as such), or **In N days**
+  (a number of days from today, with 30, 90 and 180 as quick picks; it is saved as the date it
+  lands on). Choosing Nothing again clears whatever was picked.
   Save says *Saving…*, then *Saved* shows for a moment before the field closes; if the save is
   refused, it stays open and says why. The Agent hears
   only `saved: <name>` or `cancelled: <name>`.
 - **The Agent uses it by its file:** `secret path <name>` prints where it is, to pass as
-  `--password-file` or read in its own script. `secret ls` lists the names.
+  `--password-file` or read in its own script. `secret ls` lists the names, with
+  `expires <date>` or `never expires` beside each that has one, and nothing beside the rest.
+- **An expiry for one already saved:** `secret expires <name> <YYYY-MM-DD|<N>d|never|clear>`
+  sets it without re-pasting (`90d` is 90 days from today); `clear` makes it not known again.
+  Only the expiry changes.
 
-Each secret is one file in `~/ronin/services_secrets`, readable only by you. Ronin never
+Each secret is one file in `~/ronin/services_secrets`, readable only by you. Expiry dates are kept
+beside them in `secrets-expiry.json`, never inside a value file. Ronin never
 prints a value, and no reply, log or chat carries one. A name is lowercase letters, digits,
 `_` and `-`.
 

@@ -40,7 +40,7 @@ test('the tile header carries the island, fed by the pushed work record, and a p
   // w272: nothing drops or pulses on a change: no timer, no auto-drop, no notify light, no kept state.
   // A mark that shows its current value on each push (the stance, w331) is fine.
   assert.doesNotMatch(island, /setTimeout|noticeable|notify|localStorage/);
-  assert.match(island, /if \(isOpen\(item\.id\)\) shut\(item\.id\);/);
+  assert.match(island, /if \(isOpen\(item\.id\)\) \{ shut\(item\.id\); return; \}/);
   // KAN-238: an expanded pill reads <symbol> <status> <dot> <flag>, the flag solid or its outline; no legend.
   assert.match(island, /node\.append\(kindMark\(item\.kind\), words, dot, flag\)/);
   assert.match(island, /item\.flagged \? FLAG_MARK : FLAG_OUTLINE/);
@@ -84,7 +84,9 @@ test('a Subtask whose Task is on the island folds under it: the Task pill carrie
   const island = await read('public/js/tile-island.js');
   assert.match(island, /kindKey\(item\.kind\) === 'subtask' && item\.parent && shown\.has\(item\.parent\)/);
   assert.match(island, /mark\.append\(kindMark\('Subtask'\), String\(count\)\)/);
-  assert.match(island, /pills\.replaceChildren\(\.\.\.shape\.top\.map\(pill\)\)/);
+  // One pill per top item, the kit's keyed list (KAN-413): a pill redraws only when what it shows moves.
+  assert.match(island, /pillList\.set\(pills, shape\.top\.map\(\(item\) => \(\{ id: item\.id, item, count: under\.get\(item\.id\) \|\| 0 \}\)\)\)/);
+  assert.doesNotMatch(island, /pills\.replaceChildren|bars\.replaceChildren/);
   const surface = await read('public/js/work-items-surface.js');
   assert.match(surface, /step\('subtasks', t\('work_items\.subtasks', 'Subtasks'\)/);
 });
@@ -99,23 +101,19 @@ test('w322: the wide list, a bar per item with its description, last comment and
   assert.ok(barFacts({ comments: [{}] }, 0, now).includes('1 comment'));
   assert.deepEqual(barFacts({ id: 'w2' }, 0, now), [], 'an empty fact is left out');
   const island = await read('public/js/tile-island.js');
-  assert.match(island, /el\.append\(stance, grip, pills, bars, more\)/);
-  assert.match(island, /more\.addEventListener\('click', \(\) => place\(el\.dataset\.state === 'wide' \? 'down' : 'wide'\)\)/);
-  assert.match(island, /node\.className = sub \? 'item-bar item-bar-sub' : 'item-bar'/, 'a bar is not a pill: the pill counts stay the pills');
+  assert.match(island, /el\.append\(stance, grip, pills, more\)/);
+  assert.match(island, /more\.addEventListener\('click', \(\) => \{ place\('rest'\); showMore\(\); \}\)/, 'More detail opens the board over the tile (KAN-459)');
+  assert.match(island, /node\.className = \[sub \? 'item-bar item-bar-sub' : 'item-bar'/, 'a bar is not a pill: the pill counts stay the pills');
   const css = await read('public/style.css');
-  assert.match(css, /\.tile-head \.item-island\[data-state='wide'\] \{\n  position: absolute;/);
   assert.match(css, /\.item-bar \.item-bar-comment \{ -webkit-line-clamp: 1;/);
 });
 
-test('w323: one subtask is singular; wide, the bars scroll and the way out stays in view', async () => {
+test('w323: one subtask is singular', async () => {
   assert.equal(subtaskWords(1), '1 subtask');
   assert.equal(subtaskWords(3), '3 subtasks');
   assert.ok(barFacts({ parent: 'KAN-1' }, 1).includes('1 subtask'));
   const island = await read('public/js/tile-island.js');
   assert.match(island, /node\.title = `\$\{node\.title\} · \$\{subtaskWords\(count\)\}`/, 'the pill hover');
-  const css = await read('public/style.css');
-  assert.match(css, /\[data-state='wide'\] \{[^}]*overflow: hidden;/);
-  assert.match(css, /\[data-state='wide'\] \.item-island-bars \{[^}]*min-height: 0; overflow-y: auto;/);
 });
 
 test('w331: the stance folds to three marks, only what needs the owner, read off the same push', async () => {
@@ -129,10 +127,19 @@ test('w331: the stance folds to three marks, only what needs the owner, read off
   assert.equal(stanceGaps(['asking', 'awaiting_you', 'interrupted', 'error']), '');
   assert.equal(stanceGaps(['awaiting_you']), 'This harness cannot report a question, an interruption, a failed tool');
   const island = await read('public/js/tile-island.js');
-  assert.match(island, /el\.append\(stance, grip, pills, bars, more\)/);
+  assert.match(island, /el\.append\(stance, grip, pills, more\)/);
   assert.match(island, /mark\('item-stance', \{ stance: key \}, \['circle', \{ cx: 8, cy: 8, r: 8, class: 'ground' \}\]/, 'a circle, not the kinds\' square');
   assert.match(island, /el\.hidden = !session \|\| \(!next\.length && stance\.hidden\)/, 'an Agent holding nothing still shows when it needs you');
   const css = await read('public/style.css');
   assert.match(css, /\.item-stance\[data-stance='question'\] \.ground \{ fill: var\(--kaki-fill\); \}/);
   assert.match(css, /\.item-stance\[data-stance='stopped'\] \.ground \{ fill: var\(--bad\); \}/);
+});
+
+test('a pressed item answers at once: busy until it shows, and further presses ignored (w416)', async () => {
+  const [island, head, css] = await Promise.all(['public/js/tile-island.js', 'public/js/tilehead.js', 'public/style.css'].map(read));
+  assert.match(head, /open: \(item\) => openItem\(tile, item\),/, 'open settles once the item shows');
+  assert.match(island, /if \(loading\.has\(item\.id\)\) return;/, 'a press while it loads is ignored');
+  assert.match(island, /try \{ await open\(items\.find\(\(one\) => one\.id === item\.id\) \|\| item\); \} finally \{ loading\.delete\(item\.id\); busy\(item\.id\); \}/);
+  assert.match(island, /return markBusy\(node, item\.id\);/, 'a pill redrawn mid-load stays busy');
+  assert.match(css, /\.tile-head \.item-island button:is\(\.item-pill, \.item-bar\)\[aria-busy='true'\] \{ opacity: \.58; cursor: progress; \}/);
 });

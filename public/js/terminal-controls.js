@@ -3,6 +3,7 @@ import { request } from './request.js';
 import { sheet, toast } from './ui.js';
 import { S, SELECT_MOD, IS_MAC } from './state.js';
 import { closeMenu, menuOpen } from './menu.js';
+import { t } from './lexicon.js';
 
 const actions = ['copy', 'clear', 'close', 'stop'];
 const shortcutActions = ['clear', 'close', 'stop'];
@@ -112,6 +113,9 @@ export function buildBoxControlButtons(tile) {
   });
 }
 
+// While a Stop is on its way the button says so; the box's notice then says how it went. Clear
+// needs no word: the box empties (owner, 2026-11-11); only its failure is said.
+const pressing = { stop: () => t('controls.stopping', 'Stopping…') };
 function actionButton(action, run) {
   const button = document.createElement('button');
   button.type = 'button';
@@ -120,11 +124,54 @@ function actionButton(action, run) {
   button.setAttribute('aria-label', labels[action]);
   describeAction(button);
   button.addEventListener('pointerdown', (e) => e.preventDefault());
-  button.addEventListener('click', () => void run());
+  button.addEventListener('click', async () => {
+    if (button.disabled) return;
+    if (pressing[action]) { button.textContent = pressing[action](); button.disabled = true; button.dataset.busy = 'true'; }
+    try { await run(); } finally {
+      button.textContent = labels[action];
+      button.disabled = false;
+      delete button.dataset.busy;
+    }
+  });
   return button;
+}
+
+/** A word in the tile's box when it has one (Chat, the phone), else a toast. */
+function say(tile, kind, message, ms) {
+  if (tile.composer?.notice) tile.composer.notice(kind, message, ms);
+  else if (kind !== 'info') toast(message, kind !== 'failed');
+}
+
+const STOP_WAIT_MS = 8000;
+/**
+ * After a Stop is sent: did the Agent stop? Its home row's stance says, as Ronin already
+ * pushes it (no polling). Working → anything else is Stopped; still working after a few
+ * seconds is said, and a later stop still lands. An Agent with no stance gets "sent" only.
+ */
+function followStop(tile) {
+  const row = tile.homeRow?.();
+  // Ronin's own word that it stopped (stopped_at) can land before this answer does.
+  if (row?.stopped_at) { say(tile, 'success', t('controls.stopped', 'Stopped. The Agent is no longer working.')); return; }
+  const stance = row?.stance;
+  if (!stance || stance === 'unknown') { say(tile, 'success', t('controls.stop_sent', 'Stop sent.')); return; }
+  if (stance !== 'working') { say(tile, 'success', t('controls.stop_idle', 'Stop sent. The Agent was not working.')); return; }
+  say(tile, 'info', t('controls.stop_waiting', 'Stop sent. Waiting for the Agent to stop…'));
+  const watch = (row) => {
+    if (!row?.stance || row.stance === 'working') return;
+    tile.stopWatch = null;
+    clearTimeout(tile.stopTimer);
+    say(tile, 'success', t('controls.stopped', 'Stopped. The Agent is no longer working.'));
+  };
+  tile.stopWatch = watch;
+  tile.stopTimer = setTimeout(() => {
+    if (tile.stopWatch === watch) say(tile, 'warning', t('controls.stop_working', 'Stop sent, but the Agent is still working.'));
+  }, STOP_WAIT_MS);
 }
 export async function runTerminalAction(tile, action, target) {
   if (action === 'copy') return copyTerminal(tile);
+  tile.stopWatch = null;
+  clearTimeout(tile.stopTimer);
+  tile.composer?.notice?.('', ''); // the last word goes: this press gets its own
   if (!tile.session) return toast('Choose an Agent first.', false);
   if (action === 'close') return tile.kill();
   if (action === 'clear') {
@@ -138,7 +185,13 @@ export async function runTerminalAction(tile, action, target) {
   }
   const session = S.sessions.find((row) => row.name === tile.session);
   const r = await request(`/api/sessions/${encodeURIComponent(tile.session)}/control-action`, { method: 'POST', json: { intent: action, key: tile.sessionKey || session?.key } });
-  if (!r.ok) toast(r.message, false);
+  if (!r.ok) {
+    say(tile, 'failed', action === 'stop'
+      ? t('controls.stop_failed', 'Stop not sent: {why}', { why: r.message })
+      : t('controls.clear_failed', 'Clear not sent: {why}', { why: r.message }));
+    return;
+  }
+  if (action === 'stop') followStop(tile);
 }
 function terminalSnapshot(tile) {
   if (tile.tapeMode) return tile.tape?.el?.innerText || tile.body.innerText || '';
@@ -155,7 +208,7 @@ async function copyTerminal(tile) {
   const native = window.getSelection?.();
   const local = native && tile.el.contains(native.anchorNode) ? native.toString() : '';
   const selected = local || tile.term.getSelection() || tile.lastSelection || '';
-  if (selected && await writeClipboard(selected)) return;
+  if (selected && await writeClipboard(selected)) { say(tile, 'success', t('controls.copied', 'Copied.')); return; }
   const dlg = sheet({ id: `terminal-copy-${tile.retirementId}`, label: `Copy terminal text — ${tile.session || 'Tile'}`, onClose: () => dlg.el.remove() });
   const text = document.createElement('textarea');
   text.readOnly = true;

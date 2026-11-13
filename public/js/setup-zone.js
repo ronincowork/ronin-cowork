@@ -1,4 +1,5 @@
 /* part of the ronin-cowork client — see js/README.md */
+import { createKeyedList } from './workspace-primitives.js';
 /**
  * THE SETUP HEADER ZONE — the top window of a Setup step.
  *
@@ -42,27 +43,38 @@ export function createSetupZone({ className = '' } = {}) {
   options.dataset.density = 'tight';
   zone.append(state, options);
 
+  // ONE PICK MOVES, ONE STONE REPAINTS (owner, 2026-11-12, KAN-414): the kit's keyed list. A
+  // pick is a kept row by its key and repaints only when what it shows moves; its press reads
+  // the newest pick, so a kept stone never acts on an old answer.
+  const shown = new Map();
+  const picksList = createKeyedList({ key: (row) => row.key, shows: (row) => row.shows, draw: (row) => row.draw() });
+  const pickKey = (pick) => pick.key || (pick.label || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
   const paint = ({ state: reading = '', picks = [] } = {}) => {
     // NOTHING TO SAY, NOTHING SAID. Once a step is answered its card carries a checkmark and
     // the zone has no fact left that needs a decision, so it goes blank rather than sit there
     // congratulating you. It does NOT go away: the slot is what holds the stone phalanx level
     // from step to step, so the space stays whether it is filled or not (owner, 2026-09-21).
-    state.textContent = reading;
-    options.replaceChildren(...picks.map((pick) => {
-      const button = el('button', 'ask-opt ask-rect');
-      button.type = 'button';
-      // A pick is nameable as a pick. Its label can legitimately read like a control on the
-      // surface below ('Add password', 'Register here'), so anything selecting by words alone
-      // can pick the wrong one — a harness did exactly that and pressed real controls. This
-      // says which button is the zone's, for tests, harnesses and anyone reading the DOM.
-      button.dataset.setupZonePick = pick.key || (pick.label || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-      // ask.css marks the chosen stone on aria-selected; aria-pressed is styled nowhere.
-      button.setAttribute('aria-selected', String(pick.chosen === true));
-      if (pick.disabled) { button.disabled = true; button.setAttribute('aria-disabled', 'true'); }
-      if (pick.title) button.title = pick.title;
-      button.append(el('span', 'ask-name', pick.label || ''));
-      button.addEventListener('click', () => pick.action?.());
-      return button;
+    if (state.textContent !== reading) state.textContent = reading;
+    shown.clear();
+    picksList.set(options, picks.map((pick) => {
+      const key = pickKey(pick);
+      shown.set(key, pick);
+      return { key, shows: JSON.stringify([pick.label, pick.chosen === true, Boolean(pick.disabled), pick.title || '']), draw: () => {
+        const button = el('button', 'ask-opt ask-rect');
+        button.type = 'button';
+        // A pick is nameable as a pick. Its label can legitimately read like a control on the
+        // surface below ('Add password', 'Register here'), so anything selecting by words alone
+        // can pick the wrong one — a harness did exactly that and pressed real controls. This
+        // says which button is the zone's, for tests, harnesses and anyone reading the DOM.
+        button.dataset.setupZonePick = key;
+        // ask.css marks the chosen stone on aria-selected; aria-pressed is styled nowhere.
+        button.setAttribute('aria-selected', String(pick.chosen === true));
+        if (pick.disabled) { button.disabled = true; button.setAttribute('aria-disabled', 'true'); }
+        if (pick.title) button.title = pick.title;
+        button.append(el('span', 'ask-name', pick.label || ''));
+        button.addEventListener('click', () => shown.get(key)?.action?.());
+        return button;
+      } };
     }));
   };
 

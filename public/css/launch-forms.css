@@ -116,7 +116,7 @@
   /* The picked Epic's own bar (KAN-309): its details; pressed, its reading opens under it as any bar's (KAN-310). */
   .epic-detail { display: flex; flex-direction: column; gap: var(--space-inline); }
   .epic-detail > button.item-bar { width: 100%; font-family: inherit; }
-  .epic-reading { margin-left: var(--space-inset); padding: var(--space-inline) var(--space-inset); border: var(--edge) solid var(--line); border-radius: var(--radius-large); background: var(--surface); }
+  .epic-reading { padding: var(--space-inline) var(--space-inset); border: var(--edge) solid var(--line); border-radius: var(--radius-large); background: var(--surface); }
   /* THE TEAM'S EPICS on the Team workbench (KAN-232): the card is flush (createSurface's flush): the
      board inside keeps its own inset, and nothing here reaches into the kit. */
   .team-epics .epics-board { flex: 1 1 auto; min-height: 0; border: 0; }
@@ -137,6 +137,11 @@
   .wi-head { display: flex; align-items: flex-start; gap: var(--space-inline); padding-bottom: var(--space-inset); border-bottom: var(--edge) solid var(--line); }
   .wi-head .item-kind { width: var(--text-heading); height: var(--text-heading); flex: 0 0 auto; margin-top: var(--space-row); }
   .wi-head-words { display: flex; flex-direction: column; gap: var(--space-row); min-width: 0; }
+  /* A head that stands for its bar (KAN-431): pressed, it closes the reading. */
+  .wi-head.wi-head-closes { cursor: pointer; border-radius: var(--radius-large); }
+  .wi-head.wi-head-closes:hover, .wi-head.wi-head-closes:focus-visible { background: color-mix(in srgb, var(--accent) 8%, transparent); }
+  .wi-head.wi-head-closes:active { background: color-mix(in srgb, var(--accent) 16%, transparent); }
+  .wi-head > button.minimize { margin-left: auto; }
   .wi-title { margin: 0; color: var(--fg-strong); font-size: var(--text-heading); font-weight: var(--weight-strong); line-height: var(--leading-tight); overflow-wrap: anywhere; }
   .wi-key, .wi-notice, .wi-when { margin: 0; color: var(--muted); font-size: var(--form-note); }
   .wi-answer:empty { display: none; }
@@ -145,6 +150,30 @@
   .wi-facts dt { color: var(--muted); }
   .wi-facts dt, .wi-facts dd { font-size: var(--form-input); }
   .wi-facts dd { margin: 0; overflow-wrap: anywhere; }
+  /* DETAILS IN TWO COLUMNS (owner, 2026-11-12, KAN-434): where the reading is wide, the facts sit
+     two pairs to a row, so they take half the height; a narrow reading keeps one. */
+  @container item-reading (min-width: 34rem) {
+    .wi-facts { grid-template-columns: auto minmax(0, 1fr) auto minmax(0, 1fr); }
+  }
+  /* FIND ITEM (KAN-433, KAN-464): one block — the number typed in an Erabi reading stone, Find
+     beside it at the stone's height — then a rule and space before the item shown. */
+  .find-item-ask .find-item-stone { cursor: text; }
+  .find-item-ask .find-item-stone::after { content: none; }
+  .find-item-ask .find-item-stone:focus-within { border-color: var(--kaki); border-left-color: var(--kaki); }
+  .find-item-number { width: 100%; min-width: 0; padding: 0; border: 0; background: transparent; outline: none; font-family: inherit; }
+  .find-item-number::placeholder { color: var(--muted); font-weight: var(--weight-regular); }
+  .find-item-ask .find-item-go { height: var(--ask-h); align-self: flex-start; }
+  .find-item-reading:not(:empty) { margin-top: var(--space-section); padding-top: var(--space-section); border-top: var(--edge) solid var(--line); }
+  /* An Agent over the work surface its item sits in (KAN-435): its own tile fills the layer under the Close. */
+  .work-overlay.item-agent { display: flex; flex-direction: column; overflow: hidden; z-index: 20; }
+  .work-overlay.item-agent > :last-child { flex: 1 1 auto; min-height: 0; }
+  .work-overlay.item-agent > .tile-record-head { margin: 0; padding: var(--space-row) var(--space-inset); }
+  /* THE AGENTS (KAN-435): the holder and the Agent it was started in, as stones that open the
+     Agent; sized to their words, which wrap in full. */
+  .wi-agents { display: flex; flex-wrap: wrap; gap: var(--space-inline); }
+  .wi-agents .sws-stone { flex: 0 1 auto; width: auto; max-width: 100%; aspect-ratio: auto; overflow: visible; gap: var(--space-row); padding: var(--space-row) var(--space-inset); }
+  .wi-agents .sws-label { margin-top: 0; overflow: visible; text-overflow: clip; overflow-wrap: anywhere; }
+  .wi-agents .sws-state { color: var(--muted); font-size: var(--form-note); }
   .wi-objective, .wi-text { margin: 0; overflow-wrap: anywhere; white-space: pre-wrap; font-size: var(--form-input); }
   .wi-list { display: flex; flex-direction: column; gap: var(--space-paragraph); margin: 0; padding: 0; list-style: none; }
   .wi-comment { display: flex; flex-direction: column; gap: var(--space-row); }
@@ -162,6 +191,8 @@
   .wi-attachment:hover, .wi-attachment:focus-visible { color: var(--accent); }
   /* The full overlay (js/work-details.js): one layer over a host, the tile its one user. */
   .work-overlay { position: absolute; inset: 0; overflow-y: auto; background: var(--surface); }
+  /* A tile's More detail (KAN-459): the Epics board's bars over the tile, inset as the board's. */
+  .tile-items-board > .epic-items { padding: var(--space-inset); }
   /* Its utility, small at the top right: Close. */
   .work-overlay-utility { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: var(--space-inline); }
   .work-overlay:focus { outline: none; }

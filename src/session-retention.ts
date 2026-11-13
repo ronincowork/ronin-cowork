@@ -13,6 +13,7 @@
  * key, and its close time is its last write. Rireki's sweep writes transcript.jsonl
  * every minute while a session lives, so that is exact to a minute for bound sessions.
  */
+import { holdsWritten, letterListKey } from './holds-hook.js';
 import { lstat, readdir, rm } from 'node:fs/promises';
 import path from 'node:path';
 import { listCampaigns } from './campaigns.js';
@@ -74,6 +75,7 @@ export async function sweepSessionFolders(input: SweepInput): Promise<string[]> 
     const dir = path.join(root, key);
     if ((await lastWrite(dir)) >= cutoff) continue;
     await rm(dir, { recursive: true, force: true });
+    holdsWritten(letterListKey(key), '', []); // its letter went with it
     removed.push(key);
   }
   return removed;

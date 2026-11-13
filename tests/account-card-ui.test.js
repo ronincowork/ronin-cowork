@@ -20,8 +20,10 @@ test('the Cloud Account is its own worksurface in the Settings selector, Machine
   const [catalog, view] = await Promise.all([read('public/js/workbench-catalog.js'), read('public/js/campaign-view.js')]);
   assert.match(catalog, /campaignCloudAccount: 'campaign\.cloud-account'/);
   assert.match(catalog, /campaign\(WORKBENCH_TYPES\.campaignCloudAccount, 'surface', \(\) => t\('campaign_view\.cloud_account', 'Cloud Account'\)/);
-  // Offered right after Machine, so it sits under the Machine Settings heading.
-  assert.match(catalog, /WORKBENCH_PROFILES\.campaign, \[WORKBENCH_TYPES\.terminal, WORKBENCH_TYPES\.campaignMachine, WORKBENCH_TYPES\.campaignCloudAccount,/);
+  // Offered right after Machine, so it sits under the Machine Settings heading; a hosted office
+  // offers no Cloud Account at all: the Business Lounge keeps the account (KAN-475).
+  assert.match(catalog, /WORKBENCH_PROFILES\.campaign, \[WORKBENCH_TYPES\.terminal, WORKBENCH_TYPES\.campaignMachine, \.\.\.notHosted\(WORKBENCH_TYPES\.campaignCloudAccount\),/);
+  assert.match(catalog, /const notHosted = \(\.\.\.types\) => \(HOSTED \? \[\] : types\);/);
   // Built from the same card; reread each time it is shown; an absent part is said, not blank.
   assert.match(view, /campaignCloudAccount: \(\) => \{[\s\S]{0,600}accountCard\(el, \{ absent: /);
   assert.match(view, /if \(card\) void card\.load\(\)/);

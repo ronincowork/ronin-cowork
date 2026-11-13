@@ -176,6 +176,21 @@ test('the Team: one of several in the Workspace is named; plan team changes it a
   git(lab, 'commit', '-q', '-m', 'test: dual gone');
 });
 
+test('plan delete: any status, one commit, off plan ls; an epic that attached it reads gone (w417)', async () => {
+  await ok('plan', ['write', 'scrap'], 'lead', ORDER);
+  await ok('plan', ['order', 'scrap']);
+  const epic = (await createItem({ title: 'Scrap epic', kind: 'Epic', campaign_id: 'camp', holder: { kind: 'agent', name: 'solo' } }, 'owner')).item.id;
+  await ok('item', ['attach', epic, 'plan:shop/scrap'], 'solo');
+  assert.match(await ok('plan', ['delete', 'scrap']), /^Deleted shop\/scrap \(Ordered\)\.\nStatus: Ordered · .*\nCommitted\.\n$/);
+  assert.equal(git(lab, 'log', '-1', '--format=%s'), 'plan scrap: delete\n');
+  assert.match(git(lab, 'log', '--format=%s', '--', 'camp/shop/plans/scrap.md'), /plan scrap: order/, 'the history keeps it');
+  assert.doesNotMatch(await ok('plan', ['ls']), /scrap/);
+  assert.equal((await fetch(`${base}/api/plans/resolve?ref=shop/scrap&campaign_id=camp`)).status, 404, 'plan-attachment.js says gone on 404');
+  assert.deepEqual((await readItem(epic))!.attachments, ['plan:shop/scrap'], 'the epic is not changed');
+  assert.equal((await run('plan', ['delete', 'scrap'])).status, 3, 'no plan left to delete');
+  await ok('item', ['delete', epic], 'solo');
+});
+
 test('plan: attachments go through the item tool, open where the plan is, and say gone', async () => {
   const epic = (await createItem({ title: 'Shelves', kind: 'Epic', campaign_id: 'camp', holder: { kind: 'agent', name: 'lead' } }, 'owner')).item.id;
   await ok('item', ['attach', epic, 'plan:fit']);

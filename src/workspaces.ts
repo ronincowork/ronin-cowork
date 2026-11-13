@@ -16,6 +16,7 @@
  * folder for all (owner, 2026-11-03): a folder per Workspace made each provider ask "trust this
  * folder?" for every new Workspace.
  */
+import { holdsWritten, workspaceListKey } from './holds-hook.js';
 import { mkdir, readFile, readdir, rename, unlink, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { storeDir } from './resources.js';
@@ -120,6 +121,7 @@ export async function saveWorkspace(w: Workspace): Promise<Workspace> {
 export async function deleteWorkspace(campaign: string, name: string): Promise<void> {
   try { await unlink(recordFile(campaign, name)); }
   catch (e) { if ((e as NodeJS.ErrnoException).code !== 'ENOENT') throw e; }
+  holdsWritten(workspaceListKey(campaign, name), '', []); // a Workspace with no record holds nothing
 }
 
 /** The repositories a Team's Agents work in: its Workspace's, by registered name. */
@@ -152,6 +154,7 @@ export async function writeWorkspaceHolds(campaign: string, name: string, change
   const file = holdsFile(campaign, name);
   await writeFile(`${file}.tmp`, `${JSON.stringify({ holds: change.holds ?? was.holds, icebox: change.icebox ?? was.icebox }, null, 2)}\n`, 'utf8');
   await rename(`${file}.tmp`, file);
+  holdsWritten(workspaceListKey(campaign, name), `workspace:${name}`, change.holds ?? was.holds);
 }
 
 /** Every Workspace's holds, in every Campaign: one row per Workspace record. */

@@ -39,18 +39,17 @@
 # home from its own location. Run from a checkout there is no home to derive, so
 # --home is required — the first install (cutover) names it once, explicitly.
 #
-# Outbound: this asks github.com for the release feed and the tarball — on the
-# owner's press only, never on a timer (the ⚙ gear calls --check when clicked).
-# When AGERU's egress_log lands, these fetches are entries in it.
+# Outbound: cowork asks github.com for its release feed and tarball; services ask Ronin
+# HQ with this box's key (libexec/ronin-hq.sh) — on the owner's press only, never on a
+# timer (the ⚙ gear calls --check when clicked). When AGERU's egress_log lands, these
+# fetches are entries in it.
 set -euo pipefail
 
 SELF="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"   # the tree this script is in
 SLUG="${RONIN_RELEASE_REPO:-ronincowork/ronin-cowork}"    # the cowork release feed
-# The services feed: the PUBLIC assets-only releases repo — tarballs, never source
-# (the paid layer's code stays private; the owner ruled the download ungated). A
-# stranger's curl reaches it with no auth, which is what makes the ⚙ gear's install
-# one press. Override for a fork or a private trial: RONIN_SERVICES_REPO.
-SVC_SLUG="${RONIN_SERVICES_REPO:-ronincowork/ronin-releases}"
+# Services have no feed here. The paid layer's release repo is private (owner, 7 Nov 2026,
+# KAN-323) and nothing is downloaded anonymously: a box asks Ronin HQ with its key, in
+# libexec/ronin-hq.sh, or installs a tarball it already has with --services --file.
 
 fail() {
   echo "✗ $1" >&2
@@ -155,7 +154,7 @@ sha256_of() {
   else shasum -a 256 "$1" | awk '{print $1}'; fi
 }
 
-# --- the release feeds (gh when it is there, curl for a public repo) ---
+# --- the cowork release feed (gh when it is there, curl otherwise: the repo is public) ---
 have_gh() { command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1; }
 
 latest_release() { # $1=repo slug
@@ -212,7 +211,7 @@ if [ "$MODE" = "check" ]; then
   inst="$(installed_release)"
   latest="$(latest_release "$SLUG")"
   svc_inst="$(services_installed_release)"
-  svc_latest="$(latest_release "$SVC_SLUG")"
+  svc_latest="$(hq_latest_version)"   # empty: no key, HQ away, or nothing for our contract
   if [ "$JSON" = 1 ]; then
     printf '{"installed":%s,"latest":%s,"upToDate":%s,"services":{"installed":%s,"latest":%s,"upToDate":%s}}\n' \
       "$([ -n "$inst" ] && printf '"%s"' "$inst" || echo null)" \
@@ -226,6 +225,7 @@ if [ "$MODE" = "check" ]; then
     echo "services  : ${svc_inst:-none} · latest ${svc_latest:-unknown}"
     [ -n "$latest" ] && [ "$inst" != "$latest" ] && echo "→ bin/ronin-update to install cowork ${latest}"
     [ -n "$svc_latest" ] && [ "$svc_inst" != "$svc_latest" ] && echo "→ bin/ronin-update --services to install services ${svc_latest}"
+    [ -n "$svc_latest" ] || hq_token >/dev/null 2>&1 || echo "→ no Services key on this box: register with Ronin HQ and paste your Services key into Settings"
   fi
   exit 0
 fi
@@ -298,7 +298,7 @@ restart_and_gate() {
 # --- rollback: the previous unpacked release, by symlink ---
 if [ "$MODE" = "rollback" ]; then
   [ "$PACKAGE" = "services" ] &&
-    fail "services keep no previous copy — roll back by installing the prior release: bin/ronin-update --services --version vX.Y.Z"
+    fail "services keep no previous copy — roll back by installing the prior tarball: bin/ronin-update --services --file <tarball>"
   prev="$(readlink "$HOME_DIR/previous" 2>/dev/null || true)"
   [ -n "$prev" ] && [ -d "$HOME_DIR/$prev" ] ||
     fail "no previous release recorded at $HOME_DIR/previous — nothing to roll back to"
@@ -340,7 +340,7 @@ cleanup() {
 trap cleanup EXIT
 
 # Which package this run moves: name, feed, and what counts as already-installed.
-if [ "$PACKAGE" = "services" ]; then PKG="ronin-services"; FEED="$SVC_SLUG"; INST="$(services_installed_release)"
+if [ "$PACKAGE" = "services" ]; then PKG="ronin-services"; FEED=""; INST="$(services_installed_release)"
 else PKG="ronin-cowork"; FEED="$SLUG"; INST="$(installed_release)"; fi
 
 if [ -n "$FILE" ]; then
@@ -356,21 +356,28 @@ if [ -n "$FILE" ]; then
     *-linux-x64|*-linux-arm64|*-darwin-x64|*-darwin-arm64) VER="${VER%-*-*}" ;;
   esac
   [ -n "$VER" ] || fail "cannot read a version out of '$TARBALL' (expected $PKG-vX.Y.Z[-<platform>].tar.gz)"
-elif [ "$PACKAGE" = "services" ] && HQ_VER="$(hq_fetch_services "$WORK")" && [ -n "$HQ_VER" ]; then
-  # AUTHORIZED PATH. An entitled install takes its services from Ronin HQ.
+elif [ "$PACKAGE" = "services" ]; then
+  # SERVICES COME FROM RONIN HQ, with this box's key, and from nowhere else on the network.
+  # HQ chooses the release for the contract this cowork answers, so --version has no
+  # meaning here; a particular tarball installs with --file.
+  [ -z "$WANT" ] || fail "--services takes no --version: Ronin HQ serves the release for this cowork's contract (a tarball on disk installs with --file)"
+  HQ_VER="$(hq_fetch_services "$WORK")" || {
+    rc=$?
+    [ "$rc" = 6 ] && { echo "✓ Ronin HQ has no services release for this cowork's contract — nothing to install"; exit 0; }
+    hq_explain "$rc"
+  }
   VER="$HQ_VER"
-  # Same shape as the public path: $PKG-$VER.tar.gz, and $PKG-$VER/ inside it. The contract
+  # Same shape as the --file path: $PKG-$VER.tar.gz, and $PKG-$VER/ inside it. The contract
   # check below depends on both, and it is the same line for both paths.
   TARBALL="$PKG-$VER.tar.gz"
   if [ "$VER" = "$INST" ]; then echo "✓ already on $PKG $VER — nothing to do"; exit 0; fi
-  say "authorized release $VER from Ronin HQ"
+  say "release $VER from Ronin HQ"
 else
   VER="${WANT:-$(latest_release "$FEED")}"
-  [ -n "$VER" ] || fail "could not learn the latest release (private repo needs gh auth; or pass --version / --file)"
+  [ -n "$VER" ] || fail "could not learn the latest cowork release (no answer from github; or pass --version / --file)"
   if [ "$VER" = "$INST" ]; then echo "✓ already on $PKG $VER — nothing to do"; exit 0; fi
   say "fetching $VER from $FEED"
-  PLAT=""
-  [ "$PACKAGE" = "services" ] || PLAT="$(platform_name)"
+  PLAT="$(platform_name)"
   if [ -n "$PLAT" ] && fetch_release "$FEED" "$PKG" "$VER" "$WORK" "$PLAT"; then
     TARBALL="$PKG-$VER-$PLAT.tar.gz"
     say "bundled artifact for $PLAT — it carries its own node, tmux, and node_modules"

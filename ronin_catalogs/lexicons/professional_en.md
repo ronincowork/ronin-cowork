@@ -291,7 +291,12 @@ nothing paints exactly this.
 - **campaign_home.check_updates:** Check for updates
 - **campaign_home.agent_harness:** Agent Harness
 - **campaign_home.agent_harness_is:** The CLIs on this machine, the accounts they launch on, and the models
-- **setup.provider_gate:** Activate one model provider in Machine Setup to use this.
+- **campaign_home.settings_is_hosted:** This Desk’s settings
+- **campaign_home.business_lounge:** Business Lounge
+- **campaign_home.business_lounge_is:** Your account, office and subscription, at Ronin HQ
+- **campaign_home.side_hosted:** Models, Help, Settings and the Business Lounge
+- **setup.provider_gate:** Activate one model provider in Setup or Agent Harness to use this.
+- **setup.provider_gate_hosted:** Activate one model provider in Agent Harness to use this.
 - **setup.open_settings:** Open Ronin Settings
 - **setup.open_setup:** Open Ronin Setup
 
@@ -654,16 +659,17 @@ nothing paints exactly this.
 - **team.arranged_by:** arranged by {from}
 - **team.state:** State
 
-## epics — epics-surface.js (the Epics board: a row of Epic stones, the picked Epic's bar (pressed, its reading), its Assigned and Status questions, its items as bars; w334, KAN-309, KAN-310)
+## epics — epics-surface.js (the Epics board: a row of Epic stones, the picked Epic's bar (pressed, its reading), its Assigned, Flagged and Status questions, its items as bars; w334, KAN-309, KAN-310)
 - **epics.all:** All
 - **epics.assigned:** Assigned
+- **epics.flagged:** Flagged
 - **epics.yes:** Yes
 - **epics.no:** No
 - **epics.unassigned:** Unassigned
 - **epics.group:** {status} · {n}
 - **epics.open_n:** {n} open
 - **epics.pick_epic:** Pick an Epic to see its work items.
-- **epics.none_picked:** No items for what Assigned and Status pick.
+- **epics.none_picked:** No items for what Assigned, Flagged and Status pick.
 
 ## team_epics — team-epics.js (the Team workbench's Epics card; KAN-232)
 - **team_epics.none:** No Epics for this Team yet.
@@ -1135,6 +1141,17 @@ The catalog entry goes. {dir} is not touched.
 - **composer.why_not_connected:** the tile is not connected
 - **composer.why_refused:** the session refused it
 
+## controls — terminal-controls.js (what Stop, Clear and Copy say in the box)
+- **controls.stopping:** Stopping…
+- **controls.stop_sent:** Stop sent.
+- **controls.stop_idle:** Stop sent. The Agent was not working.
+- **controls.stop_waiting:** Stop sent. Waiting for the Agent to stop…
+- **controls.stopped:** Stopped. The Agent is no longer working.
+- **controls.stop_working:** Stop sent, but the Agent is still working.
+- **controls.stop_failed:** Stop not sent: {why}
+- **controls.clear_failed:** Clear not sent: {why}
+- **controls.copied:** Copied.
+
 ## hotwords — hotwords.js (the ▥ Hotwords tab)
 - **hotwords.placeholder:** a word it keeps getting wrong
 - **hotwords.label:** a word dictation keeps getting wrong
@@ -1174,6 +1191,10 @@ The catalog entry goes. {dir} is not touched.
 - **retire.archiving:** archiving…
 - **retire.hard_delete_failed:** could not hard delete it
 - **retire.hard_deleting:** starting Hard Delete…
+- **retire.items_label:** Work still held
+- **retire.items_confirm:** {name} holds {items}, not flagged: finish or flag it and hand in its desks first, or close anyway; it goes to the Team flagged, its lead told.
+- **retire.items_anyway:** Close anyway
+- **retire.items_keep:** Keep it open
 
 ## customize — the shadow-trade notice
 - **customize.shadow_trade:** Changing one of Ronin’s own entries makes it yours: it moves to your catalogs store, 
@@ -1211,7 +1232,8 @@ The catalog entry goes. {dir} is not touched.
 - **transcript.unavailable:** Transcript unavailable for this Agent.
 - **transcript.failed:** Transcript could not be loaded. Retrying…
 - **transcript.stance_working:** Working
-- **transcript.stance_asking:** Waiting for your answer
+- **transcript.stance_asking:** Waiting for your answer in Terminal
+- **transcript.answer_in_terminal:** Answer in Terminal
 
 ## output — output.js (the RIREKI view picker)
 - **output.locked:** Locked

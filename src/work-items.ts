@@ -20,6 +20,7 @@
  * one in-process lock that every write shares, so a trail append is read, push, write with
  * nobody in between.
  */
+import { holdsLists, itemRemoved, itemWritten, liveRows, type ItemRow } from './work-items-index.js';
 import { existsSync, statSync } from 'node:fs';
 import { mkdir, readFile, readdir, rename, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
@@ -78,18 +79,19 @@ export const spaceNames = (campaign: string): SpaceNames => SPACES.get(campaign)
 /** Whether the bridge has named this campaign's space: a Jira-connected campaign. */
 export const jiraConnected = (campaign: string): boolean => SPACES.has(campaign);
 /** A paired item's Jira issue address, derived from its space's site; none when unpaired or the site is unnamed. */
-export function jiraLink(item: WorkItem): string | undefined {
+export function jiraLink(item: Pick<WorkItem, 'campaign_id'> & { external?: External; jira?: string }): string | undefined {
   const site = spaceNames(item.campaign_id).site;
-  return site && item.external.jira ? `${site}/browse/${item.external.jira.key}` : undefined;
+  const key = item.external?.jira?.key ?? item.jira;
+  return site && key ? `${site}/browse/${key}` : undefined;
 }
 
 /** What item read says of an item's connection, from stored keys only: the key it carries,
  * and its parent's (null: no parent; key null: a parent that carries none). Nothing is
  * fetched, so a key is not a claim the connection works. None for an unconnected item. */
 export interface Connection { key: string; parent: { id: string; key: string | null } | null }
-export function connectionOf(item: WorkItem, parent: WorkItem | null): Connection | undefined {
+export function connectionOf(item: WorkItem, parent: { external?: External; jira?: string } | null): Connection | undefined {
   if (!item.external.jira) return undefined;
-  return { key: item.external.jira.key, parent: item.parent ? { id: item.parent, key: parent?.external.jira?.key ?? null } : null };
+  return { key: item.external.jira.key, parent: item.parent ? { id: item.parent, key: parent?.external?.jira?.key ?? (parent?.jira || null) } : null };
 }
 
 /** The value as named, or a refusal naming the set. */
@@ -177,25 +179,31 @@ export function handInStage(item: Pick<WorkItem, 'hand_ins' | 'on_dev'>): 'lead'
 
 /* THE NOTES A USER READS (docs/using-ronin/project-management.md, How an item lives): two
  * comments headed by their words, so Jira shows them as Ronin does. "Handed in: <note>" is what
- * the user can try, written at a hand-in (--note, at most 280 characters; no commit ids, no
- * receipts: those stay on the trail). "Handover from <agent>: <note>" is where an item stands
+ * the owner should look at, in one short line, written at a hand-in (--note; no commit ids, no
+ * receipts: those stay on the trail; reviewPrompt asks for it when missing or long). "Handover from <agent>: <note>" is where an item stands
  * and what is next, written when an ending Agent hands it over (handoverItem). */
 export const HANDED_IN = 'Handed in: ';
 export const HANDOVER_FROM = 'Handover from ';
-export const NOTE_MAX = 280;
-export const NOTE_TOO_LONG = 'Keep it for the user: what they can try. The detail is in the diff.';
-
-/** What is wrong with a hand-in note, or null: only its length, at most NOTE_MAX characters. */
-export function handInNoteProblem(note: string | undefined): string | null {
-  const text = String(note ?? '').trim();
-  return text.length > NOTE_MAX ? `${NOTE_TOO_LONG} (${text.length} characters; at most ${NOTE_MAX}.)` : null;
-}
-
 /** The item's last Handed in note, without its heading; '' with none. */
 export function handedInNote(item: Pick<WorkItem, 'comments'>): string {
   const comment = [...(item.comments ?? [])].reverse().find((one) => one.text.startsWith(HANDED_IN));
   return comment ? comment.text.slice(HANDED_IN.length) : '';
 }
+
+/** THE REVIEW LINE (owner, 2026-11-12, KAN-429): an item In Review tells the owner in one short
+ * line what to look at — the Handed in note, shown on the item's bar where the owner reviews.
+ * Whoever moves an item to In Review without one, or with a long one, is prompted; nothing is
+ * refused (owner: no guards). '' when the item is not In Review or its line is short enough. */
+export function reviewPrompt(item: Pick<WorkItem, 'id' | 'status' | 'comments'>): string {
+  if (item.status !== 'In Review') return '';
+  const line = handedInNote(item).trim();
+  const next = `item transition ${item.id} "In Review" --note "<what to look at>"`;
+  if (!line) return `PROMPT: ${item.id} has no review line. Tell the owner in one short line what to look at: ${next}`;
+  if (line.length > REVIEW_LINE) return `PROMPT: ${item.id}'s review line is ${line.length} characters. The owner reads hundreds: say in one short line what to look at: ${next}`;
+  return '';
+}
+/** Past this, a review line is no longer one glance. */
+export const REVIEW_LINE = 120;
 
 /** What every write answers: the item as it now is, the line it appended, and who its notices
  * told (section 4). What the act did is read from the line (didLine). */
@@ -236,6 +244,7 @@ async function save(item: WorkItem): Promise<void> {
   const tmp = `${target}.tmp-${process.pid}-${++written}`;
   await writeFile(tmp, `${JSON.stringify(item, null, 2)}\n`, 'utf8');
   await rename(tmp, target);
+  itemWritten(item); // its live row, in the same step (work-items-index.ts)
 }
 
 /** EVERY ID AN ITEM HAS HAD still finds it (docs/using-ronin/work-items.md): a w id renamed to
@@ -463,9 +472,10 @@ const levelUnder = (parent: WorkItem | null): ItemLevel => parent ? (parent.leve
  * Nothing else is checked. That covers anything under a subtask, a move under one's own
  * descendant, and a move under oneself (the item becomes its own child, so the levels fall
  * past -1). Returns the children whose level changes, with their new level. */
-async function follow(item: WorkItem, parent: string | null, level: number): Promise<Array<{ child: WorkItem; level: number }>> {
-  const all = (await listItems()).map((other) => other.id === item.id ? { ...other, parent } : other);
-  const out: Array<{ child: WorkItem; level: number }> = [];
+async function follow(item: WorkItem, parent: string | null, level: number): Promise<Array<{ child: ItemRow; level: number }>> {
+  // The tree from the live rows (w418): an archived child is history and does not follow.
+  const all = (await liveRows()).map((other) => other.id === item.id ? { ...other, parent } : other);
+  const out: Array<{ child: ItemRow; level: number }> = [];
   const walk = (id: string, at: number): void => {
     if (at < -1) throw new WorkItemRefused(`${item.id} can't go there.`);
     for (const child of all.filter((other) => other.parent === id)) {
@@ -479,7 +489,7 @@ async function follow(item: WorkItem, parent: string | null, level: number): Pro
 
 /** The children follow: each takes its new level, and the space's first kind there when its
  * own is at another level, with one trail line saying why. */
-async function settle(moved: Array<{ child: WorkItem; level: number }>, item: WorkItem, by: string): Promise<void> {
+async function settle(moved: Array<{ child: ItemRow; level: number }>, item: WorkItem, by: string): Promise<void> {
   for (const { child, level } of moved) {
     const next = await load(child.id);
     const names = spaceNames(next.campaign_id);
@@ -585,14 +595,12 @@ export function editItem(id: string, edit: ItemEdit, by: string, note?: string):
     if (edit.status !== undefined) oneOf('status', edit.status.trim(), names.statuses);
     // A move to In Review by the Agent holding the item is a hand-in from a checkout.
     const only = Object.entries(edit).filter(([, value]) => value !== undefined).map(([key]) => key);
-    if (only.join() === 'status' && edit.status!.trim() === REVIEW && current.status !== REVIEW
+    // Its note is the Handed in note, the review line; without one the move still goes and the
+    // acknowledgement prompts for it (reviewPrompt). Already In Review, a note is a new line.
+    const forUser = String(note ?? '').trim();
+    if (only.join() === 'status' && edit.status!.trim() === REVIEW && (current.status !== REVIEW || forUser)
       && (await holdersOf(current.id)).some((holder) => holder.kind === 'agent' && holder.name === by)
       && (await listSessions()).some((session) => session.name === by)) {
-      // Its note is the Handed in note; under project management a hand-in carries one.
-      const forUser = String(note ?? '').trim();
-      if (!forUser && await import('./agent-composition.js').then((m) => m.projectManagementOn(by)).catch(() => false)) {
-        throw new WorkItemRefused(`a hand-in carries a note for the user: what they can try, in their words.\n  NEXT: item transition ${current.id} "${REVIEW}" --note "<what they can try>"`);
-      }
       return handInUnlocked(current.id, by, { desk: false, forUser });
     }
     if (edit.priority !== undefined) oneOf('priority', edit.priority.trim(), names.priorities);
@@ -605,7 +613,7 @@ export function editItem(id: string, edit: ItemEdit, by: string, note?: string):
     const kind = named || (level === current.level ? current.kind : kindAt(names, level));
     if (reparent || named) {
       jiraShape(current.campaign_id, by, { id: current.id, kind, level, paired: Boolean(current.external.jira), was: current.level }, reparent ? under : current.parent ? await readItem(current.parent) : null);
-      const paired = children.find(({ child }) => child.external.jira);
+      const paired = children.find(({ child }) => child.jira);
       if (paired && jiraConnected(current.campaign_id) && !by.startsWith('jira:')) {
         throw new WorkItemRefused(`Jira would refuse this, so Ronin does too: ${paired.child.id} is on Jira under ${current.id} and would have to change kind across levels.`);
       }
@@ -622,6 +630,11 @@ export function editItem(id: string, edit: ItemEdit, by: string, note?: string):
       if (edit.title !== undefined && edit.title.trim() !== item.title) { item.title = edit.title.trim(); changed.push('title'); }
       if (edit.objective !== undefined && edit.objective.trim() !== item.objective) { item.objective = edit.objective.trim(); changed.push('objective'); }
       if (edit.status !== undefined && edit.status.trim() !== item.status) { item.status = edit.status.trim(); changed.push(`status ${item.status}`); }
+      // Anyone moving an item to In Review with a note leaves the review line (KAN-429).
+      if (edit.status?.trim() === REVIEW && String(note ?? '').trim()) {
+        item.comments.push({ by: by.trim() || 'unknown', at: new Date().toISOString(), text: `${HANDED_IN}${String(note).trim()}` });
+        if (!changed.length) changed.push('review line');
+      }
       if (kind !== item.kind) { item.kind = kind; changed.push(`kind ${kind}`); }
       const priority = edit.priority?.trim();
       if (priority !== undefined && priority !== item.priority) { item.priority = priority; changed.push(`priority ${priority}`); }
@@ -701,8 +714,6 @@ async function handInUnlocked(given: string, session: string, opts: HandInOption
   const id = item.id;
   oneOf('status', REVIEW, spaceNames(item.campaign_id).statuses);
   const forUser = String(opts.forUser ?? '').trim();
-  const long = handInNoteProblem(forUser);
-  if (long) throw new WorkItemRefused(long);
   // The Team only finds the lead to tell: handing in code doesn't hand in the item (owner,
   // 2026-11-05; KAN-269). The Agent keeps the hold; no Team goes on, nobody comes off.
   const team = await handInTeam(item, session);
@@ -732,7 +743,7 @@ async function handInUnlocked(given: string, session: string, opts: HandInOption
 }
 
 /** A hand-in: from a desk (its receipts) or a checkout; `note` is the trail's, `forUser` the
- * Handed in note (at most NOTE_MAX characters). */
+ * Handed in note, the review line. */
 export interface HandInOptions { desk: boolean; note?: string; receipts?: string[]; forUser?: string }
 export const handInItem = (id: string, session: string, opts: HandInOptions) => withIssuer(() => handInUnlocked(id, session, opts));
 
@@ -962,15 +973,15 @@ export async function linkItem(id: string, type: string, other: string, by: stri
   });
 }
 
-/** Jira's delete (docs/using-ronin/project-management.md, Jira). The item goes, and with it its subtasks (as Jira
- * deletes an issue's subtasks); any other child is left with no parent (as an epic's children
- * are). Links to it go and every holder lets go of it. An item that came from Jira
- * (created.by jira:<user>), or a subtask that did, goes only with `inJira`: the refusal names
- * the flag. THE DELETE EVENT (agreed with the bridge, the only Jira writer): before any file
- * goes, one emitItemChanged per deleted item, the named item first, then its subtasks; the
- * item as it was, and a line { op: 'delete', by: the deleter, to: 'in-jira' when asked,
- * from: the named id on a subtask taken with it }. */
-export function deleteItem(given: string, by: string, opts: { inJira?: boolean } = {}): Promise<{ deleted: string[]; orphaned: string[] }> {
+/** Jira's delete (docs/using-ronin/project-management.md, Jira). The item goes, and with it
+ * its subtasks (as Jira deletes an issue's subtasks); any other child is left with no parent (as
+ * an epic's children are). Links to it go and every holder lets go of it. No flag: the bridge
+ * decides what Jira does (an item made in Ronin goes there too; one that came from Jira stays
+ * there). THE DELETE EVENT (agreed with the bridge, the only Jira writer): before any file goes,
+ * one emitItemChanged per deleted item, the named item first, then its subtasks; the item as it
+ * was, and a line { op: 'delete', by: the deleter, from: the named id on a subtask taken with
+ * it }. */
+export function deleteItem(given: string, by: string): Promise<{ deleted: string[]; orphaned: string[] }> {
   return withIssuer(async () => {
     const id = (await load(given)).id;
     const all = await listItems();
@@ -980,10 +991,6 @@ export function deleteItem(given: string, by: string, opts: { inJira?: boolean }
       for (const child of all.filter((other) => other.parent === at && other.level === -1 && !deleted.includes(other.id))) collect(child.id);
     };
     collect(id);
-    const fromJira = deleted.map((at) => all.find((item) => item.id === at)!).filter((item) => item.created.by.startsWith('jira:'));
-    if (fromJira.length && !opts.inJira) {
-      throw new WorkItemRefused(`${fromJira.map((item) => `${item.id} came from Jira (made by ${item.created.by})`).join('; ')}: it is not deleted. To delete it in Ronin and in Jira, run item delete ${id} --in-jira.`);
-    }
     const orphaned: string[] = [];
     for (const other of all.filter((item) => !deleted.includes(item.id))) {
       const orphan = other.parent !== null && deleted.includes(other.parent);
@@ -1003,11 +1010,12 @@ export function deleteItem(given: string, by: string, opts: { inJira?: boolean }
     }
     for (const at of deleted) {
       const item = all.find((one) => one.id === at)!;
-      emitItemChanged({ item, line: lineOf(by, 'delete', { to: opts.inJira ? 'in-jira' : undefined, from: at === id ? undefined : id }) });
+      emitItemChanged({ item, line: lineOf(by, 'delete', { from: at === id ? undefined : id }) });
     }
     for (const at of deleted) {
       await takeOffEveryList(at);
       await rm(fileOf(at));
+      itemRemoved(at);
     }
     await rewriteWatches((watches) => watches.filter((watched) => !deleted.includes(watched)));
     return { deleted, orphaned };
@@ -1037,6 +1045,7 @@ export function renameItem(was: string, to: string, by: string): Promise<Acknowl
     item.trail.push(line);
     await save(item);
     await rm(fileOf(from));
+    itemRemoved(from);
     emitItemChanged({ item, line });
     return answer(item, line);
   });
@@ -1067,23 +1076,24 @@ async function canonical(ids: string[], write: (holds: string[]) => Promise<unkn
   return out;
 }
 
+/** Every holds list, from the live index (w418): no letter, roster or Workspace file is read, so
+ * an ended session's letter is never opened for live work. Each list writes through its own store,
+ * which keeps the index in the same step (holds-hook.ts). */
 async function heldLists(): Promise<HeldList[]> {
-  const teams = await Promise.all((await listTeamRosters()).map(async (roster): Promise<HeldList> => ({
-    holder: { kind: 'team', name: roster.name },
-    holds: await canonical(roster.holds, (holds) => writeTeamRoster(roster.name, { holds }, roster.campaign_id)),
-    set: (holds) => writeTeamRoster(roster.name, { holds }, roster.campaign_id),
-  })));
-  const agents = await Promise.all((await listLetterHolds()).map(async (letter): Promise<HeldList> => ({
-    holder: { kind: 'agent', name: letter.name },
-    holds: await canonical(letter.holds, (holds) => writeLetterHolds(letter.key, holds)),
-    set: (holds) => writeLetterHolds(letter.key, holds),
-  })));
-  const workspaces = await Promise.all((await listWorkspaceHolds()).map(async (w): Promise<HeldList> => ({
-    holder: { kind: 'workspace', name: w.name, campaign: w.campaign_id },
-    holds: await canonical(w.holds, (holds) => writeWorkspaceHolds(w.campaign_id, w.name, { holds })),
-    set: (holds) => writeWorkspaceHolds(w.campaign_id, w.name, { holds }),
-  })));
-  return [...teams, ...agents, ...workspaces];
+  return (await holdsLists()).map(({ key, label, ids }): HeldList => {
+    if (key.startsWith('team:')) {
+      const campaign = key.slice(5, key.lastIndexOf('/'));
+      const name = label.slice(5);
+      return { holder: { kind: 'team', name }, holds: ids, set: (holds) => writeTeamRoster(name, { holds }, campaign) };
+    }
+    if (key.startsWith('workspace:')) {
+      const campaign = key.slice(10, key.lastIndexOf('/'));
+      const name = label.slice(10);
+      return { holder: { kind: 'workspace', name, campaign }, holds: ids, set: (holds) => writeWorkspaceHolds(campaign, name, { holds }) };
+    }
+    const letter = key.slice(7);
+    return { holder: { kind: 'agent', name: label.slice(6) }, holds: ids, set: (holds) => writeLetterHolds(letter, holds) };
+  }).sort((a, b) => ['team', 'agent', 'workspace'].indexOf(a.holder.kind) - ['team', 'agent', 'workspace'].indexOf(b.holder.kind));
 }
 
 async function listFor(holder: Holder): Promise<HeldList> {
@@ -1293,7 +1303,8 @@ export async function releaseEndedHolders(): Promise<string[]> {
   const live = new Set((await listSessions().catch(() => [])).map((one) => one.name));
   if (!live.size) return [];
   const ended: string[] = [];
-  for (const letter of await listLetterHolds()) {
+  // The letters holding work, from the live index (w418): no letter is opened to find them.
+  for (const letter of (await holdsLists()).filter((list) => list.key.startsWith('letter:')).map((list) => ({ key: list.key.slice(7), name: list.label.slice(6), holds: list.ids }))) {
     if (!letter.holds.length || live.has(letter.name)) { missing.delete(letter.name); continue; }
     const seen = (missing.get(letter.name) ?? 0) + 1;
     missing.set(letter.name, seen);
@@ -1321,8 +1332,10 @@ export function doneSince(item: Pick<WorkItem, 'trail' | 'created'>): string {
 export function archiveDone(now = Date.now()): Promise<string[]> {
   return withIssuer(async () => {
     const archived: string[] = [];
-    for (const item of await listItems()) {
-      if (item.status !== DONE || item.archived || now - Date.parse(doneSince(item)) < ARCHIVE_AFTER_MS) continue;
+    // The Done rows only (w418): an archived item has no row, and no other body is opened.
+    for (const row of (await liveRows()).filter((one) => one.status === DONE)) {
+      const item = await readItem(row.id);
+      if (!item || item.status !== DONE || item.archived || now - Date.parse(doneSince(item)) < ARCHIVE_AFTER_MS) continue;
       const from = await takeOffEveryList(item.id);
       await appendTrail(item.id, 'ronin', (it) => {
         it.archived = { at: new Date(now).toISOString() };
@@ -1469,8 +1482,10 @@ async function takenUp(epicId: string, plan: string): Promise<string[]> {
   const iceboxes = await iceboxIds();
   if (!epic || epic.level !== 1 || iceboxes.has(epic.id)) return [];
   const done: string[] = [];
-  for (const item of await listItems()) {
-    if (item.status === DONE || !item.parent || !iceboxes.has(item.parent) || !item.attachments.includes(plan)) continue;
+  // The live rows under an Icebox (w418); only those files are opened for their attachments.
+  for (const row of (await liveRows()).filter((one) => one.status !== DONE && one.parent && iceboxes.has(one.parent))) {
+    const item = await readItem(row.id);
+    if (!item || item.status === DONE || !item.parent || !iceboxes.has(item.parent) || !item.attachments.includes(plan)) continue;
     await editItem(item.id, { status: DONE }, 'ronin', `taken up: ${epic.id} carries ${plan}`);
     done.push(item.id);
   }

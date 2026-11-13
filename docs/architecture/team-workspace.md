@@ -247,6 +247,12 @@ from what the tab remembered.
   (`session.terminal`), as the Team page's Agent card places it. Agents join a Team by
   dragging, so the foot holds one **New Agent** button, which opens the New Agent form with
   this Team chosen the way the selector's New Agent card does (owner, 2026-10-20).
+  The list is drawn once per seat and Team; a push only updates (w451). Each row compares
+  its head line (人, title, step, status, ⛽, model) with what it last drew and redraws that
+  line alone, so one Agent working changes one row. An opened row's configuration is never
+  redrawn: a draft stays through every push, its own Agent's included, and through folding
+  the row, until **Send** (which answers at once with *Sending…*, then the sent line or the
+  reason it failed). Rows are only added or removed when membership changes.
 - **Wipeboard** — the real Team thread and owner composer; the roster's `wipeboard` id or
   the Team name. Entering asks the server for the thread over the socket; the thread and
   every later post arrive by push until the tab is left.

@@ -15,10 +15,9 @@
  * (owner, 2026-11-04, KAN-238) — so the colours explain themselves. The bar again, or a
  * pill, puts it back. A pill pressed again closes its item.
  *
- * THE WIDE LIST (owner, 2026-11-06, w322): the fourth layer. Down, "More detail" turns the
- * column into bars across the tile, only as tall as the items: each bar the pill's head (symbol,
- * key, title, status, flag, hand-in), then the item's description, its last comment and a line
- * of facts (barFacts). A Subtask under its Task is a slimmer bar after it. A bar opens its item.
+ * MORE DETAIL (owner, 2026-11-12, KAN-459): down, "More detail" lays the Epics board's own bars
+ * (epics-surface.js createItemBoard) over the tile with this Agent's items (`more()`, tilehead.js
+ * openItemsBoard): a bar opens in place and minimizes back; the overlay's Close returns to the tile.
  *
  * THE HAND-IN MARK (docs/using-ronin/project-management.md, Three signals): beside the dot and the flag, an item In
  * Review carries the latest of its signals, "handed in" or "on dev", with how long ago, so a
@@ -29,6 +28,7 @@
  */
 import { t } from './lexicon.js';
 import { humanAge } from './work-record.js';
+import { WorkspacePrimitives } from './workspace-primitives.js';
 
 const SVG = 'http://www.w3.org/2000/svg';
 const FLAG_MARK = '⚑'; // work-items-surface.js's mark; not imported: that module reaches the kit, which reaches the tile
@@ -182,10 +182,12 @@ const span = (className, textContent = '') => Object.assign(document.createEleme
  * place of its comments and trail. `sub` draws a Subtask's slimmer bar; `extra` adds facts
  * (the Epics worksurface's holder) after the kind; `onPress` is what the bar opens.
  */
-export function itemBar(item, { sub = false, subtasks = 0, extra = [], onPress } = {}) {
+/* `lean` (owner, 2026-11-12, KAN-429; the Epics board): the objective only — no hand-in mark, no
+ * comment line; everything else is in the opened item. Every line wraps in full, never "…". */
+export function itemBar(item, { sub = false, subtasks = 0, extra = [], onPress, lean = false } = {}) {
   const node = document.createElement('button');
   node.type = 'button';
-  node.className = sub ? 'item-bar item-bar-sub' : 'item-bar';
+  node.className = [sub ? 'item-bar item-bar-sub' : 'item-bar', lean ? 'item-bar-lean' : ''].filter(Boolean).join(' ');
   node.dataset.item = item.id;
   node.dataset.status = statusKey(item.status);
   if (item.flagged) node.dataset.flagged = 'true';
@@ -194,12 +196,12 @@ export function itemBar(item, { sub = false, subtasks = 0, extra = [], onPress }
   const state = span('item-bar-state');
   state.append(span('item-pill-status'), span('item-bar-status', item.status || ''));
   if (item.flagged) state.append(span('item-pill-flag', FLAG_MARK));
-  const signal = handInSignal(item);
+  const signal = !lean && handInSignal(item);
   if (signal) { node.dataset.handin = signal.kind; state.append(span('item-bar-handin', `${HANDIN_MARK} ${handInWords(signal)}`)); }
   head.append(kindMark(item.kind), span('item-bar-id', item.jira || item.id), span('item-bar-title', item.title || ''), state);
   node.append(head);
   if (!sub && item.objective) node.append(span('item-bar-objective', item.objective));
-  const said = !sub && lastComment(item);
+  const said = !sub && !lean && lastComment(item);
   if (said) {
     const line = span('item-bar-comment');
     line.append(span('item-bar-who', `@${said.by} · ${humanAge(Math.max(0, Date.now() - Date.parse(said.at) || 0))}`), ` ${said.text}`);
@@ -213,11 +215,12 @@ export function itemBar(item, { sub = false, subtasks = 0, extra = [], onPress }
 }
 
 /**
- * The island for one tile. `open(item)` opens an item over the tile and `shut(id)` closes it;
+ * The island for one tile. `open(item)` opens an item over the tile (a promise, settled once it
+ * shows: the pill is busy until then, w416) and `shut(id)` closes it;
  * `isOpen(id)` says whether that item is the one open. `update(session, items)` is called on
  * every reading of the work record and redraws only when what it shows moved.
  */
-export function createItemIsland({ open, shut, isOpen }) {
+export function createItemIsland({ open, shut, isOpen, more: showMore = () => {} }) {
   const el = document.createElement('div');
   el.className = 'item-island';
   el.hidden = true;
@@ -229,41 +232,30 @@ export function createItemIsland({ open, shut, isOpen }) {
   pills.className = 'item-island-pills';
   pills.setAttribute('role', 'group');
   pills.setAttribute('aria-label', t('island.items', 'Work items held'));
-  // THE WIDE LIST (owner, 2026-11-06, w322): the fourth layer, between the dropped list and one
-  // item's reading. The tile's width, only as tall as its items: a bar per item saying what it
-  // is — its description, its last comment, its facts — in the dropped list's style.
-  const bars = document.createElement('div');
-  bars.className = 'item-island-bars';
-  bars.setAttribute('role', 'group');
-  bars.setAttribute('aria-label', t('island.items', 'Work items held'));
   const more = document.createElement('button');
   more.type = 'button';
   more.className = 'item-island-more';
-  // The Agent's stance (w331): its mark left of the bar at rest; down or wide, the top row in words.
+  // The Agent's stance (w331): its mark left of the bar at rest; down, the top row in words.
   const stance = document.createElement('span');
   stance.className = 'item-island-stance';
   stance.hidden = true;
-  el.append(stance, grip, pills, bars, more);
+  el.append(stance, grip, pills, more);
 
   let session = null;
-  let drawn = '';
   let items = [];
 
-  /** 'rest' in the header, 'down' the column of pills, 'wide' the bars. */
+  /** 'rest' in the header, 'down' the column of pills. */
   const place = (state) => {
     const to = state === true ? 'down' : state || 'rest';
     el.dataset.state = to;
     grip.setAttribute('aria-expanded', String(to !== 'rest'));
     grip.title = to !== 'rest' ? t('island.up', 'Put the work items back in the header') : t('island.down', 'Show the work items with their status');
     grip.setAttribute('aria-label', grip.title);
-    more.textContent = to === 'wide' ? t('island.narrow', 'Less detail') : t('island.wide', 'More detail');
-    // Wide, it stops short of the tile's foot and scrolls past that.
-    const body = el.closest('.tile')?.querySelector('.tile-body');
-    el.style.maxHeight = to === 'wide' && body ? `${Math.max(120, body.clientHeight - 16)}px` : '';
+    more.textContent = t('island.wide', 'More detail');
   };
   place('rest');
   grip.addEventListener('click', () => place(el.dataset.state === 'rest' ? 'down' : 'rest'));
-  more.addEventListener('click', () => place(el.dataset.state === 'wide' ? 'down' : 'wide'));
+  more.addEventListener('click', () => { place('rest'); showMore(); });
   el.addEventListener('keydown', (event) => { if (event.key === 'Escape' && el.dataset.state !== 'rest') { place('rest'); grip.focus(); } });
 
   /** A Subtask whose Task is also on the island is not a pill of its own: it is under its
@@ -313,20 +305,30 @@ export function createItemIsland({ open, shut, isOpen }) {
       node.setAttribute('aria-label', node.title);
       node.append(mark);
     }
-    node.addEventListener('click', () => press(item));
-    return node;
+    node.addEventListener('click', () => void press(item));
+    return markBusy(node, item.id);
   }
 
-  /** One press opens the item, the same press again closes it; either puts the island back. */
-  function press(item) {
+  /** One press opens the item, the same press again closes it; either puts the island back.
+   *  THE PRESS ANSWERS AT ONCE (w416): while the item is on its way (its read, ~0.1 s) its pill and
+   *  bar are busy, greyed with a progress cursor, and further presses on it are ignored. */
+  const loading = new Set();
+  const markBusy = (node, id) => { if (loading.has(id)) node.setAttribute('aria-busy', 'true'); else node.removeAttribute('aria-busy'); return node; };
+  const busy = (id) => { for (const node of el.querySelectorAll('[data-item]')) if (node.dataset.item === id) markBusy(node, id); };
+  async function press(item) {
+    if (loading.has(item.id)) return;
     place('rest');
-    if (isOpen(item.id)) shut(item.id);
-    else open(items.find((one) => one.id === item.id) || item);
+    if (isOpen(item.id)) { shut(item.id); return; }
+    loading.add(item.id);
+    busy(item.id);
+    try { await open(items.find((one) => one.id === item.id) || item); } finally { loading.delete(item.id); busy(item.id); }
   }
 
-  /** A wide bar: the pill's head (symbol, key, title, status, flag, hand-in), then what the item
-   *  is, its last comment, and its facts. A Subtask under a Task here is a slimmer bar after it. */
-  const bar = (item, sub = false) => itemBar(item, { sub, subtasks: sub ? 0 : under.get(item.id) || 0, onPress: () => press(item) });
+  /** What one item's pill shows: a row redraws only when this moves. */
+  const shows = ({ item, count = 0, sub = false }) => JSON.stringify([item.id, item.kind, item.status, !!item.flagged, item.title, item.parent, handInSignal(item),
+    item.objective, item.priority, lastComment(item)?.at, item.comments?.length, item.attachments?.length, item.trail?.length, count, sub]);
+  const { createKeyedList } = WorkspacePrimitives;
+  const pillList = createKeyedList({ shows, draw: ({ item }) => pill(item) });
 
   let stanceDrawn = '';
   /** The stance, redrawn only when it or what the harness reports moved. */
@@ -347,21 +349,17 @@ export function createItemIsland({ open, shut, isOpen }) {
   /** `live` is the home row's { stance, reports } (tilehead.js), read off the same push. */
   function update(name, list, live = {}) {
     const next = Array.isArray(list) ? list : [];
-    if (name !== session) { session = name; drawn = ''; stanceDrawn = ''; place(false); }
+    if (name !== session) { session = name; stanceDrawn = ''; place(false); }
     items = next;
     drawStance(live);
     // An Agent holding nothing still shows its island when it needs you.
     el.hidden = !session || (!next.length && stance.hidden);
     more.hidden = !next.length;
-    const signature = JSON.stringify(next.map((item) => [item.id, item.kind, item.status, !!item.flagged, item.title, item.parent, handInSignal(item),
-      item.objective, item.priority, lastComment(item)?.at, item.comments?.length, item.attachments?.length, item.trail?.length]));
-    if (signature === drawn) return;
-    drawn = signature;
+    // ONE ITEM MOVES, ONE PILL CHANGES (KAN-413): the kit's keyed list. Each pill compares what
+    // it shows and redraws only itself; the rest stay the nodes they were.
     const shape = folded(next);
     under = shape.under;
-    pills.replaceChildren(...shape.top.map(pill));
-    bars.replaceChildren(...shape.top.flatMap((item) => [bar(item),
-      ...(under.get(item.id) ? next.filter((one) => one.parent === item.id && kindKey(one.kind) === 'subtask').map((one) => bar(one, true)) : [])]));
+    pillList.set(pills, shape.top.map((item) => ({ id: item.id, item, count: under.get(item.id) || 0 })));
   }
 
   return { el, update };

@@ -3,6 +3,7 @@ import { request } from './request.js';
 import { transcriptHandlers, transcriptWatch } from './events.js';
 import { t } from './lexicon.js';
 import { renderMarkdownDocument } from './markdown-reader.js';
+import { WorkspacePrimitives } from './workspace-primitives.js';
 
 /*
  * MARKDOWN ON OR OFF, per Agent (owner, 2026-11-01: "when i select MD or not in one tile it
@@ -31,7 +32,7 @@ const said = (text) => String(text || '').replace(/\s+/g, ' ').trim();
  * @param watch  this view's own slot in what the tab tells the server it shows; the server sends only that
  *               Agent's records, already cut to that reading. Injected for testing.
  */
-export function makeTileTranscript({ read = request, watch = transcriptWatch(), onState = () => {}, cache = null } = {}) {
+export function makeTileTranscript({ read = request, watch = transcriptWatch(), onState = () => {}, cache = null, onAnswer = null } = {}) {
   const el = document.createElement('div');
   el.className = 'tile-transcript';
   el.setAttribute('role', 'log');
@@ -54,6 +55,7 @@ export function makeTileTranscript({ read = request, watch = transcriptWatch(), 
   let resolved = ''; // what the route called it — for display, never for matching
   let rendered = false; // whether this reading has ever shown a record — the header's 'empty'
   let probing = 0; // the live probe; hide() and a newer probe outdate an older one
+  let unwritten = false; // open on a journal the CLI has not written yet
   let stance = ''; // what the Agent is doing, as the roster row last said
   let doing = ''; // the tool it is working on, as the row names it: name and target
   /*
@@ -134,7 +136,9 @@ export function makeTileTranscript({ read = request, watch = transcriptWatch(), 
    * as the last child of the log so the view scrolls to it like any other line.
    */
   function paintStance() {
-    const shows = active && (stance === 'working' || stance === 'asking');
+    // A pending journal has no stance to read yet; the Agent is starting on its brief.
+    const now = unwritten && (!stance || stance === 'unknown') ? 'working' : stance;
+    const shows = active && (now === 'working' || now === 'asking');
     if (!shows) {
       stanceNode?.remove();
       stanceNode = null;
@@ -145,16 +149,27 @@ export function makeTileTranscript({ read = request, watch = transcriptWatch(), 
       stanceNode.className = 'tile-transcript-stance';
       stanceNode.setAttribute('aria-live', 'polite');
     }
-    const key = `${stance}\u0000${doing}`;
+    const key = `${now}\u0000${doing}`;
     if (stanceNode.getAttribute?.('data-key') !== key) {
       stanceNode.setAttribute('data-key', key);
-      stanceNode.setAttribute('data-stance', stance);
+      stanceNode.setAttribute('data-stance', now);
       stanceNode.replaceChildren();
-      const words = stance === 'asking'
-        ? t('transcript.stance_asking', 'Waiting for your answer')
+      const words = now === 'asking'
+        ? t('transcript.stance_asking', 'Waiting for your answer in Terminal')
         : t('transcript.stance_working', 'Working');
-      if (stance === 'asking') stanceNode.textContent = words;
-      else {
+      if (now === 'asking') {
+        // The options are answered in Terminal only (owner, 2026-11-12): one press takes
+        // the tile there, and nothing switches without it. The tile owns the switch.
+        const said = document.createElement('span');
+        said.textContent = words;
+        stanceNode.append(said);
+        if (onAnswer) {
+          stanceNode.append(WorkspacePrimitives.createAction({
+            label: t('transcript.answer_in_terminal', 'Answer in Terminal'),
+            size: 'compact', className: 'tile-transcript-answer', action: () => onAnswer(),
+          }).el);
+        }
+      } else {
         for (let i = 0; i < 3; i++) stanceNode.append(document.createElement('i'));
         // The live flow's latest step: the tool it is in, by name and target.
         if (doing) {
@@ -164,7 +179,7 @@ export function makeTileTranscript({ read = request, watch = transcriptWatch(), 
           stanceNode.append(step);
         }
       }
-      stanceNode.setAttribute('aria-label', doing && stance !== 'asking' ? `${words}: ${doing}` : words);
+      stanceNode.setAttribute('aria-label', doing && now !== 'asking' ? `${words}: ${doing}` : words);
     }
     // Always last: records append above it, so the end of the conversation stays the end.
     el.append(stanceNode);
@@ -315,6 +330,7 @@ export function makeTileTranscript({ read = request, watch = transcriptWatch(), 
       })
       .sort((a, b) => (a.seq ?? 0) - (b.seq ?? 0));
     if (!fresh.length) return 0;
+    unwritten = false;
     clearMessage();
     rendered = true;
     for (const rec of fresh) {
@@ -414,6 +430,17 @@ export function makeTileTranscript({ read = request, watch = transcriptWatch(), 
     if (!result.ok) {
       // An unreadable answer is a failure and says so. It is never an empty conversation.
       message(t('transcript.failed', 'Transcript could not be loaded. Retrying…'));
+      return;
+    }
+    // A NEW AGENT IS A CONVERSATION ALREADY (owner, 2026-11-13, KAN-453): its CLI has not
+    // written a journal yet, so Chat starts empty with Working at its end, and its words
+    // start there. rewatch() is how they arrive.
+    if (result.data.gap === 'journal_pending') {
+      unwritten = true;
+      el.replaceChildren();
+      stanceNode = null;
+      paintStance();
+      report(result.data, 0);
       return;
     }
     if (result.data.available === false) {
@@ -547,6 +574,15 @@ export function makeTileTranscript({ read = request, watch = transcriptWatch(), 
     report(result.data, records.length);
   }
 
+  /**
+   * The row moved. On a pending journal, say again what this tab shows: the server's answer to
+   * a watch is to follow that Agent's journal, and the row moves when the CLI starts writing
+   * it. Nothing is asked on a timer; once records arrive this does nothing.
+   */
+  function rewatch() {
+    if (active && unwritten && session) watch(session, reading);
+  }
+
   /** The home row's word on what this Agent is doing, and the tool it is in. */
   function setStance(next, tool) {
     const value = typeof next === 'string' ? next : '';
@@ -570,12 +606,15 @@ export function makeTileTranscript({ read = request, watch = transcriptWatch(), 
     owed = null;
     exhausted = false;
     rendered = false;
+    unwritten = false;
     lastState = null;
     el.replaceChildren();
     stanceNode = null;
     sent.length = 0;
     let saved = cache?.get?.(cacheKey(name, view));
-    if (saved?.expiresAt <= Date.now()) {
+    // Expired, or saved before the route ever answered with a record to read (a new Agent's
+    // pending journal): there is no end to catch up from, so it opens afresh.
+    if (saved && (saved.expiresAt <= Date.now() || saved.committed === null)) {
       cache.delete(cacheKey(name, view));
       saved = null;
     }
@@ -644,13 +683,14 @@ export function makeTileTranscript({ read = request, watch = transcriptWatch(), 
     committed = null;
     owed = null;
     exhausted = false;
+    unwritten = false;
     el.replaceChildren();
   }
 
   // The view listens for its Agent's records for as long as it exists. `delivered` ignores
   // anything for another session, so a stale registration cannot write into the wrong tile.
   transcriptHandlers.add(delivered);
-  const self = { el, show, hide, probe, setReading, setStance, pending, redraw, shows: () => session,
+  const self = { el, show, hide, probe, setReading, setStance, rewatch, pending, redraw, shows: () => session,
     /** For tests and teardown: stop listening. */
     dispose() { stash(); stop(); active = false; transcriptHandlers.delete(delivered); views.delete(self); watch('', ''); } };
   views.add(self);

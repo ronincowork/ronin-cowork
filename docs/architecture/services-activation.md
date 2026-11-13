@@ -37,8 +37,22 @@ an office_unit only, to HQ's `POST /v1/account/tool-counts`, setting aside packe
 `provisioned_at`), the Hermes house-gateway seed (the record's `gateway_office`, else the
 developer's local door), the Setup posture (an office_unit hides Register and Install; a missing
 install there is said as a fault) and the
-machine reading (`observed.office`), which is how Agents see it. Settings shows the two
-sections, Office and Account, which must agree on the `office_id`; a disagreement is said.
+machine reading (`observed.office`), which is how Agents see it. Self-hosted Settings shows the
+Cloud Account card's two sections, Office and Account, which must agree on the `office_id`; a
+disagreement is said.
+
+**A hosted office shows no account settings** (owner, 13 Nov 2026; KAN-475). The server reads
+the record once at start and the page says so in `<html data-hosted="on">` (`public/js/hosted.js`;
+`unreadable` counts as hosted). The account, billing, subscription and office are kept in the
+Business Lounge at Ronin HQ, so Cowork carries a link and no account code: Home's side stones gain
+**Business Lounge** (opens `https://hq.roninhosted.com/` in a new tab, for everyone in the office;
+each person lands in their own lounge). What is hidden when hosted: Home's Check for updates;
+Setup (Settings opens Ronin Settings, and Home's and Help's provider hints point to Agent Harness);
+in Settings, the Cloud Account, Registration, Password and Installations cards and the Setup
+return card; in the Machine card, Configuration, Release & update and Log out. Settings stays for
+the Desk's own settings (Desk, Team and Agent defaults, Workspaces, Integrations, Jira, Feedback,
+and the Machine card's themes, archives, messages, help desk, keypad, health, hotwords and Koshi).
+Without the record nothing changes.
 
 ## Registration and runtime state
 
@@ -61,9 +75,10 @@ entitlement identifier and token file are left as they are.
 
 The existing updater checks release integrity and the Cowork/Services connector version.
 A registration Submit and `POST /api/services/install` both start that updater; neither
-needs an entitlement. A machine that holds an entitlement still fetches through the HQ
-release grant. Without one, the updater uses the public feed, so Services releases must be
-readable without credentials for that path to complete.
+needs an entitlement. A machine that holds an entitlement fetches through the HQ release
+grant. Without one the updater stops and says so: register with Ronin HQ and paste the Services
+key. There is no anonymous feed (the release repo is private); a tarball already on disk installs
+with `bin/ronin-update --services --file`.
 
 Starting is not installing. One start runs at a time, so concurrent presses launch one
 updater. The answer says only whether the updater was launched. The run

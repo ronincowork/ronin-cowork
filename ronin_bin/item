@@ -19,26 +19,26 @@ Usage:
   item attach <id> <path>|<url>|plan:<name>   item attach <id> --remove <path>|<url>|plan:<name>
   item link <id> <type> <id> [--remove]
   item archive <ids>                  item archive --done [--team <t>]
-  item delete <ids> [--in-jira]
+  item delete <ids>
 <ids> is one id or several (w12 w13 KAN-65), each acted on in turn; every id an item has had
-finds it (a w id still finds the item after it takes its Jira key), here, in read, edit and
---parent. --text matches every word in the title or objective, any case. An item Done five days is archived: off
+finds it, here, in read, edit and --parent. --text matches every word in the title or objective, any case. An item Done five days is archived: off
 every list and out of search unless --archived; item read still finds it.
-Status, kind, priority and link type are the space's own names, exactly; unconnected,
-Jira's: To Do, In Progress, In Review, Done; Epic, Task, Story, Bug, Feature, Subtask;
+Status, kind, priority and link type are the space's own names, exactly; by default:
+To Do, In Progress, In Review, Done; Epic, Task, Story, Bug, Feature, Subtask;
 Highest, High, Medium, Low, Lowest; Blocks, Relates, Duplicate, Cloners. Anything else is
 refused, naming the set. The kind sets the level: 1 Epic, 0 Task/Story/Bug/Feature,
 -1 Subtask; a new item is one below its parent, and --parent moves it there (to none, the
 level stays). The one rule: nothing goes below -1; children follow their parent
-("w39 can't go there."). On a Jira-connected campaign, a parent or kind Jira would refuse
-is refused here, with the reason.
+("w39 can't go there."). A parent or kind the space would refuse is refused here, with the
+reason.
 create lands on you, or with --team <t> on that Team (a lead's create lands on its team;
 leading several, name it). Any kind, an Epic too, with --parent or none. It answers
 "created <id> under <parent>" on its first line.
 attach plan:<name> points an epic at its order (plan --help): stored as plan:<workspace>/<name>.
 watch tracks an item without holding it (yourself unless named; a team's on its roster).
 transition to In Review by its holder is a hand-in: the item goes to the Team, and --note is the
-Handed in comment for the user (at most 280 characters; required under project management).
+Handed in comment: one short line telling the user what to look at. Without one, or long, the
+move still goes and the reply prompts for it; --note again on an item In Review replaces it.
 handover is how an ending Agent hands an item on: the note becomes a comment headed "Handover
 from <you>", you come off, the receiver goes on, the status stays (--to-do puts it back to To
 Do). Can't decide? --flag "<the question>": it is flagged and your lead is told.
@@ -48,10 +48,9 @@ that holds the item and any Team of the receiver's that holds it; --from names i
 handed it leaves the first on. Nothing goes to nobody: give work back with item handoff
 <id> team:<t>; an ending is handover.
 archive takes a Done item off every list now, as five days Done does: archived, one trail line,
-nobody told, Jira untouched; item read still finds it, and leaving Done brings it back. An item
+nobody told; item read still finds it, and leaving Done brings it back. An item
 not Done is refused. --done archives every Done item you or your Teams hold; --team narrows it.
-delete takes the item's subtasks with it, in Ronin and in Jira; an epic's other children are
-left with no parent. An item that came from Jira is deleted only with --in-jira.
+delete takes the item's subtasks with it; an epic's other children are left with no parent.
 edit --trello, --github set an external key; blank clears. Every change adds a trail line.
 Related: work-record --help; team --help
 EOF_USAGE
@@ -189,7 +188,7 @@ case "$verb" in
     ronin_item_call POST "/api/work-items/$id/link" "$(json type "${args[0]}" to "${args[1]}" ${remove:+remove true})" ;;
   archive) [ "$#" -eq 0 ] || die 'BAD-ARG: item archive takes <ids>, or --done [--team <t>]'
     item_act archive POST "$(json)" ;;
-  delete) [ "$#" -eq 0 ] || { [ "$#" -eq 1 ] && [ "$1" = --in-jira ]; } || die 'BAD-ARG: item delete takes <ids> [--in-jira]'
-    item_act delete DELETE "$(json ${1:+in_jira true})" ;;
+  delete) [ "$#" -eq 0 ] || die 'BAD-ARG: item delete takes <ids>'
+    item_act delete DELETE "$(json)" ;;
   *) usage >&2; exit 2 ;;
 esac

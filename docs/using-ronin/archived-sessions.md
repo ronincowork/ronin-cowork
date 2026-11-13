@@ -26,6 +26,12 @@ already in use or restoration fails, the archive remains available for recovery.
   consequences before confirming.
 - **Hide/close view** removes the tile from view; the Agent keeps running.
 
+Archive, Delete and Hard Delete each stop once while the Agent holds a work item In Progress
+or In Review it has not flagged, and the confirm names them: "<name> holds KAN-12 (In Review),
+not flagged: finish or flag it and hand in its desks first, or close anyway". Close anyway
+gives each to the Team, flagged, and tells its lead ([how an item
+lives](project-management.md#how-an-item-lives)).
+
 Ronin stores session metadata for restoration, and with Terminal transcript on it keeps a
 copy of the conversation in the session folder, which archive retains. The provider still
 owns the original journal. Closed, unarchived session folders are removed after the

@@ -144,17 +144,20 @@ export function createProviderSurface(context) {
       : { state: 'No provider found on this machine.', picks: [{ label: 'Sign in a provider', action: () => controller.openFirst() }] });
   };
   stones.mount(out.content, { before: [...(zone ? [zone.el] : []), refresh.el], after: [mikaAvailability, notice] });
-  const say = (text, bad = false) => { notice.className = `${bad ? 'setup-notice bad' : 'setup-fine'} setup-provider-notice`; notice.textContent = text; notice.hidden = !text; };
-  /** The surface's frame from the drawing's runtime: the zone, the dates, the stones, the selector. */
+  const say = (text, bad = false) => { notice.className = `${bad ? 'setup-notice bad' : 'setup-fine'} setup-provider-notice`; if (notice.textContent !== text) notice.textContent = text; notice.hidden = !text; };
+  /** The surface's frame from the drawing's runtime: the zone, the dates, the stones, the selector.
+   * Each part compares what it shows (KAN-414): the stones are the phalanx's kept rows, the zone's
+   * picks the kit list's, the selector's cards the Workbench's, and the lines write only on a change. */
   const repaint = () => {
     const runtime = drawing.runtime();
     const activatedNow = Number(runtime.activated_count || 0);
     paintZone(activatedNow);
     refresh.paint();
     mikaAvailability.hidden = activatedNow === 0;
-    mikaAvailability.textContent = activatedNow === 1
+    const signedIn = activatedNow === 1
       ? t('setup_surface.one_model_signed_in', '1 model signed in')
       : activatedNow > 1 ? t('setup_surface.models_signed_in', '{count} models signed in', { count: activatedNow }) : '';
+    if (mikaAvailability.textContent !== signedIn) mikaAvailability.textContent = signedIn;
     context.workbench?.refreshSelector?.();
     const items = drawing.stones();
     firstProviderId = String(items[0]?.id || '');
@@ -239,9 +242,10 @@ export function createRefreshAll(drawing, { onStep = () => {}, between = null } 
   const button = made.el ?? made;
   const paint = () => {
     const when = String(drawing.runtime().refreshed_at || providerCatalog().refreshed_at || '');
-    lastRan.textContent = when
+    const words = when
       ? t('setup_surface.last_ran', 'Last ran {date}', { date: dayTime(when) })
       : t('setup_surface.never_ran', 'Never run — every provider offers Native only until it runs.');
+    if (lastRan.textContent !== words) lastRan.textContent = words; // an unchanged push touches nothing (KAN-414)
   };
   button.classList.add('setup-provider-refresh-all');
   bar.append(button, lastRan);
@@ -332,6 +336,7 @@ export function createProviderDrawing(context, { repaint, say = () => {} }) {
         await press(path);
         button.disabled = false;
       });
+      button.dataset.endsEdit = '';
       button.classList.add('setup-provider-action');
       return button;
     };
@@ -367,6 +372,7 @@ export function createProviderDrawing(context, { repaint, say = () => {} }) {
         context.environment?.onProviderChoice?.(method === 'not_signed_in' ? 'not_now' : 'acted');
       };
       const submit = action(t('setup_surface.done', 'Done'), 'primary', () => saveAuthentication(path));
+      submit.dataset.endsEdit = '';
       const update = () => { authenticationDrafts.set(provider.id, { method, label: title.value }); field.hidden = method === 'not_signed_in'; submit.disabled = !method || (method !== 'not_signed_in' && !title.value.trim()); };
       const fields = el('div', 'setup-provider-authentication-fields');
       signInForm = ask([{ fields: [{ key: 'method', label: t('setup_surface.authentication_type', 'Authentication type'), options: [
@@ -585,9 +591,11 @@ export function createProviderDrawing(context, { repaint, say = () => {} }) {
     return () => disposeMount();
   };
 
-  /** The frame from whatever `runtime` holds now: the record, or the measure once it lands. */
+  /** The frame from whatever `runtime` holds now: the record, or the measure once it lands.
+   * The open page's terminal and sign-in form are not torn down here: the page's own dispose
+   * does that when the phalanx redraws it, and a frame that leaves its stone's row unchanged
+   * (KAN-414) leaves the page, its live sign-in tile and any draft standing (KAN-472). */
   const paintFrom = async () => {
-    disposeMount();
     context.environment.setupRuntime = runtime;
     context.environment.onSetupRuntime?.(runtime);
     await repaint();

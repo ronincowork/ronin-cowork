@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { exactPane } from './tmux.js';
 import { tmux } from './tmux-client.js';
+import { clearStop } from './stopped.js';
 
 export interface PromptRead {
   found: boolean;
@@ -91,6 +92,7 @@ export const SECOND_ENTER_DELAY_MS = 1_000;
 /** Composer sends and the two-minute override use this same text-then-Enter operation.
  * Tmux completes the bracketed paste command before copy-mode cancellation and Enter. */
 export async function deliverForce(name: string, text: string, io: PaneIO = paneIO(name)): Promise<DeliveryResult> {
+  clearStop(name); // a message: the Agent is at work again, whatever a Stop said (stopped.ts)
   await io.type(text);
   await io.enter();
   await new Promise((resolve) => setTimeout(resolve, SECOND_ENTER_DELAY_MS));

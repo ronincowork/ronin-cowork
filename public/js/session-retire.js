@@ -1,6 +1,6 @@
 /* part of the ronin-cowork client — see js/README.md */
 import { archiveSession, startSessionShutdown } from './api.js';
-import { sheet, toast } from './ui.js';
+import { confirmDialog, sheet, toast } from './ui.js';
 import { t } from './lexicon.js';
 import { renew, store } from './store.js';
 
@@ -97,6 +97,18 @@ export function retireSession(name, retirementId, onDone = () => {}) {
      words and puts its label back if the action fails, the same shape js/koshi.js uses for
      its restart ('restarting…'). CSS carries the rest of the answer; see
      `.end-session-actions` in style.css. */
+  /* THE ITEM CHECK (src/routes/sessions-api.ts heldItemsRefusal), a nudge, never a wall: every
+     way out is refused once while the Agent holds work In Progress or In Review it has not
+     flagged. The refusal names the items, and the kit's confirm says the nudge in one line; yes sends the same action again with ignore_items, and
+     the pressed button says it is working again. Each item still goes to the Team, flagged. */
+  const closeAnyway = (held) => confirmDialog({
+    label: t('retire.items_label', 'Work still held'),
+    message: t('retire.items_confirm', '{name} holds {items}, not flagged: finish or flag it and hand in its desks first, or close anyway; it goes to the Team flagged, its lead told.', {
+      name, items: held.map((item) => `${item.id} (${item.status})`).join(', '),
+    }),
+    confirmLabel: t('retire.items_anyway', 'Close anyway'),
+    cancelLabel: t('retire.items_keep', 'Keep it open'),
+  });
   const finish = async (pressed, action, failure, pending) => {
     const buttons = [...actions.querySelectorAll('button')];
     const was = pressed.textContent;
@@ -104,7 +116,20 @@ export function retireSession(name, retirementId, onDone = () => {}) {
     pressed.textContent = pending;
     progress.textContent = t('retire.resolving', 'Resolving Agent…');
     try {
-      await action();
+      try {
+        await action({ ignoreItems: false });
+      } catch (e) {
+        if (!e.itemsHeld) throw e;
+        progress.textContent = e.message;
+        if (!await closeAnyway(e.itemsHeld)) {
+          for (const button of buttons) button.disabled = false;
+          pressed.textContent = was;
+          return;
+        }
+        pressed.textContent = pending;
+        progress.textContent = t('retire.resolving', 'Resolving Agent…');
+        await action({ ignoreItems: true });
+      }
     } catch (e) {
       // It ended by itself and this page never heard: say so, and take a fresh feed, which
       // is sent the list whole and drops the row.
@@ -124,18 +149,21 @@ export function retireSession(name, retirementId, onDone = () => {}) {
     dlg.close();
     await onDone();
   };
-  const safeShutdown = async () => {
-    const state = await runShutdown(name, { onProgress: (value) => { progress.textContent = value.message; } });
+  const safeShutdown = async ({ ignoreItems }) => {
+    const state = await runShutdown(name, {
+      ...(ignoreItems ? { requestBody: { ignore_items: true } } : {}),
+      onProgress: (value) => { progress.textContent = value.message; },
+    });
     toast(state.message, true);
   };
-  archive.addEventListener('click', () => void submit(() => finish(archive, () => archiveSession(name), t('retire.archive_failed', 'could not archive it'), t('retire.archiving', 'archiving…'))));
+  archive.addEventListener('click', () => void submit(() => finish(archive, (opts) => archiveSession(name, opts), t('retire.archive_failed', 'could not archive it'), t('retire.archiving', 'archiving…'))));
   safeDelete.addEventListener('click', () => void submit(() => finish(safeDelete, safeShutdown, t('retire.shutdown_failed', 'could not safely shut it down'), t('retire.shutting_down', 'starting shutdown…'))));
   destructive.addEventListener('click', () => {
     const exact = `HARD DELETE ${name} AND OWNED DESKS`;
     if (!confirm(t('retire.hard_delete_confirm', 'Hard Delete is irreversible. Delete Agent {name} and every desk it owns, including dirty and unhanded work? Destructive evidence will be preserved.\n\nConfirm exact targets: {exact}', { name, exact }))) return;
-    void submit(() => finish(destructive, async () => {
+    void submit(() => finish(destructive, async ({ ignoreItems }) => {
       const state = await runShutdown(name, {
-        requestBody: { mode: 'hard_delete', confirmation: exact },
+        requestBody: { mode: 'hard_delete', confirmation: exact, ...(ignoreItems ? { ignore_items: true } : {}) },
         onProgress: (value) => { progress.textContent = value.message; },
       });
       toast(state.message, true);

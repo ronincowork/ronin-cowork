@@ -41,7 +41,7 @@ predicate in `src/behaviours.ts`.
 |---|---|
 | `item` (`ronin_bin/item`) | create, read, search (`--text`, `--archived`), edit, transition (`--note` on a hand-in), flag, unflag, handoff (`--from`, `--keep-holding`), handover, archive (`<ids>`, `--done [--team]`), watch, comment, attach (a path, a link or `plan:<name>`), link, delete; `item --help` |
 | `plan` (`ronin_bin/plan`) | ls (`--status Draft\|Ordered`), read (`<workspace>/<name>`, `--template`), write, park (`--idea`: the Draft plan and its Icebox item, `/api/plans/park`), order, over `/api/plans`; the Workspace is the caller's Team's unless `--workspace`; `plan --help`. Taught by `ronin-help planning`, which `conditional/cowork-agent.md` points to when an Agent is asked to plan |
-| `worktree-desk hand-in <repo> --item <id> --note "<what they can try>"` | the hand-in signal: In Review, the Agent keeping the hold, recorded in `hand_ins`, the note posted as the **Handed in** comment (280 characters at most). Under project management, refused without `--item` or without `--note` (`src/commands/desk.ts`, `src/desks/hand-in.ts`) |
+| `worktree-desk hand-in <repo> --item <id> --note "<what they can try>"` | the hand-in signal: In Review, the Agent keeping the hold, recorded in `hand_ins`, the note posted as the **Handed in** comment, the review line an opened item shows as Look at, after its Objective. Missing or long, never refused: the reply prompts for it (`reviewPrompt`, `src/work-items.ts`; `src/commands/desk.ts`, `src/desks/hand-in.ts`) |
 | `bin/ronin-promote <team>` | the promotion signal: marks each carried item `on_dev`, no status change (`src/promotion/promote.ts`) |
 | `session_end` | settles To Do back to the Team, then refuses while the Agent holds anything In Progress or In Review; NEXT is `item handover` (`src/routes/sessions-api.ts`, `settleToDo`, `unfinishedHolds`) |
 | `team-roster-write --select / --deselect` | turns project management on or off for a Team (`libexec/team-roster-write`) |
@@ -54,8 +54,9 @@ predicate in `src/behaviours.ts`.
 | `src/index.ts` | the five-minute sweeps: crashed holders, the archive, then every Workspace's Icebox (`ensureEveryIcebox`) |
 | `src/work-items.ts`, the Icebox | a Workspace as a holder (`Holder` kind `workspace`, `heldLists`, `listFor`); `ensureIcebox`, `iceboxIds`, `parkIdea`; `takenUp` (an epic attaching a parked plan moves its Icebox item to Done, from `attachDoc`) |
 | `src/workspaces.ts`, the holds | `<workspaces>/<campaign>/<name>.holds.json`: the Workspace's `holds` and its `icebox` id, beside the record so a page Save never races an item write (`readWorkspaceHolds`, `writeWorkspaceHolds`, `listWorkspaceHolds`) |
-| `src/work-items-read.ts` | the Team readings: the Team's epics (a root a Workspace holds, its Icebox, on none), the Epics push (archived items left out, counted per epic); lists read by the id each item goes by now, once |
-| `src/routes/work-items-api.ts` | `/api/work-items`: CRUD, `many/:act`, `:id/on-dev`, `:id/send-back`, `:id/handover`, comment, attach, link; search leaves archived out unless `?archived=1` |
+| `src/work-items-index.ts`, `src/holds-hook.ts` | the live index (below): its rows, its upkeep from every item and holds-list write, its rebuild |
+| `src/work-items-read.ts` | the readings, from rows: an Agent's, a Team's (its epics: a root a Workspace holds, its Icebox, on none), every item's, the Epics push (rows only), `epicCards` (the picked Epic's bar words, from bodies) |
+| `src/routes/work-items-api.ts` | `/api/work-items`: CRUD, `many/:act`, `:id/on-dev`, `:id/send-back`, `:id/handover`, `:id/cards`, comment, attach, link; search reads rows, `?text` opens the bodies the other filters leave, archived only with `?archived=1` |
 | `src/routes/promotions-api.ts` | `GET /api/promotions/:id/live`: a read of the promotion ledger receipt (`readReceipt`), live = complete, restart ok, health passed; the item reader's Handed in line ends "· live" by it (KAN-311) |
 | `src/routes/sessions-api.ts` | `session_end`'s refusal and its NEXT |
 | `src/tegami-read.ts`, `libexec/work-record-read` | the work record's items, for the tile and `work-record read` (Done shown with how long ago) |
@@ -69,6 +70,47 @@ predicate in `src/behaviours.ts`.
 | `public/js/tile-island.js` | the item island: Done hidden, Subtasks folded under their Task, the hand-in mark |
 | `public/js/jira-panel.js` | Settings › Jira |
 | `tests/work-items*.test.ts`, `tests/work-item-*.test.ts`, `tests/plans.test.ts`, `tests/item-reader.test.js`, `tests/tile-island.test.js`, `tests/epics-*.test.js`, `tests/jira-panel-ui.test.js` | the tests |
+
+## The live index
+
+Opening one item read every item file, to find its children, the links to it and its parent, and
+every letter on the machine (live and ended sessions), every roster and Workspace holds file, to
+say who holds it: about 650 file reads per open on the live store, 0.6–3.4 s under the live
+server's load (w418). The owner's shape (2026-11-11):
+
+1. **One JSON file of the live items**, `<work-items>/live-index.json`: everything not archived,
+   one flat row per item holding only what lists filter on or show: id, Campaign, kind, level,
+   status, flagged, parent, links, holders, title, Jira key, the last hand-in and on dev and when,
+   last changed (`moved`). No objective, comments, trail or attachments: those stay in the item's
+   own file. The tree comes from `parent`. Beside the rows, the file keeps every holds list it was
+   built from (its key, holder label and ids) and the ids renamed to Jira keys.
+2. **Reads.** Lists, the Epics board, the work record, Waiting on you and the pills read rows only
+   (`liveRows`, `holderLabels`). Opening an item reads the index and its own file. `item search
+   --text` opens bodies, only those the other filters leave. The Epics board's bar words (the
+   objective cut short, the last comment, how many) are read from bodies for the picked Epic only
+   (`GET /api/work-items/:id/cards`, `epicCards`). A work record still opens its own held items'
+   files (and its led Teams'), for their attachments: its documents.
+3. **Archived items and ended sessions are never read for live work.** Archive takes the row out;
+   leaving Done after archive puts it back. Holders come from the index's lists, so no ended
+   session's letter is opened; `item read` and `--archived` still find history by id. An Epic no
+   longer counts its archived items.
+4. **Upkeep.** Every item save puts its row (`itemWritten`) and every removed item file drops it
+   (`itemRemoved`), in the same issuer step as the write. Every holds-list write reports its list
+   through `holds-hook.ts`: a roster write or delete, any letter write (`replaceLetterBlock`), a
+   Workspace's holds write or delete, and a session folder swept by retention; those are the
+   writers under session end, Team rename and retire, roster edits and handoffs alike. The file is
+   saved whole, through a temp file and a rename, one save at a time. It is rebuilt from the item
+   files and the holds lists at every start (`rebuildIndex`, from `index.ts`, and on the first read
+   in any process), and a process that sees another's save reads that file back. A test in each
+   work-item suite rebuilds it and compares it with the one the writes kept.
+
+Measured (w418), the route and the Epics push run in-process, median ms idle / with the file
+pool kept busy, before → after:
+
+| Store | Open an item | List every item | Epics push | Rebuild at start |
+|---|---|---|---|---|
+| live-sized: 301 items, 329 letters | 143 / 199 → 10 / 14 | 129 / 166 → 5 / 4 | 113 / 144 → 0 / 0 | 147 |
+| 5,000 items, 329 letters | 1038 / 1165 → 19 / 16 | 1148 / 1154 → 16 / 15 | 982 / 1044 → 4 / 3 | 862 |
 
 ## Jira
 
@@ -95,8 +137,8 @@ The owner's decisions, 2026-11-04 and 05:
   only: one item per idea, "Draft the plan for <idea>", its Draft plan attached; finished when the
   plan is taken up or the idea dropped. Parking is one act, `plan park` (2026-11-10). Held by the
   Workspace, it is on no Team's or Agent's record and never reads as work waiting to be given out.
-- Ronin refuses any shape Jira would refuse, so the two never part. A delete reaches Jira; one
-  from Jira needs `--in-jira`.
+- Ronin refuses any shape Jira would refuse, so the two never part. A delete of an item made in
+  Ronin reaches Jira; one that came from Jira goes from Ronin only, its issue kept.
 
 What led there (2026-10-20 to 11-05): items made only to hand in against; Agents keeping
 everything they ever held; progress and plans filed as items; leads told of every move, often

@@ -45,7 +45,7 @@ When you bring work to a lead, it decides first which of three it is:
 | Made | the lead as it gives out work, or the Agent as it takes it | under the epic; its objective is what done looks like to you, in your words, one or two sentences |
 | Started | the Agent | In Progress |
 | Stuck | the Agent | flagged "Waiting on <who>: <what>"; it shows under Stuck |
-| Handed in | the Agent | In Review, still held by the Agent (handing in code doesn't hand in the item), with one short **Handed in** comment for you: what you can try. It shows under With the lead |
+| Handed in | the Agent | In Review, still held by the Agent, with one short **Handed in** comment for you: what you can try. It shows under With the lead. Handing in code is the repo's and needs no item: `worktree-desk hand-in <repo>` alone puts the code in, and its reply tells the Agent to check its items; `--item` hands in both at once. Handing in code doesn't hand in the item, and a hand-in never makes an item Done |
 | On dev | the lead's promotion | still In Review; it moves to Ready to accept |
 | Accepted or sent back | you | Accept makes it Done, and the Agent holding it is told. Send back makes it In Progress with your comment, held where it is; the Agent holding it is told |
 | Handed over | the Agent, as it ends | to the Team (or a named Agent) with a **Handover** comment: where it stands, what is next. Its status stays |
@@ -58,15 +58,20 @@ When you bring work to a lead, it decides first which of three it is:
 |---|---|---|
 | Done | nothing: it stays where it is until it is archived, five days after Done | — |
 | To Do | back to the Team, for its lead to give out again | automatic |
-| In Progress | a handover: where it stands and what comes next, to the Team or a named Agent | the Agent; the lead if the Agent asks |
-| In Review | a handover: what is left for you (what to try, what is not done) | the Agent; then the lead and you, as an In Review item always is |
+| In Progress | finished if it can be; if not, flagged with where it stands and what is missing, or handed over | the Agent; then the lead |
+| In Review | the Agent stays until it is Done if it can, so a sent-back item still has its Agent; if it can't, it flags it and goes | the lead or you, accepting or sending it back |
 
-`session_end` refuses while the Agent holds anything In Progress or In Review, naming each, and
-its NEXT is the handover: `item handover <ids> team:<team> "<where it stands; what is next>"`.
-An Agent that can't decide adds `--flag "<the question>"`, and its lead decides. Shut down Agent,
-archive and a crash can't ask the Agent: each unfinished item goes to the Team flagged "Ended
-without handover: <agent>, <status>", it shows under Stuck, and the lead is told once. Nothing
-goes to nobody. An item nobody wants any more is deleted, not left in To Do. An epic is Done
+One check is made on every way out: `session_end`, `session_archive`, and Archive, Delete and
+Hard Delete on the tile. It is a nudge, never a wall. While the Agent holds anything In Progress
+or In Review it has not flagged, the first try is refused, each item named, as the worktree
+check names its desks, with NEXT in order: 1. finish the item if you can (In Review is finished
+when the lead or you make it Done); 2. if you can't, flag it: `item flag <id> "<where it stands;
+what is missing>"`; 3. clean your desks: commit and hand in; 4. then go. An item the Agent
+flagged itself needs nothing more: the flag is the acknowledgement. For one left unflagged,
+`session_end --ignore-items` (or `session_archive <name> --ignore-items`), or "close anyway" in
+the tile's confirm, goes anyway. Either way, as after a crash, each unfinished item goes to the
+Team flagged "Ended without handover: <agent>, <status>", it shows under Stuck, and the lead is
+told once. Nothing goes to nobody. An item nobody wants any more is deleted, not left in To Do. An epic is Done
 when what done looks like is met.
 
 In an item's view on the tile, the objective and the Handed in note come
@@ -76,13 +81,19 @@ first; the other comments (the Agent and lead deciding things, the item's record
 
 | Signal | Made by | Means | Who is told |
 |---|---|---|---|
-| **Hand-in** | the Agent: `worktree-desk hand-in <repo> --item <id> --note "<what you can try>"` | my work is done; review it | the lead |
+| **Hand-in** | the Agent: `worktree-desk hand-in <repo> [--item <id> --note "<what you can try>"]` | my work is done; review it | the lead |
 | **Promotion** | the lead: `bin/ronin-promote <team>` | it is on dev; you can try it | nobody: it shows under Ready to accept |
 | **Flag** | anyone: `item flag` | I am stuck on someone | the lead or epic holder above it |
 
-A hand-in must name its item and carry its note: at most 280 characters, for you, with no commit
-ids or receipts (those stay on the item's trail; the diff is the detail). A promotion never changes a status. You accept only what is on
-dev (or what was handed in from a checkout, with no code to promote).
+A code hand-in is the repo's: `worktree-desk hand-in <repo>` never needs an item. With none
+named, the code goes to the Team line, the lead is told, and the reply tells the Agent to check
+its work items, one of which may now be ready to hand in for review. An item handed in carries
+its review line: one short line telling you what to look at, with no commit ids or receipts
+(those stay on the item's trail; the diff is the detail). Opened, the item shows it as **Look
+at**, straight after the Objective. Moved to In Review without one, or with a long one, the move still goes and whoever moved
+it is prompted to write it. A hand-in moves a named item to In Review and no further;
+a promotion never changes a status; only you make an item Done. You accept only what is on dev (or what was
+handed in from a checkout, with no code to promote).
 
 ## Who is told what
 
@@ -141,8 +152,9 @@ an item has a link on the Jira item that opens its chat.
 Jira is another view of the same items, through the bridge (Settings › Jira). A Jira user
 decides what the work is; Ronin decides who does it. The bridge is the only Jira writer:
 Agents use the `item` tool and never touch Jira. An item keeps its Ronin id and its Jira key,
-and either finds it. Deleting an item made in Ronin deletes it in Jira too; one that came from
-Jira needs `--in-jira`, when the person who asked for it says so. Done set in Jira comes back
+and either finds it. Deleting an item made in Ronin deletes it in Jira too. Deleting one that
+came from Jira removes it from Ronin only: the Jira issue stays, and the bridge never brings it
+back. Done set in Jira comes back
 with the next read.
 
 ## Turning it on

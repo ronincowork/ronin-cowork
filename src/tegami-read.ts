@@ -3,7 +3,8 @@ import path from 'node:path';
 import { sessionDir, sessionKey } from './session-dir.js';
 import { tegamiPath } from './tegami.js';
 import { agentReading, type AgentReading } from './work-items-read.js';
-import { jiraLink, type WorkItem } from './work-items.js';
+import { jiraLink } from './work-items.js';
+import type { ItemRow } from './work-items-index.js';
 import { mandate, type Mandate } from './agent-defaults.js';
 
 export interface Tegami {
@@ -13,11 +14,11 @@ export interface Tegami {
   teams: { team: string; team_role: string; objective: string; members?: string[] }[];
   holds: string[];
   /** The items held, each with its status, and a paired one's Jira link: what the tile and the roster show. */
-  items: Array<WorkItem & { jira_url?: string }>;
+  items: Array<ItemRow & { jira_url?: string }>;
   /** What the Teams this Agent leads hold at levels 1 and 0, and not the Agent itself: their
    * Epics (w279) and their unassigned Tasks (KAN-251), which a lead's item island shows beside
    * its own items. Empty for an Agent leading none. */
-  teamItems: Array<WorkItem & { jira_url?: string }>;
+  teamItems: Array<ItemRow & { jira_url?: string }>;
   /** The record's own documents (dropped on it, or added holding no item) and every held item's attachments. */
   docs: string[];
   chip: { text: string; gate: boolean };
@@ -62,7 +63,7 @@ async function dropped(key: string): Promise<string[]> {
 /** The tile's and the roster's readout: the open items held with their status (a flag marks an
  * impediment), the first three named and the rest counted. Done waiting for the archive is left
  * out (owner, 2026-11-05; KAN-271): it would crowd the work. */
-export function chipFor(held: WorkItem[]): { text: string; gate: boolean } {
+export function chipFor(held: ItemRow[]): { text: string; gate: boolean } {
   const items = held.filter((item) => item.status !== 'Done');
   if (!items.length) return { text: '—', gate: false };
   const named = items.slice(0, 3).map((item) => `${item.flagged ? '⚑ ' : ''}${item.id} ${item.status}`);
@@ -70,14 +71,14 @@ export function chipFor(held: WorkItem[]): { text: string; gate: boolean } {
   return { text: [...named, ...more].join(' · '), gate: items.some((item) => item.flagged) };
 }
 
-const linked = (item: WorkItem): WorkItem & { jira_url?: string } => ({ ...item, ...(jiraLink(item) ? { jira_url: jiraLink(item) } : {}) });
+const linked = (item: ItemRow): ItemRow & { jira_url?: string } => ({ ...item, ...(jiraLink(item) ? { jira_url: jiraLink(item) } : {}) });
 
 /** What its led Teams hold at levels 1 and 0 — their Epics and their unassigned Tasks, which
  * show nowhere else (owner, KAN-251) — once each, leaving out those the Agent holds itself.
  * Subtasks (-1) stay out. */
-export function teamItems(reading: AgentReading): Array<WorkItem & { jira_url?: string }> {
+export function teamItems(reading: AgentReading): Array<ItemRow & { jira_url?: string }> {
   const own = new Set(reading.items.map((item) => item.id));
-  const seen = new Map<string, WorkItem>();
+  const seen = new Map<string, ItemRow>();
   for (const team of reading.teams) for (const item of team.items) if ((item.level === 1 || item.level === 0) && !own.has(item.id)) seen.set(item.id, item);
   return [...seen.values()].map(linked);
 }

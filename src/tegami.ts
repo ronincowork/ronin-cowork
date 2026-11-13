@@ -1,4 +1,5 @@
 import fs from 'node:fs/promises';
+import { holdsWritten, letterListKey } from './holds-hook.js';
 import path from 'node:path';
 import { execFile } from './spawn-broker.js';
 import { RIREKI_DIR, sessionKey } from './session-dir.js';
@@ -122,6 +123,9 @@ async function replaceLetterBlock(file: string, text: string, parsed: ReturnType
   const tmp = `${file}.project.${process.pid}`;
   await fs.writeFile(tmp, out, 'utf8');
   await fs.rename(tmp, file);
+  // Every letter write carries its holds through: the live index sees the list as it now is.
+  const key = path.basename(path.dirname(file));
+  holdsWritten(letterListKey(key), `agent:${out.match(/^# TEGAMI — (.+)$/m)?.[1]?.trim() || key}`, holdsOfBody(key, out, body).holds);
 }
 
 /** One Agent's holder and watch lists, as its letter keeps them: work item ids. The items

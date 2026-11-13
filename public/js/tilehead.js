@@ -42,11 +42,12 @@ const HEADER = () => {
   // what the colours mean. A pill opens its item over the tile (openItem below) and closes it
   // pressed again. Read off the work record on every push: js/tile-island.js.
   { key: 'island', widget: (tile) => createItemIsland({
-      open: (item) => void openItem(tile, item),
+      open: (item) => openItem(tile, item), // settles once the item shows: the pill is busy until then (w416)
       isOpen: (id) => !!openItemLayer(tile, id),
-      shut: (id) => openItemLayer(tile, id)?.remove() }),
+      shut: (id) => openItemLayer(tile, id)?.remove(),
+      more: () => void openItemsBoard(tile) }),
     // w331: the stance rides the same home row: rireki's reading, and what this harness reports.
-    read: (tile) => { const row = tile.homeRow?.(); tile.island?.update?.(tile.session, islandItems(tile.tegami), { stance: row?.stance, reports: row?.stance_reports }); return ''; } },
+    read: (tile) => { const row = tile.homeRow?.(); tile.island?.update?.(tile.session, islandItems(tile.tegami), { stance: row?.stance, reports: row?.stance_reports }); tile.itemsBoard?.paint(); return ''; } },
 
   { grow: true },
 
@@ -293,10 +294,34 @@ async function openItem(tile, item) {
     // once it is Done (owner, w299: "it disappeared"). The tile's record only when the read failed.
     const children = read.ok && Array.isArray(read.data?.children) ? read.data.children
       : islandHeld(tile.tegami).filter((one) => one.parent === item.id);
-    renderItemDetail(detail, item, { holder, openAttachment: (path) => tile.openDoc(path), history: false,
-      children, openChild: (child) => void openItem(tile, child) });
+    renderItemDetail(detail, item, { holder, heldBy: read.ok ? read.data?.held_by : null, openAttachment: (path) => tile.openDoc(path), history: false,
+      children, openChild: (child) => void openItem(tile, child),
+      // Its head minimizes it, through the overlay's own Close (KAN-431).
+      onClose: () => box.querySelector('.work-overlay-utility button')?.click() });
     box.append(detail);
   });
+}
+
+/** MORE DETAIL (owner, 2026-11-12, KAN-459): this Agent's items over the tile on the Epics board's
+ *  own bars (epics-surface.js createItemBoard), the island's items: a bar opens in place and its
+ *  head minimizes it; Close goes back to the tile. Each push repaints only the bars that moved.
+ *  The bars' words are the Epics' cards: one read per Epic the items sit under. */
+async function openItemsBoard(tile) {
+  const [{ createItemBoard }, { get }, { request }] = await Promise.all([import('./epics-surface.js'), import('./store.js'), import('./request.js')]);
+  const every = () => islandItems(tile.tegami).map((item) => ({ ...item, holder: item.holder || (item.holders || []).at(-1) || '' }));
+  const cards = async (rows) => {
+    const pushed = new Map((get('epicItems') || []).map((item) => [item.id, item.epic]));
+    const epics = [...new Set(rows.map((item) => (item.level === 1 ? item.id : pushed.get(item.id))).filter(Boolean))];
+    const read = await Promise.all(epics.map((epic) => request(`/api/work-items/${encodeURIComponent(epic)}/cards`, { cache: 'no-store' })));
+    return read.flatMap((result) => (result.ok ? result.data.cards || [] : []));
+  };
+  const board = createItemBoard({ every, cards, empty: t('island.none', 'This Agent holds no open work items.') });
+  await overTile(tile, t('island.items', 'Work items held'), (box) => {
+    box.classList.add('tile-items-board');
+    box.append(board.el);
+  }, { closed: () => { if (tile.itemsBoard === board) tile.itemsBoard = null; board.destroy(); } });
+  tile.itemsBoard = board;
+  board.paint();
 }
 
 /** The Agent's configuration: the composition reader the Team profile already shows —

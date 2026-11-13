@@ -2,6 +2,7 @@
 import { IS_TOUCH, S } from './state.js';
 import { t } from './lexicon.js';
 import { settleComposer } from './composer-rules.js';
+import { WorkspacePrimitives } from './workspace-primitives.js';
 
 /**
  * @param {HTMLElement} body
@@ -36,8 +37,20 @@ export function buildComposer(body, hooks) {
   const why = document.createElement('p');
   why.className = 'cwhy';
   why.setAttribute('role', 'status');
-  wrap.append(why, ta, btn);
+  // What a control button did (Clear, Stop, Copy): the kit's notice, one line above the box.
+  const note = WorkspacePrimitives.createNotice();
+  note.el.classList.add('cnote');
+  note.el.setAttribute('role', 'status');
+  let noteTimer = null;
+  wrap.append(why, note.el, ta, btn);
   body.appendChild(wrap);
+  // Every button in the box answers the press at once, before whatever it does lands.
+  wrap.addEventListener('pointerdown', (e) => {
+    const button = e.target.closest?.('button');
+    if (!button || button.disabled) return;
+    button.classList.add('pressed');
+    setTimeout(() => button.classList.remove('pressed'), 250);
+  });
 
   const state = { inflight: false };
   // The wire's own words for a send that did not get through, in the owner's language.
@@ -181,6 +194,13 @@ export function buildComposer(body, hooks) {
     el: wrap,
     ta,
     clear: clearBox,
+    /** Say what a control did; `ms` 0 keeps it until the next word (a success goes after 4 s). */
+    notice(kind, message, ms = kind === 'success' ? 4000 : 0) {
+      clearTimeout(noteTimer);
+      note.set(kind, message);
+      if (ms && message) noteTimer = setTimeout(() => note.set(), ms);
+      reserve();
+    },
     dispose() {
       size.disconnect();
       rewrap.disconnect();

@@ -144,7 +144,10 @@ status as its own reads return.
 **Ronin Home** (`campaign-home.js`; owner, 2026-10-19) stays a page, not a Workbench: Teams,
 Workspaces and Epics in a triangle (owner, 2026-11-02), with Models, Help and Settings smaller stones
 in a column inset on the right — each a link to a Workbench destination of its own,
-opened in the same tab (a modified press opens a new tab through `workbenchLaunchUrl`). The
+opened in the same tab. The link's href is the plain address (`#/models`), so hovering shows what a
+person reads; a Ctrl/Cmd/Shift or middle press makes the tab id and launch state then and opens a new
+tab through `openWorkbenchTab` (`workbenchLink`, KAN-473; the bar's Teams crumb and New Agent's
+defaults links the same). The
 Teams door opens the Teams workbench (`#/cowork`, `cowork-view.js`; owner, 2026-10-20). Models and
 Workspaces are one shape (`door-workbenches.js`): the Kit Workbench on a profile of the
 door's surfaces, the door's surface seated in Workspace 1 on first open. Models seats its own
@@ -176,7 +179,7 @@ KAN-187) seats its own stones of Epics the same way (`epics-surface.js`, `epics.
 the Campaign — the store's pushed `epics` and `epicItems`, no request (KAN-190, KAN-206). Since w334 (owner,
 2026-11-06) Tilespace 1 is the Epics board (`createEpicBoard`), borrowed from the phalanx but its own: a row of Epic
 stones across the top (title, Jira key or Ronin only, open count); a pressed one is selected and its items come below
-under two ERABI questions (ask.js), Assigned (Yes / No) and Status (the open ones on arrival), as the item island's
+under three ERABI questions (ask.js), Assigned (Yes / No), Flagged (Yes / No; w409) and Status (the open ones on arrival), as the item island's
 bars (`tile-island.js` `itemBar`) grouped by status in workflow order, a Subtask under its Task. The push carries what
 a bar says (`epicsPush`: the objective and last comment cut short, comment count, last move, last hand-in). A bar
 pressed opens the item's reading under it (`renderItemDetail`, its own read). Every Epic surface is that board (w340,
@@ -200,13 +203,13 @@ over the pushed rosters' `board` (the Team's epic) and `items`): Theme and State
 each Item a branch row; the 人 mark in a stone's corner opens the Team page in a new tab.
 Help (owner, 2026-10-21) is the same door shape seating two workspaces: the help outline
 (`help.outline`, `help-outline.js`) in Workspace 1 and Mika (`help.mika`) in Workspace 2. A page stone
-dragged into a workspace reads that page whole there (`help.page`, no selector card). A Tile
-built with `opensOn: 'reading'` spends the touch screens' open-on-the-reading intention on a desk too,
-and before her record has anything in it; a Mika born by the seat gets a fresh tile once she is up.
-The gate (owner, 2026-10-19): as on the old root, the Models, Workspaces and Teams doors are locked (Help
-stays open, owner 2026-10-21; with no provider its Mika seat is one line pointing to Setup) until one model
-provider is activated (`/api/setup/runtime`'s `activated_count`), each saying so under its name,
-and Settings is the one live stone — a new user's way in is Setup.
+dragged into a workspace reads that page whole there (`help.page`, no selector card). Her tile
+opens on Chat like every tile, before her record has anything in it; a Mika born by the seat gets a fresh tile once she is up.
+The gate (owner, 2026-10-19): as on the old root, the Teams, Epics and Workspaces doors are locked until one
+model provider is activated (`/api/setup/runtime`'s `activated_count`), each saying under its name that a
+provider is activated in Setup or Agent Harness. Settings, Help (owner, 2026-10-21; with no provider its Mika
+seat is one line pointing to Setup) and Agent Harness (owner, 2026-11-13; KAN-472: it is where a provider is
+signed in, its sign-in tile mounted as on Setup) stay open — a new user's way in is Setup or Agent Harness.
 
 **One root** (owner, 2026-11-02; KAN-197). That page is the only root: the old Home at `#/current`
 and the bar's Current/Next toggle are deleted, and an old `#/current` link falls to the safe view,

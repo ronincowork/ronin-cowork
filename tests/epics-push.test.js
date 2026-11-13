@@ -52,24 +52,27 @@ test('the server pushes epics with the rosters, after every roster or work-item 
   assert.match(store_, /set\('epicItems', Array\.isArray\(message\.items\) \? message\.items : \[\]\); set\('epics', message\.epics\);/);
 });
 
-test('epicsPush: every Epic whole, and every item under one slim, with its Epic and Jira key (KAN-206)', async () => {
-  const { epicsPush } = await import('../src/work-items-read.ts');
-  const item = (id, level, parent, extra = {}) => ({ id, level, parent, title: id, status: 'To Do', holder: '', kind: 'Task', flagged: false, campaign_id: 'home', external: {}, trail: [{ op: 'create' }], comments: [{ text: 'x' }], ...extra });
+test('epicsPush: every Epic\'s row, and every item under one, with its Epic and Jira key (KAN-206, w418)', async () => {
+  const { epicsPush, cardOf } = await import('../src/work-items-read.ts');
+  const row = (id, level, parent, extra = {}) => ({ id, level, parent, title: id, status: 'To Do', holder: '', holders: [], kind: 'Task', flagged: false, campaign_id: 'home', links: [], jira: '', hand_ins: [], moved: '', ...extra });
   const { epics, items } = epicsPush([
-    item('E', 1, null), item('a', 0, 'E', { external: { jira: { id: '1', key: 'KAN-1' } }, holder: 'agent:sam' }), item('s', -1, 'a'), item('loose', 0, null),
+    row('E', 1, null), row('a', 0, 'E', { jira: 'KAN-1', holder: 'agent:sam' }), row('s', -1, 'a'), row('loose', 0, null),
   ]);
   assert.deepEqual(epics.map((epic) => epic.id), ['E']);
-  assert.deepEqual(items.map((one) => [one.id, one.epic, one.jira, one.holder]), [['a', 'E', 'KAN-1', 'agent:sam'], ['s', 'E', '', '']]);
-  assert.ok(items.every((one) => !('trail' in one) && !('comments' in one)), 'no history or comments on the push');
-  // w334: what a bar says it is, cut short: the objective, the last comment, counts, when it moved.
+  assert.deepEqual(items.map((one) => [one.id, one.epic, one.jira, one.holder]), [['a', 'E', 'KAN-1', 'agent:sam'], ['s', 'E', '', ''], ['loose', '', '', '']], 'an item under no Epic rides the push with epic \'\' (KAN-414)');
+  assert.ok(items.every((one) => !('trail' in one) && !('comments' in one) && !('objective' in one)), 'rows only: no history, comments or objective on the push');
+  // w334: what a bar says beyond its row, cut short, from the picked Epic's bodies (epicCards).
   const long = 'word '.repeat(100);
-  const [one] = epicsPush([item('E', 1, null), item('b', 0, 'E', { objective: long, comments: [{ by: 'a', at: '1', text: 'old' }, { by: 'sam', at: '2026-11-06T00:00:00Z', text: long }], trail: [{ op: 'status', at: '2026-11-06T01:00:00Z' }], hand_ins: [{ receipt: 'r1', by: 'x', at: '1' }, { receipt: 'r2', by: 'x', at: '2' }] })]).items;
-  assert.ok(one.objective.length <= 281 && one.objective.endsWith('…'));
+  const one = cardOf({ id: 'b', objective: long, comments: [{ by: 'a', at: '1', text: 'old' }, { by: 'sam', at: '2026-11-06T00:00:00Z', text: long }] });
+  assert.equal(one.objective, long.trim(), 'the objective in full: the bar wraps it (KAN-429)');
   assert.equal(one.said.by, 'sam');
   assert.ok(one.said.text.length <= 201);
   assert.equal(one.comment_count, 2);
-  assert.equal(one.moved, '2026-11-06T01:00:00Z');
-  assert.deepEqual(one.hand_ins.map((h) => h.receipt), ['r2'], 'the last hand-in only');
+  const { rowOf } = await import('../src/work-items-index.ts');
+  const r = rowOf({ id: 'b', campaign_id: 'home', title: 'b', objective: long, level: 0, kind: 'Task', status: 'To Do', flagged: false, priority: 'Medium', comments: [], parent: 'E', attachments: [], links: [], external: {}, trail: [{ op: 'status', at: '2026-11-06T01:00:00Z' }], created: { at: '1', by: 'x' }, hand_ins: [{ receipt: 'r1', by: 'x', at: '1' }, { receipt: 'r2', by: 'x', at: '2' }] });
+  assert.equal(r.moved, '2026-11-06T01:00:00Z');
+  assert.deepEqual(r.hand_ins.map((h) => h.receipt), ['r2'], 'the last hand-in only');
+  assert.ok(!('objective' in r) && !('trail' in r) && !('comments' in r), 'a row has no objective, trail or comments');
 });
 
 test('an Epic is a selector card, its stone drags to a tilespace, and its statuses run in workflow order (KAN-206, w334)', async () => {
@@ -103,7 +106,33 @@ test('teamWork: the Team’s Epics, an Epic held and the Epic above each held it
 test('the picked Epic is its own bar, opening to its reading as an item bar does; no Epic status beside the filters (KAN-309, KAN-310)', async () => {
   const surface = await readFile(new URL('../public/js/epics-surface.js', import.meta.url), 'utf8');
   assert.doesNotMatch(surface, /epic_status/, 'the filter row is Assigned and Status only');
-  assert.match(surface, /itemBar\(epic, \{ extra: \[holder \? holderWords\(holder\)[^\n]*\n\s*onPress: \(\) => \{ if \(!open\.delete\(epic\.id\)\) open\.add\(epic\.id\); paint\(\); \} \}\)/, 'pressed, it opens as any bar');
-  assert.match(surface, /reading\(epic, \{ children: false \}\)/, 'the same reading path; its children are the board below');
+  assert.match(surface, /bars\.place\(detail, epic \? \[\{ id: epic\.id, item: epic, children: false \}\] : \[\]\)/, 'the Epic is a bar of the same keyed list, opening as any bar; its children are the board below');
   assert.match(surface, /root\.append\(detail, questions\.el, groups\)/, 'the bar heads the filters');
+});
+
+test('the kit\'s keyed list: a row repaints only itself, moves only with its group, an opened row is kept (KAN-412)', async () => {
+  const { createKeyedList } = await import('../public/js/workspace-primitives.js');
+  // Just enough DOM for the list: children, insertBefore, remove, replaceWith.
+  const fake = (name) => { const n = { name, parent: null, childNodes: [],
+    insertBefore(child, ref) { child.remove(); const at = ref ? this.childNodes.indexOf(ref) : -1; this.childNodes.splice(at < 0 ? this.childNodes.length : at, 0, child); child.parent = this; touched.push(child.name); },
+    remove() { if (this.parent) this.parent.childNodes.splice(this.parent.childNodes.indexOf(this), 1); this.parent = null; },
+    replaceWith(other) { const p = this.parent; const i = p.childNodes.indexOf(this); this.remove(); p.childNodes.splice(i, 0, other); other.parent = p; } }; return n; };
+  let touched = [];
+  let drawn = [];
+  const list = createKeyedList({ shows: (row) => row.title, draw: (row) => { drawn.push(row.id); return fake(row.id); } });
+  const todo = fake('todo'); const doing = fake('doing');
+  const push = (rows) => { touched = []; drawn = []; list.place(todo, rows.filter((r) => r.s === 'todo')); list.place(doing, rows.filter((r) => r.s === 'doing')); list.sweep(); };
+  const names = (p) => p.childNodes.map((n) => n.name);
+  push([{ id: 'a', title: 'A', s: 'todo' }, { id: 'b', title: 'B', s: 'todo' }, { id: 'c', title: 'C', s: 'doing' }]);
+  assert.deepEqual([names(todo), names(doing)], [['a', 'b'], ['c']]);
+  const b = todo.childNodes[1];
+  push([{ id: 'a', title: 'A', s: 'todo' }, { id: 'b', title: 'B', s: 'todo' }, { id: 'c', title: 'C', s: 'doing' }]);
+  assert.deepEqual([drawn, touched], [[], []], 'the same push again touches nothing');
+  push([{ id: 'a', title: 'A2', s: 'todo' }, { id: 'b', title: 'B', s: 'todo' }, { id: 'c', title: 'C', s: 'doing' }]);
+  assert.deepEqual([drawn, touched], [['a'], []], 'one row moved: only it repaints, in its place');
+  push([{ id: 'a', title: 'A2', s: 'todo' }, { id: 'b', title: 'B', s: 'doing' }, { id: 'c', title: 'C', s: 'doing' }]);
+  assert.deepEqual([names(todo), names(doing), drawn], [['a'], ['b', 'c'], []], 'a status move moves the row, not redraws it');
+  assert.equal(doing.childNodes[0], b, 'the same node, so what is open under it stays');
+  push([{ id: 'b', title: 'B', s: 'doing' }, { id: 'c', title: 'C', s: 'doing' }]);
+  assert.deepEqual([names(todo), touched], [[], []], 'a row gone is removed; the rest stay put');
 });

@@ -4,8 +4,8 @@
  * the item to the Team and records who; Send back returns it to that Agent, or leaves it with
  * the Team when the Agent has ended; session_end's list of unfinished holds; an ending or a
  * crash puts items on their epic, held by nobody, silently; on a Jira-connected campaign the
- * shapes Jira refuses are refused; a delete of an item from Jira needs --in-jira, and every
- * delete emits the agreed event.
+ * shapes Jira refuses are refused; a delete needs no flag, and every delete emits the agreed
+ * event.
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -248,24 +248,19 @@ test('on a Jira-connected campaign the shapes Jira refuses are refused, with the
   assert.equal(loose.kind, 'Subtask', 'an unconnected campaign is not checked');
 });
 
-test('delete: an item from Jira needs --in-jira; every delete emits one event per item, the named one first', async () => {
+test('delete: an item from Jira goes with no flag; every delete emits one event per item, the named one first', async () => {
   const events: Array<[string, string, string | undefined, string | undefined, string]> = [];
   sockets.onItemChanged(({ item, line }) => { if (line.op === 'delete') events.push([item.id, line.by, line.to, line.from, item.external.jira?.key ?? '']); });
   const fromJira = (await items.createItem({ title: 'from Jira', parent: epic.id, jira: { id: '77', key: 'KAN-977' } }, 'jira:alice')).item;
   const sub = (await items.createItem({ title: 'its sub', parent: fromJira.id }, 'boss')).item;
-  const refused = await call('DELETE', `/api/work-items/${fromJira.id}`, { by: 'mem' });
-  assert.equal(refused.status, 409);
-  assert.match(refused.data.error, /came from Jira \(made by jira:alice\).*--in-jira/);
-  assert.ok(await items.readItem(fromJira.id), 'nothing is deleted');
-  assert.deepEqual(events, [], 'a refused delete emits nothing');
-  const done = await call('DELETE', `/api/work-items/${fromJira.id}`, { by: 'mem', in_jira: true });
+  const done = await call('DELETE', `/api/work-items/${fromJira.id}`, { by: 'mem' });
   assert.deepEqual(done.data.deleted, [fromJira.id, sub.id]);
   await new Promise((resolve) => setImmediate(resolve));
-  assert.deepEqual(events, [[fromJira.id, 'mem', 'in-jira', undefined, 'KAN-977'], [sub.id, 'mem', 'in-jira', fromJira.id, '']]);
+  assert.deepEqual(events, [[fromJira.id, 'mem', undefined, undefined, 'KAN-977'], [sub.id, 'mem', undefined, fromJira.id, '']]);
   const mine = (await items.createItem({ title: 'made here', parent: epic.id }, 'boss')).item;
   const other = (await items.createItem({ title: 'made here too', parent: epic.id }, 'boss')).item;
   const many = await call('POST', '/api/work-items/many/delete', { ids: [mine.id, other.id], by: 'mem' });
-  assert.equal(many.data.ok, true, 'an item made in Ronin needs no flag');
+  assert.equal(many.data.ok, true);
   assert.equal(await items.readItem(mine.id), null);
 });
 
@@ -369,7 +364,7 @@ test('a hand-in is with the lead until on dev after the last hand-in; a checkout
   assert.equal(await stage(desk.id), 'lead', 'a new hand-in waits for its own promotion');
 });
 
-test('a hand-in names its item under project management: the switch is read from the Agent\'s behaviours', async () => {
+test('project management is read from the Agent\'s behaviours; a hand-in never needs an item under it (w415)', async () => {
   const { projectManagementOn } = await import('../src/agent-composition.js');
   const { sessionDir } = await import('../src/session-dir.js');
   for (const [name, books] of [['pm_on', ['base-agent', 'project-management']], ['pm_off', ['base-agent']]] as const) {
@@ -381,8 +376,8 @@ test('a hand-in names its item under project management: the switch is read from
   assert.equal(await projectManagementOn('pm_off'), false);
   assert.equal(await projectManagementOn('pm_nobody'), false, 'no record: not under it');
   const desk = await fs.readFile(new URL('../src/commands/desk.ts', import.meta.url), 'utf8');
-  assert.match(desk, /if \(!projectId && await projectManagementOn\(session\)\)/);
-  assert.match(desk, /NEXT: worktree-desk hand-in \$\{positional\[0\] \?\? '<repo>'\}.*--item <id>/);
+  assert.doesNotMatch(desk, /under project management a hand-in names its work item/);
+  assert.match(desk, /Check your work items/);
 });
 
 test('an item In Review with no hand-ins recorded (handed in before the signals) is ready to accept, not with the lead', async () => {
@@ -392,55 +387,40 @@ test('an item In Review with no hand-ins recorded (handed in before the signals)
   assert.equal(items.handInStage({ hand_ins: [{ receipt: 'hi_1', by: 'mem', at: '2026-11-04T10:00:00Z' }], on_dev: { promotion: 'p', at: '2026-11-04T09:00:00Z' } }), 'lead', 'on dev before the last hand-in');
 });
 
-/* THE HAND-IN NOTE: one short comment for the user, headed Handed in (ITEM_HANDOVER). */
-test('a hand-in carries a note for the user: the Handed in comment, at most 280 characters', async () => {
-  const { item } = await items.createItem({ title: 'noted work', objective: 'A lead sees the note first.', parent: epic.id, holder: mem }, 'boss');
-  await items.addComment(item.id, 'decided with the lead: no receipts in the note', 'cap');
-  const long = await call('POST', `/api/work-items/${item.id}/transition`, { status: 'In Review', note: 'x'.repeat(281), by: 'mem' });
-  assert.equal(long.status, 409);
-  assert.match(long.data.error, /^Keep it for the user: what they can try\. The detail is in the diff\./);
-  assert.equal((await items.readItem(item.id))!.status, 'To Do', 'refused: nothing moved');
-  const ok = await call('POST', `/api/work-items/${item.id}/transition`, { status: 'In Review', note: 'Open the item; the note reads first.', by: 'mem' });
-  assert.equal(ok.status, 200, JSON.stringify(ok.data));
-  assert.equal(ok.data.item.comments.at(-1).text, 'Handed in: Open the item; the note reads first.');
-  assert.equal(items.handedInNote(ok.data.item), 'Open the item; the note reads first.');
-  // A desk's hand-in carries it the same way.
-  const desk = (await items.createItem({ title: 'desk noted', parent: epic.id, holder: mem }, 'boss')).item;
-  const handed = await items.handInItem(desk.id, 'mem', { desk: true, note: 'hand-in r9', receipts: ['r9'], forUser: 'Try the tile.' });
-  assert.equal(handed.item.comments.at(-1)!.text, 'Handed in: Try the tile.');
-  assert.equal(handed.line.note, 'hand-in r9; handed in by mem', 'the receipt stays on the trail, not in the note');
-  await assert.rejects(items.handInItem(desk.id, 'mem', { desk: true, forUser: 'y'.repeat(281) }), /Keep it for the user/);
-  assert.equal(items.handInNoteProblem('z'.repeat(280)), null);
-});
-
-test('under project management a move to In Review without a note is refused, NEXT showing --note; with one it goes', async () => {
-  const { sessionDir } = await import('../src/session-dir.js');
-  const dir = sessionDir('pmer');
-  await fs.mkdir(dir, { recursive: true });
-  await fs.writeFile(path.join(dir, 'birth-receipt.json'), JSON.stringify({ behaviours: [{ book: 'project-management', file: '/x/project-management.md' }] }));
-  await seedTegami('pmer', { repo: '', branch: '' }, [{ team: 'crew', team_role: 'member', objective: '' }]);
-  await live(['cap', 'mem', 'pmer']);
-  try {
-    const { item } = await items.createItem({ title: 'pm checkout', parent: epic.id, holder: { kind: 'agent', name: 'pmer' } }, 'boss');
-    const bare = await call('POST', `/api/work-items/${item.id}/transition`, { status: 'In Review', by: 'pmer' });
-    assert.equal(bare.status, 409);
-    assert.match(bare.data.error, new RegExp(`NEXT: item transition ${item.id} "In Review" --note "<what they can try>"`));
-    const noted = await call('POST', `/api/work-items/${item.id}/transition`, { status: 'In Review', note: 'Try it.', by: 'pmer' });
-    assert.equal(noted.status, 200);
-    assert.equal(noted.data.item.status, 'In Review');
-  } finally { await live(['cap', 'mem']); }
+/* THE REVIEW LINE (KAN-429): the Handed in note says in one short line what to look at; a move to
+ * In Review without one, or with a long one, goes and is prompted; nothing is refused (no guards). */
+test('a move to In Review is never refused for its note: missing or long, the acknowledgement prompts', async () => {
+  await live(['cap', 'mem']);
+  const { item } = await items.createItem({ title: 'noted work', parent: epic.id, holder: mem }, 'boss');
+  const bare = await call('POST', `/api/work-items/${item.id}/transition`, { status: 'In Review', by: 'mem' });
+  assert.equal(bare.status, 200, JSON.stringify(bare.data));
+  assert.equal(bare.data.item.status, 'In Review');
+  assert.match(bare.data.acknowledgement, new RegExp(`PROMPT: ${item.id} has no review line.*item transition ${item.id} "In Review" --note "<what to look at>"`));
+  const long = await call('POST', `/api/work-items/${item.id}/transition`, { status: 'In Review', note: 'x'.repeat(300), by: 'mem' });
+  assert.equal(long.status, 200);
+  assert.match(long.data.acknowledgement, /review line is 300 characters/);
+  const ok = await call('POST', `/api/work-items/${item.id}/transition`, { status: 'In Review', note: 'The note reads first on the bar.', by: 'mem' });
+  assert.equal(items.handedInNote(ok.data.item), 'The note reads first on the bar.');
+  assert.doesNotMatch(ok.data.acknowledgement, /PROMPT/);
   const desk = await fs.readFile(new URL('../src/commands/desk.ts', import.meta.url), 'utf8');
-  assert.match(desk, /if \(projectId && !forUser && await projectManagementOn\(session\)\)/, 'a desk hand-in under project management needs --note too');
-  assert.match(desk, /const long = handInNoteProblem\(forUser\);\n\s+if \(long\) die/, 'a long note is refused before any code is handed in');
+  assert.doesNotMatch(desk, /NO-NOTE|REFUSED: \$\{long\}/, 'a desk hand-in is not refused for its note either');
+  assert.match(desk, /reviewPrompt\(moved\.item\)/);
 });
 
 test('session_end\'s refusal: To Do settled first, each item named with status and title, NEXT the handover, never a drop', async () => {
   const route = await fs.readFile(new URL('../src/routes/sessions-api.ts', import.meta.url), 'utf8');
   const harakiri = route.slice(route.indexOf("app.post('/api/harakiri'"), route.indexOf("app.get('/api/sessions/:name/project-root'"));
-  assert.ok(harakiri.indexOf('await settleToDo(name)') < harakiri.indexOf('await unfinishedHolds(name)'));
-  assert.match(harakiri, /you hold \$\{item\.id\} \(\$\{item\.status\}\) \$\{item\.title\}/);
-  assert.match(harakiri, /item handover \$\{items\.map\(\(item\) => item\.id\)\.join\(' '\)\}/);
+  assert.ok(harakiri.indexOf('await settleToDo(name)') < harakiri.indexOf('await heldItemsRefusal(name'));
+  const check = route.slice(route.indexOf('async function heldItemsRefusal'), route.indexOf('/** A refusal\'s answer'));
+  assert.match(check, /await unfinishedHolds\(name\)/, 'pm_lead\'s item check, reused');
+  assert.match(check, /\$\{who\} \$\{item\.id\} \(\$\{item\.status\}\) \$\{item\.title\}, not flagged by /);
+  // A nudge, never a wall (KAN-415): finish, else flag, clean the desks, then go; the Agent's own flag passes.
+  const order = ['1. Finish', '2. If you can\'t, flag it: item flag', '3. Clean your desks: commit and hand in.', '4. Then go'].map((step) => check.indexOf(step));
+  assert.ok(order.every((at, n) => at > 0 && (n === 0 || at > order[n - 1]!)), 'the four steps, in order');
+  assert.match(check, /\.filter\(\(item\) => !flaggedBy\(item, name\)\)/, 'an item the Agent flagged itself needs no --ignore-items');
   assert.doesNotMatch(harakiri, /handoff .* none/, 'no way out that drops the item');
+  // The same check on every way out, each with its acknowledgement (w453).
+  assert.equal(route.match(/ignoringItems\(req\) \? null : await heldItemsRefusal\(name/g)?.length, 4, 'session_end, archive, DELETE, shutdown/Hard Delete');
 });
 
 /* NOTICE 6 (w300): a move to Done tells the Agent that handed the item in, once. */
@@ -505,3 +485,14 @@ test('a hand-in keeps the holder; Send back goes to the holder, who hears it; Do
   assert.deepEqual(await holding(item.id), ['agent:mem'], 'Done stays on its list until the archive');
 });
 
+
+/* THE LIVE INDEX (w418): every write kept it, so a rebuild from the files finds the same rows. */
+test('the live index rebuilt from the item files and holds lists equals the one the writes kept', async () => {
+  const index = await import('../src/work-items-index.js');
+  const kept = await index.liveRows();
+  await index.indexSaved();
+  assert.ok(kept.length > 0, 'there are live rows to compare');
+  assert.deepEqual(index.rowsOf(await index.buildState()), kept, 'rebuilt = kept');
+  const saved = JSON.parse(await (await import('node:fs/promises')).readFile(index.indexFile(), 'utf8')) as { rows: unknown[] };
+  assert.deepEqual(saved.rows, kept, 'the file saved whole is the same');
+});

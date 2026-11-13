@@ -4,14 +4,19 @@ import assert from 'node:assert/strict';
 // Just enough DOM for the two setup surfaces: nodes that hold children, text, and handlers.
 class FakeNode {
   constructor(tag = '') { this.tagName = tag.toUpperCase(); this.children = []; this.dataset = {}; this.attributes = {}; this.listeners = {}; this.hidden = false; this.disabled = false; this.value = ''; this.textContent = ''; this.className = ''; this.style = {}; const classes = new Set(); this.classList = { add: (c) => classes.add(c), remove: (c) => classes.delete(c), toggle: (c, on) => (on ?? !classes.has(c)) ? classes.add(c) : classes.delete(c), contains: (c) => classes.has(c) }; }
-  append(...nodes) { this.children.push(...nodes.filter(Boolean)); }
+  append(...nodes) { for (const node of nodes.filter(Boolean)) { if (node instanceof FakeNode) { node.parent?.children.splice(node.parent.children.indexOf(node), 1); node.parent = this; } this.children.push(node); } }
   prepend(...nodes) { this.children.unshift(...nodes.filter(Boolean)); }
   appendChild(node) { this.append(node); return node; }
   get childNodes() { return this.children; }
+  get parentNode() { return this.parent || null; }
   after(node) { this.parent?.append(node); }
-  replaceChildren(...nodes) { this.children = []; this.append(...nodes); }
-  remove() { this.removed = true; }
+  replaceChildren(...nodes) { for (const node of this.children) if (node instanceof FakeNode) node.parent = null; this.children = []; this.append(...nodes); }
+  // The kit's keyed list lays rows with these (workspace-primitives.js layNodes).
+  insertBefore(node, ref) { node.parent?.children.splice(node.parent.children.indexOf(node), 1); const at = ref ? this.children.indexOf(ref) : -1; this.children.splice(at < 0 ? this.children.length : at, 0, node); node.parent = this; return node; }
+  replaceWith(node) { const parent = this.parent; if (!parent) return; const at = parent.children.indexOf(this); this.remove(); node.parent?.children.splice(node.parent.children.indexOf(node), 1); parent.children.splice(at, 0, node); node.parent = parent; }
+  remove() { this.removed = true; if (this.parent) this.parent.children.splice(this.parent.children.indexOf(this), 1); this.parent = null; }
   setAttribute(name, value) { this.attributes[name] = String(value); }
+  removeAttribute(name) { delete this.attributes[name]; }
   addEventListener(name, fn) { (this.listeners[name] ||= []).push(fn); }
   matches(selector) {
     const attr = /^\[([\w-]+)="([^"]*)"\]$/.exec(selector);

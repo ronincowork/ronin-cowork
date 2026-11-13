@@ -669,6 +669,25 @@ own format: two numbered steps — Team (ID · Title · Kind, then Purpose) and 
 defaults (the groups) — at the forms' tight density. Its text entries are the kit's, beside
 the stones, not inside them. Contract and file list: `docs/architecture/team-workspace.md` § Durable Team record.
 
+**One stone moves, one stone repaints (KAN-414).** The Phalanx surface paints through the
+kit's keyed list (`WorkspacePrimitives.createKeyedList`, KAN-412): `setItems` with a push
+redraws only the stones whose own row changed, moves a stone between group sections without
+drawing it again, and leaves the open detail as it is unless the open stone's own row moved.
+Selecting, opening a detail, going down a level and `refreshDetail()` draw the detail afresh.
+A push on the open stone waits while the person has an unsent edit in its detail (the kit's
+`editHold`): it lands at once on submit, reset, a press on a `data-ends-edit` button (Send,
+Save, Cancel: `createAction({ endsEdit: true })`), a fold, or focus leaving with nothing changed.
+A row's signature counts a function by its presence and a Node by its identity, so a consumer
+that hands a new marker node every push redraws that stone every push: hand the same node, or a string.
+
+**One Agent, item or doc moves, one row repaints (KAN-413).** The same keyed list draws the
+item island's pills and bars, the People list, the League Team's Agents, the Docs shelf and the
+phone's Agents cards. A stance change repaints only that Agent's row and no longer asks the
+server for the Team's Work list; a Docs group keeps the fold the owner gave it across pushes;
+the phone's launch form, mid-typing, is one kept row, so a rename lands while it is open.
+The Team roster and Workspaces hand the phalanx every push and keep no signature of their
+own: one renamed Team repaints its one stone, and the open Team detail stays.
+
 **What is not an `ask()`.** The Phalanx surface (`phalanx.js`) is a page for
 browsing a collection whose item is the content — Presets, Workspace Folders, Model
 providers, Templates — and stays. Tabs, the Presets kind filter, and the

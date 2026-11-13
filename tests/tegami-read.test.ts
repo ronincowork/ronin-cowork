@@ -34,6 +34,8 @@ async function writeLetter(name: string, block: string): Promise<void> {
     path.join(temp, name, 'tegami.md'),
     `# TEGAMI — ${name}\n> prose the parser must ignore\n\n\`\`\`json\n${block}\n\`\`\`\n`,
   );
+  // Written past the store, so the live index (w418) learns its holds as a start does: rebuilt.
+  await (await import('../src/work-items-index.js')).rebuildIndex();
 }
 const item = async (title: string, docs: string[] = []) => (await createItem({ title, attachments: docs }, 'test')).item.id;
 
@@ -76,13 +78,13 @@ test('docs are every held item\'s attachments, only what exists', async () => {
 
 test("a record's own link is a doc as written: an https add_doc reaches the rows beside its files", async () => {
   const name = 'tegami-read-links';
-  const real = path.join(temp, 'RAAS_CHECKLIST.md');
+  const real = path.join(temp, 'SAMPLE_DOCUMENT.md');
   await fs.writeFile(real, 'x');
   await writeLetter(name, '{ "objective": "links" }');
   const drop = path.join(temp, name, 'drop');
   await fs.mkdir(drop, { recursive: true });
   const url = 'https://claude.ai/artifact/XyW6oPFjqGs9VJWmzxqZXw';
-  await fs.symlink(real, path.join(drop, '20261109-071437-RAAS_CHECKLIST.md'));
+  await fs.symlink(real, path.join(drop, '20261109-071437-SAMPLE_DOCUMENT.md'));
   await fs.symlink(url, path.join(drop, '20261109-071436-XyW6oPFjqGs9VJWmzxqZXw'));
   await fs.symlink(path.join(temp, 'gone.md'), path.join(drop, '20261109-071438-gone.md'));
   const t = await readTegami(name);

@@ -21,27 +21,34 @@ function createMembershipSurface(agent, changed) {
   const surface = WorkspaceKit.primitives.createSurface({ label: t('agent.team_membership', 'Team membership'), className: 'agent-team-membership' });
   const list = el('div', 'league-team-member-list');
   surface.content.append(list);
+  // ONE TEAM MOVES, ONE ROW REPAINTS (owner, 2026-11-12, KAN-414): the kit's keyed list. Each
+  // Team's row is kept by its name and repaints only when its title or this Agent's membership
+  // of it moves.
+  const rows = WorkspaceKit.primitives.createKeyedList({ key: (row) => row.key, shows: (row) => row.shows, draw: (row) => row.draw() });
+  const teamRow = (team, member) => {
+    const row = el('article', 'league-team-member');
+    const words = el('div', 'league-team-member-words');
+    words.append(el('strong', '', String(team.title || '').trim() || team.name), el('span', 'league-team-member-id', team.name));
+    const action = WorkspaceKit.primitives.createAction({
+      label: member ? t('league.remove_member', 'Remove') : t('agent.join_team', 'Join'),
+      size: 'compact', selected: member,
+      action: async () => {
+        const result = await setTeamMembership(agent, team.name, !member);
+        if (!result.ok) return surface.setState('failed', result.message);
+        surface.setState(null, '');
+        render(); changed?.();
+      },
+    });
+    row.append(words, action.el);
+    return row;
+  };
   const render = () => {
     const joined = new Set(memberships(agent));
-    list.replaceChildren();
-    for (const team of teamsFromState().filter((row) => !row.holding)) {
-      const row = el('article', 'league-team-member');
-      const words = el('div', 'league-team-member-words');
-      words.append(el('strong', '', String(team.title || '').trim() || team.name), el('span', 'league-team-member-id', team.name));
+    const teams = teamsFromState().filter((row) => !row.holding);
+    rows.set(list, teams.length ? teams.map((team) => {
       const member = joined.has(team.name);
-      const action = WorkspaceKit.primitives.createAction({
-        label: member ? t('league.remove_member', 'Remove') : t('agent.join_team', 'Join'),
-        size: 'compact', selected: member,
-        action: async () => {
-          const result = await setTeamMembership(agent, team.name, !member);
-          if (!result.ok) return surface.setState('failed', result.message);
-          surface.setState(null, '');
-          render(); changed?.();
-        },
-      });
-      row.append(words, action.el); list.append(row);
-    }
-    if (!list.childElementCount) list.append(el('p', 'league-team-empty', t('agent.no_teams', 'No Teams are installed.')));
+      return { key: team.name, shows: JSON.stringify([String(team.title || '').trim(), member]), draw: () => teamRow(team, member) };
+    }) : [{ key: '!none', shows: '', draw: () => el('p', 'league-team-empty', t('agent.no_teams', 'No Teams are installed.')) }]);
   };
   return { el: surface.el, show: render, render };
 }

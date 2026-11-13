@@ -174,3 +174,40 @@ test('closing an Agent that already ended says so, and takes a fresh feed that d
     Object.assign(globalThis, saved);
   }
 });
+
+test('an Agent holding work is refused, the confirm names each item, and Close anyway goes with ignore_items (w453)', async () => {
+  const saved = { document: globalThis.document, HTMLElement: globalThis.HTMLElement, fetch: globalThis.fetch };
+  const body = new FakeNode('body');
+  globalThis.HTMLElement = FakeNode;
+  globalThis.document = { body, activeElement: body, createElement: (tag) => {
+    const node = new FakeNode(tag);
+    node.classList.toggle = () => {};
+    node.remove = () => { node.isConnected = false; };
+    return node;
+  }, addEventListener() {}, removeEventListener() {} };
+  const sent = [];
+  globalThis.fetch = async (url, init) => {
+    sent.push({ url, body: init.body ? JSON.parse(init.body) : null });
+    const json = (data, status) => new Response(JSON.stringify(data), { status, headers: { 'content-type': 'application/json' } });
+    return sent.length === 1
+      ? json({ error: 'Refused: work items', items_held: [{ id: 'KAN-9', status: 'In Review', title: 't' }], acknowledge: 'ignore_items' }, 409)
+      : json({ ok: true, archived: { id: 'k' } }, 200);
+  };
+  let done = 0;
+  try {
+    retireSession('holder', 'items', async () => { done += 1; });
+    const archive = [...body.walk()].find((node) => node.tagName === 'BUTTON' && node.textContent === 'Archive');
+    archive.listeners.click[0]();
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    const copy = [...body.walk()].find((node) => node.className === 'ui-confirm-copy');
+    assert.match(copy.textContent, /^holder holds KAN-9 \(In Review\), not flagged: finish or flag it and hand in its desks first, or close anyway/);
+    assert.equal(archive.textContent, 'archiving…', 'the pressed button still says it is working');
+    const anyway = [...body.walk()].find((node) => node.tagName === 'BUTTON' && node.textContent === 'Close anyway');
+    anyway.listeners.click[0]();
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    assert.deepEqual(sent.map((row) => row.body), [null, { ignore_items: true }]);
+    assert.equal(done, 1);
+  } finally {
+    Object.assign(globalThis, saved);
+  }
+});

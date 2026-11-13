@@ -39,7 +39,7 @@ test('mobile box Enter sends once even with the terminal socket down; edits duri
   globalThis.window = { matchMedia: () => ({ matches: true }) };
   class Element {
     constructor() {
-      this.value = ''; this.style = {}; this.events = {}; this.children = [];
+      this.value = ''; this.style = {}; this.dataset = {}; this.events = {}; this.children = [];
       const classes = new Set();
       this.classList = {
         add: (v) => classes.add(v), remove: (v) => classes.delete(v), contains: (v) => classes.has(v),

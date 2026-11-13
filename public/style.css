@@ -785,30 +785,47 @@ body {
 }
 .tile-body[data-surface='docs'] > .tile-doc-view { display: flex; }
 .tile-body[data-surface='docs'] > .composer { display: none !important; }
+.tile-secret-ask[hidden] { display: none; }
+/* DOCKED AT THE FOOT, where the composer sits (KAN-416): the conversation or terminal above stays
+   readable and scrollable while the owner pastes. The composer stands down for it. Terminal and
+   the tape end above the field's measured height (--secret-clearance, js/secret-ask.js); Chat
+   holds it in its column, under the log. */
 .tile-secret-ask {
   position: absolute;
-  inset: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   z-index: 5;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: var(--space-inline);
+  max-height: 60%;
+  overflow-y: auto;
+  padding: var(--space-row) var(--space-inline);
   background: var(--tile-bg);
+  border-top: var(--edge) solid var(--term-panel-line);
+  font-family: var(--font-ui);
+  white-space: normal;
 }
-.tile-secret-ask[hidden] { display: none; }
+.tile-body[data-surface='chat'] > .tile-secret-ask { position: static; flex: none; order: 1; }
+.tile-body[data-secret-ask='open'] > .composer { display: none !important; }
+.tile .tile-body[data-secret-ask='open'][data-surface='term'] {
+  /* FitAddon reads computed height: give it the content area above the field. */
+  box-sizing: content-box;
+  padding-bottom: var(--secret-clearance);
+}
 .tile-secret-card {
   display: flex;
   flex-direction: column;
   gap: var(--space-row);
-  width: min(100%, 28rem);
-  padding: var(--space-inline);
+  padding: var(--space-row) var(--space-inline);
   border: var(--edge) solid var(--line);
   border-radius: var(--radius-large);
   background: var(--surface);
 }
+.tile-secret-entry { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-row); }
 .tile-secret-title { margin: 0; color: var(--fg-strong); font-weight: 600; }
 .tile-secret-for { margin: 0; color: var(--muted); }
 .tile-secret-value {
+  flex: 1 1 12rem;
+  min-width: 0;
   font: inherit;
   padding: var(--space-row) var(--space-inline);
   border: var(--edge) solid var(--line);
@@ -816,13 +833,25 @@ body {
   background: var(--inset);
   color: var(--fg-strong);
 }
+.tile-secret-expiry { flex: 0 0 auto; }
+.tile-secret-date, .tile-secret-count {
+  font: inherit;
+  padding: var(--space-row) var(--space-inline);
+  border: var(--edge) solid var(--line);
+  border-radius: var(--radius-large);
+  background: var(--inset);
+  color: var(--fg-strong);
+}
+.tile-secret-count { width: 6em; }
+.tile-secret-days { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-row); }
+.tile-secret-lands, .tile-secret-unit { color: var(--muted); }
 .tile-secret-notice { margin: 0; color: var(--muted); }
 .tile-secret-notice:empty { display: none; }
 /* The answer shows a moment before the field closes: Saved in the success look, Cancelled plain. */
 .tile-secret-card[data-state='saved'] { border-color: var(--ok); }
 .tile-secret-card[data-state='saved'] .tile-secret-notice { color: var(--ok); font-weight: 600; }
 .tile-secret-card[data-state='saved'] .tile-secret-notice::before { content: '✓ '; }
-.tile-secret-card:is([data-state='saved'], [data-state='cancelled']) .wk-action-bar { display: none; }
+.tile-secret-card:is([data-state='saved'], [data-state='cancelled']) .tile-secret-entry { display: none; }
 .tile-doc-close {
   align-self: flex-end;
   border: var(--edge) solid var(--line);
@@ -1225,42 +1254,18 @@ body {
 .item-stance[data-stance='turn'] .ink { fill: var(--fg); }
 .item-stance[data-stance='turn'] .stroke { stroke: var(--fg); }
 .item-island-stance .item-island-stance-words { display: none; }
-/* Down or wide, the bar leads and the stance is the first row, in words. */
-.tile-head .item-island:is([data-state='down'], [data-state='wide']) .item-island-grip { order: -1; }
-.tile-head .item-island:is([data-state='down'], [data-state='wide']) .item-island-stance {
+/* Down, the bar leads and the stance is the first row, in words. */
+.tile-head .item-island[data-state='down'] .item-island-grip { order: -1; }
+.tile-head .item-island[data-state='down'] .item-island-stance {
   padding: var(--space-row) var(--space-control);
   border: var(--edge) solid var(--line);
   border-radius: var(--radius-pill);
 }
-.tile-head .item-island[data-state='wide'] .item-island-stance { border-radius: var(--radius-large); }
-.item-island:is([data-state='down'], [data-state='wide']) .item-island-stance-words { display: inline; color: var(--fg); font-size: var(--text-small); white-space: nowrap; }
-.tile-head .item-island:is([data-state='down'], [data-state='wide']) button.item-island-more[hidden] { display: none; }
+.item-island[data-state='down'] .item-island-stance-words { display: inline; color: var(--fg); font-size: var(--text-small); white-space: nowrap; }
+.tile-head .item-island[data-state='down'] button.item-island-more[hidden] { display: none; }
 
-/* The wide list (owner, 2026-11-06, w322): the dropped list's surface at the tile's width,
-   only as tall as its bars; a bar per item, in the pills' own marks, with what the item is. */
-.tile-head:has(> .item-island[data-state='wide']) { position: relative; }
-.tile-head .item-island[data-state='wide'] {
-  position: absolute;
-  top: calc(100% + var(--space-inline));
-  left: var(--space-inline);
-  right: var(--space-inline);
-  max-width: none;
-  flex-direction: column;
-  align-items: stretch;
-  gap: var(--space-inline);
-  padding: var(--space-inset);
-  overflow: hidden; /* the bars scroll, not the surface: the grip and Less detail stay in view (w323) */
-  border-radius: var(--radius-large);
-  border-color: var(--accent);
-  box-shadow: var(--shadow-menu);
-}
-.tile-head .item-island[data-state='wide'] .item-island-grip { align-self: center; width: 32px; flex: 0 0 auto; }
-.tile-head .item-island[data-state='wide'] .item-island-pills { display: none; }
-.tile-head .item-island .item-island-bars { display: none; }
-.tile-head .item-island[data-state='wide'] .item-island-bars { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; overflow-y: auto; gap: var(--space-inline); }
-.tile-head .item-island[data-state='wide'] .item-island-more { flex: 0 0 auto; }
 .tile-head .item-island button.item-island-more { display: none; }
-.tile-head .item-island:is([data-state='down'], [data-state='wide']) button.item-island-more {
+.tile-head .item-island[data-state='down'] button.item-island-more {
   display: inline-flex;
   align-self: center;
   width: auto;
@@ -1290,11 +1295,15 @@ body {
   font-size: var(--text-small);
   text-align: left;
 }
+:is(.tile-head .item-island, .epic-bars, .epic-detail) button.item-bar[hidden] { display: none; } /* opened: its reading stands in its place (KAN-431) */
 :is(.tile-head .item-island, .epic-bars, .epic-detail) button.item-bar:hover, :is(.tile-head .item-island, .epic-bars, .epic-detail) button.item-bar:focus-visible { border-color: var(--accent); }
 :is(.tile-head .item-island, .epic-bars, .epic-detail) button.item-bar[data-status='progress'] { border-left-color: var(--info); }
 :is(.tile-head .item-island, .epic-bars, .epic-detail) button.item-bar[data-status='review'] { border-left-color: var(--accent); }
 :is(.tile-head .item-island, .epic-bars, .epic-detail) button.item-bar[data-flagged='true'] { border-top-color: var(--warn); border-right-color: var(--warn); border-bottom-color: var(--warn); }
 :is(.tile-head .item-island, .epic-bars, .epic-detail) button.item-bar.item-bar-sub { margin-left: var(--space-inset); padding-block: var(--space-row); }
+/* A pressed item on its way (w416): the kit's greyed look (.wk-surface[data-state='inert'],
+   .58) with a progress cursor, until it shows; tile-island.js ignores presses meanwhile. */
+.tile-head .item-island button:is(.item-pill, .item-bar)[aria-busy='true'] { opacity: .58; cursor: progress; }
 .item-bar .item-bar-head { display: flex; align-items: center; gap: var(--space-inline); min-width: 0; }
 .item-bar .item-kind { width: 14px; height: 14px; flex: 0 0 auto; }
 .item-bar .item-bar-id { flex: 0 0 auto; color: var(--muted); font-variant-numeric: tabular-nums; }
@@ -1318,6 +1327,11 @@ body {
 .item-bar .item-bar-comment { -webkit-line-clamp: 1; color: var(--muted); }
 .item-bar .item-bar-who { color: var(--accent); }
 .item-bar .item-bar-facts { color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* The Epics board's bar (KAN-429): wrapped in full or not there — no clamp, no ellipsis. */
+.item-bar.item-bar-lean .item-bar-head { flex-wrap: wrap; }
+.item-bar.item-bar-lean :is(.item-bar-title, .item-bar-objective, .item-bar-facts) {
+  display: block; -webkit-line-clamp: unset; white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: anywhere;
+}
 
 .tile-head .sess {
   flex: 0 1 auto;
@@ -1333,7 +1347,7 @@ body {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.tile-head button {
+.tile-head button, .wi-head > button.window-control {
   flex: 0 0 auto;
   background: var(--surface);
   border: var(--edge) solid var(--muted);
@@ -1344,7 +1358,7 @@ body {
   font-size: var(--text-body);
   cursor: pointer;
 }
-.tile-head button:hover {
+.tile-head button:hover, .wi-head > button.window-control:hover {
   border-color: var(--accent);
 }
 
@@ -1352,7 +1366,7 @@ body {
   width: 28px;
   font-size: var(--text-label);
 }
-.tile-head button:active {
+.tile-head button:active, .wi-head > button.window-control:active {
   color: var(--accent);
 }
 .tile-head button.kill:hover,
@@ -1360,7 +1374,7 @@ body {
   color: var(--bad);
   border-color: var(--bad);
 }
-.tile-head button.window-control {
+.tile-head button.window-control, .wi-head > button.window-control {
   font-size: var(--text-label);
   line-height: var(--leading-none);
 }
@@ -1485,6 +1499,10 @@ body {
 }
 
 .tile-body {
+  /* What the box and the secret ask cover at the foot, measured by each (js/composer.js,
+     js/secret-ask.js); none until they say. */
+  --composer-clearance: 0px;
+  --secret-clearance: 0px;
   container-type: inline-size;
   container-name: tile;
   flex: 1 1 auto;
@@ -3547,6 +3565,7 @@ body {
   color: var(--bad);
   font-weight: var(--weight-strong);
 }
+.tile-transcript-stance[data-stance='asking'] .tile-transcript-answer { font-weight: normal; }
 /* Motion is the whole point of the dots, so when motion is unwelcome they simply sit still —
    the indicator is still there, and still says the Agent is at work. */
 @media (prefers-reduced-motion: reduce) {
@@ -3769,6 +3788,25 @@ body {
   font-size: var(--text-label);
   cursor: pointer;
 }
+/* What Clear, Stop or Copy did: the kit's notice, a line of its own above the box. */
+.tile:is(.tape-on, .keys-on, .transcript-on) .composer .cnote {
+  flex-basis: 100%;
+  font: var(--text-body)/var(--leading-tight) var(--font-ui);
+}
+.tile:is(.tape-on, .keys-on, .transcript-on) .composer .cnote[hidden] { display: none; }
+/* Every kit button looks pressed the moment it is pushed, before what it does lands
+   (owner, 2026-11-12); the composer's own buttons keep their own flash below. */
+.wk-action:not(:disabled):is(:active, .pressed) { filter: brightness(0.82); }
+.wk-action[aria-busy='true'] { cursor: progress; }
+/* Enter answers the press too: a press shows before the send lands. */
+.tile:is(.tape-on, .keys-on, .transcript-on) .composer .csend:is(:active, .pressed) { filter: brightness(0.82); }
+/* A press on its way says so ("Stopping…"): the button widens for the word, then returns. */
+.tile:is(.tape-on, .keys-on, .transcript-on) .composer .cctl[data-busy] {
+  width: auto;
+  min-width: 38px;
+  padding: 0 var(--space-row);
+  cursor: progress;
+}
 /* Clear and Stop: Enter's shape, quiet; only Enter is kaki. */
 .tile:is(.tape-on, .keys-on, .transcript-on) .composer .cctl {
   height: var(--control-height-small);
@@ -3783,7 +3821,7 @@ body {
 }
 
 .tile.tape-on .tape {
-  bottom: var(--composer-clearance, 0px);
+  bottom: max(var(--composer-clearance), var(--secret-clearance)); /* the secret ask stands in for the box */
 }
 @media (pointer: coarse) {
   /* A thumb's box: two rows to type in, and Enter as tall as both, so it is easy to hit. */
@@ -4736,7 +4774,8 @@ button.wk-card { cursor: pointer; }
   font-size: var(--text-label);
   cursor: pointer;
 }
-.tile:is(.tape-on, .keys-on, .transcript-on) .composer .keysrow button:active {
+.tile:is(.tape-on, .keys-on, .transcript-on) .composer .keysrow button:is(:active, .pressed),
+.tile:is(.tape-on, .keys-on, .transcript-on) .composer .cctl:is(:active, .pressed) {
   background: var(--kaki); /* kaki: the action, or what needs you */
   border-color: var(--kaki);
   color: var(--on-strong);
@@ -4750,7 +4789,7 @@ button.wk-card { cursor: pointer; }
 .tile.keys-on:not(.tape-on) .tile-body:not([data-surface='chat']) {
   /* FitAddon reads computed height: give it the content area, excluding controls. */
   box-sizing: content-box;
-  padding-bottom: var(--composer-clearance, 0);
+  padding-bottom: max(var(--composer-clearance), var(--secret-clearance)); /* or the secret ask, standing in for it */
 }
 
 @media (max-width: 680px) {

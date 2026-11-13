@@ -122,10 +122,36 @@ function createAction(options = {}) {
   if (options.title) el.title = options.title;
   if (options.kind) el.dataset.kind = options.kind;
   if (options.size) el.dataset.size = options.size;
+  // A Send, Save or Cancel: its press ends an edit, and the kit's held row lands (editHold).
+  if (options.endsEdit) el.dataset.endsEdit = '';
   if (options.selected != null) el.setAttribute('aria-pressed', String(!!options.selected));
   el.disabled = !!options.disabled;
-  if (options.action) el.addEventListener('click', options.action);
+  // EVERY BUTTON ANSWERS THE PRESS AT ONCE (owner, 2026-11-12: "If I push it, it looks
+  // clicked, so I know it's clicked, even if it takes a second"). A pointer shows it on the
+  // way down; a key, which has no way down, on its click.
+  el.addEventListener('pointerdown', () => { if (!el.disabled) flashPressed(el); });
+  if (options.action) {
+    let busy = false;
+    el.addEventListener('click', (event) => {
+      // Still at work on the last press: this one is the same press again.
+      if (busy) return;
+      if (event?.detail === 0) flashPressed(el);
+      const result = options.action(event);
+      if (typeof result?.then !== 'function') return result;
+      busy = true;
+      el.setAttribute('aria-busy', 'true');
+      const settle = () => { busy = false; el.removeAttribute('aria-busy'); };
+      return Promise.resolve(result).then(settle, (error) => { settle(); throw error; });
+    });
+  }
   return { el, setDisabled: (on = true) => { el.disabled = !!on; } };
+}
+
+const PRESS_FLASH_MS = 250;
+function flashPressed(el) {
+  el.classList.add('pressed');
+  clearTimeout(el.pressedTimer);
+  el.pressedTimer = setTimeout(() => el.classList.remove('pressed'), PRESS_FLASH_MS);
 }
 
 function createActionBar(options = {}) {
@@ -413,6 +439,124 @@ function createLayoutMap(arrangement) {
   return { el, destroy: () => { unsubscribe(); el.remove(); } };
 }
 
+/**
+ * ONE WAY TO REDRAW A LIST (owner, 2026-11-12, KAN-412; lifted from the People list's update(),
+ * w451, and the item island's update()). A keyed list keeps one row per key between pushes:
+ * - each row compares what it shows with what it would show now and repaints only itself;
+ * - a row is added or removed only when the set of keys changes (`sweep`);
+ * - a row's nodes move only when its order or its parent (its group) changes, and laying them
+ *   out touches only what moved, so an opened row, a field being typed in, keeps its place;
+ * - a row keeps its nodes when it moves from one parent to another.
+ * `create(row)` → { nodes(): Node[], update(row), destroy?() } — the row drawn; `update` hears every
+ * later `place` and decides for itself. Or, for a row that is one node: `shows(row)` (a string of
+ * what it shows) and `draw(row)` (its node), redrawn only when `shows` moves.
+ * `place(parent, rows)` lays rows into parent in order; `sweep()` lets go every row not placed
+ * since the last sweep; `set(parent, rows)` is both, for a list in one parent.
+ * NEVER UNDER AN EDIT (owner's rule, w451, KAN-414): a row whose nodes the person has typed or
+ * changed something in (a trusted `input` or `change`) is held: a push only keeps its newest
+ * row. It still moves with its order and group, and goes when its key does. The hold lets go,
+ * and the newest row lands at once, when the edit is sent or abandoned:
+ * - `submit` or `reset` in it;
+ * - a press on a button marked `data-ends-edit` in it: every Send, Save or Cancel that is not a
+ *   form submit carries that mark (the one way a button says the edit is over);
+ * - a `<details>` in it folds;
+ * - focus leaves it with every control the person touched back to what it was.
+ * `editHold()` is the same hold for a surface's one open detail (phalanx.js).
+ */
+const valueOf = (control) => (control.type === 'checkbox' || control.type === 'radio' ? String(control.checked)
+  : control.isContentEditable ? control.textContent : String(control.value ?? ''));
+export function editHold() {
+  let dirty = false;
+  let cleared = null;
+  const watched = new Set();
+  const was = new Map(); // a control the person entered → its value before they touched it
+  const inside = (node) => [...watched].some((one) => one === node || one.contains?.(node));
+  const mark = (event) => { if (event?.isTrusted !== false) dirty = true; };
+  // After the surface's own handler, so what it sends reads the edit first.
+  const clear = () => setTimeout(() => { if (!dirty) return; dirty = false; was.clear(); cleared?.(); }, 0);
+  const entered = (event) => { const one = event.target; if (one && 'value' in one && !was.has(one)) was.set(one, valueOf(one)); };
+  const left = () => setTimeout(() => {
+    if (!dirty || inside(document.activeElement)) return;
+    if ([...was].every(([one, before]) => valueOf(one) === before)) clear();
+  }, 0);
+  const pressed = (event) => { if (event?.isTrusted !== false && event.target?.closest?.('[data-ends-edit]')) clear(); };
+  const folded = (event) => { if (event.target?.tagName === 'DETAILS' && !event.target.open) clear(); };
+  return {
+    watch(nodes) {
+      for (const one of nodes) {
+        if (!one?.addEventListener || watched.has(one)) continue;
+        watched.add(one);
+        one.addEventListener('input', mark);
+        one.addEventListener('change', mark);
+        one.addEventListener('submit', clear);
+        one.addEventListener('reset', clear);
+        one.addEventListener('click', pressed);
+        one.addEventListener('toggle', folded, true);
+        one.addEventListener('focusin', entered);
+        one.addEventListener('focusout', left);
+      }
+      for (const one of [...watched]) if (!nodes.includes(one) && !one.isConnected) watched.delete(one);
+    },
+    held: () => dirty,
+    release: () => { dirty = false; was.clear(); },
+    onClear: (callback) => { cleared = callback; },
+  };
+}
+
+export function layNodes(parent, nodes) {
+  const wanted = new Set(nodes);
+  for (const child of [...parent.childNodes]) if (!wanted.has(child)) child.remove();
+  nodes.forEach((one, index) => { if (parent.childNodes[index] !== one) parent.insertBefore(one, parent.childNodes[index] || null); });
+}
+
+export function createKeyedList({ key = (row) => row.id, create, shows, draw } = {}) {
+  const drawn = (row) => {
+    let el = null;
+    let said = null;
+    const update = (now) => {
+      const next = shows(now);
+      if (next === said) return;
+      said = next;
+      const fresh = draw(now);
+      el?.replaceWith(fresh);
+      el = fresh;
+    };
+    update(row);
+    return { nodes: () => [el], update };
+  };
+  const make = (row) => {
+    const one = (create || drawn)(row);
+    const hold = editHold();
+    let waiting = null;
+    hold.onClear(() => { if (!waiting) return; const next = waiting; waiting = null; one.update(next); hold.watch(one.nodes()); });
+    return { ...one, update: (next) => { if (hold.held()) waiting = next; else one.update(next); hold.watch(one.nodes()); }, watch: () => hold.watch(one.nodes()) };
+  };
+  const rows = new Map();
+  const placed = new Set();
+  const place = (parent, list = []) => {
+    const nodes = [];
+    for (const row of list) {
+      const id = key(row);
+      placed.add(id);
+      const one = rows.get(id);
+      if (one) one.update(row); else { rows.set(id, make(row)); rows.get(id).watch(); }
+      nodes.push(...rows.get(id).nodes());
+    }
+    layNodes(parent, nodes);
+  };
+  const sweep = () => {
+    for (const [id, one] of rows) if (!placed.has(id)) { for (const n of one.nodes()) n?.remove(); one.destroy?.(); rows.delete(id); }
+    placed.clear();
+  };
+  return {
+    place,
+    sweep,
+    set: (parent, list) => { place(parent, list); sweep(); },
+    get: (id) => rows.get(id),
+    destroy: () => { for (const one of rows.values()) one.destroy?.(); rows.clear(); placed.clear(); },
+  };
+}
+
 export const WorkspacePrimitives = Object.freeze({
   states: WORKSPACE_STATES,
   createLayoutMap,
@@ -431,4 +575,7 @@ export const WorkspacePrimitives = Object.freeze({
   createField,
   createForm,
   ninMark,
+  createKeyedList,
+  layNodes,
+  editHold,
 });

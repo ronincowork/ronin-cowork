@@ -91,3 +91,25 @@ test('a cancel answers cancelled and saves nothing; a bad name is refused before
   assert.match(bad.stderr, /not a secret name/);
   assert.equal((await run(['path', 'router_key'])).status, 4, 'no file yet');
 });
+
+test('an expiry rides beside the value, never in it: a date, never, N days, or nothing; secret ls shows it', async () => {
+  const saved = await post('/api/secrets/office_key', { value: VALUE, expires: '2027-05-11' });
+  assert.equal(saved.status, 200, saved.text);
+  const file = path.join(secretsDir(), 'office_key');
+  assert.equal(await fs.readFile(file, 'utf8'), VALUE, 'the value file is the value alone');
+  assert.equal((await fs.stat(path.join(secretsDir(), 'secrets-expiry.json'))).mode & 0o777, 0o600);
+  assert.match((await run(['ls'])).stdout, /^office_key {2}expires 2027-05-11$/m);
+  assert.equal((await run(['expires', 'office_key', 'never'])).stdout, 'office_key never expires\n');
+  assert.match((await run(['ls'])).stdout, /^office_key {2}never expires$/m);
+  assert.equal((await run(['expires', 'office_key', 'clear'])).stdout, 'office_key: expiry cleared\n');
+  assert.match((await run(['ls'])).stdout, /^office_key$/m, 'unset: nothing beside the name');
+  const at = new Date(); at.setDate(at.getDate() + 90);
+  const in90 = [at.getFullYear(), at.getMonth() + 1, at.getDate()].map((n, i) => String(n).padStart(i ? 2 : 4, '0')).join('-');
+  assert.equal((await run(['expires', 'office_key', '90d'])).stdout, `office_key expires ${in90}\n`);
+  assert.equal(await fs.readFile(file, 'utf8'), VALUE, 'setting an expiry leaves the value alone');
+  for (const bad of ['2027-02-30', 'none']) assert.match((await run(['expires', 'office_key', bad])).stderr, /not an expiry/);
+  assert.match((await run(['expires', 'nobody_here', '2027-01-01'])).stderr, /No secret nobody_here/);
+  assert.equal((await post('/api/secrets/office_key', { value: VALUE, expires: 'soon' })).status, 400);
+  await post('/api/secrets/office_key', { value: VALUE });
+  assert.match((await run(['ls'])).stdout, /^office_key$/m, 'saved with Nothing: no entry');
+});

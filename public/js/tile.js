@@ -46,9 +46,6 @@ export class Tile {
     this.transcriptState = null; // the route's last word on this Agent: available, empty, reason
     this.transcriptWantFirst = false; // pressed before the readings were known: move to the first once they are
     this.transcriptWantChat = false; // touch: open on the reading once the route says this Agent has one
-    // A seat that is a conversation (Help's Mika) opens on the reading on a desk too, and
-    // before anything is said: the entry box beside it is the way in.
-    this.opensOnReading = options.opensOn === 'reading';
     this.pending = ''; // UNLOCKED: locally-parked typed text (sent as one parcel on Enter)
     this.strip = null; // the thin bar showing this.pending over the tile
     this.composer = null; // the unlocked tile's text entry (built on first use)
@@ -85,6 +82,7 @@ export class Tile {
     this.transcriptView = makeTileTranscript({
       cache: options.transcriptCache,
       onState: (state) => this.onTranscriptState(state),
+      onAnswer: () => this.answerInTerminal(),
     });
     this.body.append(this.transcriptView.el);
 
@@ -280,6 +278,8 @@ export class Tile {
    */
   toggleTranscript() {
     if (!this.session || !this.transcriptAvailable()) return;
+    this.answerReturns = false; // any switch but the answer's own cancels its way back
+    this.transcriptWantChat = false; // a switch is a choice: the open-on-Chat intention is spent
     const readings = this.transcriptCycle();
     const was = this.transcriptOn;
     const next = was ? this.transcriptLevel + 1 : 0;
@@ -313,20 +313,39 @@ export class Tile {
   refreshStance() {
     const row = this.homeRow();
     this.transcriptView.setStance(row?.stance || '', row?.tool);
+    if (this.transcriptOn) this.transcriptView.rewatch(); // a new Agent's Chat: see tile-transcript.js
+    // Answered: back to Chat, but only a tile that went to Terminal by Answer in Terminal.
+    if (this.answerReturns && row && row.stance !== 'asking') {
+      this.answerReturns = false;
+      if (!this.transcriptOn) this.toggleTranscript();
+    }
+    this.stopWatch?.(row); // a Stop waiting to hear the Agent stopped (terminal-controls.js)
+  }
+
+  /**
+   * ANSWER IN TERMINAL — the Chat button under an Agent's question (owner, 2026-11-12).
+   * Chat cannot answer the options, so the press takes the tile to Terminal through its own
+   * Term/Chat switch, and remembers that it did: once the stance leaves 'asking' the tile
+   * comes back to Chat (refreshStance). The owner switching by hand cancels that.
+   */
+  answerInTerminal() {
+    if (!this.transcriptOn) return;
+    this.toggleTranscript();
+    this.answerReturns = !this.transcriptOn;
   }
 
   /** The route's word on this Agent's transcript arrived; the header reads it from here. */
   onTranscriptState(state) {
     this.transcriptState = state;
     if (Array.isArray(state.readings) && state.readings.length) this.transcriptReadings = state.readings;
-    // The intention from connect(), spent once. 'Available' means what it means everywhere
-    // else in this tile — the button would be live, not opaque (see transcriptQuiet): an
-    // Agent whose record is unavailable or still empty is better met at its terminal than
-    // at a reading with nothing in it. Pressing the button before the answer lands turns
-    // the transcript on and the intention is dropped rather than fighting the press.
+    // The intention from connect(), spent once. Chat opens whatever the route said: a new
+    // Agent's record, empty or not written yet, is no reason to meet it at its terminal
+    // (owner, 2026-11-13, KAN-453); it fills as the first records arrive (tile-transcript.js
+    // asks again while pending), and unnamed readings open on the route's default, Chat.
+    // A press by hand before the answer lands spends the intention (toggleTranscript).
     if (this.transcriptWantChat) {
       this.transcriptWantChat = false;
-      if (!this.transcriptOn && state.available && (this.opensOnReading || !state.empty) && this.transcriptCycle().length) {
+      if (!this.transcriptOn) {
         this.toggleTranscript();
         return;
       }
@@ -350,7 +369,8 @@ export class Tile {
     const reading = this.transcriptCycle()[this.transcriptLevel];
     // The route's own word for the reading — Chat, Notes, Work, All — is the label (owner,
     // 2026-09-22: the names beat T1…T4).
-    return reading ? (reading.label || reading.name) : t('transcript.toggle', 'Transcript');
+    // Readings not named yet: the route's default is Chat, and that is what is on screen.
+    return reading ? (reading.label || reading.name) : t('transcript.chat', 'Chat');
   }
 
   /**
@@ -627,6 +647,7 @@ export class Tile {
     if (changed && this.docView?.isOpen() && !this.docView.close()) return false;
     if (changed) {
       this.transcriptView.hide();
+      this.answerReturns = false;
       this.transcriptOn = false;
       this.transcriptLevel = -1;
       this.transcriptReadings = [];
@@ -660,6 +681,7 @@ export class Tile {
     this.refreshCtx();
     this.refreshTegami();
     this.refreshStance();
+    this.secretAsk.sync(this.homeRow()); // an ask already standing opens on a tile seated after it
 
     this.term.reset();
     this.tapeMode = !this.locked;

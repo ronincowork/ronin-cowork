@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 . "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/tool-count.sh" session_archive "$@"
 # session_archive — stop a live session while keeping it resumable.
-# Usage: session_archive <session>
+# Usage: session_archive <session> [--ignore-items]
 set -u
 case "${1-}" in
   -h|--help) [ "$#" -eq 1 ] || { echo "session_archive: --help takes no other arguments. Run session_archive --help." >&2; exit 2; }
@@ -9,18 +9,25 @@ case "${1-}" in
 session_archive — stop a live session while keeping it resumable
 
 Usage:
-  session_archive <session>
+  session_archive <session> [--ignore-items]
 
 Archive records the provider conversation and session metadata before stopping the
 live session. A refusal leaves it running; this is not hard deletion.
+It refuses once, as session_end does, while the Agent holds work items In Progress or In
+Review it has not flagged, naming each, with the same nudge: finish it, or flag it; clean the
+desks; then go. A flagged item needs nothing more; --ignore-items archives past the rest.
+Each item still goes to the Team, flagged "Ended without handover: <agent>, <status>", and the
+lead is told once. To Do goes back to the Team by itself.
 Related: session_restore --help
 EOF
     exit 0 ;;
 esac
 . "$(dirname "$(readlink "${BASH_SOURCE[0]}" 2>/dev/null || printf '%s' "${BASH_SOURCE[0]}")")/tool-path.sh"
 TOOL_DIR=$(dirname "$SELF")
+ignore_items=false
+[ "$#" -eq 2 ] && [ "$2" = --ignore-items ] && { ignore_items=true; set -- "$1"; }
 [ "$#" -eq 1 ] && [ -n "$1" ] && [ "${1#-}" = "$1" ] || {
-  echo "usage: session_archive <session>. Run session_archive --help." >&2
+  echo "usage: session_archive <session> [--ignore-items]. Run session_archive --help." >&2
   exit 2
 }
 NAME=$1
@@ -29,7 +36,8 @@ ronin_connect || exit $?
 out=$(mktemp)
 trap 'rm -f "$out"' EXIT
 code=$(curl -sS -m 60 "${RONIN_CURL[@]+"${RONIN_CURL[@]}"}" -o "$out" -w '%{http_code}' \
-  -H 'content-type: application/json' -X POST "$url/api/sessions/$NAME/archive" 2>/dev/null) || {
+  -H 'content-type: application/json' -X POST "$url/api/sessions/$NAME/archive" \
+  -d "{\"ignore_items\":$ignore_items}" 2>/dev/null) || {
   echo "UNREACHABLE: Ronin did not answer at $url" >&2
   exit 5
 }

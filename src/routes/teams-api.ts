@@ -1,4 +1,5 @@
 import type express from 'express';
+import { liveRows } from '../work-items-index.js';
 import {
   createTeamRoster,
   isCreatableTeamName,
@@ -20,7 +21,6 @@ import { readCampaign } from '../campaigns.js';
 import { readWorkspace } from '../workspaces.js';
 import { teamAgentDefaults } from '../agent-defaults.js';
 import { rosterReading, teamBoard, teamWork } from '../work-items-read.js';
-import { listItems } from '../work-items.js';
 
 const errMsg = (e: unknown): string => String((e as Error)?.message ?? e);
 
@@ -109,7 +109,7 @@ export async function teamRosters(named: string[] = []): Promise<unknown[]> {
   const keep = await campaignFilter(wanted);
   const rosters = (await listTeamRosters()).filter((r) => keep(r.campaign_id));
   const sessions = await listSessions();
-  const every = rosters.length ? await listItems() : [];
+  const every = rosters.length ? await liveRows() : [];
   return Promise.all(
     rosters.map(async (r) => {
       const reading = await rosterReading(r, sessions);

@@ -308,8 +308,8 @@ export function createRootDrawing(deps) {
 
     const row = document.createElement('div');
     row.className = 'pr-frow';
-    const save = createAction({ label: creating ? t('roots.add_save', 'Add') : stones ? t('roots.save_folder', 'Save') : t('roots.save', 'save'), kind: 'primary' }).el;
-    const cancel = createAction({ label: stones ? t('roots.cancel_folder', 'Cancel') : t('roots.cancel', 'cancel') }).el;
+    const save = createAction({ label: creating ? t('roots.add_save', 'Add') : stones ? t('roots.save_folder', 'Save') : t('roots.save', 'save'), kind: 'primary', endsEdit: true }).el;
+    const cancel = createAction({ label: stones ? t('roots.cancel_folder', 'Cancel') : t('roots.cancel', 'cancel'), endsEdit: true }).el;
     const err = status('pr-err');
     row.append(save, cancel, err.el);
     f.appendChild(row);

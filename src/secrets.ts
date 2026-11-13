@@ -7,6 +7,11 @@
  * An Agent asks with `secret ask`: the ask rides its home row (`secret_ask`), its tile opens a
  * paste field, and the owner saves or cancels. The asking request is held until then and is
  * answered "saved" or "cancelled" only.
+ *
+ * A secret may carry an expiry date (KAN-417), so a key is noticed before it lapses. The dates
+ * live beside the values in one file, `secrets-expiry.json` ({ name: "YYYY-MM-DD" | "never" }),
+ * never in a value file, which tools read as-is. Its dot keeps it out of the names. No entry means
+ * nothing is known (w478: Nothing, a date, Never, or N days from today, stored as its date).
  */
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -24,13 +29,57 @@ export function secretFile(name: string): string {
   return path.join(dir(), name);
 }
 
-export async function saveSecret(name: string, value: string): Promise<string> {
-  const file = secretFile(name);
-  if (!value) throw new SecretBadInput('An empty secret is not saved.');
+async function writePrivate(file: string, body: string): Promise<void> {
   await fs.mkdir(dir(), { recursive: true, mode: 0o700 });
   const tmp = `${file}.${process.pid}.tmp`;
-  await fs.writeFile(tmp, value, { mode: 0o600 });
+  await fs.writeFile(tmp, body, { mode: 0o600 });
   await fs.rename(tmp, file);
+}
+
+const expiryFile = (): string => path.join(dir(), 'secrets-expiry.json');
+
+/** Every expiry date, by name. */
+export async function secretExpiries(): Promise<Record<string, string>> {
+  try {
+    const all = JSON.parse(await fs.readFile(expiryFile(), 'utf8'));
+    return all && typeof all === 'object' && !Array.isArray(all) ? all : {};
+  } catch { return {}; }
+}
+
+/**
+ * An expiry as stored: a YYYY-MM-DD date, or "never" (it does not expire, which is not the same as
+ * unknown). Empty means nothing is recorded. "<N>d" is N days from today, stored as its date.
+ */
+export function expiryDate(date: string): string {
+  const day = date.trim();
+  if (!day || day === 'never') return day;
+  const days = /^(\d{1,5})d$/.exec(day);
+  if (days) {
+    const at = new Date();
+    at.setDate(at.getDate() + Number(days[1]));
+    return [at.getFullYear(), at.getMonth() + 1, at.getDate()].map((n, i) => String(n).padStart(i ? 2 : 4, '0')).join('-');
+  }
+  const real = /^\d{4}-\d{2}-\d{2}$/.test(day) && new Date(`${day}T00:00:00Z`).toISOString().startsWith(day);
+  if (!real) throw new SecretBadInput(`"${day}" is not an expiry: use YYYY-MM-DD, <N>d, never, or clear.`);
+  return day;
+}
+
+/** Set or clear one secret's expiry; the value is not touched. */
+export async function setSecretExpiry(name: string, date: string): Promise<string> {
+  secretFile(name);
+  const day = expiryDate(date);
+  const all = await secretExpiries();
+  if (day) all[name] = day; else delete all[name];
+  await writePrivate(expiryFile(), `${JSON.stringify(all, null, 2)}\n`);
+  return day;
+}
+
+export async function saveSecret(name: string, value: string, expires = ''): Promise<string> {
+  const file = secretFile(name);
+  if (!value) throw new SecretBadInput('An empty secret is not saved.');
+  const day = expiryDate(expires);
+  await writePrivate(file, value);
+  await setSecretExpiry(name, day);
   return file;
 }
 
@@ -71,11 +120,11 @@ export function askSecret(session: string, name: string, what = ''): Promise<Ans
 }
 
 /** The owner's answer on a tile: a value saves it, none cancels. Without an ask, a value is just saved. */
-export async function answerSecret(name: string, value: string | null, session = ''): Promise<Answer> {
+export async function answerSecret(name: string, value: string | null, session = '', expires = ''): Promise<Answer> {
   const ask = session ? asks.get(session) : undefined;
   if (ask && ask.name !== name) throw new SecretBadInput(`${session} asked for ${ask.name}, not ${name}.`);
   if (value == null) { ask?.done('cancelled'); return 'cancelled'; }
-  await saveSecret(name, value);
+  await saveSecret(name, value, expires);
   ask?.done('saved');
   return 'saved';
 }

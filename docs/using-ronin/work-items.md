@@ -132,7 +132,7 @@ item create --parent w3 --title "…" [--kind Task] [--objective "…"] [--prior
 item read w12                       # fields, children, comments, attachments, links, history
 item search [--campaign home_machine] [--team surface] [--holder builder | none] [--parent w3 | --no-parent] [--status "In Progress"] [--kind Bug] [--archived]
 item edit w12 --objective "…" --priority High
-item transition w12 "In Review" --note "…"   # a hand-in: --note is the Handed in comment for the user, at most 280 characters
+item transition w12 "In Review" --note "…"   # a hand-in: --note is the review line, one short line of what to look at
 item flag w12 "waiting on the API"  # item unflag w12 when clear
 item handoff w12 builder            # the giver comes off, builder goes on; or team:surface; --from names the giver; --keep-holding
 item handover w12 team:surface "…"  # an ending hands over: a Handover comment, the holder moved, the status kept; --to-do, --flag "…"

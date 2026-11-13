@@ -13,6 +13,7 @@ import { MULTIPLE_CAMPAIGNS_ENABLED } from './campaigns.js';
 import { AGENT_COMPOSITION_TYPE } from './agent-composition.js';
 import { WORK_ITEMS_TYPE } from './work-items-surface.js';
 import { HELP_PAGE_TYPE } from './help-outline.js';
+import { HOSTED } from './hosted.js';
 
 export const WORKBENCH_PROFILES = Object.freeze({ campaign: 'campaign', launch: 'launch', cowork: 'cowork', team: 'team', agent: 'agent', models: 'models', workspaces: 'workspaces', epics: 'epics', help: 'help' });
 export const WORKBENCH_TYPES = Object.freeze({
@@ -20,7 +21,7 @@ export const WORKBENCH_TYPES = Object.freeze({
   launchTeam: 'launch.team', launchAgent: 'launch.agent', launchHelp: 'launch.help',
   commons: 'team.commons', workItems: WORK_ITEMS_TYPE, cron: 'cowork.cron-jobs',
   roster: 'cowork.team-roster', sessionRoster: 'cowork.session-roster', newTeamForm: 'cowork.new-team-form', newAgent: 'session.new-agent',
-  team: 'team.profile', archives: 'cowork.archives', teamEpics: 'team.epics',
+  team: 'team.profile', archives: 'cowork.archives', teamEpics: 'team.epics', teamFindItem: 'team.find-item',
   agentDocuments: 'agent.documents', agentTeams: 'agent.team-membership', agentComposition: AGENT_COMPOSITION_TYPE,
   campaignMachine: 'campaign.machine', campaignCloudAccount: 'campaign.cloud-account', campaignDefaults: 'campaign.defaults', campaignRoots: 'campaign.project-roots',
   campaignIdentity: 'campaign.identity', campaignInstallations: 'campaign.installations', campaignCreate: 'campaign.new', campaignIntegrations: 'campaign.integrations', campaignJira: 'campaign.jira', campaignJiraItems: 'campaign.jira-items', campaignJiraPairs: 'campaign.jira-pairs',
@@ -49,6 +50,8 @@ export function registerWorkbenchCatalog() {
   via(WORKBENCH_TYPES.commons, 'tabs', 'teamCommons', { className: 'wk-selector-utility', label: () => t('team.commons_card', 'Commons'), summary: () => t('team.commons_summary', 'See Roster / Docs / Wipeboard / Messages / Configuration') });
   // EPICS (KAN-232): the Team's Epics on the Epics board (team-epics.js).
   via(WORKBENCH_TYPES.teamEpics, 'surface', 'teamEpics', { className: 'wk-selector-utility', label: () => t('epics.title', 'Epics') });
+  // FIND ITEM (owner, 2026-11-12, KAN-433): asks for an item number, loads that item here (team-find-item.js).
+  via(WORKBENCH_TYPES.teamFindItem, 'surface', 'teamFindItem', { className: 'wk-selector-utility', label: () => t('find_item.title', 'Find item') });
   add({ type: WORKBENCH_TYPES.workItems, header: 'surface', className: 'wk-selector-utility', label: () => t('work_items.title', 'Work Items'), discover: (_t, e) => e.workItemOffers(), create: ({ environment }) => environment.workItems() });
   via(WORKBENCH_TYPES.roster, 'surface', 'roster', { className: 'wk-selector-utility', label: () => t('campaign.coworks', 'Teams') });
   via(WORKBENCH_TYPES.sessionRoster, 'surface', 'sessionRoster', { className: 'wk-selector-utility', label: () => t('league.team_roster', 'Team roster') });
@@ -80,7 +83,10 @@ export function registerWorkbenchCatalog() {
   profiles.define(WORKBENCH_PROFILES.launch, [WORKBENCH_TYPES.launchTeam, WORKBENCH_TYPES.launchAgent, WORKBENCH_TYPES.launchHelp, BEHAVIOUR_SURFACE_TYPE, WORKBENCH_TYPES.document, FEEDBACK_TYPE]);
   profiles.define(WORKBENCH_PROFILES.cowork, [WORKBENCH_TYPES.roster, WORKBENCH_TYPES.sessionRoster, WORKBENCH_TYPES.cron, WORKBENCH_TYPES.team, WORKBENCH_TYPES.terminal, WORKBENCH_TYPES.newTeamForm, WORKBENCH_TYPES.newAgent, WORKBENCH_TYPES.archives, WORKBENCH_TYPES.document, BEHAVIOUR_SURFACE_TYPE, PRESETS_TYPE, FEEDBACK_TYPE]);
   profiles.define(WORKBENCH_PROFILES.agent, [WORKBENCH_TYPES.terminal, WORKBENCH_TYPES.agentComposition, WORKBENCH_TYPES.agentDocuments, WORKBENCH_TYPES.agentTeams, WORKBENCH_TYPES.workItems, WORKBENCH_TYPES.document, FEEDBACK_TYPE]);
-  profiles.define(WORKBENCH_PROFILES.campaign, [WORKBENCH_TYPES.terminal, WORKBENCH_TYPES.campaignMachine, WORKBENCH_TYPES.campaignCloudAccount, BEHAVIOUR_SURFACE_TYPE, PASSWORD_SURFACE_TYPE, WORKBENCH_TYPES.campaignInstallations, PROVIDER_SURFACE_TYPE, SETUP_SURFACE_TYPES.register, FEEDBACK_TYPE, WORKBENCH_TYPES.campaignIdentity, WORKBENCH_TYPES.campaignDefaults, WORKBENCH_TYPES.campaignRoots, SETUP_SURFACE_TYPES.launchOwn, WORKBENCH_TYPES.document, WORKBENCH_TYPES.campaignIntegrations, WORKBENCH_TYPES.campaignJira, WORKBENCH_TYPES.campaignJiraItems, WORKBENCH_TYPES.campaignJiraPairs, ...(MULTIPLE_CAMPAIGNS_ENABLED ? [WORKBENCH_TYPES.campaignCreate] : [])]);
+  // A hosted office's Settings offers no account, registration, password or installations cards:
+  // those live in the Business Lounge and on the office_park (hosted.js).
+  const notHosted = (...types) => (HOSTED ? [] : types);
+  profiles.define(WORKBENCH_PROFILES.campaign, [WORKBENCH_TYPES.terminal, WORKBENCH_TYPES.campaignMachine, ...notHosted(WORKBENCH_TYPES.campaignCloudAccount), BEHAVIOUR_SURFACE_TYPE, ...notHosted(PASSWORD_SURFACE_TYPE, WORKBENCH_TYPES.campaignInstallations), PROVIDER_SURFACE_TYPE, ...notHosted(SETUP_SURFACE_TYPES.register), FEEDBACK_TYPE, WORKBENCH_TYPES.campaignIdentity, WORKBENCH_TYPES.campaignDefaults, WORKBENCH_TYPES.campaignRoots, SETUP_SURFACE_TYPES.launchOwn, WORKBENCH_TYPES.document, WORKBENCH_TYPES.campaignIntegrations, WORKBENCH_TYPES.campaignJira, WORKBENCH_TYPES.campaignJiraItems, WORKBENCH_TYPES.campaignJiraPairs, ...(MULTIPLE_CAMPAIGNS_ENABLED ? [WORKBENCH_TYPES.campaignCreate] : [])]);
   // HOME'S DOORS (owner, 2026-10-19; door-workbenches.js): Models and Workspaces are workbenches of
   // their own; Teams is the Cowork workbench above (owner, 2026-10-20).
   // THE MODELS WORKBENCH (owner, 2026-10-19): its own stones in Workspace 1; one provider whole in a
@@ -115,9 +121,9 @@ export function registerWorkbenchCatalog() {
   // THE TEAM PAGE (owner, 2026-10-18): the selector holds Commons, the Agents, New Agent and the
   // hints (Agent vocabulary, Session controls — the selector's own, workbench.js). The composition
   // reader, Behaviors and Feedback stay placeable: the roster, New Agent and the bar place them.
-  // Epics follows Commons (KAN-232); an Epic's record is placed by a pressed Epic stone, never a card.
+  // Epics follows Commons (KAN-232), Find item follows Epics (KAN-433); an Epic's record is placed by a pressed Epic stone, never a card.
   // Defined after the Epics types: a profile names only registered types.
-  profiles.define(WORKBENCH_PROFILES.team, [WORKBENCH_TYPES.commons, WORKBENCH_TYPES.teamEpics, WORKBENCH_TYPES.epicRecord, WORKBENCH_TYPES.terminal, WORKBENCH_TYPES.newAgent, WORKBENCH_TYPES.agentComposition, BEHAVIOUR_SURFACE_TYPE, FEEDBACK_TYPE]);
+  profiles.define(WORKBENCH_PROFILES.team, [WORKBENCH_TYPES.commons, WORKBENCH_TYPES.teamEpics, WORKBENCH_TYPES.teamFindItem, WORKBENCH_TYPES.epicRecord, WORKBENCH_TYPES.terminal, WORKBENCH_TYPES.newAgent, WORKBENCH_TYPES.agentComposition, BEHAVIOUR_SURFACE_TYPE, FEEDBACK_TYPE]);
   // THE HELP WORKBENCH (owner, 2026-10-21): the help outline and Mika in chat, both solid cards (door-workbenches.js).
   add({ type: WORKBENCH_TYPES.helpOutline, header: 'surface', className: 'wk-selector-utility', label: () => t('help_outline.title', 'Help'), summary: () => t('help_outline.summary', 'The guides, starting with the four things to know'), create: ({ environment }) => environment.helpOutline() });
   add({ type: WORKBENCH_TYPES.helpMika, header: 'terminal', className: 'wk-selector-utility', label: () => 'Mika', summary: () => t('help_outline.mika_summary', 'Ask in plain words'), create: ({ environment }) => environment.helpMika() });

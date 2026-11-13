@@ -1,6 +1,6 @@
 /* part of the ronin-cowork client — see js/README.md */
 import { t } from './lexicon.js';
-import { workbenchLaunchUrl } from './workspace.js';
+import { workbenchLink } from './workspace.js';
 
 /** The one navigation header shared by every Ronin workspace. */
 /** The active Workbench declares its appearance; routes and surfaces never infer it. */
@@ -32,6 +32,7 @@ export function installWorkspaceHeader(workspace) {
     action();
   };
   home?.addEventListener('click', plainRoute(root));
+  if (coworkers) workbenchLink(coworkers, { destination: 'cowork', mode: 'overlay' });
   coworkers?.addEventListener('click', plainRoute(() => workspace.navigate('cowork')));
 
   const refresh = () => {
@@ -46,7 +47,6 @@ export function installWorkspaceHeader(workspace) {
     if (separator) separator.hidden = !underTeams;
     if (coworkers) {
       coworkers.hidden = !underTeams;
-      coworkers.href = workbenchLaunchUrl({ destination: 'cowork', mode: 'overlay' });
     }
     if (placeSeparator) placeSeparator.hidden = !placed;
     if (crumb) { crumb.textContent = placed; crumb.hidden = !placed; }

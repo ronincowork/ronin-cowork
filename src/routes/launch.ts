@@ -29,6 +29,7 @@ import { announceTeamChanges } from './wipeboards-api.js';
 import { checkoutAt, deriveTeams, parkBrief, seedTegami, teamChanged, withAxes, writeConfiguration, type SessionWithAxes } from '../tegami.js';
 import { callerOf } from './work-items-api.js';
 import { collectBirthLines, collectRowFields } from '../sockets.js';
+import { stoppedAt } from '../stopped.js';
 import { broadcastEvent, listening, pushTeams } from '../ws/events.js';
 import { listProjectRoots } from '../project-roots.js';
 import { readWorkspace } from '../workspaces.js';
@@ -198,11 +199,14 @@ export function homeRows(list: SessionWithAxes[]) {
         collectRowFields(s.name),
         readTegami(s.name),
       ]);
+      const stopped_at = stoppedAt(s.name, contributed.at);
       return {
         ...s,
         ...pane,
         ...contributed,
-        stance: contributed.stance ?? 'unknown',
+        // A Stop Ronin sent reads interrupted until the Agent writes a line or is sent to (stopped.ts).
+        stance: stopped_at ? 'interrupted' : contributed.stance ?? 'unknown',
+        ...(stopped_at ? { stopped_at } : {}),
         ...(tegami ? { tegami } : {}),
       };
     }),

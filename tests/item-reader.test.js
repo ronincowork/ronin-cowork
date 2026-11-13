@@ -43,13 +43,16 @@ test('every size in the reader is a token, and the tile overlay reads in the UI 
 
 // What the user reads first (ITEM_HANDOVER): the objective and the Handed in note, before
 // Status; the other comments folded.
-test('the reader shows the objective and the Handed in note first, other comments folded', async () => {
+test('the reader opens on Status, then the objective, the Handed in note, the Agents and the Details; other comments folded', async () => {
   const surface = await read('public/js/work-items-surface.js');
   const body = surface.slice(surface.indexOf('export function renderItemDetail'), surface.indexOf('/** A phalanx of item stones'));
   const at = (what) => { const i = body.indexOf(what); assert.ok(i >= 0, what); return i; };
   // Each step names its fold first (w297): step('<id>', t(...), ...).
-  assert.ok(at("step('objective', t('work_items.objective'") < at("step('handed_in', t('work_items.handed_in'"), 'the objective, then the note');
-  assert.ok(at("step('handed_in', t('work_items.handed_in'") < at("step('status', t('work_items.status'"), 'both before Status');
+  assert.ok(at("step('objective', t('work_items.objective'") < at("step('look_at', t('work_items.look_at'"), 'the objective, then Look at, the note (KAN-429)');
+  assert.ok(at("step('look_at', t('work_items.look_at'") < at("step('handed_in', t('work_items.handed_in'"), 'then the hand-in record');
+  assert.ok(at("statusStep = step('status', t('work_items.status'") < at("step('objective', t('work_items.objective'"), 'Status first (KAN-435)');
+  assert.ok(at("step('handed_in', t('work_items.handed_in'") < at("step('agents', t('work_items.agents'"), 'then the Agents (KAN-435)');
+  assert.ok(at("step('agents', t('work_items.agents'") < at("step('details', t('work_items.details'"), 'above the Details');
   assert.match(body, /\.filter\(\(comment\) => comment !== handed\)/, 'the note is not repeated among the comments');
   assert.match(body, /const folded = el\('details', 'wi-comments'\);/, 'the other comments fold');
   assert.match(surface, /export const HANDED_IN = 'Handed in: ';/);
@@ -86,6 +89,20 @@ test('holderWords and holderOf say who holds an item; originWords where it start
 });
 
 // Owner, 2026-11-05: the overlay says the hand-in the pill marks. KAN-311: as one line of steps.
+test('itemAgents: the holders first, a Team as its lead, then the Agent it was started in (KAN-435)', async () => {
+  const surface = await read('public/js/work-items-surface.js');
+  const lift = (name) => surface.match(new RegExp(`export (?:const|function) ${name}[\\s\\S]*?\\n(?=\\n)`))[0].replace(/^export /, '');
+  const t = (_key, literal, vars = {}) => literal.replace(/\{(\w+)\}/g, (_m, k) => String(vars[k]));
+  const membersOfTeam = (team) => (team === 'system' ? [{ name: 'system_lead', team_lead: true }] : []);
+  const { itemAgents } = new Function('t', 'membersOfTeam',
+    `${lift('teamLead')}\n${lift('holderWords')}\n${lift('itemAgents')}\nreturn { itemAgents };`)(t, membersOfTeam);
+  const rows = itemAgents({ holder: 'agent:x', created: { by: 'pm_lead' } }, ['agent:item_pills', 'team:system']);
+  assert.deepEqual(rows.map((row) => [row.name, row.label, row.roles.join(' · ')]),
+    [['item_pills', '@item_pills', 'Holder'], ['system_lead', 'Team system (lead system_lead)', 'Holder'], ['pm_lead', '@pm_lead', 'Started in']]);
+  assert.deepEqual(itemAgents({ holder: 'agent:pm_lead', created: { by: 'pm_lead' } }).map((row) => row.roles), [['Holder', 'Started in']], 'one stone for both');
+  assert.deepEqual(itemAgents({ created: { by: 'jira:glen' } }), [], 'a Jira user is no Agent');
+});
+
 test('handInRecord: one line of steps, promoted only when its promotion came after; live from the receipt', async () => {
   const surface = await read('public/js/work-items-surface.js');
   const lift = (name) => surface.match(new RegExp(`export (?:const|function) ${name}[\\s\\S]*?\\n(?=\\n)`))[0].replace(/^export /, '');
@@ -102,7 +119,7 @@ test('handInRecord: one line of steps, promoted only when its promotion came aft
   assert.equal(promotionToCheck({ handed_in: { by: 'a', at: '2026-11-05T11:00:00Z' }, on_dev: { at: '2026-11-05T10:00:00Z', promotion: 'r0' } }), '');
   assert.match(surface, /request\(`\/api\/promotions\/\$\{encodeURIComponent\(promotion\)\}\/live`/, 'live is the promotion receipt read');
   assert.doesNotMatch(surface.slice(surface.indexOf('export function handInRecord'), surface.indexOf('export function originWords')), /github|master|' \| '/i, 'no GitHub/master step, no divider');
-  assert.match(surface, /if \(record \|\| handed\) \{/, 'the row shows for a hand-in with no note too');
+  assert.match(surface, /if \(record\) \{/, 'the hand-in record shows with no note too');
 });
 
 // The tile's work record lists open items only; Done waiting for the archive is one line (KAN-271).
