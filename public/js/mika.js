@@ -184,12 +184,11 @@ export function createMikaHelpPanel({ selector, header, createAction, t, ready, 
 
 /** Mika's one ordinary tile on a workbench that has no team pools (Setup): a surface and a
  *  one-stream warm pool over the shared terminal tile host. Help borrows from it and the
- *  Mika card shows it as a normal Workspace tile. `opensOn: 'reading'` seats her as a chat
- *  (the Help workbench): the tile opens on her reading rather than her terminal. */
-export function createMikaTilePool({ opensOn = '' } = {}) {
+ *  Mika card shows it as a normal Workspace tile. Like every tile it opens on Chat. */
+export function createMikaTilePool() {
   const surface = WorkspaceKit.primitives.createSurface({ label: 'Mika', className: 'tw-terminal', flush: true, header: false });
   const pool = createWarmTerminalPool({
-    createHost: (options) => WorkspaceKit.adapters.createTerminalTileHost({ ...options, opensOn }), container: surface.content, streamCap: 1,
+    createHost: (options) => WorkspaceKit.adapters.createTerminalTileHost(options), container: surface.content, streamCap: 1,
   });
   return { surface, pool };
 }
