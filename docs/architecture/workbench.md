@@ -202,10 +202,11 @@ Help (owner, 2026-10-21) is the same door shape seating two workspaces: the help
 (`help.outline`, `help-outline.js`) in Workspace 1 and Mika (`help.mika`) in Workspace 2. A page stone
 dragged into a workspace reads that page whole there (`help.page`, no selector card). Her tile
 opens on Chat like every tile, before her record has anything in it; a Mika born by the seat gets a fresh tile once she is up.
-The gate (owner, 2026-10-19): as on the old root, the Models, Workspaces and Teams doors are locked (Help
-stays open, owner 2026-10-21; with no provider its Mika seat is one line pointing to Setup) until one model
-provider is activated (`/api/setup/runtime`'s `activated_count`), each saying so under its name,
-and Settings is the one live stone — a new user's way in is Setup.
+The gate (owner, 2026-10-19): as on the old root, the Teams, Epics and Workspaces doors are locked until one
+model provider is activated (`/api/setup/runtime`'s `activated_count`), each saying under its name that a
+provider is activated in Setup or Agent Harness. Settings, Help (owner, 2026-10-21; with no provider its Mika
+seat is one line pointing to Setup) and Agent Harness (owner, 2026-11-13; KAN-472: it is where a provider is
+signed in, its sign-in tile mounted as on Setup) stay open — a new user's way in is Setup or Agent Harness.
 
 **One root** (owner, 2026-11-02; KAN-197). That page is the only root: the old Home at `#/current`
 and the bar's Current/Next toggle are deleted, and an old `#/current` link falls to the safe view,

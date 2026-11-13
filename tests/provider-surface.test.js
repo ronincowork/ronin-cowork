@@ -480,3 +480,24 @@ test('repainting an open setup terminal does not start another measurement from 
     assert.equal(calls.filter(call => call.endsWith('/providers/refresh')).length, measurements);
   } finally { view.destroy(); }
 });
+
+test('a frame that leaves the open stone unchanged keeps its sign-in tile alive (KAN-472)', async () => {
+  const originalMachine = machine;
+  machine = { providers: [{ id: 'codex', label: 'Codex', installed: true, login_open: true, attachment: { type: 'session', key: 'provider_setup_codex' } }], activated_count: 0 };
+  const ctx = context();
+  let destroyed = 0;
+  const mount = ctx.environment.mountProviderSetupSession;
+  ctx.environment.mountProviderSetupSession = (args) => { const made = mount(args); return { ...made, destroy() { destroyed++; made.destroy(); } }; };
+  ctx.detail = { provider: 'codex' };
+  const view = surface.createProviderSurface(ctx);
+  try {
+    await view.show(); await settle();
+    byClass(view.el, 'sws-stone').find((n) => n.attributes['data-provider'] === 'codex').click();
+    const count = ctx.mounts.length;
+    assert.ok(count >= 1, 'the open sign-in is mounted');
+    const before = destroyed;
+    await view.show(); await settle();
+    assert.equal(destroyed, before, 'the record and the measure do not tear the live tile down');
+    assert.equal(ctx.mounts.length, count, 'nor mount it again');
+  } finally { view.destroy(); machine = originalMachine; }
+});

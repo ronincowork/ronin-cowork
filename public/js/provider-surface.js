@@ -591,9 +591,11 @@ export function createProviderDrawing(context, { repaint, say = () => {} }) {
     return () => disposeMount();
   };
 
-  /** The frame from whatever `runtime` holds now: the record, or the measure once it lands. */
+  /** The frame from whatever `runtime` holds now: the record, or the measure once it lands.
+   * The open page's terminal and sign-in form are not torn down here: the page's own dispose
+   * does that when the phalanx redraws it, and a frame that leaves its stone's row unchanged
+   * (KAN-414) leaves the page, its live sign-in tile and any draft standing (KAN-472). */
   const paintFrom = async () => {
-    disposeMount();
     context.environment.setupRuntime = runtime;
     context.environment.onSetupRuntime?.(runtime);
     await repaint();
