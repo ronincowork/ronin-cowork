@@ -960,38 +960,22 @@ test('Answer in Terminal: the press switches through the tile, and only that pre
   assert.equal(tile.transcriptOn, false, 'the hand switch cancelled the return');
 });
 
-test('a Chat opened before the Agent wrote its journal fills in without a reload (KAN-453)', async () => {
-  let written = false;
+test('a Chat opened before the Agent wrote its journal fills from the push, with no asking again (KAN-453)', async () => {
   const asked = [];
   const watched = [];
   const view = makeTileTranscript({
     read: async (url) => {
       asked.push(url);
-      return written
-        ? { ok: true, data: { available: true, view: 'chat', readings: READINGS, seq: 1, more: false, records: [{ seq: 0, role: 'agent', kind: 'say', text: 'hello' }] } }
-        : { ok: true, data: { available: false, gap: 'journal_pending', reason: 'This Agent has not written its first message yet.', records: [] } };
+      return { ok: true, data: { available: false, gap: 'journal_pending', reason: 'This Agent has not written its first message yet.', records: [] } };
     },
     watch: (name, reading) => watched.push([name, reading]),
   });
-  const timers = [];
-  const realTimeout = globalThis.setTimeout;
-  globalThis.setTimeout = (fn) => { timers.push(fn); return 0; };
-  try {
-    view.show('agent', '');
-    await tick();
-    assert.equal(asked.length, 1);
-    assert.equal(timers.length, 1, 'a pending journal is asked again');
-    written = true;
-    timers.shift()();
-    await tick();
-    assert.deepEqual(watched.at(-1), ['agent', ''], 'the watch is sent again, so the server follows the new journal');
-    assert.deepEqual(contents(view.el), ['hello'], 'and the first words are on screen');
-    assert.equal(timers.length, 0, 'nothing more to wait for');
-
-    // Any other gap is final; and a hidden view stops asking.
-    view.hide();
-  } finally {
-    globalThis.setTimeout = realTimeout;
-  }
+  view.show('agent', '');
+  await tick();
+  assert.deepEqual(watched, [['agent', '']], 'the watch is what the server waits on');
+  for (let i = 0; i < 5; i++) await new Promise((r) => setTimeout(r, 0));
+  assert.equal(asked.length, 1, 'one read: it does not poll');
+  deliver({ t: 'transcript', session: 'agent', reading: '', records: [{ seq: 0, role: 'agent', kind: 'say', text: 'hello' }] });
+  assert.deepEqual(contents(view.el), ['hello'], 'the first words replace the message');
   view.dispose();
 });

@@ -101,7 +101,6 @@ export function makeTileTranscript({ read = request, watch = transcriptWatch(), 
   let lastState = null; // the header facts restored with a cached phone transcript
 
   const CACHE_TTL = 10 * 60 * 1000;
-  const PENDING_RETRY_MS = 2000; // how soon a Chat whose journal is not written yet asks again
   const CACHE_LIMIT = 12;
   const cacheKey = (name = session, view = reading) => `${name}\u0000${view}`;
   function stash() {
@@ -432,18 +431,9 @@ export function makeTileTranscript({ read = request, watch = transcriptWatch(), 
     if (result.data.available === false) {
       message(result.data.reason || t('transcript.unavailable', 'Transcript unavailable for this Agent.'));
       report(result.data, 0);
-      // A NEW AGENT'S CHAT FILLS WITHOUT A RELOAD (KAN-453). A tile opens on Chat before the
-      // CLI has written its journal, and nothing is following a journal that is not there
-      // yet, so nothing would ever arrive. While it is pending, ask again: the watch first,
-      // which has the server install the watcher once the journal exists, then the read.
-      // Any other gap is not going to change by waiting. A newer show() or hide() outdates it.
-      if (result.data.gap === 'journal_pending') {
-        setTimeout(() => {
-          if (!active || token !== generation) return;
-          watch(session, reading);
-          void open(token);
-        }, PENDING_RETRY_MS);
-      }
+      // A journal not written yet is not the end of it: the watch sent in show() has the
+      // server follow it the moment the CLI writes it, and its records arrive on the socket
+      // like any others, replacing this message (src/journal-arrival.ts, KAN-453).
       return;
     }
     // The end the route reports, kept whether or not this reading showed any of it: an

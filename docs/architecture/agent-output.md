@@ -90,3 +90,9 @@ tile leaving Chat never silences another tile's Chat. When a read writes lines, 
 them to Core's `deliverToWatchers`, which sends each watching connection the lines its
 reading admits (`src/ws/watchers.ts`). A tab that reconnects says its list again and asks for
 what it missed by `seq`.
+
+A tile opens on Chat as soon as its Agent is born, usually before the CLI has written a
+journal. While a watched Agent's journal is still pending, Core watches the journal's declared
+root for that file (`src/journal-arrival.ts`); when it appears, Core raises the same transcript
+watch a tab raises, so the part follows the journal, catches up and pushes the first lines to
+the open Chat. The browser never asks again.
