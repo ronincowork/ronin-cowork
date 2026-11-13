@@ -27,9 +27,11 @@ test('Ronin Home\u2019s Models and Workspaces doors each open their own workbenc
   assert.match(home, /ctx\?\.navigate\(route\)/, 'a plain press opens the workbench in this tab');
   // THE GATE (owner, 2026-10-19): as on the old root, the doors are locked until one model
   // provider is activated and Settings is the one live stone, so a new user's way in is Setup.
-  // Help is outside the gate: a new user needs it before Setup (owner, 2026-10-21).
+  // Help is outside the gate: a new user needs it before Setup (owner, 2026-10-21); Agent Harness
+  // too, where a provider is signed in (owner, 2026-11-13; KAN-472).
   assert.match(home, /const locked = door\.gated !== false && \(!runtimeKnown \|\| activatedCount < 1\);/, 'the doors lock until a provider is activated');
   assert.match(home, /key: 'help'[^\n]*gated: false/, 'Help opens before a provider');
+  assert.match(home, /key: 'models'[^\n]*gated: false/, 'Agent Harness opens before a provider: it is where one is signed in (KAN-472)');
   assert.match(home, /if \(locked\) return;\s*ctx\?\.navigate\(route\)/, 'a locked door does not open');
   assert.match(home, /request\('\/api\/setup\/runtime', \{ cache: 'no-store' \}\)/, 'the gate reads the runtime once on enter');
   assert.match(home, /setup\.provider_gate/, 'a locked door says where the way in is');

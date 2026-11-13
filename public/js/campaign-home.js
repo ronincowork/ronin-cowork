@@ -9,9 +9,10 @@
  * workbench in this tab (door-workbenches.js), the bar reading RoninCowork • Home • <door>
  * with Home the way back. A door is a link: a plain press navigates here, a modified press
  * opens the workbench in a new tab. THE GATE (owner, 2026-10-19, "let's have the gate"): as on
- * the old root, the doors are locked until one model provider is activated, Settings the one
- * live stone, so a new user's way in is Setup. Help is the one door outside the gate: a new user
- * needs it before Setup (owner, 2026-10-21). Settings opens Setup until its answers are recorded,
+ * the old root, the doors are locked until one model provider is activated, so a new user's way
+ * in is Setup or Agent Harness. Three doors are outside the gate: Settings; Help, which a new user
+ * needs before Setup (owner, 2026-10-21); and Agent Harness, where a provider is signed in
+ * (owner, 2026-11-13; KAN-472). Settings opens Setup until its answers are recorded,
  * Settings after (`setupDefaultView`). ONE ROOT (owner, 2026-11-02; KAN-197): the old Home and the
  * bar's Current/Next toggle are gone; an old #/current link lands here.
  */
@@ -42,7 +43,7 @@ function OFFICE() {
 /** The smaller stones on the right, one above the other. Settings' route is read at paint. */
 function SIDE() {
   return [
-    { key: 'models', route: 'models', glyph: '✶', name: t('campaign_home.agent_harness', 'Agent Harness'), is: t('campaign_home.agent_harness_is', 'The CLIs on this machine, the accounts they launch on, and the models') },
+    { key: 'models', route: 'models', glyph: '✶', name: t('campaign_home.agent_harness', 'Agent Harness'), is: t('campaign_home.agent_harness_is', 'The CLIs on this machine, the accounts they launch on, and the models'), gated: false },
     { key: 'help', route: 'help', glyph: 'ミ', name: t('campaign_home.help', 'Help'), is: t('campaign_home.help_is', 'The guides, and Mika to ask'), gated: false },
     { key: 'settings', route: null, glyph: '⚙', name: t('campaign_home.settings', 'Settings'), is: t('campaign_home.settings_is', 'Setup, and this machine’s settings'), gated: false },
   ];
@@ -109,7 +110,7 @@ export function createCampaignHome() {
       card.setAttribute('aria-disabled', 'true');
     }
     card.append(doorGlyph(door.glyph), el('h2', null, door.name), el('p', 'ch-is', door.is));
-    if (locked) card.append(el('p', 'ch-gate', t('setup.provider_gate', 'Activate one model provider in Machine Setup to use this.')));
+    if (locked) card.append(el('p', 'ch-gate', t('setup.provider_gate', 'Activate one model provider in Setup or Agent Harness to use this.')));
     card.addEventListener('click', (event) => {
       if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
       event.preventDefault();
