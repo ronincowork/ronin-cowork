@@ -62,6 +62,7 @@ import { registerCli } from './routes/cli-api.js';
 import { listQueuedMessages, startMessageQueue } from './message-queue.js';
 import { isValidTeam, listAllJobs, listJobs } from './jikan.js';
 import { isValidBoardName, seedHouseBoard, WIPEBOARD_DIR } from './wipeboards.js';
+import { presence, stampInput } from './presence.js';
 import { handleEvents, pushJikan, pushMessages, pushWipeboard, startSessionsBroadcast, watchStore } from './ws/events.js';
 import { tmux as tmuxClient } from './tmux-client.js';
 import { handlePty } from './ws/pty.js';
@@ -251,6 +252,7 @@ app.use('/api', (_req, res, next) => {
   next();
 });
 app.use('/api', resourceRequestCache);
+app.use('/api', stampInput); // office presence: when a person last acted — src/presence.ts
 
 app.get('/api/health', (_req, res) =>
   res.json({
@@ -258,6 +260,7 @@ app.get('/api/health', (_req, res) =>
     auth: authEnabled,
     login: passwordAuthEnabled(),
     transcribe: Boolean(config.scribeUrl),
+    presence: presence(),
   }),
 );
 

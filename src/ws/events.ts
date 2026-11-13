@@ -275,6 +275,8 @@ export function handleEvents(ws: WebSocket): void {
 // Whether any browser is on /events: a server-side check that exists only to be pushed can
 // skip its work when nobody would hear it.
 export const listening = (): boolean => eventClients.size > 0;
+/** How many browsers are on /events now: the office's presence count (src/presence.ts). */
+export const browserCount = (): number => eventClients.size;
 
 export function broadcastEvent(msg: Record<string, unknown>): number {
   const text = JSON.stringify(msg);
