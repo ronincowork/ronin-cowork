@@ -62,7 +62,7 @@ test('both workbench entrances use the canonical New Agent form with contextual 
   assert.match(cowork, /const newAgentBySeat = \{\};[\s\S]*newAgent: \(id, consumed\)[\s\S]*createNewAgentView\(WorkspaceKit, \{[\s\S]*consumed,[\s\S]*team: \(\) =>/);
   assert.match(cowork, /openTeamDefaults:[\s\S]*putCommons\(oppositeSeat\(id\), 'team-configuration'\)/);
   assert.match(cowork, /const deskDefaultsRequest = \(\) => \(\{ destination: 'campaign', mode: 'replace', state: \{[\s\S]*workspace1: 'campaign\.defaults', workspace2: 'setup\.launch-own'/);
-  assert.match(cowork, /deskDefaultsUrl: \(\) => workbenchLaunchUrl\(deskDefaultsRequest\(\)\)/);
+  assert.match(cowork, /deskDefaultsSpec: \(\) => deskDefaultsRequest\(\)/);
   assert.match(cowork, /openDeskDefaults: \(\) => openWorkbenchTab\(deskDefaultsRequest\(\)\)/);
   assert.match(cowork, /connect: campaign \? null : \(name\) => connectSession\(name, id\)/,
     'a Team launch replaces its workspace; a Teamless Cowork launch uses the standalone Agent handoff');
