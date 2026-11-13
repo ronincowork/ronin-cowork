@@ -144,7 +144,10 @@ status as its own reads return.
 **Ronin Home** (`campaign-home.js`; owner, 2026-10-19) stays a page, not a Workbench: Teams,
 Workspaces and Epics in a triangle (owner, 2026-11-02), with Models, Help and Settings smaller stones
 in a column inset on the right — each a link to a Workbench destination of its own,
-opened in the same tab (a modified press opens a new tab through `workbenchLaunchUrl`). The
+opened in the same tab. The link's href is the plain address (`#/models`), so hovering shows what a
+person reads; a Ctrl/Cmd/Shift or middle press makes the tab id and launch state then and opens a new
+tab through `openWorkbenchTab` (`workbenchLink`, KAN-473; the bar's Teams crumb and New Agent's
+defaults links the same). The
 Teams door opens the Teams workbench (`#/cowork`, `cowork-view.js`; owner, 2026-10-20). Models and
 Workspaces are one shape (`door-workbenches.js`): the Kit Workbench on a profile of the
 door's surfaces, the door's surface seated in Workspace 1 on first open. Models seats its own

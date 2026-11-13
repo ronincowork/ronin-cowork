@@ -7,10 +7,10 @@
  * a little left of centre; Model Providers, Help and Settings three smaller stones in a vertical
  * line on the right of the page, inset from its edge. Home stays a page; each door opens its own
  * workbench in this tab (door-workbenches.js), the bar reading RoninCowork • Home • <door>
- * with Home the way back. A door is a link: a plain press navigates here, a modified press
- * opens the workbench in a new tab. THE GATE (owner, 2026-10-19, "let's have the gate"): as on
- * the old root, the doors are locked until one model provider is activated, so a new user's way
- * in is Setup or Agent Harness. Three doors are outside the gate: Settings; Help, which a new user
+ * with Home the way back. A door is a link to the plain address: a plain press navigates here, a
+ * modified or middle press opens the workbench in a new tab (KAN-473). THE GATE (owner,
+ * 2026-10-19, "let's have the gate"): as on the old root, the doors are locked until one model
+ * provider is activated, so a new user's way in is Setup or Agent Harness. Three doors are outside the gate: Settings; Help, which a new user
  * needs before Setup (owner, 2026-10-21); and Agent Harness, where a provider is signed in
  * (owner, 2026-11-13; KAN-472). Settings opens Setup until its answers are recorded,
  * Settings after (`setupDefaultView`). ONE ROOT (owner, 2026-11-02; KAN-197): the old Home and the
@@ -22,7 +22,7 @@ import { createReleaseUpdateController, packageReading } from './release-update-
 import { createSenmaida } from './senmaida.js';
 import { createThemeToggle } from './theme-toggle.js';
 import { campaignById, loadCampaigns, normalizeSelection, setupDefaultView } from './campaigns.js';
-import { workbenchLaunchUrl } from './workspace.js';
+import { workbenchLink } from './workspace.js';
 
 const el = (tag, cls, text) => {
   const out = document.createElement(tag);
@@ -96,14 +96,15 @@ export function createCampaignHome() {
   let runtimeKnown = false;
   let setupCampaign = null;
 
-  // A DOOR IS A LINK to its workbench: pressed, it navigates this tab; with a modifier it
-  // opens the workbench in a new tab through the same request the bar's doors carry. Until
-  // one model provider is activated the door is locked and says where the way in is.
+  // A DOOR IS A LINK to its workbench: its href the plain address (KAN-473); pressed, it
+  // navigates this tab; with a modifier or the middle button it opens the workbench in a new
+  // tab, the tab id and launch state made at the press (workbenchLink). Until
+  // one model provider is activated the door is locked, no link, and says where the way in is.
   function stone(door, small) {
     const card = el('a', small ? 'ch-door ch-door-small' : 'ch-door');
     const locked = door.gated !== false && (!runtimeKnown || activatedCount < 1);
     const route = door.route || setupDefaultView(setupCampaign);
-    card.href = workbenchLaunchUrl({ destination: route, mode: 'overlay' });
+    if (!locked) workbenchLink(card, { destination: route, mode: 'overlay' });
     card.dataset.door = door.key;
     if (locked) {
       card.dataset.unavailable = 'true';

@@ -17,7 +17,7 @@ import { request } from './request.js';
 import { teamPageHandlers } from './events.js';
 import { createArranger, parseDraft, reportView as sendView } from './team-arrange.js';
 import { t } from './lexicon.js';
-import { navigateToWorkspaceFolders, openWorkbenchTab, openWorkspaceTab, reserveWorkspaceTab, workbenchLaunchUrl } from './workspace.js';
+import { navigateToWorkspaceFolders, openWorkbenchTab, openWorkspaceTab, reserveWorkspaceTab } from './workspace.js';
 import { createPresetsSurface } from './presets.js';
 import { launchPresetPlan, presetLaunchUrl } from './preset-launch.js';
 import { subscribe as subscribeStore } from './store.js';
@@ -268,8 +268,8 @@ export function createCoworkView(options = {}) {
         const view = createNewAgentView(WorkspaceKit, {
           consumed,
           team: () => (campaign || team === UNASSIGNED ? '' : team),
-          teamDefaultsUrl: (name) => workbenchLaunchUrl(teamDefaultsRequest(name)),
-          deskDefaultsUrl: () => workbenchLaunchUrl(deskDefaultsRequest()),
+          teamDefaultsSpec: (name) => teamDefaultsRequest(name),
+          deskDefaultsSpec: () => deskDefaultsRequest(),
           openTeamDefaults: (name) => {
             if (!name) return;
             if (!campaign && name === team) putCommons(oppositeSeat(id), 'team-configuration');

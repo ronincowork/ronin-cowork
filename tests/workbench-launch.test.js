@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { completeWorkbenchRequest, consumeWorkbenchLaunch, navigateToWorkspaceFolders, openWorkbenchTab, openWorkspaceTab, patchWorkbenchTabState, resolveWorkbenchEntry, resolveWorkbenchState, workbenchLaunchUrl } from '../public/js/workspace.js';
+import { completeWorkbenchRequest, consumeWorkbenchLaunch, navigateToWorkspaceFolders, openWorkbenchTab, openWorkspaceTab, patchWorkbenchTabState, resolveWorkbenchEntry, resolveWorkbenchState, workbenchLaunchUrl, workbenchLink } from '../public/js/workspace.js';
 
 test('Workspace Folder navigation opens a complete new Campaign request and remembers its return tab', () => {
   let state = null;
@@ -150,13 +150,40 @@ test('every Workbench destination can receive a complete default open request', 
   }
 });
 
-test('Home and header modified-click doors carry Workbench requests in their links', async () => {
+test('Home, header and New Agent links hover as the plain address and make the launch at the press (KAN-473)', async () => {
   const [home, header, agentForm] = await Promise.all(['campaign-home.js', 'workspace-header.js', 'new-agent.js']
     .map((name) => readFile(new URL(`../public/js/${name}`, import.meta.url), 'utf8')));
-  assert.match(home, /card\.href = workbenchLaunchUrl\(\{ destination: route, mode: 'overlay' \}\)/);
-  assert.match(header, /coworkers\.href = workbenchLaunchUrl\(\{ destination: 'cowork', mode: 'overlay' \}\)/);
-  assert.match(agentForm, /teamDefaultsUrl\?\.\(chosenTeam\(\)\) \|\| workbenchLaunchUrl/);
-  assert.match(agentForm, /event\.metaKey \|\| event\.ctrlKey \|\| event\.shiftKey \|\| event\.altKey/);
+  assert.match(home, /if \(!locked\) workbenchLink\(card, \{ destination: route, mode: 'overlay' \}\)/);
+  assert.match(header, /workbenchLink\(coworkers, \{ destination: 'cowork', mode: 'overlay' \}\)/);
+  assert.match(agentForm, /const link = workbenchLink\(el\('a', null, label\), spec\)/);
+  for (const text of [home, header, agentForm]) assert.doesNotMatch(text, /\.href = workbenchLaunchUrl/, 'no href carries a launch');
+  const prior = { location: globalThis.location, window: globalThis.window };
+  const opened = [];
+  globalThis.location = { href: 'https://ronin.test/app?ronin-tab=old#/home', origin: 'https://ronin.test', pathname: '/app' };
+  globalThis.window = { open: (url) => { opened.push(url); return {}; } };
+  const listeners = {};
+  const link = { href: '', addEventListener: (type, fn) => { listeners[type] = fn; } };
+  const press = (type, init) => { let prevented = false; listeners[type]({ ...init, preventDefault: () => { prevented = true; } }); return prevented; };
+  try {
+    workbenchLink(link, { destination: 'models', mode: 'overlay' });
+    assert.equal(link.href, 'https://ronin.test/app#/models', 'the href is the plain address');
+    assert.equal(press('click', { button: 0 }), false, 'a plain press is the caller\'s own');
+    assert.equal(opened.length, 0);
+    assert.equal(press('click', { button: 0, ctrlKey: true }), true);
+    assert.equal(press('click', { button: 0, metaKey: true }), true);
+    assert.equal(press('auxclick', { button: 1 }), true, 'a middle press opens a new tab too');
+    assert.equal(opened.length, 3);
+    for (const url of opened) {
+      const made = new URL(url);
+      assert.ok(made.searchParams.get('ronin-tab'), 'the tab id is made at the press');
+      assert.equal(JSON.parse(made.searchParams.get('ronin-launch')).destination, 'models');
+      assert.equal(made.hash, '#/models');
+    }
+    assert.notEqual(new URL(opened[0]).searchParams.get('ronin-tab'), new URL(opened[1]).searchParams.get('ronin-tab'), 'each press a fresh tab');
+  } finally {
+    globalThis.location = prior.location;
+    globalThis.window = prior.window;
+  }
 });
 
 test('a noopener launch keeps its instruction when the browser returns no window proxy', () => {

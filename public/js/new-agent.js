@@ -11,7 +11,7 @@ import {
   createStep, el, kindTiles, loadProviderCatalog, mandateWord, modelLabel, priceText, providerCatalog, readingRows, tagRow, templateTray, tierWord,
 } from './form-steps.js';
 import { openLaunchHandoff } from './launch-handoff.js';
-import { closeWorkspaceTab, reserveWorkspaceTab, workbenchLaunchUrl } from './workspace.js';
+import { closeWorkspaceTab, reserveWorkspaceTab, workbenchLaunchUrl, workbenchLink } from './workspace.js';
 
 const REACH = ['open', 'discuss', 'plan', 'execute'];
 const RECRUIT = ['open', 'nobody', 'propose agents', 'staff agents'];
@@ -55,7 +55,7 @@ function paintShelves(host, { rows = [], selected = [], onChange = () => {}, ope
   return { value: () => picker.value().behaviours, destroy: () => { picker.destroy(); automatic.destroy(); conditional.destroy(); } };
 }
 
-export function createNewAgentView(kit, { connect = null, consumed = null, embedded = false, team = null, configure = null, openTeamDefaults = null, openDeskDefaults = null, openBehaviours = null, teamDefaultsUrl = null, deskDefaultsUrl = null } = {}) {
+export function createNewAgentView(kit, { connect = null, consumed = null, embedded = false, team = null, configure = null, openTeamDefaults = null, openDeskDefaults = null, openBehaviours = null, teamDefaultsSpec = null, deskDefaultsSpec = null } = {}) {
   const { createSurface, createAction, createActionBar, createField, createNotice } = kit.primitives;
 
   const freshDraft = () => {
@@ -276,12 +276,13 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
   };
   const identityRow = el('div', 'na-identity-row');
   const defaultsNote = el('div', 'fs-step-help na-defaults-note');
-  const defaultsLink = (label, href, open) => {
-    const link = el('a', null, label);
-    link.href = href;
-    if (open) link.addEventListener('click', (event) => {
+  // A defaults link hovers as its plain address; the launch state is made at the press (KAN-473).
+  const defaultsLink = (label, spec, open) => {
+    const link = workbenchLink(el('a', null, label), spec);
+    link.addEventListener('click', (event) => {
       if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
-      event.preventDefault(); open();
+      event.preventDefault();
+      if (open) open(); else location.assign(workbenchLaunchUrl(spec));
     });
     return link;
   };
@@ -293,10 +294,10 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
       : t('new_agent.defaults_cascade_desk', 'Defaults cascade from Desk → this Agent. Changes on this form apply only to this Agent.'));
     const links = el('p', 'na-defaults-links');
     if (hasTeam && chosenTeam()) links.append(defaultsLink(t('new_agent.team_defaults', 'Team defaults'),
-      teamDefaultsUrl?.(chosenTeam()) || workbenchLaunchUrl({ destination: 'team', param: chosenTeam(), mode: 'overlay' }),
+      teamDefaultsSpec?.(chosenTeam()) || { destination: 'team', param: chosenTeam(), mode: 'overlay' },
       openTeamDefaults ? () => openTeamDefaults(chosenTeam()) : null), ' · ');
     links.append(defaultsLink(t('new_agent.desk_defaults', 'Desk defaults'),
-      deskDefaultsUrl?.() || workbenchLaunchUrl({ destination: 'campaign', mode: 'overlay' }), openDeskDefaults));
+      deskDefaultsSpec?.() || { destination: 'campaign', mode: 'overlay' }, openDeskDefaults));
     defaultsNote.append(teaching, links);
   };
   const onQuestionChange = (value, key) => {
