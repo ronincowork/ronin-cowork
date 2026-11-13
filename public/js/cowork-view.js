@@ -35,7 +35,7 @@ import { createMikaHelpPanel } from './mika.js';
 import { retireSession } from './session-retire.js';
 import { installBehaviourReader } from './behaviour-reader.js';
 import { BEHAVIOUR_SURFACE_TYPE } from './behaviour-surface.js';
-import { createItemPhalanx, holderOf } from './work-items-surface.js';
+import { createItemPhalanx, holderOf, addAgentLender } from './work-items-surface.js';
 import { registerWorkbenchCatalog, WORKBENCH_PROFILES as WB_PROFILES, WORKBENCH_TYPES as WB_TYPES } from './workbench-catalog.js';
 import { createAgentCompositionSurface } from './agent-composition.js';
 import { createTeamEpics } from './team-epics.js';
@@ -236,7 +236,17 @@ export function createCoworkView(options = {}) {
     const room = buildArchives({ connect: (name) => connectSession(name, id) }, host);
     return [id, { el: surface.el, room }];
   })) : {};
-  const openAgentBeside = (id) => (name) => S.sessions.some((session) => session.name === name) && connectSession(name, oppositeSeat(id));
+  // An Agent stone in an item's reading borrows that Agent's tile from the workspace the item sits
+  // in, a non-member riding the pool as an extra (work-items-surface.js openAgentOver; KAN-435).
+  const stopLending = addAgentLender({
+    root,
+    borrow: (name, id) => {
+      if (!seats[id] || !S.sessions.some((session) => session.name === name)) return null;
+      if (!membersOfTeam(team).some((m) => m.name === name)) { extras.add(name); syncPools(membersOfTeam(team)); }
+      return seats[id].pool.borrow(name);
+    },
+    release: (name, id) => seats[id]?.pool.releaseBorrow(name),
+  });
   const environment = {
     feedback: (workspace) => createFeedbackSurface(() => bench.place(campaign ? WB_TYPES.roster : WB_TYPES.commons, workspace)),
     teamCommons: (id) => ({ el: commonsFor(id).el, show: (detail = {}) => { const item = commonsFor(id); if (!detail.doc && !detail.tab) item.attendQueueOnOpen(); item.channels.enter(ctx); if (detail.doc) { item.channels.select('docs'); void item.docs.open(detail.doc); } else if (detail.tab) item.channels.select(detail.tab); } }),
@@ -289,20 +299,10 @@ export function createCoworkView(options = {}) {
       navigateToSurface: (type, detail) => type === 'setup.roots' && navigateToWorkspaceFolders(ctx, detail),
     }, workspace: id }),
     // Epics (KAN-232): the bench keeps one per seat across Teams, so it reads the Team entered now.
-    // An Agent pressed in an item's reading opens in the other Tilespace, the item staying put
-    // (KAN-435); one not running says so (false).
-    teamEpics: (id) => keepTeamSurface(createTeamEpics({ team: () => team, openAgent: openAgentBeside(id) })),
-    // On Find item an Agent opens over it, its own tile borrowed from this seat (KAN-464).
-    teamFindItem: (id) => keepTeamSurface(createFindItem({
-      borrowAgent: (name) => {
-        if (!S.sessions.some((session) => session.name === name)) return null;
-        if (!membersOfTeam(team).some((m) => m.name === name)) { extras.add(name); syncPools(membersOfTeam(team)); }
-        return seats[id].pool.borrow(name);
-      },
-      releaseAgent: (name) => seats[id].pool.releaseBorrow(name),
-    })),
+    teamEpics: () => keepTeamSurface(createTeamEpics({ team: () => team })),
+    teamFindItem: () => keepTeamSurface(createFindItem()),
     epics: () => [],
-    epicRecord: (id, detail) => keepTeamSurface(createEpicRecord(detail.key, { epicsRead: createEpicsRead(() => ''), openAgent: openAgentBeside(id) })),
+    epicRecord: (id, detail) => keepTeamSurface(createEpicRecord(detail.key, { epicsRead: createEpicsRead(() => '') })),
     archives: (id) => ({ el: archivesBySeat[id].el, show: () => void archivesBySeat[id].room.enter() }),
     document: (detail = {}) => createDocumentWorkspaceAdapter({ root: detail.root, path: detail.path || detail.key }),
     team: (id, detail) => createLeagueTeamSurface(detail.key, id),
@@ -887,6 +887,7 @@ export function createCoworkView(options = {}) {
     },
     destroy: () => {
       entered = false;
+      stopLending();
       unsubscribe?.();
       unsubscribe = null;
       teamPageHandlers.delete(onDraft);

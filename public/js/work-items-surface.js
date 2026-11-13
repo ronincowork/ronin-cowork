@@ -11,7 +11,9 @@ import { ask } from './ask.js';
 import { createStep } from './form-steps.js';
 import { kindMark } from './tile-island.js';
 import { isPlanRef, planAttachment } from './plan-attachment.js';
-import { openWorkspaceTab, reserveWorkspaceTab } from './workspace.js';
+import { fullOverlay } from './work-details.js';
+import { createWarmTerminalPool } from './team-terminal-pool.js';
+import { S } from './state.js';
 
 export const WORK_ITEMS_TYPE = 'work-items';
 /** Jira's flag: an impediment, marked the same way on every surface. */
@@ -158,9 +160,49 @@ export function itemAgents(item, heldBy = null) {
   return [...rows.values()];
 }
 
-/** Where no work surface is at hand (a tile's overlay, the Work Items reader), an Agent opens on its own workbench. */
-function openAgentTab(name) {
-  openWorkspaceTab('agent', name, reserveWorkspaceTab());
+/** Who lends an Agent's own tile to a work surface: a workbench with tile pools (cowork-view.js)
+ *  lends from the workspace's pool `{ root, borrow(name, workspace), release(name, workspace) }`,
+ *  borrow null when the Agent is not running. Elsewhere (the Epics door) one tile of its own. */
+const lenders = new Set();
+export function addAgentLender(lender) { lenders.add(lender); return () => lenders.delete(lender); }
+let ownPool = null;
+const ownLender = {
+  borrow: (name) => {
+    if (!(S.sessions || []).some((session) => session.name === name)) return null;
+    if (!ownPool) {
+      const shelf = el('div');
+      shelf.hidden = true;
+      document.body.append(shelf);
+      ownPool = createWarmTerminalPool({ createHost: (options) => WorkspaceKit.adapters.createTerminalTileHost(options), container: shelf, streamCap: 1 });
+    }
+    ownPool.sync([name]);
+    return ownPool.borrow(name);
+  },
+  release: () => { ownPool?.sync([]); },
+};
+
+/** AN AGENT OVER ITS WORK SURFACE (owner, 2026-11-13, KAN-435): a stone pressed lays that Agent's
+ *  own tile over the work surface the item sits in (its workbench cell), never a browser tab nor
+ *  another Tilespace; Close gives the tile back and the item is there as it was. When it is the
+ *  tile the item is read over, that tile's readings step aside while it is shown. */
+export function openAgentOver(at, name) {
+  const cell = at?.closest?.('[data-workspace]');
+  if (!cell) return false;
+  const lender = [...lenders].find((one) => one.root.contains(cell)) || ownLender;
+  cell.querySelector(':scope > .work-overlay.item-agent .work-overlay-utility button')?.click(); // the one before goes back first
+  const workspace = cell.dataset.workspace;
+  const tile = lender.borrow(name, workspace);
+  if (!tile) return false;
+  const covered = [...tile.querySelectorAll('.work-overlay:not([hidden])')];
+  for (const layer of covered) layer.hidden = true;
+  fullOverlay(cell, (layer, through) => {
+    layer.classList.add('item-agent');
+    const head = el('div', 'tile-record-head');
+    const tools = el('div', 'wk-surface-header-actions');
+    tools.append(...through);
+    head.append(el('h2', '', `@${name}`), tools);
+    layer.append(head, tile);
+  }, { closed: () => { lender.release(name, workspace); for (const layer of covered) layer.hidden = false; } });
   return true;
 }
 
@@ -168,7 +210,7 @@ function openAgentTab(name) {
  * symbol, the title and the key, then label-left steps — Status first (an ERABI question that
  * moves the item: the work-item routes' transition; KAN-435), what the user reads first, the
  * Objective and the Handed in note (ITEM_HANDOVER), then Agents (itemAgents: stones that open
- * the Agent, `openAgent(name)` — false when it cannot — else its own workbench), Details (two
+ * the Agent, laid over the work surface the item sits in: openAgentOver), Details (two
  * columns where the reading is wide, KAN-434), Subtasks, Done (the Subtasks that are,
  * owner w297), Comments (the others, folded, and a box: the comment route, whose notice reaches
  * the Agents holding the item), Attachments (each opens), Links and History (`history: false`
@@ -279,7 +321,7 @@ export function renderItemDetail(host, item, { holder = '', heldBy = null, openA
     said.setAttribute('role', 'status');
     const press = (name) => {
       said.dataset.state = '';
-      const opened = (openAgent || openAgentTab)(name);
+      const opened = openAgent ? openAgent(name) : openAgentOver(host, name);
       if (opened === false) { said.dataset.state = 'failed'; said.textContent = t('work_items.agent_not_running', '@{name} is not running.', { name }); }
       else said.textContent = t('work_items.agent_opened', '@{name} opened.', { name });
     };
