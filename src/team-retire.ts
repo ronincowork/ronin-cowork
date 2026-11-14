@@ -26,6 +26,15 @@ export async function retireTeam(name: string, disposition: TeamRetireDispositio
     acknowledgement = decision.acknowledgement;
   }
   await deleteTeamRoster(name);
+  await detachTeamMembers(name, by);
+  return { ok: true, retired: name, ...(acknowledgement ? { worktree_acknowledgement: acknowledgement } : {}) };
+}
+
+// The one way a Team comes off its members: its tag and lead mark leave every session that
+// carries it, each member's work record follows, and the team notices go out. Retiring a
+// Team and archiving one both end here (KAN-500).
+export async function detachTeamMembers(name: string, by = 'owner'): Promise<string[]> {
+  const detached: string[] = [];
   for (const session of await listSessions()) {
     if (!session.tags.includes(name)) continue;
     const teams = await setTags(session.name, session.tags.filter((team) => team !== name));
@@ -33,6 +42,7 @@ export async function retireTeam(name: string, disposition: TeamRetireDispositio
     if (leads.includes(name)) await setLeads(session.name, leads.filter((team) => team !== name));
     await writeTeams(session.name, teams, by).catch(() => {});
     await announceTeamChanges(session.name, session.tags, teams).catch(() => {});
+    detached.push(session.name);
   }
-  return { ok: true, retired: name, ...(acknowledgement ? { worktree_acknowledgement: acknowledgement } : {}) };
+  return detached;
 }

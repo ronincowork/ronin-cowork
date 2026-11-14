@@ -1,7 +1,7 @@
 /* part of the ronin-cowork client — see js/README.md */
 /** Workbench; its Campaign, Cowork or Team scope limits what cards are offered. */
 import { WorkspaceKit } from './workspace-kit.js';
-import { deleteTeamRoster, membersOfTeam, subscribe, teamByName, teamsFromState, unassignedSessions, UNASSIGNED } from './team-controller.js';
+import { deleteTeamRoster, membersOfTeam, subscribe, teamByName, teamGone, teamsFromState, unassignedSessions, UNASSIGNED } from './team-controller.js';
 import { createNewTeamFormView } from './new-team-form.js';
 import { createNewAgentView } from './new-agent.js';
 import { createTeamRosterSurface } from './team-roster-surface.js';
@@ -53,7 +53,7 @@ export function createCoworkView(options = {}) {
   const campaign = options.kind === 'cowork';
   const viewKey = campaign ? 'cowork' : 'team';
   const teamsLabel = t('campaign.coworks', 'Teams');
-  const { createSurface, createTabbedSurface, createAction, createActionBar } = WorkspaceKit.primitives;
+  const { createSurface, createTabbedSurface, createAction, createActionBar, createNotice } = WorkspaceKit.primitives;
   const { createTerminalTileHost } = WorkspaceKit.adapters;
   const { DISMISSED_WORKSPACE, normalizeWorkbenchState, workspaceMaySeedDefault } = WorkspaceKit.contract;
   const teamDefaultsRequest = (name) => ({ destination: 'team', param: name, mode: 'replace', state: {
@@ -71,7 +71,7 @@ export function createCoworkView(options = {}) {
   let entered = false;
   let lastSeat = 'workspace1'; // the workspace last touched — where the next card lands
   // The Team's title, or its id read as words ('sea_settle' → 'Sea Settle') when it has none.
-  const readableTeam = (name) => String(teamByName(name)?.title ?? '').trim() || String(name).split(/[_-]+/).filter(Boolean).map((part) => part[0].toUpperCase() + part.slice(1)).join(' ');
+  const readableTeam = (name) => String(teamByName(name)?.title ?? '').trim() || teamGone(name)?.title || String(name).split(/[_-]+/).filter(Boolean).map((part) => part[0].toUpperCase() + part.slice(1)).join(' ');
   const setBarLabel = () => S.refreshWorkspaceHeader?.();
 
   /* ---------- the workspaces: two seats, the roster between them, one commons ---------- */
@@ -338,6 +338,25 @@ export function createCoworkView(options = {}) {
     selector?.setAttribute('aria-label', teamsLabel);
   }
   root.append(bench.host);
+  // A link to a Team that is not live (archived, or no Team by that name) draws one plain
+  // surface saying so in place of the workbench, never an empty Team (KAN-500).
+  let goneShown = '';
+  const showGone = (gone) => {
+    const key = gone ? JSON.stringify([team, gone]) : '';
+    bench.host.hidden = Boolean(gone);
+    if (key === goneShown) return;
+    goneShown = key;
+    root.querySelector(':scope > .tw-gone')?.remove();
+    if (!gone) return;
+    const label = gone.archived ? readableTeam(team) : team;
+    const surface = createSurface({ label, className: 'tw-gone' });
+    const back = el('a', 'tw-gone-back', t('team.gone_back', 'Teams'));
+    back.href = '#/cowork';
+    surface.content.append(createNotice({ message: gone.archived
+      ? t('team.gone_archived', 'Archived')
+      : t('team.gone_none', 'No Team has this name.') }).el, back);
+    root.append(surface.el);
+  };
   // ミ Help: Mika takes over the selector column — her ordinary tile, borrowed from the
   // pool, no workspace changes hands — and Close puts the roster cards back. The Mika
   // card under Steerco is the other door: the same session as a normal tile.
@@ -777,6 +796,9 @@ export function createCoworkView(options = {}) {
   }
   /* ---------- reading ---------- */
   const paint = () => {
+    const gone = campaign ? null : teamGone(team);
+    showGone(gone);
+    if (gone) { syncPools([]); return; }
     const members = membersOfTeam(team);
     const roster = teamByName(team);
     syncPools(restorationMembers());
