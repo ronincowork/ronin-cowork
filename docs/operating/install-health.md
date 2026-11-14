@@ -52,12 +52,19 @@ GET /api/version    the release actually serving, and the services roster
 GET /api/health     ok · auth · login · transcribe · presence
 ```
 
-`presence` is the office's, never a person's: `{ browsers, last_input_at }`. `browsers` is how
-many browsers hold the live /events socket now; `last_input_at` is the ISO time of the last
-action a person took, meaning the last non-GET `/api` request from a browser (Agents' tools on the
-operator socket do not count), or `null` since the server started. It lives in memory only and
-carries no identity, no request body and no keystrokes. On an office_park the kohai reads it
-every 30 s ([src/presence.ts](../../src/presence.ts)).
+`presence` is `{ browsers, last_input_at, people }`. `browsers` is how many browsers hold the
+live /events socket now; `last_input_at` is the ISO time of the last action a person took, meaning
+the last non-GET `/api` request from a browser (Agents' tools on the operator socket do not count),
+or `null` since the server started. On an office_park the kohai reads it every 30 s
+([src/presence.ts](../../src/presence.ts)).
+
+`people` says who is in a hosted office: one entry per email with a connected /events socket,
+`{ email, role, last_input_at }`. The email is the guard's `X-Forwarded-Email` on the socket's
+upgrade; the role is that email's in `members.json`, which the kohai writes into the `office_unit`
+store beside `office_record.json` and Ronin re-reads when it changes. An email not in the file has
+role `null`. Self-hosted, or with no header (an Agent or a shell inside the unit), `people` is `[]`
+([src/office-people.ts](../../src/office-people.ts)). It all lives in memory only: no request body,
+no keystrokes.
 
 ## Saying it back
 

@@ -62,7 +62,8 @@ import { registerCli } from './routes/cli-api.js';
 import { listQueuedMessages, startMessageQueue } from './message-queue.js';
 import { isValidTeam, listAllJobs, listJobs } from './jikan.js';
 import { isValidBoardName, seedHouseBoard, WIPEBOARD_DIR } from './wipeboards.js';
-import { presence, stampInput } from './presence.js';
+import { joinPresence, presence, stampInput } from './presence.js';
+import { startOfficePeople } from './office-people.js';
 import { readOfficeRecord } from './office-record.js';
 import { handleEvents, pushJikan, pushMessages, pushWipeboard, startSessionsBroadcast, watchStore } from './ws/events.js';
 import { tmux as tmuxClient } from './tmux-client.js';
@@ -441,7 +442,7 @@ server.on('upgrade', (req, socket, head) => {
   }
   const url = new URL(req.url ?? '/', 'http://localhost');
   if (url.pathname === '/events') {
-    wss.handleUpgrade(req, socket, head, (ws) => handleEvents(ws));
+    wss.handleUpgrade(req, socket, head, (ws) => { joinPresence(ws, req); handleEvents(ws); });
     return;
   }
   if (url.pathname !== '/pty') {
@@ -492,6 +493,7 @@ startSessionsBroadcast({
 watchStore(WIPEBOARD_DIR, (file) => { void pushWipeboard(file.split('/')[0]!); });
 watchStore(storeDir('jikan'), (file) => { if (file.endsWith('.md')) void pushJikan(file.slice(0, -3)); });
 watchStore(storeDir('message_queue'), () => { void pushMessages(); });
+void startOfficePeople(); // hosted office: who each browser is — src/office-people.ts
 void seedHouseBoard().catch((e) => console.error('[tmux-ronin] house board seed failed:', e));
 
 void publishMax();
