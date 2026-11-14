@@ -63,7 +63,7 @@ import { listQueuedMessages, startMessageQueue } from './message-queue.js';
 import { isValidTeam, listAllJobs, listJobs } from './jikan.js';
 import { isValidBoardName, seedHouseBoard, WIPEBOARD_DIR } from './wipeboards.js';
 import { joinPresence, presence, stampInput } from './presence.js';
-import { startOfficePeople } from './office-people.js';
+import { person, startOfficePeople } from './office-people.js';
 import { readOfficeRecord } from './office-record.js';
 import { handleEvents, pushJikan, pushMessages, pushWipeboard, startSessionsBroadcast, watchStore } from './ws/events.js';
 import { tmux as tmuxClient } from './tmux-client.js';
@@ -450,7 +450,7 @@ server.on('upgrade', (req, socket, head) => {
     return;
   }
   wss.handleUpgrade(req, socket, head, (ws) => {
-    handlePty(ws, url).catch((e) => {
+    handlePty(ws, url, person(req)).catch((e) => {
       try {
         ws.send(JSON.stringify({ t: 'error', m: String((e as Error)?.message ?? e) }));
         ws.close();

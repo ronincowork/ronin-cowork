@@ -5,10 +5,13 @@ import { storeDir } from './resources.js';
 import { listSessions } from './tmux.js';
 import { deliverForce, deliverSafe } from './send.js';
 import { onClock } from './jikan.js';
+import { personLabel, type Person } from './office-people.js';
 
-/** `typed` is the person at this Agent's own Message box; `owner` is Ronin writing on their behalf. */
+/** `typed` is the person at this Agent's own Message box; `owner` is Ronin writing on their behalf.
+ *  In a hosted office a message from a signed-in person also records `person` (src/office-people.ts),
+ *  and `from` is their label. */
 export type MessageSource = 'tell' | 'wipeboard_notice' | 'owner' | 'typed' | 'house' | 'jikan';
-export interface QueuedMessage { id: string; from: string; target: string; text: string; source: MessageSource; created_at: string }
+export interface QueuedMessage { id: string; from: string; target: string; text: string; source: MessageSource; created_at: string; person?: Person }
 
 const DIR = storeDir('message_queue');
 export const AUTO_FORCE_AFTER_MS = 120_000;
@@ -26,8 +29,10 @@ const channelOf = (source: MessageSource): string => ({
 
 /** Every queued message carries the recorded actor and channel into the recipient's prompt,
  *  except what the person typed in this Agent's own Message box: that arrives exactly as if
- *  typed into the terminal (owner, 2026-10-22). */
-export function deliveryText(item: Pick<QueuedMessage, 'source' | 'from' | 'text'>): string {
+ *  typed into the terminal (owner, 2026-10-22). In a hosted office a message from a person says
+ *  who, typed included: "From Ann Lee <a@x.com>, owner, X Ltd [Message box]:" (KAN-479). */
+export function deliveryText(item: Pick<QueuedMessage, 'source' | 'from' | 'text' | 'person'>): string {
+  if (item.person) return `From ${personLabel(item.person)} [${channelOf(item.source)}]:\n${item.text}`;
   if (item.source === 'typed') return item.text;
   const recorded = String(item.from || '').replace(/[\r\n\t]/g, ' ').trim().slice(0, 80);
   const from = item.source === 'tell'
@@ -64,8 +69,9 @@ export async function listQueuedMessages(): Promise<QueuedMessage[]> {
 let lastQueuedAt = 0;
 const queuedAt = (): string => { lastQueuedAt = Math.max(Date.now(), lastQueuedAt + 1); return new Date(lastQueuedAt).toISOString(); };
 
-export async function enqueueMessage(target: string, text: string, source: MessageSource, from = sourceFrom(source)): Promise<QueuedMessage> {
-  const item: QueuedMessage = { id: randomUUID(), from, target, text, source, created_at: queuedAt() };
+export async function enqueueMessage(target: string, text: string, source: MessageSource, from = sourceFrom(source), person?: Person | null): Promise<QueuedMessage> {
+  const item: QueuedMessage = { id: randomUUID(), from: person ? personLabel(person) : from, target, text, source, created_at: queuedAt() };
+  if (person) item.person = person;
   await fs.mkdir(DIR, { recursive: true });
   const tmp = `${file(item.id)}.${process.pid}.tmp`;
   await fs.writeFile(tmp, JSON.stringify(item));

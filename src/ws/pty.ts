@@ -15,6 +15,7 @@ import {
 } from '../tmux.js';
 import { getStreamHandler } from '../sockets.js';
 import { enqueueMessage } from '../message-queue.js';
+import type { Person } from '../office-people.js';
 import { DeviceAttributesResponder } from '../terminal-protocol.js';
 
 const HEARTBEAT_MS = 30_000;
@@ -22,7 +23,8 @@ const HEARTBEAT_MS = 30_000;
 export const isTerminalReply = (msg: { t?: string; d?: string }): msg is { t: 'p'; d: string } =>
   msg.t === 'p' && typeof msg.d === 'string';
 
-export async function handlePty(ws: WebSocket, url: URL): Promise<void> {
+/** `who` is the person on this socket's upgrade in a hosted office (src/office-people.ts), else null. */
+export async function handlePty(ws: WebSocket, url: URL, who: Person | null = null): Promise<void> {
   const session = url.searchParams.get('session') ?? '';
   const tape = url.searchParams.get('mode') === 'stream';
   let cols = clampDim(url.searchParams.get('cols'), 80);
@@ -111,7 +113,7 @@ export async function handlePty(ws: WebSocket, url: URL): Promise<void> {
       };
       inputQueue = inputQueue.then(async () => {
         if (closed) { answer({ ok: false, why: 'the terminal is gone' }); return; }
-        await enqueueMessage(session, d.replace(/\r$/, ''), 'typed');
+        await enqueueMessage(session, d.replace(/\r$/, ''), 'typed', undefined, who);
         answer({ ok: true });
       }).catch((e) => answer({ ok: false, why: String((e as Error).message ?? e) }));
     } else if (msg.t === 'i' && typeof msg.d === 'string') {

@@ -46,6 +46,22 @@ test('queue delivery names the recorded actor and channel without changing the s
     'From Cron jobs [Scheduled job]:\nPlease review the boundary.');
 });
 
+test('hosted office: a person\'s letter records them and says who, typed included', async (t) => {
+  const q = await queue(t, 'person');
+  const bare = { email: 'a@x.com', role: 'owner' };
+  const typed = await q.enqueueMessage('target', 'Hello.', 'typed', undefined, bare);
+  assert.deepEqual(typed.person, bare);
+  assert.equal(typed.from, 'a@x.com, owner');
+  assert.equal(q.deliveryText(typed), 'From a@x.com, owner [Message box]:\nHello.', 'email-only, the case today');
+  const full = await q.enqueueMessage('target', 'Hello.', 'owner', undefined, { ...bare, name: 'Ann Lee', organization: 'X Ltd' });
+  assert.equal(q.deliveryText(full), 'From Ann Lee <a@x.com>, owner, X Ltd [Ronin Box]:\nHello.');
+  const stranger = await q.enqueueMessage('target', 'Hello.', 'owner', undefined, { email: 'c@z.com', role: null });
+  assert.equal(q.deliveryText(stranger), 'From c@z.com [Ronin Box]:\nHello.', 'no role, no role named');
+  const local = await q.enqueueMessage('target', 'Hello.', 'typed', undefined, null);
+  assert.equal('person' in local, false);
+  assert.equal(q.deliveryText(local), 'Hello.', 'no person: exactly as today');
+});
+
 test('the worker shreds a letter whose current target is missing', async (t) => {
   const q = await queue(t, 'missing');
   await q.enqueueMessage('nobody_here', 'hello', 'house');

@@ -1,6 +1,7 @@
 import type { Express } from 'express';
 import { dismissMessages, enqueueMessage } from '../message-queue.js';
 import { isValidName } from '../tmux.js';
+import { person } from '../office-people.js';
 
 export function registerMessages(app: Express): void {
   app.post('/api/messages', async (req, res) => {
@@ -8,7 +9,9 @@ export function registerMessages(app: Express): void {
     const text = String(req.body?.text ?? '');
     if (!isValidName(target) || !text.trim()) return res.status(400).json({ error: 'A valid target and message are required.' });
     // The tile's Message box says it is the person typing; every other caller is Ronin on their behalf.
-    const item = await enqueueMessage(target, text, req.body?.typed === true ? 'typed' : 'owner');
+    // In a hosted office the signed-in person is recorded with it (src/office-people.ts).
+    const source = req.body?.typed === true ? 'typed' : 'owner';
+    const item = await enqueueMessage(target, text, source, undefined, person(req));
     res.json({ ok: true, queued: true, message: item });
   });
   app.delete('/api/messages', async (req, res) => {

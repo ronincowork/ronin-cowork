@@ -35,11 +35,12 @@ test('self-hosted: a forwarded email is not trusted, people stays []', async () 
 
 test('hosted office: people by email with role from members.json, re-read on change', async () => {
   await fs.writeFile(path.join(dir, 'office_record.json'), JSON.stringify({ office_id: 'o1', office_park: 'office-park-1', gateway_office: 'http://10.0.0.2:4912', provisioned_at: '2026-11-14T09:00:00Z' }));
-  await fs.writeFile(people.membersFile(), JSON.stringify({ members: [{ email: 'a@x.com', role: 'owner' }, { email: 'b@y.com', role: 'member' }], at: '2026-11-14T09:00:00Z' }));
+  await fs.writeFile(people.membersFile(), JSON.stringify({ members: [{ email: 'a@x.com', role: 'owner' }, { email: 'b@y.com', role: 'member', name: 'Bo\nYu', organization: 'Y Ltd', later: 1 }], at: '2026-11-14T09:00:00Z' }));
   const unwatch = await people.startOfficePeople();
 
   assert.equal(people.person(req('GET') as unknown as IncomingMessage), null, 'no header is a local caller');
-  assert.deepEqual(people.person(req('GET', 'A@X.com') as unknown as IncomingMessage), { email: 'a@x.com', role: 'owner' });
+  assert.deepEqual(people.person(req('GET', 'A@X.com') as unknown as IncomingMessage), { email: 'a@x.com', role: 'owner' }, 'email only, the case today');
+  assert.deepEqual(people.person(req('GET', 'b@y.com') as unknown as IncomingMessage), { email: 'b@y.com', role: 'member', name: 'Bo Yu', organization: 'Y Ltd' }, 'name and organization when present');
 
   const a1 = socket('a@x.com'); socket('a@x.com'); socket('b@y.com'); socket('c@z.com'); socket();
   hit('POST', 'b@y.com');
