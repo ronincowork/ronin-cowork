@@ -56,6 +56,22 @@ longer be archived automatically. Refusal happens before writing a manifest or s
 The archive manifest store is declared as `archived_sessions` in both store tables. Resolve
 its location with `bin/ronin-store archived_sessions`; never spell the path in callers.
 
+## An Agent's own end
+
+`session_end` (`POST /api/harakiri`) archives (KAN-501). `performAgentEnd` runs the same desk
+checks and closes as Delete (`shutdownAgent`), with its stop step replaced by `archiveAgent`,
+the one archive the archive route also calls. So the manifest is written and tmux stopped
+exactly as above, `SessionEnd` is not emitted, and the session folder stays. Only when no exact
+provider conversation is known does it stop the Agent outright and emit `SessionEnd`.
+
+Desks close, as before: `session_end` only ends with every desk clean and handed in, so the
+work is on the Team line and a restored Agent reopens a desk from it. Holds are released as on
+any ending (`releaseHolder`): a stopped Agent holding work would hide it from the Team, so the
+lead keeps the decision and a restored Agent takes items back by handoff; restore does not
+reclaim. The lead's end notice (the members-list ack, `memberEnded`, and the "ended without a
+handover" notice when it applies) carries `<name> ended, archived as <id>: session_restore <id>`.
+Delete, Hard Delete and the tile's shutdown are unchanged: they end outright.
+
 ## Failure guarantees
 
 - If no exact provider conversation UUID can be found, archive returns `409` before writing
@@ -75,6 +91,7 @@ its location with `bin/ronin-store archived_sessions`; never spell the path in c
 | Request | Result |
 |---|---|
 | `POST /api/sessions/:name/archive` | Persist the resumable manifest and stop the Agent; refuses while it owns an open desk |
+| `POST /api/harakiri` | `session_end`: close safe desks, then archive as above (`archived` in the answer); an unresumable conversation ends outright |
 | `DELETE /api/sessions/:name` | Coordinated close of safe assigned worktrees followed by Agent deletion |
 | `POST /api/sessions/:name/shutdown` | Immediately start observable safe Delete, or exact-confirmed Hard Delete; returns an operation id |
 | `{t:'shutdown', ...operation}` on `/events` | Each phase, desk count, terminal success, or actionable blockers, pushed as they happen; `{t:'want', resource:'shutdown', id}` answers a reopened socket with the operation as it stands |

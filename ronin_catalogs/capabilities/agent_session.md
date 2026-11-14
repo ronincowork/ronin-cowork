@@ -30,7 +30,7 @@ preflight succeeds.
 | `session_set` | write: an existing session's Team membership, lead designation, or recorded Workspace Folder handle | | `session_set --help` |
 | `session_archive` | write: make one session resumable and leave desk custody unchanged | | `session_archive --help` |
 | `session_restore` | create: restore one archived session | | `session_restore --help` |
-| `session_end` | end: preflight custody and end this Agent only when safe | | `session_end --help` |
+| `session_end` | end: preflight custody, close desks, and archive this Agent (restorable) only when safe | | `session_end --help` |
 
 `session_create` is universal and is every Cowork Agent's one visible-session creation
 surface. It does not inherit the caller's conversation or context: the caller supplies an
