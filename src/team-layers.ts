@@ -15,9 +15,10 @@
  * THE NOTICE: a change on any layer sends each lead whose layers changed the usual "Your work
  * record changed" (tegami.ts ackRecord), once per quiet spell (DEBOUNCE_MS), so an ordered plan
  * that makes several epics is one notice. The triggers are the work-item hook (sockets.ts
- * onItemChanged), the plans routes and the Workspace PUT; each only asks for a re-read. What a lead
- * is told is decided by comparing its layers before and after, so a write that moves nothing
- * of that lead's tells it nothing.
+ * onItemChanged), the plans routes, the Workspace PUT and a Team change (tegami.ts teamChanged);
+ * each only asks for a re-read. What a lead is told is decided by comparing its layers as the read
+ * prints them (`shown`), before and after, so a write that moves nothing the lead can read tells
+ * it nothing (KAN-498).
  * Canvases are names only on the line, so a canvas added or removed tells the lead and editing a
  * canvas's entries tells nobody (owner, 2026-11-09). Members are never told.
  */
@@ -116,13 +117,27 @@ let running: Promise<void> | null = null;
 let again = false;
 const seen = new Map<string, string>(); // lead -> its layers as last read, one string
 
+/** One Team's layers as `work-record read` prints them (libexec/work-record-read), and nothing
+ * more: what a lead is told of is a change it can read (KAN-498). The Folder dirs and an
+ * integration's facts ride on the reading but are not on the lines. */
+export function shown(l: TeamLayers): unknown {
+  const w = l.workspace;
+  return {
+    team: l.team,
+    workspace: w && { title: w.title || w.name, objective: w.objective, repos: w.repos, folders: w.folders, integrations: w.integrations.map((row) => String(row.provider)) },
+    plans: l.plans.map(({ name, status, team }) => [name, status, team]),
+    canvases: l.canvases.map(({ name }) => name),
+    epics: l.epics.map(({ id, title, holder, status }) => [id, title, holder, status]),
+  };
+}
+
 async function leadSignatures(read: () => Promise<SessionRow[]>): Promise<Map<string, string>> {
   const sessions = await read();
   const every = await liveRows();
   const out = new Map<string, string>();
   for (const lead of sessions.filter((one) => one.leads.length)) {
     const layers = await Promise.all(lead.leads.map((team) => teamLayers(team, sessions, every)));
-    out.set(lead.name, JSON.stringify(layers));
+    out.set(lead.name, JSON.stringify(layers.map(shown)));
   }
   return out;
 }

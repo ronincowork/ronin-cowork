@@ -266,14 +266,15 @@ export async function writeConfiguration(name: string, by = name): Promise<boole
 }
 
 /** A Team changed (owner, 2026-10-21): its roster was written, or `moved` joined, left or was
- * made lead. Every record on it is derived again; each one that changed is acked, and the
- * lead's is acked on every change, since the lead keeps the Team. */
+ * made lead. Every record on it is derived again and each one that changed is acked. What else
+ * a roster write can move on the lead's read (the Workspace line) is the layers' to compare
+ * (team-layers.ts): a write that moves nothing the read shows tells nobody (KAN-498). */
 export async function teamChanged(teams: string[], by: string, moved = ''): Promise<void> {
   for (const s of await listSessions()) {
-    const lead = s.leads.some((t) => teams.includes(t));
-    if (!lead && s.name !== moved && !s.tags.some((t) => teams.includes(t))) continue;
-    if (!(await writeTeams(s.name, s.tags, by)) && lead) await ackRecord(s.name, by);
+    if (s.name !== moved && !s.leads.some((t) => teams.includes(t)) && !s.tags.some((t) => teams.includes(t))) continue;
+    await writeTeams(s.name, s.tags, by);
   }
+  (await import('./team-layers.js')).layersMayHaveChanged();
 }
 
 /** `name` ended: every lead's members list is derived again, and a lead whose list lost it is acked. */
@@ -307,6 +308,7 @@ export async function writeObjective(name: string, objective: string, by: string
   const parsed = letterBlock(text);
   if (!parsed) throw new Error(`@${name} has no readable work record`);
   const next = objective.trim().slice(0, 2000);
+  if (parsed.body.objective === next) return next;
   parsed.body.objective = next;
   await replaceLetterBlock(file, text, parsed, parsed.body);
   await ackRecord(name, by);
