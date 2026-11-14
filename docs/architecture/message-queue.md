@@ -61,6 +61,19 @@ to their random file names (2026-10-24). The worker
 finishes one before considering the next, so paste and Enter transactions cannot interleave.
 Direct human terminal input does not enter this queue.
 
+## The From line
+
+Each letter reaches the Agent headed with who sent it and through what:
+`From @agent [Tell]:`, `From Owner [Ronin Box]:`, `From Ronin House [House notice]:`. What the
+person types in an Agent's own Message box arrives bare, exactly as if typed into the terminal
+(owner, 2026-10-22).
+
+In a hosted office the browser request (or the `/pty` upgrade, for an open tab's old Message box
+frame) names a signed-in person (src/office-people.ts). Their letter records them in `person`,
+`from` is their label, and the head says who, typed included:
+`From a@x.com, owner [Message box]:`, or `From Ann Lee <a@x.com>, owner, X Ltd [Ronin Box]:` when
+members.json carries a name and organization. Self-hosted, or a local caller, it is as above.
+
 ## Retention and actions
 
 A letter remains while a recognized dialog is open, or while a draft holds it before the

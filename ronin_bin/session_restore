@@ -11,9 +11,12 @@ session_restore — resume one archived session
 Usage:
   session_restore <archive-id>
 
-Use the archive id printed by session_archive. Ronin restores the provider conversation
-and session metadata; the archive is removed only after restoration succeeds.
-Related: session_archive --help
+Use the archive id printed by session_archive, or named in a lead's notice that an Agent
+ended with session_end (every session_end archives). Ronin restores the provider
+conversation and session metadata; the archive is removed only after restoration succeeds.
+Restore does not give back work items or worktrees: the restored Agent takes back its items
+(item handoff) and reopens a worktree (worktree-desk open).
+Related: session_archive --help, session_end --help
 EOF
     exit 0 ;;
 esac

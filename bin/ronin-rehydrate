@@ -1,0 +1,123 @@
+#!/usr/bin/env bash
+# ronin-rehydrate — bring a parked office back from the file bin/ronin-archive wrote.
+#
+#   bin/ronin-rehydrate <file>                  # returns at once; the work goes on detached
+#   bin/ronin-rehydrate <file> --foreground     # the same, attached (a person watching)
+#
+# Run as the office user, on a fresh install of the same or a newer release, with the same
+# home and roots the office had (a fresh unit of the same image has them). It stops Ronin,
+# restores every store through bin/ronin-export (this release's layout decides where each
+# lands), puts each Workspace Folder and provider file back at its path, starts Ronin and
+# resumes every parked Agent through session_restore.
+#
+# What the fresh install already had where the office's things go is moved aside, never
+# deleted: <data root>/rehydrate-replaced-<stamp>/. The office_unit store is the exception —
+# it is the new unit's own filing, written by whoever provisioned it, and is kept.
+#
+# Progress is <file>.status.json, output <file>.log, as for ronin-archive. A file from a newer
+# format or a newer release is refused, and the status says why.
+set -euo pipefail
+
+PARK_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+PARK_NAME=ronin-rehydrate
+FILE=""; FG=0
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --foreground) FG=1 ;;
+    -h|--help) sed -n '2,19p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    -*) echo "ronin-rehydrate: unknown argument '$1' (try --help)" >&2; exit 2 ;;
+    *) [ -z "$FILE" ] || { echo "ronin-rehydrate: one file only" >&2; exit 2; }; FILE="$1" ;;
+  esac
+  shift
+done
+[ -n "$FILE" ] || { echo "usage: ronin-rehydrate <file> (try --help)" >&2; exit 2; }
+case "$FILE" in /*) ;; *) FILE="$PWD/$FILE" ;; esac
+[ -f "$FILE" ] || { echo "ronin-rehydrate: $FILE not found" >&2; exit 2; }
+PARK_FILE="$FILE"
+
+. "$PARK_ROOT/libexec/ronin-machine.sh"
+. "$PARK_ROOT/libexec/ronin-park.sh"
+[ "$FG" = 1 ] || { park_detach "$FILE"; exit 0; }
+park_trap
+STORE="$PARK_ROOT/bin/ronin-store"
+DATA="$("$STORE" --root data)"
+STAMP="$(date +%Y%m%d-%H%M%S)"
+
+park_step "checking the file"
+park_digest
+MANIFEST="$(tar -xzOf "$FILE" manifest.json 2>/dev/null)" || park_fail "$FILE has no manifest.json — not a file ronin-archive wrote"
+read -r FORMAT FROM_RELEASE AGENTS <<<"$(printf '%s' "$MANIFEST" | python3 -c '
+import json, sys
+m = json.load(sys.stdin)
+print(m.get("format", 0), m.get("release", ""), ",".join(a["id"] for a in m.get("agents", [])) or "-")')"
+[ "$FORMAT" -le 1 ] || park_fail "the file is format $FORMAT, from a newer Ronin; this release ($(park_release)) reads format 1 — install a newer release first"
+HERE_RELEASE="$(park_release)"
+[ "$(printf '%s\n%s\n' "$FROM_RELEASE" "$HERE_RELEASE" | sort -V | tail -1)" = "$HERE_RELEASE" ] ||
+  park_fail "the file was made by $FROM_RELEASE and this install is $HERE_RELEASE, an older release — install $FROM_RELEASE or newer first"
+
+park_step "stopping Ronin"
+park_ronin stop
+
+park_step "unpacking"
+WORK="$DATA/rehydrate-$STAMP"
+ASIDE="$DATA/rehydrate-replaced-$STAMP"
+mkdir -p "$WORK"; PARK_WORK="$WORK"
+tar -C "$WORK" -xzf "$FILE"
+# Paths travel as they were, so the roots must be where they were.
+for pair in "home|$HOME" "user root|$("$STORE" --root user)" "data root|$DATA"; do
+  was="$(sed -n "s/^${pair%%|*}: //p" "$WORK/RONIN-EXPORT/MANIFEST")"
+  [ -z "$was" ] || [ "$was" = "${pair#*|}" ] ||
+    park_fail "the office's ${pair%%|*} was $was and here it is ${pair#*|}; rehydrate puts things back at their paths — run it as a user whose ${pair%%|*} is $was"
+done
+
+park_step "moving the fresh install's own copies aside"
+aside() { # <path> <where under ASIDE>
+  [ -e "$1" ] || [ -L "$1" ] || return 0
+  [ -d "$1" ] && [ -z "$(ls -A "$1" 2>/dev/null)" ] && return 0
+  mkdir -p "$(dirname "$ASIDE/$2")"
+  mv "$1" "$ASIDE/$2"
+  echo "  aside $1"
+}
+for src in "$WORK/RONIN-EXPORT/stores"/*/; do
+  [ -d "$src" ] || continue
+  id="$(basename "$src")"
+  [ "$id" = office_unit ] && continue   # the new unit's own filing: kept (ronin-export skips it)
+  dest="$("$STORE" "$id" 2>/dev/null)" || continue
+  aside "$dest" "stores/$id"
+done
+CARRIED="$(sed -n '/^also:$/,$p' "$WORK/RONIN-EXPORT/MANIFEST" | sed -n 's/^  \(folders\|files\)\//\1 \//p')"
+while read -r kind path; do
+  [ -n "${path:-}" ] && [ -e "$WORK/$kind$path" ] || continue
+  aside "$path" "$kind$path"
+done <<<"$CARRIED"
+
+park_step "restoring the stores"
+"$PARK_ROOT/bin/ronin-export" --restore "$WORK"
+
+park_step "restoring Workspace Folders and provider files"
+while read -r kind path; do
+  [ -n "${path:-}" ] && [ -e "$WORK/$kind$path" ] || continue
+  mkdir -p "$(dirname "$path")"
+  mv "$WORK/$kind$path" "$path"
+  echo "  ok    $path"
+done <<<"$CARRIED"
+
+park_step "starting Ronin"
+park_ronin start
+park_wait_ronin
+
+park_step "resuming the Agents"
+FAILED=""
+if [ "$AGENTS" != - ]; then
+  for id in ${AGENTS//,/ }; do
+    "$PARK_ROOT/ronin_bin/session_restore" "$id" || FAILED="$FAILED $id"
+  done
+fi
+[ -z "$FAILED" ] || park_fail "Ronin is up, but these Agents did not resume:$FAILED — each stays in the Archived tab"
+
+PARK_STEP="rehydrated"
+park_status done
+echo "agents: $(printf '%s' "$AGENTS" | tr ',' '\n' | grep -vc '^-$') resumed · Ronin is running"
+if [ -d "$ASIDE" ]; then echo "the fresh install's own copies: $ASIDE"; fi
+echo "size: $PARK_SIZE"
+echo "sha256: $PARK_SHA"

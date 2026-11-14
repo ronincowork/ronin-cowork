@@ -37,7 +37,10 @@ manifest. Live tmux facts are listed separately because they are not durable fil
 session tags and lead designations through [tmux-client.ts](../src/tmux-client.ts).
 [sessions-api.ts](../src/routes/sessions-api.ts) exposes their operations and live Team
 projection. [teams-api.ts](../src/routes/teams-api.ts) rejects `members`, `sessions`, and
-lead fields in roster writes. Archive manifests preserve a restoration snapshot; they do
+lead fields in roster writes. A roster write that leaves a Team `archived`, like retiring it,
+takes the Team's tag and lead mark off every member through `detachTeamMembers` in
+[team-retire.ts](../src/team-retire.ts), so each member's record follows and the team notices go
+out; an archived Team has no members. Archive manifests preserve a restoration snapshot; they do
 not compete with the current live session.
 
 The browser holds no durable copy of server truth. Per tab, [store.js](../public/js/store.js)

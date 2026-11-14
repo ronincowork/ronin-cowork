@@ -14,6 +14,7 @@ Workspace's own, with only provenance left.
 | `blurb` | one line under the name |
 | `order` | list order; unordered ones follow, by label |
 | `kinds` | which Workspaces it suits, e.g. `site, app` |
+| `integration` | optional: the integration's name, as a Workspace's `integration:<name>` holds it (e.g. `netlify`); that integration's brief points at this template |
 | `drawing` | optional link to a drawing of it, for people judging the outline |
 
 ## Blocks

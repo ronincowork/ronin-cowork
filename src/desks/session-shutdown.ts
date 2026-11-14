@@ -54,7 +54,7 @@ export async function assignedDesks(session: string, list: typeof listDesks = li
   return (await list({ owner: session })).filter((desk) => desk.state === 'open');
 }
 
-const liveOps: ShutdownOps = {
+export const liveOps: ShutdownOps = {
   desks: (session) => assignedDesks(session),
   liveSessions: listSessions,
   cwd: sessionDir,

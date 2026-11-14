@@ -111,3 +111,38 @@ test('work-record read prints the Team, one line per layer with its command; wor
   const tool = await fs.readFile(path.resolve(import.meta.dirname, '../ronin_bin/work-record'), 'utf8');
   assert.match(tool, /print\(json\.dumps\(\{"workspace": ws, "repos": d\.get\("repos", \[\]\)\}/, 'workspace list stays one JSON document');
 });
+
+// KAN-498: "Your work record changed" came when nothing work-record read shows had changed. Two
+// sources: the layers compared fields the read never prints (a Folder's dir, an integration's
+// facts), and a Team change acked the lead on every roster write, whatever it moved.
+test('KAN-498: a layer field the read does not print tells nobody; a line that moves still tells the lead', async () => {
+  layers.resetTeamLayers();
+  const told: string[] = [];
+  const notify = async (lead: string) => { told.push(lead); };
+  await layers.settleLayers(notify, sessions);
+  const moved = path.join(dir, 'shop-repo-moved');
+  await fs.mkdir(moved, { recursive: true });
+  await upsertProjectRoot('shop_repo', { dir: moved });
+  assert.equal((await layers.teamLayers('crew')).workspace?.dirs.shop_repo, moved, 'the reading carries the new dir');
+  assert.deepEqual(await layers.settleLayers(notify, sessions), [], 'the dir is not on the Workspace line: nobody told');
+  await editItem(epic.id, { status: 'In Progress' }, 'cap');
+  assert.deepEqual(await layers.settleLayers(notify, sessions), ['cap'], 'the epic\'s status is on the Epics line');
+  assert.deepEqual(told, ['cap']);
+});
+
+test('KAN-498: a roster write that moves nothing the read shows sends no notice; an objective change does', async () => {
+  const { teamChanged } = await import('../src/tegami.js');
+  const { writeTeamRoster } = await import('../src/team-rosters.js');
+  const { listQueuedMessages, dismissMessages } = await import('../src/message-queue.js');
+  const notices = async () => (await listQueuedMessages()).filter((m) => m.text.startsWith('Your work record changed')).map((m) => m.target).sort();
+  const clear = async () => { await dismissMessages((await listQueuedMessages()).map((m) => m.id)); };
+  await teamChanged(['crew'], 'owner'); // the records take crew's teams block once
+  await clear();
+  await writeTeamRoster('crew', { agent_defaults: { reach: 'plan' } }, 'camp');
+  await teamChanged(['crew'], 'owner');
+  assert.deepEqual(await notices(), [], 'agent_defaults is not on a work record: the lead is not told');
+  await writeTeamRoster('crew', { objective: 'run the bigger shop' }, 'camp');
+  await teamChanged(['crew'], 'owner');
+  assert.deepEqual(await notices(), ['cap', 'mem'], 'the objective is on every member\'s teams entry');
+  layers.resetTeamLayers(); // the re-read teamChanged asked for is not this test's
+});

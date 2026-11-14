@@ -1,6 +1,9 @@
 
 @layer app {
   .tw-config[hidden] { display: none; }
+  .tw-view > .wk-workbench-host[hidden] { display: none; }
+  .tw-gone { margin: var(--space-paragraph); align-self: start; }
+  .tw-gone .wk-surface-content { display: grid; gap: var(--space-paragraph); padding: var(--space-inset); }
 
   .tw-terminal[data-drop-ready='true'] { outline: var(--edge-2) solid var(--kaki); outline-offset: calc(-1 * var(--edge-2)); }
 
