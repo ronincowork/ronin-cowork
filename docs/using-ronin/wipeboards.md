@@ -205,7 +205,8 @@ leaves no empty room in the listing. All six must hold:
 6. it is not `house`.
 
 Anything short of all six and it stays; a quiet team is not a dead one, and an archived
-team keeps its roster and therefore its wipeboard. Dissolving a team still deletes only
+team keeps its roster and therefore its wipeboard (archiving takes the Team off its members;
+its link says Archived). Dissolving a team still deletes only
 the roster.
 
 ## The Brief

@@ -243,19 +243,19 @@ export async function withAxes(list: SessionInfo[]): Promise<SessionWithAxes[]> 
 
 /** Write one Ronin-derived key of this session's record. Returns whether it changed; with
  * `by`, a change by anyone else is acked. */
-async function writeDerived(name: string, key: string, value: unknown, by: string): Promise<boolean> {
+async function writeDerived(name: string, key: string, value: unknown, by: string, said = ''): Promise<boolean> {
   const file = tegamiPath(await sessionKey(name));
   const text = await fs.readFile(file, 'utf8').catch(() => '');
   const parsed = letterBlock(text);
   if (!parsed || JSON.stringify(parsed.body[key] ?? null) === JSON.stringify(value)) return false;
   await replaceLetterBlock(file, text, parsed, { ...parsed.body, [key]: value });
-  await ackRecord(name, by);
+  await ackRecord(name, by, said);
   return true;
 }
 
-/** Derive this session's teams block again. */
-export async function writeTeams(name: string, tags: string[], by = name): Promise<boolean> {
-  return writeDerived(name, 'teams', await deriveTeams(name, tags), by);
+/** Derive this session's teams block again; `said` rides on its ack. */
+export async function writeTeams(name: string, tags: string[], by = name, said = ''): Promise<boolean> {
+  return writeDerived(name, 'teams', await deriveTeams(name, tags), by, said);
 }
 
 /** The configuration line (owner, 2026-10-21): the title and Workspace Folder Ronin keeps for
@@ -277,15 +277,16 @@ export async function teamChanged(teams: string[], by: string, moved = ''): Prom
   (await import('./team-layers.js')).layersMayHaveChanged();
 }
 
-/** `name` ended: every lead's members list is derived again, and a lead whose list lost it is acked. */
-export async function memberEnded(name: string): Promise<void> {
-  for (const s of await listSessions()) if (s.leads.length) await writeTeams(s.name, s.tags, name);
+/** `name` ended: every lead's members list is derived again, and a lead whose list lost it is
+ * acked. An end that archived says so on that ack, `said`: the archive id and the restore command. */
+export async function memberEnded(name: string, said = ''): Promise<void> {
+  for (const s of await listSessions()) if (s.leads.length) await writeTeams(s.name, s.tags, name, said);
 }
 
 /** THE ACK (owner, 2026-10-07): a write to an Agent's work record by anyone else pushes it one
  * fixed line; the Agent reads its record. A write by the Agent itself is not acked. */
-export async function ackRecord(name: string, by: string): Promise<void> {
-  if (by !== name) await enqueueMessage(name, 'Your work record changed; please read it (work-record read).', 'house', 'Work record');
+export async function ackRecord(name: string, by: string, said = ''): Promise<void> {
+  if (by !== name) await enqueueMessage(name, `Your work record changed; please read it (work-record read).${said ? ` ${said}` : ''}`, 'house', 'Work record');
 }
 
 /** Change only the current mandate in an Agent-authored work record. Birth remains immutable.

@@ -10,6 +10,13 @@ longer running and does not occupy a place in the live roster.
    what prevents archiving.
 3. Find the record in **Archived** and select it to resume.
 
+An Agent that ends itself with `session_end` (as it does once its last item is Done) is
+archived the same way, after its worktrees close. An Agent that ended too early is therefore
+in **Archived**, or its lead recalls it with `session_restore <archive-id>`: the lead's notice
+of the end names the id and that command. Its work items went to the Team as on any ending;
+once restored it takes back the ones it wants. Only a conversation Ronin cannot resume ends
+outright.
+
 Ronin needs an exact conversation identity and a supported provider resume operation.
 Claude and Codex have that integration. If Ronin cannot identify the conversation safely,
 it refuses before stopping the Agent. Installing a provider does not imply it supports archive.

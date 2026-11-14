@@ -12,12 +12,13 @@ import { S } from './state.js';
 
 export const UNASSIGNED = ' unassigned';
 let rosters = [];
+let heard = false; // the first pushed rosters have arrived
 const listeners = new Set();
 
 const sessions = () => Array.isArray(S.sessions) ? S.sessions : [];
 const publish = () => { for (const listener of listeners) listener(); };
 
-hear('teams', (rows) => { rosters = rows; publish(); });
+hear('teams', (rows) => { rosters = rows; heard = true; publish(); });
 hear('sessions', () => publish());
 
 export function subscribe(listener) {
@@ -67,6 +68,15 @@ export function membersOfTeam(team) {
 export function teamByName(name) {
   const roster = rosters.find((row) => row.name === name && row.state !== 'archived');
   return roster ? { ...roster, durable: true } : { name, objective: '', durable: false };
+}
+// A Team link that names no live Team: { archived: true, title } for an archived roster,
+// { archived: false, title: '' } for a name with no roster at all. null while the Team is
+// live, for Unassigned, and before the first rosters arrive (nothing is known yet).
+export function teamGone(name) {
+  if (!heard || !name || name === UNASSIGNED) return null;
+  if (rosters.some((row) => row.name === name && row.state !== 'archived')) return null;
+  const archived = rosters.find((row) => row.name === name);
+  return archived ? { archived: true, title: String(archived.title || '').trim() } : { archived: false, title: '' };
 }
 export function teamsFromState() {
   const durable = rosters.filter((r) => r.state !== 'archived').map((r) => ({ ...r, durable: true }));

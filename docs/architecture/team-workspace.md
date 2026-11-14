@@ -34,6 +34,10 @@ on leave so no transport survives outside the entered destination.
 ## `#/team/:name` user flow
 
 1. The router enters Team with `name` as the route parameter.
+   A name with no live Team draws one plain surface in place of the workbench, never an
+   empty Team: an archived Team's title with **Archived**, or for a name with no roster at
+   all the name with "No Team has this name."; each links back to Teams (`#/cowork`). The
+   controller's `teamGone` answers which, once the first rosters have arrived.
 2. Team normalizes tab state through `normalizeWorkbenchState(viewState, declaration)`:
    the column **arrangement** (order · hidden · widths) and the **seats** (what each
    workspace held: a member, or a canonical Workbench surface type).

@@ -16,7 +16,7 @@ import { callerOf } from './work-items-api.js';
 import { announceTeamChanges } from './wipeboards-api.js';
 import { pushTeams } from '../ws/events.js';
 import { campaignFilter, campaignResolver, initialCampaignId, machineCampaignId } from '../campaign-scope.js';
-import { retireTeam } from '../team-retire.js';
+import { detachTeamMembers, retireTeam } from '../team-retire.js';
 import { readCampaign } from '../campaigns.js';
 import { readWorkspace } from '../workspaces.js';
 import { teamAgentDefaults } from '../agent-defaults.js';
@@ -184,6 +184,8 @@ export function registerTeams(app: express.Express): void {
   app.put('/api/team-rosters/:name', async (req, res) => {
     try {
       const roster = await writeTeamRoster(req.params.name, editOf(req.body));
+      // An archived Team keeps no members (KAN-500).
+      if (roster.state === 'archived') await detachTeamMembers(roster.name, callerOf(req));
       await teamChanged([roster.name], callerOf(req)).catch(() => {});
       res.json({ ok: true, roster });
     } catch (e) {
@@ -226,7 +228,7 @@ export function registerTeams(app: express.Express): void {
       const live = new Set((await listSessions()).map((s) => s.name));
       const added: string[] = [];
       const notLive: string[] = [];
-      for (const s of wanted) {
+      for (const s of roster.state === 'archived' ? [] : wanted) {
         if (!live.has(s)) {
           notLive.push(s);
           continue;
@@ -237,6 +239,7 @@ export function registerTeams(app: express.Express): void {
         await announceTeamChanges(s, before, after).catch(() => {});
         added.push(s);
       }
+      if (roster.state === 'archived') await detachTeamMembers(name, callerOf(req));
       await teamChanged([name], callerOf(req)).catch(() => {});
       res.json({ ok: true, created: !existing, roster, added, not_live: notLive });
     } catch (e) {
