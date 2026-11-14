@@ -19,7 +19,7 @@ TOOL_DIR=$(dirname "$SELF")
 
 help() {
   cat <<'EOF'
-session_end — end this Agent and its managed worktrees together: the one way to go
+session_end — close this Agent's managed worktrees and archive it: the one way to go
 
 Usage:
   session_end [--ignore-items]
@@ -37,7 +37,15 @@ named, the same check archive and the UI's Delete make. It is a nudge, never a w
   4. Then session_end. An item you flagged needs nothing more; --ignore-items goes past the rest.
 Each item still goes to the Team, flagged "Ended without handover: <you>, <status>", and the
 lead is told once. To Do goes back to your Team by itself. Nothing goes to nobody; the
-worktree check still applies. Related: worktree-desk --help, item --help.
+worktree check still applies.
+
+The end is an archive, not a delete: once the worktrees close, Ronin archives this Agent the
+way session_archive does, so an Agent that ended too early comes back with
+session_restore <archive-id>. Your lead's notice of the end names the id and the command.
+Your items still go to the Team as above; a restored Agent takes back what it wants
+(item handoff <id> <you> --from team:<team>) and reopens a worktree with worktree-desk open.
+Only a conversation Ronin cannot resume ends outright. Hard Delete stays the owner's.
+Related: session_restore --help, worktree-desk --help, item --help.
 EOF
 }
 
