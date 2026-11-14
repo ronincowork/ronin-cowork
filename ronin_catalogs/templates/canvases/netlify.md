@@ -1,11 +1,12 @@
-# Integrations
-- **label:** Integrations
-- **blurb:** A site or app and what it runs on: the live page, its database, repos, work and documents.
+# Netlify
+- **label:** Netlify
+- **blurb:** A site or app on Netlify: the live page, preview, traffic, forms and credits, then its database, repos, work and documents.
 - **order:** 10
 - **kinds:** site, app
+- **integration:** netlify
 - **drawing:** https://claude.ai/artifact/5DzaJKuVZu2jJoPP9G1JyC
 
-One block per linked integration, then the Workspace's own parts. A block holds only what
+The Netlify block first, then the Workspace's own parts. A block holds only what
 the Workspace uses: no Netlify site linked, no Netlify block; no database, no Database block.
 
 ## blocks
