@@ -61,6 +61,8 @@ import { resolveEndingRequest } from '../desks/ending-response.js';
 import { randomUUID } from 'node:crypto';
 import { hardDeleteConfirmation, shutdownAgent, ShutdownRefused, ShutdownSlots, type ShutdownProgress } from '../desks/session-shutdown.js';
 import { listDesks } from '../desks/registry.js';
+import { parkCarry } from '../machine-park.js';
+import { readOfficeRecord } from '../office-record.js';
 
 interface PreparedEnding { proceed: boolean; acknowledgement?: Record<string, unknown> }
 
@@ -193,6 +195,37 @@ async function prepareSessionEnding(
   return { proceed: decision.proceed, acknowledgement: decision.acknowledgement };
 }
 
+/** The exact provider conversation an archive will resume, or why there is none. */
+async function archiveProvider(name: string): Promise<{ agent: string; id: string } | { error: string }> {
+  const key = await sessionKey(name);
+  const runtime = await sessionRuntime(name);
+  const launchIdentity = await readLaunchIdentity(key);
+  if (launchIdentity) await resolveLaunchJournal(launchIdentity);
+  const provider = launchIdentity
+    ? (launchIdentity.providerSession ? { agent: launchIdentity.cli, id: launchIdentity.providerSession } : null)
+    : await providerSessionInfo(runtime.agent, runtime.cwd, runtime.pid, await getProviderSessionId(name));
+  return provider ?? { error: `Could not identify a resumable ${runtime.agent || 'agent'} conversation.` };
+}
+
+/** THE ARCHIVE ITSELF — manifest first, then stop — shared by one Agent's archive and a park. */
+async function archiveAgent(name: string, provider: { agent: string; id: string }): Promise<ArchivedSession> {
+  const key = await sessionKey(name);
+  const runtime = await sessionRuntime(name);
+  const archived: ArchivedSession = {
+    version: 1, id: key, name, key, archived_at: new Date().toISOString(), cwd: runtime.cwd,
+    identity: (await listSessions()).find((s) => s.name === name)?.identity,
+    agent: provider.agent, provider_session_id: provider.id, tags: await getTags(name), leads: await getLeads(name),
+    wipeboards: await getWipeboards(name), project_root: await getProjectRoot(name),
+  };
+  await writeArchive(archived);
+  try { await stopSessionTree(name); }
+  catch (e) {
+    if (await sessionExists(name)) await removeArchive(archived.id).catch(() => {});
+    throw e;
+  }
+  return archived;
+}
+
 /** The Teams one side has and the other lacks. */
 const moved = (before: string[], after: string[]): string[] =>
   [...after.filter((t) => !before.includes(t)), ...before.filter((t) => !after.includes(t))];
@@ -246,28 +279,39 @@ export function registerSessions(app: express.Express): void {
       const prepared = await prepareSessionEnding(req, res, name, 'archive');
       if (!prepared.proceed) return;
       const key = await sessionKey(name);
-      const runtime = await sessionRuntime(name);
-      const launchIdentity = await readLaunchIdentity(key);
-      if (launchIdentity) await resolveLaunchJournal(launchIdentity);
-      const provider = launchIdentity
-        ? (launchIdentity.providerSession ? { agent: launchIdentity.cli, id: launchIdentity.providerSession } : null)
-        : await providerSessionInfo(runtime.agent, runtime.cwd, runtime.pid, await getProviderSessionId(name));
-      if (!provider) return res.status(409).json({ error: `Could not identify a resumable ${runtime.agent || 'agent'} conversation.` });
-      const archived: ArchivedSession = {
-        version: 1, id: key, name, key, archived_at: new Date().toISOString(), cwd: runtime.cwd,
-        identity: (await listSessions()).find((s) => s.name === name)?.identity,
-        agent: provider.agent, provider_session_id: provider.id, tags: await getTags(name), leads: await getLeads(name),
-        wipeboards: await getWipeboards(name), project_root: await getProjectRoot(name),
-      };
-      await writeArchive(archived);
-      try { await stopSessionTree(name); }
-      catch (e) {
-        if (await sessionExists(name)) await removeArchive(archived.id).catch(() => {});
-        throw e;
-      }
+      const provider = await archiveProvider(name);
+      if ('error' in provider) return res.status(409).json(provider);
+      const archived = await archiveAgent(name, provider);
       await releaseHolds(name, key, 'archived');
       count('ended', { name, end: 'archived' });
       res.json({ ok: true, archived: publicArchive(archived), ...(prepared.acknowledgement ? { worktree_acknowledgement: prepared.acknowledgement } : {}) });
+    } catch (e) {
+      res.status(500).json({ error: String((e as Error)?.message ?? e) });
+    }
+  });
+
+  // PARK: archive every Agent at once, for bin/ronin-archive (docs/operating/park.md, KAN-502).
+  // The whole office travels, so nothing is handed back: no desk or item refusal, holds stay
+  // with their Agent, no Team is told. Every Agent is identified before any is stopped — one
+  // that cannot be resumed refuses the park with the office untouched.
+  app.post('/api/machine/park', async (_req, res) => {
+    try {
+      const names = (await listSessions()).filter((s) => s.agent).map((s) => s.name);
+      const providers = await Promise.all(names.map(async (name) => ({ name, provider: await archiveProvider(name) })));
+      const refused = providers.flatMap(({ name, provider }) => 'error' in provider ? [`${name}: ${provider.error}`] : []);
+      if (refused.length) return res.status(409).json({ error: `Not parked — no Agent was stopped. ${refused.join(' ')}` });
+      const archived: ArchivedSession[] = [];
+      for (const { name, provider } of providers) {
+        archived.push(await archiveAgent(name, provider as { agent: string; id: string }));
+        count('ended', { name, end: 'parked' });
+      }
+      const office = await readOfficeRecord();
+      res.json({
+        ok: true,
+        office_id: office.hosting === 'office_unit' ? office.record.office_id : '',
+        agents: archived.map(({ id, name, agent }) => ({ id, name, agent })),
+        ...await parkCarry(archived),
+      });
     } catch (e) {
       res.status(500).json({ error: String((e as Error)?.message ?? e) });
     }

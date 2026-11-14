@@ -1,0 +1,83 @@
+#!/usr/bin/env bash
+# ronin-archive — park this whole office in one file. Ronin stays stopped.
+#
+#   bin/ronin-archive --out <file>     # returns at once; the work goes on detached
+#   bin/ronin-archive --out <file> --foreground   # the same, attached (a person watching)
+#
+# Run as the office user. It archives every Agent through Ronin's own archive path (each
+# keeps its provider conversation, Teams, desks and work items), stops Ronin, and writes
+# <file>: one tar.gz made by bin/ronin-export — every store keyed by store id — plus every
+# Workspace Folder and each Agent's provider conversation and sign-in, keyed by path, and
+# manifest.json at its root. bin/ronin-rehydrate <file> brings the office back.
+#
+# Progress is <file>.status.json — {"state":"running"|"done"|"failed","step","size",
+# "sha256","error"} — and the output is <file>.log. The size and sha256 are printed last.
+#
+# The file holds the office's credentials. Nothing is sent anywhere by this command; where
+# the file goes is whoever runs it's decision (docs/operating/park.md).
+set -euo pipefail
+
+PARK_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+PARK_NAME=ronin-archive
+OUT=""; FG=0
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --out) OUT="${2:?--out needs a file}"; shift ;;
+    --foreground) FG=1 ;;
+    -h|--help) sed -n '2,17p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    *) echo "ronin-archive: unknown argument '$1' (try --help)" >&2; exit 2 ;;
+  esac
+  shift
+done
+[ -n "$OUT" ] || { echo "usage: ronin-archive --out <file> (try --help)" >&2; exit 2; }
+case "$OUT" in /*) ;; *) OUT="$PWD/$OUT" ;; esac
+[ -d "$(dirname "$OUT")" ] || { echo "ronin-archive: no directory $(dirname "$OUT")" >&2; exit 2; }
+PARK_FILE="$OUT"
+
+. "$PARK_ROOT/libexec/ronin-machine.sh"
+. "$PARK_ROOT/libexec/ronin-park.sh"
+[ "$FG" = 1 ] || { park_detach --out "$OUT"; exit 0; }
+park_trap
+
+WORK="$(mktemp -d)"; PARK_WORK="$WORK"
+
+park_step "archiving every Agent"
+TOOL_DIR="$PARK_ROOT/ronin_bin"
+. "$TOOL_DIR/ronin-http.sh"
+ronin_connect || park_fail "Ronin is not answering, so its Agents cannot be archived — start it and run this again"
+code=$(curl -sS -m 600 "${RONIN_CURL[@]+"${RONIN_CURL[@]}"}" -o "$WORK/park.json" -w '%{http_code}' \
+  -X POST "$url/api/machine/park") || park_fail "Ronin did not answer the park request at $url"
+if [ "$code" != 200 ]; then
+  park_fail "$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("error") or "HTTP "+sys.argv[2])' "$WORK/park.json" "$code" 2>/dev/null || echo "HTTP $code")"
+fi
+
+park_step "stopping Ronin"
+park_ronin stop
+
+park_step "writing $OUT"
+# manifest.json (the contract) and the --also arguments, from Ronin's answer.
+python3 - "$WORK/park.json" "$WORK" "$(park_release)" "$(park_commit)" "$(park_contract)" <<'PY'
+import json, sys, datetime
+park, work, release, commit, contract = json.load(open(sys.argv[1])), sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5]
+manifest = {
+    "format": 1, "release": release, "commit": commit, "contract": int(contract or 0),
+    "office_id": park.get("office_id", ""),
+    "created_at": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+    "agents": park.get("agents", []),
+}
+open(work + "/manifest.json", "w").write(json.dumps(manifest, indent=2) + "\n")
+with open(work + "/also", "w") as f:
+    f.write("manifest.json=" + work + "/manifest.json\n")
+    for d in park.get("folders", []): f.write("folders" + d + "=" + d + "\n")
+    for p in park.get("files", []): f.write("files" + p + "=" + p + "\n")
+PY
+ALSO=()
+while IFS= read -r line; do ALSO+=(--also "$line"); done <"$WORK/also"
+"$PARK_ROOT/bin/ronin-export" --keep-links --out "$OUT" "${ALSO[@]}"
+
+park_digest
+PARK_STEP="written"
+park_status done
+echo "agents: $(python3 -c 'import json,sys; print(len(json.load(open(sys.argv[1]))["agents"]))' "$WORK/manifest.json") · Ronin is stopped"
+echo "size: $PARK_SIZE"
+echo "sha256: $PARK_SHA"

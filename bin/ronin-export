@@ -5,6 +5,9 @@
 #   ronin-export --user-only        # only the user root's stores (catalogs, memory, config)
 #   ronin-export --out <path>       # name the tarball yourself
 #   ronin-export --restore <tar>    # unpack each store into where THIS box keeps it
+#                                    # (or an already-unpacked directory holding RONIN-EXPORT/)
+#   ronin-export --keep-links       # a symlink inside a store stays a link (GNU tar)
+#   ronin-export --also <member>=<path>   # carry one more path, under that member name
 #
 # The requirement is the dohyo migration, stated as history: the repo survived the box's
 # death and NOTHING else did — memories, catalogs, config, tapes, letters. The repo has
@@ -22,19 +25,25 @@
 #
 # What is deliberately absent: the units, the statusLine registration, node_modules —
 # setup.sh regenerates all three on the new box (docs/repo-to-operator.md).
+#
+# --keep-links and --also exist for bin/ronin-archive, which parks a whole office in one file
+# (docs/operating/park.md): there, a worktree's node_modules link must stay a link, and the
+# Workspace Folders and provider conversations ride beside the stores, keyed by path.
 set -euo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 STORE="$HERE/ronin-store"
 [ -x "$STORE" ] || { echo "ronin-export: $STORE not found — this tool asks, it never spells paths" >&2; exit 2; }
 
-MODE=export; OUT=""; TAR=""; USER_ONLY=0
+MODE=export; OUT=""; TAR=""; USER_ONLY=0; KEEP_LINKS=0; ALSO=()
 while [ $# -gt 0 ]; do
   case "$1" in
     --user-only) USER_ONLY=1 ;;
     --out) OUT="${2:?--out needs a path}"; shift ;;
     --restore) MODE=restore; TAR="${2:?--restore needs a tarball}"; shift ;;
-    -h|--help) sed -n '2,22p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    --keep-links) KEEP_LINKS=1 ;;
+    --also) case "${2:-}" in *=/*) ALSO+=("$2") ;; *) echo "ronin-export: --also needs <member>=<absolute path>" >&2; exit 2 ;; esac; shift ;;
+    -h|--help) sed -n '2,29p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     *) echo "ronin-export: unknown argument '$1' (try --help)" >&2; exit 2 ;;
   esac
   shift
@@ -57,13 +66,16 @@ if [ "$MODE" = "export" ]; then
   WORK="$(mktemp -d)"; trap 'rm -rf "$WORK"' EXIT
   mkdir -p "$WORK/RONIN-EXPORT/stores"
 
-  TAKEN=0
+  TAKEN=0; MEMBERS=()
   {
     echo "ronin export"
     echo "box: $BOX"
     echo "date: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
     echo "commit: $(git -C "$HERE/.." rev-parse --short HEAD 2>/dev/null || echo unknown)"
     [ "$USER_ONLY" = 1 ] && echo "scope: user root only" || echo "scope: both roots"
+    echo "home: $HOME"
+    echo "user root: $("$STORE" --root user)"
+    echo "data root: $("$STORE" --root data)"
     echo "stores:"
   } > "$WORK/RONIN-EXPORT/MANIFEST"
 
@@ -75,8 +87,9 @@ if [ "$MODE" = "export" ]; then
       continue
     fi
     # A symlink per store, dereferenced by tar -h below: id-keyed layout with no
-    # staging copy of what can be gigabytes of tape.
+    # staging copy of what can be gigabytes of tape. --keep-links renames instead.
     ln -s "$dir" "$WORK/RONIN-EXPORT/stores/$id"
+    MEMBERS+=("RONIN-EXPORT/stores/$id=$dir")
     n="$(find "$dir" -type f | wc -l | tr -d ' ')"
     echo "  take  $id — $n file(s) from $dir"
     echo "  $id: $n file(s)" >> "$WORK/RONIN-EXPORT/MANIFEST"
@@ -84,11 +97,36 @@ if [ "$MODE" = "export" ]; then
   done <<< "$(store_ids)"
 
   [ "$TAKEN" -gt 0 ] || { echo "ronin-export: no store has any files — nothing to export"; exit 1; }
+  if [ "${#ALSO[@]}" -gt 0 ]; then
+    echo "also:" >> "$WORK/RONIN-EXPORT/MANIFEST"
+    for m in "${ALSO[@]}"; do echo "  ${m%%=*}" >> "$WORK/RONIN-EXPORT/MANIFEST"; done
+  fi
   # Live sessions are being taped WHILE tar reads them (RIREKI never stops), so on any
   # box in use GNU tar exits 1: "file changed as we read it". A tape read mid-append is
   # a valid prefix of itself, not a corruption — say so and keep the export. Anything
   # past exit 1 is a real failure and stays one.
-  rc=0; tar -C "$WORK" -chzf "$OUT" RONIN-EXPORT 2> >(grep -v 'file changed as we read it' >&2) || rc=$?
+  rc=0
+  if [ "$KEEP_LINKS" = 0 ] && [ "${#ALSO[@]}" -eq 0 ]; then
+    tar -C "$WORK" -chzf "$OUT" RONIN-EXPORT 2> >(grep -v 'file changed as we read it' >&2) || rc=$?
+  else
+    # Each path is archived from / and renamed to its member name as it goes in, so nothing
+    # is staged and a link inside stays a link. The S flag leaves link targets as they are.
+    tar --version 2>/dev/null | grep -q 'GNU tar' || { echo "ronin-export: --keep-links/--also need GNU tar" >&2; exit 2; }
+    D=$'\001'   # the delimiter: a byte no path holds
+    bre() { printf '%s' "$1" | sed 's/[].*^$\\[]/\\&/g'; }
+    rep() { printf '%s' "$1" | sed 's/[&\\]/\\&/g'; }
+    XFORM=(); PATHS=()
+    for m in "${MEMBERS[@]}" ${ALSO[@]+"${ALSO[@]}"}; do
+      name="${m%%=*}"; real="$(readlink -f "${m#*=}")"
+      [ -e "$real" ] || { echo "  skip  $name — nothing at ${m#*=}"; continue; }
+      rel="${real#/}"
+      XFORM+=(--transform "s${D}^$(bre "$rel")\\(/\\|\$\\)${D}$(rep "$name")\\1${D}S")
+      PATHS+=("$rel")
+    done
+    rm -rf "$WORK/RONIN-EXPORT/stores"
+    tar -czf "$OUT" "${XFORM[@]}" -C "$WORK" RONIN-EXPORT -C / "${PATHS[@]}" \
+      2> >(grep -v 'file changed as we read it' >&2) || rc=$?
+  fi
   if [ "$rc" -eq 1 ]; then
     echo "  note  live tape(s) grew while being read — each is a clean prefix; for a"
     echo "        byte-exact session store, export while the sessions are quiet"
@@ -102,9 +140,13 @@ if [ "$MODE" = "export" ]; then
 fi
 
 # ---- restore -----------------------------------------------------------------------
-[ -f "$TAR" ] || { echo "ronin-export: $TAR not found" >&2; exit 2; }
-WORK="$(mktemp -d)"; trap 'rm -rf "$WORK"' EXIT
-tar -C "$WORK" -xzf "$TAR"
+if [ -d "$TAR" ]; then
+  WORK="$TAR"   # already unpacked (bin/ronin-rehydrate): read it where it is, leave it there
+else
+  [ -f "$TAR" ] || { echo "ronin-export: $TAR not found" >&2; exit 2; }
+  WORK="$(mktemp -d)"; trap 'rm -rf "$WORK"' EXIT
+  tar -C "$WORK" -xzf "$TAR"
+fi
 [ -d "$WORK/RONIN-EXPORT/stores" ] || { echo "ronin-export: $TAR is not a ronin export (no RONIN-EXPORT/stores inside)" >&2; exit 2; }
 
 RESTORED=0; SKIPPED=0

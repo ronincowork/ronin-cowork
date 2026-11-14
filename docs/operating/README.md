@@ -7,6 +7,7 @@ These are operating guides, not the Ronin creators' release or deployment record
   [machine administration](remote-machine-admin.md), and [tmux server](tmux-server.md).
 - Access and accounts: [private access](vpn.md), [accounts](accounts.md),
   [provider billing/sign-in](codex-account.md), and [secrets](secrets.md).
+- Parking an office: [park](park.md) — the whole office in one file with `ronin-archive`, and back with `ronin-rehydrate`.
 - Your files and applications: [Syncthing](syncthing.md), [data connections](data.md),
   and [deploying your own application](deploy.md).
 - Appearance and words: [skins](skins.md).

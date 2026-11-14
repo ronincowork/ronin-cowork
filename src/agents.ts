@@ -52,6 +52,9 @@ export const AGENTS = [
     } as AgentOperations,
     parked: '',
     credentials: ['.claude/.credentials.json'],
+    // What a parked office carries besides credentials (src/machine-park.ts): the CLI's own
+    // settings, without which a fresh home asks first-run questions instead of resuming.
+    carry: ['.claude.json', '.claude/settings.json'],
     screen: { busy: ['esc to interrupt'], asking: ['❯\\s*\\d+\\.\\s'], ready: ['^\\s*[│┃]?\\s*❯'] },
   },
   {
@@ -69,6 +72,7 @@ export const AGENTS = [
     } as AgentOperations,
     parked: '',
     credentials: ['.codex/auth.json'],
+    carry: ['.codex/config.toml'],
     screen: { busy: ['esc to interrupt'], asking: ['›\\s*\\d+\\.\\s'], ready: ['^\\s*›(?:\\s|$)'] },
   },
   {
@@ -87,11 +91,12 @@ export const AGENTS = [
     } as AgentOperations,
     parked: '',
     credentials: [],
+    carry: [],
     // Its choice menu, measured on 1.5.1's sign-in screen: "> 1. Google OAuth".
     screen: { busy: [], asking: ['(?:^|\\n)\\s*>\\s*\\d+\\.\\s'], ready: [] },
   },
   // [cli] auto_update defaults true: https://github.com/xai-org/grok-build/blob/main/crates/codegen/xai-grok-pager/docs/user-guide/05-configuration.md
-  { id: 'grok', cmd: 'grok', label: 'Grok CLI', operations: { install: 'npm install -g @xai-official/grok', update: { shell: 'npm install -g @xai-official/grok@latest', argv: [] }, selfUpdates: true, version: ['--version'], models: { read: 'command', argv: ['models'] }, session: { discovery: 'unsupported' } } as AgentOperations, parked: '', credentials: ['.grok/auth.json'], screen: { busy: [], asking: [], ready: [] } },
+  { id: 'grok', cmd: 'grok', label: 'Grok CLI', operations: { install: 'npm install -g @xai-official/grok', update: { shell: 'npm install -g @xai-official/grok@latest', argv: [] }, selfUpdates: true, version: ['--version'], models: { read: 'command', argv: ['models'] }, session: { discovery: 'unsupported' } } as AgentOperations, parked: '', credentials: ['.grok/auth.json'], carry: [], screen: { busy: [], asking: [], ready: [] } },
   {
     id: 'hermes',
     cmd: 'hermes',
@@ -107,6 +112,7 @@ export const AGENTS = [
       session: { discovery: 'unsupported' },
     } as AgentOperations,
     credentials: [],
+    carry: [],
     parked: "Ronin cannot install this one yet — Nous's own installer needs system packages it has to ask you for, and does not finish without them. Install it from their site and it appears here.",
     screen: { busy: [], asking: [], ready: [] },
   },
