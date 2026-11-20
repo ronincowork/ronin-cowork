@@ -51,6 +51,7 @@ import { rememberSessionKey, sessionDir as sessionRecordDir } from '../session-d
 import { callerUser } from '../agent-configuration.js';
 import { person } from '../office-people.js';
 import type { HouseSeat } from '../house-seats.js';
+import { readThread, type InboxEntry } from '../seats.js';
 import { readTegami } from '../tegami-read.js';
 import { ensureMikaHome, MIKA_PROMPTS, MikaUnavailable, resolveConfiguredMikaModel, type MikaSelection } from '../mika-runtime.js';
 import { compileMikaKnowledgeAt } from '../mika-knowledge.js';
@@ -205,7 +206,8 @@ const noProgress = createNoProgress((name) => sockets.rowChanged(name));
 const panes = new Map<string, Awaited<ReturnType<typeof readPane>>>();
 const fields = new Map<string, Awaited<ReturnType<typeof readFields>>>();
 const records = new Map<string, Awaited<ReturnType<typeof readTegami>>>();
-sockets.onSessionEnd((name) => { panes.delete(name); fields.delete(name); records.delete(name); });
+const threads = new Map<string, InboxEntry[]>();
+sockets.onSessionEnd((name) => { panes.delete(name); fields.delete(name); records.delete(name); threads.delete(name); });
 const part = async <T>(held: Map<string, T>, name: string, again: boolean, read: (name: string) => Promise<T>): Promise<T> => {
   if (again || !held.has(name)) held.set(name, await read(name));
   return held.get(name)!;
@@ -219,6 +221,8 @@ export async function cardOf(s: SessionWithAxes, parts: ReadonlySet<CardPart>) {
     part(fields, s.name, parts.has('fields'), readFields),
     part(records, s.name, parts.has('record'), readTegami),
   ]);
+  // A seat's tile shows its thread where a terminal would be: both ways, marked with its record.
+  const thread = s.seat ? await part(threads, s.name, parts.has('record'), (name) => readThread(name)) : null;
   // The CLI's hook record says so (src/asking.ts), or, for a CLI without hooks, the screen does.
   const { asking: onScreen, ...gauges } = pane;
   const { hooked, ...contributed } = row;
@@ -238,6 +242,7 @@ export async function cardOf(s: SessionWithAxes, parts: ReadonlySet<CardPart>) {
     ...(Array.isArray(reports) && !reports.includes('asking') ? { stance_reports: ['asking', ...reports] } : {}),
     ...(stopped_at ? { stopped_at } : {}),
     ...(tegami ? { tegami: flag ? { ...tegami, flagged: true, agent_flag: flag } : tegami } : {}),
+    ...(thread ? { thread } : {}),
   };
 }
 

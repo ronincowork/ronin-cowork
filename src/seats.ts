@@ -22,8 +22,6 @@ export interface Seat {
   leads: string[];
 }
 
-export interface InboxEntry { at: string; from: string; channel: string; text: string }
-
 const NAME_RE = /^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$/;
 const dir = () => storeDir('seats');
 const seatFile = (name: string) => path.join(dir(), `${name}.json`);
@@ -92,6 +90,10 @@ export function asSeat(req: { path: string; body?: unknown }, name: string): voi
   req.body = body;
 }
 
+/** `to` marks the seat's own Tell (message-queue.ts): its tile's thread shows both ways; the
+ * daimyo's inbox read leaves its own out. */
+export interface InboxEntry { at: string; from: string; channel: string; text: string; to?: string }
+
 export async function toInbox(name: string, entry: Omit<InboxEntry, 'at'>): Promise<InboxEntry> {
   const line: InboxEntry = { at: new Date().toISOString(), ...entry };
   await fs.mkdir(dir(), { recursive: true });
@@ -99,26 +101,34 @@ export async function toInbox(name: string, entry: Omit<InboxEntry, 'at'>): Prom
   return line;
 }
 
+const parsed = (lines: string[]): InboxEntry[] => lines.flatMap((line) => { try { return [JSON.parse(line) as InboxEntry]; } catch { return []; } });
+const inboxLines = async (name: string): Promise<string[]> => (await fs.readFile(inboxFile(name), 'utf8').catch(() => '')).split('\n').filter(Boolean);
+
+/** The tile's thread: the newest entries both ways, oldest first. */
+export async function readThread(name: string, last = 200): Promise<InboxEntry[]> {
+  return parsed((await inboxLines(name)).slice(-last));
+}
+
 /** Since my last look: what came after the cursor, and the cursor moves to the newest. With
  * nothing new it waits up to `waitSeconds` (at most 90: Cloudflare drops a silent request at
  * about 100) for the first entry, by watching the store, so every writer wakes it. */
 export async function readInbox(name: string, waitSeconds = 0): Promise<InboxEntry[]> {
-  const fresh = await sinceCursor(name);
-  const wait = Math.min(Math.max(Number(waitSeconds) || 0, 0), 90) * 1000;
-  if (fresh.length || !wait) return fresh;
+  const until = Date.now() + Math.min(Math.max(Number(waitSeconds) || 0, 0), 90) * 1000;
   await fs.mkdir(dir(), { recursive: true });
-  await new Promise<void>((resolve) => {
-    const watcher = fsWatch(dir(), (_event, file) => { if (String(file) === path.basename(inboxFile(name))) done(); });
-    const timer = setTimeout(done, wait);
-    function done(): void { clearTimeout(timer); watcher.close(); resolve(); }
-  });
-  return sinceCursor(name);
+  for (;;) {
+    const fresh = await sinceCursor(name);
+    if (fresh.length || Date.now() >= until) return fresh;
+    await new Promise<void>((resolve) => {
+      const watcher = fsWatch(dir(), (_event, file) => { if (String(file) === path.basename(inboxFile(name))) done(); });
+      const timer = setTimeout(done, until - Date.now());
+      function done(): void { clearTimeout(timer); watcher.close(); resolve(); }
+    });
+  }
 }
 
 async function sinceCursor(name: string): Promise<InboxEntry[]> {
   const cursor = Number(await fs.readFile(cursorFile(name), 'utf8').catch(() => '0')) || 0;
-  const lines = (await fs.readFile(inboxFile(name), 'utf8').catch(() => '')).split('\n').filter(Boolean);
-  const fresh = lines.slice(cursor).flatMap((line) => { try { return [JSON.parse(line) as InboxEntry]; } catch { return []; } });
+  const lines = await inboxLines(name);
   if (lines.length !== cursor) await writeAtomic(cursorFile(name), String(lines.length));
-  return fresh;
+  return parsed(lines.slice(cursor)).filter((entry) => !entry.to);
 }

@@ -16,4 +16,4 @@ export function createSurfaceHost(root, names, initial) {
   };
 }
 
-export const TILE_SURFACES = Object.freeze(['term', 'tape', 'chat', 'docs']);
+export const TILE_SURFACES = Object.freeze(['term', 'tape', 'chat', 'docs', 'seat']);

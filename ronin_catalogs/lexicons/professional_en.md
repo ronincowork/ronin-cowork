@@ -1060,6 +1060,15 @@ The pad's current config downloads as a backup first.
 - **koe.speak_failed:** Read aloud failed ({status}).
 - **koe.speed_help:** Playback speed — press for the next
 
+## seat — seat-view.js (a daimyo's tile: its status line, work record and Tells thread; KAN-755)
+- **seat.thread:** Tells
+- **seat.status:** Status line: {status}
+- **seat.status_none:** No status line.
+- **seat.task:** Task at hand: {objective}
+- **seat.to:** To @{name}
+- **seat.from:** From {name} [{channel}]
+- **seat.empty:** No Tells yet. What you send here goes to its inbox; it reads it when it next looks.
+
 ## transcript — tile-transcript.js (the tile's journal view)
 - **transcript.title:** Transcript
 - **transcript.toggle:** Transcript

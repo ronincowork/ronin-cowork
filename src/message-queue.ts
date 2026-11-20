@@ -78,6 +78,8 @@ export async function enqueueMessage(target: string, text: string, source: Messa
   const item: QueuedMessage = { id: randomUUID(), from: person ? personLabel(person) : from, target, text, source, created_at: queuedAt() };
   if (person) item.person = person;
   if (options.when) item.when = options.when;
+  // A seat's own Tell is kept on its thread too, so its tile shows both ways (src/seats.ts).
+  if (source === 'tell' && await readSeat(item.from)) await toInbox(item.from, { from: `@${item.from}`, to: target, channel: channelOf(source), text });
   // A seat has no terminal to type into: what it would be told goes to its inbox (src/seats.ts).
   if (await readSeat(target)) {
     await toInbox(target, { from: item.source === 'tell' ? `@${item.from.replace(/^@/, '')}` : item.from, channel: channelOf(source), text });
