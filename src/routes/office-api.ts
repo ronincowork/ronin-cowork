@@ -11,8 +11,8 @@ export function registerOffice(app: express.Express): void {
     try { res.json(await readOfficeRecord()); }
     catch (error) { res.status(500).json({ error: String((error as Error)?.message ?? error) }); }
   });
-  app.get('/api/office/read', async (_req, res) => {
-    try { res.json({ ok: true, text: await officeRead() }); }
+  app.get('/api/office/read', async (req, res) => {
+    try { res.json({ ok: true, text: await officeRead(String(req.query.workspace ?? '').trim()) }); }
     catch (error) { res.status(500).json({ ok: false, error: String((error as Error)?.message ?? error) }); }
   });
 }

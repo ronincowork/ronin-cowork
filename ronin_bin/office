@@ -8,17 +8,24 @@ set -u -o pipefail
 TOOL_DIR=$(dirname "$SELF")
 usage() { cat <<'EOF_USAGE'
 Usage:
-  office read     this office as it is now: the people (About You) and the notes on them, model
-                  providers signed in, each Workspace with its Summary and the Teams and Agents
-                  running in it, Agents on their own, services connected, the defaults new Agents
-                  get, and the account from the Business Lounge
+  office read     this office as it is now: the machine, the people (About You) and the notes on
+                  them, a daimyo if one is on, model providers signed in, each Workspace (its
+                  repos, folders, integrations, plans and canvases, and its Teams: the lead and
+                  who works on what), what is flagged and what is In Review, Agents on their own,
+                  services connected, the defaults new Agents get, and the account from the
+                  Business Lounge
+  office read --workspace <name>
+                  the machine and one Workspace: a lead's bearings
 Assembled each time from Ronin's own records; nothing is kept. Read-only.
 The people's notes: ~/ronin/library/ABOUT_USER.md. A Workspace's doc:
 ~/ronin/library/workspaces/<handle>.md (grep the folder to search them all).
 EOF_USAGE
 }
+WORKSPACE=
 case "${1:-}" in
-  read) [ "$#" -eq 1 ] || { echo "office: read takes no arguments (office --help)" >&2; exit 2; } ;;
+  read)
+    if [ "$#" -eq 3 ] && [ "$2" = "--workspace" ]; then WORKSPACE=$3
+    elif [ "$#" -ne 1 ]; then echo "office: read takes only --workspace <name> (office --help)" >&2; exit 2; fi ;;
   -h|--help) usage; exit 0 ;;
   '') usage >&2; exit 2 ;;
   *) echo "office: unknown command $1 (office --help)" >&2; exit 2 ;;
@@ -26,7 +33,7 @@ esac
 
 . "$TOOL_DIR/ronin-http.sh"
 ronin_connect || exit $?
-out=$(curl -sS -m 30 "${RONIN_CURL[@]+"${RONIN_CURL[@]}"}" -w '\n%{http_code}' "$url/api/office/read") || { echo "UNREACHABLE: Ronin did not answer at $url" >&2; exit 5; }
+out=$(curl -sS -m 30 "${RONIN_CURL[@]+"${RONIN_CURL[@]}"}" -w '\n%{http_code}' --get --data-urlencode "workspace=$WORKSPACE" "$url/api/office/read") || { echo "UNREACHABLE: Ronin did not answer at $url" >&2; exit 5; }
 acct=$(curl -sS -m 30 "${RONIN_CURL[@]+"${RONIN_CURL[@]}"}" -w '\n%{http_code}' "$url/api/account/record" 2>/dev/null || printf '\n000')
 OFFICE=$out ACCOUNT=$acct python3 -c '
 import json, os, sys
