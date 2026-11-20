@@ -130,10 +130,9 @@ export function registerIrasshaiOpen() {
  * HER CHAT READS AS A CONVERSATION (owner, 2026-11-16 and 18; KAN-617): the person's messages and
  * her replies, nothing else. It asks for the route's Chat reading, which leaves out Codex's own
  * startup (its system and developer text, skills, the session-start note) and injected context
- * (AGENTS.md). Of the user lines left, only the person's are drawn: what they typed (bare, or under
- * Ronin's `From <person> [Message box]:` / `[Ronin Box]:` head, drawn without the head). Ronin's
- * birth packet ("Read first: <packet>…") and every other delivery (House notice, Tell, Wipeboard
- * notice, Scheduled job) are not. Other Agents' tiles are unchanged.
+ * (AGENTS.md). Of the user lines left, only the person's are drawn, as their words (every Chat
+ * draws them without Ronin's head, KAN-758). Ronin's birth packet ("Read first: <packet>…") and
+ * every other delivery (House notice, Tell, Wipeboard notice, Scheduled job) are not.
  */
 export const CHAT_READING = 'chat';
 
