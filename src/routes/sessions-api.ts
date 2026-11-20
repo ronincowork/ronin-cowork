@@ -67,6 +67,7 @@ import { hardDeleteConfirmation, liveOps, shutdownAgent, ShutdownRefused, Shutdo
 import { listDeskRecords, listDesks } from '../desks/registry.js';
 import { resolveFileLink } from '../file-link.js';
 import { readTegami } from '../tegami-read.js';
+import { openBases, refusedHere } from '../open-places.js';
 import { commitPage } from '../commit-link.js';
 import { storeDir } from '../resources.js';
 import { parkCarry } from '../machine-park.js';
@@ -655,21 +656,22 @@ export function registerSessions(app: express.Express): void {
   // Where what an Agent names in Chat is looked for (KAN-701): its repos (desks, working folder,
   // the Workspace folders), its session folder and drop/ (a file handed to it), the folders that
   // hold the Workspace folders (a path written from above them: samurai_lab/ronin_cloud/X.md),
-  // and the library (ABOUT_USER.md and the like).
+  // the library (ABOUT_USER.md and the like), and in an office the whole home folder (open-places.ts).
   const chatPlaces = async (name: string) => {
     const desks = await listDeskRecords({ owner: name }).catch(() => []);
     const cwd = await sessionRuntime(name).then((r) => r.cwd, () => '');
     const roots = (await workspaceFolders().catch(() => [])).map((f) => f.dir);
     const own = await sessionKey(name).then((key) => sessionRecordDir(key), () => '');
     const repos = [...desks.map((d) => d.worktree), cwd, ...roots];
-    return { own, repos, files: [...repos, own, own && path.join(own, 'drop'), ...new Set(roots.map((dir) => path.dirname(dir))), storeDir('library')] };
+    return { own, repos, files: [...repos, own, own && path.join(own, 'drop'), ...new Set(roots.map((dir) => path.dirname(dir))), storeDir('library'), ...(await openBases())] };
   };
 
   app.get('/api/sessions/:name/file-link', async (req, res) => {
     const { name } = req.params;
     if (!isValidName(name)) return res.status(400).json({ error: 'Invalid name.' });
     const file = resolveFileLink(String(req.query.path ?? ''), (await chatPlaces(name)).files, (await readTegami(name))?.docs ?? []);
-    if (!file) return res.status(404).json({ error: 'No such file.' });
+    // Chat links only what opens: a hidden file in an office is not a link.
+    if (!file || await refusedHere(file, await fs.promises.realpath(file).catch(() => ''))) return res.status(404).json({ error: 'No such file.' });
     res.json({ path: file });
   });
 

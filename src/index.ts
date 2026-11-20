@@ -75,7 +75,7 @@ import { tmux as tmuxClient } from './tmux-client.js';
 import { handlePty } from './ws/pty.js';
 import { originAllowed, allowedOrigins } from './ws/origin.js';
 import { mountAssets, noCacheClient, publicFingerprint } from './assets.js';
-import { DocumentPathError, legacyDocumentPath, readDocumentFile, readProductDocumentFile, saveDocumentFile } from './document-file.js';
+import { DocumentPathError, absoluteDocumentPath, readDocumentFile, readProductDocumentFile, saveDocumentFile } from './document-file.js';
 import { checkTmuxServerCgroup } from './host-guard.js';
 import { startTeamLayers } from './team-layers.js';
 import { asSeat } from './seats.js';
@@ -389,9 +389,9 @@ app.get('/api/file', async (req, res) => {
       const safe = await readDocumentFile(req.query.root, file);
       return res.json(safe);
     }
-    const legacy = legacyDocumentPath(file);
-    const text = await fs.promises.readFile(legacy, 'utf8');
-    res.json({ path: legacy, text });
+    const full = await absoluteDocumentPath(file);
+    const text = await fs.promises.readFile(full, 'utf8');
+    res.json({ path: full, text });
   } catch (e) {
     if (e instanceof DocumentPathError) return res.status(e.status).json({ error: e.message });
     const code = (e as NodeJS.ErrnoException)?.code;
@@ -407,9 +407,9 @@ app.put('/api/file', express.text({ type: '*/*', limit: '8mb' }), async (req, re
     if (req.query.product === '1') return res.status(405).json({ error: 'Product documentation is read-only.' });
     if (req.query.root) await saveDocumentFile(req.query.root, file, text);
     else {
-      const legacy = legacyDocumentPath(file);
-      await fs.promises.access(legacy);
-      await fs.promises.writeFile(legacy, text, 'utf8');
+      const full = await absoluteDocumentPath(file);
+      await fs.promises.access(full);
+      await fs.promises.writeFile(full, text, 'utf8');
     }
     res.json({ ok: true, bytes: Buffer.byteLength(text) });
   } catch (e) {
@@ -420,8 +420,10 @@ app.put('/api/file', express.text({ type: '*/*', limit: '8mb' }), async (req, re
   }
 });
 
-app.get('/raw/*', (req, res) => {
+app.get('/raw/*', async (req, res) => {
   const file = '/' + String((req.params as Record<string, string>)[0] ?? '');
+  try { await absoluteDocumentPath(file); }
+  catch (e) { return res.status((e as DocumentPathError).status ?? 400).json({ error: (e as Error).message }); }
   res.sendFile(file, { dotfiles: 'allow', headers: { 'Cache-Control': 'no-store' } }, (e) => {
     if (!e || res.headersSent) return;
     const code = (e as NodeJS.ErrnoException)?.code;
