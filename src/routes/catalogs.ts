@@ -8,6 +8,7 @@ import { providerCatalogAnswer } from '../model-providers.js';
 import { readProviderSummary } from '../provider-summary.js';
 import { setRepoSettings } from '../desks/arrangement.js';
 import { workspaceFolders } from '../workspaces.js';
+import { HIDDEN_REFUSED, refusedHere } from '../open-places.js';
 import {
   listSavedLaunches,
   seedUserCatalog,
@@ -42,6 +43,7 @@ export function registerCatalogs(app: express.Express): void {
     try {
       // A folder a Workspace already holds comes with its name and, a repository, its settings.
       const facts = await folderFacts(dir);
+      if (await refusedHere(facts.dir)) return res.status(403).json({ error: HIDDEN_REFUSED });
       const held = (await workspaceFolders()).find((f) => f.dir === facts.dir);
       res.json({ ...facts, held: held ? { name: held.name, ...(held.repo ? { mode: held.mode, working: held.working, stable: held.stable, desks: held.desks } : {}) } : null });
     } catch (e) { res.status(500).json({ error: errMsg(e) }); }

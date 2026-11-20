@@ -65,6 +65,12 @@ drag a folder from [Explorer](explorer.md) onto the page.
 
 The same folder can be in several Workspaces; it is one folder, under one name, in each.
 
+**What opens outside Workspaces.** On your own machine, documents an Agent links in Chat or lists
+on its work record open from its tile, wherever they are. In a hosted office Ronin owns the
+machine, so every folder under the office's home opens too (a project you haven't made a
+Workspace yet, for one), except hidden ones: a file or folder whose name starts with "." never
+opens there, not even from a link, and **Add a folder** doesn't show them.
+
 ### How Agents work in a repository
 
 A repository's row shows its **Mode**; press the word to change it. It is kept on that row:
