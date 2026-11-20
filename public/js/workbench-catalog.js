@@ -23,7 +23,7 @@ export const WORKBENCH_TYPES = Object.freeze({
   roster: 'cowork.team-roster', sessionRoster: 'cowork.session-roster', newTeamForm: 'cowork.new-team-form', newAgent: 'session.new-agent',
   team: 'team.profile', archives: 'cowork.archives', teamArchived: 'team.archived', teamEpics: 'team.epics', teamFindItem: 'team.find-item',
   agentDocuments: 'agent.documents', agentTeams: 'agent.team-membership', agentComposition: AGENT_COMPOSITION_TYPE,
-  campaignMachine: 'campaign.machine', campaignCloudAccount: 'campaign.cloud-account', campaignDefaults: 'campaign.defaults', campaignRoots: 'campaign.workspaces',
+  campaignMachine: 'campaign.machine', campaignMachineStatus: 'campaign.machine-status', campaignCloudAccount: 'campaign.cloud-account', campaignDefaults: 'campaign.defaults', campaignRoots: 'campaign.workspaces',
   campaignIdentity: 'campaign.identity', campaignInstallations: 'campaign.installations', campaignCreate: 'campaign.new', campaignIntegrations: 'campaign.integrations', campaignJira: 'campaign.jira', campaignJiraItems: 'campaign.jira-items', campaignJiraPairs: 'campaign.jira-pairs',
   modelStones: 'models.stones', modelRefresh: 'models.refresh', modelDefaults: 'models.defaults', modelProvider: 'models.provider', modelMika: 'models.mika-auth',
   // THE AGENT HARNESS WORKBENCH'S TWO NEW TILESPACES (KAN-236): Accounts and Models, beside the stones and Refresh.
@@ -83,6 +83,8 @@ export function registerWorkbenchCatalog() {
   campaign(WORKBENCH_TYPES.campaignIntegrations, 'surface', () => t('integrations.title', 'Integrations'), 'campaignIntegrations', () => t('integrations.card_summary', 'Every outside service: connected or not, its token, its Workspaces.'));
   campaign(WORKBENCH_TYPES.campaignJira, 'surface', () => t('jira.title', 'Jira'), 'campaignJira', () => t('jira.card_summary', 'This Desk’s Jira space: connect, check, sync.'));
   campaign(WORKBENCH_TYPES.campaignMachine, 'tabs', () => t('campaign_view.machine', 'Machine'), 'campaignMachine', () => t('campaign_view.machine_summary', 'Themes · Desk · Account · Archived · Messages · Help desk · Keypad.'));
+  // MACHINE STATUS (owner, 2026-11-20; KAN-759): the one complete truth, written to the library on a press.
+  campaign(WORKBENCH_TYPES.campaignMachineStatus, 'surface', () => t('machine_status.title', 'Machine status'), 'campaignMachineStatus', () => t('machine_status.summary', 'What this office has set up, what it hasn\u2019t and what is available, in one doc any Agent reads. Write it now from here.'));
   // THE CLOUD ACCOUNT (owner, 2026-11-06; KAN-282): its own worksurface in the Machine Settings group,
   // read-only, the same card Configuration ends with (js/account-card.js).
   campaign(WORKBENCH_TYPES.campaignCloudAccount, 'surface', () => t('campaign_view.cloud_account', 'Cloud Account'), 'campaignCloudAccount', () => t('campaign_view.cloud_account_summary', 'Where this Ronin lives (self-hosted, or an office on an office_park) and its Ronin HQ account, subscription and house-model usage. Read-only.'));
@@ -93,7 +95,7 @@ export function registerWorkbenchCatalog() {
   // A hosted office's Settings offers no account, registration, password or installations cards:
   // those live in the Business Lounge and on the office_park (hosted.js).
   const notHosted = (...types) => (HOSTED ? [] : types);
-  profiles.define(WORKBENCH_PROFILES.campaign, [WORKBENCH_TYPES.terminal, WORKBENCH_TYPES.campaignMachine, ...notHosted(WORKBENCH_TYPES.campaignCloudAccount), BEHAVIOUR_SURFACE_TYPE, ...notHosted(PASSWORD_SURFACE_TYPE, WORKBENCH_TYPES.campaignInstallations), PROVIDER_SURFACE_TYPE, ...notHosted(SETUP_SURFACE_TYPES.register), FEEDBACK_TYPE, WORKBENCH_TYPES.campaignIdentity, WORKBENCH_TYPES.campaignDefaults, WORKBENCH_TYPES.campaignRoots, SETUP_SURFACE_TYPES.launchOwn, WORKBENCH_TYPES.document, WORKBENCH_TYPES.campaignIntegrations, WORKBENCH_TYPES.campaignJira, WORKBENCH_TYPES.campaignJiraItems, WORKBENCH_TYPES.campaignJiraPairs, ...(MULTIPLE_CAMPAIGNS_ENABLED ? [WORKBENCH_TYPES.campaignCreate] : [])]);
+  profiles.define(WORKBENCH_PROFILES.campaign, [WORKBENCH_TYPES.terminal, WORKBENCH_TYPES.campaignMachine, WORKBENCH_TYPES.campaignMachineStatus, ...notHosted(WORKBENCH_TYPES.campaignCloudAccount), BEHAVIOUR_SURFACE_TYPE, ...notHosted(PASSWORD_SURFACE_TYPE, WORKBENCH_TYPES.campaignInstallations), PROVIDER_SURFACE_TYPE, ...notHosted(SETUP_SURFACE_TYPES.register), FEEDBACK_TYPE, WORKBENCH_TYPES.campaignIdentity, WORKBENCH_TYPES.campaignDefaults, WORKBENCH_TYPES.campaignRoots, SETUP_SURFACE_TYPES.launchOwn, WORKBENCH_TYPES.document, WORKBENCH_TYPES.campaignIntegrations, WORKBENCH_TYPES.campaignJira, WORKBENCH_TYPES.campaignJiraItems, WORKBENCH_TYPES.campaignJiraPairs, ...(MULTIPLE_CAMPAIGNS_ENABLED ? [WORKBENCH_TYPES.campaignCreate] : [])]);
   // HOME'S DOORS (owner, 2026-10-19; door-workbenches.js): Models and Workspaces are workbenches of
   // their own; Teams is the Cowork workbench above (owner, 2026-10-20).
   // THE MODELS WORKBENCH (owner, 2026-10-19): its own stones in Workspace 1; one provider whole in a

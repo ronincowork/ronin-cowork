@@ -1,28 +1,46 @@
 #!/usr/bin/env bash
-# office — the office as it is now: the rig an Agent is sitting on (KAN-712). Core's GET /api/office/read
-# assembles it live (src/office-read.ts); the lounge account, when Ronin Services' account part has
-# one, is added after it. This tool only prints.
+# office — the machine status: the rig an Agent is sitting on, what is set up, what is not and what is
+# available (KAN-712, KAN-759). Core's GET /api/office/read assembles it live (src/office-read.ts),
+# the lounge account included when Ronin Services' account part has one. `write` saves it to
+# ~/ronin/library/MACHINE_STATUS.md (POST /api/office/status), as Settings' Machine status does.
 . "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/tool-count.sh" office "$@"
 set -u -o pipefail
 . "$(dirname "$(readlink "${BASH_SOURCE[0]}" 2>/dev/null || printf '%s' "${BASH_SOURCE[0]}")")/tool-path.sh"
 TOOL_DIR=$(dirname "$SELF")
 usage() { cat <<'EOF_USAGE'
 Usage:
-  office read     this office as it is now: the machine, the people (About You) and the notes on
-                  them, a daimyo if one is on, model providers signed in, each Workspace (its
-                  repos, folders, integrations, plans and canvases, and its Teams: the lead and
-                  who works on what), what is flagged and what is In Review, Agents on their own,
-                  services connected, the defaults new Agents get, and the account from the
-                  Business Lounge
+  office read     this office as it is now, the machine status: the machine (hosted or not,
+                  Ronin's version, disk), the people (About You) and the notes on them, a daimyo
+                  if one is on, every model provider (installed, signed in, Activated or not),
+                  developer tools (GitHub CLI), onboarding's steps, each Workspace (its repos,
+                  folders, integrations, plans and canvases, and its Teams: the lead and who works
+                  on what), what is flagged and what is In Review, Agents on their own, every
+                  integration (connected or not), Ronin Services' parts, the defaults new Agents
+                  get, and the account from the Business Lounge
   office read --workspace <name>
                   the machine and one Workspace: a lead's bearings
-Assembled each time from Ronin's own records; nothing is kept. Read-only.
+  office write    the machine status, written now to ~/ronin/library/MACHINE_STATUS.md
+Assembled each time from Ronin's own records. read keeps nothing; write saves what it read.
 The people's notes: ~/ronin/library/ABOUT_USER.md. A Workspace's doc:
 ~/ronin/library/workspaces/<handle>.md (grep the folder to search them all).
 EOF_USAGE
 }
 WORKSPACE=
 case "${1:-}" in
+  write)
+    [ "$#" -eq 1 ] || { echo "office: write takes nothing (office --help)" >&2; exit 2; }
+    . "$TOOL_DIR/ronin-http.sh"
+    ronin_connect || exit $?
+    out=$(curl -sS -m 60 "${RONIN_CURL[@]+"${RONIN_CURL[@]}"}" -w '\n%{http_code}' -X POST "$url/api/office/status") || { echo "UNREACHABLE: Ronin did not answer at $url" >&2; exit 5; }
+    OUT=$out python3 -c '
+import json, os, sys
+body, _, status = os.environ["OUT"].rpartition("\n")
+try: d = json.loads(body)
+except Exception: d = None
+if not d or not d.get("ok"): print((d or {}).get("error") or "HTTP %s: Ronin did not write it" % status, file=sys.stderr); sys.exit(3)
+print("Written: %s" % d["path"])
+'
+    exit $? ;;
   read)
     if [ "$#" -eq 3 ] && [ "$2" = "--workspace" ]; then WORKSPACE=$3
     elif [ "$#" -ne 1 ]; then echo "office: read takes only --workspace <name> (office --help)" >&2; exit 2; fi ;;
@@ -34,8 +52,7 @@ esac
 . "$TOOL_DIR/ronin-http.sh"
 ronin_connect || exit $?
 out=$(curl -sS -m 30 "${RONIN_CURL[@]+"${RONIN_CURL[@]}"}" -w '\n%{http_code}' --get --data-urlencode "workspace=$WORKSPACE" "$url/api/office/read") || { echo "UNREACHABLE: Ronin did not answer at $url" >&2; exit 5; }
-acct=$(curl -sS -m 30 "${RONIN_CURL[@]+"${RONIN_CURL[@]}"}" -w '\n%{http_code}' "$url/api/account/record" 2>/dev/null || printf '\n000')
-OFFICE=$out ACCOUNT=$acct python3 -c '
+OFFICE=$out python3 -c '
 import json, os, sys
 def split(raw):
     body, _, status = raw.rpartition("\n")
@@ -44,8 +61,4 @@ def split(raw):
 d, status = split(os.environ["OFFICE"])
 if not d or not d.get("ok"): print((d or {}).get("error") or "HTTP %s: Ronin answered without the office record" % status, file=sys.stderr); sys.exit(3)
 print(d["text"].rstrip())
-a, _ = split(os.environ["ACCOUNT"])
-if a and a.get("ok") and a.get("state") in ("current", "not_arrived"):
-    print("\n## The account (Business Lounge)")
-    print("\n".join(a.get("lines", [])))
 '

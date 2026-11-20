@@ -5,10 +5,15 @@
  * the readers that already exist; nothing is stored. Built for Ronin Hosted, where the people come
  * from the Business Lounge's About You; an empty About You says it has not been filled in yet.
  *
- * Sections: the people and the notes on them (library/ABOUT_USER.md); the model providers signed
- * in; each Workspace with its Summary (library/workspaces/<handle>.md, KAN-713) and the Teams and
- * Agents running in it; Agents running on their own; services connected; the defaults new Agents
- * get. The lounge account is Ronin Services' (`office read` adds it when that part answers).
+ * THE MACHINE STATUS (owner, 2026-11-20; KAN-759: "one source of truth complete truth even if it is
+ * pulling the answers from the machine various places"): what is set up, what is not and what is
+ * available, for the owner, the Helpful Assistant, a lead or the daimyo. Sections: the machine
+ * (hosting, Ronin's version, disk); the people and the notes on them (library/ABOUT_USER.md); every
+ * model provider Ronin knows, set up or not; developer tools (GitHub CLI); onboarding's steps; each
+ * Workspace with its Summary (library/workspaces/<handle>.md, KAN-713) and the Teams and Agents
+ * running in it; Agents running on their own; every integration, connected or not; Ronin Services'
+ * parts; the defaults new Agents get; and what parts add (Services' account: the Business Lounge
+ * record). `writeMachineStatus` saves it to library/MACHINE_STATUS.md.
  */
 import fs from 'node:fs/promises';
 import os from 'node:os';
@@ -34,6 +39,19 @@ import { discoverParts } from './parts.js';
 import { listServices } from './sockets.js';
 import { officePeople, type Person } from './office-people.js';
 import { readWorkspaceSummary } from './workspace-doc.js';
+import { readOfficeRecord } from './office-record.js';
+import { roninIdentity } from './routes/version.js';
+import { AGENTS } from './agents.js';
+import { githubSetupAnswer } from './setup-runtime.js';
+import { listParkedServices, listServiceFailures } from './sockets.js';
+
+/** The machine status file (owner, 2026-11-20; KAN-759): office read as it was when last written,
+ * for anyone to grep. Settings' Machine status and `office write` write it. */
+export const machineStatusFile = (): string => path.join(storeDir('library'), 'MACHINE_STATUS.md');
+
+/** A section a part adds, read each time (Services' account part: the Business Lounge record). '' is none. */
+const sections: Array<() => Promise<string>> = [];
+export function addOfficeSection(read: () => Promise<string>): void { sections.push(read); }
 
 /** The person's notes, any Agent's to read and add to (KAN-678). */
 export const aboutUserFile = (): string => path.join(storeDir('library'), 'ABOUT_USER.md');
@@ -61,6 +79,12 @@ export async function officeRead(only = ''): Promise<string> {
     integrationsState(campaign, parts).catch(() => []), readCampaign(campaign).catch(() => null),
     readAgentsSection().catch(() => ({} as Record<string, unknown>)), readMachineSection().catch(() => ({} as Record<string, unknown>)),
     machineFacts().catch(() => ({} as Record<string, unknown>)), listItems().catch(() => []), listLetterHolds().catch(() => []),
+  ]);
+  const [hosting, github, disk, added] = await Promise.all([
+    readOfficeRecord().catch((e: Error) => ({ hosting: 'unreadable' as const, error: e.message })),
+    only ? null : githubSetupAnswer().catch(() => null),
+    fs.statfs(os.homedir()).catch(() => null),
+    only ? [] : Promise.all(sections.map((read) => read().catch(() => ''))),
   ]);
   const workspaces = allWorkspaces.filter((w) => !w.archived && (!only || w.name === only));
   if (only && !workspaces.length) throw new Error(`No Workspace "${only}". office read names them.`);
@@ -108,11 +132,46 @@ export async function officeRead(only = ''): Promise<string> {
   const seats = await listSeats().catch(() => []);
   const host = [machine.name, machine.where && `in ${machine.where}`].filter(Boolean).join(' ') || os.hostname();
   const machineLine = `${host}: ${facts.kind ?? 'machine'}${facts.hypervisor ? ` (${facts.hypervisor})` : ''}, ${facts.cores ?? '?'} cores, ${facts.ram_gb ?? '?'} GB RAM, ${facts.arch ?? os.arch()}`;
+  const ronin = roninIdentity();
+  const gb = (blocks: number) => disk ? Math.round(blocks * disk.bsize / 1e9) : 0;
+  const machineLines = [
+    machineLine,
+    hosting.hosting === 'office_unit' ? `A hosted office: ${hosting.record.office_id} on ${hosting.record.office_park}${hosting.record.tier ? `, ${hosting.record.tier} tier` : ''}. It has no screen or browser of its own: sign-ins use a device code or a link opened on the person's own computer`
+      : hosting.hosting === 'self_hosted' ? 'Self-hosted (not an office on an office_park)' : `Office record unreadable: ${hosting.error}`,
+    `Ronin ${ronin.release ?? 'checkout'} (${ronin.commit}), running since ${ronin.startedAt.slice(0, 16).replace('T', ' ')} UTC`,
+    ...(disk ? [`Disk: ${gb(disk.bavail)} GB free of ${gb(disk.blocks)} GB`] : []),
+  ];
+  // EVERY HARNESS RONIN KNOWS, set up or not (KAN-759): what is there, what is not, what could be.
+  const providerLines = [
+    ...AGENTS.map((a) => {
+      const id = a.id;
+      if (!summary?.installed.includes(id)) return `${a.label}: not installed`;
+      const version = summary.versions[id] ? ` ${summary.versions[id]}` : '';
+      const state = summary.off.includes(id) ? 'turned off (sign-in kept)' : summary.operational.includes(id) ? 'Activated'
+        : summary.signed_in.includes(id) ? 'signed in, not activated' : 'installed, not signed in';
+      return `${a.label}${version}: ${state}`;
+    }),
+    ...rows.map((row) => `${row.label}: ${row.operational ? 'Activated' : 'not available'} (Ronin's house models)`),
+    ...(summary ? [`Last measured ${summary.measured_at.slice(0, 16).replace('T', ' ')} UTC`] : ['Not measured yet: Setup → Model providers measures them']),
+  ];
+  const toolLines = [
+    !github ? 'GitHub CLI: unreadable' : !github.installed ? 'GitHub CLI: not installed (needed to clone a GitHub repository)'
+      : github.authenticated ? `GitHub CLI: signed in as ${github.account}` : 'GitHub CLI: installed, not signed in (needed to clone a private repository)',
+  ];
+  const serviceLines = [
+    ...(parts.loaded.length ? [`Running: ${parts.loaded.join(', ')}`] : ['Ronin Services: not installed']),
+    ...listParkedServices().map((one) => `Parked: ${one.name}${one.reason ? ` (${one.reason})` : one.routine ? ` (${one.routine} is off)` : ''}`),
+    ...listServiceFailures().map((one) => `Failed to load: ${one.name} (${one.reason})`),
+  ];
+  const integrationLines = services.map((one) => {
+    const on = one.secrets.length || one.mcp?.saved;
+    const where = one.workspaces.length ? ` in ${one.workspaces.join(', ')}` : '';
+    return `${one.label}: ${on ? 'connected' : one.available ? 'available, not connected' : 'not available for this Desk'}${where}`;
+  });
+  const onboarding = items.filter((item) => item.kind === 'Epic' && item.title === 'Getting set up in your new office').at(-1);
+  const steps = onboarding ? items.filter((item) => item.parent === onboarding.id).map((item) => `${item.title}: ${item.status}`) : [];
   const inTeams = new Set(teams.map((team) => team.name));
   const alone = running.filter((one) => !one.tags.some((tag) => inTeams.has(tag))).map((one) => one.title || one.name);
-  const signedIn = [...(summary?.signed_in ?? []), ...rows.filter((row) => row.operational).map((row) => row.label)];
-  const connected = services.filter((one) => one.secrets.length || one.workspaces.length || one.mcp?.saved)
-    .map((one) => `${one.label}${one.workspaces.length ? ` (in ${one.workspaces.join(', ')})` : ''}`);
   const model = ((agents.sessions as Record<string, unknown> | undefined)?.default ?? {}) as { provider?: string; model?: string };
   const mine = office?.config.defaults;
   const defaults = [
@@ -128,16 +187,30 @@ export async function officeRead(only = ''): Promise<string> {
   const daimyo = seats.length ? ['## Daimyo', ...seats.map((seat) => `- ${seat.name}: ${seat.status || 'no status line'}`), ''] : [];
   return [
     only ? `# Workspace ${only}` : '# This office', '', `As of ${new Date().toISOString().slice(0, 16).replace('T', ' ')} UTC.`, '',
-    '## The machine', `- ${machineLine}`, '',
+    '## The machine', ...list(only ? [machineLine] : machineLines), '',
     ...(only ? [...work, ...daimyo] : [
       '## The people', ...list(people.length ? people.map(personLine) : [`The owner: ${NOT_FILLED}`]), '',
       '## Notes on them (library/ABOUT_USER.md)', notes.trim() || '- none yet', '',
       ...daimyo,
-      '## Model providers signed in', ...list(signedIn), '',
+      '## Model providers', ...list(providerLines), '',
+      '## Developer tools', ...list(toolLines), '',
+      ...(onboarding ? [`## Onboarding (${onboarding.id}, ${onboarding.status})`, ...list(steps), ''] : []),
       ...work,
       '## Agents running outside a Team', ...list(alone), '',
-      '## Services connected', ...list(connected), '',
+      '## Integrations', ...list(integrationLines), '',
+      '## Ronin Services', ...list(serviceLines), '',
       '## Defaults', ...list(defaults), '',
+      ...added.filter(Boolean).flatMap((one) => [one.trim(), '']),
     ]),
   ].join('\n');
+}
+
+/** Writes office read, whole, to the machine status file; answers what it wrote. */
+export async function writeMachineStatus(): Promise<{ path: string; text: string; written_at: string }> {
+  const text = await officeRead();
+  const file = machineStatusFile();
+  await fs.mkdir(path.dirname(file), { recursive: true });
+  await fs.writeFile(`${file}.tmp`, `${text.trimEnd()}\n`);
+  await fs.rename(`${file}.tmp`, file);
+  return { path: file, text, written_at: new Date().toISOString() };
 }

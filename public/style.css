@@ -2060,6 +2060,12 @@ body {
 .st-blurb.bad {
   color: var(--bad);
 }
+.st-status-text {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: var(--text-body);
+}
 .st-stamp {
   color: var(--muted);
   font-size: var(--text-small);
