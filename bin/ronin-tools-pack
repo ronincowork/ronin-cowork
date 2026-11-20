@@ -12,13 +12,15 @@
 set -euo pipefail
 ROOT=$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/.." && pwd)
 OUT=$(cd "${1:-.}" && pwd)
-TOOLS=(item team edges session_create session_check session_set session_archive session_restore plan canvas office epic-template lookup worktree-desk ronin-outside)
+TOOLS=(item team edges session_create session_check session_set session_archive session_restore plan canvas office epic-template lookup worktree-desk ronin-help ronin-outside)
 VERSION=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["version"])' "$ROOT/package.json")
 STAGE=$(mktemp -d)
 trap 'rm -rf "$STAGE"' EXIT
 
-# Committed files only, as a release is built (bin/ronin-build).
-git -C "$ROOT" archive --format=tar HEAD ronin_bin libexec/item-plain libexec/team-roster-write | tar -x -C "$STAGE"
+# Committed files only, as a release is built (bin/ronin-build). ronin-help reads the stock
+# Help, catalogs and glossary from the install, so those come too: the same files, not a copy kept apart.
+git -C "$ROOT" archive --format=tar HEAD ronin_bin libexec/item-plain libexec/team-roster-write \
+  docs ronin_catalogs public/js/help-outline.js KOTOBA_GLOSSARY.md | tar -x -C "$STAGE"
 python3 - "$STAGE/package.json" "$VERSION" "${TOOLS[@]}" <<'PY'
 import json, sys
 path, version, *tools = sys.argv[1:]
@@ -27,7 +29,7 @@ json.dump({
     "description": "Ronin's own tools, reaching an office from your machine: items, Teams, Agents, messages, plans.",
     "license": "Apache-2.0",
     "bin": {tool: "ronin_bin/ronin-outside" for tool in tools},
-    "files": ["ronin_bin", "libexec"],
+    "files": ["ronin_bin", "libexec", "docs", "ronin_catalogs", "public/js/help-outline.js", "KOTOBA_GLOSSARY.md"],
 }, open(path, "w"), indent=2)
 PY
 (cd "$STAGE" && npm pack --silent --pack-destination "$OUT" >/dev/null)
