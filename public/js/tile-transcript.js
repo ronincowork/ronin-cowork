@@ -29,6 +29,16 @@ const views = new Set();
 const said = (text) => String(text || '').replace(/\s+/g, ' ').trim();
 
 /**
+ * THE PERSON'S OWN MESSAGE IS DRAWN AS THEIR WORDS (owner, 2026-11-20; KAN-758): the Agent
+ * receives Ronin's head on it ("From Ann Lee <a@x.com>, owner, X Ltd [Message box]:", KAN-479;
+ * "[Ronin Box]:" too), and every Chat on every host draws it without the head. Every other
+ * delivery (Tell, House notice and so on) keeps its head.
+ */
+const PERSON_HEAD = /^From [^\n]*\[(?:Message box|Ronin Box)\]:\n/;
+export const personWords = (rec) => (rec?.role === 'user' && PERSON_HEAD.test(String(rec.text || ''))
+  ? { ...rec, text: String(rec.text).replace(PERSON_HEAD, '') } : rec);
+
+/**
  * @param onState  told after every read what the route said about this Agent's transcript:
  *                 { available, empty, reason, readings, view } — the header's opaque state
  *                 and the T-levels come from here, never from a list kept in the tile.
@@ -339,8 +349,8 @@ export function makeTileTranscript({ read = request, watch = transcriptWatch(), 
     follow();
     return () => { const at = sent.indexOf(mark); if (at >= 0) sent.splice(at, 1); node.remove(); };
   }
-  /** A person's record arrived: the light copy of the same words goes. In a hosted office the
-   *  record leads with who sent it ("From … [Message box]:"), so the words end it (KAN-623). */
+  /** A person's record arrived: the light copy of the same words goes. The record comes here
+   *  without Ronin's head (personWords); the words end it either way (KAN-623). */
   function landed(rec) {
     if (rec.role !== 'user' || typeof rec.seq !== 'number') return;
     const at = sent.findIndex((mark) => rec.seq > mark.after && said(rec.text).endsWith(mark.text));
@@ -406,7 +416,8 @@ export function makeTileTranscript({ read = request, watch = transcriptWatch(), 
         held.add(rec.seq);
         frontier = frontier === null ? rec.seq : Math.max(frontier, rec.seq);
       }
-      const shown = admit ? admit(rec) : rec;
+      const own = personWords(rec);
+      const shown = admit ? admit(own) : own;
       if (!shown) continue;
       insertInOrder(linkItems(shown), shown.seq);
       landed(shown);
