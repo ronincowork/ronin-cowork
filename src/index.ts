@@ -180,7 +180,8 @@ function signIn(req: express.Request, res: express.Response, next: express.NextF
   const bearer = req.headers.authorization?.startsWith('Bearer ') ? req.headers.authorization.slice(7) : '';
   if (bearer && !sameSecret(bearer, cliToken)) {
     return void seatOfBearer(bearer).then((found) => {
-      if (found) { asSeat(req, found.seat); return next(); }
+      // res.locals.seat ({ seat, status }) tells a route the call is a seat's: the daimyo connector refuses one without it.
+      if (found) { asSeat(req, found.seat); res.locals.seat = found; return next(); }
       signedIn(req, res, next);
     }, () => signedIn(req, res, next));
   }

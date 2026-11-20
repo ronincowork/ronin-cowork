@@ -73,7 +73,9 @@ Over `RONIN_URL`, a Bearer that isn't the CLI token is a daimyo's: sign-in asks 
 part that registered `sockets.addBearerCheck`, on every call and with no cache, whose seat it
 is. A seat answered makes the call that seat's: one step ([seats.ts](../../src/seats.ts),
 `asSeat`) sets every self-named caller field to the seat's name. Those fields are `by`,
-`caller`, `author`, `from` on the Team page, and `session` on `/api/cli`. A null answer falls
+`caller`, `author`, `from` on the Team page, and `session` on `/api/cli`. The route also finds
+`res.locals.seat`, the check's `{ seat, status }`: the daimyo connector answers 401 with its
+sign-in challenge when that is missing. A null answer falls
 through to the usual sign-in. The status line the user wrote is told to Agents, never enforced
 by a tool.
 
