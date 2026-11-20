@@ -37,8 +37,11 @@ export const sockets: Sockets = {
     const { putSeat } = await import('./seats.js');
     const { listSessions } = await import('./tmux.js');
     await putSeat(seat, async (name) => (await listSessions()).some((s) => s.name === name && !s.seat));
+    await (await import('./tegami.js')).daimyoChanged(seat.name);
   },
-  dropSeat: async (name) => { await (await import('./seats.js')).dropSeat(name); },
+  dropSeat: async (name) => {
+    if (await (await import('./seats.js')).dropSeat(name)) await (await import('./tegami.js')).daimyoChanged(name);
+  },
   setStreamHandler: (h) => void (streamHandler = h),
 };
 
