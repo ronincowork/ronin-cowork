@@ -38,7 +38,7 @@ import { expandLookup } from '../lookup.js';
 import { count } from '../counts.js';
 import { broadcastEvent, changed, pushTeams } from '../ws/events.js';
 import { announceTeamChanges } from './wipeboards-api.js';
-import { memberEnded, readBriefRecord, teamChanged, writeConfiguration, writeTeams } from '../tegami.js';
+import { memberEnded, readBriefRecord, teamChanged, writeConfiguration, writeObjective, writeTeams } from '../tegami.js';
 import { readAgentComposition } from '../agent-composition.js';
 import { configurationSends, configureBrief, updateConfiguration } from '../agent-configuration.js';
 import { agentBriefOf } from '../brief-build.js';
@@ -720,6 +720,24 @@ export function registerSessions(app: express.Express): void {
     await teamChanged(moved(before, teams), by, name).catch(() => {});
     return { teams, notices: await announceTeamChanges(name, before, teams) };
   };
+  // ITS OWN RECORD over HTTP: what `work-record read` shows (objective, Teams, holds, watches,
+  // documents) and the objective it updates. A daimyo's seat has no shell to run work-record
+  // in, so the daimyo API reads and writes its record here, as the seat.
+  app.get('/api/sessions/:name/record', async (req, res) => {
+    const { name } = req.params;
+    if (!isValidName(name)) return res.status(400).json({ error: 'Invalid name.' });
+    const record = await readTegami(name);
+    if (!record) return res.status(404).json({ error: `@${name} has no work record.` });
+    res.json(record);
+  });
+  app.patch('/api/sessions/:name/record', async (req, res) => {
+    const { name } = req.params;
+    if (!isValidName(name)) return res.status(400).json({ error: 'Invalid name.' });
+    if (typeof req.body?.objective !== 'string') return res.status(400).json({ error: 'Send { "objective": "…" }.' });
+    try { res.json({ ok: true, objective: await writeObjective(name, req.body.objective, callerOf(req) || name) }); }
+    catch (e) { res.status(404).json({ error: String((e as Error)?.message ?? e) }); }
+  });
+
   app.get('/api/sessions/:name/teams', async (req, res) => {
     const { name } = req.params;
     if (!isValidName(name)) return res.status(400).json({ error: 'Invalid name.' });

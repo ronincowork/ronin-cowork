@@ -37,7 +37,11 @@ export const sockets: Sockets = {
     const { setSeats } = await import('./seats.js');
     const { listSessions } = await import('./tmux.js');
     const changed = await setSeats(list, async (name) => (await listSessions()).some((s) => s.name === name && !s.seat));
-    if (changed.length) await (await import('./tegami.js')).daimyoChanged(changed.join(', '));
+    if (!changed.length) return;
+    const { daimyoChanged, seedTegami } = await import('./tegami.js');
+    // A seat keeps its own work record (objective, holds), seeded once like an Agent's at birth.
+    for (const seat of (await listSessions()).filter((s) => s.seat && changed.includes(s.name))) await seedTegami(seat.name);
+    await daimyoChanged(changed.join(', '));
   },
   readInbox: async (seat, waitSeconds) => (await import('./seats.js')).readInbox(seat, waitSeconds),
   setStreamHandler: (h) => void (streamHandler = h),

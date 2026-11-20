@@ -76,7 +76,10 @@ is. A seat answered makes the call that seat's: one step ([seats.ts](../../src/s
 `caller`, `author`, `from` on the Team page, and `session` on `/api/cli`. The route also finds
 `res.locals.seat`, the check's `{ seat, status }`: the daimyo connector answers 401 with its
 sign-in challenge when that is missing. A null answer falls
-through to the usual sign-in. The status line the user wrote is told to Agents, never enforced
+through to the usual sign-in. A seat has no shell, so its own work record is read and its
+objective written over `GET`/`PATCH /api/sessions/:name/record` (what `work-record read` and
+`update_record --objective` do for an Agent); the record is seeded when the seat first comes in,
+and its holds move with `item` like anyone's. The status line the user wrote is told to Agents, never enforced
 by a tool.
 
 ## What this is not

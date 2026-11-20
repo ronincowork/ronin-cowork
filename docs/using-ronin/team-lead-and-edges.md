@@ -16,7 +16,7 @@ stand. You can still type to any Agent in its tile, but the lead is the one plac
 Agents do not need you to carry messages between them. Ronin gives each one tools for
 crossing its **edges**, the boundary between one session and the next:
 
-- **A Tell (`edges send`)** sends one message to one Agent. It arrives in that Agent's tile as if typed, with who sent it.
+- **A Tell (`edges send`)** sends one message to one Agent. It arrives in that Agent's tile as if typed, with who sent it. Named a Team, it goes to the Team's live lead(s).
 - **The wipeboard** is the Team's shared board, for things everyone must see: a rule, two Agents about to change the same file. Posts expire once read; nothing lasting lives there.
 - **Read** looks at another Agent's record, or its live screen when it has no record yet.
 

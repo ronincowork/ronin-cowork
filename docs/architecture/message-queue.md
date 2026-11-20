@@ -84,7 +84,9 @@ inbox with its From and channel. The daimyo reads it through the daimyo API's `i
 Services part, on the `readInbox` socket), "since my last look": each read gives what came after
 the cursor and moves the cursor. With nothing new, a read can wait up to 90 seconds for the
 first entry; it watches the store, so any writer wakes it. Nothing on the box reads a seat's
-inbox. This isn't a second notice
+inbox. The daimyo's own Tells go out through the same `message` command as `edges send`, on its
+token, so the sender is the seat and the head reads `From @<daimyo> [Tell]`; a Team's name goes
+to the Team's live lead(s). This isn't a second notice
 system. Every notice still goes through `enqueueMessage`, and a seat is on the roster
 (`listSessions`) with its Teams and leads, so a Team's notices reach a daimyo lead the way they
 reach any lead.

@@ -10,7 +10,7 @@ usage() {
 edges — work across Agent and Team boundaries
 
 Usage:
-  edges send <session> <message...>
+  edges send <session|team> <message...>
   edges read [session [text|since|raw|scroll|voice] [argument...]]
   edges team [team]
   edges wipeboard [arguments...]
@@ -27,7 +27,7 @@ EOF
 [ "$#" -gt 0 ] || { usage; exit 2; }
 if [ "$#" -eq 2 ] && { [ "$2" = "-h" ] || [ "$2" = "--help" ]; }; then
   case "$1" in
-    send) echo "Usage: edges send <session> <message...>"; echo "Put one message through the durable delivery queue."; exit 0 ;;
+    send) echo "Usage: edges send <session|team> <message...>"; echo "Put one message through the durable delivery queue. A Team gets it through its live lead."; exit 0 ;;
     wipeboard) echo "Usage: edges wipeboard [boards|post <text...>|<board> [read [n]|find <text...>|post <text...>]]"; echo "Read or post on Team wipeboards."; exit 0 ;;
     page) echo "Usage: edges page [--team <team>] [key=value ...]"; echo "Read the Team page, or apply a draft containing only the named changes."; exit 0 ;;
     schedule) echo "Usage: edges schedule [--team <team>] [add|pause|resume|now|remove|when] ..."; echo "Read or change the Team's scheduled requests."; exit 0 ;;
