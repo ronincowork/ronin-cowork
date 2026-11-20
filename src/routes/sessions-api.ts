@@ -66,6 +66,7 @@ import { randomUUID } from 'node:crypto';
 import { hardDeleteConfirmation, liveOps, shutdownAgent, ShutdownRefused, ShutdownSlots, type ShutdownProgress } from '../desks/session-shutdown.js';
 import { listDeskRecords, listDesks } from '../desks/registry.js';
 import { resolveFileLink } from '../file-link.js';
+import { readTegami } from '../tegami-read.js';
 import { commitPage } from '../commit-link.js';
 import { storeDir } from '../resources.js';
 import { parkCarry } from '../machine-park.js';
@@ -667,7 +668,7 @@ export function registerSessions(app: express.Express): void {
   app.get('/api/sessions/:name/file-link', async (req, res) => {
     const { name } = req.params;
     if (!isValidName(name)) return res.status(400).json({ error: 'Invalid name.' });
-    const file = resolveFileLink(String(req.query.path ?? ''), (await chatPlaces(name)).files);
+    const file = resolveFileLink(String(req.query.path ?? ''), (await chatPlaces(name)).files, (await readTegami(name))?.docs ?? []);
     if (!file) return res.status(404).json({ error: 'No such file.' });
     res.json({ path: file });
   });
