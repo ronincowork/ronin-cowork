@@ -194,7 +194,7 @@ else:
     d["ladder_state"] = want
 # "holds" and "at" are in this list because this path rebuilds the whole block from a
 # fixed set of keys, so a key missing from it is a key this switch DELETES.
-block = json.dumps({k: d[k] for k in ("objective", "mandate", "teams", "configuration", "daimyo", "repos", "holds", "ladder_state", "at") if k in d},
+block = json.dumps({k: d[k] for k in ("objective", "mandate", "teams", "configuration", "daimyo", "brief", "repos", "holds", "watches", "ladder_state", "at") if k in d},
                    indent=2, ensure_ascii=False)
 tmp = src + ".sw"
 open(tmp, "w").write(text[:m.start(1)] + block + text[m.end(1):])
@@ -422,6 +422,13 @@ if isinstance(prev.get("configuration"), dict):
 # CARRY "daimyo" THROUGH (KAN-735): the seat driving this office from outside and its status line.
 if isinstance(prev.get("daimyo"), list):
     out["daimyo"] = prev["daimyo"]
+# CARRY "brief" AND "watches" THROUGH: the brief document Ronin rebuilds the brief from, and the
+# items this Agent watches. A save without them was deleting both.
+if isinstance(prev.get("brief"), dict):
+    out["brief"] = prev["brief"]
+_watches = [w for w in (prev.get("watches") or []) if isinstance(w, str)]
+if _watches:
+    out["watches"] = _watches
 # CARRY "holds" THROUGH: the work item ids this session holds. Assign and release move
 # them, through the work item routes; a whole-block save never drops them.
 _holds = [h for h in (prev.get("holds") or []) if isinstance(h, str)]
