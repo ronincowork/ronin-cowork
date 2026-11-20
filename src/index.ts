@@ -78,7 +78,8 @@ import { mountAssets, noCacheClient, publicFingerprint } from './assets.js';
 import { DocumentPathError, legacyDocumentPath, readDocumentFile, readProductDocumentFile, saveDocumentFile } from './document-file.js';
 import { checkTmuxServerCgroup } from './host-guard.js';
 import { startTeamLayers } from './team-layers.js';
-import { sockets, runStartedHooks, startBootHooks, stopBootHooks, mountServiceRoutes, noteService, noteServiceCapabilityPlan, noteServiceFailure, noteServiceParked } from './sockets.js';
+import { asSeat } from './seats.js';
+import { sockets, seatOfBearer, runStartedHooks, startBootHooks, stopBootHooks, mountServiceRoutes, noteService, noteServiceCapabilityPlan, noteServiceFailure, noteServiceParked } from './sockets.js';
 import { startSessionRetention } from './session-retention.js';
 import { discoverParts, partsToLoad } from './parts.js';
 import { initialCampaign } from './campaigns.js';
@@ -175,6 +176,18 @@ function issueSession(res: express.Response): boolean {
 
 // Ronin's sign-in: every route below it, and /files ahead of the body parsers.
 function signIn(req: express.Request, res: express.Response, next: express.NextFunction) {
+  // A daimyo's token (KAN-734): the Services part says whose seat it is, on every call; the call is that seat's.
+  const bearer = req.headers.authorization?.startsWith('Bearer ') ? req.headers.authorization.slice(7) : '';
+  if (bearer && !sameSecret(bearer, cliToken)) {
+    return void seatOfBearer(bearer).then((found) => {
+      if (found) { asSeat(req, found.seat); return next(); }
+      signedIn(req, res, next);
+    }, () => signedIn(req, res, next));
+  }
+  signedIn(req, res, next);
+}
+
+function signedIn(req: express.Request, res: express.Response, next: express.NextFunction) {
   // A peer on the operator's own socket is the user: the 0600 mode was the credential.
   if (isOperatorPeer(req) || checkAuth(req.headers)) return next();
   if (passwordAuthEnabled() && req.method === 'GET' && req.accepts(['json', 'html']) === 'html') {

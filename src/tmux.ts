@@ -6,6 +6,7 @@ import { removeHandoff } from './handoff.js';
 import { assertUnderMax } from './machine-state.js';
 import { RIREKI_OPT, newSessionArgs } from './session-args.js';
 import { tmux } from './tmux-client.js';
+import { listSeats, readSeat, setSeatField, type Seat } from './seats.js';
 import { isPaneScope, liveScopeOps, recordScope, sessionFolders, stoppable, withNested } from './agent-scope.js';
 
 export interface SessionIdentity {
@@ -33,6 +34,8 @@ export interface SessionInfo {
   /** READY (KAN-694): when the Agent last ran `ready`, saying it is about to speak to the person (ISO, '' never).
    *  A chat that honours it draws only what follows; nothing is refused without it. */
   ready: string;
+  /** A seat with no terminal (a daimyo, src/seats.ts): no pane to read, type into or end. */
+  seat?: true;
 }
 
 const TITLE_OPT = '@ronin-title';
@@ -76,7 +79,22 @@ export async function sessionDir(name: string): Promise<string> {
   }
 }
 
+/** A seat with no terminal (src/seats.ts) is listed with the Agents: notices, holds and the
+ *  roster find it the same way. Only a terminal's own operations know it has none. */
+const seatInfo = (seat: Seat): SessionInfo => ({
+  name: seat.name, title: `${seat.name} · daimyo`, windows: 0, attached: false,
+  created: Math.floor(Date.parse(seat.since) / 1000) || 0, tags: parseTags(seat.teams.join(',')), leads: parseTags(seat.leads.join(',')),
+  // The key sessionKey answers for a name with no pane, so its work record (and holds) are found.
+  key: seat.name, agent: 'daimyo', campaign_id: '', activity: 0, rireki: false, ready: '', seat: true,
+});
+
 export async function listSessions(): Promise<SessionInfo[]> {
+  const [panes, seats] = await Promise.all([tmuxSessions(), listSeats()]);
+  const taken = new Set(panes.map((s) => s.name));
+  return [...panes, ...seats.filter((s) => !taken.has(s.name)).map(seatInfo)].sort((a, b) => a.name.localeCompare(b.name));
+}
+
+async function tmuxSessions(): Promise<SessionInfo[]> {
   try {
     const stdout = await tmux.run([
       'list-sessions',
@@ -114,6 +132,7 @@ export async function listSessions(): Promise<SessionInfo[]> {
 }
 
 export async function sessionExists(name: string): Promise<boolean> {
+  if (await readSeat(name)) return true;
   try {
     await tmux.run(['has-session', '-t', `=${name}`]);
     return true;
@@ -351,6 +370,8 @@ export async function sessionOfPane(paneId: string): Promise<string | null> {
 }
 
 export async function getTags(name: string): Promise<string[]> {
+  const seat = await readSeat(name);
+  if (seat) return parseTags(seat.teams.join(','));
   try {
     const stdout = await tmux.run(['show-options', '-t', exactPane(name), '-qv', TAGS_OPT]);
     return parseTags(stdout);
@@ -361,6 +382,7 @@ export async function getTags(name: string): Promise<string[]> {
 
 export async function setTags(name: string, tags: string[]): Promise<string[]> {
   const clean = parseTags(tags.join(','));
+  if (await readSeat(name)) { await setSeatField(name, 'teams', clean); return clean; }
   if (clean.length) {
     await tmux.run(['set-option', '-t', exactPane(name), TAGS_OPT, clean.join(',')]);
   } else {
@@ -370,6 +392,8 @@ export async function setTags(name: string, tags: string[]): Promise<string[]> {
 }
 
 export async function getLeads(name: string): Promise<string[]> {
+  const seat = await readSeat(name);
+  if (seat) return parseTags(seat.leads.join(','));
   try {
     const stdout = await tmux.run(['show-options', '-t', exactPane(name), '-qv', LEAD_OPT]);
     return parseTags(stdout);
@@ -380,6 +404,7 @@ export async function getLeads(name: string): Promise<string[]> {
 
 export async function setLeads(name: string, teams: string[]): Promise<string[]> {
   const clean = parseTags(teams.join(','));
+  if (await readSeat(name)) { await setSeatField(name, 'leads', clean); return clean; }
   if (clean.length) {
     await tmux.run(['set-option', '-t', exactPane(name), LEAD_OPT, clean.join(',')]);
   } else {

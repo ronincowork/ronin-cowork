@@ -67,6 +67,16 @@ REFUSED: Ronin is not running (socket at /home/you/.ronin/run/ronin.sock, nobody
 journalctl --user -u ronin.service -n 50 says why; start it with: systemctl --user start ronin
 ```
 
+## A daimyo's token
+
+Over `RONIN_URL`, a Bearer that isn't the CLI token is a daimyo's: sign-in asks the Services
+part that registered `sockets.addBearerCheck`, on every call and with no cache, whose seat it
+is. A seat answered makes the call that seat's: one step ([seats.ts](../../src/seats.ts),
+`asSeat`) sets every self-named caller field to the seat's name. Those fields are `by`,
+`caller`, `author`, `from` on the Team page, and `session` on `/api/cli`. A null answer falls
+through to the usual sign-in. The status line the user wrote is told to Agents, never enforced
+by a tool.
+
 ## What this is not
 
 The browser uses `https://<full-Tailscale-DNS>:4810`, provided by Tailscale Serve.

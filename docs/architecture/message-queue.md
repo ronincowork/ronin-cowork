@@ -76,6 +76,16 @@ frame) names a signed-in person (src/office-people.ts). Their letter records the
 `From a@x.com, owner [Message box]:`, or `From Ann Lee <a@x.com>, owner, X Ltd [Ronin Box]:` when
 members.json carries a name and organization. Self-hosted, or a local caller, it is as above.
 
+## A seat's inbox
+
+A seat has no terminal to type into: a daimyo, the user's own AI manager driving the office from
+outside ([seats.ts](../../src/seats.ts)). A letter for a seat skips the queue and lands in its
+inbox with its From and channel, and the seat reads it with `edges inbox`, "since my last look":
+each read gives what came after the cursor and moves the cursor. This isn't a second notice
+system. Every notice still goes through `enqueueMessage`, and a seat is on the roster
+(`listSessions`) with its Teams and leads, so a Team's notices reach a daimyo lead the way they
+reach any lead.
+
 ## Retention and actions
 
 A letter remains while a recognized dialog is open, or while a draft holds it before the
@@ -90,5 +100,7 @@ letter. Wipeboard posts and durable work receipts remain separate from interrupt
   whenever a file in the queue folder changes and the queue moved
 - `POST /api/messages` with `{ "target": "agent", "text": "message" }`: enqueue
 - `DELETE /api/messages` with `{ "ids": ["..."] }`
+- `POST /api/seats/inbox` with `{ "by": "<seat>" }`: the seat's inbox since its last look (on a
+  daimyo's token, `by` is the token's seat)
 
 `POST /api/sessions/:name/send` also enqueues through this path.

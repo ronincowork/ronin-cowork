@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+# edges inbox — a seat's inbox (a daimyo, src/seats.ts): what Ronin would have typed into its
+# terminal, since its last look. Each read moves the cursor. On a daimyo's token the seat is
+# the token's; on this machine name it: edges inbox <seat>.
+set -u
+case "${1-}" in
+  -h|--help)
+    echo "Usage: edges inbox [<seat>]"
+    echo "What came to the seat since its last look: hand-ins, flags, In Review, replies. Each read moves the cursor."
+    exit 0 ;;
+esac
+[ "$#" -le 1 ] || { echo "edges inbox: too many arguments. Run edges inbox --help." >&2; exit 2; }
+TOOL_DIR=$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)
+. "$TOOL_DIR/ronin-http.sh"
+ronin_connect || exit $?
+body=$(python3 -c 'import json,sys; print(json.dumps({"by": sys.argv[1]}))' "${1:-}")
+curl -sS -m 30 "${RONIN_CURL[@]+"${RONIN_CURL[@]}"}" -X POST -H 'content-type: application/json' --data "$body" "$url/api/seats/inbox" | python3 -c '
+import json, sys
+d = json.loads(sys.stdin.read() or "{}")
+if d.get("error"): print(d["error"], file=sys.stderr); sys.exit(3)
+rows = d.get("entries", [])
+if not rows: print("Nothing new since your last look."); sys.exit(0)
+for r in rows: print("%s From %s [%s]:\n%s\n" % (r["at"][:16].replace("T", " "), r["from"], r["channel"], r["text"]))
+'

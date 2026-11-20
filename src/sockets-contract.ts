@@ -1,7 +1,7 @@
 
 import type { TrailLine, WorkItem } from './work-items.js';
 
-export const CONTRACT_V = 13;
+export const CONTRACT_V = 14;
 
 export interface LaunchIdentity {
   key: string;
@@ -105,6 +105,14 @@ export interface Sockets {
    */
   onItemChanged(cb: (change: ItemChange) => void | Promise<void>): void;
   addRoutes(mount: (app: unknown) => void): void;
+  /**
+   * THE SEAT SOCKETS (KAN-734): a daimyo drives the office from outside on a token. Sign-in
+   * asks this for a Bearer that is not the CLI token; a seat answered makes the call that
+   * seat's (every self-named caller field becomes its name), null is a 401. No cache.
+   */
+  addBearerCheck(cb: (token: string) => Promise<{ seat: string; status: string } | null>): void;
+  putSeat(seat: { name: string; status: string }): Promise<void>;   // throws for a live Agent's name
+  dropSeat(name: string): Promise<void>;
   setStreamHandler(h: (...args: unknown[]) => void): void;
 }
 

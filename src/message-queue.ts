@@ -8,6 +8,7 @@ import { onClock } from './jikan.js';
 import { personLabel, type Person } from './office-people.js';
 import { capturePane } from './tmux.js';
 import { classifyStatus } from './status.js';
+import { readSeat, toInbox } from './seats.js';
 
 /** `typed` is the person at this Agent's own Message box; `owner` is Ronin writing on their behalf.
  *  In a hosted office a message from a signed-in person also records `person` (src/office-people.ts),
@@ -77,6 +78,11 @@ export async function enqueueMessage(target: string, text: string, source: Messa
   const item: QueuedMessage = { id: randomUUID(), from: person ? personLabel(person) : from, target, text, source, created_at: queuedAt() };
   if (person) item.person = person;
   if (options.when) item.when = options.when;
+  // A seat has no terminal to type into: what it would be told goes to its inbox (src/seats.ts).
+  if (await readSeat(target)) {
+    await toInbox(target, { from: item.source === 'tell' ? `@${item.from.replace(/^@/, '')}` : item.from, channel: channelOf(source), text });
+    return item;
+  }
   await fs.mkdir(DIR, { recursive: true });
   const tmp = `${file(item.id)}.${process.pid}.tmp`;
   await fs.writeFile(tmp, JSON.stringify(item));
