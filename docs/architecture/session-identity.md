@@ -154,7 +154,7 @@ out separately:
 | project-root lookup | `src/tmux.ts` | name prefix |
 | the session record | `src/services/rireki/rireki.ts` (three places) | name prefix |
 | usage counting | `src/services/counting/rollup.ts` | name prefix |
-| pane → session | `messageSender()`, `src/message-sender.ts` | name prefix |
+| pane → session | `src/wipeboard-cli.ts` | name prefix |
 | ending a session | `killSessionTree()`, `src/tmux.ts` | tmux `session_group` |
 | bare `tmux ls` | — | **nothing** |
 

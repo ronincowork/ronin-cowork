@@ -44,13 +44,12 @@ Resolution order, the same in both readers:
 3. **the default path** — `<data root>/run/ronin.sock`, for a tool with no session at all:
    a cron job, a shell over SSH, the owner at a prompt.
 
-The two readers are `src/cli-http.ts`, which the TypeScript commands (promotion, recovery,
-bundle, auth) go through, and `ronin_bin/ronin-url` with its sourced sibling
-`ronin_bin/ronin-http.sh`, which the zero-dependency shell tools go through: `item`, `team`,
-the `session_*` tools, `edges` (send, wipeboard, schedule and `worktree-desk` reach the
-operator's command-line verbs with `ronin_cli_run`), `plan`, `canvas`, `office` and `mika`.
-Needing only curl and python3 is what lets the same tools run off the box (`ronin-outside`,
-below). `ronin-url` prints one line —
+The two readers are `src/cli-http.ts`, which every TypeScript command (`worktree-desk`,
+`edges wipeboard`, `edges send`, `edges schedule`, promotion, recovery, bundle, auth) goes
+through, and `ronin_bin/ronin-url` with its sourced sibling `ronin_bin/ronin-http.sh`, which
+the zero-dependency shell tools (`session_create`, `session_end`, `session_check`,
+`session_set`,
+`team roster write`, `edges page`, `mika`) go through. `ronin-url` prints one line —
 `RONIN_URL` when set, else the socket path — and `ronin_connect` turns that into the base
 `url` and the `RONIN_CURL` transport options a request is built from; a caller never knows
 which it got. Wrappers locate those siblings from their own resolved file path, including
@@ -67,19 +66,6 @@ Start Ronin, or set RONIN_URL for a development/test target.
 REFUSED: Ronin is not running (socket at /home/you/.ronin/run/ronin.sock, nobody listening).
 journalctl --user -u ronin.service -n 50 says why; start it with: systemctl --user start ronin
 ```
-
-## Off the box: the tool package
-
-A daimyo runs the same tools on its own machine. `bin/ronin-tools-pack [<out-dir>]` packs the
-committed `ronin_bin`, plus the two helpers `item` and `team` call, into
-`ronin-tools-<version>.tgz`, installed with `npm i -g <tarball or its URL>`. Each tool
-installs as `ronin_bin/ronin-outside` under its own name: `item`, `team`, `edges`, the
-`session_*` tools, `plan`, `canvas`, `office`, `epic-template`, `lookup` and `worktree-desk`.
-It picks the office, sets `RONIN_URL` and `RONIN_CLI_TOKEN`, and runs the real tool. The office
-is `--office <name>` as the first argument, else `RONIN_OFFICE`, else `RONIN_URL` as already set,
-else the one office in `~/.config/ronin/offices.json` (`RONIN_OFFICES` moves it), which holds
-`{ "<name>": { "url": "https://…", "token": "…" } }`. It needs curl and python3, not TypeScript
-or tmux. Tools that read a pane (`edges read`, `edges team`, `session_end`) stay in the office.
 
 ## A daimyo's token
 
