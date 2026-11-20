@@ -21,5 +21,6 @@
 # so nothing is typed and Enter is never spammed into it.
 set -euo pipefail
 [ $# -ge 2 ] || { echo "usage: ronin-house-send <session> <message...>" >&2; exit 2; }
-HERE=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
-exec "$HERE/node_modules/.bin/tsx" "$HERE/src/message-cli.ts" house "$@"
+TOOL_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/../ronin_bin" && pwd)
+. "$TOOL_DIR/ronin-http.sh"
+ronin_cli_run message house "$@"

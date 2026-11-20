@@ -16,7 +16,7 @@
 # Nothing here deletes an unintegrated tip except
 # an exact confirmed discard with a durable receipt.
 #
-# src/desk-cli.ts calls the operator HTTP surface and prints its reply.
+# The operator's desk verb (/api/cli/desk) answers; ronin-http.sh carries the call.
 set -u
 case "${1-}" in
   -h|--help) [ "$#" -eq 1 ] || { echo "worktree-desk: --help takes no other arguments. Run worktree-desk --help." >&2; exit 2; }
@@ -73,7 +73,6 @@ EOF
     echo "INITIALIZED $root — local repository only; no remote was assumed"
     exit 0 ;;
 esac
-. "$(dirname "$(readlink "${BASH_SOURCE[0]}" 2>/dev/null || printf '%s' "${BASH_SOURCE[0]}")")/tool-path.sh"
-HERE=$(cd "$(dirname "$SELF")/.." && pwd)
-cd "$HERE" || { echo "NO-REPO: cannot reach the Ronin tree"; exit 1; }
-exec npx tsx src/desk-cli.ts "$@"
+TOOL_DIR=$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)
+. "$TOOL_DIR/ronin-http.sh"
+ronin_cli_run desk "$@"

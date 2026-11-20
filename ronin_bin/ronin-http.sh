@@ -28,6 +28,25 @@ ronin_connect() {
   return 0
 }
 
+# ronin_cli_run TOOL [ARG...] — run one of the operator's command-line verbs (/api/cli/TOOL:
+# message, wipeboard, jikan, desk) and print its reply as the command would, with its exit
+# code. The caller is named as the session and pane this shell runs in; on a daimyo's token
+# the server names the seat instead. Needs only curl and python3, so it runs off the box too.
+ronin_cli_run() {
+  local tool=$1 body out; shift
+  ronin_connect || return $?
+  body=$(python3 -c 'import json, os, sys; print(json.dumps({"args": sys.argv[1:], "counted": os.environ.get("RONIN_TOOL_COUNTED") == "1", "session": os.environ.get("RONIN_SESSION", ""), "pane": os.environ.get("TMUX_PANE", "")}))' "$@")
+  out=$(curl -sS -m 900 "${RONIN_CURL[@]+"${RONIN_CURL[@]}"}" -X POST -H 'content-type: application/json' --data "$body" -w '\n%{http_code}' "$url/api/cli/$tool") \
+    || { echo "REFUSED: Ronin did not answer at $url" >&2; return 4; }
+  printf '%s' "${out%$'\n'*}" | REPLY_STATUS=${out##*$'\n'} python3 -c '
+import json, os, sys
+try: d = json.loads(sys.stdin.read())
+except Exception: print("REFUSED: HTTP %s" % os.environ["REPLY_STATUS"], file=sys.stderr); sys.exit(4)
+if not os.environ["REPLY_STATUS"].startswith("2"): print("REFUSED: %s" % (d.get("error") or "HTTP " + os.environ["REPLY_STATUS"]), file=sys.stderr); sys.exit(4)
+sys.stdout.write(d.get("stdout") or ""); sys.stderr.write(d.get("stderr") or ""); sys.exit(d.get("exit", 1))
+'
+}
+
 # ronin_item_call METHOD PATH [JSON] — one work item request, printed for the caller: the
 # acknowledgement first, then the item as it now is (or the reply of a read); with
 # ITEM_ACK_ONLY=1 the acknowledgement alone. An error goes to stderr with exit 3, and a
