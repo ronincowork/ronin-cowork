@@ -74,9 +74,7 @@ A daimyo runs the same tools on its own machine. `bin/ronin-tools-pack [<out-dir
 committed `ronin_bin`, plus the two helpers `item` and `team` call, into
 `ronin-tools-<version>.tgz`, installed with `npm i -g <tarball or its URL>`. Each tool
 installs as `ronin_bin/ronin-outside` under its own name: `item`, `team`, `edges`, the
-`session_*` tools, `plan`, `canvas`, `office`, `epic-template`, `lookup`, `worktree-desk` and
-`ronin-help`. `ronin-help` reads the stock Help, catalogs and glossary that the package carries,
-not the office's own customised ones.
+`session_*` tools, `plan`, `canvas`, `office`, `epic-template`, `lookup` and `worktree-desk`.
 It picks the office, sets `RONIN_URL` and `RONIN_CLI_TOKEN`, and runs the real tool. The office
 is `--office <name>` as the first argument, else `RONIN_OFFICE`, else `RONIN_URL` as already set,
 else the one office in `~/.config/ronin/offices.json` (`RONIN_OFFICES` moves it), which holds
