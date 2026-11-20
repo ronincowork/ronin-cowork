@@ -16,7 +16,6 @@ Usage:
   edges wipeboard [arguments...]
   edges page [--team <team>] [key=value ...]
   edges schedule [arguments...]
-  edges inbox [<seat>]
 
 Bare `edges read <session> [lines]` reads the durable settled record first and
 falls back to the recent live pane only when no durable record exists. The
@@ -42,6 +41,5 @@ case "$1" in
   wipeboard) shift; exec "$HERE/.edges-wipeboard" "$@" ;;
   page) shift; exec "$HERE/.edges-page" "$@" ;;
   schedule) shift; exec "$HERE/.edges-schedule" "$@" ;;
-  inbox) shift; exec "$HERE/.edges-inbox" "$@" ;;
   *) echo "edges: unknown subcommand '$1'. Run edges --help." >&2; exit 2 ;;
 esac

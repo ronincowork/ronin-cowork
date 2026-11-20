@@ -5,8 +5,9 @@
  * into its terminal goes to its inbox instead (message-queue.ts), read with a cursor: each
  * read gives what came since the last one.
  *
- * A seat goes in and out only through the Sockets (putSeat, dropSeat): the Services part that
- * checks the daimyo's token owns it. The record stays this small. */
+ * A seat goes in and out only through the Sockets (setSeats): the Services part that checks the
+ * daimyo's token follows the unit's daimyos.json with it. The record stays this small. */
+import { watch as fsWatch } from 'node:fs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { storeDir } from './resources.js';
@@ -48,25 +49,29 @@ export async function listSeats(): Promise<Seat[]> {
   return seats.filter((s): s is Seat => Boolean(s)).sort((a, b) => a.name.localeCompare(b.name));
 }
 
-/** In, or its status changed. A name a live Agent already has is refused: its notices would split. */
-export async function putSeat(input: { name: string; status: string }, liveAgent: (name: string) => Promise<boolean>): Promise<Seat> {
-  const name = String(input.name ?? '').trim();
-  if (!NAME_RE.test(name)) throw new Error(`"${name}" is not a valid seat name.`);
-  const before = await readSeat(name);
-  if (!before && await liveAgent(name)) throw new Error(`${name} is already an Agent on this office.`);
-  const seat: Seat = {
-    name, kind: 'daimyo', status: String(input.status ?? '').trim().slice(0, 500),
-    since: before?.since ?? new Date().toISOString(), teams: before?.teams ?? [], leads: before?.leads ?? [],
-  };
-  await writeAtomic(seatFile(name), JSON.stringify(seat, null, 2));
-  return seat;
-}
-
-/** Out: the record goes; its inbox goes with it. Its items are released as an ending's are, by the sweep. */
-export async function dropSeat(name: string): Promise<boolean> {
-  if (!(await readSeat(name))) return false;
-  await Promise.all([seatFile(name), inboxFile(name), cursorFile(name)].map((f) => fs.unlink(f).catch(() => {})));
-  return true;
+/** THE SEATS ARE THE LIST (daimyos.json, via the Services part): each listed seat is put in or
+ * has its status line changed; every seat not listed goes, with its inbox, and its items are
+ * released by the sweep as an ending's are. A name a live Agent already has is skipped (its
+ * notices would split) and logged. Returns the names that changed. */
+export async function setSeats(list: Array<{ name: string; status: string }>, liveAgent: (name: string) => Promise<boolean>): Promise<string[]> {
+  const changed: string[] = [];
+  const wanted = new Map(list.map((s) => [String(s.name ?? '').trim(), String(s.status ?? '').trim().slice(0, 500)]));
+  for (const seat of await listSeats()) {
+    if (wanted.has(seat.name)) continue;
+    await Promise.all([seatFile(seat.name), inboxFile(seat.name), cursorFile(seat.name)].map((f) => fs.unlink(f).catch(() => {})));
+    changed.push(seat.name);
+  }
+  for (const [name, status] of wanted) {
+    if (!NAME_RE.test(name)) { console.error(`[seats] "${name}" is not a valid seat name; skipped.`); continue; }
+    const before = await readSeat(name);
+    if (before?.status === status) continue;
+    if (!before && await liveAgent(name)) { console.error(`[seats] ${name} is already an Agent on this office; skipped.`); continue; }
+    await writeAtomic(seatFile(name), JSON.stringify({
+      name, kind: 'daimyo', status, since: before?.since ?? new Date().toISOString(), teams: before?.teams ?? [], leads: before?.leads ?? [],
+    } satisfies Seat, null, 2));
+    changed.push(name);
+  }
+  return changed;
 }
 
 export async function setSeatField(name: string, field: 'teams' | 'leads', values: string[]): Promise<void> {
@@ -94,8 +99,23 @@ export async function toInbox(name: string, entry: Omit<InboxEntry, 'at'>): Prom
   return line;
 }
 
-/** Since my last look: what came after the cursor, and the cursor moves to the newest. */
-export async function readInbox(name: string): Promise<InboxEntry[]> {
+/** Since my last look: what came after the cursor, and the cursor moves to the newest. With
+ * nothing new it waits up to `waitSeconds` (at most 90: Cloudflare drops a silent request at
+ * about 100) for the first entry, by watching the store, so every writer wakes it. */
+export async function readInbox(name: string, waitSeconds = 0): Promise<InboxEntry[]> {
+  const fresh = await sinceCursor(name);
+  const wait = Math.min(Math.max(Number(waitSeconds) || 0, 0), 90) * 1000;
+  if (fresh.length || !wait) return fresh;
+  await fs.mkdir(dir(), { recursive: true });
+  await new Promise<void>((resolve) => {
+    const watcher = fsWatch(dir(), (_event, file) => { if (String(file) === path.basename(inboxFile(name))) done(); });
+    const timer = setTimeout(done, wait);
+    function done(): void { clearTimeout(timer); watcher.close(); resolve(); }
+  });
+  return sinceCursor(name);
+}
+
+async function sinceCursor(name: string): Promise<InboxEntry[]> {
   const cursor = Number(await fs.readFile(cursorFile(name), 'utf8').catch(() => '0')) || 0;
   const lines = (await fs.readFile(inboxFile(name), 'utf8').catch(() => '')).split('\n').filter(Boolean);
   const fresh = lines.slice(cursor).flatMap((line) => { try { return [JSON.parse(line) as InboxEntry]; } catch { return []; } });

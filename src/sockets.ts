@@ -33,15 +33,13 @@ export const sockets: Sockets = {
   deliverToWatchers: (session, make) => deliverToWatchers(session, make),
   addRoutes: (m) => void routeMounts.push(m),
   addBearerCheck: (cb) => void bearerChecks.push(cb),
-  putSeat: async (seat) => {
-    const { putSeat } = await import('./seats.js');
+  setSeats: async (list) => {
+    const { setSeats } = await import('./seats.js');
     const { listSessions } = await import('./tmux.js');
-    await putSeat(seat, async (name) => (await listSessions()).some((s) => s.name === name && !s.seat));
-    await (await import('./tegami.js')).daimyoChanged(seat.name);
+    const changed = await setSeats(list, async (name) => (await listSessions()).some((s) => s.name === name && !s.seat));
+    if (changed.length) await (await import('./tegami.js')).daimyoChanged(changed.join(', '));
   },
-  dropSeat: async (name) => {
-    if (await (await import('./seats.js')).dropSeat(name)) await (await import('./tegami.js')).daimyoChanged(name);
-  },
+  readInbox: async (seat, waitSeconds) => (await import('./seats.js')).readInbox(seat, waitSeconds),
   setStreamHandler: (h) => void (streamHandler = h),
 };
 

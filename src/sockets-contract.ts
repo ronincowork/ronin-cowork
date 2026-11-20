@@ -1,7 +1,7 @@
 
 import type { TrailLine, WorkItem } from './work-items.js';
 
-export const CONTRACT_V = 14;
+export const CONTRACT_V = 15;
 
 export interface LaunchIdentity {
   key: string;
@@ -111,8 +111,12 @@ export interface Sockets {
    * seat's (every self-named caller field becomes its name), null is a 401. No cache.
    */
   addBearerCheck(cb: (token: string) => Promise<{ seat: string; status: string } | null>): void;
-  putSeat(seat: { name: string; status: string }): Promise<void>;   // throws for a live Agent's name
-  dropSeat(name: string): Promise<void>;
+  /** The seats are this list: each is put in or has its status changed, every seat not listed
+   *  goes with its inbox. A live Agent's name is skipped and logged. */
+  setSeats(seats: Array<{ name: string; status: string }>): Promise<void>;
+  /** Since the seat's last look, and the cursor moves. Nothing new: waits up to waitSeconds
+   *  (at most 90) for the first entry. */
+  readInbox(seat: string, waitSeconds?: number): Promise<Array<{ at: string; from: string; channel: string; text: string }>>;
   setStreamHandler(h: (...args: unknown[]) => void): void;
 }
 
