@@ -31,7 +31,7 @@ export async function handlePty(ws: WebSocket, url: URL, who: Person | null = nu
   let cols = clampDim(url.searchParams.get('cols'), 80);
   let rows = clampDim(url.searchParams.get('rows'), 24);
 
-  // A daimyo's seat is on the roster with no pane (src/seats.ts): there is nothing to attach.
+  // A gecko's seat is on the roster with no pane (src/seats.ts): there is nothing to attach.
   if (!isValidName(session) || !(await sessionExists(session)) || await readSeat(session)) {
     ws.send(JSON.stringify({ t: 'error', m: `No such session: ${session}` }));
     ws.close();

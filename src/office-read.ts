@@ -7,7 +7,7 @@
  *
  * THE MACHINE STATUS (owner, 2026-11-20; KAN-759: "one source of truth complete truth even if it is
  * pulling the answers from the machine various places"): what is set up, what is not and what is
- * available, for the owner, the Helpful Assistant, a lead or the daimyo. Sections: the machine
+ * available, for the owner, the Helpful Assistant, a lead or the gecko. Sections: the machine
  * (hosting, Ronin's version, disk); the people and the notes on them (library/ABOUT_USER.md); every
  * model provider Ronin knows, set up or not; developer tools (GitHub CLI); onboarding's steps; each
  * Workspace with its Summary (library/workspaces/<handle>.md, KAN-713) and the Teams and Agents
@@ -69,7 +69,7 @@ export function personLine(p: Pick<Person, 'email' | 'role'> & Partial<Person>):
 const list = (items: string[]): string[] => (items.length ? items.map((one) => `- ${one}`) : ['- none yet']);
 
 /** The office as it is now, as Markdown. With `only`, one Workspace and what is in it: a lead's
- * bearings (KAN-736). Every lead reads it, inside the office or out; a daimyo's overview is this. */
+ * bearings (KAN-736). Every lead reads it, inside the office or out; a gecko's overview is this. */
 export async function officeRead(only = ''): Promise<string> {
   const campaign = await initialCampaignId();
   const parts = { onDisk: discoverParts().map((part) => part.name), loaded: listServices() };
@@ -184,14 +184,14 @@ export async function officeRead(only = ''): Promise<string> {
     '## Flagged: waiting on someone', ...list(flagged), '',
     '## In Review: handed in', ...list(review), '',
   ];
-  const daimyo = seats.length ? ['## Daimyo', ...seats.map((seat) => `- ${seat.name}: ${seat.status || 'no status line'}`), ''] : [];
+  const gecko = seats.length ? ['## Gecko', ...seats.map((seat) => `- ${seat.name}: ${seat.status || 'no status line'}`), ''] : [];
   return [
     only ? `# Workspace ${only}` : '# This office', '', `As of ${new Date().toISOString().slice(0, 16).replace('T', ' ')} UTC.`, '',
     '## The machine', ...list(only ? [machineLine] : machineLines), '',
-    ...(only ? [...work, ...daimyo] : [
+    ...(only ? [...work, ...gecko] : [
       '## The people', ...list(people.length ? people.map(personLine) : [`The owner: ${NOT_FILLED}`]), '',
       '## Notes on them (library/ABOUT_USER.md)', notes.trim() || '- none yet', '',
-      ...daimyo,
+      ...gecko,
       '## Model providers', ...list(providerLines), '',
       '## Developer tools', ...list(toolLines), '',
       ...(onboarding ? [`## Onboarding (${onboarding.id}, ${onboarding.status})`, ...list(steps), ''] : []),

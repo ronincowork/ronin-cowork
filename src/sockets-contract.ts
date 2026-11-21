@@ -106,7 +106,7 @@ export interface Sockets {
   onItemChanged(cb: (change: ItemChange) => void | Promise<void>): void;
   addRoutes(mount: (app: unknown) => void): void;
   /**
-   * THE SEAT SOCKETS (KAN-734): a daimyo drives the office from outside on a token. Sign-in
+   * THE SEAT SOCKETS (KAN-734): a gecko drives the office from outside on a token. Sign-in
    * asks this for a Bearer that is not the CLI token; a seat answered makes the call that
    * seat's (every self-named caller field becomes its name), null is a 401. No cache.
    */

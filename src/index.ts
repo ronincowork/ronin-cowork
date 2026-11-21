@@ -176,11 +176,11 @@ function issueSession(res: express.Response): boolean {
 
 // Ronin's sign-in: every route below it, and /files ahead of the body parsers.
 function signIn(req: express.Request, res: express.Response, next: express.NextFunction) {
-  // A daimyo's token (KAN-734): the Services part says whose seat it is, on every call; the call is that seat's.
+  // A gecko's token (KAN-734): the Services part says whose seat it is, on every call; the call is that seat's.
   const bearer = req.headers.authorization?.startsWith('Bearer ') ? req.headers.authorization.slice(7) : '';
   if (bearer && !sameSecret(bearer, cliToken)) {
     return void seatOfBearer(bearer).then((found) => {
-      // res.locals.seat ({ seat, status }) tells a route the call is a seat's: the daimyo connector refuses one without it.
+      // res.locals.seat ({ seat, status }) tells a route the call is a seat's: the gecko connector refuses one without it.
       if (found) { asSeat(req, found.seat); res.locals.seat = found; return next(); }
       signedIn(req, res, next);
     }, () => signedIn(req, res, next));

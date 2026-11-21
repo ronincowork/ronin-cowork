@@ -1,6 +1,6 @@
 /* part of the ronin-cowork client — see js/README.md
  *
- * A DAIMYO'S TILE (KAN-755): a seat has no terminal (src/seats.ts). Where a terminal would be,
+ * A GECKO'S TILE (KAN-755): a seat has no terminal (src/seats.ts). Where a terminal would be,
  * its tile shows its status line and work record on top (the task at hand and the open items
  * it holds), then its Tells thread both ways, and the tile's own composer under it writes to
  * its inbox (POST /api/messages, as to any Agent). Everything here is the seat's pushed card:

@@ -10,7 +10,7 @@ TOOL_DIR=$(dirname "$SELF")
 usage() { cat <<'EOF_USAGE'
 Usage:
   office read     this office as it is now, the machine status: the machine (hosted or not,
-                  Ronin's version, disk), the people (About You) and the notes on them, a daimyo
+                  Ronin's version, disk), the people (About You) and the notes on them, a gecko
                   if one is on, every model provider (installed, signed in, Activated or not),
                   developer tools (GitHub CLI), onboarding's steps, each Workspace (its repos,
                   folders, integrations, plans and canvases, and its Teams: the lead and who works

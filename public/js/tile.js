@@ -92,7 +92,7 @@ export class Tile {
       onItem: (item) => openItemOver(this, item),
     });
     this.body.append(this.transcriptView.el);
-    // A DAIMYO'S SEAT has no terminal: its record and Tells thread stand where one would be.
+    // A GECKO'S SEAT has no terminal: its record and Tells thread stand where one would be.
     this.seatMode = false;
     this.seatView = makeSeatView();
     this.body.append(this.seatView.el);

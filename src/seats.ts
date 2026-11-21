@@ -1,4 +1,4 @@
-/* SEATS (KAN-734): a seat is on the office's roster with no terminal — a daimyo, the user's own
+/* SEATS (KAN-734): a seat is on the office's roster with no terminal — a gecko, the user's own
  * AI manager driving the office from outside. It joins Teams, leads and holds like an Agent:
  * tmux.ts lists it among the sessions and keeps its Teams and leads here, so every reader of
  * the roster (notices, holds, the board) sees it with no second path. What Ronin would type
@@ -6,7 +6,7 @@
  * read gives what came since the last one.
  *
  * A seat goes in and out only through the Sockets (setSeats): the Services part that checks the
- * daimyo's token follows the unit's daimyos.json with it. The record stays this small. */
+ * gecko's token follows the unit's geckos.json with it. The record stays this small. */
 import { watch as fsWatch } from 'node:fs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -14,7 +14,7 @@ import { storeDir } from './resources.js';
 
 export interface Seat {
   name: string;
-  kind: 'daimyo';
+  kind: 'gecko';
   /** The user's own line: how the office's Agents treat this seat ("treat as user"). */
   status: string;
   since: string;
@@ -47,7 +47,7 @@ export async function listSeats(): Promise<Seat[]> {
   return seats.filter((s): s is Seat => Boolean(s)).sort((a, b) => a.name.localeCompare(b.name));
 }
 
-/** THE SEATS ARE THE LIST (daimyos.json, via the Services part): each listed seat is put in or
+/** THE SEATS ARE THE LIST (geckos.json, via the Services part): each listed seat is put in or
  * has its status line changed; every seat not listed goes, with its inbox, and its items are
  * released by the sweep as an ending's are. A name a live Agent already has is skipped (its
  * notices would split) and logged. Returns the names that changed. */
@@ -65,7 +65,7 @@ export async function setSeats(list: Array<{ name: string; status: string }>, li
     if (before?.status === status) continue;
     if (!before && await liveAgent(name)) { console.error(`[seats] ${name} is already an Agent on this office; skipped.`); continue; }
     await writeAtomic(seatFile(name), JSON.stringify({
-      name, kind: 'daimyo', status, since: before?.since ?? new Date().toISOString(), teams: before?.teams ?? [], leads: before?.leads ?? [],
+      name, kind: 'gecko', status, since: before?.since ?? new Date().toISOString(), teams: before?.teams ?? [], leads: before?.leads ?? [],
     } satisfies Seat, null, 2));
     changed.push(name);
   }
@@ -91,7 +91,7 @@ export function asSeat(req: { path: string; body?: unknown }, name: string): voi
 }
 
 /** `to` marks the seat's own Tell (message-queue.ts): its tile's thread shows both ways; the
- * daimyo's inbox read leaves its own out. */
+ * gecko's inbox read leaves its own out. */
 export interface InboxEntry { at: string; from: string; channel: string; text: string; to?: string }
 
 export async function toInbox(name: string, entry: Omit<InboxEntry, 'at'>): Promise<InboxEntry> {

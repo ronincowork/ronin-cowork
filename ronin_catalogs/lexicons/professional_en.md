@@ -1060,7 +1060,7 @@ The pad's current config downloads as a backup first.
 - **koe.speak_failed:** Read aloud failed ({status}).
 - **koe.speed_help:** Playback speed — press for the next
 
-## seat — seat-view.js (a daimyo's tile: its status line, work record and Tells thread; KAN-755)
+## seat — seat-view.js (a gecko's tile: its status line, work record and Tells thread; KAN-755)
 - **seat.thread:** Tells
 - **seat.status:** Status line: {status}
 - **seat.status_none:** No status line.

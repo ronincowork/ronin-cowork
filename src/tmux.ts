@@ -34,7 +34,7 @@ export interface SessionInfo {
   /** READY (KAN-694): when the Agent last ran `ready`, saying it is about to speak to the person (ISO, '' never).
    *  A chat that honours it draws only what follows; nothing is refused without it. */
   ready: string;
-  /** A seat with no terminal (a daimyo, src/seats.ts): no pane to read, type into or end. */
+  /** A seat with no terminal (a gecko, src/seats.ts): no pane to read, type into or end. */
   seat?: true;
   /** The seat's status line, in the user's words ("treat as user"): its tile shows it. */
   seat_status?: string;
@@ -84,10 +84,10 @@ export async function sessionDir(name: string): Promise<string> {
 /** A seat with no terminal (src/seats.ts) is listed with the Agents: notices, holds and the
  *  roster find it the same way. Only a terminal's own operations know it has none. */
 const seatInfo = (seat: Seat): SessionInfo => ({
-  name: seat.name, title: `${seat.name} · daimyo`, windows: 0, attached: false,
+  name: seat.name, title: `${seat.name} · gecko`, windows: 0, attached: false,
   created: Math.floor(Date.parse(seat.since) / 1000) || 0, tags: parseTags(seat.teams.join(',')), leads: parseTags(seat.leads.join(',')),
   // The key sessionKey answers for a name with no pane, so its work record (and holds) are found.
-  key: seat.name, agent: 'daimyo', campaign_id: '', activity: 0, rireki: false, ready: '', seat: true, seat_status: seat.status,
+  key: seat.name, agent: 'gecko', campaign_id: '', activity: 0, rireki: false, ready: '', seat: true, seat_status: seat.status,
 });
 
 export async function listSessions(): Promise<SessionInfo[]> {

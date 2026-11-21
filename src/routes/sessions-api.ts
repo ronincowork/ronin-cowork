@@ -723,8 +723,8 @@ export function registerSessions(app: express.Express): void {
     return { teams, notices: await announceTeamChanges(name, before, teams) };
   };
   // ITS OWN RECORD over HTTP: what `work-record read` shows (objective, Teams, holds, watches,
-  // documents) and the objective it updates. A daimyo's seat has no shell to run work-record
-  // in, so the daimyo API reads and writes its record here, as the seat.
+  // documents) and the objective it updates. A gecko's seat has no shell to run work-record
+  // in, so the gecko API reads and writes its record here, as the seat.
   app.get('/api/sessions/:name/record', async (req, res) => {
     const { name } = req.params;
     if (!isValidName(name)) return res.status(400).json({ error: 'Invalid name.' });

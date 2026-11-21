@@ -77,7 +77,7 @@ function seedShell(
   repos: TegamiCheckout[],
   teams: TeamEntry[],
   sessionMandate: Mandate,
-  daimyo: DaimyoKey,
+  gecko: GeckoKey,
 ): string {
   return `# TEGAMI — ${name}
 > Your work record is what the owner reads on your tile. Keep it true.
@@ -88,10 +88,10 @@ function seedShell(
 >   the Work Item capability.
 > - **watches:** the work items you track without holding: \`item watch <id>\`; you hear
 >   of a status change on that item, nothing else.
-> - **teams**, **configuration**, **daimyo:** Ronin writes these and tells you when they change.
+> - **teams**, **configuration**, **gecko:** Ronin writes these and tells you when they change.
 
 \`\`\`json
-{ "objective": "",${daimyo ? `\n  "daimyo": ${JSON.stringify(daimyo)},` : ''}
+{ "objective": "",${gecko ? `\n  "gecko": ${JSON.stringify(gecko)},` : ''}
   "mandate": ${JSON.stringify(sessionMandate)},
   "teams": ${JSON.stringify(teams)},
   "repos": ${JSON.stringify(repos.filter((checkout) => checkout.repo || checkout.branch))},
@@ -188,8 +188,8 @@ export async function seedTegami(
   try {
     const file = tegamiPath(await sessionKey(name));
     await fs.mkdir(path.dirname(file), { recursive: true });
-    const daimyo = (await readSeat(name)) ? null : await daimyoKey();
-    await fs.writeFile(file, seedShell(name, Array.isArray(checkout) ? checkout : [checkout], teams, mandate(sessionMandate), daimyo), { flag: 'wx' });
+    const gecko = (await readSeat(name)) ? null : await geckoKey();
+    await fs.writeFile(file, seedShell(name, Array.isArray(checkout) ? checkout : [checkout], teams, mandate(sessionMandate), gecko), { flag: 'wx' });
     return file;
   } catch (e) {
     if ((e as NodeJS.ErrnoException)?.code === 'EEXIST') return tegamiPath(await sessionKey(name));
@@ -286,20 +286,20 @@ export async function writeConfiguration(name: string, by = name): Promise<boole
   return writeDerived(name, 'configuration', { title, project_root: await getProjectRoot(name) }, by);
 }
 
-/** THE DAIMYO KEY (KAN-735): while a seat is on the office, every Agent's record names it and the
+/** THE GECKO KEY (KAN-735): while a seat is on the office, every Agent's record names it and the
  * status line the user wrote for it; the brief says how to treat it. Nothing rides on messages. */
-export type DaimyoKey = Array<{ name: string; status: string }> | null;
+export type GeckoKey = Array<{ name: string; status: string }> | null;
 
-export async function daimyoKey(): Promise<DaimyoKey> {
+export async function geckoKey(): Promise<GeckoKey> {
   const seats = await listSeats();
   return seats.length ? seats.map((seat) => ({ name: seat.name, status: seat.status })) : null;
 }
 
 /** A seat came, went or its status changed: each live Agent's record that now differs is
  * written and acked ("Your work record changed"), the way a Team change is. */
-export async function daimyoChanged(by: string): Promise<void> {
-  const key = await daimyoKey();
-  for (const s of await listSessions()) if (!s.seat) await writeDerived(s.name, 'daimyo', key, by).catch(() => false);
+export async function geckoChanged(by: string): Promise<void> {
+  const key = await geckoKey();
+  for (const s of await listSessions()) if (!s.seat) await writeDerived(s.name, 'gecko', key, by).catch(() => false);
 }
 
 /** A Team changed (owner, 2026-10-21): its roster was written, or `moved` joined, left or was

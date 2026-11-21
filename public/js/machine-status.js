@@ -8,7 +8,7 @@ import { t } from './lexicon.js';
  * MACHINE STATUS (owner, 2026-11-20; KAN-759): the one complete truth of what this office has set
  * up, what it hasn't and what is available, as `office read` prints it (src/office-read.ts). Write
  * it now saves it to ~/ronin/library/MACHINE_STATUS.md, where the owner, the Helpful Assistant, a
- * lead or the daimyo read it; the surface shows what was last written and when. Any Ronin's
+ * lead or the gecko read it; the surface shows what was last written and when. Any Ronin's
  * Settings has it.
  */
 export function createMachineStatusSurface() {

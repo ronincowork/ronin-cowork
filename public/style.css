@@ -3191,7 +3191,7 @@ body {
 /* The Agent stopped at a question: its words, in the colour that means act. */
 .tile-transcript-entry[data-kind='ask'] { color: var(--bad); }
 .tile .tile-transcript { display: none; }
-/* A DAIMYO'S TILE (js/seat-view.js): its status line and work record, then its Tells thread,
+/* A GECKO'S TILE (js/seat-view.js): its status line and work record, then its Tells thread,
    then the message box, one column like Chat. The terminal's keys have nothing to act on. */
 .tile .tile-seat { display: none; }
 .tile-body[data-surface='seat'] { display: flex; flex-direction: column; padding: 0; }
@@ -4624,7 +4624,7 @@ button.wk-card { cursor: pointer; }
 .tile.transcript-on .composer .keysrow [data-terminal-action='copy'] {
   display: none;
 }
-/* A daimyo's tile (js/seat-view.js): the box in Chat's place and face; the terminal's keys and
+/* A gecko's tile (js/seat-view.js): the box in Chat's place and face; the terminal's keys and
    controls have no terminal to act on. */
 .tile.seat-on .tile-body[data-surface='seat'] > .composer.show { position: static; flex: none; }
 .tile.seat-on .composer textarea { font: var(--text-label)/var(--leading-body) var(--font-ui); }
@@ -4633,7 +4633,7 @@ button.wk-card { cursor: pointer; }
   .tile.seat-on .composer textarea { font-size: var(--text-heading); }
 }
 
-/* Not in Chat or a daimyo's tile: there the box is in the column, under the log, and reserving
+/* Not in Chat or a gecko's tile: there the box is in the column, under the log, and reserving
    its height again left that much empty screen under it on the phone (KAN-147). */
 .tile.keys-on:not(.tape-on) .tile-body:not([data-surface='chat'], [data-surface='seat']) {
   /* FitAddon reads computed height: give it the content area, excluding controls. */

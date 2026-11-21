@@ -22,7 +22,7 @@ export const STORES: readonly Store[] = [
   store('ageru', 'user', 'ageru'),
   store('ledger', 'data', 'ledger'),
   store('message_queue', 'data', 'message-queue'),
-  // Seats with no terminal (a daimyo) and their inboxes (src/seats.ts).
+  // Seats with no terminal (a gecko) and their inboxes (src/seats.ts).
   store('seats', 'data', 'seats'),
   store('behaviours', 'user', 'behaviours'),
   store('facts', 'user', 'facts'),

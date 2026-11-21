@@ -15,7 +15,7 @@ export function teamOfLine(line: string): string | null {
   return m ? m[1]! : null;
 }
 
-/** The roster's leads, a seat with no terminal (a daimyo) among them: its notice goes to its inbox. */
+/** The roster's leads, a seat with no terminal (a gecko) among them: its notice goes to its inbox. */
 export async function findLeads(team: string): Promise<string[]> {
   try {
     return leadsFor(team, (await listSessions()).filter((s) => !s.name.startsWith('grid_')));
