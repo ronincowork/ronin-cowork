@@ -17,7 +17,7 @@ route depends on the task, not on who is reading.
 | Give an Agent a file, image, or screenshot | [Share a file with an Agent](using-ronin/share-a-file.md) |
 | Connect an outside service (an MCP server, a web API, a bridge) | [Add an integration](using-ronin/add-an-integration.md) |
 | Start a Team | [New Team](using-ronin/new-team.md) |
-| Track work and coordinate Agents | [Project management](using-ronin/project-management.md), [work record](using-ronin/work-record.md), [work items](using-ronin/work-items.md), [wipeboards](using-ronin/wipeboards.md) and [Jira](using-ronin/jira.md) |
+| Track work and coordinate Agents | [Running work items](using-ronin/running-work-items.md), [work record](using-ronin/work-record.md), [work items](using-ronin/work-items.md), [wipeboards](using-ronin/wipeboards.md) and [Jira](using-ronin/jira.md) |
 | Stop, clear, copy, or close | [Terminal controls](using-ronin/terminal-controls.md) |
 | Archive or restore an Agent | [Archived sessions](using-ronin/archived-sessions.md) |
 | Use a private branch and hand work in | [Managed worktrees](using-ronin/desks.md) |

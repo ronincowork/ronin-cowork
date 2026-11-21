@@ -234,7 +234,7 @@ owner or traffic_control giving a Team's item to a member. `--from` names the gi
 handed the item leaves the first on. There is no receiver `none`: nothing goes to nobody. Work
 given back goes to its Team, `item handoff w12 team:surface`; an ending is a handover.
 
-When an Agent ends, what it held goes by its status (project-management.md, How an item lives): To Do back to its Team, In Progress and In
+When an Agent ends, what it held goes by its status (running-work-items.md, How an item lives): To Do back to its Team, In Progress and In
 Review handed over with a note, Done to nobody. A Done item is off the open lists at once: the
 work record, the tile's record and its header chip count it on one line ("Done, not yet archived:
 N (ids)", newest first) until it is archived, five days after Done or at once with `item archive` (`--done` for
@@ -269,7 +269,7 @@ from their own records. The lead's `work-record read` shows all four.
 
 ## Notices
 
-Six, and none twice; [Project management](project-management.md#who-is-told-what) has the
+Six, and none twice; [Running work items](running-work-items.md#who-is-told-what) has the
 table. Each person gets one notice per change, and a command on several items sends one notice
 listing them. An Agent's own changes tell nobody, and neither does an item taking its Jira key.
 

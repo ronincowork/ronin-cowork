@@ -65,7 +65,7 @@ function PAGES() {
       page('docs/using-ronin/share-a-file.md', t('help_outline.share', 'Share a file')),
       page('docs/using-ronin/add-an-integration.md', t('help_outline.add_integration', 'Add an integration')),
       page('docs/using-ronin/work-items.md', t('help_outline.work_items', 'Work items')),
-      page('docs/using-ronin/project-management.md', t('help_outline.project_management', 'Project management')),
+      page('docs/using-ronin/running-work-items.md', t('help_outline.running_work_items', 'Running work items')),
       page('docs/using-ronin/planning.md', t('help_outline.planning', 'Writing a plan')),
       page('docs/using-ronin/epic-templates.md', t('help_outline.epic_templates', 'Epic templates')),
       page('docs/using-ronin/wipeboards.md', t('help_outline.wipeboards', 'Wipeboards')),

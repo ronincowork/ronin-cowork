@@ -1,14 +1,14 @@
 # Project management: contents
 
 Every file behind Ronin's project management, and who reads it. Start with the README,
-[Project management, the Ronin way](../using-ronin/project-management.md); everything below is
+[Project management, the Ronin way](../using-ronin/running-work-items.md); everything below is
 where it is built or taught.
 
 ## For people
 
 | Doc | What it holds |
 |---|---|
-| [Project management](../using-ronin/project-management.md) | **The README.** Plan, epic, item; how an item lives; the three signals; the six notices; where the work shows (Jira Kanban or Scrum, Epics, the item island) |
+| [Running work items](../using-ronin/running-work-items.md) | **The README.** Plan, epic, item; how an item lives; the three signals; the six notices; where the work shows (Jira Kanban or Scrum, Epics, the item island) |
 | [Writing a plan](../using-ronin/planning.md) | the plan: who writes it, Draft and Ordered, the `plan` tool, from plan to epics, Park it (the Icebox), and the one copy of the template (`plan read --template` reads it) |
 | [Work items](../using-ronin/work-items.md) | the fields, levels, statuses and every `item` command |
 | [Jira](../using-ronin/jira.md) | connecting a space: the panel, the switches, Connect, Jira wins |

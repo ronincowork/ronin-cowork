@@ -32,7 +32,8 @@ Ronin refuses any other shape and says why. Every id an item has had still finds
 - Unsure: Task. Give a new item the epic it obviously belongs to (`--parent <epic>`); if none fits, no parent is fine.
 
 Write the objective as what done looks like to the person accepting it, in their words, one or
-two sentences. The technical detail belongs in the design doc or the commit.
+two sentences, with no code names. The technical detail goes in the item's first comment,
+starting "Brief:". Keep the title short and in their words too.
 
 ### Status
 | Status | Moved by |

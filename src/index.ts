@@ -110,12 +110,12 @@ if (isEntryPoint) await migrateItems().then((done) => {
 if (isEntryPoint) await rebuildIndex().then((rows) => console.log(`[work-items] live index: ${rows.length} live items`))
   .catch((error) => console.error(`[work-items] live index: ${(error as Error).message}`));
 // An Agent that vanished without an end through Ronin (a crash) gives up its items like any
-// ending (docs/using-ronin/project-management.md, How an item lives): a sweep every five minutes, two misses in a row.
+// ending (docs/using-ronin/running-work-items.md, How an item lives): a sweep every five minutes, two misses in a row.
 if (isEntryPoint) setInterval(() => {
   void releaseEndedHolders().then((ended) => {
     if (ended.length) console.log(`[work-items] released the items of ended ${ended.join(', ')}`);
   }).catch((error) => console.error(`[work-items] sweep: ${(error as Error).message}`));
-  // Done five days is archived (docs/using-ronin/project-management.md, How an item lives).
+  // Done five days is archived (docs/using-ronin/running-work-items.md, How an item lives).
   void archiveDone().then((archived) => {
     if (archived.length) console.log(`[work-items] archived, Done five days: ${archived.join(', ')}`);
   }).catch((error) => console.error(`[work-items] archive: ${(error as Error).message}`));

@@ -1,4 +1,4 @@
-# Project management, the Ronin way
+# Running work items
 
 Ronin keeps project management light. Docs hold the thinking, epics hold the work under way,
 and a work item exists only while someone is doing it. You see the work without asking, and

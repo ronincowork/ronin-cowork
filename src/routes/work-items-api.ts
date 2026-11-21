@@ -259,7 +259,7 @@ export function registerWorkItems(app: express.Express): void {
     if (verb === 'delete') app.delete('/api/work-items/:id', handler);
     else app.post(`/api/work-items/:id/${verb}`, handler);
   }
-  // The promotion marks a carried item on dev (docs/using-ronin/project-management.md, Three signals): { promotion }, no status change.
+  // The promotion marks a carried item on dev (docs/using-ronin/running-work-items.md, Three signals): { promotion }, no status change.
   app.post('/api/work-items/:id/on-dev', guarded(async (req, res) => {
     const promotion = text(req.body?.promotion)?.trim();
     if (!promotion) throw new WorkItemBadInput('name the promotion: { promotion }.');

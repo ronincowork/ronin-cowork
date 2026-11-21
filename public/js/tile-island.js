@@ -19,7 +19,7 @@
  * (epics-surface.js createItemBoard) over the tile with this Agent's items (`more()`, tilehead.js
  * openItemsBoard): a bar opens in place and minimizes back; the overlay's Close returns to the tile.
  *
- * THE HAND-IN MARK (docs/using-ronin/project-management.md, Three signals): beside the dot and the flag, an item In
+ * THE HAND-IN MARK (docs/using-ronin/running-work-items.md, Three signals): beside the dot and the flag, an item In
  * Review carries the latest of its signals, "handed in" or "on dev", with how long ago, so a
  * tile says what its Agent just handed in. At rest it is the mark alone; down, its words.
  *

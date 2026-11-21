@@ -205,9 +205,9 @@ async function main(): Promise<void> {
         // A hand-in is the repo's and never needs an item (owner, 2026-11-11; w415): without one the
         // code goes in and the acknowledgement tells the Agent to check its work items. Named, the
         // item goes to In Review with its note; a hand-in never moves an item to Done
-        // (docs/using-ronin/project-management.md, Three signals).
+        // (docs/using-ronin/running-work-items.md, Three signals).
         const underPm = await projectManagementOn(session);
-        // The Handed in note: the one comment the user reads (docs/using-ronin/project-management.md,
+        // The Handed in note: the one comment the user reads (docs/using-ronin/running-work-items.md,
         // How an item lives): the review line; missing or long, the acknowledgement prompts (KAN-429).
         const forUser = str(flags.get('note')).trim();
         let worst = 0;

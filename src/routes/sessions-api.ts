@@ -110,7 +110,7 @@ const openDeskRefusal = (name: string, desks: string[]): string =>
   + 'Close out first: commit, hand in, then session_end or Shut down Agent. '
   + `In an emergency (a stuck or dead pane): session_archive ${name} --ignore-desks keeps them for its restore.`;
 
-/** THE ITEM CHECK, the same on every way out (docs/using-ronin/project-management.md, How an
+/** THE ITEM CHECK, the same on every way out (docs/using-ronin/running-work-items.md, How an
  * item lives): session_end, archive, Delete, Hard Delete. It is a nudge, never a wall (owner,
  * 2026-11-12, KAN-415): an Agent holding work In Progress or In Review is refused once, each item
  * named, with NEXT in order: finish it if you can; if not, flag it; clean your desks; then go.
@@ -634,7 +634,7 @@ export function registerSessions(app: express.Express): void {
     const name = await sessionOfPane(pane);
     if (!name) return res.status(404).json({ error: `No session owns pane ${pane}.` });
     try {
-      // session_end hands over, never drops (docs/using-ronin/project-management.md, How an item
+      // session_end hands over, never drops (docs/using-ronin/running-work-items.md, How an item
       // lives): To Do goes back to the Team by itself; then the one item check every way out
       // shares (heldItemsRefusal) names In Progress and In Review, unless --ignore-items.
       await settleToDo(name);

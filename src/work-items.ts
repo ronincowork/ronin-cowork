@@ -153,7 +153,7 @@ export interface WorkItem {
   created: { at: string; by: string };
   /** The last hand-in: the Agent that handed it in, and when. Send back returns it there. */
   handed_in?: { by: string; at: string };
-  /** THE HAND-IN SIGNAL (docs/using-ronin/project-management.md, Three signals): every accepted hand-in, oldest first, even
+  /** THE HAND-IN SIGNAL (docs/using-ronin/running-work-items.md, Three signals): every accepted hand-in, oldest first, even
    * one never promoted; `receipt` null for a checkout's (no desk, no code to promote). */
   hand_ins?: HandIn[];
   /** THE PROMOTION SIGNAL (6a): the last promotion that carried a hand-in of this item to dev.
@@ -177,7 +177,7 @@ export function handInStage(item: Pick<WorkItem, 'hand_ins' | 'on_dev'>): 'lead'
   return item.on_dev && item.on_dev.at >= last.at ? 'ready' : 'lead';
 }
 
-/* THE NOTES A USER READS (docs/using-ronin/project-management.md, How an item lives): three
+/* THE NOTES A USER READS (docs/using-ronin/running-work-items.md, How an item lives): three
  * comments headed by their words, so Jira shows them as Ronin does. "Handed in: <note>" is what
  * the owner should look at, in one short line, written at a hand-in (--note; no commit ids, no
  * receipts: those stay on the trail; reviewPrompt asks for it when missing or long). "Handover from <agent>: <note>" is where an item stands
@@ -358,7 +358,7 @@ export async function appendTrail(id: string, by: string, change: (item: WorkIte
   return notified.length ? { ...answer(item, line), notified } : answer(item, line);
 }
 
-/* NOTICES (docs/using-ronin/project-management.md, Who is told what): a notice tells someone something they must act on,
+/* NOTICES (docs/using-ronin/running-work-items.md, Who is told what): a notice tells someone something they must act on,
  * and there are six, sent from here and nowhere else in the store:
  *   1. a hand-in, to the lead of the hander's Team: a desk's own message (desks/lead.ts)
  *      is the notice, so only a checkout's is sent here (handInUnlocked);
@@ -760,7 +760,7 @@ async function teamFor(item: WorkItem, mine: string[]): Promise<string | null> {
   return null;
 }
 
-/** THE HAND-IN (docs/using-ronin/project-management.md, How an item lives): the item moves to In
+/** THE HAND-IN (docs/using-ronin/running-work-items.md, How an item lives): the item moves to In
  * Review and records who handed it in (hand_ins, handed_in, the Handed in note), in one trail
  * line. Handing in code doesn't hand in the item (owner, 2026-11-05; KAN-269): the Agent keeps
  * the hold, no Team goes on. A desk's hand-in is told by the desk's own message (desks/lead.ts);
@@ -836,7 +836,7 @@ export function sendBack(given: string, words: string | undefined, by: string): 
   });
 }
 
-/** What session_end stops for (docs/using-ronin/project-management.md, How an item lives): the
+/** What session_end stops for (docs/using-ronin/running-work-items.md, How an item lives): the
  * items an Agent holds To Do, In Progress or In Review, each with the Team a handover gives it
  * to (null when no Team is found). session_end first settles To Do (settleToDo), so what it
  * names is what needs a handover. */
@@ -886,7 +886,7 @@ export function settleToDo(session: string): Promise<Acknowledged[]> {
   });
 }
 
-/** THE HANDOVER (docs/using-ronin/project-management.md, How an item lives): an ending Agent
+/** THE HANDOVER (docs/using-ronin/running-work-items.md, How an item lives): an ending Agent
  * hands an item on with where it stands and what is next. The note is a comment headed
  * "Handover from <agent>", the caller comes off and the receiver goes on, the status stays,
  * in one handoff line; `toDo` puts In Progress back to To Do in the same line. `flag` is the
@@ -1033,7 +1033,7 @@ export async function linkItem(id: string, type: string, other: string, by: stri
   });
 }
 
-/** Jira's delete (docs/using-ronin/project-management.md, Jira). The item goes, and with it
+/** Jira's delete (docs/using-ronin/running-work-items.md, Jira). The item goes, and with it
  * its subtasks (as Jira deletes an issue's subtasks); any other child is left with no parent (as
  * an epic's children are). Links to it go and every holder lets go of it. No flag: the bridge
  * decides what Jira does (an item made in Ronin goes there too; one that came from Jira stays
@@ -1311,7 +1311,7 @@ export function didLine({ item, line }: Acknowledged): string {
 }
 
 /** AN ENDING WITH NO AGENT TO ASK (Shut down Agent, archive, a crash; docs/using-ronin/
- * project-management.md, How an item lives): the Agent watches nothing, and each item it held
+ * running-work-items.md, How an item lives): the Agent watches nothing, and each item it held
  * goes by its status, never to nobody while a Team is found. Done goes to nobody; To Do goes to
  * the Team for its lead to give out again; anything else (In Progress, In Review) goes to the
  * Team flagged, its comment "Flagged: Ended without handover: <agent>, <status>". The flags are
