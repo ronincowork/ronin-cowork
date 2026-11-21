@@ -155,7 +155,8 @@ export function buildSecretAsk(tile) {
     else if (until === 'never') settle('saved', t('secret.saved_never', 'Saved: {name}, never expires', { name }));
     else if (until) settle('saved', t('secret.saved_expires', 'Saved: {name}, expires {date}', { name, date: until }));
     else settle('saved', t('secret.saved', 'Saved: {name}', { name }));
-    shown = setTimeout(() => { shown = null; open = null; view.sync(next ?? null); }, value == null ? 1000 : 2000);
+    // `open` stays the answered ask, so the sync sees a change and closes the field (KAN-757).
+    shown = setTimeout(() => { shown = null; view.sync(next ?? null); }, value == null ? 1000 : 2000);
   }
 
   root.addEventListener('submit', (event) => {
@@ -178,7 +179,6 @@ export function buildSecretAsk(tile) {
         if (!asked || asked.name === answered) { next = row; return; }
         clearTimeout(shown);
         shown = null;
-        open = null;
       }
       let ask = row?.secret_ask || null;
       if (!ask) answered = null;

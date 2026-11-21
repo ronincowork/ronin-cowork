@@ -67,6 +67,21 @@ REFUSED: Ronin is not running (socket at /home/you/.ronin/run/ronin.sock, nobody
 journalctl --user -u ronin.service -n 50 says why; start it with: systemctl --user start ronin
 ```
 
+## A gecko's token
+
+Over `RONIN_URL`, a Bearer that isn't the CLI token is a gecko's: sign-in asks the Services
+part that registered `sockets.addBearerCheck`, on every call and with no cache, whose seat it
+is. A seat answered makes the call that seat's: one step ([seats.ts](../../src/seats.ts),
+`asSeat`) sets every self-named caller field to the seat's name. Those fields are `by`,
+`caller`, `author`, `from` on the Team page, and `session` on `/api/cli`. The route also finds
+`res.locals.seat`, the check's `{ seat, status }`: the gecko connector answers 401 with its
+sign-in challenge when that is missing. A null answer falls
+through to the usual sign-in. A seat has no shell, so its own work record is read and its
+objective written over `GET`/`PATCH /api/sessions/:name/record` (what `work-record read` and
+`update_record --objective` do for an Agent); the record is seeded when the seat first comes in,
+and its holds move with `item` like anyone's. The status line the user wrote is told to Agents, never enforced
+by a tool.
+
 ## What this is not
 
 The browser uses `https://<full-Tailscale-DNS>:4810`, provided by Tailscale Serve.

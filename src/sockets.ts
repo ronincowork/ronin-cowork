@@ -12,6 +12,7 @@ const itemHooks: Array<(change: ItemChange) => void | Promise<void>> = [];
 const rowContribs: Array<(session: string) => Promise<RowFields> | RowFields> = [];
 const routeMounts: Array<(app: unknown) => void> = [];
 const activityHooks: Array<(session: string) => void> = [];
+const bearerChecks: Array<(token: string) => Promise<{ seat: string; status: string } | null>> = [];
 // The home push, set by ws/events.ts (which imports this file, so it is handed in, not imported).
 let pushRows: (session: string) => void = () => {};
 let streamHandler: ((...args: unknown[]) => void) | undefined;
@@ -31,6 +32,18 @@ export const sockets: Sockets = {
   // Connections are Core's; what a reading admits is the part's. This is the seam.
   deliverToWatchers: (session, make) => deliverToWatchers(session, make),
   addRoutes: (m) => void routeMounts.push(m),
+  addBearerCheck: (cb) => void bearerChecks.push(cb),
+  setSeats: async (list) => {
+    const { setSeats } = await import('./seats.js');
+    const { listSessions } = await import('./tmux.js');
+    const changed = await setSeats(list, async (name) => (await listSessions()).some((s) => s.name === name && !s.seat));
+    if (!changed.length) return;
+    const { geckoChanged, seedTegami } = await import('./tegami.js');
+    // A seat keeps its own work record (objective, holds), seeded once like an Agent's at birth.
+    for (const seat of (await listSessions()).filter((s) => s.seat && changed.includes(s.name))) await seedTegami(seat.name);
+    await geckoChanged(changed.join(', '));
+  },
+  readInbox: async (seat, waitSeconds) => (await import('./seats.js')).readInbox(seat, waitSeconds),
   setStreamHandler: (h) => void (streamHandler = h),
 };
 
@@ -105,6 +118,18 @@ export function emitItemChanged(change: ItemChange): void {
       console.error('[sockets] item hook:', e);
     }
   }
+}
+/** Whose seat a Bearer is: the first check that answers. Null for none (or no check registered). */
+export async function seatOfBearer(token: string): Promise<{ seat: string; status: string } | null> {
+  for (const check of bearerChecks) {
+    try {
+      const found = await check(token);
+      if (found?.seat) return found;
+    } catch (e) {
+      console.error('[sockets] bearer check:', e);
+    }
+  }
+  return null;
 }
 export function getStreamHandler(): ((...args: unknown[]) => void) | undefined {
   return streamHandler;

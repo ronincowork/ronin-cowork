@@ -290,7 +290,7 @@ async function osName(): Promise<string> {
   return m?.[1] ?? `${os.type()} ${os.release()}`;
 }
 
-async function machineFacts(): Promise<Record<string, unknown>> {
+export async function machineFacts(): Promise<Record<string, unknown>> {
   let virt: string | null = null;
   try {
     const { stdout } = await brokerExecFile('systemd-detect-virt', [], { timeout: 1500 });

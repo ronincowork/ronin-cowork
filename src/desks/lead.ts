@@ -1,31 +1,12 @@
-import { execFile } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { promisify } from 'node:util';
 import { execFile as brokerExecFile } from '../spawn-broker.js';
+import { listSessions } from '../tmux.js';
 
-const run = promisify(execFile);
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(HERE, '..', '..');
 
-export const SEP = '';
-
-export interface SessionRow { name: string; tags: string[]; leads: string[] }
-
-const split = (s: string): string[] => s.split(/[,\s]+/).map((t) => t.trim()).filter(Boolean);
-
-export function parseSessionRows(text: string): SessionRow[] {
-  const rows: SessionRow[] = [];
-  for (const line of text.split('\n')) {
-    if (!line.trim()) continue;
-    const [name = '', tags = '', leads = ''] = line.split(SEP);
-    if (!name || name.startsWith('grid_')) continue;
-    rows.push({ name, tags: split(tags), leads: split(leads) });
-  }
-  return rows;
-}
-
-export function leadsFor(team: string, rows: SessionRow[]): string[] {
+export function leadsFor(team: string, rows: Array<{ name: string; leads: string[] }>): string[] {
   return rows.filter((r) => r.leads.includes(team)).map((r) => r.name);
 }
 
@@ -34,10 +15,10 @@ export function teamOfLine(line: string): string | null {
   return m ? m[1]! : null;
 }
 
+/** The roster's leads, a seat with no terminal (a gecko) among them: its notice goes to its inbox. */
 export async function findLeads(team: string): Promise<string[]> {
   try {
-    const { stdout } = await run('tmux', ['list-sessions', '-F', `#{session_name}${SEP}#{@ronin-tags}${SEP}#{@ronin-lead}`]);
-    return leadsFor(team, parseSessionRows(stdout));
+    return leadsFor(team, (await listSessions()).filter((s) => !s.name.startsWith('grid_')));
   } catch {
     return [];
   }

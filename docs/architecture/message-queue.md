@@ -76,6 +76,24 @@ frame) names a signed-in person (src/office-people.ts). Their letter records the
 `From a@x.com, owner [Message box]:`, or `From Ann Lee <a@x.com>, owner, X Ltd [Ronin Box]:` when
 members.json carries a name and organization. Self-hosted, or a local caller, it is as above.
 
+## A seat's inbox
+
+A seat has no terminal to type into: a gecko, the user's own AI manager driving the office from
+outside ([seats.ts](../../src/seats.ts)). A letter for a seat skips the queue and lands in its
+inbox with its From and channel. The gecko reads it through the gecko API's `inbox` (the
+Services part, on the `readInbox` socket), "since my last look": each read gives what came after
+the cursor and moves the cursor. With nothing new, a read can wait up to 90 seconds for the
+first entry; it watches the store, so any writer wakes it. Nothing on the box reads a seat's
+inbox. The gecko's own Tells go out through the same `message` command as `edges send`, on its
+token, so the sender is the seat and the head reads `From @<gecko> [Tell]`; a Team's name goes
+to the Team's live lead(s). That Tell is also kept in the seat's own file, marked with `to`, so
+its tile shows the thread both ways (where a terminal would be); the inbox read leaves those out.
+What the user types in the gecko's tile goes in like any Message box letter. The server watches
+the seats store and pushes the seat's card (its `thread`) when the file moves. This isn't a second notice
+system. Every notice still goes through `enqueueMessage`, and a seat is on the roster
+(`listSessions`) with its Teams and leads, so a Team's notices reach a gecko lead the way they
+reach any lead.
+
 ## Retention and actions
 
 A letter remains while a recognized dialog is open, or while a draft holds it before the

@@ -9,9 +9,9 @@ Use `edges` whenever work crosses out of this session: a Tell to one Agent, a po
 Team's wipeboard, another session's record, rosters, Team pages, schedules. Your own record
 is `work-record`'s; a new Agent is `session_create`'s.
 
-**Tell** (`edges send <session> "<text>"`): one message to one session. The queue shows your
-name and channel; don't add a `from` line. `DELIVERED` and `QUEUED` both mean done; don't
-relay replies. `NO-SESSION`: no such session, nothing queued.
+**Tell** (`edges send <session|team> "<text>"`): to one session, or a Team's live lead. The
+queue shows your name and channel; don't add a `from` line. `DELIVERED` and `QUEUED` both mean
+done; don't relay replies. `NO-SESSION`: no such session or led Team, nothing queued.
 
 **Wipeboard** (`edges wipeboard`; `edges wipeboard post "<text>"`): the Team's board, for
 what everyone must see: rules, collisions, line state. A bare read prints what you haven't

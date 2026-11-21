@@ -194,7 +194,7 @@ else:
     d["ladder_state"] = want
 # "holds" and "at" are in this list because this path rebuilds the whole block from a
 # fixed set of keys, so a key missing from it is a key this switch DELETES.
-block = json.dumps({k: d[k] for k in ("objective", "mandate", "teams", "configuration", "repos", "holds", "ladder_state", "at") if k in d},
+block = json.dumps({k: d[k] for k in ("objective", "mandate", "teams", "configuration", "gecko", "brief", "repos", "holds", "watches", "ladder_state", "at") if k in d},
                    indent=2, ensure_ascii=False)
 tmp = src + ".sw"
 open(tmp, "w").write(text[:m.start(1)] + block + text[m.end(1):])
@@ -313,6 +313,9 @@ NOT_YOURS = {
     "configuration": "\"configuration\" is not yours to write.\n"
           "  It is DERIVED: the title and Workspace Ronin keeps for you.\n"
           "  Drop \"configuration\" and save again; it is carried through.",
+    "gecko": "\"gecko\" is not yours to write.\n"
+          "  It is DERIVED: the AI manager the user drives this office with, and its status line.\n"
+          "  Drop \"gecko\" and save again; it is carried through.",
     "role_family": "\"role_family\" is retired (R35, 2026-08-23).\n"
           "  A session has no identity axis of its own any more: identity is the TEAM\"s\n"
           "  team_role, on the team roster, worn contextually. Work readings are selected\n"
@@ -416,6 +419,16 @@ out = {"objective": d.get("objective", ""),
        "repos": repos}
 if isinstance(prev.get("configuration"), dict):
     out["configuration"] = prev["configuration"]
+# CARRY "gecko" THROUGH (KAN-735): the seat driving this office from outside and its status line.
+if isinstance(prev.get("gecko"), list):
+    out["gecko"] = prev["gecko"]
+# CARRY "brief" AND "watches" THROUGH: the brief document Ronin rebuilds the brief from, and the
+# items this Agent watches. A save without them was deleting both.
+if isinstance(prev.get("brief"), dict):
+    out["brief"] = prev["brief"]
+_watches = [w for w in (prev.get("watches") or []) if isinstance(w, str)]
+if _watches:
+    out["watches"] = _watches
 # CARRY "holds" THROUGH: the work item ids this session holds. Assign and release move
 # them, through the work item routes; a whole-block save never drops them.
 _holds = [h for h in (prev.get("holds") or []) if isinstance(h, str)]
@@ -455,7 +468,7 @@ TMP="$DIR/.tegami.$$"
 > - **repos:** the worktrees and branches you work in: `work-record workspace add|remove`.
 > - **holds:** the work items you hold; their status shows here. Work items:
 >   the Work Item capability.
-> - **teams**, **configuration:** Ronin writes these and tells you when they change.
+> - **teams**, **configuration**, **gecko:** Ronin writes these and tells you when they change.
 TEACH
   fi
   printf '\n```json\n%s\n```\n' "$BLOCK"

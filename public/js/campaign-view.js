@@ -14,6 +14,7 @@ import { createIntegrationsPanel } from './integrations-panel.js';
 import { request } from './request.js';
 import { coworkCommons } from './cowork-commons.js';
 import { accountCard } from './account-card.js';
+import { createMachineStatusSurface } from './machine-status.js';
 import { createFeedbackSurface, FEEDBACK_TYPE } from './feedback.js';
 import { createServicesSurface } from './setup-surfaces.js';
 import { readyMika } from './mika-ready.js';
@@ -95,6 +96,7 @@ export function createCampaignView() {
       const surface = coworkCommons({ tabs: MACHINE_TABS, label: t('campaign_view.machine', 'Machine'), campaign: selected });
       return { el: surface.el, show: () => surface.select(surface.current() || 'themes') };
     },
+    campaignMachineStatus: () => createMachineStatusSurface(),
     // Read when shown, not on a timer: reopening the surface is how a change at HQ arrives.
     campaignCloudAccount: () => {
       const surface = WorkspaceKit.primitives.createSurface({ label: t('campaign_view.cloud_account', 'Cloud Account'), className: 'cv-surface' });
