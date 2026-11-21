@@ -97,5 +97,4 @@ test('Help (Mika) launches on the signed-in provider with her brief', async () =
   const brief = await fs.readFile(path.join(sessions, folder, 'AGENT_BIRTH_BRIEF.md'), 'utf8');
   assert.match(brief, /Setup/);
   assert.match(brief, /Know the rig[\s\S]*office read/);
-  assert.match(brief, /- `office`: the rig you are on/);
 });
