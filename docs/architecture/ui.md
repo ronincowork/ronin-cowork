@@ -529,7 +529,8 @@ reserving a gutter.
 `check-modules` (cycles across the whole graph, orphans, resolution, top-level import
 use, the 700-line ceiling) · `smoke-ui` (the desktop Team page renders its tiles, seats
 and paints the gate's own probe session, and opens Configuration; the phone gets the
-mobile document's bar on its first paint) · `tests/` (behaviour, through the real server:
+mobile document's bar on its first paint; the probe ends through Ronin's Delete,
+`DELETE /api/sessions/:name`, so its session folder goes with it) · `tests/` (behaviour, through the real server:
 [verification](../development/verification.md)).
 
 ## Agents are data, not branches

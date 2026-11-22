@@ -81,6 +81,7 @@ let probeRefusal = null;
 let probeAvailable = false;
 
 function startProbe() {
+  if (tmux(['has-session', '-t', `=${PROBE}`]) !== null) deleteThroughRonin(PROBE);
   tmux(['kill-session', '-t', `=${PROBE}`]);
   try {
     execFileSync('tmux', ['new-session', '-d', '-s', PROBE, '-x', '120', '-y', '40'],
@@ -108,7 +109,18 @@ function stopProbe({ stale = false } = {}) {
   const owned = parsed
     .filter(([name, group]) => name && (roots.has(name) || roots.has(group)))
     .map(([name]) => name);
+  // Ronin's own Delete ends the probe, so its session folder goes with it (KAN-770); a bare
+  // kill-session left one gate_probe_<pid> folder per gate. Synchronous: this also runs on exit.
+  for (const name of roots) deleteThroughRonin(name);
   for (const name of owned.reverse()) tmux(['kill-session', '-t', `=${name}`]);
+}
+
+function deleteThroughRonin(name) {
+  try {
+    execFileSync('curl', ['-s', '-o', '/dev/null', '--max-time', '30', '-X', 'DELETE',
+      '-H', 'content-type: application/json', '-d', '{"ignore_items":true}',
+      `${URL_.replace(/#.*$/, '')}api/sessions/${encodeURIComponent(name)}`], { stdio: 'ignore' });
+  } catch { /* the tmux kill below still ends it */ }
 }
 
 async function attachProbe(page, label) {
