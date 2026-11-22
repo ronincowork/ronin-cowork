@@ -274,7 +274,8 @@ export function renderItemDetail(host, item, { holder = '', heldBy = null, openA
   answer.setAttribute('role', 'status');
   let statusStep = null;
   const flaggedWords = [t('work_items.flag_on', 'Yes'), t('work_items.flag_off', 'No')];
-  const question = ask([{ fields: [{ key: 'status', label: t('work_items.status', 'Status'),
+  // A library item has no status to move (KAN-769): no question is made for it.
+  const question = lib ? null : ask([{ fields: [{ key: 'status', label: t('work_items.status', 'Status'),
     options: statusChoices(item).map((v) => ({ v, l: v })) },
   { key: 'flagged', label: t('work_items.flagged_label', 'Flagged'), switch: flaggedWords }] }], {
     value: { status, flagged }, density: 'tight',
@@ -374,7 +375,9 @@ export function renderItemDetail(host, item, { holder = '', heldBy = null, openA
       if (openChild) { open.type = 'button'; open.addEventListener('click', () => openChild(child)); }
       const words = el('span', 'wi-child-words');
       words.append(el('span', 'wi-child-title', child.title || child.id), el('span', 'wi-when', [child.jira || child.id, child.status].filter(Boolean).join(' · ')));
-      open.append(kindMark(child.kind), words);
+      // A library item's tasks have no status, so no kind mark either: the Task mark reads as a
+      // ticked box, and the item would look all Done (KAN-769). The title alone.
+      if (lib) open.append(words); else open.append(kindMark(child.kind), words);
       row.append(open);
       list.append(row);
     }

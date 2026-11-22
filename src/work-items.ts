@@ -442,8 +442,8 @@ async function noticesOf(item: WorkItem, line: TrailLine): Promise<string[]> {
   return [];
 }
 
-/** Notice 4, an item handed to an Agent by someone else. */
-const handedNotice = (item: WorkItem, giver: string): string => `${item.id} '${item.title}' is yours, from ${giver}. Read it and follow its objective.`;
+/** Notice 4, an item handed to an Agent by someone else; a library checkout to another Agent says it too (library.ts). */
+export const handedNotice =(item: WorkItem, giver: string): string => `${item.id} '${item.title}' is yours, from ${giver}. Read it and follow its objective.`;
 
 /** Notice 6 to one Agent: what it still holds open, or, with nothing, its end. */
 async function doneNotice(item: WorkItem, name: string, by: string): Promise<string> {
