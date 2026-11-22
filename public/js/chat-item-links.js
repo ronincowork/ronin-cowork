@@ -1,6 +1,6 @@
 /*
  * LINKS IN CHAT (owner, 19 Nov): what a message names becomes a link when Ronin knows it, and
- * only then; anything else stays text. One pass over the drawn text, these kinds:
+ * only then; anything else stays text. One pass over the drawn text, three kinds:
  *
  *  - a work item's id (KAN-698): "Let's do Agent Harness (KAN-680)" — opens the tile's own item
  *    overlay; Close returns to the chat where it was. Known: in the pushed Epics and their items
@@ -12,8 +12,6 @@
  *    file-link route finds as a file (KAN-701): opens it in the tile's Docs.
  *  - a commit hash (db709a8) that is a commit in the Agent's repos (KAN-701): opens
  *    `git show --stat -p` of it in the tile's Docs, as a read-only page.
- *  - a web address (https://github.com/…/pull/149) (KAN-778): opens in a new tab; nothing is
- *    looked up, and a full stop or closing bracket after it stays text.
  *
  * One read per id or path per page, only for what the push and the session list cannot answer.
  */
@@ -32,10 +30,7 @@ const AGENT = String.raw`@?[a-z][a-z0-9_-]*[a-z0-9]`;
 const COMMIT = String.raw`(?=[0-9]*[a-f])[0-9a-f]{7,40}`;
 // A hash ends where a sentence may (f12cf12.), never before a file's extension (abc1234.md).
 const HASH_END = String.raw`(?!\w|\.\w)`;
-// A web address (KAN-778), matched before a document so github.com/… is not read as a path; it
-// ends before a sentence's full stop, comma or closing bracket (…/pull/149). or (…/pull/149)).
-const URL_ = String.raw`https?:\/\/[^\s<>"'\x60]*[^\s<>"'\x60.,;:!?)\]}]`;
-const TOKEN = new RegExp(String.raw`(?:(?<=\w@)(?<atcommit>${COMMIT})${HASH_END}|(?<![\w/.~@-])(?:(?<url>${URL_})|(?<item>${ITEM})|(?<commit>${COMMIT})${HASH_END}|(?<doc>${DOC})|(?<agent>${AGENT})))(?![\w/-])`, 'g');
+const TOKEN = new RegExp(String.raw`(?:(?<=\w@)(?<atcommit>${COMMIT})${HASH_END}|(?<![\w/.~@-])(?:(?<item>${ITEM})|(?<commit>${COMMIT})${HASH_END}|(?<doc>${DOC})|(?<agent>${AGENT})))(?![\w/-])`, 'g');
 const HAS_TOKEN = new RegExp(TOKEN.source); // a stateless test: the /g one carries lastIndex into matchAll
 const BARE_DOC = /^[\w.@+-]+\.(?:md|html?|txt|json|ya?ml|csv|pdf|png|jpe?g)$/i;
 
@@ -96,19 +91,7 @@ const dropAs = (kind, target) => (kind === 'item' ? { type: 'team.find-item', de
   : kind === 'agent' ? { type: 'session.terminal', detail: { key: target } }
     : { type: 'document', detail: { key: target } });
 
-/** A web address: a plain link to it, in a new tab; dragged, the browser's own link drag. */
-function webLink(doc, url) {
-  const a = doc.createElement('a');
-  a.className = 'chat-item-link chat-url-link';
-  a.href = url;
-  a.target = '_blank';
-  a.rel = 'noopener';
-  a.textContent = url;
-  return a;
-}
-
 function link(doc, words, kind, target, open, title) {
-  if (kind === 'url') return webLink(doc, words);
   const a = doc.createElement('a');
   a.className = `chat-item-link chat-${kind}-link`;
   a.href = '#';
@@ -151,8 +134,7 @@ export function linkChat(entry, open = {}) {
   for (const node of nodes) {
     const text = node.nodeValue;
     const found = [...text.matchAll(TOKEN)].map((m) => {
-      const { url, item, doc: path, agent } = m.groups;
-      if (url) return { at: m.index, words: url, kind: 'url', target: url }; // nothing to look up
+      const { item, doc: path, agent } = m.groups;
       const commit = m.groups.commit || m.groups.atcommit;
       const kind = item ? 'item' : commit ? 'commit' : path ? 'doc' : 'agent';
       const words = item || commit || path || agent;
