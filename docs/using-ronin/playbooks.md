@@ -24,7 +24,7 @@ item checkout PLAYBOOK-3 team:site
 ```
 
 With no receiver named, it goes to the Agent checking it out. A brief or a task can simply say
-"Check out PLAYBOOK-1 to see your next steps." In Find item, a playbook's **Check out** copies it
+"Check out PLAYBOOK-1 to see your next steps." In Find item, a playbook's **Assign to agent** copies it
 to the Agent or Team you pick and opens the new epic.
 
 ## What Ronin ships
@@ -44,8 +44,8 @@ live item. Yours are in `~/ronin/custom/playbooks/`, and a file of yours with a 
 replaces that one whole: the one rule of the
 [three places](../../ronin_stock/stock_readme.md#three-places-each-with-one-meaning).
 
-- In Find item, a playbook item's **Make my version** edits its title and objective, and adds an
-  item under it; saved, it is yours and replaces Ronin's. **Delete my version** removes your
+- In Find item, a playbook item's **Customize** edits its title and objective, and adds a
+  task (under an epic) or a subtask (under a task); saved, it is yours and replaces Ronin's. **Delete my version** removes your
   copy, and Ronin's is back. **New playbook**, under the list, makes a new one at the next free
   number.
 - `item edit PLAYBOOK-<n> --title … --objective …` edits one as any item; the edit is your copy.

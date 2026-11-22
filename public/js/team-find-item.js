@@ -26,7 +26,7 @@ export const asksPlaybooks = (typed) => /^playbooks?-?$/i.test(String(typed || '
 /**
  * THE PLAYBOOKS (docs/using-ronin/playbooks.md): work items. The list is one line per top item,
  * pressed to open it in the item reading (renderItemDetail, its children opening on a click, with
- * Check out and Make my version); New makes one of your own at the next free number.
+ * Assign to agent and Customize); New makes one of your own at the next free number.
  */
 function renderPlaybookList(host, items, open) {
   const { createAction } = WorkspaceKit.primitives;

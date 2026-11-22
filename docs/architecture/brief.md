@@ -452,7 +452,7 @@ and on no live list ([playbooks](../using-ronin/playbooks.md), `src/work-items.t
   playbook change never reaches it.
 - An Agent is pointed at one by its behaviour or task ("check out PLAYBOOK-1"), as the Helpful
   Assistant is for onboarding. Find Item reads a playbook as any item: its children open on a
-  press, with Check out and Make my version.
+  press, with Assign to agent and Customize.
 
 ## Where it is set in the UI
 
