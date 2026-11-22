@@ -166,6 +166,8 @@ What a message names is a link when Ronin knows it, and plain text otherwise:
   Workspace folders (or the folder holding them) or `~/ronin/office/`.
 - **A commit** (`db709a8`, or `dev@7e2b28b` as a hand-in says it): when it is a commit in one of the
   Agent's repos, `git show --stat -p` of it opens in Docs, to read.
+- **A web address** (`https://github.com/…/pull/149`): it opens in a new browser tab. A full stop,
+  comma or closing bracket after it is not part of the link.
 
 The Helpful Assistant's chat does the same over her chat. A document link shows the file's name;
 its whole path is its tooltip.
