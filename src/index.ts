@@ -40,7 +40,6 @@ import { registerPlans } from './routes/plans-api.js';
 import { registerCanvases } from './routes/canvases-api.js';
 import { registerSecrets } from './routes/secrets-api.js';
 import { registerWorkItems } from './routes/work-items-api.js';
-import { registerEpicTemplates } from './routes/epic-templates-api.js';
 import { registerPromotions } from './routes/promotions-api.js';
 import { epicsPush, everyItemReading } from './work-items-read.js';
 import { registerDocs } from './routes/docs-api.js';
@@ -303,7 +302,6 @@ registerPlans(app); // /api/plans* — the plan tool's door — src/routes/plans
 registerCanvases(app); // /api/canvases* — the canvas tool's door — src/routes/canvases-api.ts
 registerSecrets(app); // /api/secrets* — the secret tool's door: save, ask, names; never a value — src/routes/secrets-api.ts
 registerWorkItems(app); // /api/work-items* — the one door to the work item store — src/routes/work-items-api.ts
-registerEpicTemplates(app); // /api/epic-templates — the epic-template tool's door — src/routes/epic-templates-api.ts
 registerPromotions(app); // /api/promotions/:id/live — whether a promotion restarted and passed health (KAN-311) — src/routes/promotions-api.ts
 registerDesks(app); // /api/desks?session=<name> and funnel recovery — derived desk state — src/routes/desks-api.ts
 registerTeamPage(app); // /api/teams/:team/page — the team page's view, and drafts an agent hands it — src/routes/team-page-api.ts

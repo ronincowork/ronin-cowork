@@ -54,35 +54,25 @@ test('the person\'s own words are kept and read back', async () => {
   assert.equal((await ronin.api('/api/setup/user-intro')).body.intro.trim(), intro);
 });
 
-test('the onboarding epic starts with the template\'s tasks held by the Agent; a refresh keeps Done and remakes a missing task', async () => {
+test('checking out LIBRARY-1 makes its epic and tasks as plain live items held by the Agent (KAN-767)', async () => {
   await ronin.api('/api/launch', { body: { name: 'guide', provider: 'anthropic', prompt: 'Welcome them.' } });
   const asGuide = { TMUX_PANE: await ronin.tmux.run('display-message', '-p', '-t', '=guide:', '#{pane_id}') };
-  const template = ((await ronin.api('/api/epic-templates')).body.templates as Array<{ name: string; tasks: string[]; opens: string[] }>).find((t) => t.name === 'onboarding');
-  assert.ok(template?.tasks.length, 'the stock onboarding template is listed');
-  // Setup's selector: a pill opens what its task's Open line names (KAN-696), never a blank.
-  assert.equal(template.opens.length, template.tasks.length);
-  assert.ok(template.opens.includes('setup.providers'), JSON.stringify(template.opens));
+  const library = (await ronin.api('/api/work-items/LIBRARY-1')).body as { item: { title: string }; children: Array<{ title: string; objective: string }> };
+  assert.ok(library.children?.length, 'the stock onboarding item is in the library');
+  // Setup's selector: a pill opens what its task's Open line names (KAN-696).
+  assert.ok(library.children.some((task) => /^Open:\s*`setup\.providers`/m.test(task.objective)), 'an Open line is read from the file');
+  assert.ok(((await ronin.api('/api/work-items?library=1')).body.items as Array<{ id: string }>).some((one) => one.id === 'LIBRARY-1'), 'search --library lists it');
 
-  const started = await ronin.tool('epic-template', ['start', 'onboarding', '--to', 'guide'], { env: asGuide });
-  assert.equal(started.status, 0, started.stderr);
-  const epic = /\b(w\d+)\b/.exec(started.stdout)?.[1];
-  assert.ok(epic, started.stdout);
-  const tasks = async () => ((await ronin.api(`/api/work-items/${epic}`)).body.children ?? []) as Array<{ id: string; title: string; status: string }>;
-  const before = await tasks();
-  assert.deepEqual(before.map((t) => t.title), template.tasks, 'its tasks, in order');
-  for (const task of before) assert.deepEqual((await ronin.api(`/api/work-items/${task.id}`)).body.held_by, ['agent:guide']);
-
-  // What Irasshai's launch does with a started epic (Services irasshai part → Core's refreshTemplate).
-  const [first, , , , gone] = before;
-  assert.equal((await ronin.tool('item', ['transition', first.id, 'Done'], { env: asGuide })).status, 0);
-  assert.equal((await ronin.tool('item', ['delete', gone.id], { env: asGuide })).status, 0);
-  process.env.RONIN_USER_ROOT = ronin.env.RONIN_USER_ROOT;
-  process.env.RONIN_DATA_ROOT = ronin.env.RONIN_DATA_ROOT;
-  const { refreshTemplate } = await import('../src/epic-templates.js');
-  await refreshTemplate('onboarding', epic, { by: 'guide', to: 'guide' });
-  const after = await until(async () => { const now = await tasks(); return now.some((t) => t.title === gone.title) && now; }, 'the missing task remade');
-  assert.equal(after.find((t) => t.id === first.id)?.status, 'Done', 'what is done stays done');
-  assert.notEqual(after.find((t) => t.title === gone.title)?.id, gone.id, 'the missing task is made new');
+  const out = await ronin.tool('item', ['checkout', 'LIBRARY-1'], { env: asGuide });
+  assert.equal(out.status, 0, out.stderr);
+  const epic = /\bas (w\d+)\b/.exec(out.stdout)?.[1];
+  assert.ok(epic, out.stdout);
+  const tasks = await until(async () => { const now = ((await ronin.api(`/api/work-items/${epic}`)).body.children ?? []) as Array<{ id: string; title: string; status: string }>; return now.length && now; }, 'the copy has its tasks');
+  assert.deepEqual(tasks.map((t) => t.title), library.children.map((t) => t.title), 'its tasks, in order');
+  for (const task of tasks) {
+    assert.equal(task.status, 'To Do');
+    assert.deepEqual((await ronin.api(`/api/work-items/${task.id}`)).body.held_by, ['agent:guide']);
+  }
 });
 
 test('Help (Mika) launches on the signed-in provider with her brief', async () => {

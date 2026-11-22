@@ -10,9 +10,10 @@ plain() { local out; out=$(ronin_item_call GET "$2") || return $?; if [ -n "$as_
 die() { echo "$1" >&2; exit "${2:-2}"; }
 usage() { cat <<'EOF_USAGE'
 Usage:
-  item create --title <t> [--kind <type>] [--parent <id>] [--objective <o>] [--priority <p>] [--team <t>]
+  item create --title <t> [--kind <type>] [--parent <id>] [--objective <o>] [--priority <p>] [--team <t>] [--library]
   item read <id> [--json]
-  item search [--campaign <id>] [--team <t>] [--holder <name>|none] [--parent <id>|--no-parent] [--status <s>] [--kind <k>] [--text <words>] [--archived] [--json]
+  item search [--campaign <id>] [--team <t>] [--holder <name>|none] [--parent <id>|--no-parent] [--status <s>] [--kind <k>] [--text <words>] [--archived] [--library] [--json]
+  item checkout LIBRARY-<n> [<agent>|team:<name>]   item checkout <live id> --library
   item edit <id> --title|--objective|--kind|--parent <id|none>|--priority|--trello|--github <value> ...
   item transition <ids> "<status>" [--note "<what they can try>"]
   item handoff <ids> <agent>|team:<name> [--from <agent>|team:<name>] [--keep-holding]
@@ -43,6 +44,13 @@ search prints one line per item, '<id> | <status> | <holder> | <title>', the tit
 create lands on you, or with --team <t> on that Team (a lead's create lands on its team;
 leading several, name it). Any kind, an Epic too, with --parent or none. It answers
 "created <id> under <parent>" on its first line.
+checkout LIBRARY-<n> makes that library item's epic, tasks and subtasks as plain new items, To
+Do, held by the receiver (you, unless named), on its holds and tile; they keep no tie to the
+library. The library is files, one item tree each, named by id: stock in ronin_catalogs/library/,
+your own in ~/ronin/library_items/, which replaces stock by id. item search --library lists it,
+item read LIBRARY-<n> reads one. checkout <live id> --library files a live item and its children
+as a new library file.
+create --library makes a new library file; with --parent LIBRARY-<n>, a task added to that one.
 attach plan:<name> points an epic at its order (plan --help): stored as plan:<workspace>/<name>.
 watch tracks an item without holding it (yourself unless named; a team's on its roster).
 transition to In Review by its holder is a hand-in: the item goes to the Team, and --note is the
@@ -98,7 +106,11 @@ print(json.dumps(d))' "$BY" "$@"; }
 json() { python3 -c 'import json,sys; a=sys.argv[1:]; print(json.dumps(dict(zip(a[::2], a[1::2]))))' by "$BY" "$@"; }
 verb=$1; shift
 case "$verb" in
-  create) body=$(fields title,objective,parent,kind,priority,team "$@") || exit 2; ronin_item_call POST /api/work-items "$body"; exit $? ;;
+  create) lib=''; args=()
+    for a in "$@"; do [ "$a" = --library ] && lib=true || args+=("$a"); done
+    body=$(fields title,objective,parent,kind,priority,team "${args[@]}") || exit 2
+    [ -n "$lib" ] && body=$(python3 -c 'import json,sys; d = json.loads(sys.argv[1]); d["library"] = True; print(json.dumps(d))' "$body")
+    ronin_item_call POST /api/work-items "$body"; exit $? ;;
   search)
     q=''
     quote() { python3 -c 'import sys,urllib.parse; print(urllib.parse.quote(sys.argv[1]))' "$1"; }
@@ -107,7 +119,8 @@ case "$verb" in
         --campaign|--team|--holder|--parent|--status|--kind|--text) [ -n "${2:-}" ] || die "BAD-ARG: $1 needs a value"; q="$q&${1#--}=$(quote "$2")"; shift 2 ;;
         --no-parent) q="$q&no_parent=1"; shift ;;
         --archived) q="$q&archived=1"; shift ;;
-        *) die "BAD-ARG: item search takes --campaign, --team, --holder, --parent, --no-parent, --status, --kind, --text, --archived or --json, not $1" ;;
+        --library) q="$q&library=1"; shift ;;
+        *) die "BAD-ARG: item search takes --campaign, --team, --holder, --parent, --no-parent, --status, --kind, --text, --archived, --library or --json, not $1" ;;
       esac
     done
     plain search "/api/work-items?${q#&}"; exit $? ;;
@@ -199,6 +212,9 @@ case "$verb" in
     for a in "$@"; do [ "$a" = --remove ] && remove=true || args+=("$a"); done
     [ "${#args[@]}" -eq 2 ] || die 'BAD-ARG: item link takes <id> <type> <id> [--remove], the type as the space names it (Blocks)'
     ronin_item_call POST "/api/work-items/$id/link" "$(json type "${args[0]}" to "${args[1]}" ${remove:+remove true})" ;;
+  checkout) [ "$#" -le 1 ] || die 'BAD-ARG: item checkout takes LIBRARY-<n> [<agent>|team:<name>], or <live id> --library'
+    if [ "${1:-}" = --library ]; then ronin_item_call POST "/api/work-items/$id/checkout" "$(json library true)"
+    else ronin_item_call POST "/api/work-items/$id/checkout" "$(json ${1:+to "$1"})"; fi ;;
   archive) [ "$#" -eq 0 ] || die 'BAD-ARG: item archive takes <ids>, or --done [--team <t>]'
     item_act archive POST "$(json)" ;;
   delete) [ "$#" -eq 0 ] || die 'BAD-ARG: item delete takes <ids>'

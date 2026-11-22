@@ -150,9 +150,9 @@ async function resolvedEntries(nodes: MikaTaxonomyNode[], options: MikaKnowledge
     const names = [...new Set([...stock.keys(), ...owner.keys()])]
       // FACTS (docs/architecture/brief.md, The files and their header) are line templates over an Agent's record: nothing to read about Ronin.
       .filter((name) => !(node.root === 'ronin_catalogs' && name.startsWith('facts/')))
-      // EPIC TEMPLATES and WORKSPACE TYPES are read through their own tools (epic-template list,
-      // ronin-help new-workspace), as mandate values are through the forms: not indexed twice.
-      .filter((name) => !(node.root === 'ronin_catalogs' && (name.startsWith('epic_templates/') || name.startsWith('workspace_types/'))))
+      // THE LIBRARY'S SHIPPED ITEMS and WORKSPACE TYPES are read through their own tools (item search
+      // --library, ronin-help new-workspace), as mandate values are through the forms: not indexed twice.
+      .filter((name) => !(node.root === 'ronin_catalogs' && (name.startsWith('library/') || name.startsWith('workspace_types/'))))
       // A more specific taxonomy root owns its subtree and its owner overlay.
       .filter((name) => !delegated.some((root) => name === root || name.startsWith(`${root}/`)))
       .sort((a, b) => Buffer.from(a).compare(Buffer.from(b)));

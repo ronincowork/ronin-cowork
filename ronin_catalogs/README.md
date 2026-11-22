@@ -34,7 +34,7 @@ input; identical subject names across directories do not make the documents inte
 | `behaviours/` | one file per behaviour, flat | How an Agent works; its header says when and how much it is told. |
 | `tools/` | one file per tool or family | What the brief says about each executable in `ronin_bin/`, and which behaviour it serves. |
 | `workspace_types/` | one file per project type and per variant (`code`, `website` … `github`, `publishing` …). | What a new Workspace can be; the new-workspace behaviour lists them (`lists: workspace_types`). |
-| `epic_templates/` | one file per template (`onboarding`, `import-project`). | An epic and its tasks that `epic-template start` makes as work items and gives to an Agent to walk through (`ronin-help epic-templates`). |
+| `library/` | one file per shipped library item, named by its fixed id (`LIBRARY-1-onboarding.md`). | Ronin's own library items: each read onto the shelf at start when its id is missing, never rewritten; `item checkout` copies one into live work (`ronin-help library`). |
 | `services/` | `ronin_services.md`. | Ronin Services: Ronin's own switchable contribution and the parts it runs. Not a tool. |
 | `desk_profiles/` | `home.md`, `league.md`, `professional.md`, `terminal.md`, `vibe_code.md`. | Named presentation and workspace defaults copied into Campaign configuration. |
 | `lexicons/` | `home_en.md`, `league_en.md`, `professional_en.md`, `terminal_en.md`, `vibe_code_en.md`. | Surface-language overrides; `professional_en.md` is the complete floor. |

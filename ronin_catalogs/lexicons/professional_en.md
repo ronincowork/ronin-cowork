@@ -829,7 +829,7 @@ The pad's current config downloads as a backup first.
 ## help_outline — help-outline.js (the Help workbench's pages)
 - **help_outline.running_work_items:** Running work items
 - **help_outline.planning:** Writing a plan
-- **help_outline.epic_templates:** Epic templates
+- **help_outline.library:** The library
 
 ## docs — docs.js (the ▧ Docs tab)
 - **docs.back_title:** Back to the list

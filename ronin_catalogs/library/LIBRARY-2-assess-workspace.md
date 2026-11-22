@@ -1,10 +1,9 @@
 # Writing a Workspace's Summary
-- **for:** a Workspace whose doc has no Summary yet; one fresh Agent per Workspace
-- **order:** 30
 
-You were started to write one Workspace's Summary (its handle is this epic's last line), so other
-Agents know what it is. Started for each Workspace that `workspace-doc list` shows with no summary
-yet: `session_create <name>`, then `epic-template start assess-workspace --to <name> --workspace <handle>`.
+You were started to write one Workspace's Summary (its handle is in this epic's comment
+"Workspace: <handle>"), so other Agents know what it is. Started for each Workspace that
+`workspace-doc list` shows with no summary yet: `session_create <name>`, then
+`item checkout LIBRARY-2 <name>` and `item comment <its new epic> "Workspace: <handle>"`.
 The tasks are this epic's children; match each by its title, and work them in order.
 Rules:
 - Read; don't change their project. Nothing is moved, renamed, installed or committed.

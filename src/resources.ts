@@ -26,6 +26,8 @@ export const STORES: readonly Store[] = [
   store('behaviours', 'user', 'behaviours'),
   store('facts', 'user', 'facts'),
   store('library', 'user', 'library'),
+  // The person's own library items, over stock ronin_catalogs/library/ by id (src/library.ts; KAN-767).
+  store('library_items', 'user', 'library_items'),
   store('wipeboards', 'user', 'wipeboards'),
   store('jikan', 'user', 'jikan'),
   store('team_rosters', 'user', 'team_rosters'),

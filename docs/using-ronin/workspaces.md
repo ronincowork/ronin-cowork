@@ -35,9 +35,8 @@ It is the one place its notes live. It starts with a **Summary**, a few lines on
 Workspace is for and what is in it, then notes. The Workspace's page shows the whole doc as its
 Summary; press **Edit** to change it there. `office read` shows each Summary. Agents read and
 write it with `workspace-doc` (`workspace-doc --help`); it is a plain file, so you can open it
-too. A Workspace without a Summary gets one from the `assess-workspace`
-[epic template](epic-templates.md): a fresh Agent reads its folders and repositories, writes
-the Summary, and ends.
+too. A Workspace without a Summary gets one from LIBRARY-2 in the [library](library.md): a fresh
+Agent it is checked out to reads its folders and repositories, writes the Summary, and ends.
 
 ## Make or change a Workspace
 

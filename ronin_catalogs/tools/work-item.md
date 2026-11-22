@@ -24,6 +24,8 @@
 | `item link` | write: a link by type name (Blocks, Relates, …) |
 | `item archive` | write: one or several Done items off every list now, as five days Done does; `--done [--team <t>]` clears every Done item you or your Teams hold; an item not Done is refused |
 | `item delete` | write: one or several items go, with their subtasks |
+| `item checkout` | write: `LIBRARY-<n> [<agent>\|team:<name>]` makes that library item's epic and tasks as plain new items, To Do, held by the receiver (you, unless named); `<live id> --library` files a live item and its children as a new library item |
+| `item search --library`, `item read LIBRARY-<n>` | read: the library's items, and one with its tasks; `item create --library` makes a new one |
 
 ## Syntax
 

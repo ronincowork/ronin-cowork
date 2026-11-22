@@ -5,7 +5,7 @@
  * - the Assist surface is her chat only: her conversation as Chat draws it (tile-transcript.js)
  *   and the message box under it, with no tile chrome; its header's one tool is the tile's
  *   Term / Chat toggle, to her terminal and back (KAN-717);
- * - the selector's steps are her onboarding epic's tasks, in the template's order, a done one
+ * - the selector's steps are her onboarding epic's tasks, in LIBRARY-1's order, a done one
  *   marked ✓; a press asks her to take that step, one line through the message queue, shown in
  *   her chat at once ("Let's do Workspace.", never an id); a press on a done one sends her nothing
  *   and opens the surface its task's Open line names (KAN-699).
@@ -58,19 +58,23 @@ export const irasshaiSetup = () => irasshaiLive() || !onboardingDone(get('epics'
 /** Her session's birth key, as the pushed session list says; '' when she is not live. */
 export const irasshaiKey = () => (irasshaiIn(S.sessions) ? String(S.sessions.find((one) => one.name === IRASSHAI)?.key || IRASSHAI) : '');
 
-/** The onboarding template's task titles, read once: the steps' order; and the surface each task's Open line names. */
+/** The library's onboarding item (KAN-767): her epic is checked out from it. */
+export const ONBOARDING = 'LIBRARY-1';
+/** Its tasks' titles, read once from the library: the steps' order; and the surface each task's Open line names. */
 let order = null;
 const opens = new Map();
 export function irasshaiOrder(onRead) {
   if (order) return order;
   order = [];
-  void request('/api/epic-templates').then((result) => {
-    const onboarding = result.ok ? (result.data.templates || []).find((one) => one.name === 'onboarding') : null;
-    if (onboarding) {
-      order = onboarding.tasks.slice();
-      order.forEach((title, at) => { if (onboarding.opens?.[at]) opens.set(title, onboarding.opens[at]); });
-      onRead?.();
+  void request(`/api/work-items/${ONBOARDING}`).then((result) => {
+    const tasks = result.ok && Array.isArray(result.data.children) ? result.data.children : [];
+    if (!tasks.length) return;
+    order = tasks.map((task) => task.title);
+    for (const task of tasks) {
+      const surface = /^Open:\s*`([^`]+)`/m.exec(String(task.objective || ''))?.[1];
+      if (surface) opens.set(task.title, surface);
     }
+    onRead?.();
   });
   return order;
 }

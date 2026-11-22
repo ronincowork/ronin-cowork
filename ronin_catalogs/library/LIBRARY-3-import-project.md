@@ -1,9 +1,7 @@
 # Mapping a project they brought in
-- **for:** a person who has brought an existing project (a repository or folders) into a Workspace
-- **order:** 20
 
-This person has brought an existing project into their Workspace (its name is this epic's last
-line). Map it, show them the map, and tell them what you found. The tasks are this epic's
+This person has brought an existing project into their Workspace (its handle is in this epic's
+comment "Workspace: <handle>"). Map it, show them the map, and tell them what you found. The tasks are this epic's
 children (`item read` on this epic lists them); match each by its title, and work them in order.
 Rules:
 - Read; don't change their project. Nothing is moved, renamed, installed or committed.

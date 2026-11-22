@@ -164,6 +164,12 @@
   .find-item-number::placeholder { color: var(--muted); font-weight: var(--weight-regular); }
   .find-item-ask .find-item-go { height: var(--ask-h); align-self: flex-start; }
   .find-item-reading:not(:empty) { margin-top: var(--space-section); padding-top: var(--space-section); border-top: var(--edge) solid var(--line); }
+  /* The library (KAN-767): one plain line per item; a reading's tasks as a numbered list. */
+  .find-item-library { display: flex; flex-direction: column; gap: var(--space-section); }
+  .find-item-library-row { text-align: left; padding: 0; border: 0; background: transparent; color: inherit; font: inherit; cursor: pointer; white-space: normal; }
+  .find-item-library-row:hover, .find-item-library-row:focus-visible { color: var(--kaki); }
+  .find-item-library-tasks { margin: var(--space-section) 0; padding-left: 1.5em; }
+  .find-item-reading .find-item-library-tasks + .ask, .find-item-reading .wi-objective { margin-bottom: var(--space-section); white-space: pre-wrap; }
   /* An Agent over the work surface its item sits in (KAN-435): its own tile fills the layer under the Close. */
   .work-overlay.item-agent { display: flex; flex-direction: column; overflow: hidden; z-index: 20; }
   .work-overlay.item-agent > :last-child { flex: 1 1 auto; min-height: 0; }

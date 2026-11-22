@@ -12,6 +12,7 @@ import {
 import { agentReading, epicCards, everyItemReading, teamReading, type HeldItem } from '../work-items-read.js';
 import { liveRows, rowOf } from '../work-items-index.js';
 import { pushTeams } from '../ws/events.js';
+import { checkoutLibrary, createLibrary, fileToLibrary, isLibraryId, libraryReading, libraryText, listLibrary, readLibrary } from '../library.js';
 
 const text = (value: unknown): string | undefined => typeof value === 'string' ? value : value === undefined || value === null ? undefined : String(value);
 
@@ -116,6 +117,14 @@ export function registerWorkItems(app: express.Express): void {
       const reading = await teamReading(team);
       return res.json({ ok: true, ...reading, items: await texted(narrow(reading.items)) });
     }
+    // ?library=1: the library's files instead (KAN-767), each one row; ?text reads its whole tree.
+    if (text(req.query.library)) {
+      const shelf = (await listLibrary()).filter((one) => {
+        const all = `${libraryText(one)}`.toLowerCase();
+        return words.every((word) => all.includes(word));
+      });
+      return res.json({ ok: true, items: shelf.map((one) => ({ id: one.id, title: one.title, status: 'Library', kind: 'Epic', level: 1, parent: null, holders: [], holder: '', tasks: one.under.length, origin: one.origin })) });
+    }
     const every: Array<HeldItem & { archived?: { at: string } }> = await everyItemReading();
     // ?archived=1: history too. Archived items have no row, so their files are read (item search --archived).
     if (archived) for (const item of await listItems()) if (item.archived) every.push({ ...rowOf(item), holders: [], holder: '', archived: item.archived });
@@ -124,6 +133,11 @@ export function registerWorkItems(app: express.Express): void {
 
   app.post('/api/work-items', guarded(async (req, res) => {
     const b = req.body ?? {};
+    // --library: a new file in the person's library, or a task added to one (KAN-767).
+    if (b.library === true || b.library === 'true') {
+      const made = await createLibrary(text(b.title) ?? '', text(b.objective) ?? '', text(b.parent)?.trim() || undefined);
+      return res.json({ ok: true, id: made.id, file: made.file, acknowledgement: `${b.parent ? `added to ${made.id}` : `made ${made.id}`} in the library: ${made.file}` });
+    }
     const done = await createItem({
       title: text(b.title) ?? '', objective: text(b.objective), status: text(b.status), kind: text(b.kind), priority: text(b.priority), parent: text(b.parent) || null,
       ...(b.team || b.session ? { holder: holderFrom(b) } : {}),
@@ -133,6 +147,8 @@ export function registerWorkItems(app: express.Express): void {
   }));
 
   app.get('/api/work-items/:id', guarded(async (req, res) => {
+    // A library id reads its file (KAN-767): the epic, its tasks as children.
+    if (isLibraryId(req.params.id!)) return res.json({ ok: true, held_by: [], ...libraryReading(await readLibrary(req.params.id!)) });
     const item = await readItem(req.params.id);
     if (!item) throw new WorkItemMissing(`No work item ${req.params.id}.`);
     // Jira's read: the fields, comments, attachments, links both ways and history (trail). The
@@ -268,6 +284,19 @@ export function registerWorkItems(app: express.Express): void {
   // Send back (Waiting on you): In Progress with the comment, back to the Agent that handed it in.
   app.post('/api/work-items/:id/send-back', guarded(async (req, res) => {
     acknowledge(res, await sendBack(req.params.id!, text(req.body?.text), callerOf(req)));
+  }));
+  // CHECKOUT (KAN-767): LIBRARY-n made as plain new live items held by { to } (an Agent, or
+  // team:<name>; the caller with none); a live item with { library: true } filed as a new file.
+  app.post('/api/work-items/:id/checkout', guarded(async (req, res) => {
+    const by = callerOf(req);
+    if (req.body?.library === true || req.body?.library === 'true') {
+      const filed = await fileToLibrary(req.params.id!);
+      return res.json({ ok: true, id: filed.id, file: filed.file, acknowledgement: `filed as ${filed.id} in the library: ${filed.file}` });
+    }
+    if (!isLibraryId(req.params.id!)) throw new WorkItemBadInput(`checkout takes a library item (LIBRARY-<n>), or a live one with --library to file it; not ${req.params.id}.`);
+    const to = text(req.body?.to)?.trim() || by;
+    const { epic, made } = await checkoutLibrary(req.params.id!, to.startsWith('team:') ? { kind: 'team', name: to.slice(5) } : { kind: 'agent', name: to.replace(/^agent:/, '') }, by);
+    res.json({ ok: true, item: epic, made, acknowledgement: `checked out ${req.params.id} as ${epic.id} (${made.length} items), held by ${to}. Read it: item read ${epic.id}` });
   }));
   app.post('/api/work-items/:id/attach', guarded(async (req, res) => {
     const remove = req.body?.remove === true || req.body?.remove === 'true';

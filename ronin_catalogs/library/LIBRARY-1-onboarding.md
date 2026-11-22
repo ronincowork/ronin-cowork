@@ -1,6 +1,4 @@
 # Getting set up in your new office
-- **for:** a person who has just moved into their office
-- **order:** 10
 
 Irasshai: this person has just moved into their office. Get them started, in this order as their project allows:
 1. Your setup
@@ -17,7 +15,7 @@ The tasks are this epic's children; match each by its title, and find its steps 
 
 ## Your setup
 Do: before your first words, understand where they are (the person and their project, their account, and this office as your work record has it) and write it down in their record, `~/ronin/library/ABOUT_USER.md`: find its `## Where they are` section and update it, or make it new. For each Workspace with no summary yet, start a fresh Agent to write it, and don't wait for it: summaries arrive in `office read` as they are written. Then close this task; what you understood is what you start the conversation from.
-Details: your work record's What you know; `office read`; per Workspace with no summary (`workspace-doc list`): `session_create <name>`, then `epic-template start assess-workspace --to <name> --workspace <handle>`.
+Details: your work record's What you know; `office read`; per Workspace with no summary (`workspace-doc list`): `session_create <name>`, then `item checkout LIBRARY-2 <name>` and `item comment <its new epic> "Workspace: <handle>"`.
 Check: ABOUT_USER.md has Where they are, as things stand.
 
 ## Agent Harness
@@ -49,7 +47,7 @@ Check: the Workspace lists them.
 
 ### Start Team 1
 Do: once the Workspace exists, its first Team's lead started in the background: given the import-project epic if they brought in an existing project, else left to make its own assessment.
-Details: the Team with `team roster write <team> --workspace <handle>`, its lead with `session_create <lead> --team <team> --role lead`, then `epic-template start import-project --to <lead>`; `ronin-help new-workspace`.
+Details: the Team with `team roster write <team> --workspace <handle>`, its lead with `session_create <lead> --team <team> --role lead`, then `item checkout LIBRARY-3 <lead>` and `item comment <its new epic> "Workspace: <handle>"`; `ronin-help new-workspace`.
 Check: the lead is running in the Workspace, holding the import-project epic or doing its own assessment.
 
 ## Integrations
