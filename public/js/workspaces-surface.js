@@ -1,14 +1,15 @@
 /* part of the ronin-cowork client — see js/README.md */
 /**
- * THE WORKSPACES WORKBENCH'S SURFACES (owner, 2026-11-02; KAN-728). The Workspace is the organizing
+ * THE WORKSPACES WORKBENCH'S SURFACES (owner, 2026-11-02; KAN-728; KAN-784). The Workspace is the organizing
  * principle: Ronin keeps no folder list of its own, and a folder or repository is a row of its
  * Workspace record (src/workspaces.ts). Tilespace 1 holds the Workspaces (`createWorkspaceStones`), each
- * stone its name only. A pressed one's page (`workspacePage`) is the record: its Summary (the
- * Workspace's Markdown file, edited there), its folders as name and path, Add a folder and Clone from
- * GitHub, then Integrations, Agent info and Behaviors; Archive is under ⋯. A stone dragged or a card
- * placed opens it whole in a tilespace (`createWorkspaceRecord`); New Workspace is a dotted card
- * (`createWorkspaceNew`). A folder link dragged in from Files (`/files/<path under home>`, KAN-146)
- * adds that folder. GitHub CLI (`createFolderGithub`) is the sign-in box github-workspace-setup.js draws.
+ * stone its name, what it is for and the Teams in it. A pressed one opens beside them as one Workspace
+ * (`workspaceSurface`): a toggle, Work (its Teams or Epics, to drill into) or Config (`workspacePage`:
+ * its Summary, folders, Integrations, Agent info and Behaviors; Archive under ⋯), and Launch to its own
+ * page, `#/workspace/<name>` (`createWorkspaceRoute`). A stone dragged or a card placed opens it whole in
+ * a tilespace (`createWorkspaceRecord`); New Workspace is a dotted card (`createWorkspaceNew`). A folder
+ * link dragged in from Files (`/files/<path under home>`, KAN-146) adds that folder. GitHub CLI
+ * (`createFolderGithub`) is the sign-in box github-workspace-setup.js draws.
  */
 import { openCanvas } from './canvas-view.js';
 import { WorkspaceKit } from './workspace-kit.js';
@@ -21,7 +22,13 @@ import { ask } from './ask.js';
 import { createFolderPicker } from './folder-picker.js';
 import { createMenuButton } from './menu.js';
 import { renderMarkdownDocument } from './markdown-reader.js';
-import { subscribe as subscribeTeams, teamsFromState } from './team-controller.js';
+import { membersOfTeam, subscribe as subscribeTeams, teamsFromState } from './team-controller.js';
+import { attentionWords, createEpicOne, createEpicsRead, holderOfItem } from './epics-surface.js';
+import { epicAttention, isOpenEpic } from './epic-stage.js';
+import { listedTeam } from './roster-groups.js';
+import { openWorkspaceTab } from './workspace.js';
+import { S } from './state.js';
+import { createWorkspacesRead } from './workspaces-read.js';
 import { SURFACE_DRAG } from './workbench.js';
 
 const status = () => { const line = el('div', 'pr-status'); line.setAttribute('role', 'status'); return line; };
@@ -508,10 +515,141 @@ const dragWorkspace = (stone, type) => (!type ? stone : {
   } },
 });
 
-/** The stones of Workspaces, each its name only (owner, 2026-11-02), under a Show question as the Teams
- * stones have: Teams (those launched in it) and Epics (each Team's epic, the pushed rosters' `board`)
- * hang under each stone as branch rows when picked; a pressed stone or row opens the Workspace's page beside the rail; a stone
- * dragged into a tilespace opens that Workspace there whole. */
+/** The Teams working in a Workspace: its listed Teams, by name. */
+const teamsIn = (w) => teamsFromState().filter((team) => team.durable && team.workspace === w.name && listedTeam(team))
+  .sort((a, b) => String(a.title || a.name).localeCompare(String(b.title || b.name)));
+
+/** The Workspace's own route (KAN-784): `#/workspace/<name>`, a plain press follows it in this tab. */
+export const workspaceAddress = (name) => `#/workspace/${encodeURIComponent(name)}`;
+function workspaceLaunch(name) {
+  const link = el('a', 'wk-action workspace-launch', t('workspaces.launch', 'Launch'));
+  link.href = workspaceAddress(name);
+  link.addEventListener('click', (event) => {
+    if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || !S.workspace) return;
+    event.preventDefault();
+    S.workspace.navigate('workspace', { param: name });
+  });
+  return link;
+}
+
+/**
+ * WORK (owner, 2026-11-22; KAN-784): what is being done in the Workspace. One ERABI picks Teams or
+ * Epics; each is a stone, and a pressed one opens beside them: a Team its Agents and Launch into the
+ * Team's workbench, an Epic its own reading with Launch. An Epic is the Workspace's when one of its
+ * Teams, or an Agent on one, holds it.
+ */
+function workspaceWork(w) {
+  const host = el('div', 'wk-surface-content workspace-work'); // the phalanx's seat
+  const epicsRead = createEpicsRead(() => '');
+  let kind = 'teams';
+  const pick = ask([{ fields: [{ key: 'kind', label: t('workspaces.see', 'See'), options: [
+    { v: 'teams', l: t('campaign.coworks', 'Teams') },
+    { v: 'epics', l: t('workspaces.epics', 'Epics') },
+  ] }] }], { value: { kind }, density: 'tight', onChange: ({ kind: next }) => { kind = String(next || 'teams'); paint(); } });
+  const empty = el('p', 'fs-step-help workspace-work-empty');
+  let open = null;
+  const stones = createPhalanx({
+    className: 'workspace-work-stones',
+    renderDetail: (item, at) => {
+      open?.destroy?.(); open = null;
+      if (item.epic) {
+        open = createEpicOne(item.id, { epicsRead, launch: true, header: false });
+        at.append(open.el); open.show();
+        return () => { open?.destroy(); open = null; };
+      }
+      const team = el('div', 'workspace-team');
+      const head = el('div', 'workspace-page-head');
+      const launch = el('button', 'wk-action', t('teams_surface.launch', 'Launch'));
+      launch.type = 'button';
+      launch.addEventListener('click', () => openWorkspaceTab('team', item.id));
+      head.append(el('span', 'wk-surface-header-title', item.label), launch);
+      const agents = el('ul', 'workspace-team-agents');
+      for (const one of membersOfTeam(item.id)) agents.append(el('li', null, one.team_lead ? t('workspaces.lead_named', '{name}, lead', { name: one.name }) : one.name));
+      if (!agents.children.length) agents.append(el('li', 'fs-step-help', t('workspaces.no_agents', 'No Agents running')));
+      team.append(head, agents);
+      at.append(team);
+      return undefined;
+    },
+  });
+  stones.mount(host, { before: [pick.el, empty] });
+  function paint() {
+    const teams = teamsIn(w);
+    const names = new Set(teams.map((team) => team.name));
+    const agents = new Set(teams.flatMap((team) => membersOfTeam(team.name).map((one) => one.name)));
+    if (kind === 'teams') {
+      empty.textContent = teams.length ? '' : t('workspaces.no_teams', 'No Team works in this Workspace yet.');
+      stones.setItems(teams.map((team) => {
+        const lead = membersOfTeam(team.name).find((one) => one.team_lead)?.name;
+        return { id: team.name, label: team.title || team.name, state: lead ? t('workspaces.lead_named', '{name}, lead', { name: lead }) : t('workspaces.team', 'Team') };
+      }));
+    } else {
+      const epics = epicsRead.list().filter(isOpenEpic).filter((epic) => {
+        const holder = holderOfItem(epic);
+        return holder && (holder.kind === 'team' ? names.has(holder.name) : agents.has(holder.name));
+      });
+      empty.textContent = epics.length ? '' : t('workspaces.no_epics', 'No open Epic in this Workspace.');
+      stones.setItems(epics.map((epic) => {
+        const needs = attentionWords(epicAttention(epicsRead.items(epic.id)));
+        return { id: epic.id, epic: true, label: epic.title || epic.id, ...(needs ? { secondary: needs } : {}), state: epic.status || t('workspaces.epic', 'Epic') };
+      }));
+    }
+    empty.hidden = !empty.textContent;
+  }
+  const stopEpics = epicsRead.subscribe(paint);
+  const stopTeams = subscribeTeams(() => paint());
+  paint();
+  return { el: host, destroy: () => { stopEpics(); stopTeams?.(); open?.destroy?.(); pick.destroy(); stones.destroy(); } };
+}
+
+// The view a Workspace surface last showed, kept while the page is open: a repaint after Save stays in Config.
+let lastView = 'work';
+
+/**
+ * ONE WORKSPACE (owner, 2026-11-22; KAN-784): its name, one toggle, Work or Config, and the view it
+ * picks. Work is what is being done in it (workspaceWork); Config is its page (workspacePage: Summary,
+ * Folders, Integrations, Agent info, Behaviors), its Save, − and ⋯ in the head only there. The same
+ * surface on the Workspaces stones, in a tilespace and on its own route; `launch` adds Launch to it.
+ */
+function workspaceSurface(w, { workspacesRead, onDiscard = () => {}, launch = false, title = true }) {
+  const root = el('div', 'workspace-one');
+  const head = el('div', 'workspace-page-head');
+  const actions = el('div', 'workspace-page-actions');
+  const body = el('div', 'workspace-one-body');
+  let view = lastView;
+  let current = null;
+  // The toggle: two buttons, the one showing pressed, as Add a folder and Clone from GitHub are.
+  const { createAction } = WorkspaceKit.primitives;
+  const toggle = el('div', 'workspace-toggle');
+  toggle.setAttribute('role', 'group');
+  const views = [['work', t('workspaces.work', 'Work')], ['config', t('workspaces.config', 'Config')]].map(([key, label]) => {
+    const one = createAction({ label, size: 'compact', action: () => { if (view === key) return; view = lastView = key; paint(); } });
+    toggle.append(one.el);
+    return [key, one.el];
+  });
+  const paint = () => {
+    current?.destroy?.();
+    for (const [key, node] of views) node.setAttribute('aria-pressed', String(key === view));
+    if (view === 'config') {
+      const page = workspacePage(w, { onSaved: () => void workspacesRead.read(), onDiscard });
+      current = page;
+      actions.replaceChildren(page.action.el, page.discard.el, page.more.el);
+      body.replaceChildren(page.el);
+    } else {
+      current = workspaceWork(w);
+      actions.replaceChildren(...(launch ? [workspaceLaunch(w.name)] : []));
+      body.replaceChildren(current.el);
+    }
+  };
+  head.append(...(title ? [el('span', 'wk-surface-header-title', w.title || w.name)] : []), toggle, actions);
+  root.append(head, body);
+  paint();
+  return { el: root, destroy: () => { current?.destroy?.(); } };
+}
+
+/** The stones of Workspaces (owner, 2026-11-22; KAN-784): Layer 1, every Workspace a stone of the
+ * normal size: its name and the Teams working in it. A pressed stone
+ * opens that Workspace beside the rail, Work or Config, with Launch to its own page; a stone dragged
+ * into a tilespace opens it whole there. The last stone, New Workspace, is its Name and Folders. */
 export function createWorkspaceStones({ workspacesRead, workbench, recordType = '', withNew = false, onShow = () => {} }) {
   const { createSurface } = WorkspaceKit.primitives;
   const out = createSurface({ label: t('workspaces.title', 'Workspaces'), className: 'setup-surface workspaces-records' });
@@ -519,55 +657,33 @@ export function createWorkspaceStones({ workspacesRead, workbench, recordType = 
   const say = sayInto(messages);
   const stones = createPhalanx({
     className: 'workspace-record-stones',
-    branches: 'column',
     renderDetail: (item, host) => {
       host.scrollTop = 0;
       // Setup has no selector: its New Workspace is a stone, and the made Workspace opens in its place.
       if (item.id === NEW_STONE) {
-        const page = workspacePage(null, { taken: () => workspacesRead.list().map((w) => w.name), onSaved: async (saved) => { await workspacesRead.read(); stones.select(saved.name); }, onDiscard: () => stones.refreshDetail() });
+        const page = workspacePage(null, { taken: () => workspacesRead.list().map((w) => w.name), onSaved: async (saved) => { await workspacesRead.read(); lastView = 'config'; stones.select(saved.name); }, onDiscard: () => stones.refreshDetail() });
         const head = el('div', 'workspace-page-head');
         const actions = el('div', 'workspace-page-actions');
         actions.append(page.action.el, page.discard.el);
         head.append(el('span', 'wk-surface-header-title', t('workspaces.new', 'New Workspace')), actions);
         host.append(head, page.el);
-        return;
+        return undefined;
       }
-      const w = workspacesRead.list().find((row) => row.name === (item.workspace || item.id));
-      if (!w) return;
-      const page = workspacePage(w, { onSaved: () => void workspacesRead.read(), onDiscard: () => stones.refreshDetail() });
-      const head = el('div', 'workspace-page-head');
-      const actions = el('div', 'workspace-page-actions');
-      actions.append(page.action.el, page.discard.el, page.more.el);
-      head.append(el('span', 'wk-surface-header-title', w.title || w.name), actions);
-      host.append(head, page.el);
+      const w = workspacesRead.list().find((row) => row.name === item.id);
+      if (!w) return undefined;
+      const one = workspaceSurface(w, { workspacesRead, launch: true, onDiscard: () => stones.refreshDetail() });
+      host.append(one.el);
+      return () => one.destroy();
     },
   });
-  // SHOW (owner, 2026-11-02; the Teams stones' own question, team-roster-surface.js): many-of, blank to
-  // start, says what hangs under each stone as branch rows, a cell per picked topic in this order.
-  const SHOW = ['teams', 'epics'];
-  let show = [];
-  const filter = ask([{ fields: [
-    { key: 'show', label: t('teams_surface.show', 'Show'), many: true, options: [
-      { v: 'teams', l: t('campaign.coworks', 'Teams') },
-      { v: 'epics', l: t('workspaces.epics', 'Epics') },
-    ] },
-  ] }], { value: { show }, density: 'tight', onChange: ({ show: next }) => { show = (next || []).map(String); out.el.dataset.bare = String(!show.length); paint(); } });
-  // With nothing to show under them, the stones are the name alone (owner, 2026-11-03).
-  out.el.dataset.bare = 'true';
-  stones.mount(out.content, { before: [messages, filter.el] });
+  stones.mount(out.content, { before: [messages] });
   const paint = (answer) => {
     if (answer && !answer.ok) { say(answer.message, true); return; }
     if (answer) say(workspacesRead.list().length ? '' : t('workspaces.none', 'No Workspaces yet. Place New Workspace from the selector.'));
-    const teams = teamsFromState().filter((team) => team.durable);
     const next = workspacesRead.list().map((w) => {
-      const own = teams.filter((team) => team.workspace === w.name);
-      const epics = [...new Map(own.filter((team) => team.board?.title).map((team) => [team.board.title, team.board])).values()];
-      const cell = {
-        teams: () => own.map((team, n) => ({ id: `${w.name}:team:${n}`, label: team.title || team.name, state: t('workspaces.team', 'Team'), workspace: w.name })),
-        epics: () => epics.map((epic, n) => ({ id: `${w.name}:epic:${n}`, label: epic.title, state: epic.status || t('workspaces.epic', 'Epic'), workspace: w.name })),
-      };
-      const under = SHOW.filter((kind) => show.includes(kind)).map((kind) => cell[kind]());
-      return dragWorkspace({ id: w.name, label: w.title || w.name, ...(w.archived ? { state: t('workspaces.archived', 'Archived'), className: 'archived' } : {}), ...(show.length ? { under } : {}) }, recordType);
+      const teams = teamsIn(w).map((team) => team.title || team.name).join(' · ');
+      return dragWorkspace({ id: w.name, label: w.title || w.name,
+        ...(w.archived ? { state: t('workspaces.archived', 'Archived'), className: 'archived' } : teams ? { state: teams } : {}) }, recordType);
     });
     // ONE WORKSPACE MOVES, ONE STONE REPAINTS (KAN-413): the phalanx's keyed list leaves every
     // stone a Teams push did not move, and an open page, alone.
@@ -579,28 +695,57 @@ export function createWorkspaceStones({ workspacesRead, workbench, recordType = 
   return {
     el: out.el,
     show: () => { void workspacesRead.read(); onShow(); },
-    destroy: () => { stop(); stopTeams?.(); filter.destroy(); stones.destroy(); },
+    destroy: () => { stop(); stopTeams?.(); stones.destroy(); },
   };
 }
 
-/** One Workspace whole in a tilespace: its page, no rail. */
+/** One Workspace whole in a tilespace: the same surface, Work or Config, with Launch to its own page. */
 export function createWorkspaceRecord(key, { workspacesRead }) {
   const { createSurface, setSurfaceState } = WorkspaceKit.primitives;
   const out = createSurface({ label: key, className: 'setup-surface workspaces-record' });
+  let one = null;
   const paint = () => {
     const w = workspacesRead.list().find((row) => row.name === key);
+    one?.destroy(); one = null;
     out.content.replaceChildren();
     if (!w) { setSurfaceState(out.el, 'empty', t('workspaces.gone', 'This Workspace is no longer here.')); return; }
     setSurfaceState(out.el, null, '');
     out.header.title.textContent = w.title || w.name;
-    const page = workspacePage(w, { onSaved: () => void workspacesRead.read(), onDiscard: () => paint() });
-    out.header.actions.replaceChildren(page.action.el, page.discard.el, page.more.el);
-    out.content.append(page.el);
+    one = workspaceSurface(w, { workspacesRead, launch: true, title: false, onDiscard: () => paint() });
+    out.content.append(one.el);
   };
   return {
     el: out.el,
     show: () => { if (workspacesRead.list().length) paint(); else void workspacesRead.read().then(paint); },
-    destroy: () => {},
+    destroy: () => { one?.destroy(); one = null; },
+  };
+}
+
+/** One Workspace on its own page (owner, 2026-11-22; KAN-784): `#/workspace/<name>`, Layer 2, the same
+ * surface with the whole page's room; not a tilespace workbench. */
+export function createWorkspaceRoute() {
+  const host = el('div', 'workspace-route');
+  const workspacesRead = createWorkspacesRead();
+  let name = '';
+  let one = null;
+  const paint = () => {
+    const w = workspacesRead.list().find((row) => row.name === name);
+    one?.destroy(); one = null;
+    if (!w) { host.replaceChildren(el('p', 'fs-step-help', workspacesRead.list().length ? t('workspaces.gone', 'This Workspace is no longer here.') : t('workspaces.reading', 'Reading…'))); return; }
+    one = workspaceSurface(w, { workspacesRead, onDiscard: () => paint() });
+    host.replaceChildren(one.el);
+    S.refreshWorkspaceHeader?.();
+    S.workspace?.refreshTitle?.();
+  };
+  const title = () => workspacesRead.list().find((row) => row.name === name)?.title || name;
+  return {
+    el: host,
+    title, place: title,
+    enter: (context) => {
+      if (context.param !== name || !one) { name = context.param; void workspacesRead.read().then(paint); paint(); }
+    },
+    leave: () => {},
+    destroy: () => { one?.destroy(); one = null; },
   };
 }
 

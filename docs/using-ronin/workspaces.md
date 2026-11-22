@@ -40,14 +40,24 @@ Agent it is checked out to reads its folders and repositories, writes the Summar
 
 ## Make or change a Workspace
 
-Open the **Workspaces** door on Ronin Home (or **Workspaces** in [Ronin Setup](../getting-started/setup-workbench.md))
-and press a Workspace's stone, or place **New Workspace**. **Show** above the stones picks what
-hangs under each one: the Teams launched in it, the Epics they work on, or both.
+Open the **Workspaces** door on Ronin Home (or **Workspaces** in [Ronin Setup](../getting-started/setup-workbench.md)).
+Each Workspace is a stone: its name and the Teams working in it. The last stone is **New Workspace**.
+
+Press a stone and that Workspace opens beside the stones. At its top, **Work** and **Config** switch
+between its two views:
+
+- **Work** — what is being done in it. **See** picks **Teams** or **Epics**: the Teams launched in it,
+  or the open Epics its Teams and their Agents hold. Press one to open it beside them: a Team shows its
+  Agents and **Launch** into the Team's workbench; an Epic shows its board, with **Launch** to its page.
+- **Config** — its page: Summary, Folders, Integrations, Agent info and Behaviors.
+
+**Launch** at the top opens the Workspace on its own page, `#/workspace/<name>`, with the same two
+views and the whole page's room. A stone dragged into a tilespace opens it whole there.
 
 **New Workspace** is two things: its **Name**, and its **Folders**. Press **Create**. Nothing is
 kept until you press Create.
 
-A Workspace's page reads, top down: its **Summary**, its **Folders**, then, folded until you open
+In Config the page reads, top down: its **Summary**, its **Folders**, then, folded until you open
 them, **Integrations**, **Agent info** (its objective, instructions, Mode and plans) and
 **Behaviors**. **⋯** at the top holds **Archive**: the Workspace stops being offered when you
 start a Team, and nothing is deleted; **Restore** brings it back.

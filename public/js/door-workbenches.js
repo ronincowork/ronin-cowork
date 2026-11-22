@@ -153,7 +153,7 @@ export function createWorkspacesView() {
   return doorWorkbench({
     id: 'workspaces', profile: WORKBENCH_PROFILES.workspaces, label: t('campaign_home.workspaces', 'Workspaces'), seat: WORKBENCH_TYPES.workspaceRecords,
     seats: { workspace1: WORKBENCH_TYPES.workspaceRecords, workspace2: FILES_ON ? WORKBENCH_TYPES.files : WORKBENCH_TYPES.folderGithub },
-    loaded: loadCampaigns,
+    loaded: loadCampaigns, hints: false, // no Agent vocabulary or Session controls on Workspaces (owner, 2026-11-22)
     environment: ({ bench, ctx }) => {
       const workspacesRead = createWorkspacesRead();
       const environment = {
