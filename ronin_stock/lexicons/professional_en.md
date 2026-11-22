@@ -11,7 +11,6 @@ nothing paints exactly this.
 - **add_agent.name_placeholder:** name
 - **add_agent.instruction:** instruction
 - **add_agent.instruction_placeholder:** what this Agent should do
-- **add_agent.actions:** Launch actions
 - **add_agent.starting:** Starting…
 - **add_agent.started:** Started {name}
 - **add_agent.started_note:** Started {name} — {note}
@@ -36,14 +35,12 @@ nothing paints exactly this.
 - **mandate:** Mandate
 - **session_type:** Session type
 - **kind:** Kind
-- **template:** Template
 - **reach:** Reach
 - **recruit:** Recruit
 - **output:** Output
 - **on:** On
 - **off:** Off
 - **go:** Go
-- **save_template:** Save as template
 - **publish:** Publish
 - **kind.coding:** Software
 - **kind.household:** Home
@@ -384,7 +381,6 @@ nothing paints exactly this.
 - **help.title:** Help
 - **help.card_summary:** What each step means, beside the step you are on.
 - **help.top_body:** The name is the only thing you must give, and it is also the tag every session carries, so it is lowercase and typeable — the field enforces that as you type. A Team’s title is written for you from the name and is yours to change. The kind says what this is for, and it narrows the templates below to the ones that suit it.
-- **help.template_body:** A template fills part of the form in and stops. Its answers become yours the moment they land — nothing stays linked, and you can change any of it. An Agent template is a loadout for one session; a Team template is a cast, and picking one lands its Agents as rows you can edit. Make your own fills nothing in, and going back to it empties what a template wrote.
 - **help.mandate_body:** How far this Agent goes before it checks in, whether it may build out a team, and what it hands back. Output takes as many answers as you mean — a plan AND the team AND no code — and nothing argues with a combination. Open means no requirement. None of it is enforced: the mandate is carried in the Agent’s letter and read by it, not imposed on it.
 - **help.loadout_body:** Model and Launch mode are independent. Native means no override in that field; only Native model plus Native launch mode is the bare CLI command. Features add facilities or taught practices; behaviours say how ordinary work should be done.
 - **help.agents:** Agents
@@ -394,7 +390,6 @@ nothing paints exactly this.
 - **help.type:** New session
 - **help.type_body:** Three kinds of thing can start here. A Cowork Agent is born with everything Ronin provides on this box. A bare-metal Agent is the provider’s own CLI and nothing else. A terminal is a shell with no agent. The choice decides which of the steps below exist — a terminal is asked three things because there are only three to ask.
 - **help.top:** Name & kind
-- **help.template:** Template
 - **help.objective:** Common instructions
 - **help.objective_body:** What everyone born onto this Team is told. The objective reaches them: it is written into the brief every new Agent reads at birth, in the Team’s own words.
 - **help.instructions:** Instructions
@@ -409,7 +404,6 @@ nothing paints exactly this.
 - **help.kit_body:** What every Agent raised on this Team starts with. All of it lands in the next Agent form as an ordinary editable value — none of it is a constraint, and changing it here never touches a session already running.
 - **new_team.who_where:** Who and where
 - **new_team.agents:** Agents
-- **new_team.agents_meta:** {n} agents
 - **new_team.agent_name:** name
 - **new_team.agent_name_taken:** Nothing was created. Choose another name for: {names}.
 - **new_team.agent_add:** ＋ Add an Agent
@@ -471,14 +465,14 @@ nothing paints exactly this.
 - **new_team.name:** Team name
 - **team.objective:** Objective
 - **team.project_root:** Workspace folder
-- **new_team.team_actions:** Team actions
 - **team.team:** Team
 - **new_team.name_invalid:** Lowercase letters, digits, _ and - only.
 - **new_team.root_default:** — the box’s default —
 - **new_team.title:** New Team
 
 ## new_team — new-team-form.js (the drawn raise form, staged beside the card above)
-- **new_team.card_summary:** Template · kit · lead — the drawn form.
+- **new_team.card_summary:** Kind · kit · lead — the drawn form.
+- **new_team.kind_summary:** Optional — Kind
 - **new_team.name_placeholder:** lowercase, digits, - _
 - **new_team.objective_placeholder:** what this team is for
 - **new_team.members:** members
@@ -486,12 +480,8 @@ nothing paints exactly this.
 - **new_team.inherits:** an agent born here inherits
 - **new_team.staffing_failed:** Team created, but {failed} of {total} Agents could not be launched: {names}. Open the Team and add them there.
 - **new_team.raising:** Raising the team…
-- **new_team.save_name_placeholder:** template name
-- **new_team.save_as_new:** Save as new template
-- **new_team.saved_template:** Saved template {name}
 
 ## forms — form-steps.js (the drawn form idiom shared by New Team and New Agent)
-- **forms.library_note:** More on the Ronin library — Campaign → Templates → Check the library to see them and download the ones you want.
 - **forms.default:** default
 - **ask.answer:** Answer
 - **setup_surface.identity_short:** Register as
@@ -520,24 +510,6 @@ nothing paints exactly this.
 - **forms.none:** —
 - **forms.on:** On
 - **forms.off:** Off
-
-## presets — Setup launch presets
-- **presets.tile_view:** Tile view
-- **presets.agents_side_by_side:** Agents run side by side
-- **presets.side_by_side:** Side by side
-- **presets.two_by_two:** Two by two
-- **presets.repeats:** Repeats
-- **presets.every_day:** Every day
-- **presets.day_of_week:** Day of the week
-- **presets.one_time:** One time
-- **presets.day:** Day
-- **presets.how_it_runs:** How it runs
-- **presets.single_assistant:** Single assistant
-- **presets.chief_of_staff:** Chief of Staff
-- **presets.evaluate:** Evaluate
-- **presets.evaluate_none:** Choose a folder
-- **presets.repository:** repository
-- **presets.folder:** folder
 
 ## new_agent — new-agent.js (the drawn launch form, staged beside the ＋ New board)
 - **new_agent.title:** New Agent

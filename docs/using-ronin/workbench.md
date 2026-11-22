@@ -17,7 +17,7 @@ them. The implemented builder contract lives in Ronin Cowork's
 [Workbench construction document](../architecture/workbench.md); you do not need its
 frontend, data-loading, or state details to use a Workbench.
 
-The vocabulary comes from `ronin_catalogs/lexicons/professional_en.md`. In particular:
+The vocabulary comes from `ronin_stock/lexicons/professional_en.md`. In particular:
 
 - the **coworkspace** is the whole Ronin interface;
 - the **workbench** is this page format inside it;

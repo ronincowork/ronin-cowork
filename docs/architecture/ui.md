@@ -536,7 +536,7 @@ mobile document's bar on its first paint; the probe ends through Ronin's Delete,
 ## Agents are data, not branches
 
 Launches read session launch specs (`src/spawn.ts`); providers and agent CLIs arrive as
-catalog rows (`ronin_catalogs/MODEL_PROVIDERS.md` — each populated cell is a
+catalog rows (`ronin_stock/MODEL_PROVIDERS.md` — each populated cell is a
 provider/model/cmd triple; the standing write-up of that contract rides the owner's
 model-providers doc, in flight beside this), never as UI branches. Future agent forms
 (Hermes and whatever "app" tiles become) enter the same way: the tile's view
@@ -685,8 +685,8 @@ The Team roster and Workspaces hand the phalanx every push and keep no signature
 own: one renamed Team repaints its one stone, and the open Team detail stays.
 
 **What is not an `ask()`.** The Phalanx surface (`phalanx.js`) is a page for
-browsing a collection whose item is the content — Presets, Workspaces, Model
-providers, Templates — and stays. Tabs, the Presets kind filter, and the
+browsing a collection whose item is the content — Workspaces, Model
+providers — and stays. Tabs and the
 2 ⇄ 4 button are not selections from a list. The tile head owns its current Output and
 mention controls; proposed migrations belong in the creators’ Lab.
 

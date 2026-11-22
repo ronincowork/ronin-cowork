@@ -161,9 +161,9 @@ What a message names is a link when Ronin knows it, and plain text otherwise:
   pills; Close returns to the chat where you were.
 - **An Agent's name** (@system_lead, or the bare name): that Agent's tile opens over the work
   surface, as from an item's Agent; Close gives it back. On a phone, that Agent's screen.
-- **A document** (`~/ronin/library/ABOUT_USER.md`, `docs/a.md`, `samurai_lab/ronin_cloud/X.md`, or
+- **A document** (`~/ronin/office/ABOUT_USER.md`, `docs/a.md`, `samurai_lab/ronin_cloud/X.md`, or
   just `ABOUT_USER.md`): it opens in Docs, when it is a file in the Agent's folders, its drop, the
-  Workspace folders (or the folder holding them) or the library.
+  Workspace folders (or the folder holding them) or `~/ronin/office/`.
 - **A commit** (`db709a8`, or `dev@7e2b28b` as a hand-in says it): when it is a commit in one of the
   Agent's repos, `git show --stat -p` of it opens in Docs, to read.
 

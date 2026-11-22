@@ -16,10 +16,10 @@ teaching. Neither replaces this catalog of displayed strings.
 
 ## The catalog
 
-`ronin_catalogs/lexicons/<name>.md`, one file per lexicon, shadowable whole-file by name
-(`docs/architecture/shadowing.md`): yours in the catalogs store replaces ours of the same name; a new
-name is a new lexicon; `- **hidden:** yes` withdraws one of ours. The directory's
-`README.md` carries the format. Five ship: `professional_en` (the floor), `home_en` (a dozen
+`ronin_stock/lexicons/<name>.md`, one file per lexicon, shadowable whole-file by name
+(`docs/architecture/shadowing.md`): yours in `~/ronin/custom/lexicons/` replaces ours of the same name; a new
+name is a new lexicon; `- **hidden:** yes` withdraws one of ours. The folder's
+`lexicons_readme.md` carries the format. Five ship: `professional_en` (the floor), `home_en` (a dozen
 words, to prove the chain), `league_en` (the gamer's words, goofy on purpose), `vibe_code_en`
 and `terminal_en` (near-empty on purpose — the words grow as the surfaces settle, one file
 at a time, with no code).

@@ -22,7 +22,7 @@ have none of Ronin.
 | **Installations** | each installed component, on or off | the whole machine; never a Team or Agent question |
 | **Defaults** | the behaviours a new Team starts from | the next New Team form and a teamless Agent form; existing Teams are untouched |
 
-An installation definition (`ronin_catalogs/services/<name>.md`: Ronin Services, Ronin's
+An installation definition (`ronin_stock/services/<name>.md`: Ronin Services, Ronin's
 own) names the server parts it runs. What an Agent is told about it comes from the brief's
 files: a behaviour or tool with `when: service:<part>` is in play while that part runs, and
 `services-off` (`when: !service:ronin_services`) while Services is off. The installation itself

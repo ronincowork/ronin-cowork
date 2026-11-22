@@ -1,17 +1,17 @@
 # The brief: what an Agent is told, and how it is built
 
 How a Cowork Agent (Mika and the Helpful Assistant included) learns who it is, how to work, what
-it can call and what the office is like. Every Agent is built the same way, bottom up: files in
-four catalogs, each saying when it applies, and one configuration per Agent that picks among
-them. There are no templates and no per-Agent code. Adding a fact, behaviour or tool is adding
-its file. The words are defined in [KOTOBA](../../KOTOBA.md); how an owner changes what Agents
+it can call and what the office is like. Every Agent is built the same way, bottom up: its
+foundations (behaviours, tools, facts and playbooks), each file saying when it applies, and one
+configuration per Agent that picks among them. There are no templates and no per-Agent code.
+Adding a fact, behaviour or tool is adding its file. The words are defined in [KOTOBA](../../KOTOBA.md); how an owner changes what Agents
 are told is in [Customize Ronin](../getting-started/customize.md).
 
 ## The model in one picture
 
 ```
- sources of truth                 facts (src/facts.ts)               catalogs (ronin_catalogs/)
- members.json, workspaces,  ──►   ~/ronin/library/facts/<fact>.md    facts/  behaviours/  tools/
+ sources of truth                 office-facts (src/facts.ts)        foundations (ronin_stock/)
+ members.json, workspaces,  ──►   ~/ronin/office/facts/<fact>.md     facts/  behaviours/  tools/
  providers, items, rosters…       rewritten when a source changes    each file: when:, depth:
                                            │                                   │
                                            ▼                                   ▼
@@ -29,22 +29,35 @@ are told is in [Customize Ronin](../getting-started/customize.md).
   lines (its name, Workspace, Team, model, task).
 - **Behaviours** say how to work.
 - **Tools** are what it can call.
-- **Library items** are reusable epics. They are never told: an Agent checks one out when its
-  behaviour or task says so ([library](../using-ronin/library.md)).
+- **Playbooks** are reusable plans of work. They are never told: an Agent checks one out when
+  its behaviour or task says so ([playbooks](../using-ronin/playbooks.md)).
 - **The configuration** is one document per Agent, written whole at birth. The brief is that
-  document plus the catalog files, nothing else.
+  document plus the foundation files, nothing else.
 
-## Three objects
+## The files: three places, four foundations
 
-| Object | What it is | Folder | How much is told |
+**Three places, each with one meaning.** `ronin_stock/` (in the image) is everything Ronin
+ships; an image update replaces it whole, and nothing in it is written at run time.
+`~/ronin/custom/` is the person's own files, in the same folders, empty on a new office.
+`~/ronin/office/` is office-output: the office-facts, `MACHINE_STATUS.md`, `ABOUT_USER.md` and
+the Workspace Summaries. **The one rule for every reader:** a file in `~/ronin/custom/<folder>/`
+replaces the file of the same id in `ronin_stock/<folder>/`, whole, or adds one. Nothing is
+seeded, copied or merged. The full map is [stock_readme.md](../../ronin_stock/stock_readme.md).
+
+**The four foundations** are what an Agent and its work are built from. A stock-foundation is
+Ronin's file in `ronin_stock/<kind>/`; a custom-foundation is the person's, in
+`~/ronin/custom/<kind>/`.
+
+| Foundation | What it is | Folder | How much is told |
 |---|---|---|---|
-| **Fact** | what is true: the office's nine facts (below) and the Agent's own lines | `ronin_catalogs/facts/` | an office fact at seed is its line and its file's path; at full, its text at birth. The Agent's own lines print in full |
-| **Behaviour** | how to work: guidance an Agent follows | `ronin_catalogs/behaviours/` | a depth (below) |
-| **Tool** | something to call: one command, or a family (`session_*`) | `ronin_catalogs/tools/` | a depth (below) |
+| **Fact** | what is true: the nine office-facts (below) and the Agent's own lines; its file is its fact-print | `facts/` | an office-fact at seed is its line and its file's path; at full, its text at birth. The Agent's own lines print in full |
+| **Behaviour** | how to work: guidance an Agent follows | `behaviours/` | a depth (below) |
+| **Tool** | something to call: one command, or a family (`session_*`) | `tools/` | a depth (below) |
+| **Playbook** | a reusable plan of work, work items checked out into live ones | `playbooks/` | never told ([Playbooks](#playbooks)) |
 
 Integrations, bridges, Services, roles, desks and arrangements are not further kinds. They are
 values on the work record that bring facts, behaviours and tools into play. A bridge is a
-behaviour with its tools. A library item is not told at all; see [The library](#the-library).
+behaviour with its tools.
 
 ## Session types
 
@@ -96,8 +109,8 @@ was not told about can use it.
 
 ## The files and their header
 
-One flat folder per object. The file name (no `.md`, kebab-case) is the id that `when:`,
-`serves:`, brief settings and `ronin-help` use. Ids are one namespace across the three folders:
+One flat folder per Markdown foundation. The file name (no `.md`, kebab-case) is the id that
+`when:`, `serves:`, brief settings and `ronin-help` use. Ids are one namespace across the three folders:
 no two files share a name, so a tool whose command is a behaviour's name takes another id
 (`ask-mika` is the `mika` command), and the Workspaces fact is `office-workspaces` because the
 `workspaces` behaviour has that id. Every file starts the same:
@@ -122,7 +135,7 @@ no two files share a name, so a tool whose command is a behaviour's name takes a
 | `serves:` | tools | the behaviour ids it serves. Blank: it goes under Other tools |
 | `mandate:` | behaviours | the mandate axis this file is a value of: `reach`, `recruit` or `output`; the title is the value |
 | `with:` | mandate values | the behaviour(s) choosing this value puts in play, at their depth (Reach plan `with: planning`); the order never repeats that behaviour's text |
-| `lists:` | behaviours | a catalog directory whose files `ronin-help <behaviour>` prints after its text, one line each, the user's own (`~/ronin/<dir>/`) over stock by name, in `order:`: adding a file adds it (new-workspace: `workspace_types/`) |
+| `lists:` | behaviours | a stock folder whose files `ronin-help <behaviour>` prints after its text, one line each, the person's own (`~/ronin/custom/<dir>/`) over stock by name, in `order:`: adding a file adds it (new-workspace: `workspace_types/`) |
 | `facts:` | bridges | the facts its Workspace entry takes, comma-separated (`netlify-bridge`: `site`); each is a field on the Workspace page's Integrations row, saved as `{provider, site}` ([integrations.md](integrations.md#the-pieces)) |
 | `order:` | all | its place in its section, lower first |
 
@@ -137,10 +150,11 @@ whose placeholders all come out empty is not printed.
   list is generated from the headers (`node scripts/tool-list.mjs`).
 - **A hand-in that adds a tool adds its file**, as it adds its docs.
 
-**The user's store.** `~/ronin/facts/`, `~/ronin/behaviours/` and `~/ronin/tools/` (beside the
-user's own executables) add new files and replace stock ones by id, whole. They live outside
-what an update replaces, so customisations survive updates; a replacement also stops later
-stock changes reaching that file. Other catalogs follow [shadowing](shadowing.md).
+**Custom-foundations.** `~/ronin/custom/facts/`, `~/ronin/custom/behaviours/` and
+`~/ronin/custom/tools/` (beside the person's own executables) add new files and replace stock
+ones by id, whole, under the one rule. They live outside what an update replaces, so they
+survive updates; a replacement also stops later stock changes reaching that file. The
+section-merged registries (`MODEL_PROVIDERS.md`, `SKINS.md`) follow [shadowing](shadowing.md).
 
 ## Conditionals
 
@@ -177,10 +191,10 @@ the docs knows the office: the owner, an Agent, a lead, the Helpful Assistant, a
 
 | Fact | What it says | Its sources of truth |
 |---|---|---|
-| `about_user` | the person and the office's people; the Helpful Assistant's notes on them | hosted: `office_unit/members.json` (the Business Lounge's About you, written by the park); self-hosted: the owner's intro (`~/ronin/facts/user-intro.md`); both: `library/ABOUT_USER.md` |
+| `about_user` | the person and the office's people; the Helpful Assistant's notes on them | hosted: `office_unit/members.json` (the Business Lounge's About you, written by the park); self-hosted: the owner's intro (`~/ronin/custom/facts/user-intro.md`); both: `~/ronin/office/ABOUT_USER.md` |
 | `machine` | hosting, Ronin's release, disk, the Services parts running, parked or failed, installations on, browser access, Tailscale, the no-password setting, registration | the office record, machine settings, Services' parts, the Campaign |
 | `account` | hosted: subscription, balance, tiers, the Lounge's settings | `office_unit/lounge.json`, written by the park (Services' `account` part adds this fact) |
-| `office-workspaces` | each Workspace: folders, repositories, objective, its Summary | the Workspace store, `library/workspaces/<handle>.md` |
+| `office-workspaces` | each Workspace: folders, repositories, objective, its Summary | the Workspace store, `~/ronin/office/workspaces/<handle>.md` |
 | `integrations_authentications` | every model provider (installed, signed in, Activated, off), GitHub, integrations, MCP servers and web APIs, Hermes accounts | the provider summary, `gh`, integrations and secrets |
 | `epics` | open epics, their tasks, who holds what; onboarding's progress | work items, work records, rosters |
 | `teams_agents` | Teams, leads, members; Agents live and archived; gecko seats | rosters, work records, the archive, seats |
@@ -192,7 +206,7 @@ The facts are not the sources of truth: they read them. Each fact has one builde
 
 ### How a fact stays fresh
 
-- **A file per fact.** Each is written to `~/ronin/library/facts/<fact>.md`: its title, its seed
+- **A file per fact.** Each office-fact is written to `~/ronin/office/facts/<fact>.md`: its title, its seed
   line, then its text.
 - **Rebuilt when a source changes.** Each fact names the stores it reads. A write in one of them
   rebuilds that fact only, never all nine. A burst of writes (an Agent moving ten items) is one
@@ -206,13 +220,13 @@ The facts are not the sources of truth: they read them. Each fact has one builde
 
 ### Where the facts are read
 
-- **In the brief.** Each office fact has a catalog file (`ronin_catalogs/facts/<fact>.md`) with
+- **In the brief.** Each office-fact has a fact-print (`ronin_stock/facts/<fact>.md`) with
   the usual `when:` and `depth:`. Stock is seed: the line and the path, so every Agent knows the
   fact exists and where to read it. At full, the brief carries the fact's text as it was at
   birth. The configuration keeps those birth values under `office` (`briefFacts`,
   `src/facts.ts`).
 - **`office read`** prints every fact as one; `office read <fact>` prints one
-  (`GET /api/facts/<fact>`). `library/MACHINE_STATUS.md` is all of them in one file, rewritten
+  (`GET /api/facts/<fact>`). `~/ronin/office/MACHINE_STATUS.md` is all of them in one file, rewritten
   with each fact; Settings' Machine status shows it.
 - **Screens.** Setup's step ticks, Machine settings and the account card read the same builders,
   so a screen and an Agent never disagree.
@@ -364,8 +378,8 @@ birth and never rewritten. Each update writes the brief as it is now beside it, 
 
 ## Facts
 - You: …
-- User: <about_user's line> · ~/ronin/library/facts/about_user.md
-- Machine: … · ~/ronin/library/facts/machine.md
+- User: <about_user's line> · ~/ronin/office/facts/about_user.md
+- Machine: … · ~/ronin/office/facts/machine.md
 - …
 - Task: …
 
@@ -422,19 +436,23 @@ There is no backward compatibility: the model is for new installs, and no old st
 shape is read. A test or rig that starts the server sets `RONIN_USER_ROOT`, `RONIN_DATA_ROOT`
 and `HOME` to its own folders (`tests/helpers/ronin.ts`), so it never writes the real stores.
 
-## The library
+## Playbooks
 
-Reusable epics are library items: files, like behaviours, never told and never in the live
-store ([library](../using-ronin/library.md), `src/library.ts`).
+A playbook is a reusable plan of work: work items, stored as live ones are (one JSON file per
+item, `PLAYBOOK-n.json`, a child's `parent` its PLAYBOOK-n parent, status `Playbook`), never told
+and on no live list ([playbooks](../using-ronin/playbooks.md), `src/work-items.ts` PLAYBOOKS,
+`src/playbooks.ts`).
 
-- Ronin's ship in `ronin_catalogs/library/` (`LIBRARY-1-onboarding.md`, `LIBRARY-2-assess-workspace.md`,
-  `LIBRARY-3-import-project.md`); the user's own are in `~/ronin/library_items/` and replace
-  Ronin's by id. Editing one of Ronin's makes the user's version first.
-- `item checkout LIBRARY-n [<agent>|team:<name>]` makes plain live items from the file and gives
-  them to the caller or the named receiver. The copy has no link back: a later library change
-  never reaches it.
-- An Agent is pointed at one by its behaviour or task ("check out LIBRARY-1"), as the Helpful
-  Assistant is for onboarding. Find Item shows library items in the item reading, with Check out.
+- Ronin's ship in `ronin_stock/playbooks/` (PLAYBOOK-1 onboarding, PLAYBOOK-2 a Workspace's
+  Summary, PLAYBOOK-3 mapping a project, and their tasks); the person's own are in
+  `~/ronin/custom/playbooks/` and replace Ronin's by id. The ordinary item reader reads them;
+  an edit writes the person's copy.
+- `item checkout PLAYBOOK-n [<agent>|team:<name>]` makes plain live items from it and everything
+  under it, and gives them to the caller or the named receiver. The copy has no link back: a later
+  playbook change never reaches it.
+- An Agent is pointed at one by its behaviour or task ("check out PLAYBOOK-1"), as the Helpful
+  Assistant is for onboarding. Find Item reads a playbook as any item: its children open on a
+  press, with Check out and Make my version.
 
 ## Where it is set in the UI
 
@@ -459,6 +477,9 @@ store ([library](../using-ronin/library.md), `src/library.ts`).
 
 ## The stock files
 
+The stock-foundations in `ronin_stock/` (the three places and the one rule:
+[The files](#the-files-three-places-four-foundations)):
+
 ```
 facts/       office: about_user, machine, account (hosted), office-workspaces,
              integrations_authentications, epics, teams_agents, defaults (seed: line and path)
@@ -476,13 +497,14 @@ behaviours/  base-agent (full) · cowork-agent, write-it-down, workspaces (cowor
              mika, install-check (mika) · irasshai, irasshai-voice (irasshai) ·
              services-off (!service:ronin_services) · syncthing (!irasshai, seed) · using-ronin
              optional (depth none): team-work, more-checkpoints, working-with-the-user,
-             codebase-team, new-workspace
+             codebase-team, new-workspace, documents
 tools/       edges, work-record, agent-session (session_*), cowork-team (team), plan, canvas,
              work-item (item), worktree-desk, secret, netlify, preview, lookup, show,
              owner-view, ready, office, workspace-doc, ask-mika (mika), ronin-host,
              machine-settings, ronin-help · workspace-command (workspace; depth none until the
              command exists) · ronin-team, ronin-desk-settle (house, depth none)
-library/     LIBRARY-1-onboarding, LIBRARY-2-assess-workspace, LIBRARY-3-import-project
+playbooks/   PLAYBOOK-1 onboarding, PLAYBOOK-2 a Workspace's Summary, PLAYBOOK-3 mapping a
+             project, each with its tasks as PLAYBOOK-4 … PLAYBOOK-22
 ```
 
 Each file's header is the authority for its `when:`, depth and order; this list is a map.
@@ -497,8 +519,8 @@ not tools (`ronin-url`, `ronin-http.sh`, `tool-path.sh`) get no file
   their validation and audit evidence; it is still a tool.
 - **Behaviour**: provider-neutral guidance; it governs the work and any procedure around a tool.
 - **Fact**: a value, told; what a value asks of the Agent is a behaviour (each mandate value's
-  order). An office fact summarises its sources; it is never itself a source.
-- **Library item**: a reusable epic, a file; checked out, it becomes ordinary live items.
+  order). An office-fact summarises its sources; it is never itself a source.
+- **Playbook**: a reusable plan of work, work items; checked out, it becomes ordinary live items.
 - **Skill**: provider-native adaptation or teaching inside a provider shell. It never holds a
   Ronin rule or authority alone; another provider gets its own form, from the same Ronin file.
 - **UI**: a client of the same tool and API contracts. None copies the choreography, and none
@@ -539,7 +561,7 @@ until the command exists; it will list, read, create, edit and archive Workspace
 ## What comes next
 
 The base grows a file at a time: a curated bridge for an integration that earns one, the
-`workspace` command, which then gets its seed told, and a library item for each piece of work
+`workspace` command, which then gets its seed told, and a playbook for each piece of work
 worth repeating.
 
 ## Change checkpoint

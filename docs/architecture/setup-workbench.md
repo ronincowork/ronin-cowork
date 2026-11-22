@@ -81,71 +81,6 @@ open the band is gone entirely: that is the step's own page, not its question.
 **Password** never goes blank, because how you reach this machine is an arrangement you may
 want to revisit rather than a one-time fact: it keeps its choices for good.
 
-## Presets
-
-Presets are available from the Launch step. They are ordinary templates with a small,
-fixed set of choices in front of them and a launch that opens in a new browser tab.
-
-Above the stones, **You use Ronin for** narrows the eight to a purpose: **Build software**
-(Bare Metal, Ronin Team, Code Stack Eval, Develop a New Project), **Life Assistants**
-(Personal Assistant, Home Health, Agent + Editable Doc), **Research and writing** (Grokbot
-Morning Briefing, Personal Assistant, Bare Metal), or **All Sample Presets**. The choice is
-remembered.
-
-Selecting a stone opens its page: the name, its one line, its own choices, an **Initial
-message to agent** (every preset except Bare Metal), and **Launch**. There is no separate
-customize step; to shape a launch beyond these choices, use Launch your own.
-
-| Preset | What launches | Its choices |
-|---|---|---|
-| **Bare Metal** | a bare-metal team: the native provider CLIs themselves, no Ronin packet, three by default | one row per session, each with a provider and model; tile layout |
-| **Ronin Team** | a Team Lead and two agents in the full Ronin team room | **Where**; the rows, each with a provider and model |
-| **Code Stack Eval** | a team that reads a codebase and reports on the stack | which folder to evaluate |
-| **Develop a New Project** | a project lead and feature agents, each in its own worktree | **Where**; the feature rows |
-| **Personal Assistant** | one assistant that remembers, or a Chief of Staff that recruits | **Single assistant** or **Chief of Staff**; for the second, who to recruit |
-| **Home Health** | Head Coach, Nutritionist, Race and Event Guide | each role's kick-off message; remove or add roles |
-| **Grokbot Morning Briefing** | a briefing written on a schedule you set | **When**: every day, a day of the week, or one time; what it looks at |
-| **Agent + Editable Doc** | one coding agent beside a document you both edit | **Where** and which document |
-
-**Gates.** Every preset needs one activated model provider. Grokbot Morning Briefing also
-needs Ronin Services active. A gated stone
-still opens; its Launch is held and a line beside it says what is missing. Activating the
-provider unlocks the stones at once.
-
-**Where.** Ronin Team, Develop a New Project and Agent + Editable Doc ask where to start:
-every folder of every Workspace, with Ronin Lab and Project One first and Ronin Lab
-chosen by default, then the rest by name. **＋ workspace folder** beside it opens the
-Workspaces in the next workspace; a folder added to a Workspace there is a choice at once,
-with your choice and typed message left as they were. The Team gets a Workspace of its own
-holding the chosen folder's row.
-
-**Rows.** On Bare Metal, Ronin Team and Develop a New Project each row is one session:
-its name, and a provider and model picked in the line from the same catalog the Agent and
-Team forms use, with what this machine cannot launch greyed. Left at Default, a row takes
-the machine's configured defaults.
-
-**Bare Metal, in particular.** Each press makes a team named `bare_metal_<code>`, a
-three-digit code that also rides every session name (`session_1_042`), so several can run
-side by side. Its members are the native CLIs, started in Ronin Lab with your words and
-nothing of Ronin's; the team's Ronin base and worktrees are off. Ronin Team is the same
-shape with Ronin agents and the usual team defaults, started in the folder chosen under
-Where. Both open their team page with the team's configuration top-right and the centre
-column kept narrow: Ronin Team seats its Team Lead top-left and Agent 1 and Agent 2 below,
-whatever order they were born in; Bare Metal seats its sessions top-left and below.
-
-**Code Stack Eval's folder.** The page browses your folders and says which are
-repositories. **Evaluate** picks the one this run is about; at launch it becomes a row of
-the Team's own Workspace.
-
-**What opens.** Launch opens the new team or agent in a new tab, already seated: Home
-Health puts the Head Coach top-left and the Wipeboard beside it; Grokbot seats the agent,
-its Cron jobs and the briefing; Agent + Editable Doc seats the agent beside the document.
-
-**When something is refused.** If the machine's session limit, a name already in use, or
-anything else stops a row, the team still opens with whoever was born and a line beside
-Launch names the missing rows and why. Only a launch that born nobody closes the tab, and
-the reason sits in the same place.
-
 ## Model providers
 
 One stone per provider CLI Ronin knows, each wearing its state: **Activated**, **Off**,
@@ -161,7 +96,7 @@ step waits.
 |---|---|---|
 | **Install** | whether the CLI is on this machine | **Install** opens the provider's installer and first-run setup in a tile on this surface; a provider Ronin cannot install safely gets an **Install guide** link |
 | **Authenticate** | whether the provider is signed in here | **Authenticate** opens the provider's own sign-in in a tile on this surface, on its terminal; the step says how that CLI's sign-in goes (its methods and what to press: `signIn` in `src/agents.ts`, one line per provider, read off the CLI's own screens; KAN-716), then "Signed in? Press Done." **Done** sits right under the terminal, full width, and records it; **Cancel** ends the terminal session. The naming (title and type) comes after Done, already filled with "<provider> subscription" and Account / subscription, so Done never waits on it. While the sign-in is open, the runtime reads the CLI's credential file each time it answers, and the page asks again when you come back to its tab. Once the file is there, the step says the provider is signed in (KAN-723) |
-| **Ready** | activation, which unlocks Home's doors and the preset stones | **Turn off** stops Ronin measuring, updating and launching the provider — tiles already running are not touched and the sign-in is kept; **Turn on** brings it back, and nothing needs signing in again |
+| **Ready** | activation, which unlocks Home's doors | **Turn off** stops Ronin measuring, updating and launching the provider — tiles already running are not touched and the sign-in is kept; **Turn on** brings it back, and nothing needs signing in again |
 
 The install window can continue directly into the provider's sign-in. The temporary
 terminal has a normal tmux shell: exiting the CLI returns to its prompt. Installation,
@@ -264,21 +199,17 @@ is the one thing left to do, a fourth control, **Restart**, appears until Ronin 
 Nothing on the page polls: a confirmed email, each install step and a switch's new facts
 arrive as Ronin learns them, and after a restart the page reads again when its connection
 to Ronin returns.
-Installed parts are usable whether or not anyone registered. The Grokbot Morning Briefing
-preset waits for Services to be active. The activation flow itself is in
+Installed parts are usable whether or not anyone registered. The activation flow itself is in
 `docs/getting-started/services-activation.md`.
 
 ## Launch your own
 
-Three stones for anything the presets do not cover:
+Two stones:
 
 - **Agent** opens the ordinary New Agent form here: name, kind, provider and model,
   instructions, mandate, and its behaviours.
 - **Team** opens the ordinary New Team form here: the team, its agents, and where it
   works.
-- **Template** opens Templates: what is on your system, shipped with Ronin, installed, or
-  saved by you, ready for the Agent and Team forms. The Ronin library and sharing your own
-  come with Ronin Services.
 
 Each launch opens its result in a new tab. Inside a Team's own page, adding an Agent from
 the roster seats the newborn in the workspace that made it instead; see

@@ -93,8 +93,9 @@ One Agent is told facts, behaviours and tools at a depth, from its work record. 
 provides the input rules; this surface owns the resulting brief and birth receipt.
 
 - Contract: [The brief](architecture/brief.md).
-- Inputs: [facts](../ronin_catalogs/facts/README.md), [behaviours](../ronin_catalogs/behaviours/README.md),
-  [tools](../ronin_catalogs/tools/README.md), [templates](../ronin_catalogs/templates/README.md).
+- Inputs: the foundations in [ronin_stock](../ronin_stock/stock_readme.md): [facts](../ronin_stock/facts/facts_readme.md),
+  [behaviours](../ronin_stock/behaviours/behaviours_readme.md), [tools](../ronin_stock/tools/tools_readme.md),
+  [playbooks](../ronin_stock/playbooks/playbooks_readme.md).
 - Code: [launch.ts](../src/routes/launch.ts), [agent-defaults.ts](../src/agent-defaults.ts),
   [catalog.ts](../src/catalog.ts), [brief-record.ts](../src/brief-record.ts),
   [brief-settings.ts](../src/brief-settings.ts), [brief.ts](../src/brief.ts),
@@ -104,12 +105,12 @@ provides the input rules; this surface owns the resulting brief and birth receip
 
 ## Tools
 
-A tool owns executable authority; its file in `ronin_catalogs/tools/` says what the brief
+A tool owns executable authority; its file in `ronin_stock/tools/` says what the brief
 tells about it. Composite tools reuse guarded operations. UI and provider-native skills call or teach
 these contracts without creating another authority.
 
 - Contract: [The brief](architecture/brief.md#boundaries).
-- Inventory: [tool files](../ronin_catalogs/tools/), [executables](../ronin_bin/).
+- Inventory: [tool files](../ronin_stock/tools/), [executables](../ronin_bin/).
 - Follow the executable to its actual implementation: [worktree-desk](../ronin_bin/worktree-desk)
   uses [cli-api.ts](../src/routes/cli-api.ts) and [commands/desk.ts](../src/commands/desk.ts);
   [work-record](../ronin_bin/work-record) dispatches to [work-record-write](../libexec/work-record-write).

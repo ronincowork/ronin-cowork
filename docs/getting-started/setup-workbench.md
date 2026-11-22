@@ -41,9 +41,6 @@ Tailscale, set a password or choose **None** if the machine is protected another
 - **Agent** — one Agent: its name, provider and model, and the folder it works in.
 - **Team** — several Agents working together. See
   [New Team](../using-ronin/new-team.md).
-- **Presets** — ready-made starts, such as a Personal Assistant, a Morning Briefing, or a
-  Team to build a new project. **You use Ronin for** narrows them to building software,
-  life assistants, or research and writing.
 
 Whatever you launch opens in a new tab, ready to talk to.
 

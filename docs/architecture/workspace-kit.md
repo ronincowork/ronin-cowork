@@ -164,7 +164,7 @@ Every consumer must:
    or validation the backend does not require.
 8. Preserve unrelated dirty work and stage paths/hunks selectively.
 9. Read every string a person sees through `t('room.key', 'literal')` (`public/js/lexicon.js`)
-   and land the key in `ronin_catalogs/lexicons/professional_en.md` in the same commit —
+   and land the key in `ronin_stock/lexicons/professional_en.md` in the same commit —
    `docs/products/kokugo.md` is the whole instruction. Kit primitives take the already-translated word; they never translate.
 
 If a needed primitive, layout, adapter, state field, lifecycle capability, or backend

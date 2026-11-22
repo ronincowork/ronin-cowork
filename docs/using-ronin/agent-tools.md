@@ -13,12 +13,12 @@ Tools do jobs and report what happened. A Cowork Agent is told:
 - `session_*`: check, create, change, archive, restore and end Agent sessions; `session_create` rides Recruit: staff agents
 - `plan`: list, read, write, park and order the Workspace's plans
 - `canvas`: list the canvas templates; make, read and edit the Workspace's canvases (read shows each live block as it is now)
-- `item`: create, find, move, hand off and comment on work items; check out library items
+- `item`: create, find, move, hand off and comment on work items
 - `worktree-desk`: open, sync and hand in your worktree
 - `machine-settings`: read or change Campaign defaults, providers and Workspace folders
 - `team`: create or read a Team's roster and what it holds
 - `ronin-host`: measure the machine: what it is, its space, its account, which secrets exist
-- `office`: the machine status, the one complete truth: what this office has set up, what it hasn't and what is available; hosted, its `account` fact is the person's Business Lounge record
+- `office`: the office's facts in one, as they are now: what this office has set up, what it hasn't and what is available
 - `workspace-doc`: read and write the office's Workspace docs: each Workspace's Summary and notes
 - `mika`: ask Mika, Ronin's help assistant
 - `lookup`: print a Ronin document by its `mika-source:` id

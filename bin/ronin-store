@@ -28,9 +28,13 @@ telemetry|data|telemetry
 ageru|user|ageru
 ledger|data|ledger
 message_queue|data|message-queue
-behaviours|user|behaviours
-facts|user|facts
-library|user|library
+seats|data|seats
+custom|user|custom
+behaviours|user|custom/behaviours
+facts|user|custom/facts
+tools|user|custom/tools
+playbooks|user|custom/playbooks
+office|user|office
 wipeboards|user|wipeboards
 jikan|user|jikan
 campaigns|user|campaigns
@@ -40,8 +44,6 @@ house|user|house
 work_items|data|work-items
 desks|user|desks
 worktrees|user|worktrees
-catalogs|user|catalogs
-tools|user|tools
 memory|user|memory
 config|user|config
 mika_home|user|mika

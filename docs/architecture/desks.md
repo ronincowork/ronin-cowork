@@ -4,7 +4,7 @@ The internal HTTP desk surface owns these managed-worktree mechanics. `worktree-
 it and prints its reply. In this document, backticked/type-level `desk` names are persisted
 compatibility identifiers; the product term is **worktree**.
 What a session is told is
-`ronin_catalogs/behaviours/working-at-a-desk.md`. This page is the tool-side reference:
+`ronin_stock/behaviours/working-at-a-desk.md`. This page is the tool-side reference:
 what is recorded where, what each operation does to git, and what it refuses.
 
 > The current model is `docs/architecture/worktrees.md`.

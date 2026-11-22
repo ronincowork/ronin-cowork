@@ -29,18 +29,16 @@ ronin-cowork/
 ├── libexec/                 internal command implementations, not public commands
 ├── public/                  browser UI source and served static assets
 ├── ronin_bin/               Agent-facing executable tools projected onto PATH
-├── ronin_catalogs/          stock typed catalogs and Agent-composition definitions
-│   ├── behaviours/
-│   │   ├── floor/           every resolved file applies to every Agent, house Agents included
-│   │   ├── conditional/     individual files apply from authored launch facts
-│   │   ├── selected/        individual files apply through explicit composition
-│   │   └── sought/          awareness-only files; currently empty
-│   ├── capabilities/        real tool bundles and their teaching
+├── ronin_stock/             everything Ronin ships for Agents (stock_readme.md)
+│   ├── behaviours/          foundations: how an Agent works
+│   ├── tools/               foundations: what the brief says about each tool
+│   ├── facts/               foundations: fact-prints, how the brief prints each fact
+│   ├── playbooks/           foundations: PLAYBOOK-n work items, checked out into live work
+│   ├── workspace_types/     what a new Workspace can be
+│   ├── canvases/            outlines a canvas starts from
 │   ├── desk_profiles/       named presentation/workspace defaults
 │   ├── lexicons/            surface-language dictionaries
-│   ├── services/            Ronin Services, Ronin's own switchable contribution
-│   └── templates/           reusable Agent and Team starting compositions
-├── ronin_library/           Library type/index definitions and user-facing inventory
+│   └── services/            Ronin Services, Ronin's own switchable contribution
 ├── scripts/                 repository verification, diagnostics, and maintenance
 ├── src/                     TypeScript server, contracts, adapters, and runtime
 │   ├── activation/          registration and optional-Service activation state
@@ -89,30 +87,19 @@ That rule belongs in a Behavior, capability, tool help, or repository `AGENTS.md
 
 ### Agent composition
 
-`ronin_catalogs/` is the stock, upgrade-owned half of typed resources. Owner resources
-live in stores outside the repository and shadow or extend the stock coordinate defined by
-each catalog.
+`ronin_stock/` is everything Ronin ships for Agents and their work; an update replaces it
+whole. The person's own files are in `~/ronin/custom/`, in the same folders, and replace a
+stock file of the same id; office-output is in `~/ronin/office/`. The three places, the one
+rule and the folder map are [stock_readme.md](../../ronin_stock/stock_readme.md).
 
-- A **capability** exists to group and teach real Agent tools. It must have a `## Tools`
-  table. General conduct does not belong there.
-- A **Behavior** exists primarily to influence how an Agent works. Its directory is its
-  delivery scope: `floor`, `conditional`, `selected`, or `sought`.
-- An **installation** describes what a machine can install or enable and what that state
-  contributes. It is not an Agent capability.
-- A **template** is an authored starting composition, never runtime authority.
+- A **foundation** is what an Agent and its work are built from: a behaviour, a tool, a fact
+  (its fact-print) or a playbook. Each folder is flat; a file's `when:` says which Agents it
+  reaches ([the brief](brief.md)).
+- An **installation** (`services/`) describes what a machine can install or enable and what
+  that state contributes.
 - A **desk profile** and **lexicon** are presentation defaults and words, not Agent
   instruction.
-- Flat root registries remain flat when their format needs no additional grouping.
-
-The floor contains `base-agent.md`, what every Agent is told, and the stock-empty
-`user-intro.md`. Registration writes the owner's two-line introduction to
-`ways/floor/user-intro.md`, which shadows the placeholder whole. Every brief stacks on the
-floor: `conditional/cowork-agent.md`, `mandates.md` and `write_it_down.md` apply to every
-Agent that is not a house Agent (`requires: cowork`); `conditional/mika.md` is Mika's
-(`requires: role:mika`), with `conditional/atarashi.md` added for a new owner. Team-lead teaching lives
-in `conditional/team-lead.md`, and a lead with managed worktrees also gets
-`conditional/lead-worktrees.md`; Team remains the tool capability in
-`capabilities/cowork_team.md`.
+- Flat root registries (`MODEL_PROVIDERS.md`, `SKINS.md`) remain flat.
 
 ### Executable and runtime code
 

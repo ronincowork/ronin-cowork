@@ -18,7 +18,6 @@ through to `professional_en`.
 - **recruit:** Squad
 - **output:** Loot
 - **go:** GLHF
-- **save_template:** Save build
 - **publish:** Publish build
 - **kind.coding:** Coding
 - **kind.household:** Household

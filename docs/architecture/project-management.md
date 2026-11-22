@@ -25,7 +25,7 @@ Agent on its Behaviors panel; the narrowest layer that says holds. Jira is an in
 the Campaign and Workspace only and never decides `pm`. With it off an Agent gets none of these.
 Each file's `when:` picks its readers; an Agent is told only its own.
 
-| File (`ronin_catalogs/`) | Read by | `when:` |
+| File (`ronin_stock/`) | Read by | `when:` |
 |---|---|---|
 | `behaviours/project-management.md` | every Agent: the five reasons, structure, objectives in the user's words, status, notices, the hand-in note, don'ts | `pm` |
 | `behaviours/pm-coworker.md` | coworkers: take, start, side work, hand in, hand over at the end, end when accepted | `pm, team, role:coworker` |

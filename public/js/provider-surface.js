@@ -6,7 +6,7 @@ import { mountHermesSurface } from './hermes-surface.js';
  * registered by both workbenches. Its first face is an inventory of equal stones on the
  * shared stone work surface — one per CLI the registry knows, each wearing its short
  * measured state, then any catalog provider no registry CLI serves — mounted straight on
- * the surface content so the stone seat owns every inset exactly as Presets does. The
+ * the surface content so the stone seat owns every inset. The
  * footer keeps the catalog research date and this machine's measurement date available
  * behind a short disclosure.
  *

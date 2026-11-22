@@ -24,7 +24,7 @@ becomes its level in full density, a level becomes its selected stone in compact
 the stone open at that level returns with it. Consumers never restyle the rest geometry.
 
 **The phalanx** (owner ruling, 2026-10-03). `phalanx.js` is the stone work
-surface as it was, its geometry untouched: Settings (Presets, Workspaces, Model
+surface as it was, its geometry untouched: Settings (Workspaces, Model
 Providers, Setup) and the Agent workbench's Work Items draw with it. Escape lifts only the layer it
 is pressed in (2026-10-08).
 
@@ -309,8 +309,7 @@ independently.
 | Installations | Desk record, installation catalog, and installed facts |
 | Password | authentication state owned by the shared Password surface |
 | Bounty Program | registration/GitHub facts and the explicit preference it writes |
-| Launch your own | no launch data until Agent, Team, or Preset is selected; that embedded form then owns its reads |
-| Presets | preset catalog plus provider/root choices required by the selected preset |
+| Launch your own | no launch data until Agent or Team is selected; that embedded form then owns its reads |
 
 ### Cowork and Team (`cowork` and `team` profiles)
 
@@ -329,7 +328,7 @@ independent and must not hold the frame.
 | Cron jobs | scheduled messages for the addressed Team or collection scope |
 | New Agent / New Team | canonical launch form and its dependencies listed above |
 | Archived sessions | archive manifests when shown |
-| Presets / Document / Feedback | the shared surface's own reads |
+| Document / Feedback | the shared surface's own reads |
 
 ### Models (`models` profile)
 

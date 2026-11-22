@@ -8,7 +8,7 @@ behavior and implementation; this page names them without copying their rules.
 | Source | Owns |
 |---|---|
 | This page | Canonical terms, distinctions, and the contract for each |
-| [Stock lexicon](ronin_catalogs/lexicons/professional_en.md) | Default UI strings; other lexicons may replace wording |
+| [Stock lexicon](ronin_stock/lexicons/professional_en.md) | Default UI strings; other lexicons may replace wording |
 | [Agent glossary](KOTOBA_GLOSSARY.md) | How an Agent refers to those concepts when speaking to the owner; `ronin-help <word>` prints it |
 
 Change a meaning here and in its owning contract together. Change a displayed word in the
@@ -18,14 +18,24 @@ second authority for current Cowork or Services.
 
 ## Agent composition and tools
 
-These terms follow [the brief](docs/architecture/brief.md).
+These terms follow [the brief](docs/architecture/brief.md) and
+[ronin_stock/stock_readme.md](ronin_stock/stock_readme.md). One hyphenated term per concept, so no
+bare word carries two meanings.
 
 | Term | Meaning |
 |---|---|
-| Fact | What is true about the user and the Agent's situation, printed in the brief from the work record (`ronin_catalogs/facts/`) |
-| Tool | Ronin executable authority; its help describes its callable contract; its file in `ronin_catalogs/tools/` says what the brief tells about it |
+| Foundation (`foundation`) | One of the four kinds an Agent and its work are built from: behaviour, tool, fact, playbook |
+| Stock-foundation (`stock-foundation`) | Ronin's foundation file, in `ronin_stock/<kind>/`; an image update replaces it, nothing writes it at run time |
+| Custom-foundation (`custom-foundation`) | The person's foundation file, in `~/ronin/custom/<kind>/`, which replaces the stock one of the same id whole, or adds one |
+| Fact | What is true about the user and the Agent's situation, printed in the brief from the work record |
+| Fact-print (`fact-print`) | A fact's foundation file (`ronin_stock/facts/<id>.md`): how the brief prints it, not the fact itself |
+| Office-fact (`office-fact`) | One of the nine facts about the office as built, `~/ronin/office/facts/<id>.md`, rewritten when its sources change |
+| Office-output (`office-output`) | Everything in `~/ronin/office/`: the office-facts, `MACHINE_STATUS.md`, `ABOUT_USER.md`, the Workspace Summaries |
+| Playbook (`playbook`) | A reusable plan of work, work items with ids `PLAYBOOK-n` (folder `playbooks/`), checked out into live items with no link back ([Playbooks](docs/using-ronin/playbooks.md)) |
+| Agent-kind (`agent-kind`) | A condition a foundation's `when:` reacts to: irasshai, mika, a role |
+| Tool | Ronin executable authority; its help describes its callable contract; its file in `ronin_stock/tools/` says what the brief tells about it |
 | Composite tool | A tool coordinating guarded operations under one contract |
-| Behaviour | Provider-neutral working guidance an Agent follows (`ronin_catalogs/behaviours/`) |
+| Behaviour | Provider-neutral working guidance an Agent follows (`ronin_stock/behaviours/`) |
 | Seed | The one line a behaviour or tool is told by: that it exists, and where to read more |
 | Depth | How much of a behaviour or tool an Agent is told: not told, seed, or full |
 | Full | The whole text, in the brief from the start |
@@ -42,7 +52,6 @@ These terms follow [the brief](docs/architecture/brief.md).
 | Agent composition | The facts, behaviours and tools an Agent is told, with its mandate and assignment |
 | Scope | Where a fact or rule applies; distinguish Desk/Team inheritance and resource storage/shadowing |
 | Installation | An installed facility that can make tools, guidance, or service parts available; see [Installations](docs/architecture/installations.md) |
-| Preset / template | Editable starting values for a launch; see [Templates](docs/architecture/templates.md) |
 
 Macro, action, SOP, and Agent role are not additional composition layers. “Action” and
 “procedure” remain ordinary prose. Team lead is an explicit designation.

@@ -13,8 +13,8 @@ what isn't and what is available. It is the office's facts in one: the people an
 them, the machine (hosted or self-hosted, Ronin's version, disk, Ronin Services' parts), in a
 hosted office the Business Lounge account, each Workspace, every model provider, GitHub and
 integration, the Teams and Agents, the open epics (onboarding's progress is its epic) and the
-defaults new Agents get. Each fact is a file in `~/ronin/library/facts/`, rewritten about a second
-after what it reads changes; `~/ronin/library/MACHINE_STATUS.md` is all of them, kept current. The
+defaults new Agents get. Each office-fact is a file in `~/ronin/office/facts/`, rewritten about a second
+after what it reads changes; `~/ronin/office/MACHINE_STATUS.md` is all of them, kept current. The
 card shows it as it is when opened, and when it was written. Every Ronin's Settings has the card.
 Agents read the same files, or all of them with `office read`.
 

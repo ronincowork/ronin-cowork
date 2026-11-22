@@ -26,7 +26,7 @@ export const onboardingDone = (epics) => (epics || []).some((one) => one?.level 
 
 /**
  * Her epic's tasks as Setup's steps: the epic she holds, its level-0 children, in `order` (the
- * template's task titles) with any other after them, each { id, title, done }.
+ * PLAYBOOK-1 task titles) with any other after them, each { id, title, done }.
  */
 export function irasshaiSteps(epics, items, order = []) {
   const epic = (epics || []).find((one) => one?.level === 1 && holds(one) && one.status !== 'Done')

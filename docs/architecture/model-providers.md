@@ -1,6 +1,6 @@
 # Model providers
 
-Ronin launches agents from **one provider catalog**: `ronin_catalogs/MODEL_PROVIDERS.md`.
+Ronin launches agents from **one provider catalog**: `ronin_stock/MODEL_PROVIDERS.md`.
 It owns Ronin's own concepts: which providers there are, the CLI that serves each, and the
 family words that give a model its tier. Which models can launch is each signed-in CLI's
 own list, in the Campaign's **measured provider summary**. Ronin keeps no model facts of
@@ -14,7 +14,7 @@ Provider setup has three records with deliberately different contents:
 | Record | Holds |
 |---|---|
 | this document | the provider/model extension contract |
-| `ronin_catalogs/MODEL_PROVIDERS.md` | provider facts: id, CLI, family → tier words |
+| `ronin_stock/MODEL_PROVIDERS.md` | provider facts: id, CLI, family → tier words |
 | `docs/agents/<cli>.md` | the executable Native, Model, Dangerously and Resume command forms |
 | `docs/operating/secrets.md` | how the owner supplies and audits the credential that pays |
 
@@ -61,7 +61,7 @@ unchanged to the named provider. Ronin does not maintain or rewrite an alias map
 CLI listed and to the CLI's Agent page for the command. The catalog deliberately contains no CLI syntax.
 
 **Shadowing.** The shipped file is stock and an upgrade replaces it. A copy at
-`$(ronin-store catalogs)/MODEL_PROVIDERS.md` is an **overlay** on it, merged per
+`~/ronin/custom/MODEL_PROVIDERS.md` is an **overlay** on it, merged per
 `### <Vendor>` section and keyed by the section's `provider` id — the entry-merge every
 `## name` catalog gets (`docs/architecture/shadowing.md`), at this file's heading level. A user section
 of a shipped id replaces that section whole and keeps its place; a new id appends after
@@ -190,7 +190,7 @@ Model: Native only, and the surface says so). `readModels` walks that table; no 
 appears in it. A new way to read a list is a new key, never an `if`.
 
 Everything else reads the record through `GET /api/setup/runtime`: Ronin Home's three
-blocks, the Presets gates and the selector summaries. A machine that
+blocks and the selector summaries. A machine that
 has never been measured is measured once on the first read, not guessed. A stale summary
 shows its dates. `POST /api/setup/providers/:provider/install` uses the shared installer
 and returns the runtime with its explicit `install_open` session attachment. Setup and
@@ -290,7 +290,7 @@ Desk. A Team's `agent_defaults` carries no model.
 Every place the product asks *which provider, and which model* is one control:
 `providerModelPair` in `public/js/form-steps.js`. New Agent, New Team, Add Agent to Team,
 ⚙ Configuration and Models > Defaults (the Agent and Team lead models, each provider's
-preferred model, and Mika's row), cowork setup and the Presets rows all call
+preferred model, and Mika's row) and cowork setup all call
 it; none keeps a list, a join or a vendor's name of its own. The picker reads the rows the
 server joined (`GET /api/provider-catalog`) and what this machine measured of each CLI
 (`GET /api/setup/runtime`, which answers from the Campaign's recorded summary and never
@@ -408,7 +408,7 @@ fixtures and the smallest corresponding patterns before adding its catalog secti
 
 ## Adding a native provider
 
-Give a provider its own section in `ronin_catalogs/MODEL_PROVIDERS.md` (or in your shadow
+Give a provider its own section in `ronin_stock/MODEL_PROVIDERS.md` (or in your shadow
 copy). Name its vendor id, the registry row that serves it, and the family words that give
 its models their tiers:
 

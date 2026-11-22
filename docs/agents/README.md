@@ -16,7 +16,7 @@ shortcuts belong only to [Terminal controls](../using-ronin/terminal-controls.md
 
 The CLI and inference provider are separate: several inference providers can use one
 CLI. Models, prices and owner overrides belong to the
-[provider catalog](../../ronin_catalogs/MODEL_PROVIDERS.md), parsed only by
+[provider catalog](../../ronin_stock/MODEL_PROVIDERS.md), parsed only by
 `src/model-providers.ts`. Do not copy model tables into these pages.
 
 Each Agent page is the executable authority for its no-model/model and
