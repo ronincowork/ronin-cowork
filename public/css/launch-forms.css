@@ -478,7 +478,10 @@
   .workspace-one { display: flex; flex-direction: column; gap: var(--space-paragraph); min-width: 0; }
   .workspace-one .workspace-page-head { flex-wrap: wrap; }
   .workspace-one .workspace-toggle { display: flex; gap: var(--space-row); margin-right: auto; }
-  .workspace-work { display: flex; flex-direction: column; gap: var(--space-paragraph); min-width: 0; }
+  /* Work: its life beside its document; each column at least 20rem, so a narrow screen stacks them. */
+  .workspace-work { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr)); gap: var(--space-subsection); align-items: start; min-width: 0; }
+  .workspace-life, .workspace-doc-pane { display: flex; flex-direction: column; gap: var(--space-paragraph); min-width: 0; }
+  .workspace-doc-pane .workspace-doc-text { width: 100%; box-sizing: border-box; }
   .workspace-team { display: flex; flex-direction: column; gap: var(--space-row); }
   .workspace-team-agents { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: var(--space-row); }
   .workspace-route { min-height: 100%; overflow: auto; padding: var(--space-inset); background: var(--workbench-bg); min-width: 0; }
