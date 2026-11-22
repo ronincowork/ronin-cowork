@@ -363,7 +363,7 @@
   .fs-reading dd { margin: 0; min-width: 0; color: var(--fg-strong); font-size: var(--form-input); }
   .fs-reading em { color: var(--muted); font-style: normal; }
 
-  /* Behaviors library/viewer — the shared stone surface supplies responsive geometry. */
+  /* Behaviors list/viewer — the shared stone surface supplies responsive geometry. */
   .behaviour-surface .sws-detail { min-width: 0; }
   .behaviour-surface .sws-group { color: var(--kaki); font-weight: var(--weight-strong); }
   .behaviour-surface .behaviour-settings { display: grid; gap: var(--space-paragraph); padding: 0 var(--space-inset) var(--space-section); }

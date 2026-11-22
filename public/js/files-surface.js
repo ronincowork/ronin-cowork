@@ -19,10 +19,10 @@ function passDragsThrough() {
 }
 
 export function registerFilesSurface() {
-  const { library } = WorkspaceKit.workbench;
-  if (library.has(FILES_TYPE)) return;
+  const { surfaces } = WorkspaceKit.workbench;
+  if (surfaces.has(FILES_TYPE)) return;
   passDragsThrough();
-  library.register({
+  surfaces.register({
     type: FILES_TYPE,
     header: 'surface',
     className: 'wk-selector-utility',

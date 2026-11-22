@@ -31,7 +31,7 @@ Consume the facade where possible:
 
 ```js
 const { createSurface, createCard, createAction } = WorkspaceKit.primitives;
-const { library, profiles, create } = WorkspaceKit.workbench;
+const { surfaces, profiles, create } = WorkspaceKit.workbench;
 const { createTerminalTileHost } = WorkspaceKit.adapters;
 const { DISMISSED_WORKSPACE, normalizeWorkbenchState, workspaceMaySeedDefault } = WorkspaceKit.contract;
 ```
@@ -50,7 +50,7 @@ beneath that contract.
 
 - `WorkspaceKit.workbench.create({ profile, tenant, environment, defaultNode })` is the
   only public Workbench constructor. Consumers register reusable surface types in the
-  shared `library`, define a named profile as a list of type ids, and provide tenant
+  shared `surfaces` registry, define a named profile as a list of type ids, and provide tenant
   context. They cannot declare slots, selector DOM, headers, cells or geometry. Internally
   the Workbench owns a slot ARRANGEMENT
   (`{ slots: [{ name, label, width, min, compact }] }`, `public/js/workspace-arrangement.js`)
@@ -68,7 +68,7 @@ beneath that contract.
   typed becomes the browser tab's title through the view's own `title()`; the Team page
   offers it, defaulting to the team and persisted per tab.
   **A workspace holds exactly one surface instance.** `place(type, workspace, detail)`
-  resolves the type through the active profile and shared library. The library factory is
+  resolves the type through the active profile and the shared `surfaces` registry. The surface factory is
   called per workspace/resource; returning one node for two workspaces is refused. The
   selector and drag/drop both call this same placement path.
 - `createTerminalTileHost({ mode, actions })` and `createTabbedSurface({ actions })`

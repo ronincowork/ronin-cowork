@@ -232,7 +232,7 @@ function passwordSurfaceDefinition() {
 }
 
 export function registerPasswordSurface() {
-  const library = WorkspaceKit.workbench.library;
-  if (!library.has(PASSWORD_SURFACE_TYPE)) library.register(passwordSurfaceDefinition());
+  const surfaces = WorkspaceKit.workbench.surfaces;
+  if (!surfaces.has(PASSWORD_SURFACE_TYPE)) surfaces.register(passwordSurfaceDefinition());
   return PASSWORD_SURFACE_TYPE;
 }

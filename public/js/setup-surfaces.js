@@ -727,7 +727,7 @@ export function setupSurfaceDefinitions() {
 }
 
 export function registerSetupSurfaces() {
-  const library = WorkspaceKit.workbench.library;
-  for (const definition of setupSurfaceDefinitions()) if (!library.has(definition.type)) library.register(definition);
+  const surfaces = WorkspaceKit.workbench.surfaces;
+  for (const definition of setupSurfaceDefinitions()) if (!surfaces.has(definition.type)) surfaces.register(definition);
   return SETUP_SURFACE_TYPES;
 }

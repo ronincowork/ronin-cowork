@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "canvases": {
-    "library.setup.provider-welcome": {
+    "garden.setup.provider-welcome": {
       "copy": [
         {
           "id": "provider-boundary",
@@ -40,7 +40,7 @@
         }
       ]
     },
-    "library.setup.register": {
+    "garden.setup.register": {
       "copy": [
         {
           "id": "register-intro",
@@ -65,7 +65,7 @@
         }
       ]
     },
-    "library.setup.workspace": {
+    "garden.setup.workspace": {
       "copy": [
         {
           "id": "workspace-intro",
@@ -100,7 +100,7 @@
         }
       ]
     },
-    "library.setup.installations": {
+    "garden.setup.installations": {
       "copy": [
         {
           "id": "installations-intro",
@@ -135,7 +135,7 @@
         }
       ]
     },
-    "library.setup.password": {
+    "garden.setup.password": {
       "copy": [
         {
           "id": "password-intro",
@@ -156,7 +156,7 @@
         }
       ]
     },
-    "library.setup.launch": {
+    "garden.setup.launch": {
       "copy": [
         {
           "id": "launch-intro",

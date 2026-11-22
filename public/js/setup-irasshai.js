@@ -120,8 +120,8 @@ export function createIrasshaiOpener({ refresh, showChat }) {
 
 /** Her entry as a selector type: one card, never placed (a press is her opener's). */
 export function registerIrasshaiOpen() {
-  if (WorkspaceKit.workbench.library.has(IRASSHAI_OPEN_TYPE)) return IRASSHAI_OPEN_TYPE;
-  return WorkspaceKit.workbench.library.register({
+  if (WorkspaceKit.workbench.surfaces.has(IRASSHAI_OPEN_TYPE)) return IRASSHAI_OPEN_TYPE;
+  return WorkspaceKit.workbench.surfaces.register({
     type: IRASSHAI_OPEN_TYPE,
     header: 'surface',
     label: IRASSHAI_NAME,
@@ -226,8 +226,8 @@ export function createIrasshaiChat() {
 
 /** Her steps in the selector: one card per task, read off `environment.irasshaiSteps()`. */
 export function registerIrasshaiSteps() {
-  if (WorkspaceKit.workbench.library.has(IRASSHAI_STEP_TYPE)) return IRASSHAI_STEP_TYPE;
-  return WorkspaceKit.workbench.library.register({
+  if (WorkspaceKit.workbench.surfaces.has(IRASSHAI_STEP_TYPE)) return IRASSHAI_STEP_TYPE;
+  return WorkspaceKit.workbench.surfaces.register({
     type: IRASSHAI_STEP_TYPE,
     header: 'surface',
     label: 'Step',
@@ -243,8 +243,8 @@ export function registerIrasshaiSteps() {
 
 /** Her Integrations step's surface: the integrations panel, embedded, for the office's Campaign. */
 export function registerIrasshaiIntegrations() {
-  if (WorkspaceKit.workbench.library.has(IRASSHAI_INTEGRATIONS_TYPE)) return IRASSHAI_INTEGRATIONS_TYPE;
-  return WorkspaceKit.workbench.library.register({
+  if (WorkspaceKit.workbench.surfaces.has(IRASSHAI_INTEGRATIONS_TYPE)) return IRASSHAI_INTEGRATIONS_TYPE;
+  return WorkspaceKit.workbench.surfaces.register({
     type: IRASSHAI_INTEGRATIONS_TYPE,
     header: 'surface',
     label: () => t('integrations.title', 'Integrations'),

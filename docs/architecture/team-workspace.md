@@ -207,7 +207,7 @@ WorkspaceKit.workbench.create({
 
 Append `workbench.host`. Expose `workbench.arrangement` on the registered view so the
 ViewHost draws the layout map in the bar. `workbench.place(type, workspace, detail)` asks
-the active profile and shared library for an independent surface instance.
+the active profile and the shared surfaces registry for an independent surface instance.
 
 The managed Kit owns: slot geometry and DOM order; the layout map (show/hide/reorder);
 one splitter between each visible pair, symmetric; `data-width="compact"` on a slot

@@ -198,7 +198,7 @@ export function createCampaignView() {
       for (const id of bench.ids) {
         const held = typed.seats[id];
         const type = typeof held === 'object' ? held.type : held;
-        if (WorkspaceKit.workbench.library.has(type)) bench.place(type, id, typeof held === 'object' ? held : {});
+        if (WorkspaceKit.workbench.surfaces.has(type)) bench.place(type, id, typeof held === 'object' ? held : {});
       }
       bench.refreshSelector(); save();
       const refresh = () => { if (entered) bench.refreshSelector(); };

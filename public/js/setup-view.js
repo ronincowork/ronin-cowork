@@ -150,7 +150,7 @@ export function createSetupView() {
     takeIrasshaiStep: (step) => {
       if (!step.done) return void chat?.say(takeStepLine(step));
       const opens = stepOpens(step);
-      if (opens && WorkspaceKit.workbench.library.has(opens)) bench?.place(opens, 'workspace2');
+      if (opens && WorkspaceKit.workbench.surfaces.has(opens)) bench?.place(opens, 'workspace2');
     },
     onGardenCanvas: (next) => {
       garden = next;
@@ -213,7 +213,7 @@ export function createSetupView() {
     void reportMikaView({ workbench: 'setup', team: '', selected: 'workspace1', reading: '', workspaces: Object.fromEntries(bench.visibleIds().map((workspace) => [workspace, shown(workspace)])) });
   };
   const onShow = (m) => {
-    if (!entered || m.tab !== mikaTab() || !WorkspaceKit.workbench.library.has(m.surface)) return;
+    if (!entered || m.tab !== mikaTab() || !WorkspaceKit.workbench.surfaces.has(m.surface)) return;
     if (bench.visibleIds().some((workspace) => bench.typeAt(workspace) === m.surface)) return; // on screen already: left where it is (KAN-712)
     bench.place(m.surface, m.workspace); // not selected: the person stays in her chat
   };

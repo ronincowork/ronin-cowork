@@ -4,7 +4,7 @@ import { createTabbedSurface } from './workspace-tabs.js';
 import { WorkspaceLayouts } from './workspace-layouts.js';
 import { WorkspaceAdapters } from './workspace-adapters.js';
 import { DISMISSED_WORKSPACE, normalizeWorkbenchState, workspaceMaySeedDefault } from './workspace-contract.js';
-import { WorkbenchLibrary, WorkbenchProfiles, createWorkbench } from './workbench.js';
+import { WorkbenchSurfaces, WorkbenchProfiles, createWorkbench } from './workbench.js';
 
 // The kit's stylesheet rides the same fingerprinted asset path as this module (lead, 2026-10-24):
 // a bare 'workspace-kit.css' sat outside the version, so a restart could leave a browser on the old kit.
@@ -19,6 +19,6 @@ export const WorkspaceKit = Object.freeze({
   primitives: Object.freeze({ ...WorkspacePrimitives, createTabbedSurface }),
   layouts: WorkspaceLayouts,
   adapters: WorkspaceAdapters,
-  workbench: Object.freeze({ library: WorkbenchLibrary, profiles: WorkbenchProfiles, create: createWorkbench }),
+  workbench: Object.freeze({ surfaces: WorkbenchSurfaces, profiles: WorkbenchProfiles, create: createWorkbench }),
   contract: Object.freeze({ DISMISSED_WORKSPACE, normalizeWorkbenchState, workspaceMaySeedDefault }),
 });

@@ -48,9 +48,9 @@ links and history. It is a reading: changes go through the `item` tool. The ston
 no action callback, so the normal selection, rail, detail, Escape and focus-return
 behavior applies; dragging a stone onto a tile hands the Agent the item's reference.
 
-## Library, profile, tenant, instance
+## Surfaces, profile, tenant, instance
 
-`public/js/workbench.js` owns the shared library and frame.
+`public/js/workbench.js` owns the shared surface registry (`surfaces`) and frame.
 `public/js/workbench-catalog.js` is the canonical registration and profile catalog for
 Ronin Settings, New Project, Cowork, Team, Agent, and Home's Models and Workspaces
 doors. Destination modules provide tenant
@@ -71,9 +71,9 @@ elements or primitives exposing `.el`; the ViewHost alone places them. Standard 
 remain capability flags (`shape`, `ram`, `services`, and `feedback`), so a Workbench turns
 one off in its declaration rather than hiding it with local CSS or querying header DOM.
 
-- A **library definition** gives one stable type a header kind, discovery reading, and
+- A **surface definition** gives one stable type a header kind, discovery reading, and
   `create(context)` factory.
-- A **profile** lists the library types one destination may place.
+- A **profile** lists the surface types one destination may place.
 - A **tenant** supplies scope such as a Teams collection or Team. It filters and
   parameterizes definitions; it does not create another Workbench implementation.
 - An **instance** belongs to one workspace and optional resource key. The same type in

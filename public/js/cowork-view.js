@@ -571,7 +571,7 @@ export function createCoworkView(options = {}) {
         if (seats[id].pool.has(request.detail.key)) putSession(request.detail.key, id, false);
         continue;
       }
-      if (WorkspaceKit.workbench.library.has(request.type) && bench.place(request.type, id, request.detail)) continue;
+      if (WorkspaceKit.workbench.surfaces.has(request.type) && bench.place(request.type, id, request.detail)) continue;
       else if (wanted && seats[id].pool.has(wanted)) putSession(wanted, id, false);
       // A remembered session the roster does not have: wait while the roster is still
       // arriving, then let it go — a workspace waiting forever is the blank the owner met.

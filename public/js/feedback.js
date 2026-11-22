@@ -6,9 +6,9 @@ import { t } from './lexicon.js';
 export const FEEDBACK_TYPE = 'ronin.feedback';
 
 export function registerFeedbackSurface() {
-  const { library } = WorkspaceKit.workbench;
-  if (library.has(FEEDBACK_TYPE)) return;
-  library.register({
+  const { surfaces } = WorkspaceKit.workbench;
+  if (surfaces.has(FEEDBACK_TYPE)) return;
+  surfaces.register({
     type: FEEDBACK_TYPE,
     header: 'surface',
     visible: () => false,

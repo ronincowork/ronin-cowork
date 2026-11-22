@@ -38,8 +38,8 @@ export function registerWorkbenchCatalog() {
   if (registered) return;
   registerFeedbackSurface(); registerFilesSurface(); registerBehaviourSurface();
   registerSetupSurfaces(); registerPasswordSurface();
-  const { library, profiles } = WorkspaceKit.workbench;
-  const add = (definition) => { if (!library.has(definition.type)) library.register(definition); };
+  const { surfaces, profiles } = WorkspaceKit.workbench;
+  const add = (definition) => { if (!surfaces.has(definition.type)) surfaces.register(definition); };
   const via = (type, header, method, extra = {}) => add({ type, header, ...extra,
     create: ({ workspace, detail, environment, consumed }) => environment[method](workspace, detail, consumed) });
   add({ type: WORKBENCH_TYPES.document, header: 'surface', label: () => t('docs.frame_title', 'Document'), discover: () => [], create: ({ detail, environment }) => environment.document(detail) });

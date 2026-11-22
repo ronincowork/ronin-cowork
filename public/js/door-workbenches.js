@@ -81,7 +81,7 @@ function doorWorkbench({ id, profile, label, seat, seats = { workspace1: seat },
       for (const workspace of bench.ids) {
         const held = typed.seats[workspace];
         const type = typeof held === 'object' ? held.type : held;
-        if (WorkspaceKit.workbench.library.has(type)) bench.place(type, workspace, typeof held === 'object' ? held : {});
+        if (WorkspaceKit.workbench.surfaces.has(type)) bench.place(type, workspace, typeof held === 'object' ? held : {});
       }
       bench.refreshSelector(); save();
       if (loaded) void loaded().then(() => { if (entered) reseat(); });

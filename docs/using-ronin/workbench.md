@@ -28,17 +28,17 @@ The vocabulary comes from `ronin_stock/lexicons/professional_en.md`. In particul
 
 If this guide and [KOTOBA](../../KOTOBA.md) disagree, flag the difference. Do not invent a replacement word.
 
-## Library, profile, tenant
+## Surfaces, profile, tenant
 
 Every destination reuses one Workbench implementation; they are profiles and tenants,
 not separate layout systems.
 
-- `Workbench.library` is the one reusable catalog of surface types.
-- `Workbench.profile(name)` lists which library types the selector may expose.
+- `Workbench.surfaces` is the one reusable registry of surface types.
+- `Workbench.profile(name)` lists which surface types the selector may expose.
 - The tenant says what is being screened: a Campaign, Teams collection, Team, Agent or Session.
-- Tenant data filters or parameterizes a library type; it never changes the frame.
+- Tenant data filters or parameterizes a surface type; it never changes the frame.
 
-| Tenant context | What a profile may expose from the library |
+| Tenant context | What a profile may expose from the surfaces |
 |---|---|
 | Campaign | Campaign settings and Campaign-level resources |
 | Teams collection | Teams, Agents, shared resources, and creation surfaces available in the selected Campaign context |
@@ -47,7 +47,7 @@ not separate layout systems.
 | Setup | the Garden plus Model providers, Register, Workspace folders, Installations, Password and Launch |
 
 Adding another tenant or profile adds no layout implementation. Adding another surface
-registers a per-tilespace factory in the shared library; any profile may name that type.
+registers a per-tilespace factory in the shared surfaces registry; any profile may name that type.
 
 The Campaign settings surface holds that Campaign's effective desk configuration. Choosing
 a desk-profile template copies its complete settings into the Campaign; after that, the

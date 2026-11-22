@@ -161,8 +161,8 @@ function createGardenCanvas({ onAction = () => {}, onMedia = () => {} } = {}) {
 }
 
 export function registerGardenCanvas() {
-  if (WorkspaceKit.workbench.library.has(GARDEN_CANVAS_TYPE)) return GARDEN_CANVAS_TYPE;
-  return WorkspaceKit.workbench.library.register({
+  if (WorkspaceKit.workbench.surfaces.has(GARDEN_CANVAS_TYPE)) return GARDEN_CANVAS_TYPE;
+  return WorkspaceKit.workbench.surfaces.register({
     type: GARDEN_CANVAS_TYPE,
     header: 'surface',
     label: 'Assist',
