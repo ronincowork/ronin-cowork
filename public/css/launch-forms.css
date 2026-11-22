@@ -137,6 +137,15 @@
   /* THE EPICS PHALANX (w897): the phalanx's own stones; the title wraps in full, the key under it. */
   .epic-record-stones .sws-stone { aspect-ratio: auto; min-height: calc(var(--sws-stone) / 2); padding-bottom: calc(var(--space-inset) + 5px); }
   .epic-record-stones .sws-label { overflow-wrap: anywhere; }
+  .epic-record-stones .sws-stone { gap: var(--space-row); }
+  .epic-record-stones .sws-secondary { color: var(--accent); white-space: normal; overflow-wrap: anywhere; } /* what needs you: wraps in full */
+  .epic-record-stones .sws-state { margin-top: auto; color: var(--muted); }
+  /* NEW EPIC (w897): an Epic's bar to fill in. */
+  .epic-new-title, .epic-new-goal { box-sizing: border-box; width: 100%; padding: var(--space-row) var(--space-inline); border: var(--edge) solid var(--line-2); border-radius: var(--radius-hair); background: var(--surface); color: var(--fg); font: inherit; font-size: var(--text-body); }
+  .epic-new-title { flex: 1 1 16rem; width: auto; font-weight: var(--weight-strong); }
+  .epic-new-goal { resize: vertical; }
+  .epic-new-page { display: flex; flex-direction: column; gap: var(--space-subsection); }
+  .epic-one .epic-empty[hidden] { display: none; }
   .epics-records > .wk-surface-content > .epic-empty { padding: var(--space-inset); }
   /* ONE EPIC (w899): its bar on top, four columns under it; a narrow seat stacks them in order. */
   .epic-one > .wk-surface-content, .epic-route { display: flex; flex-direction: column; gap: var(--space-subsection); min-width: 0; padding: var(--space-inset); }
@@ -145,7 +154,7 @@
   .epic-route > .epic-one > .wk-surface-content { padding: 0; }
   .epic-bar { display: flex; flex-direction: column; gap: var(--space-inline); padding: var(--space-inline) var(--space-inset); border: var(--edge) solid var(--line-2); border-radius: var(--radius-hair); background: var(--surface); }
   .epic-bar[hidden], .epic-columns[hidden] { display: none; }
-  .epic-bar-head { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: var(--space-inline); }
+  .epic-bar-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-inline); }
   .epic-bar-title { flex: 1 1 16rem; margin: 0; color: var(--fg-strong); font-size: var(--text-body); font-weight: var(--weight-strong); overflow-wrap: anywhere; }
   .epic-bar-key { color: var(--muted); font-weight: var(--weight-regular); font-variant-numeric: tabular-nums; }
   .epic-bar-actions { display: flex; flex-wrap: wrap; gap: var(--space-inline); }

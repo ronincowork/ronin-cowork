@@ -26,10 +26,13 @@ import { WORKBENCH_TYPES } from './workbench-catalog.js';
 import { openWorkspaceTab, reserveWorkspaceTab } from './workspace.js';
 import { ask } from './ask.js';
 import { holderWords } from './work-items-surface.js';
-import { itemBar, statusKey } from './tile-island.js';
+import { itemBar } from './tile-island.js';
 import { createPhalanx } from './phalanx.js';
 import { S } from './state.js';
-import { createProgress, epicStage, isOpenEpic, STAGE_KEYS } from './epic-stage.js';
+import { epicAttention, epicMoved, isOpenEpic, orderEpics, STAGE_KEYS, statusKey } from './epic-stage.js';
+import { createProgress } from './epic-progress.js';
+import { humanAge } from './work-record.js';
+import { teamsFromState } from './team-controller.js';
 
 /** The statuses in workflow order (Jira's, the store's default); a space's own extra names follow. */
 export const STATUSES = ['To Do', 'In Progress', 'In Review', 'Done'];
@@ -369,47 +372,63 @@ const dragEpic = (epic, label) => ({ dragstart: (event) => {
   event.dataTransfer.effectAllowed = 'copy';
 } });
 
-/** What needs the person under an Epic: an item In Review, or one flagged. */
-function needsYou(items) {
-  return items.some((item) => item.flagged || statusKey(item.status) === 'review');
+/** A stone's needs-you line, in words (no counts); '' when nothing needs the person. */
+export function attentionWords(attention) {
+  return [attention.review ? t('epics.needs_review', 'Needs review') : '', attention.flagged ? t('epics.needs_flag', 'Flagged') : '',
+    attention.unassigned ? t('epics.needs_assign', 'Work to assign') : ''].filter(Boolean).join(' · ');
 }
+
+/** A stone's last line: its Jira key (when it has one) and when it last moved. */
+function movedWords(epic, moved) {
+  const ms = Date.now() - Date.parse(moved);
+  const when = Number.isFinite(ms) ? t('epics.moved_ago', 'moved {age} ago', { age: humanAge(Math.max(0, ms)) }) : '';
+  return [epic.external?.jira?.key || '', when].filter(Boolean).join(' · ');
+}
+
+const NEW_EPIC = '!new-epic';
 
 /**
  * THE EPICS PHALANX (owner, 2026-11-22; w897): Layer 1. Every open Epic a stone (no Done Epics, no
- * Icebox), its title and Jira key, its progress a colour line along the bottom edge (epic-stage.js),
- * pressed for the epic-stage and the counts. Those needing the person first, then the most
- * progressed. A pressed stone shows that Epic beside the rail (createEpicOne, with Launch); a
- * dragged one places it whole in another tilespace.
+ * Icebox): its title, what needs the person (Needs review, Flagged, Work to assign; absent when
+ * none), its Jira key and when it last moved, its progress a colour line along the bottom edge
+ * (epic-progress.js), pressed for the epic-stage and the counts. Ordered by orderEpics: those
+ * needing the person first, then the most progressed. A pressed stone shows that Epic beside the
+ * rail (createEpicOne, with Launch); a dragged one places it whole in another tilespace. The last
+ * stone, New Epic, opens an Epic's own shape to fill in (createNewEpic).
  */
-export function createEpicStones({ epicsRead }) {
+export function createEpicStones({ epicsRead, workbench = null }) {
   const { createSurface } = WorkspaceKit.primitives;
   const out = createSurface({ label: t('epics.title', 'Epics'), className: 'setup-surface epics-records' });
   const lines = new Map();
   const lineFor = (id) => { if (!lines.has(id)) lines.set(id, createProgress('line')); return lines.get(id); };
+  let made = '';
   const stones = createPhalanx({
     className: 'epic-record-stones',
     renderDetail: (item, host) => {
-      const one = createEpicOne(item.id, { epicsRead, launch: true, header: false });
+      const one = item.id === NEW_EPIC
+        ? createNewEpic({ onMade: (id) => { made = id; paint(); } })
+        : createEpicOne(item.id, { epicsRead, launch: true, header: false });
       host.append(one.el);
       one.show();
       return () => one.destroy();
     },
   });
   stones.mount(out.content);
-  const empty = el('p', 'epic-empty', t('epics.none_open', 'No open Epics.'));
-  out.content.append(empty);
   function paint() {
-    const rows = epicsRead.list().filter(isOpenEpic).map((epic) => {
+    const rows = orderEpics(epicsRead.list().filter(isOpenEpic).map((epic) => {
       const items = epicsRead.items(epic.id);
-      const line = lineFor(epic.id);
-      const { score } = line.update(epic, items);
-      return { epic, score, needs: needsYou(items), marker: line.el };
-    }).sort((a, b) => (b.needs - a.needs) || (b.score - a.score));
-    empty.hidden = rows.length > 0;
-    stones.setItems(rows.map(({ epic, marker }) => {
-      const label = epic.title || epic.id;
-      return { id: epic.id, label, secondary: epic.external?.jira?.key || '', marker, className: 'epic-record-stone', draggable: true, events: dragEpic(epic, label) };
+      const { score } = lineFor(epic.id).update(epic, items);
+      return { epic, score, attention: epicAttention(items), moved: epicMoved(epic, items) };
     }));
+    stones.setItems([...rows.map(({ epic, attention, moved }) => {
+      const label = epic.title || epic.id;
+      const needs = attentionWords(attention);
+      return { id: epic.id, label, ...(needs ? { secondary: needs } : {}), state: movedWords(epic, moved), marker: lineFor(epic.id).el,
+        className: 'epic-record-stone', draggable: true, events: dragEpic(epic, label) };
+    }), { id: NEW_EPIC, glyph: '+', label: t('epics.new', 'New Epic'), className: 'epic-record-new' }]);
+    // The Epic just made opens in New Epic's place once its push has it.
+    if (made && rows.some((row) => row.epic.id === made)) { const id = made; made = ''; stones.select(id); }
+    workbench?.refreshSelector?.(); // the selector's Epic cards follow the push
   }
   let stop = null;
   return {
@@ -417,6 +436,63 @@ export function createEpicStones({ epicsRead }) {
     show: () => { stop ??= epicsRead.subscribe(paint); paint(); },
     destroy: () => { stop?.(); stop = null; stones.destroy?.(); },
   };
+}
+
+/**
+ * NEW EPIC (owner, 2026-11-22; w897): an Epic's own shape, its bar, to fill in: the title, what done
+ * looks like, and one ERABI question, who holds it (a Team or an Agent). Create makes the Epic
+ * (POST /api/work-items, kind Epic) and `onMade(id)` opens it.
+ */
+export function createNewEpic({ onMade = () => {} } = {}) {
+  const bar = el('section', 'epic-bar epic-new');
+  const head = el('div', 'epic-bar-head');
+  const title = el('input', 'epic-new-title');
+  title.type = 'text';
+  title.placeholder = t('epics.new_title', 'Epic title');
+  title.setAttribute('aria-label', t('epics.new_title', 'Epic title'));
+  const create = el('button', 'wk-action epic-new-create', t('epics.create', 'Create'));
+  create.type = 'button';
+  const actions = el('div', 'epic-bar-actions');
+  actions.append(create);
+  head.append(title, actions);
+  const goal = el('textarea', 'epic-new-goal');
+  goal.rows = 3;
+  goal.placeholder = t('epics.new_goal', 'What done looks like, in your words');
+  goal.setAttribute('aria-label', t('epics.new_goal', 'What done looks like, in your words'));
+  let holder = '';
+  const holders = () => [
+    ...teamsFromState().filter((team) => team.durable !== false && team.name).map((team) => ({ v: `team:${team.name}`, l: team.title || team.name, word: t('epics.team', 'Team') })),
+    ...(S.sessions || []).filter((one) => one.name).map((one) => ({ v: `agent:${one.name}`, l: one.name, word: t('epics.agent', 'Agent') })),
+  ];
+  const question = ask([{ fields: [{ key: 'holder', label: t('epics.assign_to', 'Assign to'), blank: t('epics.pick', 'Pick'), options: holders() }] }],
+    { value: { holder }, density: 'tight', onChange: ({ holder: next }) => { holder = String(next || ''); } });
+  const said = el('p', 'epic-bar-said');
+  said.hidden = true;
+  bar.append(head, goal, question.el, said);
+  create.addEventListener('click', async () => {
+    const [kind, ...rest] = holder.split(':');
+    const name = rest.join(':');
+    const missing = !title.value.trim() ? t('epics.need_title', 'Give the Epic a title.') : !name ? t('epics.need_holder', 'Pick who holds it.') : '';
+    said.hidden = !missing;
+    said.textContent = missing;
+    if (missing) return;
+    create.disabled = true;
+    const result = await request('/api/work-items', { method: 'POST', json: { kind: 'Epic', title: title.value.trim(), objective: goal.value.trim(),
+      ...(kind === 'team' ? { team: name } : { session: name }) } });
+    create.disabled = false;
+    if (!result.ok) { said.hidden = false; said.textContent = result.message || t('epics.not_made', 'The Epic was not made.'); return; }
+    onMade(result.data.item?.id || '');
+  });
+  // An Epic's own shape: the four columns it will fill, empty for now (owner, 2026-11-22).
+  const columns = el('div', 'epic-columns');
+  for (const words of [t('epics.to_do', 'To Do'), t('epics.in_progress', 'In Progress'), t('epics.in_review', 'In Review'), t('epics.recently_done', 'Recently Done')]) {
+    const column = el('section', 'epic-column');
+    column.append(el('h3', 'epic-group-heading', words));
+    columns.append(column);
+  }
+  const root = el('div', 'epic-new-page');
+  root.append(bar, columns);
+  return { el: root, show: () => title.focus(), destroy: () => question.destroy() };
 }
 
 /**
@@ -465,7 +541,9 @@ export function createEpicOne(epicId, { epicsRead, launch = false, header = true
   }
   const missing = el('p', 'epic-empty', t('epics.not_found', 'This Epic is not open here.'));
   missing.hidden = true;
-  out.content.append(missing, bar, columns);
+  const none = el('p', 'epic-empty', t('epics.no_items', 'No work items under this Epic yet.'));
+  none.hidden = true;
+  out.content.append(missing, bar, none, columns);
 
   let epic = null;
   const open = new Set();
@@ -517,7 +595,7 @@ export function createEpicOne(epicId, { epicsRead, launch = false, header = true
     epic = epicsRead.list().find((row) => row.id === epicId) || null;
     missing.hidden = Boolean(epic);
     bar.hidden = columns.hidden = !epic;
-    if (!epic) return;
+    if (!epic) { none.hidden = true; return; }
     const every = epicsRead.items(epicId);
     askCards(every);
     const { stage } = progress.update(epic, every);
@@ -535,6 +613,7 @@ export function createEpicOne(epicId, { epicsRead, launch = false, header = true
     objective.hidden = !goal;
     markDone.hidden = stage !== 'aging';
     const top = every.filter((item) => item.level === 0);
+    none.hidden = top.length > 0;
     for (const status of STAGE_KEYS) {
       let here = top.filter((item) => statusKey(item.status) === status);
       if (status === 'done') here = here.sort((a, b) => String(b.moved || '').localeCompare(String(a.moved || '')));
