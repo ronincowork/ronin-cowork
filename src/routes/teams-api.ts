@@ -100,7 +100,7 @@ function editOf(body: unknown): RosterEdit {
 // (owner, 2026-10-18): `board`, the Team's epic by the rule in work-items-read.ts, its title
 // and status, and `items`, the titles of the items the Team and its members hold; and for the
 // Team workbench (owner, 2026-11-04; KAN-232) `waiting`, its items In Review and flagged with how
-// long each has waited, and `epics`, the ids of its Epics (teamWork in work-items-read.ts).
+// long each has waited, and `epics`, the ids of its Epics not Done (teamWork in work-items-read.ts; KAN-779).
 export async function teamRosters(named: string[] = []): Promise<unknown[]> {
   const resolve = await campaignResolver();
   const wanted = named.length ? named : [await machineCampaignId()].filter(Boolean);
@@ -108,6 +108,7 @@ export async function teamRosters(named: string[] = []): Promise<unknown[]> {
   const rosters = (await listTeamRosters()).filter((r) => keep(r.campaign_id));
   const sessions = await listSessions();
   const every = rosters.length ? await liveRows() : [];
+  const done = new Set(every.filter((row) => row.status === 'Done').map((row) => row.id)); // KAN-779: Done epics leave the card
   return Promise.all(
     rosters.map(async (r) => {
       const reading = await rosterReading(r, sessions);
@@ -118,7 +119,7 @@ export async function teamRosters(named: string[] = []): Promise<unknown[]> {
         campaign_id: resolve(r.campaign_id),
         board: board && { title: board.title, status: board.status },
         items: reading.items.map(({ title }) => ({ title })),
-        epics: work.epics,
+        epics: work.epics.filter((id) => !done.has(id)),
       };
     }),
   );
