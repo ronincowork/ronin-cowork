@@ -66,6 +66,10 @@ without hooks), *no progress* for a working card whose `at` is 12 minutes old
   moved (the tick). A tab whose next card is not `rev + 1` renews its socket for a whole copy.
 - **No polling.** Nothing is read on a clock; with no tab connected nothing is marked, and the
   next connection's tick makes every card.
+- **notify_me.** Every `rowChanged` also runs `checkTurnEnd` (`src/notify-me.ts`), tab or no
+  tab. An Agent with a `notify_me.json` in its folder has its fields read; a turn's end
+  (`awaiting_you`, `asking`, `error`) newer than a caller's mark sends that caller one House
+  notice through the message queue and drops its mark.
 
 ### A status change repaints one node
 
@@ -93,4 +97,5 @@ nothing in this tile.
 | the record part | `src/tegami-read.ts` `readTegami` |
 | marking, rebuild, the tick | `src/ws/events.ts` `mark`, `rebuild`, `tick`, `watchRecord`, `startSessionsBroadcast` |
 | whose cards an item write touches | `src/work-items.ts` `cardsOf` |
+| a turn's end told to a caller | `src/notify-me.ts` `markTurnEnd`, `checkTurnEnd`; `ronin_bin/notify_me` |
 | the browser's copy | `public/js/store.js` (`home`) |
