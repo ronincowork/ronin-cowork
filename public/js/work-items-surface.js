@@ -474,7 +474,7 @@ function playbookActs(step, item, { onCheckedOut, onPlaybookChanged }) {
   const pick = ask([{ fields: [{ key: 'to', label: t('work_items.checkout_to', 'To'), options }] }], { value: { to }, density: 'tight', onChange: ({ to: next }) => { to = next || ''; } });
   const said = el('p', 'fs-step-help wi-answer');
   said.setAttribute('role', 'status');
-  const out = createAction({ label: t('work_items.checkout', 'Assign to agent'), action: async () => {
+  const out = createAction({ label: t('work_items.checkout', 'Assign to agent'), size: 'compact', action: async () => {
     if (!to) { said.dataset.state = 'failed'; said.textContent = t('work_items.checkout_pick', 'Pick an Agent or a Team.'); return; }
     said.dataset.state = '';
     said.textContent = t('work_items.checking_out', 'Assigning…');
@@ -483,7 +483,10 @@ function playbookActs(step, item, { onCheckedOut, onPlaybookChanged }) {
     said.textContent = t('work_items.checked_out', 'Assigned as {id}.', { id: result.data.item.id });
     onCheckedOut?.(result.data.item.id);
   } });
-  step('checkout', t('work_items.checkout', 'Assign to agent'), () => t('work_items.checkout_meta', 'Copies it into live work'), pick.el, out.el, said);
+  // Buttons, never bars: each step's content sits in the comment box's column, which keeps a
+  // button its own width (.wi-compose).
+  const column = (...nodes) => { const box = el('div', 'wi-compose'); box.append(...nodes); return box; };
+  step('checkout', t('work_items.checkout', 'Assign to agent'), () => t('work_items.checkout_meta', 'Copies it into live work'), column(pick.el, out.el, said));
 
   const answer = el('p', 'fs-step-help wi-answer');
   answer.setAttribute('role', 'status');
@@ -496,7 +499,7 @@ function playbookActs(step, item, { onCheckedOut, onPlaybookChanged }) {
   words.rows = 12;
   words.value = item.objective || '';
   words.setAttribute('aria-label', t('work_items.objective', 'Objective'));
-  const save = createAction({ label: t('work_items.playbook_save', 'Save'), action: async () => {
+  const save = createAction({ label: t('work_items.playbook_save', 'Save'), size: 'compact', endsEdit: true, action: async () => {
     answer.dataset.state = '';
     answer.textContent = t('work_items.saving', 'Saving…');
     const result = await request(`/api/work-items/${encodeURIComponent(item.id)}`, { method: 'PUT', json: { title: title.value, objective: words.value } });
@@ -507,19 +510,19 @@ function playbookActs(step, item, { onCheckedOut, onPlaybookChanged }) {
   under.type = 'text';
   under.setAttribute('aria-label', t('work_items.playbook_add_title', 'Its title'));
   under.placeholder = t('work_items.playbook_add_title', 'Its title');
-  const add = createAction({ label: item.kind === 'Epic' ? t('work_items.playbook_add_task', 'Add task') : t('work_items.playbook_add', 'Add subtask'), action: async () => {
+  const add = createAction({ label: item.kind === 'Epic' ? t('work_items.playbook_add_task', 'Add task') : t('work_items.playbook_add', 'Add subtask'), size: 'compact', action: async () => {
     if (!under.value.trim()) { under.focus(); return; }
     const result = await request('/api/work-items', { method: 'POST', json: { title: under.value, parent: item.id } });
     if (!result.ok) return fail(result, t('work_items.playbook_not_saved', 'It was not saved.'));
     onPlaybookChanged?.(item.id);
   } });
-  const drop = createAction({ label: t('work_items.playbook_delete_mine', 'Delete my version'), action: async () => {
+  const drop = createAction({ label: t('work_items.playbook_delete_mine', 'Delete my version'), size: 'compact', action: async () => {
     const result = await request(`/api/work-items/${encodeURIComponent(item.id)}`, { method: 'DELETE', json: {} });
     if (!result.ok) return fail(result, t('work_items.playbook_not_deleted', 'It was not deleted.'));
     onPlaybookChanged?.(item.id);
   } });
   step('playbook_edit', t('work_items.playbook_make_mine', 'Customize'), () => t('work_items.playbook_make_mine_meta', 'Saved as yours, over Ronin’s'),
-    title, words, save.el, under, add.el, drop.el, answer);
+    column(title, words, save.el, under, add.el, drop.el, answer));
 }
 
 /** A phalanx of item stones with the reading as its detail. */
