@@ -30,6 +30,9 @@ export interface Tegami {
    * it leads holds (KAN-636: a Team holder is told through its lead): derived from the holds,
    * never stored; its selector pill shows ⚑ in the flagged colour. */
   flagged: boolean;
+  /** The items that make `flagged`: its held items flagged, and for a lead its Teams' (KAN-776).
+   * The tile header's ⚑ shows and unflags exactly these. */
+  flaggedItems: Array<ItemRow & { jira_url?: string }>;
   /** An Agent flag (KAN-527): the Agent itself waits on the owner, its terminal asking a
    * question, or no progress for 12 minutes while working (KAN-618). The home row sets it, with `flagged`, from the pane (src/routes/launch.ts); never stored. */
   agent_flag?: 'asking' | 'no_progress';
@@ -103,6 +106,8 @@ export async function readTegami(name: string): Promise<Tegami | null> {
     if (!block || typeof block !== 'object') return null;
     const b = block as Record<string, unknown>;
     const reading = await agentReading(name);
+    const flaggedItems = [...new Map([...reading.items, ...reading.teams.flatMap((team) => team.items)]
+      .filter((item) => item.flagged).map((item) => [item.id, linked(item)])).values()];
     return {
       objective: String(b.objective ?? ''),
       mandate: mandate(b.mandate),
@@ -133,7 +138,8 @@ export async function readTegami(name: string): Promise<Tegami | null> {
       docs: await readDocs([path.join(sessionDir(key), BIRTH_BRIEF), path.join(sessionDir(key), AGENT_BRIEF), ...reading.attachments, ...(await dropped(key))]),
       brief: b.brief && typeof b.brief === 'object' ? b.brief as WorkRecordBrief : null,
       chip: chipFor(reading.items),
-      flagged: [...reading.items, ...reading.teams.flatMap((team) => team.items)].some((item) => item.flagged),
+      flagged: flaggedItems.length > 0,
+      flaggedItems,
       quietSince: stat.mtimeMs,
     };
   } catch {

@@ -103,9 +103,10 @@ const HEADER = () => {
   return rows;
 };
 
-/** The held items flagged now; the reasons ("Flagged: …" comments) read once per new set, then the
+/** The items flagging the selector pill now (its held items, and for a lead its Teams', KAN-776),
+ *  off the letter's one list; the reasons ("Flagged: …" comments) read once per new set, then the
  *  help is redrawn. A press hides the ⚑ at once and ignores repeats until the unflags answer. */
-const flaggedHeld = (tile) => (tile.tegami?.items || []).filter((item) => item.flagged);
+const flaggedHeld = (tile) => (tile.tegami?.flaggedItems || []).filter((item) => item.flagged);
 async function readReasons(tile, el, ids) {
   const { request } = await import('./request.js');
   const reads = await Promise.all(ids.map((id) => request(`/api/work-items/${encodeURIComponent(id)}`, { cache: 'no-store' })));
@@ -130,7 +131,7 @@ async function unflagHeld(tile, el) {
   el.setAttribute('aria-busy', 'true'); el.hidden = true;
   const { request } = await import('./request.js');
   const done = await Promise.all(ids.map((id) => request(`/api/work-items/${encodeURIComponent(id)}/unflag`, { method: 'POST', json: { comment: t('head.unflagged', 'unflagged by owner') } })));
-  for (const [n, read] of done.entries()) { const item = read.ok && tile.tegami?.items?.find((one) => one.id === ids[n]); if (item) item.flagged = false; }
+  for (const [n, read] of done.entries()) { if (read.ok) for (const list of [tile.tegami?.flaggedItems, tile.tegami?.items, tile.tegami?.teamItems]) { const item = list?.find((one) => one.id === ids[n]); if (item) item.flagged = false; } }
   el.removeAttribute('aria-busy');
   syncTileHead(tile);
 }
