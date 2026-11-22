@@ -1,5 +1,5 @@
 /* The Cowork workbench's one reading of every Team: a Phalanx stone per Team. */
-import { membersOfTeam, subscribe, teamsFromState } from './team-controller.js';
+import { membersOfTeam, subscribe, teamsFromState, unassignedSessions, UNASSIGNED } from './team-controller.js';
 import { WorkspaceKit } from './workspace-kit.js';
 import { t } from './lexicon.js';
 import { createPhalanx } from './phalanx.js';
@@ -9,36 +9,28 @@ import { WORKBENCH_TYPES } from './workbench-catalog.js';
 import { openWorkspaceTab } from './workspace.js';
 import { teamsRows, workspaces } from './teams-surface-rows.js';
 import { listedTeam } from './roster-groups.js';
-
-const SHOW = ['theme', 'state', 'agents', 'items'];
-/** The house Teams (Steerco, and Ronin Helpers before it) have no stone: listedTeam, the phone's rule too (owner, 2026-11-02; KAN-305). */
-const words = () => ({ theme: t('teams_surface.theme', 'Theme'), state: t('teams_surface.state', 'State'), agents: t('league.agents', 'Agents'), items: t('teams_surface.items', 'Items') });
+import { createProgress } from './epic-stage.js';
+import { agentTitle } from './team-members.js';
 
 /**
- * A stone per Team, the name only, under two questions (owner, 2026-10-20; ask.js): Workspace,
- * many-of, blank All, narrows the stones to the Teams in those workspace folders; Show, many-of,
- * blank to start, says what hangs under each stone, a cell per topic laid as rows across
- * the stones (phalanx.js, `branches: 'column'`): Theme, the roster objective, and State, the
- * status of the Team's epic (no epic, blank), plain text; each Agent a branch row, the lead
- * first; each Item a branch row. The rows are teams-surface-rows.js over the pushed rosters (each with its `board` and
- * `items`, teams-api.ts) and the Team projection's members. The 人 mark in a stone's corner
- * opens the Team page in a new tab. The stone's detail is the Team profile the card opened
- * (`teamDetail`, the cowork view's one renderer), the level's detail when the stone is pressed
- * and a branch row's; dragged, the stone places that profile in another workspace.
+ * A stone per Team (owner, 2026-11-22; w900): what the Team is. Its name, its concept (the roster
+ * objective) and its lead, with a progress line along the bottom edge over everything the Team and
+ * its Agents hold, in the Epic stones' colours (epic-stage.js); a Team holding nothing has no line.
+ * One question, Workspace, many-of, blank All, narrows the stones to the Teams in those Workspaces.
+ * The 人 mark opens the Team's own workbench. Agents outside any Team are one more stone, No Team,
+ * last, while there are any: it opens the same way, into one Team workbench of their own.
+ * Pressed, a stone shows its Team beside the rail (`teamDetail`, the cowork view's one renderer);
+ * dragged, it places that Team in another tilespace.
  */
 export function createTeamRosterSurface({ teamDetail } = {}) {
   const { createSurface, ninMark } = WorkspaceKit.primitives;
   const label = t('campaign.coworks', 'Teams');
-  const word = words();
   let roots = []; // the workspaces chosen
-  let show = []; // what Show picks
   const surface = createSurface({ label, className: 'team-roster-surface' });
   const filter = ask([{ fields: [
     { key: 'root', label: t('teams_surface.workspace', 'Workspace'), blank: t('teams_surface.all', 'All'), many: true, options: [] },
-    { key: 'show', label: t('teams_surface.show', 'Show'), many: true, options: SHOW.map((key) => ({ v: key, l: word[key] })) },
-  ] }], { value: { root: roots, show }, density: 'tight', onChange: ({ root: nextRoots, show: nextShow }) => {
+  ] }], { value: { root: roots }, density: 'tight', onChange: ({ root: nextRoots }) => {
     roots = (nextRoots || []).map(String);
-    show = (nextShow || []).map(String);
     paint();
   } });
   const mark = (team) => {
@@ -49,30 +41,33 @@ export function createTeamRosterSurface({ teamDetail } = {}) {
     node.addEventListener('click', (event) => { event.stopPropagation(); openWorkspaceTab('team', team); });
     return node;
   };
-  // One mark per Team, kept: phalanx counts a Node by its identity, so a fresh one each push
-  // would redraw every stone (KAN-413).
-  const marks = new Map();
-  const markOf = (team) => { if (!marks.has(team)) marks.set(team, mark(team)); return marks.get(team); };
-  // What Show picks, under the stone (owner, 2026-10-20): one cell per picked topic in Show's
-  // order, the same under every stone so the phalanx lays them as rows across the stones —
-  // Theme and State plain muted text (Theme wraps, clamped; the whole is in the Team's detail);
-  // Agents and Items branch rows, the kind in each row's state line. Nothing picked: no row
-  // carries anything and the stones rest in the ordinary grid, a press selecting.
-  const branch = (team, kind, value, n = 0) => ({ id: `${team}:${kind}:${n}`, label: value, state: word[kind], team });
-  const cell = (row, kind) => ({
-    theme: () => row.theme, state: () => row.state,
-    agents: () => row.agents.map((name, n) => branch(row.id, 'agents', name, n)),
-    items: () => row.items.map((title, n) => branch(row.id, 'items', title, n)),
-  })[kind]();
-  const under = (row) => SHOW.filter((kind) => show.includes(kind)).map((kind) => cell(row, kind));
+  // One marker per Team, kept: phalanx counts a Node by its identity, so a fresh one each push
+  // would redraw every stone (KAN-413). The marker holds the 人 mark and the progress line.
+  const markers = new Map();
+  const markerOf = (team) => {
+    if (!markers.has(team)) {
+      const line = createProgress('line');
+      line.el.classList.add('team-progress-line');
+      const node = document.createElement('span');
+      node.className = 'team-stone-marks';
+      node.append(mark(team), line.el);
+      markers.set(team, { node, line });
+    }
+    return markers.get(team);
+  };
+  const lead = (name) => { const one = membersOfTeam(name).find((member) => member.team_lead); return one ? agentTitle(one) : ''; };
   const items = () => {
     const rows = new Map(teamsRows(teamsFromState(), membersOfTeam, { roots }).map((row) => [row.id, row]));
-    const teams = teamsFromState().filter((team) => !team.holding && listedTeam(team) && rows.has(team.name));
-    return teams.sort((a, b) => a.name.localeCompare(b.name)).map((team) => {
+    const teams = teamsFromState().filter((team) => !team.holding && listedTeam(team) && rows.has(team.name))
+      .sort((a, b) => a.name.localeCompare(b.name));
+    const stones = teams.map((team) => {
       const name = String(team.title ?? '').trim() || team.name;
+      const marks = markerOf(team.name);
+      marks.line.update(null, (team.items || []).map((item) => ({ ...item, level: 0 })));
+      const who = lead(team.name);
       return {
-        id: team.name, label: name, marker: markOf(team.name), ...(show.length ? { under: under(rows.get(team.name)) } : {}),
-        draggable: true,
+        id: team.name, label: name, secondary: team.objective || '', state: who ? `人 ${who}` : '',
+        marker: marks.node, className: 'team-stone', draggable: true,
         events: { dragstart: (event) => {
           event.dataTransfer.setData(SURFACE_DRAG, JSON.stringify({ type: WORKBENCH_TYPES.team, detail: { key: team.name } }));
           event.dataTransfer.setData('text/plain', name);
@@ -80,12 +75,18 @@ export function createTeamRosterSurface({ teamDetail } = {}) {
         } },
       };
     });
+    if (!roots.length && unassignedSessions().length) {
+      const marks = markerOf(UNASSIGNED);
+      marks.line.update(null, []);
+      stones.push({ id: UNASSIGNED, label: t('teams_surface.no_team', 'No Team'), secondary: t('teams_surface.no_team_summary', 'Agents outside any Team'), marker: marks.node, className: 'team-stone team-stone-none' });
+    }
+    return stones;
   };
   const renderDetail = (item, host) => {
-    const view = teamDetail?.(item.team || item.id);
+    const view = teamDetail?.(item.id);
     if (view) host.append(view.el);
   };
-  const stones = createPhalanx({ className: 'team-roster-phalanx', items: [], renderDetail, branches: 'column' });
+  const stones = createPhalanx({ className: 'team-roster-phalanx', items: [], renderDetail });
   stones.mount(surface.content, { before: [filter.el] });
   // ONE TEAM MOVES, ONE STONE REPAINTS (KAN-413): the phalanx lays its stones through the kit's
   // keyed list, so a push that moves nothing a stone shows leaves the grid and an open detail

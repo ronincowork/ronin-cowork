@@ -992,11 +992,11 @@ The pad's current config downloads as a backup first.
 - **archives.rehydrate_btn:** Rehydrate
 - **archives.rehydrating:** rehydrating…
 - **archives.group_none:** Ronin — no team
-- **archives.card:** Rehydrate Archived
+- **archives.card:** Archived Agents
 - **archives.sort:** Sort
 - **archives.sort_recent:** Recently archived
 - **archives.sort_team:** Team
-- **archives.team_card:** Rehydrate Agents
+- **archives.team_card:** Archived Agents
 - **archives.delete_aria:** Permanently delete archived session {name}
 - **archives.delete_title:** Hard delete this archive
 - **archives.delete_confirm:** Hard delete archived session "{name}"? Its saved Ronin record cannot be rehydrated after this.

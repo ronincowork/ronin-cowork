@@ -142,12 +142,14 @@ as it is, both drawing with the one exported drawing. Workspaces is its own ston
 Workspace 1 the same way (`workspaces-surface.js`), one card per Workspace and New Workspace and
 GitHub CLI as cards; Settings' Workspaces surface stays as it is. Teams opens the Teams workbench at `#/cowork`
 (`cowork-view.js`; owner, 2026-10-20), the one Teams workbench: its Teams card
-(`team-roster-surface.js`) carries a Workspace question (many-of, blank All) and a Show question
-(Theme, State, Agents, Items; none picked to start) above its stones, each stone the Team's name
-with what Show picks under it as the phalanx's branch rows (Theme one row, State one row, each
-Agent a row with the lead first, each Item a row); the 人 mark in a stone's corner opens the
-Team page in a new tab; its selector offers Team roster, Cron jobs, New Team, New Agent and
-Rehydrate Archived.
+(`team-roster-surface.js`) carries a Workspace question (many-of, blank All) above its stones,
+each stone the Team's name, concept (objective) and lead with a progress line (`epic-stage.js`,
+over the `items` the teams push carries with their status) along its bottom edge, and a No Team
+stone last while Agents outside any Team exist; the 人 mark in a stone's corner opens the Team
+page (No Team's, `#/team/%20unassigned`) in a new tab. A pressed stone's Team (`leagueTeamBody`
+in `cowork-view.js`) shows concept and Workspace coverage over a toggle of Agents, Epics
+(`createEpicStones`, bare) and Configuration (w900). Its selector offers Teams, Team roster,
+Cron jobs, a card per Team, New Team, New Agent and Archived Agents; no Agent's own card.
 Help (owner, 2026-10-21) seats the help outline (`help-outline.js`, `help.outline`: the docs/ guides
 under a headline of what Ronin is for (the headline alone on a phone); 'START HERE: 4 things you need to know' (the four), then
 Getting started and Using Ronin; each of the six opens one level down to Return and its pages (the four's level is the four), the page being read pressed; a pressed page read beside the rail through

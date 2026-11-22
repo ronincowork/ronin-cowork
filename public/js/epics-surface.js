@@ -381,9 +381,11 @@ function needsYou(items) {
  * progressed. A pressed stone shows that Epic beside the rail (createEpicOne, with Launch); a
  * dragged one places it whole in another tilespace.
  */
-export function createEpicStones({ epicsRead }) {
+export function createEpicStones({ epicsRead, bare = false, empty: emptyWords = '' }) {
   const { createSurface } = WorkspaceKit.primitives;
-  const out = createSurface({ label: t('epics.title', 'Epics'), className: 'setup-surface epics-records' });
+  // Bare (w900): the stones alone, no surface head, for a Team's Epics view inside its own surface.
+  const out = bare ? (() => { const node = el('div', 'epics-records epics-records-bare wk-surface-content'); return { el: node, content: node }; })()
+    : createSurface({ label: t('epics.title', 'Epics'), className: 'setup-surface epics-records' });
   const lines = new Map();
   const lineFor = (id) => { if (!lines.has(id)) lines.set(id, createProgress('line')); return lines.get(id); };
   const stones = createPhalanx({
@@ -396,7 +398,7 @@ export function createEpicStones({ epicsRead }) {
     },
   });
   stones.mount(out.content);
-  const empty = el('p', 'epic-empty', t('epics.none_open', 'No open Epics.'));
+  const empty = el('p', 'epic-empty', emptyWords || t('epics.none_open', 'No open Epics.'));
   out.content.append(empty);
   function paint() {
     const rows = epicsRead.list().filter(isOpenEpic).map((epic) => {

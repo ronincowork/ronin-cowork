@@ -61,12 +61,12 @@ export function registerWorkbenchCatalog() {
   via(WORKBENCH_TYPES.cron, 'surface', 'cron', { className: 'wk-selector-utility', label: () => t('workspace.tab_cron_jobs', 'Cron jobs'), summary: () => t('team_jikan.all_teams_summary', 'Scheduled messages across every team') });
   add({ type: WORKBENCH_TYPES.newTeamForm, header: 'surface', className: 'wk-selector-utility wk-selector-group-after', label: () => t('new_team.title', 'New Team'), summary: () => t('new_team.card_summary', 'Kind · kit · lead — the drawn form.'), variant: 'dotted', create: ({ workspace, environment, consumed }) => environment.newTeamForm(workspace, consumed) });
   add({ type: WORKBENCH_TYPES.newAgent, header: 'surface', className: 'wk-selector-utility', label: () => t('new_agent.title', 'New Agent'), summary: () => t('new_agent.card_summary', 'Session type first — the drawn launch form.'), variant: 'dotted', create: ({ workspace, environment, consumed }) => environment.newAgent(workspace, consumed) });
-  via(WORKBENCH_TYPES.archives, 'surface', 'archives', { className: 'wk-selector-utility', label: () => t('archives.card', 'Rehydrate Archived'), variant: 'dotted' });
-  // REHYDRATE AGENTS (owner, 2026-11-19, KAN-706): one pill on a Team's selector; it places the same
+  via(WORKBENCH_TYPES.archives, 'surface', 'archives', { className: 'wk-selector-utility', label: () => t('archives.card', 'Archived Agents'), variant: 'dotted' });
+  // ARCHIVED AGENTS (owner, 2026-11-19, KAN-706; the word 2026-11-22): one pill on a Team's selector; it places the same
   // archived sessions surface, holding only this Team's archives (cowork-view.js archivesBySeat).
-  via(WORKBENCH_TYPES.teamArchived, 'surface', 'archives', { className: 'wk-selector-utility', label: () => t('archives.team_card', 'Rehydrate Agents'), variant: 'dotted' });
-  // The Teams Phalanx is the discovery; a dragged stone places the Team profile.
-  add({ type: WORKBENCH_TYPES.team, header: 'surface', discover: () => [], create: ({ workspace, detail, environment }) => environment.team(workspace, detail) });
+  via(WORKBENCH_TYPES.teamArchived, 'surface', 'archives', { className: 'wk-selector-utility', label: () => t('archives.team_card', 'Archived Agents'), variant: 'dotted' });
+  // A card per Team on the Teams selector (w900), and a dragged Teams stone, place that Team.
+  add({ type: WORKBENCH_TYPES.team, header: 'surface', className: 'wk-selector-entity', discover: (_t, e) => e.teams?.() ?? [], create: ({ workspace, detail, environment }) => environment.team(workspace, detail) });
   add({ type: WORKBENCH_TYPES.agentDocuments, header: 'surface', className: 'wk-selector-utility', label: () => t('workspace.tab_docs', 'Documents'), summary: () => t('agent.documents_summary', 'Documents tracked by this Agent'), discover: (_t, e) => [{ key: e.agent() }], create: ({ workspace, detail, environment }) => environment.documents(workspace, detail) });
   add({ type: WORKBENCH_TYPES.agentTeams, header: 'surface', className: 'wk-selector-utility', label: () => t('agent.team_membership', 'Team membership'), summary: () => t('agent.team_membership_summary', 'Add or remove this Agent from installed Teams'), discover: (_t, e) => [{ key: e.agent() }], create: ({ workspace, detail, environment }) => environment.teams(workspace, detail) });
   add({ type: WORKBENCH_TYPES.agentComposition, header: 'surface', className: 'wk-selector-utility', label: () => t('agent_composition.title', 'Agent composition'), summary: () => t('agent_composition.summary', 'Birth brief, mandate, and Behaviors beside current facts'), discover: (_t, e) => { const key = e.agent?.(); return key ? [{ key }] : []; }, create: ({ detail, environment }) => environment.composition(detail) });
@@ -131,7 +131,7 @@ export function registerWorkbenchCatalog() {
   // THE TEAM PAGE (owner, 2026-10-18): the selector holds Commons, the Agents, New Agent and the
   // hints (Agent vocabulary, Session controls — the selector's own, workbench.js). The composition
   // reader, Behaviors and Feedback stay placeable: the roster, New Agent and the bar place them.
-  // Rehydrate Agents goes before New Agent (KAN-706).
+  // Archived Agents goes before New Agent (KAN-706).
   // Epics follows Commons (KAN-232), Find item follows Epics (KAN-433); an Epic's record is placed by a pressed Epic stone, never a card.
   // Defined after the Epics types: a profile names only registered types.
   // A document or a commit dragged from a Chat opens on a Document surface (KAN-707).

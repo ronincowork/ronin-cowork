@@ -144,16 +144,24 @@ remembered arrangement instead of applying the floor again.
 
 Teams first opens with the Team roster in tilespace 1 and New Team in tilespace 2.
 
-The **Teams** surface is the one list of Teams: each Team is a stone with its objective, how
-many Agents it has, and its lead. Press a stone and the stones fold to the left while the Team
-opens beside them: its title and objective with **Launch** (open the Team's own workbench),
-then three numbered steps. **1 Agents**: lead first, each with its live dot and what it holds,
-and **+** at the end to bring in an Agent already running or start a new one. **2 Work items**:
-one line per item with its holder and status bar (⚑ red when flagged), the Team's own items first. **3
-Configuration**, folded to its kind and model until you open it: the Team's configuration
-form, with **Delete team** at its foot. Each step folds or opens from its own heading. Press
-the stone again or Escape to go back. Drag a stone into another tilespace to open the Team
-there.
+The **Teams** surface is the one list of Teams. Each Team is a stone with what it is: its name,
+its concept (the objective) and its lead (人), and along its bottom edge a progress line over
+everything the Team and its Agents hold, in the Epic stones' colours (To Do, In Progress, In
+Review, Done; press it for the counts). A Team holding nothing has no line. **Workspace** narrows
+the stones to the Teams in those Workspaces. Agents outside any Team are one more stone, **No
+Team**, while there are any. The 人 in a stone's corner opens the Team's own workbench; No Team's
+opens one workbench for those Agents.
+
+Press a stone and the stones fold to the left while the Team opens beside them: its name with
+**Launch**, its concept, and the Workspace it covers with that Workspace's repositories. Under
+them one button ticks through three views, naming the one showing: **Agents** (lead first, each
+with its live dot, ⚑ when flagged, the items it holds and a progress line over them; **New
+Agent** at the foot), **Epics** (the Team's open Epics as Epic stones, each with its progress
+line; press one to read it beside them, with **Launch** to its own page) and **Configuration**
+(the Team's configuration form, **Delete team** at its foot). An Agent row is a reading: you
+launch the Team, not an Agent on its own. Press the stone again or Escape to go back. The
+selector has a card per Team that places the same Team in the selected tilespace, and a stone
+dragged into another tilespace does the same.
 
 **Team roster** is the plain list of every Team and every Agent: one heading per Team with its
 Launch and delete, one row per Agent with 人 when it leads, its work position, status, context
