@@ -14,4 +14,6 @@ where they belong (the record, a document, the roster, the wipeboard, the reposi
 conversation. An outside service a user connects is used one common way: Integrations, in
 your brief.
 
+When you need to know another Agent has finished, run `notify_me <agent>` and carry on or wait: one line reaches you when its turn ends. Never watch its tile or log for it.
+
 More: `ronin-help edges`

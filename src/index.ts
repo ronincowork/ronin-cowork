@@ -64,6 +64,7 @@ import { registerMessages } from './routes/messages-api.js';
 import { countBrowserTool } from './tool-call-api.js';
 import { registerCli } from './routes/cli-api.js';
 import { listQueuedMessages, startMessageQueue } from './message-queue.js';
+import { checkTurnEnd } from './notify-me.js';
 import { isValidTeam, listAllJobs, listJobs } from './jikan.js';
 import { isValidBoardName, seedHouseBoard, WIPEBOARD_DIR } from './wipeboards.js';
 import { agentCounts, joinPresence, machine, presence, stampInput } from './presence.js';
@@ -79,7 +80,7 @@ import { DocumentPathError, absoluteDocumentPath, readDocumentFile, readProductD
 import { checkTmuxServerCgroup } from './host-guard.js';
 import { startTeamLayers } from './team-layers.js';
 import { asSeat } from './seats.js';
-import { sockets, seatOfBearer, runStartedHooks, startBootHooks, stopBootHooks, mountServiceRoutes, noteService, noteServiceCapabilityPlan, noteServiceFailure, noteServiceParked } from './sockets.js';
+import { sockets, onRowChanged, seatOfBearer,runStartedHooks, startBootHooks, stopBootHooks, mountServiceRoutes, noteService, noteServiceCapabilityPlan, noteServiceFailure, noteServiceParked } from './sockets.js';
 import { discoverParts, partsToLoad } from './parts.js';
 import { initialCampaign } from './campaigns.js';
 import { listInstallations } from './resource-adapters.js';
@@ -526,7 +527,9 @@ startSessionsBroadcast({
   github: { attached: githubSetupAttached, answer: githubSetupAnswer },
   shutdown: shutdownOperation,
 });
-watchStore(WIPEBOARD_DIR, (file) => { void pushWipeboard(file.split('/')[0]!); });
+// notify_me: a marked Agent's turn end tells its callers, checked whenever its row moves — src/notify-me.ts
+onRowChanged((name) => { void checkTurnEnd(name); });
+watchStore(WIPEBOARD_DIR,(file) => { void pushWipeboard(file.split('/')[0]!); });
 watchStore(storeDir('jikan'), (file) => { if (file.endsWith('.md')) void pushJikan(file.slice(0, -3)); });
 watchStore(storeDir('message_queue'), () => { void pushMessages(); });
 // A seat's file is its roster entry (the listing moves); its inbox is its tile's thread (the card's record part).

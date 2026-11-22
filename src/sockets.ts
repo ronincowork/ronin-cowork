@@ -13,8 +13,9 @@ const rowContribs: Array<(session: string) => Promise<RowFields> | RowFields> = 
 const routeMounts: Array<(app: unknown) => void> = [];
 const activityHooks: Array<(session: string) => void> = [];
 const bearerChecks: Array<(token: string) => Promise<{ seat: string; status: string } | null>> = [];
-// The home push, set by ws/events.ts (which imports this file, so it is handed in, not imported).
-let pushRows: (session: string) => void = () => {};
+// Who hears a row move: the home push (ws/events.ts, which imports this file, so it is handed
+// in, not imported) and notify_me's turn-end check (src/notify-me.ts).
+const rowHooks: Array<(session: string) => void> = [];
 let streamHandler: ((...args: unknown[]) => void) | undefined;
 
 export const sockets: Sockets = {
@@ -27,7 +28,7 @@ export const sockets: Sockets = {
   onTranscriptWatch: (cb) => void watchHooks.push(cb),
   addRowFields: (cb) => void rowContribs.push(cb),
   onPaneActivity: (cb) => void activityHooks.push(cb),
-  rowChanged: (session) => pushRows(session),
+  rowChanged: (session) => { for (const cb of rowHooks) cb(session); },
   onItemChanged: (cb) => void itemHooks.push(cb),
   // Connections are Core's; what a reading admits is the part's. This is the seam.
   deliverToWatchers: (session, make) => deliverToWatchers(session, make),
@@ -101,7 +102,7 @@ export function emitPaneActivity(session: string): void {
     try { cb(session); } catch (e) { console.error('[sockets] pane activity hook:', e); }
   }
 }
-export function onRowChanged(push: (session: string) => void): void { pushRows = push; }
+export function onRowChanged(push: (session: string) => void): void { rowHooks.push(push); }
 export function emitTranscriptWatch(session: string): void {
   for (const cb of watchHooks) void Promise.resolve(cb(session)).catch((e) => console.error('[sockets] watch hook:', e));
 }

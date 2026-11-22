@@ -75,6 +75,27 @@ test('work-record: objective and documents written by the Agent read back', asyn
   assert.ok(text.includes(doc));
 });
 
+test('notify_me: the caller is told once when the marked Agent\'s turn ends', async () => {
+  const matePane = await ronin.tmux.run('display-message', '-p', '-t', '=mate:', '#{pane_id}');
+  const r = await ronin.tool('notify_me', ['worker'], { env: { TMUX_PANE: matePane } });
+  assert.equal(r.status, 0, r.stderr);
+  assert.match(r.stdout, /^MARKED worker/);
+  const hook = (event: string) => ronin.api(`/api/asking?pane=${encodeURIComponent(pane)}`, { body: { hook_event_name: event }, headers: { 'content-type': 'text/plain' } });
+  await hook('UserPromptSubmit');
+  await hook('Stop');
+  const line = 'worker finished its turn: waiting for you';
+  await until(async () => (await ronin.tmux.run('capture-pane', '-p', '-t', '=mate:')).includes(line), 'the turn-end line in the pane');
+  // The mark is gone: the next turn tells nobody. A Tell sent after it arrives after it.
+  await hook('UserPromptSubmit');
+  await hook('Stop');
+  await ronin.tool('edges', ['send', 'mate', 'after-the-second-turn'], { env: asWorker });
+  const screen = await until(async () => {
+    const text = await ronin.tmux.run('capture-pane', '-p', '-S', '-200', '-t', '=mate:');
+    return text.includes('after-the-second-turn') && text;
+  }, 'the Tell after the second turn');
+  assert.equal(screen.split(line).length - 1, 1);
+});
+
 test('edges send puts a message into another session\'s pane', async () => {
   const r = await ronin.tool('edges', ['send', 'mate', 'echo', 'delivered-by-edges'], { env: asWorker });
   assert.equal(r.status, 0, r.stderr);
