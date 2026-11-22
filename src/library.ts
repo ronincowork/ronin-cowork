@@ -29,10 +29,6 @@ export const stockLibraryDir = (): string => path.join(STOCK_DIR, 'library');
 export const userLibraryDir = (): string => storeDir('library_items');
 
 export const LIBRARY_ID = /^LIBRARY-[1-9][0-9]*$/;
-/** The library's onboarding item: the Helpful Assistant checks it out to herself. A checked-out
- * copy keeps no link, so her epic is known by this item's title (office read, Services' start). */
-export const ONBOARDING = 'LIBRARY-1';
-export const onboardingTitle = async (): Promise<string> => (await readLibrary(ONBOARDING).catch(() => null))?.title ?? '';
 export const isLibraryId = (id: string): boolean => LIBRARY_ID.test(String(id ?? '').trim());
 
 export interface LibraryPart { title: string; text: string; under: LibraryPart[] }
