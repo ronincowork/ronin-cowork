@@ -135,7 +135,7 @@ export const handedInComment = (item) => [...(item?.comments || [])].reverse().f
 
 /** Which sections of an item's reading are open, kept for the page's life so a fold stays
  * where the owner left it from one item to the next. Done starts folded. */
-const FOLDS = new Map([['done', false]]);
+const FOLDS = new Map([['done', false], ['checkout', false], ['playbook_edit', false]]);
 const isDone = (item) => /done|closed|resolved|complete/i.test(String(item?.status || ''));
 
 /** The Agents of an item (KAN-435): its holders first (`heldBy`, the item read's labels, else the
@@ -474,16 +474,16 @@ function playbookActs(step, item, { onCheckedOut, onPlaybookChanged }) {
   const pick = ask([{ fields: [{ key: 'to', label: t('work_items.checkout_to', 'To'), options }] }], { value: { to }, density: 'tight', onChange: ({ to: next }) => { to = next || ''; } });
   const said = el('p', 'fs-step-help wi-answer');
   said.setAttribute('role', 'status');
-  const out = createAction({ label: t('work_items.checkout', 'Check out'), action: async () => {
+  const out = createAction({ label: t('work_items.checkout', 'Assign to agent'), action: async () => {
     if (!to) { said.dataset.state = 'failed'; said.textContent = t('work_items.checkout_pick', 'Pick an Agent or a Team.'); return; }
     said.dataset.state = '';
-    said.textContent = t('work_items.checking_out', 'Checking out…');
+    said.textContent = t('work_items.checking_out', 'Assigning…');
     const result = await request(`/api/work-items/${encodeURIComponent(item.id)}/checkout`, { method: 'POST', json: { to } });
-    if (!result.ok) { said.dataset.state = 'failed'; said.textContent = result.message || t('work_items.checkout_failed', 'It was not checked out.'); return; }
-    said.textContent = t('work_items.checked_out', 'Checked out as {id}.', { id: result.data.item.id });
+    if (!result.ok) { said.dataset.state = 'failed'; said.textContent = result.message || t('work_items.checkout_failed', 'It was not assigned.'); return; }
+    said.textContent = t('work_items.checked_out', 'Assigned as {id}.', { id: result.data.item.id });
     onCheckedOut?.(result.data.item.id);
   } });
-  step('checkout', t('work_items.checkout', 'Check out'), () => t('work_items.checkout_meta', 'Copies it into live work'), pick.el, out.el, said);
+  step('checkout', t('work_items.checkout', 'Assign to agent'), () => t('work_items.checkout_meta', 'Copies it into live work'), pick.el, out.el, said);
 
   const answer = el('p', 'fs-step-help wi-answer');
   answer.setAttribute('role', 'status');
@@ -496,7 +496,7 @@ function playbookActs(step, item, { onCheckedOut, onPlaybookChanged }) {
   words.rows = 12;
   words.value = item.objective || '';
   words.setAttribute('aria-label', t('work_items.objective', 'Objective'));
-  const save = createAction({ label: t('work_items.playbook_save', 'Save my version'), action: async () => {
+  const save = createAction({ label: t('work_items.playbook_save', 'Save'), action: async () => {
     answer.dataset.state = '';
     answer.textContent = t('work_items.saving', 'Saving…');
     const result = await request(`/api/work-items/${encodeURIComponent(item.id)}`, { method: 'PUT', json: { title: title.value, objective: words.value } });
@@ -505,9 +505,9 @@ function playbookActs(step, item, { onCheckedOut, onPlaybookChanged }) {
   } });
   const under = el('input', 'wi-compose-words');
   under.type = 'text';
-  under.setAttribute('aria-label', t('work_items.playbook_add_title', 'The title of one under it'));
-  under.placeholder = t('work_items.playbook_add_title', 'The title of one under it');
-  const add = createAction({ label: t('work_items.playbook_add', 'Add under it'), action: async () => {
+  under.setAttribute('aria-label', t('work_items.playbook_add_title', 'Its title'));
+  under.placeholder = t('work_items.playbook_add_title', 'Its title');
+  const add = createAction({ label: item.kind === 'Epic' ? t('work_items.playbook_add_task', 'Add task') : t('work_items.playbook_add', 'Add subtask'), action: async () => {
     if (!under.value.trim()) { under.focus(); return; }
     const result = await request('/api/work-items', { method: 'POST', json: { title: under.value, parent: item.id } });
     if (!result.ok) return fail(result, t('work_items.playbook_not_saved', 'It was not saved.'));
@@ -518,7 +518,7 @@ function playbookActs(step, item, { onCheckedOut, onPlaybookChanged }) {
     if (!result.ok) return fail(result, t('work_items.playbook_not_deleted', 'It was not deleted.'));
     onPlaybookChanged?.(item.id);
   } });
-  step('playbook_edit', t('work_items.playbook_make_mine', 'Make my version'), () => t('work_items.playbook_make_mine_meta', 'Saved as yours, over Ronin’s'),
+  step('playbook_edit', t('work_items.playbook_make_mine', 'Customize'), () => t('work_items.playbook_make_mine_meta', 'Saved as yours, over Ronin’s'),
     title, words, save.el, under, add.el, drop.el, answer);
 }
 

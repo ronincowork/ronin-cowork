@@ -599,20 +599,21 @@ nothing paints exactly this.
 - **work_items.comment_failed:** The comment was not added.
 - **work_items.comment_told:** Added; sent to {names}.
 - **work_items.comment_nobody:** Added. No Agent holds this item, so nobody was sent it.
-- **work_items.checkout:** Check out
+- **work_items.checkout:** Assign to agent
 - **work_items.checkout_to:** To
 - **work_items.checkout_meta:** Copies it into live work
 - **work_items.checkout_pick:** Pick an Agent or a Team.
-- **work_items.checking_out:** Checking out…
-- **work_items.checked_out:** Checked out as {id}.
-- **work_items.checkout_failed:** It was not checked out.
+- **work_items.checking_out:** Assigning…
+- **work_items.checked_out:** Assigned as {id}.
+- **work_items.checkout_failed:** It was not assigned.
 - **work_items.team_named:** Team {name}
-- **work_items.playbook_make_mine:** Make my version
+- **work_items.playbook_make_mine:** Customize
 - **work_items.playbook_make_mine_meta:** Saved as yours, over Ronin’s
-- **work_items.playbook_save:** Save my version
+- **work_items.playbook_save:** Save
 - **work_items.playbook_not_saved:** It was not saved.
-- **work_items.playbook_add:** Add under it
-- **work_items.playbook_add_title:** The title of one under it
+- **work_items.playbook_add:** Add subtask
+- **work_items.playbook_add_task:** Add task
+- **work_items.playbook_add_title:** Its title
 - **work_items.playbook_delete_mine:** Delete my version
 - **work_items.playbook_not_deleted:** It was not deleted.
 - **find_item.playbooks_empty:** There are no playbooks.
