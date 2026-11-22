@@ -2,7 +2,7 @@
 - **seed:** check, create, change, archive, restore and end Agent sessions; `session_create` rides Recruit: staff agents
 - **when:**
 - **depth:** seed
-- **serves:** cowork-agent, team-lead, mika
+- **serves:** cowork-agent, team-lead, mika, irasshai
 - **order:** 30
 
 The session tools are about an Agent's existence, not its work.

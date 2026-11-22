@@ -1,6 +1,6 @@
 # Project management
 - **seed:** Run the work as work items: what they are for, their shape, status and notices.
-- **when:** pm
+- **when:** pm, !irasshai
 - **depth:** full
 - **order:** 21
 

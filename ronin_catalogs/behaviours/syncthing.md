@@ -1,6 +1,6 @@
 # Syncthing
 - **seed:** Syncthing never carries what git carries: before you add, change or review a synced folder, or chase a file missing on another machine, `ronin-help syncthing`.
-- **when:**
+- **when:** !irasshai
 - **depth:** seed
 - **order:** 28
 

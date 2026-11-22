@@ -6,7 +6,7 @@
 import type { LaunchMode } from './agent-defaults.js';
 import type { Depth } from './catalog.js';
 
-export type SessionType = 'cowork' | 'bare' | 'mika';
+export type SessionType = 'cowork' | 'bare' | 'mika' | 'irasshai';
 export type AgentRole = 'coworker' | 'lead' | 'epic_lead' | 'coordinator';
 
 /** One layer's brief settings (docs/architecture/brief.md, Layers and brief settings): what it adds (at a depth), blocks and screens to. */
@@ -102,7 +102,7 @@ const recordLines = (rows: BriefRecord['setting']['mcp']): string =>
 
 /** How a record value reads in a fact line. The words are the brief's (BRIEF_WORDING). */
 const WORDS: Record<string, (r: BriefRecord) => string> = {
-  'session.type': (r) => ({ cowork: 'Cowork Agent', bare: 'bare metal Agent', mika: 'Mika' })[r.session.type],
+  'session.type': (r) => ({ cowork: 'Cowork Agent', bare: 'bare metal Agent', mika: 'Mika', irasshai: 'Helpful Assistant' })[r.session.type],
   'setting.hosting': (r) => r.setting.hosted ? 'hosted' : 'self-hosted',
   'setting.integrations': (r) => r.setting.integrations.join(', ') || 'none',
   'setting.mcp_lines': (r) => recordLines(r.setting.mcp),

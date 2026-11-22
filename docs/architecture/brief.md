@@ -94,7 +94,7 @@ They read values on the work record.
 
 | Conditional | Holds when |
 |---|---|
-| `cowork` · `bare` · `mika` | the session type |
+| `cowork` · `bare` · `mika` · `irasshai` | the session type; `irasshai` is the Helpful Assistant, an ordinary Cowork launch with `agent_type: irasshai` |
 | `owner` · `member` | the user's role in the office |
 | `new-owner` | the Campaign has no Team yet |
 | `experience:<non_technical\|some\|developer>` · `ai:<new\|some\|daily>` · `use:<coding\|…\|other>` | the user's Lounge answers (hosted) |
@@ -339,7 +339,7 @@ behaviours/  base-agent (full) · cowork-agent, write-it-down (cowork, full)
              bridges: netlify-bridge, jira-bridge, perplexity-bridge
              (integration:<name>) · mcp-servers (mcp, seed: one line per MCP server on) ·
              web-apis (api, seed: one line per web API on)
-             mika, install-check (mika) · services-off (!service:ronin_services) · using-ronin
+             mika, install-check (mika) · irasshai, irasshai-voice (irasshai) · services-off (!service:ronin_services) · using-ronin
              optional (depth none): team-work, more-checkpoints, working-with-the-user,
              codebase-team
 tools/       edges, work-record, agent-session (session_*), cowork-team (team), plan, canvas,

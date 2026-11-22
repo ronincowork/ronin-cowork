@@ -55,7 +55,7 @@ export async function briefLayers(facts: Pick<LaunchFacts, 'campaign' | 'workspa
 }
 
 const sessionType = (form: SpawnForm): SessionType =>
-  form.house_seat === 'mika' ? 'mika' : form.session_type === 'bare_metal_agent' ? 'bare' : 'cowork';
+  form.house_seat === 'mika' ? 'mika' : form.agent_type === 'irasshai' ? 'irasshai' : form.session_type === 'bare_metal_agent' ? 'bare' : 'cowork';
 
 export type LaunchIdentity = { provider?: string; model?: string; harness?: string; launch_mode?: BriefRecord['agent']['launch_mode'] };
 
