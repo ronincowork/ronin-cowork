@@ -115,8 +115,8 @@ test('the Epics page and one Epic\'s page, as a person reads and presses them', 
 
   // One Epic's own page: its goal, four columns, Mark Epic Done only once Aging.
   await page.goto(`${ronin.base}/#/epic/${review}`);
-  await page.waitForSelector('.epic-route .epic-bar-objective:not([hidden])');
-  assert.equal(await page.textContent('.epic-route .epic-bar-objective'), 'Every shelf is full.');
+  await page.waitForSelector('.epic-route .team-bar-objective:not([hidden])');
+  assert.equal(await page.textContent('.epic-route .team-bar-objective'), 'Every shelf is full.');
   assert.deepEqual(await page.$$eval('.epic-route .epic-column h3', (nodes) => nodes.map((node) => node.textContent)), ['To Do', 'In Progress', 'In Review', 'Recently Done']);
   assert.deepEqual(await page.$$eval('.epic-route .epic-column', (nodes) => nodes.map((node) => node.querySelectorAll('button.item-bar').length)), [1, 0, 1, 0]);
   assert.equal(await page.isVisible('.epic-route .epic-mark-done'), false, 'Working: no Mark Epic Done');

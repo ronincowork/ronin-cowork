@@ -353,20 +353,8 @@ export function createEpicBoard({ epicsRead, header = true, initial = '' }) {
 /** One Epic's worksurface (its selector card, a dragged stone): that Epic alone, with Launch (w899). */
 export const createEpicRecord = (key, { epicsRead }) => createEpicOne(key, { epicsRead, launch: true });
 
-/** The Epic's own route (w899): `#/epic/<id>`, a link a plain press follows in this tab and a
- * Ctrl/Cmd or middle press opens in another. */
+/** The Epic's own route (w899): `#/epic/<id>`; Launch follows it in this tab, Ctrl/Cmd/Shift in another. */
 export const epicAddress = (id) => `#/epic/${encodeURIComponent(id)}`;
-export function epicLaunch(id) {
-  const link = el('a', 'wk-action epic-launch', t('epics.launch', 'Launch'));
-  link.href = epicAddress(id);
-  link.addEventListener('click', (event) => {
-    if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || !S.workspace) return;
-    event.preventDefault();
-    S.workspace.navigate('epic', { param: id });
-  });
-  return link;
-}
-
 const dragEpic = (epic, label) => ({ dragstart: (event) => {
   event.dataTransfer.setData(SURFACE_DRAG, JSON.stringify({ type: WORKBENCH_TYPES.epicRecord, detail: { key: epic.id } }));
   event.dataTransfer.setData('text/plain', label);
@@ -447,15 +435,14 @@ export function createEpicStones({ epicsRead, workbench = null, bare = false, em
  * (POST /api/work-items, kind Epic) and `onMade(id)` opens it.
  */
 export function createNewEpic({ onMade = () => {} } = {}) {
-  const bar = el('section', 'epic-bar epic-new');
-  const head = el('div', 'epic-bar-head');
+  const bar = el('section', 'team-bar epic-bar epic-new');
+  const head = el('div', 'team-bar-head');
   const title = el('input', 'epic-new-title');
   title.type = 'text';
   title.placeholder = t('epics.new_title', 'Epic title');
   title.setAttribute('aria-label', t('epics.new_title', 'Epic title'));
-  const create = el('button', 'wk-action epic-new-create', t('epics.create', 'Create'));
-  create.type = 'button';
-  const actions = el('div', 'epic-bar-actions');
+  const create = WorkspaceKit.primitives.createAction({ label: t('epics.create', 'Create'), size: 'compact', className: 'epic-new-create' }).el;
+  const actions = el('div', 'team-bar-actions');
   actions.append(create);
   head.append(title, actions);
   const goal = el('textarea', 'epic-new-goal');
@@ -508,29 +495,34 @@ export function createNewEpic({ onMade = () => {} } = {}) {
  * it last moved, so a forgotten In Progress card shows on an Aging Epic.
  */
 export function createEpicOne(epicId, { epicsRead, launch = false, header = true, onTitle = () => {} }) {
-  const { createSurface } = WorkspaceKit.primitives;
+  const { createSurface, createAction } = WorkspaceKit.primitives;
   const out = createSurface({ label: t('epics.epic', 'Epic'), className: 'setup-surface epic-one', header });
-  const bar = el('section', 'epic-bar');
-  const head = el('div', 'epic-bar-head');
-  const title = el('h2', 'epic-bar-title');
-  const actions = el('div', 'epic-bar-actions');
-  const details = el('button', 'wk-action epic-details', t('epics.details', 'Details'));
-  details.type = 'button';
-  const markDone = el('button', 'wk-action epic-mark-done', t('epics.mark_done', 'Mark Epic Done'));
-  markDone.type = 'button';
-  markDone.hidden = true;
-  actions.append(markDone, details);
-  if (launch) actions.append(epicLaunch(epicId));
+  // THE EPIC'S BAR (owner, 2026-11-22): the opened Team's bar grammar (cowork-view.js, team-bar): the
+  // name with its actions in the head, the goal in full, a muted line of facts (key, holder, when it
+  // last moved), the shared lifecycle bar bottom right; the work columns below it.
+  const bar = el('section', 'team-bar epic-bar');
+  const head = el('div', 'team-bar-head');
+  const title = el('h2', 'team-bar-title');
+  const actions = el('div', 'team-bar-actions');
+  const markDone = createAction({ label: t('epics.mark_done', 'Mark Epic Done'), size: 'compact', className: 'epic-mark-done', action: () => doneNow() });
+  markDone.el.hidden = true;
+  const details = createAction({ label: `${t('epics.details', 'Details')} ›`, size: 'compact', className: 'epic-details', action: () => toggleDetails() });
+  actions.append(markDone.el, details.el);
+  if (launch) actions.append(createAction({ label: t('epics.launch', 'Launch'), launch: true, size: 'compact', className: 'epic-launch', action: (event) => {
+    if (event?.metaKey || event?.ctrlKey || event?.shiftKey || !S.workspace) window.open(epicAddress(epicId), '_blank', 'noopener');
+    else S.workspace.navigate('epic', { param: epicId });
+  } }).el);
   head.append(title, actions);
-  const objective = el('p', 'epic-bar-objective');
+  const objective = el('p', 'team-bar-objective');
+  const facts = el('p', 'team-bar-coverage');
   const said = el('p', 'epic-bar-said');
   said.hidden = true;
   const progress = createProgress('bar');
-  const foot = el('div', 'epic-bar-foot');
+  const foot = el('div', 'team-bar-foot');
   foot.append(said, progress.el);
   const detailHost = el('div', 'epic-bar-details');
   detailHost.hidden = true;
-  bar.append(head, objective, foot, detailHost);
+  bar.append(head, objective, facts, foot, detailHost);
   const columns = el('div', 'epic-columns');
   const NAMES = { todo: t('epics.to_do', 'To Do'), progress: t('epics.in_progress', 'In Progress'), review: t('epics.in_review', 'In Review'), done: t('epics.recently_done', 'Recently Done') };
   const lists = {};
@@ -555,20 +547,18 @@ export function createEpicOne(epicId, { epicsRead, launch = false, header = true
   let asked = '';
   let drawn = '';
 
-  details.addEventListener('click', () => {
+  function toggleDetails() {
     const opening = detailHost.hidden;
     detailHost.hidden = !opening;
-    details.setAttribute('aria-expanded', String(opening));
-    if (opening && epic) detailHost.replaceChildren(itemReading(epic, { children: false, onClose: () => { detailHost.hidden = true; details.setAttribute('aria-expanded', 'false'); } }));
+    details.el.setAttribute('aria-expanded', String(opening));
+    if (opening && epic) detailHost.replaceChildren(itemReading(epic, { children: false, onClose: () => { detailHost.hidden = true; details.el.setAttribute('aria-expanded', 'false'); } }));
     else detailHost.replaceChildren();
-  });
-  markDone.addEventListener('click', async () => {
-    markDone.disabled = true;
+  }
+  async function doneNow() {
     const result = await request(`/api/work-items/${encodeURIComponent(epicId)}/transition`, { method: 'POST', json: { status: 'Done' } });
-    markDone.disabled = false;
     said.hidden = result.ok;
     if (!result.ok) said.textContent = result.message || t('epics.mark_done_failed', 'The Epic did not move.');
-  });
+  }
 
   function askCards(every) {
     const sig = [epic, ...every].filter(Boolean).map((item) => `${item.id}@${item.moved || ''}`).join(' ');
@@ -604,17 +594,21 @@ export function createEpicOne(epicId, { epicsRead, launch = false, header = true
     const { stage } = progress.update(epic, every);
     const words = epic.title || epic.id;
     const key = epic.external?.jira?.key || epic.id;
-    const sig = JSON.stringify([words, key, stage, epic.status, cards.get(epicId)?.objective, [...open],
+    const moved = epicMoved(epic, every);
+    const sig = JSON.stringify([words, key, stage, epic.status, epic.holder, moved, cards.get(epicId)?.objective, [...open],
       every.map((item) => [item.id, item.status, item.flagged, item.holder, item.title, item.moved, cards.get(item.id)?.objective])]);
     if (sig === drawn) return;
     drawn = sig;
-    title.replaceChildren(el('span', 'epic-bar-key', key), ` ${words}`);
+    title.textContent = words;
+    const holder = holderOfItem(epic);
+    // The Jira key rides movedWords; an Epic made in Ronin shows its own id.
+    facts.textContent = [epic.external?.jira?.key ? '' : epic.id, holder ? holderWords(holder) : '', movedWords(epic, moved)].filter(Boolean).join(' · ');
     if (out.header) out.header.title.textContent = words;
     onTitle(words);
     const goal = cards.get(epicId)?.objective || '';
     objective.textContent = goal;
     objective.hidden = !goal;
-    markDone.hidden = stage !== 'aging';
+    markDone.el.hidden = stage !== 'aging';
     const top = every.filter((item) => item.level === 0);
     none.hidden = top.length > 0;
     for (const status of LIFECYCLE) {
@@ -655,7 +649,7 @@ export function createEpicRoute() {
         one?.destroy();
         id = context.param;
         words = '';
-        one = createEpicOne(id, { epicsRead, header: false, onTitle: retitle });
+        one = createEpicOne(id, { epicsRead, onTitle: retitle });
         host.replaceChildren(one.el);
       }
       one.show();

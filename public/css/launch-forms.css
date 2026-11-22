@@ -153,19 +153,17 @@
   /* ONE EPIC (w899): its bar on top, four columns under it; a narrow seat stacks them in order. */
   .epic-one > .wk-surface-content, .epic-route { display: flex; flex-direction: column; gap: var(--space-subsection); min-width: 0; padding: var(--space-inset); }
   .epic-route { min-height: 100%; overflow: auto; background: var(--workbench-bg); }
-  .epic-route > .epic-one { border: 0; }
-  .epic-route > .epic-one > .wk-surface-content { padding: 0; }
-  .epic-bar, .team-bar { display: flex; flex-direction: column; gap: var(--space-inline); padding: var(--space-inline) var(--space-inset); border: var(--edge) solid var(--line-2); border-radius: var(--radius-hair); background: var(--surface); }
+  .epic-route > .epic-one { flex: 1 1 auto; min-height: 0; } /* one Epic, one whole tile (owner, 2026-11-22) */
+  .team-bar { display: flex; flex-direction: column; gap: var(--space-inline); padding: var(--space-inline) var(--space-inset); border: var(--edge) solid var(--line-2); border-radius: var(--radius-hair); background: var(--surface); }
   .epic-bar[hidden], .epic-columns[hidden] { display: none; }
-  .epic-bar-head, .team-bar-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-inline); }
-  .epic-bar-title, .team-bar-title { flex: 1 1 16rem; margin: 0; color: var(--fg-strong); font-size: var(--text-body); font-weight: var(--weight-strong); overflow-wrap: anywhere; }
-  .epic-bar-key { color: var(--muted); font-weight: var(--weight-regular); font-variant-numeric: tabular-nums; }
-  .epic-bar-actions, .team-bar-actions { display: flex; flex-wrap: wrap; gap: var(--space-inline); }
-  .epic-bar-actions .wk-action[hidden] { display: none; }
+  .team-bar-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-inline); }
+  .team-bar-title { flex: 1 1 16rem; margin: 0; color: var(--fg-strong); font-size: var(--text-body); font-weight: var(--weight-strong); overflow-wrap: anywhere; }
+  .team-bar-actions { display: flex; flex-wrap: wrap; gap: var(--space-inline); }
+  .team-bar-actions .wk-action[hidden] { display: none; }
   .epic-launch, .workspace-launch { text-decoration: none; }
-  .epic-bar-objective, .team-bar-objective { margin: 0; color: var(--fg); font-size: var(--text-body); white-space: pre-wrap; overflow-wrap: anywhere; }
-  .epic-bar-objective[hidden], .epic-bar-said[hidden], .epic-bar-details[hidden] { display: none; }
-  .epic-bar-foot, .team-bar-foot { display: flex; align-items: center; gap: var(--space-inline); }
+  .team-bar-objective { margin: 0; color: var(--fg); font-size: var(--text-body); white-space: pre-wrap; overflow-wrap: anywhere; }
+  .team-bar-objective[hidden], .epic-bar-said[hidden], .epic-bar-details[hidden] { display: none; }
+  .team-bar-foot { display: flex; align-items: center; gap: var(--space-inline); }
   .epic-bar-said { margin: 0; color: var(--warn); font-size: var(--text-body); }
   .epic-columns { display: grid; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); gap: var(--space-inset); align-items: start; }
   .epic-column { display: flex; flex-direction: column; gap: var(--space-inline); min-width: 0; }
