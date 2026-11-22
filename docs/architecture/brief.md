@@ -9,7 +9,7 @@ Agents are told is in [Customize Ronin](../getting-started/customize.md).
 
 | Object | What it is | Folder | How much is told |
 |---|---|---|---|
-| **Fact** | true about the user and the Agent's situation: the user, the office's people, the Workspace, the Team, the task | `ronin_catalogs/facts/` | in full when told. Facts are short; anything long is a behaviour |
+| **Fact** | true about the user and the Agent's situation: the Agent's own lines (you, its Workspace, Team, model, task) and the office's suite (about_user, machine, account, workspaces, integrations_authentications, teams_agents, epics, defaults: `~/ronin/library/facts/<fact>.md`, src/facts.ts) | `ronin_catalogs/facts/` | in full by default; an office fact is at seed (its line and path), full gives its text at birth |
 | **Behaviour** | how to work: guidance an Agent follows | `ronin_catalogs/behaviours/` | a depth (below) |
 | **Tool** | something to call: one command, or a family (`session_*`) | `ronin_catalogs/tools/` | a depth (below) |
 
@@ -64,7 +64,7 @@ behaviour's name takes another id (`ask-mika` is the `mika` command). Every file
 | `seed:` | behaviours, tools | the one line. A behaviour's seed stands on its own; a tool's is its one job. It may carry a record value, `{setting.mcp_lines}`, filled when the brief is built |
 | `line:` | facts | the line the brief prints, with `{record.path}` placeholders; `{<lead> x}` prints `<lead>` and x only when x is set; `{x?yes\|no}` prints one of two texts |
 | `when:` | all | the conditionals that must all hold, comma-separated; `!` for not; blank = every Agent. A tool that serves a behaviour needs none: it is in play when its behaviour is |
-| `depth:` | behaviours, tools | `none`, `seed` or `full`: the stock depth. Layers may raise it |
+| `depth:` | all | `none`, `seed` or `full`: the stock depth (a fact's blank is full; a fact at seed prints its line only). Layers may raise it |
 | `serves:` | tools | the behaviour ids it serves. Blank: it goes under Other tools |
 | `mandate:` | behaviours | the mandate axis this file is a value of: `reach`, `recruit` or `output`; the title is the value |
 | `with:` | mandate values | the behaviour(s) choosing this value puts in play, at their depth (Reach plan `with: planning`); the order never repeats that behaviour's text |
@@ -326,8 +326,9 @@ and `HOME` to its own folders (`tests/helpers/ronin.ts`), so it never writes the
 ## The stock files
 
 ```
-facts/       you, user, user-about, user-intro, people (hosted), ronin, workspace,
-             integrations-on (a lead: its Team's too), team (team), model, work, task
+facts/       you, about_user, machine, account (hosted), workspace, workspaces,
+             integrations_authentications, integrations-on (a lead: its Team's too), team (team),
+             teams_agents, epics, defaults, model, work, task
 behaviours/  base-agent (full) · cowork-agent, write-it-down (cowork, full)
              reach-*, recruit-*, output-* (mandate: one file per value)
              team-lead, planning (lead) · lead-worktrees (lead, desk) · canvases (cowork, seed)

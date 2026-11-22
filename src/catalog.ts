@@ -10,7 +10,7 @@
  *   - **seed:** the one line            (behaviours, tools)
  *   - **line:** User: {user.name}{, user.role}   (facts)
  *   - **when:** cowork, !mika           (all; blank = every Agent)
- *   - **depth:** none | seed | full     (behaviours, tools; blank = seed)
+ *   - **depth:** none | seed | full     (blank = seed; a fact's blank = full; a fact at seed is its line only)
  *   - **serves:** write-it-down         (tools; blank = Other tools)
  *   - **mandate:** reach                (behaviours: a mandate value; the title is the value)
  *   - **with:** planning                (mandate values: the behaviours choosing it puts in play)
@@ -86,7 +86,7 @@ export function parseCatalogFile(kind: CatalogKind, name: string, text: string):
     seed: get('seed'),
     line: get('line'),
     when: list(get('when')),
-    depth: kind === 'facts' ? 'full' : (DEPTHS as readonly string[]).includes(depth) ? depth as Depth : 'seed',
+    depth: (DEPTHS as readonly string[]).includes(depth) ? depth as Depth : kind === 'facts' ? 'full' : 'seed',
     serves: kind === 'tools' ? list(get('serves')) : [],
     mandate: axis,
     value: axis ? title.toLowerCase() : '',

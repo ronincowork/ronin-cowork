@@ -73,7 +73,8 @@ const strip = (text: string): string => text.replace(/<!--[^]*?-->/g, '').trim()
 const nested = (text: string): string => strip(text).replace(/^(#{1,6})(?=\s)/gm, (marks) => '#'.repeat(Math.min(6, marks.length + 2)));
 
 function factLines(row: InPlay, record: BriefRecord): string[] {
-  const raw = strip(row.file.body);
+  // A fact at seed is its line alone (an office fact's line and path); full adds its text.
+  const raw = row.depth === 'seed' ? '' : strip(row.file.body);
   // A paragraph whose values all come out empty goes whole, its label line with it ("Folders:").
   const body = raw.split(/\n{2,}/).flatMap((paragraph) => {
     const lines = paragraph.split('\n');

@@ -12,7 +12,7 @@ help() {
 machine-settings — read or change typed Machine and Campaign settings
 
 Usage:
-  machine-settings read [--campaign <id>]
+  machine-settings read
   machine-settings campaign read [--campaign <id>]
   machine-settings campaign write title|description <value> [--campaign <id>]
   machine-settings campaign archive [--campaign <id>]
@@ -34,7 +34,8 @@ Usage:
 Without --campaign, Campaign operations resolve RONIN_SESSION by exact live-session name
 and refuse when it has no Campaign. Writes use only the existing typed Campaign, Machine
 Settings or activation routes; observed/status/needed facts are read-only.
-Bare read keeps catalogued, observed, Campaign-on, and new-Team-default states separate.
+Bare read prints the facts it covers: machine, integrations_authentications and defaults
+(~/ronin/library/facts/, the same text `office read` gives).
 Provider reads dynamically use the canonical Campaign/provider model catalog shared with
 the UI dropdowns; no model list is maintained by this command or its capability document.
 Run `machine-settings <operation> --help` for the accepted fields and examples.
@@ -103,37 +104,11 @@ pretty() {
 COMMAND=$1; shift
 case "$COMMAND" in
   read)
-    take_campaign "$@"; [ "${#REMAINING[@]}" -eq 0 ] || die 'BAD-ARG: read accepts only --campaign <id>.' 2
-    resolve_campaign
-    campaign=$(api GET "/api/campaigns/$CAMPAIGN")
-    settings=$(api GET '/api/machine-settings')
-    catalog=$(api GET '/api/installations')
-    installed=$(api GET '/api/installed')
-    providers=$(api GET '/api/provider-catalog')
-    CAMPAIGN_JSON="$campaign" SETTINGS_JSON="$settings" CATALOG_JSON="$catalog" INSTALLED_JSON="$installed" PROVIDERS_JSON="$providers" python3 - <<'PY'
-import json,os
-c=json.loads(os.environ['CAMPAIGN_JSON']); ms=json.loads(os.environ['SETTINGS_JSON'])
-catalog=json.loads(os.environ['CATALOG_JSON']); observed=json.loads(os.environ['INSTALLED_JSON'])
-defaults=c.get('config',{}).get('defaults',{}); chosen=set(defaults.get('behaviours') or [])
-switches=c.get('config',{}).get('installations',{}); services=observed.get('services',{})
-rows=[]
-for item in catalog:
-    name=item.get('name',''); provides=item.get('provides') or []
-    fact={'state':'unknown'}
-    if name=='ronin_services':
-        fact={'state':'installed' if services.get('installed') else 'not-installed',
-              'activated':bool(services.get('activated')), 'stage':services.get('stage'),
-              'loaded':services.get('loaded') or [], 'parked':services.get('parked') or [],
-              'restart_needed':bool(services.get('restart_needed'))}
-    rows.append({'name':name,'label':item.get('label',name),'catalogued':True,
-                 'observed':fact,'campaign_on':switches.get(name) is True,
-                 'default_selected':bool(set(provides)&chosen),'provides':provides,
-                 'requires':item.get('requires') or []})
-print(json.dumps({'campaign':{k:c.get(k) for k in ('id','title','description','state')},
- 'installations':rows,'defaults':defaults,'machine_settings':{
-   'set':ms.get('set',{}),'observed':ms.get('observed',{}),'status':ms.get('status',{}),'needed':ms.get('needed',[])},
- 'providers':{'catalog':json.loads(os.environ['PROVIDERS_JSON']),'observed':c.get('providers')}},indent=2))
-PY
+    # The facts it covers (KAN-768, src/facts.ts): the machine, its providers and integrations, the defaults.
+    [ "$#" -eq 0 ] || die 'BAD-ARG: read takes nothing; a section has its own read.' 2
+    for fact in machine integrations_authentications defaults; do
+      api GET "/api/facts/$fact" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("text","").rstrip()); print()'
+    done
     ;;
   campaign)
     sub=${1:-}; shift || true

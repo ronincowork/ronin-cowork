@@ -16,6 +16,7 @@ import type { CampaignSettings } from './campaigns.js';
 import { availableTo, readMcpRecords, type McpRecord } from './mcp-records.js';
 import { isHostedOffice, officePeople } from './office-people.js';
 import { listTeamRosters } from './team-rosters.js';
+import { briefFacts } from './facts.js';
 import type { LaunchFacts, SpawnForm } from './spawn.js';
 import { mandate } from './agent-defaults.js';
 import { listDeskRecords } from './desks/registry.js';
@@ -99,6 +100,7 @@ async function birthRecord(form: SpawnForm, facts: LaunchFacts, launch: LaunchId
       account: '',
     },
     people: officePeople().map((p) => ({ ...p, role: p.role ?? '' })),
+    office: await briefFacts(),
     setting: {
       hosted: isHostedOffice(),
       campaign: campaignId,

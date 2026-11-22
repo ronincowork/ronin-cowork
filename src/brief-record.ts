@@ -47,6 +47,8 @@ export interface BriefRecord {
   };
   /** Hosted: the office's owner and members. Self-hosted: none. */
   people: OfficePerson[];
+  /** The office's facts at birth (src/facts.ts, KAN-768), by fact: its seed line, its file, its text. */
+  office?: Record<string, { line: string; path: string; text: string }>;
   setting: {
     hosted: boolean;
     campaign: string;

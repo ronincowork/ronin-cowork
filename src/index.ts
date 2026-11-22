@@ -69,7 +69,8 @@ import { isValidBoardName, seedHouseBoard, WIPEBOARD_DIR } from './wipeboards.js
 import { agentCounts, joinPresence, machine, presence, stampInput } from './presence.js';
 import { person, startOfficePeople } from './office-people.js';
 import { readOfficeRecord } from './office-record.js';
-import { changed, handleEvents, mark, pushJikan, pushMessages, pushWipeboard, startSessionsBroadcast, watchStore } from './ws/events.js';
+import { changed, handleEvents, mark, pushJikan, pushMessages, pushWipeboard, startSessionsBroadcast, watchStore, wireTmuxNotifications } from './ws/events.js';
+import { sessionsMoved, startFacts } from './facts.js';
 import { tmux as tmuxClient } from './tmux-client.js';
 import { handlePty } from './ws/pty.js';
 import { originAllowed, allowedOrigins } from './ws/origin.js';
@@ -531,7 +532,9 @@ watchStore(storeDir('jikan'), (file) => { if (file.endsWith('.md')) void pushJik
 watchStore(storeDir('message_queue'), () => { void pushMessages(); });
 // A seat's file is its roster entry (the listing moves); its inbox is its tile's thread (the card's record part).
 watchStore(storeDir('seats'), (file) => { if (file.endsWith('.inbox.jsonl')) mark(file.slice(0, -12), 'record'); else if (file.endsWith('.json')) changed(); });
-void startOfficePeople(); // hosted office: who each browser is — src/office-people.ts
+// Hosted office: who each browser is (src/office-people.ts); then the facts, one watcher per store (src/facts.ts, KAN-768).
+void startOfficePeople().then(() => startFacts()).catch((e) => console.error('[facts] start failed:', e));
+wireTmuxNotifications(tmuxClient, sessionsMoved); // live Agents are tmux's, not a store's
 void seedHouseBoard().catch((e) => console.error('[tmux-ronin] house board seed failed:', e));
 
 void publishMax();

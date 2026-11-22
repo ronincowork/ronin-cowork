@@ -12,9 +12,9 @@ has. They separate constantly: a folder typed but never created, a repository na
 never cloned, a default provider not installed or never signed in to, a Services request
 waiting on an email that never arrived.
 
-**Check:** `machine-settings read`. Each setting shows `set` (what the owner answered),
-`observed` (what the machine measured) and `status` (where they meet). The disagreements
-are the finding. Report them; do not quietly repair them.
+**Check:** the facts (`office read`) are what the machine has, measured; what the owner set
+is the Workspace page and `machine-settings <section> read`. The disagreements are the
+finding. Report them; do not quietly repair them.
 
 **Say it back,** three things and stop:
 

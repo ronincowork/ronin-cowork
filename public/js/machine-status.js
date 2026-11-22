@@ -6,10 +6,10 @@ import { t } from './lexicon.js';
 
 /**
  * MACHINE STATUS (owner, 2026-11-20; KAN-759): the one complete truth of what this office has set
- * up, what it hasn't and what is available, as `office read` prints it (src/office-read.ts). Write
- * it now saves it to ~/ronin/library/MACHINE_STATUS.md, where the owner, the Helpful Assistant, a
- * lead or the gecko read it; the surface shows what was last written and when. Any Ronin's
- * Settings has it.
+ * up, what it hasn't and what is available: the office's facts in one, as `office read` prints them
+ * (src/facts.ts, KAN-768). ~/ronin/library/MACHINE_STATUS.md is kept current as the facts change;
+ * Write it now builds every fact again. The surface shows what was last written and when. Any
+ * Ronin's Settings has it.
  */
 export function createMachineStatusSurface() {
   const surface = WorkspaceKit.primitives.createSurface({ label: t('machine_status.title', 'Machine status'), className: 'cv-surface' });
