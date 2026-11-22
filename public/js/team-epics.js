@@ -5,7 +5,7 @@
  * shown below on this same card; with one Epic, that one.
  *
  * "The Team's Epics" are those the Team or its members hold, and the Epic above each item they
- * hold. The teams push carries their ids on the Team's row (`epics`; teams-api.ts, teamWork in
+ * hold, but none Done (KAN-779). The teams push carries their ids on the Team's row (`epics`; teams-api.ts, teamWork in
  * work-items-read.ts); the Epics themselves are the store's pushed `epics`. Nothing here asks
  * the server.
  */

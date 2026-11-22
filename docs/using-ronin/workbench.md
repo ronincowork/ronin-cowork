@@ -96,7 +96,8 @@ work" is what the Team holds plus what its Agents hold: the same items `team mem
 reads.
 
 **Epics** shows the Team's Epics: those the Team or its Agents hold, and the Epic above
-each item they hold. It is the Epics board, as on the Epics workbench: a stone per Epic
+each item they hold, except those Done (find a Done Epic with Find item or on the Epics
+workbench). It is the Epics board, as on the Epics workbench: a stone per Epic
 across the top, and the pressed one below it. Press another stone to switch to that Epic
 on the same card; nothing opens elsewhere. With one Epic, that one is shown.
 
