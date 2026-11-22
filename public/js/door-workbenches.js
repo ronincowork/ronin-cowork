@@ -27,7 +27,7 @@ import { createGithubWorkspaceSetup } from './github-workspace-setup.js';
 import { createFolderGithub, createWorkspaceNew, createWorkspaceRecord, createWorkspaceStones, workspaceOffers } from './workspaces-surface.js';
 import { createWorkspacesRead } from './workspaces-read.js';
 import { campaignById, loadCampaigns, normalizeSelection } from './campaigns.js';
-import { createEpicBoard, createEpicRecord, createEpicsRead, epicOffers } from './epics-surface.js';
+import { createEpicRecord, createEpicStones, createEpicsRead, epicOffers } from './epics-surface.js';
 import { createHelpOutline, createHelpPage } from './help-outline.js';
 import { askMika, askSignInHelper, createMikaTilePool, reportMikaView, signInHelperName } from './mika.js';
 import { readyMika } from './mika-ready.js';
@@ -45,7 +45,7 @@ const blank = (id) => WorkspaceKit.primitives.createBlankSurface(id.replace('wor
  * Campaign); `reading` names the Help page being read; `destroy` lets the surfaces go with the view.
  * Every change reports this tab's view for Mika's `owner_view`, as the other workbenches do.
  */
-function doorWorkbench({ id, profile, label, seat, seats = { workspace1: seat }, count = 2, environment, cards = true, loaded = null, reading = () => '', destroy = () => {} }) {
+function doorWorkbench({ id, profile, label, seat, seats = { workspace1: seat }, count = 2, environment, cards = true, hints = true, loaded = null, reading = () => '', destroy = () => {} }) {
   registerWorkbenchCatalog();
   const { normalizeWorkbenchState } = WorkspaceKit.contract;
   let ctx = null, entered = false, bench = null;
@@ -63,7 +63,7 @@ function doorWorkbench({ id, profile, label, seat, seats = { workspace1: seat },
   };
   bench = WorkspaceKit.workbench.create({
     profile, tenant: { kind: id }, environment: environment({ bench: () => bench, entered: () => entered, ctx: () => ctx, report }),
-    defaultNode: blank, label, ...(cards ? {} : { selectorFilter: () => false }), onStateChange: save, onPlacement: save,
+    defaultNode: blank, label, hints, ...(cards ? {} : { selectorFilter: () => false }), onStateChange: save, onPlacement: save,
   });
   return {
     el: bench.host, ...workbenchView(id, { header: { feedback: false } }), arrangement: bench.arrangement,
@@ -192,12 +192,12 @@ export function createEpicsView() {
   const keep = (surface) => { made.push(surface); return surface; };
   return doorWorkbench({
     id: 'epics', profile: WORKBENCH_PROFILES.epics, label: t('campaign_home.epics', 'Epics'), seat: WORKBENCH_TYPES.epicRecords,
-    loaded: loadCampaigns,
+    loaded: loadCampaigns, hints: false, // no Agent vocabulary or Session controls on Epics (owner, 2026-11-22)
     environment: ({ bench, ctx }) => {
       const epicsRead = createEpicsRead(() => campaign(ctx)?.id || '');
       return {
         epics: () => epicOffers(epicsRead),
-        epicRecords: () => keep(createEpicBoard({ epicsRead })), // w334: the stones' row, then the picked Epic's items
+        epicRecords: () => keep(createEpicStones({ epicsRead })), // w897: the phalanx of open Epics, a pressed one beside it
         epicRecord: (_workspace, detail) => keep(createEpicRecord(detail.key, { epicsRead })),
       };
     },

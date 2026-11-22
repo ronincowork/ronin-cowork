@@ -28,7 +28,8 @@ surface as it was, its geometry untouched: Settings (Workspaces, Model
 Providers, Setup) and the Agent workbench's Work Items draw with it. Escape lifts only the layer it
 is pressed in (2026-10-08).
 
-Ronin has no board (owner, 2026-10-23): a board is Jira's or Trello's. Work Items
+Ronin's one board is an Epic's own page, `#/epic/<id>` (owner, 2026-11-22; w899): its four
+columns of the items under it. Work Items
 (`work-items`) stays on the Agent's workbench, filtered to the work items held by that
 Agent. **The Team page** (owner, 2026-10-18) is the old Team workbench opening on the
 lead's tile in workspace 1 with workspace 2 blank; its selector holds Commons, the Agents,

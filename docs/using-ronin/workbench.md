@@ -97,8 +97,9 @@ reads.
 
 **Epics** shows the Team's Epics: those the Team or its Agents hold, and the Epic above
 each item they hold, except those Done (find a Done Epic with Find item or on the Epics
-workbench). It is the Epics board, as on the Epics workbench: a stone per Epic
-across the top, and the pressed one below it. Press another stone to switch to that Epic
+workbench). It is a stone per Epic across the top, and the pressed one below it (the Epics
+workbench itself is a phalanx of open Epics, each opening on its own page: see
+[Running work items](running-work-items.md)). Press another stone to switch to that Epic
 on the same card; nothing opens elsewhere. With one Epic, that one is shown.
 
 Under the stones, an Epic shows where it comes from (its Jira key, or Ronin only) and who

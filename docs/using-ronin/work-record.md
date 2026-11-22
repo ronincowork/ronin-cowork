@@ -1,8 +1,8 @@
 # Work records and work items
 
 A work record says what an Agent is doing now: its objective, repositories, and the work
-items it holds, each with its status. Ronin has no board: a user who wants one uses Jira
-or Trello.
+items it holds, each with its status. An Epic's work, all of it, is on that Epic's own page
+(Epics › Launch).
 
 Two shipped commands: `work-record` keeps what is about the Agent (objective, repositories),
 and `item` does every act on a work item, the item always named. Its acts are Jira's item

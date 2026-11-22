@@ -114,10 +114,11 @@ export function createWorkbench(options = {}) {
 
   const selector = node('div', 'wk-workbench-selector');
   const selectorCards = node('div', 'wk-workbench-selector-cards');
-  selector.append(selectorCards, buildHints({
+  // `hints: false` leaves the Agent vocabulary and Session controls off a selector with no Agents (Epics; w897).
+  selector.append(selectorCards, ...(options.hints === false ? [] : [buildHints({
     collapsedByDefault: options.hintsCollapsed === true,
     preferenceScope: options.hintsPreferenceScope || '',
-  }));
+  })]));
   const declaration = { slots: [
     { name: 'workspace1', label: t('team.workspace_1', 'Tilespace 1'), width: 40, composite: true },
     { name: 'selector', label: options.label || profile.name, width: 20, min: 6, compact: 176 },

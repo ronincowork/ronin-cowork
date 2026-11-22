@@ -117,6 +117,47 @@
   .epic-detail { display: flex; flex-direction: column; gap: var(--space-inline); }
   .epic-detail > button.item-bar { width: 100%; font-family: inherit; }
   .epic-reading { padding: var(--space-inline) var(--space-inset); border: var(--edge) solid var(--line); border-radius: var(--radius-large); background: var(--surface); }
+  /* EPIC-STAGE AS COLOUR (owner, 2026-11-22; w898, epic-stage.js): the four statuses in the board's
+     colours, each as wide as its count; no words. A line on a stone's bottom edge, a bar on the Epic. */
+  .epic-progress { display: flex; overflow: hidden; background: var(--line); cursor: pointer; }
+  .epic-progress > i { flex: 0 0 0; min-width: 0; }
+  .epic-progress > i[data-status='todo'] { background: var(--muted); }
+  .epic-progress > i[data-status='progress'] { background: var(--info); }
+  .epic-progress > i[data-status='review'] { background: var(--accent); }
+  .epic-progress > i[data-status='done'] { background: var(--ok); }
+  .epic-progress:focus-visible { outline: var(--edge-2) solid var(--accent); outline-offset: 2px; }
+  .epic-progress-line { position: absolute; inset: auto 0 0 0; height: 5px; }
+  .epic-progress-bar { flex: 0 0 auto; width: min(100%, 12rem); height: 8px; margin-left: auto; border-radius: var(--radius-hair); }
+  .epic-stage-reading { position: fixed; z-index: 1000; display: flex; flex-direction: column; gap: var(--space-row); min-width: 10rem; padding: var(--space-inline) var(--space-inset); border: var(--edge) solid var(--line-2); border-radius: var(--radius-hair); background: var(--surface); color: var(--fg); font-size: var(--text-body); box-shadow: 0 4px 16px rgb(0 0 0 / 0.25); }
+  .epic-stage-row { display: flex; align-items: center; gap: var(--space-inline); }
+  .epic-stage-row > i { width: 8px; height: 8px; border-radius: var(--radius-round); background: var(--muted); }
+  .epic-stage-row[data-status='progress'] > i { background: var(--info); }
+  .epic-stage-row[data-status='review'] > i { background: var(--accent); }
+  .epic-stage-row[data-status='done'] > i { background: var(--ok); }
+  /* THE EPICS PHALANX (w897): the phalanx's own stones; the title wraps in full, the key under it. */
+  .epic-record-stones .sws-stone { aspect-ratio: auto; min-height: calc(var(--sws-stone) / 2); padding-bottom: calc(var(--space-inset) + 5px); }
+  .epic-record-stones .sws-label { overflow-wrap: anywhere; }
+  .epics-records > .wk-surface-content > .epic-empty { padding: var(--space-inset); }
+  /* ONE EPIC (w899): its bar on top, four columns under it; a narrow seat stacks them in order. */
+  .epic-one > .wk-surface-content, .epic-route { display: flex; flex-direction: column; gap: var(--space-subsection); min-width: 0; padding: var(--space-inset); }
+  .epic-route { min-height: 100%; overflow: auto; background: var(--workbench-bg); }
+  .epic-route > .epic-one { border: 0; }
+  .epic-route > .epic-one > .wk-surface-content { padding: 0; }
+  .epic-bar { display: flex; flex-direction: column; gap: var(--space-inline); padding: var(--space-inline) var(--space-inset); border: var(--edge) solid var(--line-2); border-radius: var(--radius-hair); background: var(--surface); }
+  .epic-bar[hidden], .epic-columns[hidden] { display: none; }
+  .epic-bar-head { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: var(--space-inline); }
+  .epic-bar-title { flex: 1 1 16rem; margin: 0; color: var(--fg-strong); font-size: var(--text-body); font-weight: var(--weight-strong); overflow-wrap: anywhere; }
+  .epic-bar-key { color: var(--muted); font-weight: var(--weight-regular); font-variant-numeric: tabular-nums; }
+  .epic-bar-actions { display: flex; flex-wrap: wrap; gap: var(--space-inline); }
+  .epic-bar-actions .wk-action[hidden] { display: none; }
+  .epic-launch { text-decoration: none; }
+  .epic-bar-objective { margin: 0; color: var(--fg); font-size: var(--text-body); white-space: pre-wrap; overflow-wrap: anywhere; }
+  .epic-bar-objective[hidden], .epic-bar-said[hidden], .epic-bar-details[hidden] { display: none; }
+  .epic-bar-foot { display: flex; align-items: center; gap: var(--space-inline); }
+  .epic-bar-said { margin: 0; color: var(--warn); font-size: var(--text-body); }
+  .epic-columns { display: grid; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); gap: var(--space-inset); align-items: start; }
+  .epic-column { display: flex; flex-direction: column; gap: var(--space-inline); min-width: 0; }
+  .epic-column .item-bar .item-bar-title { white-space: normal; overflow-wrap: anywhere; }
   /* THE TEAM'S EPICS on the Team workbench (KAN-232): the card is flush (createSurface's flush): the
      board inside keeps its own inset, and nothing here reaches into the kit. */
   .team-epics .epics-board { flex: 1 1 auto; min-height: 0; border: 0; }

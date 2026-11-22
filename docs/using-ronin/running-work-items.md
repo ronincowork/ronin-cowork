@@ -126,16 +126,21 @@ an item has a link on the Jira item that opens its chat.
 
 **In Ronin:**
 
-- **Epics workbench** (Campaign home › Epics, "What the work is"): the Epics board. A row
-  of stones across the top, one per epic in the Campaign, each with its Jira key (or Ronin
-  only) and how many of its items are open. Press one and the epic shows below on the same
-  surface: its Jira key and who holds it, then **Assigned** (Yes / No) and **Status** (the open
-  statuses on arrival), then its items as bars grouped by status. A bar says what the item is
-  (its description, last comment, kind, who holds it, "Team surface (lead surface_lead)" or
-  "@agent", and when it last moved), and pressing it opens the item's reading under it. Press
-  another stone to switch epics there; nothing opens elsewhere. An epic's selector card, or a
-  stone dragged into a tilespace, places the same board starting on that epic. Archived items
-  are not on it.
+- **Epics workbench** (Campaign home › Epics, "What the work is"): a phalanx of stones, one
+  per open Epic in the Campaign (no Done Epics, no Icebox), each its title and Jira key, its
+  progress a colour line along its bottom edge. Press the line for the Epic's **epic-stage**
+  and its four counts; press the stone to see that Epic beside the stones. Its **Launch** opens
+  the Epic's own page; a stone dragged into a tilespace places that Epic there.
+- **One Epic's page** (`#/epic/<id>`, from Launch): the Epic's bar (its key, title and what
+  done looks like, Details for its own reading, its progress bar bottom right) and its items
+  in four columns: To Do, In Progress, In Review and Recently Done (Done, not yet archived).
+  Press a card to read the item in its place; the board stays. Once the Epic is **Aging**, the
+  bar offers **Mark Epic Done**.
+- **epic-stage** is read from the Epic's Tasks, Stories, Bugs and Features (not its own
+  Status): each scores To Do 1, In Progress 2, In Review 3, Done 4, and their average is the
+  epic-stage: Empty (no items), Starter (under 1.5), Working (under 2.5), Maturing (under
+  3.25), Aging (3.25 and over: the work is in, mark the Epic Done). An Epic whose Status is Done
+  is Done. A Workspace's Icebox has none.
 - **Team workbench › Epics:** the same Epics board over the Team's epics, switching on the
   one card; with a single epic, that one is shown.
 - **The item island:** on every Agent's tile, a pill for each open item it holds (Done is not
