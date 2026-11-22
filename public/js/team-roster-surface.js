@@ -9,13 +9,13 @@ import { WORKBENCH_TYPES } from './workbench-catalog.js';
 import { openWorkspaceTab } from './workspace.js';
 import { teamsRows, workspaces } from './teams-surface-rows.js';
 import { listedTeam } from './roster-groups.js';
-import { createProgress } from './epic-stage.js';
+import { createProgress } from './epic-progress.js';
 import { agentTitle } from './team-members.js';
 
 /**
  * A stone per Team (owner, 2026-11-22; w900): what the Team is. Its name, its concept (the roster
  * objective) and its lead, with a progress line along the bottom edge over everything the Team and
- * its Agents hold, in the Epic stones' colours (epic-stage.js); a Team holding nothing has no line.
+ * its Agents hold, in the Epic stones' colours (epic-progress.js); a Team holding nothing has no line.
  * One question, Workspace, many-of, blank All, narrows the stones to the Teams in those Workspaces.
  * The 人 mark opens the Team's own workbench. Agents outside any Team are one more stone, No Team,
  * last, while there are any: it opens the same way, into one Team workbench of their own.

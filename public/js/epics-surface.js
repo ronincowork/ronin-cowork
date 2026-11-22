@@ -396,9 +396,11 @@ const NEW_EPIC = '!new-epic';
  * rail (createEpicOne, with Launch); a dragged one places it whole in another tilespace. The last
  * stone, New Epic, opens an Epic's own shape to fill in (createNewEpic).
  */
-export function createEpicStones({ epicsRead, workbench = null, bare = false }) {
+export function createEpicStones({ epicsRead, workbench = null, bare = false, emptyWords = '', newEpic = true }) {
   const { createSurface } = WorkspaceKit.primitives;
-  // Bare (w900): the stones alone, no surface head, for a Team's Epics view inside its own surface.
+  // AN EMBEDDED CONSUMER (w900): a Team's Epics view inside its own surface takes the stones bare (no
+  // surface head), its own line when it has no Epics, and no New Epic stone (one Team never makes an
+  // Epic for another from here).
   const out = bare ? (() => { const node = el('div', 'epics-records epics-records-bare wk-surface-content'); return { el: node, content: node }; })()
     : createSurface({ label: t('epics.title', 'Epics'), className: 'setup-surface epics-records' });
   const lines = new Map();
@@ -416,6 +418,9 @@ export function createEpicStones({ epicsRead, workbench = null, bare = false }) 
     },
   });
   stones.mount(out.content);
+  const empty = el('p', 'epic-empty', emptyWords);
+  empty.hidden = true;
+  if (emptyWords) out.content.append(empty);
   function paint() {
     const rows = orderEpics(epicsRead.list().filter(isOpenEpic).map((epic) => {
       const items = epicsRead.items(epic.id);
@@ -427,7 +432,8 @@ export function createEpicStones({ epicsRead, workbench = null, bare = false }) 
       const needs = attentionWords(attention);
       return { id: epic.id, label, ...(needs ? { secondary: needs } : {}), state: movedWords(epic, moved), marker: lineFor(epic.id).el,
         className: 'epic-record-stone', draggable: true, events: dragEpic(epic, label) };
-    }), { id: NEW_EPIC, glyph: '+', label: t('epics.new', 'New Epic'), className: 'epic-record-new' }]);
+    }), ...(newEpic ? [{ id: NEW_EPIC, glyph: '+', label: t('epics.new', 'New Epic'), className: 'epic-record-new' }] : [])]);
+    empty.hidden = rows.length > 0;
     // The Epic just made opens in New Epic's place once its push has it.
     if (made && rows.some((row) => row.epic.id === made)) { const id = made; made = ''; stones.select(id); }
     workbench?.refreshSelector?.(); // the selector's Epic cards follow the push

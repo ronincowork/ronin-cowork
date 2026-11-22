@@ -39,7 +39,7 @@ import { createAgentCompositionSurface } from './agent-composition.js';
 import { createTeamEpics, teamEpicIds } from './team-epics.js';
 import { createFindItem } from './team-find-item.js';
 import { createEpicRecord, createEpicStones, createEpicsRead } from './epics-surface.js';
-import { createProgress } from './epic-stage.js';
+import { createProgress } from './epic-progress.js';
 
 const el = (tag, cls, text) => {
   const out = document.createElement(tag);
@@ -649,7 +649,7 @@ export function createCoworkView(options = {}) {
       if (key === 'epics' && !epicStones) {
         const every = createEpicsRead(() => '');
         const mine = () => teamEpicIds(teamByName(name));
-        epicStones = createEpicStones({ bare: true, epicsRead: {
+        epicStones = createEpicStones({ bare: true, newEpic: false, emptyWords: t('team_epics.none', 'No Epics for this Team yet.'), epicsRead: {
           list: () => every.list().filter((epic) => mine().has(epic.id)),
           items: (id) => every.items(id),
           subscribe: (listener) => { const a = every.subscribe(listener); const b = subscribe(listener); return () => { a(); b(); }; },
