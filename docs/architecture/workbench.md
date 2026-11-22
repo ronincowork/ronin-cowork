@@ -29,7 +29,9 @@ Providers, Setup) and the Agent workbench's Work Items draw with it. Escape lift
 is pressed in (2026-10-08).
 
 Ronin's one board is an Epic's own page, `#/epic/<id>` (owner, 2026-11-22; w899): its four
-columns of the items under it. Work Items
+columns of the items under it. One Workspace has its own page too, `#/workspace/<name>` (owner,
+2026-11-22; KAN-784): Work (its Teams or Epics) or Config (its record), the same surface a pressed
+Workspace stone opens beside the stones. Work Items
 (`work-items`) stays on the Agent's workbench, filtered to the work items held by that
 Agent. **The Team page** (owner, 2026-10-18) is the old Team workbench opening on the
 lead's tile in workspace 1 with workspace 2 blank; its selector holds Commons, the Agents,
