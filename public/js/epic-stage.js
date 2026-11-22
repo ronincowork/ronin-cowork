@@ -10,7 +10,7 @@
  * counters. Pure rules only, no page: epic-progress.js hands them to the shared drawing.
  */
 
-import { lifecycle, statusKey, counted } from './item-lifecycle.js';
+import { attention, lifecycle, statusKey } from './item-lifecycle.js';
 
 /** A Workspace's Icebox: the Epic a Workspace holds (KAN-352). */
 export const isIcebox = (epic) => String(epic?.holder || '').startsWith('workspace:');
@@ -28,18 +28,8 @@ export function epicStage(epic, items) {
   return { ...life, stage };
 }
 
-/**
- * WHAT NEEDS THE PERSON under an Epic (w897): an item In Review, a flagged one, and open work no
- * Agent holds (only a Team, or nobody). Each a yes or no; the stone says it in words, no counts.
- */
-export function epicAttention(items) {
-  const open = (items || []).filter((item) => counted(item) && statusKey(item.status) !== 'done');
-  return {
-    review: open.some((item) => statusKey(item.status) === 'review'),
-    flagged: (items || []).some((item) => item.flagged && statusKey(item.status) !== 'done'),
-    unassigned: open.some((item) => !String(item.holder || '').startsWith('agent:')),
-  };
-}
+/** What needs the person under an Epic: the shared rule (item-lifecycle.js `attention`). */
+export const epicAttention = attention;
 
 /** When the Epic last moved: the newest `moved` of it and every item under it ('' when none). */
 export function epicMoved(epic, items) {

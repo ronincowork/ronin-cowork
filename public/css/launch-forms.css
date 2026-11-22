@@ -136,11 +136,13 @@
   .lifecycle-row[data-status='review'] > i { background: var(--accent); }
   .lifecycle-row[data-status='done'] > i { background: var(--ok); }
   /* THE EPICS PHALANX (w897): the phalanx's own stones; the title wraps in full, the key under it. */
-  .epic-record-stones .sws-stone { aspect-ratio: auto; min-height: calc(var(--sws-stone) / 2); padding-bottom: calc(var(--space-inset) + 5px); }
-  .epic-record-stones .sws-label { overflow-wrap: anywhere; }
-  .epic-record-stones .sws-stone { gap: var(--space-row); }
-  .epic-record-stones .sws-secondary { color: var(--accent); white-space: normal; overflow-wrap: anywhere; } /* what needs you: wraps in full */
-  .epic-record-stones .sws-state { margin-top: auto; color: var(--muted); }
+  /* ONE STONE GRAMMAR for the Epics and the Teams collections (w900): name, what needs you in
+     amber (wraps in full), a muted last line, the lifecycle line along the bottom edge. */
+  .epic-record-stones .sws-stone, .team-roster-phalanx .team-stone { aspect-ratio: auto; min-height: calc(var(--sws-stone) / 2); padding-bottom: calc(var(--space-inset) + 5px); }
+  .epic-record-stones .sws-label, .team-roster-phalanx .team-stone .sws-label { overflow-wrap: anywhere; }
+  .epic-record-stones .sws-stone, .team-roster-phalanx .team-stone { gap: var(--space-row); }
+  .epic-record-stones .sws-secondary, .team-roster-phalanx .team-stone .sws-secondary { color: var(--accent); white-space: normal; overflow-wrap: anywhere; } /* what needs you: wraps in full */
+  .epic-record-stones .sws-state, .team-roster-phalanx .team-stone .sws-state { margin-top: auto; color: var(--muted); }
   /* NEW EPIC (w897): an Epic's bar to fill in. */
   .epic-new-title, .epic-new-goal { box-sizing: border-box; width: 100%; padding: var(--space-row) var(--space-inline); border: var(--edge) solid var(--line-2); border-radius: var(--radius-hair); background: var(--surface); color: var(--fg); font: inherit; font-size: var(--text-body); }
   .epic-new-title { flex: 1 1 16rem; width: auto; font-weight: var(--weight-strong); }
@@ -153,17 +155,17 @@
   .epic-route { min-height: 100%; overflow: auto; background: var(--workbench-bg); }
   .epic-route > .epic-one { border: 0; }
   .epic-route > .epic-one > .wk-surface-content { padding: 0; }
-  .epic-bar { display: flex; flex-direction: column; gap: var(--space-inline); padding: var(--space-inline) var(--space-inset); border: var(--edge) solid var(--line-2); border-radius: var(--radius-hair); background: var(--surface); }
+  .epic-bar, .team-bar { display: flex; flex-direction: column; gap: var(--space-inline); padding: var(--space-inline) var(--space-inset); border: var(--edge) solid var(--line-2); border-radius: var(--radius-hair); background: var(--surface); }
   .epic-bar[hidden], .epic-columns[hidden] { display: none; }
-  .epic-bar-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-inline); }
-  .epic-bar-title { flex: 1 1 16rem; margin: 0; color: var(--fg-strong); font-size: var(--text-body); font-weight: var(--weight-strong); overflow-wrap: anywhere; }
+  .epic-bar-head, .team-bar-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-inline); }
+  .epic-bar-title, .team-bar-title { flex: 1 1 16rem; margin: 0; color: var(--fg-strong); font-size: var(--text-body); font-weight: var(--weight-strong); overflow-wrap: anywhere; }
   .epic-bar-key { color: var(--muted); font-weight: var(--weight-regular); font-variant-numeric: tabular-nums; }
-  .epic-bar-actions { display: flex; flex-wrap: wrap; gap: var(--space-inline); }
+  .epic-bar-actions, .team-bar-actions { display: flex; flex-wrap: wrap; gap: var(--space-inline); }
   .epic-bar-actions .wk-action[hidden] { display: none; }
   .epic-launch { text-decoration: none; }
-  .epic-bar-objective { margin: 0; color: var(--fg); font-size: var(--text-body); white-space: pre-wrap; overflow-wrap: anywhere; }
+  .epic-bar-objective, .team-bar-objective { margin: 0; color: var(--fg); font-size: var(--text-body); white-space: pre-wrap; overflow-wrap: anywhere; }
   .epic-bar-objective[hidden], .epic-bar-said[hidden], .epic-bar-details[hidden] { display: none; }
-  .epic-bar-foot { display: flex; align-items: center; gap: var(--space-inline); }
+  .epic-bar-foot, .team-bar-foot { display: flex; align-items: center; gap: var(--space-inline); }
   .epic-bar-said { margin: 0; color: var(--warn); font-size: var(--text-body); }
   .epic-columns { display: grid; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); gap: var(--space-inset); align-items: start; }
   .epic-column { display: flex; flex-direction: column; gap: var(--space-inline); min-width: 0; }

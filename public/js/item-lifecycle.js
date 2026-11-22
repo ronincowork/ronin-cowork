@@ -45,6 +45,25 @@ export function lifecycle(items) {
   return { counts, n, score, band, shares };
 }
 
+/**
+ * WHAT NEEDS THE PERSON in a set of items (w897; shared, KAN-785): an item In Review, an open one
+ * flagged, and open work no Agent holds (only a Team, or nobody). Each a yes or no.
+ */
+export function attention(items) {
+  const open = (items || []).filter((item) => counted(item) && statusKey(item.status) !== 'done');
+  return {
+    review: open.some((item) => statusKey(item.status) === 'review'),
+    flagged: (items || []).some((item) => item.flagged && statusKey(item.status) !== 'done'),
+    unassigned: open.some((item) => !String(item.holder || '').startsWith('agent:')),
+  };
+}
+
+/** What needs the person, in words (no counts); '' when nothing does. */
+export function attentionWords(needs) {
+  return [needs.review ? t('epics.needs_review', 'Needs review') : '', needs.flagged ? t('epics.needs_flag', 'Flagged') : '',
+    needs.unassigned ? t('epics.needs_assign', 'Work to assign') : ''].filter(Boolean).join(' · ');
+}
+
 /** The families in words, for the reading and its rows. */
 export function lifecycleWords() {
   return { todo: t('epics.to_do', 'To Do'), progress: t('epics.in_progress', 'In Progress'), review: t('epics.in_review', 'In Review'), done: t('epics.done', 'Done') };

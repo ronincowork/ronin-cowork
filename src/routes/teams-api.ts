@@ -98,8 +98,8 @@ function editOf(body: unknown): RosterEdit {
 // What GET /api/team-rosters answers, and, for this machine's Campaign, what /events pushes
 // as {t:'teams', rosters}. Each row carries the Team's work as the Teams workbench reads it
 // (owner, 2026-10-18): `board`, the Team's epic by the rule in work-items-read.ts, its title
-// and status, and `items`, the items the Team and its members hold (title, status and level: the
-// Team stone's progress line, w900); and for the
+// and status, and `items`, the items the Team and its members hold (title, status, level, flagged and
+// holder: the Team stone's lifecycle line and needs-you line, w900); and for the
 // Team workbench (owner, 2026-11-04; KAN-232) `waiting`, its items In Review and flagged with how
 // long each has waited, and `epics`, the ids of its Epics not Done (teamWork in work-items-read.ts; KAN-779).
 export async function teamRosters(named: string[] = []): Promise<unknown[]> {
@@ -119,7 +119,7 @@ export async function teamRosters(named: string[] = []): Promise<unknown[]> {
         ...r,
         campaign_id: resolve(r.campaign_id),
         board: board && { title: board.title, status: board.status },
-        items: reading.items.map(({ title, status, level }) => ({ title, status, level })),
+        items: reading.items.map(({ title, status, level, flagged, holder }) => ({ title, status, level, flagged: !!flagged, holder })),
         epics: work.epics.filter((id) => !done.has(id)),
       };
     }),

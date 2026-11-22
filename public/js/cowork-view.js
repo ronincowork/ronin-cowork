@@ -39,7 +39,7 @@ import { createAgentCompositionSurface } from './agent-composition.js';
 import { createTeamEpics, teamEpicIds } from './team-epics.js';
 import { createFindItem } from './team-find-item.js';
 import { createEpicRecord, createEpicStones, createEpicsRead } from './epics-surface.js';
-import { createLifecycle } from './item-lifecycle.js';
+import { createLifecycle, statusKey } from './item-lifecycle.js';
 
 const el = (tag, cls, text) => {
   const out = document.createElement(tag);
@@ -626,12 +626,13 @@ export function createCoworkView(options = {}) {
   const readWorkspaces = () => (workspacesRead ??= request('/api/workspaces').then((answer) => (answer.ok ? answer.data?.workspaces || [] : [])));
   const leagueTeamBody = (name, { seat, say }) => {
     const holding = name === UNASSIGNED;
-    const title = el('h2', null, leagueTeamLabel(name));
-    const objective = el('p', 'league-team-objective');
-    const coverage = el('p', 'league-team-coverage'); coverage.hidden = true;
-    const launch = createAction({ label: '', launch: true, size: 'compact', title: t('league.launch_team', 'Launch'), action: () => openTeam(name) });
-    launch.el.setAttribute('aria-label', launch.el.title);
-    const controls = [launch];
+    // THE TEAM'S BAR (w900), as an Epic's bar: name with the view toggle and Launch, the concept in
+    // full, the Workspace it covers, and the shared item lifecycle over all it holds, bottom right.
+    const title = el('h2', 'team-bar-title', leagueTeamLabel(name));
+    const objective = el('p', 'team-bar-objective');
+    const coverage = el('p', 'team-bar-coverage'); coverage.hidden = true;
+    const teamLine = createLifecycle('bar');
+    const launch = createAction({ label: t('league.launch_team', 'Launch'), size: 'compact', action: () => openTeam(name) });
     const remove = createAction({ label: t('league.delete_team', 'Delete team'), kind: 'danger', size: 'compact', action: async () => { const count = membersOfTeam(name).length; if (!window.confirm(t('league.delete_team_confirm', 'Delete {team}? {count} Agents will lose this Team membership.', { team: name, count }))) return; const result = await deleteTeamRoster(name); if (!result.ok) { say('failed', result.message); return; } for (const place of bench.locations(WB_TYPES.team, name)) emptySeat(place); for (const key of [...leagueTeamSurfaces.keys()]) if (key.endsWith(`\0${name}`)) leagueTeamSurfaces.delete(key); } });
     // THE TOGGLE (owner, 2026-11-22): one button; each press moves on to the next view and past
     // Configuration back to Agents. It names the view showing.
@@ -662,8 +663,15 @@ export function createCoworkView(options = {}) {
     const agents = views.agents;
     const config = views.config;
     const main = el('div', 'league-team-edit-content');
+    const actions = el('div', 'team-bar-actions');
+    if (!holding) actions.append(toggle);
+    actions.append(launch.el);
+    const head = el('div', 'team-bar-head'); head.append(title, actions);
+    const barFoot = el('div', 'team-bar-foot'); barFoot.append(teamLine.el);
+    const bar = el('div', 'team-bar'); bar.append(head, objective, coverage, barFoot);
+    main.append(bar);
     if (holding) main.append(agents);
-    else { main.append(toggle, ...TEAM_VIEWS.map((key) => views[key])); showView(teamViewOf.get(name) || 'agents'); }
+    else { main.append(...TEAM_VIEWS.map((key) => views[key])); showView(teamViewOf.get(name) || 'agents'); }
     let held = new Map(); // agent name -> the items it holds, from the Team reading
     const lines = new Map(); // agent name -> its progress line, kept so a row compares the same node
     const lineOf = (agent) => { if (!lines.has(agent)) lines.set(agent, createLifecycle('bar')); return lines.get(agent); };
@@ -698,7 +706,7 @@ export function createCoworkView(options = {}) {
         const line = mine.length ? lineOf(member.name) : null;
         const reading = line?.update(mine);
         return { name: member.name, stance: rows.get(member.name)?.stance, team_lead: member.team_lead, flagged: !!rows.get(member.name)?.tegami?.flags?.length,
-          title: agentTitle(member), holds: mine.map((item) => item.title).join(' · '), counts: reading?.counts || null, line: line?.el || null };
+          title: agentTitle(member), holds: mine.filter((item) => statusKey(item.status) !== 'done').map((item) => item.title).join(' · '), counts: reading?.counts || null, line: line?.el || null };
       }).sort((a, b) => Number(b.team_lead) - Number(a.team_lead));
       agentRows.set(agents, foot ? [...list, { name: '!foot', foot: true }] : list);
     };
@@ -740,6 +748,7 @@ export function createCoworkView(options = {}) {
       seen = signature;
       seenRecord = record;
       seenItems = itemsNow;
+      teamLine.update(holding ? [] : current.items || []);
       objective.textContent = holding ? t('teams_surface.no_team_summary', 'Agents outside any Team') : current.objective || '';
       objective.hidden = !objective.textContent;
       paintCoverage(holding ? '' : current.workspace);
@@ -751,7 +760,7 @@ export function createCoworkView(options = {}) {
       }
     };
     render();
-    return { title, objective, coverage, controls, main, render };
+    return { main, render };
   };
   const leagueTeamLabel = (name) => readableTeam(name);
   const cachedLeagueTeam = (cacheKey, make) => {
@@ -761,18 +770,15 @@ export function createCoworkView(options = {}) {
   const createLeagueTeamSurface = (name, id) => cachedLeagueTeam(`${id}\0${name}`, () => {
     let surface = null;
     const team = leagueTeamBody(name, { seat: id, say: (state, message) => surface?.setState(state, message) });
-    surface = createSurface({ label: leagueTeamLabel(name), className: 'league-team-edit', actions: team.controls });
-    surface.content.append(team.objective, team.coverage, team.main);
+    surface = createSurface({ label: leagueTeamLabel(name), className: 'league-team-edit' });
+    surface.content.append(team.main);
     return { el: surface.el, render: team.render };
   });
   const leagueTeamDetail = (name, seat) => cachedLeagueTeam(`teams-${seat}\0${name}`, () => {
     const box = el('div', 'league-team-detail');
     const status = el('p', 'league-team-detail-state'); status.setAttribute('role', 'status'); status.hidden = true;
     const team = leagueTeamBody(name, { seat, say: (state, message) => { status.hidden = state !== 'failed'; status.textContent = state === 'failed' ? message : ''; } });
-    const head = el('div', 'league-team-detail-head');
-    const actions = el('div', 'wk-surface-header-actions league-team-detail-actions'); actions.append(...team.controls.map((control) => control.el));
-    head.append(team.title, actions, team.objective, team.coverage);
-    box.append(head, status, team.main);
+    box.append(status, team.main);
     return { el: box, render: team.render };
   });
   const refreshLeagueTeamSurfaces = () => {

@@ -48,11 +48,6 @@
      heading style, one body style, tight lists. The phalanx owns the stones' geometry. */
   .league-team-detail, .league-team-detail .league-team-edit-content { display: flex; flex-direction: column; gap: var(--space-subsection); }
   .league-team-row { display: grid; grid-template-columns: var(--hr-mark) minmax(0, 1fr) var(--hr-record) var(--hr-stack); align-items: center; gap: var(--space-paragraph) var(--space-inline); padding: var(--space-row) var(--space-inline); font-size: var(--text-body); }
-  .league-team-detail-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; column-gap: var(--space-inline); }
-  .league-team-detail-head > h2 { grid-column: 1; grid-row: 1; margin: 0; color: var(--fg-strong); font-size: var(--text-heading); font-weight: var(--weight-strong); }
-  .league-team-detail-head > .league-team-detail-actions { grid-column: 2; grid-row: 1; }
-  .league-team-objective { grid-column: 1 / -1; font-size: var(--text-body); margin: 0; overflow: hidden; color: var(--muted); text-overflow: ellipsis; white-space: nowrap; }
-  .league-team-objective[hidden] { display: none; }
   .league-team-detail-state { margin: 0; color: var(--bad); }
   .league-team-step-body { gap: 0; }
   /* The Team's three steps open their bodies under the head, full width, in the stone's detail
@@ -68,13 +63,13 @@
   .league-team-agent-flag, .league-team-member-flag { margin-inline-end: var(--space-inline); color: var(--warn); }
   .league-team-agent.flagged .league-team-agent-name, .league-team-member.flagged .league-team-member-title { color: var(--warn); }
   .league-team-agent-holds { margin-inline-start: var(--space-inline); color: var(--muted); }
-  /* ONE TEAM (owner, 2026-11-22; w900): concept and Workspace under the name, then one toggle that
-     ticks through Agents, Epics and Configuration. Text wraps in full; an Agent row is a reading
-     (no press), its progress bar at the row's end the shared item lifecycle (item-lifecycle.js). */
-  .league-team-detail-head > .league-team-objective, .league-team-edit > .wk-surface-content > .league-team-objective { white-space: normal; overflow-wrap: anywhere; overflow: visible; color: var(--fg); }
-  .league-team-coverage { grid-column: 1 / -1; margin: 0; color: var(--muted); font-size: var(--text-body); overflow-wrap: anywhere; }
-  .league-team-coverage[hidden], .league-team-view[hidden] { display: none; }
-  .league-team-toggle { align-self: flex-start; }
+  /* ONE TEAM (owner, 2026-11-22; w900): its bar as an Epic's bar (launch-forms.css), the Workspace
+     muted under the concept; then the view the toggle shows. An Agent row is a reading (no press),
+     its lifecycle bar under its name. */
+  .team-bar-objective[hidden], .team-bar-coverage[hidden], .league-team-view[hidden] { display: none; }
+  .team-bar-coverage { margin: 0; color: var(--muted); font-size: var(--text-body); overflow-wrap: anywhere; }
+  .team-bar-foot > .lifecycle-bar { margin-left: auto; }
+  .team-bar-foot > .lifecycle-bar[data-empty='true'] { display: none; }
   .league-team-view { display: flex; flex-direction: column; gap: 0; min-width: 0; }
   .league-team-view-agents > .league-team-agent { grid-template-columns: var(--hr-mark) minmax(0, 1fr); cursor: default; }
   .league-team-view-agents > .league-team-agent:hover { background: transparent; }
@@ -88,14 +83,10 @@
   .league-team-view-epics .epics-records-bare > .sws-header { display: none; }
   .league-team-view-epics .sws:not([data-open='true']) .sws-rail { justify-content: flex-start; padding: var(--edge-2); }
   .league-team-view-epics .sws:not([data-open='true']) .sws-grid { width: 100%; flex-direction: row; flex-wrap: wrap; justify-content: flex-start; }
-  /* THE TEAMS STONES (w900): the concept and lead wrap in full; the progress line along the bottom
-     edge as on the Epic stones, none on a Team holding nothing. */
-  .team-roster-phalanx .team-stone { aspect-ratio: auto; min-height: calc(var(--sws-stone) / 2); padding-bottom: calc(var(--space-inset) + 5px); }
-  .team-roster-phalanx .team-stone .sws-label { overflow-wrap: anywhere; padding-inline-end: calc(var(--text-heading) * 1.5); }
-  .team-roster-phalanx .team-stone .sws-secondary { white-space: normal; overflow-wrap: anywhere; }
-  .team-stone-marks { display: contents; }
-  .team-stone-marks > .teams-launch { position: absolute; inset-block-start: var(--sws-corner); inset-inline-end: var(--sws-corner); font-size: var(--text-heading); cursor: pointer; }
+  /* THE TEAMS STONES (w900): the Epic stones' grammar (launch-forms.css); a Team holding nothing has
+     no line, and No Team is plain: no line, its name muted. */
   .team-progress-line[data-empty='true'] { display: none; }
+  .team-roster-phalanx .team-stone-none .sws-label { color: var(--muted); }
   .league-team-roster, .league-team-config { flex: 0 0 auto; }
   .league-team-roster { display: flex; flex-direction: column; min-height: 0; }
   .league-team-roster-heading { display: flex; align-items: center; justify-content: space-between; gap: var(--space-inline); margin-bottom: var(--space-paragraph); border-bottom: var(--edge) solid var(--line-2); padding-bottom: var(--space-row); }

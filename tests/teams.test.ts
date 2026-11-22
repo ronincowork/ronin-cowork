@@ -1,6 +1,6 @@
 /**
- * Teams: each Team shown by what it is (w900, KAN-780). The Teams page's stones (concept, lead,
- * progress line, no Show question), its selector (a card per Team, no Agent's own card), one Team's
+ * Teams: each Team shown by what it is (w900, KAN-780). The Teams page's stones (the Epic stones'
+ * grammar: name, what needs you, lead, the shared lifecycle line; no Show question), its selector (a card per Team, no Agent's own card), one Team's
  * three views (Agents, Epics, Configuration; its Epics without New Epic) and No Team, which is
  * there only while an Agent is outside every Team and opens one Team workbench of its own.
  */
@@ -32,16 +32,18 @@ test('the Teams page and one Team, as a person reads and presses them', async (t
   await make({ title: 'Price list', status: 'In Review', parent: epic, session: 'ben' });
   await make({ title: 'Shop sign', status: 'Done', parent: epic, session: 'ben' });
 
-  // The Team API carries each item's status and level: the stone's progress line reads them.
+  // The Team API carries each item's status, level, flag and holder: the stone's lifecycle line and
+  // its needs-you line read them.
   const rosters = (await ronin.api('/api/team-rosters')).body;
   const shop = (Array.isArray(rosters) ? rosters : rosters.rosters).find((row: { name: string }) => row.name === 'shop');
   const sign = shop.items.find((one: { title: string }) => one.title === 'Shop sign');
-  assert.deepEqual(sign, { title: 'Shop sign', status: 'Done', level: 0 });
+  assert.deepEqual(sign, { title: 'Shop sign', status: 'Done', level: 0, flagged: false, holder: 'agent:ben' });
   assert.equal(shop.items.find((one: { title: string }) => one.title === 'Ship the shop').level, 1);
 
   const browser = await pw.chromium.launch();
   t.after(() => browser.close());
   const page = await browser.newPage({ viewport: { width: 1400, height: 900 } });
+  page.setDefaultTimeout(15_000);
   const errors: string[] = [];
   page.on('pageerror', (error: Error) => errors.push(error.message));
 
@@ -49,8 +51,10 @@ test('the Teams page and one Team, as a person reads and presses them', async (t
   const stone = '.team-roster-phalanx [data-sws-id="shop"]';
   await page.waitForSelector(`${stone} .sws-state`);
   assert.equal(await page.textContent(`${stone} .sws-label`), 'Shop');
-  assert.equal(await page.textContent(`${stone} .sws-secondary`), 'Run the shop.', 'the concept');
+  // The Epic stones' grammar: name, what needs you in amber (Price list is In Review), the lead.
+  assert.equal(await page.textContent(`${stone} .sws-secondary`), 'Needs review', 'what needs you');
   assert.match(await page.textContent(`${stone} .sws-state`) || '', /^人 Ana$/, 'the lead');
+  assert.equal(await page.$(`${stone} .teams-launch`), null, 'Launch is the opened Team\'s, not the stone\'s');
   // The stone's line is the shared item lifecycle over the Team's items: the Epic itself is not
   // counted, so Price list (In Review) and Shop sign (Done) are half each, band 4 (score 3.5).
   const line = `${stone} .lifecycle.lifecycle-line.team-progress-line`;
@@ -74,6 +78,10 @@ test('the Teams page and one Team, as a person reads and presses them', async (t
   await page.click(stone);
   const toggle = '.league-team-detail .league-team-toggle';
   await page.waitForSelector(toggle);
+  // Its bar: the name, the concept in full, Launch, and the same shared lifecycle as its stone.
+  assert.equal(await page.textContent('.league-team-detail .team-bar-title'), 'Shop');
+  assert.equal(await page.textContent('.league-team-detail .team-bar-objective'), 'Run the shop.');
+  assert.equal(await page.getAttribute('.league-team-detail .team-bar-foot .lifecycle-bar', 'data-band'), '4');
   assert.equal(await page.getAttribute(toggle, 'data-view'), 'agents');
   assert.deepEqual(await page.$$eval('.league-team-detail .league-team-view-agents .league-team-agent', (rows) => rows.map((row) => (row as HTMLElement).dataset.session)), ['ana', 'ben'], 'lead first');
   // Ben's bar is the same shared drawing over the items he holds; Ana holds nothing and has none.

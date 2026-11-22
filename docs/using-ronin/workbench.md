@@ -144,17 +144,19 @@ remembered arrangement instead of applying the floor again.
 
 Teams first opens with the Team roster in tilespace 1 and New Team in tilespace 2.
 
-The **Teams** surface is the one list of Teams. Each Team is a stone with what it is: its name,
-its concept (the objective) and its lead (人), and along its bottom edge a progress line over
-everything the Team and its Agents hold, in the Epic stones' colours (To Do, In Progress, In
-Review, Done; press it for the counts). A Team holding nothing has no line. **Workspace** narrows
-the stones to the Teams in those Workspaces. Agents outside any Team are one more stone, **No
-Team**, while there are any. The 人 in a stone's corner opens the Team's own workbench; No Team's
-opens one workbench for those Agents.
+The **Teams** surface is the one list of Teams, its stones read like the Epic stones: the Team's
+name; what needs you, in amber, only when something does (**Needs review**, **Flagged**, **Work
+to assign**); its lead (人); and along the bottom edge the item lifecycle over everything the Team
+and its Agents hold, in the board's colours (To Do, In Progress, In Review, Done; press it for the
+counts). A Team holding nothing has no line. Teams needing you come first, then by name.
+**Workspace** narrows the stones to the Teams in those Workspaces. Agents outside any Team are one
+more stone, **No Team**, last and plain, while there are any.
 
-Press a stone and the stones fold to the left while the Team opens beside them: its name with
-**Launch**, its concept, and the Workspace it covers with that Workspace's repositories. Under
-them one button ticks through three views, naming the one showing: **Agents** (lead first, each
+Press a stone and the stones fold to the left while the Team opens beside them, in a bar like an
+Epic's: its name with the view button and **Launch** (the Team's own workbench; No Team's opens one
+workbench for those Agents), its concept in full, the Workspace it covers with that Workspace's
+repositories, and its item lifecycle. Under
+it, one button ticks through three views, naming the one showing: **Agents** (lead first, each
 with its live dot, ⚑ when flagged, the items it holds and a progress line over them; **New
 Agent** at the foot), **Epics** (the Team's open Epics as Epic stones, each with its progress
 line; press one to read it beside them, with **Launch** to its own page) and **Configuration**

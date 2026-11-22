@@ -49,3 +49,12 @@ test('an Epic only names the shared band and adds Done and Icebox; it does not c
   assert.equal(epic.epicStage({ status: 'Done', holder: 'team:shop' }, items).stage, 'done');
   assert.equal(epic.epicStage({ status: 'To Do', holder: 'workspace:shop' }, items).stage, 'icebox');
 });
+
+test('what needs the person is one shared rule: In Review, open and flagged, or open work no Agent holds', () => {
+  assert.deepEqual(life.attention([item('In Review', { holder: 'agent:ana' })]), { review: true, flagged: false, unassigned: false });
+  assert.deepEqual(life.attention([item('To Do', { holder: 'team:shop' })]), { review: false, flagged: false, unassigned: true });
+  assert.deepEqual(life.attention([item('Done', { flagged: true })]), { review: false, flagged: false, unassigned: false }, 'Done work needs nobody');
+  assert.equal(life.attentionWords({ review: true, flagged: true, unassigned: false }), 'Needs review · Flagged');
+  assert.equal(life.attentionWords({ review: false, flagged: false, unassigned: false }), '');
+  assert.equal(epic.epicAttention, life.attention, 'an Epic uses the shared rule');
+});

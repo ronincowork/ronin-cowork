@@ -30,7 +30,7 @@ import { itemBar } from './tile-island.js';
 import { createPhalanx } from './phalanx.js';
 import { S } from './state.js';
 import { epicAttention, epicMoved, isOpenEpic, orderEpics } from './epic-stage.js';
-import { LIFECYCLE, statusKey } from './item-lifecycle.js';
+import { attentionWords, LIFECYCLE, statusKey } from './item-lifecycle.js';
 import { createProgress } from './epic-progress.js';
 import { humanAge } from './work-record.js';
 import { teamsFromState } from './team-controller.js';
@@ -372,12 +372,6 @@ const dragEpic = (epic, label) => ({ dragstart: (event) => {
   event.dataTransfer.setData('text/plain', label);
   event.dataTransfer.effectAllowed = 'copy';
 } });
-
-/** A stone's needs-you line, in words (no counts); '' when nothing needs the person. */
-export function attentionWords(attention) {
-  return [attention.review ? t('epics.needs_review', 'Needs review') : '', attention.flagged ? t('epics.needs_flag', 'Flagged') : '',
-    attention.unassigned ? t('epics.needs_assign', 'Work to assign') : ''].filter(Boolean).join(' · ');
-}
 
 /** A stone's last line: its Jira key (when it has one) and when it last moved. */
 function movedWords(epic, moved) {

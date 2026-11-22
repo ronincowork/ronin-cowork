@@ -6,24 +6,25 @@ import { createPhalanx } from './phalanx.js';
 import { ask } from './ask.js';
 import { SURFACE_DRAG } from './workbench.js';
 import { WORKBENCH_TYPES } from './workbench-catalog.js';
-import { openWorkspaceTab } from './workspace.js';
 import { teamsRows, workspaces } from './teams-surface-rows.js';
 import { listedTeam } from './roster-groups.js';
-import { createLifecycle } from './item-lifecycle.js';
+import { attention, attentionWords, createLifecycle } from './item-lifecycle.js';
 import { agentTitle } from './team-members.js';
 
 /**
- * A stone per Team (owner, 2026-11-22; w900): what the Team is. Its name, its concept (the roster
- * objective) and its lead, with a progress line along the bottom edge over everything the Team and
- * its Agents hold, the shared item lifecycle (item-lifecycle.js); a Team holding nothing has no line.
+ * A stone per Team (owner, 2026-11-22; w900), in the Epic stones' grammar so the two collections
+ * read alike: the Team's name; what needs the person, in amber, only when something does (Needs
+ * review, Flagged, Work to assign: the shared rule, item-lifecycle.js); its lead (no lead: how many
+ * Agents it has); and along the bottom edge the shared item lifecycle over everything the Team and its
+ * Agents hold (no line when it holds nothing). Those needing the person first, then by name. The
+ * concept, the Workspace and Launch are the opened Team's. Agents outside any Team are one more
+ * stone, No Team, last and plain, while there are any.
  * One question, Workspace, many-of, blank All, narrows the stones to the Teams in those Workspaces.
- * The 人 mark opens the Team's own workbench. Agents outside any Team are one more stone, No Team,
- * last, while there are any: it opens the same way, into one Team workbench of their own.
  * Pressed, a stone shows its Team beside the rail (`teamDetail`, the cowork view's one renderer);
  * dragged, it places that Team in another tilespace.
  */
 export function createTeamRosterSurface({ teamDetail } = {}) {
-  const { createSurface, ninMark } = WorkspaceKit.primitives;
+  const { createSurface } = WorkspaceKit.primitives;
   const label = t('campaign.coworks', 'Teams');
   let roots = []; // the workspaces chosen
   const surface = createSurface({ label, className: 'team-roster-surface' });
@@ -33,41 +34,33 @@ export function createTeamRosterSurface({ teamDetail } = {}) {
     roots = (nextRoots || []).map(String);
     paint();
   } });
-  const mark = (team) => {
-    const node = ninMark('wk-launch-mark teams-launch');
-    node.removeAttribute('aria-hidden');
-    node.setAttribute('role', 'link');
-    node.setAttribute('aria-label', t('teams_surface.launch', 'Launch'));
-    node.addEventListener('click', (event) => { event.stopPropagation(); openWorkspaceTab('team', team); });
-    return node;
+  // One line per Team, kept: phalanx counts a Node by its identity, so a fresh one each push
+  // would redraw every stone (KAN-413).
+  const lines = new Map();
+  const lineOf = (team) => {
+    if (!lines.has(team)) { const line = createLifecycle('line'); line.el.classList.add('team-progress-line'); lines.set(team, line); }
+    return lines.get(team);
   };
-  // One marker per Team, kept: phalanx counts a Node by its identity, so a fresh one each push
-  // would redraw every stone (KAN-413). The marker holds the 人 mark and the progress line.
-  const markers = new Map();
-  const markerOf = (team) => {
-    if (!markers.has(team)) {
-      const line = createLifecycle('line');
-      line.el.classList.add('team-progress-line');
-      const node = document.createElement('span');
-      node.className = 'team-stone-marks';
-      node.append(mark(team), line.el);
-      markers.set(team, { node, line });
-    }
-    return markers.get(team);
+  const agentsWord = (count) => (count === 1 ? t('teams_surface.one_agent', '1 Agent') : t('teams_surface.agents', '{count} Agents', { count }));
+  const people = (name) => {
+    const members = membersOfTeam(name);
+    const one = members.find((member) => member.team_lead);
+    return one ? `人 ${agentTitle(one)}` : agentsWord(members.length);
   };
-  const lead = (name) => { const one = membersOfTeam(name).find((member) => member.team_lead); return one ? agentTitle(one) : ''; };
   const items = () => {
     const rows = new Map(teamsRows(teamsFromState(), membersOfTeam, { roots }).map((row) => [row.id, row]));
-    const teams = teamsFromState().filter((team) => !team.holding && listedTeam(team) && rows.has(team.name))
-      .sort((a, b) => a.name.localeCompare(b.name));
-    const stones = teams.map((team) => {
+    const teams = teamsFromState().filter((team) => !team.holding && listedTeam(team) && rows.has(team.name)).map((team) => {
+      const needs = attention(team.items || []);
+      return { team, needs, waiting: Number(needs.review || needs.flagged || needs.unassigned) };
+    }).sort((a, b) => (b.waiting - a.waiting) || a.team.name.localeCompare(b.team.name));
+    const stones = teams.map(({ team, needs }) => {
       const name = String(team.title ?? '').trim() || team.name;
-      const marks = markerOf(team.name);
-      marks.line.update(team.items || []);
-      const who = lead(team.name);
+      const line = lineOf(team.name);
+      line.update(team.items || []);
+      const words = attentionWords(needs);
       return {
-        id: team.name, label: name, secondary: team.objective || '', state: who ? `人 ${who}` : '',
-        marker: marks.node, className: 'team-stone', draggable: true,
+        id: team.name, label: name, ...(words ? { secondary: words } : {}), state: people(team.name),
+        marker: line.el, className: 'team-stone', draggable: true,
         events: { dragstart: (event) => {
           event.dataTransfer.setData(SURFACE_DRAG, JSON.stringify({ type: WORKBENCH_TYPES.team, detail: { key: team.name } }));
           event.dataTransfer.setData('text/plain', name);
@@ -76,9 +69,7 @@ export function createTeamRosterSurface({ teamDetail } = {}) {
       };
     });
     if (!roots.length && unassignedSessions().length) {
-      const marks = markerOf(UNASSIGNED);
-      marks.line.update([]);
-      stones.push({ id: UNASSIGNED, label: t('teams_surface.no_team', 'No Team'), secondary: t('teams_surface.no_team_summary', 'Agents outside any Team'), marker: marks.node, className: 'team-stone team-stone-none' });
+      stones.push({ id: UNASSIGNED, label: t('teams_surface.no_team', 'No Team'), state: agentsWord(unassignedSessions().length), className: 'team-stone team-stone-none' });
     }
     return stones;
   };
