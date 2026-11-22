@@ -280,9 +280,13 @@ const FACTS: Fact[] = [
   { name: 'workspaces', title: 'Workspaces', build: workspaces, stores: [{ store: 'workspaces' }, { store: 'library', match: /^workspaces\// }] },
   { name: 'integrations_authentications', title: 'Integrations and authentications', build: integrationsAuthentications,
     stores: [{ store: 'campaigns' }, { store: 'catalogs' }, { store: 'services_secrets' }, { store: 'config' }, { store: 'workspaces' }] },
-  { name: 'epics', title: 'Epics', build: epics, stores: [{ store: 'work_items' }, { store: 'session', match: /tegami\.md$/ }, { store: 'team_rosters' }] },
+  // Never the session store: it holds every Agent's tmp/ (tens of thousands of folders), and one
+  // recursive watch on it takes the machine's inotify watches from every other watcher (cards,
+  // pills, the header went dark, 22 Nov). A letter's holds are written to the work-item index too
+  // (work_items), and live Agents come from tmux (sessionsMoved).
+  { name: 'epics', title: 'Epics', build: epics, stores: [{ store: 'work_items' }, { store: 'team_rosters' }] },
   { name: 'teams_agents', title: 'Teams and Agents', build: teamsAgents,
-    stores: [{ store: 'team_rosters' }, { store: 'session', match: /tegami\.md$/ }, { store: 'archived_sessions' }, { store: 'seats', match: /\.json$/ }] },
+    stores: [{ store: 'team_rosters' }, { store: 'archived_sessions' }, { store: 'seats', match: /\.json$/ }] },
   { name: 'defaults', title: 'Defaults', build: defaults, stores: [{ store: 'campaigns' }, { store: 'config' }] },
 ];
 /** A part's own fact (Services' account), placed after the machine. Added before startFacts. */
