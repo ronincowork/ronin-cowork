@@ -21,9 +21,9 @@ At launch the Agent's environment gets `TMPDIR` and `CLAUDE_CODE_TMPDIR`, both p
 `<session store>/<key>/tmp`. Node, Rust (Codex) and most tools read `TMPDIR`. Claude Code puts
 its scratchpad under `CLAUDE_CODE_TMPDIR`/`claude-<uid>/`. A launch's own `env` still wins.
 
-The folder goes when the session folder goes: [retention](session-archive.md#retention-of-closed-session-folders),
-Hard Delete, or [archive expiry](session-archive.md#expiry). An archive keeps it, along with
-the rest of the folder.
+The folder goes when the Agent goes ([the session folder is the Agent](session-archive.md#the-session-folder-is-the-agent)):
+Delete, Hard Delete, or [archive expiry](session-archive.md#expiry). An archive keeps it, along
+with the rest of the folder.
 
 A unix socket path is at most 108 bytes, and tools append to the temp root (`tmux-<uid>/default`,
 `claude-<uid>/…`). So a root longer than `TEMP_ROOT_MAX` (72) is replaced by a short one,
@@ -120,7 +120,7 @@ pane starts one more.
 
 - **Old code:** temp lands in `/tmp` and stays. Both children outlive the Agent's end.
 - **New code:** temp is in the session folder, the scope carries the ceiling, both children
-  are gone at the end, and temp goes with the folder in the retention sweep.
+  are gone at the end, and temp goes with the folder when the Agent is deleted.
 - **The start sweep** stops the old code's two leftover scopes.
 - **A pane that exits on its own** takes its child with it.
 

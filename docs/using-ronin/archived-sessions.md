@@ -68,9 +68,8 @@ lives](running-work-items.md#how-an-item-lives)).
 
 Ronin stores session metadata for restoration, and with Terminal transcript on it keeps a
 copy of the conversation in the session folder, which archive retains. The provider still
-owns the original journal. Closed, unarchived session folders are removed after the
-retention period (a Campaign setting, default seven days); an archived one goes with its
-archive after 7 days.
+owns the original journal. The session folder lives as long as the Agent: deleting an Agent
+deletes its folder, and an archived one goes with its archive after 7 days.
 
 Agents can use `session_archive` and `session_restore`; their help gives the current syntax.
 Contributors: [archive identity, persistence, and API](../architecture/session-archive.md).

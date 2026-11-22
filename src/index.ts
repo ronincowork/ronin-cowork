@@ -80,7 +80,6 @@ import { checkTmuxServerCgroup } from './host-guard.js';
 import { startTeamLayers } from './team-layers.js';
 import { asSeat } from './seats.js';
 import { sockets, seatOfBearer, runStartedHooks, startBootHooks, stopBootHooks, mountServiceRoutes, noteService, noteServiceCapabilityPlan, noteServiceFailure, noteServiceParked } from './sockets.js';
-import { startSessionRetention } from './session-retention.js';
 import { discoverParts, partsToLoad } from './parts.js';
 import { initialCampaign } from './campaigns.js';
 import { listInstallations } from './resource-adapters.js';
@@ -513,7 +512,6 @@ void startTeamLayers((cb) => sockets.onItemChanged(cb));
 // An item write marks the work record on the cards it touches (KAN-641).
 sockets.onItemChanged(async ({ item, line }) => { for (const name of await cardsOf(item, line)) mark(name, 'record'); });
 startFiles(ROOT); // copyparty at /files where python3 is found — src/files.ts
-const stopSessionRetention = startSessionRetention(); // closed session folders outlive the retention period by nothing
 void expireArchives(); // archives older than ARCHIVE_DAYS go at start, and on each new archive — src/session-archive.ts
 // /events: pushes the session list, each Agent's card, the Team rosters, the message queue,
 // boards, cron jobs and GitHub setup when they change — src/ws/events.ts
@@ -585,7 +583,6 @@ server.listen(config.port, config.bind, async () => {
 for (const sig of ['SIGINT', 'SIGTERM'] as const) {
   process.on(sig, () => {
     stopBootHooks();
-    stopSessionRetention();
     stopSpawnBroker();
     stopFiles();
     setTimeout(() => process.exit(0), 2000).unref();

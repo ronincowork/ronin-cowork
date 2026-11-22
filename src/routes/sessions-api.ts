@@ -49,6 +49,7 @@ import { resumeAgentArgv } from '../agents.js';
 import { listTeamRosters } from '../team-rosters.js';
 import { assertSameCampaignTeams, initialCampaignId } from '../campaign-scope.js';
 import { sessionDir as sessionRecordDir } from '../session-dir.js';
+import { removeSessionFolders } from '../agent-scope.js';
 import {
   expiredArchives,
   listArchives,
@@ -213,7 +214,7 @@ async function archiveWith(name: string, provider: { agent: string; id: string }
 async function deleteArchived(archived: ArchivedSession, said = ''): Promise<void> {
   emitSessionEnd(archived.name, archived.key);
   await releaseHolds(archived.name, archived.key, 'hard deleted', null, said);
-  await fs.promises.rm(sessionRecordDir(archived.key), { recursive: true, force: true });
+  await removeSessionFolders(archived.key);
   await removeArchive(archived.id);
 }
 
@@ -249,6 +250,7 @@ async function performAgentEnd(name: string): Promise<{ closed: string[]; archiv
   const { archived } = end;
   if (!archived) emitSessionEnd(name, key); // archive keeps the tape and the folder
   await releaseHolds(name, key, 'session ended', archived);
+  if (!archived) await removeSessionFolders(key);
   count('ended', { name, end: archived ? 'archived' : 'harakiri' });
   return { closed: result.closed, archived };
 }
@@ -260,6 +262,7 @@ async function performAgentShutdown(name: string, progress: (value: ShutdownProg
   });
   emitSessionEnd(name, key);
   await releaseHolds(name, key, 'session ended');
+  await removeSessionFolders(key);
   count('ended', { name, end: 'harakiri' });
   return result.closed;
 }
@@ -280,6 +283,7 @@ async function performAgentHardDelete(name: string, progress: (value: ShutdownPr
   await killSessionTree(name, { signal, timeoutMs: 4_000 });
   emitSessionEnd(name, key);
   await releaseHolds(name, key, 'hard deleted');
+  await removeSessionFolders(key);
   count('ended', { name, end: 'deleted' });
   progress({ phase: 'complete', message: `Agent ${name} and ${ending.desks.length} owned worktree(s) hard deleted; destructive evidence preserved`, desk_count: ending.desks.length });
   return { closed: disposition.closed, quarantined: disposition.quarantined };
@@ -519,8 +523,9 @@ export function registerSessions(app: express.Express): void {
       const items = ignoringItems(req) ? null : await heldItemsRefusal(name, UI_ANYWAY);
       if (items) throw items;
       const result = await shutdownAgent(name);
-      emitSessionEnd(name, key); // rireki deletes the tape: no graveyard, eventually is fine
+      emitSessionEnd(name, key);
       await releaseHolds(name, key, 'deleted');
+      await removeSessionFolders(key);
       count('ended', { name, end: 'deleted' });
       res.json({ ok: true, closed: result.closed });
     } catch (e) {

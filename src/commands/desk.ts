@@ -14,6 +14,8 @@ import { arrangementOf } from '../desks/arrangement.js';
 import { randomUUID } from 'node:crypto';
 import { withManagedTransaction } from '../desks/lifecycle-ledger.js';
 import { shutdownAgent, ShutdownRefused } from '../desks/session-shutdown.js';
+import { removeSessionFolders } from '../agent-scope.js';
+import { sessionKey } from '../session-dir.js';
 import { didLine, nextStep, readItem, reviewPrompt } from '../work-items.js';
 import { projectManagementOn } from '../agent-configuration.js';
 
@@ -272,7 +274,9 @@ async function main(): Promise<void> {
         if (flags.get('with-session')) {
           if (positional[0]) await pickOne(session, positional[0], 'close'); // validate the named worktree, then close the whole assignment
           try {
+            const key = await sessionKey(session);
             const result = await shutdownAgent(session);
+            await removeSessionFolders(key);
             out(`CLOSED ${result.closed.join(', ') || 'no worktrees'} — session ${session} ended`);
             return;
           } catch (e) {
