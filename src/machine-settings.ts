@@ -593,35 +593,30 @@ async function computeStatus(
   };
 }
 
+/** Whether one wanted thing is here. An agent CLI and Ronin Services mean what the facts say
+ * (src/facts.ts, KAN-768): a CLI is installed when the provider summary says so (the
+ * integrations_authentications fact), Services when a part runs (the machine fact). A host tool
+ * and a key no fact states: the box is asked. */
 function holds(
-  check: { kind: string; path?: string; name?: string },
-  set: Record<string, unknown>,
+  check: { kind: string; name?: string },
   observed: Record<string, unknown>,
+  installed: readonly string[],
 ): boolean {
-  if (check.kind === 'set') {
-    const v = String(check.path ?? '')
-      .split('.')
-      .reduce<unknown>((o, k) => (o == null ? undefined : (o as Record<string, unknown>)[k]), set);
-    return v != null && v !== '' && v !== false;
-  }
   const name = check.name ?? '';
   if (check.kind === 'key') return (observed.keys as Record<string, boolean>)[name] === true;
-  if (check.kind === 'agent') return (observed.agents as Record<string, { installed: boolean }>)[name]?.installed === true;
+  if (check.kind === 'agent') return installed.includes(name);
   if (check.kind === 'tool') return (observed.tools as Record<string, boolean>)[name] === true;
   if (check.kind === 'service') {
-    const ss = ((observed.ronin as { services: string[] }).services ?? []);
+    const ss = listServices();
     return name === '*' ? ss.length > 0 : ss.includes(name);
   }
   return false;
 }
 
-function computeNeeded(
-  set: Record<string, unknown>,
-  observed: Record<string, unknown>,
-): MachineSettingsRecord['needed'] {
-  const declared = MACHINE_SETTINGS_SCHEMA.requires
-    .filter((r) => holds(r.applies, set, observed) && !holds(r.met, set, observed))
-    .map((r) => ({ leaf: r.leaf, needs: r.needs, how: r.how, met_by: r.met_by as MetBy }));
+/** What is still needed: the owner's wanted list, less what is here (holds), and a Workspace with a
+ * folder, as the workspaces fact has them. */
+async function computeNeeded(set: Record<string, unknown>, observed: Record<string, unknown>): Promise<MachineSettingsRecord['needed']> {
+  const installed = (await recordedProviderSummary())?.installed ?? [];
   const HOW: Record<string, { how: (n: string) => string; met_by: (n: string) => MetBy }> = {
     agent: {
       how: (n) => `install the ${n} CLI — it appears in agent installations the moment it lands`,
@@ -632,14 +627,20 @@ function computeNeeded(
     key: { how: (n) => `set ${n} in .env and restart the operator`, met_by: () => 'owner' },
   };
   const wanted = ((set.wanted ?? []) as Array<{ kind: string; name: string }>)
-    .filter((w) => HOW[w.kind] && !holds(w, set, observed))
+    .filter((w) => HOW[w.kind] && !holds(w, observed, installed))
     .map((w) => ({
       leaf: 'wanted',
       needs: w.kind === 'service' && w.name === '*' ? 'Ronin Services (the bundle)' : `${w.name} (${w.kind})`,
       how: HOW[w.kind].how(w.name),
       met_by: HOW[w.kind].met_by(w.name),
     }));
-  return [...declared, ...wanted];
+  if ((await workspaceFolders()).length) return wanted;
+  return [...wanted, {
+    leaf: 'workspace_folder',
+    needs: 'a Workspace with a folder where Agents can work',
+    how: 'ask where the owner keeps their work, then open the Workspaces door and add that folder to a Workspace',
+    met_by: 'agent',
+  }];
 }
 
 export async function readMachineSettings(): Promise<MachineSettingsRecord> {
@@ -650,15 +651,7 @@ export async function readMachineSettings(): Promise<MachineSettingsRecord> {
     .filter((k): k is string => typeof k === 'string' && k.length > 0);
   const observed = await cachedObserved(jobKeyNames);
   const status = await computeStatus(set, observed);
-  const needed = computeNeeded(set, observed);
-  if (!(await workspaceFolders()).length) {
-    needed.push({
-      leaf: 'workspace_folder',
-      needs: 'a Workspace with a folder where Agents can work',
-      how: 'ask where the owner keeps their work, then open the Workspaces door and add that folder to a Workspace',
-      met_by: 'agent',
-    });
-  }
+  const needed = await computeNeeded(set, observed);
   return {
     set,
     observed,

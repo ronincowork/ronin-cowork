@@ -1,78 +1,50 @@
-import { ensureInitialCampaign, writeCampaign, type SetupAnswer, SETUP_STEP_IDS } from './campaigns.js';
-import { discoverExecutable } from './agents.js';
-import { measureAndRecordProviders } from './provider-summary.js';
-import { githubSetupAnswer } from './setup-runtime.js';
+/**
+ * SETUP'S TICKS (owner, 2026-11-22; KAN-768; samurai_lab/wip/FACTS.md): each step is ticked when
+ * the office's facts say it is done, nothing recorded by Setup. One meaning each, the facts' own
+ * (src/facts.ts):
+ *   provider       a provider is Activated (integrations_authentications)
+ *   register       registered with Ronin, by name or anonymously (machine)
+ *   workspace      a Workspace has a folder (workspaces; machine-settings' needed says the same)
+ *   installations  anything is installed: a Services part, or an installation switched on (machine)
+ *   password       a password is set, or the owner's "Tailscale only, no password" setting is on (machine)
+ * A self-hosted Setup is finished when provider and workspace are ticked; the other three are
+ * optional (public/js/setup-progress.js SETUP_NEEDED). Every press is a real setting or nothing. Pushed as `setup-progress` whenever a fact
+ * is written, so a change made anywhere ticks the step.
+ */
+import { activatedProviders, anythingInstalled, browserAccess, onFactWritten, registrationStatus } from './facts.js';
+import { installedAnswer } from './routes/installed-api.js';
+import { workspaceFolders } from './workspaces.js';
 import { broadcastEvent } from './ws/events.js';
-import { tailnetIp } from './machine-settings.js';
 
-export interface SetupProgressStep { id: typeof SETUP_STEP_IDS[number]; number: number; answered: boolean; answer: SetupAnswer | '' }
-export interface SetupProgress { steps: SetupProgressStep[]; facts: { tailscale?: boolean; checked_at?: string }; scanning: boolean; scanned_at: string; reason?: string }
+export const SETUP_STEP_IDS = ['provider', 'register', 'workspace', 'installations', 'password'] as const;
+export type SetupStepId = typeof SETUP_STEP_IDS[number];
 
-let scanFlight: Promise<void> | null = null;
-let scannedAt = '';
-let scanReason = '';
+export interface SetupProgress {
+  steps: Array<{ id: SetupStepId; number: number; answered: boolean }>;
+  /** The tailnet address, '' when this machine is not on Tailscale: the password step offers Tailscale only by it. */
+  tailscale: string;
+  no_password: boolean;
+}
 
-async function response(): Promise<SetupProgress> {
-  const campaign = await ensureInitialCampaign();
-  const answers = campaign.config.setup.answers;
+export async function readSetupProgress(): Promise<SetupProgress> {
+  const [providers, registered, folders, installed, access] = await Promise.all([
+    activatedProviders(), registrationStatus(), workspaceFolders().catch(() => []), installedAnswer().catch(() => null), browserAccess(),
+  ]);
+  const ticked: Record<SetupStepId, boolean> = {
+    provider: providers.length > 0,
+    register: registered !== 'optional',
+    workspace: folders.length > 0,
+    installations: anythingInstalled(installed),
+    password: access.password || access.no_password,
+  };
   return {
-    steps: SETUP_STEP_IDS.map((id, index) => ({ id, number: index + 1, answered: Boolean(answers[id]), answer: answers[id] || '' })),
-    facts: campaign.config.setup.facts,
-    scanning: scanFlight !== null,
-    scanned_at: scannedAt || campaign.config.setup.facts.checked_at || '',
-    ...(scanReason ? { reason: scanReason } : {}),
+    steps: SETUP_STEP_IDS.map((id, index) => ({ id, number: index + 1, answered: ticked[id] })),
+    tailscale: access.tailscale,
+    no_password: access.no_password,
   };
 }
 
-async function publish(): Promise<void> {
-  broadcastEvent({ t: 'setup-progress', ...(await response()) });
-}
-
-async function performScan(): Promise<void> {
-  const reasons: string[] = [];
-  let provider = false;
-  let workspace = false;
-  const tailscale = tailnetIp() !== '127.0.0.1';
-  const [providers, github, git] = await Promise.all([
-    measureAndRecordProviders().then((value) => {
-      provider = value.activated_count > 0;
-    }, (error) => reasons.push(String((error as Error)?.message ?? error))),
-    githubSetupAnswer().then((value) => {
-      workspace ||= value.installed || value.authenticated;
-      if (value.state === 'unreadable' && value.problem) reasons.push(value.problem);
-    }, (error) => reasons.push(String((error as Error)?.message ?? error))),
-    discoverExecutable('git').then((value) => { workspace ||= Boolean(value); }, (error) => reasons.push(String((error as Error)?.message ?? error))),
-  ]);
-  const campaign = await ensureInitialCampaign();
-  const answers = { ...campaign.config.setup.answers };
-  if (provider && !answers.provider) answers.provider = 'acted';
-  if (workspace && !answers.workspace) answers.workspace = 'acted';
-  scannedAt = new Date().toISOString();
-  await writeCampaign(campaign.id, { config: { setup: { answers, facts: { tailscale, checked_at: scannedAt } } } });
-  scanReason = reasons.join(' ');
-}
-
-export function startSetupProgressScan(): Promise<void> {
-  if (scanFlight) return scanFlight;
-  scanReason = '';
-  scanFlight = performScan()
-    .catch((error) => { scanReason = String((error as Error)?.message ?? error); scannedAt = new Date().toISOString(); })
-    .finally(async () => { scanFlight = null; await publish(); });
-  return scanFlight;
-}
-
-export async function readSetupProgress({ automatic = false } = {}): Promise<SetupProgress> {
-  const campaign = await ensureInitialCampaign();
-  const missingFacts = typeof campaign.config.setup.facts.tailscale !== 'boolean';
-  if (automatic && (Object.keys(campaign.config.setup.answers).length === 0 || missingFacts)) void startSetupProgressScan();
-  return response();
-}
-
-export async function answerSetupProgress(step: string, answer: SetupAnswer): Promise<SetupProgress> {
-  if (!SETUP_STEP_IDS.includes(step as typeof SETUP_STEP_IDS[number])) throw new Error(`Unknown Setup step "${step}".`);
-  if (answer !== 'acted' && answer !== 'not_now') throw new Error('Answer must be acted or not_now.');
-  const campaign = await ensureInitialCampaign();
-  await writeCampaign(campaign.id, { config: { setup: { answers: { ...campaign.config.setup.answers, [step]: answer }, facts: campaign.config.setup.facts } } });
-  await publish();
-  return response();
+/** A fact written is the office changed: Setup's ticks go out again. */
+export function startSetupProgress(): void {
+  onFactWritten(() => { void readSetupProgress().then((progress) => broadcastEvent({ t: 'setup-progress', ...progress }), () => {}); });
 }

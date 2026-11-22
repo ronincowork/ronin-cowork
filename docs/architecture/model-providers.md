@@ -171,8 +171,7 @@ What this machine *has* is measured, not derived on every read. The Campaign rec
 
 - `measureAndRecordProviders` — the machine facts; the recorded lists, the last npm answer
   and `refreshed_at` ride along unchanged. After **Cancel** on a sign-in (a
-  sign-in closed without Done may still have left a credential file), after Turn off / on,
-  and in the Setup scan.
+  sign-in closed without Done may still have left a credential file), and after Turn off / on.
 - `refreshProviders` — **Refresh all**: the same facts, then every activated
   CLI's own list read again, each [provider part](#provider-parts)'s list, then npm asked.
   It runs at every Ronin start, so after every

@@ -61,7 +61,7 @@ export function createSetupView() {
   let gardenContent = null;
   let providerSurface = null;
   let paintedSceneId = null;
-  let progress = { steps: [], scanning: false, scanned_at: '' };
+  let progress = { steps: [], tailscale: '', no_password: false };
   let enterGeneration = 0;
   let sceneOverride = 1;
   const progressListeners = new Set();
@@ -113,33 +113,25 @@ export function createSetupView() {
     reading.textContent = next
       ? `${answered} of ${marks.length} Setup steps complete. Next: ${next.label}.`
       : 'Setup completed.';
-    const scan = document.createElement('span'); scan.className = 'setup-scan';
-    scan.dataset.state = progress.reason ? 'failed' : progress.scanning ? 'scanning' : 'idle';
-    const scanButton = document.createElement('button'); scanButton.className = 'setup-scan-button'; scanButton.type = 'button';
-    scanButton.setAttribute('aria-label', progress.scanning ? 'Looking at this machine' : progress.reason ? 'Try looking again' : 'Look at this machine again');
-    scanButton.setAttribute('aria-busy', String(progress.scanning));
-    scanButton.title = progress.scanned_at ? `Last looked ${progress.scanned_at}` : 'Look at this machine';
-    scanButton.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.3-5.6"/><path d="M20 4v5h-5"/></svg>';
-    scanButton.addEventListener('click', () => { void scanProgress(); });
-    const word = document.createElement('span'); word.className = 'setup-scan-word';
-    word.textContent = progress.scanning ? 'Looking at this machine…' : progress.reason || '';
-    scan.append(scanButton, word);
-    setupStepsHeader.replaceChildren(createSetupStepsBar(progress), scan, reading);
+    setupStepsHeader.replaceChildren(createSetupStepsBar(progress), reading);
     setupStepsHeader.hidden = Boolean(irasshai); // her steps are the selector's; the five marks are not hers
   };
   const blank = (id) => WorkspaceKit.primitives.createBlankSurface(id.replace('workspace', 'Workspace ')).el;
   const environment = {
-    onGithubAuthenticated: () => { void scanProgress(); },
-    onWorkspaceFolderChosen: () => { void scanProgress(); },
+    // Every press is a real setting, made by its own route; Setup's ticks are then read again
+    // from the facts (KAN-768). Nothing here records a step.
+    onGithubAuthenticated: () => { void readProgress(); },
+    onWorkspaceFolderChosen: () => { void readProgress(); },
     onInstallationsState: () => {},
-    onInstallationChoice: () => { void answerStep('installations', 'acted'); },
-    onPasswordChoice: (required) => { void answerStep('password', required ? 'acted' : 'not_now'); },
-    onRegistrationChoice: (answer) => { void answerStep('register', answer); },
-    onProviderChoice: () => { void scanProgress(); },
+    onInstallationChoice: () => { void readProgress(); },
+    onPasswordChoice: () => { void readProgress(); },
+    onRegistrationChoice: () => { void readProgress(); },
+    onProviderChoice: () => { void readProgress(); },
     setupProgress: () => progress,
     onSetupProgress: (listener) => { progressListeners.add(listener); listener(progress); return () => progressListeners.delete(listener); },
-    answerSetupStep: (step, answer) => answerStep(step, answer),
-    scanSetupProgress: () => scanProgress(),
+    /** The surfaces draw their Setup header zones here, and only here. */
+    setupZones: true,
+    readSetupProgress: () => readProgress(),
     nextSetupStep: () => advance(),
     setupRuntime: null,
     onSetupRuntime: (next) => { runtime = next; environment.setupRuntime = next; paint(); },
@@ -152,7 +144,6 @@ export function createSetupView() {
     launchUrl: presetLaunchUrl,
     reserveLaunchTab: reserveWorkspaceTab,
     setPathNote: (path_note) => request('/api/setup/preferences', { method: 'PATCH', json: { path_note } }),
-    setIdentityChoice: (identity_choice) => request('/api/setup/preferences', { method: 'PATCH', json: { identity_choice } }),
     mountProviderSetupSession: providerSessions.mountProviderSetupSession,
     showNewSession: (prompt) => {
       const url = workbenchLaunchUrl({ destination: 'launch', mode: 'overlay', state: {
@@ -216,12 +207,8 @@ export function createSetupView() {
     if (!next || !Array.isArray(next.steps)) return false;
     progress = next; paint(); for (const listener of progressListeners) listener(progress); return true;
   };
-  const answerStep = async (step, answer) => {
-    const result = await request(`/api/setup/progress/${encodeURIComponent(step)}`, { method: 'PATCH', json: { answer } });
-    return result.ok && acceptProgress(result.data);
-  };
-  const scanProgress = async () => {
-    const result = await request('/api/setup/progress/scan', { method: 'POST' });
+  const readProgress = async () => {
+    const result = await request('/api/setup/progress', { cache: 'no-store' });
     return result.ok && acceptProgress(result.data);
   };
   /* SHOW (KAN-692): Setup reports this tab's view, as the door workbenches do, and places what
@@ -372,7 +359,7 @@ export function createSetupView() {
       void request('/api/setup/progress', { cache: 'no-store' }).then((result) => {
         if (generation !== enterGeneration || !result.ok || !acceptProgress(result.data)) return;
         const first = firstUnansweredSetupStep(progress);
-        if (!progress.scanning && first) open(SCENES.find((scene) => scene.id === first)?.number || 1);
+        if (first) open(SCENES.find((scene) => scene.id === first)?.number || 1);
       });
       if (!runtime) {
         void request('/api/setup/runtime', { cache: 'no-store' }).then((result) => {

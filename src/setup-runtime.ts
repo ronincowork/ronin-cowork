@@ -26,10 +26,10 @@ export const INSTALLED_ROOTS = [
 
 export const SETUP_PREFERENCE_KINDS = ['build', 'life', 'research', 'other'] as const;
 export type SetupPreferenceKind = typeof SETUP_PREFERENCE_KINDS[number];
-export interface SetupPreferences { kinds: SetupPreferenceKind[]; providers: string[]; path_note: string; identity_choice: '' | 'email' | 'anonymous' | 'declined'; bounty_opt_in: boolean }
+export interface SetupPreferences { kinds: SetupPreferenceKind[]; providers: string[]; path_note: string; bounty_opt_in: boolean }
 interface SetupSection {
   providers?: Record<string, { activated_at?: unknown; off_at?: unknown; sign_in?: ProviderSignIn }>;
-  preferences?: { kinds?: unknown; providers?: unknown; path_note?: unknown; identity_choice?: unknown; bounty_opt_in?: unknown };
+  preferences?: { kinds?: unknown; providers?: unknown; path_note?: unknown; bounty_opt_in?: unknown };
   [key: string]: unknown;
 }
 
@@ -151,11 +151,9 @@ export function setupPreferences(section: SetupSection): SetupPreferences {
     ? [...new Set(section.preferences.providers.filter((provider): provider is string =>
       typeof provider === 'string' && /^[a-z0-9_-]+$/.test(provider)))]
     : [];
-  const identity = section.preferences?.identity_choice;
   return {
     kinds: SETUP_PREFERENCE_KINDS.filter((kind) => selected.has(kind)), providers,
     path_note: typeof section.preferences?.path_note === 'string' ? section.preferences.path_note : '',
-    identity_choice: identity === 'email' || identity === 'anonymous' || identity === 'declined' ? identity : '',
     bounty_opt_in: section.preferences?.bounty_opt_in === true,
   };
 }
@@ -163,15 +161,14 @@ export function setupPreferences(section: SetupSection): SetupPreferences {
 export async function writeSetupPreferences(input: unknown): Promise<SetupPreferences> {
   const patch = Array.isArray(input) ? { kinds: input } : input;
   if (!patch || typeof patch !== 'object' || Array.isArray(patch)) throw new Error('Send Setup preferences.');
-  const update = patch as { kinds?: unknown; providers?: unknown; path_note?: unknown; identity_choice?: unknown; bounty_opt_in?: unknown };
-  if (update.kinds === undefined && update.providers === undefined && update.path_note === undefined && update.identity_choice === undefined && update.bounty_opt_in === undefined) throw new Error('Send onboarding preferences.');
-  let written: SetupPreferences = { kinds: [], providers: [], path_note: '', identity_choice: '', bounty_opt_in: false };
+  const update = patch as { kinds?: unknown; providers?: unknown; path_note?: unknown; bounty_opt_in?: unknown };
+  if (update.kinds === undefined && update.providers === undefined && update.path_note === undefined && update.bounty_opt_in === undefined) throw new Error('Send onboarding preferences.');
+  let written: SetupPreferences = { kinds: [], providers: [], path_note: '', bounty_opt_in: false };
   await updateSection<SetupSection>('setup', (setup) => {
     const current = setupPreferences(setup);
     const kinds = update.kinds === undefined ? current.kinds : update.kinds;
     const providers = update.providers === undefined ? current.providers : update.providers;
     const path_note = update.path_note === undefined ? current.path_note : update.path_note;
-    const identity_choice = update.identity_choice === undefined ? current.identity_choice : update.identity_choice;
     const bounty_opt_in = update.bounty_opt_in === undefined ? current.bounty_opt_in : update.bounty_opt_in;
     if (!Array.isArray(kinds) || kinds.some((kind) => typeof kind !== 'string' || !SETUP_PREFERENCE_KINDS.includes(kind as SetupPreferenceKind))) {
       throw new Error('Kinds are build, life, research, and other.');
@@ -180,9 +177,8 @@ export async function writeSetupPreferences(input: unknown): Promise<SetupPrefer
       throw new Error('Providers must be provider IDs.');
     }
     if (typeof path_note !== 'string' || path_note.length > 2000) throw new Error('Path note must be text up to 2000 characters.');
-    if (!['', 'email', 'anonymous', 'declined'].includes(String(identity_choice))) throw new Error('Identity choice must be email, anonymous, or declined.');
     if (typeof bounty_opt_in !== 'boolean') throw new Error('Bounty opt-in must be true or false.');
-    written = setupPreferences({ preferences: { kinds, providers, path_note, identity_choice, bounty_opt_in } });
+    written = setupPreferences({ preferences: { kinds, providers, path_note, bounty_opt_in } });
     return { ...setup, preferences: written };
   });
   return written;

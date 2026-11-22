@@ -5,8 +5,9 @@
  *
  * One builder per fact, reading its sources of truth; nothing else summarises that layer. Each
  * fact is a file, `~/ronin/library/facts/<fact>.md`, rewritten when one of its source stores is
- * written (one store watcher per store, KAN-641 style), so reading the file is reading the office
- * now. Its first line after the title is its seed line, the brief's `{office.<fact>.line}`; the rest
+ * written (one store watcher per store, KAN-641 style; a burst of writes is one rebuild a second
+ * later, and only of the facts that read that store), so reading the file is reading the office
+ * now. GitHub's sign-in is gh's own, not a store: every read through Ronin asks it first (checkGithub). Its first line after the title is its seed line, the brief's `{office.<fact>.line}`; the rest
  * is its text. The brief takes each from the catalog's facts (ronin_catalogs/facts/<fact>.md): seed
  * is the line and the path, full is the text at birth. Nothing is pushed to live Agents.
  *
@@ -20,8 +21,10 @@ import { storeDir } from './resources.js';
 import { watchStore } from './ws/events.js';
 import { initialCampaignId } from './campaign-scope.js';
 import { readCampaign } from './campaigns.js';
-import { machineFacts } from './machine-settings.js';
+import { machineFacts, tailnetIp } from './machine-settings.js';
 import { readAgentsSection, readMachineSection } from './machine-state.js';
+import { passwordAuthEnabled } from './auth.js';
+import { registrationAnswer } from './activation/registration.js';
 import { readOfficeRecord } from './office-record.js';
 import { roninIdentity } from './routes/version.js';
 import { installedAnswer } from './routes/installed-api.js';
@@ -93,12 +96,32 @@ async function aboutUser(): Promise<Built> {
   return { line, lines: ['People:', ...bullets(who), '', `Notes on them (${aboutUserFile()}):`, notes.trim() || '- none yet'] };
 }
 
-// ---- machine: hosting (the office record), Ronin's version, the box, disk, the Services parts.
+// ---- THE OFFICE'S STATES that a fact prints and Setup ticks from (src/setup-progress.ts): one meaning each.
+/** The providers Activated: each CLI the provider summary has operational, and each house row that is. */
+export const providersOn = (summary: Awaited<ReturnType<typeof readProviderSummary>>, rows: Awaited<ReturnType<typeof partProviderRows>>): string[] =>
+  [...AGENTS.filter((a) => summary?.operational.includes(a.id) && !summary.off.includes(a.id)).map((a) => a.label), ...rows.filter((row) => row.operational).map((row) => row.label)];
+export async function activatedProviders(): Promise<string[]> {
+  return providersOn(await readProviderSummary().catch(() => null), await partProviderRows().catch(() => []));
+}
+/** Anything installed: a Services part on this machine, or an installation switched on. */
+export const anythingInstalled = (installed: Awaited<ReturnType<typeof installedAnswer>> | null): boolean =>
+  !!installed && (installed.services.installed || installed.installations.some((one) => one.on));
+/** How the browser reaches Ronin: a password set, or the owner's "Tailscale only, no password"
+ * setting (machine settings' machine.no_password); and the tailnet address, '' off Tailscale. */
+export async function browserAccess(): Promise<{ password: boolean; no_password: boolean; tailscale: string }> {
+  const ip = tailnetIp();
+  return { password: passwordAuthEnabled(), no_password: (await readMachineSection().catch(() => ({} as Record<string, unknown>))).no_password === true, tailscale: ip === '127.0.0.1' ? '' : ip };
+}
+/** Registered with Ronin: registered, anonymously, or not ('optional'). */
+export const registrationStatus = async (): Promise<string> => (await registrationAnswer().catch(() => null))?.status ?? 'optional';
+
+// ---- machine: hosting (the office record), Ronin's version, the box, disk, the Services parts,
+// browser access, registration.
 async function machine(): Promise<Built> {
-  const [hosting, named, box, disk, installed] = await Promise.all([
+  const [hosting, named, box, disk, installed, access, registered] = await Promise.all([
     readOfficeRecord().catch((e: Error) => ({ hosting: 'unreadable' as const, error: e.message })),
     readMachineSection().catch(() => ({} as Record<string, unknown>)), machineFacts().catch(() => ({} as Record<string, unknown>)),
-    fs.statfs(os.homedir()).catch(() => null), installedAnswer().catch(() => null),
+    fs.statfs(os.homedir()).catch(() => null), installedAnswer().catch(() => null), browserAccess(), registrationStatus(),
   ]);
   const host = [named.name, named.where && `in ${String(named.where)}`].filter(Boolean).join(' ') || os.hostname();
   const boxLine = `${host}: ${box.kind ?? 'machine'}${box.hypervisor ? ` (${box.hypervisor})` : ''}, ${box.cores ?? '?'} cores, ${box.ram_gb ?? '?'} GB RAM, ${box.arch ?? os.arch()}`;
@@ -113,12 +136,19 @@ async function machine(): Promise<Built> {
     ...services.parked.map((one) => `Parked: ${one.name}${'reason' in one && one.reason ? ` (${one.reason})` : ''}`),
     ...(services.restart_needed ? ['A restart is needed for the parts switched on or off to take effect'] : []),
   ];
+  const on = installed?.installations.filter((one) => one.on).map((one) => one.label) ?? [];
+  const browser = access.password ? 'a password is set'
+    : access.no_password ? `no password: the owner chose ${access.tailscale ? 'Tailscale only' : 'no password'}` : 'no password set, and none chosen';
   const line = `${host}, ${hosting.hosting === 'office_unit' ? 'hosted' : 'self-hosted'}, Ronin ${ronin.release ?? 'checkout'}${disk ? `, ${gb(disk.bavail)} GB free` : ''}${services?.loaded.length ? ', Ronin Services running' : ''}`;
   return { line, lines: bullets([
     boxLine, where,
     `Ronin ${ronin.release ?? 'checkout'} (${ronin.commit}), running since ${stamp(ronin.startedAt)} UTC`,
     ...(disk ? [`Disk: ${gb(disk.bavail)} GB free of ${gb(disk.blocks)} GB`] : []),
     ...parts,
+    `Installations switched on: ${on.join(', ') || 'none'}`,
+    `Browser access: ${browser}`,
+    `Tailscale: ${access.tailscale ? `on, ${access.tailscale}` : 'not on this machine'}`,
+    `Registered with Ronin: ${registered === 'registered' ? 'yes' : registered === 'anonymous' ? 'yes, anonymously' : 'no'}`,
   ]) };
 }
 
@@ -147,6 +177,7 @@ async function integrationsAuthentications(): Promise<Built> {
     readProviderSummary().catch(() => null), partProviderRows().catch(() => []), githubSetupAnswer().catch(() => null),
     integrationsState(campaign, parts).catch(() => []), accountsAnswer().catch(() => null),
   ]);
+  githubBuilt = githubKey(github);
   // THE ONE WORDING of a provider's state (FACTS.md): not installed, installed not signed in, signed in not activated, Activated, turned off.
   const stateOf = (id: string): string => !summary?.installed.includes(id) ? 'not installed'
     : summary.off.includes(id) ? 'turned off (sign-in kept)' : summary.operational.includes(id) ? 'Activated'
@@ -161,7 +192,7 @@ async function integrationsAuthentications(): Promise<Built> {
   const connected = (one: (typeof services)[number]) => !!(one.secrets.length || one.mcp?.saved);
   const integrations = services.map((one) => `${one.label}: ${connected(one) ? 'connected' : one.available ? 'available, not connected' : 'not available for this Desk'}${one.workspaces.length ? ` in ${one.workspaces.join(', ')}` : ''}`);
   const hermes = (accounts?.accounts ?? []).map((a) => `${a.name} (${a.kind}): ${a.configured ? 'set up' : 'not set up'}${a.models.length ? `, ${a.models.length} models` : ''}`);
-  const on = [...AGENTS.filter((a) => stateOf(a.id) === 'Activated').map((a) => a.label), ...rows.filter((row) => row.operational).map((row) => row.label)];
+  const on = providersOn(summary, rows);
   const line = `Activated: ${on.join(', ') || 'none'}; connected: ${services.filter(connected).map((one) => one.label).join(', ') || 'none'}${github?.authenticated ? '; GitHub signed in' : ''}`;
   return { line, lines: [
     'Model providers:', ...bullets(providers), '',
@@ -244,7 +275,8 @@ const NOT_OURS = /^(facts\/|MACHINE_STATUS\.md)/;
 const FACTS: Fact[] = [
   { name: 'about_user', title: 'About the user', build: aboutUser,
     stores: [{ store: 'office_unit', match: /members\.json$/ }, { store: 'facts', match: /^user-intro\.md$/ }, { store: 'library', match: /^ABOUT_USER\.md$/ }] },
-  { name: 'machine', title: 'The machine', build: machine, stores: [{ store: 'office_unit', match: /office_record\.json$/ }, { store: 'config' }, { store: 'campaigns' }] },
+  { name: 'machine', title: 'The machine', build: machine,
+    stores: [{ store: 'office_unit', match: /office_record\.json$/ }, { store: 'config' }, { store: 'campaigns' }, { store: 'services_secrets' }] },
   { name: 'workspaces', title: 'Workspaces', build: workspaces, stores: [{ store: 'workspaces' }, { store: 'library', match: /^workspaces\// }] },
   { name: 'integrations_authentications', title: 'Integrations and authentications', build: integrationsAuthentications,
     stores: [{ store: 'campaigns' }, { store: 'catalogs' }, { store: 'services_secrets' }, { store: 'config' }, { store: 'workspaces' }] },
@@ -275,8 +307,13 @@ export async function writeFact(name: string): Promise<string> {
   if (built) await writeFile(factFile(name), render(fact, built));
   else await fs.rm(factFile(name), { force: true });
   await writeFile(machineStatusFile(), await suiteText());
+  for (const listener of written) listener(name);
   return built ? render(fact, built) : '';
 }
+
+/** Told each time a fact is written: Setup's ticks are pushed again from it (setup-progress.ts). */
+const written = new Set<(name: string) => void>();
+export const onFactWritten = (listener: (name: string) => void): void => { written.add(listener); };
 
 /** A fact's file as it is; '' when it does not hold here. */
 export const readFact = (name: string): Promise<string> => fs.readFile(factFile(name), 'utf8').catch(() => '');
@@ -288,7 +325,7 @@ export async function suiteText(): Promise<string> {
   return ['# This office', '', `As of ${stamp(new Date().toISOString())} UTC. Each section is a fact: ${factsDir()}/<fact>.md.`, '', ...nested.flatMap((one) => [one, ''])].join('\n').trimEnd() + '\n';
 }
 
-/** Every fact built now, then the suite in one: what `office read` prints. */
+/** Every fact built now, then the suite in one: at start only. */
 export async function writeFacts(): Promise<string> {
   for (const fact of FACTS) await writeFact(fact.name).catch((e: Error) => console.warn(`[facts] ${fact.name}: ${e.message}`));
   return suiteText();
@@ -296,6 +333,7 @@ export async function writeFacts(): Promise<string> {
 
 /** The brief's facts at birth: each fact's seed line, path and text (no title). */
 export async function briefFacts(): Promise<Record<string, { line: string; path: string; text: string }>> {
+  await checkGithub();
   const out: Record<string, { line: string; path: string; text: string }> = {};
   for (const fact of FACTS) {
     const raw = await readFact(fact.name);
@@ -306,15 +344,42 @@ export async function briefFacts(): Promise<Record<string, { line: string; path:
   return out;
 }
 
-// One rebuild of a fact at a time; a write while it runs builds it once more after.
+// A burst of writes is one rebuild of each fact that reads them, a second after the first; one
+// rebuild of a fact at a time, the next waiting for it.
+const BURST_MS = 1000;
+const due = new Set<string>();
 const running = new Map<string, Promise<void>>();
-const again = new Set<string>();
 function rebuild(name: string): void {
-  if (running.has(name)) { again.add(name); return; }
-  running.set(name, writeFact(name).then(() => {}, (e: Error) => console.warn(`[facts] ${name}: ${e.message}`)).finally(() => {
-    running.delete(name);
-    if (again.delete(name)) rebuild(name);
-  }));
+  if (due.has(name)) return;
+  due.add(name);
+  setTimeout(() => {
+    due.delete(name);
+    const next = (running.get(name) ?? Promise.resolve()).then(() => writeFact(name)).then(() => {}, (e: Error) => console.warn(`[facts] ${name}: ${e.message}`));
+    running.set(name, next);
+    void next.finally(() => { if (running.get(name) === next) running.delete(name); });
+  }, BURST_MS);
+}
+
+/** GitHub's sign-in lives in gh's own files, which Ronin does not watch: every read through Ronin
+ * (office read, GET /api/facts, Settings, a brief at birth) asks gh first and rebuilds
+ * integrations_authentications now when its answer is not the one the fact was built on. */
+let githubBuilt = '';
+const githubKey = (one: Awaited<ReturnType<typeof githubSetupAnswer>> | null): string => (one ? `${one.installed}:${one.authenticated}:${one.account ?? ''}` : '');
+export async function checkGithub(): Promise<void> {
+  if (githubKey(await githubSetupAnswer().catch(() => null)) !== githubBuilt) await writeFact('integrations_authentications');
+}
+
+/** The suite as it reads now: GitHub asked first. office read and Settings' Machine status. */
+export async function readSuite(): Promise<string> {
+  await checkGithub();
+  return suiteText();
+}
+
+/** One fact as it reads now: GitHub asked first. GET /api/facts/<fact>. */
+export async function readFactNow(name: string): Promise<string> {
+  if (!FACTS.some((one) => one.name === name)) throw new Error(`No fact "${name}". The facts: ${factNames().join(', ')}.`);
+  await checkGithub();
+  return readFact(name);
 }
 
 /** At start, after the parts load: every fact written, then one watcher per store rebuilds the facts that read it. */

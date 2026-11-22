@@ -21,17 +21,15 @@ test('a fresh box answers health, the page, and an unanswered Setup', async () =
   const page = await fetch(`${ronin.base}/`, { headers: { accept: 'text/html' } });
   assert.equal(page.status, 200);
   assert.match(page.headers.get('content-type') ?? '', /html/);
+  // The ticks are the facts' (KAN-768): no provider is Activated on a fresh box, and nobody registered.
   const progress = (await ronin.api('/api/setup/progress')).body as { steps: Array<{ id: string; answered: boolean }> };
-  assert.ok(progress.steps.some((s) => s.id === 'provider'));
-  assert.ok(progress.steps.every((s) => !s.answered));
+  assert.equal(progress.steps.find((s) => s.id === 'provider')?.answered, false);
+  assert.equal(progress.steps.find((s) => s.id === 'register')?.answered, false);
 });
 
 test('Setup sees the installed CLIs, not yet signed in; Help will not start and says why', async () => {
-  // The runtime answer reads only what is recorded; Setup progress's scan measures and records.
-  // With Services loaded the scan can still be running here, so wait until one has finished
-  // (scanned_at is set after its measure is recorded; every progress read starts a scan, so
-  // `scanning` alone never reads false).
-  await until(async () => (await ronin.api('/api/setup/progress')).body.scanned_at, 'the Setup scan', 30_000);
+  // The runtime answer reads only what is recorded; Ronin's start measures and records (Refresh all).
+  await until(async () => (await ronin.api('/api/setup/runtime')).body.providers?.find((p: Provider) => p.id === 'claude')?.installed, 'the start measure', 30_000);
   const before = (await ronin.api('/api/setup/runtime')).body;
   assert.ok(before.providers, JSON.stringify(before).slice(0, 400));
   assert.equal(provider(before, 'claude').installed, true);

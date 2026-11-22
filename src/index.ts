@@ -92,6 +92,7 @@ import { filesProxy, startFiles, stopFiles, PYTHON } from './files.js';
 import { ensureInstalledRoots, githubSetupAnswer, githubSetupAttached } from './setup-runtime.js';
 import { registerSetupRuntime } from './routes/setup-runtime-api.js';
 import { registerSetupProgress } from './routes/setup-progress-api.js';
+import { startSetupProgress } from './setup-progress.js';
 import { registerMikaContext } from './mika-context.js';
 import { archiveDone, cardsOf, ensureEveryIcebox, migrateItems, releaseEndedHolders } from './work-items.js';
 import { rebuildIndex } from './work-items-index.js';
@@ -314,7 +315,7 @@ registerCampaigns(app); // /api/campaigns* — the durable record of each body o
 registerOffice(app); // /api/office — the office record: self-hosted, or an office on an office_park — src/office-record.ts
 registerInstalled(app); // /api/installed — what is on this machine: installed · activated · switched, one answer — src/routes/installed-api.ts
 registerSetupRuntime(app); // /api/setup/runtime and provider login completion — explicit readiness facts for Ronin Setup
-registerSetupProgress(app); // one server-owned Setup completion record, scan and answer resource
+registerSetupProgress(app); // Setup's ticks, read from the facts
 registerJikan(app); // /api/teams/:team/jikan* — JIKAN, the Cron jobs tab: a team's scheduled requests — src/routes/jikan-api.ts
 startHouseJikan(); // JIKAN's clock: every minute, deliver what is due through the message door — src/jikan.ts
 registerServicesActivation(app); // /api/services/activation* — the Ronin Services request, local-only; no secret crosses this surface — src/routes/services-activation-api.ts
@@ -533,6 +534,8 @@ watchStore(storeDir('message_queue'), () => { void pushMessages(); });
 // A seat's file is its roster entry (the listing moves); its inbox is its tile's thread (the card's record part).
 watchStore(storeDir('seats'), (file) => { if (file.endsWith('.inbox.jsonl')) mark(file.slice(0, -12), 'record'); else if (file.endsWith('.json')) changed(); });
 // Hosted office: who each browser is (src/office-people.ts); then the facts, one watcher per store (src/facts.ts, KAN-768).
+// Setup's ticks go out again whenever a fact is written (src/setup-progress.ts).
+startSetupProgress();
 void startOfficePeople().then(() => startFacts()).catch((e) => console.error('[facts] start failed:', e));
 wireTmuxNotifications(tmuxClient, sessionsMoved); // live Agents are tmux's, not a store's
 void seedHouseBoard().catch((e) => console.error('[tmux-ronin] house board seed failed:', e));

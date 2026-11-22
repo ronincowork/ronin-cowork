@@ -7,27 +7,42 @@ For contributors: what each Setup surface shows and measures, in full. The user'
 ## Where it is
 
 **Ronin Home** has the doors **Teams**, **Epics** and **Workspaces**, and the smaller stones
-**Model Providers**, **Help** and **Settings**. Settings opens **Ronin Setup** until each of Setup's five
-steps has been answered, and **Ronin Settings**, the full configuration workbench, after
-that. Teams, Epics, Workspaces and Model Providers wait for a model provider; Help
+**Model Providers**, **Help** and **Settings**. Settings opens **Ronin Setup** until Setup is
+done (below), and **Ronin Settings**, the full configuration workbench, after that. Teams, Epics, Workspaces and Model Providers wait for a model provider; Help
 is open from the start.
 
 Opening Ronin at its bare address, with no page named, lands on **Ronin Setup** until Setup
-is done, and on Home after that (KAN-720). Done is Setup's own record. On a hosted office it is
-the Helpful Assistant's onboarding epic reaching Done. Everywhere else it is all five steps
-being answered. A link that names a page still opens that page.
+is done, and on Home after that (KAN-720). On a hosted office, done is the Helpful Assistant's
+onboarding epic reaching Done. Everywhere else it is the model provider and Workspaces steps
+being ticked; the other three are optional. A link that names a page still opens that page.
+
+### The ticks
+
+Setup records nothing of its own (owner, 22 Nov; KAN-768). Each step is ticked when the
+office's facts say it is done (`src/setup-progress.ts`, read from the same readers the facts
+print, `src/facts.ts`), and every press is a real setting or nothing:
+
+| Step | Ticked when |
+|---|---|
+| Model providers | a provider is Activated (the integrations_authentications fact) |
+| Register | this machine is registered, by email or anonymously (the machine fact) |
+| Workspaces | a Workspace has a folder (the workspaces fact; machine settings' still needed says the same) |
+| Installations | anything is installed: a Services part, or an installation switched on (the machine fact) |
+| Password | a password is set, or the owner's **Tailscale only** (or **None**) setting is on: `machine.no_password` in machine settings, which the machine fact prints |
+
+`GET /api/setup/progress` answers the ticks and the machine's Tailscale address; each time a
+fact is written they are pushed again as `setup-progress`, so a change made anywhere ticks its step.
 
 ### Going back to Setup
 
 **Ronin Settings → Machine Settings** keeps a **Setup** card at the head of its column: the
 word, then five numbered marks, one for each step Setup asks about — model provider,
-registration, Workspaces, Installations, and password. A mark is hollow until you
-answer that step and filled once you have; the outlined mark is the step Setup will open
-on. Answering means either doing the thing or saying not now — both count, and both are
-remembered.
+registration, Workspaces, Installations, and password. A mark is hollow until that step is
+ticked (The ticks, above) and filled once it is; the outlined mark is the step Setup will open
+on.
 
 Widen the column, or switch the selector to its fuller cards, and the card also names that
-step. Once all five are answered the marks go and the card reads **Setup Complete**. It
+step. Once all five are ticked the marks go and the card reads **Setup Complete**. It
 stays where it is, so any step can be opened again whenever you want it.
 
 ## The Setup workbench
@@ -40,8 +55,8 @@ Setup is one workbench with two workspaces and a selector column between them:
 - **Workspace 2** is the actionable surface for the selected step. Selecting a card changes
   both workspaces together.
 
-On a phone the same three columns stack. Setup reads completion once when it opens and
-updates it after the corresponding action; it does not poll in the background.
+On a phone the same three columns stack. Setup reads the ticks when it opens, again after
+each of its own actions, and from the `setup-progress` push; it does not poll.
 
 Every stone surface in Setup shares one shape: square stones on the left; select one and
 the stones fold into a rail with the stone's page beside it; Escape closes it.
@@ -49,13 +64,12 @@ the stones fold into a rail with the stone's page beside it; Escape closes it.
 ### The header zone
 
 Every step opens with a band across the top of its surface, above a hairline: one line
-saying what is true on this machine right now, and the choices that answer it. It states a
+saying what is true on this machine right now, and the choices that act on it. It states a
 fact and never explains — the guidance in Workspace 1 is where the reasoning lives — and it
 carries no title, because the surface already has one.
 
-Pressing a choice is what answers the step and fills its mark. Nothing is chosen for you:
-a choice shows as taken only once you have taken it, so a machine that merely happens to be
-in some state is not treated as having decided anything.
+A choice does the thing, and the mark fills when the facts say the step is done. Nothing is
+chosen for you: a choice shows as taken only once its setting is on.
 
 The zone says what the step needs decided, never what one stone is doing. A stone's own
 condition — *Coming soon*, *Needs sign-in*, *Activated* — stays on the stone.
@@ -64,8 +78,8 @@ Once a step is settled the band goes blank, and its space stays. That space is w
 the stones at the same height as you move between steps, so nothing jumps. While a stone is
 open the band is gone entirely: that is the step's own page, not its question.
 
-Two steps never go blank, because their answers are arrangements you may want to revisit
-rather than one-time facts: **Register** and **Password** keep their choices for good.
+**Password** never goes blank, because how you reach this machine is an arrangement you may
+want to revisit rather than a one-time fact: it keeps its choices for good.
 
 ## Presets
 
@@ -176,9 +190,9 @@ Details of the catalog and what is measured are in [model providers](model-provi
 
 ## Register
 
-Registration is optional; local Ronin works without it. Declining is the header zone's
-**No thank you**, which puts the form away and answers the step; **Register here** brings it
-back. The form asks how you would like to register — with email, or anonymously — then an email, what
+Registration is optional; local Ronin works without it, and the step stays unticked until you
+register (nothing records a decline). The form is on show until you do; registered anonymously,
+**Register here** brings it back to add an email. The form asks how you would like to register — with email, or anonymously — then an email, what
 brings you here, which core Ronin feature you prefer, which of the starting patterns you
 are most likely to use, what describes you, where you will install, a two-line introduction
 for your Cowork Agents, and anything else. The introduction stays on this machine as the
@@ -199,9 +213,11 @@ you want a password as well.
 With Tailscale, the choices are **Tailscale only** and **Add password**. Without it,
 **Tailscale only** is shown but not selectable — it is not an arrangement this machine can be in — and
 **None** takes its place, for a machine already protected some other way. Once a password is
-set the only thing left to offer is **Disable password**.
+set the only thing left to offer is **Disable password**. **Tailscale only** and **None** are one
+machine setting, `machine.no_password` (`PUT /api/password/none`), which the machine fact
+prints; setting a password turns it off.
 
-Having Tailscale does not answer this step for you. Whether Tailscale alone is enough is a
+Having Tailscale does not tick this step for you. Whether Tailscale alone is enough is a
 judgement about your own machine, so Setup waits for you to say.
 
 ## Workspaces

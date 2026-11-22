@@ -96,10 +96,12 @@ export const readMachineSection = (): Promise<Record<string, unknown>> =>
 export const readMachineMonitor = async (): Promise<boolean> =>
   (await readMachineSection()).monitor !== false;
 
-export const writeMachineSection = (v: { name?: string; where?: string; monitor?: boolean }): Promise<void> =>
+/** `no_password`: the owner's "Tailscale only, no password" (Setup's password step; the machine fact prints it). */
+export const writeMachineSection = (v: { name?: string; where?: string; monitor?: boolean; no_password?: boolean }): Promise<void> =>
   updateConfig((doc) => {
     const m = ((doc.machine ?? {}) as Record<string, unknown>) || {};
     if (v.monitor !== undefined) m.monitor = Boolean(v.monitor);
+    if (v.no_password !== undefined) m.no_password = Boolean(v.no_password);
     if (v.name !== undefined) m.name = String(v.name).trim().slice(0, 64);
     if (v.where !== undefined) m.where = String(v.where).trim().slice(0, 120);
     doc.machine = m;

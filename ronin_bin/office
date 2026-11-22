@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # office — the office's facts (KAN-768, src/facts.ts): one file each in ~/ronin/library/facts/,
-# rewritten when what they read changes. `read` builds them all now and prints them as one
-# (GET /api/office/read); `read <fact>` builds and prints one (GET /api/facts/<fact>).
+# rewritten about a second after what they read changes. `read` prints them all as one
+# (GET /api/office/read); `read <fact>` prints one (GET /api/facts/<fact>). Either asks GitHub first.
 # ~/ronin/library/MACHINE_STATUS.md is the same suite in one file, kept current.
 . "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/tool-count.sh" office "$@"
 set -u -o pipefail
@@ -9,9 +9,9 @@ set -u -o pipefail
 TOOL_DIR=$(dirname "$SELF")
 usage() { cat <<'EOF_USAGE'
 Usage:
-  office read          every fact, built now, as one: about_user, machine, account (hosted),
+  office read          every fact as it is now, as one: about_user, machine, account (hosted),
                        workspaces, integrations_authentications, teams_agents, epics, defaults
-  office read <fact>   one of them, built now
+  office read <fact>   one of them
 The files: ~/ronin/library/facts/<fact>.md, current whenever read; all of them in one:
 ~/ronin/library/MACHINE_STATUS.md. The people's notes: ~/ronin/library/ABOUT_USER.md.
 EOF_USAGE

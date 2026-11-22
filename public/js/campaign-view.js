@@ -25,7 +25,6 @@ import { installBehaviourReader } from './behaviour-reader.js';
 import { workbenchView } from './workspace-contract.js';
 import { createSetupReturnCard } from './setup-return-card.js';
 import { registerWorkbenchCatalog, WORKBENCH_PROFILES, WORKBENCH_TYPES } from './workbench-catalog.js';
-import { SETUP_STEP_IDS } from './setup-progress.js';
 import { setupProgressHandlers } from './events.js';
 import { HOSTED } from './hosted.js';
 
@@ -60,9 +59,8 @@ export function createCampaignView() {
   const providerSessions = createProviderSetupSessionMount();
   const { surface: mikaSurface, pool: mikaPool } = createMikaTilePool();
   const selected = () => campaignById(normalizeSelection(ctx?.state?.campaignSelection).primary_campaign_id);
-  const setupProgress = () => liveSetupProgress || (selected() ? { steps: SETUP_STEP_IDS.map((id, index) => ({
-    id, number: index + 1, answered: Boolean(selected()?.config?.setup?.answers?.[id]), answer: selected()?.config?.setup?.answers?.[id] || '',
-  })), facts: selected()?.config?.setup?.facts || {} } : null);
+  // Setup's ticks, from the facts (GET /api/setup/progress, pushed as setup-progress); null until read.
+  const setupProgress = () => liveSetupProgress;
   const environment = {
     feedback: (workspace) => createFeedbackSurface(() => bench.place(TYPES.identity, workspace)),
     selected,
@@ -204,6 +202,7 @@ export function createCampaignView() {
       }
       bench.refreshSelector(); save();
       const refresh = () => { if (entered) bench.refreshSelector(); };
+      void request('/api/setup/progress', { cache: 'no-store' }).then((result) => { if (result.ok && Array.isArray(result.data?.steps)) onSetupProgress(result.data); });
       void loadCampaigns().then(async () => {
         if (!entered || generation !== loadGeneration) return;
         for (const [workspace, held] of Object.entries(bench.snapshot().seats)) {

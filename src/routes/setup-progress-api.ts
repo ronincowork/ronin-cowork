@@ -1,20 +1,13 @@
 import { homedir } from 'node:os';
 import type express from 'express';
-import { answerSetupProgress, readSetupProgress, startSetupProgressScan } from '../setup-progress.js';
+import { readSetupProgress } from '../setup-progress.js';
 
 const message = (error: unknown) => String((error as Error)?.message ?? error).replaceAll(homedir(), '~');
 
+/** GET /api/setup/progress: Setup's ticks, from the facts (setup-progress.ts). Read-only: a press is a real setting, made by its own route. */
 export function registerSetupProgress(app: express.Express): void {
   app.get('/api/setup/progress', async (_req, res) => {
-    try { res.json(await readSetupProgress({ automatic: true })); }
+    try { res.json(await readSetupProgress()); }
     catch (error) { res.status(500).json({ error: message(error) }); }
-  });
-  app.post('/api/setup/progress/scan', async (_req, res) => {
-    try { void startSetupProgressScan(); res.json(await readSetupProgress()); }
-    catch (error) { res.status(500).json({ error: message(error) }); }
-  });
-  app.patch('/api/setup/progress/:step', async (req, res) => {
-    try { res.json(await answerSetupProgress(String(req.params.step), req.body?.answer)); }
-    catch (error) { res.status(400).json({ error: message(error) }); }
   });
 }

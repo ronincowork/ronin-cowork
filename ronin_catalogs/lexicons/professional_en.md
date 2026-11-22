@@ -1495,12 +1495,9 @@ The pad's current config downloads as a backup first.
 - **campaign_view.cloud_account:** Cloud Account
 - **campaign_view.cloud_account_summary:** Account, office, subscription and house-model usage, as Ronin HQ records it. Read-only.
 - **machine_status.title:** Machine status
-- **machine_status.summary:** What this office has set up, what it hasn’t and what is available, in one doc any Agent reads. Write it now from here.
-- **machine_status.where:** Written to {path}. Agents read it there, or live with office read.
-- **machine_status.never:** Not written yet on this machine. Write it now saves what is set up, what isn’t and what is available.
+- **machine_status.summary:** What this office has set up, what it hasn’t and what is available, in one doc any Agent reads, kept current.
+- **machine_status.where:** Kept at {path}. Agents read it there, or with office read.
 - **machine_status.stamp:** Written {when}
-- **machine_status.write:** Write it now
-- **machine_status.failed:** Ronin could not write it.
 
 ## behaviours — behaviour-surface.js
 - **behaviours.title:** Behaviors
