@@ -2,7 +2,7 @@
  * Teams: each Team shown by what it is (w900, KAN-780). The Teams page's stones (the Epic stones'
  * grammar: name, what needs you, lead, the shared lifecycle line; no Show question), its selector (a card per Team, no Agent's own card), one Team's
  * three views (Agents, Epics, Configuration; its Epics without New Epic) and No Team, which is
- * there only while an Agent is outside every Team and opens one Team workbench of its own.
+ * there only while an Agent is outside every Team and opens its Agents.
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -18,11 +18,10 @@ test('the Teams page and one Team, as a person reads and presses them', async (t
   const ronin = await bootRonin('teams');
   t.after(() => ronin.stop());
   assert.equal((await ronin.api('/api/team-rosters', { body: { name: 'shop', title: 'Shop', objective: 'Run the shop.' } })).status, 200);
-  for (const name of ['ana', 'ben']) {
-    const launched = await ronin.api('/api/launch', { body: { name, provider: 'anthropic', prompt: 'Work the shop.', tags: ['shop'] } });
+  for (const [name, lead] of [['ana', true], ['ben', false]] as const) {
+    const launched = await ronin.api('/api/launch', { body: { name, provider: 'anthropic', prompt: 'Work the shop.', team: 'shop', team_lead: lead } });
     assert.equal(launched.status, 200, JSON.stringify(launched.body));
   }
-  assert.equal((await ronin.api('/api/sessions/ana/team_lead', { body: { teams: ['shop'] } })).status, 200);
   const make = async (body: Record<string, unknown>) => {
     const made = await ronin.api('/api/work-items', { body });
     assert.equal(made.status, 200, JSON.stringify(made.body));
@@ -105,8 +104,9 @@ test('the Teams page and one Team, as a person reads and presses them', async (t
   assert.equal(solo.status, 200, JSON.stringify(solo.body));
   await page.waitForSelector('.team-roster-phalanx [data-sws-id=" unassigned"]');
   assert.equal(await page.textContent('.team-roster-phalanx [data-sws-id=" unassigned"] .sws-label'), 'No Team');
-  await page.goto(`${ronin.base}/#/team/%20unassigned`);
-  await page.waitForFunction(() => document.body.innerText.includes('Solo'));
-  assert.match(await page.textContent('body') || '', /No Team/);
+  await page.click('.team-roster-phalanx [data-sws-id=" unassigned"]');
+  await page.waitForSelector('.league-team-detail .league-team-agent[data-session="solo"]');
+  assert.equal(await page.textContent('.league-team-detail .team-bar-title'), 'No Team');
+  assert.equal(await page.$('.league-team-detail .league-team-toggle'), null, 'No Team has its Agents only');
   assert.deepEqual(errors, []);
 });
