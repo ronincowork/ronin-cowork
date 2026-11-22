@@ -649,7 +649,7 @@ export function createCoworkView(options = {}) {
       if (key === 'epics' && !epicStones) {
         const every = createEpicsRead(() => '');
         const mine = () => teamEpicIds(teamByName(name));
-        epicStones = createEpicStones({ bare: true, empty: t('team_epics.none', 'No Epics for this Team yet.'), epicsRead: {
+        epicStones = createEpicStones({ bare: true, epicsRead: {
           list: () => every.list().filter((epic) => mine().has(epic.id)),
           items: (id) => every.items(id),
           subscribe: (listener) => { const a = every.subscribe(listener); const b = subscribe(listener); return () => { a(); b(); }; },

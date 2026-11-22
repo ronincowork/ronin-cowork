@@ -27,6 +27,7 @@
  * tile re-reads on every push (tile.js refreshTegami). Nothing here asks the server.
  */
 import { t } from './lexicon.js';
+import { statusKey } from './epic-stage.js';
 import { humanAge } from './work-record.js';
 import { WorkspacePrimitives } from './workspace-primitives.js';
 
@@ -41,14 +42,8 @@ export function kindKey(kind) {
   return ['epic', 'story', 'task', 'bug', 'feature', 'subtask'].includes(k) ? k : 'other';
 }
 
-/** The status's family, which picks the dot's colour: Jira's three, plus In Review. */
-export function statusKey(status) {
-  const s = String(status || '').toLowerCase();
-  if (/done|closed|resolved|complete/.test(s)) return 'done';
-  if (/review/.test(s)) return 'review';
-  if (/progress|doing|active/.test(s)) return 'progress';
-  return 'todo';
-}
+/** The status's family, which picks the dot's colour: Jira's three, plus In Review (epic-stage.js). */
+export { statusKey };
 
 /** Jira's type symbols: a rounded square in the kind's colour with its white mark. */
 const MARKS = {

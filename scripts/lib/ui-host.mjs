@@ -1,5 +1,5 @@
 import { createRequire } from 'node:module';
-import { homedir } from 'node:os';
+import { homedir, userInfo } from 'node:os';
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -39,10 +39,14 @@ export function defaultUrl(staging = false) {
 export const HOST_TOOLS = `${homedir()}/.cache/ronin-host-tools`;
 
 export async function loadPlaywright() {
+  // Its browsers too live under the account's home, which a scratch $HOME hides.
+  process.env.PLAYWRIGHT_BROWSERS_PATH ||= path.join(userInfo().homedir, '.cache', 'ms-playwright');
   const candidates = [
     () => (process.env.RONIN_PLAYWRIGHT_PATH ? import(process.env.RONIN_PLAYWRIGHT_PATH) : null),
     () => require_('playwright'),
     () => createRequire(`${HOST_TOOLS}/`)('playwright'),
+    // The account's own home, not $HOME: the test runner gives every run a scratch HOME (check-tests.mjs).
+    () => createRequire(`${userInfo().homedir}/.cache/ronin-host-tools/`)('playwright'),
   ];
   for (const load of candidates) {
     try {

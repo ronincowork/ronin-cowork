@@ -197,7 +197,7 @@ export function createEpicsView() {
       const epicsRead = createEpicsRead(() => campaign(ctx)?.id || '');
       return {
         epics: () => epicOffers(epicsRead),
-        epicRecords: () => keep(createEpicStones({ epicsRead })), // w897: the phalanx of open Epics, a pressed one beside it
+        epicRecords: () => keep(createEpicStones({ epicsRead, workbench: bench() })), // w897: the phalanx of open Epics, a pressed one beside it
         epicRecord: (_workspace, detail) => keep(createEpicRecord(detail.key, { epicsRead })),
       };
     },
