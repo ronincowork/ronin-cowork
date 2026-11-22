@@ -17,7 +17,7 @@
  *
  * Checking one out makes plain live items from the file, held by the receiver: no link back.
  */
-import { mkdir, readdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { STOCK_DIR, storeDir } from './resources.js';
 import { createItem, listItems, readItem, WorkItemBadInput, WorkItemMissing, type Holder, type WorkItem } from './work-items.js';
@@ -98,6 +98,35 @@ async function writeNew(part: LibraryPart): Promise<LibraryItem> {
   return { id, file, origin: 'user', ...part };
 }
 
+/** A new library item from its whole file text, at the next free number in the person's store. */
+export async function createLibraryText(source: string): Promise<LibraryItem> {
+  const part = parseLibrary(source);
+  if (!part.title) throw new WorkItemBadInput('A library item starts with its title: # <title>.');
+  return writeNew(part);
+}
+
+/** Edit from the reading: the whole file text written as the person's own file for that id; a
+ * stock one is copied there by this (Make my version), and theirs replaces stock from then on. */
+export async function saveLibrary(id: string, source: string): Promise<LibraryItem> {
+  const was = await readLibrary(id);
+  const part = parseLibrary(source);
+  if (!part.title) throw new WorkItemBadInput('A library item starts with its title: # <title>.');
+  await mkdir(userLibraryDir(), { recursive: true });
+  const file = path.join(userLibraryDir(), `${was.id}-${slug(part.title)}.md`);
+  if (was.origin === 'user' && was.file !== file) await rm(was.file, { force: true });
+  await writeFile(file, libraryText(part), 'utf8');
+  return { id: was.id, file, origin: 'user', ...part };
+}
+
+/** The person's own file for that id goes: Ronin's comes back where there is one. Answers what
+ * the id reads now, or null when it was theirs alone. */
+export async function deleteLibrary(id: string): Promise<LibraryItem | null> {
+  const was = await readLibrary(id);
+  if (was.origin !== 'user') throw new WorkItemBadInput(`${was.id} is Ronin's; only your own version is deleted.`);
+  await rm(was.file, { force: true });
+  return (await listLibrary()).find((one) => one.id === was.id) ?? null;
+}
+
 /** item create --library: a new file; under a library parent, a task added to it (written to the
  * person's own file, which then replaces stock by its id). */
 export async function createLibrary(title: string, text: string, parent?: string): Promise<LibraryItem> {
@@ -142,12 +171,16 @@ export async function checkoutLibrary(id: string, to: Holder, by: string): Promi
   return { epic, made };
 }
 
-/** A library item as an item reading shows it: the epic, and its tasks as children. */
-export function libraryReading(one: LibraryItem): { item: Record<string, unknown>; children: Array<Record<string, unknown>> } {
+/** A library item as an item reading shows it: the epic, and its tasks as children. `library`
+ * carries its file's whole text and whose it is, for Make my version and Delete. */
+export async function libraryReading(one: LibraryItem): Promise<{ item: Record<string, unknown>; children: Array<Record<string, unknown>> }> {
+  const stock = (await filesIn(stockLibraryDir())).has(one.id);
+  const library = { file: one.file, origin: one.origin, stock, text: await readFile(one.file, 'utf8') };
   const shape = (part: LibraryPart, level: number, kind: string, at: string) => ({
     id: at, campaign_id: '', title: part.title, objective: part.text, level, kind, status: 'Library', flagged: false, priority: '',
-    comments: [], parent: null, attachments: [], links: [], external: {}, trail: [], created: { at: '', by: one.origin === 'stock' ? 'ronin' : 'you' },
-    library: { file: one.file, origin: one.origin },
+    // No author: the reading would show one as the Agent it was started in.
+    comments: [], parent: null, attachments: [], links: [], external: {}, trail: [], created: { at: '', by: '' },
+    library,
   });
   return {
     item: shape(one, 1, 'Epic', one.id),

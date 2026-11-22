@@ -12,7 +12,7 @@ import {
 import { agentReading, epicCards, everyItemReading, teamReading, type HeldItem } from '../work-items-read.js';
 import { liveRows, rowOf } from '../work-items-index.js';
 import { pushTeams } from '../ws/events.js';
-import { checkoutLibrary, createLibrary, fileToLibrary, isLibraryId, libraryReading, libraryText, listLibrary, readLibrary } from '../library.js';
+import { checkoutLibrary, createLibrary, createLibraryText, deleteLibrary, fileToLibrary, isLibraryId, libraryReading, libraryText, listLibrary, readLibrary, saveLibrary } from '../library.js';
 
 const text = (value: unknown): string | undefined => typeof value === 'string' ? value : value === undefined || value === null ? undefined : String(value);
 
@@ -135,7 +135,8 @@ export function registerWorkItems(app: express.Express): void {
     const b = req.body ?? {};
     // --library: a new file in the person's library, or a task added to one (KAN-767).
     if (b.library === true || b.library === 'true') {
-      const made = await createLibrary(text(b.title) ?? '', text(b.objective) ?? '', text(b.parent)?.trim() || undefined);
+      // { text }: a whole file, as Find item's New writes it; else a title and objective (the item tool).
+      const made = text(b.text) ? await createLibraryText(text(b.text)!) : await createLibrary(text(b.title) ?? '', text(b.objective) ?? '', text(b.parent)?.trim() || undefined);
       return res.json({ ok: true, id: made.id, file: made.file, acknowledgement: `${b.parent ? `added to ${made.id}` : `made ${made.id}`} in the library: ${made.file}` });
     }
     const done = await createItem({
@@ -148,7 +149,7 @@ export function registerWorkItems(app: express.Express): void {
 
   app.get('/api/work-items/:id', guarded(async (req, res) => {
     // A library id reads its file (KAN-767): the epic, its tasks as children.
-    if (isLibraryId(req.params.id!)) return res.json({ ok: true, held_by: [], ...libraryReading(await readLibrary(req.params.id!)) });
+    if (isLibraryId(req.params.id!)) return res.json({ ok: true, held_by: [], ...await libraryReading(await readLibrary(req.params.id!)) });
     const item = await readItem(req.params.id);
     if (!item) throw new WorkItemMissing(`No work item ${req.params.id}.`);
     // Jira's read: the fields, comments, attachments, links both ways and history (trail). The
@@ -170,6 +171,11 @@ export function registerWorkItems(app: express.Express): void {
 
   app.put('/api/work-items/:id', guarded(async (req, res) => {
     const b = req.body ?? {};
+    // A library item's edit (KAN-769): { text }, its whole file, written as the person's own.
+    if (isLibraryId(req.params.id!)) {
+      const saved = await saveLibrary(req.params.id!, text(b.text) ?? '');
+      return res.json({ ok: true, id: saved.id, file: saved.file, acknowledgement: `${saved.id} saved as your version: ${saved.file}` });
+    }
     if (b.jiraFields !== undefined) throw new WorkItemRefused('jiraFields are Jira\'s, read only: the bridge sets them.');
     const external = Object.fromEntries((['trello', 'github'] as const).filter((key) => b[key] !== undefined).map((key) => [key, text(b[key]) ?? '']));
     acknowledge(res, await editItem(req.params.id, {
@@ -215,6 +221,11 @@ export function registerWorkItems(app: express.Express): void {
     archive: async (id, _b, by) => acted(await archiveItem(id, by)),
     // Jira's delete: the item and its subtasks go (deleteItem).
     delete: async (id, _b, by) => {
+      // A library id: the person's own file goes, Ronin's coming back where there is one (KAN-769).
+      if (isLibraryId(id)) {
+        const now = await deleteLibrary(id);
+        return { acknowledgement: now ? `your version of ${id} deleted: Ronin's is back` : `${id} deleted from the library`, extra: { id } };
+      }
       const { deleted, orphaned } = await deleteItem(id, by);
       const subtasks = deleted.slice(1);
       return { extra: { deleted, ...(orphaned.length ? { no_parent: orphaned } : {}) },

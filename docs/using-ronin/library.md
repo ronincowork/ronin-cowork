@@ -11,7 +11,8 @@ They keep no tie to the library, and a later change to the library does not touc
 
 - Agents: `item search --library` lists the library; `--text <words>` narrows it. `item read
   LIBRARY-1` reads one, with its tasks.
-- In Ronin: type `LIBRARY-` in Find item. Press an item to read it.
+- In Ronin: type `LIBRARY-` in Find item. Press an item to open it in the same reading as any
+  work item, marked Library: its objective, its tasks and its file.
 
 ## Check one out
 
@@ -21,8 +22,8 @@ item checkout LIBRARY-3 team:site
 ```
 
 With no receiver named, it goes to the Agent checking it out. A brief or a task can simply say
-"Check out LIBRARY-1 to see your next steps." In Find item, an item's **Assign** checks it out to
-the Agent or Team you pick and opens the new epic.
+"Check out LIBRARY-1 to see your next steps." In Find item, a library item's **Check out** copies
+it to the Agent or Team you pick and opens the new epic.
 
 ## What Ronin ships
 
@@ -38,6 +39,9 @@ The library is files, one item tree each, named after its id. Ronin's are in
 `ronin_catalogs/library/`. Yours are in `~/ronin/library_items/`, and a file of yours with a
 stock id replaces that one whole.
 
+- In Find item, a library item's **Make my version** opens its file to edit; saved, it is yours
+  in `~/ronin/library_items/` and replaces Ronin's. **Delete my version** brings Ronin's back.
+  **New library item**, under the list, writes a new one at the next free number.
 - `item create --library --title "…" --objective "…"` makes a new one at the next free number.
   With `--parent LIBRARY-<n>`, the item is added as a task to that one instead.
 - `item checkout <live epic> --library` files a live epic and its children as a new one.

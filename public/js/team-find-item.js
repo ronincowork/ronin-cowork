@@ -13,9 +13,7 @@
 import { WorkspaceKit } from './workspace-kit.js';
 import { t } from './lexicon.js';
 import { request } from './request.js';
-import { get, subscribe as hear } from './store.js';
-import { S } from './state.js';
-import { ask } from './ask.js';
+import { subscribe as hear } from './store.js';
 import { renderItemDetail, holderOf } from './work-items-surface.js';
 
 const el = (tag, cls = '', text = '') => {
@@ -26,12 +24,12 @@ const el = (tag, cls = '', text = '') => {
 export const asksLibrary = (typed) => /^library-?$/i.test(String(typed || '').trim());
 
 /**
- * THE LIBRARY (owner, 2026-11-22; KAN-767): its items are files, read when asked. The list is one
- * line per item, pressed to read it; a reading is the epic's text and its tasks, with Assign:
- * an Agent or a Team picked, the item is checked out to it as plain new live items, and the new
- * epic opens in its place.
+ * THE LIBRARY (owner, 2026-11-22; KAN-767, KAN-769): its items are files, read when asked. The
+ * list is one line per item, pressed to open it in the item reading (renderItemDetail, with its
+ * Check out and Make my version); New writes a file of your own at the next free number.
  */
 function renderLibraryList(host, items, open) {
+  const { createAction } = WorkspaceKit.primitives;
   const list = el('div', 'find-item-library');
   if (!items.length) list.append(el('p', 'fs-step-help', t('find_item.library_empty', 'The library is empty.')));
   for (const one of items) {
@@ -40,38 +38,24 @@ function renderLibraryList(host, items, open) {
     row.addEventListener('click', () => open(one.id));
     list.append(row);
   }
-  host.append(list);
-}
-
-function renderLibraryItem(host, item, children, onAssigned) {
-  const { createAction } = WorkspaceKit.primitives;
-  host.append(el('h2', 'wi-title', item.title), el('p', 'wi-key', `${item.id} · ${t('find_item.library', 'Library')}`));
-  if (item.objective) host.append(el('p', 'wi-objective', item.objective));
-  if (children.length) {
-    const tasks = el('ol', 'find-item-library-tasks');
-    for (const task of children) {
-      const line = el('li', '', task.title);
-      if (Array.isArray(task.subtasks) && task.subtasks.length) line.append(el('span', 'fs-step-help', ` · ${task.subtasks.join(' · ')}`));
-      tasks.append(line);
-    }
-    host.append(tasks);
-  }
-  const agents = (S.sessions || []).map((one) => one.name).filter(Boolean);
-  const teams = (get('teams') || []).map((one) => one.name).filter(Boolean);
-  const options = [...agents.map((name) => ({ v: name, l: `@${name}` })), ...teams.map((name) => ({ v: `team:${name}`, l: t('find_item.team', 'Team {name}', { name }) }))];
-  let to = '';
-  const pick = ask([{ fields: [{ key: 'to', label: t('find_item.assign_to', 'Assign to'), options }] }], { value: { to }, density: 'tight', onChange: ({ to: next }) => { to = next || ''; } });
   const said = el('p', 'fs-step-help wi-answer');
   said.setAttribute('role', 'status');
-  const assign = createAction({ label: t('find_item.assign', 'Assign'), action: async () => {
-    if (!to) { said.dataset.state = 'failed'; said.textContent = t('find_item.assign_pick', 'Pick an Agent or a Team.'); return; }
+  const words = el('textarea', 'wi-compose-words wi-library-text');
+  words.rows = 12;
+  words.setAttribute('aria-label', t('find_item.library_new', 'New library item'));
+  const save = createAction({ label: t('find_item.library_save', 'Save'), action: async () => {
     said.dataset.state = '';
-    said.textContent = t('find_item.assigning', 'Checking out…');
-    const result = await request(`/api/work-items/${encodeURIComponent(item.id)}/checkout`, { method: 'POST', json: { to } });
-    if (result.ok) onAssigned(result.data.item.id);
-    else { said.dataset.state = 'failed'; said.textContent = result.message || t('find_item.assign_failed', 'It was not checked out.'); }
+    const result = await request('/api/work-items', { method: 'POST', json: { library: true, text: words.value } });
+    if (result.ok) open(result.data.id);
+    else { said.dataset.state = 'failed'; said.textContent = result.message || t('find_item.library_not_saved', 'It was not saved.'); }
   } });
-  host.append(pick.el, assign.el, said);
+  const add = createAction({ label: t('find_item.library_new', 'New library item'), action: () => {
+    words.value = `# ${t('find_item.library_new_title', 'Its title')}\n\n${t('find_item.library_new_text', 'What the Agent who checks it out does.')}\n\n## ${t('find_item.library_new_task', 'A task')}\nDo: …\nCheck: …\n`;
+    add.el.replaceWith(words, save.el);
+    words.focus();
+  } });
+  list.append(add.el, said);
+  host.append(list);
 }
 
 /** The ids to try for what was typed: "kan-433" → KAN-433; "433" → each known key's 433, then w433. */
@@ -138,10 +122,12 @@ export function createFindItem(id = '') {
       const whole = result.data.item;
       said.textContent = '';
       host.replaceChildren();
-      if (whole.library) { renderLibraryItem(host, whole, Array.isArray(result.data.children) ? result.data.children : [], open); return; }
+      // A library item: the same reading, its tasks not opened (they are parts of its file);
+      // checked out, the new epic opens; saved or deleted, it reads again (or the list, gone).
       renderItemDetail(host, whole, { holder: holderOf({ ...whole, held_by: result.data.held_by }), heldBy: result.data.held_by, history: false,
         children: Array.isArray(result.data.children) ? result.data.children : [],
-        openChild: (child) => { field.control.value = child.id; void load(child.id); },
+        openChild: whole.library ? null : (child) => { field.control.value = child.id; void load(child.id); },
+        onCheckedOut: open, onLibraryChanged: (again) => open(again || 'LIBRARY-'),
         onClose: () => { host.replaceChildren(); field.control.focus(); } });
       return;
     }

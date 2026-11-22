@@ -5,7 +5,7 @@ import { carryItem } from './team-drag.js';
 import { createPhalanx } from './phalanx.js';
 import { membersOfTeam, subscribe } from './team-controller.js';
 import { request } from './request.js';
-import { subscribe as hear } from './store.js';
+import { get, subscribe as hear } from './store.js';
 import { t } from './lexicon.js';
 import { ask } from './ask.js';
 import { createStep } from './form-steps.js';
@@ -216,11 +216,16 @@ export function openAgentOver(at, name) {
  * the Agents holding the item), Attachments (each opens), Links and History (`history: false`
  * leaves it out: the Epics workbench, KAN-206). Every step folds with the form steps' own fold
  * (form-steps.js), showing its one-line answer folded. Every size is a form token. */
-export function renderItemDetail(host, item, { holder = '', heldBy = null, openAgent = null, openAttachment = null, history = true, children = [], openChild = null, onClose = null } = {}) {
+export function renderItemDetail(host, item, { holder = '', heldBy = null, openAgent = null, openAttachment = null, history = true, children = [], openChild = null, onClose = null, onCheckedOut = null, onLibraryChanged = null } = {}) {
+  // A LIBRARY ITEM (owner, 2026-11-22; KAN-769) is read here too: its Objective, tasks and Details,
+  // marked Library, with Check out and Make my version in place of the live acts. Status, holder,
+  // comments and Jira are a live item's and do not show.
+  const lib = item.library || null;
   const form = el('div', 'ntf-form wi-form');
   const head = el('header', 'wi-head');
   const key = el('p', 'wi-key');
-  const sayKey = (status) => { key.textContent = [item.jira || item.id, item.kind, status, item.flagged ? `${FLAG_MARK} ${t('work_items.flagged', 'flagged')}` : ''].filter(Boolean).join(' · '); };
+  const whose = lib ? (lib.origin === 'user' ? t('work_items.library_yours', 'Library · yours') : t('work_items.library', 'Library')) : '';
+  const sayKey = (status) => { key.textContent = [item.jira || item.id, item.kind, lib ? whose : status, item.flagged ? `${FLAG_MARK} ${t('work_items.flagged', 'flagged')}` : ''].filter(Boolean).join(' · '); };
   sayKey(item.status);
   const words = el('div', 'wi-head-words');
   words.append(el('h2', 'wi-title', item.title || item.id), key);
@@ -293,7 +298,7 @@ export function renderItemDetail(host, item, { holder = '', heldBy = null, openA
       else { question.set('status', was); answer.dataset.state = 'failed'; answer.textContent = result.message || t('work_items.move_failed', 'The status did not change.'); }
     },
   });
-  statusStep = step('status', t('work_items.status', 'Status'), () => [status, flagged ? t('work_items.flagged_label', 'Flagged') : ''].filter(Boolean).join(' · '), question.el, answer);
+  if (!lib) statusStep = step('status', t('work_items.status', 'Status'), () => [status, flagged ? t('work_items.flagged_label', 'Flagged') : ''].filter(Boolean).join(' · '), question.el, answer);
 
   // What the user reads first: what done looks like, and what to try.
   if (item.objective) step('objective', t('work_items.objective', 'Objective'), () => item.objective.split('\n')[0], el('p', 'wi-objective', item.objective));
@@ -342,7 +347,11 @@ export function renderItemDetail(host, item, { holder = '', heldBy = null, openA
 
   const facts = el('dl', 'wi-facts');
   const startedByAgent = agents.some((row) => row.started);
-  for (const [label, value] of [
+  for (const [label, value] of lib ? [
+    [t('work_items.id', 'Id'), item.id],
+    [t('work_items.kind', 'Kind'), item.kind],
+    [t('work_items.library_file', 'File'), lib.file],
+  ] : [
     [t('work_items.id', 'Id'), [item.id, item.jira && item.jira !== item.id ? item.jira : ''].filter(Boolean).join(' · ')],
     [t('work_items.kind', 'Kind'), [item.kind, item.level].filter((part) => part !== undefined && part !== null && part !== '').join(' · ')],
     ...(startedByAgent ? [] : [[t('work_items.origin', 'Started in'), originWords(item)]]),
@@ -352,7 +361,7 @@ export function renderItemDetail(host, item, { holder = '', heldBy = null, openA
     // A paired item's Jira fields, by Jira's own names.
     ...Object.entries(item.jiraFields || {}),
   ]) facts.append(el('dt', '', label), el('dd', '', value));
-  step('details', t('work_items.details', 'Details'), () => [item.priority, holder].filter(Boolean).join(' · '), facts);
+  step('details', t('work_items.details', 'Details'), () => (lib ? whose : [item.priority, holder].filter(Boolean).join(' · ')), facts);
 
   // A Task's Subtasks sit under it (owner, 2026-11-05): each its symbol, key, title and status,
   // opening in the Task's place when there is somewhere to open it. The Done ones have their
@@ -376,6 +385,7 @@ export function renderItemDetail(host, item, { holder = '', heldBy = null, openA
   const done = children.filter(isDone);
   if (open.length) step('subtasks', t('work_items.subtasks', 'Subtasks'), () => counted(open.length), childList(open));
   if (done.length) step('done', t('work_items.done_n', 'Done ({n})', { n: done.length }), () => null, childList(done)); // its name carries the count;
+  if (lib) { libraryActs(form, step, item, lib, { onCheckedOut, onLibraryChanged }); host.append(form); return; }
 
   const section = (id, label, rows, ...after) => {
     if (!rows.length && !after.length) return null;
@@ -448,6 +458,58 @@ export function renderItemDetail(host, item, { holder = '', heldBy = null, openA
   if (history) section('history', t('work_items.history', 'History'), (item.trail || []).map((line) => el('li', 'wi-when',
     [when(line.at), line.by, line.op, [line.from, line.to].filter(Boolean).join(' → '), line.note].filter(Boolean).join(' · '))));
   host.append(form);
+}
+
+/**
+ * A library item's two acts (KAN-769). Check out: an Agent or a Team picked, the item is made as
+ * plain new live items held by it (onCheckedOut gets the new epic's id). Make my version (Edit
+ * when it is yours already): its file's text, saved as your own in ~/ronin/library_items/, which
+ * replaces Ronin's by id; Delete my version brings Ronin's back (onLibraryChanged re-reads it).
+ */
+function libraryActs(form, step, item, lib, { onCheckedOut, onLibraryChanged }) {
+  const { createAction } = WorkspaceKit.primitives;
+  const agents = (S.sessions || []).map((one) => one.name).filter(Boolean);
+  const teams = (get('teams') || []).map((one) => one.name).filter(Boolean);
+  const options = [...agents.map((name) => ({ v: name, l: `@${name}` })), ...teams.map((name) => ({ v: `team:${name}`, l: t('work_items.team_named', 'Team {name}', { name }) }))];
+  let to = '';
+  const pick = ask([{ fields: [{ key: 'to', label: t('work_items.checkout_to', 'To'), options }] }], { value: { to }, density: 'tight', onChange: ({ to: next }) => { to = next || ''; } });
+  const said = el('p', 'fs-step-help wi-answer');
+  said.setAttribute('role', 'status');
+  const out = createAction({ label: t('work_items.checkout', 'Check out'), action: async () => {
+    if (!to) { said.dataset.state = 'failed'; said.textContent = t('work_items.checkout_pick', 'Pick an Agent or a Team.'); return; }
+    said.dataset.state = '';
+    said.textContent = t('work_items.checking_out', 'Checking out…');
+    const result = await request(`/api/work-items/${encodeURIComponent(item.id)}/checkout`, { method: 'POST', json: { to } });
+    if (!result.ok) { said.dataset.state = 'failed'; said.textContent = result.message || t('work_items.checkout_failed', 'It was not checked out.'); return; }
+    said.textContent = t('work_items.checked_out', 'Checked out as {id}.', { id: result.data.item.id });
+    onCheckedOut?.(result.data.item.id);
+  } });
+  step('checkout', t('work_items.checkout', 'Check out'), () => t('work_items.checkout_meta', 'Copies it into live work'), pick.el, out.el, said);
+
+  const body = el('div', 'wi-library-edit');
+  const answer = el('p', 'fs-step-help wi-answer');
+  answer.setAttribute('role', 'status');
+  const words = el('textarea', 'wi-compose-words wi-library-text');
+  words.rows = 16;
+  words.setAttribute('aria-label', t('work_items.library_text', 'The library file'));
+  const fail = (result, said) => { answer.dataset.state = 'failed'; answer.textContent = result.message || said; };
+  const save = createAction({ label: t('work_items.library_save', 'Save my version'), action: async () => {
+    answer.dataset.state = '';
+    answer.textContent = t('work_items.saving', 'Saving…');
+    const result = await request(`/api/work-items/${encodeURIComponent(item.id)}`, { method: 'PUT', json: { text: words.value } });
+    if (!result.ok) return fail(result, t('work_items.library_not_saved', 'It was not saved.'));
+    onLibraryChanged?.(item.id);
+  } });
+  const drop = createAction({ label: lib.stock ? t('work_items.library_delete_mine', 'Delete my version') : t('work_items.library_delete', 'Delete'), action: async () => {
+    const result = await request(`/api/work-items/${encodeURIComponent(item.id)}`, { method: 'DELETE', json: {} });
+    if (!result.ok) return fail(result, t('work_items.library_not_deleted', 'It was not deleted.'));
+    onLibraryChanged?.(lib.stock ? item.id : '');
+  } });
+  const editing = () => { words.value = lib.text || ''; body.replaceChildren(words, save.el, answer); words.focus(); };
+  const open = createAction({ label: lib.origin === 'user' ? t('work_items.library_edit', 'Edit') : t('work_items.library_make_mine', 'Make my version'), action: editing });
+  body.append(open.el, ...(lib.origin === 'user' ? [drop.el] : []), answer);
+  step('library_edit', lib.origin === 'user' ? t('work_items.library_edit', 'Edit') : t('work_items.library_make_mine', 'Make my version'),
+    () => (lib.origin === 'user' ? t('work_items.library_yours_meta', 'Yours, over Ronin’s') : t('work_items.library_ronins', 'Ronin’s')), body);
 }
 
 /** A phalanx of item stones with the reading as its detail. */
