@@ -58,8 +58,8 @@ async function toolPath(): Promise<string> {
   const stored = path.join(storeDir('tools'), 'ronin-testserver');
   if (await fs.access(stored).then(() => true, () => false)) return stored;
   throw new Error(
-    'ronin-testserver is not on this box. It is the Ronin Host Routine\'s tool (ronin_catalogs/routines/ronin_host.md, tools:), '
-    + `projected onto a session's PATH at birth or kept in the tools store (${storeDir('tools')}). `
+    'ronin-testserver is not on this box. It is kept in your custom tools folder '
+    + `(${storeDir('tools')}). `
     + 'Set RONIN_TESTSERVER to its path to run the tmux-touching tests here.',
   );
 }

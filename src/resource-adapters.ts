@@ -4,8 +4,7 @@ import { STOCK_DIR, entryValue, isKeyLine, resolveFiles, resolveTreeFiles, type 
 import { storeDir } from './resources.js';
 
 export type DefinitionKind =
-  | 'desk_profiles' | 'lexicons' | 'services'
-  | 'templates/agents' | 'templates/teams' | 'templates/canvases';
+  | 'desk_profiles' | 'lexicons' | 'services' | 'canvases';
 
 export interface Definition {
   name: string;
@@ -19,7 +18,7 @@ export interface Definition {
 }
 
 const isDefinitionFile = (n: string): boolean =>
-  n.endsWith('.md') && !n.startsWith('.') && n !== 'README.md';
+  n.endsWith('.md') && !n.startsWith('.') && !/readme\.md$/i.test(n); // <folder>_readme.md says the format
 
 const isHidden = (d: Definition): boolean => /^yes$/i.test(d.get('hidden'));
 
@@ -28,7 +27,7 @@ export async function readDefinitions(kind: DefinitionKind): Promise<Definition[
   const resolver = resolveFiles;
   for (const file of await resolver({
     stock: path.join(STOCK_DIR, kind),
-    user: path.join(storeDir('catalogs'), kind),
+    user: path.join(storeDir('custom'), kind),
     include: isDefinitionFile,
     symlinks: true,
   })) {
@@ -119,7 +118,7 @@ const contribution = (d: Definition): ContributionRow => ({
   parts: splitDefinitionList(d.get('parts')),
 });
 
-/** Ronin's own switchable contributions (ronin_catalogs/services: Ronin Services). Integrations are the bridges (integrations.ts). */
+/** Ronin's own switchable contributions (ronin_stock/services: Ronin Services). Integrations are the bridges (integrations.ts). */
 export async function listInstallations(): Promise<InstallationRow[]> {
   return (await readDefinitions('services')).map((d) => ({
     ...contribution(d),
@@ -128,101 +127,6 @@ export async function listInstallations(): Promise<InstallationRow[]> {
     provides: splitDefinitionList(d.get('provides')),
     requires: splitDefinitionList(d.get('requires')),
   }));
-}
-
-const TEMPLATE_KINDS = ['coding', 'work', 'personal', 'household', 'social', 'school'];
-
-export interface TemplateMandate { reach: string; recruit: string; output: string[] }
-
-export interface TemplateBox extends Pick<Row, 'name' | 'origin' | 'shadowed' | 'label' | 'blurb'> {
-  art: string;
-  kinds: string[];
-  behaviours: string[];
-}
-
-export interface AgentTemplateRow extends TemplateBox {
-  brief: string;
-  mandate: TemplateMandate | null;
-  team_mode: string;
-}
-
-export interface TemplateAgentRow {
-  name: string;
-  instructions: string;
-  mandate: TemplateMandate | null;
-  team_lead: boolean;
-  behaviours: string[];
-}
-
-export interface TeamTemplateRow extends TemplateBox {
-  objective: string;
-  agents: TemplateAgentRow[];
-}
-
-export function templateMandate(value: string): TemplateMandate | null {
-  const [reach, recruit, outputText] = value.split('·').map((part) => part.trim().toLowerCase());
-  const output = outputText?.split(',').map((part) => part.trim()).filter(Boolean) ?? [];
-  if (!reach || !recruit || !output.length) return null;
-  return { reach, recruit, output };
-}
-
-const templateBox = (d: Definition): TemplateBox => ({
-  name: d.name,
-  origin: d.origin,
-  shadowed: d.shadowed,
-  label: d.get('label') || d.name,
-  blurb: d.get('blurb'),
-  art: d.get('art'),
-  kinds: splitDefinitionList(d.get('kinds')).filter((kind) => TEMPLATE_KINDS.includes(kind)),
-  behaviours: splitDefinitionList(d.get('behaviours')).filter((name) => name !== 'mandates'),
-});
-
-export async function listAgentTemplates(): Promise<AgentTemplateRow[]> {
-  return (await readDefinitions('templates/agents')).map((d) => ({
-    ...templateBox(d),
-    brief: d.get('brief'),
-    mandate: d.has('mandate') ? templateMandate(d.get('mandate')) : null,
-    team_mode: d.get('team_mode') === 'new' ? 'new' : '',
-  }));
-}
-
-export function parseTemplateAgents(raw: string): TemplateAgentRow[] {
-  const at = raw.search(/^## agents\s*$/m);
-  if (at === -1) return [];
-  return raw
-    .slice(at)
-    .split(/^###\s+/m)
-    .slice(1)
-    .map((section) => {
-      const lines = section.split('\n');
-      const mandate = entryValue(lines, 'mandate');
-      return {
-        name: lines[0].trim(),
-        instructions: entryValue(lines, 'instructions'),
-        mandate: mandate ? templateMandate(mandate) : null,
-        team_lead: /^yes$/i.test(entryValue(lines, 'team_lead')),
-        behaviours: splitDefinitionList(entryValue(lines, 'behaviours')).filter((name) => name !== 'mandates'),
-      };
-    })
-    .filter((row) => row.name);
-}
-
-export async function listTeamTemplates(): Promise<TeamTemplateRow[]> {
-  const rows: TeamTemplateRow[] = [];
-  for (const d of await readDefinitions('templates/teams')) {
-    let raw = '';
-    try {
-      raw = await readFile(d.file, 'utf8');
-    } catch {
-      continue; // vanished mid-read, exactly as readDir treats it
-    }
-    rows.push({
-      ...templateBox(d),
-      objective: d.get('objective'),
-      agents: parseTemplateAgents(raw),
-    });
-  }
-  return rows;
 }
 
 export const contributionReading = (

@@ -347,7 +347,7 @@ export function buildMachineSettings(root, isShowing, { only = null } = {}) {
               behaviours: schema.seat.behaviours,
               name: schema.seat.name,
               prompt: schema.seat.prompt,
-              seed: ['ronin_catalogs/behaviours/conditional/atarashi.md'],
+              seed: ['ronin_stock/behaviours/conditional/atarashi.md'],
             },
           });
           go.disabled = false;

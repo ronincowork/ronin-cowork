@@ -1,8 +1,8 @@
 
-@layer vendor, foundations, ui, app;
+@layer vendor, base, ui, app;
 @import url('/vendor/xterm.css') layer(vendor);
 
-@layer foundations {
+@layer base {
 :root {
 
   /* TWO NEUTRAL SURFACES, and nothing else neutral paints a background (owner, cut 13: "if we

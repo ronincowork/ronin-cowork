@@ -1,4 +1,4 @@
-/** THE USER INTRO — the self-hosted owner's own text about themself: `~/ronin/facts/user-intro.md`.
+/** THE USER INTRO — the self-hosted owner's own text about themself: `~/ronin/custom/facts/user-intro.md`.
  * One writer. The about_user fact reads it (src/facts.ts, KAN-768); its own header is depth none,
  * so the brief tells it only through that fact. */
 import fs from 'node:fs/promises';

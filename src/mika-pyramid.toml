@@ -8,14 +8,9 @@ root = "docs"
 [[node]]
 id = "house-procedures"
 label = "House procedures and situations"
-root = "ronin_catalogs/behaviours"
+root = "ronin_stock/behaviours"
 
 [[node]]
 id = "capabilities-tools-and-models"
 label = "Supported capabilities, tools, models, roles, routines, profiles, and templates"
-root = "ronin_catalogs"
-
-[[node]]
-id = "library-contract"
-label = "Owner-resolved library behavior"
-root = "ronin_library"
+root = "ronin_stock"

@@ -7,7 +7,7 @@
  *    (store.js `epics`, `epicItems`), else the item read answers it (a renamed id such as w806, a
  *    Done item no longer pushed).
  *  - an Agent's name, @name or bare, that the session list holds (KAN-701): opens that Agent.
- *  - a document, a path or a file name (~/ronin/library/ABOUT_USER.md, docs/a.md, ABOUT_USER.md,
+ *  - a document, a path or a file name (~/ronin/office/ABOUT_USER.md, docs/a.md, ABOUT_USER.md,
  *    samurai_lab/ronin_cloud/X.md written from above the Workspace folders), that the Agent's
  *    file-link route finds as a file (KAN-701): opens it in the tile's Docs.
  *  - a commit hash (db709a8) that is a commit in the Agent's repos (KAN-701): opens

@@ -1,0 +1,21 @@
+{
+  "id": "PLAYBOOK-20",
+  "campaign_id": "",
+  "title": "Write PROJECT_MAP.md and hang it on the work surface",
+  "objective": "Do: write the map as PROJECT_MAP.md in the Workspace's main folder, and attach it to this epic so it shows in Docs.\nDetails: `item attach <this epic> <path>` (`item attach --help`); it shows in the tile's Docs and on the epic (`ronin-help tile`). In a repository, leave it uncommitted unless they ask.\nCheck: `item read` on this epic lists it under attachments.",
+  "level": 0,
+  "kind": "Task",
+  "status": "Playbook",
+  "flagged": false,
+  "priority": "",
+  "comments": [],
+  "parent": "PLAYBOOK-3",
+  "attachments": [],
+  "links": [],
+  "external": {},
+  "trail": [],
+  "created": {
+    "at": "",
+    "by": ""
+  }
+}

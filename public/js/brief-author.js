@@ -93,7 +93,7 @@ export function createAuthorForm({ mode = 'behaviour', existing = null, catalog 
   const integration = isBridge ? input('', t('author.integration_placeholder', 'e.g. netlify')) : null;
   if (isBridge) field(grid, t('author.integration', 'Integration'), integration, t('author.integration_help', 'Its behavior is told to an Agent while this integration is on for it.'));
   if (name && !isBridge) field(grid, isTool ? t('author.command', 'Command') : t('author.name', 'Name'), name,
-    isTool ? t('author.command_help', 'A command you have, on the PATH or in ~/ronin/tools. Ronin writes what Agents are told about it; the command stays yours.') : '');
+    isTool ? t('author.command_help', 'A command you have, on the PATH or in ~/ronin/custom/tools. Ronin writes what Agents are told about it; the command stays yours.') : '');
   const title = field(grid, t('author.title', 'Title'), input(parsed.title));
   const seed = isFact ? null : field(grid, t('author.seed', 'Seed'), input(parsed.seed), isTool ? t('author.seed_tool_help', 'Its one job, in one line.') : t('author.seed_help', 'One line that stands on its own: what this guidance is for.'), true);
   const factLine = isFact ? field(grid, t('author.line', 'Line'), input(parsed.line), t('author.line_help', 'The line the brief prints, with values in braces: User: {user.name}.'), true) : null;

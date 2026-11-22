@@ -1,8 +1,5 @@
 # The dependency bundle — an install that checks nothing and fetches nothing
 
-`ronin-bundle` calls the operator's HTTP bundle surface and prints its reply. Packing,
-planning and installation execute behind that surface.
-
 > and node into the Ronin download as it is. Even if someone does go to terminal, they are
 > getting the whole package."* This file is the one telling of what that means: what a
 > bundled release carries, how each platform installs it, and where every vendored byte

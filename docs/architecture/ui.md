@@ -25,11 +25,11 @@ interaction, transport, and failure rules those surfaces use.
 
 ## The cascade
 
-`public/style.css` is one file in four `@layer`s — `vendor, foundations, ui, app` —
+`public/style.css` is one file in four `@layer`s — `vendor, base, ui, app` —
 declared first:
 
 - **vendor** — xterm.css, imported into the lowest layer.
-- **foundations** — the design tokens (both themes), reset, page chrome, and the one
+- **base** — the design tokens (both themes), reset, page chrome, and the one
   universal `:focus-visible` ring.
 - **ui** — the shared primitives: `.ui-sheet`/`.ui-card`, `#toast`, the central
   `#attention-flash`, and the help box.
@@ -56,7 +56,7 @@ into files is a mechanical move for the day a layer earns one.
 
 ## The look is spelled once — all of it
 
-**Editing `@layer foundations` re-skins the whole app.** That is the promise,
+**Editing `@layer base` re-skins the whole app.** That is the promise,
 and it only holds while nothing carrying look is spelled anywhere else, in every family,
 not just colour. A raw `8px` radius in a feature rule is the same defect as a raw `#131826`.
 
@@ -124,7 +124,7 @@ These are **theme-independent** and defined once: a square corner is square in b
 Only the colour roles are redefined under `:root[data-theme='light']`.
 
 **Light and dark are Stock's two faces, and that is why they stay in CSS.** `:root` and
-`:root[data-theme='light']` under `@layer foundations` are exactly what a skin spells as
+`:root[data-theme='light']` under `@layer base` are exactly what a skin spells as
 `dark--x` and `light--x` — one mechanism, not two, and the owner's reading ("light/dark is
 really just the first two skins") is already satisfied rather than pending. Stock is spelled
 in the stylesheet because it is the **floor**: the page must paint correctly with no JS
@@ -132,13 +132,13 @@ having run, on a first visit or a flaky link, and a floor that has to be fetched
 Moving it into `SKINS.md` would also put one palette in two places.
 
 **The honest limit: a skin's colours are checked by nothing.** The gate measures
-`@layer foundations`. Shipped skins are written to stay clear of the floor — `paper` moves
+`@layer base`. Shipped skins are written to stay clear of the floor — `paper` moves
 grounds and leaves the ink alone, which is the change that cannot make anything unreadable.
 A skin of your own can do as it likes; nothing is measuring it for you.
 
-**A skin is a set of these tokens, and nothing else** (`ronin_catalogs/SKINS.md`,
+**A skin is a set of these tokens, and nothing else** (`ronin_stock/SKINS.md`,
 `js/skins.js`). It cannot add a rule, move a control or style one surface differently from
-another — it can only answer questions `@layer foundations` already asks, which is the whole
+another — it can only answer questions `@layer base` already asks, which is the whole
 safety story: there is no selector in a skin to get wrong, and a token spelled wrong is
 inert. Shadowable like any catalog (`docs/architecture/shadowing.md`): shipped skins update with the
 repo, a skin of yours is yours and an upgrade cannot touch it, and the picker says which is
@@ -157,7 +157,7 @@ the one legal home for a raw value, so naming it satisfies the gate *and* says w
 number is. A measurement more than one sheet reads, or one tuned per shell (`--row-head`,
 `--gc-motif-*`, `--ch-horizon-opacity`, `--bar-brand-*`, `--setup-stone-size`, `--note-field-h`,
 `--meter-gap`, `--tile-body-pad`), lives in
-style.css's measurements block under `@layer ui`, never in `@layer foundations`: foundations
+style.css's measurements block under `@layer ui`, never in `@layer base`: base
 holds only tokens a designer may change. `0` is always legal: the absence of a value is not a value.
 
 ## Colour
@@ -498,7 +498,7 @@ reserving a gutter.
 
 ## Keyboard and focus
 
-- One `:focus-visible` ring, universal, in foundations, `--focus-width` wide at `--focus-offset`; a component that draws its own ring reads the same two. Pointer users never see it.
+- One `:focus-visible` ring, universal, in base, `--focus-width` wide at `--focus-offset`; a component that draws its own ring reads the same two. Pointer users never see it.
 - Inert-but-explaining controls use `setInert` (`widgets.js`) — dimmed, hoverable,
   `aria-disabled`, the reason in the help text. `disabled` is for controls whose
   explanation is unnecessary.

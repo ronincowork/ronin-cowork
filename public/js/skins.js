@@ -94,7 +94,7 @@ function applySkin(found) {
   const body = (map) => Object.entries(map || {}).map(([k, v]) => `  ${k}: ${v};`).join('\n');
   const rule = (sel, map) => (body(map) ? `${sel} {\n${body(map)}\n}` : '');
   // THE SKIN OUTRANKS THE STYLESHEET BY CONSTRUCTION, not by luck: style.css lives in
-  // `@layer foundations`, and an UNLAYERED rule beats every layer whatever its specificity.
+  // `@layer base`, and an UNLAYERED rule beats every layer whatever its specificity.
   // So this block wins without having to out-specify `:root[data-theme='light']`.
   // Shell-specific rules come last so they win over the both-shells rule, which they tie
   // with on specificity.

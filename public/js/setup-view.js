@@ -9,9 +9,7 @@ import { SETUP_SCENES } from './setup-journey.js';
 import { GARDEN_CANVAS_TYPE, registerGardenCanvas } from './garden-canvas.js';
 import { localDocumentLink, productRepositoryHref } from './document-links.js';
 import { normalizeGardenCanvasCatalog } from './garden-canvas-model.js';
-import { PRESETS_TYPE, createKindsPreference, registerPresetsSurface } from './presets.js';
-import { launchPresetPlan, presetLaunchUrl } from './preset-launch.js';
-import { reserveWorkspaceTab, workbenchLaunchUrl } from './workspace.js';
+import { workbenchLaunchUrl } from './workspace.js';
 import { onProjects, projectData } from './home.js';
 import { createThemeToggle } from './theme-toggle.js';
 import { PASSWORD_SURFACE_TYPE, registerPasswordSurface } from './password-surface.js';
@@ -45,11 +43,10 @@ function registerSetupWorkbench() {
   registerSetupSurfaces();
   registerPasswordSurface();
   registerGardenCanvas();
-  registerPresetsSurface();
   registerIrasshaiOpen();
   registerIrasshaiSteps();
   registerIrasshaiIntegrations();
-  return WorkspaceKit.workbench.profiles.define(PROFILE, [IRASSHAI_OPEN_TYPE, GARDEN_CANVAS_TYPE, PRESETS_TYPE, IRASSHAI_STEP_TYPE, IRASSHAI_INTEGRATIONS_TYPE, ...ORDER]);
+  return WorkspaceKit.workbench.profiles.define(PROFILE, [IRASSHAI_OPEN_TYPE, GARDEN_CANVAS_TYPE, IRASSHAI_STEP_TYPE, IRASSHAI_INTEGRATIONS_TYPE, ...ORDER]);
 }
 
 export function createSetupView() {
@@ -66,7 +63,6 @@ export function createSetupView() {
   let sceneOverride = 1;
   const progressListeners = new Set();
   const providerSessions = createProviderSetupSessionMount();
-  const kinds = createKindsPreference(globalThis.localStorage, (next) => request('/api/setup/preferences', { method: 'PATCH', json: { kinds: next } }));
   const themeToggle = createThemeToggle();
   const opener = createIrasshaiOpener({ refresh: () => bench?.refreshSelector(), showChat: () => { bench?.select('workspace1'); garden?.el.scrollIntoView?.({ block: 'start' }); } }); // a phone stacks the workspaces
   // IRASSHAI (setup-irasshai.js): while her session is live, Assist is her chat and the selector
@@ -135,14 +131,10 @@ export function createSetupView() {
     nextSetupStep: () => advance(),
     setupRuntime: null,
     onSetupRuntime: (next) => { runtime = next; environment.setupRuntime = next; paint(); },
-    kinds,
     runtime: () => runtime || {},
     trackedRoots: () => projectData,
     onTrackedRoots: onProjects,
     navigateToSurface: (type) => openSurface(type),
-    launch: launchPresetPlan,
-    launchUrl: presetLaunchUrl,
-    reserveLaunchTab: reserveWorkspaceTab,
     setPathNote: (path_note) => request('/api/setup/preferences', { method: 'PATCH', json: { path_note } }),
     mountProviderSetupSession: providerSessions.mountProviderSetupSession,
     showNewSession: (prompt) => {
@@ -255,7 +247,7 @@ export function createSetupView() {
       card.disabled = blocked;
       if (blocked) {
         card.setAttribute('aria-disabled', 'true');
-        card.title = 'Activate a model provider before launching an Agent, Team, or Preset.';
+        card.title = 'Activate a model provider before launching an Agent or Team.';
       } else {
         card.removeAttribute('aria-disabled');
         card.removeAttribute('title');
@@ -294,7 +286,6 @@ export function createSetupView() {
     sceneOverride = next.number;
     open(next.number);
   }
-  kinds.subscribe(() => paint());
   const onProgress = (next) => { acceptProgress(next); };
   setupProgressHandlers.add(onProgress);
   const unhear = [
@@ -365,7 +356,6 @@ export function createSetupView() {
         void request('/api/setup/runtime', { cache: 'no-store' }).then((result) => {
           runtime = result.ok ? result.data : { providers: [], activated_count: 0 };
           environment.setupRuntime = runtime;
-          environment.kinds.hydrate(runtime?.preferences?.kinds || []);
           paint();
         });
       }

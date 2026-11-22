@@ -12,15 +12,13 @@ import { createTeamJikan } from './team-jikan.js';
 import { buildMessageQueue } from './message-queue.js';
 import { buildDocs, createDocumentWorkspaceAdapter } from './docs.js';
 import { buildArchives } from './archives.js';
-import { agentSituation, onAgeTick, onProjects, projectData, situationTitle, stanceLabel } from './home.js';
+import { agentSituation, onAgeTick, situationTitle, stanceLabel } from './home.js';
 import { request } from './request.js';
 import { paintCanvas } from './canvas-view.js';
 import { teamPageHandlers } from './events.js';
 import { createArranger, parseDraft, reportView as sendView } from './team-arrange.js';
 import { t } from './lexicon.js';
-import { navigateToWorkspaceFolders, openWorkbenchTab, openWorkspaceTab, reserveWorkspaceTab } from './workspace.js';
-import { createPresetsSurface } from './presets.js';
-import { launchPresetPlan, presetLaunchUrl } from './preset-launch.js';
+import { openWorkbenchTab, openWorkspaceTab, reserveWorkspaceTab } from './workspace.js';
 import { subscribe as subscribeStore } from './store.js';
 import { acceptDrops as acceptSessionDrops } from './team-drag.js';
 import { S, isCoarse } from './state.js';
@@ -313,17 +311,6 @@ export function createCoworkView(options = {}) {
       // The detail rides through: `S.showNewSession(prompt)` seeds the form's Instructions.
       return { el: newAgentBySeat[id].el, show: (detail) => void newAgentBySeat[id].enter(detail) };
     },
-    presets: (id) => createPresetsSurface({ environment: {
-      customize: ({ template, user_message } = {}) => openWorkbenchTab({ destination: 'launch', mode: 'overlay', state: {
-        selected: 'workspace1', seats: { workspace1: { type: template?.shelf === 'agents' ? 'launch.agent' : 'launch.team', detail: { template: template?.name || '', prompt: String(user_message || '') } } },
-      } }),
-      launch: launchPresetPlan,
-      launchUrl: presetLaunchUrl,
-      reserveLaunchTab: reserveWorkspaceTab,
-      trackedRoots: () => projectData,
-      onTrackedRoots: onProjects,
-      navigateToSurface: (type, detail) => type === 'setup.roots' && navigateToWorkspaceFolders(ctx, detail),
-    }, workspace: id }),
     // Epics (KAN-232): the bench keeps one per seat across Teams, so it reads the Team entered now.
     teamEpics: () => keepTeamSurface(createTeamEpics({ team: () => team })),
     teamFindItem: (_workspace, detail) => keepTeamSurface(createFindItem(detail?.key)),

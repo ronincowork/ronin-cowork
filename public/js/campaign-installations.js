@@ -11,7 +11,7 @@ import { createStatusMarker } from './status-marker.js';
 import { createSetupZone, setupStep, watchSetupProgress } from './setup-zone.js';
 import { createIntegrationsPanel } from './integrations-panel.js';
 
-/** Ronin's own (ronin_catalogs/services). Outside services are integrations (integrations-panel.js). */
+/** Ronin's own (ronin_stock/services). Outside services are integrations (integrations-panel.js). */
 const INSTALLATION_ORDER = ['ronin_services'];
 const el = (tag, cls = '', text = null) => {
   const out = document.createElement(tag);

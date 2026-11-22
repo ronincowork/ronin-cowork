@@ -1,0 +1,21 @@
+{
+  "id": "PLAYBOOK-16",
+  "campaign_id": "",
+  "title": "Read the Workspace",
+  "objective": "Do: know what the Workspace is for and what is in each of its repositories and folders.\nDetails: `workspace-doc read <handle>` (its objective, each repository and folder with its directory, its doc); each one's README, docs and build files. A few minutes, not an audit.\nCheck: you can say in a line what each repository and folder is.",
+  "level": 0,
+  "kind": "Task",
+  "status": "Playbook",
+  "flagged": false,
+  "priority": "",
+  "comments": [],
+  "parent": "PLAYBOOK-2",
+  "attachments": [],
+  "links": [],
+  "external": {},
+  "trail": [],
+  "created": {
+    "at": "",
+    "by": ""
+  }
+}

@@ -109,8 +109,6 @@ export function acceptedLaunchBody(input: unknown): { body: Record<string, unkno
   if (body.kind !== undefined && (typeof body.kind !== 'string' || !KINDS.has(body.kind.trim()))) drop('kind');
   if (body.kind !== undefined) body.kind = String(body.kind).trim();
   if (body.role !== undefined && !['coworker', 'lead', 'epic_lead', 'coordinator'].includes(String(body.role))) drop('role');
-  if (body.template !== undefined && (typeof body.template !== 'string' || !/^[\w-]{1,64}$/.test(body.template.trim()))) drop('template');
-  if (body.template !== undefined) body.template = String(body.template).trim();
 
   const inapplicable = sessionType === 'terminal'
       ? ['provider', 'model', 'instructions', 'prompt', 'kind', 'mandate', 'brief', 'integrations', 'pm', 'template', 'cmd', 'seed', 'inject', 'reference', 'role']
@@ -142,7 +140,6 @@ export function spawnFormFromLaunchBody(body: Record<string, unknown>, houseSeat
     campaign_id: String(body.campaign_id ?? '').trim() || undefined,
     kind: typeof body.kind === 'string' ? body.kind : undefined,
     ...(sessionType === 'cowork_agent' ? agentBriefOf(body) : {}),
-    template: typeof body.template === 'string' ? body.template : undefined,
     tags: Array.isArray(body.tags) ? body.tags.map(String) : [],
     seed: Array.isArray(body.seed) ? body.seed.map(String) : [],
     inject: String(body.inject ?? '').trim() || undefined,
@@ -512,7 +509,6 @@ export function registerLaunch(app: express.Express): LaunchControl {
         team_lead: !!form.team_lead && !!resolved.team,
         role: form.role ?? (form.team_lead ? 'lead' : 'coworker'),
         kind: resolved.kind,
-        template: form.template ?? '',
         ...(form.person?.email ? { user_email: form.person.email } : {}),
         mandate: resolved.mandate,
         // What the brief told, by name and depth, and why (docs/architecture/brief.md, Layers and brief settings).

@@ -108,7 +108,6 @@ function draftForm(body: Record<string, unknown>): SpawnForm {
     workspace: String(body.workspace ?? '').trim() || undefined,
     team_lead: role === 'lead',
     role,
-    template: typeof body.template === 'string' ? body.template : undefined,
     prompt: String(body.instructions ?? body.prompt ?? ''),
     ...(typeof body.desk === 'boolean' ? { desk: body.desk } : {}),
     ...(typeof body.checkout === 'boolean' ? { checkout: body.checkout } : {}),

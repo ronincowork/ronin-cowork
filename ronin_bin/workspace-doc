@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # workspace-doc — the office's Workspace docs, one Markdown file per Workspace at
-# ~/ronin/library/workspaces/<handle>.md: a Summary, then notes (KAN-713, src/workspace-doc.ts).
+# ~/ronin/office/workspaces/<handle>.md: a Summary, then notes (KAN-713, src/workspace-doc.ts).
 . "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/tool-count.sh" workspace-doc "$@"
 set -u -o pipefail
 . "$(dirname "$(readlink "${BASH_SOURCE[0]}" 2>/dev/null || printf '%s' "${BASH_SOURCE[0]}")")/tool-path.sh"
@@ -12,7 +12,7 @@ Usage:
                                            directories, then its doc
   workspace-doc summary <handle> <text>    replace its Summary; <text> - reads it from stdin
   workspace-doc note <handle> <text>       add a note at the end, dated and signed with your name
-The handle is the Workspace's name. Each doc is ~/ronin/library/workspaces/<handle>.md, made with
+The handle is the Workspace's name. Each doc is ~/ronin/office/workspaces/<handle>.md, made with
 its Workspace, or on the first read for an older one; grep the folder to search them all.
 The Summary says what the Workspace is for and what is in it, in a few lines: office read shows it.
 EOF_USAGE

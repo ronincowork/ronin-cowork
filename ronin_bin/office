@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# office — the office's facts (KAN-768, src/facts.ts): one file each in ~/ronin/library/facts/,
+# office — the office-facts (KAN-768, src/facts.ts): one file each in ~/ronin/office/facts/,
 # rewritten about a second after what they read changes. `read` prints them all as one
 # (GET /api/office/read); `read <fact>` prints one (GET /api/facts/<fact>). Either asks GitHub first.
-# ~/ronin/library/MACHINE_STATUS.md is the same suite in one file, kept current.
+# ~/ronin/office/MACHINE_STATUS.md is the same suite in one file, kept current.
 . "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/tool-count.sh" office "$@"
 set -u -o pipefail
 . "$(dirname "$(readlink "${BASH_SOURCE[0]}" 2>/dev/null || printf '%s' "${BASH_SOURCE[0]}")")/tool-path.sh"
@@ -12,8 +12,8 @@ Usage:
   office read          every fact as it is now, as one: about_user, machine, account (hosted),
                        workspaces, integrations_authentications, teams_agents, epics, defaults
   office read <fact>   one of them
-The files: ~/ronin/library/facts/<fact>.md, current whenever read; all of them in one:
-~/ronin/library/MACHINE_STATUS.md. The people's notes: ~/ronin/library/ABOUT_USER.md.
+The files: ~/ronin/office/facts/<fact>.md, current whenever read; all of them in one:
+~/ronin/office/MACHINE_STATUS.md. The people's notes: ~/ronin/office/ABOUT_USER.md.
 EOF_USAGE
 }
 case "${1:-}" in

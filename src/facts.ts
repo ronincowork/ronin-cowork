@@ -4,11 +4,11 @@
  * reading, never by running a tool.
  *
  * One builder per fact, reading its sources of truth; nothing else summarises that layer. Each
- * fact is a file, `~/ronin/library/facts/<fact>.md`, rewritten when one of its source stores is
+ * fact is a file, `~/ronin/office/facts/<fact>.md`, rewritten when one of its source stores is
  * written (one store watcher per store, KAN-641 style; a burst of writes is one rebuild a second
  * later, and only of the facts that read that store), so reading the file is reading the office
  * now. GitHub's sign-in is gh's own, not a store: every read through Ronin asks it first (checkGithub). Its first line after the title is its seed line, the brief's `{office.<fact>.line}`; the rest
- * is its text. The brief takes each from the catalog's facts (ronin_catalogs/facts/<fact>.md): seed
+ * is its text. The brief takes each from the stock facts (ronin_stock/facts/<fact>.md): seed
  * is the line and the path, full is the text at birth. Nothing is pushed to live Agents.
  *
  * `office read` and MACHINE_STATUS.md are the suite in one: the facts, concatenated (suiteText).
@@ -59,18 +59,19 @@ export interface Fact {
   build(): Promise<Built | null>;
 }
 
-export const factsDir = (): string => path.join(storeDir('library'), 'facts');
+/** The built facts are the office's output: ~/ronin/office/facts/ (ronin_stock/stock_readme.md, The three places). */
+export const factsDir = (): string => path.join(storeDir('office'), 'facts');
 export const factFile = (name: string): string => path.join(factsDir(), `${name}.md`);
 /** The suite in one file, for anyone to grep (KAN-759). */
-export const machineStatusFile = (): string => path.join(storeDir('library'), 'MACHINE_STATUS.md');
+export const machineStatusFile = (): string => path.join(storeDir('office'), 'MACHINE_STATUS.md');
 /** The person's notes, any Agent's to read and add to (KAN-678). */
-export const aboutUserFile = (): string => path.join(storeDir('library'), 'ABOUT_USER.md');
+export const aboutUserFile = (): string => path.join(storeDir('office'), 'ABOUT_USER.md');
 
 const stamp = (iso: string): string => iso.slice(0, 16).replace('T', ' ');
 const bullets = (items: string[]): string[] => (items.length ? items.map((one) => `- ${one}`) : ['- none yet']);
 
 // ---- about_user: hosted, the people from members.json (the Lounge's About you, office-people.ts);
-// self-hosted, the owner's user-intro; and either way their notes, library/ABOUT_USER.md.
+// self-hosted, the owner's user-intro; and either way their notes, office/ABOUT_USER.md.
 const NOT_FILLED = 'About You not filled in yet in the Business Lounge';
 /** One person as the Lounge's About You has them; nothing there says so. */
 export function personLine(p: Pick<Person, 'email' | 'role'> & Partial<Person>): string {
@@ -274,12 +275,12 @@ const NOT_OURS = /^(facts\/|MACHINE_STATUS\.md)/;
 /** THE SUITE, in its order. A part adds its own (Services' account) with addFact. */
 const FACTS: Fact[] = [
   { name: 'about_user', title: 'About the user', build: aboutUser,
-    stores: [{ store: 'office_unit', match: /members\.json$/ }, { store: 'facts', match: /^user-intro\.md$/ }, { store: 'library', match: /^ABOUT_USER\.md$/ }] },
+    stores: [{ store: 'office_unit', match: /members\.json$/ }, { store: 'facts', match: /^user-intro\.md$/ }, { store: 'office', match: /^ABOUT_USER\.md$/ }] },
   { name: 'machine', title: 'The machine', build: machine,
     stores: [{ store: 'office_unit', match: /office_record\.json$/ }, { store: 'config' }, { store: 'campaigns' }, { store: 'services_secrets' }] },
-  { name: 'workspaces', title: 'Workspaces', build: workspaces, stores: [{ store: 'workspaces' }, { store: 'library', match: /^workspaces\// }] },
+  { name: 'workspaces', title: 'Workspaces', build: workspaces, stores: [{ store: 'workspaces' }, { store: 'office', match: /^workspaces\// }] },
   { name: 'integrations_authentications', title: 'Integrations and authentications', build: integrationsAuthentications,
-    stores: [{ store: 'campaigns' }, { store: 'catalogs' }, { store: 'services_secrets' }, { store: 'config' }, { store: 'workspaces' }] },
+    stores: [{ store: 'campaigns' }, { store: 'custom' }, { store: 'services_secrets' }, { store: 'config' }, { store: 'workspaces' }] },
   // Never the session store: it holds every Agent's tmp/ (tens of thousands of folders), and one
   // recursive watch on it takes the machine's inotify watches from every other watcher (cards,
   // pills, the header went dark, 22 Nov). A letter's holds are written to the work-item index too
@@ -392,7 +393,7 @@ export async function startFacts(): Promise<() => void> {
   const byStore = new Map<string, Array<{ fact: string; match?: RegExp }>>();
   for (const fact of FACTS) for (const { store, match } of fact.stores) byStore.set(store, [...(byStore.get(store) ?? []), { fact: fact.name, match }]);
   const stops = [...byStore].map(([store, readers]) => watchStore(storeDir(store), (file) => {
-    if (store === 'library' && NOT_OURS.test(file)) return;
+    if (store === 'office' && NOT_OURS.test(file)) return;
     for (const one of readers) if (!one.match || one.match.test(file)) rebuild(one.fact);
   }));
   return () => { for (const stop of stops) stop(); };

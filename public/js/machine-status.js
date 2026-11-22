@@ -6,7 +6,7 @@ import { t } from './lexicon.js';
 /**
  * MACHINE STATUS (owner, 2026-11-20; KAN-759): the one complete truth of what this office has set
  * up, what it hasn't and what is available: the office's facts in one, as `office read` prints them
- * (src/facts.ts, KAN-768). ~/ronin/library/MACHINE_STATUS.md is kept current as the facts change,
+ * (src/facts.ts, KAN-768). ~/ronin/office/MACHINE_STATUS.md is kept current as the facts change,
  * and each opening reads it as it is now. Any Ronin's Settings has it.
  */
 export function createMachineStatusSurface() {

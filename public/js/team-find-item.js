@@ -20,39 +20,43 @@ const el = (tag, cls = '', text = '') => {
   const out = document.createElement(tag); out.className = cls; out.textContent = text; return out;
 };
 
-/** "LIBRARY-", "library" or "LIBRARY": the library's list, not one item (KAN-767). */
-export const asksLibrary = (typed) => /^library-?$/i.test(String(typed || '').trim());
+/** "PLAYBOOK-", "playbook" or "playbooks": the playbooks' list, not one item. */
+export const asksPlaybooks = (typed) => /^playbooks?-?$/i.test(String(typed || '').trim());
 
 /**
- * THE LIBRARY (owner, 2026-11-22; KAN-767, KAN-769): its items are files, read when asked. The
- * list is one line per item, pressed to open it in the item reading (renderItemDetail, with its
- * Check out and Make my version); New writes a file of your own at the next free number.
+ * THE PLAYBOOKS (docs/using-ronin/playbooks.md): work items. The list is one line per top item,
+ * pressed to open it in the item reading (renderItemDetail, its children opening on a click, with
+ * Check out and Make my version); New makes one of your own at the next free number.
  */
-function renderLibraryList(host, items, open) {
+function renderPlaybookList(host, items, open) {
   const { createAction } = WorkspaceKit.primitives;
-  const list = el('div', 'find-item-library');
-  if (!items.length) list.append(el('p', 'fs-step-help', t('find_item.library_empty', 'The library is empty.')));
+  const list = el('div', 'find-item-playbooks');
+  if (!items.length) list.append(el('p', 'fs-step-help', t('find_item.playbooks_empty', 'There are no playbooks.')));
   for (const one of items) {
-    const row = el('button', 'find-item-library-row', `${one.id} · ${one.title}`);
+    const row = el('button', 'find-item-playbook-row', `${one.id} · ${one.title}`);
     row.type = 'button';
     row.addEventListener('click', () => open(one.id));
     list.append(row);
   }
   const said = el('p', 'fs-step-help wi-answer');
   said.setAttribute('role', 'status');
-  const words = el('textarea', 'wi-compose-words wi-library-text');
-  words.rows = 12;
-  words.setAttribute('aria-label', t('find_item.library_new', 'New library item'));
-  const save = createAction({ label: t('find_item.library_save', 'Save'), action: async () => {
+  const title = el('input', 'wi-compose-words');
+  title.type = 'text';
+  title.placeholder = t('find_item.playbook_new_title', 'Its title');
+  title.setAttribute('aria-label', title.placeholder);
+  const words = el('textarea', 'wi-compose-words wi-playbook-text');
+  words.rows = 8;
+  words.placeholder = t('find_item.playbook_new_text', 'What the Agent who checks it out does.');
+  words.setAttribute('aria-label', words.placeholder);
+  const save = createAction({ label: t('find_item.playbook_save', 'Save'), action: async () => {
     said.dataset.state = '';
-    const result = await request('/api/work-items', { method: 'POST', json: { library: true, text: words.value } });
-    if (result.ok) open(result.data.id);
-    else { said.dataset.state = 'failed'; said.textContent = result.message || t('find_item.library_not_saved', 'It was not saved.'); }
+    const result = await request('/api/work-items', { method: 'POST', json: { playbook: true, kind: 'Epic', title: title.value, objective: words.value } });
+    if (result.ok) open(result.data.item.id);
+    else { said.dataset.state = 'failed'; said.textContent = result.message || t('find_item.playbook_not_saved', 'It was not saved.'); }
   } });
-  const add = createAction({ label: t('find_item.library_new', 'New library item'), action: () => {
-    words.value = `# ${t('find_item.library_new_title', 'Its title')}\n\n${t('find_item.library_new_text', 'What the Agent who checks it out does.')}\n\n## ${t('find_item.library_new_task', 'A task')}\nDo: …\nCheck: …\n`;
-    add.el.replaceWith(words, save.el);
-    words.focus();
+  const add = createAction({ label: t('find_item.playbook_new', 'New playbook'), action: () => {
+    add.el.replaceWith(title, words, save.el);
+    title.focus();
   } });
   list.append(add.el, said);
   host.append(list);
@@ -80,7 +84,7 @@ export function createFindItem(id = '') {
   control.type = 'text';
   control.autocomplete = 'off';
   control.spellcheck = false;
-  control.placeholder = t('find_item.placeholder', 'KAN-433, 433, w475 or LIBRARY-');
+  control.placeholder = t('find_item.placeholder', 'KAN-433, 433, w475 or PLAYBOOK-');
   stone.append(el('span', 'ask-label', t('find_item.label', 'Item number')), control);
   const field = { control };
   const said = el('p', 'fs-step-help wi-answer');
@@ -101,13 +105,13 @@ export function createFindItem(id = '') {
 
   async function load(typed) {
     const open = (id) => { field.control.value = id; void load(id); };
-    if (asksLibrary(typed)) {
+    if (asksPlaybooks(typed)) {
       const mine = ++asked;
-      const result = await request('/api/work-items?library=1', { cache: 'no-store' });
+      const result = await request('/api/work-items?playbook=1&no_parent=1', { cache: 'no-store' });
       if (mine !== asked) return;
       said.textContent = result.ok ? '' : (result.message || '');
       host.replaceChildren();
-      if (result.ok) renderLibraryList(host, result.data.items || [], open);
+      if (result.ok) renderPlaybookList(host, result.data.items || [], open);
       return;
     }
     const ids = candidateIds(typed, known);
@@ -122,12 +126,12 @@ export function createFindItem(id = '') {
       const whole = result.data.item;
       said.textContent = '';
       host.replaceChildren();
-      // A library item: the same reading, its tasks not opened (they are parts of its file);
-      // checked out, the new epic opens; saved or deleted, it reads again (or the list, gone).
+      // A playbook item reads the same; checked out, the new top item opens; saved, added to or
+      // deleted, it reads again.
       renderItemDetail(host, whole, { holder: holderOf({ ...whole, held_by: result.data.held_by }), heldBy: result.data.held_by, history: false,
         children: Array.isArray(result.data.children) ? result.data.children : [],
-        openChild: whole.library ? null : (child) => { field.control.value = child.id; void load(child.id); },
-        onCheckedOut: open, onLibraryChanged: (again) => open(again || 'LIBRARY-'),
+        openChild: (child) => { field.control.value = child.id; void load(child.id); },
+        onCheckedOut: open, onPlaybookChanged: open,
         onClose: () => { host.replaceChildren(); field.control.focus(); } });
       return;
     }

@@ -5,13 +5,13 @@
  * The owner preferred the condensed density (ronin-lab `concepts/new-agent-condensed.html`):
  * label-left steps, one rectangle for every clickable thing, collapse-on-pick. This module
  * is that idiom as functions — a step box that can fold to its one-line answer, the kind
- * tiles with `open` dotted and set apart, the template tray with `Make your own` first and
- * the library door greyed, the provider/model pair where either pick may stand alone, and
- * the tag row readings. Feature meaning stays in the forms; these are only the shapes.
+ * tiles with `open` dotted and set apart, the provider/model pair where either pick may
+ * stand alone, and the tag row readings. Feature meaning stays in the forms; these are only
+ * the shapes.
  *
  * The provider/model pair is THE ONE PICKER: New Agent, New Team, Add Agent to Team,
- * Campaign Agent defaults, Team Configuration, ⚙ Configuration, cowork setup and the
- * Presets rows all call `providerModelPair`, and it alone reads the provider catalog.
+ * Campaign Agent defaults, Team Configuration, ⚙ Configuration and cowork setup all call
+ * `providerModelPair`, and it alone reads the provider catalog.
  */
 import { t } from './lexicon.js';
 import { request } from './request.js';
@@ -89,37 +89,6 @@ export function kindTiles(current, onPick) {
   };
   for (const kind of KINDS) grid.append(tile(kind.key, kind.icon, false));
   wrap.append(grid, tile('open', '○', true));
-  return wrap;
-}
-
-/**
- * The template tray: `Open` leads (the form's own box — a template that filled
- * nothing in would collapse nothing), the catalog rows follow in their stated order, and
- * the library door stands greyed so the shelf is not mistaken for the whole offer.
- */
-/** ONE TEMPLATE BOX — the launch forms' and the Campaign page's, so the two look the same by construction. */
-function templateBox(art, label, blurb, picked, act) {
-  const cell = el('button', 'fs-tmpl');
-  cell.type = 'button';
-  cell.title = blurb;
-  cell.setAttribute('aria-pressed', String(picked));
-  const words = el('div');
-  words.append(el('b', null, label));
-  cell.append(el('i', null, art), words);
-  if (act) cell.addEventListener('click', act);
-  return cell;
-}
-
-export function templateTray(rows, current, onPick, { includeOwn = true } = {}) {
-  const grid = el('div', 'fs-tmplgrid');
-  const box = templateBox;
-  if (includeOwn) grid.append(box('○', t('campaign_view.option_open', 'Open'), t('forms.open_template_blurb', 'Use the open form with no template.'), current === '', () => onPick('')));
-  for (const row of rows) {
-    grid.append(box(row.art, row.label, row.blurb, current === row.name, () => onPick(row.name)));
-  }
-  // in words, and offers no door of its own: the download happens on the Campaign page.
-  const wrap = el('div');
-  wrap.append(grid, el('p', 'fs-tmplnote', t('forms.library_note', 'More on the Ronin library — Campaign → Templates → Check the library to see them and download the ones you want.')));
   return wrap;
 }
 

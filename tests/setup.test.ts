@@ -52,21 +52,22 @@ test('the person\'s own words are kept and read back', async () => {
   assert.equal((await ronin.api('/api/setup/user-intro')).body.intro.trim(), intro);
 });
 
-test('checking out LIBRARY-1 makes its epic and tasks as plain live items held by the Agent (KAN-767)', async () => {
+test('checking out PLAYBOOK-1 makes its epic and tasks as plain live items held by the Agent (KAN-767)', async () => {
   await ronin.api('/api/launch', { body: { name: 'guide', provider: 'anthropic', prompt: 'Welcome them.' } });
   const asGuide = { TMUX_PANE: await ronin.tmux.run('display-message', '-p', '-t', '=guide:', '#{pane_id}') };
-  const library = (await ronin.api('/api/work-items/LIBRARY-1')).body as { item: { title: string }; children: Array<{ title: string; objective: string }> };
-  assert.ok(library.children?.length, 'the stock onboarding item is in the library');
-  // Setup's selector: a pill opens what its task's Open line names (KAN-696).
-  assert.ok(library.children.some((task) => /^Open:\s*`setup\.providers`/m.test(task.objective)), 'an Open line is read from the file');
-  assert.ok(((await ronin.api('/api/work-items?library=1')).body.items as Array<{ id: string }>).some((one) => one.id === 'LIBRARY-1'), 'search --library lists it');
+  const playbook = (await ronin.api('/api/work-items/PLAYBOOK-1')).body as { item: { title: string }; children: Array<{ id: string; title: string }> };
+  assert.ok(playbook.children?.length, 'the stock onboarding playbook has its tasks');
+  // Setup's selector: a pill opens what its task's Open line names (KAN-696); each task reads as any item.
+  const objectives = await Promise.all(playbook.children.map(async (task) => (await ronin.api(`/api/work-items/${task.id}`)).body.item.objective as string));
+  assert.ok(objectives.some((objective) => /^Open:\s*`setup\.providers`/m.test(objective)), 'an Open line is read from a task');
+  assert.ok(((await ronin.api('/api/work-items?playbook=1')).body.items as Array<{ id: string }>).some((one) => one.id === 'PLAYBOOK-1'), 'search --playbook lists it');
 
-  const out = await ronin.tool('item', ['checkout', 'LIBRARY-1'], { env: asGuide });
+  const out = await ronin.tool('item', ['checkout', 'PLAYBOOK-1'], { env: asGuide });
   assert.equal(out.status, 0, out.stderr);
   const epic = /\bas (w\d+)\b/.exec(out.stdout)?.[1];
   assert.ok(epic, out.stdout);
   const tasks = await until(async () => { const now = ((await ronin.api(`/api/work-items/${epic}`)).body.children ?? []) as Array<{ id: string; title: string; status: string }>; return now.length && now; }, 'the copy has its tasks');
-  assert.deepEqual(tasks.map((t) => t.title), library.children.map((t) => t.title), 'its tasks, in order');
+  assert.deepEqual(tasks.map((t) => t.title), playbook.children.map((t) => t.title), 'its tasks, in order');
   for (const task of tasks) {
     assert.equal(task.status, 'To Do');
     assert.deepEqual((await ronin.api(`/api/work-items/${task.id}`)).body.held_by, ['agent:guide']);

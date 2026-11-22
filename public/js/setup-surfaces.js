@@ -13,7 +13,6 @@ import { campaignById, campaigns, loadCampaigns, saveCampaign } from './campaign
 import { completeInstallationMap } from './installation-map.js';
 import { createEmbeddedNewTeamFormView } from './new-team-form.js';
 import { createEmbeddedNewAgentView } from './new-agent.js';
-import { PRESETS_TYPE } from './presets.js';
 import { createInstallationsSurface } from './campaign-installations.js';
 import { createSetupZoneSlot, watchSetupProgress } from './setup-zone.js';
 import { createStatusMarker } from './status-marker.js';
@@ -30,7 +29,7 @@ const summaries = new Map([
   [SETUP_SURFACE_TYPES.roots, '2 Workspaces'],
   [SETUP_SURFACE_TYPES.installations, 'Ronin Services'],
   [SETUP_SURFACE_TYPES.bounty, 'optional · separate opt-in'],
-  [SETUP_SURFACE_TYPES.launchOwn, 'presets · team · agent'],
+  [SETUP_SURFACE_TYPES.launchOwn, 'team · agent'],
 ]);
 const el = (tag, cls = '', text = null) => { const out = document.createElement(tag); if (cls) out.className = cls; if (text != null) out.textContent = text; return out; };
 const notifySummary = (type, value, workbench) => {
@@ -119,8 +118,6 @@ function createRegisterSurface(context) {
   const kindOther = input('kind_other'); kindOther.className = 'setup-register-other'; kindOther.placeholder = t('setup_surface.something_else_prompt', 'Tell us'); kindOther.hidden = true;
   kind.onChange(() => {
     kindOther.hidden = kind.value.value !== 'other'; if (!kindOther.hidden) kindOther.focus();
-    const routeKind = { build_software: 'build', life_assistants: 'life', research_writing: 'research', other: 'other' }[kind.value.value];
-    context.environment?.kinds?.set(routeKind ? [routeKind] : []);
   });
   const preferredFeature = choiceGroup('preferred_feature', t('setup_surface.preferred_feature', 'Which core Ronin capability do you prefer most?'), [
     ['remote_access', 'Work from anywhere', t('setup_surface.feature_remote_access', 'Ronin runs on your home machine or a virtual machine. You open it from a browser wherever you are, any time.')],
@@ -327,8 +324,6 @@ function createRegisterSurface(context) {
   };
   const restoreForSelfHosted = () => { if (out.content.childNodes[0] === hostedNotice) out.content.replaceChildren(...original); };
   return { el: out.el, show: async () => {
-    const routeKind = context.environment?.kinds?.get?.()[0] || '';
-    kind.set({ build: 'build_software', life: 'life_assistants', research: 'research_writing', other: 'other' }[routeKind] || '');
     own.value = context.environment?.setupRuntime?.preferences?.path_note || '';
     const [office, result, intro] = await Promise.all([
       request('/api/office', { cache: 'no-store' }),
@@ -639,8 +634,6 @@ export function createServicesSurface(context) {
     item.append(question.el, heading, copy);
     values.append(item);
   }
-  const fine = el('p', 'setup-fine', 'Template Library offers ready-made Teams and Agents with their books and tools. It has no separate Services switch.');
-  const gate = el('p', 'setup-fine setup-services-gate', t('services_setup.gate', 'The Grokbot Morning Briefing preset waits for Ronin Services to be active.'));
   const node_ = (key, one) => ({ key, shows: '', draw: () => one });
 
   const paint = (registration, installed, activation) => {
@@ -661,7 +654,7 @@ export function createServicesSurface(context) {
     parts.set(body, [
       node_('intro', intro), node_('steps', steps),
       ...(model.keyField ? [{ key: 'key', shows: String(model.keyAction), draw: () => keyRow(model.keyAction) }] : []),
-      node_('values', values), node_('notice', notice), node_('state', state), node_('fine', fine), node_('gate', gate),
+      node_('values', values), node_('notice', notice), node_('state', state),
     ]);
   };
   // OPEN reads the three answers and listens: an email confirmed, an install's steps and a
@@ -680,12 +673,7 @@ export function createServicesSurface(context) {
 
 function createLaunchOwnSurface(context) {
   const out = surface(t('setup_surface.launch_own', 'Launch your own'));
-  const setup = context.tenant?.kind === 'setup';
   const renderDetail = (item, host) => {
-    if (item.id === 'preset') {
-      context.workbench?.place(PRESETS_TYPE, context.workspace || 'workspace2');
-      return null;
-    }
     const views = [item.id === 'team' ? createEmbeddedNewTeamFormView(WorkspaceKit, {}) : createEmbeddedNewAgentView(WorkspaceKit, {})];
     host.append(...views.map((view) => view.el));
     for (const view of views) void view.enter({});
@@ -695,12 +683,11 @@ function createLaunchOwnSurface(context) {
     items: [
       { id: 'agent', glyph: '人', label: t('agent', 'Agent') },
       { id: 'team', glyph: '人人', label: t('team', 'Team') },
-      ...(setup ? [{ id: 'preset', glyph: '▤', label: t('setup.presets', 'Presets') }] : []),
     ],
     className: 'setup-launch-own-surface',
     renderDetail,
   });
-  // Mount on the surface content itself, like Presets and Providers, so the shared SWS
+  // Mount on the surface content itself, like Providers, so the shared SWS
   // host owns the seat container and its narrow/normal/super-wide insets.
   stones.mount(out.content);
   return { el: out.el, destroy: () => stones.destroy() };

@@ -24,7 +24,7 @@ import { holdsLists, itemRemoved, itemWritten, liveRows, type ItemRow } from './
 import { existsSync, statSync } from 'node:fs';
 import { mkdir, readFile, readdir, rename, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import { storeDir } from './resources.js';
+import { STOCK_DIR, storeDir } from './resources.js';
 import { sessionKey } from './session-dir.js';
 import { enqueueMessage } from './message-queue.js';
 import { listTeamRosters, readTeamRoster, writeTeamRoster } from './team-rosters.js';
@@ -244,7 +244,41 @@ const byId = (a: WorkItem, b: WorkItem): number => {
 };
 
 const dir = () => storeDir('work_items');
-const fileOf = (id: string) => path.join(dir(), `${id}.json`);
+
+/* PLAYBOOKS (ronin_stock/playbooks/playbooks_readme.md) are work items, stored as live ones are: one
+ * <id>.json each, the id PLAYBOOK-n, status Playbook, a child's parent its PLAYBOOK-n parent.
+ * Stock-foundations are in ronin_stock/playbooks/, custom-foundations in ~/ronin/custom/playbooks/,
+ * which replace stock by id, whole. This reader reads them; every write goes to the custom
+ * folder; no holder, list or index has them. PLAYBOOK and PLAYBOOK_STATUS are the code's only
+ * spellings of the word. */
+export const PLAYBOOK = 'PLAYBOOK';
+export const PLAYBOOK_STATUS = 'Playbook';
+export const isPlaybook = (id: string): boolean => id.startsWith(`${PLAYBOOK}-`);
+const stockPlaybooksDir = () => path.join(STOCK_DIR, 'playbooks');
+
+/** Where an item is written: the live store, or the custom playbooks folder. */
+const fileOf = (id: string) => path.join(isPlaybook(id) ? storeDir('playbooks') : dir(), `${id}.json`);
+/** Where it is read: the same, but a playbook with no custom-foundation reads the stock one. */
+const readFrom = (id: string): string => {
+  const own = fileOf(id);
+  return isPlaybook(id) && !existsSync(own) ? path.join(stockPlaybooksDir(), `${id}.json`) : own;
+};
+
+/** Every playbook item, custom over stock by id, in number order. */
+export async function listPlaybooks(): Promise<WorkItem[]> {
+  const ids = new Set<string>();
+  for (const at of [stockPlaybooksDir(), storeDir('playbooks')]) {
+    for (const name of await readdir(at).catch(() => [] as string[])) if (name.endsWith('.json') && isPlaybook(name)) ids.add(name.slice(0, -5));
+  }
+  const items = await Promise.all([...ids].map(async (id) => JSON.parse(await readFile(readFrom(id), 'utf8')) as WorkItem));
+  return items.sort(byId);
+}
+
+/** The next free PLAYBOOK-n, over stock and custom. */
+async function nextPlaybookId(): Promise<string> {
+  const top = Math.max(0, ...(await listPlaybooks()).map((item) => Number(item.id.slice(PLAYBOOK.length + 1))));
+  return `${PLAYBOOK}-${top + 1}`;
+}
 
 let tail: Promise<unknown> = Promise.resolve();
 /** The issuer lock. Every item and holder write runs inside it, one at a time. */
@@ -258,12 +292,12 @@ let written = 0;
 async function save(item: WorkItem): Promise<void> {
   // Leaving Done (a Send back, a Jira reopen, any transition) brings an archived item back.
   if (item.archived && item.status !== DONE) delete item.archived;
-  await mkdir(dir(), { recursive: true });
   const target = fileOf(item.id);
+  await mkdir(path.dirname(target), { recursive: true });
   const tmp = `${target}.tmp-${process.pid}-${++written}`;
   await writeFile(tmp, `${JSON.stringify(item, null, 2)}\n`, 'utf8');
   await rename(tmp, target);
-  itemWritten(item); // its live row, in the same step (work-items-index.ts)
+  if (!isPlaybook(item.id)) itemWritten(item); // its live row, in the same step (work-items-index.ts)
 }
 
 /** EVERY ID AN ITEM HAS HAD still finds it (docs/using-ronin/work-items.md): a w id renamed to
@@ -288,7 +322,7 @@ async function aliasOf(id: string): Promise<string | null> {
 export async function resolveId(id: string): Promise<string> {
   const given = String(id ?? '').trim();
   if (!isItemId(given)) throw new WorkItemMissing(`"${given}" is not a work item id; ids look like w12 or KAN-65.`);
-  if (existsSync(fileOf(given))) return given;
+  if (existsSync(readFrom(given))) return given;
   const now = await aliasOf(given);
   if (!now) throw new WorkItemMissing(`No work item ${given}.`);
   return now;
@@ -297,7 +331,7 @@ export async function resolveId(id: string): Promise<string> {
 async function load(id: string): Promise<WorkItem> {
   const at = await resolveId(id);
   try {
-    return JSON.parse(await readFile(fileOf(at), 'utf8')) as WorkItem;
+    return JSON.parse(await readFile(readFrom(at), 'utf8')) as WorkItem;
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === 'ENOENT') throw new WorkItemMissing(`No work item ${id}.`);
     throw error;
@@ -442,7 +476,7 @@ async function noticesOf(item: WorkItem, line: TrailLine): Promise<string[]> {
   return [];
 }
 
-/** Notice 4, an item handed to an Agent by someone else; a library checkout to another Agent says it too (library.ts). */
+/** Notice 4, an item handed to an Agent by someone else; a playbook checkout to another Agent says it too (playbooks.ts). */
 export const handedNotice =(item: WorkItem, giver: string): string => `${item.id} '${item.title}' is yours, from ${giver}. Read it and follow its objective.`;
 
 /** Notice 6 to one Agent: what it still holds open, or, with nothing, its end. */
@@ -518,6 +552,9 @@ export interface NewItem {
   attachments?: string[];
   /** Born paired, so its create line and unheld message already name the Jira key. */
   jira?: JiraPair;
+  /** A playbook item: the next PLAYBOOK-n, status Playbook, held by nobody, in the custom folder.
+   * An item made under a playbook item is one too. */
+  playbook?: boolean;
 }
 
 /** One below the parent, 0 with none (Jira's hierarchy). A default, never a guard. */
@@ -592,22 +629,23 @@ export async function createItemUnlocked(input: NewItem, by: string): Promise<Ac
   const title = String(input.title ?? '').trim();
   if (!title) throw new WorkItemBadInput('A work item needs a title.');
   const parent = input.parent ? await load(input.parent) : null;
-  const agent = input.jira ? undefined : (await listSessions()).find((session) => session.name === by);
+  const playbook = Boolean(input.playbook || (parent && isPlaybook(parent.id)));
+  const agent = input.jira || playbook ? undefined : (await listSessions()).find((session) => session.name === by);
   if (agent && !input.holder && agent.leads.length > 1) throw new WorkItemRefused(`You lead ${agent.leads.join(', ')}; name one with --team <team>.`);
   // From Jira with nobody named: the Team holding its parent (owner, 2026-11-06; KAN-308), or the
   // Workspace holding it (an idea parked from Jira under the Icebox; KAN-352).
   const parentTeam = input.jira && !input.holder && parent ? (await holdersOf(parent.id)).find((one) => one.kind === 'team' || one.kind === 'workspace') : undefined;
   const holder: Holder | undefined = input.holder ?? parentTeam ?? (agent ? (agent.leads.length ? { kind: 'team', name: agent.leads[0]! } : { kind: 'agent', name: by }) : undefined);
-  const campaign_id = input.campaign_id ?? agent?.campaign_id ?? await initialCampaignId();
+  const campaign_id = playbook ? '' : input.campaign_id ?? agent?.campaign_id ?? await initialCampaignId();
   const names = spaceNames(campaign_id);
   const named = input.kind?.trim();
   const item: WorkItem = {
     ...blank(title, by),
-    id: input.jira?.key ?? await nextId(),
+    id: input.jira?.key ?? (playbook ? await nextPlaybookId() : await nextId()),
     campaign_id,
     objective: String(input.objective ?? '').trim(),
     level: named ? levelOfKind(names, named) : levelUnder(parent),
-    status: oneOf('status', input.status?.trim() || names.statuses[0]!, names.statuses),
+    status: playbook ? PLAYBOOK_STATUS : oneOf('status', input.status?.trim() || names.statuses[0]!, names.statuses),
     priority: oneOf('priority', input.priority?.trim() || names.priority, names.priorities),
     parent: parent?.id ?? null,
     attachments: input.attachments ?? [],
@@ -1044,6 +1082,9 @@ export async function linkItem(id: string, type: string, other: string, by: stri
 export function deleteItem(given: string, by: string): Promise<{ deleted: string[]; orphaned: string[] }> {
   return withIssuer(async () => {
     const id = (await load(given)).id;
+    // A playbook item's delete is Delete my version: the custom-foundation goes, and the stock
+    // one, if there is one, reads again. Nothing else moves.
+    if (isPlaybook(id)) { await rm(fileOf(id), { force: true }); return { deleted: [id], orphaned: [] }; }
     const all = await listItems();
     const deleted: string[] = [];
     const collect = (at: string): void => {

@@ -164,12 +164,11 @@
   .find-item-number::placeholder { color: var(--muted); font-weight: var(--weight-regular); }
   .find-item-ask .find-item-go { height: var(--ask-h); align-self: flex-start; }
   .find-item-reading:not(:empty) { margin-top: var(--space-section); padding-top: var(--space-section); border-top: var(--edge) solid var(--line); }
-  /* The library (KAN-767, KAN-769): one plain line per item; its file's text in a box to edit. */
-  .find-item-library { display: flex; flex-direction: column; gap: var(--space-section); }
-  .find-item-library-row { text-align: left; padding: 0; border: 0; background: transparent; color: inherit; font: inherit; cursor: pointer; white-space: normal; }
-  .find-item-library-row:hover, .find-item-library-row:focus-visible { color: var(--kaki); }
-  .wi-library-text { width: 100%; font-family: var(--font-mono); }
-  .wi-library-edit { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-section); }
+  /* The playbooks: one plain line per top item; an objective in a box to edit. */
+  .find-item-playbooks { display: flex; flex-direction: column; gap: var(--space-section); }
+  .find-item-playbook-row { text-align: left; padding: 0; border: 0; background: transparent; color: inherit; font: inherit; cursor: pointer; white-space: normal; }
+  .find-item-playbook-row:hover, .find-item-playbook-row:focus-visible { color: var(--kaki); }
+  .wi-playbook-text { width: 100%; }
   /* An Agent over the work surface its item sits in (KAN-435): its own tile fills the layer under the Close. */
   .work-overlay.item-agent { display: flex; flex-direction: column; overflow: hidden; z-index: 20; }
   .work-overlay.item-agent > :last-child { flex: 1 1 auto; min-height: 0; }
@@ -331,16 +330,14 @@
   .lh-section p { margin: 0; color: var(--muted); line-height: var(--leading-body); }
   .ntf-form textarea { resize: vertical; }
   .ntf-foot { margin-top: var(--space-subsection); }
-  .fs-steps, .ntf-tmplname, .fs-step, .fs-pair, .fs-tmplgrid, .fs-reading, .na-identity-row, .na-surface {
+  .fs-steps, .fs-step, .fs-pair, .fs-reading, .na-identity-row, .na-surface {
     --fs-key-w: 136px; /* a step's name column */
     --fs-reading-key-w: 85px;
     --fs-step-n: 14px;
     --fs-pair-w: 136px;
-    --fs-wide-w: 170px; /* a template card, a template name */
     --na-name-w: 272px;
     --na-brief-h: 102px;
   }
-  .ntf-tmplname { font-size: var(--form-input); width: var(--fs-wide-w); border: var(--edge) solid var(--line-2); border-radius: var(--radius-small); background: var(--inset); color: var(--fg); padding: var(--space-row) var(--space-inline); font: inherit; }
 
   .fs-step { display: grid; grid-template-columns: var(--fs-key-w) minmax(0, 1fr); gap: var(--space-paragraph) var(--space-inline); align-items: start; padding: var(--space-inset) 0; border-bottom: var(--edge) solid var(--line); }
   .fs-step:last-of-type { border-bottom: 0; }
@@ -408,17 +405,6 @@
   .fs-kindtile i { font-style: normal; font-size: var(--text-body); line-height: var(--leading-none); }
   .fs-kindtile span { overflow: hidden; font-size: var(--form-note); text-overflow: ellipsis; white-space: nowrap; }
   .fs-kindtile[data-open='true'] { align-self: start; border-style: dashed; }
-
-  .fs-tmplgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(var(--fs-wide-w), 1fr)); gap: var(--space-row) var(--space-inline); }
-  .fs-tmplnote { margin: var(--space-row) 0 0; font-size: var(--text-small); color: var(--muted); line-height: var(--leading-body); }
-  .fs-tmpl { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--space-row) var(--space-inline); align-items: center; border: var(--edge) solid var(--line-2); border-radius: var(--radius-small); background: var(--inset); color: var(--muted); padding: var(--space-row) var(--space-inline); cursor: pointer; text-align: left; font: inherit; }
-  .fs-tmpl:hover { border-color: var(--kaki); }
-  .fs-tmpl[aria-pressed='true'] { border-color: var(--kaki); background: var(--selected); /* the one you are on, have chosen, or are dropping onto */ }
-  .fs-tmpl i { font-style: normal; font-size: var(--text-body); line-height: var(--leading-none); }
-  .fs-tmpl b { display: block; overflow: hidden; color: var(--fg-strong); font-size: var(--form-input); font-weight: var(--weight-strong); text-overflow: ellipsis; white-space: nowrap; }
-  .fs-tmpl[aria-pressed='true'] b { color: var(--kaki-lift); }
-  .fs-tmpl:disabled { opacity: .45; border-style: dashed; cursor: default; }
-  .fs-tmpl:disabled:hover { border-color: var(--line-2); }
 
   .fs-way { display: grid; gap: var(--space-row); border: var(--edge) solid var(--line-2); border-radius: var(--radius-small); background: var(--inset); color: var(--muted); padding: var(--space-row) var(--space-inline); cursor: pointer; text-align: left; font: inherit; }
   .fs-way:hover { border-color: var(--kaki); }

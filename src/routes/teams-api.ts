@@ -152,17 +152,9 @@ export function registerTeams(app: express.Express): void {
       // abbreviated "A new team" path, state only identity. Materialize the Campaign
       // layer here so an omitted browser field cannot become a complete map of `false`.
       // Values the caller did state remain the final word.
-      let template;
-      const token = String(req.body?.template ?? '').trim();
-      if (token) {
-        const { listAgentTemplates } = await import('../resource-adapters.js');
-        const box = (await listAgentTemplates()).find((row) => row.name === token);
-        if (!box) template = { source: token, ignored: 'not an agent template on this box' };
-        else template = { source: token };
-      }
       const roster = await createTeamRoster(name, edit, campaign_id);
       count('team.create');
-      res.json({ ok: true, roster, ...(template ? { template } : {}) });
+      res.json({ ok: true, roster });
     } catch (e) {
       res.status(400).json({ error: errMsg(e) });
     }

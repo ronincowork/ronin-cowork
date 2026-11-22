@@ -1,9 +1,10 @@
 /**
- * THE CATALOG — facts, behaviours and tools (docs/architecture/brief.md, The files and their header).
+ * THE CATALOG — the Markdown foundations: facts, behaviours and tools (docs/architecture/brief.md,
+ * The files and their header; ronin_stock/stock_readme.md).
  *
- * One flat folder per object in `ronin_catalogs/` (`facts/`, `behaviours/`, `tools/`); the
- * user's own store (`~/ronin/facts/`, `~/ronin/behaviours/`, `~/ronin/tools/`) adds files and
- * replaces stock ones by name. A file's name (without `.md`) is its id: the one `when:`,
+ * One flat folder per kind in `ronin_stock/` (`facts/`, `behaviours/`, `tools/`): the
+ * stock-foundations. The person's custom-foundations (`~/ronin/custom/<kind>/`) add files and
+ * replace stock ones by name. A file's name (without `.md`) is its id: the one `when:`,
  * `serves:` and the brief settings name. Every file starts the same:
  *
  *   # Title
@@ -99,7 +100,7 @@ export function parseCatalogFile(kind: CatalogKind, name: string, text: string):
 }
 
 const isCatalogFile = (relative: string): boolean =>
-  relative.endsWith('.md') && !relative.startsWith('.') && relative !== 'README.md';
+  relative.endsWith('.md') && !relative.startsWith('.') && !/readme\.md$/i.test(relative); // <kind>_readme.md says the format
 
 /** One kind, stock and user merged by name, in `order:` then title order. */
 export async function readCatalog(kind: CatalogKind): Promise<CatalogFile[]> {

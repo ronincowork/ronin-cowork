@@ -6,7 +6,7 @@ import { t } from './lexicon.js';
  * PROVENANCE — the mark that says a catalog entry is yours.
  *
  * Every catalog the commons renders is resolved from two files: the shipped one in the
- * install, and your own in the catalogs store, entry-merged by name (`docs/architecture/shadowing.md`).
+ * install (ronin_stock/), and your own in ~/ronin/custom/, entry-merged by name (`docs/architecture/shadowing.md`).
  * The server puts `origin` and `shadowed` on every entry; this is the one place that
  * turns them into something on screen, so the four surfaces cannot drift apart.
  *
@@ -30,7 +30,7 @@ function provMark(entry) {
   el.textContent = entry.shadowed ? '◈' : '◆';
   el.title = entry.shadowed
     ? t('provenance.shadowed', 'Yours — this replaces Ronin\'s shipped entry of the same name. Upgrades to that entry will not reach you.')
-    : t('provenance.own', 'Yours — added by you, in your catalogs store. An upgrade cannot touch it.');
+    : t('provenance.own', 'Yours — added by you, in ~/ronin/custom/. An upgrade cannot touch it.');
   return el;
 }
 
@@ -54,7 +54,7 @@ export function addYourOwn(file, what, onDone) {
   btn.type = 'button';
   btn.className = 'prov-add';
   btn.textContent = t('provenance.add_own', '＋ add your own {what}', { what });
-  btn.title = t('provenance.add_own_title', 'Create your own {file} in the catalogs store — yours, outside every repo, untouched by upgrades', { file });
+  btn.title = t('provenance.add_own_title', 'Create your own {file} in ~/ronin/custom/ — yours, outside every repo, untouched by upgrades', { file });
   btn.addEventListener('click', async () => {
     btn.disabled = true;
     const r = await request('/api/catalogs/seed', { method: 'POST', json: { file } });

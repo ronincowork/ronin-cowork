@@ -5,7 +5,6 @@ import { t } from './lexicon.js';
 import { FEEDBACK_TYPE, registerFeedbackSurface } from './feedback.js';
 import { FILES_TYPE, registerFilesSurface } from './files-surface.js';
 import { BEHAVIOUR_SURFACE_TYPE, registerBehaviourSurface } from './behaviour-surface.js';
-import { PRESETS_TYPE, registerPresetsSurface } from './presets.js';
 import { SETUP_SURFACE_TYPES, registerSetupSurfaces } from './setup-surfaces.js';
 import { PASSWORD_SURFACE_TYPE, registerPasswordSurface } from './password-surface.js';
 import { PROVIDER_SURFACE_TYPE } from './provider-surface.js';
@@ -37,7 +36,7 @@ export const WORKBENCH_TYPES = Object.freeze({
 let registered = false;
 export function registerWorkbenchCatalog() {
   if (registered) return;
-  registerFeedbackSurface(); registerFilesSurface(); registerBehaviourSurface(); registerPresetsSurface();
+  registerFeedbackSurface(); registerFilesSurface(); registerBehaviourSurface();
   registerSetupSurfaces(); registerPasswordSurface();
   const { library, profiles } = WorkspaceKit.workbench;
   const add = (definition) => { if (!library.has(definition.type)) library.register(definition); };
@@ -83,14 +82,14 @@ export function registerWorkbenchCatalog() {
   campaign(WORKBENCH_TYPES.campaignIntegrations, 'surface', () => t('integrations.title', 'Integrations'), 'campaignIntegrations', () => t('integrations.card_summary', 'Every outside service: connected or not, its token, its Workspaces.'));
   campaign(WORKBENCH_TYPES.campaignJira, 'surface', () => t('jira.title', 'Jira'), 'campaignJira', () => t('jira.card_summary', 'This Desk’s Jira space: connect, check, sync.'));
   campaign(WORKBENCH_TYPES.campaignMachine, 'tabs', () => t('campaign_view.machine', 'Machine'), 'campaignMachine', () => t('campaign_view.machine_summary', 'Themes · Desk · Account · Archived · Messages · Help desk · Keypad.'));
-  // MACHINE STATUS (owner, 2026-11-20; KAN-759): the one complete truth, written to the library on a press.
+  // MACHINE STATUS (owner, 2026-11-20; KAN-759): the one complete truth, an office-output kept current.
   campaign(WORKBENCH_TYPES.campaignMachineStatus, 'surface', () => t('machine_status.title', 'Machine status'), 'campaignMachineStatus', () => t('machine_status.summary', 'What this office has set up, what it hasn\u2019t and what is available, in one doc any Agent reads, kept current.'));
   // THE CLOUD ACCOUNT (owner, 2026-11-06; KAN-282): its own worksurface in the Machine Settings group,
   // read-only, the same card Configuration ends with (js/account-card.js).
   campaign(WORKBENCH_TYPES.campaignCloudAccount, 'surface', () => t('campaign_view.cloud_account', 'Cloud Account'), 'campaignCloudAccount', () => t('campaign_view.cloud_account_summary', 'Where this Ronin lives (self-hosted, or an office on an office_park) and its Ronin HQ account, subscription and house-model usage. Read-only.'));
   if (MULTIPLE_CAMPAIGNS_ENABLED) campaign(WORKBENCH_TYPES.campaignCreate, 'surface', () => t('campaign.new', 'New Desk'), 'campaignCreate', () => t('campaign_view.new_summary', 'Set the stage. It creates no Team and launches no Agent.'), { variant: 'dotted' });
   profiles.define(WORKBENCH_PROFILES.launch, [WORKBENCH_TYPES.launchTeam, WORKBENCH_TYPES.launchAgent, WORKBENCH_TYPES.launchHelp, BEHAVIOUR_SURFACE_TYPE, WORKBENCH_TYPES.document, FEEDBACK_TYPE]);
-  profiles.define(WORKBENCH_PROFILES.cowork, [WORKBENCH_TYPES.roster, WORKBENCH_TYPES.sessionRoster, WORKBENCH_TYPES.cron, WORKBENCH_TYPES.team, WORKBENCH_TYPES.terminal, WORKBENCH_TYPES.newTeamForm, WORKBENCH_TYPES.newAgent, WORKBENCH_TYPES.archives, WORKBENCH_TYPES.document, BEHAVIOUR_SURFACE_TYPE, PRESETS_TYPE, FEEDBACK_TYPE]);
+  profiles.define(WORKBENCH_PROFILES.cowork, [WORKBENCH_TYPES.roster, WORKBENCH_TYPES.sessionRoster, WORKBENCH_TYPES.cron, WORKBENCH_TYPES.team, WORKBENCH_TYPES.terminal, WORKBENCH_TYPES.newTeamForm, WORKBENCH_TYPES.newAgent, WORKBENCH_TYPES.archives, WORKBENCH_TYPES.document, BEHAVIOUR_SURFACE_TYPE, FEEDBACK_TYPE]);
   profiles.define(WORKBENCH_PROFILES.agent, [WORKBENCH_TYPES.terminal, WORKBENCH_TYPES.agentComposition, WORKBENCH_TYPES.agentDocuments, WORKBENCH_TYPES.agentTeams, WORKBENCH_TYPES.workItems, WORKBENCH_TYPES.document, FEEDBACK_TYPE]);
   // A hosted office's Settings offers no account, registration, password or installations cards:
   // those live in the Business Lounge and on the office_park (hosted.js).

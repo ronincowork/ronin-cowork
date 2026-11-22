@@ -67,7 +67,7 @@ function PAGES() {
       page('docs/using-ronin/work-items.md', t('help_outline.work_items', 'Work items')),
       page('docs/using-ronin/running-work-items.md', t('help_outline.running_work_items', 'Running work items')),
       page('docs/using-ronin/planning.md', t('help_outline.planning', 'Writing a plan')),
-      page('docs/using-ronin/library.md', t('help_outline.library', 'The library')),
+      page('docs/using-ronin/playbooks.md', t('help_outline.playbooks', 'Playbooks')),
       page('docs/using-ronin/wipeboards.md', t('help_outline.wipeboards', 'Wipeboards')),
       page('docs/using-ronin/desks.md', t('help_outline.desks', 'Managed worktrees')),
       page('docs/using-ronin/archived-sessions.md', t('help_outline.archived', 'Archived sessions')),

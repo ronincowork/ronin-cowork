@@ -77,7 +77,6 @@ async function birthRecord(form: SpawnForm, facts: LaunchFacts, launch: LaunchId
       name: facts.name,
       title: '',
       type: sessionType(form),
-      template: form.template ?? '',
       task: form.prompt?.trim() ?? '',
     },
     user: {

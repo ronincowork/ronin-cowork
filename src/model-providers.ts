@@ -4,8 +4,8 @@ import { readHermesSettings } from './hermes-setups.js';
  *
  * Two records, one join, two names per model (owner's ruling, 2026-09-25):
  *
- * - THE CATALOG (`ronin_catalogs/MODEL_PROVIDERS.md`, stock; the owner's copy in the
- *   catalogs store is an OVERLAY on it, merged per `### <Vendor>` section and keyed by
+ * - THE CATALOG (`ronin_stock/MODEL_PROVIDERS.md`, stock; the owner's copy in
+ *   ~/ronin/custom/ is an OVERLAY on it, merged per `### <Vendor>` section and keyed by
  *   the section's `provider` id — `docs/architecture/shadowing.md`). It joins the vendor
  *   id a launch names to the CLI that serves it (`src/agents.ts`) and the family words that
  *   give a model its tier. It never says what is available and carries no model facts.
@@ -249,7 +249,7 @@ export function parseProviderCatalog(raw: string, origin: Origin = 'stock'): Pro
 }
 
 export const STOCK_CATALOG_MD = path.join(STOCK_DIR, CATALOG_FILE);
-export const userCatalogMd = (): string => path.join(storeDir('catalogs'), CATALOG_FILE);
+export const userCatalogMd = (): string => path.join(storeDir('custom'), CATALOG_FILE);
 
 async function exists(file: string): Promise<boolean> {
   try { await stat(file); return true; } catch { return false; }

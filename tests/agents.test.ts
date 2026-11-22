@@ -61,11 +61,11 @@ test('a stock behaviour told only when added: the Helpful Assistant in full; the
     const brief = /Read first: (\S+AGENT_BIRTH_BRIEF\.md)/.exec(runs.at(-1)!.argv)![1];
     return fs.readFile(brief, 'utf8');
   };
-  const stock = await fs.readFile(path.join(ROOT, 'ronin_catalogs', 'behaviours', 'irasshai.md'), 'utf8');
+  const stock = await fs.readFile(path.join(ROOT, 'ronin_stock', 'behaviours', 'irasshai.md'), 'utf8');
   const first = stock.split('\n\n')[1].split('\n')[0];
   const text = await told('helper');
   assert.ok(text.includes('### Helpful Assistant') && text.includes(first), 'added: the stock text, in full');
-  const own = path.join(ronin.env.RONIN_USER_ROOT!, 'behaviours', 'irasshai.md');
+  const own = path.join(ronin.env.RONIN_USER_ROOT!, 'custom', 'behaviours', 'irasshai.md');
   await fs.mkdir(path.dirname(own), { recursive: true });
   await fs.writeFile(own, '# Helpful Assistant\n- **seed:** the owner\'s own\n- **depth:** none\n\nThe owner\'s own words.\n');
   const shadowed = await told('helper2');

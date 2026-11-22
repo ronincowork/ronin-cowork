@@ -35,7 +35,7 @@ Without --campaign, Campaign operations resolve RONIN_SESSION by exact live-sess
 and refuse when it has no Campaign. Writes use only the existing typed Campaign, Machine
 Settings or activation routes; observed/status/needed facts are read-only.
 Bare read prints the facts it covers: machine, integrations_authentications and defaults
-(~/ronin/library/facts/, the same text `office read` gives).
+(~/ronin/office/facts/, the same text `office read` gives).
 Provider reads dynamically use the canonical Campaign/provider model catalog shared with
 the UI dropdowns; no model list is maintained by this command or its capability document.
 Run `machine-settings <operation> --help` for the accepted fields and examples.

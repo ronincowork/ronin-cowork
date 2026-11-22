@@ -107,7 +107,7 @@ beneath that contract.
 ## CSS and skin governance
 
 There is no Tailwind or PostCSS pipeline. Ronin uses the design tokens in
-`public/style.css` and cascade order `vendor, foundations, ui, app`.
+`public/style.css` and cascade order `vendor, base, ui, app`.
 
 Mandatory rules:
 

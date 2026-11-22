@@ -141,9 +141,9 @@ const templateOf = (d: Definition): CanvasTemplate => ({
   blocks: parseBlocks(d.text, true),
 });
 
-/** The shelf: stock templates/canvases, the user's catalogs store over them by name. */
+/** The outlines: stock ronin_stock/canvases/, the person's ~/ronin/custom/canvases/ over them by name. */
 export async function listCanvasTemplates(): Promise<CanvasTemplate[]> {
-  return (await readDefinitions('templates/canvases')).map(templateOf);
+  return (await readDefinitions('canvases')).map(templateOf);
 }
 
 /* ---------- the acts ---------- */

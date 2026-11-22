@@ -3,7 +3,7 @@ import { spawn } from 'node:child_process';
 import path from 'node:path';
 import { REPO_ROOT } from '../resources.js';
 
-const TOOLS = new Set(['wipeboard', 'desk', 'promotion', 'jikan', 'bundle', 'recovery', 'auth', 'message']);
+const TOOLS = new Set(['wipeboard', 'desk', 'promotion', 'jikan', 'recovery', 'auth', 'message']);
 type Reply = { stdout: string; stderr: string; exit: number };
 type Context = { session: string; pane: string; counted?: boolean };
 

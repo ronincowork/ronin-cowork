@@ -24,12 +24,10 @@ export const INSTALLED_ROOTS = [
   { name: 'project_one', label: 'Project One', remit: 'The first project-shaped workspace folder.', managed: true },
 ] as const;
 
-export const SETUP_PREFERENCE_KINDS = ['build', 'life', 'research', 'other'] as const;
-export type SetupPreferenceKind = typeof SETUP_PREFERENCE_KINDS[number];
-export interface SetupPreferences { kinds: SetupPreferenceKind[]; providers: string[]; path_note: string; bounty_opt_in: boolean }
+export interface SetupPreferences { providers: string[]; path_note: string; bounty_opt_in: boolean }
 interface SetupSection {
   providers?: Record<string, { activated_at?: unknown; off_at?: unknown; sign_in?: ProviderSignIn }>;
-  preferences?: { kinds?: unknown; providers?: unknown; path_note?: unknown; bounty_opt_in?: unknown };
+  preferences?: { providers?: unknown; path_note?: unknown; bounty_opt_in?: unknown };
   [key: string]: unknown;
 }
 
@@ -142,43 +140,34 @@ const updateSessionName = (provider: string) => `provider_setup_${provider}_upda
 const installSessionName = (provider: string) => `install_${provider}`;
 
 export function setupPreferences(section: SetupSection): SetupPreferences {
-  const selected = new Set(
-    (Array.isArray(section.preferences?.kinds) ? section.preferences.kinds : [])
-      .filter((kind): kind is SetupPreferenceKind =>
-        typeof kind === 'string' && SETUP_PREFERENCE_KINDS.includes(kind as SetupPreferenceKind)),
-  );
   const providers = Array.isArray(section.preferences?.providers)
     ? [...new Set(section.preferences.providers.filter((provider): provider is string =>
       typeof provider === 'string' && /^[a-z0-9_-]+$/.test(provider)))]
     : [];
   return {
-    kinds: SETUP_PREFERENCE_KINDS.filter((kind) => selected.has(kind)), providers,
+    providers,
     path_note: typeof section.preferences?.path_note === 'string' ? section.preferences.path_note : '',
     bounty_opt_in: section.preferences?.bounty_opt_in === true,
   };
 }
 
 export async function writeSetupPreferences(input: unknown): Promise<SetupPreferences> {
-  const patch = Array.isArray(input) ? { kinds: input } : input;
+  const patch = input;
   if (!patch || typeof patch !== 'object' || Array.isArray(patch)) throw new Error('Send Setup preferences.');
-  const update = patch as { kinds?: unknown; providers?: unknown; path_note?: unknown; bounty_opt_in?: unknown };
-  if (update.kinds === undefined && update.providers === undefined && update.path_note === undefined && update.bounty_opt_in === undefined) throw new Error('Send onboarding preferences.');
-  let written: SetupPreferences = { kinds: [], providers: [], path_note: '', bounty_opt_in: false };
+  const update = patch as { providers?: unknown; path_note?: unknown; bounty_opt_in?: unknown };
+  if (update.providers === undefined && update.path_note === undefined && update.bounty_opt_in === undefined) throw new Error('Send onboarding preferences.');
+  let written: SetupPreferences = { providers: [], path_note: '', bounty_opt_in: false };
   await updateSection<SetupSection>('setup', (setup) => {
     const current = setupPreferences(setup);
-    const kinds = update.kinds === undefined ? current.kinds : update.kinds;
     const providers = update.providers === undefined ? current.providers : update.providers;
     const path_note = update.path_note === undefined ? current.path_note : update.path_note;
     const bounty_opt_in = update.bounty_opt_in === undefined ? current.bounty_opt_in : update.bounty_opt_in;
-    if (!Array.isArray(kinds) || kinds.some((kind) => typeof kind !== 'string' || !SETUP_PREFERENCE_KINDS.includes(kind as SetupPreferenceKind))) {
-      throw new Error('Kinds are build, life, research, and other.');
-    }
     if (!Array.isArray(providers) || providers.some((provider) => typeof provider !== 'string' || !/^[a-z0-9_-]+$/.test(provider))) {
       throw new Error('Providers must be provider IDs.');
     }
     if (typeof path_note !== 'string' || path_note.length > 2000) throw new Error('Path note must be text up to 2000 characters.');
     if (typeof bounty_opt_in !== 'boolean') throw new Error('Bounty opt-in must be true or false.');
-    written = setupPreferences({ preferences: { kinds, providers, path_note, bounty_opt_in } });
+    written = setupPreferences({ preferences: { providers, path_note, bounty_opt_in } });
     return { ...setup, preferences: written };
   });
   return written;

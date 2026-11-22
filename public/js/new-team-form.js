@@ -11,7 +11,7 @@ import { agentPicks, agentRow, createAgentRows } from './team-agents.js';
 import { openLaunchHandoff } from './launch-handoff.js';
 import { launchTeamAgents } from './team-loader.js';
 import {
-  createStep, el, loadProviderCatalog, providerCatalog, readingRows, tagRow, templateTray,
+  createStep, el, loadProviderCatalog, providerCatalog, readingRows, tagRow,
 } from './form-steps.js';
 import { closeWorkspaceTab, reserveWorkspaceTab } from './workspace.js';
 import { hearWorkspaces } from './workspaces-read.js';
@@ -27,7 +27,7 @@ export function createNewTeamFormView(kit, { created = null, consumed = null, em
   const leadName = (teamName) => { const first = finalizeTeamName(teamName).split(/[_-]+/).filter(Boolean)[0]; return first ? `${first}_lead` : ''; };
   const seededAgents = (teamName = '') => [{ ...agentRow(), name: leadName(teamName), team_lead: true }];
   const draft = {
-    template: '', templateName: '', title: '',
+    title: '',
     name: '', kind: 'open', objective: '',
     workspace: '',
     reach: 'open', recruit: 'open', output: ['open'],
@@ -47,9 +47,7 @@ export function createNewTeamFormView(kit, { created = null, consumed = null, em
   let screen = {};          // what the layers in play take off the mandate menus
   const rescreen = async () => { screen = await screenOf(draft.workspace ? { workspace: draft.workspace } : {}); };
   let seed = null;          // the campaign's answers, once the door has spoken
-  let templates = [];
   let workspaces = [];
-  let snapshot = '';        // what the applied template wrote, for the dirty test
   let busy = false;
   let loaded = false;
 
@@ -70,77 +68,19 @@ export function createNewTeamFormView(kit, { created = null, consumed = null, em
     surface.content.append(embedActions);
   }
 
-  // and "Make your own" is the manual door; a mode switch above the form was a second way
-  // to say the same thing.
-
-  const templateRow = () => templates.find((row) => row.name === draft.template) || null;
-  const offered = () => (draft.kind === 'open' ? templates : templates.filter((row) => row.kinds.includes(draft.kind)));
   // The behaviours a Team may add: the catalog's optional ones (depth none), docs/architecture/brief.md, Layers and brief settings.
   let catalog = [];
   const availableBehaviours = () => catalog.filter((row) => row.kind === 'behaviour' && !row.mandate && row.depth === 'none');
   // The provider the next Agent defaults to (Models > Defaults): which launch modes it offers.
 
-  /** What a template authors, as one string — the dirty test compares against it. */
-  const authored = () => JSON.stringify({
-    objective: draft.objective, books: [...draft.books].sort(),
-    mandate: [draft.reach, draft.recruit, ...draft.output], agents: draft.agents,
-  });
-
-  function applyTemplate(name) {
-    draft.template = name;
-    draft.expanded = name ? { lead: true } : {};
-    const row = templateRow();
-    // then you go back to make your own, it leaves the template entries there… it should
-    // clear the entries below"). Back to the campaign's own answers, not to nothing — the
-    // seeded defaults are what an untouched form holds. Your name, title, kind and place
-    // are yours and are left alone.
-    if (!row) {
-      draft.objective = '';
-      objectiveInput.value = '';
-      draft.books = []; // the Campaign's own add list reaches the Team by itself; nothing is copied
-      draft.agents = seededAgents(draft.name);
-      for (const key of ['reach', 'recruit']) draft[key] = seed?.seeds?.[key]?.value || 'open';
-      draft.output = [seed?.seeds?.output?.value || 'open'].flat().filter(Boolean);
-      snapshot = '';
-      paint();
-      return;
-    }
-    if (row.objective) { draft.objective = row.objective; objectiveInput.value = row.objective; }
-    if (row.behaviours.length) draft.books = [...row.behaviours];
-    if (row.mandate) { draft.reach = row.mandate.reach; draft.recruit = row.mandate.recruit; draft.output = [row.mandate.output].flat().filter(Boolean); }
-    // carries `agents[]` in exactly the ruled wire shape `agentPicks()` produces, so it
-    // reads straight into the editor — instructions becomes the row's assignment and
-    // The old lead_brief/lead_mandate pair is gone: a lead is one marked row.
-    draft.agents = (Array.isArray(row.agents) ? row.agents : []).map((pick) => ({
-      ...agentRow(),
-      name: pick.name || '',
-      assignment: pick.instructions || '',
-      provider: pick.provider || '',
-      model: pick.model || '',
-      team_lead: pick.team_lead === true,
-      ...(pick.mandate ? {
-        reach: pick.mandate.reach,
-        recruit: pick.mandate.recruit,
-        output: [pick.mandate.output].flat().filter(Boolean),
-      } : {}),
-    }));
-    snapshot = authored();
-    paint();
-  }
-  const templateDirty = () => !!templateRow() && authored() !== snapshot;
-
-  /* ---- Kind and Template share one optional disclosure. ---- */
+  /* ---- Kind, one optional disclosure. ---- */
   let setupOpen = false;
-  const stepSetup = createStep({ n: 1, key: 'setup', title: t('new_team.kind_template', 'Kind & Template'), onToggle: () => {
+  const stepSetup = createStep({ n: 1, key: 'setup', title: t('kind', 'Kind'), onToggle: () => {
     setupOpen = !setupOpen;
     paint();
   } });
   const kindHost = el('div');
-  const trayHost = el('div');
-  stepSetup.body.append(kindHost, el('h4', 'fs-head', t('template', 'Template')), trayHost);
-  function paintTray() {
-    trayHost.replaceChildren(templateTray(offered(), draft.template, (name) => applyTemplate(name)));
-  }
+  stepSetup.body.append(kindHost);
   const kindQuestions = ask([{ fields: [{
     key: 'kind', label: t('kind', 'Kind'), shape: 'square',
     options: ruledRows('kind', ['open', ...KINDS], (key) => t(`kind.${key}`, key === 'open' ? 'Open' : key)),
@@ -150,8 +90,7 @@ export function createNewTeamFormView(kit, { created = null, consumed = null, em
     exposed: true,
     onChange: (value) => {
       draft.kind = value.kind;
-      if (draft.template && !offered().some((row) => row.name === draft.template)) { draft.template = ''; snapshot = ''; }
-      paintTray(); paintFoot(); paintActions();
+      paintFoot(); paintActions();
     },
   });
   function paintKinds() {
@@ -299,24 +238,12 @@ export function createNewTeamFormView(kit, { created = null, consumed = null, em
   });
   const stepLead = agents.step;
 
-  /* ---- the collapse rules: a template's answers fold; the header opens them ---- */
-  const FOLDS = ['lead'];
   const steps = { setup: stepSetup, top: stepTop, lead: stepLead, defaults: null, kit: stepKit };
   function toggle(key) {
     if (draft.expanded[key]) delete draft.expanded[key];
     else draft.expanded[key] = true;
-    paintFolds();
   }
   const plan = () => ['setup', 'top', 'lead', 'defaults', 'kit'];
-  const meta = {
-    lead: () => t('new_team.agents_meta', '{n} agents', { n: draft.agents.length }),
-  };
-  function paintFolds() {
-    for (const key of FOLDS) {
-      const folded = !!templateRow();
-      steps[key].setCollapsed(folded && !draft.expanded[key], folded ? meta[key]() : '', folded);
-    }
-  }
 
   /* ---- Will be raised — the reading, and what an Agent born here inherits ---- */
   const foot = el('div', 'ntf-foot');
@@ -343,23 +270,6 @@ export function createNewTeamFormView(kit, { created = null, consumed = null, em
       ])],
     ]));
   }
-  /* ---- the conditional save ---- */
-  const saveName = el('input', 'ntf-tmplname');
-  saveName.type = 'text';
-  saveName.spellcheck = false;
-  saveName.autocapitalize = 'off';
-  saveName.placeholder = t('new_team.save_name_placeholder', 'template name');
-  saveName.addEventListener('input', () => {
-    draft.templateName = saveName.value;
-    save.setDisabled(!saveName.value.trim());
-  });
-  const save = createAction({ label: t('save_template', 'Save as template'), disabled: true, action: () => void doSave() });
-  // that block as a configuration that you want to use over."
-  const saveRow = createActionBar({ label: t('new_team.team_actions', 'Team actions'), className: 'ntf-actions' });
-  saveRow.el.append(saveName, save.el);
-  // save template not at the bottom with the blurb that is the packet"). The reading IS
-  // the thing being saved — what this Team amounts to — so the button that saves it sits
-  // beneath it, not inside one of the steps that feeds it. Mounted at the surface below.
   function paintActions() {
     // keyword everywhere for starting a new team and starting a new agent." Grey while
     // there is no name, kaki — the house's go colour — the moment there is one.
@@ -367,11 +277,6 @@ export function createNewTeamFormView(kit, { created = null, consumed = null, em
     raise.setDisabled(!ready);
     if (ready) raise.el.dataset.kind = 'primary';
     else delete raise.el.dataset.kind;
-    const own = !templateRow();
-    const dirty = templateDirty();
-    saveName.hidden = !(own || dirty);
-    save.el.hidden = saveName.hidden;
-    save.el.textContent = own ? t('save_template', 'Save as template') : t('new_team.save_as_new', 'Save as new template');
   }
 
   const rosterBody = (name) => ({
@@ -457,43 +362,13 @@ export function createNewTeamFormView(kit, { created = null, consumed = null, em
     await consumed?.();
   }
 
-  async function doSave() {
-    const token = draft.templateName.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '_');
-    if (!token) return;
-    // THE TEAM SHELF: a cast, not a loadout. Save-as-new only, per shelf.
-    const result = await request('/api/templates/teams', {
-      method: 'POST',
-      json: {
-        name: token,
-        label: draft.templateName.trim(),
-        art: templateRow()?.art || '＋',
-        blurb: draft.objective.trim().slice(0, 120),
-        kinds: draft.kind === 'open' ? KINDS : [draft.kind],
-        objective: draft.objective.trim(),
-        mandate: `${draft.reach} · ${draft.recruit} · ${draft.output.join(', ')}`,
-        behaviours: draft.books,
-        // The same rows the loader launches — one shape, produced in one place.
-        agents: agentPicks(draft.agents),
-      },
-    });
-    if (!result.ok) return notice.set('failed', result.message);
-    notice.set('success', t('new_team.saved_template', 'Saved template {name}', { name: token }));
-    templates = [...templates, result.data.template];
-    draft.templateName = '';
-    saveName.value = '';
-    save.setDisabled(true);
-    paintTray();
-  }
-
   function reset() {
-    draft.template = '';
     draft.name = '';
     draft.objective = '';
     draft.books = [];
     draft.agents = seededAgents();
     draft.expanded = {};
     setupOpen = false;
-    snapshot = '';
     nameInput.value = '';
     titleInput.value = '';
     titleTouched = false;
@@ -517,17 +392,15 @@ export function createNewTeamFormView(kit, { created = null, consumed = null, em
   function paint() {
     plan().forEach((key, index) => steps[key].setNumber(index + 1));
     stepPayload.setNumber(plan().length + 1);
-    stepSetup.setCollapsed(!setupOpen, t('new_team.kind_template_summary', 'Optional — Kind and Template'), true);
+    stepSetup.setCollapsed(!setupOpen, t('new_team.kind_summary', 'Optional — Kind'), true);
     stepDefaults.setCollapsed(!defaultsOpen, t('new_team.defaults_summary', 'Settings inherited by Agents launched in this Team'), true);
     steps.kit.el.hidden = !defaultsOpen;
     stepPayload.setCollapsed(!payloadOpen, t('forms.payload_summary', 'Review what Launch will create'), true);
-    paintTray();
     paintKinds();
     paintName();
     paintRoots();
     agents.paint();
     paintKitQuestions();
-    paintFolds();
     paintActions();
     paintFoot();
   }
@@ -548,7 +421,7 @@ export function createNewTeamFormView(kit, { created = null, consumed = null, em
     payloadOpen = !payloadOpen;
     stepPayload.setCollapsed(!payloadOpen, t('forms.payload_summary', 'Review what Launch will create'), true);
   } });
-  stepPayload.body.append(foot, saveRow.el);
+  stepPayload.body.append(foot);
   stepPayload.setCollapsed(true, t('forms.payload_summary', 'Review what Launch will create'), true);
   form.append(stepSetup.el, stepTop.el, stepLead.el, stepDefaults.el, stepKit.el, stepPayload.el);
   surface.content.append(form, notice.el);
@@ -572,9 +445,8 @@ export function createNewTeamFormView(kit, { created = null, consumed = null, em
     destroy: unhear,
     enter: async (detail = {}) => {
       paint();
-      const [seeded, tray, , , catalogRows] = await Promise.all([
+      const [seeded, , , catalogRows] = await Promise.all([
         request('/api/launch-seed'),
-        request('/api/templates/teams'),
         readWorkspaces(),
         // The Team's inline Agent editor reads the shared provider catalog too. Load it
         // here so a fresh New Team journey does not depend on another launch surface
@@ -584,13 +456,11 @@ export function createNewTeamFormView(kit, { created = null, consumed = null, em
       ]);
       catalog = catalogRows?.ok && Array.isArray(catalogRows.data) ? catalogRows.data : [];
       setMandates(catalog); // the mandate menus are the catalog's mandate files
-      templates = tray.ok && Array.isArray(tray.data) ? tray.data : [];
       await rescreen();
       if (seeded.ok) seed = seeded.data;
       // The seed lands only while the form is untouched — re-entering an open draft
       // must not overwrite the owner's hand.
       if (!loaded) { applySeed(); loaded = true; }
-      if (typeof detail?.template === 'string' && detail.template) applyTemplate(detail.template);
       if (typeof detail?.prompt === 'string' && detail.prompt.trim()) {
         draft.objective = detail.prompt.trim();
         objectiveInput.value = draft.objective;

@@ -1,0 +1,21 @@
+{
+  "id": "PLAYBOOK-10",
+  "campaign_id": "",
+  "title": "Start Team 1",
+  "objective": "Do: once the Workspace exists, its first Team's lead started in the background: given the import-project epic if they brought in an existing project, else left to make its own assessment.\nDetails: the Team with `team roster write <team> --workspace <handle>`, its lead with `session_create <lead> --team <team> --role lead`, then `item checkout PLAYBOOK-3 <lead>` and `item comment <its new epic> \"Workspace: <handle>\"`; `ronin-help new-workspace`.\nCheck: the lead is running in the Workspace, holding the import-project epic or doing its own assessment.",
+  "level": -1,
+  "kind": "Subtask",
+  "status": "Playbook",
+  "flagged": false,
+  "priority": "",
+  "comments": [],
+  "parent": "PLAYBOOK-6",
+  "attachments": [],
+  "links": [],
+  "external": {},
+  "trail": [],
+  "created": {
+    "at": "",
+    "by": ""
+  }
+}

@@ -21,7 +21,7 @@ export interface BriefSettings {
 export type OfficePerson = Omit<import('./office-people.js').Person, 'role'> & { role: string };
 
 export interface BriefRecord {
-  session: { name: string; title: string; type: SessionType; template: string; task: string };
+  session: { name: string; title: string; type: SessionType; task: string };
   user: {
     name: string;
     email: string;
