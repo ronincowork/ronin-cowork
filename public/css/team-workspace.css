@@ -76,11 +76,11 @@
   .league-team-coverage[hidden], .league-team-view[hidden] { display: none; }
   .league-team-toggle { align-self: flex-start; }
   .league-team-view { display: flex; flex-direction: column; gap: 0; min-width: 0; }
-  .league-team-view-agents > .league-team-agent { grid-template-columns: var(--hr-mark) minmax(0, 1fr) auto; cursor: default; }
+  .league-team-view-agents > .league-team-agent { grid-template-columns: var(--hr-mark) minmax(0, 1fr); cursor: default; }
   .league-team-view-agents > .league-team-agent:hover { background: transparent; }
-  .league-team-view-agents .league-team-agent-name { white-space: normal; overflow: visible; overflow-wrap: anywhere; }
+  .league-team-view-agents .league-team-agent-name { white-space: normal; overflow: visible; overflow-wrap: break-word; }
   .league-team-view-agents .league-team-agent-holds { display: block; margin-inline-start: 0; }
-  .league-team-view-agents .epic-progress-bar { grid-column: 3; width: 6rem; }
+  .league-team-view-agents .epic-progress-bar { grid-column: 2; margin-left: 0; width: min(100%, 12rem); }
   .league-team-view-config { gap: var(--space-subsection); }
   /* The Team's Epics: the Epic stones as a phalanx from the left edge; the open Teams rail's
      one-column rule is the outer phalanx's, not theirs, and their empty head takes no room. */
