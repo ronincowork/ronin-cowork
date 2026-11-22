@@ -26,6 +26,8 @@ import type { BriefSettings } from './brief-record.js';
 export interface SpawnForm {
   session_type?: 'cowork_agent' | 'bare_metal_agent' | 'terminal';
   house_seat?: HouseSeat;
+  /** The Helpful Assistant (KAN-766): an ordinary Cowork launch whose brief type is `irasshai`, so her files say `when: irasshai`. */
+  agent_type?: 'irasshai';
   team?: string;
   team_lead?: boolean;
   role?: 'coworker' | 'lead' | 'epic_lead' | 'coordinator';

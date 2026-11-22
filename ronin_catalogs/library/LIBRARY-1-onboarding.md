@@ -14,8 +14,8 @@ The tasks are this epic's children; match each by its title, and find its steps 
 - Meet your Agents is the end: close any open tasks as declined, close this epic, then end yourself with `session_end` (it archives you); Mika takes over from there.
 
 ## Your setup
-Do: before your first words, understand where they are (the person and their project, their account, and this office as your work record has it) and write it down in their record, `~/ronin/library/ABOUT_USER.md`: find its `## Where they are` section and update it, or make it new. For each Workspace with no summary yet, start a fresh Agent to write it, and don't wait for it: summaries arrive in `office read` as they are written. Then close this task; what you understood is what you start the conversation from.
-Details: your work record's What you know; `office read`; per Workspace with no summary (`workspace-doc list`): `session_create <name>`, then `item checkout LIBRARY-2 <name>` and `item comment <its new epic> "Workspace: <handle>"`.
+Do: before your first words, understand where they are (the person and their project, their account, and this office as the facts in your brief have it) and write it down in their record, `~/ronin/library/ABOUT_USER.md`: find its `## Where they are` section and update it, or make it new. For each Workspace with no summary yet, start a fresh Agent to write it, and don't wait for it: summaries arrive in the Workspaces fact as they are written. Then close this task; what you understood is what you start the conversation from.
+Details: the facts your brief lists; per Workspace with no summary (`workspace-doc list`): `session_create <name>`, then `item checkout LIBRARY-2 <name>` and `item comment <its new epic> "Workspace: <handle>"`.
 Check: ABOUT_USER.md has Where they are, as things stand.
 
 ## Agent Harness

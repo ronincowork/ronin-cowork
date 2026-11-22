@@ -2,7 +2,7 @@
 - **seed:** create, find, move, hand off and comment on work items
 - **when:**
 - **depth:** seed
-- **serves:** project-management
+- **serves:** project-management, irasshai
 - **order:** 40
 
 ## Commands

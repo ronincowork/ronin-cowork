@@ -74,7 +74,7 @@ const LAUNCH_KEYS = new Set([
   'cmd', 'model', 'provider', 'mandate', 'campaign_id',
   'tags', 'seed', 'inject', 'reference',
   'kind', 'brief', 'integrations', 'pm',
-  'template',
+  'template', 'agent_type',
 ]);
 const RETURNED_LAUNCH_KEYS = new Set([
   'assignment', 'work_locations', 'posture', 'opening', 'ack', 'capExempt', 'launchAgent', 'stated_by', 'birth_reading',
@@ -129,6 +129,7 @@ export function spawnFormFromLaunchBody(body: Record<string, unknown>, houseSeat
   return {
     session_type: sessionType as SpawnForm['session_type'],
     house_seat: houseSeat,
+    agent_type: body.agent_type === 'irasshai' ? 'irasshai' : undefined,
     team: team || undefined,
     team_lead: role === 'lead',
     role,
