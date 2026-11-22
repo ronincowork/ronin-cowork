@@ -81,7 +81,7 @@ else that uses the shape takes `tool.name` and `tool.target` only.
   calls `rowChanged`, which marks that Agent's card, and Core pushes it then; there is no clock.
 - **A dead pane** (KAN-660): its CLI exited (remain-on-exit keeps the pane). tmux's pane-dead
   push is the one source (`src/pane-death.ts`): the hook record reads *stopped* with the exit
-  status and time, the Agent is flagged (`agent_flag: 'stopped'`), Chat says *Stopped: exit N
+  status and time, the Agent is flagged (`{ why: 'stopped' }` in its `flags`), Chat says *Stopped: exit N
   at HH:MM* with one Resume (`/api/sessions/:name/resume`: archive and restore at once, on the
   same provider conversation), and the Agent's leads get one house notice naming its items. An
   Agent ended with session_end, or closed, has its session killed: no pane dies, nobody is told.
@@ -97,12 +97,12 @@ else that uses the shape takes `tool.name` and `tool.target` only.
   row reads the pane on each output (`asksForInput`, `src/status.ts`, the vendors' `asking`
   patterns and the house y/n): a numbered
   choice list with its selector (`❯ 1.`, `› 1.`) reads as a question. Either sets the stance *asking* for the
-  row and puts an Agent flag on its work record (`agent_flag: 'asking'`, `flagged`): ⚑ and
-  the flagged amber on its selector pill, a ⚑ line on its work record. It is not an item flag
-  and is never stored.
+  row and puts an Agent flag on its work record (`{ why: 'asking' }` in its `flags`): ⚑ and
+  the flagged amber on its selector pill, ⚑ in its tile header, a ⚑ line on its work record.
+  It is not an item flag, the header press does not clear it, and it is never stored.
 - **No progress** (KAN-618): a row that reads *working* while its conversation's newest line
   (the stance's `at`) is 12 minutes old reads *no progress for 12 min* instead, with the same
-  Agent flag (`agent_flag: 'no_progress'`). One timer per Agent (`createNoProgress`,
+  Agent flag (`{ why: 'no_progress' }` in its `flags`). One timer per Agent (`createNoProgress`,
   `src/asking.ts`) is set for the moment that line turns 12 minutes old; it reads nothing and
   only asks for the row again. A new line moves it, and the flag goes.
 - **Stale or current** is the `ts` of the newest line; which tool lines count as meaningful

@@ -9,7 +9,7 @@ column, or drag its card into the workspace where you want to see it.
 |---|---|
 | Title / ⛩ | Edit the Agent's displayed title; its session name remains its identity |
 | Item island | A pill for every work item the Agent holds (below) |
-| ⚑ | Only while an item flags the Agent's selector pill: one it holds, or, for a lead, one its Teams hold; hover for each flag's reason. One press unflags every one of them (comment "unflagged by owner"), and the ⚑ and the pill's flag go. Also on the phone's bar |
+| ⚑ | Exactly while the Agent's selector pill shows ⚑: an item it holds is flagged, or, for a lead, an item its Team holds; or the Agent itself is asking, has made no progress for 12 minutes, or has stopped. Hover for each flag and its reason. One press unflags every item among them (comment "unflagged by owner"); the Agent's own flag stays until it moves on. Also on the phone's bar |
 | Term / Chat | When Terminal transcript is active, switch between the terminal and the Agent's conversation |
 | メ | Open the menu for this Agent (below) |
 | − | Close this view while the Agent keeps running |
@@ -71,8 +71,8 @@ its items.
 
 A question shows for every CLI, whatever its log can say: Ronin reads it off the terminal,
 including a prompt drawn before the Agent's first turn, such as Codex's *Update available*.
-While it asks, the Agent is flagged: ⚑ in amber on its selector pill, and a ⚑ line on its
-☰ Work record. Answer it and the ?, the pill's ⚑ and the line go.
+While it asks, the Agent is flagged: ⚑ in amber on its selector pill and in its tile header,
+and a ⚑ line on its ☰ Work record. Answer it and the ?, the ⚑s and the line go.
 
 The island follows the Agent's work record and its stance as they change; nothing needs refreshing.
 

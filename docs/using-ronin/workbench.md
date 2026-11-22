@@ -120,10 +120,10 @@ On a Team's workbench the discovery column lists its Agents as pills (on a phone
 | a small dot after the name | **Working**: mid-turn, a tool out |
 | a small ring after the name | **Ready**: its turn ended (or was interrupted) less than 10 minutes ago; it just finished, look at it |
 | plain | **Idle**: 10 minutes or more since its turn ended, just born, or not known |
-| ⚑ and amber | **Needs you**: it is asking (a question, a permission, a plan), has made no progress for 12 minutes, its CLI hit an error (a login expired, an API error), or it holds a flagged item |
+| ⚑ after the name, and amber | **Needs you**: its work record has a flag: an item it holds is flagged, or, for a lead, an item its Team holds; or it is asking (a question, a permission, a plan), has made no progress for 12 minutes, or its CLI stopped |
 | dimmed | **Stopped**: its pane died; open it to resume |
 
-When more than one holds, Stopped wins, then Needs you, then Working, then Ready. Hover a pill, or use a
+When more than one holds, Needs you wins, then Stopped, then Working, then Ready. Hover a pill, or use a
 screen reader, for the situation in words.
 
 Each Agent's tile on a Team shows the work items that Agent holds as pills in its header,

@@ -128,8 +128,10 @@ gives "Your work record changed".
   prompt, Codex's *Update available* before its first turn), its work record opens with
   "⚑ Asking you: answer in its terminal". It is the Agent's flag, not an item's, and it is
   never stored: it goes when the question is answered. An asking Agent, or one holding a
-  flagged item, shows ⚑ in amber on its selector pill and its Team roster row; so does a lead
-  whose Team holds a flagged item, which its `work-record read` lists first.
+  flagged item, shows ⚑ in amber on its selector pill, its tile header and its Team roster
+  row; so does a lead whose Team holds a flagged item, which its `work-record read` lists
+  first. All of these read one list on the work record, its flags; the ☰ Work record opens
+  with one ⚑ line for each.
 - `work-record read`: what the Agent holds and watches, and under Documents the record's own
   documents and the held items' attachments (`--json`: `documents` and `attachments`). A lead also sees each Team it leads:
   what the Team holds and watches, and what each member holds and watches, read when asked.

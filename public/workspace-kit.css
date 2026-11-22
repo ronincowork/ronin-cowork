@@ -109,6 +109,8 @@
     background: color-mix(in srgb, var(--warn) 12%, transparent); /* status: an Agent holds a flagged item */
   }
   .team-agent-card.flagged .wk-card-heading, .team-agent-card.flagged .wk-card-mark { color: var(--warn); }
+  /* Its ⚑ on the right of the name, where the working dot sits (owner, KAN-776). */
+  .team-agent-card.flagged .wk-card-heading::after { content: '⚑'; flex: none; margin-left: auto; padding-left: var(--space-row); }
   /* WORKING (KAN-665): one of the Chat's dots after the name; Ready (its turn just ended) the
      same dot as a hollow ring. Stopped (its pane died): muted ink, no icon. Idle: the plain pill.
      The dot sits at the pill's right edge, one column down the list (KAN-673). */
