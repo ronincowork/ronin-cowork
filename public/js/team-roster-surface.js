@@ -9,13 +9,13 @@ import { WORKBENCH_TYPES } from './workbench-catalog.js';
 import { openWorkspaceTab } from './workspace.js';
 import { teamsRows, workspaces } from './teams-surface-rows.js';
 import { listedTeam } from './roster-groups.js';
-import { createProgress } from './epic-progress.js';
+import { createLifecycle } from './item-lifecycle.js';
 import { agentTitle } from './team-members.js';
 
 /**
  * A stone per Team (owner, 2026-11-22; w900): what the Team is. Its name, its concept (the roster
  * objective) and its lead, with a progress line along the bottom edge over everything the Team and
- * its Agents hold, in the Epic stones' colours (epic-progress.js); a Team holding nothing has no line.
+ * its Agents hold, the shared item lifecycle (item-lifecycle.js); a Team holding nothing has no line.
  * One question, Workspace, many-of, blank All, narrows the stones to the Teams in those Workspaces.
  * The 人 mark opens the Team's own workbench. Agents outside any Team are one more stone, No Team,
  * last, while there are any: it opens the same way, into one Team workbench of their own.
@@ -46,7 +46,7 @@ export function createTeamRosterSurface({ teamDetail } = {}) {
   const markers = new Map();
   const markerOf = (team) => {
     if (!markers.has(team)) {
-      const line = createProgress('line');
+      const line = createLifecycle('line');
       line.el.classList.add('team-progress-line');
       const node = document.createElement('span');
       node.className = 'team-stone-marks';
@@ -63,7 +63,7 @@ export function createTeamRosterSurface({ teamDetail } = {}) {
     const stones = teams.map((team) => {
       const name = String(team.title ?? '').trim() || team.name;
       const marks = markerOf(team.name);
-      marks.line.update(null, (team.items || []).map((item) => ({ ...item, level: 0 })));
+      marks.line.update(team.items || []);
       const who = lead(team.name);
       return {
         id: team.name, label: name, secondary: team.objective || '', state: who ? `人 ${who}` : '',
@@ -77,7 +77,7 @@ export function createTeamRosterSurface({ teamDetail } = {}) {
     });
     if (!roots.length && unassignedSessions().length) {
       const marks = markerOf(UNASSIGNED);
-      marks.line.update(null, []);
+      marks.line.update([]);
       stones.push({ id: UNASSIGNED, label: t('teams_surface.no_team', 'No Team'), secondary: t('teams_surface.no_team_summary', 'Agents outside any Team'), marker: marks.node, className: 'team-stone team-stone-none' });
     }
     return stones;

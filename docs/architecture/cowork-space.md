@@ -143,7 +143,7 @@ Workspace 1 the same way (`workspaces-surface.js`), one card per Workspace and N
 GitHub CLI as cards; Settings' Workspaces surface stays as it is. Teams opens the Teams workbench at `#/cowork`
 (`cowork-view.js`; owner, 2026-10-20), the one Teams workbench: its Teams card
 (`team-roster-surface.js`) carries a Workspace question (many-of, blank All) above its stones,
-each stone the Team's name, concept (objective) and lead with a progress line (`epic-stage.js`,
+each stone the Team's name, concept (objective) and lead with a progress line (`item-lifecycle.js`, the shared item lifecycle,
 over the `items` the teams push carries with their status) along its bottom edge, and a No Team
 stone last while Agents outside any Team exist; the 人 mark in a stone's corner opens the Team
 page (No Team's, `#/team/%20unassigned`) in a new tab. A pressed stone's Team (`leagueTeamBody`

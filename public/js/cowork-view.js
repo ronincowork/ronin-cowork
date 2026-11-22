@@ -39,7 +39,7 @@ import { createAgentCompositionSurface } from './agent-composition.js';
 import { createTeamEpics, teamEpicIds } from './team-epics.js';
 import { createFindItem } from './team-find-item.js';
 import { createEpicRecord, createEpicStones, createEpicsRead } from './epics-surface.js';
-import { createProgress } from './epic-progress.js';
+import { createLifecycle } from './item-lifecycle.js';
 
 const el = (tag, cls, text) => {
   const out = document.createElement(tag);
@@ -666,7 +666,7 @@ export function createCoworkView(options = {}) {
     else { main.append(toggle, ...TEAM_VIEWS.map((key) => views[key])); showView(teamViewOf.get(name) || 'agents'); }
     let held = new Map(); // agent name -> the items it holds, from the Team reading
     const lines = new Map(); // agent name -> its progress line, kept so a row compares the same node
-    const lineOf = (agent) => { if (!lines.has(agent)) lines.set(agent, createProgress('bar')); return lines.get(agent); };
+    const lineOf = (agent) => { if (!lines.has(agent)) lines.set(agent, createLifecycle('bar')); return lines.get(agent); };
     // ONE AGENT MOVES, ONE ROW CHANGES (KAN-413): the kit's keyed list. Each Agent row compares
     // what it shows (its stance, 人, title, what it holds) and redraws only itself. A row is a
     // reading, not a door: the Team is launched whole, never an Agent on its own (owner, 2026-11-22).
@@ -696,7 +696,7 @@ export function createCoworkView(options = {}) {
       const list = membersOfTeam(name).map((member) => {
         const mine = held.get(member.name) || [];
         const line = mine.length ? lineOf(member.name) : null;
-        const reading = line?.update(null, mine.map((item) => ({ ...item, level: 0 })));
+        const reading = line?.update(mine);
         return { name: member.name, stance: rows.get(member.name)?.stance, team_lead: member.team_lead, flagged: !!rows.get(member.name)?.tegami?.flags?.length,
           title: agentTitle(member), holds: mine.map((item) => item.title).join(' · '), counts: reading?.counts || null, line: line?.el || null };
       }).sort((a, b) => Number(b.team_lead) - Number(a.team_lead));

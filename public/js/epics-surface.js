@@ -29,7 +29,8 @@ import { holderWords } from './work-items-surface.js';
 import { itemBar } from './tile-island.js';
 import { createPhalanx } from './phalanx.js';
 import { S } from './state.js';
-import { epicAttention, epicMoved, isOpenEpic, orderEpics, STAGE_KEYS, statusKey } from './epic-stage.js';
+import { epicAttention, epicMoved, isOpenEpic, orderEpics } from './epic-stage.js';
+import { LIFECYCLE, statusKey } from './item-lifecycle.js';
 import { createProgress } from './epic-progress.js';
 import { humanAge } from './work-record.js';
 import { teamsFromState } from './team-controller.js';
@@ -539,7 +540,7 @@ export function createEpicOne(epicId, { epicsRead, launch = false, header = true
   const columns = el('div', 'epic-columns');
   const NAMES = { todo: t('epics.to_do', 'To Do'), progress: t('epics.in_progress', 'In Progress'), review: t('epics.in_review', 'In Review'), done: t('epics.recently_done', 'Recently Done') };
   const lists = {};
-  for (const key of STAGE_KEYS) {
+  for (const key of LIFECYCLE) {
     const column = el('section', 'epic-column');
     column.dataset.status = key;
     const list = el('div', 'epic-bars');
@@ -622,7 +623,7 @@ export function createEpicOne(epicId, { epicsRead, launch = false, header = true
     markDone.hidden = stage !== 'aging';
     const top = every.filter((item) => item.level === 0);
     none.hidden = top.length > 0;
-    for (const status of STAGE_KEYS) {
+    for (const status of LIFECYCLE) {
       let here = top.filter((item) => statusKey(item.status) === status);
       if (status === 'done') here = here.sort((a, b) => String(b.moved || '').localeCompare(String(a.moved || '')));
       lists[status].replaceChildren(...here.map((item) => card(item)));

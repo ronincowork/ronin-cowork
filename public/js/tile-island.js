@@ -27,7 +27,7 @@
  * tile re-reads on every push (tile.js refreshTegami). Nothing here asks the server.
  */
 import { t } from './lexicon.js';
-import { statusKey } from './epic-stage.js';
+import { statusKey } from './item-lifecycle.js';
 import { humanAge } from './work-record.js';
 import { WorkspacePrimitives } from './workspace-primitives.js';
 

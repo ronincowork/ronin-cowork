@@ -70,7 +70,7 @@
   .league-team-agent-holds { margin-inline-start: var(--space-inline); color: var(--muted); }
   /* ONE TEAM (owner, 2026-11-22; w900): concept and Workspace under the name, then one toggle that
      ticks through Agents, Epics and Configuration. Text wraps in full; an Agent row is a reading
-     (no press), its progress bar at the row's end in the Epic stones' colours (epic-stage.js). */
+     (no press), its progress bar at the row's end the shared item lifecycle (item-lifecycle.js). */
   .league-team-detail-head > .league-team-objective, .league-team-edit > .wk-surface-content > .league-team-objective { white-space: normal; overflow-wrap: anywhere; overflow: visible; color: var(--fg); }
   .league-team-coverage { grid-column: 1 / -1; margin: 0; color: var(--muted); font-size: var(--text-body); overflow-wrap: anywhere; }
   .league-team-coverage[hidden], .league-team-view[hidden] { display: none; }
@@ -80,7 +80,7 @@
   .league-team-view-agents > .league-team-agent:hover { background: transparent; }
   .league-team-view-agents .league-team-agent-name { white-space: normal; overflow: visible; overflow-wrap: break-word; }
   .league-team-view-agents .league-team-agent-holds { display: block; margin-inline-start: 0; }
-  .league-team-view-agents .epic-progress-bar { grid-column: 2; margin-left: 0; width: min(100%, 12rem); }
+  .league-team-view-agents .lifecycle-bar { grid-column: 2; margin-left: 0; width: min(100%, 12rem); }
   .league-team-view-config { gap: var(--space-subsection); }
   /* The Team's Epics: the Epic stones as a phalanx from the left edge; the open Teams rail's
      one-column rule is the outer phalanx's, not theirs, and their empty head takes no room. */

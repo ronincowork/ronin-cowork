@@ -88,7 +88,7 @@ test('the Epics page and one Epic\'s page, as a person reads and presses them', 
   await page.waitForSelector(`.epic-record-stones [data-sws-id="${aging}"]`);
   const stones = await page.$$eval('.epic-record-stones .sws-grid > [data-sws-id]', (nodes) => nodes.map((node) => ({
     id: (node as HTMLElement).dataset.swsId, needs: node.querySelector('.sws-secondary')?.textContent || '', last: node.querySelector('.sws-state')?.textContent || '',
-    line: Boolean(node.querySelector('.epic-progress-line')),
+    line: Boolean(node.querySelector('.lifecycle-line')),
   })));
   assert.deepEqual(stones.map((s) => s.id), [review, toAssign, aging, '!new-epic'], 'needing you first, then most progressed; no Done Epic; New Epic last');
   assert.equal(stones[0].needs, 'Needs review', 'an item In Review');
@@ -100,8 +100,8 @@ test('the Epics page and one Epic\'s page, as a person reads and presses them', 
   }
   assert.doesNotMatch(await page.textContent('.epic-record-stones') || '', /Aging|Working|Starter|Maturing/, 'no epic-stage name on a stone');
   // The line's press reads the epic-stage and counts; it does not open the Epic.
-  await page.click(`.epic-record-stones [data-sws-id="${aging}"] .epic-progress-line`);
-  const reading = await page.textContent('.epic-stage-reading');
+  await page.click(`.epic-record-stones [data-sws-id="${aging}"] .lifecycle-line`);
+  const reading = await page.textContent('.lifecycle-reading');
   assert.match(reading || '', /Aging/);
   assert.match(reading || '', /In Progress 1/);
   assert.match(reading || '', /Done 3/);
