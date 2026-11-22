@@ -194,7 +194,7 @@ const readPane = async (name: string) => {
 
 /** AN AGENT FLAG (owner, 2026-11-15, KAN-527): the Agent itself waits on the owner, not an
  * item. Derived from the CLI's hooks and the pane, never stored: it goes when the CLI moves on. Its
- * work record carries it, and `flagged` puts ⚑ and the flagged amber on its selector pill. */
+ * card adds it to its work record's `flags` with no id ({ why }), and every surface shows ⚑ for it. */
 export const ASKING_FLAG = 'asking';
 export const NO_PROGRESS_FLAG = 'no_progress';
 export const STOPPED_FLAG = 'stopped'; // its pane died (src/pane-death.ts, KAN-660)
@@ -239,7 +239,7 @@ export async function cardOf(s: SessionWithAxes, parts: ReadonlySet<CardPart>) {
     stance: flag ?? (stopped_at ? 'interrupted' : contributed.stance ?? 'unknown'),
     ...(Array.isArray(reports) && !reports.includes('asking') ? { stance_reports: ['asking', ...reports] } : {}),
     ...(stopped_at ? { stopped_at } : {}),
-    ...(tegami ? { tegami: flag ? { ...tegami, flagged: true, agent_flag: flag } : tegami } : {}),
+    ...(tegami ? { tegami: flag ? { ...tegami, flags: [...tegami.flags, { why: flag }] } : tegami } : {}),
     ...(thread ? { thread } : {}),
   };
 }

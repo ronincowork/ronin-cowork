@@ -21,8 +21,23 @@ A card is the Agent's listing entry plus three parts, each read only when it is 
 | `fields` | `question` | the hooks alone |
 | `fields` | `stopped_at` | a Stop Ronin sent (`src/stopped.ts`), until the Agent writes a line |
 | `fields` | `secret_ask` | the `secret` tool's open ask (`src/secrets.ts`) |
-| `record` | `tegami`: objective, repos, Teams, holds, items, docs, brief | the work record files (`tegami.md`, `AGENT_BRIEF.md`, `drop/`) and item writes |
-| derived | `agent_flag` (`asking`, `no_progress`, `stopped`), `flagged` | worked out in `cardOf` from the parts above; never stored |
+| `record` | `tegami`: objective, repos, Teams, holds, items, docs, brief, `flags` (items' entries) | the work record files (`tegami.md`, `AGENT_BRIEF.md`, `drop/`) and item writes |
+| derived | the Agent's own entry in `tegami.flags`: `{ why }` with `asking`, `no_progress` or `stopped` | worked out in `cardOf` from the parts above; never stored |
+
+### Flags: one source (KAN-776)
+
+`tegami.flags` is the only place an Agent's flag lives; every surface reads it and nothing
+else, and a non-empty list is ⚑: the selector pill (⚑ after the name, amber), the Team rows,
+Home's flagged colour, the tile header ⚑ and phone bar, and the work record. Each entry is
+`{ id?, why }`:
+
+- **With an id**: a flagged item the Agent holds, or, for a lead, one a Team it leads holds.
+  `why` is the item's last "Flagged:" comment. `readTegami` (`src/tegami-read.ts`) builds these
+  from the work record's reading. The entry goes when the item is unflagged; one press on the
+  header ⚑ unflags them all.
+- **Without an id**: the Agent's own flag, `why` one of `asking`, `no_progress`, `stopped`.
+  `cardOf` adds it to the same list from the pane and hooks; it goes when the Agent moves on,
+  and the header press leaves it.
 
 ### Where two inputs meet: status (KAN-664)
 

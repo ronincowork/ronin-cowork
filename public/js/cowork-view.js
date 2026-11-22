@@ -331,12 +331,13 @@ export function createCoworkView(options = {}) {
     sessions: () => (campaign ? unassignedSessions() : membersOfTeam(team)).map((member) => {
       const reading = readingsOf(member);
       const mika = team === STEERCO && member.name === 'mika_agent';
-      // A FLAGGED AGENT (owner, 2026-11-15, KAN-521): any item it holds flagged puts ⚑ and the
-      // flagged amber on its pill; pressed, it opens as ever, the item ⚑ on its island. Working
-      // adds the kit's dot after the name; stopped dims it (KAN-665). The title says it in words.
+      // A FLAGGED AGENT (owner, 2026-11-15, KAN-521; KAN-776): a non-empty `flags` puts ⚑ and
+      // the flagged amber on its pill, the ⚑ at the right edge where the working dot sits (CSS);
+      // pressed, it opens as ever. Working adds the kit's dot after the name; stopped dims it
+      // (KAN-665). The title says it in words.
       const label = mika ? t('mika.name', 'Mika') : agentTitle(member);
       return { key: member.name, label, className: `team-agent-card${reading.situation ? ` ${reading.situation}` : ''}`,
-        mark: `${member.team_lead ? '人' : ''}${reading.flagged ? '⚑' : ''}` || null,
+        mark: member.team_lead ? '人' : null,
         title: situationTitle(label, reading.situation),
         summary: reading.step, metadata: reading.lines,
         ...(campaign ? { action: () => openAgentWorkbench(member.name) } : {}),
@@ -668,7 +669,7 @@ export function createCoworkView(options = {}) {
       },
     });
     const paintAgents = () => {
-      const list = membersOfTeam(name).map((member) => ({ name: member.name, stance: rows.get(member.name)?.stance, team_lead: member.team_lead, flagged: !!rows.get(member.name)?.tegami?.flagged,
+      const list = membersOfTeam(name).map((member) => ({ name: member.name, stance: rows.get(member.name)?.stance, team_lead: member.team_lead, flagged: !!rows.get(member.name)?.tegami?.flags?.length,
         title: agentTitle(member), holds: (held.get(member.name) || []).join(' · ') }));
       agentRows.set(agents, foot ? [...list, { name: '!foot', foot: true }] : list);
     };
@@ -760,7 +761,7 @@ export function createCoworkView(options = {}) {
       status: stanceLabel(row.stance),
       ctx: row.ctx != null ? `⛽ ${row.ctx}%` : '',
       situation: agentSituation(row),
-      flagged: agentSituation(row) === 'flagged',
+      flagged: !!row.tegami?.flags?.length,
       lines: [current.text, stanceLabel(row.stance), row.ctx != null ? `⛽ ${row.ctx}%` : '', (row.model || '').toLowerCase()].filter(Boolean),
     };
   };

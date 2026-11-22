@@ -5,7 +5,7 @@ import { pickFile } from './tilefiles.js';
 import { S, serviceMissing } from './state.js';
 import { OUTPUTS } from './output.js';
 import { createMenuButton } from './menu.js';
-import { buildWorkRecord } from './work-record.js';
+import { buildWorkRecord, flagWords } from './work-record.js';
 import { readDesks } from './desks.js';
 import { t } from './lexicon.js';
 import { isPlanRef, planName } from './plan-attachment.js';
@@ -50,8 +50,8 @@ const HEADER = () => {
 
   { grow: true },
 
-  // THE FLAG (owner, 2026-11-19, KAN-709): ⚑ beside Chat while an item this Agent holds is
-  // flagged, read off the same work record as its pill; one press unflags them all.
+  // THE FLAG (owner, 2026-11-19, KAN-709; KAN-776): ⚑ beside Chat while its work record's `flags`
+  // is not empty, as its pill; one press unflags every item's flag among them.
   { key: 'flagBtn', cls: 'tile-flag', text: '⚑', needs: 'session',
     read: (tile, el) => paintFlag(tile, el),
     on: (tile, el) => void unflagHeld(tile, el) },
@@ -103,35 +103,25 @@ const HEADER = () => {
   return rows;
 };
 
-/** The items flagging the selector pill now (its held items, and for a lead its Teams', KAN-776),
- *  off the letter's one list; the reasons ("Flagged: …" comments) read once per new set, then the
- *  help is redrawn. A press hides the ⚑ at once and ignores repeats until the unflags answer. */
-const flaggedHeld = (tile) => (tile.tegami?.flaggedItems || []).filter((item) => item.flagged);
-async function readReasons(tile, el, ids) {
-  const { request } = await import('./request.js');
-  const reads = await Promise.all(ids.map((id) => request(`/api/work-items/${encodeURIComponent(id)}`, { cache: 'no-store' })));
-  if (el.dataset.ids !== ids.join(' ')) return;
-  tile.flagReasons = reads.map((read, n) => {
-    const said = (read.ok ? read.data?.item?.comments || [] : []).filter((c) => String(c.text || '').startsWith('Flagged: ')).at(-1);
-    return `${ids[n]} ${said ? said.text : t('head.flagged', 'Flagged')}`;
-  });
-  syncTileHead(tile);
-}
+/** The work record's `flags` (KAN-776), the one source the selector pill reads too: each entry
+ *  with its reason in the help. A press unflags every entry with an id (an item's) in one go; the
+ *  Agent's own entry stays until the Agent moves on. The ⚑ hides while the unflags answer. */
 function paintFlag(tile, el) {
-  const ids = flaggedHeld(tile).map((item) => item.id);
-  el.hidden = !ids.length || el.getAttribute('aria-busy') === 'true';
-  if (el.dataset.ids !== ids.join(' ')) { el.dataset.ids = ids.join(' '); tile.flagReasons = null; if (ids.length) void readReasons(tile, el, ids); }
-  const help = `${(tile.flagReasons || ids.map((id) => `${id} ${t('head.flagged', 'Flagged')}`)).join('\n')}\n${t('head.unflag_help', 'Press to unflag')}`;
+  const flags = tile.tegami?.flags || [];
+  el.hidden = !flags.length || el.getAttribute('aria-busy') === 'true';
+  const help = [...flags.map(flagWords), ...(flags.some((flag) => flag.id) ? [t('head.unflag_help', 'Press to unflag')] : [])].join('\n');
   el.setAttribute('aria-label', help);
   return help;
 }
 async function unflagHeld(tile, el) {
   if (el.getAttribute('aria-busy') === 'true') return;
-  const ids = flaggedHeld(tile).map((item) => item.id);
+  const ids = (tile.tegami?.flags || []).filter((flag) => flag.id).map((flag) => flag.id);
+  if (!ids.length) return;
   el.setAttribute('aria-busy', 'true'); el.hidden = true;
   const { request } = await import('./request.js');
   const done = await Promise.all(ids.map((id) => request(`/api/work-items/${encodeURIComponent(id)}/unflag`, { method: 'POST', json: { comment: t('head.unflagged', 'unflagged by owner') } })));
-  for (const [n, read] of done.entries()) { if (read.ok) for (const list of [tile.tegami?.flaggedItems, tile.tegami?.items, tile.tegami?.teamItems]) { const item = list?.find((one) => one.id === ids[n]); if (item) item.flagged = false; } }
+  const cleared = new Set(ids.filter((_, n) => done[n].ok));
+  if (tile.tegami) tile.tegami.flags = (tile.tegami.flags || []).filter((flag) => !cleared.has(flag.id));
   el.removeAttribute('aria-busy');
   syncTileHead(tile);
 }
