@@ -20,7 +20,7 @@
 import { mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { STOCK_DIR, storeDir } from './resources.js';
-import { createItem, listItems, readItem, WorkItemBadInput, WorkItemMissing, type Holder, type WorkItem } from './work-items.js';
+import { createItem, handedNotice, listItems, readItem, WorkItemBadInput, WorkItemMissing, type Holder, type WorkItem } from './work-items.js';
 import { enqueueMessage } from './message-queue.js';
 import { listSessions } from './tmux.js';
 import { readTeamRoster } from './team-rosters.js';
@@ -29,6 +29,10 @@ export const stockLibraryDir = (): string => path.join(STOCK_DIR, 'library');
 export const userLibraryDir = (): string => storeDir('library_items');
 
 export const LIBRARY_ID = /^LIBRARY-[1-9][0-9]*$/;
+/** The library's onboarding item: the Helpful Assistant checks it out to herself. A checked-out
+ * copy keeps no link, so her epic is known by this item's title (office read, Services' start). */
+export const ONBOARDING = 'LIBRARY-1';
+export const onboardingTitle = async (): Promise<string> => (await readLibrary(ONBOARDING).catch(() => null))?.title ?? '';
 export const isLibraryId = (id: string): boolean => LIBRARY_ID.test(String(id ?? '').trim());
 
 export interface LibraryPart { title: string; text: string; under: LibraryPart[] }
@@ -127,17 +131,12 @@ export async function deleteLibrary(id: string): Promise<LibraryItem | null> {
   return (await listLibrary()).find((one) => one.id === was.id) ?? null;
 }
 
-/** item create --library: a new file; under a library parent, a task added to it (written to the
- * person's own file, which then replaces stock by its id). */
-export async function createLibrary(title: string, text: string, parent?: string): Promise<LibraryItem> {
-  if (!title.trim()) throw new WorkItemBadInput('A library item needs a title.');
-  if (!parent) return writeNew({ title: title.trim(), text: text.trim(), under: [] });
+/** item create --library --parent LIBRARY-n: a task added to that item, saved as the person's own
+ * version of it (saveLibrary). */
+export async function addLibraryTask(parent: string, title: string, text: string): Promise<LibraryItem> {
+  if (!title.trim()) throw new WorkItemBadInput('A library task needs a title.');
   const into = await readLibrary(parent);
-  into.under.push({ title: title.trim(), text: text.trim(), under: [] });
-  const file = into.origin === 'user' ? into.file : path.join(userLibraryDir(), path.basename(into.file));
-  await mkdir(userLibraryDir(), { recursive: true });
-  await writeFile(file, libraryText(into), 'utf8');
-  return { ...into, file, origin: 'user' };
+  return saveLibrary(into.id, libraryText({ ...into, under: [...into.under, { title: title.trim(), text: text.trim(), under: [] }] }));
 }
 
 /** item checkout <live epic> --library: the live item and its children, as a new file. */
@@ -152,11 +151,10 @@ export async function fileToLibrary(id: string): Promise<LibraryItem> {
 /** item checkout LIBRARY-n: the file made as plain new live items, To Do, in its order: the epic,
  * its tasks, their subtasks, each held by the receiver, in the receiver's Campaign; an Agent other
  * than the caller told once. Answers the epic and every id made. */
-export async function checkoutLibrary(id: string, to: Holder, by: string): Promise<{ epic: WorkItem; made: string[] }> {
+export async function checkoutLibrary(id: string, to: Extract<Holder, { kind: 'agent' | 'team' }>, by: string): Promise<{ epic: WorkItem; made: string[] }> {
   const source = await readLibrary(id);
-  const campaign_id = to.kind === 'workspace' ? to.campaign
-    : to.kind === 'team' ? (await readTeamRoster(to.name))?.campaign_id
-      : (await listSessions().catch(() => [])).find((one) => one.name === to.name)?.campaign_id;
+  const campaign_id = to.kind === 'team' ? (await readTeamRoster(to.name))?.campaign_id
+    : (await listSessions().catch(() => [])).find((one) => one.name === to.name)?.campaign_id;
   const made: string[] = [];
   const make = async (part: LibraryPart, kind: string, parent: string | null): Promise<WorkItem> => {
     const { item } = await createItem({ title: part.title, objective: part.text, kind, parent, holder: to, ...(campaign_id ? { campaign_id } : {}) }, by);
@@ -165,9 +163,7 @@ export async function checkoutLibrary(id: string, to: Holder, by: string): Promi
     return item;
   };
   const epic = await make(source, 'Epic', null);
-  if (to.kind === 'agent' && to.name !== by) {
-    await enqueueMessage(to.name, `${epic.id} '${epic.title}' is yours, from ${by}. Read it and follow its objective.`, 'house', 'Work items');
-  }
+  if (to.kind === 'agent' && to.name !== by) await enqueueMessage(to.name, handedNotice(epic, by), 'house', 'Work items');
   return { epic, made };
 }
 
@@ -176,14 +172,14 @@ export async function checkoutLibrary(id: string, to: Holder, by: string): Promi
 export async function libraryReading(one: LibraryItem): Promise<{ item: Record<string, unknown>; children: Array<Record<string, unknown>> }> {
   const stock = (await filesIn(stockLibraryDir())).has(one.id);
   const library = { file: one.file, origin: one.origin, stock, text: await readFile(one.file, 'utf8') };
-  const shape = (part: LibraryPart, level: number, kind: string, at: string) => ({
-    id: at, campaign_id: '', title: part.title, objective: part.text, level, kind, status: 'Library', flagged: false, priority: '',
-    // No author: the reading would show one as the Agent it was started in.
-    comments: [], parent: null, attachments: [], links: [], external: {}, trail: [], created: { at: '', by: '' },
-    library,
-  });
   return {
-    item: shape(one, 1, 'Epic', one.id),
-    children: one.under.map((task) => ({ ...shape(task, 0, 'Task', ''), holders: [], subtasks: task.under.map((sub) => sub.title) })),
+    item: {
+      id: one.id, campaign_id: '', title: one.title, objective: one.text, level: 1, kind: 'Epic', status: 'Library', flagged: false, priority: '',
+      // No author: the reading would show one as the Agent it was started in.
+      comments: [], parent: null, attachments: [], links: [], external: {}, trail: [], created: { at: '', by: '' },
+      library,
+    },
+    // Its tasks as the reading lists children; Setup reads each one's Open line from its objective.
+    children: one.under.map((task) => ({ id: '', title: task.title, objective: task.text, kind: 'Task', level: 0, status: '', holders: [] })),
   };
 }

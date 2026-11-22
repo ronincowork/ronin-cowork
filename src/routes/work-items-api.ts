@@ -12,7 +12,7 @@ import {
 import { agentReading, epicCards, everyItemReading, teamReading, type HeldItem } from '../work-items-read.js';
 import { liveRows, rowOf } from '../work-items-index.js';
 import { pushTeams } from '../ws/events.js';
-import { checkoutLibrary, createLibrary, createLibraryText, deleteLibrary, fileToLibrary, isLibraryId, libraryReading, libraryText, listLibrary, readLibrary, saveLibrary } from '../library.js';
+import { addLibraryTask, checkoutLibrary, createLibraryText, deleteLibrary, fileToLibrary, isLibraryId, libraryReading, libraryText, listLibrary, readLibrary, saveLibrary } from '../library.js';
 
 const text = (value: unknown): string | undefined => typeof value === 'string' ? value : value === undefined || value === null ? undefined : String(value);
 
@@ -120,7 +120,7 @@ export function registerWorkItems(app: express.Express): void {
     // ?library=1: the library's files instead (KAN-767), each one row; ?text reads its whole tree.
     if (text(req.query.library)) {
       const shelf = (await listLibrary()).filter((one) => {
-        const all = `${libraryText(one)}`.toLowerCase();
+        const all = libraryText(one).toLowerCase();
         return words.every((word) => all.includes(word));
       });
       return res.json({ ok: true, items: shelf.map((one) => ({ id: one.id, title: one.title, status: 'Library', kind: 'Epic', level: 1, parent: null, holders: [], holder: '', tasks: one.under.length, origin: one.origin })) });
@@ -133,11 +133,13 @@ export function registerWorkItems(app: express.Express): void {
 
   app.post('/api/work-items', guarded(async (req, res) => {
     const b = req.body ?? {};
-    // --library: a new file in the person's library, or a task added to one (KAN-767).
+    // --library (KAN-767): a new library file, from its whole { text } (Find item's New) or a
+    // { title, objective } (the item tool); with a LIBRARY { parent }, a task added to that one.
     if (b.library === true || b.library === 'true') {
-      // { text }: a whole file, as Find item's New writes it; else a title and objective (the item tool).
-      const made = text(b.text) ? await createLibraryText(text(b.text)!) : await createLibrary(text(b.title) ?? '', text(b.objective) ?? '', text(b.parent)?.trim() || undefined);
-      return res.json({ ok: true, id: made.id, file: made.file, acknowledgement: `${b.parent ? `added to ${made.id}` : `made ${made.id}`} in the library: ${made.file}` });
+      const parent = text(b.parent)?.trim();
+      const made = parent ? await addLibraryTask(parent, text(b.title) ?? '', text(b.objective) ?? '')
+        : await createLibraryText(text(b.text) ?? `# ${text(b.title)?.trim() ?? ''}\n\n${text(b.objective) ?? ''}`);
+      return res.json({ ok: true, id: made.id, file: made.file, acknowledgement: `${parent ? `added to ${made.id}` : `made ${made.id}`} in the library: ${made.file}` });
     }
     const done = await createItem({
       title: text(b.title) ?? '', objective: text(b.objective), status: text(b.status), kind: text(b.kind), priority: text(b.priority), parent: text(b.parent) || null,

@@ -274,7 +274,8 @@ export function renderItemDetail(host, item, { holder = '', heldBy = null, openA
   answer.setAttribute('role', 'status');
   let statusStep = null;
   const flaggedWords = [t('work_items.flag_on', 'Yes'), t('work_items.flag_off', 'No')];
-  const question = ask([{ fields: [{ key: 'status', label: t('work_items.status', 'Status'),
+  // A library item has no status to move (KAN-769): no question is made for it.
+  const question = lib ? null : ask([{ fields: [{ key: 'status', label: t('work_items.status', 'Status'),
     options: statusChoices(item).map((v) => ({ v, l: v })) },
   { key: 'flagged', label: t('work_items.flagged_label', 'Flagged'), switch: flaggedWords }] }], {
     value: { status, flagged }, density: 'tight',

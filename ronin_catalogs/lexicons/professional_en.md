@@ -627,6 +627,34 @@ nothing paints exactly this.
 - **work_items.comment_failed:** The comment was not added.
 - **work_items.comment_told:** Added; sent to {names}.
 - **work_items.comment_nobody:** Added. No Agent holds this item, so nobody was sent it.
+- **work_items.library:** Library
+- **work_items.library_yours:** Library · yours
+- **work_items.library_file:** File
+- **work_items.checkout:** Check out
+- **work_items.checkout_to:** To
+- **work_items.checkout_meta:** Copies it into live work
+- **work_items.checkout_pick:** Pick an Agent or a Team.
+- **work_items.checking_out:** Checking out…
+- **work_items.checked_out:** Checked out as {id}.
+- **work_items.checkout_failed:** It was not checked out.
+- **work_items.team_named:** Team {name}
+- **work_items.library_text:** The library file
+- **work_items.library_make_mine:** Make my version
+- **work_items.library_edit:** Edit
+- **work_items.library_save:** Save my version
+- **work_items.library_not_saved:** It was not saved.
+- **work_items.library_delete_mine:** Delete my version
+- **work_items.library_delete:** Delete
+- **work_items.library_not_deleted:** It was not deleted.
+- **work_items.library_yours_meta:** Yours, over Ronin’s
+- **work_items.library_ronins:** Ronin’s
+- **find_item.library_empty:** The library is empty.
+- **find_item.library_new:** New library item
+- **find_item.library_save:** Save
+- **find_item.library_not_saved:** It was not saved.
+- **find_item.library_new_title:** Its title
+- **find_item.library_new_text:** What the Agent who checks it out does.
+- **find_item.library_new_task:** A task
 - **team.workspace_1:** Tilespace 1
 - **team.workspace_2:** Tilespace 2
 - **team.commons_card:** Commons

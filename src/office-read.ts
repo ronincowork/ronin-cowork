@@ -23,6 +23,7 @@ import { readMachineSection } from './machine-state.js';
 import { listPlans } from './plans.js';
 import { listCanvases } from './canvases.js';
 import { DONE, listItems } from './work-items.js';
+import { onboardingTitle } from './library.js';
 import { listLetterHolds } from './tegami.js';
 import { listSeats } from './seats.js';
 import { storeDir } from './resources.js';
@@ -168,7 +169,8 @@ export async function officeRead(only = ''): Promise<string> {
     const where = one.workspaces.length ? ` in ${one.workspaces.join(', ')}` : '';
     return `${one.label}: ${on ? 'connected' : one.available ? 'available, not connected' : 'not available for this Desk'}${where}`;
   });
-  const onboarding = items.filter((item) => item.kind === 'Epic' && item.title === 'Getting set up in your new office').at(-1);
+  const onboardingIs = await onboardingTitle();
+  const onboarding = onboardingIs ? items.filter((item) => item.kind === 'Epic' && item.title === onboardingIs).at(-1) : undefined;
   const steps = onboarding ? items.filter((item) => item.parent === onboarding.id).map((item) => `${item.title}: ${item.status}`) : [];
   const inTeams = new Set(teams.map((team) => team.name));
   const alone = running.filter((one) => !one.tags.some((tag) => inTeams.has(tag))).map((one) => one.title || one.name);
