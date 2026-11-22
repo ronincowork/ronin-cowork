@@ -41,9 +41,6 @@ ronin-cowork/
 │   ├── services/            Ronin Services, Ronin's own switchable contribution
 │   └── templates/           reusable Agent and Team starting compositions
 ├── ronin_library/           Library type/index definitions and user-facing inventory
-├── ronin_session_boot/      background birth sources outside Behavior composition
-│   ├── all/                 KOTOBA glossary and Ronin utility only
-│   └── routine/             reading declared by an installation or a brief (Mika's: `routine/mika/`)
 ├── scripts/                 repository verification, diagnostics, and maintenance
 ├── src/                     TypeScript server, contracts, adapters, and runtime
 │   ├── activation/          registration and optional-Service activation state
@@ -116,16 +113,6 @@ Agent that is not a house Agent (`requires: cowork`); `conditional/mika.md` is M
 in `conditional/team-lead.md`, and a lead with managed worktrees also gets
 `conditional/lead-worktrees.md`; Team remains the tool capability in
 `capabilities/cowork_team.md`.
-
-### Session Boot
-
-`ronin_session_boot/all/` is deliberately small background material the owner should not
-need to compose: the KOTOBA glossary and Ronin utility. Universal working rules
-belong in the Behavior floor and the cowork briefs. Tool workflows belong in capabilities. Do not rebuild a
-second universal instruction shelf here.
-
-House and routine readings exist only for their declared startup mechanisms. Owner root
-reading remains in the external Session Boot store, not in this stock repository.
 
 ### Executable and runtime code
 

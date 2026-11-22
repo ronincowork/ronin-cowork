@@ -16,7 +16,6 @@ const store = (id: string, root: RootId, rel: string): Store => ({ id, root, rel
 export const STORES: readonly Store[] = [
   store('session', 'data', 'sessions'),
   store('archived_sessions', 'data', 'archived-sessions'),
-  store('session_boot_cache', 'data', 'session-boot'),
   store('bench', 'data', 'bench'),
   store('telemetry', 'data', 'telemetry'),
   store('ageru', 'user', 'ageru'),
@@ -27,7 +26,6 @@ export const STORES: readonly Store[] = [
   store('behaviours', 'user', 'behaviours'),
   store('facts', 'user', 'facts'),
   store('library', 'user', 'library'),
-  store('session_boot', 'user', 'session_boot'),
   store('wipeboards', 'user', 'wipeboards'),
   store('jikan', 'user', 'jikan'),
   store('team_rosters', 'user', 'team_rosters'),

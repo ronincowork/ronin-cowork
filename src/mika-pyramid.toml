@@ -16,11 +16,6 @@ label = "Supported capabilities, tools, models, roles, routines, profiles, and t
 root = "ronin_catalogs"
 
 [[node]]
-id = "agent-procedure-contracts"
-label = "Agent birth and active Routine contracts"
-root = "ronin_session_boot"
-
-[[node]]
 id = "library-contract"
 label = "Owner-resolved library behavior"
 root = "ronin_library"

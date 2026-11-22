@@ -76,7 +76,7 @@ Two shapes that come up:
 
 ## 4 · What is never translated
 
-- **Anything an agent reads** — the letter, the brief, the boot shelf, a prompt handed to a
+- **Anything an agent reads** — the letter, the brief, a prompt handed to a
   session, `work-record update_record` output, tool output. A session on a Home desk is still `DraftPlan`
   with `reach: plan`.
 - **The house's internal names** — [KOTOBA's internal names](../../KOTOBA.md#internal-names) (RIREKI, KOSHI, …); *Ronin*

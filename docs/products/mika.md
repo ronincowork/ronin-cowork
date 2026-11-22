@@ -23,9 +23,9 @@ Messages for the retained request rather than sending the same request repeatedl
 ## Customize the guidance
 
 Mika's brief is `ronin_catalogs/behaviours/conditional/mika.md`, stacked on the base brief every
-Agent gets; her Setup walkthrough and tips are reading on `ronin_session_boot/routine/mika/`.
-An owner copy of `routine/mika/MIKA_TIPS.md` under the resolved `session_boot` store can add
-guidance for the next Mika session. Ask an Agent to follow the
+Agent gets. An owner copy of `conditional/mika.md` under `~/ronin/behaviours/` replaces it
+for the next Mika session. Her source index groups its sources by `src/mika-pyramid.toml`.
+Ask an Agent to follow the
 [the brief](../architecture/brief.md); do not edit the installed stock
 file or expect a running session to reread it automatically.
 

@@ -116,7 +116,6 @@ if (await exists(catalogsDir)) {
 }
 await checkShadowStore('behaviours', 'ronin_catalogs/behaviours');
 await checkShadowStore('library', 'ronin_library');
-await checkShadowStore('session_boot', 'ronin_session_boot');
 
 if (!looked) {
   console.log('  ok    byoin_user_check — no user customization on this box yet (nothing to check is a clean pass)');

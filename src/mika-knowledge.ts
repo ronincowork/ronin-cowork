@@ -8,7 +8,7 @@ const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 // 24 KB leaves room in the 30 KB one-read packet for her rules, the owner's tips and the
 // Setup walkthrough beside the index.
 export const MIKA_INDEX_BUDGET = { bytes: 24_600, lines: 432, previewBytes: 160, minimumPreviewBytes: 24 } as const;
-export const MIKA_TAXONOMY = path.join(ROOT, 'ronin_session_boot', 'routine', 'mika', 'MIKA_PYRAMID.toml');
+export const MIKA_TAXONOMY = path.join(ROOT, 'src', 'mika-pyramid.toml');
 const INDEX_NAME = 'MIKA_SOURCE_INDEX.md';
 const MANIFEST_NAME = 'mika-source-manifest.json';
 const SNAPSHOT_DIR = 'mika-source-snapshots';
@@ -129,7 +129,6 @@ function defaultOwnerRoots(): Record<string, string> {
     docs: '',
     'ronin_catalogs/behaviours': storeDir('behaviours'),
     ronin_catalogs: storeDir('catalogs'),
-    ronin_session_boot: storeDir('session_boot'),
     ronin_library: storeDir('library'),
   };
 }
@@ -149,8 +148,6 @@ async function resolvedEntries(nodes: MikaTaxonomyNode[], options: MikaKnowledge
       markdownFiles(ownerRoots[node.root] ?? ''),
     ]);
     const names = [...new Set([...stock.keys(), ...owner.keys()])]
-      // Her own shelf folder is read whole at birth, never indexed as a source.
-      .filter((name) => !(node.root === 'ronin_session_boot' && name.startsWith('routine/mika/')))
       // FACTS (docs/architecture/brief.md, The files and their header) are line templates over an Agent's record: nothing to read about Ronin.
       .filter((name) => !(node.root === 'ronin_catalogs' && name.startsWith('facts/')))
       // EPIC TEMPLATES and WORKSPACE TYPES are read through their own tools (epic-template list,
