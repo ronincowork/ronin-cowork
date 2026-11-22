@@ -162,7 +162,7 @@
   .epic-bar-key { color: var(--muted); font-weight: var(--weight-regular); font-variant-numeric: tabular-nums; }
   .epic-bar-actions, .team-bar-actions { display: flex; flex-wrap: wrap; gap: var(--space-inline); }
   .epic-bar-actions .wk-action[hidden] { display: none; }
-  .epic-launch { text-decoration: none; }
+  .epic-launch, .workspace-launch { text-decoration: none; }
   .epic-bar-objective, .team-bar-objective { margin: 0; color: var(--fg); font-size: var(--text-body); white-space: pre-wrap; overflow-wrap: anywhere; }
   .epic-bar-objective[hidden], .epic-bar-said[hidden], .epic-bar-details[hidden] { display: none; }
   .epic-bar-foot, .team-bar-foot { display: flex; align-items: center; gap: var(--space-inline); }
@@ -477,7 +477,17 @@
   .workspace-form .fs-chev { color: var(--muted); font-size: 0; }
   .workspace-form .fs-chev::before { margin-right: 0; font-size: var(--form-note); }
   .workspace-form .fs-sum { color: var(--muted); }
-  .workspaces-records[data-bare='true'] .workspace-record-stones .sws-stone { aspect-ratio: auto; }
+  /* One Workspace (KAN-784): its head is name · Work/Config · actions; the view under it. */
+  .workspace-one { display: flex; flex-direction: column; gap: var(--space-paragraph); min-width: 0; }
+  .workspace-one .workspace-page-head { flex-wrap: wrap; }
+  .workspace-one .workspace-toggle { display: flex; gap: var(--space-row); margin-right: auto; }
+  /* Work: its life beside its document; each column at least 20rem, so a narrow screen stacks them. */
+  .workspace-work { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr)); gap: var(--space-subsection); align-items: start; min-width: 0; }
+  .workspace-life, .workspace-doc-pane { display: flex; flex-direction: column; gap: var(--space-paragraph); min-width: 0; }
+  .workspace-doc-pane .workspace-doc-text { width: 100%; box-sizing: border-box; }
+  .workspace-team { display: flex; flex-direction: column; gap: var(--space-row); }
+  .workspace-team-agents { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: var(--space-row); }
+  .workspace-route { min-height: 100%; overflow: auto; padding: var(--space-inset); background: var(--workbench-bg); min-width: 0; }
   .workspace-page-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-inline); padding-bottom: var(--space-row); border-bottom: var(--edge) solid var(--line); }
   .workspace-page-actions { display: flex; align-items: center; gap: var(--space-row); }
   .workspace-page-head .wk-surface-header-title { font-size: var(--form-key); color: var(--fg-strong); }
