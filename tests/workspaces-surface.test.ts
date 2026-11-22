@@ -81,7 +81,7 @@ test('the Workspaces page and one Workspace, as a person reads and presses them'
   const epic = `.workspace-life .epic-record-stones [data-sws-id="${ours}"]`;
   await page.waitForSelector(epic);
   assert.equal(await page.$(`.workspace-life [data-sws-id="${theirs}"]`), null, 'another Workspace\'s Epic is not here');
-  assert.ok(await page.$(`${epic} .epic-progress-line`), 'the shared progress line');
+  assert.ok(await page.$(`${epic} .lifecycle-line`), 'the shared progress line');
   assert.doesNotMatch(await page.textContent(epic) || '', /To Do/, 'no raw Epic Status on the stone');
   await page.click(`${epic} .sws-label, ${epic}`);
   await page.waitForSelector('.workspace-life .epic-bar');
