@@ -38,7 +38,7 @@ import { expandLookup } from '../lookup.js';
 import { count } from '../counts.js';
 import { broadcastEvent, changed, pushTeams } from '../ws/events.js';
 import { announceTeamChanges } from './wipeboards-api.js';
-import { memberEnded, readBriefRecord, teamChanged, writeConfiguration, writeObjective, writeTeams } from '../tegami.js';
+import { memberEnded, readBriefRecord, teamChanged, writeConfiguration, writeObjective, writeRecordFlag, writeTeams } from '../tegami.js';
 import { readAgentComposition } from '../agent-composition.js';
 import { configurationSends, configureBrief, updateConfiguration } from '../agent-configuration.js';
 import { agentBriefOf } from '../brief-build.js';
@@ -742,6 +742,16 @@ export function registerSessions(app: express.Express): void {
     if (!isValidName(name)) return res.status(400).json({ error: 'Invalid name.' });
     if (typeof req.body?.objective !== 'string') return res.status(400).json({ error: 'Send { "objective": "…" }.' });
     try { res.json({ ok: true, objective: await writeObjective(name, req.body.objective, callerOf(req) || name) }); }
+    catch (e) { res.status(404).json({ error: String((e as Error)?.message ?? e) }); }
+  });
+  // THE RECORD'S OWN FLAG (KAN-792): `work-record flag` / `unflag` and the tile header ⚑ press.
+  // { "flag": "<why>" } raises it; { "flag": null } clears it.
+  app.put('/api/sessions/:name/record/flag', async (req, res) => {
+    const { name } = req.params;
+    if (!isValidName(name)) return res.status(400).json({ error: 'Invalid name.' });
+    const why = req.body?.flag;
+    if (why !== null && (typeof why !== 'string' || !why.trim())) return res.status(400).json({ error: 'Send { "flag": "<who>: <what you need>" } or { "flag": null }.' });
+    try { await writeRecordFlag(name, why, callerOf(req) || name); res.json({ ok: true, flag: why }); }
     catch (e) { res.status(404).json({ error: String((e as Error)?.message ?? e) }); }
   });
 

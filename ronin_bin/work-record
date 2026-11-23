@@ -11,9 +11,14 @@ Usage:
   work-record update_record --on_tangent | --on_track
   work-record update_record --repo <repo-or-url>[:<branch>] | --unrepo <repo-or-url>[:<branch>]
   work-record add_doc [--remove] <path>|<url> [--item <id>]
+  work-record flag "<who>: <what you need>"
+  work-record unflag
   work-record workspace list
   work-record workspace add <repo-or-url> [--branch <branch>]
   work-record workspace remove <repo-or-url> [--branch <branch>]
+flag raises a ⚑ on your own work record, for a wait no item you hold is about: your selector
+pill, tile header and Team row show it until you unflag or the owner presses the ⚑. A new
+flag replaces the last. A wait on an item you hold is that item's flag: item flag <id>.
 Workspace entries are the repositories this Agent records as current work. The repository
 may be a registered handle or a URL. --branch is separate so URLs parse exactly. These
 entries do not change the Agent's birth directory or open a managed desk.
@@ -61,6 +66,8 @@ case "${1:-}" in
     fi
     exec bash "$ROOT/ronin_bin/item" attach "$id" ${remove:+--remove} "$doc" ;;
   update_record) shift; case "${1:-}" in -h|--help) write_impl --help;; esac; write_impl "$@" ;;
+  flag) shift; [ "$#" -eq 1 ] && [ -n "${1// /}" ] || { echo 'BAD-ARG: work-record flag takes one "<who>: <what you need>"' >&2; exit 2; }; write_impl --flag-set "$1" ;;
+  unflag) shift; [ "$#" -eq 0 ] || { echo 'BAD-ARG: work-record unflag takes nothing' >&2; exit 2; }; write_impl --flag-clear ;;
   workspace)
     verb=${2:-}; shift 2 || true
     case "$verb" in

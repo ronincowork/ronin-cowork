@@ -6,8 +6,9 @@ import { AGENT_BRIEF, BIRTH_BRIEF } from './birth-brief.js';
 import { agentReading, type AgentReading } from './work-items-read.js';
 import { FLAGGED, jiraLink, readItem } from './work-items.js';
 
-/** One flag (KAN-776): an item's, by its id, or, without one, the Agent's own. */
-export type Flag = { id?: string; why: string };
+/** One flag (KAN-776): an item's, by its id, or, without one, the Agent's own; `record` marks the
+ * one it raised on its work record (KAN-792), which a press on the ⚑ clears there. */
+export type Flag = { id?: string; why: string; record?: true };
 import type { ItemRow } from './work-items-index.js';
 import { mandate, type Mandate } from './agent-defaults.js';
 
@@ -31,8 +32,9 @@ export interface Tegami {
   chip: { text: string; gate: boolean };
   /** THE ONE FLAG SOURCE (owner, 22 Nov, KAN-776). With an id: a flagged item the Agent holds,
    * or, for a lead, one a Team it leads holds (KAN-636), `why` its last "Flagged:" comment; it
-   * goes when unflagged. Without an id: the Agent's own flag (KAN-527), added by its card from
-   * the pane (src/routes/launch.ts), never stored; it goes when the Agent moves on. Every
+   * goes when unflagged. Without an id: the Agent's own flag, either the one it raised on its
+   * record (`record`, the block's `flag`, KAN-792), kept until unflagged, or one its card adds from
+   * the pane (KAN-527, src/routes/launch.ts), never stored, gone when the Agent moves on. Every
    * surface reads only this: non-empty is ⚑. */
   flags: Flag[];
   /** When the work record was last written (epoch ms): the browser works out the age, so the push stays still. */
@@ -110,6 +112,7 @@ export async function readTegami(name: string): Promise<Tegami | null> {
       const said = (await readItem(id))?.comments.filter((c) => c.text.startsWith(FLAGGED)).at(-1);
       return { id, why: said ? said.text.slice(FLAGGED.length) : '' };
     }));
+    if (typeof b.flag === 'string' && b.flag.trim()) flags.push({ why: b.flag.trim(), record: true });
     return {
       objective: String(b.objective ?? ''),
       mandate: mandate(b.mandate),

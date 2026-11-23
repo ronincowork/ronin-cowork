@@ -51,7 +51,7 @@ const HEADER = () => {
   { grow: true },
 
   // THE FLAG (owner, 2026-11-19, KAN-709; KAN-776): ⚑ beside Chat while its work record's `flags`
-  // is not empty, as its pill; one press unflags every item's flag among them.
+  // is not empty, as its pill; one press unflags every item flag and the record flag among them.
   { key: 'flagBtn', cls: 'tile-flag', text: '⚑', needs: 'session',
     read: (tile, el) => paintFlag(tile, el),
     on: (tile, el) => void unflagHeld(tile, el) },
@@ -104,24 +104,31 @@ const HEADER = () => {
 };
 
 /** The work record's `flags` (KAN-776), the one source the selector pill reads too: each entry
- *  with its reason in the help. A press unflags every entry with an id (an item's) in one go; the
- *  Agent's own entry stays until the Agent moves on. The ⚑ hides while the unflags answer. */
+ *  with its reason in the help. A press unflags every entry with a trace in one go: an item's by
+ *  its id, the record's own (`record`, KAN-792) on the record; one the pane raised stays until the
+ *  Agent moves on. The ⚑ hides while the unflags answer. */
+const traced = (flag) => flag.id || flag.record;
 function paintFlag(tile, el) {
   const flags = tile.tegami?.flags || [];
   el.hidden = !flags.length || el.getAttribute('aria-busy') === 'true';
-  const help = [...flags.map(flagWords), ...(flags.some((flag) => flag.id) ? [t('head.unflag_help', 'Press to unflag')] : [])].join('\n');
+  const help = [...flags.map(flagWords), ...(flags.some(traced) ? [t('head.unflag_help', 'Press to unflag')] : [])].join('\n');
   el.setAttribute('aria-label', help);
   return help;
 }
 async function unflagHeld(tile, el) {
   if (el.getAttribute('aria-busy') === 'true') return;
-  const ids = (tile.tegami?.flags || []).filter((flag) => flag.id).map((flag) => flag.id);
-  if (!ids.length) return;
+  const flags = tile.tegami?.flags || [];
+  const ids = flags.filter((flag) => flag.id).map((flag) => flag.id);
+  const record = flags.some((flag) => flag.record);
+  if (!ids.length && !record) return;
   el.setAttribute('aria-busy', 'true'); el.hidden = true;
   const { request } = await import('./request.js');
-  const done = await Promise.all(ids.map((id) => request(`/api/work-items/${encodeURIComponent(id)}/unflag`, { method: 'POST', json: { comment: t('head.unflagged', 'unflagged by owner') } })));
+  const [recordDone, ...done] = await Promise.all([
+    record ? request(`/api/sessions/${encodeURIComponent(tile.session)}/record/flag`, { method: 'PUT', json: { flag: null } }) : { ok: false },
+    ...ids.map((id) => request(`/api/work-items/${encodeURIComponent(id)}/unflag`, { method: 'POST', json: { comment: t('head.unflagged', 'unflagged by owner') } })),
+  ]);
   const cleared = new Set(ids.filter((_, n) => done[n].ok));
-  if (tile.tegami) tile.tegami.flags = (tile.tegami.flags || []).filter((flag) => !cleared.has(flag.id));
+  if (tile.tegami) tile.tegami.flags = (tile.tegami.flags || []).filter((flag) => !cleared.has(flag.id) && !(flag.record && recordDone.ok));
   el.removeAttribute('aria-busy');
   syncTileHead(tile);
 }

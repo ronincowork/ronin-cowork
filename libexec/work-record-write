@@ -147,6 +147,34 @@ DOCMARK
     exit $? ;;
 esac
 
+# THE RECORD'S OWN FLAG (KAN-792) — `work-record flag "<why>"` and `work-record unflag`.
+# The block's "flag", edited in place with every other key kept; src/tegami-read.ts reads it
+# into the record's flags, so the pill, the tile header and the Team row show ⚑.
+case "${1-}" in
+  --flag-set|--flag-clear)
+    if [ "$1" = --flag-set ]; then [ "$#" -eq 2 ] && [ -n "${2// /}" ] || die 'work-record flag takes one "<who>: <what you need>"'
+    else [ "$#" -eq 1 ] || die 'work-record unflag takes nothing'; fi
+    NAME=$(me) || exit 3
+    SFILE="$SESSION_STORE/$(key_of "$NAME")/tegami.md"
+    [ -f "$SFILE" ] || die "work-record: you have no work record yet."
+    python3 - "$SFILE" "$NAME" "${2-}" <<'FLAGMARK' || exit 3
+import json, os, re, sys
+src, name, why = sys.argv[1], sys.argv[2], sys.argv[3].strip()[:2000]
+text = open(src).read()
+m = re.search(r"```(?:json)?\s*\n([\s\S]*?)\n```", text)
+if not m:
+    sys.exit("work-record: no json block in your work record")
+d = json.loads(m.group(1))
+if why: d["flag"] = why
+else: d.pop("flag", None)
+tmp = src + ".fl"
+open(tmp, "w").write(text[:m.start(1)] + json.dumps(d, indent=2, ensure_ascii=False) + text[m.end(1):])
+os.replace(tmp, src)
+print("@%s's work record is %s" % (name, "flagged: " + why if why else "unflagged"))
+FLAGMARK
+    exit 0 ;;
+esac
+
 STATE=""
 # Field verbs collect here as "verb<US>arg<US>arg" and apply in order, after the parse.
 US=$(printf '\037'); EDITS=()
@@ -194,7 +222,7 @@ else:
     d["ladder_state"] = want
 # "holds" and "at" are in this list because this path rebuilds the whole block from a
 # fixed set of keys, so a key missing from it is a key this switch DELETES.
-block = json.dumps({k: d[k] for k in ("objective", "mandate", "teams", "configuration", "gecko", "brief", "repos", "holds", "watches", "ladder_state", "at") if k in d},
+block = json.dumps({k: d[k] for k in ("objective", "mandate", "teams", "configuration", "gecko", "brief", "repos", "holds", "watches", "ladder_state", "flag", "at") if k in d},
                    indent=2, ensure_ascii=False)
 tmp = src + ".sw"
 open(tmp, "w").write(text[:m.start(1)] + block + text[m.end(1):])
@@ -320,6 +348,8 @@ NOT_YOURS = {
           "  A session has no identity axis of its own any more: identity is the TEAM\"s\n"
           "  team_role, on the team roster, worn contextually. Work readings are selected\n"
           "  as behaviours at birth. Drop \"role_family\".",
+    "flag": "\"flag\" is written by work-record flag / unflag, not the block.\n"
+            "  Drop \"flag\" and save again; it is carried through.",
     "holds": "\"holds\" is not yours to write.\n"
              "  It lists the work items you hold; assign, return and backlog move them.\n"
              "  Drop \"holds\" and save again; the list is carried through.",
@@ -434,6 +464,9 @@ if _watches:
 _holds = [h for h in (prev.get("holds") or []) if isinstance(h, str)]
 if _holds:
     out["holds"] = _holds
+# CARRY "flag" THROUGH (KAN-792): the flag on the record itself; work-record flag / unflag move it.
+if isinstance(prev.get("flag"), str) and prev["flag"].strip():
+    out["flag"] = prev["flag"]
 ls_ = (d.get("ladder_state") or "").strip().lower()
 if ls_ and ls_ != "on_track":
     out["ladder_state"] = ls_
