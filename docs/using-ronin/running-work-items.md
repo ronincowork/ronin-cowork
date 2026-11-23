@@ -129,13 +129,14 @@ an item has a link on the Jira item that opens its chat.
 - **Epics workbench** (Campaign home › Epics, "What the work is"): a phalanx of stones, one
   per open Epic in the Campaign (no Done Epics, no Icebox), each its title and Jira key, its
   progress a colour line along its bottom edge. Press the line for the Epic's **epic-stage**
-  and its four counts; press the stone to see that Epic beside the stones. Its **Launch** opens
-  the Epic's own page; a stone dragged into a tilespace places that Epic there.
-- **One Epic's page** (`#/epic/<id>`, from Launch): the same Epics board a Team's Epics view
-  shows, without the row of Epic stones: where the Epic comes from and who holds it, the Epic's
-  own bar (press it for its reading; move its Status, Done included, there), the Assigned,
-  Flagged and Status questions, then its items grouped by status. Press an item to read it in
-  its place; the board stays.
+  and its four counts; press the stone to see that Epic beside the stones; a stone dragged into
+  a tilespace places that Epic there.
+- **One Epic** (the pressed stone): the same Epics board a Team's Epics view shows, without the
+  row of Epic stones: **Launch** when someone holds it, the Epic's own bar (press it for its
+  reading; assign it and move its Status, Done included, there), the Assigned, Flagged and
+  Status questions, then its items grouped by status. Press an item to read it in its place;
+  the board stays. **Launch** opens the Team working the Epic in a new tab: the Agent holding
+  it in tilespace 1 (the lead when the Team holds it), the Epic in tilespace 2.
 - **epic-stage** is read from the Epic's Tasks, Stories, Bugs and Features (not its own
   Status): each scores To Do 1, In Progress 2, In Review 3, Done 4, and their average is the
   epic-stage: Empty (no items), Starter (under 1.5), Working (under 2.5), Maturing (under

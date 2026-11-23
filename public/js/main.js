@@ -18,7 +18,6 @@ import { createCoworkView } from './cowork-view.js';
 import { createAgentView } from './agent-view.js';
 import { createCampaignHome } from './campaign-home.js';
 import { createEpicsView, createHelpView, createModelsView, createWorkspacesView } from './door-workbenches.js';
-import { createEpicRoute } from './epics-surface.js';
 import { createWorkspaceRoute } from './workspaces-surface.js';
 import { createCampaignView } from './campaign-view.js';
 import { createSetupView } from './setup-view.js';
@@ -119,7 +118,6 @@ async function init() {
   guard('register the Workspaces destination', () => workspace.register('workspaces', createWorkspacesView()));
   guard('register the Epics destination', () => workspace.register('epics', createEpicsView()));
   // One Epic on its own page (w899): Layer 2, under the Epics appearance; not a tilespace workbench.
-  guard('register the Epic destination', () => workspace.register('epic', { ...createEpicRoute(), appearance: 'epics', header: { ram: true, services: true } }));
   // One Workspace on its own page (KAN-784): Layer 2, under the Workspaces appearance.
   guard('register the Workspace destination', () => workspace.register('workspace', { ...createWorkspaceRoute(), appearance: 'workspaces', header: { ram: true, services: true } }));
   guard('register the Help destination', () => workspace.register('help', createHelpView()));

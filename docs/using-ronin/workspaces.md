@@ -50,7 +50,7 @@ between its two views:
   [its doc](#its-doc). **Teams** or **Epics** picks the side: the Teams launched in it, or the open
   Epics its Teams and their Agents hold, the same stones as on the Epics page. Press one to open it
   beside them: a Team shows its Agents and **Launch** into the Team's workbench; an Epic shows its
-  board, with **Launch** to its page. On a narrow screen the doc is under them.
+  board, with **Launch** into the Team working it. On a narrow screen the doc is under them.
 - **Config** — its settings: Folders, Integrations, Agent info and Behaviors.
 
 **Launch** at the top opens the Workspace on its own page, `#/workspace/<name>`, with the same two

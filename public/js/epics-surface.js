@@ -23,7 +23,7 @@ import { request } from './request.js';
 import { subscribe as hear } from './store.js';
 import { SURFACE_DRAG } from './workbench.js';
 import { WORKBENCH_TYPES } from './workbench-catalog.js';
-import { openWorkspaceTab, reserveWorkspaceTab } from './workspace.js';
+import { workbenchLaunchUrl } from './workspace.js';
 import { ask } from './ask.js';
 import { holderWords } from './work-items-surface.js';
 import { itemBar } from './tile-island.js';
@@ -33,7 +33,7 @@ import { epicAttention, epicMoved, isOpenEpic, orderEpics } from './epic-stage.j
 import { attentionWords } from './item-lifecycle.js';
 import { createProgress } from './epic-progress.js';
 import { humanAge } from './work-record.js';
-import { teamsFromState } from './team-controller.js';
+import { membersOfTeam, teamsFromState } from './team-controller.js';
 import { splitItemTitle } from './item-title.js';
 
 /** The statuses in workflow order (Jira's, the store's default); a space's own extra names follow. */
@@ -85,26 +85,6 @@ const el = (tag, cls = '', text = '') => {
   return out;
 };
 
-/** Open the holder's own workbench in a new tab: an Agent's, or a Team's. */
-function openHolder({ kind, name }) {
-  const tab = reserveWorkspaceTab();
-  return openWorkspaceTab(kind === 'team' ? 'team' : 'agent', name, tab);
-}
-
-/** An item's holder as a button that opens that Agent (or Team); a quiet word when nobody holds it. */
-export function holderButton(item) {
-  // Held by a Workspace (its Icebox, KAN-352): parked, not waiting to be given out; a quiet word.
-  if (String(item?.holder || '').startsWith('workspace:')) return el('span', 'epic-holder is-none', holderWords(item.holder));
-  const holder = holderOfItem(item);
-  if (!holder) return el('span', 'epic-holder is-none', t('epics.unassigned', 'Unassigned'));
-  const button = el('button', 'epic-holder', holderWords(holder)); // the one wording (w299): label only
-  button.type = 'button';
-  button.title = holder.kind === 'team' ? t('epics.open_team', 'Open this Team') : t('epics.open_agent', 'Open this Agent');
-  button.addEventListener('click', () => openHolder(holder));
-  return button;
-}
-
-/** The statuses the Status question picks on arrival: the open ones (owner, 2026-11-06, w334). */
 export const OPEN_STATUSES = ['To Do', 'In Progress', 'In Review'];
 /** Assigned, as the question asks it: 'yes', 'no', both or nothing picked (all). */
 export const byAssigned = (items, picked = []) => (!picked.length || picked.length === 2 ? items
@@ -273,11 +253,21 @@ export function createItemBoard({ every: everyNow, head = () => null, cards: rea
   return { el: root, paint, destroy: () => { questions.destroy(); bars.destroy(); groupList.destroy(); } };
 }
 
-/** Launch (w899): one Epic's own page, `#/epic/<id>`, in this tab; Ctrl/Cmd/Shift in another. */
-function launchAction(epicId) {
-  return WorkspaceKit.primitives.createAction({ label: t('epics.launch', 'Launch'), launch: true, size: 'compact', className: 'epic-launch', action: (event) => {
-    if (event?.metaKey || event?.ctrlKey || event?.shiftKey || !S.workspace) window.open(epicAddress(epicId), '_blank', 'noopener');
-    else S.workspace.navigate('epic', { param: epicId });
+/**
+ * LAUNCH (owner, 2026-11-23): an Epic's one Launch opens the Team working it in a new tab: the Agent
+ * holding the Epic in tilespace 1 (the Team's lead when the Team itself holds it), this Epic in
+ * tilespace 2. Nobody holding it, or an Agent in no Team: no Launch; the Epic's bar assigns it.
+ */
+function launchTeam(epic) {
+  const holder = holderOfItem(epic);
+  const team = holder?.kind === 'team' ? holder.name
+    : holder ? teamsFromState().find((one) => one.name && membersOfTeam(one.name).some((member) => member.name === holder.name))?.name : '';
+  if (!team) return null;
+  const seats = { workspace2: { type: WORKBENCH_TYPES.epicRecord, key: epic.id },
+    ...(holder.kind === 'agent' ? { workspace1: { type: WORKBENCH_TYPES.terminal, key: holder.name } } : {}) };
+  return WorkspaceKit.primitives.createAction({ label: t('epics.launch', 'Launch'), launch: true, size: 'compact', className: 'epic-launch', action: () => {
+    const url = workbenchLaunchUrl({ destination: 'team', param: team, mode: 'replace', state: { count: 2, selected: 'workspace1', seats } });
+    if (url) window.open(url, '_blank', 'noopener');
   } }).el;
 }
 
@@ -288,11 +278,11 @@ function launchAction(epicId) {
  * pressed switches to that Epic here. `initial` is the Epic it starts on; with one Epic, that one.
  * A stone dragged into another tilespace places a board starting on that Epic (createEpicRecord).
  *
- * ONE EPIC (owner, 2026-11-23; w899) is this same board without the strip (`strip: false`): the
- * Epics phalanx's pressed stone, a dragged stone (createEpicRecord) and `#/epic/<id>` all show
- * it, the first two with Launch in the source line to the Epic's own page.
+ * ONE EPIC (owner, 2026-11-23) is this same board without the strip (`strip: false`): the Epics
+ * phalanx's pressed stone and a placed Epic (createEpicRecord). An Epic has no page of its own; with
+ * `launch`, its top line is the Launch to the Team working it (launchTeam), or nothing.
  */
-export function createEpicBoard({ epicsRead, header = true, initial = '', strip: withStrip = true, launch = false, holder = true, onTitle = () => {} }) {
+export function createEpicBoard({ epicsRead, header = true, initial = '', strip: withStrip = true, launch = false }) {
   const { createSurface } = WorkspaceKit.primitives;
   const out = createSurface({ label: t('epics.title', 'Epics'), className: 'setup-surface epics-board', header });
   const strip = el('div', 'epic-strip');
@@ -345,7 +335,6 @@ export function createEpicBoard({ epicsRead, header = true, initial = '', strip:
     const epic = epics.find((row) => row.id === selected);
     const { shortTitle, longTitle } = splitItemTitle(epic ? (epic.title || epic.id) : '');
     if (out.header) out.header.title.textContent = epic ? shortTitle : t('epics.title', 'Epics');
-    if (epic) onTitle(shortTitle);
     const signature = JSON.stringify([selected, epics.map((epic) => [epic.id, epic.title, epic.external?.jira?.key,
       epicsRead.items(epic.id).filter((item) => item.status !== 'Done').length])]);
     if (withStrip && signature !== drawn) {
@@ -357,12 +346,13 @@ export function createEpicBoard({ epicsRead, header = true, initial = '', strip:
     if (!view) { source = el('div', 'epic-source'); sourceSaid = ''; view = epicItems(selected, { epicsRead }); below.replaceChildren(continuation, source, view.el); }
     if (continuation.textContent !== longTitle) continuation.textContent = longTitle;
     continuation.hidden = !longTitle;
-    const said = JSON.stringify([selected, epic.external?.jira?.key, epic.holder]);
+    const said = JSON.stringify([selected, epic.holder, launch]);
     if (said !== sourceSaid) {
       sourceSaid = said;
-      // The Jira key only when it has one; the holder only outside its own Team (owner, 23 Nov).
-      source.replaceChildren(...(epic.external?.jira?.key ? [el('span', '', `Jira ${epic.external.jira.key}`)] : []),
-        ...(holder ? [holderButton(epic)] : []), ...(launch ? [launchAction(selected)] : []));
+      // Launch or nothing (owner, 23 Nov): no Jira key, no holder words here.
+      const go = launch ? launchTeam(epic) : null;
+      source.replaceChildren(...(go ? [go] : []));
+      source.hidden = !go;
     }
     view.paint();
   }
@@ -374,11 +364,10 @@ export function createEpicBoard({ epicsRead, header = true, initial = '', strip:
   };
 }
 
-/** One Epic's worksurface (its selector card, a dragged stone): that Epic alone, with Launch (w899). */
-export const createEpicRecord = (key, { epicsRead }) => createEpicBoard({ epicsRead, initial: key, strip: false, launch: true });
+/** One Epic's worksurface (its selector card, a dragged stone): that Epic alone, with its Team's Launch
+ * (none inside a Team's own workbench). */
+export const createEpicRecord = (key, { epicsRead, launch = true }) => createEpicBoard({ epicsRead, initial: key, strip: false, launch });
 
-/** The Epic's own route (w899): `#/epic/<id>`; Launch follows it in this tab, Ctrl/Cmd/Shift in another. */
-export const epicAddress = (id) => `#/epic/${encodeURIComponent(id)}`;
 const dragEpic = (epic, label) => ({ dragstart: (event) => {
   event.dataTransfer.setData(SURFACE_DRAG, JSON.stringify({ type: WORKBENCH_TYPES.epicRecord, detail: { key: epic.id } }));
   event.dataTransfer.setData('text/plain', label);
@@ -500,36 +489,4 @@ export function createNewEpic({ onMade = () => {} } = {}) {
   const root = el('div', 'epic-new-page');
   root.append(bar);
   return { el: root, show: () => title.focus(), destroy: () => question.destroy() };
-}
-
-/** The Epic's own route (w899): one Epic filling the page, under the Epics appearance. */
-export function createEpicRoute() {
-  const host = el('div', 'epic-route');
-  const epicsRead = createEpicsRead(() => '');
-  let one = null;
-  let id = '';
-  let words = '';
-  const retitle = (next) => {
-    if (next === words) return;
-    words = next;
-    S.refreshWorkspaceHeader?.();
-    S.workspace?.refreshTitle?.();
-  };
-  return {
-    el: host,
-    title: () => words || id,
-    place: () => words || id,
-    enter: (context) => {
-      if (context.param !== id || !one) {
-        one?.destroy();
-        id = context.param;
-        words = '';
-        one = createEpicBoard({ epicsRead, initial: id, strip: false, onTitle: retitle });
-        host.replaceChildren(one.el);
-      }
-      one.show();
-    },
-    leave: () => {},
-    destroy: () => { one?.destroy(); one = null; },
-  };
 }

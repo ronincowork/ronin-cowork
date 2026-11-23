@@ -149,9 +149,7 @@
   .epic-new-goal { resize: vertical; }
   .epic-new-page { display: flex; flex-direction: column; gap: var(--space-subsection); }
   .epics-records > .wk-surface-content > .epic-empty { padding: var(--space-inset); }
-  /* ONE EPIC'S PAGE (w899): the Epics board without its strip, one whole tile (owner, 2026-11-23). */
-  .epic-route { display: flex; flex-direction: column; min-width: 0; min-height: 100%; padding: var(--space-inset); overflow: auto; background: var(--workbench-bg); }
-  .epic-route > .epics-board { flex: 1 1 auto; min-height: 0; }
+  .epic-source[hidden] { display: none; }
   .team-bar { display: flex; flex-direction: column; gap: var(--space-inline); padding: var(--space-inline) var(--space-inset); border: var(--edge) solid var(--line-2); border-radius: var(--radius-hair); background: var(--surface); }
   .team-bar-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-inline); }
   .team-bar-title { flex: 1 1 16rem; margin: 0; color: var(--fg-strong); font-size: var(--text-body); font-weight: var(--weight-strong); overflow-wrap: anywhere; }

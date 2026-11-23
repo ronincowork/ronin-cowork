@@ -1,7 +1,7 @@
 /**
  * Epics: what a person reads across Epics and inside one (KAN-780; w897, w898, w899). The
  * epic-stage rules, the Epics phalanx (its order, what needs the person, when it moved, New
- * Epic) and one Epic's own page (the Team's Epics board without its strip).
+ * Epic) and one Epic, its stone pressed (the Team's Epics board without its strip).
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -117,17 +117,19 @@ test('the Epics page and one Epic\'s page, as a person reads and presses them', 
   assert.match(await page.textContent('.epic-new .epic-bar-said') || '', /title/);
   assert.equal(await page.$('[data-workspace-view="epics"] .terminal-hints'), null, 'no Agent vocabulary or Session controls on Epics');
 
-  // One Epic's own page: the Team's Epics board without its strip; its items grouped by status.
-  await page.goto(`${ronin.base}/#/epic/${review}`);
-  await page.waitForSelector('.epic-route .epics-board .epic-group');
-  assert.equal(await page.$('.epic-route .epic-strip'), null, 'no row of Epic stones');
-  assert.deepEqual(await page.$$eval('.epic-route .epic-group-heading', (nodes) => nodes.map((node) => node.textContent)), ['To Do · 1', 'In Review · 1']);
-  assert.equal(await page.$('.epic-route .epic-launch'), null, 'on its own page, no Launch');
-  assert.equal(await page.locator('.epic-route .item-title-continuation').innerText(), 'refill by 07:20');
+  // One Epic, its stone pressed: the Team's Epics board without its strip; Launch (a Team holds it).
+  await page.goto(`${ronin.base}/#/epics`);
+  await page.click(`.epic-record-stones [data-sws-id="${review}"] .sws-label`);
+  const one = '.epic-record-stones .sws-detail';
+  await page.waitForSelector(`${one} .epics-board .epic-group`);
+  assert.equal(await page.$(`${one} .epic-strip`), null, 'no row of Epic stones');
+  assert.deepEqual(await page.$$eval(`${one} .epic-group-heading`, (nodes) => nodes.map((node) => node.textContent)), ['To Do · 1', 'In Review · 1']);
+  assert.equal(await page.textContent(`${one} .epic-source`), 'Launch', 'Launch or nothing');
+  assert.equal(await page.locator(`${one} .item-title-continuation`).innerText(), 'refill by 07:20');
   const bar = page.locator(`button.item-bar[data-item="${restock}"]`);
   assert.equal(await bar.locator('.item-bar-title').innerText(), 'Tea');
   assert.equal(await bar.getAttribute('data-tip'), 'Tea: refill the loose leaf: check stock first');
-  assert.equal(await page.locator('.epic-route .epic-group[data-status="To Do"] .item-bar-title').innerText(), 'Draft the restock plan');
+  assert.equal(await page.locator(`${one} .epic-group[data-status="To Do"] .item-bar-title`).innerText(), 'Draft the restock plan');
   await bar.click();
   const item = page.locator(`.epic-reading[data-item="${restock}"]`);
   assert.equal(await item.locator('.wi-title').innerText(), 'Tea');

@@ -66,7 +66,7 @@ Each file's `when:` picks its readers; an Agent is told only its own.
 | `src/plans.ts`, `src/routes/plans-api.ts` | plans on the Workspace: the place (Ronin Lab's `<campaign>/<workspace>/plans`, or `plans: { location, path }`), the header, Draft and Ordered (no guards: the docs steer), one-file commits and the push, the move on a changed place; `resolve` for `plan:` |
 | `src/workspaces.ts`, `src/routes/workspaces-api.ts`, `public/js/workspaces-surface.js` | the Workspace's `plans` field and the page's Plans row |
 | `public/js/plan-attachment.js`, `src/routes/docs-api.ts` | a `plan:` attachment opened or shown gone; the Docs pane's Plans shelf |
-| `public/js/epics-surface.js` | the Epics workbench: stones, an epic's record, its Show question, `holderButton` |
+| `public/js/epics-surface.js` | the Epics workbench: stones, an epic's record, its Show question |
 | `public/js/team-epics.js` | the Team workbench's Epics card |
 | `public/js/work-items-surface.js` | an item's reading (the overlay): `holderWords` ("Team <t> (lead <l>)", "@agent"), id, kind · level, origin |
 | `public/js/tile-island.js` | the item island: Done hidden, Subtasks folded under their Task, the hand-in mark |

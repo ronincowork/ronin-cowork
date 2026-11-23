@@ -324,7 +324,7 @@ export function createCoworkView(options = {}) {
       return { el: surface.el, show: () => void (detail.workspace ? Promise.resolve({ workspace: detail.workspace }) : loadCanvases()).then((offer) => paintCanvas(body, offer.workspace, detail.key)) };
     },
     epics: () => [],
-    epicRecord: (id, detail) => keepTeamSurface(createEpicRecord(detail.key, { epicsRead: createEpicsRead(() => '') })),
+    epicRecord: (id, detail) => keepTeamSurface(createEpicRecord(detail.key, { epicsRead: createEpicsRead(() => ''), launch: false })),
     archives: (id) => ({ el: archivesBySeat[id].el, show: () => void archivesBySeat[id].room.enter() }),
     document: (detail = {}) => createDocumentWorkspaceAdapter({ root: detail.root, path: detail.path || detail.key }),
     team: (id, detail) => createLeagueTeamSurface(detail.key, id),
