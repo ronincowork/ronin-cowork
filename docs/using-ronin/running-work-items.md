@@ -128,7 +128,8 @@ an item has a link on the Jira item that opens its chat.
 
 - **Epics workbench** (Campaign home › Epics, "What the work is"): a phalanx of stones, one
   per open Epic in the Campaign (no Done Epics, no Icebox), narrowed by its **Workspace**
-  question, all one height, each its title and Jira key, its
+  question, all one height, each its title and Jira key, ⚑ top right when anything in it is
+  flagged, how many of its items are open (small, bottom right), its
   progress a colour line along its bottom edge. Press the line for the Epic's **epic-stage**
   and its four counts; press the stone to see that Epic beside the stones; a stone dragged into
   a tilespace places that Epic there.

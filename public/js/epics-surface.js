@@ -30,7 +30,7 @@ import { itemBar } from './tile-island.js';
 import { createPhalanx } from './phalanx.js';
 import { S } from './state.js';
 import { epicAttention, epicMoved, isOpenEpic, orderEpics } from './epic-stage.js';
-import { attentionWords } from './item-lifecycle.js';
+import { counted, statusKey } from './item-lifecycle.js';
 import { createProgress } from './epic-progress.js';
 import { humanAge } from './work-record.js';
 import { membersOfTeam, subscribe as hearTeams, teamsFromState } from './team-controller.js';
@@ -388,10 +388,10 @@ function movedWords(epic, moved) {
 
 /**
  * THE EPICS PHALANX (owner, 2026-11-22; w897): Layer 1. Every open Epic a stone (no Done Epics, no
- * Icebox): its title, what needs the person (Needs review, Flagged, Work to assign; absent when
- * none), its Jira key and when it last moved, its progress a colour line along the bottom edge
- * (epic-progress.js), pressed for the epic-stage and the counts. Ordered by orderEpics: those
- * needing the person first, then the most progressed; every stone the same height. A Workspace
+ * Icebox): its title, its Jira key and when it last moved, ⚑ top right while anything in it is
+ * flagged, its open item count small bottom right, its progress a colour line along the bottom edge
+ * (epic-progress.js), pressed for the epic-stage and the counts. Ordered by orderEpics: flagged
+ * first, then the most progressed; every stone the same height. A Workspace
  * question narrows them. A pressed stone shows that Epic's board beside the rail (createEpicBoard,
  * with its Team's Launch); a dragged one places it whole in another tilespace. New Epic is the
  * selector's pill (createNewEpic), not a stone.
@@ -414,6 +414,26 @@ export function createEpicStones({ epicsRead, workbench = null, bare = false, em
   };
   const lines = new Map();
   const lineFor = (id) => { if (!lines.has(id)) lines.set(id, createProgress('line')); return lines.get(id); };
+  // A STONE'S MARKS (owner, 2026-11-23): the lifecycle line along the bottom edge; ⚑ top right while
+  // the Epic or anything under it is flagged and not Done (the Agent pill's flag); bottom right, small
+  // and grey, how many of its items are not Done (the Epic's size). One node per Epic, kept (KAN-413).
+  const marks = new Map();
+  const marksFor = (epic, items) => {
+    if (!marks.has(epic.id)) {
+      const node = el('span', 'epic-stone-marks');
+      const flag = el('span', 'epic-stone-flag', '⚑');
+      flag.title = t('epics.flagged_title', 'Something here is flagged');
+      const size = el('small', 'epic-stone-size');
+      node.append(lineFor(epic.id).el, flag, size);
+      marks.set(epic.id, { node, flag, size });
+    }
+    const one = marks.get(epic.id);
+    const open = items.filter((item) => statusKey(item.status) !== 'done');
+    one.flag.hidden = !(epic.flagged || open.some((item) => item.flagged));
+    const n = String(open.filter(counted).length);
+    if (one.size.textContent !== n) one.size.textContent = n;
+    return one.node;
+  };
   const stones = createPhalanx({
     className: 'epic-record-stones',
     renderDetail: (item, host) => {
@@ -433,12 +453,12 @@ export function createEpicStones({ epicsRead, workbench = null, bare = false, em
     const rows = orderEpics(epicsRead.list().filter((epic) => isOpenEpic(epic) && (!picked || picked.has(epic.id))).map((epic) => {
       const items = epicsRead.items(epic.id);
       const { score } = lineFor(epic.id).update(epic, items);
-      return { epic, score, attention: epicAttention(items), moved: epicMoved(epic, items) };
+      // Flagged first, then the most progressed (orderEpics): the flag is what the stone shows.
+      return { epic, items, score, attention: { flagged: epicAttention(items).flagged || Boolean(epic.flagged) }, moved: epicMoved(epic, items) };
     }));
-    stones.setItems(rows.map(({ epic, attention, moved }) => {
+    stones.setItems(rows.map(({ epic, items, moved }) => {
       const label = epic.title || epic.id;
-      const needs = attentionWords(attention);
-      return { id: epic.id, label: splitItemTitle(label).shortTitle, ...(needs ? { secondary: needs } : {}), state: movedWords(epic, moved), marker: lineFor(epic.id).el,
+      return { id: epic.id, label: splitItemTitle(label).shortTitle, state: movedWords(epic, moved), marker: marksFor(epic, items),
         className: 'epic-record-stone', draggable: true, events: dragEpic(epic, label) };
     }));
     empty.hidden = rows.length > 0;

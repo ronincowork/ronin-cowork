@@ -91,16 +91,17 @@ test('the Epics page and one Epic\'s page, as a person reads and presses them', 
   assert.equal(await reviewStone.locator('.sws-label').innerText(), 'Stock the shelves');
   assert.equal(await reviewStone.getAttribute('data-tip'), 'Stock the shelves: refill by 07:20');
   const stones = await page.$$eval('.epic-record-stones .sws-grid > [data-sws-id]', (nodes) => nodes.map((node) => ({
-    id: (node as HTMLElement).dataset.swsId, needs: node.querySelector('.sws-secondary')?.textContent || '', last: node.querySelector('.sws-state')?.textContent || '',
-    line: Boolean(node.querySelector('.lifecycle-line')),
+    id: (node as HTMLElement).dataset.swsId, last: node.querySelector('.sws-state')?.textContent || '',
+    flag: !(node.querySelector('.epic-stone-flag') as HTMLElement | null)?.hidden, size: node.querySelector('.epic-stone-size')?.textContent || '',
+    line: Boolean(node.querySelector('.lifecycle-line')), words: node.querySelector('.sws-secondary')?.textContent || '',
   })));
-  assert.deepEqual(stones.map((s) => s.id), [review, toAssign, aging], 'needing you first, then most progressed; no Done Epic; no New Epic stone');
-  assert.equal(stones[0].needs, 'Needs review', 'an item In Review');
-  assert.equal(stones[1].needs, 'Work to assign');
-  assert.equal(stones[2].needs, '', 'nothing needs you: no line');
-  for (const one of stones.slice(0, 3)) {
+  assert.deepEqual(stones.map((s) => s.id), [aging, review, toAssign], 'none flagged: most progressed first; no Done Epic; no New Epic stone');
+  assert.deepEqual(stones.map((s) => s.size), ['1', '2', '2'], 'its open items, small, bottom right');
+  for (const one of stones) {
     assert.match(one.last, /moved \S+ ago/);
     assert.ok(one.line, 'a progress line on every Epic stone');
+    assert.equal(one.flag, false, 'no flag: nothing flagged');
+    assert.equal(one.words, '', 'no Needs review line');
   }
   assert.doesNotMatch(await page.textContent('.epic-record-stones') || '', /Aging|Working|Starter|Maturing/, 'no epic-stage name on a stone');
   // The line's press reads the epic-stage and counts; it does not open the Epic.

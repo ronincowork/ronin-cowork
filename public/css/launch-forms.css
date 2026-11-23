@@ -143,6 +143,14 @@
   .epic-record-stones .sws-stone, .team-roster-phalanx .team-stone { gap: var(--space-row); }
   .epic-record-stones .sws-secondary, .team-roster-phalanx .team-stone .sws-secondary { color: var(--accent); white-space: normal; overflow-wrap: anywhere; } /* what needs you: wraps in full */
   .epic-record-stones .sws-state, .team-roster-phalanx .team-stone .sws-state { margin-top: auto; color: var(--muted); }
+  /* AN EPIC STONE'S MARKS (owner, 2026-11-23): ⚑ top right in the flagged amber (the Agent pill's);
+     its open item count small and grey bottom right, above the lifecycle line. */
+  .epic-stone-marks { display: contents; }
+  .epic-stone-flag { position: absolute; top: var(--space-inset); right: var(--space-inset); color: var(--warn); line-height: 1; }
+  .epic-stone-flag[hidden] { display: none; }
+  .epic-record-stones .sws-label { padding-right: calc(var(--space-inset) + 0.5em); }
+  .epic-record-stones .sws-state { padding-right: 2.5em; }
+  .epic-stone-size { position: absolute; right: var(--space-inset); bottom: calc(var(--space-inset) + 5px); color: var(--muted); font-size: var(--text-small); line-height: 1; }
   /* EVERY EPIC STONE THE SAME HEIGHT (owner, 2026-11-23): a grid whose rows are all the tallest stone's. */
   .sws.epic-record-stones .sws-grid { display: grid; grid-template-columns: repeat(auto-fill, var(--sws-stone)); grid-auto-rows: 1fr; justify-content: center; }
   .sws.epic-record-stones[data-open='true'] .sws-grid { grid-template-columns: var(--sws-stone); }
