@@ -483,6 +483,9 @@ export function createNewItem({ kind: startKind = 'Epic', epicsRead = null, hold
   const { createSurface, createAction, createField, createNotice } = WorkspaceKit.primitives;
   const draft = { kind: startKind, parent: '', short: '', long: '', objective: '', holder: '', priority: 'Medium' };
   const read = epicsRead || createEpicsRead(() => '');
+  // The read holds the pushed Epics and their items only while someone hears it: the form hears it
+  // itself, so its Parent list is full wherever it opens (a Team's own read has no other listener).
+  const stopRead = read.subscribe(() => {});
   // Under a level-0 item it is a Subtask, whatever kind was picked.
   const underItem = () => Boolean(draft.parent) && !read.list().some((epic) => epic.id === draft.parent);
   const kindNow = () => (underItem() ? 'Subtask' : draft.kind);
@@ -623,5 +626,5 @@ export function createNewItem({ kind: startKind = 'Epic', epicsRead = null, hold
     if (result.ok) onMade(result.data.item || null);
   }
   return { el: surface.el, show: () => { ready(); titleInput.focus(); },
-    destroy: () => { for (const q of [kindQ, under, who]) q.destroy(); } };
+    destroy: () => { stopRead(); for (const q of [kindQ, under, who]) q.destroy(); } };
 }
