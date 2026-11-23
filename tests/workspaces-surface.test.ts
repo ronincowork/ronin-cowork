@@ -50,7 +50,7 @@ test('the Workspaces page and one Workspace, as a person reads and presses them'
   await page.waitForSelector(stone);
   const box = await page.locator(stone).boundingBox();
   assert.ok(box && box.height >= box.width * 0.9, `a normal-size stone, not a short one: ${JSON.stringify(box)}`);
-  assert.match(await page.textContent(stone) || '', /Shop/, 'the Teams working in it');
+  assert.match(await page.textContent(stone) || '', /1 Team/, 'how many Teams work in it');
   assert.equal(await page.$('[data-workspace-view="workspaces"] .terminal-hints'), null, 'no Agent vocabulary or Session controls');
 
   // One Workspace: Work first, its life beside its document; Config holds the record and no document.
@@ -64,17 +64,15 @@ test('the Workspaces page and one Workspace, as a person reads and presses them'
   assert.deepEqual(await pressed(), ['Config']);
   assert.equal(await page.$('.workspace-doc-pane'), null, 'no document in Config');
   assert.match(await page.textContent('.workspace-form') || '', /Folders/);
-  assert.ok(await page.isVisible('.workspace-page-actions .wk-action:has-text("Save")'), 'Save only in Config');
+  assert.ok(await page.isVisible('.workspace-bar-actions .wk-action:has-text("Save")'), 'Save only in Config');
   await page.click('.workspace-toggle button:has-text("Work")');
 
-  // Its Teams: Shop, Ana its lead; pressed, its Agents and Launch.
+  // Its Teams: the Teams stones, Shop only; pressed, its bar with Launch.
   const team = '.workspace-teams [data-sws-id="shop"]';
   await page.waitForSelector(team);
   assert.equal(await page.$('.workspace-teams [data-sws-id="lab"]'), null, 'another Workspace\'s Team is not here');
-  assert.match(await page.textContent(team) || '', /ana, lead/);
   await page.click(team);
-  await page.waitForSelector('.workspace-team button:has-text("Launch")');
-  assert.match(await page.textContent('.workspace-team-agents') || '', /ana, lead/);
+  await page.waitForSelector('.workspace-teams .team-bar [data-launch="true"]');
 
   // Its Epics: the Epics stones themselves, only this Workspace's, with their progress line; pressed, the Epic.
   await page.click('.workspace-life .ask-opt:has-text("Epics")');

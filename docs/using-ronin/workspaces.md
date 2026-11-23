@@ -41,20 +41,24 @@ Agent it is checked out to reads its folders and repositories, writes the Summar
 ## Make or change a Workspace
 
 Open the **Workspaces** door on Ronin Home (or **Workspaces** in [Ronin Setup](../getting-started/setup-workbench.md)).
-Each Workspace is a stone: its name and the Teams working in it. The last stone is **New Workspace**.
+Each Workspace is a stone, like an Epic's or a Team's: its name, how many Teams work in it, and
+along its foot the progress of what its Teams and their Agents hold. ⚑ at the top right means
+something open in it is flagged; the small number at the bottom right is how many items are open.
+Flagged Workspaces come first, then the rest by name. The last stone is **New Workspace**.
 
-Press a stone and that Workspace opens beside the stones. At its top, **Work** and **Config** switch
-between its two views:
+Press a stone and that Workspace opens beside the stones, in a bar like an opened Team's: its name
+with **Work**, **Config** and **Launch**, its objective under them, its progress along the foot.
+**Work** and **Config** switch between its two views:
 
 - **Work** — the Workspace as it is worked in: on one side what is being done in it, on the other
-  [its doc](#its-doc). **Teams** or **Epics** picks the side: the Teams launched in it, or the open
-  Epics its Teams and their Agents hold, the same stones as on the Epics page. Press one to open it
-  beside them: a Team shows its Agents and **Launch** into the Team's workbench; an Epic shows its
-  board, with **Launch** into the Team working it. On a narrow screen the doc is under them.
+  [its doc](#its-doc). **Teams** or **Epics** picks the side: the Teams stones of this Workspace, or
+  the open Epics its Teams and their Agents hold, the same stones as on the Epics page. Press one to
+  open it beside them, each with **Launch** into its workbench. On a narrow screen the doc is under
+  them.
 - **Config** — its settings: Folders, Integrations, Agent info and Behaviors.
 
-**Launch** at the top opens the Workspace on its own page, `#/workspace/<name>`, with the same two
-views and the whole page's room. A stone dragged into a tilespace opens it whole there.
+**Launch** opens the Workspace on its own page, `#/workspace/<name>`, in a new browser tab, with the
+same two views and the whole page's room. A stone dragged into a tilespace opens it whole there.
 
 **New Workspace** is two things: its **Name**, and its **Folders**. Press **Create**. Nothing is
 kept until you press Create.

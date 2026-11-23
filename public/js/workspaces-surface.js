@@ -3,10 +3,10 @@
  * THE WORKSPACES WORKBENCH'S SURFACES (owner, 2026-11-02; KAN-728; KAN-784). The Workspace is the organizing
  * principle: Ronin keeps no folder list of its own, and a folder or repository is a row of its
  * Workspace record (src/workspaces.ts). Tilespace 1 holds the Workspaces (`createWorkspaceStones`), each
- * stone its name, what it is for and the Teams in it. A pressed one opens beside them as one Workspace
- * (`workspaceSurface`): a toggle, Work (its Teams or Epics, to drill into, beside its document) or Config
- * (`workspacePage`: its folders, Integrations, Agent info and Behaviors; Archive under ⋯), and Launch to its own
- * page, `#/workspace/<name>` (`createWorkspaceRoute`). A stone dragged or a card placed opens it whole in
+ * stone in the Epic and Team stones' grammar (KAN-801). A pressed one opens beside them as one Workspace
+ * (`workspaceSurface`), in the opened Team's bar: a toggle, Work (its Teams or Epics, to drill into, beside
+ * its document) or Config (`workspacePage`: its folders, Integrations, Agent info and Behaviors; Archive
+ * under ⋯), and Launch to its own page, `#/workspace/<name>` (`createWorkspaceRoute`), in a new tab. A stone dragged or a card placed opens it whole in
  * a tilespace (`createWorkspaceRecord`); New Workspace is a dotted card (`createWorkspaceNew`). A folder
  * link dragged in from Files (`/files/<path under home>`, KAN-146) adds that folder. GitHub CLI
  * (`createFolderGithub`) is the sign-in box github-workspace-setup.js draws.
@@ -22,12 +22,14 @@ import { ask } from './ask.js';
 import { createFolderPicker } from './folder-picker.js';
 import { createMenuButton } from './menu.js';
 import { renderMarkdownDocument } from './markdown-reader.js';
-import { membersOfTeam, subscribe as subscribeTeams, teamsFromState } from './team-controller.js';
+import { subscribe as subscribeTeams, teamsFromState } from './team-controller.js';
 import { createEpicStones, createEpicsRead } from './epics-surface.js';
+import { createTeamRosterSurface } from './team-roster-surface.js';
 import { teamEpicIds } from './team-epics.js';
 import { listedTeam } from './roster-groups.js';
 import { openWorkspaceTab } from './workspace.js';
 import { S } from './state.js';
+import { createLifecycle, createStoneMarks, statusKey } from './item-lifecycle.js';
 import { createWorkspacesRead } from './workspaces-read.js';
 import { SURFACE_DRAG } from './workbench.js';
 
@@ -485,18 +487,13 @@ const dragWorkspace = (stone, type) => (!type ? stone : {
 const teamsIn = (w) => teamsFromState().filter((team) => team.durable && team.workspace === w.name && listedTeam(team))
   .sort((a, b) => String(a.title || a.name).localeCompare(String(b.title || b.name)));
 
-/** The Workspace's own route (KAN-784): `#/workspace/<name>`, a plain press follows it in this tab. */
-export const workspaceAddress = (name) => `#/workspace/${encodeURIComponent(name)}`;
-function workspaceLaunch(name) {
-  const link = el('a', 'wk-action workspace-launch', t('workspaces.launch', 'Launch'));
-  link.href = workspaceAddress(name);
-  link.addEventListener('click', (event) => {
-    if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || !S.workspace) return;
-    event.preventDefault();
-    S.workspace.navigate('workspace', { param: name });
-  });
-  return link;
-}
+/** What a Workspace holds: every item its Teams and their Agents hold (each Team row's `items`), once each. */
+const itemsIn = (w) => [...new Map(teamsIn(w).flatMap((team) => team.items || []).map((item) => [item.id, item])).values()];
+const flaggedIn = (w) => itemsIn(w).some((item) => item.flagged && statusKey(item.status) !== 'done');
+
+/** Launch (owner, 2026-11-23): the kit's Launch, the Ronin mark; it opens the Workspace's own page in a new tab. */
+const workspaceLaunch = (name) => WorkspaceKit.primitives.createAction({ label: t('workspaces.launch', 'Launch'), launch: true, size: 'compact',
+  action: () => openWorkspaceTab('workspace', name) });
 
 /**
  * THE WORKSPACE'S DOCUMENT (KAN-713; KAN-784): its one doc, `~/ronin/office/workspaces/<name>.md`, the
@@ -548,39 +545,39 @@ function workspaceDoc(w) {
   return { el: box };
 }
 
-/** The Teams' stones of a Workspace: each its name and its lead; pressed, its Agents and Launch into the
- * Team's workbench. */
+/**
+ * THE TEAMS OF A WORKSPACE (KAN-801): the Teams stones themselves, bare and fixed to this Workspace
+ * (team-roster-surface.js), as workspaceEpics takes the Epic stones. Pressed, a Team opens in its bar's
+ * grammar (cowork-view.js leagueTeamBody): its name with Launch, its concept in full, the lifecycle
+ * line along its foot. The whole one-Team view joins when team_mindset exports it.
+ */
+function teamOpened(name) {
+  const team = teamsFromState().find((one) => one.name === name);
+  const root = el('div', 'epic-detail team-detail');
+  const launch = WorkspaceKit.primitives.createAction({ label: t('league.launch_team', 'Launch'), launch: true, size: 'compact', action: () => openWorkspaceTab('team', name) });
+  const actions = el('span', 'item-bar-state team-bar-actions');
+  actions.append(launch.el);
+  const head = el('span', 'item-bar-head team-bar-head');
+  head.append(el('span', 'item-bar-title team-bar-title', String(team?.title || '').trim() || name), actions);
+  const objective = el('span', 'item-bar-objective team-bar-objective', String(team?.objective || '').trim());
+  objective.hidden = !objective.textContent;
+  const line = createLifecycle('line');
+  line.update(team?.items || []);
+  const bar = el('div', 'item-bar item-bar-lean team-bar');
+  bar.append(head, objective, line.el);
+  root.append(bar);
+  return { el: root };
+}
 function workspaceTeams(w) {
-  const seat = el('div', 'wk-surface-content workspace-teams'); // the phalanx's seat
+  const host = el('div', 'workspace-teams');
   const empty = el('p', 'fs-step-help', t('workspaces.no_teams', 'No Team works in this Workspace yet.'));
-  const stones = createPhalanx({
-    className: 'workspace-work-stones',
-    renderDetail: (item, at) => {
-      const team = el('div', 'workspace-team');
-      const head = el('div', 'workspace-page-head');
-      const launch = el('button', 'wk-action', t('teams_surface.launch', 'Launch'));
-      launch.type = 'button';
-      launch.addEventListener('click', () => openWorkspaceTab('team', item.id));
-      head.append(el('span', 'wk-surface-header-title', item.label), launch);
-      const agents = el('ul', 'workspace-team-agents');
-      for (const one of membersOfTeam(item.id)) agents.append(el('li', null, one.team_lead ? t('workspaces.lead_named', '{name}, lead', { name: one.name }) : one.name));
-      if (!agents.children.length) agents.append(el('li', 'fs-step-help', t('workspaces.no_agents', 'No Agents running')));
-      team.append(head, agents);
-      at.append(team);
-    },
-  });
-  stones.mount(seat, { before: [empty] });
-  const paint = () => {
-    const teams = teamsIn(w);
-    empty.hidden = Boolean(teams.length);
-    stones.setItems(teams.map((team) => {
-      const lead = membersOfTeam(team.name).find((one) => one.team_lead)?.name;
-      return { id: team.name, label: team.title || team.name, state: lead ? t('workspaces.lead_named', '{name}, lead', { name: lead }) : t('workspaces.team', 'Team') };
-    }));
-  };
-  const stop = subscribeTeams(() => paint());
+  const stones = createTeamRosterSurface({ bare: true, roots: [w.name], teamDetail: teamOpened });
+  host.append(empty, stones.el);
+  const paint = () => { empty.hidden = Boolean(teamsIn(w).length); };
+  const stop = subscribeTeams(paint);
   paint();
-  return { el: seat, destroy: () => { stop?.(); stones.destroy(); } };
+  stones.render();
+  return { el: host, destroy: () => { stop?.(); stones.destroy(); } };
 }
 
 /** The Epics of a Workspace: the Epics its Teams or their Agents hold (each Team roster's `epics`),
@@ -624,49 +621,61 @@ function workspaceWork(w) {
 let lastView = 'work';
 
 /**
- * ONE WORKSPACE (owner, 2026-11-22; KAN-784): its name, one toggle, Work or Config, and the view it
- * picks. Work is what is being done in it and its document (workspaceWork); Config is its page
- * (workspacePage: Folders, Integrations, Agent info, Behaviors), its Save, − and ⋯ in the head only there. The same
- * surface on the Workspaces stones, in a tilespace and on its own route; `launch` adds Launch to it.
+ * ONE WORKSPACE (owner, 2026-11-22; KAN-784; KAN-801): the opened Team's bar (cowork-view.js
+ * leagueTeamBody: the item bar's classes), its name with the Work/Config toggle and Launch in the head,
+ * its objective in full under them, the shared lifecycle line along its foot over what its Teams and
+ * their Agents hold; then the view the toggle picks. Work is what is being done in it and its document
+ * (workspaceWork); Config is its page (workspacePage: Folders, Integrations, Agent info, Behaviors),
+ * its Save, − and ⋯ in the head only there. The same surface on the Workspaces stones, in a tilespace
+ * and on its own route; `launch` adds Launch to it, `title` its name (a tilespace's header has it).
  */
 function workspaceSurface(w, { workspacesRead, onDiscard = () => {}, launch = false, title = true }) {
-  const root = el('div', 'workspace-one');
-  const head = el('div', 'workspace-page-head');
-  const actions = el('div', 'workspace-page-actions');
+  const { createAction } = WorkspaceKit.primitives;
+  const root = el('div', 'epic-detail team-detail workspace-one');
+  const actions = el('span', 'item-bar-state team-bar-actions workspace-bar-actions');
+  const head = el('span', 'item-bar-head team-bar-head');
+  const objective = el('span', 'item-bar-objective team-bar-objective', String(w.objective || '').trim());
+  objective.hidden = !objective.textContent;
+  const line = createLifecycle('line');
+  const bar = el('div', 'item-bar item-bar-lean team-bar workspace-bar');
   const body = el('div', 'workspace-one-body');
   let view = lastView;
   let current = null;
-  // The toggle: two buttons, the one showing pressed, as Add a folder and Clone from GitHub are.
-  const { createAction } = WorkspaceKit.primitives;
-  const toggle = el('div', 'workspace-toggle');
+  // The toggle: two kit actions, the one showing pressed.
+  const toggle = el('span', 'workspace-toggle');
   toggle.setAttribute('role', 'group');
   const views = [['work', t('workspaces.work', 'Work')], ['config', t('workspaces.config', 'Config')]].map(([key, label]) => {
     const one = createAction({ label, size: 'compact', action: () => { if (view === key) return; view = lastView = key; paint(); } });
     toggle.append(one.el);
     return [key, one.el];
   });
+  const launched = launch ? workspaceLaunch(w.name) : null;
   const paint = () => {
     current?.destroy?.();
     for (const [key, node] of views) node.setAttribute('aria-pressed', String(key === view));
     if (view === 'config') {
       const page = workspacePage(w, { onSaved: () => void workspacesRead.read(), onDiscard });
       current = page;
-      actions.replaceChildren(page.action.el, page.discard.el, page.more.el);
+      actions.replaceChildren(toggle, page.action.el, page.discard.el, page.more.el);
       body.replaceChildren(page.el);
     } else {
       current = workspaceWork(w);
-      actions.replaceChildren(...(launch ? [workspaceLaunch(w.name)] : []));
+      actions.replaceChildren(toggle, ...(launched ? [launched.el] : []));
       body.replaceChildren(current.el);
     }
   };
-  head.append(...(title ? [el('span', 'wk-surface-header-title', w.title || w.name)] : []), toggle, actions);
-  root.append(head, body);
+  head.append(...(title ? [el('span', 'item-bar-title team-bar-title', w.title || w.name)] : []), actions);
+  bar.append(head, objective, line.el);
+  const reline = () => line.update(itemsIn(w));
+  reline();
+  const stop = subscribeTeams(reline);
+  root.append(bar, body);
   paint();
-  return { el: root, destroy: () => { current?.destroy?.(); } };
+  return { el: root, destroy: () => { stop?.(); current?.destroy?.(); } };
 }
 
-/** The stones of Workspaces (owner, 2026-11-22; KAN-784): Layer 1, every Workspace a stone of the
- * normal size: its name and the Teams working in it. A pressed stone
+/** The stones of Workspaces (owner, 2026-11-22; KAN-784; KAN-801): Layer 1, every Workspace a stone as
+ * an Epic's or a Team's: its name, how many Teams work in it, the shared marks. A pressed stone
  * opens that Workspace beside the rail, Work or Config, with Launch to its own page; a stone dragged
  * into a tilespace opens it whole there. The last stone, New Workspace, is its Name and Folders. */
 export function createWorkspaceStones({ workspacesRead, workbench, recordType = '', withNew = false, onShow = () => {} }) {
@@ -674,6 +683,12 @@ export function createWorkspaceStones({ workspacesRead, workbench, recordType = 
   const out = createSurface({ label: t('workspaces.title', 'Workspaces'), className: 'setup-surface workspaces-records' });
   const messages = status();
   const say = sayInto(messages);
+  // One set of marks per Workspace, kept: phalanx counts a Node by its identity (KAN-413).
+  const marks = new Map();
+  const marksOf = (key) => {
+    if (!marks.has(key)) { const line = createLifecycle('line'); marks.set(key, { line, marks: createStoneMarks(line) }); }
+    return marks.get(key);
+  };
   const stones = createPhalanx({
     className: 'workspace-record-stones',
     renderDetail: (item, host) => {
@@ -699,11 +714,22 @@ export function createWorkspaceStones({ workspacesRead, workbench, recordType = 
   const paint = (answer) => {
     if (answer && !answer.ok) { say(answer.message, true); return; }
     if (answer) say(workspacesRead.list().length ? '' : t('workspaces.none', 'No Workspaces yet. Place New Workspace from the selector.'));
-    const next = workspacesRead.list().map((w) => {
-      const teams = teamsIn(w).map((team) => team.title || team.name).join(' · ');
-      return dragWorkspace({ id: w.name, label: w.title || w.name,
-        ...(w.archived ? { state: t('workspaces.archived', 'Archived'), className: 'archived' } : teams ? { state: teams } : {}) }, recordType);
-    });
+    // The Epic and Team stones' grammar (owner, 2026-11-23; KAN-801): the name, one muted line (how
+    // many Teams work in it; Archived), and the shared marks over what its Teams and their Agents hold.
+    // Flagged first, then by name.
+    const name = (w) => String(w.title || '').trim() || w.name;
+    const next = workspacesRead.list().slice()
+      .sort((a, b) => Number(flaggedIn(b)) - Number(flaggedIn(a)) || name(a).localeCompare(name(b)))
+      .map((w) => {
+        const count = teamsIn(w).length;
+        const state = w.archived ? t('workspaces.archived', 'Archived')
+          : count === 1 ? t('workspaces.one_team', '1 Team') : count ? t('workspaces.teams_count', '{count} Teams', { count }) : '';
+        const items = itemsIn(w);
+        const one = marksOf(w.name);
+        one.line.update(items);
+        return dragWorkspace({ id: w.name, label: name(w), ...(state ? { state } : {}),
+          marker: one.marks.update(items), className: `workspace-stone${w.archived ? ' archived' : ''}` }, recordType);
+      });
     // ONE WORKSPACE MOVES, ONE STONE REPAINTS (KAN-413): the phalanx's keyed list leaves every
     // stone a Teams push did not move, and an open page, alone.
     stones.setItems(withNew ? [...next, { id: NEW_STONE, glyph: '+', label: t('workspaces.new', 'New Workspace') }] : next);
