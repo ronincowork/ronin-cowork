@@ -141,7 +141,7 @@ export function workspacePage(w, { taken = () => [], onSaved = () => {}, onDisca
   stepAgents.body.append(mode.el);
 
   /* ---- 5 · Behaviors (docs/architecture/brief.md, Where it is set in the UI): what every Agent in this Workspace is told — its add, block
-     and only lists and project management; its integrations are step 3. A created Workspace only. ---- */
+     and only lists and project management; its integrations are step 3. A created Workspace only (above). ---- */
   const stepBrief = createStep({ n: n(5), key: 'brief', title: t('behaviours', 'Behaviors'), onToggle: () => { open.brief = !open.brief; paint(); } });
   const brief = isNew ? null : createBriefSettingsPanel({ layer: 'workspace', id: draft.name, ownSave: false, showIntegrations: false, onChange: () => changed(),
     preview: { workspace: draft.name }, linkFor: layerLinks() });
@@ -450,9 +450,10 @@ export function workspacePage(w, { taken = () => [], onSaved = () => {}, onDisca
     paintRows();
     paintPlans();
   }
-  // A New Workspace is its Name and its folders, then Create (KAN-728); the rest waits for the made one.
-  stepIntegrations.el.hidden = isNew;
-  stepAgents.el.hidden = isNew;
+  // A NEW WORKSPACE (owner, 2026-11-23: not just a name) is the made one's page with its Name first:
+  // Folders, Integrations and Agent info, then Create. Behaviors are read and written against a saved
+  // Workspace (/api/brief/settings/workspace/<name>), so they wait: Create opens the made Workspace
+  // with its Configuration open, Behaviors in it.
   page.append(line, stepTop.el, stepLocations.el, stepIntegrations.el, stepAgents.el, stepBrief.el);
   paint();
   // ⋯ (a made Workspace): Archive takes it off the Workspace pickers, kept; Restore brings it back.
@@ -799,6 +800,7 @@ export function createWorkspaceNew({ workspacesRead, place }) {
   const paint = () => {
     const page = workspacePage(null, { taken: () => workspacesRead.list().map((w) => w.name), onSaved: async (saved) => {
       await workspacesRead.read();
+      foldsOpen.set(`${saved.name}\0config`, true); // its Configuration open, Behaviors in it
       place(saved.name);
     }, onDiscard: () => paint() });
     out.header.actions.replaceChildren(page.action.el, page.discard.el);

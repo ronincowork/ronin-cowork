@@ -60,8 +60,9 @@ press it again to close it. Below the bar are three lines, each opening and clos
 **Launch** opens the Workspace on its own page, `#/workspace/<name>`, in a new browser tab, with the
 whole page's room. A stone dragged into a tilespace opens it whole there.
 
-**New Workspace** is two things: its **Name**, and its **Folders**. Press **Create**. Nothing is
-kept until you press Create.
+**New Workspace** is its **Name**, then what a made Workspace's Configuration has: **Folders**,
+**Integrations** and **Agent info**. Press **Create**; nothing is kept until then. The made Workspace
+opens with its Configuration open, where its **Behaviors** are.
 
 In Config the page reads, top down: its **Folders**, then, folded until you open them, **Integrations**, **Agent info** (its objective, instructions, Mode and plans) and
 **Behaviors**. **⋯** at the top holds **Archive**: the Workspace stops being offered when you
