@@ -160,7 +160,7 @@ Agent, as the Epic stones: the lead's first with 人, then flagged ones, then by
 its name; one mark top right, ⚑ in amber
 when flagged (the stone takes the pill's amber), otherwise the pill's dot, solid while working and
 hollow just finished, otherwise nothing; bottom right, small and grey, how many open items it
-holds; a progress line along its foot. Press a stone and it opens beside them, as an Epic stone
+holds; a progress line along its foot, hollow while it holds nothing. Press a stone and it opens beside them, as an Epic stone
 does, with three lines that expand and collapse: **Objective** (what its work record states, to
 read, not edit), **Work items held** (the Epic page's bars over
 what it holds) and **Configuration** (the Agent's own: name, mandate and the rest, with Save).
