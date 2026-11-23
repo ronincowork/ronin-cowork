@@ -113,8 +113,7 @@ function link(doc, words, kind, target, open, title) {
   a.className = `chat-item-link chat-${kind}-link`;
   a.href = '#';
   a.dataset[kind] = typeof target === 'string' ? target : target.id;
-  // A document shows its file name; the whole path is its tooltip (owner, 19 Nov, KAN-707).
-  a.textContent = kind === 'doc' ? words.split('/').pop() : words;
+  a.textContent = words;
   if (title) a.title = title;
   a.draggable = true;
   a.addEventListener('dragstart', (event) => {

@@ -169,8 +169,8 @@ What a message names is a link when Ronin knows it, and plain text otherwise:
 - **A web address** (`https://github.com/…/pull/149`): it opens in a new browser tab. A full stop,
   comma or closing bracket after it is not part of the link.
 
-The Helpful Assistant's chat does the same over her chat. A document link shows the file's name;
-its whole path is its tooltip.
+The Helpful Assistant's chat does the same over her chat. A document link shows its path as the
+message wrote it.
 
 Any of these links can also be dragged onto a workspace of a Team's workbench, as a selector pill
 can, and it opens there: an item on Find item, an Agent's tile, a document or a commit on a
