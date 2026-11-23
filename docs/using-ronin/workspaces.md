@@ -51,7 +51,7 @@ is its bar: its name with **Launch**, its objective, its progress along the foot
 open its Configuration under it (Folders, Integrations, Agent info and Behaviors, with **Save**);
 press it again to close it. Below the bar are three lines, each opening and closing, with its count:
 
-- **Teams** — the Teams stones of this Workspace. Press one to open it beside them, with **Launch**
+- **Teams** — the Teams stones of this Workspace. Press one to open it under them, with **Launch**
   into its workbench.
 - **Epics** — the open Epics its Teams and their Agents hold, the same stones as on the Epics page.
   Press one to open its board, with **Launch** into the Team working it.

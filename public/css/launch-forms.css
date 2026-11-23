@@ -168,6 +168,15 @@
   .sws:is(.epic-record-stones, .team-roster-phalanx, .workspace-record-stones) { --sws-stone: calc(var(--setup-stone-size) * 1.2); } /* a fifth wider: the added inset does not cost the name its width */
   .sws:is(.epic-record-stones, .team-roster-phalanx, .workspace-record-stones) .sws-grid { display: grid; grid-template-columns: repeat(auto-fill, var(--sws-stone)); grid-auto-rows: 1fr; justify-content: center; }
   .sws:is(.epic-record-stones, .team-roster-phalanx, .workspace-record-stones)[data-open='true'] > :where(.sws-rail) > .sws-grid { grid-template-columns: var(--sws-stone); }
+  /* STONES INSIDE AN OPENED STONE OPEN BELOW (owner, 2026-11-23): no rail inside a rail. A phalanx in
+     another's detail (a Workspace's Teams and Epics, a Team's Agents and Epics) keeps its stones going
+     across and wrapping, and the pressed one's detail opens under them, the whole width, as an
+     Epic's bar opens below it. */
+  .sws-detail .sws.sws[data-open='true'] { flex-direction: column; align-items: stretch; gap: var(--space-paragraph); }
+  .sws-detail .sws.sws[data-open='true'] > .sws-rail { display: flex; flex: none; justify-content: flex-start; min-width: 0; overflow: visible; padding: var(--edge-2); }
+  .sws-detail .sws.sws[data-open='true'] > .sws-rail > .sws-grid { width: 100%; flex-direction: row; flex-wrap: wrap; justify-content: flex-start; grid-template-columns: repeat(auto-fill, var(--sws-stone)); }
+  .sws-detail .sws.sws[data-open='true'] > .sws-rail .sws-group-stones { flex-direction: row; flex-wrap: wrap; }
+  .sws-detail .sws.sws[data-open='true'] > .sws-detail { flex: none; max-width: none; overflow: visible; }
   .epics-records > .wk-surface-content > .epic-empty { padding: var(--space-inset); }
   .epic-source[hidden] { display: none; }
   .epic-launch { text-decoration: none; }
