@@ -28,6 +28,7 @@
  */
 import { t } from './lexicon.js';
 import { statusKey } from './item-lifecycle.js';
+import { splitItemTitle } from './item-title.js';
 import { humanAge } from './work-record.js';
 import { WorkspacePrimitives } from './workspace-primitives.js';
 
@@ -190,13 +191,15 @@ export function itemBar(item, { sub = false, subtasks = 0, extra = [], onPress, 
   node.dataset.status = statusKey(item.status);
   if (item.flagged) node.dataset.flagged = 'true';
   node.setAttribute('aria-label', pillWords(item));
+  const title = item.title || '';
+  node.title = title;
   const head = span('item-bar-head');
   const state = span('item-bar-state');
   state.append(span('item-pill-status'), span('item-bar-status', item.status || ''));
   if (item.flagged) state.append(span('item-pill-flag', FLAG_MARK));
   const signal = !lean && handInSignal(item);
   if (signal) { node.dataset.handin = signal.kind; state.append(span('item-bar-handin', `${HANDIN_MARK} ${handInWords(signal)}`)); }
-  head.append(kindMark(item.kind), span('item-bar-id', item.jira || item.id), span('item-bar-title', item.title || ''), state);
+  head.append(kindMark(item.kind), span('item-bar-id', item.jira || item.id), span('item-bar-title', splitItemTitle(title).shortTitle), state);
   node.append(head);
   if (!sub && item.objective) node.append(span('item-bar-objective', item.objective));
   const said = !sub && !lean && lastComment(item);

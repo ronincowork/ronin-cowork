@@ -33,7 +33,9 @@ Ronin refuses any other shape and says why. Every id an item has had still finds
 
 Write the objective as what done looks like to the person accepting it, in their words, one or
 two sentences, with no code names. The technical detail goes in the item's first comment,
-starting "Brief:". Keep the title short and in their words too.
+starting "Brief:". When creating an item, you can use `Short name: more detail`.
+Choose a short name in the requester's words for stones and bars, then add whatever
+wording helps someone reading the item. A plain title works too.
 
 ### Status
 | Status | Moved by |

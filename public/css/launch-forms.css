@@ -188,6 +188,7 @@
   .wi-head.wi-head-closes:active { background: color-mix(in srgb, var(--accent) 16%, transparent); }
   .wi-head > button.minimize { margin-left: auto; }
   .wi-title { margin: 0; color: var(--fg-strong); font-size: var(--text-heading); font-weight: var(--weight-strong); line-height: var(--leading-tight); overflow-wrap: anywhere; }
+  .item-title-continuation { margin: 0; color: var(--muted); font-size: var(--text-body); line-height: var(--leading-body); overflow-wrap: anywhere; }
   .wi-key, .wi-notice, .wi-when { margin: 0; color: var(--muted); font-size: var(--form-note); }
   .wi-answer:empty { display: none; }
   .wi-answer[data-state='failed'] { color: var(--status-red); }

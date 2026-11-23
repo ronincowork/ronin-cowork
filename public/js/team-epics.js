@@ -13,6 +13,7 @@ import { WorkspaceKit } from './workspace-kit.js';
 import { t } from './lexicon.js';
 import { subscribe as hearTeams, teamByName } from './team-controller.js';
 import { createEpicBoard, createEpicsRead } from './epics-surface.js';
+import { splitItemTitle } from './item-title.js';
 
 /** The Team's row on the teams push: its `epics` (ids). */
 export const teamEpicIds = (row) => new Set(Array.isArray(row?.epics) ? row.epics : []);
@@ -37,7 +38,7 @@ export function createTeamEpics({ team }) {
   function paint() {
     const epics = read.list();
     const one = epics.length === 1 ? epics[0] : null;
-    out.header.title.textContent = one ? (one.title || one.id) : t('epics.title', 'Epics');
+    out.header.title.textContent = one ? splitItemTitle(one.title || one.id).shortTitle : t('epics.title', 'Epics');
     setSurfaceState(out.el, epics.length ? null : 'empty', epics.length ? '' : t('team_epics.none', 'No Epics for this Team yet.'));
     board.el.hidden = !epics.length;
   }
