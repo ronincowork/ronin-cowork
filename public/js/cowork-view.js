@@ -621,14 +621,12 @@ export function createCoworkView(options = {}) {
   let rows = new Map(); // name -> the store's home row
   const leagueTeamSurfaces = new Map(), openTeam = (name) => openWorkspaceTab('team', name);
   // ONE TEAM (owner, 2026-11-22; w900): what the Team is — its concept (the objective) and the
-  // Workspace it covers with that Workspace's repositories — over one of three views a toggle ticks
-  // through: Agents (a bar each, the Epic page's item bars: the lead's first, each opening its Agent),
-  // Epics (the Team's open Epics as the Epic stones, each with its progress line) and Configuration
-  // (the Team's form, Delete team at its foot). Painted into a host: a Teams stone's detail
+  // Workspace it covers with that Workspace's repositories — then its Agents (a bar each, the Epic
+  // page's item bars: the lead's first, each opening its Agent), and below them two lines that
+  // expand and collapse (owner, 2026-11-23: no view switch): Epics (the Team's open Epics as the
+  // Epic stones) and Configuration (the Team's form, Delete team at its foot). Painted into a host: a Teams stone's detail
   // (leagueTeamDetail) or a whole tilespace (createLeagueTeamSurface). No Team has Agents only.
-  const TEAM_VIEWS = ['agents', 'epics', 'config'];
-  const teamViewWords = () => ({ agents: t('league.agents', 'Agents'), epics: t('epics.title', 'Epics'), config: t('workspace.tab_team_configuration', 'Configuration') });
-  const teamViewOf = new Map(); // team -> the view last ticked to, for this page
+  const teamFoldsOpen = new Map(); // `${team}\0${fold}` -> open, for this page
   let workspacesRead = null; // one read of the Workspaces per page, for the coverage line
   const readWorkspaces = () => (workspacesRead ??= request('/api/workspaces').then((answer) => (answer.ok ? answer.data?.workspaces || [] : [])));
   // An Agent's bar opens its tile beside the Team: a non-member rides the pool as an extra (KAN-435).
@@ -638,7 +636,7 @@ export function createCoworkView(options = {}) {
   };
   const leagueTeamBody = (name, { seat, say }) => {
     const holding = name === UNASSIGNED;
-    // THE TEAM'S BAR (w900), as an Epic's bar: name with the view toggle and Launch, the concept in
+    // THE TEAM'S BAR (w900), as an Epic's bar: name with Launch, the concept in
     // full, the Workspace it covers, and the shared item lifecycle over all it holds, bottom right.
     const title = el('h2', 'team-bar-title', leagueTeamLabel(name));
     const objective = el('p', 'team-bar-objective');
@@ -646,44 +644,42 @@ export function createCoworkView(options = {}) {
     const teamLine = createLifecycle('bar');
     const launch = createAction({ label: t('league.launch_team', 'Launch'), size: 'compact', action: () => openTeam(name) });
     const remove = createAction({ label: t('league.delete_team', 'Delete team'), kind: 'danger', size: 'compact', action: async () => { const count = membersOfTeam(name).length; if (!window.confirm(t('league.delete_team_confirm', 'Delete {team}? {count} Agents will lose this Team membership.', { team: name, count }))) return; const result = await deleteTeamRoster(name); if (!result.ok) { say('failed', result.message); return; } for (const place of bench.locations(WB_TYPES.team, name)) emptySeat(place); for (const key of [...leagueTeamSurfaces.keys()]) if (key.endsWith(`\0${name}`)) leagueTeamSurfaces.delete(key); } });
-    // THE TOGGLE (owner, 2026-11-22): one button; each press moves on to the next view and past
-    // Configuration back to Agents. It names the view showing.
-    const words = teamViewWords();
-    const views = Object.fromEntries(TEAM_VIEWS.map((key) => [key, el('div', `league-team-view league-team-view-${key}`)]));
-    const toggle = el('button', 'wk-action league-team-toggle');
-    toggle.type = 'button';
-    toggle.setAttribute('aria-label', t('league.team_view_next', 'Show the next view'));
-    let epicStones = null; // built the first time Epics shows
-    const showView = (key) => {
-      teamViewOf.set(name, key);
-      toggle.textContent = `${words[key]} ›`;
-      toggle.dataset.view = key;
-      for (const view of TEAM_VIEWS) views[view].hidden = view !== key;
-      if (key === 'epics' && !epicStones) {
-        const every = createEpicsRead(() => '');
-        const mine = () => teamEpicIds(teamByName(name));
-        epicStones = createEpicStones({ bare: true, emptyWords: t('team_epics.none', 'No Epics for this Team yet.'), epicsRead: {
-          list: () => every.list().filter((epic) => mine().has(epic.id)),
-          items: (id) => every.items(id),
-          subscribe: (listener) => { const a = every.subscribe(listener); const b = subscribe(listener); return () => { a(); b(); }; },
-        } });
-        views.epics.append(epicStones.el);
-        epicStones.show();
-      }
+    // A FOLD (owner, 2026-11-23): a line naming what is under it; press it to expand or collapse.
+    const fold = (key, label, onOpen = () => {}) => {
+      const node = el('details', `team-fold team-fold-${key}`);
+      const line = el('summary', 'team-fold-line', label);
+      const body = el('div', `team-fold-body league-team-view league-team-view-${key}`);
+      node.append(line, body);
+      const remembered = `${name}\0${key}`;
+      node.open = teamFoldsOpen.get(remembered) === true;
+      node.addEventListener('toggle', () => { teamFoldsOpen.set(remembered, node.open); if (node.open) onOpen(); });
+      if (node.open) queueMicrotask(onOpen);
+      return { node, body };
     };
-    toggle.addEventListener('click', () => showView(TEAM_VIEWS[(TEAM_VIEWS.indexOf(toggle.dataset.view) + 1) % TEAM_VIEWS.length]));
-    const agents = views.agents;
-    const config = views.config;
+    let epicStones = null; // built the first time Epics opens
+    const epicsFold = fold('epics', t('epics.title', 'Epics'), () => {
+      if (epicStones) return;
+      const every = createEpicsRead(() => '');
+      const mine = () => teamEpicIds(teamByName(name));
+      epicStones = createEpicStones({ bare: true, emptyWords: t('team_epics.none', 'No Epics for this Team yet.'), epicsRead: {
+        list: () => every.list().filter((epic) => mine().has(epic.id)),
+        items: (id) => every.items(id),
+        subscribe: (listener) => { const a = every.subscribe(listener); const b = subscribe(listener); return () => { a(); b(); }; },
+      } });
+      epicsFold.body.append(epicStones.el);
+      epicStones.show();
+    });
+    const configFold = fold('config', t('workspace.tab_team_configuration', 'Configuration'));
+    const agents = el('div', 'league-team-view league-team-view-agents');
+    const config = configFold.body;
     const main = el('div', 'league-team-edit-content');
     const actions = el('div', 'team-bar-actions');
-    if (!holding) actions.append(toggle);
     actions.append(launch.el);
     const head = el('div', 'team-bar-head'); head.append(title, actions);
     const barFoot = el('div', 'team-bar-foot'); barFoot.append(teamLine.el);
     const bar = el('div', 'team-bar'); bar.append(head, objective, coverage, barFoot);
-    main.append(bar);
-    if (holding) main.append(agents);
-    else { main.append(...TEAM_VIEWS.map((key) => views[key])); showView(teamViewOf.get(name) || 'agents'); }
+    main.append(bar, agents);
+    if (!holding) main.append(epicsFold.node, configFold.node);
     let held = new Map(); // agent name -> the items it holds, from the Team reading
     const lines = new Map(); // agent name -> its progress line, kept so a bar compares the same node
     const lineOf = (agent) => { if (!lines.has(agent)) lines.set(agent, createLifecycle('line')); return lines.get(agent); };

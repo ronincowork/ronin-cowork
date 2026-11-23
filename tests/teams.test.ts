@@ -1,7 +1,7 @@
 /**
  * Teams: each Team shown by what it is (w900, KAN-780). The Teams page's stones (the Epic stones'
  * grammar: name, lead, ⚑ and open count, the shared lifecycle line; no Show question), its selector (a card per Team, no Agent's own card), one Team's
- * three views (Agents, Epics, Configuration; its Epics without New Epic) and No Team, which is
+ * bar, a bar per Agent and its Epics and Configuration as lines that expand (its Epics without New Epic) and No Team, which is
  * there only while an Agent is outside every Team and opens its Agents.
  */
 import test from 'node:test';
@@ -76,31 +76,30 @@ test('the Teams page and one Team, as a person reads and presses them', async (t
   assert.ok(await page.$('[data-workbench-offer-type="team.profile"][data-workbench-offer-resource="shop"]'), 'a card for Shop');
   assert.equal(await page.$('[data-workbench-offer-type="session.terminal"]'), null, 'no Agent card on the Teams selector');
 
-  // One Team: Agents, then Epics, then Configuration, one toggle.
+  // One Team: its bar, a bar per Agent, then Epics and Configuration as lines that expand.
   await page.click(stone);
-  const toggle = '.league-team-detail .league-team-toggle';
-  await page.waitForSelector(toggle);
+  const agentsView = '.league-team-detail .league-team-view-agents';
+  await page.waitForSelector(`${agentsView} .team-agent-bar`);
   // Its bar: the name, the concept in full, Launch, and the same shared lifecycle as its stone.
   assert.equal(await page.textContent('.league-team-detail .team-bar-title'), 'Shop');
   assert.equal(await page.textContent('.league-team-detail .team-bar-objective'), 'Run the shop.');
   assert.equal(await page.getAttribute('.league-team-detail .team-bar-foot .lifecycle-bar', 'data-band'), '4');
-  assert.equal(await page.getAttribute(toggle, 'data-view'), 'agents');
-  assert.deepEqual(await page.$$eval('.league-team-detail .league-team-view-agents .league-team-agent', (rows) => rows.map((row) => (row as HTMLElement).dataset.session)), ['ana', 'ben'], 'lead first');
-  // Ben's bar is the same shared drawing over the items he holds; Ana holds nothing and has none.
-  const bar = '.league-team-detail .league-team-agent[data-session="ben"] .lifecycle.lifecycle-bar';
-  await page.waitForSelector(`${bar}[data-empty="false"]`, { state: 'attached' });
-  assert.equal(await page.getAttribute(bar, 'data-band'), '4');
-  assert.equal(await page.$('.league-team-detail .league-team-agent[data-session="ana"] .lifecycle'), null);
-  assert.equal(await page.$('.league-team-detail button.league-team-agent'), null, 'an Agent row is a reading, not a launch');
-  await page.click(toggle);
-  assert.equal(await page.getAttribute(toggle, 'data-view'), 'epics');
+  assert.deepEqual(await page.$$eval(`${agentsView} .team-agent-bar`, (rows) => rows.map((row) => (row as HTMLElement).dataset.session)), ['ana', 'ben'], 'lead first');
+  // Ben's bar carries the shared line over the items he holds; Ana holds nothing and says so.
+  const line = `${agentsView} .team-agent-bar[data-session="ben"] .lifecycle.lifecycle-line`;
+  await page.waitForSelector(`${line}[data-empty="false"]`, { state: 'attached' });
+  assert.equal(await page.getAttribute(line, 'data-band'), '4');
+  assert.match(await page.textContent(`${agentsView} .team-agent-bar[data-session="ana"]`) || '', /Nothing in hand/);
+  // No view switch: Epics and Configuration are lines, closed until pressed.
+  assert.equal(await page.$('.league-team-detail .league-team-toggle'), null, 'no view switch');
+  assert.equal(await page.isVisible('.league-team-detail .league-team-view-config'), false);
+  await page.click('.league-team-detail .team-fold-epics > summary');
   await page.waitForSelector(`.league-team-detail .league-team-view-epics [data-sws-id="${epic}"]`);
   assert.equal(await page.$('.league-team-detail .league-team-view-epics [data-sws-id="!new-epic"]'), null, 'no New Epic inside a Team');
-  await page.click(toggle);
-  assert.equal(await page.getAttribute(toggle, 'data-view'), 'config');
+  await page.click('.league-team-detail .team-fold-config > summary');
   assert.ok(await page.isVisible('.league-team-detail .league-team-view-config'));
-  await page.click(toggle);
-  assert.equal(await page.getAttribute(toggle, 'data-view'), 'agents', 'past Configuration, back to Agents');
+  await page.click('.league-team-detail .team-fold-config > summary');
+  assert.equal(await page.isVisible('.league-team-detail .league-team-view-config'), false, 'pressed again, it collapses');
 
   // An Agent outside every Team: No Team appears, and opens one Team workbench of its own.
   const solo = await ronin.api('/api/launch', { body: { name: 'solo', provider: 'anthropic', prompt: 'On my own.' } });
@@ -108,8 +107,8 @@ test('the Teams page and one Team, as a person reads and presses them', async (t
   await page.waitForSelector('.team-roster-phalanx [data-sws-id=" unassigned"]');
   assert.equal(await page.textContent('.team-roster-phalanx [data-sws-id=" unassigned"] .sws-label'), 'No Team');
   await page.click('.team-roster-phalanx [data-sws-id=" unassigned"]');
-  await page.waitForSelector('.league-team-detail .league-team-agent[data-session="solo"]');
+  await page.waitForSelector('.league-team-detail .team-agent-bar[data-session="solo"]');
   assert.equal(await page.textContent('.league-team-detail .team-bar-title'), 'No Team');
-  assert.equal(await page.$('.league-team-detail .league-team-toggle'), null, 'No Team has its Agents only');
+  assert.equal(await page.$('.league-team-detail .team-fold'), null, 'No Team has its Agents only');
   assert.deepEqual(errors, []);
 });
