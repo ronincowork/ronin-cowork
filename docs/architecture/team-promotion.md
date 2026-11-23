@@ -56,4 +56,3 @@ bin/ronin-promote pr <team>
 
 The command opens or updates the pull request from the current working line. GitHub runs
 `npm run verify` on the pull-request head.
-

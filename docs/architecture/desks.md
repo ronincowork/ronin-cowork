@@ -184,4 +184,3 @@ beside the line and the ref moves by one atomic `update-ref`.
 - promotion: `acceptedSince(repo, line, lastPromotedLineSha)` → the receipts a change set
   carries; `ChangeSetReceipt` is the shape it writes;
 - a repository's arrangement: `arrangementOf(name)` → its Workspace row (`rowArrangement`).
-

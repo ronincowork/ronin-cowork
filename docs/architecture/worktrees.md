@@ -150,4 +150,3 @@ worktrees are preserved to named recovery refs and receipts before cleanup.
 - Use focused checks in the private worktree. The lead owns the full `npm run verify` verdict
   at the combined integration/release gate; see [verification guidance](../development/verification.md).
 - Do not delete worktrees, branches, registry rows, receipts, or recovery state implicitly.
-
