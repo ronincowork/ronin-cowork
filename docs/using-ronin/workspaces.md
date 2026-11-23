@@ -100,10 +100,9 @@ A repository added here starts Direct, on the branch it has checked out.
 
 ### Bring in a GitHub repository
 
-**Clone from GitHub** uses this machine's Git access. To reach private repositories, connect
-GitHub first with the **GitHub CLI** stone: **Install**, then **Use GitHub CLI with Mika** to
-operate the login yourself with Mika beside it, or **Let Mika connect GitHub** to have her run it.
-On a remote machine you approve the one-time device code in a browser on your own computer.
+**Clone from GitHub** uses this machine's Git access: a private repository clones only once this
+machine is signed in to GitHub. That sign-in belongs to the machine's setup, not to a Workspace, so
+the Workspaces page does not offer it.
 
 ### Plans and Canvases
 
