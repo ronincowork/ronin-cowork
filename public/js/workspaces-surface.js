@@ -588,7 +588,7 @@ function workspaceTeams(w) {
 function workspaceEpics(w) {
   const every = createEpicsRead(() => '');
   const mine = () => new Set(teamsIn(w).flatMap((team) => [...teamEpicIds(team)]));
-  const stones = createEpicStones({ bare: true, newEpic: false, emptyWords: t('workspaces.no_epics', 'No open Epic in this Workspace.'), epicsRead: {
+  const stones = createEpicStones({ bare: true, emptyWords: t('workspaces.no_epics', 'No open Epic in this Workspace.'), epicsRead: {
     list: () => every.list().filter((epic) => mine().has(epic.id)),
     items: (id) => every.items(id),
     subscribe: (listener) => { const a = every.subscribe(listener); const b = subscribeTeams(listener); return () => { a(); b?.(); }; },

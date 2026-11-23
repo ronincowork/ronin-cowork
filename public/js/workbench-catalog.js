@@ -28,7 +28,7 @@ export const WORKBENCH_TYPES = Object.freeze({
   // THE AGENT HARNESS WORKBENCH'S TWO NEW TILESPACES (KAN-236): Accounts and Models, beside the stones and Refresh.
   accountsRecords: 'accounts.records', modelsRecords: 'models.records',
   helpOutline: 'help.outline', helpMika: 'help.mika', helpPage: HELP_PAGE_TYPE,
-  workspaceRecords: 'workspaces.records', workspaceRecord: 'workspaces.record', workspaceNew: 'workspaces.new', folderGithub: 'workspaces.github', githubMika: 'workspaces.github-mika',
+  workspaceRecords: 'workspaces.records', workspaceRecord: 'workspaces.record', workspaceNew: 'workspaces.new', epicNew: 'epics.new', folderGithub: 'workspaces.github', githubMika: 'workspaces.github-mika',
   epicRecords: 'epics.records', epicRecord: 'epics.record',
   canvas: 'team.canvas',
 });
@@ -127,7 +127,8 @@ export function registerWorkbenchCatalog() {
   // beside them; a dragged stone places that Epic whole, never offered in the selector (epics-surface.js).
   add({ type: WORKBENCH_TYPES.epicRecords, header: 'surface', className: 'wk-selector-utility', label: () => t('epics.title', 'Epics'), create: ({ workspace, environment }) => environment.epicRecords(workspace) });
   add({ type: WORKBENCH_TYPES.epicRecord, header: 'surface', className: 'wk-selector-entity', discover: (_t, e) => e.epics(), create: ({ workspace, detail, environment }) => environment.epicRecord(workspace, detail) });
-  profiles.define(WORKBENCH_PROFILES.epics, [WORKBENCH_TYPES.epicRecords, WORKBENCH_TYPES.epicRecord]);
+  add({ type: WORKBENCH_TYPES.epicNew, header: 'surface', className: 'wk-selector-utility', label: () => t('epics.new', 'New Epic'), summary: () => t('epics.new_state', 'title · goal · who holds it'), variant: 'dotted', create: ({ workspace, environment }) => environment.epicNew(workspace) });
+  profiles.define(WORKBENCH_PROFILES.epics, [WORKBENCH_TYPES.epicRecords, WORKBENCH_TYPES.epicRecord, WORKBENCH_TYPES.epicNew]);
   // THE TEAM PAGE (owner, 2026-10-18): the selector holds Commons, the Agents, New Agent and the
   // hints (Agent vocabulary, Session controls — the selector's own, workbench.js). The composition
   // reader, Behaviors and Feedback stay placeable: the roster, New Agent and the bar place them.

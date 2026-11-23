@@ -127,7 +127,8 @@ an item has a link on the Jira item that opens its chat.
 **In Ronin:**
 
 - **Epics workbench** (Campaign home › Epics, "What the work is"): a phalanx of stones, one
-  per open Epic in the Campaign (no Done Epics, no Icebox), each its title and Jira key, its
+  per open Epic in the Campaign (no Done Epics, no Icebox), narrowed by its **Workspace**
+  question, all one height, each its title and Jira key, its
   progress a colour line along its bottom edge. Press the line for the Epic's **epic-stage**
   and its four counts; press the stone to see that Epic beside the stones; a stone dragged into
   a tilespace places that Epic there.
@@ -137,6 +138,9 @@ an item has a link on the Jira item that opens its chat.
   Status questions, then its items grouped by status. Press an item to read it in its place;
   the board stays. **Launch** opens the Team working the Epic in a new tab: the Agent holding
   it in tilespace 1 (the lead when the Team holds it), the Epic in tilespace 2.
+- **New Epic** (the selector's pill): its title and what done looks like, who holds it (a Team
+  or an Agent, or nobody yet) and its priority; **Create** (or Ctrl/Cmd+Enter) makes it and
+  shows it in the same tilespace. An Epic has no Parent; Ronin gives it the next w-number.
 - **epic-stage** is read from the Epic's Tasks, Stories, Bugs and Features (not its own
   Status): each scores To Do 1, In Progress 2, In Review 3, Done 4, and their average is the
   epic-stage: Empty (no items), Starter (under 1.5), Working (under 2.5), Maturing (under

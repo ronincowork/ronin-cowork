@@ -143,11 +143,9 @@
   .epic-record-stones .sws-stone, .team-roster-phalanx .team-stone { gap: var(--space-row); }
   .epic-record-stones .sws-secondary, .team-roster-phalanx .team-stone .sws-secondary { color: var(--accent); white-space: normal; overflow-wrap: anywhere; } /* what needs you: wraps in full */
   .epic-record-stones .sws-state, .team-roster-phalanx .team-stone .sws-state { margin-top: auto; color: var(--muted); }
-  /* NEW EPIC (w897): an Epic's bar to fill in. */
-  .epic-new-title, .epic-new-goal { box-sizing: border-box; width: 100%; padding: var(--space-row) var(--space-inline); border: var(--edge) solid var(--line-2); border-radius: var(--radius-hair); background: var(--surface); color: var(--fg); font: inherit; font-size: var(--text-body); }
-  .epic-new-title { flex: 1 1 16rem; width: auto; font-weight: var(--weight-strong); }
-  .epic-new-goal { resize: vertical; }
-  .epic-new-page { display: flex; flex-direction: column; gap: var(--space-subsection); }
+  /* EVERY EPIC STONE THE SAME HEIGHT (owner, 2026-11-23): a grid whose rows are all the tallest stone's. */
+  .sws.epic-record-stones .sws-grid { display: grid; grid-template-columns: repeat(auto-fill, var(--sws-stone)); grid-auto-rows: 1fr; justify-content: center; }
+  .sws.epic-record-stones[data-open='true'] .sws-grid { grid-template-columns: var(--sws-stone); }
   .epics-records > .wk-surface-content > .epic-empty { padding: var(--space-inset); }
   .epic-source[hidden] { display: none; }
   .team-bar { display: flex; flex-direction: column; gap: var(--space-inline); padding: var(--space-inline) var(--space-inset); border: var(--edge) solid var(--line-2); border-radius: var(--radius-hair); background: var(--surface); }

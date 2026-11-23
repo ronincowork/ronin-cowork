@@ -94,7 +94,7 @@ test('the Epics page and one Epic\'s page, as a person reads and presses them', 
     id: (node as HTMLElement).dataset.swsId, needs: node.querySelector('.sws-secondary')?.textContent || '', last: node.querySelector('.sws-state')?.textContent || '',
     line: Boolean(node.querySelector('.lifecycle-line')),
   })));
-  assert.deepEqual(stones.map((s) => s.id), [review, toAssign, aging, '!new-epic'], 'needing you first, then most progressed; no Done Epic; New Epic last');
+  assert.deepEqual(stones.map((s) => s.id), [review, toAssign, aging], 'needing you first, then most progressed; no Done Epic; no New Epic stone');
   assert.equal(stones[0].needs, 'Needs review', 'an item In Review');
   assert.equal(stones[1].needs, 'Work to assign');
   assert.equal(stones[2].needs, '', 'nothing needs you: no line');
@@ -111,10 +111,8 @@ test('the Epics page and one Epic\'s page, as a person reads and presses them', 
   assert.match(reading || '', /Done 3/);
   await page.keyboard.press('Escape');
   assert.equal(await page.$('.epic-record-stones .sws-detail .epic-bar'), null);
-  // New Epic opens an Epic's shape to fill in, and asks for a title first.
-  await page.click('.epic-record-stones [data-sws-id="!new-epic"]');
-  await page.click('.epic-new-create');
-  assert.match(await page.textContent('.epic-new .epic-bar-said') || '', /title/);
+  // One Workspace question over the stones, as on the Teams stones.
+  assert.ok(await page.$('[data-workspace-view="epics"] .epics-records > .wk-surface-content > section.ask'), 'the Workspace question');
   assert.equal(await page.$('[data-workspace-view="epics"] .terminal-hints'), null, 'no Agent vocabulary or Session controls on Epics');
 
   // One Epic, its stone pressed: the Team's Epics board without its strip; Launch (a Team holds it).

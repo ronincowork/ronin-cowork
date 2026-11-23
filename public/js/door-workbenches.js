@@ -27,7 +27,7 @@ import { createGithubWorkspaceSetup } from './github-workspace-setup.js';
 import { createFolderGithub, createWorkspaceNew, createWorkspaceRecord, createWorkspaceStones, workspaceOffers } from './workspaces-surface.js';
 import { createWorkspacesRead } from './workspaces-read.js';
 import { campaignById, loadCampaigns, normalizeSelection } from './campaigns.js';
-import { createEpicRecord, createEpicStones, createEpicsRead, epicOffers } from './epics-surface.js';
+import { createEpicRecord, createEpicStones, createEpicsRead, createNewEpic, epicOffers } from './epics-surface.js';
 import { createHelpOutline, createHelpPage } from './help-outline.js';
 import { askMika, askSignInHelper, createMikaTilePool, reportMikaView, signInHelperName } from './mika.js';
 import { readyMika } from './mika-ready.js';
@@ -199,6 +199,8 @@ export function createEpicsView() {
         epics: () => epicOffers(epicsRead),
         epicRecords: () => keep(createEpicStones({ epicsRead, workbench: bench() })), // w897: the phalanx of open Epics, a pressed one beside it
         epicRecord: (_workspace, detail) => keep(createEpicRecord(detail.key, { epicsRead })),
+        // New Epic (owner, 2026-11-23): the selector's pill; the Epic made shows in the same tilespace.
+        epicNew: (workspace) => keep(createNewEpic({ onMade: (id) => { if (id) bench().place(WORKBENCH_TYPES.epicRecord, workspace, { key: id }); } })),
       };
     },
     destroy: () => { for (const surface of made.splice(0)) surface.destroy?.(); },
