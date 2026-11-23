@@ -146,6 +146,7 @@
   /* AN EPIC STONE'S MARKS (owner, 2026-11-23): ⚑ top right in the flagged amber (the Agent pill's);
      its open item count small and grey bottom right, above the lifecycle line. */
   .epic-stone-marks { display: contents; }
+  .epic-new .ask[hidden] { display: none; } /* New Epic: one of Team, Lead, Agent answered takes the others away */
   .epic-stone-flag { position: absolute; top: var(--space-inset); right: var(--space-inset); color: var(--warn); line-height: 1; }
   .epic-stone-flag[hidden] { display: none; }
   .epic-record-stones .sws-label { padding-right: calc(var(--space-inset) + 0.5em); }

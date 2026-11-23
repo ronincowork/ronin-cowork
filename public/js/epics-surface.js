@@ -394,7 +394,7 @@ function movedWords(epic, moved) {
  * first, then the most progressed; every stone the same height. A Workspace
  * question narrows them. A pressed stone shows that Epic's board beside the rail (createEpicBoard,
  * with its Team's Launch); a dragged one places it whole in another tilespace. New Epic is the
- * selector's pill (createNewEpic), not a stone.
+ * selector's pill (createNewItem), not a stone.
  */
 export function createEpicStones({ epicsRead, workbench = null, bare = false, emptyWords = '' }) {
   const { createSurface } = WorkspaceKit.primitives;
@@ -475,54 +475,94 @@ export function createEpicStones({ epicsRead, workbench = null, bare = false, em
 
 /** The priorities a new Epic may take: Jira's defaults (work-items.ts JIRA_NAMES), Medium the default. */
 const PRIORITIES = ['Highest', 'High', 'Medium', 'Low', 'Lowest'];
+/** The kinds a new item may take here (Jira's defaults; a Subtask is made under its Task, by `item`). */
+const KINDS = ['Epic', 'Story', 'Task', 'Bug', 'Feature'];
 
 /**
- * NEW EPIC (owner, 2026-11-23): the New Epic pill's form, in the New Team and New Agent forms'
- * grammar (new-team-form.js): its head with Create, numbered steps under it. 1 Title and what done
- * looks like; 2 who holds it, a Team or one of its Agents, or nobody yet (the Epic's bar assigns it
- * later); 3 its details: Priority, and what it is (an Epic, with no Parent; its key the next
- * w-number on Create, or Jira's once paired). Create (or Ctrl/Cmd+Enter) makes it (POST
- * /api/work-items, kind Epic) and `onMade(id)` shows it in this tilespace.
+ * NEW WORK ITEM (owner, 2026-11-23): one form for any work item, an Epic to start (the Epics
+ * workbench's New Epic pill; a Team's to come), in the New Team and New Agent forms'
+ * grammar (new-team-form.js): its head with Create, numbered steps under it. 1 its short and long
+ * title and what done looks like; 2 who holds it, a Team, a lead or an Agent (one of the three), or
+ * nobody yet (the Epic's bar assigns it later); 3 its details: Kind (the start kind; an Epic,
+ * level 1, has no Parent, any other kind may name an open Epic), Priority, its key (the next
+ * w-number on Create). Create (or Ctrl/Cmd+Enter) makes it (POST /api/work-items) and
+ * `onMade(item)` lets the bench show it.
  */
-export function createNewEpic({ onMade = () => {} } = {}) {
+export function createNewItem({ kind: startKind = 'Epic', epicsRead = null, onMade = () => {} } = {}) {
   const { createSurface, createAction, createField, createNotice } = WorkspaceKit.primitives;
-  const draft = { title: '', objective: '', holder: '', priority: 'Medium' };
+  const draft = { kind: startKind, parent: '', short: '', long: '', objective: '', holder: '', priority: 'Medium' };
+  const parents = epicsRead || createEpicsRead(() => '');
+  const heading = () => t('work_items.new_kind', 'New {kind}', { kind: draft.kind });
+  // The title as Agents write it (item-title.js): the short title, then ': ' and the long one when there is one.
+  const titleOf = () => [draft.short.trim(), draft.long.trim()].filter(Boolean).join(': ');
   let busy = false;
   const create = createAction({ label: t('epics.create', 'Create'), size: 'compact', disabled: true, className: 'epic-new-create', action: () => void make() });
-  const surface = createSurface({ label: t('epics.new', 'New Epic'), className: 'ntf-surface epic-new', actions: [create] });
+  const surface = createSurface({ label: heading(), className: 'ntf-surface epic-new', actions: [create] });
   surface.header?.el.classList.add('launch-form-head');
   const notice = createNotice();
-  const ready = () => create.setDisabled(busy || !draft.title.trim());
+  const ready = () => create.setDisabled(busy || !draft.short.trim());
 
-  // 1 · Title and goal.
+  // 1 · Title and goal: a short title (the stone's, the bar's) and a long one (the rest); Create
+  // joins them as `short: long`. A colon would split the short title, so it is not typed there.
   const stepTop = createStep({ n: 1, key: 'top', title: t('epics.new_title_goal', 'Title & goal') });
   const titleInput = el('input');
   titleInput.type = 'text';
-  titleInput.placeholder = t('epics.new_title_placeholder', 'what this Epic delivers');
-  titleInput.addEventListener('input', () => { draft.title = titleInput.value; ready(); });
+  titleInput.placeholder = t('epics.new_short_placeholder', 'a few words');
+  titleInput.addEventListener('input', () => {
+    if (titleInput.value.includes(':')) titleInput.value = titleInput.value.replaceAll(':', '');
+    draft.short = titleInput.value;
+    ready();
+  });
+  const longInput = el('input');
+  longInput.type = 'text';
+  longInput.placeholder = t('epics.new_long_placeholder', 'the rest of the title, if it needs more');
+  longInput.addEventListener('input', () => { draft.long = longInput.value; });
+  const titles = el('div', 'fs-pair');
+  titles.append(createField({ label: t('epics.new_short', 'Short title'), control: titleInput }).el,
+    createField({ label: t('epics.new_long', 'Long title'), control: longInput }).el);
   const goalInput = el('textarea');
   goalInput.rows = 4;
   goalInput.placeholder = t('epics.new_goal_placeholder', 'what done looks like, in your words');
   goalInput.addEventListener('input', () => { draft.objective = goalInput.value; });
-  stepTop.body.append(createField({ label: t('epics.new_title', 'Title'), control: titleInput }).el,
-    createField({ label: t('epics.new_goal', 'What done looks like'), control: goalInput }).el);
+  stepTop.body.append(titles, createField({ label: t('epics.new_goal', 'What done looks like'), control: goalInput }).el);
 
-  // 2 · Who holds it: a Team first, then its Agents; nobody is fine.
+  // 2 · Who holds it (owner, 2026-11-23): three questions, a Team, a lead or an Agent; one answered
+  // takes the others away, and cleared brings them back. Nobody is fine: the Epic's bar assigns later.
   const stepWho = createStep({ n: 2, key: 'who', title: t('epics.assign_to', 'Assign to') });
-  const holders = () => [
-    ...teamsFromState().filter((team) => team.durable !== false && team.name && !team.holding).map((team) => ({ v: `team:${team.name}`, l: team.title || team.name, sub: t('epics.team', 'Team') })),
-    ...(S.sessions || []).filter((one) => one.name).map((one) => ({ v: `agent:${one.name}`, l: one.name, sub: t('epics.agent', 'Agent') })),
+  const leads = () => teamsFromState().filter((team) => team.name && !team.holding).flatMap((team) => membersOfTeam(team.name)
+    .filter((member) => member.team_lead).map((member) => ({ v: `agent:${member.name}`, l: member.name, sub: team.title || team.name })));
+  const ASSIGN = [
+    { key: 'team', label: t('epics.team', 'Team'), options: () => teamsFromState().filter((team) => team.durable !== false && team.name && !team.holding)
+      .map((team) => ({ v: `team:${team.name}`, l: team.title || team.name })) },
+    { key: 'lead', label: t('epics.lead', 'Lead'), options: leads },
+    { key: 'agent', label: t('epics.agent', 'Agent'), options: () => {
+      const led = new Set(leads().map((row) => row.v));
+      return (S.sessions || []).filter((one) => one.name && !led.has(`agent:${one.name}`)).map((one) => ({ v: `agent:${one.name}`, l: one.name }));
+    } },
   ];
-  const who = ask([{ fields: [{ key: 'holder', label: t('epics.holder', 'Team or Agent'), blank: t('epics.nobody_yet', 'Nobody yet'), options: holders }] }],
-    { value: { holder: draft.holder }, density: 'tight', onChange: ({ holder }) => { draft.holder = String(holder || ''); } });
-  stepWho.body.append(who.el);
+  const assign = ASSIGN.map(({ key, label, options }) => ask([{ fields: [{ key, label, blank: t('epics.pick', 'Pick'), options }] }],
+    { value: { [key]: '' }, density: 'tight', onChange: (value) => {
+      draft.holder = String(value[key] || '');
+      for (const [i, one] of assign.entries()) one.el.hidden = Boolean(draft.holder) && ASSIGN[i].key !== key;
+    } }));
+  stepWho.body.append(...assign.map((one) => one.el));
 
-  // 3 · Details: its priority, and what it is.
+  // 3 · Details: its kind (an Epic to start), its parent Epic once it is not an Epic, its priority, its key.
   const stepDetails = createStep({ n: 3, key: 'details', title: t('epics.details', 'Details') });
+  const kindQ = ask([{ fields: [{ key: 'kind', label: t('work_items.kind', 'Kind'), options: KINDS.map((v) => ({ v, l: v })) }] }],
+    { value: { kind: draft.kind }, density: 'tight', onChange: ({ kind: next }) => {
+      draft.kind = String(next || startKind);
+      if (surface.header) surface.header.title.textContent = heading();
+      parentQ.el.hidden = draft.kind === 'Epic';
+      if (draft.kind === 'Epic') draft.parent = '';
+    } });
+  // An Epic is the top (level 1): it has no Parent. Anything else may sit under an open Epic.
+  const parentQ = ask([{ fields: [{ key: 'parent', label: t('work_items.parent', 'Parent'), blank: t('work_items.no_parent', 'None'), options: () => epicOffers(parents).map((one) => ({ v: one.key, l: one.label })) }] }],
+    { value: { parent: '' }, density: 'tight', onChange: ({ parent }) => { draft.parent = String(parent || ''); } });
+  parentQ.el.hidden = draft.kind === 'Epic';
   const priority = ask([{ fields: [{ key: 'priority', label: t('epics.priority', 'Priority'), options: PRIORITIES.map((v) => ({ v, l: v })) }] }],
     { value: { priority: draft.priority }, density: 'tight', onChange: ({ priority: next }) => { draft.priority = String(next || 'Medium'); } });
-  stepDetails.body.append(priority.el, readingRows([
-    [t('epics.kind', 'Kind'), t('epics.kind_epic', 'Epic')],
+  stepDetails.body.append(kindQ.el, parentQ.el, priority.el, readingRows([
     [t('epics.key', 'Key'), t('epics.key_on_create', 'next w-number, given on Create')],
   ]));
 
@@ -532,18 +572,19 @@ export function createNewEpic({ onMade = () => {} } = {}) {
   surface.content.append(form, notice.el);
 
   async function make() {
-    if (busy || !draft.title.trim()) return;
+    if (busy || !draft.short.trim()) return;
     busy = true;
     ready();
     const [kind, ...rest] = draft.holder.split(':');
     const name = rest.join(':');
-    const result = await request('/api/work-items', { method: 'POST', json: { kind: 'Epic', title: draft.title.trim(), objective: draft.objective.trim(), priority: draft.priority,
+    const result = await request('/api/work-items', { method: 'POST', json: { kind: draft.kind, title: titleOf(), ...(draft.parent && draft.kind !== 'Epic' ? { parent: draft.parent } : {}), objective: draft.objective.trim(), priority: draft.priority,
       ...(kind === 'team' && name ? { team: name } : kind === 'agent' && name ? { session: name } : {}) } });
     busy = false;
     ready();
     notice.set(result.ok ? '' : 'failed', result.ok ? '' : result.message || t('epics.not_made', 'The Epic was not made.'));
     if (!result.ok) return;
-    onMade(result.data.item?.id || '');
+    notice.set('success', t('work_items.made', 'Made {id}.', { id: result.data.item?.id || '' }));
+    onMade(result.data.item || null);
   }
-  return { el: surface.el, show: () => { ready(); titleInput.focus(); }, destroy: () => { who.destroy(); priority.destroy(); } };
+  return { el: surface.el, show: () => { ready(); titleInput.focus(); }, destroy: () => { for (const one of assign) one.destroy(); kindQ.destroy(); parentQ.destroy(); priority.destroy(); } };
 }

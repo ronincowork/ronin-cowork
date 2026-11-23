@@ -139,8 +139,9 @@ an item has a link on the Jira item that opens its chat.
   Status questions, then its items grouped by status. Press an item to read it in its place;
   the board stays. **Launch** opens the Team working the Epic in a new tab: the Agent holding
   it in tilespace 1 (the lead when the Team holds it), the Epic in tilespace 2.
-- **New Epic** (the selector's pill): its title and what done looks like, who holds it (a Team
-  or an Agent, or nobody yet) and its priority; **Create** (or Ctrl/Cmd+Enter) makes it and
+- **New Epic** (the selector's pill): its short title and long title (saved as `short: long`),
+  what done looks like, who holds it (a Team, a lead or an Agent: answer one and the others go;
+  or nobody yet), its kind (Epic to start; another kind may name a parent Epic) and its priority; **Create** (or Ctrl/Cmd+Enter) makes it and
   shows it in the same tilespace. An Epic has no Parent; Ronin gives it the next w-number.
 - **epic-stage** is read from the Epic's Tasks, Stories, Bugs and Features (not its own
   Status): each scores To Do 1, In Progress 2, In Review 3, Done 4, and their average is the
