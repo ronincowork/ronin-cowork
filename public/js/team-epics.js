@@ -32,7 +32,7 @@ export function createTeamEpics({ team }) {
       return () => { stopEpics(); stopTeams(); };
     },
   };
-  const board = createEpicBoard({ epicsRead: read, header: false });
+  const board = createEpicBoard({ epicsRead: read, header: false, holder: false });
   out.content.append(board.el);
   function paint() {
     const epics = read.list();

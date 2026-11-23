@@ -288,7 +288,7 @@ function launchAction(epicId) {
  * Epics phalanx's pressed stone, a dragged stone (createEpicRecord) and `#/epic/<id>` all show
  * it, the first two with Launch in the source line to the Epic's own page.
  */
-export function createEpicBoard({ epicsRead, header = true, initial = '', strip: withStrip = true, launch = false, onTitle = () => {} }) {
+export function createEpicBoard({ epicsRead, header = true, initial = '', strip: withStrip = true, launch = false, holder = true, onTitle = () => {} }) {
   const { createSurface } = WorkspaceKit.primitives;
   const out = createSurface({ label: t('epics.title', 'Epics'), className: 'setup-surface epics-board', header });
   const strip = el('div', 'epic-strip');
@@ -312,7 +312,7 @@ export function createEpicBoard({ epicsRead, header = true, initial = '', strip:
     node.dataset.epic = epic.id;
     node.setAttribute('aria-pressed', String(epic.id === selected));
     node.append(el('span', 'epic-stone-label', label),
-      el('span', 'epic-stone-meta', `${epic.external?.jira?.key || t('epics.ronin_only', 'Ronin only')} · ${t('epics.open_n', '{n} open', { n: openCount })}`));
+      el('span', 'epic-stone-meta', [epic.external?.jira?.key, t('epics.open_n', '{n} open', { n: openCount })].filter(Boolean).join(' · ')));
     node.title = label;
     node.draggable = true;
     node.addEventListener('dragstart', (event) => {
@@ -352,8 +352,9 @@ export function createEpicBoard({ epicsRead, header = true, initial = '', strip:
     const said = JSON.stringify([selected, epic.external?.jira?.key, epic.holder]);
     if (said !== sourceSaid) {
       sourceSaid = said;
-      source.replaceChildren(el('span', '', epic.external?.jira?.key ? `Jira ${epic.external.jira.key}` : t('epics.ronin_only', 'Ronin only')), holderButton(epic),
-        ...(launch ? [launchAction(selected)] : []));
+      // The Jira key only when it has one; the holder only outside its own Team (owner, 23 Nov).
+      source.replaceChildren(...(epic.external?.jira?.key ? [el('span', '', `Jira ${epic.external.jira.key}`)] : []),
+        ...(holder ? [holderButton(epic)] : []), ...(launch ? [launchAction(selected)] : []));
     }
     view.paint();
   }
@@ -409,7 +410,7 @@ export function createEpicStones({ epicsRead, workbench = null, bare = false, em
     renderDetail: (item, host) => {
       const one = item.id === NEW_EPIC
         ? createNewEpic({ onMade: (id) => { made = id; paint(); } })
-        : createEpicBoard({ epicsRead, initial: item.id, strip: false, launch: true, header: false });
+        : createEpicBoard({ epicsRead, initial: item.id, strip: false, launch: true, header: false, holder: !bare });
       host.append(one.el);
       one.show();
       return () => one.destroy();
