@@ -298,6 +298,9 @@ export function createEpicBoard({ epicsRead, header = true, initial = '', strip:
   const continuation = el('p', 'item-title-continuation');
   let drawn = '';
   let sourceSaid = '';
+  // Each stone's progress: the same lifecycle line as the Epics phalanx's stones (KAN-785).
+  const lines = new Map();
+  const lineFor = (id) => { if (!lines.has(id)) lines.set(id, createProgress('line')); return lines.get(id); };
 
   function stone(epic) {
     const label = epic.title || epic.id;
@@ -308,6 +311,9 @@ export function createEpicBoard({ epicsRead, header = true, initial = '', strip:
     node.setAttribute('aria-pressed', String(epic.id === selected));
     node.append(el('span', 'epic-stone-label', splitItemTitle(label).shortTitle),
       el('span', 'epic-stone-meta', [epic.external?.jira?.key, t('epics.open_n', '{n} open', { n: openCount })].filter(Boolean).join(' · ')));
+    const line = lineFor(epic.id);
+    line.update(epic, epicsRead.items(epic.id));
+    node.append(line.el);
     node.title = label;
     node.draggable = true;
     node.addEventListener('dragstart', (event) => {
@@ -335,8 +341,8 @@ export function createEpicBoard({ epicsRead, header = true, initial = '', strip:
     const epic = epics.find((row) => row.id === selected);
     const { shortTitle, longTitle } = splitItemTitle(epic ? (epic.title || epic.id) : '');
     if (out.header) out.header.title.textContent = epic ? shortTitle : t('epics.title', 'Epics');
-    const signature = JSON.stringify([selected, epics.map((epic) => [epic.id, epic.title, epic.external?.jira?.key,
-      epicsRead.items(epic.id).filter((item) => item.status !== 'Done').length])]);
+    const signature = JSON.stringify([selected, epics.map((epic) => [epic.id, epic.title, epic.external?.jira?.key, epic.status, epic.holder,
+      epicsRead.items(epic.id).map((item) => [item.status, item.level, item.flagged, item.holder])])]);
     if (withStrip && signature !== drawn) {
       drawn = signature;
       strip.replaceChildren(...(epics.length ? epics.map(stone) : [el('p', 'epic-empty', t('epics.none', 'No Epics yet.'))]));
