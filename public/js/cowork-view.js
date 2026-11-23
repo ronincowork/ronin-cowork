@@ -699,8 +699,9 @@ export function createCoworkView(options = {}) {
       let reader = null;
       const config = fold('agent-config', t('workspace.tab_team_configuration', 'Configuration'), () => {
         if (reader) return;
+        // Its Save, as the tile's Configuration has it (tilehead.js openConfiguration): nothing saves on its own.
         reader = createAgentCompositionReader(agent);
-        config.body.append(reader.el);
+        config.body.append(reader.el, createActionBar({ actions: [reader.action] }).el);
         reader.show?.();
       }, `${name}\0${agent}\0config`);
       box.append(work.node, config.node);
