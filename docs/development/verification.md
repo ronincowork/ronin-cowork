@@ -22,7 +22,7 @@ flaky is deleted, not retried.
 ## Running it
 
 - `npm run verify`: `scripts/check-tests.mjs` clears `TMUX`, `RONIN_SOCKET` and the other
-  live addresses, runs the files, and fails if the live tmux server changed.
+  live addresses, runs the two files side by side, and fails if the live tmux server changed.
 - From an Agent's own pane, run it under `systemd-run --user --scope -q npm run verify`.
 
 CI (`.github/workflows/verify.yml`) runs `npm run verify` on every pull request.
