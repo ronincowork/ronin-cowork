@@ -17,7 +17,7 @@ them. The implemented builder contract lives in Ronin Cowork's
 [Workbench construction document](../architecture/workbench.md); you do not need its
 frontend, data-loading, or state details to use a Workbench.
 
-The vocabulary comes from `ronin_catalogs/lexicons/professional_en.md`. In particular:
+The vocabulary comes from `ronin_stock/lexicons/professional_en.md`. In particular:
 
 - the **coworkspace** is the whole Ronin interface;
 - the **workbench** is this page format inside it;
@@ -28,26 +28,26 @@ The vocabulary comes from `ronin_catalogs/lexicons/professional_en.md`. In parti
 
 If this guide and [KOTOBA](../../KOTOBA.md) disagree, flag the difference. Do not invent a replacement word.
 
-## Library, profile, tenant
+## Surfaces, profile, tenant
 
 Every destination reuses one Workbench implementation; they are profiles and tenants,
 not separate layout systems.
 
-- `Workbench.library` is the one reusable catalog of surface types.
-- `Workbench.profile(name)` lists which library types the selector may expose.
+- `Workbench.surfaces` is the one reusable registry of surface types.
+- `Workbench.profile(name)` lists which surface types the selector may expose.
 - The tenant says what is being screened: a Campaign, Teams collection, Team, Agent or Session.
-- Tenant data filters or parameterizes a library type; it never changes the frame.
+- Tenant data filters or parameterizes a surface type; it never changes the frame.
 
-| Tenant context | What a profile may expose from the library |
+| Tenant context | What a profile may expose from the surfaces |
 |---|---|
 | Campaign | Campaign settings and Campaign-level resources |
 | Teams collection | Teams, Agents, shared resources, and creation surfaces available in the selected Campaign context |
-| Team | that Team's Agents, Commons, Epics, New Agent and Agent composition |
+| Team | that Team's Agents, Commons, Epics, New Agent, New Item (the Epics workbench's New form, started on Task) and Agent composition |
 | Agent | Self, Documents, Team membership, and Work Items: the work items the Agent holds across its Teams |
 | Setup | the Garden plus Model providers, Register, Workspace folders, Installations, Password and Launch |
 
 Adding another tenant or profile adds no layout implementation. Adding another surface
-registers a per-tilespace factory in the shared library; any profile may name that type.
+registers a per-tilespace factory in the shared surfaces registry; any profile may name that type.
 
 The Campaign settings surface holds that Campaign's effective desk configuration. Choosing
 a desk-profile template copies its complete settings into the Campaign; after that, the
@@ -96,8 +96,10 @@ work" is what the Team holds plus what its Agents hold: the same items `team mem
 reads.
 
 **Epics** shows the Team's Epics: those the Team or its Agents hold, and the Epic above
-each item they hold. It is the Epics board, as on the Epics workbench: a stone per Epic
-across the top, and the pressed one below it. Press another stone to switch to that Epic
+each item they hold, except those Done (find a Done Epic with Find item or on the Epics
+workbench). It is a stone per Epic across the top, and the pressed one below it (the Epics
+workbench itself is a phalanx of open Epics, each opening on its own page: see
+[Running work items](running-work-items.md)). Press another stone to switch to that Epic
 on the same card; nothing opens elsewhere. With one Epic, that one is shown.
 
 Under the stones, an Epic shows where it comes from (its Jira key, or Ronin only) and who
@@ -120,10 +122,10 @@ On a Team's workbench the discovery column lists its Agents as pills (on a phone
 | a small dot after the name | **Working**: mid-turn, a tool out |
 | a small ring after the name | **Ready**: its turn ended (or was interrupted) less than 10 minutes ago; it just finished, look at it |
 | plain | **Idle**: 10 minutes or more since its turn ended, just born, or not known |
-| ⚑ and amber | **Needs you**: it is asking (a question, a permission, a plan), has made no progress for 12 minutes, its CLI hit an error (a login expired, an API error), or it holds a flagged item |
+| ⚑ after the name, and amber | **Needs you**: its work record has a flag: an item it holds is flagged, or, for a lead, an item its Team holds; or it is asking (a question, a permission, a plan), has made no progress for 12 minutes, or its CLI stopped |
 | dimmed | **Stopped**: its pane died; open it to resume |
 
-When more than one holds, Stopped wins, then Needs you, then Working, then Ready. Hover a pill, or use a
+When more than one holds, Needs you wins, then Stopped, then Working, then Ready. Hover a pill, or use a
 screen reader, for the situation in words.
 
 Each Agent's tile on a Team shows the work items that Agent holds as pills in its header,
@@ -142,16 +144,31 @@ remembered arrangement instead of applying the floor again.
 
 Teams first opens with the Team roster in tilespace 1 and New Team in tilespace 2.
 
-The **Teams** surface is the one list of Teams: each Team is a stone with its objective, how
-many Agents it has, and its lead. Press a stone and the stones fold to the left while the Team
-opens beside them: its title and objective with **Launch** (open the Team's own workbench),
-then three numbered steps. **1 Agents**: lead first, each with its live dot and what it holds,
-and **+** at the end to bring in an Agent already running or start a new one. **2 Work items**:
-one line per item with its holder and status bar (⚑ red when flagged), the Team's own items first. **3
-Configuration**, folded to its kind and model until you open it: the Team's configuration
-form, with **Delete team** at its foot. Each step folds or opens from its own heading. Press
-the stone again or Escape to go back. Drag a stone into another tilespace to open the Team
-there.
+The **Teams** surface is the one list of Teams, its stones read like the Epic stones, every one
+the same height: the Team's name; its lead (人); ⚑ top right, in amber, while anything open the
+Team or its Agents hold is flagged; bottom right, small and grey, how many of its items are not
+Done; and along the bottom edge the item lifecycle over everything the Team and its Agents hold,
+in the board's colours (To Do, In Progress, In Review, Done; press it for the counts). A Team
+holding nothing has no line. Flagged Teams come first, then by name.
+**Workspace** narrows the stones to the Teams in those Workspaces. Agents outside any Team are one
+more stone, **No Team**, last and plain, while there are any.
+
+Press a stone and the stones fold to the left while the Team opens beside them, in the bar an
+Epic has on its own page: its name with **Launch** (the Team's own workbench; No Team's opens one
+workbench for those Agents), its concept in full and its item lifecycle along its foot. Press the Team's bar and its **Configuration** opens under it (the Team's configuration form, **Delete team** at its foot); press it again to close it. Under it, two lines that expand and collapse, each with its count in brackets: **Agents**, open on arrival (one stone per
+Agent, as the Epic stones: the lead's first with 人, then flagged ones, then by name; each stone
+its name; one mark top right, ⚑ in amber
+when flagged (the stone takes the pill's amber), otherwise the pill's dot, solid while working and
+hollow just finished, otherwise nothing; bottom right, small and grey, how many open items it
+holds; a progress line along its foot, hollow while it holds nothing. Press a stone and it opens under them, full width (stones inside an
+opened stone stay across and wrapping), with three lines that expand and collapse: **Objective** (what its work record states, to
+read, not edit), **Work items held** (the Epic page's bars over
+what it holds) and **Configuration** (the Agent's own: name, mandate and the rest, with Save).
+An Agent is added to a Team where Agents are made, not here), then, closed until you press it, **Epics** (the
+Team's open Epics as Epic stones, each with its progress line; press one to read it under them,
+with **Launch** to its own page). No Team has its Agents only. Press the stone again or Escape to go back. The
+selector has a card per Team that places the same Team in the selected tilespace, and a stone
+dragged into another tilespace does the same.
 
 **Team roster** is the plain list of every Team and every Agent: one heading per Team with its
 Launch and delete, one row per Agent with 人 when it leads, its work position, status, context

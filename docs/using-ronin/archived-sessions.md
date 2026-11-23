@@ -12,9 +12,9 @@ After that Ronin removes it, with its session folder, as a Hard Delete of the ar
 2. If it owns an open managed worktree, hand off or finish that worktree first; the message explains
    what prevents archiving.
 3. Restore it from either place:
-   - **On its Team's workbench:** press **Rehydrate Agents** in the Team's selector. It opens
+   - **On its Team's workbench:** press **Archived Agents** in the Team's selector. It opens
      the archived sessions list holding only that Team's archived Agents, newest archived first.
-   - **On the Teams workbench:** press **Rehydrate Archived** for every archive on this machine.
+   - **On the Teams workbench:** press **Archived Agents** for every archive on this machine.
      Sort by **Recently archived** (the default: newest first, the Team on each line) or by
      **Team** (grouped by Team, newest first inside each).
 
@@ -64,13 +64,12 @@ Archive, Delete and Hard Delete each stop once while the Agent holds a work item
 or In Review it has not flagged, and the confirm names them: "<name> holds KAN-12 (In Review),
 not flagged: finish or flag it and hand in its desks first, or close anyway". Close anyway
 gives each to the Team, flagged, and tells its lead ([how an item
-lives](project-management.md#how-an-item-lives)).
+lives](running-work-items.md#how-an-item-lives)).
 
 Ronin stores session metadata for restoration, and with Terminal transcript on it keeps a
 copy of the conversation in the session folder, which archive retains. The provider still
-owns the original journal. Closed, unarchived session folders are removed after the
-retention period (a Campaign setting, default seven days); an archived one goes with its
-archive after 7 days.
+owns the original journal. The session folder lives as long as the Agent: deleting an Agent
+deletes its folder, and an archived one goes with its archive after 7 days.
 
 Agents can use `session_archive` and `session_restore`; their help gives the current syntax.
 Contributors: [archive identity, persistence, and API](../architecture/session-archive.md).

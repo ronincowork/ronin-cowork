@@ -46,8 +46,10 @@
   .sws-group-hint { margin: 0; color: var(--accent); font-size: var(--form-note); }
   .sws-group-empty { margin: 0; color: var(--muted); font-size: var(--form-note); }
   .sws-group-stones { display: flex; flex-wrap: wrap; gap: var(--sws-gap); }
-  .sws[data-open='true'] .sws-grid { width: var(--sws-stone); flex-direction: column; flex-wrap: nowrap; }
-  .sws[data-open='true'] .sws-group-stones { flex-direction: column; flex-wrap: nowrap; }
+  /* Open, a phalanx's OWN stones become the rail; stones in its opened detail (a Workspace's Teams and
+     Epics, a Team's Epics) keep going across, then wrap (owner, 2026-11-23). */
+  .sws[data-open='true'] > :where(.sws-rail) > .sws-grid { width: var(--sws-stone); flex-direction: column; flex-wrap: nowrap; }
+  .sws[data-open='true'] > :where(.sws-rail) .sws-group-stones { flex-direction: column; flex-wrap: nowrap; }
   .sws-stone { position: relative; display: flex; flex: 0 0 min(100%, var(--sws-stone)); flex-direction: column; align-items: flex-start; width: min(100%, var(--sws-stone)); aspect-ratio: 1; overflow: hidden; border: var(--edge) solid var(--line-2); border-radius: var(--radius-hair); background: var(--surface); color: var(--fg); padding: var(--space-inset); cursor: pointer; text-align: left; font: inherit; transition: border-color var(--motion-quick) var(--ease), box-shadow var(--motion-quick) var(--ease), transform var(--motion-settle) var(--ease), opacity var(--motion-settle) var(--ease); }
   .sws-stone::before { content: ''; position: absolute; inset: 0 auto 0 0; width: var(--edge-2); background: var(--accent); /* the stone's edge, the phalanx's mark */ }
   .sws-stone[hidden] { display: none; }
@@ -117,6 +119,70 @@
   .epic-detail { display: flex; flex-direction: column; gap: var(--space-inline); }
   .epic-detail > button.item-bar { width: 100%; font-family: inherit; }
   .epic-reading { padding: var(--space-inline) var(--space-inset); border: var(--edge) solid var(--line); border-radius: var(--radius-large); background: var(--surface); }
+  /* THE ITEM LIFECYCLE (owner, 2026-11-22; KAN-785, item-lifecycle.js): the four families in the
+     board's colours, each as wide as its share; no words. A line on a stone's bottom edge, a bar in a
+     row or a head: every Epic, Team, Agent and Workspace summary draws with these. */
+  .lifecycle { display: flex; overflow: hidden; background: var(--line); cursor: pointer; }
+  .lifecycle > i { flex: 0 0 0; min-width: 0; }
+  .lifecycle > i[data-status='todo'] { background: var(--muted); }
+  .lifecycle > i[data-status='progress'] { background: var(--info); }
+  .lifecycle > i[data-status='review'] { background: var(--accent); }
+  .lifecycle > i[data-status='done'] { background: var(--ok); }
+  .lifecycle:focus-visible { outline: var(--edge-2) solid var(--accent); outline-offset: 2px; }
+  .lifecycle-line { position: absolute; inset: auto 0 0 0; height: 5px; }
+  .lifecycle-bar { flex: 0 0 auto; width: min(100%, 12rem); height: 8px; margin-left: auto; border-radius: var(--radius-hair); }
+  .lifecycle-reading { position: fixed; z-index: 1000; display: flex; flex-direction: column; gap: var(--space-row); min-width: 10rem; padding: var(--space-inline) var(--space-inset); border: var(--edge) solid var(--line-2); border-radius: var(--radius-hair); background: var(--surface); color: var(--fg); font-size: var(--text-body); box-shadow: 0 4px 16px rgb(0 0 0 / 0.25); }
+  .lifecycle-row { display: flex; align-items: center; gap: var(--space-inline); }
+  .lifecycle-row > i { width: 8px; height: 8px; border-radius: var(--radius-round); background: var(--muted); }
+  .lifecycle-row[data-status='progress'] > i { background: var(--info); }
+  .lifecycle-row[data-status='review'] > i { background: var(--accent); }
+  .lifecycle-row[data-status='done'] > i { background: var(--ok); }
+  /* THE EPICS PHALANX (w897): the phalanx's own stones; the title wraps in full, the key under it. */
+  /* ONE STONE GRAMMAR for the Epics and the Teams collections (w900): the name, a muted last line,
+     the stone's marks (below). */
+  /* AIR (owner, 2026-11-23): a little more room inside an Epic or Team stone than the kit's, for its
+     marks (⚑, the count, the line); the name in regular weight so a row of stones is not a wall of
+     bold; the line under it muted. --stone-pad is the inset the marks sit on. */
+  .epic-record-stones .sws-stone, .team-roster-phalanx .team-stone, .workspace-record-stones .sws-stone { --stone-pad: var(--space-subsection); aspect-ratio: auto; min-height: calc(var(--sws-stone) * 0.6); padding: var(--stone-pad) var(--stone-pad) calc(var(--stone-pad) + 5px); }
+  .epic-record-stones .sws-label, .team-roster-phalanx .team-stone .sws-label, .workspace-record-stones .sws-label { overflow-wrap: anywhere; }
+  .epic-record-stones .sws-stone, .team-roster-phalanx .team-stone, .workspace-record-stones .sws-stone { gap: var(--space-paragraph); }
+  .epic-record-stones .sws-label, .team-roster-phalanx .team-stone .sws-label, .workspace-record-stones .sws-label { font-weight: var(--weight-regular); line-height: 1.3; }
+  .epic-record-stones .sws-state, .team-roster-phalanx .team-stone .sws-state, .workspace-record-stones .sws-state { margin-top: auto; color: var(--muted); }
+  /* A STONE'S MARKS (owner, 2026-11-23; the Epic and Team stones, item-lifecycle.js createStoneMarks):
+     ⚑ top right in the flagged amber (the Agent pill's); its open item count small and grey bottom
+     right, above the lifecycle line. */
+  .stone-marks { display: contents; }
+  /* NEW WORK ITEM (owner, 2026-11-23): wide before deep: a step's questions one row of stones (one ask),
+     wrapping only when there is no width; one answered takes its others away (hidden). */
+  .epic-new-row { display: flex; flex-wrap: wrap; align-items: flex-start; gap: var(--space-inline) var(--space-inset); }
+  .epic-new-row > * { flex: 1 1 14rem; min-width: 0; }
+  .epic-new .ask-stone[hidden] { display: none; }
+  .epic-new-kind .ask-group { flex: 1 1 100%; }
+  .epic-new-kind .ask-stone[data-ask-key='priority'] { margin-left: auto; } /* Priority at the right of Kind's row */
+  /* ⚑ (or an Agent's dot) top right and the count bottom right share one right edge, the stone's inset (owner, 2026-11-23). */
+  .stone-flag { position: absolute; top: var(--stone-pad, var(--space-inset)); right: var(--stone-pad, var(--space-inset)); color: var(--warn); line-height: 1; text-align: right; }
+  .stone-flag[hidden] { display: none; }
+  .epic-record-stones .sws-label, .team-roster-phalanx .team-stone .sws-label, .workspace-record-stones .sws-label { padding-right: 1em; }
+  .epic-record-stones .sws-state, .team-roster-phalanx .team-stone .sws-state, .workspace-record-stones .sws-state { padding-right: 2.5em; }
+  .stone-size { position: absolute; right: var(--stone-pad, var(--space-inset)); bottom: calc(var(--stone-pad, var(--space-inset)) + 5px); color: var(--muted); font-size: var(--text-small); line-height: 1; }
+  /* EVERY EPIC AND TEAM STONE THE SAME HEIGHT (owner, 2026-11-23): a grid whose rows are all the tallest stone's. */
+  .sws:is(.epic-record-stones, .team-roster-phalanx, .workspace-record-stones) { --sws-stone: calc(var(--setup-stone-size) * 1.2); } /* a fifth wider: the added inset does not cost the name its width */
+  .sws:is(.epic-record-stones, .team-roster-phalanx, .workspace-record-stones) .sws-grid { display: grid; grid-template-columns: repeat(auto-fill, var(--sws-stone)); grid-auto-rows: 1fr; justify-content: center; }
+  .sws:is(.epic-record-stones, .team-roster-phalanx, .workspace-record-stones)[data-open='true'] > :where(.sws-rail) > .sws-grid { grid-template-columns: var(--sws-stone); }
+  /* STONES INSIDE AN OPENED STONE OPEN BELOW (owner, 2026-11-23): no rail inside a rail. A phalanx in
+     another's detail (a Workspace's Teams and Epics, a Team's Agents and Epics) keeps its stones going
+     across and wrapping, and the pressed one's detail opens under them, the whole width, as an
+     Epic's bar opens below it. */
+  .sws-detail .sws.sws[data-open='true'] { flex-direction: column; align-items: stretch; gap: var(--space-paragraph); }
+  .sws-detail .sws.sws[data-open='true'] > .sws-rail { display: flex; flex: none; justify-content: flex-start; min-width: 0; overflow: visible; padding: var(--edge-2); }
+  .sws-detail .sws.sws[data-open='true'] > .sws-rail > .sws-grid { width: 100%; flex-direction: row; flex-wrap: wrap; justify-content: flex-start; grid-template-columns: repeat(auto-fill, var(--sws-stone)); }
+  .sws-detail .sws.sws[data-open='true'] > .sws-rail .sws-group-stones { flex-direction: row; flex-wrap: wrap; }
+  .sws-detail .sws.sws[data-open='true'] > .sws-detail { flex: none; max-width: none; overflow: visible; }
+  .epics-records > .wk-surface-content > .epic-empty { padding: var(--space-inset); }
+  .epic-source[hidden] { display: none; }
+  .epic-launch { text-decoration: none; }
+  .epic-bar-said[hidden] { display: none; }
+  .epic-bar-said { margin: 0; color: var(--warn); font-size: var(--text-body); }
   /* THE TEAM'S EPICS on the Team workbench (KAN-232): the card is flush (createSurface's flush): the
      board inside keeps its own inset, and nothing here reaches into the kit. */
   .team-epics .epics-board { flex: 1 1 auto; min-height: 0; border: 0; }
@@ -143,6 +209,7 @@
   .wi-head.wi-head-closes:active { background: color-mix(in srgb, var(--accent) 16%, transparent); }
   .wi-head > button.minimize { margin-left: auto; }
   .wi-title { margin: 0; color: var(--fg-strong); font-size: var(--text-heading); font-weight: var(--weight-strong); line-height: var(--leading-tight); overflow-wrap: anywhere; }
+  .item-title-continuation { margin: 0; color: var(--muted); font-size: var(--text-body); line-height: var(--leading-body); overflow-wrap: anywhere; }
   .wi-key, .wi-notice, .wi-when { margin: 0; color: var(--muted); font-size: var(--form-note); }
   .wi-answer:empty { display: none; }
   .wi-answer[data-state='failed'] { color: var(--status-red); }
@@ -164,6 +231,11 @@
   .find-item-number::placeholder { color: var(--muted); font-weight: var(--weight-regular); }
   .find-item-ask .find-item-go { height: var(--ask-h); align-self: flex-start; }
   .find-item-reading:not(:empty) { margin-top: var(--space-section); padding-top: var(--space-section); border-top: var(--edge) solid var(--line); }
+  /* The playbooks: one plain line per top item; an objective in a box to edit. */
+  .find-item-playbooks { display: flex; flex-direction: column; gap: var(--space-section); }
+  .find-item-playbook-row { text-align: left; padding: 0; border: 0; background: transparent; color: inherit; font: inherit; cursor: pointer; white-space: normal; }
+  .find-item-playbook-row:hover, .find-item-playbook-row:focus-visible { color: var(--kaki); }
+  .wi-playbook-text { width: 100%; }
   /* An Agent over the work surface its item sits in (KAN-435): its own tile fills the layer under the Close. */
   .work-overlay.item-agent { display: flex; flex-direction: column; overflow: hidden; z-index: 20; }
   .work-overlay.item-agent > :last-child { flex: 1 1 auto; min-height: 0; }
@@ -212,76 +284,6 @@
     .sws[data-open='true'] { gap: var(--sws-gutter-l); }
   }
 
-  .sp-surface {
-    --sp-glyph: 28px;
-    --sp-key-w: 85px;
-    --sp-select-w: 170px;
-    --sp-timing-w: 102px;
-    --sp-warn: 24px;
-  }
-  .sp-surface { container: setup-preset-phalanx / inline-size; font-size: var(--text-body); }
-  .sp-content { display: flex; flex-direction: column; overflow: hidden; }
-  .sp-kinds { margin-bottom: 0; }
-  .sp-kinds-lead { margin-right: var(--space-inline); color: var(--muted); font-size: var(--form-note); }
-  .sp-glyph { display: flex; width: var(--sp-glyph); height: var(--sp-glyph); color: var(--accent); font-style: normal; font-size: var(--text-display); font-weight: var(--weight-regular); line-height: var(--leading-none); }
-  .sp-glyph svg { width: 100%; height: 100%; }
-  .sp-heading { display: flex; align-items: center; justify-content: space-between; gap: var(--space-inline); margin-bottom: var(--space-subsection); }
-  .sp-heading h3 { margin: 0; color: var(--fg-strong); font-size: var(--text-heading); }
-  .sp-go { display: flex; align-items: center; gap: var(--space-inline); }
-  .sp-description { margin: 0 0 var(--space-section); color: var(--fg-strong); font-size: var(--text-body); line-height: var(--leading-body); }
-  .sp-choice-panel { min-width: 0; border: var(--edge) solid var(--line-2); border-radius: var(--radius-hair); padding: var(--space-inset); font-size: var(--text-body); }
-  .sp-section { min-width: 0; color: var(--muted); font-size: inherit; }
-  .sp-section[hidden] { display: none; }
-  .sp-field { display: grid; gap: var(--space-paragraph); }
-  .sp-field-label, .sp-control-label { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-inline); font-weight: var(--weight-strong); }
-  .sp-select { color: var(--kaki); font-size: inherit; font-weight: var(--weight-strong); letter-spacing: var(--tracking-wide); white-space: nowrap; }
-  .sp-field input, .sp-field select, .sp-field textarea { min-width: 0; border: 0; border-radius: var(--radius-hair); background: var(--inset); color: var(--fg); padding: var(--space-row) var(--space-control); font: inherit; }
-  .sp-field select { color: var(--accent); }
-  .sp-root-choice { display: grid; gap: var(--space-paragraph); }
-  .sp-workspace-link { justify-self: start; border: 0; border-bottom: var(--edge) solid transparent; background: transparent; color: var(--accent); padding: 0; font: inherit; cursor: pointer; }
-  .sp-workspace-link:hover { border-bottom-color: currentColor; }
-  .sp-workspace-link:disabled { color: var(--muted); cursor: default; }
-  .sp-codebase-browser { display: grid; gap: var(--space-paragraph); }
-  .sp-codebase-place { display: flex; align-items: baseline; gap: var(--space-inline); color: var(--fg-strong); }
-  .sp-codebase-list { border-top: var(--edge) solid var(--line-2); }
-  .sp-codebase-row { display: grid; grid-template-columns: minmax(0, 1fr) auto auto auto; align-items: center; gap: var(--space-paragraph) var(--space-inline); border-bottom: var(--edge) solid var(--line-2); padding: var(--space-row) var(--space-inline); }
-  .sp-codebase-status { color: var(--muted); font-size: var(--form-note); }
-  .sp-codebase-open { border: 0; background: transparent; padding: var(--space-control); font: inherit; cursor: pointer; }
-  .sp-codebase-open { overflow: hidden; color: var(--fg-strong); text-align: left; text-overflow: ellipsis; white-space: nowrap; }
-  .sp-codebase-kind { color: var(--muted); font-size: var(--form-note); }
-  .sp-controls { display: grid; }
-  .sp-control-label { margin: 0; padding: 0 0 var(--space-inset); color: var(--muted); font-size: inherit; }
-  .sp-controls > .sp-section:not(:first-child), .sp-controls + .sp-section { margin-top: calc(var(--space-section) / 2); border-top: var(--edge) solid var(--line-2); padding-top: calc(var(--space-section) / 2); }
-  .sp-rows { display: grid; gap: var(--space-row) var(--space-inline); }
-  .sp-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; align-items: center; gap: var(--space-paragraph); border: var(--edge) solid var(--line-3); border-radius: var(--radius-hair); padding: var(--space-row) var(--space-inline); }
-  .sp-row-ask { grid-template-columns: minmax(var(--sp-key-w), .7fr) minmax(0, 1fr) auto; align-items: start; }
-  .sp-row-ask textarea { min-width: 0; resize: vertical; border: 0; background: transparent; color: var(--fg-strong); padding: var(--space-row) 0; font: inherit; line-height: var(--leading-body); }
-  .sp-row-ask[data-editing='true'] textarea {
-    --sp-ask-rows: calc(3 * var(--leading-body) * 1em); /* three lines of its own text */
-    min-height: calc(var(--sp-ask-rows) + 2 * var(--space-row)); /* and its padding */
-  }
-  .sp-row input { min-width: 0; border: 0; background: transparent; color: var(--fg-strong); padding: var(--space-row) 0; font: inherit; }
-  .sp-row .fs-pair { display: flex; flex-wrap: wrap; gap: var(--space-inline); min-width: 0; }
-  .sp-row .fs-pair select { max-width: var(--sp-select-w); border: 0; border-bottom: var(--edge) solid transparent; background: transparent; color: var(--accent); padding: var(--space-row) 0; font: inherit; }
-  .sp-row .fs-pair select:hover { border-bottom-color: var(--accent); }
-  .sp-row .fs-pair select:disabled { color: var(--muted); }
-  .sp-lead { color: var(--accent); font-size: inherit; font-weight: var(--weight-strong); white-space: nowrap; }
-  .sp-lead:empty { width: 0; }
-  .sp-remove { border: 0; background: transparent; color: var(--muted); cursor: pointer; font: inherit; }
-  .sp-rows > .fs-door { border-style: dashed; border-color: var(--accent); color: var(--accent); padding-block: var(--space-row); }
-  .sp-timing { border: var(--edge) solid var(--line-3); padding: var(--space-paragraph) var(--space-inline); }
-  .sp-timing-summary { color: var(--accent); cursor: pointer; }
-  .sp-timing-editor { display: grid; grid-template-columns: repeat(auto-fit, minmax(var(--sp-timing-w), 1fr)); gap: var(--space-paragraph) var(--space-inline); margin-top: var(--space-subsection); padding-top: var(--space-inset); border-top: var(--edge) solid var(--line-2); }
-  .sp-timing-field[hidden] { display: none; }
-  .sp-timing-field { display: grid; gap: var(--space-row); color: var(--muted); }
-  .sp-timing-field[hidden] { display: none; }
-  .sp-timing-field :is(input, select) { min-width: 0; border: 0; background: var(--inset); color: var(--accent); padding: var(--space-control); font: inherit; }
-  .sp-warning { margin: var(--space-subsection) 0 var(--space-subsection); border-left: var(--edge-2) solid var(--kaki); padding: var(--space-row) var(--space-inline); color: var(--fg-strong); font-size: var(--text-body); line-height: var(--leading-body); }
-  .sp-warning[hidden] { display: none; }
-  .sp-warn { width: var(--sp-warn); height: var(--sp-warn); border: var(--edge-2) solid var(--kaki); border-radius: var(--radius-round); background: transparent; color: var(--kaki); font-weight: var(--weight-strong); cursor: pointer; }
-  .sp-launch[data-held='true'] { border-color: var(--line-3); color: var(--fg); }
-  .sp-launch { font-size: inherit; }
-
   .ntf-form, .ntf-actions { font-size: var(--form-input); }
   .na-surface > .launch-form-head,
   .ntf-surface > .launch-form-head { position: sticky; top: 0; z-index: 4; }
@@ -325,16 +327,14 @@
   .lh-section p { margin: 0; color: var(--muted); line-height: var(--leading-body); }
   .ntf-form textarea { resize: vertical; }
   .ntf-foot { margin-top: var(--space-subsection); }
-  .fs-steps, .ntf-tmplname, .fs-step, .fs-pair, .fs-tmplgrid, .fs-reading, .na-identity-row, .na-surface {
+  .fs-steps, .fs-step, .fs-pair, .fs-reading, .na-identity-row, .na-surface {
     --fs-key-w: 136px; /* a step's name column */
     --fs-reading-key-w: 85px;
     --fs-step-n: 14px;
     --fs-pair-w: 136px;
-    --fs-wide-w: 170px; /* a template card, a template name */
     --na-name-w: 272px;
     --na-brief-h: 102px;
   }
-  .ntf-tmplname { font-size: var(--form-input); width: var(--fs-wide-w); border: var(--edge) solid var(--line-2); border-radius: var(--radius-small); background: var(--inset); color: var(--fg); padding: var(--space-row) var(--space-inline); font: inherit; }
 
   .fs-step { display: grid; grid-template-columns: var(--fs-key-w) minmax(0, 1fr); gap: var(--space-paragraph) var(--space-inline); align-items: start; padding: var(--space-inset) 0; border-bottom: var(--edge) solid var(--line); }
   .fs-step:last-of-type { border-bottom: 0; }
@@ -403,25 +403,12 @@
   .fs-kindtile span { overflow: hidden; font-size: var(--form-note); text-overflow: ellipsis; white-space: nowrap; }
   .fs-kindtile[data-open='true'] { align-self: start; border-style: dashed; }
 
-  .fs-tmplgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(var(--fs-wide-w), 1fr)); gap: var(--space-row) var(--space-inline); }
-  .fs-tmplnote { margin: var(--space-row) 0 0; font-size: var(--text-small); color: var(--muted); line-height: var(--leading-body); }
-  .fs-tmpl { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--space-row) var(--space-inline); align-items: center; border: var(--edge) solid var(--line-2); border-radius: var(--radius-small); background: var(--inset); color: var(--muted); padding: var(--space-row) var(--space-inline); cursor: pointer; text-align: left; font: inherit; }
-  .fs-tmpl:hover { border-color: var(--kaki); }
-  .fs-tmpl[aria-pressed='true'] { border-color: var(--kaki); background: var(--selected); /* the one you are on, have chosen, or are dropping onto */ }
-  .fs-tmpl i { font-style: normal; font-size: var(--text-body); line-height: var(--leading-none); }
-  .fs-tmpl b { display: block; overflow: hidden; color: var(--fg-strong); font-size: var(--form-input); font-weight: var(--weight-strong); text-overflow: ellipsis; white-space: nowrap; }
-  .fs-tmpl[aria-pressed='true'] b { color: var(--kaki-lift); }
-  .fs-tmpl:disabled { opacity: .45; border-style: dashed; cursor: default; }
-  .fs-tmpl:disabled:hover { border-color: var(--line-2); }
-
   .fs-way { display: grid; gap: var(--space-row); border: var(--edge) solid var(--line-2); border-radius: var(--radius-small); background: var(--inset); color: var(--muted); padding: var(--space-row) var(--space-inline); cursor: pointer; text-align: left; font: inherit; }
   .fs-way:hover { border-color: var(--kaki); }
   .fs-way[aria-pressed='true'] { border-color: var(--kaki); background: var(--selected); /* the one you are on, have chosen, or are dropping onto */ }
   .fs-way b { color: var(--fg-strong); font-size: var(--form-input); font-weight: var(--weight-strong); }
   .fs-way[aria-pressed='true'] b { color: var(--kaki-lift); }
   .fs-way small { color: var(--muted); font-size: var(--form-note); }
-  .fs-door { align-self: flex-start; border: var(--edge) solid var(--line-2); border-radius: var(--radius-small); background: var(--surface); color: var(--fg); padding: var(--space-row) var(--space-inline); font: inherit; font-size: var(--form-input); }
-  .fs-door:disabled { opacity: .45; cursor: default; }
 
   .na-omitted { margin: 0; color: var(--muted); font-size: var(--form-note); }
   .na-omitted[hidden] { display: none; }
@@ -443,7 +430,7 @@
   .fs-reading dd { margin: 0; min-width: 0; color: var(--fg-strong); font-size: var(--form-input); }
   .fs-reading em { color: var(--muted); font-style: normal; }
 
-  /* Behaviors library/viewer — the shared stone surface supplies responsive geometry. */
+  /* Behaviors list/viewer — the shared stone surface supplies responsive geometry. */
   .behaviour-surface .sws-detail { min-width: 0; }
   .behaviour-surface .sws-group { color: var(--kaki); font-weight: var(--weight-strong); }
   .behaviour-surface .behaviour-settings { display: grid; gap: var(--space-paragraph); padding: 0 var(--space-inset) var(--space-section); }
@@ -504,7 +491,20 @@
   .workspace-form .fs-chev { color: var(--muted); font-size: 0; }
   .workspace-form .fs-chev::before { margin-right: 0; font-size: var(--form-note); }
   .workspace-form .fs-sum { color: var(--muted); }
-  .workspaces-records[data-bare='true'] .workspace-record-stones .sws-stone { aspect-ratio: auto; }
+  /* One Workspace (KAN-784): its head is name · Work/Config · actions; the view under it. */
+  .workspace-one { display: flex; flex-direction: column; gap: var(--space-paragraph); min-width: 0; }
+  /* ONE WORKSPACE (KAN-801): the opened Team's (team-workspace.css .team-bar, .team-fold); its
+     Configuration's Save, − and ⋯ at the top right of it; a stone's line hidden while it holds nothing. */
+  .workspace-record-stones .lifecycle-line[data-empty='true'] { display: none; }
+  .workspace-config-actions { justify-content: flex-end; padding-bottom: var(--space-row); }
+  .workspace-record-stones .sws-label { margin-block: auto; } /* the name in the middle of its stone, top to bottom, at its left (owner, 2026-11-23) */
+  /* ITS DOCUMENT (owner, 2026-11-23): one page, outlined, so what is shown reads as a document and not
+     a list of them; Edit at its top right turns the page to its text in the same outline. */
+  .workspace-doc-pane { display: flex; flex-direction: column; gap: var(--space-row); min-width: 0; }
+  .workspace-doc-pane > .workspace-page-head { justify-content: flex-end; padding-bottom: 0; border-bottom: 0; }
+  .workspace-doc-pane .workspace-doc { padding: var(--space-subsection); border: var(--edge) solid var(--line-2); border-radius: var(--radius-large); background: var(--surface); min-width: 0; }
+  .workspace-doc-pane .workspace-doc-text { width: 100%; box-sizing: border-box; border: 0; background: transparent; color: var(--fg); font: inherit; resize: vertical; }
+  .workspace-route { min-height: 100%; overflow: auto; padding: var(--space-inset); background: var(--workbench-bg); min-width: 0; }
   .workspace-page-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-inline); padding-bottom: var(--space-row); border-bottom: var(--edge) solid var(--line); }
   .workspace-page-actions { display: flex; align-items: center; gap: var(--space-row); }
   .workspace-page-head .wk-surface-header-title { font-size: var(--form-key); color: var(--fg-strong); }

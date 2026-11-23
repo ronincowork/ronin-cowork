@@ -50,7 +50,7 @@ is the one place; these are the pieces.
 | *Explained, approved once* — first install names outstanding machine settings before activation and applies them through one sudo process; the application holds no root | `setup.sh`, `libexec/ronin-machine-apply` |
 | *A finding, never an action* — doctor reads and names the remedy; it touches nothing | `bin/ronin-doctor`, "the box" |
 | *Never post to acknowledge* — the read cursor is the only acknowledgement on a wipeboard | [`wipeboards.md`](../using-ronin/wipeboards.md) |
-| *Stay or go* — the desk an Agent lives in is parked or ends with the Agent; nobody asks it to leave | `ronin_catalogs/behaviours/working-at-a-desk.md`, "Finish the assignment" |
+| *Stay or go* — the desk an Agent lives in is parked or ends with the Agent; nobody asks it to leave | `ronin_stock/behaviours/working-at-a-desk.md`, "Finish the assignment" |
 | What Ronin will and will not do to the machine | [`how-ronin-protects-you.md`](../getting-started/how-ronin-protects-you.md) |
 
 When a new mechanism needs a sentence like these, write the sentence where the mechanism

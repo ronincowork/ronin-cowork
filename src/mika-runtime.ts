@@ -117,7 +117,7 @@ export async function resolveConfiguredMikaModel(): Promise<MikaSelection> {
 
 export const mikaHomeDir = (): string => storeDir('mika_home');
 /** Her Setup walkthrough on the reading shelf; her home holds a copy. */
-export const mikaStartHereSource = (): string => path.join(REPO_ROOT, 'ronin_catalogs', 'behaviours', 'mika.md');
+export const mikaStartHereSource = (): string => path.join(REPO_ROOT, 'ronin_stock', 'behaviours', 'mika.md');
 /** What she is TOLD at birth, one line each; the long reading is in her birth brief. */
 export const MIKA_PROMPTS = {
   help: 'The owner opened Help without asking anything yet. Say hello in one line, say what you can do, and wait.',

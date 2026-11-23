@@ -9,8 +9,8 @@
  * "Next:" label says what the kaki-edged slab already says and eats the width a narrow
  * column needs for the name itself. Complete drops the bar and says two words.
  *
- * Like the component, it reads the Campaign's persisted answers and nothing else: no
- * probe, no second reading of machine state. Setup owns where it lands, so the card
+ * Like the component, it reads Setup's ticks, which come from the office's facts
+ * (src/setup-progress.ts), and nothing else. Setup owns where it lands, so the card
  * navigates and lets it.
  *
  * The card is a DOOR, not a work surface: Ronin Setup is its own destination, so this is

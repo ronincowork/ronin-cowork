@@ -1,8 +1,8 @@
 # Work records and work items
 
 A work record says what an Agent is doing now: its objective, repositories, and the work
-items it holds, each with its status. Ronin has no board: a user who wants one uses Jira
-or Trello.
+items it holds, each with its status. An Epic's work, all of it, is on that Epic's board
+(Epics › press its stone).
 
 Two shipped commands: `work-record` keeps what is about the Agent (objective, repositories),
 and `item` does every act on a work item, the item always named. Its acts are Jira's item
@@ -127,9 +127,13 @@ gives "Your work record changed".
 - **The Agent flag**: while an Agent's terminal asks you something (a dialog, a permission
   prompt, Codex's *Update available* before its first turn), its work record opens with
   "⚑ Asking you: answer in its terminal". It is the Agent's flag, not an item's, and it is
-  never stored: it goes when the question is answered. An asking Agent, or one holding a
-  flagged item, shows ⚑ in amber on its selector pill and its Team roster row; so does a lead
-  whose Team holds a flagged item, which its `work-record read` lists first.
+  never stored: it goes when the question is answered. An Agent waiting on you with no item
+  to flag raises its own with `work-record flag "<who>: <what you need>"`; it stays until the
+  Agent runs `work-record unflag` or you press the ⚑ on its tile header. An asking Agent, a
+  flagged one, or one holding a flagged item, shows ⚑ in amber on its selector pill, its tile header and its Team roster
+  row; so does a lead whose Team holds a flagged item, which its `work-record read` lists
+  first. All of these read one list on the work record, its flags; the ☰ Work record opens
+  with one ⚑ line for each.
 - `work-record read`: what the Agent holds and watches, and under Documents the record's own
   documents and the held items' attachments (`--json`: `documents` and `attachments`). A lead also sees each Team it leads:
   what the Team holds and watches, and what each member holds and watches, read when asked.
@@ -222,7 +226,7 @@ session's recorded Workspace. Neither edit changes its birth directory or opens
 a managed desk. These fields locate work; they do not replace commits, hand-ins, or evidence.
 
 Every way out first stops once while the Agent holds an item In Progress or In Review it has
-not flagged, unless it is acknowledged ([how an item lives](project-management.md#how-an-item-lives)).
+not flagged, unless it is acknowledged ([how an item lives](running-work-items.md#how-an-item-lives)).
 When an Agent ends, is archived, or is Hard Deleted, what it held is released: each item
 gets a `holder-ended` line and goes back to the Agent's Team, or to nobody when it has no Team
 or several. A Done item goes to nobody and nobody is told. Restoring an archived Agent does

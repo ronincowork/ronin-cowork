@@ -254,6 +254,13 @@ export async function writeWorkspaceHolds(campaign: string, name: string, change
   holdsWritten(workspaceListKey(campaign, name), `workspace:${name}`, change.holds ?? was.holds);
 }
 
+/** The holds file goes with its Workspace (deleteIcebox, under the issuer lock). */
+export async function removeWorkspaceHolds(campaign: string, name: string): Promise<void> {
+  try { await unlink(holdsFile(campaign, name)); }
+  catch (e) { if ((e as NodeJS.ErrnoException).code !== 'ENOENT') throw e; }
+  holdsWritten(workspaceListKey(campaign, name), '', []);
+}
+
 /** Every Workspace's holds, in every Campaign: one row per Workspace record. */
 export async function listWorkspaceHolds(): Promise<WorkspaceHolds[]> {
   const out: WorkspaceHolds[] = [];

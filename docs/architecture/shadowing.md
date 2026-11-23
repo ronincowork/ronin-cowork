@@ -1,14 +1,17 @@
 # Shadowing — how a user makes a catalog theirs
 
-Owner resources override shipped resources through the resolver in `src/resources.ts`.
-This page owns the replacement rules; [KOTOBA](../../KOTOBA.md) owns the terminology.
+The three places and the one rule (a file in `~/ronin/custom/<folder>/` replaces the file of the
+same id in `ronin_stock/<folder>/` whole, or adds one) are stated once, in
+[stock_readme.md](../../ronin_stock/stock_readme.md#three-places-each-with-one-meaning). This page
+is the one refinement: the flat registries at the stock root, where the id is an entry inside
+the file. The resolver is `src/resources.ts`; [KOTOBA](../../KOTOBA.md) owns the terminology.
 For the owner journey, see [Customize Ronin](../getting-started/customize.md).
 
-## The rule
+## The rule for a registry
 
 ```
-resolve(<NAME>.md) = entries(ronin_catalogs/<NAME>.md)     ← stock, in file order
-                   ⊕ entries(<catalogs store>/<NAME>.md)   ← yours
+resolve(<NAME>.md) = entries(ronin_stock/<NAME>.md)        ← stock, in file order
+                   ⊕ entries(~/ronin/custom/<NAME>.md)     ← yours
 ```
 
 **It is an entry-merge, not a file swap**, and the difference is the point. Shadowing a
@@ -37,15 +40,16 @@ file happens to define every stock name.
 
 | Catalog | Shape | Rule |
 |---|---|---|
-| `facts/`, `behaviours/`, `tools/` | one Markdown file each | whole-file, by file name, from the user's `facts/`, `behaviours/` and `tools/` stores — the brief's own rule ([brief](brief.md#the-files-and-their-header)) |
+| `facts/`, `behaviours/`, `tools/`, `playbooks/` and every other folder | one file each | the one rule: whole-file, by id, from `~/ronin/custom/<folder>/` ([brief](brief.md#the-files-three-places-four-foundations)) |
 | `SKINS.md` | `## name` blocks | entry-merge. A skin is a set of design tokens and nothing else — no selector, so the worst a bad one does is look bad |
 | `HOTWORDS.md` | a flat list under `## Terms` | **copy-on-write, not a merge** — see below |
 | `MODEL_PROVIDERS.md` | `### <Vendor>` sections, keyed by the `- **provider:** id` each declares | entry-merge, at this file's heading level. A section of a shipped id replaces it whole and keeps its place; a new id appends; `- **hidden:** yes` withdraws the shipped provider. Every served entry carries `origin` and `shadowed`; the Model providers surface says the layer under each provider |
 
 **Deliberately not shadowable:**
 
-- **The work record (TEGAMI)** — session data in the session store, not stock catalogs. There is
+- **The work record (TEGAMI)** — session data in the session store, not stock. There is
   no shipped version to win over.
+- **Office-output** (`~/ronin/office/`) — written by the fact builders and Agents; nothing ships.
 - **Your Workspaces and their folders** — user scope, in the `workspaces` store; nothing ships.
 
 **`HOTWORDS.md` is the deliberate exception.** Both halves hold the same kind of thing —
@@ -57,14 +61,14 @@ edit, new stock terms are not added for you. `src/services/koe/hotwords.ts` carr
 
 ## Two scopes, and which is which
 
-The shipped copies live in the install (`ronin_catalogs/`) and an **upgrade replaces them
-wholesale** — that is what they are for. Yours live in the **catalogs store**, outside
+The shipped copies live in the install (`ronin_stock/`) and an **upgrade replaces them
+wholesale** — that is what they are for. Yours live in `~/ronin/custom/`, outside
 every repo, where an upgrade cannot reach and an uninstall leaves them.
 
-**Never spell that path by hand.** Ask for it: `storeDir('catalogs')` in TypeScript,
-`$(ronin-store catalogs)` in bash. `docs/stores.md` is the rule (JUSHO). Every store also takes a `RONIN_<ID>_DIR` override, derived mechanically —
-`RONIN_CATALOGS_DIR` points the lookup somewhere else, which is how the resolver is
-tested.
+In code, ask for the folder: `storeDir('custom')` in TypeScript (each kind's folder is its own
+store: `storeDir('behaviours')` is `~/ronin/custom/behaviours/`), `$(ronin-store custom)` in
+bash. Every store also takes a `RONIN_<ID>_DIR` override, derived mechanically —
+`RONIN_CUSTOM_DIR` points the lookup somewhere else, which is how the resolver is tested.
 
 ## How you test a shadow
 
@@ -76,14 +80,14 @@ running operator only when the owner restarts (`docs/repo-to-operator.md`). Chan
 *mechanism* needs a restart; using it does not.
 
 The Behaviours editor uses the brief's rule through a typed server authority. Save on
-a stock behaviour creates the file of the same id in the user's `behaviours` store;
+a stock behaviour creates the file of the same id in `~/ronin/custom/behaviours/`;
 Save on the user's own behaviour updates only that file; Save As is create-only and cannot replace a
 stock or owner identity. The browser never receives or constructs an owner-store path.
 
 ## What an upgrade can and cannot touch
 
-- **Can:** everything in `ronin_catalogs/`. Assume it is replaced.
-- **Cannot:** anything in the catalogs store. That is the promise, and it is why a
+- **Can:** everything in `ronin_stock/`. Assume it is replaced.
+- **Cannot:** anything in `~/ronin/custom/` or `~/ronin/office/`. That is the promise, and it is why a
   customisation belongs there and never in an edited shipped file.
 - **A stock entry you shadowed stays shadowed** — an upgrade improving that entry does not
   reach you, by design. That is the trade for owning it, and the `origin` mark is how a

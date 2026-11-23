@@ -24,7 +24,7 @@ import { holdsLists, itemRemoved, itemWritten, liveRows, type ItemRow } from './
 import { existsSync, statSync } from 'node:fs';
 import { mkdir, readFile, readdir, rename, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import { storeDir } from './resources.js';
+import { STOCK_DIR, storeDir } from './resources.js';
 import { sessionKey } from './session-dir.js';
 import { enqueueMessage } from './message-queue.js';
 import { listTeamRosters, readTeamRoster, writeTeamRoster } from './team-rosters.js';
@@ -33,7 +33,7 @@ import { AsyncLocalStorage } from 'node:async_hooks';
 import { initialCampaignId } from './campaign-scope.js';
 import { listSessions } from './tmux.js';
 import { emitItemChanged } from './sockets.js';
-import { listWorkspaceHolds, readWorkspace, readWorkspaceHolds, writeWorkspaceHolds } from './workspaces.js';
+import { listWorkspaceHolds, readWorkspace, readWorkspaceHolds, removeWorkspaceHolds, writeWorkspaceHolds } from './workspaces.js';
 
 export const ITEM_LEVELS = [1, 0, -1] as const;
 export const TRAIL_OPS = ['create', 'assign', 'handoff', 'release', 'move', 'status', 'edit', 'comment', 'flag', 'attach', 'link', 'holder-ended', 'rename', 'delete'] as const;
@@ -153,7 +153,7 @@ export interface WorkItem {
   created: { at: string; by: string };
   /** The last hand-in: the Agent that handed it in, and when. Send back returns it there. */
   handed_in?: { by: string; at: string };
-  /** THE HAND-IN SIGNAL (docs/using-ronin/project-management.md, Three signals): every accepted hand-in, oldest first, even
+  /** THE HAND-IN SIGNAL (docs/using-ronin/running-work-items.md, Three signals): every accepted hand-in, oldest first, even
    * one never promoted; `receipt` null for a checkout's (no desk, no code to promote). */
   hand_ins?: HandIn[];
   /** THE PROMOTION SIGNAL (6a): the last promotion that carried a hand-in of this item to dev.
@@ -177,7 +177,7 @@ export function handInStage(item: Pick<WorkItem, 'hand_ins' | 'on_dev'>): 'lead'
   return item.on_dev && item.on_dev.at >= last.at ? 'ready' : 'lead';
 }
 
-/* THE NOTES A USER READS (docs/using-ronin/project-management.md, How an item lives): three
+/* THE NOTES A USER READS (docs/using-ronin/running-work-items.md, How an item lives): three
  * comments headed by their words, so Jira shows them as Ronin does. "Handed in: <note>" is what
  * the owner should look at, in one short line, written at a hand-in (--note; no commit ids, no
  * receipts: those stay on the trail; reviewPrompt asks for it when missing or long). "Handover from <agent>: <note>" is where an item stands
@@ -244,7 +244,41 @@ const byId = (a: WorkItem, b: WorkItem): number => {
 };
 
 const dir = () => storeDir('work_items');
-const fileOf = (id: string) => path.join(dir(), `${id}.json`);
+
+/* PLAYBOOKS (ronin_stock/playbooks/playbooks_readme.md) are work items, stored as live ones are: one
+ * <id>.json each, the id PLAYBOOK-n, status Playbook, a child's parent its PLAYBOOK-n parent.
+ * Stock-foundations are in ronin_stock/playbooks/, custom-foundations in ~/ronin/custom/playbooks/,
+ * which replace stock by id, whole. This reader reads them; every write goes to the custom
+ * folder; no holder, list or index has them. PLAYBOOK and PLAYBOOK_STATUS are the code's only
+ * spellings of the word. */
+export const PLAYBOOK = 'PLAYBOOK';
+export const PLAYBOOK_STATUS = 'Playbook';
+export const isPlaybook = (id: string): boolean => id.startsWith(`${PLAYBOOK}-`);
+const stockPlaybooksDir = () => path.join(STOCK_DIR, 'playbooks');
+
+/** Where an item is written: the live store, or the custom playbooks folder. */
+const fileOf = (id: string) => path.join(isPlaybook(id) ? storeDir('playbooks') : dir(), `${id}.json`);
+/** Where it is read: the same, but a playbook with no custom-foundation reads the stock one. */
+const readFrom = (id: string): string => {
+  const own = fileOf(id);
+  return isPlaybook(id) && !existsSync(own) ? path.join(stockPlaybooksDir(), `${id}.json`) : own;
+};
+
+/** Every playbook item, custom over stock by id, in number order. */
+export async function listPlaybooks(): Promise<WorkItem[]> {
+  const ids = new Set<string>();
+  for (const at of [stockPlaybooksDir(), storeDir('playbooks')]) {
+    for (const name of await readdir(at).catch(() => [] as string[])) if (name.endsWith('.json') && isPlaybook(name)) ids.add(name.slice(0, -5));
+  }
+  const items = await Promise.all([...ids].map(async (id) => JSON.parse(await readFile(readFrom(id), 'utf8')) as WorkItem));
+  return items.sort(byId);
+}
+
+/** The next free PLAYBOOK-n, over stock and custom. */
+async function nextPlaybookId(): Promise<string> {
+  const top = Math.max(0, ...(await listPlaybooks()).map((item) => Number(item.id.slice(PLAYBOOK.length + 1))));
+  return `${PLAYBOOK}-${top + 1}`;
+}
 
 let tail: Promise<unknown> = Promise.resolve();
 /** The issuer lock. Every item and holder write runs inside it, one at a time. */
@@ -258,12 +292,12 @@ let written = 0;
 async function save(item: WorkItem): Promise<void> {
   // Leaving Done (a Send back, a Jira reopen, any transition) brings an archived item back.
   if (item.archived && item.status !== DONE) delete item.archived;
-  await mkdir(dir(), { recursive: true });
   const target = fileOf(item.id);
+  await mkdir(path.dirname(target), { recursive: true });
   const tmp = `${target}.tmp-${process.pid}-${++written}`;
   await writeFile(tmp, `${JSON.stringify(item, null, 2)}\n`, 'utf8');
   await rename(tmp, target);
-  itemWritten(item); // its live row, in the same step (work-items-index.ts)
+  if (!isPlaybook(item.id)) itemWritten(item); // its live row, in the same step (work-items-index.ts)
 }
 
 /** EVERY ID AN ITEM HAS HAD still finds it (docs/using-ronin/work-items.md): a w id renamed to
@@ -288,7 +322,7 @@ async function aliasOf(id: string): Promise<string | null> {
 export async function resolveId(id: string): Promise<string> {
   const given = String(id ?? '').trim();
   if (!isItemId(given)) throw new WorkItemMissing(`"${given}" is not a work item id; ids look like w12 or KAN-65.`);
-  if (existsSync(fileOf(given))) return given;
+  if (existsSync(readFrom(given))) return given;
   const now = await aliasOf(given);
   if (!now) throw new WorkItemMissing(`No work item ${given}.`);
   return now;
@@ -297,7 +331,7 @@ export async function resolveId(id: string): Promise<string> {
 async function load(id: string): Promise<WorkItem> {
   const at = await resolveId(id);
   try {
-    return JSON.parse(await readFile(fileOf(at), 'utf8')) as WorkItem;
+    return JSON.parse(await readFile(readFrom(at), 'utf8')) as WorkItem;
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === 'ENOENT') throw new WorkItemMissing(`No work item ${id}.`);
     throw error;
@@ -358,7 +392,7 @@ export async function appendTrail(id: string, by: string, change: (item: WorkIte
   return notified.length ? { ...answer(item, line), notified } : answer(item, line);
 }
 
-/* NOTICES (docs/using-ronin/project-management.md, Who is told what): a notice tells someone something they must act on,
+/* NOTICES (docs/using-ronin/running-work-items.md, Who is told what): a notice tells someone something they must act on,
  * and there are six, sent from here and nowhere else in the store:
  *   1. a hand-in, to the lead of the hander's Team: a desk's own message (desks/lead.ts)
  *      is the notice, so only a checkout's is sent here (handInUnlocked);
@@ -442,8 +476,8 @@ async function noticesOf(item: WorkItem, line: TrailLine): Promise<string[]> {
   return [];
 }
 
-/** Notice 4, an item handed to an Agent by someone else. */
-const handedNotice = (item: WorkItem, giver: string): string => `${item.id} '${item.title}' is yours, from ${giver}. Read it and follow its objective.`;
+/** Notice 4, an item handed to an Agent by someone else; a playbook checkout to another Agent says it too (playbooks.ts). */
+export const handedNotice =(item: WorkItem, giver: string): string => `${item.id} '${item.title}' is yours, from ${giver}. Read it and follow its objective.`;
 
 /** Notice 6 to one Agent: what it still holds open, or, with nothing, its end. */
 async function doneNotice(item: WorkItem, name: string, by: string): Promise<string> {
@@ -518,6 +552,9 @@ export interface NewItem {
   attachments?: string[];
   /** Born paired, so its create line and unheld message already name the Jira key. */
   jira?: JiraPair;
+  /** A playbook item: the next PLAYBOOK-n, status Playbook, held by nobody, in the custom folder.
+   * An item made under a playbook item is one too. */
+  playbook?: boolean;
 }
 
 /** One below the parent, 0 with none (Jira's hierarchy). A default, never a guard. */
@@ -592,22 +629,23 @@ export async function createItemUnlocked(input: NewItem, by: string): Promise<Ac
   const title = String(input.title ?? '').trim();
   if (!title) throw new WorkItemBadInput('A work item needs a title.');
   const parent = input.parent ? await load(input.parent) : null;
-  const agent = input.jira ? undefined : (await listSessions()).find((session) => session.name === by);
+  const playbook = Boolean(input.playbook || (parent && isPlaybook(parent.id)));
+  const agent = input.jira || playbook ? undefined : (await listSessions()).find((session) => session.name === by);
   if (agent && !input.holder && agent.leads.length > 1) throw new WorkItemRefused(`You lead ${agent.leads.join(', ')}; name one with --team <team>.`);
   // From Jira with nobody named: the Team holding its parent (owner, 2026-11-06; KAN-308), or the
   // Workspace holding it (an idea parked from Jira under the Icebox; KAN-352).
   const parentTeam = input.jira && !input.holder && parent ? (await holdersOf(parent.id)).find((one) => one.kind === 'team' || one.kind === 'workspace') : undefined;
   const holder: Holder | undefined = input.holder ?? parentTeam ?? (agent ? (agent.leads.length ? { kind: 'team', name: agent.leads[0]! } : { kind: 'agent', name: by }) : undefined);
-  const campaign_id = input.campaign_id ?? agent?.campaign_id ?? await initialCampaignId();
+  const campaign_id = playbook ? '' : input.campaign_id ?? agent?.campaign_id ?? await initialCampaignId();
   const names = spaceNames(campaign_id);
   const named = input.kind?.trim();
   const item: WorkItem = {
     ...blank(title, by),
-    id: input.jira?.key ?? await nextId(),
+    id: input.jira?.key ?? (playbook ? await nextPlaybookId() : await nextId()),
     campaign_id,
     objective: String(input.objective ?? '').trim(),
     level: named ? levelOfKind(names, named) : levelUnder(parent),
-    status: oneOf('status', input.status?.trim() || names.statuses[0]!, names.statuses),
+    status: playbook ? PLAYBOOK_STATUS : oneOf('status', input.status?.trim() || names.statuses[0]!, names.statuses),
     priority: oneOf('priority', input.priority?.trim() || names.priority, names.priorities),
     parent: parent?.id ?? null,
     attachments: input.attachments ?? [],
@@ -760,7 +798,7 @@ async function teamFor(item: WorkItem, mine: string[]): Promise<string | null> {
   return null;
 }
 
-/** THE HAND-IN (docs/using-ronin/project-management.md, How an item lives): the item moves to In
+/** THE HAND-IN (docs/using-ronin/running-work-items.md, How an item lives): the item moves to In
  * Review and records who handed it in (hand_ins, handed_in, the Handed in note), in one trail
  * line. Handing in code doesn't hand in the item (owner, 2026-11-05; KAN-269): the Agent keeps
  * the hold, no Team goes on. A desk's hand-in is told by the desk's own message (desks/lead.ts);
@@ -836,7 +874,7 @@ export function sendBack(given: string, words: string | undefined, by: string): 
   });
 }
 
-/** What session_end stops for (docs/using-ronin/project-management.md, How an item lives): the
+/** What session_end stops for (docs/using-ronin/running-work-items.md, How an item lives): the
  * items an Agent holds To Do, In Progress or In Review, each with the Team a handover gives it
  * to (null when no Team is found). session_end first settles To Do (settleToDo), so what it
  * names is what needs a handover. */
@@ -886,7 +924,7 @@ export function settleToDo(session: string): Promise<Acknowledged[]> {
   });
 }
 
-/** THE HANDOVER (docs/using-ronin/project-management.md, How an item lives): an ending Agent
+/** THE HANDOVER (docs/using-ronin/running-work-items.md, How an item lives): an ending Agent
  * hands an item on with where it stands and what is next. The note is a comment headed
  * "Handover from <agent>", the caller comes off and the receiver goes on, the status stays,
  * in one handoff line; `toDo` puts In Progress back to To Do in the same line. `flag` is the
@@ -1033,7 +1071,7 @@ export async function linkItem(id: string, type: string, other: string, by: stri
   });
 }
 
-/** Jira's delete (docs/using-ronin/project-management.md, Jira). The item goes, and with it
+/** Jira's delete (docs/using-ronin/running-work-items.md, Jira). The item goes, and with it
  * its subtasks (as Jira deletes an issue's subtasks); any other child is left with no parent (as
  * an epic's children are). Links to it go and every holder lets go of it. No flag: the bridge
  * decides what Jira does (an item made in Ronin goes there too; one that came from Jira stays
@@ -1042,44 +1080,49 @@ export async function linkItem(id: string, type: string, other: string, by: stri
  * was, and a line { op: 'delete', by: the deleter, from: the named id on a subtask taken with
  * it }. */
 export function deleteItem(given: string, by: string): Promise<{ deleted: string[]; orphaned: string[] }> {
-  return withIssuer(async () => {
-    const id = (await load(given)).id;
-    const all = await listItems();
-    const deleted: string[] = [];
-    const collect = (at: string): void => {
-      deleted.push(at);
-      for (const child of all.filter((other) => other.parent === at && other.level === -1 && !deleted.includes(other.id))) collect(child.id);
-    };
-    collect(id);
-    const orphaned: string[] = [];
-    for (const other of all.filter((item) => !deleted.includes(item.id))) {
-      const orphan = other.parent !== null && deleted.includes(other.parent);
-      const links = other.links.filter((link) => !deleted.includes(link.to));
-      if (!orphan && links.length === other.links.length) continue;
-      const lines: TrailLine[] = [];
-      if (orphan) {
-        lines.push(lineOf(by, 'move', { from: other.parent!, to: 'none', note: `level ${other.level}; ${other.parent} was deleted` }));
-        other.parent = null;
-        orphaned.push(other.id);
-      }
-      if (links.length !== other.links.length) lines.push(lineOf(by, 'link', { note: 'links to deleted items removed' }));
-      other.links = links;
-      other.trail.push(...lines);
-      await save(other);
-      for (const line of lines) emitItemChanged({ item: other, line });
+  return withIssuer(() => deleteUnlocked(given, by));
+}
+
+async function deleteUnlocked(given: string, by: string): Promise<{ deleted: string[]; orphaned: string[] }> {
+  const id = (await load(given)).id;
+  // A playbook item's delete is Delete my version: the custom-foundation goes, and the stock
+  // one, if there is one, reads again. Nothing else moves.
+  if (isPlaybook(id)) { await rm(fileOf(id), { force: true }); return { deleted: [id], orphaned: [] }; }
+  const all = await listItems();
+  const deleted: string[] = [];
+  const collect = (at: string): void => {
+    deleted.push(at);
+    for (const child of all.filter((other) => other.parent === at && other.level === -1 && !deleted.includes(other.id))) collect(child.id);
+  };
+  collect(id);
+  const orphaned: string[] = [];
+  for (const other of all.filter((item) => !deleted.includes(item.id))) {
+    const orphan = other.parent !== null && deleted.includes(other.parent);
+    const links = other.links.filter((link) => !deleted.includes(link.to));
+    if (!orphan && links.length === other.links.length) continue;
+    const lines: TrailLine[] = [];
+    if (orphan) {
+      lines.push(lineOf(by, 'move', { from: other.parent!, to: 'none', note: `level ${other.level}; ${other.parent} was deleted` }));
+      other.parent = null;
+      orphaned.push(other.id);
     }
-    for (const at of deleted) {
-      const item = all.find((one) => one.id === at)!;
-      emitItemChanged({ item, line: lineOf(by, 'delete', { from: at === id ? undefined : id }) });
-    }
-    for (const at of deleted) {
-      await takeOffEveryList(at);
-      await rm(fileOf(at));
-      itemRemoved(at);
-    }
-    await rewriteWatches((watches) => watches.filter((watched) => !deleted.includes(watched)));
-    return { deleted, orphaned };
-  });
+    if (links.length !== other.links.length) lines.push(lineOf(by, 'link', { note: 'links to deleted items removed' }));
+    other.links = links;
+    other.trail.push(...lines);
+    await save(other);
+    for (const line of lines) emitItemChanged({ item: other, line });
+  }
+  for (const at of deleted) {
+    const item = all.find((one) => one.id === at)!;
+    emitItemChanged({ item, line: lineOf(by, 'delete', { from: at === id ? undefined : id }) });
+  }
+  for (const at of deleted) {
+    await takeOffEveryList(at);
+    await rm(fileOf(at));
+    itemRemoved(at);
+  }
+  await rewriteWatches((watches) => watches.filter((watched) => !deleted.includes(watched)));
+  return { deleted, orphaned };
 }
 
 /** Keystone 3: a paired item's Ronin id is its Jira key. One call rewrites the item's file and
@@ -1311,7 +1354,7 @@ export function didLine({ item, line }: Acknowledged): string {
 }
 
 /** AN ENDING WITH NO AGENT TO ASK (Shut down Agent, archive, a crash; docs/using-ronin/
- * project-management.md, How an item lives): the Agent watches nothing, and each item it held
+ * running-work-items.md, How an item lives): the Agent watches nothing, and each item it held
  * goes by its status, never to nobody while a Team is found. Done goes to nobody; To Do goes to
  * the Team for its lead to give out again; anything else (In Progress, In Review) goes to the
  * Team flagged, its comment "Flagged: Ended without handover: <agent>, <status>". The flags are
@@ -1501,6 +1544,22 @@ async function iceboxUnlocked(campaign: string, workspace: string): Promise<Work
 
 /** The Workspace's Icebox, made now if it has none (or its epic was deleted). */
 export const ensureIcebox = (campaign: string, workspace: string): Promise<WorkItem> => withIssuer(() => iceboxUnlocked(campaign, workspace));
+
+/** Deleting a Workspace deletes its Icebox (KAN-786): every idea under the epic, the epic, then
+ * the holds file. Each goes through Jira's delete, so the bridge hears of it. */
+export function deleteIcebox(campaign: string, workspace: string, by: string): Promise<string[]> {
+  return withIssuer(async () => {
+    const { icebox } = await readWorkspaceHolds(campaign, workspace);
+    const epic = icebox ? await readItem(icebox) : null;
+    const gone: string[] = [];
+    if (epic) {
+      for (const idea of (await listItems()).filter((one) => one.parent === epic.id)) gone.push(...(await deleteUnlocked(idea.id, by)).deleted);
+      gone.push(...(await deleteUnlocked(epic.id, by)).deleted);
+    }
+    await removeWorkspaceHolds(campaign, workspace);
+    return gone;
+  });
+}
 
 /** Every Icebox epic's id now, in every Campaign. */
 export async function iceboxIds(): Promise<Set<string>> {

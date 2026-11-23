@@ -6,7 +6,7 @@ import { mountHermesSurface } from './hermes-surface.js';
  * registered by both workbenches. Its first face is an inventory of equal stones on the
  * shared stone work surface — one per CLI the registry knows, each wearing its short
  * measured state, then any catalog provider no registry CLI serves — mounted straight on
- * the surface content so the stone seat owns every inset exactly as Presets does. The
+ * the surface content so the stone seat owns every inset. The
  * footer keeps the catalog research date and this machine's measurement date available
  * behind a short disclosure.
  *
@@ -136,11 +136,11 @@ export function createProviderSurface(context) {
   });
   context.environment?.onProviderSurface?.(controller);
   const refresh = createRefreshAll(drawing);
-  const zone = context.environment?.answerSetupStep ? createSetupZone() : null;
-  /** Step 1 states one machine fact: whether any provider on this machine is signed in. */
+  const zone = context.environment?.setupZones ? createSetupZone() : null;
+  /** Step 1 states one fact: whether any provider is Activated (integrations_authentications, KAN-768). */
   const paintZone = (activated) => {
     if (!zone) return;
-    // Answered is the checkmark's own condition, so the zone and the card cannot disagree.
+    // Ticked is the mark's own condition, so the zone and the card cannot disagree.
     if (setupStep(context.environment, 'provider')?.answered) { zone.paint(); return; }
     zone.paint(activated > 0
       ? { state: 'Provider signed in and authenticated.', picks: [] }
@@ -356,7 +356,7 @@ export function createProviderDrawing(context, { repaint, say = () => {} }) {
         authenticationDrafts.delete(provider.id);
         mounted?.park?.();
         await paint();
-        context.environment?.onProviderChoice?.(method === 'not_signed_in' ? 'not_now' : 'acted');
+        context.environment?.onProviderChoice?.();
       };
       const submit = action(t('setup_surface.done', 'Done'), 'primary', () => saveAuthentication(path));
       submit.dataset.endsEdit = '';
@@ -628,7 +628,7 @@ export function createProviderDrawing(context, { repaint, say = () => {} }) {
     runtime = recordRuntime();
     await paintFrom();
   };
-  /** Refresh all is the owner's press; a plain repaint reads the record. Setup scans live above both. */
+  /** Refresh all is the owner's press; a plain repaint reads the record. */
   const measure = async (refresh = false) => {
     const result = refresh ? await request('/api/setup/providers/refresh', { method: 'POST', json: {} }) : await request('/api/setup/runtime', { cache: 'no-store' });
     if (!result.ok) { say(result.message, true); return false; }

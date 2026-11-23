@@ -24,11 +24,15 @@ becomes its level in full density, a level becomes its selected stone in compact
 the stone open at that level returns with it. Consumers never restyle the rest geometry.
 
 **The phalanx** (owner ruling, 2026-10-03). `phalanx.js` is the stone work
-surface as it was, its geometry untouched: Settings (Presets, Workspaces, Model
+surface as it was, its geometry untouched: Settings (Workspaces, Model
 Providers, Setup) and the Agent workbench's Work Items draw with it. Escape lifts only the layer it
 is pressed in (2026-10-08).
 
-Ronin has no board (owner, 2026-10-23): a board is Jira's or Trello's. Work Items
+An Epic has no page of its own (owner, 2026-11-23): the Epics phalanx's pressed stone shows the
+Team's Epics board without its strip of Epic stones, its one Launch opening the Team working it
+(the holding Agent or the lead in tilespace 1, the Epic in tilespace 2). One Workspace has its own page too, `#/workspace/<name>` (owner,
+2026-11-22; KAN-784): Work (its Teams or Epics) or Config (its record), the same surface a pressed
+Workspace stone opens beside the stones. Work Items
 (`work-items`) stays on the Agent's workbench, filtered to the work items held by that
 Agent. **The Team page** (owner, 2026-10-18) is the old Team workbench opening on the
 lead's tile in workspace 1 with workspace 2 blank; its selector holds Commons, the Agents,
@@ -48,9 +52,9 @@ links and history. It is a reading: changes go through the `item` tool. The ston
 no action callback, so the normal selection, rail, detail, Escape and focus-return
 behavior applies; dragging a stone onto a tile hands the Agent the item's reference.
 
-## Library, profile, tenant, instance
+## Surfaces, profile, tenant, instance
 
-`public/js/workbench.js` owns the shared library and frame.
+`public/js/workbench.js` owns the shared surface registry (`surfaces`) and frame.
 `public/js/workbench-catalog.js` is the canonical registration and profile catalog for
 Ronin Settings, New Project, Cowork, Team, Agent, and Home's Models and Workspaces
 doors. Destination modules provide tenant
@@ -71,9 +75,9 @@ elements or primitives exposing `.el`; the ViewHost alone places them. Standard 
 remain capability flags (`shape`, `ram`, `services`, and `feedback`), so a Workbench turns
 one off in its declaration rather than hiding it with local CSS or querying header DOM.
 
-- A **library definition** gives one stable type a header kind, discovery reading, and
+- A **surface definition** gives one stable type a header kind, discovery reading, and
   `create(context)` factory.
-- A **profile** lists the library types one destination may place.
+- A **profile** lists the surface types one destination may place.
 - A **tenant** supplies scope such as a Teams collection or Team. It filters and
   parameterizes definitions; it does not create another Workbench implementation.
 - An **instance** belongs to one workspace and optional resource key. The same type in
@@ -182,7 +186,7 @@ one read of the pinned folders per bench (`createRootsReading`, the detail route
 KAN-187) seats its own stones of Epics the same way (`epics-surface.js`, `epics.records`): the level-1 work items of
 the Campaign — the store's pushed `epics` and `epicItems`, no request (KAN-190, KAN-206). Since w334 (owner,
 2026-11-06) Tilespace 1 is the Epics board (`createEpicBoard`), borrowed from the phalanx but its own: a row of Epic
-stones across the top (title, Jira key or Ronin only, open count); a pressed one is selected and its items come below
+stones across the top (title, its Jira key when it has one, open count); a pressed one is selected and its items come below
 under three ERABI questions (ask.js), Assigned (Yes / No), Flagged (Yes / No; w409) and Status (the open ones on arrival), as the item island's
 bars (`tile-island.js` `itemBar`) grouped by status in workflow order, a Subtask under its Task. The push carries what
 a bar says (`epicsPush`: the objective and last comment cut short, comment count, last move, last hand-in). A bar
@@ -309,8 +313,7 @@ independently.
 | Installations | Desk record, installation catalog, and installed facts |
 | Password | authentication state owned by the shared Password surface |
 | Bounty Program | registration/GitHub facts and the explicit preference it writes |
-| Launch your own | no launch data until Agent, Team, or Preset is selected; that embedded form then owns its reads |
-| Presets | preset catalog plus provider/root choices required by the selected preset |
+| Launch your own | no launch data until Agent or Team is selected; that embedded form then owns its reads |
 
 ### Cowork and Team (`cowork` and `team` profiles)
 
@@ -329,7 +332,7 @@ independent and must not hold the frame.
 | Cron jobs | scheduled messages for the addressed Team or collection scope |
 | New Agent / New Team | canonical launch form and its dependencies listed above |
 | Archived sessions | archive manifests when shown |
-| Presets / Document / Feedback | the shared surface's own reads |
+| Document / Feedback | the shared surface's own reads |
 
 ### Models (`models` profile)
 

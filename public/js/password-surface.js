@@ -3,7 +3,7 @@ import { WorkspaceKit } from './workspace-kit.js';
 import { ask } from './ask.js';
 import { request } from './request.js';
 import { t } from './lexicon.js';
-import { createSetupZoneSlot, setupStep, watchSetupProgress } from './setup-zone.js';
+import { createSetupZoneSlot, watchSetupProgress } from './setup-zone.js';
 
 export const PASSWORD_SURFACE_TYPE = 'machine.password';
 
@@ -68,20 +68,24 @@ export function createPasswordSurface(context = {}) {
   );
   access.append(selectorHost, changeRow.el, note.el, reach, basic);
   /**
-   * Step 5's header zone. Tailscale is a fact about this machine, read from the Setup scan
-   * (progress.facts.tailscale). It is three-valued on purpose: absent means the scan has not
-   * said yet, which is not the same as saying Tailscale is missing, so the zone declines to
-   * claim either until it knows.
+   * Step 5's header zone. Tailscale is a fact about this machine (the machine fact's Tailscale
+   * line, progress.tailscale: its address, '' when not on it). The step is ticked when a password
+   * is set or the owner's "Tailscale only, no password" setting is on (machine settings'
+   * machine.no_password, PUT /api/password/none; KAN-768): a real setting, not a Setup record.
    */
-  const zone = context.environment?.answerSetupStep ? createSetupZoneSlot() : null;
+  const zone = context.environment?.setupZones ? createSetupZoneSlot() : null;
   // Two different acts, and each is only ever offered in the state where it makes sense:
   // settling for no password when there is none, and removing one when there is.
-  const chooseNoPassword = () => void context.environment?.answerSetupStep?.('password', 'not_now');
+  const chooseNoPassword = async () => {
+    const result = await request('/api/password/none', { method: 'PUT', json: { on: true } });
+    if (!result.ok) { say(result.message, true); return; }
+    context.environment?.onPasswordChoice?.();
+  };
   const paintZone = () => {
     if (!zone) return;
     const progress = context.environment?.setupProgress?.();
-    const onTailscale = progress?.facts?.tailscale === true;
-    const noPasswordChosen = setupStep(context.environment, 'password')?.answer === 'not_now';
+    const onTailscale = Boolean(progress?.tailscale);
+    const noPasswordChosen = progress?.no_password === true;
     // STEP 5 NEVER EMPTIES either, and both of its picks keep working: how you reach this
     // machine is a standing arrangement, not a one-time answer, so the owner can come back
     // and change it whenever (owner, 2026-09-21). 'Tailscale only' therefore has to MEAN it —
@@ -90,7 +94,7 @@ export function createPasswordSurface(context = {}) {
     zone.paint({
       state: saved ? 'Password set.'
         : onTailscale ? 'Tailscale available. Add a password as well?'
-        : progress?.facts?.tailscale === false ? 'Tailscale not available on this machine.'
+        : progress?.steps?.length ? 'Tailscale not available on this machine.'
         : 'Checking how you reach this machine\u2026',
       // Without Tailscale, 'Tailscale only' is not an arrangement this machine can be in, so it is
       // shown and not selectable rather than quietly offered — and 'None' takes its place as
@@ -99,7 +103,7 @@ export function createPasswordSurface(context = {}) {
       // A MARK MEANS THE PERSON CHOSE IT, never that the machine happens to be that way.
       // Tailscale and no password is the state every machine starts in, so marking 'Tailscale
       // only' on arrival claimed a decision nobody had made, and the step is not complete
-      // until they make it. Nothing is pre-marked; a mark appears once they have answered.
+      // until they make it. A mark is the setting: on once they choose it.
       //
       // With a password already on, none of that is the question any more — the one thing
       // left to offer is taking it off again (owner, 2026-09-21).
@@ -228,7 +232,7 @@ function passwordSurfaceDefinition() {
 }
 
 export function registerPasswordSurface() {
-  const library = WorkspaceKit.workbench.library;
-  if (!library.has(PASSWORD_SURFACE_TYPE)) library.register(passwordSurfaceDefinition());
+  const surfaces = WorkspaceKit.workbench.surfaces;
+  if (!surfaces.has(PASSWORD_SURFACE_TYPE)) surfaces.register(passwordSurfaceDefinition());
   return PASSWORD_SURFACE_TYPE;
 }

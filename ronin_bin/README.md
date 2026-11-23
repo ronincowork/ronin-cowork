@@ -1,14 +1,14 @@
 # ronin_bin — the agent-facing tools
 
 **Everything an agent types, and nothing else.** Every Agent receives this whole directory
-on PATH at birth. Each tool's file in `ronin_catalogs/tools/` says what the brief tells about
+on PATH at birth. Each tool's file in `ronin_stock/tools/` says what the brief tells about
 it, and to whom; nothing here is taken off an Agent's PATH.
 
 Use the wipeboard for team-wide messages and `edges send` for one session, with no board in between.
 
 **This folder is defined by its audience.** Anything an agent types by bare name belongs
 here — the letter tools included, which is why they moved out of `bin/` on 2026-08-14. Each
-has its file in `ronin_catalogs/tools/`.
+has its file in `ronin_stock/tools/`.
 
 **Where the rest lives**, by who runs it: **`bin/`** — the owner's own commands
 (`ronin-byoin`, `ronin-doctor`, `ronin-deploy`, `ronin-store`, `ronin-uninstall`,
@@ -18,8 +18,8 @@ and typed by nobody (`ronin-gate` from ExecStartPost, `rireki/` the tmux applet,
 **`scripts/`** — the repo's own tooling, run by npm and by BYOIN. `bin/shim/` stays
 where it is: it is PATH interception, so you type `tmux` and the guard answers.
 
-One folder per audience: **ronin_catalogs** (facts, behaviours, tools) · **ronin_library** (the
-reading) · **ronin_bin** (what you run).
+One folder per audience: **ronin_stock** (the foundations an Agent is built from) ·
+**ronin_bin** (what you run).
 
 ## Command help
 
@@ -44,8 +44,8 @@ Ronin answers.
 
 ## Adding a tool
 
-Entry point for the whole system: `ronin_catalogs/README.md`. A tool is one executable
-operation with its file in `ronin_catalogs/tools/` (the header: `ronin_catalogs/tools/README.md`).
+Entry point for the whole system: `ronin_stock/stock_readme.md`. A tool is one executable
+operation with its file in `ronin_stock/tools/` (the header: `ronin_stock/tools/tools_readme.md`).
 
 1. Add the executable and its tools file, as you add its docs. Both or it did not ship.
 2. Tools report relevant session state and proceed.

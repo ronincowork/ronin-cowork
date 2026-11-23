@@ -12,7 +12,6 @@
     "stage": "node scripts/stage.mjs",
     "check:modules": "node scripts/check-modules.mjs",
     "preloads": "node scripts/generate-modulepreloads.mjs",
-    "check:tests": "node scripts/check-tests.mjs",
     "byoin": "tsx scripts/byoin-user-check.ts",
     "verify": "tsc --noEmit && node scripts/check-tests.mjs",
     "verify:staging": "node scripts/smoke-ui.mjs --staging",

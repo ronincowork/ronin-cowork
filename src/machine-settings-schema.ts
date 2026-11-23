@@ -172,15 +172,6 @@ export const MACHINE_SETTINGS_SCHEMA = {
     tools: ['gh', 'tailscale', 'chromium'],
   },
 
-  requires: [] as Array<{
-    leaf: string;
-    applies: { kind: string; path?: string; name?: string };
-    met: { kind: string; path?: string; name?: string };
-    needs: string;
-    how: string;
-    met_by: 'mechanical' | 'owner' | 'agent';
-  }>,
-
   seat: {
     behaviours: ['ways:setup'],
     name: 'setup',

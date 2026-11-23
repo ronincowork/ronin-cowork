@@ -8,7 +8,7 @@
  * An install is not a switch. Installed is the gate (owner, 2026-09-19): Ronin Services
  * cannot be installed without a registration, so no surface asks a second question about
  * whether this box is entitled. This route says both, and the Routines page (installs and
- * switches together, owner 2026-09-03), the Templates card and the library door read it.
+ * switches together, owner 2026-09-03) reads it.
  */
 import type express from 'express';
 import { homedir } from 'node:os';

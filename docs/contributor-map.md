@@ -37,7 +37,6 @@ The brief uses these facts to resolve what one Agent is told.
 - Code: [campaign-scope.ts](../src/campaign-scope.ts),
   [instruction-cascade.ts](../src/instruction-cascade.ts), [resources.ts](../src/resources.ts),
   [agent-defaults.ts](../src/agent-defaults.ts).
-- Tests: [agents.test.ts](../tests/agents.test.ts), [stores.test.ts](../tests/stores.test.ts).
 
 ## User interface
 
@@ -52,8 +51,7 @@ writer of server truth. Desktop and phone share feature modules but have separat
   [state.js](../public/js/state.js), and [store.js](../public/js/store.js) — the one `/events`
   socket and the resources the server pushes on it; a surface subscribes rather than polls
   ([the data path](architecture/data-path.md)). Entries: [main.js](../public/js/main.js), [phone.js](../public/js/phone.js).
-- Tests: [terminal.test.ts](../tests/terminal.test.ts) for the tile's socket; the rendered page
-  is `npm run smoke:ui`. A server test alone does not verify UI.
+- The rendered page is checked by `npm run smoke:ui`.
 
 ## Runtime and state
 
@@ -65,8 +63,6 @@ Separate live runtime facts, durable authorities, and projections. Start with th
 - Code: [tmux-client.ts](../src/tmux-client.ts), [spawn-broker.ts](../src/spawn-broker.ts),
   [session-archive.ts](../src/session-archive.ts), [machine-settings.ts](../src/machine-settings.ts),
   [worktree lifecycle](../src/desks/lifecycle-ledger.ts).
-- Tests: [agents.test.ts](../tests/agents.test.ts), [stores.test.ts](../tests/stores.test.ts),
-  [promotion.test.ts](../tests/promotion.test.ts).
 
 ## Services and connections
 
@@ -93,28 +89,27 @@ One Agent is told facts, behaviours and tools at a depth, from its work record. 
 provides the input rules; this surface owns the resulting brief and birth receipt.
 
 - Contract: [The brief](architecture/brief.md).
-- Inputs: [facts](../ronin_catalogs/facts/README.md), [behaviours](../ronin_catalogs/behaviours/README.md),
-  [tools](../ronin_catalogs/tools/README.md), [templates](../ronin_catalogs/templates/README.md).
+- Inputs: the foundations in [ronin_stock](../ronin_stock/stock_readme.md): [facts](../ronin_stock/facts/facts_readme.md),
+  [behaviours](../ronin_stock/behaviours/behaviours_readme.md), [tools](../ronin_stock/tools/tools_readme.md),
+  [playbooks](../ronin_stock/playbooks/playbooks_readme.md).
 - Code: [launch.ts](../src/routes/launch.ts), [agent-defaults.ts](../src/agent-defaults.ts),
   [catalog.ts](../src/catalog.ts), [brief-record.ts](../src/brief-record.ts),
   [brief-settings.ts](../src/brief-settings.ts), [brief.ts](../src/brief.ts),
   [brief-build.ts](../src/brief-build.ts), [agent-configuration.ts](../src/agent-configuration.ts),
   [birth-brief.ts](../src/birth-brief.ts).
-- Tests: [agents.test.ts](../tests/agents.test.ts) (the brief an Agent is started with).
 
 ## Tools
 
-A tool owns executable authority; its file in `ronin_catalogs/tools/` says what the brief
+A tool owns executable authority; its file in `ronin_stock/tools/` says what the brief
 tells about it. Composite tools reuse guarded operations. UI and provider-native skills call or teach
 these contracts without creating another authority.
 
 - Contract: [The brief](architecture/brief.md#boundaries).
-- Inventory: [tool files](../ronin_catalogs/tools/), [executables](../ronin_bin/).
+- Inventory: [tool files](../ronin_stock/tools/), [executables](../ronin_bin/).
 - Follow the executable to its actual implementation: [worktree-desk](../ronin_bin/worktree-desk)
   uses [cli-api.ts](../src/routes/cli-api.ts) and [commands/desk.ts](../src/commands/desk.ts);
   [work-record](../ronin_bin/work-record) dispatches to [work-record-write](../libexec/work-record-write).
   Tools do not all share one transport.
-- Tests: [tools.test.ts](../tests/tools.test.ts).
 
 ## Work Record
 
@@ -137,7 +132,6 @@ its name or become another work-record store.
   wipeboards, schedules, desks, hand-in, and promotion. Work Items
   ([work-items-surface.js](../public/js/work-items-surface.js)) reads the work items a Team
   and its members hold.
-- Tests: [tools.test.ts](../tests/tools.test.ts), [stores.test.ts](../tests/stores.test.ts).
 
 ## Trace a visible behavior change
 
@@ -151,11 +145,9 @@ briefly when its absence would otherwise be ambiguous; a small change needs no l
 5. **Composition:** applicability, inherited inputs, and resulting values/teaching.
 6. **Tool:** executable authority and capability teaching.
 7. **Documentation:** owning contract, vocabulary, and affected user/Agent instructions.
-8. **Tests:** focused seam checks and any necessary cross-surface journey.
 
 Privacy, security, accessibility, failure recovery, and release apply across all seven.
-Resolve competing writers before extending a feature. Individual Agents use focused checks
-and report them at hand-in. The Team lead/release maintainer owns `npm run verify` for the
-combined integration or release candidate; a lead may request an earlier run when needed.
+Resolve competing writers before extending a feature. There are no tests: Agents build,
+typecheck (`npm run verify`) and hand in; the owner reviews the real surface on global dev.
 See [verification guidance](development/verification.md). For combined Services changes,
 also arrange `bin/verify --cowork /path/to/the/matching/ronin-cowork` from the Services desk.

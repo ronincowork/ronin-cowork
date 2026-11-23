@@ -20,8 +20,8 @@ One fact determines the result for each repository, its row on the Workspace rec
 
 | The row says | Result | The page the Agent is pointed at |
 |---|---|---|
-| Direct (`desks=none`) | a **checkout**: work on its current branch with ordinary Git; announce files; no hand-in | `ronin_catalogs/behaviours/conditional/checkout.md` |
-| Reviewed (`desks=managed`) | a **worktree root**: the Agent's managed branch and worktree, commit, hand-in, the lead's promotion | `ronin_catalogs/behaviours/working-at-a-desk.md` |
+| Direct (`desks=none`) | a **checkout**: work on its current branch with ordinary Git; announce files; no hand-in | `ronin_stock/behaviours/conditional/checkout.md` |
+| Reviewed (`desks=managed`) | a **worktree root**: the Agent's managed branch and worktree, commit, hand-in, the lead's promotion | `ronin_stock/behaviours/working-at-a-desk.md` |
 
 There is no Agent-side arrangement switch. The birth packet teaches both approaches and
 names each selected repository's arrangement; `worktree-desk open <repo>` names the route
@@ -150,8 +150,3 @@ worktrees are preserved to named recovery refs and receipts before cleanup.
 - Use focused checks in the private worktree. The lead owns the full `npm run verify` verdict
   at the combined integration/release gate; see [verification guidance](../development/verification.md).
 - Do not delete worktrees, branches, registry rows, receipts, or recovery state implicitly.
-
-## Executable coverage
-
-`tests/promotion.test.ts` walks a managed repository through desk open, commit, hand-in and
-promotion into `dev`, and a failed health check reverted.

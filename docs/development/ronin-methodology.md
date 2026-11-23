@@ -42,7 +42,7 @@ during implementation.
 
 Do not turn it into history. Remove completed items as they land, and do not preserve a
 "done" section. Git records what changed; the working document says only what remains.
-The exact document contract lives in `ronin_library/documents.md`.
+The exact document contract is the `documents` behaviour, `ronin_stock/behaviours/documents.md`.
 
 ### 3. Coordinate through shared edges
 

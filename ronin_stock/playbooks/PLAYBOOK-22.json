@@ -1,0 +1,21 @@
+{
+  "id": "PLAYBOOK-22",
+  "campaign_id": "",
+  "title": "Tell them: what was found, and where the map and summary are",
+  "objective": "Do: tell the person, in a few lines, what the project is and its main parts, and where the map and summary are.\nDetails: the Docs on your tile; `ronin-help work-record`.\nCheck: they have answered, or said it is fine.",
+  "level": 0,
+  "kind": "Task",
+  "status": "Playbook",
+  "flagged": false,
+  "priority": "",
+  "comments": [],
+  "parent": "PLAYBOOK-3",
+  "attachments": [],
+  "links": [],
+  "external": {},
+  "trail": [],
+  "created": {
+    "at": "",
+    "by": ""
+  }
+}

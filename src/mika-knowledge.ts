@@ -8,7 +8,7 @@ const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 // 24 KB leaves room in the 30 KB one-read packet for her rules, the owner's tips and the
 // Setup walkthrough beside the index.
 export const MIKA_INDEX_BUDGET = { bytes: 24_600, lines: 432, previewBytes: 160, minimumPreviewBytes: 24 } as const;
-export const MIKA_TAXONOMY = path.join(ROOT, 'ronin_session_boot', 'routine', 'mika', 'MIKA_PYRAMID.toml');
+export const MIKA_TAXONOMY = path.join(ROOT, 'src', 'mika-pyramid.toml');
 const INDEX_NAME = 'MIKA_SOURCE_INDEX.md';
 const MANIFEST_NAME = 'mika-source-manifest.json';
 const SNAPSHOT_DIR = 'mika-source-snapshots';
@@ -124,13 +124,11 @@ function capUtf8(text: string, limit: number): string {
 
 function defaultOwnerRoots(): Record<string, string> {
   return {
-    // Product docs have no owner shadow store. Owner-authored reading belongs to the
-    // library root below; treating library/docs as both would index the same file twice.
+    // Product docs have no custom folder. Stock-foundations under ronin_stock/ take the person's
+    // custom-foundations in ~/ronin/custom/ over them.
     docs: '',
-    'ronin_catalogs/behaviours': storeDir('behaviours'),
-    ronin_catalogs: storeDir('catalogs'),
-    ronin_session_boot: storeDir('session_boot'),
-    ronin_library: storeDir('library'),
+    'ronin_stock/behaviours': storeDir('behaviours'),
+    ronin_stock: storeDir('custom'),
   };
 }
 
@@ -149,13 +147,11 @@ async function resolvedEntries(nodes: MikaTaxonomyNode[], options: MikaKnowledge
       markdownFiles(ownerRoots[node.root] ?? ''),
     ]);
     const names = [...new Set([...stock.keys(), ...owner.keys()])]
-      // Her own shelf folder is read whole at birth, never indexed as a source.
-      .filter((name) => !(node.root === 'ronin_session_boot' && name.startsWith('routine/mika/')))
       // FACTS (docs/architecture/brief.md, The files and their header) are line templates over an Agent's record: nothing to read about Ronin.
-      .filter((name) => !(node.root === 'ronin_catalogs' && name.startsWith('facts/')))
-      // EPIC TEMPLATES and WORKSPACE TYPES are read through their own tools (epic-template list,
-      // ronin-help new-workspace), as mandate values are through the forms: not indexed twice.
-      .filter((name) => !(node.root === 'ronin_catalogs' && (name.startsWith('epic_templates/') || name.startsWith('workspace_types/'))))
+      .filter((name) => !(node.root === 'ronin_stock' && name.startsWith('facts/')))
+      // WORKSPACE TYPES are read through their own tool (ronin-help new-workspace), as mandate
+      // values are through the forms: not indexed twice. Playbooks are JSON, not read here.
+      .filter((name) => !(node.root === 'ronin_stock' && name.startsWith('workspace_types/')))
       // A more specific taxonomy root owns its subtree and its owner overlay.
       .filter((name) => !delegated.some((root) => name === root || name.startsWith(`${root}/`)))
       .sort((a, b) => Buffer.from(a).compare(Buffer.from(b)));
@@ -176,7 +172,7 @@ async function resolvedEntries(nodes: MikaTaxonomyNode[], options: MikaKnowledge
       const text = new TextDecoder('utf-8', { fatal: true }).decode(bytes);
       // MANDATE VALUES (docs/architecture/brief.md, Mandates) are orders to one Agent, not Ronin
       // to read about: the Mandates behaviour and the forms say what the values are.
-      if (node.root.startsWith('ronin_catalogs') && /^- \*\*mandate:\*\*\s*\S/m.test(text)) continue;
+      if (node.root.startsWith('ronin_stock') &&/^- \*\*mandate:\*\*\s*\S/m.test(text)) continue;
       const ref = `mika-source:${id}`;
       entries.push({ id, ref, title: titleOf(text, relative), fullPreview: usefulPreview(text), node: node.id,
         origin: ownerFile ? 'owner' : 'stock', sha256: digest(text), text });

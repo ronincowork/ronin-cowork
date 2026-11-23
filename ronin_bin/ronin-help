@@ -58,16 +58,16 @@ if [ -n "$path" ]; then
 fi
 
 # A behaviour's `- **lists:** <dir>` (new-workspace: workspace_types): every file in that
-# catalog directory, the user's (~/ronin/<dir>/) over stock by name, in `order:`, each whole.
+# stock folder, the person's (~/ronin/custom/<dir>/) over stock by name, in `order:`, each whole.
 # Adding a file adds it to the listing; nothing else names them.
 listing() {
   local dir file name key
   dir=$(sed -n 's/^- \*\*lists:\*\* *//p' "$1" | head -1 | tr -d '[:space:]')
   case "$dir" in ''|*/*|.*) return 0;; esac
   declare -A seen=()
-  { for file in "$USER_ROOT/$dir"/*.md "$ROOT/ronin_catalogs/$dir"/*.md; do
+  { for file in "$USER_ROOT/custom/$dir"/*.md "$ROOT/ronin_stock/$dir"/*.md; do
       [ -f "$file" ] || continue
-      name=$(basename "$file"); [ "$name" = README.md ] && continue
+      name=$(basename "$file"); case "$name" in *readme.md|*README.md) continue;; esac
       [ -n "${seen[$name]:-}" ] && continue; seen[$name]=1
       key=$(sed -n 's/^- \*\*order:\*\* *//p' "$file" | head -1); printf '%s\t%s\n' "${key:-9999}" "$file"
     done; } | sort -n | cut -f2 | { echo; while IFS= read -r file; do
@@ -80,16 +80,16 @@ listing() {
     done; }
 }
 
-# Not a topic: a behaviour, tool or fact by its file name (ronin_catalogs/<kind>/<name>.md),
-# the user's copy (~/ronin/<kind>/<name>.md) over stock.
+# Not a topic: a foundation by its file name (ronin_stock/<kind>/<name>.md), the person's
+# custom-foundation (~/ronin/custom/<kind>/<name>.md) over the stock one.
 name=${want%.md}
 case "$name" in */*|.*) name='';; esac
 USER_ROOT=${RONIN_USER_ROOT:-$HOME/ronin}
 if [ -n "$name" ]; then
   for kind in behaviours tools facts; do
     store=$(printf '%s' "$kind" | tr '[:lower:]' '[:upper:]')
-    eval "dir=\${RONIN_${store}_DIR:-$USER_ROOT/$kind}"
-    for file in "$dir/$name.md" "$ROOT/ronin_catalogs/$kind/$name.md"; do
+    eval "dir=\${RONIN_${store}_DIR:-$USER_ROOT/custom/$kind}"
+    for file in "$dir/$name.md" "$ROOT/ronin_stock/$kind/$name.md"; do
       if [ -f "$file" ]; then cat "$file"; listing "$file"; exit 0; fi
     done
   done

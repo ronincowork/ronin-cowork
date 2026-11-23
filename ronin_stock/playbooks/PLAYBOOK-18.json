@@ -1,0 +1,21 @@
+{
+  "id": "PLAYBOOK-18",
+  "campaign_id": "",
+  "title": "End: close this epic and end yourself",
+  "objective": "Do: close this epic, then end yourself.\nDetails: `item transition` this epic to \"Done\"; then `session_end` (it archives you).\nCheck: you are gone.",
+  "level": 0,
+  "kind": "Task",
+  "status": "Playbook",
+  "flagged": false,
+  "priority": "",
+  "comments": [],
+  "parent": "PLAYBOOK-2",
+  "attachments": [],
+  "links": [],
+  "external": {},
+  "trail": [],
+  "created": {
+    "at": "",
+    "by": ""
+  }
+}

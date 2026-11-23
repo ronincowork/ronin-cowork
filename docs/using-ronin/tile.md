@@ -9,7 +9,7 @@ column, or drag its card into the workspace where you want to see it.
 |---|---|
 | Title / ⛩ | Edit the Agent's displayed title; its session name remains its identity |
 | Item island | A pill for every work item the Agent holds (below) |
-| ⚑ | Only while an item the Agent holds is flagged; hover for each flag's reason. One press unflags every flagged item it holds (comment "unflagged by owner") and the ⚑ goes. Also on the phone's bar |
+| ⚑ | Exactly while the Agent's selector pill shows ⚑: an item it holds is flagged, or, for a lead, an item its Team holds; or the Agent itself is asking, has made no progress for 12 minutes, or has stopped. Hover for each flag and its reason. One press unflags every item among them (comment "unflagged by owner"); the Agent's own flag stays until it moves on. Also on the phone's bar |
 | Term / Chat | When Terminal transcript is active, switch between the terminal and the Agent's conversation |
 | メ | Open the menu for this Agent (below) |
 | − | Close this view while the Agent keeps running |
@@ -71,8 +71,8 @@ its items.
 
 A question shows for every CLI, whatever its log can say: Ronin reads it off the terminal,
 including a prompt drawn before the Agent's first turn, such as Codex's *Update available*.
-While it asks, the Agent is flagged: ⚑ in amber on its selector pill, and a ⚑ line on its
-☰ Work record. Answer it and the ?, the pill's ⚑ and the line go.
+While it asks, the Agent is flagged: ⚑ in amber on its selector pill and in its tile header,
+and a ⚑ line on its ☰ Work record. Answer it and the ?, the ⚑s and the line go.
 
 The island follows the Agent's work record and its stance as they change; nothing needs refreshing.
 
@@ -161,11 +161,13 @@ What a message names is a link when Ronin knows it, and plain text otherwise:
   pills; Close returns to the chat where you were.
 - **An Agent's name** (@system_lead, or the bare name): that Agent's tile opens over the work
   surface, as from an item's Agent; Close gives it back. On a phone, that Agent's screen.
-- **A document** (`~/ronin/library/ABOUT_USER.md`, `docs/a.md`, `samurai_lab/ronin_cloud/X.md`, or
+- **A document** (`~/ronin/office/ABOUT_USER.md`, `docs/a.md`, `samurai_lab/ronin_cloud/X.md`, or
   just `ABOUT_USER.md`): it opens in Docs, when it is a file in the Agent's folders, its drop, the
-  Workspace folders (or the folder holding them) or the library.
+  Workspace folders (or the folder holding them) or `~/ronin/office/`.
 - **A commit** (`db709a8`, or `dev@7e2b28b` as a hand-in says it): when it is a commit in one of the
   Agent's repos, `git show --stat -p` of it opens in Docs, to read.
+- **A web address** (`https://github.com/…/pull/149`): it opens in a new browser tab. A full stop,
+  comma or closing bracket after it is not part of the link.
 
 The Helpful Assistant's chat does the same over her chat. A document link shows the file's name;
 its whole path is its tooltip.

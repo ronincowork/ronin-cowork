@@ -41,11 +41,12 @@ Agents already working are sent the change.
 
 **Customize › Behaviors** lists every behavior, mandate value, fact and tool. Open one to read it.
 
-- **Make my version** on a Ronin file: your copy replaces Ronin's by name, for every Agent
-  you start, and stays yours through updates. Ronin's later changes to that file no longer
-  reach you.
+- **Make my version** on a Ronin file: your copy, in `~/ronin/custom/`, replaces Ronin's by
+  name, for every Agent you start, and stays yours through updates. Ronin's later changes to
+  that file no longer reach you. That is the one rule of the
+  [three places](../../ronin_stock/stock_readme.md#three-places-each-with-one-meaning).
 - **New Behavior**, **New tool** or **New bridge**: write your own. A tool is a command you
-  already have, on the PATH or in `~/ronin/tools`; Ronin writes what Agents are told about
+  already have, on the PATH or in `~/ronin/custom/tools`; Ronin writes what Agents are told about
   it. A bridge is a behavior for one integration, with its tools, told while that
   integration is on.
 
@@ -54,7 +55,6 @@ Agents already working are sent the change.
 ## Appearance and words
 
 - Choose a skin or desk profile in appearance settings. See [skins and words](../operating/skins.md).
-- Keep named starting choices for later launches as [templates](../architecture/templates.md).
 - Where there is no editor, ask an Agent to help: it follows
   [shadowing](../architecture/shadowing.md), and `bin/ronin-doctor` finds files Ronin cannot read.
 

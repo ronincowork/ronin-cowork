@@ -7,7 +7,7 @@
  * on a profile of the door's surfaces (workbench-catalog.js), the door's surface seated in
  * Workspace 1 on first open. Models seats its own stones of providers (models-surface.js), a
  * stone dragged into a workspace or a selector card placing that provider whole; Workspaces
- * seats its own stones of Workspaces (workspaces-surface.js) and GitHub CLI beside them, its admin doors
+ * seats its own stones of Workspaces (workspaces-surface.js), its admin doors
  * dotted selector cards. Help (owner, 2026-10-21) seats the help outline in Workspace 1 and Mika
  * in Workspace 2 (a page stone dragged into a workspace reads that page there), her ordinary tile opened on her reading: a chat, not a terminal. Help is outside
  * Home's provider gate; with no provider Mika's seat says so in one line instead of her tile. Epics
@@ -23,11 +23,10 @@ import { loadProviderCatalog } from './form-steps.js';
 import { createModelDefaults, createModelProvider, createModelRefresh, createModelStones, providerOffers } from './models-surface.js';
 import { createAccountsSurface } from './accounts-surface.js';
 import { createModelsRecords } from './models-records-surface.js';
-import { createGithubWorkspaceSetup } from './github-workspace-setup.js';
-import { createFolderGithub, createWorkspaceNew, createWorkspaceRecord, createWorkspaceStones, workspaceOffers } from './workspaces-surface.js';
+import { createWorkspaceNew, createWorkspaceRecord, createWorkspaceStones, workspaceOffers } from './workspaces-surface.js';
 import { createWorkspacesRead } from './workspaces-read.js';
 import { campaignById, loadCampaigns, normalizeSelection } from './campaigns.js';
-import { createEpicBoard, createEpicRecord, createEpicsRead, epicOffers } from './epics-surface.js';
+import { createEpicRecord, createEpicStones, createEpicsRead, createNewItem, epicOffers } from './epics-surface.js';
 import { createHelpOutline, createHelpPage } from './help-outline.js';
 import { askMika, askSignInHelper, createMikaTilePool, reportMikaView, signInHelperName } from './mika.js';
 import { readyMika } from './mika-ready.js';
@@ -45,7 +44,7 @@ const blank = (id) => WorkspaceKit.primitives.createBlankSurface(id.replace('wor
  * Campaign); `reading` names the Help page being read; `destroy` lets the surfaces go with the view.
  * Every change reports this tab's view for Mika's `owner_view`, as the other workbenches do.
  */
-function doorWorkbench({ id, profile, label, seat, seats = { workspace1: seat }, count = 2, environment, cards = true, loaded = null, reading = () => '', destroy = () => {} }) {
+function doorWorkbench({ id, profile, label, seat, seats = { workspace1: seat }, count = 2, environment, cards = true, hints = true, loaded = null, reading = () => '', destroy = () => {} }) {
   registerWorkbenchCatalog();
   const { normalizeWorkbenchState } = WorkspaceKit.contract;
   let ctx = null, entered = false, bench = null;
@@ -63,7 +62,7 @@ function doorWorkbench({ id, profile, label, seat, seats = { workspace1: seat },
   };
   bench = WorkspaceKit.workbench.create({
     profile, tenant: { kind: id }, environment: environment({ bench: () => bench, entered: () => entered, ctx: () => ctx, report }),
-    defaultNode: blank, label, ...(cards ? {} : { selectorFilter: () => false }), onStateChange: save, onPlacement: save,
+    defaultNode: blank, label, hints, ...(cards ? {} : { selectorFilter: () => false }), onStateChange: save, onPlacement: save,
   });
   return {
     el: bench.host, ...workbenchView(id, { header: { feedback: false } }), arrangement: bench.arrangement,
@@ -81,7 +80,7 @@ function doorWorkbench({ id, profile, label, seat, seats = { workspace1: seat },
       for (const workspace of bench.ids) {
         const held = typed.seats[workspace];
         const type = typeof held === 'object' ? held.type : held;
-        if (WorkspaceKit.workbench.library.has(type)) bench.place(type, workspace, typeof held === 'object' ? held : {});
+        if (WorkspaceKit.workbench.surfaces.has(type)) bench.place(type, workspace, typeof held === 'object' ? held : {});
       }
       bench.refreshSelector(); save();
       if (loaded) void loaded().then(() => { if (entered) reseat(); });
@@ -137,50 +136,26 @@ export function createModelsView() {
 
 /** Workspaces: the stones of Workspaces in Tilespace 1 over the Campaign this tab looks at, a pressed one's page
  * beside them; every Workspace a selector card, opened whole where a stone is dropped or its card placed; New
- * Workspace a dotted card (owner, 2026-11-02); Files in Tilespace 2 where Ronin found Python (KAN-146),
- * GitHub CLI there otherwise, the sign-in a private clone needs.
+ * Workspace a dotted card (owner, 2026-11-02); Files in Tilespace 2 where Ronin found Python (KAN-146).
+ * GitHub CLI is not offered here (owner, 2026-11-23): the machine's GitHub sign-in is setup, not a Workspace.
  * One read of the pinned folders and one of the Workspaces for the whole bench. */
 export function createWorkspacesView() {
-  const GITHUB_MIKA = WORKBENCH_TYPES.githubMika;
-  const MIKA_SESSION = 'mika_agent';
-  const { surface: mikaSurface, pool: mikaPool } = createMikaTilePool();
-  const guidePrompt = (setupSession) => `You are helping the owner authenticate GitHub CLI in the adjacent session ${setupSession}. Read its live terminal with edges read ${setupSession} and guide the owner from what is displayed. Explain each prompt briefly and say exactly what to do next. Re-read the session after each step. This is a headless remote machine: browser approval happens on the owner's local computer. Do not operate the setup terminal and never ask for or display a credential. When it finishes, verify with gh auth status and report the connected account and Git protocol.`;
-  const connectPrompt = 'Connect this Ronin machine to GitHub through GitHub CLI. First run gh auth status. If it is not connected, run gh auth login --hostname github.com --git-protocol https --web. This is a headless remote machine: give the owner the device URL and one-time code, wait for browser approval, then run gh auth setup-git and gh auth status. Stay with the process until it succeeds or needs an owner decision. Never ask for a token in chat and never print, inspect, or expose credentials. Finish by reporting the connected account and HTTPS Git protocol.';
-  const providerSessions = createProviderSetupSessionMount();
   const made = [];
   const keep = (surface) => { made.push(surface); return surface; };
-  let github = null;
   return doorWorkbench({
     id: 'workspaces', profile: WORKBENCH_PROFILES.workspaces, label: t('campaign_home.workspaces', 'Workspaces'), seat: WORKBENCH_TYPES.workspaceRecords,
-    seats: { workspace1: WORKBENCH_TYPES.workspaceRecords, workspace2: FILES_ON ? WORKBENCH_TYPES.files : WORKBENCH_TYPES.folderGithub },
-    loaded: loadCampaigns,
-    environment: ({ bench, ctx }) => {
+    seats: { workspace1: WORKBENCH_TYPES.workspaceRecords, ...(FILES_ON ? { workspace2: WORKBENCH_TYPES.files } : {}) },
+    loaded: loadCampaigns, hints: false, // no Agent vocabulary or Session controls on Workspaces (owner, 2026-11-22)
+    environment: ({ bench }) => {
       const workspacesRead = createWorkspacesRead();
-      const environment = {
-        mountProviderSetupSession: providerSessions.mountProviderSetupSession,
+      return {
         workspaces: () => workspaceOffers(workspacesRead),
         workspaceRecords: () => keep(createWorkspaceStones({ workspacesRead, workbench: bench(), recordType: WORKBENCH_TYPES.workspaceRecord })),
         workspaceRecord: (_workspace, detail) => keep(createWorkspaceRecord(detail.key, { workspacesRead })),
         workspaceNew: (workspace) => keep(createWorkspaceNew({ workspacesRead, place: (name) => bench().place(WORKBENCH_TYPES.workspaceRecord, workspace, { key: name }) })),
-        folderGithub: (workspace) => keep(createFolderGithub(github ??= boxes(workspace))),
-        githubMika: () => ({ el: mikaSurface.el, show: () => { mikaPool.sync([helper]); mikaPool.show(helper, false); } }),
-        assistName: signInHelperName,
       };
-      let helper = MIKA_SESSION;
-      const showMika = async (workspace, prompt) => {
-        helper = await askSignInHelper(prompt);
-        mikaPool.sync([helper]);
-        bench().place(GITHUB_MIKA, workspace);
-      };
-      const opposite = (workspace) => workspace === 'workspace1' ? 'workspace2' : 'workspace1';
-      const boxes = (workspace = 'workspace2') => createGithubWorkspaceSetup({
-        environment, workspace,
-        onMikaGuide: ({ setupSession, workspace: from }) => showMika(opposite(from), guidePrompt(setupSession)),
-        onMikaConnect: ({ workspace: from }) => showMika(from, connectPrompt),
-      });
-      return environment;
     },
-    destroy: () => { for (const surface of made.splice(0)) surface.destroy?.(); github?.destroy(); github = null; providerSessions.destroyAll(); mikaPool.destroyAll(); },
+    destroy: () => { for (const surface of made.splice(0)) surface.destroy?.(); },
   });
 }
 
@@ -192,13 +167,16 @@ export function createEpicsView() {
   const keep = (surface) => { made.push(surface); return surface; };
   return doorWorkbench({
     id: 'epics', profile: WORKBENCH_PROFILES.epics, label: t('campaign_home.epics', 'Epics'), seat: WORKBENCH_TYPES.epicRecords,
-    loaded: loadCampaigns,
+    loaded: loadCampaigns, hints: false, // no Agent vocabulary or Session controls on Epics (owner, 2026-11-22)
     environment: ({ bench, ctx }) => {
       const epicsRead = createEpicsRead(() => campaign(ctx)?.id || '');
       return {
         epics: () => epicOffers(epicsRead),
-        epicRecords: () => keep(createEpicBoard({ epicsRead })), // w334: the stones' row, then the picked Epic's items
+        epicRecords: () => keep(createEpicStones({ epicsRead, workbench: bench() })), // w897: the phalanx of open Epics, a pressed one beside it
         epicRecord: (_workspace, detail) => keep(createEpicRecord(detail.key, { epicsRead })),
+        // New Epic (owner, 2026-11-23): the selector's pill; the Epic made shows in the same tilespace.
+        // An Epic made shows in the same tilespace; another kind shows its parent Epic, if it has one.
+        epicNew: (workspace) => keep(createNewItem({ kind: 'Epic', epicsRead, onMade: (item) => { const key = item?.level === 1 ? item.id : item?.parent; if (key) bench().place(WORKBENCH_TYPES.epicRecord, workspace, { key }); } })),
       };
     },
     destroy: () => { for (const surface of made.splice(0)) surface.destroy?.(); },

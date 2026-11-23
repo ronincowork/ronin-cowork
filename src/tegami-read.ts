@@ -4,7 +4,11 @@ import { sessionDir, sessionKey } from './session-dir.js';
 import { tegamiPath, type WorkRecordBrief } from './tegami.js';
 import { AGENT_BRIEF, BIRTH_BRIEF } from './birth-brief.js';
 import { agentReading, type AgentReading } from './work-items-read.js';
-import { jiraLink } from './work-items.js';
+import { FLAGGED, jiraLink, readItem } from './work-items.js';
+
+/** One flag (KAN-776): an item's, by its id, or, without one, the Agent's own; `record` marks the
+ * one it raised on its work record (KAN-792), which a press on the ⚑ clears there. */
+export type Flag = { id?: string; why: string; record?: true };
 import type { ItemRow } from './work-items-index.js';
 import { mandate, type Mandate } from './agent-defaults.js';
 
@@ -26,13 +30,13 @@ export interface Tegami {
   /** The brief record Ronin wrote (docs/architecture/brief.md, The work record is the source of truth); null before it has. */
   brief: WorkRecordBrief | null;
   chip: { text: string; gate: boolean };
-  /** Any item it holds is flagged (owner, 2026-11-15, KAN-521), or, for a lead, any item a Team
-   * it leads holds (KAN-636: a Team holder is told through its lead): derived from the holds,
-   * never stored; its selector pill shows ⚑ in the flagged colour. */
-  flagged: boolean;
-  /** An Agent flag (KAN-527): the Agent itself waits on the owner, its terminal asking a
-   * question, or no progress for 12 minutes while working (KAN-618). The home row sets it, with `flagged`, from the pane (src/routes/launch.ts); never stored. */
-  agent_flag?: 'asking' | 'no_progress';
+  /** THE ONE FLAG SOURCE (owner, 22 Nov, KAN-776). With an id: a flagged item the Agent holds,
+   * or, for a lead, one a Team it leads holds (KAN-636), `why` its last "Flagged:" comment; it
+   * goes when unflagged. Without an id: the Agent's own flag, either the one it raised on its
+   * record (`record`, the block's `flag`, KAN-792), kept until unflagged, or one its card adds from
+   * the pane (KAN-527, src/routes/launch.ts), never stored, gone when the Agent moves on. Every
+   * surface reads only this: non-empty is ⚑. */
+  flags: Flag[];
   /** When the work record was last written (epoch ms): the browser works out the age, so the push stays still. */
   quietSince: number;
 }
@@ -103,6 +107,12 @@ export async function readTegami(name: string): Promise<Tegami | null> {
     if (!block || typeof block !== 'object') return null;
     const b = block as Record<string, unknown>;
     const reading = await agentReading(name);
+    const flagged = new Set([...reading.items, ...reading.teams.flatMap((team) => team.items)].filter((item) => item.flagged).map((item) => item.id));
+    const flags = await Promise.all([...flagged].map(async (id): Promise<Flag> => {
+      const said = (await readItem(id))?.comments.filter((c) => c.text.startsWith(FLAGGED)).at(-1);
+      return { id, why: said ? said.text.slice(FLAGGED.length) : '' };
+    }));
+    if (typeof b.flag === 'string' && b.flag.trim()) flags.push({ why: b.flag.trim(), record: true });
     return {
       objective: String(b.objective ?? ''),
       mandate: mandate(b.mandate),
@@ -133,7 +143,7 @@ export async function readTegami(name: string): Promise<Tegami | null> {
       docs: await readDocs([path.join(sessionDir(key), BIRTH_BRIEF), path.join(sessionDir(key), AGENT_BRIEF), ...reading.attachments, ...(await dropped(key))]),
       brief: b.brief && typeof b.brief === 'object' ? b.brief as WorkRecordBrief : null,
       chip: chipFor(reading.items),
-      flagged: [...reading.items, ...reading.teams.flatMap((team) => team.items)].some((item) => item.flagged),
+      flags,
       quietSince: stat.mtimeMs,
     };
   } catch {

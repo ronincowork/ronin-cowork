@@ -5,7 +5,7 @@ import { carryItem } from './team-drag.js';
 import { createPhalanx } from './phalanx.js';
 import { membersOfTeam, subscribe } from './team-controller.js';
 import { request } from './request.js';
-import { subscribe as hear } from './store.js';
+import { get, subscribe as hear } from './store.js';
 import { t } from './lexicon.js';
 import { ask } from './ask.js';
 import { createStep } from './form-steps.js';
@@ -14,6 +14,7 @@ import { isPlanRef, planAttachment } from './plan-attachment.js';
 import { fullOverlay } from './work-details.js';
 import { createWarmTerminalPool } from './team-terminal-pool.js';
 import { S } from './state.js';
+import { splitItemTitle } from './item-title.js';
 
 export const WORK_ITEMS_TYPE = 'work-items';
 /** Jira's flag: an impediment, marked the same way on every surface. */
@@ -76,14 +77,15 @@ export function itemStones(items, { all = items, holder = () => '' } = {}) {
   return order.map((item) => {
     const root = rootOf(item);
     const epic = root.level === 1 || !known.has(root.id);
-    const group = epic ? { id: root.id, label: [root.id, root.title].filter(Boolean).join(' · ') } : { id: 'none', label: t('work_items.no_epic', 'No epic') };
+    const group = epic ? { id: root.id, label: [root.id, splitItemTitle(root.title || '').shortTitle].filter(Boolean).join(' · ') } : { id: 'none', label: t('work_items.no_epic', 'No epic') };
     const owner = holder(item);
+    const title = item.title || item.id;
     return {
-      id: item.id, item, group, label: item.title || item.id,
+      id: item.id, item, group, label: splitItemTitle(title).shortTitle,
       secondary: owner,
       state: [item.id, item.kind, item.status, item.flagged ? FLAG_MARK : ''].filter(Boolean).join(' · '),
       className: `wi-level-${item.level === 1 ? 'epic' : item.level === -1 ? 'subtask' : 'item'}${item.flagged ? ' wi-flagged' : ''}`,
-      attrs: { 'data-item': item.id }, draggable: true,
+      attrs: { 'data-item': item.id, title }, draggable: true,
       events: { dragstart: (event) => carryItem(event.dataTransfer, item) }, // onto a tile: the item's reference
     };
   });
@@ -92,6 +94,8 @@ export function itemStones(items, { all = items, holder = () => '' } = {}) {
 /** The statuses an item can move to, in workflow order (Jira's, JIRA_NAMES in src/work-items.ts),
  * and the item's own when its space names another. */
 export const ITEM_STATUSES = ['To Do', 'In Progress', 'In Review', 'Done'];
+/** A playbook item's status (src/work-items.ts PLAYBOOK_STATUS): the client's one spelling of it. */
+export const PLAYBOOK_STATUS = 'Playbook';
 export const statusChoices = (item) => [...new Set([...ITEM_STATUSES, item?.status].filter(Boolean))];
 
 const when = (at) => String(at || '').slice(0, 16).replace('T', ' ');
@@ -133,7 +137,7 @@ export const handedInComment = (item) => [...(item?.comments || [])].reverse().f
 
 /** Which sections of an item's reading are open, kept for the page's life so a fold stays
  * where the owner left it from one item to the next. Done starts folded. */
-const FOLDS = new Map([['done', false]]);
+const FOLDS = new Map([['done', false], ['checkout', false], ['playbook_edit', false]]);
 const isDone = (item) => /done|closed|resolved|complete/i.test(String(item?.status || ''));
 
 /** The Agents of an item (KAN-435): its holders first (`heldBy`, the item read's labels, else the
@@ -216,14 +220,21 @@ export function openAgentOver(at, name) {
  * the Agents holding the item), Attachments (each opens), Links and History (`history: false`
  * leaves it out: the Epics workbench, KAN-206). Every step folds with the form steps' own fold
  * (form-steps.js), showing its one-line answer folded. Every size is a form token. */
-export function renderItemDetail(host, item, { holder = '', heldBy = null, openAgent = null, openAttachment = null, history = true, children = [], openChild = null, onClose = null } = {}) {
+export function renderItemDetail(host, item, { holder = '', heldBy = null, openAgent = null, openAttachment = null, history = true, children = [], openChild = null, onClose = null, onCheckedOut = null, onPlaybookChanged = null } = {}) {
+  // A PLAYBOOK ITEM (docs/using-ronin/playbooks.md) is a work item, read as any is. The one
+  // difference: its status is Playbook, with no status to move; Check out and Make my version
+  // stand in for the live acts.
+  const playbook = item.status === PLAYBOOK_STATUS;
   const form = el('div', 'ntf-form wi-form');
   const head = el('header', 'wi-head');
   const key = el('p', 'wi-key');
   const sayKey = (status) => { key.textContent = [item.jira || item.id, item.kind, status, item.flagged ? `${FLAG_MARK} ${t('work_items.flagged', 'flagged')}` : ''].filter(Boolean).join(' · '); };
   sayKey(item.status);
   const words = el('div', 'wi-head-words');
-  words.append(el('h2', 'wi-title', item.title || item.id), key);
+  const { shortTitle, longTitle } = splitItemTitle(item.title || item.id);
+  words.append(el('h2', 'wi-title', shortTitle));
+  if (longTitle) words.append(el('p', 'item-title-continuation', longTitle));
+  words.append(key);
   head.append(kindMark(item.kind), words);
   // EXPAND AND MINIMIZE (owner, 2026-11-12, KAN-431): where a bar opens into this reading, the bar
   // goes and this head stands for it. Pressed, it minimizes, as does the tile header's own
@@ -269,7 +280,8 @@ export function renderItemDetail(host, item, { holder = '', heldBy = null, openA
   answer.setAttribute('role', 'status');
   let statusStep = null;
   const flaggedWords = [t('work_items.flag_on', 'Yes'), t('work_items.flag_off', 'No')];
-  const question = ask([{ fields: [{ key: 'status', label: t('work_items.status', 'Status'),
+  // A playbook item has no status to move: no question is made for it.
+  const question = playbook ? null : ask([{ fields: [{ key: 'status', label: t('work_items.status', 'Status'),
     options: statusChoices(item).map((v) => ({ v, l: v })) },
   { key: 'flagged', label: t('work_items.flagged_label', 'Flagged'), switch: flaggedWords }] }], {
     value: { status, flagged }, density: 'tight',
@@ -293,7 +305,7 @@ export function renderItemDetail(host, item, { holder = '', heldBy = null, openA
       else { question.set('status', was); answer.dataset.state = 'failed'; answer.textContent = result.message || t('work_items.move_failed', 'The status did not change.'); }
     },
   });
-  statusStep = step('status', t('work_items.status', 'Status'), () => [status, flagged ? t('work_items.flagged_label', 'Flagged') : ''].filter(Boolean).join(' · '), question.el, answer);
+  if (!playbook) statusStep = step('status', t('work_items.status', 'Status'), () => [status, flagged ? t('work_items.flagged_label', 'Flagged') : ''].filter(Boolean).join(' · '), question.el, answer);
 
   // What the user reads first: what done looks like, and what to try.
   if (item.objective) step('objective', t('work_items.objective', 'Objective'), () => item.objective.split('\n')[0], el('p', 'wi-objective', item.objective));
@@ -364,7 +376,10 @@ export function renderItemDetail(host, item, { holder = '', heldBy = null, openA
       const open = el(openChild ? 'button' : 'div', 'wi-child');
       if (openChild) { open.type = 'button'; open.addEventListener('click', () => openChild(child)); }
       const words = el('span', 'wi-child-words');
-      words.append(el('span', 'wi-child-title', child.title || child.id), el('span', 'wi-when', [child.jira || child.id, child.status].filter(Boolean).join(' · ')));
+      const title = child.title || child.id;
+      const label = el('span', 'wi-child-title', splitItemTitle(title).shortTitle);
+      label.title = title;
+      words.append(label, el('span', 'wi-when', [child.jira || child.id, child.status].filter(Boolean).join(' · ')));
       open.append(kindMark(child.kind), words);
       row.append(open);
       list.append(row);
@@ -376,6 +391,7 @@ export function renderItemDetail(host, item, { holder = '', heldBy = null, openA
   const done = children.filter(isDone);
   if (open.length) step('subtasks', t('work_items.subtasks', 'Subtasks'), () => counted(open.length), childList(open));
   if (done.length) step('done', t('work_items.done_n', 'Done ({n})', { n: done.length }), () => null, childList(done)); // its name carries the count;
+  if (playbook) { playbookActs(step, item, { onCheckedOut, onPlaybookChanged }); host.append(form); return; }
 
   const section = (id, label, rows, ...after) => {
     if (!rows.length && !after.length) return null;
@@ -448,6 +464,73 @@ export function renderItemDetail(host, item, { holder = '', heldBy = null, openA
   if (history) section('history', t('work_items.history', 'History'), (item.trail || []).map((line) => el('li', 'wi-when',
     [when(line.at), line.by, line.op, [line.from, line.to].filter(Boolean).join(' → '), line.note].filter(Boolean).join(' · '))));
   host.append(form);
+}
+
+/**
+ * A playbook item's acts. Check out: an Agent or a Team picked, the item and everything under it
+ * made as plain new live items held by it (onCheckedOut gets the new top item's id). Make my
+ * version: the ordinary item edits (title and objective, one added under it), written as a
+ * custom-foundation in ~/ronin/custom/playbooks/, which replaces stock by id; Delete my version
+ * removes your copy, and the stock one is back (onPlaybookChanged re-reads it).
+ */
+function playbookActs(step, item, { onCheckedOut, onPlaybookChanged }) {
+  const { createAction } = WorkspaceKit.primitives;
+  const agents = (S.sessions || []).map((one) => one.name).filter(Boolean);
+  const teams = (get('teams') || []).map((one) => one.name).filter(Boolean);
+  const options = [...agents.map((name) => ({ v: name, l: `@${name}` })), ...teams.map((name) => ({ v: `team:${name}`, l: t('work_items.team_named', 'Team {name}', { name }) }))];
+  let to = '';
+  const pick = ask([{ fields: [{ key: 'to', label: t('work_items.checkout_to', 'To'), options }] }], { value: { to }, density: 'tight', onChange: ({ to: next }) => { to = next || ''; } });
+  const said = el('p', 'fs-step-help wi-answer');
+  said.setAttribute('role', 'status');
+  const out = createAction({ label: t('work_items.checkout', 'Assign to agent'), size: 'compact', action: async () => {
+    if (!to) { said.dataset.state = 'failed'; said.textContent = t('work_items.checkout_pick', 'Pick an Agent or a Team.'); return; }
+    said.dataset.state = '';
+    said.textContent = t('work_items.checking_out', 'Assigning…');
+    const result = await request(`/api/work-items/${encodeURIComponent(item.id)}/checkout`, { method: 'POST', json: { to } });
+    if (!result.ok) { said.dataset.state = 'failed'; said.textContent = result.message || t('work_items.checkout_failed', 'It was not assigned.'); return; }
+    said.textContent = t('work_items.checked_out', 'Assigned as {id}.', { id: result.data.item.id });
+    onCheckedOut?.(result.data.item.id);
+  } });
+  // Buttons, never bars: each step's content sits in the comment box's column, which keeps a
+  // button its own width (.wi-compose).
+  const column = (...nodes) => { const box = el('div', 'wi-compose'); box.append(...nodes); return box; };
+  step('checkout', t('work_items.checkout', 'Assign to agent'), () => t('work_items.checkout_meta', 'Copies it into live work'), column(pick.el, out.el, said));
+
+  const answer = el('p', 'fs-step-help wi-answer');
+  answer.setAttribute('role', 'status');
+  const fail = (result, said) => { answer.dataset.state = 'failed'; answer.textContent = result.message || said; };
+  const title = el('input', 'wi-compose-words');
+  title.type = 'text';
+  title.value = item.title || '';
+  title.setAttribute('aria-label', t('find_item.playbook_new_title', 'Its title'));
+  const words = el('textarea', 'wi-compose-words wi-playbook-text');
+  words.rows = 12;
+  words.value = item.objective || '';
+  words.setAttribute('aria-label', t('work_items.objective', 'Objective'));
+  const save = createAction({ label: t('work_items.playbook_save', 'Save'), size: 'compact', endsEdit: true, action: async () => {
+    answer.dataset.state = '';
+    answer.textContent = t('work_items.saving', 'Saving…');
+    const result = await request(`/api/work-items/${encodeURIComponent(item.id)}`, { method: 'PUT', json: { title: title.value, objective: words.value } });
+    if (!result.ok) return fail(result, t('work_items.playbook_not_saved', 'It was not saved.'));
+    onPlaybookChanged?.(item.id);
+  } });
+  const under = el('input', 'wi-compose-words');
+  under.type = 'text';
+  under.setAttribute('aria-label', t('work_items.playbook_add_title', 'Its title'));
+  under.placeholder = t('work_items.playbook_add_title', 'Its title');
+  const add = createAction({ label: item.kind === 'Epic' ? t('work_items.playbook_add_task', 'Add task') : t('work_items.playbook_add', 'Add subtask'), size: 'compact', action: async () => {
+    if (!under.value.trim()) { under.focus(); return; }
+    const result = await request('/api/work-items', { method: 'POST', json: { title: under.value, parent: item.id } });
+    if (!result.ok) return fail(result, t('work_items.playbook_not_saved', 'It was not saved.'));
+    onPlaybookChanged?.(item.id);
+  } });
+  const drop = createAction({ label: t('work_items.playbook_delete_mine', 'Delete my version'), size: 'compact', action: async () => {
+    const result = await request(`/api/work-items/${encodeURIComponent(item.id)}`, { method: 'DELETE', json: {} });
+    if (!result.ok) return fail(result, t('work_items.playbook_not_deleted', 'It was not deleted.'));
+    onPlaybookChanged?.(item.id);
+  } });
+  step('playbook_edit', t('work_items.playbook_make_mine', 'Customize'), () => t('work_items.playbook_make_mine_meta', 'Saved as yours, over Ronin’s'),
+    column(title, words, save.el, under, add.el, drop.el, answer));
 }
 
 /** A phalanx of item stones with the reading as its detail. */

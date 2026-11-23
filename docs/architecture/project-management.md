@@ -1,14 +1,14 @@
 # Project management: contents
 
 Every file behind Ronin's project management, and who reads it. Start with the README,
-[Project management, the Ronin way](../using-ronin/project-management.md); everything below is
+[Project management, the Ronin way](../using-ronin/running-work-items.md); everything below is
 where it is built or taught.
 
 ## For people
 
 | Doc | What it holds |
 |---|---|
-| [Project management](../using-ronin/project-management.md) | **The README.** Plan, epic, item; how an item lives; the three signals; the six notices; where the work shows (Jira Kanban or Scrum, Epics, the item island) |
+| [Running work items](../using-ronin/running-work-items.md) | **The README.** Plan, epic, item; how an item lives; the three signals; the six notices; where the work shows (Jira Kanban or Scrum, Epics, the item island) |
 | [Writing a plan](../using-ronin/planning.md) | the plan: who writes it, Draft and Ordered, the `plan` tool, from plan to epics, Park it (the Icebox), and the one copy of the template (`plan read --template` reads it) |
 | [Work items](../using-ronin/work-items.md) | the fields, levels, statuses and every `item` command |
 | [Jira](../using-ronin/jira.md) | connecting a space: the panel, the switches, Connect, Jira wins |
@@ -25,7 +25,7 @@ Agent on its Behaviors panel; the narrowest layer that says holds. Jira is an in
 the Campaign and Workspace only and never decides `pm`. With it off an Agent gets none of these.
 Each file's `when:` picks its readers; an Agent is told only its own.
 
-| File (`ronin_catalogs/`) | Read by | `when:` |
+| File (`ronin_stock/`) | Read by | `when:` |
 |---|---|---|
 | `behaviours/project-management.md` | every Agent: the five reasons, structure, objectives in the user's words, status, notices, the hand-in note, don'ts | `pm` |
 | `behaviours/pm-coworker.md` | coworkers: take, start, side work, hand in, hand over at the end, end when accepted | `pm, team, role:coworker` |
@@ -66,12 +66,11 @@ Each file's `when:` picks its readers; an Agent is told only its own.
 | `src/plans.ts`, `src/routes/plans-api.ts` | plans on the Workspace: the place (Ronin Lab's `<campaign>/<workspace>/plans`, or `plans: { location, path }`), the header, Draft and Ordered (no guards: the docs steer), one-file commits and the push, the move on a changed place; `resolve` for `plan:` |
 | `src/workspaces.ts`, `src/routes/workspaces-api.ts`, `public/js/workspaces-surface.js` | the Workspace's `plans` field and the page's Plans row |
 | `public/js/plan-attachment.js`, `src/routes/docs-api.ts` | a `plan:` attachment opened or shown gone; the Docs pane's Plans shelf |
-| `public/js/epics-surface.js` | the Epics workbench: stones, an epic's record, its Show question, `holderButton` |
+| `public/js/epics-surface.js` | the Epics workbench: stones, an epic's record, its Show question |
 | `public/js/team-epics.js` | the Team workbench's Epics card |
 | `public/js/work-items-surface.js` | an item's reading (the overlay): `holderWords` ("Team <t> (lead <l>)", "@agent"), id, kind · level, origin |
 | `public/js/tile-island.js` | the item island: Done hidden, Subtasks folded under their Task, the hand-in mark |
 | `public/js/jira-panel.js` | Settings › Jira |
-| `tests/tools.test.ts`, `tests/stores.test.ts` | the tests |
 
 ## The live index
 

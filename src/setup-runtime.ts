@@ -24,12 +24,10 @@ export const INSTALLED_ROOTS = [
   { name: 'project_one', label: 'Project One', remit: 'The first project-shaped workspace folder.', managed: true },
 ] as const;
 
-export const SETUP_PREFERENCE_KINDS = ['build', 'life', 'research', 'other'] as const;
-export type SetupPreferenceKind = typeof SETUP_PREFERENCE_KINDS[number];
-export interface SetupPreferences { kinds: SetupPreferenceKind[]; providers: string[]; path_note: string; identity_choice: '' | 'email' | 'anonymous' | 'declined'; bounty_opt_in: boolean }
+export interface SetupPreferences { providers: string[]; path_note: string; bounty_opt_in: boolean }
 interface SetupSection {
   providers?: Record<string, { activated_at?: unknown; off_at?: unknown; sign_in?: ProviderSignIn }>;
-  preferences?: { kinds?: unknown; providers?: unknown; path_note?: unknown; identity_choice?: unknown; bounty_opt_in?: unknown };
+  preferences?: { providers?: unknown; path_note?: unknown; bounty_opt_in?: unknown };
   [key: string]: unknown;
 }
 
@@ -142,47 +140,34 @@ const updateSessionName = (provider: string) => `provider_setup_${provider}_upda
 const installSessionName = (provider: string) => `install_${provider}`;
 
 export function setupPreferences(section: SetupSection): SetupPreferences {
-  const selected = new Set(
-    (Array.isArray(section.preferences?.kinds) ? section.preferences.kinds : [])
-      .filter((kind): kind is SetupPreferenceKind =>
-        typeof kind === 'string' && SETUP_PREFERENCE_KINDS.includes(kind as SetupPreferenceKind)),
-  );
   const providers = Array.isArray(section.preferences?.providers)
     ? [...new Set(section.preferences.providers.filter((provider): provider is string =>
       typeof provider === 'string' && /^[a-z0-9_-]+$/.test(provider)))]
     : [];
-  const identity = section.preferences?.identity_choice;
   return {
-    kinds: SETUP_PREFERENCE_KINDS.filter((kind) => selected.has(kind)), providers,
+    providers,
     path_note: typeof section.preferences?.path_note === 'string' ? section.preferences.path_note : '',
-    identity_choice: identity === 'email' || identity === 'anonymous' || identity === 'declined' ? identity : '',
     bounty_opt_in: section.preferences?.bounty_opt_in === true,
   };
 }
 
 export async function writeSetupPreferences(input: unknown): Promise<SetupPreferences> {
-  const patch = Array.isArray(input) ? { kinds: input } : input;
+  const patch = input;
   if (!patch || typeof patch !== 'object' || Array.isArray(patch)) throw new Error('Send Setup preferences.');
-  const update = patch as { kinds?: unknown; providers?: unknown; path_note?: unknown; identity_choice?: unknown; bounty_opt_in?: unknown };
-  if (update.kinds === undefined && update.providers === undefined && update.path_note === undefined && update.identity_choice === undefined && update.bounty_opt_in === undefined) throw new Error('Send onboarding preferences.');
-  let written: SetupPreferences = { kinds: [], providers: [], path_note: '', identity_choice: '', bounty_opt_in: false };
+  const update = patch as { providers?: unknown; path_note?: unknown; bounty_opt_in?: unknown };
+  if (update.providers === undefined && update.path_note === undefined && update.bounty_opt_in === undefined) throw new Error('Send onboarding preferences.');
+  let written: SetupPreferences = { providers: [], path_note: '', bounty_opt_in: false };
   await updateSection<SetupSection>('setup', (setup) => {
     const current = setupPreferences(setup);
-    const kinds = update.kinds === undefined ? current.kinds : update.kinds;
     const providers = update.providers === undefined ? current.providers : update.providers;
     const path_note = update.path_note === undefined ? current.path_note : update.path_note;
-    const identity_choice = update.identity_choice === undefined ? current.identity_choice : update.identity_choice;
     const bounty_opt_in = update.bounty_opt_in === undefined ? current.bounty_opt_in : update.bounty_opt_in;
-    if (!Array.isArray(kinds) || kinds.some((kind) => typeof kind !== 'string' || !SETUP_PREFERENCE_KINDS.includes(kind as SetupPreferenceKind))) {
-      throw new Error('Kinds are build, life, research, and other.');
-    }
     if (!Array.isArray(providers) || providers.some((provider) => typeof provider !== 'string' || !/^[a-z0-9_-]+$/.test(provider))) {
       throw new Error('Providers must be provider IDs.');
     }
     if (typeof path_note !== 'string' || path_note.length > 2000) throw new Error('Path note must be text up to 2000 characters.');
-    if (!['', 'email', 'anonymous', 'declined'].includes(String(identity_choice))) throw new Error('Identity choice must be email, anonymous, or declined.');
     if (typeof bounty_opt_in !== 'boolean') throw new Error('Bounty opt-in must be true or false.');
-    written = setupPreferences({ preferences: { kinds, providers, path_note, identity_choice, bounty_opt_in } });
+    written = setupPreferences({ preferences: { providers, path_note, bounty_opt_in } });
     return { ...setup, preferences: written };
   });
   return written;
@@ -442,16 +427,18 @@ export async function createGithubSetupSession(
   await command(GITHUB_SETUP_SESSION, `'${gh.replaceAll("'", "'\\''")}' auth login --hostname github.com --git-protocol https --web`);
 }
 
-/** GitHub's supported package paths, run visibly because system package managers may ask for sudo. */
+/** GitHub's supported package paths, run visibly because system package managers may ask for sudo.
+ *  The same install adds the common tools every Agent reaches for (behaviours/linux-tools.md):
+ *  jq, file and Python's Pillow; macOS has file already. */
 export function githubInstallCommand(platform = os.platform()): string {
-  if (platform === 'darwin') return 'command -v brew >/dev/null || { echo "Homebrew is required to install GitHub CLI on macOS: https://brew.sh"; exit 1; }; brew install gh';
+  if (platform === 'darwin') return 'command -v brew >/dev/null || { echo "Homebrew is required to install GitHub CLI on macOS: https://brew.sh"; exit 1; }; brew install gh jq pillow';
   if (platform === 'linux') return [
     'if [ "$(id -u)" -eq 0 ]; then SUDO=""; elif command -v sudo >/dev/null; then SUDO=sudo; else echo "Installing GitHub CLI requires sudo on this Linux machine."; exit 1; fi',
-    'if command -v brew >/dev/null; then brew install gh',
-    'elif command -v apt-get >/dev/null; then (command -v wget >/dev/null || ($SUDO apt-get update && $SUDO apt-get install -y wget)) && $SUDO mkdir -p -m 755 /etc/apt/keyrings && GH_KEY=$(mktemp) && wget -nv -O"$GH_KEY" https://cli.github.com/packages/githubcli-archive-keyring.gpg && $SUDO tee /etc/apt/keyrings/githubcli-archive-keyring.gpg <"$GH_KEY" >/dev/null && $SUDO chmod go+r /etc/apt/keyrings/githubcli-archive-keyring.gpg && echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | $SUDO tee /etc/apt/sources.list.d/github-cli.list >/dev/null && $SUDO apt-get update && $SUDO apt-get install -y gh',
-    'elif command -v dnf >/dev/null; then $SUDO dnf install -y gh',
-    'elif command -v yum >/dev/null; then $SUDO yum install -y gh',
-    'elif command -v pacman >/dev/null; then $SUDO pacman -S --needed github-cli',
+    'if command -v brew >/dev/null; then brew install gh jq pillow',
+    'elif command -v apt-get >/dev/null; then (command -v wget >/dev/null || ($SUDO apt-get update && $SUDO apt-get install -y wget)) && $SUDO mkdir -p -m 755 /etc/apt/keyrings && GH_KEY=$(mktemp) && wget -nv -O"$GH_KEY" https://cli.github.com/packages/githubcli-archive-keyring.gpg && $SUDO tee /etc/apt/keyrings/githubcli-archive-keyring.gpg <"$GH_KEY" >/dev/null && $SUDO chmod go+r /etc/apt/keyrings/githubcli-archive-keyring.gpg && echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | $SUDO tee /etc/apt/sources.list.d/github-cli.list >/dev/null && $SUDO apt-get update && $SUDO apt-get install -y gh jq file python3-pil',
+    'elif command -v dnf >/dev/null; then $SUDO dnf install -y gh jq file python3-pillow',
+    'elif command -v yum >/dev/null; then $SUDO yum install -y gh jq file python3-pillow',
+    'elif command -v pacman >/dev/null; then $SUDO pacman -S --needed github-cli jq file python-pillow',
     'else echo "No supported GitHub CLI package manager was found. See https://cli.github.com/"; exit 1; fi',
   ].join('; ');
   throw new Error('GitHub CLI installation is supported on macOS and Linux.');

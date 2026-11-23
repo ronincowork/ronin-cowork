@@ -19,7 +19,7 @@
  * (epics-surface.js createItemBoard) over the tile with this Agent's items (`more()`, tilehead.js
  * openItemsBoard): a bar opens in place and minimizes back; the overlay's Close returns to the tile.
  *
- * THE HAND-IN MARK (docs/using-ronin/project-management.md, Three signals): beside the dot and the flag, an item In
+ * THE HAND-IN MARK (docs/using-ronin/running-work-items.md, Three signals): beside the dot and the flag, an item In
  * Review carries the latest of its signals, "handed in" or "on dev", with how long ago, so a
  * tile says what its Agent just handed in. At rest it is the mark alone; down, its words.
  *
@@ -27,6 +27,8 @@
  * tile re-reads on every push (tile.js refreshTegami). Nothing here asks the server.
  */
 import { t } from './lexicon.js';
+import { statusKey } from './item-lifecycle.js';
+import { splitItemTitle } from './item-title.js';
 import { humanAge } from './work-record.js';
 import { WorkspacePrimitives } from './workspace-primitives.js';
 
@@ -41,14 +43,8 @@ export function kindKey(kind) {
   return ['epic', 'story', 'task', 'bug', 'feature', 'subtask'].includes(k) ? k : 'other';
 }
 
-/** The status's family, which picks the dot's colour: Jira's three, plus In Review. */
-export function statusKey(status) {
-  const s = String(status || '').toLowerCase();
-  if (/done|closed|resolved|complete/.test(s)) return 'done';
-  if (/review/.test(s)) return 'review';
-  if (/progress|doing|active/.test(s)) return 'progress';
-  return 'todo';
-}
+/** The status's family, which picks the dot's colour: Jira's three, plus In Review (epic-stage.js). */
+export { statusKey };
 
 /** Jira's type symbols: a rounded square in the kind's colour with its white mark. */
 const MARKS = {
@@ -195,13 +191,15 @@ export function itemBar(item, { sub = false, subtasks = 0, extra = [], onPress, 
   node.dataset.status = statusKey(item.status);
   if (item.flagged) node.dataset.flagged = 'true';
   node.setAttribute('aria-label', pillWords(item));
+  const title = item.title || '';
+  node.title = title;
   const head = span('item-bar-head');
   const state = span('item-bar-state');
   state.append(span('item-pill-status'), span('item-bar-status', item.status || ''));
   if (item.flagged) state.append(span('item-pill-flag', FLAG_MARK));
   const signal = !lean && handInSignal(item);
   if (signal) { node.dataset.handin = signal.kind; state.append(span('item-bar-handin', `${HANDIN_MARK} ${handInWords(signal)}`)); }
-  head.append(kindMark(item.kind), span('item-bar-id', item.jira || item.id), span('item-bar-title', item.title || ''), state);
+  head.append(kindMark(item.kind), span('item-bar-id', item.jira || item.id), span('item-bar-title', splitItemTitle(title).shortTitle), state);
   node.append(head);
   if (!sub && item.objective) node.append(span('item-bar-objective', item.objective));
   const said = !sub && !lean && lastComment(item);

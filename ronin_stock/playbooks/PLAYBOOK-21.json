@@ -1,0 +1,21 @@
+{
+  "id": "PLAYBOOK-21",
+  "campaign_id": "",
+  "title": "HTML summary: the project on one page at a glance",
+  "objective": "Do: make PROJECT_SUMMARY.html beside PROJECT_MAP.md: one page a person can read at a glance (what it is, its parts, how it runs), and attach it to this epic too.\nDetails: one self-contained file, no outside scripts; `item attach <this epic> <path>`; Docs opens it like the map (`ronin-help tile`).\nCheck: `item read` on this epic lists it, and it opens from Docs.",
+  "level": 0,
+  "kind": "Task",
+  "status": "Playbook",
+  "flagged": false,
+  "priority": "",
+  "comments": [],
+  "parent": "PLAYBOOK-3",
+  "attachments": [],
+  "links": [],
+  "external": {},
+  "trail": [],
+  "created": {
+    "at": "",
+    "by": ""
+  }
+}

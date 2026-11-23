@@ -30,26 +30,41 @@ everything they need.
 
 ## Its doc
 
-Every Workspace has one doc: `~/ronin/library/workspaces/<name>.md`, made with the Workspace.
+Every Workspace has one doc: `~/ronin/office/workspaces/<name>.md`, made with the Workspace.
 It is the one place its notes live. It starts with a **Summary**, a few lines on what the
-Workspace is for and what is in it, then notes. The Workspace's page shows the whole doc as its
-Summary; press **Edit** to change it there. `office read` shows each Summary. Agents read and
+Workspace is for and what is in it, then notes. A Workspace's **Work** view shows the whole doc
+under its Teams and Epics; press **Edit** to change it there, then **Save**. `office read` shows each Summary. Agents read and
 write it with `workspace-doc` (`workspace-doc --help`); it is a plain file, so you can open it
-too. A Workspace without a Summary gets one from the `assess-workspace`
-[epic template](epic-templates.md): a fresh Agent reads its folders and repositories, writes
-the Summary, and ends.
+too. A Workspace without a Summary gets one from the PLAYBOOK-2 [playbook](playbooks.md): a fresh
+Agent it is checked out to reads its folders and repositories, writes the Summary, and ends.
 
 ## Make or change a Workspace
 
-Open the **Workspaces** door on Ronin Home (or **Workspaces** in [Ronin Setup](../getting-started/setup-workbench.md))
-and press a Workspace's stone, or place **New Workspace**. **Show** above the stones picks what
-hangs under each one: the Teams launched in it, the Epics they work on, or both.
+Open the **Workspaces** door on Ronin Home (or **Workspaces** in [Ronin Setup](../getting-started/setup-workbench.md)).
+Each Workspace is a stone, like an Epic's or a Team's: its name, and along its foot the progress of
+what its Teams and their Agents hold. ⚑ at the top right means something open in it is flagged;
+the small number at the bottom right is how many Teams work in it.
+Flagged Workspaces come first, then the rest by name. The last stone is **New Workspace**.
 
-**New Workspace** is two things: its **Name**, and its **Folders**. Press **Create**. Nothing is
-kept until you press Create.
+Press a stone and that Workspace opens beside the stones, the way an opened Team does. At its top
+is its bar: its name with **Launch**, its objective, its progress along the foot. Press the bar to
+open its Configuration under it (Folders, Integrations, Agent info and Behaviors, with **Save**);
+press it again to close it. Below the bar are three lines, each opening and closing, with its count:
 
-A Workspace's page reads, top down: its **Summary**, its **Folders**, then, folded until you open
-them, **Integrations**, **Agent info** (its objective, instructions, Mode and plans) and
+- **Teams** — the Teams stones of this Workspace. Press one to open it under them as the Teams page
+  opens it: its bar with **Launch** into its workbench, then its Agents and its Epics.
+- **Epics** — the open Epics its Teams and their Agents hold, the same stones as on the Epics page.
+  Press one to open its board, with **Launch** into the Team working it.
+- **Document** — [its doc](#its-doc), as one page; **Edit** at its top right.
+
+**Launch** opens the Workspace on its own page, `#/workspace/<name>`, in a new browser tab, with the
+whole page's room. A stone dragged into a tilespace opens it whole there.
+
+**New Workspace** is its **Name**, then what a made Workspace's Configuration has: **Folders**,
+**Integrations** and **Agent info**. Press **Create**; nothing is kept until then. The made Workspace
+opens with its Configuration open, where its **Behaviors** are.
+
+In Config the page reads, top down: its **Folders**, then, folded until you open them, **Integrations**, **Agent info** (its objective, instructions, Mode and plans) and
 **Behaviors**. **⋯** at the top holds **Archive**: the Workspace stops being offered when you
 start a Team, and nothing is deleted; **Restore** brings it back.
 
@@ -85,10 +100,9 @@ A repository added here starts Direct, on the branch it has checked out.
 
 ### Bring in a GitHub repository
 
-**Clone from GitHub** uses this machine's Git access. To reach private repositories, connect
-GitHub first with the **GitHub CLI** stone: **Install**, then **Use GitHub CLI with Mika** to
-operate the login yourself with Mika beside it, or **Let Mika connect GitHub** to have her run it.
-On a remote machine you approve the one-time device code in a browser on your own computer.
+**Clone from GitHub** uses this machine's Git access: a private repository clones only once this
+machine is signed in to GitHub. That sign-in belongs to the machine's setup, not to a Workspace, so
+the Workspaces page does not offer it.
 
 ### Plans and Canvases
 

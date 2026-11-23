@@ -29,7 +29,7 @@ async function checkCatalogFile(dir: string, file: string, label: string): Promi
     if (body)
       find(
         `${label}: no \`## <name>\` entries parse from this file, but it is not empty`,
-        `an entry is a \`## name\` heading with \`- **key:** value\` lines under it — see the shipped ronin_catalogs/${file.includes('/') ? file : file} for the format`,
+        `an entry is a \`## name\` heading with \`- **key:** value\` lines under it — see the stock ronin_stock/${file} for the format`,
       );
     return;
   }
@@ -40,23 +40,23 @@ async function checkCatalogFile(dir: string, file: string, label: string): Promi
 
 async function checkDefinitionsSurface(catalogsDir: string): Promise<void> {
   const kinds: DefinitionKind[] = [
-    'lexicons', 'desk_profiles', 'services', 'capabilities', 'templates/agents', 'templates/teams',
+    'lexicons', 'desk_profiles', 'services', 'canvases',
   ];
   for (const kind of kinds) {
     const dir = path.join(catalogsDir, kind);
     if (!(await exists(dir))) continue;
     const listed = new Set((await readDefinitions(kind)).map((row) => row.name.toLowerCase()));
     for (const file of await mdFiles(dir)) {
-      if (file.toLowerCase() === 'readme.md') continue;
+      if (/readme\.md$/i.test(file)) continue;
       looked++;
       const name = file.replace(/\.md$/, '');
       const lines = (await readFile(path.join(dir, file), 'utf8')).split('\n');
       if (/^yes$/i.test(entryValue(lines, 'hidden'))) continue;
       if (listed.has(name.toLowerCase())) continue;
-      const shipped = `ronin_catalogs/${kind}/${file}`;
+      const shipped = `ronin_stock/${kind}/${file}`;
       const remedy = await exists(path.join(process.cwd(), shipped))
-        ? `copy ${shipped} into your catalogs store and edit that complete definition, or delete your shadow to restore the shipped one`
-        : `copy a complete definition from ronin_catalogs/${kind}/ and rename it, or delete this abandoned file`;
+        ? `copy ${shipped} into ~/ronin/custom/${kind}/ and edit that complete definition, or delete yours to restore the stock one`
+        : `copy a complete definition from ronin_stock/${kind}/ and rename it, or delete this abandoned file`;
       find(
         `${kind}/${file} (yours): "${name}" does not surface — the reader requires at least one \`- **key:** value\` line`,
         remedy,
@@ -71,7 +71,7 @@ async function checkDefinitionsSurface(catalogsDir: string): Promise<void> {
       for (const entry of await readdir(dir, { withFileTypes: true })) {
         const file = path.join(dir, entry.name);
         if (entry.isDirectory()) await walk(file);
-        else if (entry.name.endsWith('.md') && entry.name.toLowerCase() !== 'readme.md') {
+        else if (entry.name.endsWith('.md') && !/readme\.md$/i.test(entry.name)) {
           looked++;
           if (!listed.has(path.resolve(file))) find(
             `behaviours/${path.relative(behaviourDir, file)} (yours) does not surface`,
@@ -90,7 +90,7 @@ async function checkShadowStore(id: string, stockDir: string): Promise<void> {
     for (const e of await readdir(d, { withFileTypes: true })) {
       const r = rel ? `${rel}/${e.name}` : e.name;
       if (e.isDirectory()) await walk(path.join(d, e.name), r);
-      else if (e.name.endsWith('.md') && e.name.toLowerCase() !== 'readme.md') {
+      else if (e.name.endsWith('.md') && !/readme\.md$/i.test(e.name)) {
         looked++;
         const p = path.join(d, e.name);
         const body = (await readFile(p, 'utf8')).trim();
@@ -105,7 +105,7 @@ async function checkShadowStore(id: string, stockDir: string): Promise<void> {
   await walk(dir);
 }
 
-const catalogsDir = storeDir('catalogs');
+const catalogsDir = storeDir('custom');
 if (await exists(catalogsDir)) {
   for (const f of await mdFiles(catalogsDir)) {
     // These catalogs have dedicated readers and do not use `## name` sections.
@@ -114,9 +114,7 @@ if (await exists(catalogsDir)) {
   }
   await checkDefinitionsSurface(catalogsDir);
 }
-await checkShadowStore('behaviours', 'ronin_catalogs/behaviours');
-await checkShadowStore('library', 'ronin_library');
-await checkShadowStore('session_boot', 'ronin_session_boot');
+await checkShadowStore('behaviours', 'ronin_stock/behaviours');
 
 if (!looked) {
   console.log('  ok    byoin_user_check — no user customization on this box yet (nothing to check is a clean pass)');

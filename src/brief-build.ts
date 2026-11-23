@@ -16,6 +16,7 @@ import type { CampaignSettings } from './campaigns.js';
 import { availableTo, readMcpRecords, type McpRecord } from './mcp-records.js';
 import { isHostedOffice, officePeople } from './office-people.js';
 import { listTeamRosters } from './team-rosters.js';
+import { briefFacts } from './facts.js';
 import type { LaunchFacts, SpawnForm } from './spawn.js';
 import { mandate } from './agent-defaults.js';
 import { listDeskRecords } from './desks/registry.js';
@@ -54,7 +55,7 @@ export async function briefLayers(facts: Pick<LaunchFacts, 'campaign' | 'workspa
 }
 
 const sessionType = (form: SpawnForm): SessionType =>
-  form.house_seat === 'mika' ? 'mika' : form.session_type === 'bare_metal_agent' ? 'bare' : 'cowork';
+  form.house_seat === 'mika' ? 'mika' : form.agent_type === 'irasshai' ? 'irasshai' : form.session_type === 'bare_metal_agent' ? 'bare' : 'cowork';
 
 export type LaunchIdentity = { provider?: string; model?: string; harness?: string; launch_mode?: BriefRecord['agent']['launch_mode'] };
 
@@ -76,7 +77,6 @@ async function birthRecord(form: SpawnForm, facts: LaunchFacts, launch: LaunchId
       name: facts.name,
       title: '',
       type: sessionType(form),
-      template: form.template ?? '',
       task: form.prompt?.trim() ?? '',
     },
     user: {
@@ -99,6 +99,7 @@ async function birthRecord(form: SpawnForm, facts: LaunchFacts, launch: LaunchId
       account: '',
     },
     people: officePeople().map((p) => ({ ...p, role: p.role ?? '' })),
+    office: await briefFacts(),
     setting: {
       hosted: isHostedOffice(),
       campaign: campaignId,

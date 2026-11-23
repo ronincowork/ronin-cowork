@@ -13,9 +13,8 @@ import { campaignById, campaigns, loadCampaigns, saveCampaign } from './campaign
 import { completeInstallationMap } from './installation-map.js';
 import { createEmbeddedNewTeamFormView } from './new-team-form.js';
 import { createEmbeddedNewAgentView } from './new-agent.js';
-import { PRESETS_TYPE } from './presets.js';
 import { createInstallationsSurface } from './campaign-installations.js';
-import { createSetupZoneSlot, setupStep, watchSetupProgress } from './setup-zone.js';
+import { createSetupZoneSlot, watchSetupProgress } from './setup-zone.js';
 import { createStatusMarker } from './status-marker.js';
 
 // Model providers is the one surface two workbenches seat (provider-surface.js); its type
@@ -30,7 +29,7 @@ const summaries = new Map([
   [SETUP_SURFACE_TYPES.roots, '2 Workspaces'],
   [SETUP_SURFACE_TYPES.installations, 'Ronin Services'],
   [SETUP_SURFACE_TYPES.bounty, 'optional · separate opt-in'],
-  [SETUP_SURFACE_TYPES.launchOwn, 'presets · team · agent'],
+  [SETUP_SURFACE_TYPES.launchOwn, 'team · agent'],
 ]);
 const el = (tag, cls = '', text = null) => { const out = document.createElement(tag); if (cls) out.className = cls; if (text != null) out.textContent = text; return out; };
 const notifySummary = (type, value, workbench) => {
@@ -119,8 +118,6 @@ function createRegisterSurface(context) {
   const kindOther = input('kind_other'); kindOther.className = 'setup-register-other'; kindOther.placeholder = t('setup_surface.something_else_prompt', 'Tell us'); kindOther.hidden = true;
   kind.onChange(() => {
     kindOther.hidden = kind.value.value !== 'other'; if (!kindOther.hidden) kindOther.focus();
-    const routeKind = { build_software: 'build', life_assistants: 'life', research_writing: 'research', other: 'other' }[kind.value.value];
-    context.environment?.kinds?.set(routeKind ? [routeKind] : []);
   });
   const preferredFeature = choiceGroup('preferred_feature', t('setup_surface.preferred_feature', 'Which core Ronin capability do you prefer most?'), [
     ['remote_access', 'Work from anywhere', t('setup_surface.feature_remote_access', 'Ronin runs on your home machine or a virtual machine. You open it from a browser wherever you are, any time.')],
@@ -182,8 +179,6 @@ function createRegisterSurface(context) {
     el('h3', '', t('setup_surface.ronin_fit', 'What brings you here')), preferredFeature.wrap, reasons.wrap,
   );
   const consent = el('p', 'setup-fine setup-register-consent', t('setup_surface.consent_exact', 'Email registration supports Ronin Services and Bounty participation. Anonymous registration shares these answers without contact details.'));
-  const declined = el('p', 'setup-register-declined', t('setup_surface.no_thanks_message', 'Enjoy using Ronin. If you’d like to share feedback later, we’d be glad to hear from you at a later date.'));
-  declined.hidden = true;
   const userIntro = el('section', 'setup-register-group setup-user-intro');
   const userIntroText = el('textarea');
   userIntroText.rows = 4; userIntroText.maxLength = 600;
@@ -234,19 +229,13 @@ function createRegisterSurface(context) {
   registerAction.replaceChildren(WorkspaceKit.primitives.ninMark('wk-launch-mark'), el('span', '', sendLabel));
   const send = el('div', 'setup-register-send');
   send.append(consent, registerAction, notice);
-  let formOpen = null; // see THE HEADER ZONE, below
-  // Declining is the header zone's 'No thank you', not a third way to register, so this asks
-  // only how — and everything the old declined branch used to hide one by one lives inside
-  // the form, which now goes away whole.
+  let formOpen = false; // see THE HEADER ZONE, below
   const paintIdentityMode = () => {
     const emailRegistration = identityMode.value.value === 'email';
     emailField.hidden = !emailRegistration;
     email.required = emailRegistration;
   };
-  identityMode.onChange(() => {
-    paintIdentityMode();
-    if (identityMode.value.value) void context.environment?.setIdentityChoice?.(identityMode.value.value);
-  });
+  identityMode.onChange(() => { paintIdentityMode(); });
   paintIdentityMode();
   form.append(welcome, registrationIntro, about, fit, send);
   const recovery = el('div', 'setup-registration-recovery');
@@ -269,11 +258,6 @@ function createRegisterSurface(context) {
     identity.replaceChildren(el('strong', '', anonymous ? t('setup_surface.registered_anonymous', 'Registered anonymously') : t('setup_surface.registered', 'Registered')),
       el('span', '', summaryWords()));
     form.hidden = !formOnShow();
-    // Follow the form, not the answer record. hideForm paints immediately while the PATCH is
-    // still in flight, so reading the record here left the line hidden at the one moment it
-    // was wanted. The form being away, and not because they have already submitted, IS the
-    // declined state — and it is true synchronously.
-    declined.hidden = formOnShow() || Boolean(current?.submitted_at);
     recoveryOptions.hidden = !current?.submitted_at;
     recovery.replaceChildren();
     const changeEmail = () => action(t('setup_surface.change_registration_email', 'Change email'), '', async () => {
@@ -301,50 +285,27 @@ function createRegisterSurface(context) {
   };
   /** Step 2's header zone. Registering is the decision; the form below is how it is done. */
   /* ── THE HEADER ZONE ──────────────────────────────────────────────────────────────────
-     Two picks, and neither is ever a no-op:
-       Register here  shows the form if it is put away;
-       No thank you   puts the form away if it is on show.
-     Either press answers step 2 — the tick means the person dealt with the step, not that
-     they registered. Once they actually have registered there is nothing left to decide, so
-     the zone empties the way every settled step does (owner, 2026-09-21).
-
-     The form's visibility is `formOpen`: null until a pick is pressed, and while it is null
-     the record decides, so someone who declined and came back finds it as they left it. */
-  const zone = context.environment?.answerSetupStep ? createSetupZoneSlot() : null;
-  const recordedAnswer = () => setupStep(context.environment, 'register')?.answer;
-  const formOnShow = () => (formOpen === null
-    ? recordedAnswer() !== 'not_now' && !current?.submitted_at
-    : formOpen);
-  const answerStep = (answer) => context.environment?.answerSetupStep?.('register', answer);
-  const showForm = () => { formOpen = true; void answerStep('acted'); paint(); };
-  const hideForm = () => {
-    formOpen = false;
-    void context.environment?.setIdentityChoice?.('declined');
-    void answerStep('not_now');
-    paint();
-  };
+     Step 2 is ticked when this machine is registered, by name or anonymously (the machine
+     fact, KAN-768); nothing else is recorded, and not registered is simply unticked. The
+     form is on show until they register; registered anonymously, Register here shows it
+     again to add their email. Registered, the zone empties as every settled step does. */
+  const zone = context.environment?.setupZones ? createSetupZoneSlot() : null;
+  const formOnShow = () => formOpen || !current?.submitted_at;
+  const showForm = () => { formOpen = true; paint(); };
   const paintZone = () => {
     if (!zone) return;
     if (current?.status === 'registered') { zone.paint(); return; }
-    const answer = recordedAnswer();
     zone.paint({
       state: current?.status === 'anonymous' ? 'Said hello anonymously.'
         : 'Register to join the community and share your experience — it makes Ronin better for everyone.',
-      picks: [
-        // Shows the form; it does NOT send it. registerAction POSTs on the spot, and with no
-        // identity chosen it posts anonymously, so a pick wired straight to it registered
-        // people who had filled in nothing. Pressing Send stays the person's own act.
-        { label: 'Register here', chosen: answer === 'acted', action: showForm },
-        { label: 'No thank you', chosen: answer === 'not_now', action: hideForm },
-      ],
+      // Shows the form; it does NOT send it. Pressing Send stays the person's own act.
+      picks: current?.status === 'anonymous' ? [{ label: 'Register here', action: showForm }] : [],
     });
   };
-  // Answering does not reload this surface, so the zone listens for the record it reads.
-  // paint() repaints the zone as its last act, so watching with paint — not paintZone — keeps
-  // the form and the declined line in step with the record too, however the record changed.
+  // The ticks can change elsewhere, so the zone listens for them; paint() repaints the zone as its last act.
   const stopProgress = watchSetupProgress(context.environment, paint);
   if (zone) out.content.append(zone.el);
-  body.append(identity, form, userIntro, declined, recoveryOptions, notice); out.content.append(body);
+  body.append(identity, form, userIntro, recoveryOptions, notice); out.content.append(body);
   // An office on an office_park has its registration managed by its provisioning: no form, no
   // header zone, no Delete registration (which would drop the office's entitlement). One
   // sentence says so; it claims nothing about completed registration, which only HQ knows. A
@@ -363,8 +324,6 @@ function createRegisterSurface(context) {
   };
   const restoreForSelfHosted = () => { if (out.content.childNodes[0] === hostedNotice) out.content.replaceChildren(...original); };
   return { el: out.el, show: async () => {
-    const routeKind = context.environment?.kinds?.get?.()[0] || '';
-    kind.set({ build: 'build_software', life: 'life_assistants', research: 'research_writing', other: 'other' }[routeKind] || '');
     own.value = context.environment?.setupRuntime?.preferences?.path_note || '';
     const [office, result, intro] = await Promise.all([
       request('/api/office', { cache: 'no-store' }),
@@ -675,8 +634,6 @@ export function createServicesSurface(context) {
     item.append(question.el, heading, copy);
     values.append(item);
   }
-  const fine = el('p', 'setup-fine', 'Template Library offers ready-made Teams and Agents with their books and tools. It has no separate Services switch.');
-  const gate = el('p', 'setup-fine setup-services-gate', t('services_setup.gate', 'The Grokbot Morning Briefing preset waits for Ronin Services to be active.'));
   const node_ = (key, one) => ({ key, shows: '', draw: () => one });
 
   const paint = (registration, installed, activation) => {
@@ -697,7 +654,7 @@ export function createServicesSurface(context) {
     parts.set(body, [
       node_('intro', intro), node_('steps', steps),
       ...(model.keyField ? [{ key: 'key', shows: String(model.keyAction), draw: () => keyRow(model.keyAction) }] : []),
-      node_('values', values), node_('notice', notice), node_('state', state), node_('fine', fine), node_('gate', gate),
+      node_('values', values), node_('notice', notice), node_('state', state),
     ]);
   };
   // OPEN reads the three answers and listens: an email confirmed, an install's steps and a
@@ -716,12 +673,7 @@ export function createServicesSurface(context) {
 
 function createLaunchOwnSurface(context) {
   const out = surface(t('setup_surface.launch_own', 'Launch your own'));
-  const setup = context.tenant?.kind === 'setup';
   const renderDetail = (item, host) => {
-    if (item.id === 'preset') {
-      context.workbench?.place(PRESETS_TYPE, context.workspace || 'workspace2');
-      return null;
-    }
     const views = [item.id === 'team' ? createEmbeddedNewTeamFormView(WorkspaceKit, {}) : createEmbeddedNewAgentView(WorkspaceKit, {})];
     host.append(...views.map((view) => view.el));
     for (const view of views) void view.enter({});
@@ -731,12 +683,11 @@ function createLaunchOwnSurface(context) {
     items: [
       { id: 'agent', glyph: '人', label: t('agent', 'Agent') },
       { id: 'team', glyph: '人人', label: t('team', 'Team') },
-      ...(setup ? [{ id: 'preset', glyph: '▤', label: t('setup.presets', 'Presets') }] : []),
     ],
     className: 'setup-launch-own-surface',
     renderDetail,
   });
-  // Mount on the surface content itself, like Presets and Providers, so the shared SWS
+  // Mount on the surface content itself, like Providers, so the shared SWS
   // host owns the seat container and its narrow/normal/super-wide insets.
   stones.mount(out.content);
   return { el: out.el, destroy: () => stones.destroy() };
@@ -776,7 +727,7 @@ export function setupSurfaceDefinitions() {
 }
 
 export function registerSetupSurfaces() {
-  const library = WorkspaceKit.workbench.library;
-  for (const definition of setupSurfaceDefinitions()) if (!library.has(definition.type)) library.register(definition);
+  const surfaces = WorkspaceKit.workbench.surfaces;
+  for (const definition of setupSurfaceDefinitions()) if (!surfaces.has(definition.type)) surfaces.register(definition);
   return SETUP_SURFACE_TYPES;
 }

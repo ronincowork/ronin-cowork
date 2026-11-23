@@ -102,10 +102,3 @@ act for when the calling shell is not inside tmux and carries neither `TMUX_PANE
 off therefore does not receive Base commands such as `work-record update_record`, `session_create`, or
 `ronin-url`. Changing a Team or Campaign default later does not mutate a running Agent's
 birth environment; recreate that Agent to give it the newly enabled tools.
-
-## For a test
-
-A test that needs an operator boots one through `tests/helpers/ronin.ts`: its own
-`RONIN_DATA_ROOT`, and its tools get `RONIN_SOCKET` pointing into it
-(`tests/tools.test.ts`). Nothing in `tests/` reaches `~/.ronin`; the runner clears the
-caller's `RONIN_SOCKET`. The tmux side of the same rule is `tests/helpers/testserver.ts`.

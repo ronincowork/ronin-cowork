@@ -75,7 +75,8 @@ its location with `bin/ronin-store archived_sessions`; never spell the path in c
 checks and closes as Delete (`shutdownAgent`), with its stop step replaced by `archiveAgent`,
 the one archive the archive route also calls. So the manifest is written and tmux stopped
 exactly as above, `SessionEnd` is not emitted, and the session folder stays. Only when no exact
-provider conversation is known does it stop the Agent outright and emit `SessionEnd`.
+provider conversation is known does it stop the Agent outright, emit `SessionEnd` and remove
+the folder.
 
 Desks close, as before: `session_end` only ends with every desk clean and handed in, so the
 work is on the Team line and a restored Agent reopens a desk from it. Holds are released as on
@@ -83,7 +84,8 @@ any ending (`releaseHolder`): a stopped Agent holding work would hide it from th
 lead keeps the decision and a restored Agent takes items back by handoff; restore does not
 reclaim. The lead's end notice (the members-list ack, `memberEnded`, and the "ended without a
 handover" notice when it applies) carries `<name> ended, archived as <id>: session_restore <id>`.
-Delete, Hard Delete and the tile's shutdown are unchanged: they end outright.
+Delete, Hard Delete and the tile's shutdown are unchanged: they end outright, and the
+folder goes with the Agent.
 
 ## Warm restart: archive all, restore all
 
@@ -122,8 +124,8 @@ expires as any other.
 An archive undoes an accidental close; it is not storage (owner, 2026-11-15). An archive whose
 `archived_at` is older than `ARCHIVE_DAYS` (7, `src/session-archive.ts`) is removed by
 `expireArchives` in `src/routes/sessions-api.ts`, through `deleteArchived`, the same removal
-`DELETE /api/archived-sessions/:id` uses: `SessionEnd` emitted, holds released, the retained
-session folder and the manifest removed. It runs at service start (`src/index.ts`) and after
+`DELETE /api/archived-sessions/:id` uses: `SessionEnd` emitted, holds released, the
+session folder (and its temp root) and the manifest removed. It runs at service start (`src/index.ts`) and after
 each new archive is written (`archiveWith`). No timer and no setting. A failure on one archive
 is logged and the rest still go.
 
@@ -188,23 +190,15 @@ supported session/resume id is accepted; conflicting ids refuse. There is no jou
 search by prompt and no descendant descriptor scan. Older unstamped sessions without
 an explicit supported id remain unidentifiable rather than risking a neighbour's history.
 
-## Retention of closed session folders
+## The session folder is the Agent
 
 A session's folder under the session store (`birth-receipt.json`, `launch-identity.json`,
 `brief.md`, `AGENT_BIRTH_BRIEF.md`, `AGENT_BRIEF.md`, `tegami.md`, `transcript.jsonl`, and for isolated launches
-`cli-home/`, plus `tmp/`, the Agent's `TMPDIR`, and `scope`, its pane scope: [agent temp and processes](agent-scope.md)) outlives the session on purpose: it is the evidence a later reading of the
-Agent needs. It does not outlive the retention period. `src/session-retention.ts` runs once
-at boot and then weekly on the JIKAN clock and removes a folder that is **closed** — no live
-session carries its key — **unarchived** — no archive manifest names its key — and has not
-been written to for the period. Archived folders stay until the archive's hard delete or its
-[expiry](#expiry) after 7 days.
-
-"Closed" is not a marker file; it is the absence of a live key, and the close time is the
-folder's last write (Rireki writes `transcript.jsonl` when the Agent's journal moves — it no
-longer touches it on a clock, so the last write is the last thing the Agent actually did).
-Retention is unaffected: a folder whose key is still live is never removed, however long it
-has been quiet. The period is `config.cowork_defaults.session_retention_days`
-on a Campaign, default **7**, no UI; when campaigns disagree the most generous value wins,
-because a folder does not record which campaign it was born into. `0` on any campaign
-switches the sweep off. Set it with `PUT /api/campaigns/:id` (`config.cowork_defaults`) or
-by editing the campaign file; `machine-settings defaults write` covers Agent defaults only.
+`cli-home/`, plus `tmp/`, the Agent's `TMPDIR`, and `scope`, its pane scope: [agent temp and processes](agent-scope.md))
+lives exactly as long as its Agent, live or archived (owner, 2026-11-22). No sweep and no
+setting decide it. Every ending that deletes the Agent removes the folder, and a short temp
+root outside it, in the same step (`removeSessionFolders`, `src/agent-scope.ts`): Delete,
+Hard Delete, the tile's shutdown, `worktree-desk close --with-session`, a `session_end` with
+no resumable conversation, an archive's Hard Delete, and [expiry](#expiry) after 7 days.
+Archive keeps it. An Agent whose pane died keeps its tmux session (`remain-on-exit`), so it
+stays a tile, reads Stopped, and keeps its folder until it is deleted.

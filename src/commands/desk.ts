@@ -14,6 +14,8 @@ import { arrangementOf } from '../desks/arrangement.js';
 import { randomUUID } from 'node:crypto';
 import { withManagedTransaction } from '../desks/lifecycle-ledger.js';
 import { shutdownAgent, ShutdownRefused } from '../desks/session-shutdown.js';
+import { removeSessionFolders } from '../agent-scope.js';
+import { sessionKey } from '../session-dir.js';
 import { didLine, nextStep, readItem, reviewPrompt } from '../work-items.js';
 import { projectManagementOn } from '../agent-configuration.js';
 
@@ -205,9 +207,9 @@ async function main(): Promise<void> {
         // A hand-in is the repo's and never needs an item (owner, 2026-11-11; w415): without one the
         // code goes in and the acknowledgement tells the Agent to check its work items. Named, the
         // item goes to In Review with its note; a hand-in never moves an item to Done
-        // (docs/using-ronin/project-management.md, Three signals).
+        // (docs/using-ronin/running-work-items.md, Three signals).
         const underPm = await projectManagementOn(session);
-        // The Handed in note: the one comment the user reads (docs/using-ronin/project-management.md,
+        // The Handed in note: the one comment the user reads (docs/using-ronin/running-work-items.md,
         // How an item lives): the review line; missing or long, the acknowledgement prompts (KAN-429).
         const forUser = str(flags.get('note')).trim();
         let worst = 0;
@@ -272,7 +274,9 @@ async function main(): Promise<void> {
         if (flags.get('with-session')) {
           if (positional[0]) await pickOne(session, positional[0], 'close'); // validate the named worktree, then close the whole assignment
           try {
+            const key = await sessionKey(session);
             const result = await shutdownAgent(session);
+            await removeSessionFolders(key);
             out(`CLOSED ${result.closed.join(', ') || 'no worktrees'} — session ${session} ended`);
             return;
           } catch (e) {

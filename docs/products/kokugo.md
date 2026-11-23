@@ -5,13 +5,13 @@ For contributors changing UI strings. To change your own appearance or wording, 
 lexicons change displayed words, not behavior.
 
 **The rule, in one sentence: every string a person reads in the coworkspace is
-`t('room.key', 'the literal')`, and the key lands in `ronin_catalogs/lexicons/professional_en.md`
+`t('room.key', 'the literal')`, and the key lands in `ronin_stock/lexicons/professional_en.md`
 in the same commit.**
 
 This page is the instruction for anyone building a new tab, view, page or control in
 `public/js/` or `public/index.html`. It is written for an agent with no other context and
 is short enough to read every time. The machinery it describes: `public/js/lexicon.js`
-(the helper), `ronin_catalogs/lexicons/` (the words, one file per lexicon), `docs/architecture/lexicons.md`
+(the helper), `ronin_stock/lexicons/` (the words, one file per lexicon), `docs/architecture/lexicons.md`
 (how the chain resolves), `docs/architecture/desk-profiles.md` (how a person picks one), and
 `npm run kokugo:table` (every key and every lexicon's word beside it — generated on demand,
 
@@ -76,7 +76,7 @@ Two shapes that come up:
 
 ## 4 · What is never translated
 
-- **Anything an agent reads** — the letter, the brief, the boot shelf, a prompt handed to a
+- **Anything an agent reads** — the letter, the brief, a prompt handed to a
   session, `work-record update_record` output, tool output. A session on a Home desk is still `DraftPlan`
   with `reach: plan`.
 - **The house's internal names** — [KOTOBA's internal names](../../KOTOBA.md#internal-names) (RIREKI, KOSHI, …); *Ronin*
@@ -124,21 +124,21 @@ reads these attributes as keys the client reads.
 ## 7 · Adding a word, adding a language
 
 - **A new string in a view**: write the `t()` call, add `- **room.key:** the literal` to
-  `ronin_catalogs/lexicons/professional_en.md` under the room's heading, and commit both
+  `ronin_stock/lexicons/professional_en.md` under the room's heading, and commit both
   together. The table is a report, not an output to commit — read it with
   `npm run kokugo:table` whenever you want it.
 - **A profile's word for it** (Home says *household* where the floor says *team*): one
   line in that profile's lexicon, e.g. `- **roster.no_team:** no household` in
-  `ronin_catalogs/lexicons/home_en.md`. Only the words that change; everything else falls
+  `ronin_stock/lexicons/home_en.md`. Only the words that change; everything else falls
   through. Regenerate the table.
-- **A new lexicon**: one file `ronin_catalogs/lexicons/<name>_<lang>.md` with `label:`,
-  `blurb:` and `base:` (the format is `ronin_catalogs/lexicons/README.md`). Wording and
+- **A new lexicon**: one file `ronin_stock/lexicons/<name>_<lang>.md` with `label:`,
+  `blurb:` and `base:` (the format is `ronin_stock/lexicons/lexicons_readme.md`). Wording and
   translation are one axis: a French Home is one file, `home_fr`, based on `professional_fr`,
   itself based on `professional_en` — never a second setting. The language is in the name.
-- **Yours**: a same-named file in your catalogs store (`bin/ronin-store catalogs` →
-  `lexicons/`) replaces ours whole; a new name is a new lexicon (`docs/architecture/shadowing.md`).
+- **Yours**: a same-named file in `~/ronin/custom/lexicons/` replaces ours whole; a new name
+  is a new lexicon (the one rule: `ronin_stock/stock_readme.md`).
 - **A desk profile names its lexicon** (`- **lexicon:** home_en` in
-  `ronin_catalogs/desk_profiles/`); picking one in ⚙ · appearance puts its words up. Views
+  `ronin_stock/desk_profiles/`); picking one in ⚙ · appearance puts its words up. Views
   take the words on their next paint; only the ⚙ desk repaints itself on a pick. Do not add
   a global re-render.
 
@@ -173,7 +173,7 @@ if (deskNote) notice.set('warning', t('add_agent.started_note', 'Started {name} 
 else notice.set('success', t('add_agent.started', 'Started {name}', { name: born }));
 ```
 
-And in `ronin_catalogs/lexicons/professional_en.md`, under `## add_agent`:
+And in `ronin_stock/lexicons/professional_en.md`, under `## add_agent`:
 
 ```
 - **add_agent.started:** Started {name}

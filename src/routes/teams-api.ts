@@ -98,9 +98,10 @@ function editOf(body: unknown): RosterEdit {
 // What GET /api/team-rosters answers, and, for this machine's Campaign, what /events pushes
 // as {t:'teams', rosters}. Each row carries the Team's work as the Teams workbench reads it
 // (owner, 2026-10-18): `board`, the Team's epic by the rule in work-items-read.ts, its title
-// and status, and `items`, the titles of the items the Team and its members hold; and for the
+// and status, and `items`, the items the Team and its members hold (title, status, level, flagged and
+// holder: the Team stone's lifecycle line and needs-you line, w900); and for the
 // Team workbench (owner, 2026-11-04; KAN-232) `waiting`, its items In Review and flagged with how
-// long each has waited, and `epics`, the ids of its Epics (teamWork in work-items-read.ts).
+// long each has waited, and `epics`, the ids of its Epics not Done (teamWork in work-items-read.ts; KAN-779).
 export async function teamRosters(named: string[] = []): Promise<unknown[]> {
   const resolve = await campaignResolver();
   const wanted = named.length ? named : [await machineCampaignId()].filter(Boolean);
@@ -108,6 +109,7 @@ export async function teamRosters(named: string[] = []): Promise<unknown[]> {
   const rosters = (await listTeamRosters()).filter((r) => keep(r.campaign_id));
   const sessions = await listSessions();
   const every = rosters.length ? await liveRows() : [];
+  const done = new Set(every.filter((row) => row.status === 'Done').map((row) => row.id)); // KAN-779: Done epics leave the card
   return Promise.all(
     rosters.map(async (r) => {
       const reading = await rosterReading(r, sessions);
@@ -117,8 +119,8 @@ export async function teamRosters(named: string[] = []): Promise<unknown[]> {
         ...r,
         campaign_id: resolve(r.campaign_id),
         board: board && { title: board.title, status: board.status },
-        items: reading.items.map(({ title }) => ({ title })),
-        epics: work.epics,
+        items: reading.items.map(({ title, status, level, flagged, holder }) => ({ title, status, level, flagged: !!flagged, holder })),
+        epics: work.epics.filter((id) => !done.has(id)),
       };
     }),
   );
@@ -152,17 +154,9 @@ export function registerTeams(app: express.Express): void {
       // abbreviated "A new team" path, state only identity. Materialize the Campaign
       // layer here so an omitted browser field cannot become a complete map of `false`.
       // Values the caller did state remain the final word.
-      let template;
-      const token = String(req.body?.template ?? '').trim();
-      if (token) {
-        const { listAgentTemplates } = await import('../resource-adapters.js');
-        const box = (await listAgentTemplates()).find((row) => row.name === token);
-        if (!box) template = { source: token, ignored: 'not an agent template on this box' };
-        else template = { source: token };
-      }
       const roster = await createTeamRoster(name, edit, campaign_id);
       count('team.create');
-      res.json({ ok: true, roster, ...(template ? { template } : {}) });
+      res.json({ ok: true, roster });
     } catch (e) {
       res.status(400).json({ error: errMsg(e) });
     }

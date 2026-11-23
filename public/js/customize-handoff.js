@@ -31,8 +31,8 @@ const el = (tag, cls, text) => {
 
 // A function, not a constant: the lexicon loads after this module is evaluated.
 function shadowTrade() {
-  return t('customize.shadow_trade', 'Changing one of Ronin’s own entries makes it yours: it moves to your catalogs store, '
-  + 'where an upgrade cannot touch it — and improvements Ronin makes to that entry will not '
+  return t('customize.shadow_trade', 'Changing one of Ronin’s own makes it yours: your copy goes in ~/ronin/custom/, '
+  + 'where an upgrade cannot touch it — and improvements Ronin makes to it will not '
   + 'reach you. That is the trade for owning it.');
 }
 
@@ -60,18 +60,15 @@ export function buildHandoff(resource, list = []) {
   if (resource.file) {
     // A shadowable markdown catalog: the seed route makes the file and hands back the path.
     box.append(el('p', null,
-      t('customize.handoff_seed', 'Ronin can create your own {file} in your catalogs store — outside every repo, untouched by upgrades. The path is the answer: hand it to your agent, or open it yourself.', { file: resource.file })));
+      t('customize.handoff_seed', 'Ronin can create your own {file} in ~/ronin/custom/ — outside every repo, untouched by upgrades. The path is the answer: hand it to your agent, or open it yourself.', { file: resource.file })));
     box.append(addYourOwn(resource.file, resource.what || t('customize.entry', 'entry')));
     return box;
   }
 
   if (resource.dir) {
-    // A definition directory: no seed path exists, so the README is the worked example.
+    // A definition directory: no seed path exists, so the folder's readme is the worked example.
     box.append(el('p', null,
-      t('customize.handoff_read_only', 'One file per {thing}, named by its token, in your catalogs store under {dir}. Ronin cannot create that file for you yet — ask your agent to add one, and point it at the directory’s own README, which states the format and every field.', { thing: resource.label.toLowerCase().replace(/s$/, ''), dir: resource.dir })));
-    const hint = el('p', 'cz-hint',
-      t('customize.handoff_store_hint', 'Ask for the store path with: bin/ronin-store catalogs — never spell it by hand.'));
-    box.append(hint);
+      t('customize.handoff_read_only', 'One file per {thing}, named by its token, in ~/ronin/custom/{dir}/. Ronin cannot create that file for you yet — ask your agent to add one, and point it at the folder’s own readme in ronin_stock/{dir}/, which states the format and every field.', { thing: resource.label.toLowerCase().replace(/s$/, ''), dir: resource.dir })));
     return box;
   }
 

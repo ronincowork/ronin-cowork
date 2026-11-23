@@ -1,6 +1,6 @@
 /**
  * WORKSPACE DOCS (owner, 2026-11-19, KAN-713): one Markdown file per Workspace, so Agents know the
- * office's Workspaces. <library>/workspaces/<handle>.md, the handle being the Workspace's name
+ * office's Workspaces. ~/ronin/office/workspaces/<handle>.md, the handle being the Workspace's name
  * (listWorkspaces). A "## Summary" section, then "## Notes". Made with the Workspace
  * (saveWorkspace); an older Workspace gets its file on the first read. The folder is the store:
  * plain files, greppable. `workspace-doc` reads and writes it; `office read` shows each Summary.
@@ -12,7 +12,7 @@ import { storeDir } from './resources.js';
 const SUMMARY = '## Summary';
 const NOTES = '## Notes';
 
-export const workspaceDocPath = (handle: string): string => path.join(storeDir('library'), 'workspaces', `${handle}.md`);
+export const workspaceDocPath = (handle: string): string => path.join(storeDir('office'), 'workspaces', `${handle}.md`);
 
 const readText = async (handle: string): Promise<string | null> => {
   try { return await readFile(workspaceDocPath(handle), 'utf8'); }

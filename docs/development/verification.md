@@ -1,42 +1,29 @@
-# Verification: focused work, one combined verdict
+# Verification: the typecheck, two guards, then the real surface
 
-`npm run verify` is the whole gate: `tsc --noEmit`, then the behaviour suite in `tests/`,
-about half a minute. Individual Agents build, typecheck and hand in; the Team lead or
-release maintainer runs the gate once on the combined candidate and owns its verdict.
+`npm run verify` is the gate: `tsc --noEmit`, then two guards in `tests/`. The owner cut the
+suite by about 90% (23 Nov 2026): tests that pin a surface stop it changing, and while Ronin
+is being built, change is the work. Agents build, typecheck and hand in; the lead promotes;
+the owner reviews the real surface on global dev, and his feedback is the check. A full test
+protocol for the running environment comes when Ronin is in production.
 
-## What the suite checks
+## The two guards
 
-Only what a user would hit when it breaks, one file each:
+Each guards a failure nobody sees by looking at the page:
 
-| File | What breaks for a user |
+| File | What breaks, unseen |
 |---|---|
-| `tests/agents.test.ts` | launching an Agent (Claude, Codex, a terminal), archive and restore |
-| `tests/tools.test.ts` | an Agent's tools reaching Ronin: `item`, `work-record`, `edges`, `ronin-url` |
-| `tests/stores.test.ts` | Teams, Workspaces, plans, items and secrets reading back, also after a restart |
-| `tests/promotion.test.ts` | desk open, hand-in, promotion into `dev`; a failed health check reverted; Chat's file and commit links |
-| `tests/setup.test.ts` | a fresh box: health, the page, Setup's providers and sign-in, the onboarding epic, Help (Mika) |
-| `tests/sign-in.test.ts` | the password gate on the page and the API, login and logout |
-| `tests/terminal.test.ts` | typing in a tile, the Message box, a foreign socket refused |
+| `tests/sign-in.test.ts` | the password gate: page and API closed until login, open after it, closed after logout |
+| `tests/stores.test.ts` | Teams, Workspaces, plans, items and secrets read back after a restart; a secret is 0600 and never printed; Agents outlive the restart |
 
-Every file boots a real Ronin (`src/index.ts`) through `tests/helpers/ronin.ts`:
-- a private tmux server (`tests/helpers/testserver.ts`), free port and scratch roots;
-- stub `claude` and `codex` that record how they were started;
-- stub `systemctl`, `systemd-run` and `loginctl`, because Ronin stops an Agent pane's scope
-  and a test server's panes share the scope of whoever started the run;
-- `NODE_ENV=production`, the only mode in which the entry point binds its operator socket.
-
-Tests drive routes, tools and the tmux server and check the result. They never read source
-or document text. A test that is ever flaky is deleted, not retried.
+Both boot a real Ronin through `tests/helpers/ronin.ts` (a private tmux server, scratch
+roots, stub CLIs and systemd tools). Add no surface or layout tests; a guard that is ever
+flaky is deleted, not retried.
 
 ## Running it
 
-- `npm run verify`: the gate. `scripts/check-tests.mjs` clears `TMUX`, `RONIN_SOCKET` and
-  the other live addresses, runs the files four at a time, and fails if the live tmux
-  server changed.
-- One file: `env -u TMUX -u TMUX_PANE -u RONIN_SOCKET node --import tsx --test
-  tests/agents.test.ts`.
-- From an Agent's own pane, run it under `systemd-run --user --scope -q npm run verify` as
-  a second wall around the Agent's scope.
+- `npm run verify`: `scripts/check-tests.mjs` clears `TMUX`, `RONIN_SOCKET` and the other
+  live addresses, runs the two files side by side, and fails if the live tmux server changed.
+- From an Agent's own pane, run it under `systemd-run --user --scope -q npm run verify`.
 
 CI (`.github/workflows/verify.yml`) runs `npm run verify` on every pull request.
 
@@ -44,8 +31,6 @@ CI (`.github/workflows/verify.yml`) runs `npm run verify` on every pull request.
 
 - `npm run smoke:ui` is the rendered-page check. `ronin-gate`, `ronin-update` and
   `ronin-deploy` run it; it needs Playwright and a browser.
-- `npm run byoin` checks a real box's user stores. `ronin-doctor` runs it; run it after
-  changing an installed box or its stores.
+- `npm run byoin` checks a real box's user stores. `ronin-doctor` runs it.
 
-Report the commands and results in a hand-in, with known failures and what was not run.
-Do not describe a failed or partial run as green.
+Report what you ran in a hand-in. Do not describe a failed or partial run as green.

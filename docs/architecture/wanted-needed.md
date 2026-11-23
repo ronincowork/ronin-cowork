@@ -3,8 +3,7 @@
 > Current state, not a plan. The ⚙ Configuration tab renders both. Companion to
 > `docs/settei.md` (the one object these
 > lists live in). In code: `src/machine-settings.ts` (`computeNeeded`), `src/machine-settings-schema.ts`
-> (`requires`, the verbs), `public/js/machine-settings.js` (the ⚙ ticks and the needed box),
-> `ronin_session_boot/job/Atarashi/00_ATARASHI.md` (the seat that works the list).
+> (`requires`, the verbs), `public/js/machine-settings.js` (the ⚙ ticks and the needed box).
 
 ## The one idea
 

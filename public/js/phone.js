@@ -282,9 +282,10 @@ export async function buildPhone() {
       lead.setAttribute('aria-label', t('league.team_lead', 'Team Lead'));
       identity.append(lead);
     }
-    if (situation === 'flagged') identity.append(el('span', 'ph-agent-flag', '⚑'));
     identity.append(el('span', 'ph-card-name', agentLabel(member)));
     line.append(identity);
+    // ⚑ on the right, where the working dot sits (owner, KAN-776).
+    if (situation === 'flagged') line.append(el('span', 'ph-agent-flag', '⚑'));
     card.append(line);
     return card;
   };

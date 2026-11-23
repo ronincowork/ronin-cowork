@@ -16,9 +16,9 @@ the machine and the skin is Stock, which is the shipped look.
 
 ## Writing your own skin
 
-**Your file is `~/ronin/catalogs/SKINS.md`** (exactly: `ronin-store catalogs` → `SKINS.md`).
+**Your file is `~/ronin/custom/SKINS.md`** (`ronin-store custom` → `SKINS.md`).
 It does not exist until you make it. **An update never touches it.** The shipped file is
-`ronin_catalogs/SKINS.md` — read it for examples, do not edit it: a `git pull` replaces it.
+`ronin_stock/SKINS.md` — read it for examples, do not edit it: a `git pull` replaces it.
 
 ```markdown
 ## mine
@@ -66,12 +66,12 @@ carries the measured table.
 ## Writing your own words — a lexicon, and the desk profile that wears it
 
 The skin decides how Ronin *looks*; a **lexicon** decides what it *says* (`docs/architecture/lexicons.md`,
-`docs/products/kokugo.md`). Both hang off a **desk profile** (`ronin_catalogs/desk_profiles/`), which is
-what a person actually picks in the Desk profile field on Ronin Settings' Desk surface. Same shadowing rule as everything
-in the catalogs store: a file of ours of the same name is replaced whole; a new name is new.
+`docs/products/kokugo.md`). Both hang off a **desk profile** (`ronin_stock/desk_profiles/`), which is
+what a person actually picks in the Desk profile field on Ronin Settings' Desk surface. The one rule
+of `~/ronin/custom/`: a file of ours of the same name is replaced whole; a new name is new.
 
-1. **The words.** `ronin-store catalogs` → `lexicons/<name>_<lang>.md` (the language is in the
-   name). Format: `ronin_catalogs/lexicons/README.md`. Say only what changes — everything
+1. **The words.** `~/ronin/custom/lexicons/<name>_<lang>.md` (the language is in the
+   name). Format: `ronin_stock/lexicons/lexicons_readme.md`. Say only what changes — everything
    else falls through to `professional_en`, the floor. Every key that can be changed, with
    every shipped lexicon's word beside it, is `npm run kokugo:table` (a report generated on
    demand and never committed).
@@ -84,9 +84,9 @@ in the catalogs store: a file of ours of the same name is replaced whole; a new 
    - **roster.no_team:** freelancers
    ```
 
-2. **The profile.** `ronin-store catalogs` → `desk_profiles/<name>.md` naming it
-   (`- **lexicon:** mine_en`, plus the skin and the rest; format in that directory's
-   README) — or copy one of ours (`home.md`) and change its `lexicon:` line.
+2. **The profile.** `~/ronin/custom/desk_profiles/<name>.md` naming it
+   (`- **lexicon:** mine_en`, plus the skin and the rest; format in
+   `ronin_stock/desk_profiles/desk_profiles_readme.md`) — or copy one of ours (`home.md`) and change its `lexicon:` line.
 3. **Pick it** in ⚙ → Appearance → desk profile, and reload. Surfaces take the words on
    their next paint.
 4. **Check it**: a key the floor lacks changes nothing, silently, so compare your file
@@ -94,5 +94,5 @@ in the catalogs store: a file of ours of the same name is replaced whole; a new 
    to `docs/kokugo-table.md`. The Customize view lists both shelves (Presentation → Desk
    profiles · Lexicons).
 
-**An update never touches your files.** Never edit `ronin_catalogs/` — a `git pull` replaces it.
+**An update never touches your files.** Never edit `ronin_stock/` — a `git pull` replaces it.
 

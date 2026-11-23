@@ -3,8 +3,8 @@
  *
  * TEMP. Every launch gets TMPDIR and CLAUDE_CODE_TMPDIR (Claude Code's scratchpad root; it
  * appends claude-<uid>/) pointing at `tmp/` in its session folder, on disk, never /tmp (tmpfs,
- * RAM). It goes when the session folder goes: retention sweep, Hard Delete, archive expiry;
- * archive keeps it. A session path too long for a unix socket under it (sun_path is 108) gets
+ * RAM). It goes when the Agent goes (removeSessionFolders): Delete, Hard Delete, an unresumable
+ * end, archive expiry; archive keeps it. A session path too long for a unix socket under it (sun_path is 108) gets
  * a short root `<data root>/tmp/<hash of key>`, linked from `<session folder>/tmp`; the start
  * sweep removes a short root whose session folder is gone.
  *
@@ -36,6 +36,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { promisify } from 'node:util';
 import { storeDir } from './resources.js';
+import { holdsWritten, letterListKey } from './holds-hook.js';
 
 const execAsync = promisify(execFile);
 
@@ -74,6 +75,15 @@ export function sessionFolders(key: string): string[] {
   const folder = path.join(storeDir('session'), key);
   const temp = agentTempDir(key);
   return temp.startsWith(`${folder}/`) ? [folder] : [folder, temp];
+}
+
+/** The Agent and its folder are one (owner, 22 Nov): every ending that deletes the Agent (Delete,
+ * Hard Delete, an unresumable end, archive Hard Delete, archive expiry) removes its folder and its
+ * temp root in the same step. Archive keeps them; nothing else removes them. */
+export async function removeSessionFolders(key: string): Promise<void> {
+  if (!key) return;
+  for (const dir of sessionFolders(key)) await rm(dir, { recursive: true, force: true });
+  holdsWritten(letterListKey(key), '', []); // its letter went with it
 }
 
 /** Make the session's temp folder and return the env that points the Agent at it. */

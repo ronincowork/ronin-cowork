@@ -6,7 +6,7 @@
 import type { LaunchMode } from './agent-defaults.js';
 import type { Depth } from './catalog.js';
 
-export type SessionType = 'cowork' | 'bare' | 'mika';
+export type SessionType = 'cowork' | 'bare' | 'mika' | 'irasshai';
 export type AgentRole = 'coworker' | 'lead' | 'epic_lead' | 'coordinator';
 
 /** One layer's brief settings (docs/architecture/brief.md, Layers and brief settings): what it adds (at a depth), blocks and screens to. */
@@ -21,7 +21,7 @@ export interface BriefSettings {
 export type OfficePerson = Omit<import('./office-people.js').Person, 'role'> & { role: string };
 
 export interface BriefRecord {
-  session: { name: string; title: string; type: SessionType; template: string; task: string };
+  session: { name: string; title: string; type: SessionType; task: string };
   user: {
     name: string;
     email: string;
@@ -47,6 +47,8 @@ export interface BriefRecord {
   };
   /** Hosted: the office's owner and members. Self-hosted: none. */
   people: OfficePerson[];
+  /** The office's facts at birth (src/facts.ts, KAN-768), by fact: its seed line, its file, its text. */
+  office?: Record<string, { line: string; path: string; text: string }>;
   setting: {
     hosted: boolean;
     campaign: string;
@@ -100,7 +102,7 @@ const recordLines = (rows: BriefRecord['setting']['mcp']): string =>
 
 /** How a record value reads in a fact line. The words are the brief's (BRIEF_WORDING). */
 const WORDS: Record<string, (r: BriefRecord) => string> = {
-  'session.type': (r) => ({ cowork: 'Cowork Agent', bare: 'bare metal Agent', mika: 'Mika' })[r.session.type],
+  'session.type': (r) => ({ cowork: 'Cowork Agent', bare: 'bare metal Agent', mika: 'Mika', irasshai: 'Helpful Assistant' })[r.session.type],
   'setting.hosting': (r) => r.setting.hosted ? 'hosted' : 'self-hosted',
   'setting.integrations': (r) => r.setting.integrations.join(', ') || 'none',
   'setting.mcp_lines': (r) => recordLines(r.setting.mcp),

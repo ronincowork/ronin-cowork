@@ -23,10 +23,20 @@ import { request } from './request.js';
 import { subscribe as hear } from './store.js';
 import { SURFACE_DRAG } from './workbench.js';
 import { WORKBENCH_TYPES } from './workbench-catalog.js';
-import { openWorkspaceTab, reserveWorkspaceTab } from './workspace.js';
+import { workbenchLaunchUrl } from './workspace.js';
 import { ask } from './ask.js';
 import { holderWords } from './work-items-surface.js';
 import { itemBar } from './tile-island.js';
+import { createPhalanx } from './phalanx.js';
+import { S } from './state.js';
+import { epicAttention, epicMoved, isOpenEpic, orderEpics } from './epic-stage.js';
+import { createStoneMarks, statusKey } from './item-lifecycle.js';
+import { createProgress } from './epic-progress.js';
+import { humanAge } from './work-record.js';
+import { membersOfTeam, subscribe as hearTeams, teamByName, teamsFromState } from './team-controller.js';
+import { workspaces } from './teams-surface-rows.js';
+import { createStep } from './form-steps.js';
+import { splitItemTitle } from './item-title.js';
 
 /** The statuses in workflow order (Jira's, the store's default); a space's own extra names follow. */
 export const STATUSES = ['To Do', 'In Progress', 'In Review', 'Done'];
@@ -65,7 +75,10 @@ export function createEpicsRead(campaignId) {
 }
 
 /** The selector's Epics: one card each, drawn onto a tile as that Epic. */
-export const epicOffers = (epicsRead) => epicsRead.list().map((epic) => ({ key: epic.id, label: epic.title || epic.id }));
+export const epicOffers = (epicsRead) => epicsRead.list().filter(isOpenEpic).map((epic) => {
+  const title = epic.title || epic.id;
+  return { key: epic.id, label: splitItemTitle(title).shortTitle, title };
+}); // no Done Epics, no Icebox (owner, 2026-11-22)
 
 const el = (tag, cls = '', text = '') => {
   const out = document.createElement(tag);
@@ -74,26 +87,6 @@ const el = (tag, cls = '', text = '') => {
   return out;
 };
 
-/** Open the holder's own workbench in a new tab: an Agent's, or a Team's. */
-function openHolder({ kind, name }) {
-  const tab = reserveWorkspaceTab();
-  return openWorkspaceTab(kind === 'team' ? 'team' : 'agent', name, tab);
-}
-
-/** An item's holder as a button that opens that Agent (or Team); a quiet word when nobody holds it. */
-export function holderButton(item) {
-  // Held by a Workspace (its Icebox, KAN-352): parked, not waiting to be given out; a quiet word.
-  if (String(item?.holder || '').startsWith('workspace:')) return el('span', 'epic-holder is-none', holderWords(item.holder));
-  const holder = holderOfItem(item);
-  if (!holder) return el('span', 'epic-holder is-none', t('epics.unassigned', 'Unassigned'));
-  const button = el('button', 'epic-holder', holderWords(holder)); // the one wording (w299): label only
-  button.type = 'button';
-  button.title = holder.kind === 'team' ? t('epics.open_team', 'Open this Team') : t('epics.open_agent', 'Open this Agent');
-  button.addEventListener('click', () => openHolder(holder));
-  return button;
-}
-
-/** The statuses the Status question picks on arrival: the open ones (owner, 2026-11-06, w334). */
 export const OPEN_STATUSES = ['To Do', 'In Progress', 'In Review'];
 /** Assigned, as the question asks it: 'yes', 'no', both or nothing picked (all). */
 export const byAssigned = (items, picked = []) => (!picked.length || picked.length === 2 ? items
@@ -120,6 +113,22 @@ function epicItems(epicId, { epicsRead }) {
     cards: () => request(`/api/work-items/${encodeURIComponent(epicId)}/cards`, { cache: 'no-store' }).then((result) => (result.ok ? result.data.cards || [] : null)),
     empty: t('epics.no_items', 'No work items under this Epic yet.'),
   });
+}
+
+/** An opened bar's reading, from the item's whole read (the push is slim): its status to move,
+ * comments, a box to comment. `children` false leaves out its children (an Epic's are the board). */
+export function itemReading(item, { children = true, onClose = null, openChild = null } = {}) {
+  const host = el('div', 'epic-reading');
+  host.dataset.item = item.id;
+  void request(`/api/work-items/${encodeURIComponent(item.id)}`, { cache: 'no-store' }).then(async (result) => {
+    if (!host.isConnected) return;
+    if (!result.ok) { host.append(el('p', 'epic-empty', result.message || '')); return; }
+    const { renderItemDetail, holderOf } = await import('./work-items-surface.js');
+    const whole = result.data.item;
+    renderItemDetail(host, whole, { holder: holderOf({ ...whole, held_by: result.data.held_by }), heldBy: result.data.held_by, history: false,
+      children: children && Array.isArray(result.data.children) ? result.data.children : [], openChild, onClose });
+  });
+  return host;
 }
 
 /**
@@ -173,21 +182,7 @@ export function createItemBoard({ every: everyNow, head = () => null, cards: rea
     });
   }
 
-  /** An opened bar's reading, from the item's whole read (the push is slim). */
-  function reading(item, { children = true, onClose = null } = {}) {
-    const host = el('div', 'epic-reading');
-    host.dataset.item = item.id;
-    void request(`/api/work-items/${encodeURIComponent(item.id)}`, { cache: 'no-store' }).then(async (result) => {
-      if (!host.isConnected) return;
-      if (!result.ok) { host.append(el('p', 'epic-empty', result.message || '')); return; }
-      const { renderItemDetail, holderOf } = await import('./work-items-surface.js');
-      const whole = result.data.item;
-      renderItemDetail(host, whole, { holder: holderOf({ ...whole, held_by: result.data.held_by }), heldBy: result.data.held_by, history: false,
-        children: children && Array.isArray(result.data.children) ? result.data.children : [], // an Epic's are the board below
-        openChild: (child) => { open.add(child.id); paint(); }, onClose });
-    });
-    return host;
-  }
+  const reading = (item, { children = true, onClose = null } = {}) => itemReading(item, { children, onClose, openChild: (child) => { open.add(child.id); paint(); } });
 
   // ONE ITEM MOVES, ONE BAR CHANGES (owner, 2026-11-12, KAN-412): the kit's keyed list
   // (WorkspacePrimitives.createKeyedList). One bar per item, kept between pushes, repaints only
@@ -261,13 +256,35 @@ export function createItemBoard({ every: everyNow, head = () => null, cards: rea
 }
 
 /**
+ * LAUNCH (owner, 2026-11-23): an Epic's one Launch opens the Team working it in a new tab: the Agent
+ * holding the Epic in tilespace 1 (the Team's lead when the Team itself holds it), this Epic in
+ * tilespace 2. Nobody holding it, or an Agent in no Team: no Launch; the Epic's bar assigns it.
+ */
+function launchTeam(epic) {
+  const holder = holderOfItem(epic);
+  const team = holder?.kind === 'team' ? holder.name
+    : holder ? teamsFromState().find((one) => one.name && membersOfTeam(one.name).some((member) => member.name === holder.name))?.name : '';
+  if (!team) return null;
+  const seats = { workspace2: { type: WORKBENCH_TYPES.epicRecord, key: epic.id },
+    ...(holder.kind === 'agent' ? { workspace1: { type: WORKBENCH_TYPES.terminal, key: holder.name } } : {}) };
+  return WorkspaceKit.primitives.createAction({ label: t('epics.launch', 'Launch'), launch: true, size: 'compact', className: 'epic-launch', action: () => {
+    const url = workbenchLaunchUrl({ destination: 'team', param: team, mode: 'replace', state: { count: 2, selected: 'workspace1', seats } });
+    if (url) window.open(url, '_blank', 'noopener');
+  } }).el;
+}
+
+/**
  * THE EPICS BOARD (owner, 2026-11-06, w334, w340): every Epic surface. A row of stones across
  * the top, one per Epic (its title, its Jira key or Ronin only, how many of its items are open);
  * the pressed one is the Epic below: its source line, then its items (epicItems). Another stone
  * pressed switches to that Epic here. `initial` is the Epic it starts on; with one Epic, that one.
  * A stone dragged into another tilespace places a board starting on that Epic (createEpicRecord).
+ *
+ * ONE EPIC (owner, 2026-11-23) is this same board without the strip (`strip: false`): the Epics
+ * phalanx's pressed stone and a placed Epic (createEpicRecord). An Epic has no page of its own; with
+ * `launch`, its top line is the Launch to the Team working it (launchTeam), or nothing.
  */
-export function createEpicBoard({ epicsRead, header = true, initial = '' }) {
+export function createEpicBoard({ epicsRead, header = true, initial = '', strip: withStrip = true, launch = false }) {
   const { createSurface } = WorkspaceKit.primitives;
   const out = createSurface({ label: t('epics.title', 'Epics'), className: 'setup-surface epics-board', header });
   const strip = el('div', 'epic-strip');
@@ -275,13 +292,16 @@ export function createEpicBoard({ epicsRead, header = true, initial = '' }) {
   strip.setAttribute('aria-label', t('epics.title', 'Epics'));
   const below = el('div', 'epic-board-body');
   const board = el('div', 'epic-board');
-  board.append(strip, below);
+  board.append(...(withStrip ? [strip] : []), below);
   out.content.append(board);
   let selected = initial;
   let view = null;
   let source = null;
   let drawn = '';
   let sourceSaid = '';
+  // Each stone's progress: the same lifecycle line as the Epics phalanx's stones (KAN-785).
+  const lines = new Map();
+  const lineFor = (id) => { if (!lines.has(id)) lines.set(id, createProgress('line')); return lines.get(id); };
 
   function stone(epic) {
     const label = epic.title || epic.id;
@@ -290,8 +310,11 @@ export function createEpicBoard({ epicsRead, header = true, initial = '' }) {
     node.type = 'button';
     node.dataset.epic = epic.id;
     node.setAttribute('aria-pressed', String(epic.id === selected));
-    node.append(el('span', 'epic-stone-label', label),
-      el('span', 'epic-stone-meta', `${epic.external?.jira?.key || t('epics.ronin_only', 'Ronin only')} · ${t('epics.open_n', '{n} open', { n: openCount })}`));
+    node.append(el('span', 'epic-stone-label', splitItemTitle(label).shortTitle),
+      el('span', 'epic-stone-meta', [epic.external?.jira?.key, t('epics.open_n', '{n} open', { n: openCount })].filter(Boolean).join(' · ')));
+    const line = lineFor(epic.id);
+    line.update(epic, epicsRead.items(epic.id));
+    node.append(line.el);
     node.title = label;
     node.draggable = true;
     node.addEventListener('dragstart', (event) => {
@@ -314,22 +337,27 @@ export function createEpicBoard({ epicsRead, header = true, initial = '' }) {
   function paint() {
     const epics = epicsRead.list();
     // An Epic gone from a push that has Epics is let go; before the first push, the one to start on is kept.
-    if (selected && epics.length && !epics.some((epic) => epic.id === selected)) { selected = ''; view?.destroy(); view = null; }
-    if (!selected && epics.length === 1) selected = epics[0].id;
+    if (withStrip && selected && epics.length && !epics.some((epic) => epic.id === selected)) { selected = ''; view?.destroy(); view = null; }
+    if (withStrip && !selected && epics.length === 1) selected = epics[0].id;
     const epic = epics.find((row) => row.id === selected);
-    if (out.header) out.header.title.textContent = epic ? (epic.title || epic.id) : t('epics.title', 'Epics');
-    const signature = JSON.stringify([selected, epics.map((epic) => [epic.id, epic.title, epic.external?.jira?.key,
-      epicsRead.items(epic.id).filter((item) => item.status !== 'Done').length])]);
-    if (signature !== drawn) {
+    const { shortTitle } = splitItemTitle(epic ? (epic.title || epic.id) : '');
+    if (out.header) out.header.title.textContent = epic ? shortTitle : t('epics.title', 'Epics');
+    const signature = JSON.stringify([selected, epics.map((epic) => [epic.id, epic.title, epic.external?.jira?.key, epic.status, epic.holder,
+      epicsRead.items(epic.id).map((item) => [item.status, item.level, item.flagged, item.holder])])]);
+    if (withStrip && signature !== drawn) {
       drawn = signature;
       strip.replaceChildren(...(epics.length ? epics.map(stone) : [el('p', 'epic-empty', t('epics.none', 'No Epics yet.'))]));
     }
+    if (!epic && !withStrip) { view?.destroy(); view = null; below.replaceChildren(el('p', 'epic-empty', t('epics.not_found', 'This Epic is not open here.'))); return; }
     if (!epic) { below.replaceChildren(...(epics.length ? [el('p', 'epic-empty', t('epics.pick_epic', 'Pick an Epic to see its work items.'))] : [])); return; }
     if (!view) { source = el('div', 'epic-source'); sourceSaid = ''; view = epicItems(selected, { epicsRead }); below.replaceChildren(source, view.el); }
-    const said = JSON.stringify([selected, epic.external?.jira?.key, epic.holder]);
+    const said = JSON.stringify([selected, epic.holder, launch]);
     if (said !== sourceSaid) {
       sourceSaid = said;
-      source.replaceChildren(el('span', '', epic.external?.jira?.key ? `Jira ${epic.external.jira.key}` : t('epics.ronin_only', 'Ronin only')), holderButton(epic));
+      // Launch or nothing (owner, 23 Nov): no Jira key, no holder words here.
+      const go = launch ? launchTeam(epic) : null;
+      source.replaceChildren(...(go ? [go] : []));
+      source.hidden = !go;
     }
     view.paint();
   }
@@ -341,5 +369,262 @@ export function createEpicBoard({ epicsRead, header = true, initial = '' }) {
   };
 }
 
-/** One Epic's worksurface (its selector card, a dragged stone): the board, starting on that Epic. */
-export const createEpicRecord = (key, options) => createEpicBoard({ ...options, initial: key });
+/** One Epic's worksurface (its selector card, a dragged stone): that Epic alone, with its Team's Launch
+ * (none inside a Team's own workbench). */
+export const createEpicRecord = (key, { epicsRead, launch = true }) => createEpicBoard({ epicsRead, initial: key, strip: false, launch });
+
+const dragEpic = (epic, label) => ({ dragstart: (event) => {
+  event.dataTransfer.setData(SURFACE_DRAG, JSON.stringify({ type: WORKBENCH_TYPES.epicRecord, detail: { key: epic.id } }));
+  event.dataTransfer.setData('text/plain', label);
+  event.dataTransfer.effectAllowed = 'copy';
+} });
+
+/** A stone's last line: its Jira key (when it has one) and when it last moved. */
+function movedWords(epic, moved) {
+  const ms = Date.now() - Date.parse(moved);
+  const when = Number.isFinite(ms) ? t('epics.moved_ago', 'moved {age} ago', { age: humanAge(Math.max(0, ms)) }) : '';
+  return [epic.external?.jira?.key || '', when].filter(Boolean).join(' · ');
+}
+
+/**
+ * THE EPICS PHALANX (owner, 2026-11-22; w897): Layer 1. Every open Epic a stone (no Done Epics, no
+ * Icebox): its title, its Jira key and when it last moved, ⚑ top right while anything in it is
+ * flagged, its open item count small bottom right, its progress a colour line along the bottom edge
+ * (epic-progress.js), pressed for the epic-stage and the counts. Ordered by orderEpics: flagged
+ * first, then the most progressed; every stone the same height. A Workspace
+ * question narrows them. A pressed stone shows that Epic's board beside the rail (createEpicBoard,
+ * with its Team's Launch); a dragged one places it whole in another tilespace. New Epic is the
+ * selector's pill (createNewItem), not a stone.
+ */
+export function createEpicStones({ epicsRead, workbench = null, bare = false, emptyWords = '' }) {
+  const { createSurface } = WorkspaceKit.primitives;
+  // AN EMBEDDED CONSUMER (w900): a Team's or a Workspace's Epics take the stones bare (no surface
+  // head, no Workspace question) and their own line when there are no Epics.
+  const out = bare ? (() => { const node = el('div', 'epics-records epics-records-bare wk-surface-content'); return { el: node, content: node }; })()
+    : createSurface({ label: t('epics.title', 'Epics'), className: 'setup-surface epics-records' });
+  // ONE QUESTION, WORKSPACE (owner, 2026-11-23; the Teams stones' own, team-roster-surface.js): many-of,
+  // blank All; it narrows the stones to the Epics the Teams of those Workspaces, or their Agents, hold.
+  let roots = [];
+  const filter = bare ? null : ask([{ fields: [
+    { key: 'root', label: t('teams_surface.workspace', 'Workspace'), blank: t('teams_surface.all', 'All'), many: true, options: [] },
+  ] }], { value: { root: roots }, density: 'tight', onChange: ({ root }) => { roots = (root || []).map(String); paint(); } });
+  const inRoots = () => {
+    if (!roots.length) return null;
+    return new Set(teamsFromState().filter((team) => roots.includes(team.workspace)).flatMap((team) => (Array.isArray(team.epics) ? team.epics : [])));
+  };
+  const lines = new Map();
+  const lineFor = (id) => { if (!lines.has(id)) lines.set(id, createProgress('line')); return lines.get(id); };
+  // A STONE'S MARKS (owner, 2026-11-23): the lifecycle line along the bottom edge; ⚑ top right while
+  // the Epic or anything under it is flagged and not Done (the Agent pill's flag); bottom right, small
+  // and grey, how many of its items are not Done (the Epic's size). One node per Epic, kept (KAN-413).
+  const marks = new Map();
+  const marksFor = (epic, items) => {
+    if (!marks.has(epic.id)) marks.set(epic.id, createStoneMarks(lineFor(epic.id)));
+    return marks.get(epic.id).update(items, { flagged: Boolean(epic.flagged) });
+  };
+  const stones = createPhalanx({
+    className: 'epic-record-stones',
+    renderDetail: (item, host) => {
+      const one = createEpicBoard({ epicsRead, initial: item.id, strip: false, launch: true, header: false });
+      host.append(one.el);
+      one.show();
+      return () => one.destroy();
+    },
+  });
+  stones.mount(out.content, { before: filter ? [filter.el] : [] });
+  const empty = el('p', 'epic-empty', emptyWords);
+  empty.hidden = true;
+  if (emptyWords) out.content.append(empty);
+  function paint() {
+    filter?.options('root', workspaces(teamsFromState()).map((root) => ({ v: root, l: root })));
+    const picked = inRoots();
+    const rows = orderEpics(epicsRead.list().filter((epic) => isOpenEpic(epic) && (!picked || picked.has(epic.id))).map((epic) => {
+      const items = epicsRead.items(epic.id);
+      const { score } = lineFor(epic.id).update(epic, items);
+      // Flagged first, then the most progressed (orderEpics): the flag is what the stone shows.
+      return { epic, items, score, attention: { flagged: epicAttention(items).flagged || Boolean(epic.flagged) }, moved: epicMoved(epic, items) };
+    }));
+    stones.setItems(rows.map(({ epic, items, moved }) => {
+      const label = epic.title || epic.id;
+      return { id: epic.id, label: splitItemTitle(label).shortTitle, state: movedWords(epic, moved), marker: marksFor(epic, items),
+        className: 'epic-record-stone', attrs: { title: label }, draggable: true, events: dragEpic(epic, label) };
+    }));
+    empty.hidden = rows.length > 0;
+    workbench?.refreshSelector?.(); // the selector's Epic cards follow the push
+  }
+  let stop = null;
+  let stopTeams = null;
+  return {
+    el: out.el,
+    show: () => { stop ??= epicsRead.subscribe(paint); stopTeams ??= hearTeams(paint); paint(); },
+    destroy: () => { stop?.(); stop = null; stopTeams?.(); stopTeams = null; filter?.destroy(); stones.destroy?.(); },
+  };
+}
+
+/** The priorities a new item may take: Jira's defaults (work-items.ts JIRA_NAMES), Medium the default. */
+const PRIORITIES = ['Highest', 'High', 'Medium', 'Low', 'Lowest'];
+/** The kinds a new item starts as (Jira's defaults). A Subtask is not picked: an item put under a
+ * Task, Story, Bug or Feature is made a Subtask (work-items.ts jiraShape). */
+const KINDS = ['Epic', 'Story', 'Task', 'Bug', 'Feature'];
+
+/**
+ * NEW WORK ITEM (owner, 2026-11-23): one form for any work item, an Epic to start (the Epics
+ * workbench's New Epic pill; a Team's to come), in the New Team and New Agent forms' grammar
+ * (new-team-form.js): its head with Create, numbered steps under it, the questions of a step side
+ * by side, one row of stones per step (wide before deep). 1 Kind, its Priority at the right of the
+ * same row. 2 Parent (gone for an Epic, which goes under nothing), Epics only beside it: an open
+ * Epic, or with Epics only off a Task, Story, Bug or Feature, which makes it a Subtask; inside a
+ * Team, that Team's. 3 the short and long
+ * title (saved `short: long`) and the Objective. 4 Who does the work: Team, Lead, Agent, one of the
+ * three, or nobody yet (`holder` answers it on opening: inside a Team, that Team). Create (or Ctrl/Cmd+Enter) makes it (POST /api/work-items) and
+ * `onMade(item)` lets the bench show it.
+ */
+export function createNewItem({ kind: startKind = 'Epic', epicsRead = null, holder: presetHolder = '', onMade = () => {} } = {}) {
+  const { createSurface, createAction, createField, createNotice } = WorkspaceKit.primitives;
+  const draft = { kind: startKind, parent: '', short: '', long: '', objective: '', holder: '', priority: 'Medium' };
+  const read = epicsRead || createEpicsRead(() => '');
+  // The read holds the pushed Epics and their items only while someone hears it: the form hears it
+  // itself, so its Parent list is full wherever it opens (a Team's own read has no other listener).
+  const stopRead = read.subscribe(() => {});
+  // Under a level-0 item it is a Subtask, whatever kind was picked.
+  const underItem = () => Boolean(draft.parent) && !read.list().some((epic) => epic.id === draft.parent);
+  const kindNow = () => (underItem() ? 'Subtask' : draft.kind);
+  const heading = () => t('work_items.new_kind', 'New {kind}', { kind: kindNow() });
+  const titleOf = () => [draft.short.trim(), draft.long.trim()].filter(Boolean).join(': ');
+  let busy = false;
+  const create = createAction({ label: t('epics.create', 'Create'), size: 'compact', disabled: true, className: 'epic-new-create', action: () => void make() });
+  const surface = createSurface({ label: heading(), className: 'ntf-surface epic-new', actions: [create] });
+  surface.header?.el.classList.add('launch-form-head');
+  const notice = createNotice();
+  const ready = () => create.setDisabled(busy || !draft.short.trim());
+  const retitle = () => { if (surface.header) surface.header.title.textContent = heading(); };
+  const row = (...nodes) => { const node = el('div', 'epic-new-row'); node.append(...nodes); return node; };
+  /** A row of questions, one ask (its stones side by side), of which one is answered: answering one
+   * hides the other stones; clearing it brings them back. `pick(key, v)` answers one from code. */
+  const oneOf = (questions, set) => {
+    const value = Object.fromEntries(questions.map(({ key }) => [key, '']));
+    const show = (picked) => { for (const { key } of questions) { const stone = q.el.querySelector(`[data-ask-key="${key}"]`); if (stone) stone.hidden = Boolean(picked) && key !== picked; } };
+    const q = ask([{ fields: questions.map(({ key, label, options }) => ({ key, label, blank: t('epics.pick', 'Pick'), options })) }],
+      { value, density: 'tight', onChange: (answer) => {
+        const picked = questions.map(({ key }) => key).find((key) => answer[key]) || '';
+        set(picked ? String(answer[picked]) : '');
+        show(picked);
+      } });
+    const pick = (key, v) => { for (const one of questions) q.set(one.key, one.key === key ? v : ''); show(v ? key : ''); };
+    return { el: q.el, pick, destroy: () => q.destroy() };
+  };
+
+  // 1 · Kind, and on the same row at the right its Priority.
+  const stepKind = createStep({ n: 1, key: 'kind', title: t('work_items.kind', 'Kind') });
+  const kindQ = ask([{ fields: [
+    { key: 'kind', label: t('work_items.kind', 'Kind'), options: KINDS.map((v) => ({ v, l: v })) },
+    { key: 'priority', label: t('work_items.priority', 'Priority'), options: PRIORITIES.map((v) => ({ v, l: v })) },
+  ] }], { value: { kind: draft.kind, priority: draft.priority }, density: 'tight', className: 'epic-new-kind', onChange: ({ kind, priority: next }) => {
+    draft.priority = String(next || 'Medium');
+    if (String(kind || startKind) === draft.kind) return;
+    draft.kind = String(kind || startKind);
+    stepUnder.el.hidden = draft.kind === 'Epic';
+    if (draft.kind === 'Epic') { draft.parent = ''; under.set('parent', ''); }
+    renumber();
+    retitle();
+  } });
+  stepKind.body.append(kindQ.el);
+
+  // 2 · Parent (owner, 2026-11-23): one question, and beside it Epics only (on by default). On, it
+  // offers the open Epics; off, every open Task, Story, Bug and Feature under them, a pick of which
+  // makes this a Subtask. Inside a Team (or once a Team is picked to do it), only that Team's Epics
+  // and the items under them. Gone for an Epic, which goes under nothing.
+  const stepUnder = createStep({ n: 2, key: 'under', title: t('work_items.parent', 'Parent') });
+  const teamNow = () => [presetHolder, draft.holder].find((h) => String(h).startsWith('team:'))?.slice(5) || '';
+  const parentEpics = () => {
+    const team = teamNow();
+    const mine = team ? new Set(teamByName(team)?.epics || []) : null;
+    return read.list().filter((epic) => isOpenEpic(epic) && (!mine || mine.has(epic.id)));
+  };
+  const parentOptions = (answers) => (answers.epicsOnly
+    ? parentEpics().map((epic) => ({ v: epic.id, l: splitItemTitle(epic.title || epic.id).shortTitle, sub: epic.id }))
+    : parentEpics().flatMap((epic) => read.items(epic.id).filter((item) => item.level === 0 && statusKey(item.status) !== 'done')
+      .map((item) => ({ v: item.id, l: splitItemTitle(item.title || item.id).shortTitle, sub: `${item.id} · ${splitItemTitle(epic.title || epic.id).shortTitle}` }))));
+  const under = ask([{ fields: [
+    { key: 'parent', label: t('work_items.parent', 'Parent'), blank: t('work_items.no_parent', 'None'), options: parentOptions },
+    { key: 'epicsOnly', label: t('work_items.epics_only', 'Epics only'), switch: [t('forms.yes', 'Yes'), t('forms.no', 'No')] },
+  ] }], { value: { parent: '', epicsOnly: true }, density: 'tight', onChange: ({ parent, epicsOnly }) => {
+    // A pick the other list does not hold is let go when the switch moves.
+    const still = parentOptions({ epicsOnly }).some((option) => option.v === parent);
+    if (parent && !still) { under.set('parent', ''); draft.parent = ''; }
+    else draft.parent = String(parent || '');
+    retitle();
+  } });
+  stepUnder.body.append(under.el);
+  stepUnder.el.hidden = draft.kind === 'Epic';
+
+  // 3 · Title and objective: a short title (the stone's, the bar's) and a long one; a colon would split the short one.
+  const stepTop = createStep({ n: 3, key: 'top', title: t('work_items.title_objective', 'Title & objective') });
+  const titleInput = el('input');
+  titleInput.type = 'text';
+  titleInput.placeholder = t('epics.new_short_placeholder', 'a few words');
+  titleInput.addEventListener('input', () => {
+    if (titleInput.value.includes(':')) titleInput.value = titleInput.value.replaceAll(':', '');
+    draft.short = titleInput.value;
+    ready();
+  });
+  const longInput = el('input');
+  longInput.type = 'text';
+  longInput.placeholder = t('epics.new_long_placeholder', 'the rest of the title, if it needs more');
+  longInput.addEventListener('input', () => { draft.long = longInput.value; });
+  const goalInput = el('textarea');
+  goalInput.rows = 4;
+  goalInput.placeholder = t('work_items.objective_placeholder', 'what done looks like, in your words');
+  goalInput.addEventListener('input', () => { draft.objective = goalInput.value; });
+  stepTop.body.append(row(createField({ label: t('epics.new_short', 'Short title'), control: titleInput }).el,
+    createField({ label: t('epics.new_long', 'Long title'), control: longInput }).el),
+  createField({ label: t('work_items.objective', 'Objective'), control: goalInput }).el);
+
+  // 4 · Who does the work: a Team, a lead or an Agent; nobody is fine (the item's bar assigns later).
+  const stepWho = createStep({ n: 4, key: 'who', title: t('work_items.who', 'Who does the work') });
+  const leads = () => teamsFromState().filter((team) => team.name && !team.holding).flatMap((team) => membersOfTeam(team.name)
+    .filter((member) => member.team_lead).map((member) => ({ v: `agent:${member.name}`, l: member.name, sub: team.title || team.name })));
+  const who = oneOf([
+    { key: 'team', label: t('epics.team', 'Team'), options: () => teamsFromState().filter((team) => team.durable !== false && team.name && !team.holding)
+      .map((team) => ({ v: `team:${team.name}`, l: team.title || team.name })) },
+    { key: 'lead', label: t('epics.lead', 'Lead'), options: leads },
+    { key: 'agent', label: t('epics.agent', 'Agent'), options: () => {
+      const led = new Set(leads().map((option) => option.v));
+      return (S.sessions || []).filter((session) => session.name && !led.has(`agent:${session.name}`)).map((session) => ({ v: `agent:${session.name}`, l: session.name }));
+    } },
+  ], (v) => { draft.holder = v; });
+  // `holder` (`team:<name>` or `agent:<name>`) answers its question on opening, inside a Team its Team;
+  // the others step aside as if the person had picked it, and clearing it brings them back.
+  if (presetHolder) {
+    const key = presetHolder.startsWith('team:') ? 'team' : leads().some((option) => option.v === presetHolder) ? 'lead' : 'agent';
+    who.pick(key, presetHolder);
+    draft.holder = presetHolder;
+  }
+  stepWho.body.append(who.el);
+
+
+  const steps = [stepKind, stepUnder, stepTop, stepWho];
+  function renumber() { let n = 0; for (const step of steps) if (!step.el.hidden) step.setNumber(++n); }
+  renumber();
+  const form = el('div', 'ntf-form');
+  form.append(...steps.map((step) => step.el));
+  form.addEventListener('keydown', (event) => { if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) { event.preventDefault(); void make(); } });
+  surface.content.append(form, notice.el);
+
+  async function make() {
+    if (busy || !draft.short.trim()) return;
+    busy = true;
+    ready();
+    const [holderKind, ...rest] = draft.holder.split(':');
+    const name = rest.join(':');
+    const result = await request('/api/work-items', { method: 'POST', json: { kind: kindNow(), title: titleOf(), objective: draft.objective.trim(), priority: draft.priority,
+      ...(draft.parent && draft.kind !== 'Epic' ? { parent: draft.parent } : {}),
+      ...(holderKind === 'team' && name ? { team: name } : holderKind === 'agent' && name ? { session: name } : {}) } });
+    busy = false;
+    ready();
+    notice.set(result.ok ? 'success' : 'failed', result.ok ? t('work_items.made', 'Made {id}.', { id: result.data.item?.id || '' }) : result.message || t('work_items.not_made', 'The item was not made.'));
+    if (result.ok) onMade(result.data.item || null);
+  }
+  return { el: surface.el, show: () => { ready(); titleInput.focus(); },
+    destroy: () => { stopRead(); for (const q of [kindQ, under, who]) q.destroy(); } };
+}

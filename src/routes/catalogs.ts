@@ -14,12 +14,7 @@ import {
   seedUserCatalog,
   isShadowable,
 } from '../resources.js';
-import {
-  listAgentTemplates,
-  listInstallations,
-  listTeamTemplates,
-} from '../resource-adapters.js';
-import { saveAgentTemplate, saveTeamTemplate } from '../templates.js';
+import { listInstallations } from '../resource-adapters.js';
 import { browseFolders, createFolder, folderFacts } from '../folder-browser.js';
 
 const errMsg = (e: unknown) => String((e as Error)?.message ?? e).replaceAll(homedir(), '~');
@@ -86,39 +81,6 @@ export function registerCatalogs(app: express.Express): void {
     catch (e) { res.status(500).json({ error: errMsg(e) }); }
   });
 
-  const byKind = <T extends { kinds: string[] }>(rows: T[], raw: unknown): T[] => {
-    const kind = String(raw ?? '').trim();
-    return !kind || kind === 'open' ? rows : rows.filter((row) => row.kinds.includes(kind));
-  };
-  app.get('/api/templates/agents', async (req, res) => {
-    try {
-      res.json(byKind(await listAgentTemplates(), req.query?.kind));
-    } catch (e) {
-      res.status(500).json({ error: errMsg(e) });
-    }
-  });
-  app.get('/api/templates/teams', async (req, res) => {
-    try {
-      res.json(byKind(await listTeamTemplates(), req.query?.kind));
-    } catch (e) {
-      res.status(500).json({ error: errMsg(e) });
-    }
-  });
-
-  app.post('/api/templates/agents', async (req, res) => {
-    try {
-      res.json({ ok: true, template: await saveAgentTemplate(req.body ?? {}) });
-    } catch (e) {
-      res.status(400).json({ error: errMsg(e) });
-    }
-  });
-  app.post('/api/templates/teams', async (req, res) => {
-    try {
-      res.json({ ok: true, template: await saveTeamTemplate(req.body ?? {}) });
-    } catch (e) {
-      res.status(400).json({ error: errMsg(e) });
-    }
-  });
   app.get('/api/desk-profiles', async (_req, res) => {
     try {
       res.json({

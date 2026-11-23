@@ -7,11 +7,12 @@ import type express from 'express';
 import {
   WorkItemBadInput, WorkItemMissing, WorkItemRefused,
   addComment, attachDoc, connectionOf, createItem, deleteItem, editComment, editItem, archiveHeldDone, archiveItem, flagItem, handoffItem, reviewPrompt, handoverItem, holderLabel, holdersOf, linkItem, listItems, markOnDev, nextStep, parentHint, readItem, resolveId, sendBack, watchItem, watchedIds,
-  FLAGGED, didLine, oneNoticePerCommand, type Acknowledged, type Holder, type JiraPair, type WorkItem,
+  FLAGGED, didLine, oneNoticePerCommand, isPlaybook, listPlaybooks, type Acknowledged, type Holder, type JiraPair, type WorkItem,
 } from '../work-items.js';
 import { agentReading, epicCards, everyItemReading, teamReading, type HeldItem } from '../work-items-read.js';
 import { liveRows, rowOf } from '../work-items-index.js';
 import { pushTeams } from '../ws/events.js';
+import { checkoutPlaybook, fileAsPlaybook } from '../playbooks.js';
 
 const text = (value: unknown): string | undefined => typeof value === 'string' ? value : value === undefined || value === null ? undefined : String(value);
 
@@ -116,6 +117,11 @@ export function registerWorkItems(app: express.Express): void {
       const reading = await teamReading(team);
       return res.json({ ok: true, ...reading, items: await texted(narrow(reading.items)) });
     }
+    // ?playbook=1: the playbook items instead, with the same filters.
+    if (text(req.query.playbook)) {
+      const shelf = (await listPlaybooks()).map((one) => ({ ...rowOf(one), holders: [], holder: '' }));
+      return res.json({ ok: true, items: await texted(narrow(shelf)) });
+    }
     const every: Array<HeldItem & { archived?: { at: string } }> = await everyItemReading();
     // ?archived=1: history too. Archived items have no row, so their files are read (item search --archived).
     if (archived) for (const item of await listItems()) if (item.archived) every.push({ ...rowOf(item), holders: [], holder: '', archived: item.archived });
@@ -124,9 +130,11 @@ export function registerWorkItems(app: express.Express): void {
 
   app.post('/api/work-items', guarded(async (req, res) => {
     const b = req.body ?? {};
+    // { playbook: true } (--playbook): a new playbook; one made under a playbook item is one too.
     const done = await createItem({
       title: text(b.title) ?? '', objective: text(b.objective), status: text(b.status), kind: text(b.kind), priority: text(b.priority), parent: text(b.parent) || null,
       ...(b.team || b.session ? { holder: holderFrom(b) } : {}),
+      playbook: b.playbook === true || b.playbook === 'true',
     }, callerOf(req));
     const hint = parentHint(done.item);
     acknowledge(res, done, hint ? { prompt: hint } : {});
@@ -137,8 +145,8 @@ export function registerWorkItems(app: express.Express): void {
     if (!item) throw new WorkItemMissing(`No work item ${req.params.id}.`);
     // Jira's read: the fields, comments, attachments, links both ways and history (trail). The
     // item's own file, and the live index for the rest (w418): its children (rows), the links to
-    // it, its parent's key, its holders. No other item file is read.
-    const rows = await liveRows();
+    // it, its parent's key, its holders. A playbook item's rows are the playbooks' (on no index).
+    const rows = isPlaybook(item.id) ? (await listPlaybooks()).map((one) => ({ ...rowOf(one), holders: [] })) : await liveRows();
     const children = rows.filter((other) => other.parent === item.id);
     const inward = rows.flatMap((other) => other.links.filter((link) => link.to === item.id).map((link) => ({ type: link.type, from: other.id })));
     const parent = item.parent ? rows.find((other) => other.id === item.parent) ?? await readItem(item.parent) : null;
@@ -259,7 +267,7 @@ export function registerWorkItems(app: express.Express): void {
     if (verb === 'delete') app.delete('/api/work-items/:id', handler);
     else app.post(`/api/work-items/:id/${verb}`, handler);
   }
-  // The promotion marks a carried item on dev (docs/using-ronin/project-management.md, Three signals): { promotion }, no status change.
+  // The promotion marks a carried item on dev (docs/using-ronin/running-work-items.md, Three signals): { promotion }, no status change.
   app.post('/api/work-items/:id/on-dev', guarded(async (req, res) => {
     const promotion = text(req.body?.promotion)?.trim();
     if (!promotion) throw new WorkItemBadInput('name the promotion: { promotion }.');
@@ -268,6 +276,19 @@ export function registerWorkItems(app: express.Express): void {
   // Send back (Waiting on you): In Progress with the comment, back to the Agent that handed it in.
   app.post('/api/work-items/:id/send-back', guarded(async (req, res) => {
     acknowledge(res, await sendBack(req.params.id!, text(req.body?.text), callerOf(req)));
+  }));
+  // CHECKOUT (KAN-767): PLAYBOOK-n made as plain new live items held by { to } (an Agent, or
+  // team:<name>; the caller with none); a live item with { playbook: true } filed as a new playbook.
+  app.post('/api/work-items/:id/checkout', guarded(async (req, res) => {
+    const by = callerOf(req);
+    if (req.body?.playbook === true || req.body?.playbook === 'true') {
+      const filed = await fileAsPlaybook(req.params.id!, by);
+      return res.json({ ok: true, item: filed, acknowledgement: `filed as playbook ${filed.id}. Read it: item read ${filed.id}` });
+    }
+    if (!isPlaybook(req.params.id!)) throw new WorkItemBadInput(`checkout takes a playbook item (PLAYBOOK-<n>), or a live one with --playbook to file it; not ${req.params.id}.`);
+    const to = text(req.body?.to)?.trim() || by;
+    const { epic, made } = await checkoutPlaybook(req.params.id!, to.startsWith('team:') ? { kind: 'team', name: to.slice(5) } : { kind: 'agent', name: to.replace(/^agent:/, '') }, by);
+    res.json({ ok: true, item: epic, made, acknowledgement: `checked out ${req.params.id} as ${epic.id} (${made.length} items), held by ${to}. Read it: item read ${epic.id}` });
   }));
   app.post('/api/work-items/:id/attach', guarded(async (req, res) => {
     const remove = req.body?.remove === true || req.body?.remove === 'true';

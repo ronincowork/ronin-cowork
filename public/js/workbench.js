@@ -1,5 +1,5 @@
 /* part of the ronin-cowork client — see js/README.md */
-/** The one sealed Workbench, its shared surface library and named discovery profiles. */
+/** The one sealed Workbench, its shared surface registry (surfaces) and named discovery profiles. */
 import { createWorkbenchLayout } from './workspace-layouts.js';
 import { WorkspacePrimitives } from './workspace-primitives.js';
 import { buildHints } from './terminal-controls.js';
@@ -25,27 +25,27 @@ const node = (tag, cls = '') => {
   return out;
 };
 
-const libraryEntries = new Map(), profiles = new Map();
-export const WorkbenchLibrary = Object.freeze({
+const surfaceEntries = new Map(), profiles = new Map();
+export const WorkbenchSurfaces = Object.freeze({
   register(definition) {
     const type = String(definition?.type || '');
-    if (!type || typeof definition.create !== 'function' || !HEADER_KINDS.has(definition.header)) throw new Error(`invalid Workbench.library surface: ${type || '(blank)'} (factory and fixed header contract required)`);
-    const previous = libraryEntries.get(type);
-    if (previous && previous !== definition) throw new Error(`Workbench.library already has ${type}`);
-    libraryEntries.set(type, Object.freeze({ ...definition, type }));
+    if (!type || typeof definition.create !== 'function' || !HEADER_KINDS.has(definition.header)) throw new Error(`invalid Workbench.surfaces surface: ${type || '(blank)'} (factory and fixed header contract required)`);
+    const previous = surfaceEntries.get(type);
+    if (previous && previous !== definition) throw new Error(`Workbench.surfaces already has ${type}`);
+    surfaceEntries.set(type, Object.freeze({ ...definition, type }));
     return type;
   },
-  get: (type) => libraryEntries.get(type) || null,
-  has: (type) => libraryEntries.has(type),
-  types: () => [...libraryEntries.keys()],
+  get: (type) => surfaceEntries.get(type) || null,
+  has: (type) => surfaceEntries.has(type),
+  types: () => [...surfaceEntries.keys()],
 });
 export const WorkbenchProfiles = Object.freeze({
   define(name, types) {
     name = String(name || '');
     const list = [...new Set(Array.isArray(types) ? types.map(String) : [])];
     if (!name || !list.length) throw new Error('Workbench.profile needs a name and surface types');
-    const missing = list.filter((type) => !WorkbenchLibrary.has(type));
-    if (missing.length) throw new Error(`Workbench.profile ${name} names unknown library types: ${missing.join(', ')}`);
+    const missing = list.filter((type) => !WorkbenchSurfaces.has(type));
+    if (missing.length) throw new Error(`Workbench.profile ${name} names unknown surface types: ${missing.join(', ')}`);
     const previous = profiles.get(name);
     if (previous && previous.types.join('\0') !== list.join('\0')) throw new Error(`Workbench.profile ${name} is already defined`);
     if (previous) return previous;
@@ -56,7 +56,7 @@ export const WorkbenchProfiles = Object.freeze({
   names: () => [...profiles.keys()],
 });
 
-/** One format. Profiles choose library entries; tenants only parameterize/filter them. */
+/** One format. Profiles choose registered surfaces; tenants only parameterize/filter them. */
 export function createWorkbench(options = {}) {
   const profile = typeof options.profile === 'string' ? WorkbenchProfiles.get(options.profile) : options.profile;
   if (!profile || !Array.isArray(profile.types)) throw new Error(`unknown Workbench.profile: ${options.profile || '(blank)'}`);
@@ -114,10 +114,11 @@ export function createWorkbench(options = {}) {
 
   const selector = node('div', 'wk-workbench-selector');
   const selectorCards = node('div', 'wk-workbench-selector-cards');
-  selector.append(selectorCards, buildHints({
+  // `hints: false` leaves the Agent vocabulary and Session controls off a selector with no Agents (Epics; w897).
+  selector.append(selectorCards, ...(options.hints === false ? [] : [buildHints({
     collapsedByDefault: options.hintsCollapsed === true,
     preferenceScope: options.hintsPreferenceScope || '',
-  }));
+  })]));
   const declaration = { slots: [
     { name: 'workspace1', label: t('team.workspace_1', 'Tilespace 1'), width: 40, composite: true },
     { name: 'selector', label: options.label || profile.name, width: 20, min: 6, compact: 176 },
@@ -211,13 +212,13 @@ export function createWorkbench(options = {}) {
 
   const allowed = () => profile.types.flatMap((type) => {
     if (typeof options.selectorFilter === 'function' && !options.selectorFilter(type)) return [];
-    const definition = WorkbenchLibrary.get(type);
+    const definition = WorkbenchSurfaces.get(type);
     if (!definition || definition.visible?.(tenant, options.environment) === false) return [];
     const discovered = definition.discover?.(tenant, options.environment);
     return Array.isArray(discovered) ? discovered.map((offer) => ({ definition, offer })) : [{ definition, offer: {} }];
   });
   const instance = (type, id, detail = {}) => {
-    const definition = WorkbenchLibrary.get(type);
+    const definition = WorkbenchSurfaces.get(type);
     if (!definition || !profile.types.includes(type) || !cells[id]) return null;
     const resource = String(detail.key || '');
     const key = `${id}\0${type}\0${resource}`;
@@ -262,7 +263,7 @@ export function createWorkbench(options = {}) {
   const place = (type, id = selected, detail = {}) => {
     // A type may name what its card places instead ({ type, detail }), or nothing (null: refused);
     // Setup's step pills open the surface their task names (KAN-696).
-    const redirect = WorkbenchLibrary.get(type)?.redirect;
+    const redirect = WorkbenchSurfaces.get(type)?.redirect;
     if (redirect) {
       const to = redirect(detail, options.environment);
       return to?.type && to.type !== type ? place(to.type, id, to.detail || {}) : false;
@@ -274,9 +275,9 @@ export function createWorkbench(options = {}) {
     value.el.dataset.workbenchSurface = type;
     if (detail.key) value.el.dataset.workbenchResource = detail.key;
     else delete value.el.dataset.workbenchResource;
-    WorkbenchLibrary.get(type)?.show?.(value, detail, { workspace: id, tenant, environment: options.environment, workbench: api });
+    WorkbenchSurfaces.get(type)?.show?.(value, detail, { workspace: id, tenant, environment: options.environment, workbench: api });
     value.show?.(detail);
-    if (WorkbenchLibrary.get(type)?.header === 'terminal' && !value.el.querySelector('.tile-head')) throw new Error(`${type} did not render its terminal Workbench header`);
+    if (WorkbenchSurfaces.get(type)?.header === 'terminal' && !value.el.querySelector('.tile-head')) throw new Error(`${type} did not render its terminal Workbench header`);
     refreshSelector();
     options.onPlacement?.(snapshot());
     return true;

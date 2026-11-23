@@ -72,7 +72,7 @@ Persistence is per browser tab (sessionStorage); one tab is one team.
 
 Everything that changes the page goes through one controller, `arrange(draft)` in
 `cowork-view.js`, built by `createArranger` (`team-arrange.js`). The selector cards call it — and so does a **draft** an agent hands in with `edges page`
-(`ronin_bin/`, its file `ronin_catalogs/tools/edges.md`). The tool's bare form prints the view (the roster;
+(`ronin_bin/`, its file `ronin_stock/tools/edges.md`). The tool's bare form prints the view (the roster;
 each tab on the team; which workspace the owner is typing in; which shows the agent;
 what each holds); its other form takes `key=value` words naming only what should
 change. The wire is `src/routes/team-page-api.ts`: tabs report their view (`PUT`),
@@ -207,7 +207,7 @@ WorkspaceKit.workbench.create({
 
 Append `workbench.host`. Expose `workbench.arrangement` on the registered view so the
 ViewHost draws the layout map in the bar. `workbench.place(type, workspace, detail)` asks
-the active profile and shared library for an independent surface instance.
+the active profile and the shared surfaces registry for an independent surface instance.
 
 The managed Kit owns: slot geometry and DOM order; the layout map (show/hide/reorder);
 one splitter between each visible pair, symmetric; `data-width="compact"` on a slot
@@ -285,7 +285,7 @@ keyboard · `5acb840` `edges page` · `a6819eb` the roster in its view · `04120
 `7c5c619` the head row and Team Configuration finished on measurement.
 
 The surface was verified by Playwright probes against the live page (`scripts/lib/ui-host.mjs`,
-`loadPlaywright()`), plus the repo gates (`check-modules`, `check-tests`) and
+`loadPlaywright()`), plus the repo gate (`check-modules`) and
 `scripts/smoke-ui.mjs`.
 The designated integrator runs one BYOIN mode on the release candidate; a SKIP is not a pass.
 

@@ -38,7 +38,7 @@ import { expandLookup } from '../lookup.js';
 import { count } from '../counts.js';
 import { broadcastEvent, changed, pushTeams } from '../ws/events.js';
 import { announceTeamChanges } from './wipeboards-api.js';
-import { memberEnded, readBriefRecord, teamChanged, writeConfiguration, writeObjective, writeTeams } from '../tegami.js';
+import { memberEnded, readBriefRecord, teamChanged, writeConfiguration, writeObjective, writeRecordFlag, writeTeams } from '../tegami.js';
 import { readAgentComposition } from '../agent-composition.js';
 import { configurationSends, configureBrief, updateConfiguration } from '../agent-configuration.js';
 import { agentBriefOf } from '../brief-build.js';
@@ -49,6 +49,7 @@ import { resumeAgentArgv } from '../agents.js';
 import { listTeamRosters } from '../team-rosters.js';
 import { assertSameCampaignTeams, initialCampaignId } from '../campaign-scope.js';
 import { sessionDir as sessionRecordDir } from '../session-dir.js';
+import { removeSessionFolders } from '../agent-scope.js';
 import {
   expiredArchives,
   listArchives,
@@ -110,7 +111,7 @@ const openDeskRefusal = (name: string, desks: string[]): string =>
   + 'Close out first: commit, hand in, then session_end or Shut down Agent. '
   + `In an emergency (a stuck or dead pane): session_archive ${name} --ignore-desks keeps them for its restore.`;
 
-/** THE ITEM CHECK, the same on every way out (docs/using-ronin/project-management.md, How an
+/** THE ITEM CHECK, the same on every way out (docs/using-ronin/running-work-items.md, How an
  * item lives): session_end, archive, Delete, Hard Delete. It is a nudge, never a wall (owner,
  * 2026-11-12, KAN-415): an Agent holding work In Progress or In Review is refused once, each item
  * named, with NEXT in order: finish it if you can; if not, flag it; clean your desks; then go.
@@ -213,7 +214,7 @@ async function archiveWith(name: string, provider: { agent: string; id: string }
 async function deleteArchived(archived: ArchivedSession, said = ''): Promise<void> {
   emitSessionEnd(archived.name, archived.key);
   await releaseHolds(archived.name, archived.key, 'hard deleted', null, said);
-  await fs.promises.rm(sessionRecordDir(archived.key), { recursive: true, force: true });
+  await removeSessionFolders(archived.key);
   await removeArchive(archived.id);
 }
 
@@ -249,6 +250,7 @@ async function performAgentEnd(name: string): Promise<{ closed: string[]; archiv
   const { archived } = end;
   if (!archived) emitSessionEnd(name, key); // archive keeps the tape and the folder
   await releaseHolds(name, key, 'session ended', archived);
+  if (!archived) await removeSessionFolders(key);
   count('ended', { name, end: archived ? 'archived' : 'harakiri' });
   return { closed: result.closed, archived };
 }
@@ -260,6 +262,7 @@ async function performAgentShutdown(name: string, progress: (value: ShutdownProg
   });
   emitSessionEnd(name, key);
   await releaseHolds(name, key, 'session ended');
+  await removeSessionFolders(key);
   count('ended', { name, end: 'harakiri' });
   return result.closed;
 }
@@ -280,6 +283,7 @@ async function performAgentHardDelete(name: string, progress: (value: ShutdownPr
   await killSessionTree(name, { signal, timeoutMs: 4_000 });
   emitSessionEnd(name, key);
   await releaseHolds(name, key, 'hard deleted');
+  await removeSessionFolders(key);
   count('ended', { name, end: 'deleted' });
   progress({ phase: 'complete', message: `Agent ${name} and ${ending.desks.length} owned worktree(s) hard deleted; destructive evidence preserved`, desk_count: ending.desks.length });
   return { closed: disposition.closed, quarantined: disposition.quarantined };
@@ -519,8 +523,9 @@ export function registerSessions(app: express.Express): void {
       const items = ignoringItems(req) ? null : await heldItemsRefusal(name, UI_ANYWAY);
       if (items) throw items;
       const result = await shutdownAgent(name);
-      emitSessionEnd(name, key); // rireki deletes the tape: no graveyard, eventually is fine
+      emitSessionEnd(name, key);
       await releaseHolds(name, key, 'deleted');
+      await removeSessionFolders(key);
       count('ended', { name, end: 'deleted' });
       res.json({ ok: true, closed: result.closed });
     } catch (e) {
@@ -634,7 +639,7 @@ export function registerSessions(app: express.Express): void {
     const name = await sessionOfPane(pane);
     if (!name) return res.status(404).json({ error: `No session owns pane ${pane}.` });
     try {
-      // session_end hands over, never drops (docs/using-ronin/project-management.md, How an item
+      // session_end hands over, never drops (docs/using-ronin/running-work-items.md, How an item
       // lives): To Do goes back to the Team by itself; then the one item check every way out
       // shares (heldItemsRefusal) names In Progress and In Review, unless --ignore-items.
       await settleToDo(name);
@@ -656,14 +661,14 @@ export function registerSessions(app: express.Express): void {
   // Where what an Agent names in Chat is looked for (KAN-701): its repos (desks, working folder,
   // the Workspace folders), its session folder and drop/ (a file handed to it), the folders that
   // hold the Workspace folders (a path written from above them: samurai_lab/ronin_cloud/X.md),
-  // the library (ABOUT_USER.md and the like), and in an office the whole home folder (open-places.ts).
+  // the office's output (ABOUT_USER.md and the like), and in an office the whole home folder (open-places.ts).
   const chatPlaces = async (name: string) => {
     const desks = await listDeskRecords({ owner: name }).catch(() => []);
     const cwd = await sessionRuntime(name).then((r) => r.cwd, () => '');
     const roots = (await workspaceFolders().catch(() => [])).map((f) => f.dir);
     const own = await sessionKey(name).then((key) => sessionRecordDir(key), () => '');
     const repos = [...desks.map((d) => d.worktree), cwd, ...roots];
-    return { own, repos, files: [...repos, own, own && path.join(own, 'drop'), ...new Set(roots.map((dir) => path.dirname(dir))), storeDir('library'), ...(await openBases())] };
+    return { own, repos, files: [...repos, own, own && path.join(own, 'drop'), ...new Set(roots.map((dir) => path.dirname(dir))), storeDir('office'), ...(await openBases())] };
   };
 
   app.get('/api/sessions/:name/file-link', async (req, res) => {
@@ -737,6 +742,16 @@ export function registerSessions(app: express.Express): void {
     if (!isValidName(name)) return res.status(400).json({ error: 'Invalid name.' });
     if (typeof req.body?.objective !== 'string') return res.status(400).json({ error: 'Send { "objective": "…" }.' });
     try { res.json({ ok: true, objective: await writeObjective(name, req.body.objective, callerOf(req) || name) }); }
+    catch (e) { res.status(404).json({ error: String((e as Error)?.message ?? e) }); }
+  });
+  // THE RECORD'S OWN FLAG (KAN-792): `work-record flag` / `unflag` and the tile header ⚑ press.
+  // { "flag": "<why>" } raises it; { "flag": null } clears it.
+  app.put('/api/sessions/:name/record/flag', async (req, res) => {
+    const { name } = req.params;
+    if (!isValidName(name)) return res.status(400).json({ error: 'Invalid name.' });
+    const why = req.body?.flag;
+    if (why !== null && (typeof why !== 'string' || !why.trim())) return res.status(400).json({ error: 'Send { "flag": "<who>: <what you need>" } or { "flag": null }.' });
+    try { await writeRecordFlag(name, why, callerOf(req) || name); res.json({ ok: true, flag: why }); }
     catch (e) { res.status(404).json({ error: String((e as Error)?.message ?? e) }); }
   });
 

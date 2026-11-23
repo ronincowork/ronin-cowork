@@ -17,6 +17,14 @@ import { t } from './lexicon.js';
 import { isPlanRef, planAttachment } from './plan-attachment.js';
 import { renderMarkdownDocument } from './markdown-reader.js';
 
+/** One entry of the work record's `flags` in words (KAN-776): an item's by its id and reason; the
+ *  Agent's own (KAN-527, no id) by what it waits on. The work record and the tile header ⚑ say it. */
+export const flagWords = (flag) => (flag.id ? `${flag.id} ${flag.why || t('head.flagged', 'Flagged')}` : ({
+  no_progress: t('work_record.agent_no_progress', 'No progress for 12 min: look in its terminal'),
+  asking: t('work_record.agent_asking', 'Asking you: answer in its Chat'),
+  stopped: t('work_record.agent_stopped', 'Stopped: its CLI exited; Resume from its Chat'),
+})[flag.why] || flag.why);
+
 export function clampTip(s, room = 120) {
   return s.length > room ? s.slice(0, room - 1) + '…' : s;
 }
@@ -75,10 +83,8 @@ export function buildWorkRecord(letter, deskEntry = null, { openDoc = null, sess
   const line = (cls, text) => Object.assign(document.createElement('p'), { className: cls, textContent: text });
 
   const held = section(t('work_record.items', 'Work items'), 'wr-items');
-  // An Agent flag (KAN-527): its terminal asks the owner something; not an item's flag.
-  if (letter.agent_flag === 'no_progress') held.appendChild(line('wr-item wr-agent-flag', `⚑ ${t('work_record.agent_no_progress', 'No progress for 12 min: look in its terminal')}`));
-  if (letter.agent_flag === 'asking') held.appendChild(line('wr-item wr-agent-flag', `⚑ ${t('work_record.agent_asking', 'Asking you: answer in its Chat')}`));
-  if (letter.agent_flag === 'stopped') held.appendChild(line('wr-item wr-agent-flag', `⚑ ${t('work_record.agent_stopped', 'Stopped: its CLI exited; Resume from its Chat')}`));
+  // Its flags first, one line each (KAN-776).
+  for (const flag of letter.flags || []) held.appendChild(line('wr-item wr-agent-flag', `⚑ ${flagWords(flag)}`));
   // Open items only (owner, 2026-11-05; KAN-271): Done waiting for the five-day archive is one
   // line under them, ids only, newest first, at most eight.
   const open = (letter.items || []).filter((item) => item.status !== 'Done');

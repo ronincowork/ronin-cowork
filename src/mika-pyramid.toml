@@ -1,0 +1,16 @@
+schema = 1
+
+[[node]]
+id = "start-and-navigate"
+label = "Start, navigate, and operate Ronin"
+root = "docs"
+
+[[node]]
+id = "house-procedures"
+label = "House procedures and situations"
+root = "ronin_stock/behaviours"
+
+[[node]]
+id = "capabilities-tools-and-models"
+label = "Supported capabilities, tools, models, roles, routines, profiles, and templates"
+root = "ronin_stock"

@@ -1,16 +1,17 @@
 /**
- * THE CATALOG — facts, behaviours and tools (docs/architecture/brief.md, The files and their header).
+ * THE CATALOG — the Markdown foundations: facts, behaviours and tools (docs/architecture/brief.md,
+ * The files and their header; ronin_stock/stock_readme.md).
  *
- * One flat folder per object in `ronin_catalogs/` (`facts/`, `behaviours/`, `tools/`); the
- * user's own store (`~/ronin/facts/`, `~/ronin/behaviours/`, `~/ronin/tools/`) adds files and
- * replaces stock ones by name. A file's name (without `.md`) is its id: the one `when:`,
+ * One flat folder per kind in `ronin_stock/` (`facts/`, `behaviours/`, `tools/`): the
+ * stock-foundations. The person's custom-foundations (`~/ronin/custom/<kind>/`) add files and
+ * replace stock ones by name. A file's name (without `.md`) is its id: the one `when:`,
  * `serves:` and the brief settings name. Every file starts the same:
  *
  *   # Title
  *   - **seed:** the one line            (behaviours, tools)
  *   - **line:** User: {user.name}{, user.role}   (facts)
  *   - **when:** cowork, !mika           (all; blank = every Agent)
- *   - **depth:** none | seed | full     (behaviours, tools; blank = seed)
+ *   - **depth:** none | seed | full     (blank = seed; a fact's blank = full; a fact at seed is its line only)
  *   - **serves:** write-it-down         (tools; blank = Other tools)
  *   - **mandate:** reach                (behaviours: a mandate value; the title is the value)
  *   - **with:** planning                (mandate values: the behaviours choosing it puts in play)
@@ -86,7 +87,7 @@ export function parseCatalogFile(kind: CatalogKind, name: string, text: string):
     seed: get('seed'),
     line: get('line'),
     when: list(get('when')),
-    depth: kind === 'facts' ? 'full' : (DEPTHS as readonly string[]).includes(depth) ? depth as Depth : 'seed',
+    depth: (DEPTHS as readonly string[]).includes(depth) ? depth as Depth : kind === 'facts' ? 'full' : 'seed',
     serves: kind === 'tools' ? list(get('serves')) : [],
     mandate: axis,
     value: axis ? title.toLowerCase() : '',
@@ -99,7 +100,7 @@ export function parseCatalogFile(kind: CatalogKind, name: string, text: string):
 }
 
 const isCatalogFile = (relative: string): boolean =>
-  relative.endsWith('.md') && !relative.startsWith('.') && relative !== 'README.md';
+  relative.endsWith('.md') && !relative.startsWith('.') && !/readme\.md$/i.test(relative); // <kind>_readme.md says the format
 
 /** One kind, stock and user merged by name, in `order:` then title order. */
 export async function readCatalog(kind: CatalogKind): Promise<CatalogFile[]> {

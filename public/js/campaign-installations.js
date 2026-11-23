@@ -11,7 +11,7 @@ import { createStatusMarker } from './status-marker.js';
 import { createSetupZone, setupStep, watchSetupProgress } from './setup-zone.js';
 import { createIntegrationsPanel } from './integrations-panel.js';
 
-/** Ronin's own (ronin_catalogs/services). Outside services are integrations (integrations-panel.js). */
+/** Ronin's own (ronin_stock/services). Outside services are integrations (integrations-panel.js). */
 const INSTALLATION_ORDER = ['ronin_services'];
 const el = (tag, cls = '', text = null) => {
   const out = document.createElement(tag);
@@ -196,38 +196,24 @@ export function createInstallationsSurface(campaign, context = {}) {
    * is installed, and never names Ronin Services.
    */
   const environment = context.environment;
-  const zone = environment?.answerSetupStep ? createSetupZone() : null;
+  const zone = environment?.setupZones ? createSetupZone() : null;
   let registered = null; // null until read: unknown is not the same as unregistered
-  const anythingInstalled = () => installed?.services?.installed === true
-    || (installed?.installations || []).some((row) => row.available === true);
   const paintZone = () => {
     if (!zone) return;
-    const step = setupStep(environment, 'installations');
-    // Answered is the checkmark's own condition, so the zone and the card cannot disagree.
-    if (step?.answered) { zone.paint(); return; }
-    if (anythingInstalled()) {
-      // Nothing else answers step 4 — the Setup scan answers only provider and workspace, and
-      // onInstallationChoice fires only when a choice is MADE here. Something already being
-      // installed is not an answer, so the pick still has to give one; once it lands the step
-      // is answered and this zone hides on the repaint.
-      zone.paint({ state: 'Installed.', picks: [
-        { label: 'Keep these', action: () => environment?.answerSetupStep?.('installations', 'acted') },
-      ] });
-      return;
-    }
-    const noThankYou = { label: 'No thank you', action: () => environment?.answerSetupStep?.('installations', 'not_now') };
-    // Registration gates the ones Ronin maintains, so say so before offering to skip.
+    // Ticked when anything is installed (the machine fact, KAN-768): the zone and the mark cannot disagree.
+    if (setupStep(environment, 'installations')?.answered) { zone.paint(); return; }
+    // Registration gates the ones Ronin maintains, so say so.
     if (registered === false) {
       zone.paint({
         state: 'Nothing installed. Registration required.',
-        picks: [{ label: 'Register first', action: () => environment?.navigateToSurface?.('setup.register') }, noThankYou],
+        picks: [{ label: 'Register first', action: () => environment?.navigateToSurface?.('setup.register') }],
       });
       return;
     }
-    zone.paint({ state: 'Nothing installed.', picks: [noThankYou] });
+    zone.paint({ state: 'Nothing installed.', picks: [] });
   };
 
-  // Answering does not reload this surface, so the zone listens for the record it reads.
+  // The ticks can change elsewhere, so the zone listens for them.
   const stopProgress = watchSetupProgress(environment, paintZone);
   // Ronin Services under a heading of its own, the integrations below it (KAN-337).
   const servicesHeading = el('h3', 'integrations-heading', t('campaign_view.ronin_services', 'Ronin Services'));

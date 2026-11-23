@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+. "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/tool-count.sh" notify_me "$@"
+# notify_me — be told once when another Agent's turn ends (KAN-772, src/notify-me.ts).
+set -euo pipefail
+case "${1-}" in
+  -h|--help)
+    cat <<'EOF'
+notify_me — be told once when another Agent's turn ends
+
+Usage:
+  notify_me <agent>
+
+Leaves a one-time mark on <agent>. When its turn next ends (waiting for you, asking a
+question, or a tool failed: its selector pill's dot turns hollow), Ronin sends you one line,
+e.g. "stockkeeper finished its turn: waiting for you", and the mark is gone. Run it again
+to be told again. The mark lives in the Agent's session folder, so it goes with the Agent.
+Answers MARKED, or NO-SESSION when there is no such Agent (nothing marked).
+Related: edges send --help.
+EOF
+    exit 0 ;;
+esac
+[ $# -eq 1 ] && [ -n "$1" ] || { echo "usage: notify_me <agent>. Run notify_me --help." >&2; exit 2; }
+. "$(dirname "$(readlink "${BASH_SOURCE[0]}" 2>/dev/null || printf '%s' "${BASH_SOURCE[0]}")")/tool-path.sh"
+HERE=$(cd "$(dirname "$SELF")/.." && pwd)
+exec npx tsx "$HERE/src/notify-me-cli.ts" "$@"

@@ -5,15 +5,16 @@ connect a provider, pick a folder, and launch. Everything else can wait.
 
 ## Opening it
 
-Press **Settings** on Ronin Home. Until you've answered every step, it opens Ronin Setup.
+Press **Settings** on Ronin Home. Until a model provider is signed in and a Workspace has a
+folder, it opens Ronin Setup.
 After that it opens **Ronin Settings**, where the **Setup** card at the top of **Machine
 Settings** takes you back to any step.
 
 Setup has three columns: guidance on the left, the steps in the middle, and the step
 you've chosen on the right. On a phone they stack.
 
-Each step has a line across the top saying where things stand, with the choices that
-answer it. A step gets a check once you've answered it, by doing it or by saying not now.
+Each step has a line across the top saying where things stand, with the choices that act
+on it. A step gets a check once it's done on this machine, however you did it.
 
 ## The steps
 
@@ -22,8 +23,8 @@ Antigravity CLI and others. One is enough. See [Provider sign-in](provider-sign-
 
 **Register.** Optional. Tell us a little about yourself, with your email or anonymously.
 Your email is what unlocks Ronin Services. The form also asks for a two-line introduction
-that every Agent you start will read, so they know who they're working for. Press
-**No thank you** to skip.
+that every Agent you start will read, so they know who they're working for. Skip it if
+you like: it stays unchecked, and nothing else waits on it.
 
 **Workspaces.** Where your Agents work. **Ronin Lab** and **Project One** are ready for you;
 press **New Workspace** to make your own, with its folders or GitHub repositories. See
@@ -40,9 +41,6 @@ Tailscale, set a password or choose **None** if the machine is protected another
 - **Agent** — one Agent: its name, provider and model, and the folder it works in.
 - **Team** — several Agents working together. See
   [New Team](../using-ronin/new-team.md).
-- **Presets** — ready-made starts, such as a Personal Assistant, a Morning Briefing, or a
-  Team to build a new project. **You use Ronin for** narrows them to building software,
-  life assistants, or research and writing.
 
 Whatever you launch opens in a new tab, ready to talk to.
 

@@ -1,0 +1,21 @@
+{
+  "id": "PLAYBOOK-15",
+  "campaign_id": "",
+  "title": "Meet your Agents: take them to Team 1",
+  "objective": "Do: show them Team 1 and take them to it; then close this epic and end yourself.\nDetails: the Teams door on Home; `show <tab-id> <surface>`; `session_end`.\nCheck: they are on Team 1's page.",
+  "level": 0,
+  "kind": "Task",
+  "status": "Playbook",
+  "flagged": false,
+  "priority": "",
+  "comments": [],
+  "parent": "PLAYBOOK-1",
+  "attachments": [],
+  "links": [],
+  "external": {},
+  "trail": [],
+  "created": {
+    "at": "",
+    "by": ""
+  }
+}

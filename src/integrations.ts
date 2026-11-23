@@ -7,7 +7,7 @@
  *   the keys      secrets in the store named `<name>-<key>`, asked with `secret ask` (secrets.ts)
  *   the link      each Workspace lists the integrations it uses (workspaces.ts)
  *
- *   an MCP server a record, `~/ronin/catalogs/integrations/<name>.md` (docs/architecture/integrations.md)
+ *   an MCP server a record, `~/ronin/custom/integrations/<name>.md` (docs/architecture/integrations.md)
  *
  * The list is the bridges, then every MCP server record (KAN-592; a record named like a bridge is
  * that bridge's way through the broker and shows as the bridge), then any name a Workspace uses
@@ -60,7 +60,7 @@ export interface McpFacts {
 interface McpRecord { name: string; label: string; description: string; facts: Omit<McpFacts, 'saved'> }
 
 const NAME = /^[a-z0-9][a-z0-9-]{0,62}$/;
-export const mcpRecordsDir = (): string => path.join(storeDir('catalogs'), 'integrations');
+export const mcpRecordsDir = (): string => path.join(storeDir('custom'), 'integrations');
 
 /** The record's fields as the broker reads them: `- **key:** value` lines under a `# Title`. */
 function parseMcpRecord(name: string, text: string): McpRecord {

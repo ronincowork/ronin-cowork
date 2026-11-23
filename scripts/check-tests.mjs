@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-// The behaviour suite (docs/development/verification.md): every tests/*.test.ts, four at a
-// time, under private roots. Each file boots its own Ronin on its own tmux server
+// The two guards (docs/development/verification.md): every tests/*.test.ts, side by side,
+// under private roots. Each file boots its own Ronin on its own tmux server
 // (tests/helpers/ronin.ts); nothing here may reach the live server, the live stores or the
 // operator socket this shell was told, so all of those are cleared first.
 import fs from 'node:fs';
@@ -17,7 +17,7 @@ for (const key of ['TMUX', 'TMUX_PANE', 'RONIN_SOCKET', 'RONIN_URL', 'RONIN_CLI_
 
 const livePid = () => process.env.TMUX ? spawnSync('tmux', ['display-message', '-p', '#{pid}'], { encoding: 'utf8' }).stdout.trim() : '';
 const before = livePid();
-const run = spawnSync(process.execPath, ['--import', 'tsx', '--test', '--test-concurrency=4', ...files], { cwd: ROOT, env, stdio: 'inherit' });
+const run = spawnSync(process.execPath, ['--import', 'tsx', '--test', '--test-concurrency=2', ...files], { cwd: ROOT, env, stdio: 'inherit' });
 fs.rmSync(scratch, { recursive: true, force: true });
 if (before && livePid() !== before) {
   console.error(`FAILED — the live tmux server changed (pid ${before}); a test reached it.`);

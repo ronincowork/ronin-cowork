@@ -1,7 +1,7 @@
 /* part of the ronin-cowork client — see js/README.md */
 /** Workbench; its Campaign, Cowork or Team scope limits what cards are offered. */
 import { WorkspaceKit } from './workspace-kit.js';
-import { deleteTeamRoster, membersOfTeam, subscribe, teamByName, teamGone, teamsFromState, unassignedSessions, UNASSIGNED } from './team-controller.js';
+import { membersOfTeam, subscribe, teamByName, teamGone, teamsFromState, unassignedSessions, UNASSIGNED } from './team-controller.js';
 import { createNewTeamFormView } from './new-team-form.js';
 import { createNewAgentView } from './new-agent.js';
 import { createTeamRosterSurface } from './team-roster-surface.js';
@@ -12,36 +12,34 @@ import { createTeamJikan } from './team-jikan.js';
 import { buildMessageQueue } from './message-queue.js';
 import { buildDocs, createDocumentWorkspaceAdapter } from './docs.js';
 import { buildArchives } from './archives.js';
-import { agentSituation, onAgeTick, onProjects, projectData, situationTitle, stanceLabel } from './home.js';
+import { agentSituation, onAgeTick, situationTitle, stanceLabel } from './home.js';
 import { request } from './request.js';
 import { paintCanvas } from './canvas-view.js';
 import { teamPageHandlers } from './events.js';
 import { createArranger, parseDraft, reportView as sendView } from './team-arrange.js';
 import { t } from './lexicon.js';
-import { navigateToWorkspaceFolders, openWorkbenchTab, openWorkspaceTab, reserveWorkspaceTab } from './workspace.js';
-import { createPresetsSurface } from './presets.js';
-import { launchPresetPlan, presetLaunchUrl } from './preset-launch.js';
+import { openWorkbenchTab, openWorkspaceTab, reserveWorkspaceTab } from './workspace.js';
 import { subscribe as subscribeStore } from './store.js';
 import { acceptDrops as acceptSessionDrops } from './team-drag.js';
 import { S, isCoarse } from './state.js';
 import { renderTeamConfiguration, teamConfigurationMeta } from './team-configuration.js';
-import { createStep } from './form-steps.js';
 import { workbenchView } from './workspace-contract.js';
 import { agentTitle, buildTeamMembers, configSignature, currentWorkStep } from './team-members.js';
 import { createFeedbackSurface } from './feedback.js';
-import { STEERCO } from './roster-groups.js';
+import { STEERCO, listedTeam } from './roster-groups.js';
 import { toast } from './ui.js';
 import { readyMika } from './mika-ready.js';
 import { createMikaHelpPanel } from './mika.js';
 import { retireSession } from './session-retire.js';
 import { installBehaviourReader } from './behaviour-reader.js';
 import { BEHAVIOUR_SURFACE_TYPE } from './behaviour-surface.js';
-import { createItemPhalanx, holderOf, addAgentLender } from './work-items-surface.js';
+import { addAgentLender } from './work-items-surface.js';
 import { registerWorkbenchCatalog, WORKBENCH_PROFILES as WB_PROFILES, WORKBENCH_TYPES as WB_TYPES } from './workbench-catalog.js';
 import { createAgentCompositionSurface } from './agent-composition.js';
 import { createTeamEpics } from './team-epics.js';
 import { createFindItem } from './team-find-item.js';
-import { createEpicRecord, createEpicsRead } from './epics-surface.js';
+import { createTeamBody } from './team-one.js';
+import { createEpicRecord, createEpicsRead, createNewItem } from './epics-surface.js';
 
 const el = (tag, cls, text) => {
   const out = document.createElement(tag);
@@ -72,7 +70,7 @@ export function createCoworkView(options = {}) {
   let entered = false;
   let lastSeat = 'workspace1'; // the workspace last touched — where the next card lands
   // The Team's title, or its id read as words ('sea_settle' → 'Sea Settle') when it has none.
-  const readableTeam = (name) => String(teamByName(name)?.title ?? '').trim() || teamGone(name)?.title || String(name).split(/[_-]+/).filter(Boolean).map((part) => part[0].toUpperCase() + part.slice(1)).join(' ');
+  const readableTeam = (name) => name === UNASSIGNED ? t('teams_surface.no_team', 'No Team') : String(teamByName(name)?.title ?? '').trim() || teamGone(name)?.title || String(name).split(/[_-]+/).filter(Boolean).map((part) => part[0].toUpperCase() + part.slice(1)).join(' ');
   const setBarLabel = () => S.refreshWorkspaceHeader?.();
 
   /* ---------- the workspaces: two seats, the roster between them, one commons ---------- */
@@ -230,10 +228,10 @@ export function createCoworkView(options = {}) {
   const cronBySeat = campaign ? Object.fromEntries(Object.keys(seats).map((id) => { const surface = createSurface({ label: t('workspace.tab_cron_jobs', 'Cron jobs'), className: 'tw-cron' }); const room = createTeamJikan({ universal: true, teams: () => teamsFromState().filter((item) => !item.holding).map((item) => item.name) }); surface.content.append(room.el); return [id, { el: surface.el, room }]; })) : {};
   // seated in a workspace, grouped by Team of record, each row's act a labelled button.
   // A rehydrated session lands in the workspace whose surface woke it, like a birth.
-  // A Team's workbench has the same surface behind its Rehydrate Agents pill, holding only the
+  // A Team's workbench has the same surface behind its Archived Agents pill, holding only the
   // archives whose Team of record is the Team entered now (KAN-706).
   const archivesBySeat = Object.fromEntries(Object.keys(seats).map((id) => {
-    const surface = createSurface({ label: campaign ? t('archives.card', 'Rehydrate Archived') : t('archives.team_card', 'Rehydrate Agents'), className: 'tw-archives' });
+    const surface = createSurface({ label: campaign ? t('archives.card', 'Archived Agents') : t('archives.team_card', 'Archived Agents'), className: 'tw-archives' });
     const host = el('div');
     surface.content.append(host);
     const room = buildArchives({ connect: (name) => connectSession(name, id) }, host, campaign ? null : () => team);
@@ -313,17 +311,6 @@ export function createCoworkView(options = {}) {
       // The detail rides through: `S.showNewSession(prompt)` seeds the form's Instructions.
       return { el: newAgentBySeat[id].el, show: (detail) => void newAgentBySeat[id].enter(detail) };
     },
-    presets: (id) => createPresetsSurface({ environment: {
-      customize: ({ template, user_message } = {}) => openWorkbenchTab({ destination: 'launch', mode: 'overlay', state: {
-        selected: 'workspace1', seats: { workspace1: { type: template?.shelf === 'agents' ? 'launch.agent' : 'launch.team', detail: { template: template?.name || '', prompt: String(user_message || '') } } },
-      } }),
-      launch: launchPresetPlan,
-      launchUrl: presetLaunchUrl,
-      reserveLaunchTab: reserveWorkspaceTab,
-      trackedRoots: () => projectData,
-      onTrackedRoots: onProjects,
-      navigateToSurface: (type, detail) => type === 'setup.roots' && navigateToWorkspaceFolders(ctx, detail),
-    }, workspace: id }),
     // Epics (KAN-232): the bench keeps one per seat across Teams, so it reads the Team entered now.
     teamEpics: () => keepTeamSurface(createTeamEpics({ team: () => team })),
     teamFindItem: (_workspace, detail) => keepTeamSurface(createFindItem(detail?.key)),
@@ -337,19 +324,29 @@ export function createCoworkView(options = {}) {
       return { el: surface.el, show: () => void (detail.workspace ? Promise.resolve({ workspace: detail.workspace }) : loadCanvases()).then((offer) => paintCanvas(body, offer.workspace, detail.key)) };
     },
     epics: () => [],
-    epicRecord: (id, detail) => keepTeamSurface(createEpicRecord(detail.key, { epicsRead: createEpicsRead(() => '') })),
+    epicRecord: (id, detail) => keepTeamSurface(createEpicRecord(detail.key, { epicsRead: createEpicsRead(() => ''), launch: false })),
+    // New Item (owner, 2026-11-23): the Epics workbench's form as it is, started on Task; what is
+    // made shows its Epic in the same tilespace (an Epic itself, or the parent of anything else).
+    newItem: (id) => keepTeamSurface(createNewItem({ kind: 'Task', epicsRead: createEpicsRead(() => ''), holder: !campaign && team && team !== UNASSIGNED ? `team:${team}` : '', onMade: (item) => {
+      const key = item?.level === 1 ? item.id : item?.parent;
+      if (key) bench.place(WB_TYPES.epicRecord, id, { key });
+    } })),
     archives: (id) => ({ el: archivesBySeat[id].el, show: () => void archivesBySeat[id].room.enter() }),
     document: (detail = {}) => createDocumentWorkspaceAdapter({ root: detail.root, path: detail.path || detail.key }),
     team: (id, detail) => createLeagueTeamSurface(detail.key, id),
-    sessions: () => (campaign ? unassignedSessions() : membersOfTeam(team)).map((member) => {
+    // THE TEAMS SELECTOR (owner, 2026-11-22; w900): a card per Team, placing that Team; no Agent's own card.
+    teams: () => (campaign ? teamsFromState().filter((one) => !one.holding && listedTeam(one)).sort((a, b) => a.name.localeCompare(b.name))
+      .map((one) => ({ key: one.name, label: readableTeam(one.name), summary: one.objective || '' })) : []),
+    sessions: () => (campaign ? [] : membersOfTeam(team)).map((member) => {
       const reading = readingsOf(member);
       const mika = team === STEERCO && member.name === 'mika_agent';
-      // A FLAGGED AGENT (owner, 2026-11-15, KAN-521): any item it holds flagged puts ⚑ and the
-      // flagged amber on its pill; pressed, it opens as ever, the item ⚑ on its island. Working
-      // adds the kit's dot after the name; stopped dims it (KAN-665). The title says it in words.
+      // A FLAGGED AGENT (owner, 2026-11-15, KAN-521; KAN-776): a non-empty `flags` puts ⚑ and
+      // the flagged amber on its pill, the ⚑ at the right edge where the working dot sits (CSS);
+      // pressed, it opens as ever. Working adds the kit's dot after the name; stopped dims it
+      // (KAN-665). The title says it in words.
       const label = mika ? t('mika.name', 'Mika') : agentTitle(member);
       return { key: member.name, label, className: `team-agent-card${reading.situation ? ` ${reading.situation}` : ''}`,
-        mark: `${member.team_lead ? '人' : ''}${reading.flagged ? '⚑' : ''}` || null,
+        mark: member.team_lead ? '人' : null,
         title: situationTitle(label, reading.situation),
         summary: reading.step, metadata: reading.lines,
         ...(campaign ? { action: () => openAgentWorkbench(member.name) } : {}),
@@ -584,7 +581,7 @@ export function createCoworkView(options = {}) {
         if (seats[id].pool.has(request.detail.key)) putSession(request.detail.key, id, false);
         continue;
       }
-      if (WorkspaceKit.workbench.library.has(request.type) && bench.place(request.type, id, request.detail)) continue;
+      if (WorkspaceKit.workbench.surfaces.has(request.type) && bench.place(request.type, id, request.detail)) continue;
       else if (wanted && seats[id].pool.has(wanted)) putSession(wanted, id, false);
       // A remembered session the roster does not have: wait while the roster is still
       // arriving, then let it go — a workspace waiting forever is the blank the owner met.
@@ -622,109 +619,12 @@ export function createCoworkView(options = {}) {
   // contributes it; there is no field for it today.
   let rows = new Map(); // name -> the store's home row
   const leagueTeamSurfaces = new Map(), openTeam = (name) => openWorkspaceTab('team', name);
-  // ONE TEAM PROFILE — head, then the Agents, Work items and Configuration steps — painted into a
-  // host: a Teams stone's detail (leagueTeamDetail) or a whole workspace (createLeagueTeamSurface).
-  const leagueTeamBody = (name, { seat, say }) => {
-    const holding = name === UNASSIGNED;
-    const title = el('h2', null, leagueTeamLabel(name));
-    const objective = el('p', 'league-team-objective');
-    const launch = createAction({ label: '', launch: true, size: 'compact', title: t('league.launch_team', 'Launch'), action: () => openTeam(name) });
-    launch.el.setAttribute('aria-label', launch.el.title);
-    const controls = [launch];
-    const remove = createAction({ label: t('league.delete_team', 'Delete team'), kind: 'danger', size: 'compact', action: async () => { const count = membersOfTeam(name).length; if (!window.confirm(t('league.delete_team_confirm', 'Delete {team}? {count} Agents will lose this Team membership.', { team: name, count }))) return; const result = await deleteTeamRoster(name); if (!result.ok) { say('failed', result.message); return; } for (const place of bench.locations(WB_TYPES.team, name)) emptySeat(place); for (const key of [...leagueTeamSurfaces.keys()]) if (key.endsWith(`\0${name}`)) leagueTeamSurfaces.delete(key); } });
-    // THE DRAWN-FORM STEPS (owner, 2026-09-28): Agents and Work items open, Configuration
-    // folded to its one-line answer; each folds or opens on its own head.
-    const folded = { agents: false, work: false, config: true };
-    const steps = {};
-    const fold = (key) => { folded[key] = !folded[key]; paintFolds(); };
-    const step = (n, key, text) => { steps[key] = createStep({ n, key, title: text, onToggle: () => fold(key) }); steps[key].body.classList.add('league-team-step-body'); return steps[key]; };
-    const agents = step(1, 'agents', t('league.agents', 'Agents')).body;
-    const work = step(2, 'work', t('league.work_items', 'Work items')).body;
-    const stones = createItemPhalanx({
-      holder: (item) => holderOf(item, membersOfTeam(name).find((member) => member.team_lead)?.name || ''),
-      openAttachment: (path) => bench.place(WB_TYPES.document, oppositeSeat(seat), { path }),
-    });
-    work.append(stones.el);
-    const config = step(3, 'config', t('workspace.tab_team_configuration', 'Configuration')).body;
-    let workCount = 0;
-    const paintFolds = () => {
-      const count = membersOfTeam(name).length;
-      steps.agents.setCollapsed(folded.agents, t('league.agent_count', '{count} Agents', { count }));
-      steps.work.setCollapsed(folded.work, t('league.item_count', '{count} items', { count: workCount }));
-      steps.config.setCollapsed(folded.config, teamConfigurationMeta(teamByName(name)));
-    };
-    const main = el('div', 'league-team-edit-content');
-    main.append(...(holding ? [steps.agents.el] : [steps.agents.el, steps.work.el, steps.config.el]));
-    let held = new Map(); // agent name -> titles of the items it holds, from the Team reading
-    // ONE AGENT MOVES, ONE ROW CHANGES (KAN-413): the kit's keyed list. Each Agent row compares
-    // what it shows (its stance, 人, title, what it holds) and redraws only itself.
-    const foot = holding ? null : el('div', 'league-team-add');
-    // Agents join a Team by dragging; the foot starts a new one — the New Agent form with
-    // this Team chosen, as the Commons roster's New Agent does (owner, 2026-10-20).
-    foot?.append(createAction({ label: t('new_agent.title', 'New Agent'), size: 'compact', action: () => bench.place(WB_TYPES.newAgent, oppositeSeat(seat), { team: name }) }).el);
-    const agentRows = WorkspaceKit.primitives.createKeyedList({
-      key: (row) => row.name,
-      shows: (row) => (row.foot ? '!foot' : JSON.stringify([row.name, row.stance, !!row.team_lead, row.title, row.holds, row.flagged])),
-      draw: (row) => {
-        if (row.foot) return foot;
-        const node = el('button', `league-team-row league-team-agent${row.flagged ? ' flagged' : ''}`);
-        node.type = 'button'; node.dataset.session = row.name;
-        node.addEventListener('click', () => openAgentWorkbench(row.name));
-        const live = el('i', 'home-live'); live.dataset.stance = row.stance || 'unknown';
-        live.title = stanceLabel(row.stance) || ''; live.setAttribute('aria-hidden', 'true');
-        const words = el('span', 'league-team-agent-name');
-        if (row.team_lead) words.append(el('span', 'league-team-agent-lead', '人'));
-        if (row.flagged) words.append(el('span', 'league-team-agent-flag', '⚑'));
-        words.append(row.title, el('span', 'league-team-agent-holds', row.holds));
-        node.append(live, words);
-        return node;
-      },
-    });
-    const paintAgents = () => {
-      const list = membersOfTeam(name).map((member) => ({ name: member.name, stance: rows.get(member.name)?.stance, team_lead: member.team_lead, flagged: !!rows.get(member.name)?.tegami?.flagged,
-        title: agentTitle(member), holds: (held.get(member.name) || []).join(' · ') }));
-      agentRows.set(agents, foot ? [...list, { name: '!foot', foot: true }] : list);
-    };
-    const readWork = async () => {
-      if (holding) return;
-      const result = await request(`/api/work-items?team=${encodeURIComponent(name)}`, { cache: 'no-store' });
-      const items = result.ok && Array.isArray(result.data.items) ? result.data.items : [];
-      held = new Map();
-      for (const item of items) if (item.holder.startsWith('agent:')) held.set(item.holder.slice(6), [...(held.get(item.holder.slice(6)) || []), item.title]);
-      workCount = items.length;
-      stones.setItems(items);
-      paintAgents(); paintFolds();
-    };
-    // Same contract as renderConfig below: every publish lands here, so the body only
-    // rebuilds — and refetches the configuration's catalogs — when what it shows moved.
-    // The configuration follows the saved record alone, so a session coming or going never
-    // repaints an edit in progress (owner, 2026-09-13). A stance moves only its Agent's row;
-    // the Work list is asked again only when the members moved, never on a stance (KAN-413).
-    let seen = '';
-    let seenRecord = '';
-    const render = () => {
-      const current = teamByName(name);
-      const signature = configSignature(name);
-      const record = JSON.stringify(current.durable ? current : null);
-      const membersMoved = signature !== seen;
-      const recordMoved = record !== seenRecord;
-      paintAgents();
-      if (!membersMoved && !recordMoved) return;
-      seen = signature;
-      seenRecord = record;
-      objective.textContent = current.objective || ''; objective.title = current.objective || ''; objective.hidden = !current.objective;
-      if (membersMoved) void readWork();
-      if (recordMoved && !holding) {
-        const fields = el('div', null);
-        config.replaceChildren(fields, createActionBar({ actions: [remove] }).el);
-        renderTeamConfiguration(fields, { ...current, durable: true }, { createAction, onSaved: render });
-      }
-      paintFolds();
-    };
-    render();
-    return { title, objective, controls, main, render };
-  };
-  const leagueTeamLabel = (name) => name === UNASSIGNED ? t('league.ronin', 'Ronin: no team') : readableTeam(name);
+  // ONE TEAM'S OPEN VIEW lives in team-one.js (KAN-801), shared with a Workspace's own Teams.
+  const leagueTeamBody = (name, { say }) => createTeamBody(name, {
+    say, rows: () => rows, openTeam,
+    onDeleted: (gone) => { for (const place of bench.locations(WB_TYPES.team, gone)) emptySeat(place); for (const key of [...leagueTeamSurfaces.keys()]) if (key.endsWith(`\0${gone}`)) { leagueTeamSurfaces.get(key).destroy?.(); leagueTeamSurfaces.delete(key); } },
+  });
+  const leagueTeamLabel = (name) => readableTeam(name);
   const cachedLeagueTeam = (cacheKey, make) => {
     if (leagueTeamSurfaces.has(cacheKey)) { const cached = leagueTeamSurfaces.get(cacheKey); cached.render?.(); return cached; }
     const out = make(); leagueTeamSurfaces.set(cacheKey, out); return out;
@@ -732,19 +632,16 @@ export function createCoworkView(options = {}) {
   const createLeagueTeamSurface = (name, id) => cachedLeagueTeam(`${id}\0${name}`, () => {
     let surface = null;
     const team = leagueTeamBody(name, { seat: id, say: (state, message) => surface?.setState(state, message) });
-    surface = createSurface({ label: leagueTeamLabel(name), className: 'league-team-edit', actions: team.controls });
-    surface.content.append(team.objective, team.main);
-    return { el: surface.el, render: team.render };
+    surface = createSurface({ label: leagueTeamLabel(name), className: 'league-team-edit' });
+    surface.content.append(team.main);
+    return { el: surface.el, render: team.render, destroy: team.destroy };
   });
   const leagueTeamDetail = (name, seat) => cachedLeagueTeam(`teams-${seat}\0${name}`, () => {
     const box = el('div', 'league-team-detail');
     const status = el('p', 'league-team-detail-state'); status.setAttribute('role', 'status'); status.hidden = true;
     const team = leagueTeamBody(name, { seat, say: (state, message) => { status.hidden = state !== 'failed'; status.textContent = state === 'failed' ? message : ''; } });
-    const head = el('div', 'league-team-detail-head');
-    const actions = el('div', 'wk-surface-header-actions league-team-detail-actions'); actions.append(...team.controls.map((control) => control.el));
-    head.append(team.title, actions, team.objective);
-    box.append(head, status, team.main);
-    return { el: box, render: team.render };
+    box.append(status, team.main);
+    return { el: box, render: team.render, destroy: team.destroy };
   });
   const refreshLeagueTeamSurfaces = () => {
     for (const view of leagueTeamSurfaces.values()) view.render?.();
@@ -773,7 +670,7 @@ export function createCoworkView(options = {}) {
       status: stanceLabel(row.stance),
       ctx: row.ctx != null ? `⛽ ${row.ctx}%` : '',
       situation: agentSituation(row),
-      flagged: agentSituation(row) === 'flagged',
+      flagged: !!row.tegami?.flags?.length,
       lines: [current.text, stanceLabel(row.stance), row.ctx != null ? `⛽ ${row.ctx}%` : '', (row.model || '').toLowerCase()].filter(Boolean),
     };
   };
@@ -967,6 +864,8 @@ export function createCoworkView(options = {}) {
       for (const commons of builtCommons()) commons.channels.destroy();
       for (const view of Object.values(newAgentBySeat)) view.destroy();
       for (const surface of teamSurfaces.splice(0)) surface.destroy?.();
+      for (const view of leagueTeamSurfaces.values()) view.destroy?.();
+      leagueTeamSurfaces.clear();
     },
   };
 }

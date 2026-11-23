@@ -1,6 +1,6 @@
 /* part of the ronin-cowork client — see js/README.md */
 /** NEW AGENT — the sole drawn launch form. Session type decides which questions exist;
- * only a Cowork Agent has kind, template, mandate, and loadout. Defaults arrive through
+ * only a Cowork Agent has kind, mandate, and loadout. Defaults arrive through
  * `GET /api/launch-seed?team=` and land until the user's hand changes them. The Behaviors
  * step is brief-step.js: this Agent's own brief settings, integrations and project
  * management, and what comes with it as the server works it out (docs/architecture/brief.md, Where it is set in the UI). */
@@ -9,7 +9,7 @@ import { t } from './lexicon.js';
 import { ask } from './ask.js';
 import { finalizeTeamName, isValidTeamName, sanitizeTeamName } from './new-team-draft.js';
 import {
-  createStep, el, kindTiles, loadProviderCatalog, modelLabel, providerCatalog, readingRows, rowTierWord, tagRow, templateTray,
+  createStep, el, kindTiles, loadProviderCatalog, modelLabel, providerCatalog, readingRows, rowTierWord, tagRow,
 } from './form-steps.js';
 import { openLaunchHandoff } from './launch-handoff.js';
 import { mandateRows, setMandates } from './mandates.js';
@@ -17,29 +17,13 @@ import { briefValue, emptyBriefValue, paintBriefForm } from './brief-step.js';
 import { closeWorkspaceTab, reserveWorkspaceTab, workbenchLaunchUrl, workbenchLink } from './workspace.js';
 
 
-/** A preload may name a template outside the form's default kind filter. Keep a compatible
- * current kind when possible; otherwise use the template's first declared kind. */
-function templateEntryKind(current, template) {
-  const kinds = Array.isArray(template?.kinds) ? template.kinds.filter(Boolean) : [];
-  return kinds.includes(current) ? current : kinds[0] || current;
-}
-
-export function templateEntryPlan({ currentKind, kindTouched = false, templates = [], template = '' } = {}) {
-  const row = templates.find((candidate) => candidate.name === template);
-  if (!row) return { kind: currentKind, template: '' };
-  const kind = templateEntryKind(currentKind, row);
-  if (kindTouched && kind !== currentKind) return { kind: currentKind, template: '' };
-  return { kind, template: row.name };
-}
-
-
 export function createNewAgentView(kit, { connect = null, consumed = null, embedded = false, team = null, configure = null, openTeamDefaults = null, openDeskDefaults = null, openBehaviours = null, teamDefaultsSpec = null, deskDefaultsSpec = null } = {}) {
-  const { createSurface, createAction, createActionBar, createField, createNotice } = kit.primitives;
+  const { createSurface, createAction, createField, createNotice } = kit.primitives;
 
   const freshDraft = () => {
     const entryTeam = typeof team === 'function' ? team() : team;
     return {
-      type: 'cowork_agent', template: '', templateName: '',
+      type: 'cowork_agent',
       name: '', kind: 'coding', kindTouched: false, provider: '', model: '', instructions: '',
       teamMode: entryTeam ? 'existing' : 'none', team: entryTeam || '', newTeam: '',
       reach: 'open', recruit: 'open', output: ['open'],
@@ -53,12 +37,9 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
   let catalog = [];
   let preview = null; // the server's answer: { in_play, integrations, pm }
   let previewAsked = 0;
-  let templates = [];
   let teams = [];
-  let snapshot = '';
   let busy = false;
   let loaded = false;
-  let templateMode = false;
   let configured = '';
   const touched = { mandate: false, model: false };
 
@@ -81,11 +62,7 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
   }
   const isCowork = () => draft.type === 'cowork_agent';
   const hasAgent = () => draft.type !== 'terminal';
-  const templateRow = () => templates.find((row) => row.name === draft.template) || null;
-  const offered = () => (draft.kind === 'open' ? templates : templates.filter((row) => row.kinds.includes(draft.kind)));
   const chosenTeam = () => (draft.teamMode === 'existing' ? draft.team : draft.teamMode === 'new' ? finalizeTeamName(draft.newTeam) : '');
-
-  // and "Make your own" is the manual door; a mode switch above the form said it twice.
 
   /* ---- 1 · Kind ---- */
   const stepKind = createStep({ n: 1, key: 'kind', title: t('kind', 'Kind') });
@@ -94,7 +71,6 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
     kindHost.replaceChildren(kindTiles(draft.kind, (key) => {
       draft.kind = key;
       draft.kindTouched = true;
-      if (draft.template && !offered().some((row) => row.name === draft.template)) { draft.template = ''; snapshot = ''; }
       paint();
     }));
   }
@@ -103,7 +79,6 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
   /* ---- 2 · Session type ---- */
   const stepType = createStep({ n: 2, key: 'type', title: t('new_agent.session_type_step', 'Session type') });
   const typeHost = el('div', 'fs-pair');
-  const templateHost = el('div', 'na-template-tray');
   const TYPES = () => [
     { key: 'cowork_agent', label: t('new_agent.type_cowork', 'Cowork Agent'), sub: t('new_agent.type_cowork_sub', 'Born with Ronin capabilities, behaviors, and assigned Team.') },
     { key: 'bare_metal_agent', label: t('new_agent.type_bare', 'Bare-metal Agent'), sub: t('new_agent.type_bare_sub', 'The provider’s agent and nothing else from Ronin.') },
@@ -118,7 +93,6 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
       box.setAttribute('aria-pressed', String(draft.type === type.key));
       box.append(el('b', null, type.label), el('small', null, type.sub));
       box.addEventListener('click', () => {
-        templateMode = false;
         draft.type = type.key;
         paint();
         void loadPreview();
@@ -126,7 +100,7 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
       typeHost.append(box);
     }
   }
-  stepType.body.append(typeHost, templateHost);
+  stepType.body.append(typeHost);
 
   /* ---- 3 · Name & instructions ---- */
   const stepTop = createStep({ n: 2, key: 'top', title: t('new_agent.agent_body', 'Agent') });
@@ -169,50 +143,6 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
     options: [{ v: configure || '', l: configure || '' }],
   }] }], { value: { agentId: configure || '' }, className: 'na-agent-identity', density: 'tight' });
 
-  /* ---- Apply Template lives under the fourth session choice. ---- */
-  function restoreTemplateDefaults() {
-    const value = (field) => seed?.seeds?.[field]?.value;
-    draft.instructions = '';
-    instructionsInput.value = '';
-    draft.setting = emptyBriefValue();
-    for (const key of ['reach', 'recruit']) draft[key] = value(key) || 'open';
-    draft.output = [value('output') || 'open'].flat().filter(Boolean);
-    draft.teamMode = 'new'; draft.team = ''; draft.newTeam = '';
-    touched.mandate = false;
-  }
-  function applyTemplate(name) {
-    draft.template = name;
-    draft.expanded = {};
-    // Make your own and every new template start from inherited defaults, never the last
-    // template's answers. Name, kind and where are the owner's own answers and stay put.
-    restoreTemplateDefaults();
-    const row = templateRow();
-    if (!row) { snapshot = ''; paint(); return; }
-    draft.instructions = row.brief || '';
-    instructionsInput.value = draft.instructions;
-    // A template's output may still be a single word — the record wraps a legacy scalar,
-    // and so does the form, rather than handing a string to code that expects a list.
-    // The shelf hands back a parsed mandate — `{ reach, recruit, output[] }` or null when
-    // the template is silent — so a silent one seeds nothing rather than seeding a guess.
-    if (row.mandate) { draft.reach = row.mandate.reach; draft.recruit = row.mandate.recruit; draft.output = [row.mandate.output].flat().filter(Boolean); touched.mandate = true; }
-    // `team_mode: 'new'` births the box into its own team (the Personal Assistant ruling).
-    if (row.team_mode === 'new') { draft.teamMode = 'new'; }
-    if (row.behaviours.length) { draft.setting.brief.add = row.behaviours.map((name) => ({ name, depth: 'full' })); }
-    snapshot = authored();
-    paint();
-    void loadPreview();
-  }
-  const authored = () => JSON.stringify({
-    instructions: draft.instructions, setting: draft.setting,
-    mandate: [draft.reach, draft.recruit, ...draft.output],
-  });
-  const templateDirty = () => !!templateRow() && authored() !== snapshot;
-  function paintTray() {
-    templateHost.hidden = !templateMode;
-    templateHost.replaceChildren();
-    if (templateMode) templateHost.append(templateTray(offered(), draft.template, (name) => applyTemplate(name), { includeOwn: false }));
-  }
-
   const instructionsInput = el('textarea');
   instructionsInput.classList.add('wk-field-control');
   instructionsInput.rows = 6;
@@ -222,9 +152,6 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
   instructionsInput.addEventListener('input', () => {
     draft.instructions = instructionsInput.value;
     paintFoot();
-    // The save offer appears when a template goes dirty, and an instructions-only edit IS
-    // dirt — it just never repainted the actions, so Save as template stayed hidden until
-    // you happened to type a name too. (@template_shelves measured it.)
     paintActions();
   });
   const instructionsField = createField({ label: configure ? t('agent_composition.objective', 'Objective') : t('new_agent.instructions', 'Instructions'), control: instructionsInput }).el;
@@ -366,7 +293,7 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
   async function loadPreview() {
     const asked = ++previewAsked;
     const result = await request('/api/brief/preview', { method: 'POST', json: {
-      type: draft.type, team: chosenTeam(), role: draft.role, ...(draft.template ? { template: draft.template } : {}),
+      type: draft.type, team: chosenTeam(), role: draft.role,
       ...(configure ? { name: configure } : {}), ...draft.setting,
     } });
     if (asked !== previewAsked || !result.ok) return;
@@ -393,11 +320,7 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
     paintFolds();
   }
   function paintFolds() {
-    const templateFolded = !configure && isCowork() && !!templateRow();
-    for (const key of FOLDS) {
-      const folded = key === 'loadout' || templateFolded;
-      steps[key].setCollapsed(folded && !draft.expanded[key], null, folded);
-    }
+    for (const key of FOLDS) steps[key].setCollapsed(!draft.expanded[key], null, true);
   }
 
   /* ---- Will be born ---- */
@@ -423,19 +346,6 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
     foot.append(el('p', 'na-note', t('new_agent.blank_note', 'A blank field is an answer, not a gap.')));
   }
 
-  /* ---- the conditional save ---- */
-  const saveName = el('input', 'ntf-tmplname');
-  saveName.type = 'text';
-  saveName.spellcheck = false;
-  saveName.autocapitalize = 'off';
-  saveName.placeholder = t('new_team.save_name_placeholder', 'template name');
-  saveName.addEventListener('input', () => {
-    draft.templateName = saveName.value;
-    save.setDisabled(!saveName.value.trim());
-  });
-  const save = createAction({ label: t('save_template', 'Save as template'), disabled: true, action: () => void doSave() });
-  const actions = createActionBar({ label: t('add_agent.actions', 'Launch actions'), className: 'ntf-actions' });
-  actions.el.append(saveName, save.el);
   function paintActions() {
     // The button says what the press will DO: with the name blank there is no team to
     // create, so it must not promise one.
@@ -444,10 +354,6 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
     start.setDisabled(configure ? !loaded || busy : !ready);
     if (ready) start.el.dataset.kind = 'primary';
     else delete start.el.dataset.kind;
-    const offer = !configure && isCowork() && (!templateRow() || templateDirty());
-    saveName.hidden = !offer;
-    save.el.hidden = !offer;
-    save.el.textContent = !templateRow() ? t('save_template', 'Save as template') : t('new_team.save_as_new', 'Save as new template');
   }
 
   const configurationValue = () => ({
@@ -478,8 +384,6 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
     for (const key of Object.keys(touched)) touched[key] = false;
     seed = null;
     loaded = false;
-    snapshot = '';
-    templateMode = false;
     nameInput.value = '';
     instructionsInput.value = '';
     paint();
@@ -548,7 +452,6 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
           team_lead: draft.role === 'lead',
           role: draft.role,
           ...draft.setting,
-          ...(draft.template ? { template: draft.template } : {}),
         };
     const result = await request('/api/launch', { method: 'POST', json: body });
     busy = false;
@@ -565,38 +468,6 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
     else openLaunchHandoff({ team, sessions: [{ name: born, team_lead: body.team_lead === true }] }, launchTab);
     clearAfterLaunch();
     await consumed?.();
-  }
-
-  async function doSave() {
-    const token = draft.templateName.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '_');
-    if (!token) return;
-    // templates are two shelves with two doors. This form only ever reads or writes the
-    // agent one — a cast belongs to a Team and means nothing to a single launch.
-    const result = await request('/api/templates/agents', {
-      method: 'POST',
-      json: {
-        name: token,
-        label: draft.templateName.trim(),
-        art: templateRow()?.art || '＋',
-        blurb: draft.instructions.trim().slice(0, 120),
-        kinds: draft.kind === 'open' ? ['coding', 'work', 'personal', 'household', 'social', 'school'] : [draft.kind],
-        brief: draft.instructions.trim(),
-        mandate: `${draft.reach} · ${draft.recruit} · ${draft.output.join(', ')}`,
-        team_mode: draft.teamMode === 'new' ? 'new' : '',
-        behaviours: draft.setting.brief.add.map((row) => row.name),
-        // THE SWITCHES A LOADOUT IS MEANT TO CARRY. `TemplateBoxSave` stores these
-        // (@template_shelves measured `boxTail` writing all three) and this form was
-        // sending only `behaviours`, so a saved Personal Assistant lost its switches.
-        //
-      },
-    });
-    if (!result.ok) return notice.set('failed', result.message);
-    notice.set('success', t('new_team.saved_template', 'Saved template {name}', { name: token }));
-    templates = [...templates, result.data.template];
-    draft.templateName = '';
-    saveName.value = '';
-    save.setDisabled(true);
-    paintTray();
   }
 
   /** The level above answers — the team's when one is chosen, the campaign's otherwise —
@@ -625,7 +496,6 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
     if (!draft.kindTouched && team && value('kind')) draft.kind = value('kind');
     syncQuestions();
     paintKinds();
-    paintTray();
     paintFolds();
     paintFoot();
     await loadPreview();
@@ -651,7 +521,6 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
     paintTypes();
     paintLeanNote();
     paintKinds();
-    paintTray();
     syncQuestions();
     paintDefaultsNote();
     paintBehaviourShelves();
@@ -666,15 +535,13 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
     payloadOpen = !payloadOpen;
     stepPayload.setCollapsed(!payloadOpen, null, true);
   } });
-  stepPayload.body.append(foot, actions.el);
+  stepPayload.body.append(foot);
   stepPayload.setCollapsed(true, null, true);
   if (configure) identityRow.append(agentIdentity.el);
   identityRow.append(nameField, teamQuestions.el);
   stepTop.body.replaceChildren(identityRow, questions.el, defaultsNote, instructionsField);
   const form = el('div', 'ntf-form');
   form.append(stepType.el, stepTop.el, stepLoadout.el, stepPayload.el);
-  // Save as template sits UNDER the reading, for the same reason as on New Team: the
-  // reading is the packet, and the button saves the packet.
   surface.content.append(building, form, notice.el);
 
   const seedPrompt = (prompt) => {
@@ -705,19 +572,12 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
       if (entryTeam) { draft.teamMode = 'existing'; draft.team = entryTeam; }
       if (detail?.teamLead === true) draft.role = 'lead';
       paint();
-      const [tray, teamRows] = await Promise.all([
-        request('/api/templates/agents'),
+      const [teamRows] = await Promise.all([
         request('/api/team-rosters'),
         loadCatalog(),
       ]);
-      templates = tray.ok && Array.isArray(tray.data) ? tray.data : [];
       teams = teamRows.ok && Array.isArray(teamRows.data) ? teamRows.data.filter((row) => row.state !== 'archived') : [];
       if (!loaded) { await loadSeed(); loaded = true; }
-      if (typeof detail?.template === 'string' && detail.template) {
-        const entry = templateEntryPlan({ currentKind: draft.kind, kindTouched: draft.kindTouched, templates, template: detail.template });
-        draft.kind = entry.kind;
-        if (entry.template) applyTemplate(entry.template);
-      }
       seedPrompt(typeof detail?.prompt === 'string' ? detail.prompt.trim() : '');
       paint();
     },

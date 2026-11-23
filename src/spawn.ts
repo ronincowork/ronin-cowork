@@ -18,7 +18,6 @@ import { mandate, type LaunchMode, type Mandate } from './agent-defaults.js';
 import { resolveInstallations, type ResolvedInstallation } from './installations.js';
 import { initialCampaignId } from './campaign-scope.js';
 import { resolveLaunchSeed } from './launch-seed.js';
-import { templateProvenance } from './template-provenance.js';
 import { profileDir, resolveHouseSeatProfile, type HouseSeat } from './house-seats.js';
 import { agentBriefOf, composeBrief, type BuiltBrief } from './brief-build.js';
 import type { BriefSettings } from './brief-record.js';
@@ -26,6 +25,8 @@ import type { BriefSettings } from './brief-record.js';
 export interface SpawnForm {
   session_type?: 'cowork_agent' | 'bare_metal_agent' | 'terminal';
   house_seat?: HouseSeat;
+  /** The Helpful Assistant (KAN-766): an ordinary Cowork launch whose brief type is `irasshai`, so her files say `when: irasshai`. */
+  agent_type?: 'irasshai';
   team?: string;
   team_lead?: boolean;
   role?: 'coworker' | 'lead' | 'epic_lead' | 'coordinator';
@@ -34,7 +35,6 @@ export interface SpawnForm {
   mandate?: Partial<Mandate>;
   campaign_id?: string;
   kind?: string;
-  template?: string; // preset is validated provenance only, never reapplied
   /** The Agent's own brief settings, integrations and project management (docs/architecture/brief.md, Layers and brief settings). */
   brief?: BriefSettings;
   integrations?: string[];
@@ -162,7 +162,6 @@ export async function resolveFacts(form: SpawnForm, taken: Set<string>, proposed
     listInstallations(),
   ]);
   const launchSpecs = await listSessionLaunchSpecs(campaign?.providers ?? await readProviderSummary());
-  const preset = await templateProvenance(coworkAgent ? form : {});
   if (form.team && !isTeamName(form.team)) {
     throw new Error(`A team name is lowercase letters, digits, _ and - (it is also the tag): "${form.team}".`);
   }
@@ -205,7 +204,7 @@ export async function resolveFacts(form: SpawnForm, taken: Set<string>, proposed
   const arrangement: 'managed' | 'checkout' | 'none' = repositories.some((repo) => repo.managed) ? 'managed' : repositories.length ? 'checkout' : 'none';
   const kind = form.kind ?? String(parentSeed?.seeds.kind.value ?? 'open');
   return {
-    sessionType, coworkAgent, bareMetalAgent, campaignId, agentsSet, campaign, launchSpecs, preset, roster, profile,
+    sessionType, coworkAgent, bareMetalAgent, campaignId, agentsSet, campaign, launchSpecs, roster, profile,
     parentSeed, workspace, place, repositories, folders, agent, installations, name, arrangement, kind,
   };
 }
@@ -275,7 +274,7 @@ export async function resolveForm(
   proposedRoster?: TeamRoster,
 ): Promise<Resolved> {
   const facts = await resolveFacts(form, taken, proposedRoster);
-  const { sessionType, coworkAgent, campaign, preset, roster, profile, parentSeed, workspace, place, repositories, folders, agent, installations, name, kind } = facts;
+  const { sessionType, coworkAgent, campaign, roster, profile, parentSeed, workspace, place, repositories, folders, agent, installations, name, kind } = facts;
   const { cmd, spec, chosen, launchMode } = await resolveLaunch(form, facts);
   const composed = await resolveBriefFor(form, facts, {
     provider: spec?.provider ?? '', model: spec?.model ?? '', harness: spec?.cli ?? '', launch_mode: launchMode,
@@ -337,10 +336,7 @@ export async function resolveForm(
     team_state: roster?.state ?? '',
     composed,
     kind,
-    ignored: [
-      ...ignored,
-      ...preset.ignored,
-    ],
+    ignored,
     installations,
     stated_by: {
       name: form.name ? explicit : system,
@@ -348,13 +344,12 @@ export async function resolveForm(
       cmd: cmdSource,
       tags: unique(roster ? rosterSource : [], form.tags?.length ? explicit : []),
       session_type: explicit,
-      template: preset.source ?? system,
-      mandate: form.mandate ? (preset.mandate ? preset.source! : explicit) : parentSeed?.seeds.reach.stated_by ?? (campaign
+      mandate: form.mandate ? explicit : parentSeed?.seeds.reach.stated_by ?? (campaign
         ? [{ layer: 'campaign', source: `#/campaign (${campaign.id}: defaults)` }]
         : system),
       team: form.team ? explicit : system,
       workspace: workspaceSource,
-      brief: unique(preset.brief ? preset.source! : explicit,
+      brief: unique(explicit,
         profile.stated_by.opening, roster ? rosterSource : [], workspaceSource),
       agent: profile.stated_by.agent,
       capExempt: profile.stated_by.capExempt,

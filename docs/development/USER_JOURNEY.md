@@ -50,8 +50,7 @@ the door back.”
 ### Ronin Home and Ronin Setup
 
 The private address opens Ronin Home. **Machine Settings** opens **Ronin Setup** at
-`#/setup`; it is the one first-run door, not a one-time form. Presets are reached through
-the Launch surface. The selector drives the Garden Canvas in Workspace 1 and the matching
+`#/setup`; it is the one first-run door, not a one-time form. The selector drives the Garden Canvas in Workspace 1 and the matching
 actionable setup surface in Workspace 2.
 
 Each surface records its own choice directly and remains available later. Measured provider

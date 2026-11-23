@@ -16,7 +16,6 @@ const store = (id: string, root: RootId, rel: string): Store => ({ id, root, rel
 export const STORES: readonly Store[] = [
   store('session', 'data', 'sessions'),
   store('archived_sessions', 'data', 'archived-sessions'),
-  store('session_boot_cache', 'data', 'session-boot'),
   store('bench', 'data', 'bench'),
   store('telemetry', 'data', 'telemetry'),
   store('ageru', 'user', 'ageru'),
@@ -24,10 +23,16 @@ export const STORES: readonly Store[] = [
   store('message_queue', 'data', 'message-queue'),
   // Seats with no terminal (a gecko) and their inboxes (src/seats.ts).
   store('seats', 'data', 'seats'),
-  store('behaviours', 'user', 'behaviours'),
-  store('facts', 'user', 'facts'),
-  store('library', 'user', 'library'),
-  store('session_boot', 'user', 'session_boot'),
+  // THE THREE PLACES (ronin_stock/stock_readme.md): ronin_stock/ is what Ronin ships; `custom` is the
+  // person's own entries, the same folders, each replacing the stock entry of its id whole or
+  // adding one; `office` is the office's output (built facts, MACHINE_STATUS, ABOUT_USER,
+  // Workspace summaries). Each kind's custom folder is a store of its own.
+  store('custom', 'user', 'custom'),
+  store('behaviours', 'user', 'custom/behaviours'),
+  store('facts', 'user', 'custom/facts'),
+  store('tools', 'user', 'custom/tools'),
+  store('playbooks', 'user', 'custom/playbooks'),
+  store('office', 'user', 'office'),
   store('wipeboards', 'user', 'wipeboards'),
   store('jikan', 'user', 'jikan'),
   store('team_rosters', 'user', 'team_rosters'),
@@ -37,8 +42,6 @@ export const STORES: readonly Store[] = [
   store('work_items', 'data', 'work-items'),
   store('desks', 'user', 'desks'),
   store('worktrees', 'user', 'worktrees'),
-  store('catalogs', 'user', 'catalogs'),
-  store('tools', 'user', 'tools'),
   store('memory', 'user', 'memory'),
   store('config', 'user', 'config'),
   store('campaigns', 'user', 'campaigns'),
@@ -71,7 +74,7 @@ export function resolveStore(id: string): { dir: string; source: StoreSource } {
 }
 export const storeDir = (id: string): string => resolveStore(id).dir;
 
-export const STOCK_DIR = path.join(__dirname, '..', 'ronin_catalogs');
+export const STOCK_DIR = path.join(__dirname, '..', 'ronin_stock');
 
 export type Origin = 'stock' | 'user';
 
@@ -246,7 +249,7 @@ export const entryPairs = (lines: string[]): Array<[string, string]> => {
 
 export async function readUserCatalog(file: string): Promise<string> {
   try {
-    return await readFile(path.join(storeDir('catalogs'), file), 'utf8');
+    return await readFile(path.join(storeDir('custom'), file), 'utf8');
   } catch (e) {
     if ((e as NodeJS.ErrnoException)?.code === 'ENOENT') return '';
     throw e;
@@ -339,7 +342,7 @@ function newFileHeader(file: string): string {
   const head = sectionHead(file);
   const same = file === 'MODEL_PROVIDERS.md' ? '`- **provider:** id`' : `\`${head} name\``;
   const stock = file === 'SAVED_LAUNCHES.md' ? '' :
-    `>\n> The shipped copy is \`ronin_catalogs/${file}\` — read it for the format and copy a\n` +
+    `>\n> The shipped copy is \`ronin_stock/${file}\` — read it for the format and copy a\n` +
     `> block out of it to start from. An entry here with the SAME ${same} REPLACES that\n` +
     `> one whole; a new name is added after them; \`- **hidden:** yes\` deletes one.\n`;
   return `# ${file.replace(/\.md$/, '')} — yours (user scope)
@@ -355,7 +358,7 @@ ${stock}>
 
 export async function seedUserCatalog(file: string): Promise<{ path: string; created: boolean }> {
   if (!isShadowable(file)) throw new Error(`"${file}" is not a catalog you can keep your own copy of.`);
-  const dir = storeDir('catalogs');
+  const dir = storeDir('custom');
   const target = path.join(dir, file);
   try {
     await readFile(target, 'utf8');
@@ -368,7 +371,7 @@ export async function seedUserCatalog(file: string): Promise<{ path: string; cre
 }
 
 async function writeCatalogFile(file: string, text: string): Promise<void> {
-  const dir = storeDir('catalogs');
+  const dir = storeDir('custom');
   await mkdir(dir, { recursive: true });
   const target = path.join(dir, file);
   const tmp = `${target}.tmp-${process.pid}`;

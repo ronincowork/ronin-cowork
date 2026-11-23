@@ -74,7 +74,7 @@ const LAUNCH_KEYS = new Set([
   'cmd', 'model', 'provider', 'mandate', 'campaign_id',
   'tags', 'seed', 'inject', 'reference',
   'kind', 'brief', 'integrations', 'pm',
-  'template',
+  'template', 'agent_type',
 ]);
 const RETURNED_LAUNCH_KEYS = new Set([
   'assignment', 'work_locations', 'posture', 'opening', 'ack', 'capExempt', 'launchAgent', 'stated_by', 'birth_reading',
@@ -109,8 +109,6 @@ export function acceptedLaunchBody(input: unknown): { body: Record<string, unkno
   if (body.kind !== undefined && (typeof body.kind !== 'string' || !KINDS.has(body.kind.trim()))) drop('kind');
   if (body.kind !== undefined) body.kind = String(body.kind).trim();
   if (body.role !== undefined && !['coworker', 'lead', 'epic_lead', 'coordinator'].includes(String(body.role))) drop('role');
-  if (body.template !== undefined && (typeof body.template !== 'string' || !/^[\w-]{1,64}$/.test(body.template.trim()))) drop('template');
-  if (body.template !== undefined) body.template = String(body.template).trim();
 
   const inapplicable = sessionType === 'terminal'
       ? ['provider', 'model', 'instructions', 'prompt', 'kind', 'mandate', 'brief', 'integrations', 'pm', 'template', 'cmd', 'seed', 'inject', 'reference', 'role']
@@ -129,6 +127,7 @@ export function spawnFormFromLaunchBody(body: Record<string, unknown>, houseSeat
   return {
     session_type: sessionType as SpawnForm['session_type'],
     house_seat: houseSeat,
+    agent_type: body.agent_type === 'irasshai' ? 'irasshai' : undefined,
     team: team || undefined,
     team_lead: role === 'lead',
     role,
@@ -141,7 +140,6 @@ export function spawnFormFromLaunchBody(body: Record<string, unknown>, houseSeat
     campaign_id: String(body.campaign_id ?? '').trim() || undefined,
     kind: typeof body.kind === 'string' ? body.kind : undefined,
     ...(sessionType === 'cowork_agent' ? agentBriefOf(body) : {}),
-    template: typeof body.template === 'string' ? body.template : undefined,
     tags: Array.isArray(body.tags) ? body.tags.map(String) : [],
     seed: Array.isArray(body.seed) ? body.seed.map(String) : [],
     inject: String(body.inject ?? '').trim() || undefined,
@@ -196,7 +194,7 @@ const readPane = async (name: string) => {
 
 /** AN AGENT FLAG (owner, 2026-11-15, KAN-527): the Agent itself waits on the owner, not an
  * item. Derived from the CLI's hooks and the pane, never stored: it goes when the CLI moves on. Its
- * work record carries it, and `flagged` puts ⚑ and the flagged amber on its selector pill. */
+ * card adds it to its work record's `flags` with no id ({ why }), and every surface shows ⚑ for it. */
 export const ASKING_FLAG = 'asking';
 export const NO_PROGRESS_FLAG = 'no_progress';
 export const STOPPED_FLAG = 'stopped'; // its pane died (src/pane-death.ts, KAN-660)
@@ -241,7 +239,7 @@ export async function cardOf(s: SessionWithAxes, parts: ReadonlySet<CardPart>) {
     stance: flag ?? (stopped_at ? 'interrupted' : contributed.stance ?? 'unknown'),
     ...(Array.isArray(reports) && !reports.includes('asking') ? { stance_reports: ['asking', ...reports] } : {}),
     ...(stopped_at ? { stopped_at } : {}),
-    ...(tegami ? { tegami: flag ? { ...tegami, flagged: true, agent_flag: flag } : tegami } : {}),
+    ...(tegami ? { tegami: flag ? { ...tegami, flags: [...tegami.flags, { why: flag }] } : tegami } : {}),
     ...(thread ? { thread } : {}),
   };
 }
@@ -511,7 +509,6 @@ export function registerLaunch(app: express.Express): LaunchControl {
         team_lead: !!form.team_lead && !!resolved.team,
         role: form.role ?? (form.team_lead ? 'lead' : 'coworker'),
         kind: resolved.kind,
-        template: form.template ?? '',
         ...(form.person?.email ? { user_email: form.person.email } : {}),
         mandate: resolved.mandate,
         // What the brief told, by name and depth, and why (docs/architecture/brief.md, Layers and brief settings).
@@ -557,7 +554,7 @@ export function registerLaunch(app: express.Express): LaunchControl {
       const shelved = [launch.parked ? resolved.brief : '', birthLines].filter(Boolean).join('\n');
       if (!shelved) return;
       // A brief that never reached the Agent is parked in brief.md beside the session; no
-      // work item is made for it (docs/using-ronin/project-management.md: items only for work).
+      // work item is made for it (docs/using-ronin/running-work-items.md: items only for work).
       await parkBrief(resolved.name, shelved);
     })().catch((e) => console.error(`[ronin] spawn ${resolved.name}:`, e));
   };

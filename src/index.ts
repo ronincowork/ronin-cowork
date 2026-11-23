@@ -40,7 +40,6 @@ import { registerPlans } from './routes/plans-api.js';
 import { registerCanvases } from './routes/canvases-api.js';
 import { registerSecrets } from './routes/secrets-api.js';
 import { registerWorkItems } from './routes/work-items-api.js';
-import { registerEpicTemplates } from './routes/epic-templates-api.js';
 import { registerPromotions } from './routes/promotions-api.js';
 import { epicsPush, everyItemReading } from './work-items-read.js';
 import { registerDocs } from './routes/docs-api.js';
@@ -65,12 +64,14 @@ import { registerMessages } from './routes/messages-api.js';
 import { countBrowserTool } from './tool-call-api.js';
 import { registerCli } from './routes/cli-api.js';
 import { listQueuedMessages, startMessageQueue } from './message-queue.js';
+import { checkTurnEnd } from './notify-me.js';
 import { isValidTeam, listAllJobs, listJobs } from './jikan.js';
 import { isValidBoardName, seedHouseBoard, WIPEBOARD_DIR } from './wipeboards.js';
 import { agentCounts, joinPresence, machine, presence, stampInput } from './presence.js';
 import { person, startOfficePeople } from './office-people.js';
 import { readOfficeRecord } from './office-record.js';
-import { changed, handleEvents, mark, pushJikan, pushMessages, pushWipeboard, startSessionsBroadcast, watchStore } from './ws/events.js';
+import { changed, handleEvents, mark, pushJikan, pushMessages, pushWipeboard, startSessionsBroadcast, watchStore, wireTmuxNotifications } from './ws/events.js';
+import { sessionsMoved, startFacts } from './facts.js';
 import { tmux as tmuxClient } from './tmux-client.js';
 import { handlePty } from './ws/pty.js';
 import { originAllowed, allowedOrigins } from './ws/origin.js';
@@ -79,8 +80,7 @@ import { DocumentPathError, absoluteDocumentPath, readDocumentFile, readProductD
 import { checkTmuxServerCgroup } from './host-guard.js';
 import { startTeamLayers } from './team-layers.js';
 import { asSeat } from './seats.js';
-import { sockets, seatOfBearer, runStartedHooks, startBootHooks, stopBootHooks, mountServiceRoutes, noteService, noteServiceCapabilityPlan, noteServiceFailure, noteServiceParked } from './sockets.js';
-import { startSessionRetention } from './session-retention.js';
+import { sockets, onRowChanged, seatOfBearer,runStartedHooks, startBootHooks, stopBootHooks, mountServiceRoutes, noteService, noteServiceCapabilityPlan, noteServiceFailure, noteServiceParked } from './sockets.js';
 import { discoverParts, partsToLoad } from './parts.js';
 import { initialCampaign } from './campaigns.js';
 import { listInstallations } from './resource-adapters.js';
@@ -92,6 +92,7 @@ import { filesProxy, startFiles, stopFiles, PYTHON } from './files.js';
 import { ensureInstalledRoots, githubSetupAnswer, githubSetupAttached } from './setup-runtime.js';
 import { registerSetupRuntime } from './routes/setup-runtime-api.js';
 import { registerSetupProgress } from './routes/setup-progress-api.js';
+import { startSetupProgress } from './setup-progress.js';
 import { registerMikaContext } from './mika-context.js';
 import { archiveDone, cardsOf, ensureEveryIcebox, migrateItems, releaseEndedHolders } from './work-items.js';
 import { rebuildIndex } from './work-items-index.js';
@@ -110,12 +111,12 @@ if (isEntryPoint) await migrateItems().then((done) => {
 if (isEntryPoint) await rebuildIndex().then((rows) => console.log(`[work-items] live index: ${rows.length} live items`))
   .catch((error) => console.error(`[work-items] live index: ${(error as Error).message}`));
 // An Agent that vanished without an end through Ronin (a crash) gives up its items like any
-// ending (docs/using-ronin/project-management.md, How an item lives): a sweep every five minutes, two misses in a row.
+// ending (docs/using-ronin/running-work-items.md, How an item lives): a sweep every five minutes, two misses in a row.
 if (isEntryPoint) setInterval(() => {
   void releaseEndedHolders().then((ended) => {
     if (ended.length) console.log(`[work-items] released the items of ended ${ended.join(', ')}`);
   }).catch((error) => console.error(`[work-items] sweep: ${(error as Error).message}`));
-  // Done five days is archived (docs/using-ronin/project-management.md, How an item lives).
+  // Done five days is archived (docs/using-ronin/running-work-items.md, How an item lives).
   void archiveDone().then((archived) => {
     if (archived.length) console.log(`[work-items] archived, Done five days: ${archived.join(', ')}`);
   }).catch((error) => console.error(`[work-items] archive: ${(error as Error).message}`));
@@ -303,7 +304,6 @@ registerPlans(app); // /api/plans* — the plan tool's door — src/routes/plans
 registerCanvases(app); // /api/canvases* — the canvas tool's door — src/routes/canvases-api.ts
 registerSecrets(app); // /api/secrets* — the secret tool's door: save, ask, names; never a value — src/routes/secrets-api.ts
 registerWorkItems(app); // /api/work-items* — the one door to the work item store — src/routes/work-items-api.ts
-registerEpicTemplates(app); // /api/epic-templates — the epic-template tool's door — src/routes/epic-templates-api.ts
 registerPromotions(app); // /api/promotions/:id/live — whether a promotion restarted and passed health (KAN-311) — src/routes/promotions-api.ts
 registerDesks(app); // /api/desks?session=<name> and funnel recovery — derived desk state — src/routes/desks-api.ts
 registerTeamPage(app); // /api/teams/:team/page — the team page's view, and drafts an agent hands it — src/routes/team-page-api.ts
@@ -315,7 +315,7 @@ registerCampaigns(app); // /api/campaigns* — the durable record of each body o
 registerOffice(app); // /api/office — the office record: self-hosted, or an office on an office_park — src/office-record.ts
 registerInstalled(app); // /api/installed — what is on this machine: installed · activated · switched, one answer — src/routes/installed-api.ts
 registerSetupRuntime(app); // /api/setup/runtime and provider login completion — explicit readiness facts for Ronin Setup
-registerSetupProgress(app); // one server-owned Setup completion record, scan and answer resource
+registerSetupProgress(app); // Setup's ticks, read from the facts
 registerJikan(app); // /api/teams/:team/jikan* — JIKAN, the Cron jobs tab: a team's scheduled requests — src/routes/jikan-api.ts
 startHouseJikan(); // JIKAN's clock: every minute, deliver what is due through the message door — src/jikan.ts
 registerServicesActivation(app); // /api/services/activation* — the Ronin Services request, local-only; no secret crosses this surface — src/routes/services-activation-api.ts
@@ -513,7 +513,6 @@ void startTeamLayers((cb) => sockets.onItemChanged(cb));
 // An item write marks the work record on the cards it touches (KAN-641).
 sockets.onItemChanged(async ({ item, line }) => { for (const name of await cardsOf(item, line)) mark(name, 'record'); });
 startFiles(ROOT); // copyparty at /files where python3 is found — src/files.ts
-const stopSessionRetention = startSessionRetention(); // closed session folders outlive the retention period by nothing
 void expireArchives(); // archives older than ARCHIVE_DAYS go at start, and on each new archive — src/session-archive.ts
 // /events: pushes the session list, each Agent's card, the Team rosters, the message queue,
 // boards, cron jobs and GitHub setup when they change — src/ws/events.ts
@@ -528,12 +527,18 @@ startSessionsBroadcast({
   github: { attached: githubSetupAttached, answer: githubSetupAnswer },
   shutdown: shutdownOperation,
 });
-watchStore(WIPEBOARD_DIR, (file) => { void pushWipeboard(file.split('/')[0]!); });
+// notify_me: a marked Agent's turn end tells its callers, checked whenever its row moves — src/notify-me.ts
+onRowChanged((name) => { void checkTurnEnd(name); });
+watchStore(WIPEBOARD_DIR,(file) => { void pushWipeboard(file.split('/')[0]!); });
 watchStore(storeDir('jikan'), (file) => { if (file.endsWith('.md')) void pushJikan(file.slice(0, -3)); });
 watchStore(storeDir('message_queue'), () => { void pushMessages(); });
 // A seat's file is its roster entry (the listing moves); its inbox is its tile's thread (the card's record part).
 watchStore(storeDir('seats'), (file) => { if (file.endsWith('.inbox.jsonl')) mark(file.slice(0, -12), 'record'); else if (file.endsWith('.json')) changed(); });
-void startOfficePeople(); // hosted office: who each browser is — src/office-people.ts
+// Hosted office: who each browser is (src/office-people.ts); then the facts, one watcher per store (src/facts.ts, KAN-768).
+// Setup's ticks go out again whenever a fact is written (src/setup-progress.ts).
+startSetupProgress();
+void startOfficePeople().then(() => startFacts()).catch((e) => console.error('[facts] start failed:', e));
+wireTmuxNotifications(tmuxClient, sessionsMoved); // live Agents are tmux's, not a store's
 void seedHouseBoard().catch((e) => console.error('[tmux-ronin] house board seed failed:', e));
 
 void publishMax();
@@ -581,7 +586,6 @@ server.listen(config.port, config.bind, async () => {
 for (const sig of ['SIGINT', 'SIGTERM'] as const) {
   process.on(sig, () => {
     stopBootHooks();
-    stopSessionRetention();
     stopSpawnBroker();
     stopFiles();
     setTimeout(() => process.exit(0), 2000).unref();

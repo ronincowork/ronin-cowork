@@ -112,8 +112,8 @@ function createBehaviourSurface(initial = {}) {
 }
 
 export function registerBehaviourSurface() {
-  const { library } = WorkspaceKit.workbench;
-  if (!library.has(BEHAVIOUR_SURFACE_TYPE)) library.register({
+  const { surfaces } = WorkspaceKit.workbench;
+  if (!surfaces.has(BEHAVIOUR_SURFACE_TYPE)) surfaces.register({
     type: BEHAVIOUR_SURFACE_TYPE,
     header: 'surface',
     label: () => t('behaviours.title', 'Behaviors'),

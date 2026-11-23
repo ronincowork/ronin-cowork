@@ -1,0 +1,21 @@
+{
+  "id": "PLAYBOOK-2",
+  "campaign_id": "",
+  "title": "Workspace Summary: write one so other Agents know what it is",
+  "objective": "You were started to write one Workspace's Summary (its handle is in this epic's comment\n\"Workspace: <handle>\"), so other Agents know what it is. Started for each Workspace that\n`workspace-doc list` shows with no summary yet: `session_create <name>`, then\n`item checkout PLAYBOOK-2 <name>` and `item comment <its new epic> \"Workspace: <handle>\"`.\nThe tasks are this epic's children; match each by its title, and work them in order.\nRules:\n- Read; don't change their project. Nothing is moved, renamed, installed or committed.\n- Done with a task: `item comment` on it \"Done: <what>\", then `item transition` it to \"Done\".",
+  "level": 1,
+  "kind": "Epic",
+  "status": "Playbook",
+  "flagged": false,
+  "priority": "",
+  "comments": [],
+  "parent": null,
+  "attachments": [],
+  "links": [],
+  "external": {},
+  "trail": [],
+  "created": {
+    "at": "",
+    "by": ""
+  }
+}

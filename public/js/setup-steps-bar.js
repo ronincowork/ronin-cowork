@@ -3,12 +3,12 @@
  * THE FIVE STEP MARKS — one drawing of Setup's progress, for anyone who needs to show it.
  *
  * Five narrow slabs leaning one shared angle, each carrying its own numeral: hollow until
- * that step is answered, kaki once it is, and the first unanswered slab kaki-edged because
+ * that step is ticked, kaki once it is, and the first unticked slab kaki-edged because
  * that is the step Setup lands on. Five marks that carry their own numbers need no counter
  * beside them.
  *
- * STATELESS AND SELF-CONTAINED. It reads the Campaign's persisted answers
- * (setup-progress.js) and nothing else: no fetch, no probe, no reading of machine state,
+ * STATELESS AND SELF-CONTAINED. It reads Setup's ticks, which come from the office's facts
+ * (setup-progress.js; src/setup-progress.ts), and nothing else: no fetch, no probe,
  * no listeners, no timers, nothing to destroy. Call it again with a newer record and
  * replace the element you were given; there is nothing to update in place.
  *

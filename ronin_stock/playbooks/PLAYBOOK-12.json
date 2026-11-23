@@ -1,0 +1,21 @@
+{
+  "id": "PLAYBOOK-12",
+  "campaign_id": "",
+  "title": "Ronin Tour: offer how Ronin works",
+  "objective": "Do: offer a tour of how Ronin works, and give it if they want it.\nDetails: `ronin-help get-started`.\nCheck: given, or declined.",
+  "level": 0,
+  "kind": "Task",
+  "status": "Playbook",
+  "flagged": false,
+  "priority": "",
+  "comments": [],
+  "parent": "PLAYBOOK-1",
+  "attachments": [],
+  "links": [],
+  "external": {},
+  "trail": [],
+  "created": {
+    "at": "",
+    "by": ""
+  }
+}

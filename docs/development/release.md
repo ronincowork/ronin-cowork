@@ -51,7 +51,7 @@ The build is a **stamp, a prune and a tarball** — there is no compiler in this
   install's identity: `/api/version` answers `release` from it, and `bin/ronin-doctor`
   compares release strings instead of inferring from commits.
 - `.github/` is pruned because it belongs to the repository rather than the install.
-  `scripts/` and `tests/` ship with the artifact.
+  `scripts/` and `tests/` (the two guards) ship with the artifact.
 - `node_modules` do not travel (~74 MB; the pty module is a per-platform native
   binary). `npm install` runs at install time instead.
 - Output: `ronin-cowork-vX.Y.Z.tar.gz` + `SHA256SUMS`. Same commit in, same bytes out

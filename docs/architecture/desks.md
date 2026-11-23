@@ -4,7 +4,7 @@ The internal HTTP desk surface owns these managed-worktree mechanics. `worktree-
 it and prints its reply. In this document, backticked/type-level `desk` names are persisted
 compatibility identifiers; the product term is **worktree**.
 What a session is told is
-`ronin_catalogs/behaviours/working-at-a-desk.md`. This page is the tool-side reference:
+`ronin_stock/behaviours/working-at-a-desk.md`. This page is the tool-side reference:
 what is recorded where, what each operation does to git, and what it refuses.
 
 > The current model is `docs/architecture/worktrees.md`.
@@ -184,8 +184,3 @@ beside the line and the ref moves by one atomic `update-ref`.
 - promotion: `acceptedSince(repo, line, lastPromotedLineSha)` → the receipts a change set
   carries; `ChangeSetReceipt` is the shape it writes;
 - a repository's arrangement: `arrangementOf(name)` → its Workspace row (`rowArrangement`).
-
-## Tests
-
-`tests/promotion.test.ts`: real git in a temporary repository, a real Ronin: an Agent
-opens a desk, commits, hands in with its item, and the lead promotes the line into `dev`.

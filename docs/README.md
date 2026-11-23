@@ -17,7 +17,7 @@ route depends on the task, not on who is reading.
 | Give an Agent a file, image, or screenshot | [Share a file with an Agent](using-ronin/share-a-file.md) |
 | Connect an outside service (an MCP server, a web API, a bridge) | [Add an integration](using-ronin/add-an-integration.md) |
 | Start a Team | [New Team](using-ronin/new-team.md) |
-| Track work and coordinate Agents | [Project management](using-ronin/project-management.md), [work record](using-ronin/work-record.md), [work items](using-ronin/work-items.md), [wipeboards](using-ronin/wipeboards.md) and [Jira](using-ronin/jira.md) |
+| Track work and coordinate Agents | [Running work items](using-ronin/running-work-items.md), [work record](using-ronin/work-record.md), [work items](using-ronin/work-items.md), [wipeboards](using-ronin/wipeboards.md) and [Jira](using-ronin/jira.md) |
 | Stop, clear, copy, or close | [Terminal controls](using-ronin/terminal-controls.md) |
 | Archive or restore an Agent | [Archived sessions](using-ronin/archived-sessions.md) |
 | Use a private branch and hand work in | [Managed worktrees](using-ronin/desks.md) |
@@ -41,7 +41,7 @@ change area to its code, UI, stores, Services, documentation, and tests.
 | What do the names mean? | [KOTOBA](../KOTOBA.md) and [Agent glossary](../KOTOBA_GLOSSARY.md) |
 | How are tools and Agent instructions composed? | [The brief](architecture/brief.md) |
 | How does an outside service or MCP server reach Agents? | [Integrations](architecture/integrations.md): bridges, MCP server records, keys, who has it, and the `mcp` broker |
-| How do configuration and owner customizations resolve? | [Installations](architecture/installations.md), [shadowing](architecture/shadowing.md), and [templates](architecture/templates.md) |
+| How do configuration and owner customizations resolve? | [the three places](../ronin_stock/stock_readme.md#three-places-each-with-one-meaning), [Installations](architecture/installations.md) and [shadowing](architecture/shadowing.md) |
 | How is project management built, and who reads which brief? | [Project management: contents](architecture/project-management.md): briefs, tools, code and the Jira bridge |
 | Where do state and work live? | [State inventory](state-inventory.md), [coordination trace](coordination-trace.md), and [Workspaces](using-ronin/workspaces.md) |
 | How does server state reach the browser? | [The data path](architecture/data-path.md): the server pushes on change, a surface subscribes when it opens, nothing polls |

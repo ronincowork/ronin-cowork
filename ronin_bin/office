@@ -1,64 +1,41 @@
 #!/usr/bin/env bash
-# office — the machine status: the rig an Agent is sitting on, what is set up, what is not and what is
-# available (KAN-712, KAN-759). Core's GET /api/office/read assembles it live (src/office-read.ts),
-# the lounge account included when Ronin Services' account part has one. `write` saves it to
-# ~/ronin/library/MACHINE_STATUS.md (POST /api/office/status), as Settings' Machine status does.
+# office — the office-facts (KAN-768, src/facts.ts): one file each in ~/ronin/office/facts/,
+# rewritten about a second after what they read changes. `read` prints them all as one
+# (GET /api/office/read); `read <fact>` prints one (GET /api/facts/<fact>). Either asks GitHub first.
+# ~/ronin/office/MACHINE_STATUS.md is the same suite in one file, kept current.
 . "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/tool-count.sh" office "$@"
 set -u -o pipefail
 . "$(dirname "$(readlink "${BASH_SOURCE[0]}" 2>/dev/null || printf '%s' "${BASH_SOURCE[0]}")")/tool-path.sh"
 TOOL_DIR=$(dirname "$SELF")
 usage() { cat <<'EOF_USAGE'
 Usage:
-  office read     this office as it is now, the machine status: the machine (hosted or not,
-                  Ronin's version, disk), the people (About You) and the notes on them, a gecko
-                  if one is on, every model provider (installed, signed in, Activated or not),
-                  developer tools (GitHub CLI), onboarding's steps, each Workspace (its repos,
-                  folders, integrations, plans and canvases, and its Teams: the lead and who works
-                  on what), what is flagged and what is In Review, Agents on their own, every
-                  integration (connected or not), Ronin Services' parts, the defaults new Agents
-                  get, and the account from the Business Lounge
-  office read --workspace <name>
-                  the machine and one Workspace: a lead's bearings
-  office write    the machine status, written now to ~/ronin/library/MACHINE_STATUS.md
-Assembled each time from Ronin's own records. read keeps nothing; write saves what it read.
-The people's notes: ~/ronin/library/ABOUT_USER.md. A Workspace's doc:
-~/ronin/library/workspaces/<handle>.md (grep the folder to search them all).
+  office read          every fact as it is now, as one: about_user, machine, account (hosted),
+                       workspaces, integrations_authentications, teams_agents, epics, defaults
+  office read <fact>   one of them
+The files: ~/ronin/office/facts/<fact>.md, current whenever read; all of them in one:
+~/ronin/office/MACHINE_STATUS.md. The people's notes: ~/ronin/office/ABOUT_USER.md.
 EOF_USAGE
 }
-WORKSPACE=
 case "${1:-}" in
-  write)
-    [ "$#" -eq 1 ] || { echo "office: write takes nothing (office --help)" >&2; exit 2; }
-    . "$TOOL_DIR/ronin-http.sh"
-    ronin_connect || exit $?
-    out=$(curl -sS -m 60 "${RONIN_CURL[@]+"${RONIN_CURL[@]}"}" -w '\n%{http_code}' -X POST "$url/api/office/status") || { echo "UNREACHABLE: Ronin did not answer at $url" >&2; exit 5; }
-    OUT=$out python3 -c '
-import json, os, sys
-body, _, status = os.environ["OUT"].rpartition("\n")
-try: d = json.loads(body)
-except Exception: d = None
-if not d or not d.get("ok"): print((d or {}).get("error") or "HTTP %s: Ronin did not write it" % status, file=sys.stderr); sys.exit(3)
-print("Written: %s" % d["path"])
-'
-    exit $? ;;
   read)
-    if [ "$#" -eq 3 ] && [ "$2" = "--workspace" ]; then WORKSPACE=$3
-    elif [ "$#" -ne 1 ]; then echo "office: read takes only --workspace <name> (office --help)" >&2; exit 2; fi ;;
+    [ "$#" -le 2 ] || { echo "office: read takes at most one fact name (office --help)" >&2; exit 2; } ;;
   -h|--help) usage; exit 0 ;;
   '') usage >&2; exit 2 ;;
   *) echo "office: unknown command $1 (office --help)" >&2; exit 2 ;;
 esac
+FACT=${2:-}
+case "$FACT" in ''|[a-z_]*) ;; *) echo "office: a fact name is lower-case (office --help)" >&2; exit 2 ;; esac
 
 . "$TOOL_DIR/ronin-http.sh"
 ronin_connect || exit $?
-out=$(curl -sS -m 30 "${RONIN_CURL[@]+"${RONIN_CURL[@]}"}" -w '\n%{http_code}' --get --data-urlencode "workspace=$WORKSPACE" "$url/api/office/read") || { echo "UNREACHABLE: Ronin did not answer at $url" >&2; exit 5; }
+route=/api/office/read
+[ -n "$FACT" ] && route="/api/facts/$FACT"
+out=$(curl -sS -m 60 "${RONIN_CURL[@]+"${RONIN_CURL[@]}"}" -w '\n%{http_code}' "$url$route") || { echo "UNREACHABLE: Ronin did not answer at $url" >&2; exit 5; }
 OFFICE=$out python3 -c '
 import json, os, sys
-def split(raw):
-    body, _, status = raw.rpartition("\n")
-    try: return json.loads(body), status
-    except Exception: return None, status
-d, status = split(os.environ["OFFICE"])
-if not d or not d.get("ok"): print((d or {}).get("error") or "HTTP %s: Ronin answered without the office record" % status, file=sys.stderr); sys.exit(3)
-print(d["text"].rstrip())
+body, _, status = os.environ["OFFICE"].rpartition("\n")
+try: d = json.loads(body)
+except Exception: d = None
+if not d or not d.get("ok"): print((d or {}).get("error") or "HTTP %s: Ronin answered without the facts" % status, file=sys.stderr); sys.exit(3)
+print(d["text"].rstrip() or "Not a fact of this office.")
 '

@@ -20,11 +20,11 @@ contracts or make a contributor follow the installation journey.
   (`src/spawn-broker.ts`). [`docs/architecture/tmux-connection.md`](docs/architecture/tmux-connection.md) says why.
 - Need a tmux server that is not the live one? `ronin-testserver open <name>`, use the
   `tmux` path it prints for every command, `ronin-testserver close <name>` when done —
-  nothing else; in a test, `tests/helpers/testserver.ts` does the same. A server you did
+  nothing else. A server you did
   not get that way is one you may not touch.
 
 Desk work follows the desk contract handed to you at birth
-(`ronin_catalogs/behaviours/working-at-a-desk.md`): **commit** preserves,
+(`ronin_stock/behaviours/working-at-a-desk.md`): **commit** preserves,
 **hand-in** publishes to the team line, and `git push` belongs only to release work.
 After changing an installed box or its user stores, run `npm run byoin` to check that
 current user customization surfaces.

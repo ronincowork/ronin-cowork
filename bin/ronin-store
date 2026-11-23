@@ -13,8 +13,7 @@
 # NEVER write a Ronin path by hand in a script. Call this.
 #
 # Two bindings of one table is a drift risk: change the table here, change it there,
-# in the same commit. tests/stores.test.ts writes through the server and reads back through
-# the tools that use this.
+# in the same commit.
 #
 # ONE LAYOUT, NO FALLBACKS. No legacy path, no legacy variable, no migration branch.
 set -euo pipefail
@@ -23,16 +22,18 @@ set -euo pipefail
 TABLE="\
 session|data|sessions
 archived_sessions|data|archived-sessions
-session_boot_cache|data|session-boot
 bench|data|bench
 telemetry|data|telemetry
 ageru|user|ageru
 ledger|data|ledger
 message_queue|data|message-queue
-behaviours|user|behaviours
-facts|user|facts
-library|user|library
-session_boot|user|session_boot
+seats|data|seats
+custom|user|custom
+behaviours|user|custom/behaviours
+facts|user|custom/facts
+tools|user|custom/tools
+playbooks|user|custom/playbooks
+office|user|office
 wipeboards|user|wipeboards
 jikan|user|jikan
 campaigns|user|campaigns
@@ -42,8 +43,6 @@ house|user|house
 work_items|data|work-items
 desks|user|desks
 worktrees|user|worktrees
-catalogs|user|catalogs
-tools|user|tools
 memory|user|memory
 config|user|config
 mika_home|user|mika

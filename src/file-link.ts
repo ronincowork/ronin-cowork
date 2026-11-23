@@ -5,8 +5,8 @@ import path from 'node:path';
 /**
  * A file an Agent links in Chat, as it wrote it: `~/…` is this machine's home, a full path is
  * itself, and a path relative to where it works is found in the first of `bases` that holds it
- * (its desks, then its working folder, its session folder and drop, the Workspace folders, the
- * library); failing those, a document on its work record that the path names the tail of
+ * (its desks, then its working folder, its session folder and drop, the Workspace folders,
+ * ~/ronin/office/); failing those, a document on its work record that the path names the tail of
  * (ronin_cowork/plans/x.md for a plan in Ronin Lab, KAN-749). Only a file that is there: null
  * otherwise, so Chat links only what opens (KAN-701).
  */

@@ -44,12 +44,13 @@ export async function loadProjects() {
  * and nothing here infers anything from anything.
  */
 // AN AGENT PILL'S ONE SITUATION (owner, 2026-11-18, KAN-665), read from its card alone:
-// stopped (its pane died) > flagged (a person is needed: asking, no progress, the CLI's error,
-// a flagged item) > working > ready (its turn ended under READY_MS ago, by the card's `at`)
-// > '' (idle: the plain pill is the calm state).
+// flagged (its work record's `flags` is not empty, KAN-776: a flagged item, or the Agent asking,
+// without progress or stopped) > stopped (its pane died, with no record to carry the flag) >
+// working > ready (its turn ended under READY_MS ago, by the card's `at`) > '' (idle: the plain
+// pill is the calm state).
 export const READY_MS = 10 * 60_000;
-export const agentSituation = (card = {}, now = Date.now()) => (card.stance === 'stopped' ? 'stopped'
-  : ['asking', 'no_progress', 'error'].includes(card.stance) || card.tegami?.flagged ? 'flagged'
+export const agentSituation = (card = {}, now = Date.now()) => (card.tegami?.flags?.length ? 'flagged'
+  : card.stance === 'stopped' ? 'stopped'
     : card.stance === 'working' ? 'working'
       : ['awaiting_you', 'interrupted'].includes(card.stance) && now - Date.parse(card.at) < READY_MS ? 'ready' : '');
 // ONE LOCAL CLOCK FOR EVERY PILL LIST: Ready ages into idle with no push, so the open lists

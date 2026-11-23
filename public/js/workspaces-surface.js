@@ -1,14 +1,15 @@
 /* part of the ronin-cowork client — see js/README.md */
 /**
- * THE WORKSPACES WORKBENCH'S SURFACES (owner, 2026-11-02; KAN-728). The Workspace is the organizing
+ * THE WORKSPACES WORKBENCH'S SURFACES (owner, 2026-11-02; KAN-728; KAN-784). The Workspace is the organizing
  * principle: Ronin keeps no folder list of its own, and a folder or repository is a row of its
  * Workspace record (src/workspaces.ts). Tilespace 1 holds the Workspaces (`createWorkspaceStones`), each
- * stone its name only. A pressed one's page (`workspacePage`) is the record: its Summary (the
- * Workspace's Markdown file, edited there), its folders as name and path, Add a folder and Clone from
- * GitHub, then Integrations, Agent info and Behaviors; Archive is under ⋯. A stone dragged or a card
- * placed opens it whole in a tilespace (`createWorkspaceRecord`); New Workspace is a dotted card
- * (`createWorkspaceNew`). A folder link dragged in from Files (`/files/<path under home>`, KAN-146)
- * adds that folder. GitHub CLI (`createFolderGithub`) is the sign-in box github-workspace-setup.js draws.
+ * stone in the Epic and Team stones' grammar (KAN-801). A pressed one opens beside them as one Workspace
+ * (`workspaceSurface`), in the opened Team's bar: a toggle, Work (its Teams or Epics, to drill into, beside
+ * its document) or Config (`workspacePage`: its folders, Integrations, Agent info and Behaviors; Archive
+ * under ⋯), and Launch to its own page, `#/workspace/<name>` (`createWorkspaceRoute`), in a new tab. A stone dragged or a card placed opens it whole in
+ * a tilespace (`createWorkspaceRecord`); New Workspace is a dotted card (`createWorkspaceNew`). A folder
+ * link dragged in from Files (`/files/<path under home>`, KAN-146) adds that folder. GitHub CLI
+ * (`createFolderGithub`) is the sign-in box github-workspace-setup.js draws.
  */
 import { openCanvas } from './canvas-view.js';
 import { WorkspaceKit } from './workspace-kit.js';
@@ -22,6 +23,16 @@ import { createFolderPicker } from './folder-picker.js';
 import { createMenuButton } from './menu.js';
 import { renderMarkdownDocument } from './markdown-reader.js';
 import { subscribe as subscribeTeams, teamsFromState } from './team-controller.js';
+import { createEpicStones, createEpicsRead } from './epics-surface.js';
+import { createTeamRosterSurface } from './team-roster-surface.js';
+import { createTeamOne } from './team-one.js';
+import { teamEpicIds } from './team-epics.js';
+import { isOpenEpic } from './epic-stage.js';
+import { listedTeam } from './roster-groups.js';
+import { openWorkspaceTab } from './workspace.js';
+import { S } from './state.js';
+import { createLifecycle, createStoneMarks, statusKey } from './item-lifecycle.js';
+import { createWorkspacesRead } from './workspaces-read.js';
 import { SURFACE_DRAG } from './workbench.js';
 
 const status = () => { const line = el('div', 'pr-status'); line.setAttribute('role', 'status'); return line; };
@@ -83,8 +94,8 @@ function folderBrowser({ onLoad = () => {} }) {
   return { el: shell, current: () => current, home: () => home, paint, load };
 }
 
-/** A Workspace's page in the launch forms' format, made plain for someone new (KAN-728): 1 Summary (the
- * Workspace's Markdown file, KAN-713, shown and edited here) or, new, its Name; 2 Folders, each a name
+/** A Workspace's page in the launch forms' format, made plain for someone new (KAN-728); a made one's is
+ * its Config (KAN-784; its document is in Work): new, 1 Name; then Folders, each a name
  * and its path, a repository's remote in a line under it and how Agents work in it, with Add a folder and
  * Clone from GitHub; then, folded, Integrations, Agent info (objective, instructions, Mode, plans) and
  * Behaviors. A New Workspace is Name + Folders, Create. The folders are the record's rows, saved with it.
@@ -102,8 +113,6 @@ export function workspacePage(w, { taken = () => [], onSaved = () => {}, onDisca
   const text = (value, onInput, placeholder = '') => { const i = el('input'); i.type = 'text'; i.value = value; i.placeholder = placeholder; i.addEventListener('input', () => onInput(i.value)); return i; };
   const area = (value, onInput) => { const a = el('textarea'); a.rows = 4; a.value = value; a.addEventListener('input', () => onInput(a.value)); return a; };
   const open = { top: true, agents: false, locations: true, integrations: false, brief: false, adding: '' }; // adding: '' | 'folder' | 'clone'
-  let doc = null; // the Workspace's Markdown file as read; `docDraft` is what Save writes, when edited
-  let docDraft = null;
   // EVERY EDIT WAITS FOR SAVE (owner, 2026-11-02): a change lights Save (kaki, what needs you) and
   // the − beside it, which throws the changes away back to the saved Workspace.
   let dirty = false;
@@ -111,41 +120,16 @@ export function workspacePage(w, { taken = () => [], onSaved = () => {}, onDisca
   const settled = () => { dirty = false; delete action.el.dataset.attention; discard.setDisabled(true); };
   const MODES = { configured: t('launch_mode.configured', 'Native'), live_dangerously: t('launch_mode.live', 'Dangerously') };
 
-  /* ---- 1 · New: its Name, one field; the handle Teams use is made from it (KAN-728). Created: its
-     Summary, which is the Workspace's Markdown file (KAN-713), the one place its notes live; Edit
-     opens the file here and Save writes it ---- */
-  const stepTop = createStep({ n: 1, key: 'top', title: isNew ? t('workspaces.name', 'Name') : t('workspaces.summary', 'Summary'), onToggle: isNew ? null : () => { open.top = !open.top; paint(); } });
-  const docView = el('div', 'workspace-doc');
-  const paintDoc = () => {
-    if (docDraft !== null) return;
-    docView.replaceChildren(doc === null ? el('p', 'fs-step-help', t('workspaces.reading', 'Reading…')) : renderMarkdownDocument(doc));
-  };
-  const editDoc = createAction({ label: t('workspaces.edit_summary', 'Edit'), size: 'compact', action: () => {
-    docDraft = doc ?? '';
-    const box = area(docDraft, (v) => { docDraft = v; changed(); });
-    box.rows = 14;
-    box.className = 'workspace-doc-text';
-    docView.replaceChildren(box);
-    editDoc.el.hidden = true;
-    box.focus();
-  } });
-  editDoc.el.classList.add('workspace-doc-edit');
-  if (isNew) {
-    stepTop.body.append(text('', (v) => { draft.title = v.trim(); draft.name = draft.title ? pinName(draft.title, new Set(taken())) : ''; changed(); }, t('workspaces.name_placeholder', 'Such as Website or Accounts')));
-  } else {
-    stepTop.body.append(docView, editDoc.el);
-    paintDoc();
-    void request(`/api/workspaces/${encodeURIComponent(draft.name)}/doc`, { cache: 'no-store' }).then((answer) => {
-      if (!answer.ok) { docView.replaceChildren(el('p', 'bad', answer.message)); return; }
-      doc = answer.data.text || '';
-      paintDoc();
-      paint();
-    });
-  }
+  /* ---- 1 · New: its Name, one field; the handle Teams use is made from it (KAN-728). A made
+     Workspace has no step 1 here: its document is in Work (workspaceDoc, KAN-784) ---- */
+  const stepTop = createStep({ n: 1, key: 'top', title: t('workspaces.name', 'Name') });
+  if (isNew) stepTop.body.append(text('', (v) => { draft.title = v.trim(); draft.name = draft.title ? pinName(draft.title, new Set(taken())) : ''; changed(); }, t('workspaces.name_placeholder', 'Such as Website or Accounts')));
+  stepTop.el.hidden = !isNew;
+  const n = (step) => (isNew ? step : step - 1); // Config numbers from 1
 
   /* ---- 4 · Agent info: what every Agent in it is told (objective, instructions), the Mode they launch
      in, and where its plans live; the extra, so it comes after the folders ---- */
-  const stepAgents = createStep({ n: 4, key: 'agents', title: t('workspaces.agent_info', 'Agent info'), onToggle: () => { open.agents = !open.agents; paint(); } });
+  const stepAgents = createStep({ n: n(4), key: 'agents', title: t('workspaces.agent_info', 'Agent info'), onToggle: () => { open.agents = !open.agents; paint(); } });
   stepAgents.body.append(createField({ label: t('workspaces.objective', 'Objective'), control: area(draft.objective, (v) => { draft.objective = v; changed(); }) }).el);
   stepAgents.body.append(createField({ label: t('workspaces.instructions', 'Instructions'), control: area(draft.instructions, (v) => { draft.instructions = v; changed(); }) }).el);
 
@@ -158,8 +142,8 @@ export function workspacePage(w, { taken = () => [], onSaved = () => {}, onDisca
   stepAgents.body.append(mode.el);
 
   /* ---- 5 · Behaviors (docs/architecture/brief.md, Where it is set in the UI): what every Agent in this Workspace is told — its add, block
-     and only lists and project management; its integrations are step 3. A created Workspace only. ---- */
-  const stepBrief = createStep({ n: 5, key: 'brief', title: t('behaviours', 'Behaviors'), onToggle: () => { open.brief = !open.brief; paint(); } });
+     and only lists and project management; its integrations are step 3. A created Workspace only (above). ---- */
+  const stepBrief = createStep({ n: n(5), key: 'brief', title: t('behaviours', 'Behaviors'), onToggle: () => { open.brief = !open.brief; paint(); } });
   const brief = isNew ? null : createBriefSettingsPanel({ layer: 'workspace', id: draft.name, ownSave: false, showIntegrations: false, onChange: () => changed(),
     preview: { workspace: draft.name }, linkFor: layerLinks() });
   if (brief) { stepBrief.body.append(el('p', 'fs-step-help', t('workspaces.brief_help', 'What every Agent in this Workspace is told. Agents already working are sent the change.')), brief.el); void brief.enter(); }
@@ -168,7 +152,7 @@ export function workspacePage(w, { taken = () => [], onSaved = () => {}, onDisca
      list (the bridges); each row a provider, with a field for each fact its bridge names (`facts: site`), saved
      into the row as {provider, site}; any other fact is kept as it is. Agents read them
      on the Team's Workspace line, and ask for its keys with `secret ask`. ---- */
-  const stepIntegrations = createStep({ n: 3, key: 'integrations', title: t('workspaces.integrations', 'Integrations'), onToggle: () => { open.integrations = !open.integrations; paint(); } });
+  const stepIntegrations = createStep({ n: n(3), key: 'integrations', title: t('workspaces.integrations', 'Integrations'), onToggle: () => { open.integrations = !open.integrations; paint(); } });
   const integrationRows = el('div', 'workspace-locations workspace-integrations');
   const addIntegration = el('select', 'workspace-integration-add');
   stepIntegrations.body.append(integrationRows, addIntegration,
@@ -217,7 +201,7 @@ export function workspacePage(w, { taken = () => [], onSaved = () => {}, onDisca
   /* ---- 2 · Folders: what matters most, so second (owner, 2026-11-03). Add a folder (the kit's folder
      picker: walk, find, or make a new one; or paste a path) and Clone from GitHub at the top, each
      opening its own panel; then one row per folder, its note under it ---- */
-  const stepLocations = createStep({ n: 2, key: 'locations', title: t('workspaces.folders', 'Folders'), onToggle: () => { open.locations = !open.locations; paint(); } });
+  const stepLocations = createStep({ n: n(2), key: 'locations', title: t('workspaces.folders', 'Folders'), onToggle: () => { open.locations = !open.locations; paint(); } });
   // The record's rows, by dir: a repository row carries how Agents work in it (mode, working, stable,
   // desks); `remote` is read for the row's line under it. Names are Ronin's, made on Save.
   const picked = new Map([...draft.repos.map((row) => ({ ...row, repo: true })), ...draft.folders.map((row) => ({ ...row, repo: false }))].map((row) => [row.dir, row]));
@@ -255,12 +239,6 @@ export function workspacePage(w, { taken = () => [], onSaved = () => {}, onDisca
     if (!answer.ok) { say(answer.message, true); return false; }
     // The rows come back named; a page kept open saves them by those names.
     for (const row of [...answer.data.workspace.repos, ...answer.data.workspace.folders]) if (picked.has(row.dir)) picked.get(row.dir).name = row.name;
-    if (!isNew && docDraft !== null && docDraft !== doc) {
-      const told = await request(`/api/workspaces/${encodeURIComponent(draft.name)}/doc`, { method: 'PUT', json: { text: docDraft } });
-      if (!told.ok) { say(told.message, true); return false; }
-      doc = docDraft;
-    }
-    docDraft = null; editDoc.el.hidden = false; paintDoc();
     const moved = answer.data.moved?.length ? ` ${t('workspaces.plans_moved', 'Moved {n} plans.', { n: answer.data.moved.length })}` : '';
     say(`${t('workspaces.saved', 'Saved {name}.', { name: answer.data.workspace.title || answer.data.workspace.name })}${moved}`);
     settled();
@@ -457,7 +435,6 @@ export function workspacePage(w, { taken = () => [], onSaved = () => {}, onDisca
     const first = draft.instructions.trim().split('\n')[0];
     stepAgents.setCollapsed(!open.agents, [MODES[draft.launch_mode], first].filter(Boolean).join(' · '), true);
     if (isNew) stepTop.setCollapsed(false, '', false);
-    else stepTop.setCollapsed(!open.top, (doc || '').split('\n').find((l) => l.trim() && !l.startsWith('#'))?.trim() || t('workspaces.none_yet', 'None'), true);
     stepIntegrations.setCollapsed(!open.integrations, draft.integrations.map((one) => index.find((r) => r.name === one.provider)?.label || one.provider).join(', ') || t('workspaces.none_yet', 'None'), true);
     paintIntegrations();
     stepBrief.el.hidden = isNew;
@@ -474,9 +451,10 @@ export function workspacePage(w, { taken = () => [], onSaved = () => {}, onDisca
     paintRows();
     paintPlans();
   }
-  // A New Workspace is its Name and its folders, then Create (KAN-728); the rest waits for the made one.
-  stepIntegrations.el.hidden = isNew;
-  stepAgents.el.hidden = isNew;
+  // A NEW WORKSPACE (owner, 2026-11-23: not just a name) is the made one's page with its Name first:
+  // Folders, Integrations and Agent info, then Create. Behaviors are read and written against a saved
+  // Workspace (/api/brief/settings/workspace/<name>), so they wait: Create opens the made Workspace
+  // with its Configuration open, Behaviors in it.
   page.append(line, stepTop.el, stepLocations.el, stepIntegrations.el, stepAgents.el, stepBrief.el);
   paint();
   // ⋯ (a made Workspace): Archive takes it off the Workspace pickers, kept; Restore brings it back.
@@ -508,67 +486,235 @@ const dragWorkspace = (stone, type) => (!type ? stone : {
   } },
 });
 
-/** The stones of Workspaces, each its name only (owner, 2026-11-02), under a Show question as the Teams
- * stones have: Teams (those launched in it) and Epics (each Team's epic, the pushed rosters' `board`)
- * hang under each stone as branch rows when picked; a pressed stone or row opens the Workspace's page beside the rail; a stone
- * dragged into a tilespace opens that Workspace there whole. */
+/** The Teams working in a Workspace: its listed Teams, by name. */
+const teamsIn = (w) => teamsFromState().filter((team) => team.durable && team.workspace === w.name && listedTeam(team))
+  .sort((a, b) => String(a.title || a.name).localeCompare(String(b.title || b.name)));
+
+/** What a Workspace holds: every item its Teams and their Agents hold (each Team row's `items`), once each. */
+const itemsIn = (w) => [...new Map(teamsIn(w).flatMap((team) => team.items || []).map((item) => [item.id, item])).values()];
+const flaggedIn = (w) => itemsIn(w).some((item) => item.flagged && statusKey(item.status) !== 'done');
+
+/** Launch (owner, 2026-11-23): the kit's Launch, the Ronin mark; it opens the Workspace's own page in a new tab. */
+const workspaceLaunch = (name) => WorkspaceKit.primitives.createAction({ label: t('workspaces.launch', 'Launch'), launch: true, size: 'compact',
+  action: () => openWorkspaceTab('workspace', name) });
+
+/**
+ * THE WORKSPACE'S DOCUMENT (KAN-713; KAN-784): its one doc, `~/ronin/office/workspaces/<name>.md`, the
+ * project's knowledge of itself, read and improved where the Workspace is worked in, never under
+ * Config. Rendered; Edit turns it to its text with Save and Cancel; Save writes the same file
+ * `workspace-doc` and `office read` use.
+ */
+function workspaceDoc(w) {
+  const { createAction } = WorkspaceKit.primitives;
+  const box = el('section', 'workspace-doc-pane');
+  const said = status();
+  const say = sayInto(said);
+  const view = el('div', 'workspace-doc');
+  const actions = el('div', 'workspace-page-actions');
+  let doc = null;
+  let draft = null;
+  const url = `/api/workspaces/${encodeURIComponent(w.name)}/doc`;
+  const show = () => {
+    draft = null;
+    view.replaceChildren(doc === null ? el('p', 'fs-step-help', t('workspaces.reading', 'Reading…')) : renderMarkdownDocument(doc));
+    actions.replaceChildren(edit.el);
+  };
+  const edit = createAction({ label: t('workspaces.edit_summary', 'Edit'), size: 'compact', action: () => {
+    draft = doc ?? '';
+    const text = el('textarea', 'workspace-doc-text');
+    text.rows = 16;
+    text.value = draft;
+    text.setAttribute('aria-label', t('workspaces.doc_text', 'The Workspace document'));
+    text.addEventListener('input', () => { draft = text.value; });
+    view.replaceChildren(text);
+    actions.replaceChildren(save.el, cancel.el);
+    text.focus();
+  } });
+  const save = createAction({ label: t('workspaces.save', 'Save'), kind: 'primary', size: 'compact', action: async () => {
+    const told = await request(url, { method: 'PUT', json: { text: draft ?? '' } });
+    if (!told.ok) { say(told.message, true); return; }
+    doc = draft ?? ''; say(''); show();
+  } });
+  const cancel = createAction({ label: t('workspaces.cancel', 'Cancel'), size: 'compact', action: () => { say(''); show(); } });
+  const head = el('div', 'workspace-page-head');
+  head.append(actions); // the fold's line names it
+  box.append(head, said, view);
+  show();
+  void request(url, { cache: 'no-store' }).then((answer) => {
+    if (!answer.ok) { say(answer.message, true); return; }
+    doc = answer.data.text || '';
+    if (draft === null) show();
+  });
+  return { el: box };
+}
+
+/**
+ * THE TEAMS OF A WORKSPACE (KAN-801): the Teams stones themselves, bare and fixed to this Workspace
+ * (team-roster-surface.js), as workspaceEpics takes the Epic stones. Pressed, a Team opens under them
+ * as the Teams page opens it (team-one.js createTeamOne): its bar with Launch, its Agents and Epics.
+ * One open at a time: the last one shown is let go when another opens or this goes.
+ */
+function workspaceTeams(w) {
+  const host = el('div', 'workspace-teams');
+  const empty = el('p', 'fs-step-help', t('workspaces.no_teams', 'No Team works in this Workspace yet.'));
+  let shown = null;
+  const teamDetail = (name) => { shown?.destroy?.(); shown = createTeamOne(name); return shown; };
+  const stones = createTeamRosterSurface({ bare: true, roots: [w.name], teamDetail });
+  host.append(empty, stones.el);
+  const paint = () => { empty.hidden = Boolean(teamsIn(w).length); };
+  const stop = subscribeTeams(paint);
+  paint();
+  stones.render();
+  return { el: host, destroy: () => { stop?.(); shown?.destroy?.(); shown = null; stones.destroy(); } };
+}
+
+/** The Epics of a Workspace: the Epics its Teams or their Agents hold (each Team roster's `epics`),
+ * drawn by the Epics stones themselves (createEpicStones, bare, as a Team's Epics view takes them). */
+function workspaceEpics(w) {
+  const every = createEpicsRead(() => '');
+  const mine = () => new Set(teamsIn(w).flatMap((team) => [...teamEpicIds(team)]));
+  const stones = createEpicStones({ bare: true, emptyWords: t('workspaces.no_epics', 'No open Epic in this Workspace.'), epicsRead: {
+    list: () => every.list().filter((epic) => mine().has(epic.id)),
+    items: (id) => every.items(id),
+    subscribe: (listener) => { const a = every.subscribe(listener); const b = subscribeTeams(listener); return () => { a(); b?.(); }; },
+  } });
+  stones.show();
+  return stones;
+}
+
+// What a Workspace surface showed open, kept while the page is open (`${name}\0${fold}` -> open).
+const foldsOpen = new Map();
+
+/**
+ * ONE WORKSPACE (owner, 2026-11-23; KAN-784; KAN-801): an opened Team's grammar (cowork-view.js
+ * leagueTeamBody). Its bar: the name with Launch, its objective in full, the shared lifecycle line
+ * along its foot over what its Teams and their Agents hold. Pressing the bar opens its Configuration
+ * under it (workspacePage: Folders, Integrations, Agent info, Behaviors, its Save, − and ⋯); pressing
+ * again closes it. Below, lines that expand and collapse, each with its count: Teams (the Teams
+ * stones), Epics (the Epic stones) and Document (its one doc, never under Configuration). The same
+ * surface on the Workspaces stones, in a tilespace and on its own route; `launch` adds Launch,
+ * `title` its name (a tilespace's header has it).
+ */
+function workspaceSurface(w, { workspacesRead, onDiscard = () => {}, launch = false, title = true }) {
+  const main = el('div', 'league-team-edit-content workspace-one');
+  const top = el('div', 'epic-detail team-detail');
+  const actions = el('span', 'item-bar-state team-bar-actions');
+  if (launch) actions.append(workspaceLaunch(w.name).el);
+  const head = el('span', 'item-bar-head team-bar-head');
+  head.append(...(title ? [el('span', 'item-bar-title team-bar-title', w.title || w.name)] : []), actions);
+  const objective = el('span', 'item-bar-objective team-bar-objective', String(w.objective || '').trim());
+  objective.hidden = !objective.textContent;
+  const line = createLifecycle('line');
+  const bar = el('div', 'item-bar item-bar-lean team-bar team-bar-pressable workspace-bar');
+  bar.append(head, objective, line.el);
+  // ITS CONFIGURATION, under the bar (owner, 2026-11-23: as the Team's and the Epic's).
+  const config = el('div', 'league-team-view team-config-open workspace-config');
+  let page = null;
+  const openConfig = (open) => {
+    config.hidden = !open;
+    foldsOpen.set(`${w.name}\0config`, open);
+    bar.setAttribute('aria-expanded', String(open));
+    if (open && !page) {
+      page = workspacePage(w, { onSaved: () => void workspacesRead.read(), onDiscard });
+      const tools = el('div', 'workspace-page-actions workspace-config-actions');
+      tools.append(page.action.el, page.discard.el, page.more.el);
+      config.append(tools, page.el);
+    }
+  };
+  bar.setAttribute('role', 'button');
+  bar.tabIndex = 0;
+  bar.title = t('workspaces.config_toggle', 'Open or close this Workspace\'s configuration');
+  bar.addEventListener('click', (event) => { if (!event.target.closest('button, a, .lifecycle')) openConfig(config.hidden); });
+  bar.addEventListener('keydown', (event) => { if (event.target === bar && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); openConfig(config.hidden); } });
+  openConfig(foldsOpen.get(`${w.name}\0config`) === true);
+  top.append(bar, config);
+  // A FOLD (the Team's): a line naming what is under it, its count in brackets; built when first opened.
+  const built = [];
+  const fold = (key, label, build, openFirst) => {
+    const node = el('details', `team-fold team-fold-${key}`);
+    const summary = el('summary', 'team-fold-line', label);
+    const body = el('div', `team-fold-body league-team-view league-team-view-epics workspace-fold-${key}`);
+    node.append(summary, body);
+    let made = null;
+    const make = () => { if (made) return; made = build(); built.push(made); body.append(made.el); };
+    node.open = foldsOpen.get(`${w.name}\0${key}`) ?? openFirst;
+    node.addEventListener('toggle', () => { foldsOpen.set(`${w.name}\0${key}`, node.open); if (node.open) make(); });
+    if (node.open) make();
+    return { node, count: (n) => { const words = `${label} (${n})`; if (summary.textContent !== words) summary.textContent = words; } };
+  };
+  const teams = fold('teams', t('campaign.coworks', 'Teams'), () => workspaceTeams(w), true);
+  const epics = fold('epics', t('workspaces.epics', 'Epics'), () => workspaceEpics(w), true);
+  const doc = fold('doc', t('workspaces.document', 'Document'), () => workspaceDoc(w), true);
+  const every = createEpicsRead(() => '');
+  const recount = () => {
+    line.update(itemsIn(w));
+    teams.count(teamsIn(w).length);
+    const mine = new Set(teamsIn(w).flatMap((team) => [...teamEpicIds(team)]));
+    epics.count(every.list().filter((epic) => mine.has(epic.id) && isOpenEpic(epic)).length);
+    doc.count(1); // a Workspace has one document
+  };
+  const stopTeams = subscribeTeams(recount);
+  const stopEpics = every.subscribe(recount);
+  recount();
+  main.append(top, teams.node, epics.node, doc.node);
+  return { el: main, destroy: () => { stopTeams?.(); stopEpics?.(); for (const one of built) one.destroy?.(); page?.destroy?.(); } };
+}
+
+/** The stones of Workspaces (owner, 2026-11-22; KAN-784; KAN-801): Layer 1, every Workspace a stone as
+ * an Epic's or a Team's: its name and the shared marks, the number bottom right its Teams. A pressed stone
+ * opens that Workspace beside the rail, Work or Config, with Launch to its own page; a stone dragged
+ * into a tilespace opens it whole there. The last stone, New Workspace, is its Name and Folders. */
 export function createWorkspaceStones({ workspacesRead, workbench, recordType = '', withNew = false, onShow = () => {} }) {
   const { createSurface } = WorkspaceKit.primitives;
   const out = createSurface({ label: t('workspaces.title', 'Workspaces'), className: 'setup-surface workspaces-records' });
   const messages = status();
   const say = sayInto(messages);
+  // One set of marks per Workspace, kept: phalanx counts a Node by its identity (KAN-413).
+  const marks = new Map();
+  const marksOf = (key) => {
+    if (!marks.has(key)) { const line = createLifecycle('line'); marks.set(key, { line, marks: createStoneMarks(line) }); }
+    return marks.get(key);
+  };
   const stones = createPhalanx({
     className: 'workspace-record-stones',
-    branches: 'column',
     renderDetail: (item, host) => {
       host.scrollTop = 0;
       // Setup has no selector: its New Workspace is a stone, and the made Workspace opens in its place.
       if (item.id === NEW_STONE) {
-        const page = workspacePage(null, { taken: () => workspacesRead.list().map((w) => w.name), onSaved: async (saved) => { await workspacesRead.read(); stones.select(saved.name); }, onDiscard: () => stones.refreshDetail() });
+        const page = workspacePage(null, { taken: () => workspacesRead.list().map((w) => w.name), onSaved: async (saved) => { await workspacesRead.read(); foldsOpen.set(`${saved.name}\0config`, true); stones.select(saved.name); }, onDiscard: () => stones.refreshDetail() });
         const head = el('div', 'workspace-page-head');
         const actions = el('div', 'workspace-page-actions');
         actions.append(page.action.el, page.discard.el);
         head.append(el('span', 'wk-surface-header-title', t('workspaces.new', 'New Workspace')), actions);
         host.append(head, page.el);
-        return;
+        return undefined;
       }
-      const w = workspacesRead.list().find((row) => row.name === (item.workspace || item.id));
-      if (!w) return;
-      const page = workspacePage(w, { onSaved: () => void workspacesRead.read(), onDiscard: () => stones.refreshDetail() });
-      const head = el('div', 'workspace-page-head');
-      const actions = el('div', 'workspace-page-actions');
-      actions.append(page.action.el, page.discard.el, page.more.el);
-      head.append(el('span', 'wk-surface-header-title', w.title || w.name), actions);
-      host.append(head, page.el);
+      const w = workspacesRead.list().find((row) => row.name === item.id);
+      if (!w) return undefined;
+      const one = workspaceSurface(w, { workspacesRead, launch: true, onDiscard: () => stones.refreshDetail() });
+      host.append(one.el);
+      return () => one.destroy();
     },
   });
-  // SHOW (owner, 2026-11-02; the Teams stones' own question, team-roster-surface.js): many-of, blank to
-  // start, says what hangs under each stone as branch rows, a cell per picked topic in this order.
-  const SHOW = ['teams', 'epics'];
-  let show = [];
-  const filter = ask([{ fields: [
-    { key: 'show', label: t('teams_surface.show', 'Show'), many: true, options: [
-      { v: 'teams', l: t('campaign.coworks', 'Teams') },
-      { v: 'epics', l: t('workspaces.epics', 'Epics') },
-    ] },
-  ] }], { value: { show }, density: 'tight', onChange: ({ show: next }) => { show = (next || []).map(String); out.el.dataset.bare = String(!show.length); paint(); } });
-  // With nothing to show under them, the stones are the name alone (owner, 2026-11-03).
-  out.el.dataset.bare = 'true';
-  stones.mount(out.content, { before: [messages, filter.el] });
+  stones.mount(out.content, { before: [messages] });
   const paint = (answer) => {
     if (answer && !answer.ok) { say(answer.message, true); return; }
     if (answer) say(workspacesRead.list().length ? '' : t('workspaces.none', 'No Workspaces yet. Place New Workspace from the selector.'));
-    const teams = teamsFromState().filter((team) => team.durable);
-    const next = workspacesRead.list().map((w) => {
-      const own = teams.filter((team) => team.workspace === w.name);
-      const epics = [...new Map(own.filter((team) => team.board?.title).map((team) => [team.board.title, team.board])).values()];
-      const cell = {
-        teams: () => own.map((team, n) => ({ id: `${w.name}:team:${n}`, label: team.title || team.name, state: t('workspaces.team', 'Team'), workspace: w.name })),
-        epics: () => epics.map((epic, n) => ({ id: `${w.name}:epic:${n}`, label: epic.title, state: epic.status || t('workspaces.epic', 'Epic'), workspace: w.name })),
-      };
-      const under = SHOW.filter((kind) => show.includes(kind)).map((kind) => cell[kind]());
-      return dragWorkspace({ id: w.name, label: w.title || w.name, ...(w.archived ? { state: t('workspaces.archived', 'Archived'), className: 'archived' } : {}), ...(show.length ? { under } : {}) }, recordType);
-    });
+    // The Epic and Team stones' grammar (owner, 2026-11-23; KAN-801): the name, the shared marks over
+    // what its Teams and their Agents hold, but the small number bottom right is how many Teams work in
+    // it, a Workspace's size (owner, 2026-11-23); no line of words under the name, Archived aside.
+    // Flagged first, then by name.
+    const name = (w) => String(w.title || '').trim() || w.name;
+    const next = workspacesRead.list().slice()
+      .sort((a, b) => Number(flaggedIn(b)) - Number(flaggedIn(a)) || name(a).localeCompare(name(b)))
+      .map((w) => {
+        const items = itemsIn(w);
+        const one = marksOf(w.name);
+        one.line.update(items);
+        const marker = one.marks.update(items, { size: teamsIn(w).length });
+        return dragWorkspace({ id: w.name, label: name(w), ...(w.archived ? { state: t('workspaces.archived', 'Archived') } : {}),
+          marker, className: `workspace-stone${w.archived ? ' archived' : ''}` }, recordType);
+      });
     // ONE WORKSPACE MOVES, ONE STONE REPAINTS (KAN-413): the phalanx's keyed list leaves every
     // stone a Teams push did not move, and an open page, alone.
     stones.setItems(withNew ? [...next, { id: NEW_STONE, glyph: '+', label: t('workspaces.new', 'New Workspace') }] : next);
@@ -579,28 +725,57 @@ export function createWorkspaceStones({ workspacesRead, workbench, recordType = 
   return {
     el: out.el,
     show: () => { void workspacesRead.read(); onShow(); },
-    destroy: () => { stop(); stopTeams?.(); filter.destroy(); stones.destroy(); },
+    destroy: () => { stop(); stopTeams?.(); stones.destroy(); },
   };
 }
 
-/** One Workspace whole in a tilespace: its page, no rail. */
+/** One Workspace whole in a tilespace: the same surface, Work or Config, with Launch to its own page. */
 export function createWorkspaceRecord(key, { workspacesRead }) {
   const { createSurface, setSurfaceState } = WorkspaceKit.primitives;
   const out = createSurface({ label: key, className: 'setup-surface workspaces-record' });
+  let one = null;
   const paint = () => {
     const w = workspacesRead.list().find((row) => row.name === key);
+    one?.destroy(); one = null;
     out.content.replaceChildren();
     if (!w) { setSurfaceState(out.el, 'empty', t('workspaces.gone', 'This Workspace is no longer here.')); return; }
     setSurfaceState(out.el, null, '');
     out.header.title.textContent = w.title || w.name;
-    const page = workspacePage(w, { onSaved: () => void workspacesRead.read(), onDiscard: () => paint() });
-    out.header.actions.replaceChildren(page.action.el, page.discard.el, page.more.el);
-    out.content.append(page.el);
+    one = workspaceSurface(w, { workspacesRead, launch: true, title: false, onDiscard: () => paint() });
+    out.content.append(one.el);
   };
   return {
     el: out.el,
     show: () => { if (workspacesRead.list().length) paint(); else void workspacesRead.read().then(paint); },
-    destroy: () => {},
+    destroy: () => { one?.destroy(); one = null; },
+  };
+}
+
+/** One Workspace on its own page (owner, 2026-11-22; KAN-784): `#/workspace/<name>`, Layer 2, the same
+ * surface with the whole page's room; not a tilespace workbench. */
+export function createWorkspaceRoute() {
+  const host = el('div', 'workspace-route');
+  const workspacesRead = createWorkspacesRead();
+  let name = '';
+  let one = null;
+  const paint = () => {
+    const w = workspacesRead.list().find((row) => row.name === name);
+    one?.destroy(); one = null;
+    if (!w) { host.replaceChildren(el('p', 'fs-step-help', workspacesRead.list().length ? t('workspaces.gone', 'This Workspace is no longer here.') : t('workspaces.reading', 'Reading…'))); return; }
+    one = workspaceSurface(w, { workspacesRead, onDiscard: () => paint() });
+    host.replaceChildren(one.el);
+    S.refreshWorkspaceHeader?.();
+    S.workspace?.refreshTitle?.();
+  };
+  const title = () => workspacesRead.list().find((row) => row.name === name)?.title || name;
+  return {
+    el: host,
+    title, place: title,
+    enter: (context) => {
+      if (context.param !== name || !one) { name = context.param; void workspacesRead.read().then(paint); paint(); }
+    },
+    leave: () => {},
+    destroy: () => { one?.destroy(); one = null; },
   };
 }
 
@@ -611,6 +786,7 @@ export function createWorkspaceNew({ workspacesRead, place }) {
   const paint = () => {
     const page = workspacePage(null, { taken: () => workspacesRead.list().map((w) => w.name), onSaved: async (saved) => {
       await workspacesRead.read();
+      foldsOpen.set(`${saved.name}\0config`, true); // its Configuration open, Behaviors in it
       place(saved.name);
     }, onDiscard: () => paint() });
     out.header.actions.replaceChildren(page.action.el, page.discard.el);

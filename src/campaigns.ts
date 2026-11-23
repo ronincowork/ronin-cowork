@@ -16,7 +16,6 @@ async function writeCampaigns(campaigns: Record<string, unknown>): Promise<void>
 export interface CampaignSettings {
   installations: Record<string, boolean>;
   services: { parts: Record<string, boolean> };
-  setup: { answers: SetupAnswers; facts: SetupFacts };
   defaults: AgentDefaults;
   cowork_defaults: Record<string, unknown>;
   template_defaults: Record<string, unknown>;
@@ -26,11 +25,6 @@ export interface CampaignSettings {
   pm?: boolean;
 }
 
-export const SETUP_STEP_IDS = ['provider', 'register', 'workspace', 'installations', 'password'] as const;
-export type SetupStepId = typeof SETUP_STEP_IDS[number];
-export type SetupAnswer = 'acted' | 'not_now';
-export type SetupAnswers = Partial<Record<SetupStepId, SetupAnswer>>;
-export interface SetupFacts { tailscale?: boolean; checked_at?: string }
 
 export interface CampaignDeskSettings {
   skin: string;
@@ -66,7 +60,6 @@ export interface CampaignEdit {
   config?: {
     installations?: Record<string, boolean>;
     services?: { parts?: Record<string, boolean> };
-    setup?: { answers?: SetupAnswers; facts?: SetupFacts };
     defaults?: Partial<AgentDefaults>;
     cowork_defaults?: Record<string, unknown>;
     template_defaults?: Record<string, unknown>;
@@ -140,20 +133,6 @@ const serviceSettings = (v: unknown): { parts: Record<string, boolean> } => {
   };
 };
 
-const setupSettings = (v: unknown): { answers: SetupAnswers; facts: SetupFacts } => {
-  const value = bucket(v);
-  const answers = bucket(value.answers);
-  const facts = bucket(value.facts);
-  return {
-    answers: Object.fromEntries(SETUP_STEP_IDS.flatMap((id) =>
-      answers[id] === 'acted' || answers[id] === 'not_now' ? [[id, answers[id]]] : [])),
-    facts: {
-      ...(typeof facts.tailscale === 'boolean' ? { tailscale: facts.tailscale } : {}),
-      ...(typeof facts.checked_at === 'string' && facts.checked_at ? { checked_at: facts.checked_at } : {}),
-    },
-  };
-};
-
 const settings = (v: unknown): CampaignSettings => {
   const c = bucket(v);
   const defaults = bucket(c.defaults);
@@ -161,7 +140,6 @@ const settings = (v: unknown): CampaignSettings => {
   return {
     installations: booleanMap(c.installations),
     services: serviceSettings(c.services),
-    setup: setupSettings(c.setup),
     defaults: agentDefaults(defaults),
     cowork_defaults: bucket(c.cowork_defaults),
     template_defaults: bucket(c.template_defaults),
@@ -333,8 +311,6 @@ export async function writeCampaign(id: string, edit: CampaignEdit): Promise<Cam
               ? existing.config.installations : await completeInstallations(edit.config.installations),
             services: edit.config.services === undefined
               ? existing.config.services : serviceSettings(edit.config.services),
-            setup: edit.config.setup === undefined
-              ? existing.config.setup : setupSettings(edit.config.setup),
             defaults: edit.config.defaults === undefined
               ? existing.config.defaults : await completeAgentDefaults(edit.config.defaults),
             cowork_defaults: edit.config.cowork_defaults === undefined

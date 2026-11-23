@@ -6,6 +6,8 @@ import { listTeamRosters } from '../team-rosters.js';
 import { deleteWorkspace, isValidWorkspaceName, listWorkspaces, normalizeWorkspace, readWorkspace, saveWorkspace, type Workspace } from '../workspaces.js';
 import { PlanBadInput, PlanMissing, PlanRefused, movePlans, plansPlace } from '../plans.js';
 import { listCanvases } from '../canvases.js';
+import { deleteIcebox } from '../work-items.js';
+import { callerOf } from './work-items-api.js';
 import { addWorkspaceNote, ensureWorkspaceDoc, readWorkspaceSummary, summaryOf, workspaceDocPath, writeWorkspaceDoc, writeWorkspaceSummary } from '../workspace-doc.js';
 
 const errMsg = (e: unknown): string => String((e as Error)?.message ?? e);
@@ -88,6 +90,7 @@ export function registerWorkspaces(app: express.Express): void {
       const campaign = await campaignOf();
       const teams = (await listTeamRosters()).filter((t) => t.campaign_id === campaign && t.workspace === name && t.state !== 'archived');
       if (teams.length) return res.status(409).json({ error: `Teams launched in this Workspace: ${teams.map((t) => t.name).join(', ')}. Move them first.` });
+      await deleteIcebox(campaign, name, callerOf(req)); // first: the holds file names it (KAN-786)
       await deleteWorkspace(campaign, name);
       res.json({ ok: true });
     } catch (e) { res.status(500).json({ error: errMsg(e) }); }
