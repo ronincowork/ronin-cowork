@@ -55,27 +55,25 @@
      rows' name column nothing, and Configuration's unnumbered sections (team-configuration.js)
      align to the step's left edge, no second indent (owner, 2026-10-20). */
   .fs-step:has(> .fs-step-head.fs-togglable) > .fs-step-body.league-team-step-body { grid-column: 1 / -1; }
-  .league-team-agent { width: 100%; border: 0; border-radius: var(--radius-hair); background: transparent; color: var(--fg); font-family: inherit; text-align: left; cursor: pointer; }
-  .league-team-agent:hover { background: var(--surface); }
-  .league-team-agent-name { grid-column: 2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .league-team-agent-lead { margin-inline-end: var(--space-inline); color: var(--accent); }
   /* A FLAGGED AGENT (KAN-521): ⚑ and the amber the roster chip uses for a flagged item. */
-  .league-team-agent-flag, .league-team-member-flag { margin-inline-end: var(--space-inline); color: var(--warn); }
-  .league-team-agent.flagged .league-team-agent-name, .league-team-member.flagged .league-team-member-title { color: var(--warn); }
-  .league-team-agent-holds { margin-inline-start: var(--space-inline); color: var(--muted); }
+  .league-team-member-flag { margin-inline-end: var(--space-inline); color: var(--warn); }
+  .league-team-member.flagged .league-team-member-title { color: var(--warn); }
   /* ONE TEAM (owner, 2026-11-22; w900): its bar as an Epic's bar (launch-forms.css), the Workspace
-     muted under the concept; then the view the toggle shows. An Agent row is a reading (no press),
-     its lifecycle bar under its name. */
+     muted under the concept; then the view the toggle shows. Each Agent a bar (below). */
   .team-bar-objective[hidden], .team-bar-coverage[hidden], .league-team-view[hidden] { display: none; }
   .team-bar-coverage { margin: 0; color: var(--muted); font-size: var(--text-body); overflow-wrap: anywhere; }
   .team-bar-foot > .lifecycle-bar { margin-left: auto; }
   .team-bar-foot > .lifecycle-bar[data-empty='true'] { display: none; }
   .league-team-view { display: flex; flex-direction: column; gap: 0; min-width: 0; }
-  .league-team-view-agents > .league-team-agent { grid-template-columns: var(--hr-mark) minmax(0, 1fr); cursor: default; }
-  .league-team-view-agents > .league-team-agent:hover { background: transparent; }
-  .league-team-view-agents .league-team-agent-name { white-space: normal; overflow: visible; overflow-wrap: break-word; }
-  .league-team-view-agents .league-team-agent-holds { display: block; margin-inline-start: 0; }
-  .league-team-view-agents .lifecycle-bar { grid-column: 2; margin-left: 0; width: min(100%, 12rem); }
+  /* ONE BAR PER AGENT (owner, 2026-11-23): the Epic page's item bars (style.css, via .epic-bars),
+     the lead's first and set apart, the shared lifecycle line along each bar's foot. */
+  .league-team-view-agents.epic-bars { gap: var(--space-inline); padding-top: var(--space-inline); }
+  .league-team-view-agents > button.team-agent-bar { position: relative; overflow: hidden; padding-bottom: calc(var(--space-inline) + 5px); font-family: inherit; cursor: pointer; }
+  .league-team-view-agents > button.team-agent-lead { margin-bottom: var(--space-inline); }
+  .team-agent-bar .home-live { flex: 0 0 auto; }
+  .team-agent-bar .team-agent-lead-mark { flex: 0 0 auto; color: var(--accent); }
+  .team-agent-bar .lifecycle-line[data-empty='true'] { display: none; }
+  .league-team-view-agents > .league-team-add { padding-top: var(--space-inline); }
   .league-team-view-config { gap: var(--space-subsection); }
   /* The Team's Epics: the Epic stones as a phalanx from the left edge; the open Teams rail's
      one-column rule is the outer phalanx's, not theirs, and their empty head takes no room. */

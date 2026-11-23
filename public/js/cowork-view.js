@@ -39,7 +39,8 @@ import { createAgentCompositionSurface } from './agent-composition.js';
 import { createTeamEpics, teamEpicIds } from './team-epics.js';
 import { createFindItem } from './team-find-item.js';
 import { createEpicRecord, createEpicStones, createEpicsRead } from './epics-surface.js';
-import { createLifecycle, statusKey } from './item-lifecycle.js';
+import { attention, attentionWords, createLifecycle, statusKey } from './item-lifecycle.js';
+import { splitItemTitle } from './item-title.js';
 
 const el = (tag, cls, text) => {
   const out = document.createElement(tag);
@@ -615,7 +616,7 @@ export function createCoworkView(options = {}) {
   const leagueTeamSurfaces = new Map(), openTeam = (name) => openWorkspaceTab('team', name);
   // ONE TEAM (owner, 2026-11-22; w900): what the Team is — its concept (the objective) and the
   // Workspace it covers with that Workspace's repositories — over one of three views a toggle ticks
-  // through: Agents (lead first, each with its live dot, ⚑ and a progress line over what it holds),
+  // through: Agents (a bar each, the Epic page's item bars: the lead's first, each opening its Agent),
   // Epics (the Team's open Epics as the Epic stones, each with its progress line) and Configuration
   // (the Team's form, Delete team at its foot). Painted into a host: a Teams stone's detail
   // (leagueTeamDetail) or a whole tilespace (createLeagueTeamSurface). No Team has Agents only.
@@ -624,6 +625,11 @@ export function createCoworkView(options = {}) {
   const teamViewOf = new Map(); // team -> the view last ticked to, for this page
   let workspacesRead = null; // one read of the Workspaces per page, for the coverage line
   const readWorkspaces = () => (workspacesRead ??= request('/api/workspaces').then((answer) => (answer.ok ? answer.data?.workspaces || [] : [])));
+  // An Agent's bar opens its tile beside the Team: a non-member rides the pool as an extra (KAN-435).
+  const showAgent = (agent, seat) => {
+    if (!membersOfTeam(team).some((m) => m.name === agent)) { extras.add(agent); syncPools(restorationMembers()); }
+    putSession(agent, oppositeSeat(seat));
+  };
   const leagueTeamBody = (name, { seat, say }) => {
     const holding = name === UNASSIGNED;
     // THE TEAM'S BAR (w900), as an Epic's bar: name with the view toggle and Launch, the concept in
@@ -673,41 +679,57 @@ export function createCoworkView(options = {}) {
     if (holding) main.append(agents);
     else { main.append(...TEAM_VIEWS.map((key) => views[key])); showView(teamViewOf.get(name) || 'agents'); }
     let held = new Map(); // agent name -> the items it holds, from the Team reading
-    const lines = new Map(); // agent name -> its progress line, kept so a row compares the same node
-    const lineOf = (agent) => { if (!lines.has(agent)) lines.set(agent, createLifecycle('bar')); return lines.get(agent); };
-    // ONE AGENT MOVES, ONE ROW CHANGES (KAN-413): the kit's keyed list. Each Agent row compares
-    // what it shows (its stance, 人, title, what it holds) and redraws only itself. A row is a
-    // reading, not a door: the Team is launched whole, never an Agent on its own (owner, 2026-11-22).
+    const lines = new Map(); // agent name -> its progress line, kept so a bar compares the same node
+    const lineOf = (agent) => { if (!lines.has(agent)) lines.set(agent, createLifecycle('line')); return lines.get(agent); };
+    // ONE BAR PER AGENT (owner, 2026-11-23), as an Epic's item bars under its bar: the lead's first
+    // (人), then each Agent, those needing you first. A bar is the Agent's name and live dot, ⚑ when
+    // flagged, what it is doing now, its open count and what needs you, and the shared lifecycle
+    // line along its foot. Pressing it opens that Agent's tile beside the Team. ONE AGENT MOVES,
+    // ONE BAR CHANGES (KAN-413): the kit's keyed list.
     const foot = holding ? null : el('div', 'league-team-add');
     // Agents join a Team by dragging; the foot starts a new one — the New Agent form with
     // this Team chosen, as the Commons roster's New Agent does (owner, 2026-10-20).
     foot?.append(createAction({ label: t('new_agent.title', 'New Agent'), size: 'compact', action: () => bench.place(WB_TYPES.newAgent, oppositeSeat(seat), { team: name }) }).el);
+    agents.classList.add('epic-bars');
     const agentRows = WorkspaceKit.primitives.createKeyedList({
       key: (row) => row.name,
-      shows: (row) => (row.foot ? '!foot' : JSON.stringify([row.name, row.stance, !!row.team_lead, row.title, row.holds, row.flagged, row.counts])),
+      shows: (row) => (row.foot ? '!foot' : JSON.stringify([row.name, row.stance, !!row.team_lead, row.title, row.doing, row.facts, row.status, row.flagged])),
       draw: (row) => {
         if (row.foot) return foot;
-        const node = el('div', `league-team-row league-team-agent${row.flagged ? ' flagged' : ''}`);
+        const node = el('button', `item-bar item-bar-lean team-agent-bar${row.team_lead ? ' team-agent-lead' : ''}`);
+        node.type = 'button';
         node.dataset.session = row.name;
+        node.dataset.status = row.status;
+        if (row.flagged) node.dataset.flagged = 'true';
         const live = el('i', 'home-live'); live.dataset.stance = row.stance || 'unknown';
         live.title = stanceLabel(row.stance) || ''; live.setAttribute('aria-hidden', 'true');
-        const words = el('span', 'league-team-agent-name');
-        if (row.team_lead) words.append(el('span', 'league-team-agent-lead', '人'));
-        if (row.flagged) words.append(el('span', 'league-team-agent-flag', '⚑'));
-        words.append(row.title, el('span', 'league-team-agent-holds', row.holds));
-        node.append(live, words);
+        const head = el('span', 'item-bar-head');
+        head.append(live);
+        if (row.team_lead) head.append(el('span', 'team-agent-lead-mark', '人'));
+        head.append(el('span', 'item-bar-title', row.title));
+        if (row.flagged) head.append(el('span', 'item-pill-flag', '⚑'));
+        node.append(head, el('span', 'item-bar-objective', row.doing));
+        if (row.facts) node.append(el('span', 'item-bar-facts', row.facts));
         if (row.line) node.append(row.line);
+        node.addEventListener('click', () => showAgent(row.name, seat));
         return node;
       },
     });
     const paintAgents = () => {
       const list = membersOfTeam(name).map((member) => {
         const mine = held.get(member.name) || [];
+        const open = mine.filter((item) => statusKey(item.status) !== 'done' && (item.level ?? 0) === 0);
         const line = mine.length ? lineOf(member.name) : null;
-        const reading = line?.update(mine);
-        return { name: member.name, stance: rows.get(member.name)?.stance, team_lead: member.team_lead, flagged: !!rows.get(member.name)?.tegami?.flags?.length,
-          title: agentTitle(member), holds: mine.filter((item) => statusKey(item.status) !== 'done').map((item) => item.title).join(' · '), counts: reading?.counts || null, line: line?.el || null };
-      }).sort((a, b) => Number(b.team_lead) - Number(a.team_lead));
+        line?.update(mine);
+        // What it is doing now: its In Progress work; else what waits in review; else what is to do.
+        const now = ['progress', 'review', 'todo'].map((key) => open.filter((item) => statusKey(item.status) === key)).find((some) => some.length) || [];
+        const needs = attentionWords(attention(mine));
+        const facts = [open.length ? t('league.agent_open', '{n} open', { n: open.length }) : '', needs].filter(Boolean).join(' · ');
+        const flagged = !!rows.get(member.name)?.tegami?.flags?.length || open.some((item) => item.flagged);
+        return { name: member.name, stance: rows.get(member.name)?.stance, team_lead: member.team_lead, flagged, title: agentTitle(member),
+          doing: now.length ? now.map((item) => splitItemTitle(item.title || '').shortTitle).join(' · ') : t('league.agent_idle', 'Nothing in hand'),
+          facts, status: now.length ? statusKey(now[0].status) : 'none', needs: !!needs || flagged, line: line?.el || null };
+      }).sort((a, b) => Number(b.team_lead) - Number(a.team_lead) || Number(b.needs) - Number(a.needs) || a.title.localeCompare(b.title));
       agentRows.set(agents, foot ? [...list, { name: '!foot', foot: true }] : list);
     };
     const readWork = async () => {
