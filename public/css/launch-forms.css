@@ -159,7 +159,8 @@
   .epic-new .ask-stone[hidden] { display: none; }
   .epic-new-kind .ask-group { flex: 1 1 100%; }
   .epic-new-kind .ask-stone[data-ask-key='priority'] { margin-left: auto; } /* Priority at the right of Kind's row */
-  .stone-flag { position: absolute; top: var(--stone-pad, var(--space-inset)); right: var(--stone-pad, var(--space-inset)); color: var(--warn); line-height: 1; }
+  /* ⚑ (or an Agent's dot) top right and the count bottom right share one right edge, the stone's inset (owner, 2026-11-23). */
+  .stone-flag { position: absolute; top: var(--stone-pad, var(--space-inset)); right: var(--stone-pad, var(--space-inset)); color: var(--warn); line-height: 1; text-align: right; }
   .stone-flag[hidden] { display: none; }
   .epic-record-stones .sws-label, .team-roster-phalanx .team-stone .sws-label, .workspace-record-stones .sws-label { padding-right: 1em; }
   .epic-record-stones .sws-state, .team-roster-phalanx .team-stone .sws-state, .workspace-record-stones .sws-state { padding-right: 2.5em; }

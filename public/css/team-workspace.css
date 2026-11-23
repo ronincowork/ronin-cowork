@@ -82,7 +82,7 @@
   /* An Agent holding nothing keeps its tracker, hollow (owner, 2026-11-23): the same stone, an empty bar. */
   .team-agent-stones .lifecycle-line[data-empty='true'] { background: transparent; box-shadow: inset 0 0 0 var(--edge) var(--line-2); }
   .team-agent-mark[hidden] { display: none; }
-  .team-agent-mark { position: absolute; top: var(--space-inset); right: var(--space-inset); color: var(--warn); line-height: 1; }
+  .team-agent-mark { position: absolute; top: var(--stone-pad, var(--space-inset)); right: var(--stone-pad, var(--space-inset)); color: var(--warn); line-height: 1; } /* on the count's inset: the two right-aligned (owner, 2026-11-23) */
   .team-agent-mark:is(.is-working, .is-ready) { box-sizing: border-box; width: 6px; height: 6px; margin-top: 0.35em; border: var(--edge) solid var(--kaki); border-radius: 50%; background: var(--kaki); /* kaki: the Chat's working dot */ }
   .team-agent-mark.is-ready { background: transparent; }
   .team-agent-open { padding: 0 var(--space-inset); }
