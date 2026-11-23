@@ -474,11 +474,12 @@ const KINDS = ['Epic', 'Story', 'Task', 'Bug', 'Feature'];
  * by side while there is width (wide before deep). 1 Kind. 2 Under (gone for an Epic, which goes
  * under nothing): an open Epic, or a Task, Story, Bug or Feature, which makes it a Subtask; one
  * answered takes the other away. 3 the short and long title (saved `short: long`) and what done
- * looks like. 4 Who does the work: a Team, a lead or an Agent, one of the three, or nobody yet.
+ * looks like. 4 Who does the work: a Team, a lead or an Agent, one of the three, or nobody yet
+ * (`holder` answers it on opening: inside a Team, that Team).
  * Priority last, small. Create (or Ctrl/Cmd+Enter) makes it (POST /api/work-items) and
  * `onMade(item)` lets the bench show it.
  */
-export function createNewItem({ kind: startKind = 'Epic', epicsRead = null, onMade = () => {} } = {}) {
+export function createNewItem({ kind: startKind = 'Epic', epicsRead = null, holder: presetHolder = '', onMade = () => {} } = {}) {
   const { createSurface, createAction, createField, createNotice } = WorkspaceKit.primitives;
   const draft = { kind: startKind, parent: '', short: '', long: '', objective: '', holder: '', priority: 'Medium' };
   const read = epicsRead || createEpicsRead(() => '');
@@ -566,6 +567,15 @@ export function createNewItem({ kind: startKind = 'Epic', epicsRead = null, onMa
       return (S.sessions || []).filter((session) => session.name && !led.has(`agent:${session.name}`)).map((session) => ({ v: `agent:${session.name}`, l: session.name }));
     } },
   ], (v) => { draft.holder = v; });
+  // `holder` (`team:<name>` or `agent:<name>`) answers its question on opening, inside a Team its Team;
+  // the others step aside as if the person had picked it, and clearing it brings them back.
+  if (presetHolder) {
+    const key = presetHolder.startsWith('team:') ? 'team' : leads().some((option) => option.v === presetHolder) ? 'lead' : 'agent';
+    const at = ['team', 'lead', 'agent'].indexOf(key);
+    who[at].set(key, presetHolder);
+    draft.holder = presetHolder;
+    for (const [i, q] of who.entries()) q.el.hidden = i !== at;
+  }
   stepWho.body.append(row(...who.map((q) => q.el)));
 
   // Priority, last and small.

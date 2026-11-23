@@ -328,7 +328,7 @@ export function createCoworkView(options = {}) {
     epicRecord: (id, detail) => keepTeamSurface(createEpicRecord(detail.key, { epicsRead: createEpicsRead(() => ''), launch: false })),
     // New Item (owner, 2026-11-23): the Epics workbench's form as it is, started on Task; what is
     // made shows its Epic in the same tilespace (an Epic itself, or the parent of anything else).
-    newItem: (id) => keepTeamSurface(createNewItem({ kind: 'Task', epicsRead: createEpicsRead(() => ''), onMade: (item) => {
+    newItem: (id) => keepTeamSurface(createNewItem({ kind: 'Task', epicsRead: createEpicsRead(() => ''), holder: !campaign && team && team !== UNASSIGNED ? `team:${team}` : '', onMade: (item) => {
       const key = item?.level === 1 ? item.id : item?.parent;
       if (key) bench.place(WB_TYPES.epicRecord, id, { key });
     } })),
