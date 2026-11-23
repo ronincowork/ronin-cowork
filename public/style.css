@@ -1288,7 +1288,7 @@ body {
   font-size: var(--text-small);
 }
 .tile-head .item-island button.item-island-more:hover, .tile-head .item-island button.item-island-more:focus-visible { border-color: var(--accent); color: var(--fg); }
-:is(.tile-head .item-island, .epic-bars, .epic-detail) button.item-bar {
+:is(.tile-head .item-island, .epic-bars, .epic-detail) :is(button, div).item-bar { /* a div: the Team's bar, read not pressed */
   display: flex;
   flex-direction: column;
   align-items: stretch;

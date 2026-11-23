@@ -39,7 +39,7 @@ import { createAgentCompositionSurface } from './agent-composition.js';
 import { createTeamEpics, teamEpicIds } from './team-epics.js';
 import { createFindItem } from './team-find-item.js';
 import { createEpicRecord, createEpicStones, createEpicsRead, createNewItem } from './epics-surface.js';
-import { attention, attentionWords, createLifecycle, statusKey } from './item-lifecycle.js';
+import { attention, attentionWords, counted, createLifecycle, statusKey } from './item-lifecycle.js';
 import { splitItemTitle } from './item-title.js';
 
 const el = (tag, cls, text) => {
@@ -636,12 +636,15 @@ export function createCoworkView(options = {}) {
   };
   const leagueTeamBody = (name, { seat, say }) => {
     const holding = name === UNASSIGNED;
-    // THE TEAM'S BAR (w900), as an Epic's bar: name with Launch, the concept in
-    // full, the Workspace it covers, and the shared item lifecycle over all it holds, bottom right.
-    const title = el('h2', 'team-bar-title', leagueTeamLabel(name));
-    const objective = el('p', 'team-bar-objective');
-    const coverage = el('p', 'team-bar-coverage'); coverage.hidden = true;
-    const teamLine = createLifecycle('bar');
+    // THE TEAM'S BAR (owner, 2026-11-23): the Epic's own bar on its page, the same item bar its
+    // work items wear (tile-island.js itemBar's classes): the name with Launch, the concept in full,
+    // a muted line of facts (the Workspace it covers and its repositories, its Agents, its open
+    // items) and the shared lifecycle line along its foot.
+    const title = el('span', 'item-bar-title team-bar-title', leagueTeamLabel(name));
+    const objective = el('span', 'item-bar-objective team-bar-objective');
+    const coverage = el('span', 'item-bar-facts team-bar-coverage'); coverage.hidden = true;
+    let covered = '';
+    const teamLine = createLifecycle('line');
     const launch = createAction({ label: t('league.launch_team', 'Launch'), size: 'compact', action: () => openTeam(name) });
     const remove = createAction({ label: t('league.delete_team', 'Delete team'), kind: 'danger', size: 'compact', action: async () => { const count = membersOfTeam(name).length; if (!window.confirm(t('league.delete_team_confirm', 'Delete {team}? {count} Agents will lose this Team membership.', { team: name, count }))) return; const result = await deleteTeamRoster(name); if (!result.ok) { say('failed', result.message); return; } for (const place of bench.locations(WB_TYPES.team, name)) emptySeat(place); for (const key of [...leagueTeamSurfaces.keys()]) if (key.endsWith(`\0${name}`)) leagueTeamSurfaces.delete(key); } });
     // A FOLD (owner, 2026-11-23): a line naming what is under it; press it to expand or collapse.
@@ -651,7 +654,7 @@ export function createCoworkView(options = {}) {
       const body = el('div', `team-fold-body league-team-view league-team-view-${key}`);
       node.append(line, body);
       const remembered = `${name}\0${key}`;
-      node.open = teamFoldsOpen.get(remembered) === true;
+      node.open = teamFoldsOpen.get(remembered) ?? key === 'agents'; // Agents open on arrival
       node.addEventListener('toggle', () => { teamFoldsOpen.set(remembered, node.open); if (node.open) onOpen(); });
       if (node.open) queueMicrotask(onOpen);
       return { node, body };
@@ -670,15 +673,16 @@ export function createCoworkView(options = {}) {
       epicStones.show();
     });
     const configFold = fold('config', t('workspace.tab_team_configuration', 'Configuration'));
-    const agents = el('div', 'league-team-view league-team-view-agents');
+    const agentsFold = fold('agents', t('league.agents', 'Agents'));
+    const agents = agentsFold.body;
     const config = configFold.body;
     const main = el('div', 'league-team-edit-content');
-    const actions = el('div', 'team-bar-actions');
+    const actions = el('span', 'item-bar-state team-bar-actions');
     actions.append(launch.el);
-    const head = el('div', 'team-bar-head'); head.append(title, actions);
-    const barFoot = el('div', 'team-bar-foot'); barFoot.append(teamLine.el);
-    const bar = el('div', 'team-bar'); bar.append(head, objective, coverage, barFoot);
-    main.append(bar, agents);
+    const head = el('span', 'item-bar-head team-bar-head'); head.append(title, actions);
+    const bar = el('div', 'item-bar item-bar-lean team-bar'); bar.append(head, objective, coverage, teamLine.el);
+    const top = el('div', 'epic-detail team-detail'); top.append(bar);
+    main.append(top, agentsFold.node);
     if (!holding) main.append(epicsFold.node, configFold.node);
     let held = new Map(); // agent name -> the items it holds, from the Team reading
     const lines = new Map(); // agent name -> its progress line, kept so a bar compares the same node
@@ -687,11 +691,9 @@ export function createCoworkView(options = {}) {
     // (人), then each Agent, those needing you first. A bar is the Agent's name and live dot, ⚑ when
     // flagged, what it is doing now, its open count and what needs you, and the shared lifecycle
     // line along its foot. Pressing it opens that Agent's tile beside the Team. ONE AGENT MOVES,
-    // ONE BAR CHANGES (KAN-413): the kit's keyed list.
-    const foot = holding ? null : el('div', 'league-team-add');
-    // Agents join a Team by dragging; the foot starts a new one — the New Agent form with
-    // this Team chosen, as the Commons roster's New Agent does (owner, 2026-10-20).
-    foot?.append(createAction({ label: t('new_agent.title', 'New Agent'), size: 'compact', action: () => bench.place(WB_TYPES.newAgent, oppositeSeat(seat), { team: name }) }).el);
+    // ONE BAR CHANGES (KAN-413): the kit's keyed list. No New Agent here (owner, 2026-11-23): an
+    // Agent is added to a Team where Agents are made.
+    const foot = null;
     agents.classList.add('epic-bars');
     const agentRows = WorkspaceKit.primitives.createKeyedList({
       key: (row) => row.name,
@@ -742,13 +744,26 @@ export function createCoworkView(options = {}) {
       for (const item of items) if (item.holder.startsWith('agent:')) held.set(item.holder.slice(6), [...(held.get(item.holder.slice(6)) || []), item]);
       paintAgents();
     };
+    // The bar's facts: the Workspace it covers with its repositories, its Agents, its open items.
+    const paintFacts = () => {
+      const current = teamByName(name);
+      const count = holding ? unassignedSessions().length : membersOfTeam(name).length;
+      const open = (holding ? [] : current.items || []).filter((item) => counted(item) && statusKey(item.status) !== 'done').length;
+      const words = [covered,
+        count === 1 ? t('teams_surface.one_agent', '1 Agent') : t('teams_surface.agents', '{count} Agents', { count }),
+        open ? t('league.agent_open', '{n} open', { n: open }) : ''].filter(Boolean).join(' · ');
+      if (coverage.textContent !== words) coverage.textContent = words;
+      coverage.hidden = !words;
+    };
     const paintCoverage = (workspace) => {
-      if (!workspace) { coverage.hidden = true; return; }
+      covered = '';
+      paintFacts();
+      if (!workspace) return;
       void readWorkspaces().then((list) => {
         const found = list.find((one) => one.name === workspace);
         const repos = (found?.repos || []).map((repo) => repo.name).filter(Boolean);
-        coverage.textContent = repos.length ? `${workspace}: ${repos.join(' · ')}` : workspace;
-        coverage.hidden = false;
+        covered = repos.length ? `${workspace}: ${repos.join(' · ')}` : workspace;
+        paintFacts();
       });
     };
     // Same contract as renderConfig below: every publish lands here, so the body only
