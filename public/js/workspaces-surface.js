@@ -656,7 +656,7 @@ function workspaceSurface(w, { workspacesRead, onDiscard = () => {}, launch = fa
     if (view === 'config') {
       const page = workspacePage(w, { onSaved: () => void workspacesRead.read(), onDiscard });
       current = page;
-      actions.replaceChildren(toggle, page.action.el, page.discard.el, page.more.el);
+      actions.replaceChildren(toggle, ...(launched ? [launched.el] : []), page.action.el, page.discard.el, page.more.el);
       body.replaceChildren(page.el);
     } else {
       current = workspaceWork(w);
