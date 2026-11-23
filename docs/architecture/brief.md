@@ -495,7 +495,8 @@ behaviours/  base-agent (full) · cowork-agent, write-it-down, workspaces (cowor
              mcp-servers (mcp, seed: one line per MCP server on) ·
              web-apis (api, seed: one line per web API on)
              mika, install-check (mika) · irasshai, irasshai-voice (irasshai) ·
-             services-off (!service:ronin_services) · syncthing (!irasshai, seed) · using-ronin
+             services-off (!service:ronin_services) · syncthing (!irasshai, seed) ·
+             linux-tools (every Agent, seed) · using-ronin
              optional (depth none): team-work, more-checkpoints, working-with-the-user,
              codebase-team, new-workspace, documents
 tools/       edges, work-record, agent-session (session_*), cowork-team (team), plan, canvas,
