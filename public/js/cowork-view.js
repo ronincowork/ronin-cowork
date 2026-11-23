@@ -663,18 +663,35 @@ export function createCoworkView(options = {}) {
       epicsFold.body.append(epicStones.el);
       epicStones.show();
     });
-    const configFold = fold('config', t('workspace.tab_team_configuration', 'Configuration'));
     const agentsFold = fold('agents', t('league.agents', 'Agents'));
     const agents = agentsFold.body;
-    const config = configFold.body;
+    // THE TEAM'S CONFIGURATION (owner, 2026-11-23): pressing the Team's bar opens it under the bar,
+    // as an Epic's bar opens its reading; pressing again closes it. Agents and Epics stay below.
+    const config = el('div', 'league-team-view league-team-view-config team-config-open');
+    config.hidden = teamFoldsOpen.get(`${name}\0config`) !== true;
     const main = el('div', 'league-team-edit-content');
     const actions = el('span', 'item-bar-state team-bar-actions');
     actions.append(launch.el);
     const head = el('span', 'item-bar-head team-bar-head'); head.append(title, actions);
     const bar = el('div', 'item-bar item-bar-lean team-bar'); bar.append(head, objective, teamLine.el);
     const top = el('div', 'epic-detail team-detail'); top.append(bar);
+    if (!holding) {
+      top.append(config);
+      bar.classList.add('team-bar-pressable');
+      bar.setAttribute('role', 'button');
+      bar.tabIndex = 0;
+      const press = () => {
+        config.hidden = !config.hidden;
+        teamFoldsOpen.set(`${name}\0config`, !config.hidden);
+        bar.setAttribute('aria-expanded', String(!config.hidden));
+      };
+      bar.setAttribute('aria-expanded', String(!config.hidden));
+      bar.title = t('league.team_config_toggle', 'Open or close this Team\'s configuration');
+      bar.addEventListener('click', (event) => { if (!event.target.closest('button, a, .lifecycle')) press(); });
+      bar.addEventListener('keydown', (event) => { if (event.target === bar && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); press(); } });
+    }
     main.append(top, agentsFold.node);
-    if (!holding) main.append(epicsFold.node, configFold.node);
+    if (!holding) main.append(epicsFold.node);
     let held = new Map(); // agent name -> the items it holds, from the Team reading
     const lines = new Map(); // agent name -> its progress line, kept so a stone compares the same node
     const lineOf = (agent) => { if (!lines.has(agent)) lines.set(agent, createLifecycle('line')); return lines.get(agent); };

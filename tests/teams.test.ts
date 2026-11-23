@@ -98,15 +98,15 @@ test('the Teams page and one Team, as a person reads and presses them', async (t
   await page.click(agentStone('ben'));
   await page.waitForSelector(`${agentsView} .team-agent-open .team-fold-agent-config`);
   await page.keyboard.press('Escape');
-  // No view switch: Epics and Configuration are lines, closed until pressed.
+  // No view switch: Epics is a line, closed until pressed; the Team's bar opens its Configuration.
   assert.equal(await page.$('.league-team-detail .league-team-toggle'), null, 'no view switch');
   assert.equal(await page.isVisible('.league-team-detail .league-team-view-config'), false);
   await page.click('.league-team-detail .team-fold-epics > summary');
   await page.waitForSelector(`.league-team-detail .league-team-view-epics [data-sws-id="${epic}"]`);
   assert.equal(await page.$('.league-team-detail .league-team-view-epics [data-sws-id="!new-epic"]'), null, 'no New Epic inside a Team');
-  await page.click('.league-team-detail .team-fold-config > summary');
+  await page.click('.league-team-detail .team-bar-objective');
   assert.ok(await page.isVisible('.league-team-detail .league-team-view-config'));
-  await page.click('.league-team-detail .team-fold-config > summary');
+  await page.click('.league-team-detail .team-bar-objective');
   assert.equal(await page.isVisible('.league-team-detail .league-team-view-config'), false, 'pressed again, it collapses');
 
   // An Agent outside every Team: No Team appears, and opens one Team workbench of its own.

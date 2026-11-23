@@ -70,6 +70,9 @@
   .team-detail > .item-bar.team-bar { position: relative; overflow: hidden; width: 100%; }
   .team-bar .team-bar-actions { margin-left: auto; }
   .team-bar .lifecycle-line[data-empty='true'] { display: none; }
+  .team-bar.team-bar-pressable { cursor: pointer; }
+  .team-bar.team-bar-pressable:is(:hover, :focus-visible) { border-color: var(--accent); }
+  .team-detail > .team-config-open { padding: var(--space-inline) var(--space-inset); border: var(--edge) solid var(--line-2); border-radius: var(--radius-large); }
   .league-team-view { display: flex; flex-direction: column; gap: 0; min-width: 0; }
   /* THE AGENTS AS STONES (owner, 2026-11-23): the Epic stones (launch-forms.css .epic-record-stones:
      the same size, height, marks and line); one mark top right (⚑, or the pill's dot: solid working,
