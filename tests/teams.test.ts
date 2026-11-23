@@ -89,9 +89,9 @@ test('the Teams page and one Team, as a person reads and presses them', async (t
   // The Agents as the Epic stones: lead first; Ben's line over what he holds and his open count.
   const agentStone = (who: string) => `${agentsView} [data-sws-id="${who}"]`;
   assert.deepEqual(await page.$$eval(`${agentsView} .team-agent-stone`, (rows) => rows.map((row) => (row as HTMLElement).dataset.swsId)), ['ana', 'ben'], 'lead first');
-  const line = `${agentStone('ben')} .lifecycle.lifecycle-line`;
-  await page.waitForSelector(`${line}[data-empty="false"]`, { state: 'attached' });
-  assert.equal(await page.getAttribute(line, 'data-band'), '4');
+  const agentLine = `${agentStone('ben')} .lifecycle.lifecycle-line`;
+  await page.waitForSelector(`${agentLine}[data-empty="false"]`, { state: 'attached' });
+  assert.equal(await page.getAttribute(agentLine, 'data-band'), '4');
   assert.equal(await page.textContent(`${agentStone('ben')} .stone-size`), '1', 'Ben holds one open item');
   assert.equal(await page.textContent(`${agentStone('ana')} .stone-size`), '0');
   // Pressed, an Agent opens beside its rail: its Work items and its Configuration.
