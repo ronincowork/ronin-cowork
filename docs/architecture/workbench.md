@@ -28,8 +28,8 @@ surface as it was, its geometry untouched: Settings (Workspaces, Model
 Providers, Setup) and the Agent workbench's Work Items draw with it. Escape lifts only the layer it
 is pressed in (2026-10-08).
 
-Ronin's one board is an Epic's own page, `#/epic/<id>` (owner, 2026-11-22; w899): its four
-columns of the items under it. One Workspace has its own page too, `#/workspace/<name>` (owner,
+Ronin's one board is an Epic's own page, `#/epic/<id>` (owner, 2026-11-23; w899): the
+Team's Epics board without its strip of Epic stones. One Workspace has its own page too, `#/workspace/<name>` (owner,
 2026-11-22; KAN-784): Work (its Teams or Epics) or Config (its record), the same surface a pressed
 Workspace stone opens beside the stones. Work Items
 (`work-items`) stays on the Agent's workbench, filtered to the work items held by that

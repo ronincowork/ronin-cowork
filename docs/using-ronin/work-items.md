@@ -2,7 +2,7 @@
 
 Work lives on **work items**, as in Jira. Anyone reading an Agent's items should know where
 its work is without asking, so Agents keep them true as they go, never only at the end.
-Ronin's one board is an Epic's own page (Epics › Launch: its work in four columns). You read items
+Ronin's one board is an Epic's own page (Epics › Launch: its items grouped by status). You read items
 there, on the Agent workbench's **Work Items**, in a Team's **Work items**, and on a tile's
 ☰ Work record; every change goes through the `item` tool, and `item --help` has the exact
 syntax (`item <command> --help` for one command and its rule).

@@ -16,7 +16,7 @@ Only what a user would hit when it breaks, one file each:
 | `tests/promotion.test.ts` | desk open, hand-in, promotion into `dev`; a failed health check reverted; Chat's file and commit links |
 | `tests/setup.test.ts` | a fresh box: health, the page, Setup's providers and sign-in, the onboarding epic, Help (Mika) |
 | `tests/sign-in.test.ts` | the password gate on the page and the API, login and logout |
-| `tests/epics.test.ts` | the Epics page and one Epic's page: epic-stage, what needs you, order, New Epic, the four columns, Mark Epic Done (needs Playwright, as `rig` does) |
+| `tests/epics.test.ts` | the Epics page and one Epic's page: epic-stage, what needs you, order, New Epic, one Epic's board (needs Playwright, as `rig` does) |
 | `tests/terminal.test.ts` | typing in a tile, the Message box, a foreign socket refused |
 
 Every file boots a real Ronin (`src/index.ts`) through `tests/helpers/ronin.ts`:

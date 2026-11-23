@@ -30,7 +30,7 @@ import { itemBar } from './tile-island.js';
 import { createPhalanx } from './phalanx.js';
 import { S } from './state.js';
 import { epicAttention, epicMoved, isOpenEpic, orderEpics } from './epic-stage.js';
-import { attentionWords, LIFECYCLE, statusKey } from './item-lifecycle.js';
+import { attentionWords } from './item-lifecycle.js';
 import { createProgress } from './epic-progress.js';
 import { humanAge } from './work-record.js';
 import { teamsFromState } from './team-controller.js';
@@ -269,14 +269,26 @@ export function createItemBoard({ every: everyNow, head = () => null, cards: rea
   return { el: root, paint, destroy: () => { questions.destroy(); bars.destroy(); groupList.destroy(); } };
 }
 
+/** Launch (w899): one Epic's own page, `#/epic/<id>`, in this tab; Ctrl/Cmd/Shift in another. */
+function launchAction(epicId) {
+  return WorkspaceKit.primitives.createAction({ label: t('epics.launch', 'Launch'), launch: true, size: 'compact', className: 'epic-launch', action: (event) => {
+    if (event?.metaKey || event?.ctrlKey || event?.shiftKey || !S.workspace) window.open(epicAddress(epicId), '_blank', 'noopener');
+    else S.workspace.navigate('epic', { param: epicId });
+  } }).el;
+}
+
 /**
  * THE EPICS BOARD (owner, 2026-11-06, w334, w340): every Epic surface. A row of stones across
  * the top, one per Epic (its title, its Jira key or Ronin only, how many of its items are open);
  * the pressed one is the Epic below: its source line, then its items (epicItems). Another stone
  * pressed switches to that Epic here. `initial` is the Epic it starts on; with one Epic, that one.
  * A stone dragged into another tilespace places a board starting on that Epic (createEpicRecord).
+ *
+ * ONE EPIC (owner, 2026-11-23; w899) is this same board without the strip (`strip: false`): the
+ * Epics phalanx's pressed stone, a dragged stone (createEpicRecord) and `#/epic/<id>` all show
+ * it, the first two with Launch in the source line to the Epic's own page.
  */
-export function createEpicBoard({ epicsRead, header = true, initial = '' }) {
+export function createEpicBoard({ epicsRead, header = true, initial = '', strip: withStrip = true, launch = false, onTitle = () => {} }) {
   const { createSurface } = WorkspaceKit.primitives;
   const out = createSurface({ label: t('epics.title', 'Epics'), className: 'setup-surface epics-board', header });
   const strip = el('div', 'epic-strip');
@@ -284,7 +296,7 @@ export function createEpicBoard({ epicsRead, header = true, initial = '' }) {
   strip.setAttribute('aria-label', t('epics.title', 'Epics'));
   const below = el('div', 'epic-board-body');
   const board = el('div', 'epic-board');
-  board.append(strip, below);
+  board.append(...(withStrip ? [strip] : []), below);
   out.content.append(board);
   let selected = initial;
   let view = null;
@@ -323,22 +335,25 @@ export function createEpicBoard({ epicsRead, header = true, initial = '' }) {
   function paint() {
     const epics = epicsRead.list();
     // An Epic gone from a push that has Epics is let go; before the first push, the one to start on is kept.
-    if (selected && epics.length && !epics.some((epic) => epic.id === selected)) { selected = ''; view?.destroy(); view = null; }
-    if (!selected && epics.length === 1) selected = epics[0].id;
+    if (withStrip && selected && epics.length && !epics.some((epic) => epic.id === selected)) { selected = ''; view?.destroy(); view = null; }
+    if (withStrip && !selected && epics.length === 1) selected = epics[0].id;
     const epic = epics.find((row) => row.id === selected);
     if (out.header) out.header.title.textContent = epic ? (epic.title || epic.id) : t('epics.title', 'Epics');
+    if (epic) onTitle(epic.title || epic.id);
     const signature = JSON.stringify([selected, epics.map((epic) => [epic.id, epic.title, epic.external?.jira?.key,
       epicsRead.items(epic.id).filter((item) => item.status !== 'Done').length])]);
-    if (signature !== drawn) {
+    if (withStrip && signature !== drawn) {
       drawn = signature;
       strip.replaceChildren(...(epics.length ? epics.map(stone) : [el('p', 'epic-empty', t('epics.none', 'No Epics yet.'))]));
     }
+    if (!epic && !withStrip) { view?.destroy(); view = null; below.replaceChildren(el('p', 'epic-empty', t('epics.not_found', 'This Epic is not open here.'))); return; }
     if (!epic) { below.replaceChildren(...(epics.length ? [el('p', 'epic-empty', t('epics.pick_epic', 'Pick an Epic to see its work items.'))] : [])); return; }
     if (!view) { source = el('div', 'epic-source'); sourceSaid = ''; view = epicItems(selected, { epicsRead }); below.replaceChildren(source, view.el); }
     const said = JSON.stringify([selected, epic.external?.jira?.key, epic.holder]);
     if (said !== sourceSaid) {
       sourceSaid = said;
-      source.replaceChildren(el('span', '', epic.external?.jira?.key ? `Jira ${epic.external.jira.key}` : t('epics.ronin_only', 'Ronin only')), holderButton(epic));
+      source.replaceChildren(el('span', '', epic.external?.jira?.key ? `Jira ${epic.external.jira.key}` : t('epics.ronin_only', 'Ronin only')), holderButton(epic),
+        ...(launch ? [launchAction(selected)] : []));
     }
     view.paint();
   }
@@ -351,7 +366,7 @@ export function createEpicBoard({ epicsRead, header = true, initial = '' }) {
 }
 
 /** One Epic's worksurface (its selector card, a dragged stone): that Epic alone, with Launch (w899). */
-export const createEpicRecord = (key, { epicsRead }) => createEpicOne(key, { epicsRead, launch: true });
+export const createEpicRecord = (key, { epicsRead }) => createEpicBoard({ epicsRead, initial: key, strip: false, launch: true });
 
 /** The Epic's own route (w899): `#/epic/<id>`; Launch follows it in this tab, Ctrl/Cmd/Shift in another. */
 export const epicAddress = (id) => `#/epic/${encodeURIComponent(id)}`;
@@ -394,7 +409,7 @@ export function createEpicStones({ epicsRead, workbench = null, bare = false, em
     renderDetail: (item, host) => {
       const one = item.id === NEW_EPIC
         ? createNewEpic({ onMade: (id) => { made = id; paint(); } })
-        : createEpicOne(item.id, { epicsRead, launch: true, header: false });
+        : createEpicBoard({ epicsRead, initial: item.id, strip: false, launch: true, header: false });
       host.append(one.el);
       one.show();
       return () => one.destroy();
@@ -473,158 +488,9 @@ export function createNewEpic({ onMade = () => {} } = {}) {
     if (!result.ok) { said.hidden = false; said.textContent = result.message || t('epics.not_made', 'The Epic was not made.'); return; }
     onMade(result.data.item?.id || '');
   });
-  // An Epic's own shape: the four columns it will fill, empty for now (owner, 2026-11-22).
-  const columns = el('div', 'epic-columns');
-  for (const words of [t('epics.to_do', 'To Do'), t('epics.in_progress', 'In Progress'), t('epics.in_review', 'In Review'), t('epics.recently_done', 'Recently Done')]) {
-    const column = el('section', 'epic-column');
-    column.append(el('h3', 'epic-group-heading', words));
-    columns.append(column);
-  }
   const root = el('div', 'epic-new-page');
-  root.append(bar, columns);
+  root.append(bar);
   return { el: root, show: () => title.focus(), destroy: () => question.destroy() };
-}
-
-/**
- * ONE EPIC (owner, 2026-11-22; w899): Layer 2, on its own route and wherever one Epic is placed.
- * The Epic's bar on top: its key and title, what done looks like in full, Details (its own
- * reading: holder, Jira, Status), Launch where it is not already on its own route, Mark Epic Done
- * once its epic-stage is Aging, and its progress bar bottom right. Under it four columns, To Do, In
- * Progress, In Review and Recently Done (Done not yet archived), each card one level-0 item as the
- * island's bar; a pressed card opens its reading in its place, the board kept. Every card says when
- * it last moved, so a forgotten In Progress card shows on an Aging Epic.
- */
-export function createEpicOne(epicId, { epicsRead, launch = false, header = true, onTitle = () => {} }) {
-  const { createSurface, createAction } = WorkspaceKit.primitives;
-  const out = createSurface({ label: t('epics.epic', 'Epic'), className: 'setup-surface epic-one', header });
-  // THE EPIC'S BAR (owner, 2026-11-22): the opened Team's bar grammar (cowork-view.js, team-bar): the
-  // name with its actions in the head, the goal in full, a muted line of facts (key, holder, when it
-  // last moved), the shared lifecycle bar bottom right; the work columns below it.
-  const bar = el('section', 'team-bar epic-bar');
-  const head = el('div', 'team-bar-head');
-  const title = el('h2', 'team-bar-title');
-  const actions = el('div', 'team-bar-actions');
-  const markDone = createAction({ label: t('epics.mark_done', 'Mark Epic Done'), size: 'compact', className: 'epic-mark-done', action: () => doneNow() });
-  markDone.el.hidden = true;
-  const details = createAction({ label: `${t('epics.details', 'Details')} ›`, size: 'compact', className: 'epic-details', action: () => toggleDetails() });
-  actions.append(markDone.el, details.el);
-  if (launch) actions.append(createAction({ label: t('epics.launch', 'Launch'), launch: true, size: 'compact', className: 'epic-launch', action: (event) => {
-    if (event?.metaKey || event?.ctrlKey || event?.shiftKey || !S.workspace) window.open(epicAddress(epicId), '_blank', 'noopener');
-    else S.workspace.navigate('epic', { param: epicId });
-  } }).el);
-  head.append(title, actions);
-  const objective = el('p', 'team-bar-objective');
-  const facts = el('p', 'team-bar-coverage');
-  const said = el('p', 'epic-bar-said');
-  said.hidden = true;
-  const progress = createProgress('bar');
-  const foot = el('div', 'team-bar-foot');
-  foot.append(said, progress.el);
-  const detailHost = el('div', 'epic-bar-details');
-  detailHost.hidden = true;
-  bar.append(head, objective, facts, foot, detailHost);
-  const columns = el('div', 'epic-columns');
-  const NAMES = { todo: t('epics.to_do', 'To Do'), progress: t('epics.in_progress', 'In Progress'), review: t('epics.in_review', 'In Review'), done: t('epics.recently_done', 'Recently Done') };
-  const lists = {};
-  for (const key of LIFECYCLE) {
-    const column = el('section', 'epic-column');
-    column.dataset.status = key;
-    const list = el('div', 'epic-bars');
-    column.append(el('h3', 'epic-group-heading', NAMES[key]), list);
-    lists[key] = list;
-    columns.append(column);
-  }
-  const missing = el('p', 'epic-empty', t('epics.not_found', 'This Epic is not open here.'));
-  missing.hidden = true;
-  const none = el('p', 'epic-empty', t('epics.no_items', 'No work items under this Epic yet.'));
-  none.hidden = true;
-  out.content.append(missing, bar, none, columns);
-
-  let epic = null;
-  const open = new Set();
-  const readings = new Map();
-  let cards = new Map();
-  let asked = '';
-  let drawn = '';
-
-  function toggleDetails() {
-    const opening = detailHost.hidden;
-    detailHost.hidden = !opening;
-    details.el.setAttribute('aria-expanded', String(opening));
-    if (opening && epic) detailHost.replaceChildren(itemReading(epic, { children: false, onClose: () => { detailHost.hidden = true; details.el.setAttribute('aria-expanded', 'false'); } }));
-    else detailHost.replaceChildren();
-  }
-  async function doneNow() {
-    const result = await request(`/api/work-items/${encodeURIComponent(epicId)}/transition`, { method: 'POST', json: { status: 'Done' } });
-    said.hidden = result.ok;
-    if (!result.ok) said.textContent = result.message || t('epics.mark_done_failed', 'The Epic did not move.');
-  }
-
-  function askCards(every) {
-    const sig = [epic, ...every].filter(Boolean).map((item) => `${item.id}@${item.moved || ''}`).join(' ');
-    if (sig === asked) return;
-    asked = sig;
-    void request(`/api/work-items/${encodeURIComponent(epicId)}/cards`, { cache: 'no-store' }).then((result) => {
-      if (!result.ok || asked !== sig || !out.el.isConnected) return;
-      cards = new Map((result.data.cards || []).map((card) => [card.id, card]));
-      drawn = '';
-      paint();
-    });
-  }
-
-  function card(item) {
-    if (open.has(item.id)) {
-      if (!readings.has(item.id)) readings.set(item.id, itemReading(item, { onClose: () => { open.delete(item.id); readings.delete(item.id); drawn = ''; paint(); } }));
-      return readings.get(item.id);
-    }
-    const holder = holderOfItem(item);
-    const extra = [holder ? holderWords(holder) : t('epics.unassigned', 'Unassigned')];
-    const subtasks = epicsRead.items(epicId).filter((one) => one.level === -1 && one.parent === item.id).length;
-    return itemBar({ ...item, ...(cards.get(item.id) || {}) }, { subtasks, lean: true, extra,
-      onPress: () => { open.add(item.id); drawn = ''; paint(); } });
-  }
-
-  function paint() {
-    epic = epicsRead.list().find((row) => row.id === epicId) || null;
-    missing.hidden = Boolean(epic);
-    bar.hidden = columns.hidden = !epic;
-    if (!epic) { none.hidden = true; return; }
-    const every = epicsRead.items(epicId);
-    askCards(every);
-    const { stage } = progress.update(epic, every);
-    const words = epic.title || epic.id;
-    const key = epic.external?.jira?.key || epic.id;
-    const moved = epicMoved(epic, every);
-    const sig = JSON.stringify([words, key, stage, epic.status, epic.holder, moved, cards.get(epicId)?.objective, [...open],
-      every.map((item) => [item.id, item.status, item.flagged, item.holder, item.title, item.moved, cards.get(item.id)?.objective])]);
-    if (sig === drawn) return;
-    drawn = sig;
-    title.textContent = words;
-    const holder = holderOfItem(epic);
-    // The Jira key rides movedWords; an Epic made in Ronin shows its own id.
-    facts.textContent = [epic.external?.jira?.key ? '' : epic.id, holder ? holderWords(holder) : '', movedWords(epic, moved)].filter(Boolean).join(' · ');
-    if (out.header) out.header.title.textContent = words;
-    onTitle(words);
-    const goal = cards.get(epicId)?.objective || '';
-    objective.textContent = goal;
-    objective.hidden = !goal;
-    markDone.el.hidden = stage !== 'aging';
-    const top = every.filter((item) => item.level === 0);
-    none.hidden = top.length > 0;
-    for (const status of LIFECYCLE) {
-      let here = top.filter((item) => statusKey(item.status) === status);
-      if (status === 'done') here = here.sort((a, b) => String(b.moved || '').localeCompare(String(a.moved || '')));
-      lists[status].replaceChildren(...here.map((item) => card(item)));
-    }
-    for (const id of [...readings.keys()]) if (!open.has(id)) readings.delete(id);
-  }
-  let stop = null;
-  return {
-    el: out.el,
-    title: () => epic?.title || epicId,
-    show: () => { stop ??= epicsRead.subscribe(paint); paint(); },
-    destroy: () => { stop?.(); stop = null; },
-  };
 }
 
 /** The Epic's own route (w899): one Epic filling the page, under the Epics appearance. */
@@ -649,7 +515,7 @@ export function createEpicRoute() {
         one?.destroy();
         id = context.param;
         words = '';
-        one = createEpicOne(id, { epicsRead, onTitle: retitle });
+        one = createEpicBoard({ epicsRead, initial: id, strip: false, onTitle: retitle });
         host.replaceChildren(one.el);
       }
       one.show();

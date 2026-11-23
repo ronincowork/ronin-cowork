@@ -1,7 +1,7 @@
 /**
  * Epics: what a person reads across Epics and inside one (KAN-780; w897, w898, w899). The
  * epic-stage rules, the Epics phalanx (its order, what needs the person, when it moved, New
- * Epic) and one Epic's own page (its goal, four columns, Mark Epic Done only once Aging).
+ * Epic) and one Epic's own page (the Team's Epics board without its strip).
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -113,20 +113,11 @@ test('the Epics page and one Epic\'s page, as a person reads and presses them', 
   assert.match(await page.textContent('.epic-new .epic-bar-said') || '', /title/);
   assert.equal(await page.$('[data-workspace-view="epics"] .terminal-hints'), null, 'no Agent vocabulary or Session controls on Epics');
 
-  // One Epic's own page: its goal, four columns, Mark Epic Done only once Aging.
+  // One Epic's own page: the Team's Epics board without its strip; its items grouped by status.
   await page.goto(`${ronin.base}/#/epic/${review}`);
-  await page.waitForSelector('.epic-route .team-bar-objective:not([hidden])');
-  assert.equal(await page.textContent('.epic-route .team-bar-objective'), 'Every shelf is full.');
-  assert.deepEqual(await page.$$eval('.epic-route .epic-column h3', (nodes) => nodes.map((node) => node.textContent)), ['To Do', 'In Progress', 'In Review', 'Recently Done']);
-  assert.deepEqual(await page.$$eval('.epic-route .epic-column', (nodes) => nodes.map((node) => node.querySelectorAll('button.item-bar').length)), [1, 0, 1, 0]);
-  assert.equal(await page.isVisible('.epic-route .epic-mark-done'), false, 'Working: no Mark Epic Done');
+  await page.waitForSelector('.epic-route .epics-board .epic-group');
+  assert.equal(await page.$('.epic-route .epic-strip'), null, 'no row of Epic stones');
+  assert.deepEqual(await page.$$eval('.epic-route .epic-group-heading', (nodes) => nodes.map((node) => node.textContent)), ['To Do · 1', 'In Review · 1']);
   assert.equal(await page.$('.epic-route .epic-launch'), null, 'on its own page, no Launch');
-
-  await page.goto(`${ronin.base}/#/epic/${aging}`);
-  await page.waitForSelector('.epic-route .epic-mark-done:not([hidden])');
-  assert.deepEqual(await page.$$eval('.epic-route .epic-column', (nodes) => nodes.map((node) => node.querySelectorAll('button.item-bar').length)), [0, 1, 0, 3]);
-  await page.click('.epic-route .epic-mark-done');
-  await page.waitForSelector('.epic-route .epic-mark-done[hidden]', { state: 'attached' });
-  assert.equal((await ronin.api(`/api/work-items/${aging}`)).body.item.status, 'Done');
   assert.deepEqual(errors, []);
 });
