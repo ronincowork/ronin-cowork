@@ -13,7 +13,7 @@
 #   stamp  — the version into package.json, and a VERSION file at the root that the
 #            install and the doctor read (release, commit, built, contract)
 #   prune  — .github/ (the repo's CI, not the install's). Everything else ships,
-#            scripts/ deliberately: an install can run its own byoin_checks
+#            scripts/ and tests/ (the two guards) deliberately: an install can run its own byoin_checks
 #   pack   — release/ronin-cowork-vX.Y.Z.tar.gz + SHA256SUMS
 #
 # Built from `git archive`, so only TRACKED files can ever land in the staged tree —
