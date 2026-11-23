@@ -80,11 +80,11 @@ test('the Teams page and one Team, as a person reads and presses them', async (t
   await page.click(stone);
   const agentsView = '.league-team-detail .league-team-view-agents';
   await page.waitForSelector(`${agentsView} .team-agent-bar`);
-  // Its bar, an Epic's: the name, Launch, the concept in full, its facts, the shared lifecycle line.
+  // Its bar, an Epic's: the name, Launch, the concept in full, the shared lifecycle line.
   assert.equal(await page.textContent('.league-team-detail .team-bar-title'), 'Shop');
   assert.equal(await page.textContent('.league-team-detail .team-bar-objective'), 'Run the shop.');
   assert.equal(await page.getAttribute('.league-team-detail .team-bar .lifecycle-line', 'data-band'), '4');
-  assert.match(await page.textContent('.league-team-detail .team-bar-coverage') || '', /2 Agents · 1 open/);
+  assert.equal(await page.$('.league-team-detail .team-bar-coverage'), null, 'no facts line');
   assert.equal(await page.$('.league-team-detail .league-team-add'), null, 'no New Agent here');
   assert.deepEqual(await page.$$eval(`${agentsView} .team-agent-bar`, (rows) => rows.map((row) => (row as HTMLElement).dataset.session)), ['ana', 'ben'], 'lead first');
   // Ben's bar carries the shared line over the items he holds; Ana holds nothing and says so.

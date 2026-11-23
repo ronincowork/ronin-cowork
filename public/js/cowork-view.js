@@ -39,7 +39,7 @@ import { createAgentCompositionSurface } from './agent-composition.js';
 import { createTeamEpics, teamEpicIds } from './team-epics.js';
 import { createFindItem } from './team-find-item.js';
 import { createEpicRecord, createEpicStones, createEpicsRead, createNewItem } from './epics-surface.js';
-import { attention, attentionWords, counted, createLifecycle, statusKey } from './item-lifecycle.js';
+import { attention, attentionWords, createLifecycle, statusKey } from './item-lifecycle.js';
 import { splitItemTitle } from './item-title.js';
 
 const el = (tag, cls, text) => {
@@ -627,8 +627,6 @@ export function createCoworkView(options = {}) {
   // Epic stones) and Configuration (the Team's form, Delete team at its foot). Painted into a host: a Teams stone's detail
   // (leagueTeamDetail) or a whole tilespace (createLeagueTeamSurface). No Team has Agents only.
   const teamFoldsOpen = new Map(); // `${team}\0${fold}` -> open, for this page
-  let workspacesRead = null; // one read of the Workspaces per page, for the coverage line
-  const readWorkspaces = () => (workspacesRead ??= request('/api/workspaces').then((answer) => (answer.ok ? answer.data?.workspaces || [] : [])));
   // An Agent's bar opens its tile beside the Team: a non-member rides the pool as an extra (KAN-435).
   const showAgent = (agent, seat) => {
     if (!membersOfTeam(team).some((m) => m.name === agent)) { extras.add(agent); syncPools(restorationMembers()); }
@@ -637,13 +635,10 @@ export function createCoworkView(options = {}) {
   const leagueTeamBody = (name, { seat, say }) => {
     const holding = name === UNASSIGNED;
     // THE TEAM'S BAR (owner, 2026-11-23): the Epic's own bar on its page, the same item bar its
-    // work items wear (tile-island.js itemBar's classes): the name with Launch, the concept in full,
-    // a muted line of facts (the Workspace it covers and its repositories, its Agents, its open
-    // items) and the shared lifecycle line along its foot.
+    // work items wear (tile-island.js itemBar's classes): the name with Launch, the concept in full
+    // and the shared lifecycle line along its foot. No facts line (owner, 2026-11-23: crowded).
     const title = el('span', 'item-bar-title team-bar-title', leagueTeamLabel(name));
     const objective = el('span', 'item-bar-objective team-bar-objective');
-    const coverage = el('span', 'item-bar-facts team-bar-coverage'); coverage.hidden = true;
-    let covered = '';
     const teamLine = createLifecycle('line');
     const launch = createAction({ label: t('league.launch_team', 'Launch'), size: 'compact', action: () => openTeam(name) });
     const remove = createAction({ label: t('league.delete_team', 'Delete team'), kind: 'danger', size: 'compact', action: async () => { const count = membersOfTeam(name).length; if (!window.confirm(t('league.delete_team_confirm', 'Delete {team}? {count} Agents will lose this Team membership.', { team: name, count }))) return; const result = await deleteTeamRoster(name); if (!result.ok) { say('failed', result.message); return; } for (const place of bench.locations(WB_TYPES.team, name)) emptySeat(place); for (const key of [...leagueTeamSurfaces.keys()]) if (key.endsWith(`\0${name}`)) leagueTeamSurfaces.delete(key); } });
@@ -680,7 +675,7 @@ export function createCoworkView(options = {}) {
     const actions = el('span', 'item-bar-state team-bar-actions');
     actions.append(launch.el);
     const head = el('span', 'item-bar-head team-bar-head'); head.append(title, actions);
-    const bar = el('div', 'item-bar item-bar-lean team-bar'); bar.append(head, objective, coverage, teamLine.el);
+    const bar = el('div', 'item-bar item-bar-lean team-bar'); bar.append(head, objective, teamLine.el);
     const top = el('div', 'epic-detail team-detail'); top.append(bar);
     main.append(top, agentsFold.node);
     if (!holding) main.append(epicsFold.node, configFold.node);
@@ -744,28 +739,6 @@ export function createCoworkView(options = {}) {
       for (const item of items) if (item.holder.startsWith('agent:')) held.set(item.holder.slice(6), [...(held.get(item.holder.slice(6)) || []), item]);
       paintAgents();
     };
-    // The bar's facts: the Workspace it covers with its repositories, its Agents, its open items.
-    const paintFacts = () => {
-      const current = teamByName(name);
-      const count = holding ? unassignedSessions().length : membersOfTeam(name).length;
-      const open = (holding ? [] : current.items || []).filter((item) => counted(item) && statusKey(item.status) !== 'done').length;
-      const words = [covered,
-        count === 1 ? t('teams_surface.one_agent', '1 Agent') : t('teams_surface.agents', '{count} Agents', { count }),
-        open ? t('league.agent_open', '{n} open', { n: open }) : ''].filter(Boolean).join(' · ');
-      if (coverage.textContent !== words) coverage.textContent = words;
-      coverage.hidden = !words;
-    };
-    const paintCoverage = (workspace) => {
-      covered = '';
-      paintFacts();
-      if (!workspace) return;
-      void readWorkspaces().then((list) => {
-        const found = list.find((one) => one.name === workspace);
-        const repos = (found?.repos || []).map((repo) => repo.name).filter(Boolean);
-        covered = repos.length ? `${workspace}: ${repos.join(' · ')}` : workspace;
-        paintFacts();
-      });
-    };
     // Same contract as renderConfig below: every publish lands here, so the body only
     // rebuilds — and refetches the configuration's catalogs — when what it shows moved.
     // The configuration follows the saved record alone, so a session coming or going never
@@ -790,7 +763,6 @@ export function createCoworkView(options = {}) {
       teamLine.update(holding ? [] : current.items || []);
       objective.textContent = holding ? t('teams_surface.no_team_summary', 'Agents outside any Team') : current.objective || '';
       objective.hidden = !objective.textContent;
-      paintCoverage(holding ? '' : current.workspace);
       if (membersMoved || itemsMoved) void readWork();
       if (recordMoved && !holding) {
         const fields = el('div', null);
