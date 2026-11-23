@@ -352,3 +352,18 @@ export async function writeObjective(name: string, objective: string, by: string
   await ackRecord(name, by);
   return next;
 }
+
+/** THE RECORD'S OWN FLAG (KAN-792): the one flag an Agent raises on its work record, not on an
+ * item: `work-record flag "<why>"` sets it, `work-record unflag` or the owner's press on the tile
+ * header ⚑ clears it (null). It is the block's `flag`, read into `flags` (src/tegami-read.ts). */
+export async function writeRecordFlag(name: string, why: string | null, by: string): Promise<void> {
+  const file = tegamiPath(await sessionKey(name));
+  const text = await fs.readFile(file, 'utf8');
+  const parsed = letterBlock(text);
+  if (!parsed) throw new Error(`@${name} has no readable work record`);
+  const next = why?.trim().slice(0, 2000) || '';
+  if ((parsed.body.flag ?? '') === next) return;
+  if (next) parsed.body.flag = next; else delete parsed.body.flag;
+  await replaceLetterBlock(file, text, parsed, parsed.body);
+  await ackRecord(name, by, next ? `Flagged: ${next}` : `Your flag was cleared by ${by}.`);
+}

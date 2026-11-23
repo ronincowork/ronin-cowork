@@ -484,7 +484,7 @@ The stock-foundations in `ronin_stock/` (the three places and the one rule:
 facts/       office: about_user, machine, account (hosted), office-workspaces,
              integrations_authentications, epics, teams_agents, defaults (seed: line and path)
              the Agent's own: you, workspace, work, team (team), integrations-on, model, task
-behaviours/  base-agent (full) · cowork-agent, write-it-down, workspaces (cowork, full)
+behaviours/  base-agent (full) · cowork-agent, flags, write-it-down, workspaces (cowork, full)
              reach-*, recruit-*, output-* (mandate: one file per value)
              team-lead, planning (lead) · lead-worktrees (lead, desk) · canvases (cowork, seed)
              project-management (pm, !irasshai, full) · pm-coworker · pm-lead · pm-epic-lead ·
@@ -495,7 +495,8 @@ behaviours/  base-agent (full) · cowork-agent, write-it-down, workspaces (cowor
              mcp-servers (mcp, seed: one line per MCP server on) ·
              web-apis (api, seed: one line per web API on)
              mika, install-check (mika) · irasshai, irasshai-voice (irasshai) ·
-             services-off (!service:ronin_services) · syncthing (!irasshai, seed) · using-ronin
+             services-off (!service:ronin_services) · syncthing (!irasshai, seed) ·
+             linux-tools (every Agent, seed) · using-ronin
              optional (depth none): team-work, more-checkpoints, working-with-the-user,
              codebase-team, new-workspace, documents
 tools/       edges, work-record, agent-session (session_*), cowork-team (team), plan, canvas,

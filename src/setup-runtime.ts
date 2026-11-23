@@ -427,16 +427,18 @@ export async function createGithubSetupSession(
   await command(GITHUB_SETUP_SESSION, `'${gh.replaceAll("'", "'\\''")}' auth login --hostname github.com --git-protocol https --web`);
 }
 
-/** GitHub's supported package paths, run visibly because system package managers may ask for sudo. */
+/** GitHub's supported package paths, run visibly because system package managers may ask for sudo.
+ *  The same install adds the common tools every Agent reaches for (behaviours/linux-tools.md):
+ *  jq, file and Python's Pillow; macOS has file already. */
 export function githubInstallCommand(platform = os.platform()): string {
-  if (platform === 'darwin') return 'command -v brew >/dev/null || { echo "Homebrew is required to install GitHub CLI on macOS: https://brew.sh"; exit 1; }; brew install gh';
+  if (platform === 'darwin') return 'command -v brew >/dev/null || { echo "Homebrew is required to install GitHub CLI on macOS: https://brew.sh"; exit 1; }; brew install gh jq pillow';
   if (platform === 'linux') return [
     'if [ "$(id -u)" -eq 0 ]; then SUDO=""; elif command -v sudo >/dev/null; then SUDO=sudo; else echo "Installing GitHub CLI requires sudo on this Linux machine."; exit 1; fi',
-    'if command -v brew >/dev/null; then brew install gh',
-    'elif command -v apt-get >/dev/null; then (command -v wget >/dev/null || ($SUDO apt-get update && $SUDO apt-get install -y wget)) && $SUDO mkdir -p -m 755 /etc/apt/keyrings && GH_KEY=$(mktemp) && wget -nv -O"$GH_KEY" https://cli.github.com/packages/githubcli-archive-keyring.gpg && $SUDO tee /etc/apt/keyrings/githubcli-archive-keyring.gpg <"$GH_KEY" >/dev/null && $SUDO chmod go+r /etc/apt/keyrings/githubcli-archive-keyring.gpg && echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | $SUDO tee /etc/apt/sources.list.d/github-cli.list >/dev/null && $SUDO apt-get update && $SUDO apt-get install -y gh',
-    'elif command -v dnf >/dev/null; then $SUDO dnf install -y gh',
-    'elif command -v yum >/dev/null; then $SUDO yum install -y gh',
-    'elif command -v pacman >/dev/null; then $SUDO pacman -S --needed github-cli',
+    'if command -v brew >/dev/null; then brew install gh jq pillow',
+    'elif command -v apt-get >/dev/null; then (command -v wget >/dev/null || ($SUDO apt-get update && $SUDO apt-get install -y wget)) && $SUDO mkdir -p -m 755 /etc/apt/keyrings && GH_KEY=$(mktemp) && wget -nv -O"$GH_KEY" https://cli.github.com/packages/githubcli-archive-keyring.gpg && $SUDO tee /etc/apt/keyrings/githubcli-archive-keyring.gpg <"$GH_KEY" >/dev/null && $SUDO chmod go+r /etc/apt/keyrings/githubcli-archive-keyring.gpg && echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | $SUDO tee /etc/apt/sources.list.d/github-cli.list >/dev/null && $SUDO apt-get update && $SUDO apt-get install -y gh jq file python3-pil',
+    'elif command -v dnf >/dev/null; then $SUDO dnf install -y gh jq file python3-pillow',
+    'elif command -v yum >/dev/null; then $SUDO yum install -y gh jq file python3-pillow',
+    'elif command -v pacman >/dev/null; then $SUDO pacman -S --needed github-cli jq file python-pillow',
     'else echo "No supported GitHub CLI package manager was found. See https://cli.github.com/"; exit 1; fi',
   ].join('; ');
   throw new Error('GitHub CLI installation is supported on macOS and Linux.');

@@ -14,6 +14,7 @@ import { isPlanRef, planAttachment } from './plan-attachment.js';
 import { fullOverlay } from './work-details.js';
 import { createWarmTerminalPool } from './team-terminal-pool.js';
 import { S } from './state.js';
+import { splitItemTitle } from './item-title.js';
 
 export const WORK_ITEMS_TYPE = 'work-items';
 /** Jira's flag: an impediment, marked the same way on every surface. */
@@ -76,14 +77,15 @@ export function itemStones(items, { all = items, holder = () => '' } = {}) {
   return order.map((item) => {
     const root = rootOf(item);
     const epic = root.level === 1 || !known.has(root.id);
-    const group = epic ? { id: root.id, label: [root.id, root.title].filter(Boolean).join(' · ') } : { id: 'none', label: t('work_items.no_epic', 'No epic') };
+    const group = epic ? { id: root.id, label: [root.id, splitItemTitle(root.title || '').shortTitle].filter(Boolean).join(' · ') } : { id: 'none', label: t('work_items.no_epic', 'No epic') };
     const owner = holder(item);
+    const title = item.title || item.id;
     return {
-      id: item.id, item, group, label: item.title || item.id,
+      id: item.id, item, group, label: splitItemTitle(title).shortTitle,
       secondary: owner,
       state: [item.id, item.kind, item.status, item.flagged ? FLAG_MARK : ''].filter(Boolean).join(' · '),
       className: `wi-level-${item.level === 1 ? 'epic' : item.level === -1 ? 'subtask' : 'item'}${item.flagged ? ' wi-flagged' : ''}`,
-      attrs: { 'data-item': item.id }, draggable: true,
+      attrs: { 'data-item': item.id, title }, draggable: true,
       events: { dragstart: (event) => carryItem(event.dataTransfer, item) }, // onto a tile: the item's reference
     };
   });
@@ -229,7 +231,10 @@ export function renderItemDetail(host, item, { holder = '', heldBy = null, openA
   const sayKey = (status) => { key.textContent = [item.jira || item.id, item.kind, status, item.flagged ? `${FLAG_MARK} ${t('work_items.flagged', 'flagged')}` : ''].filter(Boolean).join(' · '); };
   sayKey(item.status);
   const words = el('div', 'wi-head-words');
-  words.append(el('h2', 'wi-title', item.title || item.id), key);
+  const { shortTitle, longTitle } = splitItemTitle(item.title || item.id);
+  words.append(el('h2', 'wi-title', shortTitle));
+  if (longTitle) words.append(el('p', 'item-title-continuation', longTitle));
+  words.append(key);
   head.append(kindMark(item.kind), words);
   // EXPAND AND MINIMIZE (owner, 2026-11-12, KAN-431): where a bar opens into this reading, the bar
   // goes and this head stands for it. Pressed, it minimizes, as does the tile header's own
@@ -371,7 +376,10 @@ export function renderItemDetail(host, item, { holder = '', heldBy = null, openA
       const open = el(openChild ? 'button' : 'div', 'wi-child');
       if (openChild) { open.type = 'button'; open.addEventListener('click', () => openChild(child)); }
       const words = el('span', 'wi-child-words');
-      words.append(el('span', 'wi-child-title', child.title || child.id), el('span', 'wi-when', [child.jira || child.id, child.status].filter(Boolean).join(' · ')));
+      const title = child.title || child.id;
+      const label = el('span', 'wi-child-title', splitItemTitle(title).shortTitle);
+      label.title = title;
+      words.append(label, el('span', 'wi-when', [child.jira || child.id, child.status].filter(Boolean).join(' · ')));
       open.append(kindMark(child.kind), words);
       row.append(open);
       list.append(row);

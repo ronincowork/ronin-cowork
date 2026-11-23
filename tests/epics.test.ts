@@ -70,8 +70,9 @@ test('the Epics page and one Epic\'s page, as a person reads and presses them', 
   const aging = await make({ title: 'Ship the shop', kind: 'Epic', objective: 'The shop sells online.', team: 'shop' });
   await under(aging, ['Done', 'Done', 'Done', 'In Progress']);
   // Working, an item In Review.
-  const review = await make({ title: 'Stock the shelves', kind: 'Epic', objective: 'Every shelf is full.', team: 'shop' });
-  await under(review, ['In Review', 'To Do']);
+  const review = await make({ title: 'Stock the shelves: refill by 07:20', kind: 'Epic', objective: 'Every shelf is full.', team: 'shop' });
+  const restock = await make({ title: 'Tea: refill the loose leaf: check stock first', status: 'In Review', parent: review, session: 'ana' });
+  await make({ title: 'Draft the restock plan', status: 'To Do', parent: review, session: 'ana' });
   // Starter, work only a Team holds.
   const toAssign = await make({ title: 'Open the doors', kind: 'Epic', objective: 'The doors open at nine.', team: 'shop' });
   await under(toAssign, ['To Do', 'To Do'], { team: 'shop' });
@@ -86,6 +87,9 @@ test('the Epics page and one Epic\'s page, as a person reads and presses them', 
 
   await page.goto(`${ronin.base}/#/epics`);
   await page.waitForSelector(`.epic-record-stones [data-sws-id="${aging}"]`);
+  const reviewStone = page.locator(`.epic-record-stones button[data-sws-id="${review}"]`);
+  assert.equal(await reviewStone.locator('.sws-label').innerText(), 'Stock the shelves');
+  assert.equal(await reviewStone.getAttribute('data-tip'), 'Stock the shelves: refill by 07:20');
   const stones = await page.$$eval('.epic-record-stones .sws-grid > [data-sws-id]', (nodes) => nodes.map((node) => ({
     id: (node as HTMLElement).dataset.swsId, needs: node.querySelector('.sws-secondary')?.textContent || '', last: node.querySelector('.sws-state')?.textContent || '',
     line: Boolean(node.querySelector('.lifecycle-line')),
@@ -119,5 +123,14 @@ test('the Epics page and one Epic\'s page, as a person reads and presses them', 
   assert.equal(await page.$('.epic-route .epic-strip'), null, 'no row of Epic stones');
   assert.deepEqual(await page.$$eval('.epic-route .epic-group-heading', (nodes) => nodes.map((node) => node.textContent)), ['To Do · 1', 'In Review · 1']);
   assert.equal(await page.$('.epic-route .epic-launch'), null, 'on its own page, no Launch');
+  assert.equal(await page.locator('.epic-route .item-title-continuation').innerText(), 'refill by 07:20');
+  const bar = page.locator(`button.item-bar[data-item="${restock}"]`);
+  assert.equal(await bar.locator('.item-bar-title').innerText(), 'Tea');
+  assert.equal(await bar.getAttribute('data-tip'), 'Tea: refill the loose leaf: check stock first');
+  assert.equal(await page.locator('.epic-route .epic-group[data-status="To Do"] .item-bar-title').innerText(), 'Draft the restock plan');
+  await bar.click();
+  const item = page.locator(`.epic-reading[data-item="${restock}"]`);
+  assert.equal(await item.locator('.wi-title').innerText(), 'Tea');
+  assert.equal(await item.locator('.item-title-continuation').innerText(), 'refill the loose leaf: check stock first');
   assert.deepEqual(errors, []);
 });

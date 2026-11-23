@@ -127,8 +127,10 @@ gives "Your work record changed".
 - **The Agent flag**: while an Agent's terminal asks you something (a dialog, a permission
   prompt, Codex's *Update available* before its first turn), its work record opens with
   "⚑ Asking you: answer in its terminal". It is the Agent's flag, not an item's, and it is
-  never stored: it goes when the question is answered. An asking Agent, or one holding a
-  flagged item, shows ⚑ in amber on its selector pill, its tile header and its Team roster
+  never stored: it goes when the question is answered. An Agent waiting on you with no item
+  to flag raises its own with `work-record flag "<who>: <what you need>"`; it stays until the
+  Agent runs `work-record unflag` or you press the ⚑ on its tile header. An asking Agent, a
+  flagged one, or one holding a flagged item, shows ⚑ in amber on its selector pill, its tile header and its Team roster
   row; so does a lead whose Team holds a flagged item, which its `work-record read` lists
   first. All of these read one list on the work record, its flags; the ☰ Work record opens
   with one ⚑ line for each.

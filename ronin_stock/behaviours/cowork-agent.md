@@ -4,6 +4,8 @@
 - **depth:** full
 - **order:** 20
 
+Your brief shows each behaviour's header only. `ronin-help` lists every topic; `ronin-help <name>` reads a topic, a behaviour or a Ronin word in full. Look things up there before you ask or guess.
+
 Keep your work record true as your objective, repositories, items and documents change.
 Asked to plan, read `ronin-help planning` first.
 

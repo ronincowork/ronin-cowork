@@ -19,4 +19,4 @@ More: `ronin-help work-record`
 
 ## Usage
 
-Universal typed record surface. `work-record --help` lists read, update_record (objective, repositories) and workspace. It resolves the calling session without accepting record paths and preserves the existing guarded validation.
+Universal typed record surface. `work-record --help` lists read, update_record (objective, repositories), flag / unflag (the record's own ⚑) and workspace. It resolves the calling session without accepting record paths and preserves the existing guarded validation.
