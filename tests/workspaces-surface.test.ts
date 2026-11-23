@@ -70,7 +70,7 @@ test('the Workspaces page and one Workspace, as a person reads and presses them'
   await page.waitForSelector(team);
   assert.equal(await page.$('.workspace-teams [data-sws-id="lab"]'), null, 'another Workspace\'s Team is not here');
   await page.click(team);
-  await page.waitForSelector('.workspace-teams .team-bar [data-launch="true"]');
+  await page.waitForSelector('.workspace-teams .team-one .team-bar [data-launch="true"]');
 
   // Its Epics: the Epics stones themselves, only this Workspace's, with their progress line; pressed, the Epic.
   const epic = `.workspace-fold-epics .epic-record-stones [data-sws-id="${ours}"]`;

@@ -25,6 +25,7 @@ import { renderMarkdownDocument } from './markdown-reader.js';
 import { subscribe as subscribeTeams, teamsFromState } from './team-controller.js';
 import { createEpicStones, createEpicsRead } from './epics-surface.js';
 import { createTeamRosterSurface } from './team-roster-surface.js';
+import { createTeamOne } from './team-one.js';
 import { teamEpicIds } from './team-epics.js';
 import { isOpenEpic } from './epic-stage.js';
 import { listedTeam } from './roster-groups.js';
@@ -549,37 +550,22 @@ function workspaceDoc(w) {
 
 /**
  * THE TEAMS OF A WORKSPACE (KAN-801): the Teams stones themselves, bare and fixed to this Workspace
- * (team-roster-surface.js), as workspaceEpics takes the Epic stones. Pressed, a Team opens in its bar's
- * grammar (cowork-view.js leagueTeamBody): its name with Launch, its concept in full, the lifecycle
- * line along its foot. The whole one-Team view joins when team_mindset exports it.
+ * (team-roster-surface.js), as workspaceEpics takes the Epic stones. Pressed, a Team opens under them
+ * as the Teams page opens it (team-one.js createTeamOne): its bar with Launch, its Agents and Epics.
+ * One open at a time: the last one shown is let go when another opens or this goes.
  */
-function teamOpened(name) {
-  const team = teamsFromState().find((one) => one.name === name);
-  const root = el('div', 'epic-detail team-detail');
-  const launch = WorkspaceKit.primitives.createAction({ label: t('league.launch_team', 'Launch'), launch: true, size: 'compact', action: () => openWorkspaceTab('team', name) });
-  const actions = el('span', 'item-bar-state team-bar-actions');
-  actions.append(launch.el);
-  const head = el('span', 'item-bar-head team-bar-head');
-  head.append(el('span', 'item-bar-title team-bar-title', String(team?.title || '').trim() || name), actions);
-  const objective = el('span', 'item-bar-objective team-bar-objective', String(team?.objective || '').trim());
-  objective.hidden = !objective.textContent;
-  const line = createLifecycle('line');
-  line.update(team?.items || []);
-  const bar = el('div', 'item-bar item-bar-lean team-bar');
-  bar.append(head, objective, line.el);
-  root.append(bar);
-  return { el: root };
-}
 function workspaceTeams(w) {
   const host = el('div', 'workspace-teams');
   const empty = el('p', 'fs-step-help', t('workspaces.no_teams', 'No Team works in this Workspace yet.'));
-  const stones = createTeamRosterSurface({ bare: true, roots: [w.name], teamDetail: teamOpened });
+  let shown = null;
+  const teamDetail = (name) => { shown?.destroy?.(); shown = createTeamOne(name); return shown; };
+  const stones = createTeamRosterSurface({ bare: true, roots: [w.name], teamDetail });
   host.append(empty, stones.el);
   const paint = () => { empty.hidden = Boolean(teamsIn(w).length); };
   const stop = subscribeTeams(paint);
   paint();
   stones.render();
-  return { el: host, destroy: () => { stop?.(); stones.destroy(); } };
+  return { el: host, destroy: () => { stop?.(); shown?.destroy?.(); shown = null; stones.destroy(); } };
 }
 
 /** The Epics of a Workspace: the Epics its Teams or their Agents hold (each Team roster's `epics`),
