@@ -163,15 +163,8 @@
   .sws:is(.epic-record-stones, .team-roster-phalanx)[data-open='true'] .sws-grid { grid-template-columns: var(--sws-stone); }
   .epics-records > .wk-surface-content > .epic-empty { padding: var(--space-inset); }
   .epic-source[hidden] { display: none; }
-  .team-bar { display: flex; flex-direction: column; gap: var(--space-inline); padding: var(--space-inline) var(--space-inset); border: var(--edge) solid var(--line-2); border-radius: var(--radius-hair); background: var(--surface); }
-  .team-bar-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-inline); }
-  .team-bar-title { flex: 1 1 16rem; margin: 0; color: var(--fg-strong); font-size: var(--text-body); font-weight: var(--weight-strong); overflow-wrap: anywhere; }
-  .team-bar-actions { display: flex; flex-wrap: wrap; gap: var(--space-inline); }
-  .team-bar-actions .wk-action[hidden] { display: none; }
   .epic-launch, .workspace-launch { text-decoration: none; }
-  .team-bar-objective { margin: 0; color: var(--fg); font-size: var(--text-body); white-space: pre-wrap; overflow-wrap: anywhere; }
-  .team-bar-objective[hidden], .epic-bar-said[hidden] { display: none; }
-  .team-bar-foot { display: flex; align-items: center; gap: var(--space-inline); }
+  .epic-bar-said[hidden] { display: none; }
   .epic-bar-said { margin: 0; color: var(--warn); font-size: var(--text-body); }
   /* THE TEAM'S EPICS on the Team workbench (KAN-232): the card is flush (createSurface's flush): the
      board inside keeps its own inset, and nothing here reaches into the kit. */

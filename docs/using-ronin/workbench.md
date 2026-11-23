@@ -153,15 +153,15 @@ holding nothing has no line. Flagged Teams come first, then by name.
 **Workspace** narrows the stones to the Teams in those Workspaces. Agents outside any Team are one
 more stone, **No Team**, last and plain, while there are any.
 
-Press a stone and the stones fold to the left while the Team opens beside them, in a bar like an
-Epic's: its name with **Launch** (the Team's own workbench; No Team's opens one
-workbench for those Agents), its concept in full, the Workspace it covers with that Workspace's
-repositories, and its item lifecycle. Under
-it, its **Agents** (one bar per
+Press a stone and the stones fold to the left while the Team opens beside them, in the bar an
+Epic has on its own page: its name with **Launch** (the Team's own workbench; No Team's opens one
+workbench for those Agents), its concept in full, a muted line of facts (the Workspace it covers
+with that Workspace's repositories, how many Agents, how many open items) and its item lifecycle
+along its foot. Under it, three lines that expand and collapse: **Agents**, open on arrival (one bar per
 Agent, as an Epic's item bars: the lead's first with 人, then those needing you; each bar its name
 and live dot, ⚑ when flagged, what it is doing now, its open count and what needs you, and a
-progress line along its foot; pressing a bar opens that Agent beside the Team; **New Agent** at
-the foot), then two lines, closed until you press one, that expand and collapse: **Epics** (the
+progress line along its foot; pressing a bar opens that Agent beside the Team; an Agent is added to a Team where Agents are
+made, not here), then, closed until you press them, **Epics** (the
 Team's open Epics as Epic stones, each with its progress line; press one to read it beside them,
 with **Launch** to its own page) and **Configuration** (the Team's configuration form, **Delete
 team** at its foot). No Team has its Agents only. Press the stone again or Escape to go back. The
