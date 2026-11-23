@@ -33,7 +33,7 @@ import { AsyncLocalStorage } from 'node:async_hooks';
 import { initialCampaignId } from './campaign-scope.js';
 import { listSessions } from './tmux.js';
 import { emitItemChanged } from './sockets.js';
-import { listWorkspaceHolds, readWorkspace, readWorkspaceHolds, writeWorkspaceHolds } from './workspaces.js';
+import { listWorkspaceHolds, readWorkspace, readWorkspaceHolds, removeWorkspaceHolds, writeWorkspaceHolds } from './workspaces.js';
 
 export const ITEM_LEVELS = [1, 0, -1] as const;
 export const TRAIL_OPS = ['create', 'assign', 'handoff', 'release', 'move', 'status', 'edit', 'comment', 'flag', 'attach', 'link', 'holder-ended', 'rename', 'delete'] as const;
@@ -1080,47 +1080,49 @@ export async function linkItem(id: string, type: string, other: string, by: stri
  * was, and a line { op: 'delete', by: the deleter, from: the named id on a subtask taken with
  * it }. */
 export function deleteItem(given: string, by: string): Promise<{ deleted: string[]; orphaned: string[] }> {
-  return withIssuer(async () => {
-    const id = (await load(given)).id;
-    // A playbook item's delete is Delete my version: the custom-foundation goes, and the stock
-    // one, if there is one, reads again. Nothing else moves.
-    if (isPlaybook(id)) { await rm(fileOf(id), { force: true }); return { deleted: [id], orphaned: [] }; }
-    const all = await listItems();
-    const deleted: string[] = [];
-    const collect = (at: string): void => {
-      deleted.push(at);
-      for (const child of all.filter((other) => other.parent === at && other.level === -1 && !deleted.includes(other.id))) collect(child.id);
-    };
-    collect(id);
-    const orphaned: string[] = [];
-    for (const other of all.filter((item) => !deleted.includes(item.id))) {
-      const orphan = other.parent !== null && deleted.includes(other.parent);
-      const links = other.links.filter((link) => !deleted.includes(link.to));
-      if (!orphan && links.length === other.links.length) continue;
-      const lines: TrailLine[] = [];
-      if (orphan) {
-        lines.push(lineOf(by, 'move', { from: other.parent!, to: 'none', note: `level ${other.level}; ${other.parent} was deleted` }));
-        other.parent = null;
-        orphaned.push(other.id);
-      }
-      if (links.length !== other.links.length) lines.push(lineOf(by, 'link', { note: 'links to deleted items removed' }));
-      other.links = links;
-      other.trail.push(...lines);
-      await save(other);
-      for (const line of lines) emitItemChanged({ item: other, line });
+  return withIssuer(() => deleteUnlocked(given, by));
+}
+
+async function deleteUnlocked(given: string, by: string): Promise<{ deleted: string[]; orphaned: string[] }> {
+  const id = (await load(given)).id;
+  // A playbook item's delete is Delete my version: the custom-foundation goes, and the stock
+  // one, if there is one, reads again. Nothing else moves.
+  if (isPlaybook(id)) { await rm(fileOf(id), { force: true }); return { deleted: [id], orphaned: [] }; }
+  const all = await listItems();
+  const deleted: string[] = [];
+  const collect = (at: string): void => {
+    deleted.push(at);
+    for (const child of all.filter((other) => other.parent === at && other.level === -1 && !deleted.includes(other.id))) collect(child.id);
+  };
+  collect(id);
+  const orphaned: string[] = [];
+  for (const other of all.filter((item) => !deleted.includes(item.id))) {
+    const orphan = other.parent !== null && deleted.includes(other.parent);
+    const links = other.links.filter((link) => !deleted.includes(link.to));
+    if (!orphan && links.length === other.links.length) continue;
+    const lines: TrailLine[] = [];
+    if (orphan) {
+      lines.push(lineOf(by, 'move', { from: other.parent!, to: 'none', note: `level ${other.level}; ${other.parent} was deleted` }));
+      other.parent = null;
+      orphaned.push(other.id);
     }
-    for (const at of deleted) {
-      const item = all.find((one) => one.id === at)!;
-      emitItemChanged({ item, line: lineOf(by, 'delete', { from: at === id ? undefined : id }) });
-    }
-    for (const at of deleted) {
-      await takeOffEveryList(at);
-      await rm(fileOf(at));
-      itemRemoved(at);
-    }
-    await rewriteWatches((watches) => watches.filter((watched) => !deleted.includes(watched)));
-    return { deleted, orphaned };
-  });
+    if (links.length !== other.links.length) lines.push(lineOf(by, 'link', { note: 'links to deleted items removed' }));
+    other.links = links;
+    other.trail.push(...lines);
+    await save(other);
+    for (const line of lines) emitItemChanged({ item: other, line });
+  }
+  for (const at of deleted) {
+    const item = all.find((one) => one.id === at)!;
+    emitItemChanged({ item, line: lineOf(by, 'delete', { from: at === id ? undefined : id }) });
+  }
+  for (const at of deleted) {
+    await takeOffEveryList(at);
+    await rm(fileOf(at));
+    itemRemoved(at);
+  }
+  await rewriteWatches((watches) => watches.filter((watched) => !deleted.includes(watched)));
+  return { deleted, orphaned };
 }
 
 /** Keystone 3: a paired item's Ronin id is its Jira key. One call rewrites the item's file and
@@ -1542,6 +1544,22 @@ async function iceboxUnlocked(campaign: string, workspace: string): Promise<Work
 
 /** The Workspace's Icebox, made now if it has none (or its epic was deleted). */
 export const ensureIcebox = (campaign: string, workspace: string): Promise<WorkItem> => withIssuer(() => iceboxUnlocked(campaign, workspace));
+
+/** Deleting a Workspace deletes its Icebox (KAN-786): every idea under the epic, the epic, then
+ * the holds file. Each goes through Jira's delete, so the bridge hears of it. */
+export function deleteIcebox(campaign: string, workspace: string, by: string): Promise<string[]> {
+  return withIssuer(async () => {
+    const { icebox } = await readWorkspaceHolds(campaign, workspace);
+    const epic = icebox ? await readItem(icebox) : null;
+    const gone: string[] = [];
+    if (epic) {
+      for (const idea of (await listItems()).filter((one) => one.parent === epic.id)) gone.push(...(await deleteUnlocked(idea.id, by)).deleted);
+      gone.push(...(await deleteUnlocked(epic.id, by)).deleted);
+    }
+    await removeWorkspaceHolds(campaign, workspace);
+    return gone;
+  });
+}
 
 /** Every Icebox epic's id now, in every Campaign. */
 export async function iceboxIds(): Promise<Set<string>> {
