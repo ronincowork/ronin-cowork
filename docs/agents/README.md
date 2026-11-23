@@ -61,5 +61,3 @@ explicit. Authentication Behaviors express owner policy and link here for CLI me
 - `src/tmux.ts`, `src/session-archive.ts`, `src/routes/sessions-api.ts`: live identity and archive/resume.
 - `src/terminal-controls.ts`: read the Agent document and dispatch using persisted CLI identity; no screen detection.
 - [Provider contract](../architecture/model-providers.md): extension and owner-overlay rules.
-- Tests: `tests/agents.test.ts` launches, archives and restores each CLI as a stub that
-  records its command line. It checks Ronin; it does not certify a live CLI journey.

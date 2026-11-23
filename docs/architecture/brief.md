@@ -434,7 +434,7 @@ Every tool is a command on your PATH; `<tool> --help` gives its syntax.
 
 There is no backward compatibility: the model is for new installs, and no old store or record
 shape is read. A test or rig that starts the server sets `RONIN_USER_ROOT`, `RONIN_DATA_ROOT`
-and `HOME` to its own folders (`tests/helpers/ronin.ts`), so it never writes the real stores.
+and `HOME` to its own folders, so it never writes the real stores.
 
 ## Playbooks
 

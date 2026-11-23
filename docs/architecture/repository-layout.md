@@ -48,7 +48,6 @@ ronin-cowork/
 │   ├── routes/              HTTP resource and operation adapters
 │   ├── services/            generated Services runtime placement; never author here
 │   └── ws/                  websocket transport boundaries
-├── tests/                   behavior and contract tests mirroring owned surfaces
 ├── artifacts/               disposable diagnostic output; never product authority
 ├── AGENTS.md                contributor routing for coding agents
 ├── CLAUDE.md                provider-native contributor routing adapter

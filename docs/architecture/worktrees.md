@@ -151,7 +151,3 @@ worktrees are preserved to named recovery refs and receipts before cleanup.
   at the combined integration/release gate; see [verification guidance](../development/verification.md).
 - Do not delete worktrees, branches, registry rows, receipts, or recovery state implicitly.
 
-## Executable coverage
-
-`tests/promotion.test.ts` walks a managed repository through desk open, commit, hand-in and
-promotion into `dev`, and a failed health check reverted.

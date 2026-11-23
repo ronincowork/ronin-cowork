@@ -35,11 +35,11 @@ their private task progression merely to prove activity.
 
 ## Implementation trail
 
-| Step / supporting mechanism | Entry and authority | Focused evidence |
-|---|---|---|
-| Team-held work item → hand off to an Agent → return | [work-items-api.ts](../src/routes/work-items-api.ts) → [work-items.ts](../src/work-items.ts) → holder lists in [team-rosters.ts](../src/team-rosters.ts) / [tegami.ts](../src/tegami.ts) | [tools.test.ts](../tests/tools.test.ts) |
-| Agent-authored work | [work-record](../ronin_bin/work-record) → [work-record-write](../libexec/work-record-write); [tegami-read.ts](../src/tegami-read.ts) reads the result | [tools.test.ts](../tests/tools.test.ts) |
-| Messages / wipeboards / Cron jobs | Their writers and APIs in the [state inventory](state-inventory.md) | [tools.test.ts](../tests/tools.test.ts) (`edges send`), [terminal.test.ts](../tests/terminal.test.ts) (the Message box) |
-| Private worktree → hand-in | [worktree-desk](../ronin_bin/worktree-desk) → [commands/desk.ts](../src/commands/desk.ts) → [hand-in.ts](../src/desks/hand-in.ts) | [promotion.test.ts](../tests/promotion.test.ts) |
-| Team review → global dev | [promote.ts](../src/promotion/promote.ts), [receipts.ts](../src/promotion/receipts.ts) | [promotion.test.ts](../tests/promotion.test.ts) |
-| Work items reading | [work-items-read.ts](../src/work-items-read.ts) `teamReading` → `GET /api/work-items?team=` → [work-items-surface.js](../public/js/work-items-surface.js) | [tools.test.ts](../tests/tools.test.ts) |
+| Step / supporting mechanism | Entry and authority |
+|---|---|
+| Team-held work item → hand off to an Agent → return | [work-items-api.ts](../src/routes/work-items-api.ts) → [work-items.ts](../src/work-items.ts) → holder lists in [team-rosters.ts](../src/team-rosters.ts) / [tegami.ts](../src/tegami.ts) |
+| Agent-authored work | [work-record](../ronin_bin/work-record) → [work-record-write](../libexec/work-record-write); [tegami-read.ts](../src/tegami-read.ts) reads the result |
+| Messages / wipeboards / Cron jobs | Their writers and APIs in the [state inventory](state-inventory.md) |
+| Private worktree → hand-in | [worktree-desk](../ronin_bin/worktree-desk) → [commands/desk.ts](../src/commands/desk.ts) → [hand-in.ts](../src/desks/hand-in.ts) |
+| Team review → global dev | [promote.ts](../src/promotion/promote.ts), [receipts.ts](../src/promotion/receipts.ts) |
+| Work items reading | [work-items-read.ts](../src/work-items-read.ts) `teamReading` → `GET /api/work-items?team=` → [work-items-surface.js](../public/js/work-items-surface.js) |

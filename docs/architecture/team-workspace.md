@@ -285,7 +285,7 @@ keyboard · `5acb840` `edges page` · `a6819eb` the roster in its view · `04120
 `7c5c619` the head row and Team Configuration finished on measurement.
 
 The surface was verified by Playwright probes against the live page (`scripts/lib/ui-host.mjs`,
-`loadPlaywright()`), plus the repo gates (`check-modules`, `check-tests`) and
+`loadPlaywright()`), plus the repo gate (`check-modules`) and
 `scripts/smoke-ui.mjs`.
 The designated integrator runs one BYOIN mode on the release candidate; a SKIP is not a pass.
 

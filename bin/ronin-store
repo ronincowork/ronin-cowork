@@ -13,8 +13,7 @@
 # NEVER write a Ronin path by hand in a script. Call this.
 #
 # Two bindings of one table is a drift risk: change the table here, change it there,
-# in the same commit. tests/stores.test.ts writes through the server and reads back through
-# the tools that use this.
+# in the same commit.
 #
 # ONE LAYOUT, NO FALLBACKS. No legacy path, no legacy variable, no migration branch.
 set -euo pipefail

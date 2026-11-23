@@ -185,7 +185,3 @@ beside the line and the ref moves by one atomic `update-ref`.
   carries; `ChangeSetReceipt` is the shape it writes;
 - a repository's arrangement: `arrangementOf(name)` → its Workspace row (`rowArrangement`).
 
-## Tests
-
-`tests/promotion.test.ts`: real git in a temporary repository, a real Ronin: an Agent
-opens a desk, commits, hands in with its item, and the lead promotes the line into `dev`.

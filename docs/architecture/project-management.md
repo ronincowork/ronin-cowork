@@ -71,7 +71,6 @@ Each file's `when:` picks its readers; an Agent is told only its own.
 | `public/js/work-items-surface.js` | an item's reading (the overlay): `holderWords` ("Team <t> (lead <l>)", "@agent"), id, kind · level, origin |
 | `public/js/tile-island.js` | the item island: Done hidden, Subtasks folded under their Task, the hand-in mark |
 | `public/js/jira-panel.js` | Settings › Jira |
-| `tests/tools.test.ts`, `tests/stores.test.ts` | the tests |
 
 ## The live index
 

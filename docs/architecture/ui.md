@@ -530,8 +530,7 @@ reserving a gutter.
 use, the 700-line ceiling) · `smoke-ui` (the desktop Team page renders its tiles, seats
 and paints the gate's own probe session, and opens Configuration; the phone gets the
 mobile document's bar on its first paint; the probe ends through Ronin's Delete,
-`DELETE /api/sessions/:name`, so its session folder goes with it) · `tests/` (behaviour, through the real server:
-[verification](../development/verification.md)).
+`DELETE /api/sessions/:name`, so its session folder goes with it)).
 
 ## Agents are data, not branches
 
@@ -575,8 +574,7 @@ can only use one. There is deliberately no unauthenticated registration route.
 code, valid 30 minutes, for the case where a
 passkey will not offer itself and changing the password — which would log every other
 device out — is too big a hammer. `src/passkey.ts` holds the verification and
-`src/routes/passkey-api.ts` the routes; `tests/sign-in.test.ts` signs real assertions
-with a real P-256 key so the byte layout and the signature check are actually held.
+`src/routes/passkey-api.ts` the routes.
 
 No WebAuthn library was added: the browser hands back an already-decoded public key
 (`getPublicKey()`), which is the only part that would have wanted a CBOR parser.

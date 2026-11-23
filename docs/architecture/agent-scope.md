@@ -129,6 +129,3 @@ rig tmux server that then exits, so the helper sits in a `tmux-spawn` scope of i
 pane. That is the Codex daemon's shape. Old code (w624): the helper outlives both the Agent's
 end and its pane dying. New code: it is gone in both cases, and the start sweep stops the
 helpers the old code left.
-
-A test Ronin (`tests/helpers/ronin.ts`) gets a stub `systemctl`: its panes share the scope
-of whoever runs the tests, so the real one would stop the caller.

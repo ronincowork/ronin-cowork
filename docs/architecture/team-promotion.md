@@ -57,8 +57,3 @@ bin/ronin-promote pr <team>
 The command opens or updates the pull request from the current working line. GitHub runs
 `npm run verify` on the pull-request head.
 
-## Verification
-
-`tests/promotion.test.ts` promotes a real hand-in into `dev` through `bin/ronin-promote`
-(`--no-restart`), and reverts a promotion whose health check fails, against temporary
-repositories.
