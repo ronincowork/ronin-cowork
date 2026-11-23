@@ -751,7 +751,10 @@ export function createCoworkView(options = {}) {
     const paintAgents = () => {
       const list = membersOfTeam(name).map((member) => {
         const card = rows.get(member.name) || {};
-        const mine = held.get(member.name) || [];
+        // What an Agent holds is its work, an Epic too (owner, 2026-11-23): counted and drawn as a
+        // Task is; a Subtask stays its Task's step. (An Epic's or a Team's own summary still counts
+        // level-0 items only: there an Epic is the summary itself.)
+        const mine = (held.get(member.name) || []).map((item) => (item.level === 1 ? { ...item, level: 0 } : item));
         const open = mine.filter((item) => statusKey(item.status) !== 'done' && counted(item));
         lineOf(member.name).update(mine);
         const situation = mine.some((item) => item.flagged && statusKey(item.status) !== 'done') ? 'flagged' : agentSituation(card);
