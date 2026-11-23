@@ -79,25 +79,25 @@ test('the Teams page and one Team, as a person reads and presses them', async (t
   // One Team: its bar, a bar per Agent, then Agents, Epics and Configuration as lines that expand (Agents open).
   await page.click(stone);
   const agentsView = '.league-team-detail .league-team-view-agents';
-  await page.waitForSelector(`${agentsView} .team-agent-bar`);
+  await page.waitForSelector(`${agentsView} .team-agent-stone`);
   // Its bar, an Epic's: the name, Launch, the concept in full, the shared lifecycle line.
   assert.equal(await page.textContent('.league-team-detail .team-bar-title'), 'Shop');
   assert.equal(await page.textContent('.league-team-detail .team-bar-objective'), 'Run the shop.');
   assert.equal(await page.getAttribute('.league-team-detail .team-bar .lifecycle-line', 'data-band'), '4');
   assert.equal(await page.$('.league-team-detail .team-bar-coverage'), null, 'no facts line');
   assert.equal(await page.$('.league-team-detail .league-team-add'), null, 'no New Agent here');
-  assert.deepEqual(await page.$$eval(`${agentsView} .team-agent-bar`, (rows) => rows.map((row) => (row as HTMLElement).dataset.session)), ['ana', 'ben'], 'lead first');
-  // Ben's bar carries the shared line over the items he holds; Ana holds nothing and says so.
-  const line = `${agentsView} .team-agent-bar[data-session="ben"] .lifecycle.lifecycle-line`;
+  // The Agents as the Epic stones: lead first; Ben's line over what he holds and his open count.
+  const agentStone = (who: string) => `${agentsView} [data-sws-id="${who}"]`;
+  assert.deepEqual(await page.$$eval(`${agentsView} .team-agent-stone`, (rows) => rows.map((row) => (row as HTMLElement).dataset.swsId)), ['ana', 'ben'], 'lead first');
+  const line = `${agentStone('ben')} .lifecycle.lifecycle-line`;
   await page.waitForSelector(`${line}[data-empty="false"]`, { state: 'attached' });
   assert.equal(await page.getAttribute(line, 'data-band'), '4');
-  assert.equal(await page.textContent(`${agentsView} .team-agent-bar[data-session="ben"] .team-agent-size`), '1', 'Ben holds one open item');
-  assert.equal(await page.textContent(`${agentsView} .team-agent-bar[data-session="ana"] .team-agent-size`), '0');
-  // Pressed, an Agent opens in place: its Work items and its Configuration; pressed again, it closes.
-  await page.click(`${agentsView} .team-agent-bar[data-session="ben"]`);
-  await page.waitForSelector(`${agentsView} .team-agent[data-session="ben"] .team-agent-open .team-fold-agent-config`);
-  await page.click(`${agentsView} .team-agent-bar[data-session="ben"]`);
-  assert.equal(await page.$(`${agentsView} .team-agent[data-session="ben"] .team-agent-open`), null);
+  assert.equal(await page.textContent(`${agentStone('ben')} .stone-size`), '1', 'Ben holds one open item');
+  assert.equal(await page.textContent(`${agentStone('ana')} .stone-size`), '0');
+  // Pressed, an Agent opens beside its rail: its Work items and its Configuration.
+  await page.click(agentStone('ben'));
+  await page.waitForSelector(`${agentsView} .team-agent-open .team-fold-agent-config`);
+  await page.keyboard.press('Escape');
   // No view switch: Epics and Configuration are lines, closed until pressed.
   assert.equal(await page.$('.league-team-detail .league-team-toggle'), null, 'no view switch');
   assert.equal(await page.isVisible('.league-team-detail .league-team-view-config'), false);
@@ -115,7 +115,7 @@ test('the Teams page and one Team, as a person reads and presses them', async (t
   await page.waitForSelector('.team-roster-phalanx [data-sws-id=" unassigned"]');
   assert.equal(await page.textContent('.team-roster-phalanx [data-sws-id=" unassigned"] .sws-label'), 'No Team');
   await page.click('.team-roster-phalanx [data-sws-id=" unassigned"]');
-  await page.waitForSelector('.league-team-detail .team-agent-bar[data-session="solo"]');
+  await page.waitForSelector('.league-team-detail .league-team-view-agents [data-sws-id="solo"]');
   assert.equal(await page.textContent('.league-team-detail .team-bar-title'), 'No Team');
   assert.equal(await page.$('.league-team-detail .team-fold'), null, 'No Team has its Agents only');
   assert.deepEqual(errors, []);

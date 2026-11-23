@@ -38,6 +38,7 @@ import { registerWorkbenchCatalog, WORKBENCH_PROFILES as WB_PROFILES, WORKBENCH_
 import { createAgentCompositionReader, createAgentCompositionSurface } from './agent-composition.js';
 import { createTeamEpics, teamEpicIds } from './team-epics.js';
 import { createFindItem } from './team-find-item.js';
+import { createPhalanx } from './phalanx.js';
 import { createEpicRecord, createEpicStones, createEpicsRead, createItemBoard, createNewItem } from './epics-surface.js';
 import { counted, createLifecycle, statusKey } from './item-lifecycle.js';
 
@@ -673,21 +674,13 @@ export function createCoworkView(options = {}) {
     main.append(top, agentsFold.node);
     if (!holding) main.append(epicsFold.node, configFold.node);
     let held = new Map(); // agent name -> the items it holds, from the Team reading
-    const lines = new Map(); // agent name -> its progress line, kept so a bar compares the same node
+    const lines = new Map(); // agent name -> its progress line, kept so a stone compares the same node
     const lineOf = (agent) => { if (!lines.has(agent)) lines.set(agent, createLifecycle('line')); return lines.get(agent); };
-    // ONE BAR PER AGENT (owner, 2026-11-23), as an Epic's item bars under its bar: the lead's first
-    // (人), then each Agent, those needing you first. A bar is the Agent's name and live dot, ⚑ when
-    // flagged, what it is doing now, its open count and what needs you, and the shared lifecycle
-    // line along its foot. Pressing it opens that Agent's tile beside the Team. ONE AGENT MOVES,
-    // ONE BAR CHANGES (KAN-413): the kit's keyed list. No New Agent here (owner, 2026-11-23): an
-    // Agent is added to a Team where Agents are made.
-    const foot = null;
-    agents.classList.add('epic-bars');
-    // AN AGENT OPENED (owner, 2026-11-23), as a work item opens on an Epic's page: under its bar, two
-    // lines that expand and collapse: Work items (the Epics board's bars over what it holds,
+    // No New Agent here (owner, 2026-11-23): an Agent is added to a Team where Agents are made.
+    // AN AGENT OPENED (owner, 2026-11-23), beside its stone as an Epic's opens: two lines that
+    // expand and collapse: Work items (the Epics board's bars over what it holds,
     // epics-surface.js createItemBoard) and Configuration (the Agent's own: name, mandate and the
-    // rest, agent-composition.js). Kept per Agent, so a bar redrawn keeps what is open in it.
-    const opened = new Set();
+    // rest, agent-composition.js). Kept per Agent, so it keeps what is open in it.
     const panels = new Map();
     const panelOf = (agent) => {
       if (panels.has(agent)) return panels.get(agent);
@@ -709,58 +702,56 @@ export function createCoworkView(options = {}) {
       panels.set(agent, one);
       return one;
     };
-    const agentRows = WorkspaceKit.primitives.createKeyedList({
-      key: (row) => row.name,
-      shows: (row) => (row.foot ? '!foot' : JSON.stringify([row.name, !!row.team_lead, row.title, row.objective, row.mark, row.size, opened.has(row.name)])),
-      draw: (row) => {
-        if (row.foot) return foot;
-        // A SLIM BAR (owner, 2026-11-23): the name (人 for the lead) and, under it, the objective its
-        // work record states; one mark top right — ⚑ when flagged, else the pill's dot (solid while
-        // working, hollow just finished), else none; bottom right, small and grey, how many open
-        // items it holds; the shared lifecycle line along its foot.
-        const wrap = el('div', 'team-agent');
-        wrap.dataset.session = row.name;
-        const node = el('button', `item-bar item-bar-lean team-agent-bar${row.team_lead ? ' team-agent-lead' : ''}`);
-        node.type = 'button';
-        node.dataset.session = row.name;
-        if (row.mark === 'flagged') node.dataset.flagged = 'true';
-        node.setAttribute('aria-expanded', String(opened.has(row.name)));
-        const head = el('span', 'item-bar-head');
-        if (row.team_lead) head.append(el('span', 'team-agent-lead-mark', '人'));
-        head.append(el('span', 'item-bar-title', row.title));
-        node.append(head);
-        if (row.objective) node.append(el('span', 'item-bar-objective', row.objective));
-        if (row.mark) {
-          const mark = el('span', `team-agent-mark is-${row.mark}`, row.mark === 'flagged' ? '⚑' : '');
-          mark.title = row.markTitle;
-          node.append(mark);
-        }
-        node.append(el('small', 'stone-size team-agent-size', String(row.size)));
-        if (row.line) node.append(row.line);
-        node.addEventListener('click', () => {
-          if (!opened.delete(row.name)) opened.add(row.name);
-          paintAgents();
-        });
-        wrap.append(node);
-        if (opened.has(row.name)) { const panel = panelOf(row.name); wrap.append(panel.box); panel.board.paint(); }
-        return wrap;
+    // THE AGENTS AS STONES (owner, 2026-11-23), the Epic stones' grammar (createEpicStones): the
+    // name (人 for the lead) and, under it, the objective its work record states; one mark top right
+    // — ⚑ when flagged, else the pill's dot (solid working, hollow just finished), else none; bottom
+    // right, small and grey, how many open items it holds; the lifecycle line along its foot. A
+    // pressed stone opens beside the rail, as an Epic's does: its Work items and Configuration.
+    const stoneMarks = new Map(); // agent -> { node, mark, size }, kept: the phalanx compares a marker by identity
+    const marksOf = (agent, row) => {
+      if (!stoneMarks.has(agent)) {
+        const node = el('span', 'stone-marks');
+        const mark = el('span', 'team-agent-mark');
+        const size = el('small', 'stone-size');
+        node.append(lineOf(agent).el, mark, size);
+        stoneMarks.set(agent, { node, mark, size });
+      }
+      const one = stoneMarks.get(agent);
+      one.mark.className = `team-agent-mark${row.mark ? ` is-${row.mark}` : ''}`;
+      one.mark.textContent = row.mark === 'flagged' ? '⚑' : '';
+      one.mark.title = row.markTitle;
+      one.mark.hidden = !row.mark;
+      if (one.size.textContent !== String(row.size)) one.size.textContent = String(row.size);
+      return one.node;
+    };
+    const agentHost = el('div', 'team-agent-stones-host wk-surface-content');
+    const stonesOfAgents = createPhalanx({
+      className: 'epic-record-stones team-agent-stones',
+      renderDetail: (item, host) => {
+        const panel = panelOf(item.id);
+        host.append(panel.box);
+        panel.board.paint();
+        return () => {};
       },
     });
+    stonesOfAgents.mount(agentHost);
+    agents.append(agentHost);
     const paintAgents = () => {
       const list = membersOfTeam(name).map((member) => {
         const card = rows.get(member.name) || {};
         const mine = held.get(member.name) || [];
         const open = mine.filter((item) => statusKey(item.status) !== 'done' && counted(item));
-        const line = mine.length ? lineOf(member.name) : null;
-        line?.update(mine);
+        lineOf(member.name).update(mine);
         const situation = mine.some((item) => item.flagged && statusKey(item.status) !== 'done') ? 'flagged' : agentSituation(card);
         const mark = ['flagged', 'working', 'ready'].includes(situation) ? situation : '';
         return { name: member.name, team_lead: member.team_lead, title: agentTitle(member), objective: String(card.tegami?.objective || '').trim(),
-          mark, markTitle: mark ? situationTitle(agentTitle(member), mark) : '', size: open.length, line: line?.el || null };
+          mark, markTitle: mark ? situationTitle(agentTitle(member), mark) : '', size: open.length };
       }).sort((a, b) => Number(b.team_lead) - Number(a.team_lead) || Number(b.mark === 'flagged') - Number(a.mark === 'flagged') || a.title.localeCompare(b.title));
-      for (const [agent, panel] of panels) if (!list.some((row) => row.name === agent)) { panel.destroy(); panels.delete(agent); opened.delete(agent); }
-      agentRows.set(agents, foot ? [...list, { name: '!foot', foot: true }] : list);
-      for (const agent of opened) panels.get(agent)?.board.paint();
+      for (const [agent, panel] of panels) if (!list.some((row) => row.name === agent)) { panel.destroy(); panels.delete(agent); stoneMarks.delete(agent); }
+      stonesOfAgents.setItems(list.map((row) => ({ id: row.name, label: row.team_lead ? `人 ${row.title}` : row.title,
+        ...(row.objective ? { state: row.objective } : {}), marker: marksOf(row.name, row),
+        className: `team-agent-stone${row.mark === 'flagged' ? ' is-flagged' : ''}` })));
+      for (const panel of panels.values()) if (panel.box.isConnected) panel.board.paint();
     };
     const readWork = async () => {
       if (holding) return;
