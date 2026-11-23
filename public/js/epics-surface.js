@@ -295,7 +295,6 @@ export function createEpicBoard({ epicsRead, header = true, initial = '', strip:
   let selected = initial;
   let view = null;
   let source = null;
-  const continuation = el('p', 'item-title-continuation');
   let drawn = '';
   let sourceSaid = '';
   // Each stone's progress: the same lifecycle line as the Epics phalanx's stones (KAN-785).
@@ -339,7 +338,7 @@ export function createEpicBoard({ epicsRead, header = true, initial = '', strip:
     if (withStrip && selected && epics.length && !epics.some((epic) => epic.id === selected)) { selected = ''; view?.destroy(); view = null; }
     if (withStrip && !selected && epics.length === 1) selected = epics[0].id;
     const epic = epics.find((row) => row.id === selected);
-    const { shortTitle, longTitle } = splitItemTitle(epic ? (epic.title || epic.id) : '');
+    const { shortTitle } = splitItemTitle(epic ? (epic.title || epic.id) : '');
     if (out.header) out.header.title.textContent = epic ? shortTitle : t('epics.title', 'Epics');
     const signature = JSON.stringify([selected, epics.map((epic) => [epic.id, epic.title, epic.external?.jira?.key, epic.status, epic.holder,
       epicsRead.items(epic.id).map((item) => [item.status, item.level, item.flagged, item.holder])])]);
@@ -349,9 +348,7 @@ export function createEpicBoard({ epicsRead, header = true, initial = '', strip:
     }
     if (!epic && !withStrip) { view?.destroy(); view = null; below.replaceChildren(el('p', 'epic-empty', t('epics.not_found', 'This Epic is not open here.'))); return; }
     if (!epic) { below.replaceChildren(...(epics.length ? [el('p', 'epic-empty', t('epics.pick_epic', 'Pick an Epic to see its work items.'))] : [])); return; }
-    if (!view) { source = el('div', 'epic-source'); sourceSaid = ''; view = epicItems(selected, { epicsRead }); below.replaceChildren(continuation, source, view.el); }
-    if (continuation.textContent !== longTitle) continuation.textContent = longTitle;
-    continuation.hidden = !longTitle;
+    if (!view) { source = el('div', 'epic-source'); sourceSaid = ''; view = epicItems(selected, { epicsRead }); below.replaceChildren(source, view.el); }
     const said = JSON.stringify([selected, epic.holder, launch]);
     if (said !== sourceSaid) {
       sourceSaid = said;

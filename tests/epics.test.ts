@@ -125,7 +125,7 @@ test('the Epics page and one Epic\'s page, as a person reads and presses them', 
   assert.equal(await page.$(`${one} .epic-strip`), null, 'no row of Epic stones');
   assert.deepEqual(await page.$$eval(`${one} .epic-group-heading`, (nodes) => nodes.map((node) => node.textContent)), ['To Do · 1', 'In Review · 1']);
   assert.equal(await page.textContent(`${one} .epic-source`), 'Launch', 'Launch or nothing');
-  assert.equal(await page.locator(`${one} .item-title-continuation`).innerText(), 'refill by 07:20');
+  assert.equal(await page.$(`${one} .epics-board > .epic-board > .epic-board-body > .item-title-continuation`), null, 'no loose title line over the board');
   const bar = page.locator(`button.item-bar[data-item="${restock}"]`);
   assert.equal(await bar.locator('.item-bar-title').innerText(), 'Tea');
   assert.equal(await bar.getAttribute('data-tip'), 'Tea: refill the loose leaf: check stock first');
