@@ -26,6 +26,7 @@ import { subscribe as subscribeTeams, teamsFromState } from './team-controller.j
 import { createEpicStones, createEpicsRead } from './epics-surface.js';
 import { createTeamRosterSurface } from './team-roster-surface.js';
 import { teamEpicIds } from './team-epics.js';
+import { isOpenEpic } from './epic-stage.js';
 import { listedTeam } from './roster-groups.js';
 import { openWorkspaceTab } from './workspace.js';
 import { S } from './state.js';
@@ -534,7 +535,7 @@ function workspaceDoc(w) {
   } });
   const cancel = createAction({ label: t('workspaces.cancel', 'Cancel'), size: 'compact', action: () => { say(''); show(); } });
   const head = el('div', 'workspace-page-head');
-  head.append(el('span', 'wk-surface-header-title', t('workspaces.document', 'Document')), actions);
+  head.append(actions); // the fold's line names it
   box.append(head, said, view);
   show();
   void request(url, { cache: 'no-store' }).then((answer) => {
@@ -594,84 +595,81 @@ function workspaceEpics(w) {
   return stones;
 }
 
-/**
- * WORK (owner, 2026-11-22; KAN-784): the Workspace as it is lived in. Its life, one ERABI picking Teams
- * or Epics, each opening to drill into; beside it, its document. A narrow screen stacks them.
- */
-function workspaceWork(w) {
-  const host = el('div', 'workspace-work');
-  const life = el('section', 'workspace-life');
-  let kind = 'teams';
-  let shown = null;
-  const pick = ask([{ fields: [{ key: 'kind', label: t('workspaces.see', 'See'), options: [
-    { v: 'teams', l: t('campaign.coworks', 'Teams') },
-    { v: 'epics', l: t('workspaces.epics', 'Epics') },
-  ] }] }], { value: { kind }, density: 'tight', exposed: true, onChange: ({ kind: next }) => { kind = String(next || 'teams'); paint(); } });
-  const paint = () => {
-    shown?.destroy?.();
-    shown = kind === 'epics' ? workspaceEpics(w) : workspaceTeams(w);
-    life.replaceChildren(pick.el, shown.el);
-  };
-  paint();
-  host.append(life, workspaceDoc(w).el);
-  return { el: host, destroy: () => { shown?.destroy?.(); pick.destroy(); } };
-}
-
-// The view a Workspace surface last showed, kept while the page is open: a repaint after Save stays in Config.
-let lastView = 'work';
+// What a Workspace surface showed open, kept while the page is open (`${name}\0${fold}` -> open).
+const foldsOpen = new Map();
 
 /**
- * ONE WORKSPACE (owner, 2026-11-22; KAN-784; KAN-801): the opened Team's bar (cowork-view.js
- * leagueTeamBody: the item bar's classes), its name with the Work/Config toggle and Launch in the head,
- * its objective in full under them, the shared lifecycle line along its foot over what its Teams and
- * their Agents hold; then the view the toggle picks. Work is what is being done in it and its document
- * (workspaceWork); Config is its page (workspacePage: Folders, Integrations, Agent info, Behaviors),
- * its Save, − and ⋯ in the head only there. The same surface on the Workspaces stones, in a tilespace
- * and on its own route; `launch` adds Launch to it, `title` its name (a tilespace's header has it).
+ * ONE WORKSPACE (owner, 2026-11-23; KAN-784; KAN-801): an opened Team's grammar (cowork-view.js
+ * leagueTeamBody). Its bar: the name with Launch, its objective in full, the shared lifecycle line
+ * along its foot over what its Teams and their Agents hold. Pressing the bar opens its Configuration
+ * under it (workspacePage: Folders, Integrations, Agent info, Behaviors, its Save, − and ⋯); pressing
+ * again closes it. Below, lines that expand and collapse, each with its count: Teams (the Teams
+ * stones), Epics (the Epic stones) and Document (its one doc, never under Configuration). The same
+ * surface on the Workspaces stones, in a tilespace and on its own route; `launch` adds Launch,
+ * `title` its name (a tilespace's header has it).
  */
 function workspaceSurface(w, { workspacesRead, onDiscard = () => {}, launch = false, title = true }) {
-  const { createAction } = WorkspaceKit.primitives;
-  const root = el('div', 'epic-detail team-detail workspace-one');
-  const actions = el('span', 'item-bar-state team-bar-actions workspace-bar-actions');
+  const main = el('div', 'league-team-edit-content workspace-one');
+  const top = el('div', 'epic-detail team-detail');
+  const actions = el('span', 'item-bar-state team-bar-actions');
+  if (launch) actions.append(workspaceLaunch(w.name).el);
   const head = el('span', 'item-bar-head team-bar-head');
+  head.append(...(title ? [el('span', 'item-bar-title team-bar-title', w.title || w.name)] : []), actions);
   const objective = el('span', 'item-bar-objective team-bar-objective', String(w.objective || '').trim());
   objective.hidden = !objective.textContent;
   const line = createLifecycle('line');
-  const bar = el('div', 'item-bar item-bar-lean team-bar workspace-bar');
-  const body = el('div', 'workspace-one-body');
-  let view = lastView;
-  let current = null;
-  // The toggle: two kit actions, the one showing pressed.
-  const toggle = el('span', 'workspace-toggle');
-  toggle.setAttribute('role', 'group');
-  const views = [['work', t('workspaces.work', 'Work')], ['config', t('workspaces.config', 'Config')]].map(([key, label]) => {
-    const one = createAction({ label, size: 'compact', action: () => { if (view === key) return; view = lastView = key; paint(); } });
-    toggle.append(one.el);
-    return [key, one.el];
-  });
-  const launched = launch ? workspaceLaunch(w.name) : null;
-  const paint = () => {
-    current?.destroy?.();
-    for (const [key, node] of views) node.setAttribute('aria-pressed', String(key === view));
-    if (view === 'config') {
-      const page = workspacePage(w, { onSaved: () => void workspacesRead.read(), onDiscard });
-      current = page;
-      actions.replaceChildren(toggle, ...(launched ? [launched.el] : []), page.action.el, page.discard.el, page.more.el);
-      body.replaceChildren(page.el);
-    } else {
-      current = workspaceWork(w);
-      actions.replaceChildren(toggle, ...(launched ? [launched.el] : []));
-      body.replaceChildren(current.el);
+  const bar = el('div', 'item-bar item-bar-lean team-bar team-bar-pressable workspace-bar');
+  bar.append(head, objective, line.el);
+  // ITS CONFIGURATION, under the bar (owner, 2026-11-23: as the Team's and the Epic's).
+  const config = el('div', 'league-team-view team-config-open workspace-config');
+  let page = null;
+  const openConfig = (open) => {
+    config.hidden = !open;
+    foldsOpen.set(`${w.name}\0config`, open);
+    bar.setAttribute('aria-expanded', String(open));
+    if (open && !page) {
+      page = workspacePage(w, { onSaved: () => void workspacesRead.read(), onDiscard });
+      const tools = el('div', 'workspace-page-actions workspace-config-actions');
+      tools.append(page.action.el, page.discard.el, page.more.el);
+      config.append(tools, page.el);
     }
   };
-  head.append(...(title ? [el('span', 'item-bar-title team-bar-title', w.title || w.name)] : []), actions);
-  bar.append(head, objective, line.el);
-  const reline = () => line.update(itemsIn(w));
-  reline();
-  const stop = subscribeTeams(reline);
-  root.append(bar, body);
-  paint();
-  return { el: root, destroy: () => { stop?.(); current?.destroy?.(); } };
+  bar.setAttribute('role', 'button');
+  bar.tabIndex = 0;
+  bar.title = t('workspaces.config_toggle', 'Open or close this Workspace\'s configuration');
+  bar.addEventListener('click', (event) => { if (!event.target.closest('button, a, .lifecycle')) openConfig(config.hidden); });
+  bar.addEventListener('keydown', (event) => { if (event.target === bar && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); openConfig(config.hidden); } });
+  openConfig(foldsOpen.get(`${w.name}\0config`) === true);
+  top.append(bar, config);
+  // A FOLD (the Team's): a line naming what is under it, its count in brackets; built when first opened.
+  const built = [];
+  const fold = (key, label, build, openFirst) => {
+    const node = el('details', `team-fold team-fold-${key}`);
+    const summary = el('summary', 'team-fold-line', label);
+    const body = el('div', `team-fold-body league-team-view league-team-view-epics workspace-fold-${key}`);
+    node.append(summary, body);
+    let made = null;
+    const make = () => { if (made) return; made = build(); built.push(made); body.append(made.el); };
+    node.open = foldsOpen.get(`${w.name}\0${key}`) ?? openFirst;
+    node.addEventListener('toggle', () => { foldsOpen.set(`${w.name}\0${key}`, node.open); if (node.open) make(); });
+    if (node.open) make();
+    return { node, count: (n) => { const words = `${label} (${n})`; if (summary.textContent !== words) summary.textContent = words; } };
+  };
+  const teams = fold('teams', t('campaign.coworks', 'Teams'), () => workspaceTeams(w), true);
+  const epics = fold('epics', t('workspaces.epics', 'Epics'), () => workspaceEpics(w), true);
+  const doc = fold('doc', t('workspaces.document', 'Document'), () => workspaceDoc(w), true);
+  const every = createEpicsRead(() => '');
+  const recount = () => {
+    line.update(itemsIn(w));
+    teams.count(teamsIn(w).length);
+    const mine = new Set(teamsIn(w).flatMap((team) => [...teamEpicIds(team)]));
+    epics.count(every.list().filter((epic) => mine.has(epic.id) && isOpenEpic(epic)).length);
+  };
+  const stopTeams = subscribeTeams(recount);
+  const stopEpics = every.subscribe(recount);
+  recount();
+  main.append(top, teams.node, epics.node, doc.node);
+  return { el: main, destroy: () => { stopTeams?.(); stopEpics?.(); for (const one of built) one.destroy?.(); page?.destroy?.(); } };
 }
 
 /** The stones of Workspaces (owner, 2026-11-22; KAN-784; KAN-801): Layer 1, every Workspace a stone as
@@ -695,7 +693,7 @@ export function createWorkspaceStones({ workspacesRead, workbench, recordType = 
       host.scrollTop = 0;
       // Setup has no selector: its New Workspace is a stone, and the made Workspace opens in its place.
       if (item.id === NEW_STONE) {
-        const page = workspacePage(null, { taken: () => workspacesRead.list().map((w) => w.name), onSaved: async (saved) => { await workspacesRead.read(); lastView = 'config'; stones.select(saved.name); }, onDiscard: () => stones.refreshDetail() });
+        const page = workspacePage(null, { taken: () => workspacesRead.list().map((w) => w.name), onSaved: async (saved) => { await workspacesRead.read(); foldsOpen.set(`${saved.name}\0config`, true); stones.select(saved.name); }, onDiscard: () => stones.refreshDetail() });
         const head = el('div', 'workspace-page-head');
         const actions = el('div', 'workspace-page-actions');
         actions.append(page.action.el, page.discard.el);

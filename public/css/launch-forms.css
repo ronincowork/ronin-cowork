@@ -481,15 +481,17 @@
   .workspace-form .fs-sum { color: var(--muted); }
   /* One Workspace (KAN-784): its head is name · Work/Config · actions; the view under it. */
   .workspace-one { display: flex; flex-direction: column; gap: var(--space-paragraph); min-width: 0; }
-  /* ONE WORKSPACE'S BAR (KAN-801): the opened Team's (team-workspace.css .team-bar), the toggle and
-     Launch in its head; its line hidden while its Teams hold nothing; a Team opened inside it the same. */
-  :is(.workspace-one, .workspace-teams) .team-detail > .item-bar.team-bar { gap: var(--space-row); padding: var(--space-inset) var(--space-inset) calc(var(--space-inset) + 5px); font-size: var(--text-body); }
-  .workspace-bar-actions, .workspace-toggle { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-row); }
+  /* ONE WORKSPACE (KAN-801): the opened Team's (team-workspace.css .team-bar, .team-fold); its
+     Configuration's Save, − and ⋯ at the top right of it; a stone's line hidden while it holds nothing. */
   .workspace-record-stones .lifecycle-line[data-empty='true'] { display: none; }
-  /* Work: its life beside its document; each column at least 20rem, so a narrow screen stacks them. */
-  .workspace-work { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr)); gap: var(--space-subsection); align-items: start; min-width: 0; }
-  .workspace-life, .workspace-doc-pane { display: flex; flex-direction: column; gap: var(--space-paragraph); min-width: 0; }
-  .workspace-doc-pane .workspace-doc-text { width: 100%; box-sizing: border-box; }
+  .workspace-config-actions { justify-content: flex-end; padding-bottom: var(--space-row); }
+  .workspace-record-stones .sws-label { margin-block: auto; } /* the name in the middle of its stone, top to bottom, at its left (owner, 2026-11-23) */
+  /* ITS DOCUMENT (owner, 2026-11-23): one page, outlined, so what is shown reads as a document and not
+     a list of them; Edit at its top right turns the page to its text in the same outline. */
+  .workspace-doc-pane { display: flex; flex-direction: column; gap: var(--space-row); min-width: 0; }
+  .workspace-doc-pane > .workspace-page-head { justify-content: flex-end; padding-bottom: 0; border-bottom: 0; }
+  .workspace-doc-pane .workspace-doc { padding: var(--space-subsection); border: var(--edge) solid var(--line-2); border-radius: var(--radius-large); background: var(--surface); min-width: 0; }
+  .workspace-doc-pane .workspace-doc-text { width: 100%; box-sizing: border-box; border: 0; background: transparent; color: var(--fg); font: inherit; resize: vertical; }
   .workspace-route { min-height: 100%; overflow: auto; padding: var(--space-inset); background: var(--workbench-bg); min-width: 0; }
   .workspace-page-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-inline); padding-bottom: var(--space-row); border-bottom: var(--edge) solid var(--line); }
   .workspace-page-actions { display: flex; align-items: center; gap: var(--space-row); }

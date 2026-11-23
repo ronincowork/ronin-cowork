@@ -33,7 +33,7 @@ everything they need.
 Every Workspace has one doc: `~/ronin/office/workspaces/<name>.md`, made with the Workspace.
 It is the one place its notes live. It starts with a **Summary**, a few lines on what the
 Workspace is for and what is in it, then notes. A Workspace's **Work** view shows the whole doc
-beside its Teams or Epics; press **Edit** to change it there, then **Save**. `office read` shows each Summary. Agents read and
+under its Teams and Epics; press **Edit** to change it there, then **Save**. `office read` shows each Summary. Agents read and
 write it with `workspace-doc` (`workspace-doc --help`); it is a plain file, so you can open it
 too. A Workspace without a Summary gets one from the PLAYBOOK-2 [playbook](playbooks.md): a fresh
 Agent it is checked out to reads its folders and repositories, writes the Summary, and ends.
@@ -46,19 +46,19 @@ what its Teams and their Agents hold. ⚑ at the top right means something open 
 the small number at the bottom right is how many Teams work in it.
 Flagged Workspaces come first, then the rest by name. The last stone is **New Workspace**.
 
-Press a stone and that Workspace opens beside the stones, in a bar like an opened Team's: its name
-with **Work**, **Config** and **Launch**, its objective under them, its progress along the foot.
-**Work** and **Config** switch between its two views:
+Press a stone and that Workspace opens beside the stones, the way an opened Team does. At its top
+is its bar: its name with **Launch**, its objective, its progress along the foot. Press the bar to
+open its Configuration under it (Folders, Integrations, Agent info and Behaviors, with **Save**);
+press it again to close it. Below the bar are three lines, each opening and closing, with its count:
 
-- **Work** — the Workspace as it is worked in: on one side what is being done in it, on the other
-  [its doc](#its-doc). **Teams** or **Epics** picks the side: the Teams stones of this Workspace, or
-  the open Epics its Teams and their Agents hold, the same stones as on the Epics page. Press one to
-  open it beside them, each with **Launch** into its workbench. On a narrow screen the doc is under
-  them.
-- **Config** — its settings: Folders, Integrations, Agent info and Behaviors.
+- **Teams** — the Teams stones of this Workspace. Press one to open it beside them, with **Launch**
+  into its workbench.
+- **Epics** — the open Epics its Teams and their Agents hold, the same stones as on the Epics page.
+  Press one to open its board, with **Launch** into the Team working it.
+- **Document** — [its doc](#its-doc), as one page; **Edit** at its top right.
 
 **Launch** opens the Workspace on its own page, `#/workspace/<name>`, in a new browser tab, with the
-same two views and the whole page's room. A stone dragged into a tilespace opens it whole there.
+whole page's room. A stone dragged into a tilespace opens it whole there.
 
 **New Workspace** is two things: its **Name**, and its **Folders**. Press **Create**. Nothing is
 kept until you press Create.

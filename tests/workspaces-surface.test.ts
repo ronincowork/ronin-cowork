@@ -1,8 +1,8 @@
 /**
  * Workspaces: across Workspaces and inside one (KAN-780; KAN-784). Normal-size stones and no Agent
- * hints on the Workspaces page; one Workspace's Work (its Teams or Epics beside its document) or
- * Config (its record, no document); its Teams and Epics opened from there; its own page,
- * `#/workspace/<name>`, stacking life over document on a narrow screen.
+ * hints on the Workspaces page; one Workspace as an opened Team: its bar (pressed, its Configuration,
+ * no document), then its Teams, Epics and document; its own page, `#/workspace/<name>`, no sideways
+ * scroll on a narrow screen.
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -53,19 +53,17 @@ test('the Workspaces page and one Workspace, as a person reads and presses them'
   assert.equal((await page.textContent(`${stone} .stone-size`))?.trim(), '1', 'how many Teams work in it');
   assert.equal(await page.$('[data-workspace-view="workspaces"] .terminal-hints'), null, 'no Agent vocabulary or Session controls');
 
-  // One Workspace: Work first, its life beside its document; Config holds the record and no document.
+  // One Workspace: its bar, then Teams, Epics and its document; the bar pressed opens its Configuration.
   await page.click(stone);
-  await page.waitForSelector('.workspace-toggle');
-  const pressed = async () => page.$$eval('.workspace-toggle [aria-pressed="true"]', (nodes) => nodes.map((node) => node.textContent?.trim()));
-  assert.deepEqual(await pressed(), ['Work']);
-  assert.ok(await page.isVisible('.workspace-work .workspace-life'), 'its Teams or Epics');
-  assert.ok(await page.isVisible('.workspace-work .workspace-doc-pane'), 'its document, in Work');
-  await page.click('.workspace-toggle button:has-text("Config")');
-  assert.deepEqual(await pressed(), ['Config']);
-  assert.equal(await page.$('.workspace-doc-pane'), null, 'no document in Config');
-  assert.match(await page.textContent('.workspace-form') || '', /Folders/);
-  assert.ok(await page.isVisible('.workspace-bar-actions .wk-action:has-text("Save")'), 'Save only in Config');
-  await page.click('.workspace-toggle button:has-text("Work")');
+  await page.waitForSelector('.workspace-one .workspace-bar');
+  assert.ok(await page.isVisible('.workspace-one .team-fold-teams'), 'its Teams');
+  assert.ok(await page.isVisible('.workspace-one .team-fold-epics'), 'its Epics');
+  assert.ok(await page.isVisible('.workspace-one .workspace-doc-pane'), 'its document');
+  assert.equal(await page.isVisible('.workspace-config'), false, 'Configuration closed');
+  await page.click('.workspace-one .workspace-bar .item-bar-objective');
+  assert.match(await page.textContent('.workspace-config .workspace-form') || '', /Folders/);
+  assert.ok(await page.isVisible('.workspace-config-actions .wk-action:has-text("Save")'));
+  await page.click('.workspace-one .workspace-bar .item-bar-objective');
 
   // Its Teams: the Teams stones, Shop only; pressed, its bar with Launch.
   const team = '.workspace-teams [data-sws-id="shop"]';
@@ -75,14 +73,13 @@ test('the Workspaces page and one Workspace, as a person reads and presses them'
   await page.waitForSelector('.workspace-teams .team-bar [data-launch="true"]');
 
   // Its Epics: the Epics stones themselves, only this Workspace's, with their progress line; pressed, the Epic.
-  await page.click('.workspace-life .ask-opt:has-text("Epics")');
-  const epic = `.workspace-life .epic-record-stones [data-sws-id="${ours}"]`;
+  const epic = `.workspace-fold-epics .epic-record-stones [data-sws-id="${ours}"]`;
   await page.waitForSelector(epic);
-  assert.equal(await page.$(`.workspace-life [data-sws-id="${theirs}"]`), null, 'another Workspace\'s Epic is not here');
+  assert.equal(await page.$(`.workspace-fold-epics [data-sws-id="${theirs}"]`), null, 'another Workspace\'s Epic is not here');
   assert.ok(await page.$(`${epic} .lifecycle-line`), 'the shared progress line');
   assert.doesNotMatch(await page.textContent(epic) || '', /To Do/, 'no raw Epic Status on the stone');
   await page.click(`${epic} .sws-label, ${epic}`);
-  await page.waitForSelector('.workspace-life .epic-bar');
+  await page.waitForSelector('.workspace-fold-epics .epic-bar');
 
   // The document: Edit, Save, written to the one file.
   await page.click('.workspace-doc-pane .wk-action:has-text("Edit")');
@@ -93,12 +90,12 @@ test('the Workspaces page and one Workspace, as a person reads and presses them'
 
   // Its own page: the same surface; on a narrow screen its document under its life.
   await page.goto(`${ronin.base}/#/workspace/project_one`);
-  await page.waitForSelector('.workspace-route .workspace-toggle');
+  await page.waitForSelector('.workspace-route .workspace-bar');
   assert.match(await page.textContent('.workspace-route .workspace-doc') || '', /The shop website\./);
   const narrow = await open({ width: 402, height: 800 });
   await narrow.goto(`${ronin.base}/#/workspace/project_one`);
   await narrow.waitForSelector('.workspace-route .workspace-doc-pane');
-  const life = await narrow.locator('.workspace-route .workspace-life').boundingBox();
+  const life = await narrow.locator('.workspace-route .team-fold-epics').boundingBox();
   const doc = await narrow.locator('.workspace-route .workspace-doc-pane').boundingBox();
   assert.ok(life && doc && doc.y >= life.y + life.height - 1, 'stacked: the document under its life');
   assert.ok((await narrow.evaluate(() => document.documentElement.scrollWidth)) <= 402, 'no sideways scroll');
