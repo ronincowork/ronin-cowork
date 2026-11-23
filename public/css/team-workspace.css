@@ -86,7 +86,7 @@
      too, at body size with an inset all round, the line's height kept clear at the foot and the
      mark's width at the right. Doubled class: above style.css's shared item-bar rule (0,3,1). */
   .league-team-edit-content :is(.epic-bars, .epic-detail) :is(button, div).item-bar.item-bar { width: 100%; gap: var(--space-row); padding: var(--space-inset) var(--space-inset) calc(var(--space-inset) + 5px); font-size: var(--text-body); }
-  .league-team-edit-content :is(.epic-bars, .epic-detail) :is(button, div).item-bar.item-bar.team-agent-bar { padding-right: calc(var(--space-inset) + 1.5em); }
+  .league-team-edit-content :is(.epic-bars, .epic-detail) :is(button, div).item-bar.item-bar.team-agent-bar { padding-right: calc(var(--space-inset) + 1.5em); min-height: calc(2lh + var(--space-row) + var(--space-inset) * 2 + 5px); } /* two lines at least: the mark on the first, the count on the second (owner, 2026-11-23) */
   .league-team-edit-content .team-fold > summary.team-fold-line { font-size: var(--text-body); }
   .league-team-view-config { gap: var(--space-subsection); }
   /* A FOLD (owner, 2026-11-23): Epics and Configuration under the Agents, each a line that expands
