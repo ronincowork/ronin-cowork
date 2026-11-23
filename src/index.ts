@@ -70,15 +70,16 @@ import { isValidBoardName, seedHouseBoard, WIPEBOARD_DIR } from './wipeboards.js
 import { agentCounts, joinPresence, machine, presence, stampInput } from './presence.js';
 import { person, startOfficePeople } from './office-people.js';
 import { readOfficeRecord } from './office-record.js';
-import { handleEvents, mark, pushJikan, pushMessages, pushWipeboard, startSessionsBroadcast, watchStore } from './ws/events.js';
+import { changed, handleEvents, mark, pushJikan, pushMessages, pushWipeboard, startSessionsBroadcast, watchStore } from './ws/events.js';
 import { tmux as tmuxClient } from './tmux-client.js';
 import { handlePty } from './ws/pty.js';
 import { originAllowed, allowedOrigins } from './ws/origin.js';
 import { mountAssets, noCacheClient, publicFingerprint } from './assets.js';
-import { DocumentPathError, legacyDocumentPath, readDocumentFile, readProductDocumentFile, saveDocumentFile } from './document-file.js';
+import { DocumentPathError, absoluteDocumentPath, readDocumentFile, readProductDocumentFile, saveDocumentFile } from './document-file.js';
 import { checkTmuxServerCgroup } from './host-guard.js';
 import { startTeamLayers } from './team-layers.js';
-import { sockets, runStartedHooks, startBootHooks, stopBootHooks, mountServiceRoutes, noteService, noteServiceCapabilityPlan, noteServiceFailure, noteServiceParked } from './sockets.js';
+import { asSeat } from './seats.js';
+import { sockets, seatOfBearer, runStartedHooks, startBootHooks, stopBootHooks, mountServiceRoutes, noteService, noteServiceCapabilityPlan, noteServiceFailure, noteServiceParked } from './sockets.js';
 import { startSessionRetention } from './session-retention.js';
 import { discoverParts, partsToLoad } from './parts.js';
 import { initialCampaign } from './campaigns.js';
@@ -175,6 +176,19 @@ function issueSession(res: express.Response): boolean {
 
 // Ronin's sign-in: every route below it, and /files ahead of the body parsers.
 function signIn(req: express.Request, res: express.Response, next: express.NextFunction) {
+  // A gecko's token (KAN-734): the Services part says whose seat it is, on every call; the call is that seat's.
+  const bearer = req.headers.authorization?.startsWith('Bearer ') ? req.headers.authorization.slice(7) : '';
+  if (bearer && !sameSecret(bearer, cliToken)) {
+    return void seatOfBearer(bearer).then((found) => {
+      // res.locals.seat ({ seat, status }) tells a route the call is a seat's: the gecko connector refuses one without it.
+      if (found) { asSeat(req, found.seat); res.locals.seat = found; return next(); }
+      signedIn(req, res, next);
+    }, () => signedIn(req, res, next));
+  }
+  signedIn(req, res, next);
+}
+
+function signedIn(req: express.Request, res: express.Response, next: express.NextFunction) {
   // A peer on the operator's own socket is the user: the 0600 mode was the credential.
   if (isOperatorPeer(req) || checkAuth(req.headers)) return next();
   if (passwordAuthEnabled() && req.method === 'GET' && req.accepts(['json', 'html']) === 'html') {
@@ -375,9 +389,9 @@ app.get('/api/file', async (req, res) => {
       const safe = await readDocumentFile(req.query.root, file);
       return res.json(safe);
     }
-    const legacy = legacyDocumentPath(file);
-    const text = await fs.promises.readFile(legacy, 'utf8');
-    res.json({ path: legacy, text });
+    const full = await absoluteDocumentPath(file);
+    const text = await fs.promises.readFile(full, 'utf8');
+    res.json({ path: full, text });
   } catch (e) {
     if (e instanceof DocumentPathError) return res.status(e.status).json({ error: e.message });
     const code = (e as NodeJS.ErrnoException)?.code;
@@ -393,9 +407,9 @@ app.put('/api/file', express.text({ type: '*/*', limit: '8mb' }), async (req, re
     if (req.query.product === '1') return res.status(405).json({ error: 'Product documentation is read-only.' });
     if (req.query.root) await saveDocumentFile(req.query.root, file, text);
     else {
-      const legacy = legacyDocumentPath(file);
-      await fs.promises.access(legacy);
-      await fs.promises.writeFile(legacy, text, 'utf8');
+      const full = await absoluteDocumentPath(file);
+      await fs.promises.access(full);
+      await fs.promises.writeFile(full, text, 'utf8');
     }
     res.json({ ok: true, bytes: Buffer.byteLength(text) });
   } catch (e) {
@@ -406,8 +420,10 @@ app.put('/api/file', express.text({ type: '*/*', limit: '8mb' }), async (req, re
   }
 });
 
-app.get('/raw/*', (req, res) => {
+app.get('/raw/*', async (req, res) => {
   const file = '/' + String((req.params as Record<string, string>)[0] ?? '');
+  try { await absoluteDocumentPath(file); }
+  catch (e) { return res.status((e as DocumentPathError).status ?? 400).json({ error: (e as Error).message }); }
   res.sendFile(file, { dotfiles: 'allow', headers: { 'Cache-Control': 'no-store' } }, (e) => {
     if (!e || res.headersSent) return;
     const code = (e as NodeJS.ErrnoException)?.code;
@@ -515,6 +531,8 @@ startSessionsBroadcast({
 watchStore(WIPEBOARD_DIR, (file) => { void pushWipeboard(file.split('/')[0]!); });
 watchStore(storeDir('jikan'), (file) => { if (file.endsWith('.md')) void pushJikan(file.slice(0, -3)); });
 watchStore(storeDir('message_queue'), () => { void pushMessages(); });
+// A seat's file is its roster entry (the listing moves); its inbox is its tile's thread (the card's record part).
+watchStore(storeDir('seats'), (file) => { if (file.endsWith('.inbox.jsonl')) mark(file.slice(0, -12), 'record'); else if (file.endsWith('.json')) changed(); });
 void startOfficePeople(); // hosted office: who each browser is — src/office-people.ts
 void seedHouseBoard().catch((e) => console.error('[tmux-ronin] house board seed failed:', e));
 

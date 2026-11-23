@@ -6,6 +6,18 @@ installed integrations, and model providers) from Desk Settings (Desk identity,
 Team and Agent defaults, and Workspaces). This grouping changes presentation, not
 storage or inheritance.
 
+## Machine status
+
+Settings' **Machine status** card is the one complete account of this office: what is set up,
+what isn't and what is available. That covers the machine (hosted or self-hosted, Ronin's
+version, disk), the people, every model provider (installed, signed in, Activated or off), the
+GitHub CLI, onboarding's steps, each Workspace with its folders, repositories and Teams, every
+integration, connected or not, Ronin Services' parts, the defaults new Agents get and, in a hosted
+office, the Business Lounge account. Ronin gathers it from wherever each fact lives. **Write it
+now** saves it to `~/ronin/library/MACHINE_STATUS.md`, and the card shows what was written and
+when. Every Ronin's Settings has the card. Agents read the same text live with `office read`, and
+write the file with `office write`.
+
 Desks remain keyed Campaign records inside `machine_settings.json`. Each record has a stable id,
 title, description, desk profile, resolved desk choices, state, creation timestamp, and
 agent, Cowork, and template defaults.

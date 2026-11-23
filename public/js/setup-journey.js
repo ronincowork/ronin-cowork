@@ -43,13 +43,13 @@ export function irasshaiSteps(epics, items, order = []) {
 /** The line a press on a step not yet done sends her, in the person's name: the step as they see it, never an id (KAN-699). */
 export const takeStepLine = (step) => `Let's do ${step.title}.`;
 
-/** Irasshai's chat (KAN-617): a record as her chat draws it, or null. See setup-irasshai.js. */
-const HEAD = /^From [^\n]*\[([^\]\n]+)\]:\n/;
-const PERSON_CHANNELS = ['Message box', 'Ronin Box'];
+/** Irasshai's chat (KAN-617): a record as her chat draws it, or null. See setup-irasshai.js. The
+ *  person's own message reaches here already without its head (tile-transcript.js, KAN-758); a
+ *  record still under a head is another delivery. */
+const HEAD = /^From [^\n]*\[[^\]\n]+\]:\n/;
 export function irasshaiShown(rec) {
   if (rec?.role !== 'user') return rec;
   const text = String(rec.text || '');
-  const head = text.match(HEAD);
-  if (head) return PERSON_CHANNELS.includes(head[1]) ? { ...rec, text: text.slice(head[0].length) } : null;
+  if (HEAD.test(text)) return null;
   return /^\s*Read first: \S*AGENT_BIRTH_BRIEF\.md\b/.test(text) ? null : rec;
 }

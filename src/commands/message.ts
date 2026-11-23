@@ -17,9 +17,15 @@ if (!isValidName(target) || !text || (explicitHouseFrom && !isValidName(houseFro
 const from = source === 'tell'
   ? await messageSender()
   : houseFrom ? `@${houseFrom}` : undefined;
-if (!(await listSessions()).some((session) => session.name === target)) {
-  console.log(`NO-SESSION: send failed, no session named "${target}"; nothing was queued.`);
+const sessions = await listSessions();
+// A Team is told through its live lead(s), the way every notice reaches a Team (work-items.ts namesOf).
+const to = sessions.some((session) => session.name === target) ? [target]
+  : sessions.filter((session) => session.leads.includes(target) && session.name !== from).map((session) => session.name);
+if (!to.length) {
+  console.log(`NO-SESSION: send failed, no session or led Team named "${target}"; nothing was queued.`);
   process.exit(3);
 }
-const item = await enqueueMessage(target, text, source, from);
-console.log(`QUEUED for '${target}' (message ${item.id}).`);
+for (const name of to) {
+  const item = await enqueueMessage(name, text, source, from);
+  console.log(`QUEUED for '${name}'${name === target ? '' : ` (lead of ${target})`} (message ${item.id}).`);
+}

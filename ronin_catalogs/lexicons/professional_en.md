@@ -1060,6 +1060,15 @@ The pad's current config downloads as a backup first.
 - **koe.speak_failed:** Read aloud failed ({status}).
 - **koe.speed_help:** Playback speed — press for the next
 
+## seat — seat-view.js (a gecko's tile: its status line, work record and Tells thread; KAN-755)
+- **seat.thread:** Tells
+- **seat.status:** Status line: {status}
+- **seat.status_none:** No status line.
+- **seat.task:** Task at hand: {objective}
+- **seat.to:** To @{name}
+- **seat.from:** From {name} [{channel}]
+- **seat.empty:** No Tells yet. What you send here goes to its inbox; it reads it when it next looks.
+
 ## transcript — tile-transcript.js (the tile's journal view)
 - **transcript.title:** Transcript
 - **transcript.toggle:** Transcript
@@ -1457,6 +1466,13 @@ The pad's current config downloads as a backup first.
 - **campaign_view.machine_settings:** Machine Settings
 - **campaign_view.cloud_account:** Cloud Account
 - **campaign_view.cloud_account_summary:** Account, office, subscription and house-model usage, as Ronin HQ records it. Read-only.
+- **machine_status.title:** Machine status
+- **machine_status.summary:** What this office has set up, what it hasn’t and what is available, in one doc any Agent reads. Write it now from here.
+- **machine_status.where:** Written to {path}. Agents read it there, or live with office read.
+- **machine_status.never:** Not written yet on this machine. Write it now saves what is set up, what isn’t and what is available.
+- **machine_status.stamp:** Written {when}
+- **machine_status.write:** Write it now
+- **machine_status.failed:** Ronin could not write it.
 
 ## behaviours — behaviour-surface.js
 - **behaviours.title:** Behaviors

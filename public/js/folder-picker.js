@@ -47,6 +47,7 @@ export function createFolderPicker({ onChange = () => {}, take = t('folders.choo
     const result = await request('/api/folders?' + qs, { cache: 'no-store' });
     if (!result.ok) { listing.replaceChildren(el('span', 'bad', result.message)); return; }
     current = result.data.dir; homeDir = result.data.home; parent = result.data.parent;
+    hiddenLabel.hidden = result.data.hidden_shown === false; // an office never shows hidden folders
     back.disabled = !parent;
     crumbs.replaceChildren();
     const relative = current === homeDir ? [] : current.slice(homeDir.length + 1).split('/');

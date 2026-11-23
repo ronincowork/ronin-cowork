@@ -3,15 +3,18 @@ import { open, realpath, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { workspaceFolders } from './workspaces.js';
 import { REPO_ROOT } from './resources.js';
+import { HIDDEN_REFUSED, refusedHere } from './open-places.js';
 
 export class DocumentPathError extends Error {
   constructor(message: string, readonly status = 400) { super(message); }
 }
 
-/** Preserve the established Docs shelf contract when no registered root is supplied. */
-export function legacyDocumentPath(requestedPath: unknown): string {
+/** A document named by its full path (a tile's Docs, a Chat link): itself, unless this machine
+ * never opens it (open-places.ts: a hidden path in an office), as written or as it resolves. */
+export async function absoluteDocumentPath(requestedPath: unknown): Promise<string> {
   const file = String(requestedPath ?? '');
   if (!file.startsWith('/')) throw new DocumentPathError('An absolute path is required.');
+  if (await refusedHere(file, await realpath(file).catch(() => ''))) throw new DocumentPathError(HIDDEN_REFUSED, 403);
   return file;
 }
 
@@ -42,6 +45,7 @@ export async function resolveDocumentFile(rootName: unknown, requestedPath: unkn
   try { rootPath = await realpath(root.dir); }
   catch { throw new DocumentPathError('That workspace folder is unavailable.', 404); }
   if (!containedBy(rootPath, canonical)) throw new DocumentPathError('That document is outside the Workspace folder.', 403);
+  if (await refusedHere(candidate, canonical)) throw new DocumentPathError(HIDDEN_REFUSED, 403);
   const facts = await stat(canonical);
   if (!facts.isFile()) throw new DocumentPathError('No such file.', 404);
   return canonical;

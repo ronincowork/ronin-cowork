@@ -2060,6 +2060,12 @@ body {
 .st-blurb.bad {
   color: var(--bad);
 }
+.st-status-text {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: var(--text-body);
+}
 .st-stamp {
   color: var(--muted);
   font-size: var(--text-small);
@@ -3185,6 +3191,48 @@ body {
 /* The Agent stopped at a question: its words, in the colour that means act. */
 .tile-transcript-entry[data-kind='ask'] { color: var(--bad); }
 .tile .tile-transcript { display: none; }
+/* A GECKO'S TILE (js/seat-view.js): its status line and work record, then its Tells thread,
+   then the message box, one column like Chat. The terminal's keys have nothing to act on. */
+.tile .tile-seat { display: none; }
+.tile-body[data-surface='seat'] { display: flex; flex-direction: column; padding: 0; }
+.tile-body[data-surface='seat'] > .tile-seat {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  color: var(--fg);
+  background: var(--tile-bg);
+  font: var(--text-label)/var(--leading-body) var(--font-ui);
+}
+.tile-seat-head {
+  flex: none;
+  max-height: 40%;
+  overflow: auto;
+  padding: var(--space-inline);
+  border-bottom: var(--edge) solid var(--line);
+  background: var(--surface);
+}
+.tile-seat-head p { margin: 0; overflow-wrap: anywhere; }
+.tile-seat-head p + p { margin-top: var(--space-row); }
+.tile-seat-status { color: var(--fg-strong); font-weight: var(--weight-strong); }
+.tile-seat-item { color: var(--muted); }
+.tile-seat-thread {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: var(--space-inline) var(--space-inline) var(--space-subsection);
+}
+.tile-seat-entry { padding: var(--space-row) var(--space-inline); border-radius: var(--radius-small); }
+.tile-seat-entry + .tile-seat-entry { margin-top: var(--space-paragraph); }
+.tile-seat-entry[data-own] { background: var(--inset); }
+.tile-seat-entry p { margin: 0; overflow-wrap: anywhere; }
+.tile-seat-who { color: var(--muted); }
+.tile-seat-words { color: var(--fg-strong); white-space: pre-wrap; }
+.tile-seat-empty { margin: 0; color: var(--muted); }
+@media (pointer: coarse) {
+  .tile-body[data-surface='seat'] > .tile-seat { font-size: var(--text-heading); }
+}
 /* Chat is a column: the log that scrolls, then the message box. The log ends where the box
    begins, so nothing of the conversation is ever under it and "at the end" is what you see
    (owner, 2026-10-22: "there should never be screen under the dialog box"). */
@@ -3518,7 +3566,7 @@ body {
 .tile .composer {
   display: none;
 }
-.tile:is(.tape-on, .keys-on, .transcript-on) .composer.show {
+.tile:is(.tape-on, .keys-on, .transcript-on, .seat-on) .composer.show {
   display: flex;
   position: absolute;
   left: 0;
@@ -3531,7 +3579,7 @@ body {
   border-top: var(--edge) solid var(--term-panel-line);
   align-items: flex-end;
 }
-.tile:is(.tape-on, .keys-on, .transcript-on) .composer textarea {
+.tile:is(.tape-on, .keys-on, .transcript-on, .seat-on) .composer textarea {
   flex: 1;
   resize: none;
   min-height: var(--control-height-small);
@@ -3546,25 +3594,25 @@ body {
   outline: none;
 }
 
-.tile:is(.tape-on, .keys-on, .transcript-on) .composer.held textarea {
+.tile:is(.tape-on, .keys-on, .transcript-on, .seat-on) .composer.held textarea {
   border-color: var(--bad-deep);
 }
 /* The reason a send was held — its own row above the box, only while it is true. */
-.tile:is(.tape-on, .keys-on, .transcript-on) .composer .cwhy {
+.tile:is(.tape-on, .keys-on, .transcript-on, .seat-on) .composer .cwhy {
   display: none;
   flex-basis: 100%;
   margin: 0;
   font: var(--text-body)/var(--leading-tight) var(--font-ui);
   color: var(--bad-deep);
 }
-.tile:is(.tape-on, .keys-on, .transcript-on) .composer.held .cwhy {
+.tile:is(.tape-on, .keys-on, .transcript-on, .seat-on) .composer.held .cwhy {
   display: block;
 }
 
-.tile:is(.tape-on, .keys-on, .transcript-on) .composer textarea:focus {
+.tile:is(.tape-on, .keys-on, .transcript-on, .seat-on) .composer textarea:focus {
   border-color: var(--accent);
 }
-.tile:is(.tape-on, .keys-on, .transcript-on) .composer .csend {
+.tile:is(.tape-on, .keys-on, .transcript-on, .seat-on) .composer .csend {
   height: var(--control-height-small);
   min-width: 38px;
   border: 0;
@@ -3576,26 +3624,26 @@ body {
   cursor: pointer;
 }
 /* What Clear, Stop or Copy did: the kit's notice, a line of its own above the box. */
-.tile:is(.tape-on, .keys-on, .transcript-on) .composer .cnote {
+.tile:is(.tape-on, .keys-on, .transcript-on, .seat-on) .composer .cnote {
   flex-basis: 100%;
   font: var(--text-body)/var(--leading-tight) var(--font-ui);
 }
-.tile:is(.tape-on, .keys-on, .transcript-on) .composer .cnote[hidden] { display: none; }
+.tile:is(.tape-on, .keys-on, .transcript-on, .seat-on) .composer .cnote[hidden] { display: none; }
 /* Every kit button looks pressed the moment it is pushed, before what it does lands
    (owner, 2026-11-12); the composer's own buttons keep their own flash below. */
 .wk-action:not(:disabled):is(:active, .pressed) { filter: brightness(0.82); }
 .wk-action[aria-busy='true'] { cursor: progress; }
 /* Enter answers the press too: a press shows before the send lands. */
-.tile:is(.tape-on, .keys-on, .transcript-on) .composer .csend:is(:active, .pressed) { filter: brightness(0.82); }
+.tile:is(.tape-on, .keys-on, .transcript-on, .seat-on) .composer .csend:is(:active, .pressed) { filter: brightness(0.82); }
 /* A press on its way says so ("Stopping…"): the button widens for the word, then returns. */
-.tile:is(.tape-on, .keys-on, .transcript-on) .composer .cctl[data-busy] {
+.tile:is(.tape-on, .keys-on, .transcript-on, .seat-on) .composer .cctl[data-busy] {
   width: auto;
   min-width: 38px;
   padding: 0 var(--space-row);
   cursor: progress;
 }
 /* Clear and Stop: Enter's shape, quiet; only Enter is kaki. */
-.tile:is(.tape-on, .keys-on, .transcript-on) .composer .cctl {
+.tile:is(.tape-on, .keys-on, .transcript-on, .seat-on) .composer .cctl {
   height: var(--control-height-small);
   width: 38px; /* Enter's size, never bigger */
   padding: 0;
@@ -3612,14 +3660,14 @@ body {
 }
 @media (pointer: coarse) {
   /* A thumb's box: two rows to type in, and Enter as tall as both, so it is easy to hit. */
-  .tile:is(.tape-on, .keys-on, .transcript-on) .composer {
+  .tile:is(.tape-on, .keys-on, .transcript-on, .seat-on) .composer {
     --composer-two-rows: calc(2 * var(--text-heading) * var(--leading-body) + 2 * var(--space-row) + 2 * var(--edge));
   }
-  .tile:is(.tape-on, .keys-on, .transcript-on) .composer textarea {
+  .tile:is(.tape-on, .keys-on, .transcript-on, .seat-on) .composer textarea {
     font-size: var(--text-heading);
     min-height: var(--composer-two-rows);
   }
-  .tile:is(.tape-on, .keys-on, .transcript-on) .composer .csend {
+  .tile:is(.tape-on, .keys-on, .transcript-on, .seat-on) .composer .csend {
     height: var(--composer-two-rows);
     min-width: var(--composer-two-rows);
     font-size: var(--text-heading);
@@ -4535,19 +4583,19 @@ button.wk-card { cursor: pointer; }
 .mq-text { white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; margin: var(--space-row) 0; }
 .mq-actions { justify-content: flex-end; }
 
-.tile:is(.tape-on, .keys-on, .transcript-on) .composer.show {
+.tile:is(.tape-on, .keys-on, .transcript-on, .seat-on) .composer.show {
   flex-wrap: wrap;
 }
-.tile:is(.tape-on, .keys-on, .transcript-on) .composer.kb-open .keysrow {
+.tile:is(.tape-on, .keys-on, .transcript-on, .seat-on) .composer.kb-open .keysrow {
   display: none;
 }
-.tile:is(.tape-on, .keys-on, .transcript-on) .composer .keysrow {
+.tile:is(.tape-on, .keys-on, .transcript-on, .seat-on) .composer .keysrow {
   flex-basis: 100%;
   display: flex;
   gap: var(--space-inline);
   overflow-x: auto;
 }
-.tile:is(.tape-on, .keys-on, .transcript-on) .composer .keysrow button {
+.tile:is(.tape-on, .keys-on, .transcript-on, .seat-on) .composer .keysrow button {
   flex: 1 0 auto;
   min-width: 40px;
   height: 40px;
@@ -4559,8 +4607,8 @@ button.wk-card { cursor: pointer; }
   font-size: var(--text-label);
   cursor: pointer;
 }
-.tile:is(.tape-on, .keys-on, .transcript-on) .composer .keysrow button:is(:active, .pressed),
-.tile:is(.tape-on, .keys-on, .transcript-on) .composer .cctl:is(:active, .pressed) {
+.tile:is(.tape-on, .keys-on, .transcript-on, .seat-on) .composer .keysrow button:is(:active, .pressed),
+.tile:is(.tape-on, .keys-on, .transcript-on, .seat-on) .composer .cctl:is(:active, .pressed) {
   background: var(--kaki); /* kaki: the action, or what needs you */
   border-color: var(--kaki);
   color: var(--on-strong);
@@ -4568,18 +4616,26 @@ button.wk-card { cursor: pointer; }
 /* Read aloud (KAN-705, js/read-aloud.js): Stop's size on a desk, a key's in the keys row;
    lit while fetching or playing. */
 /* The speed's face is a number ("1.25×"): Stop's height and look, as wide as its words. */
-.tile:is(.tape-on, .keys-on, .transcript-on) .composer .cctl.speak-speed { width: auto; min-width: 38px; padding: 0 var(--space-inline); }
-.tile:is(.tape-on, .keys-on, .transcript-on) .composer .speak-toggle[aria-pressed='true'] {
+.tile:is(.tape-on, .keys-on, .transcript-on, .seat-on) .composer .cctl.speak-speed { width: auto; min-width: 38px; padding: 0 var(--space-inline); }
+.tile:is(.tape-on, .keys-on, .transcript-on, .seat-on) .composer .speak-toggle[aria-pressed='true'] {
   border-color: var(--accent);
   color: var(--accent);
 }
 .tile.transcript-on .composer .keysrow [data-terminal-action='copy'] {
   display: none;
 }
+/* A gecko's tile (js/seat-view.js): the box in Chat's place and face; the terminal's keys and
+   controls have no terminal to act on. */
+.tile.seat-on .tile-body[data-surface='seat'] > .composer.show { position: static; flex: none; }
+.tile.seat-on .composer textarea { font: var(--text-label)/var(--leading-body) var(--font-ui); }
+.tile.seat-on .composer.show :is(.keysrow, .cctl) { display: none; }
+@media (pointer: coarse) {
+  .tile.seat-on .composer textarea { font-size: var(--text-heading); }
+}
 
-/* Not in Chat: there the box is in the column, under the log, and reserving its height again
-   left that much empty screen under it on the phone (KAN-147). */
-.tile.keys-on:not(.tape-on) .tile-body:not([data-surface='chat']) {
+/* Not in Chat or a gecko's tile: there the box is in the column, under the log, and reserving
+   its height again left that much empty screen under it on the phone (KAN-147). */
+.tile.keys-on:not(.tape-on) .tile-body:not([data-surface='chat'], [data-surface='seat']) {
   /* FitAddon reads computed height: give it the content area, excluding controls. */
   box-sizing: content-box;
   padding-bottom: max(var(--composer-clearance), var(--secret-clearance)); /* or the secret ask, standing in for it */

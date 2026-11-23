@@ -24,6 +24,7 @@ import { closeMenu } from './menu.js';
 import { get, subscribe } from './store.js';
 import { t } from './lexicon.js';
 import { makeTileTranscript } from './tile-transcript.js';
+import { makeSeatView } from './seat-view.js';
 import { createSurfaceHost, TILE_SURFACES } from './surface-host.js';
 import { ninMark, WorkspacePrimitives } from './workspace-primitives.js';
 
@@ -91,6 +92,10 @@ export class Tile {
       onItem: (item) => openItemOver(this, item),
     });
     this.body.append(this.transcriptView.el);
+    // A GECKO'S SEAT has no terminal: its record and Tells thread stand where one would be.
+    this.seatMode = false;
+    this.seatView = makeSeatView();
+    this.body.append(this.seatView.el);
     // CONTINUE IN CHAT — at the foot of the terminal while it was reached by Answer in Terminal
     // (owner, 2026-11-15, KAN-571): the way back for when the stance cannot tell the question
     // is answered, without knowing the header's Chat/Term switch. Shown by the tile's
@@ -187,6 +192,9 @@ export class Tile {
       this.refreshTegami();
       this.refreshStance();
       this.secretAsk.sync(this.homeRow());
+      // A tile seated before the rows came finds out here that its session is a seat.
+      if (!this.seatMode && this.homeRow()?.seat) this.connectSeat(this.session);
+      else if (this.seatMode) this.seatView.paint(this.homeRow());
     });
   }
 
@@ -256,7 +264,7 @@ export class Tile {
   syncSurface(includeDocs = true) {
     const surface = includeDocs && this.docView?.isOpen()
       ? 'docs'
-      : this.transcriptOn ? 'chat'
+      : this.seatMode ? 'seat' : this.transcriptOn ? 'chat'
         : this.tapeMode ? 'tape' : 'term';
     this.surfaceHost.select(surface);
     // At Terminal by Answer in Terminal: Continue in Chat shows at its foot (style.css).
@@ -306,7 +314,7 @@ export class Tile {
    * the lower levels are the point.)
    */
   toggleTranscript() {
-    if (!this.session || !this.transcriptAvailable()) return;
+    if (!this.session || this.seatMode || !this.transcriptAvailable()) return;
     this.answerReturns = false; // any switch but the answer's own cancels its way back
     this.transcriptWantChat = false; // a switch is a choice: the open-on-Chat intention is spent
     const readings = this.transcriptCycle();
@@ -471,6 +479,8 @@ export class Tile {
 
   /** Ronin's box uses the same message sender in Locked and Unlocked views. */
   sendMessage(text) {
+    // A seat's thread shows what was sent when its inbox has it (the pushed card).
+    if (this.seatMode) return sendComposerMessage(this.session, text);
     // Shown at once, light, in Chat; a send that did not get through takes it back.
     const drop = this.transcriptView.pending(text);
     return sendComposerMessage(this.session, text).then((outcome) => {
@@ -655,6 +665,9 @@ export class Tile {
   }
 
   detach() {
+    this.seatMode = false;
+    this.el.classList.remove('seat-on');
+    this.seatView.reset();
     this.transcriptView.hide();
     this.transcriptOn = false;
     this.transcriptLevel = -1;
@@ -715,6 +728,8 @@ export class Tile {
     }
     if (changed) { this.lastSelection = ''; this.pending = ''; this.renderPending(); }
     this.session = session;
+    if (S.sessions.find((row) => row.name === session)?.seat) return this.connectSeat(session);
+    if (this.seatMode) { this.seatMode = false; this.el.classList.remove('seat-on'); this.seatView.reset(); }
     // Ask the route once, so the button is opaque or live before anyone presses it.
     if (changed && this.transcriptAvailable()) void this.transcriptView.probe(session);
     // A TILE OPENS ON CHAT, NOT THE TERMINAL (owner, 2026-09-24 for a finger; 2026-11-01 for
@@ -766,6 +781,31 @@ export class Tile {
       tapeAt: this.tapeAt,
     });
 
+    saveState();
+    return true;
+  }
+
+  /** A seat has no pane to wire to: its tile is its card (js/seat-view.js) and the composer. */
+  connectSeat(session) {
+    this.wire.close();
+    this.term.reset();
+    this.seatMode = true;
+    this.el.classList.add('seat-on');
+    this.transcriptWantChat = false;
+    this.tapeMode = false;
+    this.el.classList.remove('tape-on');
+    this.sessionKey = S.sessions.find((row) => row.name === session)?.key;
+    this.syncEmpty();
+    this.sessionName.textContent = readableSession(session);
+    this.sessionName.title = session;
+    this.syncHeader();
+    this.refreshCtx();
+    this.refreshTegami();
+    this.refreshStance();
+    this.setComposer(true);
+    this.syncSurface();
+    this.seatView.paint(this.homeRow());
+    this.setDot('on');
     saveState();
     return true;
   }
