@@ -155,11 +155,15 @@ more stone, **No Team**, last and plain, while there are any.
 
 Press a stone and the stones fold to the left while the Team opens beside them, in the bar an
 Epic has on its own page: its name with **Launch** (the Team's own workbench; No Team's opens one
-workbench for those Agents), its concept in full and its item lifecycle along its foot. Under it, three lines that expand and collapse: **Agents**, open on arrival (one bar per
-Agent, as an Epic's item bars: the lead's first with 人, then those needing you; each bar its name
-and live dot, ⚑ when flagged, what it is doing now, its open count and what needs you, and a
-progress line along its foot; pressing a bar opens that Agent beside the Team; an Agent is added to a Team where Agents are
-made, not here), then, closed until you press them, **Epics** (the
+workbench for those Agents), its concept in full and its item lifecycle along its foot. Under it, three lines that expand and collapse: **Agents**, open on arrival (one slim bar per
+Agent, as an Epic's item bars: the lead's first with 人, then flagged ones, then by name; each bar
+its name and, under it, the objective its work record states; one mark top right, ⚑ in amber
+when flagged (the bar takes the pill's amber), otherwise the pill's dot, solid while working and
+hollow just finished, otherwise nothing; bottom right, small and grey, how many open items it
+holds; a progress line along its foot. Pressing a bar opens it in place, as a work item opens on
+an Epic's page, with two lines that expand and collapse: **Work items held** (the Epic page's
+bars over what it holds) and **Configuration** (the Agent's own: name, mandate and the rest).
+An Agent is added to a Team where Agents are made, not here), then, closed until you press them, **Epics** (the
 Team's open Epics as Epic stones, each with its progress line; press one to read it beside them,
 with **Launch** to its own page) and **Configuration** (the Team's configuration form, **Delete
 team** at its foot). No Team has its Agents only. Press the stone again or Escape to go back. The

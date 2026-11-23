@@ -67,14 +67,21 @@
   .team-bar .team-bar-actions { margin-left: auto; }
   .team-bar .lifecycle-line[data-empty='true'] { display: none; }
   .league-team-view { display: flex; flex-direction: column; gap: 0; min-width: 0; }
-  /* ONE BAR PER AGENT (owner, 2026-11-23): the Epic page's item bars (style.css, via .epic-bars),
-     the lead's first and set apart, the shared lifecycle line along each bar's foot. */
+  /* ONE SLIM BAR PER AGENT (owner, 2026-11-23): the Epic page's item bars (style.css, via
+     .epic-bars), the lead's first and set apart. One mark top right (⚑, or the pill's dot: solid
+     working, hollow just finished), the open count bottom right, the lifecycle line along the foot;
+     flagged, the pill's amber. Opened, its Work items and Configuration lines under it. */
   .league-team-view-agents.epic-bars { gap: var(--space-inline); padding-top: var(--space-inline); }
-  .league-team-view-agents > button.team-agent-bar { position: relative; overflow: hidden; padding-bottom: calc(var(--space-inline) + 5px); font-family: inherit; cursor: pointer; }
-  .league-team-view-agents > button.team-agent-lead { margin-bottom: var(--space-inline); }
-  .team-agent-bar .home-live { flex: 0 0 auto; }
+  .team-agent { display: flex; flex-direction: column; gap: var(--space-row); min-width: 0; }
+  .league-team-view-agents > .team-agent:has(> .team-agent-lead) { margin-bottom: var(--space-inline); }
+  .team-agent > button.team-agent-bar { position: relative; overflow: hidden; width: 100%; padding-right: calc(var(--space-inset) + 1.5em); padding-bottom: calc(var(--space-inline) + 5px); font-family: inherit; cursor: pointer; }
+  .team-agent > button.team-agent-bar[data-flagged='true'] { background: color-mix(in srgb, var(--warn) 12%, transparent); /* status: a person is needed */ }
   .team-agent-bar .team-agent-lead-mark { flex: 0 0 auto; color: var(--accent); }
   .team-agent-bar .lifecycle-line[data-empty='true'] { display: none; }
+  .team-agent-mark { position: absolute; top: var(--space-inline); right: var(--space-inset); color: var(--warn); line-height: 1; }
+  .team-agent-mark:is(.is-working, .is-ready) { box-sizing: border-box; width: 6px; height: 6px; margin-top: 0.35em; border: var(--edge) solid var(--kaki); border-radius: 50%; background: var(--kaki); /* kaki: the Chat's working dot */ }
+  .team-agent-mark.is-ready { background: transparent; }
+  .team-agent-open { margin-left: var(--space-inset); }
   .league-team-view-config { gap: var(--space-subsection); }
   /* A FOLD (owner, 2026-11-23): Epics and Configuration under the Agents, each a line that expands
      and collapses; no view switch. */
