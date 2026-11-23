@@ -1,7 +1,7 @@
 {
   "id": "PLAYBOOK-9",
   "campaign_id": "",
-  "title": "Bring in their folders or repositories",
+  "title": "Folders and repositories: bring theirs into the Workspace",
   "objective": "Do: their folders, or the repositories they clone, in the Workspace; skip it if there are none yet.\nDetails: `ronin-help new-workspace` (folders, clone a repository).\nCheck: the Workspace lists them.",
   "level": -1,
   "kind": "Subtask",

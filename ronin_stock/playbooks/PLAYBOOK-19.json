@@ -1,7 +1,7 @@
 {
   "id": "PLAYBOOK-19",
   "campaign_id": "",
-  "title": "Map every surface the project has",
+  "title": "Map every surface: its repositories, folders, services, docs and builds",
   "objective": "Do: find each part of the project: its repositories, folders, services, docs, and how it is built, run and tested.\nDetails: `work-record workspace list` (its repositories and folders, each with its directory); the project's own README, docs and build files; `ronin-help workspaces`.\nCheck: every Location on the Workspace is on your map, each with what it is.",
   "level": 0,
   "kind": "Task",

@@ -1,7 +1,7 @@
 {
   "id": "PLAYBOOK-5",
   "campaign_id": "",
-  "title": "Agent Harness",
+  "title": "Agent Harness: at least one model provider signed in",
   "objective": "Do: at least one Agent harness signed in with their own account; more is better.\nOpen: `setup.providers`.\nDetails: Setup → Model providers (Let the Helpful Assistant authenticate, Use the CLI with the Helpful Assistant); `ronin-help provider-sign-in`.\nCheck: at least one reads Activated.",
   "level": 0,
   "kind": "Task",

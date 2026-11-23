@@ -1,7 +1,7 @@
 {
   "id": "PLAYBOOK-13",
   "campaign_id": "",
-  "title": "Behaviours",
+  "title": "Behaviours: how they shape what Agents are told",
   "objective": "Do: show how behaviours shape what their Agents are told, and help them write one if they want; skip it if not.\nDetails: `ronin-help customizing`.\nCheck: shown, or declined.",
   "level": -1,
   "kind": "Subtask",

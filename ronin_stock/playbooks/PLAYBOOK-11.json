@@ -1,7 +1,7 @@
 {
   "id": "PLAYBOOK-11",
   "campaign_id": "",
-  "title": "Integrations",
+  "title": "Integrations: the outside services their project uses",
   "objective": "Do: the outside services their project uses, each added: a bridge Ronin has, turned on for the Campaign; an MCP server with `mcp add`; a web API with `api add`; anything else noted on the Workspace. Each signed in now (the key pasted, or Sign in) or left for later; skip it if they use none.\nOpen: `setup.integrations`.\nDetails: `ronin-help add-an-integration`; `mcp --help`, `api --help`; the integrations surface shows each as it is added, with its state; `ronin-help integrations`.\nCheck: each service they named is added or noted, signed in or left for later; or declined.",
   "level": 0,
   "kind": "Task",

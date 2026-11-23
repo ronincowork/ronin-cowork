@@ -1,7 +1,7 @@
 {
   "id": "PLAYBOOK-8",
   "campaign_id": "",
-  "title": "Sign in GitHub, if they use it",
+  "title": "GitHub: sign in the GitHub CLI, if they use it",
   "objective": "Do: the GitHub CLI signed in to their account, if they use GitHub; skip it if not.\nDetails: the GitHub CLI stone on the Workspaces door (Let the Helpful Assistant connect GitHub, Use GitHub CLI with the Helpful Assistant); `ronin-help workspace-folders`.\nCheck: the stone shows their account.",
   "level": -1,
   "kind": "Subtask",

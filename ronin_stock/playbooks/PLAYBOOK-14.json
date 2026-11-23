@@ -1,7 +1,7 @@
 {
   "id": "PLAYBOOK-14",
   "campaign_id": "",
-  "title": "Project management",
+  "title": "Project management: how work items show their Team's work",
   "objective": "Do: show how work items let them see their Team's work, and how to give one out, if they want; skip it if not.\nDetails: `ronin-help project-management`, `ronin-help work-items`.\nCheck: shown, or declined.",
   "level": -1,
   "kind": "Subtask",

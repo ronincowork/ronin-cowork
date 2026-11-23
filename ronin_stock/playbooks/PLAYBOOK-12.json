@@ -1,7 +1,7 @@
 {
   "id": "PLAYBOOK-12",
   "campaign_id": "",
-  "title": "Ronin Tour",
+  "title": "Ronin Tour: offer how Ronin works",
   "objective": "Do: offer a tour of how Ronin works, and give it if they want it.\nDetails: `ronin-help get-started`.\nCheck: given, or declined.",
   "level": 0,
   "kind": "Task",

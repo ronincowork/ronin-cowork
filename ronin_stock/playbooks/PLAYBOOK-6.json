@@ -1,7 +1,7 @@
 {
   "id": "PLAYBOOK-6",
   "campaign_id": "",
-  "title": "Workspace",
+  "title": "Workspace: their first one, on a folder or repositories",
   "objective": "Do: their first Workspace, on a folder or on one or more repositories; done when its subtasks are done or skipped.\nOpen: `setup.roots`.\nDetails: `ronin-help new-workspace`.\nCheck: the Workspace exists with its folder or repositories.",
   "level": 0,
   "kind": "Task",

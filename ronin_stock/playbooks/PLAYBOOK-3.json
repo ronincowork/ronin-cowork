@@ -1,7 +1,7 @@
 {
   "id": "PLAYBOOK-3",
   "campaign_id": "",
-  "title": "Mapping a project they brought in",
+  "title": "Project map: map a project they brought in",
   "objective": "This person has brought an existing project into their Workspace (its handle is in this epic's\ncomment \"Workspace: <handle>\"). Map it, show them the map, and tell them what you found. The tasks are this epic's\nchildren (`item read` on this epic lists them); match each by its title, and work them in order.\nRules:\n- Read; don't change their project. Nothing is moved, renamed, installed or committed.\n- For each: `item read` the task, and find the steps where its Details point. Done: `item comment` on the task \"Done: <what>\", then `item transition` it to \"Done\".\n- When all four are closed: `item transition` this epic to \"Done\".",
   "level": 1,
   "kind": "Epic",

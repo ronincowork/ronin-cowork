@@ -1,7 +1,7 @@
 {
   "id": "PLAYBOOK-4",
   "campaign_id": "",
-  "title": "Your setup",
+  "title": "Your setup: understand where they are before your first words",
   "objective": "Do: before your first words, understand where they are (the person and their project, their account, and this office as the facts in your brief have it) and write it down in their record, `~/ronin/office/ABOUT_USER.md`: find its `## Where they are` section and update it, or make it new. For each Workspace with no summary yet, start a fresh Agent to write it, and don't wait for it: summaries arrive in the Workspaces fact as they are written. Then close this task; what you understood is what you start the conversation from.\nDetails: the facts your brief lists; per Workspace with no summary (`workspace-doc list`): `session_create <name>`, then `item checkout PLAYBOOK-2 <name>` and `item comment <its new epic> \"Workspace: <handle>\"`.\nCheck: ABOUT_USER.md has Where they are, as things stand.",
   "level": 0,
   "kind": "Task",

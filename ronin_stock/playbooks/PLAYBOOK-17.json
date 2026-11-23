@@ -1,7 +1,7 @@
 {
   "id": "PLAYBOOK-17",
   "campaign_id": "",
-  "title": "Write its Summary",
+  "title": "Write its Summary: a few plain lines, then one per part",
   "objective": "Do: write the Summary: a few plain lines on what the Workspace is for, then one line per repository and folder saying what it is.\nDetails: `workspace-doc summary <handle> -` with the text on stdin (`workspace-doc --help`).\nCheck: `workspace-doc list` shows it under the handle.",
   "level": 0,
   "kind": "Task",
