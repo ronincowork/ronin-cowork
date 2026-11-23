@@ -91,7 +91,13 @@ test('the Teams page and one Team, as a person reads and presses them', async (t
   const line = `${agentsView} .team-agent-bar[data-session="ben"] .lifecycle.lifecycle-line`;
   await page.waitForSelector(`${line}[data-empty="false"]`, { state: 'attached' });
   assert.equal(await page.getAttribute(line, 'data-band'), '4');
-  assert.match(await page.textContent(`${agentsView} .team-agent-bar[data-session="ana"]`) || '', /Nothing in hand/);
+  assert.equal(await page.textContent(`${agentsView} .team-agent-bar[data-session="ben"] .team-agent-size`), '1', 'Ben holds one open item');
+  assert.equal(await page.textContent(`${agentsView} .team-agent-bar[data-session="ana"] .team-agent-size`), '0');
+  // Pressed, an Agent opens in place: its Work items and its Configuration; pressed again, it closes.
+  await page.click(`${agentsView} .team-agent-bar[data-session="ben"]`);
+  await page.waitForSelector(`${agentsView} .team-agent[data-session="ben"] .team-agent-open .team-fold-agent-config`);
+  await page.click(`${agentsView} .team-agent-bar[data-session="ben"]`);
+  assert.equal(await page.$(`${agentsView} .team-agent[data-session="ben"] .team-agent-open`), null);
   // No view switch: Epics and Configuration are lines, closed until pressed.
   assert.equal(await page.$('.league-team-detail .league-team-toggle'), null, 'no view switch');
   assert.equal(await page.isVisible('.league-team-detail .league-team-view-config'), false);

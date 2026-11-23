@@ -35,12 +35,11 @@ import { installBehaviourReader } from './behaviour-reader.js';
 import { BEHAVIOUR_SURFACE_TYPE } from './behaviour-surface.js';
 import { addAgentLender } from './work-items-surface.js';
 import { registerWorkbenchCatalog, WORKBENCH_PROFILES as WB_PROFILES, WORKBENCH_TYPES as WB_TYPES } from './workbench-catalog.js';
-import { createAgentCompositionSurface } from './agent-composition.js';
+import { createAgentCompositionReader, createAgentCompositionSurface } from './agent-composition.js';
 import { createTeamEpics, teamEpicIds } from './team-epics.js';
 import { createFindItem } from './team-find-item.js';
-import { createEpicRecord, createEpicStones, createEpicsRead, createNewItem } from './epics-surface.js';
-import { attention, attentionWords, createLifecycle, statusKey } from './item-lifecycle.js';
-import { splitItemTitle } from './item-title.js';
+import { createEpicRecord, createEpicStones, createEpicsRead, createItemBoard, createNewItem } from './epics-surface.js';
+import { counted, createLifecycle, statusKey } from './item-lifecycle.js';
 
 const el = (tag, cls, text) => {
   const out = document.createElement(tag);
@@ -627,11 +626,6 @@ export function createCoworkView(options = {}) {
   // Epic stones) and Configuration (the Team's form, Delete team at its foot). Painted into a host: a Teams stone's detail
   // (leagueTeamDetail) or a whole tilespace (createLeagueTeamSurface). No Team has Agents only.
   const teamFoldsOpen = new Map(); // `${team}\0${fold}` -> open, for this page
-  // An Agent's bar opens its tile beside the Team: a non-member rides the pool as an extra (KAN-435).
-  const showAgent = (agent, seat) => {
-    if (!membersOfTeam(team).some((m) => m.name === agent)) { extras.add(agent); syncPools(restorationMembers()); }
-    putSession(agent, oppositeSeat(seat));
-  };
   const leagueTeamBody = (name, { seat, say }) => {
     const holding = name === UNASSIGNED;
     // THE TEAM'S BAR (owner, 2026-11-23): the Epic's own bar on its page, the same item bar its
@@ -643,12 +637,11 @@ export function createCoworkView(options = {}) {
     const launch = createAction({ label: t('league.launch_team', 'Launch'), size: 'compact', action: () => openTeam(name) });
     const remove = createAction({ label: t('league.delete_team', 'Delete team'), kind: 'danger', size: 'compact', action: async () => { const count = membersOfTeam(name).length; if (!window.confirm(t('league.delete_team_confirm', 'Delete {team}? {count} Agents will lose this Team membership.', { team: name, count }))) return; const result = await deleteTeamRoster(name); if (!result.ok) { say('failed', result.message); return; } for (const place of bench.locations(WB_TYPES.team, name)) emptySeat(place); for (const key of [...leagueTeamSurfaces.keys()]) if (key.endsWith(`\0${name}`)) leagueTeamSurfaces.delete(key); } });
     // A FOLD (owner, 2026-11-23): a line naming what is under it; press it to expand or collapse.
-    const fold = (key, label, onOpen = () => {}) => {
+    const fold = (key, label, onOpen = () => {}, remembered = `${name}\0${key}`) => {
       const node = el('details', `team-fold team-fold-${key}`);
       const line = el('summary', 'team-fold-line', label);
       const body = el('div', `team-fold-body league-team-view league-team-view-${key}`);
       node.append(line, body);
-      const remembered = `${name}\0${key}`;
       node.open = teamFoldsOpen.get(remembered) ?? key === 'agents'; // Agents open on arrival
       node.addEventListener('toggle', () => { teamFoldsOpen.set(remembered, node.open); if (node.open) onOpen(); });
       if (node.open) queueMicrotask(onOpen);
@@ -690,46 +683,83 @@ export function createCoworkView(options = {}) {
     // Agent is added to a Team where Agents are made.
     const foot = null;
     agents.classList.add('epic-bars');
+    // AN AGENT OPENED (owner, 2026-11-23), as a work item opens on an Epic's page: under its bar, two
+    // lines that expand and collapse: Work items (the Epics board's bars over what it holds,
+    // epics-surface.js createItemBoard) and Configuration (the Agent's own: name, mandate and the
+    // rest, agent-composition.js). Kept per Agent, so a bar redrawn keeps what is open in it.
+    const opened = new Set();
+    const panels = new Map();
+    const panelOf = (agent) => {
+      if (panels.has(agent)) return panels.get(agent);
+      const box = el('div', 'team-agent-open');
+      const board = createItemBoard({ every: () => (held.get(agent) || []).map((item) => ({ ...item })), empty: t('island.none', 'This Agent holds no open work items.') });
+      const work = fold('agent-items', t('island.items', 'Work items held'), () => board.paint(), `${name}\0${agent}\0items`);
+      if (!teamFoldsOpen.has(`${name}\0${agent}\0items`)) work.node.open = true;
+      work.body.append(board.el);
+      let reader = null;
+      const config = fold('agent-config', t('workspace.tab_team_configuration', 'Configuration'), () => {
+        if (reader) return;
+        reader = createAgentCompositionReader(agent);
+        config.body.append(reader.el);
+        reader.show?.();
+      }, `${name}\0${agent}\0config`);
+      box.append(work.node, config.node);
+      const one = { box, board, destroy: () => { board.destroy(); reader?.destroy?.(); } };
+      panels.set(agent, one);
+      return one;
+    };
     const agentRows = WorkspaceKit.primitives.createKeyedList({
       key: (row) => row.name,
-      shows: (row) => (row.foot ? '!foot' : JSON.stringify([row.name, row.stance, !!row.team_lead, row.title, row.doing, row.facts, row.status, row.flagged])),
+      shows: (row) => (row.foot ? '!foot' : JSON.stringify([row.name, !!row.team_lead, row.title, row.objective, row.mark, row.size, opened.has(row.name)])),
       draw: (row) => {
         if (row.foot) return foot;
+        // A SLIM BAR (owner, 2026-11-23): the name (人 for the lead) and, under it, the objective its
+        // work record states; one mark top right — ⚑ when flagged, else the pill's dot (solid while
+        // working, hollow just finished), else none; bottom right, small and grey, how many open
+        // items it holds; the shared lifecycle line along its foot.
+        const wrap = el('div', 'team-agent');
+        wrap.dataset.session = row.name;
         const node = el('button', `item-bar item-bar-lean team-agent-bar${row.team_lead ? ' team-agent-lead' : ''}`);
         node.type = 'button';
         node.dataset.session = row.name;
-        node.dataset.status = row.status;
-        if (row.flagged) node.dataset.flagged = 'true';
-        const live = el('i', 'home-live'); live.dataset.stance = row.stance || 'unknown';
-        live.title = stanceLabel(row.stance) || ''; live.setAttribute('aria-hidden', 'true');
+        if (row.mark === 'flagged') node.dataset.flagged = 'true';
+        node.setAttribute('aria-expanded', String(opened.has(row.name)));
         const head = el('span', 'item-bar-head');
-        head.append(live);
         if (row.team_lead) head.append(el('span', 'team-agent-lead-mark', '人'));
         head.append(el('span', 'item-bar-title', row.title));
-        if (row.flagged) head.append(el('span', 'item-pill-flag', '⚑'));
-        node.append(head, el('span', 'item-bar-objective', row.doing));
-        if (row.facts) node.append(el('span', 'item-bar-facts', row.facts));
+        node.append(head);
+        if (row.objective) node.append(el('span', 'item-bar-objective', row.objective));
+        if (row.mark) {
+          const mark = el('span', `team-agent-mark is-${row.mark}`, row.mark === 'flagged' ? '⚑' : '');
+          mark.title = row.markTitle;
+          node.append(mark);
+        }
+        node.append(el('small', 'stone-size team-agent-size', String(row.size)));
         if (row.line) node.append(row.line);
-        node.addEventListener('click', () => showAgent(row.name, seat));
-        return node;
+        node.addEventListener('click', () => {
+          if (!opened.delete(row.name)) opened.add(row.name);
+          paintAgents();
+        });
+        wrap.append(node);
+        if (opened.has(row.name)) { const panel = panelOf(row.name); wrap.append(panel.box); panel.board.paint(); }
+        return wrap;
       },
     });
     const paintAgents = () => {
       const list = membersOfTeam(name).map((member) => {
+        const card = rows.get(member.name) || {};
         const mine = held.get(member.name) || [];
-        const open = mine.filter((item) => statusKey(item.status) !== 'done' && (item.level ?? 0) === 0);
+        const open = mine.filter((item) => statusKey(item.status) !== 'done' && counted(item));
         const line = mine.length ? lineOf(member.name) : null;
         line?.update(mine);
-        // What it is doing now: its In Progress work; else what waits in review; else what is to do.
-        const now = ['progress', 'review', 'todo'].map((key) => open.filter((item) => statusKey(item.status) === key)).find((some) => some.length) || [];
-        const needs = attentionWords(attention(mine));
-        const facts = [open.length ? t('league.agent_open', '{n} open', { n: open.length }) : '', needs].filter(Boolean).join(' · ');
-        const flagged = !!rows.get(member.name)?.tegami?.flags?.length || open.some((item) => item.flagged);
-        return { name: member.name, stance: rows.get(member.name)?.stance, team_lead: member.team_lead, flagged, title: agentTitle(member),
-          doing: now.length ? now.map((item) => splitItemTitle(item.title || '').shortTitle).join(' · ') : t('league.agent_idle', 'Nothing in hand'),
-          facts, status: now.length ? statusKey(now[0].status) : 'none', needs: !!needs || flagged, line: line?.el || null };
-      }).sort((a, b) => Number(b.team_lead) - Number(a.team_lead) || Number(b.needs) - Number(a.needs) || a.title.localeCompare(b.title));
+        const situation = mine.some((item) => item.flagged && statusKey(item.status) !== 'done') ? 'flagged' : agentSituation(card);
+        const mark = ['flagged', 'working', 'ready'].includes(situation) ? situation : '';
+        return { name: member.name, team_lead: member.team_lead, title: agentTitle(member), objective: String(card.tegami?.objective || '').trim(),
+          mark, markTitle: mark ? situationTitle(agentTitle(member), mark) : '', size: open.length, line: line?.el || null };
+      }).sort((a, b) => Number(b.team_lead) - Number(a.team_lead) || Number(b.mark === 'flagged') - Number(a.mark === 'flagged') || a.title.localeCompare(b.title));
+      for (const [agent, panel] of panels) if (!list.some((row) => row.name === agent)) { panel.destroy(); panels.delete(agent); opened.delete(agent); }
       agentRows.set(agents, foot ? [...list, { name: '!foot', foot: true }] : list);
+      for (const agent of opened) panels.get(agent)?.board.paint();
     };
     const readWork = async () => {
       if (holding) return;
