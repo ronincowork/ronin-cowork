@@ -239,7 +239,14 @@ export function createTeamBody(name, { say = () => {}, rows: rowsOf = () => new 
     }
   };
   render();
-  return { main, render };
+  // Let go (owner via lead, 2026-11-23): its Epic stones if built, its Agent stones, each Agent's panel.
+  const destroy = () => {
+    epicStones?.destroy?.();
+    stonesOfAgents.destroy();
+    for (const panel of panels.values()) panel.destroy();
+    panels.clear();
+  };
+  return { main, render, destroy };
 }
 
 /**
@@ -254,5 +261,5 @@ export function createTeamOne(name, { say } = {}) {
   box.append(status, team.main);
   const stopTeams = subscribe(() => team.render());
   const stopRows = subscribeStore('home', (list) => { rows = new Map((list || []).map((row) => [row.name, row])); team.render(); });
-  return { el: box, render: team.render, destroy: () => { stopTeams?.(); stopRows?.(); } };
+  return { el: box, render: team.render, destroy: () => { stopTeams?.(); stopRows?.(); team.destroy(); } };
 }

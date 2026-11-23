@@ -622,7 +622,7 @@ export function createCoworkView(options = {}) {
   // ONE TEAM'S OPEN VIEW lives in team-one.js (KAN-801), shared with a Workspace's own Teams.
   const leagueTeamBody = (name, { say }) => createTeamBody(name, {
     say, rows: () => rows, openTeam,
-    onDeleted: (gone) => { for (const place of bench.locations(WB_TYPES.team, gone)) emptySeat(place); for (const key of [...leagueTeamSurfaces.keys()]) if (key.endsWith(`\0${gone}`)) leagueTeamSurfaces.delete(key); },
+    onDeleted: (gone) => { for (const place of bench.locations(WB_TYPES.team, gone)) emptySeat(place); for (const key of [...leagueTeamSurfaces.keys()]) if (key.endsWith(`\0${gone}`)) { leagueTeamSurfaces.get(key).destroy?.(); leagueTeamSurfaces.delete(key); } },
   });
   const leagueTeamLabel = (name) => readableTeam(name);
   const cachedLeagueTeam = (cacheKey, make) => {
@@ -634,14 +634,14 @@ export function createCoworkView(options = {}) {
     const team = leagueTeamBody(name, { seat: id, say: (state, message) => surface?.setState(state, message) });
     surface = createSurface({ label: leagueTeamLabel(name), className: 'league-team-edit' });
     surface.content.append(team.main);
-    return { el: surface.el, render: team.render };
+    return { el: surface.el, render: team.render, destroy: team.destroy };
   });
   const leagueTeamDetail = (name, seat) => cachedLeagueTeam(`teams-${seat}\0${name}`, () => {
     const box = el('div', 'league-team-detail');
     const status = el('p', 'league-team-detail-state'); status.setAttribute('role', 'status'); status.hidden = true;
     const team = leagueTeamBody(name, { seat, say: (state, message) => { status.hidden = state !== 'failed'; status.textContent = state === 'failed' ? message : ''; } });
     box.append(status, team.main);
-    return { el: box, render: team.render };
+    return { el: box, render: team.render, destroy: team.destroy };
   });
   const refreshLeagueTeamSurfaces = () => {
     for (const view of leagueTeamSurfaces.values()) view.render?.();
@@ -864,6 +864,8 @@ export function createCoworkView(options = {}) {
       for (const commons of builtCommons()) commons.channels.destroy();
       for (const view of Object.values(newAgentBySeat)) view.destroy();
       for (const surface of teamSurfaces.splice(0)) surface.destroy?.();
+      for (const view of leagueTeamSurfaces.values()) view.destroy?.();
+      leagueTeamSurfaces.clear();
     },
   };
 }
