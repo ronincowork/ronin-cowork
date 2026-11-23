@@ -46,8 +46,10 @@
   .sws-group-hint { margin: 0; color: var(--accent); font-size: var(--form-note); }
   .sws-group-empty { margin: 0; color: var(--muted); font-size: var(--form-note); }
   .sws-group-stones { display: flex; flex-wrap: wrap; gap: var(--sws-gap); }
-  .sws[data-open='true'] .sws-grid { width: var(--sws-stone); flex-direction: column; flex-wrap: nowrap; }
-  .sws[data-open='true'] .sws-group-stones { flex-direction: column; flex-wrap: nowrap; }
+  /* Open, a phalanx's OWN stones become the rail; stones in its opened detail (a Workspace's Teams and
+     Epics, a Team's Epics) keep going across, then wrap (owner, 2026-11-23). */
+  .sws[data-open='true'] > :where(.sws-rail) > .sws-grid { width: var(--sws-stone); flex-direction: column; flex-wrap: nowrap; }
+  .sws[data-open='true'] > :where(.sws-rail) .sws-group-stones { flex-direction: column; flex-wrap: nowrap; }
   .sws-stone { position: relative; display: flex; flex: 0 0 min(100%, var(--sws-stone)); flex-direction: column; align-items: flex-start; width: min(100%, var(--sws-stone)); aspect-ratio: 1; overflow: hidden; border: var(--edge) solid var(--line-2); border-radius: var(--radius-hair); background: var(--surface); color: var(--fg); padding: var(--space-inset); cursor: pointer; text-align: left; font: inherit; transition: border-color var(--motion-quick) var(--ease), box-shadow var(--motion-quick) var(--ease), transform var(--motion-settle) var(--ease), opacity var(--motion-settle) var(--ease); }
   .sws-stone::before { content: ''; position: absolute; inset: 0 auto 0 0; width: var(--edge-2); background: var(--accent); /* the stone's edge, the phalanx's mark */ }
   .sws-stone[hidden] { display: none; }
@@ -165,7 +167,7 @@
   /* EVERY EPIC AND TEAM STONE THE SAME HEIGHT (owner, 2026-11-23): a grid whose rows are all the tallest stone's. */
   .sws:is(.epic-record-stones, .team-roster-phalanx, .workspace-record-stones) { --sws-stone: calc(var(--setup-stone-size) * 1.2); } /* a fifth wider: the added inset does not cost the name its width */
   .sws:is(.epic-record-stones, .team-roster-phalanx, .workspace-record-stones) .sws-grid { display: grid; grid-template-columns: repeat(auto-fill, var(--sws-stone)); grid-auto-rows: 1fr; justify-content: center; }
-  .sws:is(.epic-record-stones, .team-roster-phalanx, .workspace-record-stones)[data-open='true'] .sws-grid { grid-template-columns: var(--sws-stone); }
+  .sws:is(.epic-record-stones, .team-roster-phalanx, .workspace-record-stones)[data-open='true'] > :where(.sws-rail) > .sws-grid { grid-template-columns: var(--sws-stone); }
   .epics-records > .wk-surface-content > .epic-empty { padding: var(--space-inset); }
   .epic-source[hidden] { display: none; }
   .epic-launch { text-decoration: none; }
