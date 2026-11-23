@@ -44,6 +44,10 @@
   .tw-config-status, .league-team-empty { font-size: var(--form-note); }
 
   .league-team-edit-content { display: flex; flex-direction: column; gap: var(--space-section); }
+  /* A WHOLE-TILESPACE TEAM SCROLLS (owner, 2026-11-23): the kit stops a surface's own scroll once a
+     stone phalanx sits anywhere in it (workspace-kit.css .wk-surface-content:has(.sws)); the Team's
+     Agents and Epics are stones inside it, so the Team surface takes its scroll back. */
+  .wk-surface.league-team-edit > .wk-surface-content { display: block; overflow-y: auto; }
   /* The Team opens beside its stone top-down: head, Agents, Work, Configuration. One
      heading style, one body style, tight lists. The phalanx owns the stones' geometry. */
   .league-team-detail, .league-team-detail .league-team-edit-content { display: flex; flex-direction: column; gap: var(--space-subsection); }

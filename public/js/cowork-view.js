@@ -641,12 +641,14 @@ export function createCoworkView(options = {}) {
     const fold = (key, label, onOpen = () => {}, remembered = `${name}\0${key}`) => {
       const node = el('details', `team-fold team-fold-${key}`);
       const line = el('summary', 'team-fold-line', label);
+      // Its count in brackets (owner, 2026-11-23), so a closed line still says how many.
+      const count = (n) => { const words = `${label} (${n})`; if (line.textContent !== words) line.textContent = words; };
       const body = el('div', `team-fold-body league-team-view league-team-view-${key}`);
       node.append(line, body);
       node.open = teamFoldsOpen.get(remembered) ?? key === 'agents'; // Agents open on arrival
       node.addEventListener('toggle', () => { teamFoldsOpen.set(remembered, node.open); if (node.open) onOpen(); });
       if (node.open) queueMicrotask(onOpen);
-      return { node, body };
+      return { node, body, count };
     };
     let epicStones = null; // built the first time Epics opens
     const epicsFold = fold('epics', t('epics.title', 'Epics'), () => {
@@ -748,6 +750,7 @@ export function createCoworkView(options = {}) {
           mark, markTitle: mark ? situationTitle(agentTitle(member), mark) : '', size: open.length };
       }).sort((a, b) => Number(b.team_lead) - Number(a.team_lead) || Number(b.mark === 'flagged') - Number(a.mark === 'flagged') || a.title.localeCompare(b.title));
       for (const [agent, panel] of panels) if (!list.some((row) => row.name === agent)) { panel.destroy(); panels.delete(agent); stoneMarks.delete(agent); }
+      agentsFold.count(list.length);
       stonesOfAgents.setItems(list.map((row) => ({ id: row.name, label: row.team_lead ? `人 ${row.title}` : row.title,
         ...(row.objective ? { state: row.objective } : {}), marker: marksOf(row.name, row),
         className: `team-agent-stone${row.mark === 'flagged' ? ' is-flagged' : ''}` })));
@@ -783,6 +786,7 @@ export function createCoworkView(options = {}) {
       seenRecord = record;
       seenItems = itemsNow;
       teamLine.update(holding ? [] : current.items || []);
+      epicsFold.count((current.items || []).filter((item) => item.level === 1 && statusKey(item.status) !== 'done').length);
       objective.textContent = holding ? t('teams_surface.no_team_summary', 'Agents outside any Team') : current.objective || '';
       objective.hidden = !objective.textContent;
       if (membersMoved || itemsMoved) void readWork();
