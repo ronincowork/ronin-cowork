@@ -725,10 +725,7 @@ export function createWorkspaceStones({ workspacesRead, workbench, recordType = 
         const items = itemsIn(w);
         const one = marksOf(w.name);
         one.line.update(items);
-        const marker = one.marks.update(items);
-        const size = marker.querySelector('.stone-size');
-        const teams = String(teamsIn(w).length);
-        if (size && size.textContent !== teams) size.textContent = teams;
+        const marker = one.marks.update(items, { size: teamsIn(w).length });
         return dragWorkspace({ id: w.name, label: name(w), ...(w.archived ? { state: t('workspaces.archived', 'Archived') } : {}),
           marker, className: `workspace-stone${w.archived ? ' archived' : ''}` }, recordType);
       });
