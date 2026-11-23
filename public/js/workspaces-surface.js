@@ -664,6 +664,7 @@ function workspaceSurface(w, { workspacesRead, onDiscard = () => {}, launch = fa
     teams.count(teamsIn(w).length);
     const mine = new Set(teamsIn(w).flatMap((team) => [...teamEpicIds(team)]));
     epics.count(every.list().filter((epic) => mine.has(epic.id) && isOpenEpic(epic)).length);
+    doc.count(1); // a Workspace has one document
   };
   const stopTeams = subscribeTeams(recount);
   const stopEpics = every.subscribe(recount);
