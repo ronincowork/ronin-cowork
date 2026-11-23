@@ -50,7 +50,7 @@ test('the Workspaces page and one Workspace, as a person reads and presses them'
   await page.waitForSelector(stone);
   const box = await page.locator(stone).boundingBox();
   assert.ok(box && box.height >= box.width * 0.9, `a normal-size stone, not a short one: ${JSON.stringify(box)}`);
-  assert.match(await page.textContent(stone) || '', /1 Team/, 'how many Teams work in it');
+  assert.equal((await page.textContent(`${stone} .stone-size`))?.trim(), '1', 'how many Teams work in it');
   assert.equal(await page.$('[data-workspace-view="workspaces"] .terminal-hints'), null, 'no Agent vocabulary or Session controls');
 
   // One Workspace: Work first, its life beside its document; Config holds the record and no document.

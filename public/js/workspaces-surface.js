@@ -675,7 +675,7 @@ function workspaceSurface(w, { workspacesRead, onDiscard = () => {}, launch = fa
 }
 
 /** The stones of Workspaces (owner, 2026-11-22; KAN-784; KAN-801): Layer 1, every Workspace a stone as
- * an Epic's or a Team's: its name, how many Teams work in it, the shared marks. A pressed stone
+ * an Epic's or a Team's: its name and the shared marks, the number bottom right its Teams. A pressed stone
  * opens that Workspace beside the rail, Work or Config, with Launch to its own page; a stone dragged
  * into a tilespace opens it whole there. The last stone, New Workspace, is its Name and Folders. */
 export function createWorkspaceStones({ workspacesRead, workbench, recordType = '', withNew = false, onShow = () => {} }) {
@@ -714,21 +714,23 @@ export function createWorkspaceStones({ workspacesRead, workbench, recordType = 
   const paint = (answer) => {
     if (answer && !answer.ok) { say(answer.message, true); return; }
     if (answer) say(workspacesRead.list().length ? '' : t('workspaces.none', 'No Workspaces yet. Place New Workspace from the selector.'));
-    // The Epic and Team stones' grammar (owner, 2026-11-23; KAN-801): the name, one muted line (how
-    // many Teams work in it; Archived), and the shared marks over what its Teams and their Agents hold.
+    // The Epic and Team stones' grammar (owner, 2026-11-23; KAN-801): the name, the shared marks over
+    // what its Teams and their Agents hold, but the small number bottom right is how many Teams work in
+    // it, a Workspace's size (owner, 2026-11-23); no line of words under the name, Archived aside.
     // Flagged first, then by name.
     const name = (w) => String(w.title || '').trim() || w.name;
     const next = workspacesRead.list().slice()
       .sort((a, b) => Number(flaggedIn(b)) - Number(flaggedIn(a)) || name(a).localeCompare(name(b)))
       .map((w) => {
-        const count = teamsIn(w).length;
-        const state = w.archived ? t('workspaces.archived', 'Archived')
-          : count === 1 ? t('workspaces.one_team', '1 Team') : count ? t('workspaces.teams_count', '{count} Teams', { count }) : '';
         const items = itemsIn(w);
         const one = marksOf(w.name);
         one.line.update(items);
-        return dragWorkspace({ id: w.name, label: name(w), ...(state ? { state } : {}),
-          marker: one.marks.update(items), className: `workspace-stone${w.archived ? ' archived' : ''}` }, recordType);
+        const marker = one.marks.update(items);
+        const size = marker.querySelector('.stone-size');
+        const teams = String(teamsIn(w).length);
+        if (size && size.textContent !== teams) size.textContent = teams;
+        return dragWorkspace({ id: w.name, label: name(w), ...(w.archived ? { state: t('workspaces.archived', 'Archived') } : {}),
+          marker, className: `workspace-stone${w.archived ? ' archived' : ''}` }, recordType);
       });
     // ONE WORKSPACE MOVES, ONE STONE REPAINTS (KAN-413): the phalanx's keyed list leaves every
     // stone a Teams push did not move, and an open page, alone.

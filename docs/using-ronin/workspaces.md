@@ -41,9 +41,9 @@ Agent it is checked out to reads its folders and repositories, writes the Summar
 ## Make or change a Workspace
 
 Open the **Workspaces** door on Ronin Home (or **Workspaces** in [Ronin Setup](../getting-started/setup-workbench.md)).
-Each Workspace is a stone, like an Epic's or a Team's: its name, how many Teams work in it, and
-along its foot the progress of what its Teams and their Agents hold. ⚑ at the top right means
-something open in it is flagged; the small number at the bottom right is how many items are open.
+Each Workspace is a stone, like an Epic's or a Team's: its name, and along its foot the progress of
+what its Teams and their Agents hold. ⚑ at the top right means something open in it is flagged;
+the small number at the bottom right is how many Teams work in it.
 Flagged Workspaces come first, then the rest by name. The last stone is **New Workspace**.
 
 Press a stone and that Workspace opens beside the stones, in a bar like an opened Team's: its name
