@@ -92,7 +92,7 @@ test('the Epics page and one Epic\'s page, as a person reads and presses them', 
   assert.equal(await reviewStone.getAttribute('data-tip'), 'Stock the shelves: refill by 07:20');
   const stones = await page.$$eval('.epic-record-stones .sws-grid > [data-sws-id]', (nodes) => nodes.map((node) => ({
     id: (node as HTMLElement).dataset.swsId, last: node.querySelector('.sws-state')?.textContent || '',
-    flag: !(node.querySelector('.epic-stone-flag') as HTMLElement | null)?.hidden, size: node.querySelector('.epic-stone-size')?.textContent || '',
+    flag: !(node.querySelector('.stone-flag') as HTMLElement | null)?.hidden, size: node.querySelector('.stone-size')?.textContent || '',
     line: Boolean(node.querySelector('.lifecycle-line')), words: node.querySelector('.sws-secondary')?.textContent || '',
   })));
   assert.deepEqual(stones.map((s) => s.id), [aging, review, toAssign], 'none flagged: most progressed first; no Done Epic; no New Epic stone');

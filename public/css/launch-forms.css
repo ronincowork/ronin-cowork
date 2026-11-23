@@ -136,16 +136,16 @@
   .lifecycle-row[data-status='review'] > i { background: var(--accent); }
   .lifecycle-row[data-status='done'] > i { background: var(--ok); }
   /* THE EPICS PHALANX (w897): the phalanx's own stones; the title wraps in full, the key under it. */
-  /* ONE STONE GRAMMAR for the Epics and the Teams collections (w900): name, what needs you in
-     amber (wraps in full), a muted last line, the lifecycle line along the bottom edge. */
+  /* ONE STONE GRAMMAR for the Epics and the Teams collections (w900): the name, a muted last line,
+     the stone's marks (below). */
   .epic-record-stones .sws-stone, .team-roster-phalanx .team-stone { aspect-ratio: auto; min-height: calc(var(--sws-stone) / 2); padding-bottom: calc(var(--space-inset) + 5px); }
   .epic-record-stones .sws-label, .team-roster-phalanx .team-stone .sws-label { overflow-wrap: anywhere; }
   .epic-record-stones .sws-stone, .team-roster-phalanx .team-stone { gap: var(--space-row); }
-  .epic-record-stones .sws-secondary, .team-roster-phalanx .team-stone .sws-secondary { color: var(--accent); white-space: normal; overflow-wrap: anywhere; } /* what needs you: wraps in full */
   .epic-record-stones .sws-state, .team-roster-phalanx .team-stone .sws-state { margin-top: auto; color: var(--muted); }
-  /* AN EPIC STONE'S MARKS (owner, 2026-11-23): ⚑ top right in the flagged amber (the Agent pill's);
-     its open item count small and grey bottom right, above the lifecycle line. */
-  .epic-stone-marks { display: contents; }
+  /* A STONE'S MARKS (owner, 2026-11-23; the Epic and Team stones, item-lifecycle.js createStoneMarks):
+     ⚑ top right in the flagged amber (the Agent pill's); its open item count small and grey bottom
+     right, above the lifecycle line. */
+  .stone-marks { display: contents; }
   /* NEW WORK ITEM (owner, 2026-11-23): wide before deep: a step's questions side by side while
      there is width, wrapping only when there is not; one answered takes its others away (hidden). */
   .epic-new-row { display: flex; flex-wrap: wrap; align-items: flex-start; gap: var(--space-inline) var(--space-inset); }
@@ -153,14 +153,14 @@
   .epic-new .ask[hidden] { display: none; }
   .epic-new-tail { display: flex; justify-content: flex-end; font-size: var(--text-small); }
   .epic-new-tail > .ask { flex: 0 1 12rem; }
-  .epic-stone-flag { position: absolute; top: var(--space-inset); right: var(--space-inset); color: var(--warn); line-height: 1; }
-  .epic-stone-flag[hidden] { display: none; }
-  .epic-record-stones .sws-label { padding-right: calc(var(--space-inset) + 0.5em); }
-  .epic-record-stones .sws-state { padding-right: 2.5em; }
-  .epic-stone-size { position: absolute; right: var(--space-inset); bottom: calc(var(--space-inset) + 5px); color: var(--muted); font-size: var(--text-small); line-height: 1; }
-  /* EVERY EPIC STONE THE SAME HEIGHT (owner, 2026-11-23): a grid whose rows are all the tallest stone's. */
-  .sws.epic-record-stones .sws-grid { display: grid; grid-template-columns: repeat(auto-fill, var(--sws-stone)); grid-auto-rows: 1fr; justify-content: center; }
-  .sws.epic-record-stones[data-open='true'] .sws-grid { grid-template-columns: var(--sws-stone); }
+  .stone-flag { position: absolute; top: var(--space-inset); right: var(--space-inset); color: var(--warn); line-height: 1; }
+  .stone-flag[hidden] { display: none; }
+  .epic-record-stones .sws-label, .team-roster-phalanx .team-stone .sws-label { padding-right: calc(var(--space-inset) + 0.5em); }
+  .epic-record-stones .sws-state, .team-roster-phalanx .team-stone .sws-state { padding-right: 2.5em; }
+  .stone-size { position: absolute; right: var(--space-inset); bottom: calc(var(--space-inset) + 5px); color: var(--muted); font-size: var(--text-small); line-height: 1; }
+  /* EVERY EPIC AND TEAM STONE THE SAME HEIGHT (owner, 2026-11-23): a grid whose rows are all the tallest stone's. */
+  .sws:is(.epic-record-stones, .team-roster-phalanx) .sws-grid { display: grid; grid-template-columns: repeat(auto-fill, var(--sws-stone)); grid-auto-rows: 1fr; justify-content: center; }
+  .sws:is(.epic-record-stones, .team-roster-phalanx)[data-open='true'] .sws-grid { grid-template-columns: var(--sws-stone); }
   .epics-records > .wk-surface-content > .epic-empty { padding: var(--space-inset); }
   .epic-source[hidden] { display: none; }
   .team-bar { display: flex; flex-direction: column; gap: var(--space-inline); padding: var(--space-inline) var(--space-inset); border: var(--edge) solid var(--line-2); border-radius: var(--radius-hair); background: var(--surface); }

@@ -30,7 +30,7 @@ import { itemBar } from './tile-island.js';
 import { createPhalanx } from './phalanx.js';
 import { S } from './state.js';
 import { epicAttention, epicMoved, isOpenEpic, orderEpics } from './epic-stage.js';
-import { counted, statusKey } from './item-lifecycle.js';
+import { createStoneMarks, statusKey } from './item-lifecycle.js';
 import { createProgress } from './epic-progress.js';
 import { humanAge } from './work-record.js';
 import { membersOfTeam, subscribe as hearTeams, teamsFromState } from './team-controller.js';
@@ -419,20 +419,8 @@ export function createEpicStones({ epicsRead, workbench = null, bare = false, em
   // and grey, how many of its items are not Done (the Epic's size). One node per Epic, kept (KAN-413).
   const marks = new Map();
   const marksFor = (epic, items) => {
-    if (!marks.has(epic.id)) {
-      const node = el('span', 'epic-stone-marks');
-      const flag = el('span', 'epic-stone-flag', '⚑');
-      flag.title = t('epics.flagged_title', 'Something here is flagged');
-      const size = el('small', 'epic-stone-size');
-      node.append(lineFor(epic.id).el, flag, size);
-      marks.set(epic.id, { node, flag, size });
-    }
-    const one = marks.get(epic.id);
-    const open = items.filter((item) => statusKey(item.status) !== 'done');
-    one.flag.hidden = !(epic.flagged || open.some((item) => item.flagged));
-    const n = String(open.filter(counted).length);
-    if (one.size.textContent !== n) one.size.textContent = n;
-    return one.node;
+    if (!marks.has(epic.id)) marks.set(epic.id, createStoneMarks(lineFor(epic.id)));
+    return marks.get(epic.id).update(items, { flagged: Boolean(epic.flagged) });
   };
   const stones = createPhalanx({
     className: 'epic-record-stones',

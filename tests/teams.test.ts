@@ -1,6 +1,6 @@
 /**
  * Teams: each Team shown by what it is (w900, KAN-780). The Teams page's stones (the Epic stones'
- * grammar: name, what needs you, lead, the shared lifecycle line; no Show question), its selector (a card per Team, no Agent's own card), one Team's
+ * grammar: name, lead, ⚑ and open count, the shared lifecycle line; no Show question), its selector (a card per Team, no Agent's own card), one Team's
  * three views (Agents, Epics, Configuration; its Epics without New Epic) and No Team, which is
  * there only while an Agent is outside every Team and opens its Agents.
  */
@@ -50,8 +50,11 @@ test('the Teams page and one Team, as a person reads and presses them', async (t
   const stone = '.team-roster-phalanx [data-sws-id="shop"]';
   await page.waitForSelector(`${stone} .sws-state`);
   assert.equal(await page.textContent(`${stone} .sws-label`), 'Shop');
-  // The Epic stones' grammar: name, what needs you in amber (Price list is In Review), the lead.
-  assert.equal(await page.textContent(`${stone} .sws-secondary`), 'Needs review', 'what needs you');
+  // The Epic stones' grammar: name, the lead, no amber line; ⚑ only while something open is
+  // flagged (nothing is), and the open count small and grey (Price list: 1).
+  assert.equal(await page.$(`${stone} .sws-secondary`), null, 'no amber line');
+  assert.equal(await page.isVisible(`${stone} .stone-flag`), false, 'nothing flagged');
+  assert.equal(await page.textContent(`${stone} .stone-size`), '1', 'one open item');
   assert.match(await page.textContent(`${stone} .sws-state`) || '', /^人 Ana$/, 'the lead');
   assert.equal(await page.$(`${stone} .teams-launch`), null, 'Launch is the opened Team\'s, not the stone\'s');
   // The stone's line is the shared item lifecycle over the Team's items: the Epic itself is not

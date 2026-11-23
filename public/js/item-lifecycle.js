@@ -152,3 +152,31 @@ export function createLifecycle(kind = 'line') {
     reading: () => reading,
   };
 }
+
+/**
+ * A STONE'S MARKS (owner, 2026-11-23; the Epic and Team stones): one kept node (display: contents)
+ * holding the lifecycle line along the stone's foot, ⚑ top right in the flagged amber while
+ * anything open is flagged, and bottom right, small and grey, how many counted items are open
+ * (the size). Passed as the phalanx stone's marker; `update(items, { flagged })` repaints it.
+ */
+export function createStoneMarks(line) {
+  const node = document.createElement('span');
+  node.className = 'stone-marks';
+  const flag = document.createElement('span');
+  flag.className = 'stone-flag';
+  flag.textContent = '⚑';
+  flag.title = t('epics.flagged_title', 'Something here is flagged');
+  const size = document.createElement('small');
+  size.className = 'stone-size';
+  node.append(line.el, flag, size);
+  return {
+    el: node,
+    update(items, { flagged = false } = {}) {
+      const open = items.filter((item) => statusKey(item.status) !== 'done');
+      flag.hidden = !(flagged || open.some((item) => item.flagged));
+      const n = String(open.filter(counted).length);
+      if (size.textContent !== n) size.textContent = n;
+      return node;
+    },
+  };
+}

@@ -38,7 +38,7 @@ import { registerWorkbenchCatalog, WORKBENCH_PROFILES as WB_PROFILES, WORKBENCH_
 import { createAgentCompositionSurface } from './agent-composition.js';
 import { createTeamEpics, teamEpicIds } from './team-epics.js';
 import { createFindItem } from './team-find-item.js';
-import { createEpicRecord, createEpicStones, createEpicsRead } from './epics-surface.js';
+import { createEpicRecord, createEpicStones, createEpicsRead, createNewItem } from './epics-surface.js';
 import { attention, attentionWords, createLifecycle, statusKey } from './item-lifecycle.js';
 import { splitItemTitle } from './item-title.js';
 
@@ -326,6 +326,12 @@ export function createCoworkView(options = {}) {
     },
     epics: () => [],
     epicRecord: (id, detail) => keepTeamSurface(createEpicRecord(detail.key, { epicsRead: createEpicsRead(() => ''), launch: false })),
+    // New Item (owner, 2026-11-23): the Epics workbench's form as it is, started on Task; what is
+    // made shows its Epic in the same tilespace (an Epic itself, or the parent of anything else).
+    newItem: (id) => keepTeamSurface(createNewItem({ kind: 'Task', epicsRead: createEpicsRead(() => ''), onMade: (item) => {
+      const key = item?.level === 1 ? item.id : item?.parent;
+      if (key) bench.place(WB_TYPES.epicRecord, id, { key });
+    } })),
     archives: (id) => ({ el: archivesBySeat[id].el, show: () => void archivesBySeat[id].room.enter() }),
     document: (detail = {}) => createDocumentWorkspaceAdapter({ root: detail.root, path: detail.path || detail.key }),
     team: (id, detail) => createLeagueTeamSurface(detail.key, id),

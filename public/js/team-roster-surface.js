@@ -8,7 +8,7 @@ import { SURFACE_DRAG } from './workbench.js';
 import { WORKBENCH_TYPES } from './workbench-catalog.js';
 import { teamsRows, workspaces } from './teams-surface-rows.js';
 import { listedTeam } from './roster-groups.js';
-import { attention, attentionWords, createLifecycle } from './item-lifecycle.js';
+import { createLifecycle, createStoneMarks, statusKey } from './item-lifecycle.js';
 import { agentTitle } from './team-members.js';
 
 /**
@@ -34,12 +34,13 @@ export function createTeamRosterSurface({ teamDetail } = {}) {
     roots = (nextRoots || []).map(String);
     paint();
   } });
-  // One line per Team, kept: phalanx counts a Node by its identity, so a fresh one each push
-  // would redraw every stone (KAN-413).
-  const lines = new Map();
-  const lineOf = (team) => {
-    if (!lines.has(team)) { const line = createLifecycle('line'); line.el.classList.add('team-progress-line'); lines.set(team, line); }
-    return lines.get(team);
+  // One set of marks per Team, kept: phalanx counts a Node by its identity, so a fresh one each push
+  // would redraw every stone (KAN-413). The marks are the Epic stones' (owner, 2026-11-23): the
+  // lifecycle line, ⚑ while anything open the Team or its Agents hold is flagged, the open count.
+  const marks = new Map();
+  const marksOf = (team) => {
+    if (!marks.has(team)) { const line = createLifecycle('line'); line.el.classList.add('team-progress-line'); marks.set(team, { line, marks: createStoneMarks(line) }); }
+    return marks.get(team);
   };
   const agentsWord = (count) => (count === 1 ? t('teams_surface.one_agent', '1 Agent') : t('teams_surface.agents', '{count} Agents', { count }));
   const people = (name) => {
@@ -49,18 +50,17 @@ export function createTeamRosterSurface({ teamDetail } = {}) {
   };
   const items = () => {
     const rows = new Map(teamsRows(teamsFromState(), membersOfTeam, { roots }).map((row) => [row.id, row]));
-    const teams = teamsFromState().filter((team) => !team.holding && listedTeam(team) && rows.has(team.name)).map((team) => {
-      const needs = attention(team.items || []);
-      return { team, needs, waiting: Number(needs.review || needs.flagged || needs.unassigned) };
-    }).sort((a, b) => (b.waiting - a.waiting) || a.team.name.localeCompare(b.team.name));
-    const stones = teams.map(({ team, needs }) => {
+    // Flagged first, then by name: the flag is what the stone shows.
+    const flaggedOf = (team) => (team.items || []).some((item) => item.flagged && statusKey(item.status) !== 'done');
+    const teams = teamsFromState().filter((team) => !team.holding && listedTeam(team) && rows.has(team.name))
+      .sort((a, b) => Number(flaggedOf(b)) - Number(flaggedOf(a)) || (String(a.title ?? '').trim() || a.name).localeCompare(String(b.title ?? '').trim() || b.name));
+    const stones = teams.map((team) => {
       const name = String(team.title ?? '').trim() || team.name;
-      const line = lineOf(team.name);
-      line.update(team.items || []);
-      const words = attentionWords(needs);
+      const one = marksOf(team.name);
+      one.line.update(team.items || []);
       return {
-        id: team.name, label: name, ...(words ? { secondary: words } : {}), state: people(team.name),
-        marker: line.el, className: 'team-stone', draggable: true,
+        id: team.name, label: name, state: people(team.name),
+        marker: one.marks.update(team.items || []), className: 'team-stone', draggable: true,
         events: { dragstart: (event) => {
           event.dataTransfer.setData(SURFACE_DRAG, JSON.stringify({ type: WORKBENCH_TYPES.team, detail: { key: team.name } }));
           event.dataTransfer.setData('text/plain', name);

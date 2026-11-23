@@ -42,7 +42,7 @@ not separate layout systems.
 |---|---|
 | Campaign | Campaign settings and Campaign-level resources |
 | Teams collection | Teams, Agents, shared resources, and creation surfaces available in the selected Campaign context |
-| Team | that Team's Agents, Commons, Epics, New Agent and Agent composition |
+| Team | that Team's Agents, Commons, Epics, New Agent, New Item (the Epics workbench's New form, started on Task) and Agent composition |
 | Agent | Self, Documents, Team membership, and Work Items: the work items the Agent holds across its Teams |
 | Setup | the Garden plus Model providers, Register, Workspace folders, Installations, Password and Launch |
 
@@ -144,11 +144,12 @@ remembered arrangement instead of applying the floor again.
 
 Teams first opens with the Team roster in tilespace 1 and New Team in tilespace 2.
 
-The **Teams** surface is the one list of Teams, its stones read like the Epic stones: the Team's
-name; what needs you, in amber, only when something does (**Needs review**, **Flagged**, **Work
-to assign**); its lead (人); and along the bottom edge the item lifecycle over everything the Team
-and its Agents hold, in the board's colours (To Do, In Progress, In Review, Done; press it for the
-counts). A Team holding nothing has no line. Teams needing you come first, then by name.
+The **Teams** surface is the one list of Teams, its stones read like the Epic stones, every one
+the same height: the Team's name; its lead (人); ⚑ top right, in amber, while anything open the
+Team or its Agents hold is flagged; bottom right, small and grey, how many of its items are not
+Done; and along the bottom edge the item lifecycle over everything the Team and its Agents hold,
+in the board's colours (To Do, In Progress, In Review, Done; press it for the counts). A Team
+holding nothing has no line. Flagged Teams come first, then by name.
 **Workspace** narrows the stones to the Teams in those Workspaces. Agents outside any Team are one
 more stone, **No Team**, last and plain, while there are any.
 
