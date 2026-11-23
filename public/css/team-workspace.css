@@ -63,7 +63,7 @@
   .team-bar-objective[hidden], .league-team-view[hidden] { display: none; }
   /* THE TEAM'S BAR (owner, 2026-11-23): an Epic's bar on its page (style.css .item-bar in
      .epic-detail), read not pressed: Launch where an item's status sits, the lifecycle line along its foot. */
-  .team-detail > .item-bar.team-bar { position: relative; overflow: hidden; width: 100%; padding-bottom: calc(var(--space-inline) + 5px); }
+  .team-detail > .item-bar.team-bar { position: relative; overflow: hidden; width: 100%; }
   .team-bar .team-bar-actions { margin-left: auto; }
   .team-bar .lifecycle-line[data-empty='true'] { display: none; }
   .league-team-view { display: flex; flex-direction: column; gap: 0; min-width: 0; }
@@ -74,14 +74,20 @@
   .league-team-view-agents.epic-bars { gap: var(--space-inline); padding-top: var(--space-inline); }
   .team-agent { display: flex; flex-direction: column; gap: var(--space-row); min-width: 0; }
   .league-team-view-agents > .team-agent:has(> .team-agent-lead) { margin-bottom: var(--space-inline); }
-  .team-agent > button.team-agent-bar { position: relative; overflow: hidden; width: 100%; padding-right: calc(var(--space-inset) + 1.5em); padding-bottom: calc(var(--space-inline) + 5px); font-family: inherit; cursor: pointer; }
+  .team-agent > button.team-agent-bar { position: relative; overflow: hidden; width: 100%; font-family: inherit; cursor: pointer; }
   .team-agent > button.team-agent-bar[data-flagged='true'] { background: color-mix(in srgb, var(--warn) 12%, transparent); /* status: a person is needed */ }
   .team-agent-bar .team-agent-lead-mark { flex: 0 0 auto; color: var(--accent); }
   .team-agent-bar .lifecycle-line[data-empty='true'] { display: none; }
-  .team-agent-mark { position: absolute; top: var(--space-inline); right: var(--space-inset); color: var(--warn); line-height: 1; }
+  .team-agent-mark { position: absolute; top: var(--space-inset); right: var(--space-inset); color: var(--warn); line-height: 1; }
   .team-agent-mark:is(.is-working, .is-ready) { box-sizing: border-box; width: 6px; height: 6px; margin-top: 0.35em; border: var(--edge) solid var(--kaki); border-radius: 50%; background: var(--kaki); /* kaki: the Chat's working dot */ }
   .team-agent-mark.is-ready { background: transparent; }
   .team-agent-open { margin-left: var(--space-inset); }
+  /* ROOM AND TYPE ON THE TEAM PAGE (owner, 2026-11-23): its bars, the opened Agent's item bars
+     too, at body size with an inset all round, the line's height kept clear at the foot and the
+     mark's width at the right. Doubled class: above style.css's shared item-bar rule (0,3,1). */
+  .league-team-edit-content :is(.epic-bars, .epic-detail) :is(button, div).item-bar.item-bar { width: 100%; gap: var(--space-row); padding: var(--space-inset) var(--space-inset) calc(var(--space-inset) + 5px); font-size: var(--text-body); }
+  .league-team-edit-content :is(.epic-bars, .epic-detail) :is(button, div).item-bar.item-bar.team-agent-bar { padding-right: calc(var(--space-inset) + 1.5em); }
+  .league-team-edit-content .team-fold > summary.team-fold-line { font-size: var(--text-body); }
   .league-team-view-config { gap: var(--space-subsection); }
   /* A FOLD (owner, 2026-11-23): Epics and Configuration under the Agents, each a line that expands
      and collapses; no view switch. */
