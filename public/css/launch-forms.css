@@ -146,13 +146,13 @@
      ⚑ top right in the flagged amber (the Agent pill's); its open item count small and grey bottom
      right, above the lifecycle line. */
   .stone-marks { display: contents; }
-  /* NEW WORK ITEM (owner, 2026-11-23): wide before deep: a step's questions side by side while
-     there is width, wrapping only when there is not; one answered takes its others away (hidden). */
+  /* NEW WORK ITEM (owner, 2026-11-23): wide before deep: a step's questions one row of stones (one ask),
+     wrapping only when there is no width; one answered takes its others away (hidden). */
   .epic-new-row { display: flex; flex-wrap: wrap; align-items: flex-start; gap: var(--space-inline) var(--space-inset); }
   .epic-new-row > * { flex: 1 1 14rem; min-width: 0; }
-  .epic-new .ask[hidden] { display: none; }
-  .epic-new-tail { display: flex; justify-content: flex-end; font-size: var(--text-small); }
-  .epic-new-tail > .ask { flex: 0 1 12rem; }
+  .epic-new .ask-stone[hidden] { display: none; }
+  .epic-new-kind .ask-group { flex: 1 1 100%; }
+  .epic-new-kind .ask-stone[data-ask-key='priority'] { margin-left: auto; } /* Priority at the right of Kind's row */
   .stone-flag { position: absolute; top: var(--space-inset); right: var(--space-inset); color: var(--warn); line-height: 1; }
   .stone-flag[hidden] { display: none; }
   .epic-record-stones .sws-label, .team-roster-phalanx .team-stone .sws-label { padding-right: calc(var(--space-inset) + 0.5em); }

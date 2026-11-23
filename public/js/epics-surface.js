@@ -471,12 +471,11 @@ const KINDS = ['Epic', 'Story', 'Task', 'Bug', 'Feature'];
  * NEW WORK ITEM (owner, 2026-11-23): one form for any work item, an Epic to start (the Epics
  * workbench's New Epic pill; a Team's to come), in the New Team and New Agent forms' grammar
  * (new-team-form.js): its head with Create, numbered steps under it, the questions of a step side
- * by side while there is width (wide before deep). 1 Kind. 2 Under (gone for an Epic, which goes
- * under nothing): an open Epic, or a Task, Story, Bug or Feature, which makes it a Subtask; one
- * answered takes the other away. 3 the short and long title (saved `short: long`) and what done
- * looks like. 4 Who does the work: a Team, a lead or an Agent, one of the three, or nobody yet
- * (`holder` answers it on opening: inside a Team, that Team).
- * Priority last, small. Create (or Ctrl/Cmd+Enter) makes it (POST /api/work-items) and
+ * by side, one row of stones per step (wide before deep). 1 Kind, its Priority at the right of the
+ * same row. 2 Under (gone for an Epic, which goes under nothing): an open Epic, or a Task, Story,
+ * Bug or Feature, which makes it a Subtask; one answered takes the other away. 3 the short and long
+ * title (saved `short: long`) and the Objective. 4 Who does the work: Team, Lead, Agent, one of the
+ * three, or nobody yet (`holder` answers it on opening: inside a Team, that Team). Create (or Ctrl/Cmd+Enter) makes it (POST /api/work-items) and
  * `onMade(item)` lets the bench show it.
  */
 export function createNewItem({ kind: startKind = 'Epic', epicsRead = null, holder: presetHolder = '', onMade = () => {} } = {}) {
@@ -496,28 +495,36 @@ export function createNewItem({ kind: startKind = 'Epic', epicsRead = null, hold
   const ready = () => create.setDisabled(busy || !draft.short.trim());
   const retitle = () => { if (surface.header) surface.header.title.textContent = heading(); };
   const row = (...nodes) => { const node = el('div', 'epic-new-row'); node.append(...nodes); return node; };
-  /** One question of its own, so a row can take one away (`hidden`) without touching the rest. */
-  const one = (key, label, options, { blank = '', value = '', onChange }) => ask([{ fields: [{ key, label, ...(blank ? { blank } : {}), options }] }],
-    { value: { [key]: value }, density: 'tight', onChange: (answer) => onChange(String(answer[key] || '')) });
-  /** Questions of which one is answered: answering one hides the others; clearing it brings them back. */
+  /** A row of questions, one ask (its stones side by side), of which one is answered: answering one
+   * hides the other stones; clearing it brings them back. `pick(key, v)` answers one from code. */
   const oneOf = (questions, set) => {
-    const asks = questions.map(({ key, label, options }) => one(key, label, options, { blank: t('epics.pick', 'Pick'), onChange: (v) => {
-      set(v);
-      for (const [i, q] of asks.entries()) q.el.hidden = Boolean(v) && questions[i].key !== key;
-    } }));
-    return asks;
+    const value = Object.fromEntries(questions.map(({ key }) => [key, '']));
+    const show = (picked) => { for (const { key } of questions) { const stone = q.el.querySelector(`[data-ask-key="${key}"]`); if (stone) stone.hidden = Boolean(picked) && key !== picked; } };
+    const q = ask([{ fields: questions.map(({ key, label, options }) => ({ key, label, blank: t('epics.pick', 'Pick'), options })) }],
+      { value, density: 'tight', onChange: (answer) => {
+        const picked = questions.map(({ key }) => key).find((key) => answer[key]) || '';
+        set(picked ? String(answer[picked]) : '');
+        show(picked);
+      } });
+    const pick = (key, v) => { for (const one of questions) q.set(one.key, one.key === key ? v : ''); show(v ? key : ''); };
+    return { el: q.el, pick, destroy: () => q.destroy() };
   };
 
-  // 1 · Kind.
+  // 1 · Kind, and on the same row at the right its Priority.
   const stepKind = createStep({ n: 1, key: 'kind', title: t('work_items.kind', 'Kind') });
-  const kindQ = one('kind', t('work_items.kind', 'Kind'), KINDS.map((v) => ({ v, l: v })), { value: draft.kind, onChange: (v) => {
-    draft.kind = v || startKind;
+  const kindQ = ask([{ fields: [
+    { key: 'kind', label: t('work_items.kind', 'Kind'), options: KINDS.map((v) => ({ v, l: v })) },
+    { key: 'priority', label: t('work_items.priority', 'Priority'), options: PRIORITIES.map((v) => ({ v, l: v })) },
+  ] }], { value: { kind: draft.kind, priority: draft.priority }, density: 'tight', className: 'epic-new-kind', onChange: ({ kind, priority: next }) => {
+    draft.priority = String(next || 'Medium');
+    if (String(kind || startKind) === draft.kind) return;
+    draft.kind = String(kind || startKind);
     stepUnder.el.hidden = draft.kind === 'Epic';
-    if (draft.kind === 'Epic') { draft.parent = ''; for (const q of under) { q.set?.(q === under[0] ? 'epic' : 'item', ''); q.el.hidden = false; } }
+    if (draft.kind === 'Epic') { draft.parent = ''; under.pick('', ''); }
     renumber();
     retitle();
   } });
-  stepKind.body.append(row(kindQ.el));
+  stepKind.body.append(kindQ.el);
 
   // 2 · Under: an open Epic, or a level-0 item under one (it is then a Subtask).
   const stepUnder = createStep({ n: 2, key: 'under', title: t('work_items.under', 'Under') });
@@ -529,11 +536,11 @@ export function createNewItem({ kind: startKind = 'Epic', epicsRead = null, hold
     { key: 'epic', label: t('work_items.under_epic', 'Epic'), options: epicOptions },
     { key: 'item', label: t('work_items.under_item', 'Task, Story, Bug or Feature'), options: itemOptions },
   ], (v) => { draft.parent = v; retitle(); });
-  stepUnder.body.append(row(...under.map((q) => q.el)));
+  stepUnder.body.append(under.el);
   stepUnder.el.hidden = draft.kind === 'Epic';
 
-  // 3 · Title and goal: a short title (the stone's, the bar's) and a long one; a colon would split the short one.
-  const stepTop = createStep({ n: 3, key: 'top', title: t('epics.new_title_goal', 'Title & goal') });
+  // 3 · Title and objective: a short title (the stone's, the bar's) and a long one; a colon would split the short one.
+  const stepTop = createStep({ n: 3, key: 'top', title: t('work_items.title_objective', 'Title & objective') });
   const titleInput = el('input');
   titleInput.type = 'text';
   titleInput.placeholder = t('epics.new_short_placeholder', 'a few words');
@@ -548,11 +555,11 @@ export function createNewItem({ kind: startKind = 'Epic', epicsRead = null, hold
   longInput.addEventListener('input', () => { draft.long = longInput.value; });
   const goalInput = el('textarea');
   goalInput.rows = 4;
-  goalInput.placeholder = t('epics.new_goal_placeholder', 'what done looks like, in your words');
+  goalInput.placeholder = t('work_items.objective_placeholder', 'what done looks like, in your words');
   goalInput.addEventListener('input', () => { draft.objective = goalInput.value; });
   stepTop.body.append(row(createField({ label: t('epics.new_short', 'Short title'), control: titleInput }).el,
     createField({ label: t('epics.new_long', 'Long title'), control: longInput }).el),
-  createField({ label: t('epics.new_goal', 'What done looks like'), control: goalInput }).el);
+  createField({ label: t('work_items.objective', 'Objective'), control: goalInput }).el);
 
   // 4 · Who does the work: a Team, a lead or an Agent; nobody is fine (the item's bar assigns later).
   const stepWho = createStep({ n: 4, key: 'who', title: t('work_items.who', 'Who does the work') });
@@ -571,23 +578,17 @@ export function createNewItem({ kind: startKind = 'Epic', epicsRead = null, hold
   // the others step aside as if the person had picked it, and clearing it brings them back.
   if (presetHolder) {
     const key = presetHolder.startsWith('team:') ? 'team' : leads().some((option) => option.v === presetHolder) ? 'lead' : 'agent';
-    const at = ['team', 'lead', 'agent'].indexOf(key);
-    who[at].set(key, presetHolder);
+    who.pick(key, presetHolder);
     draft.holder = presetHolder;
-    for (const [i, q] of who.entries()) q.el.hidden = i !== at;
   }
-  stepWho.body.append(row(...who.map((q) => q.el)));
+  stepWho.body.append(who.el);
 
-  // Priority, last and small.
-  const priority = one('priority', t('epics.priority', 'Priority'), PRIORITIES.map((v) => ({ v, l: v })), { value: draft.priority, onChange: (v) => { draft.priority = v || 'Medium'; } });
-  const tail = el('div', 'epic-new-tail');
-  tail.append(priority.el);
 
   const steps = [stepKind, stepUnder, stepTop, stepWho];
   function renumber() { let n = 0; for (const step of steps) if (!step.el.hidden) step.setNumber(++n); }
   renumber();
   const form = el('div', 'ntf-form');
-  form.append(...steps.map((step) => step.el), tail);
+  form.append(...steps.map((step) => step.el));
   form.addEventListener('keydown', (event) => { if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) { event.preventDefault(); void make(); } });
   surface.content.append(form, notice.el);
 
@@ -606,5 +607,5 @@ export function createNewItem({ kind: startKind = 'Epic', epicsRead = null, hold
     if (result.ok) onMade(result.data.item || null);
   }
   return { el: surface.el, show: () => { ready(); titleInput.focus(); },
-    destroy: () => { for (const q of [kindQ, ...under, ...who, priority]) q.destroy(); } };
+    destroy: () => { for (const q of [kindQ, under, who]) q.destroy(); } };
 }

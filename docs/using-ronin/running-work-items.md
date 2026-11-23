@@ -139,10 +139,11 @@ an item has a link on the Jira item that opens its chat.
   Status questions, then its items grouped by status. Press an item to read it in its place;
   the board stays. **Launch** opens the Team working the Epic in a new tab: the Agent holding
   it in tilespace 1 (the lead when the Team holds it), the Epic in tilespace 2.
-- **New Epic** (the selector's pill): a new work item, Epic to start. **Kind** first; **Under**
-  (not for an Epic): an open Epic, or a Task, Story, Bug or Feature, which makes it a Subtask;
-  its short and long title (saved as `short: long`) and what done looks like; **Who does the
-  work**: a Team, a lead or an Agent (answer one and the others go; or nobody yet); priority last.
+- **New Epic** (the selector's pill): a new work item, Epic to start. **Kind** first, its
+  **Priority** on the same row; **Under** (not for an Epic): an open Epic, or a Task, Story, Bug or
+  Feature, which makes it a Subtask; its short and long title (saved as `short: long`) and its
+  **Objective**; **Who does the work**: Team, Lead or Agent (answer one and the others go; or
+  nobody yet).
   **Create** (or Ctrl/Cmd+Enter) makes it; an Epic shows in the same tilespace.
 - **epic-stage** is read from the Epic's Tasks, Stories, Bugs and Features (not its own
   Status): each scores To Do 1, In Progress 2, In Review 3, Done 4, and their average is the
