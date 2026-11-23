@@ -75,6 +75,11 @@
   .team-agent-bar .lifecycle-line[data-empty='true'] { display: none; }
   .league-team-view-agents > .league-team-add { padding-top: var(--space-inline); }
   .league-team-view-config { gap: var(--space-subsection); }
+  /* A FOLD (owner, 2026-11-23): Epics and Configuration under the Agents, each a line that expands
+     and collapses; no view switch. */
+  .team-fold { border-top: var(--edge) solid var(--line-2); }
+  .team-fold > summary.team-fold-line { padding: var(--space-inline) 0; color: var(--fg-strong); font-weight: var(--weight-strong); cursor: pointer; }
+  .team-fold > .team-fold-body { padding-bottom: var(--space-inline); }
   /* The Team's Epics: the Epic stones as a phalanx from the left edge; the open Teams rail's
      one-column rule is the outer phalanx's, not theirs, and their empty head takes no room. */
   .league-team-view-epics .epics-records-bare.sws-host { padding: 0; overflow: visible; }
