@@ -140,8 +140,8 @@ an item has a link on the Jira item that opens its chat.
   the board stays. **Launch** opens the Team working the Epic in a new tab: the Agent holding
   it in tilespace 1 (the lead when the Team holds it), the Epic in tilespace 2.
 - **New Epic** (the selector's pill): a new work item, Epic to start. **Kind** first, its
-  **Priority** on the same row; **Under** (not for an Epic): an open Epic, or a Task, Story, Bug or
-  Feature, which makes it a Subtask; its short and long title (saved as `short: long`) and its
+  **Priority** on the same row; **Parent** (not for an Epic) with **Epics only** beside it: on, the
+  open Epics (inside a Team, its Epics); off, the open items under them, which makes it a Subtask; its short and long title (saved as `short: long`) and its
   **Objective**; **Who does the work**: Team, Lead or Agent (answer one and the others go; or
   nobody yet).
   **Create** (or Ctrl/Cmd+Enter) makes it; an Epic shows in the same tilespace.

@@ -33,7 +33,7 @@ import { epicAttention, epicMoved, isOpenEpic, orderEpics } from './epic-stage.j
 import { createStoneMarks, statusKey } from './item-lifecycle.js';
 import { createProgress } from './epic-progress.js';
 import { humanAge } from './work-record.js';
-import { membersOfTeam, subscribe as hearTeams, teamsFromState } from './team-controller.js';
+import { membersOfTeam, subscribe as hearTeams, teamByName, teamsFromState } from './team-controller.js';
 import { workspaces } from './teams-surface-rows.js';
 import { createStep } from './form-steps.js';
 import { splitItemTitle } from './item-title.js';
@@ -472,8 +472,9 @@ const KINDS = ['Epic', 'Story', 'Task', 'Bug', 'Feature'];
  * workbench's New Epic pill; a Team's to come), in the New Team and New Agent forms' grammar
  * (new-team-form.js): its head with Create, numbered steps under it, the questions of a step side
  * by side, one row of stones per step (wide before deep). 1 Kind, its Priority at the right of the
- * same row. 2 Under (gone for an Epic, which goes under nothing): an open Epic, or a Task, Story,
- * Bug or Feature, which makes it a Subtask; one answered takes the other away. 3 the short and long
+ * same row. 2 Parent (gone for an Epic, which goes under nothing), Epics only beside it: an open
+ * Epic, or with Epics only off a Task, Story, Bug or Feature, which makes it a Subtask; inside a
+ * Team, that Team's. 3 the short and long
  * title (saved `short: long`) and the Objective. 4 Who does the work: Team, Lead, Agent, one of the
  * three, or nobody yet (`holder` answers it on opening: inside a Team, that Team). Create (or Ctrl/Cmd+Enter) makes it (POST /api/work-items) and
  * `onMade(item)` lets the bench show it.
@@ -520,22 +521,37 @@ export function createNewItem({ kind: startKind = 'Epic', epicsRead = null, hold
     if (String(kind || startKind) === draft.kind) return;
     draft.kind = String(kind || startKind);
     stepUnder.el.hidden = draft.kind === 'Epic';
-    if (draft.kind === 'Epic') { draft.parent = ''; under.pick('', ''); }
+    if (draft.kind === 'Epic') { draft.parent = ''; under.set('parent', ''); }
     renumber();
     retitle();
   } });
   stepKind.body.append(kindQ.el);
 
-  // 2 · Under: an open Epic, or a level-0 item under one (it is then a Subtask).
-  const stepUnder = createStep({ n: 2, key: 'under', title: t('work_items.under', 'Under') });
-  const epicOptions = () => epicOffers(read).map((epic) => ({ v: epic.key, l: epic.label, sub: epic.key }));
-  const itemOptions = () => read.list().filter(isOpenEpic).flatMap((epic) => read.items(epic.id)
-    .filter((item) => item.level === 0 && statusKey(item.status) !== 'done')
-    .map((item) => ({ v: item.id, l: splitItemTitle(item.title || item.id).shortTitle, sub: `${item.id} · ${splitItemTitle(epic.title || epic.id).shortTitle}` })));
-  const under = oneOf([
-    { key: 'epic', label: t('work_items.under_epic', 'Epic'), options: epicOptions },
-    { key: 'item', label: t('work_items.under_item', 'Task, Story, Bug or Feature'), options: itemOptions },
-  ], (v) => { draft.parent = v; retitle(); });
+  // 2 · Parent (owner, 2026-11-23): one question, and beside it Epics only (on by default). On, it
+  // offers the open Epics; off, every open Task, Story, Bug and Feature under them, a pick of which
+  // makes this a Subtask. Inside a Team (or once a Team is picked to do it), only that Team's Epics
+  // and the items under them. Gone for an Epic, which goes under nothing.
+  const stepUnder = createStep({ n: 2, key: 'under', title: t('work_items.parent', 'Parent') });
+  const teamNow = () => [presetHolder, draft.holder].find((h) => String(h).startsWith('team:'))?.slice(5) || '';
+  const parentEpics = () => {
+    const team = teamNow();
+    const mine = team ? new Set(teamByName(team)?.epics || []) : null;
+    return read.list().filter((epic) => isOpenEpic(epic) && (!mine || mine.has(epic.id)));
+  };
+  const parentOptions = (answers) => (answers.epicsOnly
+    ? parentEpics().map((epic) => ({ v: epic.id, l: splitItemTitle(epic.title || epic.id).shortTitle, sub: epic.id }))
+    : parentEpics().flatMap((epic) => read.items(epic.id).filter((item) => item.level === 0 && statusKey(item.status) !== 'done')
+      .map((item) => ({ v: item.id, l: splitItemTitle(item.title || item.id).shortTitle, sub: `${item.id} · ${splitItemTitle(epic.title || epic.id).shortTitle}` }))));
+  const under = ask([{ fields: [
+    { key: 'parent', label: t('work_items.parent', 'Parent'), blank: t('work_items.no_parent', 'None'), options: parentOptions },
+    { key: 'epicsOnly', label: t('work_items.epics_only', 'Epics only'), switch: [t('forms.yes', 'Yes'), t('forms.no', 'No')] },
+  ] }], { value: { parent: '', epicsOnly: true }, density: 'tight', onChange: ({ parent, epicsOnly }) => {
+    // A pick the other list does not hold is let go when the switch moves.
+    const still = parentOptions({ epicsOnly }).some((option) => option.v === parent);
+    if (parent && !still) { under.set('parent', ''); draft.parent = ''; }
+    else draft.parent = String(parent || '');
+    retitle();
+  } });
   stepUnder.body.append(under.el);
   stepUnder.el.hidden = draft.kind === 'Epic';
 
