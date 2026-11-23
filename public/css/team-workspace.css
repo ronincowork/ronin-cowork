@@ -108,6 +108,10 @@
      no line, and No Team is plain: no line, its name muted. */
   .team-progress-line[data-empty='true'] { display: none; }
   .team-roster-phalanx .team-stone-none .sws-label { color: var(--muted); }
+  /* The Teams stones bare (KAN-801: one Workspace's Teams): no head, the stones from the left edge. */
+  .team-roster-bare.sws-host.sws-host { padding: 0; overflow: visible; }
+  .team-roster-bare > .sws-header { display: none; }
+  .team-roster-bare .sws:not([data-open='true']) .sws-rail { justify-content: flex-start; padding: var(--edge-2); }
   .league-team-roster, .league-team-config { flex: 0 0 auto; }
   .league-team-roster { display: flex; flex-direction: column; min-height: 0; }
   .league-team-roster-heading { display: flex; align-items: center; justify-content: space-between; gap: var(--space-inline); margin-bottom: var(--space-paragraph); border-bottom: var(--edge) solid var(--line-2); padding-bottom: var(--space-row); }
