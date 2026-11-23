@@ -1,5 +1,5 @@
 /**
- * Workspaces: across Workspaces and inside one (KAN-780; KAN-784). Normal-size stones and no Agent
+ * Workspaces: across Workspaces and inside one (KAN-780; KAN-784; KAN-801). Epic/Team-shaped stones and no Agent
  * hints on the Workspaces page; one Workspace as an opened Team: its bar (pressed, its Configuration,
  * no document), then its Teams, Epics and document; its own page, `#/workspace/<name>`, no sideways
  * scroll on a narrow screen.
@@ -44,12 +44,13 @@ test('the Workspaces page and one Workspace, as a person reads and presses them'
   };
   const page = await open({ width: 1400, height: 900 });
 
-  // Layer 1: a stone per Workspace at the normal size, the Teams in it; no Agent hints.
+  // Layer 1: a stone per Workspace in the Epic/Team stone shape, the Teams in it; no Agent hints.
   await page.goto(`${ronin.base}/#/workspaces`);
   const stone = '.workspace-record-stones [data-sws-id="project_one"]';
   await page.waitForSelector(stone);
   const box = await page.locator(stone).boundingBox();
-  assert.ok(box && box.height >= box.width * 0.9, `a normal-size stone, not a short one: ${JSON.stringify(box)}`);
+  // The shared Epic/Team stone (launch-forms.css): a fifth wider than a Setup stone, at least 0.6 of its width tall.
+  assert.ok(box && box.height >= box.width * 0.6 - 1, `the Epic/Team stone shape, not a squashed one: ${JSON.stringify(box)}`);
   assert.equal((await page.textContent(`${stone} .stone-size`))?.trim(), '1', 'how many Teams work in it');
   assert.equal(await page.$('[data-workspace-view="workspaces"] .terminal-hints'), null, 'no Agent vocabulary or Session controls');
 
@@ -79,7 +80,7 @@ test('the Workspaces page and one Workspace, as a person reads and presses them'
   assert.ok(await page.$(`${epic} .lifecycle-line`), 'the shared progress line');
   assert.doesNotMatch(await page.textContent(epic) || '', /To Do/, 'no raw Epic Status on the stone');
   await page.click(`${epic} .sws-label, ${epic}`);
-  await page.waitForSelector('.workspace-fold-epics .epic-bar');
+  await page.waitForSelector('.workspace-fold-epics .sws-detail .epics-board .epic-group');
 
   // The document: Edit, Save, written to the one file.
   await page.click('.workspace-doc-pane .wk-action:has-text("Edit")');
