@@ -696,7 +696,7 @@ export function createCoworkView(options = {}) {
     const lines = new Map(); // agent name -> its progress line, kept so a stone compares the same node
     const lineOf = (agent) => { if (!lines.has(agent)) lines.set(agent, createLifecycle('line')); return lines.get(agent); };
     // No New Agent here (owner, 2026-11-23): an Agent is added to a Team where Agents are made.
-    // AN AGENT OPENED (owner, 2026-11-23), beside its stone as an Epic's opens: lines that expand
+    // AN AGENT OPENED (owner, 2026-11-23), under its stones: lines that expand
     // and collapse: Objective (its work record's, read only), then Work items (the Epics board's bars over what it holds,
     // epics-surface.js createItemBoard) and Configuration (the Agent's own: name, mandate and the
     // rest, agent-composition.js). Kept per Agent, so it keeps what is open in it.
@@ -735,7 +735,7 @@ export function createCoworkView(options = {}) {
     // name (人 for the lead); one mark top right
     // — ⚑ when flagged, else the pill's dot (solid working, hollow just finished), else none; bottom
     // right, small and grey, how many open items it holds; the lifecycle line along its foot. A
-    // pressed stone opens beside the rail, as an Epic's does: its Objective, Work items and Configuration.
+    // pressed stone opens under the stones, full width (launch-forms.css, no rail in a rail): its Objective, Work items and Configuration.
     const stoneMarks = new Map(); // agent -> { node, mark, size }, kept: the phalanx compares a marker by identity
     const marksOf = (agent, row) => {
       if (!stoneMarks.has(agent)) {
