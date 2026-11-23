@@ -679,14 +679,24 @@ export function createCoworkView(options = {}) {
     const lines = new Map(); // agent name -> its progress line, kept so a stone compares the same node
     const lineOf = (agent) => { if (!lines.has(agent)) lines.set(agent, createLifecycle('line')); return lines.get(agent); };
     // No New Agent here (owner, 2026-11-23): an Agent is added to a Team where Agents are made.
-    // AN AGENT OPENED (owner, 2026-11-23), beside its stone as an Epic's opens: two lines that
-    // expand and collapse: Work items (the Epics board's bars over what it holds,
+    // AN AGENT OPENED (owner, 2026-11-23), beside its stone as an Epic's opens: lines that expand
+    // and collapse: Objective (its work record's, read only), then Work items (the Epics board's bars over what it holds,
     // epics-surface.js createItemBoard) and Configuration (the Agent's own: name, mandate and the
     // rest, agent-composition.js). Kept per Agent, so it keeps what is open in it.
     const panels = new Map();
     const panelOf = (agent) => {
       if (panels.has(agent)) return panels.get(agent);
       const box = el('div', 'team-agent-open');
+      // Objective first (owner, 2026-11-23): what its work record states, to read, not edit.
+      const aim = fold('agent-objective', t('league.objective', 'Objective'), () => {}, `${name}\0${agent}\0objective`);
+      if (!teamFoldsOpen.has(`${name}\0${agent}\0objective`)) aim.node.open = true;
+      const aimText = el('p', 'team-agent-objective');
+      aim.body.append(aimText);
+      const paintAim = () => {
+        const words = String(rows.get(agent)?.tegami?.objective || '').trim() || t('work_record.task_unstated', 'No task stated in this work record.');
+        if (aimText.textContent !== words) aimText.textContent = words;
+      };
+      paintAim();
       const board = createItemBoard({ every: () => (held.get(agent) || []).map((item) => ({ ...item })), empty: t('island.none', 'This Agent holds no open work items.') });
       const work = fold('agent-items', t('island.items', 'Work items held'), () => board.paint(), `${name}\0${agent}\0items`);
       if (!teamFoldsOpen.has(`${name}\0${agent}\0items`)) work.node.open = true;
@@ -699,16 +709,16 @@ export function createCoworkView(options = {}) {
         config.body.append(reader.el, createActionBar({ actions: [reader.action] }).el);
         reader.show?.();
       }, `${name}\0${agent}\0config`);
-      box.append(work.node, config.node);
-      const one = { box, board, destroy: () => { board.destroy(); reader?.destroy?.(); } };
+      box.append(aim.node, work.node, config.node);
+      const one = { box, board, paintAim, destroy: () => { board.destroy(); reader?.destroy?.(); } };
       panels.set(agent, one);
       return one;
     };
     // THE AGENTS AS STONES (owner, 2026-11-23), the Epic stones' grammar (createEpicStones): the
-    // name (人 for the lead) and, under it, the objective its work record states; one mark top right
+    // name (人 for the lead); one mark top right
     // — ⚑ when flagged, else the pill's dot (solid working, hollow just finished), else none; bottom
     // right, small and grey, how many open items it holds; the lifecycle line along its foot. A
-    // pressed stone opens beside the rail, as an Epic's does: its Work items and Configuration.
+    // pressed stone opens beside the rail, as an Epic's does: its Objective, Work items and Configuration.
     const stoneMarks = new Map(); // agent -> { node, mark, size }, kept: the phalanx compares a marker by identity
     const marksOf = (agent, row) => {
       if (!stoneMarks.has(agent)) {
@@ -746,15 +756,15 @@ export function createCoworkView(options = {}) {
         lineOf(member.name).update(mine);
         const situation = mine.some((item) => item.flagged && statusKey(item.status) !== 'done') ? 'flagged' : agentSituation(card);
         const mark = ['flagged', 'working', 'ready'].includes(situation) ? situation : '';
-        return { name: member.name, team_lead: member.team_lead, title: agentTitle(member), objective: String(card.tegami?.objective || '').trim(),
+        return { name: member.name, team_lead: member.team_lead, title: agentTitle(member),
           mark, markTitle: mark ? situationTitle(agentTitle(member), mark) : '', size: open.length };
       }).sort((a, b) => Number(b.team_lead) - Number(a.team_lead) || Number(b.mark === 'flagged') - Number(a.mark === 'flagged') || a.title.localeCompare(b.title));
       for (const [agent, panel] of panels) if (!list.some((row) => row.name === agent)) { panel.destroy(); panels.delete(agent); stoneMarks.delete(agent); }
       agentsFold.count(list.length);
       stonesOfAgents.setItems(list.map((row) => ({ id: row.name, label: row.team_lead ? `人 ${row.title}` : row.title,
-        ...(row.objective ? { state: row.objective } : {}), marker: marksOf(row.name, row),
+        marker: marksOf(row.name, row),
         className: `team-agent-stone${row.mark === 'flagged' ? ' is-flagged' : ''}` })));
-      for (const panel of panels.values()) if (panel.box.isConnected) panel.board.paint();
+      for (const panel of panels.values()) if (panel.box.isConnected) { panel.paintAim(); panel.board.paint(); }
     };
     const readWork = async () => {
       if (holding) return;

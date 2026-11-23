@@ -82,6 +82,7 @@
   .team-agent-mark:is(.is-working, .is-ready) { box-sizing: border-box; width: 6px; height: 6px; margin-top: 0.35em; border: var(--edge) solid var(--kaki); border-radius: 50%; background: var(--kaki); /* kaki: the Chat's working dot */ }
   .team-agent-mark.is-ready { background: transparent; }
   .team-agent-open { padding: 0 var(--space-inset); }
+  .team-agent-objective { margin: 0; color: var(--fg); white-space: pre-wrap; overflow-wrap: anywhere; }
   /* ROOM AND TYPE ON THE TEAM PAGE (owner, 2026-11-23): its bars, the opened Agent's item bars
      too, at body size with an inset all round, the line's height kept clear at the foot and the
      mark's width at the right. Doubled class: above style.css's shared item-bar rule (0,3,1). */
