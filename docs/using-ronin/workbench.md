@@ -155,9 +155,7 @@ more stone, **No Team**, last and plain, while there are any.
 
 Press a stone and the stones fold to the left while the Team opens beside them, in the bar an
 Epic has on its own page: its name with **Launch** (the Team's own workbench; No Team's opens one
-workbench for those Agents), its concept in full, a muted line of facts (the Workspace it covers
-with that Workspace's repositories, how many Agents, how many open items) and its item lifecycle
-along its foot. Under it, three lines that expand and collapse: **Agents**, open on arrival (one bar per
+workbench for those Agents), its concept in full and its item lifecycle along its foot. Under it, three lines that expand and collapse: **Agents**, open on arrival (one bar per
 Agent, as an Epic's item bars: the lead's first with 人, then those needing you; each bar its name
 and live dot, ⚑ when flagged, what it is doing now, its open count and what needs you, and a
 progress line along its foot; pressing a bar opens that Agent beside the Team; an Agent is added to a Team where Agents are

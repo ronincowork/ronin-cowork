@@ -60,7 +60,7 @@
   .league-team-member.flagged .league-team-member-title { color: var(--warn); }
   /* ONE TEAM (owner, 2026-11-22; w900): its bar as an Epic's bar (launch-forms.css), the Workspace
      muted under the concept; then the view the toggle shows. Each Agent a bar (below). */
-  .team-bar-objective[hidden], .team-bar-coverage[hidden], .league-team-view[hidden] { display: none; }
+  .team-bar-objective[hidden], .league-team-view[hidden] { display: none; }
   /* THE TEAM'S BAR (owner, 2026-11-23): an Epic's bar on its page (style.css .item-bar in
      .epic-detail), read not pressed: Launch where an item's status sits, the lifecycle line along its foot. */
   .team-detail > .item-bar.team-bar { position: relative; overflow: hidden; width: 100%; padding-bottom: calc(var(--space-inline) + 5px); }
