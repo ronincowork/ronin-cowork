@@ -113,7 +113,7 @@ test('the Epics page and one Epic\'s page, as a person reads and presses them', 
   await page.keyboard.press('Escape');
   assert.equal(await page.$('.epic-record-stones .sws-detail .epic-bar'), null);
   // One Workspace question over the stones, as on the Teams stones.
-  assert.ok(await page.$('[data-workspace-view="epics"] .epics-records > .wk-surface-content > section.ask'), 'the Workspace question');
+  assert.ok(await page.$('[data-workspace-view="epics"] .epics-records > .wk-surface-content > .sws-header > .ask'), 'the Workspace question');
   assert.equal(await page.$('[data-workspace-view="epics"] .terminal-hints'), null, 'no Agent vocabulary or Session controls on Epics');
 
   // One Epic, its stone pressed: the Team's Epics board without its strip; Launch (a Team holds it).
