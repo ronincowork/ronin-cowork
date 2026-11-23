@@ -45,7 +45,7 @@ export async function loadPlaywright() {
     () => (process.env.RONIN_PLAYWRIGHT_PATH ? import(process.env.RONIN_PLAYWRIGHT_PATH) : null),
     () => require_('playwright'),
     () => createRequire(`${HOST_TOOLS}/`)('playwright'),
-    // The account's own home, not $HOME: the test runner gives every run a scratch HOME.
+    // The account's own home, not $HOME: a rig or script may run under a scratch HOME.
     () => createRequire(`${userInfo().homedir}/.cache/ronin-host-tools/`)('playwright'),
   ];
   for (const load of candidates) {
