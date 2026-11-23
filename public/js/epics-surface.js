@@ -447,7 +447,7 @@ export function createEpicStones({ epicsRead, workbench = null, bare = false, em
     stones.setItems(rows.map(({ epic, items, moved }) => {
       const label = epic.title || epic.id;
       return { id: epic.id, label: splitItemTitle(label).shortTitle, state: movedWords(epic, moved), marker: marksFor(epic, items),
-        className: 'epic-record-stone', draggable: true, events: dragEpic(epic, label) };
+        className: 'epic-record-stone', attrs: { title: label }, draggable: true, events: dragEpic(epic, label) };
     }));
     empty.hidden = rows.length > 0;
     workbench?.refreshSelector?.(); // the selector's Epic cards follow the push
