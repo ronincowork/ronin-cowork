@@ -7,6 +7,7 @@
  * A run started with `tell` reports how it ended to that Agent, by its message queue.
  */
 import { spawn, type ChildProcess } from 'node:child_process';
+import { execFile } from './spawn-broker.js';
 import { AGENTS, type AgentLogin } from './agents.js';
 import { broadcastEvent } from './ws/events.js';
 import { enqueueMessage } from './message-queue.js';
@@ -43,12 +44,29 @@ const loginOf = (provider: string) => {
   return { agent, login };
 };
 
-/** Every open run and every last failure, as the page draws them. */
-export function signInState(): { runs: SignInRun[]; failed: Record<string, string> } {
-  return { runs: [...runs.values()].map((entry) => entry.run), failed: Object.fromEntries(failed) };
+/** WHICH WAY EACH HARNESS IS SIGNED IN, as its CLI says (AGENTS `login.status`): read when first
+ *  asked and again when a run ends; '' when it says neither (not signed in). Nothing is recorded. */
+let ways: Record<string, SignInWay | ''> | null = null;
+async function readWays(): Promise<Record<string, SignInWay | ''>> {
+  const paths = (await readProviderSummary())?.paths ?? {};
+  const read = await Promise.all(AGENTS.map(async (agent) => {
+    const login = (agent as { login?: AgentLogin }).login;
+    if (!login) return null;
+    const out = await execFile(paths[agent.id] || agent.cmd, [...login.status.argv], { timeout: 15_000 })
+      .then((r) => `${r.stdout}\n${r.stderr}`, () => '');
+    const way: SignInWay | '' = new RegExp(login.status.subscription).test(out) ? 'subscription' : new RegExp(login.status.api_key).test(out) ? 'api_key' : '';
+    return [String(agent.id), way] as [string, SignInWay | ''];
+  }));
+  ways = Object.fromEntries(read.filter((row): row is [string, SignInWay | ''] => row !== null));
+  return ways;
 }
 
-const push = () => { broadcastEvent({ t: 'harness-sign-in', ...signInState() }); };
+/** Every open run, every last failure and each harness's way, as the page draws them. */
+export async function signInState(): Promise<{ runs: SignInRun[]; failed: Record<string, string>; ways: Record<string, SignInWay | ''> }> {
+  return { runs: [...runs.values()].map((entry) => entry.run), failed: Object.fromEntries(failed), ways: ways ?? await readWays() };
+}
+
+const push = () => { void signInState().then((state) => broadcastEvent({ t: 'harness-sign-in', ...state })); };
 
 export async function startSignIn(provider: string, way: SignInWay, tell = ''): Promise<SignInRun> {
   const { agent, login } = loginOf(provider);
@@ -85,6 +103,7 @@ async function ended(provider: string, entry: { run: SignInRun; child: ChildProc
   if (!ok) failed.set(provider, last || 'The sign-in stopped.');
   // Measured again, model lists read: the facts and Setup's tick follow on their own.
   await refreshProviders().catch((error) => console.error('[sign-in] measure:', error));
+  await readWays().catch(() => {});
   push();
   if (entry.tell) {
     const said = ok ? `${entry.run.label} is signed in.` : `${entry.run.label} sign-in did not finish: ${failed.get(provider)}`;

@@ -43,9 +43,17 @@ const stones = () => { const row = el('div', 'ask setup-harness-row'); row.datas
 const shortName = (provider) => String(provider.label || provider.id).replace(/ CLI$/, '');
 
 const WAYS = Object.freeze({
-  subscription: () => t('setup_harness.subscription', 'Sign in with your subscription'),
-  api_key: () => t('setup_harness.api_key', 'Use an API key'),
+  subscription: () => t('setup_harness.subscription', 'Subscription'),
+  api_key: () => t('setup_harness.api_key', 'API key'),
 });
+/** THE FOUR WAYS (owner, 24 Nov 2026): a harness runs on one at a time. The last two wait on a proven
+ *  path (samurai_lab/wip/SETUP_HARNESS.md): shown, greyed, Coming soon. */
+/** A way inside a sentence: "subscription", "API key". */
+const wayWord = (way) => (way === 'api_key' ? t('setup_harness.api_key_word', 'API key') : t('setup_harness.subscription_word', 'subscription'));
+const SOON = Object.freeze([
+  ['gateway', () => t('setup_harness.gateway', 'Ronin gateway')],
+  ['openrouter', () => t('setup_harness.openrouter', 'OpenRouter')],
+]);
 
 export function harnessSurfaceDefinition() {
   return { type: HARNESS_SURFACE_TYPE, header: 'surface', label: () => t('setup_harness.label', 'Harness'), create: (context) => createHarnessSurface(context) };
@@ -59,7 +67,9 @@ function createHarnessSurface(context) {
   body.append(stack, note);
   out.content.append(body);
   let runtime = recordRuntime();
-  let signIn = { runs: [], failed: {} };
+  let signIn = { runs: [], failed: {}, ways: {} };
+  // A press on the other way while signed in asks once more: one way at a time (owner, 24 Nov).
+  let switching = { provider: '', way: '' };
   let open = '';
   let mounted = null;
   let terminalHost = null;
@@ -75,7 +85,7 @@ function createHarnessSurface(context) {
   const start = async (provider, way) => {
     const to = hers();
     const result = await post(`/api/setup/providers/${encodeURIComponent(provider.id)}/sign-in`, { way, tell: to });
-    if (result.ok && to) void sendPress(to, `${shortName(provider)} · ${WAYS[way]()}`);
+    if (result.ok && to) void sendPress(to, `${shortName(provider)} · Sign in with ${wayWord(way)}`);
     if (!result.ok) { signIn.failed[provider.id] = result.message; paint(); }
   };
 
@@ -161,11 +171,33 @@ function createHarnessSurface(context) {
     else if (provider.off || (signed && !own)) {
       bar.append(el('p', 'setup-harness-line', provider.off ? t('setup_harness.off_line', 'Turned off. Your sign-in is kept.') : t('setup_harness.signed_line', 'Signed in on this office.')));
     } else if (own) {
-      if (signed) bar.append(el('p', 'setup-harness-line', t('setup_harness.again', 'Signed in. To switch between subscription and API key, sign in again; it replaces this one.')));
-      if (failed) bar.append(el('p', 'setup-harness-line bad', failed));
+      // The way it is on, as its CLI says (src/provider-sign-in.ts readWays); selected when signed in.
+      const current = signed ? signIn.ways[provider.id] || '' : '';
       const row = stones();
-      row.append(button(WAYS.subscription(), true, () => start(provider, 'subscription')), button(WAYS.api_key(), false, () => start(provider, 'api_key')));
+      row.classList.add('setup-harness-ways');
+      for (const way of ['subscription', 'api_key']) {
+        const made = button(WAYS[way](), false, () => {
+          if (current && current !== way && !(switching.provider === provider.id && switching.way === way)) { switching = { provider: provider.id, way }; paint(); return; }
+          switching = { provider: '', way: '' };
+          void start(provider, way);
+        });
+        made.setAttribute('aria-selected', String(current === way));
+        row.append(made);
+      }
+      for (const [, label] of SOON) {
+        const made = button(label(), false, () => {});
+        made.disabled = true;
+        made.setAttribute('aria-disabled', 'true');
+        made.append(el('small', 'ask-word', t('setup_harness.soon', 'Coming soon')));
+        row.append(made);
+      }
       bar.append(row);
+      const line = switching.provider === provider.id
+        ? t('setup_harness.one_at_a_time', 'One at a time: signing in with {next} replaces your {now}. Press it again to switch.', { next: wayWord(switching.way), now: current ? wayWord(current) : 'sign-in' })
+        : current ? t('setup_harness.on_way', 'Signed in with your {way}.', { way: wayWord(current) })
+          : signed ? t('setup_harness.signed_line', 'Signed in on this office.') : t('setup_harness.pick_way', 'Pick how {cli} signs in. One way at a time.', { cli: shortName(provider) });
+      bar.append(el('p', 'setup-harness-line', line));
+      if (failed) bar.append(el('p', 'setup-harness-line bad', failed));
     } else bar.append(terminalOf(provider));
     return bar;
   };
@@ -181,7 +213,7 @@ function createHarnessSurface(context) {
       : t('setup_harness.note_some', '{n} of {m} signed in. A second one keeps your Agents working when one hits a limit.', { n: signed, m: harnesses.length });
   };
 
-  const onSignIn = (message) => { signIn = { runs: message.runs || [], failed: message.failed || {} }; paint(); };
+  const onSignIn = (message) => { signIn = { runs: message.runs || [], failed: message.failed || {}, ways: message.ways || {} }; paint(); };
   signInHandlers.add(onSignIn);
   const stopProgress = context.environment?.onSetupProgress?.(() => { void readRuntime(); }) || (() => {});
   void request('/api/setup/sign-in', { cache: 'no-store' }).then((r) => { if (r.ok) onSignIn(r.data); });

@@ -48,6 +48,9 @@ export interface AgentLogin {
   api_key: { argv: readonly string[]; paste: 'code' | 'key' };
   /** A pattern matching the one-time code the CLI prints, when it prints one. */
   code?: string;
+  /** WHICH WAY IT IS SIGNED IN, from the CLI's own status (owner, 24 Nov 2026): nothing of Ronin's records
+   *  it. `argv` prints the status; the first pattern that matches its output names the way. */
+  status: { argv: readonly string[]; subscription: string; api_key: string };
 }
 
 export const AGENTS = [
@@ -71,6 +74,8 @@ export const AGENTS = [
     login: {
       subscription: { argv: ['auth', 'login', '--claudeai'], paste: 'code' },
       api_key: { argv: ['auth', 'login', '--console'], paste: 'code' },
+      // `claude auth status --json`: "authMethod": "claude.ai" for a subscription, the Console otherwise.
+      status: { argv: ['auth', 'status', '--json'], subscription: '"authMethod":\\s*"claude\\.ai"', api_key: '"loggedIn":\\s*true' },
     } as AgentLogin,
     credentials: ['.claude/.credentials.json'],
     // What a parked office carries besides credentials (src/machine-park.ts): the CLI's own
@@ -97,6 +102,8 @@ export const AGENTS = [
       subscription: { argv: ['login', '--device-auth'], paste: null },
       api_key: { argv: ['login', '--with-api-key'], paste: 'key' },
       code: '\\b[A-Z0-9]{4}-[A-Z0-9]{4,6}\\b',
+      // `codex login status`: "Logged in using ChatGPT", or using an API key.
+      status: { argv: ['login', 'status'], subscription: 'Logged in using ChatGPT', api_key: 'Logged in using an API key|API key' },
     } as AgentLogin,
     credentials: ['.codex/auth.json'],
     carry: ['.codex/config.toml'],
