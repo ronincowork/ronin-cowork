@@ -4210,10 +4210,22 @@ body {
 .wk-workbench-host [data-workbench-offer-type][data-scene-relevant='true'] .wk-card-heading { font-weight: var(--weight-bold); }
 .wk-workbench-host [data-registration-locked='true'] .wk-card-heading::after { content: '  🔒'; font-size: .8em; }
 .wk-workbench-host[data-workbench-profile='setup'] [data-complete='true'] { opacity: 1; }
-.wk-workbench-host[data-workbench-profile='setup'] .wk-workbench-selector-cards > .wk-card[aria-current='page'] { border-color: var(--kaki); background: var(--kaki); /* kaki: the action, or what needs you */ color: var(--on-strong); }
-.wk-workbench-host[data-workbench-profile='setup'] .wk-workbench-selector-cards > .wk-card[aria-current='page'] .wk-card-heading,
-.wk-workbench-host[data-workbench-profile='setup'] .wk-workbench-selector-cards > .wk-card[aria-current='page'] .wk-card-summary { color: var(--on-strong); }
-.wk-workbench-host[data-workbench-profile='setup'] .wk-workbench-selector-cards > .wk-card[aria-current='page'] .wk-card-mark { color: var(--on-strong); opacity: .78; }
+/* THE WALKTHROUGH (owner, 24 Nov; w926): Setup's steps down the selector as the prototype's run across
+   the page. A numbered disc per step, joined to the next by a line; the step on screen kaki-edged on the
+   selected wash, a ticked step's disc filled. */
+.wk-workbench-host[data-workbench-profile='setup'] .wk-workbench-selector-cards { gap: var(--space-row); }
+.wk-workbench-selector-cards > .setup-step-card { --disc: 24px; position: relative; display: grid; grid-template-columns: var(--disc) 1fr; column-gap: var(--space-inline); row-gap: var(--space-row); padding: var(--space-inset); border-color: transparent; background: transparent; border-radius: var(--radius-small); }
+.wk-workbench-selector-cards > .setup-step-card > * { grid-column: 2; margin: 0; }
+.setup-step-card .wk-card-heading { display: contents; font-size: var(--text-label); font-weight: var(--weight-strong); }
+.setup-step-card .setup-step-disc { grid-column: 1; grid-row: 1 / span 3; align-self: start; display: grid; place-items: center; width: var(--disc); height: var(--disc); box-sizing: border-box; border: var(--edge) solid var(--line-2); border-radius: var(--radius-round); color: var(--muted); font: var(--weight-strong) var(--text-small) var(--font-mono); font-variant-numeric: tabular-nums; }
+.setup-step-card .setup-step-line { font-size: var(--text-body); line-height: var(--leading-body); color: var(--muted); }
+.setup-step-card .wk-card-summary:empty, .setup-step-card .wk-card-meta:empty { display: none; }
+.wk-workbench-selector-cards > .setup-step-card:hover:not([aria-current='page']) { border-color: var(--line); }
+.wk-workbench-selector-cards > .setup-step-card:not(:last-child)::after { content: ''; position: absolute; left: calc(var(--space-inset) + var(--disc) / 2); top: calc(var(--space-inset) + var(--disc) + var(--space-row)); bottom: calc(-1 * (var(--space-row) + var(--space-inset))); border-left: var(--edge) solid var(--line-2); pointer-events: none; }
+.setup-step-card[data-complete='true'] .setup-step-disc { border-color: var(--kaki-fill); background: var(--kaki-fill); color: var(--on-strong); }
+.wk-workbench-host[data-workbench-profile='setup'] .wk-workbench-selector-cards > .setup-step-card[aria-current='page'] { border-color: var(--kaki); background: var(--selected); box-shadow: inset 3px 0 var(--kaki); color: var(--fg-strong); }
+.setup-step-card[aria-current='page'] .setup-step-disc { border-color: var(--kaki-fill); color: var(--kaki-lift); }
+.setup-step-card[aria-current='page'][data-complete='true'] .setup-step-disc { color: var(--on-strong); }
 .setup-register-options[hidden] { display: none; }
 .setup-registration-recovery { display: flex; flex-wrap: wrap; gap: var(--space-inline); }
 .setup-field { display: grid; gap: var(--space-row); }

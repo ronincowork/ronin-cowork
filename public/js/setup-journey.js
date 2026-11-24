@@ -6,10 +6,10 @@
  * whether she runs or not; Ask Ronin heads the selector.
  */
 export const SETUP_SCENES = Object.freeze([
-  { id: 'harness', label: 'Harness', type: 'setup.harness', canvas: 'garden.setup.harness' },
-  { id: 'workspace', label: 'Workspace', type: 'setup.roots', canvas: 'garden.setup.workspace' },
-  { id: 'team', label: 'Team', type: 'setup.team', canvas: 'garden.setup.team' },
-  { id: 'tour', label: 'Tour', type: 'setup.tour', canvas: 'garden.setup.tour', page: 'docs/getting-started/tour.md' },
+  { id: 'harness', label: 'Harness', line: 'Sign in to the harness you already use.', type: 'setup.harness', canvas: 'garden.setup.harness' },
+  { id: 'workspace', label: 'Workspace', line: 'Say what you are working on, and where it lives.', type: 'setup.roots', canvas: 'garden.setup.workspace' },
+  { id: 'team', label: 'Team', line: 'Name your first Team, its lead and its Agents.', type: 'setup.team', canvas: 'garden.setup.team' },
+  { id: 'tour', label: 'Tour', line: 'How Agents begin, and how the work runs.', type: 'setup.tour', canvas: 'garden.setup.tour', page: 'docs/getting-started/tour.md' },
 ].map((scene, index) => Object.freeze({ ...scene, number: index + 1 })));
 
 /* IRASSHAI (setup-irasshai.js): the Helpful Assistant, Setup's Ask Ronin panel. */

@@ -34,11 +34,13 @@ again as `setup-progress`, so a change made anywhere ticks its step.
 
 ## The Setup workbench
 
-The owner's onboarding prototype is the look. The selector's pills are the three steps, **Harness**
+The owner's onboarding prototype is the look. The selector is a walkthrough down the column, as the prototype's runs across the page: the three steps, **Harness**
 (`setup.harness`), **Workspace** (`setup.roots`) and **Team** (`setup.team`, the ordinary New Team
 form), and **Tour**, the Ronin Tour with no tick, `docs/getting-started/tour.md` shown whole
-(`setup.tour`: how Agents begin, how the work runs, then Questions). The selector's header carries the
-three step marks, beside its density toggle (owner, 24 Nov). The selector is the same whether she
+(`setup.tour`: how Agents begin, how the work runs, then Questions). Each step is a numbered disc (✓ once
+ticked) joined to the next by a line, its name, and one line of what it asks (`SETUP_SCENES` `line`); the
+step on screen is kaki-edged. The selector's header carries the three step marks and nothing else: Setup
+has no density toggle (owner, 24 Nov). The selector is the same whether she
 runs or not; she has no pill of her own (it did nothing the panel does not).
 
 Setup has no hints: no Agent vocabulary, no session controls. At the foot of the selector, where

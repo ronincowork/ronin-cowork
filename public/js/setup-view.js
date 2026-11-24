@@ -261,15 +261,16 @@ export function createSetupView() {
       else card.removeAttribute('aria-current');
       const complete = Boolean(scene && sceneComplete(scene));
       card.dataset.complete = String(complete);
+      // THE WALKTHROUGH (owner, 24 Nov): the steps run down the column as the prototype's run across
+      // it: a numbered disc (✓ once ticked) joined to the next by a line, the step's name, its one line.
+      card.classList.add('setup-step-card');
       const heading = card.querySelector('.wk-card-heading');
-      let mark = heading?.querySelector('[data-setup-complete-mark]');
-      if (complete && !mark) {
-        mark = document.createElement('span');
-        mark.className = 'wk-card-mark';
-        mark.dataset.setupCompleteMark = '';
-        mark.textContent = '✓';
-        heading.prepend(mark);
-      } else if (!complete) mark?.remove();
+      let disc = heading?.querySelector('.setup-step-disc');
+      if (heading && !disc) { disc = document.createElement('span'); disc.className = 'setup-step-disc'; disc.setAttribute('aria-hidden', 'true'); heading.prepend(disc); }
+      if (disc) disc.textContent = complete ? '✓' : String(scene.number);
+      let line = card.querySelector('.setup-step-line');
+      if (!line) { line = document.createElement('p'); line.className = 'setup-step-line'; heading?.after(line); }
+      line.textContent = t(`setup.step_line_${scene.id}`, scene.line);
     }
   };
   const open = (number) => {
@@ -311,6 +312,7 @@ export function createSetupView() {
     selectorWorkspace: 'workspace2',
     selectorCurrent: true,
     hints: false,
+    density: false,
     selectorFilter: (type) => ORDER.includes(type),
     onSelectorRefresh: paint,
     onStateChange: save,
@@ -326,7 +328,7 @@ export function createSetupView() {
     },
   });
   bench.host.querySelector('.wk-workbench-selector')?.append(guide);
-  // The step marks head the selector, beside its density toggle (owner, 24 Nov): its header was empty.
+  // The step marks head the selector (owner, 24 Nov): its header was empty. Setup has no density toggle.
   bench.selectorHeader?.title.replaceChildren(setupStepsHeader);
   bench.host.querySelector('.wk-workbench-selector-cards')?.addEventListener('click', () => { queueMicrotask(() => bench.select('workspace2')); });
   followIrasshai();
