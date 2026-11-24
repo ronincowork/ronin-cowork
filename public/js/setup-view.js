@@ -62,11 +62,12 @@ export function createSetupView() {
   let chat = null;
   const offer = document.createElement('div');
   offer.className = 'setup-ask-offer';
-  const offerButton = document.createElement('button');
-  offerButton.type = 'button';
-  offerButton.className = 'wk-btn setup-ask-button';
-  offerButton.addEventListener('click', () => opener.press());
-  offer.append(offerButton);
+  const offerLine = document.createElement('p');
+  offerLine.className = 'setup-ask-line';
+  offerLine.textContent = t('setup.ask_line', 'The Helpful Assistant answers your questions about Ronin, and can do each step with you.');
+  const offerAction = WorkspaceKit.primitives.createAction({ label: ASK, kind: 'primary', action: () => opener.press() });
+  const offerButton = offerAction.el ?? offerAction;
+  offer.append(offerLine, offerButton);
   const paintOffer = () => { const card = opener.offer(); offerButton.textContent = card.label === ASK ? t('setup.ask_open', 'Ask Ronin') : card.label; offerButton.title = card.summary; };
   const seatChat = () => {
     if (!garden) return;
@@ -205,23 +206,36 @@ export function createSetupView() {
   const guide = document.createElement('section');
   guide.className = 'setup-step-guide';
   guide.setAttribute('aria-live', 'polite');
-  const paintGuide = (canvas) => {
+  const el = (tag, className, text = '') => Object.assign(document.createElement(tag), { className, textContent: text });
+  // The card: the step's name, its lead line, the why, then its guides as rows (a label, and what it is).
+  const paintGuide = (scene, canvas) => {
     guide.replaceChildren();
-    for (const copy of canvas?.copy || []) {
-      if (copy.heading) guide.append(Object.assign(document.createElement('h3'), { className: 'setup-step-guide-heading', textContent: copy.heading }));
-      if (copy.body) guide.append(Object.assign(document.createElement('p'), { className: 'setup-step-guide-body', textContent: copy.body }));
+    const copy = canvas?.copy || [];
+    if (!copy.length && !canvas?.media?.length) { guide.hidden = true; return; }
+    guide.append(el('p', 'setup-step-guide-eyebrow', scene.label));
+    for (const item of copy) {
+      if (item.heading) guide.append(el('h3', 'setup-step-guide-heading', item.heading));
+      if (item.body) guide.append(el('p', 'setup-step-guide-body', item.body));
     }
-    for (const item of canvas?.media || []) {
-      const link = Object.assign(document.createElement('button'), { type: 'button', className: 'setup-step-guide-link', textContent: item.label });
-      if (item.description) link.title = item.description;
-      link.addEventListener('click', () => { void environment.openGardenMedia(item); });
-      guide.append(link);
+    if (canvas?.media?.length) {
+      const list = el('ul', 'setup-step-guide-links');
+      for (const item of canvas.media) {
+        const open = el('button', 'setup-step-guide-link');
+        open.type = 'button';
+        open.append(el('span', 'setup-step-guide-link-label', item.label));
+        if (item.description) open.append(el('span', 'setup-step-guide-link-is', item.description));
+        open.addEventListener('click', () => { void environment.openGardenMedia(item); });
+        const row = document.createElement('li');
+        row.append(open);
+        list.append(row);
+      }
+      guide.append(list);
     }
-    guide.hidden = !guide.childElementCount;
+    guide.hidden = false;
   };
   const selectGarden = (scene) => {
     if (!gardenContent || !scene || paintedSceneId === scene.id) return false;
-    paintGuide(gardenContent.canvases[scene.canvas] || null);
+    paintGuide(scene, gardenContent.canvases[scene.canvas] || null);
     paintedSceneId = scene.id;
     return true;
   };
