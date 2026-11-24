@@ -5,48 +5,35 @@ import { SETUP_SURFACE_TYPES, registerSetupSurfaces } from './setup-surfaces.js'
 import { createProviderSetupSessionMount } from './provider-setup-session.js';
 import { request } from './request.js';
 import { t } from './lexicon.js';
-import { HOSTED_SCENES, SETUP_SCENES } from './setup-journey.js';
+import { SETUP_SCENES as SCENES } from './setup-journey.js';
 import { GARDEN_CANVAS_TYPE, registerGardenCanvas } from './garden-canvas.js';
 import { localDocumentLink, productRepositoryHref } from './document-links.js';
 import { normalizeGardenCanvasCatalog } from './garden-canvas-model.js';
 import { workbenchLaunchUrl } from './workspace.js';
 import { onProjects, projectData } from './home.js';
 import { createThemeToggle } from './theme-toggle.js';
-import { PASSWORD_SURFACE_TYPE, registerPasswordSurface } from './password-surface.js';
 import { firstUnansweredSetupStep } from './setup-progress.js';
 import { createSetupStepsBar, setupStepMarks } from './setup-steps-bar.js';
 import { mikaShowHandlers, setupProgressHandlers } from './events.js';
 import { subscribe as hear } from './store.js';
-import { HOSTED } from './hosted.js';
 import { mikaTab, reportMikaView } from './mika.js';
 import { IRASSHAI_INTEGRATIONS_TYPE, IRASSHAI_NAME, IRASSHAI_OPEN_TYPE, createIrasshaiChat, createIrasshaiOpener, irasshaiKey, irasshaiReady, registerIrasshaiIntegrations, registerIrasshaiOpen } from './setup-irasshai.js';
 
 const PROFILE = 'setup';
-// Hosted: the three steps and three pages (setup-journey.js HOSTED_SCENES; SETUP_SWEEP.md §7), laid
-// out as the owner's prototype: the steps, the step's surface, and the Ask Ronin panel on the right.
-// Self-hosted: its five steps and Launch, as they were.
-const layout = () => {
-  const SCENES = HOSTED ? HOSTED_SCENES : SETUP_SCENES;
-  return { SCENES, ORDER: Object.freeze(SCENES.map((scene) => scene.type)), ARRANGEMENT: HOSTED ? hostedArrangement : arrangement };
-};
-const hostedArrangement = Object.freeze({
+// The three steps and three pages (setup-journey.js SETUP_SCENES; SETUP_SWEEP.md §7), laid out as the
+// owner's prototype: the steps, the step's surface, and the Ask Ronin panel on the right. One Setup on every office.
+const ORDER = Object.freeze(SCENES.map((scene) => scene.type));
+const ARRANGEMENT = Object.freeze({
   order: Object.freeze(['selector', 'workspace2', 'workspace1']),
   hidden: Object.freeze([]),
   widths: Object.freeze({ selector: 16, workspace2: 52, workspace1: 32 }),
 });
-const arrangement = Object.freeze({
-  order: Object.freeze(['workspace1', 'selector', 'workspace2']),
-  hidden: Object.freeze([]),
-  widths: Object.freeze({ workspace1: 34, selector: 18, workspace2: 48 }),
-});
-/** The Ask Ronin panel's name: the Helpful Assistant, on every hosted step (§7). */
+/** The Ask Ronin panel's name: the Helpful Assistant, on every step (§7). */
 const ASK = 'Ask Ronin';
 const GARDEN_CONTENT_URL = '/content/setup-garden.v2.json';
 
 function registerSetupWorkbench() {
-  const { ORDER } = layout();
   registerSetupSurfaces();
-  registerPasswordSurface();
   registerGardenCanvas();
   registerIrasshaiOpen();
   registerIrasshaiIntegrations();
@@ -55,7 +42,6 @@ function registerSetupWorkbench() {
 
 export function createSetupView() {
   registerSetupWorkbench();
-  const { SCENES, ORDER, ARRANGEMENT } = layout();
   let ctx = null;
   let bench = null;
   let runtime = null;
@@ -69,10 +55,9 @@ export function createSetupView() {
   const progressListeners = new Set();
   const providerSessions = createProviderSetupSessionMount();
   const themeToggle = createThemeToggle();
-  const opener = createIrasshaiOpener({ refresh: () => { bench?.refreshSelector(); if (!irasshai && HOSTED && garden) paintOffer(); }, showChat: () => { bench?.select('workspace1'); garden?.el.scrollIntoView?.({ block: 'start' }); } }); // a phone stacks the workspaces
-  // IRASSHAI (setup-irasshai.js): while her session is live, Workspace 1 holds her chat: in place of
-  // the scene self-hosted, under the step's lines hosted (the Ask Ronin panel). Hosted, with her not
-  // live, the panel offers her. `irasshai` is her session's birth key at the last look ('' not live):
+  const opener = createIrasshaiOpener({ refresh: () => { bench?.refreshSelector(); if (!irasshai && garden) paintOffer(); }, showChat: () => { bench?.select('workspace1'); garden?.el.scrollIntoView?.({ block: 'start' }); } }); // a phone stacks the workspaces
+  // IRASSHAI (setup-irasshai.js): while her session is live, Workspace 1 holds her chat under the
+  // step's lines (the Ask Ronin panel). With her not live, the panel offers her. `irasshai` is her session's birth key at the last look ('' not live):
   // a new birth gets a new chat, never the last one's records (KAN-676).
   let irasshai = '';
   let chat = null;
@@ -89,11 +74,12 @@ export function createSetupView() {
     if (irasshai) {
       if (chat && chat.key !== irasshai) { garden.chat(null); chat.dispose(); chat = null; }
       chat ||= Object.assign(createIrasshaiChat(), { key: irasshai });
-      garden.chat(chat.el, HOSTED ? ASK : IRASSHAI_NAME, chat.toggle, { below: HOSTED });
+      garden.chat(chat.el, ASK, chat.toggle, { below: true });
       chat.show();
     } else {
       if (chat) chat.hide();
-      if (HOSTED) { paintOffer(); garden.chat(offer, ASK, null, { below: true }); } else if (chat) garden.chat(null);
+      paintOffer();
+      garden.chat(offer, ASK, null, { below: true });
     }
   };
   let ready = '';
@@ -128,10 +114,6 @@ export function createSetupView() {
     // from the facts (KAN-768). Nothing here records a step.
     onGithubAuthenticated: () => { void readProgress(); },
     onWorkspaceFolderChosen: () => { void readProgress(); },
-    onInstallationsState: () => {},
-    onInstallationChoice: () => { void readProgress(); },
-    onPasswordChoice: () => { void readProgress(); },
-    onRegistrationChoice: () => { void readProgress(); },
     onProviderChoice: () => { void readProgress(); },
     setupProgress: () => progress,
     onSetupProgress: (listener) => { progressListeners.add(listener); listener(progress); return () => progressListeners.delete(listener); },
@@ -244,17 +226,6 @@ export function createSetupView() {
       if (scene?.id === active.id) card.setAttribute('aria-current', 'page');
       else card.removeAttribute('aria-current');
       const complete = Boolean(scene && sceneComplete(scene));
-      // Launch waits for the provider tick, the facts' own reading (KAN-768).
-      const blocked = scene?.type === SETUP_SURFACE_TYPES.launchOwn
-        && !setupStepMarks(progress).find((step) => step.id === 'provider')?.answered;
-      card.disabled = blocked;
-      if (blocked) {
-        card.setAttribute('aria-disabled', 'true');
-        card.title = 'Activate a harness before launching an Agent or Team.';
-      } else {
-        card.removeAttribute('aria-disabled');
-        card.removeAttribute('title');
-      }
       card.dataset.complete = String(complete);
       const heading = card.querySelector('.wk-card-heading');
       let mark = heading?.querySelector('[data-setup-complete-mark]');

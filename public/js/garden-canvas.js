@@ -138,7 +138,7 @@ function createGardenCanvas({ onAction = () => {}, onMedia = () => {} } = {}) {
 
   /* A chat seated in place of the scene (setup-irasshai.js), or none: the surface is then that
      chat alone, headed `label` (her name), its header's only tool the chat's own `toggle`
-     (Term / Chat, KAN-717) beside the name (garden-canvas.css). With `below` (hosted Setup's Ask
+     (Term / Chat, KAN-717) beside the name (garden-canvas.css). With `below` (Setup's Ask
      Ronin panel, w926) the scene stays and the chat sits under it. */
   let seated = null;
   let seatedToggle = null;

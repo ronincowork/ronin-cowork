@@ -15,10 +15,9 @@ A Workspace holds:
 - **Plans** — where its plans are kept ([Writing a plan](planning.md)).
 - **Canvases** — one-page maps of the Workspace: its live site, repos, work, documents and outside services.
 
-On your own machine Ronin starts you with two: **Ronin Lab**, for ideas, research, assistants and
-planning before a project exists, off your code repositories, and **Project One**, for your first
-project. A hosted office starts with none: the Helpful Assistant offers either in Setup if it
-suits you. Add your own whenever you have work somewhere else.
+Ronin starts you with none. In Setup the Helpful Assistant can offer two: **Ronin Lab**, for
+ideas, research, assistants and planning before a project exists, off your code repositories,
+and **Project One**, for your first project. Add your own whenever you have work somewhere else.
 
 A Workspace holds items too: open work of the project that no Team has yet, which go to its first
 Team when Setup's Team step makes one, and its **Icebox** of parked ideas

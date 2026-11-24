@@ -17,7 +17,7 @@ import { createInstallationsSurface } from './campaign-installations.js';
 import { createSetupZoneSlot, watchSetupProgress } from './setup-zone.js';
 import { createStatusMarker } from './status-marker.js';
 import { createDocPage } from './setup-doc-page.js';
-import { HOSTED_SCENES } from './setup-journey.js';
+import { SETUP_SCENES } from './setup-journey.js';
 
 // Model providers is the one surface two workbenches seat (provider-surface.js); its type
 // is that module's, and Ronin Settings registers the same definition.
@@ -624,7 +624,7 @@ function createLaunchOwnSurface(context) {
   return { el: out.el, destroy: () => stones.destroy() };
 }
 
-// HOSTED STEP 3, TEAM (w926; SETUP_SWEEP.md §7): the ordinary New Team form, started in a Workspace;
+// STEP 3, TEAM (w926; SETUP_SWEEP.md §7): the ordinary New Team form, started in a Workspace;
 // the lead builds out the rest. Ticked when a Team has a live lead (teams_agents).
 function createTeamSurface() {
   const out = surface(t('setup_surface.team', 'Start a Team'));
@@ -664,7 +664,7 @@ export function setupSurfaceDefinitions() {
     definition(SETUP_SURFACE_TYPES.installations, t('campaign_view.installations', 'Installations'), createSetupInstallationsSurface),
     definition(SETUP_SURFACE_TYPES.launchOwn, t('setup_surface.launch_own', 'Launch your own'), createLaunchOwnSurface),
     definition(SETUP_SURFACE_TYPES.team, t('setup_surface.team', 'Team'), createTeamSurface),
-    ...HOSTED_SCENES.filter((scene) => scene.page).map((scene) => definition(scene.type, scene.label, createDocPage(scene.label, scene.page))),
+    ...SETUP_SCENES.filter((scene) => scene.page).map((scene) => definition(scene.type, scene.label, createDocPage(scene.label, scene.page))),
   ];
 }
 

@@ -280,7 +280,6 @@ nothing paints exactly this.
 - **campaign_home.business_lounge:** Business Lounge
 - **campaign_home.business_lounge_is:** Your account, office and subscription, at Ronin HQ
 - **campaign_home.side_hosted:** Models, Help, Settings and the Business Lounge
-- **setup.provider_gate:** Activate a harness in Setup or Harnesses to use this.
 - **setup.provider_gate_hosted:** Activate a harness in Harnesses to use this.
 - **setup.open_settings:** Open Ronin Settings
 - **setup.open_setup:** Open Ronin Setup

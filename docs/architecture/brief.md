@@ -74,7 +74,7 @@ Lead, epic lead and coordinator are **roles**, not types: a lead is a `cowork` A
 is `lead`, and its files say `when: lead` or `role:epic_lead`.
 
 A type is only a value the files read. The Helpful Assistant shows the pattern. Her behaviour
-(`irasshai`), her voice (`irasshai-voice`, Ronin's website) and one behaviour per hosted Setup
+(`irasshai`), her voice (`irasshai-voice`, Ronin's website) and one behaviour per Setup
 step (`irasshai-harness`, `irasshai-workspace`, `irasshai-team`, depth seed, each read in full as
 she takes the step) say `when: irasshai`. The coding behaviours say `when: cowork` (or
 `!irasshai`), so they never reach her. The tools she needs (`item`, `workspace`, `show`,
@@ -236,12 +236,10 @@ The facts are not the sources of truth: they read them. Each fact has one builde
 
 A screen never records a press ("No thank you", "Keep these", "dealt with") as office state
 (owner, 2026-11-22). A choice that matters is a real setting (Tailscale only, no password:
-`machine.no_password`); anything else is dropped. Setup's ticks come from facts. Hosted: Harness
+`machine.no_password`); anything else is dropped. Setup's ticks come from facts, the same on every office: Harness
 when one of the person's own harnesses is Activated (never the house models), Workspace when a
 Workspace of theirs other than Ronin Lab has an objective, Team when a Team has a live lead; and
-nothing decides onboarding is over. Self-hosted: Harnesses when a provider is Activated, Register
-when registered, Workspace when a Workspace has a folder, Installations when anything is
-installed, Password when a password is set or the no-password setting is on. What a person tells an Agent lives in that Agent's notes (`ABOUT_USER.md`), never
+nothing decides onboarding is over. What a person tells an Agent lives in that Agent's notes (`ABOUT_USER.md`), never
 in a screen.
 
 ### The Agent's own lines

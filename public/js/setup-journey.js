@@ -1,25 +1,16 @@
-/** Setup's scenes: selector doors that never reshape the workbench. Self-hosted: five steps, then Launch. */
-export const SETUP_SCENES = Object.freeze([
-  { id: 'provider', label: 'Harnesses', type: 'setup.providers', canvas: 'garden.setup.provider-welcome' },
-  { id: 'register', label: 'Register (optional)', type: 'setup.register', canvas: 'garden.setup.register' },
-  { id: 'workspace', label: 'Workspaces', type: 'setup.roots', canvas: 'garden.setup.workspace' },
-  { id: 'installations', label: 'Installations', type: 'setup.installations', canvas: 'garden.setup.installations' },
-  { id: 'password', label: 'Password', type: 'machine.password', canvas: 'garden.setup.password' },
-  { id: 'launch', label: 'Launch', type: 'setup.launch-own', canvas: 'garden.setup.launch' },
-].map((scene, index) => Object.freeze({ ...scene, number: index + 1 })));
-
 /**
- * HOSTED SETUP (owner, 2026-11-24; w926; samurai_lab/wip/SETUP_SWEEP.md §7): the prototype's three
- * steps, Harness, Workspace and Team, in any order, each ticked from a fact; then three pages with no
- * tick, Understanding, Running and Help, whose text is the docs'. The same whether she runs or not.
+ * SETUP'S SCENES, ON EVERY OFFICE (owner, 2026-11-24; w926; samurai_lab/wip/SETUP_SWEEP.md §7): selector
+ * doors that never reshape the workbench. The prototype's three steps, Harness, Workspace and Team, in any
+ * order, each ticked from a fact; then three pages with no tick, Understanding, Running and Help, whose
+ * text is the docs'. The same whether she runs or not.
  */
-export const HOSTED_SCENES = Object.freeze([
-  { id: 'harness', label: 'Harness', type: 'setup.providers', canvas: 'garden.hosted.harness' },
-  { id: 'workspace', label: 'Workspace', type: 'setup.roots', canvas: 'garden.hosted.workspace' },
-  { id: 'team', label: 'Team', type: 'setup.team', canvas: 'garden.hosted.team' },
-  { id: 'understanding', label: 'Understanding', type: 'setup.understanding', canvas: 'garden.hosted.understanding', page: 'docs/getting-started/understanding.md' },
-  { id: 'running', label: 'Running', type: 'setup.running', canvas: 'garden.hosted.running', page: 'docs/getting-started/running.md' },
-  { id: 'help', label: 'Help', type: 'setup.help', canvas: 'garden.hosted.help', page: 'docs/getting-started/help.md' },
+export const SETUP_SCENES = Object.freeze([
+  { id: 'harness', label: 'Harness', type: 'setup.providers', canvas: 'garden.setup.harness' },
+  { id: 'workspace', label: 'Workspace', type: 'setup.roots', canvas: 'garden.setup.workspace' },
+  { id: 'team', label: 'Team', type: 'setup.team', canvas: 'garden.setup.team' },
+  { id: 'understanding', label: 'Understanding', type: 'setup.understanding', canvas: 'garden.setup.understanding', page: 'docs/getting-started/understanding.md' },
+  { id: 'running', label: 'Running', type: 'setup.running', canvas: 'garden.setup.running', page: 'docs/getting-started/running.md' },
+  { id: 'help', label: 'Help', type: 'setup.help', canvas: 'garden.setup.help', page: 'docs/getting-started/help.md' },
 ].map((scene, index) => Object.freeze({ ...scene, number: index + 1 })));
 
 /* IRASSHAI (setup-irasshai.js): the Helpful Assistant, Setup's Ask Ronin panel. */

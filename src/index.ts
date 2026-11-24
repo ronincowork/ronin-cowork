@@ -89,7 +89,7 @@ import { resourceRequestCache, storeDir } from './resources.js';
 import { compressResponse } from './http-performance.js';
 import { startSpawnBroker, stopSpawnBroker } from './spawn-broker.js';
 import { filesProxy, startFiles, stopFiles, PYTHON } from './files.js';
-import { ensureInstalledRoots, githubSetupAnswer, githubSetupAttached } from './setup-runtime.js';
+import { githubSetupAnswer, githubSetupAttached } from './setup-runtime.js';
 import { registerSetupRuntime } from './routes/setup-runtime-api.js';
 import { registerSetupProgress } from './routes/setup-progress-api.js';
 import { startSetupProgress } from './setup-progress.js';
@@ -326,8 +326,6 @@ registerServicesActivation(app); // /api/services/activation* — the Ronin Serv
 // a bare measure (KAN-651): every start, so after every Update too, reads the CLIs' model lists
 // again; nobody has to press Refresh all model providers.
 const campaignStart = ensureInitialCampaign()
-  // Ronin Lab and Project One are Workspaces in that Campaign (KAN-728), so they follow it.
-  .then(() => (isEntryPoint ? ensureInstalledRoots().catch((error) => console.error(`[setup] installed roots: ${(error as Error).message}`)) : undefined))
   .then(() => migrateCampaignScope())
   .then(() => moveDeskModelDefault())
   .then(() => (isEntryPoint ? refreshProviders() : undefined))

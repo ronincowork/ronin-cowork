@@ -7,7 +7,6 @@ import { readSetupSection } from '../machine-state.js';
 import {
   closeProviderLogin,
   completeProviderLogin,
-  ensureInstalledRoots,
   openProviderLogin,
   openProviderUpdate,
   setProviderOff,
@@ -106,7 +105,6 @@ export function registerSetupRuntime(app: express.Express): void {
 
   app.get('/api/setup/runtime', async (_req, res) => {
     try {
-      await ensureInstalledRoots();
       res.json(await answer());
     } catch (error) {
       res.status(500).json({ error: errMsg(error) });

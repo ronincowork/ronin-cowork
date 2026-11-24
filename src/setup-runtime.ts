@@ -7,9 +7,6 @@ import { AGENTS, discoverExecutable, launchArgv, listAgentAvailability } from '.
 import { updateSection } from './machine-state.js';
 import { listProviderCatalog, newerVersion, type ModelList, type ProviderCatalogEntry, type ProviderSummary } from './model-providers.js';
 import { activatedAt, npmPackageOf, offAt, providerSignedIn } from './provider-summary.js';
-import { normalizeWorkspace, readWorkspace, saveWorkspace } from './workspaces.js';
-import { initialCampaignId } from './campaign-scope.js';
-import { readOfficeRecord } from './office-record.js';
 import { rootDir } from './resources.js';
 import { runCommand } from './send.js';
 import { execFile as run, SpawnBrokerError } from './spawn-broker.js';
@@ -19,10 +16,6 @@ import type { InstalledAnswer } from './routes/installed-api.js';
 
 import { createSetupSession, setupAttachment, PROVIDER_SETUP_TEAM, type SetupSessionPrimitives } from './setup-session.js';
 export { PROVIDER_SETUP_TEAM } from './setup-session.js';
-export const INSTALLED_ROOTS = [
-  { name: 'ronin_lab', label: 'Ronin Lab', remit: 'Ideas, assistants, notes, research, and pre-project work.', managed: false },
-  { name: 'project_one', label: 'Project One', remit: 'The first project-shaped workspace folder.', managed: true },
-] as const;
 
 interface SetupSection {
   providers?: Record<string, { activated_at?: unknown; off_at?: unknown; sign_in?: ProviderSignIn }>;
@@ -118,7 +111,6 @@ export interface SetupRuntimeAnswer {
   measured_at: string;
   /** When Refresh all last read every activated CLI's model list; '' when never. */
   refreshed_at: string;
-  roots: Array<{ name: string; label: string; dir: string }>;
   services: { installed: boolean; switched_on: boolean; active: boolean };
 }
 
@@ -227,14 +219,12 @@ export async function setupRuntimeAnswer(
     };
   }));
   const activated_count = providers.filter((provider) => provider.activated).length + await operationalPartCount();
-  const roots = INSTALLED_ROOTS.map((root) => ({ ...root, dir: path.join(rootDir('user'), root.name) }));
   return {
     providers,
     activated_count,
     activated_band: activated_count === 0 ? 'zero' : activated_count === 1 ? 'one' : 'two_plus',
     measured_at: summary.measured_at,
     refreshed_at: summary.refreshed_at,
-    roots: roots.map(({ name, label, dir }) => ({ name, label, dir })),
     services: {
       installed: installed?.services.installed ?? false,
       switched_on: installed?.services.switched_on ?? false,
@@ -593,50 +583,4 @@ export async function createGithubRepository(dirRaw: unknown, visibilityRaw: unk
   } catch (error) {
     throw new Error(`GitHub did not create it: ${line(error) || 'the GitHub CLI refused'}`);
   }
-}
-
-async function ensureRepository(dir: string, label: string, managed: boolean): Promise<void> {
-  await mkdir(dir, { recursive: true });
-  if (!(await exists(path.join(dir, '.git')))) await git(dir, ['init', '-b', 'main']);
-  const readme = path.join(dir, 'README.md');
-  if (!(await exists(readme))) await writeFile(readme, `# ${label}\n`, 'utf8');
-  const hasHead = await git(dir, ['rev-parse', '--verify', 'HEAD']).then(() => true, () => false);
-  if (!hasHead) {
-    await git(dir, ['add', '--', 'README.md']);
-    await git(dir, ['-c', 'user.name=Ronin', '-c', 'user.email=ronin@localhost', 'commit', '-m', `Start ${label}`]);
-  }
-  if (managed && !(await git(dir, ['show-ref', '--verify', '--quiet', 'refs/heads/dev']).then(() => true, () => false))) {
-    await git(dir, ['branch', 'dev', 'HEAD']);
-  }
-}
-
-// Start-up and the first Setup read both call this; one run at a time, or both commit the
-// first README and the second fails Setup's read.
-let rootsInFlight: Promise<Array<{ name: string; label: string; dir: string }>> | null = null;
-export function ensureInstalledRoots(): Promise<Array<{ name: string; label: string; dir: string }>> {
-  rootsInFlight ??= placeInstalledRoots().finally(() => { rootsInFlight = null; });
-  return rootsInFlight;
-}
-
-/** A hosted office makes nothing of these (owner, 2026-11-24; w926): no Workspace, no folder. Ronin Lab
- * and Project One are options the Helpful Assistant offers in Setup's Workspace step, made as any
- * Workspace is; plans make their own folder on their first write (src/plans.ts). */
-async function placeInstalledRoots(): Promise<Array<{ name: string; label: string; dir: string }>> {
-  if ((await readOfficeRecord().catch(() => null))?.hosting === 'office_unit') return [];
-  const installed = [];
-  const campaign = await initialCampaignId();
-  for (const root of INSTALLED_ROOTS) {
-    const dir = path.join(rootDir('user'), root.name);
-    await ensureRepository(dir, root.label, root.managed);
-    // Each is a Workspace holding its own folder, made once: a runtime read runs this on every call.
-    if (campaign && !(await readWorkspace(campaign, root.name))) {
-      const row = { name: root.name, dir, note: root.remit };
-      await saveWorkspace(normalizeWorkspace(campaign, root.name, {
-        title: root.label,
-        ...(root.managed ? { repos: [{ ...row, mode: 'reviewed', working: 'dev', stable: 'main', desks: 'managed' }] } : { folders: [row] }),
-      }));
-    }
-    installed.push({ name: root.name, label: root.label, dir });
-  }
-  return installed;
 }

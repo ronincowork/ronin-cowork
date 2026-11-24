@@ -19,7 +19,7 @@
 import { firstUnansweredSetupStep, setupSteps } from './setup-progress.js';
 
 /**
- * The five steps of one Campaign, in the order Setup asks them. `label` is the Setup
+ * Setup's three steps, Harness, Workspace and Team, in the server's order. `label` is the Setup
  * selector's own scene label, so no caller holds a second, staler copy of that column.
  * `next` marks the first unanswered step; every step false means Setup is complete.
  */

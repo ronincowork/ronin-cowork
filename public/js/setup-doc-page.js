@@ -4,7 +4,7 @@ import { request } from './request.js';
 import { renderMarkdownDocument } from './markdown-reader.js';
 import { localDocumentLink, productRepositoryHref } from './document-links.js';
 
-// HOSTED PAGES, UNDERSTANDING, RUNNING AND HELP (w926): no tick; the page is its doc, as the docs
+// SETUP'S PAGES, UNDERSTANDING, RUNNING AND HELP (w926): no tick; the page is its doc, as the docs
 // have it (docs/getting-started/), read when shown. A link to another doc opens it in place.
 export function createDocPage(label, page) {
   return () => {

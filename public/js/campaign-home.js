@@ -42,18 +42,15 @@ function OFFICE() {
   ];
 }
 
-/** The smaller stones on the right, one above the other. Self-hosted, Settings' route is read at
- *  paint from Setup's ticks. Hosted, Get started heads them while a Setup step is open, and the
- *  Business Lounge stands beside the others: a link out to Ronin HQ, where its account and office are kept. */
+/** The smaller stones on the right, one above the other. Get started heads them while a Setup step
+ *  is open, on every office (SETUP_SWEEP.md §7). Hosted, the Business Lounge stands beside the others: a link out to Ronin HQ, where its account and office are kept. */
 function SIDE(progress) {
-  const open = HOSTED && (progress?.steps || []).some((step) => !step.answered);
+  const open = (progress?.steps || []).some((step) => !step.answered);
   return [
     ...(open ? [{ key: 'setup', route: 'setup', glyph: '人', name: t('campaign_home.get_started', 'Get started'), is: t('campaign_home.get_started_is', 'Harness, Workspace, Team'), gated: false }] : []),
     { key: 'models', route: 'models', glyph: '✶', name: t('campaign_home.harnesses', 'Harnesses'), is: t('campaign_home.harnesses_is', 'The harnesses on this machine, the accounts they launch on, and the models'), gated: false },
     { key: 'help', route: 'help', glyph: 'ミ', name: t('campaign_home.help', 'Help'), is: t('campaign_home.help_is', 'The guides, and Mika to ask'), gated: false },
-    HOSTED
-      ? { key: 'settings', route: 'campaign', glyph: '⚙', name: t('campaign_home.settings', 'Settings'), is: t('campaign_home.settings_is_hosted', 'This Desk’s settings'), gated: false }
-      : { key: 'settings', route: progress?.finished ? 'campaign' : 'setup', glyph: '⚙', name: t('campaign_home.settings', 'Settings'), is: t('campaign_home.settings_is', 'Setup, and this machine’s settings'), gated: false },
+    { key: 'settings', route: 'campaign', glyph: '⚙', name: t('campaign_home.settings', 'Settings'), is: t('campaign_home.settings_is_hosted', 'This Desk’s settings'), gated: false },
     ...(HOSTED ? [{ key: 'lounge', href: BUSINESS_LOUNGE, glyph: '◎', name: t('campaign_home.business_lounge', 'Business Lounge'), is: t('campaign_home.business_lounge_is', 'Your account, office and subscription, at Ronin HQ'), gated: false }] : []),
   ];
 }
@@ -127,7 +124,7 @@ export function createCampaignHome() {
       card.setAttribute('aria-disabled', 'true');
     }
     card.append(doorGlyph(door.glyph), el('h2', null, door.name), el('p', 'ch-is', door.is));
-    if (locked) card.append(el('p', 'ch-gate', HOSTED ? t('setup.provider_gate_hosted', 'Activate a harness in Harnesses to use this.') : t('setup.provider_gate', 'Activate a harness in Setup or Harnesses to use this.')));
+    if (locked) card.append(el('p', 'ch-gate', t('setup.provider_gate_hosted', 'Activate a harness in Harnesses to use this.')));
     card.addEventListener('click', (event) => {
       if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
       event.preventDefault();

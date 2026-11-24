@@ -1,192 +1,7 @@
 {
   "schema_version": 2,
   "canvases": {
-    "garden.setup.provider-welcome": {
-      "copy": [
-        {
-          "id": "provider-boundary",
-          "kind": "title",
-          "eyebrow": "Your models, directly",
-          "heading": "No model lock in",
-          "body": "Sign in directly with the model provider. Use your normal subscription or API directly with the provider."
-        },
-        {
-          "id": "provider-no-lock-in",
-          "kind": "instruction",
-          "body": "Use the strength of each model provider without being locked into one."
-        },
-        {
-          "id": "provider-no-resale",
-          "kind": "instruction",
-          "body": "Ronin does not resell model access or place itself between you and the provider."
-        },
-        {
-          "id": "provider-coworking",
-          "kind": "instruction",
-          "body": "Let agents cowork side by side, connected at the edges by Ronin's tools."
-        }
-      ],
-      "cta": {
-        "label": "Install a provider",
-        "action": "setup.providers.choose"
-      },
-      "media": [
-        {
-          "id": "provider-install-guide",
-          "kind": "doc",
-          "label": "Install a provider",
-          "description": "Choosing a provider in Setup, and what installation opens",
-          "path": "docs/getting-started/agent-install.md"
-        }
-      ]
-    },
-    "garden.setup.register": {
-      "copy": [
-        {
-          "id": "register-intro",
-          "kind": "title",
-          "eyebrow": "Optional",
-          "heading": "Introduce yourself",
-          "body": "Registering gives you access to Ronin Services. It is free."
-        },
-        {
-          "id": "register-nothing-required",
-          "kind": "instruction",
-          "body": "It is not required. Ronin works without it, and Services already installed stay usable either way."
-        }
-      ],
-      "media": [
-        {
-          "id": "register-services-doc",
-          "kind": "doc",
-          "label": "Registration and Services",
-          "description": "What registering establishes, and what it does not gate",
-          "path": "docs/getting-started/services-activation.md"
-        }
-      ]
-    },
-    "garden.setup.workspace": {
-      "copy": [
-        {
-          "id": "workspace-intro",
-          "kind": "title",
-          "eyebrow": "Your ground",
-          "heading": "Make a Workspace",
-          "body": "A Workspace is a body of work: its summary, and the folders and GitHub repositories its Agents work in."
-        },
-        {
-          "id": "workspace-add",
-          "kind": "instruction",
-          "body": "Name it, add the folder or repository you want worked on, and press Create. Add more at any time."
-        },
-        {
-          "id": "workspace-github",
-          "kind": "instruction",
-          "body": "Authenticate with GitHub to reach remote repositories too."
-        },
-        {
-          "id": "workspace-desks",
-          "kind": "instruction",
-          "body": "Give each Agent its own desk for code, or share one checkout for documents and plans."
-        }
-      ],
-      "media": [
-        {
-          "id": "workspace-folders-doc",
-          "kind": "doc",
-          "label": "Workspaces",
-          "description": "What a Workspace is, and how to add its folders",
-          "path": "docs/using-ronin/workspaces.md"
-        }
-      ]
-    },
-    "garden.setup.installations": {
-      "copy": [
-        {
-          "id": "installations-intro",
-          "kind": "title",
-          "eyebrow": "Add only what helps",
-          "heading": "Choose installations",
-          "body": "Optional facilities. The coworkspace stays local and light without any of them."
-        },
-        {
-          "id": "installations-skip",
-          "kind": "instruction",
-          "body": "Skip anything you are unsure about; add it the day you need it."
-        },
-        {
-          "id": "installations-registered",
-          "kind": "instruction",
-          "body": "The ones Ronin maintains ask you to register first. They are open code and free."
-        },
-        {
-          "id": "installations-terms",
-          "kind": "instruction",
-          "body": "Ronin asks you not to commercialize the tools. A Ronin on your own machine sends no usage counts."
-        }
-      ],
-      "media": [
-        {
-          "id": "services-doc",
-          "kind": "doc",
-          "label": "Ronin Services",
-          "description": "Optional capabilities, and how to switch them on",
-          "path": "docs/getting-started/services-activation.md"
-        }
-      ]
-    },
-    "garden.setup.password": {
-      "copy": [
-        {
-          "id": "password-intro",
-          "kind": "title",
-          "eyebrow": "One installation",
-          "heading": "Choose browser access",
-          "body": "A browser password protects the same Ronin work through both its local address and its Tailscale HTTPS address."
-        },
-        {
-          "id": "password-network",
-          "kind": "instruction",
-          "body": "Turning the password off does not change which network addresses can reach Ronin."
-        },
-        {
-          "id": "password-recovery",
-          "kind": "instruction",
-          "body": "If you forget it, mint a temporary recovery code on the machine running Ronin. Ronin HQ never receives your password."
-        }
-      ]
-    },
-    "garden.setup.launch": {
-      "copy": [
-        {
-          "id": "launch-intro",
-          "kind": "title",
-          "eyebrow": "Ready when you are",
-          "heading": "Start one Agent",
-          "body": "Everything before this was setup. This is the part that does work."
-        },
-        {
-          "id": "launch-objective",
-          "kind": "instruction",
-          "body": "Give the Agent one clear objective, small enough that you can check the result yourself."
-        },
-        {
-          "id": "launch-reach",
-          "kind": "instruction",
-          "body": "Set its reach: discuss talks it through, plan plans, execute completes the agreed work."
-        }
-      ],
-      "media": [
-        {
-          "id": "launch-tile-doc",
-          "kind": "doc",
-          "label": "The tile",
-          "description": "Where an Agent terminal, documents and work record live",
-          "path": "docs/using-ronin/tile.md"
-        }
-      ]
-    },
-    "garden.hosted.harness": {
+    "garden.setup.harness": {
       "copy": [
         {
           "id": "hosted-harness-intro",
@@ -218,7 +33,7 @@
         }
       ]
     },
-    "garden.hosted.workspace": {
+    "garden.setup.workspace": {
       "copy": [
         {
           "id": "hosted-workspace-intro",
@@ -255,7 +70,7 @@
         }
       ]
     },
-    "garden.hosted.team": {
+    "garden.setup.team": {
       "copy": [
         {
           "id": "hosted-team-intro",
@@ -287,7 +102,7 @@
         }
       ]
     },
-    "garden.hosted.understanding": {
+    "garden.setup.understanding": {
       "copy": [
         {
           "id": "hosted-understanding-intro",
@@ -299,7 +114,7 @@
       ],
       "media": []
     },
-    "garden.hosted.running": {
+    "garden.setup.running": {
       "copy": [
         {
           "id": "hosted-running-intro",
@@ -311,7 +126,7 @@
       ],
       "media": []
     },
-    "garden.hosted.help": {
+    "garden.setup.help": {
       "copy": [
         {
           "id": "hosted-help-intro",

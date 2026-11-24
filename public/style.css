@@ -4444,25 +4444,6 @@ body {
 .setup-steps-mark[data-answered='true'] { border-color: var(--kaki-fill); background: var(--kaki-fill); /* kaki: the action, or what needs you */ color: var(--on-strong); }
 /* The step Setup lands on: hollow, kaki-edged. Colour and edge, never an underline. */
 .setup-steps-mark[data-next='true'] { border-color: var(--kaki-fill); color: var(--kaki-fill); }
-
-/* THE DOOR BACK TO SETUP, at the head of Machine Settings. A selector card like any other,
-   so hover, focus ring and both densities come for free. The word sits left, the marks sit
-   right, on one row — they carry their own numbers, so nothing counts itself out in words. */
-.setup-return-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-inline); min-width: 0; }
-/* THE CARD'S OWN TWO SIZE STEPS, from signals the column already sends: the frame marks it
-   data-width='compact' below the selector slot's declared 176px (js/workbench.js), and the
-   density is the column's collapsed/expanded switch. Neither reaches the component. */
-[data-selector-density='thick'] .setup-return-card .setup-steps-bar { --slab: 28px; --slab-w: 20px; --slab-gap: 4px; --slab-type: var(--text-label); }
-.wk-layout-surface[data-width='compact'] .setup-return-card .setup-steps-bar { --slab: 20px; --slab-w: 13px; --slab-gap: 2px; --slab-type: var(--text-small); }
-/* THE NEXT STEP, NAMED, ON EVERY EXPANDED CARD. The name alone: a "Next:" label says what
-   the kaki-edged mark already says, and on a narrow column it ate the width the name needs.
-   It is deliberately not .wk-card-summary, which the collapsed density hides. */
-.setup-return-next { margin: var(--space-paragraph) 0 0; min-width: 0; color: var(--muted); font-size: var(--text-body); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-[data-selector-density='thin'] .setup-return-next { display: none; }
-/* COMPLETE IS TWO WORDS. No bar: five filled marks on a finished card say nothing the
-   sentence does not. The card also drops to the utility edge, so finished Setup stops
-   asking for attention without leaving the column. */
-.setup-return-done { color: var(--kaki-fill); }
 @media (max-width: 700px) {
   .setup-surface-body { padding: var(--space-paragraph) 0; }
   .setup-services-benefit { grid-template-columns: 1fr; }

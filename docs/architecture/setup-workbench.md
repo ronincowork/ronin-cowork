@@ -10,21 +10,17 @@ For contributors: what each Setup surface shows and measures, in full. The user'
 **Harnesses**, **Help** and **Settings**. Teams, Epics and Workspaces wait for an Activated
 harness; Help is open from the start.
 
-**Hosted** (owner, 24 Nov; w926; samurai_lab wip/SETUP_SWEEP.md §7): nothing decides that Setup
-is finished. The bare address goes Home; Home shows a **Get started** stone, opening Setup,
-while any of the three steps is unticked; Settings is Settings. **Self-hosted**: Settings opens
-**Ronin Setup** until Setup is finished, and **Ronin Settings** after; the bare address lands on
-Setup until then (KAN-720). Finished is the provider and Workspaces steps ticked (the other
-three are optional), answered by the server as `finished` in `GET /api/setup/progress`. A link
-that names a page still opens that page.
+**One Setup, on every office** (owner, 24 Nov; w926; samurai_lab wip/SETUP_SWEEP.md §7): nothing
+decides that Setup is finished, and nothing in Setup branches on hosting. The bare address goes Home;
+Home shows a **Get started** stone, opening Setup, while any of the three steps is unticked; Settings
+is Settings. A link that names a page still opens that page.
 
 ### The ticks
 
 Setup records nothing of its own (owner, 22 Nov; KAN-768). Each step is ticked when the
-office's facts say it is done (`src/setup-progress.ts`, read from the same readers the facts
-print, `src/facts.ts`), and every press is a real setting or nothing:
-
-Hosted, three steps, in any order, none a gate:
+office's facts say it is done (`src/setup-progress.ts` `setupTicks`, read from the same readers the
+facts print, `src/facts.ts`), and every press is a real setting or nothing. Three steps, in any
+order, none a gate:
 
 | Step | Ticked when |
 |---|---|
@@ -32,33 +28,11 @@ Hosted, three steps, in any order, none a gate:
 | Workspace | a Workspace of theirs, not Ronin Lab, has an objective (`describedWorkspaces`, the workspaces fact) |
 | Team | a Team has a live lead (`ledTeams`, the teams_agents fact) |
 
-Self-hosted, five:
+`GET /api/setup/progress` answers the steps in order with their ticks, and the machine's Tailscale
+address and `no_password` for Settings' Password card; each time a fact is written they are pushed
+again as `setup-progress`, so a change made anywhere ticks its step.
 
-| Step | Ticked when |
-|---|---|
-| Harnesses | a provider is Activated (the integrations_authentications fact) |
-| Register | this machine is registered, by email or anonymously (the machine fact) |
-| Workspaces | a Workspace has a folder (the workspaces fact; machine settings' still needed says the same) |
-| Installations | anything is installed: a Services part, or an installation switched on (the machine fact) |
-| Password | a password is set, or the owner's **Tailscale only** (or **None**) setting is on: `machine.no_password` in machine settings, which the machine fact prints |
-
-`GET /api/setup/progress` answers `hosted`, the steps in order with their ticks, `finished`
-(self-hosted) and the machine's Tailscale address; each time a
-fact is written they are pushed again as `setup-progress`, so a change made anywhere ticks its step.
-
-### Going back to Setup
-
-**Ronin Settings → Machine Settings** keeps a **Setup** card at the head of its column: the
-word, then five numbered marks, one for each step Setup asks about — model provider,
-registration, Workspaces, Installations, and password. A mark is hollow until that step is
-ticked (The ticks, above) and filled once it is; the outlined mark is the step Setup will open
-on.
-
-Widen the column, or switch the selector to its fuller cards, and the card also names that
-step. Once all five are ticked the marks go and the card reads **Setup Complete**. It
-stays where it is, so any step can be opened again whenever you want it.
-
-## Hosted Setup
+## The Setup workbench
 
 The owner's onboarding prototype is the look: the selector holds the three steps, **Harness**
 (`setup.providers`), **Workspace** (`setup.roots`) and **Team** (`setup.team`, the ordinary New
@@ -68,30 +42,20 @@ doc in `docs/getting-started/` shown whole (`setup.understanding`, `setup.runnin
 Helpful Assistant runs or not, with her entry at the top.
 
 The columns are the selector, the step's surface, and on the right the **Ask Ronin** panel: the
-step's few lines (the garden canvas, `garden.hosted.*`), then her chat. Not running, the panel
+step's few lines (the garden canvas, `garden.setup.*`), then her chat. Not running, the panel
 offers her; pressing it, or her entry, posts `POST /api/irasshai/open`, which shows her if she
 runs, restores her archive within its seven days, or makes her fresh. Opening Setup alone does
-not start her; a new office starts her when none of the three steps is ticked. She sees the
-step (Setup reports its view) and opens what it needs with `show`.
+not start her; an office starts her when none of the three steps is ticked. Moving between the
+steps tells her nothing; she sees the step (Setup reports its view) and opens what it needs with
+`show`. A button on a step's surface may message her, named on the button.
 
-A hosted office has no registration, installations or password steps: they are the
-office_park's and the Business Lounge's. Install makes no Workspace and no folder there; Ronin
-Lab and Project One are options she offers in the Workspace step, made as any Workspace is.
-Plans make their folder on their first write.
+Registration, Installations (Ronin Services), Password and Launch are not Setup steps: their cards
+stay in Settings. Install makes no Workspace and no folder; Ronin Lab and Project One are options
+she offers in the Workspace step, made as any Workspace is. Plans make their folder on their first
+write.
 
-## The Setup workbench
-
-Self-hosted, Setup is one workbench with two workspaces and a selector column between them
-(hosted: above):
-
-- **Workspace 1** holds the Garden Canvas: short authored guidance for the selected step.
-- **The selector** lists Harnesses, optional registration, Workspaces,
-  Installations, and Launch. A check means the step's actual completion fact is true.
-- **Workspace 2** is the actionable surface for the selected step. Selecting a card changes
-  both workspaces together.
-
-On a phone the same three columns stack. Setup reads the ticks when it opens, again after
-each of its own actions, and from the `setup-progress` push; it does not poll.
+On a phone the columns stack. Setup reads the ticks when it opens, again after each of its own
+actions, and from the `setup-progress` push; it does not poll.
 
 Every stone surface in Setup shares one shape: square stones on the left; select one and
 the stones fold into a rail with the stone's page beside it; Escape closes it.
@@ -113,7 +77,7 @@ Once a step is settled the band goes blank, and its space stays. That space is w
 the stones at the same height as you move between steps, so nothing jumps. While a stone is
 open the band is gone entirely: that is the step's own page, not its question.
 
-**Password** never goes blank, because how you reach this machine is an arrangement you may
+**Password** (in Settings) never goes blank, because how you reach this machine is an arrangement you may
 want to revisit rather than a one-time fact: it keeps its choices for good.
 
 ## Harnesses
@@ -158,7 +122,7 @@ again asks in its own flow.
 
 Details of the catalog and what is measured are in [model providers](model-providers.md).
 
-## Register
+## Register (a Settings card)
 
 Registration is optional; local Ronin works without it, and the step stays unticked until you
 register (nothing records a decline). The form is on show until you do; registered anonymously,
@@ -174,9 +138,9 @@ Share only what feels useful. A registered identity is what Ronin Services entit
 hangs on; it is not a subscription and it switches nothing on by itself. Communication
 choices are separate, and **No communication** is one of them.
 
-## Password
+## Password (a Settings card)
 
-How you reach this machine is the last step. Most people reach Ronin over Tailscale, which
+How you reach this machine. Most people reach Ronin over Tailscale, which
 is already private, so the zone says whether Tailscale is available here and asks whether
 you want a password as well.
 
@@ -193,13 +157,9 @@ judgement about your own machine, so Setup waits for you to say.
 ## Workspaces
 
 The Workspace step is the Workspaces themselves (KAN-728): Ronin keeps no folder list of its
-own, so every folder Setup adds is a row of a Workspace record (`src/workspaces.ts`). A new
-self-hosted installation makes two Workspaces inside Ronin (`placeInstalledRoots`, made once each; a hosted office makes none):
-**Ronin Lab** for ideas, assistants, research and pre-project work, holding the folder
-`ronin_lab`, and **Project One** for project work, holding the repository `project_one`,
-Reviewed (working `dev`, stable `main`). Your Lab is a general thinking space, not the code
-repository for a specific project. Each folder is a Git repository with a README and a first
-commit.
+own, so every folder Setup adds is a row of a Workspace record (`src/workspaces.ts`). Install
+makes none; the Helpful Assistant offers **Ronin Lab** (ideas, research, pre-project work) and
+**Project One** (project work) in this step, made with the `workspace` tool as any Workspace is.
 
 The surface shows the Workspaces as stones (`createWorkspaceStones`, `withNew`), with a **New
 Workspace** stone last. Pressing a stone opens the Workspace's page, the same page as the
@@ -211,11 +171,11 @@ until typed; 2 **Where it lives**, **Add a folder**, **Paste a Git URL** (any ho
 canvases, Integrations and Behaviors; Archive under ⋯. The made Workspace opens in its place.
 
 GitHub is never a step of its own: a public repository clones without it. For a private one, or
-"my repositories", the Helpful Assistant (or Mika, self-hosted) signs the GitHub CLI in with
+"my repositories", the Helpful Assistant signs the GitHub CLI in with
 GitHub's device flow and `gh auth setup-git`, so a headless machine shows a code the owner
 approves in a browser elsewhere.
 
-## Ronin Services
+## Ronin Services (a Settings card)
 
 Services adds optional capabilities. The page reports what is installed and enabled on
 this machine. Terminal transcript needs both the package and its switch; local weights are
@@ -233,7 +193,7 @@ to Ronin returns.
 Installed parts are usable whether or not anyone registered. The activation flow itself is in
 `docs/getting-started/services-activation.md`.
 
-## Launch your own
+## Launch your own (a Settings card)
 
 Two stones:
 
