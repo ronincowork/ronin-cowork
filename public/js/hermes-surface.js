@@ -11,6 +11,7 @@
 import { request } from './request.js';
 import { loadProviderCatalog } from './form-steps.js';
 import { ask } from './ask.js';
+import { createStep } from './form-steps.js';
 
 const el = (tag, cls = '', text = null) => { const node = document.createElement(tag); if (cls) node.className = cls; if (text != null) node.textContent = String(text); return node; };
 const input = (value = '', type = 'text') => { const node = el('input'); node.type = type; node.value = value; return node; };
@@ -119,36 +120,61 @@ export function mountHermesSurface(host, provider, onChanged) {
     editor.append(form); name.focus();
   };
 
-  const card = (title, detail, ...presses) => {
-    const row = el('div', 'hermes-card');
+  // ONE ROW SHAPE (owner, 24 Nov): a connection, a setup and the row that adds another all read the
+  // same: a name, one line saying what it is, its stones. The adding row is dashed.
+  const card = (title, detail, presses, adding = false) => {
+    const row = el('div', `hermes-card${adding ? ' adding' : ''}`);
     const summary = el('div', 'hermes-card-summary');
     summary.append(el('strong', '', title), el('span', '', detail));
     row.append(summary, stones(...presses));
     return row;
   };
+  // TWO COLLAPSIBLE STEPS, the form idiom of New Team (form-steps.js createStep): open by default;
+  // folded, each says in a line what it holds.
+  const open = { connections: true, setups: true };
+  const step = (n, key, title, meta) => {
+    const made = createStep({ n, key, title, onToggle: () => { open[key] = !open[key]; made.setCollapsed(!open[key], meta, true); } });
+    made.setCollapsed(!open[key], meta, true);
+    return made;
+  };
+  const names = (list) => list.map((one) => one.name).join(', ');
+  const modelsLine = (c) => (c.discoveredAt ? `${c.models.length} model${c.models.length === 1 ? '' : 's'}` : 'model list not read yet');
 
   const paint = () => {
     if (disposed) return;
     closeEditor();
     notice.textContent = '';
-    root.replaceChildren(el('p', '', provider?.installed ? `Runtime installed${provider.version ? ` · ${provider.version}` : ''}` : 'Install Hermes before launching an Agent.'), notice);
-    root.append(el('h3', '', 'API connections'), el('p', '', 'Load a connection’s models to make named setups from them.'));
+    const intro = el('p', '', 'Hermes runs on API connections: an API’s address and key. A named setup picks one model from a connection and shows under Model when you start a Hermes Agent.');
+    root.replaceChildren(intro, notice);
+
+    const connections = step(1, 'connections', 'API connections', state.connections.length
+      ? `${state.connections.length} · ${names(state.connections)}` : 'None yet');
     for (const c of state.connections) {
-      root.append(card(c.name, `${c.provider}${c.credentialEnv ? ` · ${c.credentialEnv}` : ''} · ${c.configured ? 'Configured' : 'Key missing'} · ${c.discoveredAt ? `${c.models.length} models` : 'Models not loaded'}`,
-        stone('Load models', () => run('discover', { id: c.id })), stone('Edit', () => editConnection(c)),
-        ...(c.credentialEnv ? [] : [stone('Remove', () => run('delete', { kind: 'connections', id: c.id }))])));
+      const what = c.credentialEnv ? 'This office’s connection to Ronin models' : `${c.provider === 'custom' ? 'OpenAI-compatible API' : c.provider === 'mistral' ? 'Mistral API' : 'OpenAI API'}${c.configured ? '' : ' · key missing'}`;
+      connections.body.append(card(c.name, `${what} · ${modelsLine(c)}`, [
+        stone('Read its models', () => run('discover', { id: c.id })),
+        stone('Edit', () => editConnection(c)),
+        ...(c.credentialEnv ? [] : [stone('Remove', () => run('delete', { kind: 'connections', id: c.id }))]),
+      ]));
     }
-    root.append(stones(stone('Add API connection', () => editConnection())));
-    root.append(el('h3', '', 'Named setups'), el('p', '', 'Each name appears under Model when you pick Hermes for a new Agent. Each launch gets its own memory and history.'));
+    connections.body.append(card(state.connections.length ? 'Add another connection' : 'Add a connection',
+      'OpenAI, Mistral, or any OpenAI-compatible API such as OpenRouter.', [stone('Add', () => editConnection())], true));
+
+    const setups = step(2, 'setups', 'Named setups', state.setups.length ? `${state.setups.length} · ${names(state.setups)}` : 'None yet');
     for (const setup of state.setups) {
-      root.append(card(setup.name, `${state.connections.find((c) => c.id === setup.connection)?.name || 'Missing connection'} · ${setup.model} · ${setup.reasoning} reasoning · ${setup.approvals === 'off' ? 'Approvals off' : 'Ask for approval'}`,
-        stone('Edit', () => editSetup(setup)), stone('Duplicate', () => editSetup({ ...setup, id: undefined, name: `${setup.name} copy` })),
-        stone('Remove', () => run('delete', { kind: 'setups', id: setup.id }))));
+      setups.body.append(card(setup.name, `${state.connections.find((c) => c.id === setup.connection)?.name || 'Missing connection'} · ${setup.model} · ${setup.reasoning === 'default' ? 'provider default' : setup.reasoning} reasoning · ${setup.approvals === 'off' ? 'approvals off' : 'asks for approval'}`, [
+        stone('Edit', () => editSetup(setup)),
+        stone('Remove', () => run('delete', { kind: 'setups', id: setup.id })),
+      ]));
     }
-    const add = stone('Add named setup', () => editSetup());
-    add.disabled = !state.connections.some((c) => c.models.length);
-    root.append(stones(add), editor);
-    root.append(el('p', '', 'Setup changes apply to future launches; a new key is picked up when an Agent restarts. Removing a connection does not revoke its key at the API provider.'));
+    const canAdd = state.connections.some((c) => c.models.length);
+    const add = stone('Add', () => editSetup());
+    add.disabled = !canAdd;
+    setups.body.append(card(state.setups.length ? 'Add another setup' : 'Add a setup',
+      canAdd ? 'A name for one model of a connection, with its reasoning and approvals.' : 'Read a connection’s models first.', [add], true));
+
+    root.append(connections.el, setups.el, editor,
+      el('p', 'hermes-fine', 'Changes apply to Agents started after them; a new key is picked up when an Agent restarts. Removing a connection does not revoke its key at the API provider.'));
   };
   void request('/api/hermes').then((result) => { if (disposed) return; if (result.ok) { state = result.data; paint(); } else { root.append(notice); notice.textContent = result.message; } });
   return () => { disposed = true; closeEditor(); };
