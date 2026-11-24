@@ -34,12 +34,12 @@ again as `setup-progress`, so a change made anywhere ticks its step.
 
 ## The Setup workbench
 
-The owner's onboarding prototype is the look. The selector's pills are **Ask Ronin** (the
-Helpful Assistant: pressing it opens her chat, or asks for her), the three steps, **Harness**
+The owner's onboarding prototype is the look. The selector's pills are the three steps, **Harness**
 (`setup.harness`), **Workspace** (`setup.roots`) and **Team** (`setup.team`, the ordinary New Team
 form), and **Tour**, the Ronin Tour with no tick, `docs/getting-started/tour.md` shown whole
-(`setup.tour`: how Agents begin, how the work runs, then Questions). The header carries the three
-step marks. The selector is the same whether she runs or not.
+(`setup.tour`: how Agents begin, how the work runs, then Questions). The selector's header carries the
+three step marks, beside its density toggle (owner, 24 Nov). The selector is the same whether she
+runs or not; she has no pill of her own (it did nothing the panel does not).
 
 Setup has no hints: no Agent vocabulary, no session controls. At the foot of the selector, where
 they were, is **the step's guide**, kept thin (owner, 24 Nov): the step's title, the questions
@@ -50,7 +50,7 @@ Tour's Questions, and the answers are read from `docs/getting-started/tour.md`, 
 their one source.
 
 The columns are the selector, the step's surface, and on the right the **Ask Ronin** panel, which
-is only her: her chat, or, not running, the offer of her. Pressing it, or her pill, posts `POST /api/irasshai/open`, which shows her if she
+is only her: her chat, or, not running, the offer of her. Its button posts `POST /api/irasshai/open`, which shows her if she
 runs, restores her archive within its seven days, or makes her fresh. Opening Setup alone does
 not start her; an office starts her when none of the three steps is ticked. Moving between the
 steps tells her nothing; she sees the step (Setup reports its view) and opens what it needs with

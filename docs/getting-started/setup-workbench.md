@@ -19,8 +19,8 @@ Three steps, in any order, each checked once it is true in your office however y
 Then the **Tour**, to read when you like: [Ronin Tour](tour.md), how your Agents begin, how the
 work runs, and the questions people ask first.
 
-Under the steps, each step's how-to follows the step you are on. **Ask Ronin**, at the top of
-the steps and beside them, is the Helpful Assistant: she sees the step you are on, answers your
+Under the steps, each step's questions follow the step you are on. **Ask Ronin**, beside the
+steps, is the Helpful Assistant: she sees the step you are on, answers your
 questions, and can do it with you in the conversation.
 
 Registration, Ronin Services, a password, and launching your own Agent are not Setup steps:

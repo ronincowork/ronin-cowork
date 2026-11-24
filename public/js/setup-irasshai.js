@@ -7,8 +7,8 @@
  * tile's Term / Chat toggle (KAN-717). The selector is Setup's own steps whether she runs or not; she
  * sees the step (Setup reports its view) and takes it when asked.
  *
- * HER PILL (KAN-691, KAN-694): Ask Ronin, at the top of Setup's selector (owner, 24 Nov; w926), on any
- * ronin_install. A press asks for her (POST /api/irasshai/open): live, she is there; archived and still
+ * ASKING FOR HER (KAN-691, KAN-694): the Ask Ronin panel's button (w926; the selector pill went, owner
+ * 24 Nov: it did nothing visible). A press asks for her (POST /api/irasshai/open): live, she is there; archived and still
  * restorable, she is restored; else made fresh. It reads Opening… at once and ignores presses while it
  * runs; a failure says so on the card. While she is live a press shows her chat.
  *
@@ -43,10 +43,8 @@ export const irasshaiKey = () => (irasshaiIn(S.sessions) ? String(S.sessions.fin
 /** Ask for her: one POST, answered at once, with this tab (what her `show` addresses); her chat follows the session push. */
 export const askIrasshai = () => request('/api/irasshai/open', { method: 'POST', json: { tab: mikaTab() } });
 
-export const IRASSHAI_OPEN_TYPE = 'setup.irasshai';
-
 /**
- * Her entry at the top of Setup's selector: its card's words and its press. Live, a press shows her
+ * Her opener: the Ask Ronin panel button's words and its press. Live, a press shows her
  * chat (Assist, Workspace 1: the one a phone shows); not live, it asks for her, reads Opening… at
  * once, ignores presses while it runs, and says so on the card if she couldn't be opened.
  */
@@ -65,7 +63,7 @@ export function createIrasshaiOpener({ refresh, showChat }) {
   };
   // The selector draws cards by name (their summary line is folded away), so the name carries the state.
   const label = () => (state === 'opening' ? t('setup.irasshai_opening', 'Opening…')
-    : state === 'failed' ? why || t('setup.irasshai_failed', 'Couldn’t open the Helpful Assistant') : t('setup.irasshai_open', 'Ask Ronin')); // her pill (owner, 24 Nov); why in one line, as the server says it
+    : state === 'failed' ? why || t('setup.irasshai_failed', 'Couldn’t open the Helpful Assistant') : t('setup.irasshai_open', 'Ask Ronin')); // the panel button's words; why in one line, as the server says it
   const summary = () => (state === 'failed' && why ? why
     : irasshaiLive() ? t('setup.irasshai_here', 'Here, in Ask Ronin') : t('setup.irasshai_open_title', 'Your welcome Agent: start here'));
   return {
@@ -73,20 +71,6 @@ export function createIrasshaiOpener({ refresh, showChat }) {
     offer: () => ({ key: 'open', label: label(), summary: summary(), title: summary(), className: 'setup-irasshai-card', action: press }),
     arrived: () => { if (state === 'opening') { state = ''; showChat(); } refresh(); },
   };
-}
-
-/** Her entry as a selector type: one card, never placed (a press is her opener's). */
-export function registerIrasshaiOpen() {
-  if (WorkspaceKit.workbench.surfaces.has(IRASSHAI_OPEN_TYPE)) return IRASSHAI_OPEN_TYPE;
-  return WorkspaceKit.workbench.surfaces.register({
-    type: IRASSHAI_OPEN_TYPE,
-    header: 'surface',
-    label: 'Ask Ronin',
-    discover: (_tenant, environment) => (environment?.irasshaiOpen ? [environment.irasshaiOpen()] : []),
-    // A drag does what a press does: her chat, or her made fresh; nothing is placed (KAN-696).
-    redirect: (_detail, environment) => { environment?.irasshaiPress?.(); return null; },
-    create: () => WorkspaceKit.primitives.createBlankSurface(),
-  });
 }
 
 /**

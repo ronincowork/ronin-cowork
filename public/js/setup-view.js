@@ -352,7 +352,7 @@ export function createSetupView() {
       open(sceneOverride);
       seatChat();
       entered = true; report();
-      // She comes when asked (her Ask Ronin pill, or the panel's offer), or with the office's start (§7).
+      // She comes when asked (the Ask Ronin panel's button), or with the office's start (§7).
       void request('/api/setup/progress', { cache: 'no-store' }).then((result) => {
         if (generation !== enterGeneration || !result.ok || !acceptProgress(result.data)) return;
         const first = firstUnansweredSetupStep(progress);
