@@ -93,7 +93,7 @@ export function accountModel(result) {
     [t('account.account', 'account'), f.account.display_name ? `${f.account.display_name} (${f.account.user_id})` : f.account.user_id],
     [t('account.office', 'office'), f.office.office_id],
     [t('account.office_lease', 'office lease'), f.office_lease
-      ? [STATUS_WORDS()[f.office_lease.lease_status] ?? STATUS_WORDS().unknown, f.office_lease.kind, ...f.office_lease.lease_addons].filter(Boolean).join(' · ')
+      ? [STATUS_WORDS()[f.office_lease.lease_status] ?? STATUS_WORDS().unknown, f.office_lease.kind, f.office_lease.lease_plan && t('account.lease_plan', 'plan {plan}', { plan: f.office_lease.lease_plan })].filter(Boolean).join(' · ')
       : t('account.no_lease', 'No open office')],
     [t('account.changed', 'last changed'), when(f.office_lease?.changed_at)],
   ];

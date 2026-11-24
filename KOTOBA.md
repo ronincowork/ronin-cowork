@@ -170,9 +170,9 @@ stays; what the customer hears for a unit is not settled (owner, 6 Nov 2026).
 | Model gateway (`model_gateway`) | Holds Ronin's provider key outside every office; an office speaks to it with its house_token |
 | House token (`house_token`) | One office's credential for the model_gateway; revoking it is part of the kill_switch |
 | Office export (`office_export`) | The off-ramp: the office as self-hosted Ronin on the customer's own computer |
-| Office lease (`office_lease`) | One office's lease: its kind's rent plus its add-ons, billed monthly. The $5 starter is $5 off the first month's lease |
-| Lease add-on (`lease_addon`) | Something added to an office's lease: house models, voice, an environment or an integration |
-| Allowance | An add-on's month of use for one office, kept in dollars by HQ and shown as a meter (percent, stopped, resets) |
+| Office lease (`office_lease`) | One office's lease: its kind's rent plus one optional lease_plan, billed monthly. The $5 starter is $5 off the first month's lease |
+| Lease plan (`lease_plan`) | The lease's one optional plan: Basic, Premium, Platinum or Max. A paper offer: shown, never checked; integrations, CLIs and Jira are open to every office |
+| Allowance | A plan's month of house-model or voice use for one office, kept in dollars by HQ and shown as a meter (percent, stopped, resets) |
 | Lease status (`lease_status`) | trial, active, paused or ended; anything else reads as unknown |
 | Provider subscription (`provider_subscription`) | A harness provider's paid plan (Claude Pro/Max, ChatGPT Plus/Pro…). "Subscription" means only this |
 | Spent | What has been charged, this month and in total; per office and per person |
