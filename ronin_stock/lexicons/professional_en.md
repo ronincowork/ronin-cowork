@@ -1180,13 +1180,27 @@ The pad's current config downloads as a backup first.
 
 ## composer — the ✕ clear
 
-## phone — phone.js (the mobile document: Teams, a Team's Agents | Docs, one Agent's tile)
-- **phone.coworks:** Teams
+## phone — phone.js (the mobile document: the list, a Team's Docs, an item, one Agent's tile)
+- **phone.type:** Type
+- **phone.type_team:** Team
+- **phone.type_epic:** Epic
+- **phone.type_workspace:** Workspace
+- **phone.kind:** Kind
+- **phone.kind_agent:** Agent
+- **phone.kind_lead:** Lead
+- **phone.kind_item:** Item
+- **phone.sort:** Sort
+- **phone.sort_type:** By type
+- **phone.sort_active:** By active
+- **phone.band_flagged:** Flagged
+- **phone.band_active:** Active
+- **phone.band_recent:** Recently active
+- **phone.band_rest:** Everyone else
+- **phone.no_epic:** No Epic
+- **phone.no_workspace:** No Workspace
+- **phone.no_rows:** Nobody here yet.
 - **phone.launch_card:** Launch New Agent
 - **phone.launch_defaults:** Everything else launches with this Team's defaults.
-- **phone.no_coworks:** No Teams yet.
-- **phone.no_agents:** No Agents on this Team yet.
-- **phone.agents:** Agents
 - **phone.docs:** Docs
 - **phone.back:** Back
 

@@ -114,8 +114,8 @@ to comment); press it again to fold it.
 
 ### The Agent pills
 
-On a Team's workbench the discovery column lists its Agents as pills (on a phone, the Team's
-**Agents** list). Each pill says, at a glance, which of five situations its Agent is in:
+On a Team's workbench the discovery column lists its Agents as pills (on a phone, the Agent
+rows of the list: [On a phone](#on-a-phone)). Each pill says, at a glance, which of five situations its Agent is in:
 
 | Pill | Situation |
 |---|---|
@@ -220,6 +220,30 @@ The reading toggle is a toggle, never a row in the menu. Each press moves on thr
 readings this screen offers, and past the last one it returns to the terminal. A desk walks
 every reading the record has; a tablet offers Terminal, Chat and Work; a phone is Terminal
 or Chat. Notes and the full record stay on the desk.
+
+## On a phone
+
+A phone opens on one list of every Agent or item in the office. Three buttons across the top
+choose what it shows:
+
+| Button | What it does |
+|---|---|
+| **Type** | What the list is grouped by: **Team**, **Epic** or **Workspace** |
+| **Kind** | What each row is: **Agent**, **Lead** (Agents who lead a Team) or **Item** |
+| **Sort** | **By type**: one card per Team, Epic or Workspace. **By active**: one card each for **Flagged**, **Active** (working now), **Recently active** (finished in the last ten minutes) and **Everyone else**, in that order |
+
+Press a card to open it in place, with its rows underneath; press it again to close it. More
+than one can be open. An open Team card also has **Docs** (the Team's documents) and **＋ Launch
+New Agent** under its rows. The phone remembers the three choices and which cards are open.
+
+An Agent sits under an Epic when it holds the Epic or an item under it, so it can appear under
+more than one. An Agent's Workspace is its Team's; an item's is that of whoever holds its Epic.
+An item's row shows its holder's situation.
+
+Press an Agent to open its tile; back returns to the list. Press an item to open it on its own
+screen: the same reading as on a desk, with its status to move, its Agents (each opens that
+Agent's tile), its Subtasks (each opens its own screen), comments and a box to add one, and its
+attachments (each opens in Docs). Back returns to where you came from.
 
 ## Short vocabulary check
 

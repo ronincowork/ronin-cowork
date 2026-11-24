@@ -1,14 +1,18 @@
 /* part of the ronin-cowork client — see js/README.md */
 /**
  * THE MOBILE DOCUMENT'S ENTRY MODULE. `mobile.html` holds the bar and an empty main; this
- * module fills them and routes the five acts a phone does: see a Team's Agents, see the
- * documents they work on, change Agent, change Team, launch a new Agent. Nothing here
- * decides "phone": the server sent this document because the request came from one
- * (src/index.ts), so the first frame the browser paints is already the mobile bar.
+ * module fills them and routes the phone's screens. Nothing here decides "phone": the server
+ * sent this document because the request came from one (src/index.ts), so the first frame the
+ * browser paints is already the mobile bar.
  *
- * Three screens, one at a time: Teams → a Team (Agents | Docs) → one Agent's tile. On the
- * tile the head is hidden and the bar carries the head's reading toggle and メ control,
- * RELOCATED not cloned; メ opens the same menu as on a desk (js/menu.js).
+ * ONE LIST IS THE FRONT DOOR (plan ronin_cowork/phone-lists, KAN-818): three questions across
+ * the top — Type (the grouping: Team, Epic, Workspace), Kind (each row: Agent, Lead, Item) and
+ * Sort (By type: one card per Team, Epic or Workspace; By active: one card each for Flagged,
+ * Active, Recently active, Everyone else). A card pressed opens in place to its rows; pressed
+ * again it closes; several stay open. An Agent's row opens its tile, an item's row its item
+ * screen. Screens, one at a time: the list · a Team's Docs · an item · an Agent's tile ·
+ * Feedback. On the tile the head is hidden and the bar carries the head's reading toggle and メ
+ * control, RELOCATED not cloned; メ opens the same menu as on a desk (js/menu.js).
  */
 import { trackAppHeight } from './appheight.js';
 import { request } from './request.js';
@@ -26,6 +30,8 @@ import { t } from './lexicon.js';
 import { WorkspaceKit } from './workspace-kit.js';
 import { createFeedbackSurface } from './feedback.js';
 import { createKeyedList } from './workspace-primitives.js';
+import { ask } from './ask.js';
+import { splitItemTitle } from './item-title.js';
 
 const el = (tag, cls, text) => {
   const out = document.createElement(tag);
@@ -43,23 +49,105 @@ function agentLabel(session) {
   return session.title || readable(session.name);
 }
 
-/**
- * #/ · #/t/<team> · #/d/<team> · #/s/<team>/<session> · #/feedback — anything else is the
- * front door. The desktop's own `#/team/<name>` lands on the same Team, so one link opens
- * it on either device; a `#/m/…` bookmark from the shell's earlier life still resolves.
- */
+/** #/ · #/d/<team> · #/s/<agent> · #/i/<item> · #/feedback — anything else is the list. */
 const routeFromHash = () => {
   const parts = location.hash.replace(/^#\/?/, '').split('/').map(decodeURIComponent);
-  if (parts[0] === 'm') parts.shift();
   if (parts[0] === 'feedback') return { screen: 'feedback' };
-  if ((parts[0] === 't' || parts[0] === 'team') && parts[1]) return { screen: 'agents', team: parts[1] };
   if (parts[0] === 'd' && parts[1]) return { screen: 'docs', team: parts[1] };
-  if (parts[0] === 's' && parts[1] && parts[2]) return { screen: 'terminal', team: parts[1], session: parts[2] };
-  return { screen: 'teams' };
+  if (parts[0] === 's' && parts[1]) return { screen: 'terminal', session: parts[1] };
+  if (parts[0] === 'i' && parts[1]) return { screen: 'item', item: parts[1] };
+  return { screen: 'list' };
 };
-const teamHash = (team) => '#/t/' + encodeURIComponent(team);
 const docsHash = (team) => '#/d/' + encodeURIComponent(team);
-const sessionHash = (team, session) => '#/s/' + encodeURIComponent(team) + '/' + encodeURIComponent(session);
+const sessionHash = (session) => '#/s/' + encodeURIComponent(session);
+const itemHash = (id) => '#/i/' + encodeURIComponent(id);
+
+/* ---------- the list's reading: groups and rows, from the store alone ---------- */
+const NO_GROUP = ''; // the group id of "no Epic" / "no Workspace"
+const isOpenItem = (item) => item && item.status !== 'Done';
+const holderOf = (item) => {
+  const [kind, ...rest] = String(item?.holder || '').split(':');
+  const name = rest.join(':');
+  return (kind === 'agent' || kind === 'team') && name ? { kind, name } : null;
+};
+/** The Teams an Agent is on (Unassigned when none), by the roster the page reads. */
+const teamsOfAgent = (name, teams) => {
+  const on = teams.filter((team) => team.name !== UNASSIGNED && membersOfTeam(team.name).some((member) => member.name === name)).map((team) => team.name);
+  return on.length ? on : [UNASSIGNED];
+};
+/** The Teams that work an item: a Team holder is that Team; an Agent holder is its Teams. */
+const teamsOfItem = (item, teams) => {
+  const holder = holderOf(item);
+  if (!holder) return [UNASSIGNED];
+  return holder.kind === 'team' ? [holder.name] : teamsOfAgent(holder.name, teams);
+};
+const workspaceOfTeam = (name) => String(teamByName(name)?.workspace || '');
+
+/**
+ * Every group of the list for one Type and Kind: [{ id, label, team?, rows }], a row
+ * { key, kind: 'agent' | 'item', name | item }. An Agent may sit in several groups.
+ */
+function readGroups(type, kind) {
+  const teams = teamsFromState().filter((team) => listedTeam(team) && (!team.holding || unassignedSessions().length));
+  const epics = (held('epics') || []).filter(isOpenItem);
+  const under = (held('epicItems') || []).filter(isOpenItem);
+  const items = [...epics, ...under];
+  const agents = (S.sessions || []).map((session) => session.name);
+  const leads = new Set(teams.flatMap((team) => membersOfTeam(team.name).filter((member) => member.team_lead).map((member) => member.name)));
+  const people = kind === 'lead' ? agents.filter((name) => leads.has(name)) : agents;
+  const groups = new Map();
+  const group = (id, label, extra = {}) => {
+    if (!groups.has(id)) groups.set(id, { id, label, rows: [], ...extra });
+    return groups.get(id);
+  };
+  const addAgent = (target, name) => { if (!target.rows.some((row) => row.name === name)) target.rows.push({ key: `a:${name}`, kind: 'agent', name }); };
+  const addItem = (target, item) => { if (!target.rows.some((row) => row.item?.id === item.id)) target.rows.push({ key: `i:${item.id}`, kind: 'item', item }); };
+
+  if (type === 'team') {
+    for (const team of teams) group(team.name, teamLabel(team), { team: team.name });
+    if (kind === 'item') {
+      for (const item of items) for (const name of teamsOfItem(item, teams)) addItem(group(name, teamLabel({ name }), { team: name }), item);
+    } else {
+      for (const team of teams) for (const member of membersOfTeam(team.name)) {
+        if (kind === 'lead' && !member.team_lead) continue;
+        addAgent(groups.get(team.name), member.name);
+      }
+    }
+  } else if (type === 'epic') {
+    const epicLabel = (epic) => splitItemTitle(epic.title || epic.id).shortTitle;
+    for (const epic of epics) group(epic.id, epicLabel(epic));
+    const noEpic = () => group(NO_GROUP, t('phone.no_epic', 'No Epic'));
+    if (kind === 'item') {
+      for (const epic of epics) addItem(groups.get(epic.id), epic);
+      for (const item of under) addItem(item.epic && groups.has(item.epic) ? groups.get(item.epic) : noEpic(), item);
+    } else {
+      // An Agent is under an Epic when it holds the Epic or any item under it.
+      for (const name of people) {
+        const holds = items.filter((item) => { const holder = holderOf(item); return holder?.kind === 'agent' && holder.name === name; });
+        const epicIds = new Set(holds.map((item) => (item.level === 1 ? item.id : item.epic)).filter((id) => id && groups.has(id)));
+        if (!epicIds.size) addAgent(noEpic(), name);
+        for (const id of epicIds) addAgent(groups.get(id), name);
+      }
+    }
+  } else {
+    const noWorkspace = t('phone.no_workspace', 'No Workspace');
+    const at = (name) => group(name || NO_GROUP, name || noWorkspace);
+    if (kind === 'item') {
+      // An item's Workspace is its Epic's holder's; an item under no Epic, its own holder's.
+      const epicById = new Map(epics.map((epic) => [epic.id, epic]));
+      for (const item of items) {
+        const owner = item.level === 1 ? item : epicById.get(item.epic) || item;
+        for (const team of teamsOfItem(owner, teams)) addItem(at(workspaceOfTeam(team)), item);
+      }
+    } else {
+      // An Agent's Workspace is its Team's.
+      for (const name of people) for (const team of teamsOfAgent(name, teams)) addAgent(at(workspaceOfTeam(team)), name);
+    }
+  }
+  const out = [...groups.values()];
+  // A Team stands even with nobody on it (its ＋ is how one is launched); other groups only with rows.
+  return type === 'team' ? out : out.filter((one) => one.rows.length);
+}
 
 export async function buildPhone() {
   // The visible height before anything is laid out in it — see js/appheight.js.
@@ -71,10 +159,9 @@ export async function buildPhone() {
   const connectionStatus = el('span', 'connection-state');
   connectionStatus.hidden = true;
   // ONE THING MOVES, ONE THING REPAINTS (owner, 2026-11-12, KAN-414): the kit's keyed list
-  // lays the bar, the Teams list and a Team's Agents. A bar piece is a node kept by identity,
-  // or a row of words drawn again only when its words move; a card is a kept row by its
-  // Team or Agent name, so a push repaints only the card that moved and never detaches the
-  // one under a finger mid-tap.
+  // lays the bar and the list. A bar piece is a node kept by identity, or a row of words drawn
+  // again only when its words move; a list row is kept by its key, so a push repaints only the
+  // row that moved and never detaches the one under a finger mid-tap.
   const kept = () => createKeyedList({ key: (row) => row.key, shows: (row) => row.shows, draw: (row) => row.draw() });
   const barCells = kept();
   const nodeIds = new WeakMap();
@@ -82,45 +169,45 @@ export async function buildPhone() {
   const asCell = (one) => (one instanceof Node ? { key: `#${nodeIds.get(one) ?? (nodeIds.set(one, ++nextNodeId), nextNodeId)}`, shows: '', draw: () => one } : one);
   const words = (key, shows, draw) => ({ key, shows, draw });
   const paintBar = (...nodes) => barCells.set(bar, [...nodes, connectionStatus].map(asCell));
-  // The mark is in the document's own markup; tapping it is the way to the Teams list.
+  // The mark is in the document's own markup; tapping it is the way to the list.
   const brand = bar.querySelector('.brand');
   const feedbackAction = el('button', '', t('feedback.button', 'Feedback'));
   feedbackAction.type = 'button';
   feedbackAction.addEventListener('click', () => { location.hash = '#/feedback'; });
   const feedback = createFeedbackSurface(() => { location.hash = '#/'; });
   // A session put on screen from elsewhere (an Agent's name pressed in Chat, KAN-701) is that
-  // Agent's own screen, as its card opens it.
+  // Agent's own screen, as its row opens it.
   S.connectSession = (name) => {
-    const team = teamsFromState().find((one) => membersOfTeam(one.name).some((member) => member.name === name));
-    if (!team) return false;
-    location.hash = sessionHash(team.name, name);
+    if (!(S.sessions || []).some((row) => row.name === name)) return false;
+    location.hash = sessionHash(name);
     return true;
   };
 
-  const backLink = (href) => {
+  // Back from an item goes where you came from: the page's own history once it has moved here.
+  let movedInPage = false;
+  const backLink = (href, { previous = false } = {}) => {
     const back = el('a', 'ph-back', '‹');
     back.href = href;
     back.title = t('phone.back', 'Back');
+    if (previous) back.addEventListener('click', (event) => { if (movedInPage) { event.preventDefault(); history.back(); } });
     return back;
   };
-  const teamsBar = () => paintBar(brand, words('title', t('phone.coworks', 'Teams'), () => el('span', 'ph-title', t('phone.coworks', 'Teams'))));
-  const teamBar = (team) => {
-    const label = teamLabel({ ...teamByName(team), name: team });
-    paintBar(words('back:#/', '', () => backLink('#/')), words('title', label, () => el('span', 'ph-title', label)));
-  };
+  const goBack = () => { if (movedInPage) history.back(); else location.hash = '#/'; };
+  const listBar = () => paintBar(brand);
+  const titledBar = (key, label, back = '#/') => paintBar(words(`back:${back}`, '', () => backLink(back)), words(`title:${key}`, label, () => el('span', 'ph-title', label)));
   // The document painted a bar for this address before any script ran (mobile.html);
   // the script's first act is to paint the same bar with its live pieces, so a stalled
   // server never shows a bare strip and nothing changes shape when the readings land.
   let route = routeFromHash();
-  if (route.screen === 'teams') teamsBar();
-  else if (route.screen === 'feedback') paintBar(backLink('#/'), el('span', 'ph-title', t('feedback.title', 'Feedback')));
-  else if (route.screen === 'terminal') paintBar(backLink(teamHash(route.team)), el('span', 'ph-title', readable(route.session)));
-  else paintBar(backLink('#/'), el('span', 'ph-title', ''));
+  if (route.screen === 'list') listBar();
+  else if (route.screen === 'feedback') titledBar('feedback', t('feedback.title', 'Feedback'));
+  else if (route.screen === 'terminal') titledBar('terminal', readable(route.session));
+  else titledBar('boot', route.item || '');
 
-  let agentsPainted = ''; // the Team whose Agents screen is up; '' paints it fresh
   let host = null; // the one terminal host, alive only on the terminal screen
   let stageTile = null; // the mounted tile inside it — its transcript mode is remembered on close
   let docsView = null; // the Docs screen's editor — asked before it is left, in case of unsaved typing
+  let docToOpen = ''; // an item's attachment, opened once its Docs screen is up
   const transcriptModeKey = 'ronin.phone.transcript-modes';
   let savedTranscriptModes = {};
   try { savedTranscriptModes = JSON.parse(sessionStorage.getItem(transcriptModeKey) || '{}') || {}; } catch {}
@@ -133,45 +220,78 @@ export async function buildPhone() {
   };
   const transcriptCache = new Map(); // session + reading → records/cursor retained while Tiles come and go
 
-  /* ---------- screen 1 · the Teams ---------- */
-  const teamsList = el('div', 'ph-list');
-  const teamCards = kept();
-  const paintTeams = () => {
-    teamsBar();
-    const teams = teamsFromState().filter((team) => listedTeam(team) && (!team.holding || unassignedSessions().length));
-    teamCards.set(teamsList, teams.length ? teams.map((team) => {
-      const label = teamLabel(team);
-      return { key: team.name, shows: label, draw: () => {
-        const card = el('a', 'ph-card');
-        card.href = teamHash(team.name);
-        const line = el('div', 'ph-card-line');
-        line.append(el('span', 'ph-card-name', label));
-        card.append(line);
-        return card;
-      } };
-    }) : [{ key: '!none', shows: '', draw: () => el('div', 'ph-empty', t('phone.no_coworks', 'No Teams yet.')) }]);
-    if (main.firstChild !== teamsList || main.childNodes.length !== 1) main.replaceChildren(teamsList);
-  };
+  /* ---------- screen 1 · the list ---------- */
+  // The phone remembers the three answers and which cards are open (plan phone-lists).
+  const choiceKey = 'ronin.phone.list';
+  let choice = { type: 'team', kind: 'agent', sort: 'type', open: [] };
+  try { choice = { ...choice, ...(JSON.parse(localStorage.getItem(choiceKey) || '{}') || {}) }; } catch {}
+  const openCards = new Set(Array.isArray(choice.open) ? choice.open : []);
+  const remember = () => { try { localStorage.setItem(choiceKey, JSON.stringify({ ...choice, open: [...openCards] })); } catch {} };
+  const questions = ask([{ group: '', fields: [
+    { key: 'type', label: t('phone.type', 'Type'), options: [{ v: 'team', l: t('phone.type_team', 'Team') }, { v: 'epic', l: t('phone.type_epic', 'Epic') }, { v: 'workspace', l: t('phone.type_workspace', 'Workspace') }] },
+    { key: 'kind', label: t('phone.kind', 'Kind'), options: [{ v: 'agent', l: t('phone.kind_agent', 'Agent') }, { v: 'lead', l: t('phone.kind_lead', 'Lead') }, { v: 'item', l: t('phone.kind_item', 'Item') }] },
+    { key: 'sort', label: t('phone.sort', 'Sort'), options: [{ v: 'type', l: t('phone.sort_type', 'By type') }, { v: 'active', l: t('phone.sort_active', 'By active') }] },
+  ] }], {
+    value: { type: choice.type, kind: choice.kind, sort: choice.sort },
+    density: 'tight',
+    className: 'ph-questions',
+    onChange: (next) => { choice = { ...choice, ...next }; remember(); paintList(); },
+  });
+  const listScreen = el('div', 'ph-list-screen');
+  const list = el('div', 'ph-list');
+  listScreen.append(questions.el, list);
+  const rows = createKeyedList({ key: (row) => row.key, shows: (row) => row.shows, draw: (row) => row.draw() });
 
-  /* ---------- screen 2 · one Team: Agents | Docs ---------- */
-  const segment = (team, which) => {
-    const seg = el('nav', 'ph-seg');
-    for (const [id, label, href] of [
-      ['agents', t('phone.agents', 'Agents'), teamHash(team)],
-      ['docs', t('phone.docs', 'Docs'), docsHash(team)],
-    ]) {
-      const item = el('a', 'ph-seg-item', label);
-      item.href = href;
-      if (id === which) item.setAttribute('aria-current', 'page');
-      seg.append(item);
+  // The situation of a row: an Agent's off its card (KAN-665), as the desktop pill reads it; an
+  // item's is its holder's (a Team holder stands as its lead), flagged when the item is.
+  const situationOf = (row, cardOf) => {
+    if (row.kind === 'agent') return agentSituation(cardOf.get(row.name));
+    if (row.item.flagged) return 'flagged';
+    const holder = holderOf(row.item);
+    const name = holder?.kind === 'team' ? membersOfTeam(holder.name).find((member) => member.team_lead)?.name : holder?.name;
+    return name ? agentSituation(cardOf.get(name)) : '';
+  };
+  const agentRow = (name, situation) => {
+    const session = (S.sessions || []).find((one) => one.name === name) || { name };
+    const lead = teamsFromState().some((team) => membersOfTeam(team.name).some((member) => member.name === name && member.team_lead));
+    const card = el('a', `ph-card ph-row${situation ? ` ${situation}` : ''}`);
+    card.href = sessionHash(name);
+    card.title = situationTitle(agentLabel(session), situation);
+    const line = el('div', 'ph-card-line');
+    const identity = el('span', 'ph-card-identity');
+    if (lead) {
+      const mark = el('span', 'home-job lead', '人');
+      mark.title = t('league.team_lead', 'Team Lead');
+      mark.setAttribute('aria-label', t('league.team_lead', 'Team Lead'));
+      identity.append(mark);
     }
-    return seg;
+    identity.append(el('span', 'ph-card-name', agentLabel(session)));
+    line.append(identity);
+    // ⚑ on the right, where the working dot sits (owner, KAN-776).
+    if (situation === 'flagged') line.append(el('span', 'ph-row-flag', '⚑'));
+    card.append(line);
+    return { card, shows: JSON.stringify([name, agentLabel(session), lead, situation]) };
+  };
+  const itemRow = (item, situation) => {
+    const card = el('a', `ph-card ph-row${situation ? ` ${situation}` : ''}`);
+    card.href = itemHash(item.id);
+    const line = el('div', 'ph-card-line');
+    const identity = el('span', 'ph-card-identity');
+    identity.append(el('span', 'ph-card-name', splitItemTitle(item.title || item.id).shortTitle));
+    line.append(identity);
+    if (situation === 'flagged') line.append(el('span', 'ph-row-flag', '⚑'));
+    card.append(line, el('div', 'ph-card-key', [item.id, item.kind, item.status].filter(Boolean).join(' · ')));
+    return { card, shows: JSON.stringify([item.id, item.title, item.kind, item.status, situation]) };
+  };
+  const drawRow = (row, situation, under = '') => {
+    const made = row.kind === 'agent' ? agentRow(row.name, situation) : itemRow(row.item, situation);
+    return { key: `${under}|${row.key}`, shows: made.shows, draw: () => made.card };
   };
 
-  const launchCard = (team) => {
-    const card = el('div', 'ph-launch');
-    const open = el('button', 'ph-launch-open', '＋ ' + t('phone.launch_card', 'Launch New Agent'));
-    open.type = 'button';
+  // A Team's launch form (the short Launch New Agent form), kept by Team so typing survives a push.
+  const launchForms = new Map();
+  const launchForm = (team) => {
+    if (launchForms.has(team)) return launchForms.get(team);
     const form = el('div', 'ph-launch-form');
     form.hidden = true;
     const name = el('input');
@@ -191,11 +311,11 @@ export async function buildPhone() {
         name.setSelectionRange(at, at);
       }
     });
-    const words = el('textarea');
-    words.rows = 3;
-    words.autocapitalize = 'off';
-    words.spellcheck = false;
-    words.placeholder = t('add_agent.instruction_placeholder', 'what this Agent should do');
+    const instructions = el('textarea');
+    instructions.rows = 3;
+    instructions.autocapitalize = 'off';
+    instructions.spellcheck = false;
+    instructions.placeholder = t('add_agent.instruction_placeholder', 'what this Agent should do');
     const note = el('p', 'ph-launch-note', t('phone.launch_defaults', "Everything else launches with this Team's defaults."));
     const state = el('p', 'ph-launch-state');
     state.hidden = true;
@@ -217,7 +337,7 @@ export async function buildPhone() {
         json: {
           session_type: 'cowork_agent',
           team: team === UNASSIGNED ? '' : team,
-          instructions: words.value.trim(),
+          instructions: instructions.value.trim(),
           name: name.value.trim(),
           project_root: (roster?.durable && roster.project_root) || projectData?.[0]?.name || '',
           provider: '', // blank = the install default, exactly as Add Agent sends it
@@ -231,65 +351,78 @@ export async function buildPhone() {
         state.textContent = result.message;
         return;
       }
-      const born = result.data?.name || name.value.trim();
       // The Agent opens where it was born: its own tile, in this document.
-      location.hash = sessionHash(team, born);
+      location.hash = sessionHash(result.data?.name || name.value.trim());
     });
-    open.addEventListener('click', () => {
+    form.append(name, instructions, note, go, state);
+    launchForms.set(team, form);
+    return form;
+  };
+  // An open Team card's two actions, under its rows: Docs and ＋ Launch New Agent.
+  const teamActions = (team) => {
+    const actions = el('div', 'ph-actions');
+    const docs = el('a', 'ph-action', t('phone.docs', 'Docs'));
+    docs.href = docsHash(team);
+    const launch = el('button', 'ph-action', '＋ ' + t('phone.launch_card', 'Launch New Agent'));
+    launch.type = 'button';
+    launch.addEventListener('click', () => {
+      const form = launchForm(team);
       form.hidden = !form.hidden;
-      if (!form.hidden) name.focus();
+      if (!form.hidden) form.querySelector('input')?.focus();
     });
-    form.append(name, words, note, go, state);
-    card.append(open, form);
-    return card;
+    actions.append(docs, launch);
+    return actions;
   };
-
-  // ONE AGENT MOVES, ONE CARD CHANGES (KAN-413): the kit's keyed list. The Agents screen is
-  // built once per stay on a Team; a push redraws only the card whose Agent moved, so a card
-  // under a finger mid-tap stays the node it was, and the launch card — its form mid-typing —
-  // is one kept node, never rebuilt.
-  let agentsScreen = null; // { team, list, cards, bar } while the Agents screen of one Team is up
-  const paintAgents = () => {
-    const team = route.team;
-    if (!agentsPainted || agentsScreen?.team !== team || !agentsScreen.list.isConnected) {
-      agentsScreen?.cards.destroy();
-      const list = el('div', 'ph-list');
-      const cards = WorkspaceKit.primitives.createKeyedList({
-        key: (row) => row.key,
-        shows: (row) => JSON.stringify(row.member ? [row.member.name, agentLabel(row.member), row.member.team_lead === true, row.situation] : row.key),
-        draw: (row) => (row.member ? agentCard(team, row.member, row.situation) :row.key === '!launch' ? launchCard(team) : el('div', 'ph-empty', t('phone.no_agents', 'No Agents on this Team yet.'))),
-      });
-      agentsScreen = { team, list, cards, bar: '' };
-      agentsPainted = team;
-      main.replaceChildren(segment(team, 'agents'), list);
-    }
-    const bar = teamLabel({ ...teamByName(team), name: team });
-    if (bar !== agentsScreen.bar) { agentsScreen.bar = bar; teamBar(team); }
-    // Each Agent's situation off its card (KAN-665), as the desktop pill reads it.
-    const cardOf = new Map((held('home') || []).map((card) => [card.name, card]));
-    const members = membersOfTeam(team).map((member) => ({ key: member.name, member, situation: agentSituation(cardOf.get(member.name)) }));
-    agentsScreen.cards.set(agentsScreen.list, [...(members.length ? members : [{ key: '!empty' }]), { key: '!launch' }]);
-  };
-  const agentCard = (team, member, situation) => {
-    const card = el('a', `ph-card ph-agent${situation ? ` ${situation}` : ''}`);
-    card.href = sessionHash(team, member.name);
-    card.title = situationTitle(agentLabel(member), situation);
+  const groupCard = (group, open) => {
+    const card = el('button', 'ph-card ph-group');
+    card.type = 'button';
+    card.setAttribute('aria-expanded', String(open));
     const line = el('div', 'ph-card-line');
-    const identity = el('span', 'ph-card-identity');
-    if (member.team_lead) {
-      const lead = el('span', 'home-job lead', '人');
-      lead.title = t('league.team_lead', 'Team Lead');
-      lead.setAttribute('aria-label', t('league.team_lead', 'Team Lead'));
-      identity.append(lead);
-    }
-    identity.append(el('span', 'ph-card-name', agentLabel(member)));
-    line.append(identity);
-    // ⚑ on the right, where the working dot sits (owner, KAN-776).
-    if (situation === 'flagged') line.append(el('span', 'ph-agent-flag', '⚑'));
+    line.append(el('span', 'ph-card-name', group.label));
     card.append(line);
+    card.addEventListener('click', () => {
+      if (openCards.has(group.cardId)) openCards.delete(group.cardId); else openCards.add(group.cardId);
+      remember();
+      paintList();
+    });
     return card;
   };
 
+  const paintList = () => {
+    listBar();
+    const cardOf = new Map((held('home') || []).map((card) => [card.name, card]));
+    let groups = readGroups(choice.type, choice.kind).map((group) => ({ ...group, cardId: `${choice.type}:${group.id}` }));
+    if (choice.sort === 'active') {
+      // The same cards, grouped by situation (owner, 24 Nov): Flagged, then Active (working
+      // now), then Recently active (finished under ten minutes ago), then everyone else; each
+      // row once, by name.
+      const seen = new Map();
+      for (const group of groups) for (const row of group.rows) if (!seen.has(row.key)) seen.set(row.key, row);
+      const label = (row) => (row.kind === 'agent' ? agentLabel((S.sessions || []).find((one) => one.name === row.name) || { name: row.name }) : row.item.title || row.item.id);
+      const sorted = [...seen.values()].sort((a, b) => label(a).localeCompare(label(b)));
+      const bands = [['flagged', t('phone.band_flagged', 'Flagged')], ['working', t('phone.band_active', 'Active')], ['ready', t('phone.band_recent', 'Recently active')], ['rest', t('phone.band_rest', 'Everyone else')]];
+      const bandOf = (row) => { const situation = situationOf(row, cardOf); return ['flagged', 'working', 'ready'].includes(situation) ? situation : 'rest'; };
+      groups = bands.map(([band, heading]) => ({ id: band, cardId: `active:${band}`, label: heading, rows: sorted.filter((row) => bandOf(row) === band) }))
+        .filter((group) => group.rows.length);
+    }
+    const out = [];
+    for (const group of groups) {
+      const open = openCards.has(group.cardId);
+      out.push({ key: `g:${group.cardId}`, shows: JSON.stringify([group.label, open]), draw: () => groupCard(group, open) });
+      if (!open) continue;
+      if (!group.rows.length) out.push({ key: `e:${group.cardId}`, shows: '', draw: () => el('div', 'ph-empty', t('phone.no_rows', 'Nobody here yet.')) });
+      for (const row of group.rows) out.push(drawRow(row, situationOf(row, cardOf), group.cardId));
+      if (group.team) {
+        out.push({ key: `act:${group.team}`, shows: '', draw: () => teamActions(group.team) });
+        out.push({ key: `launch:${group.team}`, shows: '', draw: () => launchForm(group.team) });
+      }
+    }
+    if (!out.length) out.push({ key: '!none', shows: '', draw: () => el('div', 'ph-empty', t('phone.no_rows', 'Nobody here yet.')) });
+    rows.set(list, out);
+    if (main.firstChild !== listScreen || main.childNodes.length !== 1) main.replaceChildren(listScreen);
+  };
+
+  /* ---------- a Team's Docs ---------- */
   /**
    * The Team's documents — the same shelf the desktop commons shows (Tracked · Plans ·
    * Docs), built by docs.js for this Team's members and repos. A tapped document opens in
@@ -297,12 +430,13 @@ export async function buildPhone() {
    */
   const paintDocs = () => {
     const team = route.team;
-    teamBar(team);
+    titledBar(`docs:${team}`, teamLabel({ ...teamByName(team), name: team }));
     const pane = el('div', 'home-docs ph-docs');
     const docs = buildDocs(pane, (name) => membersOfTeam(team).some((member) => member.name === name), { team: team === UNASSIGNED ? '' : team });
     docsView = docs;
-    main.replaceChildren(segment(team, 'docs'), pane);
+    main.replaceChildren(pane);
     docs.enter();
+    if (docToOpen) { docs.open(docToOpen); docToOpen = ''; }
   };
   const leaveDocs = () => {
     if (!docsView) return true;
@@ -311,12 +445,37 @@ export async function buildPhone() {
     return left;
   };
 
-  /* ---------- screen 3 · the Agent ---------- */
+  /* ---------- an item ---------- */
+  // The desk's item reading, full width (work-items-surface.js renderItemDetail), from the
+  // item's whole read: its Agents open their tiles, its Subtasks their own item screens, its
+  // attachments Docs, and its head goes back.
+  const paintItem = () => {
+    const id = route.item;
+    titledBar(`item:${id}`, id);
+    bar.querySelector('.ph-back')?.replaceWith(backLink('#/', { previous: true }));
+    const pane = el('div', 'ph-item');
+    main.replaceChildren(pane);
+    void request(`/api/work-items/${encodeURIComponent(id)}`, { cache: 'no-store' }).then(async (result) => {
+      if (!pane.isConnected) return;
+      if (!result.ok) { pane.append(el('div', 'ph-empty', result.message || '')); return; }
+      const { renderItemDetail, holderOf: holderWords } = await import('./work-items-surface.js');
+      const whole = result.data.item;
+      const team = teamsOfItem(whole, teamsFromState())[0] || UNASSIGNED;
+      renderItemDetail(pane, whole, { holder: holderWords({ ...whole, held_by: result.data.held_by }), heldBy: result.data.held_by, history: false,
+        children: Array.isArray(result.data.children) ? result.data.children : [],
+        openAgent: (name) => S.connectSession(name),
+        openChild: (child) => { location.hash = itemHash(child.id); },
+        openAttachment: (path) => { docToOpen = path; location.hash = docsHash(team); },
+        onClose: goBack });
+    });
+  };
+
+  /* ---------- an Agent's tile ---------- */
   const openTerminal = () => {
-    const { team, session } = route;
+    const { session } = route;
     closeTerminal();
     // The tile's close (Chat's Close Tile, KAN-700) is the bar's back link: the phone has no blank tilespace.
-    host = createTerminalTileHost({ mode: 'reduced', transcriptCache, onMinimize: () => { location.hash = teamHash(team); } });
+    host = createTerminalTileHost({ mode: 'reduced', transcriptCache, onMinimize: () => { location.hash = '#/'; } });
     const term = el('div', 'ph-term');
     term.append(host.el);
     main.replaceChildren(term);
@@ -340,7 +499,7 @@ export async function buildPhone() {
     // button is the tile head's own — hidden when the route offers this Agent nothing,
     // opaque when it has nothing yet, naming where you are, exactly as on the desktop.
     paintBar(
-      backLink(teamHash(team)),
+      backLink('#/'),
       el('span', 'ph-title', agentLabel(S.sessions.find((row) => row.name === session) || { name: session })),
       tile.flagBtn,
       transcriptBtn,
@@ -357,7 +516,7 @@ export async function buildPhone() {
   };
 
   const paintFeedback = () => {
-    paintBar(backLink('#/'), el('span', 'ph-title', t('feedback.title', 'Feedback')));
+    titledBar('feedback', t('feedback.title', 'Feedback'));
     main.replaceChildren(feedback.el);
     feedback.show?.();
   };
@@ -371,34 +530,36 @@ export async function buildPhone() {
       return;
     }
     if (route.screen === 'terminal' && !(next.screen === 'terminal' && next.session === route.session)) closeTerminal();
-    // A screen change always paints fresh; the kept Agents screen only spans one stay.
-    if (next.screen !== route.screen || next.team !== route.team) agentsPainted = '';
+    const moved = next.screen !== route.screen || next.item !== route.item || next.team !== route.team;
     route = next;
-    if (route.screen === 'teams') paintTeams();
-    else if (route.screen === 'agents') paintAgents();
-    else if (route.screen === 'docs') { if (docsView) teamBar(route.team); else paintDocs(); } // a title that arrives late still lands
+    if (route.screen === 'list') paintList();
+    else if (route.screen === 'docs') { if (docsView) titledBar(`docs:${route.team}`, teamLabel({ ...teamByName(route.team), name: route.team })); else paintDocs(); } // a title that arrives late still lands
+    else if (route.screen === 'item') { if (moved || !main.querySelector('.ph-item')) paintItem(); }
     else if (route.screen === 'feedback') paintFeedback();
     else if (!host) openTerminal();
   };
-  window.addEventListener('hashchange', () => guard('phone route', render));
+  window.addEventListener('hashchange', () => { movedInPage = true; guard('phone route', render); });
 
   /* ---------- the feeds ---------- */
-  // Membership and the lists are live off the same feed the workbench uses: the Team
-  // projection repaints every screen but the terminal once per change. On the terminal, a
-  // killed or vanished session sends you back to its team — a dead tile is not a page.
+  // Membership and the list are live off the same feed the workbench uses: the Team
+  // projection repaints the list once per change. On the terminal, a killed or vanished
+  // session sends you back to the list — a dead tile is not a page.
   sessionsHandlers.add(() => {
     if (route.screen !== 'terminal') return;
     const row = S.sessions.find((r) => r.name === route.session);
-    if (!row) { location.hash = teamHash(route.team); return; }
+    if (!row) { location.hash = '#/'; return; }
     // The tile opened on the name alone; the Agent's own title lands with the list.
     const title = bar.querySelector('.ph-title');
     if (title && title.textContent !== agentLabel(row)) title.textContent = agentLabel(row);
   });
-  subscribe(() => { if (route.screen !== 'terminal') render(); });
-  // A card change redraws only that Agent's card (the keyed list compares its situation).
-  hear('home', () => { if (route.screen === 'agents') paintAgents(); });
+  const repaintList = () => { if (route.screen === 'list') paintList(); };
+  subscribe(() => { if (route.screen === 'list' || route.screen === 'docs') render(); });
+  // A card or item change redraws only the rows it moved (the keyed list compares their words).
+  hear('home', repaintList);
+  hear('epics', repaintList);
+  hear('epicItems', repaintList);
   // Ready ages into idle with no push: the one local clock looks again.
-  onAgeTick(() => { if (route.screen === 'agents') paintAgents(); });
+  onAgeTick(repaintList);
 
   // Ask the operator which optional surfaces are plugged in BEFORE a tile is born, the
   // way main.js does: `stream:false` means the 🔓 views are off and every tile is 🔒.
@@ -415,7 +576,7 @@ export async function buildPhone() {
   if (route.screen === 'terminal') guard('phone paint', render);
   guard('say when Ronin is unreachable', () => sayWhenUnreachable(connectionStatus));
   guard('session event stream', connect);
-  guard('load projects', loadProjects); // the launch card's project_root fallback
+  guard('load projects', loadProjects); // the launch form's project_root fallback
   guard('phone paint', render);
 }
 

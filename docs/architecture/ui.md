@@ -676,7 +676,7 @@ that hands a new marker node every push redraws that stone every push: hand the 
 
 **One Agent, item or doc moves, one row repaints (KAN-413).** The same keyed list draws the
 item island's pills and bars, the People list, the League Team's Agents, the Docs shelf and the
-phone's Agents cards. A stance change repaints only that Agent's row and no longer asks the
+phone's list. A stance change repaints only that Agent's row and no longer asks the
 server for the Team's Work list; a Docs group keeps the fold the owner gave it across pushes;
 the phone's launch form, mid-typing, is one kept row, so a rename lands while it is open.
 The Team roster and Workspaces hand the phalanx every push and keep no signature of their

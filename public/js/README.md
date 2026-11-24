@@ -111,7 +111,7 @@ below describes implementation ownership; use the surface index above to find a 
 | `composer-rules.js` | `sendComposerMessage`, `settleComposer` — HTTP message send and box settlement |
 | `dvr.js` | `dvrStep` — the unlocked input rule, pure |
 | `ansi.js` | `ANSI_RE` — its own module so the tape's pure logic loads outside a browser |
-| `phone.js` | THE MOBILE DOCUMENT's entry module — `mobile.html` boots it, never `main.js`: Teams → a Team (Agents \| Docs) → one Agent's tile, hash-routed (`#/t/…` `#/d/…` `#/s/…`); the server sends that document at `/m`, and at `/` to a phone |
+| `phone.js` | THE MOBILE DOCUMENT's entry module — `mobile.html` boots it, never `main.js`: one list (Type · Kind · Sort, cards opening to their rows) → an Agent's tile, an item or a Team's Docs, hash-routed (`#/s/<agent>` `#/i/<item>` `#/d/<team>`); the server sends that document at `/m`, and at `/` to a phone |
 | `keysrow.js` | `buildKeysRow` — Esc/Tab/Shift-Tab/arrows/⤓ docked on every coarse tile's composer |
 | `tilementions.js` | `insertMention`, `MENTION_MIME` — a session name into this tile's composer, from the menu or a drag |
 | `team-arrange.js` | `parseDraft`, `createArranger` — the team page's one controller: a draft (what changes; the rest stays) from a button or from an agent's `edges page`, run through the page's own verbs |

@@ -4774,20 +4774,71 @@ button.wk-card { cursor: pointer; }
   min-width: 0;
   color: var(--fg-strong);
   font-size: var(--text-label);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere; /* a name wraps in full, never cut short */
 }
-/* The Agent card's situation (KAN-665), as the desktop pill says it: the flagged look (⚑ and
-   amber), one Chat dot after the name while working (a hollow ring when just finished), muted
-   ink when stopped. */
-#phone .ph-agent.flagged {
+#phone .ph-card-key {
+  margin-top: var(--space-row);
+  color: var(--muted);
+  font-size: var(--text-label);
+}
+/* THE LIST'S QUESTIONS (Type · Kind · Sort): ERABI's stones, three across the phone's width. */
+#phone .ph-questions {
+  padding: var(--space-inline) var(--space-inline) 0;
+}
+#phone .ph-questions .ask-group { width: 100%; }
+#phone .ph-questions .ask-fields { flex-wrap: nowrap; }
+#phone .ph-questions .ask-fields > .ask-stone { flex: 1 1 0; width: auto; min-width: 0; }
+/* A group card (a Team, an Epic, a Workspace, or a situation) is today's Team card, pressed open
+   in place: its rows follow it, set in under it. */
+#phone .ph-group {
+  width: 100%;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+#phone .ph-group[aria-expanded='true'] { border-color: var(--kaki); }
+#phone .ph-row,
+#phone .ph-actions,
+#phone .ph-list > .ph-launch-form,
+#phone .ph-list > .ph-empty { margin-left: var(--space-subsection); }
+#phone .ph-actions {
+  display: flex;
+  gap: var(--space-row);
+}
+#phone .ph-action {
+  flex: 1;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: var(--edge) solid var(--line-2);
+  border-radius: var(--radius-small);
+  background: var(--surface);
+  color: var(--fg);
+  font: inherit;
+  font-size: var(--text-label);
+  text-decoration: none;
+  cursor: pointer;
+}
+#phone .ph-action:active {
+  background: var(--kaki); /* kaki: the action, or what needs you */
+  border-color: var(--kaki);
+  color: var(--on-strong);
+}
+/* The item screen: the desk's item reading, full width. */
+#phone .ph-item {
+  padding: var(--space-inline);
+}
+/* A row's situation (KAN-665), as the desktop pill says it: the flagged look (⚑ and amber), one
+   Chat dot after the name while working (a hollow ring when just finished), muted ink when
+   stopped. An item's row carries its holder's. */
+#phone .ph-row.flagged {
   border-color: color-mix(in srgb, var(--warn) 55%, transparent); /* status: a person is needed */
   background: color-mix(in srgb, var(--warn) 12%, transparent); /* status: a person is needed */
 }
-#phone .ph-agent.flagged :is(.ph-card-name, .ph-agent-flag, .home-job) { color: var(--warn); }
+#phone .ph-row.flagged :is(.ph-card-name, .ph-row-flag, .home-job) { color: var(--warn); }
 /* At the card's right edge, one column down the list (KAN-673). */
-#phone .ph-agent:is(.working, .ready) .ph-card-line::after {
+#phone .ph-row:is(.working, .ready) .ph-card-line::after {
   content: '';
   flex: none;
   align-self: center;
@@ -4798,8 +4849,8 @@ button.wk-card { cursor: pointer; }
   border-radius: 50%;
   background: var(--kaki); /* kaki: the Chat's working dot */
 }
-#phone .ph-agent.ready .ph-card-line::after { background: transparent; }
-#phone .ph-agent.stopped :is(.ph-card-name, .home-job) { color: var(--muted); }
+#phone .ph-row.ready .ph-card-line::after { background: transparent; }
+#phone .ph-row.stopped :is(.ph-card-name, .home-job) { color: var(--muted); }
 #phone .ph-empty {
   padding: var(--space-inset) var(--space-inset);
   color: var(--muted);
@@ -4828,25 +4879,10 @@ button.wk-card { cursor: pointer; }
   display: none;
 }
 
-#phone .ph-launch-open {
-  width: 100%;
-  min-height: 44px;
-  border: var(--edge) dashed var(--line-3);
-  border-radius: var(--radius-small);
-  background: transparent;
-  color: var(--muted);
-  font-size: var(--text-label);
-  cursor: pointer;
-}
-#phone .ph-launch-open:active {
-  border-color: var(--accent);
-  color: var(--accent);
-}
 #phone .ph-launch-form {
   display: flex;
   flex-direction: column;
   gap: var(--space-row);
-  margin-top: var(--space-row);
 }
 #phone .ph-launch-form[hidden] {
   display: none;
@@ -4914,40 +4950,15 @@ button.wk-card { cursor: pointer; }
 }
 
 /* THE FIRST FRAME shows the screen the address names (mobile.html reads its own hash in its
-   head): the mark and "Teams" at the front door, ‹ inside a Team or on a tile. The script's
-   first paint replaces these boot nodes with the real bar; the attribute stays, harmless. */
+   head): the mark at the front door, ‹ on Docs, an item or a tile. The script's first paint
+   replaces these boot nodes with the real bar; the attribute stays, harmless. */
 #phone .ph-bar [data-boot='inside'] { display: none; }
-html[data-screen='inside'] #phone .ph-bar [data-boot='teams'] { display: none; }
+html[data-screen='inside'] #phone .ph-bar [data-boot='list'] { display: none; }
 html[data-screen='inside'] #phone .ph-bar .ph-back[data-boot='inside'] { display: flex; }
 html[data-screen='inside'] #phone .ph-bar .ph-title[data-boot='inside'] { display: block; }
 
-/* The Team screen's two-way switch — Agents | Docs. One view at a time, never stacked. */
-#phone .ph-seg {
-  display: flex;
-  gap: var(--space-inline);
-  padding: var(--space-paragraph) var(--space-inline) 0;
-}
-#phone .ph-seg-item {
-  flex: 1;
-  min-height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: var(--edge) solid var(--line-2);
-  border-radius: var(--radius-small);
-  background: var(--surface);
-  color: var(--muted);
-  font-size: var(--text-label);
-  font-weight: var(--weight-strong);
-  text-decoration: none;
-}
-#phone .ph-seg-item[aria-current='page'] {
-  background: var(--selected); /* the one you are on, have chosen, or are dropping onto */
-  border-color: var(--kaki);
-  color: var(--fg-strong);
-}
 /* The shared docs shelf (docs.js) is `display: none` until a desktop pane shows it; here it
-   is the whole screen under the switch. */
+   is the whole screen. */
 #phone .ph-docs {
   display: flex;
   flex: 1;
