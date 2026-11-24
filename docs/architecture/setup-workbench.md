@@ -36,8 +36,11 @@ again as `setup-progress`, so a change made anywhere ticks its step.
 
 The owner's onboarding prototype is the look. The selector is a walkthrough down the column, as the prototype's runs across the page: the three steps, **Harness**
 (`setup.harness`), **Workspace** (`setup.roots`) and **Team** (`setup.team`, the ordinary New Team
-form), and **Tour**, the Ronin Tour with no tick, `docs/getting-started/tour.md` shown whole
-(`setup.tour`: how Agents begin, how the work runs, then Questions). Each step is a numbered disc (✓ once
+form), and **Tour**, the Ronin Tour with no tick (`setup.tour`, setup-tour.js): one labelled drawing per part
+of `docs/getting-started/tour.md` (two kinds of Agent, the toolkit, how the work runs, giving your Team
+work, when you come back), each with a line or two of caption, stepped with Back and Next. While it is
+open it takes both work surfaces (Workspace 1, the Ask Ronin panel, is hidden); its − or its last
+Close the Tour brings back the step before it (owner, 24 Nov: "This needs to be a picture"). Each step is a numbered disc (✓ once
 ticked) joined to the next by a line, its name, and one line of what it asks (`SETUP_SCENES` `line`); the
 step on screen is kaki-edged. The selector's header carries the three step marks and nothing else: Setup
 has no density toggle (owner, 24 Nov). The selector is the same whether she

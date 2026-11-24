@@ -16,8 +16,9 @@ Three steps, in any order, each checked once it is true in your office however y
 - **Team.** Start a Team in your Workspace: its name, what it is for, the lead's harness. The
   lead builds out the rest. See [New Team](../using-ronin/new-team.md).
 
-Then the **Tour**, to read when you like: [Ronin Tour](tour.md), how your Agents begin, how the
-work runs, and the questions people ask first.
+Then the **Tour**, whenever you like: five pictures, one at a time across the page, of how your
+Agents begin and how the work runs. Close it to come back to the steps. The same in words, with
+the questions people ask first: [Ronin Tour](tour.md).
 
 Under the steps, each step's questions follow the step you are on. **Ask Ronin**, beside the
 steps, is the Helpful Assistant: she sees the step you are on, answers your

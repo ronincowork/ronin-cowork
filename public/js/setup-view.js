@@ -163,6 +163,7 @@ export function createSetupView() {
       };
       await openDocument(item.path, item.label);
     },
+    closeTour: () => open(stepBeforeTour),
     openSetupAction: (action) => {
       openSurface(action);
     },
@@ -273,6 +274,13 @@ export function createSetupView() {
       line.textContent = t(`setup.step_line_${scene.id}`, scene.line);
     }
   };
+  const TOUR = 'setup.tour';
+  const TOUR_NUMBER = SCENES.find((scene) => scene.type === TOUR)?.number;
+  let stepBeforeTour = 1;
+  const spread = (on) => {
+    if (!bench || bench.arrangement.state().hidden.includes('workspace1') === on) return;
+    bench.arrangement.toggle('workspace1');
+  };
   const open = (number) => {
     const scene = sceneAt(number);
     selectGarden(scene);
@@ -316,9 +324,14 @@ export function createSetupView() {
     selectorFilter: (type) => ORDER.includes(type),
     onSelectorRefresh: paint,
     onStateChange: save,
-    onPlacement: (snapshot) => {
+    onPlacement: (snapshot, change) => {
       const type = typeof snapshot?.seats?.workspace2 === 'string' ? snapshot.seats.workspace2 : snapshot?.seats?.workspace2?.type;
       const scene = SCENES.find((candidate) => candidate.type === type);
+      // THE TOUR TAKES BOTH WORK SURFACES (owner, 24 Nov): while it is in Workspace 2, Workspace 1 (the
+      // Ask Ronin panel) is hidden; closing it (its − or its last Close) brings back the step before it.
+      spread(type === TOUR);
+      if (!scene && change?.dismissed === 'workspace2' && sceneOverride === TOUR_NUMBER) { open(stepBeforeTour); return; }
+      if (scene && scene.type !== TOUR) stepBeforeTour = scene.number;
       if (scene) {
         sceneOverride = scene.number;
         selectGarden(scene);

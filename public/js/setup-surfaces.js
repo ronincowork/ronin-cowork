@@ -18,8 +18,7 @@ import { createEmbeddedNewAgentView } from './new-agent.js';
 import { createInstallationsSurface } from './campaign-installations.js';
 import { createSetupZoneSlot, watchSetupProgress } from './setup-zone.js';
 import { createStatusMarker } from './status-marker.js';
-import { createDocPage } from './setup-doc-page.js';
-import { SETUP_SCENES } from './setup-journey.js';
+import { createTourSurface } from './setup-tour.js';
 
 // Model providers is the one surface two workbenches seat (provider-surface.js); its type
 // is that module's, and Ronin Settings registers the same definition.
@@ -669,7 +668,7 @@ export function setupSurfaceDefinitions() {
     definition(SETUP_SURFACE_TYPES.installations, t('campaign_view.installations', 'Installations'), createSetupInstallationsSurface),
     definition(SETUP_SURFACE_TYPES.launchOwn, t('setup_surface.launch_own', 'Launch your own'), createLaunchOwnSurface),
     definition(SETUP_SURFACE_TYPES.team, t('setup_surface.team', 'Team'), createTeamSurface),
-    ...SETUP_SCENES.filter((scene) => scene.page).map((scene) => definition(scene.type, scene.label, createDocPage(scene.label, scene.page))),
+    definition('setup.tour', t('setup_surface.tour', 'Tour'), createTourSurface),
   ];
 }
 
