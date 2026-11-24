@@ -20,8 +20,10 @@ import { IRASSHAI, IRASSHAI_NAME, askIrasshai, irasshaiLive } from './setup-iras
 
 const el = (tag, cls, text) => { const node = document.createElement(tag); if (cls) node.className = cls; if (text != null) node.textContent = String(text); return node; };
 
-const LAB = { name: 'ronin_lab', title: 'Ronin Lab', objective: 'Ideas, notes, research and brainstorming, kept away from the main code.' };
-const ONE = { name: 'project_one', title: 'Project One', objective: 'A first Workspace to try Agents on, until a real project comes along.' };
+const LAB = { name: 'ronin_lab', title: 'Ronin Lab' };
+const ONE = { name: 'project_one', title: 'Project One' };
+/** Their objectives: one seed, which the Helpful Assistant's `workspace starter` reads too (w926). */
+const STARTERS = '/content/starter-workspaces.json';
 
 /**
  * @param workspacesRead  the stones' own read (workspaces-read.js): its push is this one's too
@@ -36,7 +38,9 @@ export function createWorkspaceKickoff({ workspacesRead, openNew, environment })
 
   const make = async (key, w, doing) => {
     busy[key] = doing; paint();
-    const answer = await request(`/api/workspaces/${encodeURIComponent(w.name)}`, { method: 'PUT', json: { ...w, repos: [], folders: [], integrations: [] } });
+    const seed = await request(STARTERS);
+    const objective = String(seed.data?.[w.name]?.objective || '');
+    const answer = await request(`/api/workspaces/${encodeURIComponent(w.name)}`, { method: 'PUT', json: { ...w, objective, repos: [], folders: [], integrations: [] } });
     busy[key] = answer.ok ? '' : answer.message;
     await workspacesRead.read();
     paint();

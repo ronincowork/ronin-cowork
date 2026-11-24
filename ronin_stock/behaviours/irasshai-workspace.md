@@ -16,7 +16,8 @@ the Workspace stones; read the workspaces fact first, and skip a question its an
    project to try Agents on, and the step is done. A project: go on to Describe.
 3. **GitHub: connect now, or later?** Offer it early; it is needed only for private repositories,
    or theirs on GitHub. Connect: as in Repositories below. Later: accept it and move on, without
-   pushing; ask again only when a private repository, or theirs, comes up.
+   pushing; ask again only when a private repository, or theirs, comes up. The page's **Connect**
+   sends you exactly `Connect GitHub.` as their words: on it, run the sign-in at once.
 
 Then, for a project:
 
@@ -25,12 +26,11 @@ Then, for a project:
    `workspace create "<name>" --objective "<text>"`, then say what you called it. That alone makes
    the Workspace and ticks the step. The objective is the one place that says what the project is;
    how they like to work goes in `workspace instructions <handle> "<text>"`.
-2. **Where it lives.** A folder here (`workspace add <handle> <folder>` makes it under their
-   home), and/or their repositories.
+2. **Where it lives.** Every Workspace already has its own folder, `~/ronin/<name>`; more
+   folders (`workspace add <handle> <folder>` makes one under their home) and/or their repositories.
 3. **Repositories.** Ask for a Git URL: `workspace add <handle> <url>` clones it with plain git.
-   A public one from any host needs no sign-in. A private repository, or "my repositories" (or
-   the page sending "Connect GitHub for <Workspace>."), needs GitHub; if they said Later, this is
-   when to ask again. Connect it: run `gh auth login` yourself (a device code they approve on
+   A public one from any host needs no sign-in. A private repository, or "my repositories", needs
+   GitHub; if they said Later, this is when to ask again. Connect it: run `gh auth login` yourself (a device code they approve on
    their own computer), then `gh auth setup-git`, so git can clone what they own. Never ask
    them to know the GitHub CLI. Once connected, the page shows **My GitHub repositories**.
 4. **Integrations**, if their project uses outside services: each added the way

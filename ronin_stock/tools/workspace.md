@@ -16,5 +16,6 @@ objective; `workspace read <handle>` prints one whole. `workspace create "<name>
 folder (made under `~` when it is not there) or clones a repository from any Git host and adds
 it: a public one needs no sign-in, a private one needs GitHub (or the host) signed in here.
 `workspace starter ronin_lab|project_one` makes Ronin Lab or Project One as Ronin ships them
-(`ronin_stock/STARTER_WORKSPACES.json`: title, objective, folder), the same seed the page uses.
+(`public/content/starter-workspaces.json`: title and objective), the same seed the page uses.
+Every new Workspace gets its own folder, `~/ronin/<name>`.
 The workspaces fact shows them all. `workspace --help`.

@@ -47,7 +47,6 @@ The words are in [KOTOBA.md](../KOTOBA.md) (Agent composition and tools); the br
 | `lexicons/` | one file per lexicon | Surface words; `professional_en.md` is the complete floor. |
 | `canvases/` | one outline per file | What a canvas starts from (`canvas templates`). |
 | root | `MODEL_PROVIDERS.md`, `SKINS.md` | Flat registries; a custom copy replaces an entry by its name (`docs/architecture/shadowing.md`). |
-| root | `STARTER_WORKSPACES.json` | Ronin Lab and Project One: the title, objective and folder each is made with, by Setup's Workspace step and `workspace starter`. |
 
 The custom folder also holds the person's MCP server and web API records,
 `~/ronin/custom/integrations/<name>.md`, written by `mcp add` and `api add`.

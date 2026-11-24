@@ -17,10 +17,9 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execFile } from './spawn-broker.js';
 import { discoverExecutable } from './agents.js';
-import { rootDir } from './resources.js';
 import { listTeamRosters, readTeamRoster } from './team-rosters.js';
 import { listSessions } from './tmux.js';
-import { listWorkspaces, readWorkspace, workspaceFolders, type HeldFolder, type Workspace, type WorkspacePlans } from './workspaces.js';
+import { listWorkspaces, ownFolder, readWorkspace, workspaceFolders, type HeldFolder, type Workspace, type WorkspacePlans } from './workspaces.js';
 
 export class PlanRefused extends Error {}
 export class PlanMissing extends Error {}
@@ -65,7 +64,8 @@ export async function plansPlace(_campaign: string, workspace: string, plans?: W
     const sub = cleanSubpath(plans.path);
     return { dir: path.join(root.dir, sub), location: plans.location, path: sub, recommended: false };
   }
-  return { dir: path.join(rootDir('user'), workspace, DEFAULT_PLANS_PATH), location: workspace, path: DEFAULT_PLANS_PATH, recommended: true };
+  const own = ownFolder(workspace);
+  return { dir: path.join(own, DEFAULT_PLANS_PATH), location: path.basename(own), path: DEFAULT_PLANS_PATH, recommended: true };
 }
 
 /** The folder a Workspace's plans are in, its own place or the default. */

@@ -1,0 +1,10 @@
+{
+  "ronin_lab": {
+    "title": "Ronin Lab",
+    "objective": "Ideas, notes, research and brainstorming, kept away from the main code."
+  },
+  "project_one": {
+    "title": "Project One",
+    "objective": "A first Workspace to try Agents on, until a real project comes along."
+  }
+}

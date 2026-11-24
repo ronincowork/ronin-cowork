@@ -5,7 +5,6 @@ import { store } from './store.js';
 import { t } from './lexicon.js';
 import { createWorkspaceStones } from './workspaces-surface.js';
 import { createWorkspacesRead } from './workspaces-read.js';
-import { HOSTED } from './hosted.js';
 import { createWorkspaceKickoff } from './setup-workspace-kickoff.js';
 import { ask } from './ask.js';
 import { PROVIDER_SURFACE_TYPE, providerSurfaceDefinition } from './provider-surface.js';
@@ -321,12 +320,12 @@ function createRegisterSurface(context) {
 }
 
 // Setup's Workspace step is the Workspaces themselves (KAN-728): each a stone opening its record, and
-// New Workspace, so every folder Setup adds is a row of a Workspace. On a hosted office the kickoff
+// New Workspace, so every folder Setup adds is a row of a Workspace. The kickoff
 // questions sit over them (KAN-809).
 function createRootsSurface(context) {
   const workspacesRead = createWorkspacesRead();
   return createWorkspaceStones({ workspacesRead, workbench: context.workbench, withNew: true,
-    top: HOSTED ? ({ openNew }) => createWorkspaceKickoff({ workspacesRead, openNew, environment: context.environment }) : null,
+    top: ({ openNew }) => createWorkspaceKickoff({ workspacesRead, openNew, environment: context.environment }),
     onShow: () => notifySummary(SETUP_SURFACE_TYPES.roots, t('setup_surface.roots_summary', '{n} Workspaces', { n: workspacesRead.list().length }), context.workbench) });
 }
 

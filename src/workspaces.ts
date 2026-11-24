@@ -135,6 +135,13 @@ export async function listWorkspaces(campaign: string): Promise<Workspace[]> {
   return all.filter((w): w is Workspace => !!w);
 }
 
+/** A Workspace's own folder, ~/ronin/<name>: never one of Ronin's own folders there (office, config,
+ * memory…): that name takes -files. Its plans default to <this>/plans (src/plans.ts). */
+export function ownFolder(name: string): string {
+  const ronins = new Set(STORES.filter((one) => one.root === 'user').map((one) => one.rel.split('/')[0]));
+  return path.join(rootDir('user'), ronins.has(name) ? `${name}-files` : name);
+}
+
 /** Write the whole record. */
 export async function saveWorkspace(w: Workspace): Promise<Workspace> {
   if (!w.campaign_id || !isValidWorkspaceName(w.name)) throw new Error(`A Workspace name is lowercase letters, digits, _ and -: "${w.name}".`);
@@ -142,9 +149,7 @@ export async function saveWorkspace(w: Workspace): Promise<Workspace> {
   // EVERY WORKSPACE GETS ITS FOLDER (owner, 24 Nov; KAN-809): a new one is given ~/ronin/<name>, made
   // here, whoever makes it (a page, the workspace tool). More folders are theirs to add.
   if (!(await readWorkspace(clean.campaign_id, clean.name))) {
-    // Never one of Ronin's own folders there (office, config, memory…): that name takes -files.
-    const ronins = new Set(STORES.filter((one) => one.root === 'user').map((one) => one.rel.split('/')[0]));
-    const dir = path.join(rootDir('user'), ronins.has(clean.name) ? `${clean.name}-files` : clean.name);
+    const dir = ownFolder(clean.name);
     await mkdir(dir, { recursive: true });
     if (![...clean.repos, ...clean.folders].some((row) => row.dir === dir)) clean.folders.unshift({ name: clean.name, dir, note: '' });
   }
