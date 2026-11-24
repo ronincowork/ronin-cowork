@@ -1,55 +1,43 @@
-# Provider sign-in
+# Harness sign-in
 
-Ronin runs the Agents you already pay for: Claude Code, Codex, Antigravity CLI and others, each
-signed in with your own account. Nobody sits between you and the provider, and you can
-add another provider whenever you like. One is enough to start.
+Ronin runs the harnesses you already pay for: Claude Code, Codex, Antigravity CLI and others, each
+signed in with your own account. Nobody sits between you and the provider. One is enough to start;
+a second keeps your Agents working when one hits a limit or an outage.
 
-## Pick a provider
+Each harness holds one sign-in: your **subscription** (Claude Pro or Max, ChatGPT Plus or Pro) or an
+**API key** (pay as you go). Signing in again replaces the one before.
 
-Open **Harnesses** in [Ronin Setup](setup-workbench.md), or from the **Models** door
-on Ronin Home. Each provider is a stone that says where it stands:
+## In Setup
 
-- **Not installed** — Ronin can install it for you.
-- **Manual install** — the provider needs a step Ronin won't guess; you get an
-  **Install guide** link instead.
-- **Needs sign-in** — installed, not yet signed in.
-- **Activated** — ready for your Agents.
-- **Off** — you turned it off; your sign-in is kept.
+Open **Harness** in Setup. Each harness is a bar that says where it stands: **Sign in**,
+**Signing in**, **Signed in** or **Off**.
 
-Press a stone to open it. Its page has three steps: **Install**, **Authenticate** and
-**Ready**. Each gets a check when it's done.
+**Claude Code and Codex** sign in without a terminal. Press **Sign in**, then **Sign in with your
+subscription** or **Use an API key**. The bar shows only what you need to do:
 
-## Install
+- **Codex, subscription:** a link and a code. Open the link, sign in, and enter the code there.
+- **Claude Code:** a link. Open it, sign in, and paste the code it gives you into the box on the bar,
+  then press **Send**.
+- **Codex, API key:** a box for your OpenAI API key. Paste it and press **Send**.
 
-Press **Install**. The provider's own installer runs in a terminal right on the page, so you
-can watch it and answer anything it asks. When it finishes, Install gets its check.
+The bar turns **Signed in** by itself when the harness finishes. **Cancel** stops the sign-in.
 
-## Sign in
+**Other harnesses** sign in on their own terminal, opened in the bar: follow what it asks, then
+press **Close**. **Hermes** uses API connections, set up in its bar.
 
-In the Harnesses workbench, choose **Let Mika authenticate** to have Mika run the
-provider's native setup in this tilespace, or **Use the CLI with Mika** to operate the
-native sign-in yourself while Mika reads it and guides you from the paired tilespace.
-On other setup surfaces, **Authenticate** opens the same native sign-in directly. Follow
-the provider's browser login, device code, or API-key flow.
+If the Helpful Assistant is open, she sees each sign-in you start and how it ends, and can sign a
+harness in with you.
 
-Under the terminal, give this sign-in a name you'll recognise, such as "Personal Claude" or
-"Work API", and choose its type: **Account / subscription**, **API key**,
-**Third-party service** or **Not signed in**. Then press **Done**. **Cancel** closes the
-terminal without finishing.
+Enter keys and codes only in the bar or the harness's own terminal, never in a message to an Agent.
 
-Enter passwords and keys only in the provider's own sign-in, never in a message to an
-Agent.
+## In Settings
 
-## Ready
-
-When all three steps have checks, the provider is **Activated**. Under the steps you'll see
-the models it offers. **Refresh all model providers**, at the top, checks every provider
-again.
-
-To stop using a provider for a while, press **Turn off**. Agents already running keep going,
-and **Turn on** brings it back without signing in again.
+**Harnesses** in Settings shows every harness with three steps, **Install**, **Authenticate** and
+**Ready**. Authenticate opens the harness's terminal sign-in; press **Done** when it is finished,
+or **Cancel** to close it. **Turn off** stops Ronin using a harness for a while; your sign-in is
+kept, and **Turn on** brings it back.
 
 ## Check it works
 
-Start an Agent with this provider and say hello, as in [Get started](get-started.md#say-hello).
-An answer in the tile means you're done.
+Start an Agent on the harness and say hello, as in [Get started](get-started.md#say-hello). An answer
+in the tile means you're done.

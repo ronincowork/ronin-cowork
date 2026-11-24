@@ -32,7 +32,6 @@ import { mountHermesSurface } from './hermes-surface.js';
  * (gemini alone took 2.9s to answer, 2026-09-09); nothing measured ever stands there again.
  */
 import { t } from './lexicon.js';
-import { ask } from './ask.js';
 import { createSetupZone, setupStep } from './setup-zone.js';
 import { request } from './request.js';
 import { WorkspaceKit } from './workspace-kit.js';
@@ -259,11 +258,8 @@ export function createProviderDrawing(context, { repaint, say = () => {} }) {
   const yesNo = (on) => (on ? t('setup_surface.yes', 'yes') : t('setup_surface.no', 'no'));
   let alignedProvider = '';
   let mounted = null;
-  let signInForm = null;
-  const authenticationDrafts = new Map();
   let runtime = { providers: [] };
   const disposeMount = (destroy = true) => {
-    signInForm?.destroy(); signInForm = null;
     if (!mounted) return;
     if (destroy) mounted.destroy?.(); else mounted.park?.();
     mounted = null;
@@ -313,12 +309,10 @@ export function createProviderDrawing(context, { repaint, say = () => {} }) {
       await after();
       return result;
     };
-    let saveAuthentication = null;
     const closeSetup = () => {
       const button = action(t('setup_surface.cancel', 'Cancel'), '', async () => {
         button.disabled = true;
         const path = `/api/setup/providers/${encodeURIComponent(provider.id)}/close`;
-        authenticationDrafts.delete(provider.id);
         await press(path);
         button.disabled = false;
       });
@@ -330,51 +324,21 @@ export function createProviderDrawing(context, { repaint, say = () => {} }) {
     const finish = (path) => {
       if (!completion.hidden) return;
       completion.hidden = false;
-      // Done first, right under the terminal; the naming after it, already filled, so Done
-      // never waits on it (KAN-723): an account / subscription titled after the provider.
-      const draft = authenticationDrafts.get(provider.id) || provider.sign_in || {};
-      const title = el('input'); title.type = 'text'; title.maxLength = 120;
-      title.value = draft.label || t('setup_surface.authentication_default_title', '{provider} subscription', { provider: provider.label || provider.id });
-      title.placeholder = t('setup_surface.authentication_title_hint', 'Choose a title');
-      const field = el('label', 'setup-provider-sign-in-title', t('setup_surface.authentication_title', 'Authentication title'));
-      field.append(title);
-      let method = draft.method || 'subscription';
-      const message = el('p', 'setup-notice bad'); message.hidden = true;
-      saveAuthentication = async (destination = path) => {
-        if (method !== 'not_signed_in' && !title.value.trim()) {
-          message.textContent = t('setup_surface.title_before_done', 'To finish, give this authentication a title.');
-          message.hidden = false; title.focus(); return;
-        }
-        if (!method) {
-          message.textContent = t('setup_surface.type_before_close', 'Choose an authentication type, or Not signed in.');
-          message.hidden = false; completion.scrollIntoView?.({ block: 'nearest' }); return;
-        }
+      // Done, right under the terminal (KAN-723). It records nothing but the sign-in itself: the
+      // CLI's own credentials are the record (owner, 24 Nov 2026: one CLI, one sign-in way).
+      const submit = action(t('setup_surface.done', 'Done'), 'primary', async () => {
         submit.disabled = true;
-        const target = method === 'not_signed_in' ? `/api/setup/providers/${encodeURIComponent(provider.id)}/close` : destination;
-        const result = await request(target, { method: 'POST', json: { sign_in: method === 'not_signed_in' ? null : { method, label: title.value.trim() } } });
+        const result = await request(path, { method: 'POST', json: {} });
         if (!result.ok) { problem.textContent = result.message; problem.hidden = false; submit.disabled = false; return; }
-        authenticationDrafts.delete(provider.id);
         mounted?.park?.();
         await paint();
         context.environment?.onProviderChoice?.();
-      };
-      const submit = action(t('setup_surface.done', 'Done'), 'primary', () => saveAuthentication(path));
+      });
       submit.dataset.endsEdit = '';
       submit.classList.add('setup-provider-done');
-      const update = () => { authenticationDrafts.set(provider.id, { method, label: title.value }); field.hidden = method === 'not_signed_in'; submit.disabled = !method || (method !== 'not_signed_in' && !title.value.trim()); };
-      const fields = el('div', 'setup-provider-authentication-fields');
-      signInForm = ask([{ fields: [{ key: 'method', label: t('setup_surface.authentication_type', 'Authentication type'), options: [
-        { v: 'subscription', l: t('setup_surface.account_subscription', 'Account / subscription') },
-        { v: 'api_key', l: t('setup_surface.api_key', 'API key') },
-        { v: 'third_party', l: t('setup_surface.third_party', 'Third-party service'), sub: t('setup_surface.third_party_hint', 'For example, OpenRouter. Put the service or account name in the title.') },
-        { v: 'not_signed_in', l: t('setup_surface.not_authenticated', 'Not signed in') },
-      ] }] }], { value: { method }, onChange: (value) => { method = value.method; update(); }, trayHost: fields });
-      title.addEventListener('input', update);
-      fields.append(field, signInForm.el);
       const actions = el('div', 'setup-provider-completion-actions');
       actions.append(submit, closeSetup());
-      completion.append(actions, message, el('h3', 'setup-provider-note', t('setup_surface.naming_authentication', 'Naming this authentication')), fields);
-      update();
+      completion.append(actions);
     };
     // One shape for all three steps: a mark that says done, current, or pending; the label
     // with its measured state beside it; at most one short line; then a control of one size.
@@ -494,10 +458,6 @@ export function createProviderDrawing(context, { repaint, say = () => {} }) {
       readyRow.controls.append(turnOn);
     }
     card.append(head, flow);
-    if (provider.sign_in) {
-      const names = { subscription: t('setup_surface.account_subscription', 'Account / subscription'), api_key: t('setup_surface.api_key', 'API key'), third_party: t('setup_surface.third_party', 'Third-party service') };
-      card.append(el('p', 'setup-provider-note', t('setup_surface.sign_in_recorded', 'Your sign-in record: {method} · {title}', { method: names[provider.sign_in.method] || provider.sign_in.method, title: provider.sign_in.label })));
-    }
     card.append(problem);
     host.append(card);
   };

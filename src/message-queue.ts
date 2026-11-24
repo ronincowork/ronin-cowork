@@ -13,7 +13,7 @@ import { readSeat, toInbox } from './seats.js';
 /** `typed` is the person at this Agent's own Message box; `owner` is Ronin writing on their behalf.
  *  In a hosted office a message from a signed-in person also records `person` (src/office-people.ts),
  *  and `from` is their label. */
-export type MessageSource = 'tell' | 'wipeboard_notice' | 'owner' | 'typed' | 'house' | 'jikan';
+export type MessageSource = 'tell' | 'wipeboard_notice' | 'owner' | 'typed' | 'press' | 'house' | 'jikan';
 /** `when: 'ready'` holds a letter until the target's screen reads ready, with no deadline: a new
  *  Agent's brief, sent as its first message to a CLI that has no prompt flag (launch_initial: message). */
 export interface QueuedMessage { id: string; from: string; target: string; text: string; source: MessageSource; created_at: string; person?: Person; when?: 'ready' }
@@ -25,11 +25,11 @@ const validId = (id: string) => /^[a-f0-9-]{36}$/.test(id);
 let processing = false;
 
 const sourceFrom = (source: MessageSource): string => ({
-  tell: 'Agent', wipeboard_notice: 'Wipeboard', owner: 'Owner', typed: 'Owner', house: 'Ronin House', jikan: 'Cron jobs',
+  tell: 'Agent', wipeboard_notice: 'Wipeboard', owner: 'Owner', typed: 'Owner', press: 'Owner', house: 'Ronin House', jikan: 'Cron jobs',
 })[source];
 
 const channelOf = (source: MessageSource): string => ({
-  tell: 'Tell', wipeboard_notice: 'Wipeboard notice', owner: 'Ronin Box', typed: 'Message box', house: 'House notice', jikan: 'Scheduled job',
+  tell: 'Tell', wipeboard_notice: 'Wipeboard notice', owner: 'Ronin Box', typed: 'Message box', press: 'Button', house: 'House notice', jikan: 'Scheduled job',
 })[source];
 
 /** Every queued message carries the recorded actor and channel into the recipient's prompt,

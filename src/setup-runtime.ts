@@ -25,40 +25,8 @@ export const INSTALLED_ROOTS = [
 ] as const;
 
 interface SetupSection {
-  providers?: Record<string, { activated_at?: unknown; off_at?: unknown; sign_in?: ProviderSignIn }>;
+  providers?: Record<string, { activated_at?: unknown; off_at?: unknown }>;
   [key: string]: unknown;
-}
-
-export interface ProviderSignIn {
-  method: 'subscription' | 'api_key' | 'third_party';
-  label: string;
-  recorded_at: string;
-}
-
-/** Owner-described metadata only: saving it never establishes authentication. */
-export async function saveProviderSignIn(provider: string, input: unknown): Promise<ProviderSignIn | null> {
-  if (!AGENTS.some((agent) => agent.id === provider)) throw new Error(`Unknown provider "${provider}".`);
-  if (input === null) {
-    await updateSection<SetupSection>('setup', (setup) => {
-      const current = { ...setup.providers?.[provider] };
-      delete current.sign_in;
-      return { ...setup, providers: { ...setup.providers, [provider]: current } };
-    });
-    return null;
-  }
-  const data = input as Partial<ProviderSignIn> | null;
-  if (!data || !['subscription', 'api_key', 'third_party'].includes(String(data.method))) {
-    throw new Error('Choose Subscription, API key, or Third-party service.');
-  }
-  if (typeof data.label !== 'string' || !data.label.trim() || data.label.trim().length > 120) {
-    throw new Error('Give this sign-in a label of 1–120 characters.');
-  }
-  const sign_in: ProviderSignIn = { method: data.method as ProviderSignIn['method'], label: data.label.trim(), recorded_at: new Date().toISOString() };
-  await updateSection<SetupSection>('setup', (setup) => ({
-    ...setup,
-    providers: { ...setup.providers, [provider]: { ...setup.providers?.[provider], sign_in } },
-  }));
-  return sign_in;
 }
 
 export interface SetupProviderState {
@@ -77,8 +45,9 @@ export interface SetupProviderState {
   login_open: boolean;
   /** How its sign-in goes, in the CLI's own words (AGENTS signIn, KAN-716); '' when not read. */
   sign_in_how: string;
+  /** Whether Ronin signs it in itself, without a terminal (AGENTS `login`, src/provider-sign-in.ts). */
+  direct_sign_in: boolean;
   install_open: boolean;
-  sign_in: ProviderSignIn | null;
   signed_in: boolean;
   activated: boolean;
   activated_at: string | null;
@@ -200,8 +169,8 @@ export async function setupRuntimeAnswer(
       path: isInstalled ? summary.paths[agent.id] ?? null : null,
       login_open: loginOpen,
       sign_in_how: agent.signIn,
+      direct_sign_in: 'login' in agent,
       install_open: installOpen,
-      sign_in: section.providers?.[agent.id]?.sign_in ?? null,
       signed_in: signedIn,
       activated,
       activated_at: completed,

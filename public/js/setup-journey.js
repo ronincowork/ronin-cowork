@@ -14,7 +14,7 @@ export const SETUP_SCENES = Object.freeze([
  * tick, Understanding, Running and Help, whose text is the docs'. The same whether she runs or not.
  */
 export const HOSTED_SCENES = Object.freeze([
-  { id: 'harness', label: 'Harness', type: 'setup.providers', canvas: 'garden.hosted.harness' },
+  { id: 'harness', label: 'Harness', type: 'setup.harness', canvas: 'garden.hosted.harness' },
   { id: 'workspace', label: 'Workspace', type: 'setup.roots', canvas: 'garden.hosted.workspace' },
   { id: 'team', label: 'Team', type: 'setup.team', canvas: 'garden.hosted.team' },
   { id: 'understanding', label: 'Understanding', type: 'setup.understanding', canvas: 'garden.hosted.understanding', page: 'docs/getting-started/understanding.md' },

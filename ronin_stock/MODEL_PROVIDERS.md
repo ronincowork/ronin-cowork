@@ -150,7 +150,7 @@ Not yet exercised end to end through Ronin.
 Other providers (pi, perplexity, …) arrive the same way: a contributor PR adding a
 section, or a section in your own shadow copy. A third-party API service such as
 OpenRouter is not a harness and gets no section: it is an account a harness launches on
-(Agent Harness workbench → Accounts).
+(Harnesses workbench → Accounts).
 
 **Other launch settings** a spawn may carry (not role-level; chosen per session):
 launch mode (`configured` / `live_dangerously`).
