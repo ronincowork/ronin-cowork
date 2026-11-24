@@ -87,12 +87,10 @@ function createHarnessSurface(context) {
         : t('setup_harness.enter_code', 'Open the link, sign in, and enter this code.');
     box.append(el('p', 'setup-harness-line', run.sent ? t('setup_harness.sent', 'Sent. Finishing the sign-in…') : line));
     if (run.link) { const link = el('a', 'setup-harness-link', run.link.replace(/^https:\/\//, '').replace(/[?#].*$/, '')); link.href = run.link; link.target = '_blank'; link.rel = 'noopener noreferrer'; box.append(link); }
+    // The code on its own line; the stones under it, one size.
+    if (run.code) box.append(el('span', 'setup-harness-code', run.code));
     const row = stones();
-    if (run.code) {
-      row.append(el('span', 'setup-harness-code', run.code));
-      const copy = button(t('setup_harness.copy', 'Copy'), false, () => { void navigator.clipboard?.writeText(run.code).catch(() => {}); });
-      row.append(copy);
-    }
+    if (run.code) row.append(button(t('setup_harness.copy', 'Copy'), false, () => { void navigator.clipboard?.writeText(run.code).catch(() => {}); }));
     if (run.paste && !run.sent) {
       const input = el('input', 'setup-harness-input');
       input.type = run.paste === 'key' ? 'password' : 'text';

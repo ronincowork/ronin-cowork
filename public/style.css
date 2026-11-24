@@ -5161,18 +5161,18 @@ html[data-screen='inside'] #phone .ph-bar .ph-title[data-boot='inside'] { displa
 .setup-harness-stack { display: flex; flex-direction: column; gap: 8px; max-width: 560px; }
 .setup-harness-bar { display: flex; flex-direction: column; gap: 10px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 4px; background: var(--surface); }
 .setup-harness-bar.selected { border-color: var(--kaki); box-shadow: inset 3px 0 var(--kaki); background: var(--selected); }
-.setup-harness-bar.signed { box-shadow: inset 3px 0 var(--ok-2); }
+.setup-harness-bar.signed:not(.selected) { box-shadow: inset 3px 0 var(--ok-2); }
 .setup-harness-top { display: flex; align-items: center; gap: 10px; width: 100%; border: 0; background: none; padding: 0; font: inherit; color: inherit; text-align: left; cursor: pointer; }
 .setup-harness-top:disabled { cursor: default; }
 .setup-harness-name b { display: block; font-size: 14px; font-weight: 600; color: var(--fg-strong); }
 .setup-harness-name small { display: block; font-size: 11px; color: var(--muted); margin-top: 2px; }
-.setup-harness-go { margin-left: auto; font-weight: 600; color: var(--aiiro); }
+.setup-harness-go { margin-left: auto; font-weight: 600; color: var(--link); }
 .setup-harness-bar.signed .setup-harness-go { color: var(--ok-2); }
 .setup-harness-top:disabled .setup-harness-go { color: var(--kaki); }
-.setup-harness-window { display: flex; flex-direction: column; gap: 8px; padding: 10px; border-radius: 4px; background: var(--surface); border: 1px solid var(--line); }
+.setup-harness-window { display: flex; flex-direction: column; gap: 10px; }
 .setup-harness-line { margin: 0; line-height: 1.5; }
 .setup-harness-line.bad { color: var(--kaki); }
-.setup-harness-link { color: var(--aiiro); word-break: break-all; }
+.setup-harness-link { color: var(--link); word-break: break-all; }
 .setup-harness-row { display: flex; flex-wrap: wrap; align-items: stretch; gap: 8px; }
 /* ERABI stones of one size: each 140 wide (ask.css), a long name on two lines, every stone in a row the same height. */
 .setup-harness-code { font-family: var(--font-mono); font-size: 18px; font-weight: 600; letter-spacing: .08em; color: var(--fg-strong); }
