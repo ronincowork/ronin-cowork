@@ -31,6 +31,8 @@ export const HARNESS_SURFACE_TYPE = 'setup.harness';
 const el = (tag, cls = '', text = null) => { const out = document.createElement(tag); if (cls) out.className = cls; if (text != null) out.textContent = String(text); return out; };
 const button = (label, primary, onClick) => { const out = el('button', `wk-btn setup-harness-btn${primary ? ' primary' : ''}`, label); out.type = 'button'; out.addEventListener('click', onClick); return out; };
 
+const shortName = (provider) => String(provider.label || provider.id).replace(/ CLI$/, '');
+
 const WAYS = Object.freeze({
   subscription: () => t('setup_harness.subscription', 'Sign in with your subscription'),
   api_key: () => t('setup_harness.api_key', 'Use an API key'),
@@ -42,10 +44,11 @@ export function harnessSurfaceDefinition() {
 
 function createHarnessSurface(context) {
   const out = WorkspaceKit.primitives.createSurface({ label: t('setup_harness.label', 'Harness'), className: 'setup-surface setup-harness' });
-  const head = el('p', 'setup-harness-head', t('setup_harness.head', '1 · Harnesses'));
+  const body = el('div', 'setup-harness-body');
   const stack = el('div', 'setup-harness-stack');
   const note = el('p', 'setup-harness-note');
-  out.content.append(head, stack, note);
+  body.append(stack, note);
+  out.content.append(body);
   let runtime = recordRuntime();
   let signIn = { runs: [], failed: {} };
   let open = '';
@@ -63,14 +66,14 @@ function createHarnessSurface(context) {
   const start = async (provider, way) => {
     const to = hers();
     const result = await post(`/api/setup/providers/${encodeURIComponent(provider.id)}/sign-in`, { way, tell: to });
-    if (result.ok && to) void sendPress(to, `${provider.label} · ${WAYS[way]()}`);
+    if (result.ok && to) void sendPress(to, `${shortName(provider)} · ${WAYS[way]()}`);
     if (!result.ok) { signIn.failed[provider.id] = result.message; paint(); }
   };
 
   /** The window: only what the person must do now, from what the CLI printed. */
   const windowOf = (provider, run) => {
     const box = el('div', 'setup-harness-window');
-    const line = run.paste === 'key' ? t('setup_harness.paste_key', 'Paste your API key. It goes straight to {cli}.', { cli: provider.label })
+    const line = run.paste === 'key' ? t('setup_harness.paste_key', 'Paste your API key. It goes straight to {cli}.', { cli: shortName(provider) })
       : run.paste === 'code' ? t('setup_harness.paste_code', 'Open the link, sign in, and paste the code it gives you here.')
         : t('setup_harness.enter_code', 'Open the link, sign in, and enter this code.');
     box.append(el('p', 'setup-harness-line', run.sent ? t('setup_harness.sent', 'Sent. Finishing the sign-in…') : line));
@@ -105,7 +108,7 @@ function createHarnessSurface(context) {
   const terminalOf = (provider) => {
     const box = el('div', 'setup-harness-window');
     if (!provider.login_open) {
-      box.append(el('p', 'setup-harness-line', t('setup_harness.terminal', '{cli} signs in in a terminal.', { cli: provider.label })),
+      box.append(el('p', 'setup-harness-line', t('setup_harness.terminal', '{cli} signs in in a terminal.', { cli: shortName(provider) })),
         button(t('setup_harness.open_terminal', 'Open its sign-in'), true, async () => { await post(`/api/setup/providers/${encodeURIComponent(provider.id)}/login`); await readRuntime(); }));
       return box;
     }
@@ -126,17 +129,17 @@ function createHarnessSurface(context) {
     const selected = Boolean(run) || open === provider.id;
     const bar = el('div', `setup-harness-bar${selected ? ' selected' : ''}${signed ? ' signed' : ''}`);
     bar.dataset.provider = provider.id;
-    const top = el('div', 'setup-harness-top');
+    // The whole row is the press (owner, 24 Nov). The tile says Harness, so names drop " CLI".
+    const top = el('button', 'setup-harness-top');
+    top.type = 'button';
     const name = el('div', 'setup-harness-name');
-    name.append(el('b', '', provider.label || provider.id), el('small', '', provider.from || ''));
+    name.append(el('b', '', shortName(provider)), el('small', '', provider.from || ''));
     top.append(name);
     const state = provider.off ? t('setup_harness.off', 'Off') : signed ? t('setup_harness.signed_in', 'Signed in')
       : run ? t('setup_harness.signing_in', 'Signing in') : hermes ? t('setup_harness.set_up', 'Set up') : t('setup_harness.sign_in', 'Sign in');
-    const go = el('button', 'setup-harness-go', state);
-    go.type = 'button';
-    go.disabled = Boolean(run);
-    go.addEventListener('click', () => { open = open === provider.id ? '' : provider.id; paint(); });
-    top.append(go);
+    top.append(el('span', 'setup-harness-go', state));
+    top.disabled = Boolean(run);
+    top.addEventListener('click', () => { open = open === provider.id ? '' : provider.id; paint(); });
     bar.append(top);
     if (!selected) return bar;
     if (run) bar.append(windowOf(provider, run));
@@ -145,9 +148,10 @@ function createHarnessSurface(context) {
       if (!hermesHost) { hermesHost = el('div', 'setup-harness-window'); mountHermesSurface(hermesHost, provider, () => { void readRuntime(); }); }
       bar.append(hermesHost);
     }
-    else if (signed || provider.off) {
+    else if (provider.off || (signed && !own)) {
       bar.append(el('p', 'setup-harness-line', provider.off ? t('setup_harness.off_line', 'Turned off. Your sign-in is kept.') : t('setup_harness.signed_line', 'Signed in on this office.')));
     } else if (own) {
+      if (signed) bar.append(el('p', 'setup-harness-line', t('setup_harness.again', 'Signed in. To switch between subscription and API key, sign in again; it replaces this one.')));
       if (failed) bar.append(el('p', 'setup-harness-line bad', failed));
       const row = el('div', 'setup-harness-row');
       row.append(button(WAYS.subscription(), true, () => start(provider, 'subscription')), button(WAYS.api_key(), false, () => start(provider, 'api_key')));
