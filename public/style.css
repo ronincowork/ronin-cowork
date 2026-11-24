@@ -5173,7 +5173,8 @@ html[data-screen='inside'] #phone .ph-bar .ph-title[data-boot='inside'] { displa
 .setup-harness-line { margin: 0; line-height: 1.5; }
 .setup-harness-line.bad { color: var(--kaki); }
 .setup-harness-link { color: var(--aiiro); word-break: break-all; }
-.setup-harness-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.setup-harness-row { display: flex; flex-wrap: wrap; align-items: stretch; gap: 8px; }
+/* ERABI stones of one size: each 140 wide (ask.css), a long name on two lines, every stone in a row the same height. */
 .setup-harness-code { font-family: var(--font-mono); font-size: 18px; font-weight: 600; letter-spacing: .08em; color: var(--fg-strong); }
 .setup-harness-input { flex: 1 1 180px; min-width: 0; }
 .setup-harness-terminal { min-height: 320px; }
