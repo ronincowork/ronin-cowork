@@ -53,14 +53,27 @@
   .garden-canvas .setup-irasshai-chat > .wk-terminal-host[hidden] { display: none; }
   .garden-canvas .setup-irasshai-chat .wk-hosted-tile > .tile-head { display: none; }
   .garden-canvas .setup-irasshai-chat .wk-hosted-tile { height: 100%; border: 0; border-radius: 0; }
-  .garden-canvas .setup-ask-offer { padding: var(--space-inset); }
-  /* THE STEP'S GUIDE (w926): the step's how-to at the foot of Setup's selector, where hints were. */
-  .setup-step-guide { flex: 0 1 auto; max-height: 50%; overflow-y: auto; display: grid; gap: var(--space-row); padding: var(--space-inline); border-top: 1px solid var(--line); }
+  /* THE ASK RONIN PANEL, HER NOT RUNNING (w926): one line on what she does, and the press that asks for her. */
+  .garden-canvas .setup-ask-offer { display: grid; align-self: start; align-content: start; justify-items: start; gap: var(--space-paragraph); padding: var(--space-inset); }
+  .setup-ask-line { margin: 0; max-width: 32rem; color: var(--fg); font-size: var(--text-body); line-height: var(--leading-body); }
+  /* THE STEP'S GUIDE (w926): a card at the foot of Setup's selector, where hints were, for the step on
+     screen. The step's name, its lead line, the why, then its guides as rows. One text size; the
+     muted colour, not a smaller size, marks the secondary lines. */
+  .setup-step-guide { flex: 0 1 auto; max-height: 60%; overflow-y: auto; margin: var(--space-inline); padding: var(--space-inset); border: var(--edge) solid var(--line); border-radius: var(--radius-small); background: var(--surface); font-size: var(--text-body); line-height: var(--leading-body); }
   .setup-step-guide[hidden] { display: none; }
-  .setup-step-guide-heading { margin: 0; font-size: var(--text-body); font-weight: var(--weight-strong); }
-  .setup-step-guide-body { margin: 0; color: var(--muted); font-size: var(--text-body); }
-  .setup-step-guide-link { justify-self: start; padding: 0; border: 0; background: none; color: var(--kaki-fill); font: inherit; font-size: var(--text-body); cursor: pointer; text-align: left; }
-  .setup-step-guide-link:hover { text-decoration: underline; }
+  .setup-step-guide > * { margin: 0; }
+  .setup-step-guide > * + * { margin-top: var(--space-paragraph); }
+  .setup-step-guide-eyebrow { color: var(--kaki-lift); font-weight: var(--weight-strong); }
+  .setup-step-guide > .setup-step-guide-eyebrow + .setup-step-guide-heading { margin-top: var(--space-row); }
+  .setup-step-guide-heading { color: var(--fg-strong); font-size: var(--text-body); font-weight: var(--weight-strong); line-height: var(--leading-body); }
+  .setup-step-guide-body { color: var(--muted); }
+  .setup-step-guide-links { padding: 0; list-style: none; border-top: var(--edge) solid var(--line); }
+  .setup-step-guide-link { display: grid; gap: 2px; width: 100%; padding: var(--space-row) 0; border: 0; border-bottom: var(--edge) solid var(--line); background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+  .setup-step-guide-links li:last-child .setup-step-guide-link { border-bottom: 0; padding-bottom: 0; }
+  .setup-step-guide-link-label { color: var(--fg-strong); font-weight: var(--weight-strong); }
+  .setup-step-guide-link-label::after { content: ' \203A'; color: var(--kaki); }
+  .setup-step-guide-link-is { color: var(--muted); }
+  .setup-step-guide-link:hover .setup-step-guide-link-label, .setup-step-guide-link:focus-visible .setup-step-guide-link-label { color: var(--kaki-fill); }
 
   /* The horizon keeps its height and crops at the sides: a narrower column
      shows less field, never a squashed one. */

@@ -662,7 +662,7 @@ export function setupSurfaceDefinitions() {
     definition(SETUP_SURFACE_TYPES.register, t('setup_surface.register', 'Register'), createRegisterSurface),
     providerSurfaceDefinition(),
     harnessSurfaceDefinition(),
-    definition(SETUP_SURFACE_TYPES.roots, t('setup_surface.roots', 'Workspaces'), createRootsSurface),
+    definition(SETUP_SURFACE_TYPES.roots, t('setup_surface.roots', 'Workspace'), createRootsSurface),
     definition(SETUP_SURFACE_TYPES.installations, t('campaign_view.installations', 'Installations'), createSetupInstallationsSurface),
     definition(SETUP_SURFACE_TYPES.launchOwn, t('setup_surface.launch_own', 'Launch your own'), createLaunchOwnSurface),
     definition(SETUP_SURFACE_TYPES.team, t('setup_surface.team', 'Team'), createTeamSurface),
