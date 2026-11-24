@@ -51,6 +51,7 @@ function createHarnessSurface(context) {
   let open = '';
   let mounted = null;
   let terminalHost = null;
+  let hermesHost = null;
   let disposed = false;
   // What the person is typing survives a repaint (a push may land mid-word).
   const drafts = new Map();
@@ -139,7 +140,11 @@ function createHarnessSurface(context) {
     bar.append(top);
     if (!selected) return bar;
     if (run) bar.append(windowOf(provider, run));
-    else if (hermes) { const host = el('div', 'setup-harness-window'); bar.append(host); mountHermesSurface(host, provider, () => { void readRuntime(); }); }
+    else if (hermes) {
+      // Mounted once while its bar is open, so a repaint keeps what is being edited there.
+      if (!hermesHost) { hermesHost = el('div', 'setup-harness-window'); mountHermesSurface(hermesHost, provider, () => { void readRuntime(); }); }
+      bar.append(hermesHost);
+    }
     else if (signed || provider.off) {
       bar.append(el('p', 'setup-harness-line', provider.off ? t('setup_harness.off_line', 'Turned off. Your sign-in is kept.') : t('setup_harness.signed_line', 'Signed in on this office.')));
     } else if (own) {
@@ -154,6 +159,7 @@ function createHarnessSurface(context) {
   const paint = () => {
     if (disposed) return;
     const harnesses = (runtime.providers || []).filter((provider) => provider?.installed);
+    if (open !== 'hermes') hermesHost = null;
     if (mounted && !harnesses.some((provider) => provider.login_open && open === provider.id)) { mounted.destroy?.(); mounted = null; terminalHost = null; }
     stack.replaceChildren(...harnesses.map(barOf));
     const signed = harnesses.filter((provider) => provider.activated).length;
