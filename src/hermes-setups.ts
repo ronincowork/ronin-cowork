@@ -18,7 +18,7 @@ export interface HermesSetup { id: string; name: string; connection: string; mod
 export interface HermesSettings { connections: HermesConnection[]; setups: HermesSetup[] }
 const empty = (): HermesSettings => ({ connections: [], setups: [] });
 const readStoredSettings = () => readCredential<HermesSettings>('hermes-setups', empty());
-const keyPath = (id: string) => path.join(storeDir('services_secrets'), `hermes-${id}.env`);
+export const keyPath = (id: string) => path.join(storeDir('services_secrets'), `hermes-${id}.env`);
 const idPattern = /^[a-z0-9-]+$/;
 const modelPattern = /^[A-Za-z0-9._:/-]+$/;
 const efforts = ['default', 'none', 'low', 'medium', 'high', 'xhigh', 'max'];
