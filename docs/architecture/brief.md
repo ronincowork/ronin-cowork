@@ -39,8 +39,7 @@ are told is in [Customize Ronin](../getting-started/customize.md).
 **Three places, each with one meaning.** `ronin_stock/` (in the image) is everything Ronin
 ships; an image update replaces it whole, and nothing in it is written at run time.
 `~/ronin/custom/` is the person's own files, in the same folders, empty on a new office.
-`~/ronin/office/` is office-output: the office-facts, `MACHINE_STATUS.md`, `ABOUT_USER.md` and
-the Workspace Summaries. **The one rule for every reader:** a file in `~/ronin/custom/<folder>/`
+`~/ronin/office/` is office-output: the office-facts, `MACHINE_STATUS.md` and `ABOUT_USER.md`. **The one rule for every reader:** a file in `~/ronin/custom/<folder>/`
 replaces the file of the same id in `ronin_stock/<folder>/`, whole, or adds one. Nothing is
 seeded, copied or merged. The full map is [stock_readme.md](../../ronin_stock/stock_readme.md).
 
@@ -75,9 +74,11 @@ Lead, epic lead and coordinator are **roles**, not types: a lead is a `cowork` A
 is `lead`, and its files say `when: lead` or `role:epic_lead`.
 
 A type is only a value the files read. The Helpful Assistant shows the pattern. Her behaviour
-(`irasshai`) and her voice (`irasshai-voice`, Ronin's website) say `when: irasshai`. The coding
-behaviours say `when: cowork` (or `!irasshai`), so they never reach her. The tools she needs
-(`item`, `show`, `owner-view`, `session_create`, `ready`) list her behaviour in `serves:`. Her
+(`irasshai`), her voice (`irasshai-voice`, Ronin's website) and one behaviour per hosted Setup
+step (`irasshai-harness`, `irasshai-workspace`, `irasshai-team`, depth seed, each read in full as
+she takes the step) say `when: irasshai`. The coding behaviours say `when: cowork` (or
+`!irasshai`), so they never reach her. The tools she needs (`item`, `workspace`, `show`,
+`owner-view`, `session_create`, `ready`) list her behaviour in `serves:`. Her
 launcher sets only her name, model, mandate and a task line; everything she is told comes from
 the files.
 
@@ -194,8 +195,8 @@ the docs knows the office: the owner, an Agent, a lead, the Helpful Assistant, a
 | `about_user` | the person and the office's people; the Helpful Assistant's notes on them | hosted: `office_unit/members.json` (the Business Lounge's About you, written by the park); self-hosted: the owner's intro (`~/ronin/custom/facts/user-intro.md`); both: `~/ronin/office/ABOUT_USER.md` |
 | `machine` | hosting, Ronin's release, disk, the Services parts running, parked or failed, installations on, browser access, Tailscale, the no-password setting, registration | the office record, machine settings, Services' parts, the Campaign |
 | `account` | hosted: subscription, balance, tiers, the Lounge's settings | `office_unit/lounge.json`, written by the park (Services' `account` part adds this fact) |
-| `office-workspaces` | each Workspace: folders, repositories, objective, its Summary | the Workspace store, `~/ronin/office/workspaces/<handle>.md` |
-| `integrations_authentications` | every model provider (installed, signed in, Activated, off), GitHub, integrations, MCP servers and web APIs, Hermes accounts | the provider summary, `gh`, integrations and secrets |
+| `office-workspaces` | each Workspace: its objective (what the project is), folders, repositories, integrations, plans, canvases | the Workspace store |
+| `integrations_authentications` | every harness (installed, signed in, Activated, off) and Ronin's house models, kept apart, GitHub, integrations, MCP servers and web APIs, Hermes accounts | the provider summary, `gh`, integrations and secrets |
 | `epics` | open epics, their tasks, who holds what; onboarding's progress | work items, work records, rosters |
 | `teams_agents` | Teams, leads, members; Agents live and archived; gecko seats | rosters, work records, the archive, seats |
 | `defaults` | what a new Agent gets: default model, the Campaign's mandate and Mode | the Campaign, machine config |
@@ -235,10 +236,12 @@ The facts are not the sources of truth: they read them. Each fact has one builde
 
 A screen never records a press ("No thank you", "Keep these", "dealt with") as office state
 (owner, 2026-11-22). A choice that matters is a real setting (Tailscale only, no password:
-`machine.no_password`); anything else is dropped. Setup's ticks come from facts: Agent Harness
-when a provider is Activated, Register when registered, Workspace when a Workspace has a folder,
-Installations when anything is installed, Password when a password is set or the no-password
-setting is on. What a person tells an Agent lives in that Agent's notes (`ABOUT_USER.md`), never
+`machine.no_password`); anything else is dropped. Setup's ticks come from facts. Hosted: Harness
+when one of the person's own harnesses is Activated (never the house models), Workspace when a
+Workspace of theirs other than Ronin Lab has an objective, Team when a Team has a live lead; and
+nothing decides onboarding is over. Self-hosted: Harnesses when a provider is Activated, Register
+when registered, Workspace when a Workspace has a folder, Installations when anything is
+installed, Password when a password is set or the no-password setting is on. What a person tells an Agent lives in that Agent's notes (`ABOUT_USER.md`), never
 in a screen.
 
 ### The Agent's own lines
@@ -444,7 +447,7 @@ and on no live list ([playbooks](../using-ronin/playbooks.md), `src/work-items.t
 `src/playbooks.ts`).
 
 - Ronin's ship in `ronin_stock/playbooks/` (PLAYBOOK-1 onboarding, PLAYBOOK-2 a Workspace's
-  Summary, PLAYBOOK-3 mapping a project, and their tasks); the person's own are in
+  objective, PLAYBOOK-3 mapping a project, and their tasks); the person's own are in
   `~/ronin/custom/playbooks/` and replace Ronin's by id. The ordinary item reader reads them;
   an edit writes the person's copy.
 - `item checkout PLAYBOOK-n [<agent>|team:<name>]` makes plain live items from it and everything
@@ -494,18 +497,19 @@ behaviours/  base-agent (full) · cowork-agent, flags, write-it-down, workspaces
              bridges: netlify-bridge, jira-bridge, perplexity-bridge (integration:<name>) ·
              mcp-servers (mcp, seed: one line per MCP server on) ·
              web-apis (api, seed: one line per web API on)
-             mika, install-check (mika) · irasshai, irasshai-voice (irasshai) ·
+             mika, install-check (mika) · irasshai, irasshai-voice, irasshai-harness,
+             irasshai-workspace, irasshai-team (irasshai) ·
              services-off (!service:ronin_services) · syncthing (!irasshai, seed) ·
              linux-tools (every Agent, seed) · using-ronin
              optional (depth none): team-work, more-checkpoints, working-with-the-user,
              codebase-team, new-workspace, documents
 tools/       edges, work-record, agent-session (session_*), cowork-team (team), plan, canvas,
              work-item (item), worktree-desk, secret, netlify, preview, lookup, show,
-             owner-view, ready, office, workspace-doc, ask-mika (mika), ronin-host,
-             machine-settings, ronin-help · workspace-command (workspace; depth none until the
-             command exists) · ronin-team, ronin-desk-settle (house, depth none)
-playbooks/   PLAYBOOK-1 onboarding, PLAYBOOK-2 a Workspace's Summary, PLAYBOOK-3 mapping a
-             project, each with its tasks as PLAYBOOK-4 … PLAYBOOK-22
+             owner-view, ready, office, ask-mika (mika), ronin-host,
+             machine-settings, ronin-help · workspace (serves irasshai, team-lead) ·
+             ronin-team, ronin-desk-settle (house, depth none)
+playbooks/   PLAYBOOK-1 onboarding (Your setup, Harness, Workspace, Team), PLAYBOOK-2 a
+             Workspace's objective, PLAYBOOK-3 mapping a project, each with its tasks
 ```
 
 Each file's header is the authority for its `when:`, depth and order; this list is a map.
@@ -555,15 +559,16 @@ integration is that bridge's way through the broker and gets no line.
 
 The `workspaces` behaviour (every Cowork Agent, full) says a Project is one Workspace: its
 objective, instructions, repositories, folders, integrations, Teams and plans. The
-`office-workspaces` fact is every Workspace as it is now. The `workspace` tool is `depth: none`
-until the command exists; it will list, read, create, edit and archive Workspaces over
-`src/routes/workspaces-api.ts`.
+`office-workspaces` fact is every Workspace as it is now. The `workspace` tool (serves
+`irasshai` and `team-lead`) lists, reads and creates Workspaces, writes their objective and
+instructions, and adds a folder or a cloned repository, over the Workspace page's own routes
+(`/api/workspaces`, `/api/folders`, `/api/setup/git/clone`). The objective is the one place that
+says what the project is; there is no other Workspace doc.
 
 ## What comes next
 
-The base grows a file at a time: a curated bridge for an integration that earns one, the
-`workspace` command, which then gets its seed told, and a playbook for each piece of work
-worth repeating.
+The base grows a file at a time: a curated bridge for an integration that earns one, and a
+playbook for each piece of work worth repeating.
 
 ## Change checkpoint
 

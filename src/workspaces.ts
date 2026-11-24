@@ -24,7 +24,6 @@ import { mkdir, readFile, readdir, rename, unlink, writeFile } from 'node:fs/pro
 import os from 'node:os';
 import path from 'node:path';
 import { storeDir } from './resources.js';
-import { ensureWorkspaceDoc } from './workspace-doc.js';
 import type { LaunchMode } from './agent-defaults.js';
 
 /** A folder the Workspace works in: `dir` is the folder; `name` is Ronin's key for it (desks, tmux,
@@ -142,7 +141,6 @@ export async function saveWorkspace(w: Workspace): Promise<Workspace> {
   const clean = normalizeWorkspace(w.campaign_id, w.name, w as unknown as Record<string, unknown>);
   await nameRows(clean);
   await writeRecord(clean);
-  await ensureWorkspaceDoc(clean.name, clean.title); // its Workspace doc (KAN-713), made once
   // ONE REPOSITORY, ONE SET OF SETTINGS: the same repository in another Workspace takes these.
   const settings = (r: WorkspaceRepo) => `${r.mode} ${r.working} ${r.stable} ${r.desks}`;
   for (const campaign of await campaignNames()) {

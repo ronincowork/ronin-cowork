@@ -1,8 +1,8 @@
 {
   "id": "PLAYBOOK-15",
   "campaign_id": "",
-  "title": "Meet your Agents: take them to Team 1",
-  "objective": "Do: show them Team 1 and take them to it; then close this epic and end yourself.\nDetails: the Teams door on Home; `show <tab-id> <surface>`; `session_end`.\nCheck: they are on Team 1's page.",
+  "title": "Team: started in their Workspace",
+  "objective": "Do: a Team started in the Workspace, its lead running, and the Workspace's open items handed to it.\nBehaviour: `ronin-help irasshai-team`.\nCheck: the teams_agents fact shows the Team with its lead.",
   "level": 0,
   "kind": "Task",
   "status": "Playbook",

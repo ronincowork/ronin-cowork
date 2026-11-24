@@ -62,7 +62,7 @@ export function createAgentRows({ n, key, rows, changed, onToggle, createAction,
     }));
     const questions = ask([
       { group: t('new_agent.model_package', 'Model'), fields: [
-        { key: 'provider', label: t('forms.provider', 'Model provider'), blank: t('forms.default', 'Default'), options: providerRows },
+        { key: 'provider', label: t('forms.provider', 'Harness'), blank: t('forms.default', 'Default'), options: providerRows },
         { key: 'model', label: t('forms.model', 'Model'), blank: t('forms.default', 'Default'), after: 'provider', options: (value) => modelRows(value.provider) },
         { key: 'teamLead', label: t('new_agent.make_team_lead', 'Make team lead'), switch: [t('forms.on', 'On'), t('forms.off', 'Off')] },
       ] },

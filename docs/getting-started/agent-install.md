@@ -1,6 +1,6 @@
 # Install an Agent provider
 
-Open **Model providers** in [Ronin Setup](setup-workbench.md). Each provider has three
+Open **Harnesses** in [Ronin Setup](setup-workbench.md). Each provider has three
 separate steps—**Install**, **Authenticate**, and **Ready**—because a CLI being present does
 not prove that it is signed in or available to Ronin.
 
@@ -20,7 +20,7 @@ The provider stone tells you what this machine currently has:
 ## Install
 
 Open the provider and press **Install**. Installation runs in a visible temporary terminal
-on the Model providers surface. You can watch the provider's own installer, respond to a
+on the Harnesses surface. You can watch the provider's own installer, respond to a
 system prompt when necessary, and retain the exact failure if it does not complete. Ronin
 measures the CLI again afterward; merely starting the terminal does not mark it installed.
 

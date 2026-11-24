@@ -1,0 +1,113 @@
+#!/usr/bin/env bash
+# workspace — read and set up the office's Workspaces (w926): what each project is (its objective),
+# standing directions to its Agents (instructions), and its folders and repositories. Over the
+# Workspace page's own routes: /api/workspaces, /api/folders, /api/setup/git/clone.
+. "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/tool-count.sh" workspace "$@"
+set -u -o pipefail
+. "$(dirname "$(readlink "${BASH_SOURCE[0]}" 2>/dev/null || printf '%s' "${BASH_SOURCE[0]}")")/tool-path.sh"
+TOOL_DIR=$(dirname "$SELF")
+usage() { cat <<'EOF_USAGE'
+Usage:
+  workspace list                                  every Workspace: its handle, name and objective
+  workspace read <handle>                         its objective, instructions, repositories and folders
+  workspace create "<name>" --objective "<text>"  a new Workspace; the handle is made from the name
+  workspace objective <handle> "<text>"           replace what the project is
+  workspace instructions <handle> "<text>"        replace its standing directions to Agents
+  workspace add <handle> <folder|git-url>         a folder (made under ~ when it is not there) or a
+                                                  repository cloned from any Git host (owner/name: GitHub)
+"<text>" may be - to read it from stdin. The objective is the one place that says what the project is.
+EOF_USAGE
+}
+cmd=${1:-}; [ "$#" -gt 0 ] && shift
+case "$cmd" in
+  -h|--help|'') usage; [ -n "$cmd" ]; exit $? ;;
+  list) [ "$#" -eq 0 ] || { usage >&2; exit 2; } ;;
+  read) [ "$#" -eq 1 ] || { usage >&2; exit 2; } ;;
+  create) [ "$#" -eq 3 ] && [ "$2" = --objective ] || { usage >&2; exit 2; } ;;
+  objective|instructions|add) [ "$#" -eq 2 ] || { usage >&2; exit 2; } ;;
+  *) echo "workspace: unknown command $cmd (workspace --help)" >&2; exit 2 ;;
+esac
+args=("$@")
+[ "${#args[@]}" -gt 0 ] && [ "${args[-1]}" = - ] && args[-1]=$(cat)
+
+. "$TOOL_DIR/ronin-http.sh"
+ronin_connect || exit $?
+RONIN_BASE="$url" CMD="$cmd" python3 - "${RONIN_CURL[@]+"${RONIN_CURL[@]}"}" --args "${args[@]}" <<'EOF_PY'
+import json, os, re, subprocess, sys
+argv = sys.argv[1:]
+split = argv.index('--args')
+curl_opts, args = argv[:split], argv[split + 1:]
+base, cmd = os.environ['RONIN_BASE'], os.environ['CMD']
+
+def call(method, route, body=None):
+    line = ['curl', '-sS', '-m', '180', *curl_opts, '-w', '\n%{http_code}', '-X', method, base + route]
+    if body is not None: line += ['-H', 'Content-Type: application/json', '--data-binary', json.dumps(body)]
+    out = subprocess.run(line, capture_output=True, text=True)
+    if out.returncode: print('UNREACHABLE: Ronin did not answer at %s' % base, file=sys.stderr); sys.exit(5)
+    text, _, status = out.stdout.rpartition('\n')
+    try: data = json.loads(text)
+    except Exception: print('HTTP %s: Ronin answered without JSON' % status, file=sys.stderr); sys.exit(3)
+    if not status.startswith('2') or data.get('ok') is False or data.get('error'):
+        print(data.get('error') or 'HTTP %s' % status, file=sys.stderr); sys.exit(3)
+    return data
+
+def workspaces(): return call('GET', '/api/workspaces').get('workspaces') or []
+def one(handle):
+    for w in workspaces():
+        if w['name'] == handle: return w
+    print('No Workspace "%s". workspace list names them.' % handle, file=sys.stderr); sys.exit(4)
+def save(w):
+    body = {k: v for k, v in w.items() if k not in ('plans_place', 'canvases')}
+    return call('PUT', '/api/workspaces/' + w['name'], body)['workspace']
+
+if cmd == 'list':
+    rows = workspaces()
+    if not rows: print('No Workspaces yet.')
+    for w in rows:
+        print('%s — %s%s' % (w['name'], w.get('title') or w['name'], ' (archived)' if w.get('archived') else ''))
+        print('  ' + (w.get('objective') or 'objective: none yet').replace('\n', '\n  '))
+elif cmd == 'read':
+    w = one(args[0])
+    print('%s — %s' % (w['name'], w.get('title') or w['name']))
+    print('Objective: ' + (w.get('objective') or 'none yet'))
+    if w.get('instructions'): print('Instructions: ' + w['instructions'])
+    for r in w.get('repos') or []: print('repository %s: %s (%s)%s' % (r['name'], r['dir'], r.get('mode'), ' — ' + r['note'] if r.get('note') else ''))
+    for f in w.get('folders') or []: print('folder %s: %s%s' % (f['name'], f['dir'], ' — ' + f['note'] if f.get('note') else ''))
+    if not (w.get('repos') or w.get('folders')): print('No folders or repositories yet.')
+    for i in w.get('integrations') or []: print('integration ' + i.get('provider', ''))
+elif cmd == 'create':
+    title, objective = args[0].strip(), args[2].strip()
+    handle = re.sub(r'[^a-z0-9_-]+', '_', title.lower()).strip('_-')[:64]
+    if not handle: print('Give the Workspace a name.', file=sys.stderr); sys.exit(2)
+    taken = {w['name'] for w in workspaces()}
+    base_handle, n = handle, 2
+    while handle in taken: handle, n = '%s_%d' % (base_handle, n), n + 1
+    w = call('PUT', '/api/workspaces/' + handle, {'title': title, 'objective': objective})['workspace']
+    print('Made %s — %s' % (w['name'], w.get('title')))
+elif cmd in ('objective', 'instructions'):
+    w = one(args[0]); w[cmd] = args[1].strip(); save(w)
+    print('%s of %s written.' % (cmd.capitalize(), w['name']))
+elif cmd == 'add':
+    w = one(args[0]); what = args[1].strip()
+    if re.match(r'^(https?://|ssh://|git@|git://)', what) or re.match(r'^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$', what) and not os.path.exists(os.path.expanduser(what)):
+        dir_ = call('POST', '/api/setup/git/clone', {'repository': what})['workspace']['dir']
+    else:
+        path = os.path.abspath(os.path.expanduser(what if what.startswith(('/', '~')) else '~/' + what))
+        if not os.path.isdir(path):
+            dir_ = call('POST', '/api/folders', {'parent': os.path.dirname(path), 'name': os.path.basename(path)})['dir']
+        else: dir_ = path
+    from urllib.parse import quote
+    facts = call('GET', '/api/folders/inspect?dir=' + quote(dir_))
+    dir_ = facts.get('dir') or dir_
+    held = facts.get('held') or {}
+    rows = [*w.get('repos', []), *w.get('folders', [])]
+    if any(r['dir'] == dir_ for r in rows): print('%s already holds %s.' % (w['name'], dir_)); sys.exit(0)
+    row = {'name': held.get('name', ''), 'dir': dir_, 'note': ''}
+    if facts.get('repo'):
+        row.update({'mode': 'direct', 'working': '', 'stable': facts['repo'].get('branch') or 'main', 'desks': 'none'})
+        row.update({k: held[k] for k in ('mode', 'working', 'stable', 'desks') if k in held})
+        w['repos'] = [*w.get('repos', []), row]
+    else: w['folders'] = [*w.get('folders', []), row]
+    saved = save(w)
+    print('%s now holds %s%s.' % (saved['name'], dir_, ' (a repository)' if facts.get('repo') else ''))
+EOF_PY

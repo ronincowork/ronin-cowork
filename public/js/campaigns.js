@@ -90,11 +90,6 @@ export function normalizeSelection(stored) {
  * the initial Campaign rather than as hidden: an unscoped legacy row must not vanish from
  * the board while the migration window is open. This is the ONE place that mapping is made.
  */
-/** Where Settings opens for a Campaign: Setup until every Setup answer is given, else Settings. */
-export const setupDefaultView = (campaign) => {
-  const answers = campaign?.config?.setup?.answers || {};
-  return ['provider', 'register', 'workspace', 'installations', 'password'].every((id) => answers[id]) ? 'campaign' : 'setup';
-};
 export const campaignOf = (record) => text(record?.campaign_id) || initialCampaignId();
 
 /** Create one, then take the store's own record as the truth. Never touches anything else. */

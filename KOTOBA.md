@@ -30,7 +30,7 @@ bare word carries two meanings.
 | Fact | What is true about the user and the Agent's situation, printed in the brief from the work record |
 | Fact-print (`fact-print`) | A fact's foundation file (`ronin_stock/facts/<id>.md`): how the brief prints it, not the fact itself |
 | Office-fact (`office-fact`) | One of the nine facts about the office as built, `~/ronin/office/facts/<id>.md`, rewritten when its sources change |
-| Office-output (`office-output`) | Everything in `~/ronin/office/`: the office-facts, `MACHINE_STATUS.md`, `ABOUT_USER.md`, the Workspace Summaries |
+| Office-output (`office-output`) | Everything in `~/ronin/office/`: the office-facts, `MACHINE_STATUS.md`, `ABOUT_USER.md` |
 | Playbook (`playbook`) | A reusable plan of work, work items with ids `PLAYBOOK-n` (folder `playbooks/`), checked out into live items with no link back ([Playbooks](docs/using-ronin/playbooks.md)) |
 | Agent-kind (`agent-kind`) | A condition a foundation's `when:` reacts to: irasshai, mika, a role |
 | Tool | Ronin executable authority; its help describes its callable contract; its file in `ronin_stock/tools/` says what the brief tells about it |
@@ -65,16 +65,18 @@ Macro, action, SOP, and Agent role are not additional composition layers. “Act
 | Surface | A visible UI held in a tilespace; contributor change areas are navigation categories, not UI objects or directories |
 | Phalanx | A shared collection surface: stones stand in formation at rest, then move into a side rail when one is selected so that stone's detail can occupy the surface ([Workbench](docs/architecture/workbench.md)) |
 | Tilespace | A numbered slot of a workbench holding a tile or another surface; `workspace1`…`workspace4` in code. Not a Workspace |
-| Workspace | A project: objective, instructions, its folders and Mode; every Team works in one ([Workspaces](docs/using-ronin/workspaces.md)) |
+| Workspace | A project: its objective (the one place that says what the project is), instructions, its folders and Mode; every Team works in one ([Workspaces](docs/using-ronin/workspaces.md)) |
 | Explorer (Files) | The machine's file browser from the home folder: copyparty at `/files/`, where Ronin finds Python at start; `/files/<path>` is `$HOME/<path>`. Explorer is the card, Files the code (`ronin.files`, `src/files.ts`) ([Explorer](docs/using-ronin/explorer.md)) |
+| Harness | The agent tool that does an Agent's work, a provider's own CLI (Claude Code, Codex …), signed in with the person's own account; the one word for it, never "model provider" or "Agent Harness". Ronin's house models are not a harness of theirs ([Provider sign-in](docs/getting-started/provider-sign-in.md)) |
 | Tile | The UI for one session; a tmux pane is the terminal underneath ([Tile](docs/using-ronin/tile.md)) |
-| Ronin Home / Ronin Setup / Ronin Settings | Home destination, first-use workbench, and ongoing Desk configuration workbench |
+| Ronin Home / Ronin Setup / Ronin Settings | Home destination, the setup workbench (hosted: Harness, Workspace, Team, any order, never a gate), and ongoing Desk configuration workbench |
+| Ask Ronin | A hosted Setup's panel beside every step: the step's lines, then the Helpful Assistant's chat |
 | Desk | Engagement context for Teams and inherited configuration; internal compatibility identifiers retain `campaign` ([Desks](docs/using-ronin/campaigns.md)) |
 | Team (`team`) | A group of sessions; stock UI says Team, with Team Commons for its shared surfaces |
 | Team record (`team_roster`) | Durable Team identity, defaults, and held work; membership and leads derive from sessions ([Team workspace](docs/architecture/team-workspace.md)) |
 | Session | A running Cowork Agent, bare-metal Agent, or terminal; archived sessions have separate restore manifests ([Session identity](docs/architecture/session-identity.md)) |
 | Work record | An Agent's objective, repositories, and the work items it holds, each with its status ([Work records](docs/using-ronin/what-agents-write-down.md)) |
-| Work item | One object stored once by id, matching Jira: title, objective, `level`, `kind`, `status`, `flagged`, `priority`, `comments`, `attachments`, `links`, `external` keys and a trail; **held by** one Team or Agent, or by nobody (`item handoff` moves the id between holders' lists), and **under** one parent or none. Holding is never permission. The `item` tool does Jira's item acts (create, read, search, edit, transition, flag, handoff, comment, attach, link, delete), the item named. Never called a project ([Work items](docs/using-ronin/work-items.md)) |
+| Work item | One object stored once by id, matching Jira: title, objective, `level`, `kind`, `status`, `flagged`, `priority`, `comments`, `attachments`, `links`, `external` keys and a trail; **held by** one Team, Agent or Workspace, or by nobody (`item handoff` moves the id between holders' lists), and **under** one parent or none. Holding is never permission. The `item` tool does Jira's item acts (create, read, search, edit, transition, flag, handoff, comment, attach, link, delete), the item named. Never called a project ([Work items](docs/using-ronin/work-items.md)) |
 | Level | Stored on the item: `1` epic, `0` story/task/bug, `-1` subtask. A new item is one below its parent, `0` with none; adding a child never changes it. A default, never a guard |
 | Epic | A work item at level 1. It keeps its own fields; its status is set by hand |
 | Story / Task / Bug | A work item at level 0; story, task, bug or feature is its `kind`, any work type name, blank by default, with no fixed list |
@@ -86,7 +88,7 @@ Macro, action, SOP, and Agent role are not additional composition layers. “Act
 | Team work items | The work items a Team and its members hold, children under their parent, read in the Team's Work items; a Team holds, it does not contain. Never another store ([Work items](docs/using-ronin/work-items.md)) |
 | Board | Ronin has none; a user who wants one uses Jira or Trello |
 | Wipeboard / message queue / Cron jobs | Team announcements, pending session delivery, and scheduled requests; distinct stores and delivery lifecycles |
-| Ronin Lab | A Workspace (and its folder) for ideas, research, plans, and notes across or before projects; users and Ronin creators each have their own Lab, rather than a code repository for one specific project |
+| Ronin Lab | A Workspace (and its folder) for ideas, research, plans, and notes across or before projects, off the code repositories; self-hosted install makes it, a hosted office makes it only when the person wants it (its folder, where plans default, is made either way) |
 | Workspace folder | A folder or repository a Workspace holds, as a row of its record; Ronin keeps no other folder list; not a tilespace ([Workspaces](docs/using-ronin/workspaces.md)) |
 | Worktree | Private working folder and branch with explicit custody for managed repository work; distinct from an engagement Desk and a Desk profile ([Worktrees](docs/architecture/worktrees.md)) |
 | Commit / hand-in / promotion / Git push | Private checkpoint / admission to Team review / admission to global dev / remote publication; not synonyms |

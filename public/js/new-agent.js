@@ -235,7 +235,7 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
   };
   const questions = ask([
     { group: t('new_agent.model_package', 'Model'), fields: [
-      { key: 'provider', label: t('forms.provider', 'Model provider'), blank: defaultWord, options: providerRows, fixed: !!configure },
+      { key: 'provider', label: t('forms.provider', 'Harness'), blank: defaultWord, options: providerRows, fixed: !!configure },
       { key: 'model', label: t('forms.model', 'Model'), blank: t('forms.default', 'Default'), after: 'provider', options: (value) => modelRows(value.provider), fixed: !!configure },
       { key: 'role', label: t('agent_composition.role', 'Role'), options: [
         { v: 'coworker', l: 'Coworker' }, { v: 'lead', l: 'Lead' }, { v: 'epic_lead', l: 'Epic Lead' }, { v: 'coordinator', l: 'Coordinator' },

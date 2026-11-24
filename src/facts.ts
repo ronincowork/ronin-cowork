@@ -31,7 +31,6 @@ import { installedAnswer } from './routes/installed-api.js';
 import { loadMembers, officePeople, type Person } from './office-people.js';
 import { readUserIntro } from './user-intro.js';
 import { listWorkspaces } from './workspaces.js';
-import { readWorkspaceSummary } from './workspace-doc.js';
 import { listPlans } from './plans.js';
 import { listCanvases } from './canvases.js';
 import { AGENTS } from './agents.js';
@@ -104,6 +103,24 @@ export const providersOn = (summary: Awaited<ReturnType<typeof readProviderSumma
 export async function activatedProviders(): Promise<string[]> {
   return providersOn(await readProviderSummary().catch(() => null), await partProviderRows().catch(() => []));
 }
+/** THE PERSON'S OWN HARNESSES (owner, 2026-11-24; w926): each CLI harness Activated here, never
+ * Ronin's house models. Hosted Setup's Harness step, and the office start that makes Irasshai, read this. */
+export const harnessesOn = (summary: Awaited<ReturnType<typeof readProviderSummary>>): string[] =>
+  AGENTS.filter((a) => summary?.operational.includes(a.id) && !summary.off.includes(a.id)).map((a) => a.label);
+export async function ownHarnesses(): Promise<string[]> { return harnessesOn(await readProviderSummary().catch(() => null)); }
+/** The Workspaces the person described: any but Ronin Lab with an objective (hosted Setup's Workspace step). */
+export const LAB_WORKSPACE = 'ronin_lab';
+export async function describedWorkspaces(): Promise<string[]> {
+  const all = await listWorkspaces(await initialCampaignId()).catch(() => []);
+  return all.filter((w) => !w.archived && w.name !== LAB_WORKSPACE && w.objective.trim()).map((w) => w.name);
+}
+/** The Teams with a live lead (hosted Setup's Team step). */
+export async function ledTeams(): Promise<string[]> {
+  const campaign = await initialCampaignId();
+  const [rosters, sessions] = await Promise.all([listTeamRosters().catch(() => []), listSessions().catch(() => [])]);
+  return rosters.filter((team) => team.state !== 'archived' && (!campaign || team.campaign_id === campaign)
+    && sessions.some((one) => one.agent && one.leads.includes(team.name))).map((team) => team.name);
+}
 /** Anything installed: a Services part on this machine, or an installation switched on. */
 export const anythingInstalled = (installed: Awaited<ReturnType<typeof installedAnswer>> | null): boolean =>
   !!installed && (installed.services.installed || installed.installations.some((one) => one.on));
@@ -153,14 +170,14 @@ async function machine(): Promise<Built> {
   ]) };
 }
 
-// ---- workspaces: each Workspace, its folders, repositories, objective, Summary, plans and canvases.
+// ---- workspaces: each Workspace, its objective (what the project is), folders, repositories, plans and canvases.
 async function workspaces(): Promise<Built> {
   const campaign = await initialCampaignId();
   const all = (await listWorkspaces(campaign).catch(() => [])).filter((w) => !w.archived);
   const shown = await Promise.all(all.map(async (w) => {
-    const [sum, plans, canvases] = await Promise.all([readWorkspaceSummary(w.name).catch(() => ''), listPlans(w).catch(() => []), listCanvases(w).catch(() => [])]);
+    const [plans, canvases] = await Promise.all([listPlans(w).catch(() => []), listCanvases(w).catch(() => [])]);
     const facts = (i: Record<string, unknown>) => Object.entries(i).filter(([key]) => key !== 'provider').map(([key, value]) => `${key} ${String(value)}`).join(', ');
-    return [`### ${w.title || w.name} (${w.name})`, w.objective || '', sum ? `Summary: ${sum}` : 'Summary: none yet',
+    return [`### ${w.title || w.name} (${w.name})`, `Objective: ${w.objective || 'none yet'}`,
       `Repos: ${w.repos.map((r) => `${r.name} ${r.dir} (${r.mode}${r.desks === 'managed' ? ', desks' : ''})`).join('; ') || 'none'}`,
       `Folders: ${w.folders.map((f) => `${f.name} ${f.dir}`).join('; ') || 'none'}`,
       `Integrations: ${w.integrations.map((i) => [i.provider, facts(i)].filter(Boolean).join(' ')).join('; ') || 'none'}`,
@@ -185,18 +202,19 @@ async function integrationsAuthentications(): Promise<Built> {
     : summary.signed_in.includes(id) ? 'signed in, not activated' : 'installed, not signed in';
   const providers = [
     ...AGENTS.map((a) => `${a.label}${summary?.versions[a.id] ? ` ${summary.versions[a.id]}` : ''}: ${stateOf(a.id)}`),
-    ...rows.map((row) => `${row.label}: ${row.operational ? 'Activated' : 'not available'} (Ronin's house models)`),
-    summary ? `Last measured ${stamp(summary.measured_at)} UTC` : 'Not measured yet: Setup → Model providers measures them',
+    ...rows.map((row) => `${row.label}: ${row.operational ? 'Activated' : 'not available'} (Ronin's house models, not a harness of theirs)`),
+    summary ? `Last measured ${stamp(summary.measured_at)} UTC` : 'Not measured yet: Setup → Harness measures them',
   ];
   const gh = !github ? 'GitHub CLI: unreadable' : !github.installed ? 'GitHub CLI: not installed (needed to clone a GitHub repository)'
     : github.authenticated ? `GitHub CLI: signed in as ${github.account}` : 'GitHub CLI: installed, not signed in (needed to clone a private repository)';
   const connected = (one: (typeof services)[number]) => !!(one.secrets.length || one.mcp?.saved);
   const integrations = services.map((one) => `${one.label}: ${connected(one) ? 'connected' : one.available ? 'available, not connected' : 'not available for this Desk'}${one.workspaces.length ? ` in ${one.workspaces.join(', ')}` : ''}`);
   const hermes = (accounts?.accounts ?? []).map((a) => `${a.name} (${a.kind}): ${a.configured ? 'set up' : 'not set up'}${a.models.length ? `, ${a.models.length} models` : ''}`);
-  const on = providersOn(summary, rows);
-  const line = `Activated: ${on.join(', ') || 'none'}; connected: ${services.filter(connected).map((one) => one.label).join(', ') || 'none'}${github?.authenticated ? '; GitHub signed in' : ''}`;
+  const own = harnessesOn(summary);
+  const house = rows.filter((row) => row.operational).map((row) => row.label);
+  const line = `Harnesses Activated: ${own.join(', ') || 'none'}${house.length ? `; house models: ${house.join(', ')}` : ''}; connected: ${services.filter(connected).map((one) => one.label).join(', ') || 'none'}${github?.authenticated ? '; GitHub signed in' : ''}`;
   return { line, lines: [
-    'Model providers:', ...bullets(providers), '',
+    'Harnesses:', ...bullets(providers), '',
     'Developer tools:', ...bullets([gh]), '',
     'Integrations:', ...bullets(integrations), '',
     'Hermes accounts:', ...bullets(hermes),
@@ -278,7 +296,7 @@ const FACTS: Fact[] = [
     stores: [{ store: 'office_unit', match: /members\.json$/ }, { store: 'facts', match: /^user-intro\.md$/ }, { store: 'office', match: /^ABOUT_USER\.md$/ }] },
   { name: 'machine', title: 'The machine', build: machine,
     stores: [{ store: 'office_unit', match: /office_record\.json$/ }, { store: 'config' }, { store: 'campaigns' }, { store: 'services_secrets' }] },
-  { name: 'workspaces', title: 'Workspaces', build: workspaces, stores: [{ store: 'workspaces' }, { store: 'office', match: /^workspaces\// }] },
+  { name: 'workspaces', title: 'Workspaces', build: workspaces, stores: [{ store: 'workspaces' }] },
   { name: 'integrations_authentications', title: 'Integrations and authentications', build: integrationsAuthentications,
     stores: [{ store: 'campaigns' }, { store: 'custom' }, { store: 'services_secrets' }, { store: 'config' }, { store: 'workspaces' }] },
   // Never the session store: it holds every Agent's tmp/ (tens of thousands of folders), and one

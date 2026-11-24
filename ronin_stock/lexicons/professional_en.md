@@ -272,23 +272,25 @@ nothing paints exactly this.
 - **campaign_home.launch:** New Project
 - **campaign_home.settings:** Settings
 - **campaign_home.check_updates:** Check for updates
-- **campaign_home.agent_harness:** Agent Harness
-- **campaign_home.agent_harness_is:** The CLIs on this machine, the accounts they launch on, and the models
+- **campaign_home.harnesses:** Harnesses
+- **campaign_home.harnesses_is:** The harnesses on this machine, the accounts they launch on, and the models
+- **campaign_home.get_started:** Get started
+- **campaign_home.get_started_is:** Harness, Workspace, Team
 - **campaign_home.settings_is_hosted:** This Desk’s settings
 - **campaign_home.business_lounge:** Business Lounge
 - **campaign_home.business_lounge_is:** Your account, office and subscription, at Ronin HQ
 - **campaign_home.side_hosted:** Models, Help, Settings and the Business Lounge
-- **setup.provider_gate:** Activate one model provider in Setup or Agent Harness to use this.
-- **setup.provider_gate_hosted:** Activate one model provider in Agent Harness to use this.
+- **setup.provider_gate:** Activate a harness in Setup or Harnesses to use this.
+- **setup.provider_gate_hosted:** Activate a harness in Harnesses to use this.
 - **setup.open_settings:** Open Ronin Settings
 - **setup.open_setup:** Open Ronin Setup
 - **setup.irasshai_open:** Helpful Assistant
 - **setup.irasshai_open_title:** Your welcome Agent: start here
-- **setup.irasshai_here:** Here, in Assist
+- **setup.irasshai_here:** Here, in Ask Ronin
 - **setup.irasshai_opening:** Opening…
 - **setup.irasshai_failed:** Couldn’t open the Helpful Assistant
 
-## harness — models-surface.js, workbench-catalog.js (the Agent Harness workbench's stones and Refresh; KAN-236)
+## harness — models-surface.js, workbench-catalog.js (the Harnesses workbench's stones and Refresh; KAN-236)
 
 - **harness.stones:** Harness
 - **harness.stones_summary:** The CLIs: install, sign in, ready
@@ -505,7 +507,7 @@ nothing paints exactly this.
 - **forms.tier_light:** light
 - **forms.tier_standard:** standard
 - **forms.tier_frontier:** frontier
-- **forms.provider:** model provider
+- **forms.provider:** harness
 - **forms.model:** model
 - **forms.none:** —
 - **forms.on:** On
@@ -1408,7 +1410,7 @@ The pad's current config downloads as a backup first.
 - **feedback.sending:** Sending…
 - **feedback.sent:** Sent — thank you
 - **feedback.thank_you:** Thank you for helping us make Ronin better.
-- **setup_surface.providers:** Model providers
+- **setup_surface.providers:** Harnesses
 - **setup_surface.authenticate_mika:** Let Mika authenticate
 - **setup_surface.authenticate_guided:** Use the CLI with Mika
 - **setup_surface.authenticate_irasshai:** Let the Helpful Assistant authenticate
@@ -1419,12 +1421,12 @@ The pad's current config downloads as a backup first.
 - **setup_surface.no_cli:** No CLI in Ronin’s registry serves this provider, so it cannot be installed or signed in here.
 - **setup_surface.no_cli_state:** No CLI
 - **setup_surface.no_models:** The catalog lists no models for this provider.
-- **setup_surface.refresh_all:** Refresh all model providers
+- **setup_surface.refresh_all:** Refresh all harnesses
 - **setup_surface.refreshing_accounts:** Reading account lists…
 - **setup_surface.last_ran:** Last ran {date}
 - **setup_surface.never_ran:** Never run — every provider offers Native only until it runs.
 - **setup_surface.models_read:** Model list read {date} by {cli} {version}
-- **setup_surface.models_not_read:** Model list not read yet — press Refresh all model providers.
+- **setup_surface.models_not_read:** Model list not read yet — press Refresh all harnesses.
 - **setup_surface.provider_models_n:** {vendor} · {n} models
 - **setup_surface.part_models_n:** {n} models
 - **setup_surface.fact_installed:** Installed

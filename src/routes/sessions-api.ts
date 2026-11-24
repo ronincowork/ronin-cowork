@@ -309,7 +309,8 @@ async function prepareSessionEnding(
 const moved = (before: string[], after: string[]): string[] =>
   [...after.filter((t) => !before.includes(t)), ...before.filter((t) => !after.includes(t))];
 
-async function rehydrate(id: string, caller: string): Promise<{ status: number; body: Record<string, unknown> }> {
+/** Restore an archived Agent (session_restore's route); Services' irasshai part restores her with it (w926). */
+export async function rehydrate(id: string, caller: string): Promise<{ status: number; body: Record<string, unknown> }> {
   try {
     const archived = await readArchive(id);
     if (await sessionExists(archived.name)) {

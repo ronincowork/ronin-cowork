@@ -16,19 +16,19 @@ import { createEmbeddedNewAgentView } from './new-agent.js';
 import { createInstallationsSurface } from './campaign-installations.js';
 import { createSetupZoneSlot, watchSetupProgress } from './setup-zone.js';
 import { createStatusMarker } from './status-marker.js';
+import { createDocPage } from './setup-doc-page.js';
+import { HOSTED_SCENES } from './setup-journey.js';
 
 // Model providers is the one surface two workbenches seat (provider-surface.js); its type
 // is that module's, and Ronin Settings registers the same definition.
 export const SETUP_SURFACE_TYPES = Object.freeze({
   register: 'setup.register', providers: PROVIDER_SURFACE_TYPE, roots: 'setup.roots',
-  installations: 'setup.installations', bounty: 'setup.bounty', launchOwn: 'setup.launch-own',
+  installations: 'setup.installations', launchOwn: 'setup.launch-own', team: 'setup.team',
 });
 
 const summaries = new Map([
   [SETUP_SURFACE_TYPES.register, 'optional'],
-  [SETUP_SURFACE_TYPES.roots, '2 Workspaces'],
   [SETUP_SURFACE_TYPES.installations, 'Ronin Services'],
-  [SETUP_SURFACE_TYPES.bounty, 'optional · separate opt-in'],
   [SETUP_SURFACE_TYPES.launchOwn, 'team · agent'],
 ]);
 const el = (tag, cls = '', text = null) => { const out = document.createElement(tag); if (cls) out.className = cls; if (text != null) out.textContent = text; return out; };
@@ -42,7 +42,6 @@ const action = (label, kind, onClick) => {
   const made = WorkspaceKit.primitives.createAction({ label, kind, action: onClick });
   return made.el ?? made;
 };
-const servicesReady = (runtime = {}) => runtime?.services?.active === true || runtime?.services?.installed === true || runtime?.services?.switched_on === true;
 
 const SERVICE_COMPONENTS = Object.freeze([
   { id: 'task_manager', label: 'Project management', status: 'beta', needs: 'Work items, the work record on each tile, and Agents trained to keep their items true. Jira pairs with it as an integration.' },
@@ -107,7 +106,7 @@ function createRegisterSurface(context) {
   };
   const email = input('email', 'email'); email.placeholder = 'you@example.com'; email.autocomplete = 'email';
   const identityMode = choiceGroup('identity_mode', t('setup_surface.identity', 'How would you like to register?'), [
-    ['email', 'With email', 'Eligible for additional Ronin Services and participation in the Bounty Program.'],
+    ['email', 'With email', 'Eligible for additional Ronin Services.'],
     ['anonymous', 'Anonymous'],
   ], { short: t('setup_surface.identity_short', 'Register as') });
   identityMode.wrap.classList.add('setup-register-identity-choice');
@@ -139,7 +138,6 @@ function createRegisterSurface(context) {
     ['virtual_machine', 'Virtual machine'], ['personal_server', 'Personal server'], ['personal_computer', 'Personal computer'],
   ], { short: t('setup_surface.run_location_short', 'Install on') });
   const own = el('textarea'); own.name = 'own_words'; own.rows = 3;
-  own.addEventListener('change', () => { void context.environment?.setPathNote?.(own.value); });
   const identity = el('div', 'setup-registration-identity');
   identity.hidden = true;
   const form = el('form', 'setup-form setup-register-form');
@@ -172,13 +170,12 @@ function createRegisterSurface(context) {
   for (const reason of [
     t('setup_surface.registration_reason_preferences', 'Share preferences and help support a model-provider ecosystem without lock-in.'),
     t('setup_surface.registration_reason_services', 'Use additional Ronin Services while keeping installation and user activity separate from registration.'),
-    t('setup_surface.registration_reason_bounty', 'Participate in the Ronin Bounty Program.'),
   ]) registrationReasons.append(el('li', '', reason));
   registrationIntro.append(registrationReasons, el('p', 'setup-fine', t('setup_surface.registration_privacy', 'Ronin does not build a commercial identity profile from your local activity.')));
   fit.append(
     el('h3', '', t('setup_surface.ronin_fit', 'What brings you here')), preferredFeature.wrap, reasons.wrap,
   );
-  const consent = el('p', 'setup-fine setup-register-consent', t('setup_surface.consent_exact', 'Email registration supports Ronin Services and Bounty participation. Anonymous registration shares these answers without contact details.'));
+  const consent = el('p', 'setup-fine setup-register-consent', t('setup_surface.consent_exact', 'Email registration supports Ronin Services. Anonymous registration shares these answers without contact details.'));
   const userIntro = el('section', 'setup-register-group setup-user-intro');
   const userIntroText = el('textarea');
   userIntroText.rows = 4; userIntroText.maxLength = 600;
@@ -215,7 +212,7 @@ function createRegisterSurface(context) {
       identity_mode: anonymous ? 'anonymous' : 'email', email: email.value, purpose: '',
       kind: '', kind_other: '', user_type: '', goals: [], preferred_feature: preferredFeature.value.value,
       reasons: reasons.values(), reason_other: reasons.other.value, run_location: runLocation.value.value,
-      intended_use: [], theme_preference: '', own_words: '',
+      intended_use: [], theme_preference: '', own_words: own.value,
     } });
     notice.textContent = result.ok
       ? [anonymous ? t('setup_surface.anonymous_saved', 'Thanks — your anonymous hello was sent to Ronin.') : t('setup_surface.registration_complete', 'Registration complete.'),
@@ -306,32 +303,11 @@ function createRegisterSurface(context) {
   const stopProgress = watchSetupProgress(context.environment, paint);
   if (zone) out.content.append(zone.el);
   body.append(identity, form, userIntro, recoveryOptions, notice); out.content.append(body);
-  // An office on an office_park has its registration managed by its provisioning: no form, no
-  // header zone, no Delete registration (which would drop the office's entitlement). One
-  // sentence says so; it claims nothing about completed registration, which only HQ knows. A
-  // record that will not read is a fault, treated the same way, never as self-hosted. The put-away
-  // is reversible: show() restores the zone and the form when the record reads self-hosted again.
-  const hostedNotice = el('p', 'setup-notice setup-register-hosted');
-  const original = [...out.content.childNodes];
-  const putAwayForHosted = (office) => {
-    const unreadable = office.hosting === 'unreadable';
-    hostedNotice.textContent = unreadable
-      ? t('setup_surface.register_office_unreadable', 'Office record unreadable: {error}. Registration waits until the record reads.', { error: office.error || '—' })
-      : t('setup_surface.register_hosted', 'Hosted office: registration is managed when this office is provisioned. There is nothing to register here.');
-    hostedNotice.dataset.tone = unreadable ? 'bad' : 'ok';
-    out.content.replaceChildren(hostedNotice);
-    notifySummary(SETUP_SURFACE_TYPES.register, unreadable ? t('setup_surface.summary_office_unreadable', 'office record unreadable') : t('setup_surface.summary_managed', 'managed by provisioning'), context.workbench);
-  };
-  const restoreForSelfHosted = () => { if (out.content.childNodes[0] === hostedNotice) out.content.replaceChildren(...original); };
   return { el: out.el, show: async () => {
-    own.value = context.environment?.setupRuntime?.preferences?.path_note || '';
-    const [office, result, intro] = await Promise.all([
-      request('/api/office', { cache: 'no-store' }),
+    const [result, intro] = await Promise.all([
       request('/api/setup/registration', { cache: 'no-store' }),
       request('/api/setup/user-intro', { cache: 'no-store' }),
     ]);
-    if (office.ok && office.data?.hosting !== 'self_hosted') { putAwayForHosted(office.data); return; }
-    restoreForSelfHosted();
     current = result.ok ? result.data : null;
     if (intro.ok) {
       userIntroText.value = intro.data?.intro || '';
@@ -346,52 +322,7 @@ function createRegisterSurface(context) {
 function createRootsSurface(context) {
   const workspacesRead = createWorkspacesRead();
   return createWorkspaceStones({ workspacesRead, workbench: context.workbench, withNew: true,
-    onShow: () => notifySummary(SETUP_SURFACE_TYPES.roots, t('setup_surface.roots_summary', '{n} Workspaces', { n: workspacesRead.list().length || 2 }), context.workbench) });
-}
-
-function createBountySurface(context) {
-  const out = surface(t('setup_surface.bounty', 'Bounty Program'));
-  const intro = el('section', 'setup-bounty-intro');
-  intro.append(
-    el('span', 'setup-register-eyebrow', t('bounty.eyebrow', 'BUILD RONIN WITH US')),
-    el('h2', '', t('bounty.heading', 'Choose a bounty project')),
-    el('p', 'setup-lede', t('bounty.lede', 'Browse published projects, choose one you want to take on, and submit a proposal. Joining is always a separate choice.')),
-  );
-  intro.append(el('p', 'setup-fine', t('bounty.projects_note', 'Every project brief is public. Registration is required only to apply.')));
-  const definitions = [
-    { id: 'adaptive-onboarding', label: t('bounty.project_onboarding', 'Adaptive onboarding scenes'), description: t('bounty.project_onboarding_note', 'Deliver a clear first-run route that responds to a person’s intended use without hiding alternate paths.') },
-    { id: 'provider-recovery', label: t('bounty.project_providers', 'Provider sign-in recovery'), description: t('bounty.project_providers_note', 'Improve authentication windows, completion detection, and recovery when a provider sign-in is interrupted.') },
-    { id: 'repository-setup', label: t('bounty.project_workspaces', 'Repository and worktree setup'), description: t('bounty.project_workspaces_note', 'Design the guided GitHub clone, repository arrangement, worktree, and hand-in experience for a new workspace.') },
-  ];
-  let gates = { registered: false, github: false, machine: false, joined: false };
-  const renderDetail = (project, host) => {
-    const detail = el('article', 'setup-bounty-detail');
-    detail.append(el('h3', '', project.label), el('p', 'setup-lede', project.description));
-    const requirements = el('ul', 'setup-bounty-requirement-list');
-    for (const [ready, text] of [[gates.machine, 'Two model providers and Ronin Services ready'], [gates.github, 'GitHub connected'], [gates.registered, 'Email registration confirmed']]) {
-      requirements.append(el('li', ready ? 'ready' : 'locked', `${ready ? '✓' : '○'} ${text}`));
-    }
-    const notice = el('p', 'setup-notice'); notice.setAttribute('role', 'status');
-    const apply = action(t('bounty.apply', 'Apply for this bounty'), 'primary', async () => {
-      const result = await request('/api/setup/preferences', { method: 'PATCH', json: { bounty_opt_in: true } });
-      notice.textContent = result.ok ? t('bounty.joined', 'Bounty Program opt-in saved on this machine.') : result.message;
-      if (result.ok) apply.disabled = true;
-    });
-    apply.disabled = !gates.machine || !gates.github || !gates.registered || gates.joined;
-    detail.append(el('h4', '', t('bounty.requirements', 'Before you apply')), requirements, apply, notice);
-    host.append(detail);
-  };
-  const stones = createPhalanx({ className: 'setup-bounty-stones', renderDetail });
-  stones.mount(out.content, { before: [intro] });
-  return { el: out.el, show: async () => {
-    const [registration, github] = await Promise.all([
-      request('/api/setup/registration', { cache: 'no-store' }), request('/api/setup/github', { cache: 'no-store' }),
-    ]);
-    const email = registration.ok && registration.data?.status === 'registered' && registration.data?.identity_mode === 'email';
-    const connected = github.ok && github.data?.authenticated === true;
-    gates = { registered: email, github: connected, machine: servicesReady(context.environment?.setupRuntime) && Number(context.environment?.setupRuntime?.activated_count || 0) >= 2, joined: context.environment?.setupRuntime?.preferences?.bounty_opt_in === true };
-    stones.setItems(definitions.map((project) => ({ ...project, glyph: '◈', state: t('bounty.public_brief', 'Public brief') })));
-  }, destroy: () => stones.destroy() };
+    onShow: () => notifySummary(SETUP_SURFACE_TYPES.roots, t('setup_surface.roots_summary', '{n} Workspaces', { n: workspacesRead.list().length }), context.workbench) });
 }
 
 /** The one Services mark file, read once and inlined so the R's stroke follows the app's data-theme, not only the OS scheme.
@@ -693,6 +624,16 @@ function createLaunchOwnSurface(context) {
   return { el: out.el, destroy: () => stones.destroy() };
 }
 
+// HOSTED STEP 3, TEAM (w926; SETUP_SWEEP.md §7): the ordinary New Team form, started in a Workspace;
+// the lead builds out the rest. Ticked when a Team has a live lead (teams_agents).
+function createTeamSurface() {
+  const out = surface(t('setup_surface.team', 'Start a Team'));
+  const view = createEmbeddedNewTeamFormView(WorkspaceKit, {});
+  out.content.append(view.el);
+  void view.enter({});
+  return { el: out.el, destroy: () => { view.destroy?.(); } };
+}
+
 function createSetupInstallationsSurface(context) {
   const selected = () => campaignById(context.tenant?.campaign) || campaigns()[0] || null;
   const page = createInstallationsSurface(selected, {
@@ -721,8 +662,9 @@ export function setupSurfaceDefinitions() {
     providerSurfaceDefinition(),
     definition(SETUP_SURFACE_TYPES.roots, t('setup_surface.roots', 'Workspaces'), createRootsSurface),
     definition(SETUP_SURFACE_TYPES.installations, t('campaign_view.installations', 'Installations'), createSetupInstallationsSurface),
-    definition(SETUP_SURFACE_TYPES.bounty, t('setup_surface.bounty', 'Bounty Program'), createBountySurface),
     definition(SETUP_SURFACE_TYPES.launchOwn, t('setup_surface.launch_own', 'Launch your own'), createLaunchOwnSurface),
+    definition(SETUP_SURFACE_TYPES.team, t('setup_surface.team', 'Team'), createTeamSurface),
+    ...HOSTED_SCENES.filter((scene) => scene.page).map((scene) => definition(scene.type, scene.label, createDocPage(scene.label, scene.page))),
   ];
 }
 

@@ -20,7 +20,7 @@ Tools do jobs and report what happened. A Cowork Agent is told:
 - `team`: create or read a Team's roster and what it holds
 - `ronin-host`: measure the machine: what it is, its space, its account, which secrets exist
 - `office`: the office's facts in one, as they are now: what this office has set up, what it hasn't and what is available
-- `workspace-doc`: read and write the office's Workspace docs: each Workspace's Summary and notes
+- `workspace`: read and set up the office's Workspaces: what each project is, and its folders and repositories
 - `mika`: ask Mika, Ronin's help assistant
 - `lookup`: print a Ronin document by its `mika-source:` id
 - `show`: open a Ronin page in another visible workspace of the owner's tab, never the one they are on

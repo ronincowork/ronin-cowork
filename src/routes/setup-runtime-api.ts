@@ -13,14 +13,13 @@ import {
   setProviderOff,
   setupRuntimeAnswer,
   saveProviderSignIn,
-  createMorningBriefSchedule,
-  writeSetupPreferences,
   githubSetupAnswer,
   openGithubInstall,
   openGithubLogin,
   closeGithubLogin,
   removeGithubAuthentication,
-  cloneGithubWorkspace,
+  cloneRepository,
+  githubRepositories,
   createGithubRepository,
   openGitSetupSession,
   closeGitSetupSession,
@@ -201,29 +200,6 @@ export function registerSetupRuntime(app: express.Express): void {
     }
   });
 
-  app.post('/api/setup/morning-brief/schedules', async (req, res) => {
-    try {
-      const body = (req.body ?? {}) as Record<string, unknown>;
-      const schedule = await createMorningBriefSchedule({
-        team: body.team,
-        request: body.request,
-        when: body.when,
-      });
-      res.json({ ok: true, schedule });
-    } catch (error) {
-      res.status(400).json({ error: errMsg(error) });
-    }
-  });
-
-  app.patch('/api/setup/preferences', async (req, res) => {
-    try {
-      const preferences = await writeSetupPreferences(req.body);
-      res.json({ ok: true, preferences });
-    } catch (error) {
-      res.status(400).json({ error: errMsg(error) });
-    }
-  });
-
   app.get('/api/setup/github', async (_req, res) => {
     try { res.json(await githubSetupAnswer()); }
     catch (error) { res.status(500).json({ error: errMsg(error) }); }
@@ -249,8 +225,13 @@ export function registerSetupRuntime(app: express.Express): void {
     catch (error) { res.status(400).json({ error: errMsg(error) }); }
   });
 
-  app.post('/api/setup/github/clone', async (req, res) => {
-    try { res.json({ ok: true, workspace: await cloneGithubWorkspace(req.body?.repository, req.body?.parent) }); }
+  app.get('/api/setup/github/repos', async (_req, res) => {
+    try { res.json({ ok: true, repos: await githubRepositories() }); }
+    catch (error) { res.status(400).json({ error: errMsg(error) }); }
+  });
+
+  app.post('/api/setup/git/clone', async (req, res) => {
+    try { res.json({ ok: true, workspace: await cloneRepository(req.body?.repository, req.body?.parent) }); }
     catch (error) { res.status(400).json({ error: errMsg(error) }); }
   });
 

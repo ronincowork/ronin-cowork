@@ -4,12 +4,11 @@
  * principle: Ronin keeps no folder list of its own, and a folder or repository is a row of its
  * Workspace record (src/workspaces.ts). Tilespace 1 holds the Workspaces (`createWorkspaceStones`), each
  * stone in the Epic and Team stones' grammar (KAN-801). A pressed one opens beside them as one Workspace
- * (`workspaceSurface`), in the opened Team's bar: a toggle, Work (its Teams or Epics, to drill into, beside
- * its document) or Config (`workspacePage`: its folders, Integrations, Agent info and Behaviors; Archive
+ * (`workspaceSurface`), in the opened Team's bar: a toggle, Work (its Teams or Epics, to drill into) or
+ * Config (`workspacePage`: Describe, Where it lives, and More, folded; Archive
  * under ⋯), and Launch to its own page, `#/workspace/<name>` (`createWorkspaceRoute`), in a new tab. A stone dragged or a card placed opens it whole in
  * a tilespace (`createWorkspaceRecord`); New Workspace is a dotted card (`createWorkspaceNew`). A folder
- * link dragged in from Files (`/files/<path under home>`, KAN-146) adds that folder. GitHub CLI
- * (`createFolderGithub`) is the sign-in box github-workspace-setup.js draws.
+ * link dragged in from Files (`/files/<path under home>`, KAN-146) adds that folder.
  */
 import { openCanvas } from './canvas-view.js';
 import { WorkspaceKit } from './workspace-kit.js';
@@ -21,7 +20,6 @@ import { t } from './lexicon.js';
 import { ask } from './ask.js';
 import { createFolderPicker } from './folder-picker.js';
 import { createMenuButton } from './menu.js';
-import { renderMarkdownDocument } from './markdown-reader.js';
 import { subscribe as subscribeTeams, teamsFromState } from './team-controller.js';
 import { createEpicStones, createEpicsRead } from './epics-surface.js';
 import { createTeamRosterSurface } from './team-roster-surface.js';
@@ -38,17 +36,6 @@ import { SURFACE_DRAG } from './workbench.js';
 const status = () => { const line = el('div', 'pr-status'); line.setAttribute('role', 'status'); return line; };
 const sayInto = (line) => (message, bad) => { line.replaceChildren(); if (!message) return; const p = el('div', `pr-empty${bad ? ' bad' : ''}`, message); line.append(p); };
 
-/** GitHub CLI: Setup's sign-in box, a workspace of its own. */
-export function createFolderGithub(github) {
-  const { createSurface } = WorkspaceKit.primitives;
-  const out = createSurface({ label: t('roots.github_auth_stone', 'GitHub CLI'), className: 'setup-surface workspaces-github' });
-  let dispose = null;
-  return {
-    el: out.el,
-    show: () => { dispose?.(); dispose = github.items[0].renderDetail(out.content) || null; },
-    destroy: () => { dispose?.(); dispose = null; },
-  };
-}
 
 const pinName = (title, taken) => {
   const base = String(title).toLowerCase().replace(/[^a-z0-9_-]+/g, '-').replace(/^[-_]+|[-_]+$/g, '').slice(0, 60) || 'workspace';
@@ -95,10 +82,10 @@ function folderBrowser({ onLoad = () => {} }) {
 }
 
 /** A Workspace's page in the launch forms' format, made plain for someone new (KAN-728); a made one's is
- * its Config (KAN-784; its document is in Work): new, 1 Name; then Folders, each a name
- * and its path, a repository's remote in a line under it and how Agents work in it, with Add a folder and
- * Clone from GitHub; then, folded, Integrations, Agent info (objective, instructions, Mode, plans) and
- * Behaviors. A New Workspace is Name + Folders, Create. The folders are the record's rows, saved with it.
+ * its Config (KAN-784). In the order the owner set (2026-11-24; w926): 1 Describe, its objective (and a
+ * new one's Name); 2 Where it lives, each folder a name and its path, a repository's remote in a line
+ * under it and how Agents work in it, with Add a folder, Paste a Git URL and My GitHub repositories;
+ * 3 More, folded: instructions, Mode, plans, canvases, Integrations and Behaviors. Then Create. The folders are the record's rows, saved with it.
  * `null` is a new Workspace. Returns the page, its Save (Create) action and, made, its ⋯ for the head. */
 export function workspacePage(w, { taken = () => [], onSaved = () => {}, onDiscard = () => {} }) {
   const { createAction, createField } = WorkspaceKit.primitives;
@@ -112,7 +99,7 @@ export function workspacePage(w, { taken = () => [], onSaved = () => {}, onDisca
   const say = sayInto(line);
   const text = (value, onInput, placeholder = '') => { const i = el('input'); i.type = 'text'; i.value = value; i.placeholder = placeholder; i.addEventListener('input', () => onInput(i.value)); return i; };
   const area = (value, onInput) => { const a = el('textarea'); a.rows = 4; a.value = value; a.addEventListener('input', () => onInput(a.value)); return a; };
-  const open = { top: true, agents: false, locations: true, integrations: false, brief: false, adding: '' }; // adding: '' | 'folder' | 'clone'
+  const open = { top: true, agents: false, locations: true, adding: '' }; // adding: '' | 'folder' | 'clone' | 'mine'
   // EVERY EDIT WAITS FOR SAVE (owner, 2026-11-02): a change lights Save (kaki, what needs you) and
   // the − beside it, which throws the changes away back to the saved Workspace.
   let dirty = false;
@@ -120,17 +107,23 @@ export function workspacePage(w, { taken = () => [], onSaved = () => {}, onDisca
   const settled = () => { dirty = false; delete action.el.dataset.attention; discard.setDisabled(true); };
   const MODES = { configured: t('launch_mode.configured', 'Native'), live_dangerously: t('launch_mode.live', 'Dangerously') };
 
-  /* ---- 1 · New: its Name, one field; the handle Teams use is made from it (KAN-728). A made
-     Workspace has no step 1 here: its document is in Work (workspaceDoc, KAN-784) ---- */
-  const stepTop = createStep({ n: 1, key: 'top', title: t('workspaces.name', 'Name') });
-  if (isNew) stepTop.body.append(text('', (v) => { draft.title = v.trim(); draft.name = draft.title ? pinName(draft.title, new Set(taken())) : ''; changed(); }, t('workspaces.name_placeholder', 'Such as Website or Accounts')));
-  stepTop.el.hidden = !isNew;
-  const n = (step) => (isNew ? step : step - 1); // Config numbers from 1
+  /* ---- 1 · Describe (owner, 2026-11-24; w926; SETUP_SWEEP.md §7): what the project is, its objective,
+     the one place that says so; a new one's Name follows it until the Name is typed (the handle Teams
+     use is made from the Name, KAN-728) ---- */
+  const stepTop = createStep({ n: 1, key: 'top', title: t('workspaces.describe', 'Describe') });
+  let nameTyped = false;
+  const nameFrom = (objective) => objective.trim().split(/\s+/).slice(0, 4).join(' ').replace(/[.,;:!?]+$/, '');
+  const nameInput = isNew ? text('', (v) => { nameTyped = !!v.trim(); draft.title = v.trim(); draft.name = draft.title ? pinName(draft.title, new Set(taken())) : ''; changed(); }, t('workspaces.name_placeholder', 'Such as Website or Accounts')) : null;
+  stepTop.body.append(createField({ label: t('workspaces.objective_ask', 'What are you working on?'), control: area(draft.objective, (v) => {
+    draft.objective = v;
+    if (nameInput && !nameTyped) { draft.title = nameFrom(v); nameInput.value = draft.title; draft.name = draft.title ? pinName(draft.title, new Set(taken())) : ''; }
+    changed();
+  }) }).el);
+  if (nameInput) stepTop.body.append(createField({ label: t('workspaces.name', 'Name'), control: nameInput }).el);
 
-  /* ---- 4 · Agent info: what every Agent in it is told (objective, instructions), the Mode they launch
-     in, and where its plans live; the extra, so it comes after the folders ---- */
-  const stepAgents = createStep({ n: n(4), key: 'agents', title: t('workspaces.agent_info', 'Agent info'), onToggle: () => { open.agents = !open.agents; paint(); } });
-  stepAgents.body.append(createField({ label: t('workspaces.objective', 'Objective'), control: area(draft.objective, (v) => { draft.objective = v; changed(); }) }).el);
+  /* ---- 3 · More, folded: what every Agent in it is told (instructions), the Mode they launch in,
+     where its plans live, its integrations and Behaviors ---- */
+  const stepAgents = createStep({ n: 3, key: 'agents', title: t('workspaces.more_settings', 'More'), onToggle: () => { open.agents = !open.agents; paint(); } });
   stepAgents.body.append(createField({ label: t('workspaces.instructions', 'Instructions'), control: area(draft.instructions, (v) => { draft.instructions = v; changed(); }) }).el);
 
   const mode = ask([{ fields: [
@@ -143,19 +136,17 @@ export function workspacePage(w, { taken = () => [], onSaved = () => {}, onDisca
 
   /* ---- 5 · Behaviors (docs/architecture/brief.md, Where it is set in the UI): what every Agent in this Workspace is told — its add, block
      and only lists and project management; its integrations are step 3. A created Workspace only (above). ---- */
-  const stepBrief = createStep({ n: n(5), key: 'brief', title: t('behaviours', 'Behaviors'), onToggle: () => { open.brief = !open.brief; paint(); } });
   const brief = isNew ? null : createBriefSettingsPanel({ layer: 'workspace', id: draft.name, ownSave: false, showIntegrations: false, onChange: () => changed(),
     preview: { workspace: draft.name }, linkFor: layerLinks() });
-  if (brief) { stepBrief.body.append(el('p', 'fs-step-help', t('workspaces.brief_help', 'What every Agent in this Workspace is told. Agents already working are sent the change.')), brief.el); void brief.enter(); }
 
   /* ---- 3 · Integrations (KAN-338): the outside services this Workspace uses, from the integrations
      list (the bridges); each row a provider, with a field for each fact its bridge names (`facts: site`), saved
      into the row as {provider, site}; any other fact is kept as it is. Agents read them
      on the Team's Workspace line, and ask for its keys with `secret ask`. ---- */
-  const stepIntegrations = createStep({ n: n(3), key: 'integrations', title: t('workspaces.integrations', 'Integrations'), onToggle: () => { open.integrations = !open.integrations; paint(); } });
   const integrationRows = el('div', 'workspace-locations workspace-integrations');
   const addIntegration = el('select', 'workspace-integration-add');
-  stepIntegrations.body.append(integrationRows, addIntegration,
+  const integrationsBox = el('div', 'workspace-more-integrations');
+  integrationsBox.append(el('b', null, t('workspaces.integrations', 'Integrations')), integrationRows, addIntegration,
     el('p', 'fs-step-help', t('workspaces.integrations_help', 'Agents in this Workspace use these; they ask for a key with secret ask, and Settings › Integrations shows what is saved.')));
   let index = [];
   addIntegration.addEventListener('change', () => {
@@ -198,10 +189,10 @@ export function workspacePage(w, { taken = () => [], onSaved = () => {}, onDisca
   void request('/api/integrations', { cache: 'no-store' })
     .then((answer) => { if (answer.ok) { index = answer.data.integrations || []; paint(); } });
 
-  /* ---- 2 · Folders: what matters most, so second (owner, 2026-11-03). Add a folder (the kit's folder
-     picker: walk, find, or make a new one; or paste a path) and Clone from GitHub at the top, each
-     opening its own panel; then one row per folder, its note under it ---- */
-  const stepLocations = createStep({ n: n(2), key: 'locations', title: t('workspaces.folders', 'Folders'), onToggle: () => { open.locations = !open.locations; paint(); } });
+  /* ---- 2 · Where it lives (w926): Add a folder (the kit's folder picker: walk, find, or make a new one;
+     or paste a path), Paste a Git URL (any host, plain git), and My GitHub repositories once GitHub is
+     connected, each opening its own panel; then one row per folder, its note under it ---- */
+  const stepLocations = createStep({ n: 2, key: 'locations', title: t('workspaces.where_it_lives', 'Where it lives'), onToggle: () => { open.locations = !open.locations; paint(); } });
   // The record's rows, by dir: a repository row carries how Agents work in it (mode, working, stable,
   // desks); `remote` is read for the row's line under it. Names are Ronin's, made on Save.
   const picked = new Map([...draft.repos.map((row) => ({ ...row, repo: true })), ...draft.folders.map((row) => ({ ...row, repo: false }))].map((row) => [row.dir, row]));
@@ -219,16 +210,20 @@ export function workspacePage(w, { taken = () => [], onSaved = () => {}, onDisca
   const tools = el('div', 'workspace-location-tools');
   const choose = (which) => { open.adding = open.adding === which ? '' : which; paint(); };
   const addButton = createAction({ label: t('workspaces.add_folder', 'Add a folder'), kind: 'primary', size: 'compact', action: () => choose('folder') });
-  const cloneButton = createAction({ label: t('workspaces.clone_github', 'Clone from GitHub'), size: 'compact', action: () => choose('clone') });
-  tools.append(addButton.el, cloneButton.el);
+  const cloneButton = createAction({ label: t('workspaces.paste_git_url', 'Paste a Git URL'), size: 'compact', action: () => choose('clone') });
+  const mineButton = createAction({ label: t('workspaces.my_github', 'My GitHub repositories'), size: 'compact', action: () => { choose('mine'); if (open.adding === 'mine') void listMine(); } });
+  mineButton.el.hidden = true; // until GitHub is connected here (GET /api/setup/github)
+  tools.append(addButton.el, cloneButton.el, mineButton.el);
   const folderPanel = el('div', 'workspace-browser');
   const clonePanel = el('div', 'workspace-browser');
+  const minePanel = el('div', 'workspace-browser');
   const plansBox = el('div', 'workspace-plans'); // PLANS (KAN-256), in Agent info; declared before it is placed
-  stepLocations.body.append(tools, folderPanel, clonePanel, rows);
-  stepAgents.body.append(plansBox);
+  stepLocations.body.append(tools, folderPanel, clonePanel, minePanel, rows);
+  stepAgents.body.append(plansBox, integrationsBox);
+  if (brief) { stepAgents.body.append(el('b', null, t('behaviours', 'Behaviors')), el('p', 'fs-step-help', t('workspaces.brief_help', 'What every Agent in this Workspace is told. Agents already working are sent the change.')), brief.el); void brief.enter(); }
 
   const save = async () => {
-    if (isNew && !draft.name) { say(t('workspaces.name_needed', 'Give the Workspace a name.'), true); return false; }
+    if (isNew && !draft.name) { say(t('workspaces.describe_needed', 'Say what you are working on, or give it a name.'), true); return false; }
     const rowOf = ({ repo: _repo, ...row }) => row;
     draft.repos = [...picked.values()].filter((row) => row.repo).map(rowOf);
     draft.folders = [...picked.values()].filter((row) => !row.repo).map(({ name, dir, note }) => ({ name, dir, note }));
@@ -317,7 +312,7 @@ export function workspacePage(w, { taken = () => [], onSaved = () => {}, onDisca
   const noting = new Set(); // rows whose empty note was opened for writing
   const paintRows = () => {
     rows.replaceChildren();
-    if (!picked.size) rows.append(el('p', 'fs-step-help', t('workspaces.folders_none', 'No folders yet. Add a folder the Agents work in, or clone one from GitHub.')));
+    if (!picked.size) rows.append(el('p', 'fs-step-help', t('workspaces.folders_none', 'Nothing yet. Add a folder here, or paste a Git URL.')));
     for (const [dir, folder] of picked) {
       const { note } = folder;
       const name = folder.name || dir.split('/').filter(Boolean).pop() || dir;
@@ -387,24 +382,49 @@ export function workspacePage(w, { taken = () => [], onSaved = () => {}, onDisca
   folderPanel.append(done(t('workspaces.add_help', 'Choose the folder the Agents work in.')), picker.el, pasteLine);
   // Clone a repo: the repository first, then where it goes, walked to in its own browser.
   const repoName = (value) => (value.trim().replace(/\.git$/, '').replace(/\/+$/, '').split(/[/:]/).pop() || '');
-  const repository = text('', () => paint(), t('workspace_add.repository_placeholder', 'owner/repo or a github.com link'));
+  const repository = text('', () => paint(), t('workspace_add.repository_placeholder', 'https://… or git@… ; owner/repo for GitHub'));
   const into = folderBrowser({ onLoad: () => paint() });
   const cloneWhere = el('span', 'fs-step-help');
   const clone = el('button', 'wk-btn', t('workspaces.clone_here', 'Clone')); clone.type = 'button';
+  const cloneInto = async (url) => {
+    say(t('workspaces.cloning', 'Cloning into {dir}…', { dir: short(into.current()) }));
+    const answer = await request('/api/setup/git/clone', { method: 'POST', json: { repository: url, parent: into.current() } });
+    if (!answer.ok) { say(answer.message, true); return false; }
+    await into.load();
+    await attach(answer.data.workspace.dir);
+    return true;
+  };
   clone.addEventListener('click', async () => {
     if (!repository.value.trim()) return;
     clone.disabled = true;
-    say(t('workspaces.cloning', 'Cloning into {dir}…', { dir: short(into.current()) }));
-    const answer = await request('/api/setup/github/clone', { method: 'POST', json: { repository: repository.value.trim(), parent: into.current() } });
+    const made = await cloneInto(repository.value.trim());
     clone.disabled = false;
-    if (!answer.ok) { say(answer.message, true); return; }
-    repository.value = '';
-    await into.load();
-    await attach(answer.data.workspace.dir);
+    if (made) repository.value = '';
   });
+  // MY GITHUB REPOSITORIES (w926): once GitHub is connected here, theirs listed by gh, each with Use,
+  // which clones it as a pasted URL is. Not connected, the button is not there; the Helpful Assistant
+  // connects GitHub when they ask for their own or private repositories.
+  const mineList = el('div', 'workspace-mine-list');
+  minePanel.append(done(t('workspaces.my_github_help', 'Your repositories on GitHub. Use clones one here.')), mineList);
+  const listMine = async () => {
+    mineList.replaceChildren(el('p', 'fs-step-help', t('workspaces.reading', 'Reading…')));
+    const answer = await request('/api/setup/github/repos', { cache: 'no-store' });
+    if (!answer.ok) { mineList.replaceChildren(el('p', 'fs-step-help', answer.message)); return; }
+    mineList.replaceChildren(...(answer.data.repos || []).map((repo) => {
+      const row = el('div', 'workspace-location');
+      const use = el('button', 'wk-btn', t('workspaces.use', 'Use')); use.type = 'button';
+      use.addEventListener('click', async () => { use.disabled = true; if (!await cloneInto(repo.url)) use.disabled = false; });
+      const where = el('div', 'workspace-location-where');
+      where.append(el('b', null, repo.name), el('small', 'workspace-location-repo', repo.private ? t('workspaces.private', 'private') : ''));
+      row.append(where, use);
+      return row;
+    }));
+    if (!mineList.childElementCount) mineList.append(el('p', 'fs-step-help', t('workspaces.my_github_none', 'No repositories on this GitHub account.')));
+  };
+  void request('/api/setup/github', { cache: 'no-store' }).then((answer) => { mineButton.el.hidden = !(answer.ok && answer.data?.authenticated); });
   const cloneLine = el('div', 'workspace-clone');
   cloneLine.append(cloneWhere, clone);
-  clonePanel.append(done(t('workspaces.clone_help', 'Clone a GitHub repository into a folder on this machine.')),
+  clonePanel.append(done(t('workspaces.clone_help', 'Clone a repository from any Git host. A public one needs no sign-in.')),
     createField({ label: t('workspaces.repository', 'Repository'), control: repository }).el,
     createField({ label: t('workspaces.clone_where', 'Where to put it'), control: into.el }).el,
     cloneLine);
@@ -434,14 +454,13 @@ export function workspacePage(w, { taken = () => [], onSaved = () => {}, onDisca
   function paint() {
     const first = draft.instructions.trim().split('\n')[0];
     stepAgents.setCollapsed(!open.agents, [MODES[draft.launch_mode], first].filter(Boolean).join(' · '), true);
-    if (isNew) stepTop.setCollapsed(false, '', false);
-    stepIntegrations.setCollapsed(!open.integrations, draft.integrations.map((one) => index.find((r) => r.name === one.provider)?.label || one.provider).join(', ') || t('workspaces.none_yet', 'None'), true);
+    stepTop.setCollapsed(false, '', false);
     paintIntegrations();
-    stepBrief.el.hidden = isNew;
-    stepBrief.setCollapsed(!open.brief, '', true);
     stepLocations.setCollapsed(!open.locations, picked.size === 1 ? t('workspaces.one_folder', '1 folder') : t('workspaces.folders_n', '{n} folders', { n: picked.size }), true);
     folderPanel.hidden = open.adding !== 'folder';
     clonePanel.hidden = open.adding !== 'clone';
+    minePanel.hidden = open.adding !== 'mine';
+    mineButton.el.setAttribute('aria-pressed', String(open.adding === 'mine'));
     addButton.el.setAttribute('aria-pressed', String(open.adding === 'folder'));
     cloneButton.el.setAttribute('aria-pressed', String(open.adding === 'clone'));
     const at = short(into.current()) || '~';
@@ -455,7 +474,7 @@ export function workspacePage(w, { taken = () => [], onSaved = () => {}, onDisca
   // Folders, Integrations and Agent info, then Create. Behaviors are read and written against a saved
   // Workspace (/api/brief/settings/workspace/<name>), so they wait: Create opens the made Workspace
   // with its Configuration open, Behaviors in it.
-  page.append(line, stepTop.el, stepLocations.el, stepIntegrations.el, stepAgents.el, stepBrief.el);
+  page.append(line, stepTop.el, stepLocations.el, stepAgents.el);
   paint();
   // ⋯ (a made Workspace): Archive takes it off the Workspace pickers, kept; Restore brings it back.
   const more = isNew ? null : createMenuButton({ glyph: '⋯', title: t('workspaces.more', 'More'), host: () => page, groups: () => [{ items: [{
@@ -497,56 +516,6 @@ const flaggedIn = (w) => itemsIn(w).some((item) => item.flagged && statusKey(ite
 /** Launch (owner, 2026-11-23): the kit's Launch, the Ronin mark; it opens the Workspace's own page in a new tab. */
 const workspaceLaunch = (name) => WorkspaceKit.primitives.createAction({ label: t('workspaces.launch', 'Launch'), launch: true, size: 'compact',
   action: () => openWorkspaceTab('workspace', name) });
-
-/**
- * THE WORKSPACE'S DOCUMENT (KAN-713; KAN-784): its one doc, `~/ronin/office/workspaces/<name>.md`, the
- * project's knowledge of itself, read and improved where the Workspace is worked in, never under
- * Config. Rendered; Edit turns it to its text with Save and Cancel; Save writes the same file
- * `workspace-doc` and `office read` use.
- */
-function workspaceDoc(w) {
-  const { createAction } = WorkspaceKit.primitives;
-  const box = el('section', 'workspace-doc-pane');
-  const said = status();
-  const say = sayInto(said);
-  const view = el('div', 'workspace-doc');
-  const actions = el('div', 'workspace-page-actions');
-  let doc = null;
-  let draft = null;
-  const url = `/api/workspaces/${encodeURIComponent(w.name)}/doc`;
-  const show = () => {
-    draft = null;
-    view.replaceChildren(doc === null ? el('p', 'fs-step-help', t('workspaces.reading', 'Reading…')) : renderMarkdownDocument(doc));
-    actions.replaceChildren(edit.el);
-  };
-  const edit = createAction({ label: t('workspaces.edit_summary', 'Edit'), size: 'compact', action: () => {
-    draft = doc ?? '';
-    const text = el('textarea', 'workspace-doc-text');
-    text.rows = 16;
-    text.value = draft;
-    text.setAttribute('aria-label', t('workspaces.doc_text', 'The Workspace document'));
-    text.addEventListener('input', () => { draft = text.value; });
-    view.replaceChildren(text);
-    actions.replaceChildren(save.el, cancel.el);
-    text.focus();
-  } });
-  const save = createAction({ label: t('workspaces.save', 'Save'), kind: 'primary', size: 'compact', action: async () => {
-    const told = await request(url, { method: 'PUT', json: { text: draft ?? '' } });
-    if (!told.ok) { say(told.message, true); return; }
-    doc = draft ?? ''; say(''); show();
-  } });
-  const cancel = createAction({ label: t('workspaces.cancel', 'Cancel'), size: 'compact', action: () => { say(''); show(); } });
-  const head = el('div', 'workspace-page-head');
-  head.append(actions); // the fold's line names it
-  box.append(head, said, view);
-  show();
-  void request(url, { cache: 'no-store' }).then((answer) => {
-    if (!answer.ok) { say(answer.message, true); return; }
-    doc = answer.data.text || '';
-    if (draft === null) show();
-  });
-  return { el: box };
-}
 
 /**
  * THE TEAMS OF A WORKSPACE (KAN-801): the Teams stones themselves, bare and fixed to this Workspace
@@ -644,19 +613,17 @@ function workspaceSurface(w, { workspacesRead, onDiscard = () => {}, launch = fa
   };
   const teams = fold('teams', t('campaign.coworks', 'Teams'), () => workspaceTeams(w), true);
   const epics = fold('epics', t('workspaces.epics', 'Epics'), () => workspaceEpics(w), true);
-  const doc = fold('doc', t('workspaces.document', 'Document'), () => workspaceDoc(w), true);
   const every = createEpicsRead(() => '');
   const recount = () => {
     line.update(itemsIn(w));
     teams.count(teamsIn(w).length);
     const mine = new Set(teamsIn(w).flatMap((team) => [...teamEpicIds(team)]));
     epics.count(every.list().filter((epic) => mine.has(epic.id) && isOpenEpic(epic)).length);
-    doc.count(1); // a Workspace has one document
   };
   const stopTeams = subscribeTeams(recount);
   const stopEpics = every.subscribe(recount);
   recount();
-  main.append(top, teams.node, epics.node, doc.node);
+  main.append(top, teams.node, epics.node);
   return { el: main, destroy: () => { stopTeams?.(); stopEpics?.(); for (const one of built) one.destroy?.(); page?.destroy?.(); } };
 }
 

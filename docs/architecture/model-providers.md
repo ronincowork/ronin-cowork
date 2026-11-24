@@ -68,7 +68,7 @@ of a shipped id replaces that section whole and keeps its place; a new id append
 the shipped ones; a user section carrying `- **hidden:** yes` withdraws the shipped
 provider. Sections the owner did not write stay the shipped
 ones and keep improving with each release. Every entry the catalog serves carries its
-`origin` (`stock` | `user`) and `shadowed`, and the Model providers surface says it in
+`origin` (`stock` | `user`) and `shadowed`, and the Harnesses surface says it in
 words under each provider — *Yours · not in the shipped catalog*, or *Your copy of this
 section replaces the shipped one*; a shipped section says nothing. The
 catalog object carries `withdrawn`, the shipped providers the copy set aside. Seed a copy
@@ -105,7 +105,7 @@ a hosted office it is **Ronin models**, the house connection (Services `ronin_mo
 `samurai_lab/ronin_cloud/MODEL_MANAGEMENT.md` §1, §5): Light, Standard and Frontier first, the
 office record's `tier` the default row, then the gateway model list's real models. A part
 registers once with `addProviderPart`; `providerRows` puts its entry first, marked `part`, so
-every picker offers it as its own provider and the Model providers surface gives it its own
+every picker offers it as its own provider and the Harnesses surface gives it its own
 stone, never inside the list of the CLI it runs on. Its rows name a registry CLI (`cli`), so
 launch, identity and resume are Core's; the part may wrap the argv of an Agent born on it
 (`wrapLaunch`) and of its restore (`wrapResume`, with the model it was born on), both given the
@@ -196,7 +196,7 @@ shows its dates. `POST /api/setup/providers/:provider/install` uses the shared i
 and returns the runtime with its explicit `install_open` session attachment. Setup and
 Settings mount that attachment on the provider page, including first-run sign-in. It stays
 available after the binary appears, until Cancel ends the session and measures again.
-There is no completion hook in the installer; closing the tile, reopening Model providers,
+There is no completion hook in the installer; closing the tile, reopening Harnesses,
 or restarting Ronin refreshes the measured installation and credential facts.
 
 Every launchable provider's Agent page declares a bare command. Choosing Native in the
@@ -310,10 +310,10 @@ the same control with the provider select dropped. The registry's seeds read the
 rows: `models:first` is the marked default of the first launchable provider, `models:light`
 the first launchable **light** row — there is no name-pattern for "cheap".
 
-## The Model providers surface
+## The Harnesses surface
 
 One drawing (`public/js/provider-surface.js`), seated by two selector cards — Ronin Setup's
-**Model providers** and Ronin Settings' **Model providers** — and drawn by Home's **Models**
+**Harnesses** and Ronin Settings' **Harnesses** — and drawn by Home's **Models**
 door as one stone per provider (`public/js/models-surface.js`). The two cards read *N providers · M models · K activated here*. At the top sits the one door: **Refresh all model providers**,
 with *Last ran <date>* beside it, or *Never run — every provider offers Native only until
 it runs*. Ronin runs it at start too, never on a timer: it measures the machine, reads every

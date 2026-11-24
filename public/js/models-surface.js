@@ -50,7 +50,7 @@ export function createModelStones(context) {
   const repaint = () => {
     context.workbench?.refreshSelector?.();
     const items = drawing.stones();
-    say(items.length ? '' : t('setup_surface.no_catalog', 'No model providers are in the catalog on this machine.'));
+    say(items.length ? '' : t('setup_surface.no_catalog', 'No harnesses are in the catalog on this machine.'));
     stones.setItems(items.map(draggable));
   };
   return {

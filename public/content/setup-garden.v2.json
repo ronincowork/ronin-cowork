@@ -47,7 +47,7 @@
           "kind": "title",
           "eyebrow": "Optional",
           "heading": "Introduce yourself",
-          "body": "Registering gives you access to Ronin Services and lets you take part in the Bounty Program. Both are free."
+          "body": "Registering gives you access to Ronin Services. It is free."
         },
         {
           "id": "register-nothing-required",
@@ -185,6 +185,143 @@
           "path": "docs/using-ronin/tile.md"
         }
       ]
+    },
+    "garden.hosted.harness": {
+      "copy": [
+        {
+          "id": "hosted-harness-intro",
+          "kind": "title",
+          "eyebrow": "Setup · Harness",
+          "heading": "Connect the harness you already use.",
+          "body": "A harness is the agent tool that does the work, like Claude Code or Codex. Ronin runs it for you, signed in with your own account. Ronin never resells model access or sits between you and the provider."
+        },
+        {
+          "id": "hosted-harness-1",
+          "kind": "instruction",
+          "body": "One harness is enough to start. If one hits a limit or an outage, Agents on another keep working."
+        }
+      ],
+      "media": [
+        {
+          "id": "hosted-harness-doc-1",
+          "kind": "doc",
+          "label": "Signing in a harness",
+          "description": "How each harness signs in here",
+          "path": "docs/getting-started/provider-sign-in.md"
+        },
+        {
+          "id": "hosted-harness-doc-2",
+          "kind": "doc",
+          "label": "Help",
+          "description": "Questions people ask first",
+          "path": "docs/getting-started/help.md"
+        }
+      ]
+    },
+    "garden.hosted.workspace": {
+      "copy": [
+        {
+          "id": "hosted-workspace-intro",
+          "kind": "title",
+          "eyebrow": "Setup · Workspace",
+          "heading": "Tell us what you are working on.",
+          "body": "A Workspace is one project: what it is, then where it lives, a folder here or its repositories."
+        },
+        {
+          "id": "hosted-workspace-1",
+          "kind": "instruction",
+          "body": "Describe it first; that alone makes the Workspace."
+        },
+        {
+          "id": "hosted-workspace-2",
+          "kind": "instruction",
+          "body": "Then add a folder, or paste a Git URL. GitHub is only needed for private repositories."
+        }
+      ],
+      "media": [
+        {
+          "id": "hosted-workspace-doc-1",
+          "kind": "doc",
+          "label": "Workspaces",
+          "description": "What a Workspace is, and how to add its folders",
+          "path": "docs/using-ronin/workspaces.md"
+        },
+        {
+          "id": "hosted-workspace-doc-2",
+          "kind": "doc",
+          "label": "Help",
+          "description": "Questions people ask first",
+          "path": "docs/getting-started/help.md"
+        }
+      ]
+    },
+    "garden.hosted.team": {
+      "copy": [
+        {
+          "id": "hosted-team-intro",
+          "kind": "title",
+          "eyebrow": "Setup · Team",
+          "heading": "Start a Team in your Workspace.",
+          "body": "A Team is a group of Agents on one piece of work, in one Workspace. Its lead coordinates the others and builds out the rest."
+        },
+        {
+          "id": "hosted-team-1",
+          "kind": "instruction",
+          "body": "Name it, say what it is for, choose the lead's harness. Add more Agents if you want them."
+        }
+      ],
+      "media": [
+        {
+          "id": "hosted-team-doc-1",
+          "kind": "doc",
+          "label": "A new Team",
+          "description": "The form, field by field",
+          "path": "docs/using-ronin/new-team.md"
+        },
+        {
+          "id": "hosted-team-doc-2",
+          "kind": "doc",
+          "label": "Help",
+          "description": "Questions people ask first",
+          "path": "docs/getting-started/help.md"
+        }
+      ]
+    },
+    "garden.hosted.understanding": {
+      "copy": [
+        {
+          "id": "hosted-understanding-intro",
+          "kind": "title",
+          "eyebrow": "Good to know",
+          "heading": "How your Agents begin.",
+          "body": "Nothing here needs configuring to start. You can skip it and come back."
+        }
+      ],
+      "media": []
+    },
+    "garden.hosted.running": {
+      "copy": [
+        {
+          "id": "hosted-running-intro",
+          "kind": "title",
+          "eyebrow": "How work runs",
+          "heading": "Teams do the work. Epics and items keep track of it.",
+          "body": "Agents keep working while you are away."
+        }
+      ],
+      "media": []
+    },
+    "garden.hosted.help": {
+      "copy": [
+        {
+          "id": "hosted-help-intro",
+          "kind": "title",
+          "eyebrow": "Help",
+          "heading": "Questions people ask first.",
+          "body": "Ask Ronin answers from Ronin's own help and takes you to the right place."
+        }
+      ],
+      "media": []
     }
   }
 }

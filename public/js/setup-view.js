@@ -5,7 +5,7 @@ import { SETUP_SURFACE_TYPES, registerSetupSurfaces } from './setup-surfaces.js'
 import { createProviderSetupSessionMount } from './provider-setup-session.js';
 import { request } from './request.js';
 import { t } from './lexicon.js';
-import { SETUP_SCENES } from './setup-journey.js';
+import { HOSTED_SCENES, SETUP_SCENES } from './setup-journey.js';
 import { GARDEN_CANVAS_TYPE, registerGardenCanvas } from './garden-canvas.js';
 import { localDocumentLink, productRepositoryHref } from './document-links.js';
 import { normalizeGardenCanvasCatalog } from './garden-canvas-model.js';
@@ -19,38 +19,43 @@ import { mikaShowHandlers, setupProgressHandlers } from './events.js';
 import { subscribe as hear } from './store.js';
 import { HOSTED } from './hosted.js';
 import { mikaTab, reportMikaView } from './mika.js';
-import { IRASSHAI_INTEGRATIONS_TYPE, IRASSHAI_NAME, IRASSHAI_STEP_TYPE, IRASSHAI_OPEN_TYPE, askIrasshai, createIrasshaiChat, createIrasshaiOpener, irasshaiKey, irasshaiReady, irasshaiOrder, irasshaiSteps, registerIrasshaiIntegrations, registerIrasshaiOpen, registerIrasshaiSteps, stepOpens, takeStepLine } from './setup-irasshai.js';
+import { IRASSHAI_INTEGRATIONS_TYPE, IRASSHAI_NAME, IRASSHAI_OPEN_TYPE, createIrasshaiChat, createIrasshaiOpener, irasshaiKey, irasshaiReady, registerIrasshaiIntegrations, registerIrasshaiOpen } from './setup-irasshai.js';
 
 const PROFILE = 'setup';
-// Release toggles: unfinished programs stay out of Setup without changing the workbench.
-const SETUP_FEATURES = Object.freeze({ bounty: false });
-// A hosted office has no registration, password or installations: they are the office_park's
-// and the Business Lounge's (hosted.js), as Settings leaves them out.
-const NOT_HOSTED = Object.freeze(['register', 'installations', 'password']);
-const SCENES = Object.freeze(SETUP_SCENES
-  .filter((scene) => SETUP_FEATURES.bounty || scene.type !== 'setup.bounty')
-  .filter((scene) => !HOSTED || !NOT_HOSTED.includes(scene.id))
-  .map((scene, index) => Object.freeze({ ...scene, number: index + 1 })));
-const ORDER = Object.freeze(SCENES.map((scene) => scene.type));
-const ARRANGEMENT = Object.freeze({
+// Hosted: the three steps and three pages (setup-journey.js HOSTED_SCENES; SETUP_SWEEP.md §7), laid
+// out as the owner's prototype: the steps, the step's surface, and the Ask Ronin panel on the right.
+// Self-hosted: its five steps and Launch, as they were.
+const layout = () => {
+  const SCENES = HOSTED ? HOSTED_SCENES : SETUP_SCENES;
+  return { SCENES, ORDER: Object.freeze(SCENES.map((scene) => scene.type)), ARRANGEMENT: HOSTED ? hostedArrangement : arrangement };
+};
+const hostedArrangement = Object.freeze({
+  order: Object.freeze(['selector', 'workspace2', 'workspace1']),
+  hidden: Object.freeze([]),
+  widths: Object.freeze({ selector: 16, workspace2: 52, workspace1: 32 }),
+});
+const arrangement = Object.freeze({
   order: Object.freeze(['workspace1', 'selector', 'workspace2']),
   hidden: Object.freeze([]),
   widths: Object.freeze({ workspace1: 34, selector: 18, workspace2: 48 }),
 });
+/** The Ask Ronin panel's name: the Helpful Assistant, on every hosted step (§7). */
+const ASK = 'Ask Ronin';
 const GARDEN_CONTENT_URL = '/content/setup-garden.v2.json';
 
 function registerSetupWorkbench() {
+  const { ORDER } = layout();
   registerSetupSurfaces();
   registerPasswordSurface();
   registerGardenCanvas();
   registerIrasshaiOpen();
-  registerIrasshaiSteps();
   registerIrasshaiIntegrations();
-  return WorkspaceKit.workbench.profiles.define(PROFILE, [IRASSHAI_OPEN_TYPE, GARDEN_CANVAS_TYPE, IRASSHAI_STEP_TYPE, IRASSHAI_INTEGRATIONS_TYPE, ...ORDER]);
+  return WorkspaceKit.workbench.profiles.define(PROFILE, [IRASSHAI_OPEN_TYPE, GARDEN_CANVAS_TYPE, IRASSHAI_INTEGRATIONS_TYPE, ...ORDER]);
 }
 
 export function createSetupView() {
   registerSetupWorkbench();
+  const { SCENES, ORDER, ARRANGEMENT } = layout();
   let ctx = null;
   let bench = null;
   let runtime = null;
@@ -64,25 +69,31 @@ export function createSetupView() {
   const progressListeners = new Set();
   const providerSessions = createProviderSetupSessionMount();
   const themeToggle = createThemeToggle();
-  const opener = createIrasshaiOpener({ refresh: () => bench?.refreshSelector(), showChat: () => { bench?.select('workspace1'); garden?.el.scrollIntoView?.({ block: 'start' }); } }); // a phone stacks the workspaces
-  // IRASSHAI (setup-irasshai.js): while her session is live, Assist is her chat and the selector
-  // her epic's steps. `irasshai` is her session's birth key at the last look ('' not live): a new
-  // birth gets a new chat, never the last one's records (KAN-676).
+  const opener = createIrasshaiOpener({ refresh: () => { bench?.refreshSelector(); if (!irasshai && HOSTED && garden) paintOffer(); }, showChat: () => { bench?.select('workspace1'); garden?.el.scrollIntoView?.({ block: 'start' }); } }); // a phone stacks the workspaces
+  // IRASSHAI (setup-irasshai.js): while her session is live, Workspace 1 holds her chat: in place of
+  // the scene self-hosted, under the step's lines hosted (the Ask Ronin panel). Hosted, with her not
+  // live, the panel offers her. `irasshai` is her session's birth key at the last look ('' not live):
+  // a new birth gets a new chat, never the last one's records (KAN-676).
   let irasshai = '';
   let chat = null;
-  let epics = [];
-  let epicItems = [];
-  const steps = () => irasshaiSteps(epics, epicItems, irasshaiOrder(() => bench?.refreshSelector()));
+  const offer = document.createElement('div');
+  offer.className = 'setup-ask-offer';
+  const offerButton = document.createElement('button');
+  offerButton.type = 'button';
+  offerButton.className = 'wk-btn setup-ask-button';
+  offerButton.addEventListener('click', () => opener.press());
+  offer.append(offerButton);
+  const paintOffer = () => { const card = opener.offer(); offerButton.textContent = card.label === IRASSHAI_NAME ? t('setup.ask_open', 'Ask the Helpful Assistant') : card.label; offerButton.title = card.summary; };
   const seatChat = () => {
     if (!garden) return;
     if (irasshai) {
       if (chat && chat.key !== irasshai) { garden.chat(null); chat.dispose(); chat = null; }
       chat ||= Object.assign(createIrasshaiChat(), { key: irasshai });
-      garden.chat(chat.el, IRASSHAI_NAME, chat.toggle);
+      garden.chat(chat.el, HOSTED ? ASK : IRASSHAI_NAME, chat.toggle, { below: HOSTED });
       chat.show();
-    } else if (chat) {
-      garden.chat(null);
-      chat.hide();
+    } else {
+      if (chat) chat.hide();
+      if (HOSTED) { paintOffer(); garden.chat(offer, ASK, null, { below: true }); } else if (chat) garden.chat(null);
     }
   };
   let ready = '';
@@ -110,7 +121,6 @@ export function createSetupView() {
       ? `${answered} of ${marks.length} Setup steps complete. Next: ${next.label}.`
       : 'Setup completed.';
     setupStepsHeader.replaceChildren(createSetupStepsBar(progress), reading);
-    setupStepsHeader.hidden = Boolean(irasshai); // her steps are the selector's; the five marks are not hers
   };
   const blank = (id) => WorkspaceKit.primitives.createBlankSurface(id.replace('workspace', 'Workspace ')).el;
   const environment = {
@@ -135,7 +145,6 @@ export function createSetupView() {
     trackedRoots: () => projectData,
     onTrackedRoots: onProjects,
     navigateToSurface: (type) => openSurface(type),
-    setPathNote: (path_note) => request('/api/setup/preferences', { method: 'PATCH', json: { path_note } }),
     mountProviderSetupSession: providerSessions.mountProviderSetupSession,
     showNewSession: (prompt) => {
       const url = workbenchLaunchUrl({ destination: 'launch', mode: 'overlay', state: {
@@ -143,15 +152,8 @@ export function createSetupView() {
       } });
       if (url) location.assign(url);
     },
-    irasshaiSteps: () => steps(),
     irasshaiOpen: () => opener.offer(),
     irasshaiPress: () => opener.press(),
-    // Not done: one line to her, and she opens its surface (KAN-692). Done: nothing to her; its surface opens (KAN-699).
-    takeIrasshaiStep: (step) => {
-      if (!step.done) return void chat?.say(takeStepLine(step));
-      const opens = stepOpens(step);
-      if (opens && WorkspaceKit.workbench.surfaces.has(opens)) bench?.place(opens, 'workspace2');
-    },
     onGardenCanvas: (next) => {
       garden = next;
       seatChat();
@@ -237,17 +239,18 @@ export function createSetupView() {
     for (const card of bench?.host.querySelectorAll('[data-workbench-offer-type]') || []) {
       delete card.dataset.sceneRelevant;
       const position = ORDER.indexOf(card.dataset.workbenchOfferType);
-      if (position < 0) continue; // her steps carry their own marks
+      if (position < 0) continue;
       const scene = SCENES[position];
       if (scene?.id === active.id) card.setAttribute('aria-current', 'page');
       else card.removeAttribute('aria-current');
       const complete = Boolean(scene && sceneComplete(scene));
+      // Launch waits for the provider tick, the facts' own reading (KAN-768).
       const blocked = scene?.type === SETUP_SURFACE_TYPES.launchOwn
-        && Number(runtime?.activated_count || 0) < 1;
+        && !setupStepMarks(progress).find((step) => step.id === 'provider')?.answered;
       card.disabled = blocked;
       if (blocked) {
         card.setAttribute('aria-disabled', 'true');
-        card.title = 'Activate a model provider before launching an Agent or Team.';
+        card.title = 'Activate a harness before launching an Agent or Team.';
       } else {
         card.removeAttribute('aria-disabled');
         card.removeAttribute('title');
@@ -290,8 +293,6 @@ export function createSetupView() {
   setupProgressHandlers.add(onProgress);
   const unhear = [
     hear('sessions', followIrasshai),
-    hear('epics', (next) => { epics = Array.isArray(next) ? next : []; if (irasshai) bench?.refreshSelector(); }),
-    hear('epicItems', (next) => { epicItems = Array.isArray(next) ? next : []; if (irasshai) bench?.refreshSelector(); }),
     hear('home', () => { if (irasshai) { chat?.stance(); report(); } }), // each of her turns keeps the view fresh for `show`
   ];
 
@@ -306,7 +307,7 @@ export function createSetupView() {
     selectorCurrent: true,
     hintsCollapsed: true,
     hintsPreferenceScope: 'setup',
-    selectorFilter: (type) => type === IRASSHAI_OPEN_TYPE || (irasshai ? type === IRASSHAI_STEP_TYPE : ORDER.includes(type)),
+    selectorFilter: (type) => type === IRASSHAI_OPEN_TYPE || ORDER.includes(type),
     onSelectorRefresh: paint,
     onStateChange: save,
     onPlacement: (snapshot) => {
@@ -344,9 +345,7 @@ export function createSetupView() {
       open(sceneOverride);
       seatChat();
       entered = true; report();
-      // A hosted office's Setup is Irasshai's: opening it asks for her (shown live, else a fresh launch).
-      // Elsewhere she comes on her selector entry (KAN-694).
-      if (HOSTED) void askIrasshai();
+      // She comes when asked (her entry, or the Ask Ronin panel), or with the office's start (§7).
       void request('/api/setup/progress', { cache: 'no-store' }).then((result) => {
         if (generation !== enterGeneration || !result.ok || !acceptProgress(result.data)) return;
         const first = firstUnansweredSetupStep(progress);

@@ -32,7 +32,7 @@ behaviours guide; facts inform; skills adapt; UIs call (`docs/architecture/brief
 | `office_unit` (the office record in `~/ronin/office_unit/`) | **hosted office** | Cowork running inside an office_unit on an office_park. It shows no account, billing, subscription, registration or machine settings; self-hosted Cowork is the one without the record. |
 | Home side stone, hosted only | **Business Lounge** | A link from Home to https://hq.roninhosted.com/, where a hosted office's account, office and subscription are kept. Each person lands in their own lounge. |
 | Ronin Hosted money | **balance**, **starter balance**, **top up**, **office limit**, **spent** | The account's money in dollars: a $5 starter balance at first rental, topped up by the person; an office limit caps one office's share. Never "credits" or "budget". |
-| stone work surface | **stone work surface** | Select a collection item: stones move to a left rail, details open on the right. Reused by Workspaces and Model Providers. |
+| stone work surface | **stone work surface** | Select a collection item: stones move to a left rail, details open on the right. Reused by Workspaces and Harnesses. |
 | tile | **tile** | One cell showing one session. Never "pane". |
 | `workspace1`…`workspace4` | **tilespace** | One numbered slot of a workbench. It holds a tile or a commons. Never call it a workspace. |
 | `campaign_commons` | **the commons** | The Desk's shared surface. |

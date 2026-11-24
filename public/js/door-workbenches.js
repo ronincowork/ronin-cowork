@@ -101,7 +101,7 @@ export function createModelsView() {
   const made = [];
   const keep = (surface) => { made.push(surface); return surface; };
   return doorWorkbench({
-    id: 'models', profile: WORKBENCH_PROFILES.models, label: t('campaign_home.agent_harness', 'Agent Harness'), seat: WORKBENCH_TYPES.modelStones,
+    id: 'models', profile: WORKBENCH_PROFILES.models, label: t('campaign_home.harnesses', 'Harnesses'), seat: WORKBENCH_TYPES.modelStones,
     count: 4, seats: { workspace1: WORKBENCH_TYPES.modelStones, workspace2: WORKBENCH_TYPES.accountsRecords, workspace3: WORKBENCH_TYPES.modelsRecords, workspace4: WORKBENCH_TYPES.modelRefresh },
     loaded: loadProviderCatalog,
     environment: ({ bench }) => {
@@ -194,9 +194,9 @@ export function createHelpView() {
   none.className = 'help-mika-none';
   none.hidden = true;
   const setup = HOSTED // a hosted office's Setup is Irasshai's while she runs; its providers are signed in from Agent Harness
-    ? Object.assign(document.createElement('a'), { href: '#/models', textContent: t('campaign_home.agent_harness', 'Agent Harness') })
+    ? Object.assign(document.createElement('a'), { href: '#/models', textContent: t('campaign_home.harnesses', 'Harnesses') })
     : Object.assign(document.createElement('a'), { href: '#/setup', textContent: t('help_outline.mika_setup', 'Setup') });
-  none.append(t('help_outline.mika_needs_provider', 'Mika needs a model provider. Activate one in '), setup, '.');
+  none.append(t('help_outline.mika_needs_provider', 'Mika needs a harness. Activate one in '), setup, '.');
   mikaSurface.content.append(none);
   // A terminal seat carries a tile head from the moment it is placed; until the provider read
   // answers (or when it says none) that head is an unconnected tile, kept out of sight.

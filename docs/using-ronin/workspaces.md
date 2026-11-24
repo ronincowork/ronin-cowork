@@ -6,18 +6,23 @@ Ronin keeps no list of folders of its own.
 
 A Workspace holds:
 
-- **Summary** — [its doc](#its-doc): what the work is for and what is in it, and notes.
+- **Objective** — what the project is, in your words: the one place that says so.
 - **Folders** — the folders and repositories its Agents work in, each a name and its path,
   with a short note. A repository's row also says how Agents work in it.
 - **Integrations** — the outside services it uses.
-- **Objective** and **Instructions** — what every Agent on it is told.
+- **Instructions** — standing directions every Agent on it is told.
 - **Mode** — Dangerously unless you choose Native (Native for providers that offer no Dangerously form).
 - **Plans** — where its plans are kept ([Writing a plan](planning.md)).
 - **Canvases** — one-page maps of the Workspace: its live site, repos, work, documents and outside services.
 
-Ronin starts you with two: **Ronin Lab**, for ideas, research, assistants and planning before a
-project exists, and **Project One**, for your first project. Add your own whenever you have work
-somewhere else.
+On your own machine Ronin starts you with two: **Ronin Lab**, for ideas, research, assistants and
+planning before a project exists, off your code repositories, and **Project One**, for your first
+project. A hosted office starts with none: the Helpful Assistant offers either in Setup if it
+suits you. Add your own whenever you have work somewhere else.
+
+A Workspace holds items too: open work of the project that no Team has yet, which go to its first
+Team when Setup's Team step makes one, and its **Icebox** of parked ideas
+([Writing a plan](planning.md#park-it-the-icebox)), which no Agent reads or pulls into work.
 
 ## Teams work in a Workspace
 
@@ -27,16 +32,6 @@ where to work: the Team already knows.
 
 An Agent with no Team has no Workspace. That is meant for helpers like Mika, which carry
 everything they need.
-
-## Its doc
-
-Every Workspace has one doc: `~/ronin/office/workspaces/<name>.md`, made with the Workspace.
-It is the one place its notes live. It starts with a **Summary**, a few lines on what the
-Workspace is for and what is in it, then notes. A Workspace's **Work** view shows the whole doc
-under its Teams and Epics; press **Edit** to change it there, then **Save**. `office read` shows each Summary. Agents read and
-write it with `workspace-doc` (`workspace-doc --help`); it is a plain file, so you can open it
-too. A Workspace without a Summary gets one from the PLAYBOOK-2 [playbook](playbooks.md): a fresh
-Agent it is checked out to reads its folders and repositories, writes the Summary, and ends.
 
 ## Make or change a Workspace
 
@@ -48,31 +43,31 @@ Flagged Workspaces come first, then the rest by name. The last stone is **New Wo
 
 Press a stone and that Workspace opens beside the stones, the way an opened Team does. At its top
 is its bar: its name with **Launch**, its objective, its progress along the foot. Press the bar to
-open its Configuration under it (Folders, Integrations, Agent info and Behaviors, with **Save**);
-press it again to close it. Below the bar are three lines, each opening and closing, with its count:
+open its Configuration under it (Describe, Where it lives, and More, with **Save**);
+press it again to close it. Below the bar are two lines, each opening and closing, with its count:
 
 - **Teams** — the Teams stones of this Workspace. Press one to open it under them as the Teams page
   opens it: its bar with **Launch** into its workbench, then its Agents and its Epics.
 - **Epics** — the open Epics its Teams and their Agents hold, the same stones as on the Epics page.
   Press one to open its board, with **Launch** into the Team working it.
-- **Document** — [its doc](#its-doc), as one page; **Edit** at its top right.
 
 **Launch** opens the Workspace on its own page, `#/workspace/<name>`, in a new browser tab, with the
 whole page's room. A stone dragged into a tilespace opens it whole there.
 
-**New Workspace** is its **Name**, then what a made Workspace's Configuration has: **Folders**,
-**Integrations** and **Agent info**. Press **Create**; nothing is kept until then. The made Workspace
-opens with its Configuration open, where its **Behaviors** are.
-
-In Config the page reads, top down: its **Folders**, then, folded until you open them, **Integrations**, **Agent info** (its objective, instructions, Mode and plans) and
-**Behaviors**. **⋯** at the top holds **Archive**: the Workspace stops being offered when you
+**New Workspace** and a made Workspace's Configuration read the same, top down: **1 Describe**,
+"What are you working on?", its objective (a new one's **Name** follows it until you type one);
+**2 Where it lives**, its folders and repositories; **3 More**, folded until you open it: its
+instructions, Mode, plans, canvases, **Integrations** and, once made, **Behaviors**. Press
+**Create**; nothing is kept until then. The made Workspace opens with its Configuration open. **⋯** at the top holds **Archive**: the Workspace stops being offered when you
 start a Team, and nothing is deleted; **Restore** brings it back.
 
 ### Folders
 
 **Add a folder** picks a folder on this machine: walk to it or find it and press **Add**, make a
-new one with **New folder here**, or paste its path. **Clone from GitHub** asks for the
-repository, then where to put it: walk to a folder and press **Clone**. Under them is a row per
+new one with **New folder here**, or paste its path. **Paste a Git URL** clones a repository from
+any Git host (owner/name means GitHub), then asks where to put it: walk to a folder and press
+**Clone**. A public repository needs no sign-in. Once GitHub is signed in here, **My GitHub
+repositories** lists yours, each with **Use**. Under them is a row per
 folder: its name and path and, for a Git repository, its remote in a line under them. Press × to
 take a folder out of this Workspace; nothing on disk is touched. **+ note** on a row adds a note
 for Agents (what the folder is for; it goes into their brief). Where Explorer is on, you can also
@@ -98,15 +93,16 @@ A repository's row shows its **Mode**; press the word to change it. It is kept o
 
 A repository added here starts Direct, on the branch it has checked out.
 
-### Bring in a GitHub repository
+### Bring in a repository
 
-**Clone from GitHub** uses this machine's Git access: a private repository clones only once this
-machine is signed in to GitHub. That sign-in belongs to the machine's setup, not to a Workspace, so
-the Workspaces page does not offer it.
+**Paste a Git URL** uses plain git: a public repository from any host clones with no sign-in. A
+private one clones only once this machine is signed in to its host. For GitHub, ask the Helpful
+Assistant (or Mika on your own machine) to connect GitHub: it signs the GitHub CLI in with a code
+you approve in your browser. That sign-in belongs to the machine, not to a Workspace.
 
 ### Plans and Canvases
 
-In Agent info, **Plans** says where the Workspace keeps its plans: Ronin Lab's
+In More, **Plans** says where the Workspace keeps its plans: Ronin Lab's
 `<campaign>/<workspace>/plans`, marked recommended. Press it to pick another of its folders and a
 subfolder. On Save the plans move there; a plan of the same name already there stops the Save,
 so one plan never overwrites another. Agents never see the folder: they use the `plan` tool.

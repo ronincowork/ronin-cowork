@@ -12,8 +12,9 @@
  * 2026-10-19, "let's have the gate"): as on the old root, the doors are locked until one model
  * provider is activated, so a new user's way in is Setup or Agent Harness. Three doors are outside the gate: Settings; Help, which a new user
  * needs before Setup (owner, 2026-10-21); and Agent Harness, where a provider is signed in
- * (owner, 2026-11-13; KAN-472). Settings opens Setup until its answers are recorded,
- * Settings after (`setupDefaultView`). ONE ROOT (owner, 2026-11-02; KAN-197): the old Home and the
+ * (owner, 2026-11-13; KAN-472). Self-hosted, Settings opens Setup until Setup is finished (the
+ * server's `finished`, from the facts), Settings after. Hosted, Settings is Settings, and a Get
+ * started stone opens Setup while any of its three steps is open (w926; SETUP_SWEEP.md §7). ONE ROOT (owner, 2026-11-02; KAN-197): the old Home and the
  * bar's Current/Next toggle are gone; an old #/current link lands here.
  */
 import { t } from './lexicon.js';
@@ -21,11 +22,9 @@ import { request } from './request.js';
 import { createReleaseUpdateController, packageReading } from './release-update-controller.js';
 import { createSenmaida } from './senmaida.js';
 import { createThemeToggle } from './theme-toggle.js';
-import { campaignById, loadCampaigns, normalizeSelection, setupDefaultView } from './campaigns.js';
 import { workbenchLink } from './workspace.js';
 import { BUSINESS_LOUNGE, HOSTED } from './hosted.js';
-import { irasshaiSetup } from './setup-irasshai.js';
-import { subscribe as hear } from './store.js';
+import { setupProgressHandlers } from './events.js';
 
 const el = (tag, cls, text) => {
   const out = document.createElement(tag);
@@ -43,17 +42,18 @@ function OFFICE() {
   ];
 }
 
-/** The smaller stones on the right, one above the other. Settings' route is read at paint. A
- *  hosted office (hosted.js) has Setup while Irasshai runs or her onboarding is not over (opening it
- *  is what makes her), so its Settings opens Setup then and Settings after, and the Business Lounge
- *  stands beside the others: a link out to Ronin HQ, where its account and office are kept. */
-function SIDE() {
+/** The smaller stones on the right, one above the other. Self-hosted, Settings' route is read at
+ *  paint from Setup's ticks. Hosted, Get started heads them while a Setup step is open, and the
+ *  Business Lounge stands beside the others: a link out to Ronin HQ, where its account and office are kept. */
+function SIDE(progress) {
+  const open = HOSTED && (progress?.steps || []).some((step) => !step.answered);
   return [
-    { key: 'models', route: 'models', glyph: '✶', name: t('campaign_home.agent_harness', 'Agent Harness'), is: t('campaign_home.agent_harness_is', 'The CLIs on this machine, the accounts they launch on, and the models'), gated: false },
+    ...(open ? [{ key: 'setup', route: 'setup', glyph: '人', name: t('campaign_home.get_started', 'Get started'), is: t('campaign_home.get_started_is', 'Harness, Workspace, Team'), gated: false }] : []),
+    { key: 'models', route: 'models', glyph: '✶', name: t('campaign_home.harnesses', 'Harnesses'), is: t('campaign_home.harnesses_is', 'The harnesses on this machine, the accounts they launch on, and the models'), gated: false },
     { key: 'help', route: 'help', glyph: 'ミ', name: t('campaign_home.help', 'Help'), is: t('campaign_home.help_is', 'The guides, and Mika to ask'), gated: false },
-    HOSTED // while Irasshai onboards them, Setup is hers (setup-irasshai.js); after, Settings
-      ? { key: 'settings', route: irasshaiSetup() ? 'setup' : 'campaign', glyph: '⚙', name: t('campaign_home.settings', 'Settings'), is: t('campaign_home.settings_is_hosted', 'This Desk’s settings'), gated: false }
-      : { key: 'settings', route: null, glyph: '⚙', name: t('campaign_home.settings', 'Settings'), is: t('campaign_home.settings_is', 'Setup, and this machine’s settings'), gated: false },
+    HOSTED
+      ? { key: 'settings', route: 'campaign', glyph: '⚙', name: t('campaign_home.settings', 'Settings'), is: t('campaign_home.settings_is_hosted', 'This Desk’s settings'), gated: false }
+      : { key: 'settings', route: progress?.finished ? 'campaign' : 'setup', glyph: '⚙', name: t('campaign_home.settings', 'Settings'), is: t('campaign_home.settings_is', 'Setup, and this machine’s settings'), gated: false },
     ...(HOSTED ? [{ key: 'lounge', href: BUSINESS_LOUNGE, glyph: '◎', name: t('campaign_home.business_lounge', 'Business Lounge'), is: t('campaign_home.business_lounge_is', 'Your account, office and subscription, at Ronin HQ'), gated: false }] : []),
   ];
 }
@@ -104,7 +104,7 @@ export function createCampaignHome() {
   let entered = false;
   let activatedCount = 0;
   let runtimeKnown = false;
-  let setupCampaign = null;
+  let progress = null; // Setup's ticks (/api/setup/progress), read at entry and pushed as facts change
 
   // A DOOR IS A LINK to its workbench: its href the plain address (KAN-473); pressed, it
   // navigates this tab; with a modifier or the middle button it opens the workbench in a new
@@ -119,7 +119,7 @@ export function createCampaignHome() {
       return card;
     }
     const locked = door.gated !== false && (!runtimeKnown || activatedCount < 1);
-    const route = door.route || setupDefaultView(setupCampaign);
+    const route = door.route;
     if (!locked) workbenchLink(card, { destination: route, mode: 'overlay' });
     card.dataset.door = door.key;
     if (locked) {
@@ -127,7 +127,7 @@ export function createCampaignHome() {
       card.setAttribute('aria-disabled', 'true');
     }
     card.append(doorGlyph(door.glyph), el('h2', null, door.name), el('p', 'ch-is', door.is));
-    if (locked) card.append(el('p', 'ch-gate', HOSTED ? t('setup.provider_gate_hosted', 'Activate one model provider in Agent Harness to use this.') : t('setup.provider_gate', 'Activate one model provider in Setup or Agent Harness to use this.')));
+    if (locked) card.append(el('p', 'ch-gate', HOSTED ? t('setup.provider_gate_hosted', 'Activate a harness in Harnesses to use this.') : t('setup.provider_gate', 'Activate a harness in Setup or Harnesses to use this.')));
     card.addEventListener('click', (event) => {
       if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
       event.preventDefault();
@@ -138,7 +138,7 @@ export function createCampaignHome() {
   }
   function paintDoors() {
     doors.replaceChildren(...OFFICE().map((one) => stone(one, false)));
-    side.replaceChildren(...SIDE().map((one) => stone(one, true)));
+    side.replaceChildren(...SIDE(progress).map((one) => stone(one, true)));
   }
 
   const updates = createReleaseUpdateController({ onChange: state => {
@@ -160,10 +160,8 @@ export function createCampaignHome() {
     }
   }});
   check.addEventListener('click', () => void updates.check());
-  // A hosted Settings door follows Irasshai: Setup while she runs or onboards, Settings after.
-  let onboarding = irasshaiSetup();
-  const follow = () => { if (irasshaiSetup() !== onboarding) { onboarding = !onboarding; if (entered) paintDoors(); } };
-  if (HOSTED) { hear('sessions', follow); hear('epics', follow); }
+  // Setup's ticks move Get started and the self-hosted Settings door: the same push Setup hears.
+  setupProgressHandlers.add((next) => { if (Array.isArray(next?.steps)) { progress = next; if (entered) paintDoors(); } });
 
   return {
     el: root,
@@ -174,11 +172,11 @@ export function createCampaignHome() {
       ctx = context;
       entered = true;
       paintDoors();
-      void Promise.all([request('/api/setup/runtime', { cache: 'no-store' }), loadCampaigns()]).then(([result]) => {
+      void Promise.all([request('/api/setup/runtime', { cache: 'no-store' }), request('/api/setup/progress', { cache: 'no-store' })]).then(([result, ticks]) => {
         if (!entered) return;
         runtimeKnown = result.ok;
         activatedCount = result.ok ? Number(result.data?.activated_count) || 0 : 0;
-        setupCampaign = campaignById(normalizeSelection(ctx?.state?.campaignSelection).primary_campaign_id);
+        if (ticks.ok) progress = ticks.data;
         paintDoors();
       });
     },

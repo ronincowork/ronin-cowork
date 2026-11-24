@@ -135,7 +135,7 @@ export function buildMachineSettings(root, isShowing, { only = null } = {}) {
     const fields = fixed ? [
       { key: 'model', label: f.short ?? f.label, blank: t('settei.none_set', '— none set —'), options: catalog.filter((item) => item.provider === fixed).map((item) => ({ v: item.model, l: modelLabel(item), word: rowTierWord(item), sub: item.cost || '', off: item.selectable ? '' : reason(item) })) },
     ] : [
-      { key: 'provider', label: t('forms.provider', 'Model provider'), blank: t('settei.none_set', '— none set —'), options: providers.map((item) => ({ v: item.provider, l: item.provider_label, off: item.operational ? '' : reason(item) })) },
+      { key: 'provider', label: t('forms.provider', 'Harness'), blank: t('settei.none_set', '— none set —'), options: providers.map((item) => ({ v: item.provider, l: item.provider_label, off: item.operational ? '' : reason(item) })) },
       { key: 'model', label: t('forms.model', 'Model'), blank: t('settei.none_set', '— none set —'), after: 'provider', options: (value) => catalog.filter((item) => item.provider === value.provider).map((item) => ({ v: item.model, l: modelLabel(item), word: rowTierWord(item), sub: item.cost || '', off: item.selectable ? '' : reason(item) })) },
     ];
     const pair = ask([{ group: fixed ? '' : f.label, fields }], {

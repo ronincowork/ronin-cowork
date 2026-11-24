@@ -501,10 +501,6 @@
   .workspace-record-stones .sws-label { margin-block: auto; } /* the name in the middle of its stone, top to bottom, at its left (owner, 2026-11-23) */
   /* ITS DOCUMENT (owner, 2026-11-23): one page, outlined, so what is shown reads as a document and not
      a list of them; Edit at its top right turns the page to its text in the same outline. */
-  .workspace-doc-pane { display: flex; flex-direction: column; gap: var(--space-row); min-width: 0; }
-  .workspace-doc-pane > .workspace-page-head { justify-content: flex-end; padding-bottom: 0; border-bottom: 0; }
-  .workspace-doc-pane .workspace-doc { padding: var(--space-subsection); border: var(--edge) solid var(--line-2); border-radius: var(--radius-large); background: var(--surface); min-width: 0; }
-  .workspace-doc-pane .workspace-doc-text { width: 100%; box-sizing: border-box; border: 0; background: transparent; color: var(--fg); font: inherit; resize: vertical; }
   .workspace-route { min-height: 100%; overflow: auto; padding: var(--space-inset); background: var(--workbench-bg); min-width: 0; }
   .workspace-page-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-inline); padding-bottom: var(--space-row); border-bottom: var(--edge) solid var(--line); }
   .workspace-page-actions { display: flex; align-items: center; gap: var(--space-row); }
@@ -590,13 +586,13 @@
   .workspace-location-tools { display: flex; gap: var(--space-inline); flex-wrap: wrap; }
   /* Inside Add a folder the picker is its walk and its rows: a press adds, so no chosen box or kind tag. */
   .workspace-browser .folder-picker .folder-kind { display: none; }
-  /* The Summary is the Workspace's Markdown file, shown whole in the page's one text size (KAN-728). */
-  .workspace-doc .markdown-reader { font-size: inherit; }
-  .workspace-doc .markdown-reader :is(h1, h2, h3, h4) { font-size: inherit; font-weight: var(--weight-bold); color: var(--fg-strong); margin: var(--space-row) 0 0; }
-  .workspace-doc .markdown-reader p { margin: var(--space-row) 0 0; }
-  .workspace-doc .markdown-reader > :first-child { margin-top: 0; }
-  .workspace-doc-text { width: 100%; box-sizing: border-box; font: inherit; }
-  .workspace-doc-edit { margin-top: var(--space-row); align-self: flex-start; }
+  /* Setup's hosted pages (w926): a doc shown whole in the page's one text size. */
+  .setup-doc-body { padding: var(--space-inset); overflow-y: auto; }
+  .setup-doc-body .markdown-reader { font-size: inherit; }
+  .setup-doc-body .markdown-reader :is(h1, h2, h3, h4) { font-size: inherit; font-weight: var(--weight-bold); color: var(--fg-strong); margin: var(--space-paragraph) 0 0; }
+  .setup-doc-body .markdown-reader p { margin: var(--space-row) 0 0; }
+  .setup-doc-body .markdown-reader > :first-child { margin-top: 0; }
+  .workspace-more-integrations { display: flex; flex-direction: column; gap: var(--space-row); }
   .workspace-clone > input { flex: 1 1 auto; min-width: 0; }
   .workspace-browser { display: flex; flex-direction: column; gap: var(--space-row); padding: var(--space-inline); border: var(--edge) solid var(--line-2); border-radius: var(--radius-small); }
   .workspace-browser-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-inline); }

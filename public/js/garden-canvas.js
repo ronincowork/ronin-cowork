@@ -138,22 +138,23 @@ function createGardenCanvas({ onAction = () => {}, onMedia = () => {} } = {}) {
 
   /* A chat seated in place of the scene (setup-irasshai.js), or none: the surface is then that
      chat alone, headed `label` (her name), its header's only tool the chat's own `toggle`
-     (Term / Chat, KAN-717) beside the name (garden-canvas.css). */
+     (Term / Chat, KAN-717) beside the name (garden-canvas.css). With `below` (hosted Setup's Ask
+     Ronin panel, w926) the scene stays and the chat sits under it. */
   let seated = null;
   let seatedToggle = null;
-  const chat = (view, label = '', toggle = null) => {
+  const chat = (view, label = '', toggle = null, { below = false } = {}) => {
     if (surface.header) surface.header.title.textContent = view ? label || 'Assist' : 'Assist';
     if (seatedToggle !== toggle) {
       seatedToggle?.remove();
       seatedToggle = view && toggle && surface.header ? toggle : null;
       if (seatedToggle) surface.header.title.after(seatedToggle);
     }
-    if (seated === view) return;
+    if (seated === view) { scene.hidden = Boolean(seated) && !below; return; }
     seated?.remove();
     seated = view || null;
     if (seated) { closeMedia(); surface.content.append(seated); }
-    scene.hidden = Boolean(seated);
-    surface.el.dataset.chat = seated ? 'on' : 'off';
+    scene.hidden = Boolean(seated) && !below;
+    surface.el.dataset.chat = seated ? (below ? 'below' : 'on') : 'off';
   };
 
   surface.content.append(scene, overlay);

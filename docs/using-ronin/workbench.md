@@ -44,7 +44,7 @@ not separate layout systems.
 | Teams collection | Teams, Agents, shared resources, and creation surfaces available in the selected Campaign context |
 | Team | that Team's Agents, Commons, Epics, New Agent, New Item (the Epics workbench's New form, started on Task) and Agent composition |
 | Agent | Self, Documents, Team membership, and Work Items: the work items the Agent holds across its Teams |
-| Setup | the Garden plus Model providers, Register, Workspace folders, Installations, Password and Launch |
+| Setup | the Garden plus Harnesses, Register, Workspace folders, Installations, Password and Launch |
 
 Adding another tenant or profile adds no layout implementation. Adding another surface
 registers a per-tilespace factory in the shared surfaces registry; any profile may name that type.

@@ -166,7 +166,7 @@ its surface is the Refresh all control Settings' provider surface carries — th
 last-ran line and notice — with its steps under it (owner, 2026-10-20). The third card,
 **Defaults** (`models.defaults`, solid utility, after Model refresh; owner, 2026-10-21), sets the model a new Agent,
 a new Team lead and Mika start on: ⚙ Configuration's own `models` section drawn alone (`buildMachineSettings(…, { only:
-'models' })`), each row saving itself — one record, two views. **The Agent Harness workbench** (KAN-236; owner,
+'models' })`), each row saving itself — one record, two views. **The Harnesses workbench** (KAN-236; owner,
 2026-11-04) is this door under its new word on Home, opened in the four-tilespace shape: the stones (now the **Harness**
 card) in tilespace 1, **Accounts** (`accounts.records`, `accounts-surface.js`) in 2, **Models** (`models.records`,
 `models-records-surface.js`, with the Defaults surface embedded) in 3 and **Refresh** (`models.refresh` under its new
@@ -175,13 +175,13 @@ Discover. Accounts and presets are one reading of the Hermes record (`src/accoun
 a key added on Accounts is the connection the Hermes page shows. The existing types, surfaces and stones are
 unchanged but for their words; the route id stays `models` so saved arrangements survive. Settings' Model
 Providers surface is untouched; all draw with the one drawing `provider-surface.js` exports
-(`createProviderDrawing`, `createRefreshAll`, `providerStones`) over the same record and measure. In Agent Harness,
+(`createProviderDrawing`, `createRefreshAll`, `providerStones`) over the same record and measure. In Harnesses,
 Authenticate offers Mika operating the registry-owned native login command in the current tilespace, or the native
 `provider_setup_*` terminal with Mika reading it from the paired tilespace; Setup and Settings retain their direct
 Authenticate action. Mika is a startup invariant, including before the first owner provider is connected, so the
 two assisted choices do not depend on provider count. In every path the provider summary remains the readiness authority. Workspaces seats
 its own stones of Workspaces (`workspaces-surface.js`, `workspaces.records`): a pressed one's page is the whole
-Workspace: its Summary, its folders added with the kit's folder picker or a pasted path (KAN-728), with GitHub CLI beside them;
+Workspace: Describe (its objective), Where it lives (its folders added with the kit's folder picker or a pasted path, KAN-728, or a pasted Git URL), and More;
 one read of the pinned folders per bench (`createRootsReading`, the detail route). Epics (owner, 2026-11-02;
 KAN-187) seats its own stones of Epics the same way (`epics-surface.js`, `epics.records`): the level-1 work items of
 the Campaign — the store's pushed `epics` and `epicItems`, no request (KAN-190, KAN-206). Since w334 (owner,
@@ -215,9 +215,9 @@ dragged into a workspace reads that page whole there (`help.page`, no selector c
 opens on Chat like every tile, before her record has anything in it; a Mika born by the seat gets a fresh tile once she is up.
 The gate (owner, 2026-10-19): as on the old root, the Teams, Epics and Workspaces doors are locked until one
 model provider is activated (`/api/setup/runtime`'s `activated_count`), each saying under its name that a
-provider is activated in Setup or Agent Harness. Settings, Help (owner, 2026-10-21; with no provider its Mika
-seat is one line pointing to Setup) and Agent Harness (owner, 2026-11-13; KAN-472: it is where a provider is
-signed in, its sign-in tile mounted as on Setup) stay open — a new user's way in is Setup or Agent Harness.
+provider is activated in Setup or Harnesses. Settings, Help (owner, 2026-10-21; with no provider its Mika
+seat is one line pointing to Setup) and Harnesses (owner, 2026-11-13; KAN-472: it is where a provider is
+signed in, its sign-in tile mounted as on Setup) stay open — a new user's way in is Setup or Harnesses.
 
 **One root** (owner, 2026-11-02; KAN-197). That page is the only root: the old Home at `#/current`
 and the bar's Current/Next toggle are deleted, and an old `#/current` link falls to the safe view,
@@ -281,7 +281,7 @@ page-wide progressive gate is deleted.
 | Defaults | `campaign.config.defaults` immediately; provider catalog and Campaign-default options afterward |
 | Workspaces | `/api/workspaces` (the Workspaces stones) |
 | Installations | installation catalog and installed facts; Desk values come from the tenant |
-| Model providers | provider runtime/catalog owned by `provider-surface.js` |
+| Harnesses | provider runtime/catalog owned by `provider-surface.js` |
 | Machine | the selected cowork-commons tab owns its read; unopened tabs do no work |
 | Register / Launch your own | registration or embedded launch-form reads owned by that shared Setup surface |
 | Mika / terminal | readiness and terminal transport only when placed or deliberately prewarmed |
@@ -308,12 +308,14 @@ independently.
 |---|---|
 | Garden | static garden catalog; selected scene only |
 | Register | registration and user-introduction records |
-| Model providers | provider runtime/catalog owned by the shared provider surface |
+| Harnesses | provider runtime/catalog owned by the shared provider surface |
 | Workspaces | `/api/workspaces` (the Workspaces stones, New Workspace among them) |
 | Installations | Desk record, installation catalog, and installed facts |
 | Password | authentication state owned by the shared Password surface |
-| Bounty Program | registration/GitHub facts and the explicit preference it writes |
 | Launch your own | no launch data until Agent or Team is selected; that embedded form then owns its reads |
+| Hosted: Team | the embedded New Team form owns its reads |
+| Hosted: Understanding, Running, Help | its doc in `docs/getting-started/`, read when shown (`/api/file`) |
+| Hosted: Ask Ronin | the garden copy, then the Helpful Assistant's chat (the session push) |
 
 ### Cowork and Team (`cowork` and `team` profiles)
 
@@ -352,7 +354,7 @@ principle (KAN-728): its folders and repositories are rows of its record, and no
 
 | Surface | Required data and owner |
 |---|---|
-| Workspaces (`workspaces.records`) | `/api/workspaces`; the page writes the whole record with `PUT /api/workspaces/:name`, its folder rows (name, dir, note; a repository's mode, working, stable, desks) with it. Its Summary is the Workspace's Markdown file, shown whole (`GET /api/workspaces/:name/doc`) and, after **Edit**, written on Save (`PUT /api/workspaces/:name/doc`). Its Folders: Add a folder is the kit's folder picker (`folder-picker.js`, `/api/folders`) or a pasted path; each row's remote is read with `/api/folders/inspect`; a repository's Mode is a field on its row. Clone from GitHub (`/api/setup/github/clone` with `parent`) asks the repository, clones into the folder its own browser is open on, and adds the row. Nothing is written before Save or Create. Section order: Summary (New: Name), Folders, Integrations, Agent info (objective, instructions, Mode, plans), Behaviors; ⋯ holds Archive. New Workspace shows Name and Folders only. A `/files/<path>` link dropped from Files adds `$HOME/<path>`. Owner, 2026-11-02/03; KAN-728 |
+| Workspaces (`workspaces.records`) | `/api/workspaces`; the page writes the whole record with `PUT /api/workspaces/:name`, its folder rows (name, dir, note; a repository's mode, working, stable, desks) with it. Section order (owner, 2026-11-24; w926): 1 Describe (the objective; New: the Name after it, made from it until typed), 2 Where it lives (Add a folder: the kit's folder picker, `folder-picker.js`, `/api/folders`, or a pasted path; Paste a Git URL: `POST /api/setup/git/clone` with `parent`, any host; My GitHub repositories once gh is signed in: `GET /api/setup/github/repos`, each with Use), 3 More, folded (instructions, Mode, plans, canvases, Integrations, Behaviors); each row's remote is read with `/api/folders/inspect`; ⋯ holds Archive. Nothing is written before Save or Create. A `/files/<path>` link dropped from Files adds `$HOME/<path>`. Owner, 2026-11-02/03; KAN-728 |
 | GitHub CLI (`workspaces.github`) | the GitHub setup read and session attachment `github-workspace-setup.js` owns, one instance per bench |
 
 ### Agent (`agent` profile)

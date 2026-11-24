@@ -5,9 +5,10 @@
 - **serves:** mika, irasshai
 - **order:** 82
 
-**Surfaces `show` can name.** On Ronin Setup: `setup.providers` (Model providers), `setup.register`,
-`setup.roots` (Workspace folders), `setup.services` (Ronin Services), `setup.integrations`
-(Integrations). On a Team or Coworks page: `team.commons` (Docs · Wipeboard · Messages ·
+**Surfaces `show` can name.** On Ronin Setup: `setup.providers` (Harness), `setup.roots`
+(Workspace), `setup.team` (Team), `setup.integrations` (Integrations), `setup.understanding`,
+`setup.running` and `setup.help` (the pages); self-hosted also `setup.register` and
+`setup.installations`. On a Team or Coworks page: `team.commons` (Docs · Wipeboard · Messages ·
 Configuration), `cowork.team-roster`, `session.new-agent`, `ronin.desk` (⚙ cowork commons),
 `cowork.archives`, `cowork.cron-jobs`.
 

@@ -192,7 +192,7 @@ export const modelWord = (row) => rowTierWord(row)
 export function providerModelPair(read, write, field, { fixed = '', classes = '', blank = {}, labels = {} } = {}) {
   const providerSelect = el('select', classes);
   const modelSelect = el('select', classes);
-  providerSelect.setAttribute('aria-label', labels.provider ?? t('forms.provider', 'model provider'));
+  providerSelect.setAttribute('aria-label', labels.provider ?? t('forms.provider', 'harness'));
   modelSelect.setAttribute('aria-label', labels.model ?? t('forms.model', 'model'));
   const option = (label, value, disabled = false) => { const out = el('option', null, label); out.value = value; out.disabled = disabled; return out; };
   const paint = () => {
@@ -218,7 +218,7 @@ export function providerModelPair(read, write, field, { fixed = '', classes = ''
   providerSelect.addEventListener('change', () => { write(providerSelect.value, ''); paint(); });
   modelSelect.addEventListener('change', () => write(fixed || providerSelect.value, modelSelect.value));
   const wrap = el('div', 'fs-pair');
-  if (!fixed) wrap.append(field(labels.provider ?? t('forms.provider', 'model provider'), providerSelect));
+  if (!fixed) wrap.append(field(labels.provider ?? t('forms.provider', 'harness'), providerSelect));
   wrap.append(field(labels.model ?? t('forms.model', 'model'), modelSelect));
   paint();
   if (!providerCatalog().loaded) void loadProviderCatalog().then(paint);

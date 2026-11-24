@@ -9,12 +9,12 @@ import { listProviderCatalog, newerVersion, type ModelList, type ProviderCatalog
 import { activatedAt, npmPackageOf, offAt, providerSignedIn } from './provider-summary.js';
 import { normalizeWorkspace, readWorkspace, saveWorkspace } from './workspaces.js';
 import { initialCampaignId } from './campaign-scope.js';
+import { readOfficeRecord } from './office-record.js';
 import { rootDir } from './resources.js';
 import { runCommand } from './send.js';
 import { execFile as run, SpawnBrokerError } from './spawn-broker.js';
 import { collectBirthLines } from './sockets.js';
 import { killSessionTree, sessionExists } from './tmux.js';
-import { addJob, type Job } from './jikan.js';
 import type { InstalledAnswer } from './routes/installed-api.js';
 
 import { createSetupSession, setupAttachment, PROVIDER_SETUP_TEAM, type SetupSessionPrimitives } from './setup-session.js';
@@ -24,10 +24,8 @@ export const INSTALLED_ROOTS = [
   { name: 'project_one', label: 'Project One', remit: 'The first project-shaped workspace folder.', managed: true },
 ] as const;
 
-export interface SetupPreferences { providers: string[]; path_note: string; bounty_opt_in: boolean }
 interface SetupSection {
   providers?: Record<string, { activated_at?: unknown; off_at?: unknown; sign_in?: ProviderSignIn }>;
-  preferences?: { providers?: unknown; path_note?: unknown; bounty_opt_in?: unknown };
   [key: string]: unknown;
 }
 
@@ -122,7 +120,6 @@ export interface SetupRuntimeAnswer {
   refreshed_at: string;
   roots: Array<{ name: string; label: string; dir: string }>;
   services: { installed: boolean; switched_on: boolean; active: boolean };
-  preferences: SetupPreferences;
 }
 
 export interface ProviderSessionOps {
@@ -138,40 +135,6 @@ type Availability = Awaited<ReturnType<typeof listAgentAvailability>>;
 const sessionName = (provider: string) => `provider_setup_${provider}`;
 const updateSessionName = (provider: string) => `provider_setup_${provider}_update`;
 const installSessionName = (provider: string) => `install_${provider}`;
-
-export function setupPreferences(section: SetupSection): SetupPreferences {
-  const providers = Array.isArray(section.preferences?.providers)
-    ? [...new Set(section.preferences.providers.filter((provider): provider is string =>
-      typeof provider === 'string' && /^[a-z0-9_-]+$/.test(provider)))]
-    : [];
-  return {
-    providers,
-    path_note: typeof section.preferences?.path_note === 'string' ? section.preferences.path_note : '',
-    bounty_opt_in: section.preferences?.bounty_opt_in === true,
-  };
-}
-
-export async function writeSetupPreferences(input: unknown): Promise<SetupPreferences> {
-  const patch = input;
-  if (!patch || typeof patch !== 'object' || Array.isArray(patch)) throw new Error('Send Setup preferences.');
-  const update = patch as { providers?: unknown; path_note?: unknown; bounty_opt_in?: unknown };
-  if (update.providers === undefined && update.path_note === undefined && update.bounty_opt_in === undefined) throw new Error('Send onboarding preferences.');
-  let written: SetupPreferences = { providers: [], path_note: '', bounty_opt_in: false };
-  await updateSection<SetupSection>('setup', (setup) => {
-    const current = setupPreferences(setup);
-    const providers = update.providers === undefined ? current.providers : update.providers;
-    const path_note = update.path_note === undefined ? current.path_note : update.path_note;
-    const bounty_opt_in = update.bounty_opt_in === undefined ? current.bounty_opt_in : update.bounty_opt_in;
-    if (!Array.isArray(providers) || providers.some((provider) => typeof provider !== 'string' || !/^[a-z0-9_-]+$/.test(provider))) {
-      throw new Error('Providers must be provider IDs.');
-    }
-    if (typeof path_note !== 'string' || path_note.length > 2000) throw new Error('Path note must be text up to 2000 characters.');
-    if (typeof bounty_opt_in !== 'boolean') throw new Error('Bounty opt-in must be true or false.');
-    written = setupPreferences({ preferences: { providers, path_note, bounty_opt_in } });
-    return { ...setup, preferences: written };
-  });
-  return written;
-}
 
 const defaultSessionOps: ProviderSessionOps = {
   exists: sessionExists,
@@ -277,7 +240,6 @@ export async function setupRuntimeAnswer(
       switched_on: installed?.services.switched_on ?? false,
       active: Boolean(installed?.services.installed && installed.services.switched_on && installed.services.loaded.length),
     },
-    preferences: setupPreferences(section),
   };
 }
 
@@ -561,13 +523,18 @@ export async function removeGithubAuthentication(ops: GithubSetupOps = defaultGi
 
 /** Clone a GitHub repository into `parent` (Ronin's own folder when none is named). The Workspace
  * page that asked adds it as a row; nothing here keeps a list (KAN-728). */
-export async function cloneGithubWorkspace(repository: unknown, parent?: unknown): Promise<{ dir: string }> {
+/** A repository cloned into a folder here (owner, 2026-11-24; w926): any Git URL, from any host, with
+ * plain git; `owner/name` means GitHub. A public one needs no sign-in; a private one needs this
+ * machine's Git or GitHub sign-in, and git says so in its own words. */
+export async function cloneRepository(repository: unknown, parent?: unknown): Promise<{ dir: string }> {
   const entered = typeof repository === 'string' ? repository.trim() : '';
-  const match = /^(?:https:\/\/github\.com\/|git@github\.com:|ssh:\/\/git@github\.com\/)?([A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+?)(?:\.git)?$/.exec(entered);
-  if (!match) throw new Error('Repository must be owner/name or an HTTPS or SSH github.com URL.');
-  const slug = match[1];
-  const remote = /^(?:git@|ssh:\/\/)/.test(entered) ? entered : `https://github.com/${slug}.git`;
-  const dir = path.join(typeof parent === 'string' && parent.trim() ? path.resolve(parent.trim()) : rootDir('user'), slug.split('/')[1]);
+  const shorthand = /^([A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+?)(?:\.git)?$/.exec(entered);
+  const url = /^(?:https?:\/\/|ssh:\/\/|git@[^:]+:|git:\/\/)\S+$/.test(entered);
+  if (!shorthand && !url) throw new Error('Paste a Git URL (https://…, git@…) or owner/name for GitHub.');
+  const remote = shorthand ? `https://github.com/${shorthand[1]}.git` : entered;
+  const base = remote.replace(/\.git$/, '').replace(/\/+$/, '').split(/[/:]/).pop() || '';
+  if (!/^[A-Za-z0-9_.-]+$/.test(base)) throw new Error('That URL names no repository.');
+  const dir = path.join(typeof parent === 'string' && parent.trim() ? path.resolve(parent.trim()) : rootDir('user'), base);
   if (await exists(dir)) throw new Error(`The destination ${dir} already exists.`);
   const git = await discoverExecutable('git');
   if (!git) throw new Error('Git is not installed or is not available to the owner’s login shell.');
@@ -586,6 +553,15 @@ export async function cloneGithubWorkspace(repository: unknown, parent?: unknown
     throw new Error(safe || 'Git could not access that repository with this machine’s current Git connection.');
   }
   return { dir };
+}
+
+/** The signed-in GitHub account's repositories, newest first, as gh lists them (w926). */
+export async function githubRepositories(): Promise<Array<{ name: string; url: string; private: boolean }>> {
+  const gh = await discoverExecutable('gh');
+  if (!gh) throw new Error('GitHub is not connected here.');
+  const { stdout } = await run(gh, ['repo', 'list', '--limit', '100', '--json', 'nameWithOwner,url,isPrivate'], { timeout: 30_000, maxBuffer: 4 * 1024 * 1024 });
+  return (JSON.parse(String(stdout || '[]')) as Array<{ nameWithOwner: string; url: string; isPrivate: boolean }>)
+    .map((repo) => ({ name: repo.nameWithOwner, url: `${repo.url}.git`, private: repo.isPrivate }));
 }
 
 /** A new folder's repository, created on GitHub with the GitHub CLI: origin set, the first commit pushed.
@@ -642,7 +618,15 @@ export function ensureInstalledRoots(): Promise<Array<{ name: string; label: str
   return rootsInFlight;
 }
 
+/** A hosted office starts with no Workspace (owner, 2026-11-24; w926): Ronin Lab and Project One are
+ * options the Helpful Assistant offers in Setup's Workspace step, made as any Workspace is. Its Ronin
+ * Lab folder is still made, a repository with no Workspace, because plans default there and commit
+ * each write (src/plans.ts). */
 async function placeInstalledRoots(): Promise<Array<{ name: string; label: string; dir: string }>> {
+  if ((await readOfficeRecord().catch(() => null))?.hosting === 'office_unit') {
+    await ensureRepository(path.join(rootDir('user'), INSTALLED_ROOTS[0].name), INSTALLED_ROOTS[0].label, false);
+    return [];
+  }
   const installed = [];
   const campaign = await initialCampaignId();
   for (const root of INSTALLED_ROOTS) {
@@ -660,16 +644,3 @@ async function placeInstalledRoots(): Promise<Array<{ name: string; label: strin
   }
   return installed;
 }
-
-export interface MorningBriefScheduleDraft {
-  team: unknown;
-  request: unknown;
-  when: unknown;
-}
-
-export async function createMorningBriefSchedule(draft: MorningBriefScheduleDraft): Promise<{ team: string; job: Job }> {
-  const team = typeof draft.team === 'string' ? draft.team.trim() : '';
-  const job = await addJob(team, { request: draft.request, when: draft.when, to: 'lead', by: 'owner' });
-  return { team, job };
-}
-

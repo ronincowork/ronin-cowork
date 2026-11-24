@@ -1,20 +1,22 @@
 # Ronin Setup — construction
 
 For contributors: what each Setup surface shows and measures, in full. The user's page is
-[Ronin Setup](../getting-started/setup-workbench.md); provider construction is in
+[Ronin Setup](../getting-started/setup-workbench.md); harness construction is in
 [model providers](model-providers.md), and Workspaces in [Workspaces](../using-ronin/workspaces.md).
 
 ## Where it is
 
 **Ronin Home** has the doors **Teams**, **Epics** and **Workspaces**, and the smaller stones
-**Model Providers**, **Help** and **Settings**. Settings opens **Ronin Setup** until Setup is
-done (below), and **Ronin Settings**, the full configuration workbench, after that. Teams, Epics, Workspaces and Model Providers wait for a model provider; Help
-is open from the start.
+**Harnesses**, **Help** and **Settings**. Teams, Epics and Workspaces wait for an Activated
+harness; Help is open from the start.
 
-Opening Ronin at its bare address, with no page named, lands on **Ronin Setup** until Setup
-is done, and on Home after that (KAN-720). On a hosted office, done is the Helpful Assistant's
-onboarding epic reaching Done. Everywhere else it is the model provider and Workspaces steps
-being ticked; the other three are optional. A link that names a page still opens that page.
+**Hosted** (owner, 24 Nov; w926; samurai_lab wip/SETUP_SWEEP.md §7): nothing decides that Setup
+is finished. The bare address goes Home; Home shows a **Get started** stone, opening Setup,
+while any of the three steps is unticked; Settings is Settings. **Self-hosted**: Settings opens
+**Ronin Setup** until Setup is finished, and **Ronin Settings** after; the bare address lands on
+Setup until then (KAN-720). Finished is the provider and Workspaces steps ticked (the other
+three are optional), answered by the server as `finished` in `GET /api/setup/progress`. A link
+that names a page still opens that page.
 
 ### The ticks
 
@@ -22,15 +24,26 @@ Setup records nothing of its own (owner, 22 Nov; KAN-768). Each step is ticked w
 office's facts say it is done (`src/setup-progress.ts`, read from the same readers the facts
 print, `src/facts.ts`), and every press is a real setting or nothing:
 
+Hosted, three steps, in any order, none a gate:
+
 | Step | Ticked when |
 |---|---|
-| Model providers | a provider is Activated (the integrations_authentications fact) |
+| Harness | one of the person's own harnesses is Activated, never Ronin's house models (`harnessesOn`, the integrations_authentications fact's "Harnesses Activated") |
+| Workspace | a Workspace of theirs, not Ronin Lab, has an objective (`describedWorkspaces`, the workspaces fact) |
+| Team | a Team has a live lead (`ledTeams`, the teams_agents fact) |
+
+Self-hosted, five:
+
+| Step | Ticked when |
+|---|---|
+| Harnesses | a provider is Activated (the integrations_authentications fact) |
 | Register | this machine is registered, by email or anonymously (the machine fact) |
 | Workspaces | a Workspace has a folder (the workspaces fact; machine settings' still needed says the same) |
 | Installations | anything is installed: a Services part, or an installation switched on (the machine fact) |
 | Password | a password is set, or the owner's **Tailscale only** (or **None**) setting is on: `machine.no_password` in machine settings, which the machine fact prints |
 
-`GET /api/setup/progress` answers the ticks and the machine's Tailscale address; each time a
+`GET /api/setup/progress` answers `hosted`, the steps in order with their ticks, `finished`
+(self-hosted) and the machine's Tailscale address; each time a
 fact is written they are pushed again as `setup-progress`, so a change made anywhere ticks its step.
 
 ### Going back to Setup
@@ -45,12 +58,34 @@ Widen the column, or switch the selector to its fuller cards, and the card also 
 step. Once all five are ticked the marks go and the card reads **Setup Complete**. It
 stays where it is, so any step can be opened again whenever you want it.
 
+## Hosted Setup
+
+The owner's onboarding prototype is the look: the selector holds the three steps, **Harness**
+(`setup.providers`), **Workspace** (`setup.roots`) and **Team** (`setup.team`, the ordinary New
+Team form), then three pages with no tick, **Understanding**, **Running** and **Help**, each its
+doc in `docs/getting-started/` shown whole (`setup.understanding`, `setup.running`,
+`setup.help`). The header carries the three step marks. The selector is the same whether the
+Helpful Assistant runs or not, with her entry at the top.
+
+The columns are the selector, the step's surface, and on the right the **Ask Ronin** panel: the
+step's few lines (the garden canvas, `garden.hosted.*`), then her chat. Not running, the panel
+offers her; pressing it, or her entry, posts `POST /api/irasshai/open`, which shows her if she
+runs, restores her archive within its seven days, or makes her fresh. Opening Setup alone does
+not start her; a new office starts her when none of the three steps is ticked. She sees the
+step (Setup reports its view) and opens what it needs with `show`.
+
+A hosted office has no registration, installations or password steps: they are the
+office_park's and the Business Lounge's. Install makes no Workspace there; Ronin Lab and
+Project One are options she offers in the Workspace step, made as any Workspace is. The Ronin
+Lab folder is still made, a repository with no Workspace, because plans default there.
+
 ## The Setup workbench
 
-Setup is one workbench with two workspaces and a selector column between them:
+Self-hosted, Setup is one workbench with two workspaces and a selector column between them
+(hosted: above):
 
 - **Workspace 1** holds the Garden Canvas: short authored guidance for the selected step.
-- **The selector** lists Model providers, optional registration, Workspaces,
+- **The selector** lists Harnesses, optional registration, Workspaces,
   Installations, and Launch. A check means the step's actual completion fact is true.
 - **Workspace 2** is the actionable surface for the selected step. Selecting a card changes
   both workspaces together.
@@ -81,7 +116,7 @@ open the band is gone entirely: that is the step's own page, not its question.
 **Password** never goes blank, because how you reach this machine is an arrangement you may
 want to revisit rather than a one-time fact: it keeps its choices for good.
 
-## Model providers
+## Harnesses
 
 One stone per provider CLI Ronin knows, each wearing its state: **Activated**, **Off**,
 **Sign-in open**, **Needs sign-in**, **Not installed**, or **Manual install**. Opening this surface
@@ -159,7 +194,7 @@ judgement about your own machine, so Setup waits for you to say.
 
 The Workspace step is the Workspaces themselves (KAN-728): Ronin keeps no folder list of its
 own, so every folder Setup adds is a row of a Workspace record (`src/workspaces.ts`). A new
-installation makes two Workspaces inside Ronin (`placeInstalledRoots`, made once each):
+self-hosted installation makes two Workspaces inside Ronin (`placeInstalledRoots`, made once each; a hosted office makes none):
 **Ronin Lab** for ideas, assistants, research and pre-project work, holding the folder
 `ronin_lab`, and **Project One** for project work, holding the repository `project_one`,
 Reviewed (working `dev`, stable `main`). Your Lab is a general thinking space, not the code
@@ -168,21 +203,17 @@ commit.
 
 The surface shows the Workspaces as stones (`createWorkspaceStones`, `withNew`), with a **New
 Workspace** stone last. Pressing a stone opens the Workspace's page, the same page as the
-Workspaces door's ([Workspaces](../using-ronin/workspaces.md)): Summary, Folders with **Add a
-folder** and **Clone from GitHub**, then Integrations, Agent info and Behaviors; Archive under ⋯.
-New Workspace is its Name and its Folders, then Create; the made Workspace opens in its place.
+Workspaces door's ([Workspaces](../using-ronin/workspaces.md)), in the owner's order (24 Nov; w926):
+1 **Describe**, the objective ("What are you working on?") and a new one's Name, made from it
+until typed; 2 **Where it lives**, **Add a folder**, **Paste a Git URL** (any host, plain git:
+`POST /api/setup/git/clone`) and, once GitHub is signed in here, **My GitHub repositories**
+(`GET /api/setup/github/repos`, each with Use); 3 **More**, folded: instructions, Mode, plans,
+canvases, Integrations and Behaviors; Archive under ⋯. The made Workspace opens in its place.
 
-**Authenticate GitHub** follows three measured steps: **Install**, **Authenticate**, and
-**Ready**. If `gh` is absent, one Install button opens a visible temporary provider-style
-terminal and runs the supported package-manager path for this macOS or Linux machine; the
-owner can see its output and answer a system privilege prompt. Authenticate then offers two
-paths: **Use GitHub CLI with Mika** opens the native `setup_github` terminal while Mika reads
-that session in the opposite tilespace and guides the owner; **Let Mika connect GitHub** puts
-Mika in the current tilespace to run the CLI herself. Both use GitHub's browser/device flow,
-so a headless machine shows a code that the owner approves in a browser elsewhere. A connected
-account is named and offers **Remove authentication**;
-removal deletes that account's saved GitHub CLI login from this machine but does not revoke
-the account's GitHub tokens.
+GitHub is never a step of its own: a public repository clones without it. For a private one, or
+"my repositories", the Helpful Assistant (or Mika, self-hosted) signs the GitHub CLI in with
+GitHub's device flow and `gh auth setup-git`, so a headless machine shows a code the owner
+approves in a browser elsewhere.
 
 ## Ronin Services
 

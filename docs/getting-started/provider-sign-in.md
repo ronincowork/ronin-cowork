@@ -6,7 +6,7 @@ add another provider whenever you like. One is enough to start.
 
 ## Pick a provider
 
-Open **Model providers** in [Ronin Setup](setup-workbench.md), or from the **Models** door
+Open **Harnesses** in [Ronin Setup](setup-workbench.md), or from the **Models** door
 on Ronin Home. Each provider is a stone that says where it stands:
 
 - **Not installed** — Ronin can install it for you.
@@ -26,7 +26,7 @@ can watch it and answer anything it asks. When it finishes, Install gets its che
 
 ## Sign in
 
-In the Agent Harness workbench, choose **Let Mika authenticate** to have Mika run the
+In the Harnesses workbench, choose **Let Mika authenticate** to have Mika run the
 provider's native setup in this tilespace, or **Use the CLI with Mika** to operate the
 native sign-in yourself while Mika reads it and guides you from the paired tilespace.
 On other setup surfaces, **Authenticate** opens the same native sign-in directly. Follow

@@ -251,7 +251,7 @@ or a recorded tile.
 - **Installed is not signed in.** From the same login shell a Ronin tile receives,
   `for c in claude codex agy grok hermes copilot opencode kimi; do command -v "$c" || true; done` proves only
   whether a CLI is found. The provider catalog (`ronin_stock/MODEL_PROVIDERS.md`) lists
-  what Ronin offers; **Model providers** shows what this machine has.
+  what Ronin offers; **Harnesses** shows what this machine has.
 - **Signed in is a file's existence.** A provider whose own credential file is present
   (Claude Code `~/.claude/.credentials.json`, Codex `~/.codex/auth.json`, Grok `~/.grok/auth.json`, OpenCode `~/.local/share/opencode/auth.json`, Kimi Code `~/.kimi-code/credentials/managed:kimi-code.json`) shows as signed in; Ronin reads
   only that the file exists and does not recheck the account afterwards.
@@ -280,7 +280,7 @@ a repository.
 1. Under **Launch your own → Agent**, choose the Workspace folder and one activated
    provider and model.
 2. Launch and wait for the Agent's ready prompt. If it asks for authentication, return to
-   **Model providers** and retry once the owner has completed it.
+   **Harnesses** and retry once the owner has completed it.
 3. Send a harmless prompt needing no private data or file change:
    `Reply with exactly: Ronin Agent ready`
 

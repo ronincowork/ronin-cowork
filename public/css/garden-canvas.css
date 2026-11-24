@@ -53,6 +53,14 @@
   .garden-canvas .setup-irasshai-chat > .wk-terminal-host[hidden] { display: none; }
   .garden-canvas .setup-irasshai-chat .wk-hosted-tile > .tile-head { display: none; }
   .garden-canvas .setup-irasshai-chat .wk-hosted-tile { height: 100%; border: 0; border-radius: 0; }
+  /* HOSTED: THE ASK RONIN PANEL (w926): the step's lines on top, her chat (or the button that asks
+     for her) under them, one column; the scene gives up its centring and horizon padding. */
+  .garden-canvas[data-chat='below'] .garden-canvas-content { grid-template-rows: auto minmax(0, 1fr); }
+  .garden-canvas[data-chat='below'] .garden-canvas-scene { min-height: 0; align-content: start; padding: var(--space-inset); }
+  .garden-canvas[data-chat='below'] .garden-canvas-mark,
+  .garden-canvas[data-chat='below'] .garden-canvas-hito { display: none; }
+  .garden-canvas[data-chat='below'] .wk-surface-header-actions { display: none; }
+  .garden-canvas .setup-ask-offer { padding: var(--space-inset); border-top: 1px solid var(--line); }
 
   /* The horizon keeps its height and crops at the sides: a narrower column
      shows less field, never a squashed one. */

@@ -52,7 +52,7 @@ export function providerSurfaceDefinition() {
     type: PROVIDER_SURFACE_TYPE,
     header: 'surface',
     groupKey: PROVIDER_SURFACE_TYPE,
-    label: () => t('setup_surface.providers', 'Model providers'),
+    label: () => t('setup_surface.providers', 'Harnesses'),
     summary: () => providersSummary(providerCatalog()),
     create: (context) => createProviderSurface(context),
   };
@@ -115,7 +115,7 @@ export function providerStones(runtime) {
 }
 
 export function createProviderSurface(context) {
-  const out = WorkspaceKit.primitives.createSurface({ label: t('setup_surface.providers', 'Model providers'), className: 'setup-surface setup-provider-surface' });
+  const out = WorkspaceKit.primitives.createSurface({ label: t('setup_surface.providers', 'Harnesses'), className: 'setup-surface setup-provider-surface' });
   const notice = el('p', 'setup-fine setup-provider-notice'); notice.hidden = true;
   const mikaAvailability = el('p', 'setup-fine setup-mika-availability');
   let opened = String(context.detail?.provider || context.detail?.key || '');
@@ -164,7 +164,7 @@ export function createProviderSurface(context) {
     context.workbench?.refreshSelector?.();
     const items = drawing.stones();
     firstProviderId = String(items[0]?.id || '');
-    say(items.length ? '' : t('setup_surface.no_catalog', 'No model providers are in the catalog on this machine.'));
+    say(items.length ? '' : t('setup_surface.no_catalog', 'No harnesses are in the catalog on this machine.'));
     stones.setItems(items);
     if (openFirstWhenReady && firstProviderId) {
       openFirstWhenReady = false;
@@ -218,7 +218,7 @@ export function stepItem({ key, n, label, state = '', detail = '', status = '', 
 export function createRefreshAll(drawing, { onStep = () => {}, between = null } = {}) {
   const bar = el('div', 'setup-provider-refresh');
   const lastRan = el('p', 'setup-fine setup-provider-last-ran');
-  const made = WorkspaceKit.primitives.createAction({ label: t('setup_surface.refresh_all', 'Refresh all model providers'), kind: '', action: async () => {
+  const made = WorkspaceKit.primitives.createAction({ label: t('setup_surface.refresh_all', 'Refresh all harnesses'), kind: '', action: async () => {
     button.disabled = true;
     button.textContent = t('setup_surface.refreshing_lists', 'Reading model lists…');
     onStep('lists', 'running');
@@ -231,7 +231,7 @@ export function createRefreshAll(drawing, { onStep = () => {}, between = null } 
       onStep('accounts', answered ? 'done' : 'failed');
     }
     button.disabled = false;
-    button.textContent = t('setup_surface.refresh_all', 'Refresh all model providers');
+    button.textContent = t('setup_surface.refresh_all', 'Refresh all harnesses');
     paint();
   } });
   const button = made.el ?? made;
@@ -507,7 +507,7 @@ export function createProviderDrawing(context, { repaint, say = () => {} }) {
   const listState = (entry) => {
     if (!entry?.activated) return '';
     const list = entry.model_list;
-    if (!list) return t('setup_surface.models_not_read', 'Model list not read yet — press Refresh all model providers.');
+    if (!list) return t('setup_surface.models_not_read', 'Model list not read yet — press Refresh all harnesses.');
     if (list.unavailable) return list.unavailable;
     return t('setup_surface.models_read', 'Model list read {date} by {cli} {version}', { date: list.read_at, cli: entry.label || entry.id, version: list.by || '' }).trim();
   };

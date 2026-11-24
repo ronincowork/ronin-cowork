@@ -58,10 +58,10 @@ export function resolveMikaModel(input: {
   summary: ProviderSummary | null;
 }): MikaSelection {
   const { level, specs, summary } = input;
-  if (!summary) throw new MikaUnavailable('mika_provider_unmeasured', 'Provider readiness has not been measured. Check Model providers before Mika can start.', [], level);
+  if (!summary) throw new MikaUnavailable('mika_provider_unmeasured', 'Provider readiness has not been measured. Check Harnesses before Mika can start.', [], level);
   const operational = new Set(summary.operational);
   const eligible = specs.filter((spec) => operational.has(spec.cli));
-  if (!eligible.length) throw new MikaUnavailable('mika_no_ready_provider', 'Mika needs a signed-in model provider. Open Model providers.', [], level);
+  if (!eligible.length) throw new MikaUnavailable('mika_no_ready_provider', 'Mika needs a signed-in harness. Open Harnesses.', [], level);
   const general = input.generalProvider ?? '';
   const generalReady = !!general && eligible.some((spec) => spec.provider === general);
   const provider = generalReady ? general : eligible[0].provider;
@@ -121,7 +121,7 @@ export const mikaStartHereSource = (): string => path.join(REPO_ROOT, 'ronin_sto
 /** What she is TOLD at birth, one line each; the long reading is in her birth brief. */
 export const MIKA_PROMPTS = {
   help: 'The owner opened Help without asking anything yet. Say hello in one line, say what you can do, and wait.',
-  setup_provider_ready: 'The owner just signed in their first model provider on Ronin Setup. Follow the Setup walkthrough in your birth brief, starting with its first question.',
+  setup_provider_ready: 'The owner just signed in their first harness on Ronin Setup. Follow the Setup walkthrough in your birth brief, starting with its first question.',
 } as const;
 export const mikaStartHerePath = (): string => path.join(mikaHomeDir(), 'START_HERE.md');
 

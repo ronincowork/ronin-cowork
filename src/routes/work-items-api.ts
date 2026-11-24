@@ -4,6 +4,7 @@
  * next act. The refusals (409): nothing goes below -1 ("w39 can't go there."), and what Jira
  * itself would refuse on a connected campaign. */
 import type express from 'express';
+import { initialCampaignId } from '../campaign-scope.js';
 import {
   WorkItemBadInput, WorkItemMissing, WorkItemRefused,
   addComment, attachDoc, connectionOf, createItem, deleteItem, editComment, editItem, archiveHeldDone, archiveItem, flagItem, handoffItem, reviewPrompt, handoverItem, holderLabel, holdersOf, linkItem, listItems, markOnDev, nextStep, parentHint, readItem, resolveId, sendBack, watchItem, watchedIds,
@@ -41,11 +42,14 @@ export function answerError(res: express.Response, error: unknown): void {
   else res.status(500).json({ ok: false, error: message });
 }
 
-/** A holder is named as { team } or { session }. */
-export function holderFrom(body: Record<string, unknown> | undefined): Holder {
+/** A holder is named as { team }, { session } or { workspace } (w926: a Workspace holds its own
+ * open items as it holds its Icebox; the namer names it, nothing is inferred). */
+export async function holderFrom(body: Record<string, unknown> | undefined): Promise<Holder> {
   const team = text(body?.team)?.trim();
   const session = text(body?.session)?.trim();
-  if (Boolean(team) === Boolean(session)) throw new WorkItemBadInput('name the holder as team or session, one of them.');
+  const workspace = text(body?.workspace)?.trim();
+  if ([team, session, workspace].filter(Boolean).length !== 1) throw new WorkItemBadInput('name the holder as team, session or workspace, one of them.');
+  if (workspace) return { kind: 'workspace', name: workspace, campaign: await initialCampaignId() };
   return team ? { kind: 'team', name: team } : { kind: 'agent', name: session!.replace(/^agent:/, '') };
 }
 
@@ -133,7 +137,7 @@ export function registerWorkItems(app: express.Express): void {
     // { playbook: true } (--playbook): a new playbook; one made under a playbook item is one too.
     const done = await createItem({
       title: text(b.title) ?? '', objective: text(b.objective), status: text(b.status), kind: text(b.kind), priority: text(b.priority), parent: text(b.parent) || null,
-      ...(b.team || b.session ? { holder: holderFrom(b) } : {}),
+      ...(b.team || b.session || b.workspace ? { holder: await holderFrom(b) } : {}),
       playbook: b.playbook === true || b.playbook === 'true',
     }, callerOf(req));
     const hint = parentHint(done.item);
@@ -196,11 +200,11 @@ export function registerWorkItems(app: express.Express): void {
     handoff: async (id, b, by) => {
       const named = text(b.from)?.trim();
       const from: Holder | undefined = named ? (named.startsWith('team:') ? { kind: 'team', name: named.slice(5) } : { kind: 'agent', name: named.replace(/^agent:/, '') }) : undefined;
-      return acted(await handoffItem(id, holderFrom(b), by, { from, keepHolding: b.keep_holding === true || b.keep_holding === 'true', note: text(b.note) }));
+      return acted(await handoffItem(id, await holderFrom(b), by, { from, keepHolding: b.keep_holding === true || b.keep_holding === 'true', note: text(b.note) }));
     },
     // The handover: { note } where it stands and what is next, the caller off and the receiver
     // on, the status kept; { to_do } puts it back to To Do too; { flag } the question for the lead.
-    handover: async (id, b, by) => acted(await handoverItem(id, holderFrom(b), by, {
+    handover: async (id, b, by) => acted(await handoverItem(id, await holderFrom(b), by, {
       note: text(b.note), flag: text(b.flag), toDo: b.to_do === true || b.to_do === 'true',
     })),
     // Archive now: a Done item off every list at once, as the five-day sweep does (archiveItem).
@@ -217,7 +221,7 @@ export function registerWorkItems(app: express.Express): void {
   // takes it off; no hold changes, no trail line.
   for (const [verb, watch] of [['watch', true], ['unwatch', false]] as const) {
     acts[verb] = async (given, b, by) => {
-      const watcher = b.team || b.session ? holderFrom(b) : { kind: 'agent', name: by } as const;
+      const watcher = b.team || b.session || b.workspace ? await holderFrom(b) : { kind: 'agent', name: by } as const;
       const { id, watches } = await watchItem(given, watcher, watch);
       const list = watches.length ? watches.join(', ') : 'nothing';
       return { extra: { watches }, acknowledgement: watcher.kind === 'agent' && watcher.name === by

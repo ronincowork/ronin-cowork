@@ -4206,12 +4206,6 @@ body {
 .setup-github-terminal { min-height: 18rem; margin-top: var(--space-paragraph); }
 .setup-github-terminal-actions { display: flex; gap: var(--space-inline); margin-top: var(--space-row); }
 .setup-github-terminal-actions[hidden] { display: none; }
-.setup-bounty-intro { display: grid; gap: var(--space-row); }
-.setup-bounty-requirement-list { display: grid; gap: var(--space-row); margin: 0; padding: 0; list-style: none; }
-.setup-bounty-requirement-list .ready { color: var(--ok); }
-.setup-bounty-requirement-list .locked { color: var(--muted); }
-.setup-bounty-detail { display: grid; gap: var(--space-paragraph); padding: var(--space-inset); }
-.setup-bounty-detail h3, .setup-bounty-detail h4, .setup-bounty-detail p { margin: 0; }
 .wk-workbench-host [data-workbench-offer-type][data-scene-relevant='false'] { opacity: .48; }
 .wk-workbench-host [data-workbench-offer-type][data-scene-relevant='true'] .wk-card-heading { font-weight: var(--weight-bold); }
 .wk-workbench-host [data-registration-locked='true'] .wk-card-heading::after { content: '  🔒'; font-size: .8em; }
