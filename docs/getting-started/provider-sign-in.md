@@ -4,16 +4,29 @@ Ronin runs the harnesses you already pay for: Claude Code, Codex, Antigravity CL
 signed in with your own account. Nobody sits between you and the provider. One is enough to start;
 a second keeps your Agents working when one hits a limit or an outage.
 
-Each harness holds one sign-in: your **subscription** (Claude Pro or Max, ChatGPT Plus or Pro) or an
-**API key** (pay as you go). Signing in again replaces the one before.
+## Four ways, one at a time
+
+A harness runs on one of four ways, and only one at a time:
+
+1. **Subscription**: the plan you pay its maker for (Claude Pro or Max, ChatGPT Plus or Pro).
+2. **API key**: a key from its maker's console, paid as you go.
+3. **Ronin gateway**: Ronin's own models. Coming soon: Claude Code speaks only Anthropic's API, which
+   the gateway does not serve yet, and Codex on the gateway is not yet proven.
+4. **OpenRouter**: one OpenRouter account for many models, given to the harness when an Agent starts.
+   Coming soon: both CLIs support it, but Ronin does not pass it at launch yet.
+
+The first two are the harness's own sign-in, kept by the harness itself; signing in the other way
+replaces it. Which one it is on comes from the harness's own status (`claude auth status`,
+`codex login status`), so the bar always shows the true one.
 
 ## In Setup
 
 Open **Harness** in Setup. Each harness is a bar that says where it stands: **Sign in**,
 **Signing in**, **Signed in** or **Off**.
 
-**Claude Code and Codex** sign in without a terminal. Press **Sign in**, then **Sign in with your
-subscription** or **Use an API key**. The bar shows only what you need to do:
+**Claude Code and Codex** sign in without a terminal. Press the bar: it shows the four ways, the one
+it is on selected. Press **Subscription** or **API key**; if it is already on the other one, the bar
+says one at a time, and a second press switches. Then the bar shows only what you need to do:
 
 - **Codex, subscription:** a link and a code. Open the link, sign in, and enter the code there.
 - **Claude Code:** a link. Open it, sign in, and paste the code it gives you into the box on the bar,

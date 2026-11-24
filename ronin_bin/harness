@@ -9,7 +9,7 @@ TOOL_DIR=$(dirname "$SELF")
 usage() { cat <<'EOF_USAGE'
 Usage:
   harness sign-in <claude|codex> subscription|api_key   start its sign-in; prints the link and code
-  harness state                                         the sign-ins open now: link, code, what to paste
+  harness state                                         each one's sign-in way, and the sign-ins open now
   harness cancel <claude|codex>                         stop that sign-in
 The code or key is pasted into the box on the page by the person, never sent here. How it ends
 comes to you as a House notice. Other harnesses sign in on their own page: ronin-help provider-sign-in.
@@ -40,9 +40,10 @@ def call(method, route, body=None):
     data = json.loads(text) if text.strip().startswith(('{', '[')) else {}
     if not status.startswith('2'): sys.exit(f"harness: {data.get('error') or text.strip() or out.stderr.strip() or status}")
     return data
-def runs(): 
+def runs():
     state = call('GET', '/api/setup/sign-in')
     return state.get('runs', state) if isinstance(state, dict) else state
+WAY = {'subscription': 'subscription', 'api_key': 'API key'}
 def show(run):
     paste = {'code': 'the person pastes the code into the box on the page', 'key': 'the person pastes the key into the box on the page'}.get(run.get('paste'), 'nothing to paste')
     print(f"{run.get('label') or run.get('provider')} ({run.get('way')}): link {run.get('link') or 'not yet'}{', code ' + run['code'] if run.get('code') else ''}; {paste}{' (sent)' if run.get('sent') else ''}")
@@ -56,7 +57,10 @@ if cmd == 'sign-in':
         run = next((r for r in found if isinstance(r, dict) and r.get('provider') == provider), run)
     show(run)
 elif cmd == 'state':
-    found = runs(); found = list(found.values()) if isinstance(found, dict) else list(found or [])
+    state = call('GET', '/api/setup/sign-in')
+    for provider, way in (state.get('ways') or {}).items():  # as each CLI's own status says
+        print(f"{provider}: {'signed in with its ' + WAY[way] if way else 'not signed in'}")
+    found = state.get('runs') or []
     if not found: print('No sign-in is open.')
     for run in found:
         if isinstance(run, dict): show(run)

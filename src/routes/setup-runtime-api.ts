@@ -167,7 +167,7 @@ export function registerSetupRuntime(app: express.Express): void {
 
   // SIGN-IN WITHOUT A TERMINAL (src/provider-sign-in.ts): start for a way, paste, cancel; the state
   // is pushed as `harness-sign-in`, and read here when a page opens. `tell` names who hears the end.
-  app.get('/api/setup/sign-in', (_req, res) => { res.json(signInState()); });
+  app.get('/api/setup/sign-in', async (_req, res) => { res.json(await signInState()); });
   app.post('/api/setup/providers/:provider/sign-in', async (req, res) => {
     try { res.json({ ok: true, run: await startSignIn(String(req.params.provider), req.body?.way === 'api_key' ? 'api_key' : 'subscription', String(req.body?.tell ?? '')) }); }
     catch (error) { res.status(400).json({ error: errMsg(error) }); }
