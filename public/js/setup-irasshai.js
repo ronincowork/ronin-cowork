@@ -65,7 +65,7 @@ export function createIrasshaiOpener({ refresh, showChat }) {
   };
   // The selector draws cards by name (their summary line is folded away), so the name carries the state.
   const label = () => (state === 'opening' ? t('setup.irasshai_opening', 'Opening…')
-    : state === 'failed' ? t('setup.irasshai_failed', 'Couldn’t open the Helpful Assistant') : t('setup.irasshai_open', IRASSHAI_NAME));
+    : state === 'failed' ? why || t('setup.irasshai_failed', 'Couldn’t open the Helpful Assistant') : t('setup.irasshai_open', IRASSHAI_NAME)); // why in one line, as the server says it
   const summary = () => (state === 'failed' && why ? why
     : irasshaiLive() ? t('setup.irasshai_here', 'Here, in Ask Ronin') : t('setup.irasshai_open_title', 'Your welcome Agent: start here'));
   return {

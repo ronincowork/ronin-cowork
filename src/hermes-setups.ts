@@ -31,7 +31,7 @@ async function isHouse(baseUrl: string): Promise<boolean> {
   const office = await readOfficeRecord();
   return office.hosting === 'office_unit' && new URL(baseUrl).origin === new URL(office.record.gateway_office).origin;
 }
-async function readKey(c: Pick<HermesConnection, 'id' | 'baseUrl'>): Promise<string> {
+export async function readKey(c: Pick<HermesConnection, 'id' | 'baseUrl'>): Promise<string> {
   if (await isHouse(c.baseUrl)) { const token = await getHouseToken(); return token && !/[\r\n'"\\]/.test(token) ? token : ''; }
   if (!idPattern.test(c.id)) return '';
   try { return parse(await readFile(keyPath(c.id))).OPENAI_API_KEY || ''; } catch { return ''; }
