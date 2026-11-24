@@ -77,6 +77,8 @@ export function normalizeGardenCanvasCatalog(value, now = Date.now()) {
       cta: normalizeCta(raw.cta),
       copy: normalizeCopy(raw.copy, now),
       media: normalizeMedia(raw.media),
+      // The questions people ask about this step, by their wording in the Tour's Questions (Setup's step guide).
+      asks: Object.freeze(Array.isArray(raw.asks) ? raw.asks.map(text).filter(Boolean) : []),
     });
   }
   return Object.freeze({ schema_version: GARDEN_CANVAS_VERSION, canvases: Object.freeze(canvases) });

@@ -42,9 +42,12 @@ form), and **Tour**, the Ronin Tour with no tick, `docs/getting-started/tour.md`
 step marks. The selector is the same whether she runs or not.
 
 Setup has no hints: no Agent vocabulary, no session controls. At the foot of the selector, where
-they were, is **the step's guide**: the how-to for the step on screen, from its canvas
-(`public/content/setup-garden.v2.json`, `garden.setup.*`), with its doc links, which open over
-the panel.
+they were, is **the step's guide**, kept thin (owner, 24 Nov): the step's title, the questions
+people ask about it, each one line that opens to its answer, and its one guide doc. The title and
+doc come from the step's canvas (`public/content/setup-garden.v2.json`, `garden.setup.*`, painted
+with the canvas's own copy and media rows); its `asks` name questions by their wording in the
+Tour's Questions, and the answers are read from `docs/getting-started/tour.md`, so the Tour stays
+their one source.
 
 The columns are the selector, the step's surface, and on the right the **Ask Ronin** panel, which
 is only her: her chat, or, not running, the offer of her. Pressing it, or her pill, posts `POST /api/irasshai/open`, which shows her if she

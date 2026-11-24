@@ -1,0 +1,12 @@
+{
+  "ronin_lab": {
+    "title": "Ronin Lab",
+    "objective": "A place for brainstorming, notes and research, away from my main code.",
+    "folder": "~/ronin/ronin_lab"
+  },
+  "project_one": {
+    "title": "Project One",
+    "objective": "A first project to try Agents on while I decide what to work on.",
+    "folder": "~/ronin/project_one"
+  }
+}

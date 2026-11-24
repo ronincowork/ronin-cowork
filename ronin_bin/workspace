@@ -15,6 +15,8 @@ Usage:
   workspace instructions <handle> "<text>"        replace its standing directions to Agents
   workspace add <handle> <folder|git-url>         a folder (made under ~ when it is not there) or a
                                                   repository cloned from any Git host (owner/name: GitHub)
+  workspace starter ronin_lab|project_one         make Ronin Lab or Project One as Ronin ships them
+                                                  (ronin_stock/STARTER_WORKSPACES.json): title, objective, folder
 "<text>" may be - to read it from stdin. The objective is the one place that says what the project is.
 EOF_USAGE
 }
@@ -25,6 +27,7 @@ case "$cmd" in
   read) [ "$#" -eq 1 ] || { usage >&2; exit 2; } ;;
   create) [ "$#" -eq 3 ] && [ "$2" = --objective ] || { usage >&2; exit 2; } ;;
   objective|instructions|add) [ "$#" -eq 2 ] || { usage >&2; exit 2; } ;;
+  starter) [ "$#" -eq 1 ] && { [ "$1" = ronin_lab ] || [ "$1" = project_one ]; } || { usage >&2; exit 2; } ;;
   *) echo "workspace: unknown command $cmd (workspace --help)" >&2; exit 2 ;;
 esac
 args=("$@")
@@ -32,7 +35,7 @@ args=("$@")
 
 . "$TOOL_DIR/ronin-http.sh"
 ronin_connect || exit $?
-RONIN_BASE="$url" CMD="$cmd" python3 - "${RONIN_CURL[@]+"${RONIN_CURL[@]}"}" --args "${args[@]}" <<'EOF_PY'
+RONIN_BASE="$url" CMD="$cmd" STARTERS="$TOOL_DIR/../ronin_stock/STARTER_WORKSPACES.json" python3 - "${RONIN_CURL[@]+"${RONIN_CURL[@]}"}" --args "${args[@]}" <<'EOF_PY'
 import json, os, re, subprocess, sys
 argv = sys.argv[1:]
 split = argv.index('--args')
@@ -87,6 +90,13 @@ elif cmd == 'create':
 elif cmd in ('objective', 'instructions'):
     w = one(args[0]); w[cmd] = args[1].strip(); save(w)
     print('%s of %s written.' % (cmd.capitalize(), w['name']))
+elif cmd == 'starter':
+    seed = json.load(open(os.environ['STARTERS']))[args[0]]
+    if any(w['name'] == args[0] for w in workspaces()): print('%s is already here.' % seed['title']); sys.exit(0)
+    path = os.path.expanduser(seed['folder'])
+    os.makedirs(path, exist_ok=True)
+    w = call('PUT', '/api/workspaces/' + args[0], {'title': seed['title'], 'objective': seed['objective'], 'folders': [{'name': args[0], 'dir': path, 'note': ''}]})['workspace']
+    print('Made %s — %s, holding %s' % (w['name'], w.get('title'), path))
 elif cmd == 'add':
     w = one(args[0]); what = args[1].strip()
     if re.match(r'^(https?://|ssh://|git@|git://)', what) or re.match(r'^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$', what) and not os.path.exists(os.path.expanduser(what)):

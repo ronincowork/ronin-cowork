@@ -7,13 +7,7 @@
           "id": "hosted-harness-intro",
           "kind": "title",
           "eyebrow": "Setup · Harness",
-          "heading": "Connect the harness you already use.",
-          "body": "A harness is the agent tool that does the work, like Claude Code or Codex. Ronin runs it for you, signed in with your own account. Ronin never resells model access or sits between you and the provider."
-        },
-        {
-          "id": "hosted-harness-1",
-          "kind": "instruction",
-          "body": "One harness is enough to start. If one hits a limit or an outage, Agents on another keep working."
+          "heading": "Connect the harness you already use."
         }
       ],
       "media": [
@@ -23,14 +17,12 @@
           "label": "Signing in a harness",
           "description": "How each harness signs in here",
           "path": "docs/getting-started/provider-sign-in.md"
-        },
-        {
-          "id": "hosted-harness-doc-2",
-          "kind": "doc",
-          "label": "Ronin Tour",
-          "description": "How Agents begin, how work runs, questions",
-          "path": "docs/getting-started/tour.md"
         }
+      ],
+      "asks": [
+        "What is the difference between a harness and a model?",
+        "Do I pay Ronin for model use?",
+        "Can I add another harness later?"
       ]
     },
     "garden.setup.workspace": {
@@ -39,18 +31,7 @@
           "id": "hosted-workspace-intro",
           "kind": "title",
           "eyebrow": "Setup · Workspace",
-          "heading": "Tell us what you are working on.",
-          "body": "A Workspace is one project: what it is, then where it lives, a folder here or its repositories."
-        },
-        {
-          "id": "hosted-workspace-1",
-          "kind": "instruction",
-          "body": "Describe it first; that alone makes the Workspace."
-        },
-        {
-          "id": "hosted-workspace-2",
-          "kind": "instruction",
-          "body": "Then add a folder, or paste a Git URL. GitHub is only needed for private repositories."
+          "heading": "Tell us what you are working on."
         }
       ],
       "media": [
@@ -60,14 +41,13 @@
           "label": "Workspaces",
           "description": "What a Workspace is, and how to add its folders",
           "path": "docs/using-ronin/workspaces.md"
-        },
-        {
-          "id": "hosted-workspace-doc-2",
-          "kind": "doc",
-          "label": "Ronin Tour",
-          "description": "How Agents begin, how work runs, questions",
-          "path": "docs/getting-started/tour.md"
         }
+      ],
+      "asks": [
+        "What is a Workspace?",
+        "Do I need GitHub?",
+        "What is a worktree?",
+        "Can Agents push to my main branch?"
       ]
     },
     "garden.setup.team": {
@@ -76,13 +56,7 @@
           "id": "hosted-team-intro",
           "kind": "title",
           "eyebrow": "Setup · Team",
-          "heading": "Start a Team in your Workspace.",
-          "body": "A Team is a group of Agents on one piece of work, in one Workspace. Its lead coordinates the others and builds out the rest."
-        },
-        {
-          "id": "hosted-team-1",
-          "kind": "instruction",
-          "body": "Name it, say what it is for, choose the lead's harness. Add more Agents if you want them."
+          "heading": "Start a Team in your Workspace."
         }
       ],
       "media": [
@@ -92,14 +66,13 @@
           "label": "A new Team",
           "description": "The form, field by field",
           "path": "docs/using-ronin/new-team.md"
-        },
-        {
-          "id": "hosted-team-doc-2",
-          "kind": "doc",
-          "label": "Ronin Tour",
-          "description": "How Agents begin, how work runs, questions",
-          "path": "docs/getting-started/tour.md"
         }
+      ],
+      "asks": [
+        "Cowork or bare-metal: which should I choose?",
+        "What happens when an Agent hands in work?",
+        "How do I answer an Agent that is waiting on me?",
+        "Terminal or Chat: which should I use?"
       ]
     },
     "garden.setup.tour": {
@@ -108,11 +81,11 @@
           "id": "setup-tour-intro",
           "kind": "title",
           "eyebrow": "Ronin Tour",
-          "heading": "How your Agents begin, and how the work runs.",
-          "body": "Nothing here needs configuring to start. Questions people ask first are at the end; Ask Ronin answers anything else."
+          "heading": "How your Agents begin, and how the work runs."
         }
       ],
-      "media": []
+      "media": [],
+      "asks": []
     }
   }
 }

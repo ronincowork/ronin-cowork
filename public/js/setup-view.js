@@ -6,7 +6,7 @@ import { createProviderSetupSessionMount } from './provider-setup-session.js';
 import { request } from './request.js';
 import { t } from './lexicon.js';
 import { SETUP_SCENES as SCENES } from './setup-journey.js';
-import { GARDEN_CANVAS_TYPE, registerGardenCanvas } from './garden-canvas.js';
+import { GARDEN_CANVAS_TYPE, paintCopy, paintMedia, registerGardenCanvas } from './garden-canvas.js';
 import { localDocumentLink, productRepositoryHref } from './document-links.js';
 import { normalizeGardenCanvasCatalog } from './garden-canvas-model.js';
 import { workbenchLaunchUrl } from './workspace.js';
@@ -206,36 +206,49 @@ export function createSetupView() {
   const guide = document.createElement('section');
   guide.className = 'setup-step-guide';
   guide.setAttribute('aria-live', 'polite');
-  const el = (tag, className, text = '') => Object.assign(document.createElement(tag), { className, textContent: text });
-  // The card: the step's name, its lead line, the why, then its guides as rows (a label, and what it is).
-  const paintGuide = (scene, canvas) => {
+  // Thin (owner, 24 Nov): the step's title, the questions people ask about it, each one line that
+  // opens to its answer, and its one guide. The answers are the Tour's own (docs/getting-started/tour.md,
+  // its Questions), read once; a question the Tour no longer has is left out.
+  let answers = null;
+  const readAnswers = async () => {
+    if (answers) return answers;
+    const result = await request(`/api/file?${new URLSearchParams({ path: 'docs/getting-started/tour.md', product: '1' })}`);
+    const section = result.ok ? String(result.data.text || '').split(/^## Questions\s*$/m)[1] || '' : '';
+    answers = new Map(section.split(/\n\s*\n/).flatMap((para) => {
+      const found = /^\*\*(.+?)\*\*\s+([\s\S]+)$/.exec(para.trim());
+      if (!found) return [];
+      const plain = found[2].replace(/\[([^\]]+)\]\([^)]*\)/g, '$1').replace(/\*\*/g, '').replace(/\s+/g, ' ').trim();
+      return [[found[1].trim(), plain]];
+    }));
+    return answers;
+  };
+  const paintGuide = (canvas) => {
     guide.replaceChildren();
-    const copy = canvas?.copy || [];
-    if (!copy.length && !canvas?.media?.length) { guide.hidden = true; return; }
-    guide.append(el('p', 'setup-step-guide-eyebrow', scene.label));
-    for (const item of copy) {
-      if (item.heading) guide.append(el('h3', 'setup-step-guide-heading', item.heading));
-      if (item.body) guide.append(el('p', 'setup-step-guide-body', item.body));
+    if (canvas?.copy?.length) { const copy = document.createElement('div'); copy.className = 'garden-region garden-region-copy'; paintCopy(copy, canvas.copy); guide.append(copy); }
+    if (canvas?.asks?.length) {
+      const asks = document.createElement('div');
+      asks.className = 'setup-step-asks';
+      guide.append(asks);
+      void readAnswers().then((known) => {
+        for (const ask of canvas.asks) {
+          if (!known.has(ask)) continue;
+          const row = document.createElement('details');
+          row.className = 'setup-step-ask';
+          const summary = document.createElement('summary');
+          summary.textContent = ask;
+          const answer = document.createElement('p');
+          answer.textContent = known.get(ask);
+          row.append(summary, answer);
+          asks.append(row);
+        }
+      });
     }
-    if (canvas?.media?.length) {
-      const list = el('ul', 'setup-step-guide-links');
-      for (const item of canvas.media) {
-        const open = el('button', 'setup-step-guide-link');
-        open.type = 'button';
-        open.append(el('span', 'setup-step-guide-link-label', item.label));
-        if (item.description) open.append(el('span', 'setup-step-guide-link-is', item.description));
-        open.addEventListener('click', () => { void environment.openGardenMedia(item); });
-        const row = document.createElement('li');
-        row.append(open);
-        list.append(row);
-      }
-      guide.append(list);
-    }
-    guide.hidden = false;
+    if (canvas?.media?.length) { const media = document.createElement('div'); media.className = 'garden-region garden-region-media'; paintMedia(media, canvas.media, (item) => { void environment.openGardenMedia(item); }); guide.append(media); }
+    guide.hidden = !guide.childElementCount;
   };
   const selectGarden = (scene) => {
     if (!gardenContent || !scene || paintedSceneId === scene.id) return false;
-    paintGuide(scene, gardenContent.canvases[scene.canvas] || null);
+    paintGuide(gardenContent.canvases[scene.canvas] || null);
     paintedSceneId = scene.id;
     return true;
   };

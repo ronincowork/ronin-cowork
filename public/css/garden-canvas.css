@@ -56,24 +56,42 @@
   /* THE ASK RONIN PANEL, HER NOT RUNNING (w926): one line on what she does, and the press that asks for her. */
   .garden-canvas .setup-ask-offer { display: grid; align-self: start; align-content: start; justify-items: start; gap: var(--space-paragraph); padding: var(--space-inset); }
   .setup-ask-line { margin: 0; max-width: 32rem; color: var(--fg); font-size: var(--text-body); line-height: var(--leading-body); }
-  /* THE STEP'S GUIDE (w926): a card at the foot of Setup's selector, where hints were, for the step on
-     screen. The step's name, its lead line, the why, then its guides as rows. One text size; the
-     muted colour, not a smaller size, marks the secondary lines. */
-  .setup-step-guide { flex: 0 1 auto; max-height: 60%; overflow-y: auto; margin: var(--space-inline); padding: var(--space-inset); border: var(--edge) solid var(--line); border-radius: var(--radius-small); background: var(--surface); font-size: var(--text-body); line-height: var(--leading-body); }
+  /* THE STEP'S GUIDE (w926): the step's canvas at the foot of Setup's selector, where hints were,
+     painted with the canvas's own copy and media rows; only its tokens change for the column: the
+     title at heading size, no measure, tighter rows. */
+  .setup-step-guide {
+    --gc-block-gap: var(--space-paragraph);
+    --gc-step-tight: var(--space-row);
+    --gc-step: var(--space-paragraph);
+    --gc-step-loose: var(--space-paragraph);
+    --gc-measure: none;
+    --gc-heading-measure: none;
+    --gc-heading-size: var(--text-label);
+    --gc-heading-lh: var(--leading-tight);
+    --gc-heading-track: 0;
+    --gc-body-lh: var(--leading-body);
+    --gc-mark: 12px;
+    --gc-mark-weight: 2px;
+    --gc-glyph: 14px;
+    --gc-row-pad: var(--space-row) var(--space-inline);
+    --gc-kind-ink: var(--kaki-lift);
+    --gc-nudge: var(--edge-2);
+    flex: 0 1 auto; max-height: 45%; overflow-y: auto; display: grid; gap: var(--space-paragraph);
+    padding: var(--space-paragraph) var(--space-inset); border-top: var(--edge) solid var(--line);
+  }
   .setup-step-guide[hidden] { display: none; }
-  .setup-step-guide > * { margin: 0; }
-  .setup-step-guide > * + * { margin-top: var(--space-paragraph); }
-  .setup-step-guide-eyebrow { color: var(--kaki-lift); font-weight: var(--weight-strong); }
-  .setup-step-guide > .setup-step-guide-eyebrow + .setup-step-guide-heading { margin-top: var(--space-row); }
-  .setup-step-guide-heading { color: var(--fg-strong); font-size: var(--text-body); font-weight: var(--weight-strong); line-height: var(--leading-body); }
-  .setup-step-guide-body { color: var(--muted); }
-  .setup-step-guide-links { padding: 0; list-style: none; border-top: var(--edge) solid var(--line); }
-  .setup-step-guide-link { display: grid; gap: 2px; width: 100%; padding: var(--space-row) 0; border: 0; border-bottom: var(--edge) solid var(--line); background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
-  .setup-step-guide-links li:last-child .setup-step-guide-link { border-bottom: 0; padding-bottom: 0; }
-  .setup-step-guide-link-label { color: var(--fg-strong); font-weight: var(--weight-strong); }
-  .setup-step-guide-link-label::after { content: ' \203A'; color: var(--kaki); }
-  .setup-step-guide-link-is { color: var(--muted); }
-  .setup-step-guide-link:hover .setup-step-guide-link-label, .setup-step-guide-link:focus-visible .setup-step-guide-link-label { color: var(--kaki-fill); }
+  /* Its questions: one line each, a row under a hairline, opening to the Tour's answer. */
+  @media (max-width: 700px) { .setup-step-guide { max-height: none; } }
+  .setup-step-asks { order: 2; }
+  .setup-step-asks:empty { display: none; }
+  .setup-step-ask { border-top: var(--edge) solid var(--line); }
+  .setup-step-ask:last-child { border-bottom: var(--edge) solid var(--line); }
+  .setup-step-ask summary { display: flex; gap: var(--space-row); padding: var(--space-row) 0; color: var(--fg-strong); font-size: var(--text-body); line-height: var(--leading-body); cursor: pointer; list-style: none; }
+  .setup-step-ask summary::-webkit-details-marker { display: none; }
+  .setup-step-ask summary::before { content: '+'; flex: none; width: 1ch; color: var(--kaki-lift); }
+  .setup-step-ask[open] summary::before { content: '\2212'; }
+  .setup-step-ask summary:hover { color: var(--kaki-fill); }
+  .setup-step-ask p { margin: 0 0 var(--space-paragraph) calc(1ch + var(--space-row)); color: var(--muted); font-size: var(--text-body); line-height: var(--leading-body); }
 
   /* The horizon keeps its height and crops at the sides: a narrower column
      shows less field, never a squashed one. */
@@ -192,7 +210,7 @@
   .garden-media-external { justify-self: start; color: var(--kaki-lift); font-size: var(--text-body); }
 
   /* Kind marks. Mitred joins and square caps, the cut from the nin frame. */
-  .garden-canvas {
+  .garden-canvas, .setup-step-guide {
     --gc-icon-doc: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23000' stroke-width='1.3' stroke-linejoin='miter' stroke-linecap='square'%3E%3Cpath d='M3.5 1.5h6l3 3v10h-9z'/%3E%3Cpath d='M9.5 1.5v3h3'/%3E%3Cpath d='M5.8 8.2h4.4M5.8 10.8h4.4'/%3E%3C/svg%3E");
     --gc-icon-video: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23000' stroke-width='1.3' stroke-linejoin='miter' stroke-linecap='square'%3E%3Cpath d='M1.5 3h13v10h-13z'/%3E%3Cpath d='M6.6 5.9l4 2.1-4 2.1z' fill='%23000'/%3E%3C/svg%3E");
     --gc-icon-link: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23000' stroke-width='1.3' stroke-linejoin='miter' stroke-linecap='square'%3E%3Cpath d='M9.6 2.4h4v4'/%3E%3Cpath d='M13.6 2.4L7.4 8.6'/%3E%3Cpath d='M11.2 9.4v4.2H2.4V4.8h4.2'/%3E%3C/svg%3E");

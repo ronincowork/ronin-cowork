@@ -11,7 +11,7 @@ checked with `npm run byoin`.
 |---|---|---|
 | `ronin_stock/` (this folder, in the image) | everything Ronin ships | Ronin's repository only; an image update replaces it whole |
 | `~/ronin/custom/` | the person's own files, in the same folders as here; empty on a new office | the person, and Agents for them |
-| `~/ronin/office/` | office-output: what the fact builders and Agents write about the office (the office-facts in `facts/`, `MACHINE_STATUS.md`, `ABOUT_USER.md`, the Workspace Summaries in `workspaces/`) | the fact builders, Agents |
+| `~/ronin/office/` | office-output: what the fact builders and Agents write about the office (the office-facts in `facts/`, `MACHINE_STATUS.md`, `ABOUT_USER.md`) | the fact builders, Agents |
 
 **The one rule, for every reader:** a file in `~/ronin/custom/<folder>/` replaces the file of the
 same id in `ronin_stock/<folder>/`, whole, or adds one. Nothing is seeded, copied or merged.
@@ -47,6 +47,7 @@ The words are in [KOTOBA.md](../KOTOBA.md) (Agent composition and tools); the br
 | `lexicons/` | one file per lexicon | Surface words; `professional_en.md` is the complete floor. |
 | `canvases/` | one outline per file | What a canvas starts from (`canvas templates`). |
 | root | `MODEL_PROVIDERS.md`, `SKINS.md` | Flat registries; a custom copy replaces an entry by its name (`docs/architecture/shadowing.md`). |
+| root | `STARTER_WORKSPACES.json` | Ronin Lab and Project One: the title, objective and folder each is made with, by Setup's Workspace step and `workspace starter`. |
 
 The custom folder also holds the person's MCP server and web API records,
 `~/ronin/custom/integrations/<name>.md`, written by `mcp add` and `api add`.

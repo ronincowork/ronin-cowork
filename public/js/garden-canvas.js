@@ -15,6 +15,35 @@ const node = (tag, cls = '', value = '') => {
   return el;
 };
 
+/* A canvas's copy and its media rows, painted into `into`: the Garden Canvas's own regions, and
+   Setup's step guide at the foot of its selector (setup-view.js), one design for both. */
+export function paintCopy(into, items) {
+  for (const copy of items) {
+    const item = node('article', 'garden-copy-item');
+    item.dataset.copyId = copy.id;
+    if (copy.kind) item.dataset.kind = copy.kind;
+    if (copy.eyebrow) item.append(node('p', 'garden-copy-eyebrow', copy.eyebrow));
+    if (copy.heading) item.append(node('h2', 'garden-copy-heading', copy.heading));
+    if (copy.body) item.append(node('p', 'garden-copy-body', copy.body));
+    if (copy.stamp) item.append(node('time', 'garden-copy-stamp', copy.stamp));
+    into.append(item);
+  }
+}
+export function paintMedia(into, items, onMedia) {
+  const list = node('div', 'garden-media-list');
+  for (const item of items) {
+    const button = node('button', 'garden-media-choice');
+    button.type = 'button';
+    button.dataset.kind = item.kind;
+    if (item.id) button.dataset.mediaId = item.id;
+    button.append(node('strong', '', item.label));
+    if (item.description) button.append(node('span', '', item.description));
+    button.addEventListener('click', () => onMedia(item, button));
+    list.append(button);
+  }
+  into.append(list);
+}
+
 function createGardenCanvas({ onAction = () => {}, onMedia = () => {} } = {}) {
   const surface = WorkspaceKit.primitives.createSurface({ label: 'Assist', className: 'garden-canvas' });
   surface.content.classList.add('garden-canvas-content');
@@ -85,18 +114,6 @@ function createGardenCanvas({ onAction = () => {}, onMedia = () => {} } = {}) {
     heading?.scrollIntoView?.({ block: 'start' });
   };
 
-  const paintCopy = (items) => {
-    for (const copy of items) {
-      const item = node('article', 'garden-copy-item');
-      item.dataset.copyId = copy.id;
-      if (copy.kind) item.dataset.kind = copy.kind;
-      if (copy.eyebrow) item.append(node('p', 'garden-copy-eyebrow', copy.eyebrow));
-      if (copy.heading) item.append(node('h2', 'garden-copy-heading', copy.heading));
-      if (copy.body) item.append(node('p', 'garden-copy-body', copy.body));
-      if (copy.stamp) item.append(node('time', 'garden-copy-stamp', copy.stamp));
-      regions.copy.append(item);
-    }
-  };
   const paintQuestion = (question) => {
     const label = node('label', 'garden-question-label', question.prompt);
     const input = node(question.kind === 'textarea' ? 'textarea' : 'input', 'garden-question-input');
@@ -109,29 +126,14 @@ function createGardenCanvas({ onAction = () => {}, onMedia = () => {} } = {}) {
     button.type = 'button'; button.addEventListener('click', () => onAction(cta.action));
     regions.cta.append(button);
   };
-  const paintMedia = (items) => {
-    const list = node('div', 'garden-media-list');
-    for (const item of items) {
-      const button = node('button', 'garden-media-choice');
-      button.type = 'button';
-      button.dataset.kind = item.kind;
-      if (item.id) button.dataset.mediaId = item.id;
-      button.append(node('strong', '', item.label));
-      if (item.description) button.append(node('span', '', item.description));
-      button.addEventListener('click', () => { mediaOpener = button; onMedia(item); });
-      list.append(button);
-    }
-    regions.media.append(list);
-  };
-
   let painted = 0;
   const paint = (canvas) => {
     closeMedia();
     for (const region of Object.values(regions)) { region.replaceChildren(); region.hidden = true; }
-    if (canvas?.copy) { paintCopy(canvas.copy); regions.copy.hidden = false; }
+    if (canvas?.copy) { paintCopy(regions.copy, canvas.copy); regions.copy.hidden = false; }
     if (canvas?.question) { paintQuestion(canvas.question); regions.question.hidden = false; }
     if (canvas?.cta) { paintCta(canvas.cta); regions.cta.hidden = false; }
-    if (canvas?.media) { paintMedia(canvas.media); regions.media.hidden = false; }
+    if (canvas?.media) { paintMedia(regions.media, canvas.media, (item, button) => { mediaOpener = button; onMedia(item); }); regions.media.hidden = false; }
     scene.dataset.empty = String(!canvas || GARDEN_REGION_KEYS.every((key) => !canvas[key]));
     painted += 1;
   };
