@@ -88,7 +88,7 @@ Macro, action, SOP, and Agent role are not additional composition layers. “Act
 | Team work items | The work items a Team and its members hold, children under their parent, read in the Team's Work items; a Team holds, it does not contain. Never another store ([Work items](docs/using-ronin/work-items.md)) |
 | Board | Ronin has none; a user who wants one uses Jira or Trello |
 | Wipeboard / message queue / Cron jobs | Team announcements, pending session delivery, and scheduled requests; distinct stores and delivery lifecycles |
-| Ronin Lab | A Workspace (and its folder) for ideas, research, plans, and notes across or before projects, off the code repositories; self-hosted install makes it, a hosted office makes it only when the person wants it (its folder, where plans default, is made either way) |
+| Ronin Lab | A Workspace (and its folder) for ideas, research, plans, and notes across or before projects, off the code repositories; self-hosted install makes it, a hosted office only when the person wants it |
 | Workspace folder | A folder or repository a Workspace holds, as a row of its record; Ronin keeps no other folder list; not a tilespace ([Workspaces](docs/using-ronin/workspaces.md)) |
 | Worktree | Private working folder and branch with explicit custody for managed repository work; distinct from an engagement Desk and a Desk profile ([Worktrees](docs/architecture/worktrees.md)) |
 | Commit / hand-in / promotion / Git push | Private checkpoint / admission to Team review / admission to global dev / remote publication; not synonyms |

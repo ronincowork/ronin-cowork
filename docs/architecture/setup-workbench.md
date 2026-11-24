@@ -75,9 +75,9 @@ not start her; a new office starts her when none of the three steps is ticked. S
 step (Setup reports its view) and opens what it needs with `show`.
 
 A hosted office has no registration, installations or password steps: they are the
-office_park's and the Business Lounge's. Install makes no Workspace there; Ronin Lab and
-Project One are options she offers in the Workspace step, made as any Workspace is. The Ronin
-Lab folder is still made, a repository with no Workspace, because plans default there.
+office_park's and the Business Lounge's. Install makes no Workspace and no folder there; Ronin
+Lab and Project One are options she offers in the Workspace step, made as any Workspace is.
+Plans make their folder on their first write.
 
 ## The Setup workbench
 

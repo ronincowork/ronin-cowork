@@ -618,15 +618,11 @@ export function ensureInstalledRoots(): Promise<Array<{ name: string; label: str
   return rootsInFlight;
 }
 
-/** A hosted office starts with no Workspace (owner, 2026-11-24; w926): Ronin Lab and Project One are
- * options the Helpful Assistant offers in Setup's Workspace step, made as any Workspace is. Its Ronin
- * Lab folder is still made, a repository with no Workspace, because plans default there and commit
- * each write (src/plans.ts). */
+/** A hosted office makes nothing of these (owner, 2026-11-24; w926): no Workspace, no folder. Ronin Lab
+ * and Project One are options the Helpful Assistant offers in Setup's Workspace step, made as any
+ * Workspace is; plans make their own folder on their first write (src/plans.ts). */
 async function placeInstalledRoots(): Promise<Array<{ name: string; label: string; dir: string }>> {
-  if ((await readOfficeRecord().catch(() => null))?.hosting === 'office_unit') {
-    await ensureRepository(path.join(rootDir('user'), INSTALLED_ROOTS[0].name), INSTALLED_ROOTS[0].label, false);
-    return [];
-  }
+  if ((await readOfficeRecord().catch(() => null))?.hosting === 'office_unit') return [];
   const installed = [];
   const campaign = await initialCampaignId();
   for (const root of INSTALLED_ROOTS) {
