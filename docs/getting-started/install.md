@@ -270,9 +270,9 @@ or a recorded tile.
 
 ### Workspace folder
 
-A configured folder is required for the proof launch. **Ronin Lab** and **Project One**
-exist on a fresh install; if the owner wants another, have them choose an existing folder
-under **Workspace folders**. Inspection is local and read-only; it does not create or clone
+A configured folder is required for the proof launch. A fresh install has no Workspaces; make one
+in Setup's Workspace step (Ronin Lab and Project One are offered there), or choose an existing
+folder under **Workspace folders**. Inspection is local and read-only; it does not create or clone
 a repository.
 
 ### Prove one working Agent

@@ -61,7 +61,8 @@ including a user extending Ronin; they do not require access to the creators' La
 ## Ideas and work in progress: Ronin Lab
 
 Ronin Lab is a place for ideas, research, plans, and notes before or across projects.
-Setup gives each owner a Lab; the Ronin creators use their own Lab in the same way.
+Nothing makes a Lab until someone picks it in Setup's Workspace step; then it is an ordinary
+Workspace, with its own folder. The Ronin creators use their own Lab in the same way.
 A Lab can use Git to preserve its notes without being the code repository for one project.
 
 The creators' buildouts, audits, proposals, and rollout records belong in their

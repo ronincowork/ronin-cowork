@@ -33,7 +33,7 @@ export interface WorkspaceFolder { name: string; dir: string; note: string }
  * in from `working` to `stable`; `direct` works on `stable`. `desks` = managed gives each Agent a worktree. */
 export interface WorkspaceRepo extends WorkspaceFolder { mode: 'reviewed' | 'direct'; working: string; stable: string; desks: 'managed' | 'none' }
 /** Where the Workspace keeps its plans (src/plans.ts): one of its folders by name and a subfolder in
- * it. Absent is the default, Ronin Lab's <campaign>/<workspace>/plans. */
+ * it. Absent is the default, the Workspace's own folder: ~/ronin/<workspace>/plans. */
 export interface WorkspacePlans { location: string; path: string }
 /** One integration this Workspace uses: `provider` names its index record; the rest are its facts (`site`, `note`). */
 export type WorkspaceIntegration = { provider: string; [fact: string]: unknown };

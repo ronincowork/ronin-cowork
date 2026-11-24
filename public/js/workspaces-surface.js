@@ -259,15 +259,15 @@ export function workspacePage(w, { taken = () => [], onSaved = () => {}, onDisca
     return question.el;
   };
   /* ---- PLANS (KAN-256): where this Workspace keeps its plans, a row under the Locations. The default
-     is Ronin Lab's <campaign>/<workspace>/plans, said "recommended"; pressed, it picks any of the
-     Workspace's Locations and a subfolder. On Save the plans move there; a plan of the same name already
+     is its own folder, <workspace>/plans (~/ronin/<workspace>/plans; w926), said "recommended";
+     pressed, it picks that or any of the Workspace's Locations and a subfolder. On Save the plans move there; a plan of the same name already
      there stops the Save, so one file never overwrites another. ---- */
-  const LAB = 'ronin_lab';
+  const OWN = '~own'; // the Workspace's own folder: no plans setting (a held folder's name never starts with ~)
   let plansOpen = false;
   const placeWords = () => {
     if (draft.plans?.location) return { where: `${draft.plans.location}/${draft.plans.path}`.replace(/\/$/, ''), recommended: false };
     const place = w?.plans_place?.recommended ? w.plans_place : null;
-    return { where: place ? `${place.location}/${place.path}` : `${LAB}/…/${draft.name || '<workspace>'}/plans`, recommended: true };
+    return { where: place ? `${place.location}/${place.path}` : `${draft.name || '<workspace>'}/plans`, recommended: true };
   };
   const paintPlans = () => {
     plansBox.replaceChildren();
@@ -292,15 +292,15 @@ export function workspacePage(w, { taken = () => [], onSaved = () => {}, onDisca
     canvases.append(el('b', null, t('workspaces.canvases', 'Canvases')), nameList);
     plansBox.append(canvases);
     if (!plansOpen) return;
-    const names = [...new Set([LAB, ...[...picked.values()].map((row) => row.name).filter(Boolean)])];
-    const options = names.map((name) => ({ v: name, l: name }));
-    const chosen = draft.plans?.location || LAB;
+    const names = [...new Set([...picked.values()].map((row) => row.name).filter(Boolean))];
+    const options = [{ v: OWN, l: t('workspaces.plans_own', 'Its own folder') }, ...names.map((name) => ({ v: name, l: name }))];
+    const chosen = draft.plans?.location || OWN;
     const question = ask([{ fields: [{ key: 'location', label: t('workspaces.plans_location', 'Location'), options }] }], {
       value: { location: chosen }, density: 'tight',
       onChange: (value) => {
         const location = value.location;
-        // Ronin Lab is the recommended place itself; another Location starts at its plans folder.
-        draft.plans = location === LAB ? undefined : { location, path: location === draft.plans?.location ? draft.plans.path : 'plans' };
+        // Its own folder is the recommended place itself; another Location starts at its plans folder.
+        draft.plans = location === OWN ? undefined : { location, path: location === draft.plans?.location ? draft.plans.path : 'plans' };
         changed(); paintPlans();
       },
     });

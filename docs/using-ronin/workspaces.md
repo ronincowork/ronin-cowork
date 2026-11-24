@@ -101,8 +101,8 @@ you approve in your browser. That sign-in belongs to the machine, not to a Works
 
 ### Plans and Canvases
 
-In More, **Plans** says where the Workspace keeps its plans: Ronin Lab's
-`<campaign>/<workspace>/plans`, marked recommended. Press it to pick another of its folders and a
+In More, **Plans** says where the Workspace keeps its plans: its own folder,
+`~/ronin/<workspace>/plans`, marked recommended. Press it to pick another of its folders and a
 subfolder. On Save the plans move there; a plan of the same name already there stops the Save,
 so one plan never overwrites another. Agents never see the folder: they use the `plan` tool.
 
