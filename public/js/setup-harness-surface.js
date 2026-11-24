@@ -29,8 +29,16 @@ import { mountHermesSurface } from './hermes-surface.js';
 export const HARNESS_SURFACE_TYPE = 'setup.harness';
 
 const el = (tag, cls = '', text = null) => { const out = document.createElement(tag); if (cls) out.className = cls; if (text != null) out.textContent = String(text); return out; };
-// The workbench's own button (wk-action): its pointer, hover and primary look, as on every surface.
-const button = (label, primary, onClick) => { const made = WorkspaceKit.primitives.createAction({ label, kind: primary ? 'primary' : '', action: onClick }); return made.el ?? made; };
+// EVERY BUTTON IS AN ERABI STONE (owner, 24 Nov): `ask-opt ask-rect` with its name, in an `ask` row,
+// as Setup's zone picks are (setup-zone.js; ask.js).
+const button = (label, _primary, onClick) => {
+  const out = el('button', 'ask-opt ask-rect');
+  out.type = 'button';
+  out.append(el('span', 'ask-name', label));
+  out.addEventListener('click', () => { if (!out.disabled) onClick(); });
+  return out;
+};
+const stones = () => { const row = el('div', 'ask setup-harness-row'); row.dataset.density = 'tight'; return row; };
 
 const shortName = (provider) => String(provider.label || provider.id).replace(/ CLI$/, '');
 
@@ -79,7 +87,7 @@ function createHarnessSurface(context) {
         : t('setup_harness.enter_code', 'Open the link, sign in, and enter this code.');
     box.append(el('p', 'setup-harness-line', run.sent ? t('setup_harness.sent', 'Sent. Finishing the sign-in…') : line));
     if (run.link) { const link = el('a', 'setup-harness-link', run.link.replace(/^https:\/\//, '').replace(/[?#].*$/, '')); link.href = run.link; link.target = '_blank'; link.rel = 'noopener noreferrer'; box.append(link); }
-    const row = el('div', 'setup-harness-row');
+    const row = stones();
     if (run.code) {
       row.append(el('span', 'setup-harness-code', run.code));
       const copy = button(t('setup_harness.copy', 'Copy'), false, () => { void navigator.clipboard?.writeText(run.code).catch(() => {}); });
@@ -109,14 +117,17 @@ function createHarnessSurface(context) {
   const terminalOf = (provider) => {
     const box = el('div', 'setup-harness-window');
     if (!provider.login_open) {
-      box.append(el('p', 'setup-harness-line', t('setup_harness.terminal', '{cli} signs in in a terminal.', { cli: shortName(provider) })),
-        button(t('setup_harness.open_terminal', 'Open its sign-in'), true, async () => { await post(`/api/setup/providers/${encodeURIComponent(provider.id)}/login`); await readRuntime(); }));
+      const row = stones();
+      row.append(button(t('setup_harness.open_terminal', 'Open its sign-in'), true, async () => { await post(`/api/setup/providers/${encodeURIComponent(provider.id)}/login`); await readRuntime(); }));
+      box.append(el('p', 'setup-harness-line', t('setup_harness.terminal', '{cli} signs in in a terminal.', { cli: shortName(provider) })), row);
       return box;
     }
     if (provider.sign_in_how) box.append(el('p', 'setup-harness-line', provider.sign_in_how));
     // One host for the open terminal, kept across repaints so the tile is never torn down by one.
     terminalHost ||= el('div', 'setup-harness-terminal');
-    box.append(terminalHost, button(t('setup_harness.close', 'Close'), false, async () => { mounted?.destroy?.(); mounted = null; terminalHost = null; await post(`/api/setup/providers/${encodeURIComponent(provider.id)}/close`); await readRuntime(); }));
+    const row = stones();
+    row.append(button(t('setup_harness.close', 'Close'), false, async () => { mounted?.destroy?.(); mounted = null; terminalHost = null; await post(`/api/setup/providers/${encodeURIComponent(provider.id)}/close`); await readRuntime(); }));
+    box.append(terminalHost, row);
     if (!mounted) mounted = mountProviderAttachment(context.environment, terminalHost, provider, context.workspace, () => { mounted = null; });
     return box;
   };
@@ -154,7 +165,7 @@ function createHarnessSurface(context) {
     } else if (own) {
       if (signed) bar.append(el('p', 'setup-harness-line', t('setup_harness.again', 'Signed in. To switch between subscription and API key, sign in again; it replaces this one.')));
       if (failed) bar.append(el('p', 'setup-harness-line bad', failed));
-      const row = el('div', 'setup-harness-row');
+      const row = stones();
       row.append(button(WAYS.subscription(), true, () => start(provider, 'subscription')), button(WAYS.api_key(), false, () => start(provider, 'api_key')));
       bar.append(row);
     } else bar.append(terminalOf(provider));
