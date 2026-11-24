@@ -53,14 +53,14 @@
   .garden-canvas .setup-irasshai-chat > .wk-terminal-host[hidden] { display: none; }
   .garden-canvas .setup-irasshai-chat .wk-hosted-tile > .tile-head { display: none; }
   .garden-canvas .setup-irasshai-chat .wk-hosted-tile { height: 100%; border: 0; border-radius: 0; }
-  /* HOSTED: THE ASK RONIN PANEL (w926): the step's lines on top, her chat (or the button that asks
-     for her) under them, one column; the scene gives up its centring and horizon padding. */
-  .garden-canvas[data-chat='below'] .garden-canvas-content { grid-template-rows: auto minmax(0, 1fr); }
-  .garden-canvas[data-chat='below'] .garden-canvas-scene { min-height: 0; align-content: start; padding: var(--space-inset); }
-  .garden-canvas[data-chat='below'] .garden-canvas-mark,
-  .garden-canvas[data-chat='below'] .garden-canvas-hito { display: none; }
-  .garden-canvas[data-chat='below'] .wk-surface-header-actions { display: none; }
-  .garden-canvas .setup-ask-offer { padding: var(--space-inset); border-top: 1px solid var(--line); }
+  .garden-canvas .setup-ask-offer { padding: var(--space-inset); }
+  /* THE STEP'S GUIDE (w926): the step's how-to at the foot of Setup's selector, where hints were. */
+  .setup-step-guide { flex: 0 1 auto; max-height: 50%; overflow-y: auto; display: grid; gap: var(--space-row); padding: var(--space-inline); border-top: 1px solid var(--line); }
+  .setup-step-guide[hidden] { display: none; }
+  .setup-step-guide-heading { margin: 0; font-size: var(--text-body); font-weight: var(--weight-strong); }
+  .setup-step-guide-body { margin: 0; color: var(--muted); font-size: var(--text-body); }
+  .setup-step-guide-link { justify-self: start; padding: 0; border: 0; background: none; color: var(--kaki-fill); font: inherit; font-size: var(--text-body); cursor: pointer; text-align: left; }
+  .setup-step-guide-link:hover { text-decoration: underline; }
 
   /* The horizon keeps its height and crops at the sides: a narrower column
      shows less field, never a squashed one. */

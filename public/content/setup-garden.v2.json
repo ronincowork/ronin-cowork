@@ -27,9 +27,9 @@
         {
           "id": "hosted-harness-doc-2",
           "kind": "doc",
-          "label": "Help",
-          "description": "Questions people ask first",
-          "path": "docs/getting-started/help.md"
+          "label": "Ronin Tour",
+          "description": "How Agents begin, how work runs, questions",
+          "path": "docs/getting-started/tour.md"
         }
       ]
     },
@@ -64,9 +64,9 @@
         {
           "id": "hosted-workspace-doc-2",
           "kind": "doc",
-          "label": "Help",
-          "description": "Questions people ask first",
-          "path": "docs/getting-started/help.md"
+          "label": "Ronin Tour",
+          "description": "How Agents begin, how work runs, questions",
+          "path": "docs/getting-started/tour.md"
         }
       ]
     },
@@ -96,44 +96,20 @@
         {
           "id": "hosted-team-doc-2",
           "kind": "doc",
-          "label": "Help",
-          "description": "Questions people ask first",
-          "path": "docs/getting-started/help.md"
+          "label": "Ronin Tour",
+          "description": "How Agents begin, how work runs, questions",
+          "path": "docs/getting-started/tour.md"
         }
       ]
     },
-    "garden.setup.understanding": {
+    "garden.setup.tour": {
       "copy": [
         {
-          "id": "hosted-understanding-intro",
+          "id": "setup-tour-intro",
           "kind": "title",
-          "eyebrow": "Good to know",
-          "heading": "How your Agents begin.",
-          "body": "Nothing here needs configuring to start. You can skip it and come back."
-        }
-      ],
-      "media": []
-    },
-    "garden.setup.running": {
-      "copy": [
-        {
-          "id": "hosted-running-intro",
-          "kind": "title",
-          "eyebrow": "How work runs",
-          "heading": "Teams do the work. Epics and items keep track of it.",
-          "body": "Agents keep working while you are away."
-        }
-      ],
-      "media": []
-    },
-    "garden.setup.help": {
-      "copy": [
-        {
-          "id": "hosted-help-intro",
-          "kind": "title",
-          "eyebrow": "Help",
-          "heading": "Questions people ask first.",
-          "body": "Ask Ronin answers from Ronin's own help and takes you to the right place."
+          "eyebrow": "Ronin Tour",
+          "heading": "How your Agents begin, and how the work runs.",
+          "body": "Nothing here needs configuring to start. Questions people ask first are at the end; Ask Ronin answers anything else."
         }
       ],
       "media": []

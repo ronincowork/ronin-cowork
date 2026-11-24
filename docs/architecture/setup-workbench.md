@@ -34,16 +34,20 @@ again as `setup-progress`, so a change made anywhere ticks its step.
 
 ## The Setup workbench
 
-The owner's onboarding prototype is the look: the selector holds the three steps, **Harness**
-(`setup.providers`), **Workspace** (`setup.roots`) and **Team** (`setup.team`, the ordinary New
-Team form), then three pages with no tick, **Understanding**, **Running** and **Help**, each its
-doc in `docs/getting-started/` shown whole (`setup.understanding`, `setup.running`,
-`setup.help`). The header carries the three step marks. The selector is the same whether the
-Helpful Assistant runs or not, with her entry at the top.
+The owner's onboarding prototype is the look. The selector's pills are **Ask Ronin** (the
+Helpful Assistant: pressing it opens her chat, or asks for her), the three steps, **Harness**
+(`setup.harness`), **Workspace** (`setup.roots`) and **Team** (`setup.team`, the ordinary New Team
+form), and **Tour**, the Ronin Tour with no tick, `docs/getting-started/tour.md` shown whole
+(`setup.tour`: how Agents begin, how the work runs, then Questions). The header carries the three
+step marks. The selector is the same whether she runs or not.
 
-The columns are the selector, the step's surface, and on the right the **Ask Ronin** panel: the
-step's few lines (the garden canvas, `garden.setup.*`), then her chat. Not running, the panel
-offers her; pressing it, or her entry, posts `POST /api/irasshai/open`, which shows her if she
+Setup has no hints: no Agent vocabulary, no session controls. At the foot of the selector, where
+they were, is **the step's guide**: the how-to for the step on screen, from its canvas
+(`public/content/setup-garden.v2.json`, `garden.setup.*`), with its doc links, which open over
+the panel.
+
+The columns are the selector, the step's surface, and on the right the **Ask Ronin** panel, which
+is only her: her chat, or, not running, the offer of her. Pressing it, or her pill, posts `POST /api/irasshai/open`, which shows her if she
 runs, restores her archive within its seven days, or makes her fresh. Opening Setup alone does
 not start her; an office starts her when none of the three steps is ticked. Moving between the
 steps tells her nothing; she sees the step (Setup reports its view) and opens what it needs with

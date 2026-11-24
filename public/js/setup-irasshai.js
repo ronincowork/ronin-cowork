@@ -7,7 +7,7 @@
  * tile's Term / Chat toggle (KAN-717). The selector is Setup's own steps whether she runs or not; she
  * sees the step (Setup reports its view) and takes it when asked.
  *
- * HER ENTRY (KAN-691, KAN-694): the Helpful Assistant entry at the top of Setup's selector, on any
+ * HER PILL (KAN-691, KAN-694): Ask Ronin, at the top of Setup's selector (owner, 24 Nov; w926), on any
  * ronin_install. A press asks for her (POST /api/irasshai/open): live, she is there; archived and still
  * restorable, she is restored; else made fresh. It reads Opening… at once and ignores presses while it
  * runs; a failure says so on the card. While she is live a press shows her chat.
@@ -65,7 +65,7 @@ export function createIrasshaiOpener({ refresh, showChat }) {
   };
   // The selector draws cards by name (their summary line is folded away), so the name carries the state.
   const label = () => (state === 'opening' ? t('setup.irasshai_opening', 'Opening…')
-    : state === 'failed' ? why || t('setup.irasshai_failed', 'Couldn’t open the Helpful Assistant') : t('setup.irasshai_open', IRASSHAI_NAME)); // why in one line, as the server says it
+    : state === 'failed' ? why || t('setup.irasshai_failed', 'Couldn’t open the Helpful Assistant') : t('setup.irasshai_open', 'Ask Ronin')); // her pill (owner, 24 Nov); why in one line, as the server says it
   const summary = () => (state === 'failed' && why ? why
     : irasshaiLive() ? t('setup.irasshai_here', 'Here, in Ask Ronin') : t('setup.irasshai_open_title', 'Your welcome Agent: start here'));
   return {
@@ -81,7 +81,7 @@ export function registerIrasshaiOpen() {
   return WorkspaceKit.workbench.surfaces.register({
     type: IRASSHAI_OPEN_TYPE,
     header: 'surface',
-    label: IRASSHAI_NAME,
+    label: 'Ask Ronin',
     discover: (_tenant, environment) => (environment?.irasshaiOpen ? [environment.irasshaiOpen()] : []),
     // A drag does what a press does: her chat, or her made fresh; nothing is placed (KAN-696).
     redirect: (_detail, environment) => { environment?.irasshaiPress?.(); return null; },

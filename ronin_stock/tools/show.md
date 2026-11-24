@@ -6,9 +6,7 @@
 - **order:** 82
 
 **Surfaces `show` can name.** On Ronin Setup: `setup.harness` (Harness), `setup.roots`
-(Workspace), `setup.team` (Team), `setup.integrations` (Integrations), `setup.understanding`,
-`setup.running` and `setup.help` (the pages); self-hosted also `setup.register` and
-`setup.installations`. On a Team or Coworks page: `team.commons` (Docs · Wipeboard · Messages ·
+(Workspace), `setup.team` (Team), `setup.integrations` (Integrations), `setup.tour` (the Ronin Tour). On a Team or Coworks page: `team.commons` (Docs · Wipeboard · Messages ·
 Configuration), `cowork.team-roster`, `session.new-agent`, `ronin.desk` (⚙ cowork commons),
 `cowork.archives`, `cowork.cron-jobs`.
 

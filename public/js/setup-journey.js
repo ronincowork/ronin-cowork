@@ -1,16 +1,15 @@
 /**
  * SETUP'S SCENES, ON EVERY OFFICE (owner, 2026-11-24; w926; samurai_lab/wip/SETUP_SWEEP.md §7): selector
  * doors that never reshape the workbench. The prototype's three steps, Harness, Workspace and Team, in any
- * order, each ticked from a fact; then three pages with no tick, Understanding, Running and Help, whose
- * text is the docs'. The same whether she runs or not.
+ * order, each ticked from a fact; then the Ronin Tour, a page with no tick whose text is the docs'
+ * (docs/getting-started/tour.md: how Agents begin, how the work runs, then Questions). The same
+ * whether she runs or not; Ask Ronin heads the selector.
  */
 export const SETUP_SCENES = Object.freeze([
   { id: 'harness', label: 'Harness', type: 'setup.harness', canvas: 'garden.setup.harness' },
   { id: 'workspace', label: 'Workspace', type: 'setup.roots', canvas: 'garden.setup.workspace' },
   { id: 'team', label: 'Team', type: 'setup.team', canvas: 'garden.setup.team' },
-  { id: 'understanding', label: 'Understanding', type: 'setup.understanding', canvas: 'garden.setup.understanding', page: 'docs/getting-started/understanding.md' },
-  { id: 'running', label: 'Running', type: 'setup.running', canvas: 'garden.setup.running', page: 'docs/getting-started/running.md' },
-  { id: 'help', label: 'Help', type: 'setup.help', canvas: 'garden.setup.help', page: 'docs/getting-started/help.md' },
+  { id: 'tour', label: 'Tour', type: 'setup.tour', canvas: 'garden.setup.tour', page: 'docs/getting-started/tour.md' },
 ].map((scene, index) => Object.freeze({ ...scene, number: index + 1 })));
 
 /* IRASSHAI (setup-irasshai.js): the Helpful Assistant, Setup's Ask Ronin panel. */
