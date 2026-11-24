@@ -18,7 +18,9 @@ const el = (tag, cls, text) => { const node = document.createElement(tag); if (c
 const bucket = (value) => value && typeof value === 'object' && !Array.isArray(value) ? value : {};
 const list = (value) => Array.isArray(value) ? value : [];
 
-const kindWord = (value) => ({
+/** The seven kinds a Team or a Workspace is (owner, 24 Nov), and the word each reads as. */
+export const KINDS = ['open', 'coding', 'work', 'personal', 'household', 'social', 'school'];
+export const kindWord = (value) => ({
   open: t('campaign_view.option_open', 'Open'), coding: t('team_config.kind_coding', 'Coding'), work: t('team_config.kind_work', 'Work'), personal: t('team_config.kind_personal', 'Personal'),
   household: t('team_config.kind_household', 'Household'), social: t('team_config.kind_social', 'Social'), school: t('team_config.kind_school', 'School'),
 })[value] || value;
@@ -51,7 +53,7 @@ export function renderTeamConfiguration(host, roster, optionsArg = {}) {
     const title = el('input'); title.type = 'text'; title.name = 'title'; title.spellcheck = false; title.value = roster.title || '';
     const identity = el('div', 'tw-config-identity');
     const kind = ask([{ group: t('team_config.kind', 'Kind'), fields: [
-      { key: 'kind', label: t('team_config.kind', 'Kind'), shape: 'square', options: ruledRows('kind', ['open', 'coding', 'work', 'personal', 'household', 'social', 'school'], kindWord) },
+      { key: 'kind', label: t('team_config.kind', 'Kind'), shape: 'square', options: ruledRows('kind', KINDS, kindWord) },
     ] }], { value: { kind: roster.kind || 'open' }, density: 'tight', trayHost: identity });
     const identityField = (label, control) => {
       control.classList.add('tw-config-control');

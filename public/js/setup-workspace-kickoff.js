@@ -1,47 +1,56 @@
 /* part of the ronin-cowork client — see js/README.md */
 /**
- * THE WORKSPACE STEP'S KICKOFF (owner, 24 Nov; KAN-809; samurai_lab wip/SETUP_WORKSPACE.md §2): three
- * questions over the Workspace stones on a hosted Setup, in this order: Ronin Lab, yes or no; a
- * project, or still thinking; GitHub, now or later. Each is ERABI, exposed, its sentence in the caption.
+ * THE WORKSPACE STEP (owner, 24 Nov; KAN-809; samurai_lab wip/SETUP_WORKSPACE.md §2), over the
+ * Workspaces already made (their stones, at the foot):
  *
- * Each reads the office as it is (the Workspaces, GitHub's sign-in), never an answer kept: Ronin Lab
- * reads Yes once it exists, Still thinking once Project One does, GitHub its account once signed in.
- * A press is the real thing or a view: Yes makes Ronin Lab, Still thinking makes Project One (each an
- * ordinary Workspace, its folder made by the server), A project opens New Workspace, No and Later do
- * nothing. Connect is the one press that messages the Helpful Assistant, and its stone names her.
+ * 1. Ronin Lab: one ERABI stone, Add Ronin Lab, while there is none; made, one line saying what it is.
+ *    It is never taken off here, so there is nothing to say no to.
+ * 2. "What kind of project do you want to add?": the seven kinds as ERABI squares (the Team kinds).
+ *    A press walks the new Workspace through: for coding, GitHub first while it is not signed in
+ *    (Connect, the one press that messages the Helpful Assistant, its stone naming her); then the
+ *    New Workspace page with that kind (what it is, where it lives: a coding one's repositories, any
+ *    other its folder), and Create. Created, the kind clears and its stone is under.
+ *
  * Every press answers at once: the stones grey with what is happening until it is done.
  */
 import { t } from './lexicon.js';
 import { ask } from './ask.js';
 import { request } from './request.js';
 import { subscribe } from './store.js';
+import { ruledRows } from './glyphs.js';
+import { KINDS, kindWord } from './team-configuration.js';
+import { workspacePage } from './workspaces-surface.js';
 import { sendComposerMessage } from './composer-rules.js';
 import { IRASSHAI, IRASSHAI_NAME, askIrasshai, irasshaiLive } from './setup-irasshai.js';
 
 const el = (tag, cls, text) => { const node = document.createElement(tag); if (cls) node.className = cls; if (text != null) node.textContent = String(text); return node; };
 
 const LAB = { name: 'ronin_lab', title: 'Ronin Lab' };
-const ONE = { name: 'project_one', title: 'Project One' };
-/** Their objectives: one seed, which the Helpful Assistant's `workspace starter` reads too (w926). */
+/** Its objective: one seed, which the Helpful Assistant's `workspace starter` reads too (w926). */
 const STARTERS = '/content/starter-workspaces.json';
 
 /**
  * @param workspacesRead  the stones' own read (workspaces-read.js): its push is this one's too
- * @param openNew         opens New Workspace under the stones
  * @param environment     Setup's: its setup-progress push re-reads GitHub's sign-in
  */
-export function createWorkspaceKickoff({ workspacesRead, openNew, environment }) {
+export function createWorkspaceKickoff({ workspacesRead, environment }) {
   const root = el('div', 'setup-workspace-kickoff');
+  const top = el('div', 'setup-workspace-questions');
+  const walk = el('div', 'setup-workspace-walk');
+  const yours = el('p', 'setup-workspace-ask setup-workspace-yours', t('setup_workspace.yours', 'Your Workspaces'));
+  root.append(top, walk, yours);
   let github = { authenticated: false, account: '' };
-  const busy = { lab: '', project: '', github: '' }; // what a press is doing, said on the greyed stones
+  let kind = '';         // the kind being added; '' when nothing is
+  let shownKind = '';    // the kind the walk's page was made for
+  const busy = { lab: '', github: '' }; // what a press is doing, said on the greyed stones
   const has = (name) => workspacesRead.list().some((w) => w.name === name && !w.archived);
 
-  const make = async (key, w, doing) => {
-    busy[key] = doing; paint();
+  const addLab = async () => {
+    busy.lab = t('setup_workspace.adding', 'Adding {name}…', { name: LAB.title }); paint();
     const seed = await request(STARTERS);
-    const objective = String(seed.data?.[w.name]?.objective || '');
-    const answer = await request(`/api/workspaces/${encodeURIComponent(w.name)}`, { method: 'PUT', json: { ...w, objective, repos: [], folders: [], integrations: [] } });
-    busy[key] = answer.ok ? '' : answer.message;
+    const objective = String(seed.data?.[LAB.name]?.objective || '');
+    const answer = await request(`/api/workspaces/${LAB.name}`, { method: 'PUT', json: { ...LAB, objective, repos: [], folders: [], integrations: [] } });
+    busy.lab = answer.ok ? '' : answer.message;
     await workspacesRead.read();
     paint();
   };
@@ -59,9 +68,9 @@ export function createWorkspaceKickoff({ workspacesRead, openNew, environment })
   };
 
   // One exposed question: its sentence over its stones, a press answered by `pick`.
-  const question = (key, sentence, rows, chosen, pick) => {
+  const question = (key, sentence, rows, chosen, pick, shape) => {
     const off = busy[key];
-    const one = ask([{ fields: [{ key, label: sentence, options: rows.map((row) => (off ? { ...row, off } : row)) }] }], {
+    const one = ask([{ fields: [{ key, label: sentence, ...(shape ? { shape } : {}), options: rows.map((row) => (off ? { ...row, off } : row)) }] }], {
       value: { [key]: chosen }, exposed: true, density: 'tight',
       onChange: (now) => { if (!off && now[key] && now[key] !== chosen) void pick(now[key]); },
     });
@@ -70,25 +79,39 @@ export function createWorkspaceKickoff({ workspacesRead, openNew, environment })
     return box;
   };
 
+  // The walk: GitHub first for coding while it is not signed in, then the New Workspace page of that kind.
+  const paintWalk = () => {
+    if (kind === shownKind) return;
+    shownKind = kind;
+    walk.replaceChildren();
+    if (!kind) return;
+    const page = workspacePage(null, { kind, taken: () => workspacesRead.list().map((w) => w.name),
+      onSaved: async () => { kind = ''; await workspacesRead.read(); paint(); },
+      onDiscard: () => { kind = ''; paint(); } });
+    const head = el('div', 'workspace-page-head');
+    const actions = el('div', 'workspace-page-actions');
+    actions.append(page.action.el, page.discard.el);
+    head.append(el('span', 'wk-surface-header-title', t('setup_workspace.new_kind', 'New {kind} Workspace', { kind: kindWord(kind) })), actions);
+    walk.append(head, page.el);
+  };
+
   function paint() {
     const lab = has(LAB.name);
-    const one = has(ONE.name);
-    root.replaceChildren(
-      question('lab', t('setup_workspace.lab_ask', 'Do you want Ronin Lab?'), [
-        { v: 'yes', l: t('setup_workspace.yes', 'Yes'), sub: lab ? t('setup_workspace.lab_made', 'Ronin Lab is one of your Workspaces.') : t('setup_workspace.lab_sub', 'A place for brainstorming and notes, away from your main code.') },
-        { v: 'no', l: t('setup_workspace.no', 'No'), ...(lab ? { off: t('setup_workspace.lab_archive', 'Archive it from its own page.') } : {}) },
-      ], lab ? 'yes' : '', (v) => (v === 'yes' && !lab ? make('lab', LAB, t('setup_workspace.making', 'Making {name}…', { name: LAB.title })) : null)),
-      question('project', t('setup_workspace.project_ask', 'Do you have a project you’re working on, or are you still thinking?'), [
-        { v: 'project', l: t('setup_workspace.a_project', 'A project'), sub: t('setup_workspace.project_sub', 'Say what it is, then where it lives: New Workspace.') },
-        { v: 'thinking', l: t('setup_workspace.thinking', 'Still thinking'), sub: one ? t('setup_workspace.one_made', 'Project One is one of your Workspaces.') : t('setup_workspace.thinking_sub', 'Start with Project One, a Workspace to try Agents on.') },
-      ], one ? 'thinking' : '', (v) => (v === 'project' ? openNew() : !one ? make('project', ONE, t('setup_workspace.making', 'Making {name}…', { name: ONE.title })) : null)),
-      question('github', t('setup_workspace.github_ask', 'Connect GitHub?'), github.authenticated
-        ? [{ v: 'in', l: github.account || 'GitHub', word: t('setup_workspace.signed_in', 'signed in'), sub: t('setup_workspace.github_in', 'GitHub is signed in as {account}.', { account: github.account }) }]
-        : [
-          { v: 'connect', l: t('setup_workspace.connect', 'Connect'), word: IRASSHAI_NAME, sub: t('setup_workspace.github_sub', 'The Helpful Assistant connects GitHub with you, in her chat, so Agents can reach your private repositories. You can skip this.') },
-          { v: 'later', l: t('setup_workspace.later', 'Later'), sub: t('setup_workspace.later_sub', 'Private repositories ask for it when you add one.') },
-        ], github.authenticated ? 'in' : '', (v) => (v === 'connect' ? connect() : null)),
-    );
+    const rows = [
+      lab
+        ? el('p', 'setup-workspace-lab', t('setup_workspace.lab_is', 'Ronin Lab is where you do your creative work.'))
+        : question('lab', t('setup_workspace.lab_ask', 'Ronin Lab'), [
+          { v: 'add', l: t('setup_workspace.add_lab', 'Add Ronin Lab'), sub: t('setup_workspace.lab_sub', 'Ronin Lab is where you do your creative work: ideas, notes and brainstorming, away from your main code.') },
+        ], '', () => addLab()),
+      question('kind', t('setup_workspace.kind_ask', 'What kind of project do you want to add?'), ruledRows('kind', KINDS, kindWord), kind,
+        (v) => { kind = v; paint(); }, 'square'),
+    ];
+    if (kind === 'coding' && !github.authenticated) rows.push(question('github', t('setup_workspace.github_ask', 'Connect GitHub'), [
+      { v: 'connect', l: t('setup_workspace.connect', 'Connect'), word: IRASSHAI_NAME, sub: t('setup_workspace.github_sub', 'The Helpful Assistant connects GitHub with you, in her chat, so Agents can reach your private repositories. A public repository needs no sign-in.') },
+    ], '', () => connect()));
+    yours.hidden = !workspacesRead.list().length;
+    top.replaceChildren(...rows);
+    paintWalk();
   }
 
   const stopRead = workspacesRead.subscribe(() => paint());
