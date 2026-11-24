@@ -308,6 +308,7 @@
   .ntf-agent-row { display: flex; justify-content: space-between; gap: var(--space-inline); align-items: center; margin-top: var(--space-row); border: var(--edge) solid var(--line-2); border-radius: var(--radius-small); background: var(--inset); padding: var(--space-row) var(--space-inline); }
   .ntf-agent-row-words { display: flex; flex-wrap: wrap; gap: var(--space-row) var(--space-inline); min-width: 0; align-items: baseline; }
   .ntf-agent-row-words small { flex-basis: 100%; overflow-wrap: anywhere; color: var(--muted); }
+  .ntf-agent-add { margin-top: var(--space-paragraph); }
   .ntf-agent-row-actions, .ntf-agent-editor-actions { display: flex; gap: var(--space-inline); justify-content: flex-end; }
 
   @media (max-width: 44rem) {
