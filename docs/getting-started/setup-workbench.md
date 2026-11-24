@@ -16,11 +16,12 @@ Three steps, in any order, each checked once it is true in your office however y
 - **Team.** Start a Team in your Workspace: its name, what it is for, the lead's harness. The
   lead builds out the rest. See [New Team](../using-ronin/new-team.md).
 
-Then three pages to read when you like: [Understanding](understanding.md) (how your Agents
-begin), [Running](running.md) (Teams, epics and items) and [Help](help.md).
+Then the **Tour**, to read when you like: [Ronin Tour](tour.md), how your Agents begin, how the
+work runs, and the questions people ask first.
 
-Beside every step is **Ask Ronin**: the Helpful Assistant, who sees the step you are on and can
-do it with you in the conversation.
+Under the steps, each step's how-to follows the step you are on. **Ask Ronin**, at the top of
+the steps and beside them, is the Helpful Assistant: she sees the step you are on, answers your
+questions, and can do it with you in the conversation.
 
 Registration, Ronin Services, a password, and launching your own Agent are not Setup steps:
 they are in **Settings**.

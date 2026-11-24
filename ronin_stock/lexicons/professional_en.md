@@ -283,7 +283,7 @@ nothing paints exactly this.
 - **setup.provider_gate_hosted:** Activate a harness in Harnesses to use this.
 - **setup.open_settings:** Open Ronin Settings
 - **setup.open_setup:** Open Ronin Setup
-- **setup.irasshai_open:** Helpful Assistant
+- **setup.irasshai_open:** Ask Ronin
 - **setup.irasshai_open_title:** Your welcome Agent: start here
 - **setup.irasshai_here:** Here, in Ask Ronin
 - **setup.irasshai_opening:** Opening…

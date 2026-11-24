@@ -11,7 +11,7 @@ route depends on the task, not on who is reading.
 | Understand Ronin and decide whether it fits | [Ronin overview](../README.md) and [machine and work boundaries](getting-started/how-ronin-protects-you.md) |
 | Choose a machine and install Ronin | [Prepare a machine](getting-started/rent-a-machine.md), then [install](getting-started/install.md) |
 | Finish setup and start one working Agent | [Get started](getting-started/get-started.md), [Ronin Setup](getting-started/setup-workbench.md), and [provider sign-in](getting-started/provider-sign-in.md) |
-| Learn how Agents begin and how work runs | [Understanding](getting-started/understanding.md), [Running](getting-started/running.md), and [Help](getting-started/help.md) |
+| Learn how Agents begin and how work runs | [Ronin Tour](getting-started/tour.md) |
 | Find and arrange my work | [Workbench](using-ronin/workbench.md) and [the tile](using-ronin/tile.md) |
 | Choose where Ronin works | [Workspaces](using-ronin/workspaces.md) |
 | Browse and manage the machine's files | [Explorer](using-ronin/explorer.md) |

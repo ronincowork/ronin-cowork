@@ -314,7 +314,7 @@ independently.
 | Password | authentication state owned by the shared Password surface |
 | Launch your own | no launch data until Agent or Team is selected; that embedded form then owns its reads |
 | Hosted: Team | the embedded New Team form owns its reads |
-| Hosted: Understanding, Running, Help | its doc in `docs/getting-started/`, read when shown (`/api/file`) |
+| Tour | the Ronin Tour, `docs/getting-started/tour.md`, read when shown (`/api/file`) |
 | Hosted: Ask Ronin | the garden copy, then the Helpful Assistant's chat (the session push) |
 
 ### Cowork and Team (`cowork` and `team` profiles)

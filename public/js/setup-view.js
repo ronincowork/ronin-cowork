@@ -17,7 +17,7 @@ import { createSetupStepsBar, setupStepMarks } from './setup-steps-bar.js';
 import { mikaShowHandlers, setupProgressHandlers } from './events.js';
 import { subscribe as hear } from './store.js';
 import { mikaTab, reportMikaView } from './mika.js';
-import { IRASSHAI_INTEGRATIONS_TYPE, IRASSHAI_NAME, IRASSHAI_OPEN_TYPE, createIrasshaiChat, createIrasshaiOpener, irasshaiKey, irasshaiReady, registerIrasshaiIntegrations, registerIrasshaiOpen } from './setup-irasshai.js';
+import { IRASSHAI_INTEGRATIONS_TYPE, IRASSHAI_OPEN_TYPE, createIrasshaiChat, createIrasshaiOpener, irasshaiKey, irasshaiReady, registerIrasshaiIntegrations, registerIrasshaiOpen } from './setup-irasshai.js';
 
 const PROFILE = 'setup';
 // The three steps and three pages (setup-journey.js SETUP_SCENES; SETUP_SWEEP.md §7), laid out as the
@@ -55,8 +55,8 @@ export function createSetupView() {
   const providerSessions = createProviderSetupSessionMount();
   const themeToggle = createThemeToggle();
   const opener = createIrasshaiOpener({ refresh: () => { bench?.refreshSelector(); if (!irasshai && garden) paintOffer(); }, showChat: () => { bench?.select('workspace1'); garden?.el.scrollIntoView?.({ block: 'start' }); } }); // a phone stacks the workspaces
-  // IRASSHAI (setup-irasshai.js): while her session is live, Workspace 1 holds her chat under the
-  // step's lines (the Ask Ronin panel). With her not live, the panel offers her. `irasshai` is her session's birth key at the last look ('' not live):
+  // IRASSHAI (setup-irasshai.js): Workspace 1, the Ask Ronin panel, is only her: her chat while her
+  // session is live, else the offer of her. The step's how-to is the selector's guide (below). `irasshai` is her session's birth key at the last look ('' not live):
   // a new birth gets a new chat, never the last one's records (KAN-676).
   let irasshai = '';
   let chat = null;
@@ -67,18 +67,18 @@ export function createSetupView() {
   offerButton.className = 'wk-btn setup-ask-button';
   offerButton.addEventListener('click', () => opener.press());
   offer.append(offerButton);
-  const paintOffer = () => { const card = opener.offer(); offerButton.textContent = card.label === IRASSHAI_NAME ? t('setup.ask_open', 'Ask the Helpful Assistant') : card.label; offerButton.title = card.summary; };
+  const paintOffer = () => { const card = opener.offer(); offerButton.textContent = card.label === ASK ? t('setup.ask_open', 'Ask Ronin') : card.label; offerButton.title = card.summary; };
   const seatChat = () => {
     if (!garden) return;
     if (irasshai) {
       if (chat && chat.key !== irasshai) { garden.chat(null); chat.dispose(); chat = null; }
       chat ||= Object.assign(createIrasshaiChat(), { key: irasshai });
-      garden.chat(chat.el, ASK, chat.toggle, { below: true });
+      garden.chat(chat.el, ASK, chat.toggle);
       chat.show();
     } else {
       if (chat) chat.hide();
       paintOffer();
-      garden.chat(offer, ASK, null, { below: true });
+      garden.chat(offer, ASK, null);
     }
   };
   let ready = '';
@@ -199,9 +199,29 @@ export function createSetupView() {
   const sceneComplete = (scene) => {
     return Boolean(scene?.id && setupStepMarks(progress).find((step) => step.id === scene.id)?.answered);
   };
+  // THE STEP'S GUIDE (owner, 24 Nov; w926): the how-to for the step on screen, at the foot of the
+  // selector where the hints were, from the step's canvas (setup-garden.v2.json); its doc links open
+  // over the Ask Ronin panel. Setup has no hints: no Agent vocabulary, no session controls.
+  const guide = document.createElement('section');
+  guide.className = 'setup-step-guide';
+  guide.setAttribute('aria-live', 'polite');
+  const paintGuide = (canvas) => {
+    guide.replaceChildren();
+    for (const copy of canvas?.copy || []) {
+      if (copy.heading) guide.append(Object.assign(document.createElement('h3'), { className: 'setup-step-guide-heading', textContent: copy.heading }));
+      if (copy.body) guide.append(Object.assign(document.createElement('p'), { className: 'setup-step-guide-body', textContent: copy.body }));
+    }
+    for (const item of canvas?.media || []) {
+      const link = Object.assign(document.createElement('button'), { type: 'button', className: 'setup-step-guide-link', textContent: item.label });
+      if (item.description) link.title = item.description;
+      link.addEventListener('click', () => { void environment.openGardenMedia(item); });
+      guide.append(link);
+    }
+    guide.hidden = !guide.childElementCount;
+  };
   const selectGarden = (scene) => {
-    if (!garden || !gardenContent || !scene || paintedSceneId === scene.id) return false;
-    garden.paint(gardenContent.canvases[scene.canvas] || null);
+    if (!gardenContent || !scene || paintedSceneId === scene.id) return false;
+    paintGuide(gardenContent.canvases[scene.canvas] || null);
     paintedSceneId = scene.id;
     return true;
   };
@@ -266,8 +286,7 @@ export function createSetupView() {
     title: () => 'Ronin Setup',
     selectorWorkspace: 'workspace2',
     selectorCurrent: true,
-    hintsCollapsed: true,
-    hintsPreferenceScope: 'setup',
+    hints: false,
     selectorFilter: (type) => type === IRASSHAI_OPEN_TYPE || ORDER.includes(type),
     onSelectorRefresh: paint,
     onStateChange: save,
@@ -282,6 +301,7 @@ export function createSetupView() {
       save();
     },
   });
+  bench.host.querySelector('.wk-workbench-selector')?.append(guide);
   bench.host.querySelector('.wk-workbench-selector-cards')?.addEventListener('click', (event) => { if (!event.target.closest?.('.setup-irasshai-card')) queueMicrotask(() => bench.select('workspace2')); });
   followIrasshai();
 
@@ -306,7 +326,7 @@ export function createSetupView() {
       open(sceneOverride);
       seatChat();
       entered = true; report();
-      // She comes when asked (her entry, or the Ask Ronin panel), or with the office's start (§7).
+      // She comes when asked (her Ask Ronin pill, or the panel's offer), or with the office's start (§7).
       void request('/api/setup/progress', { cache: 'no-store' }).then((result) => {
         if (generation !== enterGeneration || !result.ok || !acceptProgress(result.data)) return;
         const first = firstUnansweredSetupStep(progress);
