@@ -631,7 +631,7 @@ function workspaceSurface(w, { workspacesRead, onDiscard = () => {}, launch = fa
  * an Epic's or a Team's: its name and the shared marks, the number bottom right its Teams. A pressed stone
  * opens that Workspace beside the rail, Work or Config, with Launch to its own page; a stone dragged
  * into a tilespace opens it whole there. The last stone, New Workspace, is its Name and Folders. */
-export function createWorkspaceStones({ workspacesRead, workbench, recordType = '', withNew = false, onShow = () => {} }) {
+export function createWorkspaceStones({ workspacesRead, workbench, recordType = '', withNew = false, onShow = () => {}, top = null }) {
   const { createSurface } = WorkspaceKit.primitives;
   const out = createSurface({ label: t('workspaces.title', 'Workspaces'), className: 'setup-surface workspaces-records' });
   const messages = status();
@@ -663,7 +663,9 @@ export function createWorkspaceStones({ workspacesRead, workbench, recordType = 
       return () => one.destroy();
     },
   });
-  stones.mount(out.content, { before: [messages] });
+  // A part over the stones (Setup's kickoff, KAN-809), given a way to open New Workspace.
+  const above = top ? top({ openNew: () => stones.select(NEW_STONE) }) : null;
+  stones.mount(out.content, { before: [...(above ? [above.el] : []), messages] });
   const paint = (answer) => {
     if (answer && !answer.ok) { say(answer.message, true); return; }
     if (answer) say(workspacesRead.list().length ? '' : t('workspaces.none', 'No Workspaces yet. Place New Workspace from the selector.'));
@@ -692,7 +694,7 @@ export function createWorkspaceStones({ workspacesRead, workbench, recordType = 
   return {
     el: out.el,
     show: () => { void workspacesRead.read(); onShow(); },
-    destroy: () => { stop(); stopTeams?.(); stones.destroy(); },
+    destroy: () => { stop(); stopTeams?.(); above?.destroy(); stones.destroy(); },
   };
 }
 
