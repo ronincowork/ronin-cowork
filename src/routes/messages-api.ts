@@ -8,9 +8,10 @@ export function registerMessages(app: Express): void {
     const target = String(req.body?.target ?? '');
     const text = String(req.body?.text ?? '');
     if (!isValidName(target) || !text.trim()) return res.status(400).json({ error: 'A valid target and message are required.' });
-    // The tile's Message box says it is the person typing; every other caller is Ronin on their behalf.
-    // In a hosted office the signed-in person is recorded with it (src/office-people.ts).
-    const source = req.body?.typed === true ? 'typed' : 'owner';
+    // The tile's Message box says it is the person typing; a page's button says it is a press (a
+    // button's message, [Button]); every other caller is Ronin on their behalf. In a hosted office the
+    // signed-in person is recorded with it (src/office-people.ts).
+    const source = req.body?.typed === true ? 'typed' : req.body?.press === true ? 'press' : 'owner';
     const item = await enqueueMessage(target, text, source, undefined, person(req));
     res.json({ ok: true, queued: true, message: item });
   });

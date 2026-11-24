@@ -37,6 +37,19 @@ export interface AgentOperations {
   };
 }
 
+/**
+ * HOW RONIN SIGNS A CLI IN, WITHOUT A TERMINAL (owner, 24 Nov 2026; samurai_lab/wip/SETUP_HARNESS.md):
+ * the CLI's own login command per way, its menu skipped. Ronin runs it, shows the link and code it
+ * prints (`code` finds the code), sends what the person pastes (`paste`: a code back, or a key on stdin),
+ * and the CLI's credential file is the record. A CLI without `login` signs in on the terminal tile.
+ */
+export interface AgentLogin {
+  subscription: { argv: readonly string[]; paste: 'code' | null };
+  api_key: { argv: readonly string[]; paste: 'code' | 'key' };
+  /** A pattern matching the one-time code the CLI prints, when it prints one. */
+  code?: string;
+}
+
 export const AGENTS = [
   {
     id: 'claude',
@@ -55,6 +68,10 @@ export const AGENTS = [
     // HOW ITS SIGN-IN GOES (KAN-716): Setup's Authenticate step says it above the terminal, read off
     // the CLI's own first-run screens (2.1.x); '' where Ronin has not read them.
     signIn: 'Press Enter to keep the text style, then pick a login method: 1 Claude account with subscription, 2 Anthropic Console account (API billing), or 3 a third-party platform. Open the link it shows, sign in, and paste the code it gives you back into the terminal.',
+    login: {
+      subscription: { argv: ['auth', 'login', '--claudeai'], paste: 'code' },
+      api_key: { argv: ['auth', 'login', '--console'], paste: 'code' },
+    } as AgentLogin,
     credentials: ['.claude/.credentials.json'],
     // What a parked office carries besides credentials (src/machine-park.ts): the CLI's own
     // settings, without which a fresh home asks first-run questions instead of resuming.
@@ -76,6 +93,11 @@ export const AGENTS = [
     } as AgentOperations,
     parked: '',
     signIn: 'Pick one and press Enter: 1 Sign in with ChatGPT (a browser link to approve, on the same computer), 2 Sign in with Device Code (open auth.openai.com/codex/device and enter the code it shows: use this one in a hosted office), or 3 to paste an OpenAI API key.',
+    login: {
+      subscription: { argv: ['login', '--device-auth'], paste: null },
+      api_key: { argv: ['login', '--with-api-key'], paste: 'key' },
+      code: '\\b[A-Z0-9]{4}-[A-Z0-9]{4,6}\\b',
+    } as AgentLogin,
     credentials: ['.codex/auth.json'],
     carry: ['.codex/config.toml'],
     screen: { busy: ['esc to interrupt'], asking: ['›\\s*\\d+\\.\\s'], ready: ['^\\s*›(?:\\s|$)'] },

@@ -1,7 +1,7 @@
 /* Ronin Setup — the lightweight first-use workbench. */
 import { WorkspaceKit } from './workspace-kit.js';
 import { workbenchView } from './workspace-contract.js';
-import { SETUP_SURFACE_TYPES, registerSetupSurfaces } from './setup-surfaces.js';
+import { registerSetupSurfaces } from './setup-surfaces.js';
 import { createProviderSetupSessionMount } from './provider-setup-session.js';
 import { request } from './request.js';
 import { t } from './lexicon.js';
@@ -47,7 +47,6 @@ export function createSetupView() {
   let runtime = null;
   let garden = null;
   let gardenContent = null;
-  let providerSurface = null;
   let paintedSceneId = null;
   let progress = { steps: [], tailscale: '', no_password: false };
   let enterGeneration = 0;
@@ -144,7 +143,6 @@ export function createSetupView() {
       paintedSceneId = null;
       selectGarden(activeScene());
     },
-    onProviderSurface: (next) => { providerSurface = next; },
     openGardenMedia: async (item) => {
       if (!garden) return;
       if (item.kind !== 'doc') { garden.showMedia({ label: item.label, kind: item.kind, src: item.src }); return; }
@@ -168,14 +166,6 @@ export function createSetupView() {
       await openDocument(item.path, item.label);
     },
     openSetupAction: (action) => {
-      if (action === 'setup.providers.choose') {
-        const scene = SCENES.find((candidate) => candidate.type === SETUP_SURFACE_TYPES.providers);
-        if (!scene) return;
-        sceneOverride = scene.number;
-        open(scene.number);
-        providerSurface?.openFirst();
-        return;
-      }
       openSurface(action);
     },
   };

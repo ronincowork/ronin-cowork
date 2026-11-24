@@ -7,6 +7,7 @@ import { createWorkspaceStones } from './workspaces-surface.js';
 import { createWorkspacesRead } from './workspaces-read.js';
 import { ask } from './ask.js';
 import { PROVIDER_SURFACE_TYPE, providerSurfaceDefinition } from './provider-surface.js';
+import { harnessSurfaceDefinition } from './setup-harness-surface.js';
 import { createPhalanx } from './phalanx.js';
 import { servicesSetupModel } from './services-setup-state.js';
 import { campaignById, campaigns, loadCampaigns, saveCampaign } from './campaigns.js';
@@ -660,6 +661,7 @@ export function setupSurfaceDefinitions() {
   return [
     definition(SETUP_SURFACE_TYPES.register, t('setup_surface.register', 'Register'), createRegisterSurface),
     providerSurfaceDefinition(),
+    harnessSurfaceDefinition(),
     definition(SETUP_SURFACE_TYPES.roots, t('setup_surface.roots', 'Workspaces'), createRootsSurface),
     definition(SETUP_SURFACE_TYPES.installations, t('campaign_view.installations', 'Installations'), createSetupInstallationsSurface),
     definition(SETUP_SURFACE_TYPES.launchOwn, t('setup_surface.launch_own', 'Launch your own'), createLaunchOwnSurface),

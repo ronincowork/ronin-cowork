@@ -310,12 +310,12 @@ export function buildMachineSettings(root, isShowing, { only = null } = {}) {
 
     group(t('settei.group_services', 'services'));
     body.appendChild(tickRow(observed.ronin.services.length > 0, 'service', '*', t('settei.ronin_services', 'Ronin Services'), ''));
-    /* the deal — Ronin Services the subscription, a different thing from the sockets above */
-    group(t('settei.group_subscription', 'subscription'));
+    /* the deal — Ronin Services' entitlement, a different thing from the sockets above */
+    group(t('settei.group_entitlement', 'entitlement'));
     const activation = set.services.activation ?? {};
     // The activation stage, labelled as what it is: activation is identity transport to
-    // Ronin HQ, not a subscription. The subscription itself is the Cloud account card's.
-    body.appendChild(obsRow(t('settei.services_activation', 'Services activation'), st.subscription,
+    // Ronin HQ, not a lease. The office lease itself is the Cloud account card's.
+    body.appendChild(obsRow(t('settei.services_activation', 'Services activation'), st.entitlement,
       activation.email_masked ? ` ${activation.email_masked}` : ''));
     // The install's steps arrive by push. The card renders the durable stage rather than
     // what this page remembers doing, so a reload or a second tab lands on the truth.

@@ -5155,3 +5155,26 @@ html[data-screen='inside'] #phone .ph-bar .ph-title[data-boot='inside'] { displa
 .accounts-tick input { margin: 0; }
 .models-records-section { display: grid; gap: var(--space-inline); }
 .models-records-section h3 { margin: 0; }
+
+/* THE HARNESS STEP (setup-harness-surface.js): the prototype's thin bars, one per harness. */
+.setup-harness { display: flex; flex-direction: column; gap: 12px; }
+.setup-harness-head { margin: 0; font-family: var(--font-mono); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--kaki); font-weight: 600; }
+.setup-harness-stack { display: flex; flex-direction: column; gap: 8px; max-width: 560px; }
+.setup-harness-bar { display: flex; flex-direction: column; gap: 10px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 4px; background: var(--surface); }
+.setup-harness-bar.selected { border-color: var(--kaki); box-shadow: inset 3px 0 var(--kaki); background: var(--selected); }
+.setup-harness-bar.signed { box-shadow: inset 3px 0 var(--ok-2); }
+.setup-harness-top { display: flex; align-items: center; gap: 10px; }
+.setup-harness-name b { display: block; font-size: 14px; font-weight: 600; color: var(--fg-strong); }
+.setup-harness-name small { display: block; font-size: 11px; color: var(--muted); margin-top: 2px; }
+.setup-harness-go { margin-left: auto; border: 0; background: none; padding: 0; font: inherit; font-weight: 600; color: var(--aiiro); cursor: pointer; }
+.setup-harness-bar.signed .setup-harness-go { color: var(--ok-2); }
+.setup-harness-go:disabled { color: var(--kaki); cursor: default; }
+.setup-harness-window { display: flex; flex-direction: column; gap: 6px; padding: 10px; border-radius: 4px; background: var(--surface); border: 1px solid var(--line); }
+.setup-harness-line { margin: 0; }
+.setup-harness-line.bad { color: var(--kaki); }
+.setup-harness-link { color: var(--aiiro); word-break: break-all; }
+.setup-harness-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.setup-harness-code { font-family: var(--font-mono); font-size: 18px; font-weight: 600; letter-spacing: .08em; color: var(--fg-strong); }
+.setup-harness-input { flex: 1 1 180px; min-width: 0; }
+.setup-harness-terminal { min-height: 320px; }
+.setup-harness-note { margin: 0; font-size: 11px; color: var(--muted); }

@@ -52,7 +52,7 @@ disagreement is said.
 
 **A hosted office shows no account settings** (owner, 13 Nov 2026; KAN-475). The server reads
 the record once at start and the page says so in `<html data-hosted="on">` (`public/js/hosted.js`;
-`unreadable` counts as hosted). The account, billing, subscription and office are kept in the
+`unreadable` counts as hosted). The account, billing, office lease and office are kept in the
 Business Lounge at Ronin HQ, so Cowork carries a link and no account code: Home's side stones gain
 **Business Lounge** (opens `https://hq.roninhosted.com/` in a new tab, for everyone in the office;
 each person lands in their own lounge). What is hidden when hosted: Home's Check for updates;

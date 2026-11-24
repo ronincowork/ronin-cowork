@@ -5,7 +5,7 @@
  * text is the docs'. The same whether she runs or not.
  */
 export const SETUP_SCENES = Object.freeze([
-  { id: 'harness', label: 'Harness', type: 'setup.providers', canvas: 'garden.setup.harness' },
+  { id: 'harness', label: 'Harness', type: 'setup.harness', canvas: 'garden.setup.harness' },
   { id: 'workspace', label: 'Workspace', type: 'setup.roots', canvas: 'garden.setup.workspace' },
   { id: 'team', label: 'Team', type: 'setup.team', canvas: 'garden.setup.team' },
   { id: 'understanding', label: 'Understanding', type: 'setup.understanding', canvas: 'garden.setup.understanding', page: 'docs/getting-started/understanding.md' },

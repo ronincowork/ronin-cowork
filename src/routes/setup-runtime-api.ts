@@ -11,7 +11,6 @@ import {
   openProviderUpdate,
   setProviderOff,
   setupRuntimeAnswer,
-  saveProviderSignIn,
   githubSetupAnswer,
   openGithubInstall,
   openGithubLogin,
@@ -24,6 +23,7 @@ import {
   closeGitSetupSession,
 } from '../setup-runtime.js';
 import { installedAnswer } from './installed-api.js';
+import { cancelSignIn, pasteSignIn, signInState, startSignIn } from '../provider-sign-in.js';
 import { measureAndRecordProviders, readProviderSummary, refreshProviders } from '../provider-summary.js';
 import type { ProviderSummary } from '../model-providers.js';
 import { readUserIntro, writeUserIntro } from '../user-intro.js';
@@ -165,6 +165,22 @@ export function registerSetupRuntime(app: express.Express): void {
     });
   }
 
+  // SIGN-IN WITHOUT A TERMINAL (src/provider-sign-in.ts): start for a way, paste, cancel; the state
+  // is pushed as `harness-sign-in`, and read here when a page opens. `tell` names who hears the end.
+  app.get('/api/setup/sign-in', (_req, res) => { res.json(signInState()); });
+  app.post('/api/setup/providers/:provider/sign-in', (req, res) => {
+    try { res.json({ ok: true, run: startSignIn(String(req.params.provider), req.body?.way === 'api_key' ? 'api_key' : 'subscription', String(req.body?.tell ?? '')) }); }
+    catch (error) { res.status(400).json({ error: errMsg(error) }); }
+  });
+  app.post('/api/setup/providers/:provider/sign-in/paste', (req, res) => {
+    try { res.json({ ok: true, run: pasteSignIn(String(req.params.provider), String(req.body?.text ?? '')) }); }
+    catch (error) { res.status(400).json({ error: errMsg(error) }); }
+  });
+  app.post('/api/setup/providers/:provider/sign-in/cancel', (req, res) => {
+    cancelSignIn(String(req.params.provider));
+    res.json({ ok: true });
+  });
+
   app.post('/api/setup/providers/:provider/login', async (req, res) => {
     try {
       const result = await openProviderLogin(String(req.params.provider));
@@ -178,7 +194,6 @@ export function registerSetupRuntime(app: express.Express): void {
 
   app.post('/api/setup/providers/:provider/done', async (req, res) => {
     try {
-      if (req.body?.sign_in !== undefined) await saveProviderSignIn(String(req.params.provider), req.body.sign_in);
       const result = await completeProviderLogin(String(req.params.provider));
       // Done activates a provider: the owner's press, so its model list is read now (owner, 2026-09-25).
       res.json({ ok: true, closed: true, activation_recorded: true, activated_at: result.activated_at, attachment: null, runtime: await answer(await refreshProviders()) });
@@ -189,7 +204,6 @@ export function registerSetupRuntime(app: express.Express): void {
 
   app.post('/api/setup/providers/:provider/close', async (req, res) => {
     try {
-      if (req.body?.sign_in !== undefined) await saveProviderSignIn(String(req.params.provider), req.body.sign_in);
       await closeProviderLogin(String(req.params.provider));
       // A sign-in closed without Done may still have left the CLI's credential file: measure.
       res.json({ ok: true, closed: true, activation_recorded: false, attachment: null, runtime: await answer(await measureAndRecordProviders()) });
