@@ -110,7 +110,8 @@ export function createAgentRows({ n, key, rows, changed, onToggle, createAction,
     });
     if (editor) host.append(paintEditor());
     else {
-      host.append(createAction({ label: t('new_team.agent_add', '＋ Add Agent'), kind: 'primary', action: () => openEditor() }).el);
+      const add = createAction({ label: t('new_team.agent_add', '＋ Add Agent'), action: () => openEditor() }).el;
+      add.classList.add('ntf-agent-add'); host.append(add);
     }
   }
   step.body.append(host); return { step, paint };
