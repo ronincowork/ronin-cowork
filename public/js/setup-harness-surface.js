@@ -29,7 +29,8 @@ import { mountHermesSurface } from './hermes-surface.js';
 export const HARNESS_SURFACE_TYPE = 'setup.harness';
 
 const el = (tag, cls = '', text = null) => { const out = document.createElement(tag); if (cls) out.className = cls; if (text != null) out.textContent = String(text); return out; };
-const button = (label, primary, onClick) => { const out = el('button', `wk-btn setup-harness-btn${primary ? ' primary' : ''}`, label); out.type = 'button'; out.addEventListener('click', onClick); return out; };
+// The workbench's own button (wk-action): its pointer, hover and primary look, as on every surface.
+const button = (label, primary, onClick) => { const made = WorkspaceKit.primitives.createAction({ label, kind: primary ? 'primary' : '', action: onClick }); return made.el ?? made; };
 
 const shortName = (provider) => String(provider.label || provider.id).replace(/ CLI$/, '');
 
