@@ -323,8 +323,8 @@ function createRegisterSurface(context) {
 // questions sit over them (KAN-809).
 function createRootsSurface(context) {
   const workspacesRead = createWorkspacesRead();
-  return createWorkspaceStones({ workspacesRead, workbench: context.workbench, withNew: true,
-    top: ({ openNew }) => createWorkspaceKickoff({ workspacesRead, openNew, environment: context.environment }),
+  return createWorkspaceStones({ workspacesRead, workbench: context.workbench,
+    top: () => createWorkspaceKickoff({ workspacesRead, environment: context.environment }),
     onShow: () => notifySummary(SETUP_SURFACE_TYPES.roots, t('setup_surface.roots_summary', '{n} Workspaces', { n: workspacesRead.list().length }), context.workbench) });
 }
 

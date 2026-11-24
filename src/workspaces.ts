@@ -25,6 +25,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { rootDir, storeDir, STORES } from './resources.js';
 import type { LaunchMode } from './agent-defaults.js';
+import type { TeamKind } from './team-rosters.js';
 
 /** A folder the Workspace works in: `dir` is the folder; `name` is Ronin's key for it (desks, tmux,
  * promotion), made from the folder's basename on save, the same for one dir in every Workspace. */
@@ -41,6 +42,8 @@ export interface Workspace {
   name: string;
   campaign_id: string;
   title: string;
+  /** What kind of project it is (the Team kinds): coding asks for repositories and GitHub, the rest a folder. */
+  kind: TeamKind;
   objective: string;
   instructions: string;
   repos: WorkspaceRepo[];
@@ -54,6 +57,8 @@ export interface Workspace {
   /** Archived (the page's ⋯): off the Workspace pickers, kept, one press brings it back. */
   archived?: boolean;
 }
+
+const KINDS = ['open', 'coding', 'work', 'personal', 'household', 'social', 'school'] as const;
 
 export const isValidWorkspaceName = (s: string): boolean => /^[a-z0-9][a-z0-9_-]{0,63}$/.test(s);
 
@@ -74,6 +79,7 @@ export function normalizeWorkspace(campaign_id: string, name: string, v: Record<
   return {
     name, campaign_id,
     title: text(v.title, 120),
+    kind: (KINDS as readonly unknown[]).includes(v.kind) ? v.kind as TeamKind : 'open',
     objective: text(v.objective, 2000),
     instructions: text(v.instructions, 8000),
     repos: rows(v.repos, (r) => { const f = folderRow(r); return f && repoRow(f, r); }),
