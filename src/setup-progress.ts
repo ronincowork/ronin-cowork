@@ -41,5 +41,10 @@ export async function readSetupProgress(): Promise<SetupProgress> {
 
 /** A fact written is the office changed: Setup's ticks go out again. */
 export function startSetupProgress(): void {
-  onFactWritten(() => { void readSetupProgress().then((progress) => broadcastEvent({ t: 'setup-progress', ...progress }), () => {}); });
+  onFactWritten((name) => {
+    void readSetupProgress().then((progress) => broadcastEvent({ t: 'setup-progress', ...progress }), () => {});
+    // THE WORKSPACES MOVED (KAN-809): the fact is rebuilt from the workspaces store, whoever wrote it
+    // (a page, Irasshai's workspace tool, an Agent), so every Workspaces list on every page reads again.
+    if (name === 'workspaces') broadcastEvent({ t: 'workspaces-changed' });
+  });
 }

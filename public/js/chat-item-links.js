@@ -14,10 +14,12 @@
  *    `git show --stat -p` of it in the tile's Docs, as a read-only page.
  *  - a web address (https://github.com/…/pull/149) (KAN-778): opens in a new tab; nothing is
  *    looked up, and a full stop or closing bracket after it stays text.
+ *  - a Workspace's handle (shop_site) that is no Agent's name (KAN-809): opens its own page in a new
+ *    tab. Known: the office's Workspaces, read once and again on each `workspaces-changed` push.
  *
  * One read per id or path per page, only for what the push and the session list cannot answer.
  */
-import { get } from './store.js';
+import { get, store } from './store.js';
 import { request } from './request.js';
 import { S } from './state.js';
 import { SURFACE_DRAG } from './workbench.js';
@@ -62,6 +64,16 @@ export function knownItem(id) {
   return items.get(id);
 }
 
+let workspaceNames = null; // Promise<Set<handle>>, read once, dropped on each push
+store.listen('workspaces-changed', () => { workspaceNames = null; });
+/** The Workspace a bare handle names, or null. */
+export function knownWorkspace(word) {
+  if (word.startsWith('@')) return null;
+  workspaceNames ||= request('/api/workspaces', { cache: 'no-store' })
+    .then((r) => new Set(r.ok ? (r.data?.workspaces || []).map((w) => w.name) : []), () => new Set());
+  return workspaceNames.then((names) => (names.has(word) ? word : null));
+}
+
 /** The Agent a name or @name names, from the session list, or null. */
 export const knownAgent = (word) => (S.sessions || []).find((row) => row.name === word.replace(/^@/, ''))?.name || null;
 
@@ -93,6 +105,7 @@ export function knownCommit(session, hash) {
  *  Agent's tile, a document or a commit's page on a Document surface. */
 const SESSION_DRAG = 'text/x-ronin-session'; // team-drag.js: a Team's roster takes an Agent dropped on it
 const dropAs = (kind, target) => (kind === 'item' ? { type: 'team.find-item', detail: { key: target.id } }
+  : kind === 'workspace' ? { type: 'workspaces.record', detail: { key: target } }
   : kind === 'agent' ? { type: 'session.terminal', detail: { key: target } }
     : { type: 'document', detail: { key: target } });
 
@@ -153,11 +166,13 @@ export function linkChat(entry, open = {}) {
       const { url, item, doc: path, agent } = m.groups;
       if (url) return { at: m.index, words: url, kind: 'url', target: url }; // nothing to look up
       const commit = m.groups.commit || m.groups.atcommit;
-      const kind = item ? 'item' : commit ? 'commit' : path ? 'doc' : 'agent';
+      let kind = item ? 'item' : commit ? 'commit' : path ? 'doc' : 'agent';
       const words = item || commit || path || agent;
+      // A word no Agent has may be a Workspace's handle.
+      if (kind === 'agent' && !knownAgent(words) && open.workspace) kind = 'workspace';
       if (!open[kind]) return null;
       const target = kind === 'item' ? knownItem(words) : kind === 'commit' ? knownCommit(session, words)
-        : kind === 'doc' ? knownDoc(session, words) : knownAgent(words);
+        : kind === 'doc' ? knownDoc(session, words) : kind === 'workspace' ? knownWorkspace(words) : knownAgent(words);
       return target ? { at: m.index, words, kind, target } : null;
     }).filter(Boolean);
     if (!found.length) continue;

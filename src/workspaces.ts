@@ -23,7 +23,7 @@ import { holdsWritten, workspaceListKey } from './holds-hook.js';
 import { mkdir, readFile, readdir, rename, unlink, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { storeDir } from './resources.js';
+import { rootDir, storeDir, STORES } from './resources.js';
 import type { LaunchMode } from './agent-defaults.js';
 
 /** A folder the Workspace works in: `dir` is the folder; `name` is Ronin's key for it (desks, tmux,
@@ -139,6 +139,15 @@ export async function listWorkspaces(campaign: string): Promise<Workspace[]> {
 export async function saveWorkspace(w: Workspace): Promise<Workspace> {
   if (!w.campaign_id || !isValidWorkspaceName(w.name)) throw new Error(`A Workspace name is lowercase letters, digits, _ and -: "${w.name}".`);
   const clean = normalizeWorkspace(w.campaign_id, w.name, w as unknown as Record<string, unknown>);
+  // EVERY WORKSPACE GETS ITS FOLDER (owner, 24 Nov; KAN-809): a new one is given ~/ronin/<name>, made
+  // here, whoever makes it (a page, the workspace tool). More folders are theirs to add.
+  if (!(await readWorkspace(clean.campaign_id, clean.name))) {
+    // Never one of Ronin's own folders there (office, config, memory…): that name takes -files.
+    const ronins = new Set(STORES.filter((one) => one.root === 'user').map((one) => one.rel.split('/')[0]));
+    const dir = path.join(rootDir('user'), ronins.has(clean.name) ? `${clean.name}-files` : clean.name);
+    await mkdir(dir, { recursive: true });
+    if (![...clean.repos, ...clean.folders].some((row) => row.dir === dir)) clean.folders.unshift({ name: clean.name, dir, note: '' });
+  }
   await nameRows(clean);
   await writeRecord(clean);
   // ONE REPOSITORY, ONE SET OF SETTINGS: the same repository in another Workspace takes these.

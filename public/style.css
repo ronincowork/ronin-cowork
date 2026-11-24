@@ -5168,6 +5168,10 @@ html[data-screen='inside'] #phone .ph-bar .ph-title[data-boot='inside'] { displa
 .setup-harness-window { display: flex; flex-direction: column; gap: 10px; }
 .setup-harness-line { margin: 0; line-height: 1.5; }
 .setup-harness-line.bad { color: var(--kaki); }
+/* The Workspace step's kickoff (setup-workspace-kickoff.js, KAN-809): three questions over the stones, one even gap. */
+.setup-workspace-kickoff { display: flex; flex-direction: column; gap: var(--space-4, 16px); margin-bottom: var(--space-4, 16px); }
+.setup-workspace-question { display: flex; flex-direction: column; gap: var(--space-2, 8px); }
+.setup-workspace-ask { margin: 0; color: var(--fg-strong); font-weight: var(--weight-strong); }
 .setup-harness-link { color: var(--link); word-break: break-all; }
 .setup-harness-row { display: flex; flex-wrap: wrap; align-items: stretch; gap: 8px; }
 /* ERABI stones of one size: each 140 wide (ask.css), a long name on two lines, every stone in a row the same height. */
