@@ -170,14 +170,15 @@ stays; what the customer hears for a unit is not settled (owner, 6 Nov 2026).
 | Model gateway (`model_gateway`) | Holds Ronin's provider key outside every office; an office speaks to it with its house_token |
 | House token (`house_token`) | One office's credential for the model_gateway; revoking it is part of the kill_switch |
 | Office export (`office_export`) | The off-ramp: the office as self-hosted Ronin on the customer's own computer |
-| Balance | The account's Ronin Hosted money, in dollars. Use lowers it; a top-up raises it |
-| Starter balance | The one-off $5 an account gets at its first rental |
-| Top up | Adding money to the balance |
-| Office limit | The optional most one office may spend from the balance |
+| Office lease (`office_lease`) | One office's lease: its kind's rent plus its add-ons, billed monthly. The $5 starter is $5 off the first month's lease |
+| Lease add-on (`lease_addon`) | Something added to an office's lease: house models, voice, an environment or an integration |
+| Allowance | An add-on's month of use for one office, kept in dollars by HQ and shown as a meter (percent, stopped, resets) |
+| Lease status (`lease_status`) | trial, active, paused or ended; anything else reads as unknown |
+| Provider subscription (`provider_subscription`) | A harness provider's paid plan (Claude Pro/Max, ChatGPT Plus/Pro…). "Subscription" means only this |
 | Spent | What has been charged, this month and in total; per office and per person |
 
 Server, host, guest, VM, workspace, customer machine and edge are not Cloud terms. "VM" named
 two layers at once, the rented machine and the customer's slice; say office_park and office.
-Ronin Hosted money is never "credits" or "budget"; price, cost and margin are in
+Ronin Hosted money is never "credits", "budget", "balance" or "subscription"; price, cost and margin are in
 `samurai_lab/ronin_cloud/PRICING_POLICY.md` §5.
 "Edge" is the `edges` message tool.

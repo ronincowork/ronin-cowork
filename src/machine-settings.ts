@@ -447,7 +447,7 @@ export function setteiServices(activation: ActivationState) {
 
 type PublicActivation = ReturnType<typeof publicState>;
 
-export function servicesSubscription(activation: PublicActivation): string {
+export function servicesEntitlement(activation: PublicActivation): string {
   if (activation.entitlement_id) {
     return `services: ${activation.entitlement_id}`
       + (activation.verified_at ? `, verified ${activation.verified_at}` : '');
@@ -589,7 +589,7 @@ async function computeStatus(
       ...jobStatus,
     },
     setup: 'Ronin Setup is always available in Machine Settings',
-    subscription: servicesSubscription(servicesActivation),
+    entitlement: servicesEntitlement(servicesActivation),
   };
 }
 
