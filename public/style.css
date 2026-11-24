@@ -4406,6 +4406,11 @@ body {
 .setup-steps-bar { --slab: 24px; --slab-w: 16px; --slab-gap: 2px; --slab-type: var(--text-body); --skew: -14deg; display: flex; align-items: center; flex: 0 0 auto; gap: var(--slab-gap); }
 .setup-steps-header { display: inline-flex; align-items: center; }
 .setup-steps-header[hidden] { display: none; }
+/* In the selector's dark header (Setup, owner 24 Nov): the marks take the header's ink, an open step
+   outlined in it, a done one filled kaki; the step Setup lands on outlined kaki. */
+.wk-surface-header .setup-steps-mark { border-color: color-mix(in srgb, var(--current-head-fg) 55%, transparent); color: var(--current-head-fg); }
+.wk-surface-header .setup-steps-mark[data-answered='true'] { border-color: var(--kaki-fill); background: var(--kaki-fill); color: var(--on-strong); }
+.wk-surface-header .setup-steps-mark[data-next='true'] { border-color: var(--kaki-lift); color: var(--kaki-lift); }
 .setup-scan[data-state='scanning'] .setup-scan-word { color: var(--kaki-fill); }
 .setup-scan[data-state='failed'] .setup-scan-word { color: var(--bad-soft); }
 .setup-scan-word:empty { display: none; }

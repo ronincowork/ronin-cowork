@@ -17,7 +17,7 @@ import { createSetupStepsBar, setupStepMarks } from './setup-steps-bar.js';
 import { mikaShowHandlers, setupProgressHandlers } from './events.js';
 import { subscribe as hear } from './store.js';
 import { mikaTab, reportMikaView } from './mika.js';
-import { IRASSHAI_INTEGRATIONS_TYPE, IRASSHAI_OPEN_TYPE, createIrasshaiChat, createIrasshaiOpener, irasshaiKey, irasshaiReady, registerIrasshaiIntegrations, registerIrasshaiOpen } from './setup-irasshai.js';
+import { IRASSHAI_INTEGRATIONS_TYPE, createIrasshaiChat, createIrasshaiOpener, irasshaiKey, irasshaiReady, registerIrasshaiIntegrations } from './setup-irasshai.js';
 
 const PROFILE = 'setup';
 // The three steps and three pages (setup-journey.js SETUP_SCENES; SETUP_SWEEP.md §7), laid out as the
@@ -35,9 +35,8 @@ const GARDEN_CONTENT_URL = '/content/setup-garden.v2.json';
 function registerSetupWorkbench() {
   registerSetupSurfaces();
   registerGardenCanvas();
-  registerIrasshaiOpen();
   registerIrasshaiIntegrations();
-  return WorkspaceKit.workbench.profiles.define(PROFILE, [IRASSHAI_OPEN_TYPE, GARDEN_CANVAS_TYPE, IRASSHAI_INTEGRATIONS_TYPE, ...ORDER]);
+  return WorkspaceKit.workbench.profiles.define(PROFILE, [GARDEN_CANVAS_TYPE, IRASSHAI_INTEGRATIONS_TYPE, ...ORDER]);
 }
 
 export function createSetupView() {
@@ -134,8 +133,6 @@ export function createSetupView() {
       } });
       if (url) location.assign(url);
     },
-    irasshaiOpen: () => opener.offer(),
-    irasshaiPress: () => opener.press(),
     onGardenCanvas: (next) => {
       garden = next;
       seatChat();
@@ -314,7 +311,7 @@ export function createSetupView() {
     selectorWorkspace: 'workspace2',
     selectorCurrent: true,
     hints: false,
-    selectorFilter: (type) => type === IRASSHAI_OPEN_TYPE || ORDER.includes(type),
+    selectorFilter: (type) => ORDER.includes(type),
     onSelectorRefresh: paint,
     onStateChange: save,
     onPlacement: (snapshot) => {
@@ -329,13 +326,15 @@ export function createSetupView() {
     },
   });
   bench.host.querySelector('.wk-workbench-selector')?.append(guide);
-  bench.host.querySelector('.wk-workbench-selector-cards')?.addEventListener('click', (event) => { if (!event.target.closest?.('.setup-irasshai-card')) queueMicrotask(() => bench.select('workspace2')); });
+  // The step marks head the selector, beside its density toggle (owner, 24 Nov): its header was empty.
+  bench.selectorHeader?.title.replaceChildren(setupStepsHeader);
+  bench.host.querySelector('.wk-workbench-selector-cards')?.addEventListener('click', () => { queueMicrotask(() => bench.select('workspace2')); });
   followIrasshai();
 
   return {
     el: bench.host,
     glyph: '人',
-    ...workbenchView('setup', { header: { ram: false, feedback: false, leading: [setupStepsHeader], actions: [themeToggle] } }),
+    ...workbenchView('setup', { header: { ram: false, feedback: false, actions: [themeToggle] } }),
     title: () => 'Ronin Setup',
     place: () => t('setup.short_title', 'Setup'), // the crumb: Home • Setup (owner, 2026-10-24)
     mount: (_host, context) => { ctx = context; },
