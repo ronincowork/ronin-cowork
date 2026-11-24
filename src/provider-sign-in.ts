@@ -10,7 +10,7 @@ import { spawn, type ChildProcess } from 'node:child_process';
 import { AGENTS, type AgentLogin } from './agents.js';
 import { broadcastEvent } from './ws/events.js';
 import { enqueueMessage } from './message-queue.js';
-import { refreshProviders } from './provider-summary.js';
+import { readProviderSummary, refreshProviders } from './provider-summary.js';
 
 export type SignInWay = 'subscription' | 'api_key';
 
@@ -50,14 +50,16 @@ export function signInState(): { runs: SignInRun[]; failed: Record<string, strin
 
 const push = () => { broadcastEvent({ t: 'harness-sign-in', ...signInState() }); };
 
-export function startSignIn(provider: string, way: SignInWay, tell = ''): SignInRun {
+export async function startSignIn(provider: string, way: SignInWay, tell = ''): Promise<SignInRun> {
   const { agent, login } = loginOf(provider);
   const step = login[way];
   if (!step) throw new Error(`Choose subscription or API key.`);
   runs.get(provider)?.child.kill();
   failed.delete(provider);
   // No browser here: the CLI prints its link instead of opening one.
-  const child = spawn(agent.cmd, [...step.argv], { stdio: ['pipe', 'pipe', 'pipe'], env: { ...process.env, BROWSER: 'true' } });
+  // The CLI as the measure found it: Ronin's own PATH need not hold ~/.local/bin.
+  const file = (await readProviderSummary())?.paths?.[provider] || agent.cmd;
+  const child = spawn(file, [...step.argv], { stdio: ['pipe', 'pipe', 'pipe'], env: { ...process.env, BROWSER: 'true' } });
   const run: SignInRun = { provider, label: agent.label, way, link: '', code: '', paste: step.paste, sent: false };
   const entry = { run, child, tell, out: '' };
   runs.set(provider, entry);
