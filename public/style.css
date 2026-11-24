@@ -5156,7 +5156,7 @@ html[data-screen='inside'] #phone .ph-bar .ph-title[data-boot='inside'] { displa
 .setup-harness-body { display: flex; flex-direction: column; gap: 16px; padding: 4px 0; }
 .setup-harness-stack { display: flex; flex-direction: column; gap: 8px; max-width: 560px; }
 .setup-harness-bar { display: flex; flex-direction: column; gap: 10px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 4px; background: var(--surface); }
-.setup-harness-bar.selected { border-color: var(--kaki); box-shadow: inset 3px 0 var(--kaki); background: var(--selected); }
+.setup-harness-bar.selected { border-color: var(--kaki); box-shadow: inset 3px 0 var(--kaki); }
 .setup-harness-bar.signed:not(.selected) { box-shadow: inset 3px 0 var(--ok-2); }
 .setup-harness-top { display: flex; align-items: center; gap: 10px; width: 100%; border: 0; background: none; padding: 0; font: inherit; color: inherit; text-align: left; cursor: pointer; }
 .setup-harness-top:disabled { cursor: default; }
@@ -5175,3 +5175,9 @@ html[data-screen='inside'] #phone .ph-bar .ph-title[data-boot='inside'] { displa
 .setup-harness-input { flex: 1 1 180px; min-width: 0; }
 .setup-harness-terminal { min-height: 320px; }
 .setup-harness-note { margin: 0; font-size: 12px; line-height: 1.5; color: var(--muted); }
+/* Hermes's two steps (form-steps.js) span the bar; the adding row is dashed, the same shape as a row it adds. */
+.hermes-settings .fs-step > .fs-step-body, .hermes-settings .fs-step:has(> .fs-step-head.fs-togglable) > .fs-step-body { grid-column: 1 / -1; }
+.hermes-settings .fs-step { grid-template-columns: minmax(0, 1fr); }
+.hermes-card.adding { border-style: dashed; }
+.hermes-card-summary { flex-direction: column; align-items: flex-start; }
+.hermes-fine { font-size: 12px; }
