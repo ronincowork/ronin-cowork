@@ -234,7 +234,14 @@ app.get('/vendor/addon-fit.js', (_req, res) => res.sendFile(path.join(NM, '@xter
 const assetVersion = publicFingerprint(PUBLIC);
 // A hosted office (an office_unit on an office_park) is read once, here: the page says so and the
 // client hides account and machine settings behind one Business Lounge link (KAN-475).
-const HOSTED = (await readOfficeRecord()).hosting !== 'self_hosted';
+const office = await readOfficeRecord();
+const HOSTED = office.hosting !== 'self_hosted';
+// The brand word (w978): an office_unit names itself "Ronin: <name> Office Unit", <name> the first
+// label of the address the browser reached it at (kojin.roninhosted.com → kojin); self-hosted is
+// RoninCowork. Written into the document as it is sent, so the first frame already reads it. On the
+// phone the word is there only on an office_unit; its bar is otherwise the mark alone.
+const brandWord = (req: express.Request) => office.hosting === 'office_unit' ? `Ronin: ${req.hostname.split('.')[0].replace(/[^\w-]/g, '')} Office Unit` : 'RoninCowork';
+const phoneBrandWord = (req: express.Request) => office.hosting === 'office_unit' ? `<span class="brand-word">${brandWord(req)}</span>` : '';
 const readDocument = (file: string) => fs.readFileSync(path.join(PUBLIC, file), 'utf8').replaceAll('__RONIN_ASSET_VERSION__', assetVersion).replaceAll('__RONIN_FILES__', PYTHON ? 'on' : 'off').replaceAll('__RONIN_HOSTED__', HOSTED ? 'on' : 'off');
 const indexHtml = readDocument('index.html');
 // THE MOBILE DOCUMENT. A phone downloads mobile.html — the bar, an empty list and
@@ -246,9 +253,9 @@ const indexHtml = readDocument('index.html');
 const mobileHtml = readDocument('mobile.html');
 const PHONE_AGENT = /\b(?:iPhone|iPod)\b|\bAndroid\b.*\bMobile\b/;
 const isPhone = (req: express.Request) => PHONE_AGENT.test(req.get('user-agent') ?? '');
-const sendDocument = (html: string) => (_req: express.Request, res: express.Response) => {
+const sendDocument = (html: string) => (req: express.Request, res: express.Response) => {
   res.setHeader('Cache-Control', 'no-cache');
-  res.type('html').send(html);
+  res.type('html').send(html.replaceAll('__RONIN_BRAND_WORD__', brandWord(req)).replaceAll('__RONIN_PHONE_BRAND_WORD__', phoneBrandWord(req)));
 };
 const sendIndex = sendDocument(indexHtml);
 const sendMobile = sendDocument(mobileHtml);

@@ -214,13 +214,15 @@
   <body>
     <header id="bar">
       <!-- The brand is a plain mark and word, not a link; Home is the link (owner, 2026-10-20). -->
-      <!-- The crumb (owner, 2026-10-20): RoninCowork   Home • Teams • <Team title>; a gap, not a dot,
+      <!-- The crumb (owner, 2026-10-20): <brand word>   Home • Teams • <Team title>; a gap, not a dot,
+           the brand word RoninCowork, or "Ronin: <name> Office Unit" on a hosted office, written by the
+           server as it sends this page (w978);
            after the brand, and the crumbs on the brand's baseline (owner, 2026-10-24); Home to #/home,
            Teams to the Teams workbench at #/cowork, a view's own place last. js/workspace-header.js. -->
       <span class="bar-crumb">
         <span id="brandbtn" class="brand">
           <img class="brand-mark" src="brand/nin-mark.svg" alt="" />
-          <span class="brand-word">RoninCowork</span>
+          <span class="brand-word">__RONIN_BRAND_WORD__</span>
         </span>
         <a id="homebtn" class="ui-bar-nav" href="./" data-t="bar.home" hidden>Home</a>
         <span id="coworkssep" class="ui-bar-separator" aria-hidden="true" hidden>•</span>

@@ -4935,7 +4935,7 @@ button.wk-card { cursor: pointer; }
 
 #phone .ph-bar .brand {
   display: inline-flex;
-  flex: 0 0 auto;
+  flex: 0 1 auto; /* a hosted office's long name wraps rather than push the bar's end off */
   align-items: center;
   gap: var(--space-inline);
   min-width: 0;
@@ -4950,6 +4950,8 @@ button.wk-card { cursor: pointer; }
   height: var(--bar-brand-mark-h);
 }
 #phone .ph-bar .brand-word {
+  min-width: 0;
+  overflow-wrap: anywhere;
   color: var(--fg-strong);
   font-size: var(--text-label);
   font-weight: var(--weight-strong);

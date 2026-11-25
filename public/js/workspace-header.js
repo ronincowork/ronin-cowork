@@ -13,10 +13,11 @@ export function installWorkspaceHeader(workspace) {
   // apart from the tinted Workbench headers below it.
   const place = document.getElementById('viewplace');
   // THE CRUMB (owner, 2026-10-20): the brand is a plain mark and word, never a link. Off the
-  // landing the crumb reads RoninCowork • Home, then the Teams
+  // landing the crumb reads <brand> • Home, then the Teams
   // door (#/cowork, the Teams workbench), then a view's own place (`place`) last. A Team page
-  // sits under Teams — RoninCowork • Home • Teams • <Team title>; any other view naming a
-  // place sits under Home alone — RoninCowork • Home • <place>.
+  // sits under Teams — <brand> • Home • Teams • <Team title>; any other view naming a
+  // place sits under Home alone — <brand> • Home • <place>. <brand> is RoninCowork, or
+  // "Ronin: <name> Office Unit" on a hosted office, written by the server (w978).
   const home = document.getElementById('homebtn');
   const placeSeparator = document.getElementById('placesep');
   const crumb = document.getElementById('viewcrumb');

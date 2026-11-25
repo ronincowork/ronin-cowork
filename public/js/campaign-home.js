@@ -6,7 +6,7 @@
  * (where the work is) bottom right, at Home's stone size with even room between them, no heading,
  * a little left of centre; Model Providers, Help and Settings three smaller stones in a vertical
  * line on the right of the page, inset from its edge. Home stays a page; each door opens its own
- * workbench in this tab (door-workbenches.js), the bar reading RoninCowork • Home • <door>
+ * workbench in this tab (door-workbenches.js), the bar reading <brand> • Home • <door>
  * with Home the way back. A door is a link to the plain address: a plain press navigates here, a
  * modified or middle press opens the workbench in a new tab (KAN-473). THE GATE (owner,
  * 2026-10-19, "let's have the gate"): as on the old root, the doors are locked until one model

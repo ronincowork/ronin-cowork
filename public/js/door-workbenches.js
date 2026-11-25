@@ -2,7 +2,7 @@
 /**
  * THE TWO WORKBENCHES HOME'S DOORS OPEN (owner, 2026-10-19; PATTERNS.md Home): Models and
  * Workspaces — each a destination of its own, opened in the same tab, the bar reading
- * RoninCowork • Home • <door>, Home the way back (the Teams door opens the Cowork workbench,
+ * <brand> • Home • <door>, Home the way back (the Teams door opens the Cowork workbench,
  * cowork-view.js; owner, 2026-10-20). One shape for the two: the Kit workbench
  * on a profile of the door's surfaces (workbench-catalog.js), the door's surface seated in
  * Workspace 1 on first open. Models seats its own stones of providers (models-surface.js), a
