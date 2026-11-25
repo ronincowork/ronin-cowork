@@ -49,7 +49,7 @@ runs or not; she has no pill of her own (it did nothing the panel does not).
 **Next**, one way on (owner, 25 Nov): one foot drawn by setup-view.js and by no surface, pinned to the
 foot of the step's work surface at its right (on a phone, a full-width bar at the bottom of the step),
 so no form scrolls it away: "Next: Workspace", "Next: Team", "Next: Tour". Steps are not gates, so it
-always moves; it is a selector move and messages nobody. The one case: on Workspace with no Workspace
+always moves. Each press reaches her, when she runs, as the person's one line (owner, 25 Nov): `Next: Team`, or `Next: Team; made Ronin Lab, in ~/ronin/ronin_lab`. The one case: on Workspace with no Workspace
 yet, "You'll work in Ronin Lab" beside it, and the press makes Ronin Lab (from
 public/content/starter-workspaces.json, kind open) before moving on. Never on the Tour, which keeps its Back and Next.
 

@@ -285,15 +285,18 @@ export function createSetupView() {
   const nextNote = document.createElement('span');
   nextNote.className = 'setup-next-note';
   const nextButton = WorkspaceKit.primitives.createAction({ size: 'compact', className: 'setup-next-go', action: async () => {
-    if (!labFirst()) { advance(); return; }
+    // Every press reaches her as the person's one line when she runs (owner, 25 Nov; w980): "Next: Team",
+    // or with Ronin Lab made on the way, "Next: Team; made Ronin Lab, in ~/ronin/ronin_lab".
+    const step = SCENES[activeScene().number]?.label;
+    const tell = (text) => { if (irasshaiLive()) void sendPress(IRASSHAI, text); };
+    if (!labFirst()) { tell(`Next: ${step}`); advance(); return; }
     nextButton.setDisabled(true);
     nextNote.textContent = t('setup.next_making_lab', 'Making Ronin Lab…');
     const seed = await request('/content/starter-workspaces.json');
     const made = await request('/api/workspaces/ronin_lab', { method: 'PUT', json: { title: 'Ronin Lab', objective: String(seed.data?.ronin_lab?.objective || ''), kind: 'open', repos: [], folders: [], integrations: [] } });
     nextButton.setDisabled(false);
     if (!made.ok) { nextNote.textContent = made.message; return; }
-    // A real setting the person made: she hears it as their press when she runs (workspace_ui, w979; w980).
-    if (irasshaiLive()) void sendPress(IRASSHAI, 'Workspace · Made Ronin Lab, in ~/ronin/ronin_lab.');
+    tell(`Next: ${step}; made Ronin Lab, in ~/ronin/ronin_lab`);
     await readProgress();
     advance();
   } });

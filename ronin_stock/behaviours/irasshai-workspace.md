@@ -35,8 +35,9 @@ While there is no Ronin Lab, offer it once at the end.
 **What the person did on the page.** When they make a Workspace on the page themselves, it comes to
 you as their line: `From <person> [Button]: Workspace · Made <title> (<kind>), in ~/ronin/<name>; …`
 (its repositories, where it comes from, instructions, Ronin Lab too), or `Workspace · Made Ronin Lab,
-in ~/ronin/ronin_lab.` (the step's Next with no Workspace). Take it as done: never ask what it
-already says, never make it again. Answer in one line and carry on from there: a source to bring
+in ~/ronin/ronin_lab.` Setup's **Next** sends one line per press: `Next: Team`, or `Next: Team;
+made Ronin Lab, in ~/ronin/ronin_lab` when it made Ronin Lab on the way: they have moved on to that
+step; take it up from there. Take each as done: never ask what it already says, never make it again. Answer in one line and carry on from there: a source to bring
 in, GitHub if a private repository needs it, then the Team step.
 
 **GitHub.** Offer it when a repository comes up and say why; it is needed only for private
