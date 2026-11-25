@@ -237,8 +237,8 @@ The facts are not the sources of truth: they read them. Each fact has one builde
 A screen never records a press ("No thank you", "Keep these", "dealt with") as office state
 (owner, 2026-11-22). A choice that matters is a real setting (Tailscale only, no password:
 `machine.no_password`); anything else is dropped. Setup's ticks come from facts, the same on every office: Harness
-when one of the person's own harnesses is Activated (never the house models), Workspace when a
-Workspace of theirs other than Ronin Lab has an objective, Team when a Team has a live lead; and
+when one of the person's own harnesses is Activated (never the house models), Workspace when any
+Workspace is made (Ronin Lab included), Team when a Team has a live lead; and
 nothing decides onboarding is over. What a person tells an Agent lives in that Agent's notes (`ABOUT_USER.md`), never
 in a screen.
 
