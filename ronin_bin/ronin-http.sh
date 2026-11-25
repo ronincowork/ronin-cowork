@@ -31,8 +31,8 @@ ronin_connect() {
 # ronin_item_call METHOD PATH [JSON] — one work item request, printed for the caller: the
 # acknowledgement first, then the item as it now is (or the reply of a read); with
 # ITEM_ACK_ONLY=1 the acknowledgement alone. An error goes to stderr with exit 3, and a
-# reply that is not JSON is reported with its HTTP status; a refusal (the hierarchy rule:
-# "w39 can't go there.") exits 4.
+# reply that is not JSON is reported with its HTTP status; a refusal (an item under itself,
+# a change Jira cannot make) exits 4.
 ronin_item_call() {
   local method=$1 path=$2 body=${3-} out
   local args=(-sS -m 30 "${RONIN_CURL[@]+"${RONIN_CURL[@]}"}" -X "$method")

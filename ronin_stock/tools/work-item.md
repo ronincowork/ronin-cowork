@@ -9,7 +9,7 @@
 
 | Tool | Authority |
 |---|---|
-| `item create` | create one work item, held by you (a lead's by its Team). You can write its title as `Short name: more detail`. Answers `created <id> under <parent>`. |
+| `item create` | create one work item, held by you (a lead's by its Team). You can write its title as `Short name: more detail`. Put it under any item: the kind follows the parent. Answers `created <id>, a <kind> under <parent>`. |
 | `item read` | read: one item in plain lines: title, id, kind, status, holder, parent, the objective whole, its children one line each, its latest comments and trail lines, newest last; `--json` the whole item as JSON |
 | `item search` | read: items by Campaign, Team, holder, parent, status, kind, or `--text` in the title or objective, one line each: `<id> \| <status> \| <holder> \| <title>`, the title in full; `--json` the JSON |
 | `item edit` | write: one item's fields; `--parent` moves it, the level following |

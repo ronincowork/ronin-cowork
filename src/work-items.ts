@@ -5,9 +5,10 @@
  * the /api/work-items routes (src/routes/work-items-api.ts), and every change here appends
  * exactly one line to the item's trail, naming who called (a quiet Jira fields refresh aside,
  * setJiraFields). Nothing is locked against
- * anyone: holding is discovery, never permission. One rule of Ronin's own: nothing goes below -1
- * (follow); beside it only Jira's level and parent rules (jiraShape). An Agent creates any kind,
- * with a parent or none (owner, 2026-11-06).
+ * anyone: holding is discovery, never permission. Any item goes under any item and the kind
+ * follows the parent (place; owner, 2026-11-25), nothing below -1 (follow); a shape is never
+ * refused. What Jira cannot do to a paired item is (jiraShape). With a parent or none
+ * (owner, 2026-11-06).
  *
  * THE SHAPE MATCHES JIRA (docs/using-ronin/work-items.md). One object at every level, and one
  * exact value (ronin-services docs/jira-bridge.md, What flows each way): `status`, `kind`, `priority` and a link's
@@ -111,7 +112,8 @@ const levelOfKind = (names: SpaceNames, kind: string): ItemLevel => {
 
 /** THE SHAPES JIRA REFUSES (docs/using-ronin/work-items.md; ronin-services docs/jira-bridge.md, Pairing: the
  * live failures): on a Jira-connected campaign an item may not take a parent or kind Jira's
- * hierarchy would refuse, so Ronin and Jira never part. An epic sits under nothing; a level-0
+ * hierarchy would refuse, so Ronin and Jira never part. A create or a move is placed (place)
+ * and always passes; what is left is a --kind write, and a paired item changing level. An epic sits under nothing; a level-0
  * item (Task, Story, Bug, Feature) under an epic or nothing; a Subtask only under a level-0
  * item; and a paired item never changes kind across levels, nor does a paired child made to
  * follow. Jira's own changes (by jira:*) are Jira's shape already and are not checked. */
@@ -226,7 +228,9 @@ export const REVIEW_LINE = 120;
 
 /** What every write answers: the item as it now is, the line it appended, and who its notices
  * told (section 4). What the act did is read from the line (didLine). */
-export interface Acknowledged { item: WorkItem; line: TrailLine; notified?: string[] }
+export interface Acknowledged { item: WorkItem; line: TrailLine; notified?: string[];
+  /** Why the item went elsewhere than the parent named (place): "KAN-805 is a Subtask, so it went under its Task". */
+  placed?: string }
 
 export class WorkItemRefused extends Error {}
 export class WorkItemMissing extends Error {}
@@ -557,39 +561,70 @@ export interface NewItem {
   playbook?: boolean;
 }
 
-/** One below the parent, 0 with none (Jira's hierarchy). A default, never a guard. */
+/** One below the parent, 0 with none (Jira's hierarchy): Jira's own items and moves. */
 const levelUnder = (parent: WorkItem | null): ItemLevel => parent ? (parent.level - 1) as ItemLevel : 0;
 
-/** THE ONE RULE (owner, 2026-10-22): nothing goes below -1. On a create, move or kind
- * write the item takes its new level and its children follow, each one below its own
- * parent; if any would land below -1 the act fails in one line: "w39 can't go there."
- * Nothing else is checked. That covers anything under a subtask, a move under one's own
- * descendant, and a move under oneself (the item becomes its own child, so the levels fall
- * past -1). Returns the children whose level changes, with their new level. */
-async function follow(item: WorkItem, parent: string | null, level: number): Promise<Array<{ child: ItemRow; level: number }>> {
+/** WHERE AN ITEM GOES (owner, 2026-11-25; w975): every item is a work item, and any one goes
+ * under any other; the kind follows the parent, so no shape is ever refused. Under an epic: the
+ * kind asked if it is level 0, else Task. Under a level-0 item: Subtask. Under a Subtask: under
+ * that Subtask's parent instead (no third level), `why` saying so. No parent: the kind asked, or
+ * Task for a Subtask. Every shape this makes is one Jira accepts. */
+interface Placed { parent: WorkItem | null; kind: string; level: ItemLevel; why?: string }
+async function place(names: SpaceNames, asked: string | undefined, parent: WorkItem | null): Promise<Placed> {
+  if (asked) levelOfKind(names, asked);
+  const work = (): string => {
+    const zero = names.kinds.filter((one) => one.level === 0).map((one) => one.name);
+    return asked && zero.includes(asked) ? asked : zero.includes('Task') ? 'Task' : kindAt(names, 0);
+  };
+  if (parent && parent.level <= -1) {
+    const up = parent.parent ? await load(parent.parent) : null;
+    const placed = await place(names, asked, up);
+    return { ...placed, why: `${parent.id} is a ${parent.kind}, so it went ${up ? `under its ${up.kind}` : 'under nothing'}` };
+  }
+  if (parent?.level === 0) return { parent, kind: kindAt(names, -1), level: -1 };
+  if (parent) return { parent, kind: work(), level: 0 };
+  if (!asked || levelOfKind(names, asked) === -1) return { parent: null, kind: work(), level: 0 };
+  return { parent: null, kind: asked, level: levelOfKind(names, asked) };
+}
+
+/** An item can't go under itself or its own descendant: that is a loop, not a shape. */
+async function refuseLoop(item: WorkItem, parent: WorkItem | null): Promise<void> {
+  for (let at = parent; at; at = at.parent ? await readItem(at.parent) : null) {
+    if (at.id === item.id) throw new WorkItemRefused(`${item.id} can't go under ${parent!.id}: ${parent!.id === item.id ? 'that is itself' : `${parent!.id} is under ${item.id}`}.`);
+  }
+}
+
+/** THE CHILDREN FOLLOW (owner, 2026-10-22; 2026-11-25): on a move or kind write the item takes
+ * its new level and its children follow, each one below its own parent. Nothing goes below -1:
+ * a child that would goes under the nearest level-0 item above it instead, as a Subtask. Returns
+ * the children whose level or parent changes. */
+async function follow(item: WorkItem, parent: string | null, level: number): Promise<Array<{ child: ItemRow; level: number; parent?: string }>> {
   // The tree from the live rows (w418): an archived child is history and does not follow.
   const all = (await liveRows()).map((other) => other.id === item.id ? { ...other, parent } : other);
-  const out: Array<{ child: ItemRow; level: number }> = [];
-  const walk = (id: string, at: number): void => {
-    if (at < -1) throw new WorkItemRefused(`${item.id} can't go there.`);
-    for (const child of all.filter((other) => other.parent === id)) {
-      if (child.id !== item.id && child.level !== at - 1) out.push({ child, level: at - 1 });
-      walk(child.id, at - 1);
+  const out: Array<{ child: ItemRow; level: number; parent?: string }> = [];
+  const walk = (id: string, at: number, anchor: string | null): void => {
+    for (const child of all.filter((other) => other.parent === id && other.id !== item.id)) {
+      const lifted = at - 1 < -1 && anchor !== null;
+      const next = lifted ? -1 : at - 1;
+      if (lifted || child.level !== next) out.push({ child, level: next, ...(lifted ? { parent: anchor! } : {}) });
+      walk(child.id, next, next === 0 ? child.id : anchor);
     }
   };
-  walk(item.id, level);
+  const anchorOf = level === 0 ? item.id : level === -1 ? parent : null;
+  walk(item.id, level, anchorOf);
   return out;
 }
 
-/** The children follow: each takes its new level, and the space's first kind there when its
- * own is at another level, with one trail line saying why. */
-async function settle(moved: Array<{ child: ItemRow; level: number }>, item: WorkItem, by: string): Promise<void> {
-  for (const { child, level } of moved) {
+/** The children follow: each takes its new level (and parent, when lifted), and the space's
+ * first kind there when its own is at another level, with one trail line saying why. */
+async function settle(moved: Array<{ child: ItemRow; level: number; parent?: string }>, item: WorkItem, by: string): Promise<void> {
+  for (const { child, level, parent } of moved) {
     const next = await load(child.id);
     const names = spaceNames(next.campaign_id);
     next.level = level as ItemLevel;
+    if (parent) next.parent = parent;
     if (names.kinds.find((one) => one.name === next.kind)?.level !== level) next.kind = kindAt(names, level);
-    const line = lineOf(by, 'edit', { note: `level ${level}, kind ${next.kind}, following ${item.id}` });
+    const line = lineOf(by, 'edit', { note: `${parent ? `parent ${parent}, ` : ''}level ${level}, kind ${next.kind}, following ${item.id}` });
     next.trail.push(line);
     await save(next);
     emitItemChanged({ item: next, line });
@@ -628,32 +663,35 @@ async function announceUnheld(item: WorkItem, by: string): Promise<string[]> {
 export async function createItemUnlocked(input: NewItem, by: string): Promise<Acknowledged> {
   const title = String(input.title ?? '').trim();
   if (!title) throw new WorkItemBadInput('A work item needs a title.');
-  const parent = input.parent ? await load(input.parent) : null;
-  const playbook = Boolean(input.playbook || (parent && isPlaybook(parent.id)));
+  const asked = input.parent ? await load(input.parent) : null;
+  const playbook = Boolean(input.playbook || (asked && isPlaybook(asked.id)));
   const agent = input.jira || playbook ? undefined : (await listSessions()).find((session) => session.name === by);
   if (agent && !input.holder && agent.leads.length > 1) throw new WorkItemRefused(`You lead ${agent.leads.join(', ')}; name one with --team <team>.`);
   // From Jira with nobody named: the Team holding its parent (owner, 2026-11-06; KAN-308), or the
   // Workspace holding it (an idea parked from Jira under the Icebox; KAN-352).
-  const parentTeam = input.jira && !input.holder && parent ? (await holdersOf(parent.id)).find((one) => one.kind === 'team' || one.kind === 'workspace') : undefined;
+  const parentTeam = input.jira && !input.holder && asked ? (await holdersOf(asked.id)).find((one) => one.kind === 'team' || one.kind === 'workspace') : undefined;
   const holder: Holder | undefined = input.holder ?? parentTeam ?? (agent ? (agent.leads.length ? { kind: 'team', name: agent.leads[0]! } : { kind: 'agent', name: by }) : undefined);
   const campaign_id = playbook ? '' : input.campaign_id ?? agent?.campaign_id ?? await initialCampaignId();
   const names = spaceNames(campaign_id);
   const named = input.kind?.trim();
+  // Jira's own items arrive in Jira's shape, as named; everyone else's are placed (place).
+  const placed: Placed = input.jira
+    ? { parent: asked, kind: named || kindAt(names, levelUnder(asked)), level: named ? levelOfKind(names, named) : levelUnder(asked) }
+    : await place(names, named || undefined, asked);
+  const parent = placed.parent;
   const item: WorkItem = {
     ...blank(title, by),
     id: input.jira?.key ?? (playbook ? await nextPlaybookId() : await nextId()),
     campaign_id,
     objective: String(input.objective ?? '').trim(),
-    level: named ? levelOfKind(names, named) : levelUnder(parent),
+    level: placed.level,
     status: playbook ? PLAYBOOK_STATUS : oneOf('status', input.status?.trim() || names.statuses[0]!, names.statuses),
     priority: oneOf('priority', input.priority?.trim() || names.priority, names.priorities),
     parent: parent?.id ?? null,
     attachments: input.attachments ?? [],
     external: input.jira ? { jira: { id: input.jira.id, key: input.jira.key } } : {},
   };
-  await follow(item, item.parent, item.level);
-  item.kind = named || kindAt(names, item.level);
-  if (!input.jira) jiraShape(campaign_id, by, { id: '', kind: item.kind, level: item.level, paired: false }, parent);
+  item.kind = placed.kind;
   const list = holder ? await listFor(holder) : null;
   await save(item);
   if (list) await list.set([...list.holds, item.id]);
@@ -662,7 +700,8 @@ export async function createItemUnlocked(input: NewItem, by: string): Promise<Ac
   await save(item);
   emitItemChanged({ item, line });
   const notified = await announceUnheld(item, by);
-  return notified.length ? { ...answer(item, line), notified } : answer(item, line);
+  const done: Acknowledged = { ...answer(item, line), ...(placed.why ? { placed: placed.why } : {}) };
+  return notified.length ? { ...done, notified } : done;
 }
 
 export const createItem = (input: NewItem, by: string) => withIssuer(() => createItemUnlocked(input, by));
@@ -677,10 +716,9 @@ export interface ItemEdit {
 }
 
 /** One call, one trail line. A lone status change is named by its own op (a transition), a
- * lone parent change by move ("w39 moved under w40, level -1"); anything else is edit. A kind
- * sets the level; a new parent with no kind named sets the level one below it, or leaves it
- * with none (Jira's convert/move), and the kind becomes the space's first at that level. The
- * children follow under the one rule (follow). A line that changes nothing (a hand-in or a
+ * lone parent change by move ("w39 moved under w40, a Subtask"); anything else is edit. A new
+ * parent places the item (place) with its own kind, or the one named, as asked; a kind alone
+ * sets the level. The children follow (follow). A line that changes nothing (a hand-in or a
  * promotion on an item already there, any empty edit) stays on the trail and acks nobody. */
 export function editItem(id: string, edit: ItemEdit, by: string, note?: string): Promise<Acknowledged> {
   if (edit.title !== undefined && !String(edit.title).trim()) throw new WorkItemBadInput('title cannot be empty.');
@@ -699,16 +737,22 @@ export function editItem(id: string, edit: ItemEdit, by: string, note?: string):
       return handInUnlocked(current.id, by, { desk: false, forUser });
     }
     if (edit.priority !== undefined) oneOf('priority', edit.priority.trim(), names.priorities);
-    const reparent = edit.parent !== undefined && edit.parent !== current.parent;
-    const under = reparent && edit.parent ? await load(edit.parent) : null;
-    const parent = reparent ? under?.id ?? null : current.parent;
     const named = edit.kind?.trim();
-    const level = named ? levelOfKind(names, named) : under ? levelUnder(under) : current.level;
+    // A new parent places the item (place), its own kind as the one asked: the kind follows the
+    // parent, never refused. Jira's own moves (jira:*) are Jira's shape already.
+    const moving = edit.parent !== undefined && edit.parent !== current.parent;
+    const asked = moving && edit.parent ? await load(edit.parent) : null;
+    if (asked) await refuseLoop(current, asked);
+    const placed = moving && !by.startsWith('jira:') ? await place(names, named || current.kind, asked) : null;
+    const parent = placed ? placed.parent?.id ?? null : moving ? asked?.id ?? null : current.parent;
+    const reparent = parent !== current.parent;
+    const under = placed ? placed.parent : asked;
+    const level = placed ? placed.level : named ? levelOfKind(names, named) : under ? levelUnder(under) : current.level;
     const children = level !== current.level || reparent ? await follow(current, parent, level) : [];
-    const kind = named || (level === current.level ? current.kind : kindAt(names, level));
+    const kind = placed ? placed.kind : named || (level === current.level ? current.kind : kindAt(names, level));
     if (reparent || named) {
       jiraShape(current.campaign_id, by, { id: current.id, kind, level, paired: Boolean(current.external.jira), was: current.level }, reparent ? under : current.parent ? await readItem(current.parent) : null);
-      const paired = children.find(({ child }) => child.jira);
+      const paired = children.find(({ child, level: next }) => child.jira && child.level !== next);
       if (paired && jiraConnected(current.campaign_id) && !by.startsWith('jira:')) {
         throw new WorkItemRefused(`Jira would refuse this, so Ronin does too: ${paired.child.id} is on Jira under ${current.id} and would have to change kind across levels.`);
       }
@@ -750,7 +794,7 @@ export function editItem(id: string, edit: ItemEdit, by: string, note?: string):
       return { op: 'edit', note: [said, changed.length ? changed.join(', ') : 'no change'].filter(Boolean).join('; ') };
     }, () => !paired && !unchanged);
     await settle(children, done.item, by);
-    return done;
+    return placed?.why ? { ...done, placed: placed.why } : done;
   });
 }
 
@@ -1335,11 +1379,13 @@ async function rewriteWatches(change: (watches: string[]) => string[]): Promise<
 /** What the act did, read from its trail line alone: "w39 moved under w40, level -1",
  * "w9 moved to In Progress", "w9 is held by agent:x". Status, kind and level appear only when
  * the act changed them. Every acknowledgement is this one line. A create says it first, for
- * scripts and Agents to read: "created w12 under KAN-239", or "created w12 with no parent". */
-export function didLine({ item, line }: Acknowledged): string {
-  if (line.op === 'create') return `created ${item.id} ${item.parent ? `under ${item.parent}` : 'with no parent'}`;
+ * scripts and Agents to read: "created w12, a Subtask under KAN-239", or "created w12, a Task
+ * with no parent"; a placement adds why ("(KAN-805 is a Subtask, so it went under its Task)"). */
+export function didLine({ item, line, placed }: Acknowledged): string {
+  const why = placed ? ` (${placed})` : '';
+  if (line.op === 'create') return `created ${item.id}, a ${item.kind} ${item.parent ? `under ${item.parent}` : 'with no parent'}${why}`;
   const what = line.op === 'status' ? `moved to ${line.to}`
-    : line.op === 'move' ? (line.to === 'none' ? `moved to no parent, ${line.note}` : `moved under ${line.to}, ${line.note}`)
+    : line.op === 'move' ? (line.to === 'none' ? `moved to no parent, a ${item.kind}` : `moved under ${line.to}, a ${item.kind}${why}`)
       : line.op === 'assign' ? `is held by ${line.to}`
         : line.op === 'handoff' ? (line.to === 'none' ? `${line.from} let go` : line.from && line.from !== 'none' ? `was handed from ${line.from} to ${line.to}` : `is held by ${line.to}`)
         : line.op === 'release' && line.note?.startsWith('archived') ? 'is archived'
@@ -1350,7 +1396,7 @@ export function didLine({ item, line }: Acknowledged): string {
               : line.op === 'attach' ? (line.from === 'removed' ? `has ${line.to} removed` : `has ${line.to} attached`)
               : line.op === 'link' ? `${line.note}`
               : `changed: ${line.note ?? 'no change'}`;
-  return `${item.id} ${what}`;
+  return `${item.id} ${what}${line.op === 'move' ? '' : why}`;
 }
 
 /** AN ENDING WITH NO AGENT TO ASK (Shut down Agent, archive, a crash; docs/using-ronin/

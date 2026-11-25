@@ -1,8 +1,8 @@
 /* /api/work-items* — the one door to the work item store (src/work-items.ts), and the
  * `item` tool's (ronin_bin/item): every act names its item. Every write acknowledges with
  * the item as it now is and the trail line it appended; the caller reads that before its
- * next act. The refusals (409): nothing goes below -1 ("w39 can't go there."), and what Jira
- * itself would refuse on a connected campaign. */
+ * next act. No shape is refused: the kind follows the parent (place). The refusals (409): an
+ * item under itself or its own descendant, and what Jira cannot do to a paired item. */
 import type express from 'express';
 import { initialCampaignId } from '../campaign-scope.js';
 import {
