@@ -27,8 +27,9 @@ Open **Harness** in Setup. Each harness is a bar that says where it stands: **Si
 **Signing in**, **Signed in** or **Off**.
 
 **Claude Code and Codex** sign in without a terminal. Press the bar: it shows its ways, the one it is
-on selected; pressing that one does nothing. Press **Subscription** or **API key**; if it is already on the other one, the bar
-says one at a time, and a second press switches. Then the bar shows only what you need to do:
+on selected. Press **Subscription** or **API key**. If it is already signed in, the bar warns first:
+signing in again signs out every Agent on that harness until you finish. A second press goes ahead.
+Then the bar shows only what you need to do:
 
 - **Codex, subscription:** a link and a code. Open the link, sign in, and enter the code there.
 - **Claude Code:** a link. Open it, sign in, and paste the code it gives you into the box on the bar,

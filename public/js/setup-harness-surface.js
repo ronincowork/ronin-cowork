@@ -191,10 +191,9 @@ function createHarnessSurface(context) {
       row.classList.add('setup-harness-ways');
       for (const way of ['subscription', 'api_key']) {
         const made = button(WAYS[way](), false, () => {
-          // The way it is on does nothing: a CLI's login revokes the sign-in it replaces, and every
-          // Agent on that harness runs on it (w994, 25 Nov 2026: a press on Codex's selected
-          // Subscription signed every Codex Agent out).
-          if (current === way) return;
+          // SIGNED IN ALREADY: WARN FIRST (owner, w994, 25 Nov 2026). A CLI's login revokes the sign-in
+          // every Agent on that harness runs on, the moment it starts; the first press says so, the
+          // second goes ahead.
           if (current && !(switching.provider === provider.id && switching.way === way)) { switching = { provider: provider.id, way }; gatewayShown = ''; paint(); return; }
           switching = { provider: '', way: '' }; gatewayShown = '';
           void start(provider, way);
@@ -217,7 +216,7 @@ function createHarnessSurface(context) {
       const line = onGateway && gatewayShown === provider.id
         ? t('setup_harness.gateway_line', 'No sign-in needed: pick a Ronin model under Model when you start a {cli} Agent. Your {cli} sign-in stays as it is.', { cli: shortName(provider) })
         : switching.provider === provider.id
-        ? t('setup_harness.one_at_a_time', 'One at a time: signing in with {next} replaces your {now}. Press it again to switch.', { next: wayWord(switching.way), now: current ? wayWord(current) : 'sign-in' })
+        ? t('setup_harness.signed_in_already', 'You\u2019re already signed in. Continuing signs out every {cli} Agent until you finish signing in with {next}. Press it again to continue.', { cli: shortName(provider), next: wayWord(switching.way) })
         : current ? t('setup_harness.on_way', 'Signed in with your {way}.', { way: wayWord(current) })
           : signed ? t('setup_harness.signed_line', 'Signed in on this office.') : t('setup_harness.pick_way', 'Pick how {cli} signs in. One way at a time.', { cli: shortName(provider) });
       bar.append(el('p', 'setup-harness-line', line));
