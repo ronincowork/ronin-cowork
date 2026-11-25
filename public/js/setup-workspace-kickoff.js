@@ -58,7 +58,7 @@ function workspaceDiagram() {
     one.append(el('b', null, name)); // under 'Your Workspaces', the name alone (owner, 25 Nov)
     return one;
   };
-  row.append(stone('Shop site', true), stone('Accounts', false), stone('Ronin Lab', false));
+  row.append(stone('Shop site', true), stone('Backend', false), stone('Ronin Lab', false));
   const opened = el('div', 'ws-diagram-detail');
   opened.append(
     el('small', null, t('setup_workspace.diagram_ws_named', 'Workspace: {name}', { name: 'Shop site' })),
