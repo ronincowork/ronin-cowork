@@ -260,7 +260,7 @@ restoration branches.
 | Destination | First open | Notable structured opening |
 |---|---|---|
 | Ronin Settings | Defaults in workspace 1; Workspaces in workspace 2 | **Desk defaults** replaces the seats with Defaults and Launch your own |
-| New Project | New Agent in workspace 1 | Links may replace or overlay New Agent/New Team and carry prompt or template detail |
+| New Project | New Agent in workspace 1 | Links may replace or overlay New Agent/New Team and carry prompt detail |
 | Ronin Setup | Garden in workspace 1; active journey surface in workspace 2 | Journey actions select a Setup surface without another restoration path |
 | Cowork / Team | Fresh empty/member seating rules; refresh restores this instance | Team Configuration, documents, commons tabs, and New Agent may be addressed in seat detail |
 | Agent | Self in workspace 1; Documents in workspace 2 | A successful standalone launch replaces the seats and focuses the authoritative returned Agent as Self |
@@ -293,8 +293,8 @@ Entry performs no form catalog read. It restores and places the requested form f
 
 | Surface | Required data and owner |
 |---|---|
-| New Agent | Agent templates, Team roster index, and selected Team/Desk launch seed |
-| New Team | Team templates, the Workspaces, and Desk launch seed; live sessions only for the final name-collision gate |
+| New Agent | Team roster index and selected Team/Desk launch seed |
+| New Team | The Workspaces and Desk launch seed; live sessions only for the final name-collision gate |
 | Help | local reading and currently seated form context |
 | Document / Feedback | the shared surface's own read or submission |
 

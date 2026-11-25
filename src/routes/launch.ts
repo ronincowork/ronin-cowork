@@ -74,7 +74,7 @@ const LAUNCH_KEYS = new Set([
   'cmd', 'model', 'provider', 'mandate', 'campaign_id',
   'tags', 'seed', 'inject', 'reference',
   'kind', 'brief', 'integrations', 'pm',
-  'template', 'agent_type',
+  'agent_type',
 ]);
 const RETURNED_LAUNCH_KEYS = new Set([
   'assignment', 'work_locations', 'posture', 'opening', 'ack', 'capExempt', 'launchAgent', 'stated_by', 'birth_reading',
@@ -111,9 +111,9 @@ export function acceptedLaunchBody(input: unknown): { body: Record<string, unkno
   if (body.role !== undefined && !['coworker', 'lead', 'epic_lead', 'coordinator'].includes(String(body.role))) drop('role');
 
   const inapplicable = sessionType === 'terminal'
-      ? ['provider', 'model', 'instructions', 'prompt', 'kind', 'mandate', 'brief', 'integrations', 'pm', 'template', 'cmd', 'seed', 'inject', 'reference', 'role']
+      ? ['provider', 'model', 'instructions', 'prompt', 'kind', 'mandate', 'brief', 'integrations', 'pm', 'cmd', 'seed', 'inject', 'reference', 'role']
     : sessionType === 'bare_metal_agent'
-      ? ['kind', 'mandate', 'brief', 'integrations', 'pm', 'template', 'seed', 'inject', 'reference', 'team_lead', 'role']
+      ? ['kind', 'mandate', 'brief', 'integrations', 'pm', 'seed', 'inject', 'reference', 'team_lead', 'role']
       : [];
   for (const key of inapplicable) drop(key);
 

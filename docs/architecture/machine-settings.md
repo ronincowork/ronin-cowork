@@ -73,6 +73,6 @@ keeps every declared family, including generated provider-model fields, paired w
 `src/resources.ts` resolves shipped resources and the matching user store. A user file at
 the same relative path replaces the shipped file whole; new user files join the result.
 Every resolved item carries `origin` and `shadowed` state. Catalog sections, definitions,
-Behaviors, ways, skins, lexicons, templates, session readings, and bundles use this resolution
+Behaviors, ways, skins, lexicons and session readings use this resolution
 rule. Directory listings and file contents are shared by resolver calls within one HTTP
 request and are read again for the next request.

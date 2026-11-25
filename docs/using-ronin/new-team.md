@@ -1,7 +1,7 @@
 # Start a Team
 
-A Team groups Agents around shared work. Open **New Team** from the launch flow, choose a
-template or make your own, and give the Team a name and objective.
+A Team groups Agents around shared work. Open **New Team** from the launch flow and give the
+Team a name and objective.
 
 ## Set up the work
 

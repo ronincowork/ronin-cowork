@@ -1,6 +1,6 @@
 
 export type StatedLayer =
-  | 'install' | 'installation' | 'campaign' | 'team' | 'agent' | 'conditional' | 'template' | 'launch'
+  | 'install' | 'installation' | 'campaign' | 'team' | 'agent' | 'conditional' | 'launch'
   | 'system' | 'team_roster' | 'explicit_launch' | 'house';
 export interface StatedBy {
   layer: StatedLayer;
