@@ -66,8 +66,8 @@ function createHarnessSurface(context) {
   out.content.append(body);
   let runtime = recordRuntime();
   let signIn = { runs: [], failed: {}, ways: {} };
-  // The office's Ronin API account: which harnesses run on the gateway, and whether it is set up.
-  let gateway = { harnesses: [], configured: false };
+  // The office's Ronin API account: which harnesses run on the gateway (always on: every office runs it).
+  let gateway = { harnesses: [] };
   let gatewayShown = '';
   // A press on the other way while signed in asks once more: one way at a time (owner, 24 Nov).
   let switching = { provider: '', way: '' };
@@ -85,7 +85,7 @@ function createHarnessSurface(context) {
     const [r, a] = await Promise.all([request('/api/setup/runtime', { cache: 'no-store' }), request('/api/accounts', { cache: 'no-store' })]);
     if (disposed) return;
     const house = a.ok ? (a.data.accounts || []).find((one) => one.kind === 'ronin_api') : null;
-    if (house) gateway = { harnesses: house.harnesses || [], configured: !!house.configured };
+    if (house) gateway = { harnesses: house.harnesses || [] };
     if (r.ok) runtime = r.data;
     paint();
   };
@@ -195,7 +195,6 @@ function createHarnessSurface(context) {
       const onGateway = gateway.harnesses.includes(provider.id);
       if (onGateway) {
         const made = button(t('setup_harness.gateway', 'Ronin gateway'), false, () => { switching = { provider: '', way: '' }; gatewayShown = gatewayShown === provider.id ? '' : provider.id; paint(); });
-        made.append(el('small', 'ask-word', gateway.configured ? t('setup_harness.ready', 'Ready') : t('setup_harness.not_set_up', 'Not set up')));
         made.setAttribute('aria-selected', 'false');
         row.append(made);
       }
@@ -206,9 +205,7 @@ function createHarnessSurface(context) {
       row.append(soon);
       bar.append(row);
       const line = onGateway && gatewayShown === provider.id
-        ? (gateway.configured
-          ? t('setup_harness.gateway_line', 'No sign-in needed: pick a Ronin model under Model when you start a {cli} Agent. Your {cli} sign-in stays as it is.', { cli: shortName(provider) })
-          : t('setup_harness.gateway_off', 'This office’s Ronin API account is not set up yet.'))
+        ? t('setup_harness.gateway_line', 'No sign-in needed: pick a Ronin model under Model when you start a {cli} Agent. Your {cli} sign-in stays as it is.', { cli: shortName(provider) })
         : switching.provider === provider.id
         ? t('setup_harness.one_at_a_time', 'One at a time: signing in with {next} replaces your {now}. Press it again to switch.', { next: wayWord(switching.way), now: current ? wayWord(current) : 'sign-in' })
         : current ? t('setup_harness.on_way', 'Signed in with your {way}.', { way: wayWord(current) })
