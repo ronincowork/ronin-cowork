@@ -178,12 +178,14 @@ export function createWorkspaceKickoff({ workspacesRead, environment }) {
     blanks.hidden = !door;
     if (!door) return;
     if (door === 'git') {
+      // GITHUB FIRST (owner, 25 Nov): signed in, nothing to say; not (almost always, on a new office),
+      // Connect before anything else.
+      if (!github.authenticated) blanks.append(connectStone(t('setup_workspace.github_private', 'GitHub is not signed in on this machine. The Helpful Assistant signs you in, in her chat; then your repositories are listed here to pick. A public one can be pasted without it.')));
       if (github.authenticated && mine?.length) blanks.append(question('picked', t('setup_workspace.which_repos', 'Which repositories?'),
         mine.map((repo) => ({ v: repo.url, l: repo.name, ...(repo.private ? { word: t('workspaces.private', 'private') } : {}) })), draft.picked,
         (v) => { draft.picked = v || []; }, { many: true }));
       blanks.append(textBox(github.authenticated ? t('setup_workspace.or_paste', 'Or paste Git URLs, one per line') : t('setup_workspace.paste', 'Git URLs, one per line'), draft.pasted,
         (v) => { draft.pasted = v; }, t('workspace_add.repository_placeholder', 'https://… or git@… ; owner/repo for GitHub'), 2));
-      if (!github.authenticated) blanks.append(connectStone(t('setup_workspace.github_private', 'For a private repository, or to pick from yours: the Helpful Assistant signs you in to GitHub, in her chat. A public one needs no sign-in.')));
     }
     if (door === 'existing') blanks.append(question('sources', t('setup_workspace.sources_ask', 'Where is it coming from?'),
       SOURCES.map((row) => ({ ...row, sub: row.v === 'computer' ? t('setup_workspace.source_computer_sub', 'They go in its files folder, from Files.') : t('setup_workspace.source_sub', 'Noted on the Workspace with its own folder; the Team step brings it in.') })),
