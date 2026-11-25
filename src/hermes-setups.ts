@@ -140,6 +140,13 @@ export async function discoverHermesModels(id: string): Promise<string[]> {
     await writeHermes(state); return c.models;
   });
 }
+/** STOCK HERMES MODEL OPTIONS (owner, 25 Nov 2026): the Ronin gateway's model list read at start-up and on
+ *  Refresh, so every gateway model is an option before anyone opens the Hermes bar (discoverHermesModels
+ *  saves them). A failed read stays quiet: the next start or Refresh tries again. */
+export async function readGatewayModels(): Promise<void> {
+  const { connections } = await readHermesSettings();
+  for (const c of connections) if (accountKind(c) === 'ronin_api') await discoverHermesModels(c.id).catch(() => {});
+}
 export async function saveHermesSetup(input: Record<string, unknown>): Promise<HermesSetup> {
   return mutation(async () => {
     const state = await readStoredSettings(); const c = state.connections.find(c => c.id === input.connection);
