@@ -2,14 +2,16 @@
  * THE SAME FORMAT AS NEW AGENT AND NEW TEAM (owner, 2026-09-13): the launch forms' numbered
  * steps (createStep), the kit's labelled fields (createField) and ERABI at the forms' tight
  * density. Step 1 · Team (open) — Team ID and Title on one line, then the Team objective, its
- * instructions and its Workspace. Step 2 · New Agent defaults (starts folded) — Mandate: what the next
- * Agent starts from, never the Team's own behaviour. Step 3 · Behaviors (starts folded) — what this Team's Agents are told: its
+ * instructions and its Workspace. Step 2 · New Agent defaults (starts folded) — this Team's own Mandate,
+ * Mode and models, copied from its Workspace when the Team was made (src/waterfall.ts) and changed only
+ * here (level-defaults.js): what the next Agent starts from; nothing running changes. Step 3 · Behaviors (starts folded) — what this Team's Agents are told: its
  * add, block and only lists, integrations and project management (brief-step.js, docs/architecture/brief.md, Where it is set in the UI). */
 import { t } from './lexicon.js';
 import { request } from './request.js';
 import { ask } from './ask.js';
-import { createStep } from './form-steps.js';
-import { firstMandate, screenOf, loadMandates, mandateRows } from './mandates.js';
+import { createStep, loadProviderCatalog } from './form-steps.js';
+import { screenOf, loadMandates } from './mandates.js';
+import { createLevelDefaults } from './level-defaults.js';
 import { WorkspacePrimitives } from './workspace-primitives.js';
 import { createBriefSettingsPanel } from './brief-step.js';
 
@@ -34,7 +36,7 @@ export function renderTeamConfiguration(host, roster, optionsArg = {}) {
   // discarded node; painting it is invisible and cheap.
   // The mandate menus are the catalog's mandate files (mandates.js), read with the Workspaces.
   void Promise.all([request('/api/workspaces'), loadMandates(),
-    screenOf({ team: roster.name })]).then(([workspaceResult, , screen]) => {
+    screenOf({ team: roster.name }), loadProviderCatalog()]).then(([workspaceResult, , screen]) => {
     const workspaces = workspaceResult.ok && Array.isArray(workspaceResult.data?.workspaces) ? workspaceResult.data.workspaces.filter((w) => !w.archived || w.name === roster.workspace) : [];
     const defaults = bucket(roster.agent_defaults);
     const form = el('form', 'ntf-form tw-config-form');
@@ -78,36 +80,28 @@ export function renderTeamConfiguration(host, roster, optionsArg = {}) {
     const stepDefaults = foldable('defaults', t('team_config.agent_defaults', 'New Agent defaults'));
     stepDefaults.body.append(el('p', 'fs-step-help', t('team_config.next_form', 'What each new Agent on this Team starts from. Nothing live changes.')));
     const defaultsRow = el('div', 'tw-config-wide');
-    const agentDefaults = ask([
-      { group: t('mandate', 'Mandate'), fields: [
-        { key: 'reach', label: t('team_config.reach', 'Reach'), options: mandateRows('reach', screen) },
-        { key: 'recruit', label: t('team_config.recruit', 'Recruit'), options: mandateRows('recruit', screen) },
-        { key: 'output', label: t('team_config.output', 'Output'), many: true, options: mandateRows('output', screen) },
-      ] },
-    ], { value: {
-      reach: defaults.reach || firstMandate('reach'), recruit: defaults.recruit || firstMandate('recruit'), output: [defaults.output || firstMandate('output')].flat().filter(Boolean),
-    }, density: 'tight', trayHost: defaultsRow });
-    defaultsRow.append(agentDefaults.el); stepDefaults.body.append(defaultsRow); form.append(stepDefaults.el);
+    const levelDefaults = createLevelDefaults({ value: { agent_defaults: defaults, launch_mode: roster.launch_mode, models: roster.models }, screen });
+    defaultsRow.append(levelDefaults.el); stepDefaults.body.append(defaultsRow); form.append(stepDefaults.el);
 
     /* ---- Behaviors (unnumbered): what every Agent on this Team is told, saved with the form ---- */
     const stepBrief = foldable('brief', t('behaviours', 'Behaviors'));
     const brief = createBriefSettingsPanel({ layer: 'team', id: roster.name, campaignId: roster.campaign_id || '', ownSave: false,
       preview: { team: roster.name, campaign_id: roster.campaign_id || undefined } });
-    stepBrief.body.append(el('p', 'fs-step-help', t('team_config.brief_help', 'What every Agent on this Team is told. Agents already working are sent the change.')), brief.el);
+    stepBrief.body.append(el('p', 'fs-step-help', t('team_config.brief_help', 'What every new Agent on this Team is told. Agents already working are not changed.')), brief.el);
     form.append(stepBrief.el); void brief.enter();
 
     const actions = el('div', 'tw-config-actions'); const status = el('span', 'tw-config-status');
     const saveAction = optionsArg.createAction?.({ label: t('panels.save', 'Save'), size: 'compact' }); const save = saveAction?.el || el('button', null, t('panels.save', 'Save')); save.type = 'submit'; actions.append(status, save); form.append(actions); host.replaceChildren(form);
     form.addEventListener('submit', async (event) => {
       event.preventDefault(); if (saveAction) saveAction.setDisabled(true); else save.disabled = true; status.textContent = t('team_config.saving', 'Saving…');
-      const picked = agentDefaults.value();
+      const picked = levelDefaults.value();
       const briefSaved = await brief.save();
       const saved = await request(`/api/team-rosters/${encodeURIComponent(roster.name)}`, { method: 'PUT', json: {
         title: title.value, objective: objective.value, instructions: instructions.value, workspace: teamWorkspace.value().workspace,
-        // Spread what was read so a key this card does not draw is carried rather than
-        // dropped — but NOT `permissions` or the model, which are ruled out of agent_defaults;
-        // spreading them would rewrite a retired field on every save.
-        agent_defaults: { ...defaults, permissions: undefined, provider: undefined, model: undefined, launch_mode: undefined, reach: picked.reach, recruit: picked.recruit, output: picked.output },
+        // Spread what was read so a key this card does not draw is carried rather than dropped.
+        agent_defaults: { ...defaults, ...picked.agent_defaults },
+        launch_mode: picked.launch_mode,
+        models: picked.models,
       } });
       status.textContent = saved.ok && briefSaved.ok ? t('team_config.saved', 'Saved') : saved.ok ? briefSaved.message : saved.message; if (saveAction) saveAction.setDisabled(false); else save.disabled = false; if (saved.ok) optionsArg.onSaved?.(saved.data.roster);
     });

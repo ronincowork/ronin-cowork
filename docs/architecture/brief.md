@@ -479,7 +479,7 @@ and on no live list ([playbooks](../using-ronin/playbooks.md), `src/work-items.t
   (`public/js/mandates.js`). No value is listed in the client.
 - **Campaign, Workspace and Team pages** edit their own Integrations, Project management, Add,
   Block and Only in the same compact form, with "An Agent here is told" (read-only); one Save
-  per page. The Workspace page's New Agent defaults set its Mandate, Mode and models
+  per page. The Workspace and Team pages' New Agent defaults set their Mandate, Mode and models
   (`public/js/level-defaults.js`); the Campaign's are its Defaults page and Models > Defaults.
 - **Behaviors page:** every fact, behaviour and tool file, the mandate values grouped by axis;
   open one to read it; Edit / Make my version; New Behavior, New tool, New bridge (a bridge is a

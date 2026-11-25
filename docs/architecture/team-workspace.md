@@ -156,13 +156,13 @@ Agent in two Teams brings the epic to both. A root nobody's work reaches has no 
 that record and nothing else — never membership or the lead. It is drawn in the same format
 as New Agent and New Team (owner, 2026-09-13): the launch forms' numbered steps
 (`createStep`), the kit's labelled fields (`createField`), and ERABI at the forms' tight
-density. **Step 1 · Team** — one line holding **Team ID** (read, not edited), **Title** and
-**Kind** (squares with the shared glyphs), then **Purpose** and the Team's own
-**Workspace** (`roster.workspace`, read by its title). Step 1 stays open; the next two start
+density. **Step 1 · Team** — one line holding **Team ID** (read, not edited) and **Title**, then the **Team
+objective**, the **Team instructions** and the Team's own **Workspace** (`roster.workspace`, read by its title). Step 1 stays open; the next two start
 folded and open on their head (the kit's step fold, `createStep` with `onToggle`), so the tab
 opens on the Team alone. **Step 2 · New Agent defaults** — what the next Agent on this Team
-starts from, never the Team's own behaviour: the **Mandate** menus (Reach, Recruit, Output).
-The model is not a Team's: Models > Defaults sets it. **Step 3 · Behaviors** — the Team's
+starts from: its **Mandate** (Reach, Recruit, Output), **Mode**, and the models for a new Agent and a
+new Team lead (`public/js/level-defaults.js`). They are copied from the Team's Workspace when the Team
+is made (`src/waterfall.ts`) and change only here; no Agent already running changes. **Step 3 · Behaviors** — the Team's
 brief settings (docs/architecture/brief.md, Where it is set in the UI). ERABI takes no foreign DOM: the entries sit beside the stones. The tab repaints only when the saved record changes —
 never on a member's status tick or a session coming and going — so an edit in progress is
 not thrown away; the Coworks page's copy of the tab keeps the same rule. **Save** PUTs the whole record to
