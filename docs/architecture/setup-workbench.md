@@ -56,7 +56,7 @@ public/content/starter-workspaces.json, kind open) before moving on. Never on th
 **Changed, beside each tick** (owner, 25 Nov; w984): src/setup-progress.ts holds a switch per step, in
 memory, pushed in `setup-progress` as `changed`. A write of the step's fact (harness
 `integrations_authentications`, without its 'Last measured' line; workspace `workspaces`; team
-`teams_agents`, only its Teams lines, not other Agents starting or stopping) that changes its text turns it on. Leaving a step (selector, Next, Tour) whose switch
+`teams_agents`) that changes its text turns it on. Leaving a step (selector, Next, Tour) whose switch
 is on, with her running, the view calls `POST /api/setup/left {step, to}`, and the server sends her (always her, never a session the page names) one line,
 `Moved to <step>. <Left step> changed while they were on it: office read <fact>.`, and turns it off.
 Off, a move tells her nothing; presses inside a step are unchanged.
