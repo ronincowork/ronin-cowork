@@ -2,7 +2,8 @@
 /**
  * SETTINGS V2 (owner, 2026-11-25; KAN-862, KAN-867): a second Settings built beside the first, so the two can be
  * compared and what is missing seen. The sections are the agreed outline, samurai_lab wip/MACHINE_SETTINGS_V2.md;
- * no hints. Today's surfaces are reused under Settings' own card names; page designs come later.
+ * no hints. Model services with its OpenRouter and Private API key pages (KAN-870, model-services-surface.js) and
+ * Office defaults holding the starting models (KAN-871) are v2's own; the other cards reuse today's surfaces.
  * When v2 is right the old Settings and its surfaces go.
  */
 import { WorkspaceKit } from './workspace-kit.js';
@@ -21,6 +22,8 @@ import { createDocumentWorkspaceAdapter } from './docs.js';
 import { installBehaviourReader } from './behaviour-reader.js';
 import { buildStats } from './stats.js';
 import { loadProviderCatalog } from './form-steps.js';
+import { createModelDefaults } from './models-surface.js';
+import { MODEL_SERVICE_PAGES, createModelServicesSurface, createOpenRouterSurface, createPrivateApiSurface } from './model-services-surface.js';
 
 const elem = (tag, cls, text) => { const out = document.createElement(tag); if (cls) out.className = cls; if (text != null) out.textContent = text; return out; };
 const enterable = (surface) => ({ el: surface.el, show: () => surface.enter() });
@@ -34,6 +37,18 @@ function roomSurface(label, room, build) {
   surface.content.append(host);
   let built = null;
   return { el: surface.el, show: () => { built ||= build(host); built?.enter?.(); } };
+}
+
+/** Office defaults (KAN-871): the models new Agents and Team leads start on, then mandate, launch mode and behaviors. */
+function officeDefaults(selected) {
+  const surface = WorkspaceKit.primitives.createSurface({ label: t('settings2.agent_defaults', 'Agent defaults'), className: 'cv-surface settings2-defaults' });
+  const models = createModelDefaults();
+  const rest = createAgentDefaultsSurface(selected, { modelsHere: true });
+  surface.content.append(
+    elem('p', 'cv-note', t('settings2.defaults_example', 'A default saved here reaches what is made next. Change it today and a Workspace made tomorrow starts with it; a Team made tomorrow inside an older Workspace starts with that Workspace’s own saved default.')),
+    elem('h3', 'cv-brief-head', t('settings2.defaults_models', 'Models')), models.el, rest.el,
+  );
+  return { el: surface.el, show: async () => { await Promise.all([models.show(), rest.enter()]); } };
 }
 
 export function createSettingsV2View() {
@@ -75,15 +90,15 @@ export function createSettingsV2View() {
       return {
         ...env,
         selected,
-        settings2ModelServices: ({ workspace }) => env.accounts(workspace),
-        settings2ModelSetup: ({ workspace }) => env.modelsRecords(workspace),
-        settings2ModelDefaults: () => env.modelDefaults(),
+        settings2ModelServices: ({ workspace }) => createModelServicesSurface({ open: (page) => bench().place(MODEL_SERVICE_PAGES[page], BESIDE[workspace] || 'workspace2') }),
+        settings2OpenRouter: () => createOpenRouterSurface(),
+        settings2PrivateApi: () => createPrivateApiSurface(),
+        settings2AgentDefaults: () => officeDefaults(selected),
         settings2BehaviorFiles: ({ detail }) => createBehaviourSurface(detail),
         campaignIntegrations: ({ workspace }) => enterable(createIntegrationsPanel(selected, { panels: { jira: () => jira(workspace) } })),
         campaignJira: ({ workspace }) => enterable(jira(workspace)),
         campaignJiraItems: () => enterable(createJiraItemsSurface(selected)),
         campaignJiraPairs: () => enterable(createJiraPairsSurface(selected)),
-        campaignDefaults: () => enterable(createAgentDefaultsSurface(selected)),
         campaignMachineStatus: () => createMachineStatusSurface(),
         settings2Stats: () => roomSurface(t('settings2.stats', 'Machine stats'), 'stats', (host) => buildStats(host)),
         feedback: () => createFeedbackSurface(() => bench().place(SETUP_SURFACE_TYPES.roots, bench().selected())),

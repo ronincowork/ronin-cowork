@@ -30,8 +30,8 @@ export const WORKBENCH_TYPES = Object.freeze({
   helpOutline: 'help.outline', helpMika: 'help.mika', helpPage: HELP_PAGE_TYPE,
   workspaceRecords: 'workspaces.records', workspaceRecord: 'workspaces.record', workspaceNew: 'workspaces.new', epicNew: 'epics.new', folderGithub: 'workspaces.github', githubMika: 'workspaces.github-mika',
   epicRecords: 'epics.records', epicRecord: 'epics.record',
-  settings2ModelServices: 'settings2.model-services', settings2ModelSetup: 'settings2.model-setup', settings2AgentDefaults: 'settings2.agent-defaults',
-  settings2ModelDefaults: 'settings2.model-defaults', settings2BehaviorFiles: 'settings2.behavior-files', settings2Stats: 'settings2.stats',
+  settings2ModelServices: 'settings2.model-services', settings2OpenRouter: 'settings2.openrouter', settings2PrivateApi: 'settings2.private-api',
+  settings2AgentDefaults: 'settings2.agent-defaults', settings2BehaviorFiles: 'settings2.behavior-files', settings2Stats: 'settings2.stats',
   canvas: 'team.canvas',
 });
 
@@ -151,15 +151,17 @@ export function registerWorkbenchCatalog() {
   // SETTINGS V2 (owner, 2026-11-25; KAN-862, KAN-867): built beside Settings to compare; the old one goes once v2 is right.
   // The five agreed sections (MACHINE_SETTINGS_V2.md). Its own card types where its words differ from the Harnesses
   // door's; the surfaces under them are today's, reused. A harness's own card is placed by its stone, not offered.
-  campaign(WORKBENCH_TYPES.settings2ModelServices, 'surface', () => t('settings2.model_services', 'Model services'), 'settings2ModelServices', () => t('settings2.model_services_summary', 'Where model requests go: Ronin Gateway, OpenRouter, a personal API.'));
-  campaign(WORKBENCH_TYPES.settings2ModelSetup, 'surface', () => t('settings2.model_setup', 'Model setup'), 'settings2ModelSetup', () => t('settings2.model_setup_summary', 'Which models each service offers, by the name people see.'));
-  campaign(WORKBENCH_TYPES.settings2AgentDefaults, 'surface', () => t('settings2.agent_defaults', 'Agent defaults'), 'campaignDefaults', () => t('settings2.agent_defaults_summary', 'Mandate, launch mode and behaviors. New Workspaces, Teams and Agents copy their parent when made.'));
-  campaign(WORKBENCH_TYPES.settings2ModelDefaults, 'surface', () => t('settings2.model_defaults', 'Model defaults'), 'settings2ModelDefaults', () => t('settings2.model_defaults_summary', 'The model a new Agent and Team lead start on.'));
+  // Model services (KAN-870): one record per connection; OpenRouter and Private API key are where models are named.
+  campaign(WORKBENCH_TYPES.settings2ModelServices, 'surface', () => t('settings2.model_services', 'Model services'), 'settings2ModelServices', () => t('settings2.model_services_summary', 'Ronin Gateway, OpenRouter and private API keys, and the models each offers.'));
+  campaign(WORKBENCH_TYPES.settings2OpenRouter, 'surface', () => t('model_services.openrouter', 'OpenRouter'), 'settings2OpenRouter', () => t('settings2.openrouter_summary', 'Your OpenRouter key and the models you name on it.'));
+  campaign(WORKBENCH_TYPES.settings2PrivateApi, 'surface', () => t('model_services.private', 'Private API key'), 'settings2PrivateApi', () => t('settings2.private_summary', 'Your own provider keys and the models you name on each.'));
+  // Office defaults (KAN-871): the starting models live with mandate, launch mode and behaviors.
+  campaign(WORKBENCH_TYPES.settings2AgentDefaults, 'surface', () => t('settings2.agent_defaults', 'Agent defaults'), 'settings2AgentDefaults', () => t('settings2.agent_defaults_summary', 'Model, mandate, launch mode and behaviors new Agents and Teams start with.'));
   campaign(WORKBENCH_TYPES.settings2BehaviorFiles, 'surface', () => t('settings2.behavior_files', 'Behavior files'), 'settings2BehaviorFiles', () => t('settings2.behavior_files_summary', 'Read and edit the behavior, fact and tool files themselves.'));
   campaign(WORKBENCH_TYPES.settings2Stats, 'surface', () => t('settings2.stats', 'Machine stats'), 'settings2Stats', () => t('settings2.stats_summary', 'Tool-call activity on this machine.'));
   profiles.define(WORKBENCH_PROFILES.settings2, [
-    WORKBENCH_TYPES.modelStones, WORKBENCH_TYPES.settings2ModelServices, WORKBENCH_TYPES.settings2ModelSetup,
-    WORKBENCH_TYPES.settings2AgentDefaults, WORKBENCH_TYPES.settings2ModelDefaults,
+    WORKBENCH_TYPES.modelStones, WORKBENCH_TYPES.settings2ModelServices, WORKBENCH_TYPES.settings2OpenRouter, WORKBENCH_TYPES.settings2PrivateApi,
+    WORKBENCH_TYPES.settings2AgentDefaults,
     SETUP_SURFACE_TYPES.roots, WORKBENCH_TYPES.campaignIntegrations, WORKBENCH_TYPES.campaignJira,
     WORKBENCH_TYPES.settings2BehaviorFiles, WORKBENCH_TYPES.campaignMachineStatus, WORKBENCH_TYPES.settings2Stats,
     FEEDBACK_TYPE,

@@ -17,7 +17,8 @@ const optionLabel = (value) => ({
   configured: t('launch_mode.configured', 'Native'), live_dangerously: t('launch_mode.live', 'Dangerously'),
 })[value] || value;
 
-export function createAgentDefaultsSurface(campaign) {
+/** `modelsHere`: Settings v2 shows the starting models on the same card (KAN-871), so the pointer to Models goes. */
+export function createAgentDefaultsSurface(campaign, { modelsHere = false } = {}) {
   const { createSurface, createNotice } = WorkspaceKit.primitives;
   const surface = createSurface({ label: t('campaign_view.defaults', 'Defaults'), className: 'cv-surface' });
   const body = el('div', 'cv-body'); surface.content.append(body);
@@ -33,7 +34,7 @@ export function createAgentDefaultsSurface(campaign) {
     const questionsRow = el('div', 'cv-default-field');
     const notice = createNotice();
     body.append(el('p', 'cv-note', t('campaign_view.defaults_help', 'These defaults land in the next Team or Agent form that opens. They remain editable there; nothing live changes.')));
-    body.append(el('p', 'cv-note', t('campaign_view.defaults_models', 'Models are set in Models.')));
+    if (!modelsHere) body.append(el('p', 'cv-note', t('campaign_view.defaults_models', 'Models are set in Models.')));
     let picked = edited || {
       reach: current.reach || firstMandate('reach'), recruit: current.recruit || firstMandate('recruit'),
       output: list(current.output), launch_mode: current.launch_mode || 'live_dangerously',
