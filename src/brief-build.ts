@@ -118,6 +118,7 @@ async function birthRecord(form: SpawnForm, facts: LaunchFacts, launch: LaunchId
       lead: !!form.team && !!form.team_lead,
       wipeboard: facts.roster?.wipeboard ?? form.team ?? '',
       team_objective: facts.roster?.objective ?? '',
+      team_instructions: facts.roster?.instructions ?? '',
       team_integrations: [],
       reach: held.reach,
       recruit: held.recruit,

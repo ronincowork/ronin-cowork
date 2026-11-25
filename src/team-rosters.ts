@@ -7,16 +7,14 @@ import { teamAgentDefaults, type TeamAgentDefaults } from './agent-defaults.js';
 import type { BriefSettings } from './brief-record.js';
 import { layerOf } from './brief-settings.js';
 
-/** The kinds (owner, 25 Nov): an Agent's, a Team's and a Workspace's, one list; no coding. */
-export const KINDS = ['open', 'business', 'personal', 'household', 'social', 'school'] as const;
-export type TeamKind = typeof KINDS[number];
-
 export interface TeamRoster {
   name: string;
   campaign_id: string;
   title: string;
-  kind: TeamKind;
+  /** What the lead picks up and starts executing (owner, 25 Nov): said to the lead when it is launched. */
   objective: string;
+  /** Standing directions to every Agent in the Team (owner, 25 Nov): in each member's brief. */
+  instructions: string;
   /** The Workspace this Team is launched in (src/workspaces.ts); its Agents inherit it. */
   workspace: string;
   branch: string;
@@ -74,14 +72,12 @@ function parse(name: string, raw: string, campaign_id = ''): TeamRoster {
     ? value.map((entry) => typeof entry === 'string' ? entry.trim().slice(0, max) : '').filter((entry) => Boolean(entry) && entry !== 'mandates')
     : [];
   const layer = layerOf('team', { brief: json('brief'), integrations: json('integrations'), pm: json('pm') });
-  const kind = get('kind');
   return {
     name,
     campaign_id: campaign_id || get('campaign_id'),
     title: get('title') || name.split(/[_-]+/).filter(Boolean).map((part) => part[0]?.toUpperCase() + part.slice(1)).join(' '),
-    kind: (KINDS as readonly string[]).includes(kind)
-      ? kind as TeamKind : 'open',
     objective: get('objective'),
+    instructions: typeof json('instructions') === 'string' ? (json('instructions') as string) : '',
     workspace: get('workspace'),
     branch: get('branch'),
     branches: stringMap(json('branches')),
@@ -161,8 +157,8 @@ export async function listTeamRosters(): Promise<TeamRoster[]> {
 
 export interface RosterEdit {
   title?: string;
-  kind?: TeamKind;
   objective?: string;
+  instructions?: string;
   workspace?: string;
   branch?: string;
   branches?: Record<string, string>;
@@ -177,7 +173,7 @@ export interface RosterEdit {
 }
 
 const KEYS: (keyof RosterEdit)[] = [
-  'title', 'kind', 'objective', 'workspace', 'branch', 'branches', 'wipeboard', 'state',
+  'title', 'objective', 'instructions', 'workspace', 'branch', 'branches', 'wipeboard', 'state',
   'brief', 'integrations', 'pm', 'agent_defaults', 'holds', 'watches',
 ];
 
@@ -188,8 +184,9 @@ function render(name: string, r: TeamRoster): string {
     '',
     ...(r.campaign_id ? [line('campaign_id', r.campaign_id)] : []),
     line('title', r.title),
-    line('kind', r.kind),
     line('objective', r.objective),
+    // JSON, so its line breaks keep (the record is one line per key).
+    line('instructions', r.instructions ? JSON.stringify(r.instructions) : ''),
     line('workspace', r.workspace),
     line('branch', r.branch),
     line('branches', JSON.stringify(r.branches)),
@@ -226,8 +223,8 @@ export async function createTeamRoster(name: string, edit: RosterEdit, campaign_
     name,
     campaign_id,
     title: edit.title?.trim() || name.split(/[_-]+/).filter(Boolean).map((part) => part[0]?.toUpperCase() + part.slice(1)).join(' '),
-    kind: edit.kind ?? 'open',
     objective: edit.objective ?? '',
+    instructions: edit.instructions ?? '',
     workspace: edit.workspace ?? '',
     branch: edit.branch ?? '',
     branches: edit.branches ?? {},

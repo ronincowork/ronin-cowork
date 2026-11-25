@@ -34,7 +34,6 @@ export interface SpawnForm {
   provider?: string;
   mandate?: Partial<Mandate>;
   campaign_id?: string;
-  kind?: string;
   /** The Agent's own brief settings, integrations and project management (docs/architecture/brief.md, Layers and brief settings). */
   brief?: BriefSettings;
   integrations?: string[];
@@ -82,7 +81,6 @@ export interface Resolved {
   team_state: '' | 'active' | 'archived';
   /** The brief, composed: record, layers, what is in play, the packet text. */
   composed: BuiltBrief | null;
-  kind: string;
   ignored: string[];
   installations: ResolvedInstallation[];
   stated_by: Record<string, StatedBy[]>;
@@ -202,10 +200,9 @@ export async function resolveFacts(form: SpawnForm, taken: Set<string>, proposed
   const repositories = (workspace?.repos ?? []).map((repo) => ({ ...repo, managed: desksManaged(rowArrangement({ ...repo, repo: true, workspace: workspace!.name, campaign_id: workspace!.campaign_id })) }));
   const folders = workspace?.folders ?? [];
   const arrangement: 'managed' | 'checkout' | 'none' = repositories.some((repo) => repo.managed) ? 'managed' : repositories.length ? 'checkout' : 'none';
-  const kind = form.kind ?? String(parentSeed?.seeds.kind.value ?? 'open');
   return {
     sessionType, coworkAgent, bareMetalAgent, campaignId, agentsSet, campaign, launchSpecs, roster, profile,
-    parentSeed, workspace, place, repositories, folders, agent, installations, name, arrangement, kind,
+    parentSeed, workspace, place, repositories, folders, agent, installations, name, arrangement,
   };
 }
 export type LaunchFacts = Awaited<ReturnType<typeof resolveFacts>>;
@@ -274,7 +271,7 @@ export async function resolveForm(
   proposedRoster?: TeamRoster,
 ): Promise<Resolved> {
   const facts = await resolveFacts(form, taken, proposedRoster);
-  const { sessionType, coworkAgent, campaign, roster, profile, parentSeed, workspace, place, repositories, folders, agent, installations, name, kind } = facts;
+  const { sessionType, coworkAgent, campaign, roster, profile, parentSeed, workspace, place, repositories, folders, agent, installations, name } = facts;
   const { cmd, spec, chosen, launchMode } = await resolveLaunch(form, facts);
   const composed = await resolveBriefFor(form, facts, {
     provider: spec?.provider ?? '', model: spec?.model ?? '', harness: spec?.cli ?? '', launch_mode: launchMode,
@@ -335,7 +332,6 @@ export async function resolveForm(
     team_wipeboard: roster?.wipeboard ?? '',
     team_state: roster?.state ?? '',
     composed,
-    kind,
     ignored,
     installations,
     stated_by: {
@@ -364,7 +360,6 @@ export async function resolveForm(
       team_wipeboard: rosterSource,
       team_state: rosterSource,
       brief_settings: form.brief !== undefined ? explicit : system,
-      kind: form.kind !== undefined ? explicit : parentSeed?.seeds.kind.stated_by ?? system,
       arrangement: repositories.length ? workspaceSource : [],
     },
   };

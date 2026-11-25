@@ -5,7 +5,7 @@ import type { Workspace } from './workspaces.js';
 import { teamRosterFile, type TeamRoster } from './team-rosters.js';
 
 /** What the New Agent form starts from. What the Agent is told is the brief's (src/brief-settings.ts). */
-export type SeedField = 'kind' | 'branch' | 'provider' | 'model' | 'reach' | 'recruit' | 'output' | 'launch_mode';
+export type SeedField = 'branch' | 'provider' | 'model' | 'reach' | 'recruit' | 'output' | 'launch_mode';
 export interface SeedValue<T = unknown> { value: T; stated_by: StatedBy[] }
 export interface LaunchSeed {
   campaign_id: string; seeds: Record<SeedField, SeedValue>;
@@ -38,7 +38,6 @@ export function resolveLaunchSeed(s: LaunchSeedSources): LaunchSeed {
   return {
     campaign_id: s.campaign.id,
     seeds: {
-      kind: { value: t?.kind ?? 'open', stated_by: conditional(t ? 'Team membership' : 'teamless Agent') },
       branch: { value: t?.branch ?? '', stated_by: conditional(t ? teamRosterFile(t.name, t.campaign_id) : 'branch default') },
       provider: { value: pair?.provider ?? '', stated_by: pairSource }, model: { value: pair?.model ?? '', stated_by: pairSource },
       reach: { value: a.reach, stated_by: source('reach') }, recruit: { value: a.recruit, stated_by: source('recruit') },

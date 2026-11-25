@@ -16,7 +16,6 @@
 import { t } from './lexicon.js';
 import { request } from './request.js';
 import { mandateTitle } from './mandates.js';
-import { glyph } from './glyphs.js';
 
 export const el = (tag, cls, text) => {
   const node = document.createElement(tag);
@@ -70,25 +69,6 @@ export function createStep({ n, key, title, onToggle = null }) {
 
 /** The mandate word a person reads for a stored value: its file's title (mandates.js). */
 export const mandateWord = (value) => mandateTitle(value);
-
-export function kindTiles(current, onPick) {
-  const KINDS = ['business', 'personal', 'household', 'social', 'school'].map((key) => ({ key, icon: glyph('kind', key) }));
-  const wrap = el('div', 'fs-kinds');
-  wrap.append(el('span', 'fs-gridlabel', t('kind', 'Kind')));
-  const grid = el('div', 'fs-kindgrid');
-  const tile = (key, icon, open) => {
-    const box = el('button', 'fs-kindtile');
-    box.type = 'button';
-    if (open) box.dataset.open = 'true';
-    box.setAttribute('aria-pressed', String(key === current));
-    box.append(el('i', null, icon), el('span', null, t(`kind.${key}`, key)));
-    box.addEventListener('click', () => onPick(key));
-    return box;
-  };
-  for (const kind of KINDS) grid.append(tile(kind.key, kind.icon, false));
-  wrap.append(grid, tile('open', '○', true));
-  return wrap;
-}
 
 /* ---------- the provider catalog, and the one picker that reads it ---------- */
 

@@ -1,4 +1,3 @@
-import { KINDS } from '../team-rosters.js';
 import { layerOf } from '../brief-settings.js';
 import type express from 'express';
 import { liveRows } from '../work-items-index.js';
@@ -42,7 +41,6 @@ async function creationEdit(campaign_id: string, stated: RosterEdit): Promise<Ro
   const inherited = campaign.config.defaults;
   const cowork = object(campaign.config.cowork_defaults);
   const edit: RosterEdit = {
-    ...(typeof cowork.kind === 'string' ? { kind: cowork.kind as RosterEdit['kind'] } : {}),
     ...(typeof cowork.branch === 'string' ? { branch: cowork.branch } : {}),
     ...(object(cowork.branches) ? { branches: Object.fromEntries(Object.entries(object(cowork.branches)).map(([k, v]) => [k, String(v)])) } : {}),
     ...stated,
@@ -65,14 +63,8 @@ function editOf(body: unknown): RosterEdit {
   }
   const edit: RosterEdit = {};
   if (b.title !== undefined) edit.title = String(b.title).trim().slice(0, 100);
-  if (b.kind !== undefined) {
-    const kind = String(b.kind).trim();
-    if (!(KINDS as readonly string[]).includes(kind)) {
-      throw new Error(`kind is one of ${KINDS.join(', ')}.`);
-    }
-    edit.kind = kind as RosterEdit['kind'];
-  }
   if (b.objective !== undefined) edit.objective = String(b.objective).trim().slice(0, 2000);
+  if (b.instructions !== undefined) edit.instructions = String(b.instructions).trim().slice(0, 4000);
   if (b.workspace !== undefined) edit.workspace = String(b.workspace).trim().slice(0, 64);
   if (b.branches !== undefined) edit.branches = b.branches && typeof b.branches === 'object' && !Array.isArray(b.branches)
     ? Object.fromEntries(Object.entries(b.branches as Record<string, unknown>)

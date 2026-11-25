@@ -27,7 +27,10 @@ import { promisify } from 'node:util';
 import path from 'node:path';
 import { rootDir, storeDir, STORES } from './resources.js';
 import type { LaunchMode } from './agent-defaults.js';
-import { KINDS, type TeamKind } from './team-rosters.js';
+
+/** The kinds (owner, 25 Nov): a Workspace's only; Teams and Agents have none. public/js/glyphs.js keeps the client's list. */
+export const WORKSPACE_KINDS = ['open', 'business', 'personal', 'household', 'social', 'school'] as const;
+export type WorkspaceKind = typeof WORKSPACE_KINDS[number];
 import { cloneRepository } from './setup-runtime.js';
 
 /** A folder the Workspace works in: `dir` is the folder; `name` is Ronin's key for it (desks, tmux,
@@ -45,8 +48,8 @@ export interface Workspace {
   name: string;
   campaign_id: string;
   title: string;
-  /** What kind of project it is (the Team kinds): coding asks for repositories and GitHub, the rest a folder. */
-  kind: TeamKind;
+  /** What kind of Workspace it is: open, business, personal, household, social or school. */
+  kind: WorkspaceKind;
   objective: string;
   instructions: string;
   repos: WorkspaceRepo[];
@@ -82,7 +85,7 @@ export function normalizeWorkspace(campaign_id: string, name: string, v: Record<
   return {
     name, campaign_id,
     title: text(v.title, 120),
-    kind: (KINDS as readonly unknown[]).includes(v.kind) ? v.kind as TeamKind : 'open',
+    kind: (WORKSPACE_KINDS as readonly unknown[]).includes(v.kind) ? v.kind as WorkspaceKind : 'open',
     objective: text(v.objective, 2000),
     instructions: text(v.instructions, 8000),
     repos: rows(v.repos, (r) => { const f = folderRow(r); return f && repoRow(f, r); }),

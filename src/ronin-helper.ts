@@ -13,7 +13,6 @@ export async function ensureSteercoTeam(): Promise<TeamRoster> {
   try {
     return await createTeamRoster(STEERCO_TEAM, {
       title: 'Steerco',
-      kind: 'open',
       objective: 'Place the work that reaches Ronin, and help operate Ronin.',
       wipeboard: 'steerco',
     });

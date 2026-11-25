@@ -393,16 +393,6 @@
   .fs-connection-note { grid-column: 1 / -1; }
   .fs-pair { display: grid; grid-template-columns: repeat(auto-fit, minmax(var(--fs-pair-w), 1fr)); gap: var(--space-row) var(--space-inline); }
 
-  .fs-gridlabel { display: block; color: var(--muted); font-size: var(--form-key); text-transform: uppercase; letter-spacing: var(--tracking-wide); }
-  .fs-kinds { display: flex; flex-direction: column; gap: var(--space-row); }
-  .fs-kindgrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-row) var(--space-inline); }
-  .fs-kindtile { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--space-row) var(--space-inline); align-items: center; border: var(--edge) solid var(--line-2); border-radius: var(--radius-small); background: var(--inset); color: var(--muted); padding: var(--space-row) var(--space-inline); cursor: pointer; text-align: left; font: inherit; }
-  .fs-kindtile:hover { border-color: var(--kaki); }
-  .fs-kindtile[aria-pressed='true'] { border-color: var(--kaki); background: var(--selected); /* the one you are on, have chosen, or are dropping onto */ }
-  .fs-kindtile[aria-pressed='true'] span { color: var(--kaki-lift); }
-  .fs-kindtile i { font-style: normal; font-size: var(--text-body); line-height: var(--leading-none); }
-  .fs-kindtile span { overflow: hidden; font-size: var(--form-note); text-overflow: ellipsis; white-space: nowrap; }
-  .fs-kindtile[data-open='true'] { align-self: start; border-style: dashed; }
 
   .fs-way { display: grid; gap: var(--space-row); border: var(--edge) solid var(--line-2); border-radius: var(--radius-small); background: var(--inset); color: var(--muted); padding: var(--space-row) var(--space-inline); cursor: pointer; text-align: left; font: inherit; }
   .fs-way:hover { border-color: var(--kaki); }
