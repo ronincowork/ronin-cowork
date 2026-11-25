@@ -17,7 +17,7 @@ import { createSetupStepsBar, setupStepMarks } from './setup-steps-bar.js';
 import { mikaShowHandlers, setupProgressHandlers } from './events.js';
 import { subscribe as hear } from './store.js';
 import { mikaTab, reportMikaView } from './mika.js';
-import { IRASSHAI, irasshaiLive, IRASSHAI_INTEGRATIONS_TYPE, createIrasshaiChat, createIrasshaiOpener, irasshaiKey, irasshaiReady, registerIrasshaiIntegrations } from './setup-irasshai.js';
+import { irasshaiLive, IRASSHAI_INTEGRATIONS_TYPE, createIrasshaiChat, createIrasshaiOpener, irasshaiKey, irasshaiReady, registerIrasshaiIntegrations } from './setup-irasshai.js';
 
 const PROFILE = 'setup';
 // The three steps and three pages (setup-journey.js SETUP_SCENES; SETUP_SWEEP.md §7), laid out as the
@@ -313,7 +313,7 @@ export function createSetupView() {
     const left = shownStep; shownStep = scene.id;
     if (!left || left === scene.id || !irasshaiLive()) return;
     if (!progress?.steps?.find((step) => step.id === left)?.changed) return;
-    void request('/api/setup/left', { method: 'POST', json: { step: left, to: scene.label, target: IRASSHAI } });
+    void request('/api/setup/left', { method: 'POST', json: { step: left, to: scene.label } });
   };
   const TOUR = 'setup.tour';
   const TOUR_NUMBER = SCENES.find((scene) => scene.type === TOUR)?.number;

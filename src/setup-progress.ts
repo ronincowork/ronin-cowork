@@ -20,6 +20,9 @@ import { browserAccess, madeWorkspaces, ledTeams, onFactWritten, ownHarnesses, r
 import { enqueueMessage } from './message-queue.js';
 import { broadcastEvent } from './ws/events.js';
 
+/** Irasshai's session name, the same as the client's (public/js/setup-journey.js IRASSHAI). */
+export const IRASSHAI = 'irasshai';
+
 export const SETUP_STEP_IDS = ['harness', 'workspace', 'team'] as const;
 export type SetupStepId = typeof SETUP_STEP_IDS[number];
 
@@ -72,12 +75,12 @@ async function noteWrite(name: string): Promise<boolean> {
 }
 
 /** The person left a step (selector, Next, Tour): with its switch on, she gets one line and it goes off. */
-export async function leftSetupStep(left: string, to: string, target: string): Promise<boolean> {
+export async function leftSetupStep(left: string, to: string): Promise<boolean> {
   const step = SETUP_STEP_IDS.find((id) => id === left);
-  if (!step || !changed.has(step) || !target) return false;
+  if (!step || !changed.has(step)) return false;
   changed.delete(step);
   const { fact, label } = STEP_FACT[step];
-  await enqueueMessage(target, `Moved to ${to}. ${label} changed while they were on it: office read ${fact}.`, 'house', 'Setup');
+  await enqueueMessage(IRASSHAI, `Moved to ${to}. ${label} changed while they were on it: office read ${fact}.`, 'house', 'Setup');
   broadcastEvent({ t: 'setup-progress', ...await readSetupProgress() });
   return true;
 }

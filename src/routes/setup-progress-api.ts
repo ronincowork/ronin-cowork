@@ -10,9 +10,9 @@ export function registerSetupProgress(app: express.Express): void {
     try { res.json(await readSetupProgress()); }
     catch (error) { res.status(500).json({ error: message(error) }); }
   });
-  /** POST /api/setup/left {step, to, target}: the person left a step; with its changed switch on, `target` (Irasshai) is told and it goes off (w984). */
+  /** POST /api/setup/left {step, to}: the person left a step; with its changed switch on, Irasshai is told and it goes off (w984). Only ever her. */
   app.post('/api/setup/left', async (req, res) => {
-    try { res.json({ ok: true, told: await leftSetupStep(String(req.body?.step || ''), String(req.body?.to || ''), String(req.body?.target || '')) }); }
+    try { res.json({ ok: true, told: await leftSetupStep(String(req.body?.step || ''), String(req.body?.to || '')) }); }
     catch (error) { res.status(400).json({ error: message(error) }); }
   });
 }
