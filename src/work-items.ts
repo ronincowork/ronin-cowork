@@ -110,13 +110,13 @@ const levelOfKind = (names: SpaceNames, kind: string): ItemLevel => {
 };
 
 /** THE SHAPES JIRA REFUSES (docs/using-ronin/work-items.md; ronin-services docs/jira-bridge.md, Pairing: the
- * live failures): on a Jira-connected campaign an item may not take a parent or kind Jira's
- * hierarchy would refuse, so Ronin and Jira never part. An epic sits under nothing; a level-0
+ * live failures): on every campaign, connected or not yet, an item may not take a parent or kind
+ * Jira's hierarchy would refuse, so Ronin follows Jira and the two never part. An epic sits under nothing; a level-0
  * item (Task, Story, Bug, Feature) under an epic or nothing; a Subtask only under a level-0
  * item; and a paired item never changes kind across levels, nor does a paired child made to
  * follow. Jira's own changes (by jira:*) are Jira's shape already and are not checked. */
 function jiraShape(campaign: string, by: string, item: { id: string; kind: string; level: number; paired: boolean; was?: number }, parent: WorkItem | null): void {
-  if (!jiraConnected(campaign) || by.startsWith('jira:')) return;
+  if (by.startsWith('jira:')) return;
   const refuse = (why: string) => { throw new WorkItemRefused(`Jira would refuse this, so Ronin does too: ${why}`); };
   const named = item.id ? `${item.id} (${item.kind})` : `a ${item.kind}`;
   if (item.paired && item.was !== undefined && item.was !== item.level) refuse(`${named} is on Jira, and Jira cannot change a work item's kind across levels; make a new item instead.`);

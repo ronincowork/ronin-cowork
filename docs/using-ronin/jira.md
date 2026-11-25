@@ -27,7 +27,7 @@ was off goes when it comes back on:
   **Under an epic** sends epics and everything under them, while items with no epic stay in
   Ronin; **All** sends every item. Sent items are created on Jira, labelled ronin-do and
   unassigned (the Assignee is the Jira people's), and their changes go out. Widening it sends what newly qualifies, parents first. An item
-  that came from Jira is never created there again.
+  that came from Jira is never created there again, nor is one already Done.
 - **Sync now** always reads: the space checked, one read, what is waiting sent, and the check
   for items gone from Jira.
 
@@ -62,6 +62,10 @@ Jira is the source; Ronin keeps the item as Jira had it at the last sync, and co
 - **Jira down, or a token expired**: the panel says **Sync failed** in Jira's own words and
   lists what is waiting to go up. Ronin keeps working and the Agents are not told; every
   tick tries again.
+- **Jira refuses a change**: it counts as sent, so it is not tried again until the item
+  changes, and the Agents holding it hear Jira's words: fix the item, or delete it if it is
+  old. **Sync now** and **Re-sync** say Synced only when everything went across; otherwise
+  they say what failed.
 - **Assigned away in Jira**, or deleted there: the pair drops and the item stays in Ronin,
   out of Jira. Assigned back to Ronin, it takes its pair back. A child of a paired item stays
   Ronin's whoever it is assigned to.
