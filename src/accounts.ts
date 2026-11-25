@@ -24,7 +24,7 @@ export const RONIN_API_SEED_ID = 'ronin_api';
 /** The Ronin API does not serve Claude Code (owner, 2026-11-03). */
 const NOT_ON_RONIN_API = new Set(['claude']);
 /** Harnesses with a binding today: the only ones a launch can actually run on an account. */
-export const BOUND_HARNESSES = ['hermes'];
+export const BOUND_HARNESSES = ['hermes', 'codex', 'opencode'];
 /** Which harnesses a vendor's own key serves natively (the plan's provider-section rule, until the catalog carries `harnesses:`). */
 const NATIVE_HARNESSES: Record<HermesConnection['provider'], string[]> = { openai: ['hermes', 'codex'], mistral: ['hermes'], custom: ['hermes'] };
 
@@ -48,25 +48,33 @@ async function defaultHarnesses(kind: AccountKind, provider: HermesConnection['p
 
 async function project(c: HermesConnection & { configured: boolean }): Promise<Account> {
   const kind = accountKind(c);
-  const harnesses = c.harnesses ?? await defaultHarnesses(kind, c.provider);
+  const wire = c.wireApi ?? (c.provider === 'openai' ? 'responses' : 'chat');
+  const compatible = BOUND_HARNESSES.filter(cli => cli === 'hermes' || (cli === 'codex' ? wire === 'responses' : wire === 'chat'));
+  const harnesses = c.harnesses ?? [...new Set([...await defaultHarnesses(kind, c.provider), ...compatible])];
   return {
     id: c.id, kind, name: c.name, provider: c.provider, baseUrl: c.baseUrl, wire: c.wireApi ?? (c.provider === 'openai' ? 'responses' : 'chat'),
     configured: c.configured, ...(c.credentialEnv ? { credentialEnv: c.credentialEnv } : {}),
-    harnesses, bound: harnesses.filter(h => BOUND_HARNESSES.includes(h)), models: c.models, offered: c.offered ?? c.models, ...(c.discoveredAt ? { discoveredAt: c.discoveredAt } : {}),
+    harnesses, bound: harnesses.filter(h => compatible.includes(h)), models: c.models, offered: c.offered ?? c.models, ...(c.discoveredAt ? { discoveredAt: c.discoveredAt } : {}),
   };
 }
 
 /** Every account, the Ronin API seeded greyed when no gateway account exists yet ("disabled, never hidden"), and every preset. */
-export async function accountsAnswer(): Promise<AccountsAnswer> {
-  const state = await hermesSettingsAnswer();
+export async function serviceConnections(state: Awaited<ReturnType<typeof hermesSettingsAnswer>>): Promise<Account[]> {
   const accounts = await Promise.all(state.connections.map(project));
   if (!accounts.some(a => a.kind === 'ronin_api')) {
     // An unreadable office record is said on the seed, not papered over with the local door.
     let baseUrl = '', fault: string | undefined;
     try { baseUrl = await roninApiBaseUrl(); } catch (e) { fault = (e as Error).message; }
     accounts.push({ id: RONIN_API_SEED_ID, kind: 'ronin_api', name: 'Ronin API', provider: 'custom', baseUrl, wire: 'responses', configured: false, seeded: true,
-      harnesses: await roninApiHarnesses(), bound: BOUND_HARNESSES, models: [], offered: [], ...(fault ? { fault } : {}) });
+      harnesses: await roninApiHarnesses(), bound: ['hermes', 'codex'], models: [], offered: [], ...(fault ? { fault } : {}) });
   }
+  return accounts;
+}
+
+/** Legacy flat projections retained for existing Accounts and Presets clients. */
+export async function accountsAnswer(): Promise<AccountsAnswer> {
+  const state = await hermesSettingsAnswer();
+  const accounts = await serviceConnections(state);
   const presets: Preset[] = state.setups.map(s => ({ id: s.id, name: s.name, harness: 'hermes', account: s.connection, model: s.model, reasoning: s.reasoning, approvals: s.approvals }));
   return { accounts, presets, kinds: ['personal_api', 'ronin_api'] };
 }

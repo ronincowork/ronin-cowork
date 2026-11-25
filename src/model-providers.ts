@@ -1,4 +1,4 @@
-import { readHermesSettings } from './hermes-setups.js';
+import { modelServices } from './model-services.js';
 /**
  * THE PROVIDERS AND THE ONE JOIN — every model row a picker offers or a launch runs.
  *
@@ -56,6 +56,8 @@ export type ModelFacts = Pick<CatalogModel, 'context' | 'output' | 'price' | 're
 
 /** ONE JOINED ROW: what a launch runs and what a picker shows. */
 export interface SessionLaunchSpec {
+  service_id?: string;
+  service_name?: string;
   /** The vendor id a launch names: `anthropic`, `openai`, … */
   provider: string;
   /** The id of the CLI that serves it in `src/agents.ts`: `claude`, `codex`, … */
@@ -314,24 +316,10 @@ export async function providerRows(summary: ProviderSummary | null, catalog?: Mo
   const models = catalog ?? await readModelCatalog();
   const operational = new Set(summary?.operational ?? []);
   const turnedOff = new Set(summary?.off ?? []);
+  const services = await modelServices();
   const joined = await Promise.all(listProviders().map(async (entry): Promise<ProviderRows> => {
     const agent = AGENTS.find((candidate) => candidate.id === entry.cli);
     const off = turnedOff.has(entry.cli);
-    if (entry.cli === 'hermes') {
-      const settings = await readHermesSettings();
-      const grammar = entry.launchable ? await grammarOf(entry.cli) : null;
-      const on = !!grammar && (summary?.installed ?? []).includes('hermes') && !off;
-      const rows: ProviderRow[] = settings.setups.filter(setup => settings.connections.some(c => c.id === setup.connection)).map((setup, index) => ({
-        provider: 'hermes', cli: 'hermes', provider_label: 'Hermes', cli_label: 'Hermes', operational: on, off,
-        selectable: on, model: setup.id, name: setup.name,
-        cmd: grammar ? commandText(renderLaunch(grammar.model, { model: setup.model })) : '',
-        ...(grammar?.modelDangerously.length ? { dangerousCmd: commandText(renderLaunch(grammar.modelDangerously, { model: setup.model })) } : {}),
-        tier: '', default: index === 0,
-      }));
-      return { ...entry, cli_label: 'Hermes', operational: on && rows.length > 0, off,
-        models: rows, launch_modes: ['configured', 'live_dangerously'] };
-    }
-
     const on = operational.has(entry.cli);
     const base = {
       provider: entry.provider, cli: entry.cli, provider_label: entry.label, cli_label: agent?.label ?? entry.cli,
@@ -340,7 +328,7 @@ export async function providerRows(summary: ProviderSummary | null, catalog?: Mo
     const grammar = entry.launchable ? await grammarOf(entry.cli) : null;
     const rows: ProviderRow[] = [];
     let launch: Pick<ProviderRows, 'native' | 'nativeDangerousCmd' | 'launch_modes'> = {};
-    if (grammar) {
+    if (grammar && entry.cli !== 'hermes') {
       const values = (model = '') => ({ provider: entry.provider, model });
       const native = commandText(renderLaunch(grammar.native, values()));
       const dangerous = grammar.nativeDangerously.length || grammar.modelDangerously.length;
@@ -365,7 +353,21 @@ export async function providerRows(summary: ProviderSummary | null, catalog?: Mo
         });
       }
     }
-    return { ...entry, cli_label: base.cli_label, operational: on, off, ...launch, models: rows };
+    if (entry.cli === 'hermes' && grammar) launch.launch_modes = ['configured', 'live_dangerously'];
+    const canUseService = !!grammar && !off && !!summary?.installed.includes(entry.cli);
+    for (const service of services) {
+      if (!grammar || !service.configured || !service.bound.includes(entry.cli)) continue;
+      for (const setup of service.models) {
+        const marker = 'service:' + setup.id;
+        rows.push({ ...base, model: entry.cli === 'hermes' ? setup.id : marker, name: setup.name,
+          service_id: service.id, service_name: service.name,
+          cmd: commandText(renderLaunch(grammar.model, { model: marker })),
+          ...(grammar.modelDangerously.length ? { dangerousCmd: commandText(renderLaunch(grammar.modelDangerously, { model: marker })) } : {}),
+          selectable: canUseService, operational: canUseService, tier: '', default: rows.length === 0 });
+      }
+    }
+    const ready = rows.some(row => row.operational);
+    return { ...entry, cli_label: base.cli_label, operational: ready, off, ...launch, models: rows };
   }));
   // A part's provider (Ronin models, in a hosted office) leads, apart from every CLI's list.
   const parts = await partProviderRows();

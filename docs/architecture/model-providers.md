@@ -82,12 +82,16 @@ rated row carries `tier`, `use_for` and `facts` (`context`, `output`, `price`, `
 `knowledge`, `reasoning`, `tools`, whichever HQ has). Several models may share a tier; Mika's
 Light → Standard → Frontier cascade takes the first of each tier, the catalog's order.
 
+## Model services
+
+A service connection owns its endpoint, wire protocol, credential reference and named model setups. Each setup has a stable ID and an upstream model ID. Gateway discovery populates its service; personal services use owner-defined entries. GET /api/model-services groups these entries by connection. The on-disk store keeps its original name and IDs for compatibility. Catalog rows carry service_id and service_name for filtering. Native CLI authentication is independent.
+
 ## Hermes connections and model options
 
 Hermes is one provider in the existing Model provider dropdown. Its Model dropdown
 lists Ronin-owned setup names, identified by stable UUIDs. Each setup references an API
 connection and pins an actual model, reasoning effort and approvals. Connection discovery
-asks the selected endpoint's `/models`; only returned model IDs can be saved in setups.
+asks the selected endpoint's `/models`; personal services also accept an explicitly entered model ID.
 This proves model-list access, not per-model inference compatibility.
 
 `hermes-setups.ts` owns validation, serialized mutation, secret-free projection and fresh
@@ -98,7 +102,7 @@ The Models worksurface has connection and setup editors instead of Authenticate/
 Provider-key environment pairs are reconciled on read and appear automatically, without
 an import action. Environment credentials remain authoritative for those connections.
 
-The launch join maps setup UUIDs to explicit actual-model commands. Cowork launch creates
+The launch join keeps the setup identity until process start and resolves it to the upstream model there. Cowork launch creates
 `<session-record>/cli-home`, saves immutable settings and links the connection credential.
 Two agents using the same setup have independent histories and memories. Setup changes
 apply to future launches; key rotation reaches existing homes on process restart. Removing

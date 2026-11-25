@@ -18,6 +18,8 @@ export interface ProviderPart {
   refresh?(): Promise<void>;
   /** An Agent's argv just before birth on one of its rows; `person` is the launching person's
    * email (the birth receipt's user_email), '' when none. */
+  /** Route a model-service launch or restore through the office relay. */
+  wrapService?(argv: string[], person: string): string[];
   wrapLaunch?(argv: string[], person: string): string[];
   /** Core's resume argv for an Agent born on it, with the model it was born on and the same person. */
   wrapResume?(argv: string[], model: string, person: string): string[];

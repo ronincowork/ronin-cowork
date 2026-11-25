@@ -27,7 +27,8 @@ const matchingModel = (specs: readonly SessionLaunchSpec[], value: string): Sess
 
 const passthroughModel = (specs: readonly SessionLaunchSpec[], value: string): string | undefined => {
   if (!/^[A-Za-z0-9._:/@+-]+$/.test(value)) return undefined;
-  const template = specs.find((spec) => spec.model !== 'native')?.cmd;
+  if (value.startsWith('service:')) throw new Error('The selected model service setup is unavailable.');
+  const template = specs.find((spec) => spec.model !== 'native' && !spec.service_id)?.cmd;
   const argv = template?.match(/^(.*?\s(?:--model|-m)(?:=|\s+))(\S+)(.*)$/);
   return argv ? `${argv[1]}${value}${argv[3]}` : undefined;
 };

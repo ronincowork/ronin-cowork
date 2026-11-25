@@ -14,6 +14,7 @@ behaviours guide; facts inform; skills adapt; UIs call (`docs/architecture/brief
 | OBOERU | **memory** | Notes that outlive the session that wrote them. |
 | TOMODACHI · SOROBAN | **Stats** | Counts of what sessions did, never content. |
 | KOE | **Hotwords** | The dictation glossary. The mic is Voice; implementation ownership is in KOTOBA. |
+| MODEL_SERVICES | **Model services** | Ronin Gateway, OpenRouter and private APIs that a harness can use. Pick the service, then a model from its list. |
 | SETTEI | **Configuration** | Settings for the relevant scope. The gear opens cowork commons. |
 | AGERU | **what gets sent** · **where Ronin has connected** | Ronin HQ packets and request history. Model-provider traffic is separate, not in this record. |
 | ERABI | — | Shared selectors (`public/js/ask.js`). The owner sees a question, never this internal name. |
