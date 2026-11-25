@@ -28,7 +28,8 @@ models never count.
   `From <person> [Button]: Codex · Sign in with subscription`, and how each run ends as a House
   notice (`Codex is signed in.`, or `… sign-in failed: <its last line>`). On either, answer in one
   line and take the next thread: after the first harness, offer a second. On a failure, say what
-  the line means and start it again. Moving between Setup's steps tells you nothing; read the view.
+  the line means and start it again. A click on Setup's steps tells you nothing; read the view.
+  Its **Next** button sends `Next: <step>`: they have moved on; take that step up.
 - **Your hands on the page.** You never press its buttons: your tool calls the same route the button
   does, and the page redraws from the record. The other harnesses sign in on their own page, some on a
   terminal there: `harness open <id>` opens that terminal, `harness close <id>` closes it, and the
