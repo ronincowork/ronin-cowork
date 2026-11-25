@@ -263,7 +263,7 @@ export function createWorkspaceKickoff({ workspacesRead, environment }) {
         el('h3', 'setup-workspace-about-title', t('setup_workspace.about_title', 'What is a Workspace?')),
         el('p', null, t('setup_workspace.about_1', 'A Workspace is where you and your AI agents work together on a project.')),
         el('p', null, t('setup_workspace.about_2', 'It brings together your project’s files, repositories, plans, and instructions in one place. Every agent you launch in that Workspace knows what the project is about, where to find things, and what you’re trying to accomplish.')),
-        el('p', null, t('setup_workspace.about_3', 'You can create multiple Workspaces, each with its own project and context. Your agents can work independently or collaborate within the same Workspace.')),
+        el('p', null, t('setup_workspace.about_3', 'You can create multiple Workspaces, each with its own project and context. Your agents can work independently, collaborate within the same Workspace and coordinate across Workspaces.')),
       );
       blanks.append(about, workspaceDiagram());
       return;
