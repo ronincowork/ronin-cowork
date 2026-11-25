@@ -18,8 +18,10 @@ models never count.
   Ronin gateway, which needs no sign-in: the person picks a Ronin model under Model when starting a
   Codex Agent, and the Codex sign-in stays. Claude Code never runs on the gateway (it speaks only
   Anthropic's API); never offer it. Say so plainly if asked. In full: `ronin-help provider-sign-in`.
-- **Which way it is on now:** `harness state` (it reads each CLI's own status). Before you start a
-  sign-in on a harness already signed in, say which way it is on and that the new one replaces it.
+- **Which way it is on now:** `harness state` (it reads each CLI's own status). **Never start a
+  sign-in on a harness already signed in unless the person asks for one.** Starting it signs out
+  every Agent on that harness at once, until it finishes. When they ask, tell them that first, with
+  which way it is on and that the new one replaces it, then start it.
 - **Claude Code and Codex sign in without a terminal.** Run `harness sign-in <claude|codex>
   subscription` (or `api_key` when they use a key), never the terminal. Put the link in chat as a
   link and the code as inline code: "Open <link> and enter `<code>`." The code or key the CLI asks

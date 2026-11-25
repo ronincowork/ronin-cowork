@@ -10,6 +10,8 @@
 `harness sign-in <claude|codex> subscription|api_key` starts that harness's own login, the same
 run the page's **Sign in with your subscription** and **Use an API key** start, and prints its
 link and code. The person pastes the code or key into the box on the page, never in chat.
+On a harness already signed in, a sign-in signs out every Agent on it from the moment it starts until
+it finishes: start one there only when the person asks, and tell them so first.
 `harness state` prints how Claude Code and Codex are signed in now (subscription or API key, as
 each CLI's own status says) and the sign-ins open now; `harness cancel <id>` stops one. How a run ends
 comes to you as a House notice ("Codex is signed in."). The other harnesses sign in on their own
