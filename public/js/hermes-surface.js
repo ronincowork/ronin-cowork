@@ -201,16 +201,18 @@ export function mountHermesSurface(host, provider, onChanged) {
     const intro = el('p', '', 'Hermes runs on the Ronin gateway, your own API key or OpenRouter. Each model option below shows under Model when you start a Hermes Agent.');
     root.replaceChildren(intro, notice);
 
-    // THREE SOURCES, EACH MARKED WHEN CONFIGURED (owner, 25 Nov 2026). Not a choice between them, as on
+    // THREE SOURCES, EACH TICKED WHEN CONFIGURED (owner, 25 Nov 2026). Not a choice between them, as on
     // Codex's bar: the model options below pick which one each uses. The Ronin gateway is always there,
-    // so it is marked and does nothing; API key and OpenRouter, pressed, manage their keys.
+    // so it is ticked and does nothing; API key and OpenRouter, pressed, manage their keys.
     const gateways = state.connections.filter(isGateway);
     const routers = state.connections.filter((c) => !isGateway(c) && isOpenRouter(c));
     const keys = state.connections.filter((c) => !isGateway(c) && !isOpenRouter(c));
     const ways = el('div', 'ask setup-harness-row setup-harness-ways'); ways.dataset.density = 'tight';
     const wayStone = (id, name, has) => {
       const made = stone(name, () => { if (id === 'gateway') return; shown = shown === id ? '' : id; paint(); });
-      made.setAttribute('aria-selected', String(has));
+      // NOT THE SELECTED MARK (owner, 25 Nov 2026): on Claude Code and Codex a selected stone is the way it
+      // runs on; here a source is only available, so it carries a tick and stays unselected.
+      if (has) { made.prepend(el('span', 'hermes-tick', '✓')); made.setAttribute('aria-label', `${name}, set up`); }
       if (id === 'gateway') made.classList.add('hermes-fixed');
       return made;
     };

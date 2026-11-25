@@ -5235,5 +5235,8 @@ html[data-screen='inside'] #phone .ph-bar .ph-title[data-boot='inside'] { displa
 .setup-harness-row.setup-harness-ways { display: grid; grid-template-columns: repeat(auto-fit, minmax(112px, 1fr)); }
 .setup-harness-ways .ask-rect { width: auto; flex: none; }
 .setup-harness-ways .ask-opt:disabled { opacity: .6; cursor: default; }
-/* Hermes's Ronin gateway: always there, marked, nothing to press. */
+/* Hermes's Ronin gateway: always there, ticked, nothing to press. */
 .hermes-fixed { pointer-events: none; }
+/* Available, not selected: a tick in the stone, never the kaki selected mark (owner, 25 Nov 2026). */
+.ask-opt .hermes-tick { color: var(--ok); font-weight: var(--weight-strong); margin-right: 6px; }
+.ask-opt:has(> .hermes-tick) { flex-direction: row; align-items: center; justify-content: center; }
