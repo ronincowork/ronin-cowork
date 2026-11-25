@@ -5217,7 +5217,8 @@ html[data-screen='inside'] #phone .ph-bar .ph-title[data-boot='inside'] { displa
 .hermes-fine { font-size: 12px; }
 /* Hermes's lists are tables (owner, 25 Nov 2026): one row each, icons on the right, one Add line. */
 .hermes-table { width: 100%; border-collapse: collapse; }
-.hermes-table :is(th, td) { padding: 6px 8px; text-align: left; vertical-align: middle; overflow-wrap: anywhere; }
+.hermes-table :is(th, td) { padding: 6px 8px; text-align: left; vertical-align: middle; overflow-wrap: break-word; }
+.hermes-options { display: grid; gap: 8px; }
 .hermes-table :is(th, td):first-child { padding-left: 0; }
 .hermes-table thead th { color: var(--muted); font-weight: normal; border-bottom: var(--edge) solid var(--line-2); }
 .hermes-table tbody th { color: var(--fg-strong); font-weight: var(--weight-strong); }
@@ -5239,4 +5240,4 @@ html[data-screen='inside'] #phone .ph-bar .ph-title[data-boot='inside'] { displa
 .hermes-fixed { pointer-events: none; }
 /* Available, not selected: a tick in the stone, never the kaki selected mark (owner, 25 Nov 2026). */
 .ask-opt .hermes-tick { color: var(--ok); font-weight: var(--weight-strong); margin-right: 6px; }
-.ask-opt:has(> .hermes-tick) { flex-direction: row; align-items: center; justify-content: center; }
+.ask-opt:has(> .hermes-tick) { flex-direction: row; align-items: center; justify-content: flex-start; }
