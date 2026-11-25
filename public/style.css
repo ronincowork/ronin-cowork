@@ -5211,6 +5211,7 @@ html[data-screen='inside'] #phone .ph-bar .ph-title[data-boot='inside'] { displa
 .ws-diagram small { color: var(--muted); font-size: var(--text-small); }
 .ws-diagram-detail { display: flex; flex-direction: column; gap: var(--space-row); padding: var(--space-control); border: var(--edge) solid var(--kaki); border-radius: var(--radius-small); background: var(--surface); }
 .ws-diagram-objective { margin: 0; color: var(--fg-strong); }
+.ws-diagram-choose { margin: 0; color: var(--fg); }
 .ws-diagram-places { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-inline); }
 .ws-diagram-places > span { padding: var(--space-row) var(--space-inline); border: var(--edge) solid var(--line-2); border-radius: var(--radius-small); text-align: center; }
 .ws-diagram-agents { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-inline); }

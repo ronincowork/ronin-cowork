@@ -42,16 +42,16 @@ const repoBase = (url) => url.trim().replace(/\.git$/, '').replace(/\/+$/, '').s
 const blank = () => ({ picked: [], pasted: '', sources: [], github: 'here', title: '', named: false, objective: '', kind: '', instructions: '', lab: false });
 
 /**
- * WHAT A WORKSPACE IS, DRAWN (owner, 25 Nov; KAN-845): an example, said so, never pressable. An
- * office holds Workspaces; one is drawn open: what it is about, the places things live in it, and
+ * WHAT A WORKSPACE IS, DRAWN (owner, 25 Nov; KAN-845): an example, said so, never pressable. Your
+ * Workspaces, three boxes; you choose to work in one, drawn open: what it is about, the places things live in it, and
  * the Agents working in it.
  */
 function workspaceDiagram() {
   const fig = el('figure', 'ws-diagram');
-  fig.setAttribute('aria-label', t('setup_workspace.diagram_label', 'An example: an office with three Workspaces, one of them opened.'));
+  fig.setAttribute('aria-label', t('setup_workspace.diagram_label', 'An example: three Workspaces, and the one you choose to work in, opened.'));
   const office = el('div', 'ws-diagram-office');
   const head = el('div', 'ws-diagram-head');
-  head.append(el('b', null, t('setup_workspace.diagram_office', 'Your Ronin office')), el('span', 'ws-diagram-example', t('setup_workspace.diagram_example', 'Example')));
+  head.append(el('b', null, t('setup_workspace.diagram_office', 'Your Workspaces')), el('span', 'ws-diagram-example', t('setup_workspace.diagram_example', 'Example')));
   const row = el('div', 'ws-diagram-row');
   const stone = (name, open) => {
     const one = el('div', `ws-diagram-ws${open ? ' open' : ''}`);
@@ -70,7 +70,7 @@ function workspaceDiagram() {
   agents.append(el('small', null, t('setup_workspace.diagram_agents', 'Agents working here, each told all of the above')));
   for (const name of ['shop_lead', 'web_dev', t('setup_workspace.diagram_more', '+ more as needed')]) agents.append(el('span', null, name));
   opened.append(places, agents);
-  office.append(head, row, opened);
+  office.append(head, row, el('p', 'ws-diagram-choose', t('setup_workspace.diagram_choose', 'You choose to work in one:')), opened);
   fig.append(office, el('figcaption', null, t('setup_workspace.diagram_caption', 'An illustration: your own Workspaces appear once you make them.')));
   return fig;
 }
