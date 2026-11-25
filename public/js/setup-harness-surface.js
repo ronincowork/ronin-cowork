@@ -90,6 +90,9 @@ function createHarnessSurface(context) {
     paint();
   };
 
+  /** A press that changes what an Agent can run on goes to her as the person's [Button] line (SETUP_HARNESS.md §4.1). */
+  const pressed = (text) => { const to = hers(); if (to) void sendPress(to, text); };
+
   const start = async (provider, way) => {
     const to = hers();
     const result = await post(`/api/setup/providers/${encodeURIComponent(provider.id)}/sign-in`, { way, tell: to });
@@ -119,12 +122,12 @@ function createHarnessSurface(context) {
       const send = button(t('setup_harness.send', 'Send'), true, async () => {
         send.disabled = true;
         const result = await post(`/api/setup/providers/${encodeURIComponent(provider.id)}/sign-in/paste`, { text: input.value });
-        if (result.ok) drafts.delete(provider.id); else send.disabled = false;
+        if (result.ok) { drafts.delete(provider.id); pressed(`${shortName(provider)} · Sent the ${run.paste}`); } else send.disabled = false;
       });
       input.addEventListener('keydown', (event) => { if (event.key === 'Enter') send.click(); });
       row.append(input, send);
     }
-    row.append(button(t('setup_harness.cancel', 'Cancel'), false, () => post(`/api/setup/providers/${encodeURIComponent(provider.id)}/sign-in/cancel`)));
+    row.append(button(t('setup_harness.cancel', 'Cancel'), false, async () => { const r = await post(`/api/setup/providers/${encodeURIComponent(provider.id)}/sign-in/cancel`); if (r.ok) pressed(`${shortName(provider)} · Cancel sign-in`); }));
     box.append(row);
     return box;
   };
@@ -134,7 +137,7 @@ function createHarnessSurface(context) {
     const box = el('div', 'setup-harness-window');
     if (!provider.login_open) {
       const row = stones();
-      row.append(button(t('setup_harness.open_terminal', 'Open its sign-in'), true, async () => { await post(`/api/setup/providers/${encodeURIComponent(provider.id)}/login`); await readRuntime(); }));
+      row.append(button(t('setup_harness.open_terminal', 'Open its sign-in'), true, async () => { const r = await post(`/api/setup/providers/${encodeURIComponent(provider.id)}/login`); if (r.ok) pressed(`${shortName(provider)} · Open its sign-in`); await readRuntime(); }));
       box.append(el('p', 'setup-harness-line', t('setup_harness.terminal', '{cli} signs in in a terminal.', { cli: shortName(provider) })), row);
       return box;
     }
@@ -142,7 +145,7 @@ function createHarnessSurface(context) {
     // One host for the open terminal, kept across repaints so the tile is never torn down by one.
     terminalHost ||= el('div', 'setup-harness-terminal');
     const row = stones();
-    row.append(button(t('setup_harness.close', 'Close'), false, async () => { mounted?.destroy?.(); mounted = null; terminalHost = null; await post(`/api/setup/providers/${encodeURIComponent(provider.id)}/close`); await readRuntime(); }));
+    row.append(button(t('setup_harness.close', 'Close'), false, async () => { mounted?.destroy?.(); mounted = null; terminalHost = null; const r = await post(`/api/setup/providers/${encodeURIComponent(provider.id)}/close`); if (r.ok) pressed(`${shortName(provider)} · Close sign-in`); await readRuntime(); }));
     box.append(terminalHost, row);
     if (!mounted) mounted = mountProviderAttachment(context.environment, terminalHost, provider, context.workspace, () => { mounted = null; });
     return box;
@@ -173,7 +176,7 @@ function createHarnessSurface(context) {
     if (run) bar.append(windowOf(provider, run));
     else if (hermes) {
       // Mounted once while its bar is open, so a repaint keeps what is being edited there.
-      if (!hermesHost) { hermesHost = el('div', 'setup-harness-window'); mountHermesSurface(hermesHost, provider, () => { void readRuntime(); }); }
+      if (!hermesHost) { hermesHost = el('div', 'setup-harness-window'); mountHermesSurface(hermesHost, provider, () => { void readRuntime(); }, (text) => pressed(`Hermes · ${text}`)); }
       bar.append(hermesHost);
     }
     else if (provider.off || (signed && !own)) {

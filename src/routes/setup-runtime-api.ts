@@ -1,4 +1,5 @@
-import { hermesSettingsAnswer, saveHermesConnection, discoverHermesModels, saveHermesSetup, deleteHermesEntry } from '../hermes-setups.js';
+import { hermesSettingsAnswer, saveHermesConnection, discoverHermesModels, saveHermesSetup, deleteHermesEntry, onHermesWritten, readGatewayModels } from '../hermes-setups.js';
+import { broadcastEvent } from '../ws/events.js';
 import { accountsAnswer, saveAccount, discoverAccount, updateAccountLists, deleteAccount, savePreset, deletePreset } from '../accounts.js';
 import { homedir } from 'node:os';
 import { dispatchInstall } from '../agent-install.js';
@@ -33,6 +34,7 @@ const answer = async (summary?: ProviderSummary) => {
 };
 
 export function registerSetupRuntime(app: express.Express): void {
+  onHermesWritten(() => broadcastEvent({ t: 'hermes-changed' }));
   app.get('/api/hermes', async (_req, res) => {
     try { res.json(await hermesSettingsAnswer()); } catch { res.status(500).json({ error: 'Could not read Hermes setups.' }); }
   });
@@ -112,7 +114,9 @@ export function registerSetupRuntime(app: express.Express): void {
   // is an egress line. Every other reader takes GET /api/setup/runtime, which is the record.
   app.post('/api/setup/providers/refresh', async (_req, res) => {
     try {
-      res.json(await answer(await refreshProviders()));
+      const summary = await refreshProviders();
+      await readGatewayModels();
+      res.json(await answer(summary));
     } catch (error) {
       res.status(500).json({ error: errMsg(error) });
     }
