@@ -24,7 +24,13 @@ import { WorkspaceKit } from './workspace-kit.js';
 import { KINDS, kindWord, ruledRows } from './glyphs.js';
 import { openWorkspaceTab } from './workspace.js';
 import { sendComposerMessage } from './composer-rules.js';
+import { sendPress } from './press.js';
 import { IRASSHAI, IRASSHAI_NAME, askIrasshai, irasshaiLive } from './setup-irasshai.js';
+
+/** WHAT THE PERSON MAKES REACHES HER (owner, 25 Nov; w979): every system change on this step goes to
+ *  the Helpful Assistant, while she runs, as the person's [Button] line (press.js), the Harness step's
+ *  way; her Chat draws it "Pressed: …". So she is on the same page without going to look. */
+const tellHer = (text) => { if (irasshaiLive()) void sendPress(IRASSHAI, `Workspace · ${text}`); };
 
 const el = (tag, cls, text) => { const node = document.createElement(tag); if (cls) node.className = cls; if (text != null) node.textContent = String(text); return node; };
 
@@ -185,6 +191,8 @@ export function createWorkspaceKickoff({ workspacesRead, environment }) {
     word.textContent = t('setup_workspace.making_short', 'Making…');
     const integrations = door === 'existing' ? draft.sources.map((provider) => ({ provider, folder: `files/${provider}` })) : [];
     let answer = await put(name, { title: draft.title.trim(), objective: draft.objective.trim(), kind: draft.kind || 'open', instructions: draft.instructions.trim(), integrations });
+    const wsMade = answer.ok;
+    const added = []; // what went into repos/, said to her
     const repos = door === 'git' ? urls().map((repository) => ({ repository })) : door === 'scratch' ? [draft.github === 'github' && github.authenticated ? { github: 'private' } : {}] : [];
     for (const [i, body] of repos.entries()) {
       if (!answer.ok) break;
@@ -192,9 +200,19 @@ export function createWorkspaceKickoff({ workspacesRead, environment }) {
         ? (repos.length > 1 ? t('setup_workspace.cloning_n', 'Cloning {i} of {n}…', { i: i + 1, n: repos.length }) : t('setup_workspace.cloning', 'Cloning…'))
         : t('setup_workspace.starting', 'Starting its repository…');
       answer = await request(`/api/workspaces/${encodeURIComponent(name)}/repos`, { method: 'POST', json: body });
+      if (answer.ok) added.push(body.repository ? repoBase(body.repository) : `${name} (new${answer.data?.github ? `, on GitHub ${answer.data.github.repository}` : ''})`);
     }
     const lab = draft.lab && !has(LAB.name);
     if (answer.ok && lab) { word.textContent = t('setup_workspace.making_lab', 'Making Ronin Lab…'); await makeLab(); }
+    if (wsMade) {
+      const said = [`Made ${draft.title.trim()} (${kindWord(draft.kind || 'open')}), in ~/ronin/${name}`];
+      if (added.length) said.push(`repositories: ${added.join(', ')}`);
+      if (integrations.length) said.push(`coming from: ${draft.sources.map((v) => SOURCES.find((row) => row.v === v)?.l || v).join(', ')}`);
+      if (draft.instructions.trim()) said.push('with instructions for its Agents');
+      if (lab) said.push('and Ronin Lab');
+      if (!answer.ok) said.push(`then failed: ${answer.message}`);
+      tellHer(`${said.join('; ')}.`);
+    }
     create.setDisabled(false);
     word.textContent = t('workspaces.create', 'Create');
     if (!answer.ok) return fail(answer.message);
@@ -280,6 +298,7 @@ export function createWorkspaceKickoff({ workspacesRead, environment }) {
         if (!answer.ok) { done.replaceChildren(el('p', 'setup-workspace-bad', answer.message)); return; }
         await workspacesRead.read();
         paint();
+        tellHer('Made Ronin Lab, in ~/ronin/ronin_lab.');
         showMade({ title: LAB.title, name: LAB.name });
       });
     }));
