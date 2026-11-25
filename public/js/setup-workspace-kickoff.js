@@ -51,8 +51,15 @@ export function createWorkspaceKickoff({ workspacesRead, environment }) {
   const doors = el('div', 'setup-workspace-doors');
   const blanks = el('div', 'setup-workspace-blanks');
   const done = el('div', 'setup-workspace-done');
-  const foot = el('p', 'setup-workspace-foot');
+  const foot = el('div', 'setup-workspace-foot');
   root.append(doors, blanks, done, foot);
+  // A SECOND PRESS ON THE CHOSEN DOOR closes it (owner, 25 Nov): back to what a Workspace is.
+  doors.addEventListener('click', (event) => {
+    const stone = event.target.closest?.('[data-ask-field="door"]');
+    if (!stone || stone.dataset.askValue !== door) return;
+    event.stopPropagation(); event.preventDefault();
+    door = ''; draft = blank(); done.replaceChildren(); paint();
+  }, true);
 
   let door = '';
   let draft = blank();
@@ -98,7 +105,7 @@ export function createWorkspaceKickoff({ workspacesRead, environment }) {
     input.addEventListener('input', () => onInput(input.value, input));
     return createField({ label, control: input }).el;
   };
-  const connectStone = (why) => question('connect', t('setup_workspace.github_ask', 'Connect GitHub'), [
+  const connectStone = (why) => question('connect', t('setup_workspace.github_ask', 'GitHub'), [
     { v: 'connect', l: t('setup_workspace.connect', 'Connect'), word: IRASSHAI_NAME, sub: why, ...(asking ? { off: asking } : {}) },
   ], '', () => void connect());
 
@@ -178,8 +185,11 @@ export function createWorkspaceKickoff({ workspacesRead, environment }) {
 
   const paintBlanks = () => {
     blanks.replaceChildren();
-    blanks.hidden = !door;
-    if (!door) return;
+    // NO DOOR YET: where the form would be, what a Workspace is (owner, 25 Nov).
+    if (!door) {
+      blanks.append(el('p', 'setup-workspace-about', t('setup_workspace.about', 'A Workspace is one project on this office: what it is, its kind, and its own folder, ~/ronin/<name>, with its plans, files and repositories. Every Agent you start in it is told all of that. Pick how you are starting to add one; you can add more later.')));
+      return;
+    }
     const { head, tail } = define();
     blanks.append(...head);
     if (door === 'git') {
@@ -201,9 +211,10 @@ export function createWorkspaceKickoff({ workspacesRead, environment }) {
         { v: 'github', l: t('setup_workspace.repo_github', 'On GitHub too'), sub: t('setup_workspace.repo_github_sub', 'The same, and a private repository on your GitHub.'),
           ...(github.authenticated ? {} : { off: t('setup_workspace.repo_github_off', 'Connect GitHub first, below.') }) },
       ], draft.github, (v) => { draft.github = v; }));
-      if (!github.authenticated) blanks.append(connectStone(t('setup_workspace.github_new', 'To keep it on GitHub too: the Helpful Assistant signs you in, in her chat.')));
     }
     blanks.append(...tail);
+    // GITHUB, OPTIONAL (owner, 25 Nov), at the foot of doors 2 and 3 while it is not signed in.
+    if ((door === 'existing' || door === 'scratch') && !github.authenticated) blanks.append(connectStone(t('setup_workspace.github_optional', 'Optional. So Agents can use GitHub for this project: pull requests, issues, a repository on GitHub. The Helpful Assistant signs you in, in her chat.')));
     const line = el('div', 'setup-workspace-create');
     line.append(create.el);
     blanks.append(line);
@@ -235,8 +246,24 @@ export function createWorkspaceKickoff({ workspacesRead, environment }) {
     if (n) {
       const link = el('button', 'setup-workspace-link', n === 1 ? t('setup_workspace.yours_one', 'You have 1 Workspace.') : t('setup_workspace.yours_n', 'You have {n} Workspaces.', { n })); link.type = 'button';
       link.addEventListener('click', () => openWorkspaceTab('workspaces'));
-      foot.append(link);
+      foot.append(el('p', 'setup-workspace-yours', ''));
+      foot.lastChild.append(link);
     }
+    // NEXT (owner, 25 Nov): on to Team. With no Workspace yet, it makes Ronin Lab first and says so.
+    const next = createAction({ label: n ? t('setup_workspace.next', 'Next: Team') : t('setup_workspace.next_lab', 'Next: Team, starting in Ronin Lab'), kind: 'primary', size: 'compact', action: async () => {
+      if (!n) {
+        next.setDisabled(true);
+        (next.el.querySelector('span') || next.el).textContent = t('setup_workspace.making', 'Making {name}…', { name: LAB.title });
+        const answer = await makeLab();
+        if (!answer.ok) { next.setDisabled(false); done.replaceChildren(el('p', 'setup-workspace-bad', answer.message)); return; }
+        await workspacesRead.read();
+      }
+      environment?.navigateToSurface?.('setup.team');
+    } });
+    const nextLine = el('div', 'setup-workspace-next');
+    nextLine.append(next.el);
+    if (!n) nextLine.append(el('span', 'fs-step-help', t('setup_workspace.next_lab_sub', 'No Workspace yet: Ronin Lab is made for you, a place for ideas and notes.')));
+    foot.append(nextLine);
   }
 
   const stopRead = workspacesRead.subscribe(() => { if (!door) paint(); });
