@@ -23,8 +23,8 @@ does not run on the gateway: it speaks only Anthropic's API.
 
 ## In Setup
 
-Open **Harness** in Setup. Each harness is a bar that says where it stands: **Sign in**,
-**Signing in**, **Signed in** or **Off**.
+Open **Harness** in Setup. Each harness is a bar that says where it stands: **Not set up**,
+**Signing in**, **Active** or **Off**.
 
 **Claude Code and Codex** sign in without a terminal. Press the bar: it shows its ways, the one it is
 on selected. Press **Subscription** or **API key**. If it is already signed in, the bar warns first:
@@ -36,7 +36,7 @@ Then the bar shows only what you need to do:
   then press **Send**.
 - **Codex, API key:** a box for your OpenAI API key. Paste it and press **Send**.
 
-The bar turns **Signed in** by itself when the harness finishes. **Cancel** stops the sign-in.
+The bar turns **Active** by itself when the harness finishes. **Cancel** stops the sign-in.
 
 **Other harnesses** sign in on their own terminal, opened in the bar: follow what it asks, then
 press **Close**. **Hermes** uses API connections, set up in its bar.

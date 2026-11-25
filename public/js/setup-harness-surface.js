@@ -169,8 +169,10 @@ function createHarnessSurface(context) {
     const name = el('div', 'setup-harness-name');
     name.append(el('b', '', shortName(provider)), el('small', '', provider.from || ''));
     top.append(name);
-    const state = provider.off ? t('setup_harness.off', 'Off') : signed ? t('setup_harness.signed_in', 'Signed in')
-      : run ? t('setup_harness.signing_in', 'Signing in') : hermes ? t('setup_harness.set_up', 'Set up') : t('setup_harness.sign_in', 'Sign in');
+    // THE BAR NAMES THE STATE, NOT WHAT TO DO (owner, 25 Nov 2026). Active, not Signed in: the Ronin
+    // gateway runs with no sign-in at all.
+    const state = provider.off ? t('setup_harness.off', 'Off') : signed ? t('setup_harness.active', 'Active')
+      : run ? t('setup_harness.signing_in', 'Signing in') : t('setup_harness.not_set_up', 'Not set up');
     top.append(el('span', 'setup-harness-go', state));
     top.disabled = Boolean(run);
     top.addEventListener('click', () => { open = open === provider.id ? '' : provider.id; paint(); });
