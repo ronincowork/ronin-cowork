@@ -27,10 +27,12 @@ const stones = (...items) => { const row = el('div', 'ask hermes-stones'); row.d
 const rows = (pairs) => pairs.map(([v, l]) => ({ v, l }));
 
 // Stone names fit the stone; the sentence goes in the caption (ask.js `sub`).
-const PROVIDERS = [{ v: 'openai', l: 'OpenAI' }, { v: 'mistral', l: 'Mistral' }, { v: 'custom', l: 'Other API', sub: 'Any OpenAI-compatible API: OpenRouter, a local server, …' }];
+const PROVIDERS = [{ v: 'openai', l: 'OpenAI' }, { v: 'mistral', l: 'Mistral' }, { v: 'custom', l: 'Other API', sub: 'Any OpenAI-compatible API: a local server, …' }];
 const WIRE = rows([['chat', 'Chat Completions'], ['responses', 'Responses']]);
 const APPROVALS = rows([['off', 'Approvals off'], ['prompt', 'Ask for approval']]);
 const BASE = { openai: 'https://api.openai.com/v1', mistral: 'https://api.mistral.ai/v1', custom: '' };
+const OPENROUTER = 'https://openrouter.ai/api/v1';
+const isOpenRouter = (c) => /^https:\/\/openrouter\.ai\//.test(c.baseUrl || '');
 
 export function mountHermesSurface(host, provider, onChanged) {
   let disposed = false;
@@ -51,6 +53,21 @@ export function mountHermesSurface(host, provider, onChanged) {
     paint(); return true;
   };
 
+  // OpenRouter is a key and nothing else: its address and wire are known (owner, 25 Nov 2026).
+  const editOpenRouter = (connection = {}) => {
+    closeEditor();
+    const form = el('form', 'hermes-editor');
+    const key = input('', 'password'); key.autocomplete = 'new-password';
+    const save = stone('Save', () => form.requestSubmit());
+    form.append(el('h3', '', connection.id ? 'Replace your OpenRouter key' : 'Add your OpenRouter key'), field('OpenRouter API key', key), stones(save, stone('Cancel', closeEditor)));
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault(); save.disabled = true;
+      try { await run('connection', { id: connection.id, name: 'OpenRouter', provider: 'custom', baseUrl: OPENROUTER, wireApi: 'chat', apiKey: key.value }); }
+      finally { key.value = ''; save.disabled = false; }
+    });
+    editor.append(form); key.focus();
+  };
+
   const editConnection = (connection = {}) => {
     closeEditor();
     const form = el('form', 'hermes-editor');
@@ -69,7 +86,7 @@ export function mountHermesSurface(host, provider, onChanged) {
       chosen = { ...value };
     } });
     const save = stone('Save', () => form.requestSubmit());
-    form.append(el('h3', '', connection.id ? 'Edit API connection' : 'Add an API connection'), field('Name', name), question.el, field('Base URL', url),
+    form.append(el('h3', '', connection.id ? 'Edit your API key' : 'Add your API key'), field('Name', name), question.el, field('Base URL', url),
       field(connection.id ? 'API key (blank keeps it)' : 'API key', key), stones(save, stone('Cancel', closeEditor)));
     form.addEventListener('submit', async (event) => {
       event.preventDefault(); save.disabled = true;
@@ -156,7 +173,9 @@ export function mountHermesSurface(host, provider, onChanged) {
   };
   // TWO COLLAPSIBLE STEPS, the form idiom of New Team (form-steps.js createStep): open by default;
   // folded, each says in a line what it holds.
-  const open = { connections: true, setups: true };
+  const open = { setups: true };
+  let shown = '';
+  let readOnce = false;
   const step = (n, key, title, meta) => {
     const made = createStep({ n, key, title, onToggle: () => { open[key] = !open[key]; made.setCollapsed(!open[key], meta, true); } });
     made.setCollapsed(!open[key], meta, true);
@@ -169,22 +188,40 @@ export function mountHermesSurface(host, provider, onChanged) {
   const names = (list) => list.map(nameOf).join(', ');
   const modelsLine = (c) => (c.discoveredAt ? `${c.models.length} model${c.models.length === 1 ? '' : 's'}` : 'model list not read yet');
 
+  // Models read on their own, once on open: the gateway's always (its options follow), any other
+  // connection with a key and no list yet.
+  const readUnread = () => {
+    if (readOnce) return; readOnce = true;
+    for (const c of state.connections) if (c.configured && (!c.discoveredAt || isGateway(c))) void run('discover', { id: c.id });
+  };
   const paint = () => {
     if (disposed) return;
     closeEditor();
     notice.textContent = '';
-    const intro = el('p', '', 'Hermes runs on an API connection. Each model option is one model from a connection, and shows under Model when you start a Hermes Agent.');
+    const intro = el('p', '', 'Hermes runs on the Ronin gateway, your own API key or OpenRouter. Each model option below shows under Model when you start a Hermes Agent.');
     root.replaceChildren(intro, notice);
 
-    const connections = step(1, 'connections', 'API connections', state.connections.length
-      ? `${state.connections.length} · ${names(state.connections)}` : 'None yet');
-    connections.body.append(table(['Name', 'API', 'Models'], state.connections.map((c) => ({
-      cells: [nameOf(c), isGateway(c) ? 'Ronin’s own models' : `${c.provider === 'custom' ? 'OpenAI-compatible' : c.provider === 'mistral' ? 'Mistral' : 'OpenAI'}${c.configured ? '' : ' · key missing'}`,
-        c.discoveredAt ? String(c.models.length) : 'Not read'],
-      actions: [icon('read', 'Read its models', () => run('discover', { id: c.id })),
-        ...(isGateway(c) ? [] : [icon('edit', 'Edit', () => editConnection(c))]),
-        ...(c.credentialEnv || isGateway(c) ? [] : [icon('remove', 'Remove', () => run('delete', { kind: 'connections', id: c.id }))])],
-    })), 'Add a connection', () => editConnection()));
+    // THREE WAYS, AS ON CODEX'S BAR (owner, 25 Nov 2026): the Ronin gateway (always there), your own
+    // API key, OpenRouter. Marked when Hermes has it; pressing one shows what it holds. Hermes may have
+    // all three at once: each model option below names the one it runs on.
+    const gateways = state.connections.filter(isGateway);
+    const routers = state.connections.filter((c) => !isGateway(c) && isOpenRouter(c));
+    const keys = state.connections.filter((c) => !isGateway(c) && !isOpenRouter(c));
+    const ways = el('div', 'ask setup-harness-row setup-harness-ways'); ways.dataset.density = 'tight';
+    const wayStone = (id, name, has) => {
+      const made = stone(name, () => { shown = shown === id ? '' : id; paint(); });
+      made.setAttribute('aria-selected', String(has));
+      return made;
+    };
+    ways.append(wayStone('gateway', 'Ronin gateway', gateways.length > 0), wayStone('key', 'API key', keys.length > 0), wayStone('openrouter', 'OpenRouter', routers.length > 0));
+    const panel = el('div', 'hermes-way');
+    const keyRows = (list, editFn) => list.map((c) => ({
+      cells: [nameOf(c), `${c.provider === 'custom' ? 'OpenAI-compatible' : c.provider === 'mistral' ? 'Mistral' : 'OpenAI'}${c.configured ? '' : ' · key missing'}`, c.discoveredAt ? `${c.models.length} models` : 'Models not read'],
+      actions: [icon('edit', 'Edit', () => editFn(c)), ...(c.credentialEnv ? [] : [icon('remove', 'Remove', () => run('delete', { kind: 'connections', id: c.id }))])],
+    }));
+    if (shown === 'gateway') panel.append(el('p', '', gateways.length ? `Always on. ${gateways[0].models.length} Ronin models, ready for the options below.` : 'Always on.'));
+    if (shown === 'key') panel.append(table(['Name', 'API', 'Models'], keyRows(keys, editConnection), 'Add your API key', () => editConnection()));
+    if (shown === 'openrouter') panel.append(table(['Name', 'API', 'Models'], keyRows(routers, editOpenRouter), routers.length ? 'Add another OpenRouter key' : 'Add your OpenRouter key', () => editOpenRouter()));
 
     const setups = step(2, 'setups', 'Hermes model options', state.setups.length ? `${state.setups.length} · ${names(state.setups)}` : 'None yet');
     const canAdd = state.connections.some((c) => c.models.length);
@@ -194,11 +231,11 @@ export function mountHermesSurface(host, provider, onChanged) {
         cells: [setup.name, c ? nameOf(c) : 'Missing', setup.model, setup.reasoning === 'default' ? 'Default' : setup.reasoning, setup.approvals === 'off' ? 'Off' : 'Ask'],
         actions: [icon('edit', 'Edit', () => editSetup(setup)), icon('remove', 'Remove', () => run('delete', { kind: 'setups', id: setup.id }))],
       };
-    }), 'Add a model option', canAdd ? () => editSetup() : null, canAdd ? '' : 'Read a connection’s models first.'));
+    }), 'Add a model option', canAdd ? () => editSetup() : null));
 
-    root.append(connections.el, setups.el, editor,
+    root.append(ways, panel, editor, setups.el,
       el('p', 'hermes-fine', 'Changes apply to Agents started after them; a new key is picked up when an Agent restarts. Removing a connection does not revoke its key at the API provider.'));
   };
-  void request('/api/hermes').then((result) => { if (disposed) return; if (result.ok) { state = result.data; paint(); } else { root.append(notice); notice.textContent = result.message; } });
+  void request('/api/hermes').then((result) => { if (disposed) return; if (result.ok) { state = result.data; paint(); readUnread(); } else { root.append(notice); notice.textContent = result.message; } });
   return () => { disposed = true; closeEditor(); };
 }

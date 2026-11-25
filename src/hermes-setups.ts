@@ -125,7 +125,14 @@ export async function discoverHermesModels(id: string): Promise<string[]> {
     const body = await response.json().catch(() => { throw new Error('API returned an unreadable model list.'); }) as { data?: { id?: unknown }[] };
     if (!Array.isArray(body.data)) throw new Error('API did not return an OpenAI-compatible model list.');
     c.models = [...new Set(body.data.flatMap(row => row && typeof row.id === 'string' && modelPattern.test(row.id) ? [row.id] : []))].sort();
-    c.discoveredAt = new Date().toISOString(); await writeCredential('hermes-setups', state); return c.models;
+    c.discoveredAt = new Date().toISOString();
+    // THE GATEWAY'S MODELS COME READY (owner, 25 Nov 2026): every model the Ronin gateway serves is a
+    // Hermes model option out of the box, named as the model, defaults for reasoning and approvals.
+    if (accountKind(c) === 'ronin_api') for (const model of c.models) {
+      if (state.setups.some(s => s.connection === c.id && s.model === model) || state.setups.some(s => s.name.toLowerCase() === model.toLowerCase())) continue;
+      state.setups.push({ id: randomUUID(), name: model, connection: c.id, model, reasoning: 'default', approvals: 'off' });
+    }
+    await writeCredential('hermes-setups', state); return c.models;
   });
 }
 export async function saveHermesSetup(input: Record<string, unknown>): Promise<HermesSetup> {
