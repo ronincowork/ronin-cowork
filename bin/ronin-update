@@ -151,7 +151,7 @@ store_contract()  { sed -n 's/^contract=//p' "$1/VERSION" 2>/dev/null || true; }
 # WHAT TRAVELS: every service (a directory carrying a register entry) AND the shared code
 # they import. `_lib/` carries no register.js ON PURPOSE — install-contract.md calls it
 # "the same trick: shared code, not a service" — so a register-only filter silently left it
-# behind, and a service that imports `../_lib/install-runner.js` then
+# behind, and a service that imports from `../_lib/` then
 # died at load with ERR_MODULE_NOT_FOUND. The assembler logs that and carries on, so the
 # roster came up short with nothing said. Underscore means shared, and shared code travels.
 place_services() { # $1=serving tree's src/services  $2=store (default: the home's)
