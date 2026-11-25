@@ -12,7 +12,7 @@
 - **transcript_journal:** {"format": "event-items", "root": "{home}/sessions", "pattern": "rollout-*.jsonl", "idPath": "payload.session_id", "childPath": "payload.source"}
 - **launch_initial:** positional
 
-CLI id: `codex`. Catalog provider: OpenAI. Reviewed 2026-09-14.
+CLI id: `codex`. Vendor: `openai` (OpenAI), its `vendor` in `src/agents.ts`; transcript `~/.codex/sessions/YYYY/MM/DD/rollout-*.jsonl`. Reviewed 2026-09-14.
 Version: **0.169.0** (hooks and set-ahead, KAN-616); **0.153.4** for the isolation below. Installed version and tagged upstream input source reviewed; no live turn interrupted.
 
 ## Ronin launch sequence

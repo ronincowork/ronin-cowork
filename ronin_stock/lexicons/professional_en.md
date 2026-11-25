@@ -506,6 +506,7 @@ nothing paints exactly this.
 - **forms.tier_light:** light
 - **forms.tier_standard:** standard
 - **forms.tier_frontier:** frontier
+- **forms.tier_unrated:** unrated
 - **forms.provider:** harness
 - **forms.model:** model
 - **forms.none:** —

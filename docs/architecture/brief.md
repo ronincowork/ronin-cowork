@@ -155,7 +155,7 @@ whose placeholders all come out empty is not printed.
 `~/ronin/custom/tools/` (beside the person's own executables) add new files and replace stock
 ones by id, whole, under the one rule. They live outside what an update replaces, so they
 survive updates; a replacement also stops later stock changes reaching that file. The
-section-merged registries (`MODEL_PROVIDERS.md`, `SKINS.md`) follow [shadowing](shadowing.md).
+section-merged registry `SKINS.md` follows [shadowing](shadowing.md).
 
 ## Conditionals
 

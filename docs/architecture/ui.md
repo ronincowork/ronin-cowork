@@ -535,9 +535,8 @@ mobile document's bar on its first paint; the probe ends through Ronin's Delete,
 ## Agents are data, not branches
 
 Launches read session launch specs (`src/spawn.ts`); providers and agent CLIs arrive as
-catalog rows (`ronin_stock/MODEL_PROVIDERS.md` — each populated cell is a
-provider/model/cmd triple; the standing write-up of that contract rides the owner's
-model-providers doc, in flight beside this), never as UI branches. Future agent forms
+joined rows (`providerRows` — each a provider/model/cmd triple, per
+[Model providers](model-providers.md)), never as UI branches. Future agent forms
 (Hermes and whatever "app" tiles become) enter the same way: the tile's view
 kinds (terminal | tape) may grow a sibling, and nothing in the shell may assume which
 agent is behind a pane.

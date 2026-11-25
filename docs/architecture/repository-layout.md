@@ -99,7 +99,7 @@ rule and the folder map are [stock_readme.md](../../ronin_stock/stock_readme.md)
   that state contributes.
 - A **desk profile** and **lexicon** are presentation defaults and words, not Agent
   instruction.
-- Flat root registries (`MODEL_PROVIDERS.md`, `SKINS.md`) remain flat.
+- Flat root registries (`SKINS.md`) remain flat.
 
 ### Executable and runtime code
 

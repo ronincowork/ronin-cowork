@@ -4346,7 +4346,7 @@ body {
 .setup-provider-models th { text-align: left; padding: var(--space-row) var(--space-inline); color: var(--muted); font-weight: var(--weight-strong); border-bottom: var(--edge) solid var(--line-2); }
 .setup-provider-models td { padding: var(--space-inline); vertical-align: top; border-bottom: var(--edge) solid var(--line); overflow-wrap: anywhere; }
 .setup-provider-models th:nth-child(2) { width: 40%; }
-.setup-provider-strengths { display: block; color: var(--muted); }
+.setup-provider-use-for { display: block; color: var(--muted); }
 .setup-provider-models td b { color: var(--fg-strong); font-weight: var(--weight-strong); }
 /* Two names per model: the CLI's own name in bold, the id every launch uses beneath it. */
 .setup-provider-model-id { display: block; margin-top: var(--space-row); color: var(--muted); font-family: var(--mono, monospace); font-size: var(--text-small); overflow-wrap: anywhere; }

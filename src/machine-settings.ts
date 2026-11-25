@@ -9,7 +9,7 @@ import { listServices } from './sockets.js';
 import { CONTRACT_V } from './sockets-contract.js';
 import { roninIdentity } from './routes/version.js';
 import { workspaceFolders } from './workspaces.js';
-import { listProviderCatalog, listSessionLaunchSpecs, parseProviderSummary, TIERS } from './model-providers.js';
+import { isTier, listProviders, listSessionLaunchSpecs, parseProviderSummary, TIERS } from './model-providers.js';
 import { storeDir } from './resources.js';
 import { readOfficeRecord } from './office-record.js';
 import { AGENTS, listAgentAvailability } from './agents.js';
@@ -397,7 +397,7 @@ const publicJobs = async (value: unknown): Promise<Record<string, unknown>> => {
     jobs.mikaassist = { level: mika.level };
   } else if (mika.provider !== undefined || mika.model !== undefined) {
     const pair = (await listSessionLaunchSpecs(await recordedProviderSummary())).find((spec) => spec.provider === mika.provider && spec.model === mika.model);
-    jobs.mikaassist = pair && pair.tier ? { level: pair.tier } : { migration_choice_required: true };
+    jobs.mikaassist = pair && isTier(pair.tier) ? { level: pair.tier } : { migration_choice_required: true };
   } else {
     jobs.mikaassist = { level: 'light' };
   }
@@ -459,8 +459,9 @@ export function servicesEntitlement(activation: PublicActivation): string {
 }
 
 async function readObserved(jobKeyNames: string[]): Promise<Record<string, unknown>> {
-  // The CLI registry says what is installed; the provider catalog says whose it is.
-  const [available, catalog] = await Promise.all([listAgentAvailability(), listProviderCatalog()]);
+  // The CLI registry says what is installed and whose it is.
+  const available = await listAgentAvailability();
+  const catalog = listProviders();
   const agents = Object.fromEntries(
     available.map((a) => [
       a.id,

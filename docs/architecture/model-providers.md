@@ -1,53 +1,68 @@
 # Model providers
 
-Ronin launches agents from **one provider catalog**: `ronin_stock/MODEL_PROVIDERS.md`.
-It owns Ronin's own concepts: which providers there are, the CLI that serves each, and the
-family words that give a model its tier. Which models can launch is each signed-in CLI's
-own list, in the Campaign's **measured provider summary**. Ronin keeps no model facts of
-its own: the models.dev pull and its Accept step are gone (owner, 18 Nov 2026, KAN-653).
+Ronin launches agents from three records joined in one place (`providerRows`,
+`src/model-providers.ts`). Each CLI in `src/agents.ts` names the vendor it serves. Which
+models can launch is each signed-in CLI's own list, in the Campaign's **measured provider
+summary**. What each model is for is **HQ's model catalog**: one Models table on HQ's admin
+page, each CLI model's tier, its "use it for" line and its facts, sent to every office through
+its park (plan `ronin_hosted/model-catalog`, KAN-827).
 
-This is intentionally data, not provider code. Adding a provider or model must not add a
-route, UI branch, parser branch, or spawn branch.
+Adding a model must not add a route, UI branch, parser branch, or spawn branch: a CLI lists
+it, and Glen rates it in HQ's table.
 
-Provider setup has three records with deliberately different contents:
+Provider setup has these records, with deliberately different contents:
 
 | Record | Holds |
 |---|---|
 | this document | the provider/model extension contract |
-| `ronin_stock/MODEL_PROVIDERS.md` | provider facts: id, CLI, family → tier words |
+| `src/agents.ts`, `vendor` | per CLI: the vendor id a launch names, the vendor's name, its transcript source, an optional maturity |
+| HQ's model catalog (`src/model-catalog.ts`) | per CLI model (cli + id): tier, "use it for" line, facts |
 | `docs/agents/<cli>.md` | the executable Native, Model, Dangerously and Resume command forms |
 | `docs/operating/secrets.md` | how the owner supplies and audits the credential that pays |
 
 Account identity is handled by `docs/operating/accounts.md`. Secret values never cross into
-this document or the catalog.
+this document or any catalog.
 
 For CLI-specific particulars and exact code ownership, use the
 [Agent integration pages](../agents/README.md). Browser shortcuts belong only to
 [Terminal controls](../using-ronin/terminal-controls.md).
 
-## The catalog
+## The vendor beside each CLI
 
-One `### <Vendor>` section per provider. The section's fields:
+Each `AGENTS` row in `src/agents.ts` carries its `vendor`:
 
 | Field | Meaning |
 |---|---|
-| `provider` | the vendor id a launch names (`anthropic`, `openai`, `google`, `xai`, `nous`) and the key of `agents.sessions.by_provider` |
-| `cli` | the id of the CLI that serves it in `src/agents.ts` (`claude`, `codex`, `agy`, `grok`, `hermes`, `copilot`, `opencode`, `kimi`) |
-| `families` | `word=tier` pairs (`sonnet=standard`): a listed id takes the tier of the longest word standing whole in it; within a tier, the first word listed is the one offered |
+| `provider` | the vendor id a launch names (`anthropic`, `openai`, `google`, `xai`, `hermes`, `github`, `opencode`, `moonshot`) and the key of `agents.sessions.by_provider` |
+| `label` | the vendor's name, as the pickers and `GET /api/setup/runtime` (`providers[].from`) show it |
+| `transcript_source` | dated, descriptive journal location and write discipline; availability requires a supported adapter and verified launch identity, not merely a file at that path |
+| `maturity` | optional: `beta`, or `comingSoon`, which shows the provider and never launches it |
 
-The file also carries one `## Tiers` table, `| tier | strengths |`: each tier's strengths
-in a few plain words ("deepest reasoning, slower"), shown beside every tiered model for
-every provider. The owner's copy's table, when it has one, replaces the stock one whole.
-| `maturity` | optional: `comingSoon` shows the provider and never launches it |
+`listProviders()` reads them; `GET /api/setup/runtime` keeps `providers[].provider` and
+`.from` by these names, and the park reads them. The join lives here and nowhere else — no
+command-word match, no map in a client. The CLI's own particulars are its
+[Agent page](../agents/README.md).
 
-The `provider` and `cli` fields are the join between the two things Ronin knows about a
-provider: the catalog (whose it is, what it offers) and the CLI registry (how it installs,
-resumes and is recognised in a tile). The join lives in this data and nowhere else — no
-command-word match, no map in a client.
+## HQ's model catalog
 
-The catalog carries no model rows: a model is offered because its CLI lists it, and the
-tier is Ronin's rule, so the Light → Standard → Frontier cascade keeps working on the day a
-vendor ships a new generation.
+Glen keeps one Models table on HQ's admin page: every model each CLI offers, `cli` + `id`
+exactly as that CLI lists it, in his order, with its tier (`light` · `standard` ·
+`frontier`), a "use it for" line in his words, and its facts. The park carries it to each
+office; the kohai writes `office_unit/models.json`:
+
+```text
+{ at, models: [ { cli, id, name, tier, use_for, context, output,
+                  price: { input, output }, released, knowledge, reasoning, tools } ] }
+```
+
+Price is USD per million tokens. A fact HQ doesn't have is absent, never guessed. The
+Services `model_catalog` part reads the file at start and on every change and hands it whole
+to Cowork (`setModels` on the Sockets); `src/model-catalog.ts` keeps the last one in the
+`model_catalog` store, so a restart or a stopped park still has it. No catalog yet is no
+rows: every listed model is then Unrated.
+
+The catalog never grants a model: a model is offered because its CLI lists it, and a catalog
+row the CLI doesn't list is not offered.
 
 **Two names per listed model, and no more (owner, 2026-09-25).** `model` is the id every
 new picker choice uses. The name shown beside it is the CLI's own display name,
@@ -57,23 +72,15 @@ is every provider's default in every path, and a preference is ⚙ Configuration
 A saved or explicitly supplied CLI model name absent from the refreshed list is passed
 unchanged to the named provider. Ronin does not maintain or rewrite an alias map.
 
-`src/model-providers.ts` parses this shape and, in `providerRows`, joins it to what each
-CLI listed and to the CLI's Agent page for the command. The catalog deliberately contains no CLI syntax.
+`providerRows` joins each CLI's vendor, what the CLI listed, HQ's catalog row on cli + id,
+and the CLI's Agent page for the command. Neither record holds CLI syntax.
 
-**Shadowing.** The shipped file is stock and an upgrade replaces it. A copy at
-`~/ronin/custom/MODEL_PROVIDERS.md` is an **overlay** on it, merged per
-`### <Vendor>` section and keyed by the section's `provider` id — the entry-merge every
-`## name` catalog gets (`docs/architecture/shadowing.md`), at this file's heading level. A user section
-of a shipped id replaces that section whole and keeps its place; a new id appends after
-the shipped ones; a user section carrying `- **hidden:** yes` withdraws the shipped
-provider. Sections the owner did not write stay the shipped
-ones and keep improving with each release. Every entry the catalog serves carries its
-`origin` (`stock` | `user`) and `shadowed`, and the Harnesses surface says it in
-words under each provider — *Yours · not in the shipped catalog*, or *Your copy of this
-section replaces the shipped one*; a shipped section says nothing. The
-catalog object carries `withdrawn`, the shipped providers the copy set aside. Seed a copy
-with the house header (`seedUserCatalog`) or copy one section out of the shipped file to
-start from.
+**The rows a provider offers (KAN-829).** Native first, then every model the CLI lists,
+grouped by the catalog's tier — Frontier, Standard, Light, each in the catalog's order —
+then **Unrated**: a listed model the catalog lacks, in the CLI's order, with no line. Each
+rated row carries `tier`, `use_for` and `facts` (`context`, `output`, `price`, `released`,
+`knowledge`, `reasoning`, `tools`, whichever HQ has). Several models may share a tier; Mika's
+Light → Standard → Frontier cascade takes the first of each tier, the catalog's order.
 
 ## Hermes connections and named setups
 
@@ -120,10 +127,10 @@ the office's tier), written by Cloud's park; Ronin asks the house connection for
 
 ## One read for the client
 
-`GET /api/provider-catalog` answers the catalog's own facts, the record's dates and every
+`GET /api/provider-catalog` answers the record's dates, when HQ's catalog was made, and every
 provider with its rows already joined —
-`{ origin, path, withdrawn, measured_at, refreshed_at, providers: [{ provider, cli, label, cli_label, launchable, operational, off, native, launch_modes, part?, models: [rows] }] }`
-(`providerCatalogAnswer`) — the only catalog route there is, and since 2026-09-25 the only
+`{ measured_at, refreshed_at, catalog_at, providers: [{ provider, cli, label, cli_label, launchable, operational, off, native, launch_modes, part?, models: [rows] }] }`
+(`providerCatalogAnswer`) — the only provider route there is, and the only
 join: no client joins anything. Google, xAI and Nous have not yet been launched end to end
 through Ronin; the first real launch of each is its proof, per the checklist below.
 
@@ -160,7 +167,7 @@ What this machine *has* is measured, not derived on every read. The Campaign rec
 | `refreshed_at` | when **Refresh all** last ran — every activated CLI's list read, npm asked; `''` when never |
 | `installed` | CLI ids found on the login-shell PATH, with `paths` saying where |
 | `signed_in` | CLI ids whose own credential file is on this machine — presence only, never read |
-| `operational` | CLI ids that can launch: installed, signed in or recorded through **Done**, not turned off, and served by a catalog section that is not `comingSoon` |
+| `operational` | CLI ids that can launch: installed, signed in or recorded through **Done**, not turned off, and its vendor is not `comingSoon` |
 | `off` | installed CLI ids the owner turned off; the sign-in is kept |
 | `activated_count` | the size of `operational` — a provider with nothing to launch does not count |
 | `versions` | what each operational/activated CLI said to the registry's `operations.version` argv, per CLI id; an installed but unactivated CLI is not run |
@@ -201,20 +208,10 @@ or restarting Ronin refreshes the measured installation and credential facts.
 
 Every launchable provider's Agent page declares a bare command. Choosing Native in the
 Model field passes no model choice to the CLI. A named model row exists only because that
-CLI's list (`models[cli].rows`) reports its id, with the CLI's name. Its tier is the
-section's family word (the longest word standing whole in the id: `flash-lite` before `flash`), otherwise
-none. The family table is what keeps Setup and Mika's Light → Standard → Frontier cascade
-working: a new Sonnet is standard on the day it is listed. With no list read, Native is the only Model choice; Launch mode remains an
-independent axis.
-
-**One model per tier per provider (owner, 19 Nov 2026, KAN-726).** `oneModelPerTier` in
-`src/model-providers.ts` is the one rule, for every provider: after Native, at most one
-Frontier, one Standard and one Light row, in that order. A tier's row is the newest id
-(the numbers in the id compared in order: `gpt-6.2-astra` over `gpt-6-astra`) of the first
-family the section lists for that tier that the CLI lists; a tie keeps the CLI's order.
-Older versions, later families of the same tier and ids no family word fits are not rows,
-so they are neither offered nor launched. A section with no `families` keeps its CLI's
-list whole. Each tiered row carries `strengths`, its tier's line from `## Tiers`.
+CLI's list (`models[cli].rows`) reports its id, with the CLI's name. Its tier and line are
+HQ's catalog row for it ([above](#hqs-model-catalog)); a new model is Unrated until Glen rates
+it, and still offered. With no list read, Native is the only Model choice; Launch mode
+remains an independent axis.
 
 ## Provider and agent are different axes
 
@@ -231,11 +228,11 @@ every terminal agent behaves like Claude.
 
 | Part | Meaning |
 |---|---|
-| provider | the vendor id shown before the dot in the picker; the section's `provider` field |
-| cli | the registry row that serves it; the section's `cli` field |
+| provider | the vendor id shown before the dot in the picker; the CLI's `vendor.provider` |
+| cli | the registry row that serves it |
 | model | the provider's real model id, as its CLI lists it |
 | cmd | the Agent page's Model command rendered with the model id |
-| row order | the CLI's own order: the order the picker offers that provider's models in |
+| row order | grouped by HQ's tier, the catalog's order within a tier; Unrated last, in the CLI's order |
 | default | Native: what answers when `agents.sessions.by_provider.<provider>` is unset. Not a stored default |
 
 The model id and the command must agree: `openai · gpt-5.6-terra` resolves to a Codex
@@ -249,7 +246,7 @@ The launch path does no provider interpretation, but it does adapt to the agent'
 interface after starting the command:
 
 ```text
-MODEL_PROVIDERS.md facts + docs/agents/<cli>.md commands
+src/agents.ts vendor + CLI list + HQ's catalog + docs/agents/<cli>.md commands
   → GET /api/provider-catalog
   → the one picker (providerModelPair, public/js/form-steps.js)
   → POST /api/launch { provider, model }
@@ -279,7 +276,7 @@ provider's own default). `settleFirstDefault` (`provider-summary.ts`) runs on ev
 measure, and a launch with no default measures first (`spawn.ts`), so a sign-in made in Setup or
 in a tile both count. A later sign-in never moves it; only Models > Defaults does. Ronin models
 (a provider part) is no sign-in and never becomes the default this way. With nothing signed in,
-a Default launch is the catalog's first CLI, into its own sign-in.
+a Default launch is the registry's first CLI, into its own sign-in.
 
 A Desk's `defaults.provider/model` used to outrank `sessions.default`; at start
 `moveDeskModelDefault` (`campaign-scope.ts`) copies a set pair there once and clears it on the
@@ -296,10 +293,10 @@ server joined (`GET /api/provider-catalog`) and what this machine measured of ea
 (`GET /api/setup/runtime`, which answers from the Campaign's recorded summary and never
 probes), and it offers:
 
-- every provider in the catalog with Native and its one model per tier from the list its
-  CLI gave on the last Refresh all, the providers this machine can launch first and the
-  rest after, Frontier to Light within each;
-- each model as `<name> · <tier> · <strengths>`, the id as the value;
+- every provider with Native and every model its CLI gave on the last Refresh all, the
+  providers this machine can launch first and the rest after, grouped Frontier, Standard,
+  Light, Unrated within each;
+- each model as `<name> · <tier> · <use_for>`, the id as the value;
 - what this machine cannot launch **disabled, never hidden** — a greyed row says *not on
   this machine* or *turned off*. A provider whose list was never read offers Native alone.
 
@@ -320,8 +317,7 @@ it runs*. Ronin runs it at start too, never on a timer: it measures the machine,
 activated CLI's own model list, and asks npm for each one's newest release. Below it the
 whole inventory on the shared stone work surface: first a stone per [provider part](#provider-parts)
 (Ronin models, in a hosted office), then one stone per CLI the registry knows,
-wearing its measured state and the vendor it serves with its model count, then any catalog
-provider no registry CLI serves. The Models workbench's **Model refresh** surface carries
+wearing its measured state and the vendor it serves with its model count. The Models workbench's **Model refresh** surface carries
 the same door with its steps under it: Harnesses, then Accounts.
 
 A stone opens that provider, top to bottom: **Yours**, the three measured steps (install ·
@@ -329,10 +325,10 @@ authenticate with the native sign-in tile, Done and Cancel · ready) read from t
 row (`docs/getting-started/setup-workbench.md`, *Activate a provider*); then **The catalog**, the three
 measured facts, one line saying when its list was read and by which CLI version (or why
 there is none, or that Refresh all has not run), and the model table. Model: Native is
-first and marked as the default. Every named row is its tier's model from the CLI's list,
-Frontier to Light, and its Model cell carries both names: the CLI's own in bold, the id
-beneath. The table has two columns, Model and Tier; the Tier cell carries the tier from
-the family words and, beneath it, the strengths from the catalog's `## Tiers` table. The native sign-in tile is mounted through the workbench environment's one
+first and marked as the default. Every named row is a model from the CLI's list, grouped
+by tier, and its Model cell carries both names: the CLI's own in bold, the id
+beneath. The table has two columns, Model and Tier; the Tier cell carries HQ's tier (or
+*unrated*) and, beneath it, the model's "use it for" line. The native sign-in tile is mounted through the workbench environment's one
 shared mount (`public/js/provider-setup-session.js`), which both Ronin Setup and Ronin
 Settings hand their environment, so it works on either seat. Showing the surface paints
 the record; only Refresh all reads. Its rows are the one picker's read, so the surface and
@@ -404,72 +400,25 @@ discard the owner's brief.
 An OpenAI-compatible provider using an already-supported Codex profile inherits this
 contract and normally needs no source change. A provider's native CLI does not: capture
 its real startup, trust dialog, empty prompt, typed prompt and working screen; add those
-fixtures and the smallest corresponding patterns before adding its catalog section.
+fixtures and the smallest corresponding patterns before adding its registry row.
 
 ## Adding a native provider
 
-Give a provider its own section in `ronin_stock/MODEL_PROVIDERS.md` (or in your shadow
-copy). Name its vendor id, the registry row that serves it, and the family words that give
-its models their tiers:
+A native provider is a new CLI: its registry row in `src/agents.ts`, with its `vendor`
+(the vendor id, its name, its transcript source), and its Agent page
+`docs/agents/<cli>.md` with the complete command permutations. The command must start an
+interactive coding agent in the current directory and remain alive to receive Ronin's
+opening brief. A raw HTTP client or one-shot completion command is not a session agent.
+Its models' tiers and lines are Glen's rows in HQ's catalog; until then they are Unrated.
 
-```markdown
-### Example
+## OpenAI-compatible services
 
-- **provider:** `example`
-- **cli:** `example`
-- **families:** `max=frontier mid=standard mini=light`
-```
-
-The command must start an interactive coding agent in the current directory and remain
-alive to receive Ronin's opening brief. A raw HTTP client or one-shot completion command
-is not a session agent. Record its complete permutations in `docs/agents/example.md`.
-A new CLI also needs its registry row in `src/agents.ts`; the
-catalog's `cli` must name an existing row, and `npm run verify` checks that it does.
-
-## Adding an OpenAI-compatible provider
-
-Protocol compatibility does not make the provider `openai`. Give DigitalOcean, Hugging
-Face, or another service its own section so the picker states who receives the request
-and whose account pays for it.
-
-When Codex is the interactive client, keep endpoint/authentication configuration in a
-named Codex profile. Before offering it, extend Codex's Agent command grammar to represent
-the profile explicitly; provider-specific command syntax never belongs in the fact table:
-
-```markdown
-### Example
-
-- **provider:** `example`
-- **cli:** `codex`
-- **families:** `model-a=standard`
-```
-
-The profile owns the compatible endpoint and protocol settings. Its credential comes
-from an environment variable or the provider's supported login store, following
-`docs/operating/secrets.md`. Neither the secret nor its value belongs in this repository, the
-catalog, a project_root, or a launch command.
-
-OpenAI-compatible is a claim to verify, not a blanket guarantee. Before adding the section,
-prove that the provider supports the API shape the current Codex CLI uses, streaming,
-tool calls, and the chosen model IDs. Then launch one real session through Ronin and
+A third-party API service (DigitalOcean, Hugging Face, OpenRouter) is not a harness and gets
+no vendor of its own: it is an account a harness launches on (Harnesses workbench →
+Accounts, `docs/operating/accounts.md`). Its credential follows `docs/operating/secrets.md`
+and never belongs in this repository, a project_root, or a launch command.
+OpenAI-compatible is a claim to verify: launch one real session through Ronin on it and
 confirm that the tile reaches a prompt and receives the complete built brief.
-
-## Candidate examples
-
-- **DigitalOcean Gradient AI** documents `https://inference.do-ai.run` as its serverless
-  inference base and explicitly describes Codex and other coding agents as supported
-  clients. Its model access key stays outside Ronin. Add a `digitalocean` section only
-  after a named Codex profile and at least one exact model ID have been exercised end to end.
-- **Hugging Face Inference Providers** documents an OpenAI-compatible chat-completions
-  endpoint at `https://router.huggingface.co/v1` and model IDs such as
-  `openai/gpt-oss-120b:cerebras`. Its compatibility is currently described for chat
-  completions, so do not assume it satisfies Codex's full agent/tool protocol; prove that
-  with the installed CLI before adding a `huggingface` section.
-
-These are examples, not stock catalog entries. A provider is offered in the
-picker whether or not this machine can launch it — the single picker says beside each
-what this machine has — and its setup must be stateable without putting a credential in
-the shipped catalog.
 
 ## Addition checklist
 
@@ -478,9 +427,8 @@ the shipped catalog.
    terminal interface.
 3. Configure and test the CLI/profile outside Ronin; keep credentials out of the repo.
 4. For a new agent CLI, capture and test every new-session state in the contract above,
-   and add its registry row to `src/agents.ts`.
-5. Add one provider section with its `provider`, `cli` and `families` fields; then
-   Refresh all.
+   and add its registry row to `src/agents.ts`, with its `vendor`.
+5. Refresh all; ask Glen to rate its models in HQ's Models table.
 6. Update the Agent page's complete command permutations and unsupported forms.
 7. Run `npm run verify` ([verification guidance](../development/verification.md)).
 8. Launch every new model through New Agent. Confirm the receipt's command, the agent

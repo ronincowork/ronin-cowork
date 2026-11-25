@@ -12,7 +12,7 @@
 - **transcript_journal:** {"format": "message-blocks", "root": "~/.claude/projects", "pattern": "{session_id}.jsonl", "idPath": "sessionId", "childPath": "isSidechain"}
 - **launch_initial:** positional
 
-CLI id: `claude`. Catalog provider: Anthropic. Reviewed 2026-09-14.
+CLI id: `claude`. Vendor: `anthropic` (Anthropic), its `vendor` in `src/agents.ts`; transcript `~/.claude/projects/<cwd-slug>/<uuid>.jsonl`. Reviewed 2026-09-14.
 Version: **2.1.327**. Installed version checked; hooks, set-ahead and answers from Chat verified live (KAN-616, KAN-656..658).
 
 ## Ronin launch sequence

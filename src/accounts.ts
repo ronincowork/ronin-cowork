@@ -6,7 +6,7 @@
  * `subscription` kind and are never stored here: the harness owns them. These are provider accounts for
  * launching Agents, not Ronin Cloud customer or subscription accounts.
  */
-import { listProviderCatalog } from './model-providers.js';
+import { listProviders } from './model-providers.js';
 import { readOfficeRecord } from './office-record.js';
 import { deleteHermesEntry, discoverHermesModels, hermesSettingsAnswer, saveHermesConnection, saveHermesSetup, updateHermesConnectionLists, type AccountKind, type HermesConnection } from './hermes-setups.js';
 
@@ -42,7 +42,7 @@ const isGateway = (baseUrl: string) => /^http:\/\/127\.0\.0\.1:\d+(\/|$)/.test(b
 export const accountKind = (c: Pick<HermesConnection, 'kind' | 'baseUrl'>): AccountKind => c.kind ?? (isGateway(c.baseUrl) ? 'ronin_api' : 'personal_api');
 
 async function roninApiHarnesses(): Promise<string[]> {
-  const clis = (await listProviderCatalog()).flatMap(entry => entry.cli && !NOT_ON_RONIN_API.has(entry.cli) ? [entry.cli] : []);
+  const clis = listProviders().flatMap(entry => entry.cli && !NOT_ON_RONIN_API.has(entry.cli) ? [entry.cli] : []);
   return [...new Set(['hermes', ...clis])];
 }
 async function defaultHarnesses(kind: AccountKind, provider: HermesConnection['provider']): Promise<string[]> {
