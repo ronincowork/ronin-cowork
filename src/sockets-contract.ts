@@ -1,7 +1,26 @@
 
 import type { TrailLine, WorkItem } from './work-items.js';
 
-export const CONTRACT_V = 15;
+export const CONTRACT_V = 16;
+
+/** One row of HQ's Models table: `cli` + `id` exactly as that CLI lists the model. A fact HQ
+ *  doesn't have is absent, never guessed. Prices are USD per million tokens. */
+export interface CatalogModel {
+  cli: string;
+  id: string;
+  name?: string;
+  tier?: string;
+  use_for?: string;
+  context?: number;
+  output?: number;
+  price?: { input?: number; output?: number };
+  released?: string;
+  knowledge?: string;
+  reasoning?: boolean;
+  tools?: boolean;
+}
+/** The catalog in Glen's order, which is the picker's order within a tier. */
+export interface ModelCatalog { at?: string; models: CatalogModel[] }
 
 export interface LaunchIdentity {
   key: string;
@@ -117,6 +136,9 @@ export interface Sockets {
   /** Since the seat's last look, and the cursor moves. Nothing new: waits up to waitSeconds
    *  (at most 90) for the first entry. */
   readInbox(seat: string, waitSeconds?: number): Promise<Array<{ at: string; from: string; channel: string; text: string }>>;
+  /** THE MODEL CATALOG (KAN-828): HQ's Models table, whole, as the unit's models.json has it.
+   *  Cowork keeps it in its own store, so a restart or a stopped park still has the last one. */
+  setModels(catalog: ModelCatalog): Promise<void>;
   setStreamHandler(h: (...args: unknown[]) => void): void;
 }
 

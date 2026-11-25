@@ -45,6 +45,7 @@ export const sockets: Sockets = {
     await geckoChanged(changed.join(', '));
   },
   readInbox: async (seat, waitSeconds) => (await import('./seats.js')).readInbox(seat, waitSeconds),
+  setModels: async (catalog) => (await import('./model-catalog.js')).setModels(catalog),
   setStreamHandler: (h) => void (streamHandler = h),
 };
 
