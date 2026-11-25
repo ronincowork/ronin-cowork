@@ -138,9 +138,9 @@ export function mountHermesSurface(host, provider, onChanged) {
     return made;
   };
   // ONE NAME FOR THE GATEWAY (owner, 25 Nov 2026): the office's Ronin API connection reads "Ronin gateway"
-// here, as on the harness bars, whatever its stored name (src/accounts.ts accountKind).
-const isGateway = (c) => c.kind === 'ronin_api' || /^http:\/\/127\.0\.0\.1:\d+(\/|$)/.test(c.baseUrl || '');
-const nameOf = (c) => (isGateway(c) ? 'Ronin gateway' : c.name);
+  // here, as on the harness bars, whatever its stored name; its kind comes resolved (src/hermes-setups.ts accountKind).
+  const isGateway = (c) => c.kind === 'ronin_api';
+  const nameOf = (c) => (isGateway(c) ? 'Ronin gateway' : c.name);
   const names = (list) => list.map(nameOf).join(', ');
   const modelsLine = (c) => (c.discoveredAt ? `${c.models.length} model${c.models.length === 1 ? '' : 's'}` : 'model list not read yet');
 

@@ -37,9 +37,13 @@ export async function readKey(c: Pick<HermesConnection, 'id' | 'baseUrl'>): Prom
   try { return parse(await readFile(keyPath(c.id))).OPENAI_API_KEY || ''; } catch { return ''; }
 }
 export async function hermesConfigured(): Promise<boolean> { const state = await readHermesSettings(); for (const c of state.connections) if (await readKey(c)) return true; return false; }
+const isGateway = (baseUrl: string) => /^http:\/\/127\.0\.0\.1:\d+(\/|$)/.test(baseUrl);
+/** A connection with no saved kind is the house gateway when it points at the local door; a hosted office's seed carries its kind. */
+export const accountKind = (c: Pick<HermesConnection, 'kind' | 'baseUrl'>): AccountKind => c.kind ?? (isGateway(c.baseUrl) ? 'ronin_api' : 'personal_api');
+/** The Hermes state as the page reads it: each connection with its key's presence and its kind resolved. */
 export async function hermesSettingsAnswer() {
   const state = await readHermesSettings();
-  return { ...state, connections: await Promise.all(state.connections.map(async c => ({ ...c, configured: !!await readKey(c) }))) };
+  return { ...state, connections: await Promise.all(state.connections.map(async c => ({ ...c, kind: accountKind(c), configured: !!await readKey(c) }))) };
 }
 export async function saveHermesConnection(input: Record<string, unknown>): Promise<HermesConnection> {
   return mutation(async () => {

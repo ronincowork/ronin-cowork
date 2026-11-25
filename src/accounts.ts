@@ -8,7 +8,7 @@
  */
 import { listProviderCatalog } from './model-providers.js';
 import { readOfficeRecord } from './office-record.js';
-import { deleteHermesEntry, discoverHermesModels, hermesSettingsAnswer, saveHermesConnection, saveHermesSetup, updateHermesConnectionLists, type AccountKind, type HermesConnection } from './hermes-setups.js';
+import { accountKind, deleteHermesEntry, discoverHermesModels, hermesSettingsAnswer, saveHermesConnection, saveHermesSetup, updateHermesConnectionLists, type AccountKind, type HermesConnection } from './hermes-setups.js';
 
 /** The house gateway's office door on a developer's own box (ronin-services/model_gateway side by side). */
 export const RONIN_API_BASE_URL = 'http://127.0.0.1:4912/v1';
@@ -37,9 +37,6 @@ export interface Account {
 export interface Preset { id: string; name: string; harness: 'hermes'; account: string; model: string; reasoning: string; approvals: 'off' | 'prompt' }
 export interface AccountsAnswer { accounts: Account[]; presets: Preset[]; kinds: AccountKind[] }
 
-const isGateway = (baseUrl: string) => /^http:\/\/127\.0\.0\.1:\d+(\/|$)/.test(baseUrl);
-/** A connection with no saved kind is the house gateway when it points at the local door; a hosted office's seed carries its kind. */
-export const accountKind = (c: Pick<HermesConnection, 'kind' | 'baseUrl'>): AccountKind => c.kind ?? (isGateway(c.baseUrl) ? 'ronin_api' : 'personal_api');
 
 async function roninApiHarnesses(): Promise<string[]> {
   const clis = (await listProviderCatalog()).flatMap(entry => entry.cli && !NOT_ON_RONIN_API.has(entry.cli) ? [entry.cli] : []);
