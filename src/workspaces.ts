@@ -189,7 +189,8 @@ export async function saveWorkspace(w: Workspace): Promise<Workspace> {
     await layOut(dir);
     // DOOR 2's SOURCES (KAN-809): each its own folder under files/, named on its integration row.
     for (const row of clean.integrations) if (/^files\/[a-z0-9_-]+$/.test(String(row.folder || ''))) await mkdir(path.join(dir, String(row.folder)), { recursive: true });
-    if (![...clean.repos, ...clean.folders].some((row) => row.dir === dir)) clean.folders.unshift({ name: clean.name, dir, note: '' });
+    // Its row is <name>-folder: the bare name is left for a repository started in it, repos/<name>.
+    if (![...clean.repos, ...clean.folders].some((row) => row.dir === dir)) clean.folders.unshift({ name: `${clean.name}-folder`, dir, note: '' });
   }
   await nameRows(clean);
   await writeRecord(clean);
