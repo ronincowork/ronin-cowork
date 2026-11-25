@@ -9,10 +9,10 @@
 
 | Tool | Authority |
 |---|---|
-| `item create` | create work items, held by you (a lead's by its Team): one per `--title`, the rest shared. You can write a title as `Short name: more detail`. Put it under any item: the kind follows the parent. Answers `created <id>, a <kind> under <parent>`, one line each. |
+| `item create` | create work items, held by you (a lead's by its Team): one per `--title`, the rest shared. You can write a title as `Short name: more detail`. The kind follows the parent; nothing goes under a Subtask. Answers `created <id>, a <kind> under <parent>`, one line each. |
 | `item read` | read: one or several items, each in plain lines: title, id, kind, status, holder, parent, the objective whole, its children one line each, its latest comments and trail lines, newest last; `--json` the whole item as JSON |
 | `item search` | read: items by Campaign, Team, holder, parent, status, kind, or `--text` in the title or objective, one line each: `<id> \| <status> \| <holder> \| <title>`, the title in full; `--json` the JSON |
-| `item edit` | write: the fields of one or several items; `--parent` moves them under any item, the kind following |
+| `item edit` | write: the fields of one or several items; `--parent` moves them, the kind following the parent |
 | `item transition` | write: the status of one or several items; a hand-in to In Review takes `--note`, the Handed in comment for the user |
 | `item flag` | write: one or several items are stuck, with the reason as a comment |
 | `item unflag` | write: one or several items are clear |

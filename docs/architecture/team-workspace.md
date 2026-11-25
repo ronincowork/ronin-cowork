@@ -115,11 +115,10 @@ Subtask), one below the parent at creation or 0 with none, and adding a child ne
 it; `status`, `priority` and a link's type are the space's names (`spaceNames`); `flagged` marks an impediment. Parent is one `parent` id on
 the item, or none, which is normal. There is no ladder: Jira has none. Parent is a field:
 `item edit --parent` (`editItem` with `parent`) sets parent, kind and level together. A create
-or a parent change is placed (`place`; owner, 2026-11-25): the kind follows the parent, under a
-Subtask the item goes under that Subtask's parent, and no shape is refused. The children follow
-(`follow`), each one below its own parent (`settle` writes them, a trail line each); one that
-would land below -1 goes under the nearest level-0 item above it. A move under oneself or one's
-own descendant is refused (`refuseLoop`). An arrival under a held item queues the holder (or a holding Team's lead) one
+or a parent change is placed (`place`; owner, 2026-11-25): the kind follows the parent, and a
+parent that is a Subtask is refused, naming its Task. The children follow (`follow`), each one
+below its own parent (`settle` writes them, a trail line each); if one would land under a
+Subtask the act is refused. A move under oneself or one's own descendant is refused (`refuseLoop`). An arrival under a held item queues the holder (or a holding Team's lead) one
 message through the message queue. Every item file is in the Jira shape;
 `migrateItems` at first start is the one code that converts a store to it. Assign moves an id
 between lists and release takes it off every list, under the store's one issuer lock, so

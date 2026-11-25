@@ -25,10 +25,9 @@ Every file behind this page (briefs, tools, code, the Jira bridge) is listed in
 - What isn't started stays a paragraph in the plan. A board holds only what is being worked.
 
 **Kinds.** Epic (level 1); Task, Story, Bug or Feature (level 0, the work); Subtask (level -1,
-a step of a level-0 item). Put an item under any item and Ronin sets the kind from the
-parent: under an epic it is the work (a Task unless you name another), under the work a
-Subtask, and under a Subtask it goes under that Subtask's parent, since there is no third
-level. Nothing is refused for its shape, and every shape is one Jira accepts.
+a step of a level-0 item). Ronin sets the kind from the parent: under an epic, a Task (or the
+Story, Bug or Feature you name); under one of those, a Subtask. Nothing goes under a Subtask:
+Ronin refuses it and names the Task. Every shape this makes is one Jira accepts.
 
 ## What you ask for
 

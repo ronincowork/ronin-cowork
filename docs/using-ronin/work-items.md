@@ -20,18 +20,17 @@ Every work item has a kind, and the kind has a level. The level says what it is.
 The kind is the Jira work type's name, exactly; a Desk paired to a space uses the space's
 own. Setting the kind sets the level (`--kind Epic` makes an epic).
 
-Put an item under any item, with `item create --parent` or `item edit <id> --parent`, and
-the kind follows the parent:
+With `item create --parent` or `item edit <id> --parent`, the kind follows the parent:
 
 - under an epic: the kind you name if it is a Task, Story, Bug or Feature, otherwise a Task;
 - under a Task, Story, Bug or Feature: a Subtask;
-- under a Subtask: a Subtask of that Subtask's parent (there is no third level);
 - no parent (`--parent none` too): the kind you name, or a Task if that was a Subtask.
 
-Nothing is refused for its shape. The reply says what happened, for example "created
-KAN-820, a Subtask under KAN-801 (KAN-805 is a Subtask, so it went under its Task)". A moved
-item's children follow, each one level below its parent; one that would go below a Subtask
-goes under the nearest Task above it instead.
+Nothing goes under a Subtask: it is refused, and the reply names the Task to use instead
+("KAN-805 is a Subtask, and nothing goes under a Subtask: put it under KAN-801."). The reply
+to the rest says what was made, for example "created KAN-820, a Subtask under KAN-801". A
+moved item's children follow, each one level below its parent; a move that would put one
+under a Subtask is refused.
 
 No parent is normal. Not every task belongs to an epic.
 

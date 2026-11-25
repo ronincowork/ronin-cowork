@@ -5,10 +5,9 @@
  * the /api/work-items routes (src/routes/work-items-api.ts), and every change here appends
  * exactly one line to the item's trail, naming who called (a quiet Jira fields refresh aside,
  * setJiraFields). Nothing is locked against
- * anyone: holding is discovery, never permission. Any item goes under any item and the kind
- * follows the parent (place; owner, 2026-11-25), nothing below -1 (follow); a shape is never
- * refused. What Jira cannot do to a paired item is (jiraShape). With a parent or none
- * (owner, 2026-11-06).
+ * anyone: holding is discovery, never permission. The kind follows the parent (place; owner,
+ * 2026-11-25); nothing goes under a Subtask (place, follow), refused naming its Task. What Jira
+ * cannot do to a paired item is refused too (jiraShape). With a parent or none (owner, 2026-11-06).
  *
  * THE SHAPE MATCHES JIRA (docs/using-ronin/work-items.md). One object at every level, and one
  * exact value (ronin-services docs/jira-bridge.md, What flows each way): `status`, `kind`, `priority` and a link's
@@ -113,7 +112,7 @@ const levelOfKind = (names: SpaceNames, kind: string): ItemLevel => {
 /** THE SHAPES JIRA REFUSES (docs/using-ronin/work-items.md; ronin-services docs/jira-bridge.md, Pairing: the
  * live failures): on a Jira-connected campaign an item may not take a parent or kind Jira's
  * hierarchy would refuse, so Ronin and Jira never part. A create or a move is placed (place)
- * and always passes; what is left is a --kind write, and a paired item changing level. An epic sits under nothing; a level-0
+ * and so passes here; what is left is a --kind write, and a paired item changing level. An epic sits under nothing; a level-0
  * item (Task, Story, Bug, Feature) under an epic or nothing; a Subtask only under a level-0
  * item; and a paired item never changes kind across levels, nor does a paired child made to
  * follow. Jira's own changes (by jira:*) are Jira's shape already and are not checked. */
@@ -228,9 +227,7 @@ export const REVIEW_LINE = 120;
 
 /** What every write answers: the item as it now is, the line it appended, and who its notices
  * told (section 4). What the act did is read from the line (didLine). */
-export interface Acknowledged { item: WorkItem; line: TrailLine; notified?: string[];
-  /** Why the item went elsewhere than the parent named (place): "KAN-805 is a Subtask, so it went under its Task". */
-  placed?: string }
+export interface Acknowledged { item: WorkItem; line: TrailLine; notified?: string[] }
 
 export class WorkItemRefused extends Error {}
 export class WorkItemMissing extends Error {}
@@ -564,23 +561,19 @@ export interface NewItem {
 /** One below the parent, 0 with none (Jira's hierarchy): Jira's own items and moves. */
 const levelUnder = (parent: WorkItem | null): ItemLevel => parent ? (parent.level - 1) as ItemLevel : 0;
 
-/** WHERE AN ITEM GOES (owner, 2026-11-25; w975): every item is a work item, and any one goes
- * under any other; the kind follows the parent, so no shape is ever refused. Under an epic: the
- * kind asked if it is level 0, else Task. Under a level-0 item: Subtask. Under a Subtask: under
- * that Subtask's parent instead (no third level), `why` saying so. No parent: the kind asked, or
- * Task for a Subtask. Every shape this makes is one Jira accepts. */
-interface Placed { parent: WorkItem | null; kind: string; level: ItemLevel; why?: string }
+/** WHERE AN ITEM GOES (owner, 2026-11-25; w975): the kind follows the parent. Under an epic:
+ * the kind asked if it is level 0, else Task. Under a level-0 item: Subtask. Under a Subtask:
+ * refused, naming its Task. No parent: the kind asked, or Task for a Subtask. Every shape this
+ * makes is one Jira accepts. */
+interface Placed { parent: WorkItem | null; kind: string; level: ItemLevel }
 async function place(names: SpaceNames, asked: string | undefined, parent: WorkItem | null): Promise<Placed> {
   if (asked) levelOfKind(names, asked);
   const work = (): string => {
     const zero = names.kinds.filter((one) => one.level === 0).map((one) => one.name);
     return asked && zero.includes(asked) ? asked : zero.includes('Task') ? 'Task' : kindAt(names, 0);
   };
-  if (parent && parent.level <= -1) {
-    const up = parent.parent ? await load(parent.parent) : null;
-    const placed = await place(names, asked, up);
-    return { ...placed, why: `${parent.id} is a ${parent.kind}, so it went ${up ? `under its ${up.kind}` : 'under nothing'}` };
-  }
+  // Nothing goes under a Subtask (owner, 2026-11-25): refused, naming where it can go.
+  if (parent && parent.level <= -1) throw new WorkItemRefused(`${parent.id} is a ${parent.kind}, and nothing goes under a ${parent.kind}${parent.parent ? `: put it under ${parent.parent}` : ''}.`);
   if (parent?.level === 0) return { parent, kind: kindAt(names, -1), level: -1 };
   if (parent) return { parent, kind: work(), level: 0 };
   if (!asked || levelOfKind(names, asked) === -1) return { parent: null, kind: work(), level: 0 };
@@ -594,37 +587,33 @@ async function refuseLoop(item: WorkItem, parent: WorkItem | null): Promise<void
   }
 }
 
-/** THE CHILDREN FOLLOW (owner, 2026-10-22; 2026-11-25): on a move or kind write the item takes
- * its new level and its children follow, each one below its own parent. Nothing goes below -1:
- * a child that would goes under the nearest level-0 item above it instead, as a Subtask. Returns
- * the children whose level or parent changes. */
-async function follow(item: WorkItem, parent: string | null, level: number): Promise<Array<{ child: ItemRow; level: number; parent?: string }>> {
+/** THE CHILDREN FOLLOW (owner, 2026-10-22): on a move or kind write the item takes its new
+ * level and its children follow, each one below its own parent. Nothing goes under a Subtask:
+ * if a child would, the act is refused, naming it. Returns the children whose level changes. */
+async function follow(item: WorkItem, parent: string | null, level: number): Promise<Array<{ child: ItemRow; level: number }>> {
   // The tree from the live rows (w418): an archived child is history and does not follow.
   const all = (await liveRows()).map((other) => other.id === item.id ? { ...other, parent } : other);
-  const out: Array<{ child: ItemRow; level: number; parent?: string }> = [];
-  const walk = (id: string, at: number, anchor: string | null): void => {
+  const out: Array<{ child: ItemRow; level: number }> = [];
+  const walk = (id: string, at: number): void => {
     for (const child of all.filter((other) => other.parent === id && other.id !== item.id)) {
-      const lifted = at - 1 < -1 && anchor !== null;
-      const next = lifted ? -1 : at - 1;
-      if (lifted || child.level !== next) out.push({ child, level: next, ...(lifted ? { parent: anchor! } : {}) });
-      walk(child.id, next, next === 0 ? child.id : anchor);
+      if (at - 1 < -1) throw new WorkItemRefused(`${item.id} can't go there: it would be a Subtask, and its ${child.id} would go under it; nothing goes under a Subtask.`);
+      if (child.level !== at - 1) out.push({ child, level: at - 1 });
+      walk(child.id, at - 1);
     }
   };
-  const anchorOf = level === 0 ? item.id : level === -1 ? parent : null;
-  walk(item.id, level, anchorOf);
+  walk(item.id, level);
   return out;
 }
 
-/** The children follow: each takes its new level (and parent, when lifted), and the space's
- * first kind there when its own is at another level, with one trail line saying why. */
-async function settle(moved: Array<{ child: ItemRow; level: number; parent?: string }>, item: WorkItem, by: string): Promise<void> {
-  for (const { child, level, parent } of moved) {
+/** The children follow: each takes its new level, and the space's first kind there when its
+ * own is at another level, with one trail line saying why. */
+async function settle(moved: Array<{ child: ItemRow; level: number }>, item: WorkItem, by: string): Promise<void> {
+  for (const { child, level } of moved) {
     const next = await load(child.id);
     const names = spaceNames(next.campaign_id);
     next.level = level as ItemLevel;
-    if (parent) next.parent = parent;
     if (names.kinds.find((one) => one.name === next.kind)?.level !== level) next.kind = kindAt(names, level);
-    const line = lineOf(by, 'edit', { note: `${parent ? `parent ${parent}, ` : ''}level ${level}, kind ${next.kind}, following ${item.id}` });
+    const line = lineOf(by, 'edit', { note: `level ${level}, kind ${next.kind}, following ${item.id}` });
     next.trail.push(line);
     await save(next);
     emitItemChanged({ item: next, line });
@@ -700,8 +689,7 @@ export async function createItemUnlocked(input: NewItem, by: string): Promise<Ac
   await save(item);
   emitItemChanged({ item, line });
   const notified = await announceUnheld(item, by);
-  const done: Acknowledged = { ...answer(item, line), ...(placed.why ? { placed: placed.why } : {}) };
-  return notified.length ? { ...done, notified } : done;
+  return notified.length ? { ...answer(item, line), notified } : answer(item, line);
 }
 
 export const createItem = (input: NewItem, by: string) => withIssuer(() => createItemUnlocked(input, by));
@@ -794,7 +782,7 @@ export function editItem(id: string, edit: ItemEdit, by: string, note?: string):
       return { op: 'edit', note: [said, changed.length ? changed.join(', ') : 'no change'].filter(Boolean).join('; ') };
     }, () => !paired && !unchanged);
     await settle(children, done.item, by);
-    return placed?.why ? { ...done, placed: placed.why } : done;
+    return done;
   });
 }
 
@@ -1380,12 +1368,11 @@ async function rewriteWatches(change: (watches: string[]) => string[]): Promise<
  * "w9 moved to In Progress", "w9 is held by agent:x". Status, kind and level appear only when
  * the act changed them. Every acknowledgement is this one line. A create says it first, for
  * scripts and Agents to read: "created w12, a Subtask under KAN-239", or "created w12, a Task
- * with no parent"; a placement adds why ("(KAN-805 is a Subtask, so it went under its Task)"). */
-export function didLine({ item, line, placed }: Acknowledged): string {
-  const why = placed ? ` (${placed})` : '';
-  if (line.op === 'create') return `created ${item.id}, a ${item.kind} ${item.parent ? `under ${item.parent}` : 'with no parent'}${why}`;
+ * with no parent". */
+export function didLine({ item, line }: Acknowledged): string {
+  if (line.op === 'create') return `created ${item.id}, a ${item.kind} ${item.parent ? `under ${item.parent}` : 'with no parent'}`;
   const what = line.op === 'status' ? `moved to ${line.to}`
-    : line.op === 'move' ? (line.to === 'none' ? `moved to no parent, a ${item.kind}` : `moved under ${line.to}, a ${item.kind}${why}`)
+    : line.op === 'move' ? (line.to === 'none' ? `moved to no parent, a ${item.kind}` : `moved under ${line.to}, a ${item.kind}`)
       : line.op === 'assign' ? `is held by ${line.to}`
         : line.op === 'handoff' ? (line.to === 'none' ? `${line.from} let go` : line.from && line.from !== 'none' ? `was handed from ${line.from} to ${line.to}` : `is held by ${line.to}`)
         : line.op === 'release' && line.note?.startsWith('archived') ? 'is archived'
@@ -1396,7 +1383,7 @@ export function didLine({ item, line, placed }: Acknowledged): string {
               : line.op === 'attach' ? (line.from === 'removed' ? `has ${line.to} removed` : `has ${line.to} attached`)
               : line.op === 'link' ? `${line.note}`
               : `changed: ${line.note ?? 'no change'}`;
-  return `${item.id} ${what}${line.op === 'move' ? '' : why}`;
+  return `${item.id} ${what}`;
 }
 
 /** AN ENDING WITH NO AGENT TO ASK (Shut down Agent, archive, a crash; docs/using-ronin/

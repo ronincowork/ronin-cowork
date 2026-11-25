@@ -84,14 +84,13 @@ A new item lands on whoever made it: a lead's on its Team (a lead of several nam
 makes any kind, an Epic too, with a parent or none. Items from Jira come as Jira has them. Parent is a field, as in Jira:
 `item edit --parent` changes the parent, kind and level in one act.
 
-**Any item goes under any item; the kind follows the parent.** Under an epic, the kind named
-(or the item's own) if it is level 0, else a Task; under a level-0 item, a Subtask; under a
-Subtask, under that Subtask's parent instead; no parent, the kind named, or a Task for a
-Subtask. Nothing is refused for its shape. Children follow, each one below its own parent,
-and one that would land below -1 goes under the nearest level-0 item above it, each with a
-trail line saying it followed. So a story and its subtasks move to another epic together,
-and an epic with stories moved under an epic becomes a Task, its stories Subtasks. Only an
-item under itself or its own descendant is refused.
+**The kind follows the parent.** Under an epic, the kind named (or the item's own) if it is
+level 0, else a Task; under a level-0 item, a Subtask; no parent, the kind named, or a Task
+for a Subtask. Nothing goes under a Subtask: refused, the reply naming its Task. Children
+follow, each one below its own parent, each with a trail line saying it followed; a move that
+would put one under a Subtask is refused. So a story and its subtasks move to another epic
+together, and an epic with stories (none with subtasks) moved under an epic becomes a Task,
+its stories Subtasks. An item under itself or its own descendant is refused too.
 
 `item delete` is Jira's delete: the item goes, and its subtasks with it; any other child is
 left with no parent, links to it go, and its holders let go of it.

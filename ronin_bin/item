@@ -35,12 +35,11 @@ Status, kind, priority and link type are the space's own names, exactly; by defa
 To Do, In Progress, In Review, Done; Epic, Task, Story, Bug, Feature, Subtask;
 Highest, High, Medium, Low, Lowest; Blocks, Relates, Duplicate, Cloners. Anything else is
 refused, naming the set. The kind sets the level: 1 Epic, 0 Task/Story/Bug/Feature,
--1 Subtask. Put an item under any item, in create or edit --parent: the kind follows the
-parent. Under an epic, the kind asked if it is a Task, Story, Bug or Feature, else a Task;
-under one of those, a Subtask; under a Subtask, a Subtask of that Subtask's parent (there is
-no third level); no parent, the kind asked, or a Task for a Subtask. Children follow; one that
-would go below a Subtask goes under the nearest Task above it. Nothing is refused for its
-shape; only an item under itself, or a change Jira cannot make to a paired item.
+-1 Subtask. In create or edit --parent, the kind follows the parent: under an epic, the kind
+asked if it is a Task, Story, Bug or Feature, else a Task; under one of those, a Subtask; no
+parent, the kind asked, or a Task for a Subtask. Nothing goes under a Subtask: refused, the
+reply naming its Task. Children follow; a move that would put one under a Subtask is refused.
+Refused too: an item under itself, or a change Jira cannot make to a paired item.
 read prints the item plainly: title, id, kind, status, holder, parent (none when empty), the
 objective whole, its children one line each, then its latest comments and trail lines, newest
 last. --json prints the whole item as JSON, every comment and trail line, for a script.
@@ -49,8 +48,8 @@ search prints one line per item, '<id> | <status> | <holder> | <title>', the tit
 create lands on you, or with --team <t> on that Team (a lead's create lands on its team;
 leading several, name it), or with --workspace <w> on that Workspace: an open item of the
 project that no Team has yet, or a want under its Icebox. Any kind, an Epic too, with --parent or none. It answers
-"created <id>, a <kind> under <parent>" on its first line, with why when it went elsewhere:
-"created KAN-820, a Subtask under KAN-801 (KAN-805 is a Subtask, so it went under its Task)".
+"created <id>, a <kind> under <parent>" on its first line: "created KAN-820, a Subtask under
+KAN-801".
 checkout PLAYBOOK-<n> makes that playbook's epic, tasks and subtasks as plain new items, To Do,
 held by the receiver (you, unless named), on its holds and tile; they keep no tie to the
 playbook. A playbook is work items, status Playbook, each its own PLAYBOOK-<n> with a parent:
