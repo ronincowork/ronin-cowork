@@ -138,7 +138,9 @@ The owner's decisions, 2026-11-04 and 05:
   only: one item per idea, "Draft the plan for <idea>", its Draft plan attached; finished when the
   plan is taken up or the idea dropped. Parking is one act, `plan park` (2026-11-10). Held by the
   Workspace, it is on no Team's or Agent's record and never reads as work waiting to be given out.
-- Ronin refuses any shape Jira would refuse, so the two never part. A delete of an item made in
+- Ronin sets the kind from the parent (2026-11-25), so every shape is one Jira accepts and the
+  two never part. Refused: anything under a Subtask (the reply names its Task), and a change
+  Jira cannot make to a paired item (a kind across levels). A delete of an item made in
   Ronin reaches Jira; one that came from Jira goes from Ronin only, its issue kept.
 
 What led there (2026-10-20 to 11-05): items made only to hand in against; Agents keeping

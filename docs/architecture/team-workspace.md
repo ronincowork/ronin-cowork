@@ -114,11 +114,11 @@ focus). The item matches Jira ([Work items](../using-ronin/work-items.md)):
 Subtask), one below the parent at creation or 0 with none, and adding a child never changes
 it; `status`, `priority` and a link's type are the space's names (`spaceNames`); `flagged` marks an impediment. Parent is one `parent` id on
 the item, or none, which is normal. There is no ladder: Jira has none. Parent is a field:
-`item edit --parent` (`editItem` with `parent`) sets parent and level together (no parent
-keeps the level). One rule binds a create, a parent change and a level write (`follow`): nothing goes below -1. The item takes its new level and its
-children follow, each one below its own parent (`settle` writes them, a trail line each);
-if any would land below -1 the act fails with "w39 can't go there." A move under oneself
-makes the item its own child, so its levels fall past -1 and it fails the same way. An arrival under a held item queues the holder (or a holding Team's lead) one
+`item edit --parent` (`editItem` with `parent`) sets parent, kind and level together. A create
+or a parent change is placed (`place`; owner, 2026-11-25): the kind follows the parent, and a
+parent that is a Subtask is refused, naming its Task. The children follow (`follow`), each one
+below its own parent (`settle` writes them, a trail line each); if one would land under a
+Subtask the act is refused. A move under oneself or one's own descendant is refused (`refuseLoop`). An arrival under a held item queues the holder (or a holding Team's lead) one
 message through the message queue. Every item file is in the Jira shape;
 `migrateItems` at first start is the one code that converts a store to it. Assign moves an id
 between lists and release takes it off every list, under the store's one issuer lock, so
