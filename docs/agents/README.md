@@ -15,9 +15,10 @@ These pages own each CLI's Ronin-specific explanation and code map. Shared brows
 shortcuts belong only to [Terminal controls](../using-ronin/terminal-controls.md).
 
 The CLI and inference provider are separate: several inference providers can use one
-CLI. Models, prices and owner overrides belong to the
-[provider catalog](../../ronin_stock/MODEL_PROVIDERS.md), parsed only by
-`src/model-providers.ts`. Do not copy model tables into these pages.
+CLI. A CLI's vendor (id, name, transcript source) is its `vendor` in `src/agents.ts`;
+its models' tiers, lines and facts are HQ's model catalog, joined only by
+`src/model-providers.ts` ([Model providers](../architecture/model-providers.md)). Do not
+copy model tables into these pages.
 
 Each Agent page is the executable authority for its no-model/model and
 native-approval/dangerous command combinations, plus Resume, new-session-id and
@@ -38,8 +39,8 @@ excludes named files or directories without creating them. Hermes uses `shared`;
 keeps its private journal directory. Names must be home-relative basenames. `transcript_journal` declares the source format,
 root, filename pattern, header id field and child-record marker. A journal with no header id
 field (`idPath`) is one store file the birth owns, such as Hermes's `state.db`, read as a
-whole rather than placed and chained by its first line. The model catalog carries
-descriptive source observations; executable CLI mechanics live here. This keeps the commands we use in one auditable place
+whole rather than placed and chained by its first line. Each CLI's `vendor.transcript_source` in
+`src/agents.ts` carries descriptive source observations; executable CLI mechanics live here. This keeps the commands we use in one auditable place
 beside the upstream alternatives we deliberately do not use. `src/agents.ts` owns
 install/update/version and identity-discovery adapters. Each Agent page also owns its
 executable `stop_keys` and `clear_keys` fields. Ronin reads that page when an

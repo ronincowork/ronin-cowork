@@ -3,18 +3,20 @@ import { holdsWritten, rosterListKey } from './holds-hook.js';
 import path from 'node:path';
 import { entryValue, isKeyLine } from './resources.js';
 import { storeDir } from './resources.js';
-import { teamAgentDefaults, type TeamAgentDefaults } from './agent-defaults.js';
+import { teamAgentDefaults, type LaunchMode, type TeamAgentDefaults } from './agent-defaults.js';
+import { launchModeOf, modelsOf, parentSettings, type Models } from './waterfall.js';
+import { readWorkspace } from './workspaces.js';
 import type { BriefSettings } from './brief-record.js';
 import { layerOf } from './brief-settings.js';
-
-export type TeamKind = 'open' | 'coding' | 'work' | 'personal' | 'household' | 'social' | 'school';
 
 export interface TeamRoster {
   name: string;
   campaign_id: string;
   title: string;
-  kind: TeamKind;
+  /** What the lead picks up and starts executing (owner, 25 Nov): said to the lead when it is launched. */
   objective: string;
+  /** Standing directions to every Agent in the Team (owner, 25 Nov): in each member's brief. */
+  instructions: string;
   /** The Workspace this Team is launched in (src/workspaces.ts); its Agents inherit it. */
   workspace: string;
   branch: string;
@@ -25,7 +27,10 @@ export interface TeamRoster {
   brief: BriefSettings;
   integrations: string[];
   pm?: boolean;
+  /** Its settings, copied from its Workspace (or the Campaign) when it was made; each new Agent copies them (src/waterfall.ts). */
   agent_defaults: TeamAgentDefaults;
+  launch_mode: LaunchMode;
+  models: Models;
   /** Work item ids this Team holds. The items live in the work item store. */
   holds: string[];
   /** Work item ids this Team watches; its lead hears a status change on each (work-items.ts tellWatchers). Its members' items do not make it a watcher. */
@@ -72,14 +77,12 @@ function parse(name: string, raw: string, campaign_id = ''): TeamRoster {
     ? value.map((entry) => typeof entry === 'string' ? entry.trim().slice(0, max) : '').filter((entry) => Boolean(entry) && entry !== 'mandates')
     : [];
   const layer = layerOf('team', { brief: json('brief'), integrations: json('integrations'), pm: json('pm') });
-  const kind = get('kind');
   return {
     name,
     campaign_id: campaign_id || get('campaign_id'),
     title: get('title') || name.split(/[_-]+/).filter(Boolean).map((part) => part[0]?.toUpperCase() + part.slice(1)).join(' '),
-    kind: ['open', 'coding', 'work', 'personal', 'household', 'social', 'school'].includes(kind)
-      ? kind as TeamKind : 'open',
     objective: get('objective'),
+    instructions: typeof json('instructions') === 'string' ? (json('instructions') as string) : '',
     workspace: get('workspace'),
     branch: get('branch'),
     branches: stringMap(json('branches')),
@@ -89,6 +92,8 @@ function parse(name: string, raw: string, campaign_id = ''): TeamRoster {
     integrations: layer.integrations,
     ...(layer.pm !== undefined ? { pm: layer.pm } : {}),
     agent_defaults: teamAgentDefaults(json('agent_defaults')),
+    launch_mode: launchModeOf(get('launch_mode')),
+    models: modelsOf(json('models')),
     // An id is on a list once (KAN-261): a list written twice by an old race reads clean.
     holds: [...new Set(strings(json('holds'), 32))],
     watches: [...new Set(strings(json('watches'), 32))],
@@ -159,8 +164,8 @@ export async function listTeamRosters(): Promise<TeamRoster[]> {
 
 export interface RosterEdit {
   title?: string;
-  kind?: TeamKind;
   objective?: string;
+  instructions?: string;
   workspace?: string;
   branch?: string;
   branches?: Record<string, string>;
@@ -170,13 +175,15 @@ export interface RosterEdit {
   integrations?: string[];
   pm?: boolean | null;
   agent_defaults?: Partial<TeamAgentDefaults>;
+  launch_mode?: LaunchMode;
+  models?: Models;
   holds?: string[];
   watches?: string[];
 }
 
 const KEYS: (keyof RosterEdit)[] = [
-  'title', 'kind', 'objective', 'workspace', 'branch', 'branches', 'wipeboard', 'state',
-  'brief', 'integrations', 'pm', 'agent_defaults', 'holds', 'watches',
+  'title', 'objective', 'instructions', 'workspace', 'branch', 'branches', 'wipeboard', 'state',
+  'brief', 'integrations', 'pm', 'agent_defaults', 'launch_mode', 'models', 'holds', 'watches',
 ];
 
 function render(name: string, r: TeamRoster): string {
@@ -186,8 +193,9 @@ function render(name: string, r: TeamRoster): string {
     '',
     ...(r.campaign_id ? [line('campaign_id', r.campaign_id)] : []),
     line('title', r.title),
-    line('kind', r.kind),
     line('objective', r.objective),
+    // JSON, so its line breaks keep (the record is one line per key).
+    line('instructions', r.instructions ? JSON.stringify(r.instructions) : ''),
     line('workspace', r.workspace),
     line('branch', r.branch),
     line('branches', JSON.stringify(r.branches)),
@@ -197,6 +205,8 @@ function render(name: string, r: TeamRoster): string {
     line('integrations', JSON.stringify(r.integrations)),
     ...(r.pm !== undefined ? [line('pm', JSON.stringify(r.pm))] : []),
     line('agent_defaults', JSON.stringify(r.agent_defaults)),
+    line('launch_mode', r.launch_mode),
+    line('models', JSON.stringify(r.models)),
     line('holds', JSON.stringify([...new Set(r.holds)])),
     line('watches', JSON.stringify([...new Set(r.watches)])),
     '',
@@ -220,21 +230,27 @@ export async function createTeamRoster(name: string, edit: RosterEdit, campaign_
   if (!isCreatableTeamName(name)) throw new Error(`"${name}" is not available as a team name.`);
   if (campaign_id && !isValidCampaignId(campaign_id)) throw new Error(`"${campaign_id}" is not a valid campaign_id.`);
   if (await readTeamRoster(name, campaign_id)) throw new Error(`Team "${name}" already has a roster — edit it instead.`);
+  // A NEW TEAM COPIES ITS WORKSPACE, or its Campaign when it has none (src/waterfall.ts); what `edit` states wins.
+  const workspace = edit.workspace ? await readWorkspace(campaign_id, edit.workspace) : null;
+  if (edit.workspace && !workspace) throw new Error(`No Workspace "${edit.workspace}" in Campaign ${campaign_id || '(none)'}.`);
+  const { settings: handed } = await parentSettings(campaign_id, { workspace });
   const roster: TeamRoster = {
     name,
     campaign_id,
     title: edit.title?.trim() || name.split(/[_-]+/).filter(Boolean).map((part) => part[0]?.toUpperCase() + part.slice(1)).join(' '),
-    kind: edit.kind ?? 'open',
     objective: edit.objective ?? '',
+    instructions: edit.instructions ?? '',
     workspace: edit.workspace ?? '',
     branch: edit.branch ?? '',
     branches: edit.branches ?? {},
     wipeboard: edit.wipeboard || (await freeBoardToken(name, campaign_id)),
     state: edit.state ?? 'active',
-    brief: edit.brief ?? { add: [], block: [], only: [] },
-    integrations: edit.integrations ?? [],
-    ...(typeof edit.pm === 'boolean' ? { pm: edit.pm } : {}),
-    agent_defaults: teamAgentDefaults(edit.agent_defaults),
+    brief: edit.brief ?? handed.brief,
+    integrations: edit.integrations ?? handed.integrations,
+    ...(typeof edit.pm === 'boolean' ? { pm: edit.pm } : typeof handed.pm === 'boolean' ? { pm: handed.pm } : {}),
+    agent_defaults: teamAgentDefaults({ ...handed.agent_defaults, ...edit.agent_defaults }),
+    launch_mode: edit.launch_mode ?? handed.launch_mode,
+    models: edit.models ? modelsOf(edit.models) : handed.models,
     holds: edit.holds ?? [],
     watches: edit.watches ?? [],
   };
@@ -261,7 +277,7 @@ export async function writeTeamRoster(name: string, edit: RosterEdit, campaign_i
   } as TeamRoster;
   for (const k of KEYS) {
     if (normalizedEdit[k] === undefined) continue;
-    const nested = ['brief', 'integrations', 'pm', 'agent_defaults', 'holds', 'watches'].includes(k);
+    const nested = ['brief', 'integrations', 'pm', 'agent_defaults', 'models', 'holds', 'watches'].includes(k);
     const v = nested ? JSON.stringify(normalizedEdit[k])
       : String(normalizedEdit[k] ?? '');
     const lineText = `- **${k}:** ${v || BLANK}`;

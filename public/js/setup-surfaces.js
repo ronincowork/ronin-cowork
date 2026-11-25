@@ -3,7 +3,6 @@ import { WorkspaceKit } from './workspace-kit.js';
 import { request } from './request.js';
 import { store } from './store.js';
 import { t } from './lexicon.js';
-import { createWorkspaceStones } from './workspaces-surface.js';
 import { createWorkspacesRead } from './workspaces-read.js';
 import { createWorkspaceKickoff } from './setup-workspace-kickoff.js';
 import { ask } from './ask.js';
@@ -323,9 +322,13 @@ function createRegisterSurface(context) {
 // questions sit over them (KAN-809).
 function createRootsSurface(context) {
   const workspacesRead = createWorkspacesRead();
-  return createWorkspaceStones({ workspacesRead, workbench: context.workbench,
-    top: () => createWorkspaceKickoff({ workspacesRead, environment: context.environment }),
-    onShow: () => notifySummary(SETUP_SURFACE_TYPES.roots, t('setup_surface.roots_summary', '{n} Workspaces', { n: workspacesRead.list().length }), context.workbench) });
+  // The step's own surface (owner, 25 Nov; KAN-809): the four doors, not the Workspaces page.
+  const out = surface(t('setup_surface.roots', 'Workspace'), 'setup-workspace-surface');
+  const step = createWorkspaceKickoff({ workspacesRead, environment: context.environment });
+  out.content.append(step.el);
+  return { el: out.el,
+    show: () => { void workspacesRead.read().then(() => notifySummary(SETUP_SURFACE_TYPES.roots, t('setup_surface.roots_summary', '{n} Workspaces', { n: workspacesRead.list().length }), context.workbench)); },
+    destroy: () => step.destroy() };
 }
 
 /** The one Services mark file, read once and inlined so the R's stroke follows the app's data-theme, not only the OS scheme.

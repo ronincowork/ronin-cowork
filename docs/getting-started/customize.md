@@ -35,7 +35,7 @@ form has a **Behaviors** step. Each works the same way, for every Agent below it
 - **Only**: when set, nothing else is told below; a behavior brings its tools.
 
 Each page also shows **An Agent here is told**: what a new Agent there is told, and why.
-Agents already working are sent the change.
+Agents already working are not changed: each level copies its parent's settings when it is made.
 
 ## Write your own
 

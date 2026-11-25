@@ -46,14 +46,12 @@ const WAYS = Object.freeze({
   subscription: () => t('setup_harness.subscription', 'Subscription'),
   api_key: () => t('setup_harness.api_key', 'API key'),
 });
-/** THE FOUR WAYS (owner, 24 Nov 2026): a harness runs on one at a time. The last two wait on a proven
- *  path (samurai_lab/wip/SETUP_HARNESS.md): shown, greyed, Coming soon. */
+/** EACH HARNESS SHOWS ONLY ITS OWN WAYS (owner, 25 Nov 2026): subscription and API key (its CLI's
+ *  sign-in, one at a time); the Ronin gateway only where the office's Ronin API account runs it
+ *  (src/accounts.ts: Codex yes, Claude Code never), picked under Model when an Agent starts; OpenRouter
+ *  greyed, Coming soon. */
 /** A way inside a sentence: "subscription", "API key". */
 const wayWord = (way) => (way === 'api_key' ? t('setup_harness.api_key_word', 'API key') : t('setup_harness.subscription_word', 'subscription'));
-const SOON = Object.freeze([
-  ['gateway', () => t('setup_harness.gateway', 'Ronin gateway')],
-  ['openrouter', () => t('setup_harness.openrouter', 'OpenRouter')],
-]);
 
 export function harnessSurfaceDefinition() {
   return { type: HARNESS_SURFACE_TYPE, header: 'surface', label: () => t('setup_harness.label', 'Harness'), create: (context) => createHarnessSurface(context) };
@@ -64,10 +62,16 @@ function createHarnessSurface(context) {
   const body = el('div', 'setup-harness-body');
   const stack = el('div', 'setup-harness-stack');
   const note = el('p', 'setup-harness-note');
-  body.append(stack, note);
+  // Harnesses has no stone on a hosted Home: Setup's Harness step is the way to it (KAN-856).
+  const more = el('p', 'setup-harness-note');
+  more.append(t('setup_harness.more', 'Defaults and models are on '), Object.assign(document.createElement('a'), { href: '#/models', textContent: t('campaign_home.harnesses', 'Harnesses') }), '.');
+  body.append(stack, note, more);
   out.content.append(body);
   let runtime = recordRuntime();
   let signIn = { runs: [], failed: {}, ways: {} };
+  // The office's Ronin API account: which harnesses run on the gateway (always on: every office runs it).
+  let gateway = { harnesses: [] };
+  let gatewayShown = '';
   // A press on the other way while signed in asks once more: one way at a time (owner, 24 Nov).
   let switching = { provider: '', way: '' };
   let open = '';
@@ -80,7 +84,17 @@ function createHarnessSurface(context) {
 
   const hers = () => (irasshaiIn(S.sessions) ? IRASSHAI : '');
   const post = (path, json = {}) => request(path, { method: 'POST', json });
-  const readRuntime = async () => { const r = await request('/api/setup/runtime', { cache: 'no-store' }); if (r.ok && !disposed) { runtime = r.data; paint(); } };
+  const readRuntime = async () => {
+    const [r, a] = await Promise.all([request('/api/setup/runtime', { cache: 'no-store' }), request('/api/accounts', { cache: 'no-store' })]);
+    if (disposed) return;
+    const house = a.ok ? (a.data.accounts || []).find((one) => one.kind === 'ronin_api') : null;
+    if (house) gateway = { harnesses: house.harnesses || [] };
+    if (r.ok) runtime = r.data;
+    paint();
+  };
+
+  /** A press that changes what an Agent can run on goes to her as the person's [Button] line (SETUP_HARNESS.md §4.1). */
+  const pressed = (text) => { const to = hers(); if (to) void sendPress(to, text); };
 
   const start = async (provider, way) => {
     const to = hers();
@@ -111,12 +125,12 @@ function createHarnessSurface(context) {
       const send = button(t('setup_harness.send', 'Send'), true, async () => {
         send.disabled = true;
         const result = await post(`/api/setup/providers/${encodeURIComponent(provider.id)}/sign-in/paste`, { text: input.value });
-        if (result.ok) drafts.delete(provider.id); else send.disabled = false;
+        if (result.ok) { drafts.delete(provider.id); pressed(`${shortName(provider)} · Sent the ${run.paste}`); } else send.disabled = false;
       });
       input.addEventListener('keydown', (event) => { if (event.key === 'Enter') send.click(); });
       row.append(input, send);
     }
-    row.append(button(t('setup_harness.cancel', 'Cancel'), false, () => post(`/api/setup/providers/${encodeURIComponent(provider.id)}/sign-in/cancel`)));
+    row.append(button(t('setup_harness.cancel', 'Cancel'), false, async () => { const r = await post(`/api/setup/providers/${encodeURIComponent(provider.id)}/sign-in/cancel`); if (r.ok) pressed(`${shortName(provider)} · Cancel sign-in`); }));
     box.append(row);
     return box;
   };
@@ -126,7 +140,7 @@ function createHarnessSurface(context) {
     const box = el('div', 'setup-harness-window');
     if (!provider.login_open) {
       const row = stones();
-      row.append(button(t('setup_harness.open_terminal', 'Open its sign-in'), true, async () => { await post(`/api/setup/providers/${encodeURIComponent(provider.id)}/login`); await readRuntime(); }));
+      row.append(button(t('setup_harness.open_terminal', 'Open its sign-in'), true, async () => { const r = await post(`/api/setup/providers/${encodeURIComponent(provider.id)}/login`); if (r.ok) pressed(`${shortName(provider)} · Open its sign-in`); await readRuntime(); }));
       box.append(el('p', 'setup-harness-line', t('setup_harness.terminal', '{cli} signs in in a terminal.', { cli: shortName(provider) })), row);
       return box;
     }
@@ -134,7 +148,7 @@ function createHarnessSurface(context) {
     // One host for the open terminal, kept across repaints so the tile is never torn down by one.
     terminalHost ||= el('div', 'setup-harness-terminal');
     const row = stones();
-    row.append(button(t('setup_harness.close', 'Close'), false, async () => { mounted?.destroy?.(); mounted = null; terminalHost = null; await post(`/api/setup/providers/${encodeURIComponent(provider.id)}/close`); await readRuntime(); }));
+    row.append(button(t('setup_harness.close', 'Close'), false, async () => { mounted?.destroy?.(); mounted = null; terminalHost = null; const r = await post(`/api/setup/providers/${encodeURIComponent(provider.id)}/close`); if (r.ok) pressed(`${shortName(provider)} · Close sign-in`); await readRuntime(); }));
     box.append(terminalHost, row);
     if (!mounted) mounted = mountProviderAttachment(context.environment, terminalHost, provider, context.workspace, () => { mounted = null; });
     return box;
@@ -165,7 +179,7 @@ function createHarnessSurface(context) {
     if (run) bar.append(windowOf(provider, run));
     else if (hermes) {
       // Mounted once while its bar is open, so a repaint keeps what is being edited there.
-      if (!hermesHost) { hermesHost = el('div', 'setup-harness-window'); mountHermesSurface(hermesHost, provider, () => { void readRuntime(); }); }
+      if (!hermesHost) { hermesHost = el('div', 'setup-harness-window'); mountHermesSurface(hermesHost, provider, () => { void readRuntime(); }, (text) => pressed(`Hermes · ${text}`)); }
       bar.append(hermesHost);
     }
     else if (provider.off || (signed && !own)) {
@@ -177,23 +191,32 @@ function createHarnessSurface(context) {
       row.classList.add('setup-harness-ways');
       for (const way of ['subscription', 'api_key']) {
         const made = button(WAYS[way](), false, () => {
-          if (current && current !== way && !(switching.provider === provider.id && switching.way === way)) { switching = { provider: provider.id, way }; paint(); return; }
-          switching = { provider: '', way: '' };
+          // SIGNED IN ALREADY: WARN FIRST (owner, w994, 25 Nov 2026). A CLI's login revokes the sign-in
+          // every Agent on that harness runs on, the moment it starts; the first press says so, the
+          // second goes ahead.
+          if (current && !(switching.provider === provider.id && switching.way === way)) { switching = { provider: provider.id, way }; gatewayShown = ''; paint(); return; }
+          switching = { provider: '', way: '' }; gatewayShown = '';
           void start(provider, way);
         });
         made.setAttribute('aria-selected', String(current === way));
         row.append(made);
       }
-      for (const [, label] of SOON) {
-        const made = button(label(), false, () => {});
-        made.disabled = true;
-        made.setAttribute('aria-disabled', 'true');
-        made.append(el('small', 'ask-word', t('setup_harness.soon', 'Coming soon')));
+      const onGateway = gateway.harnesses.includes(provider.id);
+      if (onGateway) {
+        const made = button(t('setup_harness.gateway', 'Ronin gateway'), false, () => { switching = { provider: '', way: '' }; gatewayShown = gatewayShown === provider.id ? '' : provider.id; paint(); });
+        made.setAttribute('aria-selected', 'false');
         row.append(made);
       }
+      const soon = button(t('setup_harness.openrouter', 'OpenRouter'), false, () => {});
+      soon.disabled = true;
+      soon.setAttribute('aria-disabled', 'true');
+      soon.append(el('small', 'ask-word', t('setup_harness.soon', 'Coming soon')));
+      row.append(soon);
       bar.append(row);
-      const line = switching.provider === provider.id
-        ? t('setup_harness.one_at_a_time', 'One at a time: signing in with {next} replaces your {now}. Press it again to switch.', { next: wayWord(switching.way), now: current ? wayWord(current) : 'sign-in' })
+      const line = onGateway && gatewayShown === provider.id
+        ? t('setup_harness.gateway_line', 'No sign-in needed: pick a Ronin model under Model when you start a {cli} Agent. Your {cli} sign-in stays as it is.', { cli: shortName(provider) })
+        : switching.provider === provider.id
+        ? t('setup_harness.signed_in_already', 'You\u2019re already signed in. Continuing signs out every {cli} Agent until you finish signing in with {next}. Press it again to continue.', { cli: shortName(provider), next: wayWord(switching.way) })
         : current ? t('setup_harness.on_way', 'Signed in with your {way}.', { way: wayWord(current) })
           : signed ? t('setup_harness.signed_line', 'Signed in on this office.') : t('setup_harness.pick_way', 'Pick how {cli} signs in. One way at a time.', { cli: shortName(provider) });
       bar.append(el('p', 'setup-harness-line', line));

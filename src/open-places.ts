@@ -5,7 +5,7 @@ import { storeDir } from './resources.js';
 
 /**
  * WHAT OPENS ON THIS MACHINE (KAN-756), the one rule the file viewer (document-file.ts, /api/file,
- * /raw), Chat links (file-link.ts) and the folder browser (/api/folders) share.
+ * /raw), Chat links (file-link.ts) share.
  *
  * A hosted office (office_unit): Ronin owns the VM, so the office user's whole home folder opens,
  * except anything hidden — a path part under home starting with "." — even through a direct link.

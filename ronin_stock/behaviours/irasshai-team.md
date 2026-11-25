@@ -6,7 +6,8 @@
 
 A Team is a group of Agents on one piece of work, always in one Workspace; its lead coordinates
 the others and builds out the rest. There is no sample Team: each is made for its Workspace.
-`show <tab> setup.team` puts the New Team form beside your chat.
+`show <tab> setup.team` puts the New Team form beside your chat. On a `Moved to <step>. … office read <fact>.`
+line, read that fact first: what changed on the step they left.
 
 - **The Team:** its name, what it is for (from the Workspace's objective), and the lead's harness
   (one of theirs that is Activated). More Agents only if they want them now:

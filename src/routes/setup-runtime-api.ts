@@ -1,4 +1,5 @@
-import { hermesSettingsAnswer, saveHermesConnection, discoverHermesModels, saveHermesSetup, deleteHermesEntry } from '../hermes-setups.js';
+import { hermesSettingsAnswer, saveHermesConnection, discoverHermesModels, saveHermesSetup, deleteHermesEntry, onHermesWritten, readGatewayModels } from '../hermes-setups.js';
+import { broadcastEvent } from '../ws/events.js';
 import { accountsAnswer, saveAccount, discoverAccount, updateAccountLists, deleteAccount, savePreset, deletePreset } from '../accounts.js';
 import { homedir } from 'node:os';
 import { dispatchInstall } from '../agent-install.js';
@@ -12,15 +13,7 @@ import {
   setProviderOff,
   setupRuntimeAnswer,
   githubSetupAnswer,
-  openGithubInstall,
-  openGithubLogin,
-  closeGithubLogin,
-  removeGithubAuthentication,
-  cloneRepository,
   githubRepositories,
-  createGithubRepository,
-  openGitSetupSession,
-  closeGitSetupSession,
 } from '../setup-runtime.js';
 import { installedAnswer } from './installed-api.js';
 import { cancelSignIn, pasteSignIn, signInState, startSignIn } from '../provider-sign-in.js';
@@ -41,13 +34,15 @@ const answer = async (summary?: ProviderSummary) => {
 };
 
 export function registerSetupRuntime(app: express.Express): void {
+  onHermesWritten(() => broadcastEvent({ t: 'hermes-changed' }));
   app.get('/api/hermes', async (_req, res) => {
     try { res.json(await hermesSettingsAnswer()); } catch { res.status(500).json({ error: 'Could not read Hermes setups.' }); }
   });
   app.post('/api/hermes/:action', async (req, res) => {
     try {
       switch (req.params.action) {
-        case 'connection': await saveHermesConnection(req.body); break;
+        // A connection's models are read as it is saved: nobody presses to read them (owner, 25 Nov 2026).
+        case 'connection': { const saved = await saveHermesConnection(req.body); await discoverHermesModels(saved.id).catch(() => {}); break; }
         case 'discover': await discoverHermesModels(String(req.body.id)); break;
         case 'setup': await saveHermesSetup(req.body); break;
         case 'delete':
@@ -119,7 +114,9 @@ export function registerSetupRuntime(app: express.Express): void {
   // is an egress line. Every other reader takes GET /api/setup/runtime, which is the record.
   app.post('/api/setup/providers/refresh', async (_req, res) => {
     try {
-      res.json(await answer(await refreshProviders()));
+      const summary = await refreshProviders();
+      await readGatewayModels();
+      res.json(await answer(summary));
     } catch (error) {
       res.status(500).json({ error: errMsg(error) });
     }
@@ -217,48 +214,9 @@ export function registerSetupRuntime(app: express.Express): void {
     catch (error) { res.status(500).json({ error: errMsg(error) }); }
   });
 
-  app.post('/api/setup/github/login', async (_req, res) => {
-    try { res.json({ ok: true, ...(await openGithubLogin()) }); }
-    catch (error) { res.status(400).json({ error: errMsg(error) }); }
-  });
-
-  app.post('/api/setup/github/install', async (_req, res) => {
-    try { res.json({ ok: true, ...(await openGithubInstall()) }); }
-    catch (error) { res.status(400).json({ error: errMsg(error) }); }
-  });
-
-  app.post('/api/setup/github/close', async (_req, res) => {
-    try { res.json({ ok: true, ...(await closeGithubLogin()) }); }
-    catch (error) { res.status(400).json({ error: errMsg(error) }); }
-  });
-
-  app.post('/api/setup/github/logout', async (_req, res) => {
-    try { res.json({ ok: true, ...(await removeGithubAuthentication()) }); }
-    catch (error) { res.status(400).json({ error: errMsg(error) }); }
-  });
-
   app.get('/api/setup/github/repos', async (_req, res) => {
     try { res.json({ ok: true, repos: await githubRepositories() }); }
     catch (error) { res.status(400).json({ error: errMsg(error) }); }
   });
 
-  app.post('/api/setup/git/clone', async (req, res) => {
-    try { res.json({ ok: true, workspace: await cloneRepository(req.body?.repository, req.body?.parent) }); }
-    catch (error) { res.status(400).json({ error: errMsg(error) }); }
-  });
-
-  app.post('/api/setup/github/create', async (req, res) => {
-    try { res.json({ ok: true, ...(await createGithubRepository(req.body?.dir, req.body?.visibility)) }); }
-    catch (error) { res.status(400).json({ error: errMsg(error) }); }
-  });
-
-  app.post('/api/setup/git/open', async (_req, res) => {
-    try { res.json({ ok: true, attachment: await openGitSetupSession() }); }
-    catch (error) { res.status(400).json({ error: errMsg(error) }); }
-  });
-
-  app.post('/api/setup/git/close', async (_req, res) => {
-    try { await closeGitSetupSession(); res.json({ ok: true }); }
-    catch (error) { res.status(400).json({ error: errMsg(error) }); }
-  });
 }

@@ -15,9 +15,11 @@ A Workspace holds:
 - **Plans** — where its plans are kept ([Writing a plan](planning.md)).
 - **Canvases** — one-page maps of the Workspace: its live site, repos, work, documents and outside services.
 
-Ronin starts you with none. In Setup the Helpful Assistant can offer two: **Ronin Lab**, for
-ideas, research, assistants and planning before a project exists, off your code repositories,
-and **Project One**, for your first project. Add your own whenever you have work somewhere else.
+Ronin starts you with none. Setup's Workspace step asks how you are starting: from a Git
+repository, an existing project not in Git, from scratch, or not sure yet, which makes **Ronin
+Lab**, for ideas, research and planning before a project exists. Each Workspace's folder is
+`~/ronin/<name>`, with `plans/`, `files/` and `repos/` inside. Add more whenever you have work
+somewhere else.
 
 A Workspace holds items too: open work of the project that no Team has yet, which go to its first
 Team when Setup's Team step makes one, and its **Icebox** of parked ideas

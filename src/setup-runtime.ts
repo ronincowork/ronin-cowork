@@ -5,7 +5,7 @@ import { operationalPartCount } from './provider-parts.js';
 import { updateCommand, updateLineOf } from './agent-install.js';
 import { AGENTS, discoverExecutable, launchArgv, listAgentAvailability } from './agents.js';
 import { updateSection } from './machine-state.js';
-import { listProviderCatalog, newerVersion, type ModelList, type ProviderCatalogEntry, type ProviderSummary } from './model-providers.js';
+import { listProviders, newerVersion, type ModelList, type ProviderSummary } from './model-providers.js';
 import { activatedAt, npmPackageOf, offAt, providerSignedIn } from './provider-summary.js';
 import { rootDir } from './resources.js';
 import { runCommand } from './send.js';
@@ -25,10 +25,10 @@ interface SetupSection {
 export interface SetupProviderState {
   /** The CLI id — the key of every machine fact. */
   id: string;
-  /** The vendor id the catalog joins to this CLI; '' when the catalog has no section for it. */
+  /** The vendor id this CLI serves, from its entry in `src/agents.ts`. */
   provider: string;
   label: string;
-  /** The vendor's name, from the catalog. */
+  /** The vendor's name, from the same entry. */
   from: string;
   installed: boolean;
   installable: boolean;
@@ -129,9 +129,8 @@ export async function setupRuntimeAnswer(
   summary: ProviderSummary,
   ops: Pick<ProviderSessionOps, 'exists'> = defaultSessionOps,
   installed?: InstalledAnswer,
-  catalog?: ProviderCatalogEntry[],
 ): Promise<SetupRuntimeAnswer> {
-  const entries = catalog ?? await listProviderCatalog();
+  const entries = listProviders();
   const providers = await Promise.all(AGENTS.map(async (agent): Promise<SetupProviderState> => {
     const entry = entries.find((row) => row.cli === agent.id);
     const session = sessionName(agent.id);
@@ -305,10 +304,8 @@ async function git(dir: string, args: string[]): Promise<string> {
   return (await run('git', ['-C', dir, ...args], { timeout: 10_000 })).stdout.trim();
 }
 
-const GITHUB_SETUP_SESSION = 'setup_github';
-const GITHUB_INSTALL_SESSION = 'install_github';
-const GIT_SETUP_SESSION = 'setup_git';
-
+/** GitHub on this machine (KAN-809): whether gh is there and signed in, as whom. Signing in is the
+ * Helpful Assistant's, in her chat; nothing here opens a session. */
 export type GithubSetupState = 'missing' | 'needs_authentication' | 'authenticated' | 'unreadable';
 export interface GithubSetupAnswer {
   installed: boolean;
@@ -316,176 +313,29 @@ export interface GithubSetupAnswer {
   account: string;
   state: GithubSetupState;
   problem: string;
-  installing: boolean;
-  attachment: { type: 'session'; key: string; team: typeof PROVIDER_SETUP_TEAM; temporary: true } | null;
 }
 
-export interface GithubSetupOps {
-  installed(): Promise<boolean>;
-  authenticatedLogin(): Promise<string>;
-  exists(): Promise<boolean>;
-  installExists(): Promise<boolean>;
-  open(): Promise<void>;
-  openInstall(): Promise<void>;
-  close(): Promise<void>;
-  closeInstall(): Promise<void>;
-  logout(account: string): Promise<void>;
-}
-
-export type GithubSessionPrimitives = SetupSessionPrimitives;
-
-export async function createGithubSetupSession(
-  primitives?: GithubSessionPrimitives,
-  command = runCommand,
-  executable = () => discoverExecutable('gh'),
-): Promise<void> {
-  const gh = await executable();
-  if (!gh) throw new Error('GitHub CLI is not installed on this machine.');
-  await createSetupSession(GITHUB_SETUP_SESSION, 'gh', os.homedir(), {
-    agent: false, provider: 'github',
-    argv: [],
-  }, primitives);
-  await command(GITHUB_SETUP_SESSION, `'${gh.replaceAll("'", "'\\''")}' auth login --hostname github.com --git-protocol https --web`);
-}
-
-/** GitHub's supported package paths, run visibly because system package managers may ask for sudo.
- *  The same install adds the common tools every Agent reaches for (behaviours/linux-tools.md):
- *  jq, file and Python's Pillow; macOS has file already. */
-export function githubInstallCommand(platform = os.platform()): string {
-  if (platform === 'darwin') return 'command -v brew >/dev/null || { echo "Homebrew is required to install GitHub CLI on macOS: https://brew.sh"; exit 1; }; brew install gh jq pillow';
-  if (platform === 'linux') return [
-    'if [ "$(id -u)" -eq 0 ]; then SUDO=""; elif command -v sudo >/dev/null; then SUDO=sudo; else echo "Installing GitHub CLI requires sudo on this Linux machine."; exit 1; fi',
-    'if command -v brew >/dev/null; then brew install gh jq pillow',
-    'elif command -v apt-get >/dev/null; then (command -v wget >/dev/null || ($SUDO apt-get update && $SUDO apt-get install -y wget)) && $SUDO mkdir -p -m 755 /etc/apt/keyrings && GH_KEY=$(mktemp) && wget -nv -O"$GH_KEY" https://cli.github.com/packages/githubcli-archive-keyring.gpg && $SUDO tee /etc/apt/keyrings/githubcli-archive-keyring.gpg <"$GH_KEY" >/dev/null && $SUDO chmod go+r /etc/apt/keyrings/githubcli-archive-keyring.gpg && echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | $SUDO tee /etc/apt/sources.list.d/github-cli.list >/dev/null && $SUDO apt-get update && $SUDO apt-get install -y gh jq file python3-pil',
-    'elif command -v dnf >/dev/null; then $SUDO dnf install -y gh jq file python3-pillow',
-    'elif command -v yum >/dev/null; then $SUDO yum install -y gh jq file python3-pillow',
-    'elif command -v pacman >/dev/null; then $SUDO pacman -S --needed github-cli jq file python-pillow',
-    'else echo "No supported GitHub CLI package manager was found. See https://cli.github.com/"; exit 1; fi',
-  ].join('; ');
-  throw new Error('GitHub CLI installation is supported on macOS and Linux.');
-}
-
-export async function createGithubInstallSession(primitives?: GithubSessionPrimitives): Promise<void> {
-  await createSetupSession(GITHUB_INSTALL_SESSION, 'gh', os.homedir(), { agent: false, argv: [], provider: 'github' }, primitives);
-  await runCommand(GITHUB_INSTALL_SESSION, githubInstallCommand());
-}
-
-/** A neutral owner shell for SSH, credential-helper, or organization-specific Git setup. */
-export async function openGitSetupSession(primitives?: GithubSessionPrimitives): Promise<ReturnType<typeof setupAttachment>> {
-  if (!(await sessionExists(GIT_SETUP_SESSION))) {
-    await createSetupSession(GIT_SETUP_SESSION, 'git', os.homedir(), { agent: false, argv: [], provider: 'git' }, primitives);
+export async function githubSetupAnswer(): Promise<GithubSetupAnswer> {
+  const gh = await discoverExecutable('gh');
+  if (!gh) return { installed: false, authenticated: false, account: '', state: 'missing', problem: '' };
+  try {
+    // `gh api user` verifies the active github.com credential and prints only its login.
+    const login = (await run(gh, ['api', 'user', '--hostname', 'github.com', '--jq', '.login'], { timeout: 8_000 })).stdout.trim();
+    const account = /^[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})$/.test(login) ? login : '';
+    return account
+      ? { installed: true, authenticated: true, account, state: 'authenticated', problem: '' }
+      : { installed: true, authenticated: false, account: '', state: 'unreadable', problem: 'GitHub CLI returned an unreadable authentication result.' };
+  } catch (error) {
+    return error instanceof SpawnBrokerError && error.code === 4
+      ? { installed: true, authenticated: false, account: '', state: 'needs_authentication', problem: '' }
+      : { installed: true, authenticated: false, account: '', state: 'unreadable', problem: 'Ronin could not ask GitHub CLI to verify authentication.' };
   }
-  return setupAttachment(GIT_SETUP_SESSION);
 }
 
-export async function closeGitSetupSession(): Promise<void> {
-  if (await sessionExists(GIT_SETUP_SESSION)) await killSessionTree(GIT_SETUP_SESSION);
-}
-
-const defaultGithubSetupOps: GithubSetupOps = {
-  installed: () => discoverExecutable('gh').then(Boolean),
-  // `gh api user` verifies the active github.com credential and prints only its login.
-  // `gh auth status --json` requires gh 2.81, though older installed versions can log in.
-  authenticatedLogin: async () => {
-    const gh = await discoverExecutable('gh');
-    if (!gh) throw new Error('GitHub CLI is not installed on this machine.');
-    return (await run(gh, ['api', 'user', '--hostname', 'github.com', '--jq', '.login'], { timeout: 8_000 })).stdout;
-  },
-  exists: () => sessionExists(GITHUB_SETUP_SESSION),
-  installExists: () => sessionExists(GITHUB_INSTALL_SESSION),
-  open: () => createGithubSetupSession(),
-  openInstall: () => createGithubInstallSession(),
-  close: () => killSessionTree(GITHUB_SETUP_SESSION),
-  closeInstall: () => killSessionTree(GITHUB_INSTALL_SESSION),
-  logout: async (account) => {
-    const gh = await discoverExecutable('gh');
-    if (!gh) throw new Error('GitHub CLI is not installed on this machine.');
-    await run(gh, ['auth', 'logout', '--hostname', 'github.com', '--user', account], { timeout: 8_000 });
-  },
-};
-
-export interface GithubAuthMeasurement {
-  state: 'needs_authentication' | 'authenticated' | 'unreadable';
-  account: string;
-  problem: string;
-}
-
-/** Accept only the login returned by GitHub's authenticated /user endpoint. */
-export function githubAuthFromLogin(login: string): GithubAuthMeasurement {
-  const candidate = login.trim();
-  const account = /^[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})$/.test(candidate) ? candidate : '';
-  return account
-    ? { state: 'authenticated', account, problem: '' }
-    : { state: 'unreadable', account: '', problem: 'GitHub CLI returned an unreadable authentication result.' };
-}
-
-// Whether a GitHub login, GitHub install or git setup session is open: while one is, the
-// /events tick watches the GitHub answer.
-export async function githubSetupAttached(): Promise<boolean> {
-  const open = await Promise.all([GITHUB_SETUP_SESSION, GITHUB_INSTALL_SESSION, GIT_SETUP_SESSION].map((name) => sessionExists(name)));
-  return open.some(Boolean);
-}
-
-export async function githubSetupAnswer(ops: GithubSetupOps = defaultGithubSetupOps): Promise<GithubSetupAnswer> {
-  const installed = await ops.installed();
-  let measurement: GithubAuthMeasurement = { state: 'needs_authentication', account: '', problem: '' };
-  if (installed) {
-    try { measurement = githubAuthFromLogin(await ops.authenticatedLogin()); }
-    catch (error) {
-      measurement = error instanceof SpawnBrokerError && error.code === 4
-        ? { state: 'needs_authentication', account: '', problem: '' }
-        : { state: 'unreadable', account: '', problem: 'Ronin could not ask GitHub CLI to verify authentication.' };
-    }
-  }
-  const account = measurement.account;
-  const [open, installing] = await Promise.all([ops.exists(), ops.installExists()]);
-  const authenticated = account !== '';
-  return {
-    installed,
-    authenticated,
-    account,
-    state: !installed ? 'missing' : measurement.state,
-    problem: installed ? measurement.problem : '',
-    installing,
-    attachment: installing ? setupAttachment(GITHUB_INSTALL_SESSION)
-      : open ? setupAttachment(GITHUB_SETUP_SESSION) : null,
-  };
-}
-
-export async function openGithubInstall(ops: GithubSetupOps = defaultGithubSetupOps): Promise<GithubSetupAnswer> {
-  if (await ops.installed()) return githubSetupAnswer(ops);
-  if (!(await ops.installExists())) await ops.openInstall();
-  return githubSetupAnswer(ops);
-}
-
-export async function openGithubLogin(ops: GithubSetupOps = defaultGithubSetupOps): Promise<GithubSetupAnswer> {
-  if (!(await ops.installed())) throw new Error('GitHub CLI is not installed on this machine.');
-  if (!(await ops.exists())) await ops.open();
-  return githubSetupAnswer(ops);
-}
-
-export async function closeGithubLogin(ops: GithubSetupOps = defaultGithubSetupOps): Promise<GithubSetupAnswer> {
-  if (await ops.exists()) await ops.close();
-  if (await ops.installExists()) await ops.closeInstall();
-  return githubSetupAnswer(ops);
-}
-
-/** Remove only the active github.com credential that gh reported; the browser cannot name another account. */
-export async function removeGithubAuthentication(ops: GithubSetupOps = defaultGithubSetupOps): Promise<GithubSetupAnswer> {
-  const current = await githubSetupAnswer(ops);
-  if (!current.installed) throw new Error('GitHub CLI is not installed on this machine.');
-  if (!current.authenticated || !current.account) throw new Error('GitHub is not authenticated on this machine.');
-  if (await ops.exists()) await ops.close();
-  await ops.logout(current.account);
-  return githubSetupAnswer(ops);
-}
-
-/** Clone a GitHub repository into `parent` (Ronin's own folder when none is named). The Workspace
- * page that asked adds it as a row; nothing here keeps a list (KAN-728). */
-/** A repository cloned into a folder here (owner, 2026-11-24; w926): any Git URL, from any host, with
- * plain git; `owner/name` means GitHub. A public one needs no sign-in; a private one needs this
- * machine's Git or GitHub sign-in, and git says so in its own words. */
-export async function cloneRepository(repository: unknown, parent?: unknown): Promise<{ dir: string }> {
+/** A repository cloned into `parent`, a Workspace's repos/ (addRepository, src/workspaces.ts; KAN-809):
+ * any Git URL, from any host, with plain git; `owner/name` means GitHub. A public one needs no sign-in;
+ * a private one needs this machine's Git or GitHub sign-in, and git says so in its own words. */
+export async function cloneRepository(repository: unknown, parent: string): Promise<{ dir: string }> {
   const entered = typeof repository === 'string' ? repository.trim() : '';
   const shorthand = /^([A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+?)(?:\.git)?$/.exec(entered);
   const url = /^(?:https?:\/\/|ssh:\/\/|git@[^:]+:|git:\/\/)\S+$/.test(entered);
@@ -493,7 +343,7 @@ export async function cloneRepository(repository: unknown, parent?: unknown): Pr
   const remote = shorthand ? `https://github.com/${shorthand[1]}.git` : entered;
   const base = remote.replace(/\.git$/, '').replace(/\/+$/, '').split(/[/:]/).pop() || '';
   if (!/^[A-Za-z0-9_.-]+$/.test(base)) throw new Error('That URL names no repository.');
-  const dir = path.join(typeof parent === 'string' && parent.trim() ? path.resolve(parent.trim()) : rootDir('user'), base);
+  const dir = path.join(parent, base);
   if (await exists(dir)) throw new Error(`The destination ${dir} already exists.`);
   const git = await discoverExecutable('git');
   if (!git) throw new Error('Git is not installed or is not available to the owner’s login shell.');

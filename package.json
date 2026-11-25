@@ -13,7 +13,7 @@
     "check:modules": "node scripts/check-modules.mjs",
     "preloads": "node scripts/generate-modulepreloads.mjs",
     "byoin": "tsx scripts/byoin-user-check.ts",
-    "verify": "tsc --noEmit && node scripts/check-tests.mjs",
+    "verify": "node scripts/check-tamper.mjs && tsc --noEmit && node scripts/check-tests.mjs",
     "verify:staging": "node scripts/smoke-ui.mjs --staging",
     "kokugo:table": "node scripts/kokugo-table.mjs",
     "prestart": "tsx scripts/prepare-dev-services.ts",

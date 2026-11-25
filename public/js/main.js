@@ -123,9 +123,10 @@ async function init() {
   // the same workbench, selector column, persistence, recall and drag/drop as the Cowork
   // space, offering a Campaign's own configuration instead of its Coworks and Agents.
   guard('register the Campaign destination', () => workspace.register('campaign', createCampaignView()));
+  // Setup opens at #/setup on every office; only hosted Home has its stone (KAN-856, w997).
   guard('register the Setup destination', () => workspace.register('setup', createSetupView()));
   guard('register the Launch destination', () => workspace.register('launch', createLaunchView()));
-  // A bare address goes Home; Home shows Get started while a Setup step is open (SETUP_SWEEP.md §7).
+  // A bare address goes Home.
   workspace.start('');
 
   // THE DESKTOP FIRST PAINT ends here: the route's real workspace is mounted and the

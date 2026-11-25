@@ -2,8 +2,9 @@
 
 Three steps take you from a fresh Ronin to Agents working for you: connect a harness, say what
 you are working on, and start a Team. Your phone's browser works as well as your computer's.
-Press **Get started** on Ronin Home: the steps are **Harness**, **Workspace** and **Team**, in
-any order, with the Helpful Assistant beside each one ([Ronin Setup](setup-workbench.md)). A step
+On a hosted office, press **Setup** on Ronin Home: the steps are **Harness**, **Workspace** and
+**Team**, in any order, with the Helpful Assistant beside each one ([Ronin Setup](setup-workbench.md)).
+Self-hosted, the same three are Home's **Harnesses**, **Workspaces** and **Teams** doors. A step
 gets a check once it is true in your office, however you did it.
 
 ## 1. Connect a harness

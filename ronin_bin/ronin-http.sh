@@ -28,11 +28,12 @@ ronin_connect() {
   return 0
 }
 
-# ronin_item_call METHOD PATH [JSON] — one work item request, printed for the caller: the
-# acknowledgement first, then the item as it now is (or the reply of a read); with
-# ITEM_ACK_ONLY=1 the acknowledgement alone. An error goes to stderr with exit 3, and a
-# reply that is not JSON is reported with its HTTP status; a refusal (the hierarchy rule:
-# "w39 can't go there.") exits 4.
+# ronin_item_call METHOD PATH [JSON] — one work item request, printed for the caller: a
+# write's acknowledgement lines alone, or with ITEM_JSON=1 the whole reply as JSON and nothing
+# else ({acknowledgement, item, ...}; several at once {ok, answers: [{id, ok, item}]}); a
+# read's reply is JSON either way (w995). An error goes to stderr with exit 3, and a
+# reply that is not JSON is reported with its HTTP status; a refusal (an item under itself,
+# a change Jira cannot make) exits 4, as does several at once with any not done.
 ronin_item_call() {
   local method=$1 path=$2 body=${3-} out
   local args=(-sS -m 30 "${RONIN_CURL[@]+"${RONIN_CURL[@]}"}" -X "$method")
@@ -45,8 +46,10 @@ except Exception: print("HTTP %s: Ronin answered %s without JSON" % (os.environ[
 if d.get("error"):
     print(d["error"], file=sys.stderr); sys.exit(4 if d.get("refused") else 3)
 if d.get("acknowledgement"):
-    print(d["acknowledgement"])
-    if os.environ.get("ITEM_ACK_ONLY") != "1" and d.get("item"): print(json.dumps(d["item"], indent=2, ensure_ascii=False))
+    if os.environ.get("ITEM_JSON") == "1": print(json.dumps(d, indent=2, ensure_ascii=False))
+    else: print(d["acknowledgement"])
+    # Several at once, some not done: every line printed, then the refusal exit.
+    if d.get("ok") is False: sys.exit(4)
 else:
     d.pop("ok", None)
     out = d.get("item", d)

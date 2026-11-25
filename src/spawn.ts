@@ -18,6 +18,7 @@ import { mandate, type LaunchMode, type Mandate } from './agent-defaults.js';
 import { resolveInstallations, type ResolvedInstallation } from './installations.js';
 import { initialCampaignId } from './campaign-scope.js';
 import { resolveLaunchSeed } from './launch-seed.js';
+import { parentSettings } from './waterfall.js';
 import { profileDir, resolveHouseSeatProfile, type HouseSeat } from './house-seats.js';
 import { agentBriefOf, composeBrief, type BuiltBrief } from './brief-build.js';
 import type { BriefSettings } from './brief-record.js';
@@ -34,7 +35,6 @@ export interface SpawnForm {
   provider?: string;
   mandate?: Partial<Mandate>;
   campaign_id?: string;
-  kind?: string;
   /** The Agent's own brief settings, integrations and project management (docs/architecture/brief.md, Layers and brief settings). */
   brief?: BriefSettings;
   integrations?: string[];
@@ -82,7 +82,6 @@ export interface Resolved {
   team_state: '' | 'active' | 'archived';
   /** The brief, composed: record, layers, what is in play, the packet text. */
   composed: BuiltBrief | null;
-  kind: string;
   ignored: string[];
   installations: ResolvedInstallation[];
   stated_by: Record<string, StatedBy[]>;
@@ -175,14 +174,11 @@ export async function resolveFacts(form: SpawnForm, taken: Set<string>, proposed
   const workspace: Workspace | null = workspaceName ? await readWorkspace(roster?.campaign_id || campaignId, workspaceName) : null;
   if (roster?.workspace && !workspace) throw new Error(`Team "${roster.name}" is launched in Workspace "${roster.workspace}", which does not exist.`);
   const profile = resolveHouseSeatProfile(form.house_seat, resolveLaunchProfile());
+  // The Agent's parent (src/waterfall.ts): what it copies, its brief settings included.
+  const parentLevel = await parentSettings(campaignId, { workspace, team: roster });
+  const parent = { ...parentLevel, name: roster?.name ?? workspace?.name ?? campaignId };
   const parentSeed = coworkAgent && campaign
-    ? resolveLaunchSeed({
-        campaign,
-        roster,
-        workspace,
-        sessions: agentsSet.sessions as SessionsDefaults | undefined,
-        lead: !!form.team && !!form.team_lead,
-      })
+    ? resolveLaunchSeed({ campaign_id: campaign.id, parent, roster, lead: !!form.team && !!form.team_lead })
     : null;
 
   // WHERE AN AGENT STARTS is Ronin's: one folder for every Agent, Ronin house (owner, 2026-11-03), so
@@ -202,10 +198,9 @@ export async function resolveFacts(form: SpawnForm, taken: Set<string>, proposed
   const repositories = (workspace?.repos ?? []).map((repo) => ({ ...repo, managed: desksManaged(rowArrangement({ ...repo, repo: true, workspace: workspace!.name, campaign_id: workspace!.campaign_id })) }));
   const folders = workspace?.folders ?? [];
   const arrangement: 'managed' | 'checkout' | 'none' = repositories.some((repo) => repo.managed) ? 'managed' : repositories.length ? 'checkout' : 'none';
-  const kind = form.kind ?? String(parentSeed?.seeds.kind.value ?? 'open');
   return {
     sessionType, coworkAgent, bareMetalAgent, campaignId, agentsSet, campaign, launchSpecs, roster, profile,
-    parentSeed, workspace, place, repositories, folders, agent, installations, name, arrangement, kind,
+    parent, parentSeed, workspace, place, repositories, folders, agent, installations, name, arrangement,
   };
 }
 export type LaunchFacts = Awaited<ReturnType<typeof resolveFacts>>;
@@ -217,13 +212,16 @@ async function resolveLaunch(form: SpawnForm, facts: LaunchFacts) {
   let { agentsSet, launchSpecs } = facts;
   // No default yet (KAN-725): measure the sign-ins first, so the first one signed in, in Setup
   // or in a tile, is written as the default before this launch reads it.
-  const stated = (agentsSet.sessions as SessionsDefaults | undefined)?.default?.provider;
+  // The model is the parent's (src/waterfall.ts); a parent with none leaves it to Models > Defaults.
+  const copied = parentSeed?.seeds.provider.value ? { provider: String(parentSeed.seeds.provider.value), model: String(parentSeed.seeds.model.value) } : null;
+  const stated = copied?.provider || (agentsSet.sessions as SessionsDefaults | undefined)?.default?.provider;
   if (agent && !form.cmd && !form.provider && !form.model && !stated) {
     const summary = await measureAndRecordProviders();
     agentsSet = await readAgentsSection();
     launchSpecs = await listSessionLaunchSpecs(summary);
   }
-  const sessionsSet = sessionsFor(agentsSet.sessions as SessionsDefaults | undefined, !!form.team && !!form.team_lead);
+  const house = sessionsFor(agentsSet.sessions as SessionsDefaults | undefined, !!form.team && !!form.team_lead);
+  const sessionsSet = copied ? { ...house, default: copied } : house;
   const chosen = resolveLaunchCommand({
     agent,
     cmd: form.cmd,
@@ -274,7 +272,7 @@ export async function resolveForm(
   proposedRoster?: TeamRoster,
 ): Promise<Resolved> {
   const facts = await resolveFacts(form, taken, proposedRoster);
-  const { sessionType, coworkAgent, campaign, roster, profile, parentSeed, workspace, place, repositories, folders, agent, installations, name, kind } = facts;
+  const { sessionType, coworkAgent, campaign, roster, profile, parentSeed, workspace, place, repositories, folders, agent, installations, name } = facts;
   const { cmd, spec, chosen, launchMode } = await resolveLaunch(form, facts);
   const composed = await resolveBriefFor(form, facts, {
     provider: spec?.provider ?? '', model: spec?.model ?? '', harness: spec?.cli ?? '', launch_mode: launchMode,
@@ -335,7 +333,6 @@ export async function resolveForm(
     team_wipeboard: roster?.wipeboard ?? '',
     team_state: roster?.state ?? '',
     composed,
-    kind,
     ignored,
     installations,
     stated_by: {
@@ -364,7 +361,6 @@ export async function resolveForm(
       team_wipeboard: rosterSource,
       team_state: rosterSource,
       brief_settings: form.brief !== undefined ? explicit : system,
-      kind: form.kind !== undefined ? explicit : parentSeed?.seeds.kind.stated_by ?? system,
       arrangement: repositories.length ? workspaceSource : [],
     },
   };

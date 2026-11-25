@@ -74,6 +74,8 @@ export interface BriefRecord {
     lead: boolean;
     wipeboard: string;
     team_objective: string;
+    /** The Team's standing directions to every Agent in it (owner, 25 Nov). */
+    team_instructions: string;
     /** A Team lead's: the integrations on for its Team (the layers down to the Team, without the Agent's own); [] otherwise. */
     team_integrations: string[];
     reach: string;

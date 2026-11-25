@@ -49,10 +49,10 @@ moment of asking (`deskStatus`). Nothing here is prose an agent maintains.
 `desks=managed` gives a coding launch its desk, the contract in its brief, and its
 capability-selected tools; `direct` gives none of them and the session starts in the checkout.
 There is no install-wide switch and nothing in the repository: the Workspace page's Mode
-(Reviewed or Direct) writes the row with the Workspace's Save, and
+(Desks or Direct; Desks is `mode: reviewed`) writes the row with the Workspace's Save, and
 `PUT /api/folders/:name/repo-profile` (`setRepoSettings`) writes it in every Workspace that holds
-that repository. A repository added to a Workspace starts Direct on the branch it has checked
-out. A coding launch that gets no desk says why on its receipt.
+that repository. A repository added through `POST /api/workspaces/<name>/repos` starts on Desks
+(owner, 25 Nov; KAN-809): its checked-out branch stable, `dev` made there for desks. A coding launch that gets no desk says why on its receipt.
 
 ## Open
 

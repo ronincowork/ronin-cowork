@@ -1,6 +1,6 @@
 /* part of the ronin-cowork client — see js/README.md */
 /** NEW AGENT — the sole drawn launch form. Session type decides which questions exist;
- * only a Cowork Agent has kind, mandate, and loadout. Defaults arrive through
+ * only a Cowork Agent has a mandate and loadout. Defaults arrive through
  * `GET /api/launch-seed?team=` and land until the user's hand changes them. The Behaviors
  * step is brief-step.js: this Agent's own brief settings, integrations and project
  * management, and what comes with it as the server works it out (docs/architecture/brief.md, Where it is set in the UI). */
@@ -9,7 +9,7 @@ import { t } from './lexicon.js';
 import { ask } from './ask.js';
 import { finalizeTeamName, isValidTeamName, sanitizeTeamName } from './new-team-draft.js';
 import {
-  createStep, el, kindTiles, loadProviderCatalog, modelLabel, providerCatalog, readingRows, rowTierWord, tagRow,
+  createStep, el, loadProviderCatalog, modelLabel, providerCatalog, readingRows, rowTierWord, tagRow,
 } from './form-steps.js';
 import { openLaunchHandoff } from './launch-handoff.js';
 import { mandateRows, setMandates } from './mandates.js';
@@ -24,7 +24,7 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
     const entryTeam = typeof team === 'function' ? team() : team;
     return {
       type: 'cowork_agent',
-      name: '', kind: 'coding', kindTouched: false, provider: '', model: '', instructions: '',
+      name: '', provider: '', model: '', instructions: '',
       teamMode: entryTeam ? 'existing' : 'none', team: entryTeam || '', newTeam: '',
       reach: 'open', recruit: 'open', output: ['open'],
       role: 'coworker',
@@ -63,18 +63,6 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
   const isCowork = () => draft.type === 'cowork_agent';
   const hasAgent = () => draft.type !== 'terminal';
   const chosenTeam = () => (draft.teamMode === 'existing' ? draft.team : draft.teamMode === 'new' ? finalizeTeamName(draft.newTeam) : '');
-
-  /* ---- 1 · Kind ---- */
-  const stepKind = createStep({ n: 1, key: 'kind', title: t('kind', 'Kind') });
-  const kindHost = el('div');
-  function paintKinds() {
-    kindHost.replaceChildren(kindTiles(draft.kind, (key) => {
-      draft.kind = key;
-      draft.kindTouched = true;
-      paint();
-    }));
-  }
-  stepKind.body.append(kindHost);
 
   /* ---- 2 · Session type ---- */
   const stepType = createStep({ n: 2, key: 'type', title: t('new_agent.session_type_step', 'Session type') });
@@ -127,7 +115,7 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
   function paintLeanNote() {
     leanNote.hidden = isCowork() || draft.type === 'terminal';
     if (leanNote.hidden) return;
-    leanNote.textContent = t('new_agent.bare_note', 'A bare-metal Agent takes no kind, no mandate and no loadout.');
+    leanNote.textContent = t('new_agent.bare_note', 'A bare-metal Agent takes no mandate and no loadout.');
   }
   const topLeft = el('div', 'aa-col');
   const name = createField({ label: configure ? t('agent_composition.agent_title', 'Title') : t('new_agent.name_required', 'Name · required'), control: nameInput });
@@ -310,7 +298,7 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
 
   /* ---- the plan: which steps exist for this type and door ---- */
   const steps = {
-    kind: stepKind, type: stepType, top: stepTop, loadout: stepLoadout,
+    type: stepType, top: stepTop, loadout: stepLoadout,
   };
   const plan = () => draft.type === 'cowork_agent' ? ['type', 'top', 'loadout'] : ['type', 'top'];
   const FOLDS = ['loadout'];
@@ -492,10 +480,7 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
       for (const key of ['reach', 'recruit']) if (value(key)) draft[key] = value(key);
       if (value('output')) draft.output = [value('output')].flat().filter(Boolean);
     }
-    // The campaign's, or the team's if one is joined — an editable value like every other
-    if (!draft.kindTouched && team && value('kind')) draft.kind = value('kind');
     syncQuestions();
-    paintKinds();
     paintFolds();
     paintFoot();
     await loadPreview();
@@ -520,7 +505,6 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
     instructionsField.hidden = !hasAgent();
     paintTypes();
     paintLeanNote();
-    paintKinds();
     syncQuestions();
     paintDefaultsNote();
     paintBehaviourShelves();

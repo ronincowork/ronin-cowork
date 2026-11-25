@@ -12,7 +12,7 @@
 - **transcript_journal:** —
 - **launch_initial:** ["-i", "{brief}"]
 
-CLI id and command: `agy`. Catalog provider: Google. Reviewed 2026-11-05.
+CLI id and command: `agy`. Vendor: `google` (Google), its `vendor` in `src/agents.ts`; transcript reported at `~/.gemini/antigravity-cli/brain/<conversation-id>/.system_generated/logs/transcript.jsonl`, no adapter yet. Reviewed 2026-11-05.
 Version: **1.5.1**. Installed and its help read; the launch below is not yet proven end to
 end through Ronin.
 

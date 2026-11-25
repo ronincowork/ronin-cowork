@@ -7,8 +7,8 @@ import { hermesConfigured, readHermesSettings } from './hermes-setups.js';
  * and whether its own credential file is on this machine (presence only; never read). A
  * third is recorded, not probed: the activation the owner completed through Done, kept in
  * machine settings under `setup.providers.<cli id>`. A provider is operational when it is
- * installed, signed in or recorded, not turned off, and holds at least one cell in the
- * provider catalog — an installed, signed-in CLI with nothing to launch is not counted.
+ * installed, signed in or recorded, not turned off, and its vendor in `src/agents.ts` is not
+ * `comingSoon` — an installed, signed-in CLI with nothing to launch is not counted.
  *
  * Two writers, one record (owner's ruling, 2026-09-25):
  * - `measureAndRecordProviders` — machine facts; the recorded model lists and the last
@@ -28,7 +28,7 @@ import { execFile } from './spawn-broker.js';
 import { ensureInitialCampaign, initialCampaign, writeCampaignProviders } from './campaigns.js';
 import { readAgentsSection, readSetupSection, writeAgentsSection } from './machine-state.js';
 import { operationalPartCount, refreshProviderParts } from './provider-parts.js';
-import { listProviderCatalog, providerRows, type ModelConnection, type ModelList, type ModelRow, type ProviderCatalogEntry, type ProviderSummary } from './model-providers.js';
+import { listProviders, providerRows, type ModelConnection, type ModelList, type ModelRow, type ProviderSummary } from './model-providers.js';
 
 interface SetupSection { providers?: Record<string, { activated_at?: unknown; off_at?: unknown }>; [key: string]: unknown }
 export type Agent = typeof AGENTS[number];
@@ -77,7 +77,6 @@ export interface ReadModelsOptions {
 export interface MeasureOps {
   availability?: AgentAvailability[];
   signedIn?: (cli: string) => Promise<boolean>;
-  catalog?: ProviderCatalogEntry[];
   now?: () => string;
   /** What the installed CLI printed to the registry's version argv, given its path; '' when it would not say. The first dotted number in it is the version. */
   version?: (path: string, argv: readonly string[]) => Promise<string>;
@@ -193,10 +192,8 @@ export async function readModels(agent: Agent, { home = os.homedir(), file = '',
 
 /** Probe the machine once and say what it has, dated. Pure of any record: the caller writes it. */
 export async function measureProviders(section: SetupSection, ops: MeasureOps = {}): Promise<ProviderSummary> {
-  const [available, catalog] = await Promise.all([
-    ops.availability ?? listAgentAvailability(),
-    ops.catalog ?? listProviderCatalog(),
-  ]);
+  const available = ops.availability ?? await listAgentAvailability();
+  const catalog = listProviders();
   const signedIn = ops.signedIn ?? providerSignedIn;
   const version = ops.version ?? installedVersion;
   const installed = available.filter((agent) => agent.installed).map((agent) => agent.id);

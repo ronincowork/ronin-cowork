@@ -245,7 +245,8 @@ export function createWorkbench(options = {}) {
       const host = definition.header === 'tabs'
         ? value.el.querySelector(':scope > .wk-tabset-bar .wk-tabset-actions')
         : value.el.querySelector(':scope > .wk-surface-header .wk-surface-header-actions');
-      if (host) {
+      // A workbench whose surfaces are its steps (Setup) has no close: the dash's place is the step's own.
+      if (host && options.dismissible !== false) {
         const title = t('workspace.close_surface', 'Close this work surface');
         const dismissAction = WorkspacePrimitives.createAction({
           label: '−', title,

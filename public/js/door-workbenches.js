@@ -2,7 +2,7 @@
 /**
  * THE TWO WORKBENCHES HOME'S DOORS OPEN (owner, 2026-10-19; PATTERNS.md Home): Models and
  * Workspaces — each a destination of its own, opened in the same tab, the bar reading
- * RoninCowork • Home • <door>, Home the way back (the Teams door opens the Cowork workbench,
+ * <brand> • Home • <door>, Home the way back (the Teams door opens the Cowork workbench,
  * cowork-view.js; owner, 2026-10-20). One shape for the two: the Kit workbench
  * on a profile of the door's surfaces (workbench-catalog.js), the door's surface seated in
  * Workspace 1 on first open. Models seats its own stones of providers (models-surface.js), a
@@ -32,6 +32,7 @@ import { askMika, askSignInHelper, createMikaTilePool, reportMikaView, signInHel
 import { readyMika } from './mika-ready.js';
 import { S } from './state.js';
 import { request } from './request.js';
+import { HOSTED } from './hosted.js';
 
 const blank = (id) => WorkspaceKit.primitives.createBlankSurface(id.replace('workspace', 'Workspace ')).el;
 
@@ -192,7 +193,9 @@ export function createHelpView() {
   const none = document.createElement('p');
   none.className = 'help-mika-none';
   none.hidden = true;
-  const setup = Object.assign(document.createElement('a'), { href: '#/models', textContent: t('campaign_home.harnesses', 'Harnesses') }); // harnesses are signed in from Harnesses
+  const setup = Object.assign(document.createElement('a'), HOSTED // hosted, harnesses are signed in from Setup's Harness step (KAN-856)
+    ? { href: '#/setup', textContent: t('campaign_home.setup', 'Setup') }
+    : { href: '#/models', textContent: t('campaign_home.harnesses', 'Harnesses') });
   none.append(t('help_outline.mika_needs_provider', 'Mika needs a harness. Activate one in '), setup, '.');
   mikaSurface.content.append(none);
   // A terminal seat carries a tile head from the moment it is placed; until the provider read

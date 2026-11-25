@@ -12,7 +12,7 @@
 - **transcript_journal:** —
 - **launch_initial:** message
 
-CLI id and command: `kimi`. Catalog provider: Moonshot AI. Reviewed 2026-11-15.
+CLI id and command: `kimi`. Vendor: `moonshot` (Moonshot AI), its `vendor` in `src/agents.ts`; transcript `~/.kimi-code/sessions/<workspace>/<session-id>/agents/main/wire.jsonl`, no adapter. Reviewed 2026-11-15.
 Version: **2.6.2**. Installed into a scratch home and its help read; never signed in or run
 through Ronin.
 

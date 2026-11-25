@@ -8,14 +8,15 @@
 ## Usage
 
 A Workspace is one project. Its **objective** is the one place that says what the project is;
-its **instructions** are standing directions to every Agent in it; its folders and
-repositories list only what is there. `workspace list` names every Workspace with its
+its **kind** is one of open, business, personal, household, social, school; its **instructions**
+are standing directions to every Agent in it. `workspace list` names every Workspace with its
 objective; `workspace read <handle>` prints one whole. `workspace create "<name>" --objective
-"<text>"` makes one from what the person said; `workspace objective <handle> "<text>"` and
-`workspace instructions <handle> "<text>"` replace those. `workspace add <handle> <what>` adds a
-folder (made under `~` when it is not there) or clones a repository from any Git host and adds
-it: a public one needs no sign-in, a private one needs GitHub (or the host) signed in here.
-`workspace starter ronin_lab|project_one` makes Ronin Lab or Project One as Ronin ships them
-(`public/content/starter-workspaces.json`: title and objective), the same seed the page uses.
-Every new Workspace gets its own folder, `~/ronin/<name>`.
+"<text>" --kind <kind>` makes one from what the person said; `workspace objective`, `instructions`
+and `kind` replace those. Every Workspace's folder is `~/ronin/<name>`, laid out `plans/ files/
+repos/`. `workspace repo <handle> <url>` clones a repository from any Git host into `repos/<repo>`
+(a public one needs no sign-in, a private one needs GitHub signed in here); with no URL it starts a
+new one, `--github private|public` putting it on GitHub too. `workspace source <handle> <source>`
+records where an existing project comes from (an integration row, its folder `files/<source>`).
+`workspace starter ronin_lab` makes Ronin
+Lab as Ronin ships it (`public/content/starter-workspaces.json`), the same seed the page uses.
 The workspaces fact shows them all. `workspace --help`.

@@ -40,6 +40,12 @@ declared first:
   chrome and feature-local bar styling are forbidden. At phone width (≤680px) the island
   goes: beside the crumb and the right-hand end it had no room and sat on the gauge,
   taking its taps; the crumb already names the place (KAN-640).
+- The bar's left-hand end is the brand: the mark, then the brand word. The word is
+  RoninCowork, or "Ronin: <name> Office Unit" on a hosted office, `<name>` the first label
+  of the address the browser reached it at (kojin.roninhosted.com → kojin). The server writes
+  it into `index.html` and `mobile.html` as it sends them (`__RONIN_BRAND_WORD__` and
+  `__RONIN_PHONE_BRAND_WORD__`, `src/index.ts`), so the first frame reads it. The phone bar carries the word only on a hosted
+  office; otherwise the mark alone (w978).
 - The bar's right-hand end is one group, `.bar-end` (KAN-640), in this order: the view's
   own actions (`#viewactions`), the gauge (`#ramrpm`), Feedback, then `.bar-map`, the
   surface map with its tile count (`#viewmap`, `#shapecycle`), at the far right as a pair.
@@ -467,9 +473,8 @@ desktop composition happened not to unmount it.
   hotwords, machine settings, system, services card, campaign surfaces, team jikan.
 - **Async status** — `ui.status`: the one spelling of loading…/saved/not-saved-and-why,
   `role=status`, hidden when empty, kinds `busy/ok/bad`. Consumers: hotwords, docs,
-  koshi, roots, folder picker, machine panel and settings, services card, system.
-- **Confirm** — `ui.confirmDialog`: a labelled confirm/cancel dialog. Consumers: roots,
-  folder picker.
+  koshi, roots, machine panel and settings, services card, system.
+- **Confirm** — `ui.confirmDialog`: a labelled confirm/cancel dialog. Consumers: roots.
 - **Tabs** — tab strips come from WorkspaceKit's `createTabbedSurface`; the Commons strip
   is one.
 - **Button** — `ui.button`: `type=button` + label + help in one call; sugar with a
@@ -535,9 +540,8 @@ mobile document's bar on its first paint; the probe ends through Ronin's Delete,
 ## Agents are data, not branches
 
 Launches read session launch specs (`src/spawn.ts`); providers and agent CLIs arrive as
-catalog rows (`ronin_stock/MODEL_PROVIDERS.md` — each populated cell is a
-provider/model/cmd triple; the standing write-up of that contract rides the owner's
-model-providers doc, in flight beside this), never as UI branches. Future agent forms
+joined rows (`providerRows` — each a provider/model/cmd triple, per
+[Model providers](model-providers.md)), never as UI branches. Future agent forms
 (Hermes and whatever "app" tiles become) enter the same way: the tile's view
 kinds (terminal | tape) may grow a sibling, and nothing in the shell may assume which
 agent is behind a pane.

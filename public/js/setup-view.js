@@ -17,7 +17,7 @@ import { createSetupStepsBar, setupStepMarks } from './setup-steps-bar.js';
 import { mikaShowHandlers, setupProgressHandlers } from './events.js';
 import { subscribe as hear } from './store.js';
 import { mikaTab, reportMikaView } from './mika.js';
-import { IRASSHAI_INTEGRATIONS_TYPE, createIrasshaiChat, createIrasshaiOpener, irasshaiKey, irasshaiReady, registerIrasshaiIntegrations } from './setup-irasshai.js';
+import { irasshaiLive, IRASSHAI_INTEGRATIONS_TYPE, createIrasshaiChat, createIrasshaiOpener, irasshaiKey, irasshaiReady, registerIrasshaiIntegrations } from './setup-irasshai.js';
 
 const PROFILE = 'setup';
 // The three steps and three pages (setup-journey.js SETUP_SCENES; SETUP_SWEEP.md §7), laid out as the
@@ -273,6 +273,47 @@ export function createSetupView() {
       if (!line) { line = document.createElement('p'); line.className = 'setup-step-line'; heading?.after(line); }
       line.textContent = t(`setup.step_line_${scene.id}`, scene.line);
     }
+    paintNext();
+  };
+  // THE WAY ON (owner, 25 Nov): one small Next in the step surface's header, at its right, where a close
+  // dash would be (Setup's workbench has none: `dismissible: false`): "Next: <the next step>". Drawn here
+  // and by no surface. Steps are not gates, so it always moves; on Workspace with none it makes Ronin Lab
+  // (a real setting, from its one seed) and then moves on. Never on the Tour, which has its own Back and Next.
+  const nextFoot = document.createElement('div');
+  nextFoot.className = 'setup-next';
+  const nextNote = document.createElement('span');
+  nextNote.className = 'setup-next-note';
+  const nextButton = WorkspaceKit.primitives.createAction({ size: 'compact', className: 'setup-next-go', action: async () => {
+    if (!labFirst()) { advance(); return; }
+    nextButton.setDisabled(true);
+    nextNote.textContent = t('setup.next_making_lab', 'Making Ronin Lab…');
+    const seed = await request('/content/starter-workspaces.json');
+    const made = await request('/api/workspaces/ronin_lab', { method: 'PUT', json: { title: 'Ronin Lab', objective: String(seed.data?.ronin_lab?.objective || ''), kind: 'open', repos: [], folders: [], integrations: [] } });
+    nextButton.setDisabled(false);
+    if (!made.ok) { nextNote.textContent = made.message; return; }
+    await readProgress();
+    advance();
+  } });
+  nextFoot.append(nextNote, nextButton.el);
+  const labFirst = () => activeScene().id === 'workspace' && !sceneComplete(activeScene());
+  const paintNext = () => {
+    const next = SCENES[activeScene().number];
+    const slot = bench?.host.querySelector('.wk-workbench-cell[data-workspace="workspace2"] > * > .wk-surface-header .wk-surface-header-actions');
+    if (!next || activeScene().type === TOUR || !slot) { nextFoot.remove(); return; }
+    if (nextFoot.parentNode !== slot) slot.append(nextFoot); // a placement draws a new surface, and with it a new header
+    if (nextButton.el.disabled) return;
+    nextButton.el.textContent = t('setup.next', 'Next: {step}', { step: next.label });
+    nextNote.textContent = labFirst() ? t('setup.next_lab', 'You\'ll work in Ronin Lab') : '';
+  };
+  // LEAVING A STEP (owner, 25 Nov; w984): the server holds a changed switch beside each tick, pushed in
+  // setup-progress. Leaving a step (selector, Next, Tour) whose switch is on asks the server to tell her
+  // what changed, once; off, a move tells her nothing.
+  let shownStep = null;
+  const leaving = (scene) => {
+    const left = shownStep; shownStep = scene.id;
+    if (!left || left === scene.id || !irasshaiLive()) return;
+    if (!progress?.steps?.find((step) => step.id === left)?.changed) return;
+    void request('/api/setup/left', { method: 'POST', json: { step: left, to: scene.label } });
   };
   const TOUR = 'setup.tour';
   const TOUR_NUMBER = SCENES.find((scene) => scene.type === TOUR)?.number;
@@ -297,7 +338,6 @@ export function createSetupView() {
     return true;
   }
   function advance() {
-    if (!sceneComplete(activeScene())) return;
     const next = SCENES[activeScene().number];
     if (!next) return;
     sceneOverride = next.number;
@@ -322,6 +362,7 @@ export function createSetupView() {
     hints: false,
     density: false,
     selectorFilter: (type) => ORDER.includes(type),
+    dismissible: false,
     onSelectorRefresh: paint,
     onStateChange: save,
     onPlacement: (snapshot, change) => {
@@ -332,6 +373,7 @@ export function createSetupView() {
       spread(type === TOUR);
       if (!scene && change?.dismissed === 'workspace2' && sceneOverride === TOUR_NUMBER) { open(stepBeforeTour); return; }
       if (scene && scene.type !== TOUR) stepBeforeTour = scene.number;
+      if (scene) leaving(scene);
       if (scene) {
         sceneOverride = scene.number;
         selectGarden(scene);

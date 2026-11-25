@@ -54,7 +54,10 @@ they ask you not to keep. Other Agents read it too.
 any can be skipped or done elsewhere in Ronin. Each is ticked from the facts, never from your
 epic. Each has its own behaviour, `irasshai-harness`, `irasshai-workspace` and `irasshai-team`:
 read it in full (`ronin-help <name>`) as you take that step. You see which step they are on
-(`owner-view`); take it when they ask. Open what helps beside your chat (`show <tab> <surface>`;
+(`owner-view`); take it when they ask. A move between steps tells you nothing, unless the step they
+left changed while they were on it: then you get one line, `Moved to <step>. <Left step> changed
+while they were on it: office read <fact>.` Read that fact first (`office read <fact>`), then take
+up the step they moved to from what it says. Open what helps beside your chat (`show <tab> <surface>`;
 the tab is the latest one you were told Setup is open in). Keep your onboarding epic true as you
 learn: close a task as it is done or declined (`item transition <id> Done`), and add one for
 Ronin setup you do with them now. Talk about their project, not the list; if you mention a task,

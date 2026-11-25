@@ -6,14 +6,15 @@ For contributors: what each Setup surface shows and measures, in full. The user'
 
 ## Where it is
 
-**Ronin Home** has the doors **Teams**, **Epics** and **Workspaces**, and the smaller stones
-**Harnesses**, **Help** and **Settings**. Teams, Epics and Workspaces wait for an Activated
-harness; Help is open from the start.
+**Setup is hosted-only**, like the Business Lounge (owner, 25 Nov; KAN-856). **Ronin Home** has the
+doors **Teams**, **Epics** and **Workspaces**, and the smaller stones: hosted, **Setup**, **Help**,
+**Settings** and **Business Lounge**; self-hosted, **Harnesses**, **Help** and **Settings**. Teams,
+Epics and Workspaces wait for an Activated harness; the small stones are open from the start.
 
-**One Setup, on every office** (owner, 24 Nov; w926; samurai_lab wip/SETUP_SWEEP.md §7): nothing
-decides that Setup is finished, and nothing in Setup branches on hosting. The bare address goes Home;
-Home shows a **Get started** stone, opening Setup, while any of the three steps is unticked; Settings
-is Settings. A link that names a page still opens that page.
+Hosted, the Setup stone is always there and opens Setup; Harnesses is reached through Setup's
+Harness step. Nothing decides that Setup is finished. Settings is Settings, with no toggle to Setup.
+Self-hosted, Home has no Setup stone and harnesses are signed in on Harnesses; Setup still opens at
+`#/setup` on every office (w997). A link that names a page still opens that page.
 
 ### The ticks
 
@@ -25,7 +26,7 @@ order, none a gate:
 | Step | Ticked when |
 |---|---|
 | Harness | one of the person's own harnesses is Activated, never Ronin's house models (`harnessesOn`, the integrations_authentications fact's "Harnesses Activated") |
-| Workspace | a Workspace of theirs, not Ronin Lab, has an objective (`describedWorkspaces`, the workspaces fact) |
+| Workspace | any Workspace is made, Ronin Lab included (`madeWorkspaces`, the workspaces fact; owner, 25 Nov) |
 | Team | a Team has a live lead (`ledTeams`, the teams_agents fact) |
 
 `GET /api/setup/progress` answers the steps in order with their ticks, and the machine's Tailscale
@@ -46,6 +47,21 @@ step on screen is kaki-edged. The selector's header carries the three step marks
 has no density toggle (owner, 24 Nov). The selector is the same whether she
 runs or not; she has no pill of her own (it did nothing the panel does not).
 
+**Next**, one way on (owner, 25 Nov): one foot drawn by setup-view.js and by no surface, pinned to the
+foot of the step's work surface at its right (on a phone, a full-width bar at the bottom of the step),
+so no form scrolls it away: "Next: Workspace", "Next: Team", "Next: Tour". Steps are not gates, so it
+always moves. The one case: on Workspace with no Workspace
+yet, "You'll work in Ronin Lab" beside it, and the press makes Ronin Lab (from
+public/content/starter-workspaces.json, kind open) before moving on. Never on the Tour, which keeps its Back and Next.
+
+**Changed, beside each tick** (owner, 25 Nov; w984): src/setup-progress.ts holds a switch per step, in
+memory, pushed in `setup-progress` as `changed`. A write of the step's fact (harness
+`integrations_authentications`, without its 'Last measured' line; workspace `workspaces`; team
+`teams_agents`) that changes its text turns it on. Leaving a step (selector, Next, Tour) whose switch
+is on, with her running, the view calls `POST /api/setup/left {step, to}`, and the server sends her (always her, never a session the page names) one line,
+`Moved to <step>. <Left step> changed while they were on it: office read <fact>.`, and turns it off.
+Off, a move tells her nothing; presses inside a step are unchanged.
+
 Setup has no hints: no Agent vocabulary, no session controls. At the foot of the selector, where
 they were, is **the step's guide**, kept thin (owner, 24 Nov): the step's title, the questions
 people ask about it, each one line that opens to its answer, and its one guide doc. The title and
@@ -62,8 +78,8 @@ steps tells her nothing; she sees the step (Setup reports its view) and opens wh
 `show`. A button on a step's surface may message her, named on the button.
 
 Registration, Installations (Ronin Services), Password and Launch are not Setup steps: their cards
-stay in Settings. Install makes no Workspace and no folder; Ronin Lab and Project One are options
-she offers in the Workspace step, made as any Workspace is. Plans make their folder on their first
+stay in Settings. Install makes no Workspace and no folder; Ronin Lab is made in the Workspace step
+(its "Not sure yet" door), as any Workspace is. Plans make their folder on their first
 write.
 
 On a phone the columns stack. Setup reads the ticks when it opens, again after each of its own
@@ -168,24 +184,29 @@ judgement about your own machine, so Setup waits for you to say.
 
 ## Workspaces
 
-The Workspace step is the Workspaces themselves (KAN-728): Ronin keeps no folder list of its
-own, so every folder Setup adds is a row of a Workspace record (`src/workspaces.ts`). Install
-makes none; the Helpful Assistant offers **Ronin Lab** (ideas, research, pre-project work) and
-**Project One** (project work) in this step, made with the `workspace` tool as any Workspace is.
+The Workspace step defines what a Workspace is, so any Agent that picks it up knows (owner, 25 Nov;
+KAN-809; samurai_lab wip/SETUP_WORKSPACE.md §2). One question, **How are you starting?**, four doors
+(`setup-workspace-kickoff.js`, above the Workspaces already made):
 
-The surface shows the Workspaces as stones (`createWorkspaceStones`, `withNew`), with a **New
-Workspace** stone last. Pressing a stone opens the Workspace's page, the same page as the
-Workspaces door's ([Workspaces](../using-ronin/workspaces.md)), in the owner's order (24 Nov; w926):
-1 **Describe**, the objective ("What are you working on?") and a new one's Name, made from it
-until typed; 2 **Where it lives**, **Add a folder**, **Paste a Git URL** (any host, plain git:
-`POST /api/setup/git/clone`) and, once GitHub is signed in here, **My GitHub repositories**
-(`GET /api/setup/github/repos`, each with Use); 3 **More**, folded: instructions, Mode, plans,
-canvases, Integrations and Behaviors; Archive under ⋯. The made Workspace opens in its place.
+1. **From a Git repository**: their GitHub repositories (once signed in) and pasted Git URLs, many;
+   each cloned into `repos/<repo>` (`POST /api/workspaces/<name>/repos`).
+2. **An existing project, not in Git**: where it comes from (Google Drive, WordPress, Shopify,
+   Netlify, files from their computer), each an integration row with its folder `files/<source>`.
+   Nothing is pulled in here: the Team step's Epic brings it in.
+3. **From scratch**: a new Git repository in `repos/<name>`, on GitHub too (private) when signed in.
+4. **Not sure yet**: Ronin Lab, made on the press.
+
+Doors 1–3 then ask what it is (objective; the name from it), its kind (open, business, personal,
+household, social, school: the one list Agents, Teams and Workspaces share) and anything every Agent
+there should follow (instructions). Every answer lands on the Workspace record (`src/workspaces.ts`).
+Every Workspace's folder is `~/ronin/<name>`, laid out `plans/ files/ repos/` on Create, whoever
+creates it (`layOut`). The Helpful Assistant does the same with her `workspace` tool (`create --kind`,
+`repo`, `source`, `starter ronin_lab`).
 
 GitHub is never a step of its own: a public repository clones without it. For a private one, or
-"my repositories", the Helpful Assistant signs the GitHub CLI in with
-GitHub's device flow and `gh auth setup-git`, so a headless machine shows a code the owner
-approves in a browser elsewhere.
+"my repositories", the page's **Connect · Helpful Assistant** sends her "Connect GitHub.", and she
+signs the GitHub CLI in with GitHub's device flow and `gh auth setup-git`, so a headless machine
+shows a code the owner approves in a browser elsewhere.
 
 ## Ronin Services (a Settings card)
 

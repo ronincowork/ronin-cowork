@@ -42,10 +42,9 @@ nothing paints exactly this.
 - **off:** Off
 - **go:** Go
 - **publish:** Publish
-- **kind.coding:** Software
 - **kind.household:** Home
 - **kind.personal:** Personal
-- **kind.work:** Work
+- **kind.business:** Business
 - **kind.social:** Events
 - **kind.school:** Learning
 - **kind.open:** Open
@@ -381,7 +380,7 @@ nothing paints exactly this.
 - **launch_mode.live_sub:** Use that provider CLI’s own approval-bypass launch.
 - **help.title:** Help
 - **help.card_summary:** What each step means, beside the step you are on.
-- **help.top_body:** The name is the only thing you must give, and it is also the tag every session carries, so it is lowercase and typeable — the field enforces that as you type. A Team’s title is written for you from the name and is yours to change. The kind says what this is for, and it narrows the templates below to the ones that suit it.
+- **help.top_body:** The name is the only thing you must give, and it is also the tag every session carries, so it is lowercase and typeable — the field enforces that as you type. A Team’s title is written for you from the name and is yours to change. The kind says what this is for.
 - **help.mandate_body:** How far this Agent goes before it checks in, whether it may build out a team, and what it hands back. Output takes as many answers as you mean — a plan AND the team AND no code — and nothing argues with a combination. Open means no requirement. None of it is enforced: the mandate is carried in the Agent’s letter and read by it, not imposed on it.
 - **help.loadout_body:** Model and Launch mode are independent. Native means no override in that field; only Native model plus Native launch mode is the bare CLI command. Features add facilities or taught practices; behaviours say how ordinary work should be done.
 - **help.agents:** Agents
@@ -506,6 +505,7 @@ nothing paints exactly this.
 - **forms.tier_light:** light
 - **forms.tier_standard:** standard
 - **forms.tier_frontier:** frontier
+- **forms.tier_unrated:** unrated
 - **forms.provider:** harness
 - **forms.model:** model
 - **forms.none:** —
@@ -839,22 +839,6 @@ The pad's current config downloads as a backup first.
 - **docs.brief_now:** Brief now
 - **docs.shelf_empty:** Nothing on this shelf — a Workspace's folders keep their docs in docs/ and README.md.
 - **docs.plans_empty:** No plans yet. A lead writes one with the user: plan write <name>.
-- **folders.up:** ← Up
-- **folders.home:** Home
-- **folders.search:** Find a folder here
-- **folders.hidden:** Show hidden folders
-- **folders.new:** ＋ New folder here
-- **folders.new_name:** Folder name
-- **folders.git:** Start Git version history
-- **folders.create:** Create and select
-- **folders.loading:** Reading folders…
-- **folders.choose:** Choose
-- **folders.empty:** No matching folders here.
-- **folders.new_in:** ＋ New folder in {name}
-- **folders.name_needed:** Give the new folder a name.
-- **folders.create_confirm:** Create this folder on the Ronin machine?\n\n{target}
-- **folders.create_title:** Create folder
-- **folders.creating:** Creating…
 - **docs.open_browser:** Open in browser ↗
 - **docs.frame_title:** document
 - **docs.discard_confirm:** Discard unsaved changes?
@@ -1309,12 +1293,6 @@ The pad's current config downloads as a backup first.
 - **team_config.cowork_id:** Team ID
 - **team_config.title:** Title
 - **team_config.kind:** Kind
-- **team_config.kind_coding:** Coding
-- **team_config.kind_work:** Work
-- **team_config.kind_personal:** Personal
-- **team_config.kind_household:** Household
-- **team_config.kind_social:** Social
-- **team_config.kind_school:** School
 - **team_config.objective:** Purpose
 - **where.born_in:** Born in
 - **where.additional:** Additional workspaces

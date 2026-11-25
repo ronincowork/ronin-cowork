@@ -232,8 +232,8 @@ holder's cgroup ends in `ronin.service` or is explicitly recorded as `unknown`.
 
 Report the verified browser address and that Tailscale's access rules decide who can reach
 it; if either is unknown, return to [step 5](#5-verify-the-running-install). Then help the
-owner open it on their own device. A fresh install opens Ronin Home; its **Settings** button
-opens Ronin Setup. The owner's walkthrough is [Get started](get-started.md): one provider,
+owner open it on their own device. A fresh install opens Ronin Home; a harness is signed in
+on its **Harnesses** stone. The owner's walkthrough is [Get started](get-started.md): one provider,
 one Workspace folder, one Agent that answers.
 
 Stay beside the owner as a plain terminal for diagnosis. Do not answer owner choices,
@@ -250,8 +250,7 @@ or a recorded tile.
 
 - **Installed is not signed in.** From the same login shell a Ronin tile receives,
   `for c in claude codex agy grok hermes copilot opencode kimi; do command -v "$c" || true; done` proves only
-  whether a CLI is found. The provider catalog (`ronin_stock/MODEL_PROVIDERS.md`) lists
-  what Ronin offers; **Harnesses** shows what this machine has.
+  whether a CLI is found. **Harnesses** shows what Ronin offers and what this machine has.
 - **Signed in is a file's existence.** A provider whose own credential file is present
   (Claude Code `~/.claude/.credentials.json`, Codex `~/.codex/auth.json`, Grok `~/.grok/auth.json`, OpenCode `~/.local/share/opencode/auth.json`, Kimi Code `~/.kimi-code/credentials/managed:kimi-code.json`) shows as signed in; Ronin reads
   only that the file exists and does not recheck the account afterwards.
@@ -271,7 +270,7 @@ or a recorded tile.
 ### Workspace folder
 
 A configured folder is required for the proof launch. A fresh install has no Workspaces; make one
-in Setup's Workspace step (Ronin Lab and Project One are offered there), or choose an existing
+in Setup's Workspace step, or choose an existing
 folder under **Workspace folders**. Inspection is local and read-only; it does not create or clone
 a repository.
 

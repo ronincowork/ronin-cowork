@@ -13,14 +13,14 @@ its own; an Agent never reaches a connected system, its API or its credentials. 
 outside Ronin looks different from the item, tell your lead and stop.
 
 ### The structure
-| Level | What it is |
-|---|---|
-| 1 | Epic: one part of a plan, with what done looks like, held by a Team |
-| 0 | Task, Story, Bug, Feature: one piece of work an Agent hands in |
-| -1 | Subtask: a step of a level-0 item that someone else may take, or side work that belongs to it |
+Kinds: Epic; Task, Story, Bug or Feature; Subtask.
 
-A Subtask goes only under a level-0 item, and a level-0 item only under an epic or nothing.
-Ronin refuses any other shape and says why. Every id an item has had still finds it.
+Ronin sets an item's kind from its parent:
+- under an epic: a Task, or the Story, Bug or Feature you asked for
+- under a Task, Story, Bug or Feature: a Subtask
+
+Nothing goes under a Subtask: Ronin refuses it and names the Task. The reply names the kind and
+the parent. Every id an item has had still finds it.
 
 ### Which kind
 - **Epic:** a goal bigger than one hand-in, with what done looks like; several items go under it. You don't work on an epic itself: make an item under it for each piece, and hand in on the item.

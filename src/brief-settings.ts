@@ -1,38 +1,29 @@
 /**
  * LAYERS AND BRIEF SETTINGS (docs/architecture/brief.md, Layers and brief settings).
  *
- * The layers, widest first: user, Campaign, Workspace, Team, Agent. Each layer's own record
- * holds the same three lists, `brief: {add, block, only}`, plus `integrations` and `pm`:
+ * The levels are the Campaign, the Workspace, the Team and the Agent. Each holds the same three
+ * lists, `brief: {add, block, only}`, plus `integrations` and `pm`:
  *
- *   user       ~/ronin/config/brief.json
  *   Campaign   campaign.config.{brief, integrations, pm}
  *   Workspace  the Workspace record's {brief, integrations, pm}
  *   Team       the Team roster's {brief, integrations, pm}
- *   Agent      the work record's brief document (brief_settings.agent)
+ *   Agent      the work record's brief document (brief_settings)
  *
- * Integrations are on at a layer and on below it, unless a layer below turns one off
- * (`brief.integrations_off`, narrowing): off holds for that layer and every one under it. An
- * MCP server or web API record's Campaigns only make it available (listed in the pickers), not
- * on: it is on through these same switches, like a bridge (KAN-607). Jira is set
- * at the Campaign and Workspace only: any other layer's Jira entry (user, Team, Agent) is ignored.
- *
- * Project management (`pm`) is its own setting, apart from Jira: on at the Campaign unless a
- * layer says otherwise, and the narrowest layer that says on or off holds. Files in play: each header's `when:` and
- * `depth:`, then every layer's add (the higher depth holds), then every block, then each
- * screen (`only`), which covers facts, behaviours and tools: a behaviour let through brings
- * the tools that serve it. Hide, never guard: this decides only what
- * an Agent is told.
+ * A level copies its parent's when it is made and never follows it after (src/waterfall.ts), so
+ * an Agent's brief is built from two: its parent's settings as copied at its birth, and its own.
+ * Jira is never told and never set on an Agent. Project management (`pm`) is its own setting,
+ * apart from Jira: on unless a level says off. Files in play: each header's `when:` and `depth:`,
+ * then every layer's add (the higher depth holds), then every block, then each screen (`only`),
+ * which covers facts, behaviours and tools: a behaviour let through brings the tools that serve
+ * it. Hide, never guard: this decides only what an Agent is told.
  */
-import { readFile } from 'node:fs/promises';
-import path from 'node:path';
 import { recordValue, type BriefRecord, type BriefSettings } from './brief-record.js';
 import type { Catalog, CatalogFile, CatalogKind, Depth } from './catalog.js';
 import { DEPTHS } from './catalog.js';
 import { whenHolds } from './conditionals.js';
-import { storeDir } from './resources.js';
 
-export type LayerName = 'user' | 'campaign' | 'workspace' | 'team' | 'agent';
-export const LAYERS: readonly LayerName[] = ['user', 'campaign', 'workspace', 'team', 'agent'];
+export type LayerName = 'campaign' | 'workspace' | 'team' | 'agent';
+export const LAYERS: readonly LayerName[] = ['campaign', 'workspace', 'team', 'agent'];
 
 /** What one layer's record holds. `pm` absent: this layer says nothing. */
 export interface LayerSettings { brief: BriefSettings; integrations: string[]; pm?: boolean }
@@ -73,16 +64,6 @@ export function layerOf(layer: LayerName, record: unknown): Layer {
   };
 }
 
-export const userBriefFile = (): string => path.join(storeDir('config'), 'brief.json');
-
-export async function readUserLayer(): Promise<Layer> {
-  try {
-    return layerOf('user', JSON.parse(await readFile(userBriefFile(), 'utf8')));
-  } catch {
-    return layerOf('user', {});
-  }
-}
-
 export interface Cascade {
   /** Each integration on, and the widest layer that turned it on. */
   integrations: Record<string, LayerName>;
@@ -92,9 +73,8 @@ export interface Cascade {
   pm: { on: boolean; from: LayerName };
 }
 
-/** The layers Jira can be set at; below them a Jira entry is ignored. */
-const JIRA_LAYERS: readonly LayerName[] = ['campaign', 'workspace'];
-const scoped = (layer: Layer, name: string): boolean => name !== 'jira' || JIRA_LAYERS.includes(layer.layer);
+/** Jira is set on a Campaign, Workspace or Team; an Agent's own Jira entry is ignored. */
+const scoped = (layer: Layer, name: string): boolean => name !== 'jira' || layer.layer !== 'agent';
 
 /** Integrations and project management down the layers: on adds, a layer's off narrows; pm is
  * the narrowest layer's own on or off, on by default. Jira never decides pm. */

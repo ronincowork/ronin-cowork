@@ -18,7 +18,7 @@ import {
   setTags,
 } from '../tmux.js';
 import { launchArgv } from '../agents.js';
-import { AtSessionMax, readAgentsSection } from '../machine-state.js';
+import { AtSessionMax } from '../machine-state.js';
 import { PACKET_PLACEHOLDER, resolveForm, type SpawnForm } from '../spawn.js';
 import { agentBriefOf } from '../brief-build.js';
 import { briefTold } from '../brief-settings.js';
@@ -45,7 +45,7 @@ import { readTeamRoster } from '../team-rosters.js';
 import { readCampaign } from '../campaigns.js';
 import { listInstallations } from '../resource-adapters.js';
 import { resolveLaunchSeed, shownLaunchSeed } from '../launch-seed.js';
-import type { SessionsDefaults } from '../launch-command.js';
+import { parentSettings } from '../waterfall.js';
 import { describePacket, readFirstSentence, writeBriefPacketAt, type PacketReport } from '../birth-brief.js';
 import { rememberSessionKey, sessionDir as sessionRecordDir } from '../session-dir.js';
 import { callerUser } from '../agent-configuration.js';
@@ -73,14 +73,13 @@ const LAUNCH_KEYS = new Set([
   'session_type', 'team', 'team_lead', 'role', 'instructions', 'prompt', 'name', 'caller',
   'cmd', 'model', 'provider', 'mandate', 'campaign_id',
   'tags', 'seed', 'inject', 'reference',
-  'kind', 'brief', 'integrations', 'pm',
-  'template', 'agent_type',
+  'brief', 'integrations', 'pm',
+  'agent_type',
 ]);
 const RETURNED_LAUNCH_KEYS = new Set([
   'assignment', 'work_locations', 'posture', 'opening', 'ack', 'capExempt', 'launchAgent', 'stated_by', 'birth_reading',
 ]);
 const SESSION_TYPES = new Set(['cowork_agent', 'bare_metal_agent', 'terminal']);
-const KINDS = new Set(['open', 'coding', 'work', 'personal', 'household', 'social', 'school']);
 
 export function acceptedLaunchBody(input: unknown): { body: Record<string, unknown>; ignored: string[] } {
   const source = input && typeof input === 'object' && !Array.isArray(input)
@@ -106,14 +105,12 @@ export function acceptedLaunchBody(input: unknown): { body: Record<string, unkno
 
   if (body.tags !== undefined && !Array.isArray(body.tags)) drop('tags');
   if (body.seed !== undefined && !Array.isArray(body.seed)) drop('seed');
-  if (body.kind !== undefined && (typeof body.kind !== 'string' || !KINDS.has(body.kind.trim()))) drop('kind');
-  if (body.kind !== undefined) body.kind = String(body.kind).trim();
   if (body.role !== undefined && !['coworker', 'lead', 'epic_lead', 'coordinator'].includes(String(body.role))) drop('role');
 
   const inapplicable = sessionType === 'terminal'
-      ? ['provider', 'model', 'instructions', 'prompt', 'kind', 'mandate', 'brief', 'integrations', 'pm', 'template', 'cmd', 'seed', 'inject', 'reference', 'role']
+      ? ['provider', 'model', 'instructions', 'prompt', 'mandate', 'brief', 'integrations', 'pm', 'cmd', 'seed', 'inject', 'reference', 'role']
     : sessionType === 'bare_metal_agent'
-      ? ['kind', 'mandate', 'brief', 'integrations', 'pm', 'template', 'seed', 'inject', 'reference', 'team_lead', 'role']
+      ? ['mandate', 'brief', 'integrations', 'pm', 'seed', 'inject', 'reference', 'team_lead', 'role']
       : [];
   for (const key of inapplicable) drop(key);
 
@@ -138,7 +135,6 @@ export function spawnFormFromLaunchBody(body: Record<string, unknown>, houseSeat
     provider: String(body.provider ?? '').trim() || undefined,
     mandate: sessionType === 'cowork_agent' && body.mandate !== undefined ? mandate(body.mandate) : undefined,
     campaign_id: String(body.campaign_id ?? '').trim() || undefined,
-    kind: typeof body.kind === 'string' ? body.kind : undefined,
     ...(sessionType === 'cowork_agent' ? agentBriefOf(body) : {}),
     tags: Array.isArray(body.tags) ? body.tags.map(String) : [],
     seed: Array.isArray(body.seed) ? body.seed.map(String) : [],
@@ -308,18 +304,11 @@ export function registerLaunch(app: express.Express): LaunchControl {
       if (team && !/^[a-z0-9][a-z0-9_-]{0,63}$/.test(team)) {
         return res.status(400).json({ error: `A team name is lowercase letters, digits, _ and -: "${team}".` });
       }
-      const [roster, agents] = await Promise.all([
-        team ? readTeamRoster(team, campaign_id).then((found) => found ?? readTeamRoster(team, '')) : Promise.resolve(null),
-        readAgentsSection(),
-      ]);
+      const roster = team ? await readTeamRoster(team, campaign_id) ?? await readTeamRoster(team, '') : null;
       if (team && !roster) return res.status(404).json({ error: `Unknown Team "${team}" in Campaign "${campaign_id}".` });
-      const seed = resolveLaunchSeed({
-        campaign,
-        roster,
-        workspace: roster?.workspace ? await readWorkspace(roster.campaign_id, roster.workspace) : null,
-        sessions: agents.sessions as SessionsDefaults | undefined,
-        lead: req.query.lead === '1',
-      });
+      const workspace = roster?.workspace ? await readWorkspace(roster.campaign_id, roster.workspace) : null;
+      const parent = { ...await parentSettings(campaign_id, { workspace, team: roster }), name: roster?.name ?? workspace?.name ?? campaign_id };
+      const seed = resolveLaunchSeed({ campaign_id: campaign.id, parent, roster, lead: req.query.lead === '1' });
       res.json(shownLaunchSeed(seed));
     } catch (e) {
       res.status(500).json({ error: String((e as Error)?.message ?? e) });
@@ -508,7 +497,6 @@ export function registerLaunch(app: express.Express): LaunchControl {
         tags: resolved.tags,
         team_lead: !!form.team_lead && !!resolved.team,
         role: form.role ?? (form.team_lead ? 'lead' : 'coworker'),
-        kind: resolved.kind,
         ...(form.person?.email ? { user_email: form.person.email } : {}),
         mandate: resolved.mandate,
         // What the brief told, by name and depth, and why (docs/architecture/brief.md, Layers and brief settings).

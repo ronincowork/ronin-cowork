@@ -446,7 +446,6 @@ body {
   transform: translateX(-50%);
 }
 .ui-bar-place[hidden] { display: none; }
-.ui-bar-place-toggle,
 .ui-bar-place .wk-tab-name {
   width: 100%;
   min-width: 0;
@@ -456,8 +455,6 @@ body {
   font: inherit;
   text-align: center;
 }
-.ui-bar-place-toggle { cursor: pointer; }
-.ui-bar-place-toggle:focus-visible,
 .ui-bar-place .wk-tab-name:focus-visible {
   outline: var(--focus-width) solid currentColor;
   outline-offset: var(--focus-offset);
@@ -2423,25 +2420,7 @@ body {
 }
 
 .pr-status:empty { display: none; }
-.folder-picker { display: flex; flex-direction: column; gap: var(--space-row); }
-.folder-controls { display: flex; align-items: center; gap: var(--space-inline); flex-wrap: wrap; }
-.folder-controls button, .folder-crumbs button, .folder-row button, .folder-create button { border: var(--edge) solid var(--line-2); border-radius: var(--radius-small); background: var(--surface); color: var(--fg); padding: var(--space-row) var(--space-control); cursor: pointer; }
-.folder-controls input[type='search'] { flex: 1; min-width: 150px; border: var(--edge) solid var(--line-2); border-radius: var(--radius-small); background: var(--inset); color: var(--fg); padding: var(--space-control); }
-.folder-hidden { display: flex; align-items: center; gap: var(--space-inline); color: var(--muted); font-size: var(--text-small); }
-.folder-crumbs { display: flex; align-items: center; gap: var(--space-inline); flex-wrap: wrap; color: var(--muted); }
-.folder-list { max-height: 260px; overflow-y: auto; border: var(--edge) solid var(--line-2); border-radius: var(--radius-small); }
-.folder-row { display: flex; gap: var(--space-inline); align-items: center; padding: var(--space-inline); border-bottom: var(--edge) solid var(--line-2); }
-.folder-row:last-child { border-bottom: 0; }
-.folder-group { padding: var(--space-row) var(--space-inline) var(--space-row); border-bottom: var(--edge) solid var(--line-2); color: var(--muted); font-size: var(--text-small); }
 .folder-kind { margin-left: var(--space-inline); color: var(--muted); font-size: var(--text-small); }
-.folder-open { flex: 1; text-align: left; border-color: transparent !important; }
-.folder-choose { color: var(--kaki) !important; }
-.folder-empty, .folder-loading { display: block; padding: var(--space-inline); color: var(--muted); }
-.folder-create { border: var(--edge) dashed var(--line-2); border-radius: var(--radius-small); padding: var(--space-inline); }
-.folder-create summary { cursor: pointer; color: var(--fg-strong); }
-.folder-create-row { display: grid; grid-template-columns: minmax(140px, 1fr) auto auto; gap: var(--space-row) var(--space-inline); align-items: center; margin-top: var(--space-row); }
-.folder-create-row > input[type='text'] { border: var(--edge) solid var(--line-2); border-radius: var(--radius-small); background: var(--inset); color: var(--fg); padding: var(--space-control); }
-.folder-create-row label { display: flex; align-items: center; gap: var(--space-inline); color: var(--muted); font-size: var(--text-small); }
 @media (max-width: 560px) { .folder-create-row { grid-template-columns: 1fr; } }
 .pr-empty {
   color: var(--muted);
@@ -3312,9 +3291,12 @@ body {
 .markdown-reader li > :last-child { margin-bottom: 0; }
 .markdown-reader .markdown-table { max-width: 100%; overflow-x: auto; margin: 0 0 var(--space-paragraph); }
 .markdown-reader table { border-collapse: collapse; }
-.markdown-reader :is(th, td) { padding: var(--space-row) var(--space-inline); text-align: left; vertical-align: top; }
-.markdown-reader :is(th, td):first-child { padding-left: 0; white-space: nowrap; }
-.markdown-reader th { border-bottom: calc(var(--edge) * 2) solid var(--line-2); color: var(--fg-strong); font-weight: var(--weight-strong); white-space: nowrap; }
+/* Every cell wraps, first column and header too; each column keeps a few words' width and
+   none takes more than its share, so a long first column can't push the rest to a word each
+   (KAN-833). A table too wide for those floors scrolls in its box. */
+.markdown-reader :is(th, td) { min-width: 12ch; max-width: 40ch; padding: var(--space-row) var(--space-inline); text-align: left; vertical-align: top; overflow-wrap: anywhere; }
+.markdown-reader :is(th, td):first-child { padding-left: 0; }
+.markdown-reader th { border-bottom: calc(var(--edge) * 2) solid var(--line-2); color: var(--fg-strong); font-weight: var(--weight-strong); }
 .markdown-reader tbody tr + tr td { border-top: var(--edge) solid var(--line); }
 /* Markdown off shows what the Agent wrote, marks and all, in the terminal's type, so a table or
    an indent lines up as it was written. */
@@ -4224,6 +4206,15 @@ body {
 .wk-workbench-selector-cards > .setup-step-card:not(:last-child)::after { content: ''; position: absolute; left: calc(var(--space-inset) + var(--disc) / 2); top: calc(var(--space-inset) + var(--disc) + var(--space-row)); bottom: calc(-1 * (var(--space-row) + var(--space-inset))); border-left: var(--edge) solid var(--line-2); pointer-events: none; }
 .setup-step-card[data-complete='true'] .setup-step-disc { border-color: var(--kaki-fill); background: var(--kaki-fill); color: var(--on-strong); }
 .wk-workbench-host[data-workbench-profile='setup'] .wk-workbench-selector-cards > .setup-step-card[aria-current='page'] { border-color: var(--kaki); background: var(--selected); box-shadow: inset 3px 0 var(--kaki); color: var(--fg-strong); }
+/* THE WAY ON (owner, 25 Nov): one small Next in the step surface's header, at its right. */
+.setup-next { display: flex; align-items: center; gap: var(--space-inline); min-width: 0; }
+.setup-next-note { color: var(--current-head-fg); opacity: .7; white-space: nowrap; }
+.setup-next-note:empty { display: none; }
+/* Discreet: the header's own ink, no box; an arrow says where it goes. */
+.wk-surface-header .setup-next-go { min-height: 0; padding: 2px 6px; border: var(--edge) solid transparent; background: none; color: var(--current-head-fg); }
+.wk-surface-header .setup-next-go::after { content: ' →'; }
+.wk-surface-header .setup-next-go:hover, .wk-surface-header .setup-next-go:focus-visible { border-color: currentColor; }
+@media (max-width: 700px) { .setup-next-note { display: none; } }
 .setup-step-card[aria-current='page'] .setup-step-disc { border-color: var(--kaki-fill); color: var(--kaki-lift); }
 .setup-step-card[aria-current='page'][data-complete='true'] .setup-step-disc { color: var(--on-strong); }
 .setup-register-options[hidden] { display: none; }
@@ -4346,7 +4337,7 @@ body {
 .setup-provider-models th { text-align: left; padding: var(--space-row) var(--space-inline); color: var(--muted); font-weight: var(--weight-strong); border-bottom: var(--edge) solid var(--line-2); }
 .setup-provider-models td { padding: var(--space-inline); vertical-align: top; border-bottom: var(--edge) solid var(--line); overflow-wrap: anywhere; }
 .setup-provider-models th:nth-child(2) { width: 40%; }
-.setup-provider-strengths { display: block; color: var(--muted); }
+.setup-provider-use-for { display: block; color: var(--muted); }
 .setup-provider-models td b { color: var(--fg-strong); font-weight: var(--weight-strong); }
 /* Two names per model: the CLI's own name in bold, the id every launch uses beneath it. */
 .setup-provider-model-id { display: block; margin-top: var(--space-row); color: var(--muted); font-family: var(--mono, monospace); font-size: var(--text-small); overflow-wrap: anywhere; }
@@ -4941,7 +4932,7 @@ button.wk-card { cursor: pointer; }
 
 #phone .ph-bar .brand {
   display: inline-flex;
-  flex: 0 0 auto;
+  flex: 0 1 auto; /* a hosted office's long name wraps rather than push the bar's end off */
   align-items: center;
   gap: var(--space-inline);
   min-width: 0;
@@ -4956,6 +4947,8 @@ button.wk-card { cursor: pointer; }
   height: var(--bar-brand-mark-h);
 }
 #phone .ph-bar .brand-word {
+  min-width: 0;
+  overflow-wrap: anywhere;
   color: var(--fg-strong);
   font-size: var(--text-label);
   font-weight: var(--weight-strong);
@@ -5196,14 +5189,51 @@ html[data-screen='inside'] #phone .ph-bar .ph-title[data-boot='inside'] { displa
 .setup-harness-window { display: flex; flex-direction: column; gap: 10px; }
 .setup-harness-line { margin: 0; line-height: 1.5; }
 .setup-harness-line.bad { color: var(--kaki); }
-/* The Workspace step (setup-workspace-kickoff.js, KAN-809): Ronin Lab, the kind and its walk over the stones, one even gap. */
-/* The kickoff is the header's whole height: the header grows to it, the stones start under it. */
-.wk-surface-content:has(> .sws-header > .setup-workspace-kickoff) > .sws-header { flex: 0 0 auto; block-size: auto; overflow: visible; flex-direction: column; align-items: stretch; }
-.setup-workspace-kickoff { display: flex; flex-direction: column; gap: var(--space-4, 16px); margin-bottom: var(--space-4, 16px); }
-.setup-workspace-question { display: flex; flex-direction: column; gap: var(--space-2, 8px); }
-.setup-workspace-ask { margin: 0; color: var(--fg-strong); font-weight: var(--weight-strong); }
-.setup-workspace-lab { margin: 0; color: var(--fg-muted); }
-.setup-workspace-walk:empty { display: none; }
+/* The Workspace step (setup-workspace-kickoff.js, KAN-809): the four doors; under them what a Workspace
+   is, or the open door's blanks with the form's rule beside them; what was made; the Workspaces line. */
+.setup-workspace-kickoff { display: flex; flex-direction: column; gap: var(--space-section); max-inline-size: 48rem; padding: var(--space-subsection); }
+.setup-workspace-blanks { display: flex; flex-direction: column; gap: var(--space-subsection); }
+.setup-workspace-blanks[data-door='open'] { padding-inline-start: var(--space-subsection); border-inline-start: 2px solid var(--line); }
+.setup-workspace-blanks > *, .setup-workspace-blanks .wk-field { margin: 0; }
+.setup-workspace-kickoff .wk-field { display: flex; flex-direction: column; gap: var(--space-paragraph); }
+.setup-workspace-kickoff .wk-field-description:empty, .setup-workspace-kickoff .ask-caption:empty { display: none; }
+.setup-workspace-question { display: flex; flex-direction: column; gap: var(--space-paragraph); }
+.setup-workspace-ask, .setup-workspace-about-title { margin: 0; color: var(--fg-strong); font-size: var(--form-key); font-weight: var(--weight-strong); }
+.setup-workspace-create { display: flex; justify-content: flex-start; }
+/* What a Workspace is (the owner's words): clear paragraphs, the heading close to its text. */
+.setup-workspace-about { display: flex; flex-direction: column; gap: var(--space-subsection); max-inline-size: 40rem; }
+.setup-workspace-about p { margin: 0; line-height: var(--leading-body); }
+.setup-workspace-about-title + p { margin-top: calc(var(--space-paragraph) * -1); }
+.setup-workspace-about + .ws-diagram { margin-top: calc(var(--space-section) - var(--space-subsection)); }
+/* The diagram (KAN-845): illustrative, said so, never pressable, in the page's tokens. */
+.ws-diagram { margin: 0; display: flex; flex-direction: column; gap: var(--space-inline); max-inline-size: 40rem; }
+.ws-diagram small, .ws-diagram figcaption { color: var(--muted); font-size: var(--text-small); }
+.ws-diagram-office { display: flex; flex-direction: column; gap: var(--space-control); padding: var(--space-control); border: var(--edge) dashed var(--line-2); border-radius: var(--radius-small); background: var(--inset); }
+.ws-diagram-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-inline); color: var(--fg-strong); }
+.ws-diagram-example { padding: 2px var(--space-inline); border-radius: var(--radius-small); background: var(--kaki-fill); color: var(--kaki-fill-ink); font-size: var(--text-small); font-weight: var(--weight-strong); text-transform: uppercase; letter-spacing: var(--tracking-wide); }
+.ws-diagram-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-inline); }
+.ws-diagram-ws { padding: var(--space-row) var(--space-inline); border: var(--edge) solid var(--line-2); border-radius: var(--radius-small); background: var(--surface); }
+.ws-diagram-ws.open { border-color: var(--kaki); background: var(--selected); }
+.ws-diagram-choose, .ws-diagram-objective { margin: 0; }
+.ws-diagram-objective { color: var(--fg-strong); }
+.ws-diagram-detail { display: flex; flex-direction: column; gap: var(--space-control); padding: var(--space-control); border: var(--edge) solid var(--kaki); border-radius: var(--radius-small); background: var(--surface); }
+.ws-diagram-detail > small + .ws-diagram-objective { margin-top: calc(var(--space-row) * -1); }
+.ws-diagram-places { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-inline); }
+.ws-diagram-places > span { padding: var(--space-row) var(--space-inline); border: var(--edge) solid var(--line-2); border-radius: var(--radius-small); text-align: center; }
+.ws-diagram-agents { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-inline); }
+.ws-diagram-agents > small { flex-basis: 100%; }
+.ws-diagram-agents > span { padding: 0 var(--space-inline); border: var(--edge) solid var(--line-2); border-radius: var(--radius-small); }
+/* The phone keeps the three on one row, compact (system_lead, 25 Nov). */
+@media (max-width: 600px) {
+  .ws-diagram-ws { padding: var(--space-row); }
+  .ws-diagram-places { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+/* What was made, then the Workspaces line under a rule, its own section. */
+.setup-workspace-made, .setup-workspace-bad, .setup-workspace-yours { margin: 0; }
+.setup-workspace-bad { color: var(--bad); }
+.setup-workspace-foot { display: flex; flex-direction: column; gap: var(--space-subsection); margin-top: var(--space-subsection); padding-top: var(--space-subsection); border-top: var(--edge) solid var(--line); }
+.setup-workspace-done:empty, .setup-workspace-foot:empty { display: none; }
+.setup-workspace-link { background: none; border: 0; padding: 0; color: var(--link); text-decoration: underline; cursor: pointer; font: inherit; }
 .setup-harness-link { color: var(--link); word-break: break-all; }
 .setup-harness-row { display: flex; flex-wrap: wrap; align-items: stretch; gap: 8px; }
 /* ERABI stones of one size: each 140 wide (ask.css), a long name on two lines, every stone in a row the same height. */
@@ -5214,10 +5244,30 @@ html[data-screen='inside'] #phone .ph-bar .ph-title[data-boot='inside'] { displa
 /* Hermes's two steps (form-steps.js) span the bar; the adding row is dashed, the same shape as a row it adds. */
 .hermes-settings .fs-step > .fs-step-body, .hermes-settings .fs-step:has(> .fs-step-head.fs-togglable) > .fs-step-body { grid-column: 1 / -1; }
 .hermes-settings .fs-step { grid-template-columns: minmax(0, 1fr); }
-.hermes-card.adding { border-style: dashed; }
-.hermes-card-summary { flex-direction: column; align-items: flex-start; }
 .hermes-fine { font-size: 12px; }
+/* Hermes's lists are tables (owner, 25 Nov 2026): one row each, icons on the right, one Add line. */
+.hermes-table { width: 100%; border-collapse: collapse; }
+.hermes-table :is(th, td) { padding: 6px 8px; text-align: left; vertical-align: middle; overflow-wrap: break-word; }
+.hermes-options { display: grid; gap: 8px; }
+.hermes-table :is(th, td):first-child { padding-left: 0; }
+.hermes-table thead th { color: var(--muted); font-weight: normal; border-bottom: var(--edge) solid var(--line-2); }
+.hermes-table tbody th { color: var(--fg-strong); font-weight: var(--weight-strong); }
+.hermes-table tbody td { color: var(--fg); }
+.hermes-table tbody tr + tr :is(th, td) { border-top: var(--edge) solid var(--line); }
+.hermes-tools { width: 1%; white-space: nowrap; text-align: right; }
+.hermes-icon { display: inline-grid; place-items: center; width: 28px; height: 28px; padding: 0; border: 0; border-radius: var(--radius-small); background: none; color: var(--muted); cursor: pointer; }
+.hermes-icon:hover, .hermes-icon:focus-visible { background: var(--inset); color: var(--fg-strong); }
+.hermes-icon svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.hermes-add-line { padding: 0; border: 0; background: none; color: var(--link); font: inherit; cursor: pointer; }
+.hermes-add-line:hover { text-decoration: underline; }
+.hermes-add-line:disabled { color: var(--muted); cursor: default; text-decoration: none; }
+.hermes-add-note { margin-left: 8px; color: var(--muted); }
 /* The four ways: four equal stones across the bar, two by two when narrow. */
 .setup-harness-row.setup-harness-ways { display: grid; grid-template-columns: repeat(auto-fit, minmax(112px, 1fr)); }
 .setup-harness-ways .ask-rect { width: auto; flex: none; }
 .setup-harness-ways .ask-opt:disabled { opacity: .6; cursor: default; }
+/* Hermes's Ronin gateway: always there, ticked, nothing to press. */
+.hermes-fixed { pointer-events: none; }
+/* Available, not selected: a tick in the stone, never the kaki selected mark (owner, 25 Nov 2026). */
+.ask-opt .hermes-tick { color: var(--ok); font-weight: var(--weight-strong); margin-right: 6px; }
+.ask-opt:has(> .hermes-tick) { flex-direction: row; align-items: center; justify-content: flex-start; }
