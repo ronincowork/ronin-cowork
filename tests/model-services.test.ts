@@ -90,6 +90,7 @@ test('named models stay with their service through discovery, catalog and CLI la
     { cli: 'openrouter', id: 'author/restricted', name: 'Restricted' }, { cli: 'codex', id: 'author/available', name: 'Native' }] });
   const starters = await routerModels();
   assert.deepEqual(starters.map(row => [row.name, row.model]), [['Fast', 'author/available']]);
+  assert.equal(starters[0]?.approvals, 'off');
   await deletePreset(starters[0]!.id);
   await discoverAccount(router.id);
   await saveAccount({ id: router.id, kind: 'personal_api', name: 'OpenRouter', provider: 'custom', wireApi: 'chat',

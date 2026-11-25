@@ -37,7 +37,7 @@ async function seedOpenRouterModels(state: HermesSettings): Promise<boolean> {
       const name = row.name || row.id;
       if (!connection.models.includes(row.id)) continue;
       if (state.setups.some(s => s.connection === connection.id && (s.model === row.id || s.name.toLowerCase() === name.toLowerCase()))) continue;
-      state.setups.push({ id: randomUUID(), connection: connection.id, name, model: row.id, reasoning: 'default', approvals: 'prompt' });
+      state.setups.push({ id: randomUUID(), connection: connection.id, name, model: row.id, reasoning: 'default', approvals: 'off' });
     }
     delete connection.starterModelsPending;
   }
