@@ -27,7 +27,7 @@ import { promisify } from 'node:util';
 import path from 'node:path';
 import { rootDir, storeDir, STORES } from './resources.js';
 import type { LaunchMode } from './agent-defaults.js';
-import type { TeamKind } from './team-rosters.js';
+import { KINDS, type TeamKind } from './team-rosters.js';
 
 /** A folder the Workspace works in: `dir` is the folder; `name` is Ronin's key for it (desks, tmux,
  * promotion), made from the folder's basename on save, the same for one dir in every Workspace. */
@@ -59,8 +59,6 @@ export interface Workspace {
   /** Archived (the page's ⋯): off the Workspace pickers, kept, one press brings it back. */
   archived?: boolean;
 }
-
-const KINDS = ['open', 'coding', 'work', 'personal', 'household', 'social', 'school'] as const;
 
 const execFileP = promisify(execFile);
 

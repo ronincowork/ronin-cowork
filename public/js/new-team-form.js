@@ -16,7 +16,7 @@ import {
 import { closeWorkspaceTab, reserveWorkspaceTab } from './workspace.js';
 import { hearWorkspaces } from './workspaces-read.js';
 
-const KINDS = ['coding', 'work', 'personal', 'household', 'social', 'school'];
+const KINDS = ['business', 'personal', 'household', 'social', 'school'];
 
 export function createNewTeamFormView(kit, { created = null, consumed = null, embedded = false } = {}) {
   const { createSurface, createAction, createActionBar, createField, createNotice } = kit.primitives;

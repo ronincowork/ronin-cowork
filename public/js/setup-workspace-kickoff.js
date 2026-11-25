@@ -10,8 +10,8 @@
  *    folder files/<source>, for the Team step's Epic to bring in. Nothing is pulled in here.
  * 3. From scratch: a new Git repository in repos/<name>; on GitHub too once signed in.
  * 4. Not sure yet: Ronin Lab, made on the press.
- * Doors 1–3 then ask what it is (objective, name), its kind (not door 1: coding), and what every Agent
- * in it should follow (instructions); last, while there is none, Also add Ronin Lab. Every answer is on the record.
+ * Doors 1–3 then ask what it is (objective, name), its kind, and what every Agent in it should follow
+ * (instructions); last, while there is none, Also add Ronin Lab. Every answer is on the record.
  *
  * Connect is the one press that messages the Helpful Assistant; its stone names her.
  * Every press answers at once: a pressed Create reads what it is doing until it is done.
@@ -21,8 +21,7 @@ import { ask } from './ask.js';
 import { request } from './request.js';
 import { subscribe } from './store.js';
 import { WorkspaceKit } from './workspace-kit.js';
-import { ruledRows } from './glyphs.js';
-import { KINDS, kindWord } from './team-configuration.js';
+import { KINDS, kindWord, ruledRows } from './glyphs.js';
 import { openWorkspaceTab } from './workspace.js';
 import { sendComposerMessage } from './composer-rules.js';
 import { IRASSHAI, IRASSHAI_NAME, askIrasshai, irasshaiLive } from './setup-irasshai.js';
@@ -114,9 +113,8 @@ export function createWorkspaceKickoff({ workspacesRead, environment }) {
         if (!draft.named) { draft.title = v.trim().split(/\s+/).slice(0, 4).join(' ').replace(/[.,;:!?]+$/, ''); nameInput.value = draft.title; }
       }, t('setup_workspace.objective_placeholder', 'One or two sentences: what it is and what it is for.'), 3),
       name,
-      // The kind: a Git repository's is coding, so door 1 is not asked (owner, 25 Nov).
-      ...(door === 'git' ? [] : [question('kind', t('setup_workspace.kind_ask', 'What kind of project?'), ruledRows('kind', KINDS, kindWord), draft.kind,
-        (v) => { draft.kind = v; }, { shape: 'square' })]),
+      question('kind', t('setup_workspace.kind_ask', 'What kind of project?'), ruledRows('kind', KINDS, kindWord), draft.kind,
+        (v) => { draft.kind = v; }, { shape: 'square' }),
       textBox(t('setup_workspace.instructions_ask', 'Anything every Agent here should follow?'), draft.instructions, (v) => { draft.instructions = v; },
         t('setup_workspace.instructions_placeholder', 'Optional. Such as: write in British English; never push to main.'), 3),
     ];
@@ -142,7 +140,7 @@ export function createWorkspaceKickoff({ workspacesRead, environment }) {
     done.replaceChildren();
     word.textContent = t('setup_workspace.making_short', 'Making…');
     const integrations = door === 'existing' ? draft.sources.map((provider) => ({ provider, folder: `files/${provider}` })) : [];
-    let answer = await put(name, { title: draft.title.trim(), objective: draft.objective.trim(), kind: draft.kind || (door === 'git' ? 'coding' : 'open'), instructions: draft.instructions.trim(), integrations });
+    let answer = await put(name, { title: draft.title.trim(), objective: draft.objective.trim(), kind: draft.kind || 'open', instructions: draft.instructions.trim(), integrations });
     const repos = door === 'git' ? urls().map((repository) => ({ repository })) : door === 'scratch' ? [draft.github === 'github' && github.authenticated ? { github: 'private' } : {}] : [];
     for (const [i, body] of repos.entries()) {
       if (!answer.ok) break;

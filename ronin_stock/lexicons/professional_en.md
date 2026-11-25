@@ -42,10 +42,9 @@ nothing paints exactly this.
 - **off:** Off
 - **go:** Go
 - **publish:** Publish
-- **kind.coding:** Software
 - **kind.household:** Home
 - **kind.personal:** Personal
-- **kind.work:** Work
+- **kind.business:** Business
 - **kind.social:** Events
 - **kind.school:** Learning
 - **kind.open:** Open
@@ -1310,12 +1309,6 @@ The pad's current config downloads as a backup first.
 - **team_config.cowork_id:** Team ID
 - **team_config.title:** Title
 - **team_config.kind:** Kind
-- **team_config.kind_coding:** Coding
-- **team_config.kind_work:** Work
-- **team_config.kind_personal:** Personal
-- **team_config.kind_household:** Household
-- **team_config.kind_social:** Social
-- **team_config.kind_school:** School
 - **team_config.objective:** Purpose
 - **where.born_in:** Born in
 - **where.additional:** Additional workspaces

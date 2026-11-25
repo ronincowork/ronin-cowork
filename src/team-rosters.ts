@@ -7,7 +7,9 @@ import { teamAgentDefaults, type TeamAgentDefaults } from './agent-defaults.js';
 import type { BriefSettings } from './brief-record.js';
 import { layerOf } from './brief-settings.js';
 
-export type TeamKind = 'open' | 'coding' | 'work' | 'personal' | 'household' | 'social' | 'school';
+/** The kinds (owner, 25 Nov): an Agent's, a Team's and a Workspace's, one list; no coding. */
+export const KINDS = ['open', 'business', 'personal', 'household', 'social', 'school'] as const;
+export type TeamKind = typeof KINDS[number];
 
 export interface TeamRoster {
   name: string;
@@ -77,7 +79,7 @@ function parse(name: string, raw: string, campaign_id = ''): TeamRoster {
     name,
     campaign_id: campaign_id || get('campaign_id'),
     title: get('title') || name.split(/[_-]+/).filter(Boolean).map((part) => part[0]?.toUpperCase() + part.slice(1)).join(' '),
-    kind: ['open', 'coding', 'work', 'personal', 'household', 'social', 'school'].includes(kind)
+    kind: (KINDS as readonly string[]).includes(kind)
       ? kind as TeamKind : 'open',
     objective: get('objective'),
     workspace: get('workspace'),

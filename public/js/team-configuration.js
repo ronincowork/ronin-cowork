@@ -8,7 +8,7 @@
 import { t } from './lexicon.js';
 import { request } from './request.js';
 import { ask } from './ask.js';
-import { ruledRows } from './glyphs.js';
+import { KINDS, kindWord, ruledRows } from './glyphs.js';
 import { createStep } from './form-steps.js';
 import { firstMandate, screenOf, loadMandates, mandateRows } from './mandates.js';
 import { WorkspacePrimitives } from './workspace-primitives.js';
@@ -17,13 +17,6 @@ import { createBriefSettingsPanel, layerLinks } from './brief-step.js';
 const el = (tag, cls, text) => { const node = document.createElement(tag); if (cls) node.className = cls; if (text != null) node.textContent = String(text); return node; };
 const bucket = (value) => value && typeof value === 'object' && !Array.isArray(value) ? value : {};
 const list = (value) => Array.isArray(value) ? value : [];
-
-/** The seven kinds a Team or a Workspace is (owner, 24 Nov), and the word each reads as. */
-export const KINDS = ['open', 'coding', 'work', 'personal', 'household', 'social', 'school'];
-export const kindWord = (value) => ({
-  open: t('campaign_view.option_open', 'Open'), coding: t('team_config.kind_coding', 'Coding'), work: t('team_config.kind_work', 'Work'), personal: t('team_config.kind_personal', 'Personal'),
-  household: t('team_config.kind_household', 'Household'), social: t('team_config.kind_social', 'Social'), school: t('team_config.kind_school', 'School'),
-})[value] || value;
 
 /** The form's one-line answer when its step is folded: its kind. The model is Models > Defaults' (owner, 2026-10-21). */
 export function teamConfigurationMeta(roster) {

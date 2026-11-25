@@ -16,6 +16,7 @@
 import { t } from './lexicon.js';
 import { request } from './request.js';
 import { mandateTitle } from './mandates.js';
+import { glyph } from './glyphs.js';
 
 export const el = (tag, cls, text) => {
   const node = document.createElement(tag);
@@ -71,10 +72,7 @@ export function createStep({ n, key, title, onToggle = null }) {
 export const mandateWord = (value) => mandateTitle(value);
 
 export function kindTiles(current, onPick) {
-  const KINDS = [
-    { key: 'coding', icon: '⌨' }, { key: 'work', icon: '💼' }, { key: 'personal', icon: '🎩' },
-    { key: 'household', icon: '🏠' }, { key: 'social', icon: '🎪' }, { key: 'school', icon: '🎓' },
-  ];
+  const KINDS = ['business', 'personal', 'household', 'social', 'school'].map((key) => ({ key, icon: glyph('kind', key) }));
   const wrap = el('div', 'fs-kinds');
   wrap.append(el('span', 'fs-gridlabel', t('kind', 'Kind')));
   const grid = el('div', 'fs-kindgrid');

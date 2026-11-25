@@ -1,3 +1,4 @@
+import { KINDS } from '../team-rosters.js';
 import { layerOf } from '../brief-settings.js';
 import type express from 'express';
 import { liveRows } from '../work-items-index.js';
@@ -66,8 +67,8 @@ function editOf(body: unknown): RosterEdit {
   if (b.title !== undefined) edit.title = String(b.title).trim().slice(0, 100);
   if (b.kind !== undefined) {
     const kind = String(b.kind).trim();
-    if (!['open', 'coding', 'work', 'personal', 'household', 'social', 'school'].includes(kind)) {
-      throw new Error('kind is open, coding, work, personal, household, social, or school.');
+    if (!(KINDS as readonly string[]).includes(kind)) {
+      throw new Error(`kind is one of ${KINDS.join(', ')}.`);
     }
     edit.kind = kind as RosterEdit['kind'];
   }

@@ -24,7 +24,7 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
     const entryTeam = typeof team === 'function' ? team() : team;
     return {
       type: 'cowork_agent',
-      name: '', kind: 'coding', kindTouched: false, provider: '', model: '', instructions: '',
+      name: '', kind: 'open', kindTouched: false, provider: '', model: '', instructions: '',
       teamMode: entryTeam ? 'existing' : 'none', team: entryTeam || '', newTeam: '',
       reach: 'open', recruit: 'open', output: ['open'],
       role: 'coworker',

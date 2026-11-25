@@ -30,7 +30,7 @@ import { enqueueMessage } from '../message-queue.js';
 import { scanContext, scanModel } from '../ctx.js';
 
 import { count } from '../counts.js';
-import { listTeamRosters } from '../team-rosters.js';
+import { KINDS as TEAM_KINDS, listTeamRosters } from '../team-rosters.js';
 import { announceTeamChanges } from './wipeboards-api.js';
 import { checkoutAt, deriveTeams, parkBrief, seedTegami, teamChanged, withAxes, writeBriefRecord, writeConfiguration, type SessionWithAxes } from '../tegami.js';
 import { callerOf } from './work-items-api.js';
@@ -80,7 +80,7 @@ const RETURNED_LAUNCH_KEYS = new Set([
   'assignment', 'work_locations', 'posture', 'opening', 'ack', 'capExempt', 'launchAgent', 'stated_by', 'birth_reading',
 ]);
 const SESSION_TYPES = new Set(['cowork_agent', 'bare_metal_agent', 'terminal']);
-const KINDS = new Set(['open', 'coding', 'work', 'personal', 'household', 'social', 'school']);
+const KINDS = new Set<string>(TEAM_KINDS);
 
 export function acceptedLaunchBody(input: unknown): { body: Record<string, unknown>; ignored: string[] } {
   const source = input && typeof input === 'object' && !Array.isArray(input)
