@@ -1567,9 +1567,9 @@ The pad's current config downloads as a backup first.
 - **agent_composition.sending:** Sending…
 - **agent_composition.unchanged:** Its brief is unchanged: nothing was sent.
 - **agent_composition.updated:** The Agent has been sent its new brief.
-- **campaign_view.brief_help:** What every Agent in this Campaign is told. Agents already working are sent the change.
-- **team_config.brief_help:** What every Agent on this Team is told. Agents already working are sent the change.
-- **workspaces.brief_help:** What every Agent in this Workspace is told. Agents already working are sent the change.
+- **campaign_view.brief_help:** What every new Workspace, Team and Agent inherits. Nothing that already exists changes.
+- **team_config.brief_help:** What every new Agent on this Team inherits. Agents already working don't change.
+- **workspaces.brief_help:** What every new Team and Agent in this Workspace inherits. Nothing that already exists changes.
 - **work_record.part_session:** Session
 - **work_record.part_user:** User
 - **work_record.part_people:** People
