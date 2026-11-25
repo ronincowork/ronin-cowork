@@ -21,6 +21,9 @@ it verifies listing access, not inference or tool support for every returned mod
 Create a Hermes model option selecting its model, reasoning and approvals. Non-OpenAI
 connections currently use provider-default reasoning.
 
+On Setup's Harness step, the Hermes bar shows each model service (Ronin Gateway, API key, OpenRouter)
+with its own model options, and links to Settings v2 → Model services to add or change them.
+
 New Agent keeps its two fields: Model provider = Hermes, Model = the setup name.
 Each Cowork birth creates a private `cli-home/` directory inside that session's record,
 with a configuration snapshot and empty memory/history. Hermes uses `shared` to link only

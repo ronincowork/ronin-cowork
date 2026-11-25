@@ -5177,8 +5177,10 @@ html[data-screen='inside'] #phone .ph-bar .ph-title[data-boot='inside'] { displa
 .setup-harness-row.setup-harness-ways { display: grid; grid-template-columns: repeat(auto-fit, minmax(112px, 1fr)); }
 .setup-harness-ways .ask-rect { width: auto; flex: none; }
 .setup-harness-ways .ask-opt:disabled { opacity: .6; cursor: default; }
-/* Hermes's Ronin gateway: always there, ticked, nothing to press. */
+/* Hermes's Ronin Gateway on the Settings page: always there, ticked, nothing to press. */
 .hermes-fixed { pointer-events: none; }
+/* The open source: an underline, not the selected mark (that is a CLI's way) nor the tick (set up). */
+.setup-harness-ways .ask-opt[aria-pressed='true'] { box-shadow: inset 0 calc(-1 * var(--edge-2)) var(--accent); }
 /* Available, not selected: a tick in the stone, never the kaki selected mark (owner, 25 Nov 2026). */
 .ask-opt .hermes-tick { color: var(--ok); font-weight: var(--weight-strong); margin-right: 6px; }
 .ask-opt:has(> .hermes-tick) { flex-direction: row; align-items: center; justify-content: flex-start; }

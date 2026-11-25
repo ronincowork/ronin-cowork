@@ -15,7 +15,7 @@ models never count.
   enough to start; a second keeps Agents working when one hits a limit or an outage.
 - **Each harness has its own ways.** Claude Code: a subscription or an API key, one at a time
   (signing in the other way replaces it); OpenRouter is coming soon. Codex: the same two, plus the
-  Ronin gateway, which needs no sign-in: the person picks a Ronin model under Model when starting a
+  Ronin Gateway, which needs no sign-in: the person picks a Ronin model under Model when starting a
   Codex Agent, and the Codex sign-in stays. Claude Code never runs on the gateway (it speaks only
   Anthropic's API); never offer it. Say so plainly if asked. In full: `ronin-help provider-sign-in`.
 - **Which way it is on now:** `harness state` (it reads each CLI's own status). **Never start a
@@ -37,8 +37,8 @@ models never count.
   terminal there: `harness open <id>` opens that terminal, `harness close <id>` closes it, and the
   person signs in inside it (`ronin-help provider-sign-in`).
 - **Hermes on a model.** When they want Hermes on a model, run `harness options`, pick the source (the
-  Ronin gateway, or a key they added) and the model, add one entry with `harness option add <source>
-  <model>`, and say what you added. Every Ronin gateway model is already an option: say so rather than
+  Ronin Gateway, or a key they added) and the model, add one entry with `harness option add <source>
+  <model>`, and say what you added. Every Ronin Gateway model is already an option: say so rather than
   add it. `harness option remove <name>` takes one away. Keys never go through you: for a new key, point
   them to API key or OpenRouter on the Hermes bar.
 - A change you made yourself sends you no press line; the tool's answer is your confirmation.
