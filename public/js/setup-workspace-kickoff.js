@@ -9,7 +9,7 @@
  * 2. An existing project, not in Git: where it is coming from, many-of; each an integration row with its
  *    folder files/<source>, for the Team step's Epic to bring in. Nothing is pulled in here.
  * 3. From scratch: a new Git repository in repos/<name>; on GitHub too once signed in.
- * 4. Not sure yet: Ronin Lab, made on the press.
+ * 4. Not sure yet: Ronin Lab, what it is and its folder, then Create (two presses).
  * Doors 1–3 then ask what it is (objective, name), its kind, and what every Agent in it should follow
  * (instructions); last, while there is none, Also add Ronin Lab. Every answer is on the record.
  *
@@ -183,6 +183,20 @@ export function createWorkspaceKickoff({ workspacesRead, environment }) {
   const create = createAction({ label: t('workspaces.create', 'Create'), launch: true, size: 'compact', action: async () => {
     const word = create.el.querySelector('span') || create.el;
     const fail = (message) => { done.replaceChildren(el('p', 'setup-workspace-bad', message)); };
+    // DOOR 4 (owner, 25 Nov): two presses, the door and Create.
+    if (door === 'lab') {
+      create.setDisabled(true);
+      word.textContent = t('setup_workspace.making_short', 'Making…');
+      const answer = await makeLab();
+      create.setDisabled(false);
+      word.textContent = t('workspaces.create', 'Create');
+      if (!answer.ok) return fail(answer.message);
+      door = ''; draft = blank();
+      await workspacesRead.read();
+      paint();
+      tellHer(LAB.name);
+      return showMade({ title: LAB.title, name: LAB.name });
+    }
     if (!draft.title.trim() && door === 'git' && urls().length) draft.title = repoBase(urls()[0]);
     const name = handle(draft.title);
     if (!name) return fail(t('setup_workspace.name_needed', 'Say what it is, or give it a name.'));
@@ -244,6 +258,18 @@ export function createWorkspaceKickoff({ workspacesRead, environment }) {
       blanks.append(about, workspaceDiagram());
       return;
     }
+    if (door === 'lab') {
+      const lab = el('div', 'setup-workspace-about');
+      lab.append(
+        el('h3', 'setup-workspace-about-title', LAB.title),
+        el('p', null, t('setup_workspace.lab_about', 'Ronin Lab is a place for ideas, notes, research and brainstorming while you decide what to work on. Your Agents can work in it like any Workspace.')),
+        el('p', null, t('setup_workspace.lab_where', 'Its folder: ~/ronin/ronin_lab, with plans, files and repos in it.')),
+      );
+      const line = el('div', 'setup-workspace-create');
+      line.append(create.el);
+      blanks.append(lab, line);
+      return;
+    }
     const { head, tail } = define();
     blanks.append(...head);
     if (door === 'git') {
@@ -284,16 +310,7 @@ export function createWorkspaceKickoff({ workspacesRead, environment }) {
       { v: 'lab', l: t('setup_workspace.door_lab', 'Not sure yet'), sub: t('setup_workspace.door_lab_sub', 'Ronin Lab: a place for ideas and notes while you decide.'), ...(lab ? { off: ready } : {}) },
     ], door, (v) => {
       done.replaceChildren();
-      if (v !== 'lab') { door = v; draft = blank(); paint(); return; }
-      door = ''; paint();
-      done.replaceChildren(el('p', 'setup-workspace-made', t('setup_workspace.making', 'Making {name}…', { name: LAB.title })));
-      void makeLab().then(async (answer) => {
-        if (!answer.ok) { done.replaceChildren(el('p', 'setup-workspace-bad', answer.message)); return; }
-        await workspacesRead.read();
-        paint();
-        tellHer(LAB.name);
-        showMade({ title: LAB.title, name: LAB.name });
-      });
+      door = v; draft = blank(); paint();
     }));
     paintBlanks();
     const n = workspacesRead.list().filter((w) => !w.archived).length;
