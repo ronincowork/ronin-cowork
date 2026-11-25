@@ -275,16 +275,15 @@ export function createSetupView() {
     }
     paintNext();
   };
-  // THE WAY ON (owner, 25 Nov; system_lead's ruling): one foot, the same on every step, drawn here and
-  // by no surface, pinned to the foot of the step's work surface at its right (a full-width bar on a
-  // phone), so no form scrolls it away: "Next: <the next step>". Steps are not gates, so it always moves;
-  // a selector move, it messages nobody. One case: on Workspace with no Workspace yet it makes Ronin Lab
+  // THE WAY ON (owner, 25 Nov): one small Next in the step surface's header, at its right, where a close
+  // dash would be (Setup's workbench has none: `dismissible: false`): "Next: <the next step>". Drawn here
+  // and by no surface. Steps are not gates, so it always moves; on Workspace with none it makes Ronin Lab
   // (a real setting, from its one seed) and then moves on. Never on the Tour, which has its own Back and Next.
   const nextFoot = document.createElement('div');
   nextFoot.className = 'setup-next';
   const nextNote = document.createElement('span');
   nextNote.className = 'setup-next-note';
-  const nextButton = WorkspaceKit.primitives.createAction({ kind: 'primary', action: async () => {
+  const nextButton = WorkspaceKit.primitives.createAction({ size: 'compact', className: 'setup-next-go', action: async () => {
     if (!labFirst()) { advance(); return; }
     nextButton.setDisabled(true);
     nextNote.textContent = t('setup.next_making_lab', 'Making Ronin Lab…');
@@ -299,9 +298,9 @@ export function createSetupView() {
   const labFirst = () => activeScene().id === 'workspace' && !sceneComplete(activeScene());
   const paintNext = () => {
     const next = SCENES[activeScene().number];
-    const cell = bench?.host.querySelector('.wk-workbench-cell[data-workspace="workspace2"]');
-    if (!next || activeScene().type === TOUR || !cell) { nextFoot.remove(); return; }
-    if (nextFoot.parentNode !== cell) cell.append(nextFoot); // after the surface: a placement replaces the cell's children
+    const slot = bench?.host.querySelector('.wk-workbench-cell[data-workspace="workspace2"] > * > .wk-surface-header .wk-surface-header-actions');
+    if (!next || activeScene().type === TOUR || !slot) { nextFoot.remove(); return; }
+    if (nextFoot.parentNode !== slot) slot.append(nextFoot); // a placement draws a new surface, and with it a new header
     if (nextButton.el.disabled) return;
     nextButton.el.textContent = t('setup.next', 'Next: {step}', { step: next.label });
     nextNote.textContent = labFirst() ? t('setup.next_lab', 'You\'ll work in Ronin Lab') : '';
@@ -353,6 +352,7 @@ export function createSetupView() {
     hints: false,
     density: false,
     selectorFilter: (type) => ORDER.includes(type),
+    dismissible: false,
     onSelectorRefresh: paint,
     onStateChange: save,
     onPlacement: (snapshot, change) => {

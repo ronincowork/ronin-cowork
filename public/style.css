@@ -4209,17 +4209,15 @@ body {
 .wk-workbench-selector-cards > .setup-step-card:not(:last-child)::after { content: ''; position: absolute; left: calc(var(--space-inset) + var(--disc) / 2); top: calc(var(--space-inset) + var(--disc) + var(--space-row)); bottom: calc(-1 * (var(--space-row) + var(--space-inset))); border-left: var(--edge) solid var(--line-2); pointer-events: none; }
 .setup-step-card[data-complete='true'] .setup-step-disc { border-color: var(--kaki-fill); background: var(--kaki-fill); color: var(--on-strong); }
 .wk-workbench-host[data-workbench-profile='setup'] .wk-workbench-selector-cards > .setup-step-card[aria-current='page'] { border-color: var(--kaki); background: var(--selected); box-shadow: inset 3px 0 var(--kaki); color: var(--fg-strong); }
-/* THE WAY ON (w926): one Next, pinned to the foot of the step's work surface at its right; the
-   surface above it scrolls on its own. On a phone, a full-width bar at the bottom of the step. */
-.wk-workbench-cell:has(> .setup-next) { flex-direction: column; }
-.wk-workbench-cell > .setup-next { flex: 0 0 auto; display: flex; align-items: center; justify-content: flex-end; gap: var(--space-inline); padding: var(--space-row) var(--space-inset); background: var(--surface); }
-.setup-next-note { color: var(--muted); font-size: var(--text-body); line-height: var(--leading-body); }
+/* THE WAY ON (owner, 25 Nov): one small Next in the step surface's header, at its right. */
+.setup-next { display: flex; align-items: center; gap: var(--space-inline); min-width: 0; }
+.setup-next-note { color: var(--current-head-fg); opacity: .7; white-space: nowrap; }
 .setup-next-note:empty { display: none; }
-@media (max-width: 700px) {
-  .wk-workbench-cell > .setup-next { flex-direction: column; align-items: stretch; }
-  .setup-next .wk-action { width: 100%; justify-content: center; }
-  .setup-next-note { text-align: center; }
-}
+/* Discreet: the header's own ink, no box; an arrow says where it goes. */
+.wk-surface-header .setup-next-go { min-height: 0; padding: 2px 6px; border: var(--edge) solid transparent; background: none; color: var(--current-head-fg); }
+.wk-surface-header .setup-next-go::after { content: ' →'; }
+.wk-surface-header .setup-next-go:hover, .wk-surface-header .setup-next-go:focus-visible { border-color: currentColor; }
+@media (max-width: 700px) { .setup-next-note { display: none; } }
 .setup-step-card[aria-current='page'] .setup-step-disc { border-color: var(--kaki-fill); color: var(--kaki-lift); }
 .setup-step-card[aria-current='page'][data-complete='true'] .setup-step-disc { color: var(--on-strong); }
 .setup-register-options[hidden] { display: none; }
