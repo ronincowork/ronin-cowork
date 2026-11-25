@@ -3312,9 +3312,12 @@ body {
 .markdown-reader li > :last-child { margin-bottom: 0; }
 .markdown-reader .markdown-table { max-width: 100%; overflow-x: auto; margin: 0 0 var(--space-paragraph); }
 .markdown-reader table { border-collapse: collapse; }
-.markdown-reader :is(th, td) { padding: var(--space-row) var(--space-inline); text-align: left; vertical-align: top; }
-.markdown-reader :is(th, td):first-child { padding-left: 0; white-space: nowrap; }
-.markdown-reader th { border-bottom: calc(var(--edge) * 2) solid var(--line-2); color: var(--fg-strong); font-weight: var(--weight-strong); white-space: nowrap; }
+/* Every cell wraps, first column and header too; each column keeps a few words' width and
+   none takes more than its share, so a long first column can't push the rest to a word each
+   (KAN-833). A table too wide for those floors scrolls in its box. */
+.markdown-reader :is(th, td) { min-width: 12ch; max-width: 40ch; padding: var(--space-row) var(--space-inline); text-align: left; vertical-align: top; overflow-wrap: anywhere; }
+.markdown-reader :is(th, td):first-child { padding-left: 0; }
+.markdown-reader th { border-bottom: calc(var(--edge) * 2) solid var(--line-2); color: var(--fg-strong); font-weight: var(--weight-strong); }
 .markdown-reader tbody tr + tr td { border-top: var(--edge) solid var(--line); }
 /* Markdown off shows what the Agent wrote, marks and all, in the terminal's type, so a table or
    an indent lines up as it was written. */
