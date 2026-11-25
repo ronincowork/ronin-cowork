@@ -5192,54 +5192,49 @@ html[data-screen='inside'] #phone .ph-bar .ph-title[data-boot='inside'] { displa
 .setup-harness-window { display: flex; flex-direction: column; gap: 10px; }
 .setup-harness-line { margin: 0; line-height: 1.5; }
 .setup-harness-line.bad { color: var(--kaki); }
-/* The Workspace step (setup-workspace-kickoff.js, KAN-809): the four doors, then the open door's blanks
-   in one column of even gaps, Create at its foot; what was made, then the Workspaces line. */
-.setup-workspace-kickoff { display: flex; flex-direction: column; gap: var(--space-5, 24px); max-inline-size: 48rem; padding: var(--space-4, 16px); }
-.setup-workspace-blanks { display: flex; flex-direction: column; gap: var(--space-4, 16px); }
-.setup-workspace-blanks[data-door='open'] { padding-inline-start: var(--space-4, 16px); border-inline-start: 2px solid var(--line); }
-.setup-workspace-about { display: flex; flex-direction: column; gap: calc(var(--space-paragraph) * 2); max-inline-size: 40rem; }
-/* Clear paragraphs (owner, 25 Nov): a full line between them, the heading close to its text, a section's gap before the diagram. */
+/* The Workspace step (setup-workspace-kickoff.js, KAN-809): the four doors; under them what a Workspace
+   is, or the open door's blanks with the form's rule beside them; what was made; the Workspaces line. */
+.setup-workspace-kickoff { display: flex; flex-direction: column; gap: var(--space-section); max-inline-size: 48rem; padding: var(--space-subsection); }
+.setup-workspace-blanks { display: flex; flex-direction: column; gap: var(--space-subsection); }
+.setup-workspace-blanks[data-door='open'] { padding-inline-start: var(--space-subsection); border-inline-start: 2px solid var(--line); }
+.setup-workspace-blanks > *, .setup-workspace-blanks .wk-field { margin: 0; }
+.setup-workspace-kickoff .wk-field { display: flex; flex-direction: column; gap: var(--space-paragraph); }
+.setup-workspace-kickoff .wk-field-description:empty { display: none; }
+.setup-workspace-question { display: flex; flex-direction: column; gap: var(--space-paragraph); }
+.setup-workspace-ask, .setup-workspace-about-title { margin: 0; color: var(--fg-strong); font-size: var(--form-key); font-weight: var(--weight-strong); }
+.setup-workspace-create { display: flex; justify-content: flex-start; }
+/* What a Workspace is (the owner's words): clear paragraphs, the heading close to its text. */
+.setup-workspace-about { display: flex; flex-direction: column; gap: var(--space-subsection); max-inline-size: 40rem; }
 .setup-workspace-about p { margin: 0; line-height: var(--leading-body); }
 .setup-workspace-about-title + p { margin-top: calc(var(--space-paragraph) * -1); }
-.setup-workspace-about + .ws-diagram { margin-top: calc(var(--space-section) - var(--space-4, 16px)); }
-/* The Workspace diagram (KAN-845): an example, drawn in the page's own tokens, never pressable. */
+.setup-workspace-about + .ws-diagram { margin-top: calc(var(--space-section) - var(--space-subsection)); }
+/* The diagram (KAN-845): illustrative, said so, never pressable, in the page's tokens. */
 .ws-diagram { margin: 0; display: flex; flex-direction: column; gap: var(--space-inline); max-inline-size: 40rem; }
-.ws-diagram figcaption { color: var(--muted); font-size: var(--text-small); }
+.ws-diagram small, .ws-diagram figcaption { color: var(--muted); font-size: var(--text-small); }
 .ws-diagram-office { display: flex; flex-direction: column; gap: var(--space-control); padding: var(--space-control); border: var(--edge) dashed var(--line-2); border-radius: var(--radius-small); background: var(--inset); }
 .ws-diagram-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-inline); color: var(--fg-strong); }
 .ws-diagram-example { padding: 2px var(--space-inline); border-radius: var(--radius-small); background: var(--kaki-fill); color: var(--kaki-fill-ink); font-size: var(--text-small); font-weight: var(--weight-strong); text-transform: uppercase; letter-spacing: var(--tracking-wide); }
 .ws-diagram-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-inline); }
-.ws-diagram-ws { display: flex; flex-direction: column; padding: var(--space-row) var(--space-inline); border: var(--edge) solid var(--line-2); border-radius: var(--radius-small); background: var(--surface); }
+.ws-diagram-ws { padding: var(--space-row) var(--space-inline); border: var(--edge) solid var(--line-2); border-radius: var(--radius-small); background: var(--surface); }
 .ws-diagram-ws.open { border-color: var(--kaki); background: var(--selected); }
-.ws-diagram small { color: var(--muted); font-size: var(--text-small); }
+.ws-diagram-choose, .ws-diagram-objective { margin: 0; }
+.ws-diagram-objective { color: var(--fg-strong); }
 .ws-diagram-detail { display: flex; flex-direction: column; gap: var(--space-control); padding: var(--space-control); border: var(--edge) solid var(--kaki); border-radius: var(--radius-small); background: var(--surface); }
-.ws-diagram-objective { margin: 0; color: var(--fg-strong); }
-.ws-diagram-choose { margin: 0; color: var(--fg); }
+.ws-diagram-detail > small + .ws-diagram-objective { margin-top: calc(var(--space-row) * -1); }
 .ws-diagram-places { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-inline); }
 .ws-diagram-places > span { padding: var(--space-row) var(--space-inline); border: var(--edge) solid var(--line-2); border-radius: var(--radius-small); text-align: center; }
 .ws-diagram-agents { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-inline); }
 .ws-diagram-agents > small { flex-basis: 100%; }
-.ws-diagram-detail > small + .ws-diagram-objective { margin-top: calc(var(--space-row) * -1); }
 .ws-diagram-agents > span { padding: 0 var(--space-inline); border: var(--edge) solid var(--line-2); border-radius: var(--radius-small); }
+/* The phone keeps the three on one row, compact (system_lead, 25 Nov). */
 @media (max-width: 600px) {
-  /* The phone keeps the three on one row, compact, by name only (system_lead, 25 Nov). */
-  .ws-diagram-ws { padding: var(--space-row) var(--space-row); }
+  .ws-diagram-ws { padding: var(--space-row); }
   .ws-diagram-places { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
-.setup-workspace-about-title { margin: 0; color: var(--fg-strong); font-size: var(--form-key); font-weight: var(--weight-strong); }
-.setup-workspace-foot { display: flex; flex-direction: column; gap: var(--space-4, 16px); }
-.setup-workspace-yours { margin: 0; }
-.setup-workspace-question { display: flex; flex-direction: column; gap: var(--space-2, 8px); }
-.setup-workspace-ask { margin: 0; color: var(--fg-strong); font-size: var(--form-key); font-weight: var(--weight-strong); }
-.setup-workspace-create { display: flex; justify-content: flex-start; }
-.setup-workspace-made, .setup-workspace-bad { margin: 0; }
-/* One gap between every part of the blanks, nothing of a field's own around it. */
-.setup-workspace-blanks > *, .setup-workspace-blanks .wk-field { margin: 0; }
-.setup-workspace-kickoff .wk-field { display: flex; flex-direction: column; gap: var(--space-2, 8px); }
-.setup-workspace-kickoff .wk-field-description:empty { display: none; }
-/* The Workspaces line is its own section, under a rule, well below Create. */
-.setup-workspace-foot { margin: var(--space-4, 16px) 0 0; padding-top: var(--space-4, 16px); border-top: 1px solid var(--line); }
+/* What was made, then the Workspaces line under a rule, its own section. */
+.setup-workspace-made, .setup-workspace-bad, .setup-workspace-yours { margin: 0; }
 .setup-workspace-bad { color: var(--bad); }
+.setup-workspace-foot { display: flex; flex-direction: column; gap: var(--space-subsection); margin-top: var(--space-subsection); padding-top: var(--space-subsection); border-top: var(--edge) solid var(--line); }
 .setup-workspace-done:empty, .setup-workspace-foot:empty { display: none; }
 .setup-workspace-link { background: none; border: 0; padding: 0; color: var(--link); text-decoration: underline; cursor: pointer; font: inherit; }
 .setup-harness-link { color: var(--link); word-break: break-all; }

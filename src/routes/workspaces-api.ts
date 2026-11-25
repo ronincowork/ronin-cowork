@@ -9,7 +9,7 @@ import { listCanvases } from '../canvases.js';
 import { folderFacts } from '../folder-facts.js';
 import { deleteIcebox } from '../work-items.js';
 import { callerOf } from './work-items-api.js';
-import { cloneRepository, createGithubRepository } from '../setup-runtime.js';
+import { createGithubRepository } from '../setup-runtime.js';
 
 const errMsg = (e: unknown): string => String((e as Error)?.message ?? e);
 // The office's one Campaign, always: a page never says which (KAN-727). A person never meets a Campaign.
@@ -66,7 +66,7 @@ export function registerWorkspaces(app: express.Express): void {
       const w = await readWorkspace(await campaignOf(), req.params.name);
       if (!w) return res.status(404).json({ error: `No Workspace ${req.params.name}.` });
       const repository = typeof req.body?.repository === 'string' ? req.body.repository.trim() : '';
-      const added = await addRepository(w, repository, cloneRepository);
+      const added = await addRepository(w, repository);
       const github = !repository && (req.body?.github === 'private' || req.body?.github === 'public') ? await createGithubRepository(added.dir, req.body.github) : null;
       res.json({ ok: true, workspace: await withPlace(added.workspace), dir: added.dir, ...(github ? { github } : {}) });
       layersMayHaveChanged();

@@ -37,10 +37,13 @@ const status = () => { const line = el('div', 'pr-status'); line.setAttribute('r
 const sayInto = (line) => (message, bad) => { line.replaceChildren(); if (!message) return; const p = el('div', `pr-empty${bad ? ' bad' : ''}`, message); line.append(p); };
 
 
+/** A Workspace's handle from its name, the one rule (Setup's step and New Workspace): lowercase words
+ *  joined by _, as ronin_lab; `pinName` makes it unique among those taken. */
+export const workspaceHandle = (title) => String(title).toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 60);
 const pinName = (title, taken) => {
-  const base = String(title).toLowerCase().replace(/[^a-z0-9_-]+/g, '-').replace(/^[-_]+|[-_]+$/g, '').slice(0, 60) || 'workspace';
+  const base = workspaceHandle(title) || 'workspace';
   let name = base;
-  for (let n = 2; taken.has(name); n++) name = `${base}-${n}`;
+  for (let n = 2; taken.has(name); n++) name = `${base}_${n}`;
   return name;
 };
 

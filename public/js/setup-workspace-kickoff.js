@@ -10,11 +10,13 @@
  *    folder files/<source>, for the Team step's Epic to bring in. Nothing is pulled in here.
  * 3. From scratch: a new Git repository in repos/<name>; on GitHub too once signed in.
  * 4. Not sure yet: Ronin Lab, what it is and its folder, then Create (two presses).
- * Doors 1–3 then ask what it is (objective, name), its kind, and what every Agent in it should follow
- * (instructions); last, while there is none, Also add Ronin Lab. Every answer is on the record.
+ * Doors 1–3 ask, in order: the kind, the name, what you are working on; the door's own question; what
+ * every Agent in it should follow; while there is none, Also add Ronin Lab; then Create. Every answer is
+ * on the Workspace record. With no door chosen, or the chosen one pressed again: what a Workspace is.
  *
- * Connect is the one press that messages the Helpful Assistant; its stone names her.
- * Every press answers at once: a pressed Create reads what it is doing until it is done.
+ * The Helpful Assistant hears two things from here: Connect (its stone names her) asks her to sign in
+ * to GitHub; Create tells her what was made (tellHer). Nothing else messages her. Every press answers at
+ * once: a pressed Create reads what it is doing until it is done.
  */
 import { t } from './lexicon.js';
 import { ask } from './ask.js';
@@ -23,6 +25,7 @@ import { subscribe } from './store.js';
 import { WorkspaceKit } from './workspace-kit.js';
 import { KINDS, kindWord, ruledRows } from './glyphs.js';
 import { openWorkspaceTab } from './workspace.js';
+import { workspaceHandle } from './workspaces-surface.js';
 import { sendComposerMessage } from './composer-rules.js';
 import { sendPress } from './press.js';
 import { IRASSHAI, IRASSHAI_NAME, askIrasshai, irasshaiLive } from './setup-irasshai.js';
@@ -44,8 +47,6 @@ const SOURCES = [
   { v: 'google_drive', l: 'Google Drive' }, { v: 'wordpress', l: 'WordPress' }, { v: 'shopify', l: 'Shopify' },
   { v: 'netlify', l: 'Netlify' }, { v: 'computer', l: t('setup_workspace.source_computer', 'Files from my computer') },
 ];
-/** A Workspace's handle from its name (lowercase, _), as the server takes it. */
-const handle = (title) => title.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 64);
 const repoBase = (url) => url.trim().replace(/\.git$/, '').replace(/\/+$/, '').split(/[/:]/).pop() || '';
 const blank = () => ({ picked: [], pasted: '', sources: [], github: 'here', title: '', named: false, objective: '', kind: '', instructions: '', lab: false });
 
@@ -118,9 +119,12 @@ export function createWorkspaceKickoff({ workspacesRead, environment }) {
     asking = sent.ok ? t('setup_workspace.github_sent', 'Sent: the Helpful Assistant signs you in to GitHub in her chat.') : sent.why;
     paintBlanks();
   };
+  // Read again on every fact write and when her turn ends; the blanks repaint only when it moved, so
+  // what is being typed is left alone.
   const readGithub = async () => {
     const answer = await request('/api/setup/github', { cache: 'no-store' });
-    if (answer.ok) github = { authenticated: !!answer.data?.authenticated, account: String(answer.data?.account || '') };
+    if (!answer.ok || !!answer.data?.authenticated === github.authenticated) return;
+    github = { authenticated: !!answer.data.authenticated, account: String(answer.data.account || '') };
     if (github.authenticated && !mine) {
       const list = await request('/api/setup/github/repos', { cache: 'no-store' });
       mine = list.ok ? list.data.repos || [] : [];
@@ -144,7 +148,7 @@ export function createWorkspaceKickoff({ workspacesRead, environment }) {
     const input = rows ? el('textarea') : el('input');
     if (rows) input.rows = rows; else input.type = 'text';
     input.value = value; input.placeholder = placeholder;
-    input.addEventListener('input', () => onInput(input.value, input));
+    input.addEventListener('input', () => onInput(input.value));
     return createField({ label, control: input }).el;
   };
   const connectStone = (why) => question('connect', t('setup_workspace.github_ask', 'GitHub'), [
@@ -198,7 +202,7 @@ export function createWorkspaceKickoff({ workspacesRead, environment }) {
       return showMade({ title: LAB.title, name: LAB.name });
     }
     if (!draft.title.trim() && door === 'git' && urls().length) draft.title = repoBase(urls()[0]);
-    const name = handle(draft.title);
+    const name = workspaceHandle(draft.title);
     if (!name) return fail(t('setup_workspace.name_needed', 'Say what it is, or give it a name.'));
     if (has(name)) return fail(t('setup_workspace.name_taken', 'You already have a Workspace called {name}.', { name: draft.title.trim() }));
     if (door === 'git' && !urls().length) return fail(t('setup_workspace.repo_needed', 'Pick a repository or paste its Git URL.'));
@@ -216,18 +220,24 @@ export function createWorkspaceKickoff({ workspacesRead, environment }) {
         : t('setup_workspace.starting', 'Starting its repository…');
       answer = await request(`/api/workspaces/${encodeURIComponent(name)}/repos`, { method: 'POST', json: body });
     }
-    const lab = draft.lab && !has(LAB.name);
-    if (answer.ok && lab) { word.textContent = t('setup_workspace.making_lab', 'Making Ronin Lab…'); await makeLab(); }
-    if (wsMade) tellHer(name, answer.ok ? '' : answer.message);
-    if (answer.ok && lab) tellHer(LAB.name);
+    const failed = answer.ok ? '' : answer.message;
+    let lab = false;
+    if (wsMade && draft.lab && !has(LAB.name)) {
+      word.textContent = t('setup_workspace.making_lab', 'Making Ronin Lab…');
+      lab = (await makeLab()).ok;
+    }
     create.setDisabled(false);
     word.textContent = t('workspaces.create', 'Create');
-    if (!answer.ok) return fail(answer.message);
+    if (!wsMade) return fail(failed);
+    // Made, it is shown made, whatever came after; a clone that failed is said under it.
+    tellHer(name, failed);
+    if (lab) tellHer(LAB.name);
     const made = { title: draft.title.trim(), name };
     door = ''; draft = blank();
     await workspacesRead.read();
     paint();
     showMade(made, lab);
+    if (failed) done.append(el('p', 'setup-workspace-bad', failed));
   } });
 
   const makeLab = async () => {

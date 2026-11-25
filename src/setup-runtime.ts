@@ -332,12 +332,10 @@ export async function githubSetupAnswer(): Promise<GithubSetupAnswer> {
   }
 }
 
-/** Clone a GitHub repository into `parent` (Ronin's own folder when none is named). The Workspace
- * page that asked adds it as a row; nothing here keeps a list (KAN-728). */
-/** A repository cloned into a folder here (owner, 2026-11-24; w926): any Git URL, from any host, with
- * plain git; `owner/name` means GitHub. A public one needs no sign-in; a private one needs this
- * machine's Git or GitHub sign-in, and git says so in its own words. */
-export async function cloneRepository(repository: unknown, parent?: unknown): Promise<{ dir: string }> {
+/** A repository cloned into `parent`, a Workspace's repos/ (addRepository, src/workspaces.ts; KAN-809):
+ * any Git URL, from any host, with plain git; `owner/name` means GitHub. A public one needs no sign-in;
+ * a private one needs this machine's Git or GitHub sign-in, and git says so in its own words. */
+export async function cloneRepository(repository: unknown, parent: string): Promise<{ dir: string }> {
   const entered = typeof repository === 'string' ? repository.trim() : '';
   const shorthand = /^([A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+?)(?:\.git)?$/.exec(entered);
   const url = /^(?:https?:\/\/|ssh:\/\/|git@[^:]+:|git:\/\/)\S+$/.test(entered);
@@ -345,7 +343,7 @@ export async function cloneRepository(repository: unknown, parent?: unknown): Pr
   const remote = shorthand ? `https://github.com/${shorthand[1]}.git` : entered;
   const base = remote.replace(/\.git$/, '').replace(/\/+$/, '').split(/[/:]/).pop() || '';
   if (!/^[A-Za-z0-9_.-]+$/.test(base)) throw new Error('That URL names no repository.');
-  const dir = path.join(typeof parent === 'string' && parent.trim() ? path.resolve(parent.trim()) : rootDir('user'), base);
+  const dir = path.join(parent, base);
   if (await exists(dir)) throw new Error(`The destination ${dir} already exists.`);
   const git = await discoverExecutable('git');
   if (!git) throw new Error('Git is not installed or is not available to the owner’s login shell.');

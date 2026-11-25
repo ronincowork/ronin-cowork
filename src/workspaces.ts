@@ -28,6 +28,7 @@ import path from 'node:path';
 import { rootDir, storeDir, STORES } from './resources.js';
 import type { LaunchMode } from './agent-defaults.js';
 import { KINDS, type TeamKind } from './team-rosters.js';
+import { cloneRepository } from './setup-runtime.js';
 
 /** A folder the Workspace works in: `dir` is the folder; `name` is Ronin's key for it (desks, tmux,
  * promotion), made from the folder's basename on save, the same for one dir in every Workspace. */
@@ -167,12 +168,12 @@ export async function layOut(dir: string): Promise<void> {
  * owner/name) is cloned; none starts a new one named after the Workspace. Its row is added to the
  * record on Desks: dev for desks, its own branch stable.
  */
-export async function addRepository(w: Workspace, repository: string, clone: (url: string, parent: string) => Promise<{ dir: string }>): Promise<{ workspace: Workspace; dir: string }> {
+export async function addRepository(w: Workspace, repository: string): Promise<{ workspace: Workspace; dir: string }> {
   const repos = path.join(ownFolder(w.name), 'repos');
   await mkdir(repos, { recursive: true });
   let dir: string;
   const git = (args: string[]) => execFileP('git', ['-C', dir, ...args], { timeout: 10_000 }).then((r) => r.stdout.trim());
-  if (repository) dir = (await clone(repository, repos)).dir;
+  if (repository) dir = (await cloneRepository(repository, repos)).dir;
   else {
     // A started one gets its first commit, a README naming it, so its branches exist.
     dir = path.join(repos, w.name);
