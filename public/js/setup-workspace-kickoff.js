@@ -187,7 +187,15 @@ export function createWorkspaceKickoff({ workspacesRead, environment }) {
     blanks.replaceChildren();
     // NO DOOR YET: where the form would be, what a Workspace is (owner, 25 Nov).
     if (!door) {
-      blanks.append(el('p', 'setup-workspace-about', t('setup_workspace.about', 'A Workspace is one project on this office: what it is, its kind, and its own folder, ~/ronin/<name>, with its plans, files and repositories. Every Agent you start in it is told all of that. Pick how you are starting to add one; you can add more later.')));
+      // The owner's words (25 Nov).
+      const about = el('div', 'setup-workspace-about');
+      about.append(
+        el('h3', 'setup-workspace-about-title', t('setup_workspace.about_title', 'What is a Workspace?')),
+        el('p', null, t('setup_workspace.about_1', 'A Workspace is where you and your AI agents work together on a project.')),
+        el('p', null, t('setup_workspace.about_2', 'It brings together your project’s files, repositories, plans, and instructions in one place. Every agent you launch in that Workspace knows what the project is about, where to find things, and what you’re trying to accomplish.')),
+        el('p', null, t('setup_workspace.about_3', 'You can create multiple Workspaces, each with its own project and context. Your agents can work independently or collaborate within the same Workspace.')),
+      );
+      blanks.append(about);
       return;
     }
     const { head, tail } = define();
