@@ -132,7 +132,7 @@ the item.
 ## The item tool
 
 ```text
-item create --parent w3 --title "…" [--kind Task] [--objective "…"] [--priority High]   # lands on you; --team surface puts it on a Team
+item create --parent w3 --title "…" [--title "…"] [--kind Task] [--objective "…"] [--priority High]   # one item per --title; lands on you; --team surface puts it on a Team
 item read w12                       # fields, the objective, children, latest comments and history; --json all of it, as JSON
 item search [--campaign home_machine] [--team surface] [--holder builder | none] [--parent w3 | --no-parent] [--status "In Progress"] [--kind Bug] [--archived]   # one line each: <id> | <status> | <holder> | <title>
 item edit w12 --objective "…" --priority High
@@ -148,7 +148,10 @@ item archive w12                    # a Done item off every list now; --done [--
 item delete w12                     # with its subtasks
 ```
 
-Every write answers with one line of what it did, then the item as it now is.
+Every command but `link` and `checkout` takes several ids (`item read w12 w13`, `item comment
+w12 w13 "…"`), each acted on in turn. Every write answers with one line of what it did, then
+the item as it now is; on several, one line each, and a line saying why for any not done, the
+tool then exiting 4.
 
 ## An Agent's day
 

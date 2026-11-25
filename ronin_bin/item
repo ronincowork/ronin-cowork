@@ -10,22 +10,25 @@ plain() { local out; out=$(ronin_item_call GET "$2") || return $?; if [ -n "$as_
 die() { echo "$1" >&2; exit "${2:-2}"; }
 usage() { cat <<'EOF_USAGE'
 Usage:
-  item create --title <t> [--kind <type>] [--parent <id>] [--objective <o>] [--priority <p>] [--team <t>|--workspace <w>] [--playbook]
-  item read <id> [--json]
+  item create --title <t> [--title <t> ...] [--kind <type>] [--parent <id>] [--objective <o>] [--priority <p>] [--team <t>|--workspace <w>] [--playbook]
+  item read <ids> [--json]
   item search [--campaign <id>] [--team <t>] [--holder <name>|none] [--parent <id>|--no-parent] [--status <s>] [--kind <k>] [--text <words>] [--archived] [--playbook] [--json]
   item checkout PLAYBOOK-<n> [<agent>|team:<name>]   item checkout <live id> --playbook
-  item edit <id> --title|--objective|--kind|--parent <id|none>|--priority|--trello|--github <value> ...
+  item edit <ids> --title|--objective|--kind|--parent <id|none>|--priority|--trello|--github <value> ...
   item transition <ids> "<status>" [--note "<what they can try>"]
   item handoff <ids> <agent>|team:<name>|workspace:<name> [--from <agent>|team:<name>] [--keep-holding]
   item handover <ids> <agent>|team:<name> "<where it stands; what is next>" [--to-do] [--flag "<the question>"]
   item watch <ids> [<agent>|team:<name>]  item unwatch <ids> [<agent>|team:<name>]
   item flag <ids> [<why>]             item unflag <ids> [<comment>]
-  item comment <id> <text>            item comment <id> --edit <n> <text>
-  item attach <id> <path>|<url>|plan:<name>   item attach <id> --remove <path>|<url>|plan:<name>
+  item comment <ids> <text>           item comment <ids> --edit <n> <text>
+  item attach <ids> <path>|<url>|plan:<name>   item attach <ids> --remove <path>|<url>|plan:<name>
   item link <id> <type> <id> [--remove]
   item archive <ids>                  item archive --done [--team <t>]
   item delete <ids>
-<ids> is one id or several (w12 w13 KAN-65), each acted on in turn; every id an item has had
+<ids> is one id or several (w12 w13 KAN-65), each acted on in turn: every command but link
+(one item to another) and checkout. create takes several --title, one item each, the rest
+shared. One reply line each, what was done with the id, or why not; if any was not done the
+tool exits 4: read the reply, in a script too. Every id an item has had
 finds it, here, in read, edit and --parent. --text matches every word in the title or objective, any case. An item Done five days is archived: off
 every list and out of search unless --archived; item read still finds it.
 Status, kind, priority and link type are the space's own names, exactly; by default:
@@ -112,10 +115,18 @@ print(json.dumps(d))' "$BY" "$@"; }
 json() { python3 -c 'import json,sys; a=sys.argv[1:]; print(json.dumps(dict(zip(a[::2], a[1::2]))))' by "$BY" "$@"; }
 verb=$1; shift
 case "$verb" in
-  create) playbook=''; args=()
-    for a in "$@"; do [ "$a" = --playbook ] && playbook=true || args+=("$a"); done
-    body=$(fields title,objective,parent,kind,priority,team,workspace "${args[@]}") || exit 2
-    [ -n "$playbook" ] && body=$(python3 -c 'import json,sys; d = json.loads(sys.argv[1]); d["playbook"] = True; print(json.dumps(d))' "$body")
+  create) playbook=''; args=(); titles=()
+    while [ "$#" -gt 0 ]; do
+      case "$1" in
+        --playbook) playbook=true; shift ;;
+        --title) [ "$#" -ge 2 ] || die 'BAD-ARG: --title needs the title'; titles+=("$2"); shift 2 ;;
+        *) args+=("$1"); shift ;;
+      esac
+    done
+    [ "${#titles[@]}" -gt 0 ] || die 'BAD-ARG: item create needs --title <t>, one or several'
+    body=$(fields objective,parent,kind,priority,team,workspace "${args[@]}") || exit 2
+    # One title or several: { titles }, each made with the rest of the body, one reply line each.
+    body=$(python3 -c 'import json,sys; d = json.loads(sys.argv[1]); d["titles"] = sys.argv[3:]; d["playbook"] = sys.argv[2] == "true" or None; print(json.dumps({k: v for k, v in d.items() if v is not None}))' "$body" "$playbook" "${titles[@]}")
     ronin_item_call POST /api/work-items "$body"; exit $? ;;
   search)
     q=''
@@ -136,26 +147,36 @@ case "$verb" in
       ronin_item_call POST /api/work-items/archive-done "$(json ${team:+team "$team"})"; exit $?; } ;;
 esac
 id=${1:-}; [ -n "$id" ] || die "BAD-ARG: item $verb needs the item's id"; shift
-# SEVERAL IDS: the acts that take them read every leading argument that is an id (w12, KAN-65).
-# One id goes to the item's own route; several go to /api/work-items/many/<act> { ids }, the
-# same body, each id answered on its own line.
+# SEVERAL IDS (owner, 2026-11-25): every act but link and checkout reads every leading argument
+# that is an id (w12, KAN-65). One id goes to the item's own route; several go to
+# /api/work-items/many/<act> { ids }, the same body, each id answered on its own line; read
+# reads each in turn.
 ids=("$id")
 case "$verb" in
-  transition|handoff|handover|archive|watch|unwatch|flag|unflag|delete)
-    while [ "$#" -gt 0 ] && [[ $1 =~ ^(w[1-9][0-9]*|[A-Z][A-Z0-9_]+-[1-9][0-9]*)$ ]]; do ids+=("$1"); shift; done ;;
+  link|checkout) ;;
+  *) while [ "$#" -gt 0 ] && [[ $1 =~ ^(w[1-9][0-9]*|[A-Z][A-Z0-9_]+-[1-9][0-9]*)$ ]]; do ids+=("$1"); shift; done ;;
 esac
 # item_act <act> <method> <body>: the one route for one id, the many route for several.
 item_act() {
   if [ "${#ids[@]}" -eq 1 ]; then
-    if [ "$1" = delete ]; then ronin_item_call DELETE "/api/work-items/$id" "$3"; else ronin_item_call "$2" "/api/work-items/$id/$1" "$3"; fi
+    if [ "$1" = delete ]; then ronin_item_call DELETE "/api/work-items/$id" "$3"
+    elif [ "$1" = edit ]; then ronin_item_call PUT "/api/work-items/$id" "$3"
+    else ronin_item_call "$2" "/api/work-items/$id/$1" "$3"; fi
   else
     ronin_item_call POST "/api/work-items/many/$1" "$(python3 -c 'import json,sys; d = json.loads(sys.argv[1]); d["ids"] = sys.argv[2:]; print(json.dumps(d))' "$3" "${ids[@]}")"
   fi
 }
 case "$verb" in
-  read) [ "$#" -eq 0 ] || die 'BAD-ARG: item read takes only <id> [--json]'; plain read "/api/work-items/$id" ;;
-  edit) [ "$#" -ge 2 ] || die 'BAD-ARG: item edit takes <id> --field <value> ...'
-    body=$(fields title,objective,kind,parent,priority,trello,github "$@") || exit 2; ronin_item_call PUT "/api/work-items/$id" "$body" ;;
+  read) [ "$#" -eq 0 ] || die 'BAD-ARG: item read takes only <ids> [--json]'
+    # Each in turn, a blank line between; a missing one says so and the rest still read.
+    rc=0; first=1
+    for one in "${ids[@]}"; do
+      [ -n "$first" ] || echo; first=''
+      plain read "/api/work-items/$one" || rc=$?
+    done
+    exit $rc ;;
+  edit) [ "$#" -ge 2 ] || die 'BAD-ARG: item edit takes <ids> --field <value> ...'
+    body=$(fields title,objective,kind,parent,priority,trello,github "$@") || exit 2; item_act edit PUT "$body" ;;
   transition) [ "$#" -eq 1 ] || { [ "$#" -eq 3 ] && [ "$2" = --note ]; } || die 'BAD-ARG: item transition takes <ids> <status> [--note "<what they can try>"]'
     item_act transition POST "$(json status "$1" ${3:+note "$3"})" ;;
   handover) [ "$#" -ge 1 ] || die 'BAD-ARG: item handover takes <ids> <agent>|team:<name> "<note>" [--to-do] [--flag "<the question>"]'
@@ -199,21 +220,21 @@ case "$verb" in
     item_act "$verb" POST "$who" ;;
   comment)
     if [ "${1:-}" = --edit ]; then
-      [ "$#" -eq 3 ] || die 'BAD-ARG: item comment takes <id> --edit <n> <text>, the text quoted'
-      ronin_item_call POST "/api/work-items/$id/comment" "$(json edit "$2" text "$3")"
+      [ "$#" -eq 3 ] || die 'BAD-ARG: item comment takes <ids> --edit <n> <text>, the text quoted'
+      item_act comment POST "$(json edit "$2" text "$3")"
     else
-      [ "$#" -eq 1 ] || die 'BAD-ARG: item comment takes <id> <text>, the text quoted'
-      ronin_item_call POST "/api/work-items/$id/comment" "$(json text "$1")"
+      [ "$#" -eq 1 ] || die 'BAD-ARG: item comment takes <ids> <text>, the text quoted'
+      item_act comment POST "$(json text "$1")"
     fi ;;
   flag|unflag) [ "$#" -le 1 ] || die "BAD-ARG: item $verb takes <ids> [<comment>], the comment quoted"
     item_act "$verb" POST "$(json ${1:+comment "$1"})" ;;
   attach)
     remove=''; [ "${1:-}" = --remove ] && { remove=true; shift; }
-    [ "$#" -eq 1 ] || die 'BAD-ARG: item attach takes <id> [--remove] <path>|<url>|plan:<name>'
+    [ "$#" -eq 1 ] || die 'BAD-ARG: item attach takes <ids> [--remove] <path>|<url>|plan:<name>'
     # A path is resolved here, against the caller's cwd: the item stores the absolute path.
     # plan:<name> or plan:<workspace>/<name> goes as written: the store resolves it (plan --help).
     case "$1" in http://*|https://*|plan:*) at=$1 ;; *) at=$(python3 -c 'import os,sys; print(os.path.abspath(os.path.expanduser(sys.argv[1])))' "$1") ;; esac
-    ronin_item_call POST "/api/work-items/$id/attach" "$(json path "$at" ${remove:+remove true})" ;;
+    item_act attach POST "$(json path "$at" ${remove:+remove true})" ;;
   link)
     remove=''; args=()
     for a in "$@"; do [ "$a" = --remove ] && remove=true || args+=("$a"); done
