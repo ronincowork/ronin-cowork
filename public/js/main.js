@@ -29,6 +29,7 @@ import { installCustomize } from './customize.js';
 import { t } from './lexicon.js';
 import { applyPageWords } from './pagewords.js';
 import { installFeedbackButton } from './feedback.js';
+import { createThemeToggle } from './theme-toggle.js';
 
 async function init() {
   const reveal = () => document.documentElement.classList.remove('boot-pending');
@@ -93,6 +94,8 @@ async function init() {
   workspace.kit = WorkspaceKit;
   S.workspace = workspace;
   installFeedbackButton(workspace);
+  // Light/dark, one button on every page (owner, 25 Nov; KAN-866). Phone keeps its own.
+  document.getElementById('themeaction')?.replaceChildren(createThemeToggle());
   refreshWorkspaceHeader = installWorkspaceHeader(workspace);
   S.refreshWorkspaceHeader = refreshWorkspaceHeader;
   // The Team destination. Registered beside the compatibility Sessions grid, not over it:

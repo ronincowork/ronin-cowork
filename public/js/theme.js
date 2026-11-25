@@ -37,7 +37,7 @@ export function setCampaignTheme(desk) {
   } catch (_) { /* private mode */ }
 }
 
-/** What resolves onto the page: a device pin (legacy, no UI writes one today)
+/** What resolves onto the page: a device pin (the header's light/dark button, KAN-866)
  *  outranks the Campaign's setting for this surface, which outranks the house light. */
 export const resolvedTheme = (choice = currentTheme()) =>
   choice === 'auto' ? ((COARSE ? campaignThemes.mobile : campaignThemes.desktop) || 'light') : choice;

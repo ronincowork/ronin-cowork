@@ -11,7 +11,6 @@ import { localDocumentLink, productRepositoryHref } from './document-links.js';
 import { normalizeGardenCanvasCatalog } from './garden-canvas-model.js';
 import { workbenchLaunchUrl } from './workspace.js';
 import { onProjects, projectData } from './home.js';
-import { createThemeToggle } from './theme-toggle.js';
 import { firstUnansweredSetupStep } from './setup-progress.js';
 import { createSetupStepsBar, setupStepMarks } from './setup-steps-bar.js';
 import { mikaShowHandlers, setupProgressHandlers } from './events.js';
@@ -52,7 +51,6 @@ export function createSetupView() {
   let sceneOverride = 1;
   const progressListeners = new Set();
   const providerSessions = createProviderSetupSessionMount();
-  const themeToggle = createThemeToggle();
   const opener = createIrasshaiOpener({ refresh: () => { bench?.refreshSelector(); if (!irasshai && garden) paintOffer(); }, showChat: () => { bench?.select('workspace1'); garden?.el.scrollIntoView?.({ block: 'start' }); } }); // a phone stacks the workspaces
   // IRASSHAI (setup-irasshai.js): Workspace 1, the Ask Ronin panel, is only her: her chat while her
   // session is live, else the offer of her. The step's how-to is the selector's guide (below). `irasshai` is her session's birth key at the last look ('' not live):
@@ -391,7 +389,7 @@ export function createSetupView() {
   return {
     el: bench.host,
     glyph: '人',
-    ...workbenchView('setup', { header: { ram: false, feedback: false, actions: [themeToggle] } }),
+    ...workbenchView('setup', { header: { ram: false, feedback: false } }),
     title: () => 'Ronin Setup',
     place: () => t('setup.short_title', 'Setup'), // the crumb: Home • Setup (owner, 2026-10-24)
     mount: (_host, context) => { ctx = context; },

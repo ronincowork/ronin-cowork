@@ -2,7 +2,7 @@
 /**
  * SETTINGS V2 (owner, 2026-11-25; KAN-862): a second Settings built beside the first, so the two can be
  * compared and what is missing seen. The structure is samurai_lab wip/SETTINGS_CLEANUP.md §2: four groups,
- * no hints. Today's surfaces are reused as they are; Themes and Machine stats are new cards
+ * no hints. Today's surfaces are reused as they are; Machine stats is a new card
  * over today's builders. When v2 is right the old Settings and its surfaces go.
  */
 import { WorkspaceKit } from './workspace-kit.js';
@@ -11,7 +11,7 @@ import { doorWorkbench, harnessKit } from './door-workbenches.js';
 import { WORKBENCH_PROFILES, WORKBENCH_TYPES } from './workbench-catalog.js';
 import { SETUP_SURFACE_TYPES } from './setup-surfaces.js';
 import { BEHAVIOUR_SURFACE_TYPE } from './behaviour-surface.js';
-import { campaignById, loadCampaigns, normalizeSelection, saveCampaign } from './campaigns.js';
+import { campaignById, loadCampaigns, normalizeSelection } from './campaigns.js';
 import { createAgentDefaultsSurface } from './campaign-defaults.js';
 import { createJiraItemsSurface, createJiraPairsSurface, createJiraPanel } from './jira-panel.js';
 import { createIntegrationsPanel } from './integrations-panel.js';
@@ -20,39 +20,12 @@ import { createFeedbackSurface } from './feedback.js';
 import { createDocumentWorkspaceAdapter } from './docs.js';
 import { installBehaviourReader } from './behaviour-reader.js';
 import { buildStats } from './stats.js';
-import { choice } from './campaign-desk.js';
-import { setCampaignTheme, setTheme } from './theme.js';
 import { loadProviderCatalog } from './form-steps.js';
 
 const elem = (tag, cls, text) => { const out = document.createElement(tag); if (cls) out.className = cls; if (text != null) out.textContent = text; return out; };
 const enterable = (surface) => ({ el: surface.el, show: () => surface.enter() });
 const BESIDE = Object.freeze({ workspace1: 'workspace2', workspace2: 'workspace1' });
 
-/** Themes: the Desk's light or dark, for pointer and for touch surfaces. */
-function createThemesSurface(campaign) {
-  const surface = WorkspaceKit.primitives.createSurface({ label: t('settings2.themes', 'Themes'), className: 'cv-surface' });
-  const body = elem('div', 'cv-body');
-  surface.content.append(body);
-  const options = () => [
-    { value: 'light', label: t('campaign_view.theme_light', 'Light') },
-    { value: 'dark', label: t('campaign_view.theme_dark', 'Dark') },
-  ];
-  const paint = () => {
-    const row = campaign();
-    body.replaceChildren();
-    if (!row) return;
-    const save = (field) => async (value) => {
-      const result = await saveCampaign(row.id, { desk: { [field]: value } });
-      if (result.ok) { setCampaignTheme(campaign()?.desk || {}); setTheme('auto'); }
-      paint();
-    };
-    body.append(
-      choice(t('campaign_view.theme_desktop', 'Desktop'), options(), row.desk?.theme || 'light', t('campaign_view.theme_help', 'Light or dark for pointer surfaces.'), save('theme')),
-      choice(t('campaign_view.theme_mobile', 'Mobile'), options(), row.desk?.theme_mobile || 'light', t('campaign_view.theme_mobile_help', 'Light or dark for touch surfaces — iPad and phone.'), save('theme_mobile')),
-    );
-  };
-  return { el: surface.el, show: paint };
-}
 
 /** A room built by one of today's builders (stats), on a surface of its own. */
 function roomSurface(label, room, build) {
@@ -106,7 +79,6 @@ export function createSettingsV2View() {
         campaignJira: ({ workspace }) => enterable(jira(workspace)),
         campaignJiraItems: () => enterable(createJiraItemsSurface(selected)),
         campaignJiraPairs: () => enterable(createJiraPairsSurface(selected)),
-        settings2Themes: () => createThemesSurface(selected),
         campaignDefaults: () => enterable(createAgentDefaultsSurface(selected)),
         campaignMachineStatus: () => createMachineStatusSurface(),
         settings2Stats: () => roomSurface(t('settings2.stats', 'Machine stats'), 'stats', (host) => buildStats(host)),

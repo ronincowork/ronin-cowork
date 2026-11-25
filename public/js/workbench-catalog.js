@@ -30,7 +30,7 @@ export const WORKBENCH_TYPES = Object.freeze({
   helpOutline: 'help.outline', helpMika: 'help.mika', helpPage: HELP_PAGE_TYPE,
   workspaceRecords: 'workspaces.records', workspaceRecord: 'workspaces.record', workspaceNew: 'workspaces.new', epicNew: 'epics.new', folderGithub: 'workspaces.github', githubMika: 'workspaces.github-mika',
   epicRecords: 'epics.records', epicRecord: 'epics.record',
-  settings2Themes: 'settings2.themes',settings2BehaviorDefaults: 'settings2.behavior-defaults', settings2Stats: 'settings2.stats',
+  settings2BehaviorDefaults: 'settings2.behavior-defaults', settings2Stats: 'settings2.stats',
   canvas: 'team.canvas',
 });
 
@@ -149,11 +149,10 @@ export function registerWorkbenchCatalog() {
   profiles.define(WORKBENCH_PROFILES.help, [WORKBENCH_TYPES.helpOutline, WORKBENCH_TYPES.helpMika, WORKBENCH_TYPES.helpPage]);
   // SETTINGS V2 (owner, 2026-11-25; KAN-862, SETTINGS_CLEANUP.md §2): built beside Settings to compare; the old one goes once
   // v2 is right. Four new cards; the rest are today's surfaces, reused. A harness's own card is placed by its stone, not offered.
-  campaign(WORKBENCH_TYPES.settings2Themes, 'surface', () => t('settings2.themes', 'Themes'), 'settings2Themes', () => t('settings2.themes_summary', 'Light or dark, desktop and mobile.'));
   campaign(WORKBENCH_TYPES.settings2BehaviorDefaults, 'surface', () => t('settings2.behavior_defaults', 'Behavior defaults'), 'campaignDefaults', () => t('settings2.behavior_defaults_summary', 'What the next new Workspace, Team and Agent inherit. Nothing that exists changes.'));
   campaign(WORKBENCH_TYPES.settings2Stats, 'surface', () => t('settings2.stats', 'Machine stats'), 'settings2Stats', () => t('settings2.stats_summary', 'Usage on this machine.'));
   profiles.define(WORKBENCH_PROFILES.settings2, [
-    SETUP_SURFACE_TYPES.roots, WORKBENCH_TYPES.campaignIntegrations, WORKBENCH_TYPES.campaignJira, WORKBENCH_TYPES.settings2Themes,
+    SETUP_SURFACE_TYPES.roots, WORKBENCH_TYPES.campaignIntegrations, WORKBENCH_TYPES.campaignJira,
     WORKBENCH_TYPES.modelStones,
     WORKBENCH_TYPES.accountsRecords, WORKBENCH_TYPES.modelsRecords,
     WORKBENCH_TYPES.settings2BehaviorDefaults, BEHAVIOUR_SURFACE_TYPE,
