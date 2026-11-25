@@ -232,8 +232,8 @@ holder's cgroup ends in `ronin.service` or is explicitly recorded as `unknown`.
 
 Report the verified browser address and that Tailscale's access rules decide who can reach
 it; if either is unknown, return to [step 5](#5-verify-the-running-install). Then help the
-owner open it on their own device. A fresh install opens Ronin Home; its **Settings** button
-opens Ronin Setup. The owner's walkthrough is [Get started](get-started.md): one provider,
+owner open it on their own device. A fresh install opens Ronin Home; a harness is signed in
+on its **Harnesses** stone. The owner's walkthrough is [Get started](get-started.md): one provider,
 one Workspace folder, one Agent that answers.
 
 Stay beside the owner as a plain terminal for diagnosis. Do not answer owner choices,

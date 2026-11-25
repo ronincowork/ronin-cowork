@@ -21,6 +21,7 @@ import { createEpicsView, createHelpView, createModelsView, createWorkspacesView
 import { createWorkspaceRoute } from './workspaces-surface.js';
 import { createCampaignView } from './campaign-view.js';
 import { createSetupView } from './setup-view.js';
+import { HOSTED } from './hosted.js';
 import { createLaunchView } from './launch-view.js';
 import { installWorkspaceHeader } from './workspace-header.js';
 import { WorkspaceKit } from './workspace-kit.js';
@@ -123,9 +124,10 @@ async function init() {
   // the same workbench, selector column, persistence, recall and drag/drop as the Cowork
   // space, offering a Campaign's own configuration instead of its Coworks and Agents.
   guard('register the Campaign destination', () => workspace.register('campaign', createCampaignView()));
-  guard('register the Setup destination', () => workspace.register('setup', createSetupView()));
+  // Setup is hosted-only, like the Business Lounge (owner, 2026-11-25; KAN-856).
+  if (HOSTED) guard('register the Setup destination', () => workspace.register('setup', createSetupView()));
   guard('register the Launch destination', () => workspace.register('launch', createLaunchView()));
-  // A bare address goes Home; Home shows Get started while a Setup step is open (SETUP_SWEEP.md §7).
+  // A bare address goes Home.
   workspace.start('');
 
   // THE DESKTOP FIRST PAINT ends here: the route's real workspace is mounted and the

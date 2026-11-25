@@ -10,11 +10,11 @@
  * with Home the way back. A door is a link to the plain address: a plain press navigates here, a
  * modified or middle press opens the workbench in a new tab (KAN-473). THE GATE (owner,
  * 2026-10-19, "let's have the gate"): as on the old root, the doors are locked until one model
- * provider is activated, so a new user's way in is Setup or Agent Harness. Three doors are outside the gate: Settings; Help, which a new user
- * needs before Setup (owner, 2026-10-21); and Agent Harness, where a provider is signed in
- * (owner, 2026-11-13; KAN-472). Self-hosted, Settings opens Setup until Setup is finished (the
- * server's `finished`, from the facts), Settings after. Hosted, Settings is Settings, and a Get
- * started stone opens Setup while any of its three steps is open (w926; SETUP_SWEEP.md §7). ONE ROOT (owner, 2026-11-02; KAN-197): the old Home and the
+ * provider is activated, so a new user's way in is Setup (hosted) or Harnesses (self-hosted). Three doors are outside the gate: Settings; Help, which a new user
+ * needs before Setup (owner, 2026-10-21); and Setup or Harnesses, where a harness is signed in
+ * (owner, 2026-11-13; KAN-472). SETUP IS HOSTED-ONLY (owner, 2026-11-25; KAN-856), like the Business Lounge:
+ * hosted, the Setup stone stands where Harnesses was, always, and Harnesses is reached through Setup's
+ * Harness step; self-hosted, Harnesses stays and there is no Setup. ONE ROOT (owner, 2026-11-02; KAN-197): the old Home and the
  * bar's Current/Next toggle are gone; an old #/current link lands here.
  */
 import { t } from './lexicon.js';
@@ -24,7 +24,6 @@ import { createSenmaida } from './senmaida.js';
 import { createThemeToggle } from './theme-toggle.js';
 import { workbenchLink } from './workspace.js';
 import { BUSINESS_LOUNGE, HOSTED } from './hosted.js';
-import { setupProgressHandlers } from './events.js';
 
 const el = (tag, cls, text) => {
   const out = document.createElement(tag);
@@ -42,13 +41,14 @@ function OFFICE() {
   ];
 }
 
-/** The smaller stones on the right, one above the other. Get started heads them while a Setup step
- *  is open, on every office (SETUP_SWEEP.md §7). Hosted, the Business Lounge stands beside the others: a link out to Ronin HQ, where its account and office are kept. */
-function SIDE(progress) {
-  const open = (progress?.steps || []).some((step) => !step.answered);
+/** The smaller stones on the right, one above the other. Hosted, Setup stands first (Harnesses is its
+ *  Harness step) and the Business Lounge last: a link out to Ronin HQ, where its account and office are
+ *  kept. Self-hosted, Harnesses stands first and there is no Setup (KAN-856). */
+function SIDE() {
   return [
-    ...(open ? [{ key: 'setup', route: 'setup', glyph: '人', name: t('campaign_home.get_started', 'Get started'), is: t('campaign_home.get_started_is', 'Harness, Workspace, Team'), gated: false }] : []),
-    { key: 'models', route: 'models', glyph: '✶', name: t('campaign_home.harnesses', 'Harnesses'), is: t('campaign_home.harnesses_is', 'The harnesses on this machine, the accounts they launch on, and the models'), gated: false },
+    HOSTED
+      ? { key: 'setup', route: 'setup', glyph: '人', name: t('campaign_home.setup', 'Setup'), is: t('campaign_home.setup_is', 'Harness, Workspace, Team'), gated: false }
+      : { key: 'models', route: 'models', glyph: '✶', name: t('campaign_home.harnesses', 'Harnesses'), is: t('campaign_home.harnesses_is', 'The harnesses on this machine, the accounts they launch on, and the models'), gated: false },
     { key: 'help', route: 'help', glyph: 'ミ', name: t('campaign_home.help', 'Help'), is: t('campaign_home.help_is', 'The guides, and Mika to ask'), gated: false },
     { key: 'settings', route: 'campaign', glyph: '⚙', name: t('campaign_home.settings', 'Settings'), is: t('campaign_home.settings_is_hosted', 'This Desk’s settings'), gated: false },
     ...(HOSTED ? [{ key: 'lounge', href: BUSINESS_LOUNGE, glyph: '◎', name: t('campaign_home.business_lounge', 'Business Lounge'), is: t('campaign_home.business_lounge_is', 'Your account, office and subscription, at Ronin HQ'), gated: false }] : []),
@@ -70,7 +70,7 @@ export function createCampaignHome() {
   const frame = el('div', 'ch-frame');
   const doors = el('div', 'ch-doors');
   const side = el('nav', 'ch-side');
-  side.setAttribute('aria-label', HOSTED ? t('campaign_home.side_hosted', 'Models, Help, Settings and the Business Lounge') : t('campaign_home.side', 'Models, Help and Settings'));
+  side.setAttribute('aria-label', HOSTED ? t('campaign_home.side_hosted', 'Setup, Help, Settings and the Business Lounge') : t('campaign_home.side', 'Harnesses, Help and Settings'));
   const release = el('div', 'ch-release');
   const check = el('button', 'ch-update', t('campaign_home.check_updates', 'Check for updates'));
   const answer = el('span', 'ch-update-answer');
@@ -101,7 +101,6 @@ export function createCampaignHome() {
   let entered = false;
   let activatedCount = 0;
   let runtimeKnown = false;
-  let progress = null; // Setup's ticks (/api/setup/progress), read at entry and pushed as facts change
 
   // A DOOR IS A LINK to its workbench: its href the plain address (KAN-473); pressed, it
   // navigates this tab; with a modifier or the middle button it opens the workbench in a new
@@ -124,7 +123,7 @@ export function createCampaignHome() {
       card.setAttribute('aria-disabled', 'true');
     }
     card.append(doorGlyph(door.glyph), el('h2', null, door.name), el('p', 'ch-is', door.is));
-    if (locked) card.append(el('p', 'ch-gate', t('setup.provider_gate_hosted', 'Activate a harness in Harnesses to use this.')));
+    if (locked) card.append(el('p', 'ch-gate', HOSTED ? t('campaign_home.gate_hosted', 'Activate a harness in Setup to use this.') : t('setup.provider_gate_hosted', 'Activate a harness in Harnesses to use this.')));
     card.addEventListener('click', (event) => {
       if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
       event.preventDefault();
@@ -135,7 +134,7 @@ export function createCampaignHome() {
   }
   function paintDoors() {
     doors.replaceChildren(...OFFICE().map((one) => stone(one, false)));
-    side.replaceChildren(...SIDE(progress).map((one) => stone(one, true)));
+    side.replaceChildren(...SIDE().map((one) => stone(one, true)));
   }
 
   const updates = createReleaseUpdateController({ onChange: state => {
@@ -157,8 +156,6 @@ export function createCampaignHome() {
     }
   }});
   check.addEventListener('click', () => void updates.check());
-  // Setup's ticks move Get started and the self-hosted Settings door: the same push Setup hears.
-  setupProgressHandlers.add((next) => { if (Array.isArray(next?.steps)) { progress = next; if (entered) paintDoors(); } });
 
   return {
     el: root,
@@ -169,11 +166,10 @@ export function createCampaignHome() {
       ctx = context;
       entered = true;
       paintDoors();
-      void Promise.all([request('/api/setup/runtime', { cache: 'no-store' }), request('/api/setup/progress', { cache: 'no-store' })]).then(([result, ticks]) => {
+      void request('/api/setup/runtime', { cache: 'no-store' }).then((result) => {
         if (!entered) return;
         runtimeKnown = result.ok;
         activatedCount = result.ok ? Number(result.data?.activated_count) || 0 : 0;
-        if (ticks.ok) progress = ticks.data;
         paintDoors();
       });
     },

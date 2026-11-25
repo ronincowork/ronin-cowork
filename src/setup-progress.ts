@@ -4,7 +4,7 @@
  * (src/facts.ts). Every press is a real setting or nothing. Pushed as `setup-progress` whenever a
  * fact is written, so a change made anywhere ticks the step.
  *
- * ONE SETUP ON EVERY OFFICE (owner, 2026-11-24; w926; samurai_lab/wip/SETUP_SWEEP.md §7): three
+ * SETUP, HOSTED-ONLY (owner, 2026-11-25; KAN-856; samurai_lab/wip/SETUP_SWEEP.md §7): three
  * steps, in any order, none a gate, and nothing decides onboarding is over:
  *   harness    one of the person's own CLI harnesses is Activated, never Ronin's house models (integrations_authentications)
  *   workspace  any Workspace is made, Ronin Lab included (workspaces; owner, 25 Nov)

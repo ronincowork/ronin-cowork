@@ -62,7 +62,10 @@ function createHarnessSurface(context) {
   const body = el('div', 'setup-harness-body');
   const stack = el('div', 'setup-harness-stack');
   const note = el('p', 'setup-harness-note');
-  body.append(stack, note);
+  // Harnesses has no stone on a hosted Home: Setup's Harness step is the way to it (KAN-856).
+  const more = el('p', 'setup-harness-note');
+  more.append(t('setup_harness.more', 'Defaults and models are on '), Object.assign(document.createElement('a'), { href: '#/models', textContent: t('campaign_home.harnesses', 'Harnesses') }), '.');
+  body.append(stack, note, more);
   out.content.append(body);
   let runtime = recordRuntime();
   let signIn = { runs: [], failed: {}, ways: {} };

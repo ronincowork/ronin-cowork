@@ -61,16 +61,8 @@ export function installWorkspaceHeader(workspace) {
         // its stored value names this workbench/tab and cannot rename the Team or Agent.
         place.title = '';
       } else if (active?.id === 'campaign' || active?.id === 'setup') {
-        const setup = active.id === 'setup';
-        place.replaceChildren();
-        const toggle = document.createElement('button');
-        toggle.type = 'button';
-        toggle.className = 'ui-bar-place-toggle';
-        toggle.textContent = setup ? t('setup.short_title', 'Setup') : t('campaign.settings_short_title', 'Settings');
-        toggle.title = setup ? t('setup.open_settings', 'Open Settings') : t('setup.open_setup', 'Open Setup');
-        toggle.setAttribute('aria-label', toggle.title);
-        toggle.addEventListener('click', () => workspace.navigate(setup ? 'campaign' : 'setup'));
-        place.append(toggle);
+        place.textContent = active.id === 'setup' ? t('setup.short_title', 'Setup') : t('campaign.settings_short_title', 'Settings');
+        place.title = '';
       } else if (active?.id === 'launch') {
         place.textContent = t('campaign_home.launch', 'New Project');
         place.title = '';

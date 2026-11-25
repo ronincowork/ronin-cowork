@@ -446,7 +446,6 @@ body {
   transform: translateX(-50%);
 }
 .ui-bar-place[hidden] { display: none; }
-.ui-bar-place-toggle,
 .ui-bar-place .wk-tab-name {
   width: 100%;
   min-width: 0;
@@ -456,8 +455,6 @@ body {
   font: inherit;
   text-align: center;
 }
-.ui-bar-place-toggle { cursor: pointer; }
-.ui-bar-place-toggle:focus-visible,
 .ui-bar-place .wk-tab-name:focus-visible {
   outline: var(--focus-width) solid currentColor;
   outline-offset: var(--focus-offset);
