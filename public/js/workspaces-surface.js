@@ -89,10 +89,10 @@ function folderBrowser({ onLoad = () => {} }) {
  * under it and how Agents work in it, with Add a folder, Paste a Git URL and My GitHub repositories;
  * 3 More, folded: instructions, Mode, plans, canvases, Integrations and Behaviors. Then Create. The folders are the record's rows, saved with it.
  * `null` is a new Workspace. Returns the page, its Save (Create) action and, made, its ⋯ for the head. */
-export function workspacePage(w, { taken = () => [], onSaved = () => {}, onDiscard = () => {}, kind = 'open' }) {
+export function workspacePage(w, { taken = () => [], onSaved = () => {}, onDiscard = () => {} }) {
   const { createAction, createField } = WorkspaceKit.primitives;
   const isNew = !w;
-  const draft = w ? JSON.parse(JSON.stringify(w)) : { name: '', title: '', kind, objective: '', instructions: '', repos: [], folders: [], launch_mode: 'live_dangerously', integrations: [] };
+  const draft = w ? JSON.parse(JSON.stringify(w)) : { name: '', title: '', kind: 'open', objective: '', instructions: '', repos: [], folders: [], launch_mode: 'live_dangerously', integrations: [] };
   if (!Array.isArray(draft.integrations)) draft.integrations = [];
   const page = el('div', 'ntf-form fs-steps workspace-form');
   // The page's own status line, first under its head: what Save, a tick or Clone answered.
@@ -122,7 +122,7 @@ export function workspacePage(w, { taken = () => [], onSaved = () => {}, onDisca
     changed();
   }) }).el);
   if (nameInput) stepTop.body.append(createField({ label: t('workspaces.name', 'Name'), control: nameInput }).el);
-  // ITS KIND (owner, 24 Nov): a new one's was its first press on Setup; a made one changes it here.
+  // ITS KIND (owner, 25 Nov): asked on Setup's Workspace step; a made one changes it here.
   if (!isNew) stepTop.body.append(ask([{ fields: [{ key: 'kind', label: t('workspaces.kind', 'Kind'), shape: 'square', options: ruledRows('kind', KINDS, kindWord) }] }],
     { value: { kind: draft.kind || 'open' }, density: 'tight', onChange: (value) => { draft.kind = value.kind; changed(); paint(); } }).el);
 
@@ -426,7 +426,7 @@ export function workspacePage(w, { taken = () => [], onSaved = () => {}, onDisca
     }));
     if (!mineList.childElementCount) mineList.append(el('p', 'fs-step-help', t('workspaces.my_github_none', 'No repositories on this GitHub account.')));
   };
-  void request('/api/setup/github', { cache: 'no-store' }).then((answer) => { mineButton.el.hidden = !(answer.ok && answer.data?.authenticated) || draft.kind !== 'coding'; });
+  void request('/api/setup/github', { cache: 'no-store' }).then((answer) => { mineButton.el.hidden = !(answer.ok && answer.data?.authenticated); });
   const cloneLine = el('div', 'workspace-clone');
   cloneLine.append(cloneWhere, clone);
   clonePanel.append(done(t('workspaces.clone_help', 'Clone a repository from any Git host. A public one needs no sign-in.')),
@@ -468,9 +468,6 @@ export function workspacePage(w, { taken = () => [], onSaved = () => {}, onDisca
     mineButton.el.setAttribute('aria-pressed', String(open.adding === 'mine'));
     addButton.el.setAttribute('aria-pressed', String(open.adding === 'folder'));
     cloneButton.el.setAttribute('aria-pressed', String(open.adding === 'clone'));
-    // Repositories are a coding Workspace's; every other kind lives in its folder and the ones added.
-    cloneButton.el.hidden = draft.kind !== 'coding';
-    if (draft.kind !== 'coding') mineButton.el.hidden = true;
     const at = short(into.current()) || '~';
     const named = repoName(repository.value);
     cloneWhere.textContent = named ? t('workspaces.clone_lands', 'Lands in {dir}', { dir: `${at}/${named}` }) : t('workspaces.clone_into', 'Into {dir}', { dir: at });
@@ -639,7 +636,7 @@ function workspaceSurface(w, { workspacesRead, onDiscard = () => {}, launch = fa
  * an Epic's or a Team's: its name and the shared marks, the number bottom right its Teams. A pressed stone
  * opens that Workspace beside the rail, Work or Config, with Launch to its own page; a stone dragged
  * into a tilespace opens it whole there. The last stone, New Workspace, is its Name and Folders. */
-export function createWorkspaceStones({ workspacesRead, workbench, recordType = '', withNew = false, onShow = () => {}, top = null }) {
+export function createWorkspaceStones({ workspacesRead, workbench, recordType = '', withNew = false, onShow = () => {} }) {
   const { createSurface } = WorkspaceKit.primitives;
   const out = createSurface({ label: t('workspaces.title', 'Workspaces'), className: 'setup-surface workspaces-records' });
   const messages = status();
@@ -671,12 +668,10 @@ export function createWorkspaceStones({ workspacesRead, workbench, recordType = 
       return () => one.destroy();
     },
   });
-  // A part over the stones (Setup's Workspace step, KAN-809).
-  const above = top ? top() : null;
-  stones.mount(out.content, { before: [...(above ? [above.el] : []), messages] });
+  stones.mount(out.content, { before: [messages] });
   const paint = (answer) => {
     if (answer && !answer.ok) { say(answer.message, true); return; }
-    if (answer) say(workspacesRead.list().length || top ? '' : t('workspaces.none', 'No Workspaces yet. Place New Workspace from the selector.'));
+    if (answer) say(workspacesRead.list().length ? '' : t('workspaces.none', 'No Workspaces yet. Place New Workspace from the selector.'));
     // The Epic and Team stones' grammar (owner, 2026-11-23; KAN-801): the name, the shared marks over
     // what its Teams and their Agents hold, but the small number bottom right is how many Teams work in
     // it, a Workspace's size (owner, 2026-11-23); no line of words under the name, Archived aside.
@@ -702,7 +697,7 @@ export function createWorkspaceStones({ workspacesRead, workbench, recordType = 
   return {
     el: out.el,
     show: () => { void workspacesRead.read(); onShow(); },
-    destroy: () => { stop(); stopTeams?.(); above?.destroy(); stones.destroy(); },
+    destroy: () => { stop(); stopTeams?.(); stones.destroy(); },
   };
 }
 

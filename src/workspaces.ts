@@ -22,6 +22,8 @@ import { briefSettings } from './brief-settings.js';
 import { holdsWritten, workspaceListKey } from './holds-hook.js';
 import { mkdir, readFile, readdir, rename, unlink, writeFile } from 'node:fs/promises';
 import os from 'node:os';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
 import path from 'node:path';
 import { rootDir, storeDir, STORES } from './resources.js';
 import type { LaunchMode } from './agent-defaults.js';
@@ -59,6 +61,8 @@ export interface Workspace {
 }
 
 const KINDS = ['open', 'coding', 'work', 'personal', 'household', 'social', 'school'] as const;
+
+const execFileP = promisify(execFile);
 
 export const isValidWorkspaceName = (s: string): boolean => /^[a-z0-9][a-z0-9_-]{0,63}$/.test(s);
 
@@ -148,15 +152,45 @@ export function ownFolder(name: string): string {
   return path.join(rootDir('user'), ronins.has(name) ? `${name}-files` : name);
 }
 
+/**
+ * THE WORKSPACE FOLDER (owner, 25 Nov; KAN-809): the office is empty, so Ronin sets the layout, the
+ * same in every Workspace. A plain folder; only the repositories are Git:
+ *   ~/ronin/<name>/
+ *     plans/               its plans (src/plans.ts)
+ *     files/               anything that isn't code: documents, notes, uploads; files/<source>/ per source
+ *     repos/<repo>/        each repository, cloned or started, its own Git (addRepository)
+ */
+export async function layOut(dir: string): Promise<void> {
+  for (const sub of ['plans', 'files', 'repos']) await mkdir(path.join(dir, sub), { recursive: true });
+}
+
+/**
+ * A repository into a Workspace, at repos/<repo> (the rule above): `repository` (a Git URL or
+ * owner/name) is cloned; none starts a new one named after the Workspace. Its row is added to the
+ * record, Direct on the branch it is on.
+ */
+export async function addRepository(w: Workspace, repository: string, clone: (url: string, parent: string) => Promise<{ dir: string }>): Promise<{ workspace: Workspace; dir: string }> {
+  const repos = path.join(ownFolder(w.name), 'repos');
+  await mkdir(repos, { recursive: true });
+  let dir: string;
+  if (repository) dir = (await clone(repository, repos)).dir;
+  else { dir = path.join(repos, w.name); await execFileP('git', ['init', '-q', '-b', 'main', dir], { timeout: 10_000 }); }
+  const branch = (await execFileP('git', ['-C', dir, 'symbolic-ref', '--short', 'HEAD'], { timeout: 10_000 })).stdout.trim() || 'main';
+  const next = normalizeWorkspace(w.campaign_id, w.name, { ...w, repos: [...w.repos, { name: '', dir, note: '', mode: 'direct', stable: branch }] } as unknown as Record<string, unknown>);
+  return { workspace: await saveWorkspace(next), dir };
+}
+
 /** Write the whole record. */
 export async function saveWorkspace(w: Workspace): Promise<Workspace> {
   if (!w.campaign_id || !isValidWorkspaceName(w.name)) throw new Error(`A Workspace name is lowercase letters, digits, _ and -: "${w.name}".`);
   const clean = normalizeWorkspace(w.campaign_id, w.name, w as unknown as Record<string, unknown>);
-  // EVERY WORKSPACE GETS ITS FOLDER (owner, 24 Nov; KAN-809): a new one is given ~/ronin/<name>, made
-  // here, whoever makes it (a page, the workspace tool). More folders are theirs to add.
+  // EVERY WORKSPACE GETS ITS FOLDER (owner, 24 Nov; KAN-809): a new one is given ~/ronin/<name>, laid
+  // out by the rule (layOut), here, whoever makes it (a page, the workspace tool).
   if (!(await readWorkspace(clean.campaign_id, clean.name))) {
     const dir = ownFolder(clean.name);
-    await mkdir(dir, { recursive: true });
+    await layOut(dir);
+    // DOOR 2's SOURCES (KAN-809): each its own folder under files/, named on its integration row.
+    for (const row of clean.integrations) if (/^files\/[a-z0-9_-]+$/.test(String(row.folder || ''))) await mkdir(path.join(dir, String(row.folder)), { recursive: true });
     if (![...clean.repos, ...clean.folders].some((row) => row.dir === dir)) clean.folders.unshift({ name: clean.name, dir, note: '' });
   }
   await nameRows(clean);

@@ -3,11 +3,12 @@ import { layersMayHaveChanged } from '../team-layers.js';
 import type express from 'express';
 import { initialCampaignId } from '../campaign-scope.js';
 import { listTeamRosters } from '../team-rosters.js';
-import { deleteWorkspace, isValidWorkspaceName, listWorkspaces, normalizeWorkspace, readWorkspace, saveWorkspace, type Workspace } from '../workspaces.js';
+import { addRepository, deleteWorkspace, isValidWorkspaceName, listWorkspaces, normalizeWorkspace, readWorkspace, saveWorkspace, type Workspace } from '../workspaces.js';
 import { PlanBadInput, PlanMissing, PlanRefused, movePlans, plansPlace } from '../plans.js';
 import { listCanvases } from '../canvases.js';
 import { deleteIcebox } from '../work-items.js';
 import { callerOf } from './work-items-api.js';
+import { cloneRepository, createGithubRepository } from '../setup-runtime.js';
 
 const errMsg = (e: unknown): string => String((e as Error)?.message ?? e);
 // The office's one Campaign, always: a page never says which (KAN-727). A person never meets a Campaign.
@@ -53,6 +54,20 @@ export function registerWorkspaces(app: express.Express): void {
     } catch (e) {
       res.status(e instanceof PlanRefused ? 409 : e instanceof PlanMissing ? 404 : 400).json({ error: errMsg(e) });
     }
+  });
+
+  // A REPOSITORY INTO IT (KAN-809): cloned from `repository`, or started (none given), at
+  // repos/<repo> in its folder; `github` (private | public) puts a started one on GitHub too.
+  app.post('/api/workspaces/:name/repos', async (req, res) => {
+    try {
+      const w = await readWorkspace(await campaignOf(), req.params.name);
+      if (!w) return res.status(404).json({ error: `No Workspace ${req.params.name}.` });
+      const repository = typeof req.body?.repository === 'string' ? req.body.repository.trim() : '';
+      const added = await addRepository(w, repository, cloneRepository);
+      const github = !repository && (req.body?.github === 'private' || req.body?.github === 'public') ? await createGithubRepository(added.dir, req.body.github) : null;
+      res.json({ ok: true, workspace: await withPlace(added.workspace), dir: added.dir, ...(github ? { github } : {}) });
+      layersMayHaveChanged();
+    } catch (e) { res.status(400).json({ error: errMsg(e) }); }
   });
 
   app.delete('/api/workspaces/:name', async (req, res) => {
