@@ -12,7 +12,7 @@
  * `tailscale` and `no_password` are for the Password card in Settings.
  *
  * CHANGED, BESIDE EACH TICK (owner, 25 Nov; w984): a write of a step's fact that changes its text
- * (the Harness one without its 'Last measured' line) turns that step's switch on. When the person
+ * (the Harness one without its 'Last measured' line; on Team only its Teams lines) turns that step's switch on. When the person
  * leaves a step whose switch is on, Irasshai gets one line naming the fact to read, and it goes off.
  * Off, a move tells her nothing. Held in memory, never recorded: a restart starts every switch off.
  */
@@ -53,14 +53,17 @@ const STEP_FACT: Record<SetupStepId, { fact: string; label: string }> = {
 };
 const changed = new Set<SetupStepId>();
 const lastText = new Map<string, string>();
-/** A fact's text as compared: the Harness fact's measuring stamp is not a change. */
-const comparable = (text: string) => text.split('\n').filter((line) => !/Last measured /.test(line)).join('\n');
+/** A fact's text as compared: the Harness fact's measuring stamp is not a change, and on Team only its
+ *  Teams lines count (each Team, its lead and members), not other Agents starting or stopping. */
+const comparable = (name: string, text: string) => name === 'teams_agents'
+  ? (text.split(/^Teams:$/m)[1] ?? '').split(/^Agents running outside a Team:$/m)[0]
+  : text.split('\n').filter((line) => !/Last measured /.test(line)).join('\n');
 
 /** The first write seen since start is the baseline; after it, a different text turns the step on. */
 async function noteWrite(name: string): Promise<boolean> {
   const step = SETUP_STEP_IDS.find((id) => STEP_FACT[id].fact === name);
   if (!step) return false;
-  const now = comparable(await readFact(name));
+  const now = comparable(name, await readFact(name));
   const before = lastText.get(name);
   lastText.set(name, now);
   if (before === undefined || before === now || changed.has(step)) return false;
@@ -81,7 +84,7 @@ export async function leftSetupStep(left: string, to: string, target: string): P
 
 /** A fact written is the office changed: Setup's ticks (and changed switches) go out again. */
 export function startSetupProgress(): void {
-  for (const id of SETUP_STEP_IDS) void readFact(STEP_FACT[id].fact).then((text) => { if (!lastText.has(STEP_FACT[id].fact)) lastText.set(STEP_FACT[id].fact, comparable(text)); }, () => {});
+  for (const id of SETUP_STEP_IDS) void readFact(STEP_FACT[id].fact).then((text) => { if (!lastText.has(STEP_FACT[id].fact)) lastText.set(STEP_FACT[id].fact, comparable(STEP_FACT[id].fact, text)); }, () => {});
   onFactWritten((name) => {
     void noteWrite(name).catch(() => false).then(() => readSetupProgress()).then((progress) => broadcastEvent({ t: 'setup-progress', ...progress }), () => {});
     // THE WORKSPACES MOVED (KAN-809): the fact is rebuilt from the workspaces store, whoever wrote it
