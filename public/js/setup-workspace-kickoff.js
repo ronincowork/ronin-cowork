@@ -44,7 +44,7 @@ const blank = () => ({ picked: [], pasted: '', sources: [], github: 'here', titl
 /**
  * WHAT A WORKSPACE IS, DRAWN (owner, 25 Nov; KAN-845): an example, said so, never pressable. Your
  * Workspaces, three boxes; you choose to work in one, drawn open: what it is about, the places things live in it, and
- * the Agents working in it.
+ * the Teams working in it.
  */
 function workspaceDiagram() {
   const fig = el('figure', 'ws-diagram');
@@ -67,8 +67,8 @@ function workspaceDiagram() {
   const places = el('div', 'ws-diagram-places');
   for (const word of [t('setup_workspace.diagram_files', 'Files'), t('setup_workspace.diagram_repos', 'Repositories'), t('setup_workspace.diagram_plans', 'Plans'), t('setup_workspace.diagram_instructions', 'Instructions')]) places.append(el('span', null, word));
   const agents = el('div', 'ws-diagram-agents');
-  agents.append(el('small', null, t('setup_workspace.diagram_agents', 'Agents working here, each told all of the above')));
-  for (const name of ['shop_lead', 'web_dev', t('setup_workspace.diagram_more', '+ more as needed')]) agents.append(el('span', null, name));
+  agents.append(el('small', null, t('setup_workspace.diagram_teams', 'Teams work here:')));
+  for (const name of ['marketing', 'operations', 'shopify_integration']) agents.append(el('span', null, name));
   opened.append(places, agents);
   office.append(head, row, el('p', 'ws-diagram-choose', t('setup_workspace.diagram_choose', 'You choose to work in one:')), opened);
   fig.append(office, el('figcaption', null, t('setup_workspace.diagram_caption', 'An illustration: your own Workspaces appear once you make them.')));
