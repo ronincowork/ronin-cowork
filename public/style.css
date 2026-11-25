@@ -5199,7 +5199,7 @@ html[data-screen='inside'] #phone .ph-bar .ph-title[data-boot='inside'] { displa
 .setup-workspace-blanks[data-door='open'] { padding-inline-start: var(--space-subsection); border-inline-start: 2px solid var(--line); }
 .setup-workspace-blanks > *, .setup-workspace-blanks .wk-field { margin: 0; }
 .setup-workspace-kickoff .wk-field { display: flex; flex-direction: column; gap: var(--space-paragraph); }
-.setup-workspace-kickoff .wk-field-description:empty { display: none; }
+.setup-workspace-kickoff .wk-field-description:empty, .setup-workspace-kickoff .ask-caption:empty { display: none; }
 .setup-workspace-question { display: flex; flex-direction: column; gap: var(--space-paragraph); }
 .setup-workspace-ask, .setup-workspace-about-title { margin: 0; color: var(--fg-strong); font-size: var(--form-key); font-weight: var(--weight-strong); }
 .setup-workspace-create { display: flex; justify-content: flex-start; }
