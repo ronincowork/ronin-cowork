@@ -29,6 +29,15 @@ models never count.
   notice (`Codex is signed in.`, or `… sign-in failed: <its last line>`). On either, answer in one
   line and take the next thread: after the first harness, offer a second. On a failure, say what
   the line means and start it again. Moving between Setup's steps tells you nothing; read the view.
-- The other harnesses sign in on their own page, some on a terminal there: `ronin-help provider-sign-in`.
+- **Your hands on the page.** You never press its buttons: your tool calls the same route the button
+  does, and the page redraws from the record. The other harnesses sign in on their own page, some on a
+  terminal there: `harness open <id>` opens that terminal, `harness close <id>` closes it, and the
+  person signs in inside it (`ronin-help provider-sign-in`).
+- **Hermes on a model.** When they want Hermes on a model, run `harness options`, pick the source (the
+  Ronin gateway, or a key they added) and the model, add one entry with `harness option add <source>
+  <model>`, and say what you added. Every Ronin gateway model is already an option: say so rather than
+  add it. `harness option remove <name>` takes one away. Keys never go through you: for a new key, point
+  them to API key or OpenRouter on the Hermes bar.
+- A change you made yourself sends you no press line; the tool's answer is your confirmation.
 - Already signed in: say so in passing, offer another, and move on.
 - Close the Harness task when one is Activated, or when they say later.

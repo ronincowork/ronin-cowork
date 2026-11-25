@@ -11,6 +11,12 @@ Usage:
   harness sign-in <claude|codex> subscription|api_key   start its sign-in; prints the link and code
   harness state                                         each one's sign-in way, and the sign-ins open now
   harness cancel <claude|codex>                         stop that sign-in
+  harness open <id>                                     open another harness's terminal sign-in on its page
+  harness close <id>                                    close that terminal sign-in
+  harness options                                       what Hermes can use (the Ronin gateway, each key) and its options
+  harness option add <source> <model> [--name N] [--reasoning R] [--approvals off|prompt]
+                                                        add a Hermes model option (name: the model; default; off)
+  harness option remove <name>                          remove a Hermes model option
 The code or key is pasted into the box on the page by the person, never sent here. How it ends
 comes to you as a House notice. Other harnesses sign in on their own page: ronin-help provider-sign-in.
 EOF_USAGE
@@ -20,7 +26,9 @@ case "$cmd" in
   -h|--help|'') usage; [ -n "$cmd" ]; exit $? ;;
   sign-in) [ "$#" -eq 2 ] && { [ "$2" = subscription ] || [ "$2" = api_key ]; } || { usage >&2; exit 2; } ;;
   state) [ "$#" -eq 0 ] || { usage >&2; exit 2; } ;;
-  cancel) [ "$#" -eq 1 ] || { usage >&2; exit 2; } ;;
+  cancel|open|close) [ "$#" -eq 1 ] || { usage >&2; exit 2; } ;;
+  options) [ "$#" -eq 0 ] || { usage >&2; exit 2; } ;;
+  option) { [ "${1:-}" = add ] && [ "$#" -ge 3 ] && [ $(( $# % 2 )) -eq 1 ]; } || { [ "${1:-}" = remove ] && [ "$#" -eq 2 ]; } || { usage >&2; exit 2; } ;;
   *) echo "harness: unknown command $cmd (harness --help)" >&2; exit 2 ;;
 esac
 
@@ -64,7 +72,39 @@ elif cmd == 'state':
     if not found: print('No sign-in is open.')
     for run in found:
         if isinstance(run, dict): show(run)
-else:
+elif cmd == 'cancel':
     call('POST', f'/api/setup/providers/{args[0]}/sign-in/cancel', {})
     print(f'{args[0]} sign-in cancelled.')
+elif cmd == 'open':  # the page's own press: its terminal opens on the harness's page
+    opened = call('POST', f'/api/setup/providers/{args[0]}/login', {}).get('opened')
+    print(f"{args[0]} sign-in {'opened' if opened else 'was already open'} on its page; the person signs in there.")
+elif cmd == 'close':
+    call('POST', f'/api/setup/providers/{args[0]}/close', {})
+    print(f'{args[0]} sign-in closed.')
+else:  # Hermes: what it can use (the Ronin gateway, the person's keys, typed on the page) and its model options
+    state = call('GET', '/api/hermes')
+    connections, setups = state.get('connections') or [], state.get('setups') or []
+    usable = [c for c in connections if c.get('kind') == 'ronin_api' or c.get('configured')]
+    named = {c['id']: c.get('name') or c['id'] for c in connections}
+    def source(c): return f"Ronin gateway ({c.get('name')})" if c.get('kind') == 'ronin_api' else f"Key {c.get('name')}"
+    if cmd == 'options':
+        for c in sorted(usable, key=lambda c: c.get('kind') != 'ronin_api'):
+            print(f"{source(c)}: models {', '.join(c.get('models') or []) or 'none read yet'}")
+        if not any(c.get('kind') != 'ronin_api' for c in usable): print('No key of their own yet: they add one under API key or OpenRouter on the Hermes bar.')
+        if not setups: print('No Hermes model option yet.')
+        for o in setups: print(f"Option {o['name']}: {o['model']} on {named.get(o['connection'], o['connection'])}, reasoning {o.get('reasoning')}, approvals {o.get('approvals')}")
+    elif args[0] == 'add':
+        want, model, flags = args[1], args[2], dict(zip(args[3::2], args[4::2]))
+        if set(flags) - {'--name', '--reasoning', '--approvals'}: sys.exit('harness: option add takes --name, --reasoning and --approvals (harness --help)')
+        gateway = want.lower() in ('gateway', 'ronin', 'ronin gateway')
+        c = next((c for c in usable if (gateway and c.get('kind') == 'ronin_api') or want in (c['id'], c.get('name')) or want.lower() == (c.get('name') or '').lower()), None)
+        if not c: sys.exit(f"harness: no Hermes source {want} (harness options)")
+        name = flags.get('--name', model)
+        call('POST', '/api/hermes/setup', {'name': name, 'connection': c['id'], 'model': model, 'reasoning': flags.get('--reasoning', 'default'), 'approvals': flags.get('--approvals', 'off')})
+        print(f"Added Hermes option {name}: {model} on {source(c)}.")
+    else:
+        o = next((o for o in setups if o['name'].lower() == args[1].lower()), None)
+        if not o: sys.exit(f"harness: no Hermes option {args[1]} (harness options)")
+        call('POST', '/api/hermes/delete', {'kind': 'setups', 'id': o['id']})
+        print(f"Removed Hermes option {o['name']}.")
 EOF_PY
