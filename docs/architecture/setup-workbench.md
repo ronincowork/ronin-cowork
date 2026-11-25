@@ -211,8 +211,7 @@ shows a code the owner approves in a browser elsewhere.
 ## Ronin Services (a Settings card)
 
 Services adds optional capabilities. The page reports what is installed and enabled on
-this machine. Terminal transcript needs both the package and its switch; local weights are
-currently parked, and source presence alone does not make a feature available. See [Ronin Services](../getting-started/services-activation.md)
+this machine. Terminal transcript needs both the package and its switch, and source presence alone does not make a feature available. See [Ronin Services](../getting-started/services-activation.md)
 for installation, registration, availability, and data sharing.
 
 The surface shows one measured status line and three controls in one shape:

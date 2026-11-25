@@ -121,7 +121,7 @@ the host; Services owns each part's implementation and its use of the named stor
 ## Internal names
 
 Internal identifiers are useful in source and exact commands. In owner-facing explanations,
-use the glossary's plain terms. **Koshi** is an existing UI name and an explicit exception.
+use the glossary's plain terms.
 
 | Name | Current meaning |
 |---|---|
@@ -129,7 +129,6 @@ use the glossary's plain terms. **Koshi** is an existing UI name and an explicit
 | RIREKI | Optional transcript service: reads provider journals through launch identity into the per-session transcript and serves its readings. The former terminal recorder is retained on disk as the future source for CLIs with no journal |
 | OBOERU | Memory terminology; not an active part in the Services manifest |
 | TOMODACHI / SOROBAN | Stats and counting contracts |
-| KOSHI | Ronin's helper jobs; parked, with the Koshi tab naming each job's model |
 | KOE | Hotwords part; dictation's HTTP relay is currently in the counting part |
 | SETTEI | Configuration terminology |
 | AGERU | Ronin HQ request transport and its egress record; model-provider traffic is separate ([Services activation](docs/getting-started/services-activation.md)) |

@@ -79,7 +79,7 @@ Two shapes that come up:
 - **Anything an agent reads** — the letter, the brief, a prompt handed to a
   session, `work-record update_record` output, tool output. A session on a Home desk is still `DraftPlan`
   with `reach: plan`.
-- **The house's internal names** — [KOTOBA's internal names](../../KOTOBA.md#internal-names) (RIREKI, KOSHI, …); *Ronin*
+- **The house's internal names** — [KOTOBA's internal names](../../KOTOBA.md#internal-names) (RIREKI, TEGAMI, …); *Ronin*
   the product; a vendor's name (Claude, Jira).
 - **Values** — a session name, a path, a branch, a model, a count, a timestamp, a token
   (`manual`, `cherry_pick`, a status word the server sends as data). A label is a word; a
@@ -145,7 +145,7 @@ reads these attributes as keys the client reads.
 ## 8 · The glossary room — what an agent says to a person
 
 Use the glossary's plain words for internal names (TEGAMI, RIREKI …) when speaking to the
-owner; Koshi is the existing UI-name exception. Tools and contributor docs can use exact
+owner. Tools and contributor docs can use exact
 identifiers. [KOTOBA_GLOSSARY.md](../../KOTOBA_GLOSSARY.md) is where a session learns which word to
 SAY for each, in plain words. A session reads it through `ronin-help <word>`, which prints
 the matching part of the install's glossary.

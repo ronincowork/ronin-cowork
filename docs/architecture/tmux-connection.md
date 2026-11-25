@@ -105,7 +105,7 @@ The Services parts live under `src/services/` (a placed copy; see the services r
 
 - An installation claims the parts it runs — `- **parts:** …` in
   `ronin_stock/services/<name>.md`; Ronin Services claims `counting, jira, koe,
-  koshi, koshi_weights, machine, project_management, rireki`. A claimed part loads only while that installation is on. Off means the part is
+  machine, project_management, rireki`. A claimed part loads only while that installation is on. Off means the part is
   never imported: no timers, no routes, no recorder, and `/api/version` reports
   `stream: false`, so every tile is Locked.
 - A claimed part must also have its **capability** switched on. `SERVICE_CAPABILITY_PARTS`

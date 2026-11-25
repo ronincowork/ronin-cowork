@@ -1,7 +1,6 @@
 /* part of the ronin-cowork client — see js/README.md */
 import { WorkspaceKit } from './workspace-kit.js';
 import { buildHotwords } from './hotwords.js';
-import { buildKoshi } from './koshi.js';
 import { buildMachineSettings } from './machine-settings.js';
 import { buildStats } from './stats.js';
 import { buildSystemPanel } from './system.js';
@@ -115,7 +114,6 @@ export function coworkCommons(options = {}) {
     { id: 'settei', label: t('pane.settei', 'Configuration'), glyph: '⚙', build: (host) => buildMachineSettings(host, showing('account')) },
     { id: 'release', label: t('desk.row_release', 'Release & update'), glyph: '↑', build: (host) => { host.append(appBox(app.release)); return app; } },
     { id: 'hotwords', label: t('pane.hotwords', 'Hotwords'), glyph: '▥', build: (host) => buildHotwords(host, showing('account')) },
-    { id: 'koshi', label: t('pane.koshi', 'Koshi'), glyph: '目', build: (host) => buildKoshi(host, showing('account')) },
     { id: 'account', label: t('desk.log_out', 'Log out'), glyph: '⏻', build: (host) => { host.append(appBox(app.account)); return app; } },
   ].filter((r) => !HOSTED || !['settei', 'release', 'account'].includes(r.id));
   const nav = node('div', 'desk-nav');

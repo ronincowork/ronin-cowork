@@ -358,26 +358,6 @@ async function sshReach(): Promise<Record<string, unknown>> {
   return { ssh: { listening, port: 22, addresses: { tailnet, public: pub } } };
 }
 
-async function localWeights(): Promise<Array<Record<string, unknown>>> {
-  const dir = path.join(storeDir('koshi_weights'), 'models');
-  let names: string[];
-  try {
-    names = await readdir(dir);
-  } catch {
-    return [];
-  }
-  const out: Array<Record<string, unknown>> = [];
-  for (const n of names.sort()) {
-    if (n.startsWith('.') || n === 'SHA256SUMS') continue;
-    try {
-      const st = await stat(path.join(dir, n));
-      if (st.isFile()) out.push({ name: n, mb: Math.round(st.size / 1024 ** 2) });
-    } catch {
-    }
-  }
-  return out;
-}
-
 const typedStr = (v: unknown): string | null =>
   typeof v === 'string' && v.trim() !== '' ? v : null;
 
@@ -409,7 +389,6 @@ async function readSet(): Promise<Record<string, unknown>> {
   const owner = await readSection<Record<string, unknown>>('owner', {});
   const machine = await readMachineSection();
   const agents = await readAgentsSection();
-  const koshi = await readSection<Record<string, unknown>>('koshi', {});
   const wipeboard = await readSection<Record<string, unknown>>('wipeboard', {});
   const campaigns = await readSection<Record<string, unknown>>('campaigns', {});
   const { initialCampaign } = await import('./campaigns.js');
@@ -427,7 +406,6 @@ async function readSet(): Promise<Record<string, unknown>> {
     },
     sessions: { max: await readMax() },
     agents: { sessions: sessionDefaults(agents.sessions), jobs: await publicJobs(agents.jobs) },
-    koshi,
     wipeboard,
     desk: { profile: typedStr(campaignRecord?.desk_profile) },
     wanted: (await readSection<Array<{ kind?: unknown; name?: unknown }>>('wanted', []))
@@ -496,7 +474,6 @@ async function readObserved(jobKeyNames: string[]): Promise<Record<string, unkno
     office: await readOfficeRecord(),
     routes: routes(),
     reach: await sshReach(),
-    weights: await localWeights(),
     agents,
     keys,
     tools,
@@ -709,7 +686,7 @@ export const MACHINE_SETTINGS_WRITERS = {
   },
   'record-section': async (body) => {
     const key = String(body.key ?? '');
-    if (!['sessions', 'owner', 'machine', 'agents', 'desks', 'wanted', 'setup', 'koshi', 'wipeboard', 'messages'].includes(key)) {
+    if (!['sessions', 'owner', 'machine', 'agents', 'desks', 'wanted', 'setup', 'wipeboard', 'messages'].includes(key)) {
       throw new Error(`no machine-settings section named '${key}'`);
     }
     await updateDocument((document) => { document[key] = body.value ?? {}; });

@@ -70,13 +70,6 @@ export async function readOwner(): Promise<string> {
   return name || machineUser();
 }
 
-export const readKoshiSection = (): Promise<Record<string, unknown>> =>
-  readSection<Record<string, unknown>>('koshi', {});
-
-export const writeKoshiSection = (value: Record<string, unknown>): Promise<void> =>
-  updateConfig((doc) => {
-    doc.koshi = value;
-  });
 
 export const updateAuthSection = (value: Record<string, unknown> | null): Promise<void> =>
   updateConfig((doc) => {

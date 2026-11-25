@@ -50,8 +50,6 @@ export const STORES: readonly Store[] = [
   // Mika's stable private working directory. It is deliberately not a project root and
   // never follows the versioned install as releases move.
   store('mika_home', 'user', 'mika'),
-  store('koshi_weights', 'user', 'koshi_weights'),
-  store('koshi_weights_service', 'user', 'koshi_weights_service'),
   store('promotion_ledger', 'data', 'promotion-ledger'),
   store('services_secrets', 'user', 'services_secrets'),
   // An office_unit's own filing, written once by whoever provisions it and never by Ronin:

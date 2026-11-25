@@ -126,7 +126,7 @@ conflict, reaches every lead of the line's team — the 人, `@ronin-lead` on th
 through `libexec/ronin-house-send`, which enters the same durable inbound message queue:
 reviewing the team line
 and promoting it to `dev` is the lead's primary job, and the house telling the lead that
-its job is waiting is house machinery (the same footing as Koshi's marker and
+its job is waiting is house machinery (the same footing as
 `work-record update_record --at`), not an agent driving a session. The queue holds a
 notice while it sees a human draft or dialog, then makes one best-effort attempt.
 
