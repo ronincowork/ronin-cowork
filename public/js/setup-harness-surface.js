@@ -24,7 +24,7 @@ import { sendPress } from './press.js';
 import { IRASSHAI, irasshaiIn } from './setup-journey.js';
 import { recordRuntime } from './provider-surface.js';
 import { mountProviderAttachment } from './setup-provider-state.js';
-import { mountHermesSurface } from './hermes-surface.js';
+import { mountHermesServices } from './setup-hermes-services.js';
 
 export const HARNESS_SURFACE_TYPE = 'setup.harness';
 
@@ -47,7 +47,7 @@ const WAYS = Object.freeze({
   api_key: () => t('setup_harness.api_key', 'API key'),
 });
 /** EACH HARNESS SHOWS ONLY ITS OWN WAYS (owner, 25 Nov 2026): subscription and API key (its CLI's
- *  sign-in, one at a time); the Ronin gateway only where the office's Ronin API account runs it
+ *  sign-in, one at a time); the Ronin Gateway only where the office's Ronin API account runs it
  *  (src/accounts.ts: Codex yes, Claude Code never), picked under Model when an Agent starts; OpenRouter
  *  greyed, Coming soon. */
 /** A way inside a sentence: "subscription", "API key". */
@@ -78,6 +78,7 @@ function createHarnessSurface(context) {
   let mounted = null;
   let terminalHost = null;
   let hermesHost = null;
+  let hermesStop = null;
   let disposed = false;
   // What the person is typing survives a repaint (a push may land mid-word).
   const drafts = new Map();
@@ -181,7 +182,7 @@ function createHarnessSurface(context) {
     if (run) bar.append(windowOf(provider, run));
     else if (hermes) {
       // Mounted once while its bar is open, so a repaint keeps what is being edited there.
-      if (!hermesHost) { hermesHost = el('div', 'setup-harness-window'); mountHermesSurface(hermesHost, provider, () => { void readRuntime(); }, (text) => pressed(`Hermes · ${text}`)); }
+      if (!hermesHost) { hermesHost = el('div', 'setup-harness-window'); hermesStop = mountHermesServices(hermesHost); }
       bar.append(hermesHost);
     }
     else if (provider.off || (signed && !own)) {
@@ -205,7 +206,7 @@ function createHarnessSurface(context) {
       }
       const onGateway = gateway.harnesses.includes(provider.id);
       if (onGateway) {
-        const made = button(t('setup_harness.gateway', 'Ronin gateway'), false, () => { switching = { provider: '', way: '' }; gatewayShown = gatewayShown === provider.id ? '' : provider.id; paint(); });
+        const made = button(t('setup_harness.gateway', 'Ronin Gateway'), false, () => { switching = { provider: '', way: '' }; gatewayShown = gatewayShown === provider.id ? '' : provider.id; paint(); });
         made.setAttribute('aria-selected', 'false');
         row.append(made);
       }
@@ -230,7 +231,7 @@ function createHarnessSurface(context) {
   const paint = () => {
     if (disposed) return;
     const harnesses = (runtime.providers || []).filter((provider) => provider?.installed);
-    if (open !== 'hermes') hermesHost = null;
+    if (open !== 'hermes') { hermesStop?.(); hermesStop = null; hermesHost = null; }
     if (mounted && !harnesses.some((provider) => provider.login_open && open === provider.id)) { mounted.destroy?.(); mounted = null; terminalHost = null; }
     stack.replaceChildren(...harnesses.map(barOf));
     const signed = harnesses.filter((provider) => provider.activated).length;

@@ -15,7 +15,7 @@ Both are the harness's own sign-in, kept by the harness itself; signing in the o
 Which one it is on comes from the harness's own status (`claude auth status`, `codex login status`),
 so the bar always shows the true one.
 
-**Codex** also runs on the **Ronin gateway**, Ronin's own models. It needs no sign-in: pick a Ronin
+**Codex** also runs on the **Ronin Gateway**, Ronin's own models. It needs no sign-in: pick a Ronin
 model under **Model** when you start a Codex Agent, and your Codex sign-in stays as it is. Claude Code
 does not run on the gateway: it speaks only Anthropic's API.
 
@@ -39,7 +39,8 @@ Then the bar shows only what you need to do:
 The bar turns **Active** by itself when the harness finishes. **Cancel** stops the sign-in.
 
 **Other harnesses** sign in on their own terminal, opened in the bar: follow what it asks, then
-press **Close**. **Hermes** uses API connections, set up in its bar.
+press **Close**. **Hermes** runs on a model service: the Ronin Gateway, your own API key or OpenRouter.
+Press one in its bar to see its model options; you add or change them in Settings, Model services.
 
 If the Helpful Assistant is open, she sees each sign-in you start and how it ends, and can sign a
 harness in with you.
