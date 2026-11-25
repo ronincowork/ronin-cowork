@@ -14,7 +14,8 @@ import { storeDir, REPO_ROOT } from './resources.js';
  * models it offers are optional facts on the same record; absent, src/accounts.ts derives them. */
 export type AccountKind = 'personal_api' | 'ronin_api';
 export interface HermesConnection { id: string; name: string; provider: 'openai' | 'mistral' | 'custom'; baseUrl: string; wireApi?: 'chat' | 'responses'; models: string[]; discoveredAt?: string; credentialEnv?: string; kind?: AccountKind; harnesses?: string[]; offered?: string[] }
-export interface HermesSetup { id: string; name: string; connection: string; model: string; reasoning: string; approvals: 'off' | 'prompt' }
+export interface ModelSetup { id: string; name: string; connection: string; model: string; reasoning: string; approvals: 'off' | 'prompt' }
+export type HermesSetup = ModelSetup;
 export interface HermesSettings { connections: HermesConnection[]; setups: HermesSetup[] }
 const empty = (): HermesSettings => ({ connections: [], setups: [] });
 const readStoredSettings = () => readCredential<HermesSettings>('hermes-setups', empty());
@@ -27,7 +28,7 @@ let pending: Promise<unknown> = Promise.resolve();
 function mutation<T>(fn: () => Promise<T>): Promise<T> { const next = pending.then(fn); pending = next.catch(() => {}); return next; }
 /** In an office_unit the connection to its gateway_office holds no key of its own: the house token is on disk once,
  * `house_token` in the office_unit store, written by the office's provisioning and only read here. */
-async function isHouse(baseUrl: string): Promise<boolean> {
+export async function isHouse(baseUrl: string): Promise<boolean> {
   const office = await readOfficeRecord();
   return office.hosting === 'office_unit' && new URL(baseUrl).origin === new URL(office.record.gateway_office).origin;
 }
@@ -129,12 +130,13 @@ export async function discoverHermesModels(id: string): Promise<string[]> {
     if (!response.ok) throw new Error(`Model discovery failed (HTTP ${response.status}).`);
     const body = await response.json().catch(() => { throw new Error('API returned an unreadable model list.'); }) as { data?: { id?: unknown }[] };
     if (!Array.isArray(body.data)) throw new Error('API did not return an OpenAI-compatible model list.');
-    c.models = [...new Set(body.data.flatMap(row => row && typeof row.id === 'string' && modelPattern.test(row.id) ? [row.id] : []))].sort();
+    c.models = [...new Set(body.data.flatMap(row => row && typeof row.id === 'string' && modelPattern.test(row.id) ? [row.id] : []))];
+    if (accountKind(c) !== 'ronin_api') c.models.sort();
     c.discoveredAt = new Date().toISOString();
     // THE GATEWAY'S MODELS COME READY (owner, 25 Nov 2026): every model the Ronin gateway serves is a
     // Hermes model option out of the box, named as the model, defaults for reasoning and approvals.
     if (accountKind(c) === 'ronin_api') for (const model of c.models) {
-      if (state.setups.some(s => s.connection === c.id && s.model === model) || state.setups.some(s => s.name.toLowerCase() === model.toLowerCase())) continue;
+      if (state.setups.some(s => s.connection === c.id && s.model === model) || state.setups.some(s => s.connection === c.id && s.name.toLowerCase() === model.toLowerCase())) continue;
       state.setups.push({ id: randomUUID(), name: model, connection: c.id, model, reasoning: 'default', approvals: 'off' });
     }
     await writeHermes(state); return c.models;
@@ -147,23 +149,24 @@ export async function readGatewayModels(): Promise<void> {
   const { connections } = await readHermesSettings();
   for (const c of connections) if (accountKind(c) === 'ronin_api') await discoverHermesModels(c.id).catch(() => {});
 }
-export async function saveHermesSetup(input: Record<string, unknown>): Promise<HermesSetup> {
+export async function saveModelSetup(input: Record<string, unknown>): Promise<ModelSetup> {
   return mutation(async () => {
     const state = await readStoredSettings(); const c = state.connections.find(c => c.id === input.connection);
     if (!c) throw new Error('Select an API connection.');
     const model = required(input.model, 'Model');
-    if (!c.models.includes(model)) throw new Error('Select a model discovered from this connection.');
+    if (!modelPattern.test(model) || model.startsWith('-')) throw new Error('Invalid API model ID.');
     const reasoning = required(input.reasoning, 'Reasoning');
     if (!efforts.includes(reasoning)) throw new Error('Unsupported reasoning setting.');
     if (c.provider !== 'openai' && c.wireApi !== 'responses' && reasoning !== 'default') throw new Error('Use provider default reasoning for this connection.');
     if (input.approvals !== 'off' && input.approvals !== 'prompt') throw new Error('Select an approval mode.');
     if (input.id && !state.setups.some(s => s.id === input.id)) throw new Error('Setup no longer exists.');
     const name = required(input.name, 'Setup name');
-    if (state.setups.some(s => s.id !== input.id && s.name.toLowerCase() === name.toLowerCase())) throw new Error('Setup names must be unique.');
+    if (state.setups.some(s => s.id !== input.id && s.connection === c.id && s.name.toLowerCase() === name.toLowerCase())) throw new Error('Setup names must be unique.');
     const setup: HermesSetup = { id: typeof input.id === 'string' ? input.id : randomUUID(), name, connection: c.id, model, reasoning, approvals: input.approvals };
     state.setups = [...state.setups.filter(s => s.id !== setup.id), setup]; await writeHermes(state); return setup;
   });
 }
+export const saveHermesSetup = saveModelSetup;
 export async function deleteHermesEntry(kind: 'connections' | 'setups', id: string) {
   return mutation(async () => {
     const state = await readStoredSettings();
@@ -206,6 +209,12 @@ async function credentialEnvironment(): Promise<NodeJS.ProcessEnv> {
 export function readHermesSettings(environment?: NodeJS.ProcessEnv): Promise<HermesSettings> {
   return mutation(async () => {
     const state = await readStoredSettings(); let changed = false;
+    const office = await readOfficeRecord();
+    if (office.hosting === 'office_unit' && !state.connections.some(c => accountKind(c) === 'ronin_api') && await getHouseToken()) {
+      state.connections.push({ id: randomUUID(), kind: 'ronin_api', name: 'Ronin Gateway', provider: 'custom',
+        baseUrl: office.record.gateway_office.replace(/\/$/, '') + '/v1', wireApi: 'responses', models: [] });
+      changed = true;
+    }
     const discovered = environmentConnections(environment || await credentialEnvironment());
     for (const found of discovered) {
       let c = state.connections.find(c => c.credentialEnv === found.credentialEnv);

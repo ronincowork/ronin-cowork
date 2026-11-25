@@ -1,4 +1,5 @@
-import { hermesSettingsAnswer, saveHermesConnection, discoverHermesModels, saveHermesSetup, deleteHermesEntry, onHermesWritten, readGatewayModels } from '../hermes-setups.js';
+import { modelServices } from '../model-services.js';
+import { hermesSettingsAnswer, saveHermesConnection, discoverHermesModels, saveModelSetup, deleteHermesEntry, onHermesWritten, readGatewayModels } from '../hermes-setups.js';
 import { broadcastEvent } from '../ws/events.js';
 import { accountsAnswer, saveAccount, discoverAccount, updateAccountLists, deleteAccount, savePreset, deletePreset } from '../accounts.js';
 import { homedir } from 'node:os';
@@ -34,7 +35,10 @@ const answer = async (summary?: ProviderSummary) => {
 };
 
 export function registerSetupRuntime(app: express.Express): void {
-  onHermesWritten(() => broadcastEvent({ t: 'hermes-changed' }));
+  onHermesWritten(() => {
+    broadcastEvent({ t: 'hermes-changed' });
+    broadcastEvent({ t: 'model-services-changed' });
+  });
   app.get('/api/hermes', async (_req, res) => {
     try { res.json(await hermesSettingsAnswer()); } catch { res.status(500).json({ error: 'Could not read Hermes setups.' }); }
   });
@@ -44,7 +48,7 @@ export function registerSetupRuntime(app: express.Express): void {
         // A connection's models are read as it is saved: nobody presses to read them (owner, 25 Nov 2026).
         case 'connection': { const saved = await saveHermesConnection(req.body); await discoverHermesModels(saved.id).catch(() => {}); break; }
         case 'discover': await discoverHermesModels(String(req.body.id)); break;
-        case 'setup': await saveHermesSetup(req.body); break;
+        case 'setup': await saveModelSetup(req.body); break;
         case 'delete':
           if (req.body.kind !== 'connections' && req.body.kind !== 'setups') throw new Error('Invalid entry type.');
           await deleteHermesEntry(req.body.kind, String(req.body.id)); break;
@@ -57,6 +61,24 @@ export function registerSetupRuntime(app: express.Express): void {
 
   // ACCOUNTS AND PRESETS (KAN-236): the Agent Harness workbench's reading of the same Hermes record,
   // for the Accounts and Models tilespaces and every harness page. The /api/hermes routes above keep answering.
+  app.get('/api/model-services', async (_req, res) => {
+    try { res.json({ services: await modelServices() }); } catch (error) { res.status(500).json({ error: errMsg(error) }); }
+  });
+  app.post('/api/model-services/:action', async (req, res) => {
+    try {
+      const body = req.body;
+      switch (req.params.action) {
+        case 'save': await saveAccount(body); break;
+        case 'discover': await discoverAccount(String(body.id)); break;
+        case 'delete': await deleteAccount(String(body.id)); break;
+        case 'save-model': await saveModelSetup({ reasoning: 'default', approvals: 'off', ...body, connection: body.service_id }); break;
+        case 'delete-model': await deletePreset(String(body.id)); break;
+        default: return res.status(404).json({ error: 'Unknown model service action.' });
+      }
+      res.json({ services: await modelServices() });
+    } catch (error) { res.status(400).json({ error: errMsg(error) }); }
+  });
+
   app.get('/api/accounts', async (_req, res) => {
     try { res.json(await accountsAnswer()); } catch { res.status(500).json({ error: 'Could not read accounts.' }); }
   });

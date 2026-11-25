@@ -326,7 +326,8 @@ export async function rehydrate(id: string, caller: string): Promise<{ status: n
     if (part?.wrapResume) {
       argv = part.wrapResume([...argv], archived.identity?.model ?? '', typeof receipt.user_email === 'string' ? receipt.user_email : '');
     }
-    await createSession(archived.name, archived.cwd, { agent: true, argv, cli: archived.agent, key: archived.key, resume: true });
+    await createSession(archived.name, archived.cwd, { agent: true, argv, cli: archived.agent, key: archived.key, resume: true,
+      env: archived.identity?.model?.startsWith('service:') && typeof receipt.user_email === 'string' ? { RONIN_PERSON: receipt.user_email } : {} });
     try {
       await setSessionKey(archived.name, archived.key);
       await setTags(archived.name, archived.tags);
