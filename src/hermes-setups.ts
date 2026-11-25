@@ -36,6 +36,11 @@ export async function readKey(c: Pick<HermesConnection, 'id' | 'baseUrl'>): Prom
   if (!idPattern.test(c.id)) return '';
   try { return parse(await readFile(keyPath(c.id))).OPENAI_API_KEY || ''; } catch { return ''; }
 }
+/** WHO HEARS A HERMES CHANGE (owner, 25 Nov 2026): every write, whoever made it (a page, Irasshai's tool, her
+ *  service, a discovery), is heard here; the routes push it so every Hermes bar reads again. */
+const written = new Set<() => void>();
+export const onHermesWritten = (fn: () => void) => { written.add(fn); };
+async function writeHermes(state: HermesSettings): Promise<void> { await writeCredential('hermes-setups', state); for (const fn of written) fn(); }
 export async function hermesConfigured(): Promise<boolean> { const state = await readHermesSettings(); for (const c of state.connections) if (await readKey(c)) return true; return false; }
 const isGateway = (baseUrl: string) => /^http:\/\/127\.0\.0\.1:\d+(\/|$)/.test(baseUrl);
 /** A connection with no saved kind is the house gateway when it points at the local door; a hosted office's seed carries its kind. */
@@ -85,7 +90,7 @@ export async function saveHermesConnection(input: Record<string, unknown>): Prom
     // A connection that was keyed and now points at the house gateway keeps no copy of any key.
     if (hostedGateway) await rm(keyPath(id), { force: true });
     state.connections = [...state.connections.filter(c => c.id !== id), connection];
-    await writeCredential('hermes-setups', state);
+    await writeHermes(state);
     return connection;
   });
 }
@@ -107,7 +112,7 @@ export async function updateHermesConnectionLists(id: string, input: { harnesses
       const offered = [...new Set(input.offered.map(row => { if (typeof row !== 'string' || !c.models.includes(row)) throw new Error('Offer only models discovered from this connection.'); return row; }))];
       c.offered = offered;
     }
-    await writeCredential('hermes-setups', state); return c;
+    await writeHermes(state); return c;
   });
 }
 export async function discoverHermesModels(id: string): Promise<string[]> {
@@ -132,7 +137,7 @@ export async function discoverHermesModels(id: string): Promise<string[]> {
       if (state.setups.some(s => s.connection === c.id && s.model === model) || state.setups.some(s => s.name.toLowerCase() === model.toLowerCase())) continue;
       state.setups.push({ id: randomUUID(), name: model, connection: c.id, model, reasoning: 'default', approvals: 'off' });
     }
-    await writeCredential('hermes-setups', state); return c.models;
+    await writeHermes(state); return c.models;
   });
 }
 export async function saveHermesSetup(input: Record<string, unknown>): Promise<HermesSetup> {
@@ -149,7 +154,7 @@ export async function saveHermesSetup(input: Record<string, unknown>): Promise<H
     const name = required(input.name, 'Setup name');
     if (state.setups.some(s => s.id !== input.id && s.name.toLowerCase() === name.toLowerCase())) throw new Error('Setup names must be unique.');
     const setup: HermesSetup = { id: typeof input.id === 'string' ? input.id : randomUUID(), name, connection: c.id, model, reasoning, approvals: input.approvals };
-    state.setups = [...state.setups.filter(s => s.id !== setup.id), setup]; await writeCredential('hermes-setups', state); return setup;
+    state.setups = [...state.setups.filter(s => s.id !== setup.id), setup]; await writeHermes(state); return setup;
   });
 }
 export async function deleteHermesEntry(kind: 'connections' | 'setups', id: string) {
@@ -163,7 +168,7 @@ export async function deleteHermesEntry(kind: 'connections' | 'setups', id: stri
       state.connections = state.connections.filter(row => row.id !== id);
     }
     else state.setups = state.setups.filter(row => row.id !== id);
-    await writeCredential('hermes-setups', state);
+    await writeHermes(state);
   });
 }
 const environmentProviders: Record<string, { name: string; provider: HermesConnection['provider']; baseUrl: string }> = {
@@ -215,7 +220,7 @@ export function readHermesSettings(environment?: NodeJS.ProcessEnv): Promise<Her
     for (const c of state.connections) {
       if (c.credentialEnv && !discovered.some(found => found.credentialEnv === c.credentialEnv)) await rm(keyPath(c.id), { force: true });
     }
-    if (changed) await writeCredential('hermes-setups', state);
+    if (changed) await writeHermes(state);
     return state;
   });
 }

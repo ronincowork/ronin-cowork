@@ -11,6 +11,7 @@
 import { request } from './request.js';
 import { loadProviderCatalog } from './form-steps.js';
 import { ask } from './ask.js';
+import { hermesHandlers } from './events.js';
 
 const el = (tag, cls = '', text = null) => { const node = document.createElement(tag); if (cls) node.className = cls; if (text != null) node.textContent = String(text); return node; };
 const input = (value = '', type = 'text') => { const node = el('input'); node.type = type; node.value = value; return node; };
@@ -33,19 +34,22 @@ const BASE = { openai: 'https://api.openai.com/v1', mistral: 'https://api.mistra
 const OPENROUTER = 'https://openrouter.ai/api/v1';
 const isOpenRouter = (c) => /^https:\/\/openrouter\.ai\//.test(c.baseUrl || '');
 
-export function mountHermesSurface(host, provider, onChanged) {
+/** `say`, given on Setup's Harness step: tells Irasshai what was pressed (SETUP_HARNESS.md §4.1). */
+export function mountHermesSurface(host, provider, onChanged, say = null) {
   let disposed = false;
   let state = { connections: [], setups: [] };
   const root = el('section', 'hermes-settings'); host.append(root);
   const notice = el('p'); notice.setAttribute('role', 'status');
   const editor = el('div');
   let question = null;
-  const closeEditor = () => { question?.destroy?.(); question = null; editor.replaceChildren(); };
-  const run = async (action, body) => {
+  let held = false;
+  const closeEditor = () => { question?.destroy?.(); question = null; editor.replaceChildren(); if (held) { held = false; paint(); } };
+  const run = async (action, body, line = '') => {
     notice.textContent = 'Saving…';
     const result = await request(`/api/hermes/${action}`, { method: 'POST', json: body });
     if (disposed) return false;
     if (!result.ok) { notice.textContent = result.message; return false; }
+    if (line && say) say(line);
     state = result.data;
     await loadProviderCatalog();
     if (onChanged) await onChanged();
@@ -61,7 +65,7 @@ export function mountHermesSurface(host, provider, onChanged) {
     form.append(el('h3', '', connection.id ? 'Replace your OpenRouter key' : 'Add your OpenRouter key'), field('OpenRouter API key', key), stones(save, stone('Cancel', closeEditor)));
     form.addEventListener('submit', async (event) => {
       event.preventDefault(); save.disabled = true;
-      try { await run('connection', { id: connection.id, name: 'OpenRouter', provider: 'custom', baseUrl: OPENROUTER, wireApi: 'chat', apiKey: key.value }); }
+      try { await run('connection', { id: connection.id, name: 'OpenRouter', provider: 'custom', baseUrl: OPENROUTER, wireApi: 'chat', apiKey: key.value }, connection.id ? 'Changed OpenRouter key' : 'Added OpenRouter key'); }
       finally { key.value = ''; save.disabled = false; }
     });
     editor.append(form); key.focus();
@@ -89,7 +93,7 @@ export function mountHermesSurface(host, provider, onChanged) {
       field(connection.id ? 'API key (blank keeps it)' : 'API key', key), stones(save, stone('Cancel', closeEditor)));
     form.addEventListener('submit', async (event) => {
       event.preventDefault(); save.disabled = true;
-      try { await run('connection', { id: connection.id, name: name.value, provider: chosen.provider, baseUrl: url.value, wireApi: !connection.id || wireChanged ? chosen.wire : connection.wireApi, apiKey: key.value }); }
+      try { await run('connection', { id: connection.id, name: name.value, provider: chosen.provider, baseUrl: url.value, wireApi: !connection.id || wireChanged ? chosen.wire : connection.wireApi, apiKey: key.value }, connection.id ? `Changed key ${name.value}` : `Added key ${name.value}`); }
       finally { key.value = ''; save.disabled = false; }
     });
     editor.append(form); name.focus();
@@ -131,7 +135,7 @@ export function mountHermesSurface(host, provider, onChanged) {
     form.append(el('h3', '', setup.id ? 'Edit model option' : 'Add a model option'), field('Name under Model', name), question.el, stones(save, stone('Cancel', closeEditor)));
     form.addEventListener('submit', async (event) => {
       event.preventDefault(); save.disabled = true;
-      try { await run('setup', { id: setup.id, name: name.value, ...chosen }); } finally { save.disabled = false; }
+      try { await run('setup', { id: setup.id, name: name.value, ...chosen }, `${setup.id ? 'Changed' : 'Added'} model option ${name.value} (${nameOf(connectionOf(chosen.connection) || {})})`); } finally { save.disabled = false; }
     });
     editor.append(form); name.focus();
   };
@@ -211,7 +215,7 @@ export function mountHermesSurface(host, provider, onChanged) {
     const panel = el('div', 'hermes-way');
     const keyRows = (list, editFn) => list.map((c) => ({
       cells: [nameOf(c), `${c.provider === 'custom' ? 'OpenAI-compatible' : c.provider === 'mistral' ? 'Mistral' : 'OpenAI'}${c.configured ? '' : ' · key missing'}`, c.discoveredAt ? String(c.models.length) : 'Not read'],
-      actions: [icon('edit', 'Edit', () => editFn(c)), ...(c.credentialEnv ? [] : [icon('remove', 'Remove', () => run('delete', { kind: 'connections', id: c.id }))])],
+      actions: [icon('edit', 'Edit', () => editFn(c)), ...(c.credentialEnv ? [] : [icon('remove', 'Remove', () => run('delete', { kind: 'connections', id: c.id }, `Removed key ${nameOf(c)}`))])],
     }));
     if (shown === 'key') panel.append(table(['Name', 'API', 'Models'], keyRows(keys, editConnection), 'Add your API key', () => editConnection()));
     if (shown === 'openrouter') panel.append(table(['Name', 'API', 'Models'], keyRows(routers, editOpenRouter), routers.length ? 'Add another OpenRouter key' : 'Add your OpenRouter key', () => editOpenRouter()));
@@ -225,7 +229,7 @@ export function mountHermesSurface(host, provider, onChanged) {
       const c = state.connections.find((one) => one.id === setup.connection);
       return {
         cells: [setup.name, c ? nameOf(c) : 'Missing', [setup.model, ...knobs(setup)].join(' · ')],
-        actions: [icon('edit', 'Edit', () => editSetup(setup)), icon('remove', 'Remove', () => run('delete', { kind: 'setups', id: setup.id }))],
+        actions: [icon('edit', 'Edit', () => editSetup(setup)), icon('remove', 'Remove', () => run('delete', { kind: 'setups', id: setup.id }, `Removed model option ${setup.name}`))],
       };
     }), 'Add a model option', canAdd ? () => editSetup() : null));
 
@@ -233,5 +237,13 @@ export function mountHermesSurface(host, provider, onChanged) {
       el('p', 'hermes-fine', 'Changes apply to Agents started after them; a new key is picked up when an Agent restarts. Removing a key here does not cancel it at its provider.'));
   };
   void request('/api/hermes').then((result) => { if (disposed) return; if (result.ok) { state = result.data; paint(); readUnread(); } else { root.append(notice); notice.textContent = result.message; } });
-  return () => { disposed = true; closeEditor(); };
+  // ANY HERMES WRITE, ANYONE'S, IS READ AGAIN (hermes-changed); held while a form is open, so typing survives.
+  const reread = async () => {
+    const result = await request('/api/hermes', { cache: 'no-store' });
+    if (disposed || !result.ok) return;
+    state = result.data;
+    if (editor.childElementCount) held = true; else paint();
+  };
+  hermesHandlers.add(reread);
+  return () => { disposed = true; hermesHandlers.delete(reread); closeEditor(); };
 }

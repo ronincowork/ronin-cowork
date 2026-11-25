@@ -1,4 +1,5 @@
-import { hermesSettingsAnswer, saveHermesConnection, discoverHermesModels, saveHermesSetup, deleteHermesEntry } from '../hermes-setups.js';
+import { hermesSettingsAnswer, saveHermesConnection, discoverHermesModels, saveHermesSetup, deleteHermesEntry, onHermesWritten } from '../hermes-setups.js';
+import { broadcastEvent } from '../ws/events.js';
 import { accountsAnswer, saveAccount, discoverAccount, updateAccountLists, deleteAccount, savePreset, deletePreset } from '../accounts.js';
 import { homedir } from 'node:os';
 import { dispatchInstall } from '../agent-install.js';
@@ -33,6 +34,7 @@ const answer = async (summary?: ProviderSummary) => {
 };
 
 export function registerSetupRuntime(app: express.Express): void {
+  onHermesWritten(() => broadcastEvent({ t: 'hermes-changed' }));
   app.get('/api/hermes', async (_req, res) => {
     try { res.json(await hermesSettingsAnswer()); } catch { res.status(500).json({ error: 'Could not read Hermes setups.' }); }
   });
