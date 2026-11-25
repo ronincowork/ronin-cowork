@@ -46,6 +46,13 @@ step on screen is kaki-edged. The selector's header carries the three step marks
 has no density toggle (owner, 24 Nov). The selector is the same whether she
 runs or not; she has no pill of her own (it did nothing the panel does not).
 
+**Next**, one way on (owner, 25 Nov): one foot drawn by setup-view.js and by no surface, pinned to the
+foot of the step's work surface at its right (on a phone, a full-width bar at the bottom of the step),
+so no form scrolls it away: "Next: Workspace", "Next: Team", "Next: Tour". Steps are not gates, so it
+always moves; it is a selector move and messages nobody. The one case: on Workspace with no Workspace
+yet, "You'll work in Ronin Lab" beside it, and the press makes Ronin Lab (from
+public/content/starter-workspaces.json, kind open) before moving on. Never on the Tour, which keeps its Back and Next.
+
 Setup has no hints: no Agent vocabulary, no session controls. At the foot of the selector, where
 they were, is **the step's guide**, kept thin (owner, 24 Nov): the step's title, the questions
 people ask about it, each one line that opens to its answer, and its one guide doc. The title and

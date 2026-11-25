@@ -10,11 +10,14 @@ Three steps, in any order, each checked once it is true in your office however y
 - **Harness.** Connect the harness you already use, Claude Code, Codex and the others, signed in
   with your own subscription or key. One is enough to start. See
   [Provider sign-in](provider-sign-in.md).
-- **Workspace.** Say what you are working on; that alone makes the Workspace. Then where it
-  lives: a folder here, or paste a Git URL. GitHub is only needed for your private repositories.
-  See [Workspaces](../using-ronin/workspaces.md).
+- **Workspace.** How you are starting: from a Git repository, an existing project not in Git,
+  from scratch, or not sure yet (Ronin Lab). Then what it is and its kind. GitHub is only needed
+  for your private repositories. See [Workspaces](../using-ronin/workspaces.md).
 - **Team.** Start a Team in your Workspace: its name, what it is for, the lead's harness. The
   lead builds out the rest. See [New Team](../using-ronin/new-team.md).
+
+**Next**, at the foot of each step, moves you on whether the step is checked or not. With no
+Workspace yet, it makes Ronin Lab for you first.
 
 Then the **Tour**, whenever you like: five pictures, one at a time across the page, of how your
 Agents begin and how the work runs. Close it to come back to the steps. The same in words, with
