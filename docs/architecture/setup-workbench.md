@@ -49,9 +49,17 @@ runs or not; she has no pill of her own (it did nothing the panel does not).
 **Next**, one way on (owner, 25 Nov): one foot drawn by setup-view.js and by no surface, pinned to the
 foot of the step's work surface at its right (on a phone, a full-width bar at the bottom of the step),
 so no form scrolls it away: "Next: Workspace", "Next: Team", "Next: Tour". Steps are not gates, so it
-always moves. Each press reaches her, when she runs, as the person's one line (owner, 25 Nov): `Next: Team`, or `Next: Team; Workspace · Created ronin_lab. Its record: workspace read ronin_lab.` (no summary: the record is the source). The one case: on Workspace with no Workspace
+always moves. The one case: on Workspace with no Workspace
 yet, "You'll work in Ronin Lab" beside it, and the press makes Ronin Lab (from
 public/content/starter-workspaces.json, kind open) before moving on. Never on the Tour, which keeps its Back and Next.
+
+**Changed, beside each tick** (owner, 25 Nov; w984): src/setup-progress.ts holds a switch per step, in
+memory, pushed in `setup-progress` as `changed`. A write of the step's fact (harness
+`integrations_authentications`, without its 'Last measured' line; workspace `workspaces`; team
+`teams_agents`) that changes its text turns it on. Leaving a step (selector, Next, Tour) whose switch
+is on, with her running, the view calls `POST /api/setup/left`, and the server sends her one line,
+`Moved to <step>. <Left step> changed while they were on it: office read <fact>.`, and turns it off.
+Off, a move tells her nothing; presses inside a step are unchanged.
 
 Setup has no hints: no Agent vocabulary, no session controls. At the foot of the selector, where
 they were, is **the step's guide**, kept thin (owner, 24 Nov): the step's title, the questions

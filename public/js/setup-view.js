@@ -17,7 +17,6 @@ import { createSetupStepsBar, setupStepMarks } from './setup-steps-bar.js';
 import { mikaShowHandlers, setupProgressHandlers } from './events.js';
 import { subscribe as hear } from './store.js';
 import { mikaTab, reportMikaView } from './mika.js';
-import { sendPress } from './press.js';
 import { IRASSHAI, irasshaiLive, IRASSHAI_INTEGRATIONS_TYPE, createIrasshaiChat, createIrasshaiOpener, irasshaiKey, irasshaiReady, registerIrasshaiIntegrations } from './setup-irasshai.js';
 
 const PROFILE = 'setup';
@@ -285,18 +284,13 @@ export function createSetupView() {
   const nextNote = document.createElement('span');
   nextNote.className = 'setup-next-note';
   const nextButton = WorkspaceKit.primitives.createAction({ size: 'compact', className: 'setup-next-go', action: async () => {
-    // Every press reaches her as the person's one line when she runs (owner, 25 Nov; w980): "Next: Team",
-    // and with Ronin Lab made on the way, its record named, no summary (the record is the source).
-    const step = SCENES[activeScene().number]?.label;
-    const tell = (text) => { if (irasshaiLive()) void sendPress(IRASSHAI, text); };
-    if (!labFirst()) { tell(`Next: ${step}`); advance(); return; }
+    if (!labFirst()) { advance(); return; }
     nextButton.setDisabled(true);
     nextNote.textContent = t('setup.next_making_lab', 'Making Ronin Lab…');
     const seed = await request('/content/starter-workspaces.json');
     const made = await request('/api/workspaces/ronin_lab', { method: 'PUT', json: { title: 'Ronin Lab', objective: String(seed.data?.ronin_lab?.objective || ''), kind: 'open', repos: [], folders: [], integrations: [] } });
     nextButton.setDisabled(false);
     if (!made.ok) { nextNote.textContent = made.message; return; }
-    tell(`Next: ${step}; Workspace · Created ronin_lab. Its record: workspace read ronin_lab.`);
     await readProgress();
     advance();
   } });
@@ -310,6 +304,16 @@ export function createSetupView() {
     if (nextButton.el.disabled) return;
     nextButton.el.textContent = t('setup.next', 'Next: {step}', { step: next.label });
     nextNote.textContent = labFirst() ? t('setup.next_lab', 'You\'ll work in Ronin Lab') : '';
+  };
+  // LEAVING A STEP (owner, 25 Nov; w984): the server holds a changed switch beside each tick, pushed in
+  // setup-progress. Leaving a step (selector, Next, Tour) whose switch is on asks the server to tell her
+  // what changed, once; off, a move tells her nothing.
+  let shownStep = null;
+  const leaving = (scene) => {
+    const left = shownStep; shownStep = scene.id;
+    if (!left || left === scene.id || !irasshaiLive()) return;
+    if (!progress?.steps?.find((step) => step.id === left)?.changed) return;
+    void request('/api/setup/left', { method: 'POST', json: { step: left, to: scene.label, target: IRASSHAI } });
   };
   const TOUR = 'setup.tour';
   const TOUR_NUMBER = SCENES.find((scene) => scene.type === TOUR)?.number;
@@ -369,6 +373,7 @@ export function createSetupView() {
       spread(type === TOUR);
       if (!scene && change?.dismissed === 'workspace2' && sceneOverride === TOUR_NUMBER) { open(stepBeforeTour); return; }
       if (scene && scene.type !== TOUR) stepBeforeTour = scene.number;
+      if (scene) leaving(scene);
       if (scene) {
         sceneOverride = scene.number;
         selectGarden(scene);
