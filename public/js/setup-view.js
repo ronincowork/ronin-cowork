@@ -273,6 +273,38 @@ export function createSetupView() {
       if (!line) { line = document.createElement('p'); line.className = 'setup-step-line'; heading?.after(line); }
       line.textContent = t(`setup.step_line_${scene.id}`, scene.line);
     }
+    paintNext();
+  };
+  // THE WAY ON (owner, 25 Nov; system_lead's ruling): one foot, the same on every step, drawn here and
+  // by no surface, pinned to the foot of the step's work surface at its right (a full-width bar on a
+  // phone), so no form scrolls it away: "Next: <the next step>". Steps are not gates, so it always moves;
+  // a selector move, it messages nobody. One case: on Workspace with no Workspace yet it makes Ronin Lab
+  // (a real setting, from its one seed) and then moves on. Never on the Tour, which has its own Back and Next.
+  const nextFoot = document.createElement('div');
+  nextFoot.className = 'setup-next';
+  const nextNote = document.createElement('span');
+  nextNote.className = 'setup-next-note';
+  const nextButton = WorkspaceKit.primitives.createAction({ kind: 'primary', action: async () => {
+    if (!labFirst()) { advance(); return; }
+    nextButton.setDisabled(true);
+    nextNote.textContent = t('setup.next_making_lab', 'Making Ronin Lab…');
+    const seed = await request('/content/starter-workspaces.json');
+    const made = await request('/api/workspaces/ronin_lab', { method: 'PUT', json: { title: 'Ronin Lab', objective: String(seed.data?.ronin_lab?.objective || ''), kind: 'open', repos: [], folders: [], integrations: [] } });
+    nextButton.setDisabled(false);
+    if (!made.ok) { nextNote.textContent = made.message; return; }
+    await readProgress();
+    advance();
+  } });
+  nextFoot.append(nextNote, nextButton.el);
+  const labFirst = () => activeScene().id === 'workspace' && !sceneComplete(activeScene());
+  const paintNext = () => {
+    const next = SCENES[activeScene().number];
+    const cell = bench?.host.querySelector('.wk-workbench-cell[data-workspace="workspace2"]');
+    if (!next || activeScene().type === TOUR || !cell) { nextFoot.remove(); return; }
+    if (nextFoot.parentNode !== cell) cell.append(nextFoot); // after the surface: a placement replaces the cell's children
+    if (nextButton.el.disabled) return;
+    nextButton.el.textContent = t('setup.next', 'Next: {step}', { step: next.label });
+    nextNote.textContent = labFirst() ? t('setup.next_lab', 'You\'ll work in Ronin Lab') : '';
   };
   const TOUR = 'setup.tour';
   const TOUR_NUMBER = SCENES.find((scene) => scene.type === TOUR)?.number;
@@ -297,7 +329,6 @@ export function createSetupView() {
     return true;
   }
   function advance() {
-    if (!sceneComplete(activeScene())) return;
     const next = SCENES[activeScene().number];
     if (!next) return;
     sceneOverride = next.number;
