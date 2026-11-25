@@ -71,7 +71,7 @@ function viewer(row, host, afterSave, context) {
   return () => { active = false; form?.destroy(); };
 }
 
-function createBehaviourSurface(initial = {}) {
+export function createBehaviourSurface(initial = {}) {
   const surface = WorkspaceKit.primitives.createSurface({ label: t('behaviours.title', 'Behaviors'), className: 'behaviour-surface' });
   let rows = [];
   const stones = createPhalanx({ className: 'behaviour-stones', renderDetail: (item, host) => viewer(item.row, host, refresh, { rows: () => rows }) });

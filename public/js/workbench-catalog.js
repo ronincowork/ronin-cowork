@@ -30,7 +30,8 @@ export const WORKBENCH_TYPES = Object.freeze({
   helpOutline: 'help.outline', helpMika: 'help.mika', helpPage: HELP_PAGE_TYPE,
   workspaceRecords: 'workspaces.records', workspaceRecord: 'workspaces.record', workspaceNew: 'workspaces.new', epicNew: 'epics.new', folderGithub: 'workspaces.github', githubMika: 'workspaces.github-mika',
   epicRecords: 'epics.records', epicRecord: 'epics.record',
-  settings2BehaviorDefaults: 'settings2.behavior-defaults', settings2Stats: 'settings2.stats',
+  settings2ModelServices: 'settings2.model-services', settings2ModelSetup: 'settings2.model-setup', settings2AgentDefaults: 'settings2.agent-defaults',
+  settings2ModelDefaults: 'settings2.model-defaults', settings2BehaviorFiles: 'settings2.behavior-files', settings2Stats: 'settings2.stats',
   canvas: 'team.canvas',
 });
 
@@ -147,16 +148,20 @@ export function registerWorkbenchCatalog() {
   // One help page whole in a workspace, placed by a dragged stone (help-outline.js); no selector cards.
   add({ type: WORKBENCH_TYPES.helpPage, header: 'surface', label: () => t('help_outline.title', 'Help'), discover: () => [], create: ({ detail, environment }) => environment.helpPage(detail) });
   profiles.define(WORKBENCH_PROFILES.help, [WORKBENCH_TYPES.helpOutline, WORKBENCH_TYPES.helpMika, WORKBENCH_TYPES.helpPage]);
-  // SETTINGS V2 (owner, 2026-11-25; KAN-862, SETTINGS_CLEANUP.md §2): built beside Settings to compare; the old one goes once
-  // v2 is right. Four new cards; the rest are today's surfaces, reused. A harness's own card is placed by its stone, not offered.
-  campaign(WORKBENCH_TYPES.settings2BehaviorDefaults, 'surface', () => t('settings2.behavior_defaults', 'Behavior defaults'), 'campaignDefaults', () => t('settings2.behavior_defaults_summary', 'What the next new Workspace, Team and Agent inherit. Nothing that exists changes.'));
-  campaign(WORKBENCH_TYPES.settings2Stats, 'surface', () => t('settings2.stats', 'Machine stats'), 'settings2Stats', () => t('settings2.stats_summary', 'Usage on this machine.'));
+  // SETTINGS V2 (owner, 2026-11-25; KAN-862, KAN-867): built beside Settings to compare; the old one goes once v2 is right.
+  // The five agreed sections (MACHINE_SETTINGS_V2.md). Its own card types where its words differ from the Harnesses
+  // door's; the surfaces under them are today's, reused. A harness's own card is placed by its stone, not offered.
+  campaign(WORKBENCH_TYPES.settings2ModelServices, 'surface', () => t('settings2.model_services', 'Model services'), 'settings2ModelServices', () => t('settings2.model_services_summary', 'Where model requests go: Ronin Gateway, OpenRouter, a personal API.'));
+  campaign(WORKBENCH_TYPES.settings2ModelSetup, 'surface', () => t('settings2.model_setup', 'Model setup'), 'settings2ModelSetup', () => t('settings2.model_setup_summary', 'Which models each service offers, by the name people see.'));
+  campaign(WORKBENCH_TYPES.settings2AgentDefaults, 'surface', () => t('settings2.agent_defaults', 'Agent defaults'), 'campaignDefaults', () => t('settings2.agent_defaults_summary', 'Mandate, launch mode and behaviors new Agents start with. New children copy their parent at creation.'));
+  campaign(WORKBENCH_TYPES.settings2ModelDefaults, 'surface', () => t('settings2.model_defaults', 'Model defaults'), 'settings2ModelDefaults', () => t('settings2.model_defaults_summary', 'The model a new Agent and Team lead start on.'));
+  campaign(WORKBENCH_TYPES.settings2BehaviorFiles, 'surface', () => t('settings2.behavior_files', 'Behavior files'), 'settings2BehaviorFiles', () => t('settings2.behavior_files_summary', 'Read and edit the behavior, fact and tool files themselves.'));
+  campaign(WORKBENCH_TYPES.settings2Stats, 'surface', () => t('settings2.stats', 'Machine stats'), 'settings2Stats', () => t('settings2.stats_summary', 'Tool-call activity on this machine.'));
   profiles.define(WORKBENCH_PROFILES.settings2, [
+    WORKBENCH_TYPES.modelStones, WORKBENCH_TYPES.settings2ModelServices, WORKBENCH_TYPES.settings2ModelSetup,
+    WORKBENCH_TYPES.settings2AgentDefaults, WORKBENCH_TYPES.settings2ModelDefaults,
     SETUP_SURFACE_TYPES.roots, WORKBENCH_TYPES.campaignIntegrations, WORKBENCH_TYPES.campaignJira,
-    WORKBENCH_TYPES.modelStones,
-    WORKBENCH_TYPES.accountsRecords, WORKBENCH_TYPES.modelsRecords,
-    WORKBENCH_TYPES.settings2BehaviorDefaults, BEHAVIOUR_SURFACE_TYPE,
-    WORKBENCH_TYPES.campaignMachineStatus, WORKBENCH_TYPES.settings2Stats,
+    WORKBENCH_TYPES.settings2BehaviorFiles, WORKBENCH_TYPES.campaignMachineStatus, WORKBENCH_TYPES.settings2Stats,
     FEEDBACK_TYPE,
     WORKBENCH_TYPES.modelProvider, WORKBENCH_TYPES.modelMika, WORKBENCH_TYPES.campaignJiraItems, WORKBENCH_TYPES.campaignJiraPairs, WORKBENCH_TYPES.document,
   ]);

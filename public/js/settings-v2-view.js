@@ -1,16 +1,16 @@
 /* part of the ronin-cowork client — see js/README.md */
 /**
- * SETTINGS V2 (owner, 2026-11-25; KAN-862): a second Settings built beside the first, so the two can be
- * compared and what is missing seen. The structure is samurai_lab wip/SETTINGS_CLEANUP.md §2: four groups,
- * no hints. Today's surfaces are reused as they are; Machine stats is a new card
- * over today's builders. When v2 is right the old Settings and its surfaces go.
+ * SETTINGS V2 (owner, 2026-11-25; KAN-862, KAN-867): a second Settings built beside the first, so the two can be
+ * compared and what is missing seen. The sections are the agreed outline, samurai_lab wip/MACHINE_SETTINGS_V2.md;
+ * no hints. Today's surfaces are reused under Settings' own card names; page designs come later.
+ * When v2 is right the old Settings and its surfaces go.
  */
 import { WorkspaceKit } from './workspace-kit.js';
 import { t } from './lexicon.js';
 import { doorWorkbench, harnessKit } from './door-workbenches.js';
 import { WORKBENCH_PROFILES, WORKBENCH_TYPES } from './workbench-catalog.js';
 import { SETUP_SURFACE_TYPES } from './setup-surfaces.js';
-import { BEHAVIOUR_SURFACE_TYPE } from './behaviour-surface.js';
+import { createBehaviourSurface } from './behaviour-surface.js';
 import { campaignById, loadCampaigns, normalizeSelection } from './campaigns.js';
 import { createAgentDefaultsSurface } from './campaign-defaults.js';
 import { createJiraItemsSurface, createJiraPairsSurface, createJiraPanel } from './jira-panel.js';
@@ -39,21 +39,22 @@ function roomSurface(label, room, build) {
 export function createSettingsV2View() {
   const harness = harnessKit();
   let stopReader = () => {};
+  let selected = () => null;
   return doorWorkbench({
     id: 'settings2', profile: WORKBENCH_PROFILES.settings2, label: t('settings2.title', 'Settings v2'),
-    seats: { workspace1: SETUP_SURFACE_TYPES.roots, workspace2: WORKBENCH_TYPES.campaignIntegrations },
+    seats: { workspace1: WORKBENCH_TYPES.modelStones, workspace2: WORKBENCH_TYPES.settings2ModelServices },
     loaded: () => Promise.all([loadCampaigns(), loadProviderCatalog()]),
     hints: false,
     // A harness's own card is placed by its stone; it is not offered in the selector.
     selectorFilter: (type) => type !== WORKBENCH_TYPES.modelProvider,
-    // The group heading over the first card of each group.
+    // The five agreed sections (MACHINE_SETTINGS_V2.md): a heading over the first card of each.
     onSelectorRefresh: (cards) => {
+      const campaign = selected()?.title;
       const groups = [
+        [WORKBENCH_TYPES.modelStones, t('settings2.group_harness', 'Harnesses and models')],
+        [WORKBENCH_TYPES.settings2AgentDefaults, campaign ? t('settings2.group_defaults_named', 'Campaign defaults: {name}', { name: campaign }) : t('settings2.group_defaults', 'Campaign defaults')],
         [SETUP_SURFACE_TYPES.roots, t('settings2.group_work', 'Workspaces and integrations')],
-        [WORKBENCH_TYPES.modelStones, t('settings2.group_harness', 'Harness')],
-        [WORKBENCH_TYPES.accountsRecords, t('settings2.group_models', 'Models')],
-        [WORKBENCH_TYPES.settings2BehaviorDefaults, t('settings2.group_behaviors', 'Behaviors')],
-        [WORKBENCH_TYPES.campaignMachineStatus, t('settings2.group_machine', 'Machine')],
+        [WORKBENCH_TYPES.settings2BehaviorFiles, t('settings2.group_advanced', 'Advanced')],
       ];
       for (const [type, label] of groups) {
         const first = cards.querySelector(`[data-workbench-offer-type="${type}"]`);
@@ -61,20 +62,25 @@ export function createSettingsV2View() {
       }
     },
     environment: ({ bench, ctx }) => {
-      const selected = () => campaignById(normalizeSelection(ctx()?.state?.campaignSelection).primary_campaign_id);
-      // Behaviors' read glyph opens a file beside it, as in Settings.
+      selected = () => campaignById(normalizeSelection(ctx()?.state?.campaignSelection).primary_campaign_id);
+      // Behavior files' read glyph opens a file beside it, as in Settings.
       stopReader = installBehaviourReader({
         get host() { return bench().host; },
         selected: () => bench().selected(),
         place: (...args) => bench().place(...args),
-      }, WORKBENCH_TYPES.document, BEHAVIOUR_SURFACE_TYPE);
+      }, WORKBENCH_TYPES.document, WORKBENCH_TYPES.settings2BehaviorFiles);
+      const env = harness.environment(bench);
       const jira = (workspace) => createJiraPanel(selected, {
         openItems: () => bench().place(WORKBENCH_TYPES.campaignJiraItems, BESIDE[workspace] || 'workspace2'),
         openPairs: () => bench().place(WORKBENCH_TYPES.campaignJiraPairs, BESIDE[workspace] || 'workspace2'),
       });
       return {
-        ...harness.environment(bench),
+        ...env,
         selected,
+        settings2ModelServices: ({ workspace }) => env.accounts(workspace),
+        settings2ModelSetup: ({ workspace }) => env.modelsRecords(workspace),
+        settings2ModelDefaults: () => env.modelDefaults(),
+        settings2BehaviorFiles: ({ detail }) => createBehaviourSurface(detail),
         campaignIntegrations: ({ workspace }) => enterable(createIntegrationsPanel(selected, { panels: { jira: () => jira(workspace) } })),
         campaignJira: ({ workspace }) => enterable(jira(workspace)),
         campaignJiraItems: () => enterable(createJiraItemsSurface(selected)),
