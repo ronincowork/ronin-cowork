@@ -1,4 +1,5 @@
 /** Ronin-owned Hermes connections and named launch setups. Secrets never enter projections. */
+import { readModelCatalog } from './model-catalog.js';
 import { appendEgress } from './activation/egress.js';
 import { getHouseToken } from './activation/secrets.js';
 import { readOfficeRecord } from './office-record.js';
@@ -13,7 +14,7 @@ import { storeDir, REPO_ROOT } from './resources.js';
 /** A connection is an account in the Agent Harness workbench (KAN-236): `kind`, the harnesses it serves and the
  * models it offers are optional facts on the same record; absent, src/accounts.ts derives them. */
 export type AccountKind = 'personal_api' | 'ronin_api';
-export interface HermesConnection { id: string; name: string; provider: 'openai' | 'mistral' | 'custom'; baseUrl: string; wireApi?: 'chat' | 'responses'; models: string[]; discoveredAt?: string; credentialEnv?: string; kind?: AccountKind; harnesses?: string[]; offered?: string[] }
+export interface HermesConnection { id: string; name: string; provider: 'openai' | 'mistral' | 'custom'; baseUrl: string; wireApi?: 'chat' | 'responses'; models: string[]; discoveredAt?: string; credentialEnv?: string; starterModelsPending?: true; kind?: AccountKind; harnesses?: string[]; offered?: string[] }
 export interface ModelSetup { id: string; name: string; connection: string; model: string; reasoning: string; approvals: 'off' | 'prompt' }
 export type HermesSetup = ModelSetup;
 export interface HermesSettings { connections: HermesConnection[]; setups: HermesSetup[] }
@@ -22,6 +23,26 @@ const readStoredSettings = () => readCredential<HermesSettings>('hermes-setups',
 export const keyPath = (id: string) => path.join(storeDir('services_secrets'), `hermes-${id}.env`);
 const idPattern = /^[a-z0-9-]+$/;
 const modelPattern = /^[A-Za-z0-9._:/-]+$/;
+export const isOpenRouterService = (baseUrl: string) => baseUrl.replace(/\/$/, '') === 'https://openrouter.ai/api/v1';
+
+/** Invoked under the settings mutation lock. Only new connections opt in; an older
+ * office's hand-curated list, including an intentionally empty one, stays its own. */
+async function seedOpenRouterModels(state: HermesSettings): Promise<boolean> {
+  const pending = state.connections.filter(c => c.starterModelsPending && c.discoveredAt && isOpenRouterService(c.baseUrl));
+  if (!pending.length) return false;
+  const starters = (await readModelCatalog()).models.filter(row => row.cli === 'openrouter' && modelPattern.test(row.id) && !row.id.startsWith('-'));
+  if (!starters.length) return false; // Pre-publication catalogs can already exist on the office.
+  for (const connection of pending) {
+    for (const row of starters) {
+      const name = row.name || row.id;
+      if (!connection.models.includes(row.id)) continue;
+      if (state.setups.some(s => s.connection === connection.id && (s.model === row.id || s.name.toLowerCase() === name.toLowerCase()))) continue;
+      state.setups.push({ id: randomUUID(), connection: connection.id, name, model: row.id, reasoning: 'default', approvals: 'prompt' });
+    }
+    delete connection.starterModelsPending;
+  }
+  return true;
+}
 const efforts = ['default', 'none', 'low', 'medium', 'high', 'xhigh', 'max'];
 function required(value: unknown, label: string): string { if (typeof value !== 'string' || !value.trim()) throw new Error(`${label} is required.`); return value.trim(); }
 let pending: Promise<unknown> = Promise.resolve();
@@ -80,6 +101,7 @@ export async function saveHermesConnection(input: Record<string, unknown>): Prom
     if (kind !== undefined && kind !== 'personal_api' && kind !== 'ronin_api') throw new Error('Select an account kind.');
     const harnesses = input.harnesses === undefined ? existing?.harnesses : harnessList(input.harnesses);
     const connection: HermesConnection = { ...(!apiKey && existing?.credentialEnv ? { credentialEnv: existing.credentialEnv } : {}), id, name: required(input.name, 'Connection name'), provider, baseUrl, ...(wireApi ? { wireApi } : {}),
+      ...(isOpenRouterService(baseUrl) && (!existing || !isOpenRouterService(existing.baseUrl) || existing.starterModelsPending) ? { starterModelsPending: true as const } : {}),
       models: changed ? [] : existing.models, ...(!changed && existing.discoveredAt ? { discoveredAt: existing.discoveredAt } : {}),
       ...(kind ? { kind } : {}), ...(harnesses ? { harnesses } : {}), ...(!changed && existing?.offered ? { offered: existing.offered } : {}) };
     if (apiKey) {
@@ -122,9 +144,10 @@ export async function discoverHermesModels(id: string): Promise<string[]> {
     if (!c) throw new Error('Connection no longer exists.');
     const key = await readKey(c); if (!key) throw new Error('API key missing.');
     let response: Response;
+    const listPath = isOpenRouterService(c.baseUrl) ? '/models/user' : '/models';
     const started = Date.now();
-    const record = (status: number) => appendEgress({ at: new Date().toISOString(), host: new URL(c.baseUrl).host, path: new URL(c.baseUrl).pathname + '/models', method: 'GET', status, outcome: status >= 200 && status < 300 ? 'ok' : 'failed', ms: Date.now() - started }).catch(() => {});
-    try { response = await fetch(`${c.baseUrl}/models`, { headers: { Authorization: `Bearer ${key}` }, redirect: 'error', signal: AbortSignal.timeout(15000) }); }
+    const record = (status: number) => appendEgress({ at: new Date().toISOString(), host: new URL(c.baseUrl).host, path: new URL(c.baseUrl).pathname + listPath, method: 'GET', status, outcome: status >= 200 && status < 300 ? 'ok' : 'failed', ms: Date.now() - started }).catch(() => {});
+    try { response = await fetch(c.baseUrl + listPath, { headers: { Authorization: `Bearer ${key}` }, redirect: 'error', signal: AbortSignal.timeout(15000) }); }
     catch { await record(0); throw new Error('Could not reach this API connection.'); }
     await record(response.status);
     if (!response.ok) throw new Error(`Model discovery failed (HTTP ${response.status}).`);
@@ -139,6 +162,7 @@ export async function discoverHermesModels(id: string): Promise<string[]> {
       if (state.setups.some(s => s.connection === c.id && s.model === model) || state.setups.some(s => s.connection === c.id && s.name.toLowerCase() === model.toLowerCase())) continue;
       state.setups.push({ id: randomUUID(), name: model, connection: c.id, model, reasoning: 'default', approvals: 'off' });
     }
+    await seedOpenRouterModels(state);
     await writeHermes(state); return c.models;
   });
 }
@@ -221,7 +245,7 @@ export function readHermesSettings(environment?: NodeJS.ProcessEnv): Promise<Her
       // An explicitly managed connection wins over automatic discovery of the same endpoint.
       if (!c && state.connections.some(c => !c.credentialEnv && c.baseUrl === found.baseUrl)) continue;
       if (!c) {
-        c = { id: randomUUID(), name: found.name, provider: found.provider, baseUrl: found.baseUrl, models: [], credentialEnv: found.credentialEnv };
+        c = { id: randomUUID(), name: found.name, provider: found.provider, baseUrl: found.baseUrl, models: [], credentialEnv: found.credentialEnv, ...(isOpenRouterService(found.baseUrl) ? { starterModelsPending: true } : {}) };
         state.connections.push(c); changed = true;
       }
       if (c.baseUrl !== found.baseUrl) { c.baseUrl = found.baseUrl; c.models = []; delete c.discoveredAt; changed = true; }
@@ -236,7 +260,7 @@ export function readHermesSettings(environment?: NodeJS.ProcessEnv): Promise<Her
     for (const c of state.connections) {
       if (c.credentialEnv && !discovered.some(found => found.credentialEnv === c.credentialEnv)) await rm(keyPath(c.id), { force: true });
     }
-    if (changed) await writeHermes(state);
+    if (await seedOpenRouterModels(state) || changed) await writeHermes(state);
     return state;
   });
 }

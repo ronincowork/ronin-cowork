@@ -86,6 +86,10 @@ Light → Standard → Frontier cascade takes the first of each tier, the catalo
 
 A service connection owns its endpoint, wire protocol, credential reference and named model setups. Each setup has a stable ID and an upstream model ID. Gateway discovery populates its service; personal services use owner-defined entries. GET /api/model-services groups these entries by connection. The on-disk store keeps its original name and IDs for compatibility. Catalog rows carry service_id and service_name for filtering. Native CLI authentication is independent.
 
+### OpenRouter starters
+
+HQ Admin publishes OpenRouter starter names and exact model IDs through the existing office model catalog as rows with `cli: "openrouter"`. A newly connected OpenRouter service seeds the intersection of those rows and the authenticated `/models/user` list. Once seeded, entries are ordinary office-owned setups. Refreshing, rotating a key or receiving another catalog preserves edits and removals. Before the first starter catalog arrives, a new connection remains eligible. Inference uses the office’s OpenRouter key at OpenRouter.
+
 ## Hermes connections and model options
 
 Hermes is one provider in the existing Model provider dropdown. Its Model dropdown

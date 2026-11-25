@@ -88,7 +88,10 @@ export async function saveAccount(input: Record<string, unknown>) {
       // The same office-aware default the seed shows; an unreadable record refuses the save with its reason.
       baseUrl: typeof input.baseUrl === 'string' && input.baseUrl.trim() ? input.baseUrl : await roninApiBaseUrl(), apiKey: input.apiKey ?? input.token, harnesses: input.harnesses });
   }
-  return saveHermesConnection({ ...input, id, kind });
+  const saved = await saveHermesConnection({ ...input, id, kind });
+  // The key is already saved. If discovery is offline the owner can retry via Discover.
+  if (saved.starterModelsPending) await discoverHermesModels(saved.id).catch(() => {});
+  return saved;
 }
 export const discoverAccount = (id: string) => discoverHermesModels(id);
 export const updateAccountLists = (id: string, lists: { harnesses?: unknown; offered?: unknown }) => updateHermesConnectionLists(id, lists);

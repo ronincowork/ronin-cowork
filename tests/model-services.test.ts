@@ -8,7 +8,8 @@ import express from 'express';
 import { registerSetupRuntime } from '../src/routes/setup-runtime-api.js';
 import { createServer } from 'node:http';
 import { once } from 'node:events';
-import { saveAccount, discoverAccount } from '../src/accounts.js';
+import { setModels } from '../src/model-catalog.js';
+import { saveAccount, discoverAccount, deletePreset } from '../src/accounts.js';
 import { saveHermesSetup } from '../src/hermes-setups.js';
 import { modelServices } from '../src/model-services.js';
 import { serviceLaunch } from '../src/model-service-launch.js';
@@ -74,6 +75,27 @@ test('named models stay with their service through discovery, catalog and CLI la
   const saved = edited.find(s => s.id === owner.id)?.models[0]; assert.ok(saved);
   await change('delete-model', { id: saved.id });
   await change('delete', { id: owner.id });
+  // The office can receive HQ's list after the user has connected OpenRouter.
+  const liveFetch = globalThis.fetch;
+  const discovery = t.mock.method(globalThis, 'fetch', async (url: Parameters<typeof fetch>[0], init?: RequestInit) => {
+    if (String(url) !== 'https://openrouter.ai/api/v1/models/user') return liveFetch(url, init);
+    assert.equal(new Headers(init?.headers).get('authorization'), 'Bearer router-fixture');
+    return Response.json({ data: [{ id: 'author/available' }] });
+  });
+  const router = await saveAccount({ kind: 'personal_api', name: 'OpenRouter', provider: 'custom', wireApi: 'chat',
+    baseUrl: 'https://openrouter.ai/api/v1', apiKey: 'router-fixture' });
+  const routerModels = async () => (await modelServices()).find(service => service.id === router.id)!.models;
+  assert.deepEqual(await routerModels(), []);
+  await setModels({ models: [{ cli: 'openrouter', id: 'author/available', name: 'Fast' },
+    { cli: 'openrouter', id: 'author/restricted', name: 'Restricted' }, { cli: 'codex', id: 'author/available', name: 'Native' }] });
+  const starters = await routerModels();
+  assert.deepEqual(starters.map(row => [row.name, row.model]), [['Fast', 'author/available']]);
+  await deletePreset(starters[0]!.id);
+  await discoverAccount(router.id);
+  await saveAccount({ id: router.id, kind: 'personal_api', name: 'OpenRouter', provider: 'custom', wireApi: 'chat',
+    baseUrl: 'https://openrouter.ai/api/v1', apiKey: 'router-fixture' });
+  assert.deepEqual(await routerModels(), []);
+  discovery.mock.restore();
   const marker = 'service:' + setup.id;
   assert.deepEqual(await serviceLaunch('hermes', ['hermes', 'chat', '-m', marker], ''), ['hermes', 'chat', '-m', 'vendor/private']);
   const probe = path.join(root, 'probe');
