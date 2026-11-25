@@ -13,12 +13,11 @@ models never count.
 - Open the Harness surface beside your chat: `show <tab> setup.harness`.
 - Ask which they already pay for, with your question tool, and start with that one. One is
   enough to start; a second keeps Agents working when one hits a limit or an outage.
-- **Four ways, one at a time.** A harness runs on a subscription, an API key, the Ronin gateway or
-  OpenRouter, and only one at a time; signing in another way replaces the one it is on. Only the first
-  two work today. The gateway and OpenRouter show on the page as Coming soon: Claude Code speaks only
-  Anthropic's API, which the gateway does not serve; Codex on the gateway and either CLI on OpenRouter
-  are not yet proven in Ronin. Say so plainly if asked; never promise them. In full: `ronin-help
-  provider-sign-in`.
+- **Each harness has its own ways.** Claude Code: a subscription or an API key, one at a time
+  (signing in the other way replaces it); OpenRouter is coming soon. Codex: the same two, plus the
+  Ronin gateway, which needs no sign-in: the person picks a Ronin model under Model when starting a
+  Codex Agent, and the Codex sign-in stays. Claude Code never runs on the gateway (it speaks only
+  Anthropic's API); never offer it. Say so plainly if asked. In full: `ronin-help provider-sign-in`.
 - **Which way it is on now:** `harness state` (it reads each CLI's own status). Before you start a
   sign-in on a harness already signed in, say which way it is on and that the new one replaces it.
 - **Claude Code and Codex sign in without a terminal.** Run `harness sign-in <claude|codex>

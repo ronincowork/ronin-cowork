@@ -46,14 +46,12 @@ const WAYS = Object.freeze({
   subscription: () => t('setup_harness.subscription', 'Subscription'),
   api_key: () => t('setup_harness.api_key', 'API key'),
 });
-/** THE FOUR WAYS (owner, 24 Nov 2026): a harness runs on one at a time. The last two wait on a proven
- *  path (samurai_lab/wip/SETUP_HARNESS.md): shown, greyed, Coming soon. */
+/** EACH HARNESS SHOWS ONLY ITS OWN WAYS (owner, 25 Nov 2026): subscription and API key (its CLI's
+ *  sign-in, one at a time); the Ronin gateway only where the office's Ronin API account runs it
+ *  (src/accounts.ts: Codex yes, Claude Code never), picked under Model when an Agent starts; OpenRouter
+ *  greyed, Coming soon. */
 /** A way inside a sentence: "subscription", "API key". */
 const wayWord = (way) => (way === 'api_key' ? t('setup_harness.api_key_word', 'API key') : t('setup_harness.subscription_word', 'subscription'));
-const SOON = Object.freeze([
-  ['gateway', () => t('setup_harness.gateway', 'Ronin gateway')],
-  ['openrouter', () => t('setup_harness.openrouter', 'OpenRouter')],
-]);
 
 export function harnessSurfaceDefinition() {
   return { type: HARNESS_SURFACE_TYPE, header: 'surface', label: () => t('setup_harness.label', 'Harness'), create: (context) => createHarnessSurface(context) };
@@ -68,6 +66,9 @@ function createHarnessSurface(context) {
   out.content.append(body);
   let runtime = recordRuntime();
   let signIn = { runs: [], failed: {}, ways: {} };
+  // The office's Ronin API account: which harnesses run on the gateway, and whether it is set up.
+  let gateway = { harnesses: [], configured: false };
+  let gatewayShown = '';
   // A press on the other way while signed in asks once more: one way at a time (owner, 24 Nov).
   let switching = { provider: '', way: '' };
   let open = '';
@@ -80,7 +81,14 @@ function createHarnessSurface(context) {
 
   const hers = () => (irasshaiIn(S.sessions) ? IRASSHAI : '');
   const post = (path, json = {}) => request(path, { method: 'POST', json });
-  const readRuntime = async () => { const r = await request('/api/setup/runtime', { cache: 'no-store' }); if (r.ok && !disposed) { runtime = r.data; paint(); } };
+  const readRuntime = async () => {
+    const [r, a] = await Promise.all([request('/api/setup/runtime', { cache: 'no-store' }), request('/api/accounts', { cache: 'no-store' })]);
+    if (disposed) return;
+    const house = a.ok ? (a.data.accounts || []).find((one) => one.kind === 'ronin_api') : null;
+    if (house) gateway = { harnesses: house.harnesses || [], configured: !!house.configured };
+    if (r.ok) runtime = r.data;
+    paint();
+  };
 
   const start = async (provider, way) => {
     const to = hers();
@@ -177,22 +185,31 @@ function createHarnessSurface(context) {
       row.classList.add('setup-harness-ways');
       for (const way of ['subscription', 'api_key']) {
         const made = button(WAYS[way](), false, () => {
-          if (current && current !== way && !(switching.provider === provider.id && switching.way === way)) { switching = { provider: provider.id, way }; paint(); return; }
-          switching = { provider: '', way: '' };
+          if (current && current !== way && !(switching.provider === provider.id && switching.way === way)) { switching = { provider: provider.id, way }; gatewayShown = ''; paint(); return; }
+          switching = { provider: '', way: '' }; gatewayShown = '';
           void start(provider, way);
         });
         made.setAttribute('aria-selected', String(current === way));
         row.append(made);
       }
-      for (const [, label] of SOON) {
-        const made = button(label(), false, () => {});
-        made.disabled = true;
-        made.setAttribute('aria-disabled', 'true');
-        made.append(el('small', 'ask-word', t('setup_harness.soon', 'Coming soon')));
+      const onGateway = gateway.harnesses.includes(provider.id);
+      if (onGateway) {
+        const made = button(t('setup_harness.gateway', 'Ronin gateway'), false, () => { switching = { provider: '', way: '' }; gatewayShown = gatewayShown === provider.id ? '' : provider.id; paint(); });
+        made.append(el('small', 'ask-word', gateway.configured ? t('setup_harness.ready', 'Ready') : t('setup_harness.not_set_up', 'Not set up')));
+        made.setAttribute('aria-selected', 'false');
         row.append(made);
       }
+      const soon = button(t('setup_harness.openrouter', 'OpenRouter'), false, () => {});
+      soon.disabled = true;
+      soon.setAttribute('aria-disabled', 'true');
+      soon.append(el('small', 'ask-word', t('setup_harness.soon', 'Coming soon')));
+      row.append(soon);
       bar.append(row);
-      const line = switching.provider === provider.id
+      const line = onGateway && gatewayShown === provider.id
+        ? (gateway.configured
+          ? t('setup_harness.gateway_line', 'No sign-in needed: pick a Ronin model under Model when you start a {cli} Agent. Your {cli} sign-in stays as it is.', { cli: shortName(provider) })
+          : t('setup_harness.gateway_off', 'This office’s Ronin API account is not set up yet.'))
+        : switching.provider === provider.id
         ? t('setup_harness.one_at_a_time', 'One at a time: signing in with {next} replaces your {now}. Press it again to switch.', { next: wayWord(switching.way), now: current ? wayWord(current) : 'sign-in' })
         : current ? t('setup_harness.on_way', 'Signed in with your {way}.', { way: wayWord(current) })
           : signed ? t('setup_harness.signed_line', 'Signed in on this office.') : t('setup_harness.pick_way', 'Pick how {cli} signs in. One way at a time.', { cli: shortName(provider) });
