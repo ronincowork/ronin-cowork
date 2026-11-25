@@ -249,21 +249,6 @@ export function createWorkspaceKickoff({ workspacesRead, environment }) {
       foot.append(el('p', 'setup-workspace-yours', ''));
       foot.lastChild.append(link);
     }
-    // NEXT (owner, 25 Nov): on to Team. With no Workspace yet, it makes Ronin Lab first and says so.
-    const next = createAction({ label: n ? t('setup_workspace.next', 'Next: Team') : t('setup_workspace.next_lab', 'Next: Team, starting in Ronin Lab'), kind: 'primary', size: 'compact', action: async () => {
-      if (!n) {
-        next.setDisabled(true);
-        (next.el.querySelector('span') || next.el).textContent = t('setup_workspace.making', 'Making {name}…', { name: LAB.title });
-        const answer = await makeLab();
-        if (!answer.ok) { next.setDisabled(false); done.replaceChildren(el('p', 'setup-workspace-bad', answer.message)); return; }
-        await workspacesRead.read();
-      }
-      environment?.navigateToSurface?.('setup.team');
-    } });
-    const nextLine = el('div', 'setup-workspace-next');
-    nextLine.append(next.el);
-    if (!n) nextLine.append(el('span', 'fs-step-help', t('setup_workspace.next_lab_sub', 'No Workspace yet: Ronin Lab is made for you, a place for ideas and notes.')));
-    foot.append(nextLine);
   }
 
   const stopRead = workspacesRead.subscribe(() => { if (!door) paint(); });

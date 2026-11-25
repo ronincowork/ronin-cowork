@@ -5188,7 +5188,6 @@ html[data-screen='inside'] #phone .ph-bar .ph-title[data-boot='inside'] { displa
 .setup-workspace-about { margin: 0; color: var(--muted); max-inline-size: 40rem; }
 .setup-workspace-foot { display: flex; flex-direction: column; gap: var(--space-4, 16px); }
 .setup-workspace-yours { margin: 0; }
-.setup-workspace-next { display: flex; align-items: center; gap: var(--space-2, 8px); flex-wrap: wrap; }
 .setup-workspace-question { display: flex; flex-direction: column; gap: var(--space-2, 8px); }
 .setup-workspace-ask { margin: 0; color: var(--fg-strong); font-size: var(--form-key); font-weight: var(--weight-strong); }
 .setup-workspace-create { display: flex; justify-content: flex-start; }
@@ -5200,7 +5199,7 @@ html[data-screen='inside'] #phone .ph-bar .ph-title[data-boot='inside'] { displa
 /* The Workspaces line is its own section, under a rule, well below Create. */
 .setup-workspace-foot { margin: var(--space-4, 16px) 0 0; padding-top: var(--space-4, 16px); border-top: 1px solid var(--line); }
 .setup-workspace-bad { color: var(--bad); }
-.setup-workspace-done:empty { display: none; }
+.setup-workspace-done:empty, .setup-workspace-foot:empty { display: none; }
 .setup-workspace-link { background: none; border: 0; padding: 0; color: var(--link); text-decoration: underline; cursor: pointer; font: inherit; }
 .setup-harness-link { color: var(--link); word-break: break-all; }
 .setup-harness-row { display: flex; flex-wrap: wrap; align-items: stretch; gap: 8px; }
