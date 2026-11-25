@@ -156,19 +156,12 @@ export async function discoverHermesModels(id: string): Promise<string[]> {
     c.models = [...new Set(body.data.flatMap(row => row && typeof row.id === 'string' && modelPattern.test(row.id) ? [row.id] : []))];
     if (accountKind(c) !== 'ronin_api') c.models.sort();
     c.discoveredAt = new Date().toISOString();
-    // THE GATEWAY'S MODELS COME READY (owner, 25 Nov 2026): every model the Ronin gateway serves is a
-    // Hermes model option out of the box, named as the model, defaults for reasoning and approvals.
-    if (accountKind(c) === 'ronin_api') for (const model of c.models) {
-      if (state.setups.some(s => s.connection === c.id && s.model === model) || state.setups.some(s => s.connection === c.id && s.name.toLowerCase() === model.toLowerCase())) continue;
-      state.setups.push({ id: randomUUID(), name: model, connection: c.id, model, reasoning: 'default', approvals: 'off' });
-    }
     await seedOpenRouterModels(state);
     await writeHermes(state); return c.models;
   });
 }
-/** STOCK HERMES MODEL OPTIONS (owner, 25 Nov 2026): the Ronin gateway's model list read at start-up and on
- *  Refresh, so every gateway model is an option before anyone opens the Hermes bar (discoverHermesModels
- *  saves them). A failed read stays quiet: the next start or Refresh tries again. */
+/** The Ronin Gateway's model list, read at start-up and on Refresh (its model options are that list,
+ *  withGatewayOptions). A failed read keeps the last list: the next start or Refresh tries again. */
 export async function readGatewayModels(): Promise<void> {
   const { connections } = await readHermesSettings();
   for (const c of connections) if (accountKind(c) === 'ronin_api') await discoverHermesModels(c.id).catch(() => {});
@@ -229,6 +222,16 @@ async function credentialEnvironment(): Promise<NodeJS.ProcessEnv> {
   const app = await readEnv(process.env.DOTENV_CONFIG_PATH || path.join(REPO_ROOT, '.env'));
   return { ...native, ...process.env, ...app };
 }
+/** THE RONIN GATEWAY'S MODEL OPTIONS ARE ITS OWN LIST (owner, 25 Nov 2026): one per model the office gateway
+ *  last listed, named as it, never saved and never edited; id `<connection>/<model>`. Saved setups are the ones
+ *  people name, on an API key or OpenRouter. */
+function withGatewayOptions(state: HermesSettings): HermesSettings {
+  const gateway = state.connections.filter(c => accountKind(c) === 'ronin_api');
+  return { ...state, setups: [
+    ...gateway.flatMap(c => c.models.map(model => ({ id: `${c.id}/${model}`, name: model, connection: c.id, model, reasoning: 'default', approvals: 'off' as const }))),
+    ...state.setups.filter(s => !gateway.some(c => c.id === s.connection)),
+  ] };
+}
 /** Reconcile references to existing credentials. API access is only checked by model discovery. */
 export function readHermesSettings(environment?: NodeJS.ProcessEnv): Promise<HermesSettings> {
   return mutation(async () => {
@@ -261,7 +264,7 @@ export function readHermesSettings(environment?: NodeJS.ProcessEnv): Promise<Her
       if (c.credentialEnv && !discovered.some(found => found.credentialEnv === c.credentialEnv)) await rm(keyPath(c.id), { force: true });
     }
     if (await seedOpenRouterModels(state) || changed) await writeHermes(state);
-    return state;
+    return withGatewayOptions(state);
   });
 }
 /** Fresh home per birth; immutable settings snapshot. A personal key is a shared credential link, for rotation on
@@ -271,7 +274,7 @@ export function readHermesSettings(environment?: NodeJS.ProcessEnv): Promise<Her
  * No person, no header; a personal key's calls never carry it. */
 export const PERSON_HEADER = 'X-Ronin-Person';
 export async function prepareHermesHome(setupId: string, home: string, person?: string) {
-  const state = await readStoredSettings(); const setup = state.setups.find(s => s.id === setupId);
+  const state = await readHermesSettings(); const setup = state.setups.find(s => s.id === setupId);
   const connection = state.connections.find(c => c.id === setup?.connection);
   const key = connection ? await readKey(connection) : '';
   if (!setup || !connection || !key) throw new Error('Hermes setup or API credential is unavailable.');

@@ -98,6 +98,12 @@ connection and pins an actual model, reasoning effort and approvals. Connection 
 asks the selected endpoint's `/models`; personal services also accept an explicitly entered model ID.
 This proves model-list access, not per-model inference compatibility.
 
+The Ronin Gateway's model options are its own list: one per model the office gateway last listed,
+named as it, with default reasoning and approvals off. They are never saved or edited; their id is
+`<connection id>/<model id>` (`withGatewayOptions`, src/hermes-setups.ts). The list is read at start-up
+and on Refresh, and a failed read keeps the last one. Saved setups are only the ones people name, on an
+API key or OpenRouter.
+
 `hermes-setups.ts` owns validation, serialized mutation, secret-free projection and fresh
 home provisioning. `/api/hermes` reads the projection; POST `/api/hermes/{connection,
 discover,setup,delete}` owns writes. The credential store holds metadata plus one
