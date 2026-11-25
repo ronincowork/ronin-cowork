@@ -219,6 +219,7 @@ export function createWorkspaceKickoff({ workspacesRead, environment }) {
 
   const paintBlanks = () => {
     blanks.replaceChildren();
+    blanks.dataset.door = door ? 'open' : 'none'; // the form's rule only beside a door's blanks
     // NO DOOR YET: where the form would be, what a Workspace is (owner, 25 Nov).
     if (!door) {
       // The owner's words (25 Nov).
