@@ -35,8 +35,10 @@
   item per title. One reply line each; if any was not done, its line says why and the tool exits 4.
 - Status, kind, priority and link type are the space's names exactly (`item --help` lists
   them); anything else is refused, naming the set.
-- `item read` and `item search` print plain lines to read; add `--json` only when a script parses
-  the output.
+- Every command prints plain lines to read. `--json` works on every command: the reply as JSON
+  and nothing else, for a script; a new item's id is at `.item.id`, several at
+  `.answers[].id`. Add it only when a script parses the output.
+- A flag a command does not take is refused by name, with that command's usage; nothing is done.
 - Flag as `item flag <id> "<who>: <what you need>"`; `item unflag <id>` clears it.
 
 More: `ronin-help work-items`

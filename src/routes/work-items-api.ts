@@ -36,12 +36,14 @@ export const acknowledge = (res: express.Response, done: Acknowledged, extra: Re
 
 /** Several in one call (several ids, or create's several titles): each in turn, one reply line
  * each, its acknowledgement or "<what>: <why not>". All failed: the tool's error path (409).
- * Some failed: ok false, and the tool exits 4 after printing every line. */
-async function eachAnswering(res: express.Response, keys: string[], run: (key: string) => Promise<string>): Promise<void> {
-  const answers: Array<{ id: string; ok: boolean; acknowledgement?: string; error?: string }> = [];
-  for (const id of keys) {
-    try { answers.push({ id, ok: true, acknowledgement: await run(id) }); }
-    catch (error) { answers.push({ id, ok: false, error: String((error as Error)?.message ?? error) }); }
+ * Some failed: ok false, and the tool exits 4 after printing every line. Each answer done
+ * carries the item as it now is, its id the item's (a create's key is its title), so
+ * `item ... --json` gives a script every id (w995). */
+async function eachAnswering(res: express.Response, keys: string[], run: (key: string) => Promise<{ acknowledgement: string; item?: WorkItem }>): Promise<void> {
+  const answers: Array<{ id: string; ok: boolean; acknowledgement?: string; error?: string; item?: WorkItem }> = [];
+  for (const key of keys) {
+    try { const { acknowledgement, item } = await run(key); answers.push({ id: item?.id ?? key, ok: true, acknowledgement, ...(item ? { item } : {}) }); }
+    catch (error) { answers.push({ id: key, ok: false, error: String((error as Error)?.message ?? error) }); }
   }
   const said = answers.map((one) => one.ok ? one.acknowledgement : `${one.id}: ${one.error}`).join('\n');
   if (answers.every((one) => !one.ok)) { res.status(409).json({ ok: false, refused: true, answers, error: said }); return; }
@@ -157,7 +159,7 @@ export function registerWorkItems(app: express.Express): void {
       playbook: b.playbook === true || b.playbook === 'true',
     }, callerOf(req));
     const titles = Array.isArray(b.titles) ? (b.titles as unknown[]).map((one) => String(one)) : null;
-    if (titles && titles.length > 1) return eachAnswering(res, titles, async (title) => didLine(await make(title)));
+    if (titles && titles.length > 1) return eachAnswering(res, titles, async (title) => { const done = await make(title); return { acknowledgement: didLine(done), item: done.item }; });
     const done = await make(titles?.[0] ?? text(b.title) ?? '');
     const hint = parentHint(done.item);
     acknowledge(res, done, hint ? { prompt: hint } : {});
@@ -276,7 +278,7 @@ export function registerWorkItems(app: express.Express): void {
     const ids = Array.isArray(req.body?.ids) ? (req.body.ids as unknown[]).map((id) => String(id).trim()).filter(Boolean) : [];
     if (!ids.length) throw new WorkItemBadInput('name the items as { ids: [...] }.');
     const by = callerOf(req);
-    await eachAnswering(res, ids, async (id) => (await act(id, req.body ?? {}, by)).acknowledgement);
+    await eachAnswering(res, ids, async (id) => { const { acknowledgement, done } = await act(id, req.body ?? {}, by); return { acknowledgement, item: done?.item }; });
   }));
   for (const [verb, act] of Object.entries(acts)) {
     const handler = guarded(async (req, res) => {
