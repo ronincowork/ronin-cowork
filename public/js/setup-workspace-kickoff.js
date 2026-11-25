@@ -42,6 +42,40 @@ const repoBase = (url) => url.trim().replace(/\.git$/, '').replace(/\/+$/, '').s
 const blank = () => ({ picked: [], pasted: '', sources: [], github: 'here', title: '', named: false, objective: '', kind: '', instructions: '', lab: false });
 
 /**
+ * WHAT A WORKSPACE IS, DRAWN (owner, 25 Nov; KAN-845): an example, said so, never pressable. An
+ * office holds Workspaces; one is drawn open: what it is about, the places things live in it, and
+ * the Agents working in it.
+ */
+function workspaceDiagram() {
+  const fig = el('figure', 'ws-diagram');
+  fig.setAttribute('aria-label', t('setup_workspace.diagram_label', 'An example: an office with three Workspaces, one of them opened.'));
+  const office = el('div', 'ws-diagram-office');
+  const head = el('div', 'ws-diagram-head');
+  head.append(el('b', null, t('setup_workspace.diagram_office', 'Your Ronin office')), el('span', 'ws-diagram-example', t('setup_workspace.diagram_example', 'Example')));
+  const row = el('div', 'ws-diagram-row');
+  const stone = (name, open) => {
+    const one = el('div', `ws-diagram-ws${open ? ' open' : ''}`);
+    one.append(el('small', null, t('setup_workspace.diagram_ws', 'Workspace')), el('b', null, name));
+    return one;
+  };
+  row.append(stone('Shop site', true), stone('Accounts', false), stone('Ronin Lab', false));
+  const opened = el('div', 'ws-diagram-detail');
+  opened.append(
+    el('small', null, t('setup_workspace.diagram_ws_named', 'Workspace: {name}', { name: 'Shop site' })),
+    el('p', 'ws-diagram-objective', t('setup_workspace.diagram_objective', '“An online shop for handmade candles.”')),
+  );
+  const places = el('div', 'ws-diagram-places');
+  for (const word of [t('setup_workspace.diagram_files', 'Files'), t('setup_workspace.diagram_repos', 'Repositories'), t('setup_workspace.diagram_plans', 'Plans'), t('setup_workspace.diagram_instructions', 'Instructions')]) places.append(el('span', null, word));
+  const agents = el('div', 'ws-diagram-agents');
+  agents.append(el('small', null, t('setup_workspace.diagram_agents', 'Agents working here, each told all of the above')));
+  for (const name of ['shop_lead', 'web_dev', t('setup_workspace.diagram_more', '+ more as needed')]) agents.append(el('span', null, name));
+  opened.append(places, agents);
+  office.append(head, row, opened);
+  fig.append(office, el('figcaption', null, t('setup_workspace.diagram_caption', 'An illustration: your own Workspaces appear once you make them.')));
+  return fig;
+}
+
+/**
  * @param workspacesRead  the Workspaces read (workspaces-read.js), read again on their push
  * @param environment     Setup's: its setup-progress push re-reads GitHub's sign-in
  */
@@ -195,7 +229,7 @@ export function createWorkspaceKickoff({ workspacesRead, environment }) {
         el('p', null, t('setup_workspace.about_2', 'It brings together your project’s files, repositories, plans, and instructions in one place. Every agent you launch in that Workspace knows what the project is about, where to find things, and what you’re trying to accomplish.')),
         el('p', null, t('setup_workspace.about_3', 'You can create multiple Workspaces, each with its own project and context. Your agents can work independently or collaborate within the same Workspace.')),
       );
-      blanks.append(about);
+      blanks.append(about, workspaceDiagram());
       return;
     }
     const { head, tail } = define();
