@@ -96,7 +96,7 @@ export function mountHermesSurface(host, provider, onChanged) {
       approvals: setup.approvals || 'off',
     };
     question = ask([{ fields: [
-      { key: 'connection', label: 'API connection', options: rows(state.connections.map((c) => [c.id, c.name])) },
+      { key: 'connection', label: 'API connection', options: rows(state.connections.map((c) => [c.id, nameOf(c)])) },
       { key: 'model', label: 'API model', options: modelsOf(c0) },
       { key: 'reasoning', label: 'Reasoning effort', options: levelsOf(c0) },
       { key: 'approvals', label: 'Approvals', options: APPROVALS },
@@ -137,7 +137,11 @@ export function mountHermesSurface(host, provider, onChanged) {
     made.setCollapsed(!open[key], meta, true);
     return made;
   };
-  const names = (list) => list.map((one) => one.name).join(', ');
+  // ONE NAME FOR THE GATEWAY (owner, 25 Nov 2026): the office's Ronin API connection reads "Ronin gateway"
+// here, as on the harness bars, whatever its stored name (src/accounts.ts accountKind).
+const isGateway = (c) => c.kind === 'ronin_api' || /^http:\/\/127\.0\.0\.1:\d+(\/|$)/.test(c.baseUrl || '');
+const nameOf = (c) => (isGateway(c) ? 'Ronin gateway' : c.name);
+  const names = (list) => list.map(nameOf).join(', ');
   const modelsLine = (c) => (c.discoveredAt ? `${c.models.length} model${c.models.length === 1 ? '' : 's'}` : 'model list not read yet');
 
   const paint = () => {
@@ -150,11 +154,12 @@ export function mountHermesSurface(host, provider, onChanged) {
     const connections = step(1, 'connections', 'API connections', state.connections.length
       ? `${state.connections.length} · ${names(state.connections)}` : 'None yet');
     for (const c of state.connections) {
-      const what = c.credentialEnv ? 'This office’s connection to Ronin models' : `${c.provider === 'custom' ? 'OpenAI-compatible API' : c.provider === 'mistral' ? 'Mistral API' : 'OpenAI API'}${c.configured ? '' : ' · key missing'}`;
-      connections.body.append(card(c.name, `${what} · ${modelsLine(c)}`, [
+      const gatewayOf = isGateway(c);
+      const what = gatewayOf ? 'Ronin’s own models' : `${c.provider === 'custom' ? 'OpenAI-compatible API' : c.provider === 'mistral' ? 'Mistral API' : 'OpenAI API'}${c.configured ? '' : ' · key missing'}`;
+      connections.body.append(card(nameOf(c), `${what} · ${modelsLine(c)}`, [
         stone('Read its models', () => run('discover', { id: c.id })),
         stone('Edit', () => editConnection(c)),
-        ...(c.credentialEnv ? [] : [stone('Remove', () => run('delete', { kind: 'connections', id: c.id }))]),
+        ...(c.credentialEnv || gatewayOf ? [] : [stone('Remove', () => run('delete', { kind: 'connections', id: c.id }))]),
       ]));
     }
     connections.body.append(card(state.connections.length ? 'Add another connection' : 'Add a connection',
@@ -162,7 +167,7 @@ export function mountHermesSurface(host, provider, onChanged) {
 
     const setups = step(2, 'setups', 'Named setups', state.setups.length ? `${state.setups.length} · ${names(state.setups)}` : 'None yet');
     for (const setup of state.setups) {
-      setups.body.append(card(setup.name, `${state.connections.find((c) => c.id === setup.connection)?.name || 'Missing connection'} · ${setup.model} · ${setup.reasoning === 'default' ? 'provider default' : setup.reasoning} reasoning · ${setup.approvals === 'off' ? 'approvals off' : 'asks for approval'}`, [
+      setups.body.append(card(setup.name, `${(() => { const c = state.connections.find((one) => one.id === setup.connection); return c ? nameOf(c) : 'Missing connection'; })()} · ${setup.model} · ${setup.reasoning === 'default' ? 'provider default' : setup.reasoning} reasoning · ${setup.approvals === 'off' ? 'approvals off' : 'asks for approval'}`, [
         stone('Edit', () => editSetup(setup)),
         stone('Remove', () => run('delete', { kind: 'setups', id: setup.id })),
       ]));
