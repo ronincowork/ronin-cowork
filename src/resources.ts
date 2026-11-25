@@ -23,6 +23,8 @@ export const STORES: readonly Store[] = [
   store('message_queue', 'data', 'message-queue'),
   // Seats with no terminal (a gecko) and their inboxes (src/seats.ts).
   store('seats', 'data', 'seats'),
+  // HQ's model catalog, the last one the unit's models.json gave (src/model-catalog.ts).
+  store('model_catalog', 'data', 'model-catalog'),
   // THE THREE PLACES (ronin_stock/stock_readme.md): ronin_stock/ is what Ronin ships; `custom` is the
   // person's own entries, the same folders, each replacing the stock entry of its id whole or
   // adding one; `office` is the office's output (built facts, MACHINE_STATUS, ABOUT_USER,

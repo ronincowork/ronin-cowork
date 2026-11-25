@@ -58,6 +58,7 @@ behaviours guide; facts inform; skills adapt; UIs call (`docs/architecture/brief
 | `session_mandate` | **mandate** | **Reach** how far an Agent goes · **Recruit** how it builds a Team · **Output** what it hands back. |
 | `brief` | **brief** | What an Agent is told: facts, behaviours and tools at a depth, from its work record. Installations enable; behaviours guide. |
 | `message_queue` | **message queue** | Messages waiting to enter a live session. |
+| `model_catalog` | **model catalog** | HQ's Models table: each CLI model's tier, "use it for" line and facts. |
 | `project_root` | **workspace folder** | A repository or folder Ronin knows by name; a Workspace picks the ones its Agents use. |
 | `workspace` (record) | **Workspace** | A project: objective, instructions, repositories, folders and Mode. Every Team works in one. |
 | `desk_profile` | **desk profile** | The owner's standing defaults: skin, words, layout. |
