@@ -102,28 +102,31 @@ export function createWorkspaceKickoff({ workspacesRead, environment }) {
     { v: 'connect', l: t('setup_workspace.connect', 'Connect'), word: IRASSHAI_NAME, sub: why, ...(asking ? { off: asking } : {}) },
   ], '', () => void connect());
 
-  // WHAT IT IS (doors 1–3): the objective, the name made from it until one is typed, the kind, and
-  // what every Agent in it should follow.
+  // WHAT IT IS (doors 1–3), in the owner's order (25 Nov): the kind, the name, what they are working on
+  // (the name made from it until one is typed); then the door's own question; then what every Agent in
+  // it should follow, and Also add Ronin Lab.
   const define = () => {
     const name = textBox(t('workspaces.name', 'Name'), draft.title, (v) => { draft.title = v; draft.named = !!v.trim(); }, t('workspaces.name_placeholder', 'Such as Website or Accounts'));
     const nameInput = name.querySelector('input');
-    const parts = [
+    const head = [
+      question('kind', t('setup_workspace.kind_ask', 'What kind of project?'), ruledRows('kind', KINDS, kindWord), draft.kind,
+        (v) => { draft.kind = v; }, { shape: 'square' }),
+      name,
       textBox(t('workspaces.objective_ask', 'What are you working on?'), draft.objective, (v) => {
         draft.objective = v;
         if (!draft.named) { draft.title = v.trim().split(/\s+/).slice(0, 4).join(' ').replace(/[.,;:!?]+$/, ''); nameInput.value = draft.title; }
       }, t('setup_workspace.objective_placeholder', 'One or two sentences: what it is and what it is for.'), 3),
-      name,
-      question('kind', t('setup_workspace.kind_ask', 'What kind of project?'), ruledRows('kind', KINDS, kindWord), draft.kind,
-        (v) => { draft.kind = v; }, { shape: 'square' }),
+    ];
+    const tail = [
       textBox(t('setup_workspace.instructions_ask', 'Anything every Agent here should follow?'), draft.instructions, (v) => { draft.instructions = v; },
         t('setup_workspace.instructions_placeholder', 'Optional. Such as: write in British English; never push to main.'), 3),
     ];
     if (!has(LAB.name)) {
       const lab = ask([{ fields: [{ key: 'lab', label: t('setup_workspace.also_lab', 'Also add Ronin Lab, a place for ideas and notes beside it'), switch: [t('forms.on', 'On'), t('forms.off', 'Off')] }] }],
         { value: { lab: draft.lab }, density: 'tight', onChange: (now) => { draft.lab = !!now.lab; } });
-      parts.push(lab.el);
+      tail.push(lab.el);
     }
-    return parts;
+    return { head, tail };
   };
 
   // CREATE: the Workspace (its folder laid out by the server), then its repositories one by one; the
@@ -177,6 +180,8 @@ export function createWorkspaceKickoff({ workspacesRead, environment }) {
     blanks.replaceChildren();
     blanks.hidden = !door;
     if (!door) return;
+    const { head, tail } = define();
+    blanks.append(...head);
     if (door === 'git') {
       // GITHUB FIRST (owner, 25 Nov): signed in, nothing to say; not (almost always, on a new office),
       // Connect before anything else.
@@ -198,7 +203,7 @@ export function createWorkspaceKickoff({ workspacesRead, environment }) {
       ], draft.github, (v) => { draft.github = v; }));
       if (!github.authenticated) blanks.append(connectStone(t('setup_workspace.github_new', 'To keep it on GitHub too: the Helpful Assistant signs you in, in her chat.')));
     }
-    blanks.append(...define());
+    blanks.append(...tail);
     const line = el('div', 'setup-workspace-create');
     line.append(create.el);
     blanks.append(line);

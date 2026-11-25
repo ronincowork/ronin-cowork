@@ -5187,9 +5187,15 @@ html[data-screen='inside'] #phone .ph-bar .ph-title[data-boot='inside'] { displa
 .setup-workspace-blanks { display: flex; flex-direction: column; gap: var(--space-4, 16px); padding-inline-start: var(--space-4, 16px); border-inline-start: 2px solid var(--line); }
 .setup-workspace-blanks[hidden] { display: none; }
 .setup-workspace-question { display: flex; flex-direction: column; gap: var(--space-2, 8px); }
-.setup-workspace-ask { margin: 0; color: var(--fg-strong); font-weight: var(--weight-strong); }
+.setup-workspace-ask { margin: 0; color: var(--fg-strong); font-size: var(--form-key); font-weight: var(--weight-strong); }
 .setup-workspace-create { display: flex; justify-content: flex-start; }
-.setup-workspace-made, .setup-workspace-bad, .setup-workspace-foot { margin: 0; }
+.setup-workspace-made, .setup-workspace-bad { margin: 0; }
+/* One gap between every part of the blanks, nothing of a field's own around it. */
+.setup-workspace-blanks > *, .setup-workspace-blanks .wk-field { margin: 0; }
+.setup-workspace-kickoff .wk-field { display: flex; flex-direction: column; gap: var(--space-2, 8px); }
+.setup-workspace-kickoff .wk-field-description:empty { display: none; }
+/* The Workspaces line is its own section, under a rule, well below Create. */
+.setup-workspace-foot { margin: var(--space-4, 16px) 0 0; padding-top: var(--space-4, 16px); border-top: 1px solid var(--line); }
 .setup-workspace-bad { color: var(--bad); }
 .setup-workspace-done:empty, .setup-workspace-foot:empty { display: none; }
 .setup-workspace-link { background: none; border: 0; padding: 0; color: var(--link); text-decoration: underline; cursor: pointer; font: inherit; }
