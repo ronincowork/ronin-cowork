@@ -51,11 +51,11 @@ function workspaceDiagram() {
   fig.setAttribute('aria-label', t('setup_workspace.diagram_label', 'An example: three Workspaces, and the one you choose to work in, opened.'));
   const office = el('div', 'ws-diagram-office');
   const head = el('div', 'ws-diagram-head');
-  head.append(el('b', null, t('setup_workspace.diagram_office', 'Your Workspaces')), el('span', 'ws-diagram-example', t('setup_workspace.diagram_example', 'Example')));
+  head.append(el('b', null, t('setup_workspace.diagram_office', 'Your Workspaces')), el('span', 'ws-diagram-example', t('setup_workspace.diagram_example', 'Illustrative')));
   const row = el('div', 'ws-diagram-row');
   const stone = (name, open) => {
     const one = el('div', `ws-diagram-ws${open ? ' open' : ''}`);
-    one.append(el('small', null, t('setup_workspace.diagram_ws', 'Workspace')), el('b', null, name));
+    one.append(el('b', null, name)); // under 'Your Workspaces', the name alone (owner, 25 Nov)
     return one;
   };
   row.append(stone('Shop site', true), stone('Accounts', false), stone('Ronin Lab', false));
