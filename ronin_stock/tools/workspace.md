@@ -17,6 +17,6 @@ repos/`. `workspace repo <handle> <url>` clones a repository from any Git host i
 (a public one needs no sign-in, a private one needs GitHub signed in here); with no URL it starts a
 new one, `--github private|public` putting it on GitHub too. `workspace source <handle> <source>`
 records where an existing project comes from (an integration row, its folder `files/<source>`).
-`workspace add <handle> <folder>` adds another folder. `workspace starter ronin_lab` makes Ronin
+`workspace starter ronin_lab` makes Ronin
 Lab as Ronin ships it (`public/content/starter-workspaces.json`), the same seed the page uses.
 The workspaces fact shows them all. `workspace --help`.
