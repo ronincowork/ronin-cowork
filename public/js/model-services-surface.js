@@ -17,12 +17,15 @@ import { WorkspaceKit } from './workspace-kit.js';
 import { request } from './request.js';
 import { el } from './form-steps.js';
 import { t } from './lexicon.js';
+import { store } from './store.js';
 
 export const OPENROUTER_URL = 'https://openrouter.ai/api/v1';
 export const MODEL_SERVICE_PAGES = Object.freeze({ openrouter: 'settings2.openrouter', private: 'settings2.private-api' });
 
 /** Which page a service belongs to: the Gateway, OpenRouter, or a private API. */
 export function serviceKind(service) {
+  if (service?.service_type === 'private_api') return 'private';
+  if (service?.service_type) return service.service_type;
   if (service?.kind === 'ronin_api') return 'gateway';
   return String(service?.baseUrl || '').includes('openrouter.ai') ? 'openrouter' : 'private';
 }
@@ -39,11 +42,16 @@ export function modelServicePageRequest(page) {
 let services = [];
 let read = false;
 const listeners = new Set();
-const tell = () => { for (const fn of listeners) fn(); };
-async function load(say) {
+const tell = (heard = false) => { for (const fn of listeners) fn(heard); };
+async function load(say, heard = false) {
   const result = await request('/api/model-services', { cache: 'no-store' });
   if (!result.ok) { say?.(result.message, true); return; }
-  services = Array.isArray(result.data.services) ? result.data.services : []; read = true; tell();
+  services = Array.isArray(result.data.services) ? result.data.services : []; read = true; tell(heard);
+}
+// Anyone's write (model-services-changed, broadcast by the server) is read again once, for every surface.
+let heardOff = null;
+function hearChanges() {
+  heardOff ||= store.listen('model-services-changed', () => { void load(null, true); });
 }
 async function act(action, body, say) {
   const result = await request(`/api/model-services/${action}`, { method: 'POST', json: body });
@@ -87,8 +95,10 @@ function shell(label, className) {
 }
 function lifecycle(out, paint, say) {
   let disposed = false;
-  const watch = () => { if (!disposed) paint(); };
-  listeners.add(watch);
+  // A change heard from elsewhere waits while someone types here, so typing survives.
+  const typing = () => { const a = document.activeElement; return !!a && out.el.contains(a) && /^(INPUT|SELECT|TEXTAREA)$/.test(a.tagName); };
+  const watch = (heard) => { if (!disposed && !(heard && typing())) paint(); };
+  listeners.add(watch); hearChanges();
   return {
     el: out.el,
     show: async () => { if (read) paint(); await load(say); },
