@@ -17,7 +17,7 @@ const stone = (name, pressed, fn) => {
   const out = el('button', 'ask-opt ask-rect');
   out.type = 'button';
   out.append(el('span', 'ask-name', name));
-  out.setAttribute('aria-pressed', String(pressed));
+  out.setAttribute('aria-selected', String(pressed)); // the kit's "the one you are on" (ask.css)
   out.addEventListener('click', fn);
   return out;
 };
