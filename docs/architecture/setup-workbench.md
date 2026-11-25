@@ -13,8 +13,8 @@ Epics and Workspaces wait for an Activated harness; the small stones are open fr
 
 Hosted, the Setup stone is always there and opens Setup; Harnesses is reached through Setup's
 Harness step. Nothing decides that Setup is finished. Settings is Settings, with no toggle to Setup.
-Self-hosted, there is no Setup at all: the `setup` page is not registered, and harnesses are signed
-in on Harnesses. A link that names a page still opens that page.
+Self-hosted, Home has no Setup stone and harnesses are signed in on Harnesses; Setup still opens at
+`#/setup` on every office (w997). A link that names a page still opens that page.
 
 ### The ticks
 
