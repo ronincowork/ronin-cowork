@@ -201,16 +201,17 @@ export function mountHermesSurface(host, provider, onChanged) {
     const intro = el('p', '', 'Hermes runs on the Ronin gateway, your own API key or OpenRouter. Each model option below shows under Model when you start a Hermes Agent.');
     root.replaceChildren(intro, notice);
 
-    // THREE WAYS, AS ON CODEX'S BAR (owner, 25 Nov 2026): the Ronin gateway (always there), your own
-    // API key, OpenRouter. Marked when Hermes has it; pressing one shows what it holds. Hermes may have
-    // all three at once: each model option below names the one it runs on.
+    // THREE SOURCES, EACH MARKED WHEN CONFIGURED (owner, 25 Nov 2026). Not a choice between them, as on
+    // Codex's bar: the model options below pick which one each uses. The Ronin gateway is always there,
+    // so it is marked and does nothing; API key and OpenRouter, pressed, manage their keys.
     const gateways = state.connections.filter(isGateway);
     const routers = state.connections.filter((c) => !isGateway(c) && isOpenRouter(c));
     const keys = state.connections.filter((c) => !isGateway(c) && !isOpenRouter(c));
     const ways = el('div', 'ask setup-harness-row setup-harness-ways'); ways.dataset.density = 'tight';
     const wayStone = (id, name, has) => {
-      const made = stone(name, () => { shown = shown === id ? '' : id; paint(); });
+      const made = stone(name, () => { if (id === 'gateway') return; shown = shown === id ? '' : id; paint(); });
       made.setAttribute('aria-selected', String(has));
+      if (id === 'gateway') made.classList.add('hermes-fixed');
       return made;
     };
     ways.append(wayStone('gateway', 'Ronin gateway', gateways.length > 0), wayStone('key', 'API key', keys.length > 0), wayStone('openrouter', 'OpenRouter', routers.length > 0));
@@ -219,7 +220,6 @@ export function mountHermesSurface(host, provider, onChanged) {
       cells: [nameOf(c), `${c.provider === 'custom' ? 'OpenAI-compatible' : c.provider === 'mistral' ? 'Mistral' : 'OpenAI'}${c.configured ? '' : ' · key missing'}`, c.discoveredAt ? `${c.models.length} models` : 'Models not read'],
       actions: [icon('edit', 'Edit', () => editFn(c)), ...(c.credentialEnv ? [] : [icon('remove', 'Remove', () => run('delete', { kind: 'connections', id: c.id }))])],
     }));
-    if (shown === 'gateway') panel.append(el('p', '', gateways.length ? `Always on. ${gateways[0].models.length} Ronin models, ready for the options below.` : 'Always on.'));
     if (shown === 'key') panel.append(table(['Name', 'API', 'Models'], keyRows(keys, editConnection), 'Add your API key', () => editConnection()));
     if (shown === 'openrouter') panel.append(table(['Name', 'API', 'Models'], keyRows(routers, editOpenRouter), routers.length ? 'Add another OpenRouter key' : 'Add your OpenRouter key', () => editOpenRouter()));
 

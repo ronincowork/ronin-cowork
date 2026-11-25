@@ -5235,3 +5235,5 @@ html[data-screen='inside'] #phone .ph-bar .ph-title[data-boot='inside'] { displa
 .setup-harness-row.setup-harness-ways { display: grid; grid-template-columns: repeat(auto-fit, minmax(112px, 1fr)); }
 .setup-harness-ways .ask-rect { width: auto; flex: none; }
 .setup-harness-ways .ask-opt:disabled { opacity: .6; cursor: default; }
+/* Hermes's Ronin gateway: always there, marked, nothing to press. */
+.hermes-fixed { pointer-events: none; }
