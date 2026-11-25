@@ -46,8 +46,6 @@ worktrees|user|worktrees
 memory|user|memory
 config|user|config
 mika_home|user|mika
-koshi_weights|user|koshi_weights
-koshi_weights_service|user|koshi_weights_service
 promotion_ledger|data|promotion-ledger
 services_secrets|user|services_secrets
 office_unit|user|office_unit

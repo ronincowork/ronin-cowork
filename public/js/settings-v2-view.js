@@ -2,7 +2,7 @@
 /**
  * SETTINGS V2 (owner, 2026-11-25; KAN-862): a second Settings built beside the first, so the two can be
  * compared and what is missing seen. The structure is samurai_lab wip/SETTINGS_CLEANUP.md §2: four groups,
- * no hints. Today's surfaces are reused as they are; Themes, House jobs and Machine stats are new cards
+ * no hints. Today's surfaces are reused as they are; Themes and Machine stats are new cards
  * over today's builders. When v2 is right the old Settings and its surfaces go.
  */
 import { WorkspaceKit } from './workspace-kit.js';
@@ -19,7 +19,6 @@ import { createMachineStatusSurface } from './machine-status.js';
 import { createFeedbackSurface } from './feedback.js';
 import { createDocumentWorkspaceAdapter } from './docs.js';
 import { installBehaviourReader } from './behaviour-reader.js';
-import { buildKoshi } from './koshi.js';
 import { buildStats } from './stats.js';
 import { choice } from './campaign-desk.js';
 import { setCampaignTheme, setTheme } from './theme.js';
@@ -55,7 +54,7 @@ function createThemesSurface(campaign) {
   return { el: surface.el, show: paint };
 }
 
-/** A room built by one of today's builders (Koshi, stats), on a surface of its own. */
+/** A room built by one of today's builders (stats), on a surface of its own. */
 function roomSurface(label, room, build) {
   const surface = WorkspaceKit.primitives.createSurface({ label, className: 'cv-surface' });
   const host = elem('div', `desk-pane desk-${room} show`);
@@ -108,7 +107,6 @@ export function createSettingsV2View() {
         campaignJiraItems: () => enterable(createJiraItemsSurface(selected)),
         campaignJiraPairs: () => enterable(createJiraPairsSurface(selected)),
         settings2Themes: () => createThemesSurface(selected),
-        settings2HouseJobs: () => roomSurface(t('settings2.house_jobs', 'House jobs'), 'koshi', (host) => buildKoshi(host, () => true)),
         campaignDefaults: () => enterable(createAgentDefaultsSurface(selected)),
         campaignMachineStatus: () => createMachineStatusSurface(),
         settings2Stats: () => roomSurface(t('settings2.stats', 'Machine stats'), 'stats', (host) => buildStats(host)),

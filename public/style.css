@@ -2229,88 +2229,6 @@ body {
   opacity: 1;
 }
 
-.desk-koshi {
-  flex-direction: column;
-  min-height: 0;
-  padding: var(--space-inset);
-  gap: var(--space-paragraph);
-  overflow: auto;
-}
-.ko-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-inline);
-}
-.ko-blurb {
-  opacity: 0.75;
-  font-size: var(--text-body);
-}
-.ko-blurb.bad {
-  color: var(--bad);
-  opacity: 1;
-  font-weight: var(--weight-strong);
-}
-.ko-restart {
-  flex: none;
-}
-.ko-list {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-paragraph);
-}
-.ko-row {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  grid-template-areas: 'name pick' 'what pick' 'pace pace' 'pacelabel pacelabel' 'note note';
-  gap: var(--space-row) var(--space-inline);
-  align-items: center;
-  padding: var(--space-paragraph) var(--space-inline);
-  border: var(--edge) solid var(--line);
-  border-radius: var(--radius-small);
-}
-.ko-row.off {
-  opacity: 0.5;
-}
-.ko-name {
-  grid-area: name;
-  font-weight: var(--weight-strong);
-}
-.ko-what {
-  grid-area: what;
-  font-size: var(--text-body);
-  opacity: 0.7;
-}
-.ko-pick {
-  grid-area: pick;
-  min-width: 150px;
-}
-.ko-pace {
-  grid-area: pace;
-  width: 100%;
-  margin: var(--space-row) 0 0;
-}
-.ko-pacelabel {
-  grid-area: pacelabel;
-  font-size: var(--text-body);
-  opacity: 0.7;
-}
-.ko-note {
-  grid-area: note;
-  font-size: var(--text-body);
-  opacity: 0.7;
-  margin-top: var(--space-row);
-}
-.ko-note.bad,
-.ko-empty.bad {
-  color: var(--bad);
-  opacity: 1;
-}
-.ko-empty {
-  opacity: 0.7;
-  font-size: var(--text-body);
-}
-
 .desk-hotwords {
   flex-direction: column;
   min-height: 0;
@@ -3394,13 +3312,6 @@ body {
 .tile.transcript-on .dvr-strip,
 .tile.transcript-on .tapejump,
 .tile.transcript-on .termjump { display: none; }
-.kaki-controls { display: none; gap: var(--space-inline); align-items: center; margin-bottom: var(--space-paragraph); }
-.kaki-controls.show { display: flex; }
-.kaki-controls button, .kaki-controls select {
-  border: var(--edge) solid var(--term-tape-line-2); border-radius: var(--radius-small);
-  background: var(--tile-bg); color: var(--term-tape-fg); padding: var(--space-row) var(--space-control);
-  font: var(--text-small) var(--font-mono);
-}
 .tile .tape {
   display: none;
 }

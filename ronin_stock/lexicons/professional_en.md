@@ -441,10 +441,6 @@ nothing paints exactly this.
 - **settei.key_set:** ✓ set
 - **settei.key_not_set:** not set
 - **settei.key_presence:** presence only — the value stays in .env
-- **settei.weights_downloaded:** ✓ downloaded
-- **settei.weights_size:** {mb} MB · koshi_weights store
-- **settei.local_weights:** local weights
-- **settei.weights_none:** none downloaded
 - **settei.group_agents:** agent installations
 - **settei.agents_hint:** a tick means it is on the box — tick an empty one to put it on the needed list
 - **settei.installed:** installed
@@ -701,19 +697,6 @@ nothing paints exactly this.
 - **machine.stopped:** Off — the gauge is hidden.
 - **machine.save_failed:** Could not save that.
 
-## koshi — koshi.js (the 目 Koshi tab)
-- **koshi.restart:** ↻ Restart Koshi
-- **koshi.restart_title:** Stop and start the watcher. Settings apply on their own; this is for when it is not running at all.
-- **koshi.restarting:** restarting…
-- **koshi.restart_failed:** it did not come back up
-- **koshi.blurb_running:** Which model each Koshi job asks. Changes apply within a minute — no restart needed.
-- **koshi.blurb_stopped:** Koshi is NOT running. Nothing is watching any work record.
-- **koshi.outlet_not_built:** {outlet} — not built
-- **koshi.pick_title:** Which outlet this job asks
-- **koshi.not_built:** Not built yet
-- **koshi.not_built_note:** Not built yet — nothing asks anything.
-- **koshi.saving:** saving…
-
 ## pad — padpanel.js (the ▦ Work Louder pad panel)
 - **pad.sheet:** Work Louder pad
 - **pad.title:** ▦ Work Louder
@@ -881,7 +864,6 @@ The pad's current config downloads as a backup first.
 ## pane — panes.js (the pane registry's tab labels)
 - **pane.settei:** Configuration
 - **pane.hotwords:** Hotwords
-- **pane.koshi:** Koshi
 
 ## desk — desk.js (the desk's rows and tooltips)
 - **cowork.tab_health:** Desk
@@ -919,10 +901,6 @@ The pad's current config downloads as a backup first.
 - **gauge.used:** ⛽ {label} {pct}% used
 
 ## tape — tapeview.js (the RIREKI tape view)
-- **tape.summarize_now:** Summarize now
-- **tape.summary_policy:** Summary production
-- **tape.policy_on_demand:** On demand
-- **tape.policy_keep_current:** Keep current
 - **tape.jump_title:** Jump to the latest output — the deterministic way back to the bottom, whatever the scroll is doing.
 - **tape.jump:** ↓ latest
 - **tape.fold_code:** ⌨ code
@@ -1223,14 +1201,9 @@ The pad's current config downloads as a backup first.
 ## tile — the prompt, the ended line, the picker tooltips
 - **tile.session_ended:** session ended.
 
-## tape — the summary default and the alt note
-- **tape.no_summary:** No summary has been written yet.
+## tape — the alt note
 - **tape.alt_note_partial:** history begins mid-session · scrollback above is reconstructed from the tape
 - **tape.alt_note:** scrollback above is reconstructed from the tape
-
-## tape — output.js summary notes
-- **tape.writing_summary:** Writing a summary…
-- **tape.summary_unavailable:** Summary unavailable — {message}
 
 ## customize — three more paragraphs
 - **customize.handoff_read_only_shelf:** This preview reads this shelf and does not write it. Your own agent can change it 

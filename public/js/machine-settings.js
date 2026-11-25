@@ -21,8 +21,8 @@ import { saveRow } from './save-row.js';
  *
  * WHY EVERY FIELD SAVES ITSELF instead of one Save button at the bottom: each row is a
  * different named endpoint, so a single button would have to fan out into four writes
- * and then explain which of them failed. Per-field saving is what ⌂ Roster's cap and the
- * 目 Koshi outlets already do, and it means the answer to "did that take?" is beside the
+ * and then explain which of them failed. Per-field saving is what ⌂ Roster's cap already
+ * does, and it means the answer to "did that take?" is beside the
  * field you just left rather than at the foot of the page.
  *
  * NOT SHOWN, EVER: a key. The record names the env var an outlet needs and says whether
@@ -243,9 +243,8 @@ export function buildMachineSettings(root, isShowing, { only = null } = {}) {
     );
     for (const [name, job] of Object.entries(set.agents.jobs ?? {})) {
       if (managed.has(name)) continue;
-      // A job's pointing is edited in its own room (目 Koshi); here it is the resolved
-      // answer plus whether the key it names is actually present — which is the part
-      // no other surface says out loud.
+      // The resolved answer plus whether the key it names is actually present — which
+      // is the part no other surface says out loud.
       body.appendChild(obsRow(name.replace(/_/g, ' '), `${job.provider ?? job.outlet}${job.model ? ` · ${job.model}` : ''}`,
         st.agents[name] ? ` ${st.agents[name]}` : ''));
     }
@@ -256,12 +255,6 @@ export function buildMachineSettings(root, isShowing, { only = null } = {}) {
     for (const [name, isSet] of Object.entries(observed.keys)) {
       body.appendChild(obsRow(name, isSet ? t('settei.key_set', '✓ set') : t('settei.key_not_set', 'not set'), ' ' + t('settei.key_presence', 'presence only — the value stays in .env')));
     }
-
-    // Open-source weights actually ON the box — named and sized, never assumed.
-    for (const w of observed.weights ?? []) {
-      body.appendChild(obsRow(w.name, t('settei.weights_downloaded', '✓ downloaded'), ' ' + t('settei.weights_size', '{mb} MB · koshi_weights store', { mb: w.mb })));
-    }
-    if (!(observed.weights ?? []).length) body.appendChild(obsRow(t('settei.local_weights', 'local weights'), t('settei.weights_none', 'none downloaded')));
 
     group(t('settei.group_agents', 'agent installations'));
     const hint = document.createElement('div');

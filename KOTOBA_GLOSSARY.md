@@ -1,6 +1,6 @@
 # KOTOBA_GLOSSARY — the words to use with the person you work for
 
-Use the plain words below with the owner; **Koshi** is the existing UI-name exception.
+Use the plain words below with the owner.
 [KOTOBA](KOTOBA.md) owns meanings; the lexicon owns displayed words. Tools execute;
 behaviours guide; facts inform; skills adapt; UIs call (`docs/architecture/brief.md`).
 
@@ -13,7 +13,6 @@ behaviours guide; facts inform; skills adapt; UIs call (`docs/architecture/brief
 | RIREKI | the recording | Optional journal transcripts in Services, available when the session has a supported launch binding. Terminal output remains a separate view. |
 | OBOERU | **memory** | Notes that outlive the session that wrote them. |
 | TOMODACHI · SOROBAN | **Stats** | Counts of what sessions did, never content. |
-| KOSHI | Koshi | Ronin's helper jobs, parked; the Koshi tab under Account names the model each would ask. |
 | KOE | **Hotwords** | The dictation glossary. The mic is Voice; implementation ownership is in KOTOBA. |
 | SETTEI | **Configuration** | Settings for the relevant scope. The gear opens cowork commons. |
 | AGERU | **what gets sent** · **where Ronin has connected** | Ronin HQ packets and request history. Model-provider traffic is separate, not in this record. |

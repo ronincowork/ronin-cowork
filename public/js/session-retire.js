@@ -94,8 +94,7 @@ export function retireSession(name, retirementId, onDone = () => {}) {
   /* SAY THAT IT IS WORKING. Both buttons are disabled for the whole request — archiving
      stops a tmux session, so there is a real wait — and a greyed pair alone still does not
      tell you which one you hit or that anything is underway. The pressed button says so in
-     words and puts its label back if the action fails, the same shape js/koshi.js uses for
-     its restart ('restarting…'). CSS carries the rest of the answer; see
+     words and puts its label back if the action fails. CSS carries the rest of the answer; see
      `.end-session-actions` in style.css. */
   /* THE ITEM CHECK (src/routes/sessions-api.ts heldItemsRefusal), a nudge, never a wall: every
      way out is refused once while the Agent holds work In Progress or In Review it has not

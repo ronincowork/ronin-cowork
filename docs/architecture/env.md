@@ -29,7 +29,7 @@ Copy `.env.example` to `.env` and edit; every value is optional with a sane defa
 | `SCRIBE_URL` | `http://127.0.0.1:3004` | the dictation proxy |
 | `RONIN_USER_ROOT` · `RONIN_DATA_ROOT` | store defaults | relocate the two store roots (`src/resources.ts`) |
 | `RONIN_<ID>_DIR` | per store | override a single store's directory |
-| `ANTHROPIC_API_KEY` · `OPENAI_API_KEY` and kin | unset | **provider credentials — the secrets.** Cowork itself never reads a value; a koshi outlet reads the variable its `keyEnv` *names*, and agent CLIs in panes read their standard variables |
+| `ANTHROPIC_API_KEY` · `OPENAI_API_KEY` and kin | unset | **provider credentials — the secrets.** Cowork itself never reads a value; agent CLIs in panes read their standard variables |
 
 ## Installed network configuration
 

@@ -25,7 +25,7 @@ const errMsg = (e: unknown) => String((e as Error)?.message ?? e).replaceAll(hom
 export interface InstalledAnswer {
   cowork: { release: string | null; commit: string; dirty: boolean | null; startedAt: string };
   services: {
-    /** Parts on this machine — on disk, whether or not they run: koshi, koe, project_management, counting, machine, rireki … */
+    /** Parts on this machine — on disk, whether or not they run: koe, project_management, counting, machine, rireki … */
     parts: string[];
     /** Parts this server loaded and runs. */
     loaded: string[];

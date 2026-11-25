@@ -390,7 +390,7 @@ written next to a predicate that stops it costing anything while its surface is 
 | docs list (tracked shelf) | `docs.js`, reading the store's home rows | `enter` subscribes to the store's `home` and draws the snapshot; each push redraws; `close` unsubscribes, called by the seat that leaves it (tile docs view, phone docs screen, Team and Agent workbench tabs, the document seat) · the Plans and Docs shelves read `GET /api/docs` on demand |
 | wipeboard thread, Cron jobs | the store's `wipeboard:<board>` and `jikan:<team>` (`jikan:*` for every team), painted by `team-wipeboard.js` and `team-jikan.js` | opening subscribes, which sends `{t:'want', resource, board}` or `{…, team}` on the socket; the server answers that connection with the message it broadcasts on every write (`{t:'wipeboard', board, posts, more}`, `{t:'jikan', team, jobs}`) · each reconnect says the wants again · a post, edit or removal is answered by that push · leaving unsubscribes |
 | message queue, machine reading | the store's `messages` and `memory`, painted by `message-queue.js`, the header gauge (`ramrpm.js`, KAN-638, KAN-640: the face is a five-segment bar and no text, filled by RAM in use only (total less MemAvailable over total; swap adds nothing), RAM being the real constraint; CPU and disk do not set it. Green under 60%, orange to 90%, red above. One tap opens the popup, three rows, label left, value and the row's own small five-segment bar right, same bands (Agents running of the most, load per core, disk used): "Agents 12 of 25" (Agents running now, counted from the pushed session list as `/api/health` `presence.agents.live` counts them, of the office record's `agents.most`, GET `/api/office` asked once, else RAM total ÷ 0.6 GB rounded down), "Compute 40%" (load per core, capped at 100) and "Storage 12 of 80 GB"; the title and aria label say the three rows as one line) and the desk's machine panel, which keeps its memory, swap, load and disk rows | `{t:'messages', list}` and `{t:'memory', reading}`, held and sent on connect like the home rows, then on change · a dismissal is answered by the push · `memory` carries `off`, which hides the gauge |
-| pane data (roots, koshi, stats) | the pane module | its own read on `enter()` — each owner is the file the surface lives in |
+| pane data (roots, stats) | the pane module | its own read on `enter()` — each owner is the file the surface lives in |
 | tile bytes | `TileWire` (`tilewire.js`) | the socket; reconnect/backoff lives there and nowhere else |
 
 ### Transcript reading transport
@@ -473,7 +473,7 @@ desktop composition happened not to unmount it.
   hotwords, machine settings, system, services card, campaign surfaces, team jikan.
 - **Async status** — `ui.status`: the one spelling of loading…/saved/not-saved-and-why,
   `role=status`, hidden when empty, kinds `busy/ok/bad`. Consumers: hotwords, docs,
-  koshi, roots, machine panel and settings, services card, system.
+  roots, machine panel and settings, services card, system.
 - **Confirm** — `ui.confirmDialog`: a labelled confirm/cancel dialog. Consumers: roots.
 - **Tabs** — tab strips come from WorkspaceKit's `createTabbedSurface`; the Commons strip
   is one.
@@ -493,7 +493,7 @@ jobs, Configuration) and the Campaign's Machine surface (`cowork-commons.js`: Th
 Account, Archived, Messages, Help desk, Keypad) are workspace surfaces, never overlays, and
 both draw their strip with WorkspaceKit's `createTabbedSurface`. Each tab builds its room on
 first entry, because entering a room starts its fetches. Install-level facts — configuration,
-release and update, hotwords, Koshi, log out and passkeys — are rows of the Account tab's
+release and update, hotwords, log out and passkeys — are rows of the Account tab's
 rail (`system.js` `buildSystemPanel`), drawn once rather than per tile.
 
 **How you know the strip has more on it: a fade, not a scrollbar.** The strip scrolls at

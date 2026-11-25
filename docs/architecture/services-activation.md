@@ -60,7 +60,7 @@ Setup (Settings opens Ronin Settings, and Home's and Help's provider hints point
 in Settings, the Cloud Account, Registration, Password and Installations cards and the Setup
 return card; in the Machine card, Configuration, Release & update and Log out. Settings stays for
 the Desk's own settings (Desk, Team and Agent defaults, Workspaces, Integrations, Jira, Feedback,
-and the Machine card's themes, archives, messages, help desk, keypad, health, hotwords and Koshi).
+and the Machine card's themes, archives, messages, help desk, keypad, health and hotwords).
 Without the record nothing changes.
 
 ## Registration and runtime state

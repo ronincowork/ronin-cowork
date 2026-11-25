@@ -9,8 +9,8 @@
 # WHY NO DIAL CHECK (owner law, 2026-08-28): reviewing the team line and promoting it to
 # dev is the lead's primary job, so every team agent's hand-in must reach the lead
 # directly, regardless of the lead's dial. The dial governs an agent DRIVING a session.
-# The house telling the lead "a hand-in is waiting" is the same category as Koshi moving
-# the marker (LAW 2 in libexec/koshi) and `work-record update_record --at`: house, not agent.
+# The house telling the lead "a hand-in is waiting" is the same category as
+# `work-record update_record --at`: house, not agent.
 #
 # CONTROL-PLANE DELIVERY JOINS THE PROMPT (owner, 2026-08-29). Suggested text and a
 # person's unsubmitted draft are not distinguishable reliably in Claude/Codex's TUI.

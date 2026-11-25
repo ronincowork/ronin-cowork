@@ -19,7 +19,6 @@ import { buildKeysRow } from './keysrow.js';
 import { readAloudButtons } from './read-aloud.js';
 import { buildTileDocView } from './tile-doc-view.js';
 import { buildSecretAsk } from './secret-ask.js';
-import { refreshKaki, setKakiPolicy } from './output.js';
 import { closeMenu } from './menu.js';
 import { get, subscribe } from './store.js';
 import { t } from './lexicon.js';
@@ -78,8 +77,6 @@ export class Tile {
     // terminal in the stack.
     this.tape = new TapeView(this.body, {
       onMore: () => this.wire.send({ t: 'more' }),
-      onSummaryNow: () => void this.refreshKaki(true, true),
-      onSummaryPolicy: (policy) => void this.setKakiPolicy(policy),
     });
     this.transcriptView = makeTileTranscript({
       cache: options.transcriptCache,
@@ -808,15 +805,6 @@ export class Tile {
     this.setDot('on');
     saveState();
     return true;
-  }
-
-  async refreshKaki(create, force = false) {
-    return refreshKaki(this, request, create, force);
-  }
-
-  async setKakiPolicy(policy) {
-    const r = await setKakiPolicy(this, request, policy);
-    if (r && !r.ok) toast('could not change summary production — ' + r.message, false);
   }
 
   doFit() {

@@ -49,7 +49,6 @@ const SERVICE_COMPONENTS = Object.freeze([
   { id: 'voice_hotwords', label: 'Voice & Hotwords', status: 'comingSoon', needs: 'Adds voice tools and corrections for words dictation commonly mishears.' },
   { id: 'usage_stats', label: 'Usage stats', status: 'beta', needs: 'Keeps local usage counts without storing transcript content.' },
   { id: 'machine_status', label: 'Machine status', status: 'beta', needs: 'Shows memory, swap and load for this box in the header.' },
-  { id: 'local_weights', label: 'Local weights', status: 'beta', needs: 'Provides locally stored model weights for features that need them.' },
   { id: 'jira', label: 'Jira', status: 'beta', needs: 'Pairs this Campaign with a Jira space: what Jira assigns to Ronin comes in, and the work goes back.' },
 ]);
 
