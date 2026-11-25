@@ -33,7 +33,7 @@ export function createAgentDefaultsSurface(campaign) {
     const questionsRow = el('div', 'cv-default-field');
     const notice = createNotice();
     body.append(el('p', 'cv-note', t('campaign_view.defaults_help', 'These defaults land in the next Team or Agent form that opens. They remain editable there; nothing live changes.')));
-    body.append(el('p', 'cv-note', t('campaign_view.defaults_models', 'Models are set in Models > Defaults.')));
+    body.append(el('p', 'cv-note', t('campaign_view.defaults_models', 'Models are set in Models.')));
     let picked = edited || {
       reach: current.reach || firstMandate('reach'), recruit: current.recruit || firstMandate('recruit'),
       output: list(current.output), launch_mode: current.launch_mode || 'live_dangerously',
@@ -55,7 +55,7 @@ export function createAgentDefaultsSurface(campaign) {
     /* What every Agent in this Campaign is told: its brief settings, saved by the one Save below. */
     const brief = createBriefSettingsPanel({ layer: 'campaign', id: row.id, campaignId: row.id, ownSave: false, preview: { campaign_id: row.id } });
     const briefRow = el('div', 'cv-default-field');
-    briefRow.append(el('h3', 'cv-brief-head', t('behaviours', 'Behaviors')), el('p', 'cv-note', t('campaign_view.brief_help', 'What every Agent in this Campaign is told. Agents already working are sent the change.')), brief.el);
+    briefRow.append(el('h3', 'cv-brief-head', t('behaviours', 'Behaviors')), el('p', 'cv-note', t('campaign_view.brief_help', 'What every new Workspace, Team and Agent inherits. Nothing that already exists changes.')), brief.el);
     form.append(briefRow);
     void brief.enter();
     const actions = el('div', 'cv-default-actions');

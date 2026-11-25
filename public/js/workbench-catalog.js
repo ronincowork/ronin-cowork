@@ -14,7 +14,7 @@ import { WORK_ITEMS_TYPE } from './work-items-surface.js';
 import { HELP_PAGE_TYPE } from './help-outline.js';
 import { HOSTED } from './hosted.js';
 
-export const WORKBENCH_PROFILES = Object.freeze({ campaign: 'campaign', launch: 'launch', cowork: 'cowork', team: 'team', agent: 'agent', models: 'models', workspaces: 'workspaces', epics: 'epics', help: 'help' });
+export const WORKBENCH_PROFILES = Object.freeze({ campaign: 'campaign', launch: 'launch', cowork: 'cowork', team: 'team', agent: 'agent', models: 'models', workspaces: 'workspaces', epics: 'epics', help: 'help', settings2: 'settings2' });
 export const WORKBENCH_TYPES = Object.freeze({
   document: 'document', terminal: 'session.terminal', behaviours: BEHAVIOUR_SURFACE_TYPE, feedback: FEEDBACK_TYPE, files: FILES_TYPE,
   launchTeam: 'launch.team', launchAgent: 'launch.agent', launchHelp: 'launch.help',
@@ -30,6 +30,7 @@ export const WORKBENCH_TYPES = Object.freeze({
   helpOutline: 'help.outline', helpMika: 'help.mika', helpPage: HELP_PAGE_TYPE,
   workspaceRecords: 'workspaces.records', workspaceRecord: 'workspaces.record', workspaceNew: 'workspaces.new', epicNew: 'epics.new', folderGithub: 'workspaces.github', githubMika: 'workspaces.github-mika',
   epicRecords: 'epics.records', epicRecord: 'epics.record',
+  settings2Themes: 'settings2.themes', settings2HouseJobs: 'settings2.house-jobs', settings2BehaviorDefaults: 'settings2.behavior-defaults', settings2Stats: 'settings2.stats',
   canvas: 'team.canvas',
 });
 
@@ -146,5 +147,20 @@ export function registerWorkbenchCatalog() {
   // One help page whole in a workspace, placed by a dragged stone (help-outline.js); no selector cards.
   add({ type: WORKBENCH_TYPES.helpPage, header: 'surface', label: () => t('help_outline.title', 'Help'), discover: () => [], create: ({ detail, environment }) => environment.helpPage(detail) });
   profiles.define(WORKBENCH_PROFILES.help, [WORKBENCH_TYPES.helpOutline, WORKBENCH_TYPES.helpMika, WORKBENCH_TYPES.helpPage]);
+  // SETTINGS V2 (owner, 2026-11-25; KAN-862, SETTINGS_CLEANUP.md §2): built beside Settings to compare; the old one goes once
+  // v2 is right. Four new cards; the rest are today's surfaces, reused. A harness's own card is placed by its stone, not offered.
+  campaign(WORKBENCH_TYPES.settings2Themes, 'surface', () => t('settings2.themes', 'Themes'), 'settings2Themes', () => t('settings2.themes_summary', 'Light or dark, desktop and mobile.'));
+  campaign(WORKBENCH_TYPES.settings2HouseJobs, 'surface', () => t('settings2.house_jobs', 'House jobs'), 'settings2HouseJobs', () => t('settings2.house_jobs_summary', 'The model each house job asks.'));
+  campaign(WORKBENCH_TYPES.settings2BehaviorDefaults, 'surface', () => t('settings2.behavior_defaults', 'Behavior defaults'), 'campaignDefaults', () => t('settings2.behavior_defaults_summary', 'What the next new Workspace, Team and Agent inherit. Nothing that exists changes.'));
+  campaign(WORKBENCH_TYPES.settings2Stats, 'surface', () => t('settings2.stats', 'Machine stats'), 'settings2Stats', () => t('settings2.stats_summary', 'Usage on this machine.'));
+  profiles.define(WORKBENCH_PROFILES.settings2, [
+    SETUP_SURFACE_TYPES.roots, WORKBENCH_TYPES.campaignIntegrations, WORKBENCH_TYPES.campaignJira, WORKBENCH_TYPES.settings2Themes,
+    WORKBENCH_TYPES.modelStones,
+    WORKBENCH_TYPES.accountsRecords, WORKBENCH_TYPES.modelsRecords, WORKBENCH_TYPES.settings2HouseJobs,
+    WORKBENCH_TYPES.settings2BehaviorDefaults, BEHAVIOUR_SURFACE_TYPE,
+    WORKBENCH_TYPES.campaignMachineStatus, WORKBENCH_TYPES.settings2Stats,
+    FEEDBACK_TYPE,
+    WORKBENCH_TYPES.modelProvider, WORKBENCH_TYPES.modelMika, WORKBENCH_TYPES.campaignJiraItems, WORKBENCH_TYPES.campaignJiraPairs, WORKBENCH_TYPES.document,
+  ]);
   registered = true;
 }

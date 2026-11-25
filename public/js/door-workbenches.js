@@ -44,7 +44,7 @@ const blank = (id) => WorkspaceKit.primitives.createBlankSurface(id.replace('wor
  * Campaign); `reading` names the Help page being read; `destroy` lets the surfaces go with the view.
  * Every change reports this tab's view for Mika's `owner_view`, as the other workbenches do.
  */
-function doorWorkbench({ id, profile, label, seat, seats = { workspace1: seat }, count = 2, environment, cards = true, hints = true, loaded = null, reading = () => '', destroy = () => {} }) {
+export function doorWorkbench({ id, profile, label, seat, seats = { workspace1: seat }, count = 2, environment, cards = true, hints = true, selectorFilter = null, onSelectorRefresh = null, loaded = null, reading = () => '', destroy = () => {} }) {
   registerWorkbenchCatalog();
   const { normalizeWorkbenchState } = WorkspaceKit.contract;
   let ctx = null, entered = false, bench = null;
@@ -62,7 +62,8 @@ function doorWorkbench({ id, profile, label, seat, seats = { workspace1: seat },
   };
   bench = WorkspaceKit.workbench.create({
     profile, tenant: { kind: id }, environment: environment({ bench: () => bench, entered: () => entered, ctx: () => ctx, report }),
-    defaultNode: blank, label, hints, ...(cards ? {} : { selectorFilter: () => false }), onStateChange: save, onPlacement: save,
+    defaultNode: blank, label, hints, ...(cards ? (selectorFilter ? { selectorFilter } : {}) : { selectorFilter: () => false }),
+    ...(onSelectorRefresh ? { onSelectorRefresh } : {}), onStateChange: save, onPlacement: save,
   });
   return {
     el: bench.host, ...workbenchView(id, { header: { feedback: false } }), arrangement: bench.arrangement,
@@ -95,16 +96,25 @@ function doorWorkbench({ id, profile, label, seat, seats = { workspace1: seat },
  * dropped or its card placed, one card per harness; the sign-in tile mounted as on Setup. The route id stays `models`
  * so saved arrangements survive. */
 export function createModelsView() {
+  const harness = harnessKit();
+  return doorWorkbench({
+    id: 'models', profile: WORKBENCH_PROFILES.models, label: t('campaign_home.harnesses', 'Harnesses'), seat: WORKBENCH_TYPES.modelStones,
+    count: 4, seats: { workspace1: WORKBENCH_TYPES.modelStones, workspace2: WORKBENCH_TYPES.accountsRecords, workspace3: WORKBENCH_TYPES.modelsRecords, workspace4: WORKBENCH_TYPES.modelRefresh },
+    loaded: loadProviderCatalog,
+    environment: ({ bench }) => harness.environment(bench),
+    destroy: harness.destroy,
+  });
+}
+
+/** The harness and model surfaces' resident data over a bench: Harnesses' own, and Settings v2's Harness and Models. */
+export function harnessKit() {
   const MIKA_SESSION = 'mika_agent';
   const { surface: mikaSurface, pool: mikaPool } = createMikaTilePool();
   const providerSessions = createProviderSetupSessionMount();
   const made = [];
   const keep = (surface) => { made.push(surface); return surface; };
-  return doorWorkbench({
-    id: 'models', profile: WORKBENCH_PROFILES.models, label: t('campaign_home.harnesses', 'Harnesses'), seat: WORKBENCH_TYPES.modelStones,
-    count: 4, seats: { workspace1: WORKBENCH_TYPES.modelStones, workspace2: WORKBENCH_TYPES.accountsRecords, workspace3: WORKBENCH_TYPES.modelsRecords, workspace4: WORKBENCH_TYPES.modelRefresh },
-    loaded: loadProviderCatalog,
-    environment: ({ bench }) => {
+  return {
+    environment: (bench) => {
       let helper = MIKA_SESSION;
       const showMika = async (workspace, prompt) => {
         helper = await askSignInHelper(prompt);
@@ -131,7 +141,7 @@ export function createModelsView() {
       return environment;
     },
     destroy: () => { for (const surface of made.splice(0)) surface.destroy?.(); providerSessions.destroyAll(); mikaPool.destroyAll(); },
-  });
+  };
 }
 
 /** Workspaces: the stones of Workspaces in Tilespace 1 over the Campaign this tab looks at, a pressed one's page
