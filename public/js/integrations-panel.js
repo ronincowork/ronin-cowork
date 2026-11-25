@@ -21,7 +21,7 @@ import { t } from './lexicon.js';
 import { request } from './request.js';
 import { el } from './form-steps.js';
 import { createPhalanx } from './phalanx.js';
-import { campaigns, loadCampaigns } from './campaigns.js';
+import { MULTIPLE_CAMPAIGNS_ENABLED, campaigns, loadCampaigns } from './campaigns.js';
 
 const PART = {
   running: () => t('integrations.part_running', 'running'),
@@ -181,7 +181,8 @@ export function createIntegrationsPanel(campaign, { panels = {}, embedded = fals
       },
     });
     actions.push(remove);
-    wrap.append(campaignsEditor(row));
+    // One office has one Campaign, so there is nothing to choose between (owner, 25 Nov: no "Campaign" on screen).
+    if (MULTIPLE_CAMPAIGNS_ENABLED) wrap.append(campaignsEditor(row));
     if (row.mcp.sign_in === 'key' && row.mcp.secret) wrap.append(pasteField(row.mcp.secret, { saved: row.mcp.saved, onSaved: () => load() }));
     wrap.append(createActionBar({ actions }).el, note);
     return wrap;

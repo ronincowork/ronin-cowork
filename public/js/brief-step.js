@@ -46,7 +46,7 @@ export function integrationNames(catalog = []) {
 }
 
 const layerWord = (from) => ({
-  campaign: t('brief.from_campaign', 'Campaign'), workspace: t('brief.from_workspace', 'Workspace'),
+  campaign: t('brief.from_campaign', 'office'), workspace: t('brief.from_workspace', 'Workspace'),
   team: t('brief.from_team', 'Team'),
 })[from] || from;
 

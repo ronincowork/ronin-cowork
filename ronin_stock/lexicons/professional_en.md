@@ -118,7 +118,7 @@ nothing paints exactly this.
 
 - **campaign_view.roots_summary:** Each Workspace and the folders it works in.
 - **campaign_view.new_summary:** Set the stage. It creates no Team and launches no Agent.
-- **campaign_view.none_selected:** No Desk selected.
+- **campaign_view.none_selected:** No office settings yet.
 - **campaign_view.no_description:** No description yet.
 - **campaign_view.name_help:** On the door, the browser tab and the address.
 - **campaign_view.description_help:** What this body of work is for. Shown on its card.
@@ -207,7 +207,7 @@ nothing paints exactly this.
 - **jira.token_replaced:** Token replaced.
 - **jira.new_token:** New API token
 - **jira.disconnect:** Disconnect
-- **jira.disconnect_confirm:** Disconnect this Desk from Jira? Every pair drops; nothing is deleted on either side.
+- **jira.disconnect_confirm:** Disconnect this office from Jira? Every pair drops; nothing is deleted on either side.
 - **jira.disconnected:** Disconnected.
 - **jira.sync:** Sync
 - **jira.last_check:** Last check
@@ -249,8 +249,8 @@ nothing paints exactly this.
 - **jira.items_preview:** What Connect will put on the space, labelled ronin-do and unassigned, under How it runs as set now.
 - **jira.open_items:** Open
 - **jira.open_pairs:** Open
-- **jira.off:** Services › Jira is off for this Desk. Turn it on in Installations › Ronin Services, then come back here.
-- **jira.card_summary:** This Desk’s Jira space: connect, check, sync.
+- **jira.off:** Services › Jira is off for this office. Turn it on in Installations › Ronin Services, then come back here.
+- **jira.card_summary:** This office’s Jira space: connect, check, sync.
 - **jira.stays:** stays in Ronin
 - **jira.items_counts:** {on} on Jira · {go} to go · {stay} stay in Ronin
 - **jira.checking_text:** Checking the site, the account, the space and its permissions.
@@ -1438,7 +1438,7 @@ The pad's current config downloads as a backup first.
 - **campaign_view.desk_settings:** Desk Settings
 
 ## brief — brief-step.js, brief-author.js, behaviour-surface.js and the brief settings on every page (what an Agent is told; KAN-480, BRIEF_WORDING 3–5)
-- **brief.from_campaign:** Campaign
+- **brief.from_campaign:** office
 - **brief.from_workspace:** Workspace
 - **brief.from_team:** Team
 - **brief.from_user:** your settings

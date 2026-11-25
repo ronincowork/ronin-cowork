@@ -39,7 +39,6 @@ function roomSurface(label, room, build) {
 export function createSettingsV2View() {
   const harness = harnessKit();
   let stopReader = () => {};
-  let selected = () => null;
   return doorWorkbench({
     id: 'settings2', profile: WORKBENCH_PROFILES.settings2, label: t('settings2.title', 'Settings v2'),
     seats: { workspace1: WORKBENCH_TYPES.modelStones, workspace2: WORKBENCH_TYPES.settings2ModelServices },
@@ -49,10 +48,9 @@ export function createSettingsV2View() {
     selectorFilter: (type) => type !== WORKBENCH_TYPES.modelProvider,
     // The five agreed sections (MACHINE_SETTINGS_V2.md): a heading over the first card of each.
     onSelectorRefresh: (cards) => {
-      const campaign = selected()?.title;
       const groups = [
         [WORKBENCH_TYPES.modelStones, t('settings2.group_harness', 'Harnesses and models')],
-        [WORKBENCH_TYPES.settings2AgentDefaults, campaign ? t('settings2.group_defaults_named', 'Campaign defaults: {name}', { name: campaign }) : t('settings2.group_defaults', 'Campaign defaults')],
+        [WORKBENCH_TYPES.settings2AgentDefaults, t('settings2.group_defaults', 'Office defaults')],
         [SETUP_SURFACE_TYPES.roots, t('settings2.group_work', 'Workspaces and integrations')],
         [WORKBENCH_TYPES.settings2BehaviorFiles, t('settings2.group_advanced', 'Advanced')],
       ];
@@ -62,7 +60,7 @@ export function createSettingsV2View() {
       }
     },
     environment: ({ bench, ctx }) => {
-      selected = () => campaignById(normalizeSelection(ctx()?.state?.campaignSelection).primary_campaign_id);
+      const selected = () => campaignById(normalizeSelection(ctx()?.state?.campaignSelection).primary_campaign_id);
       // Behavior files' read glyph opens a file beside it, as in Settings.
       stopReader = installBehaviourReader({
         get host() { return bench().host; },

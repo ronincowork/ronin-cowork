@@ -26,7 +26,7 @@ export function createAgentDefaultsSurface(campaign) {
 
   function paint() {
     const row = campaign(); body.replaceChildren();
-    if (!row) return surface.setState('empty', t('campaign_view.none_selected', 'No Campaign selected.'));
+    if (!row) return surface.setState('empty', t('campaign_view.none_selected', 'No office settings yet.'));
     surface.setState(null, '');
     const current = bucket(row.config?.defaults);
     const form = el('form', 'cv-defaults-form');

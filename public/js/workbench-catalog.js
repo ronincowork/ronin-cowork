@@ -85,7 +85,7 @@ export function registerWorkbenchCatalog() {
   add({ type: WORKBENCH_TYPES.campaignJiraPairs, header: 'surface', discover: () => [], create: (context) => context.environment.campaignJiraPairs(context) });
   // THE INTEGRATIONS PANEL (KAN-339): every integration in one frame, Jira's panel inside it.
   campaign(WORKBENCH_TYPES.campaignIntegrations, 'surface', () => t('integrations.title', 'Integrations'), 'campaignIntegrations', () => t('integrations.card_summary', 'Every outside service: connected or not, its token, its Workspaces.'));
-  campaign(WORKBENCH_TYPES.campaignJira, 'surface', () => t('jira.title', 'Jira'), 'campaignJira', () => t('jira.card_summary', 'This Desk’s Jira space: connect, check, sync.'));
+  campaign(WORKBENCH_TYPES.campaignJira, 'surface', () => t('jira.title', 'Jira'), 'campaignJira', () => t('jira.card_summary', 'This office’s Jira space: connect, check, sync.'));
   campaign(WORKBENCH_TYPES.campaignMachine, 'tabs', () => t('campaign_view.machine', 'Machine'), 'campaignMachine', () => t('campaign_view.machine_summary', 'Themes · Desk · Account · Archived · Messages · Help desk · Keypad.'));
   // MACHINE STATUS (owner, 2026-11-20; KAN-759): the one complete truth, an office-output kept current.
   campaign(WORKBENCH_TYPES.campaignMachineStatus, 'surface', () => t('machine_status.title', 'Machine status'), 'campaignMachineStatus', () => t('machine_status.summary', 'What this office has set up, what it hasn\u2019t and what is available, in one doc any Agent reads, kept current.'));
@@ -153,7 +153,7 @@ export function registerWorkbenchCatalog() {
   // door's; the surfaces under them are today's, reused. A harness's own card is placed by its stone, not offered.
   campaign(WORKBENCH_TYPES.settings2ModelServices, 'surface', () => t('settings2.model_services', 'Model services'), 'settings2ModelServices', () => t('settings2.model_services_summary', 'Where model requests go: Ronin Gateway, OpenRouter, a personal API.'));
   campaign(WORKBENCH_TYPES.settings2ModelSetup, 'surface', () => t('settings2.model_setup', 'Model setup'), 'settings2ModelSetup', () => t('settings2.model_setup_summary', 'Which models each service offers, by the name people see.'));
-  campaign(WORKBENCH_TYPES.settings2AgentDefaults, 'surface', () => t('settings2.agent_defaults', 'Agent defaults'), 'campaignDefaults', () => t('settings2.agent_defaults_summary', 'Mandate, launch mode and behaviors new Agents start with. New children copy their parent at creation.'));
+  campaign(WORKBENCH_TYPES.settings2AgentDefaults, 'surface', () => t('settings2.agent_defaults', 'Agent defaults'), 'campaignDefaults', () => t('settings2.agent_defaults_summary', 'Mandate, launch mode and behaviors. New Workspaces, Teams and Agents copy their parent when made.'));
   campaign(WORKBENCH_TYPES.settings2ModelDefaults, 'surface', () => t('settings2.model_defaults', 'Model defaults'), 'settings2ModelDefaults', () => t('settings2.model_defaults_summary', 'The model a new Agent and Team lead start on.'));
   campaign(WORKBENCH_TYPES.settings2BehaviorFiles, 'surface', () => t('settings2.behavior_files', 'Behavior files'), 'settings2BehaviorFiles', () => t('settings2.behavior_files_summary', 'Read and edit the behavior, fact and tool files themselves.'));
   campaign(WORKBENCH_TYPES.settings2Stats, 'surface', () => t('settings2.stats', 'Machine stats'), 'settings2Stats', () => t('settings2.stats_summary', 'Tool-call activity on this machine.'));
