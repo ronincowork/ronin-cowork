@@ -477,7 +477,7 @@
      between. Four type roles only, the forms' own, one family (--font-ui): a section's head --form-head,
      a key (a field's label, a folder's name, the page's title) --form-key, every value and control
      --form-input, a help line --form-note. Each section stacks its head over its content. */
-  .workspace-form, .workspace-page-head { --wa-list-height: 16rem; /* the folder list: about ten lines before it scrolls */ font-family: var(--font-ui); font-size: var(--form-input); }
+  .workspace-form, .workspace-page-head { font-family: var(--font-ui); font-size: var(--form-input); }
   .workspace-form :is(input, textarea, button, code, small, b) { font-family: var(--font-ui); font-size: var(--form-input); }
   .workspace-form .fs-step { grid-template-columns: minmax(0, 1fr); gap: var(--space-paragraph); }
   .workspace-form .fs-step-body { display: flex; flex-direction: column; gap: var(--space-paragraph); min-width: 0; }
@@ -581,24 +581,13 @@
   .workspace-location-remove { border: 0; background: transparent; color: var(--muted); cursor: pointer; padding: 0 var(--space-row); }
   .workspace-location-remove:hover { color: var(--bad); }
 
-  /* Add a folder and Clone from GitHub, first in the section (KAN-728): the kit's buttons, Add a folder
-     the primary one, each opening its own panel. */
+  /* Add a repository, first in the section (KAN-809): it opens its panel. */
   .workspace-location-tools { display: flex; gap: var(--space-inline); flex-wrap: wrap; }
-  /* Inside Add a folder the picker is its walk and its rows: a press adds, so no chosen box or kind tag. */
-  .workspace-browser .folder-picker .folder-kind { display: none; }
   .workspace-more-integrations { display: flex; flex-direction: column; gap: var(--space-row); }
   .workspace-clone > input { flex: 1 1 auto; min-width: 0; }
   .workspace-browser { display: flex; flex-direction: column; gap: var(--space-row); padding: var(--space-inline); border: var(--edge) solid var(--line-2); border-radius: var(--radius-small); }
   .workspace-browser-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-inline); }
   .workspace-clone { display: flex; align-items: center; justify-content: space-between; gap: var(--space-inline); padding-top: var(--space-row); border-top: var(--edge) solid var(--line); }
   .workspace-browser > .wk-field + .wk-field { padding-top: var(--space-paragraph); }
-  .wa-browser { display: flex; flex-direction: column; gap: var(--space-row); min-width: 0; }
-  .wa-browser .folder-crumbs { font-size: var(--form-input); }
-  .wa-browser .folder-crumbs button { border: 0; background: transparent; padding: 0; color: var(--link); font: inherit; }
-  .wa-browser .folder-list { max-height: var(--wa-list-height); overflow: auto; border: 0; }
-  .wa-browser .folder-row { display: flex; align-items: center; gap: var(--space-inline); padding: var(--space-row) 0; border-bottom: var(--edge) solid var(--line); }
-  .wa-browser .folder-row button.folder-open { flex: 1 1 auto; min-width: 0; border: 0; background: transparent; padding: 0; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: inherit; color: var(--fg); }
-  .wa-browser .folder-open:hover { color: var(--fg-strong); background: var(--selected); }
-  .wa-browser .folder-kind { color: var(--muted); }
 
 }

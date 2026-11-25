@@ -17,7 +17,6 @@ const eventClients = new Set<WebSocket>();
  * The tick takes ONE session listing; when it moved it sends {t:'sessions', list} and every
  * card whole, {t:'cards', rev, cards}. An Agent's card is marked by what changes a part of it
  * (KAN-641) and made in one place, rebuild(), which sends {t:'card', rev, card} when it moved.
- * While a GitHub or git setup session is attached, {t:'github-setup', github} when it moved.
  *
  * HELD messages ({t:'teams'}, {t:'epics'}, {t:'messages'}, {t:'memory'}) are published when their
  * resource changes, sent only when they differ from the last, and sent whole to every fresh
@@ -41,19 +40,17 @@ export interface Feed {
   messages: () => Promise<unknown[]>;
   wipeboard: (board: string) => Promise<Record<string, unknown> | null>;
   jikan: (team: string) => Promise<unknown[] | null>;
-  github: { attached: () => Promise<boolean>; answer: () => Promise<unknown> };
   shutdown: (id: string) => object | null;
 }
 export type CardPart = 'pane' | 'fields' | 'record';
 const ALL_PARTS: ReadonlySet<CardPart> = new Set(['pane', 'fields', 'record']);
 const empty: Feed = {
   list: listSessions, card: async (s) => ({ ...s }), teams: async () => [], epics: async () => ({ epics: [], items: [] }), messages: async () => [],
-  wipeboard: async () => null, jikan: async () => null, github: { attached: async () => false, answer: async () => null },
+  wipeboard: async () => null, jikan: async () => null,
   shutdown: () => null,
 };
 let feed: Feed = empty;
 let lastSessions = '';
-let lastGithub = '';
 // The last text of each held message, by `t`.
 const held = new Map<string, string>();
 // For a board or a Team's jobs: the last text sent, and the read running now. A burst of
@@ -84,7 +81,7 @@ export function sessionsSignature(list: unknown): string {
 
 export function feedEvents(next: Partial<Feed>): void {
   feed = { ...empty, ...next };
-  lastSessions = lastGithub = '';
+  lastSessions = '';
   heldSessions = [];
   forgetCards();
   held.clear();
@@ -128,7 +125,6 @@ export function tick(): Promise<void> {
       rev += 1;
       broadcastEvent(cardsMessage());
     }
-    await github();
   })()
     .catch(() => {})
     .finally(() => {
@@ -136,17 +132,6 @@ export function tick(): Promise<void> {
       if (rerun) { rerun = false; void tick(); }
     });
   return ticking;
-}
-
-// Watched only while a setup session is attached (the tick, and its pane's draws), and once
-// more after the last one closes, so a login that finishes and closes lands.
-async function github(): Promise<void> {
-  const attached = await feed.github.attached().catch(() => false);
-  if (!attached && !lastGithub) return;
-  const answer = await feed.github.answer().catch(() => undefined);
-  const signature = answer === undefined ? lastGithub : JSON.stringify(answer);
-  if (answer !== undefined && signature !== lastGithub) broadcastEvent({ t: 'github-setup', github: answer });
-  lastGithub = attached ? signature : '';
 }
 
 /** The session set changed: tick now, or once more after the tick in flight, which may have read before the change. */
@@ -403,7 +388,6 @@ export function startSessionsBroadcast(next: Feed): void {
     // A pane that drew: its screen. What the Agent is doing is its fields, marked by its hooks
     // or its log (rowChanged), never by a draw.
     for (const name of moved) { emitPaneActivity(name); mark(name, 'pane'); }
-    if (moved.length && lastGithub) void github();
   });
   onRowChanged((name) => mark(name, 'fields'));
   onClock('events_beat', BEAT_MS, async () => { broadcastEvent({ t: 'beat' }); });

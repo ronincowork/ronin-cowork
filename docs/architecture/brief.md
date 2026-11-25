@@ -559,8 +559,8 @@ The `workspaces` behaviour (every Cowork Agent, full) says a Project is one Work
 objective, instructions, repositories, folders, integrations, Teams and plans. The
 `office-workspaces` fact is every Workspace as it is now. The `workspace` tool (serves
 `irasshai` and `team-lead`) lists, reads and creates Workspaces, writes their objective and
-instructions, and adds a folder or a cloned repository, over the Workspace page's own routes
-(`/api/workspaces`, `/api/folders`, `/api/setup/git/clone`). The objective is the one place that
+instructions, and adds a repository (cloned or started, into its `repos/`) or a source, over the Workspace
+page's own routes (`/api/workspaces`, `POST /api/workspaces/<name>/repos`). Folders are Explorer's. The objective is the one place that
 says what the project is; there is no other Workspace doc.
 
 ## What comes next

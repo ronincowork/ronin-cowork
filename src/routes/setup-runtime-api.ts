@@ -12,15 +12,7 @@ import {
   setProviderOff,
   setupRuntimeAnswer,
   githubSetupAnswer,
-  openGithubInstall,
-  openGithubLogin,
-  closeGithubLogin,
-  removeGithubAuthentication,
-  cloneRepository,
   githubRepositories,
-  createGithubRepository,
-  openGitSetupSession,
-  closeGitSetupSession,
 } from '../setup-runtime.js';
 import { installedAnswer } from './installed-api.js';
 import { cancelSignIn, pasteSignIn, signInState, startSignIn } from '../provider-sign-in.js';
@@ -218,48 +210,9 @@ export function registerSetupRuntime(app: express.Express): void {
     catch (error) { res.status(500).json({ error: errMsg(error) }); }
   });
 
-  app.post('/api/setup/github/login', async (_req, res) => {
-    try { res.json({ ok: true, ...(await openGithubLogin()) }); }
-    catch (error) { res.status(400).json({ error: errMsg(error) }); }
-  });
-
-  app.post('/api/setup/github/install', async (_req, res) => {
-    try { res.json({ ok: true, ...(await openGithubInstall()) }); }
-    catch (error) { res.status(400).json({ error: errMsg(error) }); }
-  });
-
-  app.post('/api/setup/github/close', async (_req, res) => {
-    try { res.json({ ok: true, ...(await closeGithubLogin()) }); }
-    catch (error) { res.status(400).json({ error: errMsg(error) }); }
-  });
-
-  app.post('/api/setup/github/logout', async (_req, res) => {
-    try { res.json({ ok: true, ...(await removeGithubAuthentication()) }); }
-    catch (error) { res.status(400).json({ error: errMsg(error) }); }
-  });
-
   app.get('/api/setup/github/repos', async (_req, res) => {
     try { res.json({ ok: true, repos: await githubRepositories() }); }
     catch (error) { res.status(400).json({ error: errMsg(error) }); }
   });
 
-  app.post('/api/setup/git/clone', async (req, res) => {
-    try { res.json({ ok: true, workspace: await cloneRepository(req.body?.repository, req.body?.parent) }); }
-    catch (error) { res.status(400).json({ error: errMsg(error) }); }
-  });
-
-  app.post('/api/setup/github/create', async (req, res) => {
-    try { res.json({ ok: true, ...(await createGithubRepository(req.body?.dir, req.body?.visibility)) }); }
-    catch (error) { res.status(400).json({ error: errMsg(error) }); }
-  });
-
-  app.post('/api/setup/git/open', async (_req, res) => {
-    try { res.json({ ok: true, attachment: await openGitSetupSession() }); }
-    catch (error) { res.status(400).json({ error: errMsg(error) }); }
-  });
-
-  app.post('/api/setup/git/close', async (_req, res) => {
-    try { await closeGitSetupSession(); res.json({ ok: true }); }
-    catch (error) { res.status(400).json({ error: errMsg(error) }); }
-  });
 }

@@ -53,7 +53,6 @@ in `src/tmux-client.ts` is the server's single door to tmux:
   | `{t:'memory', reading}` | the machine service's reading of memory, swap, load, cores and scope, taken once a minute and sent when it moved; `{off:true}` once when watching is off | held, sent |
   | `{t:'wipeboard', board, …}` | when a file under that board's folder changes and the board (last 100 posts, `more`) moved | answers `{t:'want', resource:'wipeboard', board}` |
   | `{t:'jikan', team, jobs}` | when that Team's jobs file changes and its jobs moved, and as `team:'*'` for every Team | answers `{t:'want', resource:'jikan', team}` |
-  | `{t:'github-setup', github}` | on the tick while a GitHub or git setup session is attached, when `GET /api/setup/github`'s answer moved, and once after the last one closes | — |
   | `{t:'services-setup', services}` | `{ registration, installed, activation }` after each write to registration, Services, Campaigns or machine settings, when the install watcher ends, and when Ronin HQ confirms the emailed link (asked every 15 s while a request waits and a browser is connected) | — |
   | `{t:'mika', ...ready}` | after `POST /api/mika/ready` answers `starting`, while a browser is connected: her pane is looked at every 350 ms and the answer pushed when it changes, until it is not `starting` | — |
   | `{t:'shutdown', ...operation}` | each phase of a `POST /api/sessions/:name/shutdown` operation, and once when it is complete or failed | — |
