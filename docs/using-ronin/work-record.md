@@ -96,7 +96,7 @@ its stories Subtasks. An item under itself or its own descendant is refused too.
 left with no parent, links to it go, and its holders let go of it.
 
 Every write answers with one line of what the act did, read from the trail line it
-appended, then the item as it now is: "w39 moved under w40, level -1", "w9 moved to In Progress",
+appended (with `--json`, the whole reply as JSON instead, the item as it now is in it): "w39 moved under w40, level -1", "w9 moved to In Progress",
 "w9 is held by agent:x", "w12 was created", "w12 changed: kind Story", "w12 is flagged:
 waiting on the API", "w12 has a comment from lead: Start with the store.", "w12 Blocks
 w14", "w12 has /home/me/plans/AGENT_ITEMS.md removed". Status, kind and level appear only when the act changed them. When an item arrives

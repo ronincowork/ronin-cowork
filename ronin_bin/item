@@ -3,16 +3,18 @@
 set -u -o pipefail
 . "$(dirname "$(readlink "${BASH_SOURCE[0]}" 2>/dev/null || printf '%s' "${BASH_SOURCE[0]}")")/tool-path.sh"
 TOOL_DIR=$(dirname "$SELF")
-# item read and item search print plain lines (w694); --json, anywhere after the verb, the JSON.
+# Every command prints plain lines (w694); --json, anywhere after the verb, prints only the
+# reply as JSON, for a script (w995).
 as_json=''
-case "${1:-}" in read|search) a=("$1"); shift; for x in "$@"; do [ "$x" = --json ] && as_json=1 || a+=("$x"); done; set -- "${a[@]}";; esac
+if [ "$#" -gt 1 ]; then a=("$1"); shift; for x in "$@"; do [ "$x" = --json ] && as_json=1 || a+=("$x"); done; set -- "${a[@]}"; fi
+[ -z "$as_json" ] || export ITEM_JSON=1
 plain() { local out; out=$(ronin_item_call GET "$2") || return $?; if [ -n "$as_json" ]; then printf '%s\n' "$out"; else printf '%s\n' "$out" | python3 "$TOOL_DIR/../libexec/item-plain" "$1"; fi; }
 die() { echo "$1" >&2; exit "${2:-2}"; }
 usage() { cat <<'EOF_USAGE'
 Usage:
   item create --title <t> [--title <t> ...] [--kind <type>] [--parent <id>] [--objective <o>] [--priority <p>] [--team <t>|--workspace <w>] [--playbook]
-  item read <ids> [--json]
-  item search [--campaign <id>] [--team <t>] [--holder <name>|none] [--parent <id>|--no-parent] [--status <s>] [--kind <k>] [--text <words>] [--archived] [--playbook] [--json]
+  item read <ids>
+  item search [--campaign <id>] [--team <t>] [--holder <name>|none] [--parent <id>|--no-parent] [--status <s>] [--kind <k>] [--text <words>] [--archived] [--playbook]
   item checkout PLAYBOOK-<n> [<agent>|team:<name>]   item checkout <live id> --playbook
   item edit <ids> --title|--objective|--kind|--parent <id|none>|--priority|--trello|--github <value> ...
   item transition <ids> "<status>" [--note "<what they can try>"]
@@ -42,9 +44,9 @@ reply naming its Task. Children follow; a move that would put one under a Subtas
 Refused too: an item under itself, or a change Jira cannot make to a paired item.
 read prints the item plainly: title, id, kind, status, holder, parent (none when empty), the
 objective whole, its children one line each, then its latest comments and trail lines, newest
-last. --json prints the whole item as JSON, every comment and trail line, for a script.
+last. With --json, the whole item as JSON, every comment and trail line.
 search prints one line per item, '<id> | <status> | <holder> | <title>', the title in full;
---json prints the JSON ({"items": [...]}) instead.
+with --json, the JSON ({"items": [...]}) instead.
 create lands on you, or with --team <t> on that Team (a lead's create lands on its team;
 leading several, name it), or with --workspace <w> on that Workspace: an open item of the
 project that no Team has yet, or a want under its Icebox. Any kind, an Epic too, with --parent or none. It answers
@@ -81,13 +83,18 @@ nobody told; item read still finds it, and leaving Done brings it back. An item
 not Done is refused. --done archives every Done item you or your Teams hold; --team narrows it.
 delete takes the item's subtasks with it; an epic's other children are left with no parent.
 edit --trello, --github set an external key; blank clears. Every change adds a trail line.
+--json, on every command, anywhere after it: only the reply as JSON, nothing else, for a script
+(a write: {acknowledgement, item, ...}, the id at .item.id; several at once: {ok, answers:
+[{id, ok, item}]}). Without it, plain lines only. A flag the command does not take is refused
+by name, with the command's usage, and nothing is done.
 Related: work-record --help; team --help
 EOF_USAGE
 }
 case "${1:-}" in -h|--help|'') [ "$#" -le 1 ] || die 'Run item --help.'; usage; [ "$#" -eq 1 ]; exit $?;; esac
 # item <command> --help: that command's usage lines and its rule, not the whole page. The rules
 # come last in usage, each starting with its command's name, so a rule runs to the next one.
-for a in "$@"; do case "$a" in -h|--help) usage | python3 -c 'import re,sys
+# The --json rule is every command's, so every command's help carries it.
+cmd_usage() { usage | python3 -c 'import re,sys
 v, text = sys.argv[1], sys.stdin.read().splitlines()
 verbs = {m for l in text if l.startswith("  ") for m in re.findall(r"\bitem (\w+)", l)}
 if v not in verbs: sys.exit("BAD-ARG: no item command %s; run item --help" % v)
@@ -96,8 +103,38 @@ for l in text:
     if l.startswith(("  ", "Usage", "Related")): keep = False; continue
     first = l.split(" ", 1)[0]
     if first in verbs: keep = first == v
+    elif first == "--json,": keep = True
     if keep: out.append(l)
-print("\n".join(out))' "$1"; exit $?;; esac; done
+print("\n".join(out))' "$1"; }
+for a in "$@"; do case "$a" in -h|--help) cmd_usage "$1"; exit $?;; esac; done
+# A flag the command does not take is refused by name, with its usage, before anything is
+# sent (w995): a script never runs on past a wrong flag. Values after a flag that takes one
+# are not flags. Several words, or a word not --lower-case, is text, never a flag.
+takes() { case "$1" in
+  create) echo '--title= --kind= --parent= --objective= --priority= --team= --workspace= --playbook' ;;
+  search) echo '--campaign= --team= --holder= --parent= --no-parent --status= --kind= --text= --archived --playbook' ;;
+  checkout) echo '--playbook' ;;
+  edit) echo '--title= --objective= --kind= --parent= --priority= --trello= --github=' ;;
+  transition) echo '--note=' ;;
+  handoff) echo '--from= --keep-holding' ;;
+  handover) echo '--to-do --flag=' ;;
+  comment) echo '--edit=' ;;
+  attach|link) echo '--remove' ;;
+  archive) echo '--done --team=' ;;
+  *) echo '' ;;
+esac; }
+if [ "$#" -gt 1 ]; then
+  allowed=" $(takes "$1") "; skip=''
+  for a in "${@:2}"; do
+    [ -z "$skip" ] || { skip=''; continue; }
+    [[ $a =~ ^--[a-z][a-z-]*$ ]] || continue
+    case "$allowed" in
+      *" $a= "*) skip=1 ;;
+      *" $a "*) ;;
+      *) { echo "BAD-ARG: item $1 does not take $a; nothing was done."; cmd_usage "$1"; } >&2; exit 2 ;;
+    esac
+  done
+fi
 . "$TOOL_DIR/ronin-http.sh"
 ronin_connect || exit $?
 # The caller is named on every trail line: this session, or the shell user.
