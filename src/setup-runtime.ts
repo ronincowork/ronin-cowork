@@ -5,7 +5,7 @@ import { operationalPartCount } from './provider-parts.js';
 import { updateCommand, updateLineOf } from './agent-install.js';
 import { AGENTS, discoverExecutable, launchArgv, listAgentAvailability } from './agents.js';
 import { updateSection } from './machine-state.js';
-import { listProviderCatalog, newerVersion, type ModelList, type ProviderCatalogEntry, type ProviderSummary } from './model-providers.js';
+import { listProviders, newerVersion, type ModelList, type ProviderSummary } from './model-providers.js';
 import { activatedAt, npmPackageOf, offAt, providerSignedIn } from './provider-summary.js';
 import { rootDir } from './resources.js';
 import { runCommand } from './send.js';
@@ -25,10 +25,10 @@ interface SetupSection {
 export interface SetupProviderState {
   /** The CLI id — the key of every machine fact. */
   id: string;
-  /** The vendor id the catalog joins to this CLI; '' when the catalog has no section for it. */
+  /** The vendor id this CLI serves, from its entry in `src/agents.ts`. */
   provider: string;
   label: string;
-  /** The vendor's name, from the catalog. */
+  /** The vendor's name, from the same entry. */
   from: string;
   installed: boolean;
   installable: boolean;
@@ -129,9 +129,8 @@ export async function setupRuntimeAnswer(
   summary: ProviderSummary,
   ops: Pick<ProviderSessionOps, 'exists'> = defaultSessionOps,
   installed?: InstalledAnswer,
-  catalog?: ProviderCatalogEntry[],
 ): Promise<SetupRuntimeAnswer> {
-  const entries = catalog ?? await listProviderCatalog();
+  const entries = listProviders();
   const providers = await Promise.all(AGENTS.map(async (agent): Promise<SetupProviderState> => {
     const entry = entries.find((row) => row.cli === agent.id);
     const session = sessionName(agent.id);

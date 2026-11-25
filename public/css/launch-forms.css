@@ -586,17 +586,6 @@
   .workspace-location-tools { display: flex; gap: var(--space-inline); flex-wrap: wrap; }
   /* Inside Add a folder the picker is its walk and its rows: a press adds, so no chosen box or kind tag. */
   .workspace-browser .folder-picker .folder-kind { display: none; }
-  /* Setup's Tour page (w926): a doc shown whole. Body at the page's text size; the title, each part
-     (h2, under a hairline) and each topic (h3) step up by weight and size so the page reads in parts. */
-  .setup-doc-body { padding: var(--space-inset) var(--space-subsection); overflow-y: auto; }
-  .setup-doc-body .markdown-reader { font-size: var(--text-body); }
-  .setup-doc-body .markdown-reader :is(h1, h2, h3, h4) { color: var(--fg-strong); font-weight: var(--weight-bold); line-height: var(--leading-tight); }
-  .setup-doc-body .markdown-reader h1 { margin: 0 0 var(--space-paragraph); font-size: var(--text-heading); }
-  .setup-doc-body .markdown-reader h2 { margin: var(--space-subsection) 0 var(--space-paragraph); padding-top: var(--space-subsection); border-top: var(--edge) solid var(--line); font-size: var(--text-label); }
-  .setup-doc-body .markdown-reader :is(h3, h4) { margin: var(--space-subsection) 0 var(--space-row); font-size: var(--text-body); }
-  .setup-doc-body .markdown-reader :is(p, ul, ol) { margin: 0 0 var(--space-paragraph); }
-  .setup-doc-body .markdown-reader li + li { margin-top: var(--space-row); }
-  .setup-doc-body .markdown-reader > :first-child { margin-top: 0; }
   .workspace-more-integrations { display: flex; flex-direction: column; gap: var(--space-row); }
   .workspace-clone > input { flex: 1 1 auto; min-width: 0; }
   .workspace-browser { display: flex; flex-direction: column; gap: var(--space-row); padding: var(--space-inline); border: var(--edge) solid var(--line-2); border-radius: var(--radius-small); }

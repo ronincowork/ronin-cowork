@@ -12,7 +12,7 @@
 - **transcript_journal:** {"format": "copilot-events", "root": "{home}/session-state", "pattern": "events.jsonl", "idPath": "data.sessionId"}
 - **launch_initial:** ["-i", "{brief}"]
 
-CLI id and command: `copilot`. Catalog provider: GitHub. Reviewed 2026-11-15.
+CLI id and command: `copilot`. Vendor: `github` (GitHub Copilot), its `vendor` in `src/agents.ts`; transcript `$COPILOT_HOME/session-state/<session-id>/events.jsonl`, adapter `copilot-events`. Reviewed 2026-11-15.
 Version: **1.0.112**. Installed into a scratch home and its help read; never signed in or run
 through Ronin. The journal declaration is **from docs, not yet seen on a real run**: the first
 office unit that signs it in proves it.

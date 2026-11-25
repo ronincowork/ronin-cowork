@@ -109,7 +109,7 @@ const catalogsDir = storeDir('custom');
 if (await exists(catalogsDir)) {
   for (const f of await mdFiles(catalogsDir)) {
     // These catalogs have dedicated readers and do not use `## name` sections.
-    if (f === 'MODEL_PROVIDERS.md' || f === 'TOOLS.md') continue;
+    if (f === 'TOOLS.md') continue;
     await checkCatalogFile(catalogsDir, f, `${f} (yours)`);
   }
   await checkDefinitionsSurface(catalogsDir);

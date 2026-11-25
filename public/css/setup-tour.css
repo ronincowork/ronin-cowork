@@ -1,0 +1,36 @@
+/* THE RONIN TOUR, AS PICTURES (setup-tour.js; owner, 24 Nov). The drawings take their ink from the tokens,
+   so they read in light and dark. */
+.setup-tour .wk-surface-content { display: flex; flex-direction: column; gap: var(--space-subsection); padding: var(--space-section); box-sizing: border-box; flex: 1 1 auto; min-height: 0; overflow-y: auto; }
+.setup-tour-stage { flex: 1 1 auto; min-height: 0; justify-content: center; display: flex; flex-direction: column; align-items: center; gap: var(--space-subsection); margin: 0; }
+.setup-tour-heading { margin: 0; align-self: stretch; text-align: center; font-size: var(--text-heading); font-weight: var(--weight-strong); color: var(--fg-strong); }
+.setup-tour-picture { display: block; width: 100%; max-width: 880px; max-height: calc(100vh - 360px); min-height: 240px; }
+.setup-tour-caption { max-width: 64ch; text-align: center; font-size: var(--text-label); line-height: var(--leading-body); color: var(--fg); }
+.setup-tour-foot { display: flex; align-items: center; justify-content: center; gap: var(--space-subsection); }
+.setup-tour-count { min-width: 6ch; text-align: center; font-size: var(--text-body); color: var(--muted); font-variant-numeric: tabular-nums; }
+
+.setup-tour-picture text { font-family: var(--font-ui); }
+.setup-tour-picture .tour-title { fill: var(--fg-strong); font-size: 22px; font-weight: var(--weight-strong); }
+.setup-tour-picture .tour-label { fill: var(--fg-strong); font-size: 18px; }
+.setup-tour-picture .tour-note { fill: var(--muted); font-size: 16px; }
+.setup-tour-picture .tour-note-on { fill: var(--kaki-lift); font-size: 15px; }
+.setup-tour-picture .tour-accent { fill: var(--kaki-lift); font-size: 17px; font-weight: var(--weight-strong); }
+.setup-tour-picture .tour-chip-text { fill: var(--fg-strong); font-size: 15px; }
+.setup-tour-picture .tour-box { fill: var(--surface); stroke: var(--line-2); stroke-width: 1.5; }
+.setup-tour-picture .tour-on { fill: var(--selected); stroke: var(--kaki); stroke-width: 2; }
+.setup-tour-picture .tour-harness { fill: var(--inset, var(--surface)); }
+.setup-tour-picture .tour-ring { fill: color-mix(in srgb, var(--kaki) 5%, transparent); stroke: var(--kaki); stroke-width: 2; }
+.setup-tour-picture .tour-ghost { fill: none; stroke: var(--line); stroke-width: 1.5; stroke-dasharray: 6 5; }
+.setup-tour-picture .tour-chip { fill: var(--surface); stroke: var(--line-2); stroke-width: 1.2; }
+.setup-tour-picture .tour-chip-on { fill: var(--selected); stroke: var(--kaki); }
+.setup-tour-picture .tour-bubble { fill: var(--selected); stroke: var(--kaki); stroke-width: 1.5; }
+.setup-tour-picture .tour-person { fill: var(--line); stroke: var(--line-2); stroke-width: 1.5; }
+.setup-tour-picture .tour-rule { stroke: var(--line); stroke-width: 2; }
+.setup-tour-picture .tour-wire { stroke: var(--line-2); stroke-width: 2; fill: none; }
+.setup-tour-picture .tour-wire-head { fill: var(--line-2); }
+.setup-tour-picture .tour-wire-on { stroke: var(--kaki); }
+.setup-tour-picture .tour-wire-on-head { fill: var(--kaki); }
+
+@media (max-width: 700px) {
+  .setup-tour .wk-surface-content { padding: var(--space-subsection); }
+  .setup-tour-picture { max-height: none; }
+}

@@ -43,7 +43,6 @@ file happens to define every stock name.
 | `facts/`, `behaviours/`, `tools/`, `playbooks/` and every other folder | one file each | the one rule: whole-file, by id, from `~/ronin/custom/<folder>/` ([brief](brief.md#the-files-three-places-four-foundations)) |
 | `SKINS.md` | `## name` blocks | entry-merge. A skin is a set of design tokens and nothing else — no selector, so the worst a bad one does is look bad |
 | `HOTWORDS.md` | a flat list under `## Terms` | **copy-on-write, not a merge** — see below |
-| `MODEL_PROVIDERS.md` | `### <Vendor>` sections, keyed by the `- **provider:** id` each declares | entry-merge, at this file's heading level. A section of a shipped id replaces it whole and keeps its place; a new id appends; `- **hidden:** yes` withdraws the shipped provider. Every served entry carries `origin` and `shadowed`; the Model providers surface says the layer under each provider |
 
 **Deliberately not shadowable:**
 

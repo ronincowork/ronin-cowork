@@ -47,7 +47,8 @@ export function registerSetupRuntime(app: express.Express): void {
   app.post('/api/hermes/:action', async (req, res) => {
     try {
       switch (req.params.action) {
-        case 'connection': await saveHermesConnection(req.body); break;
+        // A connection's models are read as it is saved: nobody presses to read them (owner, 25 Nov 2026).
+        case 'connection': { const saved = await saveHermesConnection(req.body); await discoverHermesModels(saved.id).catch(() => {}); break; }
         case 'discover': await discoverHermesModels(String(req.body.id)); break;
         case 'setup': await saveHermesSetup(req.body); break;
         case 'delete':

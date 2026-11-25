@@ -4346,7 +4346,7 @@ body {
 .setup-provider-models th { text-align: left; padding: var(--space-row) var(--space-inline); color: var(--muted); font-weight: var(--weight-strong); border-bottom: var(--edge) solid var(--line-2); }
 .setup-provider-models td { padding: var(--space-inline); vertical-align: top; border-bottom: var(--edge) solid var(--line); overflow-wrap: anywhere; }
 .setup-provider-models th:nth-child(2) { width: 40%; }
-.setup-provider-strengths { display: block; color: var(--muted); }
+.setup-provider-use-for { display: block; color: var(--muted); }
 .setup-provider-models td b { color: var(--fg-strong); font-weight: var(--weight-strong); }
 /* Two names per model: the CLI's own name in bold, the id every launch uses beneath it. */
 .setup-provider-model-id { display: block; margin-top: var(--space-row); color: var(--muted); font-family: var(--mono, monospace); font-size: var(--text-small); overflow-wrap: anywhere; }
@@ -5218,10 +5218,30 @@ html[data-screen='inside'] #phone .ph-bar .ph-title[data-boot='inside'] { displa
 /* Hermes's two steps (form-steps.js) span the bar; the adding row is dashed, the same shape as a row it adds. */
 .hermes-settings .fs-step > .fs-step-body, .hermes-settings .fs-step:has(> .fs-step-head.fs-togglable) > .fs-step-body { grid-column: 1 / -1; }
 .hermes-settings .fs-step { grid-template-columns: minmax(0, 1fr); }
-.hermes-card.adding { border-style: dashed; }
-.hermes-card-summary { flex-direction: column; align-items: flex-start; }
 .hermes-fine { font-size: 12px; }
+/* Hermes's lists are tables (owner, 25 Nov 2026): one row each, icons on the right, one Add line. */
+.hermes-table { width: 100%; border-collapse: collapse; }
+.hermes-table :is(th, td) { padding: 6px 8px; text-align: left; vertical-align: middle; overflow-wrap: break-word; }
+.hermes-options { display: grid; gap: 8px; }
+.hermes-table :is(th, td):first-child { padding-left: 0; }
+.hermes-table thead th { color: var(--muted); font-weight: normal; border-bottom: var(--edge) solid var(--line-2); }
+.hermes-table tbody th { color: var(--fg-strong); font-weight: var(--weight-strong); }
+.hermes-table tbody td { color: var(--fg); }
+.hermes-table tbody tr + tr :is(th, td) { border-top: var(--edge) solid var(--line); }
+.hermes-tools { width: 1%; white-space: nowrap; text-align: right; }
+.hermes-icon { display: inline-grid; place-items: center; width: 28px; height: 28px; padding: 0; border: 0; border-radius: var(--radius-small); background: none; color: var(--muted); cursor: pointer; }
+.hermes-icon:hover, .hermes-icon:focus-visible { background: var(--inset); color: var(--fg-strong); }
+.hermes-icon svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.hermes-add-line { padding: 0; border: 0; background: none; color: var(--link); font: inherit; cursor: pointer; }
+.hermes-add-line:hover { text-decoration: underline; }
+.hermes-add-line:disabled { color: var(--muted); cursor: default; text-decoration: none; }
+.hermes-add-note { margin-left: 8px; color: var(--muted); }
 /* The four ways: four equal stones across the bar, two by two when narrow. */
 .setup-harness-row.setup-harness-ways { display: grid; grid-template-columns: repeat(auto-fit, minmax(112px, 1fr)); }
 .setup-harness-ways .ask-rect { width: auto; flex: none; }
 .setup-harness-ways .ask-opt:disabled { opacity: .6; cursor: default; }
+/* Hermes's Ronin gateway: always there, ticked, nothing to press. */
+.hermes-fixed { pointer-events: none; }
+/* Available, not selected: a tick in the stone, never the kaki selected mark (owner, 25 Nov 2026). */
+.ask-opt .hermes-tick { color: var(--ok); font-weight: var(--weight-strong); margin-right: 6px; }
+.ask-opt:has(> .hermes-tick) { flex-direction: row; align-items: center; justify-content: flex-start; }

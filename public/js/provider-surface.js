@@ -63,9 +63,7 @@ export function providersSummary(catalog) {
   const rows = catalog.rows;
   const providers = new Set(rows.map((row) => row.provider)).size;
   const activated = new Set(rows.filter((row) => row.operational).map((row) => row.provider)).size;
-  const counts = t('setup_surface.providers_summary', '{providers} providers · {models} models · {activated} activated here', { providers, models: rows.length, activated });
-  const yours = new Set(rows.filter((row) => row.origin === 'user').map((row) => row.provider)).size;
-  return yours ? t('setup_surface.providers_summary_yours', '{dated} · {n} yours', { dated: counts, n: yours }) : counts;
+  return t('setup_surface.providers_summary', '{providers} providers · {models} models · {activated} activated here', { providers, models: rows.length, activated });
 }
 
 /** The recorded summary as a runtime: the record every reader takes, before any measure lands. */
@@ -264,13 +262,6 @@ export function createProviderDrawing(context, { repaint, say = () => {} }) {
     if (destroy) mounted.destroy?.(); else mounted.park?.();
     mounted = null;
   };
-  /** Said only when the provider's section is the owner's copy, laid over the shipped one or new. */
-  const provenance = (rows) => {
-    const first = rows[0];
-    if (!first || first.origin !== 'user') return '';
-    if (first.shadowed) return t('setup_surface.section_yours_shadowed', 'Your copy of this section replaces the shipped one.');
-    return t('setup_surface.section_yours_new', 'Yours · not in the shipped catalog.');
-  };
   /** A path with the home directory folded to ~, for a line meant to be read. */
   const homely = (path) => String(path || '').replace(/^\/home\/[^/]+|^\/Users\/[^/]+/, '~');
   /**
@@ -462,7 +453,7 @@ export function createProviderDrawing(context, { repaint, say = () => {} }) {
     host.append(card);
   };
 
-  /* ---- 2 · MODELS: what the CLI listed on the last Refresh all, enriched by catalog descriptions ---- */
+  /* ---- 2 · MODELS: what the CLI listed on the last Refresh all, with HQ's tier and line ---- */
   /** The one line about a provider's list: when it was read and by which CLI version, or why there is none. */
   const listState = (entry) => {
     if (!entry?.activated) return '';
@@ -489,12 +480,6 @@ export function createProviderDrawing(context, { repaint, say = () => {} }) {
   /** The model table under a provider's page; the section is the caller's, appended to host here. */
   const paintModels = (rows, section, host) => {
     if (!rows.length) { section.append(el('p', 'setup-fine', t('setup_surface.no_models', 'The catalog lists no models for this provider.'))); host.append(section); return; }
-    const said = provenance(rows);
-    if (said) {
-      const from = el('p', 'setup-fine setup-provider-provenance', said);
-      from.dataset.origin = rows[0].origin; from.dataset.shadowed = String(rows[0].shadowed === true);
-      section.append(from);
-    }
     const table = el('table', 'setup-provider-models');
     const headRow = el('tr');
     for (const text of [t('setup_surface.col_model', 'Model'), t('setup_surface.col_tier', 'Tier')]) headRow.append(el('th', null, text));
@@ -510,9 +495,9 @@ export function createProviderDrawing(context, { repaint, say = () => {} }) {
       // A Ronin models tier row (model `light`, tier light) is its name already; so is an id equal to it.
       if (row.model !== 'native' && row.model !== row.tier && row.model !== modelLabel(row)) name.append(el('span', 'setup-provider-model-id', row.model));
       if (row.model === 'native') name.append(el('span', 'setup-provider-default', t('setup_surface.native_description', 'The CLI chooses its own configured or current default model.')));
-      // The tier, and beneath it the catalog's strengths for that tier: which is which, at a glance.
+      // The tier, and beneath it the model's own line from HQ's catalog: which is which, at a glance.
       const tier = el('td'); tier.append(el('span', 'setup-provider-tier', tierWord(row.tier)));
-      if (row.model !== 'native' && row.strengths) tier.append(el('span', 'setup-provider-strengths', row.strengths));
+      if (row.model !== 'native' && row.use_for) tier.append(el('span', 'setup-provider-use-for', row.use_for));
       line.append(name, tier);
       body.append(line);
     }
@@ -543,23 +528,7 @@ export function createProviderDrawing(context, { repaint, say = () => {} }) {
       yours.append(el('h2', '', rows[0].provider_label), el('p', 'setup-fine', t('setup_surface.no_cli', 'No CLI in Ronin’s registry serves this provider, so it cannot be installed or signed in here.')));
     }
     host.append(yours);
-    const connections = providerCatalog().providers.filter(entry => entry.cli === id && entry.connections);
-    if (provider?.installed && connections.length) {
-      const section = el('section', 'setup-provider-catalog');
-      section.append(el('h3', 'setup-provider-eyebrow', t('setup_surface.api_connections', 'API connections')));
-      section.append(el('p', 'setup-fine', t('setup_surface.api_connections_help', 'Add or change API connections in the native setup. Each connection keeps its own models. Finish setup, then refresh to update Ronin.')));
-      if (!connections.some(entry => entry.inference_provider)) section.append(el('p', 'setup-fine', t('setup_surface.api_connections_empty', 'No API connections configured yet.')));
-      if (!provider.off && !provider.login_open) section.append(action(t('setup_surface.manage_connections', 'Manage API connections'), '', async () => {
-        const result = await request(`/api/setup/providers/${encodeURIComponent(provider.id)}/login`, { method: 'POST', json: {} });
-        if (!result.ok) { section.append(el('p', 'setup-notice bad', result.message)); return; }
-        await paint();
-      }));
-      host.append(section);
-    }
-    const configured = connections.filter(entry => entry.inference_provider);
-    if (configured.length) {
-      for (const connection of configured) paintCatalog(connection.models, provider, host, connection.label);
-    } else paintCatalog(rows, provider, host);
+    paintCatalog(rows, provider, host);
     if (alignedProvider !== id) {
       alignedProvider = id;
       requestAnimationFrame(() => {
