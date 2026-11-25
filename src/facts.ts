@@ -108,11 +108,11 @@ export async function activatedProviders(): Promise<string[]> {
 export const harnessesOn = (summary: Awaited<ReturnType<typeof readProviderSummary>>): string[] =>
   AGENTS.filter((a) => summary?.operational.includes(a.id) && !summary.off.includes(a.id)).map((a) => a.label);
 export async function ownHarnesses(): Promise<string[]> { return harnessesOn(await readProviderSummary().catch(() => null)); }
-/** The Workspaces the person described: any but Ronin Lab with an objective (hosted Setup's Workspace step). */
-export const LAB_WORKSPACE = 'ronin_lab';
-export async function describedWorkspaces(): Promise<string[]> {
+/** The Workspaces made: any not archived, Ronin Lab included (owner, 25 Nov; Setup's Workspace step:
+ * its "Not sure yet" door makes only Ronin Lab, and that ticks it). */
+export async function madeWorkspaces(): Promise<string[]> {
   const all = await listWorkspaces(await initialCampaignId()).catch(() => []);
-  return all.filter((w) => !w.archived && w.name !== LAB_WORKSPACE && w.objective.trim()).map((w) => w.name);
+  return all.filter((w) => !w.archived).map((w) => w.name);
 }
 /** The Teams with a live lead (hosted Setup's Team step). */
 export async function ledTeams(): Promise<string[]> {

@@ -7,11 +7,11 @@
  * ONE SETUP ON EVERY OFFICE (owner, 2026-11-24; w926; samurai_lab/wip/SETUP_SWEEP.md §7): three
  * steps, in any order, none a gate, and nothing decides onboarding is over:
  *   harness    one of the person's own CLI harnesses is Activated, never Ronin's house models (integrations_authentications)
- *   workspace  a Workspace of theirs, not Ronin Lab, has an objective (workspaces)
+ *   workspace  any Workspace is made, Ronin Lab included (workspaces; owner, 25 Nov)
  *   team       a Team has a live lead (teams_agents)
  * `tailscale` and `no_password` are for the Password card in Settings.
  */
-import { browserAccess, describedWorkspaces, ledTeams, onFactWritten, ownHarnesses } from './facts.js';
+import { browserAccess, madeWorkspaces, ledTeams, onFactWritten, ownHarnesses } from './facts.js';
 import { broadcastEvent } from './ws/events.js';
 
 export const SETUP_STEP_IDS = ['harness', 'workspace', 'team'] as const;
@@ -26,8 +26,8 @@ export interface SetupProgress {
 
 /** Setup's three ticks, read from the facts. A new office is one with none of them true. */
 export async function setupTicks(): Promise<Record<SetupStepId, boolean>> {
-  const [harnesses, described, teams] = await Promise.all([ownHarnesses(), describedWorkspaces(), ledTeams()]);
-  return { harness: harnesses.length > 0, workspace: described.length > 0, team: teams.length > 0 };
+  const [harnesses, made, teams] = await Promise.all([ownHarnesses(), madeWorkspaces(), ledTeams()]);
+  return { harness: harnesses.length > 0, workspace: made.length > 0, team: teams.length > 0 };
 }
 
 export async function readSetupProgress(): Promise<SetupProgress> {
