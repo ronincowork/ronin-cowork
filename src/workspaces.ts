@@ -26,7 +26,8 @@ import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import path from 'node:path';
 import { rootDir, storeDir, STORES } from './resources.js';
-import type { LaunchMode } from './agent-defaults.js';
+import { teamAgentDefaults, type LaunchMode, type TeamAgentDefaults } from './agent-defaults.js';
+import { launchModeOf, modelsOf, parentSettings, type Models } from './waterfall.js';
 
 /** The kinds (owner, 25 Nov): a Workspace's only; Teams and Agents have none. public/js/glyphs.js keeps the client's list. */
 export const WORKSPACE_KINDS = ['open', 'business', 'personal', 'household', 'social', 'school'] as const;
@@ -54,7 +55,10 @@ export interface Workspace {
   instructions: string;
   repos: WorkspaceRepo[];
   folders: WorkspaceFolder[];
+  /** Its settings, copied from the Campaign when it was made, handed to each Team made in it (src/waterfall.ts). */
   launch_mode: LaunchMode;
+  agent_defaults: TeamAgentDefaults;
+  models: Models;
   plans?: WorkspacePlans;
   integrations: WorkspaceIntegration[];
   /** The Workspace's brief settings and project management (docs/architecture/brief.md, Layers and brief settings). */
@@ -90,13 +94,23 @@ export function normalizeWorkspace(campaign_id: string, name: string, v: Record<
     instructions: text(v.instructions, 8000),
     repos: rows(v.repos, (r) => { const f = folderRow(r); return f && repoRow(f, r); }),
     folders: rows(v.folders, folderRow),
-    launch_mode: v.launch_mode === 'configured' ? 'configured' : 'live_dangerously', // absent: Dangerously
+    launch_mode: launchModeOf(v.launch_mode),
+    agent_defaults: teamAgentDefaults(v.agent_defaults),
+    models: modelsOf(v.models),
     ...plansOf(v.plans),
     integrations: integrationsOf(v.integrations),
     brief: briefSettings(v.brief),
     ...(typeof v.pm === 'boolean' ? { pm: v.pm } : {}),
     ...(v.archived === true ? { archived: true } : {}),
   };
+}
+
+/** A Workspace about to be made (src/waterfall.ts): its Campaign's settings, then what `body` states;
+ * its integrations are the body's and the Campaign's. Saved by saveWorkspace, which gives it its folder. */
+export async function newWorkspace(campaign_id: string, name: string, body: Record<string, unknown>): Promise<Workspace> {
+  const { settings } = await parentSettings(campaign_id);
+  const own = Array.isArray(body.integrations) ? body.integrations : [];
+  return normalizeWorkspace(campaign_id, name, { ...settings, ...body, integrations: [...own, ...settings.integrations] });
 }
 
 const expand = (p: string): string => (p.startsWith('~') ? path.join(os.homedir(), p.slice(1)) : p);
@@ -169,9 +183,10 @@ export async function layOut(dir: string): Promise<void> {
 /**
  * A repository into a Workspace, at repos/<repo> (the rule above): `repository` (a Git URL or
  * owner/name) is cloned; none starts a new one named after the Workspace. Its row is added to the
- * record on Desks: dev for desks, its own branch stable.
+ * record on `mode`: Desks (`reviewed`, the default) hands work in to dev, its own branch stable;
+ * Direct works on its own branch.
  */
-export async function addRepository(w: Workspace, repository: string): Promise<{ workspace: Workspace; dir: string }> {
+export async function addRepository(w: Workspace, repository: string, mode: WorkspaceRepo['mode'] = 'reviewed'): Promise<{ workspace: Workspace; dir: string }> {
   const repos = path.join(ownFolder(w.name), 'repos');
   await mkdir(repos, { recursive: true });
   let dir: string;
@@ -187,9 +202,11 @@ export async function addRepository(w: Workspace, repository: string): Promise<{
   }
   const stable = (await git(['symbolic-ref', '--short', 'HEAD']).catch(() => '')) || 'main';
   // DESKS BY DEFAULT (owner, 25 Nov): each Agent on its own desk, handed in to dev and promoted; dev
-  // starts where the stable branch is. Direct is the row's other answer.
-  if (!(await git(['rev-parse', '--verify', '--quiet', 'refs/heads/dev']).then(() => true, () => false))) await git(['branch', 'dev', stable]);
-  const row = { name: '', dir, note: '', mode: 'reviewed', working: 'dev', stable, desks: 'managed' };
+  // starts where the stable branch is.
+  if (mode === 'reviewed' && !(await git(['rev-parse', '--verify', '--quiet', 'refs/heads/dev']).then(() => true, () => false))) await git(['branch', 'dev', stable]);
+  const row = mode === 'reviewed'
+    ? { name: '', dir, note: '', mode, working: 'dev', stable, desks: 'managed' }
+    : { name: '', dir, note: '', mode, working: '', stable, desks: 'none' };
   const next = normalizeWorkspace(w.campaign_id, w.name, { ...w, repos: [...w.repos, row] } as unknown as Record<string, unknown>);
   return { workspace: await saveWorkspace(next), dir };
 }

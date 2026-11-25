@@ -18,7 +18,7 @@ import {
   setTags,
 } from '../tmux.js';
 import { launchArgv } from '../agents.js';
-import { AtSessionMax, readAgentsSection } from '../machine-state.js';
+import { AtSessionMax } from '../machine-state.js';
 import { PACKET_PLACEHOLDER, resolveForm, type SpawnForm } from '../spawn.js';
 import { agentBriefOf } from '../brief-build.js';
 import { briefTold } from '../brief-settings.js';
@@ -45,7 +45,7 @@ import { readTeamRoster } from '../team-rosters.js';
 import { readCampaign } from '../campaigns.js';
 import { listInstallations } from '../resource-adapters.js';
 import { resolveLaunchSeed, shownLaunchSeed } from '../launch-seed.js';
-import type { SessionsDefaults } from '../launch-command.js';
+import { parentSettings } from '../waterfall.js';
 import { describePacket, readFirstSentence, writeBriefPacketAt, type PacketReport } from '../birth-brief.js';
 import { rememberSessionKey, sessionDir as sessionRecordDir } from '../session-dir.js';
 import { callerUser } from '../agent-configuration.js';
@@ -304,18 +304,11 @@ export function registerLaunch(app: express.Express): LaunchControl {
       if (team && !/^[a-z0-9][a-z0-9_-]{0,63}$/.test(team)) {
         return res.status(400).json({ error: `A team name is lowercase letters, digits, _ and -: "${team}".` });
       }
-      const [roster, agents] = await Promise.all([
-        team ? readTeamRoster(team, campaign_id).then((found) => found ?? readTeamRoster(team, '')) : Promise.resolve(null),
-        readAgentsSection(),
-      ]);
+      const roster = team ? await readTeamRoster(team, campaign_id) ?? await readTeamRoster(team, '') : null;
       if (team && !roster) return res.status(404).json({ error: `Unknown Team "${team}" in Campaign "${campaign_id}".` });
-      const seed = resolveLaunchSeed({
-        campaign,
-        roster,
-        workspace: roster?.workspace ? await readWorkspace(roster.campaign_id, roster.workspace) : null,
-        sessions: agents.sessions as SessionsDefaults | undefined,
-        lead: req.query.lead === '1',
-      });
+      const workspace = roster?.workspace ? await readWorkspace(roster.campaign_id, roster.workspace) : null;
+      const parent = { ...await parentSettings(campaign_id, { workspace, team: roster }), name: roster?.name ?? workspace?.name ?? campaign_id };
+      const seed = resolveLaunchSeed({ campaign_id: campaign.id, parent, roster, lead: req.query.lead === '1' });
       res.json(shownLaunchSeed(seed));
     } catch (e) {
       res.status(500).json({ error: String((e as Error)?.message ?? e) });

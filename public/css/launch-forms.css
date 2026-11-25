@@ -424,8 +424,6 @@
   /* Behaviors list/viewer — the shared stone surface supplies responsive geometry. */
   .behaviour-surface .sws-detail { min-width: 0; }
   .behaviour-surface .sws-group { color: var(--kaki); font-weight: var(--weight-strong); }
-  .behaviour-surface .behaviour-settings { display: grid; gap: var(--space-paragraph); padding: 0 var(--space-inset) var(--space-section); }
-  .behaviour-surface .behaviour-settings-head { margin: 0; padding: var(--space-section) var(--space-inset) 0; color: var(--fg-strong); font-size: var(--form-input); font-weight: var(--weight-strong); }
   .brief-author { display: grid; gap: var(--space-paragraph); }
   .brief-author-head { margin: 0; color: var(--fg-strong); font-size: var(--form-input); font-weight: var(--weight-strong); }
   .brief-author-grid { display: flex; flex-wrap: wrap; gap: var(--space-paragraph) var(--space-inline); }
@@ -574,6 +572,9 @@
   /* Add a repository, first in the section (KAN-809): it opens its panel. */
   .workspace-location-tools { display: flex; gap: var(--space-inline); flex-wrap: wrap; }
   .workspace-more-integrations { display: flex; flex-direction: column; gap: var(--space-row); }
+  .workspace-defaults, .level-defaults { display: flex; flex-direction: column; gap: var(--space-paragraph); }
+  .workspace-add-mode { display: flex; flex-direction: column; gap: var(--space-row); }
+  .workspace-add-mode .ask-caption:empty { display: none; }
   .workspace-clone > input { flex: 1 1 auto; min-width: 0; }
   .workspace-browser { display: flex; flex-direction: column; gap: var(--space-row); padding: var(--space-inline); border: var(--edge) solid var(--line-2); border-radius: var(--radius-small); }
   .workspace-browser-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-inline); }

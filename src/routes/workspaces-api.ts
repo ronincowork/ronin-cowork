@@ -3,13 +3,15 @@ import { layersMayHaveChanged } from '../team-layers.js';
 import type express from 'express';
 import { initialCampaignId } from '../campaign-scope.js';
 import { listTeamRosters } from '../team-rosters.js';
-import { addRepository, deleteWorkspace, isValidWorkspaceName, listWorkspaces, normalizeWorkspace, readWorkspace, saveWorkspace, type Workspace } from '../workspaces.js';
+import { addRepository, deleteWorkspace, isValidWorkspaceName, listWorkspaces, newWorkspace, normalizeWorkspace, readWorkspace, saveWorkspace, type Workspace } from '../workspaces.js';
 import { PlanBadInput, PlanMissing, PlanRefused, movePlans, plansPlace } from '../plans.js';
 import { listCanvases } from '../canvases.js';
 import { folderFacts } from '../folder-facts.js';
 import { deleteIcebox } from '../work-items.js';
 import { callerOf } from './work-items-api.js';
 import { createGithubRepository } from '../setup-runtime.js';
+
+const KEPT = ['integrations', 'brief', 'pm', 'launch_mode', 'agent_defaults', 'models'] as const;
 
 const errMsg = (e: unknown): string => String((e as Error)?.message ?? e);
 // The office's one Campaign, always: a page never says which (KAN-727). A person never meets a Campaign.
@@ -45,9 +47,9 @@ export function registerWorkspaces(app: express.Express): void {
       // clashes, so one plan file never overwrites another. Any Location will do.
       const body = { ...(req.body ?? {}) } as Record<string, unknown>;
       if (!('plans' in body) && was?.plans) body.plans = was.plans;
-      // INTEGRATIONS (KAN-338): likewise, a body without `integrations` keeps the ones it had.
-      if (!('integrations' in body) && was) body.integrations = was.integrations;
-      const next = normalizeWorkspace(campaign, name, body);
+      // A body without one of these keeps what it had (KAN-338).
+      if (was) for (const key of KEPT) if (!(key in body)) body[key] = was[key];
+      const next = was ? normalizeWorkspace(campaign, name, body) : await newWorkspace(campaign, name, body);
       const changed = JSON.stringify(was?.plans ?? null) !== JSON.stringify(next.plans ?? null);
       let moved: string[] = [];
       if (changed && next.plans) await plansPlace(campaign, name, next.plans);
@@ -66,7 +68,7 @@ export function registerWorkspaces(app: express.Express): void {
       const w = await readWorkspace(await campaignOf(), req.params.name);
       if (!w) return res.status(404).json({ error: `No Workspace ${req.params.name}.` });
       const repository = typeof req.body?.repository === 'string' ? req.body.repository.trim() : '';
-      const added = await addRepository(w, repository);
+      const added = await addRepository(w, repository, req.body?.mode === 'direct' ? 'direct' : 'reviewed');
       const github = !repository && (req.body?.github === 'private' || req.body?.github === 'public') ? await createGithubRepository(added.dir, req.body.github) : null;
       res.json({ ok: true, workspace: await withPlace(added.workspace), dir: added.dir, ...(github ? { github } : {}) });
       layersMayHaveChanged();

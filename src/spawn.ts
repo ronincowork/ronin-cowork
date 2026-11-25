@@ -18,6 +18,7 @@ import { mandate, type LaunchMode, type Mandate } from './agent-defaults.js';
 import { resolveInstallations, type ResolvedInstallation } from './installations.js';
 import { initialCampaignId } from './campaign-scope.js';
 import { resolveLaunchSeed } from './launch-seed.js';
+import { parentSettings } from './waterfall.js';
 import { profileDir, resolveHouseSeatProfile, type HouseSeat } from './house-seats.js';
 import { agentBriefOf, composeBrief, type BuiltBrief } from './brief-build.js';
 import type { BriefSettings } from './brief-record.js';
@@ -173,14 +174,11 @@ export async function resolveFacts(form: SpawnForm, taken: Set<string>, proposed
   const workspace: Workspace | null = workspaceName ? await readWorkspace(roster?.campaign_id || campaignId, workspaceName) : null;
   if (roster?.workspace && !workspace) throw new Error(`Team "${roster.name}" is launched in Workspace "${roster.workspace}", which does not exist.`);
   const profile = resolveHouseSeatProfile(form.house_seat, resolveLaunchProfile());
+  // The Agent's parent (src/waterfall.ts): what it copies, its brief settings included.
+  const parentLevel = await parentSettings(campaignId, { workspace, team: roster });
+  const parent = { ...parentLevel, name: roster?.name ?? workspace?.name ?? campaignId };
   const parentSeed = coworkAgent && campaign
-    ? resolveLaunchSeed({
-        campaign,
-        roster,
-        workspace,
-        sessions: agentsSet.sessions as SessionsDefaults | undefined,
-        lead: !!form.team && !!form.team_lead,
-      })
+    ? resolveLaunchSeed({ campaign_id: campaign.id, parent, roster, lead: !!form.team && !!form.team_lead })
     : null;
 
   // WHERE AN AGENT STARTS is Ronin's: one folder for every Agent, Ronin house (owner, 2026-11-03), so
@@ -202,7 +200,7 @@ export async function resolveFacts(form: SpawnForm, taken: Set<string>, proposed
   const arrangement: 'managed' | 'checkout' | 'none' = repositories.some((repo) => repo.managed) ? 'managed' : repositories.length ? 'checkout' : 'none';
   return {
     sessionType, coworkAgent, bareMetalAgent, campaignId, agentsSet, campaign, launchSpecs, roster, profile,
-    parentSeed, workspace, place, repositories, folders, agent, installations, name, arrangement,
+    parent, parentSeed, workspace, place, repositories, folders, agent, installations, name, arrangement,
   };
 }
 export type LaunchFacts = Awaited<ReturnType<typeof resolveFacts>>;
@@ -214,13 +212,16 @@ async function resolveLaunch(form: SpawnForm, facts: LaunchFacts) {
   let { agentsSet, launchSpecs } = facts;
   // No default yet (KAN-725): measure the sign-ins first, so the first one signed in, in Setup
   // or in a tile, is written as the default before this launch reads it.
-  const stated = (agentsSet.sessions as SessionsDefaults | undefined)?.default?.provider;
+  // The model is the parent's (src/waterfall.ts); a parent with none leaves it to Models > Defaults.
+  const copied = parentSeed?.seeds.provider.value ? { provider: String(parentSeed.seeds.provider.value), model: String(parentSeed.seeds.model.value) } : null;
+  const stated = copied?.provider || (agentsSet.sessions as SessionsDefaults | undefined)?.default?.provider;
   if (agent && !form.cmd && !form.provider && !form.model && !stated) {
     const summary = await measureAndRecordProviders();
     agentsSet = await readAgentsSection();
     launchSpecs = await listSessionLaunchSpecs(summary);
   }
-  const sessionsSet = sessionsFor(agentsSet.sessions as SessionsDefaults | undefined, !!form.team && !!form.team_lead);
+  const house = sessionsFor(agentsSet.sessions as SessionsDefaults | undefined, !!form.team && !!form.team_lead);
+  const sessionsSet = copied ? { ...house, default: copied } : house;
   const chosen = resolveLaunchCommand({
     agent,
     cmd: form.cmd,

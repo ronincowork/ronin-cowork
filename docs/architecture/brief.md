@@ -16,7 +16,7 @@ are told is in [Customize Ronin](../getting-started/customize.md).
                                            │                                   │
                                            ▼                                   ▼
             the Agent's configuration: the `brief` key on its work record (tegami.md)
-            session type, user, setting, agent, work, brief settings per layer, facts at birth
+            session type, user, setting, agent, work, brief settings (its parent's, copied, and its own), facts at birth
                                            │
                                            ▼  buildBrief (pure)
                         AGENT_BIRTH_BRIEF.md: Facts · Mandate · Behaviours (+ tools) · Other tools
@@ -274,13 +274,13 @@ record plus the files, nothing else. That document is the Agent's **configuratio
 | Agent | role and Team(s), and the integrations on for its Team; mandate (Reach, Recruit, Output); provider, model, harness, launch mode |
 | Work | desk or checkout per repository |
 | Office | each office fact at birth: its line, path and text |
-| Brief settings | each layer's settings as born — add, block, only, integrations, pm: user, Campaign, Workspace, Team, this Agent |
+| Brief settings | as born: its parent's settings (Team, else Workspace, else Campaign) and its own — add, block, only, integrations, pm |
 
 **One authority, one builder** (KAN-605). The record above is one document on the work record,
 the key `brief`, and it is the session's only authority for its brief.
 
-- **Birth writes it whole.** The launch (`composeBrief`, `src/brief-build.ts`) resolves user,
-  machine, Campaign, Workspace, Team and Agent once into the complete document (the shape of
+- **Birth writes it whole.** The launch (`composeBrief`, `src/brief-build.ts`) resolves the
+  person, the office, its parent's settings and its own once into the complete document (the shape of
   `src/brief-record.ts`), reads the office's facts as they are then, and the launch writes it as
   one key (`writeBriefRecord`, `src/tegami.ts`). The tile's Work record shows it by part.
 - **The builder is pure.** `buildBrief(document, catalogs)` works out integrations on, project
@@ -295,9 +295,9 @@ the key `brief`, and it is the session's only authority for its brief.
   and Workspace, with the Workspace's repositories, folders and instructions, and the Team and
   Workspace settings), resolved the way birth resolves them. Provider, model, harness and launch
   mode stay as born.
-- **A default never reaches a live Agent** (owner, 2026-11-16). A user, machine, Campaign,
-  Workspace or Team default, a catalog file, an MCP record or a connection changed since birth
-  reaches only Agents born after it. The office as it is now reaches anyone through the fact
+- **A default never reaches a live Agent** (owner, 2026-11-16; 25 Nov). A Campaign, Workspace or
+  Team setting, a catalog file, an MCP record or a connection changed since birth reaches only
+  what is made after it (Layers and brief settings, below). The office as it is now reaches anyone through the fact
   files.
 - **Dynamic fields never rebuild it.** The objective, items held and watched, flags, documents,
   desks and the `teams` block are on the work record but not in the brief document, so they send
@@ -318,9 +318,28 @@ names the item and the change (`ackHolders`, `src/work-items.ts`).
 
 ## Layers and brief settings
 
-The layers, widest first: the stock file (its header), the user, the Campaign, the Workspace,
-the Team, the Agent. Each layer's record holds the same three lists, naming only what it
-changes:
+**The waterfall** (owner, 25 Nov; `src/waterfall.ts`). The levels are the Campaign, the
+Workspace, the Team and the Agent. A Workspace, Team or Agent copies its parent's settings as
+they are at the moment it is made, and after that changes only on its own Configuration, never
+because a parent changed. The parent is the nearest level above: a Workspace's is its Campaign;
+a Team's is its Workspace, else the Campaign; an Agent's is its Team, else its Workspace, else
+the Campaign. Every level holds the same settings:
+
+| Setting | What it is |
+|---|---|
+| brief | the three lists below |
+| integrations | the integrations on |
+| pm | project management, on unless it says off |
+| agent_defaults | the Mandate a new Agent starts with: Reach, Recruit, Output |
+| launch_mode | Native or Dangerously |
+| models | the model for a new Agent and for a new Team lead |
+
+The Campaign is the top: its record, its Jira part, and Models > Defaults (the models). A
+Workspace record or a Team roster holds its own copy; an Agent's is on its work record (the
+brief document's `brief_settings`: its parent's, as copied at birth, and its own). Pages show a
+level's own values, never where one came from.
+
+A level's three lists name what is told:
 
 | List | Names | Effect |
 |---|---|---|
@@ -328,43 +347,37 @@ changes:
 | **block** | facts, behaviours or tools | takes them out |
 | **only** (a screen) | facts, behaviours, optionally single tools | when set, nothing else gets through |
 
-The user's lists are in the user's store; the Campaign's in Campaign settings; the
-Workspace's in the Workspace record; the Team's on the roster; the Agent's on its work record.
-
-Applied in order:
+An Agent's brief applies its two layers (its parent's copy, then its own) in order:
 
 1. Start from each file's header (`when:`, `depth:`).
-2. **Add** from every layer; where two give a depth, the higher holds.
-3. **Block** from every layer.
-4. **Screen**: a screen covers its layer and every layer below; a lower screen only narrows it,
-   and nothing below adds back what a screen above left out. A behaviour let through brings
-   the tools that serve it; a tool that serves no behaviour comes through only if named.
+2. **Add** from both; where two give a depth, the higher holds.
+3. **Block** from both.
+4. **Screen**: the parent's screen holds, and the Agent's own only narrows it. A behaviour let
+   through brings the tools that serve it; a tool that serves no behaviour comes through only
+   if named.
 
 Example, a Workspace that uses Netlify and wants More checkpoints for every Agent:
 `add: netlify-bridge, more-checkpoints: full`. A tailored Agent is a screen on it:
 `only: base-agent, netlify-bridge`. Who an Agent *is* (a welcome Agent, a help Agent) is its
 session type, never a layer's lists.
 
-**Integrations cascade the same way**: on for a Campaign is on for its Workspaces, Teams and
-Agents, and each may add its own. A layer may also turn off one that is on above it, for itself
-and below (`integrations_off` in its brief settings; the pages show "On, from the <layer>" with
-Off). MCP server and web API records cascade the same way: a record's Campaigns only make it
-available (listed in the pickers); a layer's switch turns it on (KAN-607).
+**Integrations are copied the same way**: a new level starts with its parent's on, and turns one
+on or off on its own list. An Agent may turn off one its parent has on (`integrations_off` in
+its own brief settings). A MCP server or web API record's Campaigns only make it available
+(listed in the pickers); a level's switch turns it on (KAN-607).
 On for an Agent makes `integration:<name>` hold, so its bridge behaviour and that behaviour's
 tools come into play.
 
-**Jira is set at the Campaign and Workspace only** (the Campaign's Jira part, its switch
-`services.parts.jira`, or the Workspace's integrations). A Team's or Agent's Jira entry is
-ignored by the cascade, and the Team and New Agent forms don't show Jira. An Agent reaches work
+**Jira is set on a level, never on an Agent** (the Campaign's Jira part, its switch
+`services.parts.jira`, then the copy each Workspace and Team holds). An Agent's own Jira entry
+is ignored, and the New Agent form doesn't show Jira. An Agent reaches work
 items through `item` and never past the bridge, so it is not told of Jira, and Jira is not among
 the integrations on its record.
 
-**Project management is its own switch** (`pm` on each layer's record), apart from Jira: Jira
-on or off never moves it (KAN-608). It is on at the Campaign unless the Campaign's record says
-`pm: false`, so turning it off is always deliberate; below, each layer may say on or off, and
-the narrowest layer that says one holds (`cascade`, `src/brief-settings.ts`). A form shows it on
-or off with "On/Off, from the <layer>" while it follows the layer above; choosing the other
-value sets it on that layer. Off: no item behaviours and no `item` seed. On: the item model for
+**Project management is its own switch** (`pm` on each level's record), apart from Jira: Jira
+on or off never moves it (KAN-608). It is on unless a level's record says `pm: false`, so
+turning it off is always deliberate; a new level copies its parent's, and an Agent's own on or
+off holds over its parent's (`cascade`, `src/brief-settings.ts`). Off: no item behaviours and no `item` seed. On: the item model for
 everyone, role behaviours by role. The Services part that runs project management keeps its own
 switch for running; the brief reads `pm`.
 
@@ -459,19 +472,19 @@ and on no live list ([playbooks](../using-ronin/playbooks.md), `src/work-items.t
 
 - **New Agent form, Behaviors step:** one list of cards, each on or off: Project management,
   each integration by name (never Jira), and the optional behaviours (Full or Seed once on; one
-  already told can be raised to Full). A card on from a layer above reads "On, from the
-  {layer}". Then Comes with this Agent (read-only: what is in play and why, from
+  already told can be raised to Full), starting from its parent's. Then Comes with this Agent (read-only: what is in play and why, from
   `POST /api/brief/preview`). It saves `{ brief, integrations, pm }`.
 - **Mandate** (New Agent, New Team's Agent rows, Team, Campaign): Reach, Recruit and Output list
   the mandate files from the catalog, in `order:`, less the preview's off
   (`public/js/mandates.js`). No value is listed in the client.
-- **Campaign, Workspace and Team pages** edit their Integrations, Project management, Add, Block
-  and Only in the same compact form, with "An Agent here is told" (read-only) and "Set on"
-  links to the layers above; one Save per page.
-- **Behaviors page** (the user's own layer): every fact, behaviour and tool file, the mandate
-  values grouped by axis; open one to read it; Edit / Make my version; New Behavior, New tool,
-  New bridge (a bridge is a behaviour with `when: integration:<x>` plus its tools, in one
-  Save). Its settings panel, "For every Agent you start", is the user layer.
+- **Campaign, Workspace and Team pages** edit their own Integrations, Project management, Add,
+  Block and Only in the same compact form, with "An Agent here is told" (read-only); one Save
+  per page. The Workspace page's New Agent defaults set its Mandate, Mode and models
+  (`public/js/level-defaults.js`); the Campaign's are its Defaults page and Models > Defaults.
+- **Behaviors page:** every fact, behaviour and tool file, the mandate values grouped by axis;
+  open one to read it; Edit / Make my version; New Behavior, New tool, New bridge (a bridge is a
+  behaviour with `when: integration:<x>` plus its tools, in one Save). Which are on is each
+  level's page.
 - **Settings → Machine status:** the facts as one (`MACHINE_STATUS.md`).
 - **The work record on the tile:** a closed Brief section, "What this Agent is told"
   (`GET /api/sessions/:name/brief`).

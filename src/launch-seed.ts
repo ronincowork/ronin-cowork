@@ -1,7 +1,5 @@
-import type { CampaignConfig } from './campaigns.js';
-import { sessionsFor, type SessionsDefaults } from './launch-command.js';
 import type { StatedBy } from './launch-profile.js';
-import type { Workspace } from './workspaces.js';
+import type { Level, LevelSettings } from './waterfall.js';
 import { teamRosterFile, type TeamRoster } from './team-rosters.js';
 
 /** What the New Agent form starts from. What the Agent is told is the brief's (src/brief-settings.ts). */
@@ -12,39 +10,32 @@ export interface LaunchSeed {
   still_asked: Array<'session_type' | 'name' | 'instructions'>;
 }
 export interface LaunchSeedSources {
-  campaign: CampaignConfig; roster: TeamRoster | null;
-  /** The Team's Workspace: its Mode is its Agents'. */
-  workspace: Workspace | null;
-  sessions: SessionsDefaults | undefined;
-  /** A Team lead's launch: the lead pair, when one is set. */
+  campaign_id: string;
+  /** The Agent's parent, the nearest of its Team, Workspace and Campaign, and its name (src/waterfall.ts). */
+  parent: { level: Level; name: string; settings: LevelSettings };
+  roster: TeamRoster | null;
+  /** A Team lead's launch: the lead model, when the parent has one. */
   lead?: boolean;
 }
 export function shownLaunchSeed(seed: LaunchSeed): LaunchSeed {
   return { ...seed, seeds: { ...seed.seeds } };
 }
-const installation = (source: string): StatedBy[] => [{ layer: 'installation', source }];
 const conditional = (source: string): StatedBy[] => [{ layer: 'conditional', source }];
-const campaignBy = (id: string, field: string): StatedBy[] => [{ layer: 'campaign', source: `#/campaign (${id}: ${field})` }];
-const teamBy = (roster: TeamRoster): StatedBy[] => [{ layer: 'team', source: teamRosterFile(roster.name, roster.campaign_id) }];
 
+/** A NEW AGENT COPIES ITS PARENT (src/waterfall.ts): what to do, recruit and produce, Mode and the model. */
 export function resolveLaunchSeed(s: LaunchSeedSources): LaunchSeed {
-  const c = s.campaign.config.defaults;
+  const { agent_defaults: a, launch_mode, models } = s.parent.settings;
+  const from: StatedBy[] = [{ layer: s.parent.level, source: s.parent.name }];
+  const pair = s.lead && models.lead.provider ? models.lead : models.default;
   const t = s.roster;
-  const a = t ? { ...c, ...t.agent_defaults } : c;
-  const teamSource = t ? teamBy(t) : null;
-  const source = (field: string): StatedBy[] => teamSource ?? campaignBy(s.campaign.id, `defaults.${field}`);
-  const pair = sessionsFor(s.sessions, !!s.lead).default;
-  const pairSource = installation('Models > Defaults');
   return {
-    campaign_id: s.campaign.id,
+    campaign_id: s.campaign_id,
     seeds: {
       branch: { value: t?.branch ?? '', stated_by: conditional(t ? teamRosterFile(t.name, t.campaign_id) : 'branch default') },
-      provider: { value: pair?.provider ?? '', stated_by: pairSource }, model: { value: pair?.model ?? '', stated_by: pairSource },
-      reach: { value: a.reach, stated_by: source('reach') }, recruit: { value: a.recruit, stated_by: source('recruit') },
-      output: { value: a.output, stated_by: source('output') },
-      launch_mode: s.workspace
-        ? { value: s.workspace.launch_mode, stated_by: [{ layer: 'team', source: `Workspace ${s.workspace.name}` }] }
-        : { value: c.launch_mode, stated_by: campaignBy(s.campaign.id, 'defaults.launch_mode') },
+      provider: { value: pair.provider, stated_by: from }, model: { value: pair.model, stated_by: from },
+      reach: { value: a.reach, stated_by: from }, recruit: { value: a.recruit, stated_by: from },
+      output: { value: a.output, stated_by: from },
+      launch_mode: { value: launch_mode, stated_by: from },
     },
     still_asked: ['session_type', 'name', 'instructions'],
   };

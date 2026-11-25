@@ -2,24 +2,21 @@
 /** WHAT AN AGENT IS TOLD (docs/architecture/brief.md, Layers and brief settings; Where it is set in the UI). One form for every layer:
  * the New Agent Behaviors step (layer 'agent') and the Campaign, Workspace and Team settings
  * pages. The browser works nothing out: the catalog (`GET /api/brief/catalog`) names the
- * files, and the server's answer (`POST /api/brief/preview` for an Agent, the `inherited` part
- * of `GET /api/brief/settings/:layer/:id` for a layer) says what comes from above and why.
+ * files, and the server answers the rest (`GET /api/brief/settings/:layer/:id` for a level,
+ * `POST /api/brief/preview` for an Agent).
  *
  *   value: { brief: { add: [{ name, depth }], block: [name], only: [name] }, integrations: [name], pm?: boolean }
- *   above: { integrations: { name: from }, off: { name: from }, pm: { on, from }, available: [name] }   — what the layers above give;
- *          available: the MCP server and web API records the Campaign may turn on, listed beside the bridges;
- *          pm is always answered (nobody saying: on, from the Campaign)
- *   inPlay: [{ kind: facts|behaviours|tools, name, title, depth, why: [conditional] }]  — Agent only, read-only
+ *   above: an Agent's parent, from the preview: { integrations: { name: level }, off: { name: level }, pm: { on } };
+ *          and for every form `available`: the MCP server and web API records the Campaign may turn on
+ *   inPlay: [{ kind: facts|behaviours|tools, name, title, depth, why: [conditional] }]  — read-only
  *
- * Integrations add down the layers; a layer may turn one off for itself and below. Jira is set
- * at the Campaign and Workspace only: the Team and Agent forms never show it. Project management
- * is its own switch at every layer, apart from Jira: it follows the layer above until this
- * layer says on or off. */
+ * A level (Campaign, Workspace, Team) holds its own settings, copied from its parent when it was
+ * made (src/waterfall.ts): its form is its own values and nothing else. An Agent's form is its
+ * parent's settings with its own changes on top. Jira is never on an Agent's form. */
 import { ask } from './ask.js';
 import { t } from './lexicon.js';
 import { el } from './form-steps.js';
 import { request } from './request.js';
-import { workbenchLaunchUrl, workbenchLink } from './workspace.js';
 
 /** The files folder a catalog kind lives in: fact → facts (the preview already says it plural). */
 export const scopeOf = (kind = '') => (String(kind).endsWith('s') ? String(kind) : `${kind}s`);
@@ -50,7 +47,7 @@ export function integrationNames(catalog = []) {
 
 const layerWord = (from) => ({
   campaign: t('brief.from_campaign', 'Campaign'), workspace: t('brief.from_workspace', 'Workspace'),
-  team: t('brief.from_team', 'Team'), user: t('brief.from_user', 'your settings'),
+  team: t('brief.from_team', 'Team'),
 })[from] || from;
 
 /** One `why` entry in words. */
@@ -72,44 +69,14 @@ function whyWord(need) {
 export const whyText = (why = []) => (why.length ? why.map(whyWord).join(' · ') : t('brief.why_every', 'every Agent'));
 
 
-/** Links to the layer pages above, for "Set on": the Campaign's desk settings, the Team's
- *  configuration, the Workspaces page. A plain press opens it in place; a modified one, a tab. */
-export function layerLinks({ team = '', open = {} } = {}) {
-  const specs = {
-    campaign: { destination: 'campaign', mode: 'replace', state: { count: 2, selected: 'workspace1', seats: { workspace1: 'campaign.defaults', workspace2: 'setup.launch-own' } } },
-    team: team ? { destination: 'team', param: team, mode: 'replace', state: { count: 2, selected: 'workspace1', seats: { workspace1: { type: 'team.commons', tab: 'team-configuration' } } } } : null,
-    workspace: { destination: 'workspaces', mode: 'replace' },
-  };
-  return (from, label) => {
-    const spec = specs[from];
-    if (!spec) return null;
-    const link = workbenchLink(el('a', null, label), spec);
-    link.addEventListener('click', (event) => {
-      if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
-      event.preventDefault();
-      if (open[from]) open[from](); else location.assign(workbenchLaunchUrl(spec));
-    });
-    return link;
-  };
-}
-
 /**
  * Draw the form into `host`. `layer` is 'agent' | 'campaign' | 'workspace' | 'team'. An Agent
  * gets one list of on/off cards (Project management, each integration, the optional behaviours)
  * and Comes with this Agent; a layer gets Integrations, Project management, Add, Block and Only. `onChange(value)` hands back the layer's own value, never what it inherits.
  */
-export function paintBriefForm(host, { layer = 'agent', catalog = [], value = emptyBriefValue(), above = {}, inPlay = null, onChange = () => {}, openBehaviours = null, showIntegrations = true, linkFor = null } = {}) {
+export function paintBriefForm(host, { layer = 'agent', catalog = [], value = emptyBriefValue(), above = {}, inPlay = null, onChange = () => {}, openBehaviours = null, showIntegrations = true } = {}) {
   const own = briefValue(value);
-  // Jira is set at the Campaign and Workspace only: any other form neither shows nor sets it.
-  const jiraHere = layer === 'campaign' || layer === 'workspace';
-  const shownHere = (name) => jiraHere || name !== 'jira';
-  const inherited = Object.fromEntries(Object.entries(above.integrations || {}).filter(([name, from]) => from && from !== layer && shownHere(name)));
-  // Narrowing: off above holds here; this layer may turn off what is on above, for itself and below.
-  const offAbove = Object.fromEntries(Object.entries(above.off || {}).filter(([name, from]) => from && from !== layer && shownHere(name)));
-  const ownOff = [...(own.brief.integrations_off || [])].filter(shownHere);
-  // Project management: what the layers above answer (on, from the Campaign, when none says).
-  const pmAboveOn = above.pm ? above.pm.on !== false : true;
-  const pmAboveFrom = above.pm?.from && above.pm.from !== layer ? above.pm.from : '';
+  const shownHere = (name) => layer !== 'agent' || name !== 'jira';
   const named = new Map(catalog.map((row) => [row.name, row]));
   // View opens the file in the Behaviors surface (behaviour-surface.js), where the user can read or make their own version.
   const option = (row, extra = {}) => ({ v: row.name, l: row.title || row.name, sub: row.seed || '', ...(row.kind ? { view: { name: row.name, scope: scopeOf(row.kind) } } : {}), ...extra });
@@ -127,16 +94,7 @@ export function paintBriefForm(host, { layer = 'agent', catalog = [], value = em
   // What is in play here already, from the server: a behaviour the layer itself adds is not "already".
   const played = new Map((inPlay || []).filter((row) => !(row.why || []).length || !row.why.every((need) => need === `add:${layer}`)).map((row) => [row.name, row]));
 
-  // The integrations there are, and project management, as the layers above leave them.
-  const names = [...new Set([...integrationNames(catalog), ...(above.available || []), ...Object.keys(inherited), ...Object.keys(offAbove), ...ownOff, ...own.integrations])].filter(shownHere).sort();
-  const fromAbove = (name) => !!inherited[name] || ownOff.includes(name);
-  // Following the layer above, the words say where it is set; set here, they say what it means.
-  const pmFollows = () => typeof own.pm !== 'boolean';
-  const pmWord = (on) => (pmFollows() && pmAboveFrom
-    ? (on ? t('brief.on_from_word', 'On, from the {layer}', { layer: layerWord(pmAboveFrom) }) : t('brief.off_from_word', 'Off, from the {layer}', { layer: layerWord(pmAboveFrom) }))
-    : on ? t('brief.pm_on_layer', 'Work items for every Agent below: the item model, and the guidance for each role.')
-      : t('brief.pm_off_layer', 'Off here and below: no work items guidance.'));
-  const pmIs = () => (pmFollows() ? pmAboveOn : own.pm);
+  const onOff = (on) => (on ? t('brief.on', 'On') : t('brief.off', 'Off'));
   /* Add (an Agent's Optional): each card says its state — its depth when chosen; when already in play, why and how deep. */
   const depthOf = (name) => own.brief.add.find((row) => row.name === name)?.depth || 'full';
   const depthWord = (depth) => (depth === 'seed' ? t('brief.depth_seed', 'Seed') : t('brief.depth_full', 'Full'));
@@ -164,20 +122,20 @@ export function paintBriefForm(host, { layer = 'agent', catalog = [], value = em
   };
   if (layer === 'agent') {
     /* One list of cards, each on or off: project management, each integration, the optional
-       behaviours. A card on from a layer above says so; what is saved is still { brief, integrations, pm }. */
+       behaviours, starting from the parent's; what is saved is the Agent's own changes { brief, integrations, pm }. */
     const PM = '@pm'; const INT = 'integration:'; const ADD = 'add:';
-    const fromWord = (on, from) => (on ? t('brief.on_from_word', 'On, from the {layer}', { layer: layerWord(from) }) : t('brief.off_from_word', 'Off, from the {layer}', { layer: layerWord(from) }));
-    const onOff = (on) => (on ? t('brief.on', 'On') : t('brief.off', 'Off'));
-    const pmCard = (now) => {
-      const on = now.includes(PM);
-      return { v: PM, l: t('brief.pm', 'Project management'), word: on === pmAboveOn && pmAboveFrom ? fromWord(on, pmAboveFrom) : onOff(on) };
-    };
-    const intCard = (name, now) => {
-      const on = now.includes(INT + name);
-      if (offAbove[name]) return { v: INT + name, l: name, word: fromWord(false, offAbove[name]), disabled: true };
-      if (inherited[name] && on) return { v: INT + name, l: name, word: fromWord(true, inherited[name]) };
-      return { v: INT + name, l: name, word: onOff(on) };
-    };
+    const parents = ([name, from]) => from && from !== 'agent' && shownHere(name);
+    const inherited = Object.fromEntries(Object.entries(above.integrations || {}).filter(parents));
+    const offAbove = Object.fromEntries(Object.entries(above.off || {}).filter(parents));
+    const ownOff = [...(own.brief.integrations_off || [])].filter(shownHere);
+    const pmAboveOn = above.pm ? above.pm.on !== false : true;
+    const pmIs = () => (typeof own.pm === 'boolean' ? own.pm : pmAboveOn);
+    const names = [...new Set([...integrationNames(catalog), ...(above.available || []), ...Object.keys(inherited), ...Object.keys(offAbove), ...ownOff, ...own.integrations])].filter(shownHere).sort();
+    const fromAbove = (name) => !!inherited[name] || ownOff.includes(name);
+    const pmCard = (now) => ({ v: PM, l: t('brief.pm', 'Project management'), word: onOff(now.includes(PM)) });
+    const intCard = (name, now) => (offAbove[name]
+      ? { v: INT + name, l: name, word: onOff(false), disabled: true }
+      : { v: INT + name, l: name, word: onOff(now.includes(INT + name)) });
     const addCard = (row, now) => {
       const card = addRow(row, { add: now.filter((v) => v.startsWith(ADD)).map((v) => v.slice(ADD.length)) });
       const on = now.includes(ADD + row.name);
@@ -207,50 +165,31 @@ export function paintBriefForm(host, { layer = 'agent', catalog = [], value = em
     box.append(cards.el);
     destroyers.push(cards, { destroy: () => depthAsks.forEach((one) => one.destroy()) });
   } else {
+    // The level's own: its integrations, project management (on unless it says off), Add, Block and Only.
+    const names = [...new Set([...integrationNames(catalog), ...(above.available || []), ...own.integrations])].filter(shownHere).sort();
     const intBox = showIntegrations
-      ? section(t('brief.integrations', 'Integrations'), t('brief.integrations_help_layer', 'On or off here holds for everything below.'))
+      ? section(t('brief.integrations', 'Integrations'), t('brief.integrations_help_level', 'Each Workspace, Team and Agent made here starts with these.'))
       : section(t('brief.pm', 'Project management'));
     if (showIntegrations) {
       const integrations = ask([{ fields: [{ key: 'integrations', label: t('brief.integrations', 'Integrations'), many: true, shape: 'rect', filter: false,
-        options: (now) => names.map((name) => {
-          const on = (now.integrations || []).includes(name);
-          if (offAbove[name]) return { v: name, l: name, word: t('brief.off_from_word', 'Off, from the {layer}', { layer: layerWord(offAbove[name]) }), disabled: true };
-          if (inherited[name]) return { v: name, l: name, word: on ? t('brief.on_from_word', 'On, from the {layer}', { layer: layerWord(inherited[name]) }) : t('brief.off_here', 'Off here and below') };
-          if (ownOff.includes(name)) return { v: name, l: name, word: on ? t('brief.on', 'On') : t('brief.off_here', 'Off here and below') };
-          return { v: name, l: name, word: on ? t('brief.on', 'On') : t('brief.off', 'Off') };
-        }) }] }],
-      { value: { integrations: [...new Set([...Object.keys(inherited).filter((name) => !ownOff.includes(name)), ...own.integrations])] }, density: 'tight', exposed: true,
-        onChange: (next) => {
-          const chosen = new Set(next.integrations);
-          own.integrations = next.integrations.filter((name) => !fromAbove(name) && !offAbove[name]);
-          const off = [...new Set([...Object.keys(inherited), ...ownOff])].filter((name) => !chosen.has(name));
-          if (off.length) own.brief.integrations_off = off; else delete own.brief.integrations_off;
-          emit();
-        } });
+        options: (now) => names.map((name) => ({ v: name, l: name, word: onOff((now.integrations || []).includes(name)) })) }] }],
+      { value: { integrations: [...own.integrations] }, density: 'tight', exposed: true,
+        onChange: (next) => { own.integrations = [...next.integrations]; emit(); } });
       intBox.append(integrations.el);
       destroyers.push(integrations);
     }
-    const pmNote = el('span', 'na-behaviour-note', pmWord(pmIs()));
-    // On or off at every layer. Choosing what the layer above says follows it again; anything else is this layer's own.
+    const pmWord = (on) => (on ? t('brief.pm_on_level', 'Work items for every Agent: the item model, and the guidance for each role.')
+      : t('brief.pm_off_level', 'Off: no work items guidance.'));
+    const pmNote = el('span', 'na-behaviour-note', pmWord(own.pm !== false));
     const pm = ask([{ fields: [{ key: 'pm', label: t('brief.pm', 'Project management'), compact: true, switch: [t('forms.on', 'On'), t('forms.off', 'Off')] }] }],
-      { value: { pm: pmIs() }, density: 'tight', onChange: (next) => {
-        if (next.pm === pmAboveOn) delete own.pm; else own.pm = next.pm;
-        pmNote.textContent = pmWord(pmIs()); emit();
-      } });
+      { value: { pm: own.pm !== false }, density: 'tight', onChange: (next) => { own.pm = next.pm; pmNote.textContent = pmWord(next.pm); emit(); } });
     destroyers.push(pm);
     const pmRow = el('div', 'brief-pm-row');
     if (showIntegrations) pmRow.append(el('span', 'brief-pm-name', t('brief.pm', 'Project management')));
     pmRow.append(pm.el, pmNote);
     intBox.append(pmRow);
-    // Where what is inherited is set: one line, each place a link to its page when the host can open it.
-    const sources = [...new Set([...Object.values(inherited), ...(pmFollows() && pmAboveFrom ? [pmAboveFrom] : [])])];
-    if (sources.length) {
-      const setOn = el('p', 'na-behaviour-note brief-set-on', `${t('brief.set_on', 'Set on')}: `);
-      sources.forEach((from, index) => { if (index) setOn.append(' · '); setOn.append(linkFor?.(from, layerWord(from)) || layerWord(from)); });
-      intBox.append(setOn);
-    }
 
-    const addBox = section(t('brief.add', 'Add'), t('brief.add_help', 'Brought in for every Agent below, at this depth.'));
+    const addBox = section(t('brief.add', 'Add'), t('brief.add_help', 'Brought in for every Agent here, at this depth.'));
     const add = ask([{ fields: [{ key: 'add', label: t('behaviours', 'Behaviors'), many: true, shape: 'rect', filter: false,
       row: depthControl,
       options: (now) => [...addable.map((row) => addRow(row, now)),
@@ -289,8 +228,8 @@ export function paintBriefForm(host, { layer = 'agent', catalog = [], value = em
         { value: { [key]: own.brief[key] }, density: 'tight', onChange: (next) => { own.brief[key] = [...next[key]]; emit(); } });
       box.append(picker.el); destroyers.push(picker);
     };
-    listField('block', t('brief.block', 'Block'), t('brief.block_help', 'Never told to any Agent below.'));
-    listField('only', t('brief.only', 'Only'), t('brief.only_help', 'When set, nothing else is told below; a behavior brings its tools.'));
+    listField('block', t('brief.block', 'Block'), t('brief.block_help', 'Never told to an Agent here.'));
+    listField('only', t('brief.only', 'Only'), t('brief.only_help', 'When set, nothing else is told here; a behavior brings its tools.'));
     if (inPlay) told();
   }
   host.replaceChildren(...parts);
@@ -299,10 +238,10 @@ export function paintBriefForm(host, { layer = 'agent', catalog = [], value = em
 
 /**
  * One layer's settings as a panel with its own Save: the Campaign, Workspace and Team pages
- * mount it (`GET`/`PUT /api/brief/settings/:layer/:id`). A save reaches Agents born after it;
- * a live Agent's brief doesn't move.
+ * mount it (`GET`/`PUT /api/brief/settings/:layer/:id`). A save reaches what is made after it;
+ * nothing already made moves.
  */
-export function createBriefSettingsPanel({ layer, id = '', campaignId = '', createAction = null, ownSave = true, showIntegrations = true, onChange = () => {}, preview = null, linkFor = null } = {}) {
+export function createBriefSettingsPanel({ layer, id = '', campaignId = '', createAction = null, ownSave = true, showIntegrations = true, onChange = () => {}, preview = null } = {}) {
   const root = el('div', 'brief-settings');
   const formHost = el('div', 'na-behaviour-sections');
   const actions = el('div', 'brief-settings-actions');
@@ -317,7 +256,7 @@ export function createBriefSettingsPanel({ layer, id = '', campaignId = '', crea
   let catalog = []; let value = emptyBriefValue(); let above = {}; let form = null; let inPlay = null;
   const paint = () => {
     form?.destroy();
-    form = paintBriefForm(formHost, { layer, catalog, value, above, showIntegrations, inPlay, linkFor, onChange: (next) => { value = next; status.textContent = ''; onChange(next); } });
+    form = paintBriefForm(formHost, { layer, catalog, value, above, showIntegrations, inPlay, onChange: (next) => { value = next; status.textContent = ''; onChange(next); } });
   };
   // `preview` is what an Agent here is: { campaign_id } | { workspace } | { team } (POST /api/brief/preview).
   const readTold = async () => {
@@ -325,10 +264,10 @@ export function createBriefSettingsPanel({ layer, id = '', campaignId = '', crea
     const result = await request('/api/brief/preview', { method: 'POST', json: preview });
     if (result.ok) { inPlay = result.data?.in_play || []; paint(); }
   };
-  const answer = (data = {}) => { value = briefValue(data); above = data.inherited || {}; paint(); void readTold(); };
+  const answer = (data = {}) => { value = briefValue(data); above = { available: data.available || [] }; paint(); void readTold(); };
   async function save() {
     status.textContent = t('team_config.saving', 'Saving…');
-    const body = { ...value, pm: typeof value.pm === 'boolean' ? value.pm : null };
+    const body = { ...value, pm: value.pm !== false };
     const result = await request(url(), { method: 'PUT', json: body });
     status.textContent = result.ok ? t('team_config.saved', 'Saved') : result.message;
     if (result.ok) answer(result.data);

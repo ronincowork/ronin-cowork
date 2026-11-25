@@ -18,9 +18,7 @@ import { announceTeamChanges } from './wipeboards-api.js';
 import { pushTeams } from '../ws/events.js';
 import { campaignFilter, campaignResolver, initialCampaignId, machineCampaignId } from '../campaign-scope.js';
 import { detachTeamMembers, retireTeam } from '../team-retire.js';
-import { readCampaign } from '../campaigns.js';
-import { readWorkspace } from '../workspaces.js';
-import { teamAgentDefaults } from '../agent-defaults.js';
+import { launchModeOf, modelsOf } from '../waterfall.js';
 import { rosterReading, teamBoard, teamWork } from '../work-items-read.js';
 
 const errMsg = (e: unknown): string => String((e as Error)?.message ?? e);
@@ -30,25 +28,6 @@ async function campaignOf(stated: unknown): Promise<string> {
   return asked || (await initialCampaignId());
 }
 
-const object = (value: unknown): Record<string, unknown> =>
-  value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {};
-
-/** Materialize Campaign defaults only at creation. Existing-team updates deliberately
- * bypass this helper so omission continues to mean preserve. */
-async function creationEdit(campaign_id: string, stated: RosterEdit): Promise<RosterEdit> {
-  const campaign = await readCampaign(campaign_id);
-  if (!campaign) throw new Error(`Unknown Campaign: ${campaign_id || '(none)'}.`);
-  const inherited = campaign.config.defaults;
-  const cowork = object(campaign.config.cowork_defaults);
-  const edit: RosterEdit = {
-    ...(typeof cowork.branch === 'string' ? { branch: cowork.branch } : {}),
-    ...(object(cowork.branches) ? { branches: Object.fromEntries(Object.entries(object(cowork.branches)).map(([k, v]) => [k, String(v)])) } : {}),
-    ...stated,
-    agent_defaults: { ...teamAgentDefaults(inherited), ...(stated.agent_defaults ?? {}) },
-  };
-  if (edit.workspace && !(await readWorkspace(campaign_id, edit.workspace))) throw new Error(`No Workspace "${edit.workspace}" in Campaign ${campaign_id}.`);
-  return edit;
-}
 
 function editOf(body: unknown): RosterEdit {
   const b = (body ?? {}) as Record<string, unknown>;
@@ -78,6 +57,8 @@ function editOf(body: unknown): RosterEdit {
   }
   if (b.agent_defaults !== undefined) edit.agent_defaults = b.agent_defaults && typeof b.agent_defaults === 'object' && !Array.isArray(b.agent_defaults)
     ? b.agent_defaults as RosterEdit['agent_defaults'] : {};
+  if (b.launch_mode !== undefined) edit.launch_mode = launchModeOf(b.launch_mode);
+  if (b.models !== undefined) edit.models = modelsOf(b.models);
   if (b.branch !== undefined) edit.branch = String(b.branch).trim().slice(0, 128);
   if (b.wipeboard !== undefined) edit.wipeboard = String(b.wipeboard).trim().slice(0, 64);
   if (b.state !== undefined) {
@@ -142,12 +123,7 @@ export function registerTeams(app: express.Express): void {
     }
     try {
       const campaign_id = await campaignOf(req.body?.campaign_id);
-      const edit = await creationEdit(campaign_id, editOf(req.body));
-      // Every team-creation entrance reaches this door. Some, such as New Agent's
-      // abbreviated "A new team" path, state only identity. Materialize the Campaign
-      // layer here so an omitted browser field cannot become a complete map of `false`.
-      // Values the caller did state remain the final word.
-      const roster = await createTeamRoster(name, edit, campaign_id);
+      const roster = await createTeamRoster(name, editOf(req.body), campaign_id);
       count('team.create');
       res.json({ ok: true, roster });
     } catch (e) {
@@ -205,10 +181,9 @@ export function registerTeams(app: express.Express): void {
       const named = typeof req.body?.campaign_id === 'string' && req.body.campaign_id.trim() ? req.body.campaign_id.trim() as string : undefined;
       const existing = await readTeamRoster(name, named);
       const campaign_id = await campaignOf(req.body?.campaign_id);
-      const reapplyCampaign = req.body?.campaign_defaults === true;
       const roster = existing
-        ? await writeTeamRoster(name, reapplyCampaign ? await creationEdit(campaign_id, edit) : edit, named)
-        : await createTeamRoster(name, await creationEdit(campaign_id, edit), campaign_id);
+        ? await writeTeamRoster(name, edit, named)
+        : await createTeamRoster(name, edit, campaign_id);
       count(existing ? 'team.update' : 'team.create');
       const live = new Set((await listSessions()).map((s) => s.name));
       const added: string[] = [];

@@ -11,7 +11,7 @@ import { ask } from './ask.js';
 import { createStep } from './form-steps.js';
 import { firstMandate, screenOf, loadMandates, mandateRows } from './mandates.js';
 import { WorkspacePrimitives } from './workspace-primitives.js';
-import { createBriefSettingsPanel, layerLinks } from './brief-step.js';
+import { createBriefSettingsPanel } from './brief-step.js';
 
 const el = (tag, cls, text) => { const node = document.createElement(tag); if (cls) node.className = cls; if (text != null) node.textContent = String(text); return node; };
 const bucket = (value) => value && typeof value === 'object' && !Array.isArray(value) ? value : {};
@@ -92,7 +92,7 @@ export function renderTeamConfiguration(host, roster, optionsArg = {}) {
     /* ---- Behaviors (unnumbered): what every Agent on this Team is told, saved with the form ---- */
     const stepBrief = foldable('brief', t('behaviours', 'Behaviors'));
     const brief = createBriefSettingsPanel({ layer: 'team', id: roster.name, campaignId: roster.campaign_id || '', ownSave: false,
-      preview: { team: roster.name, campaign_id: roster.campaign_id || undefined }, linkFor: layerLinks() });
+      preview: { team: roster.name, campaign_id: roster.campaign_id || undefined } });
     stepBrief.body.append(el('p', 'fs-step-help', t('team_config.brief_help', 'What every Agent on this Team is told. Agents already working are sent the change.')), brief.el);
     form.append(stepBrief.el); void brief.enter();
 

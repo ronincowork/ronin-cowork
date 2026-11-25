@@ -10,8 +10,8 @@
  *    folder files/<source>, for the Team step's Epic to bring in. Nothing is pulled in here.
  * 3. From scratch: a new Git repository in repos/<name>; on GitHub too once signed in.
  * 4. Not sure yet: Ronin Lab, what it is and its folder, then Create (two presses).
- * Doors 1–3 ask, in order: the kind, the name, what you are working on; the door's own question; what
- * every Agent in it should follow; while there is none, Also add Ronin Lab; then Create. Every answer is
+ * Doors 1–3 ask, in order: the kind, the name, what you are working on; the door's own question (doors 1
+ * and 3 then how Agents work in the repositories, Desks or Direct); what every Agent in it should follow; while there is none, Also add Ronin Lab; then Create. Every answer is
  * on the Workspace record. With no door chosen, or the chosen one pressed again: what a Workspace is.
  *
  * The Helpful Assistant hears two things from here: Connect (its stone names her) asks her to sign in
@@ -25,7 +25,7 @@ import { subscribe } from './store.js';
 import { WorkspaceKit } from './workspace-kit.js';
 import { KINDS, kindWord, ruledRows } from './glyphs.js';
 import { openWorkspaceTab } from './workspace.js';
-import { workspaceHandle } from './workspaces-surface.js';
+import { repoModeRows, workspaceHandle } from './workspaces-surface.js';
 import { sendComposerMessage } from './composer-rules.js';
 import { sendPress } from './press.js';
 import { IRASSHAI, IRASSHAI_NAME, askIrasshai, irasshaiLive } from './setup-irasshai.js';
@@ -48,7 +48,7 @@ const SOURCES = [
   { v: 'netlify', l: 'Netlify' }, { v: 'computer', l: t('setup_workspace.source_computer', 'Files from my computer') },
 ];
 const repoBase = (url) => url.trim().replace(/\.git$/, '').replace(/\/+$/, '').split(/[/:]/).pop() || '';
-const blank = () => ({ picked: [], pasted: '', sources: [], github: 'here', title: '', named: false, objective: '', kind: '', instructions: '', lab: false });
+const blank = () => ({ picked: [], pasted: '', sources: [], github: 'here', mode: 'reviewed', title: '', named: false, objective: '', kind: '', instructions: '', lab: false });
 
 /**
  * WHAT A WORKSPACE IS, DRAWN (owner, 25 Nov; KAN-845): an example, said so, never pressable. Your
@@ -212,7 +212,8 @@ export function createWorkspaceKickoff({ workspacesRead, environment }) {
     const integrations = door === 'existing' ? draft.sources.map((provider) => ({ provider, folder: `files/${provider}` })) : [];
     let answer = await put(name, { title: draft.title.trim(), objective: draft.objective.trim(), kind: draft.kind || 'open', instructions: draft.instructions.trim(), integrations });
     const wsMade = answer.ok;
-    const repos = door === 'git' ? urls().map((repository) => ({ repository })) : door === 'scratch' ? [draft.github === 'github' && github.authenticated ? { github: 'private' } : {}] : [];
+    const repos = (door === 'git' ? urls().map((repository) => ({ repository })) : door === 'scratch' ? [draft.github === 'github' && github.authenticated ? { github: 'private' } : {}] : [])
+      .map((body) => ({ ...body, mode: draft.mode }));
     for (const [i, body] of repos.entries()) {
       if (!answer.ok) break;
       word.textContent = body.repository
@@ -302,6 +303,8 @@ export function createWorkspaceKickoff({ workspacesRead, environment }) {
           ...(github.authenticated ? {} : { off: t('setup_workspace.repo_github_off', 'Connect GitHub first, below.') }) },
       ], draft.github, (v) => { draft.github = v; }));
     }
+    // DESKS OR DIRECT (owner, 25 Nov): wherever a repository is added; Desks unless they say.
+    if (door === 'git' || door === 'scratch') blanks.append(question('mode', t('workspaces.repo_mode_ask', 'How do Agents work in it?'), repoModeRows(), draft.mode, (v) => { draft.mode = v; }));
     blanks.append(...tail);
     // GITHUB, OPTIONAL (owner, 25 Nov), at the foot of doors 2 and 3 while it is not signed in.
     if ((door === 'existing' || door === 'scratch') && !github.authenticated) blanks.append(connectStone(t('setup_workspace.github_optional', 'Optional. So Agents can use GitHub for this project: pull requests, issues, a repository on GitHub. The Helpful Assistant signs you in, in her chat.')));
