@@ -148,9 +148,10 @@ item delete w12                     # with its subtasks
 ```
 
 Every command but `link` and `checkout` takes several ids (`item read w12 w13`, `item comment
-w12 w13 "…"`), each acted on in turn. Every write answers with one line of what it did, then
-the item as it now is; on several, one line each, and a line saying why for any not done, the
-tool then exiting 4.
+w12 w13 "…"`), each acted on in turn. Every write answers with one line of what it did; on
+several, one line each, and a line saying why for any not done, the tool then exiting 4. Every
+command takes `--json`: the reply as JSON and nothing else, for a script (a new item's id at
+`.item.id`). A flag a command does not take is refused by name, with its usage.
 
 ## An Agent's day
 
