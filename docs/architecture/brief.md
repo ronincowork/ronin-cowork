@@ -436,7 +436,8 @@ Every tool is a command on your PATH; `<tool> --help` gives its syntax.
   and after the edit. If the brief comes out different, it sends "Your brief changed" with the
   facts whose line reads differently, the behaviours and tools that came into play (at their
   depth) or left it, and the path of `AGENT_BRIEF.md` (`briefChanges`, `src/brief.ts`, a pure
-  comparison of the two builds). A mandate change sends the new mandate only. If nothing
+  comparison of the two builds). A mandate change names the axis and new value, followed by
+  its order (for example, `Reach: Execute — Do the agreed work through to done.`). If nothing
   differs, nothing is sent.
 - **Send** on the New Agent form sends only what changed; when nothing did, the form says "Its
   brief is unchanged: nothing was sent."
