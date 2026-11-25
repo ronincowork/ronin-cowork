@@ -12,7 +12,7 @@
 - **transcript_journal:** —
 - **launch_initial:** ["--prompt", "{brief}"]
 
-CLI id and command: `opencode`. Catalog provider: OpenCode. Reviewed 2026-11-15.
+CLI id and command: `opencode`. Vendor: `opencode` (OpenCode), its `vendor` in `src/agents.ts`; one SQLite store `~/.local/share/opencode/opencode.db`, no adapter. Reviewed 2026-11-15.
 Version: **1.19.5**. Installed into a scratch home and its help read; never signed in or run
 through Ronin.
 

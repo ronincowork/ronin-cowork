@@ -12,7 +12,7 @@
 - **transcript_journal:** {"format":"hermes-state","root":"{home}","pattern":"state.db"}
 - **launch_initial:** ["--query", "{brief}"]
 
-CLI id: `hermes`. Catalog provider: `hermes`.
+CLI id: `hermes`. Vendor: `hermes` (Hermes), its `vendor` in `src/agents.ts`; no transcript established.
 
 The Hermes Models worksurface manages API connections and named setups, rather than
 subscription sign-in. Add a named OpenAI, Mistral or OpenAI-compatible HTTPS connection,

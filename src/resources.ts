@@ -332,17 +332,14 @@ function parseCredit(v: string): { text: string; url: string } | undefined {
 const SHADOWABLE: Record<string, string> = {
   'SAVED_LAUNCHES.md': 'a launcher form, filled in ahead of time and named',
   'SKINS.md': 'a look — a set of design tokens, and nothing else',
-  'MODEL_PROVIDERS.md': 'a model provider — its `### <Vendor>` section: the vendor id, the CLI, and one row per model',
 };
-/** The heading level a catalog's entries sit under: `## name` for most, `### <Vendor>` for the provider catalog. */
-export const sectionHead = (file: string): string => (file === 'MODEL_PROVIDERS.md' ? '###' : '##');
 
 export const isShadowable = (file: string): boolean => Object.hasOwn(SHADOWABLE, file);
 
 function newFileHeader(file: string): string {
   const what = SHADOWABLE[file] ?? 'your own entries';
-  const head = sectionHead(file);
-  const same = file === 'MODEL_PROVIDERS.md' ? '`- **provider:** id`' : `\`${head} name\``;
+  const head = '##';
+  const same = `\`${head} name\``;
   const stock = file === 'SAVED_LAUNCHES.md' ? '' :
     `>\n> The shipped copy is \`ronin_stock/${file}\` — read it for the format and copy a\n` +
     `> block out of it to start from. An entry here with the SAME ${same} REPLACES that\n` +
