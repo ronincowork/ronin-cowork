@@ -82,7 +82,7 @@ rated row carries `tier`, `use_for` and `facts` (`context`, `output`, `price`, `
 `knowledge`, `reasoning`, `tools`, whichever HQ has). Several models may share a tier; Mika's
 Light → Standard → Frontier cascade takes the first of each tier, the catalog's order.
 
-## Hermes connections and named setups
+## Hermes connections and model options
 
 Hermes is one provider in the existing Model provider dropdown. Its Model dropdown
 lists Ronin-owned setup names, identified by stable UUIDs. Each setup references an API
@@ -192,7 +192,7 @@ What this machine *has* is measured, not derived on every read. The Campaign rec
 `catalog.config.models[].id` and `.name`, only the `main` section its own picker offers — the
 `overflow` generations are still served but not offered), `codex-cache` (`~/.codex/models_cache.json`,
 `models[]` with `slug`, `display_name`, and `visibility: list`), `command` (run the CLI with
-the argv and read the list under *Available models:* — Grok), or `hermes-setups` (Hermes named setups), or `none` (Antigravity:
+the argv and read the list under *Available models:* — Grok), or `hermes-setups` (Hermes model options), or `none` (Antigravity:
 Model: Native only, and the surface says so). `readModels` walks that table; no CLI id
 appears in it. A new way to read a list is a new key, never an `if`.
 

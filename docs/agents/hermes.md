@@ -14,11 +14,11 @@
 
 CLI id: `hermes`. Vendor: `hermes` (Hermes), its `vendor` in `src/agents.ts`; no transcript established.
 
-The Hermes Models worksurface manages API connections and named setups, rather than
+The Hermes Models worksurface manages API connections and Hermes model options, rather than
 subscription sign-in. Add a named OpenAI, Mistral or OpenAI-compatible HTTPS connection,
 enter its API key, and Discover models. This requests that endpoint's `/models` list;
 it verifies listing access, not inference or tool support for every returned model.
-Create a named setup selecting its model, reasoning and approvals. Non-OpenAI
+Create a Hermes model option selecting its model, reasoning and approvals. Non-OpenAI
 connections currently use provider-default reasoning.
 
 New Agent keeps its two fields: Model provider = Hermes, Model = the setup name.
@@ -26,7 +26,7 @@ Each Cowork birth creates a private `cli-home/` directory inside that session's 
 with a configuration snapshot and empty memory/history. Hermes uses `shared` to link only
 `auth.json`, `.env`, `config.yaml`, `skills`, `SOUL.md`, `hermes-agent`, `tools`, and `installs` from
 its installed home. `installs` holds the dependency generations and installation records,
-so a fresh data home reuses the installed runtime instead of installing dependencies. Named setups replace the inherited config with their snapshot and
+so a fresh data home reuses the installed runtime instead of installing dependencies. Model options replace the inherited config with their snapshot and
 point `.env` at the connection credential. Everything else starts private, including
 new runtime files introduced by Hermes updates. Codex retains its existing `private` form.
 Each birth owns its gateway and conversation store: Hermes mints conversation IDs itself,
@@ -45,13 +45,13 @@ Ronin reads its environment/.env and the native Hermes .env, records the provide
 and prepares the private credential file used by agent homes. No import action is required.
 Environment-backed connections are removed at their source; explicit form connections
 remain managed in Ronin. Configured means a key is present, not that inference was tested.
-Named setups currently require Cowork agent births; bare-metal launches are refused.
+Model options currently require Cowork agent births; bare-metal launches are refused.
 Archive/restore remains unsupported. The hermes-state transcript declaration identifies the private state.db; the reader is delivered separately by KAN-155. Raw native Hermes commands
 continue to use Hermes's own defaults and do not select a Ronin setup automatically.
 
 ## Ronin launch sequence
 
-A named setup launches `hermes chat -m <actual-model>` with a fresh HERMES_HOME.
+A model option launches `hermes chat -m <actual-model>` with a fresh HERMES_HOME.
 Its API provider and endpoint come from that home's saved configuration. The optional
 Dangerously launch mode appends `--yolo`; otherwise the setup's approvals setting applies.
 

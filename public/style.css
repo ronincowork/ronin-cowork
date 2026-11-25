@@ -5214,9 +5214,23 @@ html[data-screen='inside'] #phone .ph-bar .ph-title[data-boot='inside'] { displa
 /* Hermes's two steps (form-steps.js) span the bar; the adding row is dashed, the same shape as a row it adds. */
 .hermes-settings .fs-step > .fs-step-body, .hermes-settings .fs-step:has(> .fs-step-head.fs-togglable) > .fs-step-body { grid-column: 1 / -1; }
 .hermes-settings .fs-step { grid-template-columns: minmax(0, 1fr); }
-.hermes-card.adding { border-style: dashed; }
-.hermes-card-summary { flex-direction: column; align-items: flex-start; }
 .hermes-fine { font-size: 12px; }
+/* Hermes's lists are tables (owner, 25 Nov 2026): one row each, icons on the right, one Add line. */
+.hermes-table { width: 100%; border-collapse: collapse; }
+.hermes-table :is(th, td) { padding: 6px 8px; text-align: left; vertical-align: middle; overflow-wrap: anywhere; }
+.hermes-table :is(th, td):first-child { padding-left: 0; }
+.hermes-table thead th { color: var(--muted); font-weight: normal; border-bottom: var(--edge) solid var(--line-2); }
+.hermes-table tbody th { color: var(--fg-strong); font-weight: var(--weight-strong); }
+.hermes-table tbody td { color: var(--fg); }
+.hermes-table tbody tr + tr :is(th, td) { border-top: var(--edge) solid var(--line); }
+.hermes-tools { width: 1%; white-space: nowrap; text-align: right; }
+.hermes-icon { display: inline-grid; place-items: center; width: 28px; height: 28px; padding: 0; border: 0; border-radius: var(--radius-small); background: none; color: var(--muted); cursor: pointer; }
+.hermes-icon:hover, .hermes-icon:focus-visible { background: var(--inset); color: var(--fg-strong); }
+.hermes-icon svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.hermes-add-line { padding: 0; border: 0; background: none; color: var(--link); font: inherit; cursor: pointer; }
+.hermes-add-line:hover { text-decoration: underline; }
+.hermes-add-line:disabled { color: var(--muted); cursor: default; text-decoration: none; }
+.hermes-add-note { margin-left: 8px; color: var(--muted); }
 /* The four ways: four equal stones across the bar, two by two when narrow. */
 .setup-harness-row.setup-harness-ways { display: grid; grid-template-columns: repeat(auto-fit, minmax(112px, 1fr)); }
 .setup-harness-ways .ask-rect { width: auto; flex: none; }
