@@ -5197,8 +5197,11 @@ html[data-screen='inside'] #phone .ph-bar .ph-title[data-boot='inside'] { displa
 .setup-workspace-kickoff { display: flex; flex-direction: column; gap: var(--space-5, 24px); max-inline-size: 48rem; padding: var(--space-4, 16px); }
 .setup-workspace-blanks { display: flex; flex-direction: column; gap: var(--space-4, 16px); }
 .setup-workspace-blanks[data-door='open'] { padding-inline-start: var(--space-4, 16px); border-inline-start: 2px solid var(--line); }
-.setup-workspace-about { display: flex; flex-direction: column; gap: var(--space-2, 8px); max-inline-size: 40rem; }
-.setup-workspace-about p { margin: 0; }
+.setup-workspace-about { display: flex; flex-direction: column; gap: calc(var(--space-paragraph) * 2); max-inline-size: 40rem; }
+/* Clear paragraphs (owner, 25 Nov): a full line between them, the heading close to its text, a section's gap before the diagram. */
+.setup-workspace-about p { margin: 0; line-height: var(--leading-body); }
+.setup-workspace-about-title + p { margin-top: calc(var(--space-paragraph) * -1); }
+.setup-workspace-about + .ws-diagram { margin-top: calc(var(--space-section) - var(--space-4, 16px)); }
 /* The Workspace diagram (KAN-845): an example, drawn in the page's own tokens, never pressable. */
 .ws-diagram { margin: 0; display: flex; flex-direction: column; gap: var(--space-row); max-inline-size: 40rem; }
 .ws-diagram figcaption { color: var(--muted); font-size: var(--text-small); }
