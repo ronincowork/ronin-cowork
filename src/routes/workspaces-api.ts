@@ -6,6 +6,7 @@ import { listTeamRosters } from '../team-rosters.js';
 import { addRepository, deleteWorkspace, isValidWorkspaceName, listWorkspaces, normalizeWorkspace, readWorkspace, saveWorkspace, type Workspace } from '../workspaces.js';
 import { PlanBadInput, PlanMissing, PlanRefused, movePlans, plansPlace } from '../plans.js';
 import { listCanvases } from '../canvases.js';
+import { folderFacts } from '../folder-facts.js';
 import { deleteIcebox } from '../work-items.js';
 import { callerOf } from './work-items-api.js';
 import { cloneRepository, createGithubRepository } from '../setup-runtime.js';
@@ -18,7 +19,9 @@ const withPlace = async (w: Workspace) => {
   const place = await plansPlace(w.campaign_id, w.name, w.plans).catch((e) => (e instanceof PlanMissing || e instanceof PlanBadInput ? null : Promise.reject(e)));
   // CANVASES (KAN-329): the Workspace's canvases by name, for the page's Canvases line.
   const canvases = place ? (await listCanvases(w).catch(() => [])).map(({ name }) => name) : [];
-  return { ...w, plans_place: place ? { location: place.location, path: place.path, recommended: place.recommended } : null, canvases };
+  // EACH REPOSITORY'S REMOTE (KAN-809), for its row's line: read here, nothing probes a folder.
+  const repos = await Promise.all(w.repos.map(async (r) => ({ ...r, remote: (await folderFacts(r.dir).catch(() => null))?.repo?.remote ?? '' })));
+  return { ...w, repos, plans_place: place ? { location: place.location, path: place.path, recommended: place.recommended } : null, canvases };
 };
 
 export function registerWorkspaces(app: express.Express): void {

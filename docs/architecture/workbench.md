@@ -181,7 +181,7 @@ Authenticate offers Mika operating the registry-owned native login command in th
 Authenticate action. Mika is a startup invariant, including before the first owner provider is connected, so the
 two assisted choices do not depend on provider count. In every path the provider summary remains the readiness authority. Workspaces seats
 its own stones of Workspaces (`workspaces-surface.js`, `workspaces.records`): a pressed one's page is the whole
-Workspace: Describe (its objective), Where it lives (its folders added with the kit's folder picker or a pasted path, KAN-728, or a pasted Git URL), and More;
+Workspace: Describe (its objective), Where it lives (its folder and its repositories, Desks or Direct each; Add a repository clones one into its `repos/`, KAN-809), and More;
 one read of the pinned folders per bench (`createRootsReading`, the detail route). Epics (owner, 2026-11-02;
 KAN-187) seats its own stones of Epics the same way (`epics-surface.js`, `epics.records`): the level-1 work items of
 the Campaign — the store's pushed `epics` and `epicItems`, no request (KAN-190, KAN-206). Since w334 (owner,
@@ -354,7 +354,7 @@ principle (KAN-728): its folders and repositories are rows of its record, and no
 
 | Surface | Required data and owner |
 |---|---|
-| Workspaces (`workspaces.records`) | `/api/workspaces`; the page writes the whole record with `PUT /api/workspaces/:name`, its folder rows (name, dir, note; a repository's mode, working, stable, desks) with it. Section order (owner, 2026-11-24; w926): 1 Describe (the objective; New: the Name after it, made from it until typed), 2 Where it lives (Add a folder: the kit's folder picker, `folder-picker.js`, `/api/folders`, or a pasted path; Paste a Git URL: `POST /api/setup/git/clone` with `parent`, any host; My GitHub repositories once gh is signed in: `GET /api/setup/github/repos`, each with Use), 3 More, folded (instructions, Mode, plans, canvases, Integrations, Behaviors); each row's remote is read with `/api/folders/inspect`; ⋯ holds Archive. Nothing is written before Save or Create. A `/files/<path>` link dropped from Files adds `$HOME/<path>`. Owner, 2026-11-02/03; KAN-728 |
+| Workspaces (`workspaces.records`) | `/api/workspaces` (each repository row with its `remote`); the page writes the whole record with `PUT /api/workspaces/:name`, its rows (name, dir, note; a repository's mode, working, stable, desks) with it. Sections: 1 Describe (the objective, the kind; New: the Name after it, made from it until typed), 2 Where it lives (its folder and repositories; a repository's Desks or Direct; Add a repository: a Git URL or one of theirs on GitHub, `GET /api/setup/github/repos`, cloned into its `repos/` by `POST /api/workspaces/<name>/repos`, on Desks), 3 More, folded (instructions, Mode, plans, canvases, Integrations, Behaviors); ⋯ holds Archive. Folders are Explorer's. Owner, 25 Nov; KAN-809 |
 | GitHub CLI (`workspaces.github`) | the GitHub setup read and session attachment `github-workspace-setup.js` owns, one instance per bench |
 
 ### Agent (`agent` profile)

@@ -467,9 +467,8 @@ desktop composition happened not to unmount it.
   hotwords, machine settings, system, services card, campaign surfaces, team jikan.
 - **Async status** — `ui.status`: the one spelling of loading…/saved/not-saved-and-why,
   `role=status`, hidden when empty, kinds `busy/ok/bad`. Consumers: hotwords, docs,
-  koshi, roots, folder picker, machine panel and settings, services card, system.
-- **Confirm** — `ui.confirmDialog`: a labelled confirm/cancel dialog. Consumers: roots,
-  folder picker.
+  koshi, roots, machine panel and settings, services card, system.
+- **Confirm** — `ui.confirmDialog`: a labelled confirm/cancel dialog. Consumers: roots.
 - **Tabs** — tab strips come from WorkspaceKit's `createTabbedSurface`; the Commons strip
   is one.
 - **Button** — `ui.button`: `type=button` + label + help in one call; sugar with a

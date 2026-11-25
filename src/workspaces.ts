@@ -165,16 +165,28 @@ export async function layOut(dir: string): Promise<void> {
 /**
  * A repository into a Workspace, at repos/<repo> (the rule above): `repository` (a Git URL or
  * owner/name) is cloned; none starts a new one named after the Workspace. Its row is added to the
- * record, Direct on the branch it is on.
+ * record on Desks: dev for desks, its own branch stable.
  */
 export async function addRepository(w: Workspace, repository: string, clone: (url: string, parent: string) => Promise<{ dir: string }>): Promise<{ workspace: Workspace; dir: string }> {
   const repos = path.join(ownFolder(w.name), 'repos');
   await mkdir(repos, { recursive: true });
   let dir: string;
+  const git = (args: string[]) => execFileP('git', ['-C', dir, ...args], { timeout: 10_000 }).then((r) => r.stdout.trim());
   if (repository) dir = (await clone(repository, repos)).dir;
-  else { dir = path.join(repos, w.name); await execFileP('git', ['init', '-q', '-b', 'main', dir], { timeout: 10_000 }); }
-  const branch = (await execFileP('git', ['-C', dir, 'symbolic-ref', '--short', 'HEAD'], { timeout: 10_000 })).stdout.trim() || 'main';
-  const next = normalizeWorkspace(w.campaign_id, w.name, { ...w, repos: [...w.repos, { name: '', dir, note: '', mode: 'direct', stable: branch }] } as unknown as Record<string, unknown>);
+  else {
+    // A started one gets its first commit, a README naming it, so its branches exist.
+    dir = path.join(repos, w.name);
+    await execFileP('git', ['init', '-q', '-b', 'main', dir], { timeout: 10_000 });
+    await writeFile(path.join(dir, 'README.md'), `# ${w.title || w.name}\n${w.objective ? `\n${w.objective}\n` : ''}`, 'utf8');
+    await git(['add', '-A']);
+    await git(['-c', 'user.name=Ronin', '-c', 'user.email=ronin@localhost', 'commit', '-q', '-m', `Start ${w.title || w.name}`]);
+  }
+  const stable = (await git(['symbolic-ref', '--short', 'HEAD']).catch(() => '')) || 'main';
+  // DESKS BY DEFAULT (owner, 25 Nov): each Agent on its own desk, handed in to dev and promoted; dev
+  // starts where the stable branch is. Direct is the row's other answer.
+  if (!(await git(['rev-parse', '--verify', '--quiet', 'refs/heads/dev']).then(() => true, () => false))) await git(['branch', 'dev', stable]);
+  const row = { name: '', dir, note: '', mode: 'reviewed', working: 'dev', stable, desks: 'managed' };
+  const next = normalizeWorkspace(w.campaign_id, w.name, { ...w, repos: [...w.repos, row] } as unknown as Record<string, unknown>);
   return { workspace: await saveWorkspace(next), dir };
 }
 

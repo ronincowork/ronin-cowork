@@ -89,7 +89,6 @@ import { resourceRequestCache, storeDir } from './resources.js';
 import { compressResponse } from './http-performance.js';
 import { startSpawnBroker, stopSpawnBroker } from './spawn-broker.js';
 import { filesProxy, startFiles, stopFiles, PYTHON } from './files.js';
-import { githubSetupAnswer, githubSetupAttached } from './setup-runtime.js';
 import { registerSetupRuntime } from './routes/setup-runtime-api.js';
 import { registerSetupProgress } from './routes/setup-progress-api.js';
 import { startSetupProgress } from './setup-progress.js';
@@ -522,7 +521,6 @@ startSessionsBroadcast({
   messages: listQueuedMessages,
   wipeboard: (board) => isValidBoardName(board) ? wipeboardAnswer(board, 100) : Promise.resolve(null),
   jikan: (team) => team === '*' ? listAllJobs() : isValidTeam(team) ? listJobs(team) : Promise.resolve(null),
-  github: { attached: githubSetupAttached, answer: githubSetupAnswer },
   shutdown: shutdownOperation,
 });
 // notify_me: a marked Agent's turn end tells its callers, checked whenever its row moves — src/notify-me.ts

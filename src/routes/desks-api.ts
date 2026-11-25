@@ -1,5 +1,5 @@
 import type express from 'express';
-import { folderFacts } from '../folder-browser.js';
+import { folderFacts } from '../folder-facts.js';
 import { workspaceFolders } from '../workspaces.js';
 import { deriveDesk, fromStatus, locatorFrom, rollup, sameDesk, type DeskRollup, type DeskState, type LocateRepo } from '../desk-state.js';
 import { listDesks } from '../desks/registry.js';
