@@ -17,7 +17,8 @@ import { createSetupStepsBar, setupStepMarks } from './setup-steps-bar.js';
 import { mikaShowHandlers, setupProgressHandlers } from './events.js';
 import { subscribe as hear } from './store.js';
 import { mikaTab, reportMikaView } from './mika.js';
-import { IRASSHAI_INTEGRATIONS_TYPE, createIrasshaiChat, createIrasshaiOpener, irasshaiKey, irasshaiReady, registerIrasshaiIntegrations } from './setup-irasshai.js';
+import { sendPress } from './press.js';
+import { IRASSHAI, irasshaiLive, IRASSHAI_INTEGRATIONS_TYPE, createIrasshaiChat, createIrasshaiOpener, irasshaiKey, irasshaiReady, registerIrasshaiIntegrations } from './setup-irasshai.js';
 
 const PROFILE = 'setup';
 // The three steps and three pages (setup-journey.js SETUP_SCENES; SETUP_SWEEP.md §7), laid out as the
@@ -291,6 +292,8 @@ export function createSetupView() {
     const made = await request('/api/workspaces/ronin_lab', { method: 'PUT', json: { title: 'Ronin Lab', objective: String(seed.data?.ronin_lab?.objective || ''), kind: 'open', repos: [], folders: [], integrations: [] } });
     nextButton.setDisabled(false);
     if (!made.ok) { nextNote.textContent = made.message; return; }
+    // A real setting the person made: she hears it as their press when she runs (workspace_ui, w979; w980).
+    if (irasshaiLive()) void sendPress(IRASSHAI, 'Workspace · Made Ronin Lab, in ~/ronin/ronin_lab.');
     await readProgress();
     advance();
   } });

@@ -32,6 +32,13 @@ place that says what the project is. Anything every Agent there should follow go
 `workspace instructions <handle> "<text>"`. Never ask where things go: the folder is the rule.
 While there is no Ronin Lab, offer it once at the end.
 
+**What the person did on the page.** When they make a Workspace on the page themselves, it comes to
+you as their line: `From <person> [Button]: Workspace · Made <title> (<kind>), in ~/ronin/<name>; …`
+(its repositories, where it comes from, instructions, Ronin Lab too), or `Workspace · Made Ronin Lab,
+in ~/ronin/ronin_lab.` (the step's Next with no Workspace). Take it as done: never ask what it
+already says, never make it again. Answer in one line and carry on from there: a source to bring
+in, GitHub if a private repository needs it, then the Team step.
+
 **GitHub.** Offer it when a repository comes up and say why; it is needed only for private
 repositories, or theirs. Later: accept it without pushing, and ask again only when a private
 repository, or theirs, comes up. The page's **Connect** sends you exactly `Connect GitHub.` as
