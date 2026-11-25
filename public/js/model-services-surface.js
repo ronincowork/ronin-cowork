@@ -2,10 +2,10 @@
 /**
  * MODEL SERVICES (owner, 2026-11-25; KAN-870; samurai_lab wip/MACHINE_SETTINGS_V2.md): Settings v2's
  * Harnesses and models → Model services. One office-side record per service connection, the same for Ronin
- * Gateway, OpenRouter and a private API: its address and key, and its named models (a display name and the
- * exact model ID sent). Gateway sync fills the Gateway's list; the OpenRouter and Private API key pages are
- * where the owner names models for those connections. Every compatible harness reads the same record:
- * connection → its named models → the chosen one. A CLI on its own native service keeps its own flow.
+ * Gateway, OpenRouter and an API key (private_api): its address and key, and its model options (a display name and
+ * the exact model ID sent). Gateway sync fills the Gateway's list; the OpenRouter and API key pages are the one
+ * editor for those connections (Setup's Harness step links here). Every compatible harness reads the same record:
+ * connection → its model options → the chosen one. A CLI on its own native service keeps its own flow.
  *
  * Read: GET /api/model-services. Writes: POST /api/model-services/<save|discover|delete|save-model|delete-model>,
  * each answering the whole list again. One reading is shared by every surface on the page.
@@ -30,11 +30,12 @@ export function serviceKind(service) {
   return String(service?.baseUrl || '').includes('openrouter.ai') ? 'openrouter' : 'private';
 }
 
-/** Open Settings v2 with Model services beside the named page. */
-export function modelServicePageRequest(page) {
+/** Open Settings v2 with Model services beside the named page; `serviceId` opens the API key page on that connection. */
+export function modelServicePageRequest(page, serviceId = '') {
+  const type = MODEL_SERVICE_PAGES[page] || MODEL_SERVICE_PAGES.openrouter;
   return { destination: 'settings2', mode: 'replace', state: {
     count: 2, selected: 'workspace2',
-    seats: { workspace1: 'settings2.model-services', workspace2: MODEL_SERVICE_PAGES[page] || MODEL_SERVICE_PAGES.openrouter },
+    seats: { workspace1: 'settings2.model-services', workspace2: serviceId ? { type, key: serviceId } : type },
   } };
 }
 
@@ -151,9 +152,9 @@ function namedModels(service, say) {
     ));
     return row;
   });
-  block.append(el('h3', null, t('model_services.named_models', 'Named models')),
-    el('p', 'setup-fine', t('model_services.named_lede', 'Each one appears under Model for every compatible harness on this connection.')),
-    ...(rows.length ? rows : [el('p', 'setup-fine', t('model_services.no_models', 'No named models yet.'))]));
+  block.append(el('h3', null, t('model_services.model_options', 'Model options')),
+    el('p', 'setup-fine', t('model_services.options_lede', 'Each one appears under Model for every compatible harness on this connection.')),
+    ...(rows.length ? rows : [el('p', 'setup-fine', t('model_services.no_options', 'No model options yet.'))]));
   const discovered = service.discovered?.length
     ? t('model_services.discovered_n', '{n} model IDs listed by the service; pick one when you add a model.', { n: service.discovered.length })
     : '';
@@ -188,15 +189,15 @@ export function createModelServicesSurface({ open = () => {} } = {}) {
     const gatewayList = g?.models?.length ? [el('p', 'setup-fine', g.models.map((m) => m.name).join(' · '))] : [];
     const router = routers.find((s) => s.configured) || routers[0];
     body.replaceChildren(
-      el('p', 'setup-fine', t('model_services.lede', 'A service holds the address and key; its named models appear under Model for every compatible harness that uses it. A harness signed in to its own service keeps its own flow.')),
+      el('p', 'setup-fine', t('model_services.lede', 'A service holds the address and key; its model options appear under Model for every compatible harness that uses it. A harness signed in to its own service keeps its own flow.')),
       entry(t('model_services.gateway', 'Ronin Gateway'), gatewayFacts,
         g?.configured ? [button(t('model_services.refresh', 'Refresh the list'), () => act('discover', { id: g.id }, say))] : [], gatewayList),
       entry(t('model_services.openrouter', 'OpenRouter'),
-        router?.configured ? t('model_services.named_n', 'Key saved · {n} named models', { n: count(routers) }) : t('model_services.no_key', 'No key yet'),
+        router?.configured ? t('model_services.options_n', 'Key saved · {n} model options', { n: count(routers) }) : t('model_services.no_key', 'No key yet'),
         [button(t('model_services.open_openrouter', 'Open OpenRouter'), () => open('openrouter'))]),
-      entry(t('model_services.private', 'Private API key'),
-        privates.length ? t('model_services.private_n', '{c} connections · {n} named models', { c: privates.length, n: count(privates) }) : t('model_services.private_none', 'None yet'),
-        [button(t('model_services.open_private', 'Open Private API key'), () => open('private'))]),
+      entry(t('model_services.private', 'API key'),
+        privates.length ? t('model_services.private_n', '{c} connections · {n} model options', { c: privates.length, n: count(privates) }) : t('model_services.private_none', 'None yet'),
+        [button(t('model_services.open_private', 'Open API key'), () => open('private'))]),
     );
   };
   return lifecycle(out, paint, say);
@@ -226,10 +227,10 @@ export function createOpenRouterSurface() {
   return lifecycle(out, paint, say);
 }
 
-/* ---- Private API key: pick a connection, its address and key, then its named models ---- */
-export function createPrivateApiSurface() {
-  const { out, say, body } = shell(t('model_services.private', 'Private API key'), 'model-services-private');
-  let chosen = '';
+/* ---- API key: pick a connection, its address and key, then its model options ---- */
+export function createPrivateApiSurface({ serviceId = '' } = {}) {
+  const { out, say, body } = shell(t('model_services.private', 'API key'), 'model-services-private');
+  let chosen = serviceId;
   let adding = false;
   const vendors = [['openai', t('accounts.vendor_openai', 'OpenAI API'), 'https://api.openai.com/v1', 'responses'],
     ['mistral', t('accounts.vendor_mistral', 'Mistral API'), 'https://api.mistral.ai/v1', 'chat'],
@@ -265,9 +266,9 @@ export function createPrivateApiSurface() {
     if (!privates.some((s) => s.id === chosen)) chosen = privates[0]?.id || '';
     const service = privates.find((s) => s.id === chosen);
     const picks = privates.map((s) => button(s.name, () => { chosen = s.id; adding = false; paint(); }, s.id === chosen && !adding ? 'primary' : ''));
-    picks.push(button(t('model_services.add_private', 'Add a private API'), () => { adding = true; paint(); }));
+    picks.push(button(t('model_services.add_private', 'Add an API key'), () => { adding = true; paint(); }));
     body.replaceChildren(
-      el('p', 'setup-fine', t('model_services.private_lede', 'Your own API key for a provider such as OpenAI or Mistral. Each connection has its own named models.')),
+      el('p', 'setup-fine', t('model_services.private_lede', 'Your own API key for a provider such as OpenAI or Mistral. Each connection has its own model options.')),
       bar(...picks),
       ...(adding || !service ? [connectionForm()] : [connectionForm(service), namedModels(service, say)]),
     );

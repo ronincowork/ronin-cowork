@@ -2,7 +2,7 @@
 /**
  * SETTINGS V2 (owner, 2026-11-25; KAN-862, KAN-867): a second Settings built beside the first, so the two can be
  * compared and what is missing seen. The sections are the agreed outline, samurai_lab wip/MACHINE_SETTINGS_V2.md;
- * no hints. Model services with its OpenRouter and Private API key pages (KAN-870, model-services-surface.js) and
+ * no hints. Model services with its OpenRouter and API key pages (KAN-870, model-services-surface.js) and
  * Office defaults holding the starting models (KAN-871) are v2's own; the other cards reuse today's surfaces.
  * When v2 is right the old Settings and its surfaces go.
  */
@@ -92,7 +92,7 @@ export function createSettingsV2View() {
         selected,
         settings2ModelServices: ({ workspace }) => createModelServicesSurface({ open: (page) => bench().place(MODEL_SERVICE_PAGES[page], BESIDE[workspace] || 'workspace2') }),
         settings2OpenRouter: () => createOpenRouterSurface(),
-        settings2PrivateApi: () => createPrivateApiSurface(),
+        settings2PrivateApi: ({ detail }) => createPrivateApiSurface({ serviceId: detail?.key || '' }),
         settings2AgentDefaults: () => officeDefaults(selected),
         settings2BehaviorFiles: ({ detail }) => createBehaviourSurface(detail),
         campaignIntegrations: ({ workspace }) => enterable(createIntegrationsPanel(selected, { panels: { jira: () => jira(workspace) } })),

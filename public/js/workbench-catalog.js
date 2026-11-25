@@ -151,10 +151,10 @@ export function registerWorkbenchCatalog() {
   // SETTINGS V2 (owner, 2026-11-25; KAN-862, KAN-867): built beside Settings to compare; the old one goes once v2 is right.
   // The five agreed sections (MACHINE_SETTINGS_V2.md). Its own card types where its words differ from the Harnesses
   // door's; the surfaces under them are today's, reused. A harness's own card is placed by its stone, not offered.
-  // Model services (KAN-870): one record per connection; OpenRouter and Private API key are where models are named.
-  campaign(WORKBENCH_TYPES.settings2ModelServices, 'surface', () => t('settings2.model_services', 'Model services'), 'settings2ModelServices', () => t('settings2.model_services_summary', 'Ronin Gateway, OpenRouter and private API keys, and the models each offers.'));
+  // Model services (KAN-870): one record per connection; the OpenRouter and API key pages edit its model options.
+  campaign(WORKBENCH_TYPES.settings2ModelServices, 'surface', () => t('settings2.model_services', 'Model services'), 'settings2ModelServices', () => t('settings2.model_services_summary', 'Ronin Gateway, OpenRouter and your API keys, and the model options each offers.'));
   campaign(WORKBENCH_TYPES.settings2OpenRouter, 'surface', () => t('model_services.openrouter', 'OpenRouter'), 'settings2OpenRouter', () => t('settings2.openrouter_summary', 'Your OpenRouter key and the models you name on it.'));
-  campaign(WORKBENCH_TYPES.settings2PrivateApi, 'surface', () => t('model_services.private', 'Private API key'), 'settings2PrivateApi', () => t('settings2.private_summary', 'Your own provider keys and the models you name on each.'));
+  campaign(WORKBENCH_TYPES.settings2PrivateApi, 'surface', () => t('model_services.private', 'API key'), 'settings2PrivateApi', () => t('settings2.private_summary', 'Your own provider keys and the model options on each.'));
   // Office defaults (KAN-871): the starting models live with mandate, launch mode and behaviors.
   campaign(WORKBENCH_TYPES.settings2AgentDefaults, 'surface', () => t('settings2.agent_defaults', 'Agent defaults'), 'settings2AgentDefaults', () => t('settings2.agent_defaults_summary', 'Model, mandate, launch mode and behaviors new Agents and Teams start with.'));
   campaign(WORKBENCH_TYPES.settings2BehaviorFiles, 'surface', () => t('settings2.behavior_files', 'Behavior files'), 'settings2BehaviorFiles', () => t('settings2.behavior_files_summary', 'Read and edit the behavior, fact and tool files themselves.'));
