@@ -191,7 +191,11 @@ function createHarnessSurface(context) {
       row.classList.add('setup-harness-ways');
       for (const way of ['subscription', 'api_key']) {
         const made = button(WAYS[way](), false, () => {
-          if (current && current !== way && !(switching.provider === provider.id && switching.way === way)) { switching = { provider: provider.id, way }; gatewayShown = ''; paint(); return; }
+          // The way it is on does nothing: a CLI's login revokes the sign-in it replaces, and every
+          // Agent on that harness runs on it (w994, 25 Nov 2026: a press on Codex's selected
+          // Subscription signed every Codex Agent out).
+          if (current === way) return;
+          if (current && !(switching.provider === provider.id && switching.way === way)) { switching = { provider: provider.id, way }; gatewayShown = ''; paint(); return; }
           switching = { provider: '', way: '' }; gatewayShown = '';
           void start(provider, way);
         });
