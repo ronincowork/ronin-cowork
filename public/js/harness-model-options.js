@@ -1,7 +1,8 @@
 /* New Agent display preferences. null follows the full list, [] hides a group. Unset is the full list. */
 import { workbenchLink, openWorkbenchTab } from './workspace.js';
 import { el, modelLabel } from './form-steps.js';
-import { createTable } from './data-table.js';
+import { createTable, tableLink } from './data-table.js';
+import { modelServicePageRequest } from './model-services-surface.js';
 import { request } from './request.js';
 import { t } from './lexicon.js';
 
@@ -110,7 +111,8 @@ export function harnessModelEditor(catalog, entry) {
     const sources = el('div', 'ask setup-harness-row setup-harness-ways setup-hermes-sources');
     sources.dataset.density = 'tight';
     sources.append(...groups.map(stone));
-    const parts = [el('p', 'setup-fine', `The model services New Agent offers for ${entry.cli_label || entry.cli}, then the models in each.`), sources];
+    const parts = [el('p', 'setup-fine', `The model services New Agent offers for ${entry.cli_label || entry.cli}, then the models in each.`), sources,
+      tableLink('+ Add or change model services in Settings', () => openWorkbenchTab(modelServicePageRequest('gateway')))];
     for (const group of groups) {
       if (!isOn(group.id)) continue;
       parts.push(el('h4', 'harness-models-service', group.name), table(group));

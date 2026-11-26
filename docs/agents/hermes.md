@@ -14,8 +14,9 @@
 
 CLI id: `hermes`. Vendor: `hermes` (Hermes), its `vendor` in `src/agents.ts`; no transcript established.
 
-The Hermes Models worksurface manages API connections and Hermes model options, rather than
-subscription sign-in. Add a named OpenAI, Mistral or OpenAI-compatible HTTPS connection,
+Hermes has no sign-in of its own: it runs on a model service. Settings → Model services holds the
+connections and their model options; Hermes's page in Settings → Harness picks which services and
+models New Agent offers, as every harness's does. Add a named OpenAI, Mistral or OpenAI-compatible HTTPS connection,
 enter its API key, and Discover models. This requests that endpoint's `/models` list;
 it verifies listing access, not inference or tool support for every returned model.
 Create a Hermes model option selecting its model, reasoning and approvals. Non-OpenAI

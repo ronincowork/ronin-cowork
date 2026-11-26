@@ -1,5 +1,4 @@
 import { harnessModelEditor } from './harness-model-options.js';
-import { mountModelOptions } from './model-services-surface.js';
 /* part of the ronin-cowork client — see js/README.md */
 /**
  * ONE MODEL PROVIDERS SURFACE, TWO SEATS. Ronin Setup's Model providers card and Ronin
@@ -509,7 +508,7 @@ export function createHarnessDrawing(context, { repaint, say = () => {} }) {
     const provider = harnessFromRuntime(runtime, id);
     const rows = harnessCatalog().rows.filter((row) => (provider ? row.cli === provider.id : row.provider === id));
     if (!provider && !rows.length) { host.append(el('p', 'setup-notice bad', t('setup_surface.provider_missing', 'This harness is no longer in the harness catalog.'))); return null; }
-    // Hermes's keys and model options are Model services' (KAN-870); its page shows them, read only.
+    // Hermes has no sign-in of its own: it runs on a model service, so its page is only Models.
     const harness = harnessCatalog().harnesses.find(entry => entry.cli === id);
     const editor = harness && harnessModelEditor(harnessCatalog(), harness);
     if (id === 'hermes') {
@@ -518,8 +517,7 @@ export function createHarnessDrawing(context, { repaint, say = () => {} }) {
         models.append(el('h3', 'setup-provider-eyebrow', t('setup_surface.section_models', 'Models')), editor.el);
         host.append(models);
       }
-      const close = mountModelOptions(host);
-      return () => { close(); editor?.destroy(); };
+      return () => { editor?.destroy(); };
     }
     const yours = el('section', 'setup-provider-yours');
     yours.append(el('h3', 'setup-provider-eyebrow', t('setup_surface.section_yours', 'Yours')));

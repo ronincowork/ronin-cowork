@@ -188,36 +188,6 @@ function modelOptions(service, say) {
   return block;
 }
 
-/**
- * A harness's page in Settings (Hermes today, harnesses-surface.js): each service's model options, read only.
- * Model services is the one editor; an OpenRouter or API key row links to its tab. Returns the disposer.
- */
-export function mountModelOptions(host) {
-  const root = el('section', 'model-services-options');
-  const notice = el('p', 'setup-fine'); notice.hidden = true;
-  const say = (text) => { notice.textContent = text || ''; notice.hidden = !text; };
-  host.append(root);
-  let disposed = false;
-  const paint = () => {
-    if (disposed) return;
-    const rows = services.map((service) => {
-      const kind = serviceKind(service);
-      const names = (service.models || []).map((m) => m.name);
-      return { cells: [kind === 'gateway' ? tabName('gateway') : service.name, names.length ? names.join(' · ') : t('model_services.no_options', 'No model options yet.')],
-        tools: kind === 'gateway' ? [] : [[t('accounts.edit', 'Edit'), () => openWorkbenchTab(modelServicePageRequest(kind, kind === 'private' ? service.id : ''))]] };
-    });
-    root.replaceChildren(el('h3', null, t('model_services.model_options', 'Model options')),
-      el('p', 'setup-fine', t('model_services.harness_lede', 'What shows under Model when you start an Agent on this harness, by service. Keys and model options are edited in Settings → Model services.')),
-      notice, table([t('model_services.col_service', 'Service'), t('model_services.model_options', 'Model options')], rows,
-        services.length ? [] : [[t('model_services.open_line', '+ Add a service in Model services'), () => openWorkbenchTab(modelServicePageRequest('openrouter'))]]));
-  };
-  const watch = () => paint();
-  listeners.add(watch); hearChanges();
-  if (read) paint();
-  void load(say);
-  return () => { disposed = true; listeners.delete(watch); };
-}
-
 /* ---- Model services: three tabs ---- */
 export function createModelServicesSurface({ tab = 'gateway', serviceId = '' } = {}) {
   const out = WorkspaceKit.primitives.createSurface({ label: t('settings2.model_services', 'Model services'), className: 'setup-surface model-services' });
