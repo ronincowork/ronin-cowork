@@ -1,5 +1,5 @@
 /**
- * SETUP'S SCENES, ON EVERY OFFICE (owner, 2026-11-24; w926; samurai_lab/wip/SETUP_SWEEP.md §7): selector
+ * SETUP'S SCENES, ON EVERY OFFICE (owner, 2026-11-24; w926; docs/architecture/setup-workbench.md): selector
  * doors that never reshape the workbench. The prototype's three steps, Harness, Workspace and Team, in any
  * order, each ticked from a fact; then the Ronin Tour, no tick: a drawing per part of the docs' Tour
  * (docs/getting-started/tour.md; setup-tour.js), given both work surfaces while it is open. The same

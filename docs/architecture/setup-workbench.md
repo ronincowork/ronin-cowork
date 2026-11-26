@@ -203,6 +203,40 @@ prints; setting a password turns it off.
 Having Tailscale does not tick this step for you. Whether Tailscale alone is enough is a
 judgement about your own machine, so Setup waits for you to say.
 
+## The Helpful Assistant (Irasshai)
+
+People see her as the **Helpful Assistant**; her session, route and files say `irasshai`. She is a
+session type, not special code ([brief](brief.md)): her behaviour (`irasshai`), her voice
+(`irasshai-voice`) and one behaviour per step (`irasshai-harness`, `irasshai-workspace`,
+`irasshai-team`, read in full as she takes the step) are `when: irasshai` stock in
+`ronin_stock/behaviours/`. Those files are the authority on what she says; this section is how she
+fits Setup.
+
+**See and Chat.** The step's surface (See) draws the office from its facts and records; her chat
+(Chat, the Ask Ronin panel) is where she asks, explains and acts. Nothing in Chat is the only
+record: what she does lands in a fact, the Workspace record or an item, so See shows it and the
+next Agent finds it.
+
+**Her hands.** She never presses the page. Her tools call the same routes its buttons do, and the
+page redraws from the record: `harness` (sign-ins, `open`/`close` a harness's terminal, Hermes model
+options), `workspace` (create, repositories, sources, `starter ronin_lab`), `team`, `item`, `office
+read`, `show`. Keys and codes are pasted on the page, never into her chat. She never starts a
+sign-in on a harness already signed in unless the person asks: it signs out every Agent on it until
+it finishes, and she says so first.
+
+**What she hears.** A press of a surface button that names her comes as the person's words
+(`From <person> [Button]: …`); a sign-in's end as a House notice; leaving a changed step as the
+Moved-to line above. Her own changes send her nothing; the tool's answer is her confirmation.
+
+**What she does with what she hears.** Setup she can do now (a sign-in, a key) is a task on her
+onboarding epic, done there. Project work ("deploy to Netlify") is an open item held by the
+Workspace. A want for later goes under the Workspace's Icebox, which no Agent pulls from. On the Team
+step she hands the Workspace's open items to its first Team (`item handoff <ids> team:<t>`).
+
+**Start and end.** An office starts her when none of the three steps is ticked; otherwise the panel's
+button does. Done, she runs `session_end`, which archives her; the button restores the archive
+within seven days, and after that she starts fresh from the facts and `~/ronin/library/ABOUT_USER.md`.
+
 ## Workspaces
 
 The Workspace step defines what a Workspace is, so any Agent that picks it up knows (owner, 25 Nov;
