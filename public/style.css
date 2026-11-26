@@ -5198,10 +5198,7 @@ html[data-screen='inside'] #phone .ph-bar .ph-title[data-boot='inside'] { displa
 .harness-models, .harness-models-body { display: grid; gap: var(--space-paragraph); min-width: 0; }
 .harness-models-body > p { margin: 0; }
 .harness-models-service { margin: var(--space-row) 0 0; color: var(--fg-strong); font-size: var(--text-body); font-weight: var(--weight-strong); }
-/* A ✓ before a row's name (shown, set up); a row that is off reads muted, its ✓ slot kept so names align. */
-.data-table .data-table-name { display: flex; align-items: baseline; gap: 6px; }
-.data-table .data-table-name .hermes-tick { flex: 0 0 1em; color: var(--ok); font-weight: var(--weight-strong); }
-.data-table .data-table-name > :last-child { min-width: 0; overflow-wrap: anywhere; }
+/* A row that is off reads muted. */
 .data-table tr.data-table-off :is(th, td):not(.hermes-tools) { color: var(--muted); font-weight: normal; }
 @media (max-width: 560px) {
   .data-table thead th:first-child { width: 32%; }

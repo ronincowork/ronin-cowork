@@ -2,8 +2,7 @@
 /**
  * THE TABLE PATTERN (owner, 26 Nov 2026): the table on Setup's Hermes bar, made the one look for a list of
  * things. A muted heading row; one row per thing, its first cell the name in strong type; its presses as
- * links on the right; then optional `+ …` lines (a press) or a quiet note. A cell may be a node (a ✓ before a
- * name); a row marked `off` reads muted. Styles: .hermes-table in style.css.
+ * links on the right; then optional `+ …` lines (a press) or a quiet note. A row marked `off` reads muted. Styles: .hermes-table in style.css.
  *
  *   createTable({ headings: ['Name', 'Model'],
  *     rows: [{ cells: ['Kimi', 'moonshotai/kimi-k3'], tools: [['Edit', fn], ['Remove', fn]] }],
@@ -34,11 +33,7 @@ export function createTable({ headings = [], rows = [], lines = [] } = {}) {
   const body = make('tbody');
   for (const row of rows) {
     const tr = make('tr', row.off ? 'data-table-off' : null);
-    row.cells.forEach((cell, i) => {
-      const node = make(i === 0 ? 'th' : 'td', null, cell instanceof Node ? null : cell);
-      if (cell instanceof Node) node.append(cell);
-      tr.append(node);
-    });
+    row.cells.forEach((cell, i) => tr.append(make(i === 0 ? 'th' : 'td', null, cell)));
     if (tools) {
       const cell = make('td', 'hermes-tools');
       for (const [label, fn] of row.tools || []) cell.append(tableLink(label, fn));

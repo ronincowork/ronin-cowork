@@ -39,8 +39,8 @@ export function shownInNewAgent(catalog, entry, row) {
 
 /**
  * MODELS IN NEW AGENT, TWO TIERS (owner, 26 Nov 2026): first the model services New Agent offers for this
- * harness, In harness and each set-up service, as stones ticked when on; then, for each one on, its own table
- * in the table pattern (data-table.js): a row per model, ✓ when shown, muted when hidden, Hide or Show.
+ * harness, In harness and each set-up service, as stones filled when on; then, for each one on, its own table
+ * in the table pattern (data-table.js): a row per model, muted when hidden, Hide or Show.
  * Every press saves. A service on with nothing hidden is null, so models it adds later show by themselves;
  * a service off is [].
  */
@@ -87,7 +87,6 @@ export function harnessModelEditor(catalog, entry) {
     const on = isOn(group.id);
     const out = el('button', 'ask-opt ask-rect');
     out.type = 'button';
-    if (on) out.append(el('span', 'hermes-tick', '✓'));
     out.append(el('span', 'ask-name', group.name));
     out.setAttribute('aria-selected', String(on));
     out.setAttribute('aria-label', `${group.name}, ${on ? 'on' : 'off'}`);
@@ -100,10 +99,8 @@ export function harnessModelEditor(catalog, entry) {
     return createTable({
       headings: ['Name', 'Model ID'],
       rows: models.map(row => {
-        const name = el('span', 'data-table-name');
-        name.append(el('span', 'hermes-tick', isShown(row) ? '✓' : ''), el('span', '', modelLabel(row)));
         const id = row.model === 'native' ? 'CLI default' : row.api_model_id || row.model;
-        return { off: !isShown(row), cells: [name, id], tools: [[isShown(row) ? 'Hide' : 'Show', () => flip(row)]] };
+        return { off: !isShown(row), cells: [modelLabel(row), id], tools: [[isShown(row) ? 'Hide' : 'Show', () => flip(row)]] };
       }),
       lines: models.length ? [] : [['No models yet.', null]],
     });
