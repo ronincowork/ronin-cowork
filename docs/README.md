@@ -42,6 +42,7 @@ change area to its code, UI, stores, Services, documentation, and tests.
 |---|---|
 | What do the names mean? | [KOTOBA](../KOTOBA.md) and [Agent glossary](../KOTOBA_GLOSSARY.md) |
 | How are tools and Agent instructions composed? | [The brief](architecture/brief.md) |
+| What is in Settings, and what is not? | [Settings](architecture/settings.md): its sections, the links into it, what moved elsewhere |
 | How does an outside service or MCP server reach Agents? | [Integrations](architecture/integrations.md): bridges, MCP server records, keys, who has it, and the `mcp` broker |
 | How do configuration and owner customizations resolve? | [the three places](../ronin_stock/stock_readme.md#three-places-each-with-one-meaning), [Installations](architecture/installations.md) and [shadowing](architecture/shadowing.md) |
 | How is project management built, and who reads which brief? | [Project management: contents](architecture/project-management.md): briefs, tools, code and the Jira bridge |

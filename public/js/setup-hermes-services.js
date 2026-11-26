@@ -1,7 +1,7 @@
 /* part of the ronin-cowork client — see js/README.md */
 /**
- * HERMES ON SETUP'S HARNESS STEP (owner, 25 Nov 2026; samurai_lab wip/MACHINE_SETTINGS_V2.md "Service
- * pages in Settings"). Shows; Settings v2 edits. Three model services as stones, each ticked when set up:
+ * HERMES ON SETUP'S HARNESS STEP (owner, 25 Nov 2026; docs/architecture/model_services_README.md). Shows;
+ * Settings edits. Three model services as stones, each ticked when set up:
  * Ronin Gateway, API key, OpenRouter. The one pressed opens below with its own model entries, never
  * another's; API key with several keys picks one. Adding or changing a model is a link to that service's
  * page in Settings v2 (model-services-surface.js); the Ronin Gateway's models are supplied.

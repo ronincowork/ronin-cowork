@@ -146,38 +146,6 @@ again asks in its own flow.
 
 Details of the catalog and what is measured are in [model providers](harness-catalog.md).
 
-## Register (a Settings card)
-
-Registration is optional; local Ronin works without it, and the step stays unticked until you
-register (nothing records a decline). The form is on show until you do; registered anonymously,
-**Register here** brings it back to add an email. The form asks how you would like to register — with email, or anonymously — then an email, what
-brings you here, which core Ronin feature you prefer, which of the starting patterns you
-are most likely to use, what describes you, where you will install, a two-line introduction
-for your Cowork Agents, and anything else. The introduction stays on this machine as the
-owner `ways/floor/user-intro.md` shadow of the stock-empty Behavior and is included in every
-Cowork Agent's birth brief; leaving it blank removes the shadow and leaves the placeholder
-empty.
-Sending the form is always your own press; nothing in the header zone submits it for you.
-Share only what feels useful. A registered identity is what Ronin Services entitlement
-hangs on; it is not a subscription and it switches nothing on by itself. Communication
-choices are separate, and **No communication** is one of them.
-
-## Password (a Settings card)
-
-How you reach this machine. Most people reach Ronin over Tailscale, which
-is already private, so the zone says whether Tailscale is available here and asks whether
-you want a password as well.
-
-With Tailscale, the choices are **Tailscale only** and **Add password**. Without it,
-**Tailscale only** is shown but not selectable — it is not an arrangement this machine can be in — and
-**None** takes its place, for a machine already protected some other way. Once a password is
-set the only thing left to offer is **Disable password**. **Tailscale only** and **None** are one
-machine setting, `machine.no_password` (`PUT /api/password/none`), which the machine fact
-prints; setting a password turns it off.
-
-Having Tailscale does not tick this step for you. Whether Tailscale alone is enough is a
-judgement about your own machine, so Setup waits for you to say.
-
 ## Workspaces
 
 The Workspace step defines what a Workspace is, so any Agent that picks it up knows (owner, 25 Nov;
@@ -204,21 +172,9 @@ GitHub is never a step of its own: a public repository clones without it. For a 
 signs the GitHub CLI in with GitHub's device flow and `gh auth setup-git`, so a headless machine
 shows a code the owner approves in a browser elsewhere.
 
-## Ronin Services
+## Not in Setup or Settings
 
-There is no Services card or step (owner, 2026-11-26, KAN-914): Services ships with Cowork and
-every part runs. See [Ronin Services](../getting-started/services-activation.md) and
-[installations.md](installations.md).
-
-## Launch your own (a Settings card)
-
-Two stones:
-
-- **Agent** opens the ordinary New Agent form here: name, kind, provider and model,
-  instructions, mandate, and its behaviours.
-- **Team** opens the ordinary New Team form here: the team, its agents, and where it
-  works.
-
-Each launch opens its result in a new tab. Inside a Team's own page, adding an Agent from
-the roster seats the newborn in the workspace that made it instead; see
-[team workspace](team-workspace.md).
+There is no Register, Password, Launch your own or Ronin Services card (owner, 25–26 Nov): the
+account and any password are the Business Lounge's, a self-hosted machine is reached over the
+tailnet, New Team and New Agent are on Teams, and Ronin Services ships with Cowork with every part
+running ([installations.md](installations.md)). Settings itself: [settings.md](settings.md).

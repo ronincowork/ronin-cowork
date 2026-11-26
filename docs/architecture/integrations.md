@@ -192,7 +192,7 @@ printed. A failure is one line: what is missing (409, with what to set), what th
    `src/integrations.ts`; a bridge's provider and Jira read their record; `netlify` ships as a
    starting record with its bridge's secret; Add and `mcp add`/`api add` put the name on
    Settings' integrations; Remove deletes the secret too (Cowork and Services).
-3. Settings v2 › Integrations: the list, + Add with its kinds, Configure, the key, Remove.
+3. Settings › Integrations: the list, + Add with its kinds, Configure, the key, Remove.
 4. The Workspace's Integrations step: a tick and the running details per record; no key state.
 5. Installations and the Ronin Services on/off go ([installations.md](installations.md)).
 

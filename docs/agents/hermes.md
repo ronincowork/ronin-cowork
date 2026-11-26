@@ -23,7 +23,7 @@ Create a Hermes model entry selecting its model, reasoning and approvals. Non-Op
 connections currently use provider-default reasoning.
 
 On Setup's Harness step, the Hermes bar shows each model service (Ronin Gateway, API key, OpenRouter)
-with its own model entries, and links to Settings v2 → Model services to add or change them.
+with its own model entries, and links to Settings → Model services to add or change them.
 
 New Agent keeps its two fields: Model provider = Hermes, Model = the setup name.
 Each Cowork birth creates a private `cli-home/` directory inside that session's record,

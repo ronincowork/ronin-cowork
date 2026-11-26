@@ -1,7 +1,7 @@
 /* part of the ronin-cowork client — see js/README.md */
 /**
- * MODEL SERVICES (owner, 2026-11-25/26; KAN-870; samurai_lab wip/MACHINE_SETTINGS_V2.md): Settings v2's
- * Harnesses and models → Model services. One office-side record per service connection, the same for Ronin
+ * MODEL SERVICES (owner, 2026-11-25/26; KAN-870; docs/architecture/model_services_README.md, settings.md):
+ * Settings' Harnesses and models → Model services. One office-side record per service connection, the same for Ronin
  * Gateway, OpenRouter and an API key (private_api): its address and key, and its model entries (a display
  * name and the exact model ID sent). Every compatible harness reads the same record: connection → its model
  * options → the chosen one. A CLI on its own native service keeps its own flow.
