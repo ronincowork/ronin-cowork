@@ -1,6 +1,6 @@
 /* part of the ronin-cowork client — see js/README.md */
 /**
- * THE WORKSPACE STEP (owner, 25 Nov; KAN-809; samurai_lab wip/SETUP_WORKSPACE.md §2): it defines what
+ * THE WORKSPACE STEP (owner, 25 Nov; KAN-809; docs/architecture/setup-workbench.md, Workspaces): it defines what
  * a Workspace is, so any Agent that picks it up knows. One question, "How are you starting?", four
  * doors; a door pressed opens only its blanks under it, then Create. Nothing asks where things go:
  * every Workspace's folder is laid out by the rule (src/workspaces.ts layOut), its repositories in repos/.
