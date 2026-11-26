@@ -32,13 +32,13 @@ When nothing names a harness and model, Ronin takes the first step that works. E
 |---|---|---|---|
 | CLI | the default's harness, else the first signed in | its own sign-in | CLI default |
 | Gateway | Codex, else Hermes | Ronin Gateway | `default`, the office's tier |
-| Private API | Codex, else Hermes | a private API | the first model option that harness shows |
-| OpenRouter | Codex, else Hermes | OpenRouter | the first model option that harness shows |
+| Private API | Codex, else Hermes | a private API | the service's first model option |
+| OpenRouter | Codex, else Hermes | OpenRouter | the service's first model option |
 
 - **An Agent with no default set** walks CLI, Gateway, Private API, OpenRouter. The first CLI sign-in is still written as the default, so this is reached when nothing is signed in.
 - **Irasshai** always walks Gateway, Private API, OpenRouter, CLI.
 
-A service step needs an installed harness that works with the service and shows it in its settings. Working means signed in, key present, or the Gateway answering on its port; no test request is made, so a listening Gateway can still reject the call. The progression writes nothing. It lives in [the launch progression](../../src/launch-progression.ts).
+A service step needs an installed harness that works with the service. What a harness shows in New Agent is form display only and is never read here: hiding a service changes the form, not the route. Working means signed in, key present, or the Gateway answering on its port; no test request is made, so a listening Gateway can still reject the call. The progression writes nothing. It lives in [the launch progression](../../src/launch-progression.ts).
 
 ## When Ronin Gateway can't be used
 

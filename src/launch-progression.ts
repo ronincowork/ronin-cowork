@@ -7,19 +7,22 @@
  * |-------------|---------------------------------------|-----------------|------------------------------------|
  * | cli         | the default's, else first signed in   | its own sign-in | CLI default                        |
  * | gateway     | Codex, else Hermes                    | Ronin Gateway   | `default` (the office's tier)      |
- * | private_api | Codex, else Hermes                    | a private API   | the first option the harness shows |
- * | openrouter  | Codex, else Hermes                    | OpenRouter      | the first option the harness shows |
+ * | private_api | Codex, else Hermes                    | a private API   | the service's first model option   |
+ * | openrouter  | Codex, else Hermes                    | OpenRouter      | the service's first model option   |
  *
  * An Agent walks cli, gateway, private_api, openrouter. Irasshai walks gateway, private_api,
- * openrouter, cli. A service step needs an installed harness that works with the service and shows
- * it (the harness's own New Agent picks are respected). Working is signed in, key present, or the
- * Gateway answering on its port: no test call. The progression writes nothing.
+ * openrouter, cli. A service step needs an installed harness that works with the service. Working is
+ * signed in, key present, or the Gateway answering on its port: no test call. The progression writes
+ * nothing.
+ *
+ * This is routing policy and it is the whole of it. What a harness shows in New Agent
+ * (`newAgentModels`) is form display only and is never read here: hiding a service to tidy the form
+ * must not change which credential Irasshai or a no-default launch uses (owner, 26 Nov 2026).
  */
 import { createConnection } from 'node:net';
-import { readMachineSettingsSection } from './machine-settings.js';
 import { readAgentsSection } from './machine-state.js';
 import { modelServices, type ModelService } from './model-services.js';
-import { NATIVE_MODEL, harnessRows, type HarnessRow, type HarnessRows } from './harness-catalog.js';
+import { NATIVE_MODEL, harnessRows, type HarnessRows } from './harness-catalog.js';
 import { readHarnessSummary } from './harness-summary.js';
 
 export type Step = 'cli' | 'gateway' | 'private_api' | 'openrouter';
@@ -28,9 +31,6 @@ export const IRASSHAI_ORDER: readonly Step[] = ['gateway', 'private_api', 'openr
 /** The harnesses a service step tries, in order (owner: Codex first, then Hermes). */
 export const SERVICE_HARNESSES: readonly string[] = ['codex', 'hermes'];
 export interface Route { provider: string; model: string }
-
-/** A harness's New Agent picks per group: absent or null is the whole list, [] hides the group. */
-type Picks = Record<string, Record<string, string[] | null>>;
 
 function reachable(endpoint: string): Promise<boolean> {
   const url = new URL(endpoint);
@@ -43,20 +43,15 @@ function reachable(endpoint: string): Promise<boolean> {
   });
 }
 
-const shown = (picks: Picks, row: HarnessRow): boolean => {
-  const picked = picks[row.cli]?.[row.service_id || 'in-harness'];
-  return !Array.isArray(picked) || picked.includes(row.model);
-};
-
-async function serviceRoute(type: ModelService['service_type'], services: ModelService[], harnesses: HarnessRows[], picks: Picks): Promise<Route | null> {
+async function serviceRoute(type: ModelService['service_type'], services: ModelService[], harnesses: HarnessRows[]): Promise<Route | null> {
   for (const service of services) {
     if (service.service_type !== type || !service.configured) continue;
     if (type === 'gateway' && !await reachable(service.baseUrl)) continue;
     for (const cli of SERVICE_HARNESSES) {
       const choices = (harnesses.find(entry => entry.cli === cli)?.models ?? [])
-        .filter(row => row.service_id === service.id && row.selectable && shown(picks, row));
+        .filter(row => row.service_id === service.id && row.selectable);
       if (!choices.length) continue;
-      // The Gateway's `default` is the office's tier; elsewhere the first option the harness shows.
+      // The Gateway's `default` is the office's tier; elsewhere the service's first model option.
       const preferred = type === 'gateway' && service.models.find(option => option.model === 'default');
       const row = (preferred && choices.find(choice => choice.model === preferred.id || choice.model === 'service:' + preferred.id)) || choices[0]!;
       return { provider: row.provider, model: row.model };
@@ -68,13 +63,11 @@ async function serviceRoute(type: ModelService['service_type'], services: ModelS
 /** The first step of `order` that works, or null when none does. */
 export async function firstRoute(order: readonly Step[]): Promise<Route | null> {
   const summary = await readHarnessSummary();
-  const [services, harnesses, picks, agents] = await Promise.all([
-    modelServices(), harnessRows(summary), readMachineSettingsSection<Picks>('newAgentModels', {}), readAgentsSection(),
-  ]);
+  const [services, harnesses, agents] = await Promise.all([modelServices(), harnessRows(summary), readAgentsSection()]);
   const written = ((agents.sessions as { default?: { provider?: string } } | undefined)?.default?.provider ?? '').trim();
   for (const step of order) {
     if (step !== 'cli') {
-      const route = await serviceRoute(step, services, harnesses, picks);
+      const route = await serviceRoute(step, services, harnesses);
       if (route) return route;
       continue;
     }
