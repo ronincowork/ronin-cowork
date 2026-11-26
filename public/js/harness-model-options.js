@@ -45,6 +45,7 @@ export function shownInNewAgent(catalog, entry, row) {
  * Every press saves. A service on with nothing hidden is null, so models it adds later show by themselves;
  * a service off is [].
  */
+const TYPES = [['gateway', 'Ronin Gateway', 'gateway'], ['private_api', 'API key', 'private'], ['openrouter', 'OpenRouter', 'openrouter']];
 export function harnessModelEditor(catalog, entry) {
   const box = el('div', 'harness-models');
   const choices = { ...catalog.preferences?.[entry.cli] };
@@ -56,9 +57,16 @@ export function harnessModelEditor(catalog, entry) {
     return true;
   });
   const groupOf = row => row.service_id || 'in-harness';
+  // In harness, then each service type the harness can use in the Setup bar's order: its set-up services,
+  // or one stone saying Not set up that opens that tab of Model services.
+  const services = entry.services || [];
   const groups = [
     ...(rows.some(row => !row.service_id) ? [{ id: 'in-harness', name: 'In harness' }] : []),
-    ...(entry.services || []).map(service => ({ id: service.id, name: service.name })),
+    ...TYPES.filter(([type]) => (entry.service_types || []).includes(type) || services.some(s => s.service_type === type))
+      .flatMap(([type, name, tab]) => {
+        const mine = services.filter(s => s.service_type === type);
+        return mine.length ? mine.map(s => ({ id: s.id, name: s.name })) : [{ id: '', name, tab }];
+      }),
   ];
   const modelsOf = group => rows.filter(row => groupOf(row) === group);
   const isOn = group => !(Array.isArray(choices[group]) && choices[group].length === 0);
@@ -84,7 +92,16 @@ export function harnessModelEditor(catalog, entry) {
     void save(group, shown.length === all.length ? null : shown);
   };
 
+  const unset = group => {
+    const out = el('button', 'ask-opt ask-rect');
+    out.type = 'button';
+    out.append(el('span', 'ask-name', group.name), el('small', 'ask-word', 'Not set up'));
+    out.setAttribute('aria-selected', 'false');
+    out.addEventListener('click', () => openWorkbenchTab(modelServicePageRequest(group.tab)));
+    return out;
+  };
   const stone = group => {
+    if (!group.id) return unset(group);
     const on = isOn(group.id);
     const out = el('button', 'ask-opt ask-rect');
     out.type = 'button';
@@ -114,7 +131,7 @@ export function harnessModelEditor(catalog, entry) {
     const parts = [el('p', 'setup-fine', `The model services New Agent offers for ${entry.cli_label || entry.cli}, then the models in each.`), sources,
       tableLink('+ Add or change model services in Settings', () => openWorkbenchTab(modelServicePageRequest('gateway')))];
     for (const group of groups) {
-      if (!isOn(group.id)) continue;
+      if (!group.id || !isOn(group.id)) continue;
       parts.push(el('h4', 'harness-models-service', group.name), table(group));
     }
     holder.replaceChildren(...parts);

@@ -1,4 +1,4 @@
-import { modelServices } from './model-services.js';
+import { modelServices, serviceTypesFor } from './model-services.js';
 /**
  * THE PROVIDERS AND THE ONE JOIN — every model row a picker offers or a launch runs.
  *
@@ -101,7 +101,9 @@ export interface HarnessRows extends HarnessEntry {
   native?: string;
   nativeDangerousCmd?: string;
   launch_modes?: Array<'configured' | 'live_dangerously'>;
-  services?: Array<{ id: string; name: string }>;
+  services?: Array<{ id: string; name: string; service_type: 'gateway' | 'private_api' | 'openrouter' }>;
+  /** The service types this harness can use, set up or not. */
+  service_types?: Array<'gateway' | 'private_api' | 'openrouter'>;
   models: HarnessRow[];
 }
 
@@ -370,7 +372,7 @@ export async function harnessRows(summary: HarnessSummary | null, catalog?: Mode
       }
     }
     const ready = rows.some(row => row.operational);
-    return { ...entry, cli_label: base.cli_label, operational: ready, off, ...launch, services: compatible.map(({ id, name }) => ({ id, name })), models: rows };
+    return { ...entry, cli_label: base.cli_label, operational: ready, off, ...launch, services: compatible.map(({ id, name, service_type }) => ({ id, name, service_type })), service_types: serviceTypesFor(entry.cli), models: rows };
   }));
   return [...joined.filter((entry) => entry.operational), ...joined.filter((entry) => !entry.operational)];
 }

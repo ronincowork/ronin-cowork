@@ -26,6 +26,11 @@ export const RONIN_GATEWAY_SEED_ID = 'ronin_api';
  * harness's own setting (`newAgentModels`). */
 const SPEAKS: Record<string, ReadonlyArray<'chat' | 'responses'>> = { hermes: ['chat', 'responses'], codex: ['responses'], opencode: ['chat'] };
 export const worksWith = (wire: 'chat' | 'responses'): string[] => Object.keys(SPEAKS).filter(harness => SPEAKS[harness]!.includes(wire));
+/** The service types a harness can use: the Ronin Gateway speaks Responses, OpenRouter chat, an API key either. */
+export const serviceTypesFor = (harness: string): Array<'gateway' | 'private_api' | 'openrouter'> => {
+  const speaks = SPEAKS[harness] ?? [];
+  return [...(speaks.includes('responses') ? ['gateway' as const] : []), ...(speaks.length ? ['private_api' as const] : []), ...(speaks.includes('chat') ? ['openrouter' as const] : [])];
+};
 
 const project = (c: ModelServiceRecord & { configured: boolean }) => {
   const wire: 'chat' | 'responses' = c.wireApi ?? (c.provider === 'openai' ? 'responses' : 'chat');
