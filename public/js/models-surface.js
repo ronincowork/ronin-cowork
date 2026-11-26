@@ -144,7 +144,7 @@ const factsOf = (made) => {
 
 /** Step 1: each harness (CLI) — its version, the newer release, and what its own list said, from the record the door just wrote. */
 function listsStep(runtime, state) {
-  const providers = Array.isArray(runtime?.providers) ? runtime.providers : [];
+  const providers = Array.isArray(runtime?.harnesses) ? runtime.harnesses : [];
   const read = String(runtime?.refreshed_at || '');
   const made = stepItem({ key: 'lists', n: 1, label: t('harness.step_harnesses', 'Harnesses'),
     ...stepState(state, read ? { state: t('models.lists_read', 'Read {date}', { date: dayTime(read) }), done: true } : { state: t('models.lists_never', 'Not read yet') }),

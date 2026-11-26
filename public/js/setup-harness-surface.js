@@ -100,7 +100,7 @@ function createHarnessSurface(context) {
 
   const start = async (provider, way) => {
     const to = hers();
-    const result = await post(`/api/setup/providers/${encodeURIComponent(provider.id)}/sign-in`, { way, tell: to });
+    const result = await post(`/api/setup/harnesses/${encodeURIComponent(provider.id)}/sign-in`, { way, tell: to });
     if (result.ok && to) void sendPress(to, `${shortName(provider)} · Sign in with ${wayWord(way)}`);
     if (!result.ok) { signIn.failed[provider.id] = result.message; paint(); }
   };
@@ -126,13 +126,13 @@ function createHarnessSurface(context) {
       input.addEventListener('input', () => drafts.set(provider.id, input.value));
       const send = button(t('setup_harness.send', 'Send'), true, async () => {
         send.disabled = true;
-        const result = await post(`/api/setup/providers/${encodeURIComponent(provider.id)}/sign-in/paste`, { text: input.value });
+        const result = await post(`/api/setup/harnesses/${encodeURIComponent(provider.id)}/sign-in/paste`, { text: input.value });
         if (result.ok) { drafts.delete(provider.id); pressed(`${shortName(provider)} · Sent the ${run.paste}`); } else send.disabled = false;
       });
       input.addEventListener('keydown', (event) => { if (event.key === 'Enter') send.click(); });
       row.append(input, send);
     }
-    row.append(button(t('setup_harness.cancel', 'Cancel'), false, async () => { const r = await post(`/api/setup/providers/${encodeURIComponent(provider.id)}/sign-in/cancel`); if (r.ok) pressed(`${shortName(provider)} · Cancel sign-in`); }));
+    row.append(button(t('setup_harness.cancel', 'Cancel'), false, async () => { const r = await post(`/api/setup/harnesses/${encodeURIComponent(provider.id)}/sign-in/cancel`); if (r.ok) pressed(`${shortName(provider)} · Cancel sign-in`); }));
     box.append(row);
     return box;
   };
@@ -142,7 +142,7 @@ function createHarnessSurface(context) {
     const box = el('div', 'setup-harness-window');
     if (!provider.login_open) {
       const row = stones();
-      row.append(button(t('setup_harness.open_terminal', 'Open its sign-in'), true, async () => { const r = await post(`/api/setup/providers/${encodeURIComponent(provider.id)}/login`); if (r.ok) pressed(`${shortName(provider)} · Open its sign-in`); await readRuntime(); }));
+      row.append(button(t('setup_harness.open_terminal', 'Open its sign-in'), true, async () => { const r = await post(`/api/setup/harnesses/${encodeURIComponent(provider.id)}/login`); if (r.ok) pressed(`${shortName(provider)} · Open its sign-in`); await readRuntime(); }));
       box.append(el('p', 'setup-harness-line', t('setup_harness.terminal', '{cli} signs in in a terminal.', { cli: shortName(provider) })), row);
       return box;
     }
@@ -150,7 +150,7 @@ function createHarnessSurface(context) {
     // One host for the open terminal, kept across repaints so the tile is never torn down by one.
     terminalHost ||= el('div', 'setup-harness-terminal');
     const row = stones();
-    row.append(button(t('setup_harness.close', 'Close'), false, async () => { mounted?.destroy?.(); mounted = null; terminalHost = null; const r = await post(`/api/setup/providers/${encodeURIComponent(provider.id)}/close`); if (r.ok) pressed(`${shortName(provider)} · Close sign-in`); await readRuntime(); }));
+    row.append(button(t('setup_harness.close', 'Close'), false, async () => { mounted?.destroy?.(); mounted = null; terminalHost = null; const r = await post(`/api/setup/harnesses/${encodeURIComponent(provider.id)}/close`); if (r.ok) pressed(`${shortName(provider)} · Close sign-in`); await readRuntime(); }));
     box.append(terminalHost, row);
     if (!mounted) mounted = mountHarnessAttachment(context.environment, terminalHost, provider, context.workspace, () => { mounted = null; });
     return box;
@@ -232,7 +232,7 @@ function createHarnessSurface(context) {
 
   const paint = () => {
     if (disposed) return;
-    const harnesses = (runtime.providers || []).filter((provider) => provider?.installed);
+    const harnesses = (runtime.harnesses || []).filter((provider) => provider?.installed);
     if (open !== 'hermes') { hermesStop?.(); hermesStop = null; hermesHost = null; }
     if (mounted && !harnesses.some((provider) => provider.login_open && open === provider.id)) { mounted.destroy?.(); mounted = null; terminalHost = null; }
     stack.replaceChildren(...harnesses.map(barOf));

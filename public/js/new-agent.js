@@ -149,13 +149,13 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
   stepTop.body.append(instructionsField);
 
   /* ---- The one question utility: Model, Mandate, Team, and Where it works. ---- */
-  const harnessRows = () => harnessCatalog().providers.map(entry => ({
+  const harnessRows = () => harnessCatalog().harnesses.map(entry => ({
     v: entry.provider, l: entry.cli_label || entry.label,
     off: entry.operational ? undefined : entry.off ? t('forms.reason_turned_off', 'turned off') : t('forms.reason_not_on_machine', 'not on this machine'),
   }));
   const modelRows = ({ provider }) => {
     const catalog = harnessCatalog();
-    const entry = catalog.providers.find(item => item.provider === provider);
+    const entry = catalog.harnesses.find(item => item.provider === provider);
     return (entry?.models || []).filter(row => configure || shownInNewAgent(catalog, entry, row))
       .map(row => ({ v: row.model, l: modelLabel(row), word: row.service_name || rowTierWord(row),
         off: row.selectable ? undefined : t('forms.reason_not_on_machine', 'not on this machine'),
@@ -205,7 +205,7 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
     links.append(defaultsLink(t('new_agent.desk_defaults', 'Desk defaults'),
       deskDefaultsSpec?.() || { destination: 'campaign', mode: 'overlay' }, openDeskDefaults));
     if (!configure && hasAgent()) {
-      const entry = harnessCatalog().providers.find(row => row.provider === (draft.provider || seed?.seeds?.provider?.value));
+      const entry = harnessCatalog().harnesses.find(row => row.provider === (draft.provider || seed?.seeds?.provider?.value));
       links.append(' · ', modelSettingsLink(entry?.cli));
     }
     defaultsNote.append(teaching, links);
@@ -233,7 +233,7 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
     const provider = seed?.seeds?.provider?.value || ''; const model = seed?.seeds?.model?.value || '';
     const row = harnessCatalog().rows.find((item) => item.provider === provider && item.model === model);
     if (row && !modelRows({ provider }).some(option => option.v === model)) return t('new_agent.choose_harness', 'Choose harness');
-    const named = row ? modelLabel(row) : model || harnessCatalog().providers.find((item) => item.provider === provider)?.label || '';
+    const named = row ? modelLabel(row) : model || harnessCatalog().harnesses.find((item) => item.provider === provider)?.label || '';
     return named ? t('new_agent.default_named', 'Default · {model}', { model: named }) : t('forms.default', 'Default');
   };
   const questions = ask([

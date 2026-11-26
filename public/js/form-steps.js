@@ -86,18 +86,18 @@ export const mandateWord = (value) => mandateTitle(value);
  * `loadHarnessCatalog()` when it is shown and paints from `harnessCatalog()`; a picker
  * built before the first read paints again when it lands.
  */
-let catalog = { rows: [], providers: [], machine: [], measured_at: '', refreshed_at: '', loaded: false };
+let catalog = { rows: [], harnesses: [], machine: [], measured_at: '', refreshed_at: '', loaded: false };
 let inflight = null;
 const NATIVE_MODEL = 'native';
 
 export function loadHarnessCatalog() {
   if (inflight) return inflight;
   inflight = Promise.all([request('/api/harness-catalog'), request('/api/setup/runtime', { cache: 'no-store' })]).then(([read, runtime]) => {
-    const providers = read.ok && Array.isArray(read.data?.providers) ? read.data.providers : [];
-    const machine = runtime.ok && Array.isArray(runtime.data?.providers) ? runtime.data.providers : [];
+    const providers = read.ok && Array.isArray(read.data?.harnesses) ? read.data.harnesses : [];
+    const machine = runtime.ok && Array.isArray(runtime.data?.harnesses) ? runtime.data.harnesses : [];
     catalog = {
       preferences: read.data?.preferences || {},
-      rows: providers.flatMap((entry) => (Array.isArray(entry?.models) ? entry.models : [])), providers, machine,
+      rows: providers.flatMap((entry) => (Array.isArray(entry?.models) ? entry.models : [])), harnesses: providers, machine,
       measured_at: read.ok ? String(read.data?.measured_at || '') : '',
       refreshed_at: read.ok ? String(read.data?.refreshed_at || '') : '',
       loaded: true,
@@ -108,7 +108,7 @@ export function loadHarnessCatalog() {
   return inflight;
 }
 
-/** What every reader paints from: `{ rows, providers, machine, measured_at, refreshed_at, loaded }`. */
+/** What every reader paints from: `{ rows, harnesses, machine, measured_at, refreshed_at, loaded }`. */
 export const harnessCatalog = () => catalog;
 
 /** light · standard · frontier · unrated, in the person's words. */
@@ -174,7 +174,7 @@ export function harnessModelPair(read, write, field, { fixed = '', classes = '',
   const option = (label, value, disabled = false) => { const out = el('option', null, label); out.value = value; out.disabled = disabled; return out; };
   const paint = () => {
     const current = read() || {};
-    const providers = harnessCatalog().providers;
+    const providers = harnessCatalog().harnesses;
     harnessSelect.replaceChildren(option(blank.provider ?? t('forms.default', 'default'), ''));
     for (const entry of providers) {
       const name = entry.cli_label || entry.label;

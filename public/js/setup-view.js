@@ -415,7 +415,7 @@ export function createSetupView() {
       });
       if (!runtime) {
         void request('/api/setup/runtime', { cache: 'no-store' }).then((result) => {
-          runtime = result.ok ? result.data : { providers: [], activated_count: 0 };
+          runtime = result.ok ? result.data : { harnesses: [], activated_count: 0 };
           environment.setupRuntime = runtime;
           paint();
         });

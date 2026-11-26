@@ -72,7 +72,7 @@ export interface SetupHarnessState {
 }
 
 export interface SetupRuntimeAnswer {
-  providers: SetupHarnessState[];
+  harnesses: SetupHarnessState[];
   activated_count: number;
   activated_band: 'zero' | 'one' | 'two_plus';
   /** When the machine facts were measured; a reader shows a stale date rather than guessing. */
@@ -187,7 +187,7 @@ export async function setupRuntimeAnswer(
   }));
   const activated_count = providers.filter((provider) => provider.activated).length;
   return {
-    providers,
+    harnesses: providers,
     activated_count,
     activated_band: activated_count === 0 ? 'zero' : activated_count === 1 ? 'one' : 'two_plus',
     measured_at: summary.measured_at,

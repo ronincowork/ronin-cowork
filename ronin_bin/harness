@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # harness — sign a harness in without a terminal (owner, 24 Nov; samurai_lab/wip/SETUP_HARNESS.md):
 # Ronin runs the CLI's own login for the way chosen and the Helpful Assistant hears how it ends.
-# Over the Harness page's own routes: /api/setup/sign-in, /api/setup/providers/<id>/sign-in.
+# Over the Harness page's own routes: /api/setup/sign-in, /api/setup/harnesses/<id>/sign-in.
 . "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/tool-count.sh" harness "$@"
 set -u -o pipefail
 . "$(dirname "$(readlink "${BASH_SOURCE[0]}" 2>/dev/null || printf '%s' "${BASH_SOURCE[0]}")")/tool-path.sh"
@@ -57,7 +57,7 @@ def show(run):
     print(f"{run.get('label') or run.get('provider')} ({run.get('way')}): link {run.get('link') or 'not yet'}{', code ' + run['code'] if run.get('code') else ''}; {paste}{' (sent)' if run.get('sent') else ''}")
 if cmd == 'sign-in':
     provider, way = args
-    run = call('POST', f'/api/setup/providers/{provider}/sign-in', {'way': way, 'tell': 'irasshai'}).get('run') or {}
+    run = call('POST', f'/api/setup/harnesses/{provider}/sign-in', {'way': way, 'tell': 'irasshai'}).get('run') or {}
     for _ in range(20):  # the CLI prints its link within seconds
         if run.get('link'): break
         time.sleep(0.5)
@@ -73,13 +73,13 @@ elif cmd == 'state':
     for run in found:
         if isinstance(run, dict): show(run)
 elif cmd == 'cancel':
-    call('POST', f'/api/setup/providers/{args[0]}/sign-in/cancel', {})
+    call('POST', f'/api/setup/harnesses/{args[0]}/sign-in/cancel', {})
     print(f'{args[0]} sign-in cancelled.')
 elif cmd == 'open':  # the page's own press: its terminal opens on the harness's page
-    opened = call('POST', f'/api/setup/providers/{args[0]}/login', {}).get('opened')
+    opened = call('POST', f'/api/setup/harnesses/{args[0]}/login', {}).get('opened')
     print(f"{args[0]} sign-in {'opened' if opened else 'was already open'} on its page; the person signs in there.")
 elif cmd == 'close':
-    call('POST', f'/api/setup/providers/{args[0]}/close', {})
+    call('POST', f'/api/setup/harnesses/{args[0]}/close', {})
     print(f'{args[0]} sign-in closed.')
 else:  # Hermes: what it can use (the Ronin gateway, the person's keys, typed on the page) and its model options
     state = call('GET', '/api/hermes')

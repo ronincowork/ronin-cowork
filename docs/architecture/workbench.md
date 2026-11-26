@@ -343,7 +343,7 @@ The door's own destination over the provider drawing Settings and Setup share.
 | Surface | Required data and owner |
 |---|---|
 | Model stones (`models.stones`) | the recorded provider summary and catalog through `recordRuntime()`; a measure only on a press, as on Settings |
-| Model refresh (`models.refresh`) | the same record; the Refresh all press (`/api/setup/providers/refresh`) through the shared drawing's measure, then each account's Discover |
+| Model refresh (`models.refresh`) | the same record; the Refresh all press (`/api/setup/harnesses/refresh`) through the shared drawing's measure, then each account's Discover |
 | Defaults (`models.defaults`) | `GET /api/machine-settings`, the schema's `models` section; each row PATCHes `agents` (`sessions.default`, `sessions.lead`, `jobs.mikaassist.level`) |
 | Model provider (`models.provider`) | the same record for the one provider named in its detail; its selector cards come from `harnessOffers()` over the same record |
 

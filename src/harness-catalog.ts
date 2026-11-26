@@ -108,7 +108,7 @@ export interface HarnessCatalogAnswer {
   refreshed_at: string;
   /** When HQ's catalog was made; '' when none has arrived. */
   catalog_at: string;
-  providers: HarnessRows[];
+  harnesses: HarnessRows[];
 }
 
 /* ---------------------------------------------------------------------------------- */
@@ -382,7 +382,7 @@ export async function harnessCatalogAnswer(summary: HarnessSummary | null): Prom
     measured_at: summary?.measured_at ?? '',
     refreshed_at: summary?.refreshed_at ?? '',
     catalog_at: catalog.at ?? '',
-    providers: await harnessRows(summary, catalog),
+    harnesses: await harnessRows(summary, catalog),
   };
 }
 

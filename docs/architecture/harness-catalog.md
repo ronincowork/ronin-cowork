@@ -36,11 +36,11 @@ Each `AGENTS` row in `src/agents.ts` carries its `vendor`:
 | Field | Meaning |
 |---|---|
 | `provider` | the vendor id a launch names (`anthropic`, `openai`, `google`, `xai`, `hermes`, `github`, `opencode`, `moonshot`) and the key of `agents.sessions.by_provider` |
-| `label` | the vendor's name, as the pickers and `GET /api/setup/runtime` (`providers[].from`) show it |
+| `label` | the vendor's name, as the pickers and `GET /api/setup/runtime` (`harnesses[].from`) show it |
 | `transcript_source` | dated, descriptive journal location and write discipline; availability requires a supported adapter and verified launch identity, not merely a file at that path |
 | `maturity` | optional: `beta`, or `comingSoon`, which shows the provider and never launches it |
 
-`listHarnesses()` reads them; `GET /api/setup/runtime` keeps `providers[].provider` and
+`listHarnesses()` reads them; `GET /api/setup/runtime` keeps `harnesses[].provider` and
 `.from` by these names, and the park reads them. The join lives here and nowhere else — no
 command-word match, no map in a client. The CLI's own particulars are its
 [Agent page](../agents/README.md).
@@ -140,7 +140,7 @@ start, a restore included, with the launching person's email for the `X-Ronin-Pe
 
 `GET /api/harness-catalog` answers the record's dates, when HQ's catalog was made, and every
 provider with its rows already joined —
-`{ measured_at, refreshed_at, catalog_at, providers: [{ provider, cli, label, cli_label, launchable, operational, off, native, launch_modes, part?, models: [rows] }] }`
+`{ measured_at, refreshed_at, catalog_at, harnesses: [{ provider, cli, label, cli_label, launchable, operational, off, native, launch_modes, part?, models: [rows] }] }`
 (`harnessCatalogAnswer`) — the only provider route there is, and the only
 join: no client joins anything. Google, xAI and Nous have not yet been launched end to end
 through Ronin; the first real launch of each is its proof, per the checklist below.
@@ -194,7 +194,7 @@ What this machine *has* is measured, not derived on every read. The Campaign rec
   CLI's own list read again, the Ronin Gateway's list, then npm asked.
   It runs at every Ronin start, so after every
   Update (which restarts Ronin), with nobody pressing anything (KAN-651); in a hosted office
-  the park calls `POST /api/setup/providers/refresh` over the unit's socket when it moved the
+  the park calls `POST /api/setup/harnesses/refresh` over the unit's socket when it moved the
   CLIs in place (`ronin_cloud` office_kohai); the member's press; and once on **Done**,
   because activating a provider is a press too (owner, 2026-09-25). Never a timer, never on open.
 
@@ -210,7 +210,7 @@ appears in it. A new way to read a list is a new key, never an `if`.
 Everything else reads the record through `GET /api/setup/runtime`: Ronin Home's three
 blocks and the selector summaries. A machine that
 has never been measured is measured once on the first read, not guessed. A stale summary
-shows its dates. `POST /api/setup/providers/:provider/install` uses the shared installer
+shows its dates. `POST /api/setup/harnesses/:provider/install` uses the shared installer
 and returns the runtime with its explicit `install_open` session attachment. Setup and
 Settings mount that attachment on the provider page, including first-run sign-in. It stays
 available after the binary appears, until Cancel ends the session and measures again.

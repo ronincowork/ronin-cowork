@@ -1,6 +1,6 @@
 /* Pure provider discovery and explicit attachment seams for Ronin Setup. */
 export function harnessFromRuntime(runtime, key) {
-  return (Array.isArray(runtime?.providers) ? runtime.providers : []).find((provider) => provider?.id === key) || null;
+  return (Array.isArray(runtime?.harnesses) ? runtime.harnesses : []).find((provider) => provider?.id === key) || null;
 }
 
 const PROVIDER_MANUAL_ROUTES = Object.freeze({

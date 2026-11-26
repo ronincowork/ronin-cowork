@@ -130,7 +130,7 @@ export function registerSetupRuntime(app: express.Express): void {
   // start; in a hosted office the park calls it over the unit's socket when it moved the CLIs
   // in place (ronin_cloud office_kohai, KAN-651); the member's press. Never a timer; each ask
   // is an egress line. Every other reader takes GET /api/setup/runtime, which is the record.
-  app.post('/api/setup/providers/refresh', async (_req, res) => {
+  app.post('/api/setup/harnesses/refresh', async (_req, res) => {
     try {
       const summary = await refreshHarnesses();
       await readGatewayModels();
@@ -140,7 +140,7 @@ export function registerSetupRuntime(app: express.Express): void {
     }
   });
 
-  app.post('/api/setup/providers/:provider/install', async (req, res) => {
+  app.post('/api/setup/harnesses/:provider/install', async (req, res) => {
     try {
       const [result] = await dispatchInstall([{ kind: 'agent', name: String(req.params.provider) }]);
       if (!result || result.outcome === 'refused') {
@@ -155,11 +155,11 @@ export function registerSetupRuntime(app: express.Express): void {
 
   // Update: the registry's update line in a temporary provider_setup session shown in the
   // page, as a sign-in is; the same /close ends it. The owner's press.
-  app.post('/api/setup/providers/:provider/update', async (req, res) => {
+  app.post('/api/setup/harnesses/:provider/update', async (req, res) => {
     try {
       const result = await openHarnessUpdate(String(req.params.provider));
       const runtime = await answer();
-      const provider = runtime.providers.find((row) => row.id === String(req.params.provider));
+      const provider = runtime.harnesses.find((row) => row.id === String(req.params.provider));
       res.json({ ok: true, opened: result.opened, session: result.session, attachment: provider?.attachment ?? null, runtime });
     } catch (error) {
       res.status(400).json({ error: errMsg(error) });
@@ -170,7 +170,7 @@ export function registerSetupRuntime(app: express.Express): void {
   // offered, not launched anew. The sign-in is kept and tiles already running run on. On
   // clears the one field. Either way the machine is measured again so the record moves.
   for (const [door, off] of [['off', true], ['on', false]] as const) {
-    app.post(`/api/setup/providers/:provider/${door}`, async (req, res) => {
+    app.post(`/api/setup/harnesses/:provider/${door}`, async (req, res) => {
       try {
         const result = await setHarnessOff(String(req.params.provider), off);
         res.json({ ok: true, ...result, runtime: await answer(await measureAndRecordHarnesses()) });
@@ -183,31 +183,31 @@ export function registerSetupRuntime(app: express.Express): void {
   // SIGN-IN WITHOUT A TERMINAL (src/harness-sign-in.ts): start for a way, paste, cancel; the state
   // is pushed as `harness-sign-in`, and read here when a page opens. `tell` names who hears the end.
   app.get('/api/setup/sign-in', async (_req, res) => { res.json(await signInState()); });
-  app.post('/api/setup/providers/:provider/sign-in', async (req, res) => {
+  app.post('/api/setup/harnesses/:provider/sign-in', async (req, res) => {
     try { res.json({ ok: true, run: await startSignIn(String(req.params.provider), req.body?.way === 'api_key' ? 'api_key' : 'subscription', String(req.body?.tell ?? '')) }); }
     catch (error) { res.status(400).json({ error: errMsg(error) }); }
   });
-  app.post('/api/setup/providers/:provider/sign-in/paste', (req, res) => {
+  app.post('/api/setup/harnesses/:provider/sign-in/paste', (req, res) => {
     try { res.json({ ok: true, run: pasteSignIn(String(req.params.provider), String(req.body?.text ?? '')) }); }
     catch (error) { res.status(400).json({ error: errMsg(error) }); }
   });
-  app.post('/api/setup/providers/:provider/sign-in/cancel', (req, res) => {
+  app.post('/api/setup/harnesses/:provider/sign-in/cancel', (req, res) => {
     cancelSignIn(String(req.params.provider));
     res.json({ ok: true });
   });
 
-  app.post('/api/setup/providers/:provider/login', async (req, res) => {
+  app.post('/api/setup/harnesses/:provider/login', async (req, res) => {
     try {
       const result = await openHarnessLogin(String(req.params.provider));
       const runtime = await answer();
-      const provider = runtime.providers.find((row) => row.id === String(req.params.provider));
+      const provider = runtime.harnesses.find((row) => row.id === String(req.params.provider));
       res.json({ ok: true, opened: result.opened, attachment: provider?.attachment ?? null, runtime });
     } catch (error) {
       res.status(400).json({ error: errMsg(error) });
     }
   });
 
-  app.post('/api/setup/providers/:provider/done', async (req, res) => {
+  app.post('/api/setup/harnesses/:provider/done', async (req, res) => {
     try {
       const result = await completeHarnessLogin(String(req.params.provider));
       // Done activates a provider: the owner's press, so its model list is read now (owner, 2026-09-25).
@@ -217,7 +217,7 @@ export function registerSetupRuntime(app: express.Express): void {
     }
   });
 
-  app.post('/api/setup/providers/:provider/close', async (req, res) => {
+  app.post('/api/setup/harnesses/:provider/close', async (req, res) => {
     try {
       await closeHarnessLogin(String(req.params.provider));
       // A sign-in closed without Done may still have left the CLI's credential file: measure.

@@ -13,7 +13,7 @@ import { accountAction, accountForm, accountSummary, button } from './account-ed
 
 /** The harnesses a model service works with, by name: a fact it reports, never a tick (KAN-896). */
 export function worksWithLine(account) {
-  const known = new Map((harnessCatalog().providers || []).map((p) => [p.cli, p.cli_label || p.label || p.cli]));
+  const known = new Map((harnessCatalog().harnesses || []).map((p) => [p.cli, p.cli_label || p.label || p.cli]));
   return t('accounts.works_with', 'Works with {harnesses}', { harnesses: account.bound.map((id) => known.get(id) || id).join(', ') });
 }
 
