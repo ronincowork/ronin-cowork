@@ -1,6 +1,8 @@
 # Model providers
 
-Ronin launches agents from three records joined in one place (`providerRows`,
+For Gateway, OpenRouter, private API connections and their named models, see [Model services](model_services_README.md).
+
+For native CLI launches, Ronin joins three records in one place (`providerRows`,
 `src/model-providers.ts`). Each CLI in `src/agents.ts` names the vendor it serves. Which
 models can launch is each signed-in CLI's own list, in the Campaign's **measured provider
 summary**. What each model is for is **HQ's model catalog**: one Models table on HQ's admin
