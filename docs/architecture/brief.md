@@ -137,7 +137,7 @@ no two files share a name, so a tool whose command is a behaviour's name takes a
 | `mandate:` | behaviours | the mandate axis this file is a value of: `reach`, `recruit` or `output`; the title is the value |
 | `with:` | mandate values | the behaviour(s) choosing this value puts in play, at their depth (Reach plan `with: planning`); the order never repeats that behaviour's text |
 | `lists:` | behaviours | a stock folder whose files `ronin-help <behaviour>` prints after its text, one line each, the person's own (`~/ronin/custom/<dir>/`) over stock by name, in `order:`: adding a file adds it (new-workspace: `workspace_types/`) |
-| `facts:` | bridges | the facts its Workspace entry takes, comma-separated (`netlify-bridge`: `site`); each is a field on the Workspace page's Integrations row, saved as `{provider, site}` ([integrations.md](integrations.md#the-pieces)) |
+| `facts:` | bridges | the facts its Workspace entry takes, comma-separated (`netlify-bridge`: `site`); each is a field on the Workspace page's Integrations row, saved as `{provider, site}` ([integrations.md](integrations.md#the-workspace)) |
 | `order:` | all | its place in its section, lower first |
 
 Header lines run from the title to the first blank line. An unknown field is ignored; an
@@ -363,8 +363,8 @@ session type, never a layer's lists.
 
 **Integrations are copied the same way**: a new level starts with its parent's on, and turns one
 on or off on its own list. An Agent may turn off one its parent has on (`integrations_off` in
-its own brief settings). A MCP server or web API record's Campaigns only make it available
-(listed in the pickers); a level's switch turns it on (KAN-607).
+its own brief settings). Adding an integration in Settings turns it on at the top; on teaches and
+never blocks ([integrations.md](integrations.md#on-and-off-a-cascading-default)).
 On for an Agent makes `integration:<name>` hold, so its bridge behaviour and that behaviour's
 tools come into play.
 
