@@ -69,6 +69,15 @@ rows: every listed model is then Unrated.
 Ronin Gateway's models are not in this file. The Gateway's own list says each one's `id`,
 `name`, `tier` and `use_for`, and Ronin reads them there ([Model services](model_services_README.md)).
 
+**Why two sources, and who keeps each.** What a harness can launch is a fact the machine can read,
+so Ronin measures it: the CLI's version and its own model list, dated, never inferred. What a model
+is good for (tier, "use it for", price) is a judgement no vendor publishes, so it cannot be fetched,
+only written: that is HQ's standing work, and anything HQ must keep current reaches an office through
+Ronin Services, never through a file someone edits on the machine. Nobody opens a file to make a
+mainstream model appear: the CLI lists it after its update, and it is offered at once, Unrated until
+HQ rates it. When a model is missing, the usual cause is an old CLI, which is why the Harness page
+shows the installed version beside the newest release and offers Update.
+
 The catalog never grants a model: a model is offered because its CLI lists it, and a catalog
 row the CLI doesn't list is not offered.
 
