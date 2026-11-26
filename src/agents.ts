@@ -22,7 +22,7 @@ export type ModelsSource =
   | { read: 'codex-cache' }
   | { read: 'command'; argv: readonly string[] }
   | { read: 'command-lines'; argv: readonly string[] }
-  | { read: 'hermes-setups' }
+  | { read: 'model-options' }
   | { read: 'none' };
 
 export interface AgentOperations {
@@ -162,7 +162,7 @@ export const AGENTS = [
       update: { shell: '', argv: ['update'] },
       selfUpdates: false,
       version: ['--version'],
-      models: { read: 'hermes-setups' },
+      models: { read: 'model-options' },
       session: { discovery: 'unsupported' },
     } as AgentOperations,
     signIn: 'Pick the model provider with the arrows and Enter (Nous Portal is first), then answer what it asks for that provider.',

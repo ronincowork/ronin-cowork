@@ -1,5 +1,5 @@
 import { serviceLaunch } from './model-service-launch.js';
-import { prepareHermesHome } from './hermes-setups.js';
+import { prepareHermesHome } from './model-service-store.js';
 /** One launch processor. The CLI grammar owns identity capability; this module owns
  * sequencing and the artifact Ronin sets before starting the process. No provider list.
  */

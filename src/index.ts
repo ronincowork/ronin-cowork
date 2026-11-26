@@ -51,7 +51,7 @@ import { registerMachineSettings } from './routes/machine-settings-api.js';
 import { registerCampaigns } from './routes/campaigns-api.js';
 import { ensureInitialCampaign } from './campaigns.js';
 import { refreshHarnesses } from './harness-summary.js';
-import { readGatewayModels } from './hermes-setups.js';
+import { readGatewayModels } from './model-service-store.js';
 import { migrateCampaignScope, moveDeskModelDefault } from './campaign-scope.js';
 import { registerUpdate } from './routes/update-api.js';
 import { registerMachineRestart } from './routes/machine-restart-api.js';

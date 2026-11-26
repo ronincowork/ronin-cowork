@@ -38,7 +38,7 @@ one gateway failure affect every Agent. Its `.env` links to the
 connection's private credential file. Key rotation is picked up at process restart;
 running processes may retain their old key in memory. Setup edits affect future births.
 No subscription credentials are borrowed. Setup metadata is stored in the credential
-store's `hermes-setups.json`; secrets remain in private `hermes-<connection-id>.env` files.
+store's `model-service-store.json`; secrets remain in private `hermes-<connection-id>.env` files.
 Deleting a connection is blocked while a setup references it. Its credential file is
 retained for existing agents; revocation is performed at the API provider.
 

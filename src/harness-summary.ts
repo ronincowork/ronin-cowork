@@ -1,4 +1,4 @@
-import { hermesConfigured, readHermesSettings } from './hermes-setups.js';
+import { modelServiceConfigured, readModelServiceStore } from './model-service-store.js';
 /**
  * MEASURING THE PROVIDERS — the one place the machine is asked what it has, and the
  * Campaign record that keeps the answer.
@@ -27,7 +27,7 @@ import { AGENTS, listAgentAvailability, type AgentAvailability, type ModelsSourc
 import { execFile } from './spawn-broker.js';
 import { ensureInitialCampaign, initialCampaign, writeCampaignHarnesses } from './campaigns.js';
 import { readAgentsSection, readSetupSection, writeAgentsSection } from './machine-state.js';
-import { readGatewayModels } from './hermes-setups.js';
+import { readGatewayModels } from './model-service-store.js';
 import { listHarnesses, harnessRows, type ModelConnection, type ModelList, type ModelRow, type HarnessSummary } from './harness-catalog.js';
 
 interface SetupSection { providers?: Record<string, { activated_at?: unknown; off_at?: unknown }>; [key: string]: unknown }
@@ -59,7 +59,7 @@ async function exists(file: string): Promise<boolean> {
 
 /** The CLI signed in on this machine and left its credential file; Ronin reads only that it exists. */
 export async function harnessSignedIn(cli: string, home = os.homedir()): Promise<boolean> {
-  if (cli === 'hermes') return hermesConfigured();
+  if (cli === 'hermes') return modelServiceConfigured();
   const files = AGENTS.find((agent) => agent.id === cli)?.credentials ?? [];
   for (const file of files) if (await exists(path.join(home, file))) return true;
   return false;
@@ -170,7 +170,7 @@ const READERS: Record<ModelsSource['read'], (agent: Agent, home: string, file: s
     const { stdout } = await execFile(file, [...agent.operations.models.argv], { timeout: 20_000 });
     return lineModels(stdout);
   },
-  'hermes-setups': async () => (await readHermesSettings()).setups.map(setup => ({ id: setup.id, name: setup.name })),
+  'model-options': async () => (await readModelServiceStore()).setups.map(setup => ({ id: setup.id, name: setup.name })),
   none: async () => null,
 };
 

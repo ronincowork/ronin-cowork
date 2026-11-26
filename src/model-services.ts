@@ -1,9 +1,9 @@
 import { serviceConnections } from './accounts.js';
-import { hermesSettingsAnswer, isOpenRouterService } from './hermes-setups.js';
+import { modelServiceStoreAnswer, isOpenRouterService } from './model-service-store.js';
 
 /** One public, credential-free record per connection. Legacy stores keep the same ids. */
 export async function modelServices() {
-  const state = await hermesSettingsAnswer();
+  const state = await modelServiceStoreAnswer();
   const accounts = await serviceConnections(state);
   return accounts.map(({ models: discovered, ...connection }) => ({
     ...connection,

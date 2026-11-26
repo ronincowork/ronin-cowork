@@ -14,13 +14,13 @@ import { storeDir, REPO_ROOT } from './resources.js';
 /** A connection is a model service (KAN-236): `kind` is an optional fact on the record; absent,
  * `accountKind` derives it. Which harnesses can use it is worked out in src/accounts.ts, never stored. */
 export type AccountKind = 'personal_api' | 'ronin_api';
-export interface HermesConnection { id: string; name: string; provider: 'openai' | 'mistral' | 'custom'; baseUrl: string; wireApi?: 'chat' | 'responses'; models: string[]; modelNames?: Record<string, string>; modelInfo?: Record<string, { tier?: string; use_for?: string }>; discoveredAt?: string; credentialEnv?: string; starterModelsPending?: true; kind?: AccountKind }
+export interface ModelServiceRecord { id: string; name: string; provider: 'openai' | 'mistral' | 'custom'; baseUrl: string; wireApi?: 'chat' | 'responses'; models: string[]; modelNames?: Record<string, string>; modelInfo?: Record<string, { tier?: string; use_for?: string }>; discoveredAt?: string; credentialEnv?: string; starterModelsPending?: true; kind?: AccountKind }
 /** `tier` and `use_for` are the Ronin Gateway's own words for its model options; a named option has neither. */
-export interface ModelSetup { id: string; name: string; connection: string; model: string; reasoning: string; approvals: 'off' | 'prompt'; tier?: string; use_for?: string }
-export type HermesSetup = ModelSetup;
-export interface HermesSettings { connections: HermesConnection[]; setups: HermesSetup[] }
-const empty = (): HermesSettings => ({ connections: [], setups: [] });
-const readStoredSettings = () => readCredential<HermesSettings>('hermes-setups', empty());
+export interface ModelOption { id: string; name: string; connection: string; model: string; reasoning: string; approvals: 'off' | 'prompt'; tier?: string; use_for?: string }
+
+export interface ModelServiceStore { connections: ModelServiceRecord[]; setups: ModelOption[] }
+const empty = (): ModelServiceStore => ({ connections: [], setups: [] });
+const readStoredModelServices = () => readCredential<ModelServiceStore>('hermes-setups', empty());
 export const keyPath = (id: string) => path.join(storeDir('services_secrets'), `hermes-${id}.env`);
 const idPattern = /^[a-z0-9-]+$/;
 const modelPattern = /^[A-Za-z0-9._:/-]+$/;
@@ -28,7 +28,7 @@ export const isOpenRouterService = (baseUrl: string) => baseUrl.replace(/\/$/, '
 
 /** Invoked under the settings mutation lock. Only new connections opt in; an older
  * office's hand-curated list, including an intentionally empty one, stays its own. */
-async function seedOpenRouterModels(state: HermesSettings): Promise<boolean> {
+async function seedOpenRouterModels(state: ModelServiceStore): Promise<boolean> {
   const pending = state.connections.filter(c => c.starterModelsPending && c.discoveredAt && isOpenRouterService(c.baseUrl));
   if (!pending.length) return false;
   const starters = (await readModelCatalog()).openrouter_starters.filter(row => modelPattern.test(row.id) && !row.id.startsWith('-'));
@@ -54,7 +54,7 @@ export async function isHouse(baseUrl: string): Promise<boolean> {
   const office = await readOfficeRecord();
   return office.hosting === 'office_unit' && new URL(baseUrl).origin === new URL(office.record.gateway_office).origin;
 }
-export async function readKey(c: Pick<HermesConnection, 'id' | 'baseUrl'>): Promise<string> {
+export async function readKey(c: Pick<ModelServiceRecord, 'id' | 'baseUrl'>): Promise<string> {
   if (await isHouse(c.baseUrl)) { const token = await getHouseToken(); return token && !/[\r\n'"\\]/.test(token) ? token : ''; }
   if (!idPattern.test(c.id)) return '';
   try { return parse(await readFile(keyPath(c.id))).OPENAI_API_KEY || ''; } catch { return ''; }
@@ -62,20 +62,20 @@ export async function readKey(c: Pick<HermesConnection, 'id' | 'baseUrl'>): Prom
 /** WHO HEARS A HERMES CHANGE (owner, 25 Nov 2026): every write, whoever made it (a page, Irasshai's tool, her
  *  service, a discovery), is heard here; the routes push it so every Hermes bar reads again. */
 const written = new Set<() => void>();
-export const onHermesWritten = (fn: () => void) => { written.add(fn); };
-async function writeHermes(state: HermesSettings): Promise<void> { await writeCredential('hermes-setups', state); for (const fn of written) fn(); }
-export async function hermesConfigured(): Promise<boolean> { const state = await readHermesSettings(); for (const c of state.connections) if (await readKey(c)) return true; return false; }
+export const onModelServicesWritten = (fn: () => void) => { written.add(fn); };
+async function writeModelServiceStore(state: ModelServiceStore): Promise<void> { await writeCredential('hermes-setups', state); for (const fn of written) fn(); }
+export async function modelServiceConfigured(): Promise<boolean> { const state = await readModelServiceStore(); for (const c of state.connections) if (await readKey(c)) return true; return false; }
 const isGateway = (baseUrl: string) => /^http:\/\/127\.0\.0\.1:\d+(\/|$)/.test(baseUrl);
 /** A connection with no saved kind is the house gateway when it points at the local door; a hosted office's seed carries its kind. */
-export const accountKind = (c: Pick<HermesConnection, 'kind' | 'baseUrl'>): AccountKind => c.kind ?? (isGateway(c.baseUrl) ? 'ronin_api' : 'personal_api');
+export const accountKind = (c: Pick<ModelServiceRecord, 'kind' | 'baseUrl'>): AccountKind => c.kind ?? (isGateway(c.baseUrl) ? 'ronin_api' : 'personal_api');
 /** The Hermes state as the page reads it: each connection with its key's presence and its kind resolved. */
-export async function hermesSettingsAnswer() {
-  const state = await readHermesSettings();
+export async function modelServiceStoreAnswer() {
+  const state = await readModelServiceStore();
   return { ...state, connections: await Promise.all(state.connections.map(async c => ({ ...c, kind: accountKind(c), configured: !!await readKey(c) }))) };
 }
-export async function saveHermesConnection(input: Record<string, unknown>): Promise<HermesConnection> {
+export async function saveModelService(input: Record<string, unknown>): Promise<ModelServiceRecord> {
   return mutation(async () => {
-    const state = await readStoredSettings();
+    const state = await readStoredModelServices();
     const existing = state.connections.find(c => c.id === input.id);
     if (input.id && !existing) throw new Error('Connection no longer exists.');
     const provider = input.provider;
@@ -100,7 +100,7 @@ export async function saveHermesConnection(input: Record<string, unknown>): Prom
     if (existing?.credentialEnv && !apiKey && !hostedGateway && existing.baseUrl !== baseUrl) throw new Error('Update the endpoint in the credential environment, or enter a key here.');
     const kind = input.kind ?? existing?.kind;
     if (kind !== undefined && kind !== 'personal_api' && kind !== 'ronin_api') throw new Error('Select an account kind.');
-    const connection: HermesConnection = { ...(!apiKey && existing?.credentialEnv ? { credentialEnv: existing.credentialEnv } : {}), id, name: required(input.name, 'Connection name'), provider, baseUrl, ...(wireApi ? { wireApi } : {}),
+    const connection: ModelServiceRecord = { ...(!apiKey && existing?.credentialEnv ? { credentialEnv: existing.credentialEnv } : {}), id, name: required(input.name, 'Connection name'), provider, baseUrl, ...(wireApi ? { wireApi } : {}),
       ...(isOpenRouterService(baseUrl) && (!existing || !isOpenRouterService(existing.baseUrl) || existing.starterModelsPending) ? { starterModelsPending: true as const } : {}),
       models: changed ? [] : existing.models, ...(!changed && existing.modelNames ? { modelNames: existing.modelNames } : {}), ...(!changed && existing.modelInfo ? { modelInfo: existing.modelInfo } : {}), ...(!changed && existing.discoveredAt ? { discoveredAt: existing.discoveredAt } : {}),
       ...(kind ? { kind } : {}) };
@@ -113,13 +113,13 @@ export async function saveHermesConnection(input: Record<string, unknown>): Prom
     // A connection that was keyed and now points at the house gateway keeps no copy of any key.
     if (hostedGateway) await rm(keyPath(id), { force: true });
     state.connections = [...state.connections.filter(c => c.id !== id), connection];
-    await writeHermes(state);
+    await writeModelServiceStore(state);
     return connection;
   });
 }
-export async function discoverHermesModels(id: string): Promise<string[]> {
+export async function discoverModelIds(id: string): Promise<string[]> {
   return mutation(async () => {
-    const state = await readStoredSettings(); const c = state.connections.find(c => c.id === id);
+    const state = await readStoredModelServices(); const c = state.connections.find(c => c.id === id);
     if (!c) throw new Error('Connection no longer exists.');
     const key = await readKey(c); if (!key) throw new Error('API key missing.');
     let response: Response;
@@ -143,18 +143,18 @@ export async function discoverHermesModels(id: string): Promise<string[]> {
     if (accountKind(c) !== 'ronin_api') c.models.sort();
     c.discoveredAt = new Date().toISOString();
     await seedOpenRouterModels(state);
-    await writeHermes(state); return c.models;
+    await writeModelServiceStore(state); return c.models;
   });
 }
 /** The Ronin Gateway's model list, read at start-up and on Refresh (its model options are that list,
  *  withGatewayOptions). A failed read keeps the last list: the next start or Refresh tries again. */
 export async function readGatewayModels(): Promise<void> {
-  const { connections } = await readHermesSettings();
-  for (const c of connections) if (accountKind(c) === 'ronin_api') await discoverHermesModels(c.id).catch(() => {});
+  const { connections } = await readModelServiceStore();
+  for (const c of connections) if (accountKind(c) === 'ronin_api') await discoverModelIds(c.id).catch(() => {});
 }
-export async function saveModelSetup(input: Record<string, unknown>): Promise<ModelSetup> {
+export async function saveModelOption(input: Record<string, unknown>): Promise<ModelOption> {
   return mutation(async () => {
-    const state = await readStoredSettings(); const c = state.connections.find(c => c.id === input.connection);
+    const state = await readStoredModelServices(); const c = state.connections.find(c => c.id === input.connection);
     if (!c) throw new Error('Select an API connection.');
     if (accountKind(c) === 'ronin_api') throw new Error('Ronin Gateway supplies its own model list.');
     const model = required(input.model, 'Model');
@@ -166,14 +166,13 @@ export async function saveModelSetup(input: Record<string, unknown>): Promise<Mo
     if (input.id && !state.setups.some(s => s.id === input.id)) throw new Error('Setup no longer exists.');
     const name = required(input.name, 'Setup name');
     if (state.setups.some(s => s.id !== input.id && s.connection === c.id && s.name.toLowerCase() === name.toLowerCase())) throw new Error('Setup names must be unique.');
-    const setup: HermesSetup = { id: typeof input.id === 'string' ? input.id : randomUUID(), name, connection: c.id, model, reasoning, approvals: input.approvals };
-    state.setups = [...state.setups.filter(s => s.id !== setup.id), setup]; await writeHermes(state); return setup;
+    const setup: ModelOption = { id: typeof input.id === 'string' ? input.id : randomUUID(), name, connection: c.id, model, reasoning, approvals: input.approvals };
+    state.setups = [...state.setups.filter(s => s.id !== setup.id), setup]; await writeModelServiceStore(state); return setup;
   });
 }
-export const saveHermesSetup = saveModelSetup;
-export async function deleteHermesEntry(kind: 'connections' | 'setups', id: string) {
+export async function deleteModelServiceEntry(kind: 'connections' | 'setups', id: string) {
   return mutation(async () => {
-    const state = await readStoredSettings();
+    const state = await readStoredModelServices();
     if (kind === 'connections' && state.setups.some(s => s.connection === id)) throw new Error('Remove the setups using this connection first.');
     // Keep the private credential file for already-running profiles. Removing a setup does not revoke their key.
     if (kind === 'connections') {
@@ -182,10 +181,10 @@ export async function deleteHermesEntry(kind: 'connections' | 'setups', id: stri
       state.connections = state.connections.filter(row => row.id !== id);
     }
     else state.setups = state.setups.filter(row => row.id !== id);
-    await writeHermes(state);
+    await writeModelServiceStore(state);
   });
 }
-const environmentProviders: Record<string, { name: string; provider: HermesConnection['provider']; baseUrl: string }> = {
+const environmentProviders: Record<string, { name: string; provider: ModelServiceRecord['provider']; baseUrl: string }> = {
   OPENAI: { name: 'OpenAI API', provider: 'openai', baseUrl: 'https://api.openai.com/v1' },
   MISTRAL: { name: 'Mistral API', provider: 'mistral', baseUrl: 'https://api.mistral.ai/v1' },
 };
@@ -212,7 +211,7 @@ async function credentialEnvironment(): Promise<NodeJS.ProcessEnv> {
 /** THE RONIN GATEWAY'S MODEL OPTIONS ARE ITS OWN LIST (owner, 25 Nov 2026): one per model the office gateway
  *  last listed, with its supplied display name and model ID; id `<connection>/<model>`. Saved setups are the ones
  *  people name, on an API key or OpenRouter. */
-function withGatewayOptions(state: HermesSettings): HermesSettings {
+function withGatewayOptions(state: ModelServiceStore): ModelServiceStore {
   const gateway = state.connections.filter(c => accountKind(c) === 'ronin_api');
   return { ...state, setups: [
     ...gateway.flatMap(c => c.models.map(model => ({ id: `${c.id}/${model}`, name: Object.hasOwn(c.modelNames || {}, model) ? c.modelNames![model]! : model, connection: c.id, model, reasoning: 'default', approvals: 'off' as const, ...(Object.hasOwn(c.modelInfo || {}, model) ? c.modelInfo![model] : {}) }))),
@@ -220,9 +219,9 @@ function withGatewayOptions(state: HermesSettings): HermesSettings {
   ] };
 }
 /** Reconcile references to existing credentials. API access is only checked by model discovery. */
-export function readHermesSettings(environment?: NodeJS.ProcessEnv): Promise<HermesSettings> {
+export function readModelServiceStore(environment?: NodeJS.ProcessEnv): Promise<ModelServiceStore> {
   return mutation(async () => {
-    const state = await readStoredSettings(); let changed = false;
+    const state = await readStoredModelServices(); let changed = false;
     const office = await readOfficeRecord();
     if (office.hosting === 'office_unit' && !state.connections.some(c => accountKind(c) === 'ronin_api') && await getHouseToken()) {
       state.connections.push({ id: randomUUID(), kind: 'ronin_api', name: 'Ronin Gateway', provider: 'custom',
@@ -250,7 +249,7 @@ export function readHermesSettings(environment?: NodeJS.ProcessEnv): Promise<Her
     for (const c of state.connections) {
       if (c.credentialEnv && !discovered.some(found => found.credentialEnv === c.credentialEnv)) await rm(keyPath(c.id), { force: true });
     }
-    if (await seedOpenRouterModels(state) || changed) await writeHermes(state);
+    if (await seedOpenRouterModels(state) || changed) await writeModelServiceStore(state);
     return withGatewayOptions(state);
   });
 }
@@ -261,7 +260,7 @@ export function readHermesSettings(environment?: NodeJS.ProcessEnv): Promise<Her
  * No person, no header; a personal key's calls never carry it. */
 export const PERSON_HEADER = 'X-Ronin-Person';
 export async function prepareHermesHome(setupId: string, home: string, person?: string) {
-  const state = await readHermesSettings(); const setup = state.setups.find(s => s.id === setupId);
+  const state = await readModelServiceStore(); const setup = state.setups.find(s => s.id === setupId);
   const connection = state.connections.find(c => c.id === setup?.connection);
   const key = connection ? await readKey(connection) : '';
   if (!setup || !connection || !key) throw new Error('Hermes setup or API credential is unavailable.');

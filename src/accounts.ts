@@ -7,7 +7,7 @@
  * launching Agents, not Ronin Cloud customer or subscription accounts.
  */
 import { readOfficeRecord } from './office-record.js';
-import { accountKind, deleteHermesEntry, discoverHermesModels, hermesSettingsAnswer, saveHermesConnection, saveHermesSetup, type AccountKind, type HermesConnection } from './hermes-setups.js';
+import { accountKind, deleteModelServiceEntry, discoverModelIds, modelServiceStoreAnswer, saveModelService, saveModelOption, type AccountKind, type ModelServiceRecord } from './model-service-store.js';
 
 /** The house gateway's office door on a developer's own box (ronin-services/model_gateway side by side). */
 export const RONIN_API_BASE_URL = 'http://127.0.0.1:4912/v1';
@@ -29,7 +29,7 @@ const SPEAKS: Record<string, ReadonlyArray<'chat' | 'responses'>> = { hermes: ['
 export const worksWith = (wire: 'chat' | 'responses'): string[] => Object.keys(SPEAKS).filter(harness => SPEAKS[harness]!.includes(wire));
 
 export interface Account {
-  id: string; kind: AccountKind; name: string; provider: HermesConnection['provider']; baseUrl: string; wire: 'chat' | 'responses';
+  id: string; kind: AccountKind; name: string; provider: ModelServiceRecord['provider']; baseUrl: string; wire: 'chat' | 'responses';
   configured: boolean; seeded?: boolean; credentialEnv?: string; bound: string[]; models: string[]; discoveredAt?: string;
   /** The seed only: why no gateway address can be offered (the office record will not read). */
   fault?: string;
@@ -37,7 +37,7 @@ export interface Account {
 export interface Preset { id: string; name: string; harness: 'hermes'; account: string; model: string; reasoning: string; approvals: 'off' | 'prompt' }
 export interface AccountsAnswer { accounts: Account[]; presets: Preset[]; kinds: AccountKind[] }
 
-async function project(c: HermesConnection & { configured: boolean }): Promise<Account> {
+async function project(c: ModelServiceRecord & { configured: boolean }): Promise<Account> {
   const kind = accountKind(c);
   const wire = c.wireApi ?? (c.provider === 'openai' ? 'responses' : 'chat');
   return {
@@ -48,7 +48,7 @@ async function project(c: HermesConnection & { configured: boolean }): Promise<A
 }
 
 /** Every account, the Ronin API seeded greyed when no gateway account exists yet ("disabled, never hidden"), and every preset. */
-export async function serviceConnections(state: Awaited<ReturnType<typeof hermesSettingsAnswer>>): Promise<Account[]> {
+export async function serviceConnections(state: Awaited<ReturnType<typeof modelServiceStoreAnswer>>): Promise<Account[]> {
   const accounts = await Promise.all(state.connections.map(project));
   if (!accounts.some(a => a.kind === 'ronin_api')) {
     // An unreadable office record is said on the seed, not papered over with the local door.
@@ -62,7 +62,7 @@ export async function serviceConnections(state: Awaited<ReturnType<typeof hermes
 
 /** Legacy flat projections retained for existing Accounts and Presets clients. */
 export async function accountsAnswer(): Promise<AccountsAnswer> {
-  const state = await hermesSettingsAnswer();
+  const state = await modelServiceStoreAnswer();
   const accounts = await serviceConnections(state);
   const presets: Preset[] = state.setups.map(s => ({ id: s.id, name: s.name, harness: 'hermes', account: s.connection, model: s.model, reasoning: s.reasoning, approvals: s.approvals }));
   return { accounts, presets, kinds: ['personal_api', 'ronin_api'] };
@@ -73,20 +73,20 @@ export async function saveAccount(input: Record<string, unknown>) {
   const kind = input.kind === 'ronin_api' ? 'ronin_api' : 'personal_api';
   const id = input.id === RONIN_API_SEED_ID ? undefined : input.id;
   if (kind === 'ronin_api') {
-    return saveHermesConnection({ id, kind, name: typeof input.name === 'string' && input.name.trim() ? input.name : 'Ronin API', provider: 'custom', wireApi: 'responses',
+    return saveModelService({ id, kind, name: typeof input.name === 'string' && input.name.trim() ? input.name : 'Ronin API', provider: 'custom', wireApi: 'responses',
       // The same office-aware default the seed shows; an unreadable record refuses the save with its reason.
       baseUrl: typeof input.baseUrl === 'string' && input.baseUrl.trim() ? input.baseUrl : await roninApiBaseUrl(), apiKey: input.apiKey ?? input.token });
   }
-  const saved = await saveHermesConnection({ ...input, id, kind });
+  const saved = await saveModelService({ ...input, id, kind });
   // The key is already saved. If discovery is offline the owner can retry via Discover.
-  if (saved.starterModelsPending) await discoverHermesModels(saved.id).catch(() => {});
+  if (saved.starterModelsPending) await discoverModelIds(saved.id).catch(() => {});
   return saved;
 }
-export const discoverAccount = (id: string) => discoverHermesModels(id);
-export const deleteAccount = (id: string) => deleteHermesEntry('connections', id);
+export const discoverAccount = (id: string) => discoverModelIds(id);
+export const deleteAccount = (id: string) => deleteModelServiceEntry('connections', id);
 /** A preset names harness, account, model and knobs; today every preset is Hermes's, saved as its named setup. */
 export async function savePreset(input: Record<string, unknown>) {
   if (input.harness !== undefined && input.harness !== 'hermes') throw new Error('Presets are Hermes setups until another harness has a binding.');
-  return saveHermesSetup({ ...input, connection: input.account ?? input.connection });
+  return saveModelOption({ ...input, connection: input.account ?? input.connection });
 }
-export const deletePreset = (id: string) => deleteHermesEntry('setups', id);
+export const deletePreset = (id: string) => deleteModelServiceEntry('setups', id);

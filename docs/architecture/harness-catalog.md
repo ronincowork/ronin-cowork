@@ -108,11 +108,11 @@ This proves model-list access, not per-model inference compatibility.
 
 The Ronin Gateway's model options are its own list: one per model Ronin Gateway last listed,
 carrying its display name and API model ID, with default reasoning and approvals off. They are never saved or edited; their id is
-`<connection id>/<model id>` (`withGatewayOptions`, src/hermes-setups.ts). The list is read at start-up
+`<connection id>/<model id>` (`withGatewayOptions`, src/model-service-store.ts). The list is read at start-up
 and on Refresh, and a failed read keeps the last one. Saved setups are only the ones people name, on an
 API key or OpenRouter.
 
-`hermes-setups.ts` owns validation, serialized mutation, secret-free projection and fresh
+`model-service-store.ts` owns validation, serialized mutation, secret-free projection and fresh
 home provisioning. `/api/hermes` reads the projection; POST `/api/hermes/{connection,
 discover,setup,delete}` owns writes. The credential store holds metadata plus one
 private dotenv credential file per connection. Keys never enter catalog or route answers.
@@ -203,7 +203,7 @@ What this machine *has* is measured, not derived on every read. The Campaign rec
 `catalog.config.models[].id` and `.name`, only the `main` section its own picker offers — the
 `overflow` generations are still served but not offered), `codex-cache` (`~/.codex/models_cache.json`,
 `models[]` with `slug`, `display_name`, and `visibility: list`), `command` (run the CLI with
-the argv and read the list under *Available models:* — Grok), or `hermes-setups` (Hermes model options), or `none` (Antigravity:
+the argv and read the list under *Available models:* — Grok), or `model-options` (Hermes: its model services' model options), or `none` (Antigravity:
 Model: Native only, and the surface says so). `readModels` walks that table; no CLI id
 appears in it. A new way to read a list is a new key, never an `if`.
 

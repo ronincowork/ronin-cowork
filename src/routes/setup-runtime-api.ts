@@ -1,5 +1,5 @@
 import { modelServices } from '../model-services.js';
-import { hermesSettingsAnswer, saveHermesConnection, discoverHermesModels, saveModelSetup, deleteHermesEntry, onHermesWritten, readGatewayModels } from '../hermes-setups.js';
+import { modelServiceStoreAnswer, saveModelService, discoverModelIds, saveModelOption, deleteModelServiceEntry, onModelServicesWritten, readGatewayModels } from '../model-service-store.js';
 import { broadcastEvent } from '../ws/events.js';
 import { accountsAnswer, saveAccount, discoverAccount, deleteAccount, savePreset, deletePreset } from '../accounts.js';
 import { homedir } from 'node:os';
@@ -35,24 +35,24 @@ const answer = async (summary?: HarnessSummary) => {
 };
 
 export function registerSetupRuntime(app: express.Express): void {
-  onHermesWritten(() => { broadcastEvent({ t: 'model-services-changed' }); });
+  onModelServicesWritten(() => { broadcastEvent({ t: 'model-services-changed' }); });
   app.get('/api/hermes', async (_req, res) => {
-    try { res.json(await hermesSettingsAnswer()); } catch { res.status(500).json({ error: 'Could not read Hermes setups.' }); }
+    try { res.json(await modelServiceStoreAnswer()); } catch { res.status(500).json({ error: 'Could not read Hermes setups.' }); }
   });
   app.post('/api/hermes/:action', async (req, res) => {
     try {
       switch (req.params.action) {
         // A connection's models are read as it is saved: nobody presses to read them (owner, 25 Nov 2026).
-        case 'connection': { const saved = await saveHermesConnection(req.body); await discoverHermesModels(saved.id).catch(() => {}); break; }
-        case 'discover': await discoverHermesModels(String(req.body.id)); break;
-        case 'setup': await saveModelSetup(req.body); break;
+        case 'connection': { const saved = await saveModelService(req.body); await discoverModelIds(saved.id).catch(() => {}); break; }
+        case 'discover': await discoverModelIds(String(req.body.id)); break;
+        case 'setup': await saveModelOption(req.body); break;
         case 'delete':
           if (req.body.kind !== 'connections' && req.body.kind !== 'setups') throw new Error('Invalid entry type.');
-          await deleteHermesEntry(req.body.kind, String(req.body.id)); break;
+          await deleteModelServiceEntry(req.body.kind, String(req.body.id)); break;
         default: return res.status(404).json({ error: 'Unknown Hermes action.' });
       }
       await measureAndRecordHarnesses();
-      res.json(await hermesSettingsAnswer());
+      res.json(await modelServiceStoreAnswer());
     } catch (error) { res.status(400).json({ error: errMsg(error) }); }
   });
 
@@ -68,7 +68,7 @@ export function registerSetupRuntime(app: express.Express): void {
         case 'save': await saveAccount(body); break;
         case 'discover': await discoverAccount(String(body.id)); break;
         case 'delete': await deleteAccount(String(body.id)); break;
-        case 'save-model': await saveModelSetup({ reasoning: 'default', approvals: 'off', ...body, connection: body.service_id }); break;
+        case 'save-model': await saveModelOption({ reasoning: 'default', approvals: 'off', ...body, connection: body.service_id }); break;
         case 'delete-model': await deletePreset(String(body.id)); break;
         default: return res.status(404).json({ error: 'Unknown model service action.' });
       }

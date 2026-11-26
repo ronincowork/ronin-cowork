@@ -1,7 +1,7 @@
 import path from 'node:path';
 import { readFile } from 'node:fs/promises';
 import { modelServices } from './model-services.js';
-import { isHouse, keyPath } from './hermes-setups.js';
+import { isHouse, keyPath } from './model-service-store.js';
 import { gatewayRelay } from './gateway-relay.js';
 import { REPO_ROOT } from './resources.js';
 
