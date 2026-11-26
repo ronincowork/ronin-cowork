@@ -70,6 +70,9 @@ Macro, action, SOP, and Agent role are not additional composition layers. “Act
 | Model services (`MODEL_SERVICES`) | Office API connections such as Ronin Gateway, OpenRouter and a private API. A compatible harness can use a model service to request a model by ID. See [Model services](docs/architecture/model_services_README.md). |
 | Harness | The CLI that runs an Agent, such as Hermes, Claude Code or Codex. A harness can use its native sign-in or a compatible model service. Use only “harness”, never “model provider” or “Agent Harness”. Ronin’s house models are not a harness. |
 | Model option | A named choice a person can select in New Agent. A model service or the harness itself supplies it. A model option has a display name and a launch identity. |
+| In-harness model | A model the harness itself offers for its current subscription or harness API key. Use the choices the CLI offers, such as those in its model picker. **CLI default** lets the harness choose. |
+| Harness API key | An API key supplied to and managed by the CLI. Ronin does not receive the key. |
+| Private API key | An API key supplied to and stored by Ronin for a configured model service. Use **private key** as the short form in model settings. |
 | API model ID | The exact identifier sent to a model service in an API request. A model option’s display name can differ from its API model ID. |
 | Tile | The UI for one session; a tmux pane is the terminal underneath ([Tile](docs/using-ronin/tile.md)) |
 | Ronin Home / Ronin Setup / Ronin Settings | Home destination, the setup workbench (hosted: Harness, Workspace, Team, any order, never a gate), and ongoing Desk configuration workbench |
