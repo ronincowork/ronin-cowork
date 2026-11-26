@@ -35,10 +35,7 @@ const answer = async (summary?: ProviderSummary) => {
 };
 
 export function registerSetupRuntime(app: express.Express): void {
-  onHermesWritten(() => {
-    broadcastEvent({ t: 'hermes-changed' });
-    broadcastEvent({ t: 'model-services-changed' });
-  });
+  onHermesWritten(() => { broadcastEvent({ t: 'model-services-changed' }); });
   app.get('/api/hermes', async (_req, res) => {
     try { res.json(await hermesSettingsAnswer()); } catch { res.status(500).json({ error: 'Could not read Hermes setups.' }); }
   });
