@@ -16,7 +16,7 @@ behaviours guide; facts inform; skills adapt; UIs call (`docs/architecture/brief
 | KOE | **Hotwords** | The dictation glossary. The mic is Voice; implementation ownership is in KOTOBA. |
 | MODEL_SERVICES | **Model services** | Ronin-managed API connections such as Ronin Gateway, OpenRouter and private APIs. |
 | Harness | **Harness** | The CLI that runs an Agent. |
-| Model option | **Model option** | A named choice supplied by a model service or by the harness itself. |
+| Model entry | **Model entry** | A model name and its API model ID, bundled: one entry in a model service's list, or the harness's own. |
 | In-harness model | **In-harness model** | A model the harness itself offers for its current subscription or harness API key. Use the choices the CLI offers, such as those in its model picker. **Native** lets the harness choose. |
 | Harness API key | **Harness API key** | An API key supplied to and managed by the CLI. Ronin does not receive the key. |
 | Private API key | **Private API key** | An API key supplied to and stored by Ronin for a configured model service. Use **private key** as the short form in model settings. |
