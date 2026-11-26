@@ -86,10 +86,10 @@ function createHarnessSurface(context) {
   const hers = () => (irasshaiIn(S.sessions) ? IRASSHAI : '');
   const post = (path, json = {}) => request(path, { method: 'POST', json });
   const readRuntime = async () => {
-    const [r, a] = await Promise.all([request('/api/setup/runtime', { cache: 'no-store' }), request('/api/accounts', { cache: 'no-store' })]);
+    const [r, a] = await Promise.all([request('/api/setup/runtime', { cache: 'no-store' }), request('/api/model-services', { cache: 'no-store' })]);
     if (disposed) return;
-    const house = a.ok ? (a.data.accounts || []).find((one) => one.kind === 'ronin_api') : null;
-    if (house) gateway = { harnesses: house.harnesses || [] };
+    const house = a.ok ? (a.data.services || []).find((one) => one.service_type === 'gateway' && one.configured) : null;
+    gateway = { harnesses: house?.bound || [] };
     if (r.ok) runtime = r.data;
     paint();
   };

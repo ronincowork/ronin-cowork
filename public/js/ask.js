@@ -292,7 +292,7 @@ export function ask(groups = [], { value = {}, onChange = null, className = '', 
         options.replaceChildren();
         if (!rows.length) {
           const parent = f.after ? byKey(f.after) : null;
-          options.append(el('span', 'ask-empty', parent ? t('ask.after', 'Choose {field} first.', { field: parent.label }) : t('ask.nothing', 'Nothing to choose.')));
+          options.append(el('span', 'ask-empty', f.empty?.() || (parent ? t('ask.after', 'Choose {field} first.', { field: parent.label }) : t('ask.nothing', 'Nothing to choose.'))));
           return;
         }
         const shown = rows.filter((row) => f !== target || !filter || `${row.l} ${row.sub || ''} ${row.word || ''}`.toLowerCase().includes(filter));

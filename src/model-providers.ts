@@ -102,6 +102,7 @@ export interface ProviderRows extends ProviderEntry {
   part?: string;
   /** A part's one line for its provider page, in the part's words. */
   note?: string;
+  services?: Array<{ id: string; name: string }>;
   models: ProviderRow[];
 }
 
@@ -355,8 +356,9 @@ export async function providerRows(summary: ProviderSummary | null, catalog?: Mo
     }
     if (entry.cli === 'hermes' && grammar) launch.launch_modes = ['configured', 'live_dangerously'];
     const canUseService = !!grammar && !off && !!summary?.installed.includes(entry.cli);
-    for (const service of services) {
-      if (!grammar || !service.configured || !service.bound.includes(entry.cli)) continue;
+    const compatible = services.filter(service => service.configured && service.bound.includes(entry.cli));
+    for (const service of compatible) {
+      if (!grammar) continue;
       for (const setup of service.models) {
         const marker = 'service:' + setup.id;
         rows.push({ ...base, model: entry.cli === 'hermes' ? setup.id : marker, name: setup.name,
@@ -367,7 +369,7 @@ export async function providerRows(summary: ProviderSummary | null, catalog?: Mo
       }
     }
     const ready = rows.some(row => row.operational);
-    return { ...entry, cli_label: base.cli_label, operational: ready, off, ...launch, models: rows };
+    return { ...entry, cli_label: base.cli_label, operational: ready, off, ...launch, services: compatible.map(({ id, name }) => ({ id, name })), models: rows };
   }));
   // A part's provider (Ronin models, in a hosted office) leads, apart from every CLI's list.
   const parts = await partProviderRows();

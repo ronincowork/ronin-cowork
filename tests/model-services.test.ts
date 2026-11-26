@@ -39,6 +39,7 @@ test('named models stay with their service through discovery, catalog and CLI la
   const api = await saveAccount({ name: 'Private', provider: 'custom', wireApi: 'responses', baseUrl: base + '/private', apiKey: 'private-fixture' });
   const chat = await saveAccount({ name: 'Chat', provider: 'custom', wireApi: 'chat', baseUrl: base + '/chat', apiKey: 'chat-fixture' });
   await discoverAccount(gateway.id); await discoverAccount(api.id);
+  await assert.rejects(saveHermesSetup({ connection: gateway.id, name: 'Alias', model: 'upstream/example', reasoning: 'default', approvals: 'prompt' }), /supplies its own model list/);
   let services = await modelServices();
   assert.equal(services.find(s => s.id === gateway.id)?.models.length, 1);
   assert.deepEqual(services.find(s => s.id === api.id)?.models, []);
@@ -70,6 +71,9 @@ test('named models stay with their service through discovery, catalog and CLI la
   const created = await change('save', { kind: 'personal_api', name: 'UI fixture', provider: 'custom',
     baseUrl: base + '/ui', apiKey: 'ui-fixture', wireApi: 'chat' });
   const owner = created.find(s => s.name === 'UI fixture'); assert.ok(owner);
+  const emptyCatalog = await providerRows(summary, { models: [] });
+  assert.ok(emptyCatalog.find(row => row.cli === 'hermes')?.services?.some(service => service.id === owner.id));
+  assert.ok(!emptyCatalog.some(cli => cli.models.some(model => model.service_id === owner.id)));
   await change('discover', { id: owner.id });
   const edited = await change('save-model', { service_id: owner.id, name: 'UI model', model: 'any/model' });
   const saved = edited.find(s => s.id === owner.id)?.models[0]; assert.ok(saved);

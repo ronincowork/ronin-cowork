@@ -170,6 +170,7 @@ export async function saveModelSetup(input: Record<string, unknown>): Promise<Mo
   return mutation(async () => {
     const state = await readStoredSettings(); const c = state.connections.find(c => c.id === input.connection);
     if (!c) throw new Error('Select an API connection.');
+    if (accountKind(c) === 'ronin_api') throw new Error('Ronin Gateway supplies its own model list.');
     const model = required(input.model, 'Model');
     if (!modelPattern.test(model) || model.startsWith('-')) throw new Error('Invalid API model ID.');
     const reasoning = required(input.reasoning, 'Reasoning');
