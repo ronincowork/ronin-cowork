@@ -67,8 +67,10 @@ Macro, action, SOP, and Agent role are not additional composition layers. “Act
 | Tilespace | A numbered slot of a workbench holding a tile or another surface; `workspace1`…`workspace4` in code. Not a Workspace |
 | Workspace | A project: its objective (the one place that says what the project is), instructions, its folders and Mode; every Team works in one ([Workspaces](docs/using-ronin/workspaces.md)) |
 | Explorer (Files) | The machine's file browser from the home folder: copyparty at `/files/`, where Ronin finds Python at start; `/files/<path>` is `$HOME/<path>`. Explorer is the card, Files the code (`ronin.files`, `src/files.ts`) ([Explorer](docs/using-ronin/explorer.md)) |
-| Model services (`MODEL_SERVICES`) | Office connections that supply API models to compatible harnesses. Each service owns its named model entries. Ronin Gateway populates its entries from the Gateway; the owner defines entries for OpenRouter and private APIs ([model services](docs/architecture/model-providers.md#model-services)). |
-| Harness | The agent tool that does an Agent's work, a provider's own CLI (Claude Code, Codex …), signed in with the person's own account; the one word for it, never "model provider" or "Agent Harness". Ronin's house models are not a harness of theirs ([Provider sign-in](docs/getting-started/provider-sign-in.md)) |
+| Model services (`MODEL_SERVICES`) | Office API connections such as Ronin Gateway, OpenRouter and a private API. A compatible harness can use a model service to request a model by ID. See [Model services](docs/architecture/model_services_README.md). |
+| Harness | The CLI that runs an Agent, such as Hermes, Claude Code or Codex. A harness can use its native sign-in or a compatible model service. |
+| Model option | A named choice a person can select in New Agent. A model service or the harness itself supplies it. A model option has a display name and a launch identity. |
+| API model ID | The exact identifier sent to a model service in an API request. A model option’s display name can differ from its API model ID. |
 | Tile | The UI for one session; a tmux pane is the terminal underneath ([Tile](docs/using-ronin/tile.md)) |
 | Ronin Home / Ronin Setup / Ronin Settings | Home destination, the setup workbench (hosted: Harness, Workspace, Team, any order, never a gate), and ongoing Desk configuration workbench |
 | Ask Ronin | A hosted Setup's panel beside every step: the step's lines, then the Helpful Assistant's chat |

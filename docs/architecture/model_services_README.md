@@ -1,10 +1,10 @@
 # Model services
 
-A model service is the connection an office uses to call a model API. A harness is the CLI that runs the Agent. In Harness Setup, the intended behavior is to assign one model service to a harness. In New Agent, choosing the harness should offer only models from its assigned connection. Two harnesses can use the same connection and named models. Two connections can each have a model called “Fast” and send requests to different endpoints.
+A model service is the connection an office uses to call a model API. A harness is the CLI that runs the Agent. A **model option** is the named choice shown in New Agent. An **API model ID** is the identifier sent to a model service when that option is used. The intended harness setting controls which compatible model services and which model options appear in New Agent. Two harnesses can use the same connection and named models. Two connections can each have a model called “Fast” and send requests to different endpoints.
 
 ## Who supplies the model choices?
 
-| Source | Who supplies the names in New Agent? | What changes the list? |
+| Model service or native harness sign-in | Who supplies the names in New Agent? | What changes the list? |
 |---|---|---|
 | Ronin Gateway | The office Gateway supplies the model IDs. Each ID is also its visible name. | The machine reads the Gateway list at startup and on refresh. A successful refresh replaces the cached list. An ID removed upstream disappears from new choices after that refresh. An offline office can still display its last successful list. |
 | OpenRouter | HQ can publish starters. The office user can also name models for their OpenRouter connection. | HQ publishes the display name and exact OpenRouter ID in its Admin Models table, delivered to the office in `office_unit/models.json` as rows with `cli: openrouter`. The office seeds eligible starters once per connection, using the IDs available to its key. The user can then add, rename or remove options. Refreshing preserves those edits. |
@@ -15,7 +15,7 @@ A model service is the connection an office uses to call a model API. A harness 
 
 1. In **Settings → Harnesses and models**, configure the service connection. A private connection records the provider, endpoint, API protocol and credential. Settings returns connection details and model choices to the UI with the credential value omitted.
 2. On the service page, inspect the Gateway list or edit the named options for OpenRouter or a private API. For example, an office could name an option “Fast” and set its model ID to `vendor/model-a`. The name is what the person reads. The ID is what the endpoint receives.
-3. If Hermes is assigned to OpenRouter, New Agent should offer the models configured on that OpenRouter connection. Six named options give six choices. Zero gives an empty list until someone adds a model or changes the harness source in Setup. The November 26 implementation still exposes compatible services in New Agent and the Hermes Setup buttons only change the displayed list. Persisting and enforcing the single source is tracked in w1029.
+3. In the planned Harness Settings, the office can show OpenRouter model options for Hermes, or show both OpenRouter and Ronin Gateway model options. The office can also choose which native model options appear for a harness such as Claude Code. These preferences control New Agent. Direct backend launches retain their existing capabilities. The November 26 implementation groups model options by model service. Saving the office’s display preferences per harness is tracked in w1029.
 4. At launch the harness adapter resolves the selected option to its connection, credential, protocol and API model ID. Compatibility depends on the adapter. Hermes supports Chat and Responses, Codex supports Responses, and OpenCode supports Chat. A new harness needs an adapter for the protocol it will use.
 
 **Campaign defaults** select the starting choices that Workspaces, Teams and Agents inherit. The model names themselves belong to the service. Personal accounts and office rentals belong in the Business Lounge.
@@ -32,6 +32,6 @@ The Gateway reachability check opens a TCP connection. A listening endpoint can 
 
 ## Checking a change end to end
 
-Read `GET /api/model-services` to see each connection's `service_type`, discovered IDs and launchable named options (`models`). Follow the connection ID into the harness catalog, change the harness source in Setup and reopen New Agent, and check the empty-list case. At the request boundary, verify the endpoint, protocol and exact model ID with a fixture credential. A cached Gateway list alone cannot verify the live Gateway or HQ catalog.
+Read `GET /api/model-services` to see each connection's `service_type`, discovered IDs and launchable named options (`models`). Follow the connection ID into the harness catalog, change the model services shown for that harness in Setup and reopen New Agent, and check the empty-list case. At the request boundary, verify the endpoint, protocol and exact model ID with a fixture credential. A cached Gateway list alone cannot verify the live Gateway or HQ catalog.
 
 The implementation walkthrough and regression coverage start in [the model service record](../../src/model-services.ts), [the harness catalog](../../src/model-providers.ts), [the launch adapters](../../src/model-service-launch.ts) and [the model services tests](../../tests/model-services.test.ts). The native CLI extension contract lives in [Model providers](model-providers.md).
