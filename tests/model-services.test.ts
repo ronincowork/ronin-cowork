@@ -30,7 +30,7 @@ test('named models stay with their service through discovery, catalog and CLI la
   });
   const server = createServer((_req, res) => {
     res.setHeader('Content-Type', 'application/json');
-    res.end(JSON.stringify({ data: [{ id: 'upstream/example', name: 'Gateway example' }] }));
+    res.end(JSON.stringify({ data: [{ id: 'upstream/example', name: 'Gateway example' }, { id: 'legacy/model' }] }));
   });
   server.listen(0, '127.0.0.1'); await once(server, 'listening');
   t.after(() => server.close());
@@ -42,8 +42,9 @@ test('named models stay with their service through discovery, catalog and CLI la
   await discoverAccount(gateway.id); await discoverAccount(api.id);
   await assert.rejects(saveHermesSetup({ connection: gateway.id, name: 'Alias', model: 'upstream/example', reasoning: 'default', approvals: 'prompt' }), /supplies its own model list/);
   let services = await modelServices();
-  assert.equal(services.find(s => s.id === gateway.id)?.models.length, 1);
+  assert.equal(services.find(s => s.id === gateway.id)?.models.length, 2);
   assert.deepEqual(services.find(s => s.id === api.id)?.models, []);
+  assert.equal(services.find(s => s.id === gateway.id)?.models.find(m => m.model === 'legacy/model')?.name, 'legacy/model');
   const gatewayOption = services.find(s => s.id === gateway.id)?.models[0];
   assert.deepEqual([gatewayOption?.name, gatewayOption?.model], ['Gateway example', 'upstream/example']);
   const setup = await saveHermesSetup({ name: 'upstream/example', connection: api.id, model: 'vendor/private', reasoning: 'default', approvals: 'prompt' });

@@ -1,5 +1,8 @@
 /* New Agent display preferences. null follows the full list, [] hides a group. */
 import { workbenchLink, openWorkbenchTab } from './workspace.js';
+import { ask } from './ask.js';
+import { createStep, el } from './form-steps.js';
+import { WorkspaceKit } from './workspace-kit.js';
 import { request } from './request.js';
 
 export function modelSettingsLink(cli) {
@@ -28,60 +31,51 @@ export function shownInNewAgent(catalog, entry, row) {
 }
 
 export function harnessModelEditor(catalog, entry) {
-  const form = document.createElement('form');
-  const title = document.createElement('h3');
-  title.textContent = 'Models shown in New Agent';
-  form.append(title);
+  const section = createStep({ key: 'new-agent-models', title: 'Models shown in New Agent' });
   const choices = { ...catalog.preferences?.[entry.cli] };
+  const selectors = [];
+  const status = el('span', 'setup-fine');
+  status.setAttribute('role', 'status');
   const groups = [{ id: '', name: 'In-harness models' }, ...(entry.services || [])];
   for (const group of groups) {
     const rows = entry.models.filter(row => (row.service_id || '') === group.id);
     if (!group.id && !rows.length) continue;
-    const box = document.createElement('fieldset');
-    const legend = document.createElement('legend');
-    legend.textContent = group.name;
-    box.append(legend);
     const key = group.id || 'in-harness';
     const selection = modelSelection(catalog, entry, group.id);
-    const mode = document.createElement('select');
-    mode.setAttribute('aria-label', group.name);
-    for (const [label, value] of [['All model options', 'all'], ['Selected model options', 'selected'], ['Hidden', 'hidden']]) mode.add(new Option(label, value));
-    mode.value = selection === null ? 'all' : selection.length ? 'selected' : 'hidden';
-    box.append(mode);
-    const list = document.createElement('div');
-    const selected = new Set(selection ?? rows.map(row => row.model));
-    for (const row of rows) {
-      const label = document.createElement('label');
-      const check = document.createElement('input');
-      check.type = 'checkbox';
-      check.checked = selected.has(row.model);
-      check.onchange = () => {
-        if (check.checked) selected.add(row.model); else selected.delete(row.model);
-        choices[key] = [...selected];
-      };
-      label.append(check, row.name);
-      list.append(label, document.createElement('br'));
-    }
-    list.hidden = mode.value !== 'selected';
-    mode.onchange = () => {
-      list.hidden = mode.value !== 'selected';
-      choices[key] = mode.value === 'all' ? null : mode.value === 'hidden' ? [] : [...selected];
-    };
-    box.append(list);
-    form.append(box);
+    const mode = selection === null ? 'all' : selection.length ? 'selected' : 'hidden';
+    const step = createStep({ key, title: group.name });
+    const models = ask([{ fields: [{ key: 'models', label: 'Model options', many: true, shape: 'rect',
+      options: rows.map(row => ({ v: row.model, l: row.name })) }] }], {
+      exposed: true,
+      value: { models: selection ?? rows.map(row => row.model) },
+      onChange: value => { choices[key] = value.models; status.textContent = ''; },
+    });
+    const visibility = ask([{ fields: [{ key: 'mode', label: 'Show', shape: 'rect', options: [
+      { v: 'all', l: 'All' }, { v: 'selected', l: 'Selected' }, { v: 'hidden', l: 'Hidden' },
+    ] }] }], {
+      exposed: true,
+      value: { mode },
+      onChange: value => {
+        const currentMode = value.mode;
+        choices[key] = currentMode === 'all' ? null : currentMode === 'hidden' ? [] : models.value().models;
+        models.el.hidden = currentMode !== 'selected';
+        status.textContent = '';
+      },
+    });
+    models.el.hidden = mode !== 'selected';
+    selectors.push(visibility, models);
+    step.body.append(visibility.el, models.el);
+    section.body.append(step.el);
   }
-  const save = document.createElement('button');
-  save.textContent = 'Save model options';
-  const status = document.createElement('span');
-  status.setAttribute('role', 'status');
-  form.append(save, status);
-  form.onsubmit = async event => {
-    event.preventDefault();
-    save.disabled = true;
-    const result = await request('/api/new-agent-models/' + encodeURIComponent(entry.cli), { method: 'PUT', json: choices });
-    save.disabled = false;
+  const { createAction, createActionBar } = WorkspaceKit.primitives;
+  const save = createAction({ label: 'Save model options', kind: 'primary', action: async () => {
+    save.setDisabled(true);
+    const saved = { ...choices };
+    const result = await request('/api/new-agent-models/' + encodeURIComponent(entry.cli), { method: 'PUT', json: saved });
+    save.setDisabled(false);
+    if (result.ok) (catalog.preferences ||= {})[entry.cli] = saved;
     status.textContent = result.ok ? 'Saved' : result.message;
-    if (result.ok) (catalog.preferences ||= {})[entry.cli] = { ...choices };
-  };
-  return form;
+  } });
+  section.body.append(createActionBar({ actions: [save] }).el, status);
+  return { el: section.el, destroy: () => selectors.forEach(picker => picker.destroy()) };
 }

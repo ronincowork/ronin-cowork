@@ -514,8 +514,12 @@ export function createProviderDrawing(context, { repaint, say = () => {} }) {
     if (!provider && !rows.length) { host.append(el('p', 'setup-notice bad', t('setup_surface.provider_missing', 'This provider is no longer in the model-provider catalog.'))); return null; }
     // Hermes's keys and model options are Model services' (KAN-870); its page shows them, read only.
     const harness = providerCatalog().providers.find(entry => entry.cli === id && !entry.part);
-    if (harness) host.append(harnessModelEditor(providerCatalog(), harness));
-    if (id === 'hermes') return mountModelOptions(host);
+    const editor = harness && harnessModelEditor(providerCatalog(), harness);
+    if (editor) host.append(editor.el);
+    if (id === 'hermes') {
+      const close = mountModelOptions(host);
+      return () => { close(); editor?.destroy(); };
+    }
     const part = (providerCatalog().providers || []).find((entry) => entry.provider === id && entry.part);
     if (part) {
       // Nothing to install or sign in: the office's house connection, on the Ronin balance.
@@ -543,7 +547,7 @@ export function createProviderDrawing(context, { repaint, say = () => {} }) {
           : 0;
       });
     }
-    return () => disposeMount();
+    return () => { editor?.destroy(); disposeMount(); };
   };
 
   /** The frame from whatever `runtime` holds now: the record, or the measure once it lands.

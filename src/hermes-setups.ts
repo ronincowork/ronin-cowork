@@ -153,9 +153,6 @@ export async function discoverHermesModels(id: string): Promise<string[]> {
     if (!response.ok) throw new Error(`Model discovery failed (HTTP ${response.status}).`);
     const body = await response.json().catch(() => { throw new Error('API returned an unreadable model list.'); }) as { data?: { id?: unknown; name?: unknown }[] };
     if (!Array.isArray(body.data)) throw new Error('API did not return an OpenAI-compatible model list.');
-    if (accountKind(c) === 'ronin_api' && body.data.some(row => typeof row?.name !== 'string' || !row.name.trim())) {
-      throw new Error('Gateway model list is missing display names.');
-    }
     c.modelNames = Object.fromEntries(body.data.flatMap(row => typeof row?.id === 'string' && typeof row.name === 'string' && row.name.trim() ? [[row.id, row.name.trim()]] : []));
     c.models = [...new Set(body.data.flatMap(row => row && typeof row.id === 'string' && modelPattern.test(row.id) ? [row.id] : []))];
     if (accountKind(c) !== 'ronin_api') c.models.sort();
