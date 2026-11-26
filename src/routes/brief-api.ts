@@ -26,9 +26,9 @@ const SETTING_LAYERS = ['campaign', 'workspace', 'team'] as const;
 type SettingLayer = typeof SETTING_LAYERS[number];
 
 /** A level's own settings, and the MCP and web API records its picker lists beside the bridges:
- * those available to its Campaign (KAN-607). Nothing is inherited live (src/waterfall.ts). */
+ * every one in Settings. Nothing is inherited live (src/waterfall.ts). */
 async function layerAt(layer: SettingLayer, id: string, campaignId: string): Promise<{ brief: Layer['brief']; integrations: string[]; pm: boolean | null; available: string[] }> {
-  const available = (await availableRecords(campaignId)).map((record) => record.name);
+  const available = (await availableRecords()).map((record) => record.name);
   const record = await levelRecord(layer, id, campaignId);
   const own = layer === 'campaign' ? (await parentSettings(campaignId)).settings : layerOf(layer, record);
   return { brief: own.brief, integrations: own.integrations, pm: own.pm ?? null, available };

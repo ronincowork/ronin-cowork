@@ -1,6 +1,6 @@
-/** /api/integrations — the integrations (the bridges, and any name a Workspace uses) with each
- * one's live state for a Campaign (src/integrations.ts; KAN-513). Read only: keys are saved
- * through `secret ask`. */
+/** /api/integrations — every integration record in this machine's Settings with its live state
+ * (src/integrations.ts). Read only: records are written through the broker (/api/mcp/*), keys
+ * through /api/secrets. */
 import type express from 'express';
 import { homedir } from 'node:os';
 import { initialCampaignId } from '../campaign-scope.js';

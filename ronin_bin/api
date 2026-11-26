@@ -9,19 +9,18 @@ TOOL_DIR=$(dirname "$SELF")
 die() { echo "$1" >&2; exit "${2:-2}"; }
 usage() { cat <<'EOF_USAGE'
 Usage:
-  api list                                  the web APIs available to your Campaign: name, what it is, its base URL
+  api list                                  the web APIs set up in Settings: name, what it is, its base URL
   api call <name> <METHOD> <path> [--json '<body>'|--json -] [--query k=v ...]
                                             call it: the path is under the API's base (/sites/x, not a
                                             full URL); prints HTTP <status>, then the body; never headers
   api add <name> <base URL> [--sign-in key|oauth|none] [--secret <s>] [--send '<header>'|'query <param>']
-          [--campaigns <a,b>] [--label <l>] [--description <d>]
+          [--label <l>] [--description <d>]
                                             add one: its record; without its key yet, the record is
                                             written and it asks for the key (secret ask)
-  api remove <name>                         its record goes; its secret stays
+  api remove <name>                         its record and its key go
 Ronin attaches the key, and only on calls to the API's own host: you never handle it. The key is
 the secret <name>-api-key unless --secret names another; it goes as Authorization: Bearer unless
---send says otherwise. --campaigns blank makes the API available to every Campaign; a layer's
-Integrations turns it on.
+--send says otherwise. Adding turns it on in Settings. One Ronin ships ready (Netlify, …): mcp add.
 Related: mcp --help; secret --help; ronin-help integrations
 EOF_USAGE
 }
@@ -31,12 +30,12 @@ case "${1:-}" in -h|--help|'') usage; exit 0;; esac
 ronin_connect || exit $?
 BY=$(ronin_session_me 2>/dev/null || id -un)
 cmd=$1; shift
-json=''; sign_in=''; secret=''; send=''; campaigns=''; label=''; description=''; query=(); args=()
+json=''; sign_in=''; secret=''; send=''; label=''; description=''; query=(); args=()
 while [ "$#" -gt 0 ]; do
   case "$1" in
-    --json|--sign-in|--secret|--send|--campaigns|--label|--description|--query)
+    --json|--sign-in|--secret|--send|--label|--description|--query)
       [ "$#" -ge 2 ] || die "BAD-ARG: $1 needs a value"
-      case "$1" in --json) json=$2;; --sign-in) sign_in=$2;; --secret) secret=$2;; --send) send=$2;; --campaigns) campaigns=$2;; --label) label=$2;; --description) description=$2;; --query) query+=("$2");; esac
+      case "$1" in --json) json=$2;; --sign-in) sign_in=$2;; --secret) secret=$2;; --send) send=$2;; --label) label=$2;; --description) description=$2;; --query) query+=("$2");; esac
       shift 2 ;;
     -h|--help) usage; exit 0 ;;
     *) args+=("$1"); shift ;;
@@ -91,7 +90,7 @@ print(json.dumps(out))' "${query[@]+"${query[@]}"}") || exit 2
     api_call POST /api/apis/call "$payload" ;;
   add)
     [ "$#" -eq 2 ] || die 'BAD-ARG: api add <name> <base URL> (api --help)'
-    payload=$(body by "$BY" name "$1" base "$2" sign_in "$sign_in" secret "$secret" send "$send" campaigns "$campaigns" label "$label" description "$description")
+    payload=$(body by "$BY" name "$1" base "$2" sign_in "$sign_in" secret "$secret" send "$send" label "$label" description "$description")
     api_call POST /api/apis/add "$payload"; rc=$?
     # Add now, authenticate later: the record is written; ask for a key it still needs.
     if [ "$rc" -eq 0 ] && [ -n "$NEED_SECRET" ]; then

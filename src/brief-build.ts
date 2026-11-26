@@ -12,7 +12,7 @@ import type { BriefRecord, BriefSettings, SessionType } from './brief-record.js'
 import { cascade, LAYERS, layerOf, resolveBrief, type Cascade, type Layer, type Resolved } from './brief-settings.js';
 import { renderBrief } from './brief.js';
 import { catalogIntegrations, readCatalogs, type Catalog } from './catalog.js';
-import { availableTo, readMcpRecords, type McpRecord } from './mcp-records.js';
+import { readMcpRecords, type McpRecord } from './mcp-records.js';
 import { isHostedOffice, officePeople } from './office-people.js';
 import { listTeamRosters } from './team-rosters.js';
 import { briefFacts } from './facts.js';
@@ -24,12 +24,11 @@ import type { WorkRecordBrief } from './tegami.js';
 /** The Agent's own layer, as a launch body or a Configuration carries it. */
 export interface AgentBrief { brief: BriefSettings; integrations: string[]; pm?: boolean }
 
-/** The MCP server and web API records available to a Campaign: its pickers list them, and a
- * layer's integrations switch turns one on (KAN-607). A record named as a curated bridge is that
- * bridge's way through the broker, not a record of its own. */
-export async function availableRecords(campaign: string, catalog?: Pick<Catalog, 'behaviours'>): Promise<McpRecord[]> {
+/** The MCP server and web API records in Settings: the pickers list them, and the cascade turns
+ * one on. A record named as a curated bridge is that bridge's record, not a line of its own. */
+export async function availableRecords(catalog?: Pick<Catalog, 'behaviours'>): Promise<McpRecord[]> {
   const bridges = new Set(catalogIntegrations(catalog ?? await readCatalogs()).map((row) => row.name));
-  return (await readMcpRecords()).filter((record) => !bridges.has(record.name) && availableTo(record, campaign));
+  return (await readMcpRecords()).filter((record) => !bridges.has(record.name));
 }
 
 /** An Agent's two layers: its parent's settings as copied at its birth (src/waterfall.ts), and its own. */
@@ -89,7 +88,7 @@ async function birthRecord(form: SpawnForm, facts: LaunchFacts, launch: LaunchId
       workspace: facts.workspace?.name ?? '',
       instructions: facts.workspace?.instructions ?? '',
       integrations: [],
-      available: (await availableRecords(campaignId, catalog)).map((record) => ({ name: record.name, kind: record.kind, description: record.description, ...(record.needs ? { needs: record.needs } : {}) })),
+      available: (await availableRecords(catalog)).map((record) => ({ name: record.name, kind: record.kind, description: record.description, ...(record.needs ? { needs: record.needs } : {}) })),
       mcp: [],
       api: [],
       pm: false,

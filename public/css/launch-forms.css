@@ -506,10 +506,11 @@
   .workspace-location-repo { flex-basis: 100%; min-width: 0; overflow-wrap: anywhere; color: var(--muted); font-size: inherit; }
   .workspace-location .folder-kind { color: var(--muted); }
   .workspace-location-note { grid-column: 1 / -1; }
-  /* An integration row keeps its five cells: blank · provider · keys · blank · ×. */
-  .workspace-integrations .workspace-location { grid-template-columns: 2.2em minmax(0, 1fr) auto auto auto; }
-  /* A bridge's fact (KAN-597): one small field per `facts:` name, under its row. */
-  .workspace-form .workspace-integration-fact { grid-column: 2 / -1; display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: baseline; column-gap: var(--space-inline); }
+  /* An integration: a tick and its name (KAN-857); a bridge's facts (KAN-597) indented under a ticked one. */
+  .workspace-integrations { display: grid; gap: var(--space-row); }
+  .workspace-integration { display: inline-flex; gap: var(--space-inline); align-items: center; }
+  .workspace-integration-kept { margin-left: 2.2em; }
+  .workspace-form .workspace-integration-fact { margin-left: 2.2em; display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: baseline; column-gap: var(--space-inline); }
   .workspace-integration-fact .wk-field-label { color: var(--muted); font-size: var(--form-note); }
   .workspace-integration-fact .wk-field-description:empty, .workspace-integration-fact .wk-field-validation[hidden] { display: none; }
   .workspace-location-note[hidden], .workspace-location-add-note[hidden] { display: none; }
