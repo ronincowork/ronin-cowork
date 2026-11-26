@@ -96,15 +96,14 @@ export function harnessModelEditor(catalog, entry) {
   };
   const table = group => {
     const models = modelsOf(group.id);
-    // In harness: the CLI's name and the id it launches. A service's model is its name.
-    const ids = group.id === 'in-harness';
+    // Name and Model ID always, even when they match: what a launch sends, never guessed from the name.
     return createTable({
-      headings: ids ? ['Name', 'Model ID'] : ['Model'],
+      headings: ['Name', 'Model ID'],
       rows: models.map(row => {
         const name = el('span', 'data-table-name');
         name.append(el('span', 'hermes-tick', isShown(row) ? '✓' : ''), el('span', '', modelLabel(row)));
-        const id = row.model === 'native' ? 'CLI default' : row.model;
-        return { off: !isShown(row), cells: ids ? [name, id] : [name], tools: [[isShown(row) ? 'Hide' : 'Show', () => flip(row)]] };
+        const id = row.model === 'native' ? 'CLI default' : row.api_model_id || row.model;
+        return { off: !isShown(row), cells: [name, id], tools: [[isShown(row) ? 'Hide' : 'Show', () => flip(row)]] };
       }),
       lines: models.length ? [] : [['No models yet.', null]],
     });

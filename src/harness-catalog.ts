@@ -57,6 +57,8 @@ export type ModelFacts = Pick<CatalogModel, 'context' | 'output' | 'price' | 're
 export interface SessionLaunchSpec {
   service_id?: string;
   service_name?: string;
+  /** A service option's API model ID, the one sent to the service; `model` is its launch marker. */
+  api_model_id?: string;
   /** The vendor id a launch names: `anthropic`, `openai`, … */
   provider: string;
   /** The id of the CLI that serves it in `src/agents.ts`: `claude`, `codex`, … */
@@ -358,7 +360,7 @@ export async function harnessRows(summary: HarnessSummary | null, catalog?: Mode
       if (!grammar) continue;
       for (const setup of service.models) {
         const marker = 'service:' + setup.id;
-        rows.push({ ...base, model: entry.cli === 'hermes' ? setup.id : marker, name: setup.name,
+        rows.push({ ...base, model: entry.cli === 'hermes' ? setup.id : marker, name: setup.name, api_model_id: setup.model,
           service_id: service.id, service_name: service.name,
           cmd: commandText(renderLaunch(grammar.model, { model: marker })),
           ...(grammar.modelDangerously.length ? { dangerousCmd: commandText(renderLaunch(grammar.modelDangerously, { model: marker })) } : {}),

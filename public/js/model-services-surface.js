@@ -184,7 +184,7 @@ function modelOptions(service, say) {
       : t('model_services.discover_line', '+ Read the service’s list, to pick model IDs from'), () => act('discover', { id: service.id }, say)],
   ];
   block.append(el('p', 'setup-fine', t('model_services.options_lede', 'Each one appears under Model for every compatible harness on this connection.')),
-    table([t('model_services.col_name', 'Name'), t('model_services.col_model', 'Model')], rows, lines), editor);
+    table([t('model_services.col_name', 'Name'), t('model_services.col_model', 'Model ID')], rows, lines), editor);
   return block;
 }
 
@@ -237,8 +237,7 @@ export function createModelServicesSurface({ tab = 'gateway', serviceId = '' } =
   /* Ronin Gateway: comes configured; its model list, read only. */
   const gatewayTab = () => {
     const g = first('gateway');
-    const same = !!g?.models?.length && g.models.every((m) => m.name === m.model);
-    const rows = (g?.models || []).map((m) => ({ cells: same ? [m.model] : [m.name, m.model] }));
+    const rows = (g?.models || []).map((m) => ({ cells: [m.name, m.model] }));
     const refresh = async () => {
       await act('discover', { id: g.id }, (text, bad) => { refreshFault = bad ? text : ''; });
       paint();
@@ -253,7 +252,7 @@ export function createModelServicesSurface({ tab = 'gateway', serviceId = '' } =
       el('p', 'setup-fine', t('model_services.gateway_lede', 'The Ronin Gateway comes configured. Its model list is supplied by the gateway; there is nothing to set here.')),
       ...blocked,
       sections([{ key: 'models', title: t('model_services.model_options', 'Model options'), meta: optionsMeta(g),
-        nodes: [table(same ? [t('model_services.col_model', 'Model')] : [t('model_services.col_name', 'Name'), t('model_services.col_model', 'Model')], rows, lines), ...fault] }], folds.gateway),
+        nodes: [table([t('model_services.col_name', 'Name'), t('model_services.col_model', 'Model ID')], rows, lines), ...fault] }], folds.gateway),
     ];
   };
 

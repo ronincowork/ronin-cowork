@@ -54,17 +54,16 @@ export function mountHermesServices(host) {
     }
     const service = shown === 'private' ? mine.find((s) => s.id === key) || mine[0] : mine[0];
 
-    // One Model column when every option is named as its model (the Ronin Gateway's always are).
+    // Name and Model ID always, even when they match.
     const models = service?.models || [];
-    const named = models.some((m) => m.name !== m.model);
     const label = (m) => [m.model, ...knobs(m)].join(' · ');
     const open = () => openWorkbenchTab(modelServicePageRequest(shown, shown === 'private' ? service?.id : undefined));
     const lines = shown === 'gateway'
       ? (models.length ? [] : [['No Ronin Gateway models yet.', null]])
       : [[service?.configured ? (models.length ? '+ Add or change in Settings' : '+ Add a model in Settings') : '+ Add your key in Settings', open]];
     const table = createTable({
-      headings: named ? ['Name', 'Model'] : ['Model'],
-      rows: models.map((m) => ({ cells: named ? [m.name, label(m)] : [label(m)] })),
+      headings: ['Name', 'Model ID'],
+      rows: models.map((m) => ({ cells: [m.name, label(m)] })),
       lines,
     });
     const options = el('div', 'hermes-options'); options.append(el('h3', '', 'Model options'), table);
