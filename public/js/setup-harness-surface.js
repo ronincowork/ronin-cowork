@@ -1,6 +1,6 @@
 /* part of the ronin-cowork client — see js/README.md */
 /**
- * THE HARNESS STEP, SETUP'S WORKSPACE 2 (owner, 24 Nov 2026; samurai_lab/wip/SETUP_HARNESS.md;
+ * THE HARNESS STEP, SETUP'S WORKSPACE 2 (owner, 24 Nov 2026; docs/architecture/setup-workbench.md;
  * the owner's prototype O2-Setup-Harnesses): one thin bar per harness, drawn from the measured runtime.
  *
  *  - Signed in: the bar says so. Off: the bar says so.
@@ -95,7 +95,7 @@ function createHarnessSurface(context) {
     paint();
   };
 
-  /** A press that changes what an Agent can run on goes to her as the person's [Button] line (SETUP_HARNESS.md §4.1). */
+  /** A press that changes what an Agent can run on goes to her as the person's [Button] line (docs/architecture/setup-workbench.md, See and Chat). */
   const pressed = (text) => { const to = hers(); if (to) void sendPress(to, text); };
 
   const start = async (provider, way) => {

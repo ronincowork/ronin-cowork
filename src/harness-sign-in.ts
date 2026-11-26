@@ -1,5 +1,5 @@
 /**
- * A HARNESS SIGNED IN WITHOUT A TERMINAL (owner, 24 Nov 2026; samurai_lab/wip/SETUP_HARNESS.md).
+ * A HARNESS SIGNED IN WITHOUT A TERMINAL (owner, 24 Nov 2026; docs/architecture/setup-workbench.md).
  * Ronin runs the CLI's own login command for the way the person chose (AGENTS `login`), reads the
  * link and code it prints, sends what the person pastes, and when it exits measures the machine
  * again: the CLI's credential file is the record, nothing else is kept. One run per harness, in
