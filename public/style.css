@@ -4900,9 +4900,9 @@ html[data-screen='inside'] #phone .ph-bar .ph-title[data-boot='inside'] { displa
 }
 
 /* Desktop selector reference. Mobile actions use the existing composer keys row. */
-.terminal-hints { display: flex; flex-direction: column; flex: 0 0 auto; max-height: 70%; overflow-y: auto; gap: var(--space-row); padding: 0 var(--space-inline) var(--space-inline); font-family: var(--font-ui); font-size: var(--text-body); line-height: var(--leading-body); overflow-wrap: normal; }
-/* Hints: in the selector pills' format (workspace-kit.css, thin .wk-card): their type, padding and gap (w1022) */
-.terminal-hints h3, .terminal-hints summary { margin: 0; font-size: var(--text-label); font-weight: normal; line-height: normal; color: var(--fg-strong); }
+.terminal-hints { display: flex; flex-direction: column; flex: 0 0 auto; max-height: 70%; overflow-y: auto; gap: var(--space-row); padding: 0 var(--space-inline) var(--space-inline); font-size: var(--text-label); font-weight: var(--weight-bold); overflow-wrap: normal; }
+/* Hints: in the selector pills' format (workspace-kit.css, thin .wk-card): every line in the pill heading's font, size and weight (w1022, w1032) */
+.terminal-hints h3, .terminal-hints summary { margin: 0; font-size: inherit; font-weight: inherit; color: var(--fg-strong); }
 .terminal-hints summary { cursor: pointer; }
 .terminal-hints > details { flex: 0 0 auto; min-width: 0; padding: var(--space-row) var(--space-inline); }
 .agent-vocabulary-hints[open] { flex: 0 1 auto; min-height: calc(1.5em + 2 * var(--space-row)); overflow-y: auto; }
@@ -4912,7 +4912,7 @@ html[data-screen='inside'] #phone .ph-bar .ph-title[data-boot='inside'] { displa
 .agent-vocabulary-hints .terminal-hint-row.session-create strong { color: var(--kaki); }
 .agent-vocabulary-hints .terminal-hint-row span { flex-basis: 9rem; text-align: left; }
 .terminal-hint-row { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--space-row) var(--space-inline); margin-top: var(--space-row); color: var(--muted); }
-.terminal-hint-row strong { font-weight: var(--weight-strong); color: var(--fg-strong); }
+.terminal-hint-row strong { font-weight: inherit; color: var(--fg-strong); }
 .terminal-hint-row span { flex: 1 1 min-content; min-width: min-content; max-width: 100%; overflow-wrap: normal; text-align: right; }
 .terminal-copy-text { width: 100%; height: 50dvh; resize: vertical; font-family: var(--font-mono); white-space: pre; }
 
