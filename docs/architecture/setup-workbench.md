@@ -6,8 +6,8 @@ For contributors: what each Setup surface shows and measures, in full. The user'
 
 ## Where it is
 
-**Ronin Home** has the doors **Teams**, **Epics** and **Workspaces**, and the smaller stones **Setup**,
-**Help** and **Settings**, with **Business Lounge** on a hosted office (owner, 26 Nov; KAN-856, w1059).
+**Ronin Home** has the doors **Teams**, **Epics** and **Workspaces**, and the smaller stones **Setup**
+and **Settings** (Help's stone is off Home until Mika is ready; its page stays; w1069), with **Business Lounge** on a hosted office (owner, 26 Nov; KAN-856, w1059).
 Teams, Epics and Workspaces wait for an Activated harness; the small stones are open from the start.
 The Setup stone is always there; Harnesses has no stone and is reached through Setup's Harness step.
 Nothing decides that Setup is finished. Settings is Settings, with no toggle to Setup. A link that names a page still opens that page.
