@@ -287,7 +287,8 @@ provider's own default). `settleFirstDefault` (`provider-summary.ts`) runs on ev
 measure, and a launch with no default measures first (`spawn.ts`), so a sign-in made in Setup or
 in a tile both count. A later sign-in never moves it; only Models > Defaults does. A model service
 is no sign-in and never becomes the default this way. With nothing signed in,
-a Default launch is the registry's first CLI, into its own sign-in.
+a Default launch takes the launch progression's first working harness and model service
+([Model services](model_services_README.md), *A launch with no default*); with none, the registry's first CLI, into its own sign-in.
 
 A Desk's `defaults.provider/model` used to outrank `sessions.default`; at start
 `moveDeskModelDefault` (`campaign-scope.ts`) copies a set pair there once and clears it on the

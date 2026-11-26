@@ -24,15 +24,21 @@ A **harness API key** is supplied to and managed by the CLI. Ronin never receive
 
 **Campaign defaults** select the starting choices that Workspaces, Teams and Agents inherit. Model services supply their model options. Each harness supplies its own in-harness model options. Personal accounts and office unit rentals belong in the Business Lounge.
 
-## How Irasshai chooses
+## A launch with no default
 
-For a fresh launch, Irasshai tries these routes in order.
+When nothing names a harness and model, Ronin takes the first step that works. Each step is a harness, a model service and a model.
 
-1. A configured Ronin Gateway with a reachable endpoint and a selectable Gateway model. If the Gateway offers a model ID called `default`, Irasshai prefers it.
-2. A configured personal-key connection with a selectable named option. This includes OpenRouter. An API key alone supplies no launch choice.
-3. A signed-in CLI with a selectable native route.
+| Step | Harness | Model service | Model |
+|---|---|---|---|
+| CLI | the default's harness, else the first signed in | its own sign-in | CLI default |
+| Gateway | Codex, else Hermes | Ronin Gateway | `default`, the office's tier |
+| Private API | Codex, else Hermes | a private API | the first model option that harness shows |
+| OpenRouter | Codex, else Hermes | OpenRouter | the first model option that harness shows |
 
-The Gateway reachability check opens a TCP connection. A listening endpoint can still reject the subsequent API request. This order describes selection before launch.
+- **An Agent with no default set** walks CLI, Gateway, Private API, OpenRouter. The first CLI sign-in is still written as the default, so this is reached when nothing is signed in.
+- **Irasshai** always walks Gateway, Private API, OpenRouter, CLI.
+
+A service step needs an installed harness that works with the service and shows it in its settings. Working means signed in, key present, or the Gateway answering on its port; no test request is made, so a listening Gateway can still reject the call. The progression writes nothing. It lives in [the launch progression](../../src/launch-progression.ts).
 
 ## Checking a change end to end
 

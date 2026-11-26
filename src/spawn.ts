@@ -1,6 +1,7 @@
 import { mkdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { resolveLaunchCommand, sessionsFor, type SessionsDefaults } from './launch-command.js';
+import { AGENT_ORDER, firstRoute } from './launch-progression.js';
 import { REPO_ROOT } from './resources.js';
 import { listSessionLaunchSpecs } from './model-providers.js';
 import { agentSpec } from './agents.js';
@@ -222,11 +223,14 @@ async function resolveLaunch(form: SpawnForm, facts: LaunchFacts) {
   }
   const house = sessionsFor(agentsSet.sessions as SessionsDefaults | undefined, !!form.team && !!form.team_lead);
   const sessionsSet = copied ? { ...house, default: copied } : house;
+  // Still no default: the launch progression's first working harness and model service (KAN-894).
+  const named = !!(form.cmd || form.provider || form.model || sessionsSet.default?.provider);
+  const route = agent && !named ? await firstRoute(AGENT_ORDER) : null;
   const chosen = resolveLaunchCommand({
     agent,
     cmd: form.cmd,
-    model: form.model,
-    provider: form.provider,
+    model: form.model || route?.model,
+    provider: form.provider || route?.provider,
     specs: launchSpecs,
     sessions: sessionsSet,
   });
