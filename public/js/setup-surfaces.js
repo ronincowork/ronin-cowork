@@ -323,7 +323,7 @@ function createRootsSurface(context) {
   const workspacesRead = createWorkspacesRead();
   // The step's own surface (owner, 25 Nov; KAN-809): the four doors, not the Workspaces page.
   const out = surface(t('setup_surface.roots', 'Workspace'), 'setup-workspace-surface');
-  const step = createWorkspaceKickoff({ workspacesRead, environment: context.environment });
+  const step = createWorkspaceKickoff({ workspacesRead, environment: context.environment, intro: true });
   out.content.append(step.el);
   return { el: out.el,
     show: () => { void workspacesRead.read().then(() => notifySummary(SETUP_SURFACE_TYPES.roots, t('setup_surface.roots_summary', '{n} Workspaces', { n: workspacesRead.list().length }), context.workbench)); },

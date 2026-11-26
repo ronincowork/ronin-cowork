@@ -10,7 +10,8 @@ import { WorkspaceKit } from './workspace-kit.js';
 import { t } from './lexicon.js';
 import { doorWorkbench, harnessKit } from './door-workbenches.js';
 import { WORKBENCH_PROFILES, WORKBENCH_TYPES } from './workbench-catalog.js';
-import { SETUP_SURFACE_TYPES } from './setup-surfaces.js';
+import { createWorkspaceStones } from './workspaces-surface.js';
+import { createWorkspacesRead } from './workspaces-read.js';
 import { createBehaviourSurface } from './behaviour-surface.js';
 import { campaignById, loadCampaigns, normalizeSelection } from './campaigns.js';
 import { createAgentDefaultsSurface } from './campaign-defaults.js';
@@ -66,7 +67,7 @@ export function createSettingsV2View() {
       const groups = [
         [WORKBENCH_TYPES.modelStones, t('settings2.group_harness', 'Harnesses and models')],
         [WORKBENCH_TYPES.settings2AgentDefaults, t('settings2.group_defaults', 'Office defaults')],
-        [SETUP_SURFACE_TYPES.roots, t('settings2.group_work', 'Workspaces and integrations')],
+        [WORKBENCH_TYPES.campaignRoots, t('settings2.group_work', 'Workspaces and integrations')],
         [WORKBENCH_TYPES.settings2BehaviorFiles, t('settings2.group_advanced', 'Advanced')],
       ];
       for (const [type, label] of groups) {
@@ -92,6 +93,9 @@ export function createSettingsV2View() {
         selected,
         settings2ModelServices: ({ detail }) => createModelServicesSurface({ tab: detail?.tab || 'gateway', serviceId: detail?.key || '' }),
         settings2AgentDefaults: () => officeDefaults(selected),
+        // Workspaces (owner, 26 Nov; KAN-900): a stone each, its Configuration alone, and New Workspace's doors.
+        rootsSummary: () => t('campaign_view.roots_summary', 'Each Workspace and the folders it works in.'),
+        campaignRoots: () => createWorkspaceStones({ workspacesRead: createWorkspacesRead(), workbench: bench(), withNew: true, configOnly: true }),
         settings2BehaviorFiles: ({ detail }) => createBehaviourSurface(detail),
         campaignIntegrations: ({ workspace }) => enterable(createIntegrationsPanel(selected, { panels: { jira: () => jira(workspace) } })),
         campaignJira: ({ workspace }) => enterable(jira(workspace)),
@@ -99,7 +103,7 @@ export function createSettingsV2View() {
         campaignJiraPairs: () => enterable(createJiraPairsSurface(selected)),
         campaignMachineStatus: () => createMachineStatusSurface(),
         settings2Stats: () => roomSurface(t('settings2.stats', 'Machine stats'), 'stats', (host) => buildStats(host)),
-        feedback: () => createFeedbackSurface(() => bench().place(SETUP_SURFACE_TYPES.roots, bench().selected())),
+        feedback: () => createFeedbackSurface(() => bench().place(WORKBENCH_TYPES.campaignRoots, bench().selected())),
         document: (detail = {}) => createDocumentWorkspaceAdapter({ root: detail.root, path: detail.path || detail.key }),
       };
     },

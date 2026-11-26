@@ -157,7 +157,7 @@ export function registerWorkbenchCatalog() {
   profiles.define(WORKBENCH_PROFILES.settings2, [
     WORKBENCH_TYPES.modelStones, WORKBENCH_TYPES.settings2ModelServices,
     WORKBENCH_TYPES.settings2AgentDefaults,
-    SETUP_SURFACE_TYPES.roots, WORKBENCH_TYPES.campaignIntegrations, WORKBENCH_TYPES.campaignJira,
+    WORKBENCH_TYPES.campaignRoots, WORKBENCH_TYPES.campaignIntegrations, WORKBENCH_TYPES.campaignJira,
     WORKBENCH_TYPES.settings2BehaviorFiles, WORKBENCH_TYPES.campaignMachineStatus, WORKBENCH_TYPES.settings2Stats,
     FEEDBACK_TYPE,
     WORKBENCH_TYPES.modelHarness, WORKBENCH_TYPES.modelMika, WORKBENCH_TYPES.campaignJiraItems, WORKBENCH_TYPES.campaignJiraPairs, WORKBENCH_TYPES.document,
