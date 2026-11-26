@@ -5079,12 +5079,6 @@ html[data-screen='inside'] #phone .ph-bar .ph-title[data-boot='inside'] { displa
 
 /* THE AGENT HARNESS WORKBENCH'S ACCOUNTS AND MODELS TILESPACES (KAN-236): account cards in the Hermes card's
    shape, their two tick lists side by side, and the Models tilespace's sections. */
-.accounts-body, .models-records-body { display: grid; gap: var(--space-subsection); }
-.accounts-list { display: grid; gap: var(--space-inline); }
-.accounts-card { display: grid; gap: var(--space-inline); }
-.accounts-card[data-seeded="true"] .hermes-card-summary { color: var(--muted); }
-.models-records-section { display: grid; gap: var(--space-inline); }
-.models-records-section h3 { margin: 0; }
 
 /* THE HARNESS STEP (setup-harness-surface.js): the prototype's thin bars, one per harness. */
 .setup-harness-body { display: flex; flex-direction: column; gap: 16px; padding: 4px 0; }

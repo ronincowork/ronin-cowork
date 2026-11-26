@@ -39,7 +39,7 @@ import { githubSetupAnswer } from './setup-runtime.js';
 import { integrationsState } from './integrations.js';
 import { discoverParts } from './parts.js';
 import { listServices } from './sockets.js';
-import { accountsAnswer } from './accounts.js';
+import { modelServices } from './model-services.js';
 import { DONE, listItems, type WorkItem } from './work-items.js';
 import { listLetterHolds } from './tegami.js';
 import { listTeamRosters } from './team-rosters.js';
@@ -180,13 +180,13 @@ async function workspaces(): Promise<Built> {
   return { line: all.length ? `${all.length}: ${all.map((w) => w.name).join(', ')}` : 'none yet', lines: shown.length ? shown : ['- none yet'] };
 }
 
-// ---- integrations_authentications: model providers, GitHub, integrations (MCP servers and web APIs included), Hermes accounts.
+// ---- integrations_authentications: harnesses, GitHub, integrations (MCP servers and web APIs included), model services.
 async function integrationsAuthentications(): Promise<Built> {
   const campaign = await initialCampaignId();
   const parts = { onDisk: discoverParts().map((part) => part.name), loaded: listServices() };
   const [summary, github, services, accounts] = await Promise.all([
     readHarnessSummary().catch(() => null), githubSetupAnswer().catch(() => null),
-    integrationsState(campaign, parts).catch(() => []), accountsAnswer().catch(() => null),
+    integrationsState(campaign, parts).catch(() => []), modelServices().catch(() => []),
   ]);
   githubBuilt = githubKey(github);
   // THE ONE WORDING of a provider's state (FACTS.md): not installed, installed not signed in, signed in not activated, Activated, turned off.
@@ -201,14 +201,14 @@ async function integrationsAuthentications(): Promise<Built> {
     : github.authenticated ? `GitHub CLI: signed in as ${github.account}` : 'GitHub CLI: installed, not signed in (needed to clone a private repository)';
   const connected = (one: (typeof services)[number]) => !!(one.secrets.length || one.mcp?.saved);
   const integrations = services.map((one) => `${one.label}: ${connected(one) ? 'connected' : one.available ? 'available, not connected' : 'not available for this Desk'}${one.workspaces.length ? ` in ${one.workspaces.join(', ')}` : ''}`);
-  const hermes = (accounts?.accounts ?? []).map((a) => `${a.name} (${a.kind}): ${a.configured ? 'set up' : 'not set up'}${a.models.length ? `, ${a.models.length} models` : ''}`);
+  const modelServiceLines = accounts.map((a) => `${a.name}: ${a.configured ? 'set up' : 'not set up'}${a.models.length ? `, ${a.models.length} model options` : ''}; works with ${a.bound.join(', ')}`);
   const own = harnessesOn(summary);
   const line = `Harnesses Activated: ${own.join(', ') || 'none'}; connected: ${services.filter(connected).map((one) => one.label).join(', ') || 'none'}${github?.authenticated ? '; GitHub signed in' : ''}`;
   return { line, lines: [
     'Harnesses:', ...bullets(providers), '',
     'Developer tools:', ...bullets([gh]), '',
     'Integrations:', ...bullets(integrations), '',
-    'Hermes accounts:', ...bullets(hermes),
+    'Model services:', ...bullets(modelServiceLines),
   ] };
 }
 

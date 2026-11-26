@@ -12,7 +12,7 @@ import { readCredential, writeCredential } from './credential-store.js';
 import { storeDir, REPO_ROOT } from './resources.js';
 
 /** A connection is a model service (KAN-236): `kind` is an optional fact on the record; absent,
- * `accountKind` derives it. Which harnesses can use it is worked out in src/accounts.ts, never stored. */
+ * `accountKind` derives it. Which harnesses can use it is worked out in src/model-services.ts, never stored. */
 export type AccountKind = 'personal_api' | 'ronin_api';
 export interface ModelServiceRecord { id: string; name: string; provider: 'openai' | 'mistral' | 'custom'; baseUrl: string; wireApi?: 'chat' | 'responses'; models: string[]; modelNames?: Record<string, string>; modelInfo?: Record<string, { tier?: string; use_for?: string }>; discoveredAt?: string; credentialEnv?: string; starterModelsPending?: true; kind?: AccountKind }
 /** `tier` and `use_for` are the Ronin Gateway's own words for its model options; a named option has neither. */

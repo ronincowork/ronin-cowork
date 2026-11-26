@@ -21,8 +21,6 @@ import { registerWorkbenchCatalog, WORKBENCH_PROFILES, WORKBENCH_TYPES } from '.
 import { createHarnessSetupSessionMount } from './harness-setup-session.js';
 import { loadHarnessCatalog } from './form-steps.js';
 import { createModelDefaults, createModelHarness, createModelRefresh, createModelStones, harnessOffers } from './models-surface.js';
-import { createAccountsSurface } from './accounts-surface.js';
-import { createModelsRecords } from './models-records-surface.js';
 import { createWorkspaceNew, createWorkspaceRecord, createWorkspaceStones, workspaceOffers } from './workspaces-surface.js';
 import { createWorkspacesRead } from './workspaces-read.js';
 import { campaignById, loadCampaigns, normalizeSelection } from './campaigns.js';
@@ -91,15 +89,15 @@ export function doorWorkbench({ id, profile, label, seat, seats = { workspace1: 
   };
 }
 
-/** Agent Harness (KAN-236; owner, 2026-11-04), Home's door where Model Providers was: four tilespaces on first open —
- * the stones of harnesses (Harness) in 1, Accounts in 2, Models in 3, Refresh in 4; a harness whole where a stone is
+/** Agent Harness (KAN-236; owner, 2026-11-04), Home's door where Model Providers was: three tilespaces on first open —
+ * the stones of harnesses (Harness) in 1, Refresh in 2, Defaults in 3 (model services are Settings', KAN-892); a harness whole where a stone is
  * dropped or its card placed, one card per harness; the sign-in tile mounted as on Setup. The route id stays `models`
  * so saved arrangements survive. */
 export function createModelsView() {
   const harness = harnessKit();
   return doorWorkbench({
     id: 'models', profile: WORKBENCH_PROFILES.models, label: t('campaign_home.harnesses', 'Harnesses'), seat: WORKBENCH_TYPES.modelStones,
-    count: 4, seats: { workspace1: WORKBENCH_TYPES.modelStones, workspace2: WORKBENCH_TYPES.accountsRecords, workspace3: WORKBENCH_TYPES.modelsRecords, workspace4: WORKBENCH_TYPES.modelRefresh },
+    count: 3, seats: { workspace1: WORKBENCH_TYPES.modelStones, workspace2: WORKBENCH_TYPES.modelRefresh, workspace3: WORKBENCH_TYPES.modelDefaults },
     loaded: loadHarnessCatalog,
     environment: ({ bench }) => harness.environment(bench),
     destroy: harness.destroy,
@@ -130,8 +128,6 @@ export function harnessKit() {
         modelStones: (workspace) => keep(createModelStones({ workspace, detail: {}, environment, workbench: bench() })),
         modelRefresh: (workspace) => keep(createModelRefresh({ workspace, detail: {}, environment, workbench: bench() })),
         modelDefaults: () => createModelDefaults(),
-        accounts: (workspace) => keep(createAccountsSurface({ workspace, detail: {}, environment, workbench: bench() })),
-        modelsRecords: (workspace) => keep(createModelsRecords({ workspace, detail: {}, environment, workbench: bench() })),
         modelHarness: (workspace, detail) => keep(createModelHarness(detail.key, { workspace, detail, environment, workbench: bench() })),
         modelMika: () => ({ el: mikaSurface.el, show: () => { mikaPool.sync([helper]); mikaPool.show(helper, false); } }),
         assistName: signInHelperName,

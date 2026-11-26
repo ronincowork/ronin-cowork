@@ -1,7 +1,6 @@
-import { modelServices } from '../model-services.js';
+import { deleteModelOption, deleteService, modelServices, saveService } from '../model-services.js';
 import { modelServiceStoreAnswer, saveModelService, discoverModelIds, saveModelOption, deleteModelServiceEntry, onModelServicesWritten, readGatewayModels } from '../model-service-store.js';
 import { broadcastEvent } from '../ws/events.js';
-import { accountsAnswer, saveAccount, discoverAccount, deleteAccount, savePreset, deletePreset } from '../accounts.js';
 import { homedir } from 'node:os';
 import { dispatchInstall } from '../agent-install.js';
 import type express from 'express';
@@ -56,8 +55,7 @@ export function registerSetupRuntime(app: express.Express): void {
     } catch (error) { res.status(400).json({ error: errMsg(error) }); }
   });
 
-  // ACCOUNTS AND PRESETS (KAN-236): the Agent Harness workbench's reading of the same Hermes record,
-  // for the Accounts and Models tilespaces and every harness page. The /api/hermes routes above keep answering.
+  // MODEL SERVICES: the pages' reading of the store and their writes. /api/hermes above is the `harness` tool's.
   app.get('/api/model-services', async (_req, res) => {
     try { res.json({ services: await modelServices() }); } catch (error) { res.status(500).json({ error: errMsg(error) }); }
   });
@@ -65,44 +63,14 @@ export function registerSetupRuntime(app: express.Express): void {
     try {
       const body = req.body;
       switch (req.params.action) {
-        case 'save': await saveAccount(body); break;
-        case 'discover': await discoverAccount(String(body.id)); break;
-        case 'delete': await deleteAccount(String(body.id)); break;
+        case 'save': await saveService(body); break;
+        case 'discover': await discoverModelIds(String(body.id)); break;
+        case 'delete': await deleteService(String(body.id)); break;
         case 'save-model': await saveModelOption({ reasoning: 'default', approvals: 'off', ...body, connection: body.service_id }); break;
-        case 'delete-model': await deletePreset(String(body.id)); break;
+        case 'delete-model': await deleteModelOption(String(body.id)); break;
         default: return res.status(404).json({ error: 'Unknown model service action.' });
       }
       res.json({ services: await modelServices() });
-    } catch (error) { res.status(400).json({ error: errMsg(error) }); }
-  });
-
-  app.get('/api/accounts', async (_req, res) => {
-    try { res.json(await accountsAnswer()); } catch { res.status(500).json({ error: 'Could not read accounts.' }); }
-  });
-  app.post('/api/accounts/:action', async (req, res) => {
-    try {
-      switch (req.params.action) {
-        case 'save': await saveAccount(req.body); break;
-        case 'discover': await discoverAccount(String(req.body.id)); break;
-        case 'delete': await deleteAccount(String(req.body.id)); break;
-        default: return res.status(404).json({ error: 'Unknown account action.' });
-      }
-      await measureAndRecordHarnesses();
-      res.json(await accountsAnswer());
-    } catch (error) { res.status(400).json({ error: errMsg(error) }); }
-  });
-  app.get('/api/presets', async (_req, res) => {
-    try { res.json({ presets: (await accountsAnswer()).presets }); } catch { res.status(500).json({ error: 'Could not read presets.' }); }
-  });
-  app.post('/api/presets/:action', async (req, res) => {
-    try {
-      switch (req.params.action) {
-        case 'save': await savePreset(req.body); break;
-        case 'delete': await deletePreset(String(req.body.id)); break;
-        default: return res.status(404).json({ error: 'Unknown preset action.' });
-      }
-      await measureAndRecordHarnesses();
-      res.json(await accountsAnswer());
     } catch (error) { res.status(400).json({ error: errMsg(error) }); }
   });
 

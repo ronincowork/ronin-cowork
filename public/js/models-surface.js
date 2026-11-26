@@ -76,13 +76,13 @@ export function createModelRefresh(context) {
   const drawing = createHarnessDrawing(context, { repaint: () => repaint(), say });
   // What each step is doing now: '' at rest (it says what the record holds), or the door's state.
   const live = { lists: '', accounts: '' };
-  // The accounts (KAN-236): read with the record, discovered one by one when the door runs.
+  // The model services: read with the record, each asked for its model list when the door runs.
   let accounts = [];
-  const readAccounts = async () => { const result = await request('/api/accounts', { cache: 'no-store' }); if (result.ok) accounts = result.data.accounts || []; return result.ok; };
+  const readAccounts = async () => { const result = await request('/api/model-services', { cache: 'no-store' }); if (result.ok) accounts = result.data.services || []; return result.ok; };
   const discoverAccounts = async () => {
     let every = true;
     for (const account of accounts.filter((row) => row.configured && !row.seeded)) {
-      const result = await request('/api/accounts/discover', { method: 'POST', json: { id: account.id } });
+      const result = await request('/api/model-services/discover', { method: 'POST', json: { id: account.id } });
       if (!result.ok) every = false;
     }
     await readAccounts();
@@ -162,16 +162,16 @@ function listsStep(runtime, state) {
   return made.item;
 }
 
-/** Step 2 (KAN-236): each account asked for its model list — today's Hermes Discover, run for every configured account. */
+/** Step 2: each configured model service asked for its model list. */
 function accountsStep(accounts, state) {
   const rows = accounts.filter((row) => !row.seeded);
   const dated = rows.map((row) => row.discoveredAt).filter(Boolean).sort().pop();
-  const made = stepItem({ key: 'accounts', n: 2, label: t('accounts.title', 'Accounts'),
+  const made = stepItem({ key: 'accounts', n: 2, label: t('model_services.title', 'Model services'),
     ...stepState(state, dated ? { state: t('models.lists_read', 'Read {date}', { date: dayTime(dated) }), done: true } : { state: rows.length ? t('models.lists_never', 'Not read yet') : t('accounts.none_yet', 'None yet') }),
     detail: t('accounts.step_detail', 'Each private API and Ronin Gateway is asked for its model list.') });
   for (const row of rows) {
     const said = !row.configured ? t('accounts.key_missing', 'Key missing')
-      : row.discoveredAt ? t('accounts.models_count', '{n} models', { n: row.models.length })
+      : row.discoveredAt ? t('accounts.models_count', '{n} models', { n: (row.discovered || []).length })
       : t('models.lists_not_read', 'not read yet');
     factsOf(made).append(line(row.name, said));
   }

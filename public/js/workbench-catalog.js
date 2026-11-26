@@ -26,7 +26,6 @@ export const WORKBENCH_TYPES = Object.freeze({
   campaignIdentity: 'campaign.identity', campaignInstallations: 'campaign.installations', campaignCreate: 'campaign.new', campaignIntegrations: 'campaign.integrations', campaignJira: 'campaign.jira', campaignJiraItems: 'campaign.jira-items', campaignJiraPairs: 'campaign.jira-pairs',
   modelStones: 'models.stones', modelRefresh: 'models.refresh', modelDefaults: 'models.defaults', modelHarness: 'models.provider', modelMika: 'models.mika-auth',
   // THE AGENT HARNESS WORKBENCH'S TWO NEW TILESPACES (KAN-236): Accounts and Models, beside the stones and Refresh.
-  accountsRecords: 'accounts.records', modelsRecords: 'models.records',
   helpOutline: 'help.outline', helpMika: 'help.mika', helpPage: HELP_PAGE_TYPE,
   workspaceRecords: 'workspaces.records', workspaceRecord: 'workspaces.record', workspaceNew: 'workspaces.new', epicNew: 'epics.new', folderGithub: 'workspaces.github', githubMika: 'workspaces.github-mika',
   epicRecords: 'epics.records', epicRecord: 'epics.record',
@@ -107,19 +106,17 @@ export function registerWorkbenchCatalog() {
   // TEAM PAGE (owner, 2026-10-20): a provider's or folder's card is an entity card like an Agent's
   // (wk-selector-entity, the terminal's class); the three admin doors are dotted like New Agent; the
   // stones surface heads the selector as a solid card, as the Teams card heads the Cowork selector.
-  // THE AGENT HARNESS WORKBENCH (KAN-236; owner, 2026-11-04): the same stones, now the Harness card; Accounts and
-  // Models two new solid utility cards after it; Refresh the Model refresh surface under its new word. Nothing
-  // existing is removed: the types, surfaces and stones keep working under the new words.
+  // THE AGENT HARNESS WORKBENCH (KAN-236; owner, 2026-11-04): the same stones, now the Harness card; Refresh the
+  // Model refresh surface under its new word. The Accounts and Models (preset) cards are gone (owner, 26 Nov 2026):
+  // model services and their model options are Settings' Model services card.
   add({ type: WORKBENCH_TYPES.modelStones, header: 'surface', className: 'wk-selector-utility', label: () => t('harness.stones', 'Harness'), summary: () => t('harness.stones_summary', 'The CLIs: install, sign in, ready'), create: ({ workspace, environment }) => environment.modelStones(workspace) });
-  add({ type: WORKBENCH_TYPES.accountsRecords, header: 'surface', className: 'wk-selector-utility', label: () => t('accounts.title', 'Accounts'), summary: () => t('accounts.card_summary', 'Private API · Ronin Gateway: your model services'), create: ({ workspace, environment }) => environment.accounts(workspace) });
-  add({ type: WORKBENCH_TYPES.modelsRecords, header: 'surface', className: 'wk-selector-utility', label: () => t('models.records', 'Models'), summary: () => t('models.records_summary', 'Model options · defaults'), create: ({ workspace, environment }) => environment.modelsRecords(workspace) });
   // Refresh (owner, 2026-10-20; the word 2026-11-04): the Refresh all door the stones do not carry, a solid utility card.
-  add({ type: WORKBENCH_TYPES.modelRefresh, header: 'surface', className: 'wk-selector-utility', label: () => t('harness.refresh', 'Refresh'), summary: () => t('harness.refresh_summary', 'One press: harnesses, accounts'), create: ({ workspace, environment }) => environment.modelRefresh(workspace) });
+  add({ type: WORKBENCH_TYPES.modelRefresh, header: 'surface', className: 'wk-selector-utility', label: () => t('harness.refresh', 'Refresh'), summary: () => t('harness.refresh_summary', 'One press: harnesses, model services'), create: ({ workspace, environment }) => environment.modelRefresh(workspace) });
   // Defaults (owner, 2026-10-21): the model a new Agent, a new Team lead and Mika start on, a solid utility card after Model refresh.
   add({ type: WORKBENCH_TYPES.modelDefaults, header: 'surface', className: 'wk-selector-utility', label: () => t('models.defaults', 'Defaults'), summary: () => t('models.defaults_summary', 'Agent · Team lead · Mika'), create: ({ workspace, environment }) => environment.modelDefaults(workspace) });
   add({ type: WORKBENCH_TYPES.modelHarness, header: 'surface', className: 'wk-selector-entity', discover: (_t, e) => e.providers(), create: ({ workspace, detail, environment }) => environment.modelHarness(workspace, detail) });
   add({ type: WORKBENCH_TYPES.modelMika, header: 'terminal', label: () => 'Mika', discover: () => [], create: ({ environment }) => environment.modelMika() });
-  profiles.define(WORKBENCH_PROFILES.models, [WORKBENCH_TYPES.modelStones, WORKBENCH_TYPES.accountsRecords, WORKBENCH_TYPES.modelsRecords, WORKBENCH_TYPES.modelRefresh, WORKBENCH_TYPES.modelDefaults, WORKBENCH_TYPES.modelHarness, WORKBENCH_TYPES.modelMika]);
+  profiles.define(WORKBENCH_PROFILES.models, [WORKBENCH_TYPES.modelStones, WORKBENCH_TYPES.modelRefresh, WORKBENCH_TYPES.modelDefaults, WORKBENCH_TYPES.modelHarness, WORKBENCH_TYPES.modelMika]);
   // THE WORKSPACES WORKBENCH (owner, 2026-11-02): the stones of Workspaces in Tilespace 1, a pressed one's
   // page beside them; a card per Workspace, opened whole; New Workspace and GitHub CLI dotted (workspaces-surface.js).
   add({ type: WORKBENCH_TYPES.workspaceRecords, header: 'surface', className: 'wk-selector-utility', label: () => t('workspaces.title', 'Workspaces'), create: ({ workspace, environment }) => environment.workspaceRecords(workspace) });

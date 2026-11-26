@@ -425,8 +425,8 @@ Its models' tiers and lines are Glen's rows in HQ's catalog; until then they are
 ## OpenAI-compatible services
 
 A third-party API service (DigitalOcean, Hugging Face, OpenRouter) is not a harness and gets
-no vendor of its own: it is an account a harness launches on (Harnesses workbench →
-Accounts, `docs/operating/accounts.md`). Its credential follows `docs/operating/secrets.md`
+no vendor of its own: it is a model service a harness launches on (Settings → Model services,
+[Model services](model_services_README.md)). Its credential follows `docs/operating/secrets.md`
 and never belongs in this repository, a project_root, or a launch command.
 OpenAI-compatible is a claim to verify: launch one real session through Ronin on it and
 confirm that the tile reaches a prompt and receives the complete built brief.

@@ -167,12 +167,12 @@ last-ran line and notice — with its steps under it (owner, 2026-10-20). The th
 **Defaults** (`models.defaults`, solid utility, after Model refresh; owner, 2026-10-21), sets the model a new Agent,
 a new Team lead and Mika start on: ⚙ Configuration's own `models` section drawn alone (`buildMachineSettings(…, { only:
 'models' })`), each row saving itself — one record, two views. **The Harnesses workbench** (KAN-236; owner,
-2026-11-04) is this door under its new word on Home, opened in the four-tilespace shape: the stones (now the **Harness**
-card) in tilespace 1, **Accounts** (`accounts.records`, `accounts-surface.js`) in 2, **Models** (`models.records`,
-`models-records-surface.js`, with the Defaults surface embedded) in 3 and **Refresh** (`models.refresh` under its new
-word) in 4; Model refresh's steps read Harnesses · Accounts (the models.dev steps went, KAN-653), the Accounts step each account's
-Discover. Accounts and presets are one reading of the Hermes record (`src/accounts.ts`, `/api/accounts`, `/api/presets`):
-a key added on Accounts is the connection the Hermes page shows. The existing types, surfaces and stones are
+2026-11-04) is this door under its new word on Home, opened in three tilespaces: the stones (now the **Harness**
+card) in tilespace 1, **Refresh** (`models.refresh` under its new word) in 2 and **Defaults** in 3; Model refresh's
+steps read Harnesses · Model services, the second asking each configured model service for its model list. The
+Accounts and Models (preset) cards and their routes are gone (owner, 2026-11-26; KAN-892): model services and their
+model options are Settings' Model services card ([Model services](model_services_README.md), `/api/model-services`).
+The existing types, surfaces and stones are
 unchanged but for their words; the route id stays `models` so saved arrangements survive. Settings' Model
 Providers surface is untouched; all draw with the one drawing `harnesses-surface.js` exports
 (`createHarnessDrawing`, `createRefreshAll`, `harnessStones`) over the same record and measure. In Harnesses,
