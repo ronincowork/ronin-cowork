@@ -193,7 +193,7 @@ KAN-809; samurai_lab wip/SETUP_WORKSPACE.md §2). One question, **How are you st
 4. **Not sure yet**: Ronin Lab, made on the press.
 
 Doors 1–3 then ask what it is (objective; the name from it), its kind (open, business, personal,
-household, social, school: the one list Agents, Teams and Workspaces share) and anything every Agent
+household, social, school; a Workspace's only, `WORKSPACE_KINDS`: Teams and Agents have none) and anything every Agent
 there should follow (instructions). Every answer lands on the Workspace record (`src/workspaces.ts`).
 Every Workspace's folder is `~/ronin/<name>`, laid out `plans/ files/ repos/` on Create, whoever
 creates it (`layOut`). The Helpful Assistant does the same with her `workspace` tool (`create --kind`,
@@ -203,6 +203,28 @@ GitHub is never a step of its own: a public repository clones without it. For a 
 "my repositories", the page's **Connect · Helpful Assistant** sends her "Connect GitHub.", and she
 signs the GitHub CLI in with GitHub's device flow and `gh auth setup-git`, so a headless machine
 shows a code the owner approves in a browser elsewhere.
+
+## Team
+
+A Team is always made in one Workspace, and its lead takes that Workspace's work. The step's surface
+(`setup.team`, `createTeamSurface` in `setup-surfaces.js`) is the ordinary New Team form, the same as on
+the Teams workbench ([new Team](new-team.md)): name and title, the **Team objective** (what the lead picks up
+and starts on, said to it at birth with its epic), the **Team instructions** (in every member's brief,
+`facts/team.md`), the **Workspace** (required), the **Agents** (the lead first, each on a signed-in
+harness, so Agents on different harnesses share one Team), and the **Epic** (one of the Workspace's open
+epics handed to the Team, or a new one). The form has no Kind, defaults, toolkit or payload: a Team copies
+its Workspace's defaults when it is made, and its Configuration changes them afterwards
+([team workspace](team-workspace.md)).
+
+No press on this surface messages her: Launch is a real setting she reads in the facts. Her chat on this
+step is drawn as on every step (`tile-transcript.js`): item ids and Agent names are links
+(`chat-item-links.js`), and her choices are question cards (`chat-question.js`).
+
+The step is ticked when a Team has a live lead (the ticks above). The rest of the step is waiting on the
+owner (KAN-810): Irasshai proposing the Team structure as soon as a Workspace is made (one Team, several,
+or a Team of several Agents, with epics and items: for example a cloned repository gets an Agent that walks
+it and writes a project map), and the surface around the form showing it: a line and a **Workspace** press
+when there is no Workspace, and a card per running Team (lead, Agents, items held).
 
 ## Ronin Services
 
@@ -214,7 +236,7 @@ every part runs. See [Ronin Services](../getting-started/services-activation.md)
 
 Two stones:
 
-- **Agent** opens the ordinary New Agent form here: name, kind, provider and model,
+- **Agent** opens the ordinary New Agent form here: name, provider and model,
   instructions, mandate, and its behaviours.
 - **Team** opens the ordinary New Team form here: the team, its agents, and where it
   works.
