@@ -5173,6 +5173,27 @@ html[data-screen='inside'] #phone .ph-bar .ph-title[data-boot='inside'] { displa
 .hermes-add-line:hover { text-decoration: underline; }
 .hermes-add-line:disabled { color: var(--muted); cursor: default; text-decoration: none; }
 .hermes-add-note { margin-left: 8px; color: var(--muted); }
+/* Settings v2 Model services (KAN-870): the intro, the pick row, the form and the table are sections
+   spaced alike; every field is one height; headings sit on their content. */
+.model-services-body { display: grid; gap: var(--space-subsection); padding: var(--space-inset) 0; min-width: 0; }
+.model-services-body > p, .model-services h3 { margin: 0; }
+.model-services-models { display: grid; gap: var(--space-paragraph); min-width: 0; }
+.model-services .hermes-editor { gap: var(--space-paragraph); }
+.model-services .hermes-field :is(input, select) { height: var(--control-height); min-height: 0; }
+.model-services .wk-action-bar { margin: 0; }
+/* The table pattern (data-table.js): a row's presses are links, spaced like words. */
+.data-table-link + .data-table-link { margin-left: var(--space-inline); }
+.data-table .hermes-add .hermes-add-note { margin-left: 0; }
+/* Tables stacked on one page line up: the name column is the same width in each. */
+.data-table { table-layout: fixed; }
+.data-table thead th:first-child { width: 40%; }
+.data-table thead th.hermes-tools { width: 8.5rem; }
+.data-table-link { justify-self: start; text-align: left; }
+@media (max-width: 560px) {
+  .data-table thead th:first-child { width: 32%; }
+  .data-table thead th.hermes-tools { width: 6.25rem; }
+}
+.model-services-service { display: grid; gap: var(--space-paragraph); min-width: 0; }
 /* The four ways: four equal stones across the bar, two by two when narrow. */
 .setup-harness-row.setup-harness-ways { display: grid; grid-template-columns: repeat(auto-fit, minmax(112px, 1fr)); }
 .setup-harness-ways .ask-rect { width: auto; flex: none; }
