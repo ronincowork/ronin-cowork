@@ -1,6 +1,6 @@
 # Model services
 
-A model service is the connection an office uses to call a model API. A harness is the CLI that runs the Agent. In New Agent, choose a harness, a compatible model service, and then a model from that connection. Two harnesses can use the same connection and named models. Two connections can each have a model called “Fast” and send requests to different endpoints.
+A model service is the connection an office uses to call a model API. A harness is the CLI that runs the Agent. In Harness Setup, the intended behavior is to assign one model service to a harness. In New Agent, choosing the harness should offer only models from its assigned connection. Two harnesses can use the same connection and named models. Two connections can each have a model called “Fast” and send requests to different endpoints.
 
 ## Who supplies the model choices?
 
@@ -15,7 +15,7 @@ A model service is the connection an office uses to call a model API. A harness 
 
 1. In **Settings → Harnesses and models**, configure the service connection. A private connection records the provider, endpoint, API protocol and credential. Settings returns connection details and model choices to the UI with the credential value omitted.
 2. On the service page, inspect the Gateway list or edit the named options for OpenRouter or a private API. For example, an office could name an option “Fast” and set its model ID to `vendor/model-a`. The name is what the person reads. The ID is what the endpoint receives.
-3. In **Setup → Harnesses** or **New Agent**, selecting a service scopes the list to that connection. Switching services clears the previous model selection in New Agent. An OpenRouter connection with six saved options offers those six. With zero it offers none, and the user must choose another route or configure a model before launching through it.
+3. If Hermes is assigned to OpenRouter, New Agent should offer the models configured on that OpenRouter connection. Six named options give six choices. Zero gives an empty list until someone adds a model or changes the harness source in Setup. The November 26 implementation still exposes compatible services in New Agent and the Hermes Setup buttons only change the displayed list. Persisting and enforcing the single source is tracked in w1029.
 4. At launch the harness adapter resolves the selected option to its connection, credential, protocol and API model ID. Compatibility depends on the adapter. Hermes supports Chat and Responses, Codex supports Responses, and OpenCode supports Chat. A new harness needs an adapter for the protocol it will use.
 
 **Campaign defaults** select the starting choices that Workspaces, Teams and Agents inherit. The model names themselves belong to the service. Personal accounts and office rentals belong in the Business Lounge.
@@ -32,6 +32,6 @@ The Gateway reachability check opens a TCP connection. A listening endpoint can 
 
 ## Checking a change end to end
 
-Read `GET /api/model-services` to see each connection's `service_type`, discovered IDs and launchable named options (`models`). Follow the connection ID into the harness catalog, switch between two services in New Agent, and check the empty-list case. At the request boundary, verify the endpoint, protocol and exact model ID with a fixture credential. A cached Gateway list alone cannot verify the live Gateway or HQ catalog.
+Read `GET /api/model-services` to see each connection's `service_type`, discovered IDs and launchable named options (`models`). Follow the connection ID into the harness catalog, change the harness source in Setup and reopen New Agent, and check the empty-list case. At the request boundary, verify the endpoint, protocol and exact model ID with a fixture credential. A cached Gateway list alone cannot verify the live Gateway or HQ catalog.
 
 The implementation walkthrough and regression coverage start in [the model service record](../../src/model-services.ts), [the harness catalog](../../src/model-providers.ts), [the launch adapters](../../src/model-service-launch.ts) and [the model services tests](../../tests/model-services.test.ts). The native CLI extension contract lives in [Model providers](model-providers.md).
