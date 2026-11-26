@@ -1,10 +1,9 @@
 /* part of the ronin-cowork client — see js/README.md */
 /**
- * SETTINGS V2 (owner, 2026-11-25; KAN-862, KAN-867): a second Settings built beside the first, so the two can be
- * compared and what is missing seen. The sections are the agreed outline, samurai_lab wip/MACHINE_SETTINGS_V2.md;
- * no hints. Model services with its Ronin Gateway, API key and OpenRouter tabs (KAN-870, model-services-surface.js) and
- * Office defaults holding the starting models (KAN-871) are v2's own; the other cards reuse today's surfaces.
- * When v2 is right the old Settings and its surfaces go.
+ * SETTINGS (owner, 2026-11-25/26; KAN-857): the one Settings; built as "Settings v2" beside the old one,
+ * which is gone. Its route and code keep the name settings2. Four sections, a heading over the first card of
+ * each (docs/architecture/settings.md): Harnesses and models (the harness stones, Model services), Office
+ * defaults, Workspaces and integrations, Advanced. No hints.
  */
 import { WorkspaceKit } from './workspace-kit.js';
 import { t } from './lexicon.js';
@@ -56,7 +55,7 @@ export function createSettingsV2View() {
   const harness = harnessKit();
   let stopReader = () => {};
   return doorWorkbench({
-    id: 'settings2', profile: WORKBENCH_PROFILES.settings2, label: t('settings2.title', 'Settings v2'),
+    id: 'settings2', profile: WORKBENCH_PROFILES.settings2, label: t('settings2.title', 'Settings'),
     seats: { workspace1: WORKBENCH_TYPES.modelStones, workspace2: WORKBENCH_TYPES.settings2ModelServices },
     loaded: () => Promise.all([loadCampaigns(), loadHarnessCatalog()]),
     hints: false,

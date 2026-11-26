@@ -45,9 +45,8 @@ function SIDE() {
   return [
     { key: 'setup', route: 'setup', glyph: '人', name: t('campaign_home.setup', 'Setup'), is: t('campaign_home.setup_is', 'Harness, Workspace, Team'), gated: false },
     { key: 'help', route: 'help', glyph: 'ミ', name: t('campaign_home.help', 'Help'), is: t('campaign_home.help_is', 'The guides, and Mika to ask'), gated: false },
-    { key: 'settings', route: 'campaign', glyph: '⚙', name: t('campaign_home.settings', 'Settings'), is: t('campaign_home.settings_is_hosted', 'This Desk’s settings'), gated: false },
-    // Beside Settings until it replaces it (owner, 25 Nov; KAN-862).
-    { key: 'settings2', route: 'settings2', glyph: '⚙', name: t('campaign_home.settings2', 'Settings v2'), is: t('campaign_home.settings2_is', 'The new Settings, to compare'), gated: false },
+    // One Settings (owner, 26 Nov): what was Settings v2; the old one is gone.
+    { key: 'settings', route: 'settings2', glyph: '⚙', name: t('campaign_home.settings', 'Settings'), is: t('campaign_home.settings_is', 'This office’s settings'), gated: false },
     ...(HOSTED ? [{ key: 'lounge', href: BUSINESS_LOUNGE, glyph: '◎', name: t('campaign_home.business_lounge', 'Business Lounge'), is: t('campaign_home.business_lounge_is', 'Your account, office and subscription, at Ronin HQ'), gated: false }] : []),
   ];
 }

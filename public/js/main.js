@@ -18,7 +18,6 @@ import { createAgentView } from './agent-view.js';
 import { createCampaignHome } from './campaign-home.js';
 import { createEpicsView, createHelpView, createModelsView, createWorkspacesView } from './door-workbenches.js';
 import { createWorkspaceRoute } from './workspaces-surface.js';
-import { createCampaignView } from './campaign-view.js';
 import { createSettingsV2View } from './settings-v2-view.js';
 import { createSetupView } from './setup-view.js';
 import { createLaunchView } from './launch-view.js';
@@ -123,9 +122,8 @@ async function init() {
   guard('register the Help destination', () => workspace.register('help', createHelpView()));
   // the same workbench, selector column, persistence, recall and drag/drop as the Cowork
   // space, offering a Campaign's own configuration instead of its Coworks and Agents.
-  guard('register the Campaign destination', () => workspace.register('campaign', createCampaignView()));
-  // Settings v2 beside it, to compare, until it replaces it (KAN-862).
-  guard('register the Settings v2 destination', () => workspace.register('settings2', createSettingsV2View()));
+  // Settings: the one (owner, 26 Nov); the route keeps its code name settings2.
+  guard('register the Settings destination', () => workspace.register('settings2', createSettingsV2View()));
   // Setup opens at #/setup on every office; only hosted Home has its stone (KAN-856, w997).
   guard('register the Setup destination', () => workspace.register('setup', createSetupView()));
   guard('register the Launch destination', () => workspace.register('launch', createLaunchView()));

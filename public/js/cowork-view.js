@@ -59,8 +59,8 @@ export function createCoworkView(options = {}) {
     count: 2, selected: 'workspace1',
     seats: { workspace1: { type: WB_TYPES.commons, tab: 'team-configuration' }, workspace2: DISMISSED_WORKSPACE },
   } });
-  const deskDefaultsRequest = () => ({ destination: 'campaign', mode: 'replace', state: {
-    count: 2, selected: 'workspace1', seats: { workspace1: 'campaign.defaults', workspace2: 'setup.launch-own' },
+  const deskDefaultsRequest = () => ({ destination: 'settings2', mode: 'replace', state: {
+    count: 1, selected: 'workspace1', seats: { workspace1: 'settings2.agent-defaults' },
   } });
   const root = el('main', 'tw-view');
   let ctx = null;

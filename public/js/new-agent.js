@@ -203,7 +203,7 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
       teamDefaultsSpec?.(chosenTeam()) || { destination: 'team', param: chosenTeam(), mode: 'overlay' },
       openTeamDefaults ? () => openTeamDefaults(chosenTeam()) : null), ' · ');
     links.append(defaultsLink(t('new_agent.desk_defaults', 'Desk defaults'),
-      deskDefaultsSpec?.() || { destination: 'campaign', mode: 'overlay' }, openDeskDefaults));
+      deskDefaultsSpec?.() || { destination: 'settings2', mode: 'overlay', state: { count: 1, selected: 'workspace1', seats: { workspace1: 'settings2.agent-defaults' } } }, openDeskDefaults));
     if (!configure && hasAgent()) {
       const entry = harnessCatalog().harnesses.find(row => row.provider === (draft.provider || seed?.seeds?.provider?.value));
       links.append(' · ', modelSettingsLink(entry?.cli));

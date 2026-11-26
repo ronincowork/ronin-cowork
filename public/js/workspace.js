@@ -205,9 +205,9 @@ export function openWorkbenchTab(spec = {}, reserved = null) {
 /** Use the normal view transition to open the Workspaces, where a folder is added to one. */
 export function navigateToWorkspaceFolders(context) {
   if (!context?.navigate) return false;
-  return context.navigate('campaign', { workbenchRequest: { mode: 'replace', state: {
-    count: 2, selected: 'workspace2',
-    seats: { workspace1: 'campaign.defaults', workspace2: 'campaign.workspaces' },
+  return context.navigate('settings2', { workbenchRequest: { mode: 'replace', state: {
+    count: 1, selected: 'workspace1',
+    seats: { workspace1: 'campaign.workspaces' },
   } } });
 }
 
