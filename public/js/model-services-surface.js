@@ -18,6 +18,7 @@ import { request } from './request.js';
 import { el } from './form-steps.js';
 import { t } from './lexicon.js';
 import { store } from './store.js';
+import { openWorkbenchTab } from './workspace.js';
 
 export const OPENROUTER_URL = 'https://openrouter.ai/api/v1';
 export const MODEL_SERVICE_PAGES = Object.freeze({ openrouter: 'settings2.openrouter', private: 'settings2.private-api' });
@@ -164,6 +165,41 @@ function namedModels(service, say) {
     service.configured ? button(t('model_services.discover', 'List the service’s models'), () => act('discover', { id: service.id }, say)) : null,
   ), editor);
   return block;
+}
+
+/**
+ * A harness's page in Settings (Hermes today, provider-surface.js): each service's model options, read only.
+ * Model services is the one editor; an OpenRouter or API key list links to its page. Returns the disposer.
+ */
+export function mountModelOptions(host) {
+  const root = el('section', 'model-services-options');
+  const notice = el('p', 'setup-fine'); notice.hidden = true;
+  const say = (text) => { notice.textContent = text || ''; notice.hidden = !text; };
+  host.append(root);
+  let disposed = false;
+  const paint = () => {
+    if (disposed) return;
+    const blocks = services.map((service) => {
+      const kind = serviceKind(service);
+      const block = el('div', 'hermes-card model-services-entry');
+      const summary = el('div', 'hermes-card-summary');
+      summary.append(el('strong', null, kind === 'gateway' ? t('model_services.gateway', 'Ronin Gateway') : service.name));
+      const names = (service.models || []).map((m) => m.name);
+      summary.append(el('span', null, names.length ? names.join(' · ') : t('model_services.no_options', 'No model options yet.')));
+      block.append(summary);
+      if (kind !== 'gateway') block.append(bar(button(t('model_services.edit_options', 'Edit in Model services'), () => openWorkbenchTab(modelServicePageRequest(kind, kind === 'private' ? service.id : '')))));
+      return block;
+    });
+    root.replaceChildren(el('h3', null, t('model_services.model_options', 'Model options')),
+      el('p', 'setup-fine', t('model_services.harness_lede', 'What shows under Model when you start an Agent on this harness, by service. Keys and model options are edited in Settings → Model services.')),
+      notice, ...blocks);
+    if (!services.length) root.append(bar(button(t('model_services.open', 'Open Model services'), () => openWorkbenchTab(modelServicePageRequest('openrouter')))));
+  };
+  const watch = () => paint();
+  listeners.add(watch); hearChanges();
+  if (read) paint();
+  void load(say);
+  return () => { disposed = true; listeners.delete(watch); };
 }
 
 /* ---- Model services: the three services and what each holds ---- */

@@ -53,8 +53,6 @@ export const mikaShowHandlers = new Set();
 export const setupProgressHandlers = new Set();
 /** Who hears a harness sign-in move (`harness-sign-in`, src/provider-sign-in.ts): the Harness surface. */
 export const signInHandlers = new Set();
-/** Who hears a Hermes change (`hermes-changed`, src/hermes-setups.ts): every open Hermes bar. */
-export const hermesHandlers = new Set();
 
 // A reconnect is a new connection with no memory, so it is told again at once. The tab
 // then asks for what it missed while the socket was down.
@@ -63,7 +61,6 @@ store.listen('transcript', (m) => { for (const fn of transcriptHandlers) fn(m); 
 store.listen('team-page', (m) => { for (const fn of teamPageHandlers) fn(m); });
 store.listen('mika-show', (m) => { for (const fn of mikaShowHandlers) fn(m); });
 store.listen('harness-sign-in', (m) => { for (const fn of signInHandlers) fn(m); });
-store.listen('hermes-changed', (m) => { for (const fn of hermesHandlers) fn(m); });
 store.listen('setup-progress', (m) => { if (Array.isArray(m.steps)) for (const fn of setupProgressHandlers) fn(m); });
 store.reduce('sessions', onSessionsEvent);
 

@@ -1,4 +1,4 @@
-import { mountHermesSurface } from './hermes-surface.js';
+import { mountModelOptions } from './model-services-surface.js';
 /* part of the ronin-cowork client — see js/README.md */
 /**
  * ONE MODEL PROVIDERS SURFACE, TWO SEATS. Ronin Setup's Model providers card and Ronin
@@ -511,7 +511,8 @@ export function createProviderDrawing(context, { repaint, say = () => {} }) {
     const provider = providerFromRuntime(runtime, id);
     const rows = providerCatalog().rows.filter((row) => (provider ? row.cli === provider.id : row.provider === id));
     if (!provider && !rows.length) { host.append(el('p', 'setup-notice bad', t('setup_surface.provider_missing', 'This provider is no longer in the model-provider catalog.'))); return null; }
-    if (id === 'hermes') return mountHermesSurface(host, provider, paint);
+    // Hermes's keys and model options are Model services' (KAN-870); its page shows them, read only.
+    if (id === 'hermes') return mountModelOptions(host);
     const part = (providerCatalog().providers || []).find((entry) => entry.provider === id && entry.part);
     if (part) {
       // Nothing to install or sign in: the office's house connection, on the Ronin balance.

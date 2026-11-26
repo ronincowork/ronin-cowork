@@ -1,8 +1,7 @@
 /* part of the ronin-cowork client — see js/README.md */
 /**
  * THE ACCOUNT EDITORS (KAN-236, the Agent Harness workbench): the forms and tick lists every page that shows
- * an account uses — the Accounts tilespace, the Models tilespace and, later, each harness page. Modelled on the
- * Hermes editors (hermes-surface.js), which keep drawing the Hermes page unchanged. One record behind them all:
+ * an account uses — the Accounts tilespace and the Models tilespace. One record behind them all:
  * `/api/accounts` reads the Hermes connections as accounts; every write goes back through it.
  *   `accountForm(account, { kind, onSaved })` — add or edit a Personal API (vendor or OpenAI-compatible endpoint,
  *   key) or a Ronin API (the gateway endpoint, prefilled, and the house token).
