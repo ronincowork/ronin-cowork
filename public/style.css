@@ -5199,8 +5199,8 @@ html[data-screen='inside'] #phone .ph-bar .ph-title[data-boot='inside'] { displa
 /* Hermes's Ronin Gateway on the Settings page: always there, ticked, nothing to press. */
 .hermes-fixed { pointer-events: none; }
 /* The model service open on the Hermes bar: filled, so it reads at a glance in both themes (owner, 26 Nov 2026). */
-.setup-hermes-sources .ask-opt[aria-selected='true'] { background: var(--kaki); border-color: var(--kaki); color: #fff; }
-.setup-hermes-sources .ask-opt[aria-selected='true'] .hermes-tick { color: #fff; }
+.setup-hermes-sources .ask-opt[aria-selected='true'] { background: var(--kaki-fill); border-color: var(--kaki-fill); color: var(--kaki-fill-ink); }
+.setup-hermes-sources .ask-opt[aria-selected='true'] .hermes-tick { color: var(--kaki-fill-ink); }
 /* Available, not selected: a tick in the stone, never the kaki selected mark (owner, 25 Nov 2026). */
 .ask-opt .hermes-tick { color: var(--ok); font-weight: var(--weight-strong); margin-right: 6px; }
 .ask-opt:has(> .hermes-tick) { flex-direction: row; align-items: center; justify-content: flex-start; }

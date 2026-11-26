@@ -11,6 +11,7 @@ import { request } from './request.js';
 import { store } from './store.js';
 import { openWorkbenchTab } from './workspace.js';
 import { modelServicePageRequest, serviceKind } from './model-services-surface.js';
+import { createTable } from './data-table.js';
 
 const el = (tag, cls = '', text = null) => { const node = document.createElement(tag); if (cls) node.className = cls; if (text != null) node.textContent = String(text); return node; };
 const stone = (name, pressed, fn) => {
@@ -53,29 +54,19 @@ export function mountHermesServices(host) {
     }
     const service = shown === 'private' ? mine.find((s) => s.id === key) || mine[0] : mine[0];
 
-    const table = el('table', 'hermes-table');
     // One Model column when every option is named as its model (the Ronin Gateway's always are).
-    const named = (service?.models || []).some((m) => m.name !== m.model);
-    const head = el('tr'); head.append(...(named ? [el('th', '', 'Name')] : []), el('th', '', 'Model'));
-    const thead = el('thead'); thead.append(head);
-    const body = el('tbody');
-    for (const m of service?.models || []) {
-      const tr = el('tr'); const model = [m.model, ...knobs(m)].join(' · ');
-      tr.append(...(named ? [el('th', '', m.name), el('td', '', model)] : [el('th', '', model)])); body.append(tr);
-    }
-    const count = service?.models?.length || 0;
-    if (shown !== 'gateway' || !count) {
-      const tr = el('tr', 'hermes-add'); const cell = el('td'); cell.colSpan = named ? 2 : 1;
-      if (shown === 'gateway') cell.append(el('span', 'hermes-add-note', 'No Ronin Gateway models yet.'));
-      else {
-        const go = el('button', 'hermes-add-line', service?.configured ? (count ? '+ Add or change in Settings' : '+ Add a model in Settings') : '+ Add your key in Settings');
-        go.type = 'button';
-        go.addEventListener('click', () => openWorkbenchTab(modelServicePageRequest(shown, shown === 'private' ? service?.id : undefined)));
-        cell.append(go);
-      }
-      tr.append(cell); body.append(tr);
-    }
-    table.append(thead, body);
+    const models = service?.models || [];
+    const named = models.some((m) => m.name !== m.model);
+    const label = (m) => [m.model, ...knobs(m)].join(' · ');
+    const open = () => openWorkbenchTab(modelServicePageRequest(shown, shown === 'private' ? service?.id : undefined));
+    const lines = shown === 'gateway'
+      ? (models.length ? [] : [['No Ronin Gateway models yet.', null]])
+      : [[service?.configured ? (models.length ? '+ Add or change in Settings' : '+ Add a model in Settings') : '+ Add your key in Settings', open]];
+    const table = createTable({
+      headings: named ? ['Name', 'Model'] : ['Model'],
+      rows: models.map((m) => ({ cells: named ? [m.name, label(m)] : [label(m)] })),
+      lines,
+    });
     const options = el('div', 'hermes-options'); options.append(el('h3', '', 'Model options'), table);
     root.replaceChildren(...parts, options);
   };
