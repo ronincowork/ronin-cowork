@@ -90,7 +90,7 @@ export function createSettingsV2View() {
       return {
         ...env,
         selected,
-        settings2ModelServices: ({ workspace }) => createModelServicesSurface({ open: (page) => bench().place(MODEL_SERVICE_PAGES[page], BESIDE[workspace] || 'workspace2') }),
+        settings2ModelServices: ({ workspace }) => createModelServicesSurface({ open: (page, key = '') => bench().place(MODEL_SERVICE_PAGES[page], BESIDE[workspace] || 'workspace2', key ? { key } : {}) }),
         settings2OpenRouter: () => createOpenRouterSurface(),
         settings2PrivateApi: ({ detail }) => createPrivateApiSurface({ serviceId: detail?.key || '' }),
         settings2AgentDefaults: () => officeDefaults(selected),
