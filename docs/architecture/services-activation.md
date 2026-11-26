@@ -1,8 +1,7 @@
 # Services activation construction
 
 For contributors. [Ronin Services](../getting-started/services-activation.md) owns the
-usage route. Cowork owns activation because a base installation must be able to obtain
-Services before any optional part is loaded.
+usage route. Cowork owns the office record, registration and the HQ transport.
 
 ## Boundaries and ownership
 
@@ -12,8 +11,7 @@ Services before any optional part is loaded.
 | `src/activation/egress.ts` | Request metadata and outcomes, without tokens, addresses, or bodies |
 | `src/activation/state.ts` | Durable activation stage and public entitlement identity |
 | `src/activation/secrets.ts` | Protected entitlement credential, when a machine holds one |
-| `src/routes/services-activation-api.ts` | Registration, install start and install watch |
-| `public/js/services-setup-state.js` | Derive the Setup actions from measured registration, installation, and activation facts |
+| `src/routes/services-activation-api.ts` | Registration and feedback |
 | `src/update-run.ts` | Shared updater launcher, through `systemd-run` or the spawn broker |
 
 The remote wire contract belongs to Ronin HQ (Shiwake). Services part discovery and
@@ -44,8 +42,7 @@ What asks it: the Services account part (no record, no HQ call; `GET /api/accoun
 HQ's row, and is rewritten when the park writes it: samurai_lab `ronin_cloud/SHIWAKE_DESIGN.md` §8), the Tomodachi sender in the account part (`account/tomodachi-send.ts`: sends from
 an office_unit only, to HQ's `POST /v1/account/tool-counts`, setting aside packets from before
 `provisioned_at`), the Hermes house-gateway seed (the record's `gateway_office`, else the
-developer's local door), the Setup posture (an office_unit hides Register and Install; a missing
-install there is said as a fault) and the
+developer's local door), the Setup posture (an office_unit hides Register) and the
 machine reading (`observed.office`), which is how Agents see it. Self-hosted Settings shows the
 Cloud Account card's two sections, Office and Account, which must agree on the `office_id`; a
 disagreement is said.
@@ -56,7 +53,7 @@ the record once at start and the page says so in `<html data-hosted="on">` (`pub
 Business Lounge at Ronin HQ, so Cowork carries a link and no account code: Home's side stones gain
 **Business Lounge** (opens `https://hq.roninhosted.com/` in a new tab, for everyone in the office;
 each person lands in their own lounge). What is hidden when hosted: Home's Check for updates;
-in Settings, the Cloud Account, Registration, Password and Installations cards and the Setup
+in Settings, the Cloud Account, Registration and Password cards and the Setup
 return card; in the Machine card, Configuration, Release & update and Log out. Settings stays for
 the Desk's own settings (Desk, Team and Agent defaults, Workspaces, Integrations, Jira, Feedback,
 and the Machine card's themes, archives, messages, help desk, keypad, health and hotwords).
@@ -64,39 +61,18 @@ Without the record nothing changes.
 
 ## Registration and runtime state
 
-`/api/setup/registration` owns the registration surface. There is no email confirmation:
-submitting the form completes registration and starts the Services install. Registration
-needs no entitlement, and none is minted. `/api/services/activation` exposes the install
-state and connection record. The browser never receives a credential. Public entitlement IDs
-identify an entitlement; they cannot authorize a request.
+**Services ships with Cowork** (owner, 2026-11-26, KAN-914; [installations.md](installations.md)):
+hosted offices have both now, and self-hosted becomes the same bundle later. There is no Services
+install flow: no Services key from Ronin HQ, no download, no install stage, no Services card or
+header badge, and no on/off.
 
-`GET /api/installed` separates parts on disk, loaded/parked/failed parts, selected Services
-capabilities, and restart-needed state. `servicesSetupModel` renders Register, Install,
-Switch on/off, and the conditional Restart action from those facts. A successful registration
-is not proof of installation, and a saved switch is not proof of a loaded part.
+`/api/setup/registration` owns the registration surface (self-hosted only): submitting the form
+completes it, and an anonymous one sends its answers as a feedback packet. Nothing is minted.
 
-The durable stages are not requested, installing, installed, and error. A stored record
-from the retired email loop reads as not requested, so Install is offered again; its
-entitlement identifier and token file are left as they are.
-
-## Installation and recovery
-
-The existing updater checks release integrity and the Cowork/Services connector version.
-A registration Submit and `POST /api/services/install` both start that updater; neither
-needs an entitlement. A machine that holds an entitlement fetches through the HQ release
-grant. Without one the updater stops and says so: register with Ronin HQ and paste the Services
-key. There is no anonymous feed (the release repo is private); a tarball already on disk installs
-with `bin/ronin-update --services --file`. A contract change moves both packages in one gated swap:
-`--file <cowork> --services-file <services>` ([release.md](../development/release.md#installing-and-updating-the-consuming-half)).
-
-Starting is not installing. One start runs at a time, so concurrent presses launch one
-updater. The answer says only whether the updater was launched. The run
-writes its output and exit code beside the activation record, and the install watch turns a
-failed run into an error carrying the updater's reason. Installation completion needs
-runtime evidence (the loaded roster), not a downloaded artifact or a token. An install
-failure keeps any entitlement for retry. Restarting the operator does not restart
-the separate tmux server. Credentials live in the resolved `services_secrets` user store
-(a hosted office's entitlement beside its office record, in `office_unit`) and remain server-side.
+`GET /api/installed` says what is on this machine: the Cowork release, and the Services parts on
+disk, loaded, and parked (by their own `PARKED.md`) or failed. Every part present runs.
+Credentials live in the resolved `services_secrets` user store (a hosted office's entitlement
+beside its office record, in `office_unit`) and remain server-side.
 
 ## Outbound measurements
 

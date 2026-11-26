@@ -79,7 +79,7 @@ export interface SetupRuntimeAnswer {
   measured_at: string;
   /** When Refresh all last read every activated CLI's model list; '' when never. */
   refreshed_at: string;
-  services: { installed: boolean; switched_on: boolean; active: boolean };
+  services: { installed: boolean; active: boolean };
 }
 
 export interface ProviderSessionOps {
@@ -194,8 +194,7 @@ export async function setupRuntimeAnswer(
     refreshed_at: summary.refreshed_at,
     services: {
       installed: installed?.services.installed ?? false,
-      switched_on: installed?.services.switched_on ?? false,
-      active: Boolean(installed?.services.installed && installed.services.switched_on && installed.services.loaded.length),
+      active: Boolean(installed?.services.loaded.length),
     },
   };
 }

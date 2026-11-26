@@ -15,7 +15,6 @@ import {
   seedUserCatalog,
   isShadowable,
 } from '../resources.js';
-import { listInstallations } from '../resource-adapters.js';
 
 const errMsg = (e: unknown) => String((e as Error)?.message ?? e).replaceAll(homedir(), '~');
 
@@ -61,11 +60,6 @@ export function registerCatalogs(app: express.Express): void {
       broadcastEvent({ t: 'model-services-changed' });
       res.json({ ok: true });
     } catch (e) { res.status(500).json({ error: errMsg(e) }); }
-  });
-
-  app.get('/api/installations', async (_req, res) => {
-    try { res.json(await listInstallations()); }
-    catch (e) { res.status(500).json({ error: errMsg(e) }); }
   });
 
   app.get('/api/desk-profiles', async (_req, res) => {

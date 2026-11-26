@@ -434,7 +434,6 @@ export function createWorkspace(host, options = {}) {
     const shapeControl = document.getElementById('shapecycle');
     if (shapeControl) shapeControl.hidden = next.header?.shape !== true;
     options.ramRpm?.setVisible(next.header?.ram === true);
-    options.servicesStatus?.setVisible(next.header?.services === true);
     active = { id, view: next, param, tabId };
     state.view = id;
     if (id === 'team') state.team = param;

@@ -16,7 +16,7 @@ Each thing an owner does in Ronin, and its guide:
 | Start a Team | [New Team](../../docs/using-ronin/new-team.md) |
 | Archive or restore a session | [Archived sessions](../../docs/using-ronin/archived-sessions.md) |
 | Customize words, appearance, or guidance | [Customize](../../docs/getting-started/customize.md) |
-| Add optional Services | [Services](../../docs/getting-started/services-activation.md) |
+| What Ronin Services gives and sends | [Services](../../docs/getting-started/services-activation.md) |
 | Send product feedback | [Feedback](../../docs/using-ronin/feedback.md) |
 
 The rest is in the [documentation index](../../docs/README.md); what is available is what this

@@ -9,14 +9,13 @@ import { bypassArgs, commandText, readAgentLaunches, withBypass } from './agent-
 import { readAgentsSection, readSetupSection } from './machine-state.js';
 import { measureAndRecordHarnesses, offAt, readHarnessSummary } from './harness-summary.js';
 import { storeDir } from './resources.js';
-import { listInstallations } from './resource-adapters.js';
+import { listServices } from './sockets.js';
 import { isCreatableTeamName as isTeamName, readTeamRoster, teamRosterFile, type TeamRoster } from './team-rosters.js';
 import { resolveLaunchProfile, type LaunchProfile, type StatedBy } from './launch-profile.js';
 import { readCampaign } from './campaigns.js';
 import { readWorkspace, roninHouse, type Workspace } from './workspaces.js';
 import { desksManaged, rowArrangement } from './desks/arrangement.js';
 import { mandate, type LaunchMode, type Mandate } from './agent-defaults.js';
-import { resolveInstallations, type ResolvedInstallation } from './installations.js';
 import { initialCampaignId } from './campaign-scope.js';
 import { resolveLaunchSeed } from './launch-seed.js';
 import { parentSettings } from './waterfall.js';
@@ -84,7 +83,8 @@ export interface Resolved {
   /** The brief, composed: record, layers, what is in play, the packet text. */
   composed: BuiltBrief | null;
   ignored: string[];
-  installations: ResolvedInstallation[];
+  /** The Ronin Services parts running at birth. */
+  services: string[];
   stated_by: Record<string, StatedBy[]>;
 }
 
@@ -156,10 +156,9 @@ export async function resolveFacts(form: SpawnForm, taken: Set<string>, proposed
   const coworkAgent = sessionType === 'cowork_agent';
   const bareMetalAgent = sessionType === 'bare_metal_agent';
   const campaignId = coworkAgent ? (form.campaign_id || await initialCampaignId()) : '';
-  const [agentsSet, campaign, installationCatalog] = await Promise.all([
+  const [agentsSet, campaign] = await Promise.all([
     readAgentsSection(),
     coworkAgent ? readCampaign(campaignId) : null,
-    listInstallations(),
   ]);
   const launchSpecs = await listSessionLaunchSpecs(campaign?.providers ?? await readHarnessSummary());
   if (form.team && !isTeamName(form.team)) {
@@ -193,7 +192,8 @@ export async function resolveFacts(form: SpawnForm, taken: Set<string>, proposed
   }
 
   const agent = sessionType === 'terminal' ? false : bareMetalAgent ? true : profile.agent;
-  const installations = resolveInstallations(installationCatalog, campaign?.config.installations);
+  // The Ronin Services parts this server runs: where Services is present, every part (KAN-914).
+  const services = listServices();
   const name = wanted || slugName(form.team || (agent ? 'agent' : 'terminal'), form.prompt ?? '', taken);
   // Repositories are the Workspace's; an Agent opens a worktree when its work needs one.
   const repositories = (workspace?.repos ?? []).map((repo) => ({ ...repo, managed: desksManaged(rowArrangement({ ...repo, repo: true, workspace: workspace!.name, campaign_id: workspace!.campaign_id })) }));
@@ -201,7 +201,7 @@ export async function resolveFacts(form: SpawnForm, taken: Set<string>, proposed
   const arrangement: 'managed' | 'checkout' | 'none' = repositories.some((repo) => repo.managed) ? 'managed' : repositories.length ? 'checkout' : 'none';
   return {
     sessionType, coworkAgent, bareMetalAgent, campaignId, agentsSet, campaign, launchSpecs, roster, profile,
-    parent, parentSeed, workspace, place, repositories, folders, agent, installations, name, arrangement,
+    parent, parentSeed, workspace, place, repositories, folders, agent, services, name, arrangement,
   };
 }
 export type LaunchFacts = Awaited<ReturnType<typeof resolveFacts>>;
@@ -276,7 +276,7 @@ export async function resolveForm(
   proposedRoster?: TeamRoster,
 ): Promise<Resolved> {
   const facts = await resolveFacts(form, taken, proposedRoster);
-  const { sessionType, coworkAgent, campaign, roster, profile, parentSeed, workspace, place, repositories, folders, agent, installations, name } = facts;
+  const { sessionType, coworkAgent, campaign, roster, profile, parentSeed, workspace, place, repositories, folders, agent, services, name } = facts;
   const { cmd, spec, chosen, launchMode } = await resolveLaunch(form, facts);
   const composed = await resolveBriefFor(form, facts, {
     provider: spec?.provider ?? '', model: spec?.model ?? '', harness: spec?.cli ?? '', launch_mode: launchMode,
@@ -338,7 +338,7 @@ export async function resolveForm(
     team_state: roster?.state ?? '',
     composed,
     ignored,
-    installations,
+    services,
     stated_by: {
       name: form.name ? explicit : system,
       dir: profile.dir ? profile.stated_by.dir : workspaceSource,

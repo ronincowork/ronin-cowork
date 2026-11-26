@@ -204,22 +204,11 @@ GitHub is never a step of its own: a public repository clones without it. For a 
 signs the GitHub CLI in with GitHub's device flow and `gh auth setup-git`, so a headless machine
 shows a code the owner approves in a browser elsewhere.
 
-## Ronin Services (a Settings card)
+## Ronin Services
 
-Services adds optional capabilities. The page reports what is installed and enabled on
-this machine. Terminal transcript needs both the package and its switch, and source presence alone does not make a feature available. See [Ronin Services](../getting-started/services-activation.md)
-for installation, registration, availability, and data sharing.
-
-The surface shows one measured status line and three controls in one shape:
-**Register**, **Install**, and a **Turn on / Turn off** switch. Register and Install read
-**Done** once they are. Installing needs a registered identity; switching on cascades to
-new Teams and Agents, and a Team can still differ in its own configuration. When a restart
-is the one thing left to do, a fourth control, **Restart**, appears until Ronin is back.
-Nothing on the page polls: a confirmed email, each install step and a switch's new facts
-arrive as Ronin learns them, and after a restart the page reads again when its connection
-to Ronin returns.
-Installed parts are usable whether or not anyone registered. The activation flow itself is in
-`docs/getting-started/services-activation.md`.
+There is no Services card or step (owner, 2026-11-26, KAN-914): Services ships with Cowork and
+every part runs. See [Ronin Services](../getting-started/services-activation.md) and
+[installations.md](installations.md).
 
 ## Launch your own (a Settings card)
 

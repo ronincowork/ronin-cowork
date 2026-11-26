@@ -368,8 +368,8 @@ never blocks ([integrations.md](integrations.md#on-and-off-a-cascading-default))
 On for an Agent makes `integration:<name>` hold, so its bridge behaviour and that behaviour's
 tools come into play.
 
-**Jira is set on a level, never on an Agent** (the Campaign's Jira part, its switch
-`services.parts.jira`, then the copy each Workspace and Team holds). An Agent's own Jira entry
+**Jira is set on a level, never on an Agent** (on at the Campaign while Jira is connected in
+Settings › Integrations, then the copy each Workspace and Team holds). An Agent's own Jira entry
 is ignored, and the New Agent form doesn't show Jira. An Agent reaches work
 items through `item` and never past the bridge, so it is not told of Jira, and Jira is not among
 the integrations on its record.
@@ -511,7 +511,7 @@ behaviours/  base-agent (full) · cowork-agent, flags, write-it-down, workspaces
              web-apis (api, seed: one line per web API on)
              mika, install-check (mika) · irasshai, irasshai-voice, irasshai-harness,
              irasshai-workspace, irasshai-team (irasshai) ·
-             services-off (!service:ronin_services) · syncthing (!irasshai, seed) ·
+             syncthing (!irasshai, seed) ·
              linux-tools (every Agent, seed) · using-ronin
              optional (depth none): team-work, more-checkpoints, working-with-the-user,
              codebase-team, new-workspace, documents

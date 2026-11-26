@@ -114,9 +114,9 @@ export async function ledTeams(): Promise<string[]> {
   return rosters.filter((team) => team.state !== 'archived' && (!campaign || team.campaign_id === campaign)
     && sessions.some((one) => one.agent && one.leads.includes(team.name))).map((team) => team.name);
 }
-/** Anything installed: a Services part on this machine, or an installation switched on. */
+/** Anything installed: a Services part on this machine. */
 export const anythingInstalled = (installed: Awaited<ReturnType<typeof installedAnswer>> | null): boolean =>
-  !!installed && (installed.services.installed || installed.installations.some((one) => one.on));
+  !!installed && installed.services.installed;
 /** How the browser reaches Ronin: a password set, or the owner's "Tailscale only, no password"
  * setting (machine settings' machine.no_password); and the tailnet address, '' off Tailscale. */
 export async function browserAccess(): Promise<{ password: boolean; no_password: boolean; tailscale: string }> {
@@ -144,10 +144,8 @@ async function machine(): Promise<Built> {
   const services = installed?.services;
   const parts = !services?.loaded.length ? ['Ronin Services: not running'] : [
     `Ronin Services running: ${services.loaded.join(', ')}`,
-    ...services.parked.map((one) => `Parked: ${one.name}${'reason' in one && one.reason ? ` (${one.reason})` : ''}`),
-    ...(services.restart_needed ? ['A restart is needed for the parts switched on or off to take effect'] : []),
+    ...services.parked.map((one) => `Parked: ${one.name}${one.reason ? ` (${one.reason})` : ''}`),
   ];
-  const on = installed?.installations.filter((one) => one.on).map((one) => one.label) ?? [];
   const browser = access.password ? 'a password is set'
     : access.no_password ? `no password: the owner chose ${access.tailscale ? 'Tailscale only' : 'no password'}` : 'no password set, and none chosen';
   const line = `${host}, ${hosting.hosting === 'office_unit' ? 'hosted' : 'self-hosted'}, Ronin ${ronin.release ?? 'checkout'}${disk ? `, ${gb(disk.bavail)} GB free` : ''}${services?.loaded.length ? ', Ronin Services running' : ''}`;
@@ -156,7 +154,6 @@ async function machine(): Promise<Built> {
     `Ronin ${ronin.release ?? 'checkout'} (${ronin.commit}), running since ${stamp(ronin.startedAt)} UTC`,
     ...(disk ? [`Disk: ${gb(disk.bavail)} GB free of ${gb(disk.blocks)} GB`] : []),
     ...parts,
-    `Installations switched on: ${on.join(', ') || 'none'}`,
     `Browser access: ${browser}`,
     `Tailscale: ${access.tailscale ? `on, ${access.tailscale}` : 'not on this machine'}`,
     `Registered with Ronin: ${registered === 'registered' ? 'yes' : registered === 'anonymous' ? 'yes, anonymously' : 'no'}`,

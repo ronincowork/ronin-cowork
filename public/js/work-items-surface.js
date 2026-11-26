@@ -46,10 +46,10 @@ export function holderWords(holder, lead = null) {
 export const holderOf = (item, leadName = '') => [...new Set(Array.isArray(item?.held_by) && item.held_by.length ? item.held_by : [item?.holder].filter(Boolean))]
   .map((label) => holderWords(label, String(label).startsWith('team:') && leadName ? leadName : null)).filter(Boolean).join(', ');
 
-/** The Work Items surface's availability: the task_manager part installed and running. */
+/** The Work Items surface's availability: the project_management part running. */
 export function workItemsAvailability(installed) {
-  const capabilities = installed?.services?.capabilities;
-  return capabilities?.desired?.task_manager === true && Array.isArray(capabilities.running) && capabilities.running.includes('task_manager');
+  const loaded = installed?.services?.loaded;
+  return Array.isArray(loaded) && loaded.includes('project_management');
 }
 
 /** The stones, grouped by parent: each epic heads its group, then its items, each followed by
