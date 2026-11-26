@@ -98,7 +98,6 @@ export function createSettingsV2View() {
         campaignRoots: () => createWorkspaceStones({ workspacesRead: createWorkspacesRead(), workbench: bench(), withNew: true, configOnly: true }),
         settings2BehaviorFiles: ({ detail }) => createBehaviourSurface(detail),
         campaignIntegrations: ({ workspace }) => enterable(createIntegrationsPanel(selected, { panels: { jira: () => jira(workspace) } })),
-        campaignJira: ({ workspace }) => enterable(jira(workspace)),
         campaignJiraItems: () => enterable(createJiraItemsSurface(selected)),
         campaignJiraPairs: () => enterable(createJiraPairsSurface(selected)),
         campaignMachineStatus: () => createMachineStatusSurface(),
