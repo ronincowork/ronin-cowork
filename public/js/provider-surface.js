@@ -89,15 +89,10 @@ const catalogOnly = (runtime) => {
  * state, then every catalog provider no CLI serves. The Settings surface, the Models workbench
  * and its selector cards all read this. */
 export function providerStones(runtime) {
-  // A part's provider (Ronin models, in a hosted office) runs on a CLI but is never in that CLI's list.
-  const parts = (providerCatalog().providers || []).filter((entry) => entry.part);
-  const parted = new Set(parts.map((entry) => entry.provider));
-  const rows = providerCatalog().rows.filter((row) => !parted.has(row.provider));
+  const rows = providerCatalog().rows;
   const providers = (Array.isArray(runtime.providers) ? runtime.providers : []).filter((provider) => provider?.id);
   const stoneOf = (id, label, secondary, state, activated, marker = null) => ({ id, label, secondary, state, marker, className: 'setup-provider-stone', attrs: { 'data-provider': id, 'data-activated': String(activated) } });
   const items = [
-    ...parts.map((entry) => stoneOf(entry.provider, entry.label, t('setup_surface.part_models_n', '{n} models', { n: entry.models.length }),
-      entry.operational ? t('setup_surface.ready_launch', 'Activated for Launch') : '', entry.operational === true)),
     ...providers.map((provider) => {
       const own = rows.filter((row) => row.cli === provider.id);
       const vendor = own[0]?.provider_label || provider.from || '';
@@ -493,7 +488,7 @@ export function createProviderDrawing(context, { repaint, say = () => {} }) {
       // every launch uses beneath — the owner can tell Opus 5.5 from Opus 5 at a glance.
       const name = el('td'); name.append(el('b', null, modelLabel(row)));
       if (row.default) name.append(el('span', 'setup-provider-default', t('setup_surface.model_default_mark', 'the default')));
-      // A Ronin models tier row (model `light`, tier light) is its name already; so is an id equal to it.
+      // A Ronin Gateway tier option (model `light`, tier light) is its name already; so is an id equal to it.
       if (row.model !== 'native' && row.model !== row.tier && row.model !== modelLabel(row)) name.append(el('span', 'setup-provider-model-id', row.model));
       if (row.model === 'native') name.append(el('span', 'setup-provider-default', t('setup_surface.native_description', 'The CLI chooses its own configured or current default model.')));
       // The tier, and beneath it the model's own line from HQ's catalog: which is which, at a glance.
@@ -513,21 +508,12 @@ export function createProviderDrawing(context, { repaint, say = () => {} }) {
     const rows = providerCatalog().rows.filter((row) => (provider ? row.cli === provider.id : row.provider === id));
     if (!provider && !rows.length) { host.append(el('p', 'setup-notice bad', t('setup_surface.provider_missing', 'This provider is no longer in the model-provider catalog.'))); return null; }
     // Hermes's keys and model options are Model services' (KAN-870); its page shows them, read only.
-    const harness = providerCatalog().providers.find(entry => entry.cli === id && !entry.part);
+    const harness = providerCatalog().providers.find(entry => entry.cli === id);
     const editor = harness && harnessModelEditor(providerCatalog(), harness);
     if (editor) host.append(editor.el);
     if (id === 'hermes') {
       const close = mountModelOptions(host);
       return () => { close(); editor?.destroy(); };
-    }
-    const part = (providerCatalog().providers || []).find((entry) => entry.provider === id && entry.part);
-    if (part) {
-      // Nothing to install or sign in: the office's house connection, on the Ronin balance.
-      const yours = el('section', 'setup-provider-yours');
-      yours.append(el('h2', '', part.label), el('p', 'setup-fine', part.note || ''));
-      host.append(yours);
-      paintCatalog(part.models, null, host, '', { facts: false });
-      return null;
     }
     const yours = el('section', 'setup-provider-yours');
     yours.append(el('h3', 'setup-provider-eyebrow', t('setup_surface.section_yours', 'Yours')));

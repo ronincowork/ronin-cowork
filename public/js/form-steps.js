@@ -140,7 +140,7 @@ export const modelLabel = (row) => {
 };
 /**
  * A row's tier and its line, as every picker shows them beside the name: "frontier · <HQ's
- * use it for line>". The tier word drops when the name already says it (a Ronin models tier
+ * use it for line>". The tier word drops when the name already says it (a Ronin Gateway tier
  * row is named for its tier); the line is the model's own, from HQ's catalog; Unrated has none.
  */
 export const rowTierWord = (row) => {

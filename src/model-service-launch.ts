@@ -2,7 +2,7 @@ import path from 'node:path';
 import { readFile } from 'node:fs/promises';
 import { modelServices } from './model-services.js';
 import { isHouse, keyPath } from './hermes-setups.js';
-import { providerPart } from './provider-parts.js';
+import { gatewayRelay } from './gateway-relay.js';
 import { REPO_ROOT } from './resources.js';
 
 export const SERVICE_MODEL_PREFIX = 'service:';
@@ -31,9 +31,9 @@ export async function serviceLaunch(cli: string, argv: string[], person: string,
   const house = await isHouse(service.baseUrl);
   if (cli === 'codex' && house) {
     // Hosted Codex goes through Services' metered relay. Its pass and person header stay there.
-    const part = providerPart('ronin_models');
-    if (!part?.wrapService) throw new Error('Ronin Gateway relay is unavailable.');
-    return part.wrapService(args, person);
+    const relay = gatewayRelay();
+    if (!relay) throw new Error('Ronin Gateway relay is unavailable.');
+    return relay(args, person);
   }
   if (house) throw new Error('This harness has no hosted Gateway relay.');
   let config = '';

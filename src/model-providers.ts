@@ -22,7 +22,6 @@ import { modelServices } from './model-services.js';
 import { AGENTS } from './agents.js';
 import { commandText, readAgentLaunches, renderLaunch, type AgentLaunches } from './agent-launches.js';
 import { readModelCatalog, type CatalogModel, type ModelCatalog } from './model-catalog.js';
-import { partProviderRows } from './provider-parts.js';
 
 export const TIERS = ['light', 'standard', 'frontier'] as const;
 export type Tier = typeof TIERS[number];
@@ -98,11 +97,7 @@ export interface ProviderRows extends ProviderEntry {
   native?: string;
   nativeDangerousCmd?: string;
   launch_modes?: Array<'configured' | 'live_dangerously'>;
-  /** The Services part that serves this provider (src/provider-parts.ts); absent for a CLI's own. */
-  part?: string;
-  /** A part's one line for its provider page, in the part's words. */
-  note?: string;
-  services?: Array<{ id: string; name: string; gateway?: boolean }>;
+  services?: Array<{ id: string; name: string }>;
   models: ProviderRow[];
 }
 
@@ -369,11 +364,9 @@ export async function providerRows(summary: ProviderSummary | null, catalog?: Mo
       }
     }
     const ready = rows.some(row => row.operational);
-    return { ...entry, cli_label: base.cli_label, operational: ready, off, ...launch, services: compatible.map(({ id, name, service_type }) => ({ id, name, gateway: service_type === 'gateway' })), models: rows };
+    return { ...entry, cli_label: base.cli_label, operational: ready, off, ...launch, services: compatible.map(({ id, name }) => ({ id, name })), models: rows };
   }));
-  // A part's provider (Ronin models, in a hosted office) leads, apart from every CLI's list.
-  const parts = await partProviderRows();
-  return [...parts, ...joined.filter((entry) => entry.operational), ...joined.filter((entry) => !entry.operational)];
+  return [...joined.filter((entry) => entry.operational), ...joined.filter((entry) => !entry.operational)];
 }
 
 /** The joined rows flat: what a launch resolves against. */

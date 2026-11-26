@@ -35,7 +35,6 @@ import { listPlans } from './plans.js';
 import { listCanvases } from './canvases.js';
 import { AGENTS } from './agents.js';
 import { readProviderSummary } from './provider-summary.js';
-import { partProviderRows } from './provider-parts.js';
 import { githubSetupAnswer } from './setup-runtime.js';
 import { integrationsState } from './integrations.js';
 import { discoverParts } from './parts.js';
@@ -97,11 +96,11 @@ async function aboutUser(): Promise<Built> {
 }
 
 // ---- THE OFFICE'S STATES that a fact prints and Setup ticks from (src/setup-progress.ts): one meaning each.
-/** The providers Activated: each CLI the provider summary has operational, and each house row that is. */
-export const providersOn = (summary: Awaited<ReturnType<typeof readProviderSummary>>, rows: Awaited<ReturnType<typeof partProviderRows>>): string[] =>
-  [...AGENTS.filter((a) => summary?.operational.includes(a.id) && !summary.off.includes(a.id)).map((a) => a.label), ...rows.filter((row) => row.operational).map((row) => row.label)];
+/** The harnesses Activated: each CLI the provider summary has operational. A model service is never one. */
+export const providersOn = (summary: Awaited<ReturnType<typeof readProviderSummary>>): string[] =>
+  AGENTS.filter((a) => summary?.operational.includes(a.id) && !summary.off.includes(a.id)).map((a) => a.label);
 export async function activatedProviders(): Promise<string[]> {
-  return providersOn(await readProviderSummary().catch(() => null), await partProviderRows().catch(() => []));
+  return providersOn(await readProviderSummary().catch(() => null));
 }
 /** THE PERSON'S OWN HARNESSES (owner, 2026-11-24; w926): each CLI harness Activated here, never
  * Ronin's house models. Hosted Setup's Harness step, and the office start that makes Irasshai, read this. */
@@ -191,8 +190,8 @@ async function workspaces(): Promise<Built> {
 async function integrationsAuthentications(): Promise<Built> {
   const campaign = await initialCampaignId();
   const parts = { onDisk: discoverParts().map((part) => part.name), loaded: listServices() };
-  const [summary, rows, github, services, accounts] = await Promise.all([
-    readProviderSummary().catch(() => null), partProviderRows().catch(() => []), githubSetupAnswer().catch(() => null),
+  const [summary, github, services, accounts] = await Promise.all([
+    readProviderSummary().catch(() => null), githubSetupAnswer().catch(() => null),
     integrationsState(campaign, parts).catch(() => []), accountsAnswer().catch(() => null),
   ]);
   githubBuilt = githubKey(github);
@@ -202,7 +201,6 @@ async function integrationsAuthentications(): Promise<Built> {
     : summary.signed_in.includes(id) ? 'signed in, not activated' : 'installed, not signed in';
   const providers = [
     ...AGENTS.map((a) => `${a.label}${summary?.versions[a.id] ? ` ${summary.versions[a.id]}` : ''}: ${stateOf(a.id)}`),
-    ...rows.map((row) => `${row.label}: ${row.operational ? 'Activated' : 'not available'} (Ronin's house models, not a harness of theirs)`),
     summary ? `Last measured ${stamp(summary.measured_at)} UTC` : 'Not measured yet: Setup → Harness measures them',
   ];
   const gh = !github ? 'GitHub CLI: unreadable' : !github.installed ? 'GitHub CLI: not installed (needed to clone a GitHub repository)'
@@ -211,8 +209,7 @@ async function integrationsAuthentications(): Promise<Built> {
   const integrations = services.map((one) => `${one.label}: ${connected(one) ? 'connected' : one.available ? 'available, not connected' : 'not available for this Desk'}${one.workspaces.length ? ` in ${one.workspaces.join(', ')}` : ''}`);
   const hermes = (accounts?.accounts ?? []).map((a) => `${a.name} (${a.kind}): ${a.configured ? 'set up' : 'not set up'}${a.models.length ? `, ${a.models.length} models` : ''}`);
   const own = harnessesOn(summary);
-  const house = rows.filter((row) => row.operational).map((row) => row.label);
-  const line = `Harnesses Activated: ${own.join(', ') || 'none'}${house.length ? `; house models: ${house.join(', ')}` : ''}; connected: ${services.filter(connected).map((one) => one.label).join(', ') || 'none'}${github?.authenticated ? '; GitHub signed in' : ''}`;
+  const line = `Harnesses Activated: ${own.join(', ') || 'none'}; connected: ${services.filter(connected).map((one) => one.label).join(', ') || 'none'}${github?.authenticated ? '; GitHub signed in' : ''}`;
   return { line, lines: [
     'Harnesses:', ...bullets(providers), '',
     'Developer tools:', ...bullets([gh]), '',

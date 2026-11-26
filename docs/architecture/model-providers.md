@@ -121,25 +121,14 @@ apply to future launches; key rotation reaches existing homes on process restart
 a referenced connection is refused; removed connection credentials are retained for live
 agents. Hosted tenant isolation is not supplied by these local profiles.
 
-## Provider parts
+## The Gateway relay
 
-A model provider a Services part serves, beside the CLIs (`src/provider-parts.ts`, KAN-650). In
-a hosted office it is **Ronin models**, the house connection (Services `ronin_models`;
-`samurai_lab/ronin_cloud/MODEL_MANAGEMENT.md` §1, §5): Light, Standard and Frontier first, the
-office record's `tier` the default row, then the gateway model list's real models. A part
-registers once with `addProviderPart`; `providerRows` puts its entry first, marked `part`, so
-every picker offers it as its own provider and the Harnesses surface gives it its own
-stone, never inside the list of the CLI it runs on. Its rows name a registry CLI (`cli`), so
-launch, identity and resume are Core's; the part may wrap the argv of an Agent born on it
-(`wrapLaunch`) and of its restore (`wrapResume`, with the model it was born on), both given the
-launching person's email from the birth receipt so the part can label its house calls
-(`X-Ronin-Person`, KAN-659, as Hermes's do, KAN-621). It is counted
-as an activated provider when operational, and Refresh all asks it to read its list again
-(`refresh`). Self-hosted, no part answers and nothing changes.
-
-The office record (`src/office-record.ts`) carries `tier` (`light` | `standard` | `frontier`,
-the office's tier), written by Cloud's park; Ronin asks the house connection for a tier or
-`default`, never a model name, and the gateway serves the member's provider behind it (KAN-652).
+Ronin Gateway is a model service and nothing else ([Model services](model_services_README.md)); it
+is never an entry beside the harnesses. In a hosted office a Codex launch on it goes through
+Services' relay (`ronin_models`), so the office's house token stays in Ronin's process: the part
+hands Core one function (`src/gateway-relay.ts`), and `serviceLaunch` calls it at every process
+start, a restore included, with the launching person's email for the `X-Ronin-Person` header
+(KAN-659, as Hermes's house calls carry it, KAN-621). Self-hosted, nothing registers.
 
 ## One read for the client
 
@@ -196,7 +185,7 @@ What this machine *has* is measured, not derived on every read. The Campaign rec
   and `refreshed_at` ride along unchanged. After **Cancel** on a sign-in (a
   sign-in closed without Done may still have left a credential file), and after Turn off / on.
 - `refreshProviders` — **Refresh all**: the same facts, then every activated
-  CLI's own list read again, each [provider part](#provider-parts)'s list, then npm asked.
+  CLI's own list read again, the Ronin Gateway's list, then npm asked.
   It runs at every Ronin start, so after every
   Update (which restarts Ronin), with nobody pressing anything (KAN-651); in a hosted office
   the park calls `POST /api/setup/providers/refresh` over the unit's socket when it moved the
@@ -290,8 +279,8 @@ in ⚙ Configuration — the schema's `models` section, two views of one setting
 no provider, the first CLI signed in becomes it, written once: the provider, its model blank (the
 provider's own default). `settleFirstDefault` (`provider-summary.ts`) runs on every recorded
 measure, and a launch with no default measures first (`spawn.ts`), so a sign-in made in Setup or
-in a tile both count. A later sign-in never moves it; only Models > Defaults does. Ronin models
-(a provider part) is no sign-in and never becomes the default this way. With nothing signed in,
+in a tile both count. A later sign-in never moves it; only Models > Defaults does. A model service
+is no sign-in and never becomes the default this way. With nothing signed in,
 a Default launch is the registry's first CLI, into its own sign-in.
 
 A Desk's `defaults.provider/model` used to outrank `sessions.default`; at start
@@ -331,8 +320,7 @@ door as one stone per provider (`public/js/models-surface.js`). The two cards re
 with *Last ran <date>* beside it, or *Never run — every provider offers Native only until
 it runs*. Ronin runs it at start too, never on a timer: it measures the machine, reads every
 activated CLI's own model list, and asks npm for each one's newest release. Below it the
-whole inventory on the shared stone work surface: first a stone per [provider part](#provider-parts)
-(Ronin models, in a hosted office), then one stone per CLI the registry knows,
+whole inventory on the shared stone work surface: one stone per CLI the registry knows,
 wearing its measured state and the vendor it serves with its model count. The Models workbench's **Model refresh** surface carries
 the same door with its steps under it: Harnesses, then Accounts.
 

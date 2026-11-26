@@ -1,4 +1,4 @@
-/* New Agent display preferences. null follows the full list, [] hides a group. */
+/* New Agent display preferences. null follows the full list, [] hides a group. Unset is the full list. */
 import { workbenchLink, openWorkbenchTab } from './workspace.js';
 import { ask } from './ask.js';
 import { createStep, el } from './form-steps.js';
@@ -21,8 +21,7 @@ export function modelSettingsLink(cli) {
 export function modelSelection(catalog, entry, serviceId) {
   const selections = catalog.preferences?.[entry.cli];
   const group = serviceId || 'in-harness';
-  if (selections && Object.hasOwn(selections, group)) return selections[group];
-  return entry.services?.find(service => service.id === serviceId)?.gateway ? [] : null;
+  return selections && Object.hasOwn(selections, group) ? selections[group] : null;
 }
 
 export function shownInNewAgent(catalog, entry, row) {

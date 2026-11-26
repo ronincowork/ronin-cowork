@@ -58,7 +58,6 @@ import { compileMikaKnowledgeAt } from '../mika-knowledge.js';
 import { isMikaTab } from '../mika-context.js';
 import { ensureSteercoTeam, recordRoninHelperWelcome, roninHelperWelcomeState, RONIN_HELPER_LOADER, STEERCO_TEAM } from '../ronin-helper.js';
 import { REPO_ROOT, storeDir } from '../resources.js';
-import { providerPart } from '../provider-parts.js';
 
 const MIKA_SESSION = 'mika_agent' as const;
 
@@ -402,9 +401,6 @@ export function registerLaunch(app: express.Express): LaunchControl {
       }
       const launchWords = resolved.session_type === 'bare_metal_agent' ? (form.prompt ?? '') : resolved.brief;
       launch = resolved.agent ? await launchArgv(resolved.cmd, launchWords) : { argv: [], parked: false };
-      // A part's provider (src/provider-parts.ts) wraps the argv of an Agent born on its rows.
-      const part = providerPart(resolved.identity?.provider ?? '');
-      if (part?.wrapLaunch && launch.argv.length) launch = { ...launch, argv: part.wrapLaunch([...launch.argv], form.person?.email ?? '') };
       if (resolved.agent && !launch.argv.length) {
         if (birthDir) await rm(birthDir, { recursive: true, force: true });
         return res.status(400).json({

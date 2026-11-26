@@ -63,7 +63,7 @@ its provider offers. [Provider sign-in](provider-sign-in.md).
 
 **Do I pay Ronin for model use?** No. Your Agents run on your own subscription or API key, signed
 in directly with the provider. Ronin never resells model access or sits in between. The Helpful
-Assistant runs on your own key or harness when you have one, else on Ronin models.
+Assistant runs on your own key or harness when you have one, else on Ronin Gateway.
 
 **Can I add another harness later?** Yes, any time, on **Harnesses** on Ronin Home. A second one
 keeps Agents working when one hits a limit or an outage.

@@ -74,7 +74,6 @@ import { storeDir } from '../resources.js';
 import { parkCarry } from '../machine-park.js';
 import { readOfficeRecord } from '../office-record.js';
 import { clearHookRecord, readFields } from '../asking.js';
-import { providerPart } from '../provider-parts.js';
 
 interface PreparedEnding { proceed: boolean; acknowledgement?: Record<string, unknown> }
 
@@ -318,14 +317,8 @@ export async function rehydrate(id: string, caller: string): Promise<{ status: n
     }
     // Its birth receipt: the command it was born with (KAN-661) and the person it was born for.
     const receipt = JSON.parse(await readFile(path.join(sessionRecordDir(archived.key), 'birth-receipt.json'), 'utf8').catch(() => '{}')) as { cmd?: unknown; user_email?: unknown };
-    let argv = await resumeAgentArgv(archived.agent, archived.provider_session_id, typeof receipt.cmd === 'string' ? receipt.cmd : '');
+    const argv = await resumeAgentArgv(archived.agent, archived.provider_session_id, typeof receipt.cmd === 'string' ? receipt.cmd : '');
     if (!argv.length) return { status: 409, body: { error: `${archived.agent} cannot be resumed on this machine.` } };
-    const part = providerPart(archived.identity?.provider ?? '');
-    // An Agent born on a part's provider (src/provider-parts.ts) is restored on it, for the
-    // person it was born for, so its house calls stay theirs (KAN-659).
-    if (part?.wrapResume) {
-      argv = part.wrapResume([...argv], archived.identity?.model ?? '', typeof receipt.user_email === 'string' ? receipt.user_email : '');
-    }
     await createSession(archived.name, archived.cwd, { agent: true, argv, cli: archived.agent, key: archived.key, resume: true,
       env: archived.identity?.model?.startsWith('service:') && typeof receipt.user_email === 'string' ? { RONIN_PERSON: receipt.user_email } : {} });
     try {

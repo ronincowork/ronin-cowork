@@ -14,8 +14,8 @@ import { hermesConfigured, readHermesSettings } from './hermes-setups.js';
  * - `measureAndRecordProviders` — machine facts; the recorded model lists and the last
  *   npm answer ride along unchanged. A sign-in closing, a switch, a setup saved.
  * - `refreshProviders` — Refresh all: the same facts, then every activated CLI's own
- *   model list read again through the reader its registry entry names, each provider
- *   part's list (src/provider-parts.ts), then npm asked for the newest release. Ronin
+ *   model list read again through the reader its registry entry names, the Ronin
+ *   Gateway's list, then npm asked for the newest release. Ronin
  *   start (so after every Update, which restarts it), the park's call in a hosted office,
  *   and the member's press; never a timer (KAN-651, MODEL_MANAGEMENT.md §4).
  */
@@ -27,7 +27,7 @@ import { AGENTS, listAgentAvailability, type AgentAvailability, type ModelsSourc
 import { execFile } from './spawn-broker.js';
 import { ensureInitialCampaign, initialCampaign, writeCampaignProviders } from './campaigns.js';
 import { readAgentsSection, readSetupSection, writeAgentsSection } from './machine-state.js';
-import { operationalPartCount, refreshProviderParts } from './provider-parts.js';
+import { readGatewayModels } from './hermes-setups.js';
 import { listProviders, providerRows, type ModelConnection, type ModelList, type ModelRow, type ProviderSummary } from './model-providers.js';
 
 interface SetupSection { providers?: Record<string, { activated_at?: unknown; off_at?: unknown }>; [key: string]: unknown }
@@ -218,8 +218,7 @@ export async function measureProviders(section: SetupSection, ops: MeasureOps = 
     refreshed_at: '',
     installed, signed_in, operational,
     off: installed.filter((cli) => offAt(section, cli) !== null),
-    // A part's provider (Ronin models in a hosted office) is a provider here as much as a signed-in CLI.
-    activated_count: operational.length + await operationalPartCount(),
+    activated_count: operational.length,
     paths,
     versions,
     models: {},
@@ -297,8 +296,8 @@ const record = (value: unknown): Record<string, unknown> =>
  * THE FIRST SIGN-IN IS THE DEFAULT (owner, 2026-11-19; KAN-725): while no default provider is
  * set, the first CLI signed in here becomes ⚙ agents.sessions.default, written once: the
  * provider, its model blank (the provider's own default). A later sign-in never moves it; only the Agent defaults do.
- * One already signed in before this measure outranks one new in it. Ronin models (a provider
- * part) is no sign-in: it is never in `signed_in`. Returns the provider written, '' for none.
+ * One already signed in before this measure outranks one new in it. A model service is no
+ * sign-in: it is never in `signed_in`. Returns the provider written, '' for none.
  */
 export async function settleFirstDefault(previous: ProviderSummary | null, summary: ProviderSummary): Promise<string> {
   const agents = await readAgentsSection();
@@ -343,7 +342,7 @@ export async function refreshProviders(section?: SetupSection, ops: MeasureOps =
   const now = ops.now ?? (() => new Date().toISOString());
   const read = ops.models ?? readModels;
   const summary = await measureProviders(section ?? await readSetupSection(), ops);
-  await refreshProviderParts();
+  await readGatewayModels().catch((e) => console.error('[providers] gateway list:', e));
   const lists = await Promise.all(AGENTS.filter((agent) => summary.operational.includes(agent.id))
     .map(async (agent) => [agent.id, await read(agent, { file: summary.paths[agent.id] ?? '', version: summary.versions[agent.id] ?? '', now })] as const));
   for (const [id, list] of lists) summary.models[id] = list;

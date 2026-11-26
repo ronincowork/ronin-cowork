@@ -11,6 +11,8 @@ A model service is a connection Ronin uses to call a model API. A harness is the
 | Private API key | The user names each option and enters the exact API model ID on that connection. | Saving or removing an option changes what compatible harnesses offer. Discovery can show IDs available at the endpoint. Only saved options appear in New Agent. |
 | In-harness models | The harness supplies the model options available under its current subscription or harness API key. | The refreshed CLI list determines membership and launch IDs. HQ Admin can edit the display name for a matching CLI and ID. Without an HQ name, Ronin uses the CLI’s name. **Native** delegates the model choice to the harness. |
 
+Ronin Gateway is a model service only. New Agent lists harnesses; the Gateway never appears beside them. It works with Codex and Hermes, and its list begins with the tier options the Gateway supplies. A model service starts shown on every harness it works with, until that harness's settings narrow or hide it.
+
 A **harness API key** is supplied to and managed by the CLI. Ronin never receives it. A **private API key** (short form **private key**) is supplied to Ronin and stored for a model service connection. The same API vendor can support either arrangement.
 
 ## From Settings to an API request
