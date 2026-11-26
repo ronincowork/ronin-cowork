@@ -38,7 +38,7 @@ export interface AgentOperations {
 }
 
 /**
- * HOW RONIN SIGNS A CLI IN, WITHOUT A TERMINAL (owner, 24 Nov 2026; samurai_lab/wip/SETUP_HARNESS.md):
+ * HOW RONIN SIGNS A CLI IN, WITHOUT A TERMINAL (owner, 24 Nov 2026; docs/architecture/setup-workbench.md):
  * the CLI's own login command per way, its menu skipped. Ronin runs it, shows the link and code it
  * prints (`code` finds the code), sends what the person pastes (`paste`: a code back, or a key on stdin),
  * and the CLI's credential file is the record. A CLI without `login` signs in on the terminal tile.

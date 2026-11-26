@@ -54,6 +54,10 @@ Enter keys and codes only in the bar or the harness's own terminal, never in a m
 or **Cancel** to close it. **Turn off** stops Ronin using a harness for a while; your sign-in is
 kept, and **Turn on** brings it back.
 
+Under the steps, **Models** picks what New Agent offers for that harness: first which model services
+are on (In harness, Ronin Gateway, API key, OpenRouter), then **Hide** or **Show** for each model in
+them. Hermes's page has only Models.
+
 ## Check it works
 
 Start an Agent on the harness and say hello, as in [Get started](get-started.md#say-hello). An answer
