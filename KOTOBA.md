@@ -68,7 +68,7 @@ Macro, action, SOP, and Agent role are not additional composition layers. “Act
 | Workspace | A project: its objective (the one place that says what the project is), instructions, its folders and Mode; every Team works in one ([Workspaces](docs/using-ronin/workspaces.md)) |
 | Explorer (Files) | The machine's file browser from the home folder: copyparty at `/files/`, where Ronin finds Python at start; `/files/<path>` is `$HOME/<path>`. Explorer is the card, Files the code (`ronin.files`, `src/files.ts`) ([Explorer](docs/using-ronin/explorer.md)) |
 | Model services (`MODEL_SERVICES`) | Office API connections such as Ronin Gateway, OpenRouter and a private API. A compatible harness can use a model service to request a model by ID. See [Model services](docs/architecture/model_services_README.md). |
-| Harness | The CLI that runs an Agent, such as Hermes, Claude Code or Codex. A harness can use its native sign-in or a compatible model service. |
+| Harness | The CLI that runs an Agent, such as Hermes, Claude Code or Codex. A harness can use its native sign-in or a compatible model service. Use only “harness”, never “model provider” or “Agent Harness”. Ronin’s house models are not a harness. |
 | Model option | A named choice a person can select in New Agent. A model service or the harness itself supplies it. A model option has a display name and a launch identity. |
 | API model ID | The exact identifier sent to a model service in an API request. A model option’s display name can differ from its API model ID. |
 | Tile | The UI for one session; a tmux pane is the terminal underneath ([Tile](docs/using-ronin/tile.md)) |
