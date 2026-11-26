@@ -36,7 +36,7 @@ export function mountHermesServices(host) {
   const paint = () => {
     if (disposed) return;
     const of = (kind) => services.filter((s) => serviceKind(s) === kind);
-    const sources = row();
+    const sources = row(); sources.classList.add('setup-hermes-sources');
     for (const [kind, name] of SOURCES) {
       const made = stone(name, shown === kind, () => { shown = kind; paint(); });
       if (of(kind).some((s) => s.configured)) { made.prepend(el('span', 'hermes-tick', '✓')); made.setAttribute('aria-label', `${name}, set up`); }
@@ -54,15 +54,18 @@ export function mountHermesServices(host) {
     const service = shown === 'private' ? mine.find((s) => s.id === key) || mine[0] : mine[0];
 
     const table = el('table', 'hermes-table');
-    const head = el('tr'); head.append(el('th', '', 'Name'), el('th', '', 'Model'));
+    // One Model column when every option is named as its model (the Ronin Gateway's always are).
+    const named = (service?.models || []).some((m) => m.name !== m.model);
+    const head = el('tr'); head.append(...(named ? [el('th', '', 'Name')] : []), el('th', '', 'Model'));
     const thead = el('thead'); thead.append(head);
     const body = el('tbody');
     for (const m of service?.models || []) {
-      const tr = el('tr'); tr.append(el('th', '', m.name), el('td', '', [m.model, ...knobs(m)].join(' · '))); body.append(tr);
+      const tr = el('tr'); const model = [m.model, ...knobs(m)].join(' · ');
+      tr.append(...(named ? [el('th', '', m.name), el('td', '', model)] : [el('th', '', model)])); body.append(tr);
     }
     const count = service?.models?.length || 0;
     if (shown !== 'gateway' || !count) {
-      const tr = el('tr', 'hermes-add'); const cell = el('td'); cell.colSpan = 2;
+      const tr = el('tr', 'hermes-add'); const cell = el('td'); cell.colSpan = named ? 2 : 1;
       if (shown === 'gateway') cell.append(el('span', 'hermes-add-note', 'No Ronin Gateway models yet.'));
       else {
         const go = el('button', 'hermes-add-line', service?.configured ? (count ? '+ Add or change in Settings' : '+ Add a model in Settings') : '+ Add your key in Settings');
