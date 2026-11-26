@@ -510,8 +510,8 @@ export function createHarnessDrawing(context, { repaint, say = () => {} }) {
     // Hermes's keys and model options are Model services' (KAN-870); its page shows them, read only.
     const harness = harnessCatalog().harnesses.find(entry => entry.cli === id);
     const editor = harness && harnessModelEditor(harnessCatalog(), harness);
-    if (editor) host.append(editor.el);
     if (id === 'hermes') {
+      if (editor) host.append(editor.el);
       const close = mountModelOptions(host);
       return () => { close(); editor?.destroy(); };
     }
@@ -523,6 +523,7 @@ export function createHarnessDrawing(context, { repaint, say = () => {} }) {
     }
     host.append(yours);
     paintCatalog(rows, provider, host);
+    if (editor) host.append(editor.el);
     if (alignedHarness !== id) {
       alignedHarness = id;
       requestAnimationFrame(() => {

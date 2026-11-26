@@ -5194,6 +5194,11 @@ html[data-screen='inside'] #phone .ph-bar .ph-title[data-boot='inside'] { displa
 .data-table thead th:first-child { width: 40%; }
 .data-table thead th.hermes-tools { width: 8.5rem; }
 .data-table-link { justify-self: start; text-align: left; }
+/* A ✓ before a row's name (shown, set up); a row that is off reads muted, its ✓ slot kept so names align. */
+.data-table .data-table-name { display: flex; align-items: baseline; gap: 6px; }
+.data-table .data-table-name .hermes-tick { flex: 0 0 1em; color: var(--ok); font-weight: var(--weight-strong); }
+.data-table .data-table-name > :last-child { min-width: 0; overflow-wrap: anywhere; }
+.data-table tr.data-table-off :is(th, td):not(.hermes-tools) { color: var(--muted); font-weight: normal; }
 @media (max-width: 560px) {
   .data-table thead th:first-child { width: 32%; }
   .data-table thead th.hermes-tools { width: 6.25rem; }

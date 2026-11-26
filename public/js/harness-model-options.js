@@ -1,6 +1,6 @@
 /* New Agent display preferences. null follows the full list, [] hides a group. Unset is the full list. */
 import { workbenchLink, openWorkbenchTab } from './workspace.js';
-import { createStep, el } from './form-steps.js';
+import { el } from './form-steps.js';
 import { createTable } from './data-table.js';
 import { request } from './request.js';
 import { t } from './lexicon.js';
@@ -38,12 +38,13 @@ export function shownInNewAgent(catalog, entry, row) {
 }
 
 /**
- * MODELS SHOWN IN NEW AGENT (owner, 26 Nov 2026): one table in the table pattern (data-table.js), one row
- * per model option: its model service, whether New Agent shows it, and Hide or Show, saved on the press.
+ * MODELS SHOWN IN NEW AGENT (owner, 26 Nov 2026): a section of the harness page, as Yours is, holding one
+ * table in the table pattern (data-table.js): a row per model option, ✓ when New Agent shows it, muted when
+ * hidden, its model service, and Hide or Show, saved on the press.
  * A group with nothing hidden stays null, so models a service adds later show by themselves.
  */
 export function harnessModelEditor(catalog, entry) {
-  const section = createStep({ key: 'new-agent-models', title: 'Models shown in New Agent' });
+  const section = el('section', 'setup-provider-catalog');
   const choices = { ...catalog.preferences?.[entry.cli] };
   const services = new Map((entry.services || []).map(service => [service.id, service.name]));
   const seen = new Set();
@@ -57,7 +58,7 @@ export function harnessModelEditor(catalog, entry) {
   const all = group => rows.filter(row => groupOf(row) === group).map(row => row.model);
   const isShown = row => { const picked = choices[groupOf(row)]; return !Array.isArray(picked) || picked.includes(row.model); };
   const status = el('p', 'setup-fine');
-  status.setAttribute('role', 'status');
+  status.setAttribute('role', 'status'); status.hidden = true;
   const holder = el('div');
 
   const flip = async row => {
@@ -67,23 +68,27 @@ export function harnessModelEditor(catalog, entry) {
     choices[group] = shown.length === all(group).length ? null : shown;
     paint();
     const result = await request('/api/new-agent-models/' + encodeURIComponent(entry.cli), { method: 'PUT', json: { ...choices } });
-    if (result.ok) { (catalog.preferences ||= {})[entry.cli] = { ...choices }; status.textContent = ''; return; }
+    if (result.ok) { (catalog.preferences ||= {})[entry.cli] = { ...choices }; status.textContent = ''; status.hidden = true; return; }
     choices[group] = before;
     paint();
-    status.textContent = result.message;
+    status.textContent = result.message; status.hidden = false;
   };
 
   const paint = () => {
     holder.replaceChildren(createTable({
-      headings: ['Model', 'Model service', 'In New Agent'],
-      rows: rows.map(row => ({
-        cells: [row.name || row.model, services.get(row.service_id) || 'In harness', isShown(row) ? 'Shown' : 'Hidden'],
-        tools: [[isShown(row) ? 'Hide' : 'Show', () => { void flip(row); }]],
-      })),
+      headings: ['Model', 'Model service'],
+      rows: rows.map(row => {
+        const name = el('span', 'data-table-name');
+        const tick = el('span', 'hermes-tick', isShown(row) ? '✓' : '');
+        tick.setAttribute('aria-label', isShown(row) ? 'Shown in New Agent' : 'Hidden from New Agent');
+        name.append(tick, el('span', '', row.name || row.model));
+        return { off: !isShown(row), cells: [name, services.get(row.service_id) || 'In harness'],
+          tools: [[isShown(row) ? 'Hide' : 'Show', () => { void flip(row); }]] };
+      }),
       lines: rows.length ? [] : [['No model options yet.', null]],
     }));
   };
   paint();
-  section.body.append(holder, status);
-  return { el: section.el, destroy: () => {} };
+  section.append(el('h3', 'setup-provider-eyebrow', 'Models shown in New Agent'), holder, status);
+  return { el: section, destroy: () => {} };
 }
