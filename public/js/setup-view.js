@@ -19,7 +19,7 @@ import { mikaTab, reportMikaView } from './mika.js';
 import { irasshaiLive, IRASSHAI_INTEGRATIONS_TYPE, createIrasshaiChat, createIrasshaiOpener, irasshaiKey, irasshaiReady, registerIrasshaiIntegrations } from './setup-irasshai.js';
 
 const PROFILE = 'setup';
-// The three steps and three pages (setup-journey.js SETUP_SCENES; SETUP_SWEEP.md §7), laid out as the
+// The three steps and three pages (setup-journey.js SETUP_SCENES; docs/architecture/setup-workbench.md), laid out as the
 // owner's prototype: the steps, the step's surface, and the Ask Ronin panel on the right. One Setup on every office.
 const ORDER = Object.freeze(SCENES.map((scene) => scene.type));
 const ARRANGEMENT = Object.freeze({

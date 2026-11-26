@@ -74,7 +74,7 @@ export function workspacePage(w, { onSaved = () => {}, onDiscard = () => {} }) {
   const changed = () => { dirty = true; action.el.dataset.attention = 'true'; discard.setDisabled(false); };
   const settled = () => { dirty = false; delete action.el.dataset.attention; discard.setDisabled(true); };
 
-  /* ---- 1 · Describe (owner, 2026-11-24; w926; SETUP_SWEEP.md §7): what the project is, its objective,
+  /* ---- 1 · Describe (owner, 2026-11-24; w926; docs/architecture/setup-workbench.md): what the project is, its objective,
      the one place that says so ---- */
   const stepTop = createStep({ n: 1, key: 'top', title: t('workspaces.describe', 'Describe') });
   stepTop.body.append(createField({ label: t('workspaces.objective_ask', 'What are you working on?'), control: area(draft.objective, (v) => { draft.objective = v; changed(); }) }).el);
