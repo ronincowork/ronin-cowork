@@ -4033,48 +4033,6 @@ body {
 .setup-surface-body { display: grid; gap: var(--space-paragraph); padding: var(--space-inset) 0; min-width: 0; }
 .setup-fine { color: var(--muted); }
 .setup-form, .setup-registration-identity { display: grid; gap: var(--space-paragraph); padding: var(--space-inset); border: var(--edge) solid var(--line); border-radius: var(--radius-small); }
-/* Register: one calm column. Groups are separated by kaki rules, never boxed; the workspace already frames the surface. */
-.setup-register-compact { align-content: start; width: min(100%, 52rem); margin: 0 auto; gap: var(--space-section); font-size: var(--text-body); line-height: var(--leading-body); }
-.setup-register-form { width: 100%; padding: 0; border: 0; gap: var(--space-section); }
-.setup-register-form[hidden] { display: none; }
-.setup-register-welcome { display: grid; gap: var(--space-row); padding: var(--space-row) 0 0; }
-.setup-register-eyebrow { color: var(--kaki); font-size: var(--text-small); font-weight: var(--weight-strong); letter-spacing: var(--tracking-wide); text-transform: uppercase; }
-.setup-register-welcome h2 { margin: 0; color: var(--fg-strong); font-size: var(--text-display); font-weight: var(--weight-strong); letter-spacing: var(--tracking-tight); line-height: var(--leading-tight); }
-.setup-register-welcome .setup-lede { max-width: 38rem; color: var(--muted); font-size: var(--text-body); line-height: var(--leading-body); }
-/* Rhythm: lines sit tight inside a question, questions breathe, groups breathe more. */
-.setup-register-group { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-subsection) var(--space-inline); border-top: var(--edge-2) solid var(--kaki); padding-top: var(--space-inset); }
-.setup-register-group > :not(h3) + :not(h3) { margin-top: var(--space-subsection); }
-.setup-register-group[hidden] { display: none; }
-.setup-register-group > h3 { grid-column: 1 / -1; margin: 0; color: var(--fg-strong); font-size: var(--text-heading); font-weight: var(--weight-strong); line-height: var(--leading-tight); }
-.setup-register-group > .setup-register-full { grid-column: 1 / -1; }
-.setup-register-group > .setup-field[hidden] { display: none; }
-.setup-register-question { display: block; color: var(--fg-strong); font-size: var(--text-body); font-weight: var(--weight-strong); line-height: var(--leading-body); }
-.setup-register-compact .setup-register-bounded, .setup-register-compact .setup-register-input { display: grid; align-content: start; gap: var(--space-paragraph); min-width: 0; }
-.setup-register-checklist { display: grid; gap: 0; min-width: 0; margin: 0; border: 0; padding: 0; }
-.setup-register-checklist legend { padding: 0; margin-bottom: var(--space-paragraph); }
-.setup-register-check { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--space-inline); align-items: start; min-width: 0; padding: var(--space-row) 0; color: var(--fg); cursor: pointer; line-height: var(--leading-body); }
-.setup-register-check span { min-width: 0; }
-.setup-register-check input[type='checkbox'] { width: 1.05rem; height: 1.05rem; margin: .15rem 0 0; accent-color: var(--kaki); cursor: pointer; }
-.setup-register-reasons input[type='checkbox'] { box-sizing: border-box; appearance: none; border: var(--edge) solid var(--line-2); border-radius: var(--radius-round); background: var(--inset); }
-.setup-register-reasons input[type='checkbox']:checked { border-color: var(--kaki); background: var(--kaki); /* kaki: the action, or what needs you */ box-shadow: inset 0 0 0 var(--edge-2) var(--inset); }
-.setup-register-other[hidden] { display: none; }
-.setup-register-compact input:not([type='checkbox']), .setup-register-compact textarea { width: 100%; min-width: 0; box-sizing: border-box; border: var(--edge) solid transparent; border-radius: var(--radius-hair); background: var(--inset); padding: var(--space-row) var(--space-control); color: var(--fg-strong); font: inherit; font-size: var(--text-label); line-height: var(--leading-body); transition: border-color var(--motion-quick) var(--ease); }
-.setup-register-compact input:not([type='checkbox']):hover, .setup-register-compact textarea:hover { border-color: var(--line-2); }
-.setup-register-compact input:not([type='checkbox']):focus-visible, .setup-register-compact textarea:focus-visible { outline: 0; border-color: var(--kaki); }
-.setup-register-compact textarea { resize: vertical; }
-.setup-register-send { display: grid; justify-items: start; gap: var(--space-subsection); border-top: var(--edge-2) solid var(--kaki); padding-top: var(--space-inset); }
-.setup-register-send[hidden], .setup-register-consent[hidden], .setup-register-send > .wk-action[hidden], .setup-register-notice[hidden] { display: none; }
-.setup-register-consent { max-width: 40rem; color: var(--muted); font-size: var(--text-body); line-height: var(--leading-body); }
-.setup-register-form [hidden] { display: none !important; }
-.setup-register-reasons-list { display: grid; gap: var(--space-row); margin: 0; padding-left: var(--space-inset); color: var(--fg); line-height: var(--leading-body); }
-.setup-user-intro-actions { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-inline); }
-.setup-register-notice { min-height: 1.45em; color: var(--muted); font-size: var(--text-body); }
-.setup-register-notice:empty { display: none; }
-.setup-registration-identity { display: grid; gap: var(--space-row); border: 0; border-left: var(--edge-2) solid var(--ok-2); border-radius: 0; padding: var(--space-row) var(--space-inline); }
-.setup-registration-identity[data-tone='pending'] { border-left-color: var(--kaki); }
-.setup-registration-identity strong { color: var(--fg-strong); font-size: var(--text-label); font-weight: var(--weight-strong); line-height: var(--leading-tight); }
-.setup-registration-identity span { color: var(--muted); font-size: var(--text-body); line-height: var(--leading-body); overflow-wrap: anywhere; }
-.setup-registration-identity:empty, .setup-registration-identity[hidden] { display: none; }
 .wk-surface-content:has(.setup-github-workspace) > .sws-header {
   --sws-header-height: clamp(17rem, 32dvh, 20rem);
   display: grid;
@@ -4127,19 +4085,10 @@ body {
 @media (max-width: 700px) { .setup-next-note { display: none; } }
 .setup-step-card[aria-current='page'] .setup-step-disc { border-color: var(--kaki-fill); color: var(--kaki-lift); }
 .setup-step-card[aria-current='page'][data-complete='true'] .setup-step-disc { color: var(--on-strong); }
-.setup-register-options[hidden] { display: none; }
-.setup-registration-recovery { display: flex; flex-wrap: wrap; gap: var(--space-inline); }
 .setup-field { display: grid; gap: var(--space-row); }
 .setup-field input:not([type='checkbox']), .setup-field select, .setup-field textarea { width: 100%; box-sizing: border-box; }
 .setup-field:has(input[type='checkbox']) { grid-template-columns: 1fr auto; align-items: center; }
 .setup-lede, .setup-fine, .setup-notice { margin: 0; }
-.password-surface .password-access > :not(h3) + :not(h3) { margin-top: 0; }
-.password-surface .password-selector { justify-self: start; }
-.password-surface .wk-action-bar { justify-content: flex-start; }
-.password-surface .password-validation { min-height: 0; }
-.password-surface .password-validation:empty { display: none; }
-.password-surface input[aria-invalid='true'] { border-color: var(--bad); }
-.password-recovery p { max-width: 40rem; }
 .wk-workbench-host[data-workbench-profile='setup'] .wk-workbench-selector-cards > .wk-card:disabled { cursor: not-allowed; opacity: .42; }
 .setup-answers { display: grid; gap: var(--space-paragraph); margin: 0; }
 .setup-answer { display: grid; grid-template-columns: 8.5rem minmax(0, 1fr); gap: var(--space-row) var(--space-inline); align-items: start; border-top: var(--edge-2) solid var(--line-2); background: var(--surface); padding: var(--space-inset); }

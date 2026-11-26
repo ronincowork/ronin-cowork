@@ -216,7 +216,7 @@ export function createCoworkView(options = {}) {
   // answer; the form, session-type choices and launch path are otherwise identical.
   const newAgentBySeat = {};
   // carried Campaign identity, Project roots and Templates behind a tab strip here; those
-  // are Campaign-level and are now surfaces of Campaign Manage (js/campaign-view.js).
+  // are office-level and live in Settings (js/settings-v2-view.js).
   // The Team roster stayed — a Cowork is not Campaign configuration — and is its own
   // surface rather than the one tab left in a strip.
   const teamRosterBySeat = campaign ? Object.fromEntries(Object.keys(seats)
