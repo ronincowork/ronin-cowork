@@ -2,7 +2,7 @@
 /**
  * SETTINGS V2 (owner, 2026-11-25; KAN-862, KAN-867): a second Settings built beside the first, so the two can be
  * compared and what is missing seen. The sections are the agreed outline, samurai_lab wip/MACHINE_SETTINGS_V2.md;
- * no hints. Model services with its OpenRouter and API key pages (KAN-870, model-services-surface.js) and
+ * no hints. Model services with its Ronin Gateway, API key and OpenRouter tabs (KAN-870, model-services-surface.js) and
  * Office defaults holding the starting models (KAN-871) are v2's own; the other cards reuse today's surfaces.
  * When v2 is right the old Settings and its surfaces go.
  */
@@ -23,7 +23,7 @@ import { installBehaviourReader } from './behaviour-reader.js';
 import { buildStats } from './stats.js';
 import { loadProviderCatalog } from './form-steps.js';
 import { createModelDefaults } from './models-surface.js';
-import { MODEL_SERVICE_PAGES, createModelServicesSurface, createOpenRouterSurface, createPrivateApiSurface } from './model-services-surface.js';
+import { createModelServicesSurface } from './model-services-surface.js';
 
 const elem = (tag, cls, text) => { const out = document.createElement(tag); if (cls) out.className = cls; if (text != null) out.textContent = text; return out; };
 const enterable = (surface) => ({ el: surface.el, show: () => surface.enter() });
@@ -90,9 +90,7 @@ export function createSettingsV2View() {
       return {
         ...env,
         selected,
-        settings2ModelServices: ({ workspace }) => createModelServicesSurface({ open: (page, key = '') => bench().place(MODEL_SERVICE_PAGES[page], BESIDE[workspace] || 'workspace2', key ? { key } : {}) }),
-        settings2OpenRouter: () => createOpenRouterSurface(),
-        settings2PrivateApi: ({ detail }) => createPrivateApiSurface({ serviceId: detail?.key || '' }),
+        settings2ModelServices: ({ detail }) => createModelServicesSurface({ tab: detail?.tab || 'gateway', serviceId: detail?.key || '' }),
         settings2AgentDefaults: () => officeDefaults(selected),
         settings2BehaviorFiles: ({ detail }) => createBehaviourSurface(detail),
         campaignIntegrations: ({ workspace }) => enterable(createIntegrationsPanel(selected, { panels: { jira: () => jira(workspace) } })),

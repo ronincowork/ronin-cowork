@@ -5180,7 +5180,16 @@ html[data-screen='inside'] #phone .ph-bar .ph-title[data-boot='inside'] { displa
 .model-services-body { display: grid; gap: var(--space-subsection); padding: var(--space-inset) 0; min-width: 0; }
 .model-services-body > p, .model-services h3 { margin: 0; }
 .model-services-models { display: grid; gap: var(--space-paragraph); min-width: 0; }
-.model-services .hermes-editor { gap: var(--space-paragraph); }
+.model-services .hermes-editor, .model-services-form { display: grid; gap: var(--space-paragraph); min-width: 0; }
+.model-services .fs-step-body > p { margin: 0; }
+/* In a narrow reading (a tile, a phone) each section stacks, its body under its name, as on Work items;
+   the three tabs stay on one row. */
+.model-services { container: model-services / inline-size; }
+.model-services .setup-hermes-sources { grid-template-columns: repeat(auto-fit, minmax(88px, 1fr)); }
+@container model-services (max-width: 32rem) {
+  .model-services .fs-step { grid-template-columns: minmax(0, 1fr); }
+  .model-services .fs-step > .fs-step-body, .model-services .fs-step:has(> .fs-step-head.fs-togglable) > .fs-step-body { grid-column: 1; }
+}
 .model-services .hermes-field :is(input, select) { height: var(--control-height); min-height: 0; }
 .model-services .wk-action-bar { margin: 0; }
 /* The table pattern (data-table.js): a row's presses are links, spaced like words. */
@@ -5195,7 +5204,6 @@ html[data-screen='inside'] #phone .ph-bar .ph-title[data-boot='inside'] { displa
   .data-table thead th:first-child { width: 32%; }
   .data-table thead th.hermes-tools { width: 6.25rem; }
 }
-.model-services-service { display: grid; gap: var(--space-paragraph); min-width: 0; }
 /* The four ways: four equal stones across the bar, two by two when narrow. */
 .setup-harness-row.setup-harness-ways { display: grid; grid-template-columns: repeat(auto-fit, minmax(112px, 1fr)); }
 .setup-harness-ways .ask-rect { width: auto; flex: none; }
