@@ -1385,6 +1385,10 @@ body {
   font-size: var(--text-label);
   line-height: var(--leading-none);
 }
+.wi-head > button.window-control.minimize {
+  color: var(--kaki); /* kaki: the item's − is where to press to close it */
+  border-color: var(--kaki);
+}
 
 .tile-empty-mark {
   position: absolute;
