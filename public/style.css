@@ -1385,9 +1385,15 @@ body {
   font-size: var(--text-label);
   line-height: var(--leading-none);
 }
+/* The item's − wears the Launch button's look (workspace-kit.css .wk-action[data-kind='primary']). */
 .wi-head > button.window-control.minimize {
-  color: var(--kaki); /* kaki: the item's − is where to press to close it */
   border-color: var(--kaki);
+  background: var(--kaki); /* kaki: the action, or what needs you */
+  color: var(--on-strong);
+}
+.wi-head > button.window-control.minimize:hover {
+  background: var(--kaki-lift); /* kaki: the action, or what needs you */
+  color: var(--on-strong);
 }
 
 .tile-empty-mark {
