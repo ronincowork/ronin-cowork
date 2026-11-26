@@ -206,8 +206,10 @@ judgement about your own machine, so Setup waits for you to say.
 ## Workspaces
 
 The Workspace step defines what a Workspace is, so any Agent that picks it up knows (owner, 25 Nov;
-KAN-809; samurai_lab wip/SETUP_WORKSPACE.md §2). One question, **How are you starting?**, four doors
-(`setup-workspace-kickoff.js`, above the Workspaces already made):
+KAN-809). It is not the Workspaces page: the Workspaces already made are one link at its foot ("You
+have 5 Workspaces."). One question, **How are you starting?**, four doors (`setup-workspace-kickoff.js`);
+a door pressed opens only its questions under it, then Create. After Create the doors are there
+again: people have several Workspaces, and one Workspace can hold several repositories.
 
 1. **From a Git repository**: their GitHub repositories (once signed in) and pasted Git URLs, many;
    each cloned into `repos/<repo>` (`POST /api/workspaces/<name>/repos`).
@@ -215,14 +217,51 @@ KAN-809; samurai_lab wip/SETUP_WORKSPACE.md §2). One question, **How are you st
    Netlify, files from their computer), each an integration row with its folder `files/<source>`.
    Nothing is pulled in here: the Team step's Epic brings it in.
 3. **From scratch**: a new Git repository in `repos/<name>`, on GitHub too (private) when signed in.
-4. **Not sure yet**: Ronin Lab, made on the press.
+4. **Not sure yet**: Ronin Lab, what it is and its folder, then Create. Made, the door reads "Ronin
+   Lab is ready", greyed.
 
-Doors 1–3 then ask what it is (objective; the name from it), its kind (open, business, personal,
-household, social, school: the one list Agents, Teams and Workspaces share) and anything every Agent
-there should follow (instructions). Every answer lands on the Workspace record (`src/workspaces.ts`).
-Every Workspace's folder is `~/ronin/<name>`, laid out `plans/ files/ repos/` on Create, whoever
-creates it (`layOut`). The Helpful Assistant does the same with her `workspace` tool (`create --kind`,
-`repo`, `source`, `starter ronin_lab`).
+Doors 1–3 ask, in this order: what kind of project (open, business, personal, household, social,
+school: the one list Agents, Teams and Workspaces share) · its name · what you are working on (the name
+follows it until one is typed) · the door's own question · for doors 1 and 3, how Agents work in the
+repositories (**Desks** unless they say **Direct**) · anything every Agent there should follow ·
+while there is no Ronin Lab, **Also add Ronin Lab** · Create. Doors 2 and 3 end with an optional GitHub
+Connect while GitHub is not signed in. With no door chosen, or the chosen one pressed again, the space
+under the doors says what a Workspace is, with an illustrative example. After Create, one line: "Made
+<title>, in ~/ronin/<name>." and **Open it**.
+
+The same doors, without that explanation and the foot link, are **New Workspace** everywhere else:
+the Workspaces door and Settings' Workspaces card (`workspaces-surface.js`), where Create opens the made
+Workspace (KAN-900). There is no other form that makes a Workspace.
+
+Every answer lands on the Workspace record (`src/workspaces.ts`):
+
+| Asked | Record field |
+|---|---|
+| What you are working on; its name | `objective`; `title`, and the handle `name` made from it |
+| Kind | `kind` |
+| Anything every Agent should follow | `instructions` (Agents are born with it) |
+| Repositories (door 1); its new one (door 3) | `repos`, at `repos/<repo>`, Desks or Direct as asked |
+| Where it comes from (door 2) | `integrations`, one row per source with `folder: files/<source>` |
+| (always) | `folders`: the Workspace's own folder |
+
+Every Workspace's folder is laid out the same on Create, whoever creates it (`layOut`); a plain
+folder, only the repositories are Git. Desks (the Agents' worktrees) stay where worktree-desk puts them.
+
+```
+~/ronin/<name>/
+  plans/          its plans (the default place)
+  files/          anything that isn't code: documents, notes, uploads
+    <source>/     one per source it comes from (door 2)
+  repos/<repo>/   each repository, cloned or started, its own Git
+```
+
+The Helpful Assistant does the same with her `workspace` tool (`create --kind`, `repo`, `source`,
+`starter ronin_lab`). Two things on the step reach her, and nothing else: **Connect · Helpful
+Assistant** (the button names her) and Create, which tells her what was made as the person's
+`[Button]` line, `Workspace · Created <name>. Its record: workspace read <name>.`. A Workspace's handle
+in her chat is a link to its own page (`chat-item-links.js`). On this step the words are Workspace,
+objective (shown as "What are you working on?"), folder, repository, instructions; never root,
+project root, gh or worktree.
 
 GitHub is never a step of its own: a public repository clones without it. For a private one, or
 "my repositories", the page's **Connect · Helpful Assistant** sends her "Connect GitHub.", and she
