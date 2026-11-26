@@ -171,7 +171,7 @@ function accountsStep(accounts, state) {
     detail: t('accounts.step_detail', 'Each Personal API and Ronin API account is asked for its list; you tick what it offers on Accounts.') });
   for (const row of rows) {
     const said = !row.configured ? t('accounts.key_missing', 'Key missing')
-      : row.discoveredAt ? t('accounts.models_n', '{n} models · {m} offered', { n: row.models.length, m: row.offered.length })
+      : row.discoveredAt ? t('accounts.models_count', '{n} models', { n: row.models.length })
       : t('models.lists_not_read', 'not read yet');
     factsOf(made).append(line(row.name, said));
   }

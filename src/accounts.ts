@@ -6,9 +6,8 @@
  * `subscription` kind and are never stored here: the harness owns them. These are provider accounts for
  * launching Agents, not Ronin Cloud customer or subscription accounts.
  */
-import { listProviders } from './model-providers.js';
 import { readOfficeRecord } from './office-record.js';
-import { accountKind, deleteHermesEntry, discoverHermesModels, hermesSettingsAnswer, saveHermesConnection, saveHermesSetup, updateHermesConnectionLists, type AccountKind, type HermesConnection } from './hermes-setups.js';
+import { accountKind, deleteHermesEntry, discoverHermesModels, hermesSettingsAnswer, saveHermesConnection, saveHermesSetup, type AccountKind, type HermesConnection } from './hermes-setups.js';
 
 /** The house gateway's office door on a developer's own box (ronin-services/model_gateway side by side). */
 export const RONIN_API_BASE_URL = 'http://127.0.0.1:4912/v1';
@@ -21,40 +20,30 @@ export async function roninApiBaseUrl(): Promise<string> {
   return office.hosting === 'office_unit' ? `${office.record.gateway_office}/v1` : RONIN_API_BASE_URL;
 }
 export const RONIN_API_SEED_ID = 'ronin_api';
-/** The Ronin API does not serve Claude Code (owner, 2026-11-03). */
-const NOT_ON_RONIN_API = new Set(['claude']);
-/** Harnesses with a binding today: the only ones a launch can actually run on an account. */
-export const BOUND_HARNESSES = ['hermes', 'codex', 'opencode'];
-/** Which harnesses a vendor's own key serves natively (the plan's provider-section rule, until the catalog carries `harnesses:`). */
-const NATIVE_HARNESSES: Record<HermesConnection['provider'], string[]> = { openai: ['hermes', 'codex'], mistral: ['hermes'], custom: ['hermes'] };
+/** WHICH HARNESSES CAN USE A MODEL SERVICE (owner, 26 Nov 2026; KAN-896): a technical fact the
+ * service reports, never a choice kept on it. A harness is here when Ronin has a launch adapter for
+ * it (src/model-service-launch.ts), with the API protocols that adapter speaks. Claude Code has none,
+ * so it uses no model service. Which services and model options a harness shows in New Agent is that
+ * harness's own setting (`newAgentModels`). */
+const SPEAKS: Record<string, ReadonlyArray<'chat' | 'responses'>> = { hermes: ['chat', 'responses'], codex: ['responses'], opencode: ['chat'] };
+export const worksWith = (wire: 'chat' | 'responses'): string[] => Object.keys(SPEAKS).filter(harness => SPEAKS[harness]!.includes(wire));
 
 export interface Account {
   id: string; kind: AccountKind; name: string; provider: HermesConnection['provider']; baseUrl: string; wire: 'chat' | 'responses';
-  configured: boolean; seeded?: boolean; credentialEnv?: string; harnesses: string[]; bound: string[]; models: string[]; offered: string[]; discoveredAt?: string;
+  configured: boolean; seeded?: boolean; credentialEnv?: string; bound: string[]; models: string[]; discoveredAt?: string;
   /** The seed only: why no gateway address can be offered (the office record will not read). */
   fault?: string;
 }
 export interface Preset { id: string; name: string; harness: 'hermes'; account: string; model: string; reasoning: string; approvals: 'off' | 'prompt' }
 export interface AccountsAnswer { accounts: Account[]; presets: Preset[]; kinds: AccountKind[] }
 
-
-async function roninApiHarnesses(): Promise<string[]> {
-  const clis = listProviders().flatMap(entry => entry.cli && !NOT_ON_RONIN_API.has(entry.cli) ? [entry.cli] : []);
-  return [...new Set(['hermes', ...clis])];
-}
-async function defaultHarnesses(kind: AccountKind, provider: HermesConnection['provider']): Promise<string[]> {
-  return kind === 'ronin_api' ? roninApiHarnesses() : NATIVE_HARNESSES[provider] ?? ['hermes'];
-}
-
 async function project(c: HermesConnection & { configured: boolean }): Promise<Account> {
   const kind = accountKind(c);
   const wire = c.wireApi ?? (c.provider === 'openai' ? 'responses' : 'chat');
-  const compatible = BOUND_HARNESSES.filter(cli => cli === 'hermes' || (cli === 'codex' ? wire === 'responses' : wire === 'chat'));
-  const harnesses = c.harnesses ?? [...new Set([...await defaultHarnesses(kind, c.provider), ...compatible])];
   return {
-    id: c.id, kind, name: c.name, provider: c.provider, baseUrl: c.baseUrl, wire: c.wireApi ?? (c.provider === 'openai' ? 'responses' : 'chat'),
+    id: c.id, kind, name: c.name, provider: c.provider, baseUrl: c.baseUrl, wire,
     configured: c.configured, ...(c.credentialEnv ? { credentialEnv: c.credentialEnv } : {}),
-    harnesses, bound: harnesses.filter(h => compatible.includes(h)), models: c.models, offered: c.offered ?? c.models, ...(c.discoveredAt ? { discoveredAt: c.discoveredAt } : {}),
+    bound: worksWith(wire), models: c.models, ...(c.discoveredAt ? { discoveredAt: c.discoveredAt } : {}),
   };
 }
 
@@ -66,7 +55,7 @@ export async function serviceConnections(state: Awaited<ReturnType<typeof hermes
     let baseUrl = '', fault: string | undefined;
     try { baseUrl = await roninApiBaseUrl(); } catch (e) { fault = (e as Error).message; }
     accounts.push({ id: RONIN_API_SEED_ID, kind: 'ronin_api', name: 'Ronin API', provider: 'custom', baseUrl, wire: 'responses', configured: false, seeded: true,
-      harnesses: await roninApiHarnesses(), bound: ['hermes', 'codex'], models: [], offered: [], ...(fault ? { fault } : {}) });
+      bound: worksWith('responses'), models: [], ...(fault ? { fault } : {}) });
   }
   return accounts;
 }
@@ -86,7 +75,7 @@ export async function saveAccount(input: Record<string, unknown>) {
   if (kind === 'ronin_api') {
     return saveHermesConnection({ id, kind, name: typeof input.name === 'string' && input.name.trim() ? input.name : 'Ronin API', provider: 'custom', wireApi: 'responses',
       // The same office-aware default the seed shows; an unreadable record refuses the save with its reason.
-      baseUrl: typeof input.baseUrl === 'string' && input.baseUrl.trim() ? input.baseUrl : await roninApiBaseUrl(), apiKey: input.apiKey ?? input.token, harnesses: input.harnesses });
+      baseUrl: typeof input.baseUrl === 'string' && input.baseUrl.trim() ? input.baseUrl : await roninApiBaseUrl(), apiKey: input.apiKey ?? input.token });
   }
   const saved = await saveHermesConnection({ ...input, id, kind });
   // The key is already saved. If discovery is offline the owner can retry via Discover.
@@ -94,7 +83,6 @@ export async function saveAccount(input: Record<string, unknown>) {
   return saved;
 }
 export const discoverAccount = (id: string) => discoverHermesModels(id);
-export const updateAccountLists = (id: string, lists: { harnesses?: unknown; offered?: unknown }) => updateHermesConnectionLists(id, lists);
 export const deleteAccount = (id: string) => deleteHermesEntry('connections', id);
 /** A preset names harness, account, model and knobs; today every preset is Hermes's, saved as its named setup. */
 export async function savePreset(input: Record<string, unknown>) {

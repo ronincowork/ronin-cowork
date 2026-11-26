@@ -1,11 +1,10 @@
 /* part of the ronin-cowork client — see js/README.md */
 /**
- * THE ACCOUNT EDITORS (KAN-236, the Agent Harness workbench): the forms and tick lists every page that shows
+ * THE ACCOUNT EDITORS (KAN-236, the Agent Harness workbench): the forms every page that shows
  * an account uses — the Accounts tilespace and the Models tilespace. One record behind them all:
  * `/api/accounts` reads the Hermes connections as accounts; every write goes back through it.
  *   `accountForm(account, { kind, onSaved })` — add or edit a Personal API (vendor or OpenAI-compatible endpoint,
  *   key) or a Ronin API (the gateway endpoint, prefilled, and the house token).
- *   `tickList(rows, ticked, onChange)` — a tick per row, saved as one list on change.
  *   `kindWord(kind)` — the account kind's word, the same everywhere.
  */
 import { WorkspaceKit } from './workspace-kit.js';
@@ -51,21 +50,6 @@ export async function presetAction(action, body, say) {
   return result.data;
 }
 
-/** A tick list: `rows` as [id, label], `ticked` the ids on; `onChange(ids)` after each press. */
-export function tickList(rows, ticked, onChange, { className = '' } = {}) {
-  const list = el('div', `accounts-ticks ${className}`.trim());
-  const on = new Set(ticked);
-  for (const [id, label, note] of rows) {
-    const line = el('label', 'accounts-tick');
-    const box = el('input'); box.type = 'checkbox'; box.checked = on.has(id); box.value = id;
-    box.addEventListener('change', () => { if (box.checked) on.add(id); else on.delete(id); onChange([...on]); });
-    line.append(box, el('span', null, label));
-    if (note) line.append(el('span', 'setup-provider-default', note));
-    list.append(line);
-  }
-  return list;
-}
-
 /**
  * Add or edit an account. `kind` fixes the form: a Personal API asks vendor, endpoint, wire and key; a Ronin
  * API asks endpoint (prefilled with the gateway) and the house token. `onSaved(answer)` gets the new list.
@@ -108,7 +92,7 @@ export function accountForm(account = {}, { kind = account.kind || 'personal_api
   return form;
 }
 
-/** Add or edit a preset: name, account, model (from the account's offered list), reasoning, approvals. */
+/** Add or edit a preset: name, account, model (from the account's discovered list), reasoning, approvals. */
 export function presetForm(preset = {}, accounts = [], { onSaved = () => {}, onCancel = () => {}, say = () => {} } = {}) {
   const form = el('form', 'hermes-editor accounts-form');
   const usable = accounts.filter((a) => a.configured && a.models.length);
@@ -118,7 +102,7 @@ export function presetForm(preset = {}, accounts = [], { onSaved = () => {}, onC
   const approvals = select([['off', t('accounts.approvals_off', 'YOLO — approvals off')], ['prompt', t('accounts.approvals_prompt', 'Ask for approval')]], preset.approvals || 'off');
   const populate = () => {
     const a = usable.find((row) => row.id === account.value);
-    const rows = (a?.offered?.length ? a.offered : a?.models || []).map((id) => [id, id]);
+    const rows = (a?.models || []).map((id) => [id, id]);
     const options = select(rows, preset.account === a?.id ? preset.model : ''); model.replaceChildren(...options.childNodes); model.value = rows.some(([id]) => id === preset.model) && preset.account === a?.id ? preset.model : rows[0]?.[0] || '';
     const levels = a?.provider === 'openai' || a?.wire === 'responses' ? ['default', 'none', 'low', 'medium', 'high', 'xhigh', 'max'] : ['default'];
     const choices = select(levels.map((id) => [id, id === 'default' ? t('accounts.reasoning_default', 'Provider default') : id]), levels.includes(preset.reasoning) ? preset.reasoning : a?.provider === 'openai' ? 'medium' : 'default');
@@ -148,7 +132,7 @@ export function accountSummary(account) {
     account.fault ? t('accounts.fault', 'no gateway address: {fault}', { fault: account.fault }) : account.baseUrl.replace(/^https?:\/\//, ''),
     account.credentialEnv ? account.credentialEnv : '',
     account.seeded ? t('accounts.seeded', 'add a token to use it') : account.configured ? t('accounts.configured', 'Configured') : t('accounts.key_missing', 'Key missing'),
-    account.discoveredAt ? t('accounts.models_n', '{n} models · {m} offered', { n: account.models.length, m: account.offered.length }) : t('accounts.not_discovered', 'Models not discovered'),
+    account.discoveredAt ? t('accounts.models_count', '{n} models', { n: account.models.length }) : t('accounts.not_discovered', 'Models not discovered'),
   ].filter(Boolean);
   node.append(el('span', 'setup-provider-default', kindWord(account.kind)), el('strong', null, account.name), el('span', null, facts.join(' · ')));
   return node;

@@ -1,7 +1,7 @@
 import { modelServices } from '../model-services.js';
 import { hermesSettingsAnswer, saveHermesConnection, discoverHermesModels, saveModelSetup, deleteHermesEntry, onHermesWritten, readGatewayModels } from '../hermes-setups.js';
 import { broadcastEvent } from '../ws/events.js';
-import { accountsAnswer, saveAccount, discoverAccount, updateAccountLists, deleteAccount, savePreset, deletePreset } from '../accounts.js';
+import { accountsAnswer, saveAccount, discoverAccount, deleteAccount, savePreset, deletePreset } from '../accounts.js';
 import { homedir } from 'node:os';
 import { dispatchInstall } from '../agent-install.js';
 import type express from 'express';
@@ -84,7 +84,6 @@ export function registerSetupRuntime(app: express.Express): void {
       switch (req.params.action) {
         case 'save': await saveAccount(req.body); break;
         case 'discover': await discoverAccount(String(req.body.id)); break;
-        case 'lists': await updateAccountLists(String(req.body.id), { harnesses: req.body.harnesses, offered: req.body.offered }); break;
         case 'delete': await deleteAccount(String(req.body.id)); break;
         default: return res.status(404).json({ error: 'Unknown account action.' });
       }

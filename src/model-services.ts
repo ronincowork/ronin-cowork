@@ -5,7 +5,7 @@ import { hermesSettingsAnswer, isOpenRouterService } from './hermes-setups.js';
 export async function modelServices() {
   const state = await hermesSettingsAnswer();
   const accounts = await serviceConnections(state);
-  return accounts.map(({ models: discovered, offered: _offered, ...connection }) => ({
+  return accounts.map(({ models: discovered, ...connection }) => ({
     ...connection,
     name: connection.kind === 'ronin_api' ? 'Ronin Gateway' : connection.name,
     service_type: connection.kind === 'ronin_api' ? 'gateway' : isOpenRouterService(connection.baseUrl) ? 'openrouter' : 'private_api',
