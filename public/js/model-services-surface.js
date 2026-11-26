@@ -315,7 +315,8 @@ export function createModelServicesSurface({ tab = 'gateway', serviceId = '' } =
   listeners.add(watch); hearChanges();
   return {
     el: out.el,
-    show: async () => { if (read) paint(); await load(say); },
+    // Placed again with a tab (a harness page's press): open on that tab.
+    show: async (detail) => { if (TABS.includes(detail?.tab)) shown = detail.tab; if (read) paint(); await load(say); },
     destroy: () => { disposed = true; listeners.delete(watch); },
   };
 }

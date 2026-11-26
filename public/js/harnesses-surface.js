@@ -1,4 +1,6 @@
 import { harnessModelEditor } from './harness-model-options.js';
+import { modelServicePageRequest } from './model-services-surface.js';
+import { openWorkbenchTab } from './workspace.js';
 /* part of the ronin-cowork client — see js/README.md */
 /**
  * ONE MODEL PROVIDERS SURFACE, TWO SEATS. Ronin Setup's Model providers card and Ronin
@@ -510,7 +512,8 @@ export function createHarnessDrawing(context, { repaint, say = () => {} }) {
     if (!provider && !rows.length) { host.append(el('p', 'setup-notice bad', t('setup_surface.provider_missing', 'This harness is no longer in the harness catalog.'))); return null; }
     // Hermes has no sign-in of its own: it runs on a model service, so its page is only Models.
     const harness = harnessCatalog().harnesses.find(entry => entry.cli === id);
-    const editor = harness && harnessModelEditor(harnessCatalog(), harness);
+    const openServices = (tab) => context.environment?.openModelServices ? context.environment.openModelServices(tab, context.workspace) : openWorkbenchTab(modelServicePageRequest(tab));
+    const editor = harness && harnessModelEditor(harnessCatalog(), harness, openServices);
     if (id === 'hermes') {
       if (editor) {
         const models = el('section', 'setup-provider-catalog');

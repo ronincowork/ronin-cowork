@@ -18,6 +18,8 @@ import { FILES_ON } from './files-surface.js';
 import { t } from './lexicon.js';
 import { workbenchView } from './workspace-contract.js';
 import { registerWorkbenchCatalog, WORKBENCH_PROFILES, WORKBENCH_TYPES } from './workbench-catalog.js';
+import { openWorkbenchTab } from './workspace.js';
+import { modelServicePageRequest } from './model-services-surface.js';
 import { createHarnessSetupSessionMount } from './harness-setup-session.js';
 import { loadHarnessCatalog } from './form-steps.js';
 import { createModelDefaults, createModelHarness, createModelRefresh, createModelStones, harnessOffers } from './models-surface.js';
@@ -129,6 +131,9 @@ export function harnessKit() {
         modelRefresh: (workspace) => keep(createModelRefresh({ workspace, detail: {}, environment, workbench: bench() })),
         modelDefaults: () => createModelDefaults(),
         modelHarness: (workspace, detail) => keep(createModelHarness(detail.key, { workspace, detail, environment, workbench: bench() })),
+        // A harness page's model service press: Model services in the other pane, on the tab asked, where
+        // the workbench holds it (Settings v2); otherwise in its own tab.
+        openModelServices: (tab, from) => bench().place(WORKBENCH_TYPES.settings2ModelServices, opposite(from), { tab }) || openWorkbenchTab(modelServicePageRequest(tab)),
         modelMika: () => ({ el: mikaSurface.el, show: () => { mikaPool.sync([helper]); mikaPool.show(helper, false); } }),
         assistName: signInHelperName,
         onMikaHarnessGuide: ({ provider, setupSession, workspace }) => showMika(opposite(workspace), guidePrompt(provider, setupSession)),

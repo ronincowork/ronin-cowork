@@ -2,7 +2,6 @@
 import { workbenchLink, openWorkbenchTab } from './workspace.js';
 import { el, modelLabel } from './form-steps.js';
 import { createTable, tableLink } from './data-table.js';
-import { modelServicePageRequest } from './model-services-surface.js';
 import { request } from './request.js';
 import { t } from './lexicon.js';
 
@@ -46,7 +45,7 @@ export function shownInNewAgent(catalog, entry, row) {
  * a service off is [].
  */
 const TYPES = [['gateway', 'Ronin Gateway', 'gateway'], ['private_api', 'API key', 'private'], ['openrouter', 'OpenRouter', 'openrouter']];
-export function harnessModelEditor(catalog, entry) {
+export function harnessModelEditor(catalog, entry, openServices) {
   const box = el('div', 'harness-models');
   const choices = { ...catalog.preferences?.[entry.cli] };
   const seen = new Set();
@@ -97,7 +96,7 @@ export function harnessModelEditor(catalog, entry) {
     out.type = 'button';
     out.append(el('span', 'ask-name', group.name), el('small', 'ask-word', 'Not set up'));
     out.setAttribute('aria-selected', 'false');
-    out.addEventListener('click', () => openWorkbenchTab(modelServicePageRequest(group.tab)));
+    out.addEventListener('click', () => openServices(group.tab));
     return out;
   };
   const stone = group => {
@@ -129,7 +128,7 @@ export function harnessModelEditor(catalog, entry) {
     sources.dataset.density = 'tight';
     sources.append(...groups.map(stone));
     const parts = [el('p', 'setup-fine', `The model services New Agent offers for ${entry.cli_label || entry.cli}, then the models in each.`), sources,
-      tableLink('+ Add or change model services in Settings', () => openWorkbenchTab(modelServicePageRequest('gateway')))];
+      tableLink('+ Add or change model services in Settings', () => openServices('gateway'))];
     for (const group of groups) {
       if (!group.id || !isOn(group.id)) continue;
       parts.push(el('h4', 'harness-models-service', group.name), table(group));
