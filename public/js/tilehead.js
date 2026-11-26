@@ -282,12 +282,16 @@ export function tileMenu(tile) {
  * A READ OVER THE TILE: the full overlay (work-details.js fullOverlay) over the tile's body,
  * with a head of its title and Close; the terminal stays as it was beneath it (owner,
  * 2026-10-07: "a full overlay and not mess with the content underneath"). `fill(layer)`
- * draws the rest. Loaded on first open: the overlay's module draws the kit.
+ * draws the rest; `fill(layer, close)` with no title draws no head (the item: its − is its close).
+ * Loaded on first open: the overlay's module draws the kit.
  */
 async function overTile(tile, title, fill, options = {}) {
   const { fullOverlay } = await import('./work-details.js');
   tile.body.querySelector(':scope > .work-overlay')?.remove();
-  const layer = fullOverlay(tile.body, (box, through) => {
+  let close;
+  const layer = fullOverlay(tile.body, (box, through, shut) => {
+    close = shut;
+    if (!title) return;
     const head = document.createElement('div');
     head.className = 'tile-record-head';
     const tools = document.createElement('div');
@@ -297,7 +301,7 @@ async function overTile(tile, title, fill, options = {}) {
     head.append(Object.assign(document.createElement('h2'), { textContent: title }), tools);
     box.append(head);
   }, options);
-  fill(layer);
+  fill(layer, close);
   return layer;
 }
 
@@ -323,8 +327,8 @@ async function openItem(tile, item) {
   const { request } = await import('./request.js');
   const read = await request(`/api/work-items/${encodeURIComponent(item.id)}`, { cache: 'no-store' });
   const holder = holderOf({ ...item, held_by: read.ok ? read.data?.held_by : undefined, holder: item.holder || '' }) || (read.ok ? '' : `@${tile.session || ''}`);
-  // The reader's own head carries the key and the title, so the overlay's row is only its Close.
-  await overTile(tile, '', (box) => {
+  // The reader's own head carries the key, the title and the −, so the overlay has no head row.
+  await overTile(tile, '', (box, close) => {
     box.dataset.item = item.id;
     const detail = document.createElement('div');
     detail.className = 'tile-item-detail';
@@ -336,8 +340,8 @@ async function openItem(tile, item) {
     // The whole item (KAN-524): the tile's record is a slim row, without priority, starter or Jira fields.
     renderItemDetail(detail, read.ok && read.data?.item ? read.data.item : item, { holder, heldBy: read.ok ? read.data?.held_by : null, openAttachment: (path) => tile.openDoc(path), history: false,
       children, openChild: (child) => void openItem(tile, child),
-      // Its head minimizes it, through the overlay's own Close (KAN-431).
-      onClose: () => box.querySelector('.work-overlay-utility button')?.click() });
+      // Its head minimizes it: the overlay's own close (KAN-431).
+      onClose: close });
     box.append(detail);
   });
 }

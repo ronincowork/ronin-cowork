@@ -14,7 +14,7 @@ function overlay(host, draw, { closed = () => {} } = {}) {
   const close = () => { layer.remove(); closed(); };
   const utility = el('div', 'work-overlay-utility');
   utility.append(createAction({ label: t('work.close_item', 'Close'), size: 'compact', action: close }).el);
-  draw(layer, [utility]);
+  draw(layer, [utility], close);
   // Escape lifts this layer only: an overlay inside another leaves the outer one.
   layer.addEventListener('keydown', (event) => { if (event.key === 'Escape') { event.stopPropagation(); close(); } });
   host.append(layer);
@@ -25,5 +25,6 @@ function overlay(host, draw, { closed = () => {} } = {}) {
 }
 
 /** THE FULL OVERLAY as a location (PATTERNS.md): any surface lays a reader or a form over itself with
- * the same chrome and the same Close. `draw(layer, through)` paints into the layer. */
+ * the same chrome and the same Close. `draw(layer, through, close)` paints into the layer;
+ * a reader with its own close (the item's −) calls `close` and leaves `through` out. */
 export const fullOverlay = overlay;
