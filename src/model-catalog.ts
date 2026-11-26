@@ -1,5 +1,7 @@
-/* THE MODEL CATALOG (KAN-828): HQ's Models table, one row per CLI model with its tier, its
- * "use it for" line and its facts. HQ sends it through the park; the kohai writes the unit's
+/* THE MODEL CATALOG (KAN-828, KAN-895): two plain lists from HQ. `harness_models`: one row per
+ * harness model with its tier, its "use it for" line and its facts. `openrouter_starters`: the
+ * model options a new OpenRouter connection is seeded with, name and API model ID. Ronin Gateway's
+ * models are described by the Gateway's own list, never here. HQ sends it through the park; the kohai writes the unit's
  * models.json; the Services part reads that file and hands it here whole (setModels). This file
  * keeps the last catalog in its own store and is the only reader of it, so a restart or a
  * stopped park still has one. No catalog yet reads as no rows.
@@ -9,9 +11,9 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { storeDir } from './resources.js';
-import type { CatalogModel, ModelCatalog } from './sockets-contract.js';
+import type { CatalogModel, ModelCatalog, OpenRouterStarter } from './sockets-contract.js';
 
-export type { CatalogModel, ModelCatalog };
+export type { CatalogModel, ModelCatalog, OpenRouterStarter };
 
 const catalogFile = (): string => path.join(storeDir('model_catalog'), 'catalog.json');
 
@@ -25,13 +27,13 @@ function present<T extends object>(o: T): T {
 
 function modelRow(value: unknown): CatalogModel | null {
   const e = (value ?? {}) as Record<string, unknown>;
-  const cli = text(e.cli);
+  const harness = text(e.harness);
   const id = text(e.id);
-  if (!cli || !id) return null;
+  if (!harness || !id) return null;
   const p = (e.price ?? {}) as Record<string, unknown>;
   const price = present({ input: num(p.input), output: num(p.output) });
   return present({
-    cli, id,
+    harness, id,
     name: text(e.name),
     tier: text(e.tier)?.toLowerCase(),
     use_for: text(e.use_for),
@@ -45,16 +47,26 @@ function modelRow(value: unknown): CatalogModel | null {
   });
 }
 
+function starterRow(value: unknown): OpenRouterStarter | null {
+  const e = (value ?? {}) as Record<string, unknown>;
+  const id = text(e.id);
+  return id ? { id, name: text(e.name) ?? id } : null;
+}
+
 /** Any value as a catalog: a missing or wrong field is no rows. */
 export function parseModelCatalog(value: unknown): ModelCatalog {
   const raw = (value ?? {}) as Record<string, unknown>;
-  const models = (Array.isArray(raw.models) ? raw.models : []).map(modelRow).filter((m): m is CatalogModel => Boolean(m));
-  return present({ at: text(raw.at), models });
+  const list = (v: unknown): unknown[] => (Array.isArray(v) ? v : []);
+  return present({
+    at: text(raw.at),
+    harness_models: list(raw.harness_models).map(modelRow).filter((m): m is CatalogModel => Boolean(m)),
+    openrouter_starters: list(raw.openrouter_starters).map(starterRow).filter((m): m is OpenRouterStarter => Boolean(m)),
+  });
 }
 
 /** The last catalog HQ sent; none yet is no rows. */
 export async function readModelCatalog(): Promise<ModelCatalog> {
-  try { return parseModelCatalog(JSON.parse(await fs.readFile(catalogFile(), 'utf8'))); } catch { return { models: [] }; }
+  try { return parseModelCatalog(JSON.parse(await fs.readFile(catalogFile(), 'utf8'))); } catch { return { harness_models: [], openrouter_starters: [] }; }
 }
 
 /** Keep this catalog as the office's; written only when it differs. */

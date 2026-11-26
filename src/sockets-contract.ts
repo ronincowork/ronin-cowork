@@ -1,12 +1,12 @@
 
 import type { TrailLine, WorkItem } from './work-items.js';
 
-export const CONTRACT_V = 16;
+export const CONTRACT_V = 17;
 
-/** One row of HQ's Models table: `cli` + `id` exactly as that CLI lists the model. A fact HQ
+/** One harness model HQ rates: `harness` + `id` exactly as that CLI lists the model. A fact HQ
  *  doesn't have is absent, never guessed. Prices are USD per million tokens. */
 export interface CatalogModel {
-  cli: string;
+  harness: string;
   id: string;
   name?: string;
   tier?: string;
@@ -19,8 +19,11 @@ export interface CatalogModel {
   reasoning?: boolean;
   tools?: boolean;
 }
-/** The catalog in Glen's order, which is the picker's order within a tier. */
-export interface ModelCatalog { at?: string; models: CatalogModel[] }
+/** A model option HQ suggests for a new OpenRouter connection: its display name and exact API model ID. */
+export interface OpenRouterStarter { name: string; id: string }
+/** The office's models file: the harness models HQ rates, in Glen's order (the picker's order within
+ *  a tier), and the OpenRouter starters. Ronin Gateway's models are not here: the Gateway lists them. */
+export interface ModelCatalog { at?: string; harness_models: CatalogModel[]; openrouter_starters: OpenRouterStarter[] }
 
 export interface LaunchIdentity {
   key: string;

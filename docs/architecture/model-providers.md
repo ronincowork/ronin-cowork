@@ -5,8 +5,8 @@ For Gateway, OpenRouter, private API connections and their named models, see [Mo
 For native CLI launches, Ronin joins three records in one place (`providerRows`,
 `src/model-providers.ts`). Each CLI in `src/agents.ts` names the vendor it serves. Which
 models can launch is each signed-in CLI's own list, in the Campaign's **measured provider
-summary**. What each model is for is **HQ's model catalog**: one Models table on HQ's admin
-page, each CLI model's tier, its "use it for" line and its facts, sent to every office through
+summary**. What each model is for is **HQ's model catalog**: the harness models on HQ's admin
+Models page, each one's tier, its "use it for" line and its facts, sent to every office through
 its park (plan `ronin_hosted/model-catalog`, KAN-827).
 
 Adding a model must not add a route, UI branch, parser branch, or spawn branch: a CLI lists
@@ -18,7 +18,7 @@ Provider setup has these records, with deliberately different contents:
 |---|---|
 | this document | the provider/model extension contract |
 | `src/agents.ts`, `vendor` | per CLI: the vendor id a launch names, the vendor's name, its transcript source, an optional maturity |
-| HQ's model catalog (`src/model-catalog.ts`) | per CLI model (cli + id): tier, "use it for" line, facts |
+| HQ's model catalog (`src/model-catalog.ts`) | per harness model (harness + id): tier, "use it for" line, facts; and the OpenRouter starters |
 | `docs/agents/<cli>.md` | the executable Native, Model, Dangerously and Resume command forms |
 | `docs/operating/secrets.md` | how the owner supplies and audits the credential that pays |
 
@@ -47,14 +47,17 @@ command-word match, no map in a client. The CLI's own particulars are its
 
 ## HQ's model catalog
 
-Glen keeps one Models table on HQ's admin page: every model each CLI offers, `cli` + `id`
-exactly as that CLI lists it, in his order, with its tier (`light` · `standard` ·
-`frontier`), a "use it for" line in his words, and its facts. The park carries it to each
-office; the kohai writes `office_unit/models.json`:
+Glen rates harness models on HQ's admin Models page: every model each harness offers, `harness` +
+`id` exactly as that CLI lists it, in his order, with its tier (`light` · `standard` ·
+`frontier`), a "use it for" line in his words, and its facts. The same page keeps the OpenRouter
+starters. The park carries both to each office; the kohai writes `office_unit/models.json`
+(KAN-895):
 
 ```text
-{ at, models: [ { cli, id, name, tier, use_for, context, output,
-                  price: { input, output }, released, knowledge, reasoning, tools } ] }
+{ at,
+  harness_models: [ { harness, id, name, tier, use_for, context, output,
+                      price: { input, output }, released, knowledge, reasoning, tools } ],
+  openrouter_starters: [ { name, id } ] }
 ```
 
 Price is USD per million tokens. A fact HQ doesn't have is absent, never guessed. The
@@ -62,6 +65,9 @@ Services `model_catalog` part reads the file at start and on every change and ha
 to Cowork (`setModels` on the Sockets); `src/model-catalog.ts` keeps the last one in the
 `model_catalog` store, so a restart or a stopped park still has it. No catalog yet is no
 rows: every listed model is then Unrated.
+
+Ronin Gateway's models are not in this file. The Gateway's own list says each one's `id`,
+`name`, `tier` and `use_for`, and Ronin reads them there ([Model services](model_services_README.md)).
 
 The catalog never grants a model: a model is offered because its CLI lists it, and a catalog
 row the CLI doesn't list is not offered.
@@ -74,7 +80,7 @@ is every provider's default in every path, and a preference is ⚙ Configuration
 A saved or explicitly supplied CLI model name absent from the refreshed list is passed
 unchanged to the named provider. Ronin does not maintain or rewrite an alias map.
 
-`providerRows` joins each CLI's vendor, what the CLI listed, HQ's catalog row on cli + id,
+`providerRows` joins each CLI's vendor, what the CLI listed, HQ's catalog row on harness + id,
 and the CLI's Agent page for the command. Neither record holds CLI syntax.
 
 **The rows a provider offers (KAN-829).** Native first, then every model the CLI lists,
@@ -90,7 +96,7 @@ A service connection owns its endpoint, wire protocol, credential reference and 
 
 ### OpenRouter starters
 
-HQ Admin publishes OpenRouter starter names and exact model IDs through the existing HQ model catalog as rows with `cli: "openrouter"`. A newly connected OpenRouter service seeds the intersection of those rows and the authenticated `/models/user` list. Once seeded, users can edit or remove those model options on their OpenRouter connection. Refreshing, rotating a key or receiving another catalog preserves edits and removals. Before the first starter catalog arrives, a new connection remains eligible. Inference uses the key configured for that OpenRouter connection at OpenRouter.
+HQ Admin publishes OpenRouter starter names and exact model IDs as the models file's `openrouter_starters` list. A newly connected OpenRouter service seeds the intersection of those rows and the authenticated `/models/user` list. Once seeded, users can edit or remove those model options on their OpenRouter connection. Refreshing, rotating a key or receiving another catalog preserves edits and removals. Before the first starter catalog arrives, a new connection remains eligible. Inference uses the key configured for that OpenRouter connection at OpenRouter.
 
 ## Hermes connections and model options
 

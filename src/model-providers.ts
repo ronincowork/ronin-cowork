@@ -8,8 +8,8 @@ import { modelServices } from './model-services.js';
  * - THE CAMPAIGN'S PROVIDER SUMMARY: what this machine measured, dated, hung on the
  *   Campaign record. Its `models` are each activated CLI's own list, read on every refresh
  *   and never guessed. The CLI is the one source of truth for what can be launched.
- * - HQ'S MODEL CATALOG (`src/model-catalog.ts`): each CLI model's tier, its "use it for" line
- *   and its facts, keyed by cli + id. It never grants a model: a catalog row the CLI doesn't
+ * - HQ'S MODEL CATALOG (`src/model-catalog.ts`): each harness model's tier, its "use it for" line
+ *   and its facts, keyed by harness + id. It never grants a model: a catalog row the CLI doesn't
  *   list is not offered.
  *
  * `providerRows` is the one join: Native first, then every model the CLI lists, grouped by
@@ -68,7 +68,7 @@ export interface SessionLaunchSpec {
   /** The complete interactive command for this model. */
   cmd: string;
   dangerousCmd?: string;
-  /** The catalog's tier; `unrated` for a listed model the catalog lacks; '' for Native and setups. */
+  /** The catalog's tier, or the Gateway's own for its model options; `unrated` for a listed model the catalog lacks; '' for Native and named options. */
   tier: Tier | typeof UNRATED | '';
   /** The catalog's "use it for" line; absent when it has none. */
   use_for?: string;
@@ -289,7 +289,7 @@ async function grammarOf(cli: string): Promise<AgentLaunches | null> {
  * row the CLI doesn't list is not offered.
  */
 function rated(listed: readonly ModelRow[], cli: string, catalog: ModelCatalog): Array<{ row: ModelRow; tier: typeof GROUPS[number]; at?: CatalogModel; order: number }> {
-  const own = catalog.models.filter((m) => m.cli === cli);
+  const own = catalog.harness_models.filter((m) => m.harness === cli);
   const out = listed.map((row, index) => {
     const at = own.find((m) => m.id === row.id);
     const tier: typeof GROUPS[number] = at && isTier(at.tier) ? at.tier : UNRATED;
@@ -299,7 +299,7 @@ function rated(listed: readonly ModelRow[], cli: string, catalog: ModelCatalog):
 }
 
 const factsOf = (m: CatalogModel): ModelFacts | undefined => {
-  const { cli: _cli, id: _id, name: _name, tier: _tier, use_for: _use, ...facts } = m;
+  const { harness: _harness, id: _id, name: _name, tier: _tier, use_for: _use, ...facts } = m;
   return Object.keys(facts).length ? facts : undefined;
 };
 
@@ -360,7 +360,8 @@ export async function providerRows(summary: ProviderSummary | null, catalog?: Mo
           service_id: service.id, service_name: service.name,
           cmd: commandText(renderLaunch(grammar.model, { model: marker })),
           ...(grammar.modelDangerously.length ? { dangerousCmd: commandText(renderLaunch(grammar.modelDangerously, { model: marker })) } : {}),
-          selectable: canUseService, operational: canUseService, tier: '', default: rows.length === 0 });
+          selectable: canUseService, operational: canUseService, tier: isTier(setup.tier) ? setup.tier : '',
+          ...(setup.use_for ? { use_for: setup.use_for } : {}), default: rows.length === 0 });
       }
     }
     const ready = rows.some(row => row.operational);

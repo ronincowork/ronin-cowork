@@ -12,7 +12,7 @@ export async function modelServices() {
     discovered,
     discoveredNames: state.connections.find(c => c.id === connection.id)?.modelNames || {},
     models: state.setups.filter(entry => entry.connection === connection.id)
-      .map(({ id, model, name, reasoning, approvals }) => ({ id, model, name, reasoning, approvals })),
+      .map(({ id, model, name, reasoning, approvals, tier, use_for }) => ({ id, model, name, reasoning, approvals, ...(tier ? { tier } : {}), ...(use_for ? { use_for } : {}) })),
   }));
 }
 export type ModelService = Awaited<ReturnType<typeof modelServices>>[number];

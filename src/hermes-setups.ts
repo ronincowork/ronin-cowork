@@ -14,8 +14,9 @@ import { storeDir, REPO_ROOT } from './resources.js';
 /** A connection is an account in the Agent Harness workbench (KAN-236): `kind`, the harnesses it serves and the
  * models it offers are optional facts on the same record; absent, src/accounts.ts derives them. */
 export type AccountKind = 'personal_api' | 'ronin_api';
-export interface HermesConnection { id: string; name: string; provider: 'openai' | 'mistral' | 'custom'; baseUrl: string; wireApi?: 'chat' | 'responses'; models: string[]; modelNames?: Record<string, string>; discoveredAt?: string; credentialEnv?: string; starterModelsPending?: true; kind?: AccountKind; harnesses?: string[]; offered?: string[] }
-export interface ModelSetup { id: string; name: string; connection: string; model: string; reasoning: string; approvals: 'off' | 'prompt' }
+export interface HermesConnection { id: string; name: string; provider: 'openai' | 'mistral' | 'custom'; baseUrl: string; wireApi?: 'chat' | 'responses'; models: string[]; modelNames?: Record<string, string>; modelInfo?: Record<string, { tier?: string; use_for?: string }>; discoveredAt?: string; credentialEnv?: string; starterModelsPending?: true; kind?: AccountKind; harnesses?: string[]; offered?: string[] }
+/** `tier` and `use_for` are the Ronin Gateway's own words for its model options; a named option has neither. */
+export interface ModelSetup { id: string; name: string; connection: string; model: string; reasoning: string; approvals: 'off' | 'prompt'; tier?: string; use_for?: string }
 export type HermesSetup = ModelSetup;
 export interface HermesSettings { connections: HermesConnection[]; setups: HermesSetup[] }
 const empty = (): HermesSettings => ({ connections: [], setups: [] });
@@ -30,7 +31,7 @@ export const isOpenRouterService = (baseUrl: string) => baseUrl.replace(/\/$/, '
 async function seedOpenRouterModels(state: HermesSettings): Promise<boolean> {
   const pending = state.connections.filter(c => c.starterModelsPending && c.discoveredAt && isOpenRouterService(c.baseUrl));
   if (!pending.length) return false;
-  const starters = (await readModelCatalog()).models.filter(row => row.cli === 'openrouter' && modelPattern.test(row.id) && !row.id.startsWith('-'));
+  const starters = (await readModelCatalog()).openrouter_starters.filter(row => modelPattern.test(row.id) && !row.id.startsWith('-'));
   if (!starters.length) return false; // Pre-publication catalogs can already exist on the office.
   for (const connection of pending) {
     for (const row of starters) {
@@ -102,7 +103,7 @@ export async function saveHermesConnection(input: Record<string, unknown>): Prom
     const harnesses = input.harnesses === undefined ? existing?.harnesses : harnessList(input.harnesses);
     const connection: HermesConnection = { ...(!apiKey && existing?.credentialEnv ? { credentialEnv: existing.credentialEnv } : {}), id, name: required(input.name, 'Connection name'), provider, baseUrl, ...(wireApi ? { wireApi } : {}),
       ...(isOpenRouterService(baseUrl) && (!existing || !isOpenRouterService(existing.baseUrl) || existing.starterModelsPending) ? { starterModelsPending: true as const } : {}),
-      models: changed ? [] : existing.models, ...(!changed && existing.modelNames ? { modelNames: existing.modelNames } : {}), ...(!changed && existing.discoveredAt ? { discoveredAt: existing.discoveredAt } : {}),
+      models: changed ? [] : existing.models, ...(!changed && existing.modelNames ? { modelNames: existing.modelNames } : {}), ...(!changed && existing.modelInfo ? { modelInfo: existing.modelInfo } : {}), ...(!changed && existing.discoveredAt ? { discoveredAt: existing.discoveredAt } : {}),
       ...(kind ? { kind } : {}), ...(harnesses ? { harnesses } : {}), ...(!changed && existing?.offered ? { offered: existing.offered } : {}) };
     if (apiKey) {
       await mkdir(path.dirname(keyPath(id)), { recursive: true });
@@ -151,9 +152,15 @@ export async function discoverHermesModels(id: string): Promise<string[]> {
     catch { await record(0); throw new Error('Could not reach this API connection.'); }
     await record(response.status);
     if (!response.ok) throw new Error(`Model discovery failed (HTTP ${response.status}).`);
-    const body = await response.json().catch(() => { throw new Error('API returned an unreadable model list.'); }) as { data?: { id?: unknown; name?: unknown }[] };
+    const body = await response.json().catch(() => { throw new Error('API returned an unreadable model list.'); }) as { data?: { id?: unknown; name?: unknown; tier?: unknown; use_for?: unknown }[] };
     if (!Array.isArray(body.data)) throw new Error('API did not return an OpenAI-compatible model list.');
     c.modelNames = Object.fromEntries(body.data.flatMap(row => typeof row?.id === 'string' && typeof row.name === 'string' && row.name.trim() ? [[row.id, row.name.trim()]] : []));
+    // The Gateway says each model's tier and "use it for" line beside its name (KAN-895); null or absent is none.
+    const words = (v: unknown) => (typeof v === 'string' && v.trim() ? v.trim() : undefined);
+    if (accountKind(c) === 'ronin_api') c.modelInfo = Object.fromEntries(body.data.flatMap(row => {
+      const tier = words(row?.tier)?.toLowerCase(), use_for = words(row?.use_for);
+      return typeof row?.id === 'string' && (tier || use_for) ? [[row.id, { ...(tier ? { tier } : {}), ...(use_for ? { use_for } : {}) }]] : [];
+    }));
     c.models = [...new Set(body.data.flatMap(row => row && typeof row.id === 'string' && modelPattern.test(row.id) ? [row.id] : []))];
     if (accountKind(c) !== 'ronin_api') c.models.sort();
     c.discoveredAt = new Date().toISOString();
@@ -230,7 +237,7 @@ async function credentialEnvironment(): Promise<NodeJS.ProcessEnv> {
 function withGatewayOptions(state: HermesSettings): HermesSettings {
   const gateway = state.connections.filter(c => accountKind(c) === 'ronin_api');
   return { ...state, setups: [
-    ...gateway.flatMap(c => c.models.map(model => ({ id: `${c.id}/${model}`, name: Object.hasOwn(c.modelNames || {}, model) ? c.modelNames![model]! : model, connection: c.id, model, reasoning: 'default', approvals: 'off' as const }))),
+    ...gateway.flatMap(c => c.models.map(model => ({ id: `${c.id}/${model}`, name: Object.hasOwn(c.modelNames || {}, model) ? c.modelNames![model]! : model, connection: c.id, model, reasoning: 'default', approvals: 'off' as const, ...(Object.hasOwn(c.modelInfo || {}, model) ? c.modelInfo![model] : {}) }))),
     ...state.setups.filter(s => !gateway.some(c => c.id === s.connection)),
   ] };
 }
@@ -253,7 +260,7 @@ export function readHermesSettings(environment?: NodeJS.ProcessEnv): Promise<Her
         c = { id: randomUUID(), name: found.name, provider: found.provider, baseUrl: found.baseUrl, models: [], credentialEnv: found.credentialEnv, ...(isOpenRouterService(found.baseUrl) ? { starterModelsPending: true } : {}) };
         state.connections.push(c); changed = true;
       }
-      if (c.baseUrl !== found.baseUrl) { c.baseUrl = found.baseUrl; c.models = []; delete c.discoveredAt; delete c.modelNames; changed = true; }
+      if (c.baseUrl !== found.baseUrl) { c.baseUrl = found.baseUrl; c.models = []; delete c.discoveredAt; delete c.modelNames; delete c.modelInfo; changed = true; }
       const content = `OPENAI_API_KEY='${found.apiKey}'\nOPENAI_BASE_URL='${found.baseUrl}'\n`;
       const previous = await readFile(keyPath(c.id), 'utf8').catch(() => '');
       if (previous !== content) {

@@ -53,7 +53,7 @@ test('named models stay with their service through discovery, catalog and CLI la
   assert.equal(services.find(s => s.id === api.id)?.models[0]?.id, setup.id);
   assert.ok(!JSON.stringify(services).includes('private-fixture'));
   const summary = { installed: ['hermes', 'codex', 'opencode'], operational: [], off: [], models: {} } as unknown as ProviderSummary;
-  const catalog = await providerRows(summary, { models: [] });
+  const catalog = await providerRows(summary, { harness_models: [], openrouter_starters: [] });
   const rows = catalog.flatMap(cli => cli.models).filter(row => row.service_id === api.id);
   assert.deepEqual(rows.map(r => r.cli).sort(), ['codex', 'hermes']);
   assert.ok(rows.every(r => r.selectable));
@@ -81,7 +81,7 @@ test('named models stay with their service through discovery, catalog and CLI la
   const created = await change('save', { kind: 'personal_api', name: 'UI fixture', provider: 'custom',
     baseUrl: base + '/ui', apiKey: 'ui-fixture', wireApi: 'chat' });
   const owner = created.find(s => s.name === 'UI fixture'); assert.ok(owner);
-  const emptyCatalog = await providerRows(summary, { models: [] });
+  const emptyCatalog = await providerRows(summary, { harness_models: [], openrouter_starters: [] });
   assert.ok(emptyCatalog.find(row => row.cli === 'hermes')?.services?.some(service => service.id === owner.id));
   assert.ok(!emptyCatalog.some(cli => cli.models.some(model => model.service_id === owner.id)));
   await change('discover', { id: owner.id });
@@ -100,8 +100,8 @@ test('named models stay with their service through discovery, catalog and CLI la
     baseUrl: 'https://openrouter.ai/api/v1', apiKey: 'router-fixture' });
   const routerModels = async () => (await modelServices()).find(service => service.id === router.id)!.models;
   assert.deepEqual(await routerModels(), []);
-  await setModels({ models: [{ cli: 'openrouter', id: 'author/available', name: 'Fast' },
-    { cli: 'openrouter', id: 'author/restricted', name: 'Restricted' }, { cli: 'codex', id: 'author/available', name: 'Native' }] });
+  await setModels({ openrouter_starters: [{ id: 'author/available', name: 'Fast' }, { id: 'author/restricted', name: 'Restricted' }],
+    harness_models: [{ harness: 'codex', id: 'author/available', name: 'Native' }] });
   const starters = await routerModels();
   assert.deepEqual(starters.map(row => [row.name, row.model]), [['Fast', 'author/available']]);
   assert.equal(starters[0]?.approvals, 'off');
