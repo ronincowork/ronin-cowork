@@ -33,21 +33,15 @@ import { openWorkspaceTab } from './workspace.js';
 import { S } from './state.js';
 import { createLifecycle, createStoneMarks, statusKey } from './item-lifecycle.js';
 import { createWorkspacesRead } from './workspaces-read.js';
+import { createWorkspaceKickoff } from './setup-workspace-kickoff.js';
 import { SURFACE_DRAG } from './workbench.js';
 
 const status = () => { const line = el('div', 'pr-status'); line.setAttribute('role', 'status'); return line; };
 const sayInto = (line) => (message, bad) => { line.replaceChildren(); if (!message) return; const p = el('div', `pr-empty${bad ? ' bad' : ''}`, message); line.append(p); };
 
 
-/** A Workspace's handle from its name, the one rule (Setup's step and New Workspace): lowercase words
- *  joined by _, as ronin_lab; `pinName` makes it unique among those taken. */
+/** A Workspace's handle from its name, the one rule (New Workspace's doors): lowercase words joined by _, as ronin_lab. */
 export const workspaceHandle = (title) => String(title).toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 60);
-const pinName = (title, taken) => {
-  const base = workspaceHandle(title) || 'workspace';
-  let name = base;
-  for (let n = 2; taken.has(name); n++) name = `${base}_${n}`;
-  return name;
-};
 
 /** How Agents work in a repository (owner, 25 Nov): asked wherever one is added (Setup's doors 1 and 3,
  *  Add a repository) and on its row; Desks is the default. */
@@ -56,16 +50,15 @@ export const repoModeRows = () => [
   { v: 'direct', l: t('workspaces.mode_direct', 'Direct'), sub: t('workspaces.mode_direct_sub', 'Every Agent works in the repository’s one checkout and commits straight to it; no hand-in, no check.') },
 ];
 
-/** A Workspace's page in the launch forms' format, made plain for someone new (KAN-728); a made one's is
- * its Config (KAN-784). In the order the owner set (2026-11-24; w926): 1 Describe, its objective (and a
- * new one's Name); 2 Where it lives, each folder a name and its path, a repository's remote in a line
+/** A Workspace's page in the launch forms' format, made plain for someone new (KAN-728): its Config
+ * (KAN-784). A new Workspace is made by the doors (setup-workspace-kickoff.js; KAN-900), never here.
+ * In the order the owner set (2026-11-24; w926): 1 Describe, its objective and Kind; 2 Where it lives, each folder a name and its path, a repository's remote in a line
  * under it and how Agents work in it (Desks or Direct), with Add a repository (into its repos/; KAN-809);
  * 3 More, folded: instructions, New Agent defaults (Mandate, Mode, models), plans, canvases, Integrations and Behaviors. Then Create. The folders are the record's rows, saved with it.
- * `null` is a new Workspace. Returns the page, its Save (Create) action and, made, its ⋯ for the head. */
-export function workspacePage(w, { taken = () => [], onSaved = () => {}, onDiscard = () => {} }) {
+ * Returns the page, its Save action and its ⋯ for the head. */
+export function workspacePage(w, { onSaved = () => {}, onDiscard = () => {} }) {
   const { createAction, createField } = WorkspaceKit.primitives;
-  const isNew = !w;
-  const draft = w ? JSON.parse(JSON.stringify(w)) : { name: '', title: '', kind: 'open', objective: '', instructions: '', repos: [], folders: [], integrations: [] };
+  const draft = JSON.parse(JSON.stringify(w));
   if (!Array.isArray(draft.integrations)) draft.integrations = [];
   const page = el('div', 'ntf-form fs-steps workspace-form');
   // The page's own status line, first under its head: what Save, a tick or Clone answered.
@@ -82,20 +75,11 @@ export function workspacePage(w, { taken = () => [], onSaved = () => {}, onDisca
   const settled = () => { dirty = false; delete action.el.dataset.attention; discard.setDisabled(true); };
 
   /* ---- 1 · Describe (owner, 2026-11-24; w926; SETUP_SWEEP.md §7): what the project is, its objective,
-     the one place that says so; a new one's Name follows it until the Name is typed (the handle Teams
-     use is made from the Name, KAN-728) ---- */
+     the one place that says so ---- */
   const stepTop = createStep({ n: 1, key: 'top', title: t('workspaces.describe', 'Describe') });
-  let nameTyped = false;
-  const nameFrom = (objective) => objective.trim().split(/\s+/).slice(0, 4).join(' ').replace(/[.,;:!?]+$/, '');
-  const nameInput = isNew ? text('', (v) => { nameTyped = !!v.trim(); draft.title = v.trim(); draft.name = draft.title ? pinName(draft.title, new Set(taken())) : ''; changed(); }, t('workspaces.name_placeholder', 'Such as Website or Accounts')) : null;
-  stepTop.body.append(createField({ label: t('workspaces.objective_ask', 'What are you working on?'), control: area(draft.objective, (v) => {
-    draft.objective = v;
-    if (nameInput && !nameTyped) { draft.title = nameFrom(v); nameInput.value = draft.title; draft.name = draft.title ? pinName(draft.title, new Set(taken())) : ''; }
-    changed();
-  }) }).el);
-  if (nameInput) stepTop.body.append(createField({ label: t('workspaces.name', 'Name'), control: nameInput }).el);
-  // ITS KIND (owner, 25 Nov): asked on Setup's Workspace step; a made one changes it here.
-  if (!isNew) stepTop.body.append(ask([{ fields: [{ key: 'kind', label: t('workspaces.kind', 'Kind'), shape: 'square', options: ruledRows('kind', KINDS, kindWord) }] }],
+  stepTop.body.append(createField({ label: t('workspaces.objective_ask', 'What are you working on?'), control: area(draft.objective, (v) => { draft.objective = v; changed(); }) }).el);
+  // ITS KIND (owner, 25 Nov): asked by the doors; changed here.
+  stepTop.body.append(ask([{ fields: [{ key: 'kind', label: t('workspaces.kind', 'Kind'), shape: 'square', options: ruledRows('kind', KINDS, kindWord) }] }],
     { value: { kind: draft.kind || 'open' }, density: 'tight', onChange: (value) => { draft.kind = value.kind; changed(); paint(); } }).el);
 
   /* ---- 3 · More, folded: what every Agent in it is told (instructions), the Mode they launch in,
@@ -104,22 +88,20 @@ export function workspacePage(w, { taken = () => [], onSaved = () => {}, onDisca
   stepAgents.body.append(createField({ label: t('workspaces.instructions', 'Instructions'), control: area(draft.instructions, (v) => { draft.instructions = v; changed(); }) }).el);
 
   // NEW AGENT DEFAULTS (src/waterfall.ts): the Mandate, Mode and models each Team and Agent made in it
-  // starts with; copied from the Campaign when it was made, so a new one has none to set yet.
+  // starts with; copied from the Campaign when it was made.
   let levelDefaults = null;
-  if (!isNew) {
-    const defaultsBox = el('div', 'workspace-defaults');
-    defaultsBox.append(el('b', null, t('team_config.agent_defaults', 'New Agent defaults')),
-      el('p', 'fs-step-help', t('workspaces.defaults_help', 'What each new Team and Agent here starts with. Nothing already made changes.')));
-    stepAgents.body.append(defaultsBox);
-    void Promise.all([loadMandates(), loadHarnessCatalog()]).then(() => screenOf({ workspace: draft.name })).then((screen) => {
-      levelDefaults = createLevelDefaults({ value: draft, screen, onChange: changed });
-      defaultsBox.append(levelDefaults.el);
-    });
-  }
+  const defaultsBox = el('div', 'workspace-defaults');
+  defaultsBox.append(el('b', null, t('team_config.agent_defaults', 'New Agent defaults')),
+    el('p', 'fs-step-help', t('workspaces.defaults_help', 'What each new Team and Agent here starts with. Nothing already made changes.')));
+  stepAgents.body.append(defaultsBox);
+  void Promise.all([loadMandates(), loadHarnessCatalog()]).then(() => screenOf({ workspace: draft.name })).then((screen) => {
+    levelDefaults = createLevelDefaults({ value: draft, screen, onChange: changed });
+    defaultsBox.append(levelDefaults.el);
+  });
 
   /* ---- 5 · Behaviors (docs/architecture/brief.md, Where it is set in the UI): what every Agent in this Workspace is told — its add, block
-     and only lists and project management; its integrations are step 3. A created Workspace only (above). ---- */
-  const brief = isNew ? null : createBriefSettingsPanel({ layer: 'workspace', id: draft.name, ownSave: false, showIntegrations: false, onChange: () => changed(),
+     and only lists and project management; its integrations are step 3. ---- */
+  const brief = createBriefSettingsPanel({ layer: 'workspace', id: draft.name, ownSave: false, showIntegrations: false, onChange: () => changed(),
     preview: { workspace: draft.name } });
 
   /* ---- 3 · Integrations (KAN-338): the outside services this Workspace uses, from the integrations
@@ -186,22 +168,21 @@ export function workspacePage(w, { taken = () => [], onSaved = () => {}, onDisca
     open.adding = open.adding ? '' : 'repo'; paint(); if (open.adding) void listMine();
   } });
   tools.append(addRepo.el);
-  tools.hidden = isNew;
   const repoPanel = el('div', 'workspace-browser');
   const plansBox = el('div', 'workspace-plans'); // PLANS (KAN-256), in Agent info; declared before it is placed
   stepLocations.body.append(tools, repoPanel, rows);
-  if (isNew) stepLocations.body.append(el('p', 'fs-step-help', t('workspaces.repos_after', 'Create makes its folder, ~/ronin/<name>, with plans, files and repos in it; then add its repositories here.')));
   stepAgents.body.append(plansBox, integrationsBox);
-  if (brief) { stepAgents.body.append(el('b', null, t('behaviours', 'Behaviors')), el('p', 'fs-step-help', t('workspaces.brief_help', 'What each new Agent in this Workspace is told. Nothing already running changes.')), brief.el); void brief.enter(); }
+  stepAgents.body.append(el('b', null, t('behaviours', 'Behaviors')), el('p', 'fs-step-help', t('workspaces.brief_help', 'What each new Agent in this Workspace is told. Nothing already running changes.')), brief.el);
+  void brief.enter();
 
   const save = async () => {
-    if (isNew && !draft.name) { say(t('workspaces.describe_needed', 'Say what you are working on, or give it a name.'), true); return false; }
     const rowOf = ({ repo: _repo, ...row }) => row;
     draft.repos = [...picked.values()].filter((row) => row.repo).map(rowOf);
     draft.folders = [...picked.values()].filter((row) => !row.repo).map(({ name, dir, note }) => ({ name, dir, note }));
     // Behaviors save first; the Workspace's own save then carries the same values.
-    if (brief) { const told = await brief.save(); if (!told.ok) { say(told.message, true); return false; } }
-    const briefKeys = brief ? { brief: brief.value().brief, pm: brief.value().pm !== false } : {};
+    const told = await brief.save();
+    if (!told.ok) { say(told.message, true); return false; }
+    const briefKeys = { brief: brief.value().brief, pm: brief.value().pm !== false };
     if (levelDefaults) Object.assign(draft, levelDefaults.value());
     const answer = await request(`/api/workspaces/${encodeURIComponent(draft.name)}`, { method: 'PUT', json: { ...draft, ...briefKeys, plans: draft.plans?.location ? draft.plans : null, plans_place: undefined, canvases: undefined } });
     if (!answer.ok) { say(answer.message, true); return false; }
@@ -355,7 +336,7 @@ export function workspacePage(w, { taken = () => [], onSaved = () => {}, onDisca
   repoPanel.append(panelHead, addModeBox, cloneLine, mineList);
 
   // Save answers at the button too: Saving…, then Saved for a moment, or back to Save with the error above.
-  const label = isNew ? t('workspaces.create', 'Create') : t('workspaces.save', 'Save');
+  const label = t('workspaces.save', 'Save');
   const action = createAction({ label, launch: true, size: 'compact', endsEdit: true, action: async () => {
     const word = action.el.querySelector('span') || action.el;
     action.setDisabled(true);
@@ -378,14 +359,10 @@ export function workspacePage(w, { taken = () => [], onSaved = () => {}, onDisca
     paintRows();
     paintPlans();
   }
-  // A NEW WORKSPACE (owner, 2026-11-23: not just a name) is the made one's page with its Name first:
-  // Folders, Integrations and Agent info, then Create. Behaviors are read and written against a saved
-  // Workspace (/api/brief/settings/workspace/<name>), so they wait: Create opens the made Workspace
-  // with its Configuration open, Behaviors in it.
   page.append(line, stepTop.el, stepLocations.el, stepAgents.el);
   paint();
-  // ⋯ (a made Workspace): Archive takes it off the Workspace pickers, kept; Restore brings it back.
-  const more = isNew ? null : createMenuButton({ glyph: '⋯', title: t('workspaces.more', 'More'), host: () => page, groups: () => [{ items: [{
+  // ⋯: Archive takes it off the Workspace pickers, kept; Restore brings it back.
+  const more = createMenuButton({ glyph: '⋯', title: t('workspaces.more', 'More'), host: () => page, groups: () => [{ items: [{
     label: draft.archived ? t('workspaces.restore', 'Restore') : t('workspaces.archive', 'Archive'),
     hint: draft.archived ? t('workspaces.restore_hint', 'Offer it again when starting Teams.') : t('workspaces.archive_hint', 'Stop offering it when starting Teams. Nothing is deleted.'),
     run: async () => {
@@ -470,9 +447,10 @@ const foldsOpen = new Map();
  * again closes it. Below, lines that expand and collapse, each with its count: Teams (the Teams
  * stones), Epics (the Epic stones) and Document (its one doc, never under Configuration). The same
  * surface on the Workspaces stones, in a tilespace and on its own route; `launch` adds Launch,
- * `title` its name (a tilespace's header has it).
+ * `title` its name (a tilespace's header has it). `configOnly` (Settings; owner, 26 Nov; KAN-900): its
+ * Configuration alone, always open; its work is on its own page, by Launch.
  */
-function workspaceSurface(w, { workspacesRead, onDiscard = () => {}, launch = false, title = true }) {
+function workspaceSurface(w, { workspacesRead, onDiscard = () => {}, launch = false, title = true, configOnly = false }) {
   const main = el('div', 'league-team-edit-content workspace-one');
   const top = el('div', 'epic-detail team-detail');
   const actions = el('span', 'item-bar-state team-bar-actions');
@@ -482,7 +460,7 @@ function workspaceSurface(w, { workspacesRead, onDiscard = () => {}, launch = fa
   const objective = el('span', 'item-bar-objective team-bar-objective', String(w.objective || '').trim());
   objective.hidden = !objective.textContent;
   const line = createLifecycle('line');
-  const bar = el('div', 'item-bar item-bar-lean team-bar team-bar-pressable workspace-bar');
+  const bar = el('div', `item-bar item-bar-lean team-bar${configOnly ? '' : ' team-bar-pressable'} workspace-bar`);
   bar.append(head, objective, line.el);
   // ITS CONFIGURATION, under the bar (owner, 2026-11-23: as the Team's and the Epic's).
   const config = el('div', 'league-team-view team-config-open workspace-config');
@@ -498,13 +476,19 @@ function workspaceSurface(w, { workspacesRead, onDiscard = () => {}, launch = fa
       config.append(tools, page.el);
     }
   };
+  top.append(bar, config);
+  if (configOnly) {
+    openConfig(true);
+    line.update(itemsIn(w));
+    main.append(top);
+    return { el: main, destroy: () => page?.destroy?.() };
+  }
   bar.setAttribute('role', 'button');
   bar.tabIndex = 0;
   bar.title = t('workspaces.config_toggle', 'Open or close this Workspace\'s configuration');
   bar.addEventListener('click', (event) => { if (!event.target.closest('button, a, .lifecycle')) openConfig(config.hidden); });
   bar.addEventListener('keydown', (event) => { if (event.target === bar && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); openConfig(config.hidden); } });
   openConfig(foldsOpen.get(`${w.name}\0config`) === true);
-  top.append(bar, config);
   // A FOLD (the Team's): a line naming what is under it, its count in brackets; built when first opened.
   const built = [];
   const fold = (key, label, build, openFirst) => {
@@ -537,9 +521,10 @@ function workspaceSurface(w, { workspacesRead, onDiscard = () => {}, launch = fa
 
 /** The stones of Workspaces (owner, 2026-11-22; KAN-784; KAN-801): Layer 1, every Workspace a stone as
  * an Epic's or a Team's: its name and the shared marks, the number bottom right its Teams. A pressed stone
- * opens that Workspace beside the rail, Work or Config, with Launch to its own page; a stone dragged
- * into a tilespace opens it whole there. The last stone, New Workspace, is its Name and Folders. */
-export function createWorkspaceStones({ workspacesRead, workbench, recordType = '', withNew = false, onShow = () => {} }) {
+ * opens that Workspace beside the rail, Work or Config (Settings: its Config alone, `configOnly`), with
+ * Launch to its own page; a stone dragged into a tilespace opens it whole there. The last stone, New
+ * Workspace, is the doors (setup-workspace-kickoff.js); the made one's stone is then selected. */
+export function createWorkspaceStones({ workspacesRead, workbench, recordType = '', withNew = false, configOnly = false, onShow = () => {} }) {
   const { createSurface } = WorkspaceKit.primitives;
   const out = createSurface({ label: t('workspaces.title', 'Workspaces'), className: 'setup-surface workspaces-records' });
   const messages = status();
@@ -554,19 +539,17 @@ export function createWorkspaceStones({ workspacesRead, workbench, recordType = 
     className: 'workspace-record-stones',
     renderDetail: (item, host) => {
       host.scrollTop = 0;
-      // Setup has no selector: its New Workspace is a stone, and the made Workspace opens in its place.
+      // NEW WORKSPACE is the doors; the made one's stone is selected, its Configuration open.
       if (item.id === NEW_STONE) {
-        const page = workspacePage(null, { taken: () => workspacesRead.list().map((w) => w.name), onSaved: async (saved) => { await workspacesRead.read(); foldsOpen.set(`${saved.name}\0config`, true); stones.select(saved.name); }, onDiscard: () => stones.refreshDetail() });
+        const doors = createWorkspaceKickoff({ workspacesRead, onMade: (name) => { foldsOpen.set(`${name}\0config`, true); stones.select(name); } });
         const head = el('div', 'workspace-page-head');
-        const actions = el('div', 'workspace-page-actions');
-        actions.append(page.action.el, page.discard.el);
-        head.append(el('span', 'wk-surface-header-title', t('workspaces.new', 'New Workspace')), actions);
-        host.append(head, page.el);
-        return undefined;
+        head.append(el('span', 'wk-surface-header-title', t('workspaces.new', 'New Workspace')));
+        host.append(head, doors.el);
+        return () => doors.destroy();
       }
       const w = workspacesRead.list().find((row) => row.name === item.id);
       if (!w) return undefined;
-      const one = workspaceSurface(w, { workspacesRead, launch: true, onDiscard: () => stones.refreshDetail() });
+      const one = workspaceSurface(w, { workspacesRead, launch: true, configOnly, onDiscard: () => stones.refreshDetail() });
       host.append(one.el);
       return () => one.destroy();
     },
@@ -654,18 +637,11 @@ export function createWorkspaceRoute() {
   };
 }
 
-/** New Workspace: the empty page in a tilespace; once created, that tilespace holds the new Workspace. */
+/** New Workspace: the doors in a tilespace (setup-workspace-kickoff.js); once made, that tilespace holds it. */
 export function createWorkspaceNew({ workspacesRead, place }) {
   const { createSurface } = WorkspaceKit.primitives;
   const out = createSurface({ label: t('workspaces.new', 'New Workspace'), className: 'setup-surface workspaces-new' });
-  const paint = () => {
-    const page = workspacePage(null, { taken: () => workspacesRead.list().map((w) => w.name), onSaved: async (saved) => {
-      await workspacesRead.read();
-      foldsOpen.set(`${saved.name}\0config`, true); // its Configuration open, Behaviors in it
-      place(saved.name);
-    }, onDiscard: () => paint() });
-    out.header.actions.replaceChildren(page.action.el, page.discard.el);
-    out.content.replaceChildren(page.el);
-  };
-  return { el: out.el, show: paint, destroy: () => {} };
+  const doors = createWorkspaceKickoff({ workspacesRead, onMade: (name) => { foldsOpen.set(`${name}\0config`, true); place(name); } });
+  out.content.append(doors.el);
+  return { el: out.el, show: () => {}, destroy: () => doors.destroy() };
 }

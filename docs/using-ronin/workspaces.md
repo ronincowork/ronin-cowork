@@ -42,6 +42,9 @@ what its Teams and their Agents hold. ⚑ at the top right means something open 
 the small number at the bottom right is how many Teams work in it.
 Flagged Workspaces come first, then the rest by name. The last stone is **New Workspace**.
 
+In **Settings**, the Workspaces card has the same stones, and a pressed one opens its
+Configuration alone; its work (Teams, Epics) is on its own page, by **Launch**.
+
 Press a stone and that Workspace opens beside the stones, the way an opened Team does. At its top
 is its bar: its name with **Launch**, its objective, its progress along the foot. Press the bar to
 open its Configuration under it (Describe, Where it lives, and More, with **Save**);
@@ -55,11 +58,15 @@ press it again to close it. Below the bar are two lines, each opening and closin
 **Launch** opens the Workspace on its own page, `#/workspace/<name>`, in a new browser tab, with the
 whole page's room. A stone dragged into a tilespace opens it whole there.
 
-**New Workspace** and a made Workspace's Configuration read the same, top down: **1 Describe**,
-"What are you working on?", its objective (a new one's **Name** follows it until you type one);
-**2 Where it lives**, its folders and repositories; **3 More**, folded until you open it: its
-instructions, Mode, plans, canvases, **Integrations** and, once made, **Behaviors**. Press
-**Create**; nothing is kept until then. The made Workspace opens with its Configuration open. **⋯** at the top holds **Archive**: the Workspace stops being offered when you
+**New Workspace** asks "How are you starting?" with the same four ways as Setup's Workspace step:
+from a Git repository, an existing project not in Git, from scratch, or not sure yet (Ronin Lab).
+Each opens only its own questions; press **Create** and the made Workspace opens with its
+Configuration open. It is the one way to make a Workspace, here, in Settings and in Setup.
+
+A made Workspace's Configuration reads top down: **1 Describe**, "What are you working on?", its
+objective and its kind; **2 Where it lives**, its folders and repositories; **3 More**, folded until
+you open it: its instructions, New Agent defaults, plans, canvases, **Integrations** and
+**Behaviors**. **⋯** at the top holds **Archive**: the Workspace stops being offered when you
 start a Team, and nothing is deleted; **Restore** brings it back.
 
 ### Folders

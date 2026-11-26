@@ -12,7 +12,9 @@
  * 4. Not sure yet: Ronin Lab, what it is and its folder, then Create (two presses).
  * Doors 1–3 ask, in order: the kind, the name, what you are working on; the door's own question (doors 1
  * and 3 then how Agents work in the repositories, Desks or Direct); what every Agent in it should follow; while there is none, Also add Ronin Lab; then Create. Every answer is
- * on the Workspace record. With no door chosen, or the chosen one pressed again: what a Workspace is.
+ * on the Workspace record. With no door chosen, or the chosen one pressed again: on Setup's step, what
+ * a Workspace is, and a link to yours. The same doors are New Workspace everywhere (owner, 26 Nov; KAN-900):
+ * Settings' and the Workspaces workbench's, which open the made one (`onMade`).
  *
  * The Helpful Assistant hears two things from here: Connect (its stone names her) asks her to sign in
  * to GitHub; Create tells her what was made (tellHer). Nothing else messages her. Every press answers at
@@ -87,8 +89,10 @@ function workspaceDiagram() {
 /**
  * @param workspacesRead  the Workspaces read (workspaces-read.js), read again on their push
  * @param environment     Setup's: its setup-progress push re-reads GitHub's sign-in
+ * @param intro           Setup's step: with no door chosen, what a Workspace is, and the link to yours
+ * @param onMade          New Workspace elsewhere (workspaces-surface.js): the made one's handle, to open it
  */
-export function createWorkspaceKickoff({ workspacesRead, environment }) {
+export function createWorkspaceKickoff({ workspacesRead, environment, intro = false, onMade = null }) {
   const { createAction, createField } = WorkspaceKit.primitives;
   const root = el('div', 'setup-workspace-kickoff');
   const doors = el('div', 'setup-workspace-doors');
@@ -199,6 +203,7 @@ export function createWorkspaceKickoff({ workspacesRead, environment }) {
       await workspacesRead.read();
       paint();
       tellHer(LAB.name);
+      if (onMade) return onMade(LAB.name);
       return showMade({ title: LAB.title, name: LAB.name });
     }
     if (!draft.title.trim() && door === 'git' && urls().length) draft.title = repoBase(urls()[0]);
@@ -237,6 +242,7 @@ export function createWorkspaceKickoff({ workspacesRead, environment }) {
     door = ''; draft = blank();
     await workspacesRead.read();
     paint();
+    if (onMade) return onMade(name);
     showMade(made, lab);
     if (failed) done.append(el('p', 'setup-workspace-bad', failed));
   } });
@@ -256,7 +262,9 @@ export function createWorkspaceKickoff({ workspacesRead, environment }) {
   const paintBlanks = () => {
     blanks.replaceChildren();
     blanks.dataset.door = door ? 'open' : 'none'; // the form's rule only beside a door's blanks
-    // NO DOOR YET: where the form would be, what a Workspace is (owner, 25 Nov).
+    // NO DOOR YET: on Setup's step, where the form would be, what a Workspace is (owner, 25 Nov);
+    // elsewhere the doors alone.
+    if (!door && !intro) return;
     if (!door) {
       // The owner's words (25 Nov).
       const about = el('div', 'setup-workspace-about');
@@ -328,7 +336,7 @@ export function createWorkspaceKickoff({ workspacesRead, environment }) {
     paintBlanks();
     const n = workspacesRead.list().filter((w) => !w.archived).length;
     foot.replaceChildren();
-    if (n) {
+    if (n && intro) {
       const link = el('button', 'setup-workspace-link', n === 1 ? t('setup_workspace.yours_one', 'You have 1 Workspace.') : t('setup_workspace.yours_n', 'You have {n} Workspaces.', { n })); link.type = 'button';
       link.addEventListener('click', () => openWorkspaceTab('workspaces'));
       foot.append(el('p', 'setup-workspace-yours', ''));

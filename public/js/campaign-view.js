@@ -71,7 +71,7 @@ export function createCampaignView() {
     defaultsSummary: () => currently.defaults(environment),
     installationsSummary: () => installationsSummary(selected()),
     campaignIdentity: () => enterable(createCampaignIdentitySurface(selected)),
-    campaignRoots: () => createWorkspaceStones({ workspacesRead: createWorkspacesRead(), workbench: bench, withNew: true }),
+    campaignRoots: () => createWorkspaceStones({ workspacesRead: createWorkspacesRead(), workbench: bench, withNew: true, configOnly: true }),
     campaignDefaults: () => enterable(createAgentDefaultsSurface(selected)),
     // Open places the items table, or the pairs table, full width in the other workspace.
     campaignJira: ({ workspace }) => enterable(createJiraPanel(selected, {
