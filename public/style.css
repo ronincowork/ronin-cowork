@@ -5194,6 +5194,10 @@ html[data-screen='inside'] #phone .ph-bar .ph-title[data-boot='inside'] { displa
 .data-table thead th:first-child { width: 40%; }
 .data-table thead th.hermes-tools { width: 8.5rem; }
 .data-table-link { justify-self: start; text-align: left; }
+/* The harness page's two-tier model picker: the service stones, then a table per service on. */
+.harness-models, .harness-models-body { display: grid; gap: var(--space-paragraph); min-width: 0; }
+.harness-models-body > p { margin: 0; }
+.harness-models-service { margin: var(--space-row) 0 0; color: var(--fg-strong); font-size: var(--text-body); font-weight: var(--weight-strong); }
 /* A ✓ before a row's name (shown, set up); a row that is off reads muted, its ✓ slot kept so names align. */
 .data-table .data-table-name { display: flex; align-items: baseline; gap: 6px; }
 .data-table .data-table-name .hermes-tick { flex: 0 0 1em; color: var(--ok); font-weight: var(--weight-strong); }

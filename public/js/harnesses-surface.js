@@ -458,7 +458,8 @@ export function createHarnessDrawing(context, { repaint, say = () => {} }) {
     if (list.unavailable) return list.unavailable;
     return t('setup_surface.models_read', 'Model list read {date} by {cli} {version}', { date: list.read_at, cli: entry.label || entry.id, version: list.by || '' }).trim();
   };
-  const paintCatalog = (rows, entry, host, label = '', { facts: withFacts = true } = {}) => {
+  // `models`: the two-tier picker (harness-model-options.js) in place of the plain model table.
+  const paintCatalog = (rows, entry, host, label = '', { facts: withFacts = true, models = null } = {}) => {
     const section = el('section', 'setup-provider-catalog');
     section.append(el('h3', 'setup-provider-eyebrow', label || t('setup_surface.section_models', 'Models')));
     if (!withFacts) return paintModels(rows, section, host);
@@ -471,6 +472,7 @@ export function createHarnessDrawing(context, { repaint, say = () => {} }) {
     section.append(facts);
     const state = listState(entry);
     if (state) section.append(el('p', 'setup-fine setup-provider-list-state', state));
+    if (models) { section.append(models); host.append(section); return; }
     paintModels(rows, section, host);
   };
   /** The model table under a provider's page; the section is the caller's, appended to host here. */
@@ -511,7 +513,11 @@ export function createHarnessDrawing(context, { repaint, say = () => {} }) {
     const harness = harnessCatalog().harnesses.find(entry => entry.cli === id);
     const editor = harness && harnessModelEditor(harnessCatalog(), harness);
     if (id === 'hermes') {
-      if (editor) host.append(editor.el);
+      if (editor) {
+        const models = el('section', 'setup-provider-catalog');
+        models.append(el('h3', 'setup-provider-eyebrow', t('setup_surface.section_models', 'Models')), editor.el);
+        host.append(models);
+      }
       const close = mountModelOptions(host);
       return () => { close(); editor?.destroy(); };
     }
@@ -522,8 +528,7 @@ export function createHarnessDrawing(context, { repaint, say = () => {} }) {
       yours.append(el('h2', '', rows[0].provider_label), el('p', 'setup-fine', t('setup_surface.no_cli', 'No CLI in Ronin’s registry serves this harness, so it cannot be installed or signed in here.')));
     }
     host.append(yours);
-    paintCatalog(rows, provider, host);
-    if (editor) host.append(editor.el);
+    paintCatalog(rows, provider, host, '', { models: editor?.el });
     if (alignedHarness !== id) {
       alignedHarness = id;
       requestAnimationFrame(() => {
