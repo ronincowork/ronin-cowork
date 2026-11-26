@@ -10,11 +10,10 @@
  * with Home the way back. A door is a link to the plain address: a plain press navigates here, a
  * modified or middle press opens the workbench in a new tab (KAN-473). THE GATE (owner,
  * 2026-10-19, "let's have the gate"): as on the old root, the doors are locked until one model
- * provider is activated, so a new user's way in is Setup (hosted) or Harnesses (self-hosted). Three doors are outside the gate: Settings; Help, which a new user
- * needs before Setup (owner, 2026-10-21); and Setup or Harnesses, where a harness is signed in
- * (owner, 2026-11-13; KAN-472). SETUP IS HOSTED-ONLY (owner, 2026-11-25; KAN-856), like the Business Lounge:
- * hosted, the Setup stone stands where Harnesses was, always, and Harnesses is reached through Setup's
- * Harness step; self-hosted, Harnesses stays and there is no Setup. ONE ROOT (owner, 2026-11-02; KAN-197): the old Home and the
+ * provider is activated, so a new user's way in is Setup. Three doors are outside the gate: Settings; Help, which a new user
+ * needs before Setup (owner, 2026-10-21); and Setup, where a harness is signed in (owner, 2026-11-13; KAN-472).
+ * THE SETUP STONE (owner, 2026-11-26; KAN-856, w1059): on every office, where Harnesses was; Harnesses is
+ * reached through Setup's Harness step. ONE ROOT (owner, 2026-11-02; KAN-197): the old Home and the
  * bar's Current/Next toggle are gone; an old #/current link lands here.
  */
 import { t } from './lexicon.js';
@@ -40,14 +39,11 @@ function OFFICE() {
   ];
 }
 
-/** The smaller stones on the right, one above the other. Hosted, Setup stands first (Harnesses is its
- *  Harness step) and the Business Lounge last: a link out to Ronin HQ, where its account and office are
- *  kept. Self-hosted, Harnesses stands first and there is no Setup (KAN-856). */
+/** The smaller stones on the right, one above the other: Setup first (Harnesses is its Harness step),
+ *  and, hosted, the Business Lounge last: a link out to Ronin HQ, where its account and office are kept. */
 function SIDE() {
   return [
-    HOSTED
-      ? { key: 'setup', route: 'setup', glyph: '人', name: t('campaign_home.setup', 'Setup'), is: t('campaign_home.setup_is', 'Harness, Workspace, Team'), gated: false }
-      : { key: 'models', route: 'models', glyph: '✶', name: t('campaign_home.harnesses', 'Harnesses'), is: t('campaign_home.harnesses_is', 'The harnesses on this machine, the accounts they launch on, and the models'), gated: false },
+    { key: 'setup', route: 'setup', glyph: '人', name: t('campaign_home.setup', 'Setup'), is: t('campaign_home.setup_is', 'Harness, Workspace, Team'), gated: false },
     { key: 'help', route: 'help', glyph: 'ミ', name: t('campaign_home.help', 'Help'), is: t('campaign_home.help_is', 'The guides, and Mika to ask'), gated: false },
     { key: 'settings', route: 'campaign', glyph: '⚙', name: t('campaign_home.settings', 'Settings'), is: t('campaign_home.settings_is_hosted', 'This Desk’s settings'), gated: false },
     // Beside Settings until it replaces it (owner, 25 Nov; KAN-862).
@@ -70,7 +66,7 @@ export function createCampaignHome() {
   const frame = el('div', 'ch-frame');
   const doors = el('div', 'ch-doors');
   const side = el('nav', 'ch-side');
-  side.setAttribute('aria-label', HOSTED ? t('campaign_home.side_hosted', 'Setup, Help, Settings and the Business Lounge') : t('campaign_home.side', 'Harnesses, Help and Settings'));
+  side.setAttribute('aria-label', HOSTED ? t('campaign_home.side_hosted', 'Setup, Help, Settings and the Business Lounge') : t('campaign_home.side', 'Setup, Help and Settings'));
   const release = el('div', 'ch-release');
   const check = el('button', 'ch-update', t('campaign_home.check_updates', 'Check for updates'));
   const answer = el('span', 'ch-update-answer');
@@ -123,7 +119,7 @@ export function createCampaignHome() {
       card.setAttribute('aria-disabled', 'true');
     }
     card.append(doorGlyph(door.glyph), el('h2', null, door.name), el('p', 'ch-is', door.is));
-    if (locked) card.append(el('p', 'ch-gate', HOSTED ? t('campaign_home.gate_hosted', 'Activate a harness in Setup to use this.') : t('setup.provider_gate_hosted', 'Activate a harness in Harnesses to use this.')));
+    if (locked) card.append(el('p', 'ch-gate', t('campaign_home.gate', 'Activate a harness in Setup to use this.')));
     card.addEventListener('click', (event) => {
       if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
       event.preventDefault();

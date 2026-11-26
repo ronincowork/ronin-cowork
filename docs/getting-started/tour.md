@@ -65,7 +65,7 @@ its provider offers. [Provider sign-in](harness-sign-in.md).
 in directly with the provider. Ronin never resells model access or sits in between. The Helpful
 Assistant runs on your own key or harness when you have one, else on Ronin Gateway.
 
-**Can I add another harness later?** Yes, any time, on **Harnesses** on Ronin Home. A second one
+**Can I add another harness later?** Yes, any time, in **Setup** on Ronin Home (its Harness step). A second one
 keeps Agents working when one hits a limit or an outage.
 
 **What is a Workspace?** One project: what it is, then the folders and repositories its Agents

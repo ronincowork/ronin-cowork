@@ -56,7 +56,6 @@ the record once at start and the page says so in `<html data-hosted="on">` (`pub
 Business Lounge at Ronin HQ, so Cowork carries a link and no account code: Home's side stones gain
 **Business Lounge** (opens `https://hq.roninhosted.com/` in a new tab, for everyone in the office;
 each person lands in their own lounge). What is hidden when hosted: Home's Check for updates;
-Setup (Settings opens Ronin Settings, and Home's and Help's provider hints point to Harnesses);
 in Settings, the Cloud Account, Registration, Password and Installations cards and the Setup
 return card; in the Machine card, Configuration, Release & update and Log out. Settings stays for
 the Desk's own settings (Desk, Team and Agent defaults, Workspaces, Integrations, Jira, Feedback,

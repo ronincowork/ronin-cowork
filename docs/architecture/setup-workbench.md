@@ -6,15 +6,11 @@ For contributors: what each Setup surface shows and measures, in full. The user'
 
 ## Where it is
 
-**Setup is hosted-only**, like the Business Lounge (owner, 25 Nov; KAN-856). **Ronin Home** has the
-doors **Teams**, **Epics** and **Workspaces**, and the smaller stones: hosted, **Setup**, **Help**,
-**Settings** and **Business Lounge**; self-hosted, **Harnesses**, **Help** and **Settings**. Teams,
-Epics and Workspaces wait for an Activated harness; the small stones are open from the start.
-
-Hosted, the Setup stone is always there and opens Setup; Harnesses is reached through Setup's
-Harness step. Nothing decides that Setup is finished. Settings is Settings, with no toggle to Setup.
-Self-hosted, Home has no Setup stone and harnesses are signed in on Harnesses; Setup still opens at
-`#/setup` on every office (w997). A link that names a page still opens that page.
+**Ronin Home** has the doors **Teams**, **Epics** and **Workspaces**, and the smaller stones **Setup**,
+**Help** and **Settings**, with **Business Lounge** on a hosted office (owner, 26 Nov; KAN-856, w1059).
+Teams, Epics and Workspaces wait for an Activated harness; the small stones are open from the start.
+The Setup stone is always there; Harnesses has no stone and is reached through Setup's Harness step.
+Nothing decides that Setup is finished. Settings is Settings, with no toggle to Setup. A link that names a page still opens that page.
 
 ### The ticks
 
