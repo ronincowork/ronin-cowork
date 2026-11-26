@@ -2,7 +2,7 @@
 /**
  * MODEL SERVICES (owner, 2026-11-25/26; KAN-870; samurai_lab wip/MACHINE_SETTINGS_V2.md): Settings v2's
  * Harnesses and models → Model services. One office-side record per service connection, the same for Ronin
- * Gateway, OpenRouter and an API key (private_api): its address and key, and its model options (a display
+ * Gateway, OpenRouter and an API key (private_api): its address and key, and its model entries (a display
  * name and the exact model ID sent). Every compatible harness reads the same record: connection → its model
  * options → the chosen one. A CLI on its own native service keeps its own flow.
  *
@@ -21,7 +21,7 @@ import { WorkspaceKit } from './workspace-kit.js';
 import { request } from './request.js';
 import { el, createStep } from './form-steps.js';
 import { t } from './lexicon.js';
-import { gatewayBlockWord } from './harness-model-options.js';
+import { gatewayBlockWord } from './harness-model-entries.js';
 import { store } from './store.js';
 import { openWorkbenchTab } from './workspace.js';
 import { createTable } from './data-table.js';
@@ -111,7 +111,7 @@ function tabName(tab) {
   return t('model_services.gateway', 'Ronin Gateway');
 }
 function optionsMeta(service) {
-  return t('model_services.options_meta', '{n} model options', { n: service?.models?.length || 0 });
+  return t('model_services.options_meta', '{n} model entries', { n: service?.models?.length || 0 });
 }
 
 /** The table pattern (data-table.js), called the short way. */
@@ -136,8 +136,8 @@ function sections(defs, open) {
   return box;
 }
 
-/** A service's model options: a row each with Edit and Remove, `+ Add a model` below, the form in place. */
-function modelOptions(service, say) {
+/** A service's model entries: a row each with Edit and Remove, `+ Add a model` below, the form in place. */
+function modelEntries(service, say) {
   const block = el('div', 'model-services-models');
   const editor = el('div', 'accounts-editor');
   const form = (entry = {}) => {
@@ -177,7 +177,7 @@ function modelOptions(service, say) {
     [t('accounts.remove', 'Remove'), () => act('delete-model', { id: entry.id }, say)],
   ] }));
   const lines = [
-    ...(rows.length ? [] : [[t('model_services.no_options', 'No model options yet.'), null]]),
+    ...(rows.length ? [] : [[t('model_services.no_options', 'No model entries yet.'), null]]),
     [t('model_services.add_line', '+ Add a model'), () => form()],
     [service.discovered?.length
       ? t('model_services.discovered_line', '+ Read the service’s list again ({n} model IDs to pick from)', { n: service.discovered.length })
@@ -221,12 +221,12 @@ export function createModelServicesSurface({ tab = 'gateway', serviceId = '' } =
     return [
       el('p', 'setup-fine', t('model_services.gateway_lede', 'The Ronin Gateway comes configured. Its model list is supplied by the gateway; there is nothing to set here.')),
       ...blocked,
-      sections([{ key: 'models', title: t('model_services.model_options', 'Model options'), meta: optionsMeta(g),
+      sections([{ key: 'models', title: t('model_services.model_options', 'Model entries'), meta: optionsMeta(g),
         nodes: [table([t('model_services.col_name', 'Name'), t('model_services.col_model', 'Model ID')], rows, lines), ...fault] }], folds.gateway),
     ];
   };
 
-  /* OpenRouter: Configure (the key), then Model options. */
+  /* OpenRouter: Configure (the key), then Model entries. */
   const openRouterTab = () => {
     const service = first('openrouter');
     const key = input('', 'password'); key.autocomplete = 'new-password';
@@ -244,13 +244,13 @@ export function createModelServicesSurface({ tab = 'gateway', serviceId = '' } =
       el('p', 'setup-fine', t('model_services.openrouter_lede', 'Save your OpenRouter key, then name the models you want offered.')),
       sections([
         { key: 'configure', title: t('model_services.configure', 'Configure'), meta: saved, nodes: [el('p', 'setup-fine', saved), form] },
-        { key: 'options', title: t('model_services.model_options', 'Model options'), meta: optionsMeta(service),
-          nodes: [service ? modelOptions(service, say) : el('p', 'setup-fine', t('model_services.key_first', 'Save the key first.'))] },
+        { key: 'options', title: t('model_services.model_options', 'Model entries'), meta: optionsMeta(service),
+          nodes: [service ? modelEntries(service, say) : el('p', 'setup-fine', t('model_services.key_first', 'Save the key first.'))] },
       ], folds.openrouter),
     ];
   };
 
-  /* API key: Configure (pick a key or add one; its address and key), then Model options. */
+  /* API key: Configure (pick a key or add one; its address and key), then Model entries. */
   const vendors = [['openai', t('accounts.vendor_openai', 'OpenAI API'), 'https://api.openai.com/v1', 'responses'],
     ['mistral', t('accounts.vendor_mistral', 'Mistral API'), 'https://api.mistral.ai/v1', 'chat'],
     ['custom', t('accounts.vendor_custom', 'OpenAI-compatible API'), '', 'chat']];
@@ -289,12 +289,12 @@ export function createModelServicesSurface({ tab = 'gateway', serviceId = '' } =
       stone(t('model_services.add_private', '+ Add an API key'), adding, false, () => { adding = true; paint(); }),
     )] : [];
     return [
-      el('p', 'setup-fine', t('model_services.private_lede', 'Your own API key for a provider such as OpenAI or Mistral. Each key has its own model options.')),
+      el('p', 'setup-fine', t('model_services.private_lede', 'Your own API key for a provider such as OpenAI or Mistral. Each key has its own model entries.')),
       sections([
         { key: 'configure', title: t('model_services.configure', 'Configure'), meta: service ? service.name : t('model_services.adding', 'Adding a key'),
           nodes: [...picks, service ? connectionForm(service) : connectionForm()] },
-        { key: 'options', title: t('model_services.model_options', 'Model options'), meta: optionsMeta(service),
-          nodes: [service ? modelOptions(service, say) : el('p', 'setup-fine', t('model_services.key_first', 'Save the key first.'))] },
+        { key: 'options', title: t('model_services.model_options', 'Model entries'), meta: optionsMeta(service),
+          nodes: [service ? modelEntries(service, say) : el('p', 'setup-fine', t('model_services.key_first', 'Save the key first.'))] },
       ], folds.private),
     ];
   };
@@ -303,7 +303,7 @@ export function createModelServicesSurface({ tab = 'gateway', serviceId = '' } =
     const tabs = stones(...TABS.map((id) => stone(tabName(id), shown === id, of(id).some((s) => s.configured), () => { shown = id; paint(); })));
     const content = shown === 'gateway' ? gatewayTab() : shown === 'openrouter' ? openRouterTab() : apiKeyTab();
     body.replaceChildren(
-      el('p', 'setup-fine', t('model_services.lede', 'A service holds the address and key; its model options appear under Model for every compatible harness that uses it. A harness signed in to its own service keeps its own flow.')),
+      el('p', 'setup-fine', t('model_services.lede', 'A service holds the address and key; its model entries appear under Model for every compatible harness that uses it. A harness signed in to its own service keeps its own flow.')),
       tabs, notice, ...content,
     );
   };

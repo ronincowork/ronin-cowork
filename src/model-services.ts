@@ -1,7 +1,7 @@
 /**
  * MODEL SERVICES — the one reading of the model service store (src/model-service-store.ts) that the
  * pages, the harness catalog and a launch take: each service with its type, the harnesses that can
- * use it, the model IDs it listed and its model options. Credential-free.
+ * use it, the model IDs it listed and its model entries. Credential-free.
  */
 import { readOfficeRecord } from './office-record.js';
 import { accountKind, deleteModelServiceEntry, discoverModelIds, isOpenRouterService, modelServiceStoreAnswer, saveModelService, type ModelServiceRecord } from './model-service-store.js';
@@ -22,7 +22,7 @@ export const RONIN_GATEWAY_SEED_ID = 'ronin_api';
 /** WHICH HARNESSES CAN USE A MODEL SERVICE (owner, 26 Nov 2026; KAN-896): a technical fact the
  * service reports, never a choice kept on it. A harness is here when Ronin has a launch adapter for
  * it (src/model-service-launch.ts), with the API protocols that adapter speaks. Claude Code has none,
- * so it uses no model service. Which services and model options a harness shows in New Agent is that
+ * so it uses no model service. Which services and model entries a harness shows in New Agent is that
  * harness's own setting (`newAgentModels`). */
 const SPEAKS: Record<string, ReadonlyArray<'chat' | 'responses'>> = { hermes: ['chat', 'responses'], codex: ['responses'], opencode: ['chat'] };
 export const worksWith = (wire: 'chat' | 'responses'): string[] => Object.keys(SPEAKS).filter(harness => SPEAKS[harness]!.includes(wire));
@@ -82,4 +82,4 @@ export async function saveService(input: Record<string, unknown>) {
   return saved;
 }
 export const deleteService = (id: string) => deleteModelServiceEntry('connections', id);
-export const deleteModelOption = (id: string) => deleteModelServiceEntry('setups', id);
+export const deleteModelEntry = (id: string) => deleteModelServiceEntry('setups', id);

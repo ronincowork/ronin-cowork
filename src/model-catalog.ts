@@ -1,6 +1,6 @@
 /* THE MODEL CATALOG (KAN-828, KAN-895): two plain lists from HQ. `harness_models`: one row per
  * harness model with its tier, its "use it for" line and its facts. `openrouter_starters`: the
- * model options a new OpenRouter connection is seeded with, name and API model ID. Ronin Gateway's
+ * model entries a new OpenRouter connection is seeded with, name and API model ID. Ronin Gateway's
  * models are described by the Gateway's own list, never here. HQ sends it through the park; the kohai writes the unit's
  * models.json; the Services part reads that file and hands it here whole (setModels). This file
  * keeps the last catalog in its own store and is the only reader of it, so a restart or a

@@ -6,7 +6,7 @@
  *
  *   createTable({ headings: ['Name', 'Model'],
  *     rows: [{ cells: ['Kimi', 'moonshotai/kimi-k3'], tools: [['Edit', fn], ['Remove', fn]] }],
- *     lines: [['+ Add a model', fn], ['No model options yet.', null]] })
+ *     lines: [['+ Add a model', fn], ['No model entries yet.', null]] })
  */
 function make(tag, cls, text) {
   const node = document.createElement(tag);

@@ -201,7 +201,7 @@ async function integrationsAuthentications(): Promise<Built> {
     : github.authenticated ? `GitHub CLI: signed in as ${github.account}` : 'GitHub CLI: installed, not signed in (needed to clone a private repository)';
   const connected = (one: (typeof services)[number]) => one.saved;
   const integrations = services.map((one) => `${one.label}: ${connected(one) ? 'set up' : 'set up, key not saved'}${one.workspaces.length ? ` in ${one.workspaces.join(', ')}` : ''}`);
-  const modelServiceLines = accounts.map((a) => `${a.name}: ${a.configured ? 'set up' : 'not set up'}${a.models.length ? `, ${a.models.length} model options` : ''}; works with ${a.bound.join(', ')}`);
+  const modelServiceLines = accounts.map((a) => `${a.name}: ${a.configured ? 'set up' : 'not set up'}${a.models.length ? `, ${a.models.length} model entries` : ''}; works with ${a.bound.join(', ')}`);
   const own = harnessesOn(summary);
   const line = `Harnesses Activated: ${own.join(', ') || 'none'}; connected: ${services.filter(connected).map((one) => one.label).join(', ') || 'none'}${github?.authenticated ? '; GitHub signed in' : ''}`;
   return { line, lines: [

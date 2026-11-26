@@ -96,9 +96,9 @@ A service connection owns its endpoint, wire protocol, credential reference and 
 
 ### OpenRouter starters
 
-HQ Admin publishes OpenRouter starter names and exact model IDs as the models file's `openrouter_starters` list. A newly connected OpenRouter service seeds the intersection of those rows and the authenticated `/models/user` list. Once seeded, users can edit or remove those model options on their OpenRouter connection. Refreshing, rotating a key or receiving another catalog preserves edits and removals. Before the first starter catalog arrives, a new connection remains eligible. Inference uses the key configured for that OpenRouter connection at OpenRouter.
+HQ Admin publishes OpenRouter starter names and exact model IDs as the models file's `openrouter_starters` list. A newly connected OpenRouter service seeds the intersection of those rows and the authenticated `/models/user` list. Once seeded, users can edit or remove those model entries on their OpenRouter connection. Refreshing, rotating a key or receiving another catalog preserves edits and removals. Before the first starter catalog arrives, a new connection remains eligible. Inference uses the key configured for that OpenRouter connection at OpenRouter.
 
-## Hermes connections and model options
+## Hermes connections and model entries
 
 Hermes is one provider in the existing Model provider dropdown. Its Model dropdown
 lists Ronin-owned setup names, identified by stable UUIDs. Each setup references an API
@@ -106,7 +106,7 @@ connection and pins an actual model, reasoning effort and approvals. Connection 
 asks the selected endpoint's `/models`; personal services also accept an explicitly entered model ID.
 This proves model-list access, not per-model inference compatibility.
 
-The Ronin Gateway's model options are its own list: one per model Ronin Gateway last listed,
+The Ronin Gateway's model entries are its own list: one per model Ronin Gateway last listed,
 carrying its display name and API model ID, with default reasoning and approvals off. They are never saved or edited; their id is
 `<connection id>/<model id>` (`withGatewayOptions`, src/model-service-store.ts). The list is read at start-up
 and on Refresh, and a failed read keeps the last one. Saved setups are only the ones people name, on an
@@ -203,7 +203,7 @@ What this machine *has* is measured, not derived on every read. The Campaign rec
 `catalog.config.models[].id` and `.name`, only the `main` section its own picker offers — the
 `overflow` generations are still served but not offered), `codex-cache` (`~/.codex/models_cache.json`,
 `models[]` with `slug`, `display_name`, and `visibility: list`), `command` (run the CLI with
-the argv and read the list under *Available models:* — Grok), or `model-options` (Hermes: its model services' model options), or `none` (Antigravity:
+the argv and read the list under *Available models:* — Grok), or `model-entries` (Hermes: its model services' model entries), or `none` (Antigravity:
 Model: Native only, and the surface says so). `readModels` walks that table; no CLI id
 appears in it. A new way to read a list is a new key, never an `if`.
 

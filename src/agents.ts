@@ -22,7 +22,7 @@ export type ModelsSource =
   | { read: 'codex-cache' }
   | { read: 'command'; argv: readonly string[] }
   | { read: 'command-lines'; argv: readonly string[] }
-  | { read: 'model-options' }
+  | { read: 'model-entries' }
   | { read: 'none' };
 
 export interface AgentOperations {
@@ -162,7 +162,7 @@ export const AGENTS = [
       update: { shell: '', argv: ['update'] },
       selfUpdates: false,
       version: ['--version'],
-      models: { read: 'model-options' },
+      models: { read: 'model-entries' },
       session: { discovery: 'unsupported' },
     } as AgentOperations,
     signIn: 'Pick the model provider with the arrows and Enter (Nous Portal is first), then answer what it asks for that provider.',

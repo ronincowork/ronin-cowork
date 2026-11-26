@@ -1,4 +1,6 @@
-/* New Agent display preferences. null follows the full list, [] hides a group. Unset is the full list. */
+/* New Agent display preferences: form display only, never routing (the launch progression does not read them).
+ * null follows the full list, [] hides a group. Unset is the full list, except Ronin Gateway, hidden until someone
+ * picks it for that harness (owner, 26 Nov 2026): Irasshai and a launch with no default reach it all the same. */
 import { workbenchLink, openWorkbenchTab } from './workspace.js';
 import { el, modelLabel } from './form-steps.js';
 import { createTable, tableLink } from './data-table.js';
@@ -9,7 +11,7 @@ export function modelSettingsLink(cli) {
   const state = cli ? { count: 1, selected: 'workspace1', seats: { workspace1: { type: 'models.provider', key: cli } } } : {};
   const spec = { destination: 'settings2', state };
   const link = workbenchLink(document.createElement('a'), spec);
-  link.textContent = 'Configure model options';
+  link.textContent = 'Configure model entries';
   link.addEventListener('click', event => {
     if (event.defaultPrevented || event.button !== 0) return;
     event.preventDefault();
@@ -29,7 +31,8 @@ export function gatewayBlockWord(blocked) {
 export function modelSelection(catalog, entry, serviceId) {
   const selections = catalog.preferences?.[entry.cli];
   const group = serviceId || 'in-harness';
-  return selections && Object.hasOwn(selections, group) ? selections[group] : null;
+  if (selections && Object.hasOwn(selections, group)) return selections[group];
+  return entry.services?.find(service => service.id === serviceId)?.service_type === 'gateway' ? [] : null;
 }
 
 export function shownInNewAgent(catalog, entry, row) {

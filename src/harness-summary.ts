@@ -170,7 +170,7 @@ const READERS: Record<ModelsSource['read'], (agent: Agent, home: string, file: s
     const { stdout } = await execFile(file, [...agent.operations.models.argv], { timeout: 20_000 });
     return lineModels(stdout);
   },
-  'model-options': async () => (await readModelServiceStore()).setups.map(setup => ({ id: setup.id, name: setup.name })),
+  'model-entries': async () => (await readModelServiceStore()).setups.map(setup => ({ id: setup.id, name: setup.name })),
   none: async () => null,
 };
 

@@ -171,7 +171,7 @@ a new Team lead and Mika start on: ⚙ Configuration's own `models` section draw
 card) in tilespace 1, **Refresh** (`models.refresh` under its new word) in 2 and **Defaults** in 3; Model refresh's
 steps read Harnesses · Model services, the second asking each configured model service for its model list. The
 Accounts and Models (preset) cards and their routes are gone (owner, 2026-11-26; KAN-892): model services and their
-model options are Settings' Model services card ([Model services](model_services_README.md), `/api/model-services`).
+model entries are Settings' Model services card ([Model services](model_services_README.md), `/api/model-services`).
 The existing types, surfaces and stones are
 unchanged but for their words; the route id stays `models` so saved arrangements survive. Settings' Model
 Providers surface is untouched; all draw with the one drawing `harnesses-surface.js` exports

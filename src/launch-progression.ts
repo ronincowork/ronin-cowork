@@ -7,8 +7,8 @@
  * |-------------|---------------------------------------|-----------------|------------------------------------|
  * | cli         | the default's, else first signed in   | its own sign-in | CLI default                        |
  * | gateway     | Codex, else Hermes                    | Ronin Gateway   | `default` (the office's tier)      |
- * | private_api | Codex, else Hermes                    | a private API   | the service's first model option   |
- * | openrouter  | Codex, else Hermes                    | OpenRouter      | the service's first model option   |
+ * | private_api | Codex, else Hermes                    | a private API   | the service's first model entry   |
+ * | openrouter  | Codex, else Hermes                    | OpenRouter      | the service's first model entry   |
  *
  * An Agent walks cli, gateway, private_api, openrouter. Irasshai walks gateway, private_api,
  * openrouter, cli. A service step needs an installed harness that works with the service. Working is
@@ -51,7 +51,7 @@ async function serviceRoute(type: ModelService['service_type'], services: ModelS
       const choices = (harnesses.find(entry => entry.cli === cli)?.models ?? [])
         .filter(row => row.service_id === service.id && row.selectable);
       if (!choices.length) continue;
-      // The Gateway's `default` is the office's tier; elsewhere the service's first model option.
+      // The Gateway's `default` is the office's tier; elsewhere the service's first model entry.
       const preferred = type === 'gateway' && service.models.find(option => option.model === 'default');
       const row = (preferred && choices.find(choice => choice.model === preferred.id || choice.model === 'service:' + preferred.id)) || choices[0]!;
       return { provider: row.provider, model: row.model };

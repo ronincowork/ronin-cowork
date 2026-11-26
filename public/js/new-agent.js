@@ -5,7 +5,7 @@
  * step is brief-step.js: this Agent's own brief settings, integrations and project
  * management, and what comes with it as the server works it out (docs/architecture/brief.md, Where it is set in the UI). */
 import { store } from './store.js';
-import { gatewayBlockWord, modelSettingsLink, shownInNewAgent } from './harness-model-options.js';
+import { gatewayBlockWord, modelSettingsLink, shownInNewAgent } from './harness-model-entries.js';
 import { request } from './request.js';
 import { t } from './lexicon.js';
 import { ask } from './ask.js';
@@ -239,7 +239,7 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
   const questions = ask([
     { group: t('new_agent.model_package', 'Model'), fields: [
       { key: 'provider', label: t('forms.provider', 'Harness'), blank: defaultWord, options: harnessRows, fixed: !!configure },
-      { key: 'model', shape: 'rect', label: t('forms.model', 'Model'), blank: () => draft.provider ? t('new_agent.choose_model', 'Choose model') : defaultWord(), after: 'provider', empty: () => draft.provider ? 'No model options selected for this harness.' : '', options: modelRows, fixed: !!configure },
+      { key: 'model', shape: 'rect', label: t('forms.model', 'Model'), blank: () => draft.provider ? t('new_agent.choose_model', 'Choose model') : defaultWord(), after: 'provider', empty: () => draft.provider ? 'No model entries selected for this harness.' : '', options: modelRows, fixed: !!configure },
       { key: 'role', label: t('agent_composition.role', 'Role'), options: [
         { v: 'coworker', l: 'Coworker' }, { v: 'lead', l: 'Lead' }, { v: 'epic_lead', l: 'Epic Lead' }, { v: 'coordinator', l: 'Coordinator' },
       ] },

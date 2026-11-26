@@ -24,7 +24,7 @@ import { sendPress } from './press.js';
 import { IRASSHAI, irasshaiIn } from './setup-journey.js';
 import { recordRuntime } from './harnesses-surface.js';
 import { mountHarnessAttachment } from './setup-harness-state.js';
-import { modelSettingsLink } from './harness-model-options.js';
+import { modelSettingsLink } from './harness-model-entries.js';
 import { mountHermesServices } from './setup-hermes-services.js';
 
 export const HARNESS_SURFACE_TYPE = 'setup.harness';

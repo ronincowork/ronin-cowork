@@ -19,7 +19,7 @@ export interface CatalogModel {
   reasoning?: boolean;
   tools?: boolean;
 }
-/** A model option HQ suggests for a new OpenRouter connection: its display name and exact API model ID. */
+/** A model entry HQ suggests for a new OpenRouter connection: its display name and exact API model ID. */
 export interface OpenRouterStarter { name: string; id: string }
 /** The office's models file: the harness models HQ rates, in Glen's order (the picker's order within
  *  a tier), and the OpenRouter starters. Ronin Gateway's models are not here: the Gateway lists them. */

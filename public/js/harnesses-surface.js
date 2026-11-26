@@ -1,4 +1,4 @@
-import { harnessModelEditor } from './harness-model-options.js';
+import { harnessModelEditor } from './harness-model-entries.js';
 import { modelServicePageRequest } from './model-services-surface.js';
 import { openWorkbenchTab } from './workspace.js';
 /* part of the ronin-cowork client — see js/README.md */
@@ -459,7 +459,7 @@ export function createHarnessDrawing(context, { repaint, say = () => {} }) {
     if (list.unavailable) return list.unavailable;
     return t('setup_surface.models_read', 'Model list read {date} by {cli} {version}', { date: list.read_at, cli: entry.label || entry.id, version: list.by || '' }).trim();
   };
-  // `models`: the two-tier picker (harness-model-options.js) in place of the plain model table.
+  // `models`: the two-tier picker (harness-model-entries.js) in place of the plain model table.
   const paintCatalog = (rows, entry, host, label = '', { facts: withFacts = true, models = null } = {}) => {
     const section = el('section', 'setup-provider-catalog');
     section.append(el('h3', 'setup-provider-eyebrow', label || t('setup_surface.section_models', 'Models')));

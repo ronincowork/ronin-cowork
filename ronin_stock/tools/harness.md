@@ -17,7 +17,7 @@ each CLI's own status says) and the sign-ins open now; `harness cancel <id>` sto
 comes to you as a House notice ("Codex is signed in."). The other harnesses sign in on their own
 page (`ronin-help harness-sign-in`): `harness open <id>` opens its terminal sign-in there, the page's
 own press, and `harness close <id>` closes it. Hermes: `harness options` prints what it can use, the
-Ronin gateway and each key the person added, with their models, then its model options (name,
+Ronin gateway and each key the person added, with their models, then its model entries (name,
 source, model, reasoning, approvals). `harness option add <source> <model> [--name N] [--reasoning R]
 [--approvals off|prompt]` adds one (the source: `gateway` or a key's name; defaults: named as the model,
 provider-default reasoning, approvals off; the model must be in that source's list), and

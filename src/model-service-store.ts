@@ -19,10 +19,10 @@ export type AccountKind = 'personal_api' | 'ronin_api';
  *  Read at start-up and on Refresh, never polled; it informs New Agent and the Model services card, and blocks nothing. */
 export type GatewayStatus = 'stopped' | 'token_rejected' | 'unreachable';
 export interface ModelServiceRecord { id: string; name: string; provider: 'openai' | 'mistral' | 'custom'; baseUrl: string; wireApi?: 'chat' | 'responses'; models: string[]; modelNames?: Record<string, string>; modelInfo?: Record<string, { tier?: string; use_for?: string }>; gatewayStatus?: GatewayStatus; discoveredAt?: string; credentialEnv?: string; starterModelsPending?: true; kind?: AccountKind }
-/** `tier` and `use_for` are the Ronin Gateway's own words for its model options; a named option has neither. */
-export interface ModelOption { id: string; name: string; connection: string; model: string; reasoning: string; approvals: 'off' | 'prompt'; tier?: string; use_for?: string }
+/** `tier` and `use_for` are the Ronin Gateway's own words for its model entries; a named option has neither. */
+export interface ModelEntry { id: string; name: string; connection: string; model: string; reasoning: string; approvals: 'off' | 'prompt'; tier?: string; use_for?: string }
 
-export interface ModelServiceStore { connections: ModelServiceRecord[]; setups: ModelOption[] }
+export interface ModelServiceStore { connections: ModelServiceRecord[]; setups: ModelEntry[] }
 const empty = (): ModelServiceStore => ({ connections: [], setups: [] });
 const readStoredModelServices = () => readCredential<ModelServiceStore>('hermes-setups', empty());
 export const keyPath = (id: string) => path.join(storeDir('services_secrets'), `hermes-${id}.env`);
@@ -156,13 +156,13 @@ export async function discoverModelIds(id: string): Promise<string[]> {
     await writeModelServiceStore(state); return c.models;
   });
 }
-/** The Ronin Gateway's model list, read at start-up and on Refresh (its model options are that list,
+/** The Ronin Gateway's model list, read at start-up and on Refresh (its model entries are that list,
  *  withGatewayOptions). A failed read keeps the last list: the next start or Refresh tries again. */
 export async function readGatewayModels(): Promise<void> {
   const { connections } = await readModelServiceStore();
   for (const c of connections) if (accountKind(c) === 'ronin_api') await discoverModelIds(c.id).catch(() => {});
 }
-export async function saveModelOption(input: Record<string, unknown>): Promise<ModelOption> {
+export async function saveModelEntry(input: Record<string, unknown>): Promise<ModelEntry> {
   return mutation(async () => {
     const state = await readStoredModelServices(); const c = state.connections.find(c => c.id === input.connection);
     if (!c) throw new Error('Select an API connection.');
@@ -176,7 +176,7 @@ export async function saveModelOption(input: Record<string, unknown>): Promise<M
     if (input.id && !state.setups.some(s => s.id === input.id)) throw new Error('Setup no longer exists.');
     const name = required(input.name, 'Setup name');
     if (state.setups.some(s => s.id !== input.id && s.connection === c.id && s.name.toLowerCase() === name.toLowerCase())) throw new Error('Setup names must be unique.');
-    const setup: ModelOption = { id: typeof input.id === 'string' ? input.id : randomUUID(), name, connection: c.id, model, reasoning, approvals: input.approvals };
+    const setup: ModelEntry = { id: typeof input.id === 'string' ? input.id : randomUUID(), name, connection: c.id, model, reasoning, approvals: input.approvals };
     state.setups = [...state.setups.filter(s => s.id !== setup.id), setup]; await writeModelServiceStore(state); return setup;
   });
 }

@@ -108,7 +108,7 @@ export function registerWorkbenchCatalog() {
   // stones surface heads the selector as a solid card, as the Teams card heads the Cowork selector.
   // THE AGENT HARNESS WORKBENCH (KAN-236; owner, 2026-11-04): the same stones, now the Harness card; Refresh the
   // Model refresh surface under its new word. The Accounts and Models (preset) cards are gone (owner, 26 Nov 2026):
-  // model services and their model options are Settings' Model services card.
+  // model services and their model entries are Settings' Model services card.
   add({ type: WORKBENCH_TYPES.modelStones, header: 'surface', className: 'wk-selector-utility', label: () => t('harness.stones', 'Harness'), summary: () => t('harness.stones_summary', 'The CLIs: install, sign in, ready'), create: ({ workspace, environment }) => environment.modelStones(workspace) });
   // Refresh (owner, 2026-10-20; the word 2026-11-04): the Refresh all door the stones do not carry, a solid utility card.
   add({ type: WORKBENCH_TYPES.modelRefresh, header: 'surface', className: 'wk-selector-utility', label: () => t('harness.refresh', 'Refresh'), summary: () => t('harness.refresh_summary', 'One press: harnesses, model services'), create: ({ workspace, environment }) => environment.modelRefresh(workspace) });
@@ -149,7 +149,7 @@ export function registerWorkbenchCatalog() {
   // The five agreed sections (MACHINE_SETTINGS_V2.md). Its own card types where its words differ from the Harnesses
   // door's; the surfaces under them are today's, reused. A harness's own card is placed by its stone, not offered.
   // Model services (KAN-870): one record per connection; tabs Ronin Gateway, API key and OpenRouter.
-  campaign(WORKBENCH_TYPES.settings2ModelServices, 'surface', () => t('settings2.model_services', 'Model services'), 'settings2ModelServices', () => t('settings2.model_services_summary', 'Ronin Gateway, OpenRouter and your API keys, and the model options each offers.'));
+  campaign(WORKBENCH_TYPES.settings2ModelServices, 'surface', () => t('settings2.model_services', 'Model services'), 'settings2ModelServices', () => t('settings2.model_services_summary', 'Ronin Gateway, OpenRouter and your API keys, and the model entries each offers.'));
   // Office defaults (KAN-871): the starting models live with mandate, launch mode and behaviors.
   campaign(WORKBENCH_TYPES.settings2AgentDefaults, 'surface', () => t('settings2.agent_defaults', 'Agent defaults'), 'settings2AgentDefaults', () => t('settings2.agent_defaults_summary', 'Model, mandate, launch mode and behaviors new Agents and Teams start with.'));
   campaign(WORKBENCH_TYPES.settings2BehaviorFiles, 'surface', () => t('settings2.behavior_files', 'Behavior files'), 'settings2BehaviorFiles', () => t('settings2.behavior_files_summary', 'Read and edit the behavior, fact and tool files themselves.'));

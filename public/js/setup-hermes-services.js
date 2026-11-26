@@ -2,7 +2,7 @@
 /**
  * HERMES ON SETUP'S HARNESS STEP (owner, 25 Nov 2026; samurai_lab wip/MACHINE_SETTINGS_V2.md "Service
  * pages in Settings"). Shows; Settings v2 edits. Three model services as stones, each ticked when set up:
- * Ronin Gateway, API key, OpenRouter. The one pressed opens below with its own model options, never
+ * Ronin Gateway, API key, OpenRouter. The one pressed opens below with its own model entries, never
  * another's; API key with several keys picks one. Adding or changing a model is a link to that service's
  * page in Settings v2 (model-services-surface.js); the Ronin Gateway's models are supplied.
  * Read: GET /api/model-services; anyone's write is read again on model-services-changed.
@@ -43,7 +43,7 @@ export function mountHermesServices(host) {
       if (of(kind).some((s) => s.configured)) { made.prepend(el('span', 'hermes-tick', '✓')); made.setAttribute('aria-label', `${name}, set up`); }
       sources.append(made);
     }
-    const parts = [el('p', '', 'Hermes runs on the Ronin Gateway, your own API key or OpenRouter. Each model option shows under Model when you start an Agent.'), sources];
+    const parts = [el('p', '', 'Hermes runs on the Ronin Gateway, your own API key or OpenRouter. Each model entry shows under Model when you start an Agent.'), sources];
 
     const mine = of(shown);
     if (shown === 'private' && mine.length > 1) {
@@ -66,7 +66,7 @@ export function mountHermesServices(host) {
       rows: models.map((m) => ({ cells: [m.name, label(m)] })),
       lines,
     });
-    const options = el('div', 'hermes-options'); options.append(el('h3', '', 'Model options'), table);
+    const options = el('div', 'hermes-options'); options.append(el('h3', '', 'Model entries'), table);
     root.replaceChildren(...parts, options);
   };
 

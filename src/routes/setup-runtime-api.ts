@@ -1,5 +1,5 @@
-import { deleteModelOption, deleteService, modelServices, saveService } from '../model-services.js';
-import { modelServiceStoreAnswer, saveModelService, discoverModelIds, saveModelOption, deleteModelServiceEntry, onModelServicesWritten, readGatewayModels } from '../model-service-store.js';
+import { deleteModelEntry, deleteService, modelServices, saveService } from '../model-services.js';
+import { modelServiceStoreAnswer, saveModelService, discoverModelIds, saveModelEntry, deleteModelServiceEntry, onModelServicesWritten, readGatewayModels } from '../model-service-store.js';
 import { broadcastEvent } from '../ws/events.js';
 import { homedir } from 'node:os';
 import { dispatchInstall } from '../agent-install.js';
@@ -44,7 +44,7 @@ export function registerSetupRuntime(app: express.Express): void {
         // A connection's models are read as it is saved: nobody presses to read them (owner, 25 Nov 2026).
         case 'connection': { const saved = await saveModelService(req.body); await discoverModelIds(saved.id).catch(() => {}); break; }
         case 'discover': await discoverModelIds(String(req.body.id)); break;
-        case 'setup': await saveModelOption(req.body); break;
+        case 'setup': await saveModelEntry(req.body); break;
         case 'delete':
           if (req.body.kind !== 'connections' && req.body.kind !== 'setups') throw new Error('Invalid entry type.');
           await deleteModelServiceEntry(req.body.kind, String(req.body.id)); break;
@@ -66,8 +66,8 @@ export function registerSetupRuntime(app: express.Express): void {
         case 'save': await saveService(body); break;
         case 'discover': await discoverModelIds(String(body.id)); break;
         case 'delete': await deleteService(String(body.id)); break;
-        case 'save-model': await saveModelOption({ reasoning: 'default', approvals: 'off', ...body, connection: body.service_id }); break;
-        case 'delete-model': await deleteModelOption(String(body.id)); break;
+        case 'save-model': await saveModelEntry({ reasoning: 'default', approvals: 'off', ...body, connection: body.service_id }); break;
+        case 'delete-model': await deleteModelEntry(String(body.id)); break;
         default: return res.status(404).json({ error: 'Unknown model service action.' });
       }
       res.json({ services: await modelServices() });

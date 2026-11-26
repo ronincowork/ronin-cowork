@@ -40,7 +40,7 @@ The bar turns **Active** by itself when the harness finishes. **Cancel** stops t
 
 **Other harnesses** sign in on their own terminal, opened in the bar: follow what it asks, then
 press **Close**. **Hermes** runs on a model service: the Ronin Gateway, your own API key or OpenRouter.
-Press one in its bar to see its model options; you add or change them in Settings, Model services.
+Press one in its bar to see its model entries; you add or change them in Settings, Model services.
 
 If the Helpful Assistant is open, she sees each sign-in you start and how it ends, and can sign a
 harness in with you.
