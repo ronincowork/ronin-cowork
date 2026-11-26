@@ -9,8 +9,16 @@
 import { teamAgentDefaults, type LaunchMode, type TeamAgentDefaults } from './agent-defaults.js';
 import type { BriefSettings } from './brief-record.js';
 import { briefSettings } from './brief-settings.js';
+import { access } from 'node:fs/promises';
+import path from 'node:path';
 import { readCampaign } from './campaigns.js';
 import { readAgentsSection } from './machine-state.js';
+import { storeDir } from './resources.js';
+
+/** Jira is on at the top while it is connected: its record is its connection file (docs/architecture/integrations.md). */
+async function jiraConnected(campaignId: string): Promise<boolean> {
+  return access(path.join(storeDir('jira'), `${campaignId}.json`)).then(() => true, () => false);
+}
 
 export interface ModelPair { provider: string; model: string }
 /** The model a new Agent gets, and the one a new Team lead gets. */
@@ -52,14 +60,14 @@ export function settingsOf(record: {
   };
 }
 
-/** The Campaign's settings: its record, Jira when its Jira part is on, and Models > Defaults. */
+/** The Campaign's settings: its record, Jira while it is connected, and Models > Defaults. */
 async function campaignSettings(campaignId: string): Promise<LevelSettings> {
   const campaign = campaignId ? await readCampaign(campaignId) : null;
   const c = campaign?.config;
   const models = modelsOf((await readAgentsSection()).sessions);
   return {
     brief: briefSettings(c?.brief),
-    integrations: [...new Set([...(c?.integrations ?? []), ...(c?.services.parts.jira === true ? ['jira'] : [])])],
+    integrations: [...new Set([...(c?.integrations ?? []), ...(campaignId && await jiraConnected(campaignId) ? ['jira'] : [])])],
     ...(typeof c?.pm === 'boolean' ? { pm: c.pm } : {}),
     agent_defaults: teamAgentDefaults(c?.defaults),
     launch_mode: launchModeOf(c?.defaults.launch_mode),

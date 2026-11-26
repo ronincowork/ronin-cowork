@@ -42,7 +42,6 @@ The words are in [KOTOBA.md](../KOTOBA.md) (Agent composition and tools); the br
 | `facts/` | one fact-print per fact | How the brief prints each fact. |
 | `playbooks/` | one `PLAYBOOK-n.json` per playbook item | Ronin's playbooks: `item checkout PLAYBOOK-n` copies one into live work. |
 | `workspace_types/` | one file per project type and variant | What a new Workspace can be; the new-workspace behaviour lists them (`lists: workspace_types`). |
-| `services/` | `ronin_services.md` | Ronin Services: Ronin's own switchable contribution and the parts it runs. |
 | `desk_profiles/` | one file per profile | Named presentation and workspace defaults copied into Campaign configuration. |
 | `lexicons/` | one file per lexicon | Surface words; `professional_en.md` is the complete floor. |
 | `canvases/` | one outline per file | What a canvas starts from (`canvas templates`). |
@@ -61,10 +60,9 @@ One file in `behaviours/`, `tools/` or `facts/` with the shared header
 nothing else changes. Every tool is on every Agent's PATH; a header decides only what the Agent
 is told. An agent-facing tool is one executable in `ronin_bin/` and its file in `tools/`.
 
-An integration is a bridge: `behaviours/<name>-bridge.md` with `when: integration:<name>`.
-`services/<name>.md` is one machine installation: `effect` is `system` (its reading, tools and
-parts join every Cowork Agent birth) or `provider` (it `provides` behaviours);
-`docs/architecture/installations.md` owns the cascade.
+An integration is a record in Settings, and a bridge is `behaviours/<name>-bridge.md` with
+`when: integration:<name>` (`docs/architecture/integrations.md`). Ronin Services has no file here:
+where it ships, every part runs (`docs/architecture/installations.md`).
 
 ## Adding a desk profile or a lexicon
 

@@ -5,7 +5,6 @@ import { t } from './lexicon.js';
 import { MULTIPLE_CAMPAIGNS_ENABLED, campaignById, createCampaign, loadCampaigns, normalizeSelection } from './campaigns.js';
 import { createCampaignIdentitySurface, createNewCampaignSurface } from './campaign-surfaces.js';
 import { createAgentDefaultsSurface, defaultsSummary } from './campaign-defaults.js';
-import { createInstallationsSurface, installationsSummary } from './campaign-installations.js';
 import { createHarnessSetupSessionMount } from './harness-setup-session.js';
 import { createWorkspaceStones } from './workspaces-surface.js';
 import { createWorkspacesRead } from './workspaces-read.js';
@@ -16,7 +15,6 @@ import { coworkCommons } from './cowork-commons.js';
 import { accountCard } from './account-card.js';
 import { createMachineStatusSurface } from './machine-status.js';
 import { createFeedbackSurface, FEEDBACK_TYPE } from './feedback.js';
-import { createServicesSurface } from './setup-surfaces.js';
 import { readyMika } from './mika-ready.js';
 import { createMikaHelpPanel, createMikaTilePool } from './mika.js';
 import { toast } from './ui.js';
@@ -69,7 +67,6 @@ export function createCampaignView() {
     identitySummary: () => currently.identity(environment),
     rootsSummary: () => currently.roots(environment),
     defaultsSummary: () => currently.defaults(environment),
-    installationsSummary: () => installationsSummary(selected()),
     campaignIdentity: () => enterable(createCampaignIdentitySurface(selected)),
     campaignRoots: () => createWorkspaceStones({ workspacesRead: createWorkspacesRead(), workbench: bench, withNew: true, configOnly: true }),
     campaignDefaults: () => enterable(createAgentDefaultsSurface(selected)),
@@ -82,13 +79,6 @@ export function createCampaignView() {
     campaignIntegrations: ({ workspace }) => enterable(createIntegrationsPanel(selected, { panels: integrationPanels(workspace) })),
     campaignJiraItems: () => enterable(createJiraItemsSurface(selected)),
     campaignJiraPairs: () => enterable(createJiraPairsSurface(selected)),
-    campaignInstallations: (context) => {
-      const surface = createInstallationsSurface(selected, {
-        ...context,
-        createInstallationSurface: (id, shared) => id === 'ronin_services' ? createServicesSurface(shared) : null,
-      });
-      return { el: surface.el, show: () => surface.enter(), destroy: () => surface.destroy() };
-    },
     campaignMachine: () => {
       const surface = coworkCommons({ tabs: MACHINE_TABS, label: t('campaign_view.machine', 'Machine'), campaign: selected });
       return { el: surface.el, show: () => surface.select(surface.current() || 'themes') };

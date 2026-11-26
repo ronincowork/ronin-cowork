@@ -101,29 +101,14 @@ them, and the tick lists again.
 ## Parts: what is on disk, and what runs
 
 The Services parts live under `src/services/` (a placed copy; see the services repo's
-`bin/dev-sync`). Whether a part **runs** is decided at start by `src/parts.ts`:
+`bin/dev-sync`). Whether a part **runs** is decided at start by `src/parts.ts`: every part
+present runs (owner, 2026-11-26, KAN-914: no Services switch, no per-feature switch;
+[installations.md](installations.md)).
 
-- An installation claims the parts it runs — `- **parts:** …` in
-  `ronin_stock/services/<name>.md`; Ronin Services claims `counting, jira, koe,
-  machine, project_management, rireki`. A claimed part loads only while that installation is on. Off means the part is
-  never imported: no timers, no routes, no recorder, and `/api/version` reports
-  `stream: false`, so every tile is Locked.
-- A claimed part must also have its **capability** switched on. `SERVICE_CAPABILITY_PARTS`
-  in `src/parts.ts` is the sole capability-to-part expansion, and
-  `CAPABILITY_ON_BY_DEFAULT` beside it is the only place that says what a missing choice
-  means: Project management, Usage stats and Machine status run until they are switched off, the
-  rest are off until switched on. A Campaign records what the owner switched and authors
-  no defaults of its own. A part belonging to no capability is governed by its
-  installation switch alone.
 - A part can declare itself parked with a `PARKED.md` in its folder whose first line is
-  the reason. It is parked regardless of any switch. The recorder (`rireki`) is parked
-  this way for the whole Services beta.
-- **Installed is the gate.** Ronin Services cannot be installed without a registration, so
-  no part re-checks entitlement once it is running, and `/api/installed` carries no
-  `activated` fact for a surface to weigh. On means it works.
-- The switch is read once at start. `/api/installed` reports `parts` (on disk), `loaded`,
-  `parked` (with `installation` or `reason`) and `restart_needed`; the Installations
-  card's Services row says when the switch and the running copy disagree.
+  the reason. The recorder (`rireki`) is parked this way for the whole Services beta.
+- `/api/installed` reports `parts` (on disk), `loaded` and `parked` (with its `reason`, or a
+  load failure).
 
 ## Measuring it
 

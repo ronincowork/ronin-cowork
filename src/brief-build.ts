@@ -92,7 +92,7 @@ async function birthRecord(form: SpawnForm, facts: LaunchFacts, launch: LaunchId
       mcp: [],
       api: [],
       pm: false,
-      services: facts.installations.filter((row) => row.enabled).map((row) => row.name),
+      services: facts.services,
     },
     agent: {
       role,

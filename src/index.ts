@@ -46,7 +46,7 @@ import { registerDocs } from './routes/docs-api.js';
 import { registerDrop } from './routes/drop-api.js';
 import { registerDesks } from './routes/desks-api.js';
 import { registerTeamPage } from './routes/team-page-api.js';
-import { registerServicesActivation, resumeInstallWatch, servicesSetupWrites } from './routes/services-activation-api.js';
+import { registerServicesActivation } from './routes/services-activation-api.js';
 import { registerMachineSettings } from './routes/machine-settings-api.js';
 import { registerCampaigns } from './routes/campaigns-api.js';
 import { ensureInitialCampaign } from './campaigns.js';
@@ -81,10 +81,8 @@ import { DocumentPathError, absoluteDocumentPath, readDocumentFile, readProductD
 import { checkTmuxServerCgroup } from './host-guard.js';
 import { startTeamLayers } from './team-layers.js';
 import { asSeat } from './seats.js';
-import { sockets, onRowChanged, seatOfBearer,runStartedHooks, startBootHooks, stopBootHooks, mountServiceRoutes, noteService, noteServiceCapabilityPlan, noteServiceFailure, noteServiceParked } from './sockets.js';
+import { sockets, onRowChanged, seatOfBearer,runStartedHooks, startBootHooks, stopBootHooks, mountServiceRoutes, noteService, noteServiceFailure, noteServiceParked } from './sockets.js';
 import { discoverParts, partsToLoad } from './parts.js';
-import { initialCampaign } from './campaigns.js';
-import { listInstallations } from './resource-adapters.js';
 import type { ServiceRegistration } from './sockets-contract.js';
 import { resourceRequestCache, storeDir } from './resources.js';
 import { compressResponse } from './http-performance.js';
@@ -298,7 +296,6 @@ app.get('/api/health', async (_req, res) =>
 registerPasskeyManage(app); // /api/passkey/{list,register-options,register,remove} — BEHIND the gate on purpose
 registerPasswordSettings(app, issueSession); // /api/password — saved browser password setting, behind the same gate
 app.use(countBrowserTool);
-app.use(['/api/setup/registration', '/api/setup/services-key', '/api/services', '/api/campaigns', '/api/machine-settings'], servicesSetupWrites); // each write pushes {t:'services-setup'}
 registerLaunch(app); // /api/launch (both variants), /api/sessions — src/routes/launch.ts
 registerMikaContext(app); // /api/mika/context/:tab — tiny tab-scoped owner_view/show seam
 registerCatalogs(app); // catalogs and configuration resources — src/routes/catalogs.ts
@@ -325,7 +322,7 @@ registerSetupRuntime(app); // /api/setup/runtime and provider login completion �
 registerSetupProgress(app); // Setup's ticks, read from the facts
 registerJikan(app); // /api/teams/:team/jikan* — JIKAN, the Cron jobs tab: a team's scheduled requests — src/routes/jikan-api.ts
 startHouseJikan(); // JIKAN's clock: every minute, deliver what is due through the message door — src/jikan.ts
-registerServicesActivation(app); // /api/services/activation* — the Ronin Services request, local-only; no secret crosses this surface — src/routes/services-activation-api.ts
+registerServicesActivation(app); // /api/setup/registration, /api/feedback — src/routes/services-activation-api.ts
 
 // The Campaign's dated provider facts are measured once at start, after the record exists
 // and has migrated: the summary and the migration both read-modify-write the campaigns
@@ -340,20 +337,11 @@ const campaignStart = ensureInitialCampaign()
   .catch((error) => console.error(`[setup] campaign start: ${(error as Error).message}`));
 
 const services: ServiceRegistration[] = [];
-// The parts on disk are the install; the Campaign's Routine switches say which of them run.
-// A part claimed by a Routine that is off is parked: not imported, no timers, no routes,
-// no recorder — as if not installed, files in place (src/parts.ts). Read once, at start.
-const startupCampaign = await initialCampaign().catch(() => null);
-const plan = partsToLoad(
-  discoverParts(),
-  await listInstallations().catch(() => []),
-  startupCampaign?.config?.installations ?? {},
-  startupCampaign?.config?.services?.parts ?? {},
-);
-noteServiceCapabilityPlan(plan.capabilities);
+// The parts on disk are Ronin Services, and every one runs but one that parks itself (src/parts.ts).
+const plan = partsToLoad(discoverParts());
 for (const parked of plan.parked) {
-  console.log(`[services] ${parked.name} is parked: ${parked.reason ?? `${parked.installation} is off for this Campaign (restart after switching it on)`}`);
-  noteServiceParked(parked.name, parked.installation, parked.reason);
+  console.log(`[services] ${parked.name} is parked: ${parked.reason}`);
+  noteServiceParked(parked.name, parked.reason);
 }
 for (const { name: dir, entry } of plan.load) {
   try {
@@ -373,8 +361,6 @@ for (const s of services) {
   s.register(sockets);
 }
 mountServiceRoutes(app);
-
-void resumeInstallWatch();
 
 registerSessions(app); // per-session: kill/harakiri, meta, ctx, tegami, send — src/routes/sessions-api.ts
 registerWipeboards(app); // /api/wipeboards* — src/routes/wipeboards-api.ts

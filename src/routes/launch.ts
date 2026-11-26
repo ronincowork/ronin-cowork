@@ -43,7 +43,6 @@ import { readWorkspace } from '../workspaces.js';
 import { initialCampaignId } from '../campaign-scope.js';
 import { readTeamRoster } from '../team-rosters.js';
 import { readCampaign } from '../campaigns.js';
-import { listInstallations } from '../resource-adapters.js';
 import { resolveLaunchSeed, shownLaunchSeed } from '../launch-seed.js';
 import { parentSettings } from '../waterfall.js';
 import { describePacket, readFirstSentence, writeBriefPacketAt, type PacketReport } from '../birth-brief.js';
@@ -410,7 +409,6 @@ export function registerLaunch(app: express.Express): LaunchControl {
       const campaignId = resolved.session_type === 'bare_metal_agent'
         ? (form.campaign_id || await initialCampaignId())
         : await birthCampaign(resolved.team, form.campaign_id);
-      const transcriptOn = (await readCampaign(campaignId))?.config.services.parts.terminal_transcript === true;
       await createSession(resolved.name, resolved.dir, {
         agent: resolved.agent,
         cli: resolved.launchAgent,
@@ -420,13 +418,8 @@ export function registerLaunch(app: express.Express): LaunchControl {
         // PATH and the operator socket come from processLaunch (birthEnv), for every start.
         env: hermesEnv,
         key: birthKey || undefined,
-        // The Services switch as resolved for THIS Agent at birth (campaign < team < form):
-        // off means RIREKI never records it. Set here and never again — nothing cascades
-        // onto a running session (owner, 2026-09-04). A terminal has no Routines and keeps
-        // the recorder's own default.
-        rireki: houseSeat !== 'mika'
-          ? resolved.installations.some((installation) => installation.name === 'ronin_services' && installation.enabled) && transcriptOn
-          : undefined,
+        // RIREKI records every Agent while its part runs (KAN-914: no switch). Set here and never again.
+        rireki: houseSeat !== 'mika' ? resolved.services.includes('rireki') : undefined,
         strictCwd: houseSeat === 'mika',
       });
       runtimeBorn = true;
@@ -505,12 +498,7 @@ export function registerLaunch(app: express.Express): LaunchControl {
         // and whether one read delivers it. The receipt says what left; the tape says what
         // arrived (the ACK asks the newborn to quote the terminator).
         ...(packet ? { packet } : {}),
-        installations: resolved.installations.map((installation) => ({
-          name: installation.name,
-          on: installation.enabled,
-          delivered: installation.enabled,
-          missing: [],
-        })),
+        services: resolved.services,
       };
       try {
         await persistBirthReceipt(resolved.name, receipt);

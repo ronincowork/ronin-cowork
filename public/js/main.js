@@ -12,7 +12,6 @@ import { loadProjects } from './home.js';
 import { build } from './layout.js';
 import { S, tiles } from './state.js';
 import { installTips } from './tips.js';
-import { installServicesStatus } from './services-activation.js';
 import { createWorkspace } from './workspace.js';
 import { createCoworkView } from './cowork-view.js';
 import { createAgentView } from './agent-view.js';
@@ -53,7 +52,6 @@ async function init() {
   // rather than appearing a minute in. Guarded like every other mount: a box that
   // cannot answer /api/machine must still get its coworkspace.
   const ramRpm = guard('mount RAM_RPM', mountRamRpm, { setVisible() {} });
-  const servicesStatus = guard('services activation status', installServicesStatus, { setVisible() {} });
 
   // HOW TALL THE APPLICATION IS, before anything lays itself out inside it: every surface
   // below is measured against this, so it has to be right for the first paint, not the
@@ -88,7 +86,6 @@ async function init() {
     leadingSlot: document.getElementById('viewleading'),
     actionsSlot: document.getElementById('viewactions'),
     ramRpm,
-    servicesStatus,
     onNavigate: () => refreshWorkspaceHeader(),
   });
   workspace.kit = WorkspaceKit;
@@ -122,7 +119,7 @@ async function init() {
   guard('register the Epics destination', () => workspace.register('epics', createEpicsView()));
   // One Epic on its own page (w899): Layer 2, under the Epics appearance; not a tilespace workbench.
   // One Workspace on its own page (KAN-784): Layer 2, under the Workspaces appearance.
-  guard('register the Workspace destination', () => workspace.register('workspace', { ...createWorkspaceRoute(), appearance: 'workspaces', header: { ram: true, services: true } }));
+  guard('register the Workspace destination', () => workspace.register('workspace', { ...createWorkspaceRoute(), appearance: 'workspaces', header: { ram: true } }));
   guard('register the Help destination', () => workspace.register('help', createHelpView()));
   // the same workbench, selector column, persistence, recall and drag/drop as the Cowork
   // space, offering a Campaign's own configuration instead of its Coworks and Agents.

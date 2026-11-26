@@ -2,7 +2,6 @@
 import { request } from './request.js';
 import { button, field, status } from './ui.js';
 import { pm, getPath, currentOf, optionsOf, pickerHarness, toRequest } from './machine-settings-schema.js';
-import { servicesCard } from './services-card.js';
 import { accountCard } from './account-card.js';
 import { t } from './lexicon.js';
 import { loadHarnessCatalog, harnessCatalog, modelLabel, rowTierWord } from './form-steps.js';
@@ -186,7 +185,6 @@ export function buildMachineSettings(root, isShowing, { only = null } = {}) {
     return row;
   };
 
-  let card = null; // the Services card of the last render; a new render closes it first
   let account = null; // the Cloud account card of the last render, likewise
   const render = () => {
     body.innerHTML = '';
@@ -303,17 +301,6 @@ export function buildMachineSettings(root, isShowing, { only = null } = {}) {
 
     group(t('settei.group_services', 'services'));
     body.appendChild(tickRow(observed.ronin.services.length > 0, 'service', '*', t('settei.ronin_services', 'Ronin Services'), ''));
-    /* the deal — Ronin Services' entitlement, a different thing from the sockets above */
-    group(t('settei.group_entitlement', 'entitlement'));
-    const activation = set.services.activation ?? {};
-    // The activation stage, labelled as what it is: activation is identity transport to
-    // Ronin HQ, not a lease. The office lease itself is the Cloud account card's.
-    body.appendChild(obsRow(t('settei.services_activation', 'Services activation'), st.entitlement,
-      activation.email_masked ? ` ${activation.email_masked}` : ''));
-    // The install's steps arrive by push. The card renders the durable stage rather than
-    // what this page remembers doing, so a reload or a second tab lands on the truth.
-    card?.stop();
-    card = servicesCard(body);
     // Read-only, from the Services `account` part; hidden only when that part is absent.
     account?.stop();
     account = accountCard(body);

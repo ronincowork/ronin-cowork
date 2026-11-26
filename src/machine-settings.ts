@@ -15,11 +15,6 @@ import { readOfficeRecord } from './office-record.js';
 import { AGENTS, listAgentAvailability } from './agents.js';
 import { execFile as brokerExecFile } from './spawn-broker.js';
 import { tmux } from './tmux-client.js';
-import {
-  publicState,
-  readState as readServicesActivation,
-  type ActivationState,
-} from './activation/state.js';
 const MACHINE_SETTINGS_FILE = () => path.join(storeDir('config'), 'machine_settings.json');
 const MAX_OPT = '@ronin-session-max';
 const OWNER_OPT = '@ronin-owner';
@@ -395,7 +390,6 @@ async function readSet(): Promise<Record<string, unknown>> {
   const campaignRecord = await initialCampaign();
   const setup = await readSetupSection();
 
-  const activation = await readServicesActivation();
   return {
     campaign: { name: typedStr(campaignRecord?.title), description: typedStr(campaignRecord?.description) },
     campaigns,
@@ -412,28 +406,7 @@ async function readSet(): Promise<Record<string, unknown>> {
       .filter((w) => typeof w?.kind === 'string' && typeof w?.name === 'string')
       .map((w) => ({ kind: w.kind as string, name: w.name as string })),
     setup,
-    services: setteiServices(activation),
   };
-}
-
-export function setteiServices(activation: ActivationState) {
-  return {
-    selected: activation.stage !== 'not_requested',
-    activation: publicState(activation),
-  };
-}
-
-type PublicActivation = ReturnType<typeof publicState>;
-
-export function servicesEntitlement(activation: PublicActivation): string {
-  if (activation.entitlement_id) {
-    return `services: ${activation.entitlement_id}`
-      + (activation.verified_at ? `, verified ${activation.verified_at}` : '');
-  }
-  if (activation.stage === 'error') {
-    return 'free cowork: Services activation needs attention';
-  }
-  return 'free cowork: no entitlement recorded';
 }
 
 async function readObserved(jobKeyNames: string[]): Promise<Record<string, unknown>> {
@@ -500,8 +473,6 @@ async function computeStatus(
   const setOwner = set.owner as Record<string, unknown>;
   const agentsSeen = observed.agents as Record<string, { installed: boolean; path: string | null }>;
   const keys = observed.keys as Record<string, boolean>;
-  const services = set.services as Record<string, unknown>;
-  const servicesActivation = services.activation as PublicActivation;
   const max = (set.sessions as Record<string, number>).max;
   const running = await liveCount();
 
@@ -567,7 +538,6 @@ async function computeStatus(
       ...jobStatus,
     },
     setup: 'Ronin Setup is always available in Machine Settings',
-    entitlement: servicesEntitlement(servicesActivation),
   };
 }
 

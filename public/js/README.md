@@ -92,7 +92,6 @@ below describes implementation ownership; use the surface index above to find a 
 | `archives.js` | the Archived room — stopped, resumable sessions backed by manifests |
 | `hotwords.js` | `buildHotwords` — the ▥ Hotwords pane, the dictation glossary |
 | `stats.js` | `buildStats` — the ▦ Stats pane (TOMODACHI usage readout) |
-| `services-setup-state.js` | the Ronin Setup Services surface's state: registration, installed facts and the activation record → one status, one next line, at most one action |
 | `system.js` | `buildSystemPanel` — the Account tab's Release & update and Log out rooms (release identity, updates, log out, passkeys) in `cowork-commons.js` |
 | `work-record.js` | `buildWorkRecord` — the tile's ☰ Work record (held items first, each with status, flag and attachments; then objective, worktrees, Teams), and its age helpers |
 | `plan-attachment.js` | `isPlanRef`, `planName`, `resolvePlan`, `planAttachment` — an epic's `plan:<workspace>/<name>` attachment by name, opened through `/api/plans/resolve`, or "gone" (KAN-256) |
@@ -181,9 +180,7 @@ each card by its message id; the phone's bar pieces and Teams cards ([phone.js](
 a card mid-tap; the Cron tab ([team-jikan.js](team-jikan.js)): its header row, each job's row
 by id, and the filter and form options; an Agent's Team membership ([agent-view.js](agent-view.js));
 the Workbench selector ([workbench.js](workbench.js)): each card by type and resource, its
-press, hover and drag reading the newest offer; the Services setup surface and the ⚙ Services
-card ([setup-surfaces.js](setup-surfaces.js), [services-card.js](services-card.js)): steps by
-id, the key row, switches built once and set in place, the egress list keeping its fold; the
+press, hover and drag reading the newest offer; the
 Setup zone's picks ([setup-zone.js](setup-zone.js)).
 Work Items ([work-items-surface.js](work-items-surface.js)) re-reads only when the `epics`
 push moves (it carries every live item, `epic: ''` under none) or its scope changes, never on

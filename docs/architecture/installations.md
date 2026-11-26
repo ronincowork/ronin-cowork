@@ -17,11 +17,20 @@ have none of Ronin.
 
 ## Ronin Services always runs
 
-The owner, 2026-11-26 (KAN-857): Cowork and Ronin Services are one product, hosted or
-self-hosted, and both always run. The Installations card and the Ronin Services on/off retire,
-with `services-off` and every `when: !service:ronin_services` file. A behaviour or tool with
-`when: service:<part>` is still in play while that part runs, so a part that fails to load is
-not taught.
+The owner, 2026-11-26 (KAN-857, KAN-914): Cowork and Ronin Services ship together, as hosted
+does now; self-hosted becomes the same bundle later (not a priority: hosted comes first). Cowork
+still works without Services, but where Services is present **every part runs**: there is no
+Services switch and no per-feature switch (Project management, Terminal transcript, Voice, Usage
+stats, Machine status, Jira). A part that is present loads at start unless it parks itself
+(`PARKED.md`) or fails to load. Retired with no replacement: the Installations card and Setup's
+Installations step, the Ronin Services on/off and the six feature switches (`config.installations`,
+`config.services.parts`), `ronin_stock/services/`, `services-off`, and the whole Services install
+flow (the Services key from Ronin HQ, the download, the Services card and header badge). Jira acts
+once it is connected in Settings › Integrations. A paid option such as voice may later be turned
+on or off from the Business Lounge, never here. Hotwords is dropped.
+
+A behaviour or tool with `when: service:<part>` is still in play while that part runs, so a part
+that fails to load is not taught.
 
 ## Defaults
 
