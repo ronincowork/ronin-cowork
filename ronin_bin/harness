@@ -18,7 +18,7 @@ Usage:
                                                         add a Hermes model option (name: the model; default; off)
   harness option remove <name>                          remove a Hermes model option
 The code or key is pasted into the box on the page by the person, never sent here. How it ends
-comes to you as a House notice. Other harnesses sign in on their own page: ronin-help provider-sign-in.
+comes to you as a House notice. Other harnesses sign in on their own page: ronin-help harness-sign-in.
 EOF_USAGE
 }
 cmd=${1:-}; [ "$#" -gt 0 ] && shift

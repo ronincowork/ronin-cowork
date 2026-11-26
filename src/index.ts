@@ -50,7 +50,7 @@ import { registerServicesActivation, resumeInstallWatch, servicesSetupWrites } f
 import { registerMachineSettings } from './routes/machine-settings-api.js';
 import { registerCampaigns } from './routes/campaigns-api.js';
 import { ensureInitialCampaign } from './campaigns.js';
-import { refreshProviders } from './provider-summary.js';
+import { refreshHarnesses } from './harness-summary.js';
 import { readGatewayModels } from './hermes-setups.js';
 import { migrateCampaignScope, moveDeskModelDefault } from './campaign-scope.js';
 import { registerUpdate } from './routes/update-api.js';
@@ -335,7 +335,7 @@ registerServicesActivation(app); // /api/services/activation* — the Ronin Serv
 const campaignStart = ensureInitialCampaign()
   .then(() => migrateCampaignScope())
   .then(() => moveDeskModelDefault())
-  .then(() => (isEntryPoint ? refreshProviders() : undefined))
+  .then(() => (isEntryPoint ? refreshHarnesses() : undefined))
   .then(() => (isEntryPoint ? readGatewayModels() : undefined))
   .catch((error) => console.error(`[setup] campaign start: ${(error as Error).message}`));
 

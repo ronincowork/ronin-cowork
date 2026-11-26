@@ -19,8 +19,8 @@ import { createConnection } from 'node:net';
 import { readMachineSettingsSection } from './machine-settings.js';
 import { readAgentsSection } from './machine-state.js';
 import { modelServices, type ModelService } from './model-services.js';
-import { NATIVE_MODEL, providerRows, type ProviderRow, type ProviderRows } from './model-providers.js';
-import { readProviderSummary } from './provider-summary.js';
+import { NATIVE_MODEL, harnessRows, type HarnessRow, type HarnessRows } from './harness-catalog.js';
+import { readHarnessSummary } from './harness-summary.js';
 
 export type Step = 'cli' | 'gateway' | 'private_api' | 'openrouter';
 export const AGENT_ORDER: readonly Step[] = ['cli', 'gateway', 'private_api', 'openrouter'];
@@ -43,12 +43,12 @@ function reachable(endpoint: string): Promise<boolean> {
   });
 }
 
-const shown = (picks: Picks, row: ProviderRow): boolean => {
+const shown = (picks: Picks, row: HarnessRow): boolean => {
   const picked = picks[row.cli]?.[row.service_id || 'in-harness'];
   return !Array.isArray(picked) || picked.includes(row.model);
 };
 
-async function serviceRoute(type: ModelService['service_type'], services: ModelService[], harnesses: ProviderRows[], picks: Picks): Promise<Route | null> {
+async function serviceRoute(type: ModelService['service_type'], services: ModelService[], harnesses: HarnessRows[], picks: Picks): Promise<Route | null> {
   for (const service of services) {
     if (service.service_type !== type || !service.configured) continue;
     if (type === 'gateway' && !await reachable(service.baseUrl)) continue;
@@ -67,9 +67,9 @@ async function serviceRoute(type: ModelService['service_type'], services: ModelS
 
 /** The first step of `order` that works, or null when none does. */
 export async function firstRoute(order: readonly Step[]): Promise<Route | null> {
-  const summary = await readProviderSummary();
+  const summary = await readHarnessSummary();
   const [services, harnesses, picks, agents] = await Promise.all([
-    modelServices(), providerRows(summary), readMachineSettingsSection<Picks>('newAgentModels', {}), readAgentsSection(),
+    modelServices(), harnessRows(summary), readMachineSettingsSection<Picks>('newAgentModels', {}), readAgentsSection(),
   ]);
   const written = ((agents.sessions as { default?: { provider?: string } } | undefined)?.default?.provider ?? '').trim();
   for (const step of order) {

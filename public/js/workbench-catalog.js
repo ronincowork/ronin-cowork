@@ -7,7 +7,7 @@ import { FILES_TYPE, registerFilesSurface } from './files-surface.js';
 import { BEHAVIOUR_SURFACE_TYPE, registerBehaviourSurface } from './behaviour-surface.js';
 import { SETUP_SURFACE_TYPES, registerSetupSurfaces } from './setup-surfaces.js';
 import { PASSWORD_SURFACE_TYPE, registerPasswordSurface } from './password-surface.js';
-import { PROVIDER_SURFACE_TYPE } from './provider-surface.js';
+import { PROVIDER_SURFACE_TYPE } from './harnesses-surface.js';
 import { MULTIPLE_CAMPAIGNS_ENABLED } from './campaigns.js';
 import { AGENT_COMPOSITION_TYPE } from './agent-composition.js';
 import { WORK_ITEMS_TYPE } from './work-items-surface.js';
@@ -24,7 +24,7 @@ export const WORKBENCH_TYPES = Object.freeze({
   agentDocuments: 'agent.documents', agentTeams: 'agent.team-membership', agentComposition: AGENT_COMPOSITION_TYPE,
   campaignMachine: 'campaign.machine', campaignMachineStatus: 'campaign.machine-status', campaignCloudAccount: 'campaign.cloud-account', campaignDefaults: 'campaign.defaults', campaignRoots: 'campaign.workspaces',
   campaignIdentity: 'campaign.identity', campaignInstallations: 'campaign.installations', campaignCreate: 'campaign.new', campaignIntegrations: 'campaign.integrations', campaignJira: 'campaign.jira', campaignJiraItems: 'campaign.jira-items', campaignJiraPairs: 'campaign.jira-pairs',
-  modelStones: 'models.stones', modelRefresh: 'models.refresh', modelDefaults: 'models.defaults', modelProvider: 'models.provider', modelMika: 'models.mika-auth',
+  modelStones: 'models.stones', modelRefresh: 'models.refresh', modelDefaults: 'models.defaults', modelHarness: 'models.provider', modelMika: 'models.mika-auth',
   // THE AGENT HARNESS WORKBENCH'S TWO NEW TILESPACES (KAN-236): Accounts and Models, beside the stones and Refresh.
   accountsRecords: 'accounts.records', modelsRecords: 'models.records',
   helpOutline: 'help.outline', helpMika: 'help.mika', helpPage: HELP_PAGE_TYPE,
@@ -111,15 +111,15 @@ export function registerWorkbenchCatalog() {
   // Models two new solid utility cards after it; Refresh the Model refresh surface under its new word. Nothing
   // existing is removed: the types, surfaces and stones keep working under the new words.
   add({ type: WORKBENCH_TYPES.modelStones, header: 'surface', className: 'wk-selector-utility', label: () => t('harness.stones', 'Harness'), summary: () => t('harness.stones_summary', 'The CLIs: install, sign in, ready'), create: ({ workspace, environment }) => environment.modelStones(workspace) });
-  add({ type: WORKBENCH_TYPES.accountsRecords, header: 'surface', className: 'wk-selector-utility', label: () => t('accounts.title', 'Accounts'), summary: () => t('accounts.card_summary', 'Personal API · Ronin API: which harnesses, which models'), create: ({ workspace, environment }) => environment.accounts(workspace) });
-  add({ type: WORKBENCH_TYPES.modelsRecords, header: 'surface', className: 'wk-selector-utility', label: () => t('models.records', 'Models'), summary: () => t('models.records_summary', 'Offered · presets · defaults'), create: ({ workspace, environment }) => environment.modelsRecords(workspace) });
+  add({ type: WORKBENCH_TYPES.accountsRecords, header: 'surface', className: 'wk-selector-utility', label: () => t('accounts.title', 'Accounts'), summary: () => t('accounts.card_summary', 'Private API · Ronin Gateway: your model services'), create: ({ workspace, environment }) => environment.accounts(workspace) });
+  add({ type: WORKBENCH_TYPES.modelsRecords, header: 'surface', className: 'wk-selector-utility', label: () => t('models.records', 'Models'), summary: () => t('models.records_summary', 'Model options · defaults'), create: ({ workspace, environment }) => environment.modelsRecords(workspace) });
   // Refresh (owner, 2026-10-20; the word 2026-11-04): the Refresh all door the stones do not carry, a solid utility card.
   add({ type: WORKBENCH_TYPES.modelRefresh, header: 'surface', className: 'wk-selector-utility', label: () => t('harness.refresh', 'Refresh'), summary: () => t('harness.refresh_summary', 'One press: harnesses, accounts'), create: ({ workspace, environment }) => environment.modelRefresh(workspace) });
   // Defaults (owner, 2026-10-21): the model a new Agent, a new Team lead and Mika start on, a solid utility card after Model refresh.
   add({ type: WORKBENCH_TYPES.modelDefaults, header: 'surface', className: 'wk-selector-utility', label: () => t('models.defaults', 'Defaults'), summary: () => t('models.defaults_summary', 'Agent · Team lead · Mika'), create: ({ workspace, environment }) => environment.modelDefaults(workspace) });
-  add({ type: WORKBENCH_TYPES.modelProvider, header: 'surface', className: 'wk-selector-entity', discover: (_t, e) => e.providers(), create: ({ workspace, detail, environment }) => environment.modelProvider(workspace, detail) });
+  add({ type: WORKBENCH_TYPES.modelHarness, header: 'surface', className: 'wk-selector-entity', discover: (_t, e) => e.providers(), create: ({ workspace, detail, environment }) => environment.modelHarness(workspace, detail) });
   add({ type: WORKBENCH_TYPES.modelMika, header: 'terminal', label: () => 'Mika', discover: () => [], create: ({ environment }) => environment.modelMika() });
-  profiles.define(WORKBENCH_PROFILES.models, [WORKBENCH_TYPES.modelStones, WORKBENCH_TYPES.accountsRecords, WORKBENCH_TYPES.modelsRecords, WORKBENCH_TYPES.modelRefresh, WORKBENCH_TYPES.modelDefaults, WORKBENCH_TYPES.modelProvider, WORKBENCH_TYPES.modelMika]);
+  profiles.define(WORKBENCH_PROFILES.models, [WORKBENCH_TYPES.modelStones, WORKBENCH_TYPES.accountsRecords, WORKBENCH_TYPES.modelsRecords, WORKBENCH_TYPES.modelRefresh, WORKBENCH_TYPES.modelDefaults, WORKBENCH_TYPES.modelHarness, WORKBENCH_TYPES.modelMika]);
   // THE WORKSPACES WORKBENCH (owner, 2026-11-02): the stones of Workspaces in Tilespace 1, a pressed one's
   // page beside them; a card per Workspace, opened whole; New Workspace and GitHub CLI dotted (workspaces-surface.js).
   add({ type: WORKBENCH_TYPES.workspaceRecords, header: 'surface', className: 'wk-selector-utility', label: () => t('workspaces.title', 'Workspaces'), create: ({ workspace, environment }) => environment.workspaceRecords(workspace) });
@@ -163,7 +163,7 @@ export function registerWorkbenchCatalog() {
     SETUP_SURFACE_TYPES.roots, WORKBENCH_TYPES.campaignIntegrations, WORKBENCH_TYPES.campaignJira,
     WORKBENCH_TYPES.settings2BehaviorFiles, WORKBENCH_TYPES.campaignMachineStatus, WORKBENCH_TYPES.settings2Stats,
     FEEDBACK_TYPE,
-    WORKBENCH_TYPES.modelProvider, WORKBENCH_TYPES.modelMika, WORKBENCH_TYPES.campaignJiraItems, WORKBENCH_TYPES.campaignJiraPairs, WORKBENCH_TYPES.document,
+    WORKBENCH_TYPES.modelHarness, WORKBENCH_TYPES.modelMika, WORKBENCH_TYPES.campaignJiraItems, WORKBENCH_TYPES.campaignJiraPairs, WORKBENCH_TYPES.document,
   ]);
   registered = true;
 }

@@ -2,8 +2,8 @@
 
 For Gateway, OpenRouter, private API connections and their named models, see [Model services](model_services_README.md).
 
-For native CLI launches, Ronin joins three records in one place (`providerRows`,
-`src/model-providers.ts`). Each CLI in `src/agents.ts` names the vendor it serves. Which
+For native CLI launches, Ronin joins three records in one place (`harnessRows`,
+`src/harness-catalog.ts`). Each CLI in `src/agents.ts` names the vendor it serves. Which
 models can launch is each signed-in CLI's own list, in the Campaign's **measured provider
 summary**. What each model is for is **HQ's model catalog**: the harness models on HQ's admin
 Models page, each one's tier, its "use it for" line and its facts, sent to every office through
@@ -40,7 +40,7 @@ Each `AGENTS` row in `src/agents.ts` carries its `vendor`:
 | `transcript_source` | dated, descriptive journal location and write discipline; availability requires a supported adapter and verified launch identity, not merely a file at that path |
 | `maturity` | optional: `beta`, or `comingSoon`, which shows the provider and never launches it |
 
-`listProviders()` reads them; `GET /api/setup/runtime` keeps `providers[].provider` and
+`listHarnesses()` reads them; `GET /api/setup/runtime` keeps `providers[].provider` and
 `.from` by these names, and the park reads them. The join lives here and nowhere else — no
 command-word match, no map in a client. The CLI's own particulars are its
 [Agent page](../agents/README.md).
@@ -80,7 +80,7 @@ is every provider's default in every path, and a preference is ⚙ Configuration
 A saved or explicitly supplied CLI model name absent from the refreshed list is passed
 unchanged to the named provider. Ronin does not maintain or rewrite an alias map.
 
-`providerRows` joins each CLI's vendor, what the CLI listed, HQ's catalog row on harness + id,
+`harnessRows` joins each CLI's vendor, what the CLI listed, HQ's catalog row on harness + id,
 and the CLI's Agent page for the command. Neither record holds CLI syntax.
 
 **The rows a provider offers (KAN-829).** Native first, then every model the CLI lists,
@@ -138,10 +138,10 @@ start, a restore included, with the launching person's email for the `X-Ronin-Pe
 
 ## One read for the client
 
-`GET /api/provider-catalog` answers the record's dates, when HQ's catalog was made, and every
+`GET /api/harness-catalog` answers the record's dates, when HQ's catalog was made, and every
 provider with its rows already joined —
 `{ measured_at, refreshed_at, catalog_at, providers: [{ provider, cli, label, cli_label, launchable, operational, off, native, launch_modes, part?, models: [rows] }] }`
-(`providerCatalogAnswer`) — the only provider route there is, and the only
+(`harnessCatalogAnswer`) — the only provider route there is, and the only
 join: no client joins anything. Google, xAI and Nous have not yet been launched end to end
 through Ronin; the first real launch of each is its proof, per the checklist below.
 
@@ -185,12 +185,12 @@ What this machine *has* is measured, not derived on every read. The Campaign rec
 | `models` | per CLI id, its own model list as **Refresh all** last read it: `{ read_at, by, rows: [{ id, name }] }` in the CLI's order, `by` the CLI version installed at the read; or `{ read_at, by, rows: [], unavailable }` saying why there is none. Never guessed, never inferred from the catalog |
 | `latest` | per CLI id, the newest release its npm package listed and when it was asked — asked only by **Refresh all**, never by an ordinary measure, since each ask is an outbound request with its own egress line; kept until the next; absent for a CLI with no npm package to ask |
 
-`src/provider-summary.ts` has two writers and one record:
+`src/harness-summary.ts` has two writers and one record:
 
-- `measureAndRecordProviders` — the machine facts; the recorded lists, the last npm answer
+- `measureAndRecordHarnesses` — the machine facts; the recorded lists, the last npm answer
   and `refreshed_at` ride along unchanged. After **Cancel** on a sign-in (a
   sign-in closed without Done may still have left a credential file), and after Turn off / on.
-- `refreshProviders` — **Refresh all**: the same facts, then every activated
+- `refreshHarnesses` — **Refresh all**: the same facts, then every activated
   CLI's own list read again, the Ronin Gateway's list, then npm asked.
   It runs at every Ronin start, so after every
   Update (which restarts Ronin), with nobody pressing anything (KAN-651); in a hosted office
@@ -258,8 +258,8 @@ interface after starting the command:
 
 ```text
 src/agents.ts vendor + CLI list + HQ's catalog + docs/agents/<cli>.md commands
-  → GET /api/provider-catalog
-  → the one picker (providerModelPair, public/js/form-steps.js)
+  → GET /api/harness-catalog
+  → the one picker (harnessModelPair, public/js/form-steps.js)
   → POST /api/launch { provider, model }
   → combine the Model choice and the Mode (Workspace's, else Campaign's, else Dangerously) into one complete command
   → run the resolved cmd in the new tile
@@ -283,7 +283,7 @@ in ⚙ Configuration — the schema's `models` section, two views of one setting
 
 **The first sign-in is the default** (owner, 2026-11-19; KAN-725). While `sessions.default` names
 no provider, the first CLI signed in becomes it, written once: the provider, its model blank (the
-provider's own default). `settleFirstDefault` (`provider-summary.ts`) runs on every recorded
+provider's own default). `settleFirstDefault` (`harness-summary.ts`) runs on every recorded
 measure, and a launch with no default measures first (`spawn.ts`), so a sign-in made in Setup or
 in a tile both count. A later sign-in never moves it; only Models > Defaults does. A model service
 is no sign-in and never becomes the default this way. With nothing signed in,
@@ -297,11 +297,11 @@ Desk. A Team's `agent_defaults` carries no model.
 ## The one picker
 
 Every place the product asks *which provider, and which model* is one control:
-`providerModelPair` in `public/js/form-steps.js`. New Agent, New Team, Add Agent to Team,
+`harnessModelPair` in `public/js/form-steps.js`. New Agent, New Team, Add Agent to Team,
 ⚙ Configuration and Models > Defaults (the Agent and Team lead models, each provider's
 preferred model, and Mika's row) and cowork setup all call
 it; none keeps a list, a join or a vendor's name of its own. The picker reads the rows the
-server joined (`GET /api/provider-catalog`) and what this machine measured of each CLI
+server joined (`GET /api/harness-catalog`) and what this machine measured of each CLI
 (`GET /api/setup/runtime`, which answers from the Campaign's recorded summary and never
 probes), and it offers:
 
@@ -321,7 +321,7 @@ the first launchable **light** row — there is no name-pattern for "cheap".
 
 ## The Harnesses surface
 
-One drawing (`public/js/provider-surface.js`), seated by two selector cards — Ronin Setup's
+One drawing (`public/js/harnesses-surface.js`), seated by two selector cards — Ronin Setup's
 **Harnesses** and Ronin Settings' **Harnesses** — and drawn by Home's **Models**
 door as one stone per provider (`public/js/models-surface.js`). The two cards read *N providers · M models · K activated here*. At the top sits the one door: **Refresh all model providers**,
 with *Last ran <date>* beside it, or *Never run — every provider offers Native only until
@@ -340,7 +340,7 @@ first and marked as the default. Every named row is a model from the CLI's list,
 by tier, and its Model cell carries both names: the CLI's own in bold, the id
 beneath. The table has two columns, Model and Tier; the Tier cell carries HQ's tier (or
 *unrated*) and, beneath it, the model's "use it for" line. The native sign-in tile is mounted through the workbench environment's one
-shared mount (`public/js/provider-setup-session.js`), which both Ronin Setup and Ronin
+shared mount (`public/js/harness-setup-session.js`), which both Ronin Setup and Ronin
 Settings hand their environment, so it works on either seat. Showing the surface paints
 the record; only Refresh all reads. Its rows are the one picker's read, so the surface and
 every picker cannot disagree.
@@ -452,7 +452,7 @@ confirm that the tile reaches a prompt and receives the complete built brief.
 installation, sign-in and update, and GitHub installation and authentication. Each runtime
 publishes the same explicit session attachment. Each opens a normal tmux shell and
 runs the command inside it, so exiting the CLI returns to the shell prompt. Both UIs mount it through
-`provider-setup-session.js`; Cancel ends the temporary tmux session.
+`harness-setup-session.js`; Cancel ends the temporary tmux session.
 
 Done saves an owner-described `sign_in` record under
 `setup.providers.<cli>.sign_in` in machine settings: `method` (`subscription`, `api_key`,

@@ -59,7 +59,7 @@ To stop one safely, see [Terminal controls](../using-ronin/terminal-controls.md)
 **What is the difference between a harness and a model?** A model is the AI itself, like Claude
 or GPT. A harness is the tool that runs it as an agent, like Claude Code or Codex: it reads files,
 runs commands and keeps a conversation. In Ronin you connect harnesses, and each uses the models
-its provider offers. [Provider sign-in](provider-sign-in.md).
+its provider offers. [Provider sign-in](harness-sign-in.md).
 
 **Do I pay Ronin for model use?** No. Your Agents run on your own subscription or API key, signed
 in directly with the provider. Ronin never resells model access or sits in between. The Helpful

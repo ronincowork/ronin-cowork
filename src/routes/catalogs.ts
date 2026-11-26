@@ -7,8 +7,8 @@ import { listSkins } from '../skin-catalog.js';
 import { listLexicons, resolveLexicon } from '../lexicon-catalog.js';
 import { activeDeskProfileName, listDeskProfiles } from '../desk-profiles.js';
 import { initialCampaign } from '../campaigns.js';
-import { providerCatalogAnswer } from '../model-providers.js';
-import { readProviderSummary } from '../provider-summary.js';
+import { harnessCatalogAnswer } from '../harness-catalog.js';
+import { readHarnessSummary } from '../harness-summary.js';
 import { setRepoSettings } from '../desks/arrangement.js';
 import {
   listSavedLaunches,
@@ -36,9 +36,9 @@ export function registerCatalogs(app: express.Express): void {
 
   // The one catalog read for the client: origin, path, the model info's date, the dates
   // of the record, and every provider with its joined rows — Native, then what its CLI lists.
-  app.get('/api/provider-catalog', async (_req, res) => {
+  app.get('/api/harness-catalog', async (_req, res) => {
     try {
-      const catalog = await providerCatalogAnswer(await readProviderSummary());
+      const catalog = await harnessCatalogAnswer(await readHarnessSummary());
       const preferences = await readMachineSettingsSection('newAgentModels', {});
       res.json({ ...catalog, preferences });
     } catch (e) {

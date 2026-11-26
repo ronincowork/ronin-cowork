@@ -108,7 +108,7 @@ export function createInstallationsSurface(campaign, context = {}) {
     return result;
   };
 
-  const featureProviderControls = (installation) => {
+  const featureHarnessControls = (installation) => {
     const reason = blockedReason(installation);
     const notice = el('p', 'setup-notice');
     const unavailable = el('p', 'setup-hint', t('campaign_view.turn_available_on', 'turn Available on first'));
@@ -151,7 +151,7 @@ export function createInstallationsSurface(campaign, context = {}) {
   };
 
   const renderDetail = (installation, host) => {
-    const controls = installation.effect === 'provider' ? featureProviderControls(installation) : null;
+    const controls = installation.effect === 'provider' ? featureHarnessControls(installation) : null;
     const sharedContext = {
       ...context,
       installationMaturity: installation.maturity,

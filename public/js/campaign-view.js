@@ -6,7 +6,7 @@ import { MULTIPLE_CAMPAIGNS_ENABLED, campaignById, createCampaign, loadCampaigns
 import { createCampaignIdentitySurface, createNewCampaignSurface } from './campaign-surfaces.js';
 import { createAgentDefaultsSurface, defaultsSummary } from './campaign-defaults.js';
 import { createInstallationsSurface, installationsSummary } from './campaign-installations.js';
-import { createProviderSetupSessionMount } from './provider-setup-session.js';
+import { createHarnessSetupSessionMount } from './harness-setup-session.js';
 import { createWorkspaceStones } from './workspaces-surface.js';
 import { createWorkspacesRead } from './workspaces-read.js';
 import { createJiraItemsSurface, createJiraPairsSurface, createJiraPanel } from './jira-panel.js';
@@ -55,7 +55,7 @@ export function createCampaignView() {
   let loadGeneration = 0;
   let liveSetupProgress = null;
   // The native sign-in tile the Model providers surface mounts here as on Ronin Setup.
-  const providerSessions = createProviderSetupSessionMount();
+  const providerSessions = createHarnessSetupSessionMount();
   const { surface: mikaSurface, pool: mikaPool } = createMikaTilePool();
   const selected = () => campaignById(normalizeSelection(ctx?.state?.campaignSelection).primary_campaign_id);
   // Setup's ticks, from the facts (GET /api/setup/progress, pushed as setup-progress); null until read.
@@ -115,7 +115,7 @@ export function createCampaignView() {
       return enterable(surface);
     },
     setupRuntime: null,
-    mountProviderSetupSession: providerSessions.mountProviderSetupSession,
+    mountHarnessSetupSession: providerSessions.mountHarnessSetupSession,
     document: (detail = {}) => createDocumentWorkspaceAdapter({ root: detail.root, path: detail.path || detail.key }),
     sessions: () => [{
       key: MIKA_SESSION,

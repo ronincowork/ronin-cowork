@@ -16,7 +16,7 @@
           "kind": "doc",
           "label": "Signing in a harness",
           "description": "How each harness signs in here",
-          "path": "docs/getting-started/provider-sign-in.md"
+          "path": "docs/getting-started/harness-sign-in.md"
         }
       ],
       "asks": [

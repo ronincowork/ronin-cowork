@@ -6,7 +6,7 @@ import { t } from './lexicon.js';
 import { createWorkspacesRead } from './workspaces-read.js';
 import { createWorkspaceKickoff } from './setup-workspace-kickoff.js';
 import { ask } from './ask.js';
-import { PROVIDER_SURFACE_TYPE, providerSurfaceDefinition } from './provider-surface.js';
+import { PROVIDER_SURFACE_TYPE, harnessesSurfaceDefinition } from './harnesses-surface.js';
 import { harnessSurfaceDefinition } from './setup-harness-surface.js';
 import { createPhalanx } from './phalanx.js';
 import { servicesSetupModel } from './services-setup-state.js';
@@ -19,7 +19,7 @@ import { createSetupZoneSlot, watchSetupProgress } from './setup-zone.js';
 import { createStatusMarker } from './status-marker.js';
 import { createTourSurface } from './setup-tour.js';
 
-// Model providers is the one surface two workbenches seat (provider-surface.js); its type
+// Model providers is the one surface two workbenches seat (harnesses-surface.js); its type
 // is that module's, and Ronin Settings registers the same definition.
 export const SETUP_SURFACE_TYPES = Object.freeze({
   register: 'setup.register', providers: PROVIDER_SURFACE_TYPE, roots: 'setup.roots',
@@ -664,7 +664,7 @@ export function setupSurfaceDefinitions() {
   });
   return [
     definition(SETUP_SURFACE_TYPES.register, t('setup_surface.register', 'Register'), createRegisterSurface),
-    providerSurfaceDefinition(),
+    harnessesSurfaceDefinition(),
     harnessSurfaceDefinition(),
     definition(SETUP_SURFACE_TYPES.roots, t('setup_surface.roots', 'Workspace'), createRootsSurface),
     definition(SETUP_SURFACE_TYPES.installations, t('campaign_view.installations', 'Installations'), createSetupInstallationsSurface),

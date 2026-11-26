@@ -7,30 +7,30 @@ import { dispatchInstall } from '../agent-install.js';
 import type express from 'express';
 import { readSetupSection } from '../machine-state.js';
 import {
-  closeProviderLogin,
-  completeProviderLogin,
-  openProviderLogin,
-  openProviderUpdate,
-  setProviderOff,
+  closeHarnessLogin,
+  completeHarnessLogin,
+  openHarnessLogin,
+  openHarnessUpdate,
+  setHarnessOff,
   setupRuntimeAnswer,
   githubSetupAnswer,
   githubRepositories,
 } from '../setup-runtime.js';
 import { installedAnswer } from './installed-api.js';
-import { cancelSignIn, pasteSignIn, signInState, startSignIn } from '../provider-sign-in.js';
-import { measureAndRecordProviders, readProviderSummary, refreshProviders } from '../provider-summary.js';
-import type { ProviderSummary } from '../model-providers.js';
+import { cancelSignIn, pasteSignIn, signInState, startSignIn } from '../harness-sign-in.js';
+import { measureAndRecordHarnesses, readHarnessSummary, refreshHarnesses } from '../harness-summary.js';
+import type { HarnessSummary } from '../harness-catalog.js';
 import { readUserIntro, writeUserIntro } from '../user-intro.js';
 
 const errMsg = (error: unknown) => String((error as Error)?.message ?? error).replaceAll(homedir(), '~');
-const EMPTY_PROVIDER_SUMMARY: ProviderSummary = {
+const EMPTY_PROVIDER_SUMMARY: HarnessSummary = {
   measured_at: '', refreshed_at: '', installed: [], signed_in: [], operational: [], off: [], activated_count: 0,
   paths: {}, versions: {}, models: {}, latest: {},
 };
 /** A record-only answer. Setup progress owns every automatic machine measurement. */
-const answer = async (summary?: ProviderSummary) => {
+const answer = async (summary?: HarnessSummary) => {
   const section = await readSetupSection();
-  const facts = summary ?? await readProviderSummary() ?? EMPTY_PROVIDER_SUMMARY;
+  const facts = summary ?? await readHarnessSummary() ?? EMPTY_PROVIDER_SUMMARY;
   return setupRuntimeAnswer(section, facts, undefined, await installedAnswer());
 };
 
@@ -51,7 +51,7 @@ export function registerSetupRuntime(app: express.Express): void {
           await deleteHermesEntry(req.body.kind, String(req.body.id)); break;
         default: return res.status(404).json({ error: 'Unknown Hermes action.' });
       }
-      await measureAndRecordProviders();
+      await measureAndRecordHarnesses();
       res.json(await hermesSettingsAnswer());
     } catch (error) { res.status(400).json({ error: errMsg(error) }); }
   });
@@ -87,7 +87,7 @@ export function registerSetupRuntime(app: express.Express): void {
         case 'delete': await deleteAccount(String(req.body.id)); break;
         default: return res.status(404).json({ error: 'Unknown account action.' });
       }
-      await measureAndRecordProviders();
+      await measureAndRecordHarnesses();
       res.json(await accountsAnswer());
     } catch (error) { res.status(400).json({ error: errMsg(error) }); }
   });
@@ -101,7 +101,7 @@ export function registerSetupRuntime(app: express.Express): void {
         case 'delete': await deletePreset(String(req.body.id)); break;
         default: return res.status(404).json({ error: 'Unknown preset action.' });
       }
-      await measureAndRecordProviders();
+      await measureAndRecordHarnesses();
       res.json(await accountsAnswer());
     } catch (error) { res.status(400).json({ error: errMsg(error) }); }
   });
@@ -132,7 +132,7 @@ export function registerSetupRuntime(app: express.Express): void {
   // is an egress line. Every other reader takes GET /api/setup/runtime, which is the record.
   app.post('/api/setup/providers/refresh', async (_req, res) => {
     try {
-      const summary = await refreshProviders();
+      const summary = await refreshHarnesses();
       await readGatewayModels();
       res.json(await answer(summary));
     } catch (error) {
@@ -157,7 +157,7 @@ export function registerSetupRuntime(app: express.Express): void {
   // page, as a sign-in is; the same /close ends it. The owner's press.
   app.post('/api/setup/providers/:provider/update', async (req, res) => {
     try {
-      const result = await openProviderUpdate(String(req.params.provider));
+      const result = await openHarnessUpdate(String(req.params.provider));
       const runtime = await answer();
       const provider = runtime.providers.find((row) => row.id === String(req.params.provider));
       res.json({ ok: true, opened: result.opened, session: result.session, attachment: provider?.attachment ?? null, runtime });
@@ -172,15 +172,15 @@ export function registerSetupRuntime(app: express.Express): void {
   for (const [door, off] of [['off', true], ['on', false]] as const) {
     app.post(`/api/setup/providers/:provider/${door}`, async (req, res) => {
       try {
-        const result = await setProviderOff(String(req.params.provider), off);
-        res.json({ ok: true, ...result, runtime: await answer(await measureAndRecordProviders()) });
+        const result = await setHarnessOff(String(req.params.provider), off);
+        res.json({ ok: true, ...result, runtime: await answer(await measureAndRecordHarnesses()) });
       } catch (error) {
         res.status(400).json({ error: errMsg(error) });
       }
     });
   }
 
-  // SIGN-IN WITHOUT A TERMINAL (src/provider-sign-in.ts): start for a way, paste, cancel; the state
+  // SIGN-IN WITHOUT A TERMINAL (src/harness-sign-in.ts): start for a way, paste, cancel; the state
   // is pushed as `harness-sign-in`, and read here when a page opens. `tell` names who hears the end.
   app.get('/api/setup/sign-in', async (_req, res) => { res.json(await signInState()); });
   app.post('/api/setup/providers/:provider/sign-in', async (req, res) => {
@@ -198,7 +198,7 @@ export function registerSetupRuntime(app: express.Express): void {
 
   app.post('/api/setup/providers/:provider/login', async (req, res) => {
     try {
-      const result = await openProviderLogin(String(req.params.provider));
+      const result = await openHarnessLogin(String(req.params.provider));
       const runtime = await answer();
       const provider = runtime.providers.find((row) => row.id === String(req.params.provider));
       res.json({ ok: true, opened: result.opened, attachment: provider?.attachment ?? null, runtime });
@@ -209,9 +209,9 @@ export function registerSetupRuntime(app: express.Express): void {
 
   app.post('/api/setup/providers/:provider/done', async (req, res) => {
     try {
-      const result = await completeProviderLogin(String(req.params.provider));
+      const result = await completeHarnessLogin(String(req.params.provider));
       // Done activates a provider: the owner's press, so its model list is read now (owner, 2026-09-25).
-      res.json({ ok: true, closed: true, activation_recorded: true, activated_at: result.activated_at, attachment: null, runtime: await answer(await refreshProviders()) });
+      res.json({ ok: true, closed: true, activation_recorded: true, activated_at: result.activated_at, attachment: null, runtime: await answer(await refreshHarnesses()) });
     } catch (error) {
       res.status(409).json({ error: errMsg(error) });
     }
@@ -219,9 +219,9 @@ export function registerSetupRuntime(app: express.Express): void {
 
   app.post('/api/setup/providers/:provider/close', async (req, res) => {
     try {
-      await closeProviderLogin(String(req.params.provider));
+      await closeHarnessLogin(String(req.params.provider));
       // A sign-in closed without Done may still have left the CLI's credential file: measure.
-      res.json({ ok: true, closed: true, activation_recorded: false, attachment: null, runtime: await answer(await measureAndRecordProviders()) });
+      res.json({ ok: true, closed: true, activation_recorded: false, attachment: null, runtime: await answer(await measureAndRecordHarnesses()) });
     } catch (error) {
       res.status(400).json({ error: errMsg(error) });
     }

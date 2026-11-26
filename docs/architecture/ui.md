@@ -540,8 +540,8 @@ mobile document's bar on its first paint; the probe ends through Ronin's Delete,
 ## Agents are data, not branches
 
 Launches read session launch specs (`src/spawn.ts`); providers and agent CLIs arrive as
-joined rows (`providerRows` — each a provider/model/cmd triple, per
-[Model providers](model-providers.md)), never as UI branches. Future agent forms
+joined rows (`harnessRows` — each a provider/model/cmd triple, per
+[Model providers](harness-catalog.md)), never as UI branches. Future agent forms
 (Hermes and whatever "app" tiles become) enter the same way: the tile's view
 kinds (terminal | tape) may grow a sibling, and nothing in the shell may assume which
 agent is behind a pane.
@@ -622,7 +622,7 @@ surface. Names break at their joints (`_` `-` `.`), never mid-word.
 import { ask } from './ask.js';
 const form = ask([
   { group: t('new_agent.model_package', 'Model'), fields: [
-    { key: 'provider', label: t('forms.provider', 'model provider'), blank: t('forms.default', 'default'), options: () => providerRows() },
+    { key: 'provider', label: t('forms.provider', 'model provider'), blank: t('forms.default', 'default'), options: () => harnessRows() },
     { key: 'model', label: t('forms.model', 'model'), blank: t('forms.default', 'default'), after: 'provider', options: (v) => modelRows(v.provider) },
   ] },
   { group: t('mandate', 'Mandate'), fields: [

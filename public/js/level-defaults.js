@@ -3,13 +3,13 @@
  * starts with: its Mandate (reach, recruit, output), the Mode it launches in, and its model, one for
  * an Agent and one for a Team lead. Copied from the parent when the level was made; changed only
  * here. The mandate menus are the catalog's (mandates.js) and the models the provider catalog's
- * (form-steps.js): call after `loadMandates()` and `loadProviderCatalog()`.
+ * (form-steps.js): call after `loadMandates()` and `loadHarnessCatalog()`.
  *
  *   value: { agent_defaults: { reach, recruit, output: [] }, launch_mode, models: { default: { provider, model }, lead: { provider, model } } }
  */
 import { t } from './lexicon.js';
 import { ask } from './ask.js';
-import { modelLabel, providerCatalog, rowTierWord } from './form-steps.js';
+import { modelLabel, harnessCatalog, rowTierWord } from './form-steps.js';
 import { firstMandate, mandateRows } from './mandates.js';
 
 const el = (tag, cls) => { const node = document.createElement(tag); if (cls) node.className = cls; return node; };
@@ -17,10 +17,10 @@ const pair = (value) => ({ provider: value?.provider || '', model: value?.model 
 
 // The New Agent form's model rows: every provider and model in the catalog, what this box cannot launch off.
 const reason = (row) => (row.off ? t('forms.reason_turned_off', 'turned off') : t('forms.reason_not_on_machine', 'not on this machine'));
-const providerRows = () => providerCatalog().rows
+const harnessRows = () => harnessCatalog().rows
   .filter((row, index, all) => all.findIndex((other) => other.provider === row.provider) === index)
   .map((row) => ({ v: row.provider, l: row.cli_label || row.provider_label || row.provider, off: row.operational ? undefined : reason(row) }));
-const modelRows = (provider) => providerCatalog().rows.filter((row) => row.provider === provider)
+const modelRows = (provider) => harnessCatalog().rows.filter((row) => row.provider === provider)
   .map((row) => ({ v: row.model, l: modelLabel(row), word: rowTierWord(row), off: row.selectable ? undefined : reason(row) }));
 
 export function createLevelDefaults({ value = {}, screen = {}, onChange = () => {} } = {}) {
@@ -29,7 +29,7 @@ export function createLevelDefaults({ value = {}, screen = {}, onChange = () => 
   const lead = pair(value.models?.lead);
   const root = el('div', 'level-defaults');
   const modelFields = (prefix) => [
-    { key: `${prefix}provider`, label: t('forms.provider', 'Harness'), blank: t('forms.default', 'Default'), options: providerRows },
+    { key: `${prefix}provider`, label: t('forms.provider', 'Harness'), blank: t('forms.default', 'Default'), options: harnessRows },
     { key: `${prefix}model`, label: t('forms.model', 'Model'), blank: t('forms.default', 'Default'), after: `${prefix}provider`, options: (now) => modelRows(now[`${prefix}provider`]) },
   ];
   const asks = ask([
@@ -38,8 +38,8 @@ export function createLevelDefaults({ value = {}, screen = {}, onChange = () => 
       { key: 'recruit', label: t('team_config.recruit', 'Recruit'), options: mandateRows('recruit', screen) },
       { key: 'output', label: t('team_config.output', 'Output'), many: true, options: mandateRows('output', screen) },
       { key: 'launch_mode', label: t('launch_mode.mode', 'Mode'), options: [
-        { v: 'configured', l: t('launch_mode.configured', 'Native'), sub: t('launch_mode.configured_sub', 'Do not override the provider CLI’s approval behavior. Model selection is separate.') },
-        { v: 'live_dangerously', l: t('launch_mode.live', 'Dangerously'), sub: t('workspaces.live_sub', 'Each provider’s own approval-bypass launch; Native where a provider has none.') },
+        { v: 'configured', l: t('launch_mode.configured', 'Native'), sub: t('launch_mode.configured_sub', 'Do not override the harness’s approval behavior. Model selection is separate.') },
+        { v: 'live_dangerously', l: t('launch_mode.live', 'Dangerously'), sub: t('workspaces.live_sub', 'Each harness’s own approval-bypass launch; Native where a harness has none.') },
       ] },
     ] },
     { group: t('level_defaults.model_agent', 'Model for a new Agent'), fields: modelFields('') },

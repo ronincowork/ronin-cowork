@@ -10,7 +10,7 @@ gets a check once it is true in your office, however you did it.
 ## 1. Connect a harness
 
 Pick the harness you already use: Claude Code, Codex, Antigravity CLI, and others. Sign in with
-your own subscription or API account. One is enough to start. [Provider sign-in](provider-sign-in.md)
+your own subscription or API account. One is enough to start. [Provider sign-in](harness-sign-in.md)
 walks through it. The first one you sign in becomes the default every new Agent launches on;
 signing in another later doesn't change it. Change it on **Harnesses > Defaults**.
 

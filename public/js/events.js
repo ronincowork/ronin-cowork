@@ -51,7 +51,7 @@ export const sessionsHandlers = new Set();
 export const mikaShowHandlers = new Set();
 /** Who hears the server-owned five-step Setup record after a scan or answer lands. */
 export const setupProgressHandlers = new Set();
-/** Who hears a harness sign-in move (`harness-sign-in`, src/provider-sign-in.ts): the Harness surface. */
+/** Who hears a harness sign-in move (`harness-sign-in`, src/harness-sign-in.ts): the Harness surface. */
 export const signInHandlers = new Set();
 
 // A reconnect is a new connection with no memory, so it is told again at once. The tab

@@ -11,9 +11,9 @@ import { hermesConfigured, readHermesSettings } from './hermes-setups.js';
  * `comingSoon` — an installed, signed-in CLI with nothing to launch is not counted.
  *
  * Two writers, one record (owner's ruling, 2026-09-25):
- * - `measureAndRecordProviders` — machine facts; the recorded model lists and the last
+ * - `measureAndRecordHarnesses` — machine facts; the recorded model lists and the last
  *   npm answer ride along unchanged. A sign-in closing, a switch, a setup saved.
- * - `refreshProviders` — Refresh all: the same facts, then every activated CLI's own
+ * - `refreshHarnesses` — Refresh all: the same facts, then every activated CLI's own
  *   model list read again through the reader its registry entry names, the Ronin
  *   Gateway's list, then npm asked for the newest release. Ronin
  *   start (so after every Update, which restarts it), the park's call in a hosted office,
@@ -25,10 +25,10 @@ import path from 'node:path';
 import { appendEgress, type EgressLine } from './activation/egress.js';
 import { AGENTS, listAgentAvailability, type AgentAvailability, type ModelsSource } from './agents.js';
 import { execFile } from './spawn-broker.js';
-import { ensureInitialCampaign, initialCampaign, writeCampaignProviders } from './campaigns.js';
+import { ensureInitialCampaign, initialCampaign, writeCampaignHarnesses } from './campaigns.js';
 import { readAgentsSection, readSetupSection, writeAgentsSection } from './machine-state.js';
 import { readGatewayModels } from './hermes-setups.js';
-import { listProviders, providerRows, type ModelConnection, type ModelList, type ModelRow, type ProviderSummary } from './model-providers.js';
+import { listHarnesses, harnessRows, type ModelConnection, type ModelList, type ModelRow, type HarnessSummary } from './harness-catalog.js';
 
 interface SetupSection { providers?: Record<string, { activated_at?: unknown; off_at?: unknown }>; [key: string]: unknown }
 export type Agent = typeof AGENTS[number];
@@ -58,7 +58,7 @@ async function exists(file: string): Promise<boolean> {
 }
 
 /** The CLI signed in on this machine and left its credential file; Ronin reads only that it exists. */
-export async function providerSignedIn(cli: string, home = os.homedir()): Promise<boolean> {
+export async function harnessSignedIn(cli: string, home = os.homedir()): Promise<boolean> {
   if (cli === 'hermes') return hermesConfigured();
   const files = AGENTS.find((agent) => agent.id === cli)?.credentials ?? [];
   for (const file of files) if (await exists(path.join(home, file))) return true;
@@ -191,10 +191,10 @@ export async function readModels(agent: Agent, { home = os.homedir(), file = '',
 }
 
 /** Probe the machine once and say what it has, dated. Pure of any record: the caller writes it. */
-export async function measureProviders(section: SetupSection, ops: MeasureOps = {}): Promise<ProviderSummary> {
+export async function measureHarnesses(section: SetupSection, ops: MeasureOps = {}): Promise<HarnessSummary> {
   const available = ops.availability ?? await listAgentAvailability();
-  const catalog = listProviders();
-  const signedIn = ops.signedIn ?? providerSignedIn;
+  const catalog = listHarnesses();
+  const signedIn = ops.signedIn ?? harnessSignedIn;
   const version = ops.version ?? installedVersion;
   const installed = available.filter((agent) => agent.installed).map((agent) => agent.id);
   const paths: Record<string, string> = {};
@@ -253,11 +253,11 @@ async function npmViewVersion(pkg: string): Promise<string> {
  * CLI with no such source is simply absent from the answer, and the surface says
  * *latest unknown*.
  */
-export async function latestVersions(activated: readonly string[], ops: LatestOps = {}): Promise<ProviderSummary['latest']> {
+export async function latestVersions(activated: readonly string[], ops: LatestOps = {}): Promise<HarnessSummary['latest']> {
   const view = ops.npmView ?? npmViewVersion;
   const egress = ops.egress ?? appendEgress;
   const now = ops.now ?? (() => new Date().toISOString());
-  const out: ProviderSummary['latest'] = {};
+  const out: HarnessSummary['latest'] = {};
   for (const agent of AGENTS) {
     if (!activated.includes(agent.id)) continue;
     const pkg = npmPackageOf(agent.operations.install);
@@ -278,14 +278,14 @@ export async function latestVersions(activated: readonly string[], ops: LatestOp
 }
 
 /** The summary the Campaign record holds, or null when Ronin has not measured yet. */
-export async function readProviderSummary(): Promise<ProviderSummary | null> {
+export async function readHarnessSummary(): Promise<HarnessSummary | null> {
   return (await initialCampaign())?.providers ?? null;
 }
 
-export async function recordProviderSummary(summary: ProviderSummary): Promise<void> {
+export async function recordHarnessSummary(summary: HarnessSummary): Promise<void> {
   const campaign = await ensureInitialCampaign();
   const previous = campaign.providers ?? null;
-  await writeCampaignProviders(campaign.id, summary);
+  await writeCampaignHarnesses(campaign.id, summary);
   await settleFirstDefault(previous, summary);
 }
 
@@ -299,7 +299,7 @@ const record = (value: unknown): Record<string, unknown> =>
  * One already signed in before this measure outranks one new in it. A model service is no
  * sign-in: it is never in `signed_in`. Returns the provider written, '' for none.
  */
-export async function settleFirstDefault(previous: ProviderSummary | null, summary: ProviderSummary): Promise<string> {
+export async function settleFirstDefault(previous: HarnessSummary | null, summary: HarnessSummary): Promise<string> {
   const agents = await readAgentsSection();
   const sessions = record(agents.sessions);
   const stated = record(sessions.default).provider;
@@ -307,7 +307,7 @@ export async function settleFirstDefault(previous: ProviderSummary | null, summa
   const order = [...(previous?.signed_in ?? []), ...summary.signed_in]
     .filter((cli, at, all) => all.indexOf(cli) === at && summary.signed_in.includes(cli) && summary.operational.includes(cli));
   if (!order.length) return '';
-  const rows = await providerRows(summary);
+  const rows = await harnessRows(summary);
   for (const cli of order) {
     const row = rows.find((entry) => entry.cli === cli && entry.operational);
     if (!row) continue;
@@ -322,13 +322,13 @@ export async function settleFirstDefault(previous: ProviderSummary | null, summa
  * activated CLI says. The recorded model lists, the last npm answer and the last Refresh
  * all date ride along unchanged — nothing is read again but by a refresh.
  */
-export async function measureAndRecordProviders(section?: SetupSection, ops: MeasureOps = {}): Promise<ProviderSummary> {
-  const previous = await readProviderSummary();
-  const summary = await measureProviders(section ?? await readSetupSection(), ops);
+export async function measureAndRecordHarnesses(section?: SetupSection, ops: MeasureOps = {}): Promise<HarnessSummary> {
+  const previous = await readHarnessSummary();
+  const summary = await measureHarnesses(section ?? await readSetupSection(), ops);
   for (const id of summary.installed) if (previous?.models?.[id]) summary.models[id] = previous.models[id];
   summary.latest = previous?.latest ?? {};
   summary.refreshed_at = previous?.refreshed_at ?? '';
-  await recordProviderSummary(summary);
+  await recordHarnessSummary(summary);
   return summary;
 }
 
@@ -338,16 +338,16 @@ export async function measureAndRecordProviders(section?: SetupSection, ops: Mea
  * each activated CLI's newest release (one outbound request each, on the egress record).
  * A CLI not activated gets nothing spent on it; its old list, if any, is dropped with it.
  */
-export async function refreshProviders(section?: SetupSection, ops: MeasureOps = {}, latest: LatestOps = {}): Promise<ProviderSummary> {
+export async function refreshHarnesses(section?: SetupSection, ops: MeasureOps = {}, latest: LatestOps = {}): Promise<HarnessSummary> {
   const now = ops.now ?? (() => new Date().toISOString());
   const read = ops.models ?? readModels;
-  const summary = await measureProviders(section ?? await readSetupSection(), ops);
+  const summary = await measureHarnesses(section ?? await readSetupSection(), ops);
   await readGatewayModels().catch((e) => console.error('[providers] gateway list:', e));
   const lists = await Promise.all(AGENTS.filter((agent) => summary.operational.includes(agent.id))
     .map(async (agent) => [agent.id, await read(agent, { file: summary.paths[agent.id] ?? '', version: summary.versions[agent.id] ?? '', now })] as const));
   for (const [id, list] of lists) summary.models[id] = list;
   summary.latest = await latestVersions(summary.operational, latest);
   summary.refreshed_at = now();
-  await recordProviderSummary(summary);
+  await recordHarnessSummary(summary);
   return summary;
 }

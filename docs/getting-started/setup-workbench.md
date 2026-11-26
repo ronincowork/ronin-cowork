@@ -9,7 +9,7 @@ Three steps, in any order, each checked once it is true in your office however y
 
 - **Harness.** Connect the harness you already use, Claude Code, Codex and the others, signed in
   with your own subscription or key. One is enough to start. See
-  [Provider sign-in](provider-sign-in.md).
+  [Provider sign-in](harness-sign-in.md).
 - **Workspace.** How you are starting: from a Git repository, an existing project not in Git,
   from scratch, or not sure yet (Ronin Lab). Then what it is and its kind. GitHub is only needed
   for your private repositories. See [Workspaces](../using-ronin/workspaces.md).

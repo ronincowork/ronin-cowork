@@ -41,9 +41,9 @@ export function createModelsRecords(context) {
       ] }).el);
       return row;
     });
-    const add = button(t('accounts.preset_add', 'Add preset'), () => editor.replaceChildren(presetForm({}, state.accounts, { onSaved: took, onCancel: () => editor.replaceChildren(), say })));
+    const add = button(t('accounts.preset_add', 'Add model option'), () => editor.replaceChildren(presetForm({}, state.accounts, { onSaved: took, onCancel: () => editor.replaceChildren(), say })));
     add.disabled = !state.accounts.some((a) => a.configured && a.models.length);
-    section(presets, t('models.presets', 'Presets'), el('p', 'setup-fine', t('models.presets_lede', 'A preset names harness, account, model and knobs; it appears under Model in New Agent. Today every preset is a Hermes named setup.')), ...rows, WorkspaceKit.primitives.createActionBar({ actions: [add] }).el);
+    section(presets, t('models.presets', 'Model options'), el('p', 'setup-fine', t('models.presets_lede', 'A model option names a model service, an API model ID and its settings; it appears under Model in New Agent.')), ...rows, WorkspaceKit.primitives.createActionBar({ actions: [add] }).el);
   };
   const paint = () => { if (disposed) return; paintPresets(); context.workbench?.refreshSelector?.(); };
   return {

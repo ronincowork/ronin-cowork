@@ -17,7 +17,7 @@ models never count.
   (signing in the other way replaces it); OpenRouter is coming soon. Codex: the same two, plus the
   Ronin Gateway, which needs no sign-in: the person picks a Ronin model under Model when starting a
   Codex Agent, and the Codex sign-in stays. Claude Code never runs on the gateway (it speaks only
-  Anthropic's API); never offer it. Say so plainly if asked. In full: `ronin-help provider-sign-in`.
+  Anthropic's API); never offer it. Say so plainly if asked. In full: `ronin-help harness-sign-in`.
 - **Which way it is on now:** `harness state` (it reads each CLI's own status). **Never start a
   sign-in on a harness already signed in unless the person asks for one.** Starting it signs out
   every Agent on that harness at once, until it finishes. When they ask, tell them that first, with
@@ -35,7 +35,7 @@ models never count.
 - **Your hands on the page.** You never press its buttons: your tool calls the same route the button
   does, and the page redraws from the record. The other harnesses sign in on their own page, some on a
   terminal there: `harness open <id>` opens that terminal, `harness close <id>` closes it, and the
-  person signs in inside it (`ronin-help provider-sign-in`).
+  person signs in inside it (`ronin-help harness-sign-in`).
 - **Hermes on a model.** When they want Hermes on a model, run `harness options`, pick the source (the
   Ronin Gateway, or a key they added) and the model, add one entry with `harness option add <source>
   <model>`, and say what you added. Every Ronin Gateway model is already an option: say so rather than

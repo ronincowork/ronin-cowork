@@ -18,9 +18,9 @@ import { FILES_ON } from './files-surface.js';
 import { t } from './lexicon.js';
 import { workbenchView } from './workspace-contract.js';
 import { registerWorkbenchCatalog, WORKBENCH_PROFILES, WORKBENCH_TYPES } from './workbench-catalog.js';
-import { createProviderSetupSessionMount } from './provider-setup-session.js';
-import { loadProviderCatalog } from './form-steps.js';
-import { createModelDefaults, createModelProvider, createModelRefresh, createModelStones, providerOffers } from './models-surface.js';
+import { createHarnessSetupSessionMount } from './harness-setup-session.js';
+import { loadHarnessCatalog } from './form-steps.js';
+import { createModelDefaults, createModelHarness, createModelRefresh, createModelStones, harnessOffers } from './models-surface.js';
 import { createAccountsSurface } from './accounts-surface.js';
 import { createModelsRecords } from './models-records-surface.js';
 import { createWorkspaceNew, createWorkspaceRecord, createWorkspaceStones, workspaceOffers } from './workspaces-surface.js';
@@ -100,7 +100,7 @@ export function createModelsView() {
   return doorWorkbench({
     id: 'models', profile: WORKBENCH_PROFILES.models, label: t('campaign_home.harnesses', 'Harnesses'), seat: WORKBENCH_TYPES.modelStones,
     count: 4, seats: { workspace1: WORKBENCH_TYPES.modelStones, workspace2: WORKBENCH_TYPES.accountsRecords, workspace3: WORKBENCH_TYPES.modelsRecords, workspace4: WORKBENCH_TYPES.modelRefresh },
-    loaded: loadProviderCatalog,
+    loaded: loadHarnessCatalog,
     environment: ({ bench }) => harness.environment(bench),
     destroy: harness.destroy,
   });
@@ -110,7 +110,7 @@ export function createModelsView() {
 export function harnessKit() {
   const MIKA_SESSION = 'mika_agent';
   const { surface: mikaSurface, pool: mikaPool } = createMikaTilePool();
-  const providerSessions = createProviderSetupSessionMount();
+  const providerSessions = createHarnessSetupSessionMount();
   const made = [];
   const keep = (surface) => { made.push(surface); return surface; };
   return {
@@ -125,18 +125,18 @@ export function harnessKit() {
       const guidePrompt = (provider, setupSession) => `You are helping the owner authenticate ${provider.label || provider.id} in the adjacent session ${setupSession}. Read its live terminal with edges read ${setupSession} and guide the owner from what is displayed. Explain each prompt briefly and say exactly what to do next. Re-read the session after each step. This machine is remote, so any browser approval happens on the owner's local computer. Do not operate the setup terminal and never ask for or display a credential. When the native flow finishes, tell the owner to return to Agent Harness so Ronin can measure readiness.`;
       const connectPrompt = (provider) => `Authenticate the ${provider.label || provider.id} Agent Harness CLI on this machine. Its registry-owned native setup command is: ${provider.login_command || provider.id}. Run that command in an interactive shell and guide the owner through any browser or device approval on their local computer. Stay with the process until the native flow succeeds or needs an owner decision. Never ask for a token in chat and never print, inspect, or expose credentials. When it finishes, tell the owner to return to Agent Harness; Ronin's own measurement, not your report, decides whether it is Ready.`;
       const environment = {
-        setupRuntime: null, mountProviderSetupSession: providerSessions.mountProviderSetupSession,
-        providers: providerOffers,
+        setupRuntime: null, mountHarnessSetupSession: providerSessions.mountHarnessSetupSession,
+        providers: harnessOffers,
         modelStones: (workspace) => keep(createModelStones({ workspace, detail: {}, environment, workbench: bench() })),
         modelRefresh: (workspace) => keep(createModelRefresh({ workspace, detail: {}, environment, workbench: bench() })),
         modelDefaults: () => createModelDefaults(),
         accounts: (workspace) => keep(createAccountsSurface({ workspace, detail: {}, environment, workbench: bench() })),
         modelsRecords: (workspace) => keep(createModelsRecords({ workspace, detail: {}, environment, workbench: bench() })),
-        modelProvider: (workspace, detail) => keep(createModelProvider(detail.key, { workspace, detail, environment, workbench: bench() })),
+        modelHarness: (workspace, detail) => keep(createModelHarness(detail.key, { workspace, detail, environment, workbench: bench() })),
         modelMika: () => ({ el: mikaSurface.el, show: () => { mikaPool.sync([helper]); mikaPool.show(helper, false); } }),
         assistName: signInHelperName,
-        onMikaProviderGuide: ({ provider, setupSession, workspace }) => showMika(opposite(workspace), guidePrompt(provider, setupSession)),
-        onMikaProviderConnect: ({ provider, workspace }) => showMika(workspace, connectPrompt(provider)),
+        onMikaHarnessGuide: ({ provider, setupSession, workspace }) => showMika(opposite(workspace), guidePrompt(provider, setupSession)),
+        onMikaHarnessConnect: ({ provider, workspace }) => showMika(workspace, connectPrompt(provider)),
       };
       return environment;
     },

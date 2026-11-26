@@ -1,11 +1,11 @@
 /* part of the ronin-cowork client — see js/README.md */
 import { request } from './request.js';
 import { button, field, status } from './ui.js';
-import { pm, getPath, currentOf, optionsOf, pickerProvider, toRequest } from './machine-settings-schema.js';
+import { pm, getPath, currentOf, optionsOf, pickerHarness, toRequest } from './machine-settings-schema.js';
 import { servicesCard } from './services-card.js';
 import { accountCard } from './account-card.js';
 import { t } from './lexicon.js';
-import { loadProviderCatalog, providerCatalog, modelLabel, rowTierWord } from './form-steps.js';
+import { loadHarnessCatalog, harnessCatalog, modelLabel, rowTierWord } from './form-steps.js';
 import { ask } from './ask.js';
 import { saveRow } from './save-row.js';
 
@@ -127,7 +127,7 @@ export function buildMachineSettings(root, isShowing, { only = null } = {}) {
     let picked = fixed
       ? { provider: fixed, model: String(stored ?? '') }
       : { provider: String(stored?.provider || ''), model: String(stored?.model || '') };
-    const catalog = providerCatalog().rows;
+    const catalog = harnessCatalog().rows;
     const providers = catalog.filter((item, index) => catalog.findIndex((other) => other.provider === item.provider) === index);
     const reason = (item) => item.off
       ? t('forms.reason_turned_off', 'turned off')
@@ -154,7 +154,7 @@ export function buildMachineSettings(root, isShowing, { only = null } = {}) {
 
   /** One registry row in, one saving ⚙ row out — the only place a `kind` is read. */
   const schemaRow = (f) => {
-    const picker = pickerProvider(f);
+    const picker = pickerHarness(f);
     if (picker) return pickerRow(f, picker);
     const cur = currentOf(f, { record: rec });
     const ctx = { record: rec, deskProfiles };
@@ -360,7 +360,7 @@ export function buildMachineSettings(root, isShowing, { only = null } = {}) {
     // Two reads, not one: the record is this install, and the provider catalog is what
     // Ronin offers. Keeping them apart is what lets a model row offer a provider this box
     // has not installed yet and say so, instead of pretending the catalog is the box.
-    const [r, , dp] = await Promise.all([request('/api/machine-settings'), loadProviderCatalog(), request('/api/desk-profiles')]);
+    const [r, , dp] = await Promise.all([request('/api/machine-settings'), loadHarnessCatalog(), request('/api/desk-profiles')]);
     deskProfiles = dp.ok && Array.isArray(dp.data?.profiles) ? dp.data.profiles : [];
     if (!r.ok) {
       blurb.textContent = r.message;

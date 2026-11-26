@@ -6,7 +6,7 @@
  *  - Signed in: the bar says so. Off: the bar says so.
  *  - A harness Ronin signs in itself (AGENTS `login`: Claude Code, Codex): Sign in opens the bar on two
  *    presses, Sign in with your subscription and Use an API key. Either starts the CLI's own login
- *    (src/provider-sign-in.ts); the bar then shows only what the person must do: the link, the code, a
+ *    (src/harness-sign-in.ts); the bar then shows only what the person must do: the link, the code, a
  *    box for the code or key the CLI waits for, and Cancel. It closes when the CLI exits; the measure
  *    that follows turns it Signed in.
  *  - Any other harness signs in on its terminal tile in the bar, with Close.
@@ -22,8 +22,8 @@ import { S } from './state.js';
 import { signInHandlers } from './events.js';
 import { sendPress } from './press.js';
 import { IRASSHAI, irasshaiIn } from './setup-journey.js';
-import { recordRuntime } from './provider-surface.js';
-import { mountProviderAttachment } from './setup-provider-state.js';
+import { recordRuntime } from './harnesses-surface.js';
+import { mountHarnessAttachment } from './setup-harness-state.js';
 import { modelSettingsLink } from './harness-model-options.js';
 import { mountHermesServices } from './setup-hermes-services.js';
 
@@ -152,7 +152,7 @@ function createHarnessSurface(context) {
     const row = stones();
     row.append(button(t('setup_harness.close', 'Close'), false, async () => { mounted?.destroy?.(); mounted = null; terminalHost = null; const r = await post(`/api/setup/providers/${encodeURIComponent(provider.id)}/close`); if (r.ok) pressed(`${shortName(provider)} · Close sign-in`); await readRuntime(); }));
     box.append(terminalHost, row);
-    if (!mounted) mounted = mountProviderAttachment(context.environment, terminalHost, provider, context.workspace, () => { mounted = null; });
+    if (!mounted) mounted = mountHarnessAttachment(context.environment, terminalHost, provider, context.workspace, () => { mounted = null; });
     return box;
   };
 
@@ -190,7 +190,7 @@ function createHarnessSurface(context) {
     else if (provider.off || (signed && !own)) {
       bar.append(el('p', 'setup-harness-line', provider.off ? t('setup_harness.off_line', 'Turned off. Your sign-in is kept.') : t('setup_harness.signed_line', 'Signed in on this office.')));
     } else if (own) {
-      // The way it is on, as its CLI says (src/provider-sign-in.ts readWays); selected when signed in.
+      // The way it is on, as its CLI says (src/harness-sign-in.ts readWays); selected when signed in.
       const current = signed ? signIn.ways[provider.id] || '' : '';
       const row = stones();
       row.classList.add('setup-harness-ways');

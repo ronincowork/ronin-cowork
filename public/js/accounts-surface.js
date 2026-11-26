@@ -7,13 +7,13 @@
  */
 import { WorkspaceKit } from './workspace-kit.js';
 import { request } from './request.js';
-import { el, providerCatalog } from './form-steps.js';
+import { el, harnessCatalog } from './form-steps.js';
 import { t } from './lexicon.js';
 import { accountAction, accountForm, accountSummary, button } from './account-editors.js';
 
 /** The harnesses a model service works with, by name: a fact it reports, never a tick (KAN-896). */
 export function worksWithLine(account) {
-  const known = new Map((providerCatalog().providers || []).map((p) => [p.cli, p.cli_label || p.label || p.cli]));
+  const known = new Map((harnessCatalog().providers || []).map((p) => [p.cli, p.cli_label || p.label || p.cli]));
   return t('accounts.works_with', 'Works with {harnesses}', { harnesses: account.bound.map((id) => known.get(id) || id).join(', ') });
 }
 
@@ -51,8 +51,8 @@ export function createAccountsSurface(context) {
     if (disposed) return;
     list.replaceChildren(...state.accounts.map(card));
     adders.replaceChildren(WorkspaceKit.primitives.createActionBar({ actions: [
-      button(t('accounts.add_personal_api', 'Add Personal API'), () => open(accountForm({}, { kind: 'personal_api', onSaved: took, onCancel: () => editor.replaceChildren(), say }))),
-      button(t('accounts.add_ronin_api', 'Add Ronin API'), () => open(accountForm({}, { kind: 'ronin_api', onSaved: took, onCancel: () => editor.replaceChildren(), say }))),
+      button(t('accounts.add_personal_api', 'Add private API'), () => open(accountForm({}, { kind: 'personal_api', onSaved: took, onCancel: () => editor.replaceChildren(), say }))),
+      button(t('accounts.add_ronin_api', 'Add Ronin Gateway'), () => open(accountForm({}, { kind: 'ronin_api', onSaved: took, onCancel: () => editor.replaceChildren(), say }))),
     ] }).el);
   };
   return {

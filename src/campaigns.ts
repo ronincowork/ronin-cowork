@@ -2,7 +2,7 @@ import type { BriefSettings } from './brief-record.js';
 import { layerOf } from './brief-settings.js';
 import { readMachineSettingsSection, writeMachineSettings } from './machine-settings.js';
 import { agentDefaults, type AgentDefaults } from './agent-defaults.js';
-import { parseProviderSummary, type ProviderSummary } from './model-providers.js';
+import { parseHarnessSummary, type HarnessSummary } from './harness-catalog.js';
 import { CAPABILITY_ON_BY_DEFAULT, SERVICE_CAPABILITY_PARTS } from './parts.js';
 
 async function readCampaigns(): Promise<Record<string, unknown>> {
@@ -46,7 +46,7 @@ export interface CampaignConfig {
   created_at: string;
   config: CampaignSettings;
   /** What this machine measured of its model providers, dated; null until Ronin has measured once. */
-  providers: ProviderSummary | null;
+  providers: HarnessSummary | null;
 }
 
 export type CampaignState = 'active' | 'archived';
@@ -212,7 +212,7 @@ function parse(id: string, raw: string): CampaignConfig | null {
     state: doc.state === 'archived' ? 'archived' : 'active',
     created_at: typeof doc.created_at === 'string' && doc.created_at ? doc.created_at : '',
     config: settings(doc.config),
-    providers: parseProviderSummary(doc.providers),
+    providers: parseHarnessSummary(doc.providers),
   };
 }
 
@@ -334,7 +334,7 @@ export async function writeCampaign(id: string, edit: CampaignEdit): Promise<Cam
 }
 
 /** The runtime's own write: the measured provider summary, hung on the Campaign. Nothing else in the record moves. */
-export async function writeCampaignProviders(id: string, providers: ProviderSummary): Promise<CampaignConfig> {
+export async function writeCampaignHarnesses(id: string, providers: HarnessSummary): Promise<CampaignConfig> {
   const existing = await readCampaign(id);
   if (!existing) throw new Error(`Campaign "${id}" does not exist.`);
   return writeRecord({ ...existing, providers });

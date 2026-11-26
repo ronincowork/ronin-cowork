@@ -3,13 +3,13 @@ import { readFile } from 'node:fs/promises';
 import { access, mkdir, readdir, rename, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
-import { MACHINE_SETTINGS_SCHEMA, providerModelFields, type ProviderModelField } from './machine-settings-schema.js';
+import { MACHINE_SETTINGS_SCHEMA, harnessModelFields, type HarnessModelField } from './machine-settings-schema.js';
 import { secureUrl } from './passkey.js';
 import { listServices } from './sockets.js';
 import { CONTRACT_V } from './sockets-contract.js';
 import { roninIdentity } from './routes/version.js';
 import { workspaceFolders } from './workspaces.js';
-import { isTier, listProviders, listSessionLaunchSpecs, parseProviderSummary, TIERS } from './model-providers.js';
+import { isTier, listHarnesses, listSessionLaunchSpecs, parseHarnessSummary, TIERS } from './harness-catalog.js';
 import { storeDir } from './resources.js';
 import { readOfficeRecord } from './office-record.js';
 import { AGENTS, listAgentAvailability } from './agents.js';
@@ -24,11 +24,11 @@ const MACHINE_SETTINGS_FILE = () => path.join(storeDir('config'), 'machine_setti
 const MAX_OPT = '@ronin-session-max';
 const OWNER_OPT = '@ronin-owner';
 const NO_LIMIT = 0;
-const recordedProviderSummary = async () => {
+const recordedHarnessSummary = async () => {
   const campaigns = await readMachineSettingsSection<Record<string, unknown>>('campaigns', {});
   for (const value of Object.values(campaigns)) {
     if (!value || typeof value !== 'object' || Array.isArray(value)) continue;
-    const summary = parseProviderSummary((value as Record<string, unknown>).providers);
+    const summary = parseHarnessSummary((value as Record<string, unknown>).providers);
     if (summary) return summary;
   }
   return null;
@@ -258,7 +258,7 @@ export interface MachineSettingsRecord {
   status: Record<string, unknown>;
   needed: Array<{ leaf: string; needs: string; how: string; met_by: MetBy }>;
   schema: Omit<typeof MACHINE_SETTINGS_SCHEMA, 'fields'>
-    & { fields: Array<(typeof MACHINE_SETTINGS_SCHEMA)['fields'][number] | ProviderModelField> };
+    & { fields: Array<(typeof MACHINE_SETTINGS_SCHEMA)['fields'][number] | HarnessModelField> };
 }
 
 export type MetBy = 'mechanical' | 'owner' | 'agent';
@@ -376,7 +376,7 @@ const publicJobs = async (value: unknown): Promise<Record<string, unknown>> => {
   if (typeof mika.level === 'string' && (TIERS as readonly string[]).includes(mika.level)) {
     jobs.mikaassist = { level: mika.level };
   } else if (mika.provider !== undefined || mika.model !== undefined) {
-    const pair = (await listSessionLaunchSpecs(await recordedProviderSummary())).find((spec) => spec.provider === mika.provider && spec.model === mika.model);
+    const pair = (await listSessionLaunchSpecs(await recordedHarnessSummary())).find((spec) => spec.provider === mika.provider && spec.model === mika.model);
     jobs.mikaassist = pair && isTier(pair.tier) ? { level: pair.tier } : { migration_choice_required: true };
   } else {
     jobs.mikaassist = { level: 'light' };
@@ -439,7 +439,7 @@ export function servicesEntitlement(activation: PublicActivation): string {
 async function readObserved(jobKeyNames: string[]): Promise<Record<string, unknown>> {
   // The CLI registry says what is installed and whose it is.
   const available = await listAgentAvailability();
-  const catalog = listProviders();
+  const catalog = listHarnesses();
   const agents = Object.fromEntries(
     available.map((a) => [
       a.id,
@@ -594,7 +594,7 @@ function holds(
 /** What is still needed: the owner's wanted list, less what is here (holds), and a Workspace with a
  * folder, as the workspaces fact has them. */
 async function computeNeeded(set: Record<string, unknown>, observed: Record<string, unknown>): Promise<MachineSettingsRecord['needed']> {
-  const installed = (await recordedProviderSummary())?.installed ?? [];
+  const installed = (await recordedHarnessSummary())?.installed ?? [];
   const HOW: Record<string, { how: (n: string) => string; met_by: (n: string) => MetBy }> = {
     agent: {
       how: (n) => `install the ${n} CLI — it appears in agent installations the moment it lands`,
@@ -636,7 +636,7 @@ export async function readMachineSettings(): Promise<MachineSettingsRecord> {
     status,
     needed,
     schema: { ...MACHINE_SETTINGS_SCHEMA, fields: [...MACHINE_SETTINGS_SCHEMA.fields,
-      ...providerModelFields([...new Set((await listSessionLaunchSpecs(await recordedProviderSummary())).map((s) => s.provider))])] },
+      ...harnessModelFields([...new Set((await listSessionLaunchSpecs(await recordedHarnessSummary())).map((s) => s.provider))])] },
   };
 }
 

@@ -9,7 +9,7 @@
 import { t } from './lexicon.js';
 import { request } from './request.js';
 import { ask } from './ask.js';
-import { createStep, loadProviderCatalog } from './form-steps.js';
+import { createStep, loadHarnessCatalog } from './form-steps.js';
 import { screenOf, loadMandates } from './mandates.js';
 import { createLevelDefaults } from './level-defaults.js';
 import { WorkspacePrimitives } from './workspace-primitives.js';
@@ -36,7 +36,7 @@ export function renderTeamConfiguration(host, roster, optionsArg = {}) {
   // discarded node; painting it is invisible and cheap.
   // The mandate menus are the catalog's mandate files (mandates.js), read with the Workspaces.
   void Promise.all([request('/api/workspaces'), loadMandates(),
-    screenOf({ team: roster.name }), loadProviderCatalog()]).then(([workspaceResult, , screen]) => {
+    screenOf({ team: roster.name }), loadHarnessCatalog()]).then(([workspaceResult, , screen]) => {
     const workspaces = workspaceResult.ok && Array.isArray(workspaceResult.data?.workspaces) ? workspaceResult.data.workspaces.filter((w) => !w.archived || w.name === roster.workspace) : [];
     const defaults = bucket(roster.agent_defaults);
     const form = el('form', 'ntf-form tw-config-form');

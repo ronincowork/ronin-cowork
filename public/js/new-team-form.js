@@ -16,7 +16,7 @@ import { conflictingAgentNames } from './new-team-check.js';
 import { agentPicks, agentRow, createAgentRows } from './team-agents.js';
 import { openLaunchHandoff } from './launch-handoff.js';
 import { launchTeamAgents } from './team-loader.js';
-import { createStep, el, loadProviderCatalog } from './form-steps.js';
+import { createStep, el, loadHarnessCatalog } from './form-steps.js';
 import { closeWorkspaceTab, reserveWorkspaceTab } from './workspace.js';
 import { hearWorkspaces } from './workspaces-read.js';
 
@@ -337,7 +337,7 @@ export function createNewTeamFormView(kit, { created = null, consumed = null, em
         // The Team's inline Agent editor reads the shared provider catalog too. Load it
         // here so a fresh New Team journey does not depend on another launch surface
         // having happened to populate the module cache first.
-        loadProviderCatalog(),
+        loadHarnessCatalog(),
         request('/api/brief/catalog'),
       ]);
       setMandates(catalogRows?.ok && Array.isArray(catalogRows.data) ? catalogRows.data : []); // the mandate menus are the catalog's mandate files

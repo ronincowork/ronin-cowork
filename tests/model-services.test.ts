@@ -14,7 +14,7 @@ import { saveAccount, discoverAccount, deletePreset } from '../src/accounts.js';
 import { saveHermesSetup } from '../src/hermes-setups.js';
 import { modelServices } from '../src/model-services.js';
 import { serviceLaunch } from '../src/model-service-launch.js';
-import { providerRows, type ProviderSummary } from '../src/model-providers.js';
+import { harnessRows, type HarnessSummary } from '../src/harness-catalog.js';
 
 test('named models stay with their service through discovery, catalog and CLI launch', async t => {
   const root = await mkdtemp(path.join(tmpdir(), 'model-services-'));
@@ -52,8 +52,8 @@ test('named models stay with their service through discovery, catalog and CLI la
   services = await modelServices();
   assert.equal(services.find(s => s.id === api.id)?.models[0]?.id, setup.id);
   assert.ok(!JSON.stringify(services).includes('private-fixture'));
-  const summary = { installed: ['hermes', 'codex', 'opencode'], operational: [], off: [], models: {} } as unknown as ProviderSummary;
-  const catalog = await providerRows(summary, { harness_models: [], openrouter_starters: [] });
+  const summary = { installed: ['hermes', 'codex', 'opencode'], operational: [], off: [], models: {} } as unknown as HarnessSummary;
+  const catalog = await harnessRows(summary, { harness_models: [], openrouter_starters: [] });
   const rows = catalog.flatMap(cli => cli.models).filter(row => row.service_id === api.id);
   assert.deepEqual(rows.map(r => r.cli).sort(), ['codex', 'hermes']);
   assert.ok(rows.every(r => r.selectable));
@@ -69,7 +69,7 @@ test('named models stay with their service through discovery, catalog and CLI la
   const prefsUrl = 'http://127.0.0.1:' + apiAddress.port + '/api/new-agent-models/hermes';
   const savedPrefs = { [gateway.id]: [gatewayOption!.id], [api.id]: [] };
   assert.equal((await fetch(prefsUrl, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(savedPrefs) })).status, 200);
-  const catalogRead = await fetch('http://127.0.0.1:' + apiAddress.port + '/api/provider-catalog');
+  const catalogRead = await fetch('http://127.0.0.1:' + apiAddress.port + '/api/harness-catalog');
   assert.deepEqual((await catalogRead.json()).preferences.hermes, savedPrefs);
   const change = async (action: string, body: Record<string, unknown>) => {
     const result = await fetch(endpoint + '/' + action, { method: 'POST',
@@ -81,7 +81,7 @@ test('named models stay with their service through discovery, catalog and CLI la
   const created = await change('save', { kind: 'personal_api', name: 'UI fixture', provider: 'custom',
     baseUrl: base + '/ui', apiKey: 'ui-fixture', wireApi: 'chat' });
   const owner = created.find(s => s.name === 'UI fixture'); assert.ok(owner);
-  const emptyCatalog = await providerRows(summary, { harness_models: [], openrouter_starters: [] });
+  const emptyCatalog = await harnessRows(summary, { harness_models: [], openrouter_starters: [] });
   assert.ok(emptyCatalog.find(row => row.cli === 'hermes')?.services?.some(service => service.id === owner.id));
   assert.ok(!emptyCatalog.some(cli => cli.models.some(model => model.service_id === owner.id)));
   await change('discover', { id: owner.id });

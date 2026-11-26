@@ -12,7 +12,7 @@
  */
 import { openCanvas } from './canvas-view.js';
 import { WorkspaceKit } from './workspace-kit.js';
-import { createStep, el, loadProviderCatalog } from './form-steps.js';
+import { createStep, el, loadHarnessCatalog } from './form-steps.js';
 import { createBriefSettingsPanel } from './brief-step.js';
 import { createLevelDefaults } from './level-defaults.js';
 import { loadMandates, screenOf } from './mandates.js';
@@ -111,7 +111,7 @@ export function workspacePage(w, { taken = () => [], onSaved = () => {}, onDisca
     defaultsBox.append(el('b', null, t('team_config.agent_defaults', 'New Agent defaults')),
       el('p', 'fs-step-help', t('workspaces.defaults_help', 'What each new Team and Agent here starts with. Nothing already made changes.')));
     stepAgents.body.append(defaultsBox);
-    void Promise.all([loadMandates(), loadProviderCatalog()]).then(() => screenOf({ workspace: draft.name })).then((screen) => {
+    void Promise.all([loadMandates(), loadHarnessCatalog()]).then(() => screenOf({ workspace: draft.name })).then((screen) => {
       levelDefaults = createLevelDefaults({ value: draft, screen, onChange: changed });
       defaultsBox.append(levelDefaults.el);
     });

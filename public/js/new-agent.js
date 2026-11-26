@@ -11,7 +11,7 @@ import { t } from './lexicon.js';
 import { ask } from './ask.js';
 import { finalizeTeamName, isValidTeamName, sanitizeTeamName } from './new-team-draft.js';
 import {
-  createStep, el, loadProviderCatalog, modelLabel, providerCatalog, readingRows, rowTierWord, tagRow,
+  createStep, el, loadHarnessCatalog, modelLabel, harnessCatalog, readingRows, rowTierWord, tagRow,
 } from './form-steps.js';
 import { openLaunchHandoff } from './launch-handoff.js';
 import { mandateRows, setMandates } from './mandates.js';
@@ -71,7 +71,7 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
   const typeHost = el('div', 'fs-pair');
   const TYPES = () => [
     { key: 'cowork_agent', label: t('new_agent.type_cowork', 'Cowork Agent'), sub: t('new_agent.type_cowork_sub', 'Born with Ronin capabilities, behaviors, and assigned Team.') },
-    { key: 'bare_metal_agent', label: t('new_agent.type_bare', 'Bare-metal Agent'), sub: t('new_agent.type_bare_sub', 'The provider’s agent and nothing else from Ronin.') },
+    { key: 'bare_metal_agent', label: t('new_agent.type_bare', 'Bare-metal Agent'), sub: t('new_agent.type_bare_sub', 'The harness’s agent and nothing else from Ronin.') },
     { key: 'terminal', label: t('new_agent.type_terminal', 'Terminal'), sub: t('new_agent.type_terminal_sub', 'A raw tmux pane, no agent launched, and nothing sent to it.') },
   ];
   function paintTypes() {
@@ -149,12 +149,12 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
   stepTop.body.append(instructionsField);
 
   /* ---- The one question utility: Model, Mandate, Team, and Where it works. ---- */
-  const providerRows = () => providerCatalog().providers.map(entry => ({
+  const harnessRows = () => harnessCatalog().providers.map(entry => ({
     v: entry.provider, l: entry.cli_label || entry.label,
     off: entry.operational ? undefined : entry.off ? t('forms.reason_turned_off', 'turned off') : t('forms.reason_not_on_machine', 'not on this machine'),
   }));
   const modelRows = ({ provider }) => {
-    const catalog = providerCatalog();
+    const catalog = harnessCatalog();
     const entry = catalog.providers.find(item => item.provider === provider);
     return (entry?.models || []).filter(row => configure || shownInNewAgent(catalog, entry, row))
       .map(row => ({ v: row.model, l: modelLabel(row), word: row.service_name || rowTierWord(row),
@@ -205,7 +205,7 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
     links.append(defaultsLink(t('new_agent.desk_defaults', 'Desk defaults'),
       deskDefaultsSpec?.() || { destination: 'campaign', mode: 'overlay' }, openDeskDefaults));
     if (!configure && hasAgent()) {
-      const entry = providerCatalog().providers.find(row => row.provider === (draft.provider || seed?.seeds?.provider?.value));
+      const entry = harnessCatalog().providers.find(row => row.provider === (draft.provider || seed?.seeds?.provider?.value));
       links.append(' · ', modelSettingsLink(entry?.cli));
     }
     defaultsNote.append(teaching, links);
@@ -231,14 +231,14 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
   /** What Default launches (Models > Defaults: a Team lead's own pair when the seed was read for one). */
   const defaultWord = () => {
     const provider = seed?.seeds?.provider?.value || ''; const model = seed?.seeds?.model?.value || '';
-    const row = providerCatalog().rows.find((item) => item.provider === provider && item.model === model);
+    const row = harnessCatalog().rows.find((item) => item.provider === provider && item.model === model);
     if (row && !modelRows({ provider }).some(option => option.v === model)) return t('new_agent.choose_harness', 'Choose harness');
-    const named = row ? modelLabel(row) : model || providerCatalog().providers.find((item) => item.provider === provider)?.label || '';
+    const named = row ? modelLabel(row) : model || harnessCatalog().providers.find((item) => item.provider === provider)?.label || '';
     return named ? t('new_agent.default_named', 'Default · {model}', { model: named }) : t('forms.default', 'Default');
   };
   const questions = ask([
     { group: t('new_agent.model_package', 'Model'), fields: [
-      { key: 'provider', label: t('forms.provider', 'Harness'), blank: defaultWord, options: providerRows, fixed: !!configure },
+      { key: 'provider', label: t('forms.provider', 'Harness'), blank: defaultWord, options: harnessRows, fixed: !!configure },
       { key: 'model', shape: 'rect', label: t('forms.model', 'Model'), blank: () => draft.provider ? t('new_agent.choose_model', 'Choose model') : defaultWord(), after: 'provider', empty: () => draft.provider ? 'No model options selected for this harness.' : '', options: modelRows, fixed: !!configure },
       { key: 'role', label: t('agent_composition.role', 'Role'), options: [
         { v: 'coworker', l: 'Coworker' }, { v: 'lead', l: 'Lead' }, { v: 'epic_lead', l: 'Epic Lead' }, { v: 'coordinator', l: 'Coordinator' },
@@ -278,7 +278,7 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
     questions.set({ provider: draft.provider, model: draft.model, reach: draft.reach, recruit: draft.recruit, output: draft.output, role: draft.role});
     teamQuestions.set({ team: teamChoice(), teamName: draft.team });
   };
-  const refreshModels = () => loadProviderCatalog().then(() => {
+  const refreshModels = () => loadHarnessCatalog().then(() => {
     if (!configure && draft.model && !modelRows(draft).some(row => row.v === draft.model)) {
       draft.model = '';
       questions.set('model', '');
@@ -577,7 +577,7 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
   return {
     el: embedded ? surface.content : surface.el,
     enter: async (detail = {}) => {
-      if (configure) { await Promise.all([loadProviderCatalog(), loadCatalog()]); await loadConfiguration(); return; }
+      if (configure) { await Promise.all([loadHarnessCatalog(), loadCatalog()]); await loadConfiguration(); return; }
       const entryTeam = String(detail?.team || (typeof team === 'function' ? team() : team) || '');
       if (entryTeam) { draft.teamMode = 'existing'; draft.team = entryTeam; }
       if (detail?.teamLead === true) draft.role = 'lead';

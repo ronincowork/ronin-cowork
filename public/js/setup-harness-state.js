@@ -1,5 +1,5 @@
 /* Pure provider discovery and explicit attachment seams for Ronin Setup. */
-export function providerFromRuntime(runtime, key) {
+export function harnessFromRuntime(runtime, key) {
   return (Array.isArray(runtime?.providers) ? runtime.providers : []).find((provider) => provider?.id === key) || null;
 }
 
@@ -36,7 +36,7 @@ const signedInSentence = (provider) => {
  * needs sign-in · not installed · manual install. Signed in is measured from the CLI's
  * own credential file or recorded by Done; nothing here reads a credential.
  */
-export function providerPresentation(provider) {
+export function harnessPresentation(provider) {
   const id = String(provider?.id || '');
   const label = String(provider?.label || id || 'This provider');
   // Turned off by the owner: Ronin is not using it. Said in the owner's own terms — the
@@ -109,8 +109,8 @@ function installedDetail(provider) {
   return '';
 }
 
-export function providerReadiness(provider) {
-  const presentation = providerPresentation(provider);
+export function harnessReadiness(provider) {
+  const presentation = harnessPresentation(provider);
   const installed = provider?.installed === true;
   const activated = provider?.activated === true;
   const loginOpen = provider?.login_open === true;
@@ -158,8 +158,8 @@ export function providerReadiness(provider) {
 }
 
 /** Mount only the explicit Runtime attachment; never infer a provider session name. */
-export function mountProviderAttachment(environment, host, provider, workspace, onClosed) {
+export function mountHarnessAttachment(environment, host, provider, workspace, onClosed) {
   const attachment = provider?.attachment;
-  if (!attachment || attachment.type !== 'session' || !attachment.key || typeof environment?.mountProviderSetupSession !== 'function') return null;
-  return environment.mountProviderSetupSession({ host, provider, session: attachment.key, workspace, onClosed });
+  if (!attachment || attachment.type !== 'session' || !attachment.key || typeof environment?.mountHarnessSetupSession !== 'function') return null;
+  return environment.mountHarnessSetupSession({ host, provider, session: attachment.key, workspace, onClosed });
 }

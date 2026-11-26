@@ -2,7 +2,7 @@
 import { WorkspaceKit } from './workspace-kit.js';
 import { workbenchView } from './workspace-contract.js';
 import { registerSetupSurfaces } from './setup-surfaces.js';
-import { createProviderSetupSessionMount } from './provider-setup-session.js';
+import { createHarnessSetupSessionMount } from './harness-setup-session.js';
 import { request } from './request.js';
 import { t } from './lexicon.js';
 import { SETUP_SCENES as SCENES } from './setup-journey.js';
@@ -50,7 +50,7 @@ export function createSetupView() {
   let enterGeneration = 0;
   let sceneOverride = 1;
   const progressListeners = new Set();
-  const providerSessions = createProviderSetupSessionMount();
+  const providerSessions = createHarnessSetupSessionMount();
   const opener = createIrasshaiOpener({ refresh: () => { bench?.refreshSelector(); if (!irasshai && garden) paintOffer(); }, showChat: () => { bench?.select('workspace1'); garden?.el.scrollIntoView?.({ block: 'start' }); } }); // a phone stacks the workspaces
   // IRASSHAI (setup-irasshai.js): Workspace 1, the Ask Ronin panel, is only her: her chat while her
   // session is live, else the offer of her. The step's how-to is the selector's guide (below). `irasshai` is her session's birth key at the last look ('' not live):
@@ -111,7 +111,7 @@ export function createSetupView() {
     // from the facts (KAN-768). Nothing here records a step.
     onGithubAuthenticated: () => { void readProgress(); },
     onWorkspaceFolderChosen: () => { void readProgress(); },
-    onProviderChoice: () => { void readProgress(); },
+    onHarnessChoice: () => { void readProgress(); },
     setupProgress: () => progress,
     onSetupProgress: (listener) => { progressListeners.add(listener); listener(progress); return () => progressListeners.delete(listener); },
     /** The surfaces draw their Setup header zones here, and only here. */
@@ -124,7 +124,7 @@ export function createSetupView() {
     trackedRoots: () => projectData,
     onTrackedRoots: onProjects,
     navigateToSurface: (type) => openSurface(type),
-    mountProviderSetupSession: providerSessions.mountProviderSetupSession,
+    mountHarnessSetupSession: providerSessions.mountHarnessSetupSession,
     showNewSession: (prompt) => {
       const url = workbenchLaunchUrl({ destination: 'launch', mode: 'overlay', state: {
         selected: 'workspace1', seats: { workspace1: { type: 'launch.agent', detail: { prompt: String(prompt || '') } } },

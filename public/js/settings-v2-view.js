@@ -21,7 +21,7 @@ import { createFeedbackSurface } from './feedback.js';
 import { createDocumentWorkspaceAdapter } from './docs.js';
 import { installBehaviourReader } from './behaviour-reader.js';
 import { buildStats } from './stats.js';
-import { loadProviderCatalog } from './form-steps.js';
+import { loadHarnessCatalog } from './form-steps.js';
 import { createModelDefaults } from './models-surface.js';
 import { createModelServicesSurface } from './model-services-surface.js';
 
@@ -57,10 +57,10 @@ export function createSettingsV2View() {
   return doorWorkbench({
     id: 'settings2', profile: WORKBENCH_PROFILES.settings2, label: t('settings2.title', 'Settings v2'),
     seats: { workspace1: WORKBENCH_TYPES.modelStones, workspace2: WORKBENCH_TYPES.settings2ModelServices },
-    loaded: () => Promise.all([loadCampaigns(), loadProviderCatalog()]),
+    loaded: () => Promise.all([loadCampaigns(), loadHarnessCatalog()]),
     hints: false,
     // A harness's own card is placed by its stone; it is not offered in the selector.
-    selectorFilter: (type) => type !== WORKBENCH_TYPES.modelProvider,
+    selectorFilter: (type) => type !== WORKBENCH_TYPES.modelHarness,
     // The five agreed sections (MACHINE_SETTINGS_V2.md): a heading over the first card of each.
     onSelectorRefresh: (cards) => {
       const groups = [

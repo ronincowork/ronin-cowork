@@ -32,7 +32,7 @@ dynamic_help() {
   seed=$(mktemp /tmp/session_create-seed.XXXXXX) || { rm -f "$catalog" "$runtime"; exit 2; }
   brief=$(mktemp /tmp/session_create-brief.XXXXXX) || { rm -f "$catalog" "$runtime" "$seed"; exit 2; }
   trap "rm -f '$catalog' '$runtime' '$seed' '$brief'" EXIT
-  catalog_read /api/provider-catalog "$catalog"
+  catalog_read /api/harness-catalog "$catalog"
   catalog_read /api/setup/runtime "$runtime"
   catalog_read /api/launch-seed "$seed"
   catalog_read /api/brief/catalog "$brief"

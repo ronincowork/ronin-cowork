@@ -179,7 +179,7 @@ export const MACHINE_SETTINGS_SCHEMA = {
   },
 };
 
-export function providerModelFields(providers: string[]) {
+export function harnessModelFields(providers: string[]) {
   return providers.map((provider) => ({
     id: `model_${provider}`,
     sec: 'defaults',
@@ -196,4 +196,4 @@ export function providerModelFields(providers: string[]) {
   }));
 }
 
-export type ProviderModelField = ReturnType<typeof providerModelFields>[number];
+export type HarnessModelField = ReturnType<typeof harnessModelFields>[number];

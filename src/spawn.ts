@@ -3,11 +3,11 @@ import path from 'node:path';
 import { resolveLaunchCommand, sessionsFor, type SessionsDefaults } from './launch-command.js';
 import { AGENT_ORDER, firstRoute } from './launch-progression.js';
 import { REPO_ROOT } from './resources.js';
-import { listSessionLaunchSpecs } from './model-providers.js';
+import { listSessionLaunchSpecs } from './harness-catalog.js';
 import { agentSpec } from './agents.js';
 import { bypassArgs, commandText, readAgentLaunches, withBypass } from './agent-launches.js';
 import { readAgentsSection, readSetupSection } from './machine-state.js';
-import { measureAndRecordProviders, offAt, readProviderSummary } from './provider-summary.js';
+import { measureAndRecordHarnesses, offAt, readHarnessSummary } from './harness-summary.js';
 import { storeDir } from './resources.js';
 import { listInstallations } from './resource-adapters.js';
 import { isCreatableTeamName as isTeamName, readTeamRoster, teamRosterFile, type TeamRoster } from './team-rosters.js';
@@ -161,7 +161,7 @@ export async function resolveFacts(form: SpawnForm, taken: Set<string>, proposed
     coworkAgent ? readCampaign(campaignId) : null,
     listInstallations(),
   ]);
-  const launchSpecs = await listSessionLaunchSpecs(campaign?.providers ?? await readProviderSummary());
+  const launchSpecs = await listSessionLaunchSpecs(campaign?.providers ?? await readHarnessSummary());
   if (form.team && !isTeamName(form.team)) {
     throw new Error(`A team name is lowercase letters, digits, _ and - (it is also the tag): "${form.team}".`);
   }
@@ -217,7 +217,7 @@ async function resolveLaunch(form: SpawnForm, facts: LaunchFacts) {
   const copied = parentSeed?.seeds.provider.value ? { provider: String(parentSeed.seeds.provider.value), model: String(parentSeed.seeds.model.value) } : null;
   const stated = copied?.provider || (agentsSet.sessions as SessionsDefaults | undefined)?.default?.provider;
   if (agent && !form.cmd && !form.provider && !form.model && !stated) {
-    const summary = await measureAndRecordProviders();
+    const summary = await measureAndRecordHarnesses();
     agentsSet = await readAgentsSection();
     launchSpecs = await listSessionLaunchSpecs(summary);
   }

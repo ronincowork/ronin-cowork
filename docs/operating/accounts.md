@@ -6,7 +6,7 @@
 > credential is actually in force. Run both before asking the owner anything; half these
 > questions are already answered on disk.
 
-Model/provider wiring is documented in `docs/architecture/model-providers.md`; the credentials that
+Model/provider wiring is documented in `docs/architecture/harness-catalog.md`; the credentials that
 make those providers usable follow `secrets.md`. This page records neither.
 
 A fresh box knows nothing about the person using it, and **nothing shipped may name a

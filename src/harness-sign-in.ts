@@ -11,7 +11,7 @@ import { execFile } from './spawn-broker.js';
 import { AGENTS, type AgentLogin } from './agents.js';
 import { broadcastEvent } from './ws/events.js';
 import { enqueueMessage } from './message-queue.js';
-import { readProviderSummary, refreshProviders } from './provider-summary.js';
+import { readHarnessSummary, refreshHarnesses } from './harness-summary.js';
 
 export type SignInWay = 'subscription' | 'api_key';
 
@@ -48,7 +48,7 @@ const loginOf = (provider: string) => {
  *  asked and again when a run ends; '' when it says neither (not signed in). Nothing is recorded. */
 let ways: Record<string, SignInWay | ''> | null = null;
 async function readWays(): Promise<Record<string, SignInWay | ''>> {
-  const paths = (await readProviderSummary())?.paths ?? {};
+  const paths = (await readHarnessSummary())?.paths ?? {};
   const read = await Promise.all(AGENTS.map(async (agent) => {
     const login = (agent as { login?: AgentLogin }).login;
     if (!login) return null;
@@ -76,7 +76,7 @@ export async function startSignIn(provider: string, way: SignInWay, tell = ''): 
   failed.delete(provider);
   // No browser here: the CLI prints its link instead of opening one.
   // The CLI as the measure found it: Ronin's own PATH need not hold ~/.local/bin.
-  const file = (await readProviderSummary())?.paths?.[provider] || agent.cmd;
+  const file = (await readHarnessSummary())?.paths?.[provider] || agent.cmd;
   const child = spawn(file, [...step.argv], { stdio: ['pipe', 'pipe', 'pipe'], env: { ...process.env, BROWSER: 'true' } });
   const run: SignInRun = { provider, label: agent.label, way, link: '', code: '', paste: step.paste, sent: false };
   const entry = { run, child, tell, out: '' };
@@ -102,7 +102,7 @@ async function ended(provider: string, entry: { run: SignInRun; child: ChildProc
   const last = entry.out.split('\n').map((line) => line.trim()).filter(Boolean).pop() ?? '';
   if (!ok) failed.set(provider, last || 'The sign-in stopped.');
   // Measured again, model lists read: the facts and Setup's tick follow on their own.
-  await refreshProviders().catch((error) => console.error('[sign-in] measure:', error));
+  await refreshHarnesses().catch((error) => console.error('[sign-in] measure:', error));
   await readWays().catch(() => {});
   push();
   if (entry.tell) {

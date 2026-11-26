@@ -39,7 +39,7 @@ When all three steps have checks, launch one Agent and send the harmless proof r
 [Get started](get-started.md#say-hello). That visible response—not an
 installed command or a saved credential—is the end-to-end proof.
 
-For the sign-in walkthrough, continue with [Provider sign-in](provider-sign-in.md).
+For the sign-in walkthrough, continue with [Provider sign-in](harness-sign-in.md).
 
 Contributors: [provider installation construction](../architecture/agent-install.md) and
-[provider registry](../architecture/model-providers.md).
+[provider registry](../architecture/harness-catalog.md).

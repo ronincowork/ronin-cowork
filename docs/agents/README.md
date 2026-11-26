@@ -17,7 +17,7 @@ shortcuts belong only to [Terminal controls](../using-ronin/terminal-controls.md
 The CLI and inference provider are separate: several inference providers can use one
 CLI. A CLI's vendor (id, name, transcript source) is its `vendor` in `src/agents.ts`;
 its models' tiers, lines and facts are HQ's model catalog, joined only by
-`src/model-providers.ts` ([Model providers](../architecture/model-providers.md)). Do not
+`src/harness-catalog.ts` ([Model providers](../architecture/harness-catalog.md)). Do not
 copy model tables into these pages.
 
 Each Agent page is the executable authority for its no-model/model and
@@ -61,4 +61,4 @@ explicit. Authentication Behaviors express owner policy and link here for CLI me
 - `src/spawn.ts`, `src/routes/launch.ts`: resolve catalog entries and persist launch identity.
 - `src/tmux.ts`, `src/session-archive.ts`, `src/routes/sessions-api.ts`: live identity and archive/resume.
 - `src/terminal-controls.ts`: read the Agent document and dispatch using persisted CLI identity; no screen detection.
-- [Provider contract](../architecture/model-providers.md): extension and owner-overlay rules.
+- [Provider contract](../architecture/harness-catalog.md): extension and owner-overlay rules.

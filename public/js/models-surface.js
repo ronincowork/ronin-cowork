@@ -2,18 +2,18 @@
 /**
  * THE MODELS WORKBENCH'S SURFACES (owner, 2026-10-19; PATTERNS.md Home). Home's Models door
  * opens the Models workbench; its surfaces are its own, apart from Settings' Model Providers
- * surface, and draw with the same drawing (provider-surface.js: createProviderDrawing, the
- * provider's page; providerStones, the stones) over the same reads.
+ * surface, and draw with the same drawing (harnesses-surface.js: createHarnessDrawing, the
+ * provider's page; harnessStones, the stones) over the same reads.
  *   WS1 `createModelStones`: Phalanx A/B stones of providers. A stone pressed opens the
  *   provider's page beside the rail; a stone dragged into a workspace places the provider
- *   there whole (`createModelProvider`), no rail, the whole workspace to its page.
- *   The selector lists one card per provider (`providerOffers`), each placing that surface.
+ *   there whole (`createModelHarness`), no rail, the whole workspace to its page.
+ *   The selector lists one card per provider (`harnessOffers`), each placing that surface.
  *   `createModelDefaults`: the model a new Agent, a new Team lead and Mika start on.
  */
 import { WorkspaceKit } from './workspace-kit.js';
 import { dayTime, el } from './form-steps.js';
 import { createPhalanx } from './phalanx.js';
-import { createProviderDrawing, createRefreshAll, providerStones, recordRuntime, stepItem } from './provider-surface.js';
+import { createHarnessDrawing, createRefreshAll, harnessStones, recordRuntime, stepItem } from './harnesses-surface.js';
 import { SURFACE_DRAG } from './workbench.js';
 import { WORKBENCH_TYPES } from './workbench-catalog.js';
 import { t } from './lexicon.js';
@@ -21,14 +21,14 @@ import { request } from './request.js';
 import { buildMachineSettings } from './machine-settings.js';
 
 /** The selector's cards: one per provider, from the record every reader takes. */
-export const providerOffers = () => providerStones(recordRuntime()).map(({ id, label, secondary }) => ({ key: id, label, summary: secondary }));
+export const harnessOffers = () => harnessStones(recordRuntime()).map(({ id, label, secondary }) => ({ key: id, label, summary: secondary }));
 
 /** A stone that can be dragged into a workspace: the drop places the provider there. */
 const draggable = (stone) => ({
   ...stone,
   draggable: true,
   events: { dragstart: (event) => {
-    event.dataTransfer.setData(SURFACE_DRAG, JSON.stringify({ type: WORKBENCH_TYPES.modelProvider, detail: { key: stone.id } }));
+    event.dataTransfer.setData(SURFACE_DRAG, JSON.stringify({ type: WORKBENCH_TYPES.modelHarness, detail: { key: stone.id } }));
     event.dataTransfer.setData('text/plain', stone.label);
     event.dataTransfer.effectAllowed = 'copy';
   } },
@@ -40,10 +40,10 @@ export function createModelStones(context) {
   const out = createSurface({ label: t('harness.stones', 'Harness'), className: 'setup-surface setup-provider-surface models-stones' });
   const notice = el('p', 'setup-fine setup-provider-notice'); notice.hidden = true;
   const say = (text, bad = false) => { notice.className = `${bad ? 'setup-notice bad' : 'setup-fine'} setup-provider-notice`; notice.textContent = text; notice.hidden = !text; };
-  const drawing = createProviderDrawing(context, { repaint: () => repaint(), say });
+  const drawing = createHarnessDrawing(context, { repaint: () => repaint(), say });
   const stones = createPhalanx({
     className: 'setup-provider-stones',
-    renderDetail: (item, host) => drawing.paintProvider(item.id, host),
+    renderDetail: (item, host) => drawing.paintHarness(item.id, host),
     onSelectionChange: (id) => { if (!id) drawing.closed(); },
   });
   stones.mount(out.content, { after: [notice] });
@@ -73,7 +73,7 @@ export function createModelRefresh(context) {
   const out = createSurface({ label: t('harness.refresh', 'Refresh'), className: 'setup-surface models-refresh' });
   const notice = el('p', 'setup-fine setup-provider-notice'); notice.hidden = true;
   const say = (text, bad = false) => { notice.className = `${bad ? 'setup-notice bad' : 'setup-fine'} setup-provider-notice`; notice.textContent = text; notice.hidden = !text; };
-  const drawing = createProviderDrawing(context, { repaint: () => repaint(), say });
+  const drawing = createHarnessDrawing(context, { repaint: () => repaint(), say });
   // What each step is doing now: '' at rest (it says what the record holds), or the door's state.
   const live = { lists: '', accounts: '' };
   // The accounts (KAN-236): read with the record, discovered one by one when the door runs.
@@ -168,7 +168,7 @@ function accountsStep(accounts, state) {
   const dated = rows.map((row) => row.discoveredAt).filter(Boolean).sort().pop();
   const made = stepItem({ key: 'accounts', n: 2, label: t('accounts.title', 'Accounts'),
     ...stepState(state, dated ? { state: t('models.lists_read', 'Read {date}', { date: dayTime(dated) }), done: true } : { state: rows.length ? t('models.lists_never', 'Not read yet') : t('accounts.none_yet', 'None yet') }),
-    detail: t('accounts.step_detail', 'Each Personal API and Ronin API account is asked for its list; you tick what it offers on Accounts.') });
+    detail: t('accounts.step_detail', 'Each private API and Ronin Gateway is asked for its model list.') });
   for (const row of rows) {
     const said = !row.configured ? t('accounts.key_missing', 'Key missing')
       : row.discoveredAt ? t('accounts.models_count', '{n} models', { n: row.models.length })
@@ -179,7 +179,7 @@ function accountsStep(accounts, state) {
 }
 
 /** A workspace of its own for one provider: its page, the whole workspace, no rail. */
-export function createModelProvider(key, context) {
+export function createModelHarness(key, context) {
   const { createSurface } = WorkspaceKit.primitives;
   const out = createSurface({ label: key, className: 'setup-surface models-provider' });
   const notice = el('p', 'setup-fine setup-provider-notice'); notice.hidden = true;
@@ -187,12 +187,12 @@ export function createModelProvider(key, context) {
   const page = el('div', 'models-provider-page');
   out.content.append(page, notice);
   let dispose = null;
-  const drawing = createProviderDrawing(context, { repaint: () => repaint(), say });
+  const drawing = createHarnessDrawing(context, { repaint: () => repaint(), say });
   const repaint = () => {
     dispose?.(); dispose = null;
     page.replaceChildren();
     out.header.title.textContent = drawing.stones().find((stone) => stone.id === key)?.label || key;
-    dispose = drawing.paintProvider(key, page);
+    dispose = drawing.paintHarness(key, page);
   };
   return {
     el: out.el,

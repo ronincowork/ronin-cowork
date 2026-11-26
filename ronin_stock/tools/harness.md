@@ -15,7 +15,7 @@ it finishes: start one there only when the person asks, and tell them so first.
 `harness state` prints how Claude Code and Codex are signed in now (subscription or API key, as
 each CLI's own status says) and the sign-ins open now; `harness cancel <id>` stops one. How a run ends
 comes to you as a House notice ("Codex is signed in."). The other harnesses sign in on their own
-page (`ronin-help provider-sign-in`): `harness open <id>` opens its terminal sign-in there, the page's
+page (`ronin-help harness-sign-in`): `harness open <id>` opens its terminal sign-in there, the page's
 own press, and `harness close <id>` closes it. Hermes: `harness options` prints what it can use, the
 Ronin gateway and each key the person added, with their models, then its model options (name,
 source, model, reasoning, approvals). `harness option add <source> <model> [--name N] [--reasoning R]

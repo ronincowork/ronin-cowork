@@ -174,8 +174,8 @@ word) in 4; Model refresh's steps read Harnesses · Accounts (the models.dev ste
 Discover. Accounts and presets are one reading of the Hermes record (`src/accounts.ts`, `/api/accounts`, `/api/presets`):
 a key added on Accounts is the connection the Hermes page shows. The existing types, surfaces and stones are
 unchanged but for their words; the route id stays `models` so saved arrangements survive. Settings' Model
-Providers surface is untouched; all draw with the one drawing `provider-surface.js` exports
-(`createProviderDrawing`, `createRefreshAll`, `providerStones`) over the same record and measure. In Harnesses,
+Providers surface is untouched; all draw with the one drawing `harnesses-surface.js` exports
+(`createHarnessDrawing`, `createRefreshAll`, `harnessStones`) over the same record and measure. In Harnesses,
 Authenticate offers Mika operating the registry-owned native login command in the current tilespace, or the native
 `provider_setup_*` terminal with Mika reading it from the paired tilespace; Setup and Settings retain their direct
 Authenticate action. Mika is a startup invariant, including before the first owner provider is connected, so the
@@ -281,7 +281,7 @@ page-wide progressive gate is deleted.
 | Defaults | `campaign.config.defaults` immediately; provider catalog and Campaign-default options afterward |
 | Workspaces | `/api/workspaces` (the Workspaces stones) |
 | Installations | installation catalog and installed facts; Desk values come from the tenant |
-| Harnesses | provider runtime/catalog owned by `provider-surface.js` |
+| Harnesses | provider runtime/catalog owned by `harnesses-surface.js` |
 | Machine | the selected cowork-commons tab owns its read; unopened tabs do no work |
 | Register / Launch your own | registration or embedded launch-form reads owned by that shared Setup surface |
 | Mika / terminal | readiness and terminal transport only when placed or deliberately prewarmed |
@@ -345,7 +345,7 @@ The door's own destination over the provider drawing Settings and Setup share.
 | Model stones (`models.stones`) | the recorded provider summary and catalog through `recordRuntime()`; a measure only on a press, as on Settings |
 | Model refresh (`models.refresh`) | the same record; the Refresh all press (`/api/setup/providers/refresh`) through the shared drawing's measure, then each account's Discover |
 | Defaults (`models.defaults`) | `GET /api/machine-settings`, the schema's `models` section; each row PATCHes `agents` (`sessions.default`, `sessions.lead`, `jobs.mikaassist.level`) |
-| Model provider (`models.provider`) | the same record for the one provider named in its detail; its selector cards come from `providerOffers()` over the same record |
+| Model provider (`models.provider`) | the same record for the one provider named in its detail; its selector cards come from `harnessOffers()` over the same record |
 
 ### Workspaces (`workspaces` profile)
 

@@ -168,14 +168,14 @@ async function releaseHolds(name: string, key: string, how: string, archived?: A
  * then stop the Agent. Answers the manifest, or null when no exact provider conversation is known;
  * then nothing is written and nothing is stopped. Holds are the caller's (releaseHolds). */
 async function archiveAgent(name: string, desksLeftOpen: string[] = []): Promise<ArchivedSession | null> {
-  const provider = await archiveProvider(name);
+  const provider = await archiveHarness(name);
   return 'error' in provider ? null : archiveWith(name, provider, desksLeftOpen);
 }
 
 /** The exact provider conversation an archive will resume, or why there is none. A park asks
  * this of every Agent before any is stopped. The launch identity is read from disk, so a dead
  * pane (its process gone, the pane kept by remain-on-exit) archives the same as a live one. */
-async function archiveProvider(name: string): Promise<{ agent: string; id: string } | { error: string }> {
+async function archiveHarness(name: string): Promise<{ agent: string; id: string } | { error: string }> {
   const key = await sessionKey(name);
   const runtime = await sessionRuntime(name);
   const launchIdentity = await readLaunchIdentity(key);
@@ -413,7 +413,7 @@ export function registerSessions(app: express.Express): void {
   app.post('/api/machine/park', async (_req, res) => {
     try {
       const names = (await listSessions()).filter((s) => s.agent).map((s) => s.name);
-      const providers = await Promise.all(names.map(async (name) => ({ name, provider: await archiveProvider(name) })));
+      const providers = await Promise.all(names.map(async (name) => ({ name, provider: await archiveHarness(name) })));
       const refused = providers.flatMap(({ name, provider }) => 'error' in provider ? [`${name}: ${provider.error}`] : []);
       if (refused.length) return res.status(409).json({ error: `Not parked — no Agent was stopped. ${refused.join(' ')}` });
       const archived: ArchivedSession[] = [];
@@ -450,7 +450,7 @@ export function registerSessions(app: express.Express): void {
       const not_saved: Array<{ name: string; error: string }> = [];
       for (const name of names) {
         try {
-          const provider = await archiveProvider(name);
+          const provider = await archiveHarness(name);
           if ('error' in provider) { not_saved.push({ name, error: provider.error }); continue; }
           const archived = await archiveWith(name, provider, [], true);
           await clearHookRecord(name);

@@ -12,7 +12,7 @@ import { modelServices } from './model-services.js';
  *   and its facts, keyed by harness + id. It never grants a model: a catalog row the CLI doesn't
  *   list is not offered.
  *
- * `providerRows` is the one join: Native first, then every model the CLI lists, grouped by
+ * `harnessRows` is the one join: Native first, then every model the CLI lists, grouped by
  * the catalog's tier (Frontier, Standard, Light, in the catalog's order within each), then
  * Unrated (a listed model the catalog lacks, in the CLI's order, with no line). Each row has
  * its `model` (the id every launch uses), its `name` (the CLI's own display name, which
@@ -31,7 +31,7 @@ export const NATIVE_MODEL = 'native';
 export const isTier = (value: unknown): value is Tier => (TIERS as readonly unknown[]).includes(value);
 
 /** One CLI's vendor, as `src/agents.ts` declares it. */
-export interface ProviderEntry {
+export interface HarnessEntry {
   provider: string;
   cli: string;
   /** The vendor's name: Anthropic, OpenAI, … */
@@ -43,7 +43,7 @@ export interface ProviderEntry {
 }
 
 /** Every CLI's vendor, in the registry's order. */
-export function listProviders(): ProviderEntry[] {
+export function listHarnesses(): HarnessEntry[] {
   return AGENTS.map((agent) => {
     const { provider, label, maturity } = agent.vendor;
     return { provider, cli: agent.id, label, launchable: maturity !== 'comingSoon', ...(maturity ? { maturity } : {}) };
@@ -79,7 +79,7 @@ export interface SessionLaunchSpec {
 }
 
 /** A joined row as the client paints it: the launch spec plus what this machine can do with it. */
-export interface ProviderRow extends SessionLaunchSpec {
+export interface HarnessRow extends SessionLaunchSpec {
   provider_label: string;
   cli_label: string;
   /** Installed, signed in or recorded, and not turned off: this machine can launch it. */
@@ -89,7 +89,7 @@ export interface ProviderRow extends SessionLaunchSpec {
   selectable: boolean;
 }
 
-export interface ProviderRows extends ProviderEntry {
+export interface HarnessRows extends HarnessEntry {
   cli_label: string;
   operational: boolean;
   off: boolean;
@@ -98,17 +98,17 @@ export interface ProviderRows extends ProviderEntry {
   nativeDangerousCmd?: string;
   launch_modes?: Array<'configured' | 'live_dangerously'>;
   services?: Array<{ id: string; name: string }>;
-  models: ProviderRow[];
+  models: HarnessRow[];
 }
 
-/** What `GET /api/provider-catalog` answers: the dates of the record, and the joined rows. */
-export interface ProviderCatalogAnswer {
+/** What `GET /api/harness-catalog` answers: the dates of the record, and the joined rows. */
+export interface HarnessCatalogAnswer {
   measured_at: string;
   /** When Refresh all last read every activated CLI's list; '' when never. */
   refreshed_at: string;
   /** When HQ's catalog was made; '' when none has arrived. */
   catalog_at: string;
-  providers: ProviderRows[];
+  providers: HarnessRows[];
 }
 
 /* ---------------------------------------------------------------------------------- */
@@ -145,7 +145,7 @@ export interface ModelList {
  * again, npm asked for the newest release). Read by everything else. A stale summary
  * shows its dates. It is never guessed.
  */
-export interface ProviderSummary {
+export interface HarnessSummary {
   measured_at: string;
   /** When Refresh all last ran: every activated CLI's list read, npm asked; '' when never. */
   refreshed_at: string;
@@ -220,7 +220,7 @@ function parseLegacyModelList(value: unknown): ModelList | null {
 }
 
 /** The summary as a record holds it, or null when the record carries none or a malformed one. */
-export function parseProviderSummary(value: unknown): ProviderSummary | null {
+export function parseHarnessSummary(value: unknown): HarnessSummary | null {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
   const v = value as Record<string, unknown>;
   if (typeof v.measured_at !== 'string' || !v.measured_at.trim()) return null;
@@ -229,7 +229,7 @@ export function parseProviderSummary(value: unknown): ProviderSummary | null {
   for (const [id, where] of Object.entries(record(v.paths))) if (typeof where === 'string' && where) paths[id] = where;
   const versions: Record<string, string> = {};
   for (const [id, version] of Object.entries(record(v.versions))) if (typeof version === 'string' && version) versions[id] = version;
-  const latest: ProviderSummary['latest'] = {};
+  const latest: HarnessSummary['latest'] = {};
   for (const [id, row] of Object.entries(record(v.latest))) {
     const { version, checked_at } = record(row);
     if (typeof version === 'string' && version && typeof checked_at === 'string' && checked_at) latest[id] = { version, checked_at };
@@ -308,12 +308,12 @@ const factsOf = (m: CatalogModel): ModelFacts | undefined => {
  * by tier. Providers this machine can launch come first; the registry's order holds within
  * each group. A provider whose CLI has no Agent page has no rows at all.
  */
-export async function providerRows(summary: ProviderSummary | null, catalog?: ModelCatalog): Promise<ProviderRows[]> {
+export async function harnessRows(summary: HarnessSummary | null, catalog?: ModelCatalog): Promise<HarnessRows[]> {
   const models = catalog ?? await readModelCatalog();
   const operational = new Set(summary?.operational ?? []);
   const turnedOff = new Set(summary?.off ?? []);
   const services = await modelServices();
-  const joined = await Promise.all(listProviders().map(async (entry): Promise<ProviderRows> => {
+  const joined = await Promise.all(listHarnesses().map(async (entry): Promise<HarnessRows> => {
     const agent = AGENTS.find((candidate) => candidate.id === entry.cli);
     const off = turnedOff.has(entry.cli);
     const on = operational.has(entry.cli);
@@ -322,8 +322,8 @@ export async function providerRows(summary: ProviderSummary | null, catalog?: Mo
       operational: on, off, selectable: on,
     };
     const grammar = entry.launchable ? await grammarOf(entry.cli) : null;
-    const rows: ProviderRow[] = [];
-    let launch: Pick<ProviderRows, 'native' | 'nativeDangerousCmd' | 'launch_modes'> = {};
+    const rows: HarnessRow[] = [];
+    let launch: Pick<HarnessRows, 'native' | 'nativeDangerousCmd' | 'launch_modes'> = {};
     if (grammar && entry.cli !== 'hermes') {
       const values = (model = '') => ({ provider: entry.provider, model });
       const native = commandText(renderLaunch(grammar.native, values()));
@@ -371,23 +371,23 @@ export async function providerRows(summary: ProviderSummary | null, catalog?: Mo
 }
 
 /** The joined rows flat: what a launch resolves against. */
-export async function listSessionLaunchSpecs(summary: ProviderSummary | null = null): Promise<SessionLaunchSpec[]> {
-  return (await providerRows(summary)).flatMap((entry) => entry.models);
+export async function listSessionLaunchSpecs(summary: HarnessSummary | null = null): Promise<SessionLaunchSpec[]> {
+  return (await harnessRows(summary)).flatMap((entry) => entry.models);
 }
 
 /** The one read for the client: the dates, and the joined rows. */
-export async function providerCatalogAnswer(summary: ProviderSummary | null): Promise<ProviderCatalogAnswer> {
+export async function harnessCatalogAnswer(summary: HarnessSummary | null): Promise<HarnessCatalogAnswer> {
   const catalog = await readModelCatalog();
   return {
     measured_at: summary?.measured_at ?? '',
     refreshed_at: summary?.refreshed_at ?? '',
     catalog_at: catalog.at ?? '',
-    providers: await providerRows(summary, catalog),
+    providers: await harnessRows(summary, catalog),
   };
 }
 
 /** A provider's own default row: Native, else its first. */
-export function providerDefault(specs: readonly SessionLaunchSpec[], provider: string): SessionLaunchSpec | undefined {
+export function harnessDefault(specs: readonly SessionLaunchSpec[], provider: string): SessionLaunchSpec | undefined {
   const own = specs.filter((spec) => spec.provider === provider);
   return own.find((spec) => spec.default) ?? own[0];
 }

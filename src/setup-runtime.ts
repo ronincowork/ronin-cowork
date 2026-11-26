@@ -4,8 +4,8 @@ import path from 'node:path';
 import { updateCommand, updateLineOf } from './agent-install.js';
 import { AGENTS, discoverExecutable, launchArgv, listAgentAvailability } from './agents.js';
 import { updateSection } from './machine-state.js';
-import { listProviders, newerVersion, type ModelList, type ProviderSummary } from './model-providers.js';
-import { activatedAt, npmPackageOf, offAt, providerSignedIn } from './provider-summary.js';
+import { listHarnesses, newerVersion, type ModelList, type HarnessSummary } from './harness-catalog.js';
+import { activatedAt, npmPackageOf, offAt, harnessSignedIn } from './harness-summary.js';
 import { rootDir } from './resources.js';
 import { runCommand } from './send.js';
 import { execFile as run, SpawnBrokerError } from './spawn-broker.js';
@@ -21,7 +21,7 @@ interface SetupSection {
   [key: string]: unknown;
 }
 
-export interface SetupProviderState {
+export interface SetupHarnessState {
   /** The CLI id — the key of every machine fact. */
   id: string;
   /** The vendor id this CLI serves, from its entry in `src/agents.ts`. */
@@ -37,7 +37,7 @@ export interface SetupProviderState {
   login_open: boolean;
   /** How its sign-in goes, in the CLI's own words (AGENTS signIn, KAN-716); '' when not read. */
   sign_in_how: string;
-  /** Whether Ronin signs it in itself, without a terminal (AGENTS `login`, src/provider-sign-in.ts). */
+  /** Whether Ronin signs it in itself, without a terminal (AGENTS `login`, src/harness-sign-in.ts). */
   direct_sign_in: boolean;
   install_open: boolean;
   signed_in: boolean;
@@ -72,7 +72,7 @@ export interface SetupProviderState {
 }
 
 export interface SetupRuntimeAnswer {
-  providers: SetupProviderState[];
+  providers: SetupHarnessState[];
   activated_count: number;
   activated_band: 'zero' | 'one' | 'two_plus';
   /** When the machine facts were measured; a reader shows a stale date rather than guessing. */
@@ -125,12 +125,12 @@ const defaultSessionOps: ProviderSessionOps = {
  */
 export async function setupRuntimeAnswer(
   section: SetupSection,
-  summary: ProviderSummary,
+  summary: HarnessSummary,
   ops: Pick<ProviderSessionOps, 'exists'> = defaultSessionOps,
   installed?: InstalledAnswer,
 ): Promise<SetupRuntimeAnswer> {
-  const entries = listProviders();
-  const providers = await Promise.all(AGENTS.map(async (agent): Promise<SetupProviderState> => {
+  const entries = listHarnesses();
+  const providers = await Promise.all(AGENTS.map(async (agent): Promise<SetupHarnessState> => {
     const entry = entries.find((row) => row.cli === agent.id);
     const session = sessionName(agent.id);
     const updateSession = updateSessionName(agent.id);
@@ -140,7 +140,7 @@ export async function setupRuntimeAnswer(
     const offSince = offAt(section, agent.id);
     const isInstalled = summary.installed.includes(agent.id);
     // While its sign-in is open, the credential file is read now, not from the last measure (KAN-723).
-    const signedIn = isInstalled && (summary.signed_in.includes(agent.id) || (loginOpen && await providerSignedIn(agent.id)));
+    const signedIn = isInstalled && (summary.signed_in.includes(agent.id) || (loginOpen && await harnessSignedIn(agent.id)));
     const activated = isInstalled && offSince === null && (completed !== null || signedIn) && entry?.launchable === true;
     // Not activated: nothing was asked and nothing is offered — Installed, and stop. A
     // version from an earlier measurement is not printed as though it were current.
@@ -200,7 +200,7 @@ export async function setupRuntimeAnswer(
   };
 }
 
-export async function openProviderLogin(
+export async function openHarnessLogin(
   provider: string,
   ops: ProviderSessionOps = defaultSessionOps,
   availability?: Availability,
@@ -219,7 +219,7 @@ export async function openProviderLogin(
  * Close ends whichever temporary session the provider has open — install, sign-in, update,
  * or any combination — through the one teardown. Nothing shown in the page outlives it.
  */
-export async function closeProviderLogin(provider: string, ops: ProviderSessionOps = defaultSessionOps): Promise<{ session: string; closed: boolean }> {
+export async function closeHarnessLogin(provider: string, ops: ProviderSessionOps = defaultSessionOps): Promise<{ session: string; closed: boolean }> {
   if (!AGENTS.some((agent) => agent.id === provider)) throw new Error(`Unknown provider "${provider}".`);
   let closed: string | null = null;
   // Keep the long-standing sign-in name as the receipt when several exist; install joins
@@ -236,7 +236,7 @@ export async function closeProviderLogin(provider: string, ops: ProviderSessionO
  * Update: the registry's update line in a temporary provider_setup session, shown in the
  * page like a sign-in and ended by the same Close. The owner's press, never Ronin's.
  */
-export async function openProviderUpdate(
+export async function openHarnessUpdate(
   provider: string,
   ops: ProviderSessionOps = defaultSessionOps,
   availability?: Availability,
@@ -253,11 +253,11 @@ export async function openProviderUpdate(
   return { session, opened: true };
 }
 
-export async function completeProviderLogin(
+export async function completeHarnessLogin(
   provider: string,
   ops: ProviderSessionOps = defaultSessionOps,
   now = () => new Date().toISOString(),
-  record: (provider: string, activated_at: string) => Promise<void> = recordProviderActivation,
+  record: (provider: string, activated_at: string) => Promise<void> = recordHarnessActivation,
 ): Promise<{ session: string; activated_at: string }> {
   if (!AGENTS.some((agent) => agent.id === provider)) throw new Error(`Unknown provider "${provider}".`);
   const loginSession = sessionName(provider);
@@ -268,7 +268,7 @@ export async function completeProviderLogin(
   if (!session) throw new Error(`No open login or install session for ${provider}; activation was not recorded.`);
   const activated_at = now();
   await record(provider, activated_at);
-  await closeProviderLogin(provider, ops);
+  await closeHarnessLogin(provider, ops);
   return { session, activated_at };
 }
 
@@ -277,7 +277,7 @@ export async function completeProviderLogin(
  * session; on deletes it. What the record then says is measured, not assumed: the caller
  * measures again so `operational` moves with the switch.
  */
-export async function setProviderOff(provider: string, off: boolean, now = () => new Date().toISOString()): Promise<{ provider: string; off: boolean; off_at: string | null }> {
+export async function setHarnessOff(provider: string, off: boolean, now = () => new Date().toISOString()): Promise<{ provider: string; off: boolean; off_at: string | null }> {
   if (!AGENTS.some((agent) => agent.id === provider)) throw new Error(`Unknown provider "${provider}".`);
   let off_at: string | null = null;
   await updateSection<SetupSection>('setup', (setup) => {
@@ -288,7 +288,7 @@ export async function setProviderOff(provider: string, off: boolean, now = () =>
   return { provider, off, off_at };
 }
 
-async function recordProviderActivation(provider: string, activated_at: string): Promise<void> {
+async function recordHarnessActivation(provider: string, activated_at: string): Promise<void> {
   await updateSection<SetupSection>('setup', (setup) => ({
     ...setup,
     providers: { ...(setup.providers ?? {}), [provider]: { ...setup.providers?.[provider], activated_at } },

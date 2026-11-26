@@ -70,7 +70,7 @@ Until then, the Agent pages retain them under upstream alternatives for drift re
 ```text
 src/agents.ts vendor + each CLI's own model list + HQ's model catalog (tier, line)
   → docs/agents/<cli>.md command grammar
-  → GET /api/provider-catalog resolved commands and supported launch modes
+  → GET /api/harness-catalog resolved commands and supported launch modes
   → New Agent provider, model and launch-mode choices
   → spawn the complete selected command
 ```

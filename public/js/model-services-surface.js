@@ -152,7 +152,7 @@ function modelOptions(service, say) {
       node.append(list);
     }
     const reasoning = reasons(service)
-      ? select(['default', 'none', 'low', 'medium', 'high', 'xhigh', 'max'].map((id) => [id, id === 'default' ? t('accounts.reasoning_default', 'Provider default') : id]), entry.reasoning || 'default')
+      ? select(['default', 'none', 'low', 'medium', 'high', 'xhigh', 'max'].map((id) => [id, id === 'default' ? t('accounts.reasoning_default', 'Service default') : id]), entry.reasoning || 'default')
       : null;
     const approvals = select([['off', t('accounts.approvals_off', 'YOLO — approvals off')], ['prompt', t('accounts.approvals_prompt', 'Ask for approval')]], entry.approvals || 'off');
     node.append(el('h3', null, entry.id ? t('model_services.edit_model', 'Edit model') : t('model_services.add_model', 'Add a model')),
@@ -188,7 +188,7 @@ function modelOptions(service, say) {
 }
 
 /**
- * A harness's page in Settings (Hermes today, provider-surface.js): each service's model options, read only.
+ * A harness's page in Settings (Hermes today, harnesses-surface.js): each service's model options, read only.
  * Model services is the one editor; an OpenRouter or API key row links to its tab. Returns the disposer.
  */
 export function mountModelOptions(host) {

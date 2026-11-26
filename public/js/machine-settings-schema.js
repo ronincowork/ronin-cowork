@@ -11,7 +11,7 @@
  *
  * `ctx` is what a surface already fetched and chose: { record, home, rows }, where
  * `rows` is the provider catalog as the server joins it (form-steps.js
- * `providerCatalog().rows`): every row carries its tier and whether this machine can launch it.
+ * `harnessCatalog().rows`): every row carries its tier and whether this machine can launch it.
  */
 
 /** A provider·model value is one string so it survives a plain <option> and a text field. */
@@ -39,7 +39,7 @@ export function currentOf(f, ctx) {
 /**
  * The options a plain select offers — resolved from the surface's own ctx. A field whose
  * options are `models` or `models_for:<provider>` is not a plain select: it is the one
- * picker (form-steps.js `providerModelPair`), and `pickerProvider` says which form.
+ * picker (form-steps.js `harnessModelPair`), and `pickerHarness` says which form.
  */
 export function optionsOf(f, ctx) {
   if (f.options === 'desk_profiles') return (ctx.deskProfiles ?? []).map((p) => ({ label: p.label, value: p.name }));
@@ -50,7 +50,7 @@ export function optionsOf(f, ctx) {
 /** Is this field the picker, and in which form: `{ fixed }` with the provider a
  * `models_for:` row fixes (the row is the provider, the pick is the model alone), or ''
  * for the free pair; null for any other field. */
-export function pickerProvider(f) {
+export function pickerHarness(f) {
   const options = String(f?.options ?? '');
   if (options === 'models') return { fixed: '' };
   if (options.startsWith('models_for:')) return { fixed: options.slice('models_for:'.length) };

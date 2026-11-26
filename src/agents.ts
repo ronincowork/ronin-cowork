@@ -12,7 +12,7 @@ export interface AgentScreen {
 
 /**
  * HOW A CLI PUBLISHES ITS MODEL LIST — declared here, read by `readModels` in
- * `src/provider-summary.ts` on Refresh all. `claude-cache` and `codex-cache` are the two
+ * `src/harness-summary.ts` on Refresh all. `claude-cache` and `codex-cache` are the two
  * cache files those CLIs keep; `command` runs the CLI with the argv and reads the list it
  * prints; `none` says plainly that Ronin has no way to read one, so Model: Native is the
  * only choice. A new way to read a list is a new key here, never an `if` on a CLI id.
@@ -313,7 +313,7 @@ export async function launchArgv(cmd: string, brief: string): Promise<LaunchArgv
   return { argv: [bin, ...rest], parked: !!brief };
 }
 
-export interface ProviderLaunch {
+export interface HarnessLaunch {
   argv: string[];
   id: string;
   strategy: 'minted' | 'isolated' | 'unbound';
@@ -341,7 +341,7 @@ function namedSession(argv: readonly string[], template: readonly string[]): str
   return '';
 }
 
-export async function newProviderSession(agent: string, argv: readonly string[]): Promise<ProviderLaunch> {
+export async function newProviderSession(agent: string, argv: readonly string[]): Promise<HarnessLaunch> {
   const grammar = argv.length ? await readAgentLaunches(agent || 'terminal').catch((e: NodeJS.ErrnoException) => {
     if (e.code === 'ENOENT') return undefined; throw e;
   }) : undefined;

@@ -2,7 +2,7 @@
 
 For contributors: what each Setup surface shows and measures, in full. The user's page is
 [Ronin Setup](../getting-started/setup-workbench.md); harness construction is in
-[model providers](model-providers.md), and Workspaces in [Workspaces](../using-ronin/workspaces.md).
+[model providers](harness-catalog.md), and Workspaces in [Workspaces](../using-ronin/workspaces.md).
 
 ## Where it is
 
@@ -148,7 +148,7 @@ knows. Native is the default. Ronin only checks that a sign-in exists; it never 
 credential or asks the provider about your account. A provider that needs to sign in
 again asks in its own flow.
 
-Details of the catalog and what is measured are in [model providers](model-providers.md).
+Details of the catalog and what is measured are in [model providers](harness-catalog.md).
 
 ## Register (a Settings card)
 

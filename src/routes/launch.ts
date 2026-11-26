@@ -592,12 +592,12 @@ export function registerLaunch(app: express.Express): LaunchControl {
   const ensureMika = async (intent: 'help' | 'setup_provider_ready' = 'help', tab = ''): Promise<MikaReady> => {
     const metadata = { session: MIKA_SESSION, team: STEERCO_TEAM, loader: RONIN_HELPER_LOADER };
     const observeLive = async (already: boolean): Promise<MikaReady> => {
-      let providerState: ReturnType<typeof mikaReadinessFromPane> = 'starting';
-      try { providerState = mikaReadinessFromPane(await capturePane(MIKA_SESSION, 0)); } catch { /* live but not yet drawable */ }
-      if (providerState === 'action_required') {
+      let harnessState: ReturnType<typeof mikaReadinessFromPane> = 'starting';
+      try { harnessState = mikaReadinessFromPane(await capturePane(MIKA_SESSION, 0)); } catch { /* live but not yet drawable */ }
+      if (harnessState === 'action_required') {
         return { ok: false, state: 'action_required', action: 'pending_user', code: 'provider_confirmation_required', already, ...metadata };
       }
-      if (providerState === 'starting') return { ok: false, state: 'starting', already, ...metadata };
+      if (harnessState === 'starting') return { ok: false, state: 'starting', already, ...metadata };
       const welcome = await roninHelperWelcomeState();
       if (welcome?.state === 'pending') await recordRoninHelperWelcome(welcome.conversation, 'delivered');
       return { ok: true, state: 'ready', already, welcome_delivered: welcome?.state === 'pending', ...metadata };

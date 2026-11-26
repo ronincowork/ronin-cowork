@@ -34,7 +34,7 @@ import { listWorkspaces } from './workspaces.js';
 import { listPlans } from './plans.js';
 import { listCanvases } from './canvases.js';
 import { AGENTS } from './agents.js';
-import { readProviderSummary } from './provider-summary.js';
+import { readHarnessSummary } from './harness-summary.js';
 import { githubSetupAnswer } from './setup-runtime.js';
 import { integrationsState } from './integrations.js';
 import { discoverParts } from './parts.js';
@@ -96,17 +96,11 @@ async function aboutUser(): Promise<Built> {
 }
 
 // ---- THE OFFICE'S STATES that a fact prints and Setup ticks from (src/setup-progress.ts): one meaning each.
-/** The harnesses Activated: each CLI the provider summary has operational. A model service is never one. */
-export const providersOn = (summary: Awaited<ReturnType<typeof readProviderSummary>>): string[] =>
-  AGENTS.filter((a) => summary?.operational.includes(a.id) && !summary.off.includes(a.id)).map((a) => a.label);
-export async function activatedProviders(): Promise<string[]> {
-  return providersOn(await readProviderSummary().catch(() => null));
-}
 /** THE PERSON'S OWN HARNESSES (owner, 2026-11-24; w926): each CLI harness Activated here, never
  * Ronin's house models. Hosted Setup's Harness step, and the office start that makes Irasshai, read this. */
-export const harnessesOn = (summary: Awaited<ReturnType<typeof readProviderSummary>>): string[] =>
+export const harnessesOn = (summary: Awaited<ReturnType<typeof readHarnessSummary>>): string[] =>
   AGENTS.filter((a) => summary?.operational.includes(a.id) && !summary.off.includes(a.id)).map((a) => a.label);
-export async function ownHarnesses(): Promise<string[]> { return harnessesOn(await readProviderSummary().catch(() => null)); }
+export async function ownHarnesses(): Promise<string[]> { return harnessesOn(await readHarnessSummary().catch(() => null)); }
 /** The Workspaces made: any not archived, Ronin Lab included (owner, 25 Nov; Setup's Workspace step:
  * its "Not sure yet" door makes only Ronin Lab, and that ticks it). */
 export async function madeWorkspaces(): Promise<string[]> {
@@ -191,7 +185,7 @@ async function integrationsAuthentications(): Promise<Built> {
   const campaign = await initialCampaignId();
   const parts = { onDisk: discoverParts().map((part) => part.name), loaded: listServices() };
   const [summary, github, services, accounts] = await Promise.all([
-    readProviderSummary().catch(() => null), githubSetupAnswer().catch(() => null),
+    readHarnessSummary().catch(() => null), githubSetupAnswer().catch(() => null),
     integrationsState(campaign, parts).catch(() => []), accountsAnswer().catch(() => null),
   ]);
   githubBuilt = githubKey(github);

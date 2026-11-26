@@ -14,8 +14,8 @@ import { mountModelOptions } from './model-services-surface.js';
  * Choosing a stone opens that provider beside the rail, top to bottom:
  *   1. YOURS — the three numbered steps (install · authenticate with the native sign-in
  *      tile, Done and Close · ready), read from the runtime row alone
- *      (setup-provider-state.js). The sign-in tile is mounted through the workbench
- *      environment's `mountProviderSetupSession` (provider-setup-session.js), so it works
+ *      (setup-harness-state.js). The sign-in tile is mounted through the workbench
+ *      environment's `mountHarnessSetupSession` (harness-setup-session.js), so it works
  *      on either seat. An installed CLI's step says its version and, once Refresh has
  *      asked, the newest release its package source lists; an **Update** control runs the
  *      registry's update line in a tile as Install does — the owner's press, never Ronin's.
@@ -37,8 +37,8 @@ import { createSetupZone, setupStep } from './setup-zone.js';
 import { request } from './request.js';
 import { WorkspaceKit } from './workspace-kit.js';
 import { createPhalanx } from './phalanx.js';
-import { dayTime, loadProviderCatalog, modelLabel, providerCatalog, tierWord } from './form-steps.js';
-import { mountProviderAttachment, providerFromRuntime, providerPresentation, providerReadiness } from './setup-provider-state.js';
+import { dayTime, loadHarnessCatalog, modelLabel, harnessCatalog, tierWord } from './form-steps.js';
+import { mountHarnessAttachment, harnessFromRuntime, harnessPresentation, harnessReadiness } from './setup-harness-state.js';
 import { createStatusMarker } from './status-marker.js';
 import { IRASSHAI_NAME } from './setup-journey.js';
 
@@ -47,29 +47,29 @@ const el = (tag, cls = '', text = null) => { const out = document.createElement(
 /** The one type, on both workbenches. */
 export const PROVIDER_SURFACE_TYPE = 'setup.providers';
 
-export function providerSurfaceDefinition() {
+export function harnessesSurfaceDefinition() {
   return {
     type: PROVIDER_SURFACE_TYPE,
     header: 'surface',
     groupKey: PROVIDER_SURFACE_TYPE,
     label: () => t('setup_surface.providers', 'Harnesses'),
-    summary: () => providersSummary(providerCatalog()),
-    create: (context) => createProviderSurface(context),
+    summary: () => harnessesSummary(harnessCatalog()),
+    create: (context) => createHarnessesSurface(context),
   };
 }
 
 /** The card's line on both seats: the catalog's counts and this machine's. */
-export function providersSummary(catalog) {
-  if (!catalog?.loaded) return t('setup_surface.providers_summary_unread', 'Every provider and model Ronin offers, and what this machine has.');
+export function harnessesSummary(catalog) {
+  if (!catalog?.loaded) return t('setup_surface.providers_summary_unread', 'Every harness and model Ronin offers, and what this machine has.');
   const rows = catalog.rows;
   const providers = new Set(rows.map((row) => row.provider)).size;
   const activated = new Set(rows.filter((row) => row.operational).map((row) => row.provider)).size;
-  return t('setup_surface.providers_summary', '{providers} providers · {models} models · {activated} activated here', { providers, models: rows.length, activated });
+  return t('setup_surface.providers_summary', '{providers} harnesses · {models} models · {activated} activated here', { providers, models: rows.length, activated });
 }
 
 /** The recorded summary as a runtime: the record every reader takes, before any measure lands. */
 export const recordRuntime = () => {
-  const read = providerCatalog();
+  const read = harnessCatalog();
   const providers = Array.isArray(read.machine) ? read.machine : [];
   return {
     providers,
@@ -82,22 +82,22 @@ export const recordRuntime = () => {
 /** A catalog provider no registry CLI serves is a stone of its own, keyed by its vendor id. */
 const catalogOnly = (runtime) => {
   const known = new Set((runtime.providers || []).map((provider) => provider?.id));
-  return (providerCatalog().providers || []).filter((entry) => !known.has(entry.cli));
+  return (harnessCatalog().providers || []).filter((entry) => !known.has(entry.cli));
 };
 
 /** THE STONES, one builder (owner, 2026-10-19): every CLI the runtime knows wearing its measured
  * state, then every catalog provider no CLI serves. The Settings surface, the Models workbench
  * and its selector cards all read this. */
-export function providerStones(runtime) {
-  const rows = providerCatalog().rows;
+export function harnessStones(runtime) {
+  const rows = harnessCatalog().rows;
   const providers = (Array.isArray(runtime.providers) ? runtime.providers : []).filter((provider) => provider?.id);
   const stoneOf = (id, label, secondary, state, activated, marker = null) => ({ id, label, secondary, state, marker, className: 'setup-provider-stone', attrs: { 'data-provider': id, 'data-activated': String(activated) } });
   const items = [
     ...providers.map((provider) => {
       const own = rows.filter((row) => row.cli === provider.id);
       const vendor = own[0]?.provider_label || provider.from || '';
-      const entry = (providerCatalog().providers || []).find((candidate) => candidate.cli === provider.id);
-      return stoneOf(String(provider.id), provider.label || provider.id, own.length ? t('setup_surface.provider_models_n', '{vendor} · {n} models', { vendor, n: own.length }) : vendor, provider.id === 'hermes' ? (own.length ? 'Setups available' : 'Add a connection and setup') : providerPresentation(provider).inventoryState, provider.activated === true, createStatusMarker(entry?.maturity));
+      const entry = (harnessCatalog().providers || []).find((candidate) => candidate.cli === provider.id);
+      return stoneOf(String(provider.id), provider.label || provider.id, own.length ? t('setup_surface.provider_models_n', '{vendor} · {n} models', { vendor, n: own.length }) : vendor, provider.id === 'hermes' ? (own.length ? 'Setups available' : 'Add a connection and setup') : harnessPresentation(provider).inventoryState, provider.activated === true, createStatusMarker(entry?.maturity));
     }),
     ...catalogOnly(runtime).map((entry) => ({
       ...stoneOf(entry.provider, entry.label, entry.models.length ? t('setup_surface.provider_models_n', '{vendor} · {n} models', { vendor: entry.label, n: entry.models.length }) : '', entry.models.length ? t('setup_surface.no_cli_state', 'No CLI') : '', false, createStatusMarker(entry.maturity)),
@@ -107,27 +107,27 @@ export function providerStones(runtime) {
   return items;
 }
 
-export function createProviderSurface(context) {
+export function createHarnessesSurface(context) {
   const out = WorkspaceKit.primitives.createSurface({ label: t('setup_surface.providers', 'Harnesses'), className: 'setup-surface setup-provider-surface' });
   const notice = el('p', 'setup-fine setup-provider-notice'); notice.hidden = true;
   const mikaAvailability = el('p', 'setup-fine setup-mika-availability');
   let opened = String(context.detail?.provider || context.detail?.key || '');
-  let firstProviderId = '';
+  let firstHarnessId = '';
   let openFirstWhenReady = false;
-  const drawing = createProviderDrawing(context, { repaint: () => repaint(), say: (text, bad) => say(text, bad) });
+  const drawing = createHarnessDrawing(context, { repaint: () => repaint(), say: (text, bad) => say(text, bad) });
   const stones = createPhalanx({
     selectedId: opened,
     className: 'setup-provider-stones',
-    renderDetail: (item, host) => drawing.paintProvider(item.id, host),
+    renderDetail: (item, host) => drawing.paintHarness(item.id, host),
     onSelectionChange: (id) => { opened = String(id || ''); if (!id) drawing.closed(); },
   });
   const controller = Object.freeze({
     openFirst: () => {
-      if (firstProviderId) stones.select(firstProviderId, { focus: true });
+      if (firstHarnessId) stones.select(firstHarnessId, { focus: true });
       else openFirstWhenReady = true;
     },
   });
-  context.environment?.onProviderSurface?.(controller);
+  context.environment?.onHarnessSurface?.(controller);
   const refresh = createRefreshAll(drawing);
   const zone = context.environment?.setupZones ? createSetupZone() : null;
   /** Step 1 states one fact: whether any provider is Activated (integrations_authentications, KAN-768). */
@@ -156,19 +156,19 @@ export function createProviderSurface(context) {
     if (mikaAvailability.textContent !== signedIn) mikaAvailability.textContent = signedIn;
     context.workbench?.refreshSelector?.();
     const items = drawing.stones();
-    firstProviderId = String(items[0]?.id || '');
+    firstHarnessId = String(items[0]?.id || '');
     say(items.length ? '' : t('setup_surface.no_catalog', 'No harnesses are in the catalog on this machine.'));
     stones.setItems(items);
-    if (openFirstWhenReady && firstProviderId) {
+    if (openFirstWhenReady && firstHarnessId) {
       openFirstWhenReady = false;
-      stones.select(firstProviderId, { focus: true });
+      stones.select(firstHarnessId, { focus: true });
     }
   };
   const stopProgressRefresh = context.environment?.onSetupProgress?.(() => { void drawing.showRecord(); }) || (() => {});
   return {
     el: out.el,
     show: async () => { await drawing.showRecord(); },
-    destroy: () => { stopProgressRefresh(); context.environment?.onProviderSurface?.(null); drawing.destroy(); stones.destroy(); },
+    destroy: () => { stopProgressRefresh(); context.environment?.onHarnessSurface?.(null); drawing.destroy(); stones.destroy(); },
   };
 }
 
@@ -229,10 +229,10 @@ export function createRefreshAll(drawing, { onStep = () => {}, between = null } 
   } });
   const button = made.el ?? made;
   const paint = () => {
-    const when = String(drawing.runtime().refreshed_at || providerCatalog().refreshed_at || '');
+    const when = String(drawing.runtime().refreshed_at || harnessCatalog().refreshed_at || '');
     const words = when
       ? t('setup_surface.last_ran', 'Last ran {date}', { date: dayTime(when) })
-      : t('setup_surface.never_ran', 'Never run — every provider offers Native only until it runs.');
+      : t('setup_surface.never_ran', 'Never run — every harness offers Native only until it runs.');
     if (lastRan.textContent !== words) lastRan.textContent = words; // an unchanged push touches nothing (KAN-414)
   };
   button.classList.add('setup-provider-refresh-all');
@@ -247,10 +247,10 @@ export function createRefreshAll(drawing, { onStep = () => {}, between = null } 
  * and the Models workbench call this. `repaint()` is the host's: it paints from `runtime()` and
  * `stones()` whenever the frame moves; `say(text, bad)` is the host's notice line.
  */
-export function createProviderDrawing(context, { repaint, say = () => {} }) {
+export function createHarnessDrawing(context, { repaint, say = () => {} }) {
   const action = (label, kind, onClick) => { const made = WorkspaceKit.primitives.createAction({ label, kind, action: onClick }); return made.el ?? made; };
   const yesNo = (on) => (on ? t('setup_surface.yes', 'yes') : t('setup_surface.no', 'no'));
-  let alignedProvider = '';
+  let alignedHarness = '';
   let mounted = null;
   let runtime = { providers: [] };
   const disposeMount = (destroy = true) => {
@@ -280,7 +280,7 @@ export function createProviderDrawing(context, { repaint, say = () => {} }) {
   };
   /* ---- 1 · YOURS: the three steps, exactly as the runtime row measures them ---- */
   const paintYours = (provider, host) => {
-    const steps = providerReadiness(provider);
+    const steps = harnessReadiness(provider);
     const [install, auth, ready] = steps;
     const card = el('article', 'setup-provider');
     card.dataset.provider = provider.id;
@@ -319,7 +319,7 @@ export function createProviderDrawing(context, { repaint, say = () => {} }) {
         if (!result.ok) { problem.textContent = result.message; problem.hidden = false; submit.disabled = false; return; }
         mounted?.park?.();
         await paint();
-        context.environment?.onProviderChoice?.();
+        context.environment?.onHarnessChoice?.();
       });
       submit.dataset.endsEdit = '';
       submit.classList.add('setup-provider-done');
@@ -366,7 +366,7 @@ export function createProviderDrawing(context, { repaint, say = () => {} }) {
         finish(`/api/setup/providers/${encodeURIComponent(provider.id)}/done`);
         installRow.item.append(completion);
       }
-      mounted = mountProviderAttachment(context.environment, terminal, provider, context.workspace);
+      mounted = mountHarnessAttachment(context.environment, terminal, provider, context.workspace);
       if (!mounted) terminal.append(el('p', 'setup-notice bad', t('setup_surface.login_attachment_missing', 'The native setup session is open but its terminal attachment is unavailable.')));
     // Update is useful only when there is somewhere newer to move AND the provider is
     // usable. Otherwise the row already says the complete fact: up to date, or not signed in.
@@ -407,15 +407,15 @@ export function createProviderDrawing(context, { repaint, say = () => {} }) {
       : auth.status === 'open' ? t('setup_surface.sign_in_open', 'Sign-in open')
         : auth.status === 'available' ? t('setup_surface.not_signed_in', 'Not signed in') : t('setup_surface.install_first', 'After install'));
     if (auth.current && auth.action !== 'login_open' && !provider.install_open) {
-      const assisted = typeof context.environment?.onMikaProviderGuide === 'function'
-        && typeof context.environment?.onMikaProviderConnect === 'function';
+      const assisted = typeof context.environment?.onMikaHarnessGuide === 'function'
+        && typeof context.environment?.onMikaHarnessConnect === 'function';
       if (assisted) {
         const irasshai = context.environment.assistName?.() === IRASSHAI_NAME;
-        const operate = control(auth, irasshai ? t('setup_surface.authenticate_irasshai', 'Let the Helpful Assistant authenticate') : t('setup_surface.authenticate_mika', 'Let Mika authenticate'), () => context.environment.onMikaProviderConnect({ provider, workspace: context.workspace }));
+        const operate = control(auth, irasshai ? t('setup_surface.authenticate_irasshai', 'Let the Helpful Assistant authenticate') : t('setup_surface.authenticate_mika', 'Let Mika authenticate'), () => context.environment.onMikaHarnessConnect({ provider, workspace: context.workspace }));
         const guide = action(irasshai ? t('setup_surface.authenticate_guided_irasshai', 'Use the CLI with the Helpful Assistant') : t('setup_surface.authenticate_guided', 'Use the CLI with Mika'), '', async () => {
           guide.disabled = true;
           const result = await press(`/api/setup/providers/${encodeURIComponent(provider.id)}/login`);
-          if (result?.ok) await context.environment.onMikaProviderGuide({ provider, setupSession: result.data?.attachment?.key || `provider_setup_${provider.id}`, workspace: context.workspace });
+          if (result?.ok) await context.environment.onMikaHarnessGuide({ provider, setupSession: result.data?.attachment?.key || `provider_setup_${provider.id}`, workspace: context.workspace });
           guide.disabled = false;
         });
         guide.classList.add('setup-provider-action');
@@ -427,7 +427,7 @@ export function createProviderDrawing(context, { repaint, say = () => {} }) {
       const terminal = el('div', 'setup-provider-terminal');
       finish(`/api/setup/providers/${encodeURIComponent(provider.id)}/done`);
       authRow.item.append(terminal, completion);
-      mounted = mountProviderAttachment(context.environment, terminal, provider, context.workspace);
+      mounted = mountHarnessAttachment(context.environment, terminal, provider, context.workspace);
       if (!mounted) terminal.append(el('p', 'setup-notice bad', t('setup_surface.login_attachment_missing', 'The native setup session is open but its terminal attachment is unavailable.')));
     }
     // THE SWITCH lives on the Ready step. Activated: Turn off, with the sentence that says
@@ -475,7 +475,7 @@ export function createProviderDrawing(context, { repaint, say = () => {} }) {
   };
   /** The model table under a provider's page; the section is the caller's, appended to host here. */
   const paintModels = (rows, section, host) => {
-    if (!rows.length) { section.append(el('p', 'setup-fine', t('setup_surface.no_models', 'The catalog lists no models for this provider.'))); host.append(section); return; }
+    if (!rows.length) { section.append(el('p', 'setup-fine', t('setup_surface.no_models', 'The catalog lists no models for this harness.'))); host.append(section); return; }
     const table = el('table', 'setup-provider-models');
     const headRow = el('tr');
     for (const text of [t('setup_surface.col_model', 'Model'), t('setup_surface.col_tier', 'Tier')]) headRow.append(el('th', null, text));
@@ -503,13 +503,13 @@ export function createProviderDrawing(context, { repaint, say = () => {} }) {
     host.append(section);
   };
 
-  const paintProvider = (id, host) => {
-    const provider = providerFromRuntime(runtime, id);
-    const rows = providerCatalog().rows.filter((row) => (provider ? row.cli === provider.id : row.provider === id));
-    if (!provider && !rows.length) { host.append(el('p', 'setup-notice bad', t('setup_surface.provider_missing', 'This provider is no longer in the model-provider catalog.'))); return null; }
+  const paintHarness = (id, host) => {
+    const provider = harnessFromRuntime(runtime, id);
+    const rows = harnessCatalog().rows.filter((row) => (provider ? row.cli === provider.id : row.provider === id));
+    if (!provider && !rows.length) { host.append(el('p', 'setup-notice bad', t('setup_surface.provider_missing', 'This harness is no longer in the harness catalog.'))); return null; }
     // Hermes's keys and model options are Model services' (KAN-870); its page shows them, read only.
-    const harness = providerCatalog().providers.find(entry => entry.cli === id);
-    const editor = harness && harnessModelEditor(providerCatalog(), harness);
+    const harness = harnessCatalog().providers.find(entry => entry.cli === id);
+    const editor = harness && harnessModelEditor(harnessCatalog(), harness);
     if (editor) host.append(editor.el);
     if (id === 'hermes') {
       const close = mountModelOptions(host);
@@ -519,14 +519,14 @@ export function createProviderDrawing(context, { repaint, say = () => {} }) {
     yours.append(el('h3', 'setup-provider-eyebrow', t('setup_surface.section_yours', 'Yours')));
     if (provider) paintYours(provider, yours);
     else {
-      yours.append(el('h2', '', rows[0].provider_label), el('p', 'setup-fine', t('setup_surface.no_cli', 'No CLI in Ronin’s registry serves this provider, so it cannot be installed or signed in here.')));
+      yours.append(el('h2', '', rows[0].provider_label), el('p', 'setup-fine', t('setup_surface.no_cli', 'No CLI in Ronin’s registry serves this harness, so it cannot be installed or signed in here.')));
     }
     host.append(yours);
     paintCatalog(rows, provider, host);
-    if (alignedProvider !== id) {
-      alignedProvider = id;
+    if (alignedHarness !== id) {
+      alignedHarness = id;
       requestAnimationFrame(() => {
-        if (!host.isConnected || alignedProvider !== id) return;
+        if (!host.isConnected || alignedHarness !== id) return;
         const current = host.querySelector('.setup-provider-step[data-current="true"]');
         host.scrollTop = current
           ? host.scrollTop + current.getBoundingClientRect().top - host.getBoundingClientRect().top
@@ -547,7 +547,7 @@ export function createProviderDrawing(context, { repaint, say = () => {} }) {
   };
   /** The first frame: the recorded summary, through the one picker's read, at once. */
   const showRecord = async () => {
-    await loadProviderCatalog();
+    await loadHarnessCatalog();
     runtime = recordRuntime();
     await paintFrom();
   };
@@ -556,7 +556,7 @@ export function createProviderDrawing(context, { repaint, say = () => {} }) {
     const result = refresh ? await request('/api/setup/providers/refresh', { method: 'POST', json: {} }) : await request('/api/setup/runtime', { cache: 'no-store' });
     if (!result.ok) { say(result.message, true); return false; }
     runtime = result.data;
-    await loadProviderCatalog();
+    await loadHarnessCatalog();
     await paintFrom();
     return true;
   };
@@ -567,11 +567,11 @@ export function createProviderDrawing(context, { repaint, say = () => {} }) {
   const onFocus = () => { if (runtime.providers?.some((row) => row.login_open)) void measure(); };
   window.addEventListener('focus', onFocus);
   return {
-    paintProvider, paint, showRecord, measure,
+    paintHarness, paint, showRecord, measure,
     /** The open page is gone: the next one scrolls to its current step afresh. */
-    closed: () => { alignedProvider = ''; },
+    closed: () => { alignedHarness = ''; },
     runtime: () => runtime,
-    stones: () => providerStones(runtime),
+    stones: () => harnessStones(runtime),
     destroy: () => { window.removeEventListener('focus', onFocus); disposeMount(); },
   };
 }

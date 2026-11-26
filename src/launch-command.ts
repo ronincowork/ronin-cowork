@@ -1,4 +1,4 @@
-import { providerDefault, type SessionLaunchSpec } from './model-providers.js';
+import { harnessDefault, type SessionLaunchSpec } from './harness-catalog.js';
 import { defaultAgentCommand } from './agents.js';
 
 export interface SessionsDefaults {
@@ -82,13 +82,13 @@ export function resolveLaunchCommand(req: CommandRequest): { cmd: string; source
     const preferred = req.sessions?.by_provider?.[provider] ?? '';
     const chosen = preferred ? matchingModel(within, preferred)?.cmd ?? passthroughModel(within, preferred) : undefined;
     if (chosen) return { cmd: chosen, source: 'settei_provider' };
-    return { cmd: providerDefault(within, provider)!.cmd, source: 'system' };
+    return { cmd: harnessDefault(within, provider)!.cmd, source: 'system' };
   }
 
   const installed = dflt?.provider && dflt?.model
     ? matchingModel(specs.filter((s) => s.provider === dflt.provider), dflt.model)?.cmd
       ?? passthroughModel(specs.filter((s) => s.provider === dflt.provider), dflt.model)
     : undefined;
-  const providerNative = dflt?.provider ? providerDefault(specs, dflt.provider)?.cmd : undefined;
-  return { cmd: installed ?? providerNative ?? defaultAgentCommand(), source: 'system' };
+  const harnessNative = dflt?.provider ? harnessDefault(specs, dflt.provider)?.cmd : undefined;
+  return { cmd: installed ?? harnessNative ?? defaultAgentCommand(), source: 'system' };
 }

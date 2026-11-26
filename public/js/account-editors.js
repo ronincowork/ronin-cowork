@@ -9,14 +9,14 @@
  */
 import { WorkspaceKit } from './workspace-kit.js';
 import { request } from './request.js';
-import { el, loadProviderCatalog } from './form-steps.js';
+import { el, loadHarnessCatalog } from './form-steps.js';
 import { t } from './lexicon.js';
 
 export function kindWord(kind) {
   return {
     subscription: t('accounts.kind_subscription', 'Subscription'),
-    personal_api: t('accounts.kind_personal_api', 'Personal API'),
-    ronin_api: t('accounts.kind_ronin_api', 'Ronin API'),
+    personal_api: t('accounts.kind_personal_api', 'Private API'),
+    ronin_api: t('accounts.kind_ronin_api', 'Ronin Gateway'),
   }[kind] || kind;
 }
 
@@ -40,13 +40,13 @@ function field(name, control) {
 export async function accountAction(action, body, say) {
   const result = await request(`/api/accounts/${action}`, { method: 'POST', json: body });
   if (!result.ok) { say?.(result.message, true); return null; }
-  await loadProviderCatalog();
+  await loadHarnessCatalog();
   return result.data;
 }
 export async function presetAction(action, body, say) {
   const result = await request(`/api/presets/${action}`, { method: 'POST', json: body });
   if (!result.ok) { say?.(result.message, true); return null; }
-  await loadProviderCatalog();
+  await loadHarnessCatalog();
   return result.data;
 }
 
@@ -57,7 +57,7 @@ export async function presetAction(action, body, say) {
 export function accountForm(account = {}, { kind = account.kind || 'personal_api', onSaved = () => {}, onCancel = () => {}, say = () => {} } = {}) {
   const form = el('form', 'hermes-editor accounts-form');
   const editing = !!account.id && !account.seeded;
-  const name = input(account.name || (kind === 'ronin_api' ? t('accounts.ronin_api_name', 'Ronin API') : ''));
+  const name = input(account.name || (kind === 'ronin_api' ? t('accounts.ronin_api_name', 'Ronin Gateway') : ''));
   const url = input(account.baseUrl || (kind === 'ronin_api' ? 'http://127.0.0.1:4912/v1' : 'https://api.openai.com/v1'), 'url');
   const key = input('', 'password'); key.autocomplete = 'new-password';
   form.append(el('h3', null, editing
@@ -105,11 +105,11 @@ export function presetForm(preset = {}, accounts = [], { onSaved = () => {}, onC
     const rows = (a?.models || []).map((id) => [id, id]);
     const options = select(rows, preset.account === a?.id ? preset.model : ''); model.replaceChildren(...options.childNodes); model.value = rows.some(([id]) => id === preset.model) && preset.account === a?.id ? preset.model : rows[0]?.[0] || '';
     const levels = a?.provider === 'openai' || a?.wire === 'responses' ? ['default', 'none', 'low', 'medium', 'high', 'xhigh', 'max'] : ['default'];
-    const choices = select(levels.map((id) => [id, id === 'default' ? t('accounts.reasoning_default', 'Provider default') : id]), levels.includes(preset.reasoning) ? preset.reasoning : a?.provider === 'openai' ? 'medium' : 'default');
+    const choices = select(levels.map((id) => [id, id === 'default' ? t('accounts.reasoning_default', 'Service default') : id]), levels.includes(preset.reasoning) ? preset.reasoning : a?.provider === 'openai' ? 'medium' : 'default');
     const chosen = choices.value; reasoning.replaceChildren(...choices.childNodes); reasoning.value = chosen;
   };
   account.addEventListener('change', populate); populate();
-  form.append(el('h3', null, preset.id ? t('accounts.preset_edit', 'Edit preset') : t('accounts.preset_add', 'Add preset')),
+  form.append(el('h3', null, preset.id ? t('accounts.preset_edit', 'Edit model option') : t('accounts.preset_add', 'Add model option')),
     field(t('accounts.preset_name', 'Name shown under Model'), name), field(t('accounts.preset_account', 'Account'), account), field(t('accounts.preset_model', 'Model'), model),
     field(t('accounts.preset_reasoning', 'Reasoning effort'), reasoning), field(t('accounts.preset_approvals', 'Approvals'), approvals));
   const save = button(t('accounts.save', 'Save'), () => {}, 'primary'); save.type = 'submit';

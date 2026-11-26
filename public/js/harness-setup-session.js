@@ -2,17 +2,17 @@
 /**
  * THE NATIVE SIGN-IN TILE — one mount, handed to every workbench environment that seats
  * the Model providers surface (Ronin Setup and Ronin Settings). The surface asks its
- * environment for `mountProviderSetupSession` (setup-provider-state.js
- * `mountProviderAttachment`); this is the one implementation of it: a headerless
+ * environment for `mountHarnessSetupSession` (setup-harness-state.js
+ * `mountHarnessAttachment`); this is the one implementation of it: a headerless
  * full-mode terminal tile attached to the provider's temporary setup session, parked by
  * Done and Close, destroyed when the surface repaints or the view is torn down.
  */
 import { WorkspaceKit } from './workspace-kit.js';
 
-export function createProviderSetupSessionMount() {
+export function createHarnessSetupSessionMount() {
   const hosts = new Set();
   return {
-    mountProviderSetupSession: ({ host, provider, session, workspace, onClosed } = {}) => {
+    mountHarnessSetupSession: ({ host, provider, session, workspace, onClosed } = {}) => {
       if (!(host instanceof Node) || !session) return null;
       const terminal = WorkspaceKit.adapters.createTerminalTileHost({ mode: 'full' });
       terminal.el.dataset.provider = String(provider?.id || provider || '');
