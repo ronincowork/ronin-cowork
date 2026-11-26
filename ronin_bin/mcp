@@ -9,19 +9,22 @@ TOOL_DIR=$(dirname "$SELF")
 die() { echo "$1" >&2; exit "${2:-2}"; }
 usage() { cat <<'EOF_USAGE'
 Usage:
-  mcp list                                  the MCP servers available to your Campaign: name and what it is for
+  mcp list                                  the MCP servers set up in Settings: name and what it is for
   mcp tools <name> [<tool>]                 its tools, one line each with their arguments (? optional);
                                             with a tool, that one whole
   mcp call <name> <tool> [--json '<args>']  run a tool; --json - reads the arguments from stdin
+  mcp add                                   the integrations Ronin ships ready to set up (Netlify, …)
+  mcp add <name>                            set up one of those: its record is written in Settings
+                                            and its key asked for on your tile (secret ask)
   mcp add <name> <url|command> [--sign-in key|oauth|none] [--secret <s>] [--send '<header>'|'env NAME']
-          [--campaigns <a,b>] [--label <l>] [--description <d>]
+          [--label <l>] [--description <d>]
                                             add a server: Ronin connects, reads what it is for and
                                             writes its record; without its key yet, the record is
                                             written and it asks for the key (secret ask)
-  mcp remove <name>                         its record goes; its secret stays
+  mcp remove <name>                         its record and its key go
 Ronin attaches the key: you never handle it. The key is the secret <name>-api-key unless --secret
-names another; it goes as Authorization: Bearer unless --send says otherwise. --campaigns blank
-makes the server available to every Campaign; a layer's Integrations turns it on.
+names another; it goes as Authorization: Bearer unless --send says otherwise. Adding turns it on
+in Settings, so Workspaces made from then on tell their Agents of it. A web API: api add.
 Related: secret --help; ronin-help integrations
 EOF_USAGE
 }
@@ -31,12 +34,12 @@ case "${1:-}" in -h|--help|'') usage; exit 0;; esac
 ronin_connect || exit $?
 BY=$(ronin_session_me 2>/dev/null || id -un)
 cmd=$1; shift
-json=''; sign_in=''; secret=''; send=''; campaigns=''; label=''; description=''; args=()
+json=''; sign_in=''; secret=''; send=''; label=''; description=''; args=()
 while [ "$#" -gt 0 ]; do
   case "$1" in
-    --json|--sign-in|--secret|--send|--campaigns|--label|--description)
+    --json|--sign-in|--secret|--send|--label|--description)
       [ "$#" -ge 2 ] || die "BAD-ARG: $1 needs a value"
-      case "$1" in --json) json=$2;; --sign-in) sign_in=$2;; --secret) secret=$2;; --send) send=$2;; --campaigns) campaigns=$2;; --label) label=$2;; --description) description=$2;; esac
+      case "$1" in --json) json=$2;; --sign-in) sign_in=$2;; --secret) secret=$2;; --send) send=$2;; --label) label=$2;; --description) description=$2;; esac
       shift 2 ;;
     -h|--help) usage; exit 0 ;;
     *) args+=("$1"); shift ;;
@@ -89,13 +92,28 @@ except Exception: print("BAD-ARG: --json is not JSON", file=sys.stderr); sys.exi
 print(json.dumps({"by": os.environ["BY"], "name": os.environ["N"], "tool": os.environ["T"], "args": args}))') || exit 2
     mcp_call POST /api/mcp/call "$payload" ;;
   add)
-    [ "$#" -eq 2 ] || die 'BAD-ARG: mcp add <name> <url|command> (mcp --help)'
-    payload=$(body by "$BY" name "$1" reach "$2" sign_in "$sign_in" secret "$secret" send "$send" campaigns "$campaigns" label "$label" description "$description")
-    mcp_call POST /api/mcp/add "$payload"; rc=$?
+    [ "$#" -le 2 ] || die 'BAD-ARG: mcp add [<name> [<url|command>]] (mcp --help)'
+    if [ "$#" -eq 0 ]; then
+      # The starting records Ronin ships: one line each.
+      curl -sS -m 30 "${RONIN_CURL[@]+"${RONIN_CURL[@]}"}" "$url/api/mcp/stock" | python3 -c '
+import json, sys
+try: d = json.loads(sys.stdin.read())
+except Exception: print("The MCP broker (a Ronin Services part) is not running here.", file=sys.stderr); sys.exit(4)
+for r in d.get("stock", []): print("%s: %s" % (r["name"], r.get("description") or r.get("label")))
+print("mcp add <name> sets one up and asks for its key.")' || exit $?
+      exit 0
+    fi
+    if [ "$#" -eq 1 ]; then
+      label=${label:-$1}
+      mcp_call POST /api/mcp/stock "$(body by "$BY" name "$1")"; rc=$?
+    else
+      payload=$(body by "$BY" name "$1" reach "$2" sign_in "$sign_in" secret "$secret" send "$send" label "$label" description "$description")
+      mcp_call POST /api/mcp/add "$payload"; rc=$?
+    fi
     # Add now, authenticate later: the record is written; ask for a key it still needs.
     if [ "$rc" -eq 0 ] && [ -n "$NEED_SECRET" ]; then
       echo "Asking for $NEED_SECRET on your tile…" >&2
-      saved=$("$TOOL_DIR/secret" ask "$NEED_SECRET" --for "${label:-$1} key, for its MCP server") || exit 4
+      saved=$("$TOOL_DIR/secret" ask "$NEED_SECRET" --for "${label:-$1} key") || exit 4
       echo "$saved"
     fi
     exit "$rc" ;;

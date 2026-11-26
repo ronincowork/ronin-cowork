@@ -2,8 +2,7 @@ import type { BriefSettings } from './brief-record.js';
 import { layerOf } from './brief-settings.js';
 import { readMachineSettingsSection, writeMachineSettings } from './machine-settings.js';
 import { agentDefaults, type AgentDefaults } from './agent-defaults.js';
-import { parseProviderSummary, type ProviderSummary } from './model-providers.js';
-import { CAPABILITY_ON_BY_DEFAULT, SERVICE_CAPABILITY_PARTS } from './parts.js';
+import { parseHarnessSummary, type HarnessSummary } from './harness-catalog.js';
 
 async function readCampaigns(): Promise<Record<string, unknown>> {
   return readMachineSettingsSection<Record<string, unknown>>('campaigns', {});
@@ -14,8 +13,6 @@ async function writeCampaigns(campaigns: Record<string, unknown>): Promise<void>
 }
 
 export interface CampaignSettings {
-  installations: Record<string, boolean>;
-  services: { parts: Record<string, boolean> };
   defaults: AgentDefaults;
   cowork_defaults: Record<string, unknown>;
   template_defaults: Record<string, unknown>;
@@ -46,7 +43,7 @@ export interface CampaignConfig {
   created_at: string;
   config: CampaignSettings;
   /** What this machine measured of its model providers, dated; null until Ronin has measured once. */
-  providers: ProviderSummary | null;
+  providers: HarnessSummary | null;
 }
 
 export type CampaignState = 'active' | 'archived';
@@ -58,8 +55,6 @@ export interface CampaignEdit {
   desk?: Partial<CampaignDeskSettings>;
   state?: CampaignState;
   config?: {
-    installations?: Record<string, boolean>;
-    services?: { parts?: Record<string, boolean> };
     defaults?: Partial<AgentDefaults>;
     cowork_defaults?: Record<string, unknown>;
     template_defaults?: Record<string, unknown>;
@@ -103,43 +98,11 @@ const DESK_VALUE_MAX = 120;
 const bucket = (v: unknown): Record<string, unknown> =>
   v && typeof v === 'object' && !Array.isArray(v) ? (v as Record<string, unknown>) : {};
 
-/** A new Campaign writes every capability down, reading what a missing choice means from
- * the parts layer rather than inventing a default of its own. */
-const emptyServiceCapabilities = (): Record<string, boolean> =>
-  Object.fromEntries(Object.keys(SERVICE_CAPABILITY_PARTS).map((name) => [name, CAPABILITY_ON_BY_DEFAULT.has(name)]));
-
-const capabilitySettings = (raw: Record<string, boolean>): Record<string, boolean> => {
-  const capabilityKeys = new Set(Object.keys(SERVICE_CAPABILITY_PARTS));
-  const knownParts = new Set<string>(Object.values(SERVICE_CAPABILITY_PARTS).flat());
-  const out = Object.fromEntries(Object.entries(raw)
-    .filter(([key]) => !knownParts.has(key) && !capabilityKeys.has(key)));
-  const explicit = (name: string, fallback: boolean): boolean =>
-    Object.prototype.hasOwnProperty.call(raw, name) ? raw[name] === true : fallback;
-  // An explicit choice always wins. Where there is none, the parts layer says what the
-  // capability does, so the legacy per-part flags no longer decide it.
-  for (const name of capabilityKeys) out[name] = explicit(name, CAPABILITY_ON_BY_DEFAULT.has(name));
-  return out;
-};
-
-const serviceSettings = (v: unknown): { parts: Record<string, boolean> } => {
-  const value = bucket(v);
-  return {
-    // A Campaign with no choices recorded gets the stock map, and the stock map is what
-    // the parts layer says. Nothing is seeded here: a second hand-written default is how
-    // a Campaign ends up deciding what runs.
-    parts: Object.prototype.hasOwnProperty.call(value, 'parts')
-      ? capabilitySettings(booleanMap(value.parts))
-      : emptyServiceCapabilities(),
-  };
-};
-
 const settings = (v: unknown): CampaignSettings => {
   const c = bucket(v);
   const defaults = bucket(c.defaults);
   const layer = layerOf('campaign', c);
   return {
-    installations: booleanMap(c.installations),
-    services: serviceSettings(c.services),
     defaults: agentDefaults(defaults),
     cowork_defaults: bucket(c.cowork_defaults),
     template_defaults: bucket(c.template_defaults),
@@ -212,7 +175,7 @@ function parse(id: string, raw: string): CampaignConfig | null {
     state: doc.state === 'archived' ? 'archived' : 'active',
     created_at: typeof doc.created_at === 'string' && doc.created_at ? doc.created_at : '',
     config: settings(doc.config),
-    providers: parseProviderSummary(doc.providers),
+    providers: parseHarnessSummary(doc.providers),
   };
 }
 
@@ -224,12 +187,6 @@ async function writeRecord(c: CampaignConfig): Promise<CampaignConfig> {
 
 async function completeAgentDefaults(value: unknown): Promise<AgentDefaults> {
   return agentDefaults(value);
-}
-
-async function completeInstallations(value: unknown): Promise<Record<string, boolean>> {
-  const { listInstallations } = await import('./resource-adapters.js');
-  const choices = booleanMap(value);
-  return Object.fromEntries((await listInstallations()).map((row) => [row.name, choices[row.name] ?? false]));
 }
 
 export async function readCampaign(id: string): Promise<CampaignConfig | null> {
@@ -284,8 +241,6 @@ export async function createCampaign(edit: CampaignEdit & { id?: string }): Prom
     providers: null,
     config: {
       ...settings(edit.config),
-      services: { parts: emptyServiceCapabilities() },
-      installations: await completeInstallations(settings(edit.config).installations),
       defaults: await completeAgentDefaults(settings(edit.config).defaults),
     },
   });
@@ -307,10 +262,6 @@ export async function writeCampaign(id: string, edit: CampaignEdit): Promise<Cam
     ...(edit.config !== undefined
       ? {
           config: {
-            installations: edit.config.installations === undefined
-              ? existing.config.installations : await completeInstallations(edit.config.installations),
-            services: edit.config.services === undefined
-              ? existing.config.services : serviceSettings(edit.config.services),
             defaults: edit.config.defaults === undefined
               ? existing.config.defaults : await completeAgentDefaults(edit.config.defaults),
             cowork_defaults: edit.config.cowork_defaults === undefined
@@ -334,7 +285,7 @@ export async function writeCampaign(id: string, edit: CampaignEdit): Promise<Cam
 }
 
 /** The runtime's own write: the measured provider summary, hung on the Campaign. Nothing else in the record moves. */
-export async function writeCampaignProviders(id: string, providers: ProviderSummary): Promise<CampaignConfig> {
+export async function writeCampaignHarnesses(id: string, providers: HarnessSummary): Promise<CampaignConfig> {
   const existing = await readCampaign(id);
   if (!existing) throw new Error(`Campaign "${id}" does not exist.`);
   return writeRecord({ ...existing, providers });

@@ -116,8 +116,8 @@ export function build() {
   // have to look somewhere else to find out. Each tile head carries its own switch, next
   // to that tile's other controls, showing that tile's state. See Tile.setLocked.
 
-  // Mika is the `mika` tool and the desk's own asks; the pad panel opens from the Keypad
-  // row of the commons (js/cowork-commons.js) and its physical keys never needed a button.
+  // Mika is the `mika` tool and the desk's own asks; the pad panel opens from the bar's keypad
+  // and its physical keys never needed a button.
   // Work Louder pad — both surfaces (owner override). The
   // physical pad fires bound terminal/navigation keys whether or not the panel is open.
   // Session switcher — the pad key's list (also usable with plain ↑↓/↵ once open).

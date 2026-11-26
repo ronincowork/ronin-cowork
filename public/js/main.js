@@ -12,16 +12,14 @@ import { loadProjects } from './home.js';
 import { build } from './layout.js';
 import { S, tiles } from './state.js';
 import { installTips } from './tips.js';
-import { installServicesStatus } from './services-activation.js';
 import { createWorkspace } from './workspace.js';
 import { createCoworkView } from './cowork-view.js';
 import { createAgentView } from './agent-view.js';
 import { createCampaignHome } from './campaign-home.js';
 import { createEpicsView, createHelpView, createModelsView, createWorkspacesView } from './door-workbenches.js';
 import { createWorkspaceRoute } from './workspaces-surface.js';
-import { createCampaignView } from './campaign-view.js';
+import { createSettingsV2View } from './settings-v2-view.js';
 import { createSetupView } from './setup-view.js';
-import { setupFinished } from './setup-progress.js';
 import { createLaunchView } from './launch-view.js';
 import { installWorkspaceHeader } from './workspace-header.js';
 import { WorkspaceKit } from './workspace-kit.js';
@@ -29,6 +27,7 @@ import { installCustomize } from './customize.js';
 import { t } from './lexicon.js';
 import { applyPageWords } from './pagewords.js';
 import { installFeedbackButton } from './feedback.js';
+import { createThemeToggle } from './theme-toggle.js';
 
 async function init() {
   const reveal = () => document.documentElement.classList.remove('boot-pending');
@@ -52,7 +51,6 @@ async function init() {
   // rather than appearing a minute in. Guarded like every other mount: a box that
   // cannot answer /api/machine must still get its coworkspace.
   const ramRpm = guard('mount RAM_RPM', mountRamRpm, { setVisible() {} });
-  const servicesStatus = guard('services activation status', installServicesStatus, { setVisible() {} });
 
   // HOW TALL THE APPLICATION IS, before anything lays itself out inside it: every surface
   // below is measured against this, so it has to be right for the first paint, not the
@@ -87,12 +85,13 @@ async function init() {
     leadingSlot: document.getElementById('viewleading'),
     actionsSlot: document.getElementById('viewactions'),
     ramRpm,
-    servicesStatus,
     onNavigate: () => refreshWorkspaceHeader(),
   });
   workspace.kit = WorkspaceKit;
   S.workspace = workspace;
   installFeedbackButton(workspace);
+  // Light/dark, one button on every page (owner, 25 Nov; KAN-866). Phone keeps its own.
+  document.getElementById('themeaction')?.replaceChildren(createThemeToggle());
   refreshWorkspaceHeader = installWorkspaceHeader(workspace);
   S.refreshWorkspaceHeader = refreshWorkspaceHeader;
   // The Team destination. Registered beside the compatibility Sessions grid, not over it:
@@ -119,16 +118,17 @@ async function init() {
   guard('register the Epics destination', () => workspace.register('epics', createEpicsView()));
   // One Epic on its own page (w899): Layer 2, under the Epics appearance; not a tilespace workbench.
   // One Workspace on its own page (KAN-784): Layer 2, under the Workspaces appearance.
-  guard('register the Workspace destination', () => workspace.register('workspace', { ...createWorkspaceRoute(), appearance: 'workspaces', header: { ram: true, services: true } }));
+  guard('register the Workspace destination', () => workspace.register('workspace', { ...createWorkspaceRoute(), appearance: 'workspaces', header: { ram: true } }));
   guard('register the Help destination', () => workspace.register('help', createHelpView()));
   // the same workbench, selector column, persistence, recall and drag/drop as the Cowork
   // space, offering a Campaign's own configuration instead of its Coworks and Agents.
-  guard('register the Campaign destination', () => workspace.register('campaign', createCampaignView()));
+  // Settings: the one (owner, 26 Nov); the route keeps its code name settings2.
+  guard('register the Settings destination', () => workspace.register('settings2', createSettingsV2View()));
+  // Setup opens at #/setup on every office; only hosted Home has its stone (KAN-856, w997).
   guard('register the Setup destination', () => workspace.register('setup', createSetupView()));
   guard('register the Launch destination', () => workspace.register('launch', createLaunchView()));
-  // A bare address lands on Setup until Setup is done (KAN-720); a named page opens itself.
-  const bare = !location.hash.replace(/^#\/?/, '');
-  workspace.start(bare && !(await setupFinished()) ? 'setup' : '');
+  // A bare address goes Home.
+  workspace.start('');
 
   // THE DESKTOP FIRST PAINT ends here: the route's real workspace is mounted and the
   // header now belongs to it. Session discovery, event wiring and home catalogs below

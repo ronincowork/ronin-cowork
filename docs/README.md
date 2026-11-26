@@ -10,7 +10,9 @@ route depends on the task, not on who is reading.
 | Learn the four things a new user needs | [Team Lead and edges](using-ronin/team-lead-and-edges.md), [work records](using-ronin/what-agents-write-down.md), [tools](using-ronin/agent-tools.md), and [customizing](getting-started/customize.md); all four head the **Help** door on Ronin Home |
 | Understand Ronin and decide whether it fits | [Ronin overview](../README.md) and [machine and work boundaries](getting-started/how-ronin-protects-you.md) |
 | Choose a machine and install Ronin | [Prepare a machine](getting-started/rent-a-machine.md), then [install](getting-started/install.md) |
-| Finish setup and start one working Agent | [Get started](getting-started/get-started.md), [Ronin Setup](getting-started/setup-workbench.md), and [provider sign-in](getting-started/provider-sign-in.md) |
+| Finish setup and start one working Agent | [Get started](getting-started/get-started.md), [Ronin Setup](getting-started/setup-workbench.md), and [provider sign-in](getting-started/harness-sign-in.md) |
+| Connect a model service or trace which model an Agent uses | [Model services](architecture/model_services_README.md) |
+| Learn how Agents begin and how work runs | [Ronin Tour](getting-started/tour.md) |
 | Find and arrange my work | [Workbench](using-ronin/workbench.md) and [the tile](using-ronin/tile.md) |
 | Choose where Ronin works | [Workspaces](using-ronin/workspaces.md) |
 | Browse and manage the machine's files | [Explorer](using-ronin/explorer.md) |
@@ -22,7 +24,7 @@ route depends on the task, not on who is reading.
 | Archive or restore an Agent | [Archived sessions](using-ronin/archived-sessions.md) |
 | Use a private branch and hand work in | [Managed worktrees](using-ronin/desks.md) |
 | Change my appearance or Agent guidance | [Customize Ronin](getting-started/customize.md) |
-| Add optional Services or understand what they send | [Ronin Services](getting-started/services-activation.md) |
+| What Ronin Services gives and what it sends | [Ronin Services](getting-started/services-activation.md) |
 | Check the install or troubleshoot the machine | [Operating guides](operating/README.md), including [install health](operating/install-health.md) and [private access](operating/vpn.md) |
 | Give product feedback | [Feedback](using-ronin/feedback.md) |
 
@@ -40,6 +42,7 @@ change area to its code, UI, stores, Services, documentation, and tests.
 |---|---|
 | What do the names mean? | [KOTOBA](../KOTOBA.md) and [Agent glossary](../KOTOBA_GLOSSARY.md) |
 | How are tools and Agent instructions composed? | [The brief](architecture/brief.md) |
+| What is in Settings, and what is not? | [Settings](architecture/settings.md): its sections, the links into it, what moved elsewhere |
 | How does an outside service or MCP server reach Agents? | [Integrations](architecture/integrations.md): bridges, MCP server records, keys, who has it, and the `mcp` broker |
 | How do configuration and owner customizations resolve? | [the three places](../ronin_stock/stock_readme.md#three-places-each-with-one-meaning), [Installations](architecture/installations.md) and [shadowing](architecture/shadowing.md) |
 | How is project management built, and who reads which brief? | [Project management: contents](architecture/project-management.md): briefs, tools, code and the Jira bridge |
@@ -49,7 +52,7 @@ change area to its code, UI, stores, Services, documentation, and tests.
 | What does an Agent's Chat read? | [Agent output](architecture/agent-output.md): a log read and a terminal read write one file per Agent; Chat only reads it |
 | How does the server run terminals and optional parts? | [Runtime connection](architecture/tmux-connection.md) and [Services contracts](https://github.com/ronincowork/ronin-services/blob/dev/README.md#understand-or-change-services) |
 | Where do an Agent's temp files and processes live, and when do they go? | [Agent temp and processes](architecture/agent-scope.md): on disk under the session, in its own scope, gone when it ends |
-| How are provider CLIs integrated and launched? | [Agent launch method](architecture/agent-launches.md), [Agent integrations](agents/README.md), and [provider catalog](architecture/model-providers.md) |
+| How are provider CLIs integrated and launched? | [Agent launch method](architecture/agent-launches.md), [Agent integrations](agents/README.md), and [provider catalog](architecture/harness-catalog.md) |
 | How do Workbenches place, restore, launch, and load their surfaces? | [Workbench construction](architecture/workbench.md) and [Workspace Kit](architecture/workspace-kit.md) |
 | How do I contribute and verify a change? | [CONTRIBUTING](../CONTRIBUTING.md), [Agent route](../AGENTS.md), and [development references](development/README.md) |
 | Where does a new file or directory belong? | [Repository layout and ownership](architecture/repository-layout.md) |
@@ -60,7 +63,8 @@ including a user extending Ronin; they do not require access to the creators' La
 ## Ideas and work in progress: Ronin Lab
 
 Ronin Lab is a place for ideas, research, plans, and notes before or across projects.
-Setup gives each owner a Lab; the Ronin creators use their own Lab in the same way.
+Nothing makes a Lab until someone picks it in Setup's Workspace step; then it is an ordinary
+Workspace, with its own folder. The Ronin creators use their own Lab in the same way.
 A Lab can use Git to preserve its notes without being the code repository for one project.
 
 The creators' buildouts, audits, proposals, and rollout records belong in their

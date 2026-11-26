@@ -31,17 +31,15 @@ import { installedAnswer } from './routes/installed-api.js';
 import { loadMembers, officePeople, type Person } from './office-people.js';
 import { readUserIntro } from './user-intro.js';
 import { listWorkspaces } from './workspaces.js';
-import { readWorkspaceSummary } from './workspace-doc.js';
 import { listPlans } from './plans.js';
 import { listCanvases } from './canvases.js';
 import { AGENTS } from './agents.js';
-import { readProviderSummary } from './provider-summary.js';
-import { partProviderRows } from './provider-parts.js';
+import { readHarnessSummary } from './harness-summary.js';
 import { githubSetupAnswer } from './setup-runtime.js';
 import { integrationsState } from './integrations.js';
 import { discoverParts } from './parts.js';
 import { listServices } from './sockets.js';
-import { accountsAnswer } from './accounts.js';
+import { modelServices } from './model-services.js';
 import { DONE, listItems, type WorkItem } from './work-items.js';
 import { listLetterHolds } from './tegami.js';
 import { listTeamRosters } from './team-rosters.js';
@@ -98,15 +96,27 @@ async function aboutUser(): Promise<Built> {
 }
 
 // ---- THE OFFICE'S STATES that a fact prints and Setup ticks from (src/setup-progress.ts): one meaning each.
-/** The providers Activated: each CLI the provider summary has operational, and each house row that is. */
-export const providersOn = (summary: Awaited<ReturnType<typeof readProviderSummary>>, rows: Awaited<ReturnType<typeof partProviderRows>>): string[] =>
-  [...AGENTS.filter((a) => summary?.operational.includes(a.id) && !summary.off.includes(a.id)).map((a) => a.label), ...rows.filter((row) => row.operational).map((row) => row.label)];
-export async function activatedProviders(): Promise<string[]> {
-  return providersOn(await readProviderSummary().catch(() => null), await partProviderRows().catch(() => []));
+/** THE PERSON'S OWN HARNESSES (owner, 2026-11-24; w926): each CLI harness Activated here, never
+ * Ronin's house models. Hosted Setup's Harness step, and the office start that makes Irasshai, read this. */
+export const harnessesOn = (summary: Awaited<ReturnType<typeof readHarnessSummary>>): string[] =>
+  AGENTS.filter((a) => summary?.operational.includes(a.id) && !summary.off.includes(a.id)).map((a) => a.label);
+export async function ownHarnesses(): Promise<string[]> { return harnessesOn(await readHarnessSummary().catch(() => null)); }
+/** The Workspaces made: any not archived, Ronin Lab included (owner, 25 Nov; Setup's Workspace step:
+ * its "Not sure yet" door makes only Ronin Lab, and that ticks it). */
+export async function madeWorkspaces(): Promise<string[]> {
+  const all = await listWorkspaces(await initialCampaignId()).catch(() => []);
+  return all.filter((w) => !w.archived).map((w) => w.name);
 }
-/** Anything installed: a Services part on this machine, or an installation switched on. */
+/** The Teams with a live lead (hosted Setup's Team step). */
+export async function ledTeams(): Promise<string[]> {
+  const campaign = await initialCampaignId();
+  const [rosters, sessions] = await Promise.all([listTeamRosters().catch(() => []), listSessions().catch(() => [])]);
+  return rosters.filter((team) => team.state !== 'archived' && (!campaign || team.campaign_id === campaign)
+    && sessions.some((one) => one.agent && one.leads.includes(team.name))).map((team) => team.name);
+}
+/** Anything installed: a Services part on this machine. */
 export const anythingInstalled = (installed: Awaited<ReturnType<typeof installedAnswer>> | null): boolean =>
-  !!installed && (installed.services.installed || installed.installations.some((one) => one.on));
+  !!installed && installed.services.installed;
 /** How the browser reaches Ronin: a password set, or the owner's "Tailscale only, no password"
  * setting (machine settings' machine.no_password); and the tailnet address, '' off Tailscale. */
 export async function browserAccess(): Promise<{ password: boolean; no_password: boolean; tailscale: string }> {
@@ -134,10 +144,8 @@ async function machine(): Promise<Built> {
   const services = installed?.services;
   const parts = !services?.loaded.length ? ['Ronin Services: not running'] : [
     `Ronin Services running: ${services.loaded.join(', ')}`,
-    ...services.parked.map((one) => `Parked: ${one.name}${'reason' in one && one.reason ? ` (${one.reason})` : ''}`),
-    ...(services.restart_needed ? ['A restart is needed for the parts switched on or off to take effect'] : []),
+    ...services.parked.map((one) => `Parked: ${one.name}${one.reason ? ` (${one.reason})` : ''}`),
   ];
-  const on = installed?.installations.filter((one) => one.on).map((one) => one.label) ?? [];
   const browser = access.password ? 'a password is set'
     : access.no_password ? `no password: the owner chose ${access.tailscale ? 'Tailscale only' : 'no password'}` : 'no password set, and none chosen';
   const line = `${host}, ${hosting.hosting === 'office_unit' ? 'hosted' : 'self-hosted'}, Ronin ${ronin.release ?? 'checkout'}${disk ? `, ${gb(disk.bavail)} GB free` : ''}${services?.loaded.length ? ', Ronin Services running' : ''}`;
@@ -146,21 +154,20 @@ async function machine(): Promise<Built> {
     `Ronin ${ronin.release ?? 'checkout'} (${ronin.commit}), running since ${stamp(ronin.startedAt)} UTC`,
     ...(disk ? [`Disk: ${gb(disk.bavail)} GB free of ${gb(disk.blocks)} GB`] : []),
     ...parts,
-    `Installations switched on: ${on.join(', ') || 'none'}`,
     `Browser access: ${browser}`,
     `Tailscale: ${access.tailscale ? `on, ${access.tailscale}` : 'not on this machine'}`,
     `Registered with Ronin: ${registered === 'registered' ? 'yes' : registered === 'anonymous' ? 'yes, anonymously' : 'no'}`,
   ]) };
 }
 
-// ---- workspaces: each Workspace, its folders, repositories, objective, Summary, plans and canvases.
+// ---- workspaces: each Workspace, its objective (what the project is), folders, repositories, plans and canvases.
 async function workspaces(): Promise<Built> {
   const campaign = await initialCampaignId();
   const all = (await listWorkspaces(campaign).catch(() => [])).filter((w) => !w.archived);
   const shown = await Promise.all(all.map(async (w) => {
-    const [sum, plans, canvases] = await Promise.all([readWorkspaceSummary(w.name).catch(() => ''), listPlans(w).catch(() => []), listCanvases(w).catch(() => [])]);
+    const [plans, canvases] = await Promise.all([listPlans(w).catch(() => []), listCanvases(w).catch(() => [])]);
     const facts = (i: Record<string, unknown>) => Object.entries(i).filter(([key]) => key !== 'provider').map(([key, value]) => `${key} ${String(value)}`).join(', ');
-    return [`### ${w.title || w.name} (${w.name})`, w.objective || '', sum ? `Summary: ${sum}` : 'Summary: none yet',
+    return [`### ${w.title || w.name} (${w.name})`, `Objective: ${w.objective || 'none yet'}`,
       `Repos: ${w.repos.map((r) => `${r.name} ${r.dir} (${r.mode}${r.desks === 'managed' ? ', desks' : ''})`).join('; ') || 'none'}`,
       `Folders: ${w.folders.map((f) => `${f.name} ${f.dir}`).join('; ') || 'none'}`,
       `Integrations: ${w.integrations.map((i) => [i.provider, facts(i)].filter(Boolean).join(' ')).join('; ') || 'none'}`,
@@ -170,13 +177,13 @@ async function workspaces(): Promise<Built> {
   return { line: all.length ? `${all.length}: ${all.map((w) => w.name).join(', ')}` : 'none yet', lines: shown.length ? shown : ['- none yet'] };
 }
 
-// ---- integrations_authentications: model providers, GitHub, integrations (MCP servers and web APIs included), Hermes accounts.
+// ---- integrations_authentications: harnesses, GitHub, integrations (MCP servers and web APIs included), model services.
 async function integrationsAuthentications(): Promise<Built> {
   const campaign = await initialCampaignId();
   const parts = { onDisk: discoverParts().map((part) => part.name), loaded: listServices() };
-  const [summary, rows, github, services, accounts] = await Promise.all([
-    readProviderSummary().catch(() => null), partProviderRows().catch(() => []), githubSetupAnswer().catch(() => null),
-    integrationsState(campaign, parts).catch(() => []), accountsAnswer().catch(() => null),
+  const [summary, github, services, accounts] = await Promise.all([
+    readHarnessSummary().catch(() => null), githubSetupAnswer().catch(() => null),
+    integrationsState(campaign, parts).catch(() => []), modelServices().catch(() => []),
   ]);
   githubBuilt = githubKey(github);
   // THE ONE WORDING of a provider's state (FACTS.md): not installed, installed not signed in, signed in not activated, Activated, turned off.
@@ -185,21 +192,20 @@ async function integrationsAuthentications(): Promise<Built> {
     : summary.signed_in.includes(id) ? 'signed in, not activated' : 'installed, not signed in';
   const providers = [
     ...AGENTS.map((a) => `${a.label}${summary?.versions[a.id] ? ` ${summary.versions[a.id]}` : ''}: ${stateOf(a.id)}`),
-    ...rows.map((row) => `${row.label}: ${row.operational ? 'Activated' : 'not available'} (Ronin's house models)`),
-    summary ? `Last measured ${stamp(summary.measured_at)} UTC` : 'Not measured yet: Setup → Model providers measures them',
+    summary ? `Last measured ${stamp(summary.measured_at)} UTC` : 'Not measured yet: Setup → Harness measures them',
   ];
   const gh = !github ? 'GitHub CLI: unreadable' : !github.installed ? 'GitHub CLI: not installed (needed to clone a GitHub repository)'
     : github.authenticated ? `GitHub CLI: signed in as ${github.account}` : 'GitHub CLI: installed, not signed in (needed to clone a private repository)';
-  const connected = (one: (typeof services)[number]) => !!(one.secrets.length || one.mcp?.saved);
-  const integrations = services.map((one) => `${one.label}: ${connected(one) ? 'connected' : one.available ? 'available, not connected' : 'not available for this Desk'}${one.workspaces.length ? ` in ${one.workspaces.join(', ')}` : ''}`);
-  const hermes = (accounts?.accounts ?? []).map((a) => `${a.name} (${a.kind}): ${a.configured ? 'set up' : 'not set up'}${a.models.length ? `, ${a.models.length} models` : ''}`);
-  const on = providersOn(summary, rows);
-  const line = `Activated: ${on.join(', ') || 'none'}; connected: ${services.filter(connected).map((one) => one.label).join(', ') || 'none'}${github?.authenticated ? '; GitHub signed in' : ''}`;
+  const connected = (one: (typeof services)[number]) => one.saved;
+  const integrations = services.map((one) => `${one.label}: ${connected(one) ? 'set up' : 'set up, key not saved'}${one.workspaces.length ? ` in ${one.workspaces.join(', ')}` : ''}`);
+  const modelServiceLines = accounts.map((a) => `${a.name}: ${a.configured ? 'set up' : 'not set up'}${a.models.length ? `, ${a.models.length} model entries` : ''}; works with ${a.bound.join(', ')}`);
+  const own = harnessesOn(summary);
+  const line = `Harnesses Activated: ${own.join(', ') || 'none'}; connected: ${services.filter(connected).map((one) => one.label).join(', ') || 'none'}${github?.authenticated ? '; GitHub signed in' : ''}`;
   return { line, lines: [
-    'Model providers:', ...bullets(providers), '',
+    'Harnesses:', ...bullets(providers), '',
     'Developer tools:', ...bullets([gh]), '',
     'Integrations:', ...bullets(integrations), '',
-    'Hermes accounts:', ...bullets(hermes),
+    'Model services:', ...bullets(modelServiceLines),
   ] };
 }
 
@@ -278,7 +284,7 @@ const FACTS: Fact[] = [
     stores: [{ store: 'office_unit', match: /members\.json$/ }, { store: 'facts', match: /^user-intro\.md$/ }, { store: 'office', match: /^ABOUT_USER\.md$/ }] },
   { name: 'machine', title: 'The machine', build: machine,
     stores: [{ store: 'office_unit', match: /office_record\.json$/ }, { store: 'config' }, { store: 'campaigns' }, { store: 'services_secrets' }] },
-  { name: 'workspaces', title: 'Workspaces', build: workspaces, stores: [{ store: 'workspaces' }, { store: 'office', match: /^workspaces\// }] },
+  { name: 'workspaces', title: 'Workspaces', build: workspaces, stores: [{ store: 'workspaces' }] },
   { name: 'integrations_authentications', title: 'Integrations and authentications', build: integrationsAuthentications,
     stores: [{ store: 'campaigns' }, { store: 'custom' }, { store: 'services_secrets' }, { store: 'config' }, { store: 'workspaces' }] },
   // Never the session store: it holds every Agent's tmp/ (tens of thousands of folders), and one

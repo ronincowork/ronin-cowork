@@ -45,14 +45,15 @@ export function createWarmTerminalPool({
   };
 
   /** Most-recently-shown wins; the coldest UNPINNED warm tile parks when the cap is
-   *  exceeded. The active member is at the tail and is never the one parked. */
+   *  exceeded. The active member, and the one touched now (a borrowed tile on screen over a
+   *  work surface, KAN-811), are never the one parked. */
   const touch = (name, asColdest = false) => {
     unlist(name);
     if (asColdest) lru.unshift(name);
     else lru.push(name);
     while (lru.length > streamCap) {
-      const coldest = lru.find((n) => n !== active && !pinned.has(n));
-      if (!coldest) break; // everything left is pinned or watched — the cap yields
+      const coldest = lru.find((n) => n !== active && n !== name && !pinned.has(n));
+      if (!coldest) break; // everything left is pinned, watched or just touched — the cap yields
       park(coldest);
     }
   };

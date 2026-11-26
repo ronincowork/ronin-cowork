@@ -11,7 +11,7 @@ checked with `npm run byoin`.
 |---|---|---|
 | `ronin_stock/` (this folder, in the image) | everything Ronin ships | Ronin's repository only; an image update replaces it whole |
 | `~/ronin/custom/` | the person's own files, in the same folders as here; empty on a new office | the person, and Agents for them |
-| `~/ronin/office/` | office-output: what the fact builders and Agents write about the office (the office-facts in `facts/`, `MACHINE_STATUS.md`, `ABOUT_USER.md`, the Workspace Summaries in `workspaces/`) | the fact builders, Agents |
+| `~/ronin/office/` | office-output: what the fact builders and Agents write about the office (the office-facts in `facts/`, `MACHINE_STATUS.md`, `ABOUT_USER.md`) | the fact builders, Agents |
 
 **The one rule, for every reader:** a file in `~/ronin/custom/<folder>/` replaces the file of the
 same id in `ronin_stock/<folder>/`, whole, or adds one. Nothing is seeded, copied or merged.
@@ -42,11 +42,10 @@ The words are in [KOTOBA.md](../KOTOBA.md) (Agent composition and tools); the br
 | `facts/` | one fact-print per fact | How the brief prints each fact. |
 | `playbooks/` | one `PLAYBOOK-n.json` per playbook item | Ronin's playbooks: `item checkout PLAYBOOK-n` copies one into live work. |
 | `workspace_types/` | one file per project type and variant | What a new Workspace can be; the new-workspace behaviour lists them (`lists: workspace_types`). |
-| `services/` | `ronin_services.md` | Ronin Services: Ronin's own switchable contribution and the parts it runs. |
 | `desk_profiles/` | one file per profile | Named presentation and workspace defaults copied into Campaign configuration. |
 | `lexicons/` | one file per lexicon | Surface words; `professional_en.md` is the complete floor. |
 | `canvases/` | one outline per file | What a canvas starts from (`canvas templates`). |
-| root | `MODEL_PROVIDERS.md`, `SKINS.md` | Flat registries; a custom copy replaces an entry by its name (`docs/architecture/shadowing.md`). |
+| root | `SKINS.md` | Flat registries; a custom copy replaces an entry by its name (`docs/architecture/shadowing.md`). |
 
 The custom folder also holds the person's MCP server and web API records,
 `~/ronin/custom/integrations/<name>.md`, written by `mcp add` and `api add`.
@@ -61,10 +60,9 @@ One file in `behaviours/`, `tools/` or `facts/` with the shared header
 nothing else changes. Every tool is on every Agent's PATH; a header decides only what the Agent
 is told. An agent-facing tool is one executable in `ronin_bin/` and its file in `tools/`.
 
-An integration is a bridge: `behaviours/<name>-bridge.md` with `when: integration:<name>`.
-`services/<name>.md` is one machine installation: `effect` is `system` (its reading, tools and
-parts join every Cowork Agent birth) or `provider` (it `provides` behaviours);
-`docs/architecture/installations.md` owns the cascade.
+An integration is a record in Settings, and a bridge is `behaviours/<name>-bridge.md` with
+`when: integration:<name>` (`docs/architecture/integrations.md`). Ronin Services has no file here:
+where it ships, every part runs (`docs/architecture/installations.md`).
 
 ## Adding a desk profile or a lexicon
 

@@ -4,10 +4,10 @@
  * the user's own facts, behaviours and tools.
  */
 import type express from 'express';
-import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
+import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { AGENT_BRIEF, BIRTH_BRIEF } from '../birth-brief.js';
-import { briefOff, briefTold, cascade, layerOf, readUserLayer, userBriefFile, type Layer, type LayerName } from '../brief-settings.js';
+import { briefOff, briefTold, layerOf, type Layer, type LayerName } from '../brief-settings.js';
 import { BehaviourDocumentError, createBehaviourDocument, readBehaviourDocument, updateBehaviourDocument } from '../behaviour-documents.js';
 import { initialCampaignId } from '../campaign-scope.js';
 import { readCampaign, writeCampaign } from '../campaigns.js';
@@ -16,67 +16,52 @@ import { CONDITIONALS } from '../conditionals.js';
 import { person } from '../office-people.js';
 import { sessionDir, sessionKey } from '../session-dir.js';
 import { resolveBriefFor, resolveFacts, type SpawnForm } from '../spawn.js';
-import { availableRecords, campaignLayer as campaignLayerOf } from '../brief-build.js';
+import { availableRecords } from '../brief-build.js';
+import { parentSettings } from '../waterfall.js';
 import { readTeamRoster, writeTeamRoster } from '../team-rosters.js';
 import { readWorkspace, saveWorkspace } from '../workspaces.js';
 
 const errMsg = (e: unknown): string => String((e as Error)?.message ?? e);
-const SETTING_LAYERS = ['user', 'campaign', 'workspace', 'team'] as const;
+const SETTING_LAYERS = ['campaign', 'workspace', 'team'] as const;
 type SettingLayer = typeof SETTING_LAYERS[number];
 
-/** A layer's own record, the layers above it, and the MCP and web API records its picker lists
- * beside the bridges: those available to its Campaign (KAN-607). */
-async function layerAt(layer: SettingLayer, id: string, campaignId: string): Promise<{ own: Layer; above: Layer[]; available: string[] }> {
-  const user = await readUserLayer();
-  if (layer === 'user') return { own: user, above: [], available: [] };
-  const campaign = await readCampaign(campaignId);
-  if (!campaign) throw new BehaviourDocumentError(`Unknown Campaign: ${campaignId || '(none)'}.`, 404);
-  const available = (await availableRecords(campaignId)).map((record) => record.name);
-  // What the Campaign holds itself; below it, the Campaign as the brief reads it (Jira when its part is on).
-  // Jira is an integration only; pm is its own setting, on at the Campaign by default (KAN-608).
-  if (layer === 'campaign') return { own: layerOf('campaign', campaign.config), above: [user], available };
-  const campaignLayer = await campaignLayerOf({ id: campaignId, config: campaign.config });
+/** A level's own settings, and the MCP and web API records its picker lists beside the bridges:
+ * every one in Settings. Nothing is inherited live (src/waterfall.ts). */
+async function layerAt(layer: SettingLayer, id: string, campaignId: string): Promise<{ brief: Layer['brief']; integrations: string[]; pm: boolean | null; available: string[] }> {
+  const available = (await availableRecords()).map((record) => record.name);
+  const record = await levelRecord(layer, id, campaignId);
+  const own = layer === 'campaign' ? (await parentSettings(campaignId)).settings : layerOf(layer, record);
+  return { brief: own.brief, integrations: own.integrations, pm: own.pm ?? null, available };
+}
+
+async function levelRecord(layer: SettingLayer, id: string, campaignId: string): Promise<unknown> {
+  if (layer === 'campaign') {
+    const campaign = await readCampaign(campaignId);
+    if (!campaign) throw new BehaviourDocumentError(`Unknown Campaign: ${campaignId || '(none)'}.`, 404);
+    return campaign.config;
+  }
   if (layer === 'workspace') {
     const workspace = await readWorkspace(campaignId, id);
     if (!workspace) throw new BehaviourDocumentError(`No Workspace "${id}".`, 404);
-    return { own: layerOf('workspace', workspace), above: [user, campaignLayer], available };
+    return workspace;
   }
   const roster = await readTeamRoster(id, campaignId) ?? await readTeamRoster(id, '');
   if (!roster) throw new BehaviourDocumentError(`No Team "${id}".`, 404);
-  const workspace = roster.workspace ? await readWorkspace(roster.campaign_id || campaignId, roster.workspace) : null;
-  return { own: layerOf('team', roster), above: [user, campaignLayer, ...(workspace ? [layerOf('workspace', workspace)] : [])], available };
+  return roster;
 }
 
-const shown = ({ own, above, available }: { own: Layer; above: Layer[]; available: string[] }) => ({
-  brief: own.brief,
-  integrations: own.integrations,
-  pm: own.pm ?? null,
-  inherited: { ...cascade(above), available },
-});
-
 async function writeLayer(layer: SettingLayer, id: string, campaignId: string, body: Record<string, unknown>): Promise<void> {
+  await levelRecord(layer, id, campaignId);
   const next = layerOf(layer as LayerName, body);
   const pm = body.pm === undefined ? undefined : typeof body.pm === 'boolean' ? body.pm : null;
-  if (layer === 'user') {
-    const current = await readUserLayer();
-    const value = {
-      brief: body.brief === undefined ? current.brief : next.brief,
-      integrations: body.integrations === undefined ? current.integrations : next.integrations,
-      ...((pm === undefined ? current.pm : pm ?? undefined) !== undefined ? { pm: pm === undefined ? current.pm : pm } : {}),
-    };
-    const file = userBriefFile();
-    await mkdir(path.dirname(file), { recursive: true });
-    await writeFile(`${file}.tmp`, `${JSON.stringify(value, null, 2)}\n`, 'utf8');
-    await rename(`${file}.tmp`, file);
-  } else if (layer === 'campaign') {
+  if (layer === 'campaign') {
     await writeCampaign(campaignId, { config: {
       ...(body.brief !== undefined ? { brief: next.brief } : {}),
-      ...(body.integrations !== undefined ? { integrations: next.integrations } : {}),
+      ...(body.integrations !== undefined ? { integrations: next.integrations.filter((name) => name !== 'jira') } : {}),
       ...(pm !== undefined ? { pm } : {}),
     } });
   } else if (layer === 'workspace') {
-    const workspace = await readWorkspace(campaignId, id);
-    if (!workspace) throw new BehaviourDocumentError(`No Workspace "${id}".`, 404);
+    const workspace = (await readWorkspace(campaignId, id))!;
     const kept = new Map(workspace.integrations.map((row) => [row.provider, row]));
     const { pm: _pm, ...rest } = workspace;
     await saveWorkspace({
@@ -86,8 +71,7 @@ async function writeLayer(layer: SettingLayer, id: string, campaignId: string, b
       ...((pm === undefined ? workspace.pm : pm) != null ? { pm: (pm === undefined ? workspace.pm : pm) as boolean } : {}),
     });
   } else {
-    const roster = await readTeamRoster(id, campaignId) ?? await readTeamRoster(id, '');
-    if (!roster) throw new BehaviourDocumentError(`No Team "${id}".`, 404);
+    const roster = (await readTeamRoster(id, campaignId) ?? await readTeamRoster(id, ''))!;
     await writeTeamRoster(id, {
       ...(body.brief !== undefined ? { brief: next.brief } : {}),
       ...(body.integrations !== undefined ? { integrations: next.integrations } : {}),
@@ -146,21 +130,21 @@ export function registerBrief(app: express.Express): void {
   // (b) One layer's brief settings, and what it inherits.
   app.get('/api/brief/settings/:layer/:id', async (req, res) => {
     const layer = req.params.layer as SettingLayer;
-    if (!SETTING_LAYERS.includes(layer)) return res.status(400).json({ error: 'layer is user, campaign, workspace or team.' });
+    if (!SETTING_LAYERS.includes(layer)) return res.status(400).json({ error: 'layer is campaign, workspace or team.' });
     try {
       const campaignId = layer === 'campaign' ? req.params.id : String(req.query.campaign_id ?? '').trim() || await initialCampaignId();
-      res.json(shown(await layerAt(layer, req.params.id, campaignId)));
+      res.json(await layerAt(layer, req.params.id, campaignId));
     } catch (e) { res.status(e instanceof BehaviourDocumentError ? e.status : 500).json({ error: errMsg(e) }); }
   });
 
   app.put('/api/brief/settings/:layer/:id', async (req, res) => {
     const layer = req.params.layer as SettingLayer;
-    if (!SETTING_LAYERS.includes(layer)) return res.status(400).json({ error: 'layer is user, campaign, workspace or team.' });
+    if (!SETTING_LAYERS.includes(layer)) return res.status(400).json({ error: 'layer is campaign, workspace or team.' });
     try {
       const campaignId = layer === 'campaign' ? req.params.id : String(req.query.campaign_id ?? req.body?.campaign_id ?? '').trim() || await initialCampaignId();
       await writeLayer(layer, req.params.id, campaignId, (req.body ?? {}) as Record<string, unknown>);
       // A default changed: new Agents are born with it; a live Agent's record doesn't move.
-      res.json(shown(await layerAt(layer, req.params.id, campaignId)));
+      res.json(await layerAt(layer, req.params.id, campaignId));
     } catch (e) { res.status(e instanceof BehaviourDocumentError ? e.status : 500).json({ error: errMsg(e) }); }
   });
 

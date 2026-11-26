@@ -6,10 +6,9 @@ import { migrateWorkbenchState } from './workspace-arrangement.js';
 export const WORKBENCH_HEADER = Object.freeze({
   shape: true,
   ram: true,
-  services: true,
   feedback: true,
 });
-export const WORKBENCH_APPEARANCES = Object.freeze(['campaign', 'setup', 'launch', 'cowork', 'team', 'agent', 'models', 'workspaces', 'epics', 'help']);
+export const WORKBENCH_APPEARANCES = Object.freeze(['campaign', 'setup', 'launch', 'cowork', 'team', 'agent', 'models', 'workspaces', 'epics', 'help', 'settings2']);
 
 /** One declaration for every managed Workbench's application chrome. Feature views
  * provide content and, when useful, an island reading; the base owns capabilities and
@@ -24,7 +23,6 @@ export function workbenchView(appearance, options = {}) {
 }
 export const UTILITY_HEADER = Object.freeze({
   ram: true,
-  services: true,
   feedback: true,
 });
 

@@ -1,47 +1,33 @@
 # Ronin Setup
 
 Setup gets you from a fresh Ronin to Agents at work. There's nothing to configure up front:
-connect a provider, pick a folder, and launch. Everything else can wait.
+connect a harness, describe your project, and start a Team. Everything else can wait.
 
-## Opening it
+Press **Setup** on Ronin Home. It is always there; nothing decides you are finished. Harnesses are its Harness step.
 
-Press **Settings** on Ronin Home. Until a model provider is signed in and a Workspace has a
-folder, it opens Ronin Setup.
-After that it opens **Ronin Settings**, where the **Setup** card at the top of **Machine
-Settings** takes you back to any step.
+Three steps, in any order, each checked once it is true in your office however you did it:
 
-Setup has three columns: guidance on the left, the steps in the middle, and the step
-you've chosen on the right. On a phone they stack.
+- **Harness.** Connect the harness you already use, Claude Code, Codex and the others, signed in
+  with your own subscription or key. One is enough to start. See
+  [Provider sign-in](harness-sign-in.md).
+- **Workspace.** How you are starting: from a Git repository, an existing project not in Git,
+  from scratch, or not sure yet (Ronin Lab). Then what it is and its kind. GitHub is only needed
+  for your private repositories. See [Workspaces](../using-ronin/workspaces.md).
+- **Team.** Start a Team in your Workspace: its name, what it is for, the lead's harness. The
+  lead builds out the rest. See [New Team](../using-ronin/new-team.md).
 
-Each step has a line across the top saying where things stand, with the choices that act
-on it. A step gets a check once it's done on this machine, however you did it.
+**Next**, at the foot of each step, moves you on whether the step is checked or not. With no
+Workspace yet, it makes Ronin Lab for you first.
 
-## The steps
+Then the **Tour**, whenever you like: five pictures, one at a time across the page, of how your
+Agents begin and how the work runs. Close it to come back to the steps. The same in words, with
+the questions people ask first: [Ronin Tour](tour.md).
 
-**Model providers.** Install and sign in to the Agents you want to use: Claude Code, Codex,
-Antigravity CLI and others. One is enough. See [Provider sign-in](provider-sign-in.md).
+Under the steps, each step's questions follow the step you are on. **Ask Ronin**, beside the
+steps, is the Helpful Assistant: she sees the step you are on, answers your
+questions, and can do it with you in the conversation.
 
-**Register.** Optional. Tell us a little about yourself, with your email or anonymously.
-Your email is what unlocks Ronin Services. The form also asks for a two-line introduction
-that every Agent you start will read, so they know who they're working for. Skip it if
-you like: it stays unchecked, and nothing else waits on it.
-
-**Workspaces.** Where your Agents work. **Ronin Lab** and **Project One** are ready for you;
-press **New Workspace** to make your own, with its folders or GitHub repositories. See
-[Workspaces](../using-ronin/workspaces.md).
-
-**Installations.** Optional extras, starting with [Ronin Services](services-activation.md).
-
-**Password.** How you reach this machine. If you use Tailscale, your Ronin is already
-private: choose **Tailscale only**, or **Add password** for a second lock. Without
-Tailscale, set a password or choose **None** if the machine is protected another way.
-
-**Launch your own.** Start working:
-
-- **Agent** — one Agent: its name, provider and model, and the folder it works in.
-- **Team** — several Agents working together. See
-  [New Team](../using-ronin/new-team.md).
-
-Whatever you launch opens in a new tab, ready to talk to.
+Registration, Ronin Services, a password, and launching your own Agent are not Setup steps:
+they are in **Settings**.
 
 Contributors: [Setup construction](../architecture/setup-workbench.md).

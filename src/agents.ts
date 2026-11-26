@@ -12,7 +12,7 @@ export interface AgentScreen {
 
 /**
  * HOW A CLI PUBLISHES ITS MODEL LIST — declared here, read by `readModels` in
- * `src/provider-summary.ts` on Refresh all. `claude-cache` and `codex-cache` are the two
+ * `src/harness-summary.ts` on Refresh all. `claude-cache` and `codex-cache` are the two
  * cache files those CLIs keep; `command` runs the CLI with the argv and reads the list it
  * prints; `none` says plainly that Ronin has no way to read one, so Model: Native is the
  * only choice. A new way to read a list is a new key here, never an `if` on a CLI id.
@@ -22,7 +22,7 @@ export type ModelsSource =
   | { read: 'codex-cache' }
   | { read: 'command'; argv: readonly string[] }
   | { read: 'command-lines'; argv: readonly string[] }
-  | { read: 'hermes-setups' }
+  | { read: 'model-entries' }
   | { read: 'none' };
 
 export interface AgentOperations {
@@ -37,11 +37,43 @@ export interface AgentOperations {
   };
 }
 
+/**
+ * HOW RONIN SIGNS A CLI IN, WITHOUT A TERMINAL (owner, 24 Nov 2026; docs/architecture/setup-workbench.md):
+ * the CLI's own login command per way, its menu skipped. Ronin runs it, shows the link and code it
+ * prints (`code` finds the code), sends what the person pastes (`paste`: a code back, or a key on stdin),
+ * and the CLI's credential file is the record. A CLI without `login` signs in on the terminal tile.
+ */
+export interface AgentLogin {
+  subscription: { argv: readonly string[]; paste: 'code' | null };
+  api_key: { argv: readonly string[]; paste: 'code' | 'key' };
+  /** A pattern matching the one-time code the CLI prints, when it prints one. */
+  code?: string;
+  /** WHICH WAY IT IS SIGNED IN, from the CLI's own status (owner, 24 Nov 2026): nothing of Ronin's records
+   *  it. `argv` prints the status; the first pattern that matches its output names the way. */
+  status: { argv: readonly string[]; subscription: string; api_key: string };
+}
+
+/**
+ * WHOSE MODELS A CLI SERVES (KAN-829): the vendor id a launch names (`anthropic`, the key of
+ * `agents.sessions.by_provider`), the vendor's name, where its conversation journal lives as
+ * observed (descriptive; availability needs a journal adapter and a verified launch identity),
+ * and an optional display status: `comingSoon` is shown and never launched. Which models, their
+ * tiers and their lines are HQ's model catalog (src/model-catalog.ts); docs/agents/<cli>.md
+ * says the same in words.
+ */
+export interface AgentVendor {
+  provider: string;
+  label: string;
+  transcript_source: string;
+  maturity?: 'beta' | 'comingSoon';
+}
+
 export const AGENTS = [
   {
     id: 'claude',
     cmd: 'claude',
     label: 'Claude Code',
+    vendor: { provider: 'anthropic', label: 'Anthropic', transcript_source: 'Observed 2026-09-22: ~/.claude/projects/<cwd-slug>/<uuid>.jsonl; one record per completed message. Journal adapter exists; exact launch identity is required.' } as AgentVendor,
     operations: {
       install: 'npm install -g @anthropic-ai/claude-code',
       // Native installs update in the background: https://code.claude.com/docs/en/getting-started#auto-updates
@@ -55,6 +87,12 @@ export const AGENTS = [
     // HOW ITS SIGN-IN GOES (KAN-716): Setup's Authenticate step says it above the terminal, read off
     // the CLI's own first-run screens (2.1.x); '' where Ronin has not read them.
     signIn: 'Press Enter to keep the text style, then pick a login method: 1 Claude account with subscription, 2 Anthropic Console account (API billing), or 3 a third-party platform. Open the link it shows, sign in, and paste the code it gives you back into the terminal.',
+    login: {
+      subscription: { argv: ['auth', 'login', '--claudeai'], paste: 'code' },
+      api_key: { argv: ['auth', 'login', '--console'], paste: 'code' },
+      // `claude auth status --json`: "authMethod": "claude.ai" for a subscription, the Console otherwise.
+      status: { argv: ['auth', 'status', '--json'], subscription: '"authMethod":\\s*"claude\\.ai"', api_key: '"loggedIn":\\s*true' },
+    } as AgentLogin,
     credentials: ['.claude/.credentials.json'],
     // What a parked office carries besides credentials (src/machine-park.ts): the CLI's own
     // settings, without which a fresh home asks first-run questions instead of resuming.
@@ -65,6 +103,7 @@ export const AGENTS = [
     id: 'codex',
     cmd: 'codex',
     label: 'Codex',
+    vendor: { provider: 'openai', label: 'OpenAI', transcript_source: 'Observed 2026-09-22: ~/.codex/sessions/YYYY/MM/DD/rollout-*.jsonl; ordinal-sequenced records with a session metadata header. Journal adapter exists; fresh Ronin launches isolate the journal home; the id comes from its header.' } as AgentVendor,
     operations: {
       install: 'npm install -g @openai/codex',
       // OpenAI documents an explicit update, not automatic updates: https://developers.openai.com/codex/cli/
@@ -76,6 +115,13 @@ export const AGENTS = [
     } as AgentOperations,
     parked: '',
     signIn: 'Pick one and press Enter: 1 Sign in with ChatGPT (a browser link to approve, on the same computer), 2 Sign in with Device Code (open auth.openai.com/codex/device and enter the code it shows: use this one in a hosted office), or 3 to paste an OpenAI API key.',
+    login: {
+      subscription: { argv: ['login', '--device-auth'], paste: null },
+      api_key: { argv: ['login', '--with-api-key'], paste: 'key' },
+      code: '\\b[A-Z0-9]{4}-[A-Z0-9]{4,6}\\b',
+      // `codex login status`: "Logged in using ChatGPT", or using an API key.
+      status: { argv: ['login', 'status'], subscription: 'Logged in using ChatGPT', api_key: 'Logged in using an API key|API key' },
+    } as AgentLogin,
     credentials: ['.codex/auth.json'],
     carry: ['.codex/config.toml'],
     screen: { busy: ['esc to interrupt'], asking: ['›\\s*\\d+\\.\\s'], ready: ['^\\s*›(?:\\s|$)'] },
@@ -84,6 +130,7 @@ export const AGENTS = [
     id: 'agy',
     cmd: 'agy',
     label: 'Antigravity CLI',
+    vendor: { provider: 'google', label: 'Google', transcript_source: 'Reported, not yet observed here: ~/.gemini/antigravity-cli/brain/<conversation-id>/.system_generated/logs/transcript.jsonl. No adapter yet.' } as AgentVendor,
     operations: {
       // Google's installer: a checksum-verified binary to ~/.local/bin, no npm package.
       install: 'curl -fsSL https://antigravity.google/cli/install.sh | bash',
@@ -102,11 +149,12 @@ export const AGENTS = [
     screen: { busy: [], asking: ['(?:^|\\n)\\s*>\\s*\\d+\\.\\s'], ready: [] },
   },
   // [cli] auto_update defaults true: https://github.com/xai-org/grok-build/blob/main/crates/codegen/xai-grok-pager/docs/user-guide/05-configuration.md
-  { id: 'grok', cmd: 'grok', label: 'Grok CLI', operations: { install: 'npm install -g @xai-official/grok', update: { shell: 'npm install -g @xai-official/grok@latest', argv: [] }, selfUpdates: true, version: ['--version'], models: { read: 'command', argv: ['models'] }, session: { discovery: 'unsupported' } } as AgentOperations, parked: '', signIn: 'It shows a browser link and a code at once: open the link, check the browser shows the same code, and approve. The terminal finishes by itself.', credentials: ['.grok/auth.json'], carry: [], screen: { busy: [], asking: [], ready: [] } },
+  { id: 'grok', cmd: 'grok', label: 'Grok CLI', vendor: { provider: 'xai', label: 'xAI', transcript_source: 'No conversation journal found in the 2026-09-22 investigation (an empty FTS index, memory profiling and telemetry only). No transcript adapter available.' } as AgentVendor, operations: { install: 'npm install -g @xai-official/grok', update: { shell: 'npm install -g @xai-official/grok@latest', argv: [] }, selfUpdates: true, version: ['--version'], models: { read: 'command', argv: ['models'] }, session: { discovery: 'unsupported' } } as AgentOperations, parked: '', signIn: 'It shows a browser link and a code at once: open the link, check the browser shows the same code, and approve. The terminal finishes by itself.', credentials: ['.grok/auth.json'], carry: [], screen: { busy: [], asking: [], ready: [] } },
   {
     id: 'hermes',
     cmd: 'hermes',
     label: 'Hermes',
+    vendor: { provider: 'hermes', label: 'Hermes', transcript_source: 'Not established; no transcript availability promised.' } as AgentVendor,
     operations: {
       install: '',
       setup: ['model'],
@@ -114,7 +162,7 @@ export const AGENTS = [
       update: { shell: '', argv: ['update'] },
       selfUpdates: false,
       version: ['--version'],
-      models: { read: 'hermes-setups' },
+      models: { read: 'model-entries' },
       session: { discovery: 'unsupported' },
     } as AgentOperations,
     signIn: 'Pick the model provider with the arrows and Enter (Nous Portal is first), then answer what it asks for that provider.',
@@ -127,6 +175,7 @@ export const AGENTS = [
     id: 'copilot',
     cmd: 'copilot',
     label: 'GitHub Copilot CLI',
+    vendor: { provider: 'github', label: 'GitHub Copilot', transcript_source: 'From docs, not yet seen on a real run: $COPILOT_HOME/session-state/<session-id>/events.jsonl, one session event per line, the first session.start carrying data.sessionId. Adapter copilot-events; fresh Ronin launches isolate session-state.' } as AgentVendor,
     operations: {
       install: 'npm install -g @github/copilot',
       // `copilot help config`, autoUpdate: "Installations run from npm/JavaScript only report that a
@@ -149,6 +198,7 @@ export const AGENTS = [
     id: 'opencode',
     cmd: 'opencode',
     label: 'OpenCode',
+    vendor: { provider: 'opencode', label: 'OpenCode', transcript_source: 'One SQLite store for every session, ~/.local/share/opencode/opencode.db; schema unpublished. No adapter; Chat shows the terminal.' } as AgentVendor,
     operations: {
       install: 'npm install -g opencode-ai',
       // `autoupdate` defaults on (opencode.ai/docs/config); Update is npm's, as it was installed.
@@ -170,6 +220,7 @@ export const AGENTS = [
     id: 'kimi',
     cmd: 'kimi',
     label: 'Kimi Code',
+    vendor: { provider: 'moonshot', label: 'Moonshot AI', transcript_source: '~/.kimi-code/sessions/<workspace>/<session-id>/agents/main/wire.jsonl; line format unpublished. No adapter; Chat shows the terminal.' } as AgentVendor,
     operations: {
       // Moonshot's npm package (Node 22.19+); its curl installer puts kimi in ~/.kimi-code/bin
       // and edits .bashrc, which a login shell does not reach.
@@ -262,7 +313,7 @@ export async function launchArgv(cmd: string, brief: string): Promise<LaunchArgv
   return { argv: [bin, ...rest], parked: !!brief };
 }
 
-export interface ProviderLaunch {
+export interface HarnessLaunch {
   argv: string[];
   id: string;
   strategy: 'minted' | 'isolated' | 'unbound';
@@ -290,7 +341,7 @@ function namedSession(argv: readonly string[], template: readonly string[]): str
   return '';
 }
 
-export async function newProviderSession(agent: string, argv: readonly string[]): Promise<ProviderLaunch> {
+export async function newProviderSession(agent: string, argv: readonly string[]): Promise<HarnessLaunch> {
   const grammar = argv.length ? await readAgentLaunches(agent || 'terminal').catch((e: NodeJS.ErrnoException) => {
     if (e.code === 'ENOENT') return undefined; throw e;
   }) : undefined;

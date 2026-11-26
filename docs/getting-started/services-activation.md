@@ -1,32 +1,16 @@
 # Ronin Services
 
-Ronin Services adds optional features on top of Ronin: project management with work items
-and a board, terminal transcripts, usage stats, and more as they arrive. Ronin works fully
-without them. They're free.
+Ronin Services adds features on top of Ronin: project management with work items and a board,
+terminal transcripts, usage stats, machine status, Jira, and more as they arrive. Ronin works
+without them.
 
-## Turn them on
+## How you get them
 
-Open **Installations** in [Ronin Setup](setup-workbench.md) and press **Ronin Services**.
-You'll see three controls, done in order:
-
-1. **Register** — fill in the form with your email and press **Send**. Ronin HQ emails you a
-   **Services key**.
-2. **Install** — paste the key into **Services key** and press **Install**. It downloads the
-   Services package to this machine.
-3. **Switch on** — press **Turn on** to give Services to your new Teams and Agents.
-
-Each control reads **Done** once it is. If a **Restart** appears, press it; the page updates
-itself when Ronin is back.
-
-Below the controls, each feature has its own switch. Project management, Usage stats and
-Machine status start on; the rest start off. Turn any of them on or off whenever you like.
-With **Jira** on, **Settings › Jira** connects a Desk to a Jira space: see [Jira](../using-ronin/jira.md).
+Ronin Services comes with Ronin. A hosted office has it from the start, and every part runs:
+there is nothing to install, register for or switch on. Jira starts working once you connect it in
+**Settings › Integrations**: see [Jira](../using-ronin/jira.md).
 
 ## What is sent
-
-An email registration sends only your email address to Ronin HQ, so it can email you your
-Services key. An anonymous registration sends the answers on the form, with no email. Nothing
-else about you is attached.
 
 A Ronin on your own machine never sends usage stats. A hosted office sends a weekly count of
 which Ronin tools were used. It never includes your code, prompts, file names, messages or
@@ -34,14 +18,5 @@ conversations. The
 [Stats guide](https://github.com/ronincowork/ronin-services/blob/dev/docs/stats.md) lists
 exactly what is counted.
 
-Choosing **No communication** on the form means we don't email you; it doesn't change what
-you can use.
-
-## If something goes wrong
-
-- **Install failed** — the message says why. Press **Install** again; you don't need to
-  register again.
-- **Lost your key** — register again with the same email. A new key arrives, and the old one
-  stops working.
-- **A feature you switched on isn't there** — press **Restart** if it's shown, then look
-  again.
+A registration on your own machine is optional: an email registration sends only your email
+address to Ronin HQ, and an anonymous one sends the answers on the form, with no email.

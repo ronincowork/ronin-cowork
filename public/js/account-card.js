@@ -6,12 +6,12 @@
  * says self-hosted, or an office on an office_park with its office_id, office_park and house
  * gateway. It is this machine's own fact and shows for everyone, Services or not.
  *
- * ACCOUNT is the user's standing with Ronin HQ: which account, its subscription status as HQ
+ * ACCOUNT is the user's standing with Ronin HQ: which account, this office's lease as HQ
  * records it, and the house-model usage the gateway counted. The view and its states belong
  * to the Services `account` part (ronin-services account/read.ts, GET /api/account); HQ is
  * the account authority. A 404 means the part is absent, and only that leaves the account
  * section at one line. Every other answer is shown in its own words: missing information is
- * never drawn as an active subscription or as zero usage. No action here changes anything.
+ * never drawn as an active lease or as zero usage. No action here changes anything.
  *
  * The one value both sections carry is the office_id; a disagreement is said, never hidden.
  */
@@ -19,12 +19,11 @@ import { request } from './request.js';
 import { t } from './lexicon.js';
 
 const STATUS_WORDS = () => ({
-  none: t('account.status_none', 'No subscription'),
-  trial: t('account.status_trial', 'Trial'),
-  active: t('account.status_active', 'Active'),
-  paused: t('account.status_paused', 'Paused'),
-  cancelled: t('account.status_cancelled', 'Cancelled'),
-  unknown: t('account.status_unknown', 'Unknown'),
+  trial: t('account.lease_trial', 'Trial'),
+  active: t('account.lease_active', 'Active'),
+  paused: t('account.lease_paused', 'Paused'),
+  ended: t('account.lease_ended', 'Ended'),
+  unknown: t('account.lease_unknown', 'Unknown'),
 });
 
 const when = (s) => (s ? String(s).slice(0, 16).replace('T', ' ') : '—');
@@ -93,8 +92,10 @@ export function accountModel(result) {
   const factRows = (f) => [
     [t('account.account', 'account'), f.account.display_name ? `${f.account.display_name} (${f.account.user_id})` : f.account.user_id],
     [t('account.office', 'office'), f.office.office_id],
-    [t('account.subscription', 'subscription'), (STATUS_WORDS()[f.subscription.status] ?? STATUS_WORDS().unknown) + (f.subscription.plan ? ` · ${f.subscription.plan}` : '')],
-    [t('account.changed', 'last changed'), when(f.subscription.changed_at)],
+    [t('account.office_lease', 'office lease'), f.office_lease
+      ? [STATUS_WORDS()[f.office_lease.lease_status] ?? STATUS_WORDS().unknown, f.office_lease.kind, f.office_lease.lease_plan && t('account.lease_plan', 'plan {plan}', { plan: f.office_lease.lease_plan })].filter(Boolean).join(' · ')
+      : t('account.no_lease', 'No open office')],
+    [t('account.changed', 'last changed'), when(f.office_lease?.changed_at)],
   ];
   const usageOf = (u) => {
     if (u?.state !== 'current') return { known: false, text: USAGE_REASONS()[u?.reason] ?? t('account.usage_unknown', 'Unknown.') };
@@ -130,8 +131,7 @@ export function accountModel(result) {
 }
 
 /**
- * `absent`: what to say when the part is not installed. Inside Configuration the card simply
- * disappears; the Cloud Account worksurface (campaign-view.js) is the card alone, so it says so.
+ * `absent`: what to say when the part is not installed; without it the card simply disappears.
  */
 export function accountCard(container, { absent = null } = {}) {
   const wrap = document.createElement('div');

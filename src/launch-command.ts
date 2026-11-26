@@ -1,4 +1,4 @@
-import { providerDefault, type SessionLaunchSpec } from './model-providers.js';
+import { harnessDefault, type SessionLaunchSpec } from './harness-catalog.js';
 import { defaultAgentCommand } from './agents.js';
 
 export interface SessionsDefaults {
@@ -27,7 +27,8 @@ const matchingModel = (specs: readonly SessionLaunchSpec[], value: string): Sess
 
 const passthroughModel = (specs: readonly SessionLaunchSpec[], value: string): string | undefined => {
   if (!/^[A-Za-z0-9._:/@+-]+$/.test(value)) return undefined;
-  const template = specs.find((spec) => spec.model !== 'native')?.cmd;
+  if (value.startsWith('service:')) throw new Error('The selected model service setup is unavailable.');
+  const template = specs.find((spec) => spec.model !== 'native' && !spec.service_id)?.cmd;
   const argv = template?.match(/^(.*?\s(?:--model|-m)(?:=|\s+))(\S+)(.*)$/);
   return argv ? `${argv[1]}${value}${argv[3]}` : undefined;
 };
@@ -81,13 +82,13 @@ export function resolveLaunchCommand(req: CommandRequest): { cmd: string; source
     const preferred = req.sessions?.by_provider?.[provider] ?? '';
     const chosen = preferred ? matchingModel(within, preferred)?.cmd ?? passthroughModel(within, preferred) : undefined;
     if (chosen) return { cmd: chosen, source: 'settei_provider' };
-    return { cmd: providerDefault(within, provider)!.cmd, source: 'system' };
+    return { cmd: harnessDefault(within, provider)!.cmd, source: 'system' };
   }
 
   const installed = dflt?.provider && dflt?.model
     ? matchingModel(specs.filter((s) => s.provider === dflt.provider), dflt.model)?.cmd
       ?? passthroughModel(specs.filter((s) => s.provider === dflt.provider), dflt.model)
     : undefined;
-  const providerNative = dflt?.provider ? providerDefault(specs, dflt.provider)?.cmd : undefined;
-  return { cmd: installed ?? providerNative ?? defaultAgentCommand(), source: 'system' };
+  const harnessNative = dflt?.provider ? harnessDefault(specs, dflt.provider)?.cmd : undefined;
+  return { cmd: installed ?? harnessNative ?? defaultAgentCommand(), source: 'system' };
 }

@@ -82,23 +82,21 @@ item delete w12                     # with its subtasks; an epic's other childre
 A new item lands on whoever made it: a lead's on its Team (a lead of several names one with
 `--team`, or the create is refused naming its Teams), any other Agent's on itself. An Agent
 makes any kind, an Epic too, with a parent or none. Items from Jira come as Jira has them. Parent is a field, as in Jira:
-`item edit --parent` changes the parent and the level in one act, one below the new
-parent; with no parent the level stays. Any level-0 item moved under another becomes a
-subtask (Jira's convert to subtask).
+`item edit --parent` changes the parent, kind and level in one act.
 
-**The one rule: nothing goes below -1.** On a create, an `item edit --parent` or
-`--kind`, the item takes its new level (one below its parent, or its kind's) and its
-children follow, each one below its own parent. If any of them would land below -1, the
-act fails with one line: "w39 can't go there." Nothing else is checked. So nothing goes
-under a subtask, under its own descendant or under itself; a story and its subtasks move to
-another epic together; and an epic with stories moved under an epic becomes 0, its stories
--1, each child with a trail line saying it followed.
+**The kind follows the parent.** Under an epic, the kind named (or the item's own) if it is
+level 0, else a Task; under a level-0 item, a Subtask; no parent, the kind named, or a Task
+for a Subtask. Nothing goes under a Subtask: refused, the reply naming its Task. Children
+follow, each one below its own parent, each with a trail line saying it followed; a move that
+would put one under a Subtask is refused. So a story and its subtasks move to another epic
+together, and an epic with stories (none with subtasks) moved under an epic becomes a Task,
+its stories Subtasks. An item under itself or its own descendant is refused too.
 
 `item delete` is Jira's delete: the item goes, and its subtasks with it; any other child is
 left with no parent, links to it go, and its holders let go of it.
 
 Every write answers with one line of what the act did, read from the trail line it
-appended, then the item as it now is: "w39 moved under w40, level -1", "w9 moved to In Progress",
+appended (with `--json`, the whole reply as JSON instead, the item as it now is in it): "w39 moved under w40, level -1", "w9 moved to In Progress",
 "w9 is held by agent:x", "w12 was created", "w12 changed: kind Story", "w12 is flagged:
 waiting on the API", "w12 has a comment from lead: Start with the store.", "w12 Blocks
 w14", "w12 has /home/me/plans/AGENT_ITEMS.md removed". Status, kind and level appear only when the act changed them. When an item arrives

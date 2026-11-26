@@ -25,7 +25,7 @@ test('a Team, a Workspace, a plan and a work item are written', async () => {
   assert.equal(plan.status, 0, plan.stderr);
   const created = await ronin.tool('item', ['create', '--title', 'Stock the shelves'], { env: asKeeper });
   assert.equal(created.status, 0, created.stderr);
-  itemId = /created (\S+)/.exec(created.stdout)![1];
+  itemId = /created ([^\s,]+)/.exec(created.stdout)![1];
 });
 
 test('a secret the owner pastes is saved 0600 in the user root and its value is never printed', async () => {

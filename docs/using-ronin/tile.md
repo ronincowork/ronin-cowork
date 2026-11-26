@@ -169,8 +169,8 @@ What a message names is a link when Ronin knows it, and plain text otherwise:
 - **A web address** (`https://github.com/…/pull/149`): it opens in a new browser tab. A full stop,
   comma or closing bracket after it is not part of the link.
 
-The Helpful Assistant's chat does the same over her chat. A document link shows the file's name;
-its whole path is its tooltip.
+The Helpful Assistant's chat does the same over her chat. A document link shows its path as the
+message wrote it.
 
 Any of these links can also be dragged onto a workspace of a Team's workbench, as a selector pill
 can, and it opens there: an item on Find item, an Agent's tile, a document or a commit on a
@@ -232,7 +232,7 @@ and the tile stays on Chat.
 *Stopped: exit N at HH:MM* and a **Resume** button, which starts it again on the same
 conversation. Its Team's lead is told once, with the items it holds. **Close Tile** beside it
 closes the tile, as its − does: the Agent stays stopped and its card keeps Resume. On a phone it
-goes back to the Team.
+goes back to the list.
 
 An Agent that reads *working…* with nothing new in its conversation for 12 minutes is flagged
 *no progress for 12 min*, the same way: Chat ends with that sentence and an **Open in

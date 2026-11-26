@@ -1,13 +1,14 @@
-/* Behaviors — the user's own layer (docs/architecture/brief.md, The files and their header; Layers and brief settings; Where it is set in the UI): their brief settings for every Agent,
- * and every fact, behaviour and tool file to read, or to replace with their own version by name.
- * Over /api/brief/catalog, /api/brief/settings/user and /api/brief/files. */
+/* Behaviors (docs/architecture/brief.md, The files and their header; Where it is set in the UI): every
+ * fact, behaviour and tool file to read, or to replace with their own version by name. Which are on
+ * is each level's Configuration (the Campaign's Defaults, a Workspace, a Team).
+ * Over /api/brief/catalog and /api/brief/files. */
 import { request } from './request.js';
 import { createPhalanx } from './phalanx.js';
 import { addProvMark } from './provenance.js';
 import { WorkspaceKit } from './workspace-kit.js';
 import { t } from './lexicon.js';
 import { renderMarkdownDocument } from './markdown-reader.js';
-import { createBriefSettingsPanel, layerLinks, scopeOf } from './brief-step.js';
+import { scopeOf } from './brief-step.js';
 import { createAuthorForm } from './brief-author.js';
 import { AXES } from './mandates.js';
 
@@ -70,13 +71,12 @@ function viewer(row, host, afterSave, context) {
   return () => { active = false; form?.destroy(); };
 }
 
-function createBehaviourSurface(initial = {}) {
+export function createBehaviourSurface(initial = {}) {
   const surface = WorkspaceKit.primitives.createSurface({ label: t('behaviours.title', 'Behaviors'), className: 'behaviour-surface' });
   let rows = [];
   const stones = createPhalanx({ className: 'behaviour-stones', renderDetail: (item, host) => viewer(item.row, host, refresh, { rows: () => rows }) });
   const intro = node('div', 'sws-intro');
-  intro.append(node('h2', '', t('behaviours.title', 'Behaviors')), node('p', '', t('brief.user_help', 'What every Agent you start is told. Open any file to read it, or save your own version: yours replaces Ronin’s by name and survives updates.')));
-  const settings = createBriefSettingsPanel({ layer: 'user', id: 'me', createAction: WorkspaceKit.primitives.createAction, preview: {}, linkFor: layerLinks() });
+  intro.append(node('h2', '', t('behaviours.title', 'Behaviors')), node('p', '', t('brief.files_help', 'What Agents can be told. Open any file to read it, or save your own version: yours replaces Ronin’s by name and survives updates.')));
   // Write your own: a behaviour, a tool for a command you have, or a bridge (docs/architecture/brief.md, Where it is set in the UI).
   const adds = node('div', 'bh-actions');
   for (const [mode, scope, label] of [['behaviour', 'behaviours', t('behaviours.new', 'New Behavior')], ['tool', 'tools', t('author.new_tool', 'New tool')], ['bridge', 'behaviours', t('author.new_bridge', 'New bridge')]]) {
@@ -84,9 +84,7 @@ function createBehaviourSurface(initial = {}) {
     adds.append(add.el);
   }
   intro.append(adds);
-  settings.el.classList.add('behaviour-settings');
-  const settingsHead = node('h3', 'behaviour-settings-head', t('brief.user_settings', 'For every Agent you start'));
-  stones.mount(surface.content, { before: [intro], after: [settingsHead, settings.el] });
+  stones.mount(surface.content, { before: [intro] });
   // Behaviors, then the mandate values by axis (each a behaviour file, docs/architecture/brief.md, Mandates), Facts, Tools.
   const shelves = [['behaviours', ''], ...AXES.map((axis) => ['behaviours', axis]), ['facts', ''], ['tools', '']];
   const items = () => shelves.flatMap(([scope, axis]) => rows.filter((row) => row.scope === scope && (row.mandate || '') === axis))
@@ -100,14 +98,11 @@ function createBehaviourSurface(initial = {}) {
     const wanted = select || (initial.scope && initial.name ? `${scopeOf(initial.scope)}:${initial.name}` : '');
     if (wanted) stones.select(wanted);
   }
-  let settingsLoaded = false;
-  const loadSettings = () => { if (settingsLoaded) return; settingsLoaded = true; void settings.enter(); };
   return {
     el: surface.el,
-    // The workbench may only show this surface, never enter it: either way the settings load once.
-    show: (detail = {}) => { if (detail.scope && detail.name) initial = detail; loadSettings(); void refresh(); },
-    enter: () => { loadSettings(); void refresh(); },
-    destroy: () => { settings.destroy(); stones.destroy(); },
+    show: (detail = {}) => { if (detail.scope && detail.name) initial = detail; void refresh(); },
+    enter: () => { void refresh(); },
+    destroy: () => { stones.destroy(); },
   };
 }
 

@@ -13,8 +13,7 @@ has its file in `ronin_stock/tools/`.
 **Where the rest lives**, by who runs it: **`bin/`** — the owner's own commands
 (`ronin-byoin`, `ronin-doctor`, `ronin-deploy`, `ronin-store`, `ronin-uninstall`,
 `ronin-export`, `bench`), typed by a person. **`libexec/`** — invoked by the machine
-and typed by nobody (`ronin-gate` from ExecStartPost, `rireki/` the tmux applet,
-`koshi` the job process).
+and typed by nobody (`ronin-gate` from ExecStartPost, `rireki/` the tmux applet).
 **`scripts/`** — the repo's own tooling, run by npm and by BYOIN. `bin/shim/` stays
 where it is: it is PATH interception, so you type `tmux` and the guard answers.
 

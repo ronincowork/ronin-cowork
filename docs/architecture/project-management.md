@@ -63,7 +63,7 @@ Each file's `when:` picks its readers; an Agent is told only its own.
 | `src/routes/sessions-api.ts` | `session_end`'s refusal and its NEXT |
 | `src/tegami-read.ts`, `libexec/work-record-read` | the work record's items, for the tile and `work-record read` (Done shown with how long ago) |
 | `src/team-layers.ts` | a Team in four layers (KAN-331): Workspace, Plans, Canvases, Epics read live for every member (`teamLayers`, in `agentReading`'s `layers`); the lead's grouped "work record changed" (`layersMayHaveChanged`, `settleLayers`: a ~3 s quiet spell, each lead told only when its own layers moved), fed by `onItemChanged`, the plans routes and the Workspace PUT |
-| `src/plans.ts`, `src/routes/plans-api.ts` | plans on the Workspace: the place (Ronin Lab's `<campaign>/<workspace>/plans`, or `plans: { location, path }`), the header, Draft and Ordered (no guards: the docs steer), one-file commits and the push, the move on a changed place; `resolve` for `plan:` |
+| `src/plans.ts`, `src/routes/plans-api.ts` | plans on the Workspace: the place (the Workspace's own folder, `~/ronin/<workspace>/plans`, or `plans: { location, path }`), the header, Draft and Ordered (no guards: the docs steer), one-file commits and the push, the move on a changed place; `resolve` for `plan:` |
 | `src/workspaces.ts`, `src/routes/workspaces-api.ts`, `public/js/workspaces-surface.js` | the Workspace's `plans` field and the page's Plans row |
 | `public/js/plan-attachment.js`, `src/routes/docs-api.ts` | a `plan:` attachment opened or shown gone; the Docs pane's Plans shelf |
 | `public/js/epics-surface.js` | the Epics workbench: stones, an epic's record, its Show question |
@@ -138,7 +138,9 @@ The owner's decisions, 2026-11-04 and 05:
   only: one item per idea, "Draft the plan for <idea>", its Draft plan attached; finished when the
   plan is taken up or the idea dropped. Parking is one act, `plan park` (2026-11-10). Held by the
   Workspace, it is on no Team's or Agent's record and never reads as work waiting to be given out.
-- Ronin refuses any shape Jira would refuse, so the two never part. A delete of an item made in
+- Ronin sets the kind from the parent (2026-11-25), so every shape is one Jira accepts and the
+  two never part. Refused: anything under a Subtask (the reply names its Task), and a change
+  Jira cannot make to a paired item (a kind across levels). A delete of an item made in
   Ronin reaches Jira; one that came from Jira goes from Ronin only, its issue kept.
 
 What led there (2026-10-20 to 11-05): items made only to hand in against; Agents keeping

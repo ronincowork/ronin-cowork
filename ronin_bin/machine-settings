@@ -16,8 +16,6 @@ Usage:
   machine-settings campaign read [--campaign <id>]
   machine-settings campaign write title|description <value> [--campaign <id>]
   machine-settings campaign archive [--campaign <id>]
-  machine-settings installations read [--campaign <id>]
-  machine-settings installations write <name> on|off [--campaign <id>]
   machine-settings defaults read [--campaign <id>]
   machine-settings defaults write <field> <value> [--campaign <id>]
   machine-settings provider read [--campaign <id>]
@@ -119,19 +117,6 @@ case "$COMMAND" in
       write) field=${1:-}; value=${2-}; [ "$#" -ge 2 ] || die 'BAD-ARG: campaign write needs field and value.' 2; shift 2; take_campaign "$@"; [ "${#REMAINING[@]}" -eq 0 ] || die 'BAD-ARG: unexpected campaign write argument.' 2; case "$field" in title|description) ;; *) die 'BAD-ARG: Campaign field is title or description.' 2;; esac; resolve_campaign; body=$(json_body 'import json,sys; print(json.dumps({sys.argv[1]:sys.argv[2]}))' "$field" "$value"); api PUT "/api/campaigns/$CAMPAIGN" "$body" | pretty;;
       *) die "BAD-ARG: unknown campaign operation '$sub'." 2;; esac
     ;;
-  installations)
-    sub=${1:-}; shift || true
-    case "$sub" in
-      -h|--help|'') echo 'Usage: machine-settings installations read [--campaign <id>]; machine-settings installations write <name> on|off [--campaign <id>]';;
-      read) take_campaign "$@"; [ "${#REMAINING[@]}" -eq 0 ] || die 'BAD-ARG: installations read accepts only --campaign.' 2; resolve_campaign; c=$(api GET "/api/campaigns/$CAMPAIGN"); a=$(api GET '/api/installations'); i=$(api GET '/api/installed'); CAMPAIGN_JSON="$c" CATALOG_JSON="$a" INSTALLED_JSON="$i" python3 - <<'PY'
-import json,os
-c=json.loads(os.environ['CAMPAIGN_JSON']); a=json.loads(os.environ['CATALOG_JSON']); i=json.loads(os.environ['INSTALLED_JSON']); s=i.get('services',{}); on=c.get('config',{}).get('installations',{})
-print(json.dumps([{'name':x.get('name'),'catalogued':True,'observed':({'installed':bool(s.get('installed')),'activated':bool(s.get('activated')),'loaded':s.get('loaded',[]),'parked':s.get('parked',[])} if x.get('name')=='ronin_services' else 'unknown'),'campaign_on':on.get(x.get('name')) is True} for x in a],indent=2))
-PY
-        ;;
-      write) name=${1:-}; choice=${2:-}; [ "$#" -ge 2 ] || die 'BAD-ARG: installations write needs name and on|off.' 2; shift 2; take_campaign "$@"; [ "${#REMAINING[@]}" -eq 0 ] || die 'BAD-ARG: unexpected installations write argument.' 2; case "$choice" in on) flag=true;; off) flag=false;; *) die 'BAD-ARG: installation choice is on or off.' 2;; esac; resolve_campaign; c=$(api GET "/api/campaigns/$CAMPAIGN"); body=$(printf '%s' "$c" | NAME="$name" FLAG="$flag" python3 -c 'import json,os,sys; c=json.load(sys.stdin); m=dict(c.get("config",{}).get("installations",{})); m[os.environ["NAME"]]=os.environ["FLAG"]=="true"; print(json.dumps({"config":{"installations":m}}))'); api PUT "/api/campaigns/$CAMPAIGN" "$body" | pretty;;
-      *) die "BAD-ARG: unknown installations operation '$sub'." 2;; esac
-    ;;
   defaults)
     sub=${1:-}; shift || true
     case "$sub" in
@@ -148,7 +133,7 @@ print(json.dumps({"config":{"defaults":d}}))') || die 'BAD-ARG: unknown defaults
     sub=${1:-}; shift || true
     case "$sub" in
       -h|--help|'') echo 'Usage: provider read [--campaign <id>]; provider write-default <provider> <model>; provider write-preferred <provider> <model>';;
-      read) take_campaign "$@"; resolve_campaign; c=$(api GET "/api/campaigns/$CAMPAIGN"); m=$(api GET '/api/machine-settings'); p=$(api GET '/api/provider-catalog'); CAMPAIGN_JSON="$c" SETTINGS_JSON="$m" PROVIDERS_JSON="$p" python3 -c 'import json,os; c=json.loads(os.environ["CAMPAIGN_JSON"]); m=json.loads(os.environ["SETTINGS_JSON"]); print(json.dumps({"catalog":json.loads(os.environ["PROVIDERS_JSON"]),"observed":c.get("providers"),"preferences":m.get("set",{}).get("agents",{}).get("sessions",{})},indent=2))';;
+      read) take_campaign "$@"; resolve_campaign; c=$(api GET "/api/campaigns/$CAMPAIGN"); m=$(api GET '/api/machine-settings'); p=$(api GET '/api/harness-catalog'); CAMPAIGN_JSON="$c" SETTINGS_JSON="$m" PROVIDERS_JSON="$p" python3 -c 'import json,os; c=json.loads(os.environ["CAMPAIGN_JSON"]); m=json.loads(os.environ["SETTINGS_JSON"]); print(json.dumps({"catalog":json.loads(os.environ["PROVIDERS_JSON"]),"observed":c.get("providers"),"preferences":m.get("set",{}).get("agents",{}).get("sessions",{})},indent=2))';;
       write-default|write-preferred) [ "$#" -eq 2 ] || die "BAD-ARG: provider $sub needs provider and model." 2; provider=$1; model=$2; if [ "$sub" = write-default ]; then body=$(json_body 'import json,sys; print(json.dumps({"sessions":{"default":{"provider":sys.argv[1],"model":sys.argv[2]}}}))' "$provider" "$model"); else body=$(json_body 'import json,sys; print(json.dumps({"sessions":{"by_provider":{sys.argv[1]:sys.argv[2]}}}))' "$provider" "$model"); fi; envelope=$(BODY="$body" python3 -c 'import json,os; print(json.dumps({"family":"agents","value":json.loads(os.environ["BODY"])}))'); api PATCH '/api/machine-settings' "$envelope" | pretty;;
       *) die "BAD-ARG: unknown provider operation '$sub'." 2;; esac
     ;;

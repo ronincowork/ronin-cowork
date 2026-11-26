@@ -42,10 +42,9 @@ nothing paints exactly this.
 - **off:** Off
 - **go:** Go
 - **publish:** Publish
-- **kind.coding:** Software
 - **kind.household:** Home
 - **kind.personal:** Personal
-- **kind.work:** Work
+- **kind.business:** Business
 - **kind.social:** Events
 - **kind.school:** Learning
 - **kind.open:** Open
@@ -119,7 +118,7 @@ nothing paints exactly this.
 
 - **campaign_view.roots_summary:** Each Workspace and the folders it works in.
 - **campaign_view.new_summary:** Set the stage. It creates no Team and launches no Agent.
-- **campaign_view.none_selected:** No Desk selected.
+- **campaign_view.none_selected:** No office settings yet.
 - **campaign_view.no_description:** No description yet.
 - **campaign_view.name_help:** On the door, the browser tab and the address.
 - **campaign_view.description_help:** What this body of work is for. Shown on its card.
@@ -208,7 +207,7 @@ nothing paints exactly this.
 - **jira.token_replaced:** Token replaced.
 - **jira.new_token:** New API token
 - **jira.disconnect:** Disconnect
-- **jira.disconnect_confirm:** Disconnect this Desk from Jira? Every pair drops; nothing is deleted on either side.
+- **jira.disconnect_confirm:** Disconnect this office from Jira? Every pair drops; nothing is deleted on either side.
 - **jira.disconnected:** Disconnected.
 - **jira.sync:** Sync
 - **jira.last_check:** Last check
@@ -250,8 +249,8 @@ nothing paints exactly this.
 - **jira.items_preview:** What Connect will put on the space, labelled ronin-do and unassigned, under How it runs as set now.
 - **jira.open_items:** Open
 - **jira.open_pairs:** Open
-- **jira.off:** Services › Jira is off for this Desk. Turn it on in Installations › Ronin Services, then come back here.
-- **jira.card_summary:** This Desk’s Jira space: connect, check, sync.
+- **jira.off:** Services › Jira is off for this office. Turn it on in Installations › Ronin Services, then come back here.
+- **jira.card_summary:** This office’s Jira space: connect, check, sync.
 - **jira.stays:** stays in Ronin
 - **jira.items_counts:** {on} on Jira · {go} to go · {stay} stay in Ronin
 - **jira.checking_text:** Checking the site, the account, the space and its permissions.
@@ -272,52 +271,40 @@ nothing paints exactly this.
 - **campaign_home.launch:** New Project
 - **campaign_home.settings:** Settings
 - **campaign_home.check_updates:** Check for updates
-- **campaign_home.agent_harness:** Agent Harness
-- **campaign_home.agent_harness_is:** The CLIs on this machine, the accounts they launch on, and the models
+- **campaign_home.harnesses:** Harnesses
+- **campaign_home.harnesses_is:** The harnesses on this machine, the accounts they launch on, and the models
+- **campaign_home.get_started:** Get started
+- **campaign_home.get_started_is:** Harness, Workspace, Team
 - **campaign_home.settings_is_hosted:** This Desk’s settings
 - **campaign_home.business_lounge:** Business Lounge
 - **campaign_home.business_lounge_is:** Your account, office and subscription, at Ronin HQ
 - **campaign_home.side_hosted:** Models, Help, Settings and the Business Lounge
-- **setup.provider_gate:** Activate one model provider in Setup or Agent Harness to use this.
-- **setup.provider_gate_hosted:** Activate one model provider in Agent Harness to use this.
+- **setup.provider_gate_hosted:** Activate a harness in Harnesses to use this.
 - **setup.open_settings:** Open Ronin Settings
 - **setup.open_setup:** Open Ronin Setup
-- **setup.irasshai_open:** Helpful Assistant
+- **setup.irasshai_open:** Ask Ronin
 - **setup.irasshai_open_title:** Your welcome Agent: start here
-- **setup.irasshai_here:** Here, in Assist
+- **setup.irasshai_here:** Here, in Ask Ronin
 - **setup.irasshai_opening:** Opening…
 - **setup.irasshai_failed:** Couldn’t open the Helpful Assistant
 
-## harness — models-surface.js, workbench-catalog.js (the Agent Harness workbench's stones and Refresh; KAN-236)
+## harness — models-surface.js, workbench-catalog.js (the Harnesses workbench's stones and Refresh; KAN-236)
 
 - **harness.stones:** Harness
 - **harness.stones_summary:** The CLIs: install, sign in, ready
 - **harness.refresh:** Refresh
-- **harness.refresh_summary:** One press: harnesses, accounts
+- **harness.refresh_summary:** One press: harnesses, model services
 - **harness.step_harnesses:** Harnesses
 - **harness.step_harnesses_detail:** Each activated CLI: its version, the newest release, and its own model list. Only these models can launch on a subscription.
 
-## accounts — accounts-surface.js, account-editors.js (the Accounts tilespace and the forms every page shares; KAN-236)
+## accounts — model-services-surface.js, models-surface.js (model service words still read under these keys)
 
-- **accounts.title:** Accounts
-- **accounts.card_summary:** Personal API · Ronin API: which harnesses, which models
-- **accounts.lede:** Accounts a harness can launch on, apart from its own sign-in. A key added here, or on a harness page, is one record; the harnesses it serves and the models it offers are yours to tick.
-- **accounts.kind_subscription:** Subscription
-- **accounts.kind_personal_api:** Personal API
-- **accounts.kind_ronin_api:** Ronin API
-- **accounts.ronin_api_name:** Ronin API
-- **accounts.ronin_api_note:** From Ronin Cloud onboarding, or the house gateway running on this machine. Usage is stamped by the gateway.
-- **accounts.add_title:** Add {kind}
-- **accounts.edit_title:** Edit {kind}
 - **accounts.field_name:** Name
 - **accounts.field_vendor:** API provider
 - **accounts.field_url:** Base URL
 - **accounts.field_wire:** Wire API
 - **accounts.field_key:** API key
 - **accounts.field_key_keep:** API key (leave blank to keep)
-- **accounts.field_endpoint:** Gateway endpoint
-- **accounts.field_token:** House token
-- **accounts.field_token_keep:** House token (leave blank to keep)
 - **accounts.vendor_openai:** OpenAI API
 - **accounts.vendor_mistral:** Mistral API
 - **accounts.vendor_custom:** OpenAI-compatible API
@@ -325,45 +312,19 @@ nothing paints exactly this.
 - **accounts.wire_responses:** Responses
 - **accounts.save:** Save
 - **accounts.cancel:** Cancel
-- **accounts.add_personal_api:** Add Personal API
-- **accounts.add_ronin_api:** Add Ronin API
-- **accounts.add_token:** Add token
-- **accounts.discover:** Discover
 - **accounts.edit:** Edit
 - **accounts.remove:** Remove
-- **accounts.serves:** Serves
-- **accounts.offers:** Offers
-- **accounts.offers_dated:** Offers · discovered {date}
-- **accounts.discover_first:** Press Discover to read this endpoint’s model list.
-- **accounts.no_binding:** no binding yet
-- **accounts.seeded:** add a token to use it
-- **accounts.configured:** Configured
 - **accounts.key_missing:** Key missing
-- **accounts.models_n:** {n} models · {m} offered
-- **accounts.not_discovered:** Models not discovered
 - **accounts.none_yet:** None yet
-- **accounts.step_detail:** Each Personal API and Ronin API account is asked for its list; you tick what it offers on Accounts.
-- **accounts.missing_account:** Missing account
+- **accounts.step_detail:** Each private API and Ronin Gateway is asked for its model list.
 - **accounts.approvals_off:** YOLO — approvals off
-- **accounts.approvals_off_short:** YOLO
 - **accounts.approvals_prompt:** Ask for approval
-- **accounts.reasoning_default:** Provider default
-- **accounts.preset_add:** Add preset
-- **accounts.preset_edit:** Edit preset
-- **accounts.preset_name:** Name shown under Model
-- **accounts.preset_account:** Account
-- **accounts.preset_model:** Model
+- **accounts.reasoning_default:** Service default
 - **accounts.preset_reasoning:** Reasoning effort
 - **accounts.preset_approvals:** Approvals
 
-## models — models-records-surface.js, models-surface.js (the Models tilespace; KAN-236)
+## models — models-surface.js (the Harnesses workbench: stones, Refresh, Defaults)
 
-- **models.records:** Models
-- **models.records_summary:** Offered · presets · defaults
-- **models.offered:** Offered per account
-- **models.offered_none:** No accounts yet. Add one on Accounts or on a harness page.
-- **models.presets:** Presets
-- **models.presets_lede:** A preset names harness, account, model and knobs; it appears under Model in New Agent. Today every preset is a Hermes named setup.
 
 ## launch — launch-view.js (the Workbench where Teams and Agents begin)
 
@@ -375,12 +336,12 @@ nothing paints exactly this.
 - **launch_mode.head:** launch mode
 - **launch_mode.mode:** Mode
 - **launch_mode.configured:** Native
-- **launch_mode.configured_sub:** Do not override the provider CLI’s approval behavior. Model selection is separate.
+- **launch_mode.configured_sub:** Do not override the harness’s approval behavior. Model selection is separate.
 - **launch_mode.live:** Dangerously
-- **launch_mode.live_sub:** Use that provider CLI’s own approval-bypass launch.
+- **launch_mode.live_sub:** Use that harness’s own approval-bypass launch.
 - **help.title:** Help
 - **help.card_summary:** What each step means, beside the step you are on.
-- **help.top_body:** The name is the only thing you must give, and it is also the tag every session carries, so it is lowercase and typeable — the field enforces that as you type. A Team’s title is written for you from the name and is yours to change. The kind says what this is for, and it narrows the templates below to the ones that suit it.
+- **help.top_body:** The name is the only thing you must give, and it is also the tag every session carries, so it is lowercase and typeable — the field enforces that as you type. A Team’s title is written for you from the name and is yours to change. The kind says what this is for.
 - **help.mandate_body:** How far this Agent goes before it checks in, whether it may build out a team, and what it hands back. Output takes as many answers as you mean — a plan AND the team AND no code — and nothing argues with a combination. Open means no requirement. None of it is enforced: the mandate is carried in the Agent’s letter and read by it, not imposed on it.
 - **help.loadout_body:** Model and Launch mode are independent. Native means no override in that field; only Native model plus Native launch mode is the bare CLI command. Features add facilities or taught practices; behaviours say how ordinary work should be done.
 - **help.agents:** Agents
@@ -388,7 +349,7 @@ nothing paints exactly this.
 - **help.behaviours:** What a Behavior is
 - **help.behaviours_body:** Behaviors are specific guidance given to Agents at birth. Team Work and Working with the User are selectable; Write it Down, All Cowork Agents and Conditional Behaviors are applied by Ronin when their rules match.
 - **help.type:** New session
-- **help.type_body:** Three kinds of thing can start here. A Cowork Agent is born with everything Ronin provides on this box. A bare-metal Agent is the provider’s own CLI and nothing else. A terminal is a shell with no agent. The choice decides which of the steps below exist — a terminal is asked three things because there are only three to ask.
+- **help.type_body:** Three kinds of thing can start here. A Cowork Agent is born into Ronin with this installation, its selected behaviours, reading and Team. A bare-metal Agent is the harness’s own CLI and nothing else. A terminal is a shell with no agent in it at all.
 - **help.top:** Name & kind
 - **help.objective:** Common instructions
 - **help.objective_body:** What everyone born onto this Team is told. The objective reaches them: it is written into the brief every new Agent reads at birth, in the Team’s own words.
@@ -397,7 +358,7 @@ nothing paints exactly this.
 - **help.team:** Team
 - **help.team_body:** A new team is made first and the Agent is born into it. Joining an existing one lands that team’s answers in this form, which you can then change. No team is ordinary — a rōnin works alone and nothing is missing.
 - **help.where:** Who and where
-- **help.where_body:** The provider and model that open, and the folder they open in. The folder is where work starts, not a fence: an Agent reaches whatever it is asked to reach. A Team’s branch is the line its Agents hand work in to, and the lead promotes from it; blank means the Team’s own line.
+- **help.where_body:** The harness and model that open, and the folder they open in. The folder is where work starts, not a fence: an Agent reaches whatever it is asked to reach.
 - **help.mandate:** Mandate
 - **help.loadout:** Behaviors
 - **help.kit:** Shared toolkit
@@ -441,10 +402,6 @@ nothing paints exactly this.
 - **settei.key_set:** ✓ set
 - **settei.key_not_set:** not set
 - **settei.key_presence:** presence only — the value stays in .env
-- **settei.weights_downloaded:** ✓ downloaded
-- **settei.weights_size:** {mb} MB · koshi_weights store
-- **settei.local_weights:** local weights
-- **settei.weights_none:** none downloaded
 - **settei.group_agents:** agent installations
 - **settei.agents_hint:** a tick means it is on the box — tick an empty one to put it on the needed list
 - **settei.installed:** installed
@@ -505,7 +462,8 @@ nothing paints exactly this.
 - **forms.tier_light:** light
 - **forms.tier_standard:** standard
 - **forms.tier_frontier:** frontier
-- **forms.provider:** model provider
+- **forms.tier_unrated:** unrated
+- **forms.provider:** harness
 - **forms.model:** model
 - **forms.none:** —
 - **forms.on:** On
@@ -522,7 +480,7 @@ nothing paints exactly this.
 - **new_agent.type_cowork:** Cowork Agent
 - **new_agent.type_cowork_sub:** Born with Ronin capabilities, behaviors, and assigned Team.
 - **new_agent.type_bare:** Bare-metal Agent
-- **new_agent.type_bare_sub:** The provider’s agent and nothing else.
+- **new_agent.type_bare_sub:** The harness’s agent and nothing else from Ronin.
 - **new_agent.type_terminal:** Terminal
 - **new_agent.type_terminal_sub:** A raw tmux pane, no agent launched, and nothing sent to it.
 - **new_agent.name_placeholder:** name
@@ -700,19 +658,6 @@ nothing paints exactly this.
 - **machine.stopped:** Off — the gauge is hidden.
 - **machine.save_failed:** Could not save that.
 
-## koshi — koshi.js (the 目 Koshi tab)
-- **koshi.restart:** ↻ Restart Koshi
-- **koshi.restart_title:** Stop and start the watcher. Settings apply on their own; this is for when it is not running at all.
-- **koshi.restarting:** restarting…
-- **koshi.restart_failed:** it did not come back up
-- **koshi.blurb_running:** Which model each Koshi job asks. Changes apply within a minute — no restart needed.
-- **koshi.blurb_stopped:** Koshi is NOT running. Nothing is watching any work record.
-- **koshi.outlet_not_built:** {outlet} — not built
-- **koshi.pick_title:** Which outlet this job asks
-- **koshi.not_built:** Not built yet
-- **koshi.not_built_note:** Not built yet — nothing asks anything.
-- **koshi.saving:** saving…
-
 ## pad — padpanel.js (the ▦ Work Louder pad panel)
 - **pad.sheet:** Work Louder pad
 - **pad.title:** ▦ Work Louder
@@ -838,22 +783,6 @@ The pad's current config downloads as a backup first.
 - **docs.brief_now:** Brief now
 - **docs.shelf_empty:** Nothing on this shelf — a Workspace's folders keep their docs in docs/ and README.md.
 - **docs.plans_empty:** No plans yet. A lead writes one with the user: plan write <name>.
-- **folders.up:** ← Up
-- **folders.home:** Home
-- **folders.search:** Find a folder here
-- **folders.hidden:** Show hidden folders
-- **folders.new:** ＋ New folder here
-- **folders.new_name:** Folder name
-- **folders.git:** Start Git version history
-- **folders.create:** Create and select
-- **folders.loading:** Reading folders…
-- **folders.choose:** Choose
-- **folders.empty:** No matching folders here.
-- **folders.new_in:** ＋ New folder in {name}
-- **folders.name_needed:** Give the new folder a name.
-- **folders.create_confirm:** Create this folder on the Ronin machine?\n\n{target}
-- **folders.create_title:** Create folder
-- **folders.creating:** Creating…
 - **docs.open_browser:** Open in browser ↗
 - **docs.frame_title:** document
 - **docs.discard_confirm:** Discard unsaved changes?
@@ -896,7 +825,6 @@ The pad's current config downloads as a backup first.
 ## pane — panes.js (the pane registry's tab labels)
 - **pane.settei:** Configuration
 - **pane.hotwords:** Hotwords
-- **pane.koshi:** Koshi
 
 ## desk — desk.js (the desk's rows and tooltips)
 - **cowork.tab_health:** Desk
@@ -934,10 +862,6 @@ The pad's current config downloads as a backup first.
 - **gauge.used:** ⛽ {label} {pct}% used
 
 ## tape — tapeview.js (the RIREKI tape view)
-- **tape.summarize_now:** Summarize now
-- **tape.summary_policy:** Summary production
-- **tape.policy_on_demand:** On demand
-- **tape.policy_keep_current:** Keep current
 - **tape.jump_title:** Jump to the latest output — the deterministic way back to the bottom, whatever the scroll is doing.
 - **tape.jump:** ↓ latest
 - **tape.fold_code:** ⌨ code
@@ -1179,13 +1103,27 @@ The pad's current config downloads as a backup first.
 
 ## composer — the ✕ clear
 
-## phone — phone.js (the mobile document: Teams, a Team's Agents | Docs, one Agent's tile)
-- **phone.coworks:** Teams
+## phone — phone.js (the mobile document: the list, a Team's Docs, an item, one Agent's tile)
+- **phone.type:** Type
+- **phone.type_team:** Team
+- **phone.type_epic:** Epic
+- **phone.type_workspace:** Workspace
+- **phone.kind:** Kind
+- **phone.kind_agent:** Agent
+- **phone.kind_lead:** Lead
+- **phone.kind_item:** Item
+- **phone.sort:** Sort
+- **phone.sort_type:** By type
+- **phone.sort_active:** By active
+- **phone.band_flagged:** Flagged
+- **phone.band_active:** Active
+- **phone.band_recent:** Recently active
+- **phone.band_rest:** Everyone else
+- **phone.no_epic:** No Epic
+- **phone.no_workspace:** No Workspace
+- **phone.no_rows:** Nobody here yet.
 - **phone.launch_card:** Launch New Agent
 - **phone.launch_defaults:** Everything else launches with this Team's defaults.
-- **phone.no_coworks:** No Teams yet.
-- **phone.no_agents:** No Agents on this Team yet.
-- **phone.agents:** Agents
 - **phone.docs:** Docs
 - **phone.back:** Back
 
@@ -1224,14 +1162,9 @@ The pad's current config downloads as a backup first.
 ## tile — the prompt, the ended line, the picker tooltips
 - **tile.session_ended:** session ended.
 
-## tape — the summary default and the alt note
-- **tape.no_summary:** No summary has been written yet.
+## tape — the alt note
 - **tape.alt_note_partial:** history begins mid-session · scrollback above is reconstructed from the tape
 - **tape.alt_note:** scrollback above is reconstructed from the tape
-
-## tape — output.js summary notes
-- **tape.writing_summary:** Writing a summary…
-- **tape.summary_unavailable:** Summary unavailable — {message}
 
 ## customize — three more paragraphs
 - **customize.handoff_read_only_shelf:** This preview reads this shelf and does not write it. Your own agent can change it 
@@ -1294,12 +1227,6 @@ The pad's current config downloads as a backup first.
 - **team_config.cowork_id:** Team ID
 - **team_config.title:** Title
 - **team_config.kind:** Kind
-- **team_config.kind_coding:** Coding
-- **team_config.kind_work:** Work
-- **team_config.kind_personal:** Personal
-- **team_config.kind_household:** Household
-- **team_config.kind_social:** Social
-- **team_config.kind_school:** School
 - **team_config.objective:** Purpose
 - **where.born_in:** Born in
 - **where.additional:** Additional workspaces
@@ -1408,23 +1335,23 @@ The pad's current config downloads as a backup first.
 - **feedback.sending:** Sending…
 - **feedback.sent:** Sent — thank you
 - **feedback.thank_you:** Thank you for helping us make Ronin better.
-- **setup_surface.providers:** Model providers
+- **setup_surface.providers:** Harnesses
 - **setup_surface.authenticate_mika:** Let Mika authenticate
 - **setup_surface.authenticate_guided:** Use the CLI with Mika
 - **setup_surface.authenticate_irasshai:** Let the Helpful Assistant authenticate
 - **setup_surface.authenticate_guided_irasshai:** Use the CLI with the Helpful Assistant
-- **setup_surface.providers_summary_unread:** Every provider and model Ronin offers, and what this machine has.
-- **setup_surface.providers_summary:** {providers} providers · {models} models · {activated} activated here
+- **setup_surface.providers_summary_unread:** Every harness and model Ronin offers, and what this machine has.
+- **setup_surface.providers_summary:** {providers} harnesses · {models} models · {activated} activated here
 - **setup_surface.section_yours:** Yours
-- **setup_surface.no_cli:** No CLI in Ronin’s registry serves this provider, so it cannot be installed or signed in here.
+- **setup_surface.no_cli:** No CLI in Ronin’s registry serves this harness, so it cannot be installed or signed in here.
 - **setup_surface.no_cli_state:** No CLI
-- **setup_surface.no_models:** The catalog lists no models for this provider.
-- **setup_surface.refresh_all:** Refresh all model providers
+- **setup_surface.no_models:** The catalog lists no models for this harness.
+- **setup_surface.refresh_all:** Refresh all harnesses
 - **setup_surface.refreshing_accounts:** Reading account lists…
 - **setup_surface.last_ran:** Last ran {date}
-- **setup_surface.never_ran:** Never run — every provider offers Native only until it runs.
+- **setup_surface.never_ran:** Never run — every harness offers Native only until it runs.
 - **setup_surface.models_read:** Model list read {date} by {cli} {version}
-- **setup_surface.models_not_read:** Model list not read yet — press Refresh all model providers.
+- **setup_surface.models_not_read:** Model list not read yet — press Refresh all harnesses.
 - **setup_surface.provider_models_n:** {vendor} · {n} models
 - **setup_surface.part_models_n:** {n} models
 - **setup_surface.fact_installed:** Installed
@@ -1472,7 +1399,7 @@ The pad's current config downloads as a backup first.
 - **campaign_view.desk_settings:** Desk Settings
 
 ## brief — brief-step.js, brief-author.js, behaviour-surface.js and the brief settings on every page (what an Agent is told; KAN-480, BRIEF_WORDING 3–5)
-- **brief.from_campaign:** Campaign
+- **brief.from_campaign:** office
 - **brief.from_workspace:** Workspace
 - **brief.from_team:** Team
 - **brief.from_user:** your settings
@@ -1574,9 +1501,9 @@ The pad's current config downloads as a backup first.
 - **agent_composition.sending:** Sending…
 - **agent_composition.unchanged:** Its brief is unchanged: nothing was sent.
 - **agent_composition.updated:** The Agent has been sent its new brief.
-- **campaign_view.brief_help:** What every Agent in this Campaign is told. Agents already working are sent the change.
-- **team_config.brief_help:** What every Agent on this Team is told. Agents already working are sent the change.
-- **workspaces.brief_help:** What every Agent in this Workspace is told. Agents already working are sent the change.
+- **campaign_view.brief_help:** What every new Workspace, Team and Agent inherits. Nothing that already exists changes.
+- **team_config.brief_help:** What every new Agent on this Team inherits. Agents already working don't change.
+- **workspaces.brief_help:** What every new Team and Agent in this Workspace inherits. Nothing that already exists changes.
 - **work_record.part_session:** Session
 - **work_record.part_user:** User
 - **work_record.part_people:** People

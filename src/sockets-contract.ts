@@ -1,7 +1,29 @@
 
 import type { TrailLine, WorkItem } from './work-items.js';
 
-export const CONTRACT_V = 15;
+export const CONTRACT_V = 17;
+
+/** One harness model HQ rates: `harness` + `id` exactly as that CLI lists the model. A fact HQ
+ *  doesn't have is absent, never guessed. Prices are USD per million tokens. */
+export interface CatalogModel {
+  harness: string;
+  id: string;
+  name?: string;
+  tier?: string;
+  use_for?: string;
+  context?: number;
+  output?: number;
+  price?: { input?: number; output?: number };
+  released?: string;
+  knowledge?: string;
+  reasoning?: boolean;
+  tools?: boolean;
+}
+/** A model entry HQ suggests for a new OpenRouter connection: its display name and exact API model ID. */
+export interface OpenRouterStarter { name: string; id: string }
+/** The office's models file: the harness models HQ rates, in Glen's order (the picker's order within
+ *  a tier), and the OpenRouter starters. Ronin Gateway's models are not here: the Gateway lists them. */
+export interface ModelCatalog { at?: string; harness_models: CatalogModel[]; openrouter_starters: OpenRouterStarter[] }
 
 export interface LaunchIdentity {
   key: string;
@@ -61,7 +83,7 @@ export type TranscriptLookup = { source: TranscriptSource } | { gap: TranscriptG
 export interface Sockets {
   resolveTranscriptSource(name: string): Promise<TranscriptLookup>;
   /** `started` runs once every part's start() has finished and Ronin is listening, so it sees what
-   *  they set up (Ronin models' rows); it is not awaited, so a long one never holds Ronin's start (KAN-721). */
+   *  they set up (the Gateway relay); it is not awaited, so a long one never holds Ronin's start (KAN-721). */
   registerBoot(hook: { start(): void | Promise<void>; started?(): void | Promise<void>; stop?(): void }): void;
   onSessionWillBorn(cb: (name: string) => void | Promise<void>): void;
   onSessionBorn(cb: (info: BornInfo) => void | Promise<void>): void;
@@ -117,10 +139,13 @@ export interface Sockets {
   /** Since the seat's last look, and the cursor moves. Nothing new: waits up to waitSeconds
    *  (at most 90) for the first entry. */
   readInbox(seat: string, waitSeconds?: number): Promise<Array<{ at: string; from: string; channel: string; text: string }>>;
+  /** THE MODEL CATALOG (KAN-828): HQ's Models table, whole, as the unit's models.json has it.
+   *  Cowork keeps it in its own store, so a restart or a stopped park still has the last one. */
+  setModels(catalog: ModelCatalog): Promise<void>;
   setStreamHandler(h: (...args: unknown[]) => void): void;
 }
 
 export interface ServiceRegistration {
-  name: string; // the service folder name: project_management | koshi | rireki | counting | koe
+  name: string; // the service folder name: project_management | rireki | counting | koe
   register(sockets: Sockets): void;
 }

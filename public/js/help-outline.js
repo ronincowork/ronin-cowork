@@ -53,7 +53,7 @@ function PAGES() {
     shelf('start', t('help_outline.start', 'Getting started'), [
       page('docs/getting-started/get-started.md', t('help_outline.get_started', 'Get started')),
       page('docs/getting-started/setup-workbench.md', t('help_outline.setup', 'Ronin Setup')),
-      page('docs/getting-started/provider-sign-in.md', t('help_outline.sign_in', 'Provider sign-in')),
+      page('docs/getting-started/harness-sign-in.md', t('help_outline.sign_in', 'Harness sign-in')),
       page('docs/getting-started/services-activation.md', t('help_outline.services', 'Ronin Services')),
     ]),
     shelf('using', t('help_outline.using', 'Using Ronin'), [
@@ -126,7 +126,7 @@ export function createHelpOutline({ onRead = () => {} } = {}) {
   });
   const intro = el('div', 'sws-intro help-outline-intro');
   intro.append(
-    el('h2', '', t('help_outline.headline', 'Launch and go. Work across model providers. Simple Ronin tools facilitate agent coworking.')),
+    el('h2', '', t('help_outline.headline', 'Launch and go. Work across harnesses. Simple Ronin tools facilitate agent coworking.')),
     el('p', '', t('help_outline.lead_line', 'Your Agents and accounts run remote, you access from browser on your computer or phone.')),
   );
   stones.mount(out.content, { before: [intro] });

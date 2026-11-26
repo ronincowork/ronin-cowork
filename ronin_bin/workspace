@@ -1,0 +1,139 @@
+#!/usr/bin/env bash
+# workspace — read and set up the office's Workspaces (w926): what each project is (its objective),
+# standing directions to its Agents (instructions), and its folders and repositories. Over the
+# Workspace page's own routes: /api/workspaces (and its /repos).
+. "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/tool-count.sh" workspace "$@"
+set -u -o pipefail
+. "$(dirname "$(readlink "${BASH_SOURCE[0]}" 2>/dev/null || printf '%s' "${BASH_SOURCE[0]}")")/tool-path.sh"
+TOOL_DIR=$(dirname "$SELF")
+usage() { cat <<'EOF_USAGE'
+Usage:
+  workspace list                                  every Workspace: its handle, name and objective
+  workspace read <handle>                         its objective, instructions, repositories and folders
+  workspace create "<name>" --objective "<text>" [--kind <kind>]
+                                                  a new Workspace; the handle is made from the name.
+                                                  Kinds: open business personal household social school
+  workspace objective <handle> "<text>"           replace what the project is
+  workspace instructions <handle> "<text>"        replace its standing directions to Agents
+  workspace kind <handle> <kind>                  set its kind
+  workspace repo <handle> [<git-url>] [--github private|public]
+                                                  a repository into repos/<repo>: cloned from any Git host
+                                                  (owner/name: GitHub), or with no URL a new one started;
+                                                  --github puts a started one on GitHub too
+  workspace source <handle> <source>              where an existing project comes from (google_drive,
+                                                  wordpress, shopify, netlify, computer, or another):
+                                                  an integration row, its folder files/<source>
+  workspace starter ronin_lab                     make Ronin Lab as Ronin ships it
+                                                  (public/content/starter-workspaces.json, the page's seed too)
+"<text>" may be - to read it from stdin. The objective is the one place that says what the project is.
+Every Workspace's folder is ~/ronin/<name>, laid out plans/ files/ repos/.
+EOF_USAGE
+}
+cmd=${1:-}; [ "$#" -gt 0 ] && shift
+case "$cmd" in
+  -h|--help|'') usage; [ -n "$cmd" ]; exit $? ;;
+  list) [ "$#" -eq 0 ] || { usage >&2; exit 2; } ;;
+  read) [ "$#" -eq 1 ] || { usage >&2; exit 2; } ;;
+  create) { [ "$#" -eq 3 ] || { [ "$#" -eq 5 ] && [ "$4" = --kind ]; }; } && [ "$2" = --objective ] || { usage >&2; exit 2; } ;;
+  objective|instructions|kind|source) [ "$#" -eq 2 ] || { usage >&2; exit 2; } ;;
+  repo) { [ "$#" -ge 1 ] && [ "$#" -le 4 ]; } || { usage >&2; exit 2; } ;;
+  starter) [ "$#" -eq 1 ] && [ "$1" = ronin_lab ] || { usage >&2; exit 2; } ;;
+  *) echo "workspace: unknown command $cmd (workspace --help)" >&2; exit 2 ;;
+esac
+args=("$@")
+[ "${#args[@]}" -gt 0 ] && [ "${args[-1]}" = - ] && args[-1]=$(cat)
+[ "$cmd" = create ] && [ "${#args[@]}" -eq 3 ] && [ "${args[2]}" = - ] && args[2]=$(cat)
+
+. "$TOOL_DIR/ronin-http.sh"
+ronin_connect || exit $?
+RONIN_BASE="$url" CMD="$cmd" STARTERS="$TOOL_DIR/../public/content/starter-workspaces.json" python3 - "${RONIN_CURL[@]+"${RONIN_CURL[@]}"}" --args "${args[@]}" <<'EOF_PY'
+import json, os, re, subprocess, sys
+argv = sys.argv[1:]
+split = argv.index('--args')
+curl_opts, args = argv[:split], argv[split + 1:]
+base, cmd = os.environ['RONIN_BASE'], os.environ['CMD']
+KINDS = ('open', 'business', 'personal', 'household', 'social', 'school')
+def kind_of(k):
+    if k not in KINDS: print('A kind is one of: %s.' % ' '.join(KINDS), file=sys.stderr); sys.exit(2)
+    return k
+from urllib.parse import quote
+
+def call(method, route, body=None):
+    line = ['curl', '-sS', '-m', '180', *curl_opts, '-w', '\n%{http_code}', '-X', method, base + route]
+    if body is not None: line += ['-H', 'Content-Type: application/json', '--data-binary', json.dumps(body)]
+    out = subprocess.run(line, capture_output=True, text=True)
+    if out.returncode: print('UNREACHABLE: Ronin did not answer at %s' % base, file=sys.stderr); sys.exit(5)
+    text, _, status = out.stdout.rpartition('\n')
+    try: data = json.loads(text)
+    except Exception: print('HTTP %s: Ronin answered without JSON' % status, file=sys.stderr); sys.exit(3)
+    if not status.startswith('2') or data.get('ok') is False or data.get('error'):
+        print(data.get('error') or 'HTTP %s' % status, file=sys.stderr); sys.exit(3)
+    return data
+
+def workspaces(): return call('GET', '/api/workspaces').get('workspaces') or []
+def one(handle):
+    for w in workspaces():
+        if w['name'] == handle: return w
+    print('No Workspace "%s". workspace list names them.' % handle, file=sys.stderr); sys.exit(4)
+def save(w):
+    body = {k: v for k, v in w.items() if k not in ('plans_place', 'canvases')}
+    return call('PUT', '/api/workspaces/' + w['name'], body)['workspace']
+
+if cmd == 'list':
+    rows = workspaces()
+    if not rows: print('No Workspaces yet.')
+    for w in rows:
+        print('%s — %s%s' % (w['name'], w.get('title') or w['name'], ' (archived)' if w.get('archived') else ''))
+        print('  ' + (w.get('objective') or 'objective: none yet').replace('\n', '\n  '))
+elif cmd == 'read':
+    w = one(args[0])
+    print('%s — %s (%s)' % (w['name'], w.get('title') or w['name'], w.get('kind') or 'open'))
+    print('Objective: ' + (w.get('objective') or 'none yet'))
+    if w.get('instructions'): print('Instructions: ' + w['instructions'])
+    for r in w.get('repos') or []: print('repository %s: %s (%s)%s%s' % (r['name'], r['dir'], r.get('mode'), ', from ' + r['remote'] if r.get('remote') else '', ' — ' + r['note'] if r.get('note') else ''))
+    for f in w.get('folders') or []: print('folder %s: %s%s' % (f['name'], f['dir'], ' — ' + f['note'] if f.get('note') else ''))
+    if not (w.get('repos') or w.get('folders')): print('No folders or repositories yet.')
+    for i in w.get('integrations') or []: print('integration %s%s' % (i.get('provider', ''), ', folder ' + i['folder'] if i.get('folder') else ''))
+elif cmd == 'create':
+    title, objective = args[0].strip(), args[2].strip()
+    kind = kind_of(args[4]) if len(args) == 5 else 'open'
+    handle = re.sub(r'[^a-z0-9_-]+', '_', title.lower()).strip('_-')[:64]
+    if not handle: print('Give the Workspace a name.', file=sys.stderr); sys.exit(2)
+    taken = {w['name'] for w in workspaces()}
+    base_handle, n = handle, 2
+    while handle in taken: handle, n = '%s_%d' % (base_handle, n), n + 1
+    w = call('PUT', '/api/workspaces/' + handle, {'title': title, 'objective': objective, 'kind': kind})['workspace']
+    print('Made %s — %s, in %s' % (w['name'], w.get('title'), (w.get('folders') or [{}])[0].get('dir', '~/ronin/' + w['name'])))
+elif cmd in ('objective', 'instructions'):
+    w = one(args[0]); w[cmd] = args[1].strip(); save(w)
+    print('%s of %s written.' % (cmd.capitalize(), w['name']))
+elif cmd == 'kind':
+    w = one(args[0]); w['kind'] = kind_of(args[1]); save(w)
+    print('%s is %s.' % (w['name'], w['kind']))
+elif cmd == 'repo':
+    w = one(args[0]); rest = args[1:]; body = {}
+    if '--github' in rest:
+        i = rest.index('--github')
+        if i + 1 >= len(rest) or rest[i + 1] not in ('private', 'public'): print('--github is private or public.', file=sys.stderr); sys.exit(2)
+        body['github'] = rest[i + 1]; del rest[i:i + 2]
+    if len(rest) > 1: print('One repository at a time.', file=sys.stderr); sys.exit(2)
+    if rest: body['repository'] = rest[0].strip()
+    out = call('POST', '/api/workspaces/%s/repos' % quote(w['name']), body)
+    print('%s into %s%s.' % ('Cloned ' + rest[0] if rest else 'Started a repository', out['dir'],
+          ', on GitHub too' if out.get('github') else ''))
+elif cmd == 'source':
+    w = one(args[0]); source = re.sub(r'[^a-z0-9_-]+', '_', args[1].strip().lower()).strip('_-')
+    if not source: print('Name the source.', file=sys.stderr); sys.exit(2)
+    rows = w.get('integrations') or []
+    if any(r.get('provider') == source for r in rows): print('%s already comes from %s.' % (w['name'], source)); sys.exit(0)
+    own = next((f['dir'] for f in w.get('folders') or [] if f.get('name') == w['name']), (w.get('folders') or [{}])[0].get('dir'))
+    if own: os.makedirs(os.path.join(own, 'files', source), exist_ok=True)
+    w['integrations'] = [*rows, {'provider': source, 'folder': 'files/' + source}]; save(w)
+    print('%s comes from %s; its files go in files/%s.' % (w['name'], source, source))
+elif cmd == 'starter':
+    seed = json.load(open(os.environ['STARTERS']))[args[0]]
+    if any(w['name'] == args[0] for w in workspaces()): print('%s is already here.' % seed['title']); sys.exit(0)
+    w = call('PUT', '/api/workspaces/' + args[0], {'title': seed['title'], 'objective': seed['objective'], 'kind': 'open'})['workspace']
+    held = (w.get('folders') or [{}])[0].get('dir', '')
+    print('Made %s — %s%s' % (w['name'], w.get('title'), ', holding ' + held if held else ''))
+EOF_PY

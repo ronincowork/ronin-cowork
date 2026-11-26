@@ -35,8 +35,15 @@ const said = (text) => String(text || '').replace(/\s+/g, ' ').trim();
  * delivery (Tell, House notice and so on) keeps its head.
  */
 const PERSON_HEAD = /^From [^\n]*\[(?:Message box|Ronin Box)\]:\n/;
-export const personWords = (rec) => (rec?.role === 'user' && PERSON_HEAD.test(String(rec.text || ''))
-  ? { ...rec, text: String(rec.text).replace(PERSON_HEAD, '') } : rec);
+/** A button's message (sendPress, press.js) is the person's too, drawn as what they pressed. */
+const PRESS_HEAD = /^From [^\n]*\[Button\]:\n/;
+export const personWords = (rec) => {
+  if (rec?.role !== 'user') return rec;
+  const text = String(rec.text || '');
+  if (PERSON_HEAD.test(text)) return { ...rec, text: text.replace(PERSON_HEAD, '') };
+  if (PRESS_HEAD.test(text)) return { ...rec, text: `Pressed: ${text.replace(PRESS_HEAD, '')}` };
+  return rec;
+};
 
 /**
  * @param onState  told after every read what the route said about this Agent's transcript:
@@ -74,6 +81,8 @@ export function makeTileTranscript({ read = request, watch = transcriptWatch(), 
   // overlay over this chat's own body (Setup's Helpful Assistant).
   const openItem = onItem || ((item) => import('./tilehead.js').then(({ openItemOver }) =>
     openItemOver({ body: el.parentElement, session, tegami: null, openDoc }, item)));
+  // A Workspace's handle pressed opens its own page in a new tab (KAN-809).
+  const openWorkspace = (name) => import('./workspace.js').then(({ openWorkspaceTab }) => openWorkspaceTab('workspace', name));
   // An Agent's name pressed opens that Agent (KAN-701) as an item's Agent stone does: its tile
   // over this work surface, Close gives it back (work-items-surface.js openAgentOver); where
   // there is no work surface (a phone), wherever Ronin puts a session on screen.
@@ -278,7 +287,7 @@ export function makeTileTranscript({ read = request, watch = transcriptWatch(), 
   }
 
   /** A record drawn, its item ids made links to the item overlay (chat-item-links.js). */
-  const linkItems = (rec) => linkChat(entryFor(rec), { item: openItem, agent: openAgent, doc: openDoc, commit: openDoc, session: () => session });
+  const linkItems = (rec) => linkChat(entryFor(rec), { item: openItem, agent: openAgent, doc: openDoc, commit: openDoc, workspace: openWorkspace, session: () => session });
   function entryFor(rec) {
     const entry = document.createElement('div');
     entry.className = 'tile-transcript-entry';

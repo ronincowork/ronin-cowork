@@ -22,10 +22,17 @@ import { briefSettings } from './brief-settings.js';
 import { holdsWritten, workspaceListKey } from './holds-hook.js';
 import { mkdir, readFile, readdir, rename, unlink, writeFile } from 'node:fs/promises';
 import os from 'node:os';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
 import path from 'node:path';
-import { storeDir } from './resources.js';
-import { ensureWorkspaceDoc } from './workspace-doc.js';
-import type { LaunchMode } from './agent-defaults.js';
+import { rootDir, storeDir, STORES } from './resources.js';
+import { teamAgentDefaults, type LaunchMode, type TeamAgentDefaults } from './agent-defaults.js';
+import { launchModeOf, modelsOf, parentSettings, type Models } from './waterfall.js';
+
+/** The kinds (owner, 25 Nov): a Workspace's only; Teams and Agents have none. public/js/glyphs.js keeps the client's list. */
+export const WORKSPACE_KINDS = ['open', 'business', 'personal', 'household', 'social', 'school'] as const;
+export type WorkspaceKind = typeof WORKSPACE_KINDS[number];
+import { cloneRepository } from './setup-runtime.js';
 
 /** A folder the Workspace works in: `dir` is the folder; `name` is Ronin's key for it (desks, tmux,
  * promotion), made from the folder's basename on save, the same for one dir in every Workspace. */
@@ -34,7 +41,7 @@ export interface WorkspaceFolder { name: string; dir: string; note: string }
  * in from `working` to `stable`; `direct` works on `stable`. `desks` = managed gives each Agent a worktree. */
 export interface WorkspaceRepo extends WorkspaceFolder { mode: 'reviewed' | 'direct'; working: string; stable: string; desks: 'managed' | 'none' }
 /** Where the Workspace keeps its plans (src/plans.ts): one of its folders by name and a subfolder in
- * it. Absent is the default, Ronin Lab's <campaign>/<workspace>/plans. */
+ * it. Absent is the default, the Workspace's own folder: ~/ronin/<workspace>/plans. */
 export interface WorkspacePlans { location: string; path: string }
 /** One integration this Workspace uses: `provider` names its index record; the rest are its facts (`site`, `note`). */
 export type WorkspaceIntegration = { provider: string; [fact: string]: unknown };
@@ -42,11 +49,16 @@ export interface Workspace {
   name: string;
   campaign_id: string;
   title: string;
+  /** What kind of Workspace it is: open, business, personal, household, social or school. */
+  kind: WorkspaceKind;
   objective: string;
   instructions: string;
   repos: WorkspaceRepo[];
   folders: WorkspaceFolder[];
+  /** Its settings, copied from the Campaign when it was made, handed to each Team made in it (src/waterfall.ts). */
   launch_mode: LaunchMode;
+  agent_defaults: TeamAgentDefaults;
+  models: Models;
   plans?: WorkspacePlans;
   integrations: WorkspaceIntegration[];
   /** The Workspace's brief settings and project management (docs/architecture/brief.md, Layers and brief settings). */
@@ -55,6 +67,8 @@ export interface Workspace {
   /** Archived (the page's ⋯): off the Workspace pickers, kept, one press brings it back. */
   archived?: boolean;
 }
+
+const execFileP = promisify(execFile);
 
 export const isValidWorkspaceName = (s: string): boolean => /^[a-z0-9][a-z0-9_-]{0,63}$/.test(s);
 
@@ -75,17 +89,28 @@ export function normalizeWorkspace(campaign_id: string, name: string, v: Record<
   return {
     name, campaign_id,
     title: text(v.title, 120),
+    kind: (WORKSPACE_KINDS as readonly unknown[]).includes(v.kind) ? v.kind as WorkspaceKind : 'open',
     objective: text(v.objective, 2000),
     instructions: text(v.instructions, 8000),
     repos: rows(v.repos, (r) => { const f = folderRow(r); return f && repoRow(f, r); }),
     folders: rows(v.folders, folderRow),
-    launch_mode: v.launch_mode === 'configured' ? 'configured' : 'live_dangerously', // absent: Dangerously
+    launch_mode: launchModeOf(v.launch_mode),
+    agent_defaults: teamAgentDefaults(v.agent_defaults),
+    models: modelsOf(v.models),
     ...plansOf(v.plans),
     integrations: integrationsOf(v.integrations),
     brief: briefSettings(v.brief),
     ...(typeof v.pm === 'boolean' ? { pm: v.pm } : {}),
     ...(v.archived === true ? { archived: true } : {}),
   };
+}
+
+/** A Workspace about to be made (src/waterfall.ts): its Campaign's settings, then what `body` states;
+ * its integrations are the body's and the Campaign's. Saved by saveWorkspace, which gives it its folder. */
+export async function newWorkspace(campaign_id: string, name: string, body: Record<string, unknown>): Promise<Workspace> {
+  const { settings } = await parentSettings(campaign_id);
+  const own = Array.isArray(body.integrations) ? body.integrations : [];
+  return normalizeWorkspace(campaign_id, name, { ...settings, ...body, integrations: [...own, ...settings.integrations] });
 }
 
 const expand = (p: string): string => (p.startsWith('~') ? path.join(os.homedir(), p.slice(1)) : p);
@@ -136,13 +161,72 @@ export async function listWorkspaces(campaign: string): Promise<Workspace[]> {
   return all.filter((w): w is Workspace => !!w);
 }
 
+/** A Workspace's own folder, ~/ronin/<name>: never one of Ronin's own folders there (office, config,
+ * memory…): that name takes -files. Its plans default to <this>/plans (src/plans.ts). */
+export function ownFolder(name: string): string {
+  const ronins = new Set(STORES.filter((one) => one.root === 'user').map((one) => one.rel.split('/')[0]));
+  return path.join(rootDir('user'), ronins.has(name) ? `${name}-files` : name);
+}
+
+/**
+ * THE WORKSPACE FOLDER (owner, 25 Nov; KAN-809): the office is empty, so Ronin sets the layout, the
+ * same in every Workspace. A plain folder; only the repositories are Git:
+ *   ~/ronin/<name>/
+ *     plans/               its plans (src/plans.ts)
+ *     files/               anything that isn't code: documents, notes, uploads; files/<source>/ per source
+ *     repos/<repo>/        each repository, cloned or started, its own Git (addRepository)
+ */
+export async function layOut(dir: string): Promise<void> {
+  for (const sub of ['plans', 'files', 'repos']) await mkdir(path.join(dir, sub), { recursive: true });
+}
+
+/**
+ * A repository into a Workspace, at repos/<repo> (the rule above): `repository` (a Git URL or
+ * owner/name) is cloned; none starts a new one named after the Workspace. Its row is added to the
+ * record on `mode`: Desks (`reviewed`, the default) hands work in to dev, its own branch stable;
+ * Direct works on its own branch.
+ */
+export async function addRepository(w: Workspace, repository: string, mode: WorkspaceRepo['mode'] = 'reviewed'): Promise<{ workspace: Workspace; dir: string }> {
+  const repos = path.join(ownFolder(w.name), 'repos');
+  await mkdir(repos, { recursive: true });
+  let dir: string;
+  const git = (args: string[]) => execFileP('git', ['-C', dir, ...args], { timeout: 10_000 }).then((r) => r.stdout.trim());
+  if (repository) dir = (await cloneRepository(repository, repos)).dir;
+  else {
+    // A started one gets its first commit, a README naming it, so its branches exist.
+    dir = path.join(repos, w.name);
+    await execFileP('git', ['init', '-q', '-b', 'main', dir], { timeout: 10_000 });
+    await writeFile(path.join(dir, 'README.md'), `# ${w.title || w.name}\n${w.objective ? `\n${w.objective}\n` : ''}`, 'utf8');
+    await git(['add', '-A']);
+    await git(['-c', 'user.name=Ronin', '-c', 'user.email=ronin@localhost', 'commit', '-q', '-m', `Start ${w.title || w.name}`]);
+  }
+  const stable = (await git(['symbolic-ref', '--short', 'HEAD']).catch(() => '')) || 'main';
+  // DESKS BY DEFAULT (owner, 25 Nov): each Agent on its own desk, handed in to dev and promoted; dev
+  // starts where the stable branch is.
+  if (mode === 'reviewed' && !(await git(['rev-parse', '--verify', '--quiet', 'refs/heads/dev']).then(() => true, () => false))) await git(['branch', 'dev', stable]);
+  const row = mode === 'reviewed'
+    ? { name: '', dir, note: '', mode, working: 'dev', stable, desks: 'managed' }
+    : { name: '', dir, note: '', mode, working: '', stable, desks: 'none' };
+  const next = normalizeWorkspace(w.campaign_id, w.name, { ...w, repos: [...w.repos, row] } as unknown as Record<string, unknown>);
+  return { workspace: await saveWorkspace(next), dir };
+}
+
 /** Write the whole record. */
 export async function saveWorkspace(w: Workspace): Promise<Workspace> {
   if (!w.campaign_id || !isValidWorkspaceName(w.name)) throw new Error(`A Workspace name is lowercase letters, digits, _ and -: "${w.name}".`);
   const clean = normalizeWorkspace(w.campaign_id, w.name, w as unknown as Record<string, unknown>);
+  // EVERY WORKSPACE GETS ITS FOLDER (owner, 24 Nov; KAN-809): a new one is given ~/ronin/<name>, laid
+  // out by the rule (layOut), here, whoever makes it (a page, the workspace tool).
+  if (!(await readWorkspace(clean.campaign_id, clean.name))) {
+    const dir = ownFolder(clean.name);
+    await layOut(dir);
+    // DOOR 2's SOURCES (KAN-809): each its own folder under files/, named on its integration row.
+    for (const row of clean.integrations) if (/^files\/[a-z0-9_-]+$/.test(String(row.folder || ''))) await mkdir(path.join(dir, String(row.folder)), { recursive: true });
+    // Its row is <name>-folder: the bare name is left for a repository started in it, repos/<name>.
+    if (![...clean.repos, ...clean.folders].some((row) => row.dir === dir)) clean.folders.unshift({ name: `${clean.name}-folder`, dir, note: '' });
+  }
   await nameRows(clean);
   await writeRecord(clean);
-  await ensureWorkspaceDoc(clean.name, clean.title); // its Workspace doc (KAN-713), made once
   // ONE REPOSITORY, ONE SET OF SETTINGS: the same repository in another Workspace takes these.
   const settings = (r: WorkspaceRepo) => `${r.mode} ${r.working} ${r.stable} ${r.desks}`;
   for (const campaign of await campaignNames()) {

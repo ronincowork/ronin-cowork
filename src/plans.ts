@@ -2,7 +2,7 @@
  * PLANS (KAN-256; docs/using-ronin/planning.md). A plan is written once with the user,
  * then ordered. The tool steers nothing: the planning doc and the
  * briefs say the flow (the plan isn't rewritten: the work runs on the epics). It lives on the Workspace, at
- * `<ronin_lab>/<campaign>/<workspace>/plans/<name>.md` unless the Workspace names another place
+ * `~/ronin/<workspace>/plans/<name>.md`, in the Workspace's own folder, unless it names another place
  * (`plans: { location, path }`, src/workspaces.ts). No Agent sees the path: everything goes through
  * `ronin_bin/plan` over /api/plans (src/routes/plans-api.ts).
  *
@@ -17,10 +17,9 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execFile } from './spawn-broker.js';
 import { discoverExecutable } from './agents.js';
-import { rootDir } from './resources.js';
 import { listTeamRosters, readTeamRoster } from './team-rosters.js';
 import { listSessions } from './tmux.js';
-import { listWorkspaces, readWorkspace, workspaceFolders, type HeldFolder, type Workspace, type WorkspacePlans } from './workspaces.js';
+import { listWorkspaces, ownFolder, readWorkspace, workspaceFolders, type HeldFolder, type Workspace, type WorkspacePlans } from './workspaces.js';
 
 export class PlanRefused extends Error {}
 export class PlanMissing extends Error {}
@@ -38,7 +37,6 @@ export interface PlansPlace { dir: string; location: string; path: string; recom
 
 export const isValidPlanName = (s: string): boolean => /^[a-z0-9][a-z0-9-]{0,63}$/.test(s);
 
-const DEFAULT_LOCATION = 'ronin_lab';
 const today = (): string => new Date().toISOString().slice(0, 10);
 const HEADER = /^Status: (Draft|Ordered) · (\S+) · (.+?)(?: · Team (\S+))?$/;
 export const headerLine = (h: PlanHeader): string => `Status: ${h.status} · ${h.date} · ${h.by}${h.team ? ` · Team ${h.team}` : ''}`;
@@ -54,20 +52,20 @@ export function cleanSubpath(sub: string): string {
   return parts.join('/');
 }
 
-/** The default: Ronin Lab (Setup makes it), then the Campaign, the Workspace, plans. */
-export const defaultPlansPath = (campaign: string, workspace: string): string => `${campaign}/${workspace}/plans`;
+/** The default (owner, 2026-11-24; w926): the Workspace's own folder, ~/ronin/<workspace>, then plans.
+ * Every Workspace has its own folder; the first write makes it. */
+export const DEFAULT_PLANS_PATH = 'plans';
 
-export async function plansPlace(campaign: string, workspace: string, plans?: WorkspacePlans | null): Promise<PlansPlace> {
-  const roots = await rootsByName();
+export async function plansPlace(_campaign: string, workspace: string, plans?: WorkspacePlans | null): Promise<PlansPlace> {
   if (plans?.location) {
+    const roots = await rootsByName();
     const root = roots.get(plans.location);
     if (!root) throw new PlanMissing(`The Workspace ${workspace} keeps its plans in ${plans.location}, which no Workspace holds now.`);
     const sub = cleanSubpath(plans.path);
     return { dir: path.join(root.dir, sub), location: plans.location, path: sub, recommended: false };
   }
-  const lab = roots.get(DEFAULT_LOCATION)?.dir ?? path.join(rootDir('user'), DEFAULT_LOCATION);
-  const sub = defaultPlansPath(campaign, workspace);
-  return { dir: path.join(lab, sub), location: DEFAULT_LOCATION, path: sub, recommended: true };
+  const own = ownFolder(workspace);
+  return { dir: path.join(own, DEFAULT_PLANS_PATH), location: path.basename(own), path: DEFAULT_PLANS_PATH, recommended: true };
 }
 
 /** The folder a Workspace's plans are in, its own place or the default. */

@@ -19,5 +19,5 @@ own id, `PLAYBOOK-n.json`. A child's `parent` is its PLAYBOOK-n parent; the stat
   --playbook` files a live item and its children as a new playbook.
 
 The stock ones: PLAYBOOK-1 (Irasshai's onboarding, its tasks the Setup steps), PLAYBOOK-2
-(writing a Workspace's Summary) and PLAYBOOK-3 (mapping a project brought in). How a person uses
+(writing a Workspace's objective) and PLAYBOOK-3 (mapping a project brought in). How a person uses
 them: [docs/using-ronin/playbooks.md](../../docs/using-ronin/playbooks.md).

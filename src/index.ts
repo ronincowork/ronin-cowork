@@ -46,11 +46,12 @@ import { registerDocs } from './routes/docs-api.js';
 import { registerDrop } from './routes/drop-api.js';
 import { registerDesks } from './routes/desks-api.js';
 import { registerTeamPage } from './routes/team-page-api.js';
-import { registerServicesActivation, resumeInstallWatch, servicesSetupWrites } from './routes/services-activation-api.js';
+import { registerServicesActivation } from './routes/services-activation-api.js';
 import { registerMachineSettings } from './routes/machine-settings-api.js';
 import { registerCampaigns } from './routes/campaigns-api.js';
 import { ensureInitialCampaign } from './campaigns.js';
-import { refreshProviders } from './provider-summary.js';
+import { refreshHarnesses } from './harness-summary.js';
+import { readGatewayModels } from './model-service-store.js';
 import { migrateCampaignScope, moveDeskModelDefault } from './campaign-scope.js';
 import { registerUpdate } from './routes/update-api.js';
 import { registerMachineRestart } from './routes/machine-restart-api.js';
@@ -80,16 +81,13 @@ import { DocumentPathError, absoluteDocumentPath, readDocumentFile, readProductD
 import { checkTmuxServerCgroup } from './host-guard.js';
 import { startTeamLayers } from './team-layers.js';
 import { asSeat } from './seats.js';
-import { sockets, onRowChanged, seatOfBearer,runStartedHooks, startBootHooks, stopBootHooks, mountServiceRoutes, noteService, noteServiceCapabilityPlan, noteServiceFailure, noteServiceParked } from './sockets.js';
+import { sockets, onRowChanged, seatOfBearer,runStartedHooks, startBootHooks, stopBootHooks, mountServiceRoutes, noteService, noteServiceFailure, noteServiceParked } from './sockets.js';
 import { discoverParts, partsToLoad } from './parts.js';
-import { initialCampaign } from './campaigns.js';
-import { listInstallations } from './resource-adapters.js';
 import type { ServiceRegistration } from './sockets-contract.js';
 import { resourceRequestCache, storeDir } from './resources.js';
 import { compressResponse } from './http-performance.js';
 import { startSpawnBroker, stopSpawnBroker } from './spawn-broker.js';
 import { filesProxy, startFiles, stopFiles, PYTHON } from './files.js';
-import { ensureInstalledRoots, githubSetupAnswer, githubSetupAttached } from './setup-runtime.js';
 import { registerSetupRuntime } from './routes/setup-runtime-api.js';
 import { registerSetupProgress } from './routes/setup-progress-api.js';
 import { startSetupProgress } from './setup-progress.js';
@@ -234,7 +232,14 @@ app.get('/vendor/addon-fit.js', (_req, res) => res.sendFile(path.join(NM, '@xter
 const assetVersion = publicFingerprint(PUBLIC);
 // A hosted office (an office_unit on an office_park) is read once, here: the page says so and the
 // client hides account and machine settings behind one Business Lounge link (KAN-475).
-const HOSTED = (await readOfficeRecord()).hosting !== 'self_hosted';
+const office = await readOfficeRecord();
+const HOSTED = office.hosting !== 'self_hosted';
+// The brand word (w978): an office_unit names itself "Ronin: <name> Office Unit", <name> the first
+// label of the address the browser reached it at (kojin.roninhosted.com → kojin); self-hosted is
+// RoninCowork. Written into the document as it is sent, so the first frame already reads it. On the
+// phone the word is there only on an office_unit; its bar is otherwise the mark alone.
+const brandWord = (req: express.Request) => office.hosting === 'office_unit' ? `Ronin: ${req.hostname.split('.')[0].replace(/[^\w-]/g, '')} Office Unit` : 'RoninCowork';
+const phoneBrandWord = (req: express.Request) => office.hosting === 'office_unit' ? `<span class="brand-word">${brandWord(req)}</span>` : '';
 const readDocument = (file: string) => fs.readFileSync(path.join(PUBLIC, file), 'utf8').replaceAll('__RONIN_ASSET_VERSION__', assetVersion).replaceAll('__RONIN_FILES__', PYTHON ? 'on' : 'off').replaceAll('__RONIN_HOSTED__', HOSTED ? 'on' : 'off');
 const indexHtml = readDocument('index.html');
 // THE MOBILE DOCUMENT. A phone downloads mobile.html — the bar, an empty list and
@@ -246,9 +251,9 @@ const indexHtml = readDocument('index.html');
 const mobileHtml = readDocument('mobile.html');
 const PHONE_AGENT = /\b(?:iPhone|iPod)\b|\bAndroid\b.*\bMobile\b/;
 const isPhone = (req: express.Request) => PHONE_AGENT.test(req.get('user-agent') ?? '');
-const sendDocument = (html: string) => (_req: express.Request, res: express.Response) => {
+const sendDocument = (html: string) => (req: express.Request, res: express.Response) => {
   res.setHeader('Cache-Control', 'no-cache');
-  res.type('html').send(html);
+  res.type('html').send(html.replaceAll('__RONIN_BRAND_WORD__', brandWord(req)).replaceAll('__RONIN_PHONE_BRAND_WORD__', phoneBrandWord(req)));
 };
 const sendIndex = sendDocument(indexHtml);
 const sendMobile = sendDocument(mobileHtml);
@@ -291,7 +296,6 @@ app.get('/api/health', async (_req, res) =>
 registerPasskeyManage(app); // /api/passkey/{list,register-options,register,remove} — BEHIND the gate on purpose
 registerPasswordSettings(app, issueSession); // /api/password — saved browser password setting, behind the same gate
 app.use(countBrowserTool);
-app.use(['/api/setup/registration', '/api/setup/services-key', '/api/services', '/api/campaigns', '/api/machine-settings'], servicesSetupWrites); // each write pushes {t:'services-setup'}
 registerLaunch(app); // /api/launch (both variants), /api/sessions — src/routes/launch.ts
 registerMikaContext(app); // /api/mika/context/:tab — tiny tab-scoped owner_view/show seam
 registerCatalogs(app); // catalogs and configuration resources — src/routes/catalogs.ts
@@ -318,7 +322,7 @@ registerSetupRuntime(app); // /api/setup/runtime and provider login completion �
 registerSetupProgress(app); // Setup's ticks, read from the facts
 registerJikan(app); // /api/teams/:team/jikan* — JIKAN, the Cron jobs tab: a team's scheduled requests — src/routes/jikan-api.ts
 startHouseJikan(); // JIKAN's clock: every minute, deliver what is due through the message door — src/jikan.ts
-registerServicesActivation(app); // /api/services/activation* — the Ronin Services request, local-only; no secret crosses this surface — src/routes/services-activation-api.ts
+registerServicesActivation(app); // /api/setup/registration, /api/feedback — src/routes/services-activation-api.ts
 
 // The Campaign's dated provider facts are measured once at start, after the record exists
 // and has migrated: the summary and the migration both read-modify-write the campaigns
@@ -326,28 +330,18 @@ registerServicesActivation(app); // /api/services/activation* — the Ronin Serv
 // a bare measure (KAN-651): every start, so after every Update too, reads the CLIs' model lists
 // again; nobody has to press Refresh all model providers.
 const campaignStart = ensureInitialCampaign()
-  // Ronin Lab and Project One are Workspaces in that Campaign (KAN-728), so they follow it.
-  .then(() => (isEntryPoint ? ensureInstalledRoots().catch((error) => console.error(`[setup] installed roots: ${(error as Error).message}`)) : undefined))
   .then(() => migrateCampaignScope())
   .then(() => moveDeskModelDefault())
-  .then(() => (isEntryPoint ? refreshProviders() : undefined))
+  .then(() => (isEntryPoint ? refreshHarnesses() : undefined))
+  .then(() => (isEntryPoint ? readGatewayModels() : undefined))
   .catch((error) => console.error(`[setup] campaign start: ${(error as Error).message}`));
 
 const services: ServiceRegistration[] = [];
-// The parts on disk are the install; the Campaign's Routine switches say which of them run.
-// A part claimed by a Routine that is off is parked: not imported, no timers, no routes,
-// no recorder — as if not installed, files in place (src/parts.ts). Read once, at start.
-const startupCampaign = await initialCampaign().catch(() => null);
-const plan = partsToLoad(
-  discoverParts(),
-  await listInstallations().catch(() => []),
-  startupCampaign?.config?.installations ?? {},
-  startupCampaign?.config?.services?.parts ?? {},
-);
-noteServiceCapabilityPlan(plan.capabilities);
+// The parts on disk are Ronin Services, and every one runs but one that parks itself (src/parts.ts).
+const plan = partsToLoad(discoverParts());
 for (const parked of plan.parked) {
-  console.log(`[services] ${parked.name} is parked: ${parked.reason ?? `${parked.installation} is off for this Campaign (restart after switching it on)`}`);
-  noteServiceParked(parked.name, parked.installation, parked.reason);
+  console.log(`[services] ${parked.name} is parked: ${parked.reason}`);
+  noteServiceParked(parked.name, parked.reason);
 }
 for (const { name: dir, entry } of plan.load) {
   try {
@@ -367,8 +361,6 @@ for (const s of services) {
   s.register(sockets);
 }
 mountServiceRoutes(app);
-
-void resumeInstallWatch();
 
 registerSessions(app); // per-session: kill/harakiri, meta, ctx, tegami, send — src/routes/sessions-api.ts
 registerWipeboards(app); // /api/wipeboards* — src/routes/wipeboards-api.ts
@@ -524,7 +516,6 @@ startSessionsBroadcast({
   messages: listQueuedMessages,
   wipeboard: (board) => isValidBoardName(board) ? wipeboardAnswer(board, 100) : Promise.resolve(null),
   jikan: (team) => team === '*' ? listAllJobs() : isValidTeam(team) ? listJobs(team) : Promise.resolve(null),
-  github: { attached: githubSetupAttached, answer: githubSetupAnswer },
   shutdown: shutdownOperation,
 });
 // notify_me: a marked Agent's turn end tells its callers, checked whenever its row moves — src/notify-me.ts

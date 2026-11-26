@@ -51,6 +51,8 @@ export const sessionsHandlers = new Set();
 export const mikaShowHandlers = new Set();
 /** Who hears the server-owned five-step Setup record after a scan or answer lands. */
 export const setupProgressHandlers = new Set();
+/** Who hears a harness sign-in move (`harness-sign-in`, src/harness-sign-in.ts): the Harness surface. */
+export const signInHandlers = new Set();
 
 // A reconnect is a new connection with no memory, so it is told again at once. The tab
 // then asks for what it missed while the socket was down.
@@ -58,6 +60,7 @@ store.onOpen(() => { sendWatch(); for (const fn of transcriptHandlers) fn({ t: '
 store.listen('transcript', (m) => { for (const fn of transcriptHandlers) fn(m); });
 store.listen('team-page', (m) => { for (const fn of teamPageHandlers) fn(m); });
 store.listen('mika-show', (m) => { for (const fn of mikaShowHandlers) fn(m); });
+store.listen('harness-sign-in', (m) => { for (const fn of signInHandlers) fn(m); });
 store.listen('setup-progress', (m) => { if (Array.isArray(m.steps)) for (const fn of setupProgressHandlers) fn(m); });
 store.reduce('sessions', onSessionsEvent);
 

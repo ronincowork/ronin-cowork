@@ -12,7 +12,7 @@ falls through to `professional_en`.
 - **team_kit:** Mise en place
 - **loadout:** Station
 - **go:** Service
-- **kind.coding:** The workshop
+- **kind.business:** The business
 - **kind.household:** The household
 - **kind.personal:** Oneself
 - **kind.social:** Entertaining

@@ -14,6 +14,9 @@ jobs:
         with:
           node-version: '22'
           cache: npm
+      # Before anything is installed or built: the marks of a rewritten commit
+      # (scripts/check-tamper.mjs). It reads the files and runs none of them.
+      - run: node scripts/check-tamper.mjs
       - run: npm ci
       # Each test boots a real Ronin on a private tmux server (tests/helpers/ronin.ts):
       # a runner is the fresh box a new user has, so it must carry the binary.

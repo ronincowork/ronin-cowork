@@ -1,37 +1,22 @@
 /* part of the ronin-cowork client — see js/README.md */
 /**
- * SETUP IS IRASSHAI'S WHILE SHE RUNS (owner, 2026-11-15; KAN-573). Irasshai is a hosted
- * office's onboarding Agent (Ronin Services, docs/irasshai.md). While her session is live:
- * - the Assist surface is her chat only: her conversation as Chat draws it (tile-transcript.js)
- *   and the message box under it, with no tile chrome; its header's one tool is the tile's
- *   Term / Chat toggle, to her terminal and back (KAN-717);
- * - the selector's steps are her onboarding epic's tasks, in PLAYBOOK-1's order, a done one
- *   marked ✓; a press asks her to take that step, one line through the message queue, shown in
- *   her chat at once ("Let's do Workspace.", never an id); a press on a done one sends her nothing
- *   and opens the surface its task's Open line names (KAN-699).
- * Her items are the store's pushed `epics` and `epicItems`; nothing here asks on a timer. With no
- * Irasshai, Setup is as it always was.
+ * THE HELPFUL ASSISTANT IS SETUP'S ASK RONIN PANEL (owner, 2026-11-24; w926; docs/architecture/setup-workbench.md).
+ * Irasshai is an ordinary session type whose behaviour is her prompt (Ronin Services, docs/irasshai.md).
+ * Hosted, Setup's Workspace 1 is her panel on every step: the step's few lines, then her chat (her
+ * conversation as Chat draws it, tile-transcript.js, and the message box), its header's one tool the
+ * tile's Term / Chat toggle (KAN-717). The selector is Setup's own steps whether she runs or not; she
+ * sees the step (Setup reports its view) and takes it when asked.
  *
- * OPENING SETUP OPENS HER (KAN-676): a hosted office's Setup, on opening, asks Ronin Services for her
- * (POST /api/irasshai/open): live, she is there; not live, she is made fresh, as any Agent is made.
- * Once her session is live the pushed session list seats her chat as above; a new birth (a new key)
- * gets a new chat. Self-hosted Setup asks for her only on her selector entry.
+ * ASKING FOR HER (KAN-691, KAN-694): the Ask Ronin panel's button (w926; the selector pill went, owner
+ * 24 Nov: it did nothing visible). A press asks for her (POST /api/irasshai/open): live, she is there; archived and still
+ * restorable, she is restored; else made fresh. It reads Opening… at once and ignores presses while it
+ * runs; a failure says so on the card. While she is live a press shows her chat.
  *
- * HER ENTRY (owner, 2026-11-19; KAN-691, KAN-694): Setup's selector has a Helpful Assistant entry at
- * the top, always (her name people see, IRASSHAI_NAME), on any ronin_install,
- * this machine included. A press asks for her as opening a hosted Setup does: it reads Opening… at
- * once and ignores presses while it runs; a failure says so on the card. While she is live a press
- * shows her chat.
+ * SHE OPENS THE SURFACES (KAN-692): she opens what a step needs with `show <tab> <surface>`, as Mika
+ * does; Setup reports its view for this tab and places what `show` names (setup-view.js).
  *
- * SHE OPENS THE SURFACES (owner, 2026-11-19; KAN-692): each onboarding task names the surface to open
- * for it, and she opens it with `show <tab> <surface>`, as Mika does; Setup reports its view for this
- * tab and places what `show` names (setup-view.js). Nothing here maps a step to a surface. The tab
- * goes with each ask for her (`askIrasshai`), into her launch prompt.
- *
- * THE INTEGRATIONS PANEL (KAN-601) is one of those surfaces, `setup.integrations`, embedded: each
- * service she adds appears there with its state (key needed, key saved, sign in), with its paste
- * field or Sign in. It reads the list again each time one of her turns ends (her row's stance,
- * pushed on `home`, leaves working): no timer, no new watcher.
+ * THE INTEGRATIONS PANEL (KAN-601) is a surface she can `show`, `setup.integrations`, embedded. It reads
+ * the list again each time one of her turns ends (her row's stance, pushed on `home`): no timer.
  */
 import { S } from './state.js';
 import { get } from './store.js';
@@ -40,56 +25,26 @@ import { buildComposer } from './composer.js';
 import { sendComposerMessage } from './composer-rules.js';
 import { makeTileTranscript } from './tile-transcript.js';
 import { WorkspaceKit } from './workspace-kit.js';
-import { IRASSHAI, IRASSHAI_NAME, irasshaiIn, irasshaiShown, onboardingDone } from './setup-journey.js';
+import { IRASSHAI, IRASSHAI_NAME, irasshaiIn, irasshaiShown } from './setup-journey.js';
 import { createIntegrationsPanel } from './integrations-panel.js';
 import { campaigns, loadCampaigns } from './campaigns.js';
 import { subscribe } from './store.js';
 import { t } from './lexicon.js';
 import { mikaTab } from './mika.js';
 
-export { IRASSHAI, IRASSHAI_NAME, irasshaiShown, irasshaiSteps, takeStepLine } from './setup-journey.js';
-export const IRASSHAI_STEP_TYPE = 'setup.irasshai-step';
+export { IRASSHAI, IRASSHAI_NAME, irasshaiShown } from './setup-journey.js';
 /** The integrations panel as a surface `show` names. */
 export const IRASSHAI_INTEGRATIONS_TYPE = 'setup.integrations';
 /** Whether her session is live, as the pushed session list says. */
 export const irasshaiLive = () => irasshaiIn(S.sessions);
-/** A hosted Setup is hers while she runs or her onboarding is not over: opening it is what makes her (KAN-676). */
-export const irasshaiSetup = () => irasshaiLive() || !onboardingDone(get('epics'));
 /** Her session's birth key, as the pushed session list says; '' when she is not live. */
 export const irasshaiKey = () => (irasshaiIn(S.sessions) ? String(S.sessions.find((one) => one.name === IRASSHAI)?.key || IRASSHAI) : '');
-
-/** The onboarding playbook: her epic is checked out from it. */
-export const ONBOARDING = 'PLAYBOOK-1';
-/** Its tasks' titles, read once from the playbook: the steps' order; and the surface each task's Open line names. */
-let order = null;
-const opens = new Map();
-export function irasshaiOrder(onRead) {
-  if (order) return order;
-  order = [];
-  void request(`/api/work-items/${ONBOARDING}`).then(async (result) => {
-    const tasks = result.ok && Array.isArray(result.data.children) ? result.data.children : [];
-    if (!tasks.length) return;
-    order = tasks.map((task) => task.title);
-    // Each task read as any item is, for its Open line.
-    for (const read of await Promise.all(tasks.map((task) => request(`/api/work-items/${encodeURIComponent(task.id)}`)))) {
-      const task = read.ok ? read.data.item : null;
-      const surface = /^Open:\s*`([^`]+)`/m.exec(String(task?.objective || ''))?.[1];
-      if (surface) opens.set(task.title, surface);
-    }
-    onRead?.();
-  });
-  return order;
-}
-/** The Setup surface a step's task names in its Open line, '' none: what a dragged step pill opens (KAN-696). */
-export const stepOpens = (step) => opens.get(step?.title) || '';
 
 /** Ask for her: one POST, answered at once, with this tab (what her `show` addresses); her chat follows the session push. */
 export const askIrasshai = () => request('/api/irasshai/open', { method: 'POST', json: { tab: mikaTab() } });
 
-export const IRASSHAI_OPEN_TYPE = 'setup.irasshai';
-
 /**
- * Her entry at the top of Setup's selector: its card's words and its press. Live, a press shows her
+ * Her opener: the Ask Ronin panel button's words and its press. Live, a press shows her
  * chat (Assist, Workspace 1: the one a phone shows); not live, it asks for her, reads Opening… at
  * once, ignores presses while it runs, and says so on the card if she couldn't be opened.
  */
@@ -108,28 +63,14 @@ export function createIrasshaiOpener({ refresh, showChat }) {
   };
   // The selector draws cards by name (their summary line is folded away), so the name carries the state.
   const label = () => (state === 'opening' ? t('setup.irasshai_opening', 'Opening…')
-    : state === 'failed' ? t('setup.irasshai_failed', 'Couldn’t open the Helpful Assistant') : t('setup.irasshai_open', IRASSHAI_NAME));
+    : state === 'failed' ? why || t('setup.irasshai_failed', 'Couldn’t open the Helpful Assistant') : t('setup.irasshai_open', 'Ask Ronin')); // the panel button's words; why in one line, as the server says it
   const summary = () => (state === 'failed' && why ? why
-    : irasshaiLive() ? t('setup.irasshai_here', 'Here, in Assist') : t('setup.irasshai_open_title', 'Your welcome Agent: start here'));
+    : irasshaiLive() ? t('setup.irasshai_here', 'Here, in Ask Ronin') : t('setup.irasshai_open_title', 'Your welcome Agent: start here'));
   return {
     press,
     offer: () => ({ key: 'open', label: label(), summary: summary(), title: summary(), className: 'setup-irasshai-card', action: press }),
     arrived: () => { if (state === 'opening') { state = ''; showChat(); } refresh(); },
   };
-}
-
-/** Her entry as a selector type: one card, never placed (a press is her opener's). */
-export function registerIrasshaiOpen() {
-  if (WorkspaceKit.workbench.surfaces.has(IRASSHAI_OPEN_TYPE)) return IRASSHAI_OPEN_TYPE;
-  return WorkspaceKit.workbench.surfaces.register({
-    type: IRASSHAI_OPEN_TYPE,
-    header: 'surface',
-    label: IRASSHAI_NAME,
-    discover: (_tenant, environment) => (environment?.irasshaiOpen ? [environment.irasshaiOpen()] : []),
-    // A drag does what a press does: her chat, or her made fresh; nothing is placed (KAN-696).
-    redirect: (_detail, environment) => { environment?.irasshaiPress?.(); return null; },
-    create: () => WorkspaceKit.primitives.createBlankSurface(),
-  });
 }
 
 /**
@@ -224,24 +165,7 @@ export function createIrasshaiChat() {
   };
 }
 
-/** Her steps in the selector: one card per task, read off `environment.irasshaiSteps()`. */
-export function registerIrasshaiSteps() {
-  if (WorkspaceKit.workbench.surfaces.has(IRASSHAI_STEP_TYPE)) return IRASSHAI_STEP_TYPE;
-  return WorkspaceKit.workbench.surfaces.register({
-    type: IRASSHAI_STEP_TYPE,
-    header: 'surface',
-    label: 'Step',
-    discover: (_tenant, environment) => (environment?.irasshaiSteps?.() || []).map((step) => ({
-      key: step.id, label: step.title, summary: '', mark: step.done ? '✓' : null, opens: stepOpens(step),
-      action: () => environment.takeIrasshaiStep(step),
-    })),
-    // A press asks her; a drag opens the surface its task's Open line names, or nothing (KAN-696).
-    redirect: (detail) => (detail?.opens ? { type: detail.opens } : null),
-    create: () => WorkspaceKit.primitives.createBlankSurface(),
-  });
-}
-
-/** Her Integrations step's surface: the integrations panel, embedded, for the office's Campaign. */
+/** The integrations panel, embedded, for the office's Campaign: a surface her `show` names. */
 export function registerIrasshaiIntegrations() {
   if (WorkspaceKit.workbench.surfaces.has(IRASSHAI_INTEGRATIONS_TYPE)) return IRASSHAI_INTEGRATIONS_TYPE;
   return WorkspaceKit.workbench.surfaces.register({

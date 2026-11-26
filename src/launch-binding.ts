@@ -1,4 +1,5 @@
-import { prepareHermesHome } from './hermes-setups.js';
+import { serviceLaunch } from './model-service-launch.js';
+import { prepareHermesHome } from './model-service-store.js';
 /** One launch processor. The CLI grammar owns identity capability; this module owns
  * sequencing and the artifact Ronin sets before starting the process. No provider list.
  */
@@ -107,7 +108,8 @@ export function processLaunch(request: LaunchRequest,
     const ahead = await setAhead(request.cli, request.cwd, home);
     const exe = assigned.argv.findIndex((part) => path.basename(part) === request.cli);
     const argv = exe < 0 ? assigned.argv : [...assigned.argv.slice(0, exe + 1), ...ahead, ...assigned.argv.slice(exe + 1)];
-    await start(argv, { ...birthEnv(), ...await agentTempEnv(key), ...request.env, ...identity.env }, identity);
+    const serviceArgv = await serviceLaunch(request.cli, argv, request.env?.RONIN_PERSON ?? '', retained?.home);
+    await start(serviceArgv, { ...birthEnv(), ...await agentTempEnv(key), ...request.env, ...identity.env }, identity);
     emitSessionBorn({ name: request.name, key, team: request.team, root: request.cwd, identity });
     return identity;
   });

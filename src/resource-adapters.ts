@@ -4,7 +4,7 @@ import { STOCK_DIR, entryValue, isKeyLine, resolveFiles, resolveTreeFiles, type 
 import { storeDir } from './resources.js';
 
 export type DefinitionKind =
-  | 'desk_profiles' | 'lexicons' | 'services' | 'canvases';
+  | 'desk_profiles' | 'lexicons' | 'canvases';
 
 export interface Definition {
   name: string;
@@ -79,20 +79,6 @@ interface Row {
   credit?: { text: string; url: string };
 }
 
-export interface ContributionRow extends Pick<Row, 'name' | 'origin' | 'shadowed' | 'label' | 'blurb'> {
-  reading: string[];
-  reading_off: string[];
-  /** Services parts this contribution runs inside the server; loaded only while its switch is on. */
-  parts: string[];
-}
-
-export interface InstallationRow extends ContributionRow {
-  effect: 'system' | 'provider';
-  maturity: string;
-  provides: string[];
-  requires: string[];
-}
-
 
 function credit(v: string): { text: string; url: string } | undefined {
   const m = /^\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)$/.exec(v.trim());
@@ -111,24 +97,3 @@ const row = (d: Definition): Row => ({
   credit: credit(d.get('credit')),
 });
 
-const contribution = (d: Definition): ContributionRow => ({
-  name: d.name, origin: d.origin, shadowed: d.shadowed,
-  label: d.get('label') || d.name, blurb: d.get('blurb'),
-  reading: splitDefinitionList(d.get('reading')), reading_off: splitDefinitionList(d.get('reading_off')),
-  parts: splitDefinitionList(d.get('parts')),
-});
-
-/** Ronin's own switchable contributions (ronin_stock/services: Ronin Services). Integrations are the bridges (integrations.ts). */
-export async function listInstallations(): Promise<InstallationRow[]> {
-  return (await readDefinitions('services')).map((d) => ({
-    ...contribution(d),
-    effect: d.get('effect') === 'system' ? 'system' : 'provider',
-    maturity: d.get('maturity'),
-    provides: splitDefinitionList(d.get('provides')),
-    requires: splitDefinitionList(d.get('requires')),
-  }));
-}
-
-export const contributionReading = (
-  contributions: readonly { enabled: boolean; reading: string[]; reading_off: string[] }[],
-): string[] => contributions.flatMap((contribution) => contribution.enabled ? contribution.reading : contribution.reading_off);

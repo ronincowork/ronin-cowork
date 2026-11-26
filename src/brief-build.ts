@@ -1,19 +1,18 @@
 /**
  * BUILDING A BRIEF (docs/architecture/brief.md, The work record is the source of truth; Layers and brief settings; The brief).
  *
- * One invariant. The New Agent path (`composeBrief`) resolves every input once — user, machine,
- * Campaign, Workspace, Team, Agent — into the complete brief document, which Ronin writes on the
+ * One invariant. The New Agent path (`composeBrief`) resolves every input once — the person, the office,
+ * the Agent's parent's settings as copied at birth, its own — into the complete brief document, which Ronin writes on the
  * work record as its `brief` key. `buildBrief` is a pure function of that document and the
  * catalogs: birth, the New Agent preview and the Configuration all render through it. The
  * Configuration edits the document (src/agent-configuration.ts) and calls the same builder.
  * Nothing else is an input: no machine setting, default, receipt, snapshot or other work-record key.
  */
 import type { BriefRecord, BriefSettings, SessionType } from './brief-record.js';
-import { cascade, LAYERS, layerOf, readUserLayer, resolveBrief, type Cascade, type Layer, type Resolved } from './brief-settings.js';
+import { cascade, LAYERS, layerOf, resolveBrief, type Cascade, type Layer, type Resolved } from './brief-settings.js';
 import { renderBrief } from './brief.js';
 import { catalogIntegrations, readCatalogs, type Catalog } from './catalog.js';
-import type { CampaignSettings } from './campaigns.js';
-import { availableTo, readMcpRecords, type McpRecord } from './mcp-records.js';
+import { readMcpRecords, type McpRecord } from './mcp-records.js';
 import { isHostedOffice, officePeople } from './office-people.js';
 import { listTeamRosters } from './team-rosters.js';
 import { briefFacts } from './facts.js';
@@ -25,33 +24,16 @@ import type { WorkRecordBrief } from './tegami.js';
 /** The Agent's own layer, as a launch body or a Configuration carries it. */
 export interface AgentBrief { brief: BriefSettings; integrations: string[]; pm?: boolean }
 
-/** The MCP server and web API records available to a Campaign: its pickers list them, and a
- * layer's integrations switch turns one on (KAN-607). A record named as a curated bridge is that
- * bridge's way through the broker, not a record of its own. */
-export async function availableRecords(campaign: string, catalog?: Pick<Catalog, 'behaviours'>): Promise<McpRecord[]> {
+/** The MCP server and web API records in Settings: the pickers list them, and the cascade turns
+ * one on. A record named as a curated bridge is that bridge's record, not a line of its own. */
+export async function availableRecords(catalog?: Pick<Catalog, 'behaviours'>): Promise<McpRecord[]> {
   const bridges = new Set(catalogIntegrations(catalog ?? await readCatalogs()).map((row) => row.name));
-  return (await readMcpRecords()).filter((record) => !bridges.has(record.name) && availableTo(record, campaign));
+  return (await readMcpRecords()).filter((record) => !bridges.has(record.name));
 }
 
-/** The Campaign's layer: its own settings, and Jira when its Jira part is on. Jira is an
- * integration set at the Campaign and Workspace only; it never decides project management, which
- * is its own setting, on at the Campaign by default (KAN-608). The switch, not the live pairing.
- * A record available to the Campaign is not on here unless the Campaign's own integrations name it. */
-export async function campaignLayer(campaign: { id: string; config: Pick<CampaignSettings, 'integrations'> & { services?: { parts?: Record<string, unknown> } } } | null | undefined): Promise<Layer> {
-  if (!campaign) return layerOf('campaign', {});
-  const jira = campaign.config.services?.parts?.jira === true ? ['jira'] : [];
-  return layerOf('campaign', { ...campaign.config, integrations: [...campaign.config.integrations, ...jira] });
-}
-
-/** The layers widest first: user, Campaign, Workspace, Team, Agent. */
-export async function briefLayers(facts: Pick<LaunchFacts, 'campaign' | 'workspace' | 'roster'>, agent: AgentBrief): Promise<Layer[]> {
-  return [
-    await readUserLayer(),
-    await campaignLayer(facts.campaign),
-    layerOf('workspace', facts.workspace ?? {}),
-    layerOf('team', facts.roster ?? {}),
-    layerOf('agent', agent),
-  ];
+/** An Agent's two layers: its parent's settings as copied at its birth (src/waterfall.ts), and its own. */
+export function briefLayers(facts: Pick<LaunchFacts, 'parent'>, agent: AgentBrief): Layer[] {
+  return [layerOf(facts.parent.level, facts.parent.settings), layerOf('agent', agent)];
 }
 
 const sessionType = (form: SpawnForm): SessionType =>
@@ -106,11 +88,11 @@ async function birthRecord(form: SpawnForm, facts: LaunchFacts, launch: LaunchId
       workspace: facts.workspace?.name ?? '',
       instructions: facts.workspace?.instructions ?? '',
       integrations: [],
-      available: (await availableRecords(campaignId, catalog)).map((record) => ({ name: record.name, kind: record.kind, description: record.description, ...(record.needs ? { needs: record.needs } : {}) })),
+      available: (await availableRecords(catalog)).map((record) => ({ name: record.name, kind: record.kind, description: record.description, ...(record.needs ? { needs: record.needs } : {}) })),
       mcp: [],
       api: [],
       pm: false,
-      services: facts.installations.filter((row) => row.enabled).map((row) => row.name),
+      services: facts.services,
     },
     agent: {
       role,
@@ -118,6 +100,7 @@ async function birthRecord(form: SpawnForm, facts: LaunchFacts, launch: LaunchId
       lead: !!form.team && !!form.team_lead,
       wipeboard: facts.roster?.wipeboard ?? form.team ?? '',
       team_objective: facts.roster?.objective ?? '',
+      team_instructions: facts.roster?.instructions ?? '',
       team_integrations: [],
       reach: held.reach,
       recruit: held.recruit,
@@ -171,7 +154,7 @@ const settingsOf = (layer: Layer): Omit<Layer, 'layer'> => ({ brief: layer.brief
 /** THE NEW AGENT PATH: resolve every input once into the brief document, then build it. */
 export async function composeBrief(form: SpawnForm, facts: LaunchFacts, agent: AgentBrief, launch: LaunchIdentity = {}): Promise<BuiltBrief> {
   const catalog = await readCatalogs();
-  const layers = await briefLayers(facts, agent);
+  const layers = briefLayers(facts, agent);
   const record = await birthRecord(form, facts, launch, catalog);
   return buildBrief({ ...record, brief_settings: Object.fromEntries(layers.map((layer) => [layer.layer, settingsOf(layer)])) }, catalog);
 }

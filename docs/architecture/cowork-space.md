@@ -49,7 +49,6 @@ Three kinds of thing, and only three, sit inside the bar:
 | `workspace_surface` | about | its head | what the head holds |
 |---|---|---|---|
 | **terminal_tile** | one session | **tile head** (`js/tilehead.js`) | ⛩ edit Agent title · reading toggle · メ menu (`js/menu.js`: send a file, mention, output, work record, delete or archive) · −. The Torii is first, immediately before the readable title; the permanent session ID does not change. |
-| **cowork_commons** | this install and this owner | the Campaign's **Machine** strip (`js/cowork-commons.js`) | Themes · Desk · Account (the rail: Configuration · Release & update · Hotwords · Koshi · Log out) · Archived · Messages · Help desk · Keypad |
 | **new_agent** | one launch | **surface head** | the New Agent form (`js/new-agent.js`), placed by the New Agent card or `workspace1=new`; from the press until the Agent is born, Launch reads **Building…** and the form steps back under the working dots; the newborn lands in that workspace |
 | *(blank)* | — | — | an EMPTY workspace says *Workspace* and holds nothing — never a commons by default |
 
@@ -123,7 +122,7 @@ Its centre is three stones in a triangle (owner, 2026-11-02; KAN-186, KAN-191, K
 read Who, What, Where: **Teams** (who does the work) at the apex, **Epics** (what the work is, ◇, drawn
 at ⌂'s visual size and weight: `--ch-glyph-epics`) bottom left and **Workspaces** (where the work is)
 bottom right, each at Home's stone size from before (208px square) with one even gap across and down
-(`--ch-office-gap`, `--space-section` + `--space-subsection`). **Model Providers**, **Help** and
+(`--ch-office-gap`, `--space-section` + `--space-subsection`). **Harnesses**, **Help** and
 **Settings** are three smaller stones in a vertical line on the right (in a row under the triangle on a
 narrow window). On a wide window the page is ten even tracks: the triangle's centre sits at 40% of the
 page width and the line's at 85%, both lifted a little above the middle (KAN-194, KAN-196). Each stone's who/what/where line shows on hover at `--text-heading`.
@@ -137,7 +136,7 @@ out on arrival), a card's holder (`@<agent>`, or `Team <name> (lead <lead>)`: wo
 statuses as buttons, objective and comments, never history. A stone dragged into a workspace, or
 an Epic's selector card, places that Epic's worksurface there. Models is its own stones of
 providers in Workspace 1 (`models-surface.js`): a stone dragged into a workspace, or its selector
-card, places that provider's page there whole, no rail; Settings' Model Providers surface stays
+card, places that provider's page there whole, no rail; Settings' Harnesses surface stays
 as it is, both drawing with the one exported drawing. Workspaces is its own stones of Workspaces in
 Workspace 1 the same way (`workspaces-surface.js`), one card per Workspace and New Workspace and
 GitHub CLI as cards; Settings' Workspaces surface stays as it is. Teams opens the Teams workbench at `#/cowork`

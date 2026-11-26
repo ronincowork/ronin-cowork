@@ -45,6 +45,7 @@ export const sockets: Sockets = {
     await geckoChanged(changed.join(', '));
   },
   readInbox: async (seat, waitSeconds) => (await import('./seats.js')).readInbox(seat, waitSeconds),
+  setModels: async (catalog) => (await import('./model-catalog.js')).setModels(catalog),
   setStreamHandler: (h) => void (streamHandler = h),
 };
 
@@ -142,13 +143,13 @@ export function noteService(name: string): void {
 export function listServices(): string[] {
   return [...serviceNames];
 }
-const parkedServices = new Map<string, { routine?: string; reason?: string }>();
-/** A part on disk that this server did not load: self-parked, or its Routine was off at start. */
-export function noteServiceParked(name: string, routine?: string, reason?: string): void {
-  parkedServices.set(name, { ...(routine ? { routine } : {}), ...(reason ? { reason } : {}) });
+const parkedServices = new Map<string, string>();
+/** A part on disk that this server did not load because it parks itself (its PARKED.md). */
+export function noteServiceParked(name: string, reason: string): void {
+  parkedServices.set(name, reason);
 }
-export function listParkedServices(): { name: string; routine?: string; reason?: string }[] {
-  return [...parkedServices].map(([name, detail]) => ({ name, ...detail }));
+export function listParkedServices(): { name: string; reason: string }[] {
+  return [...parkedServices].map(([name, reason]) => ({ name, reason }));
 }
 const serviceFailures = new Map<string, string>();
 export function noteServiceFailure(name: string, reason: string): void {
@@ -156,26 +157,6 @@ export function noteServiceFailure(name: string, reason: string): void {
 }
 export function listServiceFailures(): { name: string; reason: string }[] {
   return [...serviceFailures].map(([name, reason]) => ({ name, reason }));
-}
-let serviceCapabilityPlan: { name: string; parts: string[] }[] = [];
-export function noteServiceCapabilityPlan(plan: { name: string; parts: string[] }[]): void {
-  serviceCapabilityPlan = plan.map((capability) => ({ name: capability.name, parts: [...capability.parts] }));
-}
-/** Capability-keyed runtime truth derived from the already-expanded startup plan. */
-export function listServiceCapabilities(): { known: string[]; running: string[]; partial: string[]; parked: { name: string; reason: string }[] } {
-  const loaded = new Set(serviceNames);
-  const parked = new Map([...parkedServices].map(([name, detail]) => [name, detail.reason]));
-  for (const [name, reason] of serviceFailures) parked.set(name, reason);
-  return {
-    known: serviceCapabilityPlan.map(({ name }) => name),
-    running: serviceCapabilityPlan.filter(({ parts }) => parts.every((part) => loaded.has(part))).map(({ name }) => name),
-    partial: serviceCapabilityPlan.filter(({ parts }) => parts.some((part) => loaded.has(part)) && !parts.every((part) => loaded.has(part))).map(({ name }) => name),
-    parked: serviceCapabilityPlan.flatMap(({ name, parts }) => {
-      const reason = parts.map((part) => parked.get(part))
-        .find((value) => value && !['master_off', 'component_off'].includes(value));
-      return reason ? [{ name, reason }] : [];
-    }),
-  };
 }
 export async function collectRowFields(session: string): Promise<RowFields> {
   const out: RowFields = {};

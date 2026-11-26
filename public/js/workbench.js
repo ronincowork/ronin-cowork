@@ -106,7 +106,8 @@ export function createWorkbench(options = {}) {
     columns[COLUMN_OF[id]].append(cell);
   }
 
-  let selectorDensity = options.selectorDensity === 'thick' ? 'thick' : 'thin';
+  // `density: false` (Setup): one card size, no toggle; its cards always show their summary.
+  let selectorDensity = options.density === false || options.selectorDensity === 'thick' ? 'thick' : 'thin';
   const densityToggle = WorkspacePrimitives.createAction({ label: '', size: 'compact', className: 'tw-agent-density' });
   const densityLines = node('span', 'tw-agent-density-lines');
   densityLines.append(node('i'), node('i'));
@@ -128,7 +129,7 @@ export function createWorkbench(options = {}) {
     declaration,
     surfaces: { workspace1: columns.workspace1, selector, workspace2: columns.workspace2 },
     // The selector's head is empty but for its controls (owner, 2026-10-20): no title on any workbench.
-    headers: { selector: { label: '', actions: [densityToggle, ...(options.actions || [])] } },
+    headers: { selector: { label: '', actions: [...(options.density === false ? [] : [densityToggle]), ...(options.actions || [])] } },
     onStateChange: remember,
   });
   layout.el.dataset.workbenchProfile = profile.name;
@@ -140,7 +141,7 @@ export function createWorkbench(options = {}) {
     densityToggle.el.setAttribute('aria-pressed', String(selectorDensity === 'thin'));
   };
   const setSelectorDensity = (value, emit = false) => {
-    selectorDensity = value === 'thick' ? 'thick' : 'thin';
+    selectorDensity = options.density === false || value === 'thick' ? 'thick' : 'thin';
     paintDensity();
     options.onSelectorDensityChange?.(selectorDensity);
     refreshSelector();
@@ -244,7 +245,8 @@ export function createWorkbench(options = {}) {
       const host = definition.header === 'tabs'
         ? value.el.querySelector(':scope > .wk-tabset-bar .wk-tabset-actions')
         : value.el.querySelector(':scope > .wk-surface-header .wk-surface-header-actions');
-      if (host) {
+      // A workbench whose surfaces are its steps (Setup) has no close: the dash's place is the step's own.
+      if (host && options.dismissible !== false) {
         const title = t('workspace.close_surface', 'Close this work surface');
         const dismissAction = WorkspacePrimitives.createAction({
           label: '−', title,

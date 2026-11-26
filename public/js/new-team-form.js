@@ -1,25 +1,27 @@
 /* part of the ronin-cowork client — see js/README.md */
+/**
+ * NEW TEAM (owner, 25 Nov; KAN-850): one form, in Setup's Team step and wherever a Team is launched.
+ * It asks only what launching a Team needs: its name, its objective (what the lead picks up and
+ * starts executing), its instructions (standing directions to every Agent in it), the Workspace it is
+ * dedicated to, its Agents (the lead and any others), and its Epic: one of the Workspace's open epics,
+ * or a new one. No kind (a Workspace's only), no defaults (the Workspace's), no payload.
+ */
 import { request } from './request.js';
 import { S } from './state.js';
 import { t } from './lexicon.js';
 import { ask } from './ask.js';
-import { ruledRows } from './glyphs.js';
 import { screenOf, setMandates } from './mandates.js';
 import { finalizeTeamName, isValidTeamName, sanitizeTeamName } from './new-team-draft.js';
 import { conflictingAgentNames } from './new-team-check.js';
 import { agentPicks, agentRow, createAgentRows } from './team-agents.js';
 import { openLaunchHandoff } from './launch-handoff.js';
 import { launchTeamAgents } from './team-loader.js';
-import {
-  createStep, el, loadProviderCatalog, providerCatalog, readingRows, tagRow,
-} from './form-steps.js';
+import { createStep, el, loadHarnessCatalog } from './form-steps.js';
 import { closeWorkspaceTab, reserveWorkspaceTab } from './workspace.js';
 import { hearWorkspaces } from './workspaces-read.js';
 
-const KINDS = ['coding', 'work', 'personal', 'household', 'social', 'school'];
-
 export function createNewTeamFormView(kit, { created = null, consumed = null, embedded = false } = {}) {
-  const { createSurface, createAction, createActionBar, createField, createNotice } = kit.primitives;
+  const { createSurface, createAction, createField, createActionBar, createNotice } = kit.primitives;
 
   // A Team starts with its lead (owner, 2026-10-21): one Agent marked team lead, named
   // <first word of the team name>_lead — front-2 → front_lead. The name follows the Team
@@ -27,16 +29,11 @@ export function createNewTeamFormView(kit, { created = null, consumed = null, em
   const leadName = (teamName) => { const first = finalizeTeamName(teamName).split(/[_-]+/).filter(Boolean)[0]; return first ? `${first}_lead` : ''; };
   const seededAgents = (teamName = '') => [{ ...agentRow(), name: leadName(teamName), team_lead: true }];
   const draft = {
-    title: '',
-    name: '', kind: 'open', objective: '',
+    title: '', name: '', objective: '', instructions: '',
     workspace: '',
-    reach: 'open', recruit: 'open', output: ['open'],
-    books: [],
-    // The Agents this Team is raised with.
+    epic: '', epicTitle: '',
     agents: seededAgents(),
-    expanded: {},
   };
-  // The lead whose name still reads as the old team name's lead takes the new one; an edited name stays.
   const followLead = (before) => {
     const was = leadName(before);
     const now = leadName(draft.name);
@@ -46,10 +43,9 @@ export function createNewTeamFormView(kit, { created = null, consumed = null, em
   };
   let screen = {};          // what the layers in play take off the mandate menus
   const rescreen = async () => { screen = await screenOf(draft.workspace ? { workspace: draft.workspace } : {}); };
-  let seed = null;          // the campaign's answers, once the door has spoken
   let workspaces = [];
+  let epics = [];           // the Workspace's open epics, as the item search answers them
   let busy = false;
-  let loaded = false;
 
   const raise = createAction({
     label: t('forms.launch', 'Launch'),
@@ -68,37 +64,8 @@ export function createNewTeamFormView(kit, { created = null, consumed = null, em
     surface.content.append(embedActions);
   }
 
-  // The behaviours a Team may add: the catalog's optional ones (depth none), docs/architecture/brief.md, Layers and brief settings.
-  let catalog = [];
-  const availableBehaviours = () => catalog.filter((row) => row.kind === 'behaviour' && !row.mandate && row.depth === 'none');
-  // The provider the next Agent defaults to (Models > Defaults): which launch modes it offers.
-
-  /* ---- Kind, one optional disclosure. ---- */
-  let setupOpen = false;
-  const stepSetup = createStep({ n: 1, key: 'setup', title: t('kind', 'Kind'), onToggle: () => {
-    setupOpen = !setupOpen;
-    paint();
-  } });
-  const kindHost = el('div');
-  stepSetup.body.append(kindHost);
-  const kindQuestions = ask([{ fields: [{
-    key: 'kind', label: t('kind', 'Kind'), shape: 'square',
-    options: ruledRows('kind', ['open', ...KINDS], (key) => t(`kind.${key}`, key === 'open' ? 'Open' : key)),
-  }] }], {
-    value: { kind: draft.kind },
-    className: 'ntf-kind-questions',
-    exposed: true,
-    onChange: (value) => {
-      draft.kind = value.kind;
-      paintFoot(); paintActions();
-    },
-  });
-  function paintKinds() {
-    kindQuestions.set('kind', draft.kind);
-    kindHost.replaceChildren(kindQuestions.el);
-  }
-  /* ---- step 2 · Name & instructions ---- */
-  const stepTop = createStep({ n: 2, key: 'top', title: t('new_team.name_instructions', 'Name & instructions') });
+  /* ---- 1 · Name, objective and instructions ---- */
+  const stepTop = createStep({ n: 1, key: 'top', title: t('new_team.name_objective', 'Name & objective') });
   const nameInput = el('input');
   nameInput.type = 'text';
   nameInput.autocapitalize = 'off';
@@ -117,7 +84,6 @@ export function createNewTeamFormView(kit, { created = null, consumed = null, em
     followLead(before);
     paintName();
     paintTitle();
-    paintFoot();
     paintActions(); // Launch wakes on the first character of a name
   });
   // Settle the name when the owner leaves the field: a trailing separator is legal to
@@ -130,17 +96,14 @@ export function createNewTeamFormView(kit, { created = null, consumed = null, em
     followLead(before);
     paintName();
     paintTitle();
-    paintFoot();
   });
-  // No spelling rule under the field: the input enforces it as you type, so a sentence
   const nameField = createField({ label: t('new_team.name', 'Team name'), control: nameInput });
-  // auto-populated. Then someone could change if they wanted."). Same rule as every other
-  // seeded value on these forms: the default lands, the hand has the last word.
+  // The title follows the name until the hand edits it: the default lands, the hand has the last word.
   let titleTouched = false;
   const titleInput = el('input');
   titleInput.type = 'text';
   titleInput.spellcheck = false;
-  titleInput.addEventListener('input', () => { draft.title = titleInput.value; titleTouched = true; paintFoot(); });
+  titleInput.addEventListener('input', () => { draft.title = titleInput.value; titleTouched = true; });
   const titleField = createField({ label: t('new_team.readable', 'Title'), control: titleInput });
   const derivedTitle = () => finalizeTeamName(draft.name).split(/[_-]+/).filter(Boolean)
     .map((part) => part[0].toUpperCase() + part.slice(1)).join(' ');
@@ -157,154 +120,121 @@ export function createNewTeamFormView(kit, { created = null, consumed = null, em
     nameField.setValidation('valid', '');
   };
   stepTop.body.append(topPair);
-
-  /* ---- step 3 · Objective ---- */
   const objectiveInput = el('textarea');
   objectiveInput.rows = 3;
-  objectiveInput.placeholder = t('new_team.objective_placeholder', 'what this team is for');
-  objectiveInput.addEventListener('input', () => { draft.objective = objectiveInput.value; paintFoot(); });
-  stepTop.body.append(createField({ label: t('new_team.instructions', 'Team instructions'), control: objectiveInput }).el);
+  objectiveInput.placeholder = t('new_team.objective_placeholder', 'what the lead picks up and starts on');
+  objectiveInput.addEventListener('input', () => { draft.objective = objectiveInput.value; });
+  stepTop.body.append(createField({ label: t('new_team.objective', 'Team objective'), control: objectiveInput }).el);
+  const instructionsInput = el('textarea');
+  instructionsInput.rows = 3;
+  instructionsInput.placeholder = t('new_team.instructions_placeholder', 'standing directions every Agent in the Team reads');
+  instructionsInput.addEventListener('input', () => { draft.instructions = instructionsInput.value; });
+  stepTop.body.append(createField({ label: t('new_team.instructions', 'Team instructions'), control: instructionsInput }).el);
 
-  /* ---- the Workspace, under the name and instructions in section 2 (owner, 2026-10-21: "We include
-     the workspace in the new team"), not folded into Agent defaults ---- */
+  /* ---- 2 · The Workspace: a Team is always dedicated to one, and inherits its settings ---- */
+  const stepWhere = createStep({ n: 2, key: 'where', title: t('new_team.workspace', 'Workspace') });
   const workspaceRows = () => workspaces.map((row) => ({ v: row.name, l: row.title || row.name, sub: row.objective || '' }));
   const whereQuestions = ask([
-    { group: t('new_team.workspace', 'Workspace'), fields: [
-      { key: 'workspace', label: t('new_team.workspace', 'Workspace'), blank: t('new_team.workspace_none', 'None'), options: workspaceRows },
-    ] },
+    { fields: [{ key: 'workspace', label: t('new_team.workspace', 'Workspace'), options: workspaceRows }] },
   ], {
     value: { workspace: draft.workspace },
     className: 'ntf-where-questions',
     density: 'tight',
-    onChange: (value) => { draft.workspace = value.workspace; paintFoot(); void rescreen(); },
+    onChange: (value) => {
+      if (value.workspace === draft.workspace) return;
+      draft.workspace = value.workspace;
+      draft.epic = '';
+      paintActions();
+      void rescreen();
+      void readEpics();
+    },
   });
-  stepTop.body.append(whereQuestions.el);
-  function paintRoots() { whereQuestions.set('workspace', draft.workspace); }
-  const whereSummary = () => workspaces.find((row) => row.name === draft.workspace)?.title || draft.workspace || t('new_team.workspace_none', 'None');
+  stepWhere.body.append(whereQuestions.el);
+  const paintRoots = () => whereQuestions.set('workspace', draft.workspace);
 
-  /* ---- step 5 · Team kit ---- */
-  const stepKit = createStep({ n: 6, key: 'kit', title: t('team_kit', 'Shared toolkit') });
-  // agent to inherit from its team. It's going to be very agent-specific anyway, and I
-  // think open is the only natural thing." Reach, recruit and output stay `open` in the
-  // record and are asked once, on the Agent, where they mean something.
-  //
-  // NO CONTROL DIAL EITHER: "I want to kill it visually, even if the plumbing is still
-  // there." The record keeps its field; the form stops offering it.
-  // confuse a user because they have no idea what that is"). He is right, and it is worse
-  // than confusing: it names the provider CLI's approval mode, every launch-table cell
-  // already carries `--dangerously-bypass-approvals-and-sandbox` hardcoded, and nothing
-  // in `src/spawn.ts` reads the field to change a command. It is stored and attributed
-  // and delivered nowhere. Raised with the lead; the record keeps its default.
-  const kitHost = el('div');
-  let kitQuestions = null;
-  let kitSignature = '';
-  function paintKitQuestions() {
-    const signature = JSON.stringify([availableBehaviours().map((row) => row.name)]);
-    if (signature !== kitSignature) {
-      kitQuestions?.destroy();
-      const shelfRows = (rows) => rows.map((row) => ({ v: row.name, l: row.title || row.name, sub: row.seed || '', ...(row.path ? { read: row.path } : {}) }));
-      kitQuestions = ask([
-        { group: t('behaviours', 'Behaviours'), fields: [{
-          key: 'books', label: t('behaviours', 'Behaviours'), many: true, shape: 'tall', options: shelfRows(availableBehaviours()),
-        }] },
-      ], {
-        value: {
-          books: [...draft.books],
-        },
-        className: 'ntf-kit-questions',
-        density: 'tight',
-        trayHost: kitHost,
-        onChange: (value, key) => {
-          draft.books = [...value.books];
-          paintKitQuestions(); whereQuestions.paint(); paintFoot();
-        },
-      });
-      kitSignature = signature;
-      kitHost.replaceChildren(kitQuestions.el);
-    }
-    kitQuestions.set('books', [...draft.books]);
-  }
-  stepKit.body.append(kitHost);
-
-  /* ---- step 6 · Team lead ---- */
-  /* ---- step 4 · the team's own agents (js/team-agents.js) ---- */
+  /* ---- 3 · Agents (js/team-agents.js) ---- */
   const agents = createAgentRows({
     n: 3, key: 'lead',
     rows: () => draft.agents,
     createAction, createActionBar,
-    changed: () => paintFoot(),
-    onToggle: () => toggle('lead'),
+    changed: () => {},
     screen: () => screen,
   });
-  const stepLead = agents.step;
 
-  const steps = { setup: stepSetup, top: stepTop, lead: stepLead, defaults: null, kit: stepKit };
-  function toggle(key) {
-    if (draft.expanded[key]) delete draft.expanded[key];
-    else draft.expanded[key] = true;
+  /* ---- 4 · Epic: one of the Workspace's open epics, or a new one ---- */
+  const stepEpic = createStep({ n: 4, key: 'epic', title: t('new_team.epic', 'Epic') });
+  const epicRows = () => epics.map((row) => ({ v: row.id, l: row.title, sub: row.id }));
+  const epicQuestions = ask([
+    { fields: [{ key: 'epic', label: t('new_team.epic', 'Epic'), blank: t('new_team.epic_new', 'A new epic'), options: epicRows }] },
+  ], {
+    value: { epic: draft.epic },
+    className: 'ntf-epic-questions',
+    density: 'tight',
+    onChange: (value) => { draft.epic = value.epic || ''; paintEpic(); },
+  });
+  const epicTitleInput = el('input');
+  epicTitleInput.type = 'text';
+  epicTitleInput.addEventListener('input', () => { draft.epicTitle = epicTitleInput.value; });
+  const epicTitleField = createField({ label: t('new_team.epic_title', 'New epic'), control: epicTitleInput });
+  stepEpic.body.append(epicQuestions.el, epicTitleField.el);
+  // The new epic's title, when none is written: the Team's title.
+  const newEpicTitle = () => draft.epicTitle.trim() || draft.title.trim() || finalizeTeamName(draft.name);
+  function paintEpic() {
+    epicQuestions.set('epic', draft.epic);
+    epicTitleField.el.hidden = !!draft.epic;
+    epicTitleInput.placeholder = draft.title.trim() || t('new_team.epic_title_placeholder', 'what done looks like');
   }
-  const plan = () => ['setup', 'top', 'lead', 'defaults', 'kit'];
-
-  /* ---- Will be raised — the reading, and what an Agent born here inherits ---- */
-  const foot = el('div', 'ntf-foot');
-  function paintFoot() {
-    const name = finalizeTeamName(draft.name);
-    foot.replaceChildren();
-    foot.append(readingRows([
-      [t('add_agent.team', 'team'), name],
-      [t('team.objective', 'Objective'), draft.objective],
-      [t('add_agent.place', 'place'), whereSummary()],
-      [t('new_team.agents', 'Agents'), draft.agents.some((row) => row.name)
-        ? tagRow(draft.agents.filter((row) => row.name).map((row) => ({ text: row.name, on: true })))
-        : ''],
-      [t('new_team.members', 'members'), (() => { const em = el('em', null, t('new_team.members_note', 'derived from live tags — never stored here')); return em; })()],
-    ]));
-    foot.append(el('p', 'fs-head', t('new_team.inherits', 'an agent born here inherits')));
-    foot.append(readingRows([
-      [t('kind', 'Kind'), draft.kind],
-      [t('behaviours', 'Behaviours'), draft.books.length ? tagRow(draft.books.map((text) => ({ text, on: true }))) : ''],
-      [t('mandate', 'Mandate'), `${draft.reach} · ${draft.recruit} · ${draft.output.join(', ')}`],
-      [t('add_agent.still_asked', 'still asked'), tagRow([
-        t('session_type', 'Session type'), t('add_agent.name', 'name'), t('add_agent.instruction', 'instruction'),
-        t('forms.model', 'model'),
-      ])],
-    ]));
-  }
-  function paintActions() {
-    // keyword everywhere for starting a new team and starting a new agent." Grey while
-    // there is no name, kaki — the house's go colour — the moment there is one.
-    const ready = !!finalizeTeamName(draft.name);
-    raise.setDisabled(!ready);
-    if (ready) raise.el.dataset.kind = 'primary';
-    else delete raise.el.dataset.kind;
+  async function readEpics() {
+    const at = draft.workspace;
+    if (!at) { epics = []; epicQuestions.options('epic', epicRows); return paintEpic(); }
+    const answer = await request(`/api/work-items?kind=epic&holder=${encodeURIComponent(`workspace:${at}`)}`);
+    if (at !== draft.workspace) return;
+    const icebox = `Icebox: ${at}`;
+    epics = answer.ok && Array.isArray(answer.data?.items)
+      ? answer.data.items.filter((row) => row.status !== 'Done' && row.title !== icebox) : [];
+    epicQuestions.options('epic', epicRows);
+    paintEpic();
   }
 
   const rosterBody = (name) => ({
     name,
     title: draft.title.trim(),
-    kind: draft.kind,
     objective: draft.objective.trim(),
+    instructions: draft.instructions.trim(),
     workspace: draft.workspace,
-    brief: { add: draft.books.map((name) => ({ name, depth: 'full' })), block: [], only: [] },
-    agent_defaults: {
-      reach: draft.reach, recruit: draft.recruit, output: draft.output,
-    },
   });
+
+  // The Team's epic, once the Team exists: the one picked, handed to it, or a new one it holds.
+  async function teamEpic(name) {
+    if (draft.epic) {
+      const handed = await request(`/api/work-items/${encodeURIComponent(draft.epic)}/handoff`, { method: 'POST', json: { team: name } });
+      return handed.ok ? { id: draft.epic, title: epics.find((row) => row.id === draft.epic)?.title || '' } : { failed: handed.message };
+    }
+    const title = newEpicTitle();
+    const made = await request('/api/work-items', { method: 'POST', json: { title, kind: 'Epic', objective: draft.objective.trim(), team: name } });
+    const id = made.data?.item?.id || made.data?.id || '';
+    return made.ok && id ? { id, title } : { failed: made.message };
+  }
+
+  // What the lead is told at birth: the Team's objective and its epic, then its own row's words.
+  const leadPrompt = (row, epic) => [
+    draft.objective.trim() ? `${t('new_team.lead_objective', 'Team objective')}: ${draft.objective.trim()}` : '',
+    epic?.id ? `${t('new_team.lead_epic', 'Your epic')}: ${epic.id}${epic.title ? ` ${epic.title}` : ''}` : '',
+    row.instructions,
+  ].filter(Boolean).join('\n\n');
 
   async function doRaise() {
     const name = finalizeTeamName(draft.name);
-    if (busy || !isValidTeamName(name)) {
-      if (!busy) notice.set('failed', t('new_team.name_invalid', 'Lowercase letters, digits, _ and - only.'));
+    if (busy || !isValidTeamName(name) || !draft.workspace) {
+      if (!busy && !isValidTeamName(name)) notice.set('failed', t('new_team.name_invalid', 'Lowercase letters, digits, _ and - only.'));
       return;
     }
     const launchTab = reserveWorkspaceTab();
     busy = true;
     raise.setDisabled(true);
     const picks = agentPicks(draft.agents);
-    // CHECK BEFORE THE FIRST WRITE. The launch door rightly refuses an explicit name
-    // collision, but discovering one after POST /api/team-rosters leaves a Team with only
-    // part of the cast. The form knows the whole proposed cast, so its gate checks both
-    // the live set (`S.sessions`) and duplicates inside the form before it creates anything.
+    // CHECK BEFORE THE FIRST WRITE: a name taken found after the roster is made leaves a Team
+    // with only part of its cast, so the whole proposed cast is checked first.
     if (picks.length) {
       const conflicts = conflictingAgentNames(picks, S.sessions);
       if (conflicts.length) {
@@ -317,13 +247,8 @@ export function createNewTeamFormView(kit, { created = null, consumed = null, em
       }
     }
     notice.set('info', t('new_team.raising', 'Raising the team…'));
-    // THE LOADER OWNS THE CAST (@team_loader, agreed on the board): one call creates the
-    // record and, only if that succeeded, sends every picked row through the launch door.
-    //
-    // `agentPicks` is where the screen's words become the route's: a row says assignment
-    // THE CANONICAL ROSTER DOOR STAYS HERE and is the duplicate-submit gate: only the
-    // request that creates the Team reaches the staffing handoff, so pressing Raise twice
-    // cannot birth the cast twice (@team_loader's refinement, taken).
+    // THE CANONICAL ROSTER DOOR is the duplicate-submit gate: only the request that creates
+    // the Team reaches the epic and the staffing, so pressing Launch twice cannot birth the cast twice.
     const made = await request('/api/team-rosters', { method: 'POST', json: rosterBody(name) });
     if (!made.ok) {
       closeWorkspaceTab(launchTab);
@@ -331,29 +256,26 @@ export function createNewTeamFormView(kit, { created = null, consumed = null, em
       raise.setDisabled(false);
       return notice.set('failed', made.message);
     }
+    const epic = await teamEpic(name);
+    const cast = picks.map((row) => (row.team_lead ? { ...row, instructions: leadPrompt(row, epic) } : row));
     // The Team record is the new tab's tenant. Open its requested Workbench now;
     // terminal seats remain pending until each Agent appears in the live roster.
-    openLaunchHandoff({ team: name, sessions: picks }, launchTab);
-    // Then the cast, through the loader: births are awaited in order because every one
-    // updates this Team's membership record. `agentPicks` is where the screen's words
-    // become the route's — a row says assignment and the wire says instructions.
-    const outcomes = await launchTeamAgents(request, name, picks);
-    const launched = outcomes.filter(({ result }) => result?.ok).map(({ row, result }) => ({
-      name: result.data?.name || row.name,
-      team_lead: row.team_lead === true,
-    }));
+    openLaunchHandoff({ team: name, sessions: cast }, launchTab);
+    const outcomes = await launchTeamAgents(request, name, cast);
+    const born = outcomes.filter(({ result }) => result?.ok).map(({ row, result }) => result.data?.name || row.name);
     const refused = outcomes.filter(({ result }) => !result?.ok);
     busy = false;
     raise.setDisabled(false);
-    if (refused.length) {
-      const born = launched.map(({ name: sessionName }) => sessionName);
-      notice.set('failed', t('new_team.staffing_failed', 'Team created. Launched {launched} of {total} Agents: {born}. Failed: {names}. The Team is open; add the failed Agents there.', {
-        launched: born.length,
-        failed: refused.length,
-        total: outcomes.length,
-        born: born.length ? born.join(', ') : t('forms.none', 'none'),
-        names: refused.map(({ row, result }) => `${row.name}: ${result?.message || t('forms.failed', 'failed')}`).join(', '),
-      }));
+    if (refused.length || epic.failed) {
+      notice.set('failed', [
+        epic.failed ? t('new_team.epic_failed', 'Team created; its epic was not: {why}.', { why: epic.failed }) : '',
+        refused.length ? t('new_team.staffing_failed', 'Team created. Launched {launched} of {total} Agents: {born}. Failed: {names}. The Team is open; add the failed Agents there.', {
+          launched: born.length,
+          total: outcomes.length,
+          born: born.length ? born.join(', ') : t('forms.none', 'none'),
+          names: refused.map(({ row, result }) => `${row.name}: ${result?.message || t('forms.failed', 'failed')}`).join(', '),
+        }) : '',
+      ].filter(Boolean).join(' '));
       return;
     }
     notice.set('', '');
@@ -363,67 +285,33 @@ export function createNewTeamFormView(kit, { created = null, consumed = null, em
   }
 
   function reset() {
-    draft.name = '';
-    draft.objective = '';
-    draft.books = [];
-    draft.agents = seededAgents();
-    draft.expanded = {};
-    setupOpen = false;
+    Object.assign(draft, { title: '', name: '', objective: '', instructions: '', epic: '', epicTitle: '', agents: seededAgents() });
     nameInput.value = '';
     titleInput.value = '';
     titleTouched = false;
     objectiveInput.value = '';
-    applySeed();
+    instructionsInput.value = '';
+    epicTitleInput.value = '';
     paint();
-  }
-
-  /** The campaign's answers LAND — once, whole, before any hand has touched the form. */
-  function applySeed() {
-    if (!seed) return;
-    const value = (field) => seed.seeds?.[field]?.value;
-    for (const key of ['reach', 'recruit']) {
-      if (value(key)) draft[key] = value(key);
-    }
-    if (value('output')) draft.output = [value('output')].flat().filter(Boolean);
-    draft.books = [];
-    paintRoots();
   }
 
   function paint() {
-    plan().forEach((key, index) => steps[key].setNumber(index + 1));
-    stepPayload.setNumber(plan().length + 1);
-    stepSetup.setCollapsed(!setupOpen, t('new_team.kind_summary', 'Optional — Kind'), true);
-    stepDefaults.setCollapsed(!defaultsOpen, t('new_team.defaults_summary', 'Settings inherited by Agents launched in this Team'), true);
-    steps.kit.el.hidden = !defaultsOpen;
-    stepPayload.setCollapsed(!payloadOpen, t('forms.payload_summary', 'Review what Launch will create'), true);
-    paintKinds();
     paintName();
     paintRoots();
     agents.paint();
-    paintKitQuestions();
+    paintEpic();
     paintActions();
-    paintFoot();
+  }
+  function paintActions() {
+    // Grey until there is a name and a Workspace, kaki — the house's go colour — once there are.
+    const ready = !!finalizeTeamName(draft.name) && !!draft.workspace;
+    raise.setDisabled(!ready);
+    if (ready) raise.el.dataset.kind = 'primary';
+    else delete raise.el.dataset.kind;
   }
 
   const form = el('div', 'ntf-form');
-  // ONE BAND OVER EVERYTHING THAT IS A DEFAULT, and it folds them all away together: a
-  // Team can be raised without ever opening it, which is the point of saying so here
-  // rather than repeating "this is a default, not a constraint" on each field below.
-  let defaultsOpen = false;
-  const stepDefaults = createStep({ n: 5, key: 'defaults', title: t('new_team.agent_defaults', 'Agent defaults'), onToggle: () => {
-    defaultsOpen = !defaultsOpen;
-    paint();
-  } });
-  steps.defaults = stepDefaults;
-  // The final review stays folded until asked for and explains what opening it reveals.
-  let payloadOpen = false;
-  const stepPayload = createStep({ n: 8, key: 'payload', title: t('forms.payload', 'Payload'), onToggle: () => {
-    payloadOpen = !payloadOpen;
-    stepPayload.setCollapsed(!payloadOpen, t('forms.payload_summary', 'Review what Launch will create'), true);
-  } });
-  stepPayload.body.append(foot);
-  stepPayload.setCollapsed(true, t('forms.payload_summary', 'Review what Launch will create'), true);
-  form.append(stepSetup.el, stepTop.el, stepLead.el, stepDefaults.el, stepKit.el, stepPayload.el);
+  form.append(stepTop.el, stepWhere.el, agents.step.el, stepEpic.el);
   surface.content.append(form, notice.el);
 
   // ITS WORKSPACES (KAN-724): read on entering, and again whenever a bench reads them (a Workspace
@@ -435,9 +323,8 @@ export function createNewTeamFormView(kit, { created = null, consumed = null, em
   };
   const unhear = hearWorkspaces(() => void readWorkspaces().then(() => {
     whereQuestions.options('workspace', workspaceRows);
-    paintRoots();
-    paintFoot();
-    return rescreen();
+    paint();
+    return Promise.all([rescreen(), readEpics()]);
   }));
 
   return {
@@ -445,22 +332,17 @@ export function createNewTeamFormView(kit, { created = null, consumed = null, em
     destroy: unhear,
     enter: async (detail = {}) => {
       paint();
-      const [seeded, , , catalogRows] = await Promise.all([
-        request('/api/launch-seed'),
+      const [, , catalogRows] = await Promise.all([
         readWorkspaces(),
         // The Team's inline Agent editor reads the shared provider catalog too. Load it
         // here so a fresh New Team journey does not depend on another launch surface
         // having happened to populate the module cache first.
-        loadProviderCatalog(),
+        loadHarnessCatalog(),
         request('/api/brief/catalog'),
       ]);
-      catalog = catalogRows?.ok && Array.isArray(catalogRows.data) ? catalogRows.data : [];
-      setMandates(catalog); // the mandate menus are the catalog's mandate files
-      await rescreen();
-      if (seeded.ok) seed = seeded.data;
-      // The seed lands only while the form is untouched — re-entering an open draft
-      // must not overwrite the owner's hand.
-      if (!loaded) { applySeed(); loaded = true; }
+      setMandates(catalogRows?.ok && Array.isArray(catalogRows.data) ? catalogRows.data : []); // the mandate menus are the catalog's mandate files
+      whereQuestions.options('workspace', workspaceRows);
+      await Promise.all([rescreen(), readEpics()]);
       if (typeof detail?.prompt === 'string' && detail.prompt.trim()) {
         draft.objective = detail.prompt.trim();
         objectiveInput.value = draft.objective;

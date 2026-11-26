@@ -74,7 +74,6 @@ import { storeDir } from '../resources.js';
 import { parkCarry } from '../machine-park.js';
 import { readOfficeRecord } from '../office-record.js';
 import { clearHookRecord, readFields } from '../asking.js';
-import { providerPart } from '../provider-parts.js';
 
 interface PreparedEnding { proceed: boolean; acknowledgement?: Record<string, unknown> }
 
@@ -169,14 +168,14 @@ async function releaseHolds(name: string, key: string, how: string, archived?: A
  * then stop the Agent. Answers the manifest, or null when no exact provider conversation is known;
  * then nothing is written and nothing is stopped. Holds are the caller's (releaseHolds). */
 async function archiveAgent(name: string, desksLeftOpen: string[] = []): Promise<ArchivedSession | null> {
-  const provider = await archiveProvider(name);
+  const provider = await archiveHarness(name);
   return 'error' in provider ? null : archiveWith(name, provider, desksLeftOpen);
 }
 
 /** The exact provider conversation an archive will resume, or why there is none. A park asks
  * this of every Agent before any is stopped. The launch identity is read from disk, so a dead
  * pane (its process gone, the pane kept by remain-on-exit) archives the same as a live one. */
-async function archiveProvider(name: string): Promise<{ agent: string; id: string } | { error: string }> {
+async function archiveHarness(name: string): Promise<{ agent: string; id: string } | { error: string }> {
   const key = await sessionKey(name);
   const runtime = await sessionRuntime(name);
   const launchIdentity = await readLaunchIdentity(key);
@@ -309,7 +308,8 @@ async function prepareSessionEnding(
 const moved = (before: string[], after: string[]): string[] =>
   [...after.filter((t) => !before.includes(t)), ...before.filter((t) => !after.includes(t))];
 
-async function rehydrate(id: string, caller: string): Promise<{ status: number; body: Record<string, unknown> }> {
+/** Restore an archived Agent (session_restore's route); Services' irasshai part restores her with it (w926). */
+export async function rehydrate(id: string, caller: string): Promise<{ status: number; body: Record<string, unknown> }> {
   try {
     const archived = await readArchive(id);
     if (await sessionExists(archived.name)) {
@@ -317,15 +317,10 @@ async function rehydrate(id: string, caller: string): Promise<{ status: number; 
     }
     // Its birth receipt: the command it was born with (KAN-661) and the person it was born for.
     const receipt = JSON.parse(await readFile(path.join(sessionRecordDir(archived.key), 'birth-receipt.json'), 'utf8').catch(() => '{}')) as { cmd?: unknown; user_email?: unknown };
-    let argv = await resumeAgentArgv(archived.agent, archived.provider_session_id, typeof receipt.cmd === 'string' ? receipt.cmd : '');
+    const argv = await resumeAgentArgv(archived.agent, archived.provider_session_id, typeof receipt.cmd === 'string' ? receipt.cmd : '');
     if (!argv.length) return { status: 409, body: { error: `${archived.agent} cannot be resumed on this machine.` } };
-    const part = providerPart(archived.identity?.provider ?? '');
-    // An Agent born on a part's provider (src/provider-parts.ts) is restored on it, for the
-    // person it was born for, so its house calls stay theirs (KAN-659).
-    if (part?.wrapResume) {
-      argv = part.wrapResume([...argv], archived.identity?.model ?? '', typeof receipt.user_email === 'string' ? receipt.user_email : '');
-    }
-    await createSession(archived.name, archived.cwd, { agent: true, argv, cli: archived.agent, key: archived.key, resume: true });
+    await createSession(archived.name, archived.cwd, { agent: true, argv, cli: archived.agent, key: archived.key, resume: true,
+      env: archived.identity?.model?.startsWith('service:') && typeof receipt.user_email === 'string' ? { RONIN_PERSON: receipt.user_email } : {} });
     try {
       await setSessionKey(archived.name, archived.key);
       await setTags(archived.name, archived.tags);
@@ -418,7 +413,7 @@ export function registerSessions(app: express.Express): void {
   app.post('/api/machine/park', async (_req, res) => {
     try {
       const names = (await listSessions()).filter((s) => s.agent).map((s) => s.name);
-      const providers = await Promise.all(names.map(async (name) => ({ name, provider: await archiveProvider(name) })));
+      const providers = await Promise.all(names.map(async (name) => ({ name, provider: await archiveHarness(name) })));
       const refused = providers.flatMap(({ name, provider }) => 'error' in provider ? [`${name}: ${provider.error}`] : []);
       if (refused.length) return res.status(409).json({ error: `Not parked — no Agent was stopped. ${refused.join(' ')}` });
       const archived: ArchivedSession[] = [];
@@ -455,7 +450,7 @@ export function registerSessions(app: express.Express): void {
       const not_saved: Array<{ name: string; error: string }> = [];
       for (const name of names) {
         try {
-          const provider = await archiveProvider(name);
+          const provider = await archiveHarness(name);
           if ('error' in provider) { not_saved.push({ name, error: provider.error }); continue; }
           const archived = await archiveWith(name, provider, [], true);
           await clearHookRecord(name);

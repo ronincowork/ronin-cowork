@@ -8,7 +8,7 @@ export const ARCHIVE_DIR = storeDir('archived_sessions');
 /** An archive undoes an accidental close; it is not storage (owner, 2026-11-15). Older than
  * this, it is removed as its Hard Delete removes it: at service start and on each new archive. */
 export const ARCHIVE_DAYS = 7;
-export type ResumableProvider = string;
+export type ResumableHarness = string;
 
 export interface ArchivedSession {
   version: 1;
@@ -17,7 +17,7 @@ export interface ArchivedSession {
   key: string;
   archived_at: string;
   cwd: string;
-  agent: ResumableProvider;
+  agent: ResumableHarness;
   identity?: import('./tmux.js').SessionIdentity;
   provider_session_id: string;
   tags: string[];
@@ -92,7 +92,7 @@ function idAfter(argv: readonly string[], flags: readonly string[]): string {
   return ids.length && ids.every(id => UUID.test(id) && id === ids[0]) ? ids[0]! : '';
 }
 
-export function providerFromArgv(argv: readonly string[]): ResumableProvider | '' {
+export function providerFromArgv(argv: readonly string[]): ResumableHarness | '' {
   for (const value of argv.slice(0, 2)) {
     const bare = path.basename(value);
     const match = AGENTS.find((agent) => agent.cmd === bare);
@@ -109,7 +109,7 @@ export async function providerSessionInfo(
   _cwd: string,
   pid: number,
   stampedId = '',
-): Promise<{ agent: ResumableProvider; id: string } | null> {
+): Promise<{ agent: ResumableHarness; id: string } | null> {
   const stamped = agentSpec(stampedAgent)?.id;
   if (stamped && stampedId) return { agent: stamped, id: stampedId };
   const argv = await argvFromProc(pid);

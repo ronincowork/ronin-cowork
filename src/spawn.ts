@@ -1,23 +1,24 @@
 import { mkdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { resolveLaunchCommand, sessionsFor, type SessionsDefaults } from './launch-command.js';
+import { AGENT_ORDER, firstRoute } from './launch-progression.js';
 import { REPO_ROOT } from './resources.js';
-import { listSessionLaunchSpecs } from './model-providers.js';
+import { listSessionLaunchSpecs } from './harness-catalog.js';
 import { agentSpec } from './agents.js';
 import { bypassArgs, commandText, readAgentLaunches, withBypass } from './agent-launches.js';
 import { readAgentsSection, readSetupSection } from './machine-state.js';
-import { measureAndRecordProviders, offAt, readProviderSummary } from './provider-summary.js';
+import { measureAndRecordHarnesses, offAt, readHarnessSummary } from './harness-summary.js';
 import { storeDir } from './resources.js';
-import { listInstallations } from './resource-adapters.js';
+import { listServices } from './sockets.js';
 import { isCreatableTeamName as isTeamName, readTeamRoster, teamRosterFile, type TeamRoster } from './team-rosters.js';
 import { resolveLaunchProfile, type LaunchProfile, type StatedBy } from './launch-profile.js';
 import { readCampaign } from './campaigns.js';
 import { readWorkspace, roninHouse, type Workspace } from './workspaces.js';
 import { desksManaged, rowArrangement } from './desks/arrangement.js';
 import { mandate, type LaunchMode, type Mandate } from './agent-defaults.js';
-import { resolveInstallations, type ResolvedInstallation } from './installations.js';
 import { initialCampaignId } from './campaign-scope.js';
 import { resolveLaunchSeed } from './launch-seed.js';
+import { parentSettings } from './waterfall.js';
 import { profileDir, resolveHouseSeatProfile, type HouseSeat } from './house-seats.js';
 import { agentBriefOf, composeBrief, type BuiltBrief } from './brief-build.js';
 import type { BriefSettings } from './brief-record.js';
@@ -34,7 +35,6 @@ export interface SpawnForm {
   provider?: string;
   mandate?: Partial<Mandate>;
   campaign_id?: string;
-  kind?: string;
   /** The Agent's own brief settings, integrations and project management (docs/architecture/brief.md, Layers and brief settings). */
   brief?: BriefSettings;
   integrations?: string[];
@@ -82,9 +82,9 @@ export interface Resolved {
   team_state: '' | 'active' | 'archived';
   /** The brief, composed: record, layers, what is in play, the packet text. */
   composed: BuiltBrief | null;
-  kind: string;
   ignored: string[];
-  installations: ResolvedInstallation[];
+  /** The Ronin Services parts running at birth. */
+  services: string[];
   stated_by: Record<string, StatedBy[]>;
 }
 
@@ -156,12 +156,11 @@ export async function resolveFacts(form: SpawnForm, taken: Set<string>, proposed
   const coworkAgent = sessionType === 'cowork_agent';
   const bareMetalAgent = sessionType === 'bare_metal_agent';
   const campaignId = coworkAgent ? (form.campaign_id || await initialCampaignId()) : '';
-  const [agentsSet, campaign, installationCatalog] = await Promise.all([
+  const [agentsSet, campaign] = await Promise.all([
     readAgentsSection(),
     coworkAgent ? readCampaign(campaignId) : null,
-    listInstallations(),
   ]);
-  const launchSpecs = await listSessionLaunchSpecs(campaign?.providers ?? await readProviderSummary());
+  const launchSpecs = await listSessionLaunchSpecs(campaign?.providers ?? await readHarnessSummary());
   if (form.team && !isTeamName(form.team)) {
     throw new Error(`A team name is lowercase letters, digits, _ and - (it is also the tag): "${form.team}".`);
   }
@@ -175,14 +174,11 @@ export async function resolveFacts(form: SpawnForm, taken: Set<string>, proposed
   const workspace: Workspace | null = workspaceName ? await readWorkspace(roster?.campaign_id || campaignId, workspaceName) : null;
   if (roster?.workspace && !workspace) throw new Error(`Team "${roster.name}" is launched in Workspace "${roster.workspace}", which does not exist.`);
   const profile = resolveHouseSeatProfile(form.house_seat, resolveLaunchProfile());
+  // The Agent's parent (src/waterfall.ts): what it copies, its brief settings included.
+  const parentLevel = await parentSettings(campaignId, { workspace, team: roster });
+  const parent = { ...parentLevel, name: roster?.name ?? workspace?.name ?? campaignId };
   const parentSeed = coworkAgent && campaign
-    ? resolveLaunchSeed({
-        campaign,
-        roster,
-        workspace,
-        sessions: agentsSet.sessions as SessionsDefaults | undefined,
-        lead: !!form.team && !!form.team_lead,
-      })
+    ? resolveLaunchSeed({ campaign_id: campaign.id, parent, roster, lead: !!form.team && !!form.team_lead })
     : null;
 
   // WHERE AN AGENT STARTS is Ronin's: one folder for every Agent, Ronin house (owner, 2026-11-03), so
@@ -196,16 +192,16 @@ export async function resolveFacts(form: SpawnForm, taken: Set<string>, proposed
   }
 
   const agent = sessionType === 'terminal' ? false : bareMetalAgent ? true : profile.agent;
-  const installations = resolveInstallations(installationCatalog, campaign?.config.installations);
+  // The Ronin Services parts this server runs: where Services is present, every part (KAN-914).
+  const services = listServices();
   const name = wanted || slugName(form.team || (agent ? 'agent' : 'terminal'), form.prompt ?? '', taken);
   // Repositories are the Workspace's; an Agent opens a worktree when its work needs one.
   const repositories = (workspace?.repos ?? []).map((repo) => ({ ...repo, managed: desksManaged(rowArrangement({ ...repo, repo: true, workspace: workspace!.name, campaign_id: workspace!.campaign_id })) }));
   const folders = workspace?.folders ?? [];
   const arrangement: 'managed' | 'checkout' | 'none' = repositories.some((repo) => repo.managed) ? 'managed' : repositories.length ? 'checkout' : 'none';
-  const kind = form.kind ?? String(parentSeed?.seeds.kind.value ?? 'open');
   return {
     sessionType, coworkAgent, bareMetalAgent, campaignId, agentsSet, campaign, launchSpecs, roster, profile,
-    parentSeed, workspace, place, repositories, folders, agent, installations, name, arrangement, kind,
+    parent, parentSeed, workspace, place, repositories, folders, agent, services, name, arrangement,
   };
 }
 export type LaunchFacts = Awaited<ReturnType<typeof resolveFacts>>;
@@ -217,18 +213,24 @@ async function resolveLaunch(form: SpawnForm, facts: LaunchFacts) {
   let { agentsSet, launchSpecs } = facts;
   // No default yet (KAN-725): measure the sign-ins first, so the first one signed in, in Setup
   // or in a tile, is written as the default before this launch reads it.
-  const stated = (agentsSet.sessions as SessionsDefaults | undefined)?.default?.provider;
+  // The model is the parent's (src/waterfall.ts); a parent with none leaves it to Models > Defaults.
+  const copied = parentSeed?.seeds.provider.value ? { provider: String(parentSeed.seeds.provider.value), model: String(parentSeed.seeds.model.value) } : null;
+  const stated = copied?.provider || (agentsSet.sessions as SessionsDefaults | undefined)?.default?.provider;
   if (agent && !form.cmd && !form.provider && !form.model && !stated) {
-    const summary = await measureAndRecordProviders();
+    const summary = await measureAndRecordHarnesses();
     agentsSet = await readAgentsSection();
     launchSpecs = await listSessionLaunchSpecs(summary);
   }
-  const sessionsSet = sessionsFor(agentsSet.sessions as SessionsDefaults | undefined, !!form.team && !!form.team_lead);
+  const house = sessionsFor(agentsSet.sessions as SessionsDefaults | undefined, !!form.team && !!form.team_lead);
+  const sessionsSet = copied ? { ...house, default: copied } : house;
+  // Still no default: the launch progression's first working harness and model service (KAN-894).
+  const named = !!(form.cmd || form.provider || form.model || sessionsSet.default?.provider);
+  const route = agent && !named ? await firstRoute(AGENT_ORDER) : null;
   const chosen = resolveLaunchCommand({
     agent,
     cmd: form.cmd,
-    model: form.model,
-    provider: form.provider,
+    model: form.model || route?.model,
+    provider: form.provider || route?.provider,
     specs: launchSpecs,
     sessions: sessionsSet,
   });
@@ -274,7 +276,7 @@ export async function resolveForm(
   proposedRoster?: TeamRoster,
 ): Promise<Resolved> {
   const facts = await resolveFacts(form, taken, proposedRoster);
-  const { sessionType, coworkAgent, campaign, roster, profile, parentSeed, workspace, place, repositories, folders, agent, installations, name, kind } = facts;
+  const { sessionType, coworkAgent, campaign, roster, profile, parentSeed, workspace, place, repositories, folders, agent, services, name } = facts;
   const { cmd, spec, chosen, launchMode } = await resolveLaunch(form, facts);
   const composed = await resolveBriefFor(form, facts, {
     provider: spec?.provider ?? '', model: spec?.model ?? '', harness: spec?.cli ?? '', launch_mode: launchMode,
@@ -335,9 +337,8 @@ export async function resolveForm(
     team_wipeboard: roster?.wipeboard ?? '',
     team_state: roster?.state ?? '',
     composed,
-    kind,
     ignored,
-    installations,
+    services,
     stated_by: {
       name: form.name ? explicit : system,
       dir: profile.dir ? profile.stated_by.dir : workspaceSource,
@@ -364,7 +365,6 @@ export async function resolveForm(
       team_wipeboard: rosterSource,
       team_state: rosterSource,
       brief_settings: form.brief !== undefined ? explicit : system,
-      kind: form.kind !== undefined ? explicit : parentSeed?.seeds.kind.stated_by ?? system,
       arrangement: repositories.length ? workspaceSource : [],
     },
   };

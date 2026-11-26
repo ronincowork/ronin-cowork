@@ -1,6 +1,6 @@
 # KOTOBA_GLOSSARY — the words to use with the person you work for
 
-Use the plain words below with the owner; **Koshi** is the existing UI-name exception.
+Use the plain words below with the owner.
 [KOTOBA](KOTOBA.md) owns meanings; the lexicon owns displayed words. Tools execute;
 behaviours guide; facts inform; skills adapt; UIs call (`docs/architecture/brief.md`).
 
@@ -13,8 +13,14 @@ behaviours guide; facts inform; skills adapt; UIs call (`docs/architecture/brief
 | RIREKI | the recording | Optional journal transcripts in Services, available when the session has a supported launch binding. Terminal output remains a separate view. |
 | OBOERU | **memory** | Notes that outlive the session that wrote them. |
 | TOMODACHI · SOROBAN | **Stats** | Counts of what sessions did, never content. |
-| KOSHI | Koshi | Ronin's helper jobs, parked; the Koshi tab under Account names the model each would ask. |
 | KOE | **Hotwords** | The dictation glossary. The mic is Voice; implementation ownership is in KOTOBA. |
+| MODEL_SERVICES | **Model services** | Ronin-managed API connections such as Ronin Gateway, OpenRouter and private APIs. |
+| Harness | **Harness** | The CLI that runs an Agent. |
+| Model entry | **Model entry** | A model name and its API model ID, bundled: one entry in a model service's list, or the harness's own. |
+| In-harness model | **In-harness model** | A model the harness itself offers for its current subscription or harness API key. Use the choices the CLI offers, such as those in its model picker. **Native** lets the harness choose. |
+| Harness API key | **Harness API key** | An API key supplied to and managed by the CLI. Ronin does not receive the key. |
+| Private API key | **Private API key** | An API key supplied to and stored by Ronin for a configured model service. Use **private key** as the short form in model settings. |
+| API model ID | **API model ID** | The exact model identifier sent in an API request. |
 | SETTEI | **Configuration** | Settings for the relevant scope. The gear opens cowork commons. |
 | AGERU | **what gets sent** · **where Ronin has connected** | Ronin HQ packets and request history. Model-provider traffic is separate, not in this record. |
 | ERABI | — | Shared selectors (`public/js/ask.js`). The owner sees a question, never this internal name. |
@@ -32,7 +38,7 @@ behaviours guide; facts inform; skills adapt; UIs call (`docs/architecture/brief
 | `office_unit` (the office record in `~/ronin/office_unit/`) | **hosted office** | Cowork running inside an office_unit on an office_park. It shows no account, billing, subscription, registration or machine settings; self-hosted Cowork is the one without the record. |
 | Home side stone, hosted only | **Business Lounge** | A link from Home to https://hq.roninhosted.com/, where a hosted office's account, office and subscription are kept. Each person lands in their own lounge. |
 | Ronin Hosted money | **balance**, **starter balance**, **top up**, **office limit**, **spent** | The account's money in dollars: a $5 starter balance at first rental, topped up by the person; an office limit caps one office's share. Never "credits" or "budget". |
-| stone work surface | **stone work surface** | Select a collection item: stones move to a left rail, details open on the right. Reused by Workspaces and Model Providers. |
+| stone work surface | **stone work surface** | Select a collection item: stones move to a left rail, details open on the right. Reused by Workspaces and Harnesses. |
 | tile | **tile** | One cell showing one session. Never "pane". |
 | `workspace1`…`workspace4` | **tilespace** | One numbered slot of a workbench. It holds a tile or a commons. Never call it a workspace. |
 | `campaign_commons` | **the commons** | The Desk's shared surface. |
@@ -58,6 +64,7 @@ behaviours guide; facts inform; skills adapt; UIs call (`docs/architecture/brief
 | `session_mandate` | **mandate** | **Reach** how far an Agent goes · **Recruit** how it builds a Team · **Output** what it hands back. |
 | `brief` | **brief** | What an Agent is told: facts, behaviours and tools at a depth, from its work record. Installations enable; behaviours guide. |
 | `message_queue` | **message queue** | Messages waiting to enter a live session. |
+| `model_catalog` | **model catalog** | HQ's Models table: each CLI model's tier, "use it for" line and facts. |
 | `project_root` | **workspace folder** | A repository or folder Ronin knows by name; a Workspace picks the ones its Agents use. |
 | `workspace` (record) | **Workspace** | A project: objective, instructions, repositories, folders and Mode. Every Team works in one. |
 | `desk_profile` | **desk profile** | The owner's standing defaults: skin, words, layout. |

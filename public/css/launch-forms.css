@@ -308,6 +308,7 @@
   .ntf-agent-row { display: flex; justify-content: space-between; gap: var(--space-inline); align-items: center; margin-top: var(--space-row); border: var(--edge) solid var(--line-2); border-radius: var(--radius-small); background: var(--inset); padding: var(--space-row) var(--space-inline); }
   .ntf-agent-row-words { display: flex; flex-wrap: wrap; gap: var(--space-row) var(--space-inline); min-width: 0; align-items: baseline; }
   .ntf-agent-row-words small { flex-basis: 100%; overflow-wrap: anywhere; color: var(--muted); }
+  .ntf-agent-add { margin-top: var(--space-paragraph); }
   .ntf-agent-row-actions, .ntf-agent-editor-actions { display: flex; gap: var(--space-inline); justify-content: flex-end; }
 
   @media (max-width: 44rem) {
@@ -392,16 +393,6 @@
   .fs-connection-note { grid-column: 1 / -1; }
   .fs-pair { display: grid; grid-template-columns: repeat(auto-fit, minmax(var(--fs-pair-w), 1fr)); gap: var(--space-row) var(--space-inline); }
 
-  .fs-gridlabel { display: block; color: var(--muted); font-size: var(--form-key); text-transform: uppercase; letter-spacing: var(--tracking-wide); }
-  .fs-kinds { display: flex; flex-direction: column; gap: var(--space-row); }
-  .fs-kindgrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-row) var(--space-inline); }
-  .fs-kindtile { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--space-row) var(--space-inline); align-items: center; border: var(--edge) solid var(--line-2); border-radius: var(--radius-small); background: var(--inset); color: var(--muted); padding: var(--space-row) var(--space-inline); cursor: pointer; text-align: left; font: inherit; }
-  .fs-kindtile:hover { border-color: var(--kaki); }
-  .fs-kindtile[aria-pressed='true'] { border-color: var(--kaki); background: var(--selected); /* the one you are on, have chosen, or are dropping onto */ }
-  .fs-kindtile[aria-pressed='true'] span { color: var(--kaki-lift); }
-  .fs-kindtile i { font-style: normal; font-size: var(--text-body); line-height: var(--leading-none); }
-  .fs-kindtile span { overflow: hidden; font-size: var(--form-note); text-overflow: ellipsis; white-space: nowrap; }
-  .fs-kindtile[data-open='true'] { align-self: start; border-style: dashed; }
 
   .fs-way { display: grid; gap: var(--space-row); border: var(--edge) solid var(--line-2); border-radius: var(--radius-small); background: var(--inset); color: var(--muted); padding: var(--space-row) var(--space-inline); cursor: pointer; text-align: left; font: inherit; }
   .fs-way:hover { border-color: var(--kaki); }
@@ -433,8 +424,6 @@
   /* Behaviors list/viewer — the shared stone surface supplies responsive geometry. */
   .behaviour-surface .sws-detail { min-width: 0; }
   .behaviour-surface .sws-group { color: var(--kaki); font-weight: var(--weight-strong); }
-  .behaviour-surface .behaviour-settings { display: grid; gap: var(--space-paragraph); padding: 0 var(--space-inset) var(--space-section); }
-  .behaviour-surface .behaviour-settings-head { margin: 0; padding: var(--space-section) var(--space-inset) 0; color: var(--fg-strong); font-size: var(--form-input); font-weight: var(--weight-strong); }
   .brief-author { display: grid; gap: var(--space-paragraph); }
   .brief-author-head { margin: 0; color: var(--fg-strong); font-size: var(--form-input); font-weight: var(--weight-strong); }
   .brief-author-grid { display: flex; flex-wrap: wrap; gap: var(--space-paragraph) var(--space-inline); }
@@ -476,7 +465,7 @@
      between. Four type roles only, the forms' own, one family (--font-ui): a section's head --form-head,
      a key (a field's label, a folder's name, the page's title) --form-key, every value and control
      --form-input, a help line --form-note. Each section stacks its head over its content. */
-  .workspace-form, .workspace-page-head { --wa-list-height: 16rem; /* the folder list: about ten lines before it scrolls */ font-family: var(--font-ui); font-size: var(--form-input); }
+  .workspace-form, .workspace-page-head { font-family: var(--font-ui); font-size: var(--form-input); }
   .workspace-form :is(input, textarea, button, code, small, b) { font-family: var(--font-ui); font-size: var(--form-input); }
   .workspace-form .fs-step { grid-template-columns: minmax(0, 1fr); gap: var(--space-paragraph); }
   .workspace-form .fs-step-body { display: flex; flex-direction: column; gap: var(--space-paragraph); min-width: 0; }
@@ -500,10 +489,6 @@
   .workspace-record-stones .sws-label { margin-block: auto; } /* the name in the middle of its stone, top to bottom, at its left (owner, 2026-11-23) */
   /* ITS DOCUMENT (owner, 2026-11-23): one page, outlined, so what is shown reads as a document and not
      a list of them; Edit at its top right turns the page to its text in the same outline. */
-  .workspace-doc-pane { display: flex; flex-direction: column; gap: var(--space-row); min-width: 0; }
-  .workspace-doc-pane > .workspace-page-head { justify-content: flex-end; padding-bottom: 0; border-bottom: 0; }
-  .workspace-doc-pane .workspace-doc { padding: var(--space-subsection); border: var(--edge) solid var(--line-2); border-radius: var(--radius-large); background: var(--surface); min-width: 0; }
-  .workspace-doc-pane .workspace-doc-text { width: 100%; box-sizing: border-box; border: 0; background: transparent; color: var(--fg); font: inherit; resize: vertical; }
   .workspace-route { min-height: 100%; overflow: auto; padding: var(--space-inset); background: var(--workbench-bg); min-width: 0; }
   .workspace-page-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-inline); padding-bottom: var(--space-row); border-bottom: var(--edge) solid var(--line); }
   .workspace-page-actions { display: flex; align-items: center; gap: var(--space-row); }
@@ -521,10 +506,11 @@
   .workspace-location-repo { flex-basis: 100%; min-width: 0; overflow-wrap: anywhere; color: var(--muted); font-size: inherit; }
   .workspace-location .folder-kind { color: var(--muted); }
   .workspace-location-note { grid-column: 1 / -1; }
-  /* An integration row keeps its five cells: blank · provider · keys · blank · ×. */
-  .workspace-integrations .workspace-location { grid-template-columns: 2.2em minmax(0, 1fr) auto auto auto; }
-  /* A bridge's fact (KAN-597): one small field per `facts:` name, under its row. */
-  .workspace-form .workspace-integration-fact { grid-column: 2 / -1; display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: baseline; column-gap: var(--space-inline); }
+  /* An integration: a tick and its name (KAN-857); a bridge's facts (KAN-597) indented under a ticked one. */
+  .workspace-integrations { display: grid; gap: var(--space-row); }
+  .workspace-integration { display: inline-flex; gap: var(--space-inline); align-items: center; }
+  .workspace-integration-kept { margin-left: 2.2em; }
+  .workspace-form .workspace-integration-fact { margin-left: 2.2em; display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: baseline; column-gap: var(--space-inline); }
   .workspace-integration-fact .wk-field-label { color: var(--muted); font-size: var(--form-note); }
   .workspace-integration-fact .wk-field-description:empty, .workspace-integration-fact .wk-field-validation[hidden] { display: none; }
   .workspace-location-note[hidden], .workspace-location-add-note[hidden] { display: none; }
@@ -584,30 +570,16 @@
   .workspace-location-remove { border: 0; background: transparent; color: var(--muted); cursor: pointer; padding: 0 var(--space-row); }
   .workspace-location-remove:hover { color: var(--bad); }
 
-  /* Add a folder and Clone from GitHub, first in the section (KAN-728): the kit's buttons, Add a folder
-     the primary one, each opening its own panel. */
+  /* Add a repository, first in the section (KAN-809): it opens its panel. */
   .workspace-location-tools { display: flex; gap: var(--space-inline); flex-wrap: wrap; }
-  /* Inside Add a folder the picker is its walk and its rows: a press adds, so no chosen box or kind tag. */
-  .workspace-browser .folder-picker .folder-kind { display: none; }
-  /* The Summary is the Workspace's Markdown file, shown whole in the page's one text size (KAN-728). */
-  .workspace-doc .markdown-reader { font-size: inherit; }
-  .workspace-doc .markdown-reader :is(h1, h2, h3, h4) { font-size: inherit; font-weight: var(--weight-bold); color: var(--fg-strong); margin: var(--space-row) 0 0; }
-  .workspace-doc .markdown-reader p { margin: var(--space-row) 0 0; }
-  .workspace-doc .markdown-reader > :first-child { margin-top: 0; }
-  .workspace-doc-text { width: 100%; box-sizing: border-box; font: inherit; }
-  .workspace-doc-edit { margin-top: var(--space-row); align-self: flex-start; }
+  .workspace-more-integrations { display: flex; flex-direction: column; gap: var(--space-row); }
+  .workspace-defaults, .level-defaults { display: flex; flex-direction: column; gap: var(--space-paragraph); }
+  .workspace-add-mode { display: flex; flex-direction: column; gap: var(--space-row); }
+  .workspace-add-mode .ask-caption:empty { display: none; }
   .workspace-clone > input { flex: 1 1 auto; min-width: 0; }
   .workspace-browser { display: flex; flex-direction: column; gap: var(--space-row); padding: var(--space-inline); border: var(--edge) solid var(--line-2); border-radius: var(--radius-small); }
   .workspace-browser-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-inline); }
   .workspace-clone { display: flex; align-items: center; justify-content: space-between; gap: var(--space-inline); padding-top: var(--space-row); border-top: var(--edge) solid var(--line); }
   .workspace-browser > .wk-field + .wk-field { padding-top: var(--space-paragraph); }
-  .wa-browser { display: flex; flex-direction: column; gap: var(--space-row); min-width: 0; }
-  .wa-browser .folder-crumbs { font-size: var(--form-input); }
-  .wa-browser .folder-crumbs button { border: 0; background: transparent; padding: 0; color: var(--link); font: inherit; }
-  .wa-browser .folder-list { max-height: var(--wa-list-height); overflow: auto; border: 0; }
-  .wa-browser .folder-row { display: flex; align-items: center; gap: var(--space-inline); padding: var(--space-row) 0; border-bottom: var(--edge) solid var(--line); }
-  .wa-browser .folder-row button.folder-open { flex: 1 1 auto; min-width: 0; border: 0; background: transparent; padding: 0; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: inherit; color: var(--fg); }
-  .wa-browser .folder-open:hover { color: var(--fg-strong); background: var(--selected); }
-  .wa-browser .folder-kind { color: var(--muted); }
 
 }

@@ -1,75 +1,33 @@
 import { mkdir, stat, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { operationalPartCount } from './provider-parts.js';
 import { updateCommand, updateLineOf } from './agent-install.js';
 import { AGENTS, discoverExecutable, launchArgv, listAgentAvailability } from './agents.js';
 import { updateSection } from './machine-state.js';
-import { listProviderCatalog, newerVersion, type ModelList, type ProviderCatalogEntry, type ProviderSummary } from './model-providers.js';
-import { activatedAt, npmPackageOf, offAt, providerSignedIn } from './provider-summary.js';
-import { normalizeWorkspace, readWorkspace, saveWorkspace } from './workspaces.js';
-import { initialCampaignId } from './campaign-scope.js';
+import { listHarnesses, newerVersion, type ModelList, type HarnessSummary } from './harness-catalog.js';
+import { activatedAt, npmPackageOf, offAt, harnessSignedIn } from './harness-summary.js';
 import { rootDir } from './resources.js';
 import { runCommand } from './send.js';
 import { execFile as run, SpawnBrokerError } from './spawn-broker.js';
 import { collectBirthLines } from './sockets.js';
 import { killSessionTree, sessionExists } from './tmux.js';
-import { addJob, type Job } from './jikan.js';
 import type { InstalledAnswer } from './routes/installed-api.js';
 
 import { createSetupSession, setupAttachment, PROVIDER_SETUP_TEAM, type SetupSessionPrimitives } from './setup-session.js';
 export { PROVIDER_SETUP_TEAM } from './setup-session.js';
-export const INSTALLED_ROOTS = [
-  { name: 'ronin_lab', label: 'Ronin Lab', remit: 'Ideas, assistants, notes, research, and pre-project work.', managed: false },
-  { name: 'project_one', label: 'Project One', remit: 'The first project-shaped workspace folder.', managed: true },
-] as const;
 
-export interface SetupPreferences { providers: string[]; path_note: string; bounty_opt_in: boolean }
 interface SetupSection {
-  providers?: Record<string, { activated_at?: unknown; off_at?: unknown; sign_in?: ProviderSignIn }>;
-  preferences?: { providers?: unknown; path_note?: unknown; bounty_opt_in?: unknown };
+  providers?: Record<string, { activated_at?: unknown; off_at?: unknown }>;
   [key: string]: unknown;
 }
 
-export interface ProviderSignIn {
-  method: 'subscription' | 'api_key' | 'third_party';
-  label: string;
-  recorded_at: string;
-}
-
-/** Owner-described metadata only: saving it never establishes authentication. */
-export async function saveProviderSignIn(provider: string, input: unknown): Promise<ProviderSignIn | null> {
-  if (!AGENTS.some((agent) => agent.id === provider)) throw new Error(`Unknown provider "${provider}".`);
-  if (input === null) {
-    await updateSection<SetupSection>('setup', (setup) => {
-      const current = { ...setup.providers?.[provider] };
-      delete current.sign_in;
-      return { ...setup, providers: { ...setup.providers, [provider]: current } };
-    });
-    return null;
-  }
-  const data = input as Partial<ProviderSignIn> | null;
-  if (!data || !['subscription', 'api_key', 'third_party'].includes(String(data.method))) {
-    throw new Error('Choose Subscription, API key, or Third-party service.');
-  }
-  if (typeof data.label !== 'string' || !data.label.trim() || data.label.trim().length > 120) {
-    throw new Error('Give this sign-in a label of 1–120 characters.');
-  }
-  const sign_in: ProviderSignIn = { method: data.method as ProviderSignIn['method'], label: data.label.trim(), recorded_at: new Date().toISOString() };
-  await updateSection<SetupSection>('setup', (setup) => ({
-    ...setup,
-    providers: { ...setup.providers, [provider]: { ...setup.providers?.[provider], sign_in } },
-  }));
-  return sign_in;
-}
-
-export interface SetupProviderState {
+export interface SetupHarnessState {
   /** The CLI id — the key of every machine fact. */
   id: string;
-  /** The vendor id the catalog joins to this CLI; '' when the catalog has no section for it. */
+  /** The vendor id this CLI serves, from its entry in `src/agents.ts`. */
   provider: string;
   label: string;
-  /** The vendor's name, from the catalog. */
+  /** The vendor's name, from the same entry. */
   from: string;
   installed: boolean;
   installable: boolean;
@@ -79,8 +37,9 @@ export interface SetupProviderState {
   login_open: boolean;
   /** How its sign-in goes, in the CLI's own words (AGENTS signIn, KAN-716); '' when not read. */
   sign_in_how: string;
+  /** Whether Ronin signs it in itself, without a terminal (AGENTS `login`, src/harness-sign-in.ts). */
+  direct_sign_in: boolean;
   install_open: boolean;
-  sign_in: ProviderSignIn | null;
   signed_in: boolean;
   activated: boolean;
   activated_at: string | null;
@@ -113,16 +72,14 @@ export interface SetupProviderState {
 }
 
 export interface SetupRuntimeAnswer {
-  providers: SetupProviderState[];
+  harnesses: SetupHarnessState[];
   activated_count: number;
   activated_band: 'zero' | 'one' | 'two_plus';
   /** When the machine facts were measured; a reader shows a stale date rather than guessing. */
   measured_at: string;
   /** When Refresh all last read every activated CLI's model list; '' when never. */
   refreshed_at: string;
-  roots: Array<{ name: string; label: string; dir: string }>;
-  services: { installed: boolean; switched_on: boolean; active: boolean };
-  preferences: SetupPreferences;
+  services: { installed: boolean; active: boolean };
 }
 
 export interface ProviderSessionOps {
@@ -138,40 +95,6 @@ type Availability = Awaited<ReturnType<typeof listAgentAvailability>>;
 const sessionName = (provider: string) => `provider_setup_${provider}`;
 const updateSessionName = (provider: string) => `provider_setup_${provider}_update`;
 const installSessionName = (provider: string) => `install_${provider}`;
-
-export function setupPreferences(section: SetupSection): SetupPreferences {
-  const providers = Array.isArray(section.preferences?.providers)
-    ? [...new Set(section.preferences.providers.filter((provider): provider is string =>
-      typeof provider === 'string' && /^[a-z0-9_-]+$/.test(provider)))]
-    : [];
-  return {
-    providers,
-    path_note: typeof section.preferences?.path_note === 'string' ? section.preferences.path_note : '',
-    bounty_opt_in: section.preferences?.bounty_opt_in === true,
-  };
-}
-
-export async function writeSetupPreferences(input: unknown): Promise<SetupPreferences> {
-  const patch = input;
-  if (!patch || typeof patch !== 'object' || Array.isArray(patch)) throw new Error('Send Setup preferences.');
-  const update = patch as { providers?: unknown; path_note?: unknown; bounty_opt_in?: unknown };
-  if (update.providers === undefined && update.path_note === undefined && update.bounty_opt_in === undefined) throw new Error('Send onboarding preferences.');
-  let written: SetupPreferences = { providers: [], path_note: '', bounty_opt_in: false };
-  await updateSection<SetupSection>('setup', (setup) => {
-    const current = setupPreferences(setup);
-    const providers = update.providers === undefined ? current.providers : update.providers;
-    const path_note = update.path_note === undefined ? current.path_note : update.path_note;
-    const bounty_opt_in = update.bounty_opt_in === undefined ? current.bounty_opt_in : update.bounty_opt_in;
-    if (!Array.isArray(providers) || providers.some((provider) => typeof provider !== 'string' || !/^[a-z0-9_-]+$/.test(provider))) {
-      throw new Error('Providers must be provider IDs.');
-    }
-    if (typeof path_note !== 'string' || path_note.length > 2000) throw new Error('Path note must be text up to 2000 characters.');
-    if (typeof bounty_opt_in !== 'boolean') throw new Error('Bounty opt-in must be true or false.');
-    written = setupPreferences({ preferences: { providers, path_note, bounty_opt_in } });
-    return { ...setup, preferences: written };
-  });
-  return written;
-}
 
 const defaultSessionOps: ProviderSessionOps = {
   exists: sessionExists,
@@ -202,13 +125,12 @@ const defaultSessionOps: ProviderSessionOps = {
  */
 export async function setupRuntimeAnswer(
   section: SetupSection,
-  summary: ProviderSummary,
+  summary: HarnessSummary,
   ops: Pick<ProviderSessionOps, 'exists'> = defaultSessionOps,
   installed?: InstalledAnswer,
-  catalog?: ProviderCatalogEntry[],
 ): Promise<SetupRuntimeAnswer> {
-  const entries = catalog ?? await listProviderCatalog();
-  const providers = await Promise.all(AGENTS.map(async (agent): Promise<SetupProviderState> => {
+  const entries = listHarnesses();
+  const providers = await Promise.all(AGENTS.map(async (agent): Promise<SetupHarnessState> => {
     const entry = entries.find((row) => row.cli === agent.id);
     const session = sessionName(agent.id);
     const updateSession = updateSessionName(agent.id);
@@ -218,7 +140,7 @@ export async function setupRuntimeAnswer(
     const offSince = offAt(section, agent.id);
     const isInstalled = summary.installed.includes(agent.id);
     // While its sign-in is open, the credential file is read now, not from the last measure (KAN-723).
-    const signedIn = isInstalled && (summary.signed_in.includes(agent.id) || (loginOpen && await providerSignedIn(agent.id)));
+    const signedIn = isInstalled && (summary.signed_in.includes(agent.id) || (loginOpen && await harnessSignedIn(agent.id)));
     const activated = isInstalled && offSince === null && (completed !== null || signedIn) && entry?.launchable === true;
     // Not activated: nothing was asked and nothing is offered — Installed, and stop. A
     // version from an earlier measurement is not printed as though it were current.
@@ -237,8 +159,8 @@ export async function setupRuntimeAnswer(
       path: isInstalled ? summary.paths[agent.id] ?? null : null,
       login_open: loginOpen,
       sign_in_how: agent.signIn,
+      direct_sign_in: 'login' in agent,
       install_open: installOpen,
-      sign_in: section.providers?.[agent.id]?.sign_in ?? null,
       signed_in: signedIn,
       activated,
       activated_at: completed,
@@ -263,25 +185,21 @@ export async function setupRuntimeAnswer(
       state: offSince !== null && isInstalled ? 'off' : activated ? 'activated' : loginOpen ? 'login_open' : isInstalled ? 'installed' : agent.operations.install ? 'installable' : 'absent',
     };
   }));
-  const activated_count = providers.filter((provider) => provider.activated).length + await operationalPartCount();
-  const roots = INSTALLED_ROOTS.map((root) => ({ ...root, dir: path.join(rootDir('user'), root.name) }));
+  const activated_count = providers.filter((provider) => provider.activated).length;
   return {
-    providers,
+    harnesses: providers,
     activated_count,
     activated_band: activated_count === 0 ? 'zero' : activated_count === 1 ? 'one' : 'two_plus',
     measured_at: summary.measured_at,
     refreshed_at: summary.refreshed_at,
-    roots: roots.map(({ name, label, dir }) => ({ name, label, dir })),
     services: {
       installed: installed?.services.installed ?? false,
-      switched_on: installed?.services.switched_on ?? false,
-      active: Boolean(installed?.services.installed && installed.services.switched_on && installed.services.loaded.length),
+      active: Boolean(installed?.services.loaded.length),
     },
-    preferences: setupPreferences(section),
   };
 }
 
-export async function openProviderLogin(
+export async function openHarnessLogin(
   provider: string,
   ops: ProviderSessionOps = defaultSessionOps,
   availability?: Availability,
@@ -300,7 +218,7 @@ export async function openProviderLogin(
  * Close ends whichever temporary session the provider has open — install, sign-in, update,
  * or any combination — through the one teardown. Nothing shown in the page outlives it.
  */
-export async function closeProviderLogin(provider: string, ops: ProviderSessionOps = defaultSessionOps): Promise<{ session: string; closed: boolean }> {
+export async function closeHarnessLogin(provider: string, ops: ProviderSessionOps = defaultSessionOps): Promise<{ session: string; closed: boolean }> {
   if (!AGENTS.some((agent) => agent.id === provider)) throw new Error(`Unknown provider "${provider}".`);
   let closed: string | null = null;
   // Keep the long-standing sign-in name as the receipt when several exist; install joins
@@ -317,7 +235,7 @@ export async function closeProviderLogin(provider: string, ops: ProviderSessionO
  * Update: the registry's update line in a temporary provider_setup session, shown in the
  * page like a sign-in and ended by the same Close. The owner's press, never Ronin's.
  */
-export async function openProviderUpdate(
+export async function openHarnessUpdate(
   provider: string,
   ops: ProviderSessionOps = defaultSessionOps,
   availability?: Availability,
@@ -334,11 +252,11 @@ export async function openProviderUpdate(
   return { session, opened: true };
 }
 
-export async function completeProviderLogin(
+export async function completeHarnessLogin(
   provider: string,
   ops: ProviderSessionOps = defaultSessionOps,
   now = () => new Date().toISOString(),
-  record: (provider: string, activated_at: string) => Promise<void> = recordProviderActivation,
+  record: (provider: string, activated_at: string) => Promise<void> = recordHarnessActivation,
 ): Promise<{ session: string; activated_at: string }> {
   if (!AGENTS.some((agent) => agent.id === provider)) throw new Error(`Unknown provider "${provider}".`);
   const loginSession = sessionName(provider);
@@ -349,7 +267,7 @@ export async function completeProviderLogin(
   if (!session) throw new Error(`No open login or install session for ${provider}; activation was not recorded.`);
   const activated_at = now();
   await record(provider, activated_at);
-  await closeProviderLogin(provider, ops);
+  await closeHarnessLogin(provider, ops);
   return { session, activated_at };
 }
 
@@ -358,7 +276,7 @@ export async function completeProviderLogin(
  * session; on deletes it. What the record then says is measured, not assumed: the caller
  * measures again so `operational` moves with the switch.
  */
-export async function setProviderOff(provider: string, off: boolean, now = () => new Date().toISOString()): Promise<{ provider: string; off: boolean; off_at: string | null }> {
+export async function setHarnessOff(provider: string, off: boolean, now = () => new Date().toISOString()): Promise<{ provider: string; off: boolean; off_at: string | null }> {
   if (!AGENTS.some((agent) => agent.id === provider)) throw new Error(`Unknown provider "${provider}".`);
   let off_at: string | null = null;
   await updateSection<SetupSection>('setup', (setup) => {
@@ -369,7 +287,7 @@ export async function setProviderOff(provider: string, off: boolean, now = () =>
   return { provider, off, off_at };
 }
 
-async function recordProviderActivation(provider: string, activated_at: string): Promise<void> {
+async function recordHarnessActivation(provider: string, activated_at: string): Promise<void> {
   await updateSection<SetupSection>('setup', (setup) => ({
     ...setup,
     providers: { ...(setup.providers ?? {}), [provider]: { ...setup.providers?.[provider], activated_at } },
@@ -384,10 +302,8 @@ async function git(dir: string, args: string[]): Promise<string> {
   return (await run('git', ['-C', dir, ...args], { timeout: 10_000 })).stdout.trim();
 }
 
-const GITHUB_SETUP_SESSION = 'setup_github';
-const GITHUB_INSTALL_SESSION = 'install_github';
-const GIT_SETUP_SESSION = 'setup_git';
-
+/** GitHub on this machine (KAN-809): whether gh is there and signed in, as whom. Signing in is the
+ * Helpful Assistant's, in her chat; nothing here opens a session. */
 export type GithubSetupState = 'missing' | 'needs_authentication' | 'authenticated' | 'unreadable';
 export interface GithubSetupAnswer {
   installed: boolean;
@@ -395,179 +311,37 @@ export interface GithubSetupAnswer {
   account: string;
   state: GithubSetupState;
   problem: string;
-  installing: boolean;
-  attachment: { type: 'session'; key: string; team: typeof PROVIDER_SETUP_TEAM; temporary: true } | null;
 }
 
-export interface GithubSetupOps {
-  installed(): Promise<boolean>;
-  authenticatedLogin(): Promise<string>;
-  exists(): Promise<boolean>;
-  installExists(): Promise<boolean>;
-  open(): Promise<void>;
-  openInstall(): Promise<void>;
-  close(): Promise<void>;
-  closeInstall(): Promise<void>;
-  logout(account: string): Promise<void>;
-}
-
-export type GithubSessionPrimitives = SetupSessionPrimitives;
-
-export async function createGithubSetupSession(
-  primitives?: GithubSessionPrimitives,
-  command = runCommand,
-  executable = () => discoverExecutable('gh'),
-): Promise<void> {
-  const gh = await executable();
-  if (!gh) throw new Error('GitHub CLI is not installed on this machine.');
-  await createSetupSession(GITHUB_SETUP_SESSION, 'gh', os.homedir(), {
-    agent: false, provider: 'github',
-    argv: [],
-  }, primitives);
-  await command(GITHUB_SETUP_SESSION, `'${gh.replaceAll("'", "'\\''")}' auth login --hostname github.com --git-protocol https --web`);
-}
-
-/** GitHub's supported package paths, run visibly because system package managers may ask for sudo.
- *  The same install adds the common tools every Agent reaches for (behaviours/linux-tools.md):
- *  jq, file and Python's Pillow; macOS has file already. */
-export function githubInstallCommand(platform = os.platform()): string {
-  if (platform === 'darwin') return 'command -v brew >/dev/null || { echo "Homebrew is required to install GitHub CLI on macOS: https://brew.sh"; exit 1; }; brew install gh jq pillow';
-  if (platform === 'linux') return [
-    'if [ "$(id -u)" -eq 0 ]; then SUDO=""; elif command -v sudo >/dev/null; then SUDO=sudo; else echo "Installing GitHub CLI requires sudo on this Linux machine."; exit 1; fi',
-    'if command -v brew >/dev/null; then brew install gh jq pillow',
-    'elif command -v apt-get >/dev/null; then (command -v wget >/dev/null || ($SUDO apt-get update && $SUDO apt-get install -y wget)) && $SUDO mkdir -p -m 755 /etc/apt/keyrings && GH_KEY=$(mktemp) && wget -nv -O"$GH_KEY" https://cli.github.com/packages/githubcli-archive-keyring.gpg && $SUDO tee /etc/apt/keyrings/githubcli-archive-keyring.gpg <"$GH_KEY" >/dev/null && $SUDO chmod go+r /etc/apt/keyrings/githubcli-archive-keyring.gpg && echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | $SUDO tee /etc/apt/sources.list.d/github-cli.list >/dev/null && $SUDO apt-get update && $SUDO apt-get install -y gh jq file python3-pil',
-    'elif command -v dnf >/dev/null; then $SUDO dnf install -y gh jq file python3-pillow',
-    'elif command -v yum >/dev/null; then $SUDO yum install -y gh jq file python3-pillow',
-    'elif command -v pacman >/dev/null; then $SUDO pacman -S --needed github-cli jq file python-pillow',
-    'else echo "No supported GitHub CLI package manager was found. See https://cli.github.com/"; exit 1; fi',
-  ].join('; ');
-  throw new Error('GitHub CLI installation is supported on macOS and Linux.');
-}
-
-export async function createGithubInstallSession(primitives?: GithubSessionPrimitives): Promise<void> {
-  await createSetupSession(GITHUB_INSTALL_SESSION, 'gh', os.homedir(), { agent: false, argv: [], provider: 'github' }, primitives);
-  await runCommand(GITHUB_INSTALL_SESSION, githubInstallCommand());
-}
-
-/** A neutral owner shell for SSH, credential-helper, or organization-specific Git setup. */
-export async function openGitSetupSession(primitives?: GithubSessionPrimitives): Promise<ReturnType<typeof setupAttachment>> {
-  if (!(await sessionExists(GIT_SETUP_SESSION))) {
-    await createSetupSession(GIT_SETUP_SESSION, 'git', os.homedir(), { agent: false, argv: [], provider: 'git' }, primitives);
+export async function githubSetupAnswer(): Promise<GithubSetupAnswer> {
+  const gh = await discoverExecutable('gh');
+  if (!gh) return { installed: false, authenticated: false, account: '', state: 'missing', problem: '' };
+  try {
+    // `gh api user` verifies the active github.com credential and prints only its login.
+    const login = (await run(gh, ['api', 'user', '--hostname', 'github.com', '--jq', '.login'], { timeout: 8_000 })).stdout.trim();
+    const account = /^[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})$/.test(login) ? login : '';
+    return account
+      ? { installed: true, authenticated: true, account, state: 'authenticated', problem: '' }
+      : { installed: true, authenticated: false, account: '', state: 'unreadable', problem: 'GitHub CLI returned an unreadable authentication result.' };
+  } catch (error) {
+    return error instanceof SpawnBrokerError && error.code === 4
+      ? { installed: true, authenticated: false, account: '', state: 'needs_authentication', problem: '' }
+      : { installed: true, authenticated: false, account: '', state: 'unreadable', problem: 'Ronin could not ask GitHub CLI to verify authentication.' };
   }
-  return setupAttachment(GIT_SETUP_SESSION);
 }
 
-export async function closeGitSetupSession(): Promise<void> {
-  if (await sessionExists(GIT_SETUP_SESSION)) await killSessionTree(GIT_SETUP_SESSION);
-}
-
-const defaultGithubSetupOps: GithubSetupOps = {
-  installed: () => discoverExecutable('gh').then(Boolean),
-  // `gh api user` verifies the active github.com credential and prints only its login.
-  // `gh auth status --json` requires gh 2.81, though older installed versions can log in.
-  authenticatedLogin: async () => {
-    const gh = await discoverExecutable('gh');
-    if (!gh) throw new Error('GitHub CLI is not installed on this machine.');
-    return (await run(gh, ['api', 'user', '--hostname', 'github.com', '--jq', '.login'], { timeout: 8_000 })).stdout;
-  },
-  exists: () => sessionExists(GITHUB_SETUP_SESSION),
-  installExists: () => sessionExists(GITHUB_INSTALL_SESSION),
-  open: () => createGithubSetupSession(),
-  openInstall: () => createGithubInstallSession(),
-  close: () => killSessionTree(GITHUB_SETUP_SESSION),
-  closeInstall: () => killSessionTree(GITHUB_INSTALL_SESSION),
-  logout: async (account) => {
-    const gh = await discoverExecutable('gh');
-    if (!gh) throw new Error('GitHub CLI is not installed on this machine.');
-    await run(gh, ['auth', 'logout', '--hostname', 'github.com', '--user', account], { timeout: 8_000 });
-  },
-};
-
-export interface GithubAuthMeasurement {
-  state: 'needs_authentication' | 'authenticated' | 'unreadable';
-  account: string;
-  problem: string;
-}
-
-/** Accept only the login returned by GitHub's authenticated /user endpoint. */
-export function githubAuthFromLogin(login: string): GithubAuthMeasurement {
-  const candidate = login.trim();
-  const account = /^[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})$/.test(candidate) ? candidate : '';
-  return account
-    ? { state: 'authenticated', account, problem: '' }
-    : { state: 'unreadable', account: '', problem: 'GitHub CLI returned an unreadable authentication result.' };
-}
-
-// Whether a GitHub login, GitHub install or git setup session is open: while one is, the
-// /events tick watches the GitHub answer.
-export async function githubSetupAttached(): Promise<boolean> {
-  const open = await Promise.all([GITHUB_SETUP_SESSION, GITHUB_INSTALL_SESSION, GIT_SETUP_SESSION].map((name) => sessionExists(name)));
-  return open.some(Boolean);
-}
-
-export async function githubSetupAnswer(ops: GithubSetupOps = defaultGithubSetupOps): Promise<GithubSetupAnswer> {
-  const installed = await ops.installed();
-  let measurement: GithubAuthMeasurement = { state: 'needs_authentication', account: '', problem: '' };
-  if (installed) {
-    try { measurement = githubAuthFromLogin(await ops.authenticatedLogin()); }
-    catch (error) {
-      measurement = error instanceof SpawnBrokerError && error.code === 4
-        ? { state: 'needs_authentication', account: '', problem: '' }
-        : { state: 'unreadable', account: '', problem: 'Ronin could not ask GitHub CLI to verify authentication.' };
-    }
-  }
-  const account = measurement.account;
-  const [open, installing] = await Promise.all([ops.exists(), ops.installExists()]);
-  const authenticated = account !== '';
-  return {
-    installed,
-    authenticated,
-    account,
-    state: !installed ? 'missing' : measurement.state,
-    problem: installed ? measurement.problem : '',
-    installing,
-    attachment: installing ? setupAttachment(GITHUB_INSTALL_SESSION)
-      : open ? setupAttachment(GITHUB_SETUP_SESSION) : null,
-  };
-}
-
-export async function openGithubInstall(ops: GithubSetupOps = defaultGithubSetupOps): Promise<GithubSetupAnswer> {
-  if (await ops.installed()) return githubSetupAnswer(ops);
-  if (!(await ops.installExists())) await ops.openInstall();
-  return githubSetupAnswer(ops);
-}
-
-export async function openGithubLogin(ops: GithubSetupOps = defaultGithubSetupOps): Promise<GithubSetupAnswer> {
-  if (!(await ops.installed())) throw new Error('GitHub CLI is not installed on this machine.');
-  if (!(await ops.exists())) await ops.open();
-  return githubSetupAnswer(ops);
-}
-
-export async function closeGithubLogin(ops: GithubSetupOps = defaultGithubSetupOps): Promise<GithubSetupAnswer> {
-  if (await ops.exists()) await ops.close();
-  if (await ops.installExists()) await ops.closeInstall();
-  return githubSetupAnswer(ops);
-}
-
-/** Remove only the active github.com credential that gh reported; the browser cannot name another account. */
-export async function removeGithubAuthentication(ops: GithubSetupOps = defaultGithubSetupOps): Promise<GithubSetupAnswer> {
-  const current = await githubSetupAnswer(ops);
-  if (!current.installed) throw new Error('GitHub CLI is not installed on this machine.');
-  if (!current.authenticated || !current.account) throw new Error('GitHub is not authenticated on this machine.');
-  if (await ops.exists()) await ops.close();
-  await ops.logout(current.account);
-  return githubSetupAnswer(ops);
-}
-
-/** Clone a GitHub repository into `parent` (Ronin's own folder when none is named). The Workspace
- * page that asked adds it as a row; nothing here keeps a list (KAN-728). */
-export async function cloneGithubWorkspace(repository: unknown, parent?: unknown): Promise<{ dir: string }> {
+/** A repository cloned into `parent`, a Workspace's repos/ (addRepository, src/workspaces.ts; KAN-809):
+ * any Git URL, from any host, with plain git; `owner/name` means GitHub. A public one needs no sign-in;
+ * a private one needs this machine's Git or GitHub sign-in, and git says so in its own words. */
+export async function cloneRepository(repository: unknown, parent: string): Promise<{ dir: string }> {
   const entered = typeof repository === 'string' ? repository.trim() : '';
-  const match = /^(?:https:\/\/github\.com\/|git@github\.com:|ssh:\/\/git@github\.com\/)?([A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+?)(?:\.git)?$/.exec(entered);
-  if (!match) throw new Error('Repository must be owner/name or an HTTPS or SSH github.com URL.');
-  const slug = match[1];
-  const remote = /^(?:git@|ssh:\/\/)/.test(entered) ? entered : `https://github.com/${slug}.git`;
-  const dir = path.join(typeof parent === 'string' && parent.trim() ? path.resolve(parent.trim()) : rootDir('user'), slug.split('/')[1]);
+  const shorthand = /^([A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+?)(?:\.git)?$/.exec(entered);
+  const url = /^(?:https?:\/\/|ssh:\/\/|git@[^:]+:|git:\/\/)\S+$/.test(entered);
+  if (!shorthand && !url) throw new Error('Paste a Git URL (https://…, git@…) or owner/name for GitHub.');
+  const remote = shorthand ? `https://github.com/${shorthand[1]}.git` : entered;
+  const base = remote.replace(/\.git$/, '').replace(/\/+$/, '').split(/[/:]/).pop() || '';
+  if (!/^[A-Za-z0-9_.-]+$/.test(base)) throw new Error('That URL names no repository.');
+  const dir = path.join(parent, base);
   if (await exists(dir)) throw new Error(`The destination ${dir} already exists.`);
   const git = await discoverExecutable('git');
   if (!git) throw new Error('Git is not installed or is not available to the owner’s login shell.');
@@ -586,6 +360,15 @@ export async function cloneGithubWorkspace(repository: unknown, parent?: unknown
     throw new Error(safe || 'Git could not access that repository with this machine’s current Git connection.');
   }
   return { dir };
+}
+
+/** The signed-in GitHub account's repositories, newest first, as gh lists them (w926). */
+export async function githubRepositories(): Promise<Array<{ name: string; url: string; private: boolean }>> {
+  const gh = await discoverExecutable('gh');
+  if (!gh) throw new Error('GitHub is not connected here.');
+  const { stdout } = await run(gh, ['repo', 'list', '--limit', '100', '--json', 'nameWithOwner,url,isPrivate'], { timeout: 30_000, maxBuffer: 4 * 1024 * 1024 });
+  return (JSON.parse(String(stdout || '[]')) as Array<{ nameWithOwner: string; url: string; isPrivate: boolean }>)
+    .map((repo) => ({ name: repo.nameWithOwner, url: `${repo.url}.git`, private: repo.isPrivate }));
 }
 
 /** A new folder's repository, created on GitHub with the GitHub CLI: origin set, the first commit pushed.
@@ -618,58 +401,3 @@ export async function createGithubRepository(dirRaw: unknown, visibilityRaw: unk
     throw new Error(`GitHub did not create it: ${line(error) || 'the GitHub CLI refused'}`);
   }
 }
-
-async function ensureRepository(dir: string, label: string, managed: boolean): Promise<void> {
-  await mkdir(dir, { recursive: true });
-  if (!(await exists(path.join(dir, '.git')))) await git(dir, ['init', '-b', 'main']);
-  const readme = path.join(dir, 'README.md');
-  if (!(await exists(readme))) await writeFile(readme, `# ${label}\n`, 'utf8');
-  const hasHead = await git(dir, ['rev-parse', '--verify', 'HEAD']).then(() => true, () => false);
-  if (!hasHead) {
-    await git(dir, ['add', '--', 'README.md']);
-    await git(dir, ['-c', 'user.name=Ronin', '-c', 'user.email=ronin@localhost', 'commit', '-m', `Start ${label}`]);
-  }
-  if (managed && !(await git(dir, ['show-ref', '--verify', '--quiet', 'refs/heads/dev']).then(() => true, () => false))) {
-    await git(dir, ['branch', 'dev', 'HEAD']);
-  }
-}
-
-// Start-up and the first Setup read both call this; one run at a time, or both commit the
-// first README and the second fails Setup's read.
-let rootsInFlight: Promise<Array<{ name: string; label: string; dir: string }>> | null = null;
-export function ensureInstalledRoots(): Promise<Array<{ name: string; label: string; dir: string }>> {
-  rootsInFlight ??= placeInstalledRoots().finally(() => { rootsInFlight = null; });
-  return rootsInFlight;
-}
-
-async function placeInstalledRoots(): Promise<Array<{ name: string; label: string; dir: string }>> {
-  const installed = [];
-  const campaign = await initialCampaignId();
-  for (const root of INSTALLED_ROOTS) {
-    const dir = path.join(rootDir('user'), root.name);
-    await ensureRepository(dir, root.label, root.managed);
-    // Each is a Workspace holding its own folder, made once: a runtime read runs this on every call.
-    if (campaign && !(await readWorkspace(campaign, root.name))) {
-      const row = { name: root.name, dir, note: root.remit };
-      await saveWorkspace(normalizeWorkspace(campaign, root.name, {
-        title: root.label,
-        ...(root.managed ? { repos: [{ ...row, mode: 'reviewed', working: 'dev', stable: 'main', desks: 'managed' }] } : { folders: [row] }),
-      }));
-    }
-    installed.push({ name: root.name, label: root.label, dir });
-  }
-  return installed;
-}
-
-export interface MorningBriefScheduleDraft {
-  team: unknown;
-  request: unknown;
-  when: unknown;
-}
-
-export async function createMorningBriefSchedule(draft: MorningBriefScheduleDraft): Promise<{ team: string; job: Job }> {
-  const team = typeof draft.team === 'string' ? draft.team.trim() : '';
-  const job = await addJob(team, { request: draft.request, when: draft.when, to: 'lead', by: 'owner' });
-  return { team, job };
-}
-

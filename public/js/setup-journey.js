@@ -1,47 +1,24 @@
-/** Setup is one developer path. Scenes name selector doors; they never reshape the workbench. */
+/**
+ * SETUP'S SCENES, ON EVERY OFFICE (owner, 2026-11-24; w926; docs/architecture/setup-workbench.md): selector
+ * doors that never reshape the workbench. The prototype's three steps, Harness, Workspace and Team, in any
+ * order, each ticked from a fact; then the Ronin Tour, no tick: a drawing per part of the docs' Tour
+ * (docs/getting-started/tour.md; setup-tour.js), given both work surfaces while it is open. The same
+ * whether she runs or not.
+ */
 export const SETUP_SCENES = Object.freeze([
-  { id: 'provider', label: 'Model providers', type: 'setup.providers', canvas: 'garden.setup.provider-welcome' },
-  { id: 'register', label: 'Register (optional)', type: 'setup.register', canvas: 'garden.setup.register' },
-  { id: 'workspace', label: 'Workspaces', type: 'setup.roots', canvas: 'garden.setup.workspace' },
-  { id: 'installations', label: 'Installations', type: 'setup.installations', canvas: 'garden.setup.installations' },
-  { id: 'password', label: 'Password', type: 'machine.password', canvas: 'garden.setup.password' },
-  { id: 'bounty', label: 'Bounty Program', type: 'setup.bounty', canvas: 'garden.setup.bounty' },
-  { id: 'launch', label: 'Launch', type: 'setup.launch-own', canvas: 'garden.setup.launch' },
+  { id: 'harness', label: 'Harness', line: 'Sign in to the harness you already use.', type: 'setup.harness', canvas: 'garden.setup.harness' },
+  { id: 'workspace', label: 'Workspace', line: 'Say what you are working on, and where it lives.', type: 'setup.roots', canvas: 'garden.setup.workspace' },
+  { id: 'team', label: 'Team', line: 'Name your first Team, its lead and its Agents.', type: 'setup.team', canvas: 'garden.setup.team' },
+  { id: 'tour', label: 'Tour', line: 'How Agents begin, and how the work runs.', type: 'setup.tour', canvas: 'garden.setup.tour' },
 ].map((scene, index) => Object.freeze({ ...scene, number: index + 1 })));
 
-/* IRASSHAI'S STEPS (KAN-573; setup-irasshai.js): while she runs, Setup's steps are her onboarding
-   epic's tasks instead of the scenes above. */
+/* IRASSHAI (setup-irasshai.js): the Helpful Assistant, Setup's Ask Ronin panel. */
 export const IRASSHAI = 'irasshai';
 /** The name people see (owner, 2026-11-19; KAN-691): "irasshai is cute but not legible". Code, route and session stay irasshai. */
 export const IRASSHAI_NAME = 'Helpful Assistant';
-const HELD = `agent:${IRASSHAI}`;
 
 /** Whether her session is in a session list (setup-irasshai.js reads the pushed one). */
 export const irasshaiIn = (sessions) => (sessions || []).some((session) => session?.name === IRASSHAI);
-
-const holds = (item) => item?.holder === HELD || (Array.isArray(item?.holders) && item.holders.includes(HELD));
-
-/** Whether her onboarding is over: an epic she holds is Done (KAN-676). Before it exists, it is not. */
-export const onboardingDone = (epics) => (epics || []).some((one) => one?.level === 1 && holds(one) && one.status === 'Done');
-
-/**
- * Her epic's tasks as Setup's steps: the epic she holds, its level-0 children, in `order` (the
- * PLAYBOOK-1 task titles) with any other after them, each { id, title, done }.
- */
-export function irasshaiSteps(epics, items, order = []) {
-  const epic = (epics || []).find((one) => one?.level === 1 && holds(one) && one.status !== 'Done')
-    || (epics || []).find((one) => one?.level === 1 && holds(one));
-  if (!epic) return [];
-  const rank = (title) => { const at = order.indexOf(title); return at < 0 ? order.length : at; };
-  return (items || [])
-    .filter((item) => item?.epic === epic.id && item.level === 0)
-    .map((item, index) => ({ id: item.id, title: item.title || item.id, done: item.status === 'Done', index }))
-    .sort((a, b) => rank(a.title) - rank(b.title) || a.index - b.index)
-    .map(({ id, title, done }) => ({ id, title, done }));
-}
-
-/** The line a press on a step not yet done sends her, in the person's name: the step as they see it, never an id (KAN-699). */
-export const takeStepLine = (step) => `Let's do ${step.title}.`;
 
 /** Irasshai's chat (KAN-617): a record as her chat draws it, or null. See setup-irasshai.js. The
  *  person's own message reaches here already without its head (tile-transcript.js, KAN-758); a

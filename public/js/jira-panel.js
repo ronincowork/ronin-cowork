@@ -449,7 +449,7 @@ export function createJiraPanel(selected, { openItems = null, openPairs = null }
     );
     renewal.setCollapsed(!open.renew, '');
     const disconnect = createAction({ label: t('jira.disconnect', 'Disconnect'), size: 'compact', action: async () => {
-      if (!confirm(t('jira.disconnect_confirm', 'Disconnect this Desk from Jira? Every pair drops; nothing is deleted on either side.'))) return;
+      if (!confirm(t('jira.disconnect_confirm', 'Disconnect this office from Jira? Every pair drops; nothing is deleted on either side.'))) return;
       const result = await request(api(), { method: 'DELETE' });
       notice.set(result.ok ? 'success' : 'failed', result.ok ? t('jira.disconnected', 'Disconnected.') : result.message);
       await load();
@@ -546,7 +546,7 @@ export function createJiraPanel(selected, { openItems = null, openPairs = null }
     check.setDisabled(false); sync.setDisabled(false);
     if (!snap) return;
     if (snap.off) {
-      form.append(howStep(), read(t('jira.off', 'Services › Jira is off for this Desk. Turn it on in Installations › Ronin Services, then come back here.')));
+      form.append(howStep(), read(t('jira.off', 'Services › Jira is off for this office. Turn it on in Installations › Ronin Services, then come back here.')));
       return;
     }
     if (snap.error) { notice.set('failed', snap.error); return; }

@@ -23,8 +23,8 @@ The provider and tmux do different halves of the job:
    `claude --model <m> --dangerously-skip-permissions --resume <uuid>`, `codex --model <m>
    --dangerously-bypass-approvals-and-sandbox resume <uuid>`. A birth command that is not the
    CLI itself (a part's wrapped launch), or no birth command, falls back to the CLI's Dangerously
-command, never its plain one (KAN-718). An Agent born on a
-   part's provider (`src/provider-parts.ts`) is restored through that part's `wrapResume`.
+command, never its plain one (KAN-718). A model service
+   launch is resolved again at the restore's process start (`src/model-service-launch.ts`).
 5. The provider CLI loads its own conversation history. Ronin restores the session key,
    teams, leads, wipeboards, note, project root, control dial, agent stamp, provider UUID,
    and session type. Only then is the archive manifest removed.

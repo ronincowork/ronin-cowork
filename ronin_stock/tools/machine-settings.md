@@ -37,4 +37,4 @@ intended change and wait for a yes before writing, and not to handle credentials
 
 ## Usage
 
-Typed, secret-free Machine and Campaign configuration. `machine-settings --help` lists read and write operations for the Campaign, installations, Agent and Cowork defaults, providers, machine facts, and owner profile. The same operations are available to every Agent given this tool.
+Typed, secret-free Machine and Campaign configuration. `machine-settings --help` lists read and write operations for the Campaign, Agent and Cowork defaults, providers, machine facts, and owner profile. The same operations are available to every Agent given this tool.

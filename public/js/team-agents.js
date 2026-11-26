@@ -2,7 +2,7 @@
 import { t } from './lexicon.js';
 import { ask } from './ask.js';
 import { mandateRows } from './mandates.js';
-import { createStep, el, mandateWord, modelLabel, providerCatalog, rowTierWord } from './form-steps.js';
+import { createStep, el, mandateWord, modelLabel, harnessCatalog, rowTierWord } from './form-steps.js';
 import { finalizeTeamName, sanitizeTeamName } from './new-team-draft.js';
 
 let rowId = 0;
@@ -50,19 +50,19 @@ export function createAgentRows({ n, key, rows, changed, onToggle, createAction,
     });
     assignment.addEventListener('input', () => { row.assignment = assignment.value; });
 
-    const providerRows = () => providerCatalog().rows
+    const harnessRows = () => harnessCatalog().rows
       .filter((item, at, all) => all.findIndex((other) => other.provider === item.provider) === at)
       .map((item) => ({
         v: item.provider, l: item.cli_label || item.provider_label || item.provider,
         off: item.operational ? undefined : item.off ? t('forms.reason_turned_off', 'turned off') : t('forms.reason_not_on_machine', 'not on this machine'),
       }));
-    const modelRows = (provider) => providerCatalog().rows.filter((item) => item.provider === provider).map((item) => ({
+    const modelRows = (provider) => harnessCatalog().rows.filter((item) => item.provider === provider).map((item) => ({
       v: item.model, l: modelLabel(item), word: rowTierWord(item),
       off: item.selectable ? undefined : item.off ? t('forms.reason_turned_off', 'turned off') : t('forms.reason_not_on_machine', 'not on this machine'),
     }));
     const questions = ask([
       { group: t('new_agent.model_package', 'Model'), fields: [
-        { key: 'provider', label: t('forms.provider', 'Model provider'), blank: t('forms.default', 'Default'), options: providerRows },
+        { key: 'provider', label: t('forms.provider', 'Harness'), blank: t('forms.default', 'Default'), options: harnessRows },
         { key: 'model', label: t('forms.model', 'Model'), blank: t('forms.default', 'Default'), after: 'provider', options: (value) => modelRows(value.provider) },
         { key: 'teamLead', label: t('new_agent.make_team_lead', 'Make team lead'), switch: [t('forms.on', 'On'), t('forms.off', 'Off')] },
       ] },
@@ -110,7 +110,8 @@ export function createAgentRows({ n, key, rows, changed, onToggle, createAction,
     });
     if (editor) host.append(paintEditor());
     else {
-      host.append(createAction({ label: t('new_team.agent_add', '＋ Add Agent'), kind: 'primary', action: () => openEditor() }).el);
+      const add = createAction({ label: t('new_team.agent_add', '＋ Add Agent'), action: () => openEditor() }).el;
+      add.classList.add('ntf-agent-add'); host.append(add);
     }
   }
   step.body.append(host); return { step, paint };

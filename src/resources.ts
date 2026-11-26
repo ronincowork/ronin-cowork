@@ -23,6 +23,8 @@ export const STORES: readonly Store[] = [
   store('message_queue', 'data', 'message-queue'),
   // Seats with no terminal (a gecko) and their inboxes (src/seats.ts).
   store('seats', 'data', 'seats'),
+  // HQ's model catalog, the last one the unit's models.json gave (src/model-catalog.ts).
+  store('model_catalog', 'data', 'model-catalog'),
   // THE THREE PLACES (ronin_stock/stock_readme.md): ronin_stock/ is what Ronin ships; `custom` is the
   // person's own entries, the same folders, each replacing the stock entry of its id whole or
   // adding one; `office` is the office's output (built facts, MACHINE_STATUS, ABOUT_USER,
@@ -48,8 +50,6 @@ export const STORES: readonly Store[] = [
   // Mika's stable private working directory. It is deliberately not a project root and
   // never follows the versioned install as releases move.
   store('mika_home', 'user', 'mika'),
-  store('koshi_weights', 'user', 'koshi_weights'),
-  store('koshi_weights_service', 'user', 'koshi_weights_service'),
   store('promotion_ledger', 'data', 'promotion-ledger'),
   store('services_secrets', 'user', 'services_secrets'),
   // An office_unit's own filing, written once by whoever provisions it and never by Ronin:
@@ -330,17 +330,14 @@ function parseCredit(v: string): { text: string; url: string } | undefined {
 const SHADOWABLE: Record<string, string> = {
   'SAVED_LAUNCHES.md': 'a launcher form, filled in ahead of time and named',
   'SKINS.md': 'a look — a set of design tokens, and nothing else',
-  'MODEL_PROVIDERS.md': 'a model provider — its `### <Vendor>` section: the vendor id, the CLI, and one row per model',
 };
-/** The heading level a catalog's entries sit under: `## name` for most, `### <Vendor>` for the provider catalog. */
-export const sectionHead = (file: string): string => (file === 'MODEL_PROVIDERS.md' ? '###' : '##');
 
 export const isShadowable = (file: string): boolean => Object.hasOwn(SHADOWABLE, file);
 
 function newFileHeader(file: string): string {
   const what = SHADOWABLE[file] ?? 'your own entries';
-  const head = sectionHead(file);
-  const same = file === 'MODEL_PROVIDERS.md' ? '`- **provider:** id`' : `\`${head} name\``;
+  const head = '##';
+  const same = `\`${head} name\``;
   const stock = file === 'SAVED_LAUNCHES.md' ? '' :
     `>\n> The shipped copy is \`ronin_stock/${file}\` — read it for the format and copy a\n` +
     `> block out of it to start from. An entry here with the SAME ${same} REPLACES that\n` +

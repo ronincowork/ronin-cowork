@@ -12,7 +12,7 @@
 - **transcript_journal:** —
 - **launch_initial:** positional
 
-CLI id: `grok`. Catalog provider: xAI. Reviewed 2026-09-14.
+CLI id: `grok`. Vendor: `xai` (xAI), its `vendor` in `src/agents.ts`; no conversation journal found. Reviewed 2026-09-14.
 Version: **1.0.24**. Installed version checked; current upstream guide reviewed, not claimed to match every installed-version menu.
 
 ## Ronin launch sequence

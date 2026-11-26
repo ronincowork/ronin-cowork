@@ -18,7 +18,7 @@ import {
   setTags,
 } from '../tmux.js';
 import { launchArgv } from '../agents.js';
-import { AtSessionMax, readAgentsSection } from '../machine-state.js';
+import { AtSessionMax } from '../machine-state.js';
 import { PACKET_PLACEHOLDER, resolveForm, type SpawnForm } from '../spawn.js';
 import { agentBriefOf } from '../brief-build.js';
 import { briefTold } from '../brief-settings.js';
@@ -43,9 +43,8 @@ import { readWorkspace } from '../workspaces.js';
 import { initialCampaignId } from '../campaign-scope.js';
 import { readTeamRoster } from '../team-rosters.js';
 import { readCampaign } from '../campaigns.js';
-import { listInstallations } from '../resource-adapters.js';
 import { resolveLaunchSeed, shownLaunchSeed } from '../launch-seed.js';
-import type { SessionsDefaults } from '../launch-command.js';
+import { parentSettings } from '../waterfall.js';
 import { describePacket, readFirstSentence, writeBriefPacketAt, type PacketReport } from '../birth-brief.js';
 import { rememberSessionKey, sessionDir as sessionRecordDir } from '../session-dir.js';
 import { callerUser } from '../agent-configuration.js';
@@ -58,7 +57,6 @@ import { compileMikaKnowledgeAt } from '../mika-knowledge.js';
 import { isMikaTab } from '../mika-context.js';
 import { ensureSteercoTeam, recordRoninHelperWelcome, roninHelperWelcomeState, RONIN_HELPER_LOADER, STEERCO_TEAM } from '../ronin-helper.js';
 import { REPO_ROOT, storeDir } from '../resources.js';
-import { providerPart } from '../provider-parts.js';
 
 const MIKA_SESSION = 'mika_agent' as const;
 
@@ -73,14 +71,13 @@ const LAUNCH_KEYS = new Set([
   'session_type', 'team', 'team_lead', 'role', 'instructions', 'prompt', 'name', 'caller',
   'cmd', 'model', 'provider', 'mandate', 'campaign_id',
   'tags', 'seed', 'inject', 'reference',
-  'kind', 'brief', 'integrations', 'pm',
-  'template', 'agent_type',
+  'brief', 'integrations', 'pm',
+  'agent_type',
 ]);
 const RETURNED_LAUNCH_KEYS = new Set([
   'assignment', 'work_locations', 'posture', 'opening', 'ack', 'capExempt', 'launchAgent', 'stated_by', 'birth_reading',
 ]);
 const SESSION_TYPES = new Set(['cowork_agent', 'bare_metal_agent', 'terminal']);
-const KINDS = new Set(['open', 'coding', 'work', 'personal', 'household', 'social', 'school']);
 
 export function acceptedLaunchBody(input: unknown): { body: Record<string, unknown>; ignored: string[] } {
   const source = input && typeof input === 'object' && !Array.isArray(input)
@@ -106,14 +103,12 @@ export function acceptedLaunchBody(input: unknown): { body: Record<string, unkno
 
   if (body.tags !== undefined && !Array.isArray(body.tags)) drop('tags');
   if (body.seed !== undefined && !Array.isArray(body.seed)) drop('seed');
-  if (body.kind !== undefined && (typeof body.kind !== 'string' || !KINDS.has(body.kind.trim()))) drop('kind');
-  if (body.kind !== undefined) body.kind = String(body.kind).trim();
   if (body.role !== undefined && !['coworker', 'lead', 'epic_lead', 'coordinator'].includes(String(body.role))) drop('role');
 
   const inapplicable = sessionType === 'terminal'
-      ? ['provider', 'model', 'instructions', 'prompt', 'kind', 'mandate', 'brief', 'integrations', 'pm', 'template', 'cmd', 'seed', 'inject', 'reference', 'role']
+      ? ['provider', 'model', 'instructions', 'prompt', 'mandate', 'brief', 'integrations', 'pm', 'cmd', 'seed', 'inject', 'reference', 'role']
     : sessionType === 'bare_metal_agent'
-      ? ['kind', 'mandate', 'brief', 'integrations', 'pm', 'template', 'seed', 'inject', 'reference', 'team_lead', 'role']
+      ? ['mandate', 'brief', 'integrations', 'pm', 'seed', 'inject', 'reference', 'team_lead', 'role']
       : [];
   for (const key of inapplicable) drop(key);
 
@@ -138,7 +133,6 @@ export function spawnFormFromLaunchBody(body: Record<string, unknown>, houseSeat
     provider: String(body.provider ?? '').trim() || undefined,
     mandate: sessionType === 'cowork_agent' && body.mandate !== undefined ? mandate(body.mandate) : undefined,
     campaign_id: String(body.campaign_id ?? '').trim() || undefined,
-    kind: typeof body.kind === 'string' ? body.kind : undefined,
     ...(sessionType === 'cowork_agent' ? agentBriefOf(body) : {}),
     tags: Array.isArray(body.tags) ? body.tags.map(String) : [],
     seed: Array.isArray(body.seed) ? body.seed.map(String) : [],
@@ -308,18 +302,11 @@ export function registerLaunch(app: express.Express): LaunchControl {
       if (team && !/^[a-z0-9][a-z0-9_-]{0,63}$/.test(team)) {
         return res.status(400).json({ error: `A team name is lowercase letters, digits, _ and -: "${team}".` });
       }
-      const [roster, agents] = await Promise.all([
-        team ? readTeamRoster(team, campaign_id).then((found) => found ?? readTeamRoster(team, '')) : Promise.resolve(null),
-        readAgentsSection(),
-      ]);
+      const roster = team ? await readTeamRoster(team, campaign_id) ?? await readTeamRoster(team, '') : null;
       if (team && !roster) return res.status(404).json({ error: `Unknown Team "${team}" in Campaign "${campaign_id}".` });
-      const seed = resolveLaunchSeed({
-        campaign,
-        roster,
-        workspace: roster?.workspace ? await readWorkspace(roster.campaign_id, roster.workspace) : null,
-        sessions: agents.sessions as SessionsDefaults | undefined,
-        lead: req.query.lead === '1',
-      });
+      const workspace = roster?.workspace ? await readWorkspace(roster.campaign_id, roster.workspace) : null;
+      const parent = { ...await parentSettings(campaign_id, { workspace, team: roster }), name: roster?.name ?? workspace?.name ?? campaign_id };
+      const seed = resolveLaunchSeed({ campaign_id: campaign.id, parent, roster, lead: req.query.lead === '1' });
       res.json(shownLaunchSeed(seed));
     } catch (e) {
       res.status(500).json({ error: String((e as Error)?.message ?? e) });
@@ -406,17 +393,13 @@ export function registerLaunch(app: express.Express): LaunchControl {
     }
 
     try {
-      let hermesEnv: Record<string, string> = {};
+      let hermesEnv: Record<string, string> = resolved.identity?.model.startsWith('service:') && form.person?.email ? { RONIN_PERSON: form.person.email } : {};
       if (resolved.identity?.provider === 'hermes') {
-        if (!birthDir) throw new Error('Named Hermes setups require a Cowork agent session.');
         // The person on the birth receipt (user_email) labels this Agent's house calls (KAN-621).
         hermesEnv = { RONIN_SETUP_ID: resolved.identity.model, ...(form.person?.email ? { RONIN_PERSON: form.person.email } : {}) };
       }
       const launchWords = resolved.session_type === 'bare_metal_agent' ? (form.prompt ?? '') : resolved.brief;
       launch = resolved.agent ? await launchArgv(resolved.cmd, launchWords) : { argv: [], parked: false };
-      // A part's provider (src/provider-parts.ts) wraps the argv of an Agent born on its rows.
-      const part = providerPart(resolved.identity?.provider ?? '');
-      if (part?.wrapLaunch && launch.argv.length) launch = { ...launch, argv: part.wrapLaunch([...launch.argv], form.person?.email ?? '') };
       if (resolved.agent && !launch.argv.length) {
         if (birthDir) await rm(birthDir, { recursive: true, force: true });
         return res.status(400).json({
@@ -426,7 +409,6 @@ export function registerLaunch(app: express.Express): LaunchControl {
       const campaignId = resolved.session_type === 'bare_metal_agent'
         ? (form.campaign_id || await initialCampaignId())
         : await birthCampaign(resolved.team, form.campaign_id);
-      const transcriptOn = (await readCampaign(campaignId))?.config.services.parts.terminal_transcript === true;
       await createSession(resolved.name, resolved.dir, {
         agent: resolved.agent,
         cli: resolved.launchAgent,
@@ -436,13 +418,8 @@ export function registerLaunch(app: express.Express): LaunchControl {
         // PATH and the operator socket come from processLaunch (birthEnv), for every start.
         env: hermesEnv,
         key: birthKey || undefined,
-        // The Services switch as resolved for THIS Agent at birth (campaign < team < form):
-        // off means RIREKI never records it. Set here and never again — nothing cascades
-        // onto a running session (owner, 2026-09-04). A terminal has no Routines and keeps
-        // the recorder's own default.
-        rireki: houseSeat !== 'mika'
-          ? resolved.installations.some((installation) => installation.name === 'ronin_services' && installation.enabled) && transcriptOn
-          : undefined,
+        // RIREKI records every Agent while its part runs (KAN-914: no switch). Set here and never again.
+        rireki: houseSeat !== 'mika' ? resolved.services.includes('rireki') : undefined,
         strictCwd: houseSeat === 'mika',
       });
       runtimeBorn = true;
@@ -508,7 +485,6 @@ export function registerLaunch(app: express.Express): LaunchControl {
         tags: resolved.tags,
         team_lead: !!form.team_lead && !!resolved.team,
         role: form.role ?? (form.team_lead ? 'lead' : 'coworker'),
-        kind: resolved.kind,
         ...(form.person?.email ? { user_email: form.person.email } : {}),
         mandate: resolved.mandate,
         // What the brief told, by name and depth, and why (docs/architecture/brief.md, Layers and brief settings).
@@ -522,12 +498,7 @@ export function registerLaunch(app: express.Express): LaunchControl {
         // and whether one read delivers it. The receipt says what left; the tape says what
         // arrived (the ACK asks the newborn to quote the terminator).
         ...(packet ? { packet } : {}),
-        installations: resolved.installations.map((installation) => ({
-          name: installation.name,
-          on: installation.enabled,
-          delivered: installation.enabled,
-          missing: [],
-        })),
+        services: resolved.services,
       };
       try {
         await persistBirthReceipt(resolved.name, receipt);
@@ -609,12 +580,12 @@ export function registerLaunch(app: express.Express): LaunchControl {
   const ensureMika = async (intent: 'help' | 'setup_provider_ready' = 'help', tab = ''): Promise<MikaReady> => {
     const metadata = { session: MIKA_SESSION, team: STEERCO_TEAM, loader: RONIN_HELPER_LOADER };
     const observeLive = async (already: boolean): Promise<MikaReady> => {
-      let providerState: ReturnType<typeof mikaReadinessFromPane> = 'starting';
-      try { providerState = mikaReadinessFromPane(await capturePane(MIKA_SESSION, 0)); } catch { /* live but not yet drawable */ }
-      if (providerState === 'action_required') {
+      let harnessState: ReturnType<typeof mikaReadinessFromPane> = 'starting';
+      try { harnessState = mikaReadinessFromPane(await capturePane(MIKA_SESSION, 0)); } catch { /* live but not yet drawable */ }
+      if (harnessState === 'action_required') {
         return { ok: false, state: 'action_required', action: 'pending_user', code: 'provider_confirmation_required', already, ...metadata };
       }
-      if (providerState === 'starting') return { ok: false, state: 'starting', already, ...metadata };
+      if (harnessState === 'starting') return { ok: false, state: 'starting', already, ...metadata };
       const welcome = await roninHelperWelcomeState();
       if (welcome?.state === 'pending') await recordRoninHelperWelcome(welcome.conversation, 'delivered');
       return { ok: true, state: 'ready', already, welcome_delivered: welcome?.state === 'pending', ...metadata };

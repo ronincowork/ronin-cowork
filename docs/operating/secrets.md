@@ -28,7 +28,7 @@ program changing, and it is the one kind of mistake that a later commit cannot t
 The one credential decision every install makes, and the one that costs money when it is
 made by accident. (Who the install belongs to is `accounts.md`; this is what pays.)
 Which providers and models Ronin can launch, and how a third-party provider is added, is
-the separate public contract in `docs/architecture/model-providers.md`. That document may name an
+the separate public contract in `docs/architecture/harness-catalog.md`. That document may name an
 environment variable; this page governs its value and where that value may live.
 
 - **A subscription** (Claude Pro/Max and the like) — you log the CLI in once on this box

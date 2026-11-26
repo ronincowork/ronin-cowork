@@ -284,10 +284,10 @@ function mobileFirstPaintRecorder() {
 async function runPhonePass({ label, browser, contextOpts }) {
   // [name, route, stall the first answer, the bar the first frame must show]
   const cases = [
-    ['/m', 'm', false, 'teams'],
-    ['/ as a phone', '', false, 'teams'],
-    ['/m with the first answer stalled', 'm', true, 'teams'],
-    ['/m at a tile address', `m#/s/${PROBE}/${PROBE}`, false, 'inside'],
+    ['/m', 'm', false, 'list'],
+    ['/ as a phone', '', false, 'list'],
+    ['/m with the first answer stalled', 'm', true, 'list'],
+    ['/m at a tile address', `m#/s/${PROBE}`, false, 'inside'],
   ];
   for (const [name, route, stall, opens] of cases) {
     const { page, jsErrors, netFails } = await openPage(browser, contextOpts);
@@ -305,8 +305,8 @@ async function runPhonePass({ label, browser, contextOpts }) {
     }
     await page.waitForTimeout(1500);
     const first = await page.evaluate(() => window.__roninFirstPaint || null);
-    const rightBar = opens === 'teams' ? first?.mark && !first.back : first?.back && !first.mark;
-    if (first?.mobile && rightBar) ok(`${label}: ${name} — first paint is the mobile bar, ${opens === 'teams' ? `the mark and "${first.title}"` : '‹ inside'}`);
+    const rightBar = opens === 'list' ? first?.mark && !first.back : first?.back && !first.mark;
+    if (first?.mobile && rightBar) ok(`${label}: ${name} — first paint is the mobile bar, ${opens === 'list' ? 'the mark' : '‹ inside'}`);
     else bad(`${label}: ${name} — first paint is not the ${opens} bar (${JSON.stringify(first)})`);
     const settled = await page.evaluate(() => ({
       mobile: !!document.querySelector('#phone > .ph-bar') && !!document.querySelector('#phone > .ph-main'),
@@ -315,7 +315,7 @@ async function runPhonePass({ label, browser, contextOpts }) {
       cards: document.querySelectorAll('#phone .ph-card').length,
       failBar: document.getElementById('failbar')?.innerText.trim().slice(0, 400) || null,
     }));
-    if (settled.mobile && settled.entry && !settled.desktop) ok(`${label}: ${name} — the mobile document, with no desktop markup in it (${settled.cards} team cards)`);
+    if (settled.mobile && settled.entry && !settled.desktop) ok(`${label}: ${name} — the mobile document, with no desktop markup in it (${settled.cards} cards)`);
     else bad(`${label}: ${name} — not the mobile document (${JSON.stringify(settled)})`);
     if (settled.failBar) bad(`${label}: ${name} — the failure banner is showing:\n         ` + settled.failBar.replace(/\n/g, '\n         '));
     if (jsErrors.length) bad(`${label}: ${name} — uncaught JS errors:\n         ` + jsErrors.join('\n         '));

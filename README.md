@@ -75,7 +75,7 @@ independent Agent ── choose what helps ── Team coordination
 | decide whether I need another machine | [Choose or rent a machine](docs/getting-started/rent-a-machine.md) |
 | have an Agent install Ronin | [Agent-led installation](docs/getting-started/install.md) |
 | finish first use in Ronin Setup and start one working Agent | [Get started](docs/getting-started/get-started.md) |
-| sign in an Agent provider safely | [Provider sign-in](docs/getting-started/provider-sign-in.md) |
+| sign in an Agent provider safely | [Provider sign-in](docs/getting-started/harness-sign-in.md) |
 | find use, troubleshooting, or contributor guidance | [Documentation by question](docs/README.md) |
 
 ## The two repos

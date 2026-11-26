@@ -39,7 +39,7 @@ on its own `#!/usr/bin/env node`.
 
 ## The door
 
-    POST /api/setup/providers/:provider/install
+    POST /api/setup/harnesses/:provider/install
 
 Setup's Install press calls `dispatchInstall([{ kind: 'agent', name }])` (`src/agent-install.ts`).
 `kind` is the registry's own verb (`docs/architecture/wanted-needed.md`), so the day a second kind

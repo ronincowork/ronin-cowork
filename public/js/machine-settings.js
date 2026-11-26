@@ -1,11 +1,10 @@
 /* part of the ronin-cowork client — see js/README.md */
 import { request } from './request.js';
 import { button, field, status } from './ui.js';
-import { pm, getPath, currentOf, optionsOf, pickerProvider, toRequest } from './machine-settings-schema.js';
-import { servicesCard } from './services-card.js';
+import { pm, getPath, currentOf, optionsOf, pickerHarness, toRequest } from './machine-settings-schema.js';
 import { accountCard } from './account-card.js';
 import { t } from './lexicon.js';
-import { loadProviderCatalog, providerCatalog, modelLabel, rowTierWord } from './form-steps.js';
+import { loadHarnessCatalog, harnessCatalog, modelLabel, rowTierWord } from './form-steps.js';
 import { ask } from './ask.js';
 import { saveRow } from './save-row.js';
 
@@ -21,8 +20,8 @@ import { saveRow } from './save-row.js';
  *
  * WHY EVERY FIELD SAVES ITSELF instead of one Save button at the bottom: each row is a
  * different named endpoint, so a single button would have to fan out into four writes
- * and then explain which of them failed. Per-field saving is what ⌂ Roster's cap and the
- * 目 Koshi outlets already do, and it means the answer to "did that take?" is beside the
+ * and then explain which of them failed. Per-field saving is what ⌂ Roster's cap already
+ * does, and it means the answer to "did that take?" is beside the
  * field you just left rather than at the foot of the page.
  *
  * NOT SHOWN, EVER: a key. The record names the env var an outlet needs and says whether
@@ -127,7 +126,7 @@ export function buildMachineSettings(root, isShowing, { only = null } = {}) {
     let picked = fixed
       ? { provider: fixed, model: String(stored ?? '') }
       : { provider: String(stored?.provider || ''), model: String(stored?.model || '') };
-    const catalog = providerCatalog().rows;
+    const catalog = harnessCatalog().rows;
     const providers = catalog.filter((item, index) => catalog.findIndex((other) => other.provider === item.provider) === index);
     const reason = (item) => item.off
       ? t('forms.reason_turned_off', 'turned off')
@@ -135,7 +134,7 @@ export function buildMachineSettings(root, isShowing, { only = null } = {}) {
     const fields = fixed ? [
       { key: 'model', label: f.short ?? f.label, blank: t('settei.none_set', '— none set —'), options: catalog.filter((item) => item.provider === fixed).map((item) => ({ v: item.model, l: modelLabel(item), word: rowTierWord(item), sub: item.cost || '', off: item.selectable ? '' : reason(item) })) },
     ] : [
-      { key: 'provider', label: t('forms.provider', 'Model provider'), blank: t('settei.none_set', '— none set —'), options: providers.map((item) => ({ v: item.provider, l: item.provider_label, off: item.operational ? '' : reason(item) })) },
+      { key: 'provider', label: t('forms.provider', 'Harness'), blank: t('settei.none_set', '— none set —'), options: providers.map((item) => ({ v: item.provider, l: item.provider_label, off: item.operational ? '' : reason(item) })) },
       { key: 'model', label: t('forms.model', 'Model'), blank: t('settei.none_set', '— none set —'), after: 'provider', options: (value) => catalog.filter((item) => item.provider === value.provider).map((item) => ({ v: item.model, l: modelLabel(item), word: rowTierWord(item), sub: item.cost || '', off: item.selectable ? '' : reason(item) })) },
     ];
     const pair = ask([{ group: fixed ? '' : f.label, fields }], {
@@ -154,7 +153,7 @@ export function buildMachineSettings(root, isShowing, { only = null } = {}) {
 
   /** One registry row in, one saving ⚙ row out — the only place a `kind` is read. */
   const schemaRow = (f) => {
-    const picker = pickerProvider(f);
+    const picker = pickerHarness(f);
     if (picker) return pickerRow(f, picker);
     const cur = currentOf(f, { record: rec });
     const ctx = { record: rec, deskProfiles };
@@ -186,7 +185,6 @@ export function buildMachineSettings(root, isShowing, { only = null } = {}) {
     return row;
   };
 
-  let card = null; // the Services card of the last render; a new render closes it first
   let account = null; // the Cloud account card of the last render, likewise
   const render = () => {
     body.innerHTML = '';
@@ -243,9 +241,8 @@ export function buildMachineSettings(root, isShowing, { only = null } = {}) {
     );
     for (const [name, job] of Object.entries(set.agents.jobs ?? {})) {
       if (managed.has(name)) continue;
-      // A job's pointing is edited in its own room (目 Koshi); here it is the resolved
-      // answer plus whether the key it names is actually present — which is the part
-      // no other surface says out loud.
+      // The resolved answer plus whether the key it names is actually present — which
+      // is the part no other surface says out loud.
       body.appendChild(obsRow(name.replace(/_/g, ' '), `${job.provider ?? job.outlet}${job.model ? ` · ${job.model}` : ''}`,
         st.agents[name] ? ` ${st.agents[name]}` : ''));
     }
@@ -256,12 +253,6 @@ export function buildMachineSettings(root, isShowing, { only = null } = {}) {
     for (const [name, isSet] of Object.entries(observed.keys)) {
       body.appendChild(obsRow(name, isSet ? t('settei.key_set', '✓ set') : t('settei.key_not_set', 'not set'), ' ' + t('settei.key_presence', 'presence only — the value stays in .env')));
     }
-
-    // Open-source weights actually ON the box — named and sized, never assumed.
-    for (const w of observed.weights ?? []) {
-      body.appendChild(obsRow(w.name, t('settei.weights_downloaded', '✓ downloaded'), ' ' + t('settei.weights_size', '{mb} MB · koshi_weights store', { mb: w.mb })));
-    }
-    if (!(observed.weights ?? []).length) body.appendChild(obsRow(t('settei.local_weights', 'local weights'), t('settei.weights_none', 'none downloaded')));
 
     group(t('settei.group_agents', 'agent installations'));
     const hint = document.createElement('div');
@@ -310,17 +301,6 @@ export function buildMachineSettings(root, isShowing, { only = null } = {}) {
 
     group(t('settei.group_services', 'services'));
     body.appendChild(tickRow(observed.ronin.services.length > 0, 'service', '*', t('settei.ronin_services', 'Ronin Services'), ''));
-    /* the deal — Ronin Services the subscription, a different thing from the sockets above */
-    group(t('settei.group_subscription', 'subscription'));
-    const activation = set.services.activation ?? {};
-    // The activation stage, labelled as what it is: activation is identity transport to
-    // Ronin HQ, not a subscription. The subscription itself is the Cloud account card's.
-    body.appendChild(obsRow(t('settei.services_activation', 'Services activation'), st.subscription,
-      activation.email_masked ? ` ${activation.email_masked}` : ''));
-    // The install's steps arrive by push. The card renders the durable stage rather than
-    // what this page remembers doing, so a reload or a second tab lands on the truth.
-    card?.stop();
-    card = servicesCard(body);
     // Read-only, from the Services `account` part; hidden only when that part is absent.
     account?.stop();
     account = accountCard(body);
@@ -367,7 +347,7 @@ export function buildMachineSettings(root, isShowing, { only = null } = {}) {
     // Two reads, not one: the record is this install, and the provider catalog is what
     // Ronin offers. Keeping them apart is what lets a model row offer a provider this box
     // has not installed yet and say so, instead of pretending the catalog is the box.
-    const [r, , dp] = await Promise.all([request('/api/machine-settings'), loadProviderCatalog(), request('/api/desk-profiles')]);
+    const [r, , dp] = await Promise.all([request('/api/machine-settings'), loadHarnessCatalog(), request('/api/desk-profiles')]);
     deskProfiles = dp.ok && Array.isArray(dp.data?.profiles) ? dp.data.profiles : [];
     if (!r.ok) {
       blurb.textContent = r.message;

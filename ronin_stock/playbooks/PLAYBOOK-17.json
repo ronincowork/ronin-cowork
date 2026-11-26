@@ -1,8 +1,8 @@
 {
   "id": "PLAYBOOK-17",
   "campaign_id": "",
-  "title": "Write its Summary: a few plain lines, then one per part",
-  "objective": "Do: write the Summary: a few plain lines on what the Workspace is for, then one line per repository and folder saying what it is.\nDetails: `workspace-doc summary <handle> -` with the text on stdin (`workspace-doc --help`).\nCheck: `workspace-doc list` shows it under the handle.",
+  "title": "Write its objective, and file what needs doing",
+  "objective": "Do: write the objective: a few plain lines on what the project is. What you found that needs doing (a broken build, a missing deploy) is an open item of the Workspace, one per thing.\nDetails: `workspace objective <handle> -` with the text on stdin (`workspace --help`); each item `item create --title \"<short name>: <detail>\" --workspace <handle>`.\nCheck: `workspace list` shows the objective under the handle.",
   "level": 0,
   "kind": "Task",
   "status": "Playbook",

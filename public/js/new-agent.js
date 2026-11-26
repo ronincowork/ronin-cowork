@@ -1,15 +1,17 @@
 /* part of the ronin-cowork client — see js/README.md */
 /** NEW AGENT — the sole drawn launch form. Session type decides which questions exist;
- * only a Cowork Agent has kind, mandate, and loadout. Defaults arrive through
+ * only a Cowork Agent has a mandate and loadout. Defaults arrive through
  * `GET /api/launch-seed?team=` and land until the user's hand changes them. The Behaviors
  * step is brief-step.js: this Agent's own brief settings, integrations and project
  * management, and what comes with it as the server works it out (docs/architecture/brief.md, Where it is set in the UI). */
+import { store } from './store.js';
+import { gatewayBlockWord, modelSettingsLink, shownInNewAgent } from './harness-model-entries.js';
 import { request } from './request.js';
 import { t } from './lexicon.js';
 import { ask } from './ask.js';
 import { finalizeTeamName, isValidTeamName, sanitizeTeamName } from './new-team-draft.js';
 import {
-  createStep, el, kindTiles, loadProviderCatalog, modelLabel, providerCatalog, readingRows, rowTierWord, tagRow,
+  createStep, el, loadHarnessCatalog, modelLabel, harnessCatalog, readingRows, rowTierWord, tagRow,
 } from './form-steps.js';
 import { openLaunchHandoff } from './launch-handoff.js';
 import { mandateRows, setMandates } from './mandates.js';
@@ -24,7 +26,7 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
     const entryTeam = typeof team === 'function' ? team() : team;
     return {
       type: 'cowork_agent',
-      name: '', kind: 'coding', kindTouched: false, provider: '', model: '', instructions: '',
+      name: '', provider: '', model: '', instructions: '',
       teamMode: entryTeam ? 'existing' : 'none', team: entryTeam || '', newTeam: '',
       reach: 'open', recruit: 'open', output: ['open'],
       role: 'coworker',
@@ -64,24 +66,12 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
   const hasAgent = () => draft.type !== 'terminal';
   const chosenTeam = () => (draft.teamMode === 'existing' ? draft.team : draft.teamMode === 'new' ? finalizeTeamName(draft.newTeam) : '');
 
-  /* ---- 1 · Kind ---- */
-  const stepKind = createStep({ n: 1, key: 'kind', title: t('kind', 'Kind') });
-  const kindHost = el('div');
-  function paintKinds() {
-    kindHost.replaceChildren(kindTiles(draft.kind, (key) => {
-      draft.kind = key;
-      draft.kindTouched = true;
-      paint();
-    }));
-  }
-  stepKind.body.append(kindHost);
-
   /* ---- 2 · Session type ---- */
   const stepType = createStep({ n: 2, key: 'type', title: t('new_agent.session_type_step', 'Session type') });
   const typeHost = el('div', 'fs-pair');
   const TYPES = () => [
     { key: 'cowork_agent', label: t('new_agent.type_cowork', 'Cowork Agent'), sub: t('new_agent.type_cowork_sub', 'Born with Ronin capabilities, behaviors, and assigned Team.') },
-    { key: 'bare_metal_agent', label: t('new_agent.type_bare', 'Bare-metal Agent'), sub: t('new_agent.type_bare_sub', 'The provider’s agent and nothing else from Ronin.') },
+    { key: 'bare_metal_agent', label: t('new_agent.type_bare', 'Bare-metal Agent'), sub: t('new_agent.type_bare_sub', 'The harness’s agent and nothing else from Ronin.') },
     { key: 'terminal', label: t('new_agent.type_terminal', 'Terminal'), sub: t('new_agent.type_terminal_sub', 'A raw tmux pane, no agent launched, and nothing sent to it.') },
   ];
   function paintTypes() {
@@ -127,7 +117,7 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
   function paintLeanNote() {
     leanNote.hidden = isCowork() || draft.type === 'terminal';
     if (leanNote.hidden) return;
-    leanNote.textContent = t('new_agent.bare_note', 'A bare-metal Agent takes no kind, no mandate and no loadout.');
+    leanNote.textContent = t('new_agent.bare_note', 'A bare-metal Agent takes no mandate and no loadout.');
   }
   const topLeft = el('div', 'aa-col');
   const name = createField({ label: configure ? t('agent_composition.agent_title', 'Title') : t('new_agent.name_required', 'Name · required'), control: nameInput });
@@ -159,18 +149,25 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
   stepTop.body.append(instructionsField);
 
   /* ---- The one question utility: Model, Mandate, Team, and Where it works. ---- */
-  const providerRows = () => providerCatalog().rows
-    .filter((row, index, all) => all.findIndex((other) => other.provider === row.provider) === index)
-    .map((row) => {
-      const unavailable = row.operational ? '' : row.off
-        ? t('forms.reason_turned_off', 'turned off')
-        : t('forms.reason_not_on_machine', 'not on this machine');
-      return { v: row.provider, l: row.cli_label || row.provider_label || row.provider, off: unavailable || undefined };
-    });
-  const modelRows = (provider) => providerCatalog().rows.filter((row) => row.provider === provider).map((row) => ({
-    v: row.model, l: modelLabel(row), word: rowTierWord(row),
-    off: row.selectable ? undefined : row.off ? t('forms.reason_turned_off', 'turned off') : t('forms.reason_not_on_machine', 'not on this machine'),
+  const harnessRows = () => harnessCatalog().harnesses.map(entry => ({
+    v: entry.provider, l: entry.cli_label || entry.label,
+    off: entry.operational ? undefined : entry.off ? t('forms.reason_turned_off', 'turned off') : t('forms.reason_not_on_machine', 'not on this machine'),
   }));
+  const modelRows = ({ provider }) => {
+    const catalog = harnessCatalog();
+    const entry = catalog.harnesses.find(item => item.provider === provider);
+    return (entry?.models || []).filter(row => configure || shownInNewAgent(catalog, entry, row))
+      .map(row => ({ v: row.model, l: modelLabel(row), word: row.service_name || rowTierWord(row),
+        off: row.selectable ? undefined : gatewayBlockWord(row.blocked) || t('forms.reason_not_on_machine', 'not on this machine'),
+      }));
+  };
+  const needsModel = () => {
+    if (configure || !hasAgent()) return false;
+    const provider = draft.provider || seed?.seeds?.provider?.value;
+    if (!provider) return false;
+    const model = draft.model || (!draft.provider && seed?.seeds?.model?.value);
+    return !modelRows({ provider }).some(row => row.v === model && !row.off);
+  };
   const teamChoice = () => draft.teamMode === 'new' ? 'new' : draft.teamMode === 'none' ? 'none' : 'current';
   const teamRows = () => teams.map((row) => ({ v: row.name, l: String(row.title ?? '').trim() || row.name, sub: row.name }));
   const newTeamField = () => {
@@ -206,12 +203,17 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
       teamDefaultsSpec?.(chosenTeam()) || { destination: 'team', param: chosenTeam(), mode: 'overlay' },
       openTeamDefaults ? () => openTeamDefaults(chosenTeam()) : null), ' · ');
     links.append(defaultsLink(t('new_agent.desk_defaults', 'Desk defaults'),
-      deskDefaultsSpec?.() || { destination: 'campaign', mode: 'overlay' }, openDeskDefaults));
+      deskDefaultsSpec?.() || { destination: 'settings2', mode: 'overlay', state: { count: 1, selected: 'workspace1', seats: { workspace1: 'settings2.agent-defaults' } } }, openDeskDefaults));
+    if (!configure && hasAgent()) {
+      const entry = harnessCatalog().harnesses.find(row => row.provider === (draft.provider || seed?.seeds?.provider?.value));
+      links.append(' · ', modelSettingsLink(entry?.cli));
+    }
     defaultsNote.append(teaching, links);
   };
   const onQuestionChange = (value, key) => {
     if ('provider' in value) {
-      draft.provider = value.provider; draft.model = value.model;
+      draft.provider = value.provider; draft.model = key === 'provider' ? '' : value.model;
+      if (key === 'provider' && value.model) questions.set('model', '');
     }
     if ('reach' in value) { draft.reach = value.reach; draft.recruit = value.recruit; draft.output = value.output; }
     if ('role' in value) draft.role = value.role;
@@ -229,14 +231,15 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
   /** What Default launches (Models > Defaults: a Team lead's own pair when the seed was read for one). */
   const defaultWord = () => {
     const provider = seed?.seeds?.provider?.value || ''; const model = seed?.seeds?.model?.value || '';
-    const row = providerCatalog().rows.find((item) => item.provider === provider && item.model === model);
-    const named = row ? modelLabel(row) : model || providerCatalog().providers.find((item) => item.provider === provider)?.label || '';
+    const row = harnessCatalog().rows.find((item) => item.provider === provider && item.model === model);
+    if (row && !modelRows({ provider }).some(option => option.v === model)) return t('new_agent.choose_harness', 'Choose harness');
+    const named = row ? modelLabel(row) : model || harnessCatalog().harnesses.find((item) => item.provider === provider)?.label || '';
     return named ? t('new_agent.default_named', 'Default · {model}', { model: named }) : t('forms.default', 'Default');
   };
   const questions = ask([
     { group: t('new_agent.model_package', 'Model'), fields: [
-      { key: 'provider', label: t('forms.provider', 'Model provider'), blank: defaultWord, options: providerRows, fixed: !!configure },
-      { key: 'model', label: t('forms.model', 'Model'), blank: t('forms.default', 'Default'), after: 'provider', options: (value) => modelRows(value.provider), fixed: !!configure },
+      { key: 'provider', label: t('forms.provider', 'Harness'), blank: defaultWord, options: harnessRows, fixed: !!configure },
+      { key: 'model', shape: 'rect', label: t('forms.model', 'Model'), blank: () => draft.provider ? t('new_agent.choose_model', 'Choose model') : defaultWord(), after: 'provider', empty: () => draft.provider ? 'No model entries selected for this harness.' : '', options: modelRows, fixed: !!configure },
       { key: 'role', label: t('agent_composition.role', 'Role'), options: [
         { v: 'coworker', l: 'Coworker' }, { v: 'lead', l: 'Lead' }, { v: 'epic_lead', l: 'Epic Lead' }, { v: 'coordinator', l: 'Coordinator' },
       ] },
@@ -275,7 +278,18 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
     questions.set({ provider: draft.provider, model: draft.model, reach: draft.reach, recruit: draft.recruit, output: draft.output, role: draft.role});
     teamQuestions.set({ team: teamChoice(), teamName: draft.team });
   };
-  void loadProviderCatalog().then(() => questions.paint());
+  const refreshModels = () => loadHarnessCatalog().then(() => {
+    if (!configure && draft.model && !modelRows(draft).some(row => row.v === draft.model)) {
+      draft.model = '';
+      questions.set('model', '');
+    }
+    questions.paint();
+    paintDefaultsNote();
+    paintFoot();
+    paintActions();
+  });
+  const forgetModels = store.listen('model-services-changed', refreshModels);
+  void refreshModels();
 
   /* ---- 7 · Loadout ---- */
   const stepLoadout = createStep({ n: 7, key: 'loadout', title: t('behaviours', 'Behaviors'), onToggle: () => toggle('loadout') });
@@ -310,7 +324,7 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
 
   /* ---- the plan: which steps exist for this type and door ---- */
   const steps = {
-    kind: stepKind, type: stepType, top: stepTop, loadout: stepLoadout,
+    type: stepType, top: stepTop, loadout: stepLoadout,
   };
   const plan = () => draft.type === 'cowork_agent' ? ['type', 'top', 'loadout'] : ['type', 'top'];
   const FOLDS = ['loadout'];
@@ -351,7 +365,7 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
     // create, so it must not promise one.
     // Send can always be pressed; a change only highlights it (the server sends what changed).
     const ready = configure ? JSON.stringify(configurationValue()) !== configured : !!draft.name.trim() && (draft.teamMode !== 'new' || isValidTeamName(chosenTeam()));
-    start.setDisabled(configure ? !loaded || busy : !ready);
+    start.setDisabled(busy || (configure ? !loaded : !ready || needsModel()));
     if (ready) start.el.dataset.kind = 'primary';
     else delete start.el.dataset.kind;
   }
@@ -409,7 +423,7 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
   }
 
   async function doStart() {
-    if (busy) return;
+    if (busy || needsModel()) return;
     const launchTab = connect ? null : reserveWorkspaceTab();
     const name = draft.name.trim();
     busy = true;
@@ -492,10 +506,7 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
       for (const key of ['reach', 'recruit']) if (value(key)) draft[key] = value(key);
       if (value('output')) draft.output = [value('output')].flat().filter(Boolean);
     }
-    // The campaign's, or the team's if one is joined — an editable value like every other
-    if (!draft.kindTouched && team && value('kind')) draft.kind = value('kind');
     syncQuestions();
-    paintKinds();
     paintFolds();
     paintFoot();
     await loadPreview();
@@ -520,7 +531,6 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
     instructionsField.hidden = !hasAgent();
     paintTypes();
     paintLeanNote();
-    paintKinds();
     syncQuestions();
     paintDefaultsNote();
     paintBehaviourShelves();
@@ -567,7 +577,7 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
   return {
     el: embedded ? surface.content : surface.el,
     enter: async (detail = {}) => {
-      if (configure) { await Promise.all([loadProviderCatalog(), loadCatalog()]); await loadConfiguration(); return; }
+      if (configure) { await Promise.all([loadHarnessCatalog(), loadCatalog()]); await loadConfiguration(); return; }
       const entryTeam = String(detail?.team || (typeof team === 'function' ? team() : team) || '');
       if (entryTeam) { draft.teamMode = 'existing'; draft.team = entryTeam; }
       if (detail?.teamLead === true) draft.role = 'lead';
@@ -583,6 +593,7 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
     },
     action: start,
     destroy: () => {
+      forgetModels();
       window.removeEventListener('ronin:behaviours-changed', refreshBehaviours);
       questions.destroy();
       teamQuestions.destroy();

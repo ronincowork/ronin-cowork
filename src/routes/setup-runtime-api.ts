@@ -1,97 +1,76 @@
-import { hermesSettingsAnswer, saveHermesConnection, discoverHermesModels, saveHermesSetup, deleteHermesEntry } from '../hermes-setups.js';
-import { accountsAnswer, saveAccount, discoverAccount, updateAccountLists, deleteAccount, savePreset, deletePreset } from '../accounts.js';
+import { deleteModelEntry, deleteService, modelServices, saveService } from '../model-services.js';
+import { modelServiceStoreAnswer, saveModelService, discoverModelIds, saveModelEntry, deleteModelServiceEntry, onModelServicesWritten, readGatewayModels } from '../model-service-store.js';
+import { broadcastEvent } from '../ws/events.js';
 import { homedir } from 'node:os';
 import { dispatchInstall } from '../agent-install.js';
 import type express from 'express';
 import { readSetupSection } from '../machine-state.js';
 import {
-  closeProviderLogin,
-  completeProviderLogin,
-  ensureInstalledRoots,
-  openProviderLogin,
-  openProviderUpdate,
-  setProviderOff,
+  closeHarnessLogin,
+  completeHarnessLogin,
+  openHarnessLogin,
+  openHarnessUpdate,
+  setHarnessOff,
   setupRuntimeAnswer,
-  saveProviderSignIn,
-  createMorningBriefSchedule,
-  writeSetupPreferences,
   githubSetupAnswer,
-  openGithubInstall,
-  openGithubLogin,
-  closeGithubLogin,
-  removeGithubAuthentication,
-  cloneGithubWorkspace,
-  createGithubRepository,
-  openGitSetupSession,
-  closeGitSetupSession,
+  githubRepositories,
 } from '../setup-runtime.js';
 import { installedAnswer } from './installed-api.js';
-import { measureAndRecordProviders, readProviderSummary, refreshProviders } from '../provider-summary.js';
-import type { ProviderSummary } from '../model-providers.js';
+import { cancelSignIn, pasteSignIn, signInState, startSignIn } from '../harness-sign-in.js';
+import { measureAndRecordHarnesses, readHarnessSummary, refreshHarnesses } from '../harness-summary.js';
+import type { HarnessSummary } from '../harness-catalog.js';
 import { readUserIntro, writeUserIntro } from '../user-intro.js';
 
 const errMsg = (error: unknown) => String((error as Error)?.message ?? error).replaceAll(homedir(), '~');
-const EMPTY_PROVIDER_SUMMARY: ProviderSummary = {
+const EMPTY_PROVIDER_SUMMARY: HarnessSummary = {
   measured_at: '', refreshed_at: '', installed: [], signed_in: [], operational: [], off: [], activated_count: 0,
   paths: {}, versions: {}, models: {}, latest: {},
 };
 /** A record-only answer. Setup progress owns every automatic machine measurement. */
-const answer = async (summary?: ProviderSummary) => {
+const answer = async (summary?: HarnessSummary) => {
   const section = await readSetupSection();
-  const facts = summary ?? await readProviderSummary() ?? EMPTY_PROVIDER_SUMMARY;
+  const facts = summary ?? await readHarnessSummary() ?? EMPTY_PROVIDER_SUMMARY;
   return setupRuntimeAnswer(section, facts, undefined, await installedAnswer());
 };
 
 export function registerSetupRuntime(app: express.Express): void {
+  onModelServicesWritten(() => { broadcastEvent({ t: 'model-services-changed' }); });
   app.get('/api/hermes', async (_req, res) => {
-    try { res.json(await hermesSettingsAnswer()); } catch { res.status(500).json({ error: 'Could not read Hermes setups.' }); }
+    try { res.json(await modelServiceStoreAnswer()); } catch { res.status(500).json({ error: 'Could not read Hermes setups.' }); }
   });
   app.post('/api/hermes/:action', async (req, res) => {
     try {
       switch (req.params.action) {
-        case 'connection': await saveHermesConnection(req.body); break;
-        case 'discover': await discoverHermesModels(String(req.body.id)); break;
-        case 'setup': await saveHermesSetup(req.body); break;
+        // A connection's models are read as it is saved: nobody presses to read them (owner, 25 Nov 2026).
+        case 'connection': { const saved = await saveModelService(req.body); await discoverModelIds(saved.id).catch(() => {}); break; }
+        case 'discover': await discoverModelIds(String(req.body.id)); break;
+        case 'setup': await saveModelEntry(req.body); break;
         case 'delete':
           if (req.body.kind !== 'connections' && req.body.kind !== 'setups') throw new Error('Invalid entry type.');
-          await deleteHermesEntry(req.body.kind, String(req.body.id)); break;
+          await deleteModelServiceEntry(req.body.kind, String(req.body.id)); break;
         default: return res.status(404).json({ error: 'Unknown Hermes action.' });
       }
-      await measureAndRecordProviders();
-      res.json(await hermesSettingsAnswer());
+      await measureAndRecordHarnesses();
+      res.json(await modelServiceStoreAnswer());
     } catch (error) { res.status(400).json({ error: errMsg(error) }); }
   });
 
-  // ACCOUNTS AND PRESETS (KAN-236): the Agent Harness workbench's reading of the same Hermes record,
-  // for the Accounts and Models tilespaces and every harness page. The /api/hermes routes above keep answering.
-  app.get('/api/accounts', async (_req, res) => {
-    try { res.json(await accountsAnswer()); } catch { res.status(500).json({ error: 'Could not read accounts.' }); }
+  // MODEL SERVICES: the pages' reading of the store and their writes. /api/hermes above is the `harness` tool's.
+  app.get('/api/model-services', async (_req, res) => {
+    try { res.json({ services: await modelServices() }); } catch (error) { res.status(500).json({ error: errMsg(error) }); }
   });
-  app.post('/api/accounts/:action', async (req, res) => {
+  app.post('/api/model-services/:action', async (req, res) => {
     try {
+      const body = req.body;
       switch (req.params.action) {
-        case 'save': await saveAccount(req.body); break;
-        case 'discover': await discoverAccount(String(req.body.id)); break;
-        case 'lists': await updateAccountLists(String(req.body.id), { harnesses: req.body.harnesses, offered: req.body.offered }); break;
-        case 'delete': await deleteAccount(String(req.body.id)); break;
-        default: return res.status(404).json({ error: 'Unknown account action.' });
+        case 'save': await saveService(body); break;
+        case 'discover': await discoverModelIds(String(body.id)); break;
+        case 'delete': await deleteService(String(body.id)); break;
+        case 'save-model': await saveModelEntry({ reasoning: 'default', approvals: 'off', ...body, connection: body.service_id }); break;
+        case 'delete-model': await deleteModelEntry(String(body.id)); break;
+        default: return res.status(404).json({ error: 'Unknown model service action.' });
       }
-      await measureAndRecordProviders();
-      res.json(await accountsAnswer());
-    } catch (error) { res.status(400).json({ error: errMsg(error) }); }
-  });
-  app.get('/api/presets', async (_req, res) => {
-    try { res.json({ presets: (await accountsAnswer()).presets }); } catch { res.status(500).json({ error: 'Could not read presets.' }); }
-  });
-  app.post('/api/presets/:action', async (req, res) => {
-    try {
-      switch (req.params.action) {
-        case 'save': await savePreset(req.body); break;
-        case 'delete': await deletePreset(String(req.body.id)); break;
-        default: return res.status(404).json({ error: 'Unknown preset action.' });
-      }
-      await measureAndRecordProviders();
-      res.json(await accountsAnswer());
+      res.json({ services: await modelServices() });
     } catch (error) { res.status(400).json({ error: errMsg(error) }); }
   });
 
@@ -107,7 +86,6 @@ export function registerSetupRuntime(app: express.Express): void {
 
   app.get('/api/setup/runtime', async (_req, res) => {
     try {
-      await ensureInstalledRoots();
       res.json(await answer());
     } catch (error) {
       res.status(500).json({ error: errMsg(error) });
@@ -120,15 +98,17 @@ export function registerSetupRuntime(app: express.Express): void {
   // start; in a hosted office the park calls it over the unit's socket when it moved the CLIs
   // in place (ronin_cloud office_kohai, KAN-651); the member's press. Never a timer; each ask
   // is an egress line. Every other reader takes GET /api/setup/runtime, which is the record.
-  app.post('/api/setup/providers/refresh', async (_req, res) => {
+  app.post('/api/setup/harnesses/refresh', async (_req, res) => {
     try {
-      res.json(await answer(await refreshProviders()));
+      const summary = await refreshHarnesses();
+      await readGatewayModels();
+      res.json(await answer(summary));
     } catch (error) {
       res.status(500).json({ error: errMsg(error) });
     }
   });
 
-  app.post('/api/setup/providers/:provider/install', async (req, res) => {
+  app.post('/api/setup/harnesses/:provider/install', async (req, res) => {
     try {
       const [result] = await dispatchInstall([{ kind: 'agent', name: String(req.params.provider) }]);
       if (!result || result.outcome === 'refused') {
@@ -143,11 +123,11 @@ export function registerSetupRuntime(app: express.Express): void {
 
   // Update: the registry's update line in a temporary provider_setup session shown in the
   // page, as a sign-in is; the same /close ends it. The owner's press.
-  app.post('/api/setup/providers/:provider/update', async (req, res) => {
+  app.post('/api/setup/harnesses/:provider/update', async (req, res) => {
     try {
-      const result = await openProviderUpdate(String(req.params.provider));
+      const result = await openHarnessUpdate(String(req.params.provider));
       const runtime = await answer();
-      const provider = runtime.providers.find((row) => row.id === String(req.params.provider));
+      const provider = runtime.harnesses.find((row) => row.id === String(req.params.provider));
       res.json({ ok: true, opened: result.opened, session: result.session, attachment: provider?.attachment ?? null, runtime });
     } catch (error) {
       res.status(400).json({ error: errMsg(error) });
@@ -158,67 +138,58 @@ export function registerSetupRuntime(app: express.Express): void {
   // offered, not launched anew. The sign-in is kept and tiles already running run on. On
   // clears the one field. Either way the machine is measured again so the record moves.
   for (const [door, off] of [['off', true], ['on', false]] as const) {
-    app.post(`/api/setup/providers/:provider/${door}`, async (req, res) => {
+    app.post(`/api/setup/harnesses/:provider/${door}`, async (req, res) => {
       try {
-        const result = await setProviderOff(String(req.params.provider), off);
-        res.json({ ok: true, ...result, runtime: await answer(await measureAndRecordProviders()) });
+        const result = await setHarnessOff(String(req.params.provider), off);
+        res.json({ ok: true, ...result, runtime: await answer(await measureAndRecordHarnesses()) });
       } catch (error) {
         res.status(400).json({ error: errMsg(error) });
       }
     });
   }
 
-  app.post('/api/setup/providers/:provider/login', async (req, res) => {
+  // SIGN-IN WITHOUT A TERMINAL (src/harness-sign-in.ts): start for a way, paste, cancel; the state
+  // is pushed as `harness-sign-in`, and read here when a page opens. `tell` names who hears the end.
+  app.get('/api/setup/sign-in', async (_req, res) => { res.json(await signInState()); });
+  app.post('/api/setup/harnesses/:provider/sign-in', async (req, res) => {
+    try { res.json({ ok: true, run: await startSignIn(String(req.params.provider), req.body?.way === 'api_key' ? 'api_key' : 'subscription', String(req.body?.tell ?? '')) }); }
+    catch (error) { res.status(400).json({ error: errMsg(error) }); }
+  });
+  app.post('/api/setup/harnesses/:provider/sign-in/paste', (req, res) => {
+    try { res.json({ ok: true, run: pasteSignIn(String(req.params.provider), String(req.body?.text ?? '')) }); }
+    catch (error) { res.status(400).json({ error: errMsg(error) }); }
+  });
+  app.post('/api/setup/harnesses/:provider/sign-in/cancel', (req, res) => {
+    cancelSignIn(String(req.params.provider));
+    res.json({ ok: true });
+  });
+
+  app.post('/api/setup/harnesses/:provider/login', async (req, res) => {
     try {
-      const result = await openProviderLogin(String(req.params.provider));
+      const result = await openHarnessLogin(String(req.params.provider));
       const runtime = await answer();
-      const provider = runtime.providers.find((row) => row.id === String(req.params.provider));
+      const provider = runtime.harnesses.find((row) => row.id === String(req.params.provider));
       res.json({ ok: true, opened: result.opened, attachment: provider?.attachment ?? null, runtime });
     } catch (error) {
       res.status(400).json({ error: errMsg(error) });
     }
   });
 
-  app.post('/api/setup/providers/:provider/done', async (req, res) => {
+  app.post('/api/setup/harnesses/:provider/done', async (req, res) => {
     try {
-      if (req.body?.sign_in !== undefined) await saveProviderSignIn(String(req.params.provider), req.body.sign_in);
-      const result = await completeProviderLogin(String(req.params.provider));
+      const result = await completeHarnessLogin(String(req.params.provider));
       // Done activates a provider: the owner's press, so its model list is read now (owner, 2026-09-25).
-      res.json({ ok: true, closed: true, activation_recorded: true, activated_at: result.activated_at, attachment: null, runtime: await answer(await refreshProviders()) });
+      res.json({ ok: true, closed: true, activation_recorded: true, activated_at: result.activated_at, attachment: null, runtime: await answer(await refreshHarnesses()) });
     } catch (error) {
       res.status(409).json({ error: errMsg(error) });
     }
   });
 
-  app.post('/api/setup/providers/:provider/close', async (req, res) => {
+  app.post('/api/setup/harnesses/:provider/close', async (req, res) => {
     try {
-      if (req.body?.sign_in !== undefined) await saveProviderSignIn(String(req.params.provider), req.body.sign_in);
-      await closeProviderLogin(String(req.params.provider));
+      await closeHarnessLogin(String(req.params.provider));
       // A sign-in closed without Done may still have left the CLI's credential file: measure.
-      res.json({ ok: true, closed: true, activation_recorded: false, attachment: null, runtime: await answer(await measureAndRecordProviders()) });
-    } catch (error) {
-      res.status(400).json({ error: errMsg(error) });
-    }
-  });
-
-  app.post('/api/setup/morning-brief/schedules', async (req, res) => {
-    try {
-      const body = (req.body ?? {}) as Record<string, unknown>;
-      const schedule = await createMorningBriefSchedule({
-        team: body.team,
-        request: body.request,
-        when: body.when,
-      });
-      res.json({ ok: true, schedule });
-    } catch (error) {
-      res.status(400).json({ error: errMsg(error) });
-    }
-  });
-
-  app.patch('/api/setup/preferences', async (req, res) => {
-    try {
-      const preferences = await writeSetupPreferences(req.body);
-      res.json({ ok: true, preferences });
+      res.json({ ok: true, closed: true, activation_recorded: false, attachment: null, runtime: await answer(await measureAndRecordHarnesses()) });
     } catch (error) {
       res.status(400).json({ error: errMsg(error) });
     }
@@ -229,43 +200,9 @@ export function registerSetupRuntime(app: express.Express): void {
     catch (error) { res.status(500).json({ error: errMsg(error) }); }
   });
 
-  app.post('/api/setup/github/login', async (_req, res) => {
-    try { res.json({ ok: true, ...(await openGithubLogin()) }); }
+  app.get('/api/setup/github/repos', async (_req, res) => {
+    try { res.json({ ok: true, repos: await githubRepositories() }); }
     catch (error) { res.status(400).json({ error: errMsg(error) }); }
   });
 
-  app.post('/api/setup/github/install', async (_req, res) => {
-    try { res.json({ ok: true, ...(await openGithubInstall()) }); }
-    catch (error) { res.status(400).json({ error: errMsg(error) }); }
-  });
-
-  app.post('/api/setup/github/close', async (_req, res) => {
-    try { res.json({ ok: true, ...(await closeGithubLogin()) }); }
-    catch (error) { res.status(400).json({ error: errMsg(error) }); }
-  });
-
-  app.post('/api/setup/github/logout', async (_req, res) => {
-    try { res.json({ ok: true, ...(await removeGithubAuthentication()) }); }
-    catch (error) { res.status(400).json({ error: errMsg(error) }); }
-  });
-
-  app.post('/api/setup/github/clone', async (req, res) => {
-    try { res.json({ ok: true, workspace: await cloneGithubWorkspace(req.body?.repository, req.body?.parent) }); }
-    catch (error) { res.status(400).json({ error: errMsg(error) }); }
-  });
-
-  app.post('/api/setup/github/create', async (req, res) => {
-    try { res.json({ ok: true, ...(await createGithubRepository(req.body?.dir, req.body?.visibility)) }); }
-    catch (error) { res.status(400).json({ error: errMsg(error) }); }
-  });
-
-  app.post('/api/setup/git/open', async (_req, res) => {
-    try { res.json({ ok: true, attachment: await openGitSetupSession() }); }
-    catch (error) { res.status(400).json({ error: errMsg(error) }); }
-  });
-
-  app.post('/api/setup/git/close', async (_req, res) => {
-    try { await closeGitSetupSession(); res.json({ ok: true }); }
-    catch (error) { res.status(400).json({ error: errMsg(error) }); }
-  });
 }

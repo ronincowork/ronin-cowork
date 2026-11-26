@@ -3,32 +3,27 @@ import { readFile } from 'node:fs/promises';
 import { access, mkdir, readdir, rename, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
-import { MACHINE_SETTINGS_SCHEMA, providerModelFields, type ProviderModelField } from './machine-settings-schema.js';
+import { MACHINE_SETTINGS_SCHEMA, harnessModelFields, type HarnessModelField } from './machine-settings-schema.js';
 import { secureUrl } from './passkey.js';
 import { listServices } from './sockets.js';
 import { CONTRACT_V } from './sockets-contract.js';
 import { roninIdentity } from './routes/version.js';
 import { workspaceFolders } from './workspaces.js';
-import { listProviderCatalog, listSessionLaunchSpecs, parseProviderSummary, TIERS } from './model-providers.js';
+import { isTier, listHarnesses, listSessionLaunchSpecs, parseHarnessSummary, TIERS } from './harness-catalog.js';
 import { storeDir } from './resources.js';
 import { readOfficeRecord } from './office-record.js';
 import { AGENTS, listAgentAvailability } from './agents.js';
 import { execFile as brokerExecFile } from './spawn-broker.js';
 import { tmux } from './tmux-client.js';
-import {
-  publicState,
-  readState as readServicesActivation,
-  type ActivationState,
-} from './activation/state.js';
 const MACHINE_SETTINGS_FILE = () => path.join(storeDir('config'), 'machine_settings.json');
 const MAX_OPT = '@ronin-session-max';
 const OWNER_OPT = '@ronin-owner';
 const NO_LIMIT = 0;
-const recordedProviderSummary = async () => {
+const recordedHarnessSummary = async () => {
   const campaigns = await readMachineSettingsSection<Record<string, unknown>>('campaigns', {});
   for (const value of Object.values(campaigns)) {
     if (!value || typeof value !== 'object' || Array.isArray(value)) continue;
-    const summary = parseProviderSummary((value as Record<string, unknown>).providers);
+    const summary = parseHarnessSummary((value as Record<string, unknown>).providers);
     if (summary) return summary;
   }
   return null;
@@ -258,7 +253,7 @@ export interface MachineSettingsRecord {
   status: Record<string, unknown>;
   needed: Array<{ leaf: string; needs: string; how: string; met_by: MetBy }>;
   schema: Omit<typeof MACHINE_SETTINGS_SCHEMA, 'fields'>
-    & { fields: Array<(typeof MACHINE_SETTINGS_SCHEMA)['fields'][number] | ProviderModelField> };
+    & { fields: Array<(typeof MACHINE_SETTINGS_SCHEMA)['fields'][number] | HarnessModelField> };
 }
 
 export type MetBy = 'mechanical' | 'owner' | 'agent';
@@ -358,26 +353,6 @@ async function sshReach(): Promise<Record<string, unknown>> {
   return { ssh: { listening, port: 22, addresses: { tailnet, public: pub } } };
 }
 
-async function localWeights(): Promise<Array<Record<string, unknown>>> {
-  const dir = path.join(storeDir('koshi_weights'), 'models');
-  let names: string[];
-  try {
-    names = await readdir(dir);
-  } catch {
-    return [];
-  }
-  const out: Array<Record<string, unknown>> = [];
-  for (const n of names.sort()) {
-    if (n.startsWith('.') || n === 'SHA256SUMS') continue;
-    try {
-      const st = await stat(path.join(dir, n));
-      if (st.isFile()) out.push({ name: n, mb: Math.round(st.size / 1024 ** 2) });
-    } catch {
-    }
-  }
-  return out;
-}
-
 const typedStr = (v: unknown): string | null =>
   typeof v === 'string' && v.trim() !== '' ? v : null;
 
@@ -396,8 +371,8 @@ const publicJobs = async (value: unknown): Promise<Record<string, unknown>> => {
   if (typeof mika.level === 'string' && (TIERS as readonly string[]).includes(mika.level)) {
     jobs.mikaassist = { level: mika.level };
   } else if (mika.provider !== undefined || mika.model !== undefined) {
-    const pair = (await listSessionLaunchSpecs(await recordedProviderSummary())).find((spec) => spec.provider === mika.provider && spec.model === mika.model);
-    jobs.mikaassist = pair && pair.tier ? { level: pair.tier } : { migration_choice_required: true };
+    const pair = (await listSessionLaunchSpecs(await recordedHarnessSummary())).find((spec) => spec.provider === mika.provider && spec.model === mika.model);
+    jobs.mikaassist = pair && isTier(pair.tier) ? { level: pair.tier } : { migration_choice_required: true };
   } else {
     jobs.mikaassist = { level: 'light' };
   }
@@ -409,14 +384,12 @@ async function readSet(): Promise<Record<string, unknown>> {
   const owner = await readSection<Record<string, unknown>>('owner', {});
   const machine = await readMachineSection();
   const agents = await readAgentsSection();
-  const koshi = await readSection<Record<string, unknown>>('koshi', {});
   const wipeboard = await readSection<Record<string, unknown>>('wipeboard', {});
   const campaigns = await readSection<Record<string, unknown>>('campaigns', {});
   const { initialCampaign } = await import('./campaigns.js');
   const campaignRecord = await initialCampaign();
   const setup = await readSetupSection();
 
-  const activation = await readServicesActivation();
   return {
     campaign: { name: typedStr(campaignRecord?.title), description: typedStr(campaignRecord?.description) },
     campaigns,
@@ -427,40 +400,19 @@ async function readSet(): Promise<Record<string, unknown>> {
     },
     sessions: { max: await readMax() },
     agents: { sessions: sessionDefaults(agents.sessions), jobs: await publicJobs(agents.jobs) },
-    koshi,
     wipeboard,
     desk: { profile: typedStr(campaignRecord?.desk_profile) },
     wanted: (await readSection<Array<{ kind?: unknown; name?: unknown }>>('wanted', []))
       .filter((w) => typeof w?.kind === 'string' && typeof w?.name === 'string')
       .map((w) => ({ kind: w.kind as string, name: w.name as string })),
     setup,
-    services: setteiServices(activation),
   };
-}
-
-export function setteiServices(activation: ActivationState) {
-  return {
-    selected: activation.stage !== 'not_requested',
-    activation: publicState(activation),
-  };
-}
-
-type PublicActivation = ReturnType<typeof publicState>;
-
-export function servicesSubscription(activation: PublicActivation): string {
-  if (activation.entitlement_id) {
-    return `services: ${activation.entitlement_id}`
-      + (activation.verified_at ? `, verified ${activation.verified_at}` : '');
-  }
-  if (activation.stage === 'error') {
-    return 'free cowork: Services activation needs attention';
-  }
-  return 'free cowork: no entitlement recorded';
 }
 
 async function readObserved(jobKeyNames: string[]): Promise<Record<string, unknown>> {
-  // The CLI registry says what is installed; the provider catalog says whose it is.
-  const [available, catalog] = await Promise.all([listAgentAvailability(), listProviderCatalog()]);
+  // The CLI registry says what is installed and whose it is.
+  const available = await listAgentAvailability();
+  const catalog = listHarnesses();
   const agents = Object.fromEntries(
     available.map((a) => [
       a.id,
@@ -495,7 +447,6 @@ async function readObserved(jobKeyNames: string[]): Promise<Record<string, unkno
     office: await readOfficeRecord(),
     routes: routes(),
     reach: await sshReach(),
-    weights: await localWeights(),
     agents,
     keys,
     tools,
@@ -522,8 +473,6 @@ async function computeStatus(
   const setOwner = set.owner as Record<string, unknown>;
   const agentsSeen = observed.agents as Record<string, { installed: boolean; path: string | null }>;
   const keys = observed.keys as Record<string, boolean>;
-  const services = set.services as Record<string, unknown>;
-  const servicesActivation = services.activation as PublicActivation;
   const max = (set.sessions as Record<string, number>).max;
   const running = await liveCount();
 
@@ -589,7 +538,6 @@ async function computeStatus(
       ...jobStatus,
     },
     setup: 'Ronin Setup is always available in Machine Settings',
-    subscription: servicesSubscription(servicesActivation),
   };
 }
 
@@ -616,7 +564,7 @@ function holds(
 /** What is still needed: the owner's wanted list, less what is here (holds), and a Workspace with a
  * folder, as the workspaces fact has them. */
 async function computeNeeded(set: Record<string, unknown>, observed: Record<string, unknown>): Promise<MachineSettingsRecord['needed']> {
-  const installed = (await recordedProviderSummary())?.installed ?? [];
+  const installed = (await recordedHarnessSummary())?.installed ?? [];
   const HOW: Record<string, { how: (n: string) => string; met_by: (n: string) => MetBy }> = {
     agent: {
       how: (n) => `install the ${n} CLI — it appears in agent installations the moment it lands`,
@@ -658,7 +606,7 @@ export async function readMachineSettings(): Promise<MachineSettingsRecord> {
     status,
     needed,
     schema: { ...MACHINE_SETTINGS_SCHEMA, fields: [...MACHINE_SETTINGS_SCHEMA.fields,
-      ...providerModelFields([...new Set((await listSessionLaunchSpecs(await recordedProviderSummary())).map((s) => s.provider))])] },
+      ...harnessModelFields([...new Set((await listSessionLaunchSpecs(await recordedHarnessSummary())).map((s) => s.provider))])] },
   };
 }
 
@@ -708,7 +656,7 @@ export const MACHINE_SETTINGS_WRITERS = {
   },
   'record-section': async (body) => {
     const key = String(body.key ?? '');
-    if (!['sessions', 'owner', 'machine', 'agents', 'desks', 'wanted', 'setup', 'koshi', 'wipeboard', 'messages'].includes(key)) {
+    if (!['sessions', 'owner', 'machine', 'agents', 'desks', 'wanted', 'setup', 'wipeboard', 'messages'].includes(key)) {
       throw new Error(`no machine-settings section named '${key}'`);
     }
     await updateDocument((document) => { document[key] = body.value ?? {}; });

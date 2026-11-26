@@ -348,7 +348,7 @@ else
       printf '%s\n' "# bin/shim/tmux makes tmux kill-server unavailable. It is INERT unless this"
       printf '%s\n' "# directory comes before /usr/bin, which is why it is PREPENDED and stays FIRST."
       printf '%s\n' "# ronin_bin holds Agent-facing tools and bin holds the house's own scripts"
-      printf '%s\n' "# (including koshi) — all typed by bare name, so both stay on PATH."
+      printf '%s\n' "# — all typed by bare name, so both stay on PATH."
       printf '%s\n' "#  Safe to delete this block."
       [ -z "$3" ] || printf '%s\n' "$3"
       printf '%s\n' "$2"

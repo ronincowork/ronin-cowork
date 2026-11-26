@@ -74,6 +74,14 @@ export async function openPullRequest(input: PrInput, opts: { exec?: Exec; gh?: 
   if (receipt.state !== 'complete') log(`  warning: receipt ${receipt.id} is ${receipt.state}; opening the PR anyway.`);
 
   await exec('git', ['fetch', '-q', 'origin', stable], dir).catch(() => '');
+  // GitHub's working branch must still be a commit this machine pushed. If someone rewrote it
+  // (25 Nov 2026: a collaborator's infected machine force-pushed a booby-trapped copy of dev),
+  // stop before the push and say so; a plain push would only fail as 'non-fast-forward'.
+  await exec('git', ['fetch', '-q', 'origin', working], dir).catch(() => '');
+  const remote = (await exec('git', ['rev-parse', '-q', '--verify', `refs/remotes/origin/${working}`], dir).catch(() => '')).trim();
+  if (remote && !(await exec('git', ['merge-base', '--is-ancestor', remote, working], dir).then(() => true, () => false))) {
+    throw new Error(`${repo}: GitHub's ${working} is at ${remote.slice(0, 12)}, a commit this machine never pushed: someone rewrote the branch. Nothing was pushed. See who did it (gh api repos/{owner}/{repo}/activity) and read the difference (git diff --ignore-cr-at-eol ${working} origin/${working}) before anything else; do not build or start that commit.`);
+  }
   const subjects = (await exec('git', ['log', '--format=%s', `origin/${stable}..${working}`], dir)).split('\n').map((s) => s.trim()).filter(Boolean);
   const body = prBody({ receipt, repo, subjects, head });
   const title = prTitle(subjects, working, stable);

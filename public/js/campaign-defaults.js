@@ -17,7 +17,8 @@ const optionLabel = (value) => ({
   configured: t('launch_mode.configured', 'Native'), live_dangerously: t('launch_mode.live', 'Dangerously'),
 })[value] || value;
 
-export function createAgentDefaultsSurface(campaign) {
+/** `modelsHere`: Settings v2 shows the starting models on the same card (KAN-871), so the pointer to Models goes. */
+export function createAgentDefaultsSurface(campaign, { modelsHere = false } = {}) {
   const { createSurface, createNotice } = WorkspaceKit.primitives;
   const surface = createSurface({ label: t('campaign_view.defaults', 'Defaults'), className: 'cv-surface' });
   const body = el('div', 'cv-body'); surface.content.append(body);
@@ -26,14 +27,14 @@ export function createAgentDefaultsSurface(campaign) {
 
   function paint() {
     const row = campaign(); body.replaceChildren();
-    if (!row) return surface.setState('empty', t('campaign_view.none_selected', 'No Campaign selected.'));
+    if (!row) return surface.setState('empty', t('campaign_view.none_selected', 'No office settings yet.'));
     surface.setState(null, '');
     const current = bucket(row.config?.defaults);
     const form = el('form', 'cv-defaults-form');
     const questionsRow = el('div', 'cv-default-field');
     const notice = createNotice();
     body.append(el('p', 'cv-note', t('campaign_view.defaults_help', 'These defaults land in the next Team or Agent form that opens. They remain editable there; nothing live changes.')));
-    body.append(el('p', 'cv-note', t('campaign_view.defaults_models', 'Models are set in Models > Defaults.')));
+    if (!modelsHere) body.append(el('p', 'cv-note', t('campaign_view.defaults_models', 'Models are set in Models.')));
     let picked = edited || {
       reach: current.reach || firstMandate('reach'), recruit: current.recruit || firstMandate('recruit'),
       output: list(current.output), launch_mode: current.launch_mode || 'live_dangerously',
@@ -46,8 +47,8 @@ export function createAgentDefaultsSurface(campaign) {
       ] },
       { group: t('campaign_view.defaults_runtime', 'Runtime'), fields: [
         { key: 'launch_mode', label: t('launch_mode.head', 'Launch mode'), options: [
-          { v: 'configured', l: optionLabel('configured'), sub: t('launch_mode.configured_sub', 'Do not override the provider CLI’s approval behavior. Model selection is separate.') },
-          { v: 'live_dangerously', l: optionLabel('live_dangerously'), sub: t('launch_mode.live_sub', 'Use that provider CLI’s own approval-bypass launch.') },
+          { v: 'configured', l: optionLabel('configured'), sub: t('launch_mode.configured_sub', 'Do not override the harness’s approval behavior. Model selection is separate.') },
+          { v: 'live_dangerously', l: optionLabel('live_dangerously'), sub: t('launch_mode.live_sub', 'Use that harness’s own approval-bypass launch.') },
         ] },
       ] },
     ], { value: picked, trayHost: questionsRow, onChange: (value) => { picked = value; edited = value; } });
@@ -55,7 +56,7 @@ export function createAgentDefaultsSurface(campaign) {
     /* What every Agent in this Campaign is told: its brief settings, saved by the one Save below. */
     const brief = createBriefSettingsPanel({ layer: 'campaign', id: row.id, campaignId: row.id, ownSave: false, preview: { campaign_id: row.id } });
     const briefRow = el('div', 'cv-default-field');
-    briefRow.append(el('h3', 'cv-brief-head', t('behaviours', 'Behaviors')), el('p', 'cv-note', t('campaign_view.brief_help', 'What every Agent in this Campaign is told. Agents already working are sent the change.')), brief.el);
+    briefRow.append(el('h3', 'cv-brief-head', t('behaviours', 'Behaviors')), el('p', 'cv-note', t('campaign_view.brief_help', 'What every new Workspace, Team and Agent inherits. Nothing that already exists changes.')), brief.el);
     form.append(briefRow);
     void brief.enter();
     const actions = el('div', 'cv-default-actions');

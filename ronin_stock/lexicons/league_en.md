@@ -19,9 +19,8 @@ through to `professional_en`.
 - **output:** Loot
 - **go:** GLHF
 - **publish:** Publish build
-- **kind.coding:** Coding
 - **kind.household:** Household
 - **kind.personal:** Personal
-- **kind.work:** Work
+- **kind.business:** Business
 - **kind.social:** Social
 - **kind.school:** School

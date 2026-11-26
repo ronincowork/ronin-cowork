@@ -446,7 +446,6 @@ body {
   transform: translateX(-50%);
 }
 .ui-bar-place[hidden] { display: none; }
-.ui-bar-place-toggle,
 .ui-bar-place .wk-tab-name {
   width: 100%;
   min-width: 0;
@@ -456,8 +455,6 @@ body {
   font: inherit;
   text-align: center;
 }
-.ui-bar-place-toggle { cursor: pointer; }
-.ui-bar-place-toggle:focus-visible,
 .ui-bar-place .wk-tab-name:focus-visible {
   outline: var(--focus-width) solid currentColor;
   outline-offset: var(--focus-offset);
@@ -1388,6 +1385,16 @@ body {
   font-size: var(--text-label);
   line-height: var(--leading-none);
 }
+/* The item's − wears the Launch button's look (workspace-kit.css .wk-action[data-kind='primary']). */
+.wi-head > button.window-control.minimize {
+  border-color: var(--kaki);
+  background: var(--kaki); /* kaki: the action, or what needs you */
+  color: var(--on-strong);
+}
+.wi-head > button.window-control.minimize:hover {
+  background: var(--kaki-lift); /* kaki: the action, or what needs you */
+  color: var(--on-strong);
+}
 
 .tile-empty-mark {
   position: absolute;
@@ -2232,88 +2239,6 @@ body {
   opacity: 1;
 }
 
-.desk-koshi {
-  flex-direction: column;
-  min-height: 0;
-  padding: var(--space-inset);
-  gap: var(--space-paragraph);
-  overflow: auto;
-}
-.ko-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-inline);
-}
-.ko-blurb {
-  opacity: 0.75;
-  font-size: var(--text-body);
-}
-.ko-blurb.bad {
-  color: var(--bad);
-  opacity: 1;
-  font-weight: var(--weight-strong);
-}
-.ko-restart {
-  flex: none;
-}
-.ko-list {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-paragraph);
-}
-.ko-row {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  grid-template-areas: 'name pick' 'what pick' 'pace pace' 'pacelabel pacelabel' 'note note';
-  gap: var(--space-row) var(--space-inline);
-  align-items: center;
-  padding: var(--space-paragraph) var(--space-inline);
-  border: var(--edge) solid var(--line);
-  border-radius: var(--radius-small);
-}
-.ko-row.off {
-  opacity: 0.5;
-}
-.ko-name {
-  grid-area: name;
-  font-weight: var(--weight-strong);
-}
-.ko-what {
-  grid-area: what;
-  font-size: var(--text-body);
-  opacity: 0.7;
-}
-.ko-pick {
-  grid-area: pick;
-  min-width: 150px;
-}
-.ko-pace {
-  grid-area: pace;
-  width: 100%;
-  margin: var(--space-row) 0 0;
-}
-.ko-pacelabel {
-  grid-area: pacelabel;
-  font-size: var(--text-body);
-  opacity: 0.7;
-}
-.ko-note {
-  grid-area: note;
-  font-size: var(--text-body);
-  opacity: 0.7;
-  margin-top: var(--space-row);
-}
-.ko-note.bad,
-.ko-empty.bad {
-  color: var(--bad);
-  opacity: 1;
-}
-.ko-empty {
-  opacity: 0.7;
-  font-size: var(--text-body);
-}
-
 .desk-hotwords {
   flex-direction: column;
   min-height: 0;
@@ -2423,25 +2348,7 @@ body {
 }
 
 .pr-status:empty { display: none; }
-.folder-picker { display: flex; flex-direction: column; gap: var(--space-row); }
-.folder-controls { display: flex; align-items: center; gap: var(--space-inline); flex-wrap: wrap; }
-.folder-controls button, .folder-crumbs button, .folder-row button, .folder-create button { border: var(--edge) solid var(--line-2); border-radius: var(--radius-small); background: var(--surface); color: var(--fg); padding: var(--space-row) var(--space-control); cursor: pointer; }
-.folder-controls input[type='search'] { flex: 1; min-width: 150px; border: var(--edge) solid var(--line-2); border-radius: var(--radius-small); background: var(--inset); color: var(--fg); padding: var(--space-control); }
-.folder-hidden { display: flex; align-items: center; gap: var(--space-inline); color: var(--muted); font-size: var(--text-small); }
-.folder-crumbs { display: flex; align-items: center; gap: var(--space-inline); flex-wrap: wrap; color: var(--muted); }
-.folder-list { max-height: 260px; overflow-y: auto; border: var(--edge) solid var(--line-2); border-radius: var(--radius-small); }
-.folder-row { display: flex; gap: var(--space-inline); align-items: center; padding: var(--space-inline); border-bottom: var(--edge) solid var(--line-2); }
-.folder-row:last-child { border-bottom: 0; }
-.folder-group { padding: var(--space-row) var(--space-inline) var(--space-row); border-bottom: var(--edge) solid var(--line-2); color: var(--muted); font-size: var(--text-small); }
 .folder-kind { margin-left: var(--space-inline); color: var(--muted); font-size: var(--text-small); }
-.folder-open { flex: 1; text-align: left; border-color: transparent !important; }
-.folder-choose { color: var(--kaki) !important; }
-.folder-empty, .folder-loading { display: block; padding: var(--space-inline); color: var(--muted); }
-.folder-create { border: var(--edge) dashed var(--line-2); border-radius: var(--radius-small); padding: var(--space-inline); }
-.folder-create summary { cursor: pointer; color: var(--fg-strong); }
-.folder-create-row { display: grid; grid-template-columns: minmax(140px, 1fr) auto auto; gap: var(--space-row) var(--space-inline); align-items: center; margin-top: var(--space-row); }
-.folder-create-row > input[type='text'] { border: var(--edge) solid var(--line-2); border-radius: var(--radius-small); background: var(--inset); color: var(--fg); padding: var(--space-control); }
-.folder-create-row label { display: flex; align-items: center; gap: var(--space-inline); color: var(--muted); font-size: var(--text-small); }
 @media (max-width: 560px) { .folder-create-row { grid-template-columns: 1fr; } }
 .pr-empty {
   color: var(--muted);
@@ -3312,9 +3219,12 @@ body {
 .markdown-reader li > :last-child { margin-bottom: 0; }
 .markdown-reader .markdown-table { max-width: 100%; overflow-x: auto; margin: 0 0 var(--space-paragraph); }
 .markdown-reader table { border-collapse: collapse; }
-.markdown-reader :is(th, td) { padding: var(--space-row) var(--space-inline); text-align: left; vertical-align: top; }
-.markdown-reader :is(th, td):first-child { padding-left: 0; white-space: nowrap; }
-.markdown-reader th { border-bottom: calc(var(--edge) * 2) solid var(--line-2); color: var(--fg-strong); font-weight: var(--weight-strong); white-space: nowrap; }
+/* Every cell wraps, first column and header too; each column keeps a few words' width and
+   none takes more than its share, so a long first column can't push the rest to a word each
+   (KAN-833). A table too wide for those floors scrolls in its box. */
+.markdown-reader :is(th, td) { min-width: 12ch; max-width: 40ch; padding: var(--space-row) var(--space-inline); text-align: left; vertical-align: top; overflow-wrap: anywhere; }
+.markdown-reader :is(th, td):first-child { padding-left: 0; }
+.markdown-reader th { border-bottom: calc(var(--edge) * 2) solid var(--line-2); color: var(--fg-strong); font-weight: var(--weight-strong); }
 .markdown-reader tbody tr + tr td { border-top: var(--edge) solid var(--line); }
 /* Markdown off shows what the Agent wrote, marks and all, in the terminal's type, so a table or
    an indent lines up as it was written. */
@@ -3412,13 +3322,6 @@ body {
 .tile.transcript-on .dvr-strip,
 .tile.transcript-on .tapejump,
 .tile.transcript-on .termjump { display: none; }
-.kaki-controls { display: none; gap: var(--space-inline); align-items: center; margin-bottom: var(--space-paragraph); }
-.kaki-controls.show { display: flex; }
-.kaki-controls button, .kaki-controls select {
-  border: var(--edge) solid var(--term-tape-line-2); border-radius: var(--radius-small);
-  background: var(--tile-bg); color: var(--term-tape-fg); padding: var(--space-row) var(--space-control);
-  font: var(--text-small) var(--font-mono);
-}
 .tile .tape {
   display: none;
 }
@@ -4118,19 +4021,8 @@ body {
 .ramrpm-pop strong { color: var(--fg-strong); }
 .ramrpm-pop span { color: var(--muted); text-align: right; }
 
-.services-state { margin-left: var(--space-inline); border: var(--edge) solid var(--line-2); border-radius: var(--radius-small); background: var(--surface); color: var(--muted); padding: var(--space-row) var(--space-inline); font: var(--text-small) var(--font-mono); cursor: pointer; }
 .connection-state { color: var(--muted); font: var(--text-small) var(--font-mono); white-space: nowrap; }
 #phone .connection-state { margin-left: auto; }
-.services-state.busy::before { content: '◌'; display: inline-block; margin-right: var(--space-inline); animation: services-spin var(--motion-slow) linear infinite; }
-.services-pop { position: fixed; z-index: 50; width: min(360px, calc(100vw - 16px)); border: var(--edge) solid var(--line-2); border-radius: var(--radius-small); background: var(--surface); box-shadow: var(--shadow-menu); padding: var(--space-inset); }
-.services-pop-message { margin: 0 0 var(--space-subsection); color: var(--muted); }
-.services-pop-actions { display: flex; flex-wrap: wrap; gap: var(--space-inline); }
-.services-pop-actions button { border: var(--edge) solid var(--line-2); border-radius: var(--radius-small); background: var(--surface); color: var(--fg); padding: var(--space-row) var(--space-control); cursor: pointer; }
-.services-pop-actions .services-check { border-color: var(--kaki); background: var(--kaki); /* kaki: the action, or what needs you */ color: var(--on-strong); }
-.services-pop-actions .services-check:hover { background: var(--kaki-lift); /* kaki: the action, or what needs you */ }
-.st-services .services-check { border-color: var(--kaki); background: var(--kaki); /* kaki: the action, or what needs you */ color: var(--on-strong); }
-.st-services .services-check:hover { background: var(--kaki-lift); /* kaki: the action, or what needs you */ }
-@keyframes services-spin { to { transform: rotate(360deg); } }
 
 /* Ronin Setup workspace-2 surfaces: sparse first face, detail on selection. */
 /* No inline padding: a Setup surface's body begins on the surface's own content edge, the
@@ -4141,48 +4033,6 @@ body {
 .setup-surface-body { display: grid; gap: var(--space-paragraph); padding: var(--space-inset) 0; min-width: 0; }
 .setup-fine { color: var(--muted); }
 .setup-form, .setup-registration-identity { display: grid; gap: var(--space-paragraph); padding: var(--space-inset); border: var(--edge) solid var(--line); border-radius: var(--radius-small); }
-/* Register: one calm column. Groups are separated by kaki rules, never boxed; the workspace already frames the surface. */
-.setup-register-compact { align-content: start; width: min(100%, 52rem); margin: 0 auto; gap: var(--space-section); font-size: var(--text-body); line-height: var(--leading-body); }
-.setup-register-form { width: 100%; padding: 0; border: 0; gap: var(--space-section); }
-.setup-register-form[hidden] { display: none; }
-.setup-register-welcome { display: grid; gap: var(--space-row); padding: var(--space-row) 0 0; }
-.setup-register-eyebrow { color: var(--kaki); font-size: var(--text-small); font-weight: var(--weight-strong); letter-spacing: var(--tracking-wide); text-transform: uppercase; }
-.setup-register-welcome h2 { margin: 0; color: var(--fg-strong); font-size: var(--text-display); font-weight: var(--weight-strong); letter-spacing: var(--tracking-tight); line-height: var(--leading-tight); }
-.setup-register-welcome .setup-lede { max-width: 38rem; color: var(--muted); font-size: var(--text-body); line-height: var(--leading-body); }
-/* Rhythm: lines sit tight inside a question, questions breathe, groups breathe more. */
-.setup-register-group { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-subsection) var(--space-inline); border-top: var(--edge-2) solid var(--kaki); padding-top: var(--space-inset); }
-.setup-register-group > :not(h3) + :not(h3) { margin-top: var(--space-subsection); }
-.setup-register-group[hidden] { display: none; }
-.setup-register-group > h3 { grid-column: 1 / -1; margin: 0; color: var(--fg-strong); font-size: var(--text-heading); font-weight: var(--weight-strong); line-height: var(--leading-tight); }
-.setup-register-group > .setup-register-full { grid-column: 1 / -1; }
-.setup-register-group > .setup-field[hidden] { display: none; }
-.setup-register-question { display: block; color: var(--fg-strong); font-size: var(--text-body); font-weight: var(--weight-strong); line-height: var(--leading-body); }
-.setup-register-compact .setup-register-bounded, .setup-register-compact .setup-register-input { display: grid; align-content: start; gap: var(--space-paragraph); min-width: 0; }
-.setup-register-checklist { display: grid; gap: 0; min-width: 0; margin: 0; border: 0; padding: 0; }
-.setup-register-checklist legend { padding: 0; margin-bottom: var(--space-paragraph); }
-.setup-register-check { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--space-inline); align-items: start; min-width: 0; padding: var(--space-row) 0; color: var(--fg); cursor: pointer; line-height: var(--leading-body); }
-.setup-register-check span { min-width: 0; }
-.setup-register-check input[type='checkbox'] { width: 1.05rem; height: 1.05rem; margin: .15rem 0 0; accent-color: var(--kaki); cursor: pointer; }
-.setup-register-reasons input[type='checkbox'] { box-sizing: border-box; appearance: none; border: var(--edge) solid var(--line-2); border-radius: var(--radius-round); background: var(--inset); }
-.setup-register-reasons input[type='checkbox']:checked { border-color: var(--kaki); background: var(--kaki); /* kaki: the action, or what needs you */ box-shadow: inset 0 0 0 var(--edge-2) var(--inset); }
-.setup-register-other[hidden] { display: none; }
-.setup-register-compact input:not([type='checkbox']), .setup-register-compact textarea { width: 100%; min-width: 0; box-sizing: border-box; border: var(--edge) solid transparent; border-radius: var(--radius-hair); background: var(--inset); padding: var(--space-row) var(--space-control); color: var(--fg-strong); font: inherit; font-size: var(--text-label); line-height: var(--leading-body); transition: border-color var(--motion-quick) var(--ease); }
-.setup-register-compact input:not([type='checkbox']):hover, .setup-register-compact textarea:hover { border-color: var(--line-2); }
-.setup-register-compact input:not([type='checkbox']):focus-visible, .setup-register-compact textarea:focus-visible { outline: 0; border-color: var(--kaki); }
-.setup-register-compact textarea { resize: vertical; }
-.setup-register-send { display: grid; justify-items: start; gap: var(--space-subsection); border-top: var(--edge-2) solid var(--kaki); padding-top: var(--space-inset); }
-.setup-register-send[hidden], .setup-register-consent[hidden], .setup-register-send > .wk-action[hidden], .setup-register-notice[hidden] { display: none; }
-.setup-register-consent { max-width: 40rem; color: var(--muted); font-size: var(--text-body); line-height: var(--leading-body); }
-.setup-register-form [hidden] { display: none !important; }
-.setup-register-reasons-list { display: grid; gap: var(--space-row); margin: 0; padding-left: var(--space-inset); color: var(--fg); line-height: var(--leading-body); }
-.setup-user-intro-actions { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-inline); }
-.setup-register-notice { min-height: 1.45em; color: var(--muted); font-size: var(--text-body); }
-.setup-register-notice:empty { display: none; }
-.setup-registration-identity { display: grid; gap: var(--space-row); border: 0; border-left: var(--edge-2) solid var(--ok-2); border-radius: 0; padding: var(--space-row) var(--space-inline); }
-.setup-registration-identity[data-tone='pending'] { border-left-color: var(--kaki); }
-.setup-registration-identity strong { color: var(--fg-strong); font-size: var(--text-label); font-weight: var(--weight-strong); line-height: var(--leading-tight); }
-.setup-registration-identity span { color: var(--muted); font-size: var(--text-body); line-height: var(--leading-body); overflow-wrap: anywhere; }
-.setup-registration-identity:empty, .setup-registration-identity[hidden] { display: none; }
 .wk-surface-content:has(.setup-github-workspace) > .sws-header {
   --sws-header-height: clamp(17rem, 32dvh, 20rem);
   display: grid;
@@ -4206,89 +4056,40 @@ body {
 .setup-github-terminal { min-height: 18rem; margin-top: var(--space-paragraph); }
 .setup-github-terminal-actions { display: flex; gap: var(--space-inline); margin-top: var(--space-row); }
 .setup-github-terminal-actions[hidden] { display: none; }
-.setup-bounty-intro { display: grid; gap: var(--space-row); }
-.setup-bounty-requirement-list { display: grid; gap: var(--space-row); margin: 0; padding: 0; list-style: none; }
-.setup-bounty-requirement-list .ready { color: var(--ok); }
-.setup-bounty-requirement-list .locked { color: var(--muted); }
-.setup-bounty-detail { display: grid; gap: var(--space-paragraph); padding: var(--space-inset); }
-.setup-bounty-detail h3, .setup-bounty-detail h4, .setup-bounty-detail p { margin: 0; }
 .wk-workbench-host [data-workbench-offer-type][data-scene-relevant='false'] { opacity: .48; }
 .wk-workbench-host [data-workbench-offer-type][data-scene-relevant='true'] .wk-card-heading { font-weight: var(--weight-bold); }
 .wk-workbench-host [data-registration-locked='true'] .wk-card-heading::after { content: '  🔒'; font-size: .8em; }
 .wk-workbench-host[data-workbench-profile='setup'] [data-complete='true'] { opacity: 1; }
-.wk-workbench-host[data-workbench-profile='setup'] .wk-workbench-selector-cards > .wk-card[aria-current='page'] { border-color: var(--kaki); background: var(--kaki); /* kaki: the action, or what needs you */ color: var(--on-strong); }
-.wk-workbench-host[data-workbench-profile='setup'] .wk-workbench-selector-cards > .wk-card[aria-current='page'] .wk-card-heading,
-.wk-workbench-host[data-workbench-profile='setup'] .wk-workbench-selector-cards > .wk-card[aria-current='page'] .wk-card-summary { color: var(--on-strong); }
-.wk-workbench-host[data-workbench-profile='setup'] .wk-workbench-selector-cards > .wk-card[aria-current='page'] .wk-card-mark { color: var(--on-strong); opacity: .78; }
-.setup-register-options[hidden] { display: none; }
-.setup-registration-recovery { display: flex; flex-wrap: wrap; gap: var(--space-inline); }
+/* THE WALKTHROUGH (owner, 24 Nov; w926): Setup's steps down the selector as the prototype's run across
+   the page. A numbered disc per step, joined to the next by a line; the step on screen kaki-edged on the
+   selected wash, a ticked step's disc filled. */
+.wk-workbench-host[data-workbench-profile='setup'] .wk-workbench-selector-cards { gap: var(--space-row); }
+.wk-workbench-selector-cards > .setup-step-card { --disc: 24px; position: relative; display: grid; grid-template-columns: var(--disc) 1fr; column-gap: var(--space-inline); row-gap: var(--space-row); padding: var(--space-inset); border-color: transparent; background: transparent; border-radius: var(--radius-small); }
+.wk-workbench-selector-cards > .setup-step-card > * { grid-column: 2; margin: 0; }
+.setup-step-card .wk-card-heading { display: contents; font-size: var(--text-label); font-weight: var(--weight-strong); }
+.setup-step-card .setup-step-disc { grid-column: 1; grid-row: 1 / span 3; align-self: start; display: grid; place-items: center; width: var(--disc); height: var(--disc); box-sizing: border-box; border: var(--edge) solid var(--line-2); border-radius: var(--radius-round); color: var(--muted); font: var(--weight-strong) var(--text-small) var(--font-mono); font-variant-numeric: tabular-nums; }
+.setup-step-card .setup-step-line { font-size: var(--text-body); line-height: var(--leading-body); color: var(--muted); }
+.setup-step-card .wk-card-summary:empty, .setup-step-card .wk-card-meta:empty { display: none; }
+.wk-workbench-selector-cards > .setup-step-card:hover:not([aria-current='page']) { border-color: var(--line); }
+.wk-workbench-selector-cards > .setup-step-card:not(:last-child)::after { content: ''; position: absolute; left: calc(var(--space-inset) + var(--disc) / 2); top: calc(var(--space-inset) + var(--disc) + var(--space-row)); bottom: calc(-1 * (var(--space-row) + var(--space-inset))); border-left: var(--edge) solid var(--line-2); pointer-events: none; }
+.setup-step-card[data-complete='true'] .setup-step-disc { border-color: var(--kaki-fill); background: var(--kaki-fill); color: var(--on-strong); }
+.wk-workbench-host[data-workbench-profile='setup'] .wk-workbench-selector-cards > .setup-step-card[aria-current='page'] { border-color: var(--kaki); background: var(--selected); box-shadow: inset 3px 0 var(--kaki); color: var(--fg-strong); }
+/* THE WAY ON (owner, 25 Nov): one small Next in the step surface's header, at its right. */
+.setup-next { display: flex; align-items: center; gap: var(--space-inline); min-width: 0; }
+.setup-next-note { color: var(--current-head-fg); opacity: .7; white-space: nowrap; }
+.setup-next-note:empty { display: none; }
+/* Discreet: the header's own ink, no box; an arrow says where it goes. */
+.wk-surface-header .setup-next-go { min-height: 0; padding: 2px 6px; border: var(--edge) solid transparent; background: none; color: var(--current-head-fg); }
+.wk-surface-header .setup-next-go::after { content: ' →'; }
+.wk-surface-header .setup-next-go:hover, .wk-surface-header .setup-next-go:focus-visible { border-color: currentColor; }
+@media (max-width: 700px) { .setup-next-note { display: none; } }
+.setup-step-card[aria-current='page'] .setup-step-disc { border-color: var(--kaki-fill); color: var(--kaki-lift); }
+.setup-step-card[aria-current='page'][data-complete='true'] .setup-step-disc { color: var(--on-strong); }
 .setup-field { display: grid; gap: var(--space-row); }
 .setup-field input:not([type='checkbox']), .setup-field select, .setup-field textarea { width: 100%; box-sizing: border-box; }
 .setup-field:has(input[type='checkbox']) { grid-template-columns: 1fr auto; align-items: center; }
 .setup-lede, .setup-fine, .setup-notice { margin: 0; }
-.password-surface .password-access > :not(h3) + :not(h3) { margin-top: 0; }
-.password-surface .password-selector { justify-self: start; }
-.password-surface .wk-action-bar { justify-content: flex-start; }
-.password-surface .password-validation { min-height: 0; }
-.password-surface .password-validation:empty { display: none; }
-.password-surface input[aria-invalid='true'] { border-color: var(--bad); }
-.password-recovery p { max-width: 40rem; }
-.setup-services-compact { align-content: start; width: min(100%, 42rem); margin: 0 auto; gap: var(--space-section); }
-.setup-services-intro { display: grid; gap: var(--space-section); }
-.setup-services-beta { display: grid; gap: var(--space-row); border-left: var(--edge-2) solid var(--kaki); padding: var(--space-row) var(--space-inline); }
-.setup-services-beta h3 { margin: 0; color: var(--fg-strong); font-size: var(--text-heading); font-weight: var(--weight-strong); }
-.setup-services-beta p { margin: 0; color: var(--muted); font-size: var(--text-body); line-height: var(--leading-body); }
-.setup-services-lockup { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: var(--space-paragraph) var(--space-inline); align-items: center; }
-.setup-services-mark { display: block; width: 3.5rem; height: 3.5rem; }
-.setup-services-mark img, .setup-services-mark svg { display: block; width: 100%; height: 100%; object-fit: contain; }
-.setup-services-identity { display: grid; gap: var(--space-row); }
-.setup-services-identity h2 { margin: 0; color: var(--fg-strong); font-size: var(--text-display); font-weight: var(--weight-strong); }
-.setup-services-identity .setup-lede { font-size: var(--text-body); line-height: var(--leading-body); }
-.setup-services-beta-marker { align-self: start; color: var(--kaki); font-size: var(--text-body); letter-spacing: var(--tracking-wide); text-transform: uppercase; }
 .wk-workbench-host[data-workbench-profile='setup'] .wk-workbench-selector-cards > .wk-card:disabled { cursor: not-allowed; opacity: .42; }
-.setup-services-benefits { display: grid; gap: var(--space-paragraph); }
-.setup-services-benefit { display: grid; grid-template-columns: 10rem minmax(0, 1fr); gap: var(--space-row) var(--space-inline); align-items: start; border-top: var(--edge-2) solid var(--kaki); background: var(--surface); padding: var(--space-inset) var(--space-inset); }
-.setup-services-benefit h3, .setup-services-benefit p { margin: 0; }
-.setup-services-benefit h3 { color: var(--fg-strong); font-size: var(--text-heading); font-weight: var(--weight-strong); line-height: var(--leading-body); }
-.setup-services-benefit p, .setup-services-next { color: var(--muted); font-size: var(--text-body); line-height: var(--leading-body); }
-.setup-services-status { display: grid; gap: var(--space-row); border-left: var(--edge-2) solid var(--line-2); padding: var(--space-row) var(--space-inline); }
-.setup-services-status[data-tone='ok'] { border-left-color: var(--ok-2); }
-.setup-services-status[data-tone='warn'] { border-left-color: var(--warn); }
-.setup-services-status[data-tone='bad'] { border-left-color: var(--bad); }
-.setup-services-status-line, .setup-services-next { margin: 0; }
-.setup-services-status-line { color: var(--fg-strong); font-size: var(--text-label); font-weight: var(--weight-strong); }
-.setup-services-compact > .wk-action { justify-self: start; }
-.setup-services-steps { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-paragraph) var(--space-inline); }
-.setup-services-step { display: grid; grid-template-rows: auto 1fr; gap: var(--space-row); min-width: 0; }
-.setup-services-step-caption { color: var(--muted); font-size: var(--text-body); }
-.setup-services-step-action { display: inline-flex; width: 100%; height: 100%; min-height: var(--control-height); align-items: center; justify-content: center; box-sizing: border-box; text-align: center; }
-.setup-services-step-action[data-done='true'] { color: var(--ok); border-color: var(--ok-2); }
-.setup-services-step-action[data-step='restart'] { border-color: var(--kaki); background: var(--kaki); /* kaki: the action, or what needs you */ color: var(--on-strong); font-weight: var(--weight-strong); }
-.setup-services-step-action[data-step='restart']:disabled { border-color: var(--line-2); background: var(--surface); color: var(--muted); font-weight: var(--weight-regular); }
-.setup-services-step-action[data-step='restart']:enabled:hover { filter: brightness(1.08); }
-.setup-services-notice { min-height: 1.45em; margin: 0; }
-.setup-services-key { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: var(--space-inline); }
-.setup-services-key-input { font-family: var(--font-mono); }
-.setup-services-components { gap: 0; }
-.setup-services-components .setup-services-benefit { grid-template-columns: 5rem minmax(7rem, .8fr) minmax(0, 1.6fr); align-items: center; border-top: var(--edge) solid var(--line-2); gap: var(--space-inline); padding: var(--space-inset) 0; }
-.setup-services-components .ask-label { display: none; }
-.setup-services-components .ask-stone { width: 100%; min-width: 0; height: 2.25rem; padding: var(--space-control); }
-.setup-services-components .ask-fields { display: block; }
-.setup-services-components .ask { min-width: 0; }
-.setup-services-feature-status { min-height: 1.45em; color: var(--muted); font-size: var(--text-body); line-height: var(--leading-body); }
-.setup-services-feature-copy { display: grid; gap: var(--space-row); }
-.setup-services-compact { container-type: inline-size; }
-@container (max-width: 32rem) {
-  .setup-services-components .setup-services-benefit { grid-template-columns: 4.5rem minmax(0, 1fr); grid-template-areas: "switch title" "switch copy"; align-items: start; gap: var(--space-row) var(--space-inline); }
-  .setup-services-components .setup-services-benefit > .ask { grid-area: switch; }
-  .setup-services-components .setup-services-benefit > h3 { grid-area: title; }
-  .setup-services-components .setup-services-feature-copy { grid-area: copy; }
-  .setup-services-components .setup-services-benefit h3, .setup-services-components .setup-services-benefit p { font-size: var(--text-body); }
-  .setup-services-step-action { min-width: 0; padding-inline: var(--space-control); font-size: var(--text-label); }
-}
-.campaign-installation-switch .ask-label { display: none; }
-.campaign-installation-switch .ask-stone { height: 2.25rem; }
-.campaign-installation-switch + .setup-hint { margin-top: calc(-1 * var(--space-row)); }
 .setup-answers { display: grid; gap: var(--space-paragraph); margin: 0; }
 .setup-answer { display: grid; grid-template-columns: 8.5rem minmax(0, 1fr); gap: var(--space-row) var(--space-inline); align-items: start; border-top: var(--edge-2) solid var(--line-2); background: var(--surface); padding: var(--space-inset); }
 .setup-answer[data-tone='ok'] { border-top-color: var(--ok-2); }
@@ -4296,28 +4097,9 @@ body {
 .setup-answer[data-tone='bad'] { border-top-color: var(--bad); }
 .setup-answer > dt { color: var(--fg-strong); font-size: var(--text-label); font-weight: var(--weight-strong); line-height: var(--leading-body); }
 .setup-answer > dd { display: grid; justify-items: start; gap: var(--space-paragraph); margin: 0; min-width: 0; }
-/* THE INTEGRATIONS PANEL (KAN-339; js/integrations-panel.js). */
-.integrations-heading { margin: var(--space-paragraph) 0 0; color: var(--fg-strong); font-size: var(--text-label); font-weight: var(--weight-strong); }
-.integrations-facts > .setup-answer > dd { overflow-wrap: anywhere; }
-.integrations-folds { display: grid; gap: var(--space-row); }
-.integrations-fold { border-top: var(--edge-2) solid var(--line-2); background: var(--surface); }
-.integrations-fold[data-keyed='true'] { border-top-color: var(--ok); }
-.integrations-fold > summary { cursor: pointer; padding: var(--space-inset); color: var(--fg-strong); }
-.integrations-fold-body { padding: 0 var(--space-inset) var(--space-inset); }
-.integrations-stones [data-keyed='true'] .sws-state { color: var(--ok); }
-/* MCP servers on the row (KAN-592): Campaigns ticked, the key's paste field, Sign in / Remove, Add. */
-.integrations-mcp, .integrations-add { display: grid; gap: var(--space-row); margin-top: var(--space-paragraph); }
-.integrations-campaigns { display: grid; gap: var(--space-row); margin: 0; padding: var(--space-inset); border: var(--edge-2) solid var(--line-2); }
-.integrations-campaigns > legend { color: var(--fg-strong); font-weight: var(--weight-strong); }
-.integrations-campaign-list { display: flex; flex-wrap: wrap; gap: var(--space-row) var(--space-paragraph); }
-.integrations-campaign { display: inline-flex; gap: 0.4em; align-items: center; }
-.integrations-campaigns > .wk-action { justify-self: start; }
-.integrations-hint, .integrations-paste-for { margin: 0; color: var(--muted); }
-.integrations-paste { display: grid; gap: var(--space-row); }
-.integrations-paste-entry { display: flex; gap: var(--space-row); align-items: center; }
-.integrations-paste-value { flex: 1; min-width: 0; }
-.integrations-said { margin: 0; overflow-wrap: anywhere; }
-.integrations-said:empty { display: none; }
+/* SETTINGS › INTEGRATIONS (KAN-857; js/integrations-panel.js): Model services' patterns (.model-services). */
+.integrations-facts { display: grid; gap: var(--space-row); min-width: 0; }
+.integrations-facts > p { margin: 0; overflow-wrap: anywhere; }
 .setup-hint { margin: 0; color: var(--muted); font-size: var(--text-body); line-height: var(--leading-body); }
 .setup-provider-stone[data-activated='true'] { border-color: var(--ok-2); }
 .setup-provider-notice { margin: 0; }
@@ -4340,7 +4122,7 @@ body {
 .setup-provider-models th { text-align: left; padding: var(--space-row) var(--space-inline); color: var(--muted); font-weight: var(--weight-strong); border-bottom: var(--edge) solid var(--line-2); }
 .setup-provider-models td { padding: var(--space-inline); vertical-align: top; border-bottom: var(--edge) solid var(--line); overflow-wrap: anywhere; }
 .setup-provider-models th:nth-child(2) { width: 40%; }
-.setup-provider-strengths { display: block; color: var(--muted); }
+.setup-provider-use-for { display: block; color: var(--muted); }
 .setup-provider-models td b { color: var(--fg-strong); font-weight: var(--weight-strong); }
 /* Two names per model: the CLI's own name in bold, the id every launch uses beneath it. */
 .setup-provider-model-id { display: block; margin-top: var(--space-row); color: var(--muted); font-family: var(--mono, monospace); font-size: var(--text-small); overflow-wrap: anywhere; }
@@ -4412,6 +4194,11 @@ body {
 .setup-steps-bar { --slab: 24px; --slab-w: 16px; --slab-gap: 2px; --slab-type: var(--text-body); --skew: -14deg; display: flex; align-items: center; flex: 0 0 auto; gap: var(--slab-gap); }
 .setup-steps-header { display: inline-flex; align-items: center; }
 .setup-steps-header[hidden] { display: none; }
+/* In the selector's dark header (Setup, owner 24 Nov): the marks take the header's ink, an open step
+   outlined in it, a done one filled kaki; the step Setup lands on outlined kaki. */
+.wk-surface-header .setup-steps-mark { border-color: color-mix(in srgb, var(--current-head-fg) 55%, transparent); color: var(--current-head-fg); }
+.wk-surface-header .setup-steps-mark[data-answered='true'] { border-color: var(--kaki-fill); background: var(--kaki-fill); color: var(--on-strong); }
+.wk-surface-header .setup-steps-mark[data-next='true'] { border-color: var(--kaki-lift); color: var(--kaki-lift); }
 .setup-scan[data-state='scanning'] .setup-scan-word { color: var(--kaki-fill); }
 .setup-scan[data-state='failed'] .setup-scan-word { color: var(--bad-soft); }
 .setup-scan-word:empty { display: none; }
@@ -4450,28 +4237,8 @@ body {
 .setup-steps-mark[data-answered='true'] { border-color: var(--kaki-fill); background: var(--kaki-fill); /* kaki: the action, or what needs you */ color: var(--on-strong); }
 /* The step Setup lands on: hollow, kaki-edged. Colour and edge, never an underline. */
 .setup-steps-mark[data-next='true'] { border-color: var(--kaki-fill); color: var(--kaki-fill); }
-
-/* THE DOOR BACK TO SETUP, at the head of Machine Settings. A selector card like any other,
-   so hover, focus ring and both densities come for free. The word sits left, the marks sit
-   right, on one row — they carry their own numbers, so nothing counts itself out in words. */
-.setup-return-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-inline); min-width: 0; }
-/* THE CARD'S OWN TWO SIZE STEPS, from signals the column already sends: the frame marks it
-   data-width='compact' below the selector slot's declared 176px (js/workbench.js), and the
-   density is the column's collapsed/expanded switch. Neither reaches the component. */
-[data-selector-density='thick'] .setup-return-card .setup-steps-bar { --slab: 28px; --slab-w: 20px; --slab-gap: 4px; --slab-type: var(--text-label); }
-.wk-layout-surface[data-width='compact'] .setup-return-card .setup-steps-bar { --slab: 20px; --slab-w: 13px; --slab-gap: 2px; --slab-type: var(--text-small); }
-/* THE NEXT STEP, NAMED, ON EVERY EXPANDED CARD. The name alone: a "Next:" label says what
-   the kaki-edged mark already says, and on a narrow column it ate the width the name needs.
-   It is deliberately not .wk-card-summary, which the collapsed density hides. */
-.setup-return-next { margin: var(--space-paragraph) 0 0; min-width: 0; color: var(--muted); font-size: var(--text-body); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-[data-selector-density='thin'] .setup-return-next { display: none; }
-/* COMPLETE IS TWO WORDS. No bar: five filled marks on a finished card say nothing the
-   sentence does not. The card also drops to the utility edge, so finished Setup stops
-   asking for attention without leaving the column. */
-.setup-return-done { color: var(--kaki-fill); }
 @media (max-width: 700px) {
   .setup-surface-body { padding: var(--space-paragraph) 0; }
-  .setup-services-benefit { grid-template-columns: 1fr; }
   .setup-answer { grid-template-columns: 1fr; }
 }
 
@@ -4794,20 +4561,71 @@ button.wk-card { cursor: pointer; }
   min-width: 0;
   color: var(--fg-strong);
   font-size: var(--text-label);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere; /* a name wraps in full, never cut short */
 }
-/* The Agent card's situation (KAN-665), as the desktop pill says it: the flagged look (⚑ and
-   amber), one Chat dot after the name while working (a hollow ring when just finished), muted
-   ink when stopped. */
-#phone .ph-agent.flagged {
+#phone .ph-card-key {
+  margin-top: var(--space-row);
+  color: var(--muted);
+  font-size: var(--text-label);
+}
+/* THE LIST'S QUESTIONS (Type · Kind · Sort): ERABI's stones, three across the phone's width. */
+#phone .ph-questions {
+  padding: var(--space-inline) var(--space-inline) 0;
+}
+#phone .ph-questions .ask-group { width: 100%; }
+#phone .ph-questions .ask-fields { flex-wrap: nowrap; }
+#phone .ph-questions .ask-fields > .ask-stone { flex: 1 1 0; width: auto; min-width: 0; }
+/* A group card (a Team, an Epic, a Workspace, or a situation) is today's Team card, pressed open
+   in place: its rows follow it, set in under it. */
+#phone .ph-group {
+  width: 100%;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+#phone .ph-group[aria-expanded='true'] { border-color: var(--kaki); }
+#phone .ph-row,
+#phone .ph-actions,
+#phone .ph-list > .ph-launch-form,
+#phone .ph-list > .ph-empty { margin-left: var(--space-subsection); }
+#phone .ph-actions {
+  display: flex;
+  gap: var(--space-row);
+}
+#phone .ph-action {
+  flex: 1;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: var(--edge) solid var(--line-2);
+  border-radius: var(--radius-small);
+  background: var(--surface);
+  color: var(--fg);
+  font: inherit;
+  font-size: var(--text-label);
+  text-decoration: none;
+  cursor: pointer;
+}
+#phone .ph-action:active {
+  background: var(--kaki); /* kaki: the action, or what needs you */
+  border-color: var(--kaki);
+  color: var(--on-strong);
+}
+/* The item screen: the desk's item reading, full width. */
+#phone .ph-item {
+  padding: var(--space-inline);
+}
+/* A row's situation (KAN-665), as the desktop pill says it: the flagged look (⚑ and amber), one
+   Chat dot after the name while working (a hollow ring when just finished), muted ink when
+   stopped. An item's row carries its holder's. */
+#phone .ph-row.flagged {
   border-color: color-mix(in srgb, var(--warn) 55%, transparent); /* status: a person is needed */
   background: color-mix(in srgb, var(--warn) 12%, transparent); /* status: a person is needed */
 }
-#phone .ph-agent.flagged :is(.ph-card-name, .ph-agent-flag, .home-job) { color: var(--warn); }
+#phone .ph-row.flagged :is(.ph-card-name, .ph-row-flag, .home-job) { color: var(--warn); }
 /* At the card's right edge, one column down the list (KAN-673). */
-#phone .ph-agent:is(.working, .ready) .ph-card-line::after {
+#phone .ph-row:is(.working, .ready) .ph-card-line::after {
   content: '';
   flex: none;
   align-self: center;
@@ -4818,8 +4636,8 @@ button.wk-card { cursor: pointer; }
   border-radius: 50%;
   background: var(--kaki); /* kaki: the Chat's working dot */
 }
-#phone .ph-agent.ready .ph-card-line::after { background: transparent; }
-#phone .ph-agent.stopped :is(.ph-card-name, .home-job) { color: var(--muted); }
+#phone .ph-row.ready .ph-card-line::after { background: transparent; }
+#phone .ph-row.stopped :is(.ph-card-name, .home-job) { color: var(--muted); }
 #phone .ph-empty {
   padding: var(--space-inset) var(--space-inset);
   color: var(--muted);
@@ -4848,25 +4666,10 @@ button.wk-card { cursor: pointer; }
   display: none;
 }
 
-#phone .ph-launch-open {
-  width: 100%;
-  min-height: 44px;
-  border: var(--edge) dashed var(--line-3);
-  border-radius: var(--radius-small);
-  background: transparent;
-  color: var(--muted);
-  font-size: var(--text-label);
-  cursor: pointer;
-}
-#phone .ph-launch-open:active {
-  border-color: var(--accent);
-  color: var(--accent);
-}
 #phone .ph-launch-form {
   display: flex;
   flex-direction: column;
   gap: var(--space-row);
-  margin-top: var(--space-row);
 }
 #phone .ph-launch-form[hidden] {
   display: none;
@@ -4913,7 +4716,7 @@ button.wk-card { cursor: pointer; }
 
 #phone .ph-bar .brand {
   display: inline-flex;
-  flex: 0 0 auto;
+  flex: 0 1 auto; /* a hosted office's long name wraps rather than push the bar's end off */
   align-items: center;
   gap: var(--space-inline);
   min-width: 0;
@@ -4928,46 +4731,23 @@ button.wk-card { cursor: pointer; }
   height: var(--bar-brand-mark-h);
 }
 #phone .ph-bar .brand-word {
+  min-width: 0;
+  overflow-wrap: anywhere;
   color: var(--fg-strong);
   font-size: var(--text-label);
   font-weight: var(--weight-strong);
 }
 
 /* THE FIRST FRAME shows the screen the address names (mobile.html reads its own hash in its
-   head): the mark and "Teams" at the front door, ‹ inside a Team or on a tile. The script's
-   first paint replaces these boot nodes with the real bar; the attribute stays, harmless. */
+   head): the mark at the front door, ‹ on Docs, an item or a tile. The script's first paint
+   replaces these boot nodes with the real bar; the attribute stays, harmless. */
 #phone .ph-bar [data-boot='inside'] { display: none; }
-html[data-screen='inside'] #phone .ph-bar [data-boot='teams'] { display: none; }
+html[data-screen='inside'] #phone .ph-bar [data-boot='list'] { display: none; }
 html[data-screen='inside'] #phone .ph-bar .ph-back[data-boot='inside'] { display: flex; }
 html[data-screen='inside'] #phone .ph-bar .ph-title[data-boot='inside'] { display: block; }
 
-/* The Team screen's two-way switch — Agents | Docs. One view at a time, never stacked. */
-#phone .ph-seg {
-  display: flex;
-  gap: var(--space-inline);
-  padding: var(--space-paragraph) var(--space-inline) 0;
-}
-#phone .ph-seg-item {
-  flex: 1;
-  min-height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: var(--edge) solid var(--line-2);
-  border-radius: var(--radius-small);
-  background: var(--surface);
-  color: var(--muted);
-  font-size: var(--text-label);
-  font-weight: var(--weight-strong);
-  text-decoration: none;
-}
-#phone .ph-seg-item[aria-current='page'] {
-  background: var(--selected); /* the one you are on, have chosen, or are dropping onto */
-  border-color: var(--kaki);
-  color: var(--fg-strong);
-}
 /* The shared docs shelf (docs.js) is `display: none` until a desktop pane shows it; here it
-   is the whole screen under the switch. */
+   is the whole screen. */
 #phone .ph-docs {
   display: flex;
   flex: 1;
@@ -4983,21 +4763,19 @@ html[data-screen='inside'] #phone .ph-bar .ph-title[data-boot='inside'] { displa
 }
 
 /* Desktop selector reference. Mobile actions use the existing composer keys row. */
-.terminal-hints { display: flex; flex-direction: column; flex: 0 0 auto; max-height: 70%; overflow-y: auto; margin: var(--space-row); font-family: var(--font-ui); font-size: var(--text-body); line-height: var(--leading-body); overflow-wrap: normal; }
-/* Hints: the title is the panel's header, a section names its rows, a row is a key and what it does */
-.terminal-hints summary { cursor: pointer; color: var(--fg-strong); font-size: var(--text-label); font-weight: var(--weight-strong); }
-.terminal-hints h3 { margin: 0; font-size: var(--text-heading); font-weight: var(--weight-bold); line-height: var(--leading-tight); color: var(--fg-strong); }
-.terminal-hints > details { flex: 0 0 auto; min-width: 0; margin-top: var(--space-subsection); padding: var(--space-inset); }
-.terminal-hints > h3 + details { margin-top: var(--space-paragraph); }
-.terminal-hints > details[open] > summary { margin-bottom: var(--space-paragraph); }
-.agent-vocabulary-hints[open] { flex: 0 1 auto; min-height: calc(1.5em + 2 * var(--space-inset)); overflow-y: auto; }
+.terminal-hints { display: flex; flex-direction: column; flex: 0 0 auto; max-height: 70%; overflow-y: auto; gap: var(--space-row); padding: 0 var(--space-inline) var(--space-inline); font-size: var(--text-label); font-weight: var(--weight-bold); overflow-wrap: normal; }
+/* Hints: in the selector pills' format (workspace-kit.css, thin .wk-card): every line in the pill heading's font, size and weight (w1022, w1032) */
+.terminal-hints h3, .terminal-hints summary { margin: 0; font-size: inherit; font-weight: inherit; color: var(--fg-strong); }
+.terminal-hints summary { cursor: pointer; }
+.terminal-hints > details { flex: 0 0 auto; min-width: 0; padding: var(--space-row) var(--space-inline); }
+.agent-vocabulary-hints[open] { flex: 0 1 auto; min-height: calc(1.5em + 2 * var(--space-row)); overflow-y: auto; }
 .agent-vocabulary-hints .terminal-hint-row strong { flex: 0 1 7rem; }
 .agent-vocabulary-hints .terminal-hint-row { border-top: var(--edge) solid var(--line); padding-top: var(--space-row); }
 .agent-vocabulary-hints .terminal-hint-row.session-create { border-top-color: var(--kaki); color: var(--kaki); }
 .agent-vocabulary-hints .terminal-hint-row.session-create strong { color: var(--kaki); }
 .agent-vocabulary-hints .terminal-hint-row span { flex-basis: 9rem; text-align: left; }
 .terminal-hint-row { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--space-row) var(--space-inline); margin-top: var(--space-row); color: var(--muted); }
-.terminal-hint-row strong { font-weight: var(--weight-strong); color: var(--fg-strong); }
+.terminal-hint-row strong { font-weight: inherit; color: var(--fg-strong); }
 .terminal-hint-row span { flex: 1 1 min-content; min-width: min-content; max-width: 100%; overflow-wrap: normal; text-align: right; }
 .terminal-copy-text { width: 100%; height: 50dvh; resize: vertical; font-family: var(--font-mono); white-space: pre; }
 
@@ -5156,27 +4934,151 @@ html[data-screen='inside'] #phone .ph-bar .ph-title[data-boot='inside'] { displa
 .hermes-field { display: grid; gap: var(--space-row); color: var(--muted); font-size: var(--form-note); }
 .hermes-field input, .hermes-field select { width: 100%; min-width: 0; min-height: var(--control-height); box-sizing: border-box; background: var(--inset); color: var(--fg); border: var(--edge) solid var(--line); border-radius: var(--radius-small); padding: var(--space-row) var(--space-control); font: inherit; font-size: var(--form-input); }
 .hermes-card p { overflow-wrap: anywhere; }
-
-.hermes-settings .wk-action { width: 140px; min-height: 40px; flex: 0 0 140px; }
-.hermes-settings .wk-action-bar { display: flex; flex-wrap: wrap; gap: var(--space-inline); }
-
-.hermes-card { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-inline) var(--space-control); }
 .hermes-card-summary { display: flex; flex: 1 1 16rem; flex-wrap: wrap; align-items: baseline; gap: var(--space-row) var(--space-inline); min-width: 0; }
 .hermes-card-summary span { color: var(--muted); overflow-wrap: anywhere; }
-.hermes-card .wk-action-bar { flex: 0 0 auto; }
-.hermes-card .wk-action { width: auto; flex: 0 0 auto; min-width: 4rem; }
+/* ERABI stones, one size (ask.css's 140-wide rectangle), one row per card or form. */
+.hermes-stones { display: flex; flex-wrap: wrap; align-items: stretch; gap: 8px; }
+.hermes-settings h3 { margin: 0; font-size: var(--text-label); color: var(--fg-strong); }
 
 /* THE AGENT HARNESS WORKBENCH'S ACCOUNTS AND MODELS TILESPACES (KAN-236): account cards in the Hermes card's
    shape, their two tick lists side by side, and the Models tilespace's sections. */
-.accounts-body, .models-records-body { display: grid; gap: var(--space-subsection); }
-.accounts-list { display: grid; gap: var(--space-inline); }
-.accounts-card { display: grid; gap: var(--space-inline); }
-.accounts-card[data-seeded="true"] .hermes-card-summary { color: var(--muted); }
-.accounts-lists { display: grid; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); gap: var(--space-control); }
-.accounts-list-block { display: grid; gap: var(--space-row); min-width: 0; }
-.accounts-ticks { display: grid; gap: var(--space-row); }
-.accounts-tick { display: flex; align-items: center; gap: var(--space-inline); font-size: var(--form-note); min-width: 0; }
-.accounts-tick span { overflow-wrap: anywhere; }
-.accounts-tick input { margin: 0; }
-.models-records-section { display: grid; gap: var(--space-inline); }
-.models-records-section h3 { margin: 0; }
+
+/* THE HARNESS STEP (setup-harness-surface.js): the prototype's thin bars, one per harness. */
+.setup-harness-body { display: flex; flex-direction: column; gap: 16px; padding: 4px 0; }
+.setup-harness-stack { display: flex; flex-direction: column; gap: 8px; max-width: 560px; }
+.setup-harness-bar { display: flex; flex-direction: column; gap: 10px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 4px; background: var(--surface); }
+.setup-harness-bar.selected { border-color: var(--kaki); box-shadow: inset 3px 0 var(--kaki); }
+.setup-harness-bar.signed:not(.selected) { box-shadow: inset 3px 0 var(--ok-2); }
+.setup-harness-top { display: flex; align-items: center; gap: 10px; width: 100%; border: 0; background: none; padding: 0; font: inherit; color: inherit; text-align: left; cursor: pointer; }
+.setup-harness-top:disabled { cursor: default; }
+.setup-harness-name b { display: block; font-size: 14px; font-weight: 600; color: var(--fg-strong); }
+.setup-harness-name small { display: block; font-size: 11px; color: var(--muted); margin-top: 2px; }
+.setup-harness-go { margin-left: auto; font-weight: 600; color: var(--link); }
+.setup-harness-bar.signed .setup-harness-go { color: var(--ok-2); }
+.setup-harness-top:disabled .setup-harness-go { color: var(--kaki); }
+.setup-harness-window { display: flex; flex-direction: column; gap: 10px; }
+.setup-harness-line { margin: 0; line-height: 1.5; }
+.setup-harness-line.bad { color: var(--kaki); }
+/* The Workspace step (setup-workspace-kickoff.js, KAN-809): the four doors; under them what a Workspace
+   is, or the open door's blanks with the form's rule beside them; what was made; the Workspaces line. */
+.setup-workspace-kickoff { display: flex; flex-direction: column; gap: var(--space-section); max-inline-size: 48rem; padding: var(--space-subsection); }
+.setup-workspace-blanks { display: flex; flex-direction: column; gap: var(--space-subsection); }
+.setup-workspace-blanks[data-door='open'] { padding-inline-start: var(--space-subsection); border-inline-start: 2px solid var(--line); }
+.setup-workspace-blanks > *, .setup-workspace-blanks .wk-field { margin: 0; }
+.setup-workspace-kickoff .wk-field { display: flex; flex-direction: column; gap: var(--space-paragraph); }
+.setup-workspace-kickoff .wk-field-description:empty, .setup-workspace-kickoff .ask-caption:empty { display: none; }
+.setup-workspace-question { display: flex; flex-direction: column; gap: var(--space-paragraph); }
+.setup-workspace-ask, .setup-workspace-about-title { margin: 0; color: var(--fg-strong); font-size: var(--form-key); font-weight: var(--weight-strong); }
+.setup-workspace-create { display: flex; justify-content: flex-start; }
+/* What a Workspace is (the owner's words): clear paragraphs, the heading close to its text. */
+.setup-workspace-about { display: flex; flex-direction: column; gap: var(--space-subsection); max-inline-size: 40rem; }
+.setup-workspace-about p { margin: 0; line-height: var(--leading-body); }
+.setup-workspace-about-title + p { margin-top: calc(var(--space-paragraph) * -1); }
+.setup-workspace-about + .ws-diagram { margin-top: calc(var(--space-section) - var(--space-subsection)); }
+/* The diagram (KAN-845): illustrative, said so, never pressable, in the page's tokens. */
+.ws-diagram { margin: 0; display: flex; flex-direction: column; gap: var(--space-inline); max-inline-size: 40rem; }
+.ws-diagram small, .ws-diagram figcaption { color: var(--muted); font-size: var(--text-small); }
+.ws-diagram-office { display: flex; flex-direction: column; gap: var(--space-control); padding: var(--space-control); border: var(--edge) dashed var(--line-2); border-radius: var(--radius-small); background: var(--inset); }
+.ws-diagram-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-inline); color: var(--fg-strong); }
+.ws-diagram-example { padding: 2px var(--space-inline); border-radius: var(--radius-small); background: var(--kaki-fill); color: var(--kaki-fill-ink); font-size: var(--text-small); font-weight: var(--weight-strong); text-transform: uppercase; letter-spacing: var(--tracking-wide); }
+.ws-diagram-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-inline); }
+.ws-diagram-ws { padding: var(--space-row) var(--space-inline); border: var(--edge) solid var(--line-2); border-radius: var(--radius-small); background: var(--surface); }
+.ws-diagram-ws.open { border-color: var(--kaki); background: var(--selected); }
+.ws-diagram-choose, .ws-diagram-objective { margin: 0; }
+.ws-diagram-objective { color: var(--fg-strong); }
+.ws-diagram-detail { display: flex; flex-direction: column; gap: var(--space-control); padding: var(--space-control); border: var(--edge) solid var(--kaki); border-radius: var(--radius-small); background: var(--surface); }
+.ws-diagram-detail > small + .ws-diagram-objective { margin-top: calc(var(--space-row) * -1); }
+.ws-diagram-places { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-inline); }
+.ws-diagram-places > span { padding: var(--space-row) var(--space-inline); border: var(--edge) solid var(--line-2); border-radius: var(--radius-small); text-align: center; }
+.ws-diagram-agents { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-inline); }
+.ws-diagram-agents > small { flex-basis: 100%; }
+.ws-diagram-agents > span { padding: 0 var(--space-inline); border: var(--edge) solid var(--line-2); border-radius: var(--radius-small); }
+/* The phone keeps the three on one row, compact (system_lead, 25 Nov). */
+@media (max-width: 600px) {
+  .ws-diagram-ws { padding: var(--space-row); }
+  .ws-diagram-places { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+/* What was made, then the Workspaces line under a rule, its own section. */
+.setup-workspace-made, .setup-workspace-bad, .setup-workspace-yours { margin: 0; }
+.setup-workspace-bad { color: var(--bad); }
+.setup-workspace-foot { display: flex; flex-direction: column; gap: var(--space-subsection); margin-top: var(--space-subsection); padding-top: var(--space-subsection); border-top: var(--edge) solid var(--line); }
+.setup-workspace-done:empty, .setup-workspace-foot:empty { display: none; }
+.setup-workspace-link { background: none; border: 0; padding: 0; color: var(--link); text-decoration: underline; cursor: pointer; font: inherit; }
+.setup-harness-link { color: var(--link); word-break: break-all; }
+.setup-harness-row { display: flex; flex-wrap: wrap; align-items: stretch; gap: 8px; }
+/* ERABI stones of one size: each 140 wide (ask.css), a long name on two lines, every stone in a row the same height. */
+.setup-harness-code { font-family: var(--font-mono); font-size: 18px; font-weight: 600; letter-spacing: .08em; color: var(--fg-strong); }
+.setup-harness-input { flex: 1 1 180px; min-width: 0; }
+.setup-harness-terminal { min-height: 320px; }
+.setup-harness-note { margin: 0; font-size: 12px; line-height: 1.5; color: var(--muted); }
+/* Hermes's two steps (form-steps.js) span the bar; the adding row is dashed, the same shape as a row it adds. */
+.hermes-settings .fs-step > .fs-step-body, .hermes-settings .fs-step:has(> .fs-step-head.fs-togglable) > .fs-step-body { grid-column: 1 / -1; }
+.hermes-settings .fs-step { grid-template-columns: minmax(0, 1fr); }
+.hermes-fine { font-size: 12px; }
+/* Hermes's lists are tables (owner, 25 Nov 2026): one row each, icons on the right, one Add line. */
+.hermes-table { width: 100%; border-collapse: collapse; }
+.hermes-table :is(th, td) { padding: 6px 8px; text-align: left; vertical-align: middle; overflow-wrap: break-word; }
+.hermes-options { display: grid; gap: 8px; }
+.hermes-table :is(th, td):first-child { padding-left: 0; }
+.hermes-table thead th { color: var(--muted); font-weight: normal; border-bottom: var(--edge) solid var(--line-2); }
+.hermes-table tbody th { color: var(--fg-strong); font-weight: var(--weight-strong); }
+.hermes-table tbody td { color: var(--fg); }
+.hermes-table tbody tr + tr :is(th, td) { border-top: var(--edge) solid var(--line); }
+.hermes-tools { width: 1%; white-space: nowrap; text-align: right; }
+.hermes-icon { display: inline-grid; place-items: center; width: 28px; height: 28px; padding: 0; border: 0; border-radius: var(--radius-small); background: none; color: var(--muted); cursor: pointer; }
+.hermes-icon:hover, .hermes-icon:focus-visible { background: var(--inset); color: var(--fg-strong); }
+.hermes-icon svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.hermes-add-line { padding: 0; border: 0; background: none; color: var(--link); font: inherit; cursor: pointer; }
+.hermes-add-line:hover { text-decoration: underline; }
+.hermes-add-line:disabled { color: var(--muted); cursor: default; text-decoration: none; }
+.hermes-add-note { margin-left: 8px; color: var(--muted); }
+/* Settings v2 Model services (KAN-870): the intro, the pick row, the form and the table are sections
+   spaced alike; every field is one height; headings sit on their content. */
+.model-services-body { display: grid; gap: var(--space-subsection); padding: var(--space-inset) 0; min-width: 0; }
+.model-services-body > p, .model-services h3 { margin: 0; }
+.model-services-models { display: grid; gap: var(--space-paragraph); min-width: 0; }
+.model-services .hermes-editor, .model-services-form { display: grid; gap: var(--space-paragraph); min-width: 0; }
+.model-services .fs-step-body > p { margin: 0; }
+/* In a narrow reading (a tile, a phone) each section stacks, its body under its name, as on Work items;
+   the three tabs stay on one row. */
+.model-services { container: model-services / inline-size; }
+.model-services .setup-hermes-sources { grid-template-columns: repeat(auto-fit, minmax(88px, 1fr)); }
+@container model-services (max-width: 32rem) {
+  .model-services .fs-step { grid-template-columns: minmax(0, 1fr); }
+  .model-services .fs-step > .fs-step-body, .model-services .fs-step:has(> .fs-step-head.fs-togglable) > .fs-step-body { grid-column: 1; }
+}
+.model-services .hermes-field :is(input, select) { height: var(--control-height); min-height: 0; }
+.model-services .wk-action-bar { margin: 0; }
+/* The table pattern (data-table.js): a row's presses are links, spaced like words. */
+.data-table-link + .data-table-link { margin-left: var(--space-inline); }
+.data-table .hermes-add .hermes-add-note { margin-left: 0; }
+/* Tables stacked on one page line up: the name column is the same width in each. */
+.data-table { table-layout: fixed; }
+.data-table thead th:first-child { width: 40%; }
+.data-table thead th.hermes-tools { width: 8.5rem; }
+.data-table-link { justify-self: start; text-align: left; }
+/* The harness page's two-tier model picker: the service stones, then a table per service on. */
+.harness-models, .harness-models-body { display: grid; gap: var(--space-paragraph); min-width: 0; }
+.harness-models-body > p { margin: 0; }
+.harness-models-service { margin: var(--space-row) 0 0; color: var(--fg-strong); font-size: var(--text-body); font-weight: var(--weight-strong); }
+/* A row that is off reads muted. */
+.data-table tr.data-table-off :is(th, td):not(.hermes-tools) { color: var(--muted); font-weight: normal; }
+@media (max-width: 560px) {
+  .data-table thead th:first-child { width: 32%; }
+  .data-table thead th.hermes-tools { width: 6.25rem; }
+  /* A row's presses wrap under each other rather than run past the card. */
+  .data-table td.hermes-tools { white-space: normal; }
+  .data-table td.hermes-tools .data-table-link { display: block; margin-left: auto; }
+}
+/* The four ways: four equal stones across the bar, two by two when narrow. */
+.setup-harness-row.setup-harness-ways { display: grid; grid-template-columns: repeat(auto-fit, minmax(112px, 1fr)); }
+.setup-harness-ways .ask-rect { width: auto; flex: none; }
+.setup-harness-ways .ask-opt:disabled { opacity: .6; cursor: default; }
+/* Hermes's Ronin Gateway on the Settings page: always there, ticked, nothing to press. */
+.hermes-fixed { pointer-events: none; }
+/* The model service open on the Hermes bar: filled, so it reads at a glance in both themes (owner, 26 Nov 2026). */
+.setup-hermes-sources .ask-opt[aria-selected='true'] { background: var(--kaki-fill); border-color: var(--kaki-fill); color: var(--kaki-fill-ink); }
+.setup-hermes-sources .ask-opt[aria-selected='true'] .hermes-tick { color: var(--kaki-fill-ink); }
+/* Available, not selected: a tick in the stone, never the kaki selected mark (owner, 25 Nov 2026). */
+.ask-opt .hermes-tick { color: var(--ok); font-weight: var(--weight-strong); margin-right: 6px; }
+.ask-opt:has(> .hermes-tick) { flex-direction: row; align-items: center; justify-content: flex-start; }

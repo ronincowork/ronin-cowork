@@ -1,9 +1,10 @@
 /* /api/work-items* — the one door to the work item store (src/work-items.ts), and the
  * `item` tool's (ronin_bin/item): every act names its item. Every write acknowledges with
  * the item as it now is and the trail line it appended; the caller reads that before its
- * next act. The refusals (409): nothing goes below -1 ("w39 can't go there."), and what Jira
- * itself would refuse on a connected campaign. */
+ * next act. The kind follows the parent (place). The refusals (409): anything under a Subtask,
+ * an item under itself or its own descendant, and what Jira cannot do to a paired item. */
 import type express from 'express';
+import { initialCampaignId } from '../campaign-scope.js';
 import {
   WorkItemBadInput, WorkItemMissing, WorkItemRefused,
   addComment, attachDoc, connectionOf, createItem, deleteItem, editComment, editItem, archiveHeldDone, archiveItem, flagItem, handoffItem, reviewPrompt, handoverItem, holderLabel, holdersOf, linkItem, listItems, markOnDev, nextStep, parentHint, readItem, resolveId, sendBack, watchItem, watchedIds,
@@ -33,6 +34,22 @@ export const acknowledge = (res: express.Response, done: Acknowledged, extra: Re
       + (typeof extra.prompt === 'string' && extra.prompt ? `\n${extra.prompt}` : ''),
   });
 
+/** Several in one call (several ids, or create's several titles): each in turn, one reply line
+ * each, its acknowledgement or "<what>: <why not>". All failed: the tool's error path (409).
+ * Some failed: ok false, and the tool exits 4 after printing every line. Each answer done
+ * carries the item as it now is, its id the item's (a create's key is its title), so
+ * `item ... --json` gives a script every id (w995). */
+async function eachAnswering(res: express.Response, keys: string[], run: (key: string) => Promise<{ acknowledgement: string; item?: WorkItem }>): Promise<void> {
+  const answers: Array<{ id: string; ok: boolean; acknowledgement?: string; error?: string; item?: WorkItem }> = [];
+  for (const key of keys) {
+    try { const { acknowledgement, item } = await run(key); answers.push({ id: item?.id ?? key, ok: true, acknowledgement, ...(item ? { item } : {}) }); }
+    catch (error) { answers.push({ id: key, ok: false, error: String((error as Error)?.message ?? error) }); }
+  }
+  const said = answers.map((one) => one.ok ? one.acknowledgement : `${one.id}: ${one.error}`).join('\n');
+  if (answers.every((one) => !one.ok)) { res.status(409).json({ ok: false, refused: true, answers, error: said }); return; }
+  res.json({ ok: answers.every((one) => one.ok), answers, acknowledgement: said });
+}
+
 export function answerError(res: express.Response, error: unknown): void {
   const message = String((error as Error)?.message ?? error);
   if (error instanceof WorkItemRefused) res.status(409).json({ ok: false, refused: true, error: message });
@@ -41,11 +58,14 @@ export function answerError(res: express.Response, error: unknown): void {
   else res.status(500).json({ ok: false, error: message });
 }
 
-/** A holder is named as { team } or { session }. */
-export function holderFrom(body: Record<string, unknown> | undefined): Holder {
+/** A holder is named as { team }, { session } or { workspace } (w926: a Workspace holds its own
+ * open items as it holds its Icebox; the namer names it, nothing is inferred). */
+export async function holderFrom(body: Record<string, unknown> | undefined): Promise<Holder> {
   const team = text(body?.team)?.trim();
   const session = text(body?.session)?.trim();
-  if (Boolean(team) === Boolean(session)) throw new WorkItemBadInput('name the holder as team or session, one of them.');
+  const workspace = text(body?.workspace)?.trim();
+  if ([team, session, workspace].filter(Boolean).length !== 1) throw new WorkItemBadInput('name the holder as team, session or workspace, one of them.');
+  if (workspace) return { kind: 'workspace', name: workspace, campaign: await initialCampaignId() };
   return team ? { kind: 'team', name: team } : { kind: 'agent', name: session!.replace(/^agent:/, '') };
 }
 
@@ -131,11 +151,16 @@ export function registerWorkItems(app: express.Express): void {
   app.post('/api/work-items', guarded(async (req, res) => {
     const b = req.body ?? {};
     // { playbook: true } (--playbook): a new playbook; one made under a playbook item is one too.
-    const done = await createItem({
-      title: text(b.title) ?? '', objective: text(b.objective), status: text(b.status), kind: text(b.kind), priority: text(b.priority), parent: text(b.parent) || null,
-      ...(b.team || b.session ? { holder: holderFrom(b) } : {}),
+    // { titles: [...] } (--title, several times): one item each, the rest of the body shared,
+    // one reply line each (owner, 2026-11-25).
+    const make = async (title: string) => createItem({
+      title, objective: text(b.objective), status: text(b.status), kind: text(b.kind), priority: text(b.priority), parent: text(b.parent) || null,
+      ...(b.team || b.session || b.workspace ? { holder: await holderFrom(b) } : {}),
       playbook: b.playbook === true || b.playbook === 'true',
     }, callerOf(req));
+    const titles = Array.isArray(b.titles) ? (b.titles as unknown[]).map((one) => String(one)) : null;
+    if (titles && titles.length > 1) return eachAnswering(res, titles, async (title) => { const done = await make(title); return { acknowledgement: didLine(done), item: done.item }; });
+    const done = await make(titles?.[0] ?? text(b.title) ?? '');
     const hint = parentHint(done.item);
     acknowledge(res, done, hint ? { prompt: hint } : {});
   }));
@@ -160,25 +185,30 @@ export function registerWorkItems(app: express.Express): void {
     res.json({ ok: true, cards: await epicCards(id) });
   }));
 
-  app.put('/api/work-items/:id', guarded(async (req, res) => {
-    const b = req.body ?? {};
-    if (b.jiraFields !== undefined) throw new WorkItemRefused('jiraFields are Jira\'s, read only: the bridge sets them.');
-    const external = Object.fromEntries((['trello', 'github'] as const).filter((key) => b[key] !== undefined).map((key) => [key, text(b[key]) ?? '']));
-    acknowledge(res, await editItem(req.params.id, {
-      title: text(b.title), objective: text(b.objective), kind: text(b.kind), priority: text(b.priority),
-      ...(b.parent !== undefined ? { parent: parentOf(b.parent) } : {}),
-      ...(Object.keys(external).length ? { external } : {}),
-      ...(b.jira !== undefined ? { jira: jiraOf(b.jira) } : {}),
-    }, callerOf(req), text(b.note)));
-  }));
-
-  // THE ACTS THAT TAKE SEVERAL IDS (docs/using-ronin/work-items.md): transition, handoff, handover, archive,
-  // watch, unwatch, flag, unflag, delete. Each is one function of (id, body, caller) answering
-  // its acknowledgement; POST /api/work-items/:id/<act> (DELETE /api/work-items/:id) runs it on
-  // one item, POST /api/work-items/many/<act> { ids } on each in turn, every id answering.
+  // THE ACTS THAT TAKE SEVERAL IDS (docs/using-ronin/work-items.md; owner, 2026-11-25): every act
+  // but link (one item to another). Each is one function of (id, body, caller) answering its
+  // acknowledgement; POST /api/work-items/:id/<act> (PUT /api/work-items/:id for edit, DELETE
+  // for delete) runs it on one item, POST /api/work-items/many/<act> { ids } on each in turn,
+  // every id answering.
   type Act = (id: string, b: Record<string, unknown>, by: string) => Promise<{ acknowledgement: string; done?: Acknowledged; extra?: Record<string, unknown> }>;
   const acted = (done: Acknowledged) => ({ acknowledgement: didLine(done), done });
   const acts: Record<string, Act> = {
+    edit: async (id, b, by) => {
+      if (b.jiraFields !== undefined) throw new WorkItemRefused('jiraFields are Jira\'s, read only: the bridge sets them.');
+      const external = Object.fromEntries((['trello', 'github'] as const).filter((key) => b[key] !== undefined).map((key) => [key, text(b[key]) ?? '']));
+      return acted(await editItem(id, {
+        title: text(b.title), objective: text(b.objective), kind: text(b.kind), priority: text(b.priority),
+        ...(b.parent !== undefined ? { parent: parentOf(b.parent) } : {}),
+        ...(Object.keys(external).length ? { external } : {}),
+        ...(b.jira !== undefined ? { jira: jiraOf(b.jira) } : {}),
+      }, by, text(b.note)));
+    },
+    // { text } adds one; { edit: n, text } changes comment n, as Jira's comment edit.
+    comment: async (id, b, by) => {
+      const n = text(b.edit);
+      return acted(n ? await editComment(id, Number(n), text(b.text) ?? '', by) : await addComment(id, text(b.text) ?? '', by));
+    },
+    attach: async (id, b, by) => acted(await attachDoc(id, text(b.path) ?? '', by, b.remove === true || b.remove === 'true')),
     // Jira's transition: any status to any status, one trail line. Edit does not set it.
     transition: async (id, b, by) => {
       const status = text(b.status)?.trim();
@@ -196,11 +226,11 @@ export function registerWorkItems(app: express.Express): void {
     handoff: async (id, b, by) => {
       const named = text(b.from)?.trim();
       const from: Holder | undefined = named ? (named.startsWith('team:') ? { kind: 'team', name: named.slice(5) } : { kind: 'agent', name: named.replace(/^agent:/, '') }) : undefined;
-      return acted(await handoffItem(id, holderFrom(b), by, { from, keepHolding: b.keep_holding === true || b.keep_holding === 'true', note: text(b.note) }));
+      return acted(await handoffItem(id, await holderFrom(b), by, { from, keepHolding: b.keep_holding === true || b.keep_holding === 'true', note: text(b.note) }));
     },
     // The handover: { note } where it stands and what is next, the caller off and the receiver
     // on, the status kept; { to_do } puts it back to To Do too; { flag } the question for the lead.
-    handover: async (id, b, by) => acted(await handoverItem(id, holderFrom(b), by, {
+    handover: async (id, b, by) => acted(await handoverItem(id, await holderFrom(b), by, {
       note: text(b.note), flag: text(b.flag), toDo: b.to_do === true || b.to_do === 'true',
     })),
     // Archive now: a Done item off every list at once, as the five-day sweep does (archiveItem).
@@ -217,7 +247,7 @@ export function registerWorkItems(app: express.Express): void {
   // takes it off; no hold changes, no trail line.
   for (const [verb, watch] of [['watch', true], ['unwatch', false]] as const) {
     acts[verb] = async (given, b, by) => {
-      const watcher = b.team || b.session ? holderFrom(b) : { kind: 'agent', name: by } as const;
+      const watcher = b.team || b.session || b.workspace ? await holderFrom(b) : { kind: 'agent', name: by } as const;
       const { id, watches } = await watchItem(given, watcher, watch);
       const list = watches.length ? watches.join(', ') : 'nothing';
       return { extra: { watches }, acknowledgement: watcher.kind === 'agent' && watcher.name === by
@@ -248,15 +278,7 @@ export function registerWorkItems(app: express.Express): void {
     const ids = Array.isArray(req.body?.ids) ? (req.body.ids as unknown[]).map((id) => String(id).trim()).filter(Boolean) : [];
     if (!ids.length) throw new WorkItemBadInput('name the items as { ids: [...] }.');
     const by = callerOf(req);
-    const answers: Array<{ id: string; ok: boolean; acknowledgement?: string; error?: string }> = [];
-    for (const id of ids) {
-      try { answers.push({ id, ok: true, acknowledgement: (await act(id, req.body ?? {}, by)).acknowledgement }); }
-      catch (error) { answers.push({ id, ok: false, error: String((error as Error)?.message ?? error) }); }
-    }
-    const said = answers.map((one) => one.ok ? one.acknowledgement : `${one.id}: ${one.error}`).join('\n');
-    // Every id failed: the tool's error path. Some failed: the answer says which, line by line.
-    if (answers.every((one) => !one.ok)) return res.status(409).json({ ok: false, refused: true, answers, error: said });
-    res.json({ ok: answers.every((one) => one.ok), answers, acknowledgement: said });
+    await eachAnswering(res, ids, async (id) => { const { acknowledgement, done } = await act(id, req.body ?? {}, by); return { acknowledgement, item: done?.item }; });
   }));
   for (const [verb, act] of Object.entries(acts)) {
     const handler = guarded(async (req, res) => {
@@ -265,6 +287,7 @@ export function registerWorkItems(app: express.Express): void {
       else res.json({ ok: true, ...extra, acknowledgement });
     });
     if (verb === 'delete') app.delete('/api/work-items/:id', handler);
+    else if (verb === 'edit') app.put('/api/work-items/:id', handler);
     else app.post(`/api/work-items/:id/${verb}`, handler);
   }
   // The promotion marks a carried item on dev (docs/using-ronin/running-work-items.md, Three signals): { promotion }, no status change.
@@ -290,19 +313,9 @@ export function registerWorkItems(app: express.Express): void {
     const { epic, made } = await checkoutPlaybook(req.params.id!, to.startsWith('team:') ? { kind: 'team', name: to.slice(5) } : { kind: 'agent', name: to.replace(/^agent:/, '') }, by);
     res.json({ ok: true, item: epic, made, acknowledgement: `checked out ${req.params.id} as ${epic.id} (${made.length} items), held by ${to}. Read it: item read ${epic.id}` });
   }));
-  app.post('/api/work-items/:id/attach', guarded(async (req, res) => {
-    const remove = req.body?.remove === true || req.body?.remove === 'true';
-    acknowledge(res, await attachDoc(req.params.id, text(req.body?.path) ?? '', callerOf(req), remove));
-  }));
   app.post('/api/work-items/:id/link', guarded(async (req, res) => {
     const remove = req.body?.remove === true || req.body?.remove === 'true';
     acknowledge(res, await linkItem(req.params.id, text(req.body?.type)?.trim() ?? '', text(req.body?.to)?.trim() ?? '', callerOf(req), remove));
-  }));
-  app.post('/api/work-items/:id/comment', guarded(async (req, res) => {
-    // { text } adds one; { edit: n, text } changes comment n, as Jira's comment edit.
-    const n = text(req.body?.edit);
-    acknowledge(res, n ? await editComment(req.params.id, Number(n), text(req.body?.text) ?? '', callerOf(req))
-      : await addComment(req.params.id, text(req.body?.text) ?? '', callerOf(req)));
   }));
 
   // Anything else under /api/work-items names no item (an id like surface/7 is not one):

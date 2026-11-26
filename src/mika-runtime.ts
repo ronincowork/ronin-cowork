@@ -1,8 +1,8 @@
 import { chmod, lstat, mkdir, readFile, realpath, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { REPO_ROOT, storeDir } from './resources.js';
-import { TIERS, listSessionLaunchSpecs, type ProviderSummary, type SessionLaunchSpec, type Tier } from './model-providers.js';
-import { readProviderSummary } from './provider-summary.js';
+import { TIERS, listSessionLaunchSpecs, type HarnessSummary, type SessionLaunchSpec, type Tier } from './harness-catalog.js';
+import { readHarnessSummary } from './harness-summary.js';
 import { readAgentsSection } from './machine-state.js';
 
 export const MIKA_LEVELS = TIERS;
@@ -53,16 +53,16 @@ const orderedLevels = (specs: readonly SessionLaunchSpec[]): MikaLevel[] =>
  */
 export function resolveMikaModel(input: {
   level: MikaLevel;
-  generalProvider?: string;
+  generalHarness?: string;
   specs: readonly SessionLaunchSpec[];
-  summary: ProviderSummary | null;
+  summary: HarnessSummary | null;
 }): MikaSelection {
   const { level, specs, summary } = input;
-  if (!summary) throw new MikaUnavailable('mika_provider_unmeasured', 'Provider readiness has not been measured. Check Model providers before Mika can start.', [], level);
+  if (!summary) throw new MikaUnavailable('mika_provider_unmeasured', 'Provider readiness has not been measured. Check Harnesses before Mika can start.', [], level);
   const operational = new Set(summary.operational);
   const eligible = specs.filter((spec) => operational.has(spec.cli));
-  if (!eligible.length) throw new MikaUnavailable('mika_no_ready_provider', 'Mika needs a signed-in model provider. Open Model providers.', [], level);
-  const general = input.generalProvider ?? '';
+  if (!eligible.length) throw new MikaUnavailable('mika_no_ready_provider', 'Mika needs a signed-in harness. Open Harnesses.', [], level);
+  const general = input.generalHarness ?? '';
   const generalReady = !!general && eligible.some((spec) => spec.provider === general);
   const provider = generalReady ? general : eligible[0].provider;
   const within = eligible.filter((spec) => spec.provider === provider);
@@ -99,7 +99,7 @@ export async function resolveConfiguredMikaModel(): Promise<MikaSelection> {
   const legacy = jobs.mikaassist && typeof jobs.mikaassist === 'object'
     ? jobs.mikaassist as Record<string, unknown>
     : jobs.mika && typeof jobs.mika === 'object' ? jobs.mika as Record<string, unknown> : {};
-  const summary = await readProviderSummary();
+  const summary = await readHarnessSummary();
   const specs = await listSessionLaunchSpecs(summary);
   let level = mikaLevelFromAgents(agents);
   if (legacy.level === undefined && (legacy.provider !== undefined || legacy.model !== undefined)) {
@@ -109,7 +109,7 @@ export async function resolveConfiguredMikaModel(): Promise<MikaSelection> {
   }
   return resolveMikaModel({
     level,
-    generalProvider: typeof dflt.provider === 'string' ? dflt.provider : '',
+    generalHarness: typeof dflt.provider === 'string' ? dflt.provider : '',
     specs,
     summary,
   });
@@ -121,7 +121,7 @@ export const mikaStartHereSource = (): string => path.join(REPO_ROOT, 'ronin_sto
 /** What she is TOLD at birth, one line each; the long reading is in her birth brief. */
 export const MIKA_PROMPTS = {
   help: 'The owner opened Help without asking anything yet. Say hello in one line, say what you can do, and wait.',
-  setup_provider_ready: 'The owner just signed in their first model provider on Ronin Setup. Follow the Setup walkthrough in your birth brief, starting with its first question.',
+  setup_provider_ready: 'The owner just signed in their first harness on Ronin Setup. Follow the Setup walkthrough in your birth brief, starting with its first question.',
 } as const;
 export const mikaStartHerePath = (): string => path.join(mikaHomeDir(), 'START_HERE.md');
 

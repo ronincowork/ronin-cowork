@@ -111,6 +111,14 @@ function mandateLines(row: InPlay): string[] {
   return row.depth === 'full' && strip(row.file.body) ? [line, '', nested(row.file.body), ''] : [line];
 }
 
+/** A mandate in an update: name the axis and value before its order, so the change is legible. */
+function mandateChangeLines(row: InPlay): string[] {
+  const axis = row.file.mandate[0].toUpperCase() + row.file.mandate.slice(1);
+  const order = row.file.seed && row.file.seed !== row.title ? ` — ${row.file.seed}` : '';
+  const line = `- ${axis}: ${row.title}${order}`;
+  return row.depth === 'full' && strip(row.file.body) ? [line, '', nested(row.file.body), ''] : [line];
+}
+
 export function renderBrief(name: string, record: BriefRecord, resolved: Resolved): string {
   const out: string[] = [`# Brief — ${name}`, ''];
   if (resolved.facts.length) {
@@ -141,7 +149,7 @@ const toldRows = (r: Resolved): InPlay[] => [...r.facts, ...r.mandates, ...r.beh
 /** What a behaviour, mandate or tool says in a brief at its depth: the lines an update sends. */
 function saidLines(row: InPlay): string[] {
   if (row.kind === 'tools') return toolLines(row);
-  if (row.file.mandate) return [...mandateLines(row), ''];
+  if (row.file.mandate) return [...mandateChangeLines(row), ''];
   return [`### ${row.title}`, row.depth === 'full' ? nested(row.file.body) : seedText(row), ''];
 }
 

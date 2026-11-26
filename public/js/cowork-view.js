@@ -59,8 +59,8 @@ export function createCoworkView(options = {}) {
     count: 2, selected: 'workspace1',
     seats: { workspace1: { type: WB_TYPES.commons, tab: 'team-configuration' }, workspace2: DISMISSED_WORKSPACE },
   } });
-  const deskDefaultsRequest = () => ({ destination: 'campaign', mode: 'replace', state: {
-    count: 2, selected: 'workspace1', seats: { workspace1: 'campaign.defaults', workspace2: 'setup.launch-own' },
+  const deskDefaultsRequest = () => ({ destination: 'settings2', mode: 'replace', state: {
+    count: 1, selected: 'workspace1', seats: { workspace1: 'settings2.agent-defaults' },
   } });
   const root = el('main', 'tw-view');
   let ctx = null;
@@ -216,7 +216,7 @@ export function createCoworkView(options = {}) {
   // answer; the form, session-type choices and launch path are otherwise identical.
   const newAgentBySeat = {};
   // carried Campaign identity, Project roots and Templates behind a tab strip here; those
-  // are Campaign-level and are now surfaces of Campaign Manage (js/campaign-view.js).
+  // are office-level and live in Settings (js/settings-v2-view.js).
   // The Team roster stayed — a Cowork is not Campaign configuration — and is its own
   // surface rather than the one tab left in a strip.
   const teamRosterBySeat = campaign ? Object.fromEntries(Object.keys(seats)
@@ -775,7 +775,7 @@ export function createCoworkView(options = {}) {
     el: root, glyph: campaign ? '⛩' : '人', ...workbenchView(campaign ? 'cowork' : 'team'),
     // The ViewHost draws the Kit's layout map in the bar for this while the view is active.
     arrangement: bench.arrangement,
-    // The crumb's last step on a Team page: RoninCowork • Home • Teams • <Team title> (owner, 2026-10-20).
+    // The crumb's last step on a Team page: <brand> • Home • Teams • <Team title> (owner, 2026-10-20).
     place: () => campaign ? '' : readableTeam(team),
     // The owner's per-tab name; Teams defaults to its page name, a Team to the Team name.
     title: ({ param, viewState }) => {
