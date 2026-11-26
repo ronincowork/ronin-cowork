@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# harness — sign a harness in without a terminal (owner, 24 Nov; samurai_lab/wip/SETUP_HARNESS.md):
+# harness — sign a harness in without a terminal (owner, 24 Nov; docs/architecture/setup-workbench.md "Harnesses"):
 # Ronin runs the CLI's own login for the way chosen and the Helpful Assistant hears how it ends.
 # Over the Harness page's own routes: /api/setup/sign-in, /api/setup/harnesses/<id>/sign-in.
 . "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/tool-count.sh" harness "$@"

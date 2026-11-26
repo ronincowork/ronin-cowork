@@ -323,7 +323,7 @@ function createLaunchOwnSurface(context) {
   return { el: out.el, destroy: () => stones.destroy() };
 }
 
-// STEP 3, TEAM (w926; SETUP_SWEEP.md §7): the ordinary New Team form, started in a Workspace;
+// STEP 3, TEAM (w926; docs/architecture/setup-workbench.md): the ordinary New Team form, started in a Workspace;
 // the lead builds out the rest. Ticked when a Team has a live lead (teams_agents).
 function createTeamSurface() {
   const out = surface(t('setup_surface.team', 'Start a Team'));

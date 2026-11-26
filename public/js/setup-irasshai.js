@@ -1,6 +1,6 @@
 /* part of the ronin-cowork client — see js/README.md */
 /**
- * THE HELPFUL ASSISTANT IS SETUP'S ASK RONIN PANEL (owner, 2026-11-24; w926; samurai_lab/wip/SETUP_SWEEP.md §7).
+ * THE HELPFUL ASSISTANT IS SETUP'S ASK RONIN PANEL (owner, 2026-11-24; w926; docs/architecture/setup-workbench.md).
  * Irasshai is an ordinary session type whose behaviour is her prompt (Ronin Services, docs/irasshai.md).
  * Hosted, Setup's Workspace 1 is her panel on every step: the step's few lines, then her chat (her
  * conversation as Chat draws it, tile-transcript.js, and the message box), its header's one tool the

@@ -4,14 +4,13 @@
  * THE OFFICE (owner, 2026-11-02; KAN-186, KAN-191, KAN-194): three stones in a triangle read Who,
  * What, Where: Teams (who does the work) on top, Epics (what the work is) bottom left, Workspaces
  * (where the work is) bottom right, at Home's stone size with even room between them, no heading,
- * a little left of centre; Model Providers, Help and Settings three smaller stones in a vertical
+ * a little left of centre; the smaller stones (Setup, Settings) in a vertical
  * line on the right of the page, inset from its edge. Home stays a page; each door opens its own
  * workbench in this tab (door-workbenches.js), the bar reading <brand> • Home • <door>
  * with Home the way back. A door is a link to the plain address: a plain press navigates here, a
  * modified or middle press opens the workbench in a new tab (KAN-473). THE GATE (owner,
  * 2026-10-19, "let's have the gate"): as on the old root, the doors are locked until one model
- * provider is activated, so a new user's way in is Setup. Three doors are outside the gate: Settings; Help, which a new user
- * needs before Setup (owner, 2026-10-21); and Setup, where a harness is signed in (owner, 2026-11-13; KAN-472).
+ * provider is activated, so a new user's way in is Setup. The small stones are outside the gate: Settings, and Setup, where a harness is signed in (owner, 2026-11-13; KAN-472).
  * THE SETUP STONE (owner, 2026-11-26; KAN-856, w1059): on every office, where Harnesses was; Harnesses is
  * reached through Setup's Harness step. ONE ROOT (owner, 2026-11-02; KAN-197): the old Home and the
  * bar's Current/Next toggle are gone; an old #/current link lands here.
@@ -44,7 +43,7 @@ function OFFICE() {
 function SIDE() {
   return [
     { key: 'setup', route: 'setup', glyph: '人', name: t('campaign_home.setup', 'Setup'), is: t('campaign_home.setup_is', 'Harness, Workspace, Team'), gated: false },
-    { key: 'help', route: 'help', glyph: 'ミ', name: t('campaign_home.help', 'Help'), is: t('campaign_home.help_is', 'The guides, and Mika to ask'), gated: false },
+    // Help's stone is off Home until Mika is ready for a live office; its page stays at #/help (owner, 26 Nov; w1069).
     // One Settings (owner, 26 Nov): what was Settings v2; the old one is gone.
     { key: 'settings', route: 'settings2', glyph: '⚙', name: t('campaign_home.settings', 'Settings'), is: t('campaign_home.settings_is', 'This office’s settings'), gated: false },
     ...(HOSTED ? [{ key: 'lounge', href: BUSINESS_LOUNGE, glyph: '◎', name: t('campaign_home.business_lounge', 'Business Lounge'), is: t('campaign_home.business_lounge_is', 'Your account, office and subscription, at Ronin HQ'), gated: false }] : []),
@@ -65,7 +64,7 @@ export function createCampaignHome() {
   const frame = el('div', 'ch-frame');
   const doors = el('div', 'ch-doors');
   const side = el('nav', 'ch-side');
-  side.setAttribute('aria-label', HOSTED ? t('campaign_home.side_hosted', 'Setup, Help, Settings and the Business Lounge') : t('campaign_home.side', 'Setup, Help and Settings'));
+  side.setAttribute('aria-label', HOSTED ? t('campaign_home.side_hosted', 'Setup, Settings and the Business Lounge') : t('campaign_home.side', 'Setup and Settings'));
   const release = el('div', 'ch-release');
   const check = el('button', 'ch-update', t('campaign_home.check_updates', 'Check for updates'));
   const answer = el('span', 'ch-update-answer');

@@ -6,8 +6,8 @@ For contributors: what each Setup surface shows and measures, in full. The user'
 
 ## Where it is
 
-**Ronin Home** has the doors **Teams**, **Epics** and **Workspaces**, and the smaller stones **Setup**,
-**Help** and **Settings**, with **Business Lounge** on a hosted office (owner, 26 Nov; KAN-856, w1059).
+**Ronin Home** has the doors **Teams**, **Epics** and **Workspaces**, and the smaller stones **Setup**
+and **Settings** (Help's stone is off Home until Mika is ready; its page stays; w1069), with **Business Lounge** on a hosted office (owner, 26 Nov; KAN-856, w1059).
 Teams, Epics and Workspaces wait for an Activated harness; the small stones are open from the start.
 The Setup stone is always there; Harnesses has no stone and is reached through Setup's Harness step.
 Nothing decides that Setup is finished. Settings is Settings, with no toggle to Setup. A link that names a page still opens that page.
@@ -106,51 +106,112 @@ want to revisit rather than a one-time fact: it keeps its choices for good.
 
 ## Harnesses
 
-One stone per provider CLI Ronin knows, each wearing its state: **Activated**, **Off**,
-**Sign-in open**, **Needs sign-in**, **Not installed**, or **Manual install**. Opening this surface
-paints the recorded facts immediately, then measures behind them and repaints when it lands.
+One surface on two seats: Setup's Harness step (`setup-harness-surface.js`) and the Harness pages in
+Settings (`harnesses-surface.js`). Both read the same measured runtime, so a change shows on both.
+The CLI's own credential file is the record of a sign-in; Ronin keeps nothing beside it.
 
-A provider's page is three numbered steps. A finished step wears a check; the installed
-step also offers Update only when an activated provider has a newer version available and
-the registry knows how to update it. The next unmet step owns the setup control; a later
-step waits.
+### Setup's Harness step
+
+One bar per harness, registry order, Claude Code and Codex first, each saying **Not set up**,
+**Signing in**, **Active** or **Off**.
+
+- **Claude Code and Codex** sign in without a terminal, one way at a time: **Subscription** or
+  **API key** (a new sign-in replaces the old one, as the CLI itself does). Ronin runs the CLI's own
+  login command for that way (`login` in `src/agents.ts`, run by `src/harness-sign-in.ts`), reads the
+  link and code it prints, and the bar shows only what the person must do: the link and code
+  (Codex subscription), the link and a box for the code it gives back (Claude Code), or a key box
+  (Codex API key), with **Send** and **Cancel**. When the CLI exits Ronin measures again and the bar
+  turns Active; a run that did not sign in leaves the CLI's last line under the bar.
+- **Other harnesses** sign in on their own terminal, opened in the bar (**Open its sign-in**,
+  **Close**); `signIn` in `src/agents.ts` says what that CLI asks.
+- **Hermes** shows its three model services (Ronin Gateway, API key, OpenRouter), each ticked when
+  set up, and the model entries of the one pressed (`setup-hermes-services.js`). Adding or changing
+  them is a link to Model services in Settings.
+
+Keys and codes are typed only in the bar or the harness's own terminal, never in chat.
+
+**See and Chat are one conversation.** A press goes to the Helpful Assistant, when she is live, as
+the person's own line (`press.js`, drawn in her chat as "Pressed: …"), only after its route answered
+OK. The rule: a press goes to her when it changes what an Agent can run on or starts something she
+should follow; one that only moves around the page, or handles a secret, stays silent. So she gets
+`Codex · Sign in with subscription`, `Codex · Sent the code` (never its text), `Codex · Cancel
+sign-in`, `Grok · Open its sign-in` and `Grok · Close sign-in`. A result nobody pressed, the CLI
+exiting, reaches her from the run itself: `Codex is signed in.` or `Codex sign-in did not finish:
+<last line>`.
+
+**Her hands.** She never presses the page. Her `harness` tool (`ronin_bin/harness`) calls the same
+routes the bar calls (`sign-in`, `cancel`, `state`, `open`, `close`, and the Hermes `options` and
+`option add|remove`); the route changes the record and the page redraws from its push
+(`harness-sign-in`, setup progress, `model-services-changed`). A change she made sends her no press
+line: the tool's answer is her confirmation. Keys are never hers to enter.
+
+### The Harness pages in Settings
+
+A harness's page is three numbered steps. A finished step wears a check; the next unmet step owns
+the control.
 
 | Step | What it measures | The control |
 |---|---|---|
-| **Install** | whether the CLI is on this machine | **Install** opens the provider's installer and first-run setup in a tile on this surface; a provider Ronin cannot install safely gets an **Install guide** link |
-| **Authenticate** | whether the provider is signed in here | **Authenticate** opens the provider's own sign-in in a tile on this surface, on its terminal; the step says how that CLI's sign-in goes (its methods and what to press: `signIn` in `src/agents.ts`, one line per provider, read off the CLI's own screens; KAN-716), then "Signed in? Press Done." **Done** sits right under the terminal, full width, and records it; **Cancel** ends the terminal session. The naming (title and type) comes after Done, already filled with "<provider> subscription" and Account / subscription, so Done never waits on it. While the sign-in is open, the runtime reads the CLI's credential file each time it answers, and the page asks again when you come back to its tab. Once the file is there, the step says the provider is signed in (KAN-723) |
-| **Ready** | activation, which unlocks Home's doors | **Turn off** stops Ronin measuring, updating and launching the provider — tiles already running are not touched and the sign-in is kept; **Turn on** brings it back, and nothing needs signing in again |
+| **Install** | whether the CLI is on this machine | **Install** opens the installer in a tile on the page; a CLI Ronin cannot install safely gets an **Install guide** link |
+| **Authenticate** | whether the harness is signed in here | **Authenticate** opens the CLI's own sign-in in a terminal tile, with what that CLI asks (`signIn`); **Done** under it re-measures, **Cancel** ends the terminal. While it is open the runtime reads the CLI's credential file each time it answers |
+| **Ready** | activation, which unlocks Home's doors | **Turn off** stops Ronin measuring, updating and launching the harness; running tiles and the sign-in are kept. **Turn on** brings it back |
 
-The install window can continue directly into the provider's sign-in. The temporary
-terminal has a normal tmux shell: exiting the CLI returns to its prompt. Installation,
-provider authentication, and GitHub setup all use this pattern.
+Below the steps, **Models** (`harness-model-entries.js`) picks what New Agent offers for this
+harness, in two tiers. First a stone per model service: **In harness** (the CLI's own list from
+the last **Refresh all harnesses**) and each service type the harness can use (`serviceTypesFor`
+in `src/model-services.ts`); filled means on, and a type with no service yet reads **Not set up**
+and opens Model services on its tab in the other pane. Then one table per service that is on,
+Name and Model ID, a **Hide** or **Show** per row, a hidden row muted. Every press saves
+(`PUT /api/new-agent-models/:cli`): a service on with nothing hidden follows its full list, so
+models it adds later show by themselves. Ronin Gateway starts hidden until someone shows it.
+Hermes's page is only this Models section: it has no sign-in of its own.
 
-Under the terminal, **Naming this authentication** has a free-text **Authentication title**
-and an **Authentication type** stone. Open the stone to choose **Account / subscription**,
-**API key**, **Third-party service**, or **Not signed in**; the choices collapse after selection.
-The title can be anything meaningful to you, such as “Personal Google” or “Work OpenRouter”.
-**Done** saves the title and type and finishes setup. **Cancel** ends the temporary session
-without requiring or saving those fields; it does not undo installation or credentials
-already saved by the CLI. Both buttons sit together below the fields.
-
-Ronin saves this description separately from credentials, then checks readiness again.
-The terminal height is bounded, and opening a provider scrolls its detail panel to the
-first unfinished step. This works in both Ronin Setup and Ronin Settings.
-
-Below the steps sits the provider's model list as its CLI gave it on the last **Refresh
-all model providers** (the one button at the top of the surface, with the date it last
-ran), each model with the CLI's own name and its id, and the tier and cost the catalog
-knows. Native is the default. Ronin only checks that a sign-in exists; it never reads a
-credential or asks the provider about your account. A provider that needs to sign in
-again asks in its own flow.
+Ronin only checks that a sign-in exists; it never reads a credential or asks the provider about
+your account.
 
 Details of the catalog and what is measured are in [model providers](harness-catalog.md).
+
+## The Helpful Assistant (Irasshai)
+
+People see her as the **Helpful Assistant**; her session, route and files say `irasshai`. She is a
+session type, not special code ([brief](brief.md)): her behaviour (`irasshai`), her voice
+(`irasshai-voice`) and one behaviour per step (`irasshai-harness`, `irasshai-workspace`,
+`irasshai-team`, read in full as she takes the step) are `when: irasshai` stock in
+`ronin_stock/behaviours/`. Those files are the authority on what she says; this section is how she
+fits Setup.
+
+**See and Chat.** The step's surface (See) draws the office from its facts and records; her chat
+(Chat, the Ask Ronin panel) is where she asks, explains and acts. Nothing in Chat is the only
+record: what she does lands in a fact, the Workspace record or an item, so See shows it and the
+next Agent finds it.
+
+**Her hands.** She never presses the page. Her tools call the same routes its buttons do, and the
+page redraws from the record: `harness` (sign-ins, `open`/`close` a harness's terminal, Hermes model
+options), `workspace` (create, repositories, sources, `starter ronin_lab`), `team`, `item`, `office
+read`, `show`. Keys and codes are pasted on the page, never into her chat. She never starts a
+sign-in on a harness already signed in unless the person asks: it signs out every Agent on it until
+it finishes, and she says so first.
+
+**What she hears.** A press of a surface button that names her comes as the person's words
+(`From <person> [Button]: …`); a sign-in's end as a House notice; leaving a changed step as the
+Moved-to line above. Her own changes send her nothing; the tool's answer is her confirmation.
+
+**What she does with what she hears.** Setup she can do now (a sign-in, a key) is a task on her
+onboarding epic, done there. Project work ("deploy to Netlify") is an open item held by the
+Workspace. A want for later goes under the Workspace's Icebox, which no Agent pulls from. On the Team
+step she hands the Workspace's open items to its first Team (`item handoff <ids> team:<t>`).
+
+**Start and end.** An office starts her when none of the three steps is ticked; otherwise the panel's
+button does. Done, she runs `session_end`, which archives her; the button restores the archive
+within seven days, and after that she starts fresh from the facts and `~/ronin/library/ABOUT_USER.md`.
 
 ## Workspaces
 
 The Workspace step defines what a Workspace is, so any Agent that picks it up knows (owner, 25 Nov;
-KAN-809; samurai_lab wip/SETUP_WORKSPACE.md §2). One question, **How are you starting?**, four doors
-(`setup-workspace-kickoff.js`, above the Workspaces already made):
+KAN-809). It is not the Workspaces page: the Workspaces already made are one link at its foot ("You
+have 5 Workspaces."). One question, **How are you starting?**, four doors (`setup-workspace-kickoff.js`);
+a door pressed opens only its questions under it, then Create. After Create the doors are there
+again: people have several Workspaces, and one Workspace can hold several repositories.
 
 1. **From a Git repository**: their GitHub repositories (once signed in) and pasted Git URLs, many;
    each cloned into `repos/<repo>` (`POST /api/workspaces/<name>/repos`).
@@ -158,19 +219,78 @@ KAN-809; samurai_lab wip/SETUP_WORKSPACE.md §2). One question, **How are you st
    Netlify, files from their computer), each an integration row with its folder `files/<source>`.
    Nothing is pulled in here: the Team step's Epic brings it in.
 3. **From scratch**: a new Git repository in `repos/<name>`, on GitHub too (private) when signed in.
-4. **Not sure yet**: Ronin Lab, made on the press.
+4. **Not sure yet**: Ronin Lab, what it is and its folder, then Create. Made, the door reads "Ronin
+   Lab is ready", greyed.
 
-Doors 1–3 then ask what it is (objective; the name from it), its kind (open, business, personal,
-household, social, school: the one list Agents, Teams and Workspaces share) and anything every Agent
-there should follow (instructions). Every answer lands on the Workspace record (`src/workspaces.ts`).
-Every Workspace's folder is `~/ronin/<name>`, laid out `plans/ files/ repos/` on Create, whoever
-creates it (`layOut`). The Helpful Assistant does the same with her `workspace` tool (`create --kind`,
-`repo`, `source`, `starter ronin_lab`).
+Doors 1–3 ask, in this order: what kind of project (open, business, personal, household, social,
+school; a Workspace's only, `WORKSPACE_KINDS`: Teams and Agents have none) · its name · what you are working on (the name
+follows it until one is typed) · the door's own question · for doors 1 and 3, how Agents work in the
+repositories (**Desks** unless they say **Direct**) · anything every Agent there should follow ·
+while there is no Ronin Lab, **Also add Ronin Lab** · Create. Doors 2 and 3 end with an optional GitHub
+Connect while GitHub is not signed in. With no door chosen, or the chosen one pressed again, the space
+under the doors says what a Workspace is, with an illustrative example. After Create, one line: "Made
+<title>, in ~/ronin/<name>." and **Open it**.
+
+The same doors, without that explanation and the foot link, are **New Workspace** everywhere else:
+the Workspaces door and Settings' Workspaces card (`workspaces-surface.js`), where Create opens the made
+Workspace (KAN-900). There is no other form that makes a Workspace.
+
+Every answer lands on the Workspace record (`src/workspaces.ts`):
+
+| Asked | Record field |
+|---|---|
+| What you are working on; its name | `objective`; `title`, and the handle `name` made from it |
+| Kind | `kind` |
+| Anything every Agent should follow | `instructions` (Agents are born with it) |
+| Repositories (door 1); its new one (door 3) | `repos`, at `repos/<repo>`, Desks or Direct as asked |
+| Where it comes from (door 2) | `integrations`, one row per source with `folder: files/<source>` |
+| (always) | `folders`: the Workspace's own folder |
+
+Every Workspace's folder is laid out the same on Create, whoever creates it (`layOut`); a plain
+folder, only the repositories are Git. Desks (the Agents' worktrees) stay where worktree-desk puts them.
+
+```
+~/ronin/<name>/
+  plans/          its plans (the default place)
+  files/          anything that isn't code: documents, notes, uploads
+    <source>/     one per source it comes from (door 2)
+  repos/<repo>/   each repository, cloned or started, its own Git
+```
+
+The Helpful Assistant does the same with her `workspace` tool (`create --kind`, `repo`, `source`,
+`starter ronin_lab`). Two things on the step reach her, and nothing else: **Connect · Helpful
+Assistant** (the button names her) and Create, which tells her what was made as the person's
+`[Button]` line, `Workspace · Created <name>. Its record: workspace read <name>.`. A Workspace's handle
+in her chat is a link to its own page (`chat-item-links.js`). On this step the words are Workspace,
+objective (shown as "What are you working on?"), folder, repository, instructions; never root,
+project root, gh or worktree.
 
 GitHub is never a step of its own: a public repository clones without it. For a private one, or
 "my repositories", the page's **Connect · Helpful Assistant** sends her "Connect GitHub.", and she
 signs the GitHub CLI in with GitHub's device flow and `gh auth setup-git`, so a headless machine
 shows a code the owner approves in a browser elsewhere.
+
+## Team
+
+A Team is always made in one Workspace, and its lead takes that Workspace's work. The step's surface
+(`setup.team`, `createTeamSurface` in `setup-surfaces.js`) is the ordinary New Team form, the same as on
+the Teams workbench ([new Team](new-team.md)): name and title, the **Team objective** (what the lead picks up
+and starts on, said to it at birth with its epic), the **Team instructions** (in every member's brief,
+`facts/team.md`), the **Workspace** (required), the **Agents** (the lead first, each on a signed-in
+harness, so Agents on different harnesses share one Team), and the **Epic** (one of the Workspace's open
+epics handed to the Team, or a new one). The form has no Kind, defaults, toolkit or payload: a Team copies
+its Workspace's defaults when it is made, and its Configuration changes them afterwards
+([team workspace](team-workspace.md)).
+
+No press on this surface messages her: Launch is a real setting she reads in the facts. Her chat on this
+step is drawn as on every step (`tile-transcript.js`): item ids and Agent names are links
+(`chat-item-links.js`), and her choices are question cards (`chat-question.js`).
+
+The step is ticked when a Team has a live lead (the ticks above). The rest of the step is waiting on the
+owner (KAN-810): Irasshai proposing the Team structure as soon as a Workspace is made (one Team, several,
+or a Team of several Agents, with epics and items: for example a cloned repository gets an Agent that walks
+it and writes a project map), and the surface around the form showing it: a line and a **Workspace** press
+when there is no Workspace, and a card per running Team (lead, Agents, items held).
 
 ## Not in Setup or Settings
 

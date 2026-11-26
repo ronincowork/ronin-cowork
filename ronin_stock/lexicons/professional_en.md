@@ -293,31 +293,18 @@ nothing paints exactly this.
 - **harness.stones:** Harness
 - **harness.stones_summary:** The CLIs: install, sign in, ready
 - **harness.refresh:** Refresh
-- **harness.refresh_summary:** One press: harnesses, accounts
+- **harness.refresh_summary:** One press: harnesses, model services
 - **harness.step_harnesses:** Harnesses
 - **harness.step_harnesses_detail:** Each activated CLI: its version, the newest release, and its own model list. Only these models can launch on a subscription.
 
-## accounts — accounts-surface.js, account-editors.js (the Accounts tilespace and the forms every page shares; KAN-236)
+## accounts — model-services-surface.js, models-surface.js (model service words still read under these keys)
 
-- **accounts.title:** Accounts
-- **accounts.card_summary:** Personal API · Ronin API: which harnesses, which models
-- **accounts.lede:** Accounts a harness can launch on, apart from its own sign-in. A key added here, or on a harness page, is one record; the harnesses it serves and the models it offers are yours to tick.
-- **accounts.kind_subscription:** Subscription
-- **accounts.kind_personal_api:** Personal API
-- **accounts.kind_ronin_api:** Ronin API
-- **accounts.ronin_api_name:** Ronin API
-- **accounts.ronin_api_note:** From Ronin Cloud onboarding, or the house gateway running on this machine. Usage is stamped by the gateway.
-- **accounts.add_title:** Add {kind}
-- **accounts.edit_title:** Edit {kind}
 - **accounts.field_name:** Name
 - **accounts.field_vendor:** API provider
 - **accounts.field_url:** Base URL
 - **accounts.field_wire:** Wire API
 - **accounts.field_key:** API key
 - **accounts.field_key_keep:** API key (leave blank to keep)
-- **accounts.field_endpoint:** Gateway endpoint
-- **accounts.field_token:** House token
-- **accounts.field_token_keep:** House token (leave blank to keep)
 - **accounts.vendor_openai:** OpenAI API
 - **accounts.vendor_mistral:** Mistral API
 - **accounts.vendor_custom:** OpenAI-compatible API
@@ -325,45 +312,19 @@ nothing paints exactly this.
 - **accounts.wire_responses:** Responses
 - **accounts.save:** Save
 - **accounts.cancel:** Cancel
-- **accounts.add_personal_api:** Add Personal API
-- **accounts.add_ronin_api:** Add Ronin API
-- **accounts.add_token:** Add token
-- **accounts.discover:** Discover
 - **accounts.edit:** Edit
 - **accounts.remove:** Remove
-- **accounts.serves:** Serves
-- **accounts.offers:** Offers
-- **accounts.offers_dated:** Offers · discovered {date}
-- **accounts.discover_first:** Press Discover to read this endpoint’s model list.
-- **accounts.no_binding:** no binding yet
-- **accounts.seeded:** add a token to use it
-- **accounts.configured:** Configured
 - **accounts.key_missing:** Key missing
-- **accounts.models_n:** {n} models · {m} offered
-- **accounts.not_discovered:** Models not discovered
 - **accounts.none_yet:** None yet
-- **accounts.step_detail:** Each Personal API and Ronin API account is asked for its list; you tick what it offers on Accounts.
-- **accounts.missing_account:** Missing account
+- **accounts.step_detail:** Each private API and Ronin Gateway is asked for its model list.
 - **accounts.approvals_off:** YOLO — approvals off
-- **accounts.approvals_off_short:** YOLO
 - **accounts.approvals_prompt:** Ask for approval
-- **accounts.reasoning_default:** Provider default
-- **accounts.preset_add:** Add preset
-- **accounts.preset_edit:** Edit preset
-- **accounts.preset_name:** Name shown under Model
-- **accounts.preset_account:** Account
-- **accounts.preset_model:** Model
+- **accounts.reasoning_default:** Service default
 - **accounts.preset_reasoning:** Reasoning effort
 - **accounts.preset_approvals:** Approvals
 
-## models — models-records-surface.js, models-surface.js (the Models tilespace; KAN-236)
+## models — models-surface.js (the Harnesses workbench: stones, Refresh, Defaults)
 
-- **models.records:** Models
-- **models.records_summary:** Offered · presets · defaults
-- **models.offered:** Offered per account
-- **models.offered_none:** No accounts yet. Add one on Accounts or on a harness page.
-- **models.presets:** Presets
-- **models.presets_lede:** A preset names harness, account, model and knobs; it appears under Model in New Agent. Today every preset is a Hermes named setup.
 
 ## launch — launch-view.js (the Workbench where Teams and Agents begin)
 
@@ -375,9 +336,9 @@ nothing paints exactly this.
 - **launch_mode.head:** launch mode
 - **launch_mode.mode:** Mode
 - **launch_mode.configured:** Native
-- **launch_mode.configured_sub:** Do not override the provider CLI’s approval behavior. Model selection is separate.
+- **launch_mode.configured_sub:** Do not override the harness’s approval behavior. Model selection is separate.
 - **launch_mode.live:** Dangerously
-- **launch_mode.live_sub:** Use that provider CLI’s own approval-bypass launch.
+- **launch_mode.live_sub:** Use that harness’s own approval-bypass launch.
 - **help.title:** Help
 - **help.card_summary:** What each step means, beside the step you are on.
 - **help.top_body:** The name is the only thing you must give, and it is also the tag every session carries, so it is lowercase and typeable — the field enforces that as you type. A Team’s title is written for you from the name and is yours to change. The kind says what this is for.
@@ -388,7 +349,7 @@ nothing paints exactly this.
 - **help.behaviours:** What a Behavior is
 - **help.behaviours_body:** Behaviors are specific guidance given to Agents at birth. Team Work and Working with the User are selectable; Write it Down, All Cowork Agents and Conditional Behaviors are applied by Ronin when their rules match.
 - **help.type:** New session
-- **help.type_body:** Three kinds of thing can start here. A Cowork Agent is born with everything Ronin provides on this box. A bare-metal Agent is the provider’s own CLI and nothing else. A terminal is a shell with no agent. The choice decides which of the steps below exist — a terminal is asked three things because there are only three to ask.
+- **help.type_body:** Three kinds of thing can start here. A Cowork Agent is born into Ronin with this installation, its selected behaviours, reading and Team. A bare-metal Agent is the harness’s own CLI and nothing else. A terminal is a shell with no agent in it at all.
 - **help.top:** Name & kind
 - **help.objective:** Common instructions
 - **help.objective_body:** What everyone born onto this Team is told. The objective reaches them: it is written into the brief every new Agent reads at birth, in the Team’s own words.
@@ -397,7 +358,7 @@ nothing paints exactly this.
 - **help.team:** Team
 - **help.team_body:** A new team is made first and the Agent is born into it. Joining an existing one lands that team’s answers in this form, which you can then change. No team is ordinary — a rōnin works alone and nothing is missing.
 - **help.where:** Who and where
-- **help.where_body:** The provider and model that open, and the folder they open in. The folder is where work starts, not a fence: an Agent reaches whatever it is asked to reach. A Team’s branch is the line its Agents hand work in to, and the lead promotes from it; blank means the Team’s own line.
+- **help.where_body:** The harness and model that open, and the folder they open in. The folder is where work starts, not a fence: an Agent reaches whatever it is asked to reach.
 - **help.mandate:** Mandate
 - **help.loadout:** Behaviors
 - **help.kit:** Shared toolkit
@@ -519,7 +480,7 @@ nothing paints exactly this.
 - **new_agent.type_cowork:** Cowork Agent
 - **new_agent.type_cowork_sub:** Born with Ronin capabilities, behaviors, and assigned Team.
 - **new_agent.type_bare:** Bare-metal Agent
-- **new_agent.type_bare_sub:** The provider’s agent and nothing else.
+- **new_agent.type_bare_sub:** The harness’s agent and nothing else from Ronin.
 - **new_agent.type_terminal:** Terminal
 - **new_agent.type_terminal_sub:** A raw tmux pane, no agent launched, and nothing sent to it.
 - **new_agent.name_placeholder:** name
@@ -1379,16 +1340,16 @@ The pad's current config downloads as a backup first.
 - **setup_surface.authenticate_guided:** Use the CLI with Mika
 - **setup_surface.authenticate_irasshai:** Let the Helpful Assistant authenticate
 - **setup_surface.authenticate_guided_irasshai:** Use the CLI with the Helpful Assistant
-- **setup_surface.providers_summary_unread:** Every provider and model Ronin offers, and what this machine has.
-- **setup_surface.providers_summary:** {providers} providers · {models} models · {activated} activated here
+- **setup_surface.providers_summary_unread:** Every harness and model Ronin offers, and what this machine has.
+- **setup_surface.providers_summary:** {providers} harnesses · {models} models · {activated} activated here
 - **setup_surface.section_yours:** Yours
-- **setup_surface.no_cli:** No CLI in Ronin’s registry serves this provider, so it cannot be installed or signed in here.
+- **setup_surface.no_cli:** No CLI in Ronin’s registry serves this harness, so it cannot be installed or signed in here.
 - **setup_surface.no_cli_state:** No CLI
-- **setup_surface.no_models:** The catalog lists no models for this provider.
+- **setup_surface.no_models:** The catalog lists no models for this harness.
 - **setup_surface.refresh_all:** Refresh all harnesses
 - **setup_surface.refreshing_accounts:** Reading account lists…
 - **setup_surface.last_ran:** Last ran {date}
-- **setup_surface.never_ran:** Never run — every provider offers Native only until it runs.
+- **setup_surface.never_ran:** Never run — every harness offers Native only until it runs.
 - **setup_surface.models_read:** Model list read {date} by {cli} {version}
 - **setup_surface.models_not_read:** Model list not read yet — press Refresh all harnesses.
 - **setup_surface.provider_models_n:** {vendor} · {n} models
