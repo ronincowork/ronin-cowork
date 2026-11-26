@@ -19,6 +19,7 @@ import { el } from './form-steps.js';
 import { t } from './lexicon.js';
 import { store } from './store.js';
 import { openWorkbenchTab } from './workspace.js';
+import { createTable, tableLink } from './data-table.js';
 
 export const OPENROUTER_URL = 'https://openrouter.ai/api/v1';
 export const MODEL_SERVICE_PAGES = Object.freeze({ openrouter: 'settings2.openrouter', private: 'settings2.private-api' });
@@ -108,7 +109,12 @@ function lifecycle(out, paint, say) {
   };
 }
 
-/** A service's named models: each row Edit and Remove, Add below, the form in place. */
+/** The table pattern (data-table.js), called the short way. */
+function table(headings, rows, lines = []) {
+  return createTable({ headings, rows, lines });
+}
+
+/** A service's model options: a row each with Edit and Remove, `+ Add a model` below, the form in place. */
 function namedModels(service, say) {
   const block = el('section', 'model-services-models');
   const editor = el('div', 'accounts-editor');
@@ -143,27 +149,20 @@ function namedModels(service, say) {
     });
     editor.replaceChildren(node); queueMicrotask(() => name.focus());
   };
-  const rows = (service.models || []).map((entry) => {
-    const row = el('div', 'hermes-card model-services-model');
-    const summary = el('div', 'hermes-card-summary');
-    summary.append(el('strong', null, entry.name), el('span', null, entry.model));
-    row.append(summary, bar(
-      button(t('accounts.edit', 'Edit'), () => form(entry)),
-      button(t('accounts.remove', 'Remove'), () => act('delete-model', { id: entry.id }, say)),
-    ));
-    return row;
-  });
+  const rows = (service.models || []).map((entry) => ({ cells: [entry.name, entry.model], tools: [
+    [t('accounts.edit', 'Edit'), () => form(entry)],
+    [t('accounts.remove', 'Remove'), () => act('delete-model', { id: entry.id }, say)],
+  ] }));
+  const lines = service.configured ? [
+    [t('model_services.add_line', '+ Add a model'), () => form()],
+    [service.discovered?.length
+      ? t('model_services.discovered_line', '+ Read the service’s list again ({n} model IDs to pick from)', { n: service.discovered.length })
+      : t('model_services.discover_line', '+ Read the service’s list, to pick model IDs from'), () => act('discover', { id: service.id }, say)],
+  ] : [[t('model_services.key_first', 'Save the key first.'), null]];
+  if (!rows.length) lines.unshift([t('model_services.no_options', 'No model options yet.'), null]);
   block.append(el('h3', null, t('model_services.model_options', 'Model options')),
     el('p', 'setup-fine', t('model_services.options_lede', 'Each one appears under Model for every compatible harness on this connection.')),
-    ...(rows.length ? rows : [el('p', 'setup-fine', t('model_services.no_options', 'No model options yet.'))]));
-  const discovered = service.discovered?.length
-    ? t('model_services.discovered_n', '{n} model IDs listed by the service; pick one when you add a model.', { n: service.discovered.length })
-    : '';
-  if (discovered) block.append(el('p', 'setup-fine', discovered));
-  block.append(bar(
-    service.configured ? button(t('model_services.add_model', 'Add a model'), () => form()) : null,
-    service.configured ? button(t('model_services.discover', 'List the service’s models'), () => act('discover', { id: service.id }, say)) : null,
-  ), editor);
+    table([t('model_services.col_name', 'Name'), t('model_services.col_model', 'Model')], rows, lines), editor);
   return block;
 }
 
@@ -179,21 +178,16 @@ export function mountModelOptions(host) {
   let disposed = false;
   const paint = () => {
     if (disposed) return;
-    const blocks = services.map((service) => {
+    const rows = services.map((service) => {
       const kind = serviceKind(service);
-      const block = el('div', 'hermes-card model-services-entry');
-      const summary = el('div', 'hermes-card-summary');
-      summary.append(el('strong', null, kind === 'gateway' ? t('model_services.gateway', 'Ronin Gateway') : service.name));
       const names = (service.models || []).map((m) => m.name);
-      summary.append(el('span', null, names.length ? names.join(' · ') : t('model_services.no_options', 'No model options yet.')));
-      block.append(summary);
-      if (kind !== 'gateway') block.append(bar(button(t('model_services.edit_options', 'Edit in Model services'), () => openWorkbenchTab(modelServicePageRequest(kind, kind === 'private' ? service.id : '')))));
-      return block;
+      return { cells: [kind === 'gateway' ? t('model_services.gateway', 'Ronin Gateway') : service.name, names.length ? names.join(' · ') : t('model_services.no_options', 'No model options yet.')],
+        tools: kind === 'gateway' ? [] : [[t('accounts.edit', 'Edit'), () => openWorkbenchTab(modelServicePageRequest(kind, kind === 'private' ? service.id : ''))]] };
     });
     root.replaceChildren(el('h3', null, t('model_services.model_options', 'Model options')),
       el('p', 'setup-fine', t('model_services.harness_lede', 'What shows under Model when you start an Agent on this harness, by service. Keys and model options are edited in Settings → Model services.')),
-      notice, ...blocks);
-    if (!services.length) root.append(bar(button(t('model_services.open', 'Open Model services'), () => openWorkbenchTab(modelServicePageRequest('openrouter')))));
+      notice, table([t('model_services.col_service', 'Service'), t('model_services.model_options', 'Model options')], rows,
+        services.length ? [] : [[t('model_services.open_line', '+ Add a service in Model services'), () => openWorkbenchTab(modelServicePageRequest('openrouter'))]]));
   };
   const watch = () => paint();
   listeners.add(watch); hearChanges();
@@ -202,46 +196,47 @@ export function mountModelOptions(host) {
   return () => { disposed = true; listeners.delete(watch); };
 }
 
-/* ---- Model services: the three services and what each holds ---- */
+/* ---- Model services: each service under its heading, its model options in a table beneath (owner, 26 Nov) ---- */
 export function createModelServicesSurface({ open = () => {} } = {}) {
   const { out, say, body } = shell(t('settings2.model_services', 'Model services'), 'model-services-list');
   let refreshFault = '';
-  const entry =(title, facts, actions = [], extra = []) => {
-    const row = el('div', 'hermes-card model-services-entry');
-    const summary = el('div', 'hermes-card-summary');
-    summary.append(el('strong', null, title), el('span', null, facts));
-    row.append(summary, ...extra, ...(actions.length ? [bar(...actions)] : []));
-    return row;
+  const cols = () => [t('model_services.col_name', 'Name'), t('model_services.col_model', 'Model')];
+  const modelRows = (service) => (service?.models || []).map((m) => ({ cells: [m.name, m.model] }));
+  const section = (title, ...nodes) => {
+    const node = el('section', 'model-services-service');
+    node.append(el('h3', null, title), ...nodes);
+    return node;
   };
   const paint = () => {
-    const gateway = services.filter((s) => serviceKind(s) === 'gateway');
-    const routers = services.filter((s) => serviceKind(s) === 'openrouter');
+    const g = services.find((s) => serviceKind(s) === 'gateway' && s.configured) || services.find((s) => serviceKind(s) === 'gateway');
+    const router = services.find((s) => serviceKind(s) === 'openrouter' && s.configured) || services.find((s) => serviceKind(s) === 'openrouter');
     const privates = services.filter((s) => serviceKind(s) === 'private');
-    const count = (rows) => rows.reduce((n, s) => n + (s.models?.length || 0), 0);
-    const g = gateway.find((s) => s.configured) || gateway[0];
-    const gatewayFacts = !g ? t('model_services.gateway_none', 'Not connected on this office.')
-      : g.fault ? g.fault
-      : !g.configured ? t('model_services.gateway_waiting', 'Not connected yet.')
-      : t('model_services.gateway_models', '{n} models, supplied by the gateway', { n: count([g]) });
-    const gatewayList = g?.models?.length ? [el('p', 'setup-fine', g.models.map((m) => m.name).join(' · '))] : [];
-    // A failed Refresh is said on the Gateway's own line, with what is still shown.
-    if (g && refreshFault) gatewayList.push(el('p', 'setup-notice bad', t('model_services.refresh_failed', 'Refresh failed: {why} ({address}). The list shown is the last one read.', { why: refreshFault, address: String(g.baseUrl || '').replace(/^https?:\/\//, '') })));
     const refresh = async () => {
       await act('discover', { id: g.id }, (text, bad) => { refreshFault = bad ? text : ''; });
       paint();
     };
-    const router = routers.find((s) => s.configured) || routers[0];
+
+    // Ronin Gateway: its own list, read only; Refresh reads it again.
+    const gatewayLines = !g ? [[t('model_services.gateway_none', 'Not connected on this office.'), null]]
+      : g.fault ? [[g.fault, null]]
+      : !g.configured ? [[t('model_services.gateway_waiting', 'Not connected yet.'), null]]
+      : [...(g.models?.length ? [] : [[t('model_services.gateway_empty', 'No models from the gateway yet.'), null]]), [t('model_services.refresh_line', '+ Refresh the list'), refresh]];
+    const gatewayFault = g && refreshFault ? [el('p', 'setup-notice bad', t('model_services.refresh_failed', 'Refresh failed: {why} ({address}). The list shown is the last one read.', { why: refreshFault, address: String(g.baseUrl || '').replace(/^https?:\/\//, '') }))] : [];
+
+    // OpenRouter and each API key: their model options; the key and the editing on their own page.
+    const routerLines = router?.configured
+      ? [...(router.models?.length ? [] : [[t('model_services.no_options', 'No model options yet.'), null]]), [t('model_services.edit_line', '+ Add or change models'), () => open('openrouter')]]
+      : [[t('model_services.add_router_key', '+ Add your OpenRouter key'), () => open('openrouter')]];
+    const keySections = privates.map((s) => section(`${t('model_services.private', 'API key')} · ${s.name}`,
+      table(cols(), modelRows(s), [...(s.models?.length ? [] : [[t('model_services.no_options', 'No model options yet.'), null]]), [t('model_services.edit_line', '+ Add or change models'), () => open('private', s.id)]])));
+
     body.replaceChildren(
       el('p', 'setup-fine', t('model_services.lede', 'A service holds the address and key; its model options appear under Model for every compatible harness that uses it. A harness signed in to its own service keeps its own flow.')),
-      entry(t('model_services.gateway', 'Ronin Gateway'), gatewayFacts,
-        g?.configured ? [button(t('model_services.refresh', 'Refresh the list'), refresh)] : [], gatewayList),
-      entry(t('model_services.openrouter', 'OpenRouter'),
-        router?.configured ? t('model_services.options_n', 'Key saved · {n} model options', { n: count(routers) }) : t('model_services.no_key', 'No key yet'),
-        [button(t('model_services.open_openrouter', 'Open OpenRouter'), () => open('openrouter'))]),
-      entry(t('model_services.private', 'API key'),
-        privates.length ? t('model_services.private_n', '{c} connections · {n} model options', { c: privates.length, n: count(privates) }) : t('model_services.private_none', 'None yet'),
-        [button(t('model_services.open_private', 'Open API key'), () => open('private'))]),
+      section(t('model_services.gateway', 'Ronin Gateway'), table(cols(), modelRows(g), gatewayLines), ...gatewayFault),
+      section(t('model_services.openrouter', 'OpenRouter'), table(cols(), router?.configured ? modelRows(router) : [], routerLines)),
+      ...(keySections.length ? keySections : [section(t('model_services.private', 'API key'), table(cols(), [], [[t('model_services.add_private_line', '+ Add an API key'), () => open('private', 'new')]]))]),
     );
+    if (keySections.length) body.append(tableLink(t('model_services.add_another_key', '+ Add another API key'), () => open('private', 'new')));
   };
   return lifecycle(out, paint, say);
 }
@@ -273,8 +268,9 @@ export function createOpenRouterSurface() {
 /* ---- API key: pick a connection, its address and key, then its model options ---- */
 export function createPrivateApiSurface({ serviceId = '' } = {}) {
   const { out, say, body } = shell(t('model_services.private', 'API key'), 'model-services-private');
-  let chosen = serviceId;
-  let adding = false;
+  // serviceId 'new' opens the page on an empty Add form.
+  let adding = serviceId === 'new';
+  let chosen = adding ? '' : serviceId;
   const vendors = [['openai', t('accounts.vendor_openai', 'OpenAI API'), 'https://api.openai.com/v1', 'responses'],
     ['mistral', t('accounts.vendor_mistral', 'Mistral API'), 'https://api.mistral.ai/v1', 'chat'],
     ['custom', t('accounts.vendor_custom', 'OpenAI-compatible API'), '', 'chat']];
