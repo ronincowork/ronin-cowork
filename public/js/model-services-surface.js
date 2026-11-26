@@ -200,8 +200,10 @@ export function mountModelOptions(host) {
 export function createModelServicesSurface({ open = () => {} } = {}) {
   const { out, say, body } = shell(t('settings2.model_services', 'Model services'), 'model-services-list');
   let refreshFault = '';
-  const cols = () => [t('model_services.col_name', 'Name'), t('model_services.col_model', 'Model')];
-  const modelRows = (service) => (service?.models || []).map((m) => ({ cells: [m.name, m.model] }));
+  // One Model column when every option is named as its model (the Gateway's), as on Setup's Hermes bar.
+  const same = (service) => !!service?.models?.length && service.models.every((m) => m.name === m.model);
+  const cols = (service) => same(service) ? [t('model_services.col_model', 'Model')] : [t('model_services.col_name', 'Name'), t('model_services.col_model', 'Model')];
+  const modelRows = (service) => (service?.models || []).map((m) => ({ cells: same(service) ? [m.model] : [m.name, m.model] }));
   const section = (title, ...nodes) => {
     const node = el('section', 'model-services-service');
     node.append(el('h3', null, title), ...nodes);
@@ -228,12 +230,12 @@ export function createModelServicesSurface({ open = () => {} } = {}) {
       ? [...(router.models?.length ? [] : [[t('model_services.no_options', 'No model options yet.'), null]]), [t('model_services.edit_line', '+ Add or change models'), () => open('openrouter')]]
       : [[t('model_services.add_router_key', '+ Add your OpenRouter key'), () => open('openrouter')]];
     const keySections = privates.map((s) => section(`${t('model_services.private', 'API key')} · ${s.name}`,
-      table(cols(), modelRows(s), [...(s.models?.length ? [] : [[t('model_services.no_options', 'No model options yet.'), null]]), [t('model_services.edit_line', '+ Add or change models'), () => open('private', s.id)]])));
+      table(cols(s), modelRows(s), [...(s.models?.length ? [] : [[t('model_services.no_options', 'No model options yet.'), null]]), [t('model_services.edit_line', '+ Add or change models'), () => open('private', s.id)]])));
 
     body.replaceChildren(
       el('p', 'setup-fine', t('model_services.lede', 'A service holds the address and key; its model options appear under Model for every compatible harness that uses it. A harness signed in to its own service keeps its own flow.')),
-      section(t('model_services.gateway', 'Ronin Gateway'), table(cols(), modelRows(g), gatewayLines), ...gatewayFault),
-      section(t('model_services.openrouter', 'OpenRouter'), table(cols(), router?.configured ? modelRows(router) : [], routerLines)),
+      section(t('model_services.gateway', 'Ronin Gateway'), table(cols(g), modelRows(g), gatewayLines), ...gatewayFault),
+      section(t('model_services.openrouter', 'OpenRouter'), table(cols(router?.configured ? router : null), router?.configured ? modelRows(router) : [], routerLines)),
       ...(keySections.length ? keySections : [section(t('model_services.private', 'API key'), table(cols(), [], [[t('model_services.add_private_line', '+ Add an API key'), () => open('private', 'new')]]))]),
     );
     if (keySections.length) body.append(tableLink(t('model_services.add_another_key', '+ Add another API key'), () => open('private', 'new')));
