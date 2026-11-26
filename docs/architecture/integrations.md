@@ -75,9 +75,10 @@ makes it curated; `reach:` makes it an MCP server; `base:` a web API. A record m
 and `base:` both (Netlify). `reach:` and `base:` are one or the other. There is no `campaigns:`
 line: a record in Settings is there for every Workspace on the machine.
 
-**Jira** is a record like the others (`jira.md`, its secret the token). Its connection details
-(site, space, account, the switches, the sync state) stay in the Jira part's own file, and its
-Configure section in Settings is today's Jira panel. Jira is hidden: Agents reach work items
+**Jira's record is its connection**, the Jira part's own file (`~/ronin/jira/<campaign>.json`:
+site, space, account, the switches, the sync state; the token in the secret `jira-<campaign>`).
+Connect writes it and Remove (its disconnect) deletes it; Settings lists Jira while it exists, and
+its Configure section is today's Jira panel. Jira is hidden: Agents reach work items
 through `item`, so they are told nothing of Jira itself ([brief.md](brief.md)).
 
 **The keys** are secrets, `~/ronin/services_secrets/<name>-<key>`: nothing readable, a value is
@@ -139,6 +140,10 @@ The one cascade is `cascade`, `src/brief-settings.ts`.
 
 ## What Agents are told
 
+- **Every Agent has the Integrations behaviour,** `behaviours/integrations.md` (no `when:`, seed
+  depth): how to fill in a record when the person it works for asks for a service (`mcp add` for
+  the ones Ronin ships, `mcp add <name> <reach>`, `api add <name> <base>`), the key asked with
+  `secret ask` on its tile, then a check. Where things are; the don'ts.
 - **One behaviour for every MCP server,** `behaviours/mcp-servers.md` (`when: mcp`), at seed depth,
   in play when at least one MCP record is on for the Agent. Its seed is generated: one line per
   record that is on, `<name>: <description>`, then how to call (`mcp tools <name>`, then `mcp call
@@ -164,6 +169,8 @@ the log names the caller.
 | `mcp tools <name>` | `GET /api/mcp/tools?name=` | the server's tools: name, what it does, the arguments it takes |
 | `mcp call <name> <tool> --json '<args>'` | `POST /api/mcp/call` | runs the tool and prints its answer |
 | `mcp add <name> <reach> [--sign-in key\|oauth\|none] [--secret <n>] [--send <s>] [--description <d>]` | `POST /api/mcp/add` | connects, reads the server's description, writes the record and puts it on Settings' integrations. A key not yet saved does not stop it: the record is written, a call answers with the `secret ask` line, and the first call after it is saved reads the server's description |
+| `mcp add` | `GET /api/mcp/stock` | the starting records Ronin ships, for an Agent (and Settings' Add) |
+| `mcp add <name>` | `POST /api/mcp/stock` `{name}` | copies that starting record into the owner's store, puts it on Settings' integrations, and names its key when not saved (the command asks for it with `secret ask`) |
 | `mcp remove <name>`, `api remove <name>` | `POST /api/mcp/remove` | deletes the record and its secret and takes it off Settings' integrations |
 | `api list` | `GET /api/apis` | the web APIs in Settings, each with its base and whether its key is saved |
 | `api call <name> <METHOD> <path> [--json '<body>'] [--query k=v]` | `POST /api/apis/call` | the call: `HTTP <status>`, then the body (JSON pretty-printed, cut at 400 lines; any other body saved to a file). Never a response header. The path starts with one `/` and must stay on base's host and under base's path (`//host`, a scheme, `..` and encoded dots refused before anything is sent); redirects are not followed |

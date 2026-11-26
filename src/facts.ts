@@ -199,8 +199,8 @@ async function integrationsAuthentications(): Promise<Built> {
   ];
   const gh = !github ? 'GitHub CLI: unreadable' : !github.installed ? 'GitHub CLI: not installed (needed to clone a GitHub repository)'
     : github.authenticated ? `GitHub CLI: signed in as ${github.account}` : 'GitHub CLI: installed, not signed in (needed to clone a private repository)';
-  const connected = (one: (typeof services)[number]) => !!(one.secrets.length || one.mcp?.saved);
-  const integrations = services.map((one) => `${one.label}: ${connected(one) ? 'connected' : one.available ? 'available, not connected' : 'not available for this Desk'}${one.workspaces.length ? ` in ${one.workspaces.join(', ')}` : ''}`);
+  const connected = (one: (typeof services)[number]) => one.saved;
+  const integrations = services.map((one) => `${one.label}: ${connected(one) ? 'set up' : 'set up, key not saved'}${one.workspaces.length ? ` in ${one.workspaces.join(', ')}` : ''}`);
   const modelServiceLines = accounts.map((a) => `${a.name}: ${a.configured ? 'set up' : 'not set up'}${a.models.length ? `, ${a.models.length} model options` : ''}; works with ${a.bound.join(', ')}`);
   const own = harnessesOn(summary);
   const line = `Harnesses Activated: ${own.join(', ') || 'none'}; connected: ${services.filter(connected).map((one) => one.label).join(', ') || 'none'}${github?.authenticated ? '; GitHub signed in' : ''}`;

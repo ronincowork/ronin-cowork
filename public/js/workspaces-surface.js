@@ -104,52 +104,43 @@ export function workspacePage(w, { onSaved = () => {}, onDiscard = () => {} }) {
   const brief = createBriefSettingsPanel({ layer: 'workspace', id: draft.name, ownSave: false, showIntegrations: false, onChange: () => changed(),
     preview: { workspace: draft.name } });
 
-  /* ---- 3 · Integrations (KAN-338): the outside services this Workspace uses, from the integrations
-     list (the bridges); each row a provider, with a field for each fact its bridge names (`facts: site`), saved
-     into the row as {provider, site}; any other fact is kept as it is. Agents read them
-     on the Team's Workspace line, and ask for its keys with `secret ask`. ---- */
-  const integrationRows = el('div', 'workspace-locations workspace-integrations');
-  const addIntegration = el('select', 'workspace-integration-add');
+  /* ---- 3 · Integrations (owner, 26 Nov; KAN-857; docs/architecture/integrations.md, The Workspace): a tick
+     per integration set up in Settings. Ticked, its Agents are told of it (it teaches, never blocks); under a
+     ticked one whose bridge names facts (`facts: site`), a field each, the running details of this
+     Workspace's use, saved into its row as {provider, site}. No key and no setup here: those are Settings'. ---- */
+  const integrationRows = el('div', 'workspace-integrations');
   const integrationsBox = el('div', 'workspace-more-integrations');
-  integrationsBox.append(el('b', null, t('workspaces.integrations', 'Integrations')), integrationRows, addIntegration,
-    el('p', 'fs-step-help', t('workspaces.integrations_help', 'Agents in this Workspace use these; they ask for a key with secret ask, and Settings › Integrations shows what is saved.')));
+  integrationsBox.append(el('b', null, t('workspaces.integrations', 'Integrations')), integrationRows,
+    el('p', 'fs-step-help', t('workspaces.integrations_help', 'Ticked: this Workspace’s Agents are told of it. Each is set up, with its key, in Settings › Integrations.')));
   let index = [];
-  addIntegration.addEventListener('change', () => {
-    const provider = addIntegration.value;
-    if (!provider) return;
-    draft.integrations.push({ provider });
-    changed(); paint();
-  });
   const paintIntegrations = () => {
     integrationRows.replaceChildren();
-    if (!draft.integrations.length) integrationRows.append(el('p', 'fs-step-help', t('workspaces.integrations_none', 'None yet.')));
-    for (const entry of draft.integrations) {
-      const record = index.find((one) => one.name === entry.provider);
-      const row = el('div', 'workspace-location');
-      const remove = el('button', 'workspace-location-remove', '×'); remove.type = 'button';
-      remove.setAttribute('aria-label', t('workspaces.remove_named', 'Remove {name}', { name: record?.label || entry.provider }));
-      remove.addEventListener('click', () => { draft.integrations = draft.integrations.filter((one) => one !== entry); changed(); paint(); });
-      const where = el('div', 'workspace-location-where');
+    const gone = draft.integrations.filter((entry) => !index.some((one) => one.name === entry.provider));
+    const rows = [...index.map((one) => ({ name: one.name, label: one.label, facts: one.facts || [] })), ...gone.map((entry) => ({ name: entry.provider, label: entry.provider, facts: [] }))];
+    if (!rows.length) integrationRows.append(el('p', 'fs-step-help', t('workspaces.integrations_none', 'None set up yet: add one in Settings › Integrations.')));
+    for (const one of rows) {
+      const entry = draft.integrations.find((e) => e.provider === one.name);
+      const label = el('label', 'workspace-integration');
+      const tick = Object.assign(el('input'), { type: 'checkbox', checked: !!entry });
+      tick.addEventListener('change', () => {
+        draft.integrations = tick.checked ? [...draft.integrations, { provider: one.name }] : draft.integrations.filter((e) => e.provider !== one.name);
+        changed(); paint();
+      });
+      label.append(tick, el('span', null, one.label));
+      integrationRows.append(label);
+      if (!entry) continue;
       // The facts its bridge names (its `facts:` line) are fields; any other fact is kept and shown as it is.
-      const named = record?.facts || [];
-      const facts = Object.entries(entry).filter(([k]) => k !== 'provider' && !named.includes(k)).map(([k, v]) => `${k} ${v}`).join(' · ');
-      where.append(el('b', null, record?.label || entry.provider), el('code', null, facts || (named.length ? '' : record?.blurb || '')));
-      const state = record?.secrets.length ? t('integrations.keys_n', '{n} saved', { n: record.secrets.length }) : t('integrations.no_keys', 'No keys');
-      row.append(el('small', 'folder-kind', ''), where, el('small', 'folder-kind', state), el('span'), remove);
-      for (const fact of named) {
+      const kept = Object.entries(entry).filter(([k]) => k !== 'provider' && !one.facts.includes(k)).map(([k, v]) => `${k} ${v}`).join(' · ');
+      if (kept) integrationRows.append(el('code', 'workspace-integration-kept', kept));
+      for (const fact of one.facts) {
         const field = createField({ label: fact, control: text(entry[fact] ?? '', (v) => {
           if (v.trim()) entry[fact] = v.trim(); else delete entry[fact];
           changed();
         }) });
         field.el.classList.add('workspace-integration-fact');
-        row.append(field.el);
+        integrationRows.append(field.el);
       }
-      integrationRows.append(row);
     }
-    const chosen = new Set(draft.integrations.map((one) => one.provider));
-    addIntegration.replaceChildren(Object.assign(el('option', null, t('workspaces.add_integration', '+ Add an integration')), { value: '' }),
-      ...index.filter((one) => one.available !== false && !chosen.has(one.name)).map((one) => Object.assign(el('option', null, one.label), { value: one.name })));
-    addIntegration.hidden = addIntegration.options.length < 2;
   };
   void request('/api/integrations', { cache: 'no-store' })
     .then((answer) => { if (answer.ok) { index = answer.data.integrations || []; paint(); } });

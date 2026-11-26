@@ -1,19 +1,18 @@
 /**
  * THE MCP SERVER AND WEB API RECORDS, as the brief reads them (docs/architecture/integrations.md,
- * The MCP server record; Who has it; What Agents are told). One file per record in the owner's
- * custom folder, `~/ronin/custom/integrations/<name>.md`, written by `mcp add` or `api add` (the Services
- * part `mcp`). A record with a `reach:` is an MCP server, one with a `base:` a web API. The brief
- * reads only the name, the kind, the description, the Campaigns it is available to and whether its
- * secret is saved yet (KAN-600: a record added before its key says so on its line); it never calls
- * a server and never reads a secret's value. Available is not on (KAN-607): a record is on only
- * where a layer's integrations switch turns it on, like a bridge.
+ * The integration record; What Agents are told). One file per record in this machine's Settings,
+ * `~/ronin/custom/integrations/<name>.md`, written by Settings › Integrations, `mcp add` or `api add`
+ * (the Services part `mcp`). A record with a `reach:` is an MCP server, one with a `base:` a web API.
+ * The brief reads only the name, the kind, the description and whether its secret is saved yet
+ * (KAN-600: a record added before its key says so on its line); it never calls a server and never
+ * reads a secret's value. A record is on where the cascade has it on, like a bridge.
  */
 import { access, readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { entryValue, isKeyLine, storeDir } from './resources.js';
 
 /** `needs`: what the record still lacks before a call works ('' when nothing), for its brief line. */
-export interface McpRecord { name: string; kind: 'mcp' | 'api'; label: string; description: string; campaigns: string[]; needs: string; signIn: string; secret: string }
+export interface McpRecord { name: string; kind: 'mcp' | 'api'; label: string; description: string; needs: string; signIn: string; secret: string }
 
 const NAME = /^[a-z0-9][a-z0-9-]*$/;
 
@@ -30,7 +29,6 @@ export function parseMcpRecord(name: string, text: string): McpRecord | null {
     kind,
     label,
     description: entryValue(header, 'description') || label,
-    campaigns: entryValue(header, 'campaigns').split(',').map((one) => one.trim()).filter(Boolean),
     needs: '',
     signIn: (entryValue(header, 'sign-in') || 'none').toLowerCase(),
     secret: entryValue(header, 'secret'),
@@ -51,7 +49,3 @@ export async function readMcpRecords(): Promise<McpRecord[]> {
   }));
   return records;
 }
-
-/** Available to a Campaign (its pickers list it; a layer turns it on): blank `campaigns:` is every Campaign. */
-export const availableTo = (record: McpRecord, campaign: string): boolean =>
-  !record.campaigns.length || record.campaigns.includes(campaign);
