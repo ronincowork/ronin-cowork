@@ -205,7 +205,8 @@ export function mountModelOptions(host) {
 /* ---- Model services: the three services and what each holds ---- */
 export function createModelServicesSurface({ open = () => {} } = {}) {
   const { out, say, body } = shell(t('settings2.model_services', 'Model services'), 'model-services-list');
-  const entry = (title, facts, actions = [], extra = []) => {
+  let refreshFault = '';
+  const entry =(title, facts, actions = [], extra = []) => {
     const row = el('div', 'hermes-card model-services-entry');
     const summary = el('div', 'hermes-card-summary');
     summary.append(el('strong', null, title), el('span', null, facts));
@@ -223,11 +224,17 @@ export function createModelServicesSurface({ open = () => {} } = {}) {
       : !g.configured ? t('model_services.gateway_waiting', 'Not connected yet.')
       : t('model_services.gateway_models', '{n} models, supplied by the gateway', { n: count([g]) });
     const gatewayList = g?.models?.length ? [el('p', 'setup-fine', g.models.map((m) => m.name).join(' · '))] : [];
+    // A failed Refresh is said on the Gateway's own line, with what is still shown.
+    if (g && refreshFault) gatewayList.push(el('p', 'setup-notice bad', t('model_services.refresh_failed', 'Refresh failed: {why} ({address}). The list shown is the last one read.', { why: refreshFault, address: String(g.baseUrl || '').replace(/^https?:\/\//, '') })));
+    const refresh = async () => {
+      await act('discover', { id: g.id }, (text, bad) => { refreshFault = bad ? text : ''; });
+      paint();
+    };
     const router = routers.find((s) => s.configured) || routers[0];
     body.replaceChildren(
       el('p', 'setup-fine', t('model_services.lede', 'A service holds the address and key; its model options appear under Model for every compatible harness that uses it. A harness signed in to its own service keeps its own flow.')),
       entry(t('model_services.gateway', 'Ronin Gateway'), gatewayFacts,
-        g?.configured ? [button(t('model_services.refresh', 'Refresh the list'), () => act('discover', { id: g.id }, say))] : [], gatewayList),
+        g?.configured ? [button(t('model_services.refresh', 'Refresh the list'), refresh)] : [], gatewayList),
       entry(t('model_services.openrouter', 'OpenRouter'),
         router?.configured ? t('model_services.options_n', 'Key saved · {n} model options', { n: count(routers) }) : t('model_services.no_key', 'No key yet'),
         [button(t('model_services.open_openrouter', 'Open OpenRouter'), () => open('openrouter'))]),
