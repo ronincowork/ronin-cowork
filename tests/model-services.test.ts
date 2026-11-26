@@ -5,6 +5,7 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import test from 'node:test';
 import express from 'express';
+import { registerCatalogs } from '../src/routes/catalogs.js';
 import { registerSetupRuntime } from '../src/routes/setup-runtime-api.js';
 import { createServer } from 'node:http';
 import { once } from 'node:events';
@@ -29,7 +30,7 @@ test('named models stay with their service through discovery, catalog and CLI la
   });
   const server = createServer((_req, res) => {
     res.setHeader('Content-Type', 'application/json');
-    res.end(JSON.stringify({ data: [{ id: 'upstream/example' }] }));
+    res.end(JSON.stringify({ data: [{ id: 'upstream/example', name: 'Gateway example' }] }));
   });
   server.listen(0, '127.0.0.1'); await once(server, 'listening');
   t.after(() => server.close());
@@ -43,6 +44,8 @@ test('named models stay with their service through discovery, catalog and CLI la
   let services = await modelServices();
   assert.equal(services.find(s => s.id === gateway.id)?.models.length, 1);
   assert.deepEqual(services.find(s => s.id === api.id)?.models, []);
+  const gatewayOption = services.find(s => s.id === gateway.id)?.models[0];
+  assert.deepEqual([gatewayOption?.name, gatewayOption?.model], ['Gateway example', 'upstream/example']);
   const setup = await saveHermesSetup({ name: 'upstream/example', connection: api.id, model: 'vendor/private', reasoning: 'default', approvals: 'prompt' });
   const chatSetup = await saveHermesSetup({ name: 'Chat', connection: chat.id, model: 'vendor/chat', reasoning: 'default', approvals: 'prompt' });
   services = await modelServices();
@@ -57,10 +60,16 @@ test('named models stay with their service through discovery, catalog and CLI la
   const app = express();
   app.use(express.json());
   registerSetupRuntime(app);
+  registerCatalogs(app);
   const apiServer = app.listen(0, '127.0.0.1'); await once(apiServer, 'listening');
   t.after(() => apiServer.close());
   const apiAddress = apiServer.address(); assert.ok(apiAddress && typeof apiAddress === 'object');
   const endpoint = 'http://127.0.0.1:' + apiAddress.port + '/api/model-services';
+  const prefsUrl = 'http://127.0.0.1:' + apiAddress.port + '/api/new-agent-models/hermes';
+  const savedPrefs = { [gateway.id]: [gatewayOption!.id], [api.id]: [] };
+  assert.equal((await fetch(prefsUrl, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(savedPrefs) })).status, 200);
+  const catalogRead = await fetch('http://127.0.0.1:' + apiAddress.port + '/api/provider-catalog');
+  assert.deepEqual((await catalogRead.json()).preferences.hermes, savedPrefs);
   const change = async (action: string, body: Record<string, unknown>) => {
     const result = await fetch(endpoint + '/' + action, { method: 'POST',
       headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });

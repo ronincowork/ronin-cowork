@@ -96,6 +96,7 @@ export function loadProviderCatalog() {
     const providers = read.ok && Array.isArray(read.data?.providers) ? read.data.providers : [];
     const machine = runtime.ok && Array.isArray(runtime.data?.providers) ? runtime.data.providers : [];
     catalog = {
+      preferences: read.data?.preferences || {},
       rows: providers.flatMap((entry) => (Array.isArray(entry?.models) ? entry.models : [])), providers, machine,
       measured_at: read.ok ? String(read.data?.measured_at || '') : '',
       refreshed_at: read.ok ? String(read.data?.refreshed_at || '') : '',

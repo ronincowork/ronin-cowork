@@ -147,7 +147,8 @@ function modelOptions(service, say) {
     if (service.discovered?.length) {
       model.setAttribute('list', listId);
       const list = el('datalist'); list.id = listId;
-      for (const id of service.discovered) { const o = el('option'); o.value = id; list.append(o); }
+      for (const id of service.discovered) { const o = el('option'); o.value = id; o.label = service.discoveredNames?.[id] || id; list.append(o); }
+      model.addEventListener('change', () => { if (!name.value.trim()) name.value = service.discoveredNames?.[model.value] || model.value; });
       node.append(list);
     }
     const reasoning = reasons(service)

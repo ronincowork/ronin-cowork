@@ -1,3 +1,4 @@
+import { harnessModelEditor } from './harness-model-options.js';
 import { mountModelOptions } from './model-services-surface.js';
 /* part of the ronin-cowork client — see js/README.md */
 /**
@@ -512,6 +513,8 @@ export function createProviderDrawing(context, { repaint, say = () => {} }) {
     const rows = providerCatalog().rows.filter((row) => (provider ? row.cli === provider.id : row.provider === id));
     if (!provider && !rows.length) { host.append(el('p', 'setup-notice bad', t('setup_surface.provider_missing', 'This provider is no longer in the model-provider catalog.'))); return null; }
     // Hermes's keys and model options are Model services' (KAN-870); its page shows them, read only.
+    const harness = providerCatalog().providers.find(entry => entry.cli === id && !entry.part);
+    if (harness) host.append(harnessModelEditor(providerCatalog(), harness));
     if (id === 'hermes') return mountModelOptions(host);
     const part = (providerCatalog().providers || []).find((entry) => entry.provider === id && entry.part);
     if (part) {

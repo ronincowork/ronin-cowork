@@ -102,7 +102,7 @@ export interface ProviderRows extends ProviderEntry {
   part?: string;
   /** A part's one line for its provider page, in the part's words. */
   note?: string;
-  services?: Array<{ id: string; name: string }>;
+  services?: Array<{ id: string; name: string; gateway?: boolean }>;
   models: ProviderRow[];
 }
 
@@ -298,7 +298,7 @@ function rated(listed: readonly ModelRow[], cli: string, catalog: ModelCatalog):
   const out = listed.map((row, index) => {
     const at = own.find((m) => m.id === row.id);
     const tier: typeof GROUPS[number] = at && isTier(at.tier) ? at.tier : UNRATED;
-    return { row, tier, at: tier === UNRATED ? undefined : at, order: tier === UNRATED ? index : own.indexOf(at!) };
+    return { row, tier, at, order: tier === UNRATED ? index : own.indexOf(at!) };
   });
   return out.sort((a, b) => GROUPS.indexOf(a.tier) - GROUPS.indexOf(b.tier) || a.order - b.order);
 }
@@ -347,7 +347,7 @@ export async function providerRows(summary: ProviderSummary | null, catalog?: Mo
       for (const { row, tier, at } of rated(listed, entry.cli, models)) {
         const facts = at && factsOf(at);
         rows.push({
-          ...base, model: row.id, name: row.name || row.id,
+          ...base, model: row.id, name: at?.name || row.name || row.id,
           cmd: commandText(renderLaunch(grammar.model, values(row.id))),
           ...(grammar.modelDangerously.length ? { dangerousCmd: commandText(renderLaunch(grammar.modelDangerously, values(row.id))) } : {}),
           tier, ...(at?.use_for ? { use_for: at.use_for } : {}), ...(facts ? { facts } : {}), default: false,
@@ -369,7 +369,7 @@ export async function providerRows(summary: ProviderSummary | null, catalog?: Mo
       }
     }
     const ready = rows.some(row => row.operational);
-    return { ...entry, cli_label: base.cli_label, operational: ready, off, ...launch, services: compatible.map(({ id, name }) => ({ id, name })), models: rows };
+    return { ...entry, cli_label: base.cli_label, operational: ready, off, ...launch, services: compatible.map(({ id, name, service_type }) => ({ id, name, gateway: service_type === 'gateway' })), models: rows };
   }));
   // A part's provider (Ronin models, in a hosted office) leads, apart from every CLI's list.
   const parts = await partProviderRows();

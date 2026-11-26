@@ -1,3 +1,6 @@
+import { readMachineSettingsSection, updateDocument } from '../machine-settings.js';
+import { broadcastEvent } from '../ws/events.js';
+import { AGENTS } from '../agents.js';
 import { homedir } from 'node:os';
 import type express from 'express';
 import { listSkins } from '../skin-catalog.js';
@@ -35,10 +38,29 @@ export function registerCatalogs(app: express.Express): void {
   // of the record, and every provider with its joined rows — Native, then what its CLI lists.
   app.get('/api/provider-catalog', async (_req, res) => {
     try {
-      res.json(await providerCatalogAnswer(await readProviderSummary()));
+      const catalog = await providerCatalogAnswer(await readProviderSummary());
+      const preferences = await readMachineSettingsSection('newAgentModels', {});
+      res.json({ ...catalog, preferences });
     } catch (e) {
       res.status(500).json({ error: errMsg(e) });
     }
+  });
+
+  app.put('/api/new-agent-models/:cli', async (req, res) => {
+    const cli = req.params.cli;
+    const groups = req.body;
+    if (!AGENTS.some(agent => agent.id === cli) || !groups || typeof groups !== 'object' || Array.isArray(groups) ||
+        !Object.entries(groups).every(([key, ids]) => /^[a-zA-Z0-9_-]{1,100}$/.test(key) &&
+          (ids === null || (Array.isArray(ids) && ids.every(id => typeof id === 'string' && id.length <= 1024))))) {
+      return res.status(400).json({ error: 'Invalid harness model selections.' });
+    }
+    try {
+      await updateDocument(doc => {
+        doc.newAgentModels = { ...(doc.newAgentModels as Record<string, unknown>), [cli]: groups };
+      });
+      broadcastEvent({ t: 'model-services-changed' });
+      res.json({ ok: true });
+    } catch (e) { res.status(500).json({ error: errMsg(e) }); }
   });
 
   app.get('/api/installations', async (_req, res) => {

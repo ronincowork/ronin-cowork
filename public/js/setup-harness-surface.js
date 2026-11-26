@@ -24,6 +24,7 @@ import { sendPress } from './press.js';
 import { IRASSHAI, irasshaiIn } from './setup-journey.js';
 import { recordRuntime } from './provider-surface.js';
 import { mountProviderAttachment } from './setup-provider-state.js';
+import { modelSettingsLink } from './harness-model-options.js';
 import { mountHermesServices } from './setup-hermes-services.js';
 
 export const HARNESS_SURFACE_TYPE = 'setup.harness';
@@ -179,6 +180,7 @@ function createHarnessSurface(context) {
     top.addEventListener('click', () => { open = open === provider.id ? '' : provider.id; paint(); });
     bar.append(top);
     if (!selected) return bar;
+    bar.append(modelSettingsLink(provider.id));
     if (run) bar.append(windowOf(provider, run));
     else if (hermes) {
       // Mounted once while its bar is open, so a repaint keeps what is being edited there.

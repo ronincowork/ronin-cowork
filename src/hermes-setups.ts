@@ -14,7 +14,7 @@ import { storeDir, REPO_ROOT } from './resources.js';
 /** A connection is an account in the Agent Harness workbench (KAN-236): `kind`, the harnesses it serves and the
  * models it offers are optional facts on the same record; absent, src/accounts.ts derives them. */
 export type AccountKind = 'personal_api' | 'ronin_api';
-export interface HermesConnection { id: string; name: string; provider: 'openai' | 'mistral' | 'custom'; baseUrl: string; wireApi?: 'chat' | 'responses'; models: string[]; discoveredAt?: string; credentialEnv?: string; starterModelsPending?: true; kind?: AccountKind; harnesses?: string[]; offered?: string[] }
+export interface HermesConnection { id: string; name: string; provider: 'openai' | 'mistral' | 'custom'; baseUrl: string; wireApi?: 'chat' | 'responses'; models: string[]; modelNames?: Record<string, string>; discoveredAt?: string; credentialEnv?: string; starterModelsPending?: true; kind?: AccountKind; harnesses?: string[]; offered?: string[] }
 export interface ModelSetup { id: string; name: string; connection: string; model: string; reasoning: string; approvals: 'off' | 'prompt' }
 export type HermesSetup = ModelSetup;
 export interface HermesSettings { connections: HermesConnection[]; setups: HermesSetup[] }
@@ -102,7 +102,7 @@ export async function saveHermesConnection(input: Record<string, unknown>): Prom
     const harnesses = input.harnesses === undefined ? existing?.harnesses : harnessList(input.harnesses);
     const connection: HermesConnection = { ...(!apiKey && existing?.credentialEnv ? { credentialEnv: existing.credentialEnv } : {}), id, name: required(input.name, 'Connection name'), provider, baseUrl, ...(wireApi ? { wireApi } : {}),
       ...(isOpenRouterService(baseUrl) && (!existing || !isOpenRouterService(existing.baseUrl) || existing.starterModelsPending) ? { starterModelsPending: true as const } : {}),
-      models: changed ? [] : existing.models, ...(!changed && existing.discoveredAt ? { discoveredAt: existing.discoveredAt } : {}),
+      models: changed ? [] : existing.models, ...(!changed && existing.modelNames ? { modelNames: existing.modelNames } : {}), ...(!changed && existing.discoveredAt ? { discoveredAt: existing.discoveredAt } : {}),
       ...(kind ? { kind } : {}), ...(harnesses ? { harnesses } : {}), ...(!changed && existing?.offered ? { offered: existing.offered } : {}) };
     if (apiKey) {
       await mkdir(path.dirname(keyPath(id)), { recursive: true });
@@ -151,8 +151,12 @@ export async function discoverHermesModels(id: string): Promise<string[]> {
     catch { await record(0); throw new Error('Could not reach this API connection.'); }
     await record(response.status);
     if (!response.ok) throw new Error(`Model discovery failed (HTTP ${response.status}).`);
-    const body = await response.json().catch(() => { throw new Error('API returned an unreadable model list.'); }) as { data?: { id?: unknown }[] };
+    const body = await response.json().catch(() => { throw new Error('API returned an unreadable model list.'); }) as { data?: { id?: unknown; name?: unknown }[] };
     if (!Array.isArray(body.data)) throw new Error('API did not return an OpenAI-compatible model list.');
+    if (accountKind(c) === 'ronin_api' && body.data.some(row => typeof row?.name !== 'string' || !row.name.trim())) {
+      throw new Error('Gateway model list is missing display names.');
+    }
+    c.modelNames = Object.fromEntries(body.data.flatMap(row => typeof row?.id === 'string' && typeof row.name === 'string' && row.name.trim() ? [[row.id, row.name.trim()]] : []));
     c.models = [...new Set(body.data.flatMap(row => row && typeof row.id === 'string' && modelPattern.test(row.id) ? [row.id] : []))];
     if (accountKind(c) !== 'ronin_api') c.models.sort();
     c.discoveredAt = new Date().toISOString();
@@ -224,12 +228,12 @@ async function credentialEnvironment(): Promise<NodeJS.ProcessEnv> {
   return { ...native, ...process.env, ...app };
 }
 /** THE RONIN GATEWAY'S MODEL OPTIONS ARE ITS OWN LIST (owner, 25 Nov 2026): one per model the office gateway
- *  last listed, named as it, never saved and never edited; id `<connection>/<model>`. Saved setups are the ones
+ *  last listed, with its supplied display name and model ID; id `<connection>/<model>`. Saved setups are the ones
  *  people name, on an API key or OpenRouter. */
 function withGatewayOptions(state: HermesSettings): HermesSettings {
   const gateway = state.connections.filter(c => accountKind(c) === 'ronin_api');
   return { ...state, setups: [
-    ...gateway.flatMap(c => c.models.map(model => ({ id: `${c.id}/${model}`, name: model, connection: c.id, model, reasoning: 'default', approvals: 'off' as const }))),
+    ...gateway.flatMap(c => c.models.map(model => ({ id: `${c.id}/${model}`, name: Object.hasOwn(c.modelNames || {}, model) ? c.modelNames![model]! : model, connection: c.id, model, reasoning: 'default', approvals: 'off' as const }))),
     ...state.setups.filter(s => !gateway.some(c => c.id === s.connection)),
   ] };
 }
@@ -252,7 +256,7 @@ export function readHermesSettings(environment?: NodeJS.ProcessEnv): Promise<Her
         c = { id: randomUUID(), name: found.name, provider: found.provider, baseUrl: found.baseUrl, models: [], credentialEnv: found.credentialEnv, ...(isOpenRouterService(found.baseUrl) ? { starterModelsPending: true } : {}) };
         state.connections.push(c); changed = true;
       }
-      if (c.baseUrl !== found.baseUrl) { c.baseUrl = found.baseUrl; c.models = []; delete c.discoveredAt; changed = true; }
+      if (c.baseUrl !== found.baseUrl) { c.baseUrl = found.baseUrl; c.models = []; delete c.discoveredAt; delete c.modelNames; changed = true; }
       const content = `OPENAI_API_KEY='${found.apiKey}'\nOPENAI_BASE_URL='${found.baseUrl}'\n`;
       const previous = await readFile(keyPath(c.id), 'utf8').catch(() => '');
       if (previous !== content) {

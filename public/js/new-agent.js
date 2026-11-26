@@ -5,6 +5,7 @@
  * step is brief-step.js: this Agent's own brief settings, integrations and project
  * management, and what comes with it as the server works it out (docs/architecture/brief.md, Where it is set in the UI). */
 import { store } from './store.js';
+import { modelSettingsLink, shownInNewAgent } from './harness-model-options.js';
 import { request } from './request.js';
 import { t } from './lexicon.js';
 import { ask } from './ask.js';
@@ -25,7 +26,7 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
     const entryTeam = typeof team === 'function' ? team() : team;
     return {
       type: 'cowork_agent',
-      name: '', provider: '', service: '', model: '', instructions: '',
+      name: '', provider: '', model: '', instructions: '',
       teamMode: entryTeam ? 'existing' : 'none', team: entryTeam || '', newTeam: '',
       reach: 'open', recruit: 'open', output: ['open'],
       role: 'coworker',
@@ -152,14 +153,21 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
     v: entry.provider, l: entry.cli_label || entry.label,
     off: entry.operational ? undefined : entry.off ? t('forms.reason_turned_off', 'turned off') : t('forms.reason_not_on_machine', 'not on this machine'),
   }));
-  const serviceRows = ({ provider }) => (providerCatalog().providers.find(entry => entry.provider === provider)?.services || [])
-    .map(service => ({ v: service.id, l: service.name }));
-  const modelRows = ({ provider, service }) => providerCatalog().rows
-    .filter(row => row.provider === provider && (row.service_id || '') === service)
-    .map(row => ({ v: row.model, l: modelLabel(row), word: rowTierWord(row),
-      off: row.selectable ? undefined : row.off ? t('forms.reason_turned_off', 'turned off') : t('forms.reason_not_on_machine', 'not on this machine'),
-    }));
-  const needsModel = () => hasAgent() && !!draft.service && !modelRows(draft).some(row => row.v === draft.model && !row.off);
+  const modelRows = ({ provider }) => {
+    const catalog = providerCatalog();
+    const entry = catalog.providers.find(item => item.provider === provider);
+    return (entry?.models || []).filter(row => configure || shownInNewAgent(catalog, entry, row))
+      .map(row => ({ v: row.model, l: modelLabel(row), word: row.service_name || rowTierWord(row),
+        off: row.selectable ? undefined : t('forms.reason_not_on_machine', 'not on this machine'),
+      }));
+  };
+  const needsModel = () => {
+    if (configure || !hasAgent()) return false;
+    const provider = draft.provider || seed?.seeds?.provider?.value;
+    if (!provider) return false;
+    const model = draft.model || (!draft.provider && seed?.seeds?.model?.value);
+    return !modelRows({ provider }).some(row => row.v === model && !row.off);
+  };
   const teamChoice = () => draft.teamMode === 'new' ? 'new' : draft.teamMode === 'none' ? 'none' : 'current';
   const teamRows = () => teams.map((row) => ({ v: row.name, l: String(row.title ?? '').trim() || row.name, sub: row.name }));
   const newTeamField = () => {
@@ -196,11 +204,15 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
       openTeamDefaults ? () => openTeamDefaults(chosenTeam()) : null), ' · ');
     links.append(defaultsLink(t('new_agent.desk_defaults', 'Desk defaults'),
       deskDefaultsSpec?.() || { destination: 'campaign', mode: 'overlay' }, openDeskDefaults));
+    if (!configure && hasAgent()) {
+      const entry = providerCatalog().providers.find(row => row.provider === (draft.provider || seed?.seeds?.provider?.value));
+      links.append(' · ', modelSettingsLink(entry?.cli));
+    }
     defaultsNote.append(teaching, links);
   };
   const onQuestionChange = (value, key) => {
     if ('provider' in value) {
-      draft.provider = value.provider; draft.service = value.service; draft.model = key === 'provider' ? '' : value.model;
+      draft.provider = value.provider; draft.model = key === 'provider' ? '' : value.model;
       if (key === 'provider' && value.model) questions.set('model', '');
     }
     if ('reach' in value) { draft.reach = value.reach; draft.recruit = value.recruit; draft.output = value.output; }
@@ -220,14 +232,14 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
   const defaultWord = () => {
     const provider = seed?.seeds?.provider?.value || ''; const model = seed?.seeds?.model?.value || '';
     const row = providerCatalog().rows.find((item) => item.provider === provider && item.model === model);
+    if (row && !modelRows({ provider }).some(option => option.v === model)) return t('new_agent.choose_harness', 'Choose harness');
     const named = row ? modelLabel(row) : model || providerCatalog().providers.find((item) => item.provider === provider)?.label || '';
     return named ? t('new_agent.default_named', 'Default · {model}', { model: named }) : t('forms.default', 'Default');
   };
   const questions = ask([
     { group: t('new_agent.model_package', 'Model'), fields: [
       { key: 'provider', label: t('forms.provider', 'Harness'), blank: defaultWord, options: providerRows, fixed: !!configure },
-      { key: 'service', label: t('new_agent.model_service', 'Model service'), blank: t('forms.default', 'Default'), after: 'provider', options: serviceRows, fixed: !!configure },
-      { key: 'model', label: t('forms.model', 'Model'), blank: () => draft.service ? t('new_agent.choose_model', 'Choose model') : t('forms.default', 'Default'), after: 'service', empty: () => draft.service ? t('new_agent.no_service_models', 'No models configured for this service.') : '', options: modelRows, fixed: !!configure },
+      { key: 'model', shape: 'rect', label: t('forms.model', 'Model'), blank: () => draft.provider ? t('new_agent.choose_model', 'Choose model') : defaultWord(), after: 'provider', empty: () => draft.provider ? 'No model options selected for this harness.' : '', options: modelRows, fixed: !!configure },
       { key: 'role', label: t('agent_composition.role', 'Role'), options: [
         { v: 'coworker', l: 'Coworker' }, { v: 'lead', l: 'Lead' }, { v: 'epic_lead', l: 'Epic Lead' }, { v: 'coordinator', l: 'Coordinator' },
       ] },
@@ -238,7 +250,7 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
       { key: 'output', label: t('output', 'Output'), many: true, options: () => mandateRows('output', { block: preview?.off || [] }) },
     ] },
   ], {
-    value: { provider: draft.provider, service: draft.service, model: draft.model, reach: draft.reach, recruit: draft.recruit, output: draft.output, role: draft.role},
+    value: { provider: draft.provider, model: draft.model, reach: draft.reach, recruit: draft.recruit, output: draft.output, role: draft.role},
     className: 'na-questions',
     density: 'tight',
     onChange: onQuestionChange,
@@ -263,10 +275,19 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
     onChange: onQuestionChange,
   });
   const syncQuestions = () => {
-    questions.set({ provider: draft.provider, service: draft.service, model: draft.model, reach: draft.reach, recruit: draft.recruit, output: draft.output, role: draft.role});
+    questions.set({ provider: draft.provider, model: draft.model, reach: draft.reach, recruit: draft.recruit, output: draft.output, role: draft.role});
     teamQuestions.set({ team: teamChoice(), teamName: draft.team });
   };
-  const refreshModels = () => loadProviderCatalog().then(() => { questions.paint(); paintActions(); });
+  const refreshModels = () => loadProviderCatalog().then(() => {
+    if (!configure && draft.model && !modelRows(draft).some(row => row.v === draft.model)) {
+      draft.model = '';
+      questions.set('model', '');
+    }
+    questions.paint();
+    paintDefaultsNote();
+    paintFoot();
+    paintActions();
+  });
   const forgetModels = store.listen('model-services-changed', refreshModels);
   void refreshModels();
 
@@ -500,8 +521,8 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
     stepPayload.setNumber(order.length + 1);
     stepPayload.el.hidden = !!configure || draft.type === 'terminal';
     stepTop.el.querySelector('h3').textContent = hasAgent() ? t('new_agent.agent_body', 'Agent') : t('new_agent.name_required_step', 'Name · required');
-    if (configure) questions.show(['provider', 'service', 'model', 'role', 'reach', 'recruit', 'output']);
-    else questions.show(draft.type === 'terminal' ? [] : draft.type === 'bare_metal_agent' ? ['provider', 'service', 'model'] : null);
+    if (configure) questions.show(['provider', 'model', 'role', 'reach', 'recruit', 'output']);
+    else questions.show(draft.type === 'terminal' ? [] : draft.type === 'bare_metal_agent' ? ['provider', 'model'] : null);
     teamQuestions.show(isCowork() ? null : ['team']);
     teamQuestions.el.hidden = false;
     questions.el.hidden = draft.type === 'terminal';
@@ -545,7 +566,6 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
     draft.type = current.session_type || 'cowork_agent'; draft.name = current.title || configure; nameInput.value = draft.name;
     draft.instructions = current.objective || ''; instructionsInput.value = draft.instructions;
     draft.provider = current.provider || ''; draft.model = current.model || '';
-    draft.service = providerCatalog().rows.find(row => row.provider === draft.provider && row.model === draft.model)?.service_id || '';
     draft.role = current.role || 'coworker';
     draft.teamMode = current.team ? 'existing' : 'none'; draft.team = current.team || '';
     draft.reach = current.mandate.reach; draft.recruit = current.mandate.recruit; draft.output = [...current.mandate.output];

@@ -10,6 +10,7 @@ export async function modelServices() {
     name: connection.kind === 'ronin_api' ? 'Ronin Gateway' : connection.name,
     service_type: connection.kind === 'ronin_api' ? 'gateway' : isOpenRouterService(connection.baseUrl) ? 'openrouter' : 'private_api',
     discovered,
+    discoveredNames: state.connections.find(c => c.id === connection.id)?.modelNames || {},
     models: state.setups.filter(entry => entry.connection === connection.id)
       .map(({ id, model, name, reasoning, approvals }) => ({ id, model, name, reasoning, approvals })),
   }));

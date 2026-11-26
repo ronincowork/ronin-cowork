@@ -101,7 +101,7 @@ asks the selected endpoint's `/models`; personal services also accept an explici
 This proves model-list access, not per-model inference compatibility.
 
 The Ronin Gateway's model options are its own list: one per model Ronin Gateway last listed,
-named as it, with default reasoning and approvals off. They are never saved or edited; their id is
+carrying its display name and API model ID, with default reasoning and approvals off. They are never saved or edited; their id is
 `<connection id>/<model id>` (`withGatewayOptions`, src/hermes-setups.ts). The list is read at start-up
 and on Refresh, and a failed read keeps the last one. Saved setups are only the ones people name, on an
 API key or OpenRouter.
