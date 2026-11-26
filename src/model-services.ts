@@ -54,6 +54,8 @@ export async function modelServices() {
     name: service.kind === 'ronin_api' ? 'Ronin Gateway' : service.name,
     service_type: service.kind === 'ronin_api' ? 'gateway' as const : isOpenRouterService(service.baseUrl) ? 'openrouter' as const : 'private_api' as const,
     discoveredNames: state.connections.find(c => c.id === service.id)?.modelNames || {},
+    /** Ronin Gateway only: why it can't be used, as its last list read found it; absent is ready (w1028). */
+    ...(state.connections.find(c => c.id === service.id)?.gatewayStatus ? { status: state.connections.find(c => c.id === service.id)!.gatewayStatus } : {}),
     models: state.setups.filter(entry => entry.connection === service.id)
       .map(({ id, model, name, reasoning, approvals, tier, use_for }) => ({ id, model, name, reasoning, approvals, ...(tier ? { tier } : {}), ...(use_for ? { use_for } : {}) })),
   }));

@@ -14,7 +14,11 @@ import { storeDir, REPO_ROOT } from './resources.js';
 /** A connection is a model service (KAN-236): `kind` is an optional fact on the record; absent,
  * `accountKind` derives it. Which harnesses can use it is worked out in src/model-services.ts, never stored. */
 export type AccountKind = 'personal_api' | 'ronin_api';
-export interface ModelServiceRecord { id: string; name: string; provider: 'openai' | 'mistral' | 'custom'; baseUrl: string; wireApi?: 'chat' | 'responses'; models: string[]; modelNames?: Record<string, string>; modelInfo?: Record<string, { tier?: string; use_for?: string }>; discoveredAt?: string; credentialEnv?: string; starterModelsPending?: true; kind?: AccountKind }
+/** WHY RONIN GATEWAY CAN'T BE USED (w1028), as its last model-list read found it: `stopped` (the office's
+ *  house models are stopped: allowance used up or no plan), `token_rejected`, `unreachable`. Absent is ready.
+ *  Read at start-up and on Refresh, never polled; it informs New Agent and the Model services card, and blocks nothing. */
+export type GatewayStatus = 'stopped' | 'token_rejected' | 'unreachable';
+export interface ModelServiceRecord { id: string; name: string; provider: 'openai' | 'mistral' | 'custom'; baseUrl: string; wireApi?: 'chat' | 'responses'; models: string[]; modelNames?: Record<string, string>; modelInfo?: Record<string, { tier?: string; use_for?: string }>; gatewayStatus?: GatewayStatus; discoveredAt?: string; credentialEnv?: string; starterModelsPending?: true; kind?: AccountKind }
 /** `tier` and `use_for` are the Ronin Gateway's own words for its model options; a named option has neither. */
 export interface ModelOption { id: string; name: string; connection: string; model: string; reasoning: string; approvals: 'off' | 'prompt'; tier?: string; use_for?: string }
 
@@ -126,11 +130,16 @@ export async function discoverModelIds(id: string): Promise<string[]> {
     const listPath = isOpenRouterService(c.baseUrl) ? '/models/user' : '/models';
     const started = Date.now();
     const record = (status: number) => appendEgress({ at: new Date().toISOString(), host: new URL(c.baseUrl).host, path: new URL(c.baseUrl).pathname + listPath, method: 'GET', status, outcome: status >= 200 && status < 300 ? 'ok' : 'failed', ms: Date.now() - started }).catch(() => {});
+    // A failed Gateway read is kept as its status; the last list stays as it was.
+    const failed = async (status: GatewayStatus, message: string): Promise<never> => {
+      if (accountKind(c) === 'ronin_api' && c.gatewayStatus !== status) { c.gatewayStatus = status; await writeModelServiceStore(state); }
+      throw new Error(message);
+    };
     try { response = await fetch(c.baseUrl + listPath, { headers: { Authorization: `Bearer ${key}` }, redirect: 'error', signal: AbortSignal.timeout(15000) }); }
-    catch { await record(0); throw new Error('Could not reach this API connection.'); }
+    catch { await record(0); return failed('unreachable', 'Could not reach this API connection.'); }
     await record(response.status);
-    if (!response.ok) throw new Error(`Model discovery failed (HTTP ${response.status}).`);
-    const body = await response.json().catch(() => { throw new Error('API returned an unreadable model list.'); }) as { data?: { id?: unknown; name?: unknown; tier?: unknown; use_for?: unknown }[] };
+    if (!response.ok) return failed(response.status === 401 ? 'token_rejected' : 'unreachable', `Model discovery failed (HTTP ${response.status}).`);
+    const body = await response.json().catch(() => { throw new Error('API returned an unreadable model list.'); }) as { stopped?: unknown; data?: { id?: unknown; name?: unknown; tier?: unknown; use_for?: unknown }[] };
     if (!Array.isArray(body.data)) throw new Error('API did not return an OpenAI-compatible model list.');
     c.modelNames = Object.fromEntries(body.data.flatMap(row => typeof row?.id === 'string' && typeof row.name === 'string' && row.name.trim() ? [[row.id, row.name.trim()]] : []));
     // The Gateway says each model's tier and "use it for" line beside its name (KAN-895); null or absent is none.
@@ -139,6 +148,7 @@ export async function discoverModelIds(id: string): Promise<string[]> {
       const tier = words(row?.tier)?.toLowerCase(), use_for = words(row?.use_for);
       return typeof row?.id === 'string' && (tier || use_for) ? [[row.id, { ...(tier ? { tier } : {}), ...(use_for ? { use_for } : {}) }]] : [];
     }));
+    if (body.stopped === true) c.gatewayStatus = 'stopped'; else delete c.gatewayStatus;
     c.models = [...new Set(body.data.flatMap(row => row && typeof row.id === 'string' && modelPattern.test(row.id) ? [row.id] : []))];
     if (accountKind(c) !== 'ronin_api') c.models.sort();
     c.discoveredAt = new Date().toISOString();

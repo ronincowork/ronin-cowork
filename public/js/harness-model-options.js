@@ -3,6 +3,7 @@ import { workbenchLink, openWorkbenchTab } from './workspace.js';
 import { createStep, el } from './form-steps.js';
 import { createTable } from './data-table.js';
 import { request } from './request.js';
+import { t } from './lexicon.js';
 
 export function modelSettingsLink(cli) {
   const state = cli ? { count: 1, selected: 'workspace1', seats: { workspace1: { type: 'models.provider', key: cli } } } : {};
@@ -15,6 +16,14 @@ export function modelSettingsLink(cli) {
     openWorkbenchTab(spec);
   });
   return link;
+}
+
+/** Why a Ronin Gateway option can't be used now, in the person's words; '' when it can (w1028). */
+export function gatewayBlockWord(blocked) {
+  return blocked === 'stopped' ? t('model_services.gateway_stopped', 'house models are stopped for this office: see the Business Lounge')
+    : blocked === 'token_rejected' ? t('model_services.gateway_token_rejected', 'the gateway rejected this office’s token')
+    : blocked === 'unreachable' ? t('model_services.gateway_unreachable', 'the gateway could not be reached')
+    : '';
 }
 
 export function modelSelection(catalog, entry, serviceId) {

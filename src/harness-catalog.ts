@@ -87,6 +87,8 @@ export interface HarnessRow extends SessionLaunchSpec {
   /** Turned off by the owner; the sign-in is kept. */
   off: boolean;
   selectable: boolean;
+  /** A Ronin Gateway option that can't be used now, and why: stopped, token_rejected or unreachable (w1028). */
+  blocked?: string;
 }
 
 export interface HarnessRows extends HarnessEntry {
@@ -360,7 +362,8 @@ export async function harnessRows(summary: HarnessSummary | null, catalog?: Mode
           service_id: service.id, service_name: service.name,
           cmd: commandText(renderLaunch(grammar.model, { model: marker })),
           ...(grammar.modelDangerously.length ? { dangerousCmd: commandText(renderLaunch(grammar.modelDangerously, { model: marker })) } : {}),
-          selectable: canUseService, operational: canUseService, tier: isTier(setup.tier) ? setup.tier : '',
+          selectable: canUseService && !service.status, operational: canUseService && !service.status, ...(service.status ? { blocked: service.status } : {}),
+          tier: isTier(setup.tier) ? setup.tier : '',
           ...(setup.use_for ? { use_for: setup.use_for } : {}), default: rows.length === 0 });
       }
     }

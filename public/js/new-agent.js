@@ -5,7 +5,7 @@
  * step is brief-step.js: this Agent's own brief settings, integrations and project
  * management, and what comes with it as the server works it out (docs/architecture/brief.md, Where it is set in the UI). */
 import { store } from './store.js';
-import { modelSettingsLink, shownInNewAgent } from './harness-model-options.js';
+import { gatewayBlockWord, modelSettingsLink, shownInNewAgent } from './harness-model-options.js';
 import { request } from './request.js';
 import { t } from './lexicon.js';
 import { ask } from './ask.js';
@@ -158,7 +158,7 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
     const entry = catalog.harnesses.find(item => item.provider === provider);
     return (entry?.models || []).filter(row => configure || shownInNewAgent(catalog, entry, row))
       .map(row => ({ v: row.model, l: modelLabel(row), word: row.service_name || rowTierWord(row),
-        off: row.selectable ? undefined : t('forms.reason_not_on_machine', 'not on this machine'),
+        off: row.selectable ? undefined : gatewayBlockWord(row.blocked) || t('forms.reason_not_on_machine', 'not on this machine'),
       }));
   };
   const needsModel = () => {

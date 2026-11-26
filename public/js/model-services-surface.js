@@ -21,6 +21,7 @@ import { WorkspaceKit } from './workspace-kit.js';
 import { request } from './request.js';
 import { el, createStep } from './form-steps.js';
 import { t } from './lexicon.js';
+import { gatewayBlockWord } from './harness-model-options.js';
 import { store } from './store.js';
 import { openWorkbenchTab } from './workspace.js';
 import { createTable } from './data-table.js';
@@ -246,9 +247,11 @@ export function createModelServicesSurface({ tab = 'gateway', serviceId = '' } =
       : g.fault ? [[g.fault, null]]
       : !g.configured ? [[t('model_services.gateway_waiting', 'Not connected yet.'), null]]
       : [...(rows.length ? [] : [[t('model_services.gateway_empty', 'No models from the gateway yet.'), null]]), [t('model_services.refresh_line', '+ Refresh the list'), refresh]];
+    const blocked = g?.status ? [el('p', 'setup-notice bad', t('model_services.gateway_blocked', 'Ronin Gateway can’t be used now: {why}. Its options are greyed in New Agent. Refresh reads it again.', { why: gatewayBlockWord(g.status) }))] : [];
     const fault = g && refreshFault ? [el('p', 'setup-notice bad', t('model_services.refresh_failed', 'Refresh failed: {why} ({address}). The list shown is the last one read.', { why: refreshFault, address: String(g.baseUrl || '').replace(/^https?:\/\//, '') }))] : [];
     return [
       el('p', 'setup-fine', t('model_services.gateway_lede', 'The Ronin Gateway comes configured. Its model list is supplied by the gateway; there is nothing to set here.')),
+      ...blocked,
       sections([{ key: 'models', title: t('model_services.model_options', 'Model options'), meta: optionsMeta(g),
         nodes: [table(same ? [t('model_services.col_model', 'Model')] : [t('model_services.col_name', 'Name'), t('model_services.col_model', 'Model')], rows, lines), ...fault] }], folds.gateway),
     ];

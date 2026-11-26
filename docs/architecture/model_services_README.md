@@ -40,6 +40,19 @@ When nothing names a harness and model, Ronin takes the first step that works. E
 
 A service step needs an installed harness that works with the service and shows it in its settings. Working means signed in, key present, or the Gateway answering on its port; no test request is made, so a listening Gateway can still reject the call. The progression writes nothing. It lives in [the launch progression](../../src/launch-progression.ts).
 
+## When Ronin Gateway can't be used
+
+Ronin keeps what the Gateway's last model-list read found, as the service's `status`. The list is read at start-up and on Refresh, never on a timer.
+
+| Status | The read found | What the person sees |
+|---|---|---|
+| ready (no status) | the list, not stopped | Gateway options as usual |
+| `stopped` | the list with `stopped: true`: the office's house models are stopped, allowance used up or no plan | Gateway options greyed in New Agent, pointing to the Business Lounge |
+| `token_rejected` | HTTP 401 | Gateway options greyed: the gateway rejected the office's token |
+| `unreachable` | no answer, or any other failure | Gateway options greyed: the gateway could not be reached |
+
+The Model services card shows the same line. The status informs and blocks nothing: no launch is refused by it, and a launch with no default takes its next step, since a greyed option is not selectable. A running Agent that meets a stopped gateway shows the gateway's own line in its terminal.
+
 ## Checking a change end to end
 
 Read `GET /api/model-services` to see each connection's `service_type`, discovered IDs and launchable named options (`models`). Follow the connection ID into the harness catalog, change the model services shown for that harness in Setup and reopen New Agent, and check the empty-list case. At the request boundary, verify the endpoint, protocol and exact model ID with a fixture credential. A cached Gateway list alone cannot verify the live Gateway or HQ catalog.
