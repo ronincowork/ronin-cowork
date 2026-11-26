@@ -49,7 +49,6 @@ Three kinds of thing, and only three, sit inside the bar:
 | `workspace_surface` | about | its head | what the head holds |
 |---|---|---|---|
 | **terminal_tile** | one session | **tile head** (`js/tilehead.js`) | ⛩ edit Agent title · reading toggle · メ menu (`js/menu.js`: send a file, mention, output, work record, delete or archive) · −. The Torii is first, immediately before the readable title; the permanent session ID does not change. |
-| **cowork_commons** | this install and this owner | the Campaign's **Machine** strip (`js/cowork-commons.js`) | Themes · Desk · Account (the rail: Configuration · Release & update · Hotwords · Log out) · Archived · Messages · Help desk · Keypad |
 | **new_agent** | one launch | **surface head** | the New Agent form (`js/new-agent.js`), placed by the New Agent card or `workspace1=new`; from the press until the Agent is born, Launch reads **Building…** and the form steps back under the working dots; the newborn lands in that workspace |
 | *(blank)* | — | — | an EMPTY workspace says *Workspace* and holds nothing — never a commons by default |
 

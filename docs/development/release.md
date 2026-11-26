@@ -63,9 +63,8 @@ verifies a checksum.
 
 ## Installing and updating (the consuming half)
 
-One implementation, `bin/ronin-update`, behind two doors: the terminal, and the
-**Release & update** row of the Account rail (`public/js/cowork-commons.js`) and Ronin
-Home's update line, whose buttons run the same script. The layout it
+One implementation, `bin/ronin-update`, behind two doors: the terminal, and Ronin
+Home's update line (Check for updates), whose buttons run the same script. The layout it
 manages, under an install home named once at first install (`--home`):
 
 ```

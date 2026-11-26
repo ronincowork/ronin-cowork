@@ -131,8 +131,7 @@ export function accountModel(result) {
 }
 
 /**
- * `absent`: what to say when the part is not installed. Inside Configuration the card simply
- * disappears; the Cloud Account worksurface (campaign-view.js) is the card alone, so it says so.
+ * `absent`: what to say when the part is not installed; without it the card simply disappears.
  */
 export function accountCard(container, { absent = null } = {}) {
   const wrap = document.createElement('div');

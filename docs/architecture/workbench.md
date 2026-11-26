@@ -282,8 +282,6 @@ page-wide progressive gate is deleted.
 | Workspaces | `/api/workspaces` (the Workspaces stones) |
 | Installations | installation catalog and installed facts; Desk values come from the tenant |
 | Harnesses | provider runtime/catalog owned by `harnesses-surface.js` |
-| Machine | the selected cowork-commons tab owns its read; unopened tabs do no work |
-| Register / Launch your own | registration or embedded launch-form reads owned by that shared Setup surface |
 | Mika / terminal | readiness and terminal transport only when placed or deliberately prewarmed |
 | Document / Feedback / Password | each shared surface owns its operation |
 

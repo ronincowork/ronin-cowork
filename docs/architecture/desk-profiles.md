@@ -42,5 +42,4 @@ renders exactly as before.
 | `lexicon` | `public/js/lexicon.js` | at boot and on a pick; every `t()` |
 | `rireki_view` | `public/js/desk-profile.js` → `S.output` | a NEW tile's Output, when nothing was saved for it; a tile's own choice is never overwritten |
 
-The Desk surface on Ronin Settings (`public/js/campaign-surfaces.js`) picks a profile from
-its **Desk profile** field.
+There is no Desk card in Settings (owner, 25 Nov): a profile is set with `machine-settings`.

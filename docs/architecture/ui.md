@@ -489,12 +489,9 @@ one-shot structured launches live in
 [Workbench construction](workbench.md#entry-refresh-and-intentional-launch).
 
 The Team destination's Commons (`cowork-view.js`: Roster, Docs, Wipeboard, Messages, Cron
-jobs, Configuration) and the Campaign's Machine surface (`cowork-commons.js`: Themes, Desk,
-Account, Archived, Messages, Help desk, Keypad) are workspace surfaces, never overlays, and
-both draw their strip with WorkspaceKit's `createTabbedSurface`. Each tab builds its room on
-first entry, because entering a room starts its fetches. Install-level facts — configuration,
-release and update, hotwords, log out and passkeys — are rows of the Account tab's
-rail (`system.js` `buildSystemPanel`), drawn once rather than per tile.
+jobs, Configuration) is a workspace surface, never an overlay, and draws its strip with
+WorkspaceKit's `createTabbedSurface`. Each tab builds its room on first entry, because entering a
+room starts its fetches. Office-level settings are Settings' cards ([settings.md](settings.md)).
 
 **How you know the strip has more on it: a fade, not a scrollbar.** The strip scrolls at
 every width; each end fades out when there are tabs behind it (`data-edge` on
@@ -571,8 +568,8 @@ prints as step 2. Rather than hiding a button that would do nothing,
 derived per request from `Host` (`RONIN_RP_ID` overrides it for a proxy that rewrites
 Host), so one build serves every install.
 
-**Registration is behind the gate, spending is in front.** A passkey is added from the
-Account rail's Log out row (`public/js/system.js`) after proving you are already the owner; the login page
+**Registration is behind the gate, spending is in front.** A passkey is added through the
+authenticated `/api/passkey/*` routes after proving you are already the owner; the login page
 can only use one. There is deliberately no unauthenticated registration route.
 `bin/ronin-recovery` calls the authenticated operator HTTP surface to mint a one-shot
 code, valid 30 minutes, for the case where a
