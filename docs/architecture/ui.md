@@ -30,7 +30,8 @@ declared first in each:
 
 - **vendor** — xterm.css, imported into the lowest layer.
 - **base** — the design tokens, both themes, in `public/tokens.css` (linked first): Ronin's
-  one palette, which the website and the Business Lounge copy. Then, in style.css, the reset,
+  one palette, which the website and the Business Lounge copy (`npm run tokens -- <checkout>...`
+  writes it over ronin-site's, ronin-shiwake's and lounge-ui's copies). Then, in style.css, the reset,
   page chrome, and the one universal `:focus-visible` ring.
 - **ui** — the shared primitives: `.ui-sheet`/`.ui-card`, `#toast`, the central
   `#attention-flash`, and the help box.

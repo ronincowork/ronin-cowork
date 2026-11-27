@@ -1,5 +1,6 @@
 /* This is Ronin's one palette. The website and the Business Lounge carry a copy of this file:
-   change it here, then copy it to them. */
+   change it here, then copy it to them with: npm run tokens -- <checkout>... (each repo's team
+   commits its copies). */
 
 @layer vendor, base, ui, app;
 
