@@ -57,9 +57,9 @@ function choiceOf(input: unknown): Question | undefined {
     options: (Array.isArray(obj(q).options) ? obj(q).options as unknown[] : []).slice(0, 9)
       .map((o) => ({ label: str(obj(o).label, 200), description: str(obj(o).description, 1000) })),
     many: obj(q).multiSelect === true,
-    // Both CLIs add one final free-text answer to a one-of question. It is not in tool_input,
+    // Both CLIs add one final free-text answer to every choice question. It is not in tool_input,
     // so carry that UI fact explicitly to Chat instead of silently losing the last option.
-    freeText: obj(q).multiSelect !== true,
+    freeText: true,
   })).filter((q) => q.options.length);
   return questions.length ? { kind: 'choice', questions } : undefined;
 }
@@ -212,7 +212,7 @@ export async function readFields(session: string): Promise<RowFields & { stance?
  * several parts, or checkboxes, on a review whose first option submits. A plan and a permission
  * take yes or no. Returns null for a question Chat cannot answer (a form: free text).
  */
-type ChoiceAnswer = number | number[] | { text: string };
+type ChoiceAnswer = number | number[] | { text: string; choices?: number[] };
 export type Answer = { choices: ChoiceAnswer[] } | { yes: boolean };
 export type AnswerKey = string | { text: string };
 const YES_NO: Record<string, { plan: [string, string]; permission: [string, string] }> = {
@@ -232,13 +232,15 @@ export function answerKeys(cli: string, question: Question, answer: Answer): Ans
     const choice = answer.choices[i];
     if (choice && typeof choice === 'object' && !Array.isArray(choice) && 'text' in choice) {
       const text = choice.text.trim().replace(/[\r\n]+/g, ' ').slice(0, 4000);
-      if (q.freeText === false || !text) return null;
+      const picked = choice.choices ?? [];
+      if (!text || picked.some((n) => !Number.isInteger(n) || n < 0 || n >= q.options.length) || (!q.many && picked.length)) return null;
       // The implicit final row opens the CLI's text field; literal text and Enter submit it.
-      out.push(String(q.options.length + 1), { text }, 'Enter');
+      out.push(...picked.map((n) => String(n + 1)), String(q.options.length + 1), { text }, 'Enter');
+      if (q.many) out.push('Tab');
       continue;
     }
     const picked = ([] as number[]).concat(choice as number | number[]);
-    if (!picked.length || picked.some((n) => !Number.isInteger(n) || n < 0 || n >= q.options.length)) return null;
+    if ((!q.many && !picked.length) || picked.some((n) => !Number.isInteger(n) || n < 0 || n >= q.options.length)) return null;
     if (!q.many && picked.length > 1) return null;
     out.push(...picked.map((n) => String(n + 1)));
     if (q.many) out.push('Tab');
