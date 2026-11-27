@@ -9,17 +9,20 @@ It does not own feature data. It restores placement, creates independent surface
 instances, and calls the placed instance's `show()` synchronously. The surface owns the
 smallest reads needed to paint itself.
 
-`public/js/phalanx.js` owns the shared Phalanx collection interaction: stones at rest,
-a selected-stone rail beside its detail, focus return, Escape, and responsive geometry (at rest
-up to four stones across, fewer as the seat narrows).
-Consumers supply items and detail content; they do not recreate that movement privately.
-A row may carry `items`. In full density pressing such a stone goes one level down: its
-descendants become the rail's stones and the stone is the level's detail until one is
-pressed. At rest in full density `branches` draws those items under their stone
-(`'column'` stacks them; `'chart'` is one column per child with grandchildren stacked,
-folded into a count past `CHART_DEPTH` until pressed). There is one way back from any
-depth: Escape or the Return stone (small, on the inset) returns to the top view, nothing selected, in the
-density you were in. Switching density keeps the selection: a selected stone with items
+`public/js/phalanx.js` owns the shared Phalanx collection interaction: stones at rest, a
+pressed stone's detail opened on the surface in place of the stones, the kaki − at its top
+right (the item's and a document's control, owner 2026-11-27, KAN-939; there is no rail of
+stones down the side), focus return, Escape, and responsive geometry (at rest up to four
+stones across, fewer as the seat narrows). Consumers supply items and detail content; they
+do not recreate that movement or draw a close of their own.
+A row may carry `items`. In full density pressing such a stone goes one level down, over the
+one before: its descendants become the stones, under a head naming the level with its −, and
+a pressed one of them opens its detail over that level. At rest in full density `branches`
+draws those items under their stone (`'column'` stacks them; `'chart'` is one column per
+child with grandchildren stacked, folded into a count past `CHART_DEPTH` until pressed). The
+way back is one step at a time: the − or Escape closes an open detail to the stones it opened
+from and a level to the one before; `top()` goes all the way. The surface's header (`before`)
+shows only at the top with nothing open. Switching density keeps the selection: a selected stone with items
 becomes its level in full density, a level becomes its selected stone in compact, and
 the stone open at that level returns with it. Consumers never restyle the rest geometry.
 
@@ -32,7 +35,7 @@ An Epic has no page of its own (owner, 2026-11-23): the Epics phalanx's pressed 
 Team's Epics board without its strip of Epic stones, its one Launch opening the Team working it
 (the holding Agent or the lead in tilespace 1, the Epic in tilespace 2). One Workspace has its own page too, `#/workspace/<name>` (owner,
 2026-11-22; KAN-784): Work (its Teams or Epics) or Config (its record), the same surface a pressed
-Workspace stone opens beside the stones. Work Items
+Workspace stone opens in place of the stones. Work Items
 (`work-items`) stays on the Agent's workbench, filtered to the work items held by that
 Agent. **The Team page** (owner, 2026-10-18) is the old Team workbench opening on the
 lead's tile in workspace 1 with workspace 2 blank; its selector holds Commons, the Agents,
@@ -45,11 +48,11 @@ Work items read as phalanx stones (`createItemPhalanx` in `work-items-surface.js
 Agent's Work Items surface, a Team's Work items step on the Teams workbench and an opened
 member on the Team roster. Stones group by parent: each epic heads its group, then its
 items, each followed by its subtasks; items under no epic group under *No epic*. A stone
-shows the title, the holder, and id · kind · status with ⚑ when flagged. Pressing one moves
-the stones to the rail and renders its reading inside the same `sws-detail`: objective,
+shows the title, the holder, and id · kind · status with ⚑ when flagged. Pressing one opens
+its reading in place of the stones, inside the same `sws-detail`, the phalanx's − back: objective,
 priority, holder, parent, comments, attachments (each opens as a document beside it),
 links and history. It is a reading: changes go through the `item` tool. The stones supply
-no action callback, so the normal selection, rail, detail, Escape and focus-return
+no action callback, so the normal selection, detail, −, Escape and focus-return
 behavior applies; dragging a stone onto a tile hands the Agent the item's reference.
 
 ## Surfaces, profile, tenant, instance
@@ -155,7 +158,7 @@ defaults links the same). The
 Teams door opens the Teams workbench (`#/cowork`, `cowork-view.js`; owner, 2026-10-20). Workspaces, Epics
 and Help are one shape (`door-workbenches.js`): the Kit Workbench on a profile of the door's surfaces, the door's
 surface seated in Workspace 1 on first open. Settings' harness cards come from the same file's `harnessKit`: the
-stones of harnesses (`models.stones`; a stone pressed opens its page beside the rail, a stone dragged or a harness's
+stones of harnesses (`models.stones`; a stone pressed opens its page in place of the stones, a stone dragged or a harness's
 selector card places it whole, `models.provider`), and **Refresh** (`models.refresh`), the one Refresh all press with
 its steps under it, Harnesses then Model services (`models-surface.js`, drawn with `harnesses-surface.js`).
 Workspaces seats

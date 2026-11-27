@@ -22,7 +22,7 @@ const el = (tag, className) => Object.assign(document.createElement(tag), { clas
  * concept, the Workspace and Launch are the opened Team's. Agents outside any Team are one more
  * stone, No Team, last and plain, while there are any.
  * One question, Workspace, many-of, blank All, narrows the stones to the Teams in those Workspaces.
- * Pressed, a stone shows its Team beside the rail (`teamDetail`, the cowork view's one renderer);
+ * Pressed, a stone shows its Team in place of the stones (`teamDetail`, the cowork view's one renderer);
  * dragged, it places that Team in another tilespace.
  */
 /* AN EMBEDDED CONSUMER (KAN-801; as createEpicStones' `bare`): `bare` is the stones alone — no

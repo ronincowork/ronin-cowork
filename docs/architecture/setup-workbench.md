@@ -81,8 +81,8 @@ write.
 On a phone the columns stack. Setup reads the ticks when it opens, again after each of its own
 actions, and from the `setup-progress` push; it does not poll.
 
-Every stone surface in Setup shares one shape: square stones on the left; select one and
-the stones fold into a rail with the stone's page beside it; Escape closes it.
+Every stone surface in Setup shares one shape: square stones; press one and its page opens in
+their place with the kaki − top right; the − or Escape closes it back to the stones.
 
 ## Harnesses
 

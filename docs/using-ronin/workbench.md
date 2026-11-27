@@ -153,20 +153,19 @@ holding nothing has no line. Flagged Teams come first, then by name.
 **Workspace** narrows the stones to the Teams in those Workspaces. Agents outside any Team are one
 more stone, **No Team**, last and plain, while there are any.
 
-Press a stone and the stones fold to the left while the Team opens beside them, in the bar an
+Press a stone and the Team opens in place of the stones, a kaki **−** at its top right to go back to them, in the bar an
 Epic has on its own page: its name with **Launch** (the Team's own workbench; No Team's opens one
 workbench for those Agents), its concept in full and its item lifecycle along its foot. Press the Team's bar and its **Configuration** opens under it (the Team's configuration form, **Delete team** at its foot); press it again to close it. Under it, two lines that expand and collapse, each with its count in brackets: **Agents**, open on arrival (one stone per
 Agent, as the Epic stones: the lead's first with 人, then flagged ones, then by name; each stone
 its name; one mark top right, ⚑ in amber
 when flagged (the stone takes the pill's amber), otherwise the pill's dot, solid while working and
 hollow just finished, otherwise nothing; bottom right, small and grey, how many open items it
-holds; a progress line along its foot, hollow while it holds nothing. Press a stone and it opens under them, full width (stones inside an
-opened stone stay across and wrapping), with three lines that expand and collapse: **Objective** (what its work record states, to
+holds; a progress line along its foot, hollow while it holds nothing. Press a stone and it opens in their place, with its own **−** back to them, with three lines that expand and collapse: **Objective** (what its work record states, to
 read, not edit), **Work items held** (the Epic page's bars over
 what it holds) and **Configuration** (the Agent's own: name, mandate and the rest, with Save).
 An Agent is added to a Team where Agents are made, not here), then, closed until you press it, **Epics** (the
-Team's open Epics as Epic stones, each with its progress line; press one to read it under them,
-with **Launch** to its own page). No Team has its Agents only. Press the stone again or Escape to go back. The
+Team's open Epics as Epic stones, each with its progress line; press one to read it in their place,
+with **Launch** to its own page). No Team has its Agents only. The **−** or Escape goes back one step. The
 selector has a card per Team that places the same Team in the selected tilespace, and a stone
 dragged into another tilespace does the same.
 

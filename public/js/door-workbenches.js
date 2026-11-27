@@ -148,7 +148,7 @@ export function createEpicsView() {
       const epicsRead = createEpicsRead(() => campaign(ctx)?.id || '');
       return {
         epics: () => epicOffers(epicsRead),
-        epicRecords: () => keep(createEpicStones({ epicsRead, workbench: bench() })), // w897: the phalanx of open Epics, a pressed one beside it
+        epicRecords: () => keep(createEpicStones({ epicsRead, workbench: bench() })), // w897: the phalanx of open Epics, a pressed one in their place
         epicRecord: (_workspace, detail) => keep(createEpicRecord(detail.key, { epicsRead })),
         // New Epic (owner, 2026-11-23): the selector's pill; the Epic made shows in the same tilespace.
         // An Epic made shows in the same tilespace; another kind shows its parent Epic, if it has one.

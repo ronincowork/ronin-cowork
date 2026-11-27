@@ -136,7 +136,7 @@ out on arrival), a card's holder (`@<agent>`, or `Team <name> (lead <lead>)`: wo
 statuses as buttons, objective and comments, never history. A stone dragged into a workspace, or
 an Epic's selector card, places that Epic's worksurface there. Models is its own stones of
 providers in Workspace 1 (`models-surface.js`): a stone dragged into a workspace, or its selector
-card, places that provider's page there whole, no rail; Settings' Harnesses surface stays
+card, places that provider's page there whole; Settings' Harnesses surface stays
 as it is, both drawing with the one exported drawing. Workspaces is its own stones of Workspaces in
 Workspace 1 the same way (`workspaces-surface.js`), one card per Workspace and New Workspace and
 GitHub CLI as cards; Settings' Workspaces surface stays as it is. Teams opens the Teams workbench at `#/cowork`
@@ -151,7 +151,7 @@ in `cowork-view.js`) shows concept and Workspace coverage over a toggle of Agent
 Cron jobs, a card per Team, New Team, New Agent and Archived Agents; no Agent's own card.
 Help (owner, 2026-10-21) seats the help outline (`help-outline.js`, `help.outline`: the docs/ guides
 under a headline of what Ronin is for (the headline alone on a phone); 'START HERE: 4 things you need to know' (the four), then
-Getting started and Using Ronin; each of the six opens one level down to Return and its pages (the four's level is the four), the page being read pressed; a pressed page read beside the rail through
+Getting started and Using Ronin; one of the four opens its page, a shelf opens one level down to its pages under its name and −, and a pressed page reads in place of the stones through
 `/api/file?product=1`) in Workspace 1 and Mika (`help.mika`) in Workspace 2, her tile opened on Chat
 like every tile; both are solid cards.
 Until one model provider is activated the Models, Workspaces, Teams and Epics doors are locked; Help stays

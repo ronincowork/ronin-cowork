@@ -46,12 +46,13 @@ Flagged Workspaces come first, then the rest by name. The last stone is **New Wo
 In **Settings**, the Workspaces card has the same stones, and a pressed one opens its
 Configuration alone; its work (Teams, Epics) is on its own page, by **Launch**.
 
-Press a stone and that Workspace opens beside the stones, the way an opened Team does. At its top
+Press a stone and that Workspace opens in place of the stones, the way an opened Team does, a kaki
+**−** at its top right to go back to them. At its top
 is its bar: its name with **Launch**, its objective, its progress along the foot. Press the bar to
 open its Configuration under it (Describe, Where it lives, and More, with **Save**);
 press it again to close it. Below the bar are two lines, each opening and closing, with its count:
 
-- **Teams** — the Teams stones of this Workspace. Press one to open it under them as the Teams page
+- **Teams** — the Teams stones of this Workspace. Press one to open it in their place as the Teams page
   opens it: its bar with **Launch** into its workbench, then its Agents and its Epics.
 - **Epics** — the open Epics its Teams and their Agents hold, the same stones as on the Epics page.
   Press one to open its board, with **Launch** into the Team working it.

@@ -1089,7 +1089,7 @@ body {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.tile-head button, .wi-head > button.window-control, .wk-surface-header > button.transcript-toggle {
+.tile-head button, .wi-head > button.window-control, .sws-head > button.window-control, .wk-surface-header > button.transcript-toggle {
   flex: 0 0 auto;
   background: var(--surface);
   border: var(--edge) solid var(--muted);
@@ -1116,17 +1116,17 @@ body {
   color: var(--bad);
   border-color: var(--bad);
 }
-.tile-head button.window-control, .wi-head > button.window-control {
+.tile-head button.window-control, .wi-head > button.window-control, .sws-head > button.window-control {
   font-size: var(--text-label);
   line-height: var(--leading-none);
 }
-/* The item's − wears the Launch button's look (workspace-kit.css .wk-action[data-kind='primary']). */
-.wi-head > button.window-control.minimize {
+/* The item's − and an opened stone's (phalanx.js) wear the Launch button's look (workspace-kit.css .wk-action[data-kind='primary']). */
+.wi-head > button.window-control.minimize, .sws-head > button.window-control.minimize {
   border-color: var(--kaki);
   background: var(--kaki); /* kaki: the action, or what needs you */
   color: var(--on-strong);
 }
-.wi-head > button.window-control.minimize:hover {
+.wi-head > button.window-control.minimize:hover, .sws-head > button.window-control.minimize:hover {
   background: var(--kaki-lift); /* kaki: the action, or what needs you */
   color: var(--on-strong);
 }

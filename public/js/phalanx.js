@@ -1,5 +1,6 @@
 /* part of the tmux-ronin client — see js/README.md */
 import { createKeyedList, editHold } from './workspace-primitives.js';
+import { t } from './lexicon.js';
 
 const element = (tag, className = '', text = '') => {
   const node = document.createElement(tag);
@@ -35,15 +36,17 @@ const carries = (row) => Array.isArray(row.items) || Array.isArray(row.under);
 const cells = (row) => Array.isArray(row.under) ? row.under : Array.isArray(row.items) ? [descendants(row)] : [];
 
 /**
- * The shared collection surface: a responsive phalanx at rest and a one-stone
- * rail beside the consumer's real detail when selected. Its top area starts empty;
- * consumers supply `before` content only when an explicit surface design calls for it.
+ * The shared collection surface: a responsive phalanx at rest; a pressed stone opens the
+ * consumer's real detail on the surface, in place of the stones, with a kaki − at the top
+ * right, the control a document and an item have (owner, 2026-11-27, KAN-939: no rail of
+ * stones down the side). Its top area starts empty; consumers supply `before` content only
+ * when an explicit surface design calls for it.
  *
  * LEVELS. A row may carry `items` (rows, nested as deep as they go), or `under`: cells in
  * topic order, each a string (plain muted lines) or rows. In full density a stone with
- * rows under it does not select: the phalanx goes one level down, those rows (every
- * descendant) become the stones in the rail and the stone itself is the level's detail
- * until one of them is pressed. At rest in full density each such stone shows what it
+ * rows under it does not select: the phalanx goes one level down, over the one before,
+ * and those rows (every descendant) become the stones, under a head naming the level with
+ * its −. A pressed one of them opens its detail over that level. At rest in full density each such stone shows what it
  * carries under it (no row carrying anything, the ordinary grid), drawn as `branches`
  * says: 'column' lays the stones and their cells on one grid — one column per stone, one
  * grid row per cell, so the same topic starts at the same height under every stone
@@ -51,21 +54,28 @@ const cells = (row) => Array.isArray(row.under) ? row.under : Array.isArray(row.
  * stacked under their parent (a chart deeper than CHART_DEPTH folds grandchildren into a
  * count until pressed).
  *
- * THE WAY BACK is one, from any depth: Escape, or the small Return stone at the head of a level,
- * returns to the top view with just the stones and nothing selected, in the density you
- * were in. Press-again still deselects where you are.
+ * THE WAY BACK is one step at a time: the −, or Escape, closes an open detail back to the
+ * stones it opened from, and a level back to the one before. `top()` goes all the way.
  */
 export function createPhalanx({ items = [], selectedId = '', renderDetail, onSelectionChange, className = '', grouped = false, density = 'full', branches = '' } = {}) {
   const root = element('section', `sws ${className}`.trim());
-  const rail = element('div', 'sws-rail');
+  const head = element('div', 'sws-head');
+  const headTitle = element('h3', 'sws-head-title');
+  const minimize = element('button', 'window-control minimize sws-close', '−');
+  minimize.type = 'button';
+  minimize.title = t('phalanx.minimize', 'Minimize');
+  minimize.setAttribute('aria-label', minimize.title);
+  head.append(headTitle, minimize);
+  head.hidden = true;
+  const stones = element('div', 'sws-stones');
   const grid = element('div', 'sws-grid');
   const detail = element('div', 'sws-detail');
   const detailId = `sws-detail-${++nextDetailId}`;
   detail.id = detailId;
   detail.setAttribute('role', 'region');
   detail.hidden = true;
-  rail.append(grid);
-  root.append(rail, detail);
+  stones.append(grid);
+  root.append(head, stones, detail);
   root.dataset.grouped = String(Boolean(grouped));
   root.dataset.density = density;
   if (branches) root.dataset.branches = branches;
@@ -104,9 +114,31 @@ export function createPhalanx({ items = [], selectedId = '', renderDetail, onSel
     restoreElement = null;
     externalDetail = null;
     paint();
-    (select ? buttonFor(select) : grid.querySelector('.sws-back'))?.focus?.();
+    minimize.focus?.();
     notify();
   };
+  /** The −: an open detail closes to the stones it opened from; a level goes back one. */
+  const back = () => {
+    if (selected || externalDetail) {
+      const focusId = selected || restoreId;
+      const focusElement = externalDetail ? restoreElement : null;
+      selected = '';
+      externalDetail = null;
+      paint();
+      if (focusElement && focusElement.isConnected !== false) focusElement.focus();
+      else buttonFor(focusId)?.focus();
+      notify();
+      return;
+    }
+    if (!path.length) return;
+    const focusId = path[path.length - 1];
+    path = path.slice(0, -1);
+    restoreId = focusId;
+    paint();
+    buttonFor(focusId)?.focus();
+    notify();
+  };
+  minimize.addEventListener('click', back);
   const top = () => {
     const focusId = path[0] || restoreId || selected;
     const focusElement = path.length ? null : restoreElement;
@@ -185,7 +217,7 @@ export function createPhalanx({ items = [], selectedId = '', renderDetail, onSel
   };
 
   // ONE STONE MOVES, ONE STONE REPAINTS (owner, 2026-11-12, KAN-414): the kit's keyed list
-  // (WorkspacePrimitives.createKeyedList). Every cell of the grid (the Return stone, a group's
+  // (WorkspacePrimitives.createKeyedList). Every cell of the grid (a group's
   // section, an inline heading, a stone or its branch) is a row kept between paints; each
   // compares what it shows and repaints only itself, a stone moves only when its order or
   // group changes, and a push that moved nothing touches nothing. A drawn stone reads its row
@@ -200,20 +232,11 @@ export function createPhalanx({ items = [], selectedId = '', renderDetail, onSel
     restoreId = id;
     restoreElement = null;
     externalDetail = null;
-    selected = selected === id ? '' : id;
+    selected = id;
     paint();
-    buttonFor(id)?.focus();
+    minimize.focus?.();
     notify();
   };
-  const backCell = (owner) => ({ key: '!back', shows: said([owner.label, owner.id]), draw: () => {
-    // The way back is a small stone that says only Return, not another stone of the level.
-    const back = element('button', 'sws-stone sws-back');
-    back.type = 'button';
-    back.append(element('b', 'sws-label', 'Return'));
-    back.setAttribute('aria-label', `Return to all · ${owner.label || owner.id}`);
-    back.addEventListener('click', top);
-    return back;
-  } });
   const groupCell = (group, id, empty) => ({ key: `!group:${id}`, shows: said([group, empty]), draw: () => {
     const section = element('section', 'sws-group'); section.dataset.swsGroup = id;
     const heading = element(group.action ? 'button' : 'h3', 'sws-group-heading', group.label || id);
@@ -246,9 +269,8 @@ export function createPhalanx({ items = [], selectedId = '', renderDetail, onSel
   detailHold.watch([detail]);
   detailHold.onClear(() => paintDetail(false));
   const paintDetail = (force) => {
-    const { owner } = level();
-    const current = externalDetail || byId(selected) || owner;
-    const now = current ? said([externalDetail ? 'external' : current === owner ? 'level' : 'stone', current]) : '';
+    const current = externalDetail || byId(selected);
+    const now = current ? said([externalDetail ? 'external' : 'stone', current]) : '';
     if (!force && now === detailSaid) return;
     if (!force && detailHold.held() && current && detailSaid) return;
     detailHold.release();
@@ -263,8 +285,14 @@ export function createPhalanx({ items = [], selectedId = '', renderDetail, onSel
   const paint = ({ force = true } = {}) => {
     const { owner, shown } = level();
     if (!find(shown, selected)) selected = '';
-    root.dataset.open = String(Boolean(selected || externalDetail || owner));
+    // Open, the detail stands in place of the stones; at a level, the head names it. Either way
+    // the head carries the −.
+    const open = Boolean(selected || externalDetail);
+    root.dataset.open = String(open);
     root.dataset.level = String(path.length);
+    stones.hidden = open;
+    head.hidden = !open && !owner;
+    headTitle.textContent = !open && owner ? owner.label || owner.id : '';
     const groupOptions = typeof grouped === 'object' ? grouped : {};
     const declaredGroups = Array.isArray(groupOptions.groups) ? groupOptions.groups : [];
     const groups = grouped && !owner ? [...declaredGroups] : [];
@@ -278,7 +306,7 @@ export function createPhalanx({ items = [], selectedId = '', renderDetail, onSel
     // The grid's rows: the stones, then one per cell, as many as the fullest stone carries.
     const gridRows = String(1 + Math.max(0, ...shown.map((item) => cells(item).length)));
     if (grid.style.getPropertyValue?.('--sws-rows') !== gridRows) grid.style.setProperty('--sws-rows', gridRows);
-    const laid = owner ? [backCell(owner)] : [];
+    const laid = [];
     const inGroup = new Map();
     for (const entry of groups) {
       const group = typeof entry === 'object' ? entry : { id: entry, label: entry };
@@ -308,9 +336,10 @@ export function createPhalanx({ items = [], selectedId = '', renderDetail, onSel
   };
 
   root.addEventListener('keydown', (event) => {
-    if (event.key !== 'Escape' || atRest()) return;
+    // A phalanx inside another's detail takes its own Escape; the outer one is not stepped back too.
+    if (event.key !== 'Escape' || event.defaultPrevented || atRest()) return;
     event.preventDefault();
-    top();
+    back();
   });
 
   const api = {
@@ -356,8 +385,10 @@ export function createPhalanx({ items = [], selectedId = '', renderDetail, onSel
     },
     /** Go one level down into a top stone that carries items, optionally selecting one. */
     down(id, options) { if (find(rows, id)) down(id, options); return api; },
-    /** The one way back: the top view, just the stones, nothing selected. */
+    /** All the way back: the top view, just the stones, nothing selected. */
     top() { top(); return api; },
+    /** The −: one step back, an open detail to its stones, a level to the one before. */
+    back() { back(); return api; },
     /** The stone whose level is showing, or null at the top. */
     level: () => level().owner,
     openDetail(item, { returnFocus = null } = {}) { selected = ''; externalDetail = item || null; restoreElement = returnFocus; paint(); notify(); return api; },

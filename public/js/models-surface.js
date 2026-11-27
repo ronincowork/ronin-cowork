@@ -2,7 +2,7 @@
 /**
  * SETTINGS' HARNESS SURFACES, drawn with harnesses-surface.js (createHarnessDrawing, a harness's
  * page; harnessStones, the stones) over the same reads.
- *   `createModelStones`: the stones of harnesses; a stone pressed opens its page beside the rail; a
+ *   `createModelStones`: the stones of harnesses; a stone pressed opens its page in place of the stones; a
  *   stone dragged into a workspace places that harness there whole (`createModelHarness`).
  *   The selector lists one card per harness (`harnessOffers`).
  *   `createModelRefresh`: Refresh all, step by step.
@@ -32,7 +32,7 @@ const draggable = (stone) => ({
   } },
 });
 
-/** WS1: the stones of providers; the pressed one's page beside the rail. */
+/** WS1: the stones of providers; the pressed one's page in their place. */
 export function createModelStones(context) {
   const { createSurface } = WorkspaceKit.primitives;
   const out = createSurface({ label: t('harness.stones', 'Harness'), className: 'setup-surface setup-provider-surface models-stones' });
@@ -176,7 +176,7 @@ function accountsStep(accounts, state) {
   return made.item;
 }
 
-/** A workspace of its own for one provider: its page, the whole workspace, no rail. */
+/** A workspace of its own for one provider: its page, the whole workspace. */
 export function createModelHarness(key, context) {
   const { createSurface } = WorkspaceKit.primitives;
   const out = createSurface({ label: key, className: 'setup-surface models-provider' });
