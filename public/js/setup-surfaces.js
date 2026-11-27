@@ -5,16 +5,11 @@ import { WorkspaceKit } from './workspace-kit.js';
 import { t } from './lexicon.js';
 import { createWorkspacesRead } from './workspaces-read.js';
 import { createWorkspaceKickoff } from './setup-workspace-kickoff.js';
-import { PROVIDER_SURFACE_TYPE, harnessesSurfaceDefinition } from './harnesses-surface.js';
 import { harnessSurfaceDefinition } from './setup-harness-surface.js';
 import { createEmbeddedNewTeamFormView } from './new-team-form.js';
 import { createTourSurface } from './setup-tour.js';
 
-// Model providers is the one surface two workbenches seat (harnesses-surface.js); its type
-// is that module's, and Ronin Settings registers the same definition.
-export const SETUP_SURFACE_TYPES = Object.freeze({
-  providers: PROVIDER_SURFACE_TYPE, roots: 'setup.roots', team: 'setup.team',
-});
+export const SETUP_SURFACE_TYPES = Object.freeze({ roots: 'setup.roots', team: 'setup.team' });
 
 const summaries = new Map();
 const notifySummary = (type, value, workbench) => {
@@ -33,9 +28,8 @@ function createRootsSurface(context) {
   const out = surface(t('setup_surface.roots', 'Workspace'), 'setup-workspace-surface');
   const step = createWorkspaceKickoff({ workspacesRead, environment: context.environment, intro: true });
   out.content.append(step.el);
-  return { el: out.el,
-    show: () => { void workspacesRead.read().then(() => notifySummary(SETUP_SURFACE_TYPES.roots, t('setup_surface.roots_summary', '{n} Workspaces', { n: workspacesRead.list().length }), context.workbench)); },
-    destroy: () => step.destroy() };
+  // No count on the step's card: the selector shows each step's name, its line and its tick, nothing more.
+  return { el: out.el, show: () => { void workspacesRead.read(); }, destroy: () => step.destroy() };
 }
 
 // STEP 3, TEAM (w926; docs/architecture/setup-workbench.md): the ordinary New Team form, started in a Workspace;
@@ -54,7 +48,6 @@ export function setupSurfaceDefinitions() {
     ...(groupKey ? { groupKey } : {}),
   });
   return [
-    harnessesSurfaceDefinition(),
     harnessSurfaceDefinition(),
     definition(SETUP_SURFACE_TYPES.roots, t('setup_surface.roots', 'Workspace'), createRootsSurface),
     definition(SETUP_SURFACE_TYPES.team, t('setup_surface.team', 'Team'), createTeamSurface),

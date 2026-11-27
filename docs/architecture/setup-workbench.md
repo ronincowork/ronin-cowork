@@ -140,8 +140,8 @@ exiting, reaches her from the run itself: `Codex is signed in.` or `Codex sign-i
 <last line>`.
 
 **Her hands.** She never presses the page. Her `harness` tool (`ronin_bin/harness`) calls the same
-routes the bar calls (`sign-in`, `cancel`, `state`, `open`, `close`, and the Hermes `options` and
-`option add|remove`); the route changes the record and the page redraws from its push
+routes the bar calls (`sign-in`, `cancel`, `state`, `open`, `close`, and the Hermes `entries` and
+`entry add|remove`, over `/api/model-services`); the route changes the record and the page redraws from its push
 (`harness-sign-in`, setup progress, `model-services-changed`). A change she made sends her no press
 line: the tool's answer is her confirmation. Keys are never hers to enter.
 
