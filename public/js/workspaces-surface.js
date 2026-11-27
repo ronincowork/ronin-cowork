@@ -7,8 +7,8 @@
  * (`workspaceSurface`), in the opened Team's bar: a toggle, Work (its Teams or Epics, to drill into) or
  * Config (`workspacePage`: Describe, Where it lives, and More, folded; Archive
  * under ⋯), and Launch to its own page, `#/workspace/<name>` (`createWorkspaceRoute`), in a new tab. A stone dragged or a card placed opens it whole in
- * a tilespace (`createWorkspaceRecord`); New Workspace is a dotted card (`createWorkspaceNew`). A folder
- * link dragged in from Files (`/files/<path under home>`, KAN-146) adds that folder.
+ * a tilespace (`createWorkspaceRecord`); New Workspace is a dotted card (`createWorkspaceNew`), the
+ * four doors of setup-workspace-kickoff.js. In Settings a pressed stone opens its Config alone (`configOnly`).
  */
 import { openCanvas } from './canvas-view.js';
 import { WorkspaceKit } from './workspace-kit.js';
@@ -306,6 +306,9 @@ export function workspacePage(w, { onSaved = () => {}, onDiscard = () => {} }) {
   const mineList = el('div', 'workspace-mine-list');
   const listMine = async () => {
     mineList.replaceChildren();
+    // Only once GitHub is signed in here: before that there is no list to ask for.
+    const signed = await request('/api/setup/github', { cache: 'no-store' });
+    if (!signed.ok || !signed.data?.authenticated) return;
     const answer = await request('/api/setup/github/repos', { cache: 'no-store' });
     if (!answer.ok) return;
     mineList.replaceChildren(...(answer.data.repos || []).map((repo) => {

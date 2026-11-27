@@ -56,7 +56,6 @@ import { ensureMikaHome, MIKA_PROMPTS, MikaUnavailable, resolveConfiguredMikaMod
 import { compileMikaKnowledgeAt } from '../mika-knowledge.js';
 import { isMikaTab } from '../mika-context.js';
 import { ensureSteercoTeam, recordRoninHelperWelcome, roninHelperWelcomeState, RONIN_HELPER_LOADER, STEERCO_TEAM } from '../ronin-helper.js';
-import { REPO_ROOT, storeDir } from '../resources.js';
 
 const MIKA_SESSION = 'mika_agent' as const;
 

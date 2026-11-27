@@ -718,6 +718,13 @@ body {
 /* A phone has no room for the centred island beside the crumb and the right-hand end: it sat
    on top of the gauge and took its taps (KAN-640). The crumb already names the place. */
 @media (max-width: 680px) { #bar .view-island { display: none; } }
+/* A phone (KAN-930): the brand keeps its mark and drops its word, and what still does not fit
+   wraps — the crumb onto its own lines, the right-hand end onto the next row — never drawn over. */
+@media (max-width: 680px) {
+  #bar { flex-wrap: wrap; row-gap: var(--space-row); }
+  #bar .bar-crumb { flex-wrap: wrap; }
+  #bar .brand-word { display: none; }
+}
 
 #bar .shape-cycle,
 #bar .bar-toggle {

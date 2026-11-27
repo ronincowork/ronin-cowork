@@ -73,8 +73,8 @@ not start her; an office starts her when none of the three steps is ticked. Movi
 steps tells her nothing; she sees the step (Setup reports its view) and opens what it needs with
 `show`. A button on a step's surface may message her, named on the button.
 
-Registration, Installations (Ronin Services), Password and Launch are not Setup steps: their cards
-stay in Settings. Install makes no Workspace and no folder; Ronin Lab is made in the Workspace step
+Registration, Ronin Services, Password and launching your own are not Setup steps (see "Not in
+Setup or Settings" below). Install makes no Workspace and no folder; Ronin Lab is made in the Workspace step
 (its "Not sure yet" door), as any Workspace is. Plans make their folder on their first
 write.
 
@@ -121,8 +121,8 @@ exiting, reaches her from the run itself: `Codex is signed in.` or `Codex sign-i
 <last line>`.
 
 **Her hands.** She never presses the page. Her `harness` tool (`ronin_bin/harness`) calls the same
-routes the bar calls (`sign-in`, `cancel`, `state`, `open`, `close`, and the Hermes `options` and
-`option add|remove`); the route changes the record and the page redraws from its push
+routes the bar calls (`sign-in`, `cancel`, `state`, `open`, `close`, and the Hermes `entries` and
+`entry add|remove`, over `/api/model-services`); the route changes the record and the page redraws from its push
 (`harness-sign-in`, setup progress, `model-services-changed`). A change she made sends her no press
 line: the tool's answer is her confirmation. Keys are never hers to enter.
 
@@ -168,7 +168,7 @@ next Agent finds it.
 
 **Her hands.** She never presses the page. Her tools call the same routes its buttons do, and the
 page redraws from the record: `harness` (sign-ins, `open`/`close` a harness's terminal, Hermes model
-options), `workspace` (create, repositories, sources, `starter ronin_lab`), `team`, `item`, `office
+entries), `workspace` (create, repositories, sources, `starter ronin_lab`), `team`, `item`, `office
 read`, `show`. Keys and codes are pasted on the page, never into her chat. She never starts a
 sign-in on a harness already signed in unless the person asks: it signs out every Agent on it until
 it finishes, and she says so first.

@@ -352,7 +352,7 @@ export function createNewAgentView(kit, { connect = null, consumed = null, embed
     }
     const added = draft.setting.brief.add;
     if (isCowork() && added.length) rows.push([t('behaviours', 'Behaviours'), tagRow(added.map((row) => ({ text: row.name, on: true })))]);
-    if (hasAgent()) rows.push([t('forms.model', 'model'), draft.provider ? `${draft.provider}${draft.model ? ` / ${modelLabel(draft)}` : ''}` : defaultWord()]);
+    if (hasAgent()) rows.push([t('forms.model', 'Model'), draft.provider ? `${draft.provider}${draft.model ? ` / ${modelLabel(draft)}` : ''}` : defaultWord()]);
     return rows;
   }
   function paintFoot() {

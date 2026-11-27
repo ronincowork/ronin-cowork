@@ -1,5 +1,5 @@
 import { deleteModelEntry, deleteService, modelServices, saveService } from '../model-services.js';
-import { modelServiceStoreAnswer, saveModelService, discoverModelIds, saveModelEntry, deleteModelServiceEntry, onModelServicesWritten, readGatewayModels } from '../model-service-store.js';
+import { discoverModelIds, saveModelEntry, onModelServicesWritten, readGatewayModels } from '../model-service-store.js';
 import { broadcastEvent } from '../ws/events.js';
 import { homedir } from 'node:os';
 import { dispatchInstall } from '../agent-install.js';
@@ -35,27 +35,7 @@ const answer = async (summary?: HarnessSummary) => {
 
 export function registerSetupRuntime(app: express.Express): void {
   onModelServicesWritten(() => { broadcastEvent({ t: 'model-services-changed' }); });
-  app.get('/api/hermes', async (_req, res) => {
-    try { res.json(await modelServiceStoreAnswer()); } catch { res.status(500).json({ error: 'Could not read Hermes setups.' }); }
-  });
-  app.post('/api/hermes/:action', async (req, res) => {
-    try {
-      switch (req.params.action) {
-        // A connection's models are read as it is saved: nobody presses to read them (owner, 25 Nov 2026).
-        case 'connection': { const saved = await saveModelService(req.body); await discoverModelIds(saved.id).catch(() => {}); break; }
-        case 'discover': await discoverModelIds(String(req.body.id)); break;
-        case 'setup': await saveModelEntry(req.body); break;
-        case 'delete':
-          if (req.body.kind !== 'connections' && req.body.kind !== 'setups') throw new Error('Invalid entry type.');
-          await deleteModelServiceEntry(req.body.kind, String(req.body.id)); break;
-        default: return res.status(404).json({ error: 'Unknown Hermes action.' });
-      }
-      await measureAndRecordHarnesses();
-      res.json(await modelServiceStoreAnswer());
-    } catch (error) { res.status(400).json({ error: errMsg(error) }); }
-  });
-
-  // MODEL SERVICES: the pages' reading of the store and their writes. /api/hermes above is the `harness` tool's.
+  // MODEL SERVICES: the store as the pages and the `harness` tool read and write it.
   app.get('/api/model-services', async (_req, res) => {
     try { res.json({ services: await modelServices() }); } catch (error) { res.status(500).json({ error: errMsg(error) }); }
   });

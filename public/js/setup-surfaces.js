@@ -11,12 +11,6 @@ import { createTourSurface } from './setup-tour.js';
 
 export const SETUP_SURFACE_TYPES = Object.freeze({ roots: 'setup.roots', team: 'setup.team' });
 
-const summaries = new Map();
-const notifySummary = (type, value, workbench) => {
-  if (summaries.get(type) === value) return;
-  summaries.set(type, value);
-  workbench?.refreshSelector?.();
-};
 const surface = (label, className = '') => WorkspaceKit.primitives.createSurface({ label, className: `setup-surface ${className}`.trim() });
 
 // Setup's Workspace step is the Workspaces themselves (KAN-728): each a stone opening its record, and
@@ -28,9 +22,8 @@ function createRootsSurface(context) {
   const out = surface(t('setup_surface.roots', 'Workspace'), 'setup-workspace-surface');
   const step = createWorkspaceKickoff({ workspacesRead, environment: context.environment, intro: true });
   out.content.append(step.el);
-  return { el: out.el,
-    show: () => { void workspacesRead.read().then(() => notifySummary(SETUP_SURFACE_TYPES.roots, t('setup_surface.roots_summary', '{n} Workspaces', { n: workspacesRead.list().length }), context.workbench)); },
-    destroy: () => step.destroy() };
+  // A step card is its disc, its name and one line: no count (docs/architecture/setup-workbench.md).
+  return { el: out.el, show: () => { void workspacesRead.read(); }, destroy: () => step.destroy() };
 }
 
 // STEP 3, TEAM (w926; docs/architecture/setup-workbench.md): the ordinary New Team form, started in a Workspace;
@@ -45,7 +38,7 @@ function createTeamSurface() {
 
 export function setupSurfaceDefinitions() {
   const definition = (type, label, create, groupKey = '') => ({
-    type, header: 'surface', label: () => label, summary: () => summaries.get(type), create: (context) => create(context),
+    type, header: 'surface', label: () => label, create: (context) => create(context),
     ...(groupKey ? { groupKey } : {}),
   });
   return [

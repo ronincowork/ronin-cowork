@@ -38,8 +38,6 @@ const names = (value: unknown): string[] => Array.isArray(value)
     }))]
   : [];
 
-export const emptyBrief = (): BriefSettings => ({ add: [], block: [], only: [] });
-
 /** A record's brief settings, from whatever the record holds; anything unreadable is empty. */
 export function briefSettings(value: unknown): BriefSettings {
   const v = value && typeof value === 'object' ? value as Record<string, unknown> : {};

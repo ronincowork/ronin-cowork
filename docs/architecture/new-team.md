@@ -19,7 +19,9 @@ the Team page changes one Team afterwards. The same form is Setup's Team step an
 - **Agents:** the draft starts with one row marked `team_lead`, named `<first word of the team
   name>_lead` (the first word ends at the first `-` or `_`); the name follows the Team name while it
   still reads as the previous name's lead, so an edited name stays, and the row is removed like any
-  other. Its provider and model stay blank, which for a lead is the Team lead model on Models > Defaults.
+  other. A row's harness, model and mandate stay blank unless picked ("The Team's"): blank is left
+  out of the launch, so the Agent takes the Team's own, copied from its Workspace (`team-agents.js`
+  `agentPicks`).
 - **Epic:** one of the Workspace's open epics (held by `workspace:<name>`, not Done, not its Icebox),
   handed to the Team; or a new epic the Team holds, titled as written or by the Team's title.
 
