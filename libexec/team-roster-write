@@ -33,7 +33,10 @@ Create a Team by naming one that has no record; otherwise only named fields chan
 --workspace names the Team's Workspace by its handle; the Workspace holds the repositories.
 --select adds behaviours to the Team's brief settings (brief.add), so every Agent born on the
 Team is told them; --deselect takes them off. The rest of the brief settings stay. Agents
-already running are not changed. project-management is the work-items switch: --select turns
+already running are not changed. A depth after a colon, <behaviour>:full or <behaviour>:seed,
+is how much of it they are told; without one its header decides, and a behaviour whose header
+says none is told only its seed line, so name :full when the Team needs it whole. Selecting one
+again with a depth changes its depth. project-management is the work-items switch: --select turns
 it on for the Team, --deselect off. `team roster read <team>` shows the result under brief.add.
 --campaign names the Team's Campaign, for a Team name that is in more than one.
 --add adds live Agents and never removes members. To move an Agent between Teams, add
@@ -101,11 +104,20 @@ if e["SELECT"] or e["DESELECT"]:
     except Exception: now = {}
     brief = now.get("brief") or {}
     names = lambda v: [t.strip() for t in v.split(",") if t.strip()]
-    sel, desel = names(e["SELECT"]), names(e["DESELECT"])
-    if "project-management" in sel: b["pm"] = True
+    # <behaviour>:full or :seed is the depth it is told at, written as the entry's depth; without
+    # one the behaviour's own header decides (a header of depth none is told as its seed line).
+    sel = [(n.split(":", 1) + [""])[:2] for n in names(e["SELECT"])]
+    desel = [n.split(":", 1)[0] for n in names(e["DESELECT"])]
+    if any(n == "project-management" for n, _ in sel): b["pm"] = True
     if "project-management" in desel: b["pm"] = False
     add = [a for a in (brief.get("add") or []) if a.get("name") not in desel]
-    add += [{"name": n} for n in sel if n != "project-management" and n not in [a.get("name") for a in add]]
+    for n, depth in sel:
+        if n == "project-management": continue
+        entry = {"name": n, **({"depth": depth} if depth else {})}
+        at = [a.get("name") for a in add]
+        if n in at:
+            if depth: add[at.index(n)] = entry  # re-selected with a depth: that depth now
+        else: add.append(entry)
     b["brief"] = {**brief, "add": add, "block": brief.get("block") or [], "only": brief.get("only") or []}
 print(json.dumps(b))
 PY
