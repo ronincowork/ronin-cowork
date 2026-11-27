@@ -4653,8 +4653,6 @@ html[data-screen='inside'] #phone .ph-bar .ph-title[data-boot='inside'] { displa
 .harness-panel-part > .setup-harness-window, .harness-panel-part > .harness-models, .harness-panel-part > p { align-self: stretch; }
 .harness-panel-part > .setup-provider-eyebrow { margin: 0; }
 .harness-panel .setup-harness-terminal { align-self: stretch; }
-.harness-terminal-foot { display: flex; flex-wrap: wrap; align-items: flex-start; gap: var(--space-control); }
-.harness-terminal-ends { display: flex; gap: var(--space-inline); margin-left: auto; }
 /* Settings' window on the surface: the Helpful Assistant's chat over the harness surface, put away with −. */
 .setup-surface:has(> .harness-agent-window) { position: relative; }
 .harness-agent-window { position: absolute; z-index: 5; inset-inline-end: 16px; inset-block-end: 16px; inline-size: min(440px, calc(100% - 32px)); block-size: min(560px, calc(100% - 32px)); display: flex; flex-direction: column; background: var(--surface); border: 1px solid var(--line-2); border-radius: 8px; box-shadow: var(--shadow-menu); overflow: hidden; }
