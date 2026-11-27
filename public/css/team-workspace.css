@@ -22,6 +22,8 @@
      names keep their width in a workspace narrower than the row's fixed columns. */
   .team-roster-detail .home-row { grid-template-columns: var(--hr-mark) minmax(0, 1fr) var(--hr-record) var(--hr-status) var(--hr-ctx) var(--hr-stack); }
   .team-roster-detail .home-row > .home-stack { grid-column: 6; }
+  /* AN AGENT OPENED ON THE ROSTER (KAN-964): its Team Lead question and configuration under its row, the Team bar's frame. */
+  .team-roster-agent { display: flex; flex-direction: column; gap: var(--space-subsection); margin: var(--space-row) 0 var(--space-paragraph); padding: var(--space-inline) var(--space-inset); border: var(--edge) solid var(--line-2); border-radius: var(--radius-large); }
   .home-grp-actions.tile-head { min-height: 0; padding: 0; border: 0; background: transparent; flex-wrap: nowrap; }
   .tw-config { display: flex; flex-direction: column; gap: var(--space-section); padding: var(--space-inset) var(--space-inset); overflow-y: auto; }
   /* The tab is drawn on the launch forms' furniture (launch-forms.css: .ntf-form, .fs-step, .wk-field);
@@ -74,19 +76,15 @@
   .team-bar.team-bar-pressable:is(:hover, :focus-visible) { border-color: var(--accent); }
   .team-detail > .team-config-open { padding: var(--space-inline) var(--space-inset); border: var(--edge) solid var(--line-2); border-radius: var(--radius-large); }
   .league-team-view { display: flex; flex-direction: column; gap: 0; min-width: 0; }
-  /* THE AGENTS AS STONES (owner, 2026-11-23): the Epic stones (launch-forms.css .epic-record-stones:
-     the same size, height, marks and line); one mark top right (⚑, or the pill's dot: solid working,
-     hollow just finished); flagged, the pill's amber. Opened: Work items and
-     Configuration as lines that expand. */
-  .team-agent-stones .team-agent-stone.is-flagged { background: color-mix(in srgb, var(--warn) 12%, transparent); /* status: a person is needed */ }
-  /* An Agent holding nothing keeps its tracker, hollow (owner, 2026-11-23): the same stone, an empty bar. */
-  .team-agent-stones .lifecycle-line[data-empty='true'] { background: transparent; box-shadow: inset 0 0 0 var(--edge) var(--line-2); }
-  .team-agent-mark[hidden] { display: none; }
-  .team-agent-mark { position: absolute; top: var(--stone-pad, var(--space-inset)); right: var(--stone-pad, var(--space-inset)); color: var(--warn); line-height: var(--leading-none); --agent-dot-drop: 0.35em; /* the dot sits on the name's x-height */ } /* on the count's inset: the two right-aligned (owner, 2026-11-23) */
-  .team-agent-mark:is(.is-working, .is-ready) { box-sizing: border-box; width: 6px; height: 6px; margin-top: var(--agent-dot-drop); border: var(--edge) solid var(--kaki); border-radius: 50%; background: var(--kaki); /* kaki: the Chat's working dot */ }
+  /* THE AGENTS AS BARS (owner, 2026-11-27, KAN-964): each the Team's bar (above), opened the same
+     way, its panel under it. At the right its open-item count and one mark (⚑, or the pill's dot:
+     solid working, hollow just finished); flagged, the pill's amber. */
+  .team-agent-bar.is-flagged { background: color-mix(in srgb, var(--warn) 12%, transparent); /* status: a person is needed */ }
+  .team-agent-size { color: var(--muted); font-size: var(--text-small); }
+  .team-agent-mark[hidden], .team-agent-open[hidden] { display: none; }
+  .team-agent-mark { color: var(--warn); line-height: var(--leading-none); }
+  .team-agent-mark:is(.is-working, .is-ready) { box-sizing: border-box; width: 6px; height: 6px; border: var(--edge) solid var(--kaki); border-radius: 50%; background: var(--kaki); /* kaki: the Chat's working dot */ }
   .team-agent-mark.is-ready { background: transparent; }
-  .team-agent-open { padding: 0 var(--space-inset); }
-  .team-agent-objective { margin: 0; color: var(--fg); white-space: pre-wrap; overflow-wrap: anywhere; }
   /* ROOM AND TYPE ON THE TEAM PAGE (owner, 2026-11-23): its bars, the opened Agent's item bars
      too, at body size with an inset all round, the line's height kept clear at the foot and the
      mark's width at the right. Doubled class: above style.css's shared item-bar rule (0,3,1). */
@@ -98,10 +96,10 @@
   .team-fold { border-top: var(--edge) solid var(--line-2); }
   .team-fold > summary.team-fold-line { padding: var(--space-inline) 0; color: var(--fg-strong); font-weight: var(--weight-strong); cursor: pointer; }
   .team-fold > .team-fold-body { padding-bottom: var(--space-inline); }
-  /* The Team's Epics and Agents: stones as a phalanx from the left edge; their empty head takes no room. */
-  :is(.league-team-view-epics .epics-records-bare, .league-team-view-agents .team-agent-stones-host).sws-host { padding: 0; overflow: visible; }
-  :is(.league-team-view-epics .epics-records-bare, .league-team-view-agents .team-agent-stones-host) > .sws-header { display: none; }
-  :is(.league-team-view-epics, .league-team-view-agents) .sws-stones { justify-content: flex-start; padding: var(--edge-2); }
+  /* The Team's Epics: stones as a phalanx from the left edge; their empty head takes no room. */
+  .league-team-view-epics .epics-records-bare.sws-host { padding: 0; overflow: visible; }
+  .league-team-view-epics .epics-records-bare > .sws-header { display: none; }
+  .league-team-view-epics .sws-stones { justify-content: flex-start; padding: var(--edge-2); }
   :is(.league-team-view-epics, .league-team-view-agents) .sws-grid { width: 100%; flex-direction: row; flex-wrap: wrap; justify-content: flex-start; }
   /* THE TEAMS STONES (w900): the Epic stones' grammar (launch-forms.css); a Team holding nothing has
      no line, and No Team is plain: no line, its name muted. */
