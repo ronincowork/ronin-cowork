@@ -4655,6 +4655,7 @@ html[data-screen='inside'] #phone .ph-bar .ph-title[data-boot='inside'] { displa
 .harness-panel .setup-harness-terminal { align-self: stretch; }
 /* Under a sign-in terminal: small stones, as wide as their words. */
 .harness-terminal-stones .ask-rect { width: auto; flex: none; }
+.harness-terminal-note { margin: 0; align-self: center; font-style: italic; }
 /* Settings' window on the surface: the Helpful Assistant's chat over the harness surface, put away with −. */
 .setup-surface:has(> .harness-agent-window) { position: relative; }
 .harness-agent-window { position: absolute; z-index: 5; inset-inline-end: 16px; inset-block-end: 16px; inline-size: min(440px, calc(100% - 32px)); block-size: min(560px, calc(100% - 32px)); display: flex; flex-direction: column; background: var(--surface); border: 1px solid var(--line-2); border-radius: 8px; box-shadow: var(--shadow-menu); overflow: hidden; }
