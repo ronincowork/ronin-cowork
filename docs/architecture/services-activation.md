@@ -1,7 +1,7 @@
 # Services activation construction
 
 For contributors. [Ronin Services](../getting-started/services-activation.md) owns the
-usage route. Cowork owns the office record, registration and the HQ transport.
+usage route. Cowork owns the office record and the HQ transport.
 
 ## Boundaries and ownership
 
@@ -9,9 +9,8 @@ usage route. Cowork owns the office record, registration and the HQ transport.
 |---|---|
 | `src/activation/transport.ts` | Shared allowlisted HTTPS transport to Ronin HQ |
 | `src/activation/egress.ts` | Request metadata and outcomes, without tokens, addresses, or bodies |
-| `src/activation/state.ts` | Durable activation stage and public entitlement identity |
-| `src/activation/secrets.ts` | Protected entitlement credential, when a machine holds one |
-| `src/routes/services-activation-api.ts` | Registration and feedback |
+| `src/activation/secrets.ts` | The hosted office's house token, written by the provisioner |
+| `src/routes/services-activation-api.ts` | Feedback to Ronin HQ |
 | `src/update-run.ts` | Shared updater launcher, through `systemd-run` or the spawn broker |
 
 The remote wire contract belongs to Ronin HQ (Shiwake). Services part discovery and
@@ -42,7 +41,7 @@ What asks it: the Services account part (no record, no HQ call; `GET /api/accoun
 HQ's row, and is rewritten when the park writes it: samurai_lab `ronin_cloud/SHIWAKE_DESIGN.md` §8), the Tomodachi sender in the account part (`account/tomodachi-send.ts`: sends from
 an office_unit only, to HQ's `POST /v1/account/tool-counts`, setting aside packets from before
 `provisioned_at`), the Hermes house-gateway seed (the record's `gateway_office`, else the
-developer's local door), the Setup posture (an office_unit hides Register) and the
+developer's local door), and the
 machine reading (`observed.office`), which is how Agents see it. Self-hosted Settings shows the
 Cloud Account card's two sections, Office and Account, which must agree on the `office_id`; a
 disagreement is said.
@@ -53,25 +52,21 @@ the record once at start and the page says so in `<html data-hosted="on">` (`pub
 Business Lounge at Ronin HQ, so Cowork carries a link and no account code: Home's side stones gain
 **Business Lounge** (opens `https://hq.roninhosted.com/` in a new tab, for everyone in the office;
 each person lands in their own lounge). What is hidden when hosted: Home's Check for updates;
-in Settings, the Cloud Account, Registration and Password cards and the Setup
-return card; in the Machine card, Configuration, Release & update and Log out. Settings stays for
+in Settings, the Cloud Account and Password cards; in the Machine card, Configuration, Release & update and Log out. Settings stays for
 the Desk's own settings (Desk, Team and Agent defaults, Workspaces, Integrations, Jira, Feedback,
 and the Machine card's themes, archives, messages, help desk, keypad, health and hotwords).
 Without the record nothing changes.
 
-## Registration and runtime state
+## Runtime state
 
 **Services ships with Cowork** (owner, 2026-11-26, KAN-914; [installations.md](installations.md)):
 hosted offices have both now, and self-hosted becomes the same bundle later. There is no Services
 install flow: no Services key from Ronin HQ, no download, no install stage, no Services card or
 header badge, and no on/off.
 
-`/api/setup/registration` owns the registration surface (self-hosted only): submitting the form
-completes it, and an anonymous one sends its answers as a feedback packet. Nothing is minted.
-
 `GET /api/installed` says what is on this machine: the Cowork release, and the Services parts on
 disk, loaded, and parked (by their own `PARKED.md`) or failed. Every part present runs.
-Credentials live in the resolved `services_secrets` user store (a hosted office's entitlement
+Credentials live in the resolved `services_secrets` user store (a hosted office's house token
 beside its office record, in `office_unit`) and remain server-side.
 
 ## Outbound measurements

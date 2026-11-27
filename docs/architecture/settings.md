@@ -49,5 +49,5 @@ defaults) is a separate task from changing a behavior file's text (Behavior file
   ([installations.md](installations.md)).
 
 Retired with the old Settings: the Machine card (Themes, Desk, Account, Archived, Messages, Help
-desk, Keypad), Cloud Account, Password, Register, Installations, Launch your own, the Desk card and
+desk, Keypad), Cloud Account, Password, Installations, Launch your own, the Desk card and
 New Desk, and the separate Jira card.

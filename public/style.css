@@ -4039,7 +4039,6 @@ body {
    the choice it is. */
 .setup-surface-body { display: grid; gap: var(--space-paragraph); padding: var(--space-inset) 0; min-width: 0; }
 .setup-fine { color: var(--muted); }
-.setup-form, .setup-registration-identity { display: grid; gap: var(--space-paragraph); padding: var(--space-inset); border: var(--edge) solid var(--line); border-radius: var(--radius-small); }
 .wk-surface-content:has(.setup-github-workspace) > .sws-header {
   --sws-header-height: clamp(17rem, 32dvh, 20rem);
   display: grid;
@@ -4065,7 +4064,6 @@ body {
 .setup-github-terminal-actions[hidden] { display: none; }
 .wk-workbench-host [data-workbench-offer-type][data-scene-relevant='false'] { opacity: .48; }
 .wk-workbench-host [data-workbench-offer-type][data-scene-relevant='true'] .wk-card-heading { font-weight: var(--weight-bold); }
-.wk-workbench-host [data-registration-locked='true'] .wk-card-heading::after { content: '  🔒'; font-size: .8em; }
 .wk-workbench-host[data-workbench-profile='setup'] [data-complete='true'] { opacity: 1; }
 /* THE WALKTHROUGH (owner, 24 Nov; w926): Setup's steps down the selector as the prototype's run across
    the page. A numbered disc per step, joined to the next by a line; the step on screen kaki-edged on the

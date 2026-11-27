@@ -298,18 +298,15 @@ Entry performs no form catalog read. It restores and places the requested form f
 
 ### Ronin Setup (`setup` profile)
 
-The Garden and selected journey surface seat immediately. Garden content, setup runtime,
-and small registration/GitHub completion facts hydrate the journey and discovery column
-independently.
+The selector and the step on screen seat immediately; the steps' ticks (`/api/setup/progress`)
+and each step's own reads hydrate independently.
 
 | Surface | Required data and owner |
 |---|---|
-| Garden | static garden catalog; selected scene only |
-| Register | registration and user-introduction records |
-| Harnesses | provider runtime/catalog owned by the shared provider surface |
-| Workspaces | `/api/workspaces` (the Workspaces stones, New Workspace among them) |
-| Installations | Desk record, installation catalog, and installed facts |
-| Password | authentication state owned by the shared Password surface |
+| Harness | the harness runtime (`/api/setup/runtime`) and sign-in runs (`/api/setup/sign-in`) |
+| Workspace | `/api/workspaces`, for the four doors and the Workspaces already made |
+| Team | the New Team form's reads |
+| Tour | static: `docs/getting-started/tour.md`'s parts, drawn |
 | Launch your own | no launch data until Agent or Team is selected; that embedded form then owns its reads |
 | Hosted: Team | the embedded New Team form owns its reads |
 | Tour | the Ronin Tour, `docs/getting-started/tour.md`, read when shown (`/api/file`) |

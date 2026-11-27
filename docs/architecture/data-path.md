@@ -130,8 +130,7 @@ poll.
   comes from.
 
 The server's clocks, and why each exists: cron (`jikan`), session retention, the message
-delivery queue, the pty heartbeat, the HQ confirmation wait while a registration is
-pending, and the machine service's one-minute reading. None of them exists for the browser's
+delivery queue, the pty heartbeat, and the machine service's one-minute reading. None of them exists for the browser's
 sake. There is no session tick on a clock: a pane's output is announced by tmux, and that is
 when its context gauge and its terminal read are looked at again.
 
