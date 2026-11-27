@@ -2,8 +2,7 @@
 /**
  * THE HARNESS PAGES IN SETTINGS (docs/architecture/setup-workbench.md "Harnesses"): the stones of
  * harnesses (`harnessStones`) and, for the one pressed, its page (`createHarnessDrawing`): three
- * numbered steps (install; authenticate, with Agent or on the CLI's own terminal with Done and Cancel,
- * the same two presses as Setup's Harness step, harness-authenticate.js; ready), read
+ * numbered steps (install, authenticate on the CLI's own terminal with Done and Cancel, ready), read
  * from the measured runtime alone (setup-harness-state.js), then Models (harness-model-entries.js).
  * The stones paint at once from the recorded summary; the measure runs behind them and repaints.
  * Refresh all (`createRefreshAll`) is the one press that reads the CLIs' model lists.
@@ -15,8 +14,6 @@ import { WorkspaceKit } from './workspace-kit.js';
 import { dayTime, loadHarnessCatalog, modelLabel, harnessCatalog, tierWord } from './form-steps.js';
 import { mountHarnessAttachment, harnessFromRuntime, harnessPresentation, harnessReadiness } from './setup-harness-state.js';
 import { createStatusMarker } from './status-marker.js';
-import { signInHandlers } from './events.js';
-import { authenticateWithAgent, createAgentWindow, signInChoices, signInWindow } from './harness-authenticate.js';
 
 const el = (tag, cls = '', text = null) => { const out = document.createElement(tag); if (cls) out.className = cls; if (text != null) out.textContent = String(text); return out; };
 
@@ -131,29 +128,6 @@ export function createHarnessDrawing(context, { repaint, say = () => {} }) {
   let alignedHarness = '';
   let mounted = null;
   let runtime = { harnesses: [] };
-  // A sign-in the Helpful Assistant started (harness sign-in): its link and code under the step,
-  // drawn in place on each push, so the page is never redrawn under the person.
-  let signIn = { runs: [] };
-  let agentWindow = null;
-  const runHosts = new Map();
-  const drafts = new Map();
-  const paintRun = (provider) => {
-    const host = runHosts.get(provider.id);
-    const run = signIn.runs.find((one) => one.provider === provider.id);
-    host?.replaceChildren(...(run ? [signInWindow(provider, run, drafts)] : []));
-  };
-  const onSignIn = (message) => {
-    const ended = signIn.runs.some((one) => !(message.runs || []).some((now) => now.provider === one.provider));
-    signIn = { runs: message.runs || [] };
-    for (const [id, host] of runHosts) {
-      if (!host.isConnected) { runHosts.delete(id); continue; }
-      const provider = harnessFromRuntime(runtime, id);
-      if (provider) paintRun(provider);
-    }
-    if (ended) void measure();
-  };
-  signInHandlers.add(onSignIn);
-  void request('/api/setup/sign-in', { cache: 'no-store' }).then((r) => { if (r.ok) onSignIn(r.data); });
   const disposeMount = (destroy = true) => {
     if (!mounted) return;
     if (destroy) mounted.destroy?.(); else mounted.park?.();
@@ -307,21 +281,7 @@ export function createHarnessDrawing(context, { repaint, say = () => {} }) {
       : auth.status === 'open' ? t('setup_surface.sign_in_open', 'Sign-in open')
         : auth.status === 'available' ? t('setup_surface.not_signed_in', 'Not signed in') : t('setup_surface.install_first', 'After install'));
     if (auth.current && auth.action !== 'login_open' && !provider.install_open) {
-      // The same two presses as Setup's Harness step (harness-authenticate.js); she opens in a window
-      // on this surface, and a sign-in she starts shows its link and code under the step.
-      authRow.item.append(signInChoices({
-        agent: async () => {
-          agentWindow ||= createAgentWindow();
-          agentWindow.show(card.closest('.setup-surface') || card);
-          const result = await authenticateWithAgent(provider);
-          if (!result.ok) { problem.textContent = result.message; problem.hidden = false; }
-        },
-        terminal: () => press(`/api/setup/harnesses/${encodeURIComponent(provider.id)}/login`),
-      }));
-      const runHost = el('div', 'setup-provider-sign-in');
-      runHosts.set(provider.id, runHost);
-      paintRun(provider);
-      authRow.item.append(runHost);
+      authRow.controls.append(control(auth, t('setup_surface.authenticate', 'Authenticate'), () => press(`/api/setup/harnesses/${encodeURIComponent(provider.id)}/login`)));
     } else if (auth.action === 'login_open') {
       const terminal = el('div', 'setup-provider-terminal');
       finish(`/api/setup/harnesses/${encodeURIComponent(provider.id)}/done`);
@@ -477,6 +437,6 @@ export function createHarnessDrawing(context, { repaint, say = () => {} }) {
     closed: () => { alignedHarness = ''; },
     runtime: () => runtime,
     stones: () => harnessStones(runtime),
-    destroy: () => { window.removeEventListener('focus', onFocus); signInHandlers.delete(onSignIn); agentWindow?.destroy(); disposeMount(); },
+    destroy: () => { window.removeEventListener('focus', onFocus); disposeMount(); },
   };
 }

@@ -76,10 +76,8 @@ elif cmd == 'cancel':
     call('POST', f'/api/setup/harnesses/{args[0]}/sign-in/cancel', {})
     print(f'{args[0]} sign-in cancelled.')
 elif cmd == 'open':  # the page's own press: its terminal opens on the harness's page
-    answer = call('POST', f'/api/setup/harnesses/{args[0]}/login', {})
-    session = (answer.get('attachment') or {}).get('key') or ''
-    print(f"{args[0]} sign-in {'opened' if answer.get('opened') else 'was already open'} on its page; the person signs in there."
-          + (f" Read it with: edges read {session}" if session else ''))
+    opened = call('POST', f'/api/setup/harnesses/{args[0]}/login', {}).get('opened')
+    print(f"{args[0]} sign-in {'opened' if opened else 'was already open'} on its page; the person signs in there.")
 elif cmd == 'close':
     call('POST', f'/api/setup/harnesses/{args[0]}/close', {})
     print(f'{args[0]} sign-in closed.')

@@ -26,22 +26,16 @@ models never count.
   subscription` (or `api_key` when they use a key), never the terminal. Put the link in chat as a
   link and the code as inline code: "Open <link> and enter `<code>`." The code or key the CLI asks
   back for is pasted into the box on the page, never into chat: say so, and never ask for it.
-- **Authenticate with Agent.** Every harness's page, here and in Settings, has two presses:
-  Authenticate with Agent (recommended) and Terminal. `From <person> [Button]: <harness> ·
-  Authenticate with Agent` is them asking you to sign it in: on Claude Code or Codex ask which way
-  with your question tool and start it; on another harness run `harness open <id>`, read its
-  terminal with `edges read <session>` (the session the tool names), and tell them each step from
-  what it shows. You never type in that terminal.
 - **What you hear.** The person's own presses on the page come to you as
-  `From <person> [Button]: Grok · Terminal`, and how each run ends as a House
+  `From <person> [Button]: Codex · Sign in with subscription`, and how each run ends as a House
   notice (`Codex is signed in.`, or `… sign-in failed: <its last line>`). On either, answer in one
   line and take the next thread: after the first harness, offer a second. On a failure, say what
   the line means and start it again. A move between Setup's steps tells you nothing,
   except a `Moved to <step>. … office read <fact>.` line: read that fact first, then go on.
 - **Your hands on the page.** You never press its buttons: your tool calls the same route the button
-  does, and the page redraws from the record. `harness open <id>` opens a harness's terminal sign-in
-  on its page, `harness close <id>` closes it, and the person signs in inside it
-  (`ronin-help harness-sign-in`).
+  does, and the page redraws from the record. The other harnesses sign in on their own page, some on a
+  terminal there: `harness open <id>` opens that terminal, `harness close <id>` closes it, and the
+  person signs in inside it (`ronin-help harness-sign-in`).
 - **Hermes on a model.** When they want Hermes on a model, run `harness entries`. Every Ronin Gateway
   model is already a model entry: say so rather than add it. On a key they added, pick the model and
   add one with `harness entry add <key> <model>`, and say what you added. `harness entry remove

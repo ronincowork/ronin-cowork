@@ -107,8 +107,6 @@ export function createSetupView() {
   };
   const blank = (id) => WorkspaceKit.primitives.createBlankSurface(id.replace('workspace', 'Workspace ')).el;
   const environment = {
-    // Authenticate with Agent (harness-authenticate.js): she opens in the work surface, Ask Ronin's panel.
-    showAssistant: () => opener.press(),
     // Every press is a real setting, made by its own route; Setup's ticks are then read again
     // from the facts (KAN-768). Nothing here records a step.
     onGithubAuthenticated: () => { void readProgress(); },

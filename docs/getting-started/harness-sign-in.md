@@ -21,41 +21,38 @@ does not run on the gateway: it speaks only Anthropic's API.
 
 **OpenRouter**, one OpenRouter account for many models, is coming soon for both.
 
-## Signing in
-
-Every harness signs in the same way, in Setup and in Settings, with one of two presses:
-
-- **Authenticate with Agent (recommended):** the Helpful Assistant signs the harness in with you.
-  In Setup she opens beside the step; in Settings, in a window on the page (**−** puts it away).
-  On Claude Code and Codex she asks which way, **Subscription** or **API key**, and starts it; then
-  you see only what you need to do:
-  - **Codex, subscription:** a link and a code. Open the link, sign in, and enter the code there.
-  - **Claude Code:** a link. Open it, sign in, and paste the code it gives you into the box, then
-    press **Send**.
-  - **Codex, API key:** a box for your OpenAI API key. Paste it and press **Send**.
-
-  On the other harnesses she opens the terminal sign-in and talks you through it.
-- **Terminal:** the harness's own sign-in in a terminal. Follow what it asks, then press **Done**.
-  **Cancel** closes it.
-
-If the harness is already signed in, the first press warns you: signing in again signs out every
-Agent on that harness until you finish. A second press goes ahead.
-
-Enter keys and codes only in the box or the harness's own terminal, never in a message to an Agent.
-
 ## In Setup
 
 Open **Harness** in Setup. Each harness is a bar that says where it stands: **Not set up**,
-**Signing in**, **Active** or **Off**. Press a bar to sign it in; it turns **Active** by itself
-when the harness finishes. **Hermes** runs on a model service: the Ronin Gateway, your own API key
-or OpenRouter. Press one in its bar to see its model entries; you add or change them in Settings,
-Model services.
+**Signing in**, **Active** or **Off**.
+
+**Claude Code and Codex** sign in without a terminal. Press the bar: it shows its ways, the one it is
+on selected. Press **Subscription** or **API key**. If it is already signed in, the bar warns first:
+signing in again signs out every Agent on that harness until you finish. A second press goes ahead.
+Then the bar shows only what you need to do:
+
+- **Codex, subscription:** a link and a code. Open the link, sign in, and enter the code there.
+- **Claude Code:** a link. Open it, sign in, and paste the code it gives you into the box on the bar,
+  then press **Send**.
+- **Codex, API key:** a box for your OpenAI API key. Paste it and press **Send**.
+
+The bar turns **Active** by itself when the harness finishes. **Cancel** stops the sign-in.
+
+**Other harnesses** sign in on their own terminal, opened in the bar: follow what it asks, then
+press **Close**. **Hermes** runs on a model service: the Ronin Gateway, your own API key or OpenRouter.
+Press one in its bar to see its model entries; you add or change them in Settings, Model services.
+
+If the Helpful Assistant is open, she sees each sign-in you start and how it ends, and can sign a
+harness in with you.
+
+Enter keys and codes only in the bar or the harness's own terminal, never in a message to an Agent.
 
 ## In Settings
 
 **Harnesses** in Settings shows every harness with three steps, **Install**, **Authenticate** and
-**Ready**. **Turn off** stops Ronin using a harness for a while; your sign-in is kept, and
-**Turn on** brings it back.
+**Ready**. Authenticate opens the harness's terminal sign-in; press **Done** when it is finished,
+or **Cancel** to close it. **Turn off** stops Ronin using a harness for a while; your sign-in is
+kept, and **Turn on** brings it back.
 
 Under the steps, **Models** picks what New Agent offers for that harness: first which model services
 are on (In harness, Ronin Gateway, API key, OpenRouter), then **Hide** or **Show** for each model in
