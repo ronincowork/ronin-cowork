@@ -402,7 +402,9 @@ is "Coming soon": a service is offered where it shares a format, or not shown.
   under the small word **Backup** where the harness has another way. Under the terminal, **Copy code**
   and **Copy link** copy the last device code and link the screen shows (read only, `screenText` in
   `termview.js`; the terminal's own copy and links are untouched, for scrolling's sake). Copy link waits,
-  saying **Expose full URL**, until a link is on screen (owner, 27 Nov 2026).
+  saying **Expose full URL**, until a link is on screen; a ctrl key the screen offers with its word
+  (`ctrl+q  quit`) is a third stone that presses it (owner, 27 Nov 2026). **Done** and **Cancel** end the
+  same line. The terminal is fitted once the panel is on the page, so the CLI draws at the size shown.
 
 Keys and codes are typed only on the panel or into the Ronin key vault, never in chat.
 
