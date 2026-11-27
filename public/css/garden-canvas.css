@@ -97,7 +97,7 @@
 
   /* The horizon keeps its height and crops at the sides: a narrower column
      shows less field, never a squashed one. */
-  .garden-canvas-mark { position: absolute; inset: auto 0 0; width: 100%; height: var(--gc-horizon); color: var(--kaki); opacity: var(--gc-motif-opacity); z-index: -1; pointer-events: none; }
+  .garden-canvas-mark { position: absolute; inset: auto 0 0; width: 100%; height: var(--gc-horizon); color: var(--gc-motif-ink); opacity: var(--gc-motif-opacity); z-index: -1; pointer-events: none; }
   /* The figure is its own fixed-size element, placed by percentage, so it walks
      the flat bund as the column widens instead of scaling with it. */
   .garden-canvas-hito { position: absolute; bottom: var(--gc-hito-stand); left: var(--gc-hito-walk); width: var(--gc-hito-w); height: var(--gc-hito-h); color: var(--kaki); opacity: var(--gc-motif-opacity); z-index: -1; pointer-events: none; transition: left var(--motion-slow) var(--gc-hito-ease); }

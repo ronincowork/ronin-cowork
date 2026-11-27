@@ -75,6 +75,10 @@
 
   --kaki-fill-hover: var(--kaki-lift);
 
+  /* The landscape lines drawn behind Home (the rice terraces) and the Garden Canvas. */
+  --ch-horizon-ink: var(--kaki);
+  --gc-motif-ink: var(--kaki);
+
   /* THE TERMINAL'S COLOURS ARE THE DESIGNER'S, the 16 ANSI slots included. ui.md "Theme"
      says what each slot must stay for agent CLIs to stay readable. */
   --term-cube: standard;
@@ -246,6 +250,9 @@
   --kaki-fill: var(--kaki-lift);
   --kaki-fill-ink: var(--on-strong);
   --kaki-fill-hover: color-mix(in srgb, var(--kaki-lift) 86%, #000);
+  /* kaki at low opacity on white is pink: the landscape lines are grey in light */
+  --ch-horizon-ink: var(--line-3);
+  --gc-motif-ink: var(--line-3);
 
   /* Light mode uses the selected full-fill treatment for collection scopes. */
   --head-admin-bg: var(--graphite);
@@ -267,7 +274,7 @@
   --term-ansi-cyan: #2c7a7a;
   --term-ansi-white: var(--fg);
 
-  --term-ansi-br-black: #ece8e1; /* the band behind the person's messages: warm stone, not lilac */
+  --term-ansi-br-black: #e8e8e8; /* the band behind the person's messages: a pure grey, no tint */
   --term-ansi-br-red: #d13b3b;
   --term-ansi-br-green: #6f8f28;
   --term-ansi-br-yellow: #b08c00;

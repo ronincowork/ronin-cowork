@@ -4,7 +4,6 @@
   .ch-view {
     --ch-box: 2px;
     --ch-horizon-h: 290px;
-    --ch-horizon-ink: var(--kaki);
     --ch-glyph: 30px;
     --ch-glyph-epics: 18px; /* ◇ draws ~1.7× the ink of ⌂ at one size; this matches them (KAN-192) */
     --ch-glyph-epics-weight: .5px; /* and its outline is lighter than ⌂'s */
