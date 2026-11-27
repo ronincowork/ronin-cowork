@@ -17,7 +17,7 @@ export function createHarnessSetupSessionMount() {
       terminal.el.dataset.provider = String(provider?.id || provider || '');
       terminal.el.dataset.workspace = String(workspace || 'workspace2');
       host.replaceChildren(terminal.el);
-      terminal.mount(String(session));
+      const tile = terminal.mount(String(session));
       hosts.add(terminal);
       let closed = false;
       const destroy = () => {
@@ -27,7 +27,10 @@ export function createHarnessSetupSessionMount() {
         terminal.destroy();
         onClosed?.();
       };
-      return { el: terminal.el, fit: terminal.fit, park: terminal.park, destroy };
+      // What the screen shows, read only: the panel's Copy code and Copy link follow it.
+      const screenText = () => (tile && tile.term?.screenText?.()) || '';
+      const onOutput = (fn) => (tile && tile.term?.onOutput?.(fn)) || (() => {});
+      return { el: terminal.el, fit: terminal.fit, park: terminal.park, destroy, screenText, onOutput };
     },
     /** Tear down every tile still mounted — a view's destroy. */
     destroyAll: () => { for (const host of hosts) host.destroy(); hosts.clear(); },
