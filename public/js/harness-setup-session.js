@@ -30,9 +30,10 @@ export function createHarnessSetupSessionMount() {
       // What the screen shows, read only: the panel's Copy code and Copy link follow it.
       const screenText = () => (tile && tile.term?.screenText?.()) || '';
       const onOutput = (fn) => (tile && tile.term?.onOutput?.(fn)) || (() => {});
-      /** A key the screen offers, pressed for the person (the panel's Quit: ctrl+q). */
+      /** Keys or a click the screen offers, pressed for the person (the panel's Show URL and Go Back). */
       const send = (keys) => Boolean(tile?.sendRaw?.(keys));
-      return { el: terminal.el, fit: terminal.fit, park: terminal.park, destroy, screenText, onOutput, send };
+      const locate = (pattern) => (tile && tile.term?.locate?.(pattern)) || null;
+      return { el: terminal.el, fit: terminal.fit, park: terminal.park, destroy, screenText, onOutput, send, locate };
     },
     /** Tear down every tile still mounted — a view's destroy. */
     destroyAll: () => { for (const host of hosts) host.destroy(); hosts.clear(); },

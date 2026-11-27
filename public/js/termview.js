@@ -121,6 +121,18 @@ export class TermView {
     return lines.join('\n');
   }
 
+  /** Where `pattern` first shows on screen: its 1-based column and row in the visible screen, or null. */
+  locate(pattern) {
+    const b = this.term.buffer?.active;
+    if (!b) return null;
+    for (let row = 0; row < this.term.rows; row++) {
+      const text = b.getLine(b.baseY + row)?.translateToString(true) || '';
+      const at = text.search(pattern);
+      if (at >= 0) return { col: at + 1, row: row + 1 };
+    }
+    return null;
+  }
+
   /** Called after each piece of output is drawn; returns its stop. */
   onOutput(fn) {
     const sub = this.term.onWriteParsed?.(fn);
