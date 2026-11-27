@@ -3842,26 +3842,8 @@ body {
 .setup-provider-refresh { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-row) var(--space-inline); margin: var(--space-paragraph) 0 var(--space-paragraph); }
 .setup-provider-last-ran { margin: 0; font-size: var(--text-body); }
 /* A stone's detail is two sections, top to bottom: Yours (the steps), then The catalog. */
-.setup-provider-yours, .setup-provider-catalog { display: grid; gap: var(--space-paragraph); min-width: 0; }
-.setup-provider-catalog { margin-top: var(--space-subsection); padding-top: var(--space-inset); border-top: var(--edge) solid var(--line); }
 .setup-provider-eyebrow { margin: 0; color: var(--muted); font-size: var(--text-small); font-weight: var(--weight-strong); letter-spacing: var(--tracking-wide); text-transform: uppercase; }
-.setup-provider-facts { display: flex; flex-wrap: wrap; gap: var(--space-row) var(--space-inline); margin: 0; }
-.setup-provider-facts div { display: flex; gap: var(--space-inline); font-size: var(--text-body); }
-.setup-provider-facts dt { color: var(--muted); }
-.setup-provider-facts dd { margin: 0; color: var(--fg-strong); font-weight: var(--weight-strong); }
-.setup-provider-facts div[data-on='true'] dd { color: var(--ok); }
-.setup-provider-list-state { margin: 0; }
-.setup-provider-table { overflow-x: auto; max-width: 100%; }
-.setup-provider-models { width: 100%; table-layout: fixed; border-collapse: collapse; font-size: var(--text-body); }
-.setup-provider-models th { text-align: left; padding: var(--space-row) var(--space-inline); color: var(--muted); font-weight: var(--weight-strong); border-bottom: var(--edge) solid var(--line-2); }
-.setup-provider-models td { padding: var(--space-inline); vertical-align: top; border-bottom: var(--edge) solid var(--line); overflow-wrap: anywhere; }
-.setup-provider-models th:nth-child(2) { width: 40%; }
-.setup-provider-use-for { display: block; color: var(--muted); }
-.setup-provider-models td b { color: var(--fg-strong); font-weight: var(--weight-strong); }
 /* Two names per model: the CLI's own name in bold, the id every launch uses beneath it. */
-.setup-provider-model-id { display: block; margin-top: var(--space-row); color: var(--muted); font-family: var(--font-mono); font-size: var(--text-small); overflow-wrap: anywhere; }
-.setup-provider-default { display: block; margin-top: var(--space-row); color: var(--muted); font-size: var(--text-small); }
-.setup-provider-tier { color: var(--muted); font-size: var(--text-small); letter-spacing: var(--tracking-wide); text-transform: uppercase; }
 /* The selected provider: a flat detail on the shared stone seat, on the Setup type baseline
    (14 body · 16 step · 20 title). Three numbered steps share one shape — the mark, the copy,
    then a control of one size — under a restrained kaki rule. The mark says done, current,
@@ -3869,8 +3851,6 @@ body {
    surface is the size container: the control sits beside the copy only when the detail is
    wide enough and otherwise takes its own line under the copy, never stretched. */
 .setup-provider { display: grid; gap: var(--space-subsection); max-width: 44rem; min-width: 0; padding-bottom: var(--space-inset); }
-.setup-provider-head { display: grid; gap: var(--space-row); }
-.setup-provider-head h2 { margin: 0; color: var(--fg-strong); font-size: var(--text-display); font-weight: var(--weight-strong); line-height: var(--leading-tight); }
 .setup-provider-from { margin: 0; color: var(--muted); font-size: var(--text-body); }
 .setup-provider-steps { --provider-rule: var(--line); display: grid; gap: 0; min-width: 0; margin: 0; padding: 0; list-style: none; }
 .setup-provider-step { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--space-paragraph) var(--space-inline); align-items: start; min-width: 0; padding: calc(var(--space-section) / 2) 0; border-top: var(--edge) solid var(--provider-rule); }
@@ -3899,28 +3879,12 @@ body {
 .setup-provider-command { color: var(--muted); font: var(--text-body) var(--font-mono); overflow-wrap: anywhere; }
 .setup-provider-control { display: flex; flex-wrap: wrap; gap: var(--space-inline); min-width: 0; grid-column: 2; }
 .setup-provider-control:empty { display: none; }
-.setup-provider-action { display: inline-flex; flex: 0 0 10rem; width: 10rem; min-height: var(--control-height); align-items: center; justify-content: center; box-sizing: border-box; padding-inline: var(--space-control); text-align: center; text-decoration: none; }
-.setup-provider-control > .setup-provider-action:disabled { border-color: var(--line); background: transparent; color: var(--muted); opacity: 1; }
 @container setup-stone-work-surface (min-width: 46rem) {
   .setup-provider-step { grid-template-columns: auto minmax(0, 1fr) auto; }
   .setup-provider-control { grid-column: auto; align-self: center; justify-content: flex-end; }
 }
-.setup-provider-completion { grid-column: 1 / -1; display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-subsection); min-width: 0; padding: var(--space-inset); border: var(--edge) solid var(--line); border-radius: var(--radius-small); }
-.setup-provider-completion-actions { display: flex; flex-wrap: wrap; gap: var(--space-inline); width: 100%; }
-.setup-provider-completion-actions > .wk-action { flex: 0 0 10rem; width: 10rem; min-height: var(--control-height); }
-.setup-provider-completion-actions > .setup-provider-done { flex: 1 1 100%; width: 100%; }
-.setup-provider-authentication-fields { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-subsection); width: 100%; min-width: 0; }
-.setup-provider-completion[hidden], .setup-provider-sign-in-title[hidden] { display: none; }
-.setup-provider-completion > .setup-provider-note { margin: 0; }
-.setup-provider-sign-in-title { display: grid; gap: var(--space-row); width: 100%; min-width: 0; color: var(--muted); font-size: var(--form-note); }
-.setup-provider-sign-in-title input { width: 100%; min-width: 0; min-height: var(--control-height); background: var(--inset); color: var(--fg); border: var(--edge) solid var(--line); border-radius: var(--radius-small); padding: 0 var(--space-control); font: inherit; font-size: var(--form-input); }
-.setup-provider-problem { margin: 0; }
-.setup-provider-problem[hidden] { display: none; }
 /* The native sign-in tile: headerless, with a bounded height so the surrounding
    setup controls remain reachable. Terminal output scrolls inside the tile. */
-.setup-provider-terminal { grid-column: 1 / -1; height: min(30rem, 50dvh); min-height: 0; overflow: hidden; border: var(--edge) solid var(--line); border-radius: var(--radius-small); background: var(--surface); }
-.setup-provider-terminal > .wk-terminal-host, .setup-provider-terminal .tile { height: 100%; min-height: 0; max-height: 100%; }
-.setup-provider-terminal .tile > .tile-head { display: none; }
 /* THE FIVE STEP MARKS (js/setup-steps-bar.js) — one drawing of Setup's progress, seated
    wherever it has to be read. It draws at ONE size and never reads its surroundings, so
    it is the same shape in a selector column and in a header; a consumer that needs
@@ -4651,19 +4615,28 @@ html[data-screen='inside'] #phone .ph-bar .ph-title[data-boot='inside'] { displa
 /* THE AGENT HARNESS WORKBENCH'S ACCOUNTS AND MODELS TILESPACES (KAN-236): account cards in the Hermes card's
    shape, their two tick lists side by side, and the Models tilespace's sections. */
 
-/* THE HARNESS STEP (setup-harness-surface.js): the prototype's thin bars, one per harness. */
-.setup-harness-body { display: flex; flex-direction: column; gap: var(--space-subsection); padding: var(--space-row) 0; }
-.setup-harness-stack { display: flex; flex-direction: column; gap: var(--space-paragraph); max-width: 560px; }
-.setup-harness-bar { display: flex; flex-direction: column; gap: var(--space-control); padding: var(--space-control) var(--space-inset); border: 1px solid var(--line); border-radius: 4px; background: var(--surface); }
-.setup-harness-bar.selected { border-color: var(--kaki); box-shadow: inset 3px 0 var(--kaki); }
-.setup-harness-bar.signed:not(.selected) { box-shadow: inset 3px 0 var(--ok-2); }
-.setup-harness-top { display: flex; align-items: center; gap: var(--space-control); width: 100%; border: 0; background: none; padding: 0; font: inherit; color: inherit; text-align: left; cursor: pointer; }
-.setup-harness-top:disabled { cursor: default; }
-.setup-harness-name b { display: block; font-size: var(--text-label); font-weight: 600; color: var(--fg-strong); }
-.setup-harness-name small { display: block; font-size: var(--text-small); color: var(--muted); margin-top: var(--space-row); }
-.setup-harness-go { margin-left: auto; font-weight: 600; color: var(--link); }
-.setup-harness-bar.signed .setup-harness-go { color: var(--ok-2); }
-.setup-harness-top:disabled .setup-harness-go { color: var(--kaki); }
+/* THE ONE HARNESS PANEL (harnesses-surface.js), Setup's and Settings' alike: name and state word, then its parts
+   at one spacing: Install or Update, Model services (the service row, then the model entries), Turn off. */
+.harness-panel { display: flex; flex-direction: column; gap: var(--space-section); max-inline-size: 48rem; min-width: 0; }
+.harness-panel-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-control); }
+.harness-panel-title { display: flex; flex-direction: column; gap: var(--space-row); }
+.harness-panel-title h2, .harness-panel-title p { margin: 0; }
+.harness-panel-state { margin-left: auto; font-weight: var(--weight-strong); color: var(--fg-strong); }
+.harness-panel-part { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-paragraph); min-width: 0; }
+.harness-panel-part > .ask, .harness-panel-part > .setup-harness-window, .harness-panel-part > .harness-models, .harness-panel-part > p { align-self: stretch; }
+.harness-panel-part > .setup-provider-eyebrow { margin: 0; }
+.harness-panel .setup-harness-terminal { align-self: stretch; }
+/* Settings' window on the surface: the Helpful Assistant's chat over the harness surface, put away with −. */
+.setup-surface:has(> .harness-agent-window) { position: relative; }
+.harness-agent-window { position: absolute; z-index: 5; inset-inline-end: 16px; inset-block-end: 16px; inline-size: min(440px, calc(100% - 32px)); block-size: min(560px, calc(100% - 32px)); display: flex; flex-direction: column; background: var(--surface); border: 1px solid var(--line-2); border-radius: 8px; box-shadow: 0 8px 24px rgb(0 0 0 / 0.35); overflow: hidden; }
+.harness-agent-window-head { display: flex; align-items: center; gap: var(--space-control); padding: var(--space-row) var(--space-control); border-block-end: 1px solid var(--line); }
+.harness-agent-window-head b { color: var(--fg-strong); }
+.harness-agent-window-head .transcript-toggle { margin-inline-start: auto; }
+.harness-agent-window-close { border: 0; background: none; color: var(--kaki); font: inherit; font-size: 18px; line-height: 1; cursor: pointer; padding: 0 4px; }
+.harness-agent-window .setup-irasshai-chat { flex: 1; min-height: 0; border: 0; border-radius: 0; }
+.harness-agent-window .setup-irasshai-chat > .tile-body[hidden], .harness-agent-window .setup-irasshai-chat > .wk-terminal-host[hidden] { display: none; }
+.harness-agent-window .setup-irasshai-chat .wk-hosted-tile > .tile-head { display: none; }
+/* A sign-in run's window: the line, the link, the code, the box and its stones. */
 .setup-harness-window { display: flex; flex-direction: column; gap: var(--space-control); }
 .setup-harness-line { margin: 0; line-height: var(--leading-body); }
 .setup-harness-line.bad { color: var(--kaki); }
@@ -4718,7 +4691,6 @@ html[data-screen='inside'] #phone .ph-bar .ph-title[data-boot='inside'] { displa
 .setup-harness-code { --harness-code-size: 18px; /* a sign-in code read off the screen and typed elsewhere */ font-family: var(--font-mono); font-size: var(--harness-code-size); font-weight: 600; letter-spacing: .08em; color: var(--fg-strong); }
 .setup-harness-input { flex: 1 1 180px; min-width: 0; }
 .setup-harness-terminal { min-height: 320px; }
-.setup-harness-note { margin: 0; font-size: var(--text-body); line-height: var(--leading-body); color: var(--muted); }
 /* Hermes's two steps (form-steps.js) span the bar; the adding row is dashed, the same shape as a row it adds. */
 .hermes-settings .fs-step > .fs-step-body, .hermes-settings .fs-step:has(> .fs-step-head.fs-togglable) > .fs-step-body { grid-column: 1 / -1; }
 .hermes-settings .fs-step { grid-template-columns: minmax(0, 1fr); }
@@ -4765,7 +4737,7 @@ html[data-screen='inside'] #phone .ph-bar .ph-title[data-boot='inside'] { displa
 .data-table thead th:first-child { width: 40%; }
 .data-table thead th.hermes-tools { width: 8.5rem; }
 .data-table-link { justify-self: start; text-align: left; }
-/* The harness page's two-tier model picker: the service stones, then a table per service on. */
+/* A harness's model entries: a table per service that is on. */
 .harness-models, .harness-models-body { display: grid; gap: var(--space-paragraph); min-width: 0; }
 .harness-models-body > p { margin: 0; }
 .harness-models-service { margin: var(--space-row) 0 0; color: var(--fg-strong); font-size: var(--text-body); font-weight: var(--weight-strong); }
@@ -4778,15 +4750,15 @@ html[data-screen='inside'] #phone .ph-bar .ph-title[data-boot='inside'] { displa
   .data-table td.hermes-tools { white-space: normal; }
   .data-table td.hermes-tools .data-table-link { display: block; margin-left: auto; }
 }
-/* The four ways: four equal stones across the bar, two by two when narrow. */
+/* A harness's service row: equal stones across the panel, wrapping when narrow. */
 .setup-harness-row.setup-harness-ways { display: grid; grid-template-columns: repeat(auto-fit, minmax(112px, 1fr)); }
 .setup-harness-ways .ask-rect { width: auto; flex: none; }
 .setup-harness-ways .ask-opt:disabled { opacity: .6; cursor: default; }
 /* Hermes's Ronin Gateway on the Settings page: always there, ticked, nothing to press. */
 .hermes-fixed { pointer-events: none; }
-/* The model service open on the Hermes bar: filled, so it reads at a glance in both themes (owner, 26 Nov 2026). */
-.setup-hermes-sources .ask-opt[aria-selected='true'] { background: var(--kaki-fill); border-color: var(--kaki-fill); color: var(--kaki-fill-ink); }
-.setup-hermes-sources .ask-opt[aria-selected='true'] .hermes-tick { color: var(--kaki-fill-ink); }
+/* The service a harness is on: filled, so it reads at a glance in both themes (owner, 26 Nov 2026). */
+:is(.setup-hermes-sources, .setup-harness-ways) .ask-opt[aria-selected='true'] { background: var(--kaki-fill); border-color: var(--kaki-fill); color: var(--kaki-fill-ink); }
+:is(.setup-hermes-sources, .setup-harness-ways) .ask-opt[aria-selected='true'] .hermes-tick { color: var(--kaki-fill-ink); }
 /* Available, not selected: a tick in the stone, never the kaki selected mark (owner, 25 Nov 2026). */
 .ask-opt .hermes-tick { color: var(--ok); font-weight: var(--weight-strong); margin-right: var(--space-row); }
 .ask-opt:has(> .hermes-tick) { flex-direction: row; align-items: center; justify-content: flex-start; }

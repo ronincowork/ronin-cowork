@@ -86,71 +86,32 @@ their place with the kaki − top right; the − or Escape closes it back to the
 
 ## Harnesses
 
-Two surfaces over one measured runtime: Setup's Harness step (`setup-harness-surface.js`) and the
-harness pages in Settings (`harnesses-surface.js`, seated by `harnessKit` in `door-workbenches.js`),
-so a change shows on both. Setup's line under the bars links to Settings.
-The CLI's own credential file is the record of a sign-in; Ronin keeps nothing beside it.
+Setup's Harness step and Settings' harness surfaces mount the one harness panel
+(`public/js/harnesses-surface.js`): the same stones, the same state word, the same panel. The place
+decides only where the Helpful Assistant opens (`openAgent`): Setup's work surface, Ask Ronin's panel
+(`showAssistant` in `setup-view.js`); Settings' window over the surface (`models-surface.js`). The
+panel, its services and its rules are in [model providers](harness-catalog.md), *One harness panel*.
+The CLI's own credential file is the record of an in-harness sign-in; Ronin keeps nothing beside it.
 
-### Setup's Harness step
+Keys and codes are typed only on the panel, in the Ronin key vault, or in the harness's own terminal,
+never in chat.
 
-One bar per harness, registry order, Claude Code and Codex first, each saying **Not set up**,
-**Signing in**, **Active** or **Off**.
-
-- **Claude Code and Codex** sign in without a terminal, one way at a time: **Subscription** or
-  **API key** (a new sign-in replaces the old one, as the CLI itself does). Ronin runs the CLI's own
-  login command for that way (`login` in `src/agents.ts`, run by `src/harness-sign-in.ts`), reads the
-  link and code it prints, and the bar shows only what the person must do: the link and code
-  (Codex subscription), the link and a box for the code it gives back (Claude Code), or a key box
-  (Codex API key), with **Send** and **Cancel**. When the CLI exits Ronin measures again and the bar
-  turns Active; a run that did not sign in leaves the CLI's last line under the bar.
-- **Other harnesses** sign in on their own terminal, opened in the bar (**Open its sign-in**,
-  **Close**); `signIn` in `src/agents.ts` says what that CLI asks.
-- **Hermes** shows its three model services (Ronin Gateway, API key, OpenRouter), each ticked when
-  set up, and the model entries of the one pressed (`setup-hermes-services.js`). Adding or changing
-  them is a link to Model services in Settings.
-
-Keys and codes are typed only in the bar or the harness's own terminal, never in chat.
-
-**See and Chat are one conversation.** A press goes to the Helpful Assistant, when she is live, as
-the person's own line (`press.js`, drawn in her chat as "Pressed: …"), only after its route answered
-OK. The rule: a press goes to her when it changes what an Agent can run on or starts something she
-should follow; one that only moves around the page, or handles a secret, stays silent. So she gets
-`Codex · Sign in with subscription`, `Codex · Sent the code` (never its text), `Codex · Cancel
-sign-in`, `Grok · Open its sign-in` and `Grok · Close sign-in`. A result nobody pressed, the CLI
-exiting, reaches her from the run itself: `Codex is signed in.` or `Codex sign-in did not finish:
-<last line>`.
+**See and Chat are one conversation.** A press goes to the Helpful Assistant as the person's own line
+(`press.js`, drawn in her chat as "Pressed: …"), only after its route answered OK. The rule: a press
+goes to her when it changes what an Agent can run on or starts something she should follow; one that
+only moves around the page, or handles a secret, stays silent. So she gets `Codex · Sign in with
+subscription`, `Codex · Sent the code` (never its text), `Codex · Cancel sign-in`, `Grok · Terminal`
+and `Grok · Close sign-in`. A result nobody pressed, the CLI exiting, reaches her from the run
+itself: `Codex is signed in.` or `Codex sign-in did not finish: <last line>`.
 
 **Her hands.** She never presses the page. Her `harness` tool (`ronin_bin/harness`) calls the same
-routes the bar calls (`sign-in`, `cancel`, `state`, `open`, `close`, and the Hermes `entries` and
-`entry add|remove`, over `/api/model-services`); the route changes the record and the page redraws from its push
-(`harness-sign-in`, setup progress, `model-services-changed`). A change she made sends her no press
-line: the tool's answer is her confirmation. Keys are never hers to enter.
-
-### The Harness pages in Settings
-
-A harness's page is three numbered steps. A finished step wears a check; the next unmet step owns
-the control.
-
-| Step | What it measures | The control |
-|---|---|---|
-| **Install** | whether the CLI is on this machine | **Install** opens the installer in a tile on the page; a CLI Ronin cannot install safely gets an **Install guide** link |
-| **Authenticate** | whether the harness is signed in here | **Authenticate** opens the CLI's own sign-in in a terminal tile, with what that CLI asks (`signIn`); **Done** under it re-measures, **Cancel** ends the terminal. While it is open the runtime reads the CLI's credential file each time it answers |
-| **Ready** | activation, which unlocks Home's doors | **Turn off** stops Ronin measuring, updating and launching the harness; running tiles and the sign-in are kept. **Turn on** brings it back |
-
-Below the steps, **Models** (`harness-model-entries.js`) picks what New Agent offers for this
-harness, in two tiers. First a stone per model service: **In harness** (the CLI's own list from
-the last **Refresh all harnesses**) and each service type the harness can use (`serviceTypesFor`
-in `src/model-services.ts`); filled means on, and a type with no service yet reads **Not set up**
-and opens Model services on its tab in the other pane. Then one table per service that is on,
-Name and Model ID, a **Hide** or **Show** per row, a hidden row muted. Every press saves
-(`PUT /api/new-agent-models/:cli`): a service on with nothing hidden follows its full list, so
-models it adds later show by themselves. Ronin Gateway starts hidden until someone shows it.
-Hermes's page is only this Models section: it has no sign-in of its own.
+routes the panel calls (`sign-in`, `cancel`, `state`, `open`, `close`, and the Hermes `entries` and
+`entry add|remove`, over `/api/model-services`); the route changes the record and the page redraws
+from its push (`harness-sign-in`, setup progress, `model-services-changed`). A change she made sends
+her no press line: the tool's answer is her confirmation. Keys are never hers to enter.
 
 Ronin only checks that a sign-in exists; it never reads a credential or asks the provider about
 your account.
-
-Details of the catalog and what is measured are in [model providers](harness-catalog.md).
 
 ## The Helpful Assistant (Irasshai)
 

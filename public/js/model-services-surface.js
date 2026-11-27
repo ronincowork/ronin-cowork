@@ -106,7 +106,7 @@ function stones(...items) {
 }
 const reasons = (service) => service.provider === 'openai' || service.wire === 'responses';
 function tabName(tab) {
-  if (tab === 'private') return t('model_services.private', 'API key');
+  if (tab === 'private') return t('model_services.private', 'API key in Ronin key vault');
   if (tab === 'openrouter') return t('model_services.openrouter', 'OpenRouter');
   return t('model_services.gateway', 'Ronin Gateway');
 }
@@ -231,7 +231,7 @@ export function createModelServicesSurface({ tab = 'gateway', serviceId = '' } =
     const service = first('openrouter');
     const key = input('', 'password'); key.autocomplete = 'new-password';
     const form = el('form', 'model-services-form');
-    const save = button(service ? t('model_services.replace_key', 'Replace key') : t('model_services.save_key', 'Save key'), () => {}, 'primary'); save.type = 'submit';
+    const save = button(service ? t('model_services.replace_key', 'Replace in Ronin key vault') : t('model_services.save_key', 'Save to Ronin key vault'), () => {}, 'primary'); save.type = 'submit';
     form.append(field(t('model_services.openrouter_key', 'OpenRouter API key'), key), bar(save,
       service ? button(t('accounts.remove', 'Remove'), () => act('delete', { id: service.id }, say)) : null));
     form.addEventListener('submit', async (event) => {
@@ -239,7 +239,7 @@ export function createModelServicesSurface({ tab = 'gateway', serviceId = '' } =
       try { await act('save', { id: service?.id, kind: 'personal_api', name: 'OpenRouter', provider: 'custom', baseUrl: OPENROUTER_URL, wireApi: 'chat', apiKey: key.value }, say); }
       finally { key.value = ''; save.disabled = false; }
     });
-    const saved = service?.configured ? t('model_services.key_saved', 'Key saved.') : t('model_services.no_key', 'No key yet');
+    const saved = service?.configured ? t('model_services.key_saved', 'Key saved in the Ronin key vault.') : t('model_services.no_key', 'No key yet');
     return [
       el('p', 'setup-fine', t('model_services.openrouter_lede', 'Save your OpenRouter key, then name the models you want offered.')),
       sections([

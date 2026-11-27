@@ -9,6 +9,11 @@
 A secret is **configuration, not code**. It differs per machine, it changes without the
 program changing, and it is the one kind of mistake that a later commit cannot take back.
 
+## The Ronin key vault
+
+Where Ronin keeps a secret a person gives it: a model service's key, an integration's key, and what
+an Agent's `secret ask` collects. Every place that asks for one says so, and none of them is a chat.
+
 ## The approach
 
 1. **The ignore rule comes before the file.** `.env` in `.gitignore` on day one, while

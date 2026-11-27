@@ -328,7 +328,7 @@ the same control with the provider select dropped. The registry's seeds read the
 rows: `models:first` is the marked default of the first launchable provider, `models:light`
 the first launchable **light** row — there is no name-pattern for "cheap".
 
-## One harness panel (plan, KAN-940)
+## One harness panel (KAN-940, built KAN-941)
 
 **Why.** Setup's Harness step and Settings' harness page draw the same server facts with two sets
 of words and two layouts (owner, 27 Nov: "2 pieces doing the same job and not well... we need a
@@ -353,8 +353,9 @@ heading and Home's doors alike. It names the state, not what to do (owner, 25 No
 | **Active** | at least one model service gives it models | Active, Activated, Activated for Launch, Hermes's Ready |
 | **Off** | turned off; every sign-in is kept | Off |
 
-Today the server's `activated` counts only the CLI's own sign-in; it widens to "any model service
-on" (`src/setup-runtime.ts`), so a Codex on the Ronin Gateway alone reads Active. Hermes needs no
+`activated` stays the CLI's own sign-in (it decides what Ronin measures and reads); beside it
+`served` (`src/setup-runtime.ts`) says a configured model service is bound to the harness, and Active
+is either, so a Codex on the Ronin Gateway alone reads Active and counts in `activated_count`. Hermes needs no
 case of its own. The Installed / Signed in / Activated facts and the numbered Install →
 Authenticate → Ready steps go: the word says it once.
 
@@ -363,15 +364,17 @@ Authenticate → Ready steps go: the word says it once.
 One row of stones; a harness shows only the services it can use (`serviceTypesFor` over `SPEAKS`,
 `src/model-services.ts`, plus its CLI's own `login`). Today `SPEAKS` has Codex (Responses: Gateway,
 key vault), Hermes (both: all three) and OpenCode (chat: key vault, OpenRouter). Claude Code is not in
-it: its key-vault API key is new, an Anthropic key the launch hands Claude Code (`ANTHROPIC_API_KEY`
-in its `cli-home`), added to `SPEAKS` as its own wire. Several can be on at once; the in-harness
+it: its key-vault API key is not built yet, an Anthropic key the launch hands Claude Code
+(`ANTHROPIC_API_KEY`), added to `SPEAKS` as its own wire, with the key store's wire types, model
+discovery over Anthropic's `/v1/models` and the launch adapter. Until then Claude Code's row has no
+key-vault stone. Several can be on at once; the in-harness
 ones are one at a time, as the CLI itself allows.
 
 | Service | Where it lives | Pressing it | Claude Code | Codex | Hermes | Others |
 |---|---|---|---|---|---|---|
 | **Subscription** | in harness | runs the CLI's subscription login (Claude Code `auth login --claudeai`, Codex `login --device-auth`); the panel shows the link and the code or code box | yes | yes | | |
 | **API key in harness** *(recommended)* | in harness | runs the CLI's key login (Claude Code `auth login --console`, Codex `login --with-api-key`); the panel shows the link and code box, or the key box | yes | yes | | |
-| **API key in Ronin key vault** | Ronin | the key goes into the Ronin key vault as a model service; Ronin starts the Agent on it | yes, new | yes | yes | OpenCode |
+| **API key in Ronin key vault** | Ronin | the key goes into the Ronin key vault as a model service; Ronin starts the Agent on it | not yet | yes | yes | OpenCode |
 | **Ronin Gateway** | Ronin | nothing to sign in; on, with its supplied models | never | yes | yes | |
 | **OpenRouter** | Ronin | the OpenRouter key into the Ronin key vault | | | yes | OpenCode |
 | **Terminal** | in harness | the CLI's own login in its terminal tile, its own menu, **Done** and **Cancel**: subscription or key by hand. Offered, never pushed | yes | yes | | yes, the only one |
@@ -472,17 +475,13 @@ then Model services. The harness part also runs at start, never on a timer: it m
 reads every activated CLI's own model list and asks npm for each one's newest release; the press
 then asks each model service for its list.
 
-A stone opens that harness, top to bottom: the three measured steps (install · authenticate with the
-native sign-in tile, Done and Cancel · ready) read from the runtime
-row; then **Models**: the three measured facts and the tiered picker of what New Agent offers for
-this harness, a stone per model service (In harness, the CLI's own list; then each service type it
-can use) and a table per service that is on, Name and Model ID, Hide or Show per row
-(`harness-model-entries.js`; [Setup workbench](setup-workbench.md), *Harnesses*). The native sign-in
-tile is mounted through the one shared mount (`public/js/harness-setup-session.js`), which Setup and
-Settings both hand their environment. Showing the surface paints the record; only Refresh all reads.
+A stone opens that harness's panel, the same in Setup and Settings (*One harness panel*, above). Its
+terminal (sign-in, install or update) is mounted through the one shared mount
+(`public/js/harness-setup-session.js`), which Setup and Settings both hand their environment. Showing
+the surface paints the record; only Refresh all reads.
 
 **Activation is the one switch.** It decides whether Ronin spends anything on a
-provider. **Turn off**, on the Ready step, writes Ronin's own `setup.providers.<cli>.off_at`
+provider. **Turn off**, at the foot of its panel, writes Ronin's own `setup.providers.<cli>.off_at`
 and nothing else: the provider is then not measured, not asked for its latest, not offered
 an Update, greyed in every picker with the words *turned off*, and refused for new
 launches with its own sentence — *turned off on this machine; your sign-in is kept*. No
@@ -591,5 +590,5 @@ runs the command inside it, so exiting the CLI returns to the shell prompt. Both
 `harness-setup-session.js`; Cancel ends the temporary tmux session.
 
 Done records nothing but the sign-in itself: it re-measures, and the CLI's own credential file is
-the record. Claude Code and Codex sign in on Setup's Harness step without a terminal
-(`src/harness-sign-in.ts`); see [Setup workbench](setup-workbench.md), *Harnesses*.
+the record. Claude Code and Codex also sign in without a terminal (`src/harness-sign-in.ts`); see
+*One harness panel*.

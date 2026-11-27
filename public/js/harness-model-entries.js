@@ -41,41 +41,41 @@ export function shownInNewAgent(catalog, entry, row) {
 }
 
 /**
- * MODELS IN NEW AGENT, TWO TIERS (owner, 26 Nov 2026): first the model services New Agent offers for this
- * harness, In harness and each set-up service, as stones filled when on; then, for each one on, its own table
- * in the table pattern (data-table.js): a row per model, muted when hidden, Hide or Show.
- * Every press saves. A service on with nothing hidden is null, so models it adds later show by themselves;
- * a service off is [].
+ * A HARNESS'S MODEL SERVICES, TWO PARTS (owner, 27 Nov 2026; docs/architecture/harness-catalog.md, One harness
+ * panel). `stones`: a stone per Ronin-side service the harness can use (a key in the Ronin key vault, Ronin
+ * Gateway, OpenRouter), filled when New Agent offers it; one not set up says so and opens Model services on its
+ * tab. They sit in the panel's service row beside the in-harness ways. `entries`: under the row, a table per
+ * service that is on (In harness first, when the CLI lists its own), in the table pattern (data-table.js): a row
+ * per model, muted when hidden, Hide or Show. Every press saves. A service on with nothing hidden is null, so
+ * models it adds later show by themselves; a service off is [].
  */
-const TYPES = [['gateway', 'Ronin Gateway', 'gateway'], ['private_api', 'API key', 'private'], ['openrouter', 'OpenRouter', 'openrouter']];
+const TYPES = [['private_api', 'API key in Ronin key vault', 'private'], ['gateway', 'Ronin Gateway', 'gateway'], ['openrouter', 'OpenRouter', 'openrouter']];
 export function harnessModelEditor(catalog, entry, openServices) {
-  const box = el('div', 'harness-models');
   const choices = { ...catalog.preferences?.[entry.cli] };
   const seen = new Set();
-  const rows = entry.models.filter(row => {
+  const rows = (entry.models || []).filter(row => {
     const id = `${row.service_id || ''}\n${row.model}`;
     if (seen.has(id)) return false;
     seen.add(id);
     return true;
   });
   const groupOf = row => row.service_id || 'in-harness';
-  // In harness, then each service type the harness can use in the Setup bar's order: its set-up services,
-  // or one stone saying Not set up that opens that tab of Model services.
   const services = entry.services || [];
-  const groups = [
-    ...(rows.some(row => !row.service_id) ? [{ id: 'in-harness', name: 'In harness' }] : []),
-    ...TYPES.filter(([type]) => (entry.service_types || []).includes(type) || services.some(s => s.service_type === type))
-      .flatMap(([type, name, tab]) => {
-        const mine = services.filter(s => s.service_type === type);
-        return mine.length ? mine.map(s => ({ id: s.id, name: s.name })) : [{ id: '', name, tab }];
-      }),
-  ];
+  const word = type => TYPES.find(([one]) => one === type)?.[1] || '';
+  const ronin = TYPES.filter(([type]) => (entry.service_types || []).includes(type) || services.some(s => s.service_type === type))
+    .flatMap(([type, name, tab]) => {
+      const mine = services.filter(s => s.service_type === type);
+      return mine.length ? mine.map(s => ({ id: s.id, name: type === 'gateway' ? name : s.name, type })) : [{ id: '', name, tab, type }];
+    });
   const modelsOf = group => rows.filter(row => groupOf(row) === group);
   const isOn = group => !(Array.isArray(choices[group]) && choices[group].length === 0);
   const isShown = row => { const picked = choices[groupOf(row)]; return !Array.isArray(picked) || picked.includes(row.model); };
   const status = el('p', 'setup-fine');
   status.setAttribute('role', 'status'); status.hidden = true;
   const holder = el('div', 'harness-models-body');
+  const box = el('div', 'harness-models');
+  box.append(holder, status);
+  let onChange = () => {};
 
   const save = async (group, next) => {
     const before = choices[group];
@@ -94,27 +94,27 @@ export function harnessModelEditor(catalog, entry, openServices) {
     void save(group, shown.length === all.length ? null : shown);
   };
 
-  const unset = group => {
-    const out = el('button', 'ask-opt ask-rect');
-    out.type = 'button';
-    out.append(el('span', 'ask-name', group.name), el('small', 'ask-word', 'Not set up'));
-    out.setAttribute('aria-selected', 'false');
-    out.addEventListener('click', () => openServices(group.tab));
-    return out;
-  };
-  const stone = group => {
-    if (!group.id) return unset(group);
-    const on = isOn(group.id);
+  /** The Ronin-side stones, drawn afresh for the panel's row. */
+  const stones = () => ronin.map(group => {
     const out = el('button', 'ask-opt ask-rect');
     out.type = 'button';
     out.append(el('span', 'ask-name', group.name));
+    // A key's own name says which key; the small word says where it is kept.
+    if (group.id && group.type === 'private_api') out.append(el('small', 'ask-word', word('private_api')));
+    if (!group.id) {
+      out.append(el('small', 'ask-word', t('harness.not_set_up', 'Not set up')));
+      out.setAttribute('aria-selected', 'false');
+      out.addEventListener('click', () => openServices(group.tab));
+      return out;
+    }
+    const on = isOn(group.id);
     out.setAttribute('aria-selected', String(on));
     out.setAttribute('aria-label', `${group.name}, ${on ? 'on' : 'off'}`);
     out.addEventListener('click', () => { void save(group.id, on ? [] : null); });
     return out;
-  };
+  });
   const table = group => {
-    const models = modelsOf(group.id);
+    const models = modelsOf(group);
     // Name and Model ID always, even when they match: what a launch sends, never guessed from the name.
     return createTable({
       headings: ['Name', 'Model ID'],
@@ -127,18 +127,18 @@ export function harnessModelEditor(catalog, entry, openServices) {
   };
 
   const paint = () => {
-    const sources = el('div', 'ask setup-harness-row setup-harness-ways setup-hermes-sources');
-    sources.dataset.density = 'tight';
-    sources.append(...groups.map(stone));
-    const parts = [el('p', 'setup-fine', `The model services New Agent offers for ${entry.cli_label || entry.cli}, then the models in each.`), sources,
-      tableLink('+ Add or change model services in Settings', () => openServices('gateway'))];
-    for (const group of groups) {
+    const parts = [];
+    if (modelsOf('in-harness').length) parts.push(el('h4', 'harness-models-service', t('harness.in_harness', 'In harness')), table('in-harness'));
+    for (const group of ronin) {
       if (!group.id || !isOn(group.id)) continue;
-      parts.push(el('h4', 'harness-models-service', group.name), table(group));
+      parts.push(el('h4', 'harness-models-service', group.name), table(group.id));
     }
+    if (!parts.length) parts.push(el('p', 'setup-fine', t('harness.no_entries', 'No model service is on yet. Choose one above.')));
+    // The way to add or change them comes after them (owner, 27 Nov: never above the choice).
+    parts.push(tableLink(t('harness.add_services', '+ Add or change model services in Settings'), () => openServices('gateway')));
     holder.replaceChildren(...parts);
+    onChange();
   };
   paint();
-  box.append(holder, status);
-  return { el: box, destroy: () => {} };
+  return { stones, entries: box, onChange: (fn) => { onChange = fn; }, destroy: () => {} };
 }

@@ -29,7 +29,8 @@ const EMPTY_PROVIDER_SUMMARY: HarnessSummary = {
 const answer = async (summary?: HarnessSummary) => {
   const section = await readSetupSection();
   const facts = summary ?? await readHarnessSummary() ?? EMPTY_PROVIDER_SUMMARY;
-  return setupRuntimeAnswer(section, facts, undefined, await installedAnswer());
+  const served = (await modelServices().catch(() => [])).filter((service) => service.configured).flatMap((service) => service.bound);
+  return setupRuntimeAnswer(section, facts, undefined, await installedAnswer(), served);
 };
 
 export function registerSetupRuntime(app: express.Express): void {

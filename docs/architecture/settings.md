@@ -35,7 +35,7 @@ defaults) is a separate task from changing a behavior file's text (Behavior file
 
 | From | Opens |
 |---|---|
-| A harness's Models section, Setup's Hermes bar | Model services, on the service's tab (`modelServicePageRequest(tab, id)`) |
+| A harness's Ronin-side service not set up, and its *Add or change model services* link | Model services, on the service's tab (`modelServicePageRequest(tab, id)`) |
 | New Agent's and the Teams page's Desk defaults | Agent defaults |
 | A Workspace's folder action | Workspaces |
 

@@ -83,7 +83,7 @@ export function registerWorkbenchCatalog() {
   profiles.define(WORKBENCH_PROFILES.agent, [WORKBENCH_TYPES.terminal, WORKBENCH_TYPES.agentComposition, WORKBENCH_TYPES.agentDocuments, WORKBENCH_TYPES.agentTeams, WORKBENCH_TYPES.workItems, WORKBENCH_TYPES.document, FEEDBACK_TYPE]);
   // SETTINGS' HARNESS CARDS: the stones of harnesses (Harness), Refresh, and one card per harness,
   // an entity card placing that harness whole (models-surface.js).
-  add({ type: WORKBENCH_TYPES.modelStones, header: 'surface', className: 'wk-selector-utility', label: () => t('harness.stones', 'Harness'), summary: () => t('harness.stones_summary', 'The CLIs: install, sign in, ready'), create: ({ workspace, environment }) => environment.modelStones(workspace) });
+  add({ type: WORKBENCH_TYPES.modelStones, header: 'surface', className: 'wk-selector-utility', label: () => t('harness.stones', 'Harness'), summary: () => t('harness.stones_summary', 'The CLIs: install, model services'), create: ({ workspace, environment }) => environment.modelStones(workspace) });
   // Refresh (owner, 2026-10-20): the Refresh all door the stones do not carry.
   add({ type: WORKBENCH_TYPES.modelRefresh, header: 'surface', className: 'wk-selector-utility', label: () => t('harness.refresh', 'Refresh'), summary: () => t('harness.refresh_summary', 'One press: harnesses, model services'), create: ({ workspace, environment }) => environment.modelRefresh(workspace) });
   add({ type: WORKBENCH_TYPES.modelHarness, header: 'surface', className: 'wk-selector-entity', discover: (_t, e) => e.providers(), create: ({ workspace, detail, environment }) => environment.modelHarness(workspace, detail) });

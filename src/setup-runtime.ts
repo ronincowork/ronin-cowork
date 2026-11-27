@@ -42,6 +42,10 @@ export interface SetupHarnessState {
   install_open: boolean;
   signed_in: boolean;
   activated: boolean;
+  /** A model service gives it models (a configured service bound to it: Ronin Gateway, a key in the
+   *  Ronin key vault, OpenRouter): Active without its own sign-in (docs/architecture/harness-catalog.md,
+   *  One harness panel). */
+  served: boolean;
   activated_at: string | null;
   /** Turned off by the owner: Ronin is not using this provider. The sign-in is kept; live tiles run on. */
   off: boolean;
@@ -128,6 +132,8 @@ export async function setupRuntimeAnswer(
   summary: HarnessSummary,
   ops: Pick<ProviderSessionOps, 'exists'> = defaultSessionOps,
   installed?: InstalledAnswer,
+  /** The harnesses a configured model service is bound to. */
+  servedBy: readonly string[] = [],
 ): Promise<SetupRuntimeAnswer> {
   const entries = listHarnesses();
   const providers = await Promise.all(AGENTS.map(async (agent): Promise<SetupHarnessState> => {
@@ -163,6 +169,7 @@ export async function setupRuntimeAnswer(
       install_open: installOpen,
       signed_in: signedIn,
       activated,
+      served: isInstalled && offSince === null && servedBy.includes(agent.id),
       activated_at: completed,
       off: offSince !== null,
       off_at: offSince,
@@ -182,10 +189,11 @@ export async function setupRuntimeAnswer(
       attachment: loginOpen ? setupAttachment(session)
         : updateOpen ? setupAttachment(updateSession)
           : installOpen ? setupAttachment(installSession) : null,
-      state: offSince !== null && isInstalled ? 'off' : activated ? 'activated' : loginOpen ? 'login_open' : isInstalled ? 'installed' : agent.operations.install ? 'installable' : 'absent',
+      state: offSince !== null && isInstalled ? 'off' : activated || (isInstalled && servedBy.includes(agent.id)) ? 'activated' : loginOpen ? 'login_open' : isInstalled ? 'installed' : agent.operations.install ? 'installable' : 'absent',
     };
   }));
-  const activated_count = providers.filter((provider) => provider.activated).length;
+  // Active: its own sign-in or a model service (owner, 27 Nov 2026).
+  const activated_count = providers.filter((provider) => provider.activated || provider.served).length;
   return {
     harnesses: providers,
     activated_count,

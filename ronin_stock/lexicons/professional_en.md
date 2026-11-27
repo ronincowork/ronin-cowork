@@ -288,7 +288,7 @@ nothing paints exactly this.
 ## harness — models-surface.js, workbench-catalog.js (Settings' harness stones and Refresh; KAN-236)
 
 - **harness.stones:** Harness
-- **harness.stones_summary:** The CLIs: install, sign in, ready
+- **harness.stones_summary:** The CLIs: install, model services
 - **harness.refresh:** Refresh
 - **harness.refresh_summary:** One press: harnesses, model services
 - **harness.step_harnesses:** Harnesses
@@ -1343,7 +1343,6 @@ The pad's current config downloads as a backup first.
 - **feedback.sending:** Sending…
 - **feedback.sent:** Sent — thank you
 - **feedback.thank_you:** Thank you for helping us make Ronin better.
-- **setup_surface.section_yours:** Yours
 - **setup_surface.no_cli:** No CLI in Ronin’s registry serves this harness, so it cannot be installed or signed in here.
 - **setup_surface.no_cli_state:** No CLI
 - **setup_surface.no_models:** The catalog lists no models for this harness.
@@ -1351,19 +1350,9 @@ The pad's current config downloads as a backup first.
 - **setup_surface.refreshing_accounts:** Reading account lists…
 - **setup_surface.last_ran:** Last ran {date}
 - **setup_surface.never_ran:** Never run — every harness offers Native only until it runs.
-- **setup_surface.models_read:** Model list read {date} by {cli} {version}
-- **setup_surface.models_not_read:** Model list not read yet — press Refresh all harnesses.
 - **setup_surface.provider_models_1:** {vendor} · 1 model
 - **setup_surface.provider_models_n:** {vendor} · {n} models
 - **setup_surface.part_models_n:** {n} models
-- **setup_surface.fact_installed:** Installed
-- **setup_surface.fact_signed_in:** Signed in
-- **setup_surface.fact_activated:** Activated
-- **setup_surface.yes:** yes
-- **setup_surface.no:** no
-- **setup_surface.col_model:** Model
-- **setup_surface.col_tier:** Tier
-- **setup_surface.model_default_mark:** the default
 
 ## Provider sign-in record
 - **setup_surface.api_key:** API key

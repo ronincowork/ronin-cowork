@@ -1,22 +1,22 @@
 /* part of the ronin-cowork client — see js/README.md */
 /**
- * SETTINGS' HARNESS SURFACES, drawn with harnesses-surface.js (createHarnessDrawing, a harness's
- * page; harnessStones, the stones) over the same reads.
- *   `createModelStones`: the stones of harnesses; a stone pressed opens its page in place of the stones; a
+ * SETTINGS' HARNESS SURFACES, drawn with the one harness panel (harnesses-surface.js), as Setup's Harness step is.
+ *   `createModelStones`: the stones of harnesses; a stone pressed opens its panel in place of the stones; a
  *   stone dragged into a workspace places that harness there whole (`createModelHarness`).
+ *   Here the Helpful Assistant opens in a window on the surface, put away with − (`createAgentWindow`).
  *   The selector lists one card per harness (`harnessOffers`).
  *   `createModelRefresh`: Refresh all, step by step.
  *   `createModelDefaults`: the model a new Agent, a new Team lead and Mika start on (Office defaults).
  */
 import { WorkspaceKit } from './workspace-kit.js';
 import { dayTime, el } from './form-steps.js';
-import { createPhalanx } from './phalanx.js';
-import { createHarnessDrawing, createRefreshAll, harnessStones, recordRuntime, stepItem } from './harnesses-surface.js';
+import { createHarnessDrawing, createHarnessesSurface, createRefreshAll, harnessStones, recordRuntime, stepItem } from './harnesses-surface.js';
 import { SURFACE_DRAG } from './workbench.js';
 import { WORKBENCH_TYPES } from './workbench-catalog.js';
 import { t } from './lexicon.js';
 import { request } from './request.js';
 import { buildMachineSettings } from './machine-settings.js';
+import { IRASSHAI_NAME, askIrasshai, createIrasshaiChat, irasshaiLive } from './setup-irasshai.js';
 
 /** The selector's cards: one per provider, from the record every reader takes. */
 export const harnessOffers = () => harnessStones(recordRuntime()).map(({ id, label, secondary }) => ({ key: id, label, summary: secondary }));
@@ -32,30 +32,38 @@ const draggable = (stone) => ({
   } },
 });
 
-/** WS1: the stones of providers; the pressed one's page in their place. */
-export function createModelStones(context) {
-  const { createSurface } = WorkspaceKit.primitives;
-  const out = createSurface({ label: t('harness.stones', 'Harness'), className: 'setup-surface setup-provider-surface models-stones' });
-  const notice = el('p', 'setup-fine setup-provider-notice'); notice.hidden = true;
-  const say = (text, bad = false) => { notice.className = `${bad ? 'setup-notice bad' : 'setup-fine'} setup-provider-notice`; notice.textContent = text; notice.hidden = !text; };
-  const drawing = createHarnessDrawing(context, { repaint: () => repaint(), say });
-  const stones = createPhalanx({
-    className: 'setup-provider-stones',
-    renderDetail: (item, host) => drawing.paintHarness(item.id, host),
-    onSelectionChange: (id) => { if (!id) drawing.closed(); },
-  });
-  stones.mount(out.content, { after: [notice] });
-  const repaint = () => {
-    context.workbench?.refreshSelector?.();
-    const items = drawing.stones();
-    say(items.length ? '' : t('setup_surface.no_catalog', 'No harnesses are in the catalog on this machine.'));
-    stones.setItems(items.map(draggable));
+/** SETTINGS' WINDOW ON THE SURFACE (owner, 27 Nov 2026): the Helpful Assistant's chat over a harness surface,
+ *  asked for when she is not here, put away with a kaki −. One per surface. */
+function createAgentWindow() {
+  let made = null;
+  const build = () => {
+    const out = el('section', 'harness-agent-window');
+    const head = el('header', 'harness-agent-window-head');
+    const close = el('button', 'harness-agent-window-close', '−');
+    close.type = 'button';
+    close.setAttribute('aria-label', t('harness.put_away', 'Put away'));
+    const chat = createIrasshaiChat();
+    head.append(el('b', '', IRASSHAI_NAME), chat.toggle, close);
+    out.append(head, chat.el);
+    close.addEventListener('click', () => { chat.hide(); out.remove(); });
+    return { out, chat };
   };
   return {
-    el: out.el,
-    show: async () => { await drawing.showRecord(); },
-    destroy: () => { drawing.destroy(); stones.destroy(); },
+    open: (surface) => {
+      if (!irasshaiLive()) void askIrasshai();
+      made ||= build();
+      if (!made.out.isConnected) surface.append(made.out);
+      made.chat.show();
+    },
+    destroy: () => { made?.out.remove(); made?.chat.dispose(); made = null; },
   };
+}
+
+/** WS1: the stones of harnesses; the pressed one's panel in their place. */
+export function createModelStones(context) {
+  const agent = createAgentWindow();
+  const surface = createHarnessesSurface(context, { label: t('harness.stones', 'Harness'), className: 'models-stones', openAgent: (at) => agent.open(at), decorate: draggable });
+  return { el: surface.el, show: surface.show, destroy: () => { agent.destroy(); surface.destroy(); } };
 }
 
 /**
@@ -185,16 +193,16 @@ export function createModelHarness(key, context) {
   const page = el('div', 'models-provider-page');
   out.content.append(page, notice);
   let dispose = null;
+  const agent = createAgentWindow();
   const drawing = createHarnessDrawing(context, { repaint: () => repaint(), say });
+  // Mounted once: the panel hears every frame itself, so its terminal and drafts stand.
   const repaint = () => {
-    dispose?.(); dispose = null;
-    page.replaceChildren();
     out.header.title.textContent = drawing.stones().find((stone) => stone.id === key)?.label || key;
-    dispose = drawing.paintHarness(key, page);
+    dispose ||= drawing.paintHarness(key, page, { openAgent: () => agent.open(out.el) });
   };
   return {
     el: out.el,
     show: async () => { await drawing.showRecord(); },
-    destroy: () => { dispose?.(); drawing.destroy(); },
+    destroy: () => { dispose?.(); agent.destroy(); drawing.destroy(); },
   };
 }

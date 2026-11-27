@@ -89,7 +89,7 @@ else:  # Hermes: its model services (the Ronin Gateway, the person's keys, typed
     if cmd == 'entries':
         for x in gateway: print(f"Ronin Gateway: every model it lists is already an entry ({', '.join(x.get('discovered') or []) or 'none read yet'})")
         for x in keys: print(f"Key {x.get('name')}: models {', '.join(x.get('discovered') or []) or 'none read yet'}")
-        if not keys: print('No key of their own yet: they add one under API key or OpenRouter on the Hermes bar.')
+        if not keys: print('No key of their own yet: they add one under API key in Ronin key vault or OpenRouter on the Hermes panel.')
         for x, m in entries: print(f"Entry {m['name']}: {m['model']} on {x.get('name')}, reasoning {m.get('reasoning')}, approvals {m.get('approvals')}")
     elif args[0] == 'add':
         want, model, flags = args[1], args[2], dict(zip(args[3::2], args[4::2]))

@@ -5,7 +5,7 @@ import { WorkspaceKit } from './workspace-kit.js';
 import { t } from './lexicon.js';
 import { createWorkspacesRead } from './workspaces-read.js';
 import { createWorkspaceKickoff } from './setup-workspace-kickoff.js';
-import { harnessSurfaceDefinition } from './setup-harness-surface.js';
+import { createHarnessesSurface } from './harnesses-surface.js';
 import { createEmbeddedNewTeamFormView } from './new-team-form.js';
 import { createTourSurface } from './setup-tour.js';
 
@@ -36,13 +36,19 @@ function createTeamSurface() {
   return { el: out.el, destroy: () => { view.destroy?.(); } };
 }
 
+// STEP 1, HARNESS (owner, 27 Nov 2026; docs/architecture/harness-catalog.md, One harness panel): the same stones
+// and panel as Settings' harness surfaces; here the Helpful Assistant opens in the work surface, Ask Ronin's panel.
+function createHarnessSurface(context) {
+  return createHarnessesSurface(context, { label: t('setup_harness.label', 'Harness'), className: 'setup-harness', openAgent: () => context.environment?.showAssistant?.() });
+}
+
 export function setupSurfaceDefinitions() {
   const definition = (type, label, create, groupKey = '') => ({
     type, header: 'surface', label: () => label, create: (context) => create(context),
     ...(groupKey ? { groupKey } : {}),
   });
   return [
-    harnessSurfaceDefinition(),
+    definition('setup.harness', t('setup_harness.label', 'Harness'), createHarnessSurface),
     definition(SETUP_SURFACE_TYPES.roots, t('setup_surface.roots', 'Workspace'), createRootsSurface),
     definition(SETUP_SURFACE_TYPES.team, t('setup_surface.team', 'Team'), createTeamSurface),
     definition('setup.tour', t('setup_surface.tour', 'Tour'), createTourSurface),
