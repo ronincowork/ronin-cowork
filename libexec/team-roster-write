@@ -31,8 +31,10 @@ Usage:
 
 Create a Team by naming one that has no record; otherwise only named fields change.
 --workspace names the Team's Workspace by its handle; the Workspace holds the repositories.
---select adds selected behaviours to the Team's list and --deselect takes them off; the rest
-of the list, and its required ones, stay (project-management is the work-items switch).
+--select adds behaviours to the Team's brief settings (brief.add), so every Agent born on the
+Team is told them; --deselect takes them off. The rest of the brief settings stay. Agents
+already running are not changed. project-management is the work-items switch: --select turns
+it on for the Team, --deselect off. `team roster read <team>` shows the result under brief.add.
 --campaign names the Team's Campaign, for a Team name that is in more than one.
 --add adds live Agents and never removes members. To move an Agent between Teams, add
 the destination membership, then remove the old Team on that Team's page in the
@@ -70,13 +72,13 @@ done
 ronin_connect || exit $?
 
 BY=$(ronin_session_me 2>/dev/null) || BY=""
-# --select / --deselect change the Team's behaviour list as it stands: read it first.
+# --select / --deselect change the Team's brief settings as they stand: read them first.
 CURRENT='{}'
 if [ -n "$SELECT$DESELECT" ]; then
   CURRENT=$(curl -sS -m 20 "${RONIN_CURL[@]+"${RONIN_CURL[@]}"}" -G --data-urlencode "campaign_id=$CAMPAIGN" "$url/api/team-rosters/$NAME" 2>/dev/null) || die "UNREACHABLE: Ronin did not answer at $url" 5
   # A list read is the base of the write: an unreadable one refuses rather than replaces.
   printf '%s' "$CURRENT" | python3 -c 'import json,sys; d=json.load(sys.stdin); sys.exit(0 if "name" in d or "has no roster" in d.get("error", "") else 1)' 2>/dev/null \
-    || die "REFUSED: could not read Team $NAME's behaviour list: $(printf '%s' "$CURRENT" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("error",""))' 2>/dev/null)" 4
+    || die "REFUSED: could not read Team $NAME's brief settings: $(printf '%s' "$CURRENT" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("error",""))' 2>/dev/null)" 4
 fi
 body=$(BY="$BY" NAME="$NAME" OBJ="$OBJ" WORKSPACE="$WORKSPACE" BRANCH="$BRANCH" \
        BOARD="$BOARD" STATE="$STATE" ADD="$ADD" CAMPAIGN_DEFAULTS="$CAMPAIGN_DEFAULTS" \
@@ -92,12 +94,19 @@ if e["ADD"]: b["session_names"] = [t.strip() for t in e["ADD"].split(",") if t.s
 if e["CAMPAIGN_DEFAULTS"]: b["campaign_defaults"] = True
 if e["CAMPAIGN"]: b["campaign_id"] = e["CAMPAIGN"]
 if e["SELECT"] or e["DESELECT"]:
-    try: now = (json.loads(e["CURRENT"]) or {}).get("behaviours") or {}
+    # The Team's brief settings: brief.add is what an Agent born on the Team is told beyond the
+    # layers above. The whole brief is written back, so block and only stay as they are.
+    # project-management is the work-items switch, the Team's pm, not a brief entry.
+    try: now = json.loads(e["CURRENT"]) or {}
     except Exception: now = {}
+    brief = now.get("brief") or {}
     names = lambda v: [t.strip() for t in v.split(",") if t.strip()]
-    selected = [n for n in (now.get("selected") or []) if n not in names(e["DESELECT"])]
-    selected += [n for n in names(e["SELECT"]) if n not in selected]
-    b["behaviours"] = {"selected": selected, "required": now.get("required") or []}
+    sel, desel = names(e["SELECT"]), names(e["DESELECT"])
+    if "project-management" in sel: b["pm"] = True
+    if "project-management" in desel: b["pm"] = False
+    add = [a for a in (brief.get("add") or []) if a.get("name") not in desel]
+    add += [{"name": n} for n in sel if n != "project-management" and n not in [a.get("name") for a in add]]
+    b["brief"] = {**brief, "add": add, "block": brief.get("block") or [], "only": brief.get("only") or []}
 print(json.dumps(b))
 PY
 ) || die "BAD-ARG: could not build the request" 2
