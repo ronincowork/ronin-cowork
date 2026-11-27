@@ -213,22 +213,22 @@
 
 :root[data-theme='light'] {
 
-  /* LIGHT IS PAPER, INK AND ONE KAKI (samurai_lab/design/STYLE.md). Neutrals carry a faint
-     warmth, hue about 38°, so nothing reads lilac beside kaki; kaki is solid or absent. */
+  /* LIGHT IS PAPER, INK AND ONE KAKI (samurai_lab/design/STYLE.md). Every neutral is a pure
+     grey, so kaki is the only colour with a hue; kaki is solid or absent. */
   --head-team-bg: var(--kaki-lift);
   --head-team-fg: var(--on-strong);
   --head-team-muted: color-mix(in srgb, var(--on-strong) 78%, transparent);
   --head-attention: #fff0dc;
   --surface: #ffffff;
-  --inset: #f4f2ee;
-  --line: #b8b3aa;
-  --line-2: #99938a;
-  --line-3: #7d776d;
-  --fg-strong: #161410;
-  --fg: #2e2b26;
-  --muted: #5e5850;
-  --selected: #ece6dc; /* a stone fill; the kaki edge the components draw says it is chosen */
-  --graphite: #3a3834;
+  --inset: #f4f4f4;
+  --line: #b3b3b3;
+  --line-2: #959595;
+  --line-3: #787878;
+  --fg-strong: #151515;
+  --fg: #2b2b2b;
+  --muted: #5c5c5c;
+  --selected: #ebebeb; /* a grey fill; the kaki edge the components draw says it is chosen */
+  --graphite: #3a3a3a;
   --link: var(--aiiro);
   --accent: var(--kaki-lift);
   --accent-2: var(--aiiro);
