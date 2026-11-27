@@ -447,8 +447,7 @@ body {
    on top of the gauge and took its taps (KAN-640). The crumb already names the place. */
 @media (max-width: 680px) { #bar .view-island { display: none; } }
 
-#bar .shape-cycle,
-#bar .bar-toggle {
+#bar .shape-cycle {
   display: inline-flex;
   align-items: center;
   background: transparent;
@@ -461,10 +460,41 @@ body {
   cursor: pointer;
   white-space: nowrap;
 }
-/* A compact icon control seated in the bar by the ViewHost (js/workspace.js
-   showActions) — Setup's light/dark. The shape control's frame, square, glyph centred. */
-#bar .bar-toggle { width: 30px; padding: 0; justify-content: center; font-size: var(--text-label); line-height: var(--leading-none); }
-#bar .bar-toggle[aria-pressed='true'] { color: var(--fg); }
+
+/* The light/dark switch (js/theme-toggle.js): the website's pill (ronin-site
+   theme-switch.css), the same look on every page. */
+.theme-switch {
+  flex: 0 0 auto;
+  align-self: center;
+  width: 42px;
+  height: 24px;
+  padding: var(--space-row);
+  border: var(--edge) solid var(--line-3);
+  border-radius: var(--radius-pill);
+  background: var(--inset);
+  cursor: pointer;
+}
+.theme-switch:hover { border-color: var(--kaki); }
+.theme-switch__track {
+  position: relative;
+  display: block;
+  width: 32px;
+  height: 14px;
+  background: radial-gradient(circle, var(--muted) 1.5px, transparent 2px) 0 50% / 16px 14px repeat-x;
+}
+.theme-switch__track i {
+  position: absolute;
+  top: 3px;
+  left: 12px;
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-round);
+  background: var(--kaki);
+  box-shadow: 0 0 0 var(--edge-2) var(--inset);
+  transition: transform var(--motion-settle) var(--ease);
+}
+.theme-switch[data-theme-choice='light'] .theme-switch__track i { transform: translateX(-12px); }
+.theme-switch[data-theme-choice='dark'] .theme-switch__track i { transform: translateX(12px); }
 
 .tile-head button.job {
   margin-left: var(--space-inline);
@@ -2783,7 +2813,6 @@ body {
     border-color: var(--kaki);
     color: var(--on-strong);
   }
-  #bar .bar-toggle { height: 40px; width: 44px; font-size: var(--text-heading); }
 
   #bar .brand {
     flex: 0 1 auto;
@@ -3621,13 +3650,11 @@ body {
     min-width: 34px;
     padding: 0 var(--space-control);
   }
-  #bar .shape-cycle:hover,
-  #bar .bar-toggle:hover {
+  #bar .shape-cycle:hover {
     color: var(--fg);
     border-color: var(--muted);
   }
-  #bar .shape-cycle:active,
-  #bar .bar-toggle:active {
+  #bar .shape-cycle:active {
     background: var(--selected); /* the one you are on, have chosen, or are dropping onto */
     color: var(--fg);
   }
