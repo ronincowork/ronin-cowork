@@ -19,7 +19,7 @@ const recordedDay = (value) => {
 /** The sentence for an installed provider that has not signed in here yet. */
 const signInSentence = (provider) => {
   const label = String(provider?.label || provider?.id || 'This provider');
-  return `Opens ${label} in a tile here. Follow its sign-in, then press Done.`;
+  return `The Helpful Assistant signs ${label} in with you, or sign in yourself in a terminal here.`;
 };
 
 /** The sentence for a signed-in provider: what Ronin measured, or what it recorded. */

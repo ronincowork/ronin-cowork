@@ -3911,6 +3911,9 @@ body {
 .setup-provider-completion-actions > .setup-provider-done { flex: 1 1 100%; width: 100%; }
 .setup-provider-authentication-fields { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-subsection); width: 100%; min-width: 0; }
 .setup-provider-completion[hidden], .setup-provider-sign-in-title[hidden] { display: none; }
+/* Authenticate's two presses and a sign-in the Helpful Assistant started, under the step's text (harness-authenticate.js). */
+.setup-provider-step > .setup-harness-ways, .setup-provider-sign-in { grid-column: 2 / -1; min-width: 0; }
+.setup-provider-sign-in:empty { display: none; }
 .setup-provider-completion > .setup-provider-note { margin: 0; }
 .setup-provider-sign-in-title { display: grid; gap: var(--space-row); width: 100%; min-width: 0; color: var(--muted); font-size: var(--form-note); }
 .setup-provider-sign-in-title input { width: 100%; min-width: 0; min-height: var(--control-height); background: var(--inset); color: var(--fg); border: var(--edge) solid var(--line); border-radius: var(--radius-small); padding: 0 var(--space-control); font: inherit; font-size: var(--form-input); }
@@ -4667,6 +4670,17 @@ html[data-screen='inside'] #phone .ph-bar .ph-title[data-boot='inside'] { displa
 .setup-harness-window { display: flex; flex-direction: column; gap: var(--space-control); }
 .setup-harness-line { margin: 0; line-height: var(--leading-body); }
 .setup-harness-line.bad { color: var(--kaki); }
+/* Settings' window on the surface (harness-authenticate.js, KAN-938): the Helpful Assistant's chat over
+   a harness's page, put away with −. */
+.setup-surface:has(> .harness-agent-window) { position: relative; }
+.harness-agent-window { position: absolute; z-index: 5; inset-inline-end: 16px; inset-block-end: 16px; inline-size: min(440px, calc(100% - 32px)); block-size: min(560px, calc(100% - 32px)); display: flex; flex-direction: column; background: var(--surface); border: 1px solid var(--line-2); border-radius: 8px; box-shadow: 0 8px 24px rgb(0 0 0 / 0.35); overflow: hidden; }
+.harness-agent-window-head { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-block-end: 1px solid var(--line); }
+.harness-agent-window-head b { color: var(--fg-strong); }
+.harness-agent-window-head .transcript-toggle { margin-inline-start: auto; }
+.harness-agent-window-close { border: 0; background: none; color: var(--kaki); font: inherit; font-size: 18px; line-height: 1; cursor: pointer; padding: 0 4px; }
+.harness-agent-window .setup-irasshai-chat { flex: 1; min-height: 0; border: 0; border-radius: 0; }
+.harness-agent-window .setup-irasshai-chat > .tile-body[hidden], .harness-agent-window .setup-irasshai-chat > .wk-terminal-host[hidden] { display: none; }
+.harness-agent-window .setup-irasshai-chat .wk-hosted-tile > .tile-head { display: none; }
 /* The Workspace step (setup-workspace-kickoff.js, KAN-809): the four doors; under them what a Workspace
    is, or the open door's blanks with the form's rule beside them; what was made; the Workspaces line. */
 .setup-workspace-kickoff { display: flex; flex-direction: column; gap: var(--space-section); max-inline-size: 48rem; padding: var(--space-subsection); }

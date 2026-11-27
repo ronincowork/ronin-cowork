@@ -457,5 +457,6 @@ runs the command inside it, so exiting the CLI returns to the shell prompt. Both
 `harness-setup-session.js`; Cancel ends the temporary tmux session.
 
 Done records nothing but the sign-in itself: it re-measures, and the CLI's own credential file is
-the record. Claude Code and Codex sign in on Setup's Harness step without a terminal
-(`src/harness-sign-in.ts`); see [Setup workbench](setup-workbench.md), *Harnesses*.
+the record. The other way in, Authenticate with Agent, has the Helpful Assistant run Claude Code's
+and Codex's sign-in without a terminal (`src/harness-sign-in.ts`); see
+[Setup workbench](setup-workbench.md), *Harnesses*.
