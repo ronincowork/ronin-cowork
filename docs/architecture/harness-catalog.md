@@ -328,7 +328,7 @@ the same control with the provider select dropped. The registry's seeds read the
 rows: `models:first` is the marked default of the first launchable provider, `models:light`
 the first launchable **light** row — there is no name-pattern for "cheap".
 
-## One harness panel (plan, KAN-940: waiting on the owner's yes)
+## One harness panel (plan, KAN-940)
 
 **Why.** Setup's Harness step and Settings' harness page draw the same server facts with two sets
 of words and two layouts (owner, 27 Nov: "2 pieces doing the same job and not well... we need a
@@ -374,8 +374,10 @@ uses it only as the argument to `harness sign-in <cli> subscription|api_key`.
   her `<cli> · Sign in with subscription|API key`. The panel shows what the run printed: the link,
   the code, the box for the code or key, **Send** and **Cancel**. She helps in chat and hears how it
   ends; keys and codes are typed only on the panel.
-- **Terminal**: the CLI's own sign-in in its terminal tile on the panel, its own menu, with
-  **Done** and **Cancel**. Setup's **Close** goes.
+- **Terminal**, on every harness, Claude Code and Codex included: the CLI's own sign-in in its
+  terminal tile on the panel, its own menu, with **Done** and **Cancel**. The button says Terminal
+  and nothing more; the Helpful Assistant is told (`<cli> · Terminal`) so she knows what is
+  happening, and is not opened (owner, 27 Nov). Setup's **Close** goes.
 
 **The place decides only where she opens**: the host passes `openAgent`. Setup opens her in its
 work surface, as now; Settings opens her chat in a window on the surface with a kaki − (a small
@@ -386,8 +388,7 @@ press shows *Signing in again signs out every {cli} Agent until you finish*; the
 The way it is on stays selected, from `readWays`.
 
 **A harness with no subscription/API key split** (Antigravity, Grok, OpenCode, Kimi, Copilot):
-Ronin has no `login` for it, so the CLI's own terminal is the only sign-in. It shows the
-**Terminal** button; whether the Helpful Assistant is told and opened beside it is question 1.
+Ronin has no `login` for it, so it shows the **Terminal** button only.
 
 ### One panel, both places
 
@@ -433,16 +434,12 @@ Settings' Refresh and Defaults surfaces are not harness sign-in and stay.
 | The bar names the state (25 Nov) | kept: one word everywhere |
 | Settings' three numbered steps | gone: one state word and the one control (owner, 27 Nov) |
 
-### Decided and open
+### Decided
 
 Owner, 27 Nov: one state word and the one control that applies; the same editable Models section
-for Hermes in both places; stones in both; three sign-in buttons, Subscription, API key, Terminal.
-
-Open:
-
-1. **A harness with no split** (Antigravity, Grok, OpenCode, Kimi, Copilot): (a) **Terminal**
-   only; the Helpful Assistant is told and opened beside it, as for the other two *(recommended)* ·
-   (b) **Terminal** alone, nobody told.
+for Hermes in both places; stones in both; three sign-in buttons, Subscription, API key, Terminal;
+a harness with no split shows Terminal only; every Terminal button tells the Helpful Assistant and
+never names her. Nothing is open.
 
 ## The Harnesses surface
 
