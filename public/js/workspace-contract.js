@@ -9,12 +9,17 @@ export const WORKBENCH_HEADER = Object.freeze({
   feedback: true,
 });
 export const WORKBENCH_APPEARANCES = Object.freeze(['campaign', 'setup', 'launch', 'cowork', 'team', 'agent', 'workspaces', 'epics', 'help', 'settings2']);
+// A workbench from a folder (KAN-954) adds its name at boot (folder-workbenches.js): one more
+// Workbench destination, with a tab instance of its own like the built-in ones.
+const appearances = new Set(WORKBENCH_APPEARANCES);
+export const isWorkbenchAppearance = (name) => appearances.has(name);
+export const addWorkbenchAppearance = (name) => { appearances.add(name); };
 
 /** One declaration for every managed Workbench's application chrome. Feature views
  * provide content and, when useful, an island reading; the base owns capabilities and
  * appearance identity. */
 export function workbenchView(appearance, options = {}) {
-  if (!WORKBENCH_APPEARANCES.includes(appearance)) throw new Error(`unknown Workbench appearance: ${appearance}`);
+  if (!isWorkbenchAppearance(appearance)) throw new Error(`unknown Workbench appearance: ${appearance}`);
   return Object.freeze({
     appearance,
     header: Object.freeze({ ...WORKBENCH_HEADER, ...(options.header || {}) }),

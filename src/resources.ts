@@ -34,6 +34,9 @@ export const STORES: readonly Store[] = [
   store('facts', 'user', 'custom/facts'),
   store('tools', 'user', 'custom/tools'),
   store('playbooks', 'user', 'custom/playbooks'),
+  // A workbench from a folder (KAN-954): one folder per workbench, workbench.json and its page code
+  // (docs/architecture/workbench.md, Workbench packages). Stock ships none.
+  store('workbenches', 'user', 'custom/workbenches'),
   store('office', 'user', 'office'),
   store('wipeboards', 'user', 'wipeboards'),
   store('jikan', 'user', 'jikan'),

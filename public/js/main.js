@@ -20,6 +20,7 @@ import { createEpicsView, createHelpView, createWorkspacesView } from './door-wo
 import { createWorkspaceRoute } from './workspaces-surface.js';
 import { createSettingsV2View } from './settings-v2-view.js';
 import { createSetupView } from './setup-view.js';
+import { loadFolderWorkbenches } from './folder-workbenches.js';
 import { createLaunchView } from './launch-view.js';
 import { installWorkspaceHeader } from './workspace-header.js';
 import { WorkspaceKit } from './workspace-kit.js';
@@ -126,6 +127,9 @@ async function init() {
   // Setup opens at #/setup on every office; only hosted Home has its stone (KAN-856, w997).
   guard('register the Setup destination', () => workspace.register('setup', createSetupView()));
   guard('register the Launch destination', () => workspace.register('launch', createLaunchView()));
+  // Workbenches from the office's custom/workbenches/ folder (KAN-954), each at #/<name>; known
+  // before the first route is read, so a link to one opens it.
+  await loadFolderWorkbenches(workspace).catch((e) => console.warn('folder workbenches', e));
   // A bare address goes Home.
   workspace.start('');
 

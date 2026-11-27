@@ -1,6 +1,6 @@
 /* part of the ronin-cowork client — see js/README.md */
 import { WorkspacePrimitives } from './workspace-primitives.js';
-import { WORKBENCH_APPEARANCES } from './workspace-contract.js';
+import { isWorkbenchAppearance } from './workspace-contract.js';
 
 const WORKSPACE_STATE_KEY = 'ronin.workspace.v2';
 const WORKSPACE_STATE_VERSION = 4;
@@ -9,7 +9,7 @@ const WORKBENCH_LAUNCH_PARAM = 'ronin-launch';
 const WORKBENCH_TAB_PARAM = 'ronin-tab';
 
 const text = (value) => (typeof value === 'string' ? value : '');
-const workbenchViews = new Set(WORKBENCH_APPEARANCES);
+const workbenchViews = { has: isWorkbenchAppearance }; // the built-in workbenches and every folder one
 const tenantViews = new Set(['team', 'agent']);
 const validTabId = (value) => /^[a-f0-9]{32}$/.test(text(value));
 const newWorkbenchTabId = () => {

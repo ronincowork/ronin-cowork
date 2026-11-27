@@ -347,6 +347,82 @@ service reads finish. Team membership and Work Items enrich independently.
 | Team membership | Team records and live session tags from `team-controller.js`; writes use the canonical session-membership route |
 | Document / Feedback | each shared surface's own read or submission |
 
+## Workbench packages
+
+A workbench can come from a folder (KAN-954). Each folder in the office's
+`~/ronin/custom/workbenches/` is one workbench; stock ships none, and Cowork names no package.
+A folder dropped in is a workbench on the next page load; a folder removed is gone. The
+packages themselves are kept in the ronin-workbenches repository, one folder each.
+
+```
+~/ronin/custom/workbenches/<name>/
+  workbench.json
+  page/main.js        the entry: its page code (ES modules, css, images), any layout under the folder
+```
+
+**workbench.json**
+
+```json
+{
+  "name": "appliance_counter",
+  "title": "Appliance Counter",
+  "version": "1",
+  "entry": "page/main.js",
+  "surfaces": [
+    { "type": "appliance_counter.new_order", "seat": 1 },
+    { "type": "appliance_counter.orders", "seat": 2 }
+  ],
+  "members_see": ["appliance_counter"],
+  "lexicon": "appliance_counter_fr"
+}
+```
+
+| Key | Meaning | Read by |
+|---|---|---|
+| `name` | the folder's name; the workbench's address is `#/<name>` | Cowork reads the folder name |
+| `title` | the bar's place word, the tab title and its Home stone | Cowork |
+| `entry` | the page code, a path in the folder (default `page/main.js`) | Cowork |
+| `surfaces` | the surface types the workbench offers, in selector order (its profile); `seat` is the tilespace (1–4) it opens in on first open; without one it is offered, not seated. A seat of 3 or 4 makes a four-tilespace workbench | Cowork |
+| `version` | the package's version | whoever copies it in |
+| `members_see` | the default for which workbenches members see, written once into the office's setting when the package is first copied in | whoever copies it in |
+| `lexicon` | the words its page reads (`/api/lexicons/:name`) | the page code |
+
+**Serving.** `GET /api/workbenches` lists the folders, read at the request:
+`{ workbenches: [{ name, title, entry, surfaces }] }`. The folder's files are served as they are at
+`/custom/workbenches/<name>/<path>` behind the sign-in, so relative imports between the
+package's own files work (`src/routes/workbenches-api.ts`).
+
+**The entry** is an ES module with a default export, called once at boot before the first route
+opens; it may be async:
+
+```js
+export default async function register(ronin) {
+  const { createPhalanx } = await ronin.cowork('phalanx.js');
+  ronin.surfaces.register({
+    type: 'appliance_counter.new_order', header: 'surface', label: () => 'New order',
+    create: ({ workspace, detail, environment }) => ({ el, show() {}, leave() {}, destroy() {} }),
+  });
+}
+```
+
+| `ronin.` | What |
+|---|---|
+| `name`, `title`, `base` | the workbench's name and title; `base` is its folder's URL (`/custom/workbenches/<name>/`) for its own css and images |
+| `surfaces.register(definition)` | registers a surface type in the one registry ([Surfaces, profile, tenant, instance](#surfaces-profile-tenant-instance)): the definition shape `workbench-catalog.js` uses |
+| `cowork(file)` | a Cowork client module by its `public/js/` file name, the same instance Cowork uses. A package never imports Cowork by URL: the versioned address would load a second copy of the registry |
+| `WorkspaceKit`, `t`, `request` | the Kit, the lexicon reader and the fetch helper |
+
+A surface's `create` gets `environment.place(type, workspace, detail)`, which seats another of the
+workbench's surfaces on the same workbench. A package adds no server code: it uses the routes
+Cowork already serves, such as `/api/work-items*`.
+
+**Opening.** `public/js/folder-workbenches.js` loads each entry, defines the profile from
+`surfaces` (a type the page code did not register is left out) and registers the destination
+`#/<name>` as a door workbench (`doorWorkbench` in `door-workbenches.js`): its own tab instance,
+refresh and arrangement like the built-in ones, with no Agent vocabulary or Session controls hints.
+Home shows a stone for each, between Setup and Settings. One that will not load is reported in the
+browser console; the others still open.
+
 ## Change checklist
 
 When adding or changing a Workbench surface:

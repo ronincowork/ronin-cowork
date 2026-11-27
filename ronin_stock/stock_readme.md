@@ -48,7 +48,9 @@ The words are in [KOTOBA.md](../KOTOBA.md) (Agent composition and tools); the br
 | root | `SKINS.md` | Flat registries; a custom copy replaces an entry by its name (`docs/architecture/shadowing.md`). |
 
 The custom folder also holds the person's MCP server and web API records,
-`~/ronin/custom/integrations/<name>.md`, written by `mcp add` and `api add`.
+`~/ronin/custom/integrations/<name>.md`, written by `mcp add` and `api add`, and its workbenches,
+`~/ronin/custom/workbenches/<name>/`, one folder each; stock ships none
+([Workbench packages](../docs/architecture/workbench.md#workbench-packages)).
 
 Every folder has a `<folder>_readme.md` for its file format (`tools/tools_readme.md`). This map owns location; each folder's readme
 owns format. When a file is added, moved or removed, update this table in the same change.

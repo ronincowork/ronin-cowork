@@ -58,6 +58,7 @@ import { registerMachineRestart } from './routes/machine-restart-api.js';
 import { registerJikan, startHouseJikan } from './routes/jikan-api.js';
 import { registerInstalled } from './routes/installed-api.js';
 import { registerOffice } from './routes/office-api.js';
+import { registerWorkbenches } from './routes/workbenches-api.js';
 import { registerVersion } from './routes/version.js';
 import { registerWipeboards, wipeboardAnswer } from './routes/wipeboards-api.js';
 import { registerTerminalControls } from './terminal-controls.js';
@@ -317,6 +318,7 @@ registerUpdate(app); // /api/update/* — the ⚙ gear's check + run, press-only
 registerMachineRestart(app); // /api/machine/restart — the Setup Services Restart press; answers, then runs ronin-host restart — src/routes/machine-restart-api.ts
 registerMachineSettings(app); // /api/machine-settings — the install record, and writes BY NAME only — src/routes/machine-settings-api.ts
 registerCampaigns(app); // /api/campaigns* — the durable record of each body of work — src/routes/campaigns-api.ts
+registerWorkbenches(app); // /api/workbenches and /custom/workbenches/<name>/ — a workbench from a folder (KAN-954)
 registerOffice(app); // /api/office — the office record: self-hosted, or an office on an office_park — src/office-record.ts
 registerInstalled(app); // /api/installed — what is on this machine: installed · activated · switched, one answer — src/routes/installed-api.ts
 registerSetupRuntime(app); // /api/setup/runtime and provider login completion — explicit readiness facts for Ronin Setup
