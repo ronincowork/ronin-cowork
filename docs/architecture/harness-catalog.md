@@ -328,6 +328,108 @@ the same control with the provider select dropped. The registry's seeds read the
 rows: `models:first` is the marked default of the first launchable provider, `models:light`
 the first launchable **light** row — there is no name-pattern for "cheap".
 
+## One harness panel (plan, KAN-940: waiting on the owner's yes)
+
+**Why.** Setup's Harness step and Settings' harness page draw the same server facts with two sets
+of words and two layouts (owner, 27 Nov: "2 pieces doing the same job and not well... we need a
+common set of code"). KAN-938 added a third module beside the two and was reverted (41d29476):
+the fix is fewer modules, not another. Nothing server-side changes; the client gets one model and
+one panel.
+
+### One model: the state word
+
+One function, `harnessState(provider)`, gives every harness one word, used on the stone, the panel
+heading and Home's doors alike. It names the state, not what to do (owner, 25 Nov).
+
+| Word | When | Replaces |
+|---|---|---|
+| **Not installed** | the CLI is not on this machine (an Install guide link when Ronin cannot install it) | Not installed, Manual install |
+| **Installing** | its install tile is open | Installation open |
+| **Not signed in** | installed, no sign-in | Not set up (Setup), Needs sign-in (Settings) |
+| **Signing in** | a sign-in is open: the Agent's link-and-code run or the terminal | Signing in, Sign-in open |
+| **Active** | signed in and on | Active (Setup), Activated / Activated for Launch (Settings) |
+| **Off** | turned off; the sign-in is kept | Off |
+
+Hermes has no sign-in: **Active** when a model service is set up, else **No model service**.
+The Installed / Signed in / Activated yes-no facts and the numbered Install → Authenticate →
+Ready steps go: the word says it once.
+
+### One sign-in
+
+Every harness, the same two presses in both places (owner, 27 Nov):
+
+- **Authenticate with Agent (recommended)**: asks for the Helpful Assistant if she is not here
+  and tells her `<harness> · Authenticate with Agent`. She asks the way and runs it with her
+  `harness` tool: for Claude Code and Codex, `harness sign-in <cli> subscription|api_key`
+  (`src/harness-sign-in.ts`, unchanged), and the panel shows the link, the code, the paste box
+  and Cancel from that run's push, as Setup's bar does today; for any other harness, `harness
+  open <id>`, and she talks the person through its terminal.
+- **Terminal**: the harness's own sign-in in its terminal tile on the panel (the CLI's own menu
+  asks the way), with **Done** and **Cancel**. Setup's **Close** goes; Done and Cancel everywhere.
+
+**The place decides only where she opens**: the host passes `openAgent`. Setup opens her in its
+work surface, as now; Settings opens her chat in a window on the surface with a kaki − (a small
+function in `models-surface.js`, over `createIrasshaiChat`).
+
+Warn before re-sign-in (w994) stays, one rule for both presses: on an **Active** harness the first
+press shows the line *Signing in again signs out every {cli} Agent until you finish*, the second
+goes ahead. She says the same before she starts one (her `irasshai-harness` behaviour, as now).
+The panel keeps the line *Signed in with your subscription / API key* from `readWays`.
+
+### One panel, both places
+
+The phalanx of stones in both places (KAN-939: a pressed stone opens its panel in place of the
+stones, kaki − top right). The same list in both: every registry CLI, then catalog-only vendors.
+The panel, top to bottom, shows only the control that applies:
+
+1. Name, vendor, the state word.
+2. **Install** (or Install guide) when Not installed; **Update to x** when one is available.
+3. The two sign-in presses when Not signed in or Active; the run or the terminal while Signing in.
+4. **Turn off** / **Turn on**, with its sentence.
+5. **Models** (`harness-model-entries.js`, unchanged): In harness, Ronin Gateway, API key,
+   OpenRouter. Hermes's panel is only this.
+
+The Ronin Gateway is a model service, not a sign-in (Codex and Hermes, never Claude Code): it is a
+Models stone, so Setup's **Ronin Gateway** and **OpenRouter · Coming soon** sign-in stones go.
+Settings' Refresh and Defaults surfaces are not harness sign-in and stay.
+
+### Files
+
+| File | What happens |
+|---|---|
+| `public/js/harnesses-surface.js` | becomes the one module: `recordRuntime`, `harnessState`, `harnessStones`, `mountHarnessPanel(host, id, { openAgent })`, the sign-in run window, the attachment mount. `paintYours`, `installedState`, the facts and the old model table go. `stepItem` and `createRefreshAll` stay for Refresh |
+| `public/js/setup-harness-surface.js` | deleted; Setup's surface definition (a phalanx over `mountHarnessPanel`, `openAgent` = work surface) moves into `setup-surfaces.js`, ~15 lines |
+| `public/js/setup-harness-state.js` | deleted; `harnessPresentation` / `harnessReadiness` and their sentences become `harnessState`, `mountHarnessAttachment` moves into the one module |
+| `public/js/setup-hermes-services.js` | deleted; Hermes shows the Models section in both places |
+| `public/js/models-surface.js` | `createModelStones` and `createModelHarness` mount `mountHarnessPanel` with the window `openAgent` |
+| `harness-setup-session.js`, `harness-model-entries.js`, `src/*` | unchanged |
+| `public/style.css` | the `setup-harness-*` bar and `setup-provider-step*`/`-facts`/`-models` rules the panel no longer uses go |
+| lexicon (`ronin_stock/lexicons/professional_en.md`) | the unused `setup_harness.*` and `setup_surface.*` keys go; `harness.*` keys for the six words and two presses |
+| `docs/getting-started/harness-sign-in.md` | In Setup and In Settings become one section |
+| `docs/architecture/setup-workbench.md` *Harnesses* | one section; it points here |
+| `ronin_stock/behaviours/irasshai-harness.md` | she hears *Authenticate with Agent*, asks the way, warns on Active |
+
+### Earlier rulings
+
+| Ruling | Kept or changed |
+|---|---|
+| One way at a time, subscription or API key (24–25 Nov) | kept, as the Agent's question and the CLI's menu; the two page stones go (question 1) |
+| Warn before re-sign-in (w994) | kept, both presses |
+| Ronin Gateway on Codex and Hermes, never Claude Code | kept, as a Models stone |
+| Hermes's model services: Setup shows, Settings edits (25 Nov) | changed if question 3 is yes |
+| The bar names the state (25 Nov) | kept: one word everywhere |
+| Settings' three numbered steps | changed if question 2 is yes |
+
+### Questions for the owner
+
+1. **Subscription / API key** on the page: (a) gone; the Agent asks, the Terminal's CLI asks
+   *(recommended)* · (b) kept as two stones under the Agent press.
+2. **Settings' layout**: (a) the state word and the one control that applies, as above
+   *(recommended)* · (b) keep the numbered Install → Authenticate → Ready steps, in both places.
+3. **Hermes's models in Setup**: (a) the same editable Models section as Settings *(recommended)*
+   · (b) Setup shows them, Settings edits.
+4. **Setup's list**: (a) stones, as Settings (KAN-939) *(recommended)* · (b) bars, in both places.
+
 ## The Harnesses surface
 
 Settings' harness cards draw it (`public/js/harnesses-surface.js`, seated by `harnessKit` in
