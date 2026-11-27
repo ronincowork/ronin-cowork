@@ -305,7 +305,7 @@ independent and must not hold the frame.
 | Surface | Required data and owner |
 |---|---|
 | Team roster / Team profile | Team records and live session-derived membership; the roster's Phalanx is Cowork's only discovery of Teams (no per-Team selector cards); its detail and a placed Team profile paint one body (`leagueTeamBody` in `cowork-view.js`) |
-| Team roster (`cowork.session-roster`) | `js/roster.js` restored as consumed before the Phalanx port: Team records, live sessions and pushed home rows; its desk column stays empty: desks are read when the work record opens |
+| Team roster (`cowork.session-roster`) | `js/roster.js` restored as consumed before the Phalanx port: Team records, live sessions and pushed home rows; its desk column stays empty: desks are read when the work record opens; a pressed row opens the Agent under it (`roster-surface.js` `agentDetail`: Team Lead, configuration), never launches it (KAN-964) |
 | Agent terminal | selected session plus terminal transport; other sessions are not mounted for it |
 | Commons | only the selected tab enters: Roster, Docs, Wipeboard, Messages, Cron jobs or Configuration |
 | Cron jobs | scheduled messages for the addressed Team or collection scope |

@@ -11,8 +11,11 @@ discovery column, placement, drag/drop,
 recall, sizing and lifecycle as `kind: 'team'`. Its selector exposes one Team roster,
 Teams, New Team and New Agent. The roster is the detailed grouped Agent list formerly
 shown on the Ronin Desk: role, work record chip, status, context, desk state and model stay aligned
-in each row. Selecting an Agent connects it in the active workspace; dropping an Agent on
-a Team heading adds that membership through the canonical Teams API.
+in each row. Pressing an Agent opens it under its row, never launches it (KAN-964): its
+Team's lead as one question that makes another member lead (`setTeamLead`), then its
+configuration (`createAgentCompositionReader`); dropping an Agent on a Team heading adds that
+membership through the canonical Teams API. The workbench first opens on the Team roster in
+Workspace 1 and the Teams stones in Workspace 2.
 
 Ronin Desk is not offered here; its card and shared workspace surface live in the Campaign
 workbench at `#/campaign`.
