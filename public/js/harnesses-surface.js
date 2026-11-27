@@ -260,14 +260,13 @@ export function mountHarnessPanel(host, id, { drawing, context = {}, openAgent =
   };
   const dropTerminal = () => { stopCopy(); mounted?.destroy?.(); mounted = null; mountedKey = ''; terminalHost = null; copyRow = null; };
 
-  /* UNDER A SIGN-IN TERMINAL (owner, 27 Nov 2026): Copy code, Show URL then Copy link, and Go Back, from what the
-   * screen shows. Read, and pressed for the person only where the screen itself offers it: its "show full URL"
-   * clicked where it is drawn, its go-back key sent. What was seen stays: a code that leaves the screen when the
+  /* UNDER A SIGN-IN TERMINAL (owner, 27 Nov 2026): Copy code, Copy link and Go Back, from what the screen shows.
+   * Read only, but for the go-back key the screen names, sent for the person. A link the CLI hides until asked
+   * waits for the person to show it in the terminal. What was seen stays: a code that leaves the screen when the
    * URL is shown is still the code. */
   // A device code as sign-ins print it: two groups of four or five letters and digits (9Q3Z-9V69).
   const CODE = /\b[A-Z0-9]{4,5}-[A-Z0-9]{4,5}\b/g;
   const LINK = /https:\/\/[^\s<>"'│]+/g;
-  const SHOW_URL = /show full url/i;
   // The key the screen names for going back ("esc go back", "ctrl+b back").
   const BACK = /\b(esc|ctrl\+[a-z])\s+(?:to\s+)?(?:go\s+)?back\b/i;
   const keyOf = (name) => (name.toLowerCase() === 'esc' ? '\x1b' : String.fromCharCode(name.toLowerCase().charCodeAt(5) - 96));
@@ -278,36 +277,23 @@ export function mountHarnessPanel(host, id, { drawing, context = {}, openAgent =
     if (copyRow) return copyRow;
     copyRow = el('div', 'ask setup-harness-row setup-harness-ways harness-terminal-stones'); copyRow.dataset.density = 'tight';
     const said = el('p', 'setup-fine'); said.hidden = true;
-    let seen = { code: '', link: '', show: false, back: '' };
+    let seen = { code: '', link: '', back: '' };
     const copy = (value) => { void navigator.clipboard?.writeText(value).then(() => { said.textContent = t('setup_harness.copied', 'Copied.'); said.hidden = false; }, () => {}); };
-    /** A click on the screen's own "Click here" for its full URL: the "here" before "show full URL", on that
-     *  line or, wrapped, the line above (SGR mouse, as the CLI's mouse mode reads it; 1-based cells). */
-    const showUrl = () => {
-      const lines = mounted?.screenLines?.() || [];
-      const row = lines.findIndex((line) => SHOW_URL.test(line));
-      if (row < 0) return;
-      const before = lines[row].slice(0, lines[row].search(SHOW_URL));
-      const at = /here/i.test(before) ? { row, col: before.toLowerCase().lastIndexOf('here') }
-        : row > 0 && /here/i.test(lines[row - 1]) ? { row: row - 1, col: lines[row - 1].toLowerCase().lastIndexOf('here') }
-          : { row, col: lines[row].search(SHOW_URL) };
-      const x = at.col + 2; const y = at.row + 1;
-      mounted?.send?.(`\x1b[<0;${x};${y}M\x1b[<0;${x};${y}m`);
-    };
     const paintCopy = () => {
       const code = stone(t('harness.copy_code', 'Copy code'), () => { if (seen.code) copy(seen.code); }, seen.code || t('harness.no_code', 'No code yet'));
       code.disabled = !seen.code;
-      const link = seen.link
-        ? stone(t('harness.copy_link', 'Copy link'), () => copy(seen.link))
-        : stone(t('harness.show_url', 'Show URL'), showUrl);
-      if (!seen.link && !seen.show) link.disabled = true;
+      const link = stone(t('harness.copy_link', 'Copy link'), () => { if (seen.link) copy(seen.link); });
+      link.disabled = !seen.link;
       const stones = [code, link];
       if (seen.back) stones.push(stone(t('harness.go_back', 'Go Back'), () => { mounted?.send?.(keyOf(seen.back)); }));
+      // No link on screen yet: the person shows it in the terminal themselves (owner, 27 Nov 2026).
+      if (!seen.link) stones.push(el('p', 'setup-fine harness-terminal-note', t('harness.click_for_url', 'Note: click in the terminal to show the URL.')));
       copyRow.replaceChildren(...stones, said);
     };
     const scan = () => {
       const text = mounted?.screenText?.() || '';
-      const next = { code: last(text, CODE) || seen.code, link: last(text, LINK) || seen.link, show: SHOW_URL.test(text), back: text.match(BACK)?.[1] || '' };
-      if (next.code === seen.code && next.link === seen.link && next.show === seen.show && next.back === seen.back) return;
+      const next = { code: last(text, CODE) || seen.code, link: last(text, LINK) || seen.link, back: text.match(BACK)?.[1] || '' };
+      if (next.code === seen.code && next.link === seen.link && next.back === seen.back) return;
       seen = next;
       paintCopy();
     };

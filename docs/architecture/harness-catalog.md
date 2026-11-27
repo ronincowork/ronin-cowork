@@ -400,10 +400,9 @@ is "Coming soon": a service is offered where it shares a format, or not shown.
   The Ronin Gateway needs no key.
 - **Terminal**: the CLI's own login in its terminal tile, its own menu, **Done** and **Cancel**,
   under the small word **Backup** where the harness has another way. Under the terminal, small stones
-  from what the screen shows (`screenText`, `screenLines` in `termview.js`; the terminal's own copy and links
+  from what the screen shows (`screenText` in `termview.js`; the terminal's own copy and links
   are untouched, for scrolling's sake): **Copy code**, the last device code seen, kept when it leaves the
-  screen; **Show URL**, a click on the screen's own "Click here" before "show full URL", which turns **Copy link**
-  once a link is on screen; **Go Back**, the key the screen names for going back (owner, 27 Nov 2026). While it is open, **Done**
+  screen; **Copy link**, once a link is on screen, with the note *click in the terminal to show the URL* until then; **Go Back**, the key the screen names for going back (owner, 27 Nov 2026). While it is open, **Done**
   and **Cancel** stand in the service row in Terminal's place. The terminal is fitted once the panel is on the page, so the CLI draws at the size shown.
 
 Keys and codes are typed only on the panel or into the Ronin key vault, never in chat.

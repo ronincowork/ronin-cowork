@@ -121,15 +121,6 @@ export class TermView {
     return lines.join('\n');
   }
 
-  /** The visible screen's lines as drawn, row by row (row 1 first), unjoined: for finding where a word is. */
-  screenLines() {
-    const b = this.term.buffer?.active;
-    if (!b) return [];
-    const out = [];
-    for (let row = 0; row < this.term.rows; row++) out.push(b.getLine(b.baseY + row)?.translateToString(true) || '');
-    return out;
-  }
-
   /** Called after each piece of output is drawn; returns its stop. */
   onOutput(fn) {
     const sub = this.term.onWriteParsed?.(fn);
