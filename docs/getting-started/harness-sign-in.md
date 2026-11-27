@@ -34,7 +34,7 @@ Subscription and API key on Claude Code and Codex sign the harness in without a 
 shows the link, the code, or a box for the code or key, with **Send** and **Cancel**. One at a time:
 signing in the other way replaces it. The one it is on is filled.
 
-An outside service with no key yet reads **Not signed in**: press it to add the key in Model services.
+An API key or OpenRouter with no key yet reads **No key in vault**: press it to add the key in Model services.
 One signed in is filled when New Agent offers it; press it to turn it off or on.
 
 **Terminal** opens the harness's own sign-in on the panel. Follow what it asks, then press **Done**, or
