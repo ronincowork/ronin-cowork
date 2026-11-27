@@ -33,9 +33,15 @@ function createRootsSurface(context) {
   const out = surface(t('setup_surface.roots', 'Workspace'), 'setup-workspace-surface');
   const step = createWorkspaceKickoff({ workspacesRead, environment: context.environment, intro: true });
   out.content.append(step.el);
+  // The step's line in the rail counts the Workspaces, again whenever they move.
+  const count = () => {
+    const n = workspacesRead.list().filter((w) => !w.archived).length;
+    notifySummary(SETUP_SURFACE_TYPES.roots, n === 1 ? t('setup_surface.roots_summary_one', '1 Workspace') : t('setup_surface.roots_summary', '{n} Workspaces', { n }), context.workbench);
+  };
+  const stop = workspacesRead.subscribe(count);
   return { el: out.el,
-    show: () => { void workspacesRead.read().then(() => notifySummary(SETUP_SURFACE_TYPES.roots, t('setup_surface.roots_summary', '{n} Workspaces', { n: workspacesRead.list().length }), context.workbench)); },
-    destroy: () => step.destroy() };
+    show: () => { void workspacesRead.read(); },
+    destroy: () => { stop(); step.destroy(); } };
 }
 
 // STEP 3, TEAM (w926; docs/architecture/setup-workbench.md): the ordinary New Team form, started in a Workspace;
