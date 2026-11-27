@@ -363,9 +363,8 @@ nothing paints exactly this.
 - **help.loadout:** Behaviors
 - **help.kit:** Shared toolkit
 - **help.kit_body:** What every Agent raised on this Team starts with. All of it lands in the next Agent form as an ordinary editable value — none of it is a constraint, and changing it here never touches a session already running.
-- **new_team.who_where:** Who and where
 - **new_team.agents:** Agents
-- **new_team.agent_name:** name
+- **new_team.agent_name:** Name
 - **new_team.agent_name_taken:** Nothing was created. Choose another name for: {names}.
 - **new_team.agent_add:** ＋ Add an Agent
 - **new_team.readable:** Title
@@ -424,22 +423,40 @@ nothing paints exactly this.
 - **team.project_root:** Workspace folder
 - **team.team:** Team
 - **new_team.name_invalid:** Lowercase letters, digits, _ and - only.
-- **new_team.root_default:** — the box’s default —
 - **new_team.title:** New Team
 
 ## new_team — new-team-form.js (the drawn raise form, staged beside the card above)
-- **new_team.card_summary:** Kind · kit · lead — the drawn form.
-- **new_team.kind_summary:** Optional — Kind
+- **new_team.card_summary:** Name, Workspace, Agents and Epic.
 - **new_team.name_placeholder:** lowercase, digits, - _
-- **new_team.objective_placeholder:** what this team is for
-- **new_team.members:** members
-- **new_team.members_note:** derived from live tags — never stored here
-- **new_team.inherits:** an agent born here inherits
+- **new_team.objective_placeholder:** what the lead picks up and starts on
 - **new_team.staffing_failed:** Team created, but {failed} of {total} Agents could not be launched: {names}. Open the Team and add them there.
 - **new_team.raising:** Raising the team…
+- **new_team.agent_add_confirm:** Add
+- **new_team.agent_add_title:** Add Agent
+- **new_team.agent_assignment_label:** Instructions
+- **new_team.agent_drop_named:** Remove {name}
+- **new_team.agent_edit_title:** Edit Agent
+- **new_team.agent_editor_actions:** Agent actions
+- **new_team.agent_row_actions:** Agent row actions
+- **new_team.epic:** Epic
+- **new_team.epic_failed:** Team created; its epic was not: {why}.
+- **new_team.epic_new:** A new epic
+- **new_team.epic_title:** New epic
+- **new_team.epic_title_placeholder:** what done looks like
+- **new_team.instructions:** Team instructions
+- **new_team.instructions_placeholder:** standing directions every Agent in the Team reads
+- **new_team.lead_epic:** Your epic
+- **new_team.lead_objective:** Team objective
+- **new_team.name_objective:** Name & objective
+- **new_team.objective:** Team objective
+- **new_team.team_default:** The Team's
+- **new_team.unnamed_agent:** unnamed Agent
+- **new_team.workspace:** Workspace
+- **new_team.workspace_blank:** Choose a Workspace
+- **new_team.workspace_none:** None
 
 ## forms — form-steps.js (the drawn form idiom shared by New Team and New Agent)
-- **forms.default:** default
+- **forms.default:** Default
 - **ask.answer:** Answer
 - **setup_surface.identity_short:** Register as
 - **setup_surface.kind_short:** You use Ronin for
@@ -463,8 +480,8 @@ nothing paints exactly this.
 - **forms.tier_standard:** standard
 - **forms.tier_frontier:** frontier
 - **forms.tier_unrated:** unrated
-- **forms.provider:** harness
-- **forms.model:** model
+- **forms.provider:** Harness
+- **forms.model:** Model
 - **forms.none:** —
 - **forms.on:** On
 - **forms.off:** Off
@@ -1226,17 +1243,12 @@ The pad's current config downloads as a backup first.
 - **team_config.loading:** Loading Team Configuration…
 - **team_config.cowork_id:** Team ID
 - **team_config.title:** Title
-- **team_config.kind:** Kind
-- **team_config.objective:** Purpose
 - **where.born_in:** Born in
 - **where.additional:** Additional workspaces
 - **where.col_branch:** Branch
 - **where.label:** Where it works
 - **where.summary:** born in {root} · {repos}
 - **where.none:** no auto worktree
-- **team_config.default:** Default
-- **team_config.provider:** Provider
-- **team_config.model:** Model
 - **team_config.reach:** Reach
 - **team_config.recruit:** Recruit
 - **team_config.output:** Output
