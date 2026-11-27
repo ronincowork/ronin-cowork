@@ -42,15 +42,16 @@ export function shownInNewAgent(catalog, entry, row) {
 
 /**
  * A HARNESS'S MODEL SERVICES, TWO PARTS (owner, 27 Nov 2026; docs/architecture/harness-catalog.md, One harness
- * panel). `stones`: a stone per Ronin-side service the harness can use (a key in the Ronin key vault, Ronin
- * Gateway, OpenRouter), filled when New Agent offers it; one not set up says so and opens Model services on its
- * tab. They sit in the panel's service row beside the in-harness ways. `entries`: under the row, a table per
+ * panel). `stones`: a stone per outside service the harness can use (Ronin Gateway, an API key in the Ronin key
+ * vault, OpenRouter: src/model-services.ts, by request format), filled when New Agent offers it; one with no key
+ * yet says Not signed in and opens Model services on its tab. They sit in the panel's service row beside the in-harness ways. `entries`: under the row, a table per
  * service that is on (In harness first, when the CLI lists its own), in the table pattern (data-table.js): a row
  * per model, muted when hidden, Hide or Show. Every press saves. A service on with nothing hidden is null, so
  * models it adds later show by themselves; a service off is [].
  */
-const TYPES = [['private_api', 'API key in Ronin key vault', 'private'], ['gateway', 'Ronin Gateway', 'gateway'], ['openrouter', 'OpenRouter', 'openrouter']];
-export function harnessModelEditor(catalog, entry, openServices) {
+const TYPES = [['gateway', 'Ronin Gateway', 'gateway'], ['private_api', 'API key', 'private'], ['openrouter', 'OpenRouter', 'openrouter']];
+/** `skip`: service types this harness does not show (a harness with its own key login shows no key in the vault). */
+export function harnessModelEditor(catalog, entry, openServices, { skip = [] } = {}) {
   const choices = { ...catalog.preferences?.[entry.cli] };
   const seen = new Set();
   const rows = (entry.models || []).filter(row => {
@@ -62,7 +63,7 @@ export function harnessModelEditor(catalog, entry, openServices) {
   const groupOf = row => row.service_id || 'in-harness';
   const services = entry.services || [];
   const word = type => TYPES.find(([one]) => one === type)?.[1] || '';
-  const ronin = TYPES.filter(([type]) => (entry.service_types || []).includes(type) || services.some(s => s.service_type === type))
+  const ronin = TYPES.filter(([type]) => !skip.includes(type) && ((entry.service_types || []).includes(type) || services.some(s => s.service_type === type)))
     .flatMap(([type, name, tab]) => {
       const mine = services.filter(s => s.service_type === type);
       return mine.length ? mine.map(s => ({ id: s.id, name: type === 'gateway' ? name : s.name, type })) : [{ id: '', name, tab, type }];
@@ -99,10 +100,11 @@ export function harnessModelEditor(catalog, entry, openServices) {
     const out = el('button', 'ask-opt ask-rect');
     out.type = 'button';
     out.append(el('span', 'ask-name', group.name));
-    // A key's own name says which key; the small word says where it is kept.
+    // A key's own name says which key; the small word says what it is.
     if (group.id && group.type === 'private_api') out.append(el('small', 'ask-word', word('private_api')));
     if (!group.id) {
-      out.append(el('small', 'ask-word', t('harness.not_set_up', 'Not set up')));
+      // An outside service with no key yet is not signed in; the press opens Model services to add it.
+      out.append(el('small', 'ask-word', t('harness.not_signed_in', 'Not signed in')));
       out.setAttribute('aria-selected', 'false');
       out.addEventListener('click', () => openServices(group.tab));
       return out;

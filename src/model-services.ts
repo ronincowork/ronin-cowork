@@ -19,25 +19,38 @@ export async function roninGatewayBaseUrl(): Promise<string> {
 /** The id of the Ronin Gateway shown before one is saved. */
 export const RONIN_GATEWAY_SEED_ID = 'ronin_api';
 
-/** WHICH HARNESSES CAN USE A MODEL SERVICE (owner, 26 Nov 2026; KAN-896): a technical fact the
- * service reports, never a choice kept on it. A harness is here when Ronin has a launch adapter for
- * it (src/model-service-launch.ts), with the API protocols that adapter speaks. Claude Code has none,
- * so it uses no model service. Which services and model entries a harness shows in New Agent is that
- * harness's own setting (`newAgentModels`). */
-const SPEAKS: Record<string, ReadonlyArray<'chat' | 'responses'>> = { hermes: ['chat', 'responses'], codex: ['responses'], opencode: ['chat'] };
-export const worksWith = (wire: 'chat' | 'responses'): string[] => Object.keys(SPEAKS).filter(harness => SPEAKS[harness]!.includes(wire));
-/** The service types a harness can use: the Ronin Gateway speaks Responses, OpenRouter chat, an API key either. */
-export const serviceTypesFor = (harness: string): Array<'gateway' | 'private_api' | 'openrouter'> => {
-  const speaks = SPEAKS[harness] ?? [];
-  return [...(speaks.includes('responses') ? ['gateway' as const] : []), ...(speaks.length ? ['private_api' as const] : []), ...(speaks.includes('chat') ? ['openrouter' as const] : [])];
+/** WHICH HARNESSES CAN USE A MODEL SERVICE (owner, 27 Nov 2026; docs/architecture/harness-catalog.md, One harness
+ * panel): one rule for every outside service. A service speaks request formats; a harness's launch adapter
+ * (src/model-service-launch.ts) speaks formats; a harness can use a service wherever they share one, and its
+ * launch uses the harness's first shared format. A technical fact, never a choice kept on the service. Which
+ * services and model entries a harness shows in New Agent is that harness's own setting (`newAgentModels`). */
+export type ServiceFormat = 'responses' | 'chat' | 'anthropic';
+type ServiceType = 'gateway' | 'private_api' | 'openrouter';
+const HARNESS_FORMATS: Record<string, readonly ServiceFormat[]> = { codex: ['responses'], claude: ['anthropic'], hermes: ['chat', 'responses'], opencode: ['chat'] };
+/** What a service speaks: the Ronin Gateway, Responses; OpenRouter, all three (openrouter.ai/docs); an API key,
+ *  the one chosen when it was added. */
+const formatsOf = (type: ServiceType, wire: 'chat' | 'responses'): ServiceFormat[] =>
+  type === 'gateway' ? ['responses'] : type === 'openrouter' ? ['responses', 'chat', 'anthropic'] : [wire];
+/** The harnesses a service speaking `formats` serves. */
+export const worksWith = (formats: readonly ServiceFormat[]): string[] => Object.keys(HARNESS_FORMATS).filter(harness => HARNESS_FORMATS[harness]!.some(f => formats.includes(f)));
+/** The format a launch of `harness` on a service speaking `formats` uses; null when they share none. */
+export const launchFormat = (harness: string, formats: readonly ServiceFormat[]): ServiceFormat | null => (HARNESS_FORMATS[harness] ?? []).find(f => formats.includes(f)) ?? null;
+/** The service types a harness can use: each type whose formats it shares (an API key can be either Chat or Responses). */
+export const serviceTypesFor = (harness: string): ServiceType[] => {
+  const speaks = HARNESS_FORMATS[harness] ?? [];
+  const can = (formats: ServiceFormat[]) => speaks.some(f => formats.includes(f));
+  return [...(can(['responses']) ? ['gateway' as const] : []), ...(can(['chat', 'responses']) ? ['private_api' as const] : []), ...(can(formatsOf('openrouter', 'chat')) ? ['openrouter' as const] : [])];
 };
 
+const typeOf = (c: { kind?: string; baseUrl: string }, kind: string): ServiceType => kind === 'ronin_api' ? 'gateway' : isOpenRouterService(c.baseUrl) ? 'openrouter' : 'private_api';
 const project = (c: ModelServiceRecord & { configured: boolean }) => {
   const wire: 'chat' | 'responses' = c.wireApi ?? (c.provider === 'openai' ? 'responses' : 'chat');
+  const kind = accountKind(c);
+  const formats = formatsOf(typeOf(c, kind), wire);
   return {
-    id: c.id, kind: accountKind(c), name: c.name, provider: c.provider, baseUrl: c.baseUrl, wire, configured: c.configured,
+    id: c.id, kind, name: c.name, provider: c.provider, baseUrl: c.baseUrl, wire, formats, configured: c.configured,
     seeded: false, fault: undefined as string | undefined,
-    ...(c.credentialEnv ? { credentialEnv: c.credentialEnv } : {}), bound: worksWith(wire), discovered: c.models,
+    ...(c.credentialEnv ? { credentialEnv: c.credentialEnv } : {}), bound: worksWith(formats), discovered: c.models,
     ...(c.discoveredAt ? { discoveredAt: c.discoveredAt } : {}),
   };
 };
@@ -52,12 +65,12 @@ export async function modelServices() {
     let baseUrl = '', fault: string | undefined;
     try { baseUrl = await roninGatewayBaseUrl(); } catch (e) { fault = (e as Error).message; }
     services.push({ id: RONIN_GATEWAY_SEED_ID, kind: 'ronin_api', name: 'Ronin Gateway', provider: 'custom', baseUrl, wire: 'responses',
-      configured: false, seeded: true, fault, bound: worksWith('responses'), discovered: [] });
+      formats: formatsOf('gateway', 'responses'), configured: false, seeded: true, fault, bound: worksWith(formatsOf('gateway', 'responses')), discovered: [] });
   }
   return services.map(service => ({
     ...service,
     name: service.kind === 'ronin_api' ? 'Ronin Gateway' : service.name,
-    service_type: service.kind === 'ronin_api' ? 'gateway' as const : isOpenRouterService(service.baseUrl) ? 'openrouter' as const : 'private_api' as const,
+    service_type: typeOf(service, service.kind),
     discoveredNames: state.connections.find(c => c.id === service.id)?.modelNames || {},
     /** Ronin Gateway only: why it can't be used, as its last list read found it; absent is ready (w1028). */
     ...(state.connections.find(c => c.id === service.id)?.gatewayStatus ? { status: state.connections.find(c => c.id === service.id)!.gatewayStatus } : {}),
