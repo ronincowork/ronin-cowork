@@ -81,8 +81,8 @@ export const mandateWord = (value) => mandateTitle(value);
  * names — `model`, the id every launch uses, and `name`, the CLI's own display name with the
  * version in it — its `use_for` line and facts, plus `operational`,
  * `off` and `selectable` for this machine. `GET /api/setup/runtime` answers the machine
- * facts the Model providers surface paints (installed, signed in, steps). Nothing here
- * probes; only Refresh all on that surface reads a model list. A surface calls
+ * facts a harness's page paints (installed, signed in, steps). Nothing here
+ * probes; only Refresh all reads a model list. A surface calls
  * `loadHarnessCatalog()` when it is shown and paints from `harnessCatalog()`; a picker
  * built before the first read paints again when it lands.
  */
@@ -130,7 +130,7 @@ export function dayTime(iso) {
 /**
  * One model as an option reads: its name and its tier, and stops there. A picker is for
  * choosing, not for reading: the model's description belongs to the
- * Campaign's Model providers surface, where there is room for the whole table. In an
+ * harness's page in Settings, where there is room for the whole table. In an
  * option it is a sentence squeezed into a line that cannot show it.
  */
 export const modelLabel = (row) => {

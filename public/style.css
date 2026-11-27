@@ -359,7 +359,7 @@ body {
   --current-head-line: var(--head-team-line);
   --current-head-edge: var(--head-team-edge);
 }
-:root:is([data-workbench='campaign'], [data-workbench='setup'], [data-workbench='launch'], [data-workbench='models'], [data-workbench='workspaces'], [data-workbench='help']) {
+:root:is([data-workbench='campaign'], [data-workbench='setup'], [data-workbench='launch'], [data-workbench='workspaces'], [data-workbench='help']) {
   --current-head-bg: var(--head-admin-bg);
   --current-head-fg: var(--head-admin-fg);
   --current-head-muted: var(--head-admin-muted);
@@ -4202,32 +4202,6 @@ body {
 .setup-scan[data-state='scanning'] .setup-scan-word { color: var(--kaki-fill); }
 .setup-scan[data-state='failed'] .setup-scan-word { color: var(--bad-soft); }
 .setup-scan-word:empty { display: none; }
-/* THE SETUP HEADER ZONE. It sits in the work surface's own content box and adds no inset of
-   its own, so its state line and its picks begin on the same left edge as the surface's own
-   title and footer. A hairline divides the zone from the phalanx rather than a box: a box
-   spends kaki on a container, and kaki is what marks a chosen stone. The slot keeps its
-   fixed height, so the phalanx stays level from step to step whatever the state says.
-
-   The zone styles the zone and nothing else. It never reaches past its own slot to lay out
-   the phalanx below — the phalanx is the work surface's, identical on a surface that carries
-   a zone and one that does not, and a change up here must never move a stone down there.
-
-   The rule is drawn on the zone rather than on the slot, and the zone is one step shorter
-   than the slot it sits in. That leftover step is the clearance under the rule: it belongs
-   to the header's own box, so the line stands clear of the stones without the header ever
-   reaching down to space them. Hover takes the rule to kaki the way a fold's hairline does
-   (launch-forms.css, owner 2026-09-13) — the line lifts, nothing fills, and the words stay
-   put, because the zone is a region to read, not a control to press. */
-.sws-header:has(> .setup-zone) { box-sizing: border-box; }
-/* A SETTLED ZONE GOES BLANK, IT DOES NOT GO AWAY. The slot is the phalanx's spacing: it holds
-   the stones at the same height on every step, whether the zone above them has something to
-   say or nothing at all (owner, 2026-09-21). Only operation mode takes the slot away, which
-   is a different thing — there is no phalanx view to keep level. */
-.setup-zone-slot { display: flex; flex: 0 0 auto; align-items: flex-start; box-sizing: border-box; min-width: 0; block-size: var(--sws-header-height, clamp(6rem, 15dvh, 9rem)); overflow: hidden; }
-.setup-zone { display: grid; align-content: start; justify-items: start; gap: var(--space-section); box-sizing: border-box; width: 100%; min-width: 0; height: calc(100% - 20px); overflow: hidden; border-bottom: var(--edge) solid var(--line); padding: var(--space-inset) 0 0; transition: border-color var(--motion-quick) var(--ease); }
-:is(.sws-header, .setup-zone-slot):has(> .setup-zone):hover > .setup-zone { border-bottom-color: var(--kaki); }
-.setup-zone-state { min-height: calc(var(--form-input) * 1.4 * 2); max-width: 40rem; margin: 0; color: var(--fg-strong); font-size: var(--form-input); font-weight: var(--weight-regular); line-height: var(--leading-body); }
-.setup-zone-options { width: auto; }
 /* A NARROW LEANING SLAB. Five standing together are a bar read left to right; five circles
    were five separate things. The lean is one angle shared by every mark and never changes
    with state — only the fill moves, so the row cannot reflow as answers land. */

@@ -11,8 +11,8 @@
  * modified or middle press opens the workbench in a new tab (KAN-473). THE GATE (owner,
  * 2026-10-19, "let's have the gate"): as on the old root, the doors are locked until one model
  * provider is activated, so a new user's way in is Setup. The small stones are outside the gate: Settings, and Setup, where a harness is signed in (owner, 2026-11-13; KAN-472).
- * THE SETUP STONE (owner, 2026-11-26; KAN-856, w1059): on every office, where Harnesses was; Harnesses is
- * reached through Setup's Harness step. ONE ROOT (owner, 2026-11-02; KAN-197): the old Home and the
+ * THE SETUP STONE (owner, 2026-11-26; KAN-856, w1059): on every office, where Harnesses was; each harness's
+ * page is in Settings, linked from Setup's Harness step. ONE ROOT (owner, 2026-11-02; KAN-197): the old Home and the
  * bar's Current/Next toggle are gone; an old #/current link lands here.
  */
 import { t } from './lexicon.js';
@@ -38,7 +38,7 @@ function OFFICE() {
   ];
 }
 
-/** The smaller stones on the right, one above the other: Setup first (Harnesses is its Harness step),
+/** The smaller stones on the right, one above the other: Setup first (its Harness step signs harnesses in),
  *  and, hosted, the Business Lounge last: a link out to Ronin HQ, where its account and office are kept. */
 function SIDE() {
   return [

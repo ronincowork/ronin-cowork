@@ -16,7 +16,7 @@ import { createWorkspace } from './workspace.js';
 import { createCoworkView } from './cowork-view.js';
 import { createAgentView } from './agent-view.js';
 import { createCampaignHome } from './campaign-home.js';
-import { createEpicsView, createHelpView, createModelsView, createWorkspacesView } from './door-workbenches.js';
+import { createEpicsView, createHelpView, createWorkspacesView } from './door-workbenches.js';
 import { createWorkspaceRoute } from './workspaces-surface.js';
 import { createSettingsV2View } from './settings-v2-view.js';
 import { createSetupView } from './setup-view.js';
@@ -113,7 +113,6 @@ async function init() {
   // one, so its own failure is reported rather than looping.
   guard('register the Ronin Home destination', () => workspace.register('home', createCampaignHome()));
   // Home's Models and Workspaces doors, each a workbench of its own in the same tab (owner, 2026-10-19).
-  guard('register the Models destination', () => workspace.register('models', createModelsView()));
   guard('register the Workspaces destination', () => workspace.register('workspaces', createWorkspacesView()));
   guard('register the Epics destination', () => workspace.register('epics', createEpicsView()));
   // One Epic on its own page (w899): Layer 2, under the Epics appearance; not a tilespace workbench.

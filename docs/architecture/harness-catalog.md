@@ -125,7 +125,7 @@ API key or OpenRouter.
 home provisioning. `/api/hermes` reads the projection; POST `/api/hermes/{connection,
 discover,setup,delete}` owns writes. The credential store holds metadata plus one
 private dotenv credential file per connection. Keys never enter catalog or route answers.
-The Models worksurface has connection and setup editors instead of Authenticate/Ready.
+Hermes's page in Settings has no Authenticate or Ready: only Models.
 Provider-key environment pairs are reconciled on read and appear automatically, without
 an import action. Environment credentials remain authoritative for those connections.
 
@@ -280,7 +280,7 @@ src/agents.ts vendor + CLI list + HQ's catalog + docs/agents/<cli>.md commands
 ## Model defaults
 
 One record says what model a launch gets when its form says Default (owner, 2026-10-21):
-⚙ `agents.sessions` in `machine_settings.json`, set on **Models > Defaults** and shown again
+⚙ `agents.sessions` in `machine_settings.json`, set on **Settings → Agent defaults** and shown again
 in ⚙ Configuration — the schema's `models` section, two views of one setting.
 
 | Default | Key | Read by |
@@ -294,7 +294,7 @@ in ⚙ Configuration — the schema's `models` section, two views of one setting
 no provider, the first CLI signed in becomes it, written once: the provider, its model blank (the
 provider's own default). `settleFirstDefault` (`harness-summary.ts`) runs on every recorded
 measure, and a launch with no default measures first (`spawn.ts`), so a sign-in made in Setup or
-in a tile both count. A later sign-in never moves it; only Models > Defaults does. A model service
+in a tile both count. A later sign-in never moves it; only Agent defaults does. A model service
 is no sign-in and never becomes the default this way. With nothing signed in,
 a Default launch takes the launch progression's first working harness and model service
 ([Model services](model_services_README.md), *A launch with no default*); with none, the registry's first CLI, into its own sign-in.
@@ -307,7 +307,7 @@ Desk. A Team's `agent_defaults` carries no model.
 
 Every place the product asks *which provider, and which model* is one control:
 `harnessModelPair` in `public/js/form-steps.js`. New Agent, New Team, Add Agent to Team,
-⚙ Configuration and Models > Defaults (the Agent and Team lead models, each provider's
+⚙ Configuration and Agent defaults (the Agent and Team lead models, each provider's
 preferred model, and Mika's row) and cowork setup all call
 it; none keeps a list, a join or a vendor's name of its own. The picker reads the rows the
 server joined (`GET /api/harness-catalog`) and what this machine measured of each CLI
@@ -330,29 +330,22 @@ the first launchable **light** row — there is no name-pattern for "cheap".
 
 ## The Harnesses surface
 
-One drawing (`public/js/harnesses-surface.js`), seated by two selector cards — Ronin Setup's
-**Harnesses** and Ronin Settings' **Harnesses** — and drawn by Home's **Models**
-door as one stone per provider (`public/js/models-surface.js`). The two cards read *N providers · M models · K activated here*. At the top sits the one door: **Refresh all model providers**,
-with *Last ran <date>* beside it, or *Never run — every provider offers Native only until
-it runs*. Ronin runs it at start too, never on a timer: it measures the machine, reads every
-activated CLI's own model list, and asks npm for each one's newest release. Below it the
-whole inventory on the shared stone work surface: one stone per CLI the registry knows,
-wearing its measured state and the vendor it serves with its model count. The Models workbench's **Model refresh** surface carries
-the same door with its steps under it: Harnesses, then Accounts.
+Settings' harness cards draw it (`public/js/harnesses-surface.js`, seated by `harnessKit` in
+`door-workbenches.js` through `models-surface.js`): **Harness**, one stone per CLI the registry knows,
+wearing its measured state and the vendor it serves with its model count, and **Refresh**, the one
+door: **Refresh all harnesses**, with *Last ran <date>* beside it and its steps under it, Harnesses
+then Model services. The harness part also runs at start, never on a timer: it measures the machine,
+reads every activated CLI's own model list and asks npm for each one's newest release; the press
+then asks each model service for its list.
 
-A stone opens that provider, top to bottom: **Yours**, the three measured steps (install ·
-authenticate with the native sign-in tile, Done and Cancel · ready) read from the runtime
-row (`docs/getting-started/setup-workbench.md`, *Activate a provider*); then **The catalog**, the three
-measured facts, one line saying when its list was read and by which CLI version (or why
-there is none, or that Refresh all has not run), and the model table. Model: Native is
-first and marked as the default. Every named row is a model from the CLI's list, grouped
-by tier, and its Model cell carries both names: the CLI's own in bold, the id
-beneath. The table has two columns, Model and Tier; the Tier cell carries HQ's tier (or
-*unrated*) and, beneath it, the model's "use it for" line. The native sign-in tile is mounted through the workbench environment's one
-shared mount (`public/js/harness-setup-session.js`), which both Ronin Setup and Ronin
-Settings hand their environment, so it works on either seat. Showing the surface paints
-the record; only Refresh all reads. Its rows are the one picker's read, so the surface and
-every picker cannot disagree.
+A stone opens that harness, top to bottom: the three measured steps (install · authenticate with the
+native sign-in tile, Done and Cancel · ready) read from the runtime
+row; then **Models**: the three measured facts and the tiered picker of what New Agent offers for
+this harness, a stone per model service (In harness, the CLI's own list; then each service type it
+can use) and a table per service that is on, Name and Model ID, Hide or Show per row
+(`harness-model-entries.js`; [Setup workbench](setup-workbench.md), *Harnesses*). The native sign-in
+tile is mounted through the one shared mount (`public/js/harness-setup-session.js`), which Setup and
+Settings both hand their environment. Showing the surface paints the record; only Refresh all reads.
 
 **Activation is the one switch.** It decides whether Ronin spends anything on a
 provider. **Turn off**, on the Ready step, writes Ronin's own `setup.providers.<cli>.off_at`
@@ -455,7 +448,7 @@ confirm that the tile reaches a prompt and receives the complete built brief.
    and model visible in the tile, and the complete startup request received by the agent.
 
 
-## Setup sessions and sign-in descriptions
+## Setup sessions and sign-in
 
 `src/setup-session.ts` creates and identifies temporary setup sessions for provider
 installation, sign-in and update, and GitHub installation and authentication. Each runtime
@@ -463,8 +456,6 @@ publishes the same explicit session attachment. Each opens a normal tmux shell a
 runs the command inside it, so exiting the CLI returns to the shell prompt. Both UIs mount it through
 `harness-setup-session.js`; Cancel ends the temporary tmux session.
 
-Done saves an owner-described `sign_in` record under
-`setup.providers.<cli>.sign_in` in machine settings: `method` (`subscription`, `api_key`,
-`third_party`), `label`, and `recorded_at`. An explicit null clears that description.
-It contains no credentials and does not establish authentication, change the CLI's
-configuration, or select an account for future launches. Activation preserves the record.
+Done records nothing but the sign-in itself: it re-measures, and the CLI's own credential file is
+the record. Claude Code and Codex sign in on Setup's Harness step without a terminal
+(`src/harness-sign-in.ts`); see [Setup workbench](setup-workbench.md), *Harnesses*.

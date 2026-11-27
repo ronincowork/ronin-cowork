@@ -7,11 +7,11 @@ import { createTable, tableLink } from './data-table.js';
 import { request } from './request.js';
 import { t } from './lexicon.js';
 
-export function modelSettingsLink(cli) {
+export function modelSettingsLink(cli, label = 'Configure model entries') {
   const state = cli ? { count: 1, selected: 'workspace1', seats: { workspace1: { type: 'models.provider', key: cli } } } : {};
   const spec = { destination: 'settings2', state };
   const link = workbenchLink(document.createElement('a'), spec);
-  link.textContent = 'Configure model entries';
+  link.textContent = label;
   link.addEventListener('click', event => {
     if (event.defaultPrevented || event.button !== 0) return;
     event.preventDefault();

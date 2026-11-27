@@ -1,14 +1,12 @@
 /* part of the ronin-cowork client — see js/README.md */
 /**
- * THE MODELS WORKBENCH'S SURFACES (owner, 2026-10-19; PATTERNS.md Home). Home's Models door
- * opens the Models workbench; its surfaces are its own, apart from Settings' Model Providers
- * surface, and draw with the same drawing (harnesses-surface.js: createHarnessDrawing, the
- * provider's page; harnessStones, the stones) over the same reads.
- *   WS1 `createModelStones`: Phalanx A/B stones of providers. A stone pressed opens the
- *   provider's page beside the rail; a stone dragged into a workspace places the provider
- *   there whole (`createModelHarness`), no rail, the whole workspace to its page.
- *   The selector lists one card per provider (`harnessOffers`), each placing that surface.
- *   `createModelDefaults`: the model a new Agent, a new Team lead and Mika start on.
+ * SETTINGS' HARNESS SURFACES, drawn with harnesses-surface.js (createHarnessDrawing, a harness's
+ * page; harnessStones, the stones) over the same reads.
+ *   `createModelStones`: the stones of harnesses; a stone pressed opens its page beside the rail; a
+ *   stone dragged into a workspace places that harness there whole (`createModelHarness`).
+ *   The selector lists one card per harness (`harnessOffers`).
+ *   `createModelRefresh`: Refresh all, step by step.
+ *   `createModelDefaults`: the model a new Agent, a new Team lead and Mika start on (Office defaults).
  */
 import { WorkspaceKit } from './workspace-kit.js';
 import { dayTime, el } from './form-steps.js';

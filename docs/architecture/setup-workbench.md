@@ -84,30 +84,11 @@ actions, and from the `setup-progress` push; it does not poll.
 Every stone surface in Setup shares one shape: square stones on the left; select one and
 the stones fold into a rail with the stone's page beside it; Escape closes it.
 
-### The header zone
-
-Every step opens with a band across the top of its surface, above a hairline: one line
-saying what is true on this machine right now, and the choices that act on it. It states a
-fact and never explains — the guidance in Workspace 1 is where the reasoning lives — and it
-carries no title, because the surface already has one.
-
-A choice does the thing, and the mark fills when the facts say the step is done. Nothing is
-chosen for you: a choice shows as taken only once its setting is on.
-
-The zone says what the step needs decided, never what one stone is doing. A stone's own
-condition — *Coming soon*, *Needs sign-in*, *Activated* — stays on the stone.
-
-Once a step is settled the band goes blank, and its space stays. That space is what holds
-the stones at the same height as you move between steps, so nothing jumps. While a stone is
-open the band is gone entirely: that is the step's own page, not its question.
-
-**Password** (in Settings) never goes blank, because how you reach this machine is an arrangement you may
-want to revisit rather than a one-time fact: it keeps its choices for good.
-
 ## Harnesses
 
-One surface on two seats: Setup's Harness step (`setup-harness-surface.js`) and the Harness pages in
-Settings (`harnesses-surface.js`). Both read the same measured runtime, so a change shows on both.
+Two surfaces over one measured runtime: Setup's Harness step (`setup-harness-surface.js`) and the
+harness pages in Settings (`harnesses-surface.js`, seated by `harnessKit` in `door-workbenches.js`),
+so a change shows on both. Setup's line under the bars links to Settings.
 The CLI's own credential file is the record of a sign-in; Ronin keeps nothing beside it.
 
 ### Setup's Harness step
