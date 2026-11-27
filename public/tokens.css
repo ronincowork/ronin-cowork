@@ -211,34 +211,37 @@
 
 :root[data-theme='light'] {
 
-  --kaki-tint: #f2a566;
-  --head-team-bg: var(--kaki-tint);
-  --head-team-fg: #201a0e;
-  --head-team-muted: #4f2e1b;
-  --head-attention: #7a2f10;
+  /* LIGHT IS PAPER, INK AND ONE KAKI (samurai_lab/design/STYLE.md). Neutrals carry a faint
+     warmth, hue about 38°, so nothing reads lilac beside kaki; kaki is solid or absent. */
+  --head-team-bg: var(--kaki-lift);
+  --head-team-fg: var(--on-strong);
+  --head-team-muted: color-mix(in srgb, var(--on-strong) 78%, transparent);
+  --head-attention: #fff0dc;
   --surface: #ffffff;
-  --inset: #f2f3f5;
-  --line: #afb2be;
-  --line-2: #9094a5;
-  --line-3: #797e93;
-  --fg-strong: #14161c;
-  --fg: #2c2e36;
-  --muted: #585e6e;
+  --inset: #f4f2ee;
+  --line: #b8b3aa;
+  --line-2: #99938a;
+  --line-3: #7d776d;
+  --fg-strong: #161410;
+  --fg: #2e2b26;
+  --muted: #5e5850;
+  --selected: #ece6dc; /* a stone fill; the kaki edge the components draw says it is chosen */
+  --graphite: #3a3834;
   --link: var(--aiiro);
-  --accent: #a06b1a;
-  --accent-2: #3f6a95;
-  --accent-deep: #8a5a10;
+  --accent: var(--kaki-lift);
+  --accent-2: var(--aiiro);
+  --accent-deep: #84391f;
   --ok: #5c7a1d;
   --ok-2: #1e7a4c;
   --warn: #9a7b00;
   --status-yellow: #c9a227;
-  --status-red: #b8362a;
-  --bad: #b04343;
-  --bad-soft: #8f3a3a;
-  --bad-deep: #a33c33;
-  --bad-line: #d8b0b0;
-  --bad-ground: #f7e2e2;
-  --bad-fg: #6a1f1f;
+  --status-red: var(--bad);
+  --bad: #b02a3c; /* crimson: wrong never reads as brand */
+  --bad-soft: #8c2f3b;
+  --bad-deep: #952335;
+  --bad-line: #e0b4ba;
+  --bad-ground: #f8e4e6;
+  --bad-fg: #5e1a24;
   --info: #1f5fc9;
   --scrim: rgb(0 0 0 / 35%);
   --shadow-menu: 0 8px 24px rgb(30 30 30 / 18%);
@@ -257,7 +260,7 @@
   --head-teams-muted: color-mix(in srgb, var(--on-strong) 78%, transparent);
 
   --term-cube: invert;
-  --term-cursor: #a06b1a;
+  --term-cursor: var(--kaki-lift);
   --term-selection: #d8e2f2;
   --term-ansi-black: #1d1f21;
   --term-ansi-red: #bc2f2f;
@@ -268,7 +271,7 @@
   --term-ansi-cyan: #2c7a7a;
   --term-ansi-white: var(--fg);
 
-  --term-ansi-br-black: #dfe1e6; /* the band behind the person's messages: a neutral grey, no yellow */
+  --term-ansi-br-black: #ece8e1; /* the band behind the person's messages: warm stone, not lilac */
   --term-ansi-br-red: #d13b3b;
   --term-ansi-br-green: #6f8f28;
   --term-ansi-br-yellow: #b08c00;
