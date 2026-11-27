@@ -333,10 +333,13 @@ the first launchable **light** row — there is no name-pattern for "cheap".
 **Why.** Setup's Harness step and Settings' harness page draw the same server facts with two sets
 of words and two layouts (owner, 27 Nov: "2 pieces doing the same job and not well... we need a
 common set of code"). KAN-938 added a third module beside the two and was reverted (41d29476):
-the fix is fewer modules, not another. Nothing server-side changes; the client gets one model and
-one panel.
+the fix is fewer modules, not another. The client gets one model and one panel.
 
-### One model: the state word
+**What the panel is for.** An installed harness runs; what it needs is access to models. So the
+panel's main section is **Model services**, never "authentication" or "sign-in" (owner, 27 Nov).
+Signing in is only what some services need on the way.
+
+### The state word
 
 One function, `harnessState(provider)`, gives every harness one word, used on the stone, the panel
 heading and Home's doors alike. It names the state, not what to do (owner, 25 Nov).
@@ -345,50 +348,58 @@ heading and Home's doors alike. It names the state, not what to do (owner, 25 No
 |---|---|---|
 | **Not installed** | the CLI is not on this machine (an Install guide link when Ronin cannot install it) | Not installed, Manual install |
 | **Installing** | its install tile is open | Installation open |
-| **Not signed in** | installed, no sign-in | Not set up (Setup), Needs sign-in (Settings) |
-| **Signing in** | a sign-in is open: the Agent's link-and-code run or the terminal | Signing in, Sign-in open |
-| **Active** | signed in and on | Active (Setup), Activated / Activated for Launch (Settings) |
-| **Off** | turned off; the sign-in is kept | Off |
+| **No model service** | installed, no service gives it models | Not set up, Needs sign-in, Hermes's No model service yet |
+| **Signing in** | a service's sign-in is open: its link-and-code run or the terminal | Signing in, Sign-in open |
+| **Active** | at least one model service gives it models | Active, Activated, Activated for Launch, Hermes's Ready |
+| **Off** | turned off; every sign-in is kept | Off |
 
-Hermes has no sign-in: **Active** when a model service is set up, else **No model service**.
-The Installed / Signed in / Activated yes-no facts and the numbered Install → Authenticate →
-Ready steps go: the word says it once.
+Today the server's `activated` counts only the CLI's own sign-in; it widens to "any model service
+on" (`src/setup-runtime.ts`), so a Codex on the Ronin Gateway alone reads Active. Hermes needs no
+case of its own. The Installed / Signed in / Activated facts and the numbered Install →
+Authenticate → Ready steps go: the word says it once.
 
-### One sign-in
+### Model services, part 1: choose a service, authenticate where needed
 
-**What subscription and API key do today (from the code).** They are not two ways an Agent helps;
-they choose which login command Ronin runs. `startSignIn(provider, way)` (`src/harness-sign-in.ts`)
-looks up `login[way]` in `src/agents.ts` and runs that CLI's own login with its menu skipped:
-Claude Code `auth login --claudeai` (subscription) or `--console` (API key), both a link and a
-pasted code; Codex `login --device-auth` (a link and a code) or `--with-api-key` (a key box). After
-that the way is used for one thing only: `readWays` reads the CLI's status (`claude auth status`,
-`codex login status`) so the page can say which one it is on. Launches never read it, and Ronin
-records nothing; the CLI keeps its credential and its maker bills that way. The Helpful Assistant
-uses it only as the argument to `harness sign-in <cli> subscription|api_key`.
+One row of stones; a harness shows only the services it can use (`serviceTypesFor` over `SPEAKS`,
+`src/model-services.ts`, plus its CLI's own `login`). Today `SPEAKS` has Codex (Responses: Gateway,
+key vault), Hermes (both: all three) and OpenCode (chat: key vault, OpenRouter). Claude Code is not in
+it: its key-vault API key is new, an Anthropic key the launch hands Claude Code (`ANTHROPIC_API_KEY`
+in its `cli-home`), added to `SPEAKS` as its own wire. Several can be on at once; the in-harness
+ones are one at a time, as the CLI itself allows.
 
-**Three buttons, the same in both places (owner, 27 Nov):** **Subscription** · **API key** ·
-**Terminal**.
+| Service | Where it lives | Pressing it | Claude Code | Codex | Hermes | Others |
+|---|---|---|---|---|---|---|
+| **Subscription** | in harness | runs the CLI's subscription login (Claude Code `auth login --claudeai`, Codex `login --device-auth`); the panel shows the link and the code or code box | yes | yes | | |
+| **API key in harness** *(recommended)* | in harness | runs the CLI's key login (Claude Code `auth login --console`, Codex `login --with-api-key`); the panel shows the link and code box, or the key box | yes | yes | | |
+| **API key in Ronin key vault** | Ronin | the key goes into the Ronin key vault as a model service; Ronin starts the Agent on it | yes, new | yes | yes | OpenCode |
+| **Ronin Gateway** | Ronin | nothing to sign in; on, with its supplied models | never | yes | yes | |
+| **OpenRouter** | Ronin | the OpenRouter key into the Ronin key vault | | | yes | OpenCode |
+| **Terminal** | in harness | the CLI's own login in its terminal tile, its own menu, **Done** and **Cancel**: subscription or key by hand. Offered, never pushed | yes | yes | | yes, the only one |
 
-- **Subscription** and **API key** start that way's run from the panel (the route Setup's bar
-  calls today, with `tell` set to her), open the Helpful Assistant where the place puts her, and tell
-  her `<cli> · Sign in with subscription|API key`. The panel shows what the run printed: the link,
-  the code, the box for the code or key, **Send** and **Cancel**. She helps in chat and hears how it
-  ends; keys and codes are typed only on the panel.
-- **Terminal**, on every harness, Claude Code and Codex included: the CLI's own sign-in in its
-  terminal tile on the panel, its own menu, with **Done** and **Cancel**. The button says Terminal
-  and nothing more; the Helpful Assistant is told (`<cli> · Terminal`) so she knows what is
-  happening, and is not opened (owner, 27 Nov). Setup's **Close** goes.
+`src/harness-sign-in.ts` and the routes stay as they are: the in-harness stones start the run
+(with `tell` set to the Helpful Assistant), and the panel shows what the run printed, with
+**Send** and **Cancel**. Keys and codes are typed only on the panel or into the key vault, never
+in chat. The service it is on stays selected (`readWays` for the in-harness two, the model service
+record for the rest).
 
-**The place decides only where she opens**: the host passes `openAgent`. Setup opens her in its
-work surface, as now; Settings opens her chat in a window on the surface with a kaki − (a small
-function in `models-surface.js`, over `createIrasshaiChat`).
+**The Helpful Assistant.** Subscription and API key in harness open her where the place puts her
+and tell her `<cli> · Sign in with subscription|API key`. Terminal tells her `<cli> · Terminal`
+and does not open her; no stone names her (owner, 27 Nov). **The place decides only where she
+opens**: the host passes `openAgent`. Setup opens her in its work surface; Settings opens her chat
+in a window on the surface with a kaki − (a small function in `models-surface.js`, over
+`createIrasshaiChat`).
 
-Warn before re-sign-in (w994) stays, one rule for all three: on an **Active** harness the first
-press shows *Signing in again signs out every {cli} Agent until you finish*; the second goes ahead.
-The way it is on stays selected, from `readWays`.
+**Warn before re-sign-in (w994)** stays on the three in-harness stones (Subscription, API key in
+harness, Terminal): on a harness already signed in the first press says *Signing in again signs out
+every {cli} Agent until you finish*; the second goes ahead. The Ronin services touch no CLI sign-in,
+so they never warn.
 
-**A harness with no subscription/API key split** (Antigravity, Grok, OpenCode, Kimi, Copilot):
-Ronin has no `login` for it, so it shows the **Terminal** button only.
+### Model services, part 2: model entries
+
+Under the row, never above it (today Setup's link to Settings sits above the services): the
+model entries of each service that is on, from `harness-model-entries.js` as it is: a table per
+service, Name and Model ID, **Hide** or **Show** per row; for a key-vault key or OpenRouter, adding
+or removing an entry. Its link to Model services in Settings sits here, at the end.
 
 ### One panel, both places
 
@@ -398,48 +409,58 @@ The panel, top to bottom, shows only the control that applies:
 
 1. Name, vendor, the state word.
 2. **Install** (or Install guide) when Not installed; **Update to x** when one is available.
-3. The sign-in buttons when Not signed in or Active; the run or the terminal while Signing in.
+3. **Model services**: part 1, the service row and any run or terminal open; part 2, the model
+   entries.
 4. **Turn off** / **Turn on**, with its sentence.
-5. **Models** (`harness-model-entries.js`, unchanged): In harness, Ronin Gateway, API key,
-   OpenRouter. Hermes's panel is only this.
 
-The Ronin Gateway is a model service, not a sign-in (Codex and Hermes, never Claude Code): it is a
-Models stone, so Setup's **Ronin Gateway** and **OpenRouter · Coming soon** sign-in stones go.
-Settings' Refresh and Defaults surfaces are not harness sign-in and stay.
+Settings' Refresh and Defaults surfaces are not this panel and stay.
+
+### Ronin key vault
+
+The owner's name for where Ronin keeps a secret, said everywhere a secret is asked for (owner,
+27 Nov): the key box of a model service (`model-services-surface.js`, this panel), the page the
+`secret` tool opens (`secret-ask.js`), an integration's key (`integrations-panel.js`), and
+`docs/operating/secrets.md`. Words only: the store under it is unchanged.
 
 ### Files
 
 | File | What happens |
 |---|---|
-| `public/js/harnesses-surface.js` | becomes the one module: `recordRuntime`, `harnessState`, `harnessStones`, `mountHarnessPanel(host, id, { openAgent })`, the sign-in run window, the attachment mount. `paintYours`, `installedState`, the facts and the old model table go. `stepItem` and `createRefreshAll` stay for Refresh |
+| `public/js/harnesses-surface.js` | becomes the one module: `recordRuntime`, `harnessState`, `harnessStones`, `mountHarnessPanel(host, id, { openAgent })`, the service row, the sign-in run window, the attachment mount. `paintYours`, `installedState`, the facts and the old model table go. `stepItem` and `createRefreshAll` stay for Refresh |
+| `public/js/harness-model-entries.js` | part 2; its service stones move up into part 1's row, its tables stay |
 | `public/js/setup-harness-surface.js` | deleted; Setup's surface definition (a phalanx over `mountHarnessPanel`, `openAgent` = work surface) moves into `setup-surfaces.js`, ~15 lines |
-| `public/js/setup-harness-state.js` | deleted; `harnessPresentation` / `harnessReadiness` and their sentences become `harnessState`, `mountHarnessAttachment` moves into the one module |
-| `public/js/setup-hermes-services.js` | deleted; Hermes shows the Models section in both places |
+| `public/js/setup-harness-state.js` | deleted; its sentences become `harnessState`, `mountHarnessAttachment` moves into the one module |
+| `public/js/setup-hermes-services.js` | deleted; Hermes uses the same row and entries |
 | `public/js/models-surface.js` | `createModelStones` and `createModelHarness` mount `mountHarnessPanel` with the window `openAgent` |
-| `harness-setup-session.js`, `harness-model-entries.js`, `src/*` | unchanged |
+| `src/setup-runtime.ts` | `activated` counts any model service on |
+| `src/model-services.ts`, the launch | Claude Code's key-vault API key: its wire in `SPEAKS`, the key handed at launch |
+| `harness-setup-session.js`, `src/harness-sign-in.ts`, the sign-in routes | unchanged |
+| `secret-ask.js`, `model-services-surface.js`, `integrations-panel.js` | say Ronin key vault |
 | `public/style.css` | the `setup-harness-*` bar and `setup-provider-step*`/`-facts`/`-models` rules the panel no longer uses go |
-| lexicon (`ronin_stock/lexicons/professional_en.md`) | the unused `setup_harness.*` and `setup_surface.*` keys go; `harness.*` keys for the six words and two presses |
-| `docs/getting-started/harness-sign-in.md` | In Setup and In Settings become one section |
-| `docs/architecture/setup-workbench.md` *Harnesses* | one section; it points here |
-| `ronin_stock/behaviours/irasshai-harness.md` | she is opened and told *Sign in with subscription / API key*; helps with the panel's run; warns on Active |
+| lexicon (`ronin_stock/lexicons/professional_en.md`) | the unused `setup_harness.*` and `setup_surface.*` keys go; `harness.*` keys for the words and services |
+| `docs/getting-started/harness-sign-in.md` | becomes the harness's Model services, one section for Setup and Settings |
+| `docs/architecture/setup-workbench.md` *Harnesses*, `docs/operating/secrets.md` | one section pointing here; the key vault's name |
+| `ronin_stock/behaviours/irasshai-harness.md` | she hears which service was pressed; helps with the panel's run; warns before a re-sign-in |
 
 ### Earlier rulings
 
 | Ruling | Kept or changed |
 |---|---|
-| One way at a time, subscription or API key (24–25 Nov) | kept, as two of the three buttons; "Authenticate with Agent" (27 Nov) is replaced by them |
-| Warn before re-sign-in (w994) | kept, both presses |
-| Ronin Gateway on Codex and Hermes, never Claude Code | kept, as a Models stone |
-| Hermes's model services: Setup shows, Settings edits (25 Nov) | changed: the same editable Models in both (owner, 27 Nov) |
+| One in-harness way at a time, subscription or API key (24–25 Nov) | kept |
+| Warn before re-sign-in (w994) | kept, on the in-harness stones |
+| Ronin Gateway on Codex and Hermes, never Claude Code | kept, as a service in the row |
+| Hermes's model services: Setup shows, Settings edits (25 Nov) | changed: the same row and entries in both (owner, 27 Nov) |
 | The bar names the state (25 Nov) | kept: one word everywhere |
-| Settings' three numbered steps | gone: one state word and the one control (owner, 27 Nov) |
+| Settings' three numbered steps | gone (owner, 27 Nov) |
+| "Authenticate with Agent" (27 Nov) | gone: the service stones replace it |
 
 ### Decided
 
-Owner, 27 Nov: one state word and the one control that applies; the same editable Models section
-for Hermes in both places; stones in both; three sign-in buttons, Subscription, API key, Terminal;
-a harness with no split shows Terminal only; every Terminal button tells the Helpful Assistant and
-never names her. Nothing is open.
+Owner, 27 Nov: one state word and the one control that applies; stones in both places; the section
+is Model services, choose and authenticate first, model entries under it; Subscription, API key in
+harness (recommended), API key in Ronin key vault, Ronin Gateway, OpenRouter, Terminal, each where
+the harness can use it; Terminal tells the Helpful Assistant and never names her; Ronin key vault
+is the name everywhere a secret is asked for. Nothing is open.
 
 ## The Harnesses surface
 
