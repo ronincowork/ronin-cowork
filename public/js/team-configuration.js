@@ -19,7 +19,7 @@ const el = (tag, cls, text) => { const node = document.createElement(tag); if (c
 const bucket = (value) => value && typeof value === 'object' && !Array.isArray(value) ? value : {};
 const list = (value) => Array.isArray(value) ? value : [];
 
-/** The form's one-line answer when its step is folded: its Workspace. The model is Models > Defaults' (owner, 2026-10-21). */
+/** The form's one-line answer when its step is folded: its Workspace. */
 export function teamConfigurationMeta(roster) {
   return roster?.workspace || '';
 }
@@ -57,10 +57,10 @@ export function renderTeamConfiguration(host, roster, optionsArg = {}) {
     objective.placeholder = t('new_team.objective_placeholder', 'what the lead picks up and starts on');
     const instructions = el('textarea'); instructions.name = 'instructions'; instructions.rows = 3; instructions.value = roster.instructions || '';
     instructions.placeholder = t('new_team.instructions_placeholder', 'standing directions every Agent in the Team reads');
-    // The Team's own Workspace (roster.workspace), beside Purpose, read by its title.
+    // The Team's own Workspace (roster.workspace), read by its title.
     const workspaceRows = () => workspaces.map((w) => ({ v: w.name, l: w.title || w.name, sub: w.objective || '' }));
     const workspaceRow = el('div', 'tw-config-wide');
-    const teamWorkspace = ask([{ group: t('new_team.workspace', 'Workspace'), fields: [
+    const teamWorkspace = ask([{ fields: [
       { key: 'workspace', label: t('new_team.workspace', 'Workspace'), blank: t('new_team.workspace_none', 'None'), options: workspaceRows },
     ] }], { value: { workspace: roster.workspace || '' }, density: 'tight', trayHost: workspaceRow });
     workspaceRow.append(teamWorkspace.el);

@@ -135,7 +135,7 @@ export function createNewTeamFormView(kit, { created = null, consumed = null, em
   const stepWhere = createStep({ n: 2, key: 'where', title: t('new_team.workspace', 'Workspace') });
   const workspaceRows = () => workspaces.map((row) => ({ v: row.name, l: row.title || row.name, sub: row.objective || '' }));
   const whereQuestions = ask([
-    { fields: [{ key: 'workspace', label: t('new_team.workspace', 'Workspace'), options: workspaceRows }] },
+    { fields: [{ key: 'workspace', label: t('new_team.workspace', 'Workspace'), options: workspaceRows, blank: t('new_team.workspace_blank', 'Choose a Workspace') }] },
   ], {
     value: { workspace: draft.workspace },
     className: 'ntf-where-questions',
