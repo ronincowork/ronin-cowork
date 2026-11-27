@@ -4,7 +4,7 @@
 # Usage: team roster write <team> [--objective <text>] [--workspace <handle>]
 #                              [--branch <b>] [--wipeboard <board>]
 #                              [--state active|archived] [--campaign-defaults] [--add s1,s2]
-#                              [--select b1,b2] [--deselect b1,b2] [--campaign <id>]
+#                              [--select b1[:full|:seed],b2] [--deselect b1,b2] [--campaign <id>]
 #
 # ONE UPSERT (owner, 2026-08-26). A team with no roster is CREATED from whatever you
 # name; a team with one is UPDATED in the fields you name and untouched elsewhere.
@@ -27,7 +27,7 @@ Usage:
   team roster write <team> [--objective <text>] [--workspace <handle>]
                         [--branch <branch>] [--wipeboard <board>]
                         [--state active|archived] [--campaign-defaults] [--add s1,s2]
-                        [--select b1,b2] [--deselect b1,b2] [--campaign <id>]
+                        [--select b1[:full|:seed],b2] [--deselect b1,b2] [--campaign <id>]
 
 Create a Team by naming one that has no record; otherwise only named fields change.
 --workspace names the Team's Workspace by its handle; the Workspace holds the repositories.
