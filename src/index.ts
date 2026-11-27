@@ -58,7 +58,7 @@ import { registerMachineRestart } from './routes/machine-restart-api.js';
 import { registerJikan, startHouseJikan } from './routes/jikan-api.js';
 import { registerInstalled } from './routes/installed-api.js';
 import { registerOffice } from './routes/office-api.js';
-import { registerWorkbenches } from './routes/workbenches-api.js';
+import { registerWorkbenches, shownTo } from './routes/workbenches-api.js';
 import { registerVersion } from './routes/version.js';
 import { registerWipeboards, wipeboardAnswer } from './routes/wipeboards-api.js';
 import { registerTerminalControls } from './terminal-controls.js';
@@ -259,9 +259,11 @@ const sendDocument = (html: string) => (req: express.Request, res: express.Respo
 };
 const sendIndex = sendDocument(indexHtml);
 const sendMobile = sendDocument(mobileHtml);
-app.get('/', (req, res) => {
+app.get('/', async (req, res) => {
   res.setHeader('Vary', 'User-Agent'); // one address, two documents: a cache must never hand a phone the desktop
-  (isPhone(req) ? sendMobile : sendIndex)(req, res);
+  // A member shown a list of workbenches (KAN-955) gets the workbench document on a phone too: the
+  // phone document has no workbenches, and the workbench lays itself out at phone width.
+  (isPhone(req) && !(await shownTo(req)) ? sendMobile : sendIndex)(req, res);
 });
 app.get('/index.html', sendIndex);
 app.get('/cowork-setup', (_req, res) => res.redirect(302, '/'));

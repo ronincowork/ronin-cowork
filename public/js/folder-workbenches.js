@@ -17,6 +17,14 @@ const registry = () => WorkspaceKit.workbench;
 const opened = [];
 /** The folder workbenches open in this page, in folder order: Home's stones for them. */
 export const folderWorkbenches = () => opened.slice();
+// WHICH WORKBENCHES MEMBERS SEE (KAN-955): `shown` is this person's list (a member, with the
+// setting set), else null: everything. `membersSee` is the setting as saved, for Settings.
+let shown = null, membersSee = [];
+export const shownWorkbenches = () => shown;
+export const savedMembersSee = () => membersSee.slice();
+export const setSavedMembersSee = (list) => { membersSee = list.slice(); };
+/** Whether a workbench is offered to this person. */
+export const isShown = (name) => !shown || shown.includes(name);
 
 /** What a package's page code is given: its own name, title and folder, and Cowork's client. */
 const roninFor = (workbench, base) => Object.freeze({
@@ -49,6 +57,8 @@ async function openFolderWorkbench(workspace, workbench) {
 export async function loadFolderWorkbenches(workspace) {
   const result = await request('/api/workbenches', { cache: 'no-store' });
   const list = result.ok && Array.isArray(result.data.workbenches) ? result.data.workbenches : [];
+  shown = result.ok && Array.isArray(result.data.shown) && result.data.shown.length ? result.data.shown : null;
+  membersSee = result.ok && Array.isArray(result.data.members_see) ? result.data.members_see : [];
   const ok = await Promise.all(list.map((workbench) => openFolderWorkbench(workspace, workbench).then(() => true)
     .catch((error) => { console.warn(`workbench ${workbench.name}`, error); return false; })));
   opened.splice(0, opened.length, ...list.filter((_w, i) => ok[i]));

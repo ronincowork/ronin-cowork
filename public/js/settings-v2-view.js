@@ -24,6 +24,7 @@ import { buildStats } from './stats.js';
 import { loadHarnessCatalog } from './form-steps.js';
 import { createModelDefaults } from './models-surface.js';
 import { createModelServicesSurface } from './model-services-surface.js';
+import { createMembersSeeSurface } from './members-see-surface.js';
 
 const elem = (tag, cls, text) => { const out = document.createElement(tag); if (cls) out.className = cls; if (text != null) out.textContent = text; return out; };
 const enterable = (surface) => ({ el: surface.el, show: () => surface.enter() });
@@ -92,6 +93,7 @@ export function createSettingsV2View() {
         selected,
         settings2ModelServices: ({ detail }) => createModelServicesSurface({ tab: detail?.tab || 'gateway', serviceId: detail?.key || '' }),
         settings2AgentDefaults: () => officeDefaults(selected),
+        settings2MembersSee: () => createMembersSeeSurface(),
         // Workspaces (owner, 26 Nov; KAN-900): a stone each, its Configuration alone, and New Workspace's doors.
         rootsSummary: () => t('campaign_view.roots_summary', 'Each Workspace and the folders it works in.'),
         campaignRoots: () => createWorkspaceStones({ workspacesRead: createWorkspacesRead(), workbench: bench(), withNew: true, configOnly: true }),

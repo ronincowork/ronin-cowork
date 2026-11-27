@@ -20,7 +20,7 @@ import { request } from './request.js';
 import { createReleaseUpdateController, packageReading } from './release-update-controller.js';
 import { createSenmaida } from './senmaida.js';
 import { workbenchLink } from './workspace.js';
-import { folderWorkbenches } from './folder-workbenches.js';
+import { folderWorkbenches, isShown } from './folder-workbenches.js';
 import { BUSINESS_LOUNGE, HOSTED } from './hosted.js';
 
 const el = (tag, cls, text) => {
@@ -130,8 +130,9 @@ export function createCampaignHome() {
     return card;
   }
   function paintDoors() {
-    doors.replaceChildren(...OFFICE().map((one) => stone(one, false)));
-    side.replaceChildren(...SIDE().map((one) => stone(one, true)));
+    // A member is offered only the workbenches the office lists for members (KAN-955); a link out stays.
+    doors.replaceChildren(...OFFICE().filter((one) => isShown(one.route)).map((one) => stone(one, false)));
+    side.replaceChildren(...SIDE().filter((one) => one.href || isShown(one.route)).map((one) => stone(one, true)));
   }
 
   const updates = createReleaseUpdateController({ onChange: state => {

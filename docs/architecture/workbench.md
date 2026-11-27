@@ -423,6 +423,33 @@ refresh and arrangement like the built-in ones, with no Agent vocabulary or Sess
 Home shows a stone for each, between Setup and Settings. One that will not load is reported in the
 browser console; the others still open.
 
+## Which workbenches members see
+
+One office setting (KAN-955), on Settings' **What members see** card under Office defaults: a
+list of workbenches, the first where a member lands. It is one small file:
+
+```
+~/ronin/config/members_see.json      {"workbenches": ["appliance_counter"]}
+```
+
+The names are destinations: a folder workbench's name, or a built-in one (`cowork` Teams,
+`epics`, `workspaces`, `setup`, `help`, `settings2` Settings). Settings writes it
+(`PUT /api/workbenches/members-see {workbenches}`); whoever first copies a workbench package in
+writes the package's `members_see` there as it is, when the file is absent. It is read at each
+page load; no restart.
+
+- It applies by role: to every person whose role is member in `office_unit/members.json`
+  ([office-people.ts](../../src/office-people.ts)). The owner, and a self-hosted office, is
+  shown everything, Settings included.
+- No file, or an empty list: members are shown everything, as before.
+- It decides what is shown and refuses nothing. `GET /api/workbenches` gives this person's
+  `shown` (the list, or null for everything) beside the saved `members_see`.
+
+For a member with a list: any address not on it opens the first; Home shows only the listed
+stones (a link out, the Business Lounge, stays); with one listed the bar has no Home, the
+workbench is the whole office. A member's phone gets the workbench document, not the phone
+document, since the phone document has no workbenches.
+
 ## Change checklist
 
 When adding or changing a Workbench surface:
